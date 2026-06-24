@@ -1,0 +1,37 @@
+# A compact studio apartment — the canonical ArchLang example.
+plan "Studio 1BR" {
+  units mm
+  grid 50
+  scale 1:50
+  north up
+
+  # Exterior shell (closed) + one internal partition.
+  wall exterior thickness 200 { (0,0) (7000,0) (7000,6000) (0,6000) close }
+  wall partition thickness 100 { (4000,0) (4000,4000) }
+  wall partition thickness 100 { (4000,4000) (7000,4000) }
+
+  room id=r_living at (0,0)    size 4000x6000 label "Living / Kitchen"
+  room id=r_bed    at (4000,0) size 3000x4000 label "Bedroom"
+  room id=r_bath   at (4000,4000) size 3000x2000 label "Bath"
+
+  door id=d_main at (1000,6000) width 1000 wall exterior  hinge left  swing in
+  door id=d_bed  at (4000,1500) width 900  wall partition hinge left  swing in
+  door id=d_bath at (5200,4000) width 800  wall partition hinge right swing out
+
+  window at (2500,0)    width 1800 wall exterior
+  window at (7000,2000) width 1200 wall exterior
+  window at (7000,5000) width 800  wall exterior
+
+  furniture bed   at (4300,300)  size 1500x2000 label "Bed"
+  furniture sofa  at (300,4200)  size 2000x900  label "Sofa"
+  furniture stove at (300,200)   size 600x600   label "Stove"
+
+  dim (0,6000)->(7000,6000) offset 600 text "7000"
+  dim (7000,0)->(7000,6000) offset 600 text "6000"
+
+  title {
+    project "Studio Apartment"
+    drawn_by "ArchCanvas"
+    date "2026-06-25"
+  }
+}

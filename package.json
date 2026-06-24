@@ -1,0 +1,64 @@
+{
+  "name": "@chanmeng666/archlang",
+  "version": "0.1.0",
+  "description": "A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.",
+  "keywords": [
+    "architecture",
+    "floor-plan",
+    "dsl",
+    "compiler",
+    "svg",
+    "cad",
+    "typst",
+    "parametric",
+    "language"
+  ],
+  "license": "MIT",
+  "author": "Chan Meng <chanmeng.dev@gmail.com>",
+  "homepage": "https://github.com/chanmeng666/archlang#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chanmeng666/archlang.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chanmeng666/archlang/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "arch": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "cli": "tsx src/cli.ts",
+    "prepublishOnly": "npm run build && npm run test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

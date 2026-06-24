@@ -1,0 +1,39 @@
+# A two-bedroom apartment with a central corridor.
+plan "Two-Bedroom Flat" {
+  units mm
+  grid 100
+  scale 1:100
+  north right
+
+  wall exterior thickness 250 { (0,0) (10000,0) (10000,8000) (0,8000) close }
+  wall partition thickness 100 { (4000,0) (4000,5000) }
+  wall partition thickness 100 { (4000,5000) (10000,5000) }
+  wall partition thickness 100 { (7000,5000) (7000,8000) }
+
+  room id=r_kitchen at (0,0)        size 4000x5000 label "Kitchen / Living"
+  room id=r_bed1    at (4000,0)     size 6000x5000 label "Master Bedroom"
+  room id=r_bed2    at (0,5000)     size 4000x3000 label "Bedroom 2"
+  room id=r_bath    at (4000,5000)  size 3000x3000 label "Bathroom"
+  room id=r_hall    at (7000,5000)  size 3000x3000 label "Hall"
+
+  door at (4000,2500)  width 900  wall partition hinge left swing in
+  door at (5500,5000)  width 800  wall partition hinge left swing in
+  door at (7000,6500)  width 900  wall partition hinge right swing in
+
+  window at (2000,0)     width 2000 wall exterior
+  window at (8000,0)     width 2400 wall exterior
+  window at (0,3000)     width 1500 wall exterior
+  window at (10000,3000) width 1500 wall exterior
+
+  furniture bed at (5000,300) size 1800x2100 label "Bed"
+  furniture bed at (300,5300) size 1400x2000 label "Bed"
+
+  dim (0,8000)->(10000,8000) offset 700 text "10000"
+  dim (0,0)->(0,8000) offset 700 text "8000"
+
+  title {
+    project "Two-Bedroom Flat"
+    drawn_by "ArchCanvas"
+    date "2026-06-25"
+  }
+}

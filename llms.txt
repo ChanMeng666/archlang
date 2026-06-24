@@ -1,0 +1,24 @@
+# ArchLang
+
+> A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.
+
+This file follows the [llms.txt](https://llmstxt.org/) convention: a concise, machine-readable map
+of the project for large language models and AI agents.
+
+## About
+
+- Repository: https://github.com/chanmeng666/archlang
+- Primary stack: Node.js / JavaScript
+- License: MIT
+
+## Key documents
+
+- [README](https://github.com/chanmeng666/archlang/blob/main/README.md): overview, features, installation, usage
+- [AGENTS.md](https://github.com/chanmeng666/archlang/blob/main/AGENTS.md): how AI agents should work in this repo
+- [CONTRIBUTING](https://github.com/chanmeng666/archlang/blob/main/CONTRIBUTING.md): development setup and contribution workflow
+- [CHANGELOG](https://github.com/chanmeng666/archlang/blob/main/CHANGELOG.md): version history
+
+## For agents
+
+To work effectively here: read the README and AGENTS.md first, then follow the commands and
+conventions they describe. Prefer the project's own scripts over ad-hoc commands.
