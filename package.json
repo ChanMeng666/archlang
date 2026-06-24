@@ -34,7 +34,7 @@
     }
   },
   "bin": {
-    "arch": "./dist/cli.js"
+    "arch": "dist/cli.js"
   },
   "files": [
     "dist",
