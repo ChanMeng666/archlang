@@ -101,3 +101,35 @@ describe("AIA layers (T3.2)", () => {
     expect(dxf).toContain("\n8\nA-COLS\n"); // an entity is on the A-COLS layer
   });
 });
+
+describe("openings void walls (T3.3)", () => {
+  const wallLoops = (src: string) => {
+    const { scene } = compile(src, { noCache: true });
+    const node = scene!.nodes.find((n) => n.layer === "wallFill" && n.prim.t === "region");
+    return node && node.prim.t === "region" ? node.prim.loops : [];
+  };
+
+  it("a door cuts its host wall into two pieces", () => {
+    const intact = wallLoops(`plan "P" { wall exterior thickness 200 { (0,0) (4000,0) } }`);
+    const cut = wallLoops(`plan "P" { wall exterior thickness 200 { (0,0) (4000,0) } door at (2000,0) width 900 wall exterior }`);
+    expect(intact.length).toBe(1); // solid band
+    expect(cut.length).toBe(2); // split by the opening
+  });
+
+  it("the opening gap matches the door width and position", () => {
+    const cut = wallLoops(`plan "P" { wall exterior thickness 200 { (0,0) (4000,0) } door at (2000,0) width 900 wall exterior }`);
+    const xs = new Set(cut.flat().map((p) => p.x));
+    expect(xs.has(1550)).toBe(true); // 2000 - 450
+    expect(xs.has(2450)).toBe(true); // 2000 + 450
+  });
+
+  it("a window also voids its host wall", () => {
+    const cut = wallLoops(`plan "P" { wall exterior thickness 200 { (0,0) (4000,0) } window at (2000,0) width 1200 wall exterior }`);
+    expect(cut.length).toBe(2);
+  });
+
+  it("cutting is deterministic", () => {
+    const src = `plan "P" { wall exterior thickness 200 { (0,0) (4000,0) } door at (2000,0) width 900 wall exterior }`;
+    expect(compile(src, { noCache: true }).svg).toBe(compile(src, { noCache: true }).svg);
+  });
+});

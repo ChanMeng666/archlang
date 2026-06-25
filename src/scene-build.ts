@@ -9,14 +9,14 @@
  */
 
 import type { CompileOptions } from "./types.js";
-import type { ResolvedPlan, RWall } from "./ir.js";
+import type { Opening, ResolvedPlan, RWall } from "./ir.js";
 import type { RenderCtx } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode } from "./scene.js";
 import { registry } from "./elements/index.js";
 import type { Bounds } from "./geometry.js";
-import { emptyBounds, extendBounds, segmentRectangle, segmentsOfWall } from "./geometry.js";
+import { distPointToSegment, emptyBounds, extendBounds, segmentRectangle, segmentsOfWall } from "./geometry.js";
 import type { Rect } from "./geometry/union.js";
-import { rectUnionOutline } from "./geometry/union.js";
+import { rectBooleanOutline } from "./geometry/union.js";
 import { patternId } from "./hatches.js";
 import { DEFAULT_THEME, mergeTheme, sanitizeTheme } from "./theme.js";
 
@@ -46,6 +46,33 @@ function materialsUsed(walls: RWall[]): string[] {
 }
 
 /**
+ * Axis-aligned rectangle to subtract for one opening: the opening spans its
+ * `width` along the hosting wall segment and the full wall thickness across it.
+ * Returns null for a non-orthogonal host (handled by the angled fallback).
+ */
+function openingRect(w: RWall, op: Opening): Rect | null {
+  let seg = null as null | { a: { x: number; y: number }; b: { x: number; y: number } };
+  let best = Infinity;
+  for (const s of segmentsOfWall(w)) {
+    const d = distPointToSegment(op.at, s.a, s.b);
+    if (d < best) {
+      best = d;
+      seg = s;
+    }
+  }
+  if (!seg) return null;
+  const halfW = op.width / 2;
+  const halfT = w.thickness / 2;
+  if (seg.a.y === seg.b.y) {
+    return { x0: op.at.x - halfW, x1: op.at.x + halfW, y0: op.at.y - halfT, y1: op.at.y + halfT };
+  }
+  if (seg.a.x === seg.b.x) {
+    return { x0: op.at.x - halfT, x1: op.at.x + halfT, y0: op.at.y - halfW, y1: op.at.y + halfW };
+  }
+  return null; // angled host
+}
+
+/**
  * Wall fill + outline, grouped by material so each material's poché unions
  * independently. Orthogonal groups become a single multi-loop `region` (clean
  * boundaries, no internal seams); angled groups fall back to the wall element's
@@ -62,6 +89,7 @@ function lowerWalls(walls: RWall[], ctx: RenderCtx): SceneNode[] {
       continue;
     }
     const rects: Rect[] = [];
+    const holes: Rect[] = [];
     for (const w of group) {
       for (const s of segmentsOfWall(w)) {
         const corners = segmentRectangle(s.a, s.b, s.thickness);
@@ -69,8 +97,13 @@ function lowerWalls(walls: RWall[], ctx: RenderCtx): SceneNode[] {
         const ysv = corners.map((c) => c.y);
         rects.push({ x0: Math.min(...xsv), y0: Math.min(...ysv), x1: Math.max(...xsv), y1: Math.max(...ysv) });
       }
+      // Doors/windows void the wall solid (IFC-style opening subtraction).
+      for (const op of w.openings) {
+        const hr = openingRect(w, op);
+        if (hr) holes.push(hr);
+      }
     }
-    const loops = rectUnionOutline(rects);
+    const loops = rectBooleanOutline(rects, holes);
     if (loops.length === 0) continue;
     nodes.push({ layer: "wallFill", prim: { t: "region", loops }, paint: { fill: `url(#${patternId(mat)})`, fillRule: "nonzero" } });
     nodes.push({

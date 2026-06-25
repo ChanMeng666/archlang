@@ -24,8 +24,8 @@ exports[`golden SVG snapshots > renders parametric.arch deterministically 1`] = 
 <text x="10900" y="600" font-size="207.4" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Kitchen</text>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
-<path d="M -100,-100 L -100,5100 L 12100,5100 L 12100,-100 Z M 100,4900 L 100,100 L 3900,100 L 3900,4900 Z M 4100,4900 L 4100,100 L 7900,100 L 7900,4900 Z M 8100,4900 L 8100,100 L 11900,100 L 11900,4900 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M -100,-100 L -100,5100 L 12100,5100 L 12100,-100 Z M 100,4900 L 100,100 L 3900,100 L 3900,4900 Z M 4100,4900 L 4100,100 L 7900,100 L 7900,4900 Z M 8100,4900 L 8100,100 L 11900,100 L 11900,4900 Z" fill="none" stroke="#1b1b1b" stroke-width="34.16" stroke-linejoin="miter"/>
+<path d="M -100,-100 L -100,5100 L 1550,5100 L 1550,4900 L 100,4900 L 100,100 L 1200,100 L 1200,-100 Z M 2450,4900 L 2450,5100 L 5550,5100 L 5550,4900 L 4100,4900 L 4100,100 L 5200,100 L 5200,-100 L 2800,-100 L 2800,100 L 3900,100 L 3900,4900 Z M 6450,4900 L 6450,5100 L 9550,5100 L 9550,4900 L 8100,4900 L 8100,100 L 9200,100 L 9200,-100 L 6800,-100 L 6800,100 L 7900,100 L 7900,4900 Z M 10450,4900 L 10450,5100 L 12100,5100 L 12100,-100 L 10800,-100 L 10800,100 L 11900,100 L 11900,4900 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -100,-100 L -100,5100 L 1550,5100 L 1550,4900 L 100,4900 L 100,100 L 1200,100 L 1200,-100 Z M 2450,4900 L 2450,5100 L 5550,5100 L 5550,4900 L 4100,4900 L 4100,100 L 5200,100 L 5200,-100 L 2800,-100 L 2800,100 L 3900,100 L 3900,4900 Z M 6450,4900 L 6450,5100 L 9550,5100 L 9550,4900 L 8100,4900 L 8100,100 L 9200,100 L 9200,-100 L 6800,-100 L 6800,100 L 7900,100 L 7900,4900 Z M 10450,4900 L 10450,5100 L 12100,5100 L 12100,-100 L 10800,-100 L 10800,100 L 11900,100 L 11900,4900 Z" fill="none" stroke="#1b1b1b" stroke-width="34.16" stroke-linejoin="miter"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
 <polygon points="2450,4865.84 1550,4865.84 1550,5134.16 2450,5134.16" fill="#ffffff"/>
@@ -98,8 +98,8 @@ exports[`golden SVG snapshots > renders studio.arch deterministically 1`] = `
 <text x="600" y="500" font-size="122.4" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Stove</text>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
-<path d="M -100,-100 L -100,6100 L 7100,6100 L 7100,-100 Z M 100,100 L 3950,100 L 3950,4050 L 6900,4050 L 6900,5900 L 100,5900 Z M 4050,3950 L 4050,100 L 6900,100 L 6900,3950 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M -100,-100 L -100,6100 L 7100,6100 L 7100,-100 Z M 100,100 L 3950,100 L 3950,4050 L 6900,4050 L 6900,5900 L 100,5900 Z M 4050,3950 L 4050,100 L 6900,100 L 6900,3950 Z" fill="none" stroke="#1b1b1b" stroke-width="20.16" stroke-linejoin="miter"/>
+<path d="M -100,-100 L -100,6100 L 500,6100 L 500,5900 L 100,5900 L 100,100 L 1600,100 L 1600,-100 Z M 1500,5900 L 1500,6100 L 7100,6100 L 7100,5400 L 6900,5400 L 6900,5900 Z M 3400,-100 L 3400,100 L 3950,100 L 3950,1050 L 4050,1050 L 4050,100 L 6900,100 L 6900,1400 L 7100,1400 L 7100,-100 Z M 4050,1950 L 3950,1950 L 3950,4050 L 4800,4050 L 4800,3950 L 4050,3950 Z M 6900,3950 L 5600,3950 L 5600,4050 L 6900,4050 L 6900,4600 L 7100,4600 L 7100,2600 L 6900,2600 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -100,-100 L -100,6100 L 500,6100 L 500,5900 L 100,5900 L 100,100 L 1600,100 L 1600,-100 Z M 1500,5900 L 1500,6100 L 7100,6100 L 7100,5400 L 6900,5400 L 6900,5900 Z M 3400,-100 L 3400,100 L 3950,100 L 3950,1050 L 4050,1050 L 4050,100 L 6900,100 L 6900,1400 L 7100,1400 L 7100,-100 Z M 4050,1950 L 3950,1950 L 3950,4050 L 4800,4050 L 4800,3950 L 4050,3950 Z M 6900,3950 L 5600,3950 L 5600,4050 L 6900,4050 L 6900,4600 L 7100,4600 L 7100,2600 L 6900,2600 Z" fill="none" stroke="#1b1b1b" stroke-width="20.16" stroke-linejoin="miter"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
 <polygon points="1500,5879.84 500,5879.84 500,6120.16 1500,6120.16" fill="#ffffff"/>
@@ -167,10 +167,10 @@ exports[`golden SVG snapshots > renders themed.arch deterministically 1`] = `
 <text x="4050" y="1300" font-size="106.25" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bed</text>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
-<path d="M -125,-125 L -125,4125 L 6125,4125 L 6125,-125 Z M 125,3875 L 125,125 L 5875,125 L 5875,3875 Z" fill="url(#hatch-brick)" fill-rule="nonzero"/>
-<path d="M 3050,-50 L 2950,-50 L 2950,4050 L 3050,4050 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M -125,-125 L -125,4125 L 6125,4125 L 6125,-125 Z M 125,3875 L 125,125 L 5875,125 L 5875,3875 Z" fill="none" stroke="#e8e8e8" stroke-width="22.75" stroke-linejoin="miter"/>
-<path d="M 3050,-50 L 2950,-50 L 2950,4050 L 3050,4050 Z" fill="none" stroke="#e8e8e8" stroke-width="22.75" stroke-linejoin="miter"/>
+<path d="M -125,-125 L -125,4125 L 6125,4125 L 6125,-125 L 5100,-125 L 5100,125 L 5875,125 L 5875,3875 L 125,3875 L 125,125 L 700,125 L 700,-125 Z M 3900,-125 L 2300,-125 L 2300,125 L 3900,125 Z" fill="url(#hatch-brick)" fill-rule="nonzero"/>
+<path d="M 3050,-50 L 2950,-50 L 2950,1550 L 3050,1550 Z M 3050,2450 L 2950,2450 L 2950,4050 L 3050,4050 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -125,-125 L -125,4125 L 6125,4125 L 6125,-125 L 5100,-125 L 5100,125 L 5875,125 L 5875,3875 L 125,3875 L 125,125 L 700,125 L 700,-125 Z M 3900,-125 L 2300,-125 L 2300,125 L 3900,125 Z" fill="none" stroke="#e8e8e8" stroke-width="22.75" stroke-linejoin="miter"/>
+<path d="M 3050,-50 L 2950,-50 L 2950,1550 L 3050,1550 Z M 3050,2450 L 2950,2450 L 2950,4050 L 3050,4050 Z" fill="none" stroke="#e8e8e8" stroke-width="22.75" stroke-linejoin="miter"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
 <polygon points="2927.25,1550 2927.25,2450 3072.75,2450 3072.75,1550" fill="#ffffff"/>
@@ -225,8 +225,8 @@ exports[`golden SVG snapshots > renders two-bed.arch deterministically 1`] = `
 <text x="1000" y="6300" font-size="175.1" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bed</text>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
-<path d="M -150,-150 L -150,8150 L 10150,8150 L 10150,-150 Z M 150,150 L 3950,150 L 3950,5050 L 6950,5050 L 6950,7850 L 150,7850 Z M 4050,4950 L 4050,150 L 9850,150 L 9850,4950 Z M 7050,7850 L 7050,5050 L 9850,5050 L 9850,7850 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M -150,-150 L -150,8150 L 10150,8150 L 10150,-150 Z M 150,150 L 3950,150 L 3950,5050 L 6950,5050 L 6950,7850 L 150,7850 Z M 4050,4950 L 4050,150 L 9850,150 L 9850,4950 Z M 7050,7850 L 7050,5050 L 9850,5050 L 9850,7850 Z" fill="none" stroke="#1b1b1b" stroke-width="28.84" stroke-linejoin="miter"/>
+<path d="M -150,-150 L -150,2250 L 150,2250 L 150,150 L 1000,150 L 1000,-150 Z M 150,3750 L -150,3750 L -150,8150 L 10150,8150 L 10150,3750 L 9850,3750 L 9850,4950 L 5900,4950 L 5900,5050 L 6950,5050 L 6950,6050 L 7050,6050 L 7050,5050 L 9850,5050 L 9850,7850 L 7050,7850 L 7050,6950 L 6950,6950 L 6950,7850 L 150,7850 Z M 3000,-150 L 3000,150 L 3950,150 L 3950,2050 L 4050,2050 L 4050,150 L 6800,150 L 6800,-150 Z M 4050,2950 L 3950,2950 L 3950,5050 L 5100,5050 L 5100,4950 L 4050,4950 Z M 9200,-150 L 9200,150 L 9850,150 L 9850,2250 L 10150,2250 L 10150,-150 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -150,-150 L -150,2250 L 150,2250 L 150,150 L 1000,150 L 1000,-150 Z M 150,3750 L -150,3750 L -150,8150 L 10150,8150 L 10150,3750 L 9850,3750 L 9850,4950 L 5900,4950 L 5900,5050 L 6950,5050 L 6950,6050 L 7050,6050 L 7050,5050 L 9850,5050 L 9850,7850 L 7050,7850 L 7050,6950 L 6950,6950 L 6950,7850 L 150,7850 Z M 3000,-150 L 3000,150 L 3950,150 L 3950,2050 L 4050,2050 L 4050,150 L 6800,150 L 6800,-150 Z M 4050,2950 L 3950,2950 L 3950,5050 L 5100,5050 L 5100,4950 L 4050,4950 Z M 9200,-150 L 9200,150 L 9850,150 L 9850,2250 L 10150,2250 L 10150,-150 Z" fill="none" stroke="#1b1b1b" stroke-width="28.84" stroke-linejoin="miter"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
 <polygon points="3921.16,2050 3921.16,2950 4078.84,2950 4078.84,2050" fill="#ffffff"/>

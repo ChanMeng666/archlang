@@ -23,7 +23,7 @@ import { asBool, asNum, asStr, closest, evalExpr, exprSpan } from "./expr.js";
 import type { Theme } from "./theme.js";
 import type { ResolveCtx } from "./registry.js";
 import type { WallSegment } from "./geometry.js";
-import { hostInfoForWalls } from "./geometry.js";
+import { hostInfoForWalls, segmentsOfWall } from "./geometry.js";
 import { registryOrder } from "./elements/index.js";
 import { BUILTIN_NAMES } from "./builtins.js";
 
@@ -31,6 +31,14 @@ export interface RBase {
   kind: ElementKind;
   id: string;
   span?: Span;
+}
+
+/** An opening (door/window) registered on a wall — voids the wall solid. */
+export interface Opening {
+  /** Centre point of the opening (on the wall centerline). */
+  at: Point;
+  /** Opening width along the wall. */
+  width: number;
 }
 
 export interface RWall extends RBase {
@@ -41,6 +49,8 @@ export interface RWall extends RBase {
   material: string;
   points: Point[];
   closed: boolean;
+  /** Openings (doors/windows) hosted on this wall; subtracted from its solid. */
+  openings: Opening[];
 }
 export interface RRoom extends RBase {
   kind: "room";
@@ -358,6 +368,18 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
 
   // 3. IR element list in source order (for rendering).
   const elements = entries.map((e) => e.resolved!);
+
+  // 3b. Register openings: each hosted door/window voids its wall's solid. The
+  //     host segment came from `segmentsOfWall`, so match by endpoint coords.
+  const wallOfSegment = (seg: WallSegment): RWall | undefined =>
+    walls.find((w) =>
+      segmentsOfWall(w).some((s) => s.a.x === seg.a.x && s.a.y === seg.a.y && s.b.x === seg.b.x && s.b.y === seg.b.y),
+    );
+  for (const el of elements) {
+    if ((el.kind === "door" || el.kind === "window") && el.host) {
+      wallOfSegment(el.host)?.openings.push({ at: el.at, width: el.width });
+    }
+  }
 
   // 4. Cross-element checks.
   const drawable = elements.some(

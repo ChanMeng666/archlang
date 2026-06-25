@@ -64,7 +64,7 @@ export const wall: ElementDef = {
           span: n.span,
         });
     }
-    return { kind: "wall", id, category: n.category, thickness, material, points, closed: n.closed, span: n.span };
+    return { kind: "wall", id, category: n.category, thickness, material, points, closed: n.closed, openings: [], span: n.span };
   },
 
   bounds(resolved): Point[] {
