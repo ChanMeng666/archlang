@@ -246,3 +246,38 @@ describe("value-functions / closures (T2.5)", () => {
     expect(e.hints).toEqual(['did you mean "area"?']);
   });
 });
+
+describe("built-ins (T2.6)", () => {
+  const at = (body: string) => elements(`plan "P" { ${body} }`).find((e) => e.kind === "column").at;
+
+  it("min / max (variadic)", () => {
+    expect(at(`column at (min(5, 3, 9), max(1, 8, 2)) size 1x1`)).toEqual({ x: 3, y: 8 });
+  });
+  it("abs", () => {
+    expect(at(`column at (abs(-50), 0) size 1x1`).x).toBe(50);
+  });
+  it("sqrt", () => {
+    expect(at(`column at (sqrt(144), 0) size 1x1`).x).toBe(12);
+  });
+  it("floor / ceil", () => {
+    expect(at(`column at (floor(3.7), ceil(3.2)) size 1x1`)).toEqual({ x: 3, y: 4 });
+  });
+  it("round", () => {
+    expect(at(`column at (round(2.5), round(2.4)) size 1x1`)).toEqual({ x: 3, y: 2 });
+  });
+  it("len of an array and of a string", () => {
+    expect(at(`let xs = [1, 2, 3] column at (len(xs), 0) size 1x1`).x).toBe(3);
+    expect(at(`column at (len("hello"), 0) size 1x1`).x).toBe(5);
+  });
+  it("str stringifies a number (checked via len)", () => {
+    expect(at(`column at (len(str(123)), 0) size 1x1`).x).toBe(3);
+  });
+  it("a built-in arity error is a diagnostic", () => {
+    expect(diags(`plan "P" { column at (abs(1, 2), 0) size 1x1 }`).map((d) => d.code)).toContain("E_ARITY");
+  });
+  it("a user let shadows a built-in without an E_REDEF", () => {
+    const d = diags(`plan "P" { let min = 7 column at (min, 0) size 1x1 }`);
+    expect(d.map((x) => x.code)).not.toContain("E_REDEF");
+    expect(at(`let min = 7 column at (min, 0) size 1x1`).x).toBe(7);
+  });
+});

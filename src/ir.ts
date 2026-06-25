@@ -25,6 +25,7 @@ import type { ResolveCtx } from "./registry.js";
 import type { WallSegment } from "./geometry.js";
 import { hostInfoForWalls } from "./geometry.js";
 import { registryOrder } from "./elements/index.js";
+import { BUILTIN_NAMES } from "./builtins.js";
 
 export interface RBase {
   kind: ElementKind;
@@ -252,8 +253,11 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
   const snapPt = (p: Point): Point => ({ x: snap(p.x), y: snap(p.y) });
 
   // 0. Expand body (lets, assignments, instances, control flow) into a flat
-  //    element stream. The top-level scope IS the global scope (plan `let`s).
-  const globalScope = new Scope();
+  //    element stream. Built-ins live in a scope ABOVE the plan's globals, so a
+  //    user `let` of the same name shadows them without an E_REDEF.
+  const builtinScope = new Scope();
+  for (const name of BUILTIN_NAMES) builtinScope.vars.set(name, { t: "builtin", name });
+  const globalScope = new Scope(builtinScope);
   const entries = expandScope(ast.body, globalScope, globalScope, ast.components, diagnostics, 0);
 
   // 1. Assign ids in registry (canonical) order. The flat stream is numbered
