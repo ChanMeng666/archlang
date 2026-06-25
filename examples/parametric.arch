@@ -1,0 +1,31 @@
+# Parametric plan: a row of identical studio units built from ONE component.
+# Demonstrates `let` bindings, arithmetic, and reusable `component`s.
+plan "Parametric — Studio Row" {
+  units mm
+  grid 50
+  scale 1:100
+  north up
+
+  # Plan-level constants (visible inside components — plan scope is global).
+  let WALL = 200
+  let W = 4000          # unit width
+  let H = 5000          # unit depth
+  let DOOR = 900
+  let WIN = 1600
+
+  # One studio unit, positioned at x. Everything is derived from the constants.
+  component unit(x) {
+    wall exterior thickness WALL { (x, 0) (x + W, 0) (x + W, H) (x, H) close }
+    room at (x, 0) size W x H label "Studio"
+    furniture bed   at (x + 300, 300)        size 1500x2000 label "Bed"
+    furniture kitch at (x + W - 1900, 300)    size 1600x600  label "Kitchen"
+    door   at (x + W / 2, H) width DOOR wall exterior hinge left swing in
+    window at (x + W / 2, 0) width WIN  wall exterior
+  }
+
+  unit(0)
+  unit(W)
+  unit(W * 2)
+
+  dim (0,0)->(W * 3, 0) offset 700 text "3 units"
+}

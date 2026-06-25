@@ -106,19 +106,22 @@ interface Entry {
 
 /**
  * Expand a statement list into a flat element stream: evaluate `let`s into the
- * scope env (source order, no forward refs), and inline component instances
- * with their params bound. Component scope = params + the component's own
- * `let`s only (no outer/global capture — predictable, per the design).
+ * scope env (source order, no forward refs), and inline component instances.
+ *
+ * Scoping is lexical with the plan as the global scope: a component body sees
+ * the plan-level `let`s (`global`) plus its own params and local `let`s, but
+ * NOT the caller's locals. `env` is this scope's env; at the top level it *is*
+ * `global`, so top-level `let`s populate the global scope.
  */
 function expandScope(
   body: Statement[],
-  seed: [string, number][],
+  env: Env,
+  defined: Set<string>,
+  global: Env,
   components: Map<string, ComponentDef>,
   diagnostics: Diagnostic[],
   depth: number,
 ): Entry[] {
-  const env: Env = new Map(seed);
-  const defined = new Set<string>(seed.map(([n]) => n));
   const diag = (d: Diagnostic) => diagnostics.push(d);
   const out: Entry[] = [];
 
@@ -144,11 +147,15 @@ function expandScope(
       if (stmt.args.length !== comp.params.length) {
         diag({ severity: "error", message: `Component "${stmt.name}" expects ${comp.params.length} argument(s) but got ${stmt.args.length}`, code: "E_ARGCOUNT", span: stmt.span });
       }
-      const childSeed: [string, number][] = comp.params.map((p, i) => [
-        p,
-        stmt.args[i] !== undefined ? evalExpr(stmt.args[i], env, diag) : 0,
-      ]);
-      out.push(...expandScope(comp.body, childSeed, components, diagnostics, depth + 1));
+      const argVals = comp.params.map((_, i) => (stmt.args[i] !== undefined ? evalExpr(stmt.args[i], env, diag) : 0));
+      // Component scope = plan global + params; its lets are local.
+      const childEnv: Env = new Map(global);
+      const childDefined = new Set<string>();
+      comp.params.forEach((p, i) => {
+        childEnv.set(p, argVals[i]);
+        childDefined.add(p);
+      });
+      out.push(...expandScope(comp.body, childEnv, childDefined, global, components, diagnostics, depth + 1));
     } else {
       out.push({ node: stmt, env: new Map(env), id: "" });
     }
@@ -163,7 +170,9 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
   const snapPt = (p: Point): Point => ({ x: snap(p.x), y: snap(p.y) });
 
   // 0. Expand body (lets + component instantiation) into a flat element stream.
-  const entries = expandScope(ast.body, [], ast.components, diagnostics, 0);
+  //    At the top level the scope env IS the global env (plan-level `let`s).
+  const globalEnv: Env = new Map();
+  const entries = expandScope(ast.body, globalEnv, new Set(), globalEnv, ast.components, diagnostics, 0);
 
   // 1. Assign ids in registry (canonical) order. The flat stream is numbered
   //    globally per kind, so auto-ids stay unique across component instances.

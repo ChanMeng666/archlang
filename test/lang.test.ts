@@ -78,6 +78,16 @@ describe("components", () => {
     expect(diags(`plan "P" { component a() { a() } a() }`).map((d) => d.code)).toContain("E_RECURSION");
   });
 
+  it("sees plan-level (global) bindings inside a component body", () => {
+    const els = elements(`plan "P" {
+      let SZ = 1200
+      component pad(x) { column at (x, 0) size SZ x SZ }
+      pad(0)
+    }`);
+    const col = els.find((e) => e.kind === "column");
+    expect(col.size).toEqual({ w: 1200, h: 1200 });
+  });
+
   it("composes: one component may instantiate an earlier one", () => {
     const els = elements(`plan "P" {
       component leg(x) { column at (x, 0) size 100x100 }

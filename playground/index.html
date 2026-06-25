@@ -142,6 +142,29 @@
   door at (2500,4000) width 900 wall exterior hinge left swing in
   window at (0,2000) width 1500 wall exterior
 }`,
+        "Parametric (let + component)": `plan "Studio Row" {
+  units mm
+  grid 50
+  scale 1:100
+
+  let WALL = 200
+  let W = 4000
+  let H = 5000
+
+  component unit(x) {
+    wall exterior thickness WALL { (x,0) (x+W,0) (x+W,H) (x,H) close }
+    room at (x,0) size W x H label "Studio"
+    furniture bed at (x+300,300) size 1500x2000 label "Bed"
+    door at (x + W/2, H) width 900 wall exterior hinge left swing in
+    window at (x + W/2, 0) width 1600 wall exterior
+  }
+
+  unit(0)
+  unit(W)
+  unit(W * 2)
+
+  dim (0,0)->(W*3,0) offset 700 text "3 units"
+}`,
       };
 
       const srcEl = document.getElementById("src");

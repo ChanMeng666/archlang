@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Arithmetic expressions** anywhere a number appears (coordinates, sizes,
+  widths, thickness, offsets): `+ - * / %`, unary minus, and parentheses with
+  the usual precedence. Sizes accept `WxH` or `<expr> x <expr>`. Division by
+  zero is a compile error.
+- **`let` bindings**: `let NAME = <expr>`, evaluated top-to-bottom (no forward
+  references); unknown names get a `did you mean …?` hint.
+- **Components**: `component NAME(params) { … }` plus `NAME(args)` instantiation
+  — reusable, parameterised sub-plans that compose. Component bodies see their
+  params, own `let`s, and plan-level `let`s. Auto-ids stay unique across
+  instantiations; infinite recursion is bounded and reported.
+- New diagnostics: `E_UNKNOWN_REF`, `E_REDEF`, `E_DIV_ZERO`, `E_ARGCOUNT`,
+  `E_UNKNOWN_COMPONENT`, `E_RECURSION`.
+- `examples/parametric.arch` — a parametric studio row built from one component.
+
+### Changed
+- Lexer: added `+ - * / %` operator tokens; bare numbers are non-negative
+  (negation is a unary operator). The `WxH` dimension literal still works.
+- AST: element numeric fields are expressions evaluated during `resolve`; the
+  plan body is a statement stream (`elements` + `let`s + component instances).
+  SVG output is byte-identical for non-parametric plans (golden-snapshot
+  verified for `studio.arch` and `two-bed.arch`).
+
 ## [0.3.0] - 2026-06-25
 
 ### Added

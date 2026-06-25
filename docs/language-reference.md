@@ -27,6 +27,64 @@ plan "My Home" {
 | `scale 1:50` | Printed scale, shown in the title block. | none |
 | `north up\|down\|left\|right\|<deg>` | North direction for the north arrow. | `up` |
 
+## Values & expressions
+
+Anywhere a number is expected (coordinates, sizes, widths, thickness, offsets)
+you may write an **arithmetic expression**:
+
+```
+room at (0, 0) size (3000) x (3000 - 500)
+furniture bed at (WALL + 300, 300) size 1500x2000
+```
+
+- **Operators:** `+ - * / %`, unary `-`, and parentheses `( … )`.
+- **Precedence:** `* / %` bind tighter than `+ -`; use parens to override.
+- **Numbers are non-negative literals**; write `-x` for negation.
+- Division/modulo by zero is a compile error.
+- **Sizes** accept either the `WxH` literal (`4000x3000`) or `<expr> x <expr>`
+  (`(2000+W) x H`). The bare `x` separates width and height.
+
+### Bindings — `let`
+
+Bind a name to a value with `let`; later statements can use it:
+
+```
+let WALL = 200
+let W = 4000
+let H = W - 1000
+room at (0, 0) size W x H
+```
+
+- Evaluated **top to bottom**; a name must be defined before it is used
+  (no forward references).
+- Re-defining a name in the same scope is an error.
+- Unknown names produce a `did you mean …?` hint.
+
+### Components
+
+Define a reusable, parameterised sub-plan with `component`, then instantiate it
+by name. A component body may contain elements, `let`s, and calls to earlier
+components (composition).
+
+```
+component bath(x, y) {
+  room at (x, y) size 2000x2000 label "Bath"
+  door at (x + 1000, y) width 700 wall exterior
+}
+
+bath(0, 0)
+bath(3000, 0)
+```
+
+- **Scope:** a component body sees its **parameters**, its own `let`s, and the
+  **plan-level** `let`s (plan scope is global) — but not the caller's locals.
+- Auto-assigned ids stay unique across instantiations (the whole drawing is
+  numbered per kind), so two `bath(...)` calls yield `room_1`/`room_2`, etc.
+- Infinite recursion is bounded and reported as an error.
+
+See [`examples/parametric.arch`](../examples/parametric.arch) for a worked
+example using all three.
+
 ## Elements
 
 ### Wall
