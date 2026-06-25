@@ -23,7 +23,9 @@ import { asBool, asNum, asStr, closest, evalExpr, exprSpan } from "./expr.js";
 import type { Theme } from "./theme.js";
 import type { ResolveCtx } from "./registry.js";
 import type { WallSegment } from "./geometry.js";
-import { hostInfoForWalls, segmentsOfWall } from "./geometry.js";
+import { segmentsOfWall, WallGrid } from "./geometry.js";
+import type { GridBox } from "./geometry/grid-index.js";
+import { GridIndex } from "./geometry/grid-index.js";
 import { registryOrder } from "./elements/index.js";
 import { BUILTIN_NAMES } from "./builtins.js";
 
@@ -335,14 +337,16 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
   // Openings call isOnWall(at, ref) then hostSegment(at, ref) with identical
   // args back-to-back; a one-entry memo fuses those into a single wall scan.
   // walls is fully populated before any opening resolves (registry order:
-  // walls first), so the cached info stays valid for the whole opening phase.
+  // walls first), so the spatial index is built lazily on first use and reused.
+  let wallGrid: WallGrid | null = null;
   let hiKey = "";
   let hiVal: { host: WallSegment | null; onWall: boolean } | null = null;
   const hostInfo = (at: Point, ref?: string) => {
     const key = `${at.x},${at.y},${ref ?? ""}`;
     if (key === hiKey && hiVal) return hiVal;
+    if (!wallGrid) wallGrid = new WallGrid(walls);
     hiKey = key;
-    hiVal = hostInfoForWalls(walls, at, ref);
+    hiVal = wallGrid.hostInfo(at, ref);
     return hiVal;
   };
   const ctx: ResolveCtx = {
@@ -396,22 +400,42 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
       code: "W_EMPTY_PLAN",
     });
   }
+  // Room overlap: a spatial grid restricts the pairwise test to rooms sharing a
+  // cell (~O(n) for distributed plans) instead of all O(n²) pairs. Two rooms
+  // overlap ⟹ their boxes intersect ⟹ they share a cell, so this finds exactly
+  // the same overlaps; pairs are emitted in (a,b) order to keep diagnostics
+  // byte-identical to the former double loop.
   const rooms = elements.filter((e): e is RRoom => e.kind === "room");
-  for (let a = 0; a < rooms.length; a++) {
-    for (let b = a + 1; b < rooms.length; b++) {
-      const r1 = rooms[a];
+  const roomBox = (r: RRoom): GridBox => ({ minX: r.at.x, minY: r.at.y, maxX: r.at.x + r.size.w, maxY: r.at.y + r.size.h });
+  let rext = 0;
+  for (const r of rooms) rext += r.size.w + r.size.h;
+  const rgrid = new GridIndex<number>(rooms.length > 0 ? Math.max(rext / (rooms.length * 2), 1) : 1);
+  rooms.forEach((r, i) => rgrid.insert(roomBox(r), i));
+  const overlaps: [number, number][] = [];
+  const seenPair = new Set<string>();
+  rooms.forEach((r1, a) => {
+    for (const b of rgrid.queryBox(roomBox(r1))) {
+      if (b <= a) continue; // each unordered pair once, with a < b
       const r2 = rooms[b];
       const ox = Math.max(0, Math.min(r1.at.x + r1.size.w, r2.at.x + r2.size.w) - Math.max(r1.at.x, r2.at.x));
       const oy = Math.max(0, Math.min(r1.at.y + r1.size.h, r2.at.y + r2.size.h) - Math.max(r1.at.y, r2.at.y));
       if (ox > 1 && oy > 1) {
-        diagnostics.push({
-          severity: "warning",
-          message: `Rooms "${r1.id}" and "${r2.id}" overlap`,
-          code: "W_ROOM_OVERLAP",
-          span: r2.span,
-        });
+        const key = `${a},${b}`;
+        if (!seenPair.has(key)) {
+          seenPair.add(key);
+          overlaps.push([a, b]);
+        }
       }
     }
+  });
+  overlaps.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+  for (const [a, b] of overlaps) {
+    diagnostics.push({
+      severity: "warning",
+      message: `Rooms "${rooms[a].id}" and "${rooms[b].id}" overlap`,
+      code: "W_ROOM_OVERLAP",
+      span: rooms[b].span,
+    });
   }
 
   const ir: ResolvedPlan = {
