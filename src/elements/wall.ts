@@ -4,6 +4,7 @@ import type { ExprPoint, Point, WallNode } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, RenderOp, ResolveCtx } from "../registry.js";
 import type { RWall } from "../ir.js";
 import { add, mul, normal, segmentRectangle, segmentsOfWall, sub, unit } from "../geometry.js";
+import { DEFAULT_MATERIAL, isKnownMaterial, KNOWN_MATERIALS } from "../hatches.js";
 
 export const wall: ElementDef = {
   kind: "wall",
@@ -15,6 +16,11 @@ export const wall: ElementDef = {
     const category = ctx.eatIdent().value;
     ctx.eatKeyword("thickness");
     const thickness = ctx.parseExpr();
+    let material: string | undefined;
+    if (ctx.isKeyword("material")) {
+      ctx.next();
+      material = ctx.eatIdent().value;
+    }
     ctx.eat("lcurly");
     const points: ExprPoint[] = [];
     let closed = false;
@@ -32,7 +38,7 @@ export const wall: ElementDef = {
     }
     ctx.eat("rcurly");
     if (points.length < 2) ctx.fail("A wall needs at least two points", kw);
-    return { kind: "wall", id, category, thickness, points, closed, line: kw.line };
+    return { kind: "wall", id, category, thickness, material, points, closed, line: kw.line };
   },
 
   idPrefix: (node) => (node as WallNode).category || "wall",
@@ -46,7 +52,18 @@ export const wall: ElementDef = {
     if (thickness <= 0) {
       ctx.diag({ severity: "error", message: `Wall "${id}" must have a positive thickness`, code: "E_WALL_THICKNESS", span: n.span });
     }
-    return { kind: "wall", id, category: n.category, thickness, points, closed: n.closed, span: n.span };
+    let material = DEFAULT_MATERIAL as string;
+    if (n.material !== undefined) {
+      if (isKnownMaterial(n.material)) material = n.material;
+      else
+        ctx.diag({
+          severity: "warning",
+          message: `Unknown wall material "${n.material}" (known: ${KNOWN_MATERIALS.join(", ")}); using the default hatch`,
+          code: "W_UNKNOWN_MATERIAL",
+          span: n.span,
+        });
+    }
+    return { kind: "wall", id, category: n.category, thickness, material, points, closed: n.closed, span: n.span };
   },
 
   bounds(resolved): Point[] {

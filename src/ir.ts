@@ -35,6 +35,8 @@ export interface RWall extends RBase {
   kind: "wall";
   category: string;
   thickness: number;
+  /** Resolved hatch material (always a known material; defaults to "poche"). */
+  material: string;
   points: Point[];
   closed: boolean;
 }

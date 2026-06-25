@@ -64,3 +64,44 @@ describe("wall rendering — clean joins", () => {
     expect(compile(src, { noCache: true }).svg).toBe(compile(src, { noCache: true }).svg);
   });
 });
+
+describe("wall materials", () => {
+  it("renders a material's distinct hatch pattern and fills with it", () => {
+    const { svg, errors } = compile(
+      `plan "M" { wall w thickness 400 material brick { (0,0) (4000,0) } }`,
+      { noCache: true },
+    );
+    expect(errors).toEqual([]);
+    expect(svg).toContain('id="hatch-brick"');
+    expect(svg).toContain('fill="url(#hatch-brick)"');
+  });
+
+  it("defaults to the poché hatch when no material is given", () => {
+    const { svg } = compile(`plan "M" { wall w thickness 400 { (0,0) (4000,0) } }`, { noCache: true });
+    expect(svg).toContain('id="poche"');
+    expect(svg).toContain('fill="url(#poche)"');
+  });
+
+  it("warns on an unknown material and falls back to the default hatch", () => {
+    const { svg, diagnostics } = compile(
+      `plan "M" { wall w thickness 400 material marble { (0,0) (4000,0) } }`,
+      { noCache: true },
+    );
+    expect(diagnostics.some((d) => d.code === "W_UNKNOWN_MATERIAL")).toBe(true);
+    expect(svg).toContain('fill="url(#poche)"');
+    expect(svg).not.toContain("hatch-marble");
+  });
+
+  it("groups walls by material — two distinct patterns appear", () => {
+    const { svg } = compile(
+      `plan "M" {
+        wall a thickness 400 material concrete { (0,0) (4000,0) }
+        wall b thickness 400 material tile { (0,2000) (4000,2000) }
+      }`,
+      { noCache: true },
+    );
+    expect(svg).toContain('id="hatch-concrete"');
+    expect(svg).toContain('id="hatch-tile"');
+    expect((svg.match(/stroke-linejoin="miter"/g) ?? []).length).toBe(2);
+  });
+});

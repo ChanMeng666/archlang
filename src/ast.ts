@@ -45,6 +45,8 @@ export interface WallNode extends NodeBase {
   category: string;
   /** Wall thickness in mm. */
   thickness: Expr;
+  /** Optional hatch material (e.g. "brick"); defaults to the poché hatch. */
+  material?: string;
   /** Polyline vertices in order. */
   points: ExprPoint[];
   /** Whether the polyline closes back to its first vertex. */

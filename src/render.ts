@@ -10,6 +10,8 @@ import type { Bounds } from "./geometry.js";
 import { emptyBounds, extendBounds, segmentRectangle, segmentsOfWall } from "./geometry.js";
 import type { Rect } from "./geometry/union.js";
 import { rectUnionOutline } from "./geometry/union.js";
+import type { Material } from "./hatches.js";
+import { hatchPattern, patternId } from "./hatches.js";
 
 const THEME: Record<string, string> = {
   bg: "#ffffff",
@@ -77,36 +79,46 @@ function loopsToPath(loops: { x: number; y: number }[][]): string {
   return loops.map((loop) => "M " + loop.map(pt).join(" L ") + " Z").join(" ");
 }
 
+/** Distinct wall materials present, in a stable (sorted) order. */
+function materialsUsed(walls: RWall[]): string[] {
+  return [...new Set(walls.map((w) => w.material))].sort();
+}
+
 /**
- * Wall fill + outline. For fully-orthogonal walls the segment rectangles are
- * unioned into clean boundary loops (no internal seams at corners/T-junctions).
- * Angled walls fall back to the per-segment renderer.
+ * Wall fill + outline, grouped by material so each material's poché unions
+ * independently and fills with its own hatch. For fully-orthogonal walls the
+ * segment rectangles are unioned into clean boundary loops (no internal seams);
+ * angled walls fall back to the per-segment renderer.
  */
 function renderWalls(walls: RWall[], ctx: RenderCtx): RenderOp[] {
   if (walls.length === 0) return [];
-  if (!allOrthogonal(walls)) {
-    const def = registry.get("wall")!;
-    return walls.flatMap((w) => def.render(w, ctx));
-  }
-  const rects: Rect[] = [];
-  for (const w of walls) {
-    for (const s of segmentsOfWall(w)) {
-      const corners = segmentRectangle(s.a, s.b, s.thickness);
-      const xsv = corners.map((c) => c.x);
-      const ysv = corners.map((c) => c.y);
-      rects.push({ x0: Math.min(...xsv), y0: Math.min(...ysv), x1: Math.max(...xsv), y1: Math.max(...ysv) });
+  const ops: RenderOp[] = [];
+  for (const mat of materialsUsed(walls)) {
+    const group = walls.filter((w) => w.material === mat);
+    if (!allOrthogonal(group)) {
+      const def = registry.get("wall")!;
+      ops.push(...group.flatMap((w) => def.render(w, ctx)));
+      continue;
     }
-  }
-  const loops = rectUnionOutline(rects);
-  if (loops.length === 0) return [];
-  const d = loopsToPath(loops);
-  return [
-    { pass: "wallFill", svg: `<path d="${d}" fill="url(#poche)" fill-rule="nonzero"/>` },
-    {
+    const rects: Rect[] = [];
+    for (const w of group) {
+      for (const s of segmentsOfWall(w)) {
+        const corners = segmentRectangle(s.a, s.b, s.thickness);
+        const xsv = corners.map((c) => c.x);
+        const ysv = corners.map((c) => c.y);
+        rects.push({ x0: Math.min(...xsv), y0: Math.min(...ysv), x1: Math.max(...xsv), y1: Math.max(...ysv) });
+      }
+    }
+    const loops = rectUnionOutline(rects);
+    if (loops.length === 0) continue;
+    const d = loopsToPath(loops);
+    ops.push({ pass: "wallFill", svg: `<path d="${d}" fill="url(#${patternId(mat)})" fill-rule="nonzero"/>` });
+    ops.push({
       pass: "wallFace",
       svg: `<path d="${d}" fill="none" stroke="${ctx.theme.wallStroke}" stroke-width="${ctx.fmt(ctx.sizes.wallStroke)}" stroke-linejoin="miter"/>`,
-    },
-  ];
+    });
+  }
+  return ops;
 }
 
 export function render(ir: ResolvedPlan, opts: CompileOptions = {}): string {
@@ -141,13 +153,12 @@ export function render(ir: ResolvedPlan, opts: CompileOptions = {}): string {
     `<svg xmlns="http://www.w3.org/2000/svg" ${svgAttrs} viewBox="${fmt(vbX)} ${fmt(vbY)} ${fmt(vbW)} ${fmt(vbH)}" font-family="Helvetica, Arial, sans-serif">`,
   );
 
-  // Defs: poché hatch pattern
-  out.push(
-    `<defs><pattern id="poche" patternUnits="userSpaceOnUse" width="${fmt(hatchGap)}" height="${fmt(hatchGap)}" patternTransform="rotate(45)">` +
-      `<rect width="${fmt(hatchGap)}" height="${fmt(hatchGap)}" fill="${THEME.pocheBase}"/>` +
-      `<line x1="0" y1="0" x2="0" y2="${fmt(hatchGap)}" stroke="${THEME.pocheHatch}" stroke-width="${fmt(thin * 0.7)}"/>` +
-      `</pattern></defs>`,
-  );
+  // Defs: a hatch <pattern> for each wall material in use (default → "poche").
+  const hatchCtx = { fmt, gap: hatchGap, thin, base: THEME.pocheBase, line: THEME.pocheHatch };
+  const patterns = materialsUsed(ir.walls)
+    .map((m) => hatchPattern(m as Material, hatchCtx))
+    .join("");
+  out.push(`<defs>${patterns}</defs>`);
 
   // Background
   out.push(`<rect x="${fmt(vbX)}" y="${fmt(vbY)}" width="${fmt(vbW)}" height="${fmt(vbH)}" fill="${THEME.bg}"/>`);
