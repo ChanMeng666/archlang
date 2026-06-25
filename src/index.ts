@@ -8,8 +8,10 @@
 
 import { parse } from "./parser.js";
 import { resolve } from "./ir.js";
-import { render } from "./render.js";
+import { toScene } from "./scene-build.js";
+import { renderSvg } from "./backends/svg.js";
 import { offsetToLineCol } from "./diagnostics.js";
+import type { Scene } from "./scene.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { CompileError, CompileOptions, CompileResult } from "./types.js";
 
@@ -94,9 +96,16 @@ function compileUncached(source: string, opts: CompileOptions): CompileResult {
     .map((d) => toLegacy(source, d));
 
   // Warnings never block rendering; any error (or no plan) aborts with svg = "".
-  const svg = resolved && errs.length === 0 ? render(resolved.ir, opts) : "";
+  // The Scene is built once and serialized to SVG; it is also exposed on the
+  // result so consumers can target other backends (toDxf/toPdf) without re-resolving.
+  let svg = "";
+  let scene: Scene | undefined;
+  if (resolved && errs.length === 0) {
+    scene = toScene(resolved.ir, opts);
+    svg = renderSvg(scene, opts);
+  }
 
-  return { svg, errors, warnings, diagnostics, ast: plan };
+  return { svg, errors, warnings, diagnostics, ast: plan, scene };
 }
 
 /** Clear the internal compile cache (useful in long-lived processes/tests). */

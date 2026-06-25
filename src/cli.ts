@@ -3,7 +3,7 @@
 
 import { readFileSync, writeFileSync, watchFile } from "node:fs";
 import { resolve as resolvePath } from "node:path";
-import { compile, formatDiagnostic, resolve, toScene, toDxf, toPdf } from "./index.js";
+import { compile, formatDiagnostic, toDxf, toPdf } from "./index.js";
 
 type Format = "svg" | "dxf" | "pdf";
 
@@ -15,25 +15,25 @@ async function compileFile(input: string, output: string, format: Format, width?
     process.stderr.write(`error: cannot read ${input}\n`);
     return false;
   }
-  const { svg, diagnostics, ast } = compile(source, { width, noCache: true });
+  const { svg, diagnostics, scene } = compile(source, { width, noCache: true });
   for (const d of diagnostics) {
     process.stderr.write(`${formatDiagnostic(source, d)}\n\n`);
   }
   const errorCount = diagnostics.filter((d) => d.severity === "error").length;
-  if (errorCount > 0) {
+  if (errorCount > 0 || !scene) {
     process.stderr.write(`✗ compilation failed (${errorCount} error${errorCount > 1 ? "s" : ""})\n`);
     return false;
   }
 
   if (format === "dxf") {
-    const dxf = toDxf(toScene(resolve(ast!).ir));
+    const dxf = toDxf(scene);
     writeFileSync(output, dxf, "utf8");
     process.stdout.write(`✓ ${input} → ${output} (${dxf.length} bytes, DXF)\n`);
     return true;
   }
   if (format === "pdf") {
     try {
-      const pdf = await toPdf(toScene(resolve(ast!).ir));
+      const pdf = await toPdf(scene);
       writeFileSync(output, pdf);
       process.stdout.write(`✓ ${input} → ${output} (${pdf.length} bytes, PDF)\n`);
       return true;

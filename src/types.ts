@@ -48,4 +48,10 @@ export interface CompileResult {
   diagnostics: import("./diagnostics.js").Diagnostic[];
   /** The validated AST, present whenever parsing succeeded. */
   ast?: import("./ast.js").PlanNode;
+  /**
+   * The backend-neutral Scene IR (positioned drawing primitives), present
+   * whenever rendering succeeded (i.e. no fatal errors). Feed it to alternate
+   * backends: `toDxf(scene)`, `toPdf(scene)`.
+   */
+  scene?: import("./scene.js").Scene;
 }
