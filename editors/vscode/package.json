@@ -1,0 +1,47 @@
+{
+  "name": "archlang-vscode",
+  "private": true,
+  "version": "0.0.1",
+  "displayName": "ArchLang",
+  "description": "Syntax highlighting and live diagnostics for ArchLang (.arch) floor-plan source.",
+  "publisher": "chanmeng666",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": ["Programming Languages", "Linters"],
+  "main": "./dist/extension.js",
+  "activationEvents": ["onLanguage:arch"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "arch",
+        "aliases": ["ArchLang"],
+        "extensions": [".arch"],
+        "configuration": "../language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "arch",
+        "scopeName": "source.arch",
+        "path": "../archlang.tmLanguage.json"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "watch": "tsc -p . --watch",
+    "vscode:prepublish": "tsc -p ."
+  },
+  "dependencies": {
+    "@chanmeng666/archlang": "file:../..",
+    "vscode-languageclient": "^9.0.1",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.12"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.7.2"
+  }
+}
