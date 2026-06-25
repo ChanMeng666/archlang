@@ -192,6 +192,28 @@ export interface ComponentDef {
   span?: Span;
 }
 
+/** One named item in an `import` list, optionally renamed with `as`. */
+export interface ImportItem {
+  name: string;
+  alias?: string;
+}
+
+/**
+ * `import "<spec>" : a, b as c` (named items) or `import "<spec>" : *` (all).
+ * `spec` is a module reference — a relative `.arch` path or a namespaced
+ * `@local/name:1.0.0` — resolved through the {@link import("./world.js").World}
+ * at link time. Imports bring the module's **components** into this plan.
+ */
+export interface ImportNode {
+  kind: "import";
+  spec: string;
+  items: ImportItem[];
+  /** `import "x": *` — bring in every exported component. */
+  star: boolean;
+  line: number;
+  span?: Span;
+}
+
 export interface TitleNode {
   project?: string;
   drawnBy?: string;
@@ -214,6 +236,8 @@ export interface PlanNode {
   theme?: Partial<Theme>;
   /** Component definitions, by name. */
   components: Map<string, ComponentDef>;
+  /** Module imports (header-level), resolved at link time before resolve. */
+  imports: ImportNode[];
   /** All statements (elements, `let`s, instances), in source order. */
   body: Statement[];
 }

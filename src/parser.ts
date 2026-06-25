@@ -9,6 +9,8 @@ import type {
   ExprPoint,
   ForNode,
   IfNode,
+  ImportItem,
+  ImportNode,
   InstanceNode,
   LetNode,
   NorthDir,
@@ -32,7 +34,7 @@ export interface ParseOutcome {
 }
 
 /** Plan-level settings + binding/definition keywords (not registry elements). */
-const SETTINGS = ["units", "grid", "scale", "north", "title", "theme", "let", "component"];
+const SETTINGS = ["units", "grid", "scale", "north", "title", "theme", "let", "component", "import"];
 /** Control-flow + rule keywords that begin a body statement. */
 const CONTROL = ["for", "if", "while", "set"];
 /** Keywords that begin a plan-body statement (registry element keywords are added
@@ -162,6 +164,7 @@ class Parser {
       grid: 0,
       north: "up",
       components: new Map(),
+      imports: [],
       body: [],
     };
 
@@ -211,6 +214,12 @@ class Parser {
               this.fail(`Component "${def.name}" is already defined`, t);
             }
             plan.components.set(def.name, def);
+            break;
+          }
+          case "import": {
+            const imp = this.parseImport();
+            imp.span = this.spanFrom(start);
+            plan.imports.push(imp);
             break;
           }
           // Elements, `let`, instances, control flow, and assignment all flow
@@ -410,8 +419,12 @@ class Parser {
       else if (t.value === "let") node = this.parseLet();
       // An ident immediately followed by "=" is an assignment.
       else if (this.peek(1).type === "equals") node = this.parseAssign();
-      // A defined component (or this one, recursively) followed by "(" is a call.
-      else if ((components.has(t.value) || t.value === selfName) && this.peek(1).type === "lparen") node = this.parseInstance();
+      // Any ident followed by "(" is a component call. The component may be
+      // defined later, recursively (`selfName`), or brought in by an `import`
+      // (added at link time, after parse) — so an unknown name is validated at
+      // expand (E_UNKNOWN_COMPONENT), not here. `components`/`selfName` retained
+      // for clarity of intent.
+      else if (this.peek(1).type === "lparen") node = this.parseInstance();
       else this.fail(`Unknown statement "${t.value}"`, t);
     }
     node.span = this.spanFrom(start);
@@ -459,6 +472,39 @@ class Parser {
       els = this.parseBlockBody(components, selfName);
     }
     return { kind: "if", id: "", cond, then, else: els, line: kw.line };
+  }
+
+  /**
+   * `import "<spec>" : a, b as c` | `import "<spec>" : *` — bring a module's
+   * components into this plan. Header-level (link-time), so it never interleaves
+   * with draw order. Resolution + reading happen later via the World.
+   */
+  private parseImport(): ImportNode {
+    const kw = this.eatKeyword("import");
+    const spec = this.eatString();
+    this.eat("colon");
+    const items: ImportItem[] = [];
+    let star = false;
+    if (this.isType("star")) {
+      this.next();
+      star = true;
+    } else {
+      for (;;) {
+        const name = this.eatIdent().value;
+        let alias: string | undefined;
+        if (this.isKeyword("as")) {
+          this.next();
+          alias = this.eatIdent().value;
+        }
+        items.push({ name, alias });
+        if (this.isType("comma")) {
+          this.next();
+          continue;
+        }
+        break;
+      }
+    }
+    return { kind: "import", spec, items, star, line: kw.line };
   }
 
   /** `set <kind>(key: value, …)` — scoped default overrides for an element kind. */

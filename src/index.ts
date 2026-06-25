@@ -14,6 +14,7 @@ import { offsetToLineCol } from "./diagnostics.js";
 import { createRegistry } from "./registry.js";
 import type { Runtime } from "./registry.js";
 import { NULL_WORLD } from "./world.js";
+import { link } from "./import.js";
 import { idToken } from "./identity.js";
 import type { Scene } from "./scene.js";
 import type { Diagnostic } from "./diagnostics.js";
@@ -139,12 +140,15 @@ function compileUncached(source: string, opts: CompileOptions): CompileResult {
 
   const { plan, diagnostics: parseDiags } = parse(source, registry);
 
-  // parse → resolve (AST→IR, the single place semantics live) → render. The World
-  // supplies `now` to resolve; `import` reads (T4.3) flow through it too.
-  const resolved = plan ? resolve(plan, registry, world) : null;
-  const diagnostics: Diagnostic[] = resolved
-    ? [...parseDiags, ...resolved.diagnostics]
-    : [...parseDiags];
+  // parse → link (resolve `import`s through the World — the one I/O phase) →
+  // resolve (AST→IR, the single place semantics live) → render.
+  const linked = plan ? link(plan, world, registry) : null;
+  const resolved = linked ? resolve(linked.plan, registry, world) : null;
+  const diagnostics: Diagnostic[] = [
+    ...parseDiags,
+    ...(linked?.diagnostics ?? []),
+    ...(resolved?.diagnostics ?? []),
+  ];
 
   const errs = diagnostics.filter((d) => d.severity === "error");
   const errors = errs.map((d) => toLegacy(source, d));
