@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-25
+
+### Added
+- **Backend-neutral Scene IR.** A new positioned-primitive drawing IR
+  (`src/scene.ts`: `Scene`, `SceneNode`, `ScenePrim`, `Paint`) sits between
+  `resolve` and the backends, so geometry is defined **exactly once** and every
+  backend is a thin, pure serializer. Inspired by Typst's `Frame` and D2's
+  `d2target`.
+  - `toScene(ir, opts)` (`src/scene-build.ts`) lowers the resolved IR to a Scene
+    (elements emit primitives; orthogonal walls union into clean multi-loop
+    regions). Exported, plus the Scene types.
+  - `compile().scene` exposes the Scene (append-only `CompileResult` field) so
+    consumers can target alternate backends without re-resolving.
+- **Vector PDF.** `toPdf(scene)` now emits **true vector** PDF via `pdfkit`
+  (strokes are real paths, text is selectable) instead of rasterizing the SVG.
+
+### Changed
+- **SVG rendering is now a pure serializer** of the Scene (`src/backends/svg.ts`);
+  `render(ir)` is a thin composition. Output is **byte-identical** to v0.6 (golden
+  snapshots unchanged).
+- **DXF backend (`toDxf`) is now a pure Scene serializer** and no longer
+  re-derives door arcs / window panes / dimension geometry (the duplicated
+  `emitDoor`/`emitWindow`/`emitDim` are deleted). DXF output is correspondingly
+  richer (full dimension geometry + computed room areas).
+- **API:** `toDxf` and `toPdf` now take a `Scene` (was the IR / an SVG string);
+  build one with `toScene(ir)` or read `compile().scene`.
+
+### Removed
+- The `svg-to-pdfkit` optional dependency (the PDF backend no longer round-trips
+  through SVG). `pdfkit` remains the only optional, lazy-loaded dependency; the
+  default SVG/DXF path stays zero-dependency.
+
 ## [0.6.0] - 2026-06-25
 
 ### Added
