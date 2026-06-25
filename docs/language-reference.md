@@ -102,13 +102,51 @@ Rendered as a title block in the lower-right corner (with `scale` if set).
 `compile(source, opts?)` returns:
 
 ```ts
-{ svg: string; errors: CompileError[]; warnings: CompileWarning[]; ast?: PlanNode }
+{
+  svg: string;
+  errors: CompileError[];          // derived from diagnostics (severity "error")
+  warnings: CompileWarning[];      // derived from diagnostics (severity "warning")
+  diagnostics: Diagnostic[];       // every problem, with byte-offset spans
+  ast?: PlanNode;
+}
 ```
 
 - `errors` are **fatal**; when present, `svg` is `""`. Each carries `message`
   and (when known) `line`/`col`.
 - `warnings` are advisory (e.g. *door does not lie on any wall*, *rooms overlap*)
   and do not block rendering.
+- `errors`/`warnings` are **projections** of `diagnostics` — kept for back-compat.
+
+### Diagnostics
+
+The compiler never throws on bad source: it recovers from syntax errors and
+reports **all** problems in a single pass. Each is a `Diagnostic`:
+
+```ts
+interface Span { start: number; end: number; }          // byte offsets into source
+type Severity = "error" | "warning";
+interface Diagnostic {
+  severity: Severity;
+  message: string;
+  span?: Span;       // source location, when known
+  code?: string;     // stable machine code, e.g. "E_ROOM_SIZE"
+  hints?: string[];  // optional "did you mean …?" suggestions
+}
+```
+
+`formatDiagnostic(source, d)` (also exported) renders a caret-framed snippet:
+
+```text
+error[E_ROOM_SIZE]: room "bed" must have a positive size
+  --> 1:27
+   |
+ 1 | room id=bed at (0,0) size 0x4000
+   |                           ^^^^^^
+   = help: did you mean 3000x4000?
+```
+
+`offsetToLineCol(source, offset)` converts a byte offset to a 1-based
+`{ line, col }`. The `arch` CLI prints these frames for every diagnostic.
 
 Options: `width` (px for the `<svg>`; height derived from aspect ratio) and
 `noCache` (bypass the memoization cache).
