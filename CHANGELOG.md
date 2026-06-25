@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-25
+
+### Added
+- **Export backends.** `arch compile … --format svg|dxf|pdf` (default `svg`), plus
+  programmatic `toDxf(ir)` / `toPdf(svg)`:
+  - **DXF** — a pure, synchronous, **zero-dependency** ASCII DXF (R12) writer from
+    the resolved IR (wall faces, room/furniture/column rectangles, door swing
+    arcs, window glazing, dimension lines + labels; Y-flipped for CAD).
+    Deterministic.
+  - **PDF** — `pdfkit` + `svg-to-pdfkit` lazy-loaded under `optionalDependencies`,
+    so the core never hard-requires them (clear error if absent).
+- **Public IR access.** `resolve(ast)` and the IR types (`ResolvedPlan`,
+  `ResolvedElement`, `RWall`, `RRoom`, `RDoor`, `RWindow`, `RFurniture`, `RDim`,
+  `RColumn`) are now exported for consumers that want resolved geometry or custom
+  backends.
+- **Editor tooling** (in-repo, not shipped in the package; the published core
+  stays zero-dependency):
+  - A **TextMate grammar** (`editors/archlang.tmLanguage.json`) for `.arch`
+    highlighting, TextMate-engine verified.
+  - The **playground** rebuilt as a Vite + CodeMirror 6 app with syntax
+    highlighting and live inline lint fed by `compile().diagnostics`.
+  - A minimal **VS Code extension + LSP server** (`editors/vscode`) that
+    publishes the compiler's diagnostics for open `.arch` documents.
+- **Benchmark harness** (`npm run bench`): a deterministic ~1000-element plan with
+  per-stage timings.
+- **CI** (`.github/workflows/ci.yml`): `npm ci → typecheck → test` on Node 18 + 20.
+
+### Changed
+- **Performance**: each opening's `isOnWall` + `hostSegment` checks are fused into
+  a single wall scan (`hostInfoForWalls`), roughly halving the dominant resolve
+  cost. Output is byte-identical (golden snapshots + a fast-check equivalence
+  property guard).
+
+### Fixed / Security
+- **SVG output XSS hardening.** Theme strings (colours/font) from the `theme { … }`
+  directive or `CompileOptions.theme` are now escaped once at the render boundary
+  (`sanitizeTheme`), closing an attribute-breakout vector introduced with v0.5
+  theming. Output is byte-identical for well-formed themes; the XSS-safety
+  guarantee (fixed element allowlist, escaped user text) is documented in
+  `SECURITY.md` and covered by `test/security.test.ts`.
+
 ## [0.5.0] - 2026-06-25
 
 ### Added
