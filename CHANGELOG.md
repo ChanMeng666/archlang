@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-06-26
+
+### Added — professional CAD fidelity
+
+Output that reads as a real drawing: line-weight hierarchy and line types, CAD
+layers, openings that truly cut walls, clean angled joinery, data-driven hatches,
+self-consistent dimensions, and sub-linear geometry. Everything stays pure and
+deterministic; the core remains zero-runtime-dependency.
+
+- **Style metadata on the Scene.** `SceneNode` gains optional `lineWeight`
+  (`heavy|medium|thin|extraThin`), `lineType` (`continuous|dashed|center|hidden`),
+  and `layerName`. SVG maps weight → `stroke-width` and type → `stroke-dasharray`;
+  DXF emits an `LTYPE` table (before `LAYER`) with group codes `6`/`8`. Additive —
+  nodes that set none render as before.
+- **AIA CAD layers.** Element kinds map to standard layer names (`A-WALL`,
+  `A-FLOR`, `A-DOOR`, `A-GLAZ`, `A-FURN`, `A-COLS`, `A-ANNO-TEXT`, `A-ANNO-DIMS`).
+  SVG wraps each layer in an Inkscape `<g>`; DXF declares the layers with colours.
+- **Openings void walls (IFC-style).** A hosted door/window registers an opening
+  on its wall; the wall solid is the boolean difference of its offset segments and
+  the opening rectangles, so an opening genuinely cuts the wall. Orthogonal case is
+  fully zero-dependency.
+- **Optional angled-wall geometry engine.** A new `GeometryBackend` seam unions
+  angled (non-axis-aligned) walls into one seamless outline. The optional
+  `clipper2-wasm` adapter (declared in `optionalDependencies`, lazily `import()`ed
+  only for angled geometry) is registered by the CLI when present; otherwise angled
+  walls fall back to per-segment rendering. The default build pulls no new
+  dependency, and **orthogonal output is byte-identical with or without** the engine.
+- **Data-driven hatches.** Wall poché is now a backend-neutral `hatch` Scene
+  primitive. SVG emits a tiled `<pattern>` and DXF a real `HATCH` entity. Tune with
+  `material <name> [scale <n>] [angle <deg>]`.
+- **Computed dimensions.** A `dim` with no explicit `text` shows its measured
+  length `|to−from|`, formatted via a shared formatter so SVG and DXF agree.
+- **Spatial grid index.** Host lookup and room-overlap detection are backed by a
+  uniform-grid index (~O(n) for distributed plans), provably byte-identical to the
+  former O(n²) scans (fast-check equivalence tests).
+
+### Changed
+
+- **Rendered output intentionally changed** (per-layer `<g>` grouping, line
+  weights/types, walls cut by openings, hatch fills). SVG goldens for the orthogonal
+  examples remain byte-identical; the Scene-IR golden was updated deliberately.
+- **DXF version bumped `AC1009` → `AC1015`** (AutoCAD 2000) so the new `HATCH`
+  entity is supported; `LINE`/`ARC`/`TEXT` entities stay R12-style.
+
 ## [0.8.0] - 2026-06-25
 
 ### Added — a full (pure, expand-time) scripting language

@@ -33,8 +33,8 @@ describe("DXF export", () => {
     expect(dxf).toContain("\nARC\n"); // door swing arcs
     expect(dxf).toContain("\nTEXT\n");
     expect(dxf).toContain("Bedroom"); // room label text
-    expect(dxf).toContain("WALLS");
-    expect(dxf).toContain("ROOMS");
+    expect(dxf).toContain("A-WALL"); // AIA wall layer
+    expect(dxf).toContain("A-FLOR"); // AIA floor (room) layer
   });
 
   it("is deterministic (pure, byte-identical across calls)", () => {
@@ -60,6 +60,29 @@ describe("DXF export", () => {
 
   it("does not throw on an empty plan", () => {
     expect(() => dxfOf('plan "Empty" { }')).not.toThrow();
+  });
+
+  it("emits a real HATCH entity for wall poché (pattern name, scale, angle, boundary)", () => {
+    const dxf = dxfOf(`plan "H" { wall w thickness 400 material brick scale 2 angle 30 { (0,0) (4000,0) } }`);
+    // Version must support HATCH (post-R12).
+    expect(dxf).toContain("AC1015");
+    expect(dxf).toContain("\nHATCH\n");
+    expect(dxf).toContain("AcDbHatch");
+    expect(dxf).toContain("\nANSI32\n"); // predefined pattern name (group 2)
+    // Pattern scale (41) and angle (52) round-trip the DSL values.
+    expect(/\n41\n2\b/.test(dxf)).toBe(true);
+    expect(/\n52\n30\b/.test(dxf)).toBe(true);
+    // A polyline boundary path (92=2) with vertices (93).
+    expect(/\n92\n2\n/.test(dxf)).toBe(true);
+    expect(/\n93\n\d/.test(dxf)).toBe(true);
+  });
+
+  it("emits one HATCH per wall hatch group", () => {
+    const dxf = dxfOf(`plan "H" {
+      wall a thickness 400 material brick { (0,0) (4000,0) }
+      wall b thickness 400 material concrete { (0,2000) (4000,2000) }
+    }`);
+    expect((dxf.match(/\nHATCH\n/g) ?? []).length).toBe(2);
   });
 
   it("re-derives no element geometry (door swing math lives only in the element)", () => {

@@ -245,8 +245,8 @@ Currently `door` supports `swing` (`in`/`out`) and `hinge` (`left`/`right`).
 ### Wall
 
 ```
-wall <kind> thickness <mm> [material <name>] { (x,y) (x,y) … [close] }
-wall id=<id> <kind> thickness <mm> [material <name>] { … }
+wall <kind> thickness <mm> [material <name> [scale <n>] [angle <deg>]] { (x,y) (x,y) … [close] }
+wall id=<id> <kind> thickness <mm> [material <name> …] { … }
 ```
 
 A polyline of ≥2 points, drawn with the given thickness and a poché hatch.
@@ -254,14 +254,19 @@ A polyline of ≥2 points, drawn with the given thickness and a poché hatch.
 `<kind>` is a free label (e.g. `exterior`, `partition`).
 
 Orthogonal walls are **boolean-unioned** so corners and T-junctions render as
-one clean outline with no internal seams. (Angled walls fall back to a
-per-segment outline.)
+one clean outline with no internal seams. Angled walls render seamlessly too when
+the optional `clipper2-wasm` geometry engine is installed; otherwise they fall
+back to a per-segment outline.
 
 **Materials** select the hatch pattern: `poche` (default), `concrete`, `brick`,
 `insulation`, `tile`, `none`. An unknown material warns and uses the default.
+Hatches are **data-driven**: the SVG emits a tiled `<pattern>` and the DXF a real
+`HATCH` entity. Optionally tune the hatch with `scale <n>` (tile-size multiplier,
+default 1) and `angle <deg>` (extra rotation, default 0):
 
 ```
 wall exterior thickness 250 material brick { … }
+wall exterior thickness 250 material brick scale 1.5 angle 30 { … }
 ```
 
 ### Room

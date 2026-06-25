@@ -46,9 +46,15 @@ export type {
 // a Scene: `toDxf(scene)` / `toPdf(scene)`; build one with `toScene(ir)` or read
 // `compile().scene`.
 export { toScene } from "./scene-build.js";
-export type { Scene, SceneNode, ScenePrim, Paint, RenderPass, RenderSizes } from "./scene.js";
+export type { Scene, SceneNode, ScenePrim, Paint, RenderPass, RenderSizes, LineWeight, LineType } from "./scene.js";
 export { toDxf } from "./export/dxf.js";
 export { toPdf } from "./export/pdf.js";
+// Optional polygon-geometry backend seam. The default path is zero-dependency
+// (rectilinear boolean); registering a backend (e.g. the lazily-loaded
+// `clipper2-wasm` adapter) unlocks seamless angled-wall joinery.
+export { setGeometryBackend, getGeometryBackend } from "./geometry/backend.js";
+export type { GeometryBackend, JoinKind } from "./geometry/backend.js";
+export { loadClipperBackend } from "./geometry/clipper.js";
 
 /** Small LRU-ish memo cache keyed by source+options. Bounded to 64 entries. */
 const cache = new Map<string, CompileResult>();

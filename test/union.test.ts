@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { compile } from "../src/index.js";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { compile, getGeometryBackend, loadClipperBackend, setGeometryBackend } from "../src/index.js";
 import { rectUnionOutline } from "../src/geometry/union.js";
+
+const pocheFills = (svg: string): number => (svg.match(/fill="url\(#poche\)"/g) ?? []).length;
 
 describe("rectUnionOutline", () => {
   it("traces an L-corner as one 6-vertex loop", () => {
@@ -103,5 +105,89 @@ describe("wall materials", () => {
     expect(svg).toContain('id="hatch-concrete"');
     expect(svg).toContain('id="hatch-tile"');
     expect((svg.match(/stroke-linejoin="miter"/g) ?? []).length).toBe(2);
+  });
+});
+
+describe("hatch as data (T3.5)", () => {
+  const brick = (extra: string) =>
+    compile(`plan "H" { wall w thickness 400 material brick${extra} { (0,0) (4000,0) } }`, { noCache: true });
+
+  it("bakes scale + angle into a distinct pattern id and patternTransform", () => {
+    const { svg } = brick(" scale 2 angle 30");
+    expect(svg).toContain('id="hatch-brick-s2-a30"');
+    expect(svg).toContain('fill="url(#hatch-brick-s2-a30)"');
+    expect(svg).toContain('patternTransform="rotate(30)"');
+  });
+
+  it("keeps the bare id for the default (scale 1, angle 0)", () => {
+    const { svg } = brick("");
+    expect(svg).toContain('id="hatch-brick"');
+    expect(svg).not.toContain("hatch-brick-s");
+  });
+
+  it("two scales of one material emit two distinct patterns", () => {
+    const { svg } = compile(
+      `plan "H" {
+        wall a thickness 400 material brick scale 1 { (0,0) (4000,0) }
+        wall b thickness 400 material brick scale 3 { (0,2000) (4000,2000) }
+      }`,
+      { noCache: true },
+    );
+    expect(svg).toContain('id="hatch-brick"');
+    expect(svg).toContain('id="hatch-brick-s3-a0"');
+  });
+
+  it("scale/angle change output deterministically", () => {
+    expect(brick(" scale 1.5 angle 45").svg).toBe(brick(" scale 1.5 angle 45").svg);
+  });
+
+  it("warns on a non-positive scale and falls back to 1", () => {
+    const { svg, diagnostics } = brick(" scale 0");
+    expect(diagnostics.some((d) => d.code === "W_HATCH_SCALE")).toBe(true);
+    expect(svg).toContain('id="hatch-brick"'); // fell back to scale 1
+  });
+});
+
+// Angled (non-axis-aligned) walls: without a backend they fall back to
+// per-segment fills (seams); with the optional clipper2-wasm engine they union
+// into one seamless region. Orthogonal output must be unaffected either way.
+const ANGLED = `plan "A" { wall exterior thickness 200 { (0,0) (3000,2000) (6000,0) } }`;
+const ORTHO = `plan "O" { wall w thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close } }`;
+
+describe("GeometryBackend seam (T3.4) — engine absent", () => {
+  it("falls back to per-segment fills for angled walls (no backend registered)", () => {
+    expect(getGeometryBackend()).toBe(null); // sanity: default is no backend
+    const { svg, errors } = compile(ANGLED, { noCache: true });
+    expect(errors).toEqual([]);
+    expect(pocheFills(svg)).toBe(2); // one fill per segment — the seamy fallback
+  });
+
+  it("is deterministic without a backend", () => {
+    expect(compile(ANGLED, { noCache: true }).svg).toBe(compile(ANGLED, { noCache: true }).svg);
+  });
+});
+
+describe("GeometryBackend seam (T3.4) — clipper2-wasm engine present", () => {
+  let orthoNoBackend: string;
+  beforeAll(async () => {
+    orthoNoBackend = compile(ORTHO, { noCache: true }).svg; // capture pre-backend
+    setGeometryBackend(await loadClipperBackend());
+  });
+  afterAll(() => setGeometryBackend(null));
+
+  it("unions angled walls into a single seamless region (no per-segment seams)", () => {
+    const { svg, errors } = compile(ANGLED, { noCache: true });
+    expect(errors).toEqual([]);
+    expect(pocheFills(svg)).toBe(1); // one unioned fill instead of two
+    expect((svg.match(/stroke-linejoin="miter"/g) ?? []).length).toBe(1);
+  });
+
+  it("renders angled walls deterministically with the engine present", () => {
+    expect(compile(ANGLED, { noCache: true }).svg).toBe(compile(ANGLED, { noCache: true }).svg);
+  });
+
+  it("leaves orthogonal output byte-identical whether or not the engine is loaded", () => {
+    // Orthogonal walls always use the zero-dep rectilinear boolean, never the backend.
+    expect(compile(ORTHO, { noCache: true }).svg).toBe(orthoNoBackend);
   });
 });

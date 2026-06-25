@@ -22,6 +22,7 @@
 import type { NorthDir, Point, TitleNode } from "./ast.js";
 import type { Span } from "./diagnostics.js";
 import type { Bounds } from "./geometry.js";
+import type { HatchSpec } from "./hatches.js";
 import type { Theme } from "./theme.js";
 
 /**
@@ -42,6 +43,18 @@ export const RENDER_PASSES = [
   "annotations",
 ] as const;
 export type RenderPass = (typeof RENDER_PASSES)[number];
+
+/**
+ * Named line-weight steps (a CAD pen ramp). A backend maps each to a concrete
+ * stroke width via the drawing's reference dimension + theme `lineWeight`, so the
+ * weight *hierarchy* is defined once and stays consistent across SVG/DXF/PDF.
+ */
+export const LINE_WEIGHTS = ["heavy", "medium", "thin", "extraThin"] as const;
+export type LineWeight = (typeof LINE_WEIGHTS)[number];
+
+/** Named line types (dash conventions). `continuous` is the default solid line. */
+export const LINE_TYPES = ["continuous", "dashed", "center", "hidden"] as const;
+export type LineType = (typeof LINE_TYPES)[number];
 
 /** Render-derived sizes (in mm), scaled from the drawing's reference dimension. */
 export interface RenderSizes {
@@ -98,6 +111,13 @@ export type ScenePrim =
    * SVG `A` command needs — so neither backend re-derives endpoints from trig.
    */
   | { t: "arc"; center: Point; r: number; start: Point; end: Point; sweep: 0 | 1 }
+  /**
+   * A hatched (poché) region: closed loops filled with a named material pattern,
+   * scaled and rotated. The SVG backend bakes `scale`→tile size and `angle`→
+   * `patternTransform`; the DXF backend emits a real `HATCH` entity. `origin` is
+   * the optional pattern anchor (defaults to the drawing origin).
+   */
+  | { t: "hatch"; region: Point[][]; material: string; scale: number; angle: number; origin?: Point }
   /** A text label. `value` is the raw (unescaped) string; backends escape on emit. */
   | {
       t: "text";
@@ -112,12 +132,46 @@ export type ScenePrim =
       rotate?: number;
     };
 
-/** One drawable: a primitive on a layer, with paint and an optional source span. */
+/**
+ * Default AIA (American Institute of Architects) CAD layer name for a draw pass.
+ * A node may override this via {@link SceneNode.layerName} (e.g. a column lives in
+ * the `furniture` pass but belongs on `A-COLS`).
+ */
+export function aiaLayer(pass: RenderPass): string {
+  switch (pass) {
+    case "floor": return "A-FLOR";
+    case "furniture": return "A-FURN";
+    case "wallFill":
+    case "wallFace": return "A-WALL";
+    case "doors": return "A-DOOR";
+    case "windows": return "A-GLAZ";
+    case "labels": return "A-ANNO-TEXT";
+    case "dims": return "A-ANNO-DIMS";
+    case "annotations": return "A-ANNO";
+  }
+}
+
+/** One drawable: a primitive on a layer, with paint and an optional source span.
+ *
+ * `lineWeight`/`lineType`/`layerName` are optional *semantic* style metadata
+ * (added in Phase v0.9). When `lineWeight` is set a backend derives the stroke
+ * width from the named ramp (overriding `paint.width`); when `lineType` is set
+ * (and not `continuous`) it derives the dash pattern. `layerName` names the CAD
+ * layer (AIA) the node belongs to. All are additive: a node that sets none
+ * renders exactly as before. */
 export interface SceneNode {
   layer: RenderPass;
   prim: ScenePrim;
   paint: Paint;
+  lineWeight?: LineWeight;
+  lineType?: LineType;
+  layerName?: string;
   span?: Span;
+}
+
+/** Effective CAD layer for a node: explicit `layerName`, else the pass default. */
+export function layerOf(node: SceneNode): string {
+  return node.layerName ?? aiaLayer(node.layer);
 }
 
 /**
@@ -139,6 +193,6 @@ export interface Scene {
   scale?: string;
   title?: TitleNode;
   name: string;
-  /** Distinct wall materials in use (stable order), so the SVG backend can emit hatch `<pattern>`s. */
-  materials: string[];
+  /** Distinct hatch specs in use (stable order), so the SVG backend can emit a `<pattern>` per spec. */
+  hatches: HatchSpec[];
 }

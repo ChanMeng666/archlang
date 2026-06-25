@@ -3,9 +3,22 @@
 
 import { readFileSync, writeFileSync, watchFile } from "node:fs";
 import { resolve as resolvePath } from "node:path";
-import { compile, formatDiagnostic, toDxf, toPdf } from "./index.js";
+import { compile, formatDiagnostic, loadClipperBackend, setGeometryBackend, toDxf, toPdf } from "./index.js";
 
 type Format = "svg" | "dxf" | "pdf";
+
+/**
+ * Best-effort registration of the optional angled-geometry engine. Loaded once,
+ * before compiling, so the synchronous pipeline can use it for non-axis-aligned
+ * walls. Absent dependency ⇒ silently keep the zero-dep per-segment fallback.
+ */
+async function tryLoadGeometryBackend(): Promise<void> {
+  try {
+    setGeometryBackend(await loadClipperBackend());
+  } catch {
+    // clipper2-wasm not installed — angled walls fall back to per-segment.
+  }
+}
 
 async function compileFile(input: string, output: string, format: Format, width?: number): Promise<boolean> {
   let source: string;
@@ -92,6 +105,9 @@ async function main(): Promise<void> {
   }
   const inPath = resolvePath(input);
   const output = args.o ? resolvePath(args.o) : defaultOut(inPath, format);
+
+  // Enable seamless angled-wall joinery when the optional engine is available.
+  await tryLoadGeometryBackend();
 
   if (cmd === "compile") {
     process.exit((await compileFile(inPath, output, format, args.width)) ? 0 : 1);

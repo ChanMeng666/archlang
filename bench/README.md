@@ -43,12 +43,27 @@ test. Guarded by:
 Measured effect: `resolve` −31% on the balanced plan, −21% on the opening-heavy
 plan; full `compile()` of 1000 elements ~28 ms.
 
-## Deliberately deferred: spatial grid/index
+## Spatial grid index (T3.7)
 
-The fused scan is still `O(openings × wallSegments)`. A uniform spatial grid would
-make it ~`O(openings)`, but a *provably byte-identical* nearest-**segment** index
-(with the linear scan's exact lowest-index tie-breaking) is materially more
-complex and risks the project's sacred determinism guarantee. Given that absolute
-latency is already ~28 ms at 1000 elements — and real floor plans are far smaller —
-this is not warranted now. The benchmark stays in the repo so the trade-off can be
-revisited if a genuine large-scale workload appears.
+The fused scan was still `O(openings × wallSegments)`, and room overlap `O(R²)`.
+Both are now backed by a uniform-grid bucket index (`src/geometry/grid-index.ts`):
+
+- **Room overlap** buckets each room's box and tests only rooms sharing a cell.
+  Two rooms overlap ⟹ their boxes intersect ⟹ they share a cell, so the same
+  overlaps are found; warnings are sorted into `(a,b)` order so the diagnostics
+  stay byte-identical to the former double loop.
+- **Host lookup** (`WallGrid`, `src/geometry.ts`) buckets wall segments and, for
+  each opening, queries an expanding box. A box of half-size `r` is guaranteed to
+  contain every segment within distance `r`, so the box grows until it provably
+  holds both the nearest segment (`r ≥ bestDist`) and the on-wall tolerance band
+  (`r ≥ maxTol`); a final pass scans the gathered segments in global index order
+  with the same first-wins `dist < best` rule.
+
+This is **provably byte-identical** to the brute-force scan — pinned by
+`test/geometry-hostinfo.test.ts` (`WallGrid` ≡ `hostInfoForWalls`, 600 random
+inputs incl. far points + refs) and `test/grid-index.test.ts` (grid room-overlap
+≡ the O(n²) loop, 300 random room sets), plus the golden snapshots.
+
+Measured effect (median `resolve`, ~1000-element skewed plans): `ROOM_HEAVY`
+~4 ms → ~2 ms; `OPENING_HEAVY` ~15 ms → ~8.5 ms. The remaining `OPENING_HEAVY`
+cost is now dominated by `render` (opening cuts), not hosting.

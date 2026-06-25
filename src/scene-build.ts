@@ -9,16 +9,26 @@
  */
 
 import type { CompileOptions } from "./types.js";
-import type { ResolvedPlan, RWall } from "./ir.js";
+import type { Opening, ResolvedPlan, RWall } from "./ir.js";
 import type { RenderCtx } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode } from "./scene.js";
 import { registry } from "./elements/index.js";
-import type { Bounds } from "./geometry.js";
-import { emptyBounds, extendBounds, segmentRectangle, segmentsOfWall } from "./geometry.js";
+import type { Bounds, Vec } from "./geometry.js";
+import { add, distPointToSegment, emptyBounds, extendBounds, mul, normal, segmentRectangle, segmentsOfWall, sub, unit } from "./geometry.js";
 import type { Rect } from "./geometry/union.js";
-import { rectUnionOutline } from "./geometry/union.js";
+import { rectBooleanOutline } from "./geometry/union.js";
+import { getGeometryBackend } from "./geometry/backend.js";
+import type { GeometryBackend } from "./geometry/backend.js";
+import type { Point } from "./ast.js";
 import { patternId } from "./hatches.js";
+import type { HatchSpec } from "./hatches.js";
 import { DEFAULT_THEME, mergeTheme, sanitizeTheme } from "./theme.js";
+
+/** Deterministic mm formatter for computed label text (round 2dp, strip zeros, no -0). */
+function fmtMm(n: number): string {
+  const r = Math.round(n * 100) / 100;
+  return Object.is(r, -0) ? "0" : String(r);
+}
 
 /** Drawing bounds: each element contributes points via its registry `bounds`. */
 function planBounds(ir: ResolvedPlan): Bounds {
@@ -40,44 +50,167 @@ function allOrthogonal(walls: RWall[]): boolean {
   return walls.every((w) => segmentsOfWall(w).every((s) => s.a.x === s.b.x || s.a.y === s.b.y));
 }
 
-/** Distinct wall materials present, in a stable (sorted) order. */
-function materialsUsed(walls: RWall[]): string[] {
-  return [...new Set(walls.map((w) => w.material))].sort();
+/** The hatch spec a wall fills with (material + scale + angle). */
+function hatchOf(w: RWall): HatchSpec {
+  return { material: w.material, scale: w.hatchScale, angle: w.hatchAngle };
+}
+
+/** Stable grouping key for a hatch spec (walls sharing it union together). */
+function hatchKey(h: HatchSpec): string {
+  return `${h.material}|${h.scale}|${h.angle}`;
+}
+
+/** Distinct hatch specs present, in a stable (key-sorted) order. */
+function hatchesUsed(walls: RWall[]): HatchSpec[] {
+  const seen = new Map<string, HatchSpec>();
+  for (const w of walls) {
+    const h = hatchOf(w);
+    const k = hatchKey(h);
+    if (!seen.has(k)) seen.set(k, h);
+  }
+  return [...seen.values()].sort((a, b) => (hatchKey(a) < hatchKey(b) ? -1 : 1));
 }
 
 /**
- * Wall fill + outline, grouped by material so each material's poché unions
- * independently. Orthogonal groups become a single multi-loop `region` (clean
- * boundaries, no internal seams); angled groups fall back to the wall element's
- * per-segment primitives.
+ * Axis-aligned rectangle to subtract for one opening: the opening spans its
+ * `width` along the hosting wall segment and the full wall thickness across it.
+ * Returns null for a non-orthogonal host (handled by the angled fallback).
  */
-function lowerWalls(walls: RWall[], ctx: RenderCtx): SceneNode[] {
-  if (walls.length === 0) return [];
-  const nodes: SceneNode[] = [];
-  for (const mat of materialsUsed(walls)) {
-    const group = walls.filter((w) => w.material === mat);
-    if (!allOrthogonal(group)) {
-      const def = registry.get("wall")!;
-      nodes.push(...group.flatMap((w) => def.render(w, ctx)));
-      continue;
+function openingRect(w: RWall, op: Opening): Rect | null {
+  let seg = null as null | { a: { x: number; y: number }; b: { x: number; y: number } };
+  let best = Infinity;
+  for (const s of segmentsOfWall(w)) {
+    const d = distPointToSegment(op.at, s.a, s.b);
+    if (d < best) {
+      best = d;
+      seg = s;
     }
-    const rects: Rect[] = [];
-    for (const w of group) {
-      for (const s of segmentsOfWall(w)) {
-        const corners = segmentRectangle(s.a, s.b, s.thickness);
-        const xsv = corners.map((c) => c.x);
-        const ysv = corners.map((c) => c.y);
-        rects.push({ x0: Math.min(...xsv), y0: Math.min(...ysv), x1: Math.max(...xsv), y1: Math.max(...ysv) });
-      }
+  }
+  if (!seg) return null;
+  const halfW = op.width / 2;
+  const halfT = w.thickness / 2;
+  if (seg.a.y === seg.b.y) {
+    return { x0: op.at.x - halfW, x1: op.at.x + halfW, y0: op.at.y - halfT, y1: op.at.y + halfT };
+  }
+  if (seg.a.x === seg.b.x) {
+    return { x0: op.at.x - halfT, x1: op.at.x + halfT, y0: op.at.y - halfW, y1: op.at.y + halfW };
+  }
+  return null; // angled host
+}
+
+/**
+ * Opening rectangle as a rotated polygon, oriented along the hosting wall
+ * segment: it spans the opening `width` along the segment direction and the full
+ * wall thickness across it. Used by the angled (polygon-backend) path, where the
+ * host may be at any angle (unlike {@link openingRect}, which is axis-aligned).
+ */
+function openingPoly(w: RWall, op: Opening): Point[] | null {
+  let seg = null as null | { a: Point; b: Point };
+  let best = Infinity;
+  for (const s of segmentsOfWall(w)) {
+    const d = distPointToSegment(op.at, s.a, s.b);
+    if (d < best) {
+      best = d;
+      seg = s;
     }
-    const loops = rectUnionOutline(rects);
-    if (loops.length === 0) continue;
-    nodes.push({ layer: "wallFill", prim: { t: "region", loops }, paint: { fill: `url(#${patternId(mat)})`, fillRule: "nonzero" } });
-    nodes.push({
+  }
+  if (!seg) return null;
+  const dir: Vec = unit(sub(seg.b, seg.a));
+  const nrm = normal(dir);
+  const hw = op.width / 2;
+  const ht = w.thickness / 2;
+  return [
+    add(add(op.at, mul(dir, -hw)), mul(nrm, -ht)),
+    add(add(op.at, mul(dir, hw)), mul(nrm, -ht)),
+    add(add(op.at, mul(dir, hw)), mul(nrm, ht)),
+    add(add(op.at, mul(dir, -hw)), mul(nrm, ht)),
+  ];
+}
+
+/** The fill (data-driven hatch) + outline nodes for one hatch group's unioned region. */
+function emitRegion(loops: Point[][], h: HatchSpec, ctx: RenderCtx): SceneNode[] {
+  return [
+    {
+      layer: "wallFill",
+      prim: { t: "hatch", region: loops, material: h.material, scale: h.scale, angle: h.angle },
+      paint: { fill: `url(#${patternId(h.material, h.scale, h.angle)})`, fillRule: "nonzero" },
+    },
+    {
       layer: "wallFace",
       prim: { t: "region", loops },
       paint: { fill: "none", stroke: ctx.theme.wallStroke, width: ctx.sizes.wallStroke, linejoin: "miter" },
-    });
+    },
+  ];
+}
+
+/** Axis-aligned union (+ opening holes) for an all-orthogonal hatch group. */
+function lowerOrthogonalGroup(group: RWall[], h: HatchSpec, ctx: RenderCtx): SceneNode[] {
+  const rects: Rect[] = [];
+  const holes: Rect[] = [];
+  for (const w of group) {
+    for (const s of segmentsOfWall(w)) {
+      const corners = segmentRectangle(s.a, s.b, s.thickness);
+      const xsv = corners.map((c) => c.x);
+      const ysv = corners.map((c) => c.y);
+      rects.push({ x0: Math.min(...xsv), y0: Math.min(...ysv), x1: Math.max(...xsv), y1: Math.max(...ysv) });
+    }
+    // Doors/windows void the wall solid (IFC-style opening subtraction).
+    for (const op of w.openings) {
+      const hr = openingRect(w, op);
+      if (hr) holes.push(hr);
+    }
+  }
+  const loops = rectBooleanOutline(rects, holes);
+  return loops.length === 0 ? [] : emitRegion(loops, h, ctx);
+}
+
+/**
+ * Polygon union (+ opening holes) for a hatch group containing angled walls, via
+ * the optional {@link GeometryBackend}. Each segment becomes a (possibly rotated)
+ * rectangle; the backend merges them into one seamless outline and subtracts the
+ * opening polygons. Returns `null` if the backend yields nothing (degenerate
+ * input), so the caller can fall back.
+ */
+function lowerAngledGroup(group: RWall[], h: HatchSpec, ctx: RenderCtx, backend: GeometryBackend): SceneNode[] | null {
+  const rects: Point[][] = [];
+  const holes: Point[][] = [];
+  for (const w of group) {
+    for (const s of segmentsOfWall(w)) rects.push(segmentRectangle(s.a, s.b, s.thickness));
+    for (const op of w.openings) {
+      const hp = openingPoly(w, op);
+      if (hp) holes.push(hp);
+    }
+  }
+  const loops = holes.length ? backend.difference(rects, holes) : backend.union(rects);
+  return loops.length === 0 ? null : emitRegion(loops, h, ctx);
+}
+
+/**
+ * Wall fill + outline, grouped by hatch spec (material + scale + angle) so each
+ * distinct poché unions independently. Orthogonal groups become a single
+ * multi-loop region via the zero-dependency rectilinear boolean (byte-identical
+ * regardless of any registered backend). A group with angled walls uses the
+ * optional {@link GeometryBackend} when one is registered (seamless joinery),
+ * else falls back to the wall element's per-segment primitives.
+ */
+function lowerWalls(walls: RWall[], ctx: RenderCtx): SceneNode[] {
+  if (walls.length === 0) return [];
+  const backend = getGeometryBackend();
+  const nodes: SceneNode[] = [];
+  for (const h of hatchesUsed(walls)) {
+    const k = hatchKey(h);
+    const group = walls.filter((w) => hatchKey(hatchOf(w)) === k);
+    if (allOrthogonal(group)) {
+      nodes.push(...lowerOrthogonalGroup(group, h, ctx));
+      continue;
+    }
+    const viaBackend = backend ? lowerAngledGroup(group, h, ctx, backend) : null;
+    if (viaBackend) {
+      nodes.push(...viaBackend);
+    } else {
+      const def = registry.get("wall")!;
+      nodes.push(...group.flatMap((w) => def.render(w, ctx)));
+    }
   }
   return nodes;
 }
@@ -111,7 +244,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}): Scene {
 
   // Collect non-wall elements (source order), then lower walls — exactly the v0.1
   // op order, so layer-bucketing in a backend reproduces the original draw order.
-  const ctx: RenderCtx = { theme, sizes, bounds: b };
+  const ctx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm };
   const nodes: SceneNode[] = [];
   for (const el of ir.elements) {
     if (el.kind === "wall") continue;
@@ -131,6 +264,6 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}): Scene {
     scale: ir.scale,
     title: ir.title,
     name: ir.name,
-    materials: materialsUsed(ir.walls),
+    hatches: hatchesUsed(ir.walls),
   };
 }

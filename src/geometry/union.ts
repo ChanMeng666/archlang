@@ -1,10 +1,15 @@
 /**
- * Boolean union of axis-aligned rectangles → boundary loops.
+ * Boolean of axis-aligned rectangles (union, and difference of "holes") →
+ * boundary loops.
  *
  * Zero-dependency, synchronous, deterministic. Used to merge wall segment
- * rectangles into clean outlines so orthogonal corners and T-junctions render
- * with no internal seams. Angled walls (non-axis-aligned rectangles) are not
- * handled here — the renderer falls back to per-segment outlines for those.
+ * rectangles into clean outlines (no internal seams at corners/T-junctions) and,
+ * since v0.9, to subtract door/window opening rectangles so openings truly void
+ * the wall solid. Works via coordinate compression: the union of all rectangle
+ * edges forms a grid; a cell is "in" when its centre is inside a solid rect and
+ * not inside any hole rect; the boundary between in/out cells is then walked into
+ * closed loops. Angled (non-axis-aligned) rectangles are not handled here — the
+ * renderer falls back to per-segment outlines for those.
  */
 
 import type { Point } from "../ast.js";
@@ -21,15 +26,29 @@ function uniqSorted(values: number[]): number[] {
   return out;
 }
 
+const insideAny = (rects: Rect[], cx: number, cy: number): boolean =>
+  rects.some((r) => cx > r.x0 && cx < r.x1 && cy > r.y0 && cy < r.y1);
+
 /**
  * Outline loops of the union of axis-aligned rectangles. Each loop is a closed
  * rectilinear polygon (the closing point is implied, not repeated). Outer
  * boundaries and holes are both returned; render with `fill-rule: nonzero`.
  */
 export function rectUnionOutline(rects: Rect[]): Point[][] {
-  if (rects.length === 0) return [];
-  const xs = uniqSorted(rects.flatMap((r) => [r.x0, r.x1]));
-  const ys = uniqSorted(rects.flatMap((r) => [r.y0, r.y1]));
+  return rectBooleanOutline(rects, []);
+}
+
+/**
+ * Outline loops of `(⋃ solid) \ (⋃ holes)` — the solid rectangles unioned, with
+ * the hole rectangles subtracted. With no holes this is exactly
+ * {@link rectUnionOutline} (byte-identical), so walls without openings are
+ * unaffected.
+ */
+export function rectBooleanOutline(solid: Rect[], holes: Rect[] = []): Point[][] {
+  if (solid.length === 0) return [];
+  const all = holes.length ? [...solid, ...holes] : solid;
+  const xs = uniqSorted(all.flatMap((r) => [r.x0, r.x1]));
+  const ys = uniqSorted(all.flatMap((r) => [r.y0, r.y1]));
   const nx = xs.length - 1;
   const ny = ys.length - 1;
 
@@ -37,7 +56,7 @@ export function rectUnionOutline(rects: Rect[]): Point[][] {
     if (i < 0 || j < 0 || i >= nx || j >= ny) return false;
     const cx = (xs[i] + xs[i + 1]) / 2;
     const cy = (ys[j] + ys[j + 1]) / 2;
-    return rects.some((r) => cx > r.x0 && cx < r.x1 && cy > r.y0 && cy < r.y1);
+    return insideAny(solid, cx, cy) && !insideAny(holes, cx, cy);
   };
 
   // Directed boundary edges, emitted per filled cell so the filled region is

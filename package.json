@@ -1,6 +1,6 @@
 {
   "name": "@chanmeng666/archlang",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.",
   "keywords": [
     "architecture",
@@ -66,6 +66,7 @@
     "vscode-textmate": "^9.3.2"
   },
   "optionalDependencies": {
+    "clipper2-wasm": "0.4.0",
     "pdfkit": "^0.15.2"
   }
 }

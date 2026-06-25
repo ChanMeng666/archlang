@@ -78,6 +78,13 @@ export interface RenderCtx {
   theme: Theme;
   sizes: RenderSizes;
   bounds: Bounds;
+  /**
+   * Deterministic millimetre formatter for *computed label text* (e.g. a
+   * dimension's measured length when no explicit `text` is given). Rounds to 2
+   * decimals and strips trailing zeros, so the value an element bakes into a
+   * `text` primitive reads identically in every backend (SVG, DXF, …).
+   */
+  fmt(n: number): string;
 }
 
 /**
