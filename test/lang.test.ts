@@ -165,3 +165,47 @@ describe("control flow (T2.3)", () => {
     expect(cols.length).toBe(6);
   });
 });
+
+describe("scope chain (T2.4)", () => {
+  it("a for-variable shadows an outer binding and is restored after the loop", () => {
+    const cols = elements(`plan "P" {
+      let x = 10
+      column at (x, 0) size 1x1
+      for x in [99] { column at (x, 0) size 1x1 }
+      column at (x, 0) size 1x1
+    }`).filter((e) => e.kind === "column");
+    expect(cols.map((c) => c.at.x)).toEqual([10, 99, 10]);
+  });
+
+  it("a block-local let shadows an outer let without an E_REDEF", () => {
+    const src = `plan "P" {
+      let w = 5
+      if true { let w = 50 column at (w, 0) size 1x1 }
+      column at (w, 0) size 1x1
+    }`;
+    expect(diags(src).map((d) => d.code)).not.toContain("E_REDEF");
+    const cols = elements(src).filter((e) => e.kind === "column");
+    expect(cols.map((c) => c.at.x)).toEqual([50, 5]); // inner shadow, then outer restored
+  });
+
+  it("redefinition in the SAME scope is still caught", () => {
+    expect(diags(`plan "P" { let a = 1 let a = 2 column at (a,0) size 1x1 }`).map((d) => d.code)).toContain("E_REDEF");
+  });
+
+  it("a component body sees globals + params but not the caller's locals", () => {
+    // Globals + params resolve fine.
+    const d = diags(`plan "P" {
+      let G = 7
+      component c(p) { column at (G + p, 0) size 1x1 }
+      c(1)
+    }`);
+    expect(d.map((x) => x.code)).not.toContain("E_UNKNOWN_REF");
+    // A local of the CALLING component is invisible to the callee (parent = global).
+    const d2 = diags(`plan "P" {
+      component c(p) { column at (callerLocal + p, 0) size 1x1 }
+      component caller() { let callerLocal = 5 c(1) }
+      caller()
+    }`);
+    expect(d2.map((x) => x.code)).toContain("E_UNKNOWN_REF");
+  });
+});
