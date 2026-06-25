@@ -2,6 +2,7 @@
 
 import type { Token } from "./lexer.js";
 import { lex } from "./lexer.js";
+import type { Diagnostic, Span } from "./diagnostics.js";
 import type {
   DimNode,
   DoorNode,
@@ -17,35 +18,48 @@ import type {
 
 export interface ParseOutcome {
   plan?: PlanNode;
-  errors: { message: string; line: number; col: number }[];
+  diagnostics: Diagnostic[];
 }
 
+/** Keywords that begin a plan-body statement; recovery resynchronizes to one. */
+const STATEMENT_STARTS = new Set([
+  "units", "grid", "scale", "north",
+  "wall", "room", "door", "window", "furniture", "dim", "title",
+]);
+
+/** Thrown internally by `eat*` helpers; always caught within the parser. */
 class ParseError extends Error {
-  constructor(public override message: string, public line: number, public col: number) {
+  constructor(public override message: string, public span: Span) {
     super(message);
   }
 }
 
 export function parse(src: string): ParseOutcome {
   const { tokens, errors: lexErrors } = lex(src);
-  if (lexErrors.length > 0) {
-    // Surface the first lexical error; it usually explains the rest.
-    return { errors: [lexErrors[0]] };
-  }
+  const lexDiags: Diagnostic[] = lexErrors.map((e) => ({
+    severity: "error" as const,
+    message: e.message,
+    span: e.span,
+  }));
+
+  const p = new Parser(tokens);
+  let plan: PlanNode | undefined;
   try {
-    const p = new Parser(tokens);
-    const plan = p.parsePlan();
-    return { plan, errors: [] };
+    plan = p.parsePlan();
   } catch (e) {
+    // Only a malformed plan *header* escapes parsePlan's per-statement recovery.
     if (e instanceof ParseError) {
-      return { errors: [{ message: e.message, line: e.line, col: e.col }] };
+      p.diagnostics.push({ severity: "error", message: e.message, span: e.span });
+    } else {
+      throw e;
     }
-    throw e;
   }
+  return { plan, diagnostics: [...lexDiags, ...p.diagnostics] };
 }
 
 class Parser {
   private pos = 0;
+  public diagnostics: Diagnostic[] = [];
   constructor(private toks: Token[]) {}
 
   private peek(o = 0): Token {
@@ -55,7 +69,24 @@ class Parser {
     return this.toks[Math.min(this.pos++, this.toks.length - 1)];
   }
   private fail(msg: string, t = this.peek()): never {
-    throw new ParseError(msg, t.line, t.col);
+    throw new ParseError(msg, { start: t.start, end: t.end });
+  }
+
+  /** Span from a start offset to the end of the last consumed token. */
+  private spanFrom(start: number): Span {
+    const last = this.toks[Math.max(0, Math.min(this.pos - 1, this.toks.length - 1))];
+    return { start, end: last.end };
+  }
+
+  /** Recover after a statement error: skip to the next statement start or block end. */
+  private synchronize(): void {
+    // Always make progress so a hard-stuck token can't loop forever.
+    if (!this.isType("rcurly") && !this.isType("eof")) this.next();
+    while (!this.isType("rcurly") && !this.isType("eof")) {
+      const t = this.peek();
+      if (t.type === "ident" && STATEMENT_STARTS.has(t.value)) return;
+      this.next();
+    }
   }
 
   private isKeyword(kw: string, o = 0): boolean {
@@ -103,57 +134,97 @@ class Parser {
 
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const t = this.peek();
-      if (t.type !== "ident") this.fail(`Expected a statement but found ${describe(t)}`);
-      switch (t.value) {
-        case "units": {
-          this.next();
-          const u = this.eatIdent().value;
-          if (u !== "mm") this.fail(`Unsupported units "${u}" (only "mm" is supported)`, t);
-          plan.units = "mm";
-          break;
+      const start = t.start;
+      try {
+        if (t.type !== "ident") this.fail(`Expected a statement but found ${describe(t)}`);
+        switch (t.value) {
+          case "units": {
+            this.next();
+            const u = this.eatIdent().value;
+            if (u !== "mm") this.fail(`Unsupported units "${u}" (only "mm" is supported)`, t);
+            plan.units = "mm";
+            break;
+          }
+          case "grid":
+            this.next();
+            plan.grid = this.eatNumber();
+            break;
+          case "scale": {
+            this.next();
+            const a = this.eatNumber();
+            this.eat("colon");
+            const b = this.eatNumber();
+            plan.scale = `${a}:${b}`;
+            break;
+          }
+          case "north":
+            this.next();
+            plan.north = this.parseNorth();
+            break;
+          case "wall": {
+            const n = this.parseWall();
+            n.span = this.spanFrom(start);
+            plan.walls.push(n);
+            break;
+          }
+          case "room": {
+            const n = this.parseRoom();
+            n.span = this.spanFrom(start);
+            plan.rooms.push(n);
+            break;
+          }
+          case "door": {
+            const n = this.parseDoor();
+            n.span = this.spanFrom(start);
+            plan.doors.push(n);
+            break;
+          }
+          case "window": {
+            const n = this.parseWindow();
+            n.span = this.spanFrom(start);
+            plan.windows.push(n);
+            break;
+          }
+          case "furniture": {
+            const n = this.parseFurniture();
+            n.span = this.spanFrom(start);
+            plan.furniture.push(n);
+            break;
+          }
+          case "dim": {
+            const n = this.parseDim();
+            n.span = this.spanFrom(start);
+            plan.dims.push(n);
+            break;
+          }
+          case "title": {
+            const n = this.parseTitle();
+            n.span = this.spanFrom(start);
+            plan.title = n;
+            break;
+          }
+          default:
+            this.fail(`Unknown statement "${t.value}"`, t);
         }
-        case "grid":
-          this.next();
-          plan.grid = this.eatNumber();
-          break;
-        case "scale": {
-          this.next();
-          const a = this.eatNumber();
-          this.eat("colon");
-          const b = this.eatNumber();
-          plan.scale = `${a}:${b}`;
-          break;
+      } catch (e) {
+        if (e instanceof ParseError) {
+          this.diagnostics.push({ severity: "error", message: e.message, span: e.span });
+          this.synchronize();
+        } else {
+          throw e;
         }
-        case "north":
-          this.next();
-          plan.north = this.parseNorth();
-          break;
-        case "wall":
-          plan.walls.push(this.parseWall());
-          break;
-        case "room":
-          plan.rooms.push(this.parseRoom());
-          break;
-        case "door":
-          plan.doors.push(this.parseDoor());
-          break;
-        case "window":
-          plan.windows.push(this.parseWindow());
-          break;
-        case "furniture":
-          plan.furniture.push(this.parseFurniture());
-          break;
-        case "dim":
-          plan.dims.push(this.parseDim());
-          break;
-        case "title":
-          plan.title = this.parseTitle();
-          break;
-        default:
-          this.fail(`Unknown statement "${t.value}"`, t);
       }
     }
-    this.eat("rcurly");
+    // A missing closing brace is reported but the partial plan is still returned.
+    try {
+      this.eat("rcurly");
+    } catch (e) {
+      if (e instanceof ParseError) {
+        this.diagnostics.push({ severity: "error", message: e.message, span: e.span });
+      } else {
+        throw e;
+      }
+    }
     return plan;
   }
 

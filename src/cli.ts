@@ -2,15 +2,8 @@
 /** ArchLang CLI: `arch compile <in.arch> [-o out.svg]`, `arch watch <in.arch>`. */
 
 import { readFileSync, writeFileSync, watchFile } from "node:fs";
-import { basename, resolve } from "node:path";
-import { compile } from "./index.js";
-
-function printErrors(label: string, items: { message: string; line?: number; col?: number }[]): void {
-  for (const e of items) {
-    const loc = e.line ? `:${e.line}${e.col ? `:${e.col}` : ""}` : "";
-    process.stderr.write(`${label}${loc} ${e.message}\n`);
-  }
-}
+import { resolve } from "node:path";
+import { compile, formatDiagnostic } from "./index.js";
 
 function compileFile(input: string, output: string, width?: number): boolean {
   let source: string;
@@ -20,11 +13,13 @@ function compileFile(input: string, output: string, width?: number): boolean {
     process.stderr.write(`error: cannot read ${input}\n`);
     return false;
   }
-  const { svg, errors, warnings } = compile(source, { width, noCache: true });
-  printErrors("warning", warnings);
-  if (errors.length > 0) {
-    printErrors(`${basename(input)}`, errors);
-    process.stderr.write(`✗ compilation failed (${errors.length} error${errors.length > 1 ? "s" : ""})\n`);
+  const { svg, diagnostics } = compile(source, { width, noCache: true });
+  for (const d of diagnostics) {
+    process.stderr.write(`${formatDiagnostic(source, d)}\n\n`);
+  }
+  const errorCount = diagnostics.filter((d) => d.severity === "error").length;
+  if (errorCount > 0) {
+    process.stderr.write(`✗ compilation failed (${errorCount} error${errorCount > 1 ? "s" : ""})\n`);
     return false;
   }
   writeFileSync(output, svg, "utf8");

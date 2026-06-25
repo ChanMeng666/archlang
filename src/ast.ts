@@ -1,5 +1,7 @@
 /** Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. */
 
+import type { Span } from "./diagnostics.js";
+
 export interface Point {
   x: number;
   y: number;
@@ -19,6 +21,8 @@ export interface WallNode {
   /** Whether the polyline closes back to its first vertex. */
   closed: boolean;
   line: number;
+  /** Byte-offset span from the leading keyword to the last consumed token. */
+  span?: Span;
 }
 
 export interface RoomNode {
@@ -27,6 +31,8 @@ export interface RoomNode {
   size: { w: number; h: number };
   label?: string;
   line: number;
+  /** Byte-offset span from the leading keyword to the last consumed token. */
+  span?: Span;
 }
 
 export interface DoorNode {
@@ -38,6 +44,8 @@ export interface DoorNode {
   hinge: "left" | "right";
   swing: "in" | "out";
   line: number;
+  /** Byte-offset span from the leading keyword to the last consumed token. */
+  span?: Span;
 }
 
 export interface WindowNode {
@@ -46,6 +54,8 @@ export interface WindowNode {
   width: number;
   wall?: string;
   line: number;
+  /** Byte-offset span from the leading keyword to the last consumed token. */
+  span?: Span;
 }
 
 export interface FurnitureNode {
@@ -55,6 +65,8 @@ export interface FurnitureNode {
   size: { w: number; h: number };
   label?: string;
   line: number;
+  /** Byte-offset span from the leading keyword to the last consumed token. */
+  span?: Span;
 }
 
 export interface DimNode {
@@ -66,6 +78,8 @@ export interface DimNode {
   /** Override text; defaults to the measured length. */
   text?: string;
   line: number;
+  /** Byte-offset span from the leading keyword to the last consumed token. */
+  span?: Span;
 }
 
 export interface TitleNode {
@@ -73,6 +87,8 @@ export interface TitleNode {
   drawnBy?: string;
   date?: string;
   line: number;
+  /** Byte-offset span from the leading keyword to the last consumed token. */
+  span?: Span;
 }
 
 export interface PlanNode {

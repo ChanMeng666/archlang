@@ -24,11 +24,15 @@ export interface Token {
   num2?: number;
   line: number;
   col: number;
+  /** Byte offset of the token's first character into the source. */
+  start: number;
+  /** Byte offset just past the token's last character. */
+  end: number;
 }
 
 export interface LexResult {
   tokens: Token[];
-  errors: { message: string; line: number; col: number }[];
+  errors: { message: string; span: { start: number; end: number } }[];
 }
 
 const isDigit = (c: string) => c >= "0" && c <= "9";
@@ -38,7 +42,7 @@ const isIdentPart = (c: string) => isIdentStart(c) || isDigit(c);
 
 export function lex(src: string): LexResult {
   const tokens: Token[] = [];
-  const errors: { message: string; line: number; col: number }[] = [];
+  const errors: { message: string; span: { start: number; end: number } }[] = [];
   let i = 0;
   let line = 1;
   let col = 1;
@@ -54,13 +58,20 @@ export function lex(src: string): LexResult {
     }
     return c;
   };
-  const push = (type: TokenType, value: string, startLine: number, startCol: number, extra?: Partial<Token>) =>
-    tokens.push({ type, value, line: startLine, col: startCol, ...extra });
+  const push = (
+    type: TokenType,
+    value: string,
+    startLine: number,
+    startCol: number,
+    startIdx: number,
+    extra?: Partial<Token>,
+  ) => tokens.push({ type, value, line: startLine, col: startCol, ...extra, start: startIdx, end: i });
 
   while (i < src.length) {
     const c = peek();
     const startLine = line;
     const startCol = col;
+    const startIdx = i;
 
     // Whitespace
     if (c === " " || c === "\t" || c === "\r" || c === "\n") {
@@ -96,21 +107,21 @@ export function lex(src: string): LexResult {
         value += advance();
       }
       if (!terminated) {
-        errors.push({ message: "Unterminated string literal", line: startLine, col: startCol });
+        errors.push({ message: "Unterminated string literal", span: { start: startIdx, end: i } });
       }
-      push("string", value, startLine, startCol);
+      push("string", value, startLine, startCol, startIdx);
       continue;
     }
 
     // Punctuation & operators
-    if (c === "(") { advance(); push("lparen", "(", startLine, startCol); continue; }
-    if (c === ")") { advance(); push("rparen", ")", startLine, startCol); continue; }
-    if (c === "{") { advance(); push("lcurly", "{", startLine, startCol); continue; }
-    if (c === "}") { advance(); push("rcurly", "}", startLine, startCol); continue; }
-    if (c === ",") { advance(); push("comma", ",", startLine, startCol); continue; }
-    if (c === "=") { advance(); push("equals", "=", startLine, startCol); continue; }
-    if (c === ":") { advance(); push("colon", ":", startLine, startCol); continue; }
-    if (c === "-" && peek(1) === ">") { advance(); advance(); push("arrow", "->", startLine, startCol); continue; }
+    if (c === "(") { advance(); push("lparen", "(", startLine, startCol, startIdx); continue; }
+    if (c === ")") { advance(); push("rparen", ")", startLine, startCol, startIdx); continue; }
+    if (c === "{") { advance(); push("lcurly", "{", startLine, startCol, startIdx); continue; }
+    if (c === "}") { advance(); push("rcurly", "}", startLine, startCol, startIdx); continue; }
+    if (c === ",") { advance(); push("comma", ",", startLine, startCol, startIdx); continue; }
+    if (c === "=") { advance(); push("equals", "=", startLine, startCol, startIdx); continue; }
+    if (c === ":") { advance(); push("colon", ":", startLine, startCol, startIdx); continue; }
+    if (c === "-" && peek(1) === ">") { advance(); advance(); push("arrow", "->", startLine, startCol, startIdx); continue; }
 
     // Number (optionally part of a dimension WxH)
     if (isDigit(c) || (c === "-" && isDigit(peek(1))) || (c === "." && isDigit(peek(1)))) {
@@ -133,10 +144,10 @@ export function lex(src: string): LexResult {
           while (isDigit(peek())) raw2 += advance();
         }
         const second = parseFloat(raw2);
-        push("dimension", `${raw}x${raw2}`, startLine, startCol, { num: first, num2: second });
+        push("dimension", `${raw}x${raw2}`, startLine, startCol, startIdx, { num: first, num2: second });
         continue;
       }
-      push("number", raw, startLine, startCol, { num: first });
+      push("number", raw, startLine, startCol, startIdx, { num: first });
       continue;
     }
 
@@ -144,15 +155,15 @@ export function lex(src: string): LexResult {
     if (isIdentStart(c)) {
       let value = "";
       while (i < src.length && isIdentPart(peek())) value += advance();
-      push("ident", value, startLine, startCol);
+      push("ident", value, startLine, startCol, startIdx);
       continue;
     }
 
     // Unknown character
-    errors.push({ message: `Unexpected character ${JSON.stringify(c)}`, line: startLine, col: startCol });
+    errors.push({ message: `Unexpected character ${JSON.stringify(c)}`, span: { start: startIdx, end: startIdx + 1 } });
     advance();
   }
 
-  push("eof", "", line, col);
+  push("eof", "", line, col, i);
   return { tokens, errors };
 }
