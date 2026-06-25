@@ -1,0 +1,40 @@
+# Theming + materials: a two-room plan with a brick exterior, a partition,
+# and a dark "blueprint" theme. Try CompileOptions.theme to override at runtime.
+plan "Themed Duplex" {
+  units mm
+  grid 50
+  scale 1:100
+  north up
+
+  theme {
+    background: "#1e2127"
+    wall: "#e8e8e8"
+    wallFill: "#3a3f4b"
+    wallHatch: "#5a6172"
+    room: "#272b33"
+    roomLabel: "#f0f0f0"
+    areaLabel: "#9aa0aa"
+    furniture: "#2f343d"
+    dim: "#6cb6ff"
+    annotation: "#cfd3da"
+    font: "Georgia, serif"
+    lineWeight: 1.3
+  }
+
+  let W = 6000
+  let H = 4000
+
+  wall exterior thickness 250 material brick { (0,0) (W,0) (W,H) (0,H) close }
+  wall partition thickness 100 { (3000,0) (3000,H) }
+
+  room id=a at (0,0)    size 3000x4000 label "Living"
+  room id=b at (3000,0) size 3000x4000 label "Bedroom"
+
+  furniture bed at (3300,300) size 1500x2000 label "Bed"
+
+  door   at (3000,2000) width 900  wall partition hinge left swing in
+  window at (1500,0)    width 1600 wall exterior
+  window at (4500,0)    width 1200 wall exterior
+
+  dim (0,H)->(W,H) offset 600 text "6000"
+}

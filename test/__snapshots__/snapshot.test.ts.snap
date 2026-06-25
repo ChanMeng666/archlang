@@ -120,6 +120,45 @@ exports[`golden SVG snapshots > renders studio.arch deterministically 1`] = `
 </svg>"
 `;
 
+exports[`golden SVG snapshots > renders themed.arch deterministically 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg"  viewBox="-1187.5 -1187.5 8375 6375" font-family="Georgia, serif">
+<defs><pattern id="hatch-brick" patternUnits="userSpaceOnUse" width="243.75" height="113.75"><rect width="243.75" height="113.75" fill="#3a3f4b"/><line x1="0" y1="113.75" x2="243.75" y2="113.75" stroke="#5a6172" stroke-width="7.8"/><line x1="0" y1="56.87" x2="243.75" y2="56.87" stroke="#5a6172" stroke-width="7.8"/><line x1="121.88" y1="0" x2="121.88" y2="56.87" stroke="#5a6172" stroke-width="7.8"/><line x1="0" y1="56.87" x2="0" y2="113.75" stroke="#5a6172" stroke-width="7.8"/><line x1="243.75" y1="56.87" x2="243.75" y2="113.75" stroke="#5a6172" stroke-width="7.8"/></pattern><pattern id="poche" patternUnits="userSpaceOnUse" width="81.25" height="81.25" patternTransform="rotate(45)"><rect width="81.25" height="81.25" fill="#3a3f4b"/><line x1="0" y1="0" x2="0" y2="81.25" stroke="#5a6172" stroke-width="9.1"/></pattern></defs>
+<rect x="-1187.5" y="-1187.5" width="8375" height="6375" fill="#1e2127"/>
+<polygon points="0,0 3000,0 3000,4000 0,4000" fill="#272b33"/>
+<polygon points="3000,0 6000,0 6000,4000 3000,4000" fill="#272b33"/>
+<polygon points="3300,300 4800,300 4800,2300 3300,2300" fill="#2f343d" stroke="#a8a29a" stroke-width="13"/>
+<text x="4050" y="1300" font-size="106.25" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bed</text>
+<path d="M -125,-125 L -125,4125 L 6125,4125 L 6125,-125 Z M 125,3875 L 125,125 L 5875,125 L 5875,3875 Z" fill="url(#hatch-brick)" fill-rule="nonzero"/>
+<path d="M 3050,-50 L 2950,-50 L 2950,4050 L 3050,4050 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -125,-125 L -125,4125 L 6125,4125 L 6125,-125 Z M 125,3875 L 125,125 L 5875,125 L 5875,3875 Z" fill="none" stroke="#e8e8e8" stroke-width="22.75" stroke-linejoin="miter"/>
+<path d="M 3050,-50 L 2950,-50 L 2950,4050 L 3050,4050 Z" fill="none" stroke="#e8e8e8" stroke-width="22.75" stroke-linejoin="miter"/>
+<polygon points="2927.25,1550 2927.25,2450 3072.75,2450 3072.75,1550" fill="#ffffff"/>
+<line x1="3000" y1="1550" x2="2100" y2="1550" stroke="#555555" stroke-width="16.9"/>
+<path d="M 2100,1550 A 900 900 0 0 1 3000,2450" fill="none" stroke="#555555" stroke-width="13" stroke-dasharray="52 39"/>
+<polygon points="700,147.75 2300,147.75 2300,-147.75 700,-147.75" fill="#ffffff"/>
+<line x1="700" y1="125" x2="2300" y2="125" stroke="#e8e8e8" stroke-width="13"/>
+<line x1="700" y1="-125" x2="2300" y2="-125" stroke="#e8e8e8" stroke-width="13"/>
+<line x1="700" y1="0" x2="2300" y2="0" stroke="#3a6ea5" stroke-width="13"/>
+<polygon points="3900,147.75 5100,147.75 5100,-147.75 3900,-147.75" fill="#ffffff"/>
+<line x1="3900" y1="125" x2="5100" y2="125" stroke="#e8e8e8" stroke-width="13"/>
+<line x1="3900" y1="-125" x2="5100" y2="-125" stroke="#e8e8e8" stroke-width="13"/>
+<line x1="3900" y1="0" x2="5100" y2="0" stroke="#3a6ea5" stroke-width="13"/>
+<text x="1500" y="1962.5" font-size="187.5" fill="#f0f0f0" text-anchor="middle" dominant-baseline="central" font-weight="600">Living</text>
+<text x="1500" y="2168.75" font-size="137.5" fill="#9aa0aa" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
+<text x="4500" y="1962.5" font-size="187.5" fill="#f0f0f0" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
+<text x="4500" y="2168.75" font-size="137.5" fill="#9aa0aa" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
+<line x1="0" y1="4000" x2="0" y2="4600" stroke="#6cb6ff" stroke-width="9.1"/>
+<line x1="6000" y1="4000" x2="6000" y2="4600" stroke="#6cb6ff" stroke-width="9.1"/>
+<line x1="0" y1="4600" x2="6000" y2="4600" stroke="#6cb6ff" stroke-width="13"/>
+<line x1="53.03" y1="4653.03" x2="-53.03" y2="4546.97" stroke="#6cb6ff" stroke-width="13"/>
+<line x1="6053.03" y1="4653.03" x2="5946.97" y2="4546.97" stroke="#6cb6ff" stroke-width="13"/>
+<text x="3000" y="4687.5" font-size="125" fill="#6cb6ff" text-anchor="middle" dominant-baseline="central" transform="rotate(0 3000 4687.5)">6000</text>
+<g><polygon points="5843.75,-990.62 5703.13,-540.62 5843.75,-639.06 5984.38,-540.62" fill="#cfd3da" transform="rotate(0 5843.75 -709.37)"/><text x="5843.75" y="-1120.62" font-size="162.5" fill="#cfd3da" text-anchor="middle" dominant-baseline="central">N</text></g>
+<g><rect x="-125" y="4709.38" width="500" height="87.5" fill="#cfd3da"/><rect x="375" y="4709.38" width="500" height="87.5" fill="none" stroke="#cfd3da" stroke-width="13"/><text x="-125" y="4921.88" font-size="125" fill="#cfd3da" text-anchor="start" dominant-baseline="central">0</text><text x="875" y="4921.88" font-size="125" fill="#cfd3da" text-anchor="middle" dominant-baseline="central">1 m</text></g>
+<g><rect x="4000" y="4284.38" width="2125" height="871.25" fill="none" stroke="#cfd3da" stroke-width="13"/><text x="4106.25" y="4720" font-size="95" fill="#888888" dominant-baseline="central">SCALE</text><text x="6018.75" y="4720" font-size="118.75" fill="#cfd3da" text-anchor="end" dominant-baseline="central">1:100</text></g>
+</svg>"
+`;
+
 exports[`golden SVG snapshots > renders two-bed.arch deterministically 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg"  viewBox="-1901 -1901 13802 11802" font-family="Helvetica, Arial, sans-serif">
 <defs><pattern id="poche" patternUnits="userSpaceOnUse" width="133.9" height="133.9" patternTransform="rotate(45)"><rect width="133.9" height="133.9" fill="#e9e4db"/><line x1="0" y1="0" x2="0" y2="133.9" stroke="#b9b1a4" stroke-width="11.54"/></pattern></defs>

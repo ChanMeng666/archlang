@@ -90,13 +90,24 @@ example using all three.
 ### Wall
 
 ```
-wall <kind> thickness <mm> { (x,y) (x,y) … [close] }
-wall id=<id> <kind> thickness <mm> { … }
+wall <kind> thickness <mm> [material <name>] { (x,y) (x,y) … [close] }
+wall id=<id> <kind> thickness <mm> [material <name>] { … }
 ```
 
 A polyline of ≥2 points, drawn with the given thickness and a poché hatch.
 `close` connects the last point back to the first (use for exterior shells).
 `<kind>` is a free label (e.g. `exterior`, `partition`).
+
+Orthogonal walls are **boolean-unioned** so corners and T-junctions render as
+one clean outline with no internal seams. (Angled walls fall back to a
+per-segment outline.)
+
+**Materials** select the hatch pattern: `poche` (default), `concrete`, `brick`,
+`insulation`, `tile`, `none`. An unknown material warns and uses the default.
+
+```
+wall exterior thickness 250 material brick { … }
+```
 
 ### Room
 
@@ -163,6 +174,39 @@ title {
 ```
 
 Rendered as a title block in the lower-right corner (with `scale` if set).
+
+## Theming
+
+A `theme { … }` directive overrides colours, line weight, and font. Resolution
+order (later wins): built-in defaults → the `theme` directive →
+`CompileOptions.theme` (programmatic).
+
+```
+theme {
+  background: "#1e2127"
+  wall:       "#e8e8e8"   # wall outline
+  wallFill:   "#3a3f4b"   # poché base
+  wallHatch:  "#5a6172"   # poché lines
+  room:       "#272b33"
+  roomLabel:  "#f0f0f0"
+  dim:        "#6cb6ff"
+  annotation: "#cfd3da"
+  font:       "Georgia, serif"
+  lineWeight: 1.3          # multiplier on all stroke widths
+}
+```
+
+Friendly keys (`wall`, `room`, `furniture`, `wallFill`, `wallHatch`, `door`,
+`window`, `background`) alias the canonical theme fields; you can also use the
+canonical names (`wallStroke`, `roomFill`, …). Unknown keys warn and are
+ignored. Colours are strings, `lineWeight` is a number, `font` is a CSS
+`font-family`. Programmatic overrides use the canonical field names:
+
+```ts
+compile(src, { theme: { wallStroke: "#0000ff", lineWeight: 0.5 } });
+```
+
+See [`examples/themed.arch`](../examples/themed.arch).
 
 ## Compilation result
 

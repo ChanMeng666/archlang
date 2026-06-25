@@ -12,7 +12,7 @@ const example = (name: string) => readFileSync(join(__dirname, "..", "examples",
  * must be intentional (review the snapshot diff, then `vitest -u`).
  */
 describe("golden SVG snapshots", () => {
-  for (const name of ["studio.arch", "two-bed.arch", "parametric.arch"]) {
+  for (const name of ["studio.arch", "two-bed.arch", "parametric.arch", "themed.arch"]) {
     it(`renders ${name} deterministically`, () => {
       const { svg, errors } = compile(example(name), { noCache: true });
       expect(errors).toEqual([]);

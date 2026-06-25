@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Clean wall joins**: orthogonal walls are boolean-unioned into a single
+  poché fill + mitred outline, so corners and T-junctions render with no
+  internal seams (zero-dep, deterministic). Angled walls fall back to
+  per-segment outlines.
+- **Material hatches**: `wall <kind> thickness N material <name> { … }` with
+  `poche` (default), `concrete`, `brick`, `insulation`, `tile`, `none`. Unknown
+  materials warn and fall back to the default hatch.
+- **Theming**: a `theme { … }` plan directive and `CompileOptions.theme` control
+  colours, `lineWeight`, and `font`. Resolution: defaults < directive < options.
+  Friendly directive aliases (`wall`, `room`, `wallFill`, …) map to theme fields.
+- New diagnostics: `W_UNKNOWN_MATERIAL`, `W_UNKNOWN_THEME_KEY`.
+- `examples/themed.arch` — a dark, brick-walled themed plan.
+
+### Changed
+- Walls are rendered centrally (unioned by material) rather than per element.
+  Default-material, default-theme output is unchanged for non-wall-seam content;
+  wall rendering is cleaner (golden snapshots updated + visually verified).
+- The memoization cache key now includes `CompileOptions.theme`.
+
 ## [0.4.0] - 2026-06-25
 
 ### Added
