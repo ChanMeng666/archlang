@@ -19,9 +19,10 @@ npm run build        # build library + CLI into dist/ (tsup)
 npm run typecheck    # tsc --noEmit
 npm test             # run the vitest suite (test/compile.test.ts)
 npm run cli -- compile examples/studio.arch -o studio.svg   # run the CLI from source via tsx
+npm run bench        # compile a generated ~1000-element plan and report per-stage timings
 
-# Rebuild the browser bundle the playground loads:
-npx esbuild src/index.ts --bundle --format=esm --outfile=playground/lib/archlang.js
+# Playground (Vite + CodeMirror 6); consumes the built dist/:
+npm run build && npm install --prefix playground && npm run dev --prefix playground
 ```
 
 ## Architecture & Conventions
@@ -55,13 +56,13 @@ source (.arch)
 
 ## Gotchas & Anti-patterns
 
-- **Don't edit `dist/` or `playground/lib/archlang.js`** — both are build outputs. Rebuild
-  with `npm run build` / the esbuild command above.
+- **Don't edit `dist/`** — it's a build output. Rebuild with `npm run build`. The playground
+  imports the built `dist/` (via a Vite alias), so rebuild the core after changing `src/`.
 - **Determinism is tested.** `test/compile.test.ts` asserts `compile(s) === compile(s)`
   byte-for-byte. Anything that varies output across runs (object key order, floats, time)
   will fail — keep number formatting going through the `fmt()` helper in `render.ts`.
-- **`npm run dev`** runs `tsup --watch` (a rebuild watcher), not a web server. The playground
-  is just a static `index.html`; serve the repo root with any static server to view it.
+- **`npm run dev`** (repo root) runs `tsup --watch` (a rebuild watcher), not a web server. The
+  playground is a separate Vite app — run `npm run dev --prefix playground` for its dev server.
 - **Door `hinge left/right` is relative to the wall's traversal direction**, not the screen —
   so the hinge side can flip depending on the order of a wall's points. Expected for v0.1.
 

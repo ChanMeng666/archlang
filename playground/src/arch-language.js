@@ -1,0 +1,108 @@
+/**
+ * CodeMirror 6 language support for ArchLang.
+ *
+ * A StreamLanguage tokenizer that mirrors src/lexer.ts token-for-token (the
+ * hand-written lexer is the single source of truth), plus a HighlightStyle and
+ * a linter fed by the compiler's own `diagnostics` (span byte-offsets map
+ * directly to editor positions, since the lexer indexes the source string).
+ */
+import { StreamLanguage, LanguageSupport, syntaxHighlighting, HighlightStyle } from "@codemirror/language";
+import { linter } from "@codemirror/lint";
+import { tags as t } from "@lezer/highlight";
+import { compile } from "archlang";
+
+const CONTROL = new Set(["plan", "component", "let", "theme", "title"]);
+const ELEMENT = new Set(["wall", "room", "door", "window", "furniture", "dim", "column"]);
+const ATTR = new Set([
+  "units", "grid", "scale", "north", "material", "at", "size", "width", "thickness",
+  "label", "hinge", "swing", "offset", "text", "close", "id", "project", "drawn_by", "date",
+]);
+const ENUM = new Set(["up", "down", "left", "right", "in", "out", "mm"]);
+
+const archStream = StreamLanguage.define({
+  name: "arch",
+  languageData: { commentTokens: { line: "#" } },
+
+  token(stream) {
+    if (stream.eatSpace()) return null;
+
+    // Comment to end of line.
+    if (stream.match(/^#.*/)) return "comment";
+
+    // String literal with \" / \\ escapes (does not span lines).
+    if (stream.peek() === '"') {
+      stream.next();
+      let escaped = false;
+      let ch;
+      while ((ch = stream.next()) != null) {
+        if (escaped) { escaped = false; continue; }
+        if (ch === "\\") { escaped = true; continue; }
+        if (ch === '"') break;
+      }
+      return "string";
+    }
+
+    // Number, optionally a literal dimension WxH.
+    if (stream.match(/^[0-9]+(?:\.[0-9]+)?(?:x[0-9]+(?:\.[0-9]+)?)?/)) return "number";
+    if (stream.match(/^\.[0-9]+/)) return "number";
+
+    // Arrow before minus.
+    if (stream.match(/^->/)) return "operator";
+    if (stream.match(/^[+\-*/%=:,]/)) return "operator";
+    if (stream.match(/^[(){}]/)) return "bracket";
+
+    // Identifier / keyword.
+    const id = stream.match(/^[A-Za-z_][A-Za-z0-9_]*/);
+    if (id) {
+      const word = id[0];
+      if (CONTROL.has(word)) return "keyword";
+      if (ELEMENT.has(word)) return "typeName";
+      if (ATTR.has(word)) return "propertyName";
+      if (ENUM.has(word)) return "atom";
+      return "variableName";
+    }
+
+    stream.next();
+    return null;
+  },
+});
+
+const highlightStyle = HighlightStyle.define([
+  { tag: t.keyword, color: "#0e5484", fontWeight: "600" },
+  { tag: t.typeName, color: "#9a3b1b", fontWeight: "600" },
+  { tag: t.propertyName, color: "#3a5e2a" },
+  { tag: t.atom, color: "#7a4fb3" },
+  { tag: t.number, color: "#1b6b7a" },
+  { tag: t.string, color: "#a06000" },
+  { tag: t.comment, color: "#9a968b", fontStyle: "italic" },
+  { tag: t.operator, color: "#6a6a6a" },
+]);
+
+export function archLanguage() {
+  return new LanguageSupport(archStream, [syntaxHighlighting(highlightStyle)]);
+}
+
+/** A CodeMirror linter that surfaces the compiler's diagnostics inline. */
+export function archLinter() {
+  return linter(
+    (view) => {
+      const doc = view.state.doc;
+      const text = doc.toString();
+      const { diagnostics } = compile(text, { noCache: true });
+      const len = text.length;
+      const out = [];
+      for (const d of diagnostics) {
+        const from = Math.max(0, Math.min(d.span?.start ?? 0, len));
+        const to = Math.max(from, Math.min(d.span?.end ?? from, len));
+        out.push({
+          from,
+          to: to > from ? to : Math.min(from + 1, len),
+          severity: d.severity === "error" ? "error" : "warning",
+          message: d.code ? `${d.message}  [${d.code}]` : d.message,
+        });
+      }
+      return out;
+    },
+    { delay: 250 },
+  );
+}

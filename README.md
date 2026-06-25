@@ -128,9 +128,15 @@ plan "Studio 1BR" {
 
 ### Try it live
 
-Open [`playground/index.html`](playground/index.html) — a fully client-side editor with live
-preview, example plans, and SVG download. (After `npm install`, regenerate the browser bundle with
-`npx esbuild src/index.ts --bundle --format=esm --outfile=playground/lib/archlang.js`.)
+The [`playground/`](playground) is a Vite + CodeMirror 6 app — a client-side editor with syntax
+highlighting, inline lint (fed by the compiler's `diagnostics`), live SVG preview, example plans,
+and SVG download. Run it with:
+
+```bash
+npm run build                      # build the core (the playground consumes dist/)
+npm install --prefix playground
+npm run dev --prefix playground    # open the printed localhost URL
+```
 
 ## 📚 Documentation
 
