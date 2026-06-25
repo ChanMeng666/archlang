@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-06-25
+
+### Added — a full (pure, expand-time) scripting language
+
+The expression calculator (`Value === number`) is promoted to a small scripting
+language. Everything stays **expand-time and deterministic**: loops,
+conditionals, and function calls are evaluated while the drawing is built — no
+runtime, no I/O, no clock — so the same source still produces byte-identical
+output. Numbers remain unitless millimetres.
+
+- **Generalized values.** `Value` is now `number | boolean | string | array |
+  function` (`src/expr.ts`). Using a non-number where a number is required is a
+  typed diagnostic (`E_TYPE`) with a safe default — never a throw.
+- **Richer expressions.** Comparisons (`< > <= >= == !=`), logical operators
+  (`&& ||`, short-circuiting), `!`, array literals `[a, b]`, half-open ranges
+  `a..b`, indexing `arr[i]` (bounds-checked), function calls, and `if … else`
+  **as an expression**.
+- **Control flow** that expands into the element stream: `for x in <array|range>
+  { … }`, `if <cond> { … } else { … }`, and bounded `while` (10k-iteration cap).
+  `name = <expr>` reassigns an existing binding (so `while` loops can progress).
+- **Value-functions / closures.** `let area(w, h) = w * h` defines a pure
+  closure (recursion bounded; arity checked). Distinct from `component`, which
+  emits elements.
+- **Built-in functions** (a frozen, pure set): `min, max, abs, sqrt, floor,
+  ceil, round, len, str`. Shadowable by a user `let`.
+- **Scoped `set` rules.** `set door(swing: out)` overrides defaults for
+  subsequent doors in scope; an explicit attribute still wins.
+- **String interpolation.** `label "Studio {i}"` interpolates expressions into
+  labels/dimension text; interpolated content is escaped at the serialization
+  boundary (XSS-safe).
+- **Lexical scope chain** with shadowing; `ResolveCtx` gains `evalStr`, and
+  `ParseCtx` gains `parseStringExpr`.
+
+### Changed
+- `examples/parametric.arch` is rewritten to showcase the new language (a
+  `for`-loop row, a value-function, an array, a scoped `set`, an `if`, and
+  interpolated labels). Its golden snapshot updates accordingly.
+- Existing non-scripting examples (`studio`, `two-bed`, `themed`) render
+  **byte-identically** — the value generalization changes nothing for plans that
+  use no new constructs.
+- `docs/language-reference.md` documents values, operators, arrays/ranges,
+  conditional expressions, interpolation, reassignment, functions, control flow,
+  built-ins, and `set` rules.
+
 ## [0.7.0] - 2026-06-25
 
 ### Added

@@ -18,13 +18,14 @@ import type {
   TitleNode,
 } from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import type { Env, Expr } from "./expr.js";
-import { closest, evalExpr } from "./expr.js";
+import type { Env, Expr, Value } from "./expr.js";
+import { asBool, asNum, asStr, closest, evalExpr, exprSpan } from "./expr.js";
 import type { Theme } from "./theme.js";
 import type { ResolveCtx } from "./registry.js";
 import type { WallSegment } from "./geometry.js";
 import { hostInfoForWalls } from "./geometry.js";
 import { registryOrder } from "./elements/index.js";
+import { BUILTIN_NAMES } from "./builtins.js";
 
 export interface RBase {
   kind: ElementKind;
@@ -99,69 +100,171 @@ export interface ResolvedPlan {
 
 /** Max component-instantiation nesting depth before bailing out. */
 const MAX_DEPTH = 64;
+/** Safety cap on `while` iterations (deterministic guard against runaway loops). */
+const MAX_ITERATIONS = 10_000;
 
 /** An element flattened out of the body, paired with the env its exprs use. */
 interface Entry {
   node: AstElement;
   env: Env;
   id: string;
+  /** Active `set` overrides for this element's kind, captured at expansion. */
+  defaults?: ReadonlyMap<string, Value>;
   resolved?: ResolvedElement;
 }
 
 /**
- * Expand a statement list into a flat element stream: evaluate `let`s into the
- * scope env (source order, no forward refs), and inline component instances.
+ * A lexical scope: its own bindings plus a link to the enclosing scope. `let`
+ * declares in this scope (shadowing parents); assignment mutates the nearest
+ * enclosing scope that owns the name; lookups walk up the chain. All of this is
+ * expand-time and pure — there is no runtime.
+ */
+class Scope {
+  readonly vars = new Map<string, Value>();
+  /** Active `set <kind>(…)` overrides declared in THIS scope. */
+  readonly sets = new Map<ElementKind, ReadonlyMap<string, Value>>();
+  constructor(readonly parent?: Scope) {}
+
+  /** The nearest scope (this or an ancestor) that declares `name`. */
+  owner(name: string): Scope | undefined {
+    for (let s: Scope | undefined = this; s; s = s.parent) if (s.vars.has(name)) return s;
+    return undefined;
+  }
+
+  /** Flatten all visible bindings into a Map (child overrides parent). This is
+   *  the per-element env snapshot `resolve` evaluates expressions against. */
+  flatten(): Env {
+    const m: Env = new Map();
+    const chain: Scope[] = [];
+    for (let s: Scope | undefined = this; s; s = s.parent) chain.push(s);
+    for (let i = chain.length - 1; i >= 0; i--) for (const [k, v] of chain[i].vars) m.set(k, v);
+    return m;
+  }
+
+  /** Merge `set` overrides for `kind` down the scope chain (child wins). */
+  effectiveSet(kind: ElementKind): ReadonlyMap<string, Value> | undefined {
+    let merged: Map<string, Value> | undefined;
+    const chain: Scope[] = [];
+    for (let s: Scope | undefined = this; s; s = s.parent) chain.push(s);
+    for (let i = chain.length - 1; i >= 0; i--) {
+      const m = chain[i].sets.get(kind);
+      if (m) merged = new Map([...(merged ?? []), ...m]);
+    }
+    return merged;
+  }
+}
+
+/**
+ * Expand a statement list into a flat element stream: evaluate `let`s and
+ * assignments into the scope, inline component instances, and expand `for`/`if`/
+ * `while` — all in fixed source order, expand-time, with no runtime.
  *
  * Scoping is lexical with the plan as the global scope: a component body sees
- * the plan-level `let`s (`global`) plus its own params and local `let`s, but
- * NOT the caller's locals. `env` is this scope's env; at the top level it *is*
- * `global`, so top-level `let`s populate the global scope.
+ * the plan-level `let`s (`global`) plus its own params and local `let`s, but NOT
+ * the caller's locals. `for`/`if`/`while` bodies are child scopes of the current
+ * one, so loop-local `let`s don't collide across iterations and assignments can
+ * reach an outer binding (which is what lets `while` terminate).
  */
 function expandScope(
   body: Statement[],
-  env: Env,
-  defined: Set<string>,
-  global: Env,
+  scope: Scope,
+  global: Scope,
   components: Map<string, ComponentDef>,
   diagnostics: Diagnostic[],
   depth: number,
 ): Entry[] {
   const diag = (d: Diagnostic) => diagnostics.push(d);
   const out: Entry[] = [];
+  /** Evaluate an expression against this scope's currently-visible bindings. */
+  const evalIn = (e: Expr): Value => evalExpr(e, scope.flatten(), diag);
 
   for (const stmt of body) {
-    if (stmt.kind === "let") {
-      if (defined.has(stmt.name)) {
-        diag({ severity: "error", message: `"${stmt.name}" is already defined in this scope`, code: "E_REDEF", span: stmt.span });
-        continue;
+    switch (stmt.kind) {
+      case "let": {
+        if (scope.vars.has(stmt.name)) {
+          diag({ severity: "error", message: `"${stmt.name}" is already defined in this scope`, code: "E_REDEF", span: stmt.span });
+          break;
+        }
+        const v = evalIn(stmt.value);
+        // A function may call itself: add it to its own closure for recursion.
+        if (v.t === "fn") v.closure.set(stmt.name, v);
+        scope.vars.set(stmt.name, v);
+        break;
       }
-      env.set(stmt.name, evalExpr(stmt.value, env, diag));
-      defined.add(stmt.name);
-    } else if (stmt.kind === "instance") {
-      const comp = components.get(stmt.name);
-      if (!comp) {
-        const hint = closest(stmt.name, [...components.keys()]);
-        diag({ severity: "error", message: `Unknown component "${stmt.name}"`, code: "E_UNKNOWN_COMPONENT", span: stmt.span, hints: hint ? [`did you mean "${hint}"?`] : undefined });
-        continue;
+      case "assign": {
+        const owner = scope.owner(stmt.name);
+        if (!owner) {
+          const hint = closest(stmt.name, [...scope.flatten().keys()]);
+          diag({ severity: "error", message: `Cannot assign to undefined name "${stmt.name}" (declare it with "let" first)`, code: "E_ASSIGN_UNDEF", span: stmt.span, hints: hint ? [`did you mean "${hint}"?`] : undefined });
+          break;
+        }
+        owner.vars.set(stmt.name, evalIn(stmt.value));
+        break;
       }
-      if (depth >= MAX_DEPTH) {
-        diag({ severity: "error", message: `Component recursion too deep (limit ${MAX_DEPTH}) instantiating "${stmt.name}"`, code: "E_RECURSION", span: stmt.span });
-        continue;
+      case "instance": {
+        const comp = components.get(stmt.name);
+        if (!comp) {
+          const hint = closest(stmt.name, [...components.keys()]);
+          diag({ severity: "error", message: `Unknown component "${stmt.name}"`, code: "E_UNKNOWN_COMPONENT", span: stmt.span, hints: hint ? [`did you mean "${hint}"?`] : undefined });
+          break;
+        }
+        if (depth >= MAX_DEPTH) {
+          diag({ severity: "error", message: `Component recursion too deep (limit ${MAX_DEPTH}) instantiating "${stmt.name}"`, code: "E_RECURSION", span: stmt.span });
+          break;
+        }
+        if (stmt.args.length !== comp.params.length) {
+          diag({ severity: "error", message: `Component "${stmt.name}" expects ${comp.params.length} argument(s) but got ${stmt.args.length}`, code: "E_ARGCOUNT", span: stmt.span });
+        }
+        const argVals: Value[] = comp.params.map((_, i) =>
+          stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : { t: "num", v: 0 },
+        );
+        // Component scope = plan global + params; its lets are local.
+        const childScope = new Scope(global);
+        comp.params.forEach((p, i) => childScope.vars.set(p, argVals[i]));
+        out.push(...expandScope(comp.body, childScope, global, components, diagnostics, depth + 1));
+        break;
       }
-      if (stmt.args.length !== comp.params.length) {
-        diag({ severity: "error", message: `Component "${stmt.name}" expects ${comp.params.length} argument(s) but got ${stmt.args.length}`, code: "E_ARGCOUNT", span: stmt.span });
+      case "for": {
+        const it = evalIn(stmt.iter);
+        if (it.t !== "arr") {
+          diag({ severity: "error", message: `"for" expects an array or range but got a ${it.t === "num" ? "number" : it.t}`, code: "E_TYPE", span: stmt.span });
+          break;
+        }
+        for (const item of it.v) {
+          const child = new Scope(scope);
+          child.vars.set(stmt.varName, item);
+          out.push(...expandScope(stmt.body, child, global, components, diagnostics, depth));
+        }
+        break;
       }
-      const argVals = comp.params.map((_, i) => (stmt.args[i] !== undefined ? evalExpr(stmt.args[i], env, diag) : 0));
-      // Component scope = plan global + params; its lets are local.
-      const childEnv: Env = new Map(global);
-      const childDefined = new Set<string>();
-      comp.params.forEach((p, i) => {
-        childEnv.set(p, argVals[i]);
-        childDefined.add(p);
-      });
-      out.push(...expandScope(comp.body, childEnv, childDefined, global, components, diagnostics, depth + 1));
-    } else {
-      out.push({ node: stmt, env: new Map(env), id: "" });
+      case "if": {
+        const cond = asBool(evalIn(stmt.cond), diag, exprSpan(stmt.cond));
+        const branch = cond ? stmt.then : stmt.else;
+        if (branch) out.push(...expandScope(branch, new Scope(scope), global, components, diagnostics, depth));
+        break;
+      }
+      case "while": {
+        let n = 0;
+        while (asBool(evalIn(stmt.cond), diag, exprSpan(stmt.cond))) {
+          if (n++ >= MAX_ITERATIONS) {
+            diag({ severity: "error", message: `"while" exceeded ${MAX_ITERATIONS} iterations (possible infinite loop)`, code: "E_WHILE_LIMIT", span: stmt.span });
+            break;
+          }
+          out.push(...expandScope(stmt.body, new Scope(scope), global, components, diagnostics, depth));
+        }
+        break;
+      }
+      case "set": {
+        // Merge into this scope's overrides for the target kind; later elements
+        // in this (and nested) scopes pick them up.
+        const merged = new Map<string, Value>(scope.sets.get(stmt.target) ?? []);
+        for (const o of stmt.over) merged.set(o.key, evalIn(o.value));
+        scope.sets.set(stmt.target, merged);
+        break;
+      }
+      default:
+        // An element: snapshot the scope's visible bindings + active set-defaults.
+        out.push({ node: stmt, env: scope.flatten(), id: "", defaults: scope.effectiveSet(stmt.kind) });
     }
   }
   return out;
@@ -173,10 +276,13 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
   const snap = (v: number) => (g > 0 ? Math.round(v / g) * g : v);
   const snapPt = (p: Point): Point => ({ x: snap(p.x), y: snap(p.y) });
 
-  // 0. Expand body (lets + component instantiation) into a flat element stream.
-  //    At the top level the scope env IS the global env (plan-level `let`s).
-  const globalEnv: Env = new Map();
-  const entries = expandScope(ast.body, globalEnv, new Set(), globalEnv, ast.components, diagnostics, 0);
+  // 0. Expand body (lets, assignments, instances, control flow) into a flat
+  //    element stream. Built-ins live in a scope ABOVE the plan's globals, so a
+  //    user `let` of the same name shadows them without an E_REDEF.
+  const builtinScope = new Scope();
+  for (const name of BUILTIN_NAMES) builtinScope.vars.set(name, { t: "builtin", name });
+  const globalScope = new Scope(builtinScope);
+  const entries = expandScope(ast.body, globalScope, globalScope, ast.components, diagnostics, 0);
 
   // 1. Assign ids in registry (canonical) order. The flat stream is numbered
   //    globally per kind, so auto-ids stay unique across component instances.
@@ -208,7 +314,9 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
   //    its expressions against the env captured during expansion.
   const walls: RWall[] = [];
   let activeEnv: Env = new Map();
-  const evalNum = (e: Expr): number => evalExpr(e, activeEnv, (d) => diagnostics.push(d));
+  const evalNum = (e: Expr): number =>
+    asNum(evalExpr(e, activeEnv, (d) => diagnostics.push(d)), (d) => diagnostics.push(d), exprSpan(e));
+  const evalStr = (e: Expr): string => asStr(evalExpr(e, activeEnv, (d) => diagnostics.push(d)));
   const evalPt = (p: ExprPoint): Point => ({ x: evalNum(p.x), y: evalNum(p.y) });
   // Openings call isOnWall(at, ref) then hostSegment(at, ref) with identical
   // args back-to-back; a one-entry memo fuses those into a single wall scan.
@@ -228,6 +336,7 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
     snap,
     snapPt,
     eval: evalNum,
+    evalStr,
     evalPt,
     id: "",
     walls,
@@ -240,6 +349,7 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
       if (e.node.kind !== def.kind) continue;
       activeEnv = e.env;
       ctx.id = e.id;
+      ctx.defaults = e.defaults;
       const r = def.resolve(e.node, ctx);
       e.resolved = r;
       if (r.kind === "wall") walls.push(r);

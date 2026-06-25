@@ -1,14 +1,21 @@
-# ArchLang Language Reference (v0.1)
+# ArchLang Language Reference (v0.8)
 
 ArchLang is a small declarative language that compiles to a professional SVG
 floor plan. It is **explicit and parametric**: you give every element exact
 coordinates and sizes in millimetres, so the same source always renders the
 same drawing, and changing one number changes exactly one thing.
 
+Since v0.8 it is also a small, pure **scripting language** — values, control
+flow, functions, arrays, and string interpolation — but it stays **expand-time
+and deterministic**: every loop, conditional, and function call is evaluated
+while the drawing is built (there is no runtime, no I/O, no clock), so the same
+source always produces byte-identical output.
+
 - **Unit:** millimetres (integers recommended).
 - **Coordinate system:** origin top-left, **+x** right, **+y** down (matches SVG).
 - **Comments:** `#` to end of line.
-- **Strings:** double-quoted; `\"` and `\\` escapes supported.
+- **Strings:** double-quoted; `\"`, `\\`, `\n` escapes supported, plus `{…}`
+  interpolation (see [Strings & interpolation](#strings--interpolation)).
 
 A program is a single `plan` block:
 
@@ -29,20 +36,78 @@ plan "My Home" {
 
 ## Values & expressions
 
-Anywhere a number is expected (coordinates, sizes, widths, thickness, offsets)
-you may write an **arithmetic expression**:
+Expressions appear anywhere a value is expected (coordinates, sizes, widths,
+thickness, offsets, labels). A value is one of:
+
+| Type | Examples |
+|------|----------|
+| **number** (unitless mm) | `3000`, `12.5`, `WALL + 300` |
+| **boolean** | `true`, `false`, `a < b` |
+| **string** | `"Bed"`, `"Studio {i}"` |
+| **array** | `[1, 2, 3]`, `0..n` (a range) |
+| **function** | `let area(w, h) = w * h` |
 
 ```
 room at (0, 0) size (3000) x (3000 - 500)
 furniture bed at (WALL + 300, 300) size 1500x2000
 ```
 
-- **Operators:** `+ - * / %`, unary `-`, and parentheses `( … )`.
-- **Precedence:** `* / %` bind tighter than `+ -`; use parens to override.
-- **Numbers are non-negative literals**; write `-x` for negation.
-- Division/modulo by zero is a compile error.
+Where a **number** is specifically required (a coordinate, a size, …), a
+non-number value is a type error with a clear diagnostic — it never crashes the
+compile.
+
+### Operators
+
+Lowest-to-highest precedence (use parentheses to override):
+
+| Group | Operators |
+|-------|-----------|
+| logical or | `\|\|` |
+| logical and | `&&` |
+| equality | `==`  `!=` |
+| comparison | `<`  `>`  `<=`  `>=` |
+| range | `a..b` |
+| additive | `+`  `-` |
+| multiplicative | `*`  `/`  `%` |
+| unary | `-x`  `+x`  `!x` |
+| postfix | `arr[i]`  `f(args)` |
+
+- `&&` / `||` **short-circuit** (the right side is skipped when the result is
+  already known).
+- `==` / `!=` compare values of any type (different types are never equal;
+  arrays compare deeply); the ordering operators require numbers.
+- **Numbers are non-negative literals**; write `-x` for negation. Division /
+  modulo by zero is a compile error.
 - **Sizes** accept either the `WxH` literal (`4000x3000`) or `<expr> x <expr>`
   (`(2000+W) x H`). The bare `x` separates width and height.
+
+### Arrays & ranges
+
+```
+let widths = [3000, 3500, 4000]
+let n = widths[1]              # indexing (0-based; out-of-range is an error)
+for i in 0..3 { … }           # 0..3 is the array [0, 1, 2] (half-open)
+```
+
+### Conditional expression
+
+`if` is also an **expression** that yields a value (the `else` is required):
+
+```
+let w = if compact { 2400 } else { 3000 }
+```
+
+### Strings & interpolation
+
+A string may embed `{ <expr> }`; each hole is evaluated and converted to text:
+
+```
+room at (x, 0) size W x H label "Studio {i + 1}"
+dim (0,0)->(L,0) offset 700 text "{L / 1000} m"
+```
+
+- Literal braces are written `\{` and `\}`.
+- Interpolated text is **escaped at output**, so labels are always XSS-safe.
 
 ### Bindings — `let`
 
@@ -57,8 +122,35 @@ room at (0, 0) size W x H
 
 - Evaluated **top to bottom**; a name must be defined before it is used
   (no forward references).
-- Re-defining a name in the same scope is an error.
+- Re-defining a name in the same scope is an error. An inner scope (a component
+  body or a control-flow block) may **shadow** an outer name.
 - Unknown names produce a `did you mean …?` hint.
+
+**Reassignment.** Once a name is bound, `name = <expr>` updates it (this is how a
+`while` loop makes progress — see [Control flow](#control-flow)). Assigning a
+name that was never `let`-bound is an error.
+
+```
+let i = 0
+i = i + 1            # reassigns the existing binding
+```
+
+### Functions
+
+`let NAME(params) = <expr>` defines a pure **value-function** (a closure over the
+names visible where it is defined):
+
+```
+let area(w, h) = w * h
+let scaled(x)  = x * GRID          # captures the outer `GRID`
+room at (0, 0) size area(40, 30) x 100
+```
+
+- A function may call itself; recursion is bounded (deep recursion is reported,
+  not a crash).
+- Calling with the wrong number of arguments is an error.
+- This is distinct from `component`, which emits **elements** rather than
+  returning a value.
 
 ### Components
 
@@ -83,7 +175,70 @@ bath(3000, 0)
 - Infinite recursion is bounded and reported as an error.
 
 See [`examples/parametric.arch`](../examples/parametric.arch) for a worked
-example using all three.
+example using all of these.
+
+## Control flow
+
+`for`, `if`, and `while` **expand** into the element stream while the drawing is
+built — there is no runtime. Each block is its own scope.
+
+```
+for i in 0..COUNT {
+  let x = i * W
+  room at (x, 0) size W x H label "Unit {i + 1}"
+}
+
+if rooms > 1 {
+  wall partition thickness 100 { (W, 0) (W, H) }
+} else {
+  furniture sofa at (300, 300) size 2000x900
+}
+
+let i = 0
+while i < COUNT {
+  column at (i * 600, 0) size 300x300
+  i = i + 1                       # progress (see Reassignment)
+}
+```
+
+- `for x in <array|range>` binds `x` for each item, in order.
+- `if <cond> { … } [else { … }]` expands one branch; the condition must be a
+  boolean.
+- `while <cond> { … }` repeats until the condition is false; it is capped at
+  10,000 iterations (a runaway loop is reported, not hung).
+
+## Built-in functions
+
+A frozen set of pure helpers is always in scope (a `let` of the same name
+shadows one):
+
+| Function | Result |
+|----------|--------|
+| `min(a, b, …)` / `max(a, b, …)` | smallest / largest number |
+| `abs(x)` | absolute value |
+| `sqrt(x)` | square root (negative input is an error) |
+| `floor(x)` / `ceil(x)` / `round(x)` | rounding |
+| `len(x)` | length of an array or string |
+| `str(x)` | value rendered as a string |
+
+```
+column at (max(0, x - GAP), 0) size 300x300
+room at (0,0) size 1000x1000 label "Room {floor(area / 1000000)} m²"
+```
+
+## Set rules
+
+`set <kind>(attr: value, …)` overrides the default for subsequent elements of
+that kind, scoped to the enclosing block. An attribute the element states
+explicitly always wins.
+
+```
+set door(swing: out)             # later doors swing out…
+door at (1000, 0) width 800      # → out
+door at (3000, 0) width 800 swing in   # explicit → in
+```
+
+Currently `door` supports `swing` (`in`/`out`) and `hinge` (`left`/`right`).
 
 ## Elements
 

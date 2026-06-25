@@ -2,6 +2,8 @@
 
 > **Audience:** a fresh Claude Code session executing this plan task-by-task with no prior conversation context. Read §0 and §1 first, then implement phases in order. Each task has a **Definition of Done (DoD)**; do not move on until it's met.
 
+> **Status: v0.2→v0.5 SHIPPED (current release v0.6.0).** The active roadmap is now [`IMPLEMENTATION-PLAN-v0.7-v1.0.md`](./IMPLEMENTATION-PLAN-v0.7-v1.0.md) — backend-neutral Scene IR, a full scripting language, professional CAD fidelity, an open plugin platform, IDE-grade tooling, and a v1.0 launch, distilled from a deep study of Typst, Mermaid, D2, Penrose, and Clipper2. Start there.
+
 ---
 
 ## 0. How to use this plan

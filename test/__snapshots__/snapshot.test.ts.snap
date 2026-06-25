@@ -22,14 +22,14 @@ exports[`golden SVG snapshots > renders parametric.arch deterministically 1`] = 
 <path d="M -100,-100 L -100,5100 L 12100,5100 L 12100,-100 Z M 100,4900 L 100,100 L 3900,100 L 3900,4900 Z M 4100,4900 L 4100,100 L 7900,100 L 7900,4900 Z M 8100,4900 L 8100,100 L 11900,100 L 11900,4900 Z" fill="url(#poche)" fill-rule="nonzero"/>
 <path d="M -100,-100 L -100,5100 L 12100,5100 L 12100,-100 Z M 100,4900 L 100,100 L 3900,100 L 3900,4900 Z M 4100,4900 L 4100,100 L 7900,100 L 7900,4900 Z M 8100,4900 L 8100,100 L 11900,100 L 11900,4900 Z" fill="none" stroke="#1b1b1b" stroke-width="34.16" stroke-linejoin="miter"/>
 <polygon points="2450,4865.84 1550,4865.84 1550,5134.16 2450,5134.16" fill="#ffffff"/>
-<line x1="2450" y1="5000" x2="2450" y2="4100" stroke="#555555" stroke-width="25.38"/>
-<path d="M 2450,4100 A 900 900 0 0 1 1550,5000" fill="none" stroke="#555555" stroke-width="19.52" stroke-dasharray="78.08 58.56"/>
+<line x1="2450" y1="5000" x2="2450" y2="5900" stroke="#555555" stroke-width="25.38"/>
+<path d="M 2450,5900 A 900 900 0 0 0 1550,5000" fill="none" stroke="#555555" stroke-width="19.52" stroke-dasharray="78.08 58.56"/>
 <polygon points="6450,4865.84 5550,4865.84 5550,5134.16 6450,5134.16" fill="#ffffff"/>
-<line x1="6450" y1="5000" x2="6450" y2="4100" stroke="#555555" stroke-width="25.38"/>
-<path d="M 6450,4100 A 900 900 0 0 1 5550,5000" fill="none" stroke="#555555" stroke-width="19.52" stroke-dasharray="78.08 58.56"/>
+<line x1="6450" y1="5000" x2="6450" y2="5900" stroke="#555555" stroke-width="25.38"/>
+<path d="M 6450,5900 A 900 900 0 0 0 5550,5000" fill="none" stroke="#555555" stroke-width="19.52" stroke-dasharray="78.08 58.56"/>
 <polygon points="10450,4865.84 9550,4865.84 9550,5134.16 10450,5134.16" fill="#ffffff"/>
-<line x1="10450" y1="5000" x2="10450" y2="4100" stroke="#555555" stroke-width="25.38"/>
-<path d="M 10450,4100 A 900 900 0 0 1 9550,5000" fill="none" stroke="#555555" stroke-width="19.52" stroke-dasharray="78.08 58.56"/>
+<line x1="10450" y1="5000" x2="10450" y2="5900" stroke="#555555" stroke-width="25.38"/>
+<path d="M 10450,5900 A 900 900 0 0 0 9550,5000" fill="none" stroke="#555555" stroke-width="19.52" stroke-dasharray="78.08 58.56"/>
 <polygon points="1200,134.16 2800,134.16 2800,-134.16 1200,-134.16" fill="#ffffff"/>
 <line x1="1200" y1="100" x2="2800" y2="100" stroke="#1b1b1b" stroke-width="19.52"/>
 <line x1="1200" y1="-100" x2="2800" y2="-100" stroke="#1b1b1b" stroke-width="19.52"/>
@@ -42,18 +42,24 @@ exports[`golden SVG snapshots > renders parametric.arch deterministically 1`] = 
 <line x1="9200" y1="100" x2="10800" y2="100" stroke="#1b1b1b" stroke-width="19.52"/>
 <line x1="9200" y1="-100" x2="10800" y2="-100" stroke="#1b1b1b" stroke-width="19.52"/>
 <line x1="9200" y1="0" x2="10800" y2="0" stroke="#3a6ea5" stroke-width="19.52"/>
-<text x="2000" y="2426.8" font-size="366" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Studio</text>
+<text x="2000" y="2426.8" font-size="366" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Studio A</text>
 <text x="2000" y="2829.4" font-size="268.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.0 m²</text>
-<text x="6000" y="2426.8" font-size="366" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Studio</text>
+<text x="6000" y="2426.8" font-size="366" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Studio B</text>
 <text x="6000" y="2829.4" font-size="268.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.0 m²</text>
-<text x="10000" y="2426.8" font-size="366" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Studio</text>
+<text x="10000" y="2426.8" font-size="366" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Studio C</text>
 <text x="10000" y="2829.4" font-size="268.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.0 m²</text>
-<line x1="0" y1="0" x2="0" y2="700" stroke="#0E5484" stroke-width="13.66"/>
-<line x1="12000" y1="0" x2="12000" y2="700" stroke="#0E5484" stroke-width="13.66"/>
-<line x1="0" y1="700" x2="12000" y2="700" stroke="#0E5484" stroke-width="19.52"/>
-<line x1="103.52" y1="803.52" x2="-103.52" y2="596.48" stroke="#0E5484" stroke-width="19.52"/>
-<line x1="12103.52" y1="803.52" x2="11896.48" y2="596.48" stroke="#0E5484" stroke-width="19.52"/>
-<text x="6000" y="870.8" font-size="244" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 6000 870.8)">3 units</text>
+<line x1="8000" y1="5000" x2="8000" y2="5700" stroke="#0E5484" stroke-width="13.66"/>
+<line x1="12000" y1="5000" x2="12000" y2="5700" stroke="#0E5484" stroke-width="13.66"/>
+<line x1="8000" y1="5700" x2="12000" y2="5700" stroke="#0E5484" stroke-width="19.52"/>
+<line x1="8103.52" y1="5803.52" x2="7896.48" y2="5596.48" stroke="#0E5484" stroke-width="19.52"/>
+<line x1="12103.52" y1="5803.52" x2="11896.48" y2="5596.48" stroke="#0E5484" stroke-width="19.52"/>
+<text x="10000" y="5870.8" font-size="244" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 10000 5870.8)">20 m² each</text>
+<line x1="0" y1="0" x2="0" y2="1400" stroke="#0E5484" stroke-width="13.66"/>
+<line x1="12000" y1="0" x2="12000" y2="1400" stroke="#0E5484" stroke-width="13.66"/>
+<line x1="0" y1="1400" x2="12000" y2="1400" stroke="#0E5484" stroke-width="19.52"/>
+<line x1="103.52" y1="1503.52" x2="-103.52" y2="1296.48" stroke="#0E5484" stroke-width="19.52"/>
+<line x1="12103.52" y1="1503.52" x2="11896.48" y2="1296.48" stroke="#0E5484" stroke-width="19.52"/>
+<text x="6000" y="1570.8" font-size="244" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 6000 1570.8)">3 units</text>
 <g><polygon points="11551,-1789.7 11276.5,-911.3 11551,-1103.45 11825.5,-911.3" fill="#333333" transform="rotate(0 11551 -1240.7)"/><text x="11551" y="-2043.46" font-size="317.2" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
 <g><rect x="-100" y="6240.7" width="1000" height="170.8" fill="#333333"/><rect x="900" y="6240.7" width="1000" height="170.8" fill="none" stroke="#333333" stroke-width="19.52"/><text x="-100" y="6655.5" font-size="244" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="1900" y="6655.5" font-size="244" fill="#333333" text-anchor="middle" dominant-baseline="central">2 m</text></g>
 <g><rect x="7952" y="5411.1" width="4148" height="1700.68" fill="none" stroke="#333333" stroke-width="19.52"/><text x="8159.4" y="6261.44" font-size="185.44" fill="#888888" dominant-baseline="central">SCALE</text><text x="11892.6" y="6261.44" font-size="231.8" fill="#333333" text-anchor="end" dominant-baseline="central">1:100</text></g>

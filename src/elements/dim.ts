@@ -22,7 +22,7 @@ export const dim: ElementDef = {
     }
     if (ctx.isKeyword("text")) {
       ctx.next();
-      node.text = ctx.eatString();
+      node.text = ctx.parseStringExpr();
     }
     return node;
   },
@@ -37,7 +37,7 @@ export const dim: ElementDef = {
       from: ctx.snapPt(ctx.evalPt(n.from)),
       to: ctx.snapPt(ctx.evalPt(n.to)),
       offset: ctx.eval(n.offset),
-      text: n.text,
+      text: n.text !== undefined ? ctx.evalStr(n.text) : undefined,
       span: n.span,
     };
   },

@@ -7,7 +7,7 @@
 
 import type { Token } from "./lexer.js";
 import type { AstElement, ElementKind, ExprPoint, Point } from "./ast.js";
-import type { Expr } from "./expr.js";
+import type { Expr, Value } from "./expr.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { ResolvedElement, RWall } from "./ir.js";
 import type { Bounds, WallSegment } from "./geometry.js";
@@ -36,6 +36,9 @@ export interface ParseCtx {
   parseExpr(): Expr;
   /** Parse a size: either a `WxH` dimension literal or `<expr> x <expr>`. */
   parseDimensions(): { w: Expr; h: Expr };
+  /** Parse a string literal as an expression (a string-interpolation template),
+   *  evaluated to text at resolve via {@link ResolveCtx.evalStr}. */
+  parseStringExpr(): Expr;
   parseIdOpt(): string;
   /** Report a fatal parse error at `t` (defaults to the current token); never returns. */
   fail(msg: string, t?: Token): never;
@@ -48,6 +51,8 @@ export interface ResolveCtx {
   snapPt(p: Point): Point;
   /** Evaluate an expression against the current binding environment. */
   eval(e: Expr): number;
+  /** Evaluate an expression to a string (for interpolated labels/text). */
+  evalStr(e: Expr): string;
   /** Evaluate an expression-point to a concrete point. */
   evalPt(p: ExprPoint): Point;
   /** Resolved id of the element currently being resolved. */
@@ -56,6 +61,10 @@ export interface ResolveCtx {
   walls: RWall[];
   hostSegment(at: Point, ref?: string): WallSegment | null;
   isOnWall(at: Point, ref?: string): boolean;
+  /** Active `set <kind>(…)` overrides for the element being resolved (by attr
+   *  name), or undefined when none are in scope. Elements apply these only to
+   *  attributes the user left unspecified. */
+  defaults?: ReadonlyMap<string, Value>;
   diag(d: Diagnostic): void;
 }
 

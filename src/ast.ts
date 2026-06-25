@@ -58,7 +58,8 @@ export interface RoomNode extends NodeBase {
   kind: "room";
   at: ExprPoint;
   size: { w: Expr; h: Expr };
-  label?: string;
+  /** Label as a string-interpolation template, evaluated at resolve. */
+  label?: Expr;
 }
 
 export interface DoorNode extends NodeBase {
@@ -67,8 +68,10 @@ export interface DoorNode extends NodeBase {
   width: Expr;
   /** Optional wall (id or category) the door is hosted by. */
   wall?: string;
-  hinge: "left" | "right";
-  swing: "in" | "out";
+  /** Hinge/swing are explicit-only here; the default (and any `set door(...)`
+   *  override) is applied at resolve so user-specified values always win. */
+  hinge?: "left" | "right";
+  swing?: "in" | "out";
 }
 
 export interface WindowNode extends NodeBase {
@@ -84,7 +87,8 @@ export interface FurnitureNode extends NodeBase {
   category: string;
   at: ExprPoint;
   size: { w: Expr; h: Expr };
-  label?: string;
+  /** Label as a string-interpolation template, evaluated at resolve. */
+  label?: Expr;
 }
 
 export interface DimNode extends NodeBase {
@@ -93,8 +97,8 @@ export interface DimNode extends NodeBase {
   to: ExprPoint;
   /** Perpendicular offset of the dimension line from the measured segment, mm. */
   offset: Expr;
-  /** Override text; defaults to the measured length. */
-  text?: string;
+  /** Override text (string-interpolation template); defaults to measured length. */
+  text?: Expr;
 }
 
 export interface ColumnNode extends NodeBase {
@@ -127,8 +131,53 @@ export interface InstanceNode extends NodeBase {
   args: Expr[];
 }
 
-/** A plan-body statement in source order: an element, a `let`, or an instance. */
-export type Statement = AstElement | LetNode | InstanceNode;
+/** `for NAME in <expr> { body }` — expanded over the iterable during resolve. */
+export interface ForNode extends NodeBase {
+  kind: "for";
+  varName: string;
+  iter: Expr;
+  body: Statement[];
+}
+
+/** `if <expr> { then } [else { else }]` — control flow, expanded during resolve. */
+export interface IfNode extends NodeBase {
+  kind: "if";
+  cond: Expr;
+  then: Statement[];
+  else?: Statement[];
+}
+
+/** `while <expr> { body }` — bounded loop, expanded during resolve. */
+export interface WhileNode extends NodeBase {
+  kind: "while";
+  cond: Expr;
+  body: Statement[];
+}
+
+/** `NAME = <expr>` — reassign an existing binding (expand-time, makes `while`
+ *  loops terminate). Distinct from `let`, which declares. */
+export interface AssignNode extends NodeBase {
+  kind: "assign";
+  name: string;
+  value: Expr;
+}
+
+/** One `key: value` override inside a `set` rule. */
+export interface SetOverride {
+  key: string;
+  value: Expr;
+}
+
+/** `set <kind>(key: value, …)` — override defaults for subsequent elements of
+ *  that kind, scoped to the enclosing block. */
+export interface SetNode extends NodeBase {
+  kind: "set";
+  target: ElementKind;
+  over: SetOverride[];
+}
+
+/** A plan-body statement in source order. */
+export type Statement = AstElement | LetNode | InstanceNode | ForNode | IfNode | WhileNode | AssignNode | SetNode;
 
 /** `component NAME(params) { body }` — a reusable parameterised sub-plan. */
 export interface ComponentDef {
