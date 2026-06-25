@@ -40,7 +40,7 @@ export const door: ElementDef = {
 
   resolve(node, ctx: ResolveCtx): RDoor {
     const n = node as DoorNode;
-    const id = ctx.idOf(n);
+    const id = ctx.id;
     const at = ctx.snapPt(ctx.evalPt(n.at));
     const wv = ctx.eval(n.width);
     const width = ctx.snap(wv) || wv;

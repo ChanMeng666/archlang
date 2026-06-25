@@ -32,7 +32,7 @@ export const dim: ElementDef = {
     const n = node as DimNode;
     return {
       kind: "dim",
-      id: ctx.idOf(n),
+      id: ctx.id,
       from: ctx.snapPt(ctx.evalPt(n.from)),
       to: ctx.snapPt(ctx.evalPt(n.to)),
       offset: ctx.eval(n.offset),

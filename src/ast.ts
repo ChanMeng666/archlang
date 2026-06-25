@@ -110,6 +110,32 @@ export type AstElement =
   | DimNode
   | ColumnNode;
 
+/** `let NAME = <expr>` — a binding statement. */
+export interface LetNode extends NodeBase {
+  kind: "let";
+  name: string;
+  value: Expr;
+}
+
+/** `NAME(args)` — instantiate a component (expanded during resolve). */
+export interface InstanceNode extends NodeBase {
+  kind: "instance";
+  name: string;
+  args: Expr[];
+}
+
+/** A plan-body statement in source order: an element, a `let`, or an instance. */
+export type Statement = AstElement | LetNode | InstanceNode;
+
+/** `component NAME(params) { body }` — a reusable parameterised sub-plan. */
+export interface ComponentDef {
+  name: string;
+  params: string[];
+  body: Statement[];
+  line: number;
+  span?: Span;
+}
+
 export interface TitleNode {
   project?: string;
   drawnBy?: string;
@@ -128,6 +154,8 @@ export interface PlanNode {
   scale?: string;
   north: NorthDir;
   title?: TitleNode;
-  /** All elements, in source order. */
-  elements: AstElement[];
+  /** Component definitions, by name. */
+  components: Map<string, ComponentDef>;
+  /** All statements (elements, `let`s, instances), in source order. */
+  body: Statement[];
 }

@@ -25,7 +25,7 @@ describe("column — extensibility proof", () => {
   it("parses, resolves, and renders a registered-only element", () => {
     const { svg, errors, ast } = compile(src, { noCache: true });
     expect(errors).toEqual([]);
-    expect(ast?.elements[0].kind).toBe("column");
+    expect(ast?.body[0].kind).toBe("column");
     expect(svg).toContain('fill="#4a4a4a"'); // column fill
     expect(svg).toContain("1000,1000 1400,1000 1400,1400 1000,1400"); // snapped square
   });

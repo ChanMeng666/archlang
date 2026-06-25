@@ -3,7 +3,16 @@
 import type { Token } from "./lexer.js";
 import { lex } from "./lexer.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import type { ExprPoint, NorthDir, PlanNode, TitleNode } from "./ast.js";
+import type {
+  ComponentDef,
+  ExprPoint,
+  InstanceNode,
+  LetNode,
+  NorthDir,
+  PlanNode,
+  Statement,
+  TitleNode,
+} from "./ast.js";
 import type { Expr } from "./expr.js";
 import { parseExpr as parseExprPratt } from "./expr.js";
 import type { ParseCtx } from "./registry.js";
@@ -14,8 +23,8 @@ export interface ParseOutcome {
   diagnostics: Diagnostic[];
 }
 
-/** Plan-level settings (not registry elements). */
-const SETTINGS = ["units", "grid", "scale", "north", "title"];
+/** Plan-level settings + binding/definition keywords (not registry elements). */
+const SETTINGS = ["units", "grid", "scale", "north", "title", "let", "component"];
 /** Keywords that begin a plan-body statement; recovery resynchronizes to one. */
 const STATEMENT_STARTS = new Set<string>([...SETTINGS, ...registry.keys()]);
 
@@ -136,7 +145,8 @@ class Parser {
       units: "mm",
       grid: 0,
       north: "up",
-      elements: [],
+      components: new Map(),
+      body: [],
     };
 
     while (!this.isType("rcurly") && !this.isType("eof")) {
@@ -148,7 +158,14 @@ class Parser {
         if (def) {
           const node = def.parse(this.ctx);
           node.span = this.spanFrom(start);
-          plan.elements.push(node);
+          plan.body.push(node);
+          continue;
+        }
+        // A defined component name followed by `(` is an instantiation.
+        if (plan.components.has(t.value) && this.peek(1).type === "lparen") {
+          const node = this.parseInstance();
+          node.span = this.spanFrom(start);
+          plan.body.push(node);
           continue;
         }
         switch (t.value) {
@@ -179,6 +196,21 @@ class Parser {
             const n = this.parseTitle();
             n.span = this.spanFrom(start);
             plan.title = n;
+            break;
+          }
+          case "let": {
+            const n = this.parseLet();
+            n.span = this.spanFrom(start);
+            plan.body.push(n);
+            break;
+          }
+          case "component": {
+            const def = this.parseComponent(plan.components);
+            def.span = this.spanFrom(start);
+            if (plan.components.has(def.name)) {
+              this.fail(`Component "${def.name}" is already defined`, t);
+            }
+            plan.components.set(def.name, def);
             break;
           }
           default:
@@ -281,6 +313,70 @@ class Parser {
     }
     this.eat("rcurly");
     return node;
+  }
+
+  private parseLet(): LetNode {
+    const kw = this.eatKeyword("let");
+    const name = this.eatIdent().value;
+    this.eat("equals");
+    const value = parseExprPratt(this.ctx);
+    return { kind: "let", id: "", name, value, line: kw.line };
+  }
+
+  private parseInstance(): InstanceNode {
+    const nameTok = this.eatIdent();
+    this.eat("lparen");
+    const args: Expr[] = [];
+    while (!this.isType("rparen") && !this.isType("eof")) {
+      args.push(parseExprPratt(this.ctx));
+      if (this.isType("comma")) this.next();
+      else break;
+    }
+    this.eat("rparen");
+    return { kind: "instance", id: "", name: nameTok.value, args, line: nameTok.line };
+  }
+
+  /** `component NAME(p1, p2, …) { <statements> }`. */
+  private parseComponent(components: Map<string, ComponentDef>): ComponentDef {
+    const kw = this.eatKeyword("component");
+    const name = this.eatIdent().value;
+    this.eat("lparen");
+    const params: string[] = [];
+    while (!this.isType("rparen") && !this.isType("eof")) {
+      params.push(this.eatIdent().value);
+      if (this.isType("comma")) this.next();
+      else break;
+    }
+    this.eat("rparen");
+    this.eat("lcurly");
+    const body: Statement[] = [];
+    while (!this.isType("rcurly") && !this.isType("eof")) {
+      const t = this.peek();
+      const start = t.start;
+      const def = registry.get(t.value);
+      if (def) {
+        const node = def.parse(this.ctx);
+        node.span = this.spanFrom(start);
+        body.push(node);
+        continue;
+      }
+      if (t.value === "let") {
+        const n = this.parseLet();
+        n.span = this.spanFrom(start);
+        body.push(n);
+        continue;
+      }
+      // A previously-defined component (or this one, recursively) may be called.
+      if ((components.has(t.value) || t.value === name) && this.peek(1).type === "lparen") {
+        const n = this.parseInstance();
+        n.span = this.spanFrom(start);
+        body.push(n);
+        continue;
+      }
+      this.fail(`Expected an element, "let", or component call in component body but found ${describe(t)}`, t);
+    }
+    this.eat("rcurly");
+    return { name, params, body, line: kw.line };
   }
 }
 

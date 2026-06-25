@@ -39,7 +39,7 @@ export const wall: ElementDef = {
 
   resolve(node, ctx: ResolveCtx): RWall {
     const n = node as WallNode;
-    const id = ctx.idOf(n);
+    const id = ctx.id;
     const points = n.points.map((p) => ctx.snapPt(ctx.evalPt(p)));
     const tv = ctx.eval(n.thickness);
     const thickness = ctx.snap(tv) || tv;

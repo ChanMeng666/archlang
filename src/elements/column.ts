@@ -29,7 +29,7 @@ export const column: ElementDef = {
 
   resolve(node, ctx: ResolveCtx): RColumn {
     const n = node as ColumnNode;
-    const id = ctx.idOf(n);
+    const id = ctx.id;
     const at = ctx.snapPt(ctx.evalPt(n.at));
     const size = { w: ctx.snap(ctx.eval(n.size.w)), h: ctx.snap(ctx.eval(n.size.h)) };
     if (size.w <= 0 || size.h <= 0) {

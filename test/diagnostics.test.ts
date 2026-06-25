@@ -98,7 +98,7 @@ describe("parser — error recovery + multi-error collection", () => {
 
   it("still produces a partial AST containing the well-formed statements", () => {
     const { ast } = compile(src, { noCache: true });
-    const rooms = ast?.elements.filter((e) => e.kind === "room") ?? [];
+    const rooms = ast?.body.filter((e) => e.kind === "room") ?? [];
     expect(rooms.map((r) => r.id)).toEqual(["a", "b"]);
   });
 

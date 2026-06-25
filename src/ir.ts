@@ -6,10 +6,20 @@
  * immutable IR (the input AST is never mutated). `render` consumes IR only.
  */
 
-import type { AstElement, ElementKind, ExprPoint, NorthDir, PlanNode, Point, TitleNode } from "./ast.js";
+import type {
+  AstElement,
+  ComponentDef,
+  ElementKind,
+  ExprPoint,
+  NorthDir,
+  PlanNode,
+  Point,
+  Statement,
+  TitleNode,
+} from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Env, Expr } from "./expr.js";
-import { evalExpr } from "./expr.js";
+import { closest, evalExpr } from "./expr.js";
 import type { ResolveCtx } from "./registry.js";
 import type { WallSegment } from "./geometry.js";
 import { hostSegmentForWalls, isOnSomeWall } from "./geometry.js";
@@ -83,15 +93,80 @@ export interface ResolvedPlan {
   walls: RWall[];
 }
 
+/** Max component-instantiation nesting depth before bailing out. */
+const MAX_DEPTH = 64;
+
+/** An element flattened out of the body, paired with the env its exprs use. */
+interface Entry {
+  node: AstElement;
+  env: Env;
+  id: string;
+  resolved?: ResolvedElement;
+}
+
+/**
+ * Expand a statement list into a flat element stream: evaluate `let`s into the
+ * scope env (source order, no forward refs), and inline component instances
+ * with their params bound. Component scope = params + the component's own
+ * `let`s only (no outer/global capture — predictable, per the design).
+ */
+function expandScope(
+  body: Statement[],
+  seed: [string, number][],
+  components: Map<string, ComponentDef>,
+  diagnostics: Diagnostic[],
+  depth: number,
+): Entry[] {
+  const env: Env = new Map(seed);
+  const defined = new Set<string>(seed.map(([n]) => n));
+  const diag = (d: Diagnostic) => diagnostics.push(d);
+  const out: Entry[] = [];
+
+  for (const stmt of body) {
+    if (stmt.kind === "let") {
+      if (defined.has(stmt.name)) {
+        diag({ severity: "error", message: `"${stmt.name}" is already defined in this scope`, code: "E_REDEF", span: stmt.span });
+        continue;
+      }
+      env.set(stmt.name, evalExpr(stmt.value, env, diag));
+      defined.add(stmt.name);
+    } else if (stmt.kind === "instance") {
+      const comp = components.get(stmt.name);
+      if (!comp) {
+        const hint = closest(stmt.name, [...components.keys()]);
+        diag({ severity: "error", message: `Unknown component "${stmt.name}"`, code: "E_UNKNOWN_COMPONENT", span: stmt.span, hints: hint ? [`did you mean "${hint}"?`] : undefined });
+        continue;
+      }
+      if (depth >= MAX_DEPTH) {
+        diag({ severity: "error", message: `Component recursion too deep (limit ${MAX_DEPTH}) instantiating "${stmt.name}"`, code: "E_RECURSION", span: stmt.span });
+        continue;
+      }
+      if (stmt.args.length !== comp.params.length) {
+        diag({ severity: "error", message: `Component "${stmt.name}" expects ${comp.params.length} argument(s) but got ${stmt.args.length}`, code: "E_ARGCOUNT", span: stmt.span });
+      }
+      const childSeed: [string, number][] = comp.params.map((p, i) => [
+        p,
+        stmt.args[i] !== undefined ? evalExpr(stmt.args[i], env, diag) : 0,
+      ]);
+      out.push(...expandScope(comp.body, childSeed, components, diagnostics, depth + 1));
+    } else {
+      out.push({ node: stmt, env: new Map(env), id: "" });
+    }
+  }
+  return out;
+}
+
 export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnostic[] } {
   const diagnostics: Diagnostic[] = [];
   const g = ast.grid;
   const snap = (v: number) => (g > 0 ? Math.round(v / g) * g : v);
   const snapPt = (p: Point): Point => ({ x: snap(p.x), y: snap(p.y) });
 
-  // 1. Assign ids in registry (canonical) order so cross-kind collisions and
-  //    auto-id numbering are byte-identical to the v0.2 validate pass.
-  const idMap = new Map<AstElement, string>();
+  // 0. Expand body (lets + component instantiation) into a flat element stream.
+  const entries = expandScope(ast.body, [], ast.components, diagnostics, 0);
+
+  // 1. Assign ids in registry (canonical) order. The flat stream is numbered
+  //    globally per kind, so auto-ids stay unique across component instances.
   const seen = new Set<string>();
   const assignId = (provided: string, prefix: string, idx: number, span?: Span): string => {
     if (provided) {
@@ -108,18 +183,19 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
   };
   for (const def of registryOrder) {
     let idx = 0;
-    for (const node of ast.elements) {
-      if (node.kind !== def.kind) continue;
+    for (const e of entries) {
+      if (e.node.kind !== def.kind) continue;
       idx++;
-      idMap.set(node, assignId(node.id, def.idPrefix(node), idx, node.span));
+      e.id = assignId(e.node.id, def.idPrefix(e.node), idx, e.node.span);
     }
   }
 
   // 2. Resolve in registry order (walls first → openings can host against them).
+  //    `activeEnv`/`activeId` are swapped per entry so each element evaluates
+  //    its expressions against the env captured during expansion.
   const walls: RWall[] = [];
-  // Binding environment (empty until `let`/components land in T4.2/T4.3).
-  const env: Env = new Map();
-  const evalNum = (e: Expr): number => evalExpr(e, env, (d) => diagnostics.push(d));
+  let activeEnv: Env = new Map();
+  const evalNum = (e: Expr): number => evalExpr(e, activeEnv, (d) => diagnostics.push(d));
   const evalPt = (p: ExprPoint): Point => ({ x: evalNum(p.x), y: evalNum(p.y) });
   const ctx: ResolveCtx = {
     grid: g,
@@ -127,24 +203,25 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
     snapPt,
     eval: evalNum,
     evalPt,
-    idOf: (node) => idMap.get(node) ?? node.id,
+    id: "",
     walls,
     hostSegment: (at, ref) => hostSegmentForWalls(walls, at, ref),
     isOnWall: (at, ref) => isOnSomeWall(walls, at, ref),
     diag: (d) => diagnostics.push(d),
   };
-  const rmap = new Map<AstElement, ResolvedElement>();
   for (const def of registryOrder) {
-    for (const node of ast.elements) {
-      if (node.kind !== def.kind) continue;
-      const r = def.resolve(node, ctx);
-      rmap.set(node, r);
+    for (const e of entries) {
+      if (e.node.kind !== def.kind) continue;
+      activeEnv = e.env;
+      ctx.id = e.id;
+      const r = def.resolve(e.node, ctx);
+      e.resolved = r;
       if (r.kind === "wall") walls.push(r);
     }
   }
 
   // 3. IR element list in source order (for rendering).
-  const elements = ast.elements.map((n) => rmap.get(n)!);
+  const elements = entries.map((e) => e.resolved!);
 
   // 4. Cross-element checks.
   const drawable = elements.some(

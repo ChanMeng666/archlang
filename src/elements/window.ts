@@ -28,7 +28,7 @@ export const windowEl: ElementDef = {
 
   resolve(node, ctx: ResolveCtx): RWindow {
     const n = node as WindowNode;
-    const id = ctx.idOf(n);
+    const id = ctx.id;
     const at = ctx.snapPt(ctx.evalPt(n.at));
     const wv = ctx.eval(n.width);
     const width = ctx.snap(wv) || wv;

@@ -67,8 +67,8 @@ export interface ResolveCtx {
   eval(e: Expr): number;
   /** Evaluate an expression-point to a concrete point. */
   evalPt(p: ExprPoint): Point;
-  /** Resolved id for an AST node (assigned in registry order before resolve). */
-  idOf(node: AstElement): string;
+  /** Resolved id of the element currently being resolved. */
+  id: string;
   /** Resolved walls, ready before openings resolve (walls resolve first). */
   walls: RWall[];
   hostSegment(at: Point, ref?: string): WallSegment | null;
