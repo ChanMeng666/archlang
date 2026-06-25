@@ -9,6 +9,8 @@ import type {
   ExprPoint,
   ForNode,
   IfNode,
+  ImportItem,
+  ImportNode,
   InstanceNode,
   LetNode,
   NorthDir,
@@ -22,9 +24,12 @@ import type {
 import type { Expr } from "./expr.js";
 import { parseExpr as parseExprPratt } from "./expr.js";
 import type { Theme } from "./theme.js";
-import { isNumericThemeKey, resolveThemeKey } from "./theme.js";
-import type { ParseCtx } from "./registry.js";
-import { registry } from "./elements/index.js";
+import { isNumericThemeKey, resolveThemeKey, resolveStyleKey } from "./theme.js";
+import { isDisallowedConfigValue } from "./sanitize.js";
+import { fnv1a } from "./hash.js";
+import { idToken } from "./identity.js";
+import type { ParseCtx, Registry } from "./registry.js";
+import { BUILTIN_REGISTRY } from "./registry.js";
 
 export interface ParseOutcome {
   plan?: PlanNode;
@@ -32,11 +37,12 @@ export interface ParseOutcome {
 }
 
 /** Plan-level settings + binding/definition keywords (not registry elements). */
-const SETTINGS = ["units", "grid", "scale", "north", "title", "theme", "let", "component"];
+const SETTINGS = ["units", "grid", "scale", "north", "title", "theme", "style", "let", "component", "import"];
 /** Control-flow + rule keywords that begin a body statement. */
 const CONTROL = ["for", "if", "while", "set"];
-/** Keywords that begin a plan-body statement; recovery resynchronizes to one. */
-const STATEMENT_STARTS = new Set<string>([...SETTINGS, ...CONTROL, ...registry.keys()]);
+/** Keywords that begin a plan-body statement (registry element keywords are added
+ *  per-parse, so recovery is plugin-aware). */
+const FIXED_STATEMENT_STARTS: readonly string[] = [...SETTINGS, ...CONTROL];
 
 /** Thrown internally by `eat*` helpers; always caught within the parser. */
 class ParseError extends Error {
@@ -45,7 +51,32 @@ class ParseError extends Error {
   }
 }
 
-export function parse(src: string): ParseOutcome {
+// Stage memo: parsing is a pure function of (source, registry). Keyed by content
+// hash + registry identity (a plugin changes parse output), source verified on
+// hit. The cached PlanNode is never mutated downstream (link clones before
+// merging; resolve reads only), so sharing it is safe.
+const parseCache = new Map<string, { src: string; out: ParseOutcome }>();
+const PARSE_CACHE_MAX = 32;
+
+/** Clear the parse stage memo (called by `clearCache`). */
+export function clearParseCache(): void {
+  parseCache.clear();
+}
+
+export function parse(src: string, registry: Registry = BUILTIN_REGISTRY): ParseOutcome {
+  const key = `${fnv1a(src)}|${idToken(registry)}`;
+  const hit = parseCache.get(key);
+  if (hit && hit.src === src) return hit.out;
+  const out = parseImpl(src, registry);
+  if (parseCache.size >= PARSE_CACHE_MAX) {
+    const oldest = parseCache.keys().next().value;
+    if (oldest !== undefined) parseCache.delete(oldest);
+  }
+  parseCache.set(key, { src, out });
+  return out;
+}
+
+function parseImpl(src: string, registry: Registry): ParseOutcome {
   const { tokens, errors: lexErrors } = lex(src);
   const lexDiags: Diagnostic[] = lexErrors.map((e) => ({
     severity: "error" as const,
@@ -53,7 +84,7 @@ export function parse(src: string): ParseOutcome {
     span: e.span,
   }));
 
-  const p = new Parser(tokens);
+  const p = new Parser(tokens, registry);
   let plan: PlanNode | undefined;
   try {
     plan = p.parsePlan();
@@ -73,8 +104,12 @@ class Parser {
   public diagnostics: Diagnostic[] = [];
   /** Facade passed to element parse functions (see registry.ts). */
   private readonly ctx: ParseCtx;
+  /** Statement-start keywords for recovery resync — fixed keywords + this
+   *  registry's element keywords (so plugin elements resync correctly). */
+  private readonly statementStarts: ReadonlySet<string>;
 
-  constructor(private toks: Token[]) {
+  constructor(private toks: Token[], private readonly registry: Registry = BUILTIN_REGISTRY) {
+    this.statementStarts = new Set<string>([...FIXED_STATEMENT_STARTS, ...registry.byKeyword.keys()]);
     this.ctx = {
       peek: (o) => this.peek(o),
       next: () => this.next(),
@@ -116,7 +151,7 @@ class Parser {
     if (!this.isType("rcurly") && !this.isType("eof")) this.next();
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const t = this.peek();
-      if (t.type === "ident" && STATEMENT_STARTS.has(t.value)) return;
+      if (t.type === "ident" && this.statementStarts.has(t.value)) return;
       this.next();
     }
   }
@@ -157,6 +192,7 @@ class Parser {
       grid: 0,
       north: "up",
       components: new Map(),
+      imports: [],
       body: [],
     };
 
@@ -196,7 +232,15 @@ class Parser {
             break;
           }
           case "theme": {
-            plan.theme = { ...plan.theme, ...this.parseTheme() };
+            const r = this.parseTheme();
+            if (r.base !== undefined) plan.themeBase = r.base;
+            if (r.from !== undefined) plan.themeFrom = r.from;
+            plan.theme = { ...plan.theme, ...r.theme };
+            break;
+          }
+          case "style": {
+            const { kind, style } = this.parseStyle();
+            plan.styles = { ...plan.styles, [kind]: { ...plan.styles?.[kind], ...style } };
             break;
           }
           case "component": {
@@ -206,6 +250,12 @@ class Parser {
               this.fail(`Component "${def.name}" is already defined`, t);
             }
             plan.components.set(def.name, def);
+            break;
+          }
+          case "import": {
+            const imp = this.parseImport();
+            imp.span = this.spanFrom(start);
+            plan.imports.push(imp);
             break;
           }
           // Elements, `let`, instances, control flow, and assignment all flow
@@ -312,34 +362,94 @@ class Parser {
     return node;
   }
 
-  /** `theme { key: <value> … }` — colours (strings), `lineWeight` (number), `font` (string). */
-  private parseTheme(): Partial<Theme> {
+  /**
+   * Theme directive, in three shapes:
+   *   - `theme { key: <value> … }`              — overrides only
+   *   - `theme <name> [ { … } ]`                — named base + optional overrides
+   *   - `theme from "#color"`                   — derive poché from one wall colour
+   */
+  private parseTheme(): { base?: string; from?: string; theme: Partial<Theme> } {
     this.eatKeyword("theme");
+    if (this.isKeyword("from")) {
+      this.next();
+      return { from: this.eatString(), theme: {} };
+    }
+    // A leading ident is a named base (`theme blueprint { … }` or just `theme blueprint`).
+    const base = this.isType("ident") ? this.eatIdent().value : undefined;
+    const theme: Partial<Theme> = {};
+    if (this.isType("lcurly")) {
+      this.eat("lcurly");
+      while (!this.isType("rcurly") && !this.isType("eof")) {
+        const keyTok = this.eatIdent();
+        if (this.isType("colon")) this.next();
+        const resolved = resolveThemeKey(keyTok.value);
+        if (!resolved) {
+          this.diagnostics.push({
+            severity: "warning",
+            message: `Unknown theme key "${keyTok.value}"`,
+            code: "W_UNKNOWN_THEME_KEY",
+            span: { start: keyTok.start, end: keyTok.end },
+          });
+          if (this.isType("string") || this.isType("number")) this.next();
+          else this.fail(`Expected a value for theme key "${keyTok.value}"`);
+          continue;
+        }
+        if (isNumericThemeKey(resolved)) {
+          (theme as Record<string, unknown>)[resolved] = this.eatNumber();
+        } else {
+          (theme as Record<string, unknown>)[resolved] = this.sanitizedStringValue(keyTok, "theme");
+        }
+      }
+      this.eat("rcurly");
+    }
+    return { base, theme };
+  }
+
+  /** Eat a string value, blanking it (with a diagnostic) if it carries a
+   *  disallowed token — markup or a `data:` URL (untrusted source config). */
+  private sanitizedStringValue(keyTok: Token, what: string): string {
+    const val = this.eatString();
+    if (isDisallowedConfigValue(val)) {
+      this.diagnostics.push({
+        severity: "warning",
+        message: `Disallowed value for ${what} key "${keyTok.value}" stripped`,
+        code: "W_SANITIZED_CONFIG",
+        span: { start: keyTok.start, end: keyTok.end },
+      });
+      return "";
+    }
+    return val;
+  }
+
+  /**
+   * `style <kind> { fill … stroke … }` — per-element-kind colour overrides
+   * (resolved element → theme → default at lowering, kept out of the IR). Keys
+   * are friendly attributes (`fill`/`stroke`/`label`) mapped per kind to a Theme key.
+   */
+  private parseStyle(): { kind: string; style: Partial<Theme> } {
+    this.eatKeyword("style");
+    const kind = this.eatIdent().value;
+    const style: Partial<Theme> = {};
     this.eat("lcurly");
-    const t: Partial<Theme> = {};
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const keyTok = this.eatIdent();
       if (this.isType("colon")) this.next();
-      const resolved = resolveThemeKey(keyTok.value);
+      const resolved = resolveStyleKey(kind, keyTok.value);
       if (!resolved) {
         this.diagnostics.push({
           severity: "warning",
-          message: `Unknown theme key "${keyTok.value}"`,
-          code: "W_UNKNOWN_THEME_KEY",
+          message: `Unknown style key "${keyTok.value}" for "${kind}"`,
+          code: "W_UNKNOWN_STYLE_KEY",
           span: { start: keyTok.start, end: keyTok.end },
         });
         if (this.isType("string") || this.isType("number")) this.next();
-        else this.fail(`Expected a value for theme key "${keyTok.value}"`);
+        else this.fail(`Expected a value for style key "${keyTok.value}"`);
         continue;
       }
-      if (isNumericThemeKey(resolved)) {
-        (t as Record<string, unknown>)[resolved] = this.eatNumber();
-      } else {
-        (t as Record<string, unknown>)[resolved] = this.eatString();
-      }
+      (style as Record<string, unknown>)[resolved] = this.sanitizedStringValue(keyTok, "style");
     }
     this.eat("rcurly");
-    return t;
+    return { kind, style };
   }
 
   private parseLet(): LetNode {
@@ -400,13 +510,17 @@ class Parser {
     else if (t.value === "while") node = this.parseWhile(components, selfName);
     else if (t.value === "set") node = this.parseSet();
     else {
-      const def = registry.get(t.value);
+      const def = this.registry.byKeyword.get(t.value);
       if (def) node = def.parse(this.ctx);
       else if (t.value === "let") node = this.parseLet();
       // An ident immediately followed by "=" is an assignment.
       else if (this.peek(1).type === "equals") node = this.parseAssign();
-      // A defined component (or this one, recursively) followed by "(" is a call.
-      else if ((components.has(t.value) || t.value === selfName) && this.peek(1).type === "lparen") node = this.parseInstance();
+      // Any ident followed by "(" is a component call. The component may be
+      // defined later, recursively (`selfName`), or brought in by an `import`
+      // (added at link time, after parse) — so an unknown name is validated at
+      // expand (E_UNKNOWN_COMPONENT), not here. `components`/`selfName` retained
+      // for clarity of intent.
+      else if (this.peek(1).type === "lparen") node = this.parseInstance();
       else this.fail(`Unknown statement "${t.value}"`, t);
     }
     node.span = this.spanFrom(start);
@@ -456,11 +570,44 @@ class Parser {
     return { kind: "if", id: "", cond, then, else: els, line: kw.line };
   }
 
+  /**
+   * `import "<spec>" : a, b as c` | `import "<spec>" : *` — bring a module's
+   * components into this plan. Header-level (link-time), so it never interleaves
+   * with draw order. Resolution + reading happen later via the World.
+   */
+  private parseImport(): ImportNode {
+    const kw = this.eatKeyword("import");
+    const spec = this.eatString();
+    this.eat("colon");
+    const items: ImportItem[] = [];
+    let star = false;
+    if (this.isType("star")) {
+      this.next();
+      star = true;
+    } else {
+      for (;;) {
+        const name = this.eatIdent().value;
+        let alias: string | undefined;
+        if (this.isKeyword("as")) {
+          this.next();
+          alias = this.eatIdent().value;
+        }
+        items.push({ name, alias });
+        if (this.isType("comma")) {
+          this.next();
+          continue;
+        }
+        break;
+      }
+    }
+    return { kind: "import", spec, items, star, line: kw.line };
+  }
+
   /** `set <kind>(key: value, …)` — scoped default overrides for an element kind. */
   private parseSet(): SetNode {
     const kw = this.eatKeyword("set");
     const targetTok = this.eatIdent();
-    const def = registry.get(targetTok.value);
+    const def = this.registry.byKeyword.get(targetTok.value);
     if (!def) this.fail(`Unknown element kind "${targetTok.value}" in "set" rule`, targetTok);
     this.eat("lparen");
     const over: SetOverride[] = [];
@@ -472,7 +619,9 @@ class Parser {
       else break;
     }
     this.eat("rparen");
-    return { kind: "set", id: "", target: def.kind, over, line: kw.line };
+    // `target` is keyed as a string at runtime (scope.sets / effectiveSet), so a
+    // plugin's custom kind works here even though the field type is ElementKind.
+    return { kind: "set", id: "", target: def.kind as SetNode["target"], over, line: kw.line };
   }
 
   /** Parse a string literal as a (possibly interpolated) template expression. */

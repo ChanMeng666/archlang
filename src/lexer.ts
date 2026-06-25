@@ -1,5 +1,7 @@
 /** Hand-written lexer for ArchLang. Zero dependencies; tracks line/col. */
 
+import { fnv1a } from "./hash.js";
+
 export type TokenType =
   | "ident"
   | "number"
@@ -60,7 +62,30 @@ const isIdentStart = (c: string) =>
   (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_";
 const isIdentPart = (c: string) => isIdentStart(c) || isDigit(c);
 
+// Stage memo: lexing is a pure function of the source text. Keyed by content
+// hash (verified against the stored source on hit). Speeds re-lex on reparse.
+const lexCache = new Map<string, { src: string; out: LexResult }>();
+const LEX_CACHE_MAX = 32;
+
 export function lex(src: string): LexResult {
+  const key = fnv1a(src);
+  const hit = lexCache.get(key);
+  if (hit && hit.src === src) return hit.out;
+  const out = lexImpl(src);
+  if (lexCache.size >= LEX_CACHE_MAX) {
+    const oldest = lexCache.keys().next().value;
+    if (oldest !== undefined) lexCache.delete(oldest);
+  }
+  lexCache.set(key, { src, out });
+  return out;
+}
+
+/** Clear the lex stage memo (called by `clearCache`). */
+export function clearLexCache(): void {
+  lexCache.clear();
+}
+
+function lexImpl(src: string): LexResult {
   const tokens: Token[] = [];
   const errors: { message: string; span: { start: number; end: number } }[] = [];
   let i = 0;

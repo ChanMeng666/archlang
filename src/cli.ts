@@ -2,10 +2,29 @@
 /** ArchLang CLI: `arch compile <in.arch> [-o out.svg]`, `arch watch <in.arch>`. */
 
 import { readFileSync, writeFileSync, watchFile } from "node:fs";
-import { resolve as resolvePath } from "node:path";
+import { resolve as resolvePath, dirname } from "node:path";
 import { compile, formatDiagnostic, loadClipperBackend, setGeometryBackend, toDxf, toPdf } from "./index.js";
+import type { World } from "./index.js";
 
 type Format = "svg" | "dxf" | "pdf";
+
+/**
+ * A real-filesystem {@link World}: import paths resolve relative to `baseDir`
+ * and `now` is the wall clock. This is the one spot Node APIs and real time are
+ * allowed — the compiler core stays pure and gets its environment injected here.
+ */
+function makeNodeWorld(baseDir: string): World {
+  return {
+    read(path: string): string | null {
+      try {
+        return readFileSync(resolvePath(baseDir, path), "utf8");
+      } catch {
+        return null;
+      }
+    },
+    now: () => new Date(),
+  };
+}
 
 /**
  * Best-effort registration of the optional angled-geometry engine. Loaded once,
@@ -28,7 +47,7 @@ async function compileFile(input: string, output: string, format: Format, width?
     process.stderr.write(`error: cannot read ${input}\n`);
     return false;
   }
-  const { svg, diagnostics, scene } = compile(source, { width, noCache: true });
+  const { svg, diagnostics, scene } = compile(source, { width, noCache: true, world: makeNodeWorld(dirname(input)) });
   for (const d of diagnostics) {
     process.stderr.write(`${formatDiagnostic(source, d)}\n\n`);
   }

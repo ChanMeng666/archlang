@@ -32,6 +32,30 @@ export interface CompileOptions {
    * the built-in defaults (these win). Any subset of keys may be supplied.
    */
   theme?: Partial<import("./theme.js").Theme>;
+  /**
+   * Third-party element definitions, merged into a **per-call** registry (no
+   * global mutation → cache-safe). Each must be a valid `ElementDef`; pass them
+   * through `registerElement` for validation. Plugin identity is folded into the
+   * compile cache key, so reusing the same array hits cache and a different
+   * plugin set never bleeds across compiles.
+   */
+  plugins?: import("./registry.js").ElementDef[];
+  /**
+   * Per-call polygon-geometry backend (angled-wall joinery). Overrides the
+   * module-global `setGeometryBackend()` for this compile only.
+   */
+  backend?: import("./geometry/backend.js").GeometryBackend | null;
+  /** Named hatch materials available to this compile, selectable via `material <name>`. */
+  hatches?: import("./registry.js").HatchPlugin[];
+  /** Named themes available to this compile, selectable via `theme <name> { … }`. */
+  themes?: import("./registry.js").ThemePlugin[];
+  /**
+   * Environment seam: resolves `import` paths and supplies `now`. Defaults to a
+   * no-op World (nothing readable, no clock), so an import-free plan compiles
+   * byte-identically with or without one. Node builds a real-fs World; the
+   * browser/tests pass a virtual map. See {@link import("./world.js").World}.
+   */
+  world?: import("./world.js").World;
 }
 
 export interface CompileResult {

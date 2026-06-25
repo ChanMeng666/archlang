@@ -1,0 +1,24 @@
+# Standard openings library — importable door/window components.
+#
+#   import "lib/doors.arch": single, double
+#   single(1000, 6000, 900)
+#
+# Each takes a position, a width, and (for windows) glazing — placed against the
+# nearest wall by the host plan.
+plan "doors" {
+  units mm
+  grid 50
+
+  component single(x, y, w) {
+    door at (x, y) width w hinge left swing in
+  }
+
+  component double(x, y, w) {
+    door at (x, y) width w hinge left swing in
+    door at (x + w, y) width w hinge right swing in
+  }
+
+  component glazing(x, y, w) {
+    window at (x, y) width w
+  }
+}

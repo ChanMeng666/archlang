@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-06-26
+
+### Added — extensible platform
+
+ArchLang becomes a platform: third-party elements, a clean environment seam, an
+import system for `.arch` libraries, a richer theming cascade, and config
+sanitization with per-stage memoization. All additive and infrastructural — the
+core stays pure, deterministic, and zero-runtime-dependency, and **every existing
+rendered output is byte-identical**.
+
+- **Open, per-call plugin registry.** `compile(src, { plugins })` merges
+  third-party `ElementDef`s into a registry built fresh **per call** — no global
+  mutation, so the compile cache stays correct. A new element type now compiles
+  with zero core edits. `register{Element,Theme,Hatch,Backend}` validate/construct
+  extensions; `createRegistry`/`BUILTIN_REGISTRY` are exported. Plugin, theme,
+  backend, hatch, and World **identity is folded into the compile cache key** (via
+  stable process-local id tokens), so distinct extension sets never bleed across
+  compiles. `CompileOptions` gains `plugins`, `backend`, `hatches`, `themes`.
+- **`World` seam.** New `World { read(path): string | null; now?(): Date }` is the
+  compiler's single, injectable window onto its environment, keeping `compile()`
+  pure/synchronous/isomorphic. `NULL_WORLD` (default) and `makeVirtualWorld(files)`
+  ship for browser/test use; the CLI builds a real-fs World. `now` makes
+  time-dependent output injectable (never a hidden `Date.now()`). An import-free
+  plan compiles byte-identically with or without a World.
+- **Import system.** `import "<spec>": a, b as c` (named items, `as`, `*`) brings a
+  module's components into a plan. A new `link` phase — the compiler's only I/O,
+  behind `World.read` — resolves specs (relative `.arch` paths and namespaced
+  `@local/name:1.0.0`), parses each module, and merges components. Cyclic imports
+  yield `E_IMPORT_CYCLE` (no hang); missing/unexported/conflicting/bad-spec each get
+  a diagnostic. Seeded standard libraries under `examples/lib/` (`furniture.arch`,
+  `doors.arch`) + an `examples/imports.arch` demo. Works in Node and the browser.
+- **Theming cascade.** Built-in named themes (`THEMES`: `blueprint`, `mono`, `dark`,
+  `presentation`) via `theme <name> { … }` (named base + overrides; one-liner
+  `theme <name>` works too). Per-element `style <kind> { fill … }` overrides resolve
+  element → theme → default. Opt-in `theme from "#color"` derives a finished poché
+  from one wall colour (deterministic, zero-dep HSL). `registerTheme` adds named
+  themes per call. Theme stays **out of the IR** (re-theming never re-resolves);
+  cascade order is default → named base → `theme{}` → `theme from` → per-element
+  `style` → `CompileOptions.theme` (always wins). Opt-in derivation keeps all golden
+  snapshots byte-identical.
+- **Config sanitization.** `sanitizeConfig()` denylist for **untrusted** `.arch`
+  config: drops prototype-polluting keys (`__proto__`/`constructor`/`prototype`) and
+  blanks string values carrying markup (`<`/`>`) or a `data:` URL. Applied to source
+  theme/style values; trusted `CompileOptions` skip it. Theme/style key resolution
+  hardened to own-property checks.
+- **Per-stage memoization.** Content-hash/identity caches for `lex → tokens`,
+  `parse → ast`, and `resolve → ir` (FNV-1a; registry/World identity in the keys),
+  bounded and cleared by `clearCache()`. ~22× faster re-render on reparse (e.g.
+  re-theming or resizing the same source). Stages are pure, so cached objects are
+  shared transparently — determinism intact.
+
 ## [0.9.0] - 2026-06-26
 
 ### Added — professional CAD fidelity

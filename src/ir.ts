@@ -21,12 +21,15 @@ import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Env, Expr, Value } from "./expr.js";
 import { asBool, asNum, asStr, closest, evalExpr, exprSpan } from "./expr.js";
 import type { Theme } from "./theme.js";
-import type { ResolveCtx } from "./registry.js";
+import type { ResolveCtx, Registry } from "./registry.js";
+import { BUILTIN_REGISTRY } from "./registry.js";
+import type { World } from "./world.js";
+import { NULL_WORLD } from "./world.js";
+import { idToken } from "./identity.js";
 import type { WallSegment } from "./geometry.js";
 import { segmentsOfWall, WallGrid } from "./geometry.js";
 import type { GridBox } from "./geometry/grid-index.js";
 import { GridIndex } from "./geometry/grid-index.js";
-import { registryOrder } from "./elements/index.js";
 import { BUILTIN_NAMES } from "./builtins.js";
 
 export interface RBase {
@@ -108,6 +111,12 @@ export interface ResolvedPlan {
   north: NorthDir;
   title?: TitleNode;
   theme?: Partial<Theme>;
+  /** Named theme base (`theme <name>`), resolved to colours at lowering. */
+  themeBase?: string;
+  /** Wall colour for opt-in poché derivation (`theme from "#color"`). */
+  themeFrom?: string;
+  /** Per-element style overrides (`style <kind> { … }`), applied at lowering. */
+  styles?: Record<string, Partial<Theme>>;
   /** Resolved elements, in source order (for rendering). */
   elements: ResolvedElement[];
   /** Resolved walls (for bounds/hosting), in source order. */
@@ -286,7 +295,40 @@ function expandScope(
   return out;
 }
 
-export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnostic[] } {
+// Stage memo: resolution is a pure function of (ast, registry, world). The AST
+// is an immutable per-parse object, so its identity token uniquely keys the
+// result (collision-free, unlike a content hash). Sharing the IR is safe —
+// scene-building reads it read-only.
+const resolveCache = new Map<string, { ir: ResolvedPlan; diagnostics: Diagnostic[] }>();
+const RESOLVE_CACHE_MAX = 32;
+
+/** Clear the resolve stage memo (called by `clearCache`). */
+export function clearResolveCache(): void {
+  resolveCache.clear();
+}
+
+export function resolve(
+  ast: PlanNode,
+  registry: Registry = BUILTIN_REGISTRY,
+  world: World = NULL_WORLD,
+): { ir: ResolvedPlan; diagnostics: Diagnostic[] } {
+  const key = `${idToken(ast)}:${idToken(registry)}:${idToken(world)}`;
+  const hit = resolveCache.get(key);
+  if (hit) return hit;
+  const out = resolveImpl(ast, registry, world);
+  if (resolveCache.size >= RESOLVE_CACHE_MAX) {
+    const oldest = resolveCache.keys().next().value;
+    if (oldest !== undefined) resolveCache.delete(oldest);
+  }
+  resolveCache.set(key, out);
+  return out;
+}
+
+function resolveImpl(
+  ast: PlanNode,
+  registry: Registry = BUILTIN_REGISTRY,
+  world: World = NULL_WORLD,
+): { ir: ResolvedPlan; diagnostics: Diagnostic[] } {
   const diagnostics: Diagnostic[] = [];
   const g = ast.grid;
   const snap = (v: number) => (g > 0 ? Math.round(v / g) * g : v);
@@ -316,7 +358,7 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
     seen.add(auto);
     return auto;
   };
-  for (const def of registryOrder) {
+  for (const def of registry.order) {
     let idx = 0;
     for (const e of entries) {
       if (e.node.kind !== def.kind) continue;
@@ -360,9 +402,10 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
     walls,
     hostSegment: (at, ref) => hostInfo(at, ref).host,
     isOnWall: (at, ref) => hostInfo(at, ref).onWall,
+    ...(world.now ? { now: () => world.now!() } : {}),
     diag: (d) => diagnostics.push(d),
   };
-  for (const def of registryOrder) {
+  for (const def of registry.order) {
     for (const e of entries) {
       if (e.node.kind !== def.kind) continue;
       activeEnv = e.env;
@@ -446,6 +489,9 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
     north: ast.north,
     title: ast.title,
     theme: ast.theme,
+    themeBase: ast.themeBase,
+    themeFrom: ast.themeFrom,
+    styles: ast.styles,
     elements,
     walls,
   };

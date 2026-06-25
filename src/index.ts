@@ -11,6 +11,14 @@ import { resolve } from "./ir.js";
 import { toScene } from "./scene-build.js";
 import { renderSvg } from "./backends/svg.js";
 import { offsetToLineCol } from "./diagnostics.js";
+import { createRegistry, BUILTIN_REGISTRY } from "./registry.js";
+import type { Runtime } from "./registry.js";
+import { NULL_WORLD } from "./world.js";
+import { link } from "./import.js";
+import { clearLexCache } from "./lexer.js";
+import { clearParseCache } from "./parser.js";
+import { clearResolveCache } from "./ir.js";
+import { idToken } from "./identity.js";
 import type { Scene } from "./scene.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { CompileError, CompileOptions, CompileResult } from "./types.js";
@@ -55,13 +63,61 @@ export { toPdf } from "./export/pdf.js";
 export { setGeometryBackend, getGeometryBackend } from "./geometry/backend.js";
 export type { GeometryBackend, JoinKind } from "./geometry/backend.js";
 export { loadClipperBackend } from "./geometry/clipper.js";
+// Extensibility surface (v0.10). `compile(src, { plugins, backend, hatches, themes })`
+// adds third-party elements/backends/hatches/themes per call — cache-safe, with no
+// global mutation. The `register*` helpers validate + tag an extension for an opts field.
+export {
+  createRegistry,
+  BUILTIN_REGISTRY,
+  registerElement,
+  registerTheme,
+  registerHatch,
+  registerBackend,
+} from "./registry.js";
+export type {
+  Registry,
+  Runtime,
+  ElementDef,
+  ParseCtx,
+  ResolveCtx,
+  RenderCtx,
+  ThemePlugin,
+  HatchPlugin,
+  HatchMetaInput,
+} from "./registry.js";
+// World seam (v0.10): the compiler's window onto its environment (import reads,
+// `now`). Pass `compile(src, { world })`; default is a pure no-op World.
+export { NULL_WORLD, makeVirtualWorld } from "./world.js";
+export type { World } from "./world.js";
+// Theming (v0.10): named bases (`theme <name>`), per-element `style`, and opt-in
+// one-colour poché derivation. THEMES are the built-in named bases.
+export { THEMES, DEFAULT_THEME, mergeTheme, derivePoche, hexToHsl, hslToHex } from "./theme.js";
+export type { Theme, StyleMap } from "./theme.js";
+// Config sanitization (v0.10): denylist for untrusted .arch config; trusted
+// CompileOptions skip it. `fnv1a` keys the per-stage memo caches.
+export { sanitizeConfig, isDisallowedConfigValue } from "./sanitize.js";
+export { fnv1a } from "./hash.js";
 
 /** Small LRU-ish memo cache keyed by source+options. Bounded to 64 entries. */
 const cache = new Map<string, CompileResult>();
 const CACHE_MAX = 64;
 
 export function compile(source: string, opts: CompileOptions = {}): CompileResult {
-  const key = JSON.stringify([source, opts.width ?? null, opts.theme ?? null]);
+  // The key includes plugin/theme/backend/hatch identity so distinct extension
+  // sets never share a cache entry. Trusted, JSON-serializable `theme`/`width`
+  // are embedded directly; object plugins get a stable process-local id token
+  // (reused object → hit; different object → safe miss). Trailing tokens are 0
+  // when absent, preserving the legacy key shape for plain compiles.
+  const key = JSON.stringify([
+    source,
+    opts.width ?? null,
+    opts.theme ?? null,
+    opts.plugins?.map(idToken) ?? null,
+    idToken(opts.themes),
+    idToken(opts.backend),
+    idToken(opts.hatches),
+    idToken(opts.world),
+  ]);
   if (!opts.noCache) {
     const hit = cache.get(key);
     if (hit) return hit;
@@ -87,13 +143,25 @@ function toLegacy(source: string, d: Diagnostic): CompileError {
 }
 
 function compileUncached(source: string, opts: CompileOptions): CompileResult {
-  const { plan, diagnostics: parseDiags } = parse(source);
+  // Per-call registry (built-ins + plugins) and runtime — fresh each compile, no
+  // global mutation. Absent plugins/backend collapse to the built-in behavior.
+  // Plugin-free compiles reuse the stable BUILTIN_REGISTRY so the parse/resolve
+  // stage memos can hit across reparses (a fresh registry per call would defeat them).
+  const registry = opts.plugins?.length ? createRegistry(opts.plugins) : BUILTIN_REGISTRY;
+  const runtime: Runtime = { registry, backend: opts.backend, themes: opts.themes };
+  const world = opts.world ?? NULL_WORLD;
 
-  // parse → resolve (AST→IR, the single place semantics live) → render.
-  const resolved = plan ? resolve(plan) : null;
-  const diagnostics: Diagnostic[] = resolved
-    ? [...parseDiags, ...resolved.diagnostics]
-    : [...parseDiags];
+  const { plan, diagnostics: parseDiags } = parse(source, registry);
+
+  // parse → link (resolve `import`s through the World — the one I/O phase) →
+  // resolve (AST→IR, the single place semantics live) → render.
+  const linked = plan ? link(plan, world, registry) : null;
+  const resolved = linked ? resolve(linked.plan, registry, world) : null;
+  const diagnostics: Diagnostic[] = [
+    ...parseDiags,
+    ...(linked?.diagnostics ?? []),
+    ...(resolved?.diagnostics ?? []),
+  ];
 
   const errs = diagnostics.filter((d) => d.severity === "error");
   const errors = errs.map((d) => toLegacy(source, d));
@@ -107,14 +175,17 @@ function compileUncached(source: string, opts: CompileOptions): CompileResult {
   let svg = "";
   let scene: Scene | undefined;
   if (resolved && errs.length === 0) {
-    scene = toScene(resolved.ir, opts);
+    scene = toScene(resolved.ir, opts, runtime);
     svg = renderSvg(scene, opts);
   }
 
   return { svg, errors, warnings, diagnostics, ast: plan, scene };
 }
 
-/** Clear the internal compile cache (useful in long-lived processes/tests). */
+/** Clear the internal compile cache + all per-stage memos (lex/parse/resolve). */
 export function clearCache(): void {
   cache.clear();
+  clearLexCache();
+  clearParseCache();
+  clearResolveCache();
 }

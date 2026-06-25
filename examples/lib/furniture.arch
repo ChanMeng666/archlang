@@ -1,0 +1,31 @@
+# Standard furniture library — importable components.
+#
+#   import "lib/furniture.arch": bed, sofa
+#   bed(4300, 300)
+#
+# Each component is self-contained (no cross-component calls), so a named import
+# brings in exactly what you ask for.
+plan "furniture" {
+  units mm
+  grid 50
+
+  component bed(x, y) {
+    furniture bed at (x, y) size 1500x2000 label "Bed"
+  }
+
+  component double_bed(x, y) {
+    furniture bed at (x, y) size 1800x2100 label "Bed"
+  }
+
+  component sofa(x, y) {
+    furniture sofa at (x, y) size 2000x900 label "Sofa"
+  }
+
+  component desk(x, y) {
+    furniture desk at (x, y) size 1400x700 label "Desk"
+  }
+
+  component stove(x, y) {
+    furniture stove at (x, y) size 600x600 label "Stove"
+  }
+}
