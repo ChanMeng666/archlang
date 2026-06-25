@@ -20,6 +20,7 @@ import type {
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Env, Expr } from "./expr.js";
 import { closest, evalExpr } from "./expr.js";
+import type { Theme } from "./theme.js";
 import type { ResolveCtx } from "./registry.js";
 import type { WallSegment } from "./geometry.js";
 import { hostSegmentForWalls, isOnSomeWall } from "./geometry.js";
@@ -89,6 +90,7 @@ export interface ResolvedPlan {
   scale?: string;
   north: NorthDir;
   title?: TitleNode;
+  theme?: Partial<Theme>;
   /** Resolved elements, in source order (for rendering). */
   elements: ResolvedElement[];
   /** Resolved walls (for bounds/hosting), in source order. */
@@ -270,6 +272,7 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
     scale: ast.scale,
     north: ast.north,
     title: ast.title,
+    theme: ast.theme,
     elements,
     walls,
   };

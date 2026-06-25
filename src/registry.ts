@@ -11,6 +11,7 @@ import type { Expr } from "./expr.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { ResolvedElement, RWall } from "./ir.js";
 import type { Bounds, WallSegment } from "./geometry.js";
+import type { Theme } from "./theme.js";
 
 /**
  * Ordered render layers. Element ops are bucketed by pass and emitted in this
@@ -93,7 +94,7 @@ export interface RenderCtx {
   fmt(v: number): string;
   pt(p: Point): string;
   xml(s: string): string;
-  theme: Record<string, string>;
+  theme: Theme;
   sizes: RenderSizes;
   bounds: Bounds;
 }

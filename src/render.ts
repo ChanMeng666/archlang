@@ -12,26 +12,8 @@ import type { Rect } from "./geometry/union.js";
 import { rectUnionOutline } from "./geometry/union.js";
 import type { Material } from "./hatches.js";
 import { hatchPattern, patternId } from "./hatches.js";
-
-const THEME: Record<string, string> = {
-  bg: "#ffffff",
-  pocheBase: "#e9e4db",
-  pocheHatch: "#b9b1a4",
-  wallStroke: "#1b1b1b",
-  roomFill: "#fbfaf7",
-  roomLabel: "#222222",
-  areaLabel: "#7a7a7a",
-  furnitureStroke: "#a8a29a",
-  furnitureFill: "#f4f2ee",
-  furnitureLabel: "#9a948c",
-  opening: "#ffffff",
-  doorLeaf: "#555555",
-  windowPane: "#3a6ea5",
-  dim: "#0E5484",
-  annotation: "#333333",
-  annotationMuted: "#888888",
-  column: "#4a4a4a",
-};
+import type { Theme } from "./theme.js";
+import { DEFAULT_THEME, mergeTheme } from "./theme.js";
 
 /** Round to 2 decimals and strip trailing zeros — keeps output stable & compact. */
 function fmt(v: number): string {
@@ -122,6 +104,10 @@ function renderWalls(walls: RWall[], ctx: RenderCtx): RenderOp[] {
 }
 
 export function render(ir: ResolvedPlan, opts: CompileOptions = {}): string {
+  // Resolve theme: defaults < plan `theme { … }` directive < CompileOptions.theme.
+  const THEME: Theme = mergeTheme(DEFAULT_THEME, ir.theme, opts.theme);
+  const lw = THEME.lineWeight;
+
   const b = planBounds(ir);
   const drawW = b.maxX - b.minX;
   const drawH = b.maxY - b.minY;
@@ -129,8 +115,8 @@ export function render(ir: ResolvedPlan, opts: CompileOptions = {}): string {
 
   const sizes: RenderSizes = {
     refDim,
-    wallStroke: refDim * 0.0028,
-    thin: refDim * 0.0016,
+    wallStroke: refDim * 0.0028 * lw,
+    thin: refDim * 0.0016 * lw,
     roomFont: refDim * 0.03,
     areaFont: refDim * 0.022,
     dimFont: refDim * 0.02,
@@ -150,7 +136,7 @@ export function render(ir: ResolvedPlan, opts: CompileOptions = {}): string {
     ? `width="${fmt(opts.width)}" height="${fmt((opts.width * vbH) / vbW)}"`
     : "";
   out.push(
-    `<svg xmlns="http://www.w3.org/2000/svg" ${svgAttrs} viewBox="${fmt(vbX)} ${fmt(vbY)} ${fmt(vbW)} ${fmt(vbH)}" font-family="Helvetica, Arial, sans-serif">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" ${svgAttrs} viewBox="${fmt(vbX)} ${fmt(vbY)} ${fmt(vbW)} ${fmt(vbH)}" font-family="${xml(THEME.font)}">`,
   );
 
   // Defs: a hatch <pattern> for each wall material in use (default → "poche").
@@ -178,16 +164,16 @@ export function render(ir: ResolvedPlan, opts: CompileOptions = {}): string {
   }
 
   // Plan-level annotations (after element passes): north, scale bar, title block.
-  out.push(northArrow(ir, b, margin, refDim));
-  out.push(scaleBar(b, margin, refDim, thin));
-  const tb = titleBlock(ir, b, margin, refDim, thin);
+  out.push(northArrow(ir, b, margin, refDim, THEME));
+  out.push(scaleBar(b, margin, refDim, thin, THEME));
+  const tb = titleBlock(ir, b, margin, refDim, thin, THEME);
   if (tb) out.push(tb);
 
   out.push("</svg>");
   return out.join("\n");
 }
 
-function northArrow(ir: ResolvedPlan, b: Bounds, margin: number, refDim: number): string {
+function northArrow(ir: ResolvedPlan, b: Bounds, margin: number, refDim: number, THEME: Theme): string {
   const r = refDim * 0.045;
   const cx = b.maxX - r;
   const cy = b.minY - margin * 0.55;
@@ -217,7 +203,7 @@ function northArrow(ir: ResolvedPlan, b: Bounds, margin: number, refDim: number)
   );
 }
 
-function scaleBar(b: Bounds, margin: number, refDim: number, thin: number): string {
+function scaleBar(b: Bounds, margin: number, refDim: number, thin: number, THEME: Theme): string {
   const barLen = niceBarLength(refDim * 0.3);
   const x0 = b.minX;
   const y0 = b.maxY + margin * 0.55;
@@ -239,7 +225,7 @@ function scaleBar(b: Bounds, margin: number, refDim: number, thin: number): stri
   return `<g>${parts.join("")}</g>`;
 }
 
-function titleBlock(ir: ResolvedPlan, b: Bounds, margin: number, refDim: number, thin: number): string | null {
+function titleBlock(ir: ResolvedPlan, b: Bounds, margin: number, refDim: number, thin: number, THEME: Theme): string | null {
   const t = ir.title;
   if (!t && !ir.scale) return null;
   const boxW = refDim * 0.34;

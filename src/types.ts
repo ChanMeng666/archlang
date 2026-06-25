@@ -6,6 +6,7 @@
  */
 
 export type { Span, Severity, Diagnostic } from "./diagnostics.js";
+export type { Theme } from "./theme.js";
 
 export interface CompileError {
   /** Human-readable message. */
@@ -26,6 +27,11 @@ export interface CompileOptions {
   width?: number;
   /** Bypass the internal memoization cache (mostly for benchmarks/tests). */
   noCache?: boolean;
+  /**
+   * Theme overrides applied on top of the plan's `theme { … }` directive and
+   * the built-in defaults (these win). Any subset of keys may be supplied.
+   */
+  theme?: Partial<import("./theme.js").Theme>;
 }
 
 export interface CompileResult {

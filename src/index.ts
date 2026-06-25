@@ -30,7 +30,7 @@ const cache = new Map<string, CompileResult>();
 const CACHE_MAX = 64;
 
 export function compile(source: string, opts: CompileOptions = {}): CompileResult {
-  const key = JSON.stringify([source, opts.width ?? null]);
+  const key = JSON.stringify([source, opts.width ?? null, opts.theme ?? null]);
   if (!opts.noCache) {
     const hit = cache.get(key);
     if (hit) return hit;

@@ -6,6 +6,7 @@
 
 import type { Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
+import type { Theme } from "./theme.js";
 
 export interface Point {
   x: number;
@@ -156,6 +157,8 @@ export interface PlanNode {
   scale?: string;
   north: NorthDir;
   title?: TitleNode;
+  /** Theme overrides from the `theme { … }` directive. */
+  theme?: Partial<Theme>;
   /** Component definitions, by name. */
   components: Map<string, ComponentDef>;
   /** All statements (elements, `let`s, instances), in source order. */

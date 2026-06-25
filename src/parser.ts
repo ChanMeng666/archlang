@@ -15,6 +15,8 @@ import type {
 } from "./ast.js";
 import type { Expr } from "./expr.js";
 import { parseExpr as parseExprPratt } from "./expr.js";
+import type { Theme } from "./theme.js";
+import { isNumericThemeKey, resolveThemeKey } from "./theme.js";
 import type { ParseCtx } from "./registry.js";
 import { registry } from "./elements/index.js";
 
@@ -24,7 +26,7 @@ export interface ParseOutcome {
 }
 
 /** Plan-level settings + binding/definition keywords (not registry elements). */
-const SETTINGS = ["units", "grid", "scale", "north", "title", "let", "component"];
+const SETTINGS = ["units", "grid", "scale", "north", "title", "theme", "let", "component"];
 /** Keywords that begin a plan-body statement; recovery resynchronizes to one. */
 const STATEMENT_STARTS = new Set<string>([...SETTINGS, ...registry.keys()]);
 
@@ -198,6 +200,10 @@ class Parser {
             plan.title = n;
             break;
           }
+          case "theme": {
+            plan.theme = { ...plan.theme, ...this.parseTheme() };
+            break;
+          }
           case "let": {
             const n = this.parseLet();
             n.span = this.spanFrom(start);
@@ -313,6 +319,36 @@ class Parser {
     }
     this.eat("rcurly");
     return node;
+  }
+
+  /** `theme { key: <value> … }` — colours (strings), `lineWeight` (number), `font` (string). */
+  private parseTheme(): Partial<Theme> {
+    this.eatKeyword("theme");
+    this.eat("lcurly");
+    const t: Partial<Theme> = {};
+    while (!this.isType("rcurly") && !this.isType("eof")) {
+      const keyTok = this.eatIdent();
+      if (this.isType("colon")) this.next();
+      const resolved = resolveThemeKey(keyTok.value);
+      if (!resolved) {
+        this.diagnostics.push({
+          severity: "warning",
+          message: `Unknown theme key "${keyTok.value}"`,
+          code: "W_UNKNOWN_THEME_KEY",
+          span: { start: keyTok.start, end: keyTok.end },
+        });
+        if (this.isType("string") || this.isType("number")) this.next();
+        else this.fail(`Expected a value for theme key "${keyTok.value}"`);
+        continue;
+      }
+      if (isNumericThemeKey(resolved)) {
+        (t as Record<string, unknown>)[resolved] = this.eatNumber();
+      } else {
+        (t as Record<string, unknown>)[resolved] = this.eatString();
+      }
+    }
+    this.eat("rcurly");
+    return t;
   }
 
   private parseLet(): LetNode {
