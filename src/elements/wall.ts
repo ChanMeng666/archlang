@@ -1,6 +1,6 @@
 /** `wall <category> thickness N { (x,y)… [close] }` — poché fill + crisp faces. */
 
-import type { Point, WallNode } from "../ast.js";
+import type { ExprPoint, Point, WallNode } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, RenderOp, ResolveCtx } from "../registry.js";
 import type { RWall } from "../ir.js";
 import { add, mul, normal, segmentRectangle, segmentsOfWall, sub, unit } from "../geometry.js";
@@ -14,9 +14,9 @@ export const wall: ElementDef = {
     const id = ctx.parseIdOpt();
     const category = ctx.eatIdent().value;
     ctx.eatKeyword("thickness");
-    const thickness = ctx.eatNumber();
+    const thickness = ctx.parseExpr();
     ctx.eat("lcurly");
-    const points: Point[] = [];
+    const points: ExprPoint[] = [];
     let closed = false;
     while (!ctx.isType("rcurly") && !ctx.isType("eof")) {
       if (ctx.isKeyword("close")) {
@@ -40,8 +40,9 @@ export const wall: ElementDef = {
   resolve(node, ctx: ResolveCtx): RWall {
     const n = node as WallNode;
     const id = ctx.idOf(n);
-    const points = n.points.map(ctx.snapPt);
-    const thickness = ctx.snap(n.thickness) || n.thickness;
+    const points = n.points.map((p) => ctx.snapPt(ctx.evalPt(p)));
+    const tv = ctx.eval(n.thickness);
+    const thickness = ctx.snap(tv) || tv;
     if (thickness <= 0) {
       ctx.diag({ severity: "error", message: `Wall "${id}" must have a positive thickness`, code: "E_WALL_THICKNESS", span: n.span });
     }

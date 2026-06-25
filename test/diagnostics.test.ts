@@ -83,7 +83,7 @@ describe("parser — error recovery + multi-error collection", () => {
     'plan "E" {',
     '  room id=a at (0,0) size 1000x1000 label "A"',
     "  grid xyz",
-    "  door at (0,0) width abc",
+    "  door foo at (0,0) width 900",
     '  room id=b at (9000,0) size 1000x1000 label "B"',
     "  scale foo",
     "}",

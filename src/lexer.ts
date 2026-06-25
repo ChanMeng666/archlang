@@ -13,6 +13,11 @@ export type TokenType =
   | "equals"
   | "colon"
   | "arrow" // ->
+  | "plus" // +
+  | "minus" // - (binary or unary; arrow -> is separate)
+  | "star" // *
+  | "slash" // /
+  | "percent" // %
   | "eof";
 
 export interface Token {
@@ -123,10 +128,17 @@ export function lex(src: string): LexResult {
     if (c === ":") { advance(); push("colon", ":", startLine, startCol, startIdx); continue; }
     if (c === "-" && peek(1) === ">") { advance(); advance(); push("arrow", "->", startLine, startCol, startIdx); continue; }
 
-    // Number (optionally part of a dimension WxH)
-    if (isDigit(c) || (c === "-" && isDigit(peek(1))) || (c === "." && isDigit(peek(1)))) {
+    // Arithmetic operators (unary minus is handled by the expression parser).
+    if (c === "+") { advance(); push("plus", "+", startLine, startCol, startIdx); continue; }
+    if (c === "-") { advance(); push("minus", "-", startLine, startCol, startIdx); continue; }
+    if (c === "*") { advance(); push("star", "*", startLine, startCol, startIdx); continue; }
+    if (c === "/") { advance(); push("slash", "/", startLine, startCol, startIdx); continue; }
+    if (c === "%") { advance(); push("percent", "%", startLine, startCol, startIdx); continue; }
+
+    // Number (optionally part of a literal dimension WxH). Numbers are
+    // non-negative; negation is a unary operator in expressions.
+    if (isDigit(c) || (c === "." && isDigit(peek(1)))) {
       let raw = "";
-      if (c === "-") raw += advance();
       while (isDigit(peek())) raw += advance();
       if (peek() === ".") {
         raw += advance();
@@ -134,10 +146,9 @@ export function lex(src: string): LexResult {
       }
       const first = parseFloat(raw);
       // Dimension: <num>x<num>
-      if (peek() === "x" && (isDigit(peek(1)) || (peek(1) === "-" && isDigit(peek(2))) || (peek(1) === "." && isDigit(peek(2))))) {
+      if (peek() === "x" && (isDigit(peek(1)) || (peek(1) === "." && isDigit(peek(2))))) {
         advance(); // consume 'x'
         let raw2 = "";
-        if (peek() === "-") raw2 += advance();
         while (isDigit(peek())) raw2 += advance();
         if (peek() === ".") {
           raw2 += advance();

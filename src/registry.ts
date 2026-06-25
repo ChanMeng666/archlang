@@ -6,7 +6,8 @@
  */
 
 import type { Token } from "./lexer.js";
-import type { AstElement, ElementKind, Point } from "./ast.js";
+import type { AstElement, ElementKind, ExprPoint, Point } from "./ast.js";
+import type { Expr } from "./expr.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { ResolvedElement, RWall } from "./ir.js";
 import type { Bounds, WallSegment } from "./geometry.js";
@@ -46,7 +47,12 @@ export interface ParseCtx {
   eatString(): string;
   isKeyword(kw: string, o?: number): boolean;
   isType(type: Token["type"]): boolean;
-  parsePoint(): Point;
+  /** Parse a `(expr, expr)` point. */
+  parsePoint(): ExprPoint;
+  /** Parse an arithmetic expression. */
+  parseExpr(): Expr;
+  /** Parse a size: either a `WxH` dimension literal or `<expr> x <expr>`. */
+  parseDimensions(): { w: Expr; h: Expr };
   parseIdOpt(): string;
   /** Report a fatal parse error at `t` (defaults to the current token); never returns. */
   fail(msg: string, t?: Token): never;
@@ -57,6 +63,10 @@ export interface ResolveCtx {
   grid: number;
   snap(v: number): number;
   snapPt(p: Point): Point;
+  /** Evaluate an expression against the current binding environment. */
+  eval(e: Expr): number;
+  /** Evaluate an expression-point to a concrete point. */
+  evalPt(p: ExprPoint): Point;
   /** Resolved id for an AST node (assigned in registry order before resolve). */
   idOf(node: AstElement): string;
   /** Resolved walls, ready before openings resolve (walls resolve first). */

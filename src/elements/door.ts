@@ -15,7 +15,7 @@ export const door: ElementDef = {
     ctx.eatKeyword("at");
     const at = ctx.parsePoint();
     ctx.eatKeyword("width");
-    const width = ctx.eatNumber();
+    const width = ctx.parseExpr();
     const node: DoorNode = { kind: "door", id, at, width, hinge: "left", swing: "in", line: kw.line };
     if (ctx.isKeyword("wall")) {
       ctx.next();
@@ -41,8 +41,9 @@ export const door: ElementDef = {
   resolve(node, ctx: ResolveCtx): RDoor {
     const n = node as DoorNode;
     const id = ctx.idOf(n);
-    const at = ctx.snapPt(n.at);
-    const width = ctx.snap(n.width) || n.width;
+    const at = ctx.snapPt(ctx.evalPt(n.at));
+    const wv = ctx.eval(n.width);
+    const width = ctx.snap(wv) || wv;
     if (width <= 0) {
       ctx.diag({ severity: "error", message: `Door "${id}" must have a positive width`, code: "E_DOOR_WIDTH", span: n.span });
     }

@@ -15,8 +15,8 @@ export const room: ElementDef = {
     ctx.eatKeyword("at");
     const at = ctx.parsePoint();
     ctx.eatKeyword("size");
-    const dim = ctx.eat("dimension");
-    const node: RoomNode = { kind: "room", id, at, size: { w: dim.num!, h: dim.num2! }, line: kw.line };
+    const size = ctx.parseDimensions();
+    const node: RoomNode = { kind: "room", id, at, size, line: kw.line };
     if (ctx.isKeyword("label")) {
       ctx.next();
       node.label = ctx.eatString();
@@ -29,8 +29,8 @@ export const room: ElementDef = {
   resolve(node, ctx: ResolveCtx): RRoom {
     const n = node as RoomNode;
     const id = ctx.idOf(n);
-    const at = ctx.snapPt(n.at);
-    const size = { w: ctx.snap(n.size.w), h: ctx.snap(n.size.h) };
+    const at = ctx.snapPt(ctx.evalPt(n.at));
+    const size = { w: ctx.snap(ctx.eval(n.size.w)), h: ctx.snap(ctx.eval(n.size.h)) };
     if (size.w <= 0 || size.h <= 0) {
       ctx.diag({ severity: "error", message: `Room "${id}" must have a positive size`, code: "E_ROOM_SIZE", span: n.span });
     }

@@ -14,10 +14,10 @@ export const dim: ElementDef = {
     const from = ctx.parsePoint();
     ctx.eat("arrow");
     const to = ctx.parsePoint();
-    const node: DimNode = { kind: "dim", id: "", from, to, offset: 300, line: kw.line };
+    const node: DimNode = { kind: "dim", id: "", from, to, offset: { t: "num", value: 300 }, line: kw.line };
     if (ctx.isKeyword("offset")) {
       ctx.next();
-      node.offset = ctx.eatNumber();
+      node.offset = ctx.parseExpr();
     }
     if (ctx.isKeyword("text")) {
       ctx.next();
@@ -33,9 +33,9 @@ export const dim: ElementDef = {
     return {
       kind: "dim",
       id: ctx.idOf(n),
-      from: ctx.snapPt(n.from),
-      to: ctx.snapPt(n.to),
-      offset: n.offset,
+      from: ctx.snapPt(ctx.evalPt(n.from)),
+      to: ctx.snapPt(ctx.evalPt(n.to)),
+      offset: ctx.eval(n.offset),
       text: n.text,
       span: n.span,
     };

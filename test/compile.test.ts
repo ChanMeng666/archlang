@@ -67,9 +67,12 @@ describe("compile — grid snap", () => {
   it("does not mutate the input AST (resolve is pure)", () => {
     const { plan } = parse(src);
     resolve(plan!);
-    const room = plan!.elements[0] as { at: unknown; size: unknown };
-    expect(room.at).toEqual({ x: 123, y: 77 });
-    expect(room.size).toEqual({ w: 2960, h: 1010 });
+    // AST holds expressions; resolve never writes snapped numbers back into it.
+    const room = plan!.elements[0] as { at: { x: unknown; y: unknown }; size: { w: unknown; h: unknown } };
+    expect(room.at.x).toEqual({ t: "num", value: 123 });
+    expect(room.at.y).toEqual({ t: "num", value: 77 });
+    expect(room.size.w).toEqual({ t: "num", value: 2960 });
+    expect(room.size.h).toEqual({ t: "num", value: 1010 });
   });
 });
 

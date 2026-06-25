@@ -5,10 +5,17 @@
  */
 
 import type { Span } from "./diagnostics.js";
+import type { Expr } from "./expr.js";
 
 export interface Point {
   x: number;
   y: number;
+}
+
+/** A point whose coordinates are expressions (evaluated during resolve). */
+export interface ExprPoint {
+  x: Expr;
+  y: Expr;
 }
 
 /** North orientation: a cardinal keyword or an explicit bearing in degrees. */
@@ -37,24 +44,24 @@ export interface WallNode extends NodeBase {
   /** Free-form category, e.g. "exterior" or "partition". Also a door/window ref. */
   category: string;
   /** Wall thickness in mm. */
-  thickness: number;
+  thickness: Expr;
   /** Polyline vertices in order. */
-  points: Point[];
+  points: ExprPoint[];
   /** Whether the polyline closes back to its first vertex. */
   closed: boolean;
 }
 
 export interface RoomNode extends NodeBase {
   kind: "room";
-  at: Point;
-  size: { w: number; h: number };
+  at: ExprPoint;
+  size: { w: Expr; h: Expr };
   label?: string;
 }
 
 export interface DoorNode extends NodeBase {
   kind: "door";
-  at: Point;
-  width: number;
+  at: ExprPoint;
+  width: Expr;
   /** Optional wall (id or category) the door is hosted by. */
   wall?: string;
   hinge: "left" | "right";
@@ -63,8 +70,8 @@ export interface DoorNode extends NodeBase {
 
 export interface WindowNode extends NodeBase {
   kind: "window";
-  at: Point;
-  width: number;
+  at: ExprPoint;
+  width: Expr;
   wall?: string;
 }
 
@@ -72,25 +79,25 @@ export interface FurnitureNode extends NodeBase {
   kind: "furniture";
   /** Free-form category, e.g. "bed" or "sofa". */
   category: string;
-  at: Point;
-  size: { w: number; h: number };
+  at: ExprPoint;
+  size: { w: Expr; h: Expr };
   label?: string;
 }
 
 export interface DimNode extends NodeBase {
   kind: "dim";
-  from: Point;
-  to: Point;
+  from: ExprPoint;
+  to: ExprPoint;
   /** Perpendicular offset of the dimension line from the measured segment, mm. */
-  offset: number;
+  offset: Expr;
   /** Override text; defaults to the measured length. */
   text?: string;
 }
 
 export interface ColumnNode extends NodeBase {
   kind: "column";
-  at: Point;
-  size: { w: number; h: number };
+  at: ExprPoint;
+  size: { w: Expr; h: Expr };
 }
 
 /** Discriminated union of all element AST nodes (registry-dispatchable). */

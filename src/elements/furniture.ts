@@ -16,8 +16,8 @@ export const furniture: ElementDef = {
     ctx.eatKeyword("at");
     const at = ctx.parsePoint();
     ctx.eatKeyword("size");
-    const dim = ctx.eat("dimension");
-    const node: FurnitureNode = { kind: "furniture", id, category, at, size: { w: dim.num!, h: dim.num2! }, line: kw.line };
+    const size = ctx.parseDimensions();
+    const node: FurnitureNode = { kind: "furniture", id, category, at, size, line: kw.line };
     if (ctx.isKeyword("label")) {
       ctx.next();
       node.label = ctx.eatString();
@@ -30,8 +30,8 @@ export const furniture: ElementDef = {
   resolve(node, ctx: ResolveCtx): RFurniture {
     const n = node as FurnitureNode;
     const id = ctx.idOf(n);
-    const at = ctx.snapPt(n.at);
-    const size = { w: ctx.snap(n.size.w), h: ctx.snap(n.size.h) };
+    const at = ctx.snapPt(ctx.evalPt(n.at));
+    const size = { w: ctx.snap(ctx.eval(n.size.w)), h: ctx.snap(ctx.eval(n.size.h)) };
     if (size.w <= 0 || size.h <= 0) {
       ctx.diag({ severity: "error", message: `Furniture "${id}" must have a positive size`, code: "E_FURN_SIZE", span: n.span });
     }

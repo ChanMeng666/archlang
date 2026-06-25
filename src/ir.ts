@@ -6,8 +6,10 @@
  * immutable IR (the input AST is never mutated). `render` consumes IR only.
  */
 
-import type { AstElement, ElementKind, NorthDir, PlanNode, Point, TitleNode } from "./ast.js";
+import type { AstElement, ElementKind, ExprPoint, NorthDir, PlanNode, Point, TitleNode } from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
+import type { Env, Expr } from "./expr.js";
+import { evalExpr } from "./expr.js";
 import type { ResolveCtx } from "./registry.js";
 import type { WallSegment } from "./geometry.js";
 import { hostSegmentForWalls, isOnSomeWall } from "./geometry.js";
@@ -115,10 +117,16 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
 
   // 2. Resolve in registry order (walls first → openings can host against them).
   const walls: RWall[] = [];
+  // Binding environment (empty until `let`/components land in T4.2/T4.3).
+  const env: Env = new Map();
+  const evalNum = (e: Expr): number => evalExpr(e, env, (d) => diagnostics.push(d));
+  const evalPt = (p: ExprPoint): Point => ({ x: evalNum(p.x), y: evalNum(p.y) });
   const ctx: ResolveCtx = {
     grid: g,
     snap,
     snapPt,
+    eval: evalNum,
+    evalPt,
     idOf: (node) => idMap.get(node) ?? node.id,
     walls,
     hostSegment: (at, ref) => hostSegmentForWalls(walls, at, ref),

@@ -3,7 +3,9 @@
 import type { Token } from "./lexer.js";
 import { lex } from "./lexer.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import type { NorthDir, PlanNode, Point, TitleNode } from "./ast.js";
+import type { ExprPoint, NorthDir, PlanNode, TitleNode } from "./ast.js";
+import type { Expr } from "./expr.js";
+import { parseExpr as parseExprPratt } from "./expr.js";
 import type { ParseCtx } from "./registry.js";
 import { registry } from "./elements/index.js";
 
@@ -65,6 +67,8 @@ class Parser {
       isKeyword: (kw, o) => this.isKeyword(kw, o),
       isType: (type) => this.isType(type),
       parsePoint: () => this.parsePoint(),
+      parseExpr: () => parseExprPratt(this.ctx),
+      parseDimensions: () => this.parseDimensions(),
       parseIdOpt: () => this.parseIdOpt(),
       fail: (msg, t) => this.fail(msg, t),
     };
@@ -229,13 +233,26 @@ class Parser {
     this.fail(`Expected a north direction (up|down|left|right|<degrees>) but found ${describe(t)}`);
   }
 
-  private parsePoint(): Point {
+  private parsePoint(): ExprPoint {
     this.eat("lparen");
-    const x = this.eatNumber();
+    const x = parseExprPratt(this.ctx);
     this.eat("comma");
-    const y = this.eatNumber();
+    const y = parseExprPratt(this.ctx);
     this.eat("rparen");
     return { x, y };
+  }
+
+  /** A size: either a `WxH` literal dimension token or `<expr> x <expr>`. */
+  private parseDimensions(): { w: Expr; h: Expr } {
+    if (this.isType("dimension")) {
+      const d = this.eat("dimension");
+      return { w: { t: "num", value: d.num! }, h: { t: "num", value: d.num2! } };
+    }
+    const w = parseExprPratt(this.ctx);
+    if (this.isKeyword("x")) this.next();
+    else this.fail(`Expected "x" between width and height but found ${describe(this.peek())}`);
+    const h = parseExprPratt(this.ctx);
+    return { w, h };
   }
 
   private parseTitle(): TitleNode {
