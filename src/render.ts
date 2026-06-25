@@ -13,7 +13,7 @@ import { rectUnionOutline } from "./geometry/union.js";
 import type { Material } from "./hatches.js";
 import { hatchPattern, patternId } from "./hatches.js";
 import type { Theme } from "./theme.js";
-import { DEFAULT_THEME, mergeTheme } from "./theme.js";
+import { DEFAULT_THEME, mergeTheme, sanitizeTheme } from "./theme.js";
 
 /** Round to 2 decimals and strip trailing zeros — keeps output stable & compact. */
 function fmt(v: number): string {
@@ -105,7 +105,9 @@ function renderWalls(walls: RWall[], ctx: RenderCtx): RenderOp[] {
 
 export function render(ir: ResolvedPlan, opts: CompileOptions = {}): string {
   // Resolve theme: defaults < plan `theme { … }` directive < CompileOptions.theme.
-  const THEME: Theme = mergeTheme(DEFAULT_THEME, ir.theme, opts.theme);
+  // sanitizeTheme escapes all string values once — theme strings are untrusted
+  // and flow into SVG attributes, so this prevents attribute breakout / XSS.
+  const THEME: Theme = sanitizeTheme(mergeTheme(DEFAULT_THEME, ir.theme, opts.theme));
   const lw = THEME.lineWeight;
 
   const b = planBounds(ir);
@@ -136,7 +138,7 @@ export function render(ir: ResolvedPlan, opts: CompileOptions = {}): string {
     ? `width="${fmt(opts.width)}" height="${fmt((opts.width * vbH) / vbW)}"`
     : "";
   out.push(
-    `<svg xmlns="http://www.w3.org/2000/svg" ${svgAttrs} viewBox="${fmt(vbX)} ${fmt(vbY)} ${fmt(vbW)} ${fmt(vbH)}" font-family="${xml(THEME.font)}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" ${svgAttrs} viewBox="${fmt(vbX)} ${fmt(vbY)} ${fmt(vbW)} ${fmt(vbH)}" font-family="${THEME.font}">`,
   );
 
   // Defs: a hatch <pattern> for each wall material in use (default → "poche").
