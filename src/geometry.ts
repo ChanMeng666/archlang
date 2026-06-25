@@ -1,6 +1,6 @@
 /** Pure geometry helpers. All coordinates in millimetres. Deterministic. */
 
-import type { PlanNode, Point } from "./ast.js";
+import type { Point } from "./ast.js";
 
 export interface Vec {
   x: number;
@@ -86,66 +86,55 @@ export interface WallSegment {
   a: Point;
   b: Point;
   thickness: number;
-  kind: string;
+  category: string;
 }
 
-/** Flatten all walls to their individual segments. */
-export function wallSegments(plan: PlanNode): WallSegment[] {
+/** Minimal wall shape needed by the segment/hosting helpers (a resolved wall). */
+export interface WallLike {
+  id: string;
+  category: string;
+  thickness: number;
+  points: Point[];
+  closed: boolean;
+}
+
+/** Flatten a single wall into its individual segments. */
+export function segmentsOfWall(w: WallLike): WallSegment[] {
   const segs: WallSegment[] = [];
-  for (const w of plan.walls) {
-    for (let k = 0; k < w.points.length - 1; k++) {
-      segs.push({ a: w.points[k], b: w.points[k + 1], thickness: w.thickness, kind: w.kind });
-    }
-    if (w.closed && w.points.length > 2) {
-      segs.push({ a: w.points[w.points.length - 1], b: w.points[0], thickness: w.thickness, kind: w.kind });
-    }
+  for (let k = 0; k < w.points.length - 1; k++) {
+    segs.push({ a: w.points[k], b: w.points[k + 1], thickness: w.thickness, category: w.category });
+  }
+  if (w.closed && w.points.length > 2) {
+    segs.push({ a: w.points[w.points.length - 1], b: w.points[0], thickness: w.thickness, category: w.category });
   }
   return segs;
 }
 
 /** The wall segment hosting an opening point (nearest), filtered by ref if given. */
-export function hostSegment(plan: PlanNode, at: Point, wallRef?: string): WallSegment | null {
-  const walls = wallRef
-    ? plan.walls.filter((w) => w.id === wallRef || w.kind === wallRef)
-    : plan.walls;
+export function hostSegmentForWalls(walls: WallLike[], at: Point, ref?: string): WallSegment | null {
+  const candidates = ref ? walls.filter((w) => w.id === ref || w.category === ref) : walls;
   let best: WallSegment | null = null;
   let bestDist = Infinity;
-  for (const w of walls) {
-    const segs: [Point, Point][] = [];
-    for (let k = 0; k < w.points.length - 1; k++) segs.push([w.points[k], w.points[k + 1]]);
-    if (w.closed && w.points.length > 2) segs.push([w.points[w.points.length - 1], w.points[0]]);
-    for (const [a, b] of segs) {
-      const dist = distPointToSegment(at, a, b);
+  for (const w of candidates) {
+    for (const s of segmentsOfWall(w)) {
+      const dist = distPointToSegment(at, s.a, s.b);
       if (dist < bestDist) {
         bestDist = dist;
-        best = { a, b, thickness: w.thickness, kind: w.kind };
+        best = s;
       }
     }
   }
   return best;
 }
 
-/** Drawing bounds over walls (offset by thickness), rooms, furniture, and dims. */
-export function planBounds(plan: PlanNode): Bounds {
-  const b = emptyBounds();
-  for (const seg of wallSegments(plan)) {
-    for (const c of segmentRectangle(seg.a, seg.b, seg.thickness)) extendBounds(b, c.x, c.y);
+/** Whether a point lies within tolerance of some wall (filtered by ref if given). */
+export function isOnSomeWall(walls: WallLike[], at: Point, ref?: string): boolean {
+  const candidates = ref ? walls.filter((w) => w.id === ref || w.category === ref) : walls;
+  for (const w of candidates) {
+    const tol = w.thickness / 2 + Math.max(w.thickness, 1);
+    for (const s of segmentsOfWall(w)) {
+      if (distPointToSegment(at, s.a, s.b) <= tol) return true;
+    }
   }
-  for (const r of plan.rooms) {
-    extendBounds(b, r.at.x, r.at.y);
-    extendBounds(b, r.at.x + r.size.w, r.at.y + r.size.h);
-  }
-  for (const f of plan.furniture) {
-    extendBounds(b, f.at.x, f.at.y);
-    extendBounds(b, f.at.x + f.size.w, f.at.y + f.size.h);
-  }
-  for (const d of plan.dims) {
-    extendBounds(b, d.from.x, d.from.y);
-    extendBounds(b, d.to.x, d.to.y);
-  }
-  if (!isFinite(b.minX)) {
-    // Nothing to draw; provide a default frame.
-    return { minX: 0, minY: 0, maxX: 1000, maxY: 1000 };
-  }
-  return b;
+  return false;
 }

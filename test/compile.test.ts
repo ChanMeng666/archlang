@@ -3,6 +3,8 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { compile, clearCache } from "../src/index.js";
+import { parse } from "../src/parser.js";
+import { resolve } from "../src/ir.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const studio = readFileSync(join(__dirname, "..", "examples", "studio.arch"), "utf8");
@@ -51,12 +53,23 @@ describe("compile — determinism", () => {
 });
 
 describe("compile — grid snap", () => {
-  it("snaps off-grid coordinates to the module", () => {
-    const src = `plan "G" { grid 100 room id=r at (123,77) size 2960x1010 label "R" }`;
-    const { ast, errors } = compile(src, { noCache: true });
-    expect(errors).toEqual([]);
-    expect(ast?.rooms[0].at).toEqual({ x: 100, y: 100 });
-    expect(ast?.rooms[0].size).toEqual({ w: 3000, h: 1000 });
+  const src = `plan "G" { grid 100 room id=r at (123,77) size 2960x1010 label "R" }`;
+
+  it("snaps off-grid coordinates to the module in the IR", () => {
+    const { plan } = parse(src);
+    const { ir, diagnostics } = resolve(plan!);
+    expect(diagnostics).toEqual([]);
+    const room = ir.elements.find((e) => e.kind === "room") as { at: unknown; size: unknown };
+    expect(room.at).toEqual({ x: 100, y: 100 });
+    expect(room.size).toEqual({ w: 3000, h: 1000 });
+  });
+
+  it("does not mutate the input AST (resolve is pure)", () => {
+    const { plan } = parse(src);
+    resolve(plan!);
+    const room = plan!.elements[0] as { at: unknown; size: unknown };
+    expect(room.at).toEqual({ x: 123, y: 77 });
+    expect(room.size).toEqual({ w: 2960, h: 1010 });
   });
 });
 

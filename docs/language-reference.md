@@ -85,6 +85,15 @@ dim (x1,y1)->(x2,y2) [offset <mm>] [text "<override>"]
 A dimension line offset perpendicular from the measured segment, with tick
 marks and a label. Without `text`, the measured length (mm) is shown.
 
+### Column
+
+```
+column [id=<id>] at (x,y) size <w>x<h>
+```
+
+A solid structural column (filled square). Useful for grids of columns in
+larger plans.
+
 ### Title block
 
 ```
@@ -156,3 +165,19 @@ Options: `width` (px for the `<svg>`; height derived from aspect ratio) and
 See [`examples/studio.arch`](../examples/studio.arch) and
 [`examples/two-bed.arch`](../examples/two-bed.arch), or try the
 [playground](../playground/index.html).
+
+## Architecture (for contributors)
+
+The compiler is a pipeline: **lex → parse → resolve(AST → IR) → render**.
+Every element type (wall, room, door, …) is a single self-contained module in
+`src/elements/` implementing a common `ElementDef` (`parse` / `resolve` /
+`render`); parse, resolve, and render all iterate the registry rather than a
+hard-coded switch. `resolve()` (in `src/ir.ts`) is the single place semantics
+live — grid-snap, id assignment, opening-hosting, and checks — and it produces
+a new immutable IR (the AST is never mutated). `render()` consumes the IR only,
+which keeps it backend-ready.
+
+**To add an element type:** write one `src/elements/<name>.ts` exporting an
+`ElementDef`, then add one `register()` line in `src/elements/index.ts`. No
+edits to the parser, resolver, or renderer cores are needed — `column` is the
+worked example.

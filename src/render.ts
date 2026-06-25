@@ -1,22 +1,15 @@
-/** Renders a validated PlanNode to a professional SVG floor plan. Deterministic. */
+/** Renders a resolved plan (IR) to a professional SVG floor plan. Deterministic. */
 
-import type { PlanNode, Point } from "./ast.js";
+import type { Point } from "./ast.js";
 import type { CompileOptions } from "./types.js";
-import {
-  add,
-  hostSegment,
-  length,
-  mul,
-  normal,
-  planBounds,
-  rectCorners,
-  segmentRectangle,
-  sub,
-  unit,
-  wallSegments,
-} from "./geometry.js";
+import type { ResolvedPlan } from "./ir.js";
+import type { RenderCtx, RenderSizes } from "./registry.js";
+import { RENDER_PASSES } from "./registry.js";
+import { registry } from "./elements/index.js";
+import type { Bounds } from "./geometry.js";
+import { emptyBounds, extendBounds } from "./geometry.js";
 
-const THEME = {
+const THEME: Record<string, string> = {
   bg: "#ffffff",
   pocheBase: "#e9e4db",
   pocheHatch: "#b9b1a4",
@@ -33,6 +26,7 @@ const THEME = {
   dim: "#0E5484",
   annotation: "#333333",
   annotationMuted: "#888888",
+  column: "#4a4a4a",
 };
 
 /** Round to 2 decimals and strip trailing zeros — keeps output stable & compact. */
@@ -57,20 +51,39 @@ function niceBarLength(target: number): number {
   return best;
 }
 
-export function render(plan: PlanNode, opts: CompileOptions = {}): string {
-  const b = planBounds(plan);
+/** Drawing bounds: each element contributes points via its registry `bounds`. */
+function planBounds(ir: ResolvedPlan): Bounds {
+  const b = emptyBounds();
+  for (const el of ir.elements) {
+    const def = registry.get(el.kind);
+    if (!def) continue;
+    for (const p of def.bounds(el)) extendBounds(b, p.x, p.y);
+  }
+  if (!isFinite(b.minX)) {
+    // Nothing to draw; provide a default frame.
+    return { minX: 0, minY: 0, maxX: 1000, maxY: 1000 };
+  }
+  return b;
+}
+
+export function render(ir: ResolvedPlan, opts: CompileOptions = {}): string {
+  const b = planBounds(ir);
   const drawW = b.maxX - b.minX;
   const drawH = b.maxY - b.minY;
   const refDim = Math.max(drawW, drawH, 1);
 
-  const wallStroke = refDim * 0.0028;
-  const thin = refDim * 0.0016;
-  const roomFont = refDim * 0.03;
-  const areaFont = refDim * 0.022;
-  const dimFont = refDim * 0.02;
-  const furnFont = refDim * 0.017;
-  const margin = refDim * 0.17;
-  const hatchGap = refDim * 0.013;
+  const sizes: RenderSizes = {
+    refDim,
+    wallStroke: refDim * 0.0028,
+    thin: refDim * 0.0016,
+    roomFont: refDim * 0.03,
+    areaFont: refDim * 0.022,
+    dimFont: refDim * 0.02,
+    furnFont: refDim * 0.017,
+    margin: refDim * 0.17,
+    hatchGap: refDim * 0.013,
+  };
+  const { thin, margin, hatchGap } = sizes;
 
   const vbX = b.minX - margin;
   const vbY = b.minY - margin;
@@ -96,187 +109,37 @@ export function render(plan: PlanNode, opts: CompileOptions = {}): string {
   // Background
   out.push(`<rect x="${fmt(vbX)}" y="${fmt(vbY)}" width="${fmt(vbW)}" height="${fmt(vbH)}" fill="${THEME.bg}"/>`);
 
-  // 1. Room floor fills
-  for (const r of plan.rooms) {
-    const c = rectCorners(r.at.x, r.at.y, r.size.w, r.size.h);
-    out.push(`<polygon points="${c.map(pt).join(" ")}" fill="${THEME.roomFill}"/>`);
+  // Elements: collect ops once (preserving source order), then emit pass by pass.
+  const ctx: RenderCtx = { fmt, pt, xml, theme: THEME, sizes, bounds: b };
+  const ops = ir.elements.flatMap((el) => {
+    const def = registry.get(el.kind);
+    return def ? def.render(el, ctx) : [];
+  });
+  for (const pass of RENDER_PASSES) {
+    for (const op of ops) if (op.pass === pass) out.push(op.svg);
   }
 
-  // 2. Furniture
-  for (const f of plan.furniture) {
-    const c = rectCorners(f.at.x, f.at.y, f.size.w, f.size.h);
-    out.push(
-      `<polygon points="${c.map(pt).join(" ")}" fill="${THEME.furnitureFill}" stroke="${THEME.furnitureStroke}" stroke-width="${fmt(thin)}"/>`,
-    );
-    if (f.label) {
-      const cx = f.at.x + f.size.w / 2;
-      const cy = f.at.y + f.size.h / 2;
-      out.push(
-        `<text x="${fmt(cx)}" y="${fmt(cy)}" font-size="${fmt(furnFont)}" fill="${THEME.furnitureLabel}" text-anchor="middle" dominant-baseline="central">${xml(f.label)}</text>`,
-      );
-    }
-  }
-
-  // 3. Walls — poché fill (extended rect) + crisp faces (non-extended)
-  const segs = wallSegments(plan);
-  for (const s of segs) {
-    const poly = segmentRectangle(s.a, s.b, s.thickness);
-    out.push(`<polygon points="${poly.map(pt).join(" ")}" fill="url(#poche)"/>`);
-  }
-  for (const s of segs) {
-    const d = unit(sub(s.b, s.a));
-    const n = normal(d);
-    const h = s.thickness / 2;
-    const fa1 = add(s.a, mul(n, h));
-    const fb1 = add(s.b, mul(n, h));
-    const fa2 = add(s.a, mul(n, -h));
-    const fb2 = add(s.b, mul(n, -h));
-    out.push(
-      `<line x1="${fmt(fa1.x)}" y1="${fmt(fa1.y)}" x2="${fmt(fb1.x)}" y2="${fmt(fb1.y)}" stroke="${THEME.wallStroke}" stroke-width="${fmt(wallStroke)}" stroke-linecap="square"/>`,
-    );
-    out.push(
-      `<line x1="${fmt(fa2.x)}" y1="${fmt(fa2.y)}" x2="${fmt(fb2.x)}" y2="${fmt(fb2.y)}" stroke="${THEME.wallStroke}" stroke-width="${fmt(wallStroke)}" stroke-linecap="square"/>`,
-    );
-  }
-
-  // 4. Openings (doors + windows): erase wall, then draw symbol
-  for (const dr of plan.doors) {
-    const seg = hostSegment(plan, dr.at, dr.wall);
-    if (!seg) continue;
-    const d = unit(sub(seg.b, seg.a));
-    const n = normal(d);
-    const h = seg.thickness / 2 + wallStroke;
-    const hw = dr.width / 2;
-    // erase
-    const cover = [
-      add(add(dr.at, mul(d, -hw)), mul(n, h)),
-      add(add(dr.at, mul(d, hw)), mul(n, h)),
-      add(add(dr.at, mul(d, hw)), mul(n, -h)),
-      add(add(dr.at, mul(d, -hw)), mul(n, -h)),
-    ];
-    out.push(`<polygon points="${cover.map(pt).join(" ")}" fill="${THEME.opening}"/>`);
-    // door symbol
-    const hinge = dr.hinge === "left" ? add(dr.at, mul(d, -hw)) : add(dr.at, mul(d, hw));
-    const farJamb = dr.hinge === "left" ? add(dr.at, mul(d, hw)) : add(dr.at, mul(d, -hw));
-    const leafDir = dr.swing === "in" ? n : mul(n, -1);
-    const leafEnd = add(hinge, mul(leafDir, dr.width));
-    const cross = (leafEnd.x - hinge.x) * (farJamb.y - hinge.y) - (leafEnd.y - hinge.y) * (farJamb.x - hinge.x);
-    const sweep = cross < 0 ? 1 : 0;
-    out.push(
-      `<line x1="${fmt(hinge.x)}" y1="${fmt(hinge.y)}" x2="${fmt(leafEnd.x)}" y2="${fmt(leafEnd.y)}" stroke="${THEME.doorLeaf}" stroke-width="${fmt(thin * 1.3)}"/>`,
-    );
-    out.push(
-      `<path d="M ${pt(leafEnd)} A ${fmt(dr.width)} ${fmt(dr.width)} 0 0 ${sweep} ${pt(farJamb)}" fill="none" stroke="${THEME.doorLeaf}" stroke-width="${fmt(thin)}" stroke-dasharray="${fmt(thin * 4)} ${fmt(thin * 3)}"/>`,
-    );
-  }
-  for (const wn of plan.windows) {
-    const seg = hostSegment(plan, wn.at, wn.wall);
-    if (!seg) continue;
-    const d = unit(sub(seg.b, seg.a));
-    const n = normal(d);
-    const h = seg.thickness / 2;
-    const he = h + wallStroke;
-    const hw = wn.width / 2;
-    const cover = [
-      add(add(wn.at, mul(d, -hw)), mul(n, he)),
-      add(add(wn.at, mul(d, hw)), mul(n, he)),
-      add(add(wn.at, mul(d, hw)), mul(n, -he)),
-      add(add(wn.at, mul(d, -hw)), mul(n, -he)),
-    ];
-    out.push(`<polygon points="${cover.map(pt).join(" ")}" fill="${THEME.opening}"/>`);
-    const jA = add(wn.at, mul(d, -hw));
-    const jB = add(wn.at, mul(d, hw));
-    for (const off of [h, -h]) {
-      const a = add(jA, mul(n, off));
-      const bb = add(jB, mul(n, off));
-      out.push(
-        `<line x1="${fmt(a.x)}" y1="${fmt(a.y)}" x2="${fmt(bb.x)}" y2="${fmt(bb.y)}" stroke="${THEME.wallStroke}" stroke-width="${fmt(thin)}"/>`,
-      );
-    }
-    out.push(
-      `<line x1="${fmt(jA.x)}" y1="${fmt(jA.y)}" x2="${fmt(jB.x)}" y2="${fmt(jB.y)}" stroke="${THEME.windowPane}" stroke-width="${fmt(thin)}"/>`,
-    );
-  }
-
-  // 5. Room labels + area (on top)
-  for (const r of plan.rooms) {
-    const cx = r.at.x + r.size.w / 2;
-    const cy = r.at.y + r.size.h / 2;
-    const areaM2 = ((r.size.w / 1000) * (r.size.h / 1000)).toFixed(1);
-    if (r.label) {
-      out.push(
-        `<text x="${fmt(cx)}" y="${fmt(cy - roomFont * 0.2)}" font-size="${fmt(roomFont)}" fill="${THEME.roomLabel}" text-anchor="middle" dominant-baseline="central" font-weight="600">${xml(r.label)}</text>`,
-      );
-    }
-    out.push(
-      `<text x="${fmt(cx)}" y="${fmt(cy + (r.label ? roomFont * 0.9 : 0))}" font-size="${fmt(areaFont)}" fill="${THEME.areaLabel}" text-anchor="middle" dominant-baseline="central">${areaM2} m²</text>`,
-    );
-  }
-
-  // 6. Dimensions
-  for (const dm of plan.dims) {
-    const dir = unit(sub(dm.to, dm.from));
-    const n = normal(dir);
-    const off = mul(n, dm.offset);
-    const p1 = add(dm.from, off);
-    const p2 = add(dm.to, off);
-    const tick = refDim * 0.012;
-    // extension lines
-    out.push(
-      `<line x1="${fmt(dm.from.x)}" y1="${fmt(dm.from.y)}" x2="${fmt(p1.x)}" y2="${fmt(p1.y)}" stroke="${THEME.dim}" stroke-width="${fmt(thin * 0.7)}"/>`,
-    );
-    out.push(
-      `<line x1="${fmt(dm.to.x)}" y1="${fmt(dm.to.y)}" x2="${fmt(p2.x)}" y2="${fmt(p2.y)}" stroke="${THEME.dim}" stroke-width="${fmt(thin * 0.7)}"/>`,
-    );
-    // dimension line
-    out.push(
-      `<line x1="${fmt(p1.x)}" y1="${fmt(p1.y)}" x2="${fmt(p2.x)}" y2="${fmt(p2.y)}" stroke="${THEME.dim}" stroke-width="${fmt(thin)}"/>`,
-    );
-    // ticks (45°)
-    for (const p of [p1, p2]) {
-      const t1 = add(p, mul(unit({ x: dir.x + n.x, y: dir.y + n.y }), tick));
-      const t2 = add(p, mul(unit({ x: dir.x + n.x, y: dir.y + n.y }), -tick));
-      out.push(
-        `<line x1="${fmt(t1.x)}" y1="${fmt(t1.y)}" x2="${fmt(t2.x)}" y2="${fmt(t2.y)}" stroke="${THEME.dim}" stroke-width="${fmt(thin)}"/>`,
-      );
-    }
-    // text
-    const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
-    const tp = add(mid, mul(n, dimFont * 0.7));
-    let angle = (Math.atan2(dir.y, dir.x) * 180) / Math.PI;
-    if (angle > 90) angle -= 180;
-    if (angle < -90) angle += 180;
-    const label = dm.text ?? String(Math.round(length(sub(dm.to, dm.from))));
-    out.push(
-      `<text x="${fmt(tp.x)}" y="${fmt(tp.y)}" font-size="${fmt(dimFont)}" fill="${THEME.dim}" text-anchor="middle" dominant-baseline="central" transform="rotate(${fmt(angle)} ${fmt(tp.x)} ${fmt(tp.y)})">${xml(label)}</text>`,
-    );
-  }
-
-  // 7. North arrow (top-right band)
-  out.push(northArrow(plan, b, margin, refDim));
-
-  // 8. Scale bar (bottom-left band)
+  // Plan-level annotations (after element passes): north, scale bar, title block.
+  out.push(northArrow(ir, b, margin, refDim));
   out.push(scaleBar(b, margin, refDim, thin));
-
-  // 9. Title block (bottom-right band)
-  const tb = titleBlock(plan, b, margin, refDim, thin);
+  const tb = titleBlock(ir, b, margin, refDim, thin);
   if (tb) out.push(tb);
 
   out.push("</svg>");
   return out.join("\n");
 }
 
-function northArrow(plan: PlanNode, b: ReturnType<typeof planBounds>, margin: number, refDim: number): string {
+function northArrow(ir: ResolvedPlan, b: Bounds, margin: number, refDim: number): string {
   const r = refDim * 0.045;
   const cx = b.maxX - r;
   const cy = b.minY - margin * 0.55;
   let deg: number;
-  switch (plan.north) {
+  switch (ir.north) {
     case "up": deg = 0; break;
     case "down": deg = 180; break;
     case "left": deg = 270; break;
     case "right": deg = 90; break;
-    default: deg = typeof plan.north === "object" ? plan.north.deg : 0;
+    default: deg = typeof ir.north === "object" ? ir.north.deg : 0;
   }
   const fs = refDim * 0.026;
   // Triangle points "up" before rotation; only the arrow rotates — the "N"
@@ -296,7 +159,7 @@ function northArrow(plan: PlanNode, b: ReturnType<typeof planBounds>, margin: nu
   );
 }
 
-function scaleBar(b: ReturnType<typeof planBounds>, margin: number, refDim: number, thin: number): string {
+function scaleBar(b: Bounds, margin: number, refDim: number, thin: number): string {
   const barLen = niceBarLength(refDim * 0.3);
   const x0 = b.minX;
   const y0 = b.maxY + margin * 0.55;
@@ -318,15 +181,9 @@ function scaleBar(b: ReturnType<typeof planBounds>, margin: number, refDim: numb
   return `<g>${parts.join("")}</g>`;
 }
 
-function titleBlock(
-  plan: PlanNode,
-  b: ReturnType<typeof planBounds>,
-  margin: number,
-  refDim: number,
-  thin: number,
-): string | null {
-  const t = plan.title;
-  if (!t && !plan.scale) return null;
+function titleBlock(ir: ResolvedPlan, b: Bounds, margin: number, refDim: number, thin: number): string | null {
+  const t = ir.title;
+  if (!t && !ir.scale) return null;
   const boxW = refDim * 0.34;
   const boxH = margin * 0.82;
   const x0 = b.maxX - boxW;
@@ -337,7 +194,7 @@ function titleBlock(
   if (t?.project) lines.push({ k: "PROJECT", v: t.project });
   if (t?.drawnBy) lines.push({ k: "DRAWN BY", v: t.drawnBy });
   if (t?.date) lines.push({ k: "DATE", v: t.date });
-  if (plan.scale) lines.push({ k: "SCALE", v: plan.scale });
+  if (ir.scale) lines.push({ k: "SCALE", v: ir.scale });
 
   const parts: string[] = [];
   parts.push(

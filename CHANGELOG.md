@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Element registry + AST→IR layering.** Each element type (wall, room, door,
+  window, furniture, dim) is now a single self-contained module in
+  `src/elements/` implementing a common `ElementDef`; parse/resolve/render
+  iterate the registry instead of hard-coded switches. Adding an element type is
+  one new module + one `register()` line.
+- **`column`** element: `column [id=] at (x,y) size WxH` — a solid structural
+  column, and the worked example of the new one-file extensibility.
+- Pure `resolve(ast) → IR` (`src/ir.ts`): grid-snap, id assignment, opening
+  hosting, and semantic checks now produce a new immutable IR — the input AST is
+  no longer mutated. `render()` consumes the IR only (backend-ready).
+
+### Changed
+- `compile()` pipeline is now `parse → resolve → render`. `CompileResult.ast`
+  is the raw parsed AST (unmutated); snapped/resolved geometry lives in the IR.
+- AST: elements live in a single discriminated `PlanNode.elements` array (each
+  node carries a `kind`); wall/furniture's category field renamed `kind` →
+  `category`. SVG output is byte-identical to v0.2 (golden-snapshot verified).
+
 ## [0.2.0] - 2026-06-25
 
 ### Added

@@ -1,31 +1,21 @@
-/** Recursive-descent parser: tokens -> PlanNode. Zero dependencies. */
+/** Recursive-descent parser: tokens -> PlanNode. Registry-driven element dispatch. */
 
 import type { Token } from "./lexer.js";
 import { lex } from "./lexer.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import type {
-  DimNode,
-  DoorNode,
-  FurnitureNode,
-  NorthDir,
-  PlanNode,
-  Point,
-  RoomNode,
-  TitleNode,
-  WallNode,
-  WindowNode,
-} from "./ast.js";
+import type { NorthDir, PlanNode, Point, TitleNode } from "./ast.js";
+import type { ParseCtx } from "./registry.js";
+import { registry } from "./elements/index.js";
 
 export interface ParseOutcome {
   plan?: PlanNode;
   diagnostics: Diagnostic[];
 }
 
+/** Plan-level settings (not registry elements). */
+const SETTINGS = ["units", "grid", "scale", "north", "title"];
 /** Keywords that begin a plan-body statement; recovery resynchronizes to one. */
-const STATEMENT_STARTS = new Set([
-  "units", "grid", "scale", "north",
-  "wall", "room", "door", "window", "furniture", "dim", "title",
-]);
+const STATEMENT_STARTS = new Set<string>([...SETTINGS, ...registry.keys()]);
 
 /** Thrown internally by `eat*` helpers; always caught within the parser. */
 class ParseError extends Error {
@@ -60,7 +50,25 @@ export function parse(src: string): ParseOutcome {
 class Parser {
   private pos = 0;
   public diagnostics: Diagnostic[] = [];
-  constructor(private toks: Token[]) {}
+  /** Facade passed to element parse functions (see registry.ts). */
+  private readonly ctx: ParseCtx;
+
+  constructor(private toks: Token[]) {
+    this.ctx = {
+      peek: (o) => this.peek(o),
+      next: () => this.next(),
+      eat: (type) => this.eat(type),
+      eatKeyword: (kw) => this.eatKeyword(kw),
+      eatIdent: () => this.eatIdent(),
+      eatNumber: () => this.eatNumber(),
+      eatString: () => this.eatString(),
+      isKeyword: (kw, o) => this.isKeyword(kw, o),
+      isType: (type) => this.isType(type),
+      parsePoint: () => this.parsePoint(),
+      parseIdOpt: () => this.parseIdOpt(),
+      fail: (msg, t) => this.fail(msg, t),
+    };
+  }
 
   private peek(o = 0): Token {
     return this.toks[Math.min(this.pos + o, this.toks.length - 1)];
@@ -124,12 +132,7 @@ class Parser {
       units: "mm",
       grid: 0,
       north: "up",
-      walls: [],
-      rooms: [],
-      doors: [],
-      windows: [],
-      furniture: [],
-      dims: [],
+      elements: [],
     };
 
     while (!this.isType("rcurly") && !this.isType("eof")) {
@@ -137,6 +140,13 @@ class Parser {
       const start = t.start;
       try {
         if (t.type !== "ident") this.fail(`Expected a statement but found ${describe(t)}`);
+        const def = registry.get(t.value);
+        if (def) {
+          const node = def.parse(this.ctx);
+          node.span = this.spanFrom(start);
+          plan.elements.push(node);
+          continue;
+        }
         switch (t.value) {
           case "units": {
             this.next();
@@ -161,42 +171,6 @@ class Parser {
             this.next();
             plan.north = this.parseNorth();
             break;
-          case "wall": {
-            const n = this.parseWall();
-            n.span = this.spanFrom(start);
-            plan.walls.push(n);
-            break;
-          }
-          case "room": {
-            const n = this.parseRoom();
-            n.span = this.spanFrom(start);
-            plan.rooms.push(n);
-            break;
-          }
-          case "door": {
-            const n = this.parseDoor();
-            n.span = this.spanFrom(start);
-            plan.doors.push(n);
-            break;
-          }
-          case "window": {
-            const n = this.parseWindow();
-            n.span = this.spanFrom(start);
-            plan.windows.push(n);
-            break;
-          }
-          case "furniture": {
-            const n = this.parseFurniture();
-            n.span = this.spanFrom(start);
-            plan.furniture.push(n);
-            break;
-          }
-          case "dim": {
-            const n = this.parseDim();
-            n.span = this.spanFrom(start);
-            plan.dims.push(n);
-            break;
-          }
           case "title": {
             const n = this.parseTitle();
             n.span = this.spanFrom(start);
@@ -262,122 +236,6 @@ class Parser {
     const y = this.eatNumber();
     this.eat("rparen");
     return { x, y };
-  }
-
-  private parseWall(): WallNode {
-    const kw = this.eatKeyword("wall");
-    const id = this.parseIdOpt();
-    const kind = this.eatIdent().value;
-    this.eatKeyword("thickness");
-    const thickness = this.eatNumber();
-    this.eat("lcurly");
-    const points: Point[] = [];
-    let closed = false;
-    while (!this.isType("rcurly") && !this.isType("eof")) {
-      if (this.isKeyword("close")) {
-        this.next();
-        closed = true;
-        break;
-      }
-      if (this.isType("lparen")) {
-        points.push(this.parsePoint());
-        continue;
-      }
-      this.fail(`Expected a point "(x,y)" or "close" in wall body but found ${describe(this.peek())}`);
-    }
-    this.eat("rcurly");
-    if (points.length < 2) this.fail("A wall needs at least two points", kw);
-    return { id, kind, thickness, points, closed, line: kw.line };
-  }
-
-  private parseRoom(): RoomNode {
-    const kw = this.eatKeyword("room");
-    const id = this.parseIdOpt();
-    this.eatKeyword("at");
-    const at = this.parsePoint();
-    this.eatKeyword("size");
-    const dim = this.eat("dimension");
-    const node: RoomNode = { id, at, size: { w: dim.num!, h: dim.num2! }, line: kw.line };
-    if (this.isKeyword("label")) {
-      this.next();
-      node.label = this.eatString();
-    }
-    return node;
-  }
-
-  private parseDoor(): DoorNode {
-    const kw = this.eatKeyword("door");
-    const id = this.parseIdOpt();
-    this.eatKeyword("at");
-    const at = this.parsePoint();
-    this.eatKeyword("width");
-    const width = this.eatNumber();
-    const node: DoorNode = { id, at, width, hinge: "left", swing: "in", line: kw.line };
-    if (this.isKeyword("wall")) {
-      this.next();
-      node.wall = this.eatIdent().value;
-    }
-    if (this.isKeyword("hinge")) {
-      this.next();
-      const h = this.eatIdent().value;
-      if (h !== "left" && h !== "right") this.fail(`Expected hinge "left" or "right" but found "${h}"`);
-      node.hinge = h;
-    }
-    if (this.isKeyword("swing")) {
-      this.next();
-      const s = this.eatIdent().value;
-      if (s !== "in" && s !== "out") this.fail(`Expected swing "in" or "out" but found "${s}"`);
-      node.swing = s;
-    }
-    return node;
-  }
-
-  private parseWindow(): WindowNode {
-    const kw = this.eatKeyword("window");
-    const id = this.parseIdOpt();
-    this.eatKeyword("at");
-    const at = this.parsePoint();
-    this.eatKeyword("width");
-    const width = this.eatNumber();
-    const node: WindowNode = { id, at, width, line: kw.line };
-    if (this.isKeyword("wall")) {
-      this.next();
-      node.wall = this.eatIdent().value;
-    }
-    return node;
-  }
-
-  private parseFurniture(): FurnitureNode {
-    const kw = this.eatKeyword("furniture");
-    const id = this.parseIdOpt();
-    const kind = this.eatIdent().value;
-    this.eatKeyword("at");
-    const at = this.parsePoint();
-    this.eatKeyword("size");
-    const dim = this.eat("dimension");
-    const node: FurnitureNode = { id, kind, at, size: { w: dim.num!, h: dim.num2! }, line: kw.line };
-    if (this.isKeyword("label")) {
-      this.next();
-      node.label = this.eatString();
-    }
-    return node;
-  }
-
-  private parseDim(): DimNode {
-    const kw = this.eatKeyword("dim");
-    const from = this.parsePoint();
-    this.eat("arrow");
-    const to = this.parsePoint();
-    const node: DimNode = { id: "", from, to, offset: 300, line: kw.line };
-    if (this.isKeyword("offset")) {
-      this.next();
-      node.offset = this.eatNumber();
-    }
-    if (this.isKeyword("text")) {
-      this.next();
-      node.text = this.eatString();
-    }
-    return node;
   }
 
   private parseTitle(): TitleNode {

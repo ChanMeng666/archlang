@@ -7,7 +7,7 @@
  */
 
 import { parse } from "./parser.js";
-import { validate } from "./validate.js";
+import { resolve } from "./ir.js";
 import { render } from "./render.js";
 import { offsetToLineCol } from "./diagnostics.js";
 import type { Diagnostic } from "./diagnostics.js";
@@ -58,7 +58,11 @@ function toLegacy(source: string, d: Diagnostic): CompileError {
 function compileUncached(source: string, opts: CompileOptions): CompileResult {
   const { plan, diagnostics: parseDiags } = parse(source);
 
-  const diagnostics: Diagnostic[] = plan ? [...parseDiags, ...validate(plan)] : [...parseDiags];
+  // parse → resolve (AST→IR, the single place semantics live) → render.
+  const resolved = plan ? resolve(plan) : null;
+  const diagnostics: Diagnostic[] = resolved
+    ? [...parseDiags, ...resolved.diagnostics]
+    : [...parseDiags];
 
   const errs = diagnostics.filter((d) => d.severity === "error");
   const errors = errs.map((d) => toLegacy(source, d));
@@ -67,7 +71,7 @@ function compileUncached(source: string, opts: CompileOptions): CompileResult {
     .map((d) => toLegacy(source, d));
 
   // Warnings never block rendering; any error (or no plan) aborts with svg = "".
-  const svg = plan && errs.length === 0 ? render(plan, opts) : "";
+  const svg = resolved && errs.length === 0 ? render(resolved.ir, opts) : "";
 
   return { svg, errors, warnings, diagnostics, ast: plan };
 }
