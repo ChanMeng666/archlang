@@ -64,10 +64,13 @@ const ALIASES: Record<string, keyof Theme> = {
   window: "windowPane",
 };
 
-/** Resolve a directive key (canonical or alias) to a Theme key, or null. */
+/** Resolve a directive key (canonical or alias) to a Theme key, or null. Uses
+ *  own-property checks so prototype keys (`__proto__`, `constructor`) resolve to
+ *  null (rejected as unknown) rather than slipping through `in`. */
 export function resolveThemeKey(key: string): keyof Theme | null {
-  if (key in DEFAULT_THEME) return key as keyof Theme;
-  if (key in ALIASES) return ALIASES[key];
+  const owns = (o: object, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);
+  if (owns(DEFAULT_THEME, key)) return key as keyof Theme;
+  if (owns(ALIASES, key)) return ALIASES[key];
   return null;
 }
 
@@ -128,9 +131,13 @@ const STYLE_KEYS: Record<string, Record<string, keyof Theme>> = {
   column: { fill: "column", stroke: "wallStroke" },
 };
 
-/** Resolve a `style <kind> { <key> … }` attribute to a Theme key, or null. */
+/** Resolve a `style <kind> { <key> … }` attribute to a Theme key, or null.
+ *  Own-property checks keep prototype keys from resolving. */
 export function resolveStyleKey(kind: string, key: string): keyof Theme | null {
-  return STYLE_KEYS[kind]?.[key] ?? null;
+  const owns = (o: object, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);
+  if (!owns(STYLE_KEYS, kind)) return null;
+  const m = STYLE_KEYS[kind];
+  return owns(m, key) ? m[key] : null;
 }
 
 /** Per-element style overrides, by element kind, as resolved Theme partials. */

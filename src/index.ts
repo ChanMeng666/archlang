@@ -11,10 +11,13 @@ import { resolve } from "./ir.js";
 import { toScene } from "./scene-build.js";
 import { renderSvg } from "./backends/svg.js";
 import { offsetToLineCol } from "./diagnostics.js";
-import { createRegistry } from "./registry.js";
+import { createRegistry, BUILTIN_REGISTRY } from "./registry.js";
 import type { Runtime } from "./registry.js";
 import { NULL_WORLD } from "./world.js";
 import { link } from "./import.js";
+import { clearLexCache } from "./lexer.js";
+import { clearParseCache } from "./parser.js";
+import { clearResolveCache } from "./ir.js";
 import { idToken } from "./identity.js";
 import type { Scene } from "./scene.js";
 import type { Diagnostic } from "./diagnostics.js";
@@ -90,6 +93,10 @@ export type { World } from "./world.js";
 // one-colour poché derivation. THEMES are the built-in named bases.
 export { THEMES, DEFAULT_THEME, mergeTheme, derivePoche, hexToHsl, hslToHex } from "./theme.js";
 export type { Theme, StyleMap } from "./theme.js";
+// Config sanitization (v0.10): denylist for untrusted .arch config; trusted
+// CompileOptions skip it. `fnv1a` keys the per-stage memo caches.
+export { sanitizeConfig, isDisallowedConfigValue } from "./sanitize.js";
+export { fnv1a } from "./hash.js";
 
 /** Small LRU-ish memo cache keyed by source+options. Bounded to 64 entries. */
 const cache = new Map<string, CompileResult>();
@@ -138,7 +145,9 @@ function toLegacy(source: string, d: Diagnostic): CompileError {
 function compileUncached(source: string, opts: CompileOptions): CompileResult {
   // Per-call registry (built-ins + plugins) and runtime — fresh each compile, no
   // global mutation. Absent plugins/backend collapse to the built-in behavior.
-  const registry = createRegistry(opts.plugins);
+  // Plugin-free compiles reuse the stable BUILTIN_REGISTRY so the parse/resolve
+  // stage memos can hit across reparses (a fresh registry per call would defeat them).
+  const registry = opts.plugins?.length ? createRegistry(opts.plugins) : BUILTIN_REGISTRY;
   const runtime: Runtime = { registry, backend: opts.backend, themes: opts.themes };
   const world = opts.world ?? NULL_WORLD;
 
@@ -173,7 +182,10 @@ function compileUncached(source: string, opts: CompileOptions): CompileResult {
   return { svg, errors, warnings, diagnostics, ast: plan, scene };
 }
 
-/** Clear the internal compile cache (useful in long-lived processes/tests). */
+/** Clear the internal compile cache + all per-stage memos (lex/parse/resolve). */
 export function clearCache(): void {
   cache.clear();
+  clearLexCache();
+  clearParseCache();
+  clearResolveCache();
 }

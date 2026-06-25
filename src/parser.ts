@@ -25,6 +25,9 @@ import type { Expr } from "./expr.js";
 import { parseExpr as parseExprPratt } from "./expr.js";
 import type { Theme } from "./theme.js";
 import { isNumericThemeKey, resolveThemeKey, resolveStyleKey } from "./theme.js";
+import { isDisallowedConfigValue } from "./sanitize.js";
+import { fnv1a } from "./hash.js";
+import { idToken } from "./identity.js";
 import type { ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
 
@@ -48,7 +51,32 @@ class ParseError extends Error {
   }
 }
 
+// Stage memo: parsing is a pure function of (source, registry). Keyed by content
+// hash + registry identity (a plugin changes parse output), source verified on
+// hit. The cached PlanNode is never mutated downstream (link clones before
+// merging; resolve reads only), so sharing it is safe.
+const parseCache = new Map<string, { src: string; out: ParseOutcome }>();
+const PARSE_CACHE_MAX = 32;
+
+/** Clear the parse stage memo (called by `clearCache`). */
+export function clearParseCache(): void {
+  parseCache.clear();
+}
+
 export function parse(src: string, registry: Registry = BUILTIN_REGISTRY): ParseOutcome {
+  const key = `${fnv1a(src)}|${idToken(registry)}`;
+  const hit = parseCache.get(key);
+  if (hit && hit.src === src) return hit.out;
+  const out = parseImpl(src, registry);
+  if (parseCache.size >= PARSE_CACHE_MAX) {
+    const oldest = parseCache.keys().next().value;
+    if (oldest !== undefined) parseCache.delete(oldest);
+  }
+  parseCache.set(key, { src, out });
+  return out;
+}
+
+function parseImpl(src: string, registry: Registry): ParseOutcome {
   const { tokens, errors: lexErrors } = lex(src);
   const lexDiags: Diagnostic[] = lexErrors.map((e) => ({
     severity: "error" as const,
@@ -369,12 +397,28 @@ class Parser {
         if (isNumericThemeKey(resolved)) {
           (theme as Record<string, unknown>)[resolved] = this.eatNumber();
         } else {
-          (theme as Record<string, unknown>)[resolved] = this.eatString();
+          (theme as Record<string, unknown>)[resolved] = this.sanitizedStringValue(keyTok, "theme");
         }
       }
       this.eat("rcurly");
     }
     return { base, theme };
+  }
+
+  /** Eat a string value, blanking it (with a diagnostic) if it carries a
+   *  disallowed token — markup or a `data:` URL (untrusted source config). */
+  private sanitizedStringValue(keyTok: Token, what: string): string {
+    const val = this.eatString();
+    if (isDisallowedConfigValue(val)) {
+      this.diagnostics.push({
+        severity: "warning",
+        message: `Disallowed value for ${what} key "${keyTok.value}" stripped`,
+        code: "W_SANITIZED_CONFIG",
+        span: { start: keyTok.start, end: keyTok.end },
+      });
+      return "";
+    }
+    return val;
   }
 
   /**
@@ -402,7 +446,7 @@ class Parser {
         else this.fail(`Expected a value for style key "${keyTok.value}"`);
         continue;
       }
-      (style as Record<string, unknown>)[resolved] = this.eatString();
+      (style as Record<string, unknown>)[resolved] = this.sanitizedStringValue(keyTok, "style");
     }
     this.eat("rcurly");
     return { kind, style };

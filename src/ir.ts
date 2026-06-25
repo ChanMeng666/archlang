@@ -25,6 +25,7 @@ import type { ResolveCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
 import type { World } from "./world.js";
 import { NULL_WORLD } from "./world.js";
+import { idToken } from "./identity.js";
 import type { WallSegment } from "./geometry.js";
 import { segmentsOfWall, WallGrid } from "./geometry.js";
 import type { GridBox } from "./geometry/grid-index.js";
@@ -294,7 +295,36 @@ function expandScope(
   return out;
 }
 
+// Stage memo: resolution is a pure function of (ast, registry, world). The AST
+// is an immutable per-parse object, so its identity token uniquely keys the
+// result (collision-free, unlike a content hash). Sharing the IR is safe —
+// scene-building reads it read-only.
+const resolveCache = new Map<string, { ir: ResolvedPlan; diagnostics: Diagnostic[] }>();
+const RESOLVE_CACHE_MAX = 32;
+
+/** Clear the resolve stage memo (called by `clearCache`). */
+export function clearResolveCache(): void {
+  resolveCache.clear();
+}
+
 export function resolve(
+  ast: PlanNode,
+  registry: Registry = BUILTIN_REGISTRY,
+  world: World = NULL_WORLD,
+): { ir: ResolvedPlan; diagnostics: Diagnostic[] } {
+  const key = `${idToken(ast)}:${idToken(registry)}:${idToken(world)}`;
+  const hit = resolveCache.get(key);
+  if (hit) return hit;
+  const out = resolveImpl(ast, registry, world);
+  if (resolveCache.size >= RESOLVE_CACHE_MAX) {
+    const oldest = resolveCache.keys().next().value;
+    if (oldest !== undefined) resolveCache.delete(oldest);
+  }
+  resolveCache.set(key, out);
+  return out;
+}
+
+function resolveImpl(
   ast: PlanNode,
   registry: Registry = BUILTIN_REGISTRY,
   world: World = NULL_WORLD,
