@@ -1,7 +1,8 @@
 /** `furniture <category> [id=] at (x,y) size WxH [label "…"]` — outlined fill + label. */
 
 import type { FurnitureNode, Point } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, RenderOp, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { SceneNode } from "../scene.js";
 import type { RFurniture } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 
@@ -43,23 +44,25 @@ export const furniture: ElementDef = {
     return rectCorners(f.at.x, f.at.y, f.size.w, f.size.h);
   },
 
-  render(resolved, ctx: RenderCtx): RenderOp[] {
+  render(resolved, ctx: RenderCtx): SceneNode[] {
     const f = resolved as RFurniture;
-    const { fmt, pt, xml, theme, sizes } = ctx;
-    const ops: RenderOp[] = [];
+    const { theme, sizes } = ctx;
+    const nodes: SceneNode[] = [];
     const c = rectCorners(f.at.x, f.at.y, f.size.w, f.size.h);
-    ops.push({
-      pass: "furniture",
-      svg: `<polygon points="${c.map(pt).join(" ")}" fill="${theme.furnitureFill}" stroke="${theme.furnitureStroke}" stroke-width="${fmt(sizes.thin)}"/>`,
+    nodes.push({
+      layer: "furniture",
+      prim: { t: "polygon", pts: c },
+      paint: { fill: theme.furnitureFill, stroke: theme.furnitureStroke, width: sizes.thin },
     });
     if (f.label) {
       const cx = f.at.x + f.size.w / 2;
       const cy = f.at.y + f.size.h / 2;
-      ops.push({
-        pass: "furniture",
-        svg: `<text x="${fmt(cx)}" y="${fmt(cy)}" font-size="${fmt(sizes.furnFont)}" fill="${theme.furnitureLabel}" text-anchor="middle" dominant-baseline="central">${xml(f.label)}</text>`,
+      nodes.push({
+        layer: "furniture",
+        prim: { t: "text", at: { x: cx, y: cy }, value: f.label, size: sizes.furnFont, anchor: "middle", baseline: "central" },
+        paint: { fill: theme.furnitureLabel },
       });
     }
-    return ops;
+    return nodes;
   },
 };

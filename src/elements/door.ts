@@ -1,7 +1,8 @@
 /** `door [id=] at (x,y) width N [wall ref] [hinge l|r] [swing in|out]` — opening + leaf + swing arc. */
 
 import type { DoorNode, Point } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, RenderOp, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { SceneNode } from "../scene.js";
 import type { RDoor } from "../ir.js";
 import { add, mul, normal, sub, unit } from "../geometry.js";
 
@@ -55,11 +56,17 @@ export const door: ElementDef = {
 
   bounds: () => [],
 
-  render(resolved, ctx: RenderCtx): RenderOp[] {
+  /**
+   * Opening cover + leaf line + swing arc. The swing geometry (hinge, leaf,
+   * far jamb, minor-arc orientation) is computed **here, once** — every backend
+   * (SVG, DXF, PDF) now serializes the same `arc` primitive rather than
+   * re-deriving it.
+   */
+  render(resolved, ctx: RenderCtx): SceneNode[] {
     const dr = resolved as RDoor;
     const seg = dr.host;
     if (!seg) return [];
-    const { fmt, pt, theme, sizes } = ctx;
+    const { theme, sizes } = ctx;
     const d = unit(sub(seg.b, seg.a));
     const n = normal(d);
     const h = seg.thickness / 2 + sizes.wallStroke;
@@ -70,22 +77,24 @@ export const door: ElementDef = {
       add(add(dr.at, mul(d, hw)), mul(n, -h)),
       add(add(dr.at, mul(d, -hw)), mul(n, -h)),
     ];
-    const ops: RenderOp[] = [];
-    ops.push({ pass: "doors", svg: `<polygon points="${cover.map(pt).join(" ")}" fill="${theme.opening}"/>` });
+    const nodes: SceneNode[] = [];
+    nodes.push({ layer: "doors", prim: { t: "polygon", pts: cover }, paint: { fill: theme.opening } });
     const hinge = dr.hinge === "left" ? add(dr.at, mul(d, -hw)) : add(dr.at, mul(d, hw));
     const farJamb = dr.hinge === "left" ? add(dr.at, mul(d, hw)) : add(dr.at, mul(d, -hw));
     const leafDir = dr.swing === "in" ? n : mul(n, -1);
     const leafEnd = add(hinge, mul(leafDir, dr.width));
     const cross = (leafEnd.x - hinge.x) * (farJamb.y - hinge.y) - (leafEnd.y - hinge.y) * (farJamb.x - hinge.x);
-    const sweep = cross < 0 ? 1 : 0;
-    ops.push({
-      pass: "doors",
-      svg: `<line x1="${fmt(hinge.x)}" y1="${fmt(hinge.y)}" x2="${fmt(leafEnd.x)}" y2="${fmt(leafEnd.y)}" stroke="${theme.doorLeaf}" stroke-width="${fmt(sizes.thin * 1.3)}"/>`,
+    const sweep: 0 | 1 = cross < 0 ? 1 : 0;
+    nodes.push({
+      layer: "doors",
+      prim: { t: "line", a: hinge, b: leafEnd },
+      paint: { stroke: theme.doorLeaf, width: sizes.thin * 1.3 },
     });
-    ops.push({
-      pass: "doors",
-      svg: `<path d="M ${pt(leafEnd)} A ${fmt(dr.width)} ${fmt(dr.width)} 0 0 ${sweep} ${pt(farJamb)}" fill="none" stroke="${theme.doorLeaf}" stroke-width="${fmt(sizes.thin)}" stroke-dasharray="${fmt(sizes.thin * 4)} ${fmt(sizes.thin * 3)}"/>`,
+    nodes.push({
+      layer: "doors",
+      prim: { t: "arc", center: hinge, r: dr.width, start: leafEnd, end: farJamb, sweep },
+      paint: { fill: "none", stroke: theme.doorLeaf, width: sizes.thin, dash: [sizes.thin * 4, sizes.thin * 3] },
     });
-    return ops;
+    return nodes;
   },
 };

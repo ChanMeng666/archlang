@@ -1,7 +1,8 @@
 /** `dim (x,y)->(x,y) [offset N] [text "…"]` — dimension line with ticks + length. */
 
 import type { DimNode } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, RenderOp, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { SceneNode } from "../scene.js";
 import type { RDim } from "../ir.js";
 import { add, length, mul, normal, sub, unit } from "../geometry.js";
 
@@ -46,35 +47,25 @@ export const dim: ElementDef = {
     return [dm.from, dm.to];
   },
 
-  render(resolved, ctx: RenderCtx): RenderOp[] {
+  render(resolved, ctx: RenderCtx): SceneNode[] {
     const dm = resolved as RDim;
-    const { fmt, xml, theme, sizes } = ctx;
+    const { theme, sizes } = ctx;
     const dir = unit(sub(dm.to, dm.from));
     const n = normal(dir);
     const off = mul(n, dm.offset);
     const p1 = add(dm.from, off);
     const p2 = add(dm.to, off);
     const tick = sizes.refDim * 0.012;
-    const ops: RenderOp[] = [];
-    ops.push({
-      pass: "dims",
-      svg: `<line x1="${fmt(dm.from.x)}" y1="${fmt(dm.from.y)}" x2="${fmt(p1.x)}" y2="${fmt(p1.y)}" stroke="${theme.dim}" stroke-width="${fmt(sizes.thin * 0.7)}"/>`,
-    });
-    ops.push({
-      pass: "dims",
-      svg: `<line x1="${fmt(dm.to.x)}" y1="${fmt(dm.to.y)}" x2="${fmt(p2.x)}" y2="${fmt(p2.y)}" stroke="${theme.dim}" stroke-width="${fmt(sizes.thin * 0.7)}"/>`,
-    });
-    ops.push({
-      pass: "dims",
-      svg: `<line x1="${fmt(p1.x)}" y1="${fmt(p1.y)}" x2="${fmt(p2.x)}" y2="${fmt(p2.y)}" stroke="${theme.dim}" stroke-width="${fmt(sizes.thin)}"/>`,
-    });
+    const thinPaint = { stroke: theme.dim, width: sizes.thin };
+    const nodes: SceneNode[] = [];
+    // Extension lines (lighter), then the dimension line.
+    nodes.push({ layer: "dims", prim: { t: "line", a: dm.from, b: p1 }, paint: { stroke: theme.dim, width: sizes.thin * 0.7 } });
+    nodes.push({ layer: "dims", prim: { t: "line", a: dm.to, b: p2 }, paint: { stroke: theme.dim, width: sizes.thin * 0.7 } });
+    nodes.push({ layer: "dims", prim: { t: "line", a: p1, b: p2 }, paint: thinPaint });
     for (const p of [p1, p2]) {
       const t1 = add(p, mul(unit({ x: dir.x + n.x, y: dir.y + n.y }), tick));
       const t2 = add(p, mul(unit({ x: dir.x + n.x, y: dir.y + n.y }), -tick));
-      ops.push({
-        pass: "dims",
-        svg: `<line x1="${fmt(t1.x)}" y1="${fmt(t1.y)}" x2="${fmt(t2.x)}" y2="${fmt(t2.y)}" stroke="${theme.dim}" stroke-width="${fmt(sizes.thin)}"/>`,
-      });
+      nodes.push({ layer: "dims", prim: { t: "line", a: t1, b: t2 }, paint: thinPaint });
     }
     const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
     const tp = add(mid, mul(n, sizes.dimFont * 0.7));
@@ -82,10 +73,11 @@ export const dim: ElementDef = {
     if (angle > 90) angle -= 180;
     if (angle < -90) angle += 180;
     const label = dm.text ?? String(Math.round(length(sub(dm.to, dm.from))));
-    ops.push({
-      pass: "dims",
-      svg: `<text x="${fmt(tp.x)}" y="${fmt(tp.y)}" font-size="${fmt(sizes.dimFont)}" fill="${theme.dim}" text-anchor="middle" dominant-baseline="central" transform="rotate(${fmt(angle)} ${fmt(tp.x)} ${fmt(tp.y)})">${xml(label)}</text>`,
+    nodes.push({
+      layer: "dims",
+      prim: { t: "text", at: tp, value: label, size: sizes.dimFont, anchor: "middle", baseline: "central", rotate: angle },
+      paint: { fill: theme.dim },
     });
-    return ops;
+    return nodes;
   },
 };

@@ -12,30 +12,12 @@ import type { Diagnostic } from "./diagnostics.js";
 import type { ResolvedElement, RWall } from "./ir.js";
 import type { Bounds, WallSegment } from "./geometry.js";
 import type { Theme } from "./theme.js";
+import type { RenderPass, RenderSizes, Paint, ScenePrim, SceneNode, Scene } from "./scene.js";
 
-/**
- * Ordered render layers. Element ops are bucketed by pass and emitted in this
- * order, preserving source order within a pass — this exactly reproduces the
- * v0.1 global draw order (all wall fills, then all wall faces, doors before
- * windows, labels above fills, …).
- */
-export const RENDER_PASSES = [
-  "floor",
-  "furniture",
-  "wallFill",
-  "wallFace",
-  "doors",
-  "windows",
-  "labels",
-  "dims",
-  "annotations",
-] as const;
-export type RenderPass = (typeof RENDER_PASSES)[number];
-
-export interface RenderOp {
-  pass: RenderPass;
-  svg: string;
-}
+// The layer ordering + Scene types now live in `scene.ts` (the backend-neutral
+// IR). Re-exported here so existing element/render imports keep working.
+export { RENDER_PASSES } from "./scene.js";
+export type { RenderPass, RenderSizes, Paint, ScenePrim, SceneNode, Scene };
 
 /** Parser facade handed to `ElementDef.parse` — the existing recursive-descent helpers. */
 export interface ParseCtx {
@@ -77,23 +59,13 @@ export interface ResolveCtx {
   diag(d: Diagnostic): void;
 }
 
-export interface RenderSizes {
-  refDim: number;
-  wallStroke: number;
-  thin: number;
-  roomFont: number;
-  areaFont: number;
-  dimFont: number;
-  furnFont: number;
-  margin: number;
-  hatchGap: number;
-}
-
-/** Render facade: number formatting, theme, derived sizes, and drawing bounds. */
+/**
+ * Render facade handed to `ElementDef.render`. Elements emit positioned
+ * primitives ({@link SceneNode}) — no string building — so they need only the
+ * resolved theme (colours), derived sizes (font/stroke numbers), and the drawing
+ * bounds. Number formatting + XML escaping now live in the backends.
+ */
 export interface RenderCtx {
-  fmt(v: number): string;
-  pt(p: Point): string;
-  xml(s: string): string;
   theme: Theme;
   sizes: RenderSizes;
   bounds: Bounds;
@@ -113,5 +85,6 @@ export interface ElementDef {
   resolve(node: AstElement, ctx: ResolveCtx): ResolvedElement;
   /** Points this element contributes to the drawing bounds. */
   bounds(resolved: ResolvedElement): Point[];
-  render(resolved: ResolvedElement, ctx: RenderCtx): RenderOp[];
+  /** Emit positioned drawing primitives for this element (the Scene IR). */
+  render(resolved: ResolvedElement, ctx: RenderCtx): SceneNode[];
 }

@@ -1,7 +1,8 @@
 /** `room [id=] at (x,y) size WxH [label "…"]` — floor fill + label + computed area. */
 
 import type { Point, RoomNode } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, RenderOp, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { SceneNode } from "../scene.js";
 import type { RRoom } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 
@@ -42,26 +43,28 @@ export const room: ElementDef = {
     return rectCorners(r.at.x, r.at.y, r.size.w, r.size.h);
   },
 
-  render(resolved, ctx: RenderCtx): RenderOp[] {
+  render(resolved, ctx: RenderCtx): SceneNode[] {
     const r = resolved as RRoom;
-    const { fmt, pt, xml, theme, sizes } = ctx;
-    const ops: RenderOp[] = [];
+    const { theme, sizes } = ctx;
+    const nodes: SceneNode[] = [];
     const c = rectCorners(r.at.x, r.at.y, r.size.w, r.size.h);
-    ops.push({ pass: "floor", svg: `<polygon points="${c.map(pt).join(" ")}" fill="${theme.roomFill}"/>` });
+    nodes.push({ layer: "floor", prim: { t: "polygon", pts: c }, paint: { fill: theme.roomFill } });
 
     const cx = r.at.x + r.size.w / 2;
     const cy = r.at.y + r.size.h / 2;
     const areaM2 = ((r.size.w / 1000) * (r.size.h / 1000)).toFixed(1);
     if (r.label) {
-      ops.push({
-        pass: "labels",
-        svg: `<text x="${fmt(cx)}" y="${fmt(cy - sizes.roomFont * 0.2)}" font-size="${fmt(sizes.roomFont)}" fill="${theme.roomLabel}" text-anchor="middle" dominant-baseline="central" font-weight="600">${xml(r.label)}</text>`,
+      nodes.push({
+        layer: "labels",
+        prim: { t: "text", at: { x: cx, y: cy - sizes.roomFont * 0.2 }, value: r.label, size: sizes.roomFont, anchor: "middle", baseline: "central", weight: 600 },
+        paint: { fill: theme.roomLabel },
       });
     }
-    ops.push({
-      pass: "labels",
-      svg: `<text x="${fmt(cx)}" y="${fmt(cy + (r.label ? sizes.roomFont * 0.9 : 0))}" font-size="${fmt(sizes.areaFont)}" fill="${theme.areaLabel}" text-anchor="middle" dominant-baseline="central">${areaM2} m²</text>`,
+    nodes.push({
+      layer: "labels",
+      prim: { t: "text", at: { x: cx, y: cy + (r.label ? sizes.roomFont * 0.9 : 0) }, value: `${areaM2} m²`, size: sizes.areaFont, anchor: "middle", baseline: "central" },
+      paint: { fill: theme.areaLabel },
     });
-    return ops;
+    return nodes;
   },
 };

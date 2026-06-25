@@ -7,7 +7,8 @@
  */
 
 import type { ColumnNode, Point } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, RenderOp, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { SceneNode } from "../scene.js";
 import type { RColumn } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 
@@ -43,14 +44,15 @@ export const column: ElementDef = {
     return rectCorners(c.at.x, c.at.y, c.size.w, c.size.h);
   },
 
-  render(resolved, ctx: RenderCtx): RenderOp[] {
+  render(resolved, ctx: RenderCtx): SceneNode[] {
     const c = resolved as RColumn;
-    const { fmt, pt, theme, sizes } = ctx;
+    const { theme, sizes } = ctx;
     const pts = rectCorners(c.at.x, c.at.y, c.size.w, c.size.h);
     return [
       {
-        pass: "furniture",
-        svg: `<polygon points="${pts.map(pt).join(" ")}" fill="${theme.column}" stroke="${theme.wallStroke}" stroke-width="${fmt(sizes.thin)}"/>`,
+        layer: "furniture",
+        prim: { t: "polygon", pts },
+        paint: { fill: theme.column, stroke: theme.wallStroke, width: sizes.thin },
       },
     ];
   },

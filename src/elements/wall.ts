@@ -1,7 +1,8 @@
 /** `wall <category> thickness N { (x,y)… [close] }` — poché fill + crisp faces. */
 
 import type { ExprPoint, Point, WallNode } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, RenderOp, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { SceneNode } from "../scene.js";
 import type { RWall } from "../ir.js";
 import { add, mul, normal, segmentRectangle, segmentsOfWall, sub, unit } from "../geometry.js";
 import { DEFAULT_MATERIAL, isKnownMaterial, KNOWN_MATERIALS } from "../hatches.js";
@@ -71,33 +72,29 @@ export const wall: ElementDef = {
     return segmentsOfWall(w).flatMap((s) => segmentRectangle(s.a, s.b, s.thickness));
   },
 
-  render(resolved, ctx: RenderCtx): RenderOp[] {
+  /**
+   * Per-segment wall fill (poché) + two crisp face lines. This is the angled-wall
+   * path; orthogonal walls are unioned into clean loops in `scene-build.ts`. The
+   * fill always references the default poché pattern, matching v0.1.
+   */
+  render(resolved, ctx: RenderCtx): SceneNode[] {
     const w = resolved as RWall;
-    const { fmt, pt, theme, sizes } = ctx;
+    const { theme, sizes } = ctx;
     const segs = segmentsOfWall(w);
-    const ops: RenderOp[] = [];
+    const nodes: SceneNode[] = [];
     for (const s of segs) {
       const poly = segmentRectangle(s.a, s.b, s.thickness);
-      ops.push({ pass: "wallFill", svg: `<polygon points="${poly.map(pt).join(" ")}" fill="url(#poche)"/>` });
+      nodes.push({ layer: "wallFill", prim: { t: "polygon", pts: poly }, paint: { fill: "url(#poche)" } });
     }
     for (const s of segs) {
       const d = unit(sub(s.b, s.a));
       const n = normal(d);
       const h = s.thickness / 2;
-      const fa1 = add(s.a, mul(n, h));
-      const fb1 = add(s.b, mul(n, h));
-      const fa2 = add(s.a, mul(n, -h));
-      const fb2 = add(s.b, mul(n, -h));
-      ops.push({
-        pass: "wallFace",
-        svg: `<line x1="${fmt(fa1.x)}" y1="${fmt(fa1.y)}" x2="${fmt(fb1.x)}" y2="${fmt(fb1.y)}" stroke="${theme.wallStroke}" stroke-width="${fmt(sizes.wallStroke)}" stroke-linecap="square"/>`,
-      });
-      ops.push({
-        pass: "wallFace",
-        svg: `<line x1="${fmt(fa2.x)}" y1="${fmt(fa2.y)}" x2="${fmt(fb2.x)}" y2="${fmt(fb2.y)}" stroke="${theme.wallStroke}" stroke-width="${fmt(sizes.wallStroke)}" stroke-linecap="square"/>`,
-      });
+      const face = { stroke: theme.wallStroke, width: sizes.wallStroke, linecap: "square" as const };
+      nodes.push({ layer: "wallFace", prim: { t: "line", a: add(s.a, mul(n, h)), b: add(s.b, mul(n, h)) }, paint: face });
+      nodes.push({ layer: "wallFace", prim: { t: "line", a: add(s.a, mul(n, -h)), b: add(s.b, mul(n, -h)) }, paint: face });
     }
-    return ops;
+    return nodes;
   },
 };
 

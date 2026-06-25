@@ -1,7 +1,8 @@
 /** `window [id=] at (x,y) width N [wall ref]` — opening + glazing panes. */
 
 import type { Point, WindowNode } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, RenderOp, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { SceneNode } from "../scene.js";
 import type { RWindow } from "../ir.js";
 import { add, mul, normal, sub, unit } from "../geometry.js";
 
@@ -43,11 +44,11 @@ export const windowEl: ElementDef = {
 
   bounds: () => [],
 
-  render(resolved, ctx: RenderCtx): RenderOp[] {
+  render(resolved, ctx: RenderCtx): SceneNode[] {
     const wn = resolved as RWindow;
     const seg = wn.host;
     if (!seg) return [];
-    const { fmt, pt, theme, sizes } = ctx;
+    const { theme, sizes } = ctx;
     const d = unit(sub(seg.b, seg.a));
     const n = normal(d);
     const h = seg.thickness / 2;
@@ -59,22 +60,22 @@ export const windowEl: ElementDef = {
       add(add(wn.at, mul(d, hw)), mul(n, -he)),
       add(add(wn.at, mul(d, -hw)), mul(n, -he)),
     ];
-    const ops: RenderOp[] = [];
-    ops.push({ pass: "windows", svg: `<polygon points="${cover.map(pt).join(" ")}" fill="${theme.opening}"/>` });
+    const nodes: SceneNode[] = [];
+    nodes.push({ layer: "windows", prim: { t: "polygon", pts: cover }, paint: { fill: theme.opening } });
     const jA = add(wn.at, mul(d, -hw));
     const jB = add(wn.at, mul(d, hw));
     for (const off of [h, -h]) {
-      const a = add(jA, mul(n, off));
-      const bb = add(jB, mul(n, off));
-      ops.push({
-        pass: "windows",
-        svg: `<line x1="${fmt(a.x)}" y1="${fmt(a.y)}" x2="${fmt(bb.x)}" y2="${fmt(bb.y)}" stroke="${theme.wallStroke}" stroke-width="${fmt(sizes.thin)}"/>`,
+      nodes.push({
+        layer: "windows",
+        prim: { t: "line", a: add(jA, mul(n, off)), b: add(jB, mul(n, off)) },
+        paint: { stroke: theme.wallStroke, width: sizes.thin },
       });
     }
-    ops.push({
-      pass: "windows",
-      svg: `<line x1="${fmt(jA.x)}" y1="${fmt(jA.y)}" x2="${fmt(jB.x)}" y2="${fmt(jB.y)}" stroke="${theme.windowPane}" stroke-width="${fmt(sizes.thin)}"/>`,
+    nodes.push({
+      layer: "windows",
+      prim: { t: "line", a: jA, b: jB },
+      paint: { stroke: theme.windowPane, width: sizes.thin },
     });
-    return ops;
+    return nodes;
   },
 };
