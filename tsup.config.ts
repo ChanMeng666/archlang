@@ -9,7 +9,7 @@ export default defineConfig({
   target: "es2022",
   // Optional export-backend deps are lazy-imported; never bundle them so the
   // core build stays self-contained and they remain truly optional.
-  external: ["pdfkit", "svg-to-pdfkit"],
+  external: ["pdfkit"],
   // CLI needs a shebang; library entry stays clean.
   banner: ({ format }) => (format === "esm" ? {} : {}),
 });

@@ -33,7 +33,7 @@ async function compileFile(input: string, output: string, format: Format, width?
   }
   if (format === "pdf") {
     try {
-      const pdf = await toPdf(svg);
+      const pdf = await toPdf(toScene(resolve(ast!).ir));
       writeFileSync(output, pdf);
       process.stdout.write(`✓ ${input} → ${output} (${pdf.length} bytes, PDF)\n`);
       return true;
