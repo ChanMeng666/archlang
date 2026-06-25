@@ -342,6 +342,20 @@ class Parser {
   private parseLet(): LetNode {
     const kw = this.eatKeyword("let");
     const name = this.eatIdent().value;
+    // `let NAME(params) = body` defines a value-function (closure).
+    if (this.isType("lparen")) {
+      this.next();
+      const params: string[] = [];
+      while (!this.isType("rparen") && !this.isType("eof")) {
+        params.push(this.eatIdent().value);
+        if (this.isType("comma")) this.next();
+        else break;
+      }
+      this.eat("rparen");
+      this.eat("equals");
+      const body = parseExprPratt(this.ctx);
+      return { kind: "let", id: "", name, value: { t: "fnlit", params, body }, line: kw.line };
+    }
     this.eat("equals");
     const value = parseExprPratt(this.ctx);
     return { kind: "let", id: "", name, value, line: kw.line };

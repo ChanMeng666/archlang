@@ -168,7 +168,10 @@ function expandScope(
           diag({ severity: "error", message: `"${stmt.name}" is already defined in this scope`, code: "E_REDEF", span: stmt.span });
           break;
         }
-        scope.vars.set(stmt.name, evalIn(stmt.value));
+        const v = evalIn(stmt.value);
+        // A function may call itself: add it to its own closure for recursion.
+        if (v.t === "fn") v.closure.set(stmt.name, v);
+        scope.vars.set(stmt.name, v);
         break;
       }
       case "assign": {

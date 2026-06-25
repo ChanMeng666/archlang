@@ -209,3 +209,40 @@ describe("scope chain (T2.4)", () => {
     expect(d2.map((x) => x.code)).toContain("E_UNKNOWN_REF");
   });
 });
+
+describe("value-functions / closures (T2.5)", () => {
+  it("a value-function computes a result usable in a coordinate (DoD)", () => {
+    const col = elements(`plan "P" { let dbl(x) = x * 2 column at (dbl(100), 0) size 50x50 }`).find((e) => e.kind === "column");
+    expect(col.at.x).toBe(200);
+  });
+
+  it("multi-parameter functions work in a size", () => {
+    const r = elements(`plan "P" { let area(w, h) = w * h room at (0,0) size area(40, 30) x 100 }`).find((e) => e.kind === "room");
+    expect(r.size.w).toBe(1200);
+  });
+
+  it("a closure captures an outer let (DoD)", () => {
+    const col = elements(`plan "P" { let k = 1000 let addk(x) = x + k column at (addk(5), 0) size 1x1 }`).find((e) => e.kind === "column");
+    expect(col.at.x).toBe(1005);
+  });
+
+  it("reports an arity mismatch (DoD)", () => {
+    expect(diags(`plan "P" { let f(a, b) = a + b column at (f(1), 0) size 1x1 }`).map((d) => d.code)).toContain("E_ARITY");
+  });
+
+  it("supports self-recursion bounded by a call-depth cap", () => {
+    // Factorial-ish, terminating.
+    const col = elements(`plan "P" { let sum(n) = if n == 0 { 0 } else { n + sum(n - 1) } column at (sum(4), 0) size 1x1 }`).find((e) => e.kind === "column");
+    expect(col.at.x).toBe(10); // 4+3+2+1
+
+    // Infinite recursion is caught, not a stack overflow throw.
+    expect(diags(`plan "P" { let loop(n) = loop(n + 1) column at (loop(0), 0) size 1x1 }`).map((d) => d.code)).toContain("E_CALL_DEPTH");
+  });
+
+  it("calling an unknown function gives a did-you-mean hint", () => {
+    const d = diags(`plan "P" { let area(w, h) = w * h column at (aria(1, 2), 0) size 1x1 }`);
+    const e = d.find((x) => x.code === "E_UNKNOWN_FN");
+    expect(e).toBeDefined();
+    expect(e.hints).toEqual(['did you mean "area"?']);
+  });
+});

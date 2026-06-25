@@ -30,8 +30,11 @@ export type Expr =
   | { t: "range"; lo: Expr; hi: Expr; span?: Span }
   /** `base[idx]` array indexing. */
   | { t: "index"; base: Expr; idx: Expr; span?: Span }
-  /** `callee(args)` — user functions (T2.5) / built-ins (T2.6). */
+  /** `callee(args)` — user functions / built-ins. */
   | { t: "call"; callee: string; args: Expr[]; span?: Span }
+  /** A function literal from `let f(params) = body`; evaluates to an `fn` Value
+   *  closing over the defining scope. */
+  | { t: "fnlit"; params: string[]; body: Expr; span?: Span }
   /** `if cond { then } else { else }` as an expression. */
   | { t: "if"; cond: Expr; then: Expr; else: Expr; span?: Span };
 
@@ -39,14 +42,17 @@ export type Expr =
  * A runtime value of the expression language. The language is pure and
  * expand-time: every value is computed during `resolve`, never at runtime.
  * Numbers stay unitless millimetres (no Length/Ratio/Angle — one unit).
- *
- * `fn`/`builtin` are added in later tasks (user functions, built-ins).
  */
 export type Value =
   | { t: "num"; v: number }
   | { t: "bool"; v: boolean }
   | { t: "str"; v: string }
-  | { t: "arr"; v: Value[] };
+  | { t: "arr"; v: Value[] }
+  /** A user value-function (closure): captures the bindings visible where it
+   *  was defined. */
+  | { t: "fn"; params: string[]; body: Expr; closure: Env }
+  /** A built-in function, dispatched by name through the frozen builtins map. */
+  | { t: "builtin"; name: string };
 
 export type Env = Map<string, Value>;
 
@@ -62,6 +68,8 @@ export function typeName(v: Value): string {
     case "bool": return "boolean";
     case "str": return "string";
     case "arr": return "array";
+    case "fn":
+    case "builtin": return "function";
   }
 }
 
@@ -87,6 +95,8 @@ export function asStr(v: Value): string {
     case "num": return fmtNum(v.v);
     case "bool": return v.v ? "true" : "false";
     case "arr": return `[${v.v.map(asStr).join(", ")}]`;
+    case "fn":
+    case "builtin": return "<function>";
   }
 }
 
@@ -326,11 +336,21 @@ function tokensOver(toks: Token[], shift: number, outer: ExprTokens): ExprTokens
 const NUM0: Value = { t: "num", v: 0 };
 /** Safety cap on the length of a generated range (deterministic guard). */
 const MAX_RANGE = 100_000;
+/** Safety cap on function-call nesting (guards against runaway recursion). */
+const MAX_CALL_DEPTH = 512;
+
+/** Built-in dispatch is injected by {@link setBuiltinDispatch} (from builtins.ts)
+ *  to avoid a static import cycle. Until set, built-in calls are unknown. */
+let builtinDispatch: ((name: string, args: Value[], onError: (d: Diagnostic) => void, span?: Span) => Value) | null = null;
+export function setBuiltinDispatch(fn: typeof builtinDispatch): void {
+  builtinDispatch = fn;
+}
 
 /** Evaluate an expression to a {@link Value}. Errors (unknown ref, type
- *  mismatch, division by zero, bad index) emit a diagnostic and yield a safe
- *  default so resolution can continue and report everything. */
-export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void): Value {
+ *  mismatch, division by zero, bad index, arity, recursion) emit a diagnostic
+ *  and yield a safe default so resolution can continue and report everything.
+ *  `depth` bounds function-call nesting; callers pass 0. */
+export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, depth = 0): Value {
   switch (e.t) {
     case "num":
       return { t: "num", v: e.value };
@@ -338,11 +358,13 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void): V
       return { t: "bool", v: e.value };
     case "str": {
       let s = "";
-      for (const p of e.parts) s += typeof p === "string" ? p : asStr(evalExpr(p, env, onError));
+      for (const p of e.parts) s += typeof p === "string" ? p : asStr(evalExpr(p, env, onError, depth));
       return { t: "str", v: s };
     }
     case "arr":
-      return { t: "arr", v: e.items.map((it) => evalExpr(it, env, onError)) };
+      return { t: "arr", v: e.items.map((it) => evalExpr(it, env, onError, depth)) };
+    case "fnlit":
+      return { t: "fn", params: e.params, body: e.body, closure: env };
     case "ref": {
       const v = env.get(e.name);
       if (v === undefined) {
@@ -360,16 +382,16 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void): V
     }
     case "unary": {
       if (e.op === "!") {
-        return { t: "bool", v: !asBool(evalExpr(e.e, env, onError), onError, e.span) };
+        return { t: "bool", v: !asBool(evalExpr(e.e, env, onError, depth), onError, e.span) };
       }
-      const v = asNum(evalExpr(e.e, env, onError), onError, e.span);
+      const v = asNum(evalExpr(e.e, env, onError, depth), onError, e.span);
       return { t: "num", v: e.op === "-" ? -v : v };
     }
     case "bin":
-      return evalBin(e, env, onError);
+      return evalBin(e, env, onError, depth);
     case "range": {
-      const lo = asNum(evalExpr(e.lo, env, onError), onError, e.span);
-      const hi = asNum(evalExpr(e.hi, env, onError), onError, e.span);
+      const lo = asNum(evalExpr(e.lo, env, onError, depth), onError, e.span);
+      const hi = asNum(evalExpr(e.hi, env, onError, depth), onError, e.span);
       const items: Value[] = [];
       let n = 0;
       for (let v = lo; v < hi; v += 1) {
@@ -382,8 +404,8 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void): V
       return { t: "arr", v: items };
     }
     case "index": {
-      const base = evalExpr(e.base, env, onError);
-      const i = asNum(evalExpr(e.idx, env, onError), onError, e.span);
+      const base = evalExpr(e.base, env, onError, depth);
+      const i = asNum(evalExpr(e.idx, env, onError, depth), onError, e.span);
       if (base.t !== "arr") {
         onError({ severity: "error", message: `Cannot index a ${typeName(base)} (only arrays)`, code: "E_TYPE", span: e.span });
         return NUM0;
@@ -396,52 +418,72 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void): V
       return base.v[k];
     }
     case "if": {
-      const c = asBool(evalExpr(e.cond, env, onError), onError, e.span);
-      return evalExpr(c ? e.then : e.else, env, onError);
+      const c = asBool(evalExpr(e.cond, env, onError, depth), onError, e.span);
+      return evalExpr(c ? e.then : e.else, env, onError, depth);
     }
-    case "call": {
-      // User functions (T2.5) and built-ins (T2.6) extend this. Until then a
-      // call has no callable to resolve to.
-      const hint = closest(e.callee, [...env.keys()]);
-      onError({
-        severity: "error",
-        message: `Unknown function "${e.callee}"`,
-        code: "E_UNKNOWN_FN",
-        span: e.span,
-        hints: hint ? [`did you mean "${hint}"?`] : undefined,
-      });
-      return NUM0;
-    }
+    case "call":
+      return evalCall(e, env, onError, depth);
   }
 }
 
-/** Structural equality across Value kinds (cross-type compares unequal). */
+function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagnostic) => void, depth: number): Value {
+  const args = e.args.map((a) => evalExpr(a, env, onError, depth));
+  const callee = env.get(e.callee);
+  if (callee && callee.t === "fn") {
+    if (args.length !== callee.params.length) {
+      onError({ severity: "error", message: `Function "${e.callee}" expects ${callee.params.length} argument(s) but got ${args.length}`, code: "E_ARITY", span: e.span });
+    }
+    if (depth >= MAX_CALL_DEPTH) {
+      onError({ severity: "error", message: `Call stack too deep (limit ${MAX_CALL_DEPTH}) calling "${e.callee}"`, code: "E_CALL_DEPTH", span: e.span });
+      return NUM0;
+    }
+    const callEnv: Env = new Map(callee.closure);
+    callee.params.forEach((p, i) => callEnv.set(p, args[i] ?? NUM0));
+    return evalExpr(callee.body, callEnv, onError, depth + 1);
+  }
+  if (callee && callee.t === "builtin" && builtinDispatch) {
+    return builtinDispatch(callee.name, args, onError, e.span);
+  }
+  const hint = closest(e.callee, [...env.keys()]);
+  onError({
+    severity: "error",
+    message: `Unknown function "${e.callee}"`,
+    code: "E_UNKNOWN_FN",
+    span: e.span,
+    hints: hint ? [`did you mean "${hint}"?`] : undefined,
+  });
+  return NUM0;
+}
+
+/** Structural equality across Value kinds (cross-type compares unequal;
+ *  functions compare by identity). */
 function valueEq(a: Value, b: Value): boolean {
   if (a.t !== b.t) return false;
   if (a.t === "arr" && b.t === "arr") {
     return a.v.length === b.v.length && a.v.every((x, i) => valueEq(x, b.v[i]));
   }
+  if (a.t === "fn" || a.t === "builtin") return a === b;
   // num/bool/str compare by primitive value.
   return (a as { v: unknown }).v === (b as { v: unknown }).v;
 }
 
-function evalBin(e: Extract<Expr, { t: "bin" }>, env: Env, onError: (d: Diagnostic) => void): Value {
+function evalBin(e: Extract<Expr, { t: "bin" }>, env: Env, onError: (d: Diagnostic) => void, depth: number): Value {
   const op = e.op;
   // Logical operators short-circuit (so the RHS isn't evaluated needlessly).
   if (op === "&&" || op === "||") {
-    const l = asBool(evalExpr(e.l, env, onError), onError, e.span);
+    const l = asBool(evalExpr(e.l, env, onError, depth), onError, e.span);
     if (op === "&&" && !l) return { t: "bool", v: false };
     if (op === "||" && l) return { t: "bool", v: true };
-    return { t: "bool", v: asBool(evalExpr(e.r, env, onError), onError, e.span) };
+    return { t: "bool", v: asBool(evalExpr(e.r, env, onError, depth), onError, e.span) };
   }
   // Equality works on any matching Value kind.
   if (op === "==" || op === "!=") {
-    const eq = valueEq(evalExpr(e.l, env, onError), evalExpr(e.r, env, onError));
+    const eq = valueEq(evalExpr(e.l, env, onError, depth), evalExpr(e.r, env, onError, depth));
     return { t: "bool", v: op === "==" ? eq : !eq };
   }
   // Remaining operators are numeric (comparisons and arithmetic).
-  const l = asNum(evalExpr(e.l, env, onError), onError, e.span);
-  const r = asNum(evalExpr(e.r, env, onError), onError, e.span);
+  const l = asNum(evalExpr(e.l, env, onError, depth), onError, e.span);
+  const r = asNum(evalExpr(e.r, env, onError, depth), onError, e.span);
   switch (op) {
     case "<": return { t: "bool", v: l < r };
     case ">": return { t: "bool", v: l > r };
