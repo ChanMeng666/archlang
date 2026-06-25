@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-25
+
 ### Added
 - **Arithmetic expressions** anywhere a number appears (coordinates, sizes,
   widths, thickness, offsets): `+ - * / %`, unary minus, and parentheses with
