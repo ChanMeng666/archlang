@@ -110,6 +110,12 @@ export interface ResolvedPlan {
   north: NorthDir;
   title?: TitleNode;
   theme?: Partial<Theme>;
+  /** Named theme base (`theme <name>`), resolved to colours at lowering. */
+  themeBase?: string;
+  /** Wall colour for opt-in poché derivation (`theme from "#color"`). */
+  themeFrom?: string;
+  /** Per-element style overrides (`style <kind> { … }`), applied at lowering. */
+  styles?: Record<string, Partial<Theme>>;
   /** Resolved elements, in source order (for rendering). */
   elements: ResolvedElement[];
   /** Resolved walls (for bounds/hosting), in source order. */
@@ -453,6 +459,9 @@ export function resolve(
     north: ast.north,
     title: ast.title,
     theme: ast.theme,
+    themeBase: ast.themeBase,
+    themeFrom: ast.themeFrom,
+    styles: ast.styles,
     elements,
     walls,
   };

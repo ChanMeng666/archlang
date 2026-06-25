@@ -24,7 +24,7 @@ import type {
 import type { Expr } from "./expr.js";
 import { parseExpr as parseExprPratt } from "./expr.js";
 import type { Theme } from "./theme.js";
-import { isNumericThemeKey, resolveThemeKey } from "./theme.js";
+import { isNumericThemeKey, resolveThemeKey, resolveStyleKey } from "./theme.js";
 import type { ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
 
@@ -34,7 +34,7 @@ export interface ParseOutcome {
 }
 
 /** Plan-level settings + binding/definition keywords (not registry elements). */
-const SETTINGS = ["units", "grid", "scale", "north", "title", "theme", "let", "component", "import"];
+const SETTINGS = ["units", "grid", "scale", "north", "title", "theme", "style", "let", "component", "import"];
 /** Control-flow + rule keywords that begin a body statement. */
 const CONTROL = ["for", "if", "while", "set"];
 /** Keywords that begin a plan-body statement (registry element keywords are added
@@ -204,7 +204,15 @@ class Parser {
             break;
           }
           case "theme": {
-            plan.theme = { ...plan.theme, ...this.parseTheme() };
+            const r = this.parseTheme();
+            if (r.base !== undefined) plan.themeBase = r.base;
+            if (r.from !== undefined) plan.themeFrom = r.from;
+            plan.theme = { ...plan.theme, ...r.theme };
+            break;
+          }
+          case "style": {
+            const { kind, style } = this.parseStyle();
+            plan.styles = { ...plan.styles, [kind]: { ...plan.styles?.[kind], ...style } };
             break;
           }
           case "component": {
@@ -326,34 +334,78 @@ class Parser {
     return node;
   }
 
-  /** `theme { key: <value> … }` — colours (strings), `lineWeight` (number), `font` (string). */
-  private parseTheme(): Partial<Theme> {
+  /**
+   * Theme directive, in three shapes:
+   *   - `theme { key: <value> … }`              — overrides only
+   *   - `theme <name> [ { … } ]`                — named base + optional overrides
+   *   - `theme from "#color"`                   — derive poché from one wall colour
+   */
+  private parseTheme(): { base?: string; from?: string; theme: Partial<Theme> } {
     this.eatKeyword("theme");
+    if (this.isKeyword("from")) {
+      this.next();
+      return { from: this.eatString(), theme: {} };
+    }
+    // A leading ident is a named base (`theme blueprint { … }` or just `theme blueprint`).
+    const base = this.isType("ident") ? this.eatIdent().value : undefined;
+    const theme: Partial<Theme> = {};
+    if (this.isType("lcurly")) {
+      this.eat("lcurly");
+      while (!this.isType("rcurly") && !this.isType("eof")) {
+        const keyTok = this.eatIdent();
+        if (this.isType("colon")) this.next();
+        const resolved = resolveThemeKey(keyTok.value);
+        if (!resolved) {
+          this.diagnostics.push({
+            severity: "warning",
+            message: `Unknown theme key "${keyTok.value}"`,
+            code: "W_UNKNOWN_THEME_KEY",
+            span: { start: keyTok.start, end: keyTok.end },
+          });
+          if (this.isType("string") || this.isType("number")) this.next();
+          else this.fail(`Expected a value for theme key "${keyTok.value}"`);
+          continue;
+        }
+        if (isNumericThemeKey(resolved)) {
+          (theme as Record<string, unknown>)[resolved] = this.eatNumber();
+        } else {
+          (theme as Record<string, unknown>)[resolved] = this.eatString();
+        }
+      }
+      this.eat("rcurly");
+    }
+    return { base, theme };
+  }
+
+  /**
+   * `style <kind> { fill … stroke … }` — per-element-kind colour overrides
+   * (resolved element → theme → default at lowering, kept out of the IR). Keys
+   * are friendly attributes (`fill`/`stroke`/`label`) mapped per kind to a Theme key.
+   */
+  private parseStyle(): { kind: string; style: Partial<Theme> } {
+    this.eatKeyword("style");
+    const kind = this.eatIdent().value;
+    const style: Partial<Theme> = {};
     this.eat("lcurly");
-    const t: Partial<Theme> = {};
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const keyTok = this.eatIdent();
       if (this.isType("colon")) this.next();
-      const resolved = resolveThemeKey(keyTok.value);
+      const resolved = resolveStyleKey(kind, keyTok.value);
       if (!resolved) {
         this.diagnostics.push({
           severity: "warning",
-          message: `Unknown theme key "${keyTok.value}"`,
-          code: "W_UNKNOWN_THEME_KEY",
+          message: `Unknown style key "${keyTok.value}" for "${kind}"`,
+          code: "W_UNKNOWN_STYLE_KEY",
           span: { start: keyTok.start, end: keyTok.end },
         });
         if (this.isType("string") || this.isType("number")) this.next();
-        else this.fail(`Expected a value for theme key "${keyTok.value}"`);
+        else this.fail(`Expected a value for style key "${keyTok.value}"`);
         continue;
       }
-      if (isNumericThemeKey(resolved)) {
-        (t as Record<string, unknown>)[resolved] = this.eatNumber();
-      } else {
-        (t as Record<string, unknown>)[resolved] = this.eatString();
-      }
+      (style as Record<string, unknown>)[resolved] = this.eatString();
     }
     this.eat("rcurly");
-    return t;
+    return { kind, style };
   }
 
   private parseLet(): LetNode {

@@ -234,6 +234,12 @@ export interface PlanNode {
   title?: TitleNode;
   /** Theme overrides from the `theme { … }` directive. */
   theme?: Partial<Theme>;
+  /** Named theme base from `theme <name> { … }` (resolved at lowering). */
+  themeBase?: string;
+  /** Wall colour for `theme from "#color"` — opt-in poché derivation. */
+  themeFrom?: string;
+  /** Per-element style overrides (`style <kind> { … }`), by kind → Theme partial. */
+  styles?: Record<string, Partial<Theme>>;
   /** Component definitions, by name. */
   components: Map<string, ComponentDef>;
   /** Module imports (header-level), resolved at link time before resolve. */

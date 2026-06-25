@@ -164,6 +164,8 @@ export interface Runtime {
   registry: Registry;
   /** Per-call geometry backend; overrides the module-global `getGeometryBackend()`. */
   backend?: GeometryBackend | null;
+  /** Per-call named themes, selectable via `theme <name>` (override built-in THEMES). */
+  themes?: ThemePlugin[];
 }
 
 /** The default runtime (built-in registry, global backend). */

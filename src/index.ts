@@ -86,6 +86,10 @@ export type {
 // `now`). Pass `compile(src, { world })`; default is a pure no-op World.
 export { NULL_WORLD, makeVirtualWorld } from "./world.js";
 export type { World } from "./world.js";
+// Theming (v0.10): named bases (`theme <name>`), per-element `style`, and opt-in
+// one-colour poché derivation. THEMES are the built-in named bases.
+export { THEMES, DEFAULT_THEME, mergeTheme, derivePoche, hexToHsl, hslToHex } from "./theme.js";
+export type { Theme, StyleMap } from "./theme.js";
 
 /** Small LRU-ish memo cache keyed by source+options. Bounded to 64 entries. */
 const cache = new Map<string, CompileResult>();
@@ -135,7 +139,7 @@ function compileUncached(source: string, opts: CompileOptions): CompileResult {
   // Per-call registry (built-ins + plugins) and runtime — fresh each compile, no
   // global mutation. Absent plugins/backend collapse to the built-in behavior.
   const registry = createRegistry(opts.plugins);
-  const runtime: Runtime = { registry, backend: opts.backend };
+  const runtime: Runtime = { registry, backend: opts.backend, themes: opts.themes };
   const world = opts.world ?? NULL_WORLD;
 
   const { plan, diagnostics: parseDiags } = parse(source, registry);

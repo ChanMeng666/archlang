@@ -22,7 +22,8 @@ import type { GeometryBackend } from "./geometry/backend.js";
 import type { Point } from "./ast.js";
 import { patternId } from "./hatches.js";
 import type { HatchSpec } from "./hatches.js";
-import { DEFAULT_THEME, mergeTheme, sanitizeTheme } from "./theme.js";
+import { DEFAULT_THEME, THEMES, mergeTheme, sanitizeTheme, derivePoche } from "./theme.js";
+import type { Theme } from "./theme.js";
 
 /** Deterministic mm formatter for computed label text (round 2dp, strip zeros, no -0). */
 function fmtMm(n: number): string {
@@ -220,10 +221,37 @@ function lowerWalls(walls: RWall[], ctx: RenderCtx, registry: Registry, backend:
  * page chrome (north/scale/title). `opts.width` does not affect the Scene (it is
  * an SVG-only attribute) — only `opts.theme` participates.
  */
+/** Resolve `theme <name>` to its colours: per-call registered themes win over built-in THEMES. */
+function themeBaseLookup(name: string | undefined, runtime: Runtime): Partial<Theme> {
+  if (!name) return {};
+  const reg = runtime.themes?.find((t) => t.name === name);
+  return reg ? reg.theme : THEMES[name] ?? {};
+}
+
 export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): Scene {
   const registry = runtime.registry;
   const backend = runtime.backend ?? getGeometryBackend();
-  const theme = sanitizeTheme(mergeTheme(DEFAULT_THEME, ir.theme, opts.theme));
+
+  // Theme cascade (later wins): default → named base → plan `theme{}` overrides →
+  // opt-in `theme from` poché → [per-element `style`] → CompileOptions.theme. The
+  // `theme from` layer only exists when written, so existing plans are unaffected.
+  // `preStyle` holds everything below `style`/`opts.theme`; sanitize is applied
+  // exactly once per produced theme (no double-escaping), and `opts.theme` is the
+  // last layer in BOTH paths so it always wins — even over a per-element style.
+  const base = themeBaseLookup(ir.themeBase, runtime);
+  const themeFromLayer = ir.themeFrom ? derivePoche(ir.themeFrom) : undefined;
+  const preStyle = mergeTheme(DEFAULT_THEME, base, themeFromLayer, ir.theme);
+  const theme = sanitizeTheme(mergeTheme(preStyle, opts.theme));
+
+  // Per-element styled themes (`style <kind> { … }`), each sanitized once. Absent
+  // styles → every element reuses `theme` (identity) → byte-identical output.
+  const styledByKind = new Map<string, Theme>();
+  if (ir.styles) {
+    for (const kind of Object.keys(ir.styles)) {
+      styledByKind.set(kind, sanitizeTheme(mergeTheme(preStyle, ir.styles[kind], opts.theme)));
+    }
+  }
+
   const lw = theme.lineWeight;
 
   const b = planBounds(ir, registry);
@@ -245,14 +273,19 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
 
   // Collect non-wall elements (source order), then lower walls — exactly the v0.1
   // op order, so layer-bucketing in a backend reproduces the original draw order.
-  const ctx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm };
+  // Each kind gets its styled theme when `style <kind>` applies, else the base ctx.
+  const baseCtx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm };
+  const ctxFor = (kind: string): RenderCtx => {
+    const st = styledByKind.get(kind);
+    return st ? { ...baseCtx, theme: st } : baseCtx;
+  };
   const nodes: SceneNode[] = [];
   for (const el of ir.elements) {
     if (el.kind === "wall") continue;
     const def = registry.byKind.get(el.kind);
-    if (def) nodes.push(...def.render(el, ctx));
+    if (def) nodes.push(...def.render(el, ctxFor(el.kind)));
   }
-  nodes.push(...lowerWalls(ir.walls, ctx, registry, backend));
+  nodes.push(...lowerWalls(ir.walls, ctxFor("wall"), registry, backend));
 
   return {
     width: drawW + sizes.margin * 2,
