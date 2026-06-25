@@ -127,8 +127,39 @@ export interface InstanceNode extends NodeBase {
   args: Expr[];
 }
 
-/** A plan-body statement in source order: an element, a `let`, or an instance. */
-export type Statement = AstElement | LetNode | InstanceNode;
+/** `for NAME in <expr> { body }` — expanded over the iterable during resolve. */
+export interface ForNode extends NodeBase {
+  kind: "for";
+  varName: string;
+  iter: Expr;
+  body: Statement[];
+}
+
+/** `if <expr> { then } [else { else }]` — control flow, expanded during resolve. */
+export interface IfNode extends NodeBase {
+  kind: "if";
+  cond: Expr;
+  then: Statement[];
+  else?: Statement[];
+}
+
+/** `while <expr> { body }` — bounded loop, expanded during resolve. */
+export interface WhileNode extends NodeBase {
+  kind: "while";
+  cond: Expr;
+  body: Statement[];
+}
+
+/** `NAME = <expr>` — reassign an existing binding (expand-time, makes `while`
+ *  loops terminate). Distinct from `let`, which declares. */
+export interface AssignNode extends NodeBase {
+  kind: "assign";
+  name: string;
+  value: Expr;
+}
+
+/** A plan-body statement in source order. */
+export type Statement = AstElement | LetNode | InstanceNode | ForNode | IfNode | WhileNode | AssignNode;
 
 /** `component NAME(params) { body }` — a reusable parameterised sub-plan. */
 export interface ComponentDef {

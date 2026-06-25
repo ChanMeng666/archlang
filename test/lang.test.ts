@@ -97,3 +97,71 @@ describe("components", () => {
     expect(els.filter((e) => e.kind === "column").map((c) => c.at.x)).toEqual([0, 1000]);
   });
 });
+
+describe("control flow (T2.3)", () => {
+  it("for-over-range expands into the element stream (DoD)", () => {
+    const cols = elements(`plan "P" { for i in 0..3 { column at (i*600, 0) size 300x300 } }`).filter((e) => e.kind === "column");
+    expect(cols.length).toBe(3);
+    expect(cols.map((c) => c.at.x)).toEqual([0, 600, 1200]);
+  });
+
+  it("for-over-array literal", () => {
+    const cols = elements(`plan "P" { for x in [100, 400, 900] { column at (x, 0) size 50x50 } }`).filter((e) => e.kind === "column");
+    expect(cols.map((c) => c.at.x)).toEqual([100, 400, 900]);
+  });
+
+  it("for body is a fresh scope each iteration (loop-local let, no redefinition)", () => {
+    const d = diags(`plan "P" { for i in 0..2 { let w = i*100 column at (i*200, 0) size w x w } }`);
+    expect(d.map((x) => x.code)).not.toContain("E_REDEF");
+    const cols = elements(`plan "P" { for i in 0..2 { let w = (i+1)*100 column at (i*200, 0) size w x w } }`).filter((e) => e.kind === "column");
+    expect(cols.map((c) => c.size.w)).toEqual([100, 200]);
+  });
+
+  it("if/else expands only the taken branch", () => {
+    const yes = elements(`plan "P" { let big = 5000 if big > 3000 { room at (0,0) size 100x100 label "Big" } else { room at (0,0) size 50x50 label "Small" } }`).filter((e) => e.kind === "room");
+    expect(yes.map((r) => r.label)).toEqual(["Big"]);
+    const no = elements(`plan "P" { if 1 > 2 { column at (0,0) size 9x9 } else { column at (5,5) size 1x1 } }`).filter((e) => e.kind === "column");
+    expect(no.map((c) => [c.at.x, c.at.y])).toEqual([[5, 5]]);
+  });
+
+  it("if without else and a false condition expands nothing", () => {
+    const cols = elements(`plan "P" { column at (0,0) size 1x1 if false { column at (9,9) size 1x1 } }`).filter((e) => e.kind === "column");
+    expect(cols.length).toBe(1);
+  });
+
+  it("while with reassignment terminates naturally (DoD)", () => {
+    const cols = elements(`plan "P" { let i = 0 while i < 4 { column at (i*300, 0) size 100x100 i = i + 1 } }`).filter((e) => e.kind === "column");
+    expect(cols.map((c) => c.at.x)).toEqual([0, 300, 600, 900]);
+  });
+
+  it("while caps a runaway loop with a diagnostic", () => {
+    expect(diags(`plan "P" { while true { column at (0,0) size 1x1 } }`).map((d) => d.code)).toContain("E_WHILE_LIMIT");
+  });
+
+  it("assignment to an undefined name is a diagnostic", () => {
+    expect(diags(`plan "P" { x = 5 column at (x,0) size 1x1 }`).map((d) => d.code)).toContain("E_ASSIGN_UNDEF");
+  });
+
+  it("for over a non-iterable is a type error", () => {
+    expect(diags(`plan "P" { for i in 5 { column at (i,0) size 1x1 } }`).map((d) => d.code)).toContain("E_TYPE");
+  });
+
+  it("nested control flow composes (for containing if)", () => {
+    const cols = elements(`plan "P" { for i in 0..4 { if i % 2 == 0 { column at (i*100, 0) size 50x50 } } }`).filter((e) => e.kind === "column");
+    expect(cols.map((c) => c.at.x)).toEqual([0, 200]); // only even i
+  });
+
+  it("control flow is deterministic (byte-identical output)", () => {
+    const src = `plan "P" { grid 50 for i in 0..5 { column at (i*500, 0) size 200x200 } }`;
+    expect(compile(src, { noCache: true }).svg).toBe(compile(src, { noCache: true }).svg);
+  });
+
+  it("control flow works inside a component body", () => {
+    const cols = elements(`plan "P" {
+      component row(y) { for i in 0..3 { column at (i*400, y) size 100x100 } }
+      row(0)
+      row(1000)
+    }`).filter((e) => e.kind === "column");
+    expect(cols.length).toBe(6);
+  });
+});

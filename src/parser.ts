@@ -4,14 +4,18 @@ import type { Token } from "./lexer.js";
 import { lex } from "./lexer.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type {
+  AssignNode,
   ComponentDef,
   ExprPoint,
+  ForNode,
+  IfNode,
   InstanceNode,
   LetNode,
   NorthDir,
   PlanNode,
   Statement,
   TitleNode,
+  WhileNode,
 } from "./ast.js";
 import type { Expr } from "./expr.js";
 import { parseExpr as parseExprPratt } from "./expr.js";
@@ -27,8 +31,10 @@ export interface ParseOutcome {
 
 /** Plan-level settings + binding/definition keywords (not registry elements). */
 const SETTINGS = ["units", "grid", "scale", "north", "title", "theme", "let", "component"];
+/** Control-flow keywords that begin a body statement. */
+const CONTROL = ["for", "if", "while"];
 /** Keywords that begin a plan-body statement; recovery resynchronizes to one. */
-const STATEMENT_STARTS = new Set<string>([...SETTINGS, ...registry.keys()]);
+const STATEMENT_STARTS = new Set<string>([...SETTINGS, ...CONTROL, ...registry.keys()]);
 
 /** Thrown internally by `eat*` helpers; always caught within the parser. */
 class ParseError extends Error {
@@ -156,20 +162,6 @@ class Parser {
       const start = t.start;
       try {
         if (t.type !== "ident") this.fail(`Expected a statement but found ${describe(t)}`);
-        const def = registry.get(t.value);
-        if (def) {
-          const node = def.parse(this.ctx);
-          node.span = this.spanFrom(start);
-          plan.body.push(node);
-          continue;
-        }
-        // A defined component name followed by `(` is an instantiation.
-        if (plan.components.has(t.value) && this.peek(1).type === "lparen") {
-          const node = this.parseInstance();
-          node.span = this.spanFrom(start);
-          plan.body.push(node);
-          continue;
-        }
         switch (t.value) {
           case "units": {
             this.next();
@@ -204,12 +196,6 @@ class Parser {
             plan.theme = { ...plan.theme, ...this.parseTheme() };
             break;
           }
-          case "let": {
-            const n = this.parseLet();
-            n.span = this.spanFrom(start);
-            plan.body.push(n);
-            break;
-          }
           case "component": {
             const def = this.parseComponent(plan.components);
             def.span = this.spanFrom(start);
@@ -219,8 +205,10 @@ class Parser {
             plan.components.set(def.name, def);
             break;
           }
+          // Elements, `let`, instances, control flow, and assignment all flow
+          // through the shared body-statement parser.
           default:
-            this.fail(`Unknown statement "${t.value}"`, t);
+            plan.body.push(this.parseOneBodyStatement(plan.components, undefined));
         }
       } catch (e) {
         if (e instanceof ParseError) {
@@ -372,6 +360,92 @@ class Parser {
     return { kind: "instance", id: "", name: nameTok.value, args, line: nameTok.line };
   }
 
+  /** `NAME = <expr>` — reassign an existing binding. */
+  private parseAssign(): AssignNode {
+    const nameTok = this.eatIdent();
+    this.eat("equals");
+    const value = parseExprPratt(this.ctx);
+    return { kind: "assign", id: "", name: nameTok.value, value, line: nameTok.line };
+  }
+
+  /**
+   * Parse one body statement: an element, `let`, instance, `for`/`if`/`while`,
+   * or assignment. Shared by the plan body, component bodies, and control-flow
+   * blocks. `selfName` permits a component body to call itself recursively.
+   */
+  private parseOneBodyStatement(components: Map<string, ComponentDef>, selfName?: string): Statement {
+    const t = this.peek();
+    const start = t.start;
+    if (t.type !== "ident") this.fail(`Expected a statement but found ${describe(t)}`);
+    let node: Statement;
+    if (t.value === "for") node = this.parseFor(components, selfName);
+    else if (t.value === "if") node = this.parseIf(components, selfName);
+    else if (t.value === "while") node = this.parseWhile(components, selfName);
+    else {
+      const def = registry.get(t.value);
+      if (def) node = def.parse(this.ctx);
+      else if (t.value === "let") node = this.parseLet();
+      // An ident immediately followed by "=" is an assignment.
+      else if (this.peek(1).type === "equals") node = this.parseAssign();
+      // A defined component (or this one, recursively) followed by "(" is a call.
+      else if ((components.has(t.value) || t.value === selfName) && this.peek(1).type === "lparen") node = this.parseInstance();
+      else this.fail(`Unknown statement "${t.value}"`, t);
+    }
+    node.span = this.spanFrom(start);
+    return node;
+  }
+
+  /** Parse a `{ … }` block of body statements (with per-statement recovery). */
+  private parseBlockBody(components: Map<string, ComponentDef>, selfName?: string): Statement[] {
+    this.eat("lcurly");
+    const body: Statement[] = [];
+    while (!this.isType("rcurly") && !this.isType("eof")) {
+      try {
+        body.push(this.parseOneBodyStatement(components, selfName));
+      } catch (e) {
+        if (e instanceof ParseError) {
+          this.diagnostics.push({ severity: "error", message: e.message, span: e.span });
+          this.synchronize();
+        } else {
+          throw e;
+        }
+      }
+    }
+    this.eat("rcurly");
+    return body;
+  }
+
+  /** `for NAME in <expr> { body }`. */
+  private parseFor(components: Map<string, ComponentDef>, selfName?: string): ForNode {
+    const kw = this.eatKeyword("for");
+    const varName = this.eatIdent().value;
+    this.eatKeyword("in");
+    const iter = parseExprPratt(this.ctx);
+    const body = this.parseBlockBody(components, selfName);
+    return { kind: "for", id: "", varName, iter, body, line: kw.line };
+  }
+
+  /** `if <expr> { then } [else { else }]`. */
+  private parseIf(components: Map<string, ComponentDef>, selfName?: string): IfNode {
+    const kw = this.eatKeyword("if");
+    const cond = parseExprPratt(this.ctx);
+    const then = this.parseBlockBody(components, selfName);
+    let els: Statement[] | undefined;
+    if (this.isKeyword("else")) {
+      this.next();
+      els = this.parseBlockBody(components, selfName);
+    }
+    return { kind: "if", id: "", cond, then, else: els, line: kw.line };
+  }
+
+  /** `while <expr> { body }`. */
+  private parseWhile(components: Map<string, ComponentDef>, selfName?: string): WhileNode {
+    const kw = this.eatKeyword("while");
+    const cond = parseExprPratt(this.ctx);
+    const body = this.parseBlockBody(components, selfName);
+    return { kind: "while", id: "", cond, body, line: kw.line };
+  }
+
   /** `component NAME(p1, p2, …) { <statements> }`. */
   private parseComponent(components: Map<string, ComponentDef>): ComponentDef {
     const kw = this.eatKeyword("component");
@@ -384,34 +458,7 @@ class Parser {
       else break;
     }
     this.eat("rparen");
-    this.eat("lcurly");
-    const body: Statement[] = [];
-    while (!this.isType("rcurly") && !this.isType("eof")) {
-      const t = this.peek();
-      const start = t.start;
-      const def = registry.get(t.value);
-      if (def) {
-        const node = def.parse(this.ctx);
-        node.span = this.spanFrom(start);
-        body.push(node);
-        continue;
-      }
-      if (t.value === "let") {
-        const n = this.parseLet();
-        n.span = this.spanFrom(start);
-        body.push(n);
-        continue;
-      }
-      // A previously-defined component (or this one, recursively) may be called.
-      if ((components.has(t.value) || t.value === name) && this.peek(1).type === "lparen") {
-        const n = this.parseInstance();
-        n.span = this.spanFrom(start);
-        body.push(n);
-        continue;
-      }
-      this.fail(`Expected an element, "let", or component call in component body but found ${describe(t)}`, t);
-    }
-    this.eat("rcurly");
+    const body = this.parseBlockBody(components, name);
     return { name, params, body, line: kw.line };
   }
 }
