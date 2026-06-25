@@ -24,6 +24,12 @@ import { patternId } from "./hatches.js";
 import type { HatchSpec } from "./hatches.js";
 import { DEFAULT_THEME, mergeTheme, sanitizeTheme } from "./theme.js";
 
+/** Deterministic mm formatter for computed label text (round 2dp, strip zeros, no -0). */
+function fmtMm(n: number): string {
+  const r = Math.round(n * 100) / 100;
+  return Object.is(r, -0) ? "0" : String(r);
+}
+
 /** Drawing bounds: each element contributes points via its registry `bounds`. */
 function planBounds(ir: ResolvedPlan): Bounds {
   const b = emptyBounds();
@@ -238,7 +244,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}): Scene {
 
   // Collect non-wall elements (source order), then lower walls — exactly the v0.1
   // op order, so layer-bucketing in a backend reproduces the original draw order.
-  const ctx: RenderCtx = { theme, sizes, bounds: b };
+  const ctx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm };
   const nodes: SceneNode[] = [];
   for (const el of ir.elements) {
     if (el.kind === "wall") continue;

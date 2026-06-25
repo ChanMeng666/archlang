@@ -49,7 +49,7 @@ export const dim: ElementDef = {
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const dm = resolved as RDim;
-    const { theme, sizes } = ctx;
+    const { theme, sizes, fmt } = ctx;
     const dir = unit(sub(dm.to, dm.from));
     const n = normal(dir);
     const off = mul(n, dm.offset);
@@ -72,7 +72,9 @@ export const dim: ElementDef = {
     let angle = (Math.atan2(dir.y, dir.x) * 180) / Math.PI;
     if (angle > 90) angle -= 180;
     if (angle < -90) angle += 180;
-    const label = dm.text ?? String(Math.round(length(sub(dm.to, dm.from))));
+    // No explicit text → the measured length |to−from|, formatted once via the
+    // shared mm formatter so SVG and DXF show the same value (T3.6).
+    const label = dm.text ?? fmt(length(sub(dm.to, dm.from)));
     nodes.push({
       layer: "dims",
       prim: { t: "text", at: tp, value: label, size: sizes.dimFont, anchor: "middle", baseline: "central", rotate: angle },

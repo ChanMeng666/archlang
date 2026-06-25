@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compile } from "../src/index.js";
+import { compile, toDxf } from "../src/index.js";
 import { registry, registryOrder } from "../src/elements/index.js";
 
 describe("element registry", () => {
@@ -34,6 +34,32 @@ describe("column — extensibility proof", () => {
     const { svg, diagnostics } = compile(`plan "C" { column at (0,0) size 0x400 }`, { noCache: true });
     expect(svg).toBe("");
     expect(diagnostics.some((d) => d.code === "E_COLUMN_SIZE")).toBe(true);
+  });
+});
+
+describe("computed dimensions (T3.6)", () => {
+  it("shows the measured length when no text is given", () => {
+    const { svg } = compile(`plan "D" { dim (0,0)->(7000,0) offset 600 }`, { noCache: true });
+    expect(svg).toContain(">7000</text>");
+  });
+
+  it("computes a diagonal length from |to−from|", () => {
+    const { svg } = compile(`plan "D" { dim (0,0)->(3000,4000) offset 600 }`, { noCache: true });
+    expect(svg).toContain(">5000</text>"); // 3-4-5 triangle
+  });
+
+  it("an explicit text still wins over the measured length", () => {
+    const { svg } = compile(`plan "D" { dim (0,0)->(7000,0) offset 600 text "7.0 m" }`, { noCache: true });
+    expect(svg).toContain(">7.0 m</text>");
+    expect(svg).not.toContain(">7000</text>");
+  });
+
+  it("shows the same computed value in SVG and DXF", () => {
+    const src = `plan "D" { dim (0,0)->(3000,4000) offset 600 }`;
+    const { svg, scene } = compile(src, { noCache: true });
+    const dxf = toDxf(scene!);
+    expect(svg).toContain(">5000</text>");
+    expect(dxf).toContain("\n5000\n"); // DXF TEXT group-1 value
   });
 });
 
