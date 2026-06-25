@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { compile } from "../src/index.js";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { compile, getGeometryBackend, loadClipperBackend, setGeometryBackend } from "../src/index.js";
 import { rectUnionOutline } from "../src/geometry/union.js";
+
+const pocheFills = (svg: string): number => (svg.match(/fill="url\(#poche\)"/g) ?? []).length;
 
 describe("rectUnionOutline", () => {
   it("traces an L-corner as one 6-vertex loop", () => {
@@ -103,5 +105,49 @@ describe("wall materials", () => {
     expect(svg).toContain('id="hatch-concrete"');
     expect(svg).toContain('id="hatch-tile"');
     expect((svg.match(/stroke-linejoin="miter"/g) ?? []).length).toBe(2);
+  });
+});
+
+// Angled (non-axis-aligned) walls: without a backend they fall back to
+// per-segment fills (seams); with the optional clipper2-wasm engine they union
+// into one seamless region. Orthogonal output must be unaffected either way.
+const ANGLED = `plan "A" { wall exterior thickness 200 { (0,0) (3000,2000) (6000,0) } }`;
+const ORTHO = `plan "O" { wall w thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close } }`;
+
+describe("GeometryBackend seam (T3.4) — engine absent", () => {
+  it("falls back to per-segment fills for angled walls (no backend registered)", () => {
+    expect(getGeometryBackend()).toBe(null); // sanity: default is no backend
+    const { svg, errors } = compile(ANGLED, { noCache: true });
+    expect(errors).toEqual([]);
+    expect(pocheFills(svg)).toBe(2); // one fill per segment — the seamy fallback
+  });
+
+  it("is deterministic without a backend", () => {
+    expect(compile(ANGLED, { noCache: true }).svg).toBe(compile(ANGLED, { noCache: true }).svg);
+  });
+});
+
+describe("GeometryBackend seam (T3.4) — clipper2-wasm engine present", () => {
+  let orthoNoBackend: string;
+  beforeAll(async () => {
+    orthoNoBackend = compile(ORTHO, { noCache: true }).svg; // capture pre-backend
+    setGeometryBackend(await loadClipperBackend());
+  });
+  afterAll(() => setGeometryBackend(null));
+
+  it("unions angled walls into a single seamless region (no per-segment seams)", () => {
+    const { svg, errors } = compile(ANGLED, { noCache: true });
+    expect(errors).toEqual([]);
+    expect(pocheFills(svg)).toBe(1); // one unioned fill instead of two
+    expect((svg.match(/stroke-linejoin="miter"/g) ?? []).length).toBe(1);
+  });
+
+  it("renders angled walls deterministically with the engine present", () => {
+    expect(compile(ANGLED, { noCache: true }).svg).toBe(compile(ANGLED, { noCache: true }).svg);
+  });
+
+  it("leaves orthogonal output byte-identical whether or not the engine is loaded", () => {
+    // Orthogonal walls always use the zero-dep rectilinear boolean, never the backend.
+    expect(compile(ORTHO, { noCache: true }).svg).toBe(orthoNoBackend);
   });
 });

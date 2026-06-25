@@ -13,10 +13,13 @@ import type { Opening, ResolvedPlan, RWall } from "./ir.js";
 import type { RenderCtx } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode } from "./scene.js";
 import { registry } from "./elements/index.js";
-import type { Bounds } from "./geometry.js";
-import { distPointToSegment, emptyBounds, extendBounds, segmentRectangle, segmentsOfWall } from "./geometry.js";
+import type { Bounds, Vec } from "./geometry.js";
+import { add, distPointToSegment, emptyBounds, extendBounds, mul, normal, segmentRectangle, segmentsOfWall, sub, unit } from "./geometry.js";
 import type { Rect } from "./geometry/union.js";
 import { rectBooleanOutline } from "./geometry/union.js";
+import { getGeometryBackend } from "./geometry/backend.js";
+import type { GeometryBackend } from "./geometry/backend.js";
+import type { Point } from "./ast.js";
 import { patternId } from "./hatches.js";
 import { DEFAULT_THEME, mergeTheme, sanitizeTheme } from "./theme.js";
 
@@ -73,44 +76,113 @@ function openingRect(w: RWall, op: Opening): Rect | null {
 }
 
 /**
- * Wall fill + outline, grouped by material so each material's poché unions
- * independently. Orthogonal groups become a single multi-loop `region` (clean
- * boundaries, no internal seams); angled groups fall back to the wall element's
- * per-segment primitives.
+ * Opening rectangle as a rotated polygon, oriented along the hosting wall
+ * segment: it spans the opening `width` along the segment direction and the full
+ * wall thickness across it. Used by the angled (polygon-backend) path, where the
+ * host may be at any angle (unlike {@link openingRect}, which is axis-aligned).
  */
-function lowerWalls(walls: RWall[], ctx: RenderCtx): SceneNode[] {
-  if (walls.length === 0) return [];
-  const nodes: SceneNode[] = [];
-  for (const mat of materialsUsed(walls)) {
-    const group = walls.filter((w) => w.material === mat);
-    if (!allOrthogonal(group)) {
-      const def = registry.get("wall")!;
-      nodes.push(...group.flatMap((w) => def.render(w, ctx)));
-      continue;
+function openingPoly(w: RWall, op: Opening): Point[] | null {
+  let seg = null as null | { a: Point; b: Point };
+  let best = Infinity;
+  for (const s of segmentsOfWall(w)) {
+    const d = distPointToSegment(op.at, s.a, s.b);
+    if (d < best) {
+      best = d;
+      seg = s;
     }
-    const rects: Rect[] = [];
-    const holes: Rect[] = [];
-    for (const w of group) {
-      for (const s of segmentsOfWall(w)) {
-        const corners = segmentRectangle(s.a, s.b, s.thickness);
-        const xsv = corners.map((c) => c.x);
-        const ysv = corners.map((c) => c.y);
-        rects.push({ x0: Math.min(...xsv), y0: Math.min(...ysv), x1: Math.max(...xsv), y1: Math.max(...ysv) });
-      }
-      // Doors/windows void the wall solid (IFC-style opening subtraction).
-      for (const op of w.openings) {
-        const hr = openingRect(w, op);
-        if (hr) holes.push(hr);
-      }
-    }
-    const loops = rectBooleanOutline(rects, holes);
-    if (loops.length === 0) continue;
-    nodes.push({ layer: "wallFill", prim: { t: "region", loops }, paint: { fill: `url(#${patternId(mat)})`, fillRule: "nonzero" } });
-    nodes.push({
+  }
+  if (!seg) return null;
+  const dir: Vec = unit(sub(seg.b, seg.a));
+  const nrm = normal(dir);
+  const hw = op.width / 2;
+  const ht = w.thickness / 2;
+  return [
+    add(add(op.at, mul(dir, -hw)), mul(nrm, -ht)),
+    add(add(op.at, mul(dir, hw)), mul(nrm, -ht)),
+    add(add(op.at, mul(dir, hw)), mul(nrm, ht)),
+    add(add(op.at, mul(dir, -hw)), mul(nrm, ht)),
+  ];
+}
+
+/** The fill + outline nodes for one material's unioned wall region. */
+function emitRegion(loops: Point[][], mat: string, ctx: RenderCtx): SceneNode[] {
+  return [
+    { layer: "wallFill", prim: { t: "region", loops }, paint: { fill: `url(#${patternId(mat)})`, fillRule: "nonzero" } },
+    {
       layer: "wallFace",
       prim: { t: "region", loops },
       paint: { fill: "none", stroke: ctx.theme.wallStroke, width: ctx.sizes.wallStroke, linejoin: "miter" },
-    });
+    },
+  ];
+}
+
+/** Axis-aligned union (+ opening holes) for an all-orthogonal material group. */
+function lowerOrthogonalGroup(group: RWall[], mat: string, ctx: RenderCtx): SceneNode[] {
+  const rects: Rect[] = [];
+  const holes: Rect[] = [];
+  for (const w of group) {
+    for (const s of segmentsOfWall(w)) {
+      const corners = segmentRectangle(s.a, s.b, s.thickness);
+      const xsv = corners.map((c) => c.x);
+      const ysv = corners.map((c) => c.y);
+      rects.push({ x0: Math.min(...xsv), y0: Math.min(...ysv), x1: Math.max(...xsv), y1: Math.max(...ysv) });
+    }
+    // Doors/windows void the wall solid (IFC-style opening subtraction).
+    for (const op of w.openings) {
+      const hr = openingRect(w, op);
+      if (hr) holes.push(hr);
+    }
+  }
+  const loops = rectBooleanOutline(rects, holes);
+  return loops.length === 0 ? [] : emitRegion(loops, mat, ctx);
+}
+
+/**
+ * Polygon union (+ opening holes) for a material group containing angled walls,
+ * via the optional {@link GeometryBackend}. Each segment becomes a (possibly
+ * rotated) rectangle; the backend merges them into one seamless outline and
+ * subtracts the opening polygons. Returns `null` if the backend yields nothing
+ * (degenerate input), so the caller can fall back.
+ */
+function lowerAngledGroup(group: RWall[], mat: string, ctx: RenderCtx, backend: GeometryBackend): SceneNode[] | null {
+  const rects: Point[][] = [];
+  const holes: Point[][] = [];
+  for (const w of group) {
+    for (const s of segmentsOfWall(w)) rects.push(segmentRectangle(s.a, s.b, s.thickness));
+    for (const op of w.openings) {
+      const hp = openingPoly(w, op);
+      if (hp) holes.push(hp);
+    }
+  }
+  const loops = holes.length ? backend.difference(rects, holes) : backend.union(rects);
+  return loops.length === 0 ? null : emitRegion(loops, mat, ctx);
+}
+
+/**
+ * Wall fill + outline, grouped by material so each material's poché unions
+ * independently. Orthogonal groups become a single multi-loop `region` via the
+ * zero-dependency rectilinear boolean (byte-identical regardless of any
+ * registered backend). A group with angled walls uses the optional
+ * {@link GeometryBackend} when one is registered (seamless joinery), else falls
+ * back to the wall element's per-segment primitives.
+ */
+function lowerWalls(walls: RWall[], ctx: RenderCtx): SceneNode[] {
+  if (walls.length === 0) return [];
+  const backend = getGeometryBackend();
+  const nodes: SceneNode[] = [];
+  for (const mat of materialsUsed(walls)) {
+    const group = walls.filter((w) => w.material === mat);
+    if (allOrthogonal(group)) {
+      nodes.push(...lowerOrthogonalGroup(group, mat, ctx));
+      continue;
+    }
+    const viaBackend = backend ? lowerAngledGroup(group, mat, ctx, backend) : null;
+    if (viaBackend) {
+      nodes.push(...viaBackend);
+    } else {
+      const def = registry.get("wall")!;
+      nodes.push(...group.flatMap((w) => def.render(w, ctx)));
+    }
   }
   return nodes;
 }

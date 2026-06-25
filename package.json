@@ -66,6 +66,7 @@
     "vscode-textmate": "^9.3.2"
   },
   "optionalDependencies": {
+    "clipper2-wasm": "0.4.0",
     "pdfkit": "^0.15.2"
   }
 }
