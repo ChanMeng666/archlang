@@ -12,7 +12,8 @@
  */
 
 import type { Point } from "../ast.js";
-import type { LineType, RenderPass, Scene, SceneNode } from "../scene.js";
+import type { LineType, Scene, SceneNode } from "../scene.js";
+import { layerOf } from "../scene.js";
 import { minorArcDegrees } from "../geometry.js";
 
 /** Deterministic number formatting (round to 4dp, no -0). */
@@ -83,7 +84,18 @@ class DxfBuilder {
   }
 }
 
-const LAYERS = ["WALLS", "ROOMS", "DOORS", "WINDOWS", "FURNITURE", "COLUMNS", "DIMS", "LABELS"];
+/** AIA CAD layers and their DXF colour numbers (group code 62). */
+const AIA_LAYERS: { name: string; color: number }[] = [
+  { name: "A-WALL", color: 7 },
+  { name: "A-FLOR", color: 8 },
+  { name: "A-FURN", color: 3 },
+  { name: "A-COLS", color: 1 },
+  { name: "A-DOOR", color: 4 },
+  { name: "A-GLAZ", color: 5 },
+  { name: "A-ANNO-TEXT", color: 6 },
+  { name: "A-ANNO-DIMS", color: 2 },
+  { name: "A-ANNO", color: 8 },
+];
 
 /** Dash definitions (drawing units = mm): name, descriptive text, and pattern.
  *  Positive = dash, negative = gap. Solid CONTINUOUS has an empty pattern. */
@@ -93,29 +105,6 @@ const LTYPES: { name: string; desc: string; pattern: number[] }[] = [
   { name: "CENTER", desc: "Center", pattern: [400, -100, 100, -100] },
   { name: "HIDDEN", desc: "Hidden", pattern: [100, -100] },
 ];
-
-/** Map a Scene draw layer to a DXF layer name. */
-function dxfLayer(layer: RenderPass): string {
-  switch (layer) {
-    case "wallFill":
-    case "wallFace":
-      return "WALLS";
-    case "floor":
-      return "ROOMS";
-    case "doors":
-      return "DOORS";
-    case "windows":
-      return "WINDOWS";
-    case "furniture":
-      return "FURNITURE";
-    case "labels":
-      return "LABELS";
-    case "dims":
-      return "DIMS";
-    default:
-      return "0";
-  }
-}
 
 function header(): string {
   const h: string[] = [];
@@ -131,18 +120,18 @@ function header(): string {
     for (const d of lt.pattern) p(49, num(d));
   }
   p(0, "ENDTAB");
-  // LAYER table so entities reference real layers.
-  p(0, "TABLE"); p(2, "LAYER"); p(70, LAYERS.length);
-  for (const name of LAYERS) {
-    p(0, "LAYER"); p(2, name); p(70, 0); p(62, 7); p(6, "CONTINUOUS");
+  // LAYER table (AIA names + colours) so entities reference real layers.
+  p(0, "TABLE"); p(2, "LAYER"); p(70, AIA_LAYERS.length);
+  for (const { name, color } of AIA_LAYERS) {
+    p(0, "LAYER"); p(2, name); p(70, 0); p(62, color); p(6, "CONTINUOUS");
   }
   p(0, "ENDTAB"); p(0, "ENDSEC");
   return h.join("\n") + "\n";
 }
 
-/** Serialize one scene node to DXF entities on the given layer. */
+/** Serialize one scene node to DXF entities on its CAD layer. */
 function emit(b: DxfBuilder, node: SceneNode): void {
-  const layer = dxfLayer(node.layer);
+  const layer = layerOf(node);
   const lt = dxfLineType(node.lineType);
   const prim = node.prim;
   switch (prim.t) {

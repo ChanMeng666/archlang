@@ -124,6 +124,25 @@ export type ScenePrim =
       rotate?: number;
     };
 
+/**
+ * Default AIA (American Institute of Architects) CAD layer name for a draw pass.
+ * A node may override this via {@link SceneNode.layerName} (e.g. a column lives in
+ * the `furniture` pass but belongs on `A-COLS`).
+ */
+export function aiaLayer(pass: RenderPass): string {
+  switch (pass) {
+    case "floor": return "A-FLOR";
+    case "furniture": return "A-FURN";
+    case "wallFill":
+    case "wallFace": return "A-WALL";
+    case "doors": return "A-DOOR";
+    case "windows": return "A-GLAZ";
+    case "labels": return "A-ANNO-TEXT";
+    case "dims": return "A-ANNO-DIMS";
+    case "annotations": return "A-ANNO";
+  }
+}
+
 /** One drawable: a primitive on a layer, with paint and an optional source span.
  *
  * `lineWeight`/`lineType`/`layerName` are optional *semantic* style metadata
@@ -140,6 +159,11 @@ export interface SceneNode {
   lineType?: LineType;
   layerName?: string;
   span?: Span;
+}
+
+/** Effective CAD layer for a node: explicit `layerName`, else the pass default. */
+export function layerOf(node: SceneNode): string {
+  return node.layerName ?? aiaLayer(node.layer);
 }
 
 /**

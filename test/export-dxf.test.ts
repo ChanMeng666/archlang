@@ -33,8 +33,8 @@ describe("DXF export", () => {
     expect(dxf).toContain("\nARC\n"); // door swing arcs
     expect(dxf).toContain("\nTEXT\n");
     expect(dxf).toContain("Bedroom"); // room label text
-    expect(dxf).toContain("WALLS");
-    expect(dxf).toContain("ROOMS");
+    expect(dxf).toContain("A-WALL"); // AIA wall layer
+    expect(dxf).toContain("A-FLOR"); // AIA floor (room) layer
   });
 
   it("is deterministic (pure, byte-identical across calls)", () => {

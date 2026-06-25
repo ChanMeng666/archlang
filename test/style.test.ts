@@ -70,3 +70,34 @@ describe("Scene style metadata (T3.1)", () => {
     expect(mk()).toBe(mk());
   });
 });
+
+describe("AIA layers (T3.2)", () => {
+  const src = `plan "L" {
+    wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+    room at (0,0) size 4000x3000 label "R"
+    door at (2000,0) width 900 wall exterior
+    column at (500,500) size 300x300
+  }`;
+
+  it("SVG groups nodes into Inkscape layers per AIA name", () => {
+    const { scene } = compile(src, { noCache: true });
+    const svg = renderSvg(scene!);
+    for (const lyr of ["A-WALL", "A-FLOR", "A-DOOR", "A-COLS"]) {
+      expect(svg).toContain(`<g id="${lyr}" inkscape:groupmode="layer"`);
+    }
+    expect(svg).toContain('xmlns:inkscape=');
+  });
+
+  it("a column lands on A-COLS, not A-FURN", () => {
+    const { scene } = compile(src, { noCache: true });
+    const col = scene!.nodes.find((n) => n.layerName === "A-COLS");
+    expect(col).toBeDefined();
+  });
+
+  it("DXF declares AIA layers with colours and references them on entities", () => {
+    const { scene } = compile(src, { noCache: true });
+    const dxf = toDxf(scene!);
+    for (const lyr of ["A-WALL", "A-FLOR", "A-DOOR", "A-COLS"]) expect(dxf).toContain(lyr);
+    expect(dxf).toContain("\n8\nA-COLS\n"); // an entity is on the A-COLS layer
+  });
+});

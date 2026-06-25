@@ -51,6 +51,8 @@ export const column: ElementDef = {
     return [
       {
         layer: "furniture",
+        // Columns share the furniture draw pass but belong on their own CAD layer.
+        layerName: "A-COLS",
         prim: { t: "polygon", pts },
         paint: { fill: theme.column, stroke: theme.wallStroke, width: sizes.thin },
       },

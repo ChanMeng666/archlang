@@ -12,7 +12,7 @@
 import type { NorthDir, Point, TitleNode } from "../ast.js";
 import type { CompileOptions } from "../types.js";
 import type { LineType, LineWeight, Paint, RenderSizes, Scene, SceneNode } from "../scene.js";
-import { RENDER_PASSES } from "../scene.js";
+import { RENDER_PASSES, layerOf } from "../scene.js";
 import type { Bounds } from "../geometry.js";
 import type { Material } from "../hatches.js";
 import { hatchPattern } from "../hatches.js";
@@ -145,7 +145,7 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
     ? `width="${fmt(opts.width)}" height="${fmt((opts.width * vbH) / vbW)}"`
     : "";
   out.push(
-    `<svg xmlns="http://www.w3.org/2000/svg" ${svgAttrs} viewBox="${fmt(vbX)} ${fmt(vbY)} ${fmt(vbW)} ${fmt(vbH)}" font-family="${THEME.font}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" ${svgAttrs} viewBox="${fmt(vbX)} ${fmt(vbY)} ${fmt(vbW)} ${fmt(vbH)}" font-family="${THEME.font}">`,
   );
 
   // Defs: a hatch <pattern> for each wall material in use (default → "poche").
@@ -156,9 +156,24 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
   // Background
   out.push(`<rect x="${fmt(vbX)}" y="${fmt(vbY)}" width="${fmt(vbW)}" height="${fmt(vbH)}" fill="${THEME.bg}"/>`);
 
-  // Element/wall primitives, bucketed by layer (deterministic draw order).
+  // Element/wall primitives, grouped into per-CAD-layer <g> (deterministic draw
+  // order preserved: passes iterated in order, layers ordered by first appearance,
+  // collection order kept within a layer). Each <g> is an Inkscape layer so a
+  // viewer can toggle walls/doors/annotations independently.
+  const groups = new Map<string, string[]>();
   for (const pass of RENDER_PASSES) {
-    for (const node of scene.nodes) if (node.layer === pass) out.push(serialize(node, sizes));
+    for (const node of scene.nodes) {
+      if (node.layer !== pass) continue;
+      const lyr = layerOf(node);
+      let bucket = groups.get(lyr);
+      if (!bucket) groups.set(lyr, (bucket = []));
+      bucket.push(serialize(node, sizes));
+    }
+  }
+  for (const [lyr, els] of groups) {
+    out.push(`<g id="${lyr}" inkscape:groupmode="layer" inkscape:label="${lyr}">`);
+    out.push(...els);
+    out.push("</g>");
   }
 
   // Plan-level annotations (after element passes): north, scale bar, title block.
