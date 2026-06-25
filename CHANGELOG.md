@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-25
+
 ### Added
 - **Resilient parsing + professional diagnostics.** The compiler now recovers from syntax
   errors and reports **all** problems in a single pass instead of throwing on the first one.
