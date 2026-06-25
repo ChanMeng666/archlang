@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-25
+
 ### Added
 - **Element registry + AST→IR layering.** Each element type (wall, room, door,
   window, furniture, dim) is now a single self-contained module in
