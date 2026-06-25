@@ -105,8 +105,8 @@ describe("AIA layers (T3.2)", () => {
 describe("openings void walls (T3.3)", () => {
   const wallLoops = (src: string) => {
     const { scene } = compile(src, { noCache: true });
-    const node = scene!.nodes.find((n) => n.layer === "wallFill" && n.prim.t === "region");
-    return node && node.prim.t === "region" ? node.prim.loops : [];
+    const node = scene!.nodes.find((n) => n.layer === "wallFill" && n.prim.t === "hatch");
+    return node && node.prim.t === "hatch" ? node.prim.region : [];
   };
 
   it("a door cuts its host wall into two pieces", () => {

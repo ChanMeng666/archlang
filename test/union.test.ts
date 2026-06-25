@@ -108,6 +108,46 @@ describe("wall materials", () => {
   });
 });
 
+describe("hatch as data (T3.5)", () => {
+  const brick = (extra: string) =>
+    compile(`plan "H" { wall w thickness 400 material brick${extra} { (0,0) (4000,0) } }`, { noCache: true });
+
+  it("bakes scale + angle into a distinct pattern id and patternTransform", () => {
+    const { svg } = brick(" scale 2 angle 30");
+    expect(svg).toContain('id="hatch-brick-s2-a30"');
+    expect(svg).toContain('fill="url(#hatch-brick-s2-a30)"');
+    expect(svg).toContain('patternTransform="rotate(30)"');
+  });
+
+  it("keeps the bare id for the default (scale 1, angle 0)", () => {
+    const { svg } = brick("");
+    expect(svg).toContain('id="hatch-brick"');
+    expect(svg).not.toContain("hatch-brick-s");
+  });
+
+  it("two scales of one material emit two distinct patterns", () => {
+    const { svg } = compile(
+      `plan "H" {
+        wall a thickness 400 material brick scale 1 { (0,0) (4000,0) }
+        wall b thickness 400 material brick scale 3 { (0,2000) (4000,2000) }
+      }`,
+      { noCache: true },
+    );
+    expect(svg).toContain('id="hatch-brick"');
+    expect(svg).toContain('id="hatch-brick-s3-a0"');
+  });
+
+  it("scale/angle change output deterministically", () => {
+    expect(brick(" scale 1.5 angle 45").svg).toBe(brick(" scale 1.5 angle 45").svg);
+  });
+
+  it("warns on a non-positive scale and falls back to 1", () => {
+    const { svg, diagnostics } = brick(" scale 0");
+    expect(diagnostics.some((d) => d.code === "W_HATCH_SCALE")).toBe(true);
+    expect(svg).toContain('id="hatch-brick"'); // fell back to scale 1
+  });
+});
+
 // Angled (non-axis-aligned) walls: without a backend they fall back to
 // per-segment fills (seams); with the optional clipper2-wasm engine they union
 // into one seamless region. Orthogonal output must be unaffected either way.

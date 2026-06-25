@@ -14,7 +14,6 @@ import type { CompileOptions } from "../types.js";
 import type { LineType, LineWeight, Paint, RenderSizes, Scene, SceneNode } from "../scene.js";
 import { RENDER_PASSES, layerOf } from "../scene.js";
 import type { Bounds } from "../geometry.js";
-import type { Material } from "../hatches.js";
 import { hatchPattern } from "../hatches.js";
 import type { Theme } from "../theme.js";
 
@@ -115,6 +114,10 @@ function serialize(node: SceneNode, sizes: RenderSizes): string {
       return `<line x1="${fmt(prim.a.x)}" y1="${fmt(prim.a.y)}" x2="${fmt(prim.b.x)}" y2="${fmt(prim.b.y)}" stroke="${paint.stroke ?? "none"}" stroke-width="${fmt(width)}"${paint.linecap ? ` stroke-linecap="${paint.linecap}"` : ""}${dashAttr(dash)}/>`;
     case "region":
       return `<path d="${regionPath(prim.loops)}"${pathPaint(paint, width, dash)}/>`;
+    case "hatch":
+      // Filled with the material `<pattern>` (its id encodes scale/angle); `paint`
+      // already carries the `url(#…)` fill + nonzero rule, so this matches a region fill.
+      return `<path d="${regionPath(prim.region)}"${pathPaint(paint, width, dash)}/>`;
     case "arc":
       return `<path d="M ${pt(prim.start)} A ${fmt(prim.r)} ${fmt(prim.r)} 0 0 ${prim.sweep} ${pt(prim.end)}"${pathPaint(paint, width, dash)}/>`;
     case "text": {
@@ -148,9 +151,10 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" ${svgAttrs} viewBox="${fmt(vbX)} ${fmt(vbY)} ${fmt(vbW)} ${fmt(vbH)}" font-family="${THEME.font}">`,
   );
 
-  // Defs: a hatch <pattern> for each wall material in use (default → "poche").
+  // Defs: a hatch <pattern> for each distinct hatch spec in use (material + scale
+  // + angle). The default spec (poché, scale 1, angle 0) keeps the bare "poche" id.
   const hatchCtx = { fmt, gap: hatchGap, thin, base: THEME.pocheBase, line: THEME.pocheHatch };
-  const patterns = scene.materials.map((m) => hatchPattern(m as Material, hatchCtx)).join("");
+  const patterns = scene.hatches.map((h) => hatchPattern(h, hatchCtx)).join("");
   out.push(`<defs>${patterns}</defs>`);
 
   // Background

@@ -24,7 +24,7 @@ describe("Scene IR", () => {
       width: scene.width,
       height: scene.height,
       bounds: scene.bounds,
-      materials: scene.materials,
+      hatches: scene.hatches,
       nodes: scene.nodes,
     }).toMatchSnapshot();
   });
@@ -50,10 +50,11 @@ describe("Scene IR", () => {
     for (const name of ["studio.arch", "two-bed.arch", "parametric.arch", "themed.arch"]) {
       for (const n of sceneOf(example(name)).nodes) kinds.add(n.prim.t);
     }
-    // walls union → region, openings → polygon/line, doors → arc, labels → text.
+    // walls union → hatch fill + region face, openings → polygon/line, doors → arc, labels → text.
     expect(kinds).toContain("polygon");
     expect(kinds).toContain("line");
     expect(kinds).toContain("region");
+    expect(kinds).toContain("hatch");
     expect(kinds).toContain("arc");
     expect(kinds).toContain("text");
   });

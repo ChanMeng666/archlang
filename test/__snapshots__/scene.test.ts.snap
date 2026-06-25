@@ -8,10 +8,14 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     "minX": -100,
     "minY": -100,
   },
-  "height": 8648,
-  "materials": [
-    "poche",
+  "hatches": [
+    {
+      "angle": 0,
+      "material": "poche",
+      "scale": 1,
+    },
   ],
+  "height": 8648,
   "nodes": [
     {
       "layer": "floor",
@@ -1025,7 +1029,9 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
         "fillRule": "nonzero",
       },
       "prim": {
-        "loops": [
+        "angle": 0,
+        "material": "poche",
+        "region": [
           [
             {
               "x": -100,
@@ -1189,7 +1195,8 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
             },
           ],
         ],
-        "t": "region",
+        "scale": 1,
+        "t": "hatch",
       },
     },
     {

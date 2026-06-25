@@ -47,6 +47,10 @@ export interface RWall extends RBase {
   thickness: number;
   /** Resolved hatch material (always a known material; defaults to "poche"). */
   material: string;
+  /** Hatch tile-size multiplier (default 1). */
+  hatchScale: number;
+  /** Extra hatch rotation in degrees (default 0). */
+  hatchAngle: number;
   points: Point[];
   closed: boolean;
   /** Openings (doors/windows) hosted on this wall; subtracted from its solid. */

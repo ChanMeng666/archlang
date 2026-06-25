@@ -22,6 +22,7 @@
 import type { NorthDir, Point, TitleNode } from "./ast.js";
 import type { Span } from "./diagnostics.js";
 import type { Bounds } from "./geometry.js";
+import type { HatchSpec } from "./hatches.js";
 import type { Theme } from "./theme.js";
 
 /**
@@ -110,6 +111,13 @@ export type ScenePrim =
    * SVG `A` command needs — so neither backend re-derives endpoints from trig.
    */
   | { t: "arc"; center: Point; r: number; start: Point; end: Point; sweep: 0 | 1 }
+  /**
+   * A hatched (poché) region: closed loops filled with a named material pattern,
+   * scaled and rotated. The SVG backend bakes `scale`→tile size and `angle`→
+   * `patternTransform`; the DXF backend emits a real `HATCH` entity. `origin` is
+   * the optional pattern anchor (defaults to the drawing origin).
+   */
+  | { t: "hatch"; region: Point[][]; material: string; scale: number; angle: number; origin?: Point }
   /** A text label. `value` is the raw (unescaped) string; backends escape on emit. */
   | {
       t: "text";
@@ -185,6 +193,6 @@ export interface Scene {
   scale?: string;
   title?: TitleNode;
   name: string;
-  /** Distinct wall materials in use (stable order), so the SVG backend can emit hatch `<pattern>`s. */
-  materials: string[];
+  /** Distinct hatch specs in use (stable order), so the SVG backend can emit a `<pattern>` per spec. */
+  hatches: HatchSpec[];
 }

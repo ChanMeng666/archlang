@@ -1,8 +1,11 @@
 /**
  * DXF export backend — a pure serializer of the {@link Scene}. Emits ASCII DXF
- * (R12 / AC1009, the most broadly importable flavor). Pure, synchronous,
- * zero-dep: DXF is plain text, so this needs no external library and ships in the
- * core. Build a Scene with `toScene(resolve(ast).ir)` (or `compile().scene`).
+ * headed `AC1015` (AutoCAD 2000): R12-style LINE/ARC/TEXT entities (broadly
+ * importable) plus the v0.9 `HATCH` entity (introduced after R12, hence the
+ * version bump) so wall poché survives to CAD as a real hatch, not just boundary
+ * lines. Pure, synchronous, zero-dep: DXF is plain text, so this needs no
+ * external library and ships in the core. Build a Scene with
+ * `toScene(resolve(ast).ir)` (or `compile().scene`).
  *
  * As of v0.7 the geometry is NOT re-derived here: door arcs, window panes, and
  * dimension ticks are the very `ScenePrim`s the elements produced. Each primitive
@@ -15,6 +18,7 @@ import type { Point } from "../ast.js";
 import type { LineType, Scene, SceneNode } from "../scene.js";
 import { layerOf } from "../scene.js";
 import { minorArcDegrees } from "../geometry.js";
+import { dxfPatternName, isSolidFill } from "../hatches.js";
 
 /** Deterministic number formatting (round to 4dp, no -0). */
 function num(v: number): string {
@@ -79,6 +83,45 @@ class DxfBuilder {
     }
   }
 
+  /**
+   * A real HATCH entity (AutoCAD 2000+). Each region loop becomes a closed
+   * polyline boundary path; `pattern` is a predefined pattern name (group 2),
+   * with `scale`/`angle` (groups 41/52). `solid` switches to a solid fill (70=1).
+   * Hatch style 75=0 (odd-parity) so multi-loop regions render holes correctly.
+   */
+  hatch(layer: string, loops: Point[][], pattern: string, solid: boolean, scale: number, angle: number): void {
+    this.pair(0, "HATCH");
+    this.pair(100, "AcDbEntity");
+    this.pair(8, layer);
+    this.pair(100, "AcDbHatch");
+    this.pair(10, 0); this.pair(20, 0); this.pair(30, 0); // elevation point
+    this.pair(210, 0); this.pair(220, 0); this.pair(230, 1); // extrusion
+    this.pair(2, pattern);
+    this.pair(70, solid ? 1 : 0);
+    this.pair(71, 0); // non-associative
+    this.pair(91, loops.length); // boundary path count
+    for (const loop of loops) {
+      this.pair(92, 2); // polyline boundary
+      this.pair(72, 0); // no bulge
+      this.pair(73, 1); // closed
+      this.pair(93, loop.length); // vertex count
+      for (const p of loop) {
+        this.pair(10, num(p.x));
+        this.pair(20, num(-p.y));
+      }
+      this.pair(97, 0); // source boundary objects
+    }
+    this.pair(75, 0); // hatch style: normal (odd parity)
+    this.pair(76, 1); // pattern type: predefined
+    if (!solid) {
+      this.pair(52, num(angle)); // pattern angle (deg)
+      this.pair(41, num(scale)); // pattern scale
+      this.pair(77, 0); // not doubled
+      this.pair(78, 0); // pattern definition lines (predefined → resolved by name)
+    }
+    this.pair(98, 0); // seed points
+  }
+
   toString(): string {
     return this.out.join("\n") + "\n";
   }
@@ -109,8 +152,8 @@ const LTYPES: { name: string; desc: string; pattern: number[] }[] = [
 function header(): string {
   const h: string[] = [];
   const p = (c: number, v: string | number) => h.push(String(c), String(v));
-  // Minimal HEADER declaring R12.
-  p(0, "SECTION"); p(2, "HEADER"); p(9, "$ACADVER"); p(1, "AC1009"); p(0, "ENDSEC");
+  // Minimal HEADER declaring AutoCAD 2000 (AC1015) — the HATCH entity needs > R12.
+  p(0, "SECTION"); p(2, "HEADER"); p(9, "$ACADVER"); p(1, "AC1015"); p(0, "ENDSEC");
   p(0, "SECTION"); p(2, "TABLES");
   // LTYPE table FIRST, so the LAYER table (and entities) can reference linetypes.
   p(0, "TABLE"); p(2, "LTYPE"); p(70, LTYPES.length);
@@ -143,6 +186,9 @@ function emit(b: DxfBuilder, node: SceneNode): void {
       break;
     case "region":
       for (const lp of prim.loops) b.loop(layer, lp, lt);
+      break;
+    case "hatch":
+      b.hatch(layer, prim.region, dxfPatternName(prim.material), isSolidFill(prim.material), prim.scale, prim.angle);
       break;
     case "arc": {
       const [a0, a1] = minorArcDegrees(prim.center, prim.start, prim.end);

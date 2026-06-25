@@ -21,6 +21,7 @@ import { getGeometryBackend } from "./geometry/backend.js";
 import type { GeometryBackend } from "./geometry/backend.js";
 import type { Point } from "./ast.js";
 import { patternId } from "./hatches.js";
+import type { HatchSpec } from "./hatches.js";
 import { DEFAULT_THEME, mergeTheme, sanitizeTheme } from "./theme.js";
 
 /** Drawing bounds: each element contributes points via its registry `bounds`. */
@@ -43,9 +44,25 @@ function allOrthogonal(walls: RWall[]): boolean {
   return walls.every((w) => segmentsOfWall(w).every((s) => s.a.x === s.b.x || s.a.y === s.b.y));
 }
 
-/** Distinct wall materials present, in a stable (sorted) order. */
-function materialsUsed(walls: RWall[]): string[] {
-  return [...new Set(walls.map((w) => w.material))].sort();
+/** The hatch spec a wall fills with (material + scale + angle). */
+function hatchOf(w: RWall): HatchSpec {
+  return { material: w.material, scale: w.hatchScale, angle: w.hatchAngle };
+}
+
+/** Stable grouping key for a hatch spec (walls sharing it union together). */
+function hatchKey(h: HatchSpec): string {
+  return `${h.material}|${h.scale}|${h.angle}`;
+}
+
+/** Distinct hatch specs present, in a stable (key-sorted) order. */
+function hatchesUsed(walls: RWall[]): HatchSpec[] {
+  const seen = new Map<string, HatchSpec>();
+  for (const w of walls) {
+    const h = hatchOf(w);
+    const k = hatchKey(h);
+    if (!seen.has(k)) seen.set(k, h);
+  }
+  return [...seen.values()].sort((a, b) => (hatchKey(a) < hatchKey(b) ? -1 : 1));
 }
 
 /**
@@ -104,10 +121,14 @@ function openingPoly(w: RWall, op: Opening): Point[] | null {
   ];
 }
 
-/** The fill + outline nodes for one material's unioned wall region. */
-function emitRegion(loops: Point[][], mat: string, ctx: RenderCtx): SceneNode[] {
+/** The fill (data-driven hatch) + outline nodes for one hatch group's unioned region. */
+function emitRegion(loops: Point[][], h: HatchSpec, ctx: RenderCtx): SceneNode[] {
   return [
-    { layer: "wallFill", prim: { t: "region", loops }, paint: { fill: `url(#${patternId(mat)})`, fillRule: "nonzero" } },
+    {
+      layer: "wallFill",
+      prim: { t: "hatch", region: loops, material: h.material, scale: h.scale, angle: h.angle },
+      paint: { fill: `url(#${patternId(h.material, h.scale, h.angle)})`, fillRule: "nonzero" },
+    },
     {
       layer: "wallFace",
       prim: { t: "region", loops },
@@ -116,8 +137,8 @@ function emitRegion(loops: Point[][], mat: string, ctx: RenderCtx): SceneNode[] 
   ];
 }
 
-/** Axis-aligned union (+ opening holes) for an all-orthogonal material group. */
-function lowerOrthogonalGroup(group: RWall[], mat: string, ctx: RenderCtx): SceneNode[] {
+/** Axis-aligned union (+ opening holes) for an all-orthogonal hatch group. */
+function lowerOrthogonalGroup(group: RWall[], h: HatchSpec, ctx: RenderCtx): SceneNode[] {
   const rects: Rect[] = [];
   const holes: Rect[] = [];
   for (const w of group) {
@@ -134,17 +155,17 @@ function lowerOrthogonalGroup(group: RWall[], mat: string, ctx: RenderCtx): Scen
     }
   }
   const loops = rectBooleanOutline(rects, holes);
-  return loops.length === 0 ? [] : emitRegion(loops, mat, ctx);
+  return loops.length === 0 ? [] : emitRegion(loops, h, ctx);
 }
 
 /**
- * Polygon union (+ opening holes) for a material group containing angled walls,
- * via the optional {@link GeometryBackend}. Each segment becomes a (possibly
- * rotated) rectangle; the backend merges them into one seamless outline and
- * subtracts the opening polygons. Returns `null` if the backend yields nothing
- * (degenerate input), so the caller can fall back.
+ * Polygon union (+ opening holes) for a hatch group containing angled walls, via
+ * the optional {@link GeometryBackend}. Each segment becomes a (possibly rotated)
+ * rectangle; the backend merges them into one seamless outline and subtracts the
+ * opening polygons. Returns `null` if the backend yields nothing (degenerate
+ * input), so the caller can fall back.
  */
-function lowerAngledGroup(group: RWall[], mat: string, ctx: RenderCtx, backend: GeometryBackend): SceneNode[] | null {
+function lowerAngledGroup(group: RWall[], h: HatchSpec, ctx: RenderCtx, backend: GeometryBackend): SceneNode[] | null {
   const rects: Point[][] = [];
   const holes: Point[][] = [];
   for (const w of group) {
@@ -155,28 +176,29 @@ function lowerAngledGroup(group: RWall[], mat: string, ctx: RenderCtx, backend: 
     }
   }
   const loops = holes.length ? backend.difference(rects, holes) : backend.union(rects);
-  return loops.length === 0 ? null : emitRegion(loops, mat, ctx);
+  return loops.length === 0 ? null : emitRegion(loops, h, ctx);
 }
 
 /**
- * Wall fill + outline, grouped by material so each material's poché unions
- * independently. Orthogonal groups become a single multi-loop `region` via the
- * zero-dependency rectilinear boolean (byte-identical regardless of any
- * registered backend). A group with angled walls uses the optional
- * {@link GeometryBackend} when one is registered (seamless joinery), else falls
- * back to the wall element's per-segment primitives.
+ * Wall fill + outline, grouped by hatch spec (material + scale + angle) so each
+ * distinct poché unions independently. Orthogonal groups become a single
+ * multi-loop region via the zero-dependency rectilinear boolean (byte-identical
+ * regardless of any registered backend). A group with angled walls uses the
+ * optional {@link GeometryBackend} when one is registered (seamless joinery),
+ * else falls back to the wall element's per-segment primitives.
  */
 function lowerWalls(walls: RWall[], ctx: RenderCtx): SceneNode[] {
   if (walls.length === 0) return [];
   const backend = getGeometryBackend();
   const nodes: SceneNode[] = [];
-  for (const mat of materialsUsed(walls)) {
-    const group = walls.filter((w) => w.material === mat);
+  for (const h of hatchesUsed(walls)) {
+    const k = hatchKey(h);
+    const group = walls.filter((w) => hatchKey(hatchOf(w)) === k);
     if (allOrthogonal(group)) {
-      nodes.push(...lowerOrthogonalGroup(group, mat, ctx));
+      nodes.push(...lowerOrthogonalGroup(group, h, ctx));
       continue;
     }
-    const viaBackend = backend ? lowerAngledGroup(group, mat, ctx, backend) : null;
+    const viaBackend = backend ? lowerAngledGroup(group, h, ctx, backend) : null;
     if (viaBackend) {
       nodes.push(...viaBackend);
     } else {
@@ -236,6 +258,6 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}): Scene {
     scale: ir.scale,
     title: ir.title,
     name: ir.name,
-    materials: materialsUsed(ir.walls),
+    hatches: hatchesUsed(ir.walls),
   };
 }
