@@ -7,7 +7,7 @@
 
 import type { Token } from "./lexer.js";
 import type { AstElement, ElementKind, ExprPoint, Point } from "./ast.js";
-import type { Expr } from "./expr.js";
+import type { Expr, Value } from "./expr.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { ResolvedElement, RWall } from "./ir.js";
 import type { Bounds, WallSegment } from "./geometry.js";
@@ -56,6 +56,10 @@ export interface ResolveCtx {
   walls: RWall[];
   hostSegment(at: Point, ref?: string): WallSegment | null;
   isOnWall(at: Point, ref?: string): boolean;
+  /** Active `set <kind>(…)` overrides for the element being resolved (by attr
+   *  name), or undefined when none are in scope. Elements apply these only to
+   *  attributes the user left unspecified. */
+  defaults?: ReadonlyMap<string, Value>;
   diag(d: Diagnostic): void;
 }
 

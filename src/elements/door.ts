@@ -4,7 +4,14 @@ import type { DoorNode, Point } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RDoor } from "../ir.js";
+import type { Value } from "../expr.js";
 import { add, mul, normal, sub, unit } from "../geometry.js";
+
+/** Read an enum override from the active `set` defaults, if valid. */
+function enumDefault<T extends string>(defaults: ReadonlyMap<string, Value> | undefined, key: string, allowed: readonly T[]): T | undefined {
+  const v = defaults?.get(key);
+  return v && v.t === "str" && (allowed as readonly string[]).includes(v.v) ? (v.v as T) : undefined;
+}
 
 export const door: ElementDef = {
   kind: "door",
@@ -17,7 +24,7 @@ export const door: ElementDef = {
     const at = ctx.parsePoint();
     ctx.eatKeyword("width");
     const width = ctx.parseExpr();
-    const node: DoorNode = { kind: "door", id, at, width, hinge: "left", swing: "in", line: kw.line };
+    const node: DoorNode = { kind: "door", id, at, width, line: kw.line };
     if (ctx.isKeyword("wall")) {
       ctx.next();
       node.wall = ctx.eatIdent().value;
@@ -51,7 +58,10 @@ export const door: ElementDef = {
     if (ctx.walls.length > 0 && !ctx.isOnWall(at, n.wall)) {
       ctx.diag({ severity: "warning", message: `Door "${id}" does not lie on any wall`, code: "W_DOOR_OFF_WALL", span: n.span });
     }
-    return { kind: "door", id, at, width, hinge: n.hinge, swing: n.swing, host: ctx.hostSegment(at, n.wall), span: n.span };
+    // Precedence: explicit attribute > `set door(...)` default > hard default.
+    const hinge = n.hinge ?? enumDefault(ctx.defaults, "hinge", ["left", "right"] as const) ?? "left";
+    const swing = n.swing ?? enumDefault(ctx.defaults, "swing", ["in", "out"] as const) ?? "in";
+    return { kind: "door", id, at, width, hinge, swing, host: ctx.hostSegment(at, n.wall), span: n.span };
   },
 
   bounds: () => [],

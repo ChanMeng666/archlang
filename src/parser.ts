@@ -13,6 +13,8 @@ import type {
   LetNode,
   NorthDir,
   PlanNode,
+  SetNode,
+  SetOverride,
   Statement,
   TitleNode,
   WhileNode,
@@ -31,8 +33,8 @@ export interface ParseOutcome {
 
 /** Plan-level settings + binding/definition keywords (not registry elements). */
 const SETTINGS = ["units", "grid", "scale", "north", "title", "theme", "let", "component"];
-/** Control-flow keywords that begin a body statement. */
-const CONTROL = ["for", "if", "while"];
+/** Control-flow + rule keywords that begin a body statement. */
+const CONTROL = ["for", "if", "while", "set"];
 /** Keywords that begin a plan-body statement; recovery resynchronizes to one. */
 const STATEMENT_STARTS = new Set<string>([...SETTINGS, ...CONTROL, ...registry.keys()]);
 
@@ -395,6 +397,7 @@ class Parser {
     if (t.value === "for") node = this.parseFor(components, selfName);
     else if (t.value === "if") node = this.parseIf(components, selfName);
     else if (t.value === "while") node = this.parseWhile(components, selfName);
+    else if (t.value === "set") node = this.parseSet();
     else {
       const def = registry.get(t.value);
       if (def) node = def.parse(this.ctx);
@@ -450,6 +453,36 @@ class Parser {
       els = this.parseBlockBody(components, selfName);
     }
     return { kind: "if", id: "", cond, then, else: els, line: kw.line };
+  }
+
+  /** `set <kind>(key: value, …)` — scoped default overrides for an element kind. */
+  private parseSet(): SetNode {
+    const kw = this.eatKeyword("set");
+    const targetTok = this.eatIdent();
+    const def = registry.get(targetTok.value);
+    if (!def) this.fail(`Unknown element kind "${targetTok.value}" in "set" rule`, targetTok);
+    this.eat("lparen");
+    const over: SetOverride[] = [];
+    while (!this.isType("rparen") && !this.isType("eof")) {
+      const key = this.eatIdent().value;
+      this.eat("colon");
+      over.push({ key, value: this.parseSetValue() });
+      if (this.isType("comma")) this.next();
+      else break;
+    }
+    this.eat("rparen");
+    return { kind: "set", id: "", target: def.kind, over, line: kw.line };
+  }
+
+  /** A `set` value: a bare keyword (enum like `out`/`left`) is a string;
+   *  anything else is a normal expression. */
+  private parseSetValue(): Expr {
+    const t = this.peek();
+    if (t.type === "ident" && (this.peek(1).type === "comma" || this.peek(1).type === "rparen")) {
+      this.next();
+      return { t: "str", parts: [t.value] };
+    }
+    return parseExprPratt(this.ctx);
   }
 
   /** `while <expr> { body }`. */

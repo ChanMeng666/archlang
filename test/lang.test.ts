@@ -281,3 +281,55 @@ describe("built-ins (T2.6)", () => {
     expect(at(`let min = 7 column at (min, 0) size 1x1`).x).toBe(7);
   });
 });
+
+describe("set rules (T2.7)", () => {
+  const doors = (src: string) => elements(`plan "P" {\n${src}\n}`).filter((e) => e.kind === "door");
+
+  it("a set changes the default for subsequent doors (DoD)", () => {
+    const ds = doors(`
+      wall exterior thickness 200 { (0,0) (4000,0) }
+      door at (1000, 0) width 800
+      set door(swing: out)
+      door at (3000, 0) width 800
+    `);
+    expect(ds.map((d) => d.swing)).toEqual(["in", "out"]); // first default, second overridden
+  });
+
+  it("an explicit attribute beats the set default", () => {
+    const ds = doors(`
+      wall exterior thickness 200 { (0,0) (4000,0) }
+      set door(swing: out)
+      door at (1000, 0) width 800 swing in
+      door at (3000, 0) width 800
+    `);
+    expect(ds.map((d) => d.swing)).toEqual(["in", "out"]); // explicit wins, then set default
+  });
+
+  it("a set is scoped to its block and does not leak out", () => {
+    const ds = doors(`
+      wall exterior thickness 200 { (0,0) (6000,0) }
+      if true { set door(swing: out) door at (1000, 0) width 800 }
+      door at (3000, 0) width 800
+    `);
+    expect(ds.map((d) => d.swing)).toEqual(["out", "in"]); // inside block out, outside back to default
+  });
+
+  it("set supports multiple keys (hinge + swing)", () => {
+    const ds = doors(`
+      wall exterior thickness 200 { (0,0) (4000,0) }
+      set door(hinge: right, swing: out)
+      door at (2000, 0) width 800
+    `);
+    expect([ds[0].hinge, ds[0].swing]).toEqual(["right", "out"]);
+  });
+
+  it("an unknown element kind in a set rule is a parse error", () => {
+    const d = compile(`plan "P" { set wibble(x: 1) }`, { noCache: true }).diagnostics;
+    expect(d.some((x) => /Unknown element kind/.test(x.message))).toBe(true);
+  });
+
+  it("set is deterministic", () => {
+    const src = `plan "P" { wall exterior thickness 200 { (0,0) (4000,0) } set door(swing: out) door at (2000,0) width 800 }`;
+    expect(compile(src, { noCache: true }).svg).toBe(compile(src, { noCache: true }).svg);
+  });
+});

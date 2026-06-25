@@ -108,6 +108,8 @@ interface Entry {
   node: AstElement;
   env: Env;
   id: string;
+  /** Active `set` overrides for this element's kind, captured at expansion. */
+  defaults?: ReadonlyMap<string, Value>;
   resolved?: ResolvedElement;
 }
 
@@ -119,6 +121,8 @@ interface Entry {
  */
 class Scope {
   readonly vars = new Map<string, Value>();
+  /** Active `set <kind>(…)` overrides declared in THIS scope. */
+  readonly sets = new Map<ElementKind, ReadonlyMap<string, Value>>();
   constructor(readonly parent?: Scope) {}
 
   /** The nearest scope (this or an ancestor) that declares `name`. */
@@ -135,6 +139,18 @@ class Scope {
     for (let s: Scope | undefined = this; s; s = s.parent) chain.push(s);
     for (let i = chain.length - 1; i >= 0; i--) for (const [k, v] of chain[i].vars) m.set(k, v);
     return m;
+  }
+
+  /** Merge `set` overrides for `kind` down the scope chain (child wins). */
+  effectiveSet(kind: ElementKind): ReadonlyMap<string, Value> | undefined {
+    let merged: Map<string, Value> | undefined;
+    const chain: Scope[] = [];
+    for (let s: Scope | undefined = this; s; s = s.parent) chain.push(s);
+    for (let i = chain.length - 1; i >= 0; i--) {
+      const m = chain[i].sets.get(kind);
+      if (m) merged = new Map([...(merged ?? []), ...m]);
+    }
+    return merged;
   }
 }
 
@@ -238,9 +254,17 @@ function expandScope(
         }
         break;
       }
+      case "set": {
+        // Merge into this scope's overrides for the target kind; later elements
+        // in this (and nested) scopes pick them up.
+        const merged = new Map<string, Value>(scope.sets.get(stmt.target) ?? []);
+        for (const o of stmt.over) merged.set(o.key, evalIn(o.value));
+        scope.sets.set(stmt.target, merged);
+        break;
+      }
       default:
-        // An element: snapshot the scope's visible bindings for resolve.
-        out.push({ node: stmt, env: scope.flatten(), id: "" });
+        // An element: snapshot the scope's visible bindings + active set-defaults.
+        out.push({ node: stmt, env: scope.flatten(), id: "", defaults: scope.effectiveSet(stmt.kind) });
     }
   }
   return out;
@@ -323,6 +347,7 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
       if (e.node.kind !== def.kind) continue;
       activeEnv = e.env;
       ctx.id = e.id;
+      ctx.defaults = e.defaults;
       const r = def.resolve(e.node, ctx);
       e.resolved = r;
       if (r.kind === "wall") walls.push(r);

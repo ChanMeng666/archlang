@@ -67,8 +67,10 @@ export interface DoorNode extends NodeBase {
   width: Expr;
   /** Optional wall (id or category) the door is hosted by. */
   wall?: string;
-  hinge: "left" | "right";
-  swing: "in" | "out";
+  /** Hinge/swing are explicit-only here; the default (and any `set door(...)`
+   *  override) is applied at resolve so user-specified values always win. */
+  hinge?: "left" | "right";
+  swing?: "in" | "out";
 }
 
 export interface WindowNode extends NodeBase {
@@ -158,8 +160,22 @@ export interface AssignNode extends NodeBase {
   value: Expr;
 }
 
+/** One `key: value` override inside a `set` rule. */
+export interface SetOverride {
+  key: string;
+  value: Expr;
+}
+
+/** `set <kind>(key: value, …)` — override defaults for subsequent elements of
+ *  that kind, scoped to the enclosing block. */
+export interface SetNode extends NodeBase {
+  kind: "set";
+  target: ElementKind;
+  over: SetOverride[];
+}
+
 /** A plan-body statement in source order. */
-export type Statement = AstElement | LetNode | InstanceNode | ForNode | IfNode | WhileNode | AssignNode;
+export type Statement = AstElement | LetNode | InstanceNode | ForNode | IfNode | WhileNode | AssignNode | SetNode;
 
 /** `component NAME(params) { body }` — a reusable parameterised sub-plan. */
 export interface ComponentDef {
