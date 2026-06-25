@@ -46,7 +46,7 @@ export type {
 // a Scene: `toDxf(scene)` / `toPdf(scene)`; build one with `toScene(ir)` or read
 // `compile().scene`.
 export { toScene } from "./scene-build.js";
-export type { Scene, SceneNode, ScenePrim, Paint, RenderPass, RenderSizes } from "./scene.js";
+export type { Scene, SceneNode, ScenePrim, Paint, RenderPass, RenderSizes, LineWeight, LineType } from "./scene.js";
 export { toDxf } from "./export/dxf.js";
 export { toPdf } from "./export/pdf.js";
 

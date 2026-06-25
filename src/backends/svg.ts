@@ -11,7 +11,7 @@
 
 import type { NorthDir, Point, TitleNode } from "../ast.js";
 import type { CompileOptions } from "../types.js";
-import type { Paint, Scene, SceneNode } from "../scene.js";
+import type { LineType, LineWeight, Paint, RenderSizes, Scene, SceneNode } from "../scene.js";
 import { RENDER_PASSES } from "../scene.js";
 import type { Bounds } from "../geometry.js";
 import type { Material } from "../hatches.js";
@@ -40,21 +40,62 @@ function niceBarLength(target: number): number {
   return best;
 }
 
+/**
+ * Named line-weight ramp → concrete stroke width in mm, scaled from the drawing.
+ * `heavy` matches the wall stroke; the rest step down. The whole hierarchy keys
+ * off the same sizes (which already include the theme `lineWeight` multiplier),
+ * so weights stay proportional at any drawing size.
+ */
+function weightWidth(w: LineWeight, sizes: RenderSizes): number {
+  switch (w) {
+    case "heavy": return sizes.wallStroke;
+    case "medium": return sizes.wallStroke * 0.6;
+    case "thin": return sizes.thin;
+    case "extraThin": return sizes.thin * 0.55;
+  }
+}
+
+/** Named line type → dash pattern in mm (undefined = solid). */
+function dashPattern(t: LineType, sizes: RenderSizes): number[] | undefined {
+  const u = sizes.thin;
+  switch (t) {
+    case "continuous": return undefined;
+    case "dashed": return [u * 6, u * 4];
+    case "center": return [u * 12, u * 3, u * 3, u * 3];
+    case "hidden": return [u * 3, u * 3];
+  }
+}
+
+/** Effective stroke width: from the named weight if set, else the raw paint width. */
+function effWidth(node: SceneNode, sizes: RenderSizes): number {
+  return node.lineWeight ? weightWidth(node.lineWeight, sizes) : node.paint.width ?? 0;
+}
+
+/** Effective dash array: from the named line type if set, else the raw paint dash. */
+function effDash(node: SceneNode, sizes: RenderSizes): number[] | undefined {
+  if (node.lineType && node.lineType !== "continuous") return dashPattern(node.lineType, sizes);
+  return node.paint.dash;
+}
+
+const dashAttr = (dash: number[] | undefined): string =>
+  dash ? ` stroke-dasharray="${dash.map(fmt).join(" ")}"` : "";
+
 /** Stroke attributes shared by `polygon`/`line` (omitted entirely when no stroke). */
-function strokeAttrs(paint: Paint): string {
+function strokeAttrs(paint: Paint, width: number, dash: number[] | undefined): string {
   if (!paint.stroke) return "";
-  let s = ` stroke="${paint.stroke}" stroke-width="${fmt(paint.width ?? 0)}"`;
+  let s = ` stroke="${paint.stroke}" stroke-width="${fmt(width)}"`;
   if (paint.linecap) s += ` stroke-linecap="${paint.linecap}"`;
+  s += dashAttr(dash);
   return s;
 }
 
 /** Paint attributes for a `<path>` (region/arc), in the canonical attribute order. */
-function pathPaint(paint: Paint): string {
+function pathPaint(paint: Paint, width: number, dash: number[] | undefined): string {
   let s = ` fill="${paint.fill ?? "none"}"`;
   if (paint.fillRule) s += ` fill-rule="${paint.fillRule}"`;
-  if (paint.stroke) s += ` stroke="${paint.stroke}" stroke-width="${fmt(paint.width ?? 0)}"`;
+  if (paint.stroke) s += ` stroke="${paint.stroke}" stroke-width="${fmt(width)}"`;
   if (paint.linejoin) s += ` stroke-linejoin="${paint.linejoin}"`;
-  if (paint.dash) s += ` stroke-dasharray="${fmt(paint.dash[0])} ${fmt(paint.dash[1])}"`;
+  s += dashAttr(dash);
   return s;
 }
 
@@ -63,17 +104,19 @@ function regionPath(loops: Point[][]): string {
 }
 
 /** Serialize one scene node to a single SVG element string. */
-function serialize(node: SceneNode): string {
+function serialize(node: SceneNode, sizes: RenderSizes): string {
   const { prim, paint } = node;
+  const width = effWidth(node, sizes);
+  const dash = effDash(node, sizes);
   switch (prim.t) {
     case "polygon":
-      return `<polygon points="${prim.pts.map(pt).join(" ")}" fill="${paint.fill ?? "none"}"${strokeAttrs(paint)}/>`;
+      return `<polygon points="${prim.pts.map(pt).join(" ")}" fill="${paint.fill ?? "none"}"${strokeAttrs(paint, width, dash)}/>`;
     case "line":
-      return `<line x1="${fmt(prim.a.x)}" y1="${fmt(prim.a.y)}" x2="${fmt(prim.b.x)}" y2="${fmt(prim.b.y)}" stroke="${paint.stroke ?? "none"}" stroke-width="${fmt(paint.width ?? 0)}"${paint.linecap ? ` stroke-linecap="${paint.linecap}"` : ""}/>`;
+      return `<line x1="${fmt(prim.a.x)}" y1="${fmt(prim.a.y)}" x2="${fmt(prim.b.x)}" y2="${fmt(prim.b.y)}" stroke="${paint.stroke ?? "none"}" stroke-width="${fmt(width)}"${paint.linecap ? ` stroke-linecap="${paint.linecap}"` : ""}${dashAttr(dash)}/>`;
     case "region":
-      return `<path d="${regionPath(prim.loops)}"${pathPaint(paint)}/>`;
+      return `<path d="${regionPath(prim.loops)}"${pathPaint(paint, width, dash)}/>`;
     case "arc":
-      return `<path d="M ${pt(prim.start)} A ${fmt(prim.r)} ${fmt(prim.r)} 0 0 ${prim.sweep} ${pt(prim.end)}"${pathPaint(paint)}/>`;
+      return `<path d="M ${pt(prim.start)} A ${fmt(prim.r)} ${fmt(prim.r)} 0 0 ${prim.sweep} ${pt(prim.end)}"${pathPaint(paint, width, dash)}/>`;
     case "text": {
       const weight = prim.weight !== undefined ? ` font-weight="${prim.weight}"` : "";
       const transform = prim.rotate !== undefined ? ` transform="rotate(${fmt(prim.rotate)} ${fmt(prim.at.x)} ${fmt(prim.at.y)})"` : "";
@@ -115,7 +158,7 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
 
   // Element/wall primitives, bucketed by layer (deterministic draw order).
   for (const pass of RENDER_PASSES) {
-    for (const node of scene.nodes) if (node.layer === pass) out.push(serialize(node));
+    for (const node of scene.nodes) if (node.layer === pass) out.push(serialize(node, sizes));
   }
 
   // Plan-level annotations (after element passes): north, scale bar, title block.

@@ -43,6 +43,18 @@ export const RENDER_PASSES = [
 ] as const;
 export type RenderPass = (typeof RENDER_PASSES)[number];
 
+/**
+ * Named line-weight steps (a CAD pen ramp). A backend maps each to a concrete
+ * stroke width via the drawing's reference dimension + theme `lineWeight`, so the
+ * weight *hierarchy* is defined once and stays consistent across SVG/DXF/PDF.
+ */
+export const LINE_WEIGHTS = ["heavy", "medium", "thin", "extraThin"] as const;
+export type LineWeight = (typeof LINE_WEIGHTS)[number];
+
+/** Named line types (dash conventions). `continuous` is the default solid line. */
+export const LINE_TYPES = ["continuous", "dashed", "center", "hidden"] as const;
+export type LineType = (typeof LINE_TYPES)[number];
+
 /** Render-derived sizes (in mm), scaled from the drawing's reference dimension. */
 export interface RenderSizes {
   refDim: number;
@@ -112,11 +124,21 @@ export type ScenePrim =
       rotate?: number;
     };
 
-/** One drawable: a primitive on a layer, with paint and an optional source span. */
+/** One drawable: a primitive on a layer, with paint and an optional source span.
+ *
+ * `lineWeight`/`lineType`/`layerName` are optional *semantic* style metadata
+ * (added in Phase v0.9). When `lineWeight` is set a backend derives the stroke
+ * width from the named ramp (overriding `paint.width`); when `lineType` is set
+ * (and not `continuous`) it derives the dash pattern. `layerName` names the CAD
+ * layer (AIA) the node belongs to. All are additive: a node that sets none
+ * renders exactly as before. */
 export interface SceneNode {
   layer: RenderPass;
   prim: ScenePrim;
   paint: Paint;
+  lineWeight?: LineWeight;
+  lineType?: LineType;
+  layerName?: string;
   span?: Span;
 }
 
