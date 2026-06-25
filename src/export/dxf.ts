@@ -1,16 +1,19 @@
 /**
- * DXF export backend — consumes the resolved IR and emits ASCII DXF (R12 /
- * AC1009, the most broadly importable flavor). Pure, synchronous, zero-dep:
- * DXF is plain text, so this needs no external library and is safe to ship in
- * the core. It is NOT part of `compile()` — call it on the IR from `resolve()`.
+ * DXF export backend — a pure serializer of the {@link Scene}. Emits ASCII DXF
+ * (R12 / AC1009, the most broadly importable flavor). Pure, synchronous,
+ * zero-dep: DXF is plain text, so this needs no external library and ships in the
+ * core. Build a Scene with `toScene(resolve(ast).ir)` (or `compile().scene`).
  *
- * DXF's Y axis points up, while ArchLang's Y points down (SVG convention), so
- * every coordinate's Y is negated here to keep plans right-side-up in CAD.
+ * As of v0.7 the geometry is NOT re-derived here: door arcs, window panes, and
+ * dimension ticks are the very `ScenePrim`s the elements produced. Each primitive
+ * maps generically to a DXF entity; the only element-aware step is mapping a draw
+ * layer to a DXF layer name. DXF's Y axis points up while ArchLang's points down,
+ * so every Y is negated to keep plans right-side-up in CAD.
  */
 
 import type { Point } from "../ast.js";
-import type { ResolvedPlan, ResolvedElement, RDoor, RWindow, RDim } from "../ir.js";
-import { add, mul, normal, sub, unit, rectCorners, segmentsOfWall } from "../geometry.js";
+import type { RenderPass, Scene, SceneNode } from "../scene.js";
+import { minorArcDegrees } from "../geometry.js";
 
 /** Deterministic number formatting (round to 4dp, no -0). */
 function num(v: number): string {
@@ -54,9 +57,10 @@ class DxfBuilder {
     this.pair(1, value.replace(/\n/g, " "));
   }
 
-  rect(layer: string, corners: Point[]): void {
-    for (let i = 0; i < corners.length; i++) {
-      this.line(layer, corners[i], corners[(i + 1) % corners.length]);
+  /** Closed loop of points as a chain of LINEs (R12-safe; no LWPOLYLINE). */
+  loop(layer: string, pts: Point[]): void {
+    for (let i = 0; i < pts.length; i++) {
+      this.line(layer, pts[i], pts[(i + 1) % pts.length]);
     }
   }
 
@@ -66,6 +70,29 @@ class DxfBuilder {
 }
 
 const LAYERS = ["WALLS", "ROOMS", "DOORS", "WINDOWS", "FURNITURE", "COLUMNS", "DIMS", "LABELS"];
+
+/** Map a Scene draw layer to a DXF layer name. */
+function dxfLayer(layer: RenderPass): string {
+  switch (layer) {
+    case "wallFill":
+    case "wallFace":
+      return "WALLS";
+    case "floor":
+      return "ROOMS";
+    case "doors":
+      return "DOORS";
+    case "windows":
+      return "WINDOWS";
+    case "furniture":
+      return "FURNITURE";
+    case "labels":
+      return "LABELS";
+    case "dims":
+      return "DIMS";
+    default:
+      return "0";
+  }
+}
 
 function header(): string {
   const h: string[] = [];
@@ -81,98 +108,37 @@ function header(): string {
   return h.join("\n") + "\n";
 }
 
-/** Door leaf line + swing arc (minor arc), replicating the render geometry. */
-function emitDoor(b: DxfBuilder, dr: RDoor): void {
-  const seg = dr.host;
-  if (!seg) return;
-  const d = unit(sub(seg.b, seg.a));
-  const n = normal(d);
-  const hw = dr.width / 2;
-  const hinge = dr.hinge === "left" ? add(dr.at, mul(d, -hw)) : add(dr.at, mul(d, hw));
-  const farJamb = dr.hinge === "left" ? add(dr.at, mul(d, hw)) : add(dr.at, mul(d, -hw));
-  const leafDir = dr.swing === "in" ? n : mul(n, -1);
-  const leafEnd = add(hinge, mul(leafDir, dr.width));
-  b.line("DOORS", hinge, leafEnd);
-
-  // Arc center=hinge, radius=width, in Y-flipped space; pick the minor arc.
-  const deg = (p: Point) => (Math.atan2(-(p.y - hinge.y), p.x - hinge.x) * 180) / Math.PI;
-  const a1 = deg(leafEnd);
-  const a2 = deg(farJamb);
-  const ccw = ((a2 - a1) % 360 + 360) % 360;
-  if (ccw <= 180) b.arc("DOORS", hinge, dr.width, a1, a2);
-  else b.arc("DOORS", hinge, dr.width, a2, a1);
-}
-
-function emitWindow(b: DxfBuilder, wn: RWindow): void {
-  const seg = wn.host;
-  if (!seg) return;
-  const d = unit(sub(seg.b, seg.a));
-  const n = normal(d);
-  const hw = wn.width / 2;
-  const h = seg.thickness / 2;
-  const jA = add(wn.at, mul(d, -hw));
-  const jB = add(wn.at, mul(d, hw));
-  b.line("WINDOWS", add(jA, mul(n, h)), add(jB, mul(n, h)));
-  b.line("WINDOWS", add(jA, mul(n, -h)), add(jB, mul(n, -h)));
-  b.line("WINDOWS", jA, jB); // glazing line
-}
-
-function emitDim(b: DxfBuilder, dm: RDim): void {
-  const dd = unit(sub(dm.to, dm.from));
-  const dn = normal(dd);
-  const p1 = add(dm.from, mul(dn, dm.offset));
-  const p2 = add(dm.to, mul(dn, dm.offset));
-  b.line("DIMS", p1, p2);
-  if (dm.text) {
-    const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
-    b.text("DIMS", mid, 150, dm.text);
+/** Serialize one scene node to DXF entities on the given layer. */
+function emit(b: DxfBuilder, node: SceneNode): void {
+  const layer = dxfLayer(node.layer);
+  const prim = node.prim;
+  switch (prim.t) {
+    case "polygon":
+      b.loop(layer, prim.pts);
+      break;
+    case "line":
+      b.line(layer, prim.a, prim.b);
+      break;
+    case "region":
+      for (const lp of prim.loops) b.loop(layer, lp);
+      break;
+    case "arc": {
+      const [a0, a1] = minorArcDegrees(prim.center, prim.start, prim.end);
+      b.arc(layer, prim.center, prim.r, a0, a1);
+      break;
+    }
+    case "text":
+      b.text(layer, prim.at, prim.size, prim.value);
+      break;
   }
 }
 
-/** Render a resolved plan as an ASCII DXF document string. */
-export function toDxf(ir: ResolvedPlan): string {
+/** Render a {@link Scene} as an ASCII DXF document string. */
+export function toDxf(scene: Scene): string {
   const b = new DxfBuilder();
   b.pair(0, "SECTION");
   b.pair(2, "ENTITIES");
-
-  const labelAt = (at: Point, w: number, h: number): Point => ({ x: at.x + w / 2, y: at.y + h / 2 });
-
-  for (const el of ir.elements as ResolvedElement[]) {
-    switch (el.kind) {
-      case "wall":
-        for (const s of segmentsOfWall(el)) {
-          const d = unit(sub(s.b, s.a));
-          const n = normal(d);
-          const off = s.thickness / 2;
-          // Two parallel wall faces convey thickness.
-          b.line("WALLS", add(s.a, mul(n, off)), add(s.b, mul(n, off)));
-          b.line("WALLS", add(s.a, mul(n, -off)), add(s.b, mul(n, -off)));
-        }
-        break;
-      case "room":
-        b.rect("ROOMS", rectCorners(el.at.x, el.at.y, el.size.w, el.size.h));
-        if (el.label) b.text("LABELS", labelAt(el.at, el.size.w, el.size.h), 200, el.label);
-        break;
-      case "furniture":
-        b.rect("FURNITURE", rectCorners(el.at.x, el.at.y, el.size.w, el.size.h));
-        if (el.label) b.text("LABELS", labelAt(el.at, el.size.w, el.size.h), 150, el.label);
-        break;
-      case "column":
-        b.rect("COLUMNS", rectCorners(el.at.x, el.at.y, el.size.w, el.size.h));
-        break;
-      case "door":
-        emitDoor(b, el);
-        break;
-      case "window":
-        emitWindow(b, el);
-        break;
-      case "dim":
-        emitDim(b, el);
-        break;
-    }
-  }
-
+  for (const node of scene.nodes) emit(b, node);
   b.pair(0, "ENDSEC");
-  const entities = b.toString();
-  return header() + entities + "0\nEOF\n";
+  return header() + b.toString() + "0\nEOF\n";
 }

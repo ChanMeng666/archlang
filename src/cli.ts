@@ -3,7 +3,7 @@
 
 import { readFileSync, writeFileSync, watchFile } from "node:fs";
 import { resolve as resolvePath } from "node:path";
-import { compile, formatDiagnostic, resolve, toDxf, toPdf } from "./index.js";
+import { compile, formatDiagnostic, resolve, toScene, toDxf, toPdf } from "./index.js";
 
 type Format = "svg" | "dxf" | "pdf";
 
@@ -26,8 +26,7 @@ async function compileFile(input: string, output: string, format: Format, width?
   }
 
   if (format === "dxf") {
-    const { ir } = resolve(ast!);
-    const dxf = toDxf(ir);
+    const dxf = toDxf(toScene(resolve(ast!).ir));
     writeFileSync(output, dxf, "utf8");
     process.stdout.write(`✓ ${input} → ${output} (${dxf.length} bytes, DXF)\n`);
     return true;

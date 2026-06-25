@@ -53,6 +53,21 @@ export function distPointToSegment(p: Point, a: Point, b: Point): number {
   return Math.hypot(p.x - cx, p.y - cy);
 }
 
+/**
+ * Start/end angles (in degrees) of the **minor** arc from `start` to `end` about
+ * `center`, in CAD orientation (Y up, counter-clockwise positive — the opposite
+ * of the screen's Y-down space these points live in). Returned ordered so the
+ * swept arc is the shorter one. Backends that emit native arcs (e.g. DXF `ARC`)
+ * use this so the trig lives here, not in the serializer.
+ */
+export function minorArcDegrees(center: Point, start: Point, end: Point): [number, number] {
+  const deg = (p: Point): number => (Math.atan2(-(p.y - center.y), p.x - center.x) * 180) / Math.PI;
+  const a1 = deg(start);
+  const a2 = deg(end);
+  const ccw = (((a2 - a1) % 360) + 360) % 360;
+  return ccw <= 180 ? [a1, a2] : [a2, a1];
+}
+
 /** Axis-aligned rectangle corners (clockwise) from origin + size. */
 export function rectCorners(x: number, y: number, w: number, h: number): Point[] {
   return [
