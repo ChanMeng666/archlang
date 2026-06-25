@@ -64,5 +64,9 @@
     "vitest": "^2.1.8",
     "vscode-oniguruma": "^2.0.1",
     "vscode-textmate": "^9.3.2"
+  },
+  "optionalDependencies": {
+    "pdfkit": "^0.15.2",
+    "svg-to-pdfkit": "^0.1.8"
   }
 }

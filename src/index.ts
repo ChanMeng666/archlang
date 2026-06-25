@@ -25,6 +25,24 @@ export type {
 export { formatDiagnostic, offsetToLineCol } from "./diagnostics.js";
 export type * from "./ast.js";
 
+// IR + export backends (for consumers that want resolved geometry or other
+// output formats). `resolve`/`toDxf` are pure & zero-dep; `toPdf` lazily loads
+// optional deps. None of these are part of `compile()`.
+export { resolve } from "./ir.js";
+export type {
+  ResolvedPlan,
+  ResolvedElement,
+  RWall,
+  RRoom,
+  RDoor,
+  RWindow,
+  RFurniture,
+  RDim,
+  RColumn,
+} from "./ir.js";
+export { toDxf } from "./export/dxf.js";
+export { toPdf } from "./export/pdf.js";
+
 /** Small LRU-ish memo cache keyed by source+options. Bounded to 64 entries. */
 const cache = new Map<string, CompileResult>();
 const CACHE_MAX = 64;
