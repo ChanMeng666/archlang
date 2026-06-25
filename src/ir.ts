@@ -18,8 +18,8 @@ import type {
   TitleNode,
 } from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import type { Env, Expr } from "./expr.js";
-import { closest, evalExpr } from "./expr.js";
+import type { Env, Expr, Value } from "./expr.js";
+import { asNum, closest, evalExpr, exprSpan } from "./expr.js";
 import type { Theme } from "./theme.js";
 import type { ResolveCtx } from "./registry.js";
 import type { WallSegment } from "./geometry.js";
@@ -151,7 +151,9 @@ function expandScope(
       if (stmt.args.length !== comp.params.length) {
         diag({ severity: "error", message: `Component "${stmt.name}" expects ${comp.params.length} argument(s) but got ${stmt.args.length}`, code: "E_ARGCOUNT", span: stmt.span });
       }
-      const argVals = comp.params.map((_, i) => (stmt.args[i] !== undefined ? evalExpr(stmt.args[i], env, diag) : 0));
+      const argVals: Value[] = comp.params.map((_, i) =>
+        stmt.args[i] !== undefined ? evalExpr(stmt.args[i], env, diag) : { t: "num", v: 0 },
+      );
       // Component scope = plan global + params; its lets are local.
       const childEnv: Env = new Map(global);
       const childDefined = new Set<string>();
@@ -208,7 +210,8 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
   //    its expressions against the env captured during expansion.
   const walls: RWall[] = [];
   let activeEnv: Env = new Map();
-  const evalNum = (e: Expr): number => evalExpr(e, activeEnv, (d) => diagnostics.push(d));
+  const evalNum = (e: Expr): number =>
+    asNum(evalExpr(e, activeEnv, (d) => diagnostics.push(d)), (d) => diagnostics.push(d), exprSpan(e));
   const evalPt = (p: ExprPoint): Point => ({ x: evalNum(p.x), y: evalNum(p.y) });
   // Openings call isOnWall(at, ref) then hostSegment(at, ref) with identical
   // args back-to-back; a one-entry memo fuses those into a single wall scan.

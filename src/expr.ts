@@ -12,10 +12,70 @@ import type { Diagnostic, Span } from "./diagnostics.js";
 export type Expr =
   | { t: "num"; value: number }
   | { t: "ref"; name: string; span?: Span }
-  | { t: "unary"; op: "-" | "+"; e: Expr }
-  | { t: "bin"; op: "+" | "-" | "*" | "/" | "%"; l: Expr; r: Expr };
+  | { t: "unary"; op: "-" | "+"; e: Expr; span?: Span }
+  | { t: "bin"; op: "+" | "-" | "*" | "/" | "%"; l: Expr; r: Expr; span?: Span };
 
-export type Env = Map<string, number>;
+/**
+ * A runtime value of the expression language. The language is pure and
+ * expand-time: every value is computed during `resolve`, never at runtime.
+ * Numbers stay unitless millimetres (no Length/Ratio/Angle — one unit).
+ *
+ * `fn`/`builtin` are added in later tasks (user functions, built-ins).
+ */
+export type Value =
+  | { t: "num"; v: number }
+  | { t: "bool"; v: boolean }
+  | { t: "str"; v: string }
+  | { t: "arr"; v: Value[] };
+
+export type Env = Map<string, Value>;
+
+/** The source span of an expression, when it carries one (for diagnostics). */
+export function exprSpan(e: Expr): Span | undefined {
+  return "span" in e ? e.span : undefined;
+}
+
+/** Human-readable type name for diagnostics. */
+export function typeName(v: Value): string {
+  switch (v.t) {
+    case "num": return "number";
+    case "bool": return "boolean";
+    case "str": return "string";
+    case "arr": return "array";
+  }
+}
+
+/** Coerce a Value to a number, diagnosing a mismatch and yielding 0. */
+export function asNum(v: Value, onError: (d: Diagnostic) => void, span?: Span): number {
+  if (v.t === "num") return v.v;
+  onError({ severity: "error", message: `Expected a number but got ${typeName(v)}`, code: "E_TYPE", span });
+  return 0;
+}
+
+/** Coerce a Value to a boolean, diagnosing a mismatch and yielding false. */
+export function asBool(v: Value, onError: (d: Diagnostic) => void, span?: Span): boolean {
+  if (v.t === "bool") return v.v;
+  onError({ severity: "error", message: `Expected a boolean but got ${typeName(v)}`, code: "E_TYPE", span });
+  return false;
+}
+
+/** Coerce a Value to a string for interpolation/labels. Numbers/bools stringify
+ *  deterministically; arrays render as `[a, b]`. Never errors. */
+export function asStr(v: Value): string {
+  switch (v.t) {
+    case "str": return v.v;
+    case "num": return fmtNum(v.v);
+    case "bool": return v.v ? "true" : "false";
+    case "arr": return `[${v.v.map(asStr).join(", ")}]`;
+  }
+}
+
+/** Deterministic number → string (mirrors render.ts `fmt`: trim to 3 dp). */
+function fmtNum(n: number): string {
+  if (!Number.isFinite(n)) return "0";
+  const r = Math.round(n * 1000) / 1000;
+  return Object.is(r, -0) ? "0" : String(r);
+}
 
 /** Minimal token-stream the expression parser needs (satisfied by ParseCtx). */
 export interface ExprTokens {
@@ -87,12 +147,15 @@ function parseAtom(ts: ExprTokens): Expr {
   return ts.fail(`Expected a number, name, or "(" but found ${describe(t)}`);
 }
 
-/** Evaluate an expression. Errors (unknown ref, division by zero) emit a
- *  diagnostic and yield 0 so resolution can continue and report everything. */
-export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void): number {
+const NUM0: Value = { t: "num", v: 0 };
+
+/** Evaluate an expression to a {@link Value}. Errors (unknown ref, type
+ *  mismatch, division by zero) emit a diagnostic and yield a safe default so
+ *  resolution can continue and report everything. */
+export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void): Value {
   switch (e.t) {
     case "num":
-      return e.value;
+      return { t: "num", v: e.value };
     case "ref": {
       const v = env.get(e.name);
       if (v === undefined) {
@@ -104,28 +167,28 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void): n
           span: e.span,
           hints: hint ? [`did you mean "${hint}"?`] : undefined,
         });
-        return 0;
+        return NUM0;
       }
       return v;
     }
     case "unary": {
-      const v = evalExpr(e.e, env, onError);
-      return e.op === "-" ? -v : v;
+      const v = asNum(evalExpr(e.e, env, onError), onError, e.span);
+      return { t: "num", v: e.op === "-" ? -v : v };
     }
     case "bin": {
-      const l = evalExpr(e.l, env, onError);
-      const r = evalExpr(e.r, env, onError);
+      const l = asNum(evalExpr(e.l, env, onError), onError, e.span);
+      const r = asNum(evalExpr(e.r, env, onError), onError, e.span);
       switch (e.op) {
-        case "+": return l + r;
-        case "-": return l - r;
-        case "*": return l * r;
+        case "+": return { t: "num", v: l + r };
+        case "-": return { t: "num", v: l - r };
+        case "*": return { t: "num", v: l * r };
         case "/":
         case "%":
           if (r === 0) {
-            onError({ severity: "error", message: `${e.op === "/" ? "Division" : "Modulo"} by zero`, code: "E_DIV_ZERO" });
-            return 0;
+            onError({ severity: "error", message: `${e.op === "/" ? "Division" : "Modulo"} by zero`, code: "E_DIV_ZERO", span: e.span });
+            return NUM0;
           }
-          return e.op === "/" ? l / r : l % r;
+          return { t: "num", v: e.op === "/" ? l / r : l % r };
       }
     }
   }
