@@ -25,6 +25,13 @@ describe("SVG output is XSS-safe", () => {
     expect(svg).toContain("&lt;script&gt;");
   });
 
+  it("escapes INTERPOLATED label content (escaping is at the serialization boundary)", () => {
+    const src = `plan "X" { let bad = "<script>alert(1)</script>" room id=r at (0,0) size 1000x1000 label "Name: {bad}" }`;
+    const { svg } = compile(src, { noCache: true });
+    expect(svg).not.toContain("<script>alert(1)");
+    expect(svg).toContain("&lt;script&gt;");
+  });
+
   it("sanitizes a malicious theme color from the `theme` directive (attribute breakout)", () => {
     const { svg } = compile(wallPlan(`theme { wall: "#fff\\" onload=\\"alert(1)" }`), { noCache: true });
     expect(svg).not.toContain('#fff" onload'); // raw quote breakout absent

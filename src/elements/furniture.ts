@@ -21,7 +21,7 @@ export const furniture: ElementDef = {
     const node: FurnitureNode = { kind: "furniture", id, category, at, size, line: kw.line };
     if (ctx.isKeyword("label")) {
       ctx.next();
-      node.label = ctx.eatString();
+      node.label = ctx.parseStringExpr();
     }
     return node;
   },
@@ -36,7 +36,7 @@ export const furniture: ElementDef = {
     if (size.w <= 0 || size.h <= 0) {
       ctx.diag({ severity: "error", message: `Furniture "${id}" must have a positive size`, code: "E_FURN_SIZE", span: n.span });
     }
-    return { kind: "furniture", id, category: n.category, at, size, label: n.label, span: n.span };
+    return { kind: "furniture", id, category: n.category, at, size, label: n.label !== undefined ? ctx.evalStr(n.label) : undefined, span: n.span };
   },
 
   bounds(resolved): Point[] {

@@ -20,7 +20,7 @@ export const room: ElementDef = {
     const node: RoomNode = { kind: "room", id, at, size, line: kw.line };
     if (ctx.isKeyword("label")) {
       ctx.next();
-      node.label = ctx.eatString();
+      node.label = ctx.parseStringExpr();
     }
     return node;
   },
@@ -35,7 +35,7 @@ export const room: ElementDef = {
     if (size.w <= 0 || size.h <= 0) {
       ctx.diag({ severity: "error", message: `Room "${id}" must have a positive size`, code: "E_ROOM_SIZE", span: n.span });
     }
-    return { kind: "room", id, at, size, label: n.label, span: n.span };
+    return { kind: "room", id, at, size, label: n.label !== undefined ? ctx.evalStr(n.label) : undefined, span: n.span };
   },
 
   bounds(resolved): Point[] {

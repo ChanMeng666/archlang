@@ -333,3 +333,26 @@ describe("set rules (T2.7)", () => {
     expect(compile(src, { noCache: true }).svg).toBe(compile(src, { noCache: true }).svg);
   });
 });
+
+describe("string-interpolated labels (T2.8)", () => {
+  const rooms = (src: string) => elements(`plan "P" { ${src} }`).filter((e) => e.kind === "room");
+
+  it("interpolates a loop variable into a label (DoD)", () => {
+    const rs = rooms(`for i in 0..3 { room at (i*2000, 0) size 1000x1000 label "Bed {i}" }`);
+    expect(rs.map((r) => r.label)).toEqual(["Bed 0", "Bed 1", "Bed 2"]);
+  });
+
+  it("interpolates expressions and built-ins", () => {
+    const r = rooms(`let n = 3 room at (0,0) size 1000x1000 label "Area {n * n} ({str(n)})"`)[0];
+    expect(r.label).toBe("Area 9 (3)");
+  });
+
+  it("a plain label is unchanged (back-compat)", () => {
+    expect(rooms(`room at (0,0) size 1000x1000 label "Kitchen"`)[0].label).toBe("Kitchen");
+  });
+
+  it("a dim text override may interpolate", () => {
+    const d = elements(`plan "P" { let n = 3 dim (0,0)->(3000,0) offset 500 text "{n} units" }`).find((e) => e.kind === "dim");
+    expect(d.text).toBe("3 units");
+  });
+});

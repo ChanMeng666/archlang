@@ -88,6 +88,7 @@ class Parser {
       parsePoint: () => this.parsePoint(),
       parseExpr: () => parseExprPratt(this.ctx),
       parseDimensions: () => this.parseDimensions(),
+      parseStringExpr: () => this.parseStringExpr(),
       parseIdOpt: () => this.parseIdOpt(),
       fail: (msg, t) => this.fail(msg, t),
     };
@@ -472,6 +473,13 @@ class Parser {
     }
     this.eat("rparen");
     return { kind: "set", id: "", target: def.kind, over, line: kw.line };
+  }
+
+  /** Parse a string literal as a (possibly interpolated) template expression. */
+  private parseStringExpr(): Expr {
+    const t = this.peek();
+    if (t.type !== "string") this.fail(`Expected a string but found ${describe(t)}`);
+    return parseExprPratt(this.ctx);
   }
 
   /** A `set` value: a bare keyword (enum like `out`/`left`) is a string;

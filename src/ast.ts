@@ -58,7 +58,8 @@ export interface RoomNode extends NodeBase {
   kind: "room";
   at: ExprPoint;
   size: { w: Expr; h: Expr };
-  label?: string;
+  /** Label as a string-interpolation template, evaluated at resolve. */
+  label?: Expr;
 }
 
 export interface DoorNode extends NodeBase {
@@ -86,7 +87,8 @@ export interface FurnitureNode extends NodeBase {
   category: string;
   at: ExprPoint;
   size: { w: Expr; h: Expr };
-  label?: string;
+  /** Label as a string-interpolation template, evaluated at resolve. */
+  label?: Expr;
 }
 
 export interface DimNode extends NodeBase {
@@ -95,8 +97,8 @@ export interface DimNode extends NodeBase {
   to: ExprPoint;
   /** Perpendicular offset of the dimension line from the measured segment, mm. */
   offset: Expr;
-  /** Override text; defaults to the measured length. */
-  text?: string;
+  /** Override text (string-interpolation template); defaults to measured length. */
+  text?: Expr;
 }
 
 export interface ColumnNode extends NodeBase {

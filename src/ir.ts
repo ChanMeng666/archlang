@@ -19,7 +19,7 @@ import type {
 } from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Env, Expr, Value } from "./expr.js";
-import { asBool, asNum, closest, evalExpr, exprSpan } from "./expr.js";
+import { asBool, asNum, asStr, closest, evalExpr, exprSpan } from "./expr.js";
 import type { Theme } from "./theme.js";
 import type { ResolveCtx } from "./registry.js";
 import type { WallSegment } from "./geometry.js";
@@ -316,6 +316,7 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
   let activeEnv: Env = new Map();
   const evalNum = (e: Expr): number =>
     asNum(evalExpr(e, activeEnv, (d) => diagnostics.push(d)), (d) => diagnostics.push(d), exprSpan(e));
+  const evalStr = (e: Expr): string => asStr(evalExpr(e, activeEnv, (d) => diagnostics.push(d)));
   const evalPt = (p: ExprPoint): Point => ({ x: evalNum(p.x), y: evalNum(p.y) });
   // Openings call isOnWall(at, ref) then hostSegment(at, ref) with identical
   // args back-to-back; a one-entry memo fuses those into a single wall scan.
@@ -335,6 +336,7 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
     snap,
     snapPt,
     eval: evalNum,
+    evalStr,
     evalPt,
     id: "",
     walls,
