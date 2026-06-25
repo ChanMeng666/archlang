@@ -23,7 +23,7 @@ import { closest, evalExpr } from "./expr.js";
 import type { Theme } from "./theme.js";
 import type { ResolveCtx } from "./registry.js";
 import type { WallSegment } from "./geometry.js";
-import { hostSegmentForWalls, isOnSomeWall } from "./geometry.js";
+import { hostInfoForWalls } from "./geometry.js";
 import { registryOrder } from "./elements/index.js";
 
 export interface RBase {
@@ -210,6 +210,19 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
   let activeEnv: Env = new Map();
   const evalNum = (e: Expr): number => evalExpr(e, activeEnv, (d) => diagnostics.push(d));
   const evalPt = (p: ExprPoint): Point => ({ x: evalNum(p.x), y: evalNum(p.y) });
+  // Openings call isOnWall(at, ref) then hostSegment(at, ref) with identical
+  // args back-to-back; a one-entry memo fuses those into a single wall scan.
+  // walls is fully populated before any opening resolves (registry order:
+  // walls first), so the cached info stays valid for the whole opening phase.
+  let hiKey = "";
+  let hiVal: { host: WallSegment | null; onWall: boolean } | null = null;
+  const hostInfo = (at: Point, ref?: string) => {
+    const key = `${at.x},${at.y},${ref ?? ""}`;
+    if (key === hiKey && hiVal) return hiVal;
+    hiKey = key;
+    hiVal = hostInfoForWalls(walls, at, ref);
+    return hiVal;
+  };
   const ctx: ResolveCtx = {
     grid: g,
     snap,
@@ -218,8 +231,8 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
     evalPt,
     id: "",
     walls,
-    hostSegment: (at, ref) => hostSegmentForWalls(walls, at, ref),
-    isOnWall: (at, ref) => isOnSomeWall(walls, at, ref),
+    hostSegment: (at, ref) => hostInfo(at, ref).host,
+    isOnWall: (at, ref) => hostInfo(at, ref).onWall,
     diag: (d) => diagnostics.push(d),
   };
   for (const def of registryOrder) {

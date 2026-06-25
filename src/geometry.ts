@@ -127,6 +127,38 @@ export function hostSegmentForWalls(walls: WallLike[], at: Point, ref?: string):
   return best;
 }
 
+/**
+ * Single-pass host lookup: the nearest wall segment AND whether the point lies
+ * on some wall, computed in one scan (distPointToSegment evaluated once per
+ * segment). Byte-identical to calling {@link hostSegmentForWalls} and
+ * {@link isOnSomeWall} separately — the nearest uses the same first-wins
+ * `dist < best` rule; `onWall` is an order-independent OR of the per-wall
+ * tolerance test. This halves the per-opening scan cost (the benchmark's
+ * dominant stage) without changing output.
+ */
+export function hostInfoForWalls(
+  walls: WallLike[],
+  at: Point,
+  ref?: string,
+): { host: WallSegment | null; onWall: boolean } {
+  const candidates = ref ? walls.filter((w) => w.id === ref || w.category === ref) : walls;
+  let host: WallSegment | null = null;
+  let bestDist = Infinity;
+  let onWall = false;
+  for (const w of candidates) {
+    const tol = w.thickness / 2 + Math.max(w.thickness, 1);
+    for (const s of segmentsOfWall(w)) {
+      const dist = distPointToSegment(at, s.a, s.b);
+      if (dist < bestDist) {
+        bestDist = dist;
+        host = s;
+      }
+      if (!onWall && dist <= tol) onWall = true;
+    }
+  }
+  return { host, onWall };
+}
+
 /** Whether a point lies within tolerance of some wall (filtered by ref if given). */
 export function isOnSomeWall(walls: WallLike[], at: Point, ref?: string): boolean {
   const candidates = ref ? walls.filter((w) => w.id === ref || w.category === ref) : walls;
