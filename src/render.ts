@@ -2,12 +2,14 @@
 
 import type { Point } from "./ast.js";
 import type { CompileOptions } from "./types.js";
-import type { ResolvedPlan } from "./ir.js";
-import type { RenderCtx, RenderSizes } from "./registry.js";
+import type { ResolvedPlan, RWall } from "./ir.js";
+import type { RenderCtx, RenderOp, RenderSizes } from "./registry.js";
 import { RENDER_PASSES } from "./registry.js";
 import { registry } from "./elements/index.js";
 import type { Bounds } from "./geometry.js";
-import { emptyBounds, extendBounds } from "./geometry.js";
+import { emptyBounds, extendBounds, segmentRectangle, segmentsOfWall } from "./geometry.js";
+import type { Rect } from "./geometry/union.js";
+import { rectUnionOutline } from "./geometry/union.js";
 
 const THEME: Record<string, string> = {
   bg: "#ffffff",
@@ -66,6 +68,47 @@ function planBounds(ir: ResolvedPlan): Bounds {
   return b;
 }
 
+/** Is every segment of every wall axis-aligned (horizontal or vertical)? */
+function allOrthogonal(walls: RWall[]): boolean {
+  return walls.every((w) => segmentsOfWall(w).every((s) => s.a.x === s.b.x || s.a.y === s.b.y));
+}
+
+function loopsToPath(loops: { x: number; y: number }[][]): string {
+  return loops.map((loop) => "M " + loop.map(pt).join(" L ") + " Z").join(" ");
+}
+
+/**
+ * Wall fill + outline. For fully-orthogonal walls the segment rectangles are
+ * unioned into clean boundary loops (no internal seams at corners/T-junctions).
+ * Angled walls fall back to the per-segment renderer.
+ */
+function renderWalls(walls: RWall[], ctx: RenderCtx): RenderOp[] {
+  if (walls.length === 0) return [];
+  if (!allOrthogonal(walls)) {
+    const def = registry.get("wall")!;
+    return walls.flatMap((w) => def.render(w, ctx));
+  }
+  const rects: Rect[] = [];
+  for (const w of walls) {
+    for (const s of segmentsOfWall(w)) {
+      const corners = segmentRectangle(s.a, s.b, s.thickness);
+      const xsv = corners.map((c) => c.x);
+      const ysv = corners.map((c) => c.y);
+      rects.push({ x0: Math.min(...xsv), y0: Math.min(...ysv), x1: Math.max(...xsv), y1: Math.max(...ysv) });
+    }
+  }
+  const loops = rectUnionOutline(rects);
+  if (loops.length === 0) return [];
+  const d = loopsToPath(loops);
+  return [
+    { pass: "wallFill", svg: `<path d="${d}" fill="url(#poche)" fill-rule="nonzero"/>` },
+    {
+      pass: "wallFace",
+      svg: `<path d="${d}" fill="none" stroke="${ctx.theme.wallStroke}" stroke-width="${ctx.fmt(ctx.sizes.wallStroke)}" stroke-linejoin="miter"/>`,
+    },
+  ];
+}
+
 export function render(ir: ResolvedPlan, opts: CompileOptions = {}): string {
   const b = planBounds(ir);
   const drawW = b.maxX - b.minX;
@@ -110,11 +153,15 @@ export function render(ir: ResolvedPlan, opts: CompileOptions = {}): string {
   out.push(`<rect x="${fmt(vbX)}" y="${fmt(vbY)}" width="${fmt(vbW)}" height="${fmt(vbH)}" fill="${THEME.bg}"/>`);
 
   // Elements: collect ops once (preserving source order), then emit pass by pass.
+  // Walls are rendered centrally (see renderWalls) so their outlines can be
+  // unioned across segments — everything else goes through the registry.
   const ctx: RenderCtx = { fmt, pt, xml, theme: THEME, sizes, bounds: b };
   const ops = ir.elements.flatMap((el) => {
+    if (el.kind === "wall") return [];
     const def = registry.get(el.kind);
     return def ? def.render(el, ctx) : [];
   });
+  ops.push(...renderWalls(ir.walls, ctx));
   for (const pass of RENDER_PASSES) {
     for (const op of ops) if (op.pass === pass) out.push(op.svg);
   }

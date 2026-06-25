@@ -46,10 +46,12 @@ describe("render passes — global draw order is independent of source order", (
       "}",
     ].join("\n");
     const { svg } = compile(src, { noCache: true });
-    const lastFill = svg.lastIndexOf('fill="url(#poche)"');
-    const firstFace = svg.indexOf('stroke-linecap="square"');
-    expect(lastFill).toBeGreaterThan(-1);
-    expect(firstFace).toBeGreaterThan(lastFill);
+    // Walls are unioned: one poché fill path in wallFill, then the miter
+    // outline in wallFace — fill still precedes face.
+    const fill = svg.indexOf('fill="url(#poche)"');
+    const face = svg.indexOf('stroke-linejoin="miter"');
+    expect(fill).toBeGreaterThan(-1);
+    expect(face).toBeGreaterThan(fill);
   });
 
   it("draws doors before windows even when the window is declared first", () => {

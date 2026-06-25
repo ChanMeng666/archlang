@@ -19,42 +19,8 @@ exports[`golden SVG snapshots > renders parametric.arch deterministically 1`] = 
 <text x="9050" y="1300" font-size="207.4" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bed</text>
 <polygon points="10100,300 11700,300 11700,900 10100,900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.52"/>
 <text x="10900" y="600" font-size="207.4" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Kitchen</text>
-<polygon points="-100,100 4100,100 4100,-100 -100,-100" fill="url(#poche)"/>
-<polygon points="3900,-100 3900,5100 4100,5100 4100,-100" fill="url(#poche)"/>
-<polygon points="4100,4900 -100,4900 -100,5100 4100,5100" fill="url(#poche)"/>
-<polygon points="100,5100 100,-100 -100,-100 -100,5100" fill="url(#poche)"/>
-<polygon points="3900,100 8100,100 8100,-100 3900,-100" fill="url(#poche)"/>
-<polygon points="7900,-100 7900,5100 8100,5100 8100,-100" fill="url(#poche)"/>
-<polygon points="8100,4900 3900,4900 3900,5100 8100,5100" fill="url(#poche)"/>
-<polygon points="4100,5100 4100,-100 3900,-100 3900,5100" fill="url(#poche)"/>
-<polygon points="7900,100 12100,100 12100,-100 7900,-100" fill="url(#poche)"/>
-<polygon points="11900,-100 11900,5100 12100,5100 12100,-100" fill="url(#poche)"/>
-<polygon points="12100,4900 7900,4900 7900,5100 12100,5100" fill="url(#poche)"/>
-<polygon points="8100,5100 8100,-100 7900,-100 7900,5100" fill="url(#poche)"/>
-<line x1="0" y1="100" x2="4000" y2="100" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="0" y1="-100" x2="4000" y2="-100" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="3900" y1="0" x2="3900" y2="5000" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="4100" y1="0" x2="4100" y2="5000" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="4000" y1="4900" x2="0" y2="4900" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="4000" y1="5100" x2="0" y2="5100" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="100" y1="5000" x2="100" y2="0" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="-100" y1="5000" x2="-100" y2="0" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="4000" y1="100" x2="8000" y2="100" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="4000" y1="-100" x2="8000" y2="-100" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="7900" y1="0" x2="7900" y2="5000" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="8100" y1="0" x2="8100" y2="5000" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="8000" y1="4900" x2="4000" y2="4900" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="8000" y1="5100" x2="4000" y2="5100" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="4100" y1="5000" x2="4100" y2="0" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="3900" y1="5000" x2="3900" y2="0" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="8000" y1="100" x2="12000" y2="100" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="8000" y1="-100" x2="12000" y2="-100" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="11900" y1="0" x2="11900" y2="5000" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="12100" y1="0" x2="12100" y2="5000" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="12000" y1="4900" x2="8000" y2="4900" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="12000" y1="5100" x2="8000" y2="5100" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="8100" y1="5000" x2="8100" y2="0" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
-<line x1="7900" y1="5000" x2="7900" y2="0" stroke="#1b1b1b" stroke-width="34.16" stroke-linecap="square"/>
+<path d="M -100,-100 L -100,5100 L 12100,5100 L 12100,-100 Z M 100,4900 L 100,100 L 3900,100 L 3900,4900 Z M 4100,4900 L 4100,100 L 7900,100 L 7900,4900 Z M 8100,4900 L 8100,100 L 11900,100 L 11900,4900 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -100,-100 L -100,5100 L 12100,5100 L 12100,-100 Z M 100,4900 L 100,100 L 3900,100 L 3900,4900 Z M 4100,4900 L 4100,100 L 7900,100 L 7900,4900 Z M 8100,4900 L 8100,100 L 11900,100 L 11900,4900 Z" fill="none" stroke="#1b1b1b" stroke-width="34.16" stroke-linejoin="miter"/>
 <polygon points="2450,4865.84 1550,4865.84 1550,5134.16 2450,5134.16" fill="#ffffff"/>
 <line x1="2450" y1="5000" x2="2450" y2="4100" stroke="#555555" stroke-width="25.38"/>
 <path d="M 2450,4100 A 900 900 0 0 1 1550,5000" fill="none" stroke="#555555" stroke-width="19.52" stroke-dasharray="78.08 58.56"/>
@@ -107,24 +73,8 @@ exports[`golden SVG snapshots > renders studio.arch deterministically 1`] = `
 <text x="1300" y="4650" font-size="122.4" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Sofa</text>
 <polygon points="300,200 900,200 900,800 300,800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
 <text x="600" y="500" font-size="122.4" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Stove</text>
-<polygon points="-100,100 7100,100 7100,-100 -100,-100" fill="url(#poche)"/>
-<polygon points="6900,-100 6900,6100 7100,6100 7100,-100" fill="url(#poche)"/>
-<polygon points="7100,5900 -100,5900 -100,6100 7100,6100" fill="url(#poche)"/>
-<polygon points="100,6100 100,-100 -100,-100 -100,6100" fill="url(#poche)"/>
-<polygon points="3950,-50 3950,4050 4050,4050 4050,-50" fill="url(#poche)"/>
-<polygon points="3950,4050 7050,4050 7050,3950 3950,3950" fill="url(#poche)"/>
-<line x1="0" y1="100" x2="7000" y2="100" stroke="#1b1b1b" stroke-width="20.16" stroke-linecap="square"/>
-<line x1="0" y1="-100" x2="7000" y2="-100" stroke="#1b1b1b" stroke-width="20.16" stroke-linecap="square"/>
-<line x1="6900" y1="0" x2="6900" y2="6000" stroke="#1b1b1b" stroke-width="20.16" stroke-linecap="square"/>
-<line x1="7100" y1="0" x2="7100" y2="6000" stroke="#1b1b1b" stroke-width="20.16" stroke-linecap="square"/>
-<line x1="7000" y1="5900" x2="0" y2="5900" stroke="#1b1b1b" stroke-width="20.16" stroke-linecap="square"/>
-<line x1="7000" y1="6100" x2="0" y2="6100" stroke="#1b1b1b" stroke-width="20.16" stroke-linecap="square"/>
-<line x1="100" y1="6000" x2="100" y2="0" stroke="#1b1b1b" stroke-width="20.16" stroke-linecap="square"/>
-<line x1="-100" y1="6000" x2="-100" y2="0" stroke="#1b1b1b" stroke-width="20.16" stroke-linecap="square"/>
-<line x1="3950" y1="0" x2="3950" y2="4000" stroke="#1b1b1b" stroke-width="20.16" stroke-linecap="square"/>
-<line x1="4050" y1="0" x2="4050" y2="4000" stroke="#1b1b1b" stroke-width="20.16" stroke-linecap="square"/>
-<line x1="4000" y1="4050" x2="7000" y2="4050" stroke="#1b1b1b" stroke-width="20.16" stroke-linecap="square"/>
-<line x1="4000" y1="3950" x2="7000" y2="3950" stroke="#1b1b1b" stroke-width="20.16" stroke-linecap="square"/>
+<path d="M -100,-100 L -100,6100 L 7100,6100 L 7100,-100 Z M 100,100 L 3950,100 L 3950,4050 L 6900,4050 L 6900,5900 L 100,5900 Z M 4050,3950 L 4050,100 L 6900,100 L 6900,3950 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -100,-100 L -100,6100 L 7100,6100 L 7100,-100 Z M 100,100 L 3950,100 L 3950,4050 L 6900,4050 L 6900,5900 L 100,5900 Z M 4050,3950 L 4050,100 L 6900,100 L 6900,3950 Z" fill="none" stroke="#1b1b1b" stroke-width="20.16" stroke-linejoin="miter"/>
 <polygon points="1500,5879.84 500,5879.84 500,6120.16 1500,6120.16" fill="#ffffff"/>
 <line x1="1500" y1="6000" x2="1500" y2="5000" stroke="#555555" stroke-width="14.98"/>
 <path d="M 1500,5000 A 1000 1000 0 0 1 500,6000" fill="none" stroke="#555555" stroke-width="11.52" stroke-dasharray="46.08 34.56"/>
@@ -183,27 +133,8 @@ exports[`golden SVG snapshots > renders two-bed.arch deterministically 1`] = `
 <text x="5900" y="1350" font-size="175.1" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bed</text>
 <polygon points="300,5300 1700,5300 1700,7300 300,7300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="16.48"/>
 <text x="1000" y="6300" font-size="175.1" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bed</text>
-<polygon points="-150,150 10150,150 10150,-150 -150,-150" fill="url(#poche)"/>
-<polygon points="9850,-150 9850,8150 10150,8150 10150,-150" fill="url(#poche)"/>
-<polygon points="10150,7850 -150,7850 -150,8150 10150,8150" fill="url(#poche)"/>
-<polygon points="150,8150 150,-150 -150,-150 -150,8150" fill="url(#poche)"/>
-<polygon points="3950,-50 3950,5050 4050,5050 4050,-50" fill="url(#poche)"/>
-<polygon points="3950,5050 10050,5050 10050,4950 3950,4950" fill="url(#poche)"/>
-<polygon points="6950,4950 6950,8050 7050,8050 7050,4950" fill="url(#poche)"/>
-<line x1="0" y1="150" x2="10000" y2="150" stroke="#1b1b1b" stroke-width="28.84" stroke-linecap="square"/>
-<line x1="0" y1="-150" x2="10000" y2="-150" stroke="#1b1b1b" stroke-width="28.84" stroke-linecap="square"/>
-<line x1="9850" y1="0" x2="9850" y2="8000" stroke="#1b1b1b" stroke-width="28.84" stroke-linecap="square"/>
-<line x1="10150" y1="0" x2="10150" y2="8000" stroke="#1b1b1b" stroke-width="28.84" stroke-linecap="square"/>
-<line x1="10000" y1="7850" x2="0" y2="7850" stroke="#1b1b1b" stroke-width="28.84" stroke-linecap="square"/>
-<line x1="10000" y1="8150" x2="0" y2="8150" stroke="#1b1b1b" stroke-width="28.84" stroke-linecap="square"/>
-<line x1="150" y1="8000" x2="150" y2="0" stroke="#1b1b1b" stroke-width="28.84" stroke-linecap="square"/>
-<line x1="-150" y1="8000" x2="-150" y2="0" stroke="#1b1b1b" stroke-width="28.84" stroke-linecap="square"/>
-<line x1="3950" y1="0" x2="3950" y2="5000" stroke="#1b1b1b" stroke-width="28.84" stroke-linecap="square"/>
-<line x1="4050" y1="0" x2="4050" y2="5000" stroke="#1b1b1b" stroke-width="28.84" stroke-linecap="square"/>
-<line x1="4000" y1="5050" x2="10000" y2="5050" stroke="#1b1b1b" stroke-width="28.84" stroke-linecap="square"/>
-<line x1="4000" y1="4950" x2="10000" y2="4950" stroke="#1b1b1b" stroke-width="28.84" stroke-linecap="square"/>
-<line x1="6950" y1="5000" x2="6950" y2="8000" stroke="#1b1b1b" stroke-width="28.84" stroke-linecap="square"/>
-<line x1="7050" y1="5000" x2="7050" y2="8000" stroke="#1b1b1b" stroke-width="28.84" stroke-linecap="square"/>
+<path d="M -150,-150 L -150,8150 L 10150,8150 L 10150,-150 Z M 150,150 L 3950,150 L 3950,5050 L 6950,5050 L 6950,7850 L 150,7850 Z M 4050,4950 L 4050,150 L 9850,150 L 9850,4950 Z M 7050,7850 L 7050,5050 L 9850,5050 L 9850,7850 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -150,-150 L -150,8150 L 10150,8150 L 10150,-150 Z M 150,150 L 3950,150 L 3950,5050 L 6950,5050 L 6950,7850 L 150,7850 Z M 4050,4950 L 4050,150 L 9850,150 L 9850,4950 Z M 7050,7850 L 7050,5050 L 9850,5050 L 9850,7850 Z" fill="none" stroke="#1b1b1b" stroke-width="28.84" stroke-linejoin="miter"/>
 <polygon points="3921.16,2050 3921.16,2950 4078.84,2950 4078.84,2050" fill="#ffffff"/>
 <line x1="4000" y1="2050" x2="3100" y2="2050" stroke="#555555" stroke-width="21.42"/>
 <path d="M 3100,2050 A 900 900 0 0 1 4000,2950" fill="none" stroke="#555555" stroke-width="16.48" stroke-dasharray="65.92 49.44"/>
