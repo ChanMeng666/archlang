@@ -7,7 +7,7 @@
 > exactly what has shipped, the git state, the conventions to keep, and where to
 > pick up.
 
-_Last updated after: v0.9 **T3.1–T3.7 complete** + release-prepped to **0.9.0** (built, tested, NOT published)._
+_Last updated after: v0.10 **T4.1–T4.5 complete** + release-prepped to **0.10.0** (built, tested, NOT published)._
 
 ---
 
@@ -15,19 +15,20 @@ _Last updated after: v0.9 **T3.1–T3.7 complete** + release-prepped to **0.9.0*
 
 - **v0.7 (Scene IR):** shipped before this work began (commit `5974d23`, released 0.7.0).
 - **v0.8 (full scripting language, T2.1–T2.8):** ✅ **COMPLETE and merged to `main`.** Version bumped to **0.8.0**. **Not yet published to npm.**
-- **v0.9 (CAD fidelity, T3.1–T3.7):** ✅ **COMPLETE** on branch `feat/v0.9-cad-fidelity` (not merged to `main`). Version bumped to **0.9.0**, CHANGELOG written. **Not yet published to npm; `archcanvas` not touched.**
-- **v0.10 / v0.11 / v1.0:** not started.
-- **Tests:** **225 passing** (was 204 at the v0.9 checkpoint), typecheck + build clean, all examples deterministic (with the optional geometry engine present AND absent).
+- **v0.9 (CAD fidelity, T3.1–T3.7):** ✅ **COMPLETE and merged to `main`** (merge `82ec142`). Released-prepped to **0.9.0**. **Not yet published to npm.**
+- **v0.10 (extensible platform, T4.1–T4.5):** ✅ **COMPLETE** on branch `feat/v0.10-platform` (not merged to `main`). Version bumped to **0.10.0**, CHANGELOG written. **Not yet published to npm; `archcanvas` not touched.**
+- **v0.11 / v1.0:** not started.
+- **Tests:** **273 passing** (was 225 after v0.9), typecheck + build clean, all examples deterministic; **all existing rendered output byte-identical** through the v0.10 additions.
 
 ---
 
 ## 2. Git state (read carefully before doing anything)
 
-- **Default branch:** `main`. **Current working branch:** `feat/v0.9-cad-fidelity`.
-- `main` contains **v0.8** and is **~10 commits ahead of `origin/main`** — **nothing has been pushed** (push only when the human asks).
-- `feat/v0.9-cad-fidelity` is `main` + 3 commits (T3.1–T3.3), **not merged**.
-- **`package.json` version is `0.8.0`** (v0.9 release prep not done yet).
-- **Nothing is published to npm** (publish needs the human's 2FA OTP). **`archcanvas` was not touched** (its system prompt still needs teaching the v0.8 constructs — pending the human's go-ahead).
+- **Default branch:** `main`. **Current working branch:** `feat/v0.10-platform`.
+- `main` contains **v0.9** (merge `82ec142`) and is **ahead of `origin/main`** — **nothing has been pushed** (push only when the human asks).
+- `feat/v0.10-platform` is `main` + 6 commits (T4.1–T4.5 + release prep), **not merged**.
+- **`package.json` version is `0.10.0`** (v0.10 release prep done: bump + CHANGELOG + this log).
+- **Nothing is published to npm** (publish needs the human's 2FA OTP). **`archcanvas` was not touched** (pending the human's go-ahead).
 - A harmless CRLF/autocrlf artifact may show `test/__snapshots__/*.snap` as modified; check `git diff --ignore-all-space` before worrying.
 
 **v0.8 commits on `main` (oldest→newest):** `ed14e22` T2.1 → `cdb7a11` T2.2 → `425c7d4` T2.3 → `7e199e8` T2.4 → `2dc64f4` T2.5 → `a4662da` T2.6 → `d864add` T2.7 → `53a2ce6` T2.8 → `40ebd03` release 0.8.0 → `a345096` merge.
@@ -79,19 +80,45 @@ New tests for v0.9 live in `test/style.test.ts` (line weights, dash round-trip, 
 
 ---
 
+## 4b. What shipped — v0.10 (extensible platform), T4.1–T4.5
+
+> **Snapshot rule restored:** v0.10 is **additive/infrastructural** — every existing
+> rendered output stays **byte-identical** (the four golden snapshots are the
+> tripwire; run without `-u`). The whole phase threads new capability through
+> defaulted parameters that collapse to the prior behavior when unused.
+
+| Task | What | Key files |
+|---|---|---|
+| **T4.1** | **Open, per-call plugin registry.** `createRegistry(plugins)` clones the static `BUILTIN_DEFS` per call (no global mutation → cache-safe). `Registry` (`byKeyword`/`byKind`/`order`) threaded through `parse`/`resolve`/`toScene`; parser `STATEMENT_STARTS` is now per-instance (plugin-aware recovery). `register{Element,Theme,Hatch,Backend}` validators/constructors. **Cache key folds in plugin/theme/backend/hatch/World identity** via process-local `idToken` (`src/identity.ts`). `ElementDef.kind` widened to allow new string kinds. | `src/elements/defs.ts`, `src/registry.ts`, `src/identity.ts`, `src/elements/index.ts`, `src/parser.ts`, `src/ir.ts`, `src/scene-build.ts`, `src/types.ts`, `src/index.ts` |
+| **T4.2** | **`World` seam.** `World { read(path): string\|null; now?(): Date }`, `NULL_WORLD`, `makeVirtualWorld`. Threaded into `compile`/`resolve` (`ResolveCtx.now`); CLI builds a real-fs `makeNodeWorld` (the one place Node APIs + wall-clock live). Default no-op → byte-identical. | `src/world.ts`, `src/index.ts`, `src/ir.ts`, `src/registry.ts`, `src/cli.ts`, `src/types.ts` |
+| **T4.3** | **Import system.** `import "<spec>": a, b as c \| *` brings a module's **components** into a plan. New `link` phase (the only I/O, behind `World.read`) between parse and resolve: resolves specs (relative `.arch` + namespaced `@local/name:1.0.0`, pure path joins), parses, merges components; cyclic → `E_IMPORT_CYCLE`; missing/unexported/conflict/bad-spec diagnostics. Parser now treats any `name(` as a component call (validated at expand) so imported/forward components resolve. Seeded `examples/lib/{furniture,doors}.arch` + `examples/imports.arch`. | `src/import.ts`, `src/ast.ts`, `src/parser.ts`, `src/index.ts`, `examples/lib/*` |
+| **T4.4** | **Theming cascade.** `THEMES` (blueprint/mono/dark/presentation); `theme <name> { … }` named base (+ one-liner); per-element `style <kind> { fill … }`; opt-in `theme from "#color"` HSL poché derivation (zero-dep). Cascade (later wins): default → named base → `theme{}` → `theme from` → per-element `style` → `CompileOptions.theme`. Theme stays **out of the IR** (passthrough to `ResolvedPlan`); one unsanitized merge feeds base + styled themes, sanitize runs once each. Opt-in derivation keeps snapshots byte-identical. | `src/theme.ts`, `src/parser.ts`, `src/ast.ts`, `src/ir.ts`, `src/scene-build.ts`, `src/registry.ts`, `src/index.ts` |
+| **T4.5** | **Config sanitization + stage memo.** `sanitizeConfig()` denylist (`__proto__`/`constructor`/`prototype` keys; `<`/`>`/`url(data:` values) on untrusted source theme/style values; trusted `CompileOptions` skip it; theme/style key resolution hardened to own-property checks. FNV-1a stage memos for `lex`/`parse`/`resolve` (registry/World identity in keys; cleared by `clearCache`). ~22× faster reparse (bench). | `src/sanitize.ts`, `src/hash.ts`, `src/parser.ts`, `src/lexer.ts`, `src/ir.ts`, `src/theme.ts`, `src/index.ts` |
+
+New tests: `test/plugins.test.ts`, `test/world.test.ts`, `test/import.test.ts`, `test/theme-cascade.test.ts`, `test/sanitize.test.ts`, `test/stage-cache.test.ts` (48 new; 273 total).
+
+**v0.10 commits on the branch:** `ec3b3d8` T4.1 → `ea8fd09` T4.2 → `be413d2` T4.3 → `02a7609` T4.4 → `75677b3` T4.5 → (release-prep: 0.10.0 + CHANGELOG + this log).
+
+### Deferrals / notes for v0.10 (pick up where relevant)
+- **`registerHatch`/`registerTheme` consumption depth:** `registerBackend` is fully per-call wired in scene-build, and `registerTheme` themes are consumed by the T4.4 cascade. `registerHatch` ships as a validated constructor + cache-key identity + `CompileOptions.hatches`, but custom hatches are **not yet threaded** into the SVG/DXF hatch table or wall material validation (that touches `wall.ts` resolve + both backends). Wire it when a real custom-hatch consumer appears.
+- **Imports bring components only** (not plan-level `let` value-functions); seed libs are intentionally self-contained (no cross-component calls), so named imports don't need transitive dependency resolution. `@local` is the only supported namespace.
+- **Unknown `theme <name>`** is silently treated as `{}` (no diagnostic) — `toScene` has no diagnostics channel, and registered theme names aren't known at resolve.
+
+---
+
 ## 5. Remaining work — START HERE
 
 Implement strictly in roadmap order; each task is gated by its DoD (roadmap §6 for v0.9, §7–§9 for v0.10–v1.0).
 
-### v0.9 — ✅ COMPLETE (T3.1–T3.7 + release prep). Awaiting the human's go-ahead to:
-1. **Merge** `feat/v0.9-cad-fidelity` → `main` (`--no-ff` when ready).
-2. **Publish** `npm publish --access public` (needs the human's npm 2FA OTP), then tag `v0.9.0` + `git push --tags`.
-3. **Consumer bump** `archcanvas` to `^0.9.0` (`npm install`, `npx tsc --noEmit`, `npm run build`); optionally expose layers/linetypes/hatch params to its system prompt. Do NOT push `archcanvas main` unless asked.
+### v0.10 — ✅ COMPLETE (T4.1–T4.5 + release prep). Awaiting the human's go-ahead to:
+1. **Merge** `feat/v0.10-platform` → `main` (`--no-ff` when ready).
+2. **Publish** `npm publish --access public` (needs the human's npm 2FA OTP), then tag `v0.10.0` + `git push --tags`.
+3. **Consumer bump** `archcanvas` to `^0.10.0` (`npm install`, `npx tsc --noEmit`, `npm run build`); optionally expose plugins/World/imports/theming to its system prompt. Do NOT push `archcanvas main` unless asked.
 
-(Done this phase: T3.4 GeometryBackend + clipper2-wasm, T3.5 data-driven hatches + DXF HATCH, T3.6 computed dims, T3.7 spatial grid index. The earlier "OPEN DECISION" on clipper2-wasm was resolved with the human: install it as an optional dep.)
+(v0.9 was merged to `main` at `82ec142`; its publish/consumer-bump steps may still be pending the human — confirm before assuming 0.9.0 is on npm.)
 
-### START HERE next: v0.10 (platform), then v0.11 (tooling/DX), v1.0 (launch)
-See roadmap §7, §8, §9. Highlights: open registry + plugins (T4.1), `World` seam + imports/packages (T4.2–T4.3), theming cascade + config sanitization + stage memo (T4.4–T4.5); lossless/recoverable parse tree, `arch fmt`, full LSP, one-grammar-source, error catalog (T5.x); docs site + deployed playground, relational placement, PNG backend, visual-regression, workspaces (T6.x). Each phase ends with a release + (version-only) consumer bump.
+### START HERE next: v0.11 (tooling/DX), then v1.0 (launch)
+See roadmap §8, §9. Highlights: lossless/recoverable parse tree (parser recovers, always returns an AST + errors), `arch fmt` (Wadler/Prettier Doc IR), full LSP, one-grammar-source (TextMate/Monarch/Prism), error catalog (T5.x); docs site + deployed playground, relational placement vocabulary, PNG backend, visual-regression, workspaces (T6.x). Each phase ends with a release + (version-only) consumer bump.
 
 ---
 
