@@ -23,8 +23,8 @@ import type { Expr } from "./expr.js";
 import { parseExpr as parseExprPratt } from "./expr.js";
 import type { Theme } from "./theme.js";
 import { isNumericThemeKey, resolveThemeKey } from "./theme.js";
-import type { ParseCtx } from "./registry.js";
-import { registry } from "./elements/index.js";
+import type { ParseCtx, Registry } from "./registry.js";
+import { BUILTIN_REGISTRY } from "./registry.js";
 
 export interface ParseOutcome {
   plan?: PlanNode;
@@ -35,8 +35,9 @@ export interface ParseOutcome {
 const SETTINGS = ["units", "grid", "scale", "north", "title", "theme", "let", "component"];
 /** Control-flow + rule keywords that begin a body statement. */
 const CONTROL = ["for", "if", "while", "set"];
-/** Keywords that begin a plan-body statement; recovery resynchronizes to one. */
-const STATEMENT_STARTS = new Set<string>([...SETTINGS, ...CONTROL, ...registry.keys()]);
+/** Keywords that begin a plan-body statement (registry element keywords are added
+ *  per-parse, so recovery is plugin-aware). */
+const FIXED_STATEMENT_STARTS: readonly string[] = [...SETTINGS, ...CONTROL];
 
 /** Thrown internally by `eat*` helpers; always caught within the parser. */
 class ParseError extends Error {
@@ -45,7 +46,7 @@ class ParseError extends Error {
   }
 }
 
-export function parse(src: string): ParseOutcome {
+export function parse(src: string, registry: Registry = BUILTIN_REGISTRY): ParseOutcome {
   const { tokens, errors: lexErrors } = lex(src);
   const lexDiags: Diagnostic[] = lexErrors.map((e) => ({
     severity: "error" as const,
@@ -53,7 +54,7 @@ export function parse(src: string): ParseOutcome {
     span: e.span,
   }));
 
-  const p = new Parser(tokens);
+  const p = new Parser(tokens, registry);
   let plan: PlanNode | undefined;
   try {
     plan = p.parsePlan();
@@ -73,8 +74,12 @@ class Parser {
   public diagnostics: Diagnostic[] = [];
   /** Facade passed to element parse functions (see registry.ts). */
   private readonly ctx: ParseCtx;
+  /** Statement-start keywords for recovery resync — fixed keywords + this
+   *  registry's element keywords (so plugin elements resync correctly). */
+  private readonly statementStarts: ReadonlySet<string>;
 
-  constructor(private toks: Token[]) {
+  constructor(private toks: Token[], private readonly registry: Registry = BUILTIN_REGISTRY) {
+    this.statementStarts = new Set<string>([...FIXED_STATEMENT_STARTS, ...registry.byKeyword.keys()]);
     this.ctx = {
       peek: (o) => this.peek(o),
       next: () => this.next(),
@@ -116,7 +121,7 @@ class Parser {
     if (!this.isType("rcurly") && !this.isType("eof")) this.next();
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const t = this.peek();
-      if (t.type === "ident" && STATEMENT_STARTS.has(t.value)) return;
+      if (t.type === "ident" && this.statementStarts.has(t.value)) return;
       this.next();
     }
   }
@@ -400,7 +405,7 @@ class Parser {
     else if (t.value === "while") node = this.parseWhile(components, selfName);
     else if (t.value === "set") node = this.parseSet();
     else {
-      const def = registry.get(t.value);
+      const def = this.registry.byKeyword.get(t.value);
       if (def) node = def.parse(this.ctx);
       else if (t.value === "let") node = this.parseLet();
       // An ident immediately followed by "=" is an assignment.
@@ -460,7 +465,7 @@ class Parser {
   private parseSet(): SetNode {
     const kw = this.eatKeyword("set");
     const targetTok = this.eatIdent();
-    const def = registry.get(targetTok.value);
+    const def = this.registry.byKeyword.get(targetTok.value);
     if (!def) this.fail(`Unknown element kind "${targetTok.value}" in "set" rule`, targetTok);
     this.eat("lparen");
     const over: SetOverride[] = [];
@@ -472,7 +477,9 @@ class Parser {
       else break;
     }
     this.eat("rparen");
-    return { kind: "set", id: "", target: def.kind, over, line: kw.line };
+    // `target` is keyed as a string at runtime (scope.sets / effectiveSet), so a
+    // plugin's custom kind works here even though the field type is ElementKind.
+    return { kind: "set", id: "", target: def.kind as SetNode["target"], over, line: kw.line };
   }
 
   /** Parse a string literal as a (possibly interpolated) template expression. */

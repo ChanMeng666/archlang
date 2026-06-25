@@ -21,12 +21,12 @@ import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Env, Expr, Value } from "./expr.js";
 import { asBool, asNum, asStr, closest, evalExpr, exprSpan } from "./expr.js";
 import type { Theme } from "./theme.js";
-import type { ResolveCtx } from "./registry.js";
+import type { ResolveCtx, Registry } from "./registry.js";
+import { BUILTIN_REGISTRY } from "./registry.js";
 import type { WallSegment } from "./geometry.js";
 import { segmentsOfWall, WallGrid } from "./geometry.js";
 import type { GridBox } from "./geometry/grid-index.js";
 import { GridIndex } from "./geometry/grid-index.js";
-import { registryOrder } from "./elements/index.js";
 import { BUILTIN_NAMES } from "./builtins.js";
 
 export interface RBase {
@@ -286,7 +286,7 @@ function expandScope(
   return out;
 }
 
-export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnostic[] } {
+export function resolve(ast: PlanNode, registry: Registry = BUILTIN_REGISTRY): { ir: ResolvedPlan; diagnostics: Diagnostic[] } {
   const diagnostics: Diagnostic[] = [];
   const g = ast.grid;
   const snap = (v: number) => (g > 0 ? Math.round(v / g) * g : v);
@@ -316,7 +316,7 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
     seen.add(auto);
     return auto;
   };
-  for (const def of registryOrder) {
+  for (const def of registry.order) {
     let idx = 0;
     for (const e of entries) {
       if (e.node.kind !== def.kind) continue;
@@ -362,7 +362,7 @@ export function resolve(ast: PlanNode): { ir: ResolvedPlan; diagnostics: Diagnos
     isOnWall: (at, ref) => hostInfo(at, ref).onWall,
     diag: (d) => diagnostics.push(d),
   };
-  for (const def of registryOrder) {
+  for (const def of registry.order) {
     for (const e of entries) {
       if (e.node.kind !== def.kind) continue;
       activeEnv = e.env;

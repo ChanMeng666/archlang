@@ -10,9 +10,9 @@
 
 import type { CompileOptions } from "./types.js";
 import type { Opening, ResolvedPlan, RWall } from "./ir.js";
-import type { RenderCtx } from "./registry.js";
+import type { RenderCtx, Registry, Runtime } from "./registry.js";
+import { BUILTIN_RUNTIME } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode } from "./scene.js";
-import { registry } from "./elements/index.js";
 import type { Bounds, Vec } from "./geometry.js";
 import { add, distPointToSegment, emptyBounds, extendBounds, mul, normal, segmentRectangle, segmentsOfWall, sub, unit } from "./geometry.js";
 import type { Rect } from "./geometry/union.js";
@@ -31,10 +31,10 @@ function fmtMm(n: number): string {
 }
 
 /** Drawing bounds: each element contributes points via its registry `bounds`. */
-function planBounds(ir: ResolvedPlan): Bounds {
+function planBounds(ir: ResolvedPlan, registry: Registry): Bounds {
   const b = emptyBounds();
   for (const el of ir.elements) {
-    const def = registry.get(el.kind);
+    const def = registry.byKind.get(el.kind);
     if (!def) continue;
     for (const p of def.bounds(el)) extendBounds(b, p.x, p.y);
   }
@@ -193,9 +193,8 @@ function lowerAngledGroup(group: RWall[], h: HatchSpec, ctx: RenderCtx, backend:
  * optional {@link GeometryBackend} when one is registered (seamless joinery),
  * else falls back to the wall element's per-segment primitives.
  */
-function lowerWalls(walls: RWall[], ctx: RenderCtx): SceneNode[] {
+function lowerWalls(walls: RWall[], ctx: RenderCtx, registry: Registry, backend: GeometryBackend | null): SceneNode[] {
   if (walls.length === 0) return [];
-  const backend = getGeometryBackend();
   const nodes: SceneNode[] = [];
   for (const h of hatchesUsed(walls)) {
     const k = hatchKey(h);
@@ -208,7 +207,7 @@ function lowerWalls(walls: RWall[], ctx: RenderCtx): SceneNode[] {
     if (viaBackend) {
       nodes.push(...viaBackend);
     } else {
-      const def = registry.get("wall")!;
+      const def = registry.byKind.get("wall")!;
       nodes.push(...group.flatMap((w) => def.render(w, ctx)));
     }
   }
@@ -221,11 +220,13 @@ function lowerWalls(walls: RWall[], ctx: RenderCtx): SceneNode[] {
  * page chrome (north/scale/title). `opts.width` does not affect the Scene (it is
  * an SVG-only attribute) — only `opts.theme` participates.
  */
-export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}): Scene {
+export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): Scene {
+  const registry = runtime.registry;
+  const backend = runtime.backend ?? getGeometryBackend();
   const theme = sanitizeTheme(mergeTheme(DEFAULT_THEME, ir.theme, opts.theme));
   const lw = theme.lineWeight;
 
-  const b = planBounds(ir);
+  const b = planBounds(ir, registry);
   const drawW = b.maxX - b.minX;
   const drawH = b.maxY - b.minY;
   const refDim = Math.max(drawW, drawH, 1);
@@ -248,10 +249,10 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}): Scene {
   const nodes: SceneNode[] = [];
   for (const el of ir.elements) {
     if (el.kind === "wall") continue;
-    const def = registry.get(el.kind);
+    const def = registry.byKind.get(el.kind);
     if (def) nodes.push(...def.render(el, ctx));
   }
-  nodes.push(...lowerWalls(ir.walls, ctx));
+  nodes.push(...lowerWalls(ir.walls, ctx, registry, backend));
 
   return {
     width: drawW + sizes.margin * 2,

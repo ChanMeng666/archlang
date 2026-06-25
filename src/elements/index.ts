@@ -1,32 +1,17 @@
 /**
- * Element registry assembly. Registration order is canonical: it drives id
- * assignment and resolve ordering (walls first, so openings can host against
- * them). To add an element: write one module and add one `register()` line.
+ * Built-in element registry — back-compatible views over the default
+ * {@link Registry}. The canonical built-in list now lives in `defs.ts`; the
+ * per-call registry machinery (and the public `register*` extension points) live
+ * in `registry.ts`. These exports keep existing `registry`/`registryOrder`
+ * imports working while the pipeline threads a per-call registry through.
+ *
+ * To add a built-in element: write one module and add it to `BUILTIN_DEFS` in
+ * `defs.ts`. To add a *third-party* element: pass it via `compile(src, { plugins })`.
  */
 
-import type { ElementDef } from "../registry.js";
-import { wall } from "./wall.js";
-import { room } from "./room.js";
-import { door } from "./door.js";
-import { windowEl } from "./window.js";
-import { furniture } from "./furniture.js";
-import { dim } from "./dim.js";
-import { column } from "./column.js";
+import { BUILTIN_REGISTRY } from "../registry.js";
 
-/** Defs in canonical (registration) order. */
-export const registryOrder: ElementDef[] = [];
-/** Lookup by keyword. */
-export const registry = new Map<string, ElementDef>();
-
-function register(def: ElementDef): void {
-  registry.set(def.keyword, def);
-  registryOrder.push(def);
-}
-
-register(wall);
-register(room);
-register(door);
-register(windowEl);
-register(furniture);
-register(dim);
-register(column);
+/** Built-in defs in canonical (registration) order. */
+export const registryOrder = BUILTIN_REGISTRY.order;
+/** Built-in lookup by keyword. */
+export const registry = BUILTIN_REGISTRY.byKeyword;
