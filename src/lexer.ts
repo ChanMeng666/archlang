@@ -18,6 +18,18 @@ export type TokenType =
   | "star" // *
   | "slash" // /
   | "percent" // %
+  | "lbracket" // [
+  | "rbracket" // ]
+  | "lt" // <
+  | "gt" // >
+  | "le" // <=
+  | "ge" // >=
+  | "eq" // ==
+  | "ne" // !=
+  | "bang" // !
+  | "and" // &&
+  | "or" // ||
+  | "dotdot" // .. (range)
   | "eof";
 
 export interface Token {
@@ -27,6 +39,9 @@ export interface Token {
   num?: number;
   /** For "dimension": h. */
   num2?: number;
+  /** For "string": the exact source characters between the quotes (escapes
+   *  intact), so the parser can find `{…}` interpolations. */
+  raw?: string;
   line: number;
   col: number;
   /** Byte offset of the token's first character into the source. */
@@ -90,11 +105,12 @@ export function lex(src: string): LexResult {
       continue;
     }
 
-    // String literal with \" and \\ escapes
+    // String literal with \" and \\ escapes. `raw` keeps the exact inner source
+    // (escapes intact) so the parser can split out `{…}` interpolations.
     if (c === '"') {
       advance();
+      const rawStart = i;
       let value = "";
-      let terminated = false;
       while (i < src.length) {
         const ch = peek();
         if (ch === "\\") {
@@ -103,18 +119,20 @@ export function lex(src: string): LexResult {
           value += esc === "n" ? "\n" : esc;
           continue;
         }
-        if (ch === '"') {
-          advance();
-          terminated = true;
-          break;
-        }
+        if (ch === '"') break; // closing quote — don't consume yet
         if (ch === "\n") break; // strings don't span lines
         value += advance();
+      }
+      const raw = src.slice(rawStart, i);
+      let terminated = false;
+      if (peek() === '"') {
+        advance();
+        terminated = true;
       }
       if (!terminated) {
         errors.push({ message: "Unterminated string literal", span: { start: startIdx, end: i } });
       }
-      push("string", value, startLine, startCol, startIdx);
+      push("string", value, startLine, startCol, startIdx, { raw });
       continue;
     }
 
@@ -124,9 +142,23 @@ export function lex(src: string): LexResult {
     if (c === "{") { advance(); push("lcurly", "{", startLine, startCol, startIdx); continue; }
     if (c === "}") { advance(); push("rcurly", "}", startLine, startCol, startIdx); continue; }
     if (c === ",") { advance(); push("comma", ",", startLine, startCol, startIdx); continue; }
-    if (c === "=") { advance(); push("equals", "=", startLine, startCol, startIdx); continue; }
     if (c === ":") { advance(); push("colon", ":", startLine, startCol, startIdx); continue; }
+    if (c === "[") { advance(); push("lbracket", "[", startLine, startCol, startIdx); continue; }
+    if (c === "]") { advance(); push("rbracket", "]", startLine, startCol, startIdx); continue; }
     if (c === "-" && peek(1) === ">") { advance(); advance(); push("arrow", "->", startLine, startCol, startIdx); continue; }
+
+    // Comparison / equality / logical operators (multi-char forms first).
+    if (c === "=" && peek(1) === "=") { advance(); advance(); push("eq", "==", startLine, startCol, startIdx); continue; }
+    if (c === "=") { advance(); push("equals", "=", startLine, startCol, startIdx); continue; }
+    if (c === "!" && peek(1) === "=") { advance(); advance(); push("ne", "!=", startLine, startCol, startIdx); continue; }
+    if (c === "!") { advance(); push("bang", "!", startLine, startCol, startIdx); continue; }
+    if (c === "<" && peek(1) === "=") { advance(); advance(); push("le", "<=", startLine, startCol, startIdx); continue; }
+    if (c === "<") { advance(); push("lt", "<", startLine, startCol, startIdx); continue; }
+    if (c === ">" && peek(1) === "=") { advance(); advance(); push("ge", ">=", startLine, startCol, startIdx); continue; }
+    if (c === ">") { advance(); push("gt", ">", startLine, startCol, startIdx); continue; }
+    if (c === "&" && peek(1) === "&") { advance(); advance(); push("and", "&&", startLine, startCol, startIdx); continue; }
+    if (c === "|" && peek(1) === "|") { advance(); advance(); push("or", "||", startLine, startCol, startIdx); continue; }
+    if (c === "." && peek(1) === ".") { advance(); advance(); push("dotdot", "..", startLine, startCol, startIdx); continue; }
 
     // Arithmetic operators (unary minus is handled by the expression parser).
     if (c === "+") { advance(); push("plus", "+", startLine, startCol, startIdx); continue; }
@@ -140,7 +172,8 @@ export function lex(src: string): LexResult {
     if (isDigit(c) || (c === "." && isDigit(peek(1)))) {
       let raw = "";
       while (isDigit(peek())) raw += advance();
-      if (peek() === ".") {
+      // A "." is a decimal point only when a digit follows; ".." is the range op.
+      if (peek() === "." && isDigit(peek(1))) {
         raw += advance();
         while (isDigit(peek())) raw += advance();
       }
@@ -150,7 +183,7 @@ export function lex(src: string): LexResult {
         advance(); // consume 'x'
         let raw2 = "";
         while (isDigit(peek())) raw2 += advance();
-        if (peek() === ".") {
+        if (peek() === "." && isDigit(peek(1))) {
           raw2 += advance();
           while (isDigit(peek())) raw2 += advance();
         }
