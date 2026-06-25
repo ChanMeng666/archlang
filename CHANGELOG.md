@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-25
+
 ### Added
 - **Clean wall joins**: orthogonal walls are boolean-unioned into a single
   poché fill + mitred outline, so corners and T-junctions render with no
