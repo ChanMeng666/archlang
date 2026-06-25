@@ -49,6 +49,13 @@ export interface CompileOptions {
   hatches?: import("./registry.js").HatchPlugin[];
   /** Named themes available to this compile, selectable via `theme <name> { … }`. */
   themes?: import("./registry.js").ThemePlugin[];
+  /**
+   * Environment seam: resolves `import` paths and supplies `now`. Defaults to a
+   * no-op World (nothing readable, no clock), so an import-free plan compiles
+   * byte-identically with or without one. Node builds a real-fs World; the
+   * browser/tests pass a virtual map. See {@link import("./world.js").World}.
+   */
+  world?: import("./world.js").World;
 }
 
 export interface CompileResult {

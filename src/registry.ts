@@ -68,6 +68,11 @@ export interface ResolveCtx {
    *  name), or undefined when none are in scope. Elements apply these only to
    *  attributes the user left unspecified. */
   defaults?: ReadonlyMap<string, Value>;
+  /** Current time from the {@link import("./world.js").World} seam, when provided.
+   *  Absent unless the caller supplied a World with `now` — so time-dependent
+   *  output is always injectable (never a hidden `Date.now()`) and stays
+   *  deterministic in tests. */
+  now?(): Date;
   diag(d: Diagnostic): void;
 }
 

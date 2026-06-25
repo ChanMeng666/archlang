@@ -13,6 +13,7 @@ import { renderSvg } from "./backends/svg.js";
 import { offsetToLineCol } from "./diagnostics.js";
 import { createRegistry } from "./registry.js";
 import type { Runtime } from "./registry.js";
+import { NULL_WORLD } from "./world.js";
 import { idToken } from "./identity.js";
 import type { Scene } from "./scene.js";
 import type { Diagnostic } from "./diagnostics.js";
@@ -80,6 +81,10 @@ export type {
   HatchPlugin,
   HatchMetaInput,
 } from "./registry.js";
+// World seam (v0.10): the compiler's window onto its environment (import reads,
+// `now`). Pass `compile(src, { world })`; default is a pure no-op World.
+export { NULL_WORLD, makeVirtualWorld } from "./world.js";
+export type { World } from "./world.js";
 
 /** Small LRU-ish memo cache keyed by source+options. Bounded to 64 entries. */
 const cache = new Map<string, CompileResult>();
@@ -99,6 +104,7 @@ export function compile(source: string, opts: CompileOptions = {}): CompileResul
     idToken(opts.themes),
     idToken(opts.backend),
     idToken(opts.hatches),
+    idToken(opts.world),
   ]);
   if (!opts.noCache) {
     const hit = cache.get(key);
@@ -129,11 +135,13 @@ function compileUncached(source: string, opts: CompileOptions): CompileResult {
   // global mutation. Absent plugins/backend collapse to the built-in behavior.
   const registry = createRegistry(opts.plugins);
   const runtime: Runtime = { registry, backend: opts.backend };
+  const world = opts.world ?? NULL_WORLD;
 
   const { plan, diagnostics: parseDiags } = parse(source, registry);
 
-  // parse → resolve (AST→IR, the single place semantics live) → render.
-  const resolved = plan ? resolve(plan, registry) : null;
+  // parse → resolve (AST→IR, the single place semantics live) → render. The World
+  // supplies `now` to resolve; `import` reads (T4.3) flow through it too.
+  const resolved = plan ? resolve(plan, registry, world) : null;
   const diagnostics: Diagnostic[] = resolved
     ? [...parseDiags, ...resolved.diagnostics]
     : [...parseDiags];

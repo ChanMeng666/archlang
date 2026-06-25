@@ -23,6 +23,8 @@ import { asBool, asNum, asStr, closest, evalExpr, exprSpan } from "./expr.js";
 import type { Theme } from "./theme.js";
 import type { ResolveCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
+import type { World } from "./world.js";
+import { NULL_WORLD } from "./world.js";
 import type { WallSegment } from "./geometry.js";
 import { segmentsOfWall, WallGrid } from "./geometry.js";
 import type { GridBox } from "./geometry/grid-index.js";
@@ -286,7 +288,11 @@ function expandScope(
   return out;
 }
 
-export function resolve(ast: PlanNode, registry: Registry = BUILTIN_REGISTRY): { ir: ResolvedPlan; diagnostics: Diagnostic[] } {
+export function resolve(
+  ast: PlanNode,
+  registry: Registry = BUILTIN_REGISTRY,
+  world: World = NULL_WORLD,
+): { ir: ResolvedPlan; diagnostics: Diagnostic[] } {
   const diagnostics: Diagnostic[] = [];
   const g = ast.grid;
   const snap = (v: number) => (g > 0 ? Math.round(v / g) * g : v);
@@ -360,6 +366,7 @@ export function resolve(ast: PlanNode, registry: Registry = BUILTIN_REGISTRY): {
     walls,
     hostSegment: (at, ref) => hostInfo(at, ref).host,
     isOnWall: (at, ref) => hostInfo(at, ref).onWall,
+    ...(world.now ? { now: () => world.now!() } : {}),
     diag: (d) => diagnostics.push(d),
   };
   for (const def of registry.order) {
