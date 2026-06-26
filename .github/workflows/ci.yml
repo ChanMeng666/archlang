@@ -29,5 +29,10 @@ jobs:
       - name: Type-check
         run: npm run typecheck
 
+      - name: Editor grammars are in sync with the token source
+        run: |
+          npm run gen:grammars
+          git diff --exit-code editors/archlang.tmLanguage.json playground/src/arch-language.js
+
       - name: Test
         run: npm test

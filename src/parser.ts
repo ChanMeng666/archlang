@@ -30,19 +30,17 @@ import { fnv1a } from "./hash.js";
 import { idToken } from "./identity.js";
 import type { ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
+import { STATEMENT_STARTS } from "./grammar/tokens.js";
 
 export interface ParseOutcome {
   plan?: PlanNode;
   diagnostics: Diagnostic[];
 }
 
-/** Plan-level settings + binding/definition keywords (not registry elements). */
-const SETTINGS = ["units", "grid", "scale", "north", "title", "theme", "style", "let", "component", "import"];
-/** Control-flow + rule keywords that begin a body statement. */
-const CONTROL = ["for", "if", "while", "set"];
 /** Keywords that begin a plan-body statement (registry element keywords are added
- *  per-parse, so recovery is plugin-aware). */
-const FIXED_STATEMENT_STARTS: readonly string[] = [...SETTINGS, ...CONTROL];
+ *  per-parse, so recovery is plugin-aware). Sourced from the one grammar file
+ *  (`src/grammar/tokens.ts`) so the parser and the editor grammars stay in sync. */
+const FIXED_STATEMENT_STARTS: readonly string[] = STATEMENT_STARTS;
 
 /** Thrown internally by `eat*` helpers; always caught within the parser. */
 class ParseError extends Error {
@@ -198,7 +196,7 @@ class Parser {
     try {
       this.eatKeyword("plan");
       plan.name = this.eatString();
-      this.eat("lcurly");
+      plan.bodyStart = this.eat("lcurly").end;
     } catch (e) {
       if (!(e instanceof ParseError)) throw e;
       this.diagnostics.push({ severity: "error", message: e.message, span: e.span });

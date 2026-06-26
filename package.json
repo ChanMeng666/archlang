@@ -53,6 +53,7 @@
     "test:watch": "vitest",
     "cli": "tsx src/cli.ts",
     "bench": "tsx bench/run.ts",
+    "gen:grammars": "tsx scripts/gen-grammars.ts",
     "prepublishOnly": "npm run build && npm run test"
   },
   "devDependencies": {

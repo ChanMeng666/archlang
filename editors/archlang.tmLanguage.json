@@ -2,16 +2,34 @@
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "ArchLang",
   "scopeName": "source.arch",
-  "fileTypes": ["arch"],
+  "fileTypes": [
+    "arch"
+  ],
   "patterns": [
-    { "include": "#comments" },
-    { "include": "#strings" },
-    { "include": "#id-binding" },
-    { "include": "#component-def" },
-    { "include": "#numbers" },
-    { "include": "#keywords" },
-    { "include": "#constants" },
-    { "include": "#operators" }
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#id-binding"
+    },
+    {
+      "include": "#component-def"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#constants"
+    },
+    {
+      "include": "#operators"
+    }
   ],
   "repository": {
     "comments": {
@@ -21,45 +39,83 @@
     "strings": {
       "name": "string.quoted.double.arch",
       "begin": "\"",
-      "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.arch" } },
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.begin.arch"
+        }
+      },
       "end": "\"|(?=$)",
-      "endCaptures": { "0": { "name": "punctuation.definition.string.end.arch" } },
-      "patterns": [{ "match": "\\\\.", "name": "constant.character.escape.arch" }]
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.arch"
+        }
+      },
+      "patterns": [
+        {
+          "match": "\\\\.",
+          "name": "constant.character.escape.arch"
+        }
+      ]
     },
     "id-binding": {
       "match": "\\b(id)\\s*(=)\\s*([A-Za-z_][A-Za-z0-9_]*)",
       "captures": {
-        "1": { "name": "keyword.other.arch" },
-        "2": { "name": "keyword.operator.assignment.arch" },
-        "3": { "name": "entity.name.tag.arch" }
+        "1": {
+          "name": "keyword.other.arch"
+        },
+        "2": {
+          "name": "keyword.operator.assignment.arch"
+        },
+        "3": {
+          "name": "entity.name.tag.arch"
+        }
       }
     },
     "component-def": {
       "match": "\\b(component)\\s+([A-Za-z_][A-Za-z0-9_]*)",
       "captures": {
-        "1": { "name": "keyword.control.arch" },
-        "2": { "name": "entity.name.function.arch" }
+        "1": {
+          "name": "keyword.control.arch"
+        },
+        "2": {
+          "name": "entity.name.function.arch"
+        }
       }
     },
     "numbers": {
       "patterns": [
-        { "match": "\\b[0-9]+(?:\\.[0-9]+)?x[0-9]+(?:\\.[0-9]+)?\\b", "name": "constant.numeric.dimension.arch" },
-        { "match": "\\b[0-9]+(?:\\.[0-9]+)?\\b", "name": "constant.numeric.arch" }
+        {
+          "match": "\\b[0-9]+(?:\\.[0-9]+)?x[0-9]+(?:\\.[0-9]+)?\\b",
+          "name": "constant.numeric.dimension.arch"
+        },
+        {
+          "match": "\\b[0-9]+(?:\\.[0-9]+)?\\b",
+          "name": "constant.numeric.arch"
+        }
       ]
     },
     "keywords": {
       "patterns": [
-        { "match": "\\b(plan|component|let|theme|title)\\b", "name": "keyword.control.arch" },
-        { "match": "\\b(wall|room|door|window|furniture|dim|column)\\b", "name": "storage.type.element.arch" },
-        { "match": "\\b(units|grid|scale|north|material|at|size|width|thickness|label|hinge|swing|offset|text|close|project|drawn_by|date)\\b", "name": "keyword.other.arch" }
+        {
+          "match": "\\b(plan|component|let|theme|title|style|import|for|if|while|else|set)\\b",
+          "name": "keyword.control.arch"
+        },
+        {
+          "match": "\\b(wall|room|door|window|furniture|dim|column)\\b",
+          "name": "storage.type.element.arch"
+        },
+        {
+          "match": "\\b(units|grid|scale|north|material|angle|at|size|width|thickness|label|hinge|swing|offset|text|close|id|project|drawn_by|date|from|as)\\b",
+          "name": "keyword.other.arch"
+        }
       ]
     },
     "constants": {
-      "match": "\\b(up|down|left|right|in|out|mm)\\b",
+      "match": "\\b(up|down|left|right|in|out|mm|true|false)\\b",
       "name": "constant.language.arch"
     },
     "operators": {
-      "match": "->|[+\\-*/%=:,]",
+      "match": "->|==|!=|<=|>=|&&|\\|\\||\\.\\.|\\+|-|\\*|/|%|=|:|,|<|>|!|\\[|\\]",
       "name": "keyword.operator.arch"
     }
   }
