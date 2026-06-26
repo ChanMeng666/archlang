@@ -1,0 +1,13 @@
+# Enforce LF line endings everywhere so output stays byte-identical across
+# platforms (determinism is a core invariant — see docs/IMPLEMENTATION-PLAN §0).
+* text=auto eol=lf
+
+# Binary assets — never touch line endings.
+*.png  binary
+*.ttf  binary
+*.otf  binary
+*.woff binary
+*.woff2 binary
+*.vsix binary
+*.ico  binary
+*.pdf  binary
