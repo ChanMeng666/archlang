@@ -18,5 +18,13 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    rollupOptions: {
+      // The core's Node-only export backends (PNG via @resvg/resvg-js, PDF via
+      // pdfkit, angled-geometry via clipper2-wasm) are reached only through lazy
+      // `import()`s that never run in the browser — the playground rasterizes via
+      // <canvas> and embeds PDF via jsPDF. Externalize them (and node: builtins)
+      // so Rollup doesn't try to bundle native binaries it can't parse.
+      external: [/^node:/, "@resvg/resvg-js", "pdfkit", "clipper2-wasm"],
+    },
   },
 });

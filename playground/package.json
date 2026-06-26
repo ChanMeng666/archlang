@@ -15,7 +15,8 @@
     "@codemirror/lint": "^6.8.4",
     "@codemirror/state": "^6.5.0",
     "@codemirror/view": "^6.36.1",
-    "@lezer/highlight": "^1.2.1"
+    "@lezer/highlight": "^1.2.1",
+    "jspdf": "^4.2.1"
   },
   "devDependencies": {
     "vite": "^6.0.7"

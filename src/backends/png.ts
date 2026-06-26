@@ -14,11 +14,14 @@
  * `compile()`. Build a Scene with `toScene(ir)` or `compile().scene`.
  */
 
-import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import type { CompileOptions } from "../types.js";
 import type { Scene } from "../scene.js";
 import { renderSvg } from "./svg.js";
+
+// NB: node:fs / node:url are imported LAZILY inside fontPath() (not at module
+// top) so this module stays browser-safe and honours the §0 invariant "no
+// Node-only APIs in src/ except cli.ts". The Node path only runs when renderPng
+// is actually called (it is Node-only — resvg is a native binding).
 
 /** The bundled font's family name — pinned as resvg's default so it is used for
  *  every `<text>` regardless of the SVG's `font-family` (Helvetica/Arial/…). */
@@ -32,15 +35,24 @@ let fontPathCache: string | null = null;
  * `dist/assets/` next to the emitted chunk, and `assets/fonts/` at the repo root
  * relative to `src/backends/`.
  */
-function fontPath(): string {
+async function fontPath(): Promise<string> {
   if (fontPathCache) return fontPathCache;
+  // Namespace access (not destructuring) so browser bundlers that stub `node:*`
+  // don't fail their static named-export check — this code never runs in a browser.
+  const fs = await import("node:fs");
+  const url = await import("node:url");
+  // String-CONCAT paths (not literals or template literals) so browser bundlers'
+  // `new URL(..., import.meta.url)` asset plugins don't statically pick the font
+  // up — it ships only in the npm tarball (dist/assets) and is read here at
+  // runtime under Node. (Vite/Rollup match literal/template forms, not `+`.)
+  const file = "Roboto-Regular.ttf";
   const candidates = [
-    new URL("./assets/Roboto-Regular.ttf", import.meta.url), // bundled: dist/assets
-    new URL("../../assets/fonts/Roboto-Regular.ttf", import.meta.url), // source: repo/assets/fonts
+    new URL("./assets/" + file, import.meta.url), // bundled: dist/assets
+    new URL("../.." + "/assets/fonts/" + file, import.meta.url), // source: repo/assets/fonts
   ];
   for (const u of candidates) {
-    const p = fileURLToPath(u);
-    if (existsSync(p)) {
+    const p = url.fileURLToPath(u);
+    if (fs.existsSync(p)) {
       fontPathCache = p;
       return p;
     }
@@ -72,7 +84,7 @@ export async function renderPng(scene: Scene, opts: PngOptions = {}): Promise<Ui
   const scale = opts.scale && opts.scale > 0 ? opts.scale : 1;
   const resvg = new Resvg(svg, {
     font: {
-      fontFiles: [fontPath()],
+      fontFiles: [await fontPath()],
       loadSystemFonts: false,
       defaultFontFamily: BUNDLED_FONT_FAMILY,
     },

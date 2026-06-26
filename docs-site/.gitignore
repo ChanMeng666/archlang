@@ -1,0 +1,15 @@
+# VitePress build output + cache
+.vitepress/dist/
+.vitepress/cache/
+
+# Pages generated from canonical repo docs by sync-docs.mjs (do not edit/commit;
+# the source of truth is docs/*.md and docs/adr/*.md).
+reference.md
+errors.md
+adr/0*.md
+adr/index.md
+
+# Example-gallery SVGs are regenerated from examples/*.arch by sync-docs.mjs.
+public/examples/
+
+node_modules/

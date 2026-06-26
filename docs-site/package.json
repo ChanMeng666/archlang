@@ -1,0 +1,16 @@
+{
+  "name": "archlang-docs",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Documentation site for ArchLang (VitePress). Not published.",
+  "scripts": {
+    "sync": "node sync-docs.mjs",
+    "dev": "npm run sync && vitepress dev",
+    "build": "npm run sync && vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.3"
+  }
+}
