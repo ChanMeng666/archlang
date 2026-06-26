@@ -33,6 +33,8 @@ export interface ParseCtx {
   eatString(): string;
   isKeyword(kw: string, o?: number): boolean;
   isType(type: Token["type"]): boolean;
+  /** Is `value` a keyword that begins a plan/body statement (for parse recovery)? */
+  isStatementStart(value: string): boolean;
   /** Parse a `(expr, expr)` point. */
   parsePoint(): ExprPoint;
   /** Parse an arithmetic expression. */

@@ -5,6 +5,7 @@
  */
 
 import type { Span } from "./diagnostics.js";
+import type { Comment } from "./lexer.js";
 import type { Expr } from "./expr.js";
 import type { Theme } from "./theme.js";
 
@@ -180,8 +181,28 @@ export interface SetNode extends NodeBase {
   over: SetOverride[];
 }
 
+/**
+ * A statement the parser could not parse. Instead of silently dropping the
+ * broken region, the parser emits one of these (capturing the skipped span and
+ * the diagnostic message), so the tree stays lossless and tooling can see the
+ * hole. It carries no geometry; `resolve` skips it.
+ */
+export interface ErrorNode extends NodeBase {
+  kind: "error";
+  message: string;
+}
+
 /** A plan-body statement in source order. */
-export type Statement = AstElement | LetNode | InstanceNode | ForNode | IfNode | WhileNode | AssignNode | SetNode;
+export type Statement =
+  | AstElement
+  | LetNode
+  | InstanceNode
+  | ForNode
+  | IfNode
+  | WhileNode
+  | AssignNode
+  | SetNode
+  | ErrorNode;
 
 /** `component NAME(params) { body }` — a reusable parameterised sub-plan. */
 export interface ComponentDef {
@@ -246,4 +267,6 @@ export interface PlanNode {
   imports: ImportNode[];
   /** All statements (elements, `let`s, instances), in source order. */
   body: Statement[];
+  /** Line comments captured as trivia (for the formatter / LSP); not semantic. */
+  comments?: Comment[];
 }

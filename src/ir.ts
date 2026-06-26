@@ -287,6 +287,10 @@ function expandScope(
         scope.sets.set(stmt.target, merged);
         break;
       }
+      case "error":
+        // A statement that failed to parse — already reported as a diagnostic at
+        // parse time. It carries no geometry, so there is nothing to expand.
+        break;
       default:
         // An element: snapshot the scope's visible bindings + active set-defaults.
         out.push({ node: stmt, env: scope.flatten(), id: "", defaults: scope.effectiveSet(stmt.kind) });

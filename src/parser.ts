@@ -77,25 +77,19 @@ export function parse(src: string, registry: Registry = BUILTIN_REGISTRY): Parse
 }
 
 function parseImpl(src: string, registry: Registry): ParseOutcome {
-  const { tokens, errors: lexErrors } = lex(src);
+  const { tokens, errors: lexErrors, comments } = lex(src);
   const lexDiags: Diagnostic[] = lexErrors.map((e) => ({
     severity: "error" as const,
     message: e.message,
     span: e.span,
   }));
 
+  // parsePlan never throws on user source: it recovers from a malformed header
+  // and from per-statement errors, so a PlanNode (possibly partial) is always
+  // produced — `CompileResult.ast` is present even on broken input.
   const p = new Parser(tokens, registry);
-  let plan: PlanNode | undefined;
-  try {
-    plan = p.parsePlan();
-  } catch (e) {
-    // Only a malformed plan *header* escapes parsePlan's per-statement recovery.
-    if (e instanceof ParseError) {
-      p.diagnostics.push({ severity: "error", message: e.message, span: e.span });
-    } else {
-      throw e;
-    }
-  }
+  const plan = p.parsePlan();
+  plan.comments = comments;
   return { plan, diagnostics: [...lexDiags, ...p.diagnostics] };
 }
 
@@ -120,6 +114,7 @@ class Parser {
       eatString: () => this.eatString(),
       isKeyword: (kw, o) => this.isKeyword(kw, o),
       isType: (type) => this.isType(type),
+      isStatementStart: (v) => this.statementStarts.has(v),
       parsePoint: () => this.parsePoint(),
       parseExpr: () => parseExprPratt(this.ctx),
       parseDimensions: () => this.parseDimensions(),
@@ -145,13 +140,18 @@ class Parser {
     return { start, end: last.end };
   }
 
-  /** Recover after a statement error: skip to the next statement start or block end. */
-  private synchronize(): void {
-    // Always make progress so a hard-stuck token can't loop forever.
-    if (!this.isType("rcurly") && !this.isType("eof")) this.next();
+  /**
+   * Recover after a statement error: skip to the next statement start or block
+   * end. `failStart` is the byte offset where the failed statement began; we
+   * only stop at a statement-start keyword *past* it, which both (a) preserves a
+   * next-statement keyword the expression recovery guard refused to consume, and
+   * (b) guarantees forward progress (the failing token itself is always skipped),
+   * so a hard-stuck token can't loop forever.
+   */
+  private synchronize(failStart: number): void {
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const t = this.peek();
-      if (t.type === "ident" && this.statementStarts.has(t.value)) return;
+      if (t.start > failStart && t.type === "ident" && this.statementStarts.has(t.value)) return;
       this.next();
     }
   }
@@ -182,12 +182,8 @@ class Parser {
   }
 
   parsePlan(): PlanNode {
-    this.eatKeyword("plan");
-    const name = this.eatString();
-    this.eat("lcurly");
-
     const plan: PlanNode = {
-      name,
+      name: "",
       units: "mm",
       grid: 0,
       north: "up",
@@ -195,6 +191,24 @@ class Parser {
       imports: [],
       body: [],
     };
+
+    // Header recovery: a malformed `plan "name" {` is reported but does not bail —
+    // we skip to the opening brace (or the first statement keyword) and parse the
+    // body anyway, so a partial tree is still produced.
+    try {
+      this.eatKeyword("plan");
+      plan.name = this.eatString();
+      this.eat("lcurly");
+    } catch (e) {
+      if (!(e instanceof ParseError)) throw e;
+      this.diagnostics.push({ severity: "error", message: e.message, span: e.span });
+      while (!this.isType("eof") && !this.isType("lcurly")) {
+        const t = this.peek();
+        if (t.type === "ident" && this.statementStarts.has(t.value)) break;
+        this.next();
+      }
+      if (this.isType("lcurly")) this.next();
+    }
 
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const t = this.peek();
@@ -266,7 +280,8 @@ class Parser {
       } catch (e) {
         if (e instanceof ParseError) {
           this.diagnostics.push({ severity: "error", message: e.message, span: e.span });
-          this.synchronize();
+          this.synchronize(start);
+          plan.body.push({ kind: "error", id: "", line: t.line, message: e.message, span: this.spanFrom(start) });
         } else {
           throw e;
         }
@@ -532,12 +547,14 @@ class Parser {
     this.eat("lcurly");
     const body: Statement[] = [];
     while (!this.isType("rcurly") && !this.isType("eof")) {
+      const stmtTok = this.peek();
       try {
         body.push(this.parseOneBodyStatement(components, selfName));
       } catch (e) {
         if (e instanceof ParseError) {
           this.diagnostics.push({ severity: "error", message: e.message, span: e.span });
-          this.synchronize();
+          this.synchronize(stmtTok.start);
+          body.push({ kind: "error", id: "", line: stmtTok.line, message: e.message, span: this.spanFrom(stmtTok.start) });
         } else {
           throw e;
         }

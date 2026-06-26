@@ -112,6 +112,10 @@ export interface ExprTokens {
   peek(o?: number): Token;
   next(): Token;
   fail(msg: string, t?: Token): never;
+  /** Recovery hook: is `value` a keyword that begins a plan/body statement?
+   *  Lets the atom parser refuse to swallow the next statement's keyword as a
+   *  bare reference when a previous statement is incomplete. */
+  isStatementStart?(value: string): boolean;
 }
 
 // Binary-operator precedence, lowest binds loosest. Range (`..`) sits between
@@ -233,6 +237,14 @@ function parseAtom(ts: ExprTokens): Expr {
       if (close.type !== "rparen") ts.fail(`Expected ")" or "," in call but found ${describe(close)}`);
       ts.next();
       return { t: "call", callee: t.value, args, span: { start: t.start, end: close.end } };
+    }
+    // Recovery guard: a statement-start keyword that begins a new line is almost
+    // certainly the next statement (the current one is incomplete) — refuse to
+    // swallow it as a bare reference so the parser can resynchronize on it. A
+    // same-line keyword-named binding (`let grid = 5; … grid x grid`) still works.
+    if (ts.isStatementStart?.(t.value)) {
+      const prev = ts.peek(-1);
+      if (!prev || prev.line < t.line) ts.fail(`Expected a value but found "${t.value}"`, t);
     }
     ts.next();
     return { t: "ref", name: t.value, span: { start: t.start, end: t.end } };
