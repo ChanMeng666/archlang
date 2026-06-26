@@ -16,6 +16,14 @@ function enumDefault<T extends string>(defaults: ReadonlyMap<string, Value> | un
 export const door: ElementDef = {
   kind: "door",
   keyword: "door",
+  doc: "A door: an opening in its host wall with a leaf and swing arc.",
+  params: [
+    { name: "at", type: "point", doc: "Hinge/center position (x, y) in mm." },
+    { name: "width", type: "number", doc: "Door width (leaf length) in mm." },
+    { name: "wall", type: "name", optional: true, doc: "Host wall by id or category (else nearest)." },
+    { name: "hinge", type: "left|right", optional: true, doc: "Hinge side relative to wall direction." },
+    { name: "swing", type: "in|out", optional: true, doc: "Swing direction." },
+  ],
 
   parse(ctx: ParseCtx): DoorNode {
     const kw = ctx.eatKeyword("door");

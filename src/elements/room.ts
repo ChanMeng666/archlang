@@ -9,6 +9,12 @@ import { rectCorners } from "../geometry.js";
 export const room: ElementDef = {
   kind: "room",
   keyword: "room",
+  doc: "A room: a filled rectangle with a centered label and computed area.",
+  params: [
+    { name: "at", type: "point", doc: "Top-left corner (x, y) in mm." },
+    { name: "size", type: "WxH", doc: "Width × height in mm (e.g. 4000x3000)." },
+    { name: "label", type: "string", optional: true, doc: "Room label (supports {interpolation})." },
+  ],
 
   parse(ctx: ParseCtx): RoomNode {
     const kw = ctx.eatKeyword("room");

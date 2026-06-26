@@ -52,6 +52,22 @@ export function offsetToPosition(text: string, offset: number): LspPosition {
   return { line, character: clamped - lineStart };
 }
 
+/** Source offset for a 0-based line/character position (inverse of the above). */
+export function positionToOffset(text: string, pos: LspPosition): number {
+  let i = 0;
+  let line = 0;
+  while (i < text.length && line < pos.line) {
+    if (text[i] === "\n") line++;
+    i++;
+  }
+  return Math.min(text.length, i + Math.max(0, pos.character));
+}
+
+/** LSP range for a byte-offset span. */
+export function spanToRange(text: string, span: { start: number; end: number }): LspRange {
+  return { start: offsetToPosition(text, span.start), end: offsetToPosition(text, span.end) };
+}
+
 /** Compile `text` and return its diagnostics in LSP shape. */
 export function lspDiagnostics(compile: CompileFn, text: string): LspDiagnostic[] {
   const { diagnostics } = compile(text, { noCache: true });

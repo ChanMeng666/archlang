@@ -9,6 +9,12 @@ import { add, mul, normal, sub, unit } from "../geometry.js";
 export const windowEl: ElementDef = {
   kind: "window",
   keyword: "window",
+  doc: "A window: a glazed opening in its host wall.",
+  params: [
+    { name: "at", type: "point", doc: "Center position (x, y) in mm." },
+    { name: "width", type: "number", doc: "Window width in mm." },
+    { name: "wall", type: "name", optional: true, doc: "Host wall by id or category (else nearest)." },
+  ],
 
   parse(ctx: ParseCtx): WindowNode {
     const kw = ctx.eatKeyword("window");

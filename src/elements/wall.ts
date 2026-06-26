@@ -10,6 +10,14 @@ import { DEFAULT_MATERIAL, isKnownMaterial, KNOWN_MATERIALS, patternId } from ".
 export const wall: ElementDef = {
   kind: "wall",
   keyword: "wall",
+  doc: "A wall: a poché-filled polyline with crisp face lines; hosts doors/windows.",
+  params: [
+    { name: "category", type: "name", doc: "Category, e.g. exterior or partition (also a door/window host)." },
+    { name: "thickness", type: "number", doc: "Wall thickness in mm." },
+    { name: "material", type: "name", optional: true, doc: "Hatch material (brick, concrete, …); defaults to poché." },
+    { name: "scale", type: "number", optional: true, default: "1", doc: "Hatch tile-size multiplier (after material)." },
+    { name: "angle", type: "number", optional: true, default: "0", doc: "Extra hatch rotation in degrees (after material)." },
+  ],
 
   parse(ctx: ParseCtx): WallNode {
     const kw = ctx.eatKeyword("wall");
