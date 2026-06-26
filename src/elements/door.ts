@@ -5,7 +5,7 @@ import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js
 import type { SceneNode } from "../scene.js";
 import type { RDoor } from "../ir.js";
 import type { Value } from "../expr.js";
-import { add, mul, normal, sub, unit } from "../geometry.js";
+import { add, mul, nearestWallNote, normal, sub, unit } from "../geometry.js";
 
 /** Read an enum override from the active `set` defaults, if valid. */
 function enumDefault<T extends string>(defaults: ReadonlyMap<string, Value> | undefined, key: string, allowed: readonly T[]): T | undefined {
@@ -16,6 +16,14 @@ function enumDefault<T extends string>(defaults: ReadonlyMap<string, Value> | un
 export const door: ElementDef = {
   kind: "door",
   keyword: "door",
+  doc: "A door: an opening in its host wall with a leaf and swing arc.",
+  params: [
+    { name: "at", type: "point", doc: "Hinge/center position (x, y) in mm." },
+    { name: "width", type: "number", doc: "Door width (leaf length) in mm." },
+    { name: "wall", type: "name", optional: true, doc: "Host wall by id or category (else nearest)." },
+    { name: "hinge", type: "left|right", optional: true, doc: "Hinge side relative to wall direction." },
+    { name: "swing", type: "in|out", optional: true, doc: "Swing direction." },
+  ],
 
   parse(ctx: ParseCtx): DoorNode {
     const kw = ctx.eatKeyword("door");
@@ -56,7 +64,8 @@ export const door: ElementDef = {
       ctx.diag({ severity: "error", message: `Door "${id}" must have a positive width`, code: "E_DOOR_WIDTH", span: n.span });
     }
     if (ctx.walls.length > 0 && !ctx.isOnWall(at, n.wall)) {
-      ctx.diag({ severity: "warning", message: `Door "${id}" does not lie on any wall`, code: "W_DOOR_OFF_WALL", span: n.span });
+      const note = nearestWallNote(at, ctx.walls);
+      ctx.diag({ severity: "warning", message: `Door "${id}" does not lie on any wall`, code: "W_DOOR_OFF_WALL", span: n.span, relatedSpans: note ? [note] : undefined });
     }
     // Precedence: explicit attribute > `set door(...)` default > hard default.
     const hinge = n.hinge ?? enumDefault(ctx.defaults, "hinge", ["left", "right"] as const) ?? "left";

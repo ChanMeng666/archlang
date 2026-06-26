@@ -9,6 +9,13 @@ import { add, length, mul, normal, sub, unit } from "../geometry.js";
 export const dim: ElementDef = {
   kind: "dim",
   keyword: "dim",
+  doc: "A dimension: a measured line with ticks; text defaults to the length.",
+  params: [
+    { name: "from", type: "point", doc: "Start point (x, y); written before ->." },
+    { name: "to", type: "point", doc: "End point (x, y); written after ->." },
+    { name: "offset", type: "number", optional: true, default: "300", doc: "Perpendicular offset of the dimension line, mm." },
+    { name: "text", type: "string", optional: true, doc: "Override text; defaults to the measured length." },
+  ],
 
   parse(ctx: ParseCtx): DimNode {
     const kw = ctx.eatKeyword("dim");

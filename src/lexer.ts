@@ -52,9 +52,19 @@ export interface Token {
   end: number;
 }
 
+/** A piece of trivia: a line comment, kept so the formatter is non-destructive. */
+export interface Comment {
+  /** Byte span covering the comment including its leading `#` (excludes the newline). */
+  span: { start: number; end: number };
+  /** The comment text including the leading `#`. */
+  text: string;
+}
+
 export interface LexResult {
   tokens: Token[];
   errors: { message: string; span: { start: number; end: number } }[];
+  /** Line comments, in source order — trivia for the formatter / tooling. */
+  comments: Comment[];
 }
 
 const isDigit = (c: string) => c >= "0" && c <= "9";
@@ -88,6 +98,7 @@ export function clearLexCache(): void {
 function lexImpl(src: string): LexResult {
   const tokens: Token[] = [];
   const errors: { message: string; span: { start: number; end: number } }[] = [];
+  const comments: Comment[] = [];
   let i = 0;
   let line = 1;
   let col = 1;
@@ -124,9 +135,12 @@ function lexImpl(src: string): LexResult {
       continue;
     }
 
-    // Comment to end of line
+    // Comment to end of line — captured as trivia (not a token). Exclude a
+    // trailing CR so CRLF sources don't leave a stray `\r` in the comment text.
     if (c === "#") {
       while (i < src.length && peek() !== "\n") advance();
+      const end = src[i - 1] === "\r" ? i - 1 : i;
+      comments.push({ span: { start: startIdx, end }, text: src.slice(startIdx, end) });
       continue;
     }
 
@@ -234,5 +248,5 @@ function lexImpl(src: string): LexResult {
   }
 
   push("eof", "", line, col, i);
-  return { tokens, errors };
+  return { tokens, errors, comments };
 }

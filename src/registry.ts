@@ -33,6 +33,8 @@ export interface ParseCtx {
   eatString(): string;
   isKeyword(kw: string, o?: number): boolean;
   isType(type: Token["type"]): boolean;
+  /** Is `value` a keyword that begins a plan/body statement (for parse recovery)? */
+  isStatementStart(value: string): boolean;
   /** Parse a `(expr, expr)` point. */
   parsePoint(): ExprPoint;
   /** Parse an arithmetic expression. */
@@ -96,6 +98,23 @@ export interface RenderCtx {
 }
 
 /**
+ * Documentation for one element parameter — the single source consumed by the
+ * LSP (hover, completion, signature help) and the docs. `optional` params render
+ * in `[brackets]` in the synthesized signature.
+ */
+export interface ParamDoc {
+  name: string;
+  /** A short type hint, e.g. "point", "number", "string", "left|right". */
+  type: string;
+  /** Whether the parameter may be omitted. */
+  optional?: boolean;
+  /** Default applied at resolve when omitted (shown in hover). */
+  default?: string;
+  /** One-line human description. */
+  doc: string;
+}
+
+/**
  * One element type. `TNode`/`TResolved` are the concrete node/IR types; the
  * registry stores these widened to the unions, and each module narrows via the
  * `kind` discriminant.
@@ -114,6 +133,11 @@ export interface ElementDef {
   bounds(resolved: ResolvedElement): Point[];
   /** Emit positioned drawing primitives for this element (the Scene IR). */
   render(resolved: ResolvedElement, ctx: RenderCtx): SceneNode[];
+  /** Parameter schema — one source for the LSP (hover/completion/signature) and
+   *  the docs. Optional so third-party plugins need not provide it. */
+  params?: readonly ParamDoc[];
+  /** One-line summary of what the element draws (for hover). */
+  doc?: string;
 }
 
 /**

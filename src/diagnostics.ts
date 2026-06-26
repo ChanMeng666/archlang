@@ -16,6 +16,13 @@ export interface Span {
 
 export type Severity = "error" | "warning";
 
+/** A secondary source location that explains a diagnostic (e.g. the wall a
+ *  misplaced door was expected to lie on). */
+export interface RelatedSpan {
+  span: Span;
+  message: string;
+}
+
 export interface Diagnostic {
   severity: Severity;
   message: string;
@@ -25,6 +32,9 @@ export interface Diagnostic {
   code?: string;
   /** Optional follow-up suggestions, each rendered as a `= help:` line. */
   hints?: string[];
+  /** Secondary locations that contextualize the problem (rendered as framed
+   *  `note:` snippets after the primary span). */
+  relatedSpans?: RelatedSpan[];
 }
 
 /** Convert a byte offset into a 1-based `{line, col}`. Offsets are clamped. */
@@ -99,6 +109,21 @@ export function formatDiagnostic(source: string, d: Diagnostic): string {
     for (const hint of d.hints ?? []) {
       lines.push(`  = help: ${hint}`);
     }
+  }
+
+  // Related locations: a small framed snippet per secondary span.
+  for (const rel of d.relatedSpans ?? []) {
+    const { line, col } = offsetToLineCol(source, rel.span.start);
+    const ls = lineStart(source, rel.span.start);
+    const le = lineEnd(source, rel.span.start);
+    const srcLine = source.slice(ls, le);
+    const caretStart = rel.span.start - ls;
+    const caretLen = Math.max(1, Math.min(rel.span.end, le) - ls - caretStart);
+    const gutter = String(line);
+    const pad = " ".repeat(gutter.length);
+    lines.push(`${pad} --> ${line}:${col}`);
+    lines.push(`${gutter} | ${srcLine}`);
+    lines.push(`${pad} | ${" ".repeat(caretStart)}${"-".repeat(caretLen)} note: ${rel.message}`);
   }
 
   return lines.join("\n");

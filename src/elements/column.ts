@@ -15,6 +15,11 @@ import { rectCorners } from "../geometry.js";
 export const column: ElementDef = {
   kind: "column",
   keyword: "column",
+  doc: "A structural column: a small filled rectangle.",
+  params: [
+    { name: "at", type: "point", doc: "Center position (x, y) in mm." },
+    { name: "size", type: "WxH", doc: "Width × height in mm." },
+  ],
 
   parse(ctx: ParseCtx): ColumnNode {
     const kw = ctx.eatKeyword("column");

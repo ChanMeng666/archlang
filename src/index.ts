@@ -34,6 +34,17 @@ export type {
 } from "./types.js";
 export { formatDiagnostic, offsetToLineCol } from "./diagnostics.js";
 export type * from "./ast.js";
+// Source formatter (v0.11): pure text→text, comment-preserving, idempotent.
+export { format } from "./format.js";
+// Language services (v0.11): pure LSP core (hover/completion/definition/rename/
+// signature help) over the CST cursor + registry schemas. The VS Code server is
+// a thin adapter; these are isomorphic and unit-testable.
+export { hover, completion, definition, rename, signatureHelp } from "./lsp.js";
+export type { HoverResult, CompletionItem, CompletionKind, TextEdit, SignatureResult } from "./lsp.js";
+// Error catalog (v0.11): every E_*/W_* code with cause/fix/example. Backs
+// `arch explain <CODE>` and the generated docs/error-codes.md.
+export { explain, ERROR_CATALOG, ERROR_CODES } from "./error-catalog.js";
+export type { CatalogEntry } from "./error-catalog.js";
 
 // IR + export backends (for consumers that want resolved geometry or other
 // output formats). `resolve`/`toDxf` are pure & zero-dep; `toPdf` lazily loads

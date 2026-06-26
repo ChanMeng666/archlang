@@ -9,6 +9,13 @@ import { rectCorners } from "../geometry.js";
 export const furniture: ElementDef = {
   kind: "furniture",
   keyword: "furniture",
+  doc: "A furniture item: an outlined rectangle with an optional label.",
+  params: [
+    { name: "category", type: "name", doc: "Furniture category, e.g. bed or sofa." },
+    { name: "at", type: "point", doc: "Top-left corner (x, y) in mm." },
+    { name: "size", type: "WxH", doc: "Width × height in mm." },
+    { name: "label", type: "string", optional: true, doc: "Label (supports {interpolation})." },
+  ],
 
   parse(ctx: ParseCtx): FurnitureNode {
     const kw = ctx.eatKeyword("furniture");
