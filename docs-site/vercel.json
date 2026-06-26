@@ -3,5 +3,7 @@
   "framework": null,
   "installCommand": "cd .. && npm install",
   "buildCommand": "cd .. && npm run docs:build",
-  "outputDirectory": ".vitepress/dist"
+  "outputDirectory": ".vitepress/dist",
+  "cleanUrls": true,
+  "trailingSlash": false
 }

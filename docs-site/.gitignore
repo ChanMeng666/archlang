@@ -14,3 +14,5 @@ adr/index.md
 public/examples/
 
 node_modules/
+
+.vercel
