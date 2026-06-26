@@ -13,18 +13,18 @@ ArchLang — A small declarative language that compiles to professional SVG floo
 
 ## Project status & where things live (current)
 
-**ArchLang 1.0 is shipped and launched.** This is a published, deployed monorepo —
+**ArchLang is shipped and launched (v1.1.0).** This is a published, deployed monorepo —
 not a work-in-progress. Treat the live artifacts below as the source of truth.
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.0.1` (published) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.1.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
+| **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md` |
 | **VS Code extension** | `ChanMeng.archlang@0.2.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` + `v1.0.1` | github.com/ChanMeng666/archlang |
-| **Consumer (`archcanvas`)** | bumped to `^1.0.1` on a branch (PR open, not merged) | github.com/ChanMeng666/archcanvas/pull/2 |
-| **Tests** | 345 passing (36 files); typecheck + build clean | — |
+| **Git** | `main`, tags `v1.0.0` → `v1.1.0` (latest) | github.com/ChanMeng666/archlang |
+| **Tests** | 371 passing (41 files); typecheck + build clean | — |
 
 > Beware older docs that predate the launch: `docs/IMPLEMENTATION-PLAN-v0.7-v1.0.md`
 > is the (now-completed) roadmap, and the earlier half of `docs/WORK-LOG.md` is
@@ -34,15 +34,24 @@ not a work-in-progress. Treat the live artifacts below as the source of truth.
 
 ```
 .                     @chanmeng666/archlang — the core (PUBLISHED package; src/, dist/)
+├─ spec.llm.md        GENERATED one-page language spec for agents (`arch spec`); see scripts/gen-llm-spec.ts
+├─ SKILL.md           agent Skill: the spec → compile → describe → lint loop (CLI-driven)
+├─ llms.txt           machine-readable project map (how to USE vs CONTRIBUTE)
 ├─ editors/vscode     archlang-vscode → published as ChanMeng.archlang (esbuild-bundled extension)
 ├─ editors/*.json     generated TextMate grammar + language-configuration (shared by the extension)
 ├─ playground/        Vite + CodeMirror live editor (consumes the built core via dist/)
 ├─ docs-site/         VitePress docs (pages generated from docs/*.md, examples/*.arch)
-├─ docs/              language-reference.md · error-codes.md · adr/ · this WORK-LOG.md · roadmap
+├─ docs/              language-reference.md · error-codes.md · adr/ · WORK-LOG.md · roadmap
 ├─ examples/          studio · two-bed · parametric · themed · relational · lib/ · imports
+├─ eval/              NL→ArchLang authorability harness (corpus.json, goldens/, run.ts)
+├─ scripts/           gen-grammars · gen-error-codes · gen-llm-spec (single-source generators)
 ├─ bench/             ~1000-element timing harness (+ --json mode, CI regression comment)
-└─ test/              vitest: snapshot + fast-check + unit + visual-regression (__goldens__/)
+└─ test/              vitest: snapshot + fast-check + unit + visual-regression + CLI/describe/lint/eval
 ```
+
+Key `src/` modules added in v1.1 (all pure, exported from `src/index.ts`): `describe.ts`
+(semantic summary), `lint.ts` (architectural soundness rules), `analyze.ts` (shared resolve
+pipeline + rectilinear geometry behind both). The agent-facing CLI lives in `src/cli.ts`.
 
 A single `npm install` at the root bootstraps every workspace.
 
@@ -150,7 +159,12 @@ source (.arch)
 
 ## Reading Order
 
-When onboarding to this repo, read in this order:
+**To USE ArchLang (author/edit floor plans as an agent):** read `spec.llm.md` (the whole language
+in one page — or run `arch spec`), then follow `SKILL.md`'s loop: `spec` → write `.arch` →
+`arch compile --json` → fix from each `diagnostics[].fix` → `arch describe --json` to confirm
+intent. Zero install: `npx @chanmeng666/archlang …`.
+
+**To CONTRIBUTE (work on this repo), read in this order:**
 1. `README.md` — what the project is and how to run it
 2. This `AGENTS.md` — how to work in it
 3. `CONTRIBUTING.md` — contribution workflow and quality gates

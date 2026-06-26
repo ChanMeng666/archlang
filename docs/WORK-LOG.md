@@ -8,7 +8,7 @@
 > [`docs/IMPLEMENTATION-PLAN-v0.7-v1.0.md`](./IMPLEMENTATION-PLAN-v0.7-v1.0.md) is
 > the (now-completed) plan these phases executed.
 
-_Last updated: **v1.0 LAUNCHED.** Core published `@chanmeng666/archlang@1.0.1`; VS Code extension published `ChanMeng.archlang@0.2.0`; playground + docs site deployed. Sections 3–4b below are the accurate v0.8–v0.10 implementation history; sections 1, 2, 4c, 4d, 5, 7 reflect the launched state._
+_Last updated: **v1.1.0 LAUNCHED (AI-agent-native).** Core published `@chanmeng666/archlang@1.1.0` (`latest`); VS Code extension `ChanMeng.archlang@0.2.0`; playground + docs site deployed. v1.1 made ArchLang drivable by an AI agent end-to-end through its CLI (no MCP): an agent-native CLI (`--json`, exit codes, stdin, `fix`-carrying diagnostics), `arch spec`/`spec.llm.md`, `arch describe` (semantic JSON), `arch lint` (soundness), a `SKILL.md`, and an NL→ArchLang `eval/` harness. Sections 3–4b below are the accurate v0.8–v0.10 implementation history; sections 1, 2, 4c, 4d, 5, 7 reflect the launched state. For the full v1.1 detail read `CHANGELOG.md`._
 
 ---
 
@@ -23,17 +23,18 @@ _Last updated: **v1.0 LAUNCHED.** Core published `@chanmeng666/archlang@1.0.1`; 
 - **v0.10 (extensible platform, T4.1–T4.5):** ✅ shipped (0.10.0).
 - **v0.11 (IDE-grade tooling, T5.1–T5.5):** ✅ shipped (0.11.0) — see §4c.
 - **v1.0 (polish, ecosystem & launch, T6.1–T6.5):** ✅ shipped (1.0.0), plus a **1.0.1** consumer-bundler fix — see §4d.
-- **Published:** core `@chanmeng666/archlang@1.0.1` on npm; extension `ChanMeng.archlang@0.2.0` on the VS Code Marketplace.
+- **v1.1 (AI-agent-native, CLI-first):** ✅ shipped (1.1.0) — agent-native CLI (`--json`, exit codes, stdin), `describe()`/`arch describe`, `lint()`/`arch lint`, `arch spec`/`spec.llm.md`, `SKILL.md`, and the `eval/` authorability harness. Additive; rendered output byte-identical to v1.0.
+- **Published:** core `@chanmeng666/archlang@1.1.0` on npm (`latest`); extension `ChanMeng.archlang@0.2.0` on the VS Code Marketplace.
 - **Deployed:** playground (archlang-playground.vercel.app) + docs site (archlang-docs.vercel.app).
-- **Tests:** **345 passing** (36 files), typecheck + build clean, examples deterministic.
+- **Tests:** **371 passing** (41 files), typecheck + build clean, examples deterministic.
 
 ---
 
 ## 2. Git state
 
 - **Default branch:** `main` — current, clean, and **pushed** to `origin/main`.
-- **Tags:** `v1.0.0` and `v1.0.1` (pushed).
-- **`package.json` version:** `1.0.1` (published to npm).
+- **Tags:** `v1.0.0`, `v1.0.1`, `v1.1.0` (pushed); `v1.1.0` is `latest`.
+- **`package.json` version:** `1.1.0` (published to npm).
 - **Repo is now an npm-workspaces monorepo:** core at root + `editors/vscode` + `playground` + `docs-site`, one root lockfile. `.gitattributes` enforces LF endings (so the old CRLF snapshot artifact is gone).
 - **Consumer `archcanvas`:** bumped to `^1.0.1` on branch `chore/bump-archlang-1.0.0` with PR #2 open (verified `tsc --noEmit` + `next build`); **not merged**.
 
@@ -167,9 +168,11 @@ v1.0 is launched; there is no "next phase" queued. For new work:
 ```bash
 cd D:\github_repository\archlang
 git branch --show-current          # expect: main (clean, pushed)
-npm install && npm test            # expect 345 passing (one install bootstraps all workspaces)
+npm install && npm test            # expect 371 passing (one install bootstraps all workspaces)
 npm run build && node dist/cli.js compile examples/relational.arch -f svg -o out.svg   # relational placement
 node dist/cli.js compile examples/studio.arch -f png -o out.png                         # PNG (needs optional resvg)
+node dist/cli.js spec              # the whole language in one page (agent-facing)
+echo 'plan "X" { units mm room at (0,0) size 4000x3000 label "R" }' | node dist/cli.js describe - --json   # semantic facts
 ```
 
 For the full current picture read **`AGENTS.md`** (status table + architecture); for the

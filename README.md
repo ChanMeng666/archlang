@@ -58,6 +58,11 @@ is fully client-side.
   path runs in Node and the browser with no native binaries.
 - **Errors as data.** `compile()` *returns* `diagnostics`/`errors`/`warnings` with byte spans — it
   never throws on bad source — making a tight authoring or LLM self-correction loop trivial.
+- **AI-agent-native, CLI-first.** `arch spec` teaches the whole language in one page; `arch describe
+  --json` returns the plan as **facts** (rooms, areas, adjacency, what doors connect) so a text-only
+  agent verifies without an image; `arch lint --json` flags unsound plans. Every command is
+  `--json` with deterministic exit codes and `fix`-carrying diagnostics — no MCP, no server. See
+  [`SKILL.md`](SKILL.md).
 - **IDE-grade tooling.** A full LSP (hover, completion, go-to-definition, rename, signature
   help), an `arch fmt` formatter, an `arch explain <CODE>` error catalog, and a VS Code extension.
 - **Library + CLI + playground + docs.** Use the `compile()` API, the `arch` CLI, the live
@@ -186,6 +191,8 @@ diagnostics, hover, completion, go-to-definition, rename, and signature help —
 ## 📚 Documentation
 
 - **[📖 Docs site](https://archlang-docs.vercel.app)** — the hosted guide, reference, error catalog, examples gallery, and ADRs.
+- **[spec.llm.md](spec.llm.md)** — the **whole language in one page** (~2k tokens) for AI agents; also `arch spec`.
+- **[SKILL.md](SKILL.md)** — the agent Skill: how to author plans via the CLI (`spec → compile → describe → lint`).
 - **[Language Reference](docs/language-reference.md)** — every statement, with syntax and defaults.
 - **[Error catalog](docs/error-codes.md)** — every `E_*`/`W_*` code with a cause and a fix.
 - **[Architecture Decision Records](docs/adr)** — the key design decisions and their trade-offs.
