@@ -24,6 +24,7 @@ function page(src, dest) {
 console.log("syncing canonical docs into the site:");
 page("docs/language-reference.md", "reference.md");
 page("docs/error-codes.md", "errors.md");
+page("spec.llm.md", "spec.md");
 
 // ADRs: copy each, plus build an index.
 const adrSrc = join(repo, "docs/adr");

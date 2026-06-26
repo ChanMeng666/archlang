@@ -3,17 +3,29 @@ import { EditorState } from "@codemirror/state";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { bracketMatching } from "@codemirror/language";
 import { lintGutter } from "@codemirror/lint";
-import { compile, toDxf } from "archlang";
+import { compile, describe, lint, toDxf } from "archlang";
 import { archLanguage, archLinter } from "./arch-language.js";
 import { EXAMPLES } from "./examples.js";
 import "./style.css";
 
 const preview = document.getElementById("preview");
+const describeEl = document.getElementById("describe");
+const lintEl = document.getElementById("lint");
 const errorsEl = document.getElementById("errors");
 const statusEl = document.getElementById("status");
 const statusText = document.getElementById("statusText");
 const select = document.getElementById("examples");
 const formatSelect = document.getElementById("format");
+
+// ---- output tabs (Preview · Describe · Lint) ----
+const tabs = [...document.querySelectorAll(".tab")];
+const views = { preview, describe: describeEl, lint: lintEl };
+for (const tab of tabs) {
+  tab.addEventListener("click", () => {
+    for (const t of tabs) t.classList.toggle("active", t === tab);
+    for (const [name, el] of Object.entries(views)) el.classList.toggle("active", name === tab.dataset.tab);
+  });
+}
 
 for (const name of Object.keys(EXAMPLES)) {
   const o = document.createElement("option");
@@ -25,9 +37,35 @@ for (const name of Object.keys(EXAMPLES)) {
 let lastSvg = "";
 let lastScene = null;
 
+/** Update the Describe (semantic facts) and Lint (soundness) tabs for `source`. */
+function updateAnalysis(source, ok) {
+  // Describe — the semantic summary a text-only agent would read.
+  const summary = describe(source, { noCache: true });
+  const { diagnostics: _d, ...facts } = summary;
+  describeEl.textContent = ok ? JSON.stringify(facts, null, 2) : "Fix the errors to see the plan's semantic summary.";
+
+  // Lint — architectural soundness warnings (habitability rules).
+  const lintDiags = ok ? lint(source) : [];
+  if (!ok) {
+    lintEl.innerHTML = `<p class="empty">Fix the errors to run the soundness check.</p>`;
+  } else if (lintDiags.length === 0) {
+    lintEl.innerHTML = `<p class="ok">✓ No soundness warnings — every room is reachable, bedrooms have windows, the building has an entrance.</p>`;
+  } else {
+    lintEl.innerHTML = lintDiags
+      .map((d) => `<div class="lintrow"><code>${d.code}</code> ${escapeHtml(d.message)}${d.hints?.length ? `<span class="hint">${escapeHtml(d.hints[0])}</span>` : ""}</div>`)
+      .join("");
+  }
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+}
+
 function render(source) {
   const { svg, errors, warnings, scene } = compile(source, { noCache: true });
-  if (errors.length) {
+  const ok = errors.length === 0;
+  updateAnalysis(source, ok);
+  if (!ok) {
     statusEl.classList.add("err");
     statusText.textContent = `${errors.length} error${errors.length > 1 ? "s" : ""}`;
     errorsEl.classList.add("show");

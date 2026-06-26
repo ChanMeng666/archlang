@@ -6,6 +6,7 @@
 # the source of truth is docs/*.md and docs/adr/*.md).
 reference.md
 errors.md
+spec.md
 adr/0*.md
 adr/index.md
 

@@ -33,13 +33,15 @@ plan "Title" {
 
 ## Elements
 
-- wall <category> thickness <mm> [material <name>] { (x,y) (x,y) … [close] }   # category e.g. exterior/partition; `close` makes a loop
-- room [id=<name>] at (x,y) size <W>x<H> [label "…"]   # OR relational: room [id=…] (right-of|left-of|below|above) <roomId> [align top|middle|bottom|left|right] [gap <mm>] size <W>x<H> [label "…"]
-- door [id=<name>] at (x,y) width <mm> [wall <id|category>] [hinge left|right] [swing in|out]   # must sit on a wall
-- window [id=<name>] at (x,y) width <mm> [wall <id|category>]   # must sit on a wall
-- furniture <category> at (x,y) size <W>x<H> [label "…"]   # category e.g. bed/sofa/table
-- dim (x,y)->(x,y) offset <mm> [text "…"]   # a dimension line
-- column [id=<name>] at (x,y) size <W>x<H>
+```text
+wall <category> thickness <mm> [material <name>] { (x,y) (x,y) … [close] }   # category e.g. exterior/partition; `close` makes a loop
+room [id=<name>] at (x,y) size <W>x<H> [label "…"]   # OR relational: room [id=…] (right-of|left-of|below|above) <roomId> [align top|middle|bottom|left|right] [gap <mm>] size <W>x<H> [label "…"]
+door [id=<name>] at (x,y) width <mm> [wall <id|category>] [hinge left|right] [swing in|out]   # must sit on a wall
+window [id=<name>] at (x,y) width <mm> [wall <id|category>]   # must sit on a wall
+furniture <category> at (x,y) size <W>x<H> [label "…"]   # category e.g. bed/sofa/table
+dim (x,y)->(x,y) offset <mm> [text "…"]   # a dimension line
+column [id=<name>] at (x,y) size <W>x<H>
+```
 
 ## Scripting (all expand-time, deterministic)
 

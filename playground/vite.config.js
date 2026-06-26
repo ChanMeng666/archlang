@@ -15,6 +15,11 @@ export default defineConfig({
   server: {
     fs: { allow: [resolve(__dirname, "..")] },
   },
+  // The core's optional Node-only backends (@resvg/resvg-js, pdfkit, clipper2-wasm)
+  // are reached only via lazy `import()`s that never run in the browser. Exclude
+  // them from dev dep-prebundling so esbuild doesn't try to load their native
+  // `.node`/wasm files (the `build.rollupOptions.external` below covers prod).
+  optimizeDeps: { exclude: ["@resvg/resvg-js", "pdfkit", "clipper2-wasm", "archlang"] },
   build: {
     outDir: "dist",
     emptyOutDir: true,

@@ -28,7 +28,7 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
 
   it("documents every built-in element", () => {
     const spec = renderLlmSpec(exampleSources());
-    for (const el of KEYWORDS.element) expect(spec).toContain(`- ${el} `);
+    for (const el of KEYWORDS.element) expect(spec).toMatch(new RegExp(`^${el} `, "m"));
   });
 
   it("stays small enough to drop into a system prompt (< ~4k tokens)", () => {

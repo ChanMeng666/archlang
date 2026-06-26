@@ -21,6 +21,7 @@
         <option value="pdf">PDF</option>
       </select>
       <button id="download">Download</button>
+      <a class="btn" href="https://archlang-docs.vercel.app/spec" target="_blank" rel="noopener">Spec</a>
       <a class="btn" href="https://github.com/chanmeng666/archlang" target="_blank" rel="noopener">GitHub</a>
     </header>
     <main>
@@ -30,8 +31,18 @@
         <div id="errors"></div>
       </section>
       <section class="pane">
-        <h2><span class="dot" id="status"></span><span id="statusText">ready</span></h2>
-        <div id="preview"></div>
+        <h2>
+          <span class="dot" id="status"></span><span id="statusText">ready</span>
+          <span class="grow"></span>
+          <span class="tabs" role="tablist">
+            <button class="tab active" data-tab="preview" type="button">Preview</button>
+            <button class="tab" data-tab="describe" type="button">Describe</button>
+            <button class="tab" data-tab="lint" type="button">Lint</button>
+          </span>
+        </h2>
+        <div id="preview" class="tabview active" role="tabpanel"></div>
+        <pre id="describe" class="tabview" role="tabpanel"></pre>
+        <div id="lint" class="tabview" role="tabpanel"></div>
       </section>
     </main>
 

@@ -58,7 +58,9 @@ export function renderLlmSpec(examples: Record<string, string>): string {
     );
   }
 
-  const elementLines = KEYWORDS.element.map((k) => `- ${ELEMENT_GRAMMAR[k]}`).join("\n");
+  // A fenced block (not a bullet list) so the `<placeholder>` angle brackets are
+  // safe everywhere they render (GitHub, npm, and the Vue-compiled docs site).
+  const elementLines = "```text\n" + KEYWORDS.element.map((k) => ELEMENT_GRAMMAR[k]).join("\n") + "\n```";
 
   const exampleBlocks = SPEC_EXAMPLES.map((name) => {
     const src = examples[name];

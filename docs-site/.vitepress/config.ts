@@ -40,10 +40,11 @@ export default defineConfig({
     nav: [
       { text: "Guide", link: "/guide" },
       { text: "Reference", link: "/reference" },
+      { text: "AI Agents", link: "/agents" },
       { text: "Errors", link: "/errors" },
       { text: "Examples", link: "/examples" },
       { text: "ADRs", link: "/adr/" },
-      { text: "Playground", link: "https://github.com/chanmeng666/archlang#playground" },
+      { text: "Playground", link: "https://archlang-playground.vercel.app" },
     ],
     sidebar: [
       {
@@ -51,6 +52,13 @@ export default defineConfig({
         items: [
           { text: "What is ArchLang?", link: "/guide" },
           { text: "Examples gallery", link: "/examples" },
+        ],
+      },
+      {
+        text: "For AI agents",
+        items: [
+          { text: "Use it from an agent", link: "/agents" },
+          { text: "One-page spec", link: "/spec" },
         ],
       },
       {
