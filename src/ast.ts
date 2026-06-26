@@ -269,4 +269,7 @@ export interface PlanNode {
   body: Statement[];
   /** Line comments captured as trivia (for the formatter / LSP); not semantic. */
   comments?: Comment[];
+  /** Byte offset just past the body's opening `{` — lets the formatter tell
+   *  file-header comments (before it) from in-body comments. */
+  bodyStart?: number;
 }
