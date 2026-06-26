@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-06-26
+
+### Added — IDE-grade tooling & DX
+
+The compiler grows a proper toolchain: a comment-preserving formatter, a full
+language server, one grammar source of truth, and a documented error catalog.
+The parser becomes lossless and never throws. All of this is tooling/internal —
+the core stays pure, deterministic, and zero-runtime-dependency, and **every
+existing rendered output (SVG/DXF/PDF) is byte-identical**.
+
+- **Lossless, error-recovering parse tree.** The lexer captures comments as
+  trivia (`LexResult.comments`); the AST gains an `ErrorNode` statement variant,
+  `PlanNode.comments`, and a `bodyStart` offset. The parser never throws on user
+  source: a malformed header recovers (so `CompileResult.ast` is present even on
+  partial input), and a broken line emits an `Error` node + diagnostic and keeps
+  the rest of the tree instead of dropping it (progress-aware `synchronize`; the
+  expression parser refuses to swallow a new-line statement keyword). New
+  read-only AST cursor (`src/cursor.ts`).
+- **`arch fmt` formatter.** A ~150-line zero-dep Wadler/Prettier `Doc` IR
+  (`src/doc.ts`) + `format(source)` (`src/format.ts`, exported): deterministic,
+  idempotent, comment-preserving, and semantics-preserving (`compile(x) ===
+  compile(format(x))`). Precedence-correct expressions, `WxH` vs `<expr> x
+  <expr>` sizing, and long wall point-lists that wrap one-per-line. CLI: `arch
+  fmt <in.arch> [--write]`. Returns source unchanged on parse error.
+- **Full LSP.** Promoted from diagnostics-only to hover, completion,
+  go-to-definition, scope-aware rename, and signature help — a pure, isomorphic,
+  unit-tested core (`src/lsp.ts`, exported) driven by an append-only `params`
+  schema on `ElementDef` (one source for the LSP and the docs). The VS Code
+  server advertises and delegates to it.
+- **One grammar source of truth.** `src/grammar/tokens.ts` is the single source
+  for keyword categories, operators, and statement-start keywords; the parser
+  derives its statement set from it, and `scripts/gen-grammars.ts`
+  (`npm run gen:grammars`) generates the TextMate grammar and the playground
+  StreamLanguage. A drift test + CI step keep them in sync.
+- **Error-code catalog + richer diagnostics.** `src/error-catalog.ts` documents
+  every `E_*`/`W_*` code (cause/fix/example); `arch explain <CODE>` prints an
+  entry; `scripts/gen-error-codes.ts` (`npm run gen:errors`) generates
+  `docs/error-codes.md` (drift-checked). `Diagnostic` gains `relatedSpans`, and a
+  door/window off every wall now points at the nearest wall.
+
 ## [0.10.0] - 2026-06-26
 
 ### Added — extensible platform
