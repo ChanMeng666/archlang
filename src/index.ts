@@ -34,6 +34,8 @@ export type {
 } from "./types.js";
 export { formatDiagnostic, offsetToLineCol } from "./diagnostics.js";
 export type * from "./ast.js";
+// Source formatter (v0.11): pure text→text, comment-preserving, idempotent.
+export { format } from "./format.js";
 
 // IR + export backends (for consumers that want resolved geometry or other
 // output formats). `resolve`/`toDxf` are pure & zero-dep; `toPdf` lazily loads

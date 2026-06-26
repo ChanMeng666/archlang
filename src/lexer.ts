@@ -135,10 +135,12 @@ function lexImpl(src: string): LexResult {
       continue;
     }
 
-    // Comment to end of line — captured as trivia (not a token).
+    // Comment to end of line — captured as trivia (not a token). Exclude a
+    // trailing CR so CRLF sources don't leave a stray `\r` in the comment text.
     if (c === "#") {
       while (i < src.length && peek() !== "\n") advance();
-      comments.push({ span: { start: startIdx, end: i }, text: src.slice(startIdx, i) });
+      const end = src[i - 1] === "\r" ? i - 1 : i;
+      comments.push({ span: { start: startIdx, end }, text: src.slice(startIdx, end) });
       continue;
     }
 

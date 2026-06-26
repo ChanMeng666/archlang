@@ -3,7 +3,7 @@
 
 import { readFileSync, writeFileSync, watchFile } from "node:fs";
 import { resolve as resolvePath, dirname } from "node:path";
-import { compile, formatDiagnostic, loadClipperBackend, setGeometryBackend, toDxf, toPdf } from "./index.js";
+import { compile, format, formatDiagnostic, loadClipperBackend, setGeometryBackend, toDxf, toPdf } from "./index.js";
 import type { World } from "./index.js";
 
 type Format = "svg" | "dxf" | "pdf";
@@ -79,16 +79,39 @@ async function compileFile(input: string, output: string, format: Format, width?
   return true;
 }
 
-function parseArgs(argv: string[]): { _: string[]; o?: string; width?: number; format?: string } {
-  const res: { _: string[]; o?: string; width?: number; format?: string } = { _: [] };
+function parseArgs(argv: string[]): { _: string[]; o?: string; width?: number; format?: string; write?: boolean } {
+  const res: { _: string[]; o?: string; width?: number; format?: string; write?: boolean } = { _: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "-o" || a === "--out") res.o = argv[++i];
     else if (a === "-w" || a === "--width") res.width = Number(argv[++i]);
     else if (a === "-f" || a === "--format") res.format = argv[++i];
+    else if (a === "--write") res.write = true;
     else res._.push(a);
   }
   return res;
+}
+
+/**
+ * `arch fmt <in.arch> [--write]` — format source to canonical, comment-preserving
+ * form. Prints to stdout by default; `--write` rewrites the file in place.
+ */
+function fmtFile(input: string, write: boolean): boolean {
+  let source: string;
+  try {
+    source = readFileSync(input, "utf8");
+  } catch {
+    process.stderr.write(`error: cannot read ${input}\n`);
+    return false;
+  }
+  const formatted = format(source);
+  if (write) {
+    if (formatted !== source) writeFileSync(input, formatted, "utf8");
+    process.stdout.write(`✓ ${input} formatted${formatted === source ? " (no changes)" : ""}\n`);
+  } else {
+    process.stdout.write(formatted);
+  }
+  return true;
 }
 
 function defaultOut(input: string, format: Format): string {
@@ -104,10 +127,21 @@ async function main(): Promise<void> {
       `arch — ArchLang compiler\n\n` +
         `Usage:\n` +
         `  arch compile <in.arch> [-o out] [-w width] [-f svg|dxf|pdf]\n` +
-        `  arch watch   <in.arch> [-o out] [-w width] [-f svg|dxf|pdf]\n\n` +
+        `  arch watch   <in.arch> [-o out] [-w width] [-f svg|dxf|pdf]\n` +
+        `  arch fmt     <in.arch> [--write]\n\n` +
         `Formats: svg (default) · dxf (zero-dep) · pdf (needs optional pdfkit + svg-to-pdfkit)\n`,
     );
     process.exit(cmd ? 0 : 1);
+  }
+
+  // `fmt` is a pure text→text command — no geometry backend, no output format.
+  if (cmd === "fmt") {
+    const input = args._[0];
+    if (!input) {
+      process.stderr.write("error: missing input file\n");
+      process.exit(1);
+    }
+    process.exit(fmtFile(resolvePath(input), args.write ?? false) ? 0 : 1);
   }
 
   const fmt = (args.format ?? "svg").toLowerCase();
