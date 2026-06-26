@@ -10,7 +10,7 @@
     "url": "https://github.com/ChanMeng666/archlang.git",
     "directory": "editors/vscode"
   },
-  "publisher": "chanmeng666",
+  "publisher": "ChanMeng",
   "engines": {
     "vscode": "^1.75.0"
   },
