@@ -1,4 +1,18 @@
 import { defineConfig } from "vitepress";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
+// The ArchLang TextMate grammar — generated from the single source of truth
+// (scripts/gen-grammars.ts → editors/archlang.tmLanguage.json, the same grammar
+// VS Code uses). Loading it here lets Shiki highlight `arch` fenced code blocks
+// instead of falling back to plain text, and keeps the site in lockstep with the
+// grammar (regenerate the grammar → the site picks it up; nothing to hand-sync).
+const archGrammar = JSON.parse(
+  readFileSync(
+    fileURLToPath(new URL("../../editors/archlang.tmLanguage.json", import.meta.url)),
+    "utf8",
+  ),
+);
 
 // ArchLang docs site (T6.1). Static, isomorphic — no backend. Pages re-use the
 // canonical docs maintained in the repo root (language reference, error catalog)
@@ -16,6 +30,12 @@ export default defineConfig({
   // error-codes.md → the site's /errors page) that are valid on GitHub but not
   // pages on this site under the same name. Don't fail the build on them.
   ignoreDeadLinks: [/\.\.\/(examples|playground)\//, /\.\.\/\.\.\//, /error-codes/],
+  // Register the ArchLang grammar with Shiki under the `arch` fence id (the
+  // grammar's own `name` is "ArchLang"; its scopeName stays `source.arch`). The
+  // `archlang` alias is accepted too.
+  markdown: {
+    languages: [{ ...archGrammar, name: "arch", aliases: ["archlang"] }],
+  },
   themeConfig: {
     nav: [
       { text: "Guide", link: "/guide" },
