@@ -1,0 +1,87 @@
+name: Deploy (Vercel)
+
+# Cross-account deploy. The Vercel team that hosts archlang-docs / archlang-playground
+# is linked to a *different* GitHub account than this repo, so Vercel's own Git
+# integration can't see this repo. Instead we deploy from CI with a Vercel token.
+#
+# The org/project IDs below are non-secret identifiers (useless without the token).
+# The ONLY secret required is VERCEL_TOKEN:
+#   1. Create it at https://vercel.com/account/settings/tokens with the she-sharp1
+#      scope (the team that owns the projects).
+#   2. Add it to this repo: Settings → Secrets and variables → Actions →
+#      New repository secret → name: VERCEL_TOKEN.
+# Then push to main (or run this workflow manually) to deploy.
+#
+# Each project builds via its committed vercel.json (which builds the core first,
+# then the site) and deploys with `--prebuilt`, so the monorepo `cd ..` works on
+# the Linux runner where the whole repo is checked out.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: docs
+            dir: docs-site
+            project_id: prj_BQBn15EITtFL5hw4bGBcEBm6gb91
+            url: https://archlang-docs.vercel.app
+          - name: playground
+            dir: playground
+            project_id: prj_fKCyuxicxftbsIqgh6M7AxBAwEE0
+            url: https://archlang-playground.vercel.app
+    env:
+      VERCEL_ORG_ID: team_B067BUpWFoVPBxfQ0TWllunK
+      VERCEL_PROJECT_ID: ${{ matrix.project_id }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - name: Check VERCEL_TOKEN is set
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::VERCEL_TOKEN secret is not set. Add it in Settings → Secrets and variables → Actions, then re-run this workflow."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Pull Vercel project settings
+        working-directory: ${{ matrix.dir }}
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build (vercel.json builds the core first, then the site)
+        working-directory: ${{ matrix.dir }}
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy to production
+        working-directory: ${{ matrix.dir }}
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+
+      - name: Smoke check (retry up to ~30s for alias propagation)
+        run: |
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "${{ matrix.url }}")
+            echo "attempt $i: ${{ matrix.url }} -> $code"
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 5
+          done
+          echo "::error::${{ matrix.url }} did not return 200 after deploy"
+          exit 1
