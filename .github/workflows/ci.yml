@@ -41,3 +41,41 @@ jobs:
 
       - name: Test
         run: npm test
+
+  bench:
+    name: Benchmark (informational)
+    runs-on: ubuntu-latest
+    # Timings are runner-dependent — this never gates the build; it posts a PR
+    # comment with the median per-stage deltas vs. bench/baseline.json.
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run benchmark
+        run: |
+          npx tsx bench/run.ts --json > bench-current.json
+          node bench/compare.mjs bench-current.json bench-comment.md
+      - name: Post benchmark comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('bench-comment.md', 'utf8');
+            const marker = '<!-- archlang-bench -->';
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find((c) => c.body.includes(marker));
+            const payload = `${marker}\n${body}`;
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body: payload });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body: payload });
+            }

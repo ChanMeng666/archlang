@@ -40,15 +40,25 @@ The compiler is **pure TypeScript with zero runtime dependencies** and runs iden
 
 ## ✨ Features
 
-- **Code → professional drawing.** Poché-hatched walls, door swing arcs, window glazing,
-  computed room areas, dimension lines, a north arrow, a scale bar, and a title block.
+- **Code → professional drawing.** Poché-hatched walls (by material), door swing arcs, window
+  glazing, computed room areas, dimension lines, layers, line weights/types, a north arrow, a
+  scale bar, and a title block.
+- **Four export formats.** **SVG** and **DXF** with zero dependencies; **PDF** (vector,
+  selectable text) and **PNG** (deterministic raster) via optional, lazily-loaded add-ons that
+  the default install never pulls.
+- **Parametric + scriptable.** Values, arithmetic, arrays, `for`/`if`/`while`, and pure
+  functions — plus **relational placement** (`right-of` / `below` / …) resolved by deterministic
+  topological arithmetic. All expand-time: no runtime, no clock, no I/O.
 - **Explicit + deterministic.** Integer-millimetre coordinates with optional **grid snapping**;
-  byte-for-byte stable output, so renders are cacheable and testable.
-- **Zero dependencies, isomorphic.** Hand-written lexer + recursive-descent parser; runs in
-  Node and the browser. No native binaries, no fonts to bundle.
-- **Errors as data.** `compile()` *returns* `errors`/`warnings` with line numbers — it never
-  throws on bad source — which makes a tight authoring or LLM self-correction loop trivial.
-- **Library + CLI + playground.** Use the `compile()` API, the `arch` CLI, or the live editor.
+  byte-for-byte stable output, so renders are cacheable and visually regression-tested.
+- **Zero-dependency core, isomorphic.** Hand-written lexer + recursive-descent parser; the SVG
+  path runs in Node and the browser with no native binaries.
+- **Errors as data.** `compile()` *returns* `diagnostics`/`errors`/`warnings` with byte spans — it
+  never throws on bad source — making a tight authoring or LLM self-correction loop trivial.
+- **IDE-grade tooling.** A full LSP (hover, completion, go-to-definition, rename, signature
+  help), an `arch fmt` formatter, an `arch explain <CODE>` error catalog, and a VS Code extension.
+- **Library + CLI + playground + docs.** Use the `compile()` API, the `arch` CLI, the live
+  editor, or the documentation site.
 
 ## 🚀 Getting Started
 
@@ -97,9 +107,12 @@ else writeFileSync("tiny.svg", svg); // a finished floor plan
 **As a CLI:**
 
 ```bash
-arch compile floorplan.arch -o floorplan.svg   # compile once
+arch compile floorplan.arch -o floorplan.svg   # compile once (SVG, default)
+arch compile floorplan.arch -f dxf             # also: dxf · pdf · png
 arch compile floorplan.arch -w 1000            # set output width (px)
 arch watch   floorplan.arch                     # recompile on save
+arch fmt     floorplan.arch --write             # format source in place
+arch explain E_LAYOUT_CYCLE                      # explain a diagnostic
 ```
 
 **A taste of the language** (see [`examples/`](examples) and the
@@ -130,19 +143,21 @@ plan "Studio 1BR" {
 
 The [`playground/`](playground) is a Vite + CodeMirror 6 app — a client-side editor with syntax
 highlighting, inline lint (fed by the compiler's `diagnostics`), live SVG preview, example plans,
-and SVG download. Run it with:
+and **SVG / PNG / DXF / PDF download**. From the repo root (npm workspaces):
 
 ```bash
-npm run build                      # build the core (the playground consumes dist/)
-npm install --prefix playground
-npm run dev --prefix playground    # open the printed localhost URL
+npm install            # bootstraps all workspaces
+npm run playground:dev # builds the core, then opens the playground dev server
 ```
 
 ## 📚 Documentation
 
 - **[Language Reference](docs/language-reference.md)** — every statement, with syntax and defaults.
-- **[Examples](examples)** — `studio.arch`, `two-bed.arch`.
+- **[Error catalog](docs/error-codes.md)** — every `E_*`/`W_*` code with a cause and a fix.
+- **[Architecture Decision Records](docs/adr)** — the key design decisions and their trade-offs.
+- **[Examples](examples)** — `studio`, `two-bed`, `parametric`, `themed`, `relational`.
 - **[AGENTS.md](AGENTS.md)** — orientation for AI agents working in this repo.
+- **Docs site** — `npm run docs:build` builds the VitePress site in `docs-site/`.
 
 ## 🤝 Contributing
 

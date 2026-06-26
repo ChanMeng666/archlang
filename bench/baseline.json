@@ -1,0 +1,20 @@
+{
+  "BALANCED": {
+    "compile": 12.921,
+    "parse": 0.077,
+    "resolve": 0,
+    "render": 12.826
+  },
+  "ROOM_HEAVY": {
+    "compile": 4.141,
+    "parse": 0.09,
+    "resolve": 0,
+    "render": 4.048
+  },
+  "OPENING_HEAVY": {
+    "compile": 26.113,
+    "parse": 0.071,
+    "resolve": 0,
+    "render": 23.211
+  }
+}

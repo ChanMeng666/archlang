@@ -1,15 +1,22 @@
-# ArchLang Language Reference (v0.8)
+# ArchLang Language Reference (v1.0)
 
 ArchLang is a small declarative language that compiles to a professional SVG
 floor plan. It is **explicit and parametric**: you give every element exact
 coordinates and sizes in millimetres, so the same source always renders the
 same drawing, and changing one number changes exactly one thing.
 
-Since v0.8 it is also a small, pure **scripting language** — values, control
-flow, functions, arrays, and string interpolation — but it stays **expand-time
-and deterministic**: every loop, conditional, and function call is evaluated
-while the drawing is built (there is no runtime, no I/O, no clock), so the same
-source always produces byte-identical output.
+It is also a small, pure **scripting language** — values, control flow, functions,
+arrays, and string interpolation — but it stays **expand-time and deterministic**:
+every loop, conditional, and function call is evaluated while the drawing is built
+(there is no runtime, no I/O, no clock), so the same source always produces
+byte-identical output.
+
+The output is professional CAD: layers, line weights, line types, wall poché
+hatches by material, openings that void their wall, dimensions, a north arrow,
+scale bar, and a title block — exportable to **SVG, DXF, PDF, or PNG**. Rooms can
+be placed absolutely or **relative to one another** (`right-of` / `below` / …).
+Plans can `import` components from other modules, select named **themes**, and be
+formatted with `arch fmt`. This reference covers the language through v1.0.
 
 - **Unit:** millimetres (integers recommended).
 - **Coordinate system:** origin top-left, **+x** right, **+y** down (matches SVG).
@@ -273,10 +280,33 @@ wall exterior thickness 250 material brick scale 1.5 angle 30 { … }
 
 ```
 room [id=<id>] at (x,y) size <w>x<h> [label "<text>"]
+room [id=<id>] <right-of|left-of|below|above> <ref> [align <edge>] [gap <mm>] size <w>x<h> [label "<text>"]
 ```
 
 A rectangle. The compiler prints the `label` and the **computed area** (m²).
 Rooms describe space; walls are drawn separately.
+
+**Relational placement (v1.0).** Instead of an absolute `at (x,y)`, a room may be
+positioned **relative to another room** with `right-of` / `left-of` / `below` /
+`above`. The compiler resolves the absolute corner by pure arithmetic in
+dependency order (a topological pass over the references) — it is deterministic
+sugar over absolute coordinates, not an optimizer. The absolute path is the
+default and is unchanged.
+
+- `<ref>` is the `id` of another room.
+- `align <edge>` lines up the cross-axis edges: horizontal placement uses
+  `top|middle|bottom`, vertical placement uses `left|center|right` (default: the
+  leading edge — `top` for horizontal, `left` for vertical).
+- `gap <mm>` is the spacing along the placement axis (default `0`).
+
+```
+room id=living  at (0,0)                        size 5000x4000 label "Living"
+room id=kitchen right-of living align top gap 0 size 3000x4000 label "Kitchen"
+room id=bed     below living    align left gap 0 size 5000x3500 label "Bedroom"
+```
+
+A reference cycle reports [`E_LAYOUT_CYCLE`](error-codes.md); an unknown reference
+reports `E_LAYOUT_REF`. See the dedicated guide page for the placement arithmetic.
 
 ### Door
 
@@ -379,6 +409,7 @@ See [`examples/themed.arch`](../examples/themed.arch).
   warnings: CompileWarning[];      // derived from diagnostics (severity "warning")
   diagnostics: Diagnostic[];       // every problem, with byte-offset spans
   ast?: PlanNode;
+  scene?: Scene;                   // backend-neutral drawing (for DXF/PDF/PNG)
 }
 ```
 
@@ -387,6 +418,25 @@ See [`examples/themed.arch`](../examples/themed.arch).
 - `warnings` are advisory (e.g. *door does not lie on any wall*, *rooms overlap*)
   and do not block rendering.
 - `errors`/`warnings` are **projections** of `diagnostics` — kept for back-compat.
+- `scene` is the backend-neutral {@link Scene} IR — the geometry computed once and
+  shared by every backend.
+
+### Output formats
+
+The default `compile()` path is zero-dependency and emits **SVG**. Other backends
+are pure serializers of the same `scene`:
+
+| Format | API | CLI | Dependency |
+|--------|-----|-----|------------|
+| SVG | `compile().svg` | `arch compile p.arch` | none (default) |
+| DXF | `toDxf(scene)` | `arch compile p.arch -f dxf` | none (zero-dep) |
+| PDF | `toPdf(scene)` | `arch compile p.arch -f pdf` | optional `pdfkit` (vector, text selectable) |
+| PNG | `renderPng(scene)` | `arch compile p.arch -f png` | optional `@resvg/resvg-js` (deterministic raster) |
+
+The optional dependencies are lazily `import()`ed, so the core never requires
+them and a default install emits SVG and DXF with nothing extra. The PNG backend
+rasterizes the SVG with a bundled font (no system fonts), so output is
+byte-identical across machines.
 
 ### Diagnostics
 

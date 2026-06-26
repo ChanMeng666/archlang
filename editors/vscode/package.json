@@ -40,7 +40,7 @@
     "vscode:prepublish": "tsc -p ."
   },
   "dependencies": {
-    "@chanmeng666/archlang": "^0.11.0",
+    "@chanmeng666/archlang": "file:../..",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.12"

@@ -45,6 +45,11 @@
   "engines": {
     "node": ">=18"
   },
+  "workspaces": [
+    "editors/vscode",
+    "playground",
+    "docs-site"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -53,8 +58,13 @@
     "test:watch": "vitest",
     "cli": "tsx src/cli.ts",
     "bench": "tsx bench/run.ts",
+    "bench:json": "tsx bench/run.ts --json",
     "gen:grammars": "tsx scripts/gen-grammars.ts",
     "gen:errors": "tsx scripts/gen-error-codes.ts",
+    "docs:dev": "npm run build && npm -w docs-site run dev",
+    "docs:build": "npm run build && npm -w docs-site run build",
+    "playground:dev": "npm run build && npm -w archlang-playground run dev",
+    "playground:build": "npm run build && npm -w archlang-playground run build",
     "prepublishOnly": "npm run build && npm run test"
   },
   "devDependencies": {

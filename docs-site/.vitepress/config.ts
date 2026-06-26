@@ -12,9 +12,10 @@ export default defineConfig({
   cleanUrls: true,
   lastUpdated: true,
   // The reference/errors pages are synced verbatim from the canonical repo docs,
-  // which contain relative links to repo files (examples/*.arch, playground/) that
-  // are valid on GitHub but not pages on this site. Don't fail the build on them.
-  ignoreDeadLinks: [/\.\.\/(examples|playground)\//, /\.\.\/\.\.\//],
+  // which contain relative links to repo files (examples/*.arch, playground/,
+  // error-codes.md → the site's /errors page) that are valid on GitHub but not
+  // pages on this site under the same name. Don't fail the build on them.
+  ignoreDeadLinks: [/\.\.\/(examples|playground)\//, /\.\.\/\.\.\//, /error-codes/],
   themeConfig: {
     nav: [
       { text: "Guide", link: "/guide" },

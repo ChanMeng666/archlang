@@ -117,6 +117,31 @@ export { fnv1a } from "./hash.js";
 const cache = new Map<string, CompileResult>();
 const CACHE_MAX = 64;
 
+/**
+ * Compile ArchLang source to a professional SVG floor plan.
+ *
+ * Pure, synchronous, and isomorphic (Node + browser): the same `source` always
+ * yields byte-identical output. The result is append-only — `{ svg, errors,
+ * warnings, diagnostics, ast, scene }` — and never throws on a user-source
+ * problem; errors are returned as {@link CompileResult.diagnostics} (with byte
+ * spans) and reflected in `errors`, with `svg` left `""` when any error is
+ * present. Results are memoized by `source` + extension identity unless
+ * `opts.noCache` is set.
+ *
+ * The default path is zero-dependency and emits SVG; the `scene` field exposes
+ * the backend-neutral {@link Scene} so consumers can target other backends
+ * ({@link toDxf}, {@link toPdf}, {@link renderPng}) without re-resolving. Pass a
+ * {@link World} (via `opts.world`) to resolve `import`s and inject `now`.
+ *
+ * @param source  ArchLang source text (a `plan "…" { … }`).
+ * @param opts    Width, theme, plugins/backend/hatches/themes, world, noCache.
+ * @returns A {@link CompileResult}.
+ *
+ * @example
+ * const { svg, diagnostics, scene } = compile(`plan "Demo" {
+ *   room at (0,0) size 4000x3000 label "Room"
+ * }`);
+ */
 export function compile(source: string, opts: CompileOptions = {}): CompileResult {
   // The key includes plugin/theme/backend/hatch identity so distinct extension
   // sets never share a cache entry. Trusted, JSON-serializable `theme`/`width`

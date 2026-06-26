@@ -37,21 +37,45 @@ const ms = (n: number) => `${n.toFixed(2)} ms`;
 const row = (label: string, s: Stat) =>
   `  ${label.padEnd(22)} min ${ms(s.min).padStart(9)}   mean ${ms(s.mean).padStart(9)}   median ${ms(s.median).padStart(9)}`;
 
-function benchPlan(name: string, spec: GenSpec, iters: number): void {
+/** `--json` emits machine-readable timings for CI regression comparison. */
+const JSON_MODE = process.argv.includes("--json");
+
+function benchPlan(name: string, spec: GenSpec, iters: number): Record<string, Stat> {
   const src = genPlan(spec);
   const { plan } = parse(src);
   const ir = resolve(plan!).ir;
 
-  console.log(`\n${name}  (${count(spec)} elements: ${spec.walls}W ${spec.rooms}R ${spec.doors}D ${spec.windows}Wn ${spec.furniture}F)`);
-  console.log(row("compile (full)", timeit(() => compile(src, { noCache: true }), iters)));
-  console.log(row("  parse", timeit(() => parse(src), iters)));
-  console.log(row("  resolve", timeit(() => resolve(plan!), iters)));
-  console.log(row("  render", timeit(() => render(ir, {}), iters)));
+  const stats = {
+    compile: timeit(() => compile(src, { noCache: true }), iters),
+    parse: timeit(() => parse(src), iters),
+    resolve: timeit(() => resolve(plan!), iters),
+    render: timeit(() => render(ir, {}), iters),
+  };
+  if (!JSON_MODE) {
+    console.log(`\n${name}  (${count(spec)} elements: ${spec.walls}W ${spec.rooms}R ${spec.doors}D ${spec.windows}Wn ${spec.furniture}F)`);
+    console.log(row("compile (full)", stats.compile));
+    console.log(row("  parse", stats.parse));
+    console.log(row("  resolve", stats.resolve));
+    console.log(row("  render", stats.render));
+  }
+  return stats;
 }
 
-const ITERS = 40;
-console.log(`ArchLang benchmark — ${ITERS} timed iterations each (after warmup)`);
-benchPlan("BALANCED", BALANCED, ITERS);
-benchPlan("ROOM_HEAVY (O(R^2) overlap)", ROOM_HEAVY, ITERS);
-benchPlan("OPENING_HEAVY (host-segment scan)", OPENING_HEAVY, ITERS);
-console.log("");
+const ITERS = JSON_MODE ? 25 : 40;
+if (!JSON_MODE) console.log(`ArchLang benchmark — ${ITERS} timed iterations each (after warmup)`);
+const results = {
+  BALANCED: benchPlan("BALANCED", BALANCED, ITERS),
+  ROOM_HEAVY: benchPlan("ROOM_HEAVY (O(R^2) overlap)", ROOM_HEAVY, ITERS),
+  OPENING_HEAVY: benchPlan("OPENING_HEAVY (host-segment scan)", OPENING_HEAVY, ITERS),
+};
+if (JSON_MODE) {
+  // Stable JSON for CI diffing: median-ms per plan/stage, rounded to 3 dp.
+  const out: Record<string, Record<string, number>> = {};
+  for (const [plan, stages] of Object.entries(results)) {
+    out[plan] = {};
+    for (const [stage, s] of Object.entries(stages)) out[plan][stage] = Number(s.median.toFixed(3));
+  }
+  console.log(JSON.stringify(out, null, 2));
+} else {
+  console.log("");
+}
