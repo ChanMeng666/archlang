@@ -1,7 +1,7 @@
 {
   "name": "archlang-vscode",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "displayName": "ArchLang",
   "description": "Syntax highlighting plus full language support — live diagnostics, hover, completion, go-to-definition, rename, and signature help — for ArchLang (.arch) floor-plan source.",
   "license": "MIT",
@@ -23,31 +23,34 @@
         "id": "arch",
         "aliases": ["ArchLang"],
         "extensions": [".arch"],
-        "configuration": "../language-configuration.json"
+        "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
       {
         "language": "arch",
         "scopeName": "source.arch",
-        "path": "../archlang.tmLanguage.json"
+        "path": "./archlang.tmLanguage.json"
       }
     ]
   },
   "scripts": {
-    "build": "tsc -p .",
-    "watch": "tsc -p . --watch",
-    "vscode:prepublish": "tsc -p ."
+    "copy-assets": "node copy-assets.mjs",
+    "typecheck": "tsc -p . --noEmit",
+    "build": "node copy-assets.mjs && node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "package": "npm run build && vsce package --no-dependencies",
+    "vscode:prepublish": "npm run build"
   },
-  "dependencies": {
-    "@chanmeng666/archlang": "file:../..",
+  "devDependencies": {
+    "@chanmeng666/archlang": "^1.0.1",
+    "@types/node": "^22.20.0",
+    "@types/vscode": "^1.75.0",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.24.2",
+    "typescript": "^5.7.2",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.12"
-  },
-  "devDependencies": {
-    "@types/node": "^22.20.0",
-    "@types/vscode": "^1.75.0",
-    "typescript": "^5.7.2"
   }
 }

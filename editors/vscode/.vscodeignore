@@ -1,11 +1,14 @@
+# The extension is bundled with esbuild into dist/, so node_modules and sources
+# are not needed in the .vsix. Ship only dist/ (bundle) + the grammar/config
+# JSON (copied in by copy-assets.mjs at build) + README.
 .vscode/**
 src/**
+node_modules/**
 **/*.ts
 **/*.map
+**/tsconfig.tsbuildinfo
 tsconfig.json
+esbuild.mjs
+copy-assets.mjs
 .gitignore
 .vscodeignore
-**/tsconfig.tsbuildinfo
-node_modules/.bin/**
-node_modules/**/*.md
-node_modules/**/test/**
