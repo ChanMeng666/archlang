@@ -102,7 +102,7 @@ function drawNode(doc: any, node: SceneNode, theme: Theme): void {
 export async function toPdf(scene: Scene): Promise<Uint8Array> {
   let PDFDocument: any;
   try {
-    PDFDocument = (await import("pdfkit" as string)).default;
+    PDFDocument = (await import(/* webpackIgnore: true */ /* @vite-ignore */ "pdfkit" as string)).default;
   } catch {
     throw new Error(
       "PDF export needs the optional dependency 'pdfkit'. Install it: npm install pdfkit",

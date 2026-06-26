@@ -73,7 +73,7 @@ export interface PngOptions extends CompileOptions {
 export async function renderPng(scene: Scene, opts: PngOptions = {}): Promise<Uint8Array> {
   let Resvg: typeof import("@resvg/resvg-js").Resvg;
   try {
-    ({ Resvg } = await import("@resvg/resvg-js" as string));
+    ({ Resvg } = await import(/* webpackIgnore: true */ /* @vite-ignore */ "@resvg/resvg-js" as string));
   } catch {
     throw new Error(
       "PNG export needs the optional dependency '@resvg/resvg-js'. Install it: npm install @resvg/resvg-js",

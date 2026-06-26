@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-06-26
+
+### Fixed
+
+- **Bundler builds in downstream consumers (webpack / Next.js).** The lazy
+  `import()`s of the optional native/wasm dependencies (`@resvg/resvg-js`,
+  `pdfkit`, `clipper2-wasm`) are now annotated with `/* webpackIgnore: true */`
+  and `/* @vite-ignore */`, so a consumer's bundler no longer follows them into a
+  native `.node` binary at build time (which failed with *"Module parse failed:
+  Unexpected character"*). These dependencies are still loaded lazily at runtime
+  under Node when the relevant export (`renderPng`/`toPdf`/angled-wall geometry)
+  is used; nothing changes for the zero-dependency SVG/DXF path.
+
 ## [1.0.0] - 2026-06-26
 
 ### Added — Polish, ecosystem & launch (v1.0)
