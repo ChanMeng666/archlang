@@ -25,9 +25,10 @@ export const KEYWORDS = {
   attribute: [
     "units", "grid", "scale", "north", "material", "angle", "at", "size", "width", "thickness",
     "label", "hinge", "swing", "offset", "text", "close", "id", "project", "drawn_by", "date", "from", "as",
+    "right-of", "left-of", "below", "above", "align", "gap",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
-  enum: ["up", "down", "left", "right", "in", "out", "mm", "true", "false"],
+  enum: ["up", "down", "left", "right", "in", "out", "mm", "true", "false", "top", "middle", "bottom", "center"],
 } as const;
 
 /** All operators the lexer recognises (multi-char forms first when generating regex). */

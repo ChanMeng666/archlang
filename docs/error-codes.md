@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**28 errors** · **9 warnings**
+**30 errors** · **9 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -26,6 +26,8 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_IMPORT_NOT_FOUND`](#e_import_not_found) | error | Import path could not be resolved. |
 | [`E_IMPORT_PARSE`](#e_import_parse) | error | Imported module has a parse error. |
 | [`E_INDEX`](#e_index) | error | Array index out of range. |
+| [`E_LAYOUT_CYCLE`](#e_layout_cycle) | error | Relational room placement forms a cycle. |
+| [`E_LAYOUT_REF`](#e_layout_ref) | error | Relational placement references an unknown room. |
 | [`E_RANGE_LIMIT`](#e_range_limit) | error | Range too large. |
 | [`E_RECURSION`](#e_recursion) | error | Component recursion too deep. |
 | [`E_REDEF`](#e_redef) | error | Name already defined in this scope. |
@@ -252,6 +254,31 @@ import "lib/missing.arch": a   # error
 ```arch
 let a = [1, 2]
 let x = a[5]   # error
+```
+
+## E_LAYOUT_CYCLE
+
+*error* — Relational room placement forms a cycle.
+
+**Cause.** Rooms placed with `right-of`/`below`/… reference each other in a loop, so no order resolves them.
+
+**Fix.** Break the cycle by giving one of the rooms absolute `at (x,y)` coordinates.
+
+```arch
+room id=a right-of b size 100x100
+room id=b left-of a size 100x100   # error: a ↔ b cycle
+```
+
+## E_LAYOUT_REF
+
+*error* — Relational placement references an unknown room.
+
+**Cause.** A `right-of`/`below`/… clause names a room id that does not exist in the plan.
+
+**Fix.** Reference an existing room id, or fix the typo.
+
+```arch
+room id=k right-of ghost size 100x100   # error: no room "ghost"
 ```
 
 ## E_RANGE_LIMIT

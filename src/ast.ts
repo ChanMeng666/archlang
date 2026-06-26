@@ -59,9 +59,33 @@ export interface WallNode extends NodeBase {
   closed: boolean;
 }
 
+/** Relational-placement direction: the side of the reference room to sit on. */
+export type RelDir = "right-of" | "left-of" | "below" | "above";
+
+/** Edge to align with the reference room. Horizontal placement
+ *  (`right-of`/`left-of`) uses `top|middle|bottom`; vertical placement
+ *  (`below`/`above`) uses `left|center|right` (`center`≡`middle`). */
+export type RelAlign = "top" | "middle" | "bottom" | "left" | "center" | "right";
+
+/** `DIR REF [align EDGE] [gap EXPR]` — a room's position relative to another room.
+ *  Resolved to absolute coordinates by pure arithmetic in dependency order. */
+export interface RoomRel {
+  dir: RelDir;
+  /** Id of the reference room this one is placed against. */
+  ref: string;
+  align?: RelAlign;
+  /** Spacing (mm) between the two rooms along the placement axis; default 0. */
+  gap?: Expr;
+  span?: Span;
+}
+
 export interface RoomNode extends NodeBase {
   kind: "room";
-  at: ExprPoint;
+  /** Absolute top-left corner. Mutually exclusive with {@link RoomNode.rel};
+   *  exactly one is present. The absolute path is the default and is unchanged. */
+  at?: ExprPoint;
+  /** Relational placement clause (when `at` is absent). */
+  rel?: RoomRel;
   size: { w: Expr; h: Expr };
   /** Label as a string-interpolation template, evaluated at resolve. */
   label?: Expr;

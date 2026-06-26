@@ -1,0 +1,32 @@
+# Relational placement (v1.0): rooms positioned relative to one another with
+# `right-of` / `left-of` / `below` / `above` (+ `align` and `gap`), resolved to
+# absolute coordinates by pure arithmetic in dependency order. Only `living` is
+# anchored with `at`; every other room derives its position from a neighbour, so
+# changing the anchor or a size reflows the whole plan deterministically.
+plan "Relational 1BR" {
+  units mm
+  grid 50
+  scale 1:100
+  north up
+
+  # Exterior shell (walls are always absolute — relational placement is rooms-only).
+  wall exterior thickness 200 { (0,0) (8000,0) (8000,7500) (0,7500) close }
+
+  room id=living  at (0,0)                         size 5000x4000 label "Living"
+  room id=kitchen right-of living align top  gap 0 size 3000x4000 label "Kitchen"
+  room id=bed     below living    align left gap 0 size 5000x3500 label "Bedroom"
+  room id=bath    right-of bed    align top  gap 0 size 3000x3500 label "Bath"
+
+  door   at (1000,0) width 1000 wall exterior hinge left swing in
+  window at (6500,0) width 1800 wall exterior
+
+  furniture bed at (300,4300) size 1500x2000 label "Bed"
+
+  dim (0,7500)->(8000,7500) offset 600 text "8000"
+
+  title {
+    project "Relational Layout Demo"
+    drawn_by "ArchCanvas"
+    date "2026-06-26"
+  }
+}

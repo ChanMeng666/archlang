@@ -236,6 +236,22 @@ function lexImpl(src: string): LexResult {
 
     // Identifier / keyword
     if (isIdentStart(c)) {
+      // Compound relational keywords `right-of` / `left-of` lex as a single
+      // ident so the hyphen is not mistaken for subtraction (these are the only
+      // hyphenated words in the grammar; everything else keeps `a-b` as `a - b`).
+      // Matched only as whole words: `right-of` followed by a non-ident char.
+      let j = i;
+      while (j < src.length && isIdentPart(src[j]!)) j++;
+      const word = src.slice(i, j);
+      if ((word === "right" || word === "left") && src[j] === "-") {
+        let k = j + 1;
+        while (k < src.length && isIdentPart(src[k]!)) k++;
+        if (src.slice(j + 1, k) === "of" && !isIdentPart(src[k] ?? "")) {
+          while (i < k) advance();
+          push("ident", `${word}-of`, startLine, startCol, startIdx);
+          continue;
+        }
+      }
       let value = "";
       while (i < src.length && isIdentPart(peek())) value += advance();
       push("ident", value, startLine, startCol, startIdx);

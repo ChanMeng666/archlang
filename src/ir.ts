@@ -14,9 +14,12 @@ import type {
   NorthDir,
   PlanNode,
   Point,
+  RelAlign,
+  RelDir,
   Statement,
   TitleNode,
 } from "./ast.js";
+import { placeRelational } from "./layout.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Env, Expr, Value } from "./expr.js";
 import { asBool, asNum, asStr, closest, evalExpr, exprSpan } from "./expr.js";
@@ -61,11 +64,26 @@ export interface RWall extends RBase {
   /** Openings (doors/windows) hosted on this wall; subtracted from its solid. */
   openings: Opening[];
 }
+/** A resolved relational-placement constraint carried on an unplaced room until
+ *  `placeRelational` computes its absolute `at` in dependency order. */
+export interface RelConstraint {
+  dir: RelDir;
+  /** Id of the reference room this one is placed against. */
+  ref: string;
+  align?: RelAlign;
+  /** Resolved spacing (mm) along the placement axis. */
+  gap: number;
+  span?: Span;
+}
+
 export interface RRoom extends RBase {
   kind: "room";
   at: Point;
   size: { w: number; h: number };
   label?: string;
+  /** Present only when the room used a relational clause (`right-of`/…); its
+   *  `at` above is a placeholder until {@link placeRelational} resolves it. */
+  _rel?: RelConstraint;
 }
 export interface RDoor extends RBase {
   kind: "door";
@@ -423,6 +441,16 @@ function resolveImpl(
 
   // 3. IR element list in source order (for rendering).
   const elements = entries.map((e) => e.resolved!);
+
+  // 3a. Relational placement: rooms positioned with `right-of`/`below`/… get
+  //     absolute coordinates here, by pure arithmetic in dependency order
+  //     (topological). Rooms with an absolute `at` carry no constraint, so this
+  //     is a no-op for them and the manual path stays byte-identical.
+  placeRelational(
+    elements.filter((e): e is RRoom => e.kind === "room"),
+    snapPt,
+    (d: Diagnostic) => diagnostics.push(d),
+  );
 
   // 3b. Register openings: each hosted door/window voids its wall's solid. The
   //     host segment came from `segmentsOfWall`, so match by endpoint coords.

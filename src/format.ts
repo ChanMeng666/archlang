@@ -15,6 +15,7 @@ import type {
   ExprPoint,
   ImportNode,
   PlanNode,
+  RoomRel,
   Statement,
   TitleNode,
 } from "./ast.js";
@@ -108,6 +109,14 @@ function sizeStr(size: { w: Expr; h: Expr }): string {
   return `${exprStr(size.w)} x ${exprStr(size.h)}`;
 }
 
+/** A room's relational placement clause: `DIR ref [align E] [gap n]`. */
+function relStr(rel: RoomRel): string {
+  let out = `${rel.dir} ${rel.ref}`;
+  if (rel.align) out += ` align ${rel.align}`;
+  if (rel.gap !== undefined) out += ` gap ${exprStr(rel.gap)}`;
+  return out;
+}
+
 /** A `set` override value: a bare keyword when it is a single-identifier string. */
 function setValStr(e: Expr): string {
   if (e.t === "str" && e.parts.length === 1 && typeof e.parts[0] === "string" && /^[A-Za-z_]\w*$/.test(e.parts[0])) {
@@ -151,7 +160,7 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       return concat([head, " ", body]);
     }
     case "room":
-      return `room ${id}at ${ptStr(s.at)} size ${sizeStr(s.size)}${s.label ? ` label ${exprStr(s.label)}` : ""}`;
+      return `room ${id}${s.at ? `at ${ptStr(s.at)}` : relStr(s.rel!)} size ${sizeStr(s.size)}${s.label ? ` label ${exprStr(s.label)}` : ""}`;
     case "door":
       return `door ${id}at ${ptStr(s.at)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${s.hinge ? ` hinge ${s.hinge}` : ""}${s.swing ? ` swing ${s.swing}` : ""}`;
     case "window":
