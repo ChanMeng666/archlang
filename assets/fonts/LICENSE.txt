@@ -1,0 +1,16 @@
+Roboto-Regular.ttf
+==================
+
+Roboto is licensed under the Apache License, Version 2.0.
+
+Copyright 2015 Google Inc. All Rights Reserved.
+
+ArchLang bundles Roboto-Regular.ttf as the font used by the optional PNG raster
+backend (`src/backends/png.ts`). System fonts are disabled when rasterizing, so a
+single bundled font guarantees that text renders deterministically on every
+machine — the precondition for the visual-regression goldens.
+
+You may obtain a copy of the Apache-2.0 license at:
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Source: https://github.com/googlefonts/roboto-2

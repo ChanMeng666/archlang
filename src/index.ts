@@ -68,6 +68,10 @@ export { toScene } from "./scene-build.js";
 export type { Scene, SceneNode, ScenePrim, Paint, RenderPass, RenderSizes, LineWeight, LineType } from "./scene.js";
 export { toDxf } from "./export/dxf.js";
 export { toPdf } from "./export/pdf.js";
+// PNG raster backend (v1.0). Rasterizes the Scene's SVG with the OPTIONAL,
+// lazy-loaded `@resvg/resvg-js`; deterministic via a bundled font. Node-only.
+export { renderPng } from "./backends/png.js";
+export type { PngOptions } from "./backends/png.js";
 // Optional polygon-geometry backend seam. The default path is zero-dependency
 // (rectilinear boolean); registering a backend (e.g. the lazily-loaded
 // `clipper2-wasm` adapter) unlocks seamless angled-wall joinery.

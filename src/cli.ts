@@ -3,10 +3,10 @@
 
 import { readFileSync, writeFileSync, watchFile } from "node:fs";
 import { resolve as resolvePath, dirname } from "node:path";
-import { compile, explain, format, formatDiagnostic, loadClipperBackend, setGeometryBackend, toDxf, toPdf } from "./index.js";
+import { compile, explain, format, formatDiagnostic, loadClipperBackend, renderPng, setGeometryBackend, toDxf, toPdf } from "./index.js";
 import type { World } from "./index.js";
 
-type Format = "svg" | "dxf" | "pdf";
+type Format = "svg" | "dxf" | "pdf" | "png";
 
 /**
  * A real-filesystem {@link World}: import paths resolve relative to `baseDir`
@@ -74,6 +74,17 @@ async function compileFile(input: string, output: string, format: Format, width?
       return false;
     }
   }
+  if (format === "png") {
+    try {
+      const png = await renderPng(scene);
+      writeFileSync(output, png);
+      process.stdout.write(`✓ ${input} → ${output} (${png.length} bytes, PNG)\n`);
+      return true;
+    } catch (e) {
+      process.stderr.write(`error: ${(e as Error).message}\n`);
+      return false;
+    }
+  }
   writeFileSync(output, svg, "utf8");
   process.stdout.write(`✓ ${input} → ${output} (${svg.length} bytes)\n`);
   return true;
@@ -126,11 +137,11 @@ async function main(): Promise<void> {
     process.stdout.write(
       `arch — ArchLang compiler\n\n` +
         `Usage:\n` +
-        `  arch compile <in.arch> [-o out] [-w width] [-f svg|dxf|pdf]\n` +
-        `  arch watch   <in.arch> [-o out] [-w width] [-f svg|dxf|pdf]\n` +
+        `  arch compile <in.arch> [-o out] [-w width] [-f svg|dxf|pdf|png]\n` +
+        `  arch watch   <in.arch> [-o out] [-w width] [-f svg|dxf|pdf|png]\n` +
         `  arch fmt     <in.arch> [--write]\n` +
         `  arch explain <CODE>            (e.g. E_ROOM_SIZE)\n\n` +
-        `Formats: svg (default) · dxf (zero-dep) · pdf (needs optional pdfkit + svg-to-pdfkit)\n`,
+        `Formats: svg (default) · dxf (zero-dep) · pdf (needs optional pdfkit) · png (needs optional @resvg/resvg-js)\n`,
     );
     process.exit(cmd ? 0 : 1);
   }
@@ -162,8 +173,8 @@ async function main(): Promise<void> {
   }
 
   const fmt = (args.format ?? "svg").toLowerCase();
-  if (fmt !== "svg" && fmt !== "dxf" && fmt !== "pdf") {
-    process.stderr.write(`error: unknown format "${args.format}" (use svg, dxf, or pdf)\n`);
+  if (fmt !== "svg" && fmt !== "dxf" && fmt !== "pdf" && fmt !== "png") {
+    process.stderr.write(`error: unknown format "${args.format}" (use svg, dxf, pdf, or png)\n`);
     process.exit(1);
   }
   const format = fmt as Format;
