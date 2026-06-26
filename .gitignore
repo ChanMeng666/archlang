@@ -6,3 +6,4 @@ coverage/
 playground/dist/
 playground/node_modules/
 *.tsbuildinfo
+*.vsix

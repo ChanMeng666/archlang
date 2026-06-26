@@ -1,9 +1,15 @@
 {
   "name": "archlang-vscode",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.1.0",
   "displayName": "ArchLang",
-  "description": "Syntax highlighting and live diagnostics for ArchLang (.arch) floor-plan source.",
+  "description": "Syntax highlighting plus full language support — live diagnostics, hover, completion, go-to-definition, rename, and signature help — for ArchLang (.arch) floor-plan source.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ChanMeng666/archlang.git",
+    "directory": "editors/vscode"
+  },
   "publisher": "chanmeng666",
   "engines": {
     "vscode": "^1.75.0"
@@ -34,7 +40,7 @@
     "vscode:prepublish": "tsc -p ."
   },
   "dependencies": {
-    "@chanmeng666/archlang": "file:../..",
+    "@chanmeng666/archlang": "^0.11.0",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.12"
