@@ -7,9 +7,44 @@ Codex, etc.) working with this repository. Read it before writing or changing an
 
 ArchLang — A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.
 
-- **Primary language / stack:** Node.js / JavaScript
+- **Primary language / stack:** TypeScript (Node 18+; the core also runs in the browser)
 - **Default branch:** `main`
-- **Repository:** https://github.com/chanmeng666/archlang
+- **Repository:** https://github.com/ChanMeng666/archlang
+
+## Project status & where things live (current)
+
+**ArchLang 1.0 is shipped and launched.** This is a published, deployed monorepo —
+not a work-in-progress. Treat the live artifacts below as the source of truth.
+
+| Thing | Current | Where |
+|-------|---------|-------|
+| **Core package** | `@chanmeng666/archlang@1.0.1` (published) | npmjs.com/package/@chanmeng666/archlang |
+| **VS Code extension** | `ChanMeng.archlang@0.2.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
+| **Playground** | deployed | https://archlang-playground.vercel.app |
+| **Docs site** | deployed (VitePress) | https://archlang-docs.vercel.app |
+| **Git** | `main`, tags `v1.0.0` + `v1.0.1` | github.com/ChanMeng666/archlang |
+| **Consumer (`archcanvas`)** | bumped to `^1.0.1` on a branch (PR open, not merged) | github.com/ChanMeng666/archcanvas/pull/2 |
+| **Tests** | 345 passing (36 files); typecheck + build clean | — |
+
+> Beware older docs that predate the launch: `docs/IMPLEMENTATION-PLAN-v0.7-v1.0.md`
+> is the (now-completed) roadmap, and the earlier half of `docs/WORK-LOG.md` is
+> historical. The table above and `CHANGELOG.md` reflect what actually shipped.
+
+**Monorepo layout (npm workspaces, one root lockfile):**
+
+```
+.                     @chanmeng666/archlang — the core (PUBLISHED package; src/, dist/)
+├─ editors/vscode     archlang-vscode → published as ChanMeng.archlang (esbuild-bundled extension)
+├─ editors/*.json     generated TextMate grammar + language-configuration (shared by the extension)
+├─ playground/        Vite + CodeMirror live editor (consumes the built core via dist/)
+├─ docs-site/         VitePress docs (pages generated from docs/*.md, examples/*.arch)
+├─ docs/              language-reference.md · error-codes.md · adr/ · this WORK-LOG.md · roadmap
+├─ examples/          studio · two-bed · parametric · themed · relational · lib/ · imports
+├─ bench/             ~1000-element timing harness (+ --json mode, CI regression comment)
+└─ test/              vitest: snapshot + fast-check + unit + visual-regression (__goldens__/)
+```
+
+A single `npm install` at the root bootstraps every workspace.
 
 ## Commands
 
@@ -91,6 +126,10 @@ source (.arch)
 - **The PNG backend is Node-only and async** (resvg is a native binding); it rasterizes the SVG
   with a **bundled font** so text is deterministic. Keep `node:*` imports lazy inside the
   function so the module stays browser-safe.
+- **Keep the optional-dep `import()`s bundler-safe.** The lazy `import()`s of `@resvg/resvg-js`,
+  `pdfkit`, and `clipper2-wasm` carry `/* webpackIgnore: true */ /* @vite-ignore */` so a
+  downstream webpack/Next.js consumer doesn't try to bundle a native `.node` binary and fail its
+  build (this was the 1.0.0→1.0.1 fix). Preserve those comments on any new optional-dep import.
 - **`npm run dev`** (repo root) runs `tsup --watch` (a rebuild watcher), not a web server. The
   playground/docs sites are separate Vite apps — use `npm run playground:dev` / `docs:dev`.
 - **Door `hinge left/right` is relative to the wall's traversal direction**, not the screen —

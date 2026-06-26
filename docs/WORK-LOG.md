@@ -1,35 +1,41 @@
-# ArchLang v0.7→v1.0 — Implementation Work Log & Handoff
+# ArchLang v0.7→v1.0 — Implementation Work Log (history) & current state
 
-> **Purpose.** This is a session-to-session handoff. A fresh Claude Code session
-> should read **this file first**, then the roadmap
-> [`docs/IMPLEMENTATION-PLAN-v0.7-v1.0.md`](./IMPLEMENTATION-PLAN-v0.7-v1.0.md),
-> then continue the **remaining tasks** from where this log stops. It records
-> exactly what has shipped, the git state, the conventions to keep, and where to
-> pick up.
+> **Purpose.** A record of how ArchLang reached its **1.0 launch** and the state it
+> is in now. The v0.7→v1.0 build is **complete** — there is no pending phase. A
+> fresh session should read **`AGENTS.md` first** (the canonical status + how to
+> work), then use this log for the per-phase implementation history (§3–§4d) and
+> the post-1.0 continuation notes (§5). The roadmap
+> [`docs/IMPLEMENTATION-PLAN-v0.7-v1.0.md`](./IMPLEMENTATION-PLAN-v0.7-v1.0.md) is
+> the (now-completed) plan these phases executed.
 
-_Last updated after: v0.10 **T4.1–T4.5 complete** + release-prepped to **0.10.0** (built, tested, NOT published)._
+_Last updated: **v1.0 LAUNCHED.** Core published `@chanmeng666/archlang@1.0.1`; VS Code extension published `ChanMeng.archlang@0.2.0`; playground + docs site deployed. Sections 3–4b below are the accurate v0.8–v0.10 implementation history; sections 1, 2, 4c, 4d, 5, 7 reflect the launched state._
 
 ---
 
 ## 1. TL;DR — status
 
-- **v0.7 (Scene IR):** shipped before this work began (commit `5974d23`, released 0.7.0).
-- **v0.8 (full scripting language, T2.1–T2.8):** ✅ **COMPLETE and merged to `main`.** Version bumped to **0.8.0**. **Not yet published to npm.**
-- **v0.9 (CAD fidelity, T3.1–T3.7):** ✅ **COMPLETE and merged to `main`** (merge `82ec142`). Released-prepped to **0.9.0**. **Not yet published to npm.**
-- **v0.10 (extensible platform, T4.1–T4.5):** ✅ **COMPLETE** on branch `feat/v0.10-platform` (not merged to `main`). Version bumped to **0.10.0**, CHANGELOG written. **Not yet published to npm; `archcanvas` not touched.**
-- **v0.11 / v1.0:** not started.
-- **Tests:** **273 passing** (was 225 after v0.9), typecheck + build clean, all examples deterministic; **all existing rendered output byte-identical** through the v0.10 additions.
+**Everything through v1.0 is shipped, published, and deployed.** For the canonical
+"what's live and where" table, see **`AGENTS.md` → Project status**. Phase rollup:
+
+- **v0.7 (Scene IR):** shipped (released 0.7.0).
+- **v0.8 (scripting language, T2.1–T2.8):** ✅ shipped (0.8.0).
+- **v0.9 (CAD fidelity, T3.1–T3.7):** ✅ shipped (0.9.0).
+- **v0.10 (extensible platform, T4.1–T4.5):** ✅ shipped (0.10.0).
+- **v0.11 (IDE-grade tooling, T5.1–T5.5):** ✅ shipped (0.11.0) — see §4c.
+- **v1.0 (polish, ecosystem & launch, T6.1–T6.5):** ✅ shipped (1.0.0), plus a **1.0.1** consumer-bundler fix — see §4d.
+- **Published:** core `@chanmeng666/archlang@1.0.1` on npm; extension `ChanMeng.archlang@0.2.0` on the VS Code Marketplace.
+- **Deployed:** playground (archlang-playground.vercel.app) + docs site (archlang-docs.vercel.app).
+- **Tests:** **345 passing** (36 files), typecheck + build clean, examples deterministic.
 
 ---
 
-## 2. Git state (read carefully before doing anything)
+## 2. Git state
 
-- **Default branch:** `main`. **Current working branch:** `feat/v0.10-platform`.
-- `main` contains **v0.9** (merge `82ec142`) and is **ahead of `origin/main`** — **nothing has been pushed** (push only when the human asks).
-- `feat/v0.10-platform` is `main` + 6 commits (T4.1–T4.5 + release prep), **not merged**.
-- **`package.json` version is `0.10.0`** (v0.10 release prep done: bump + CHANGELOG + this log).
-- **Nothing is published to npm** (publish needs the human's 2FA OTP). **`archcanvas` was not touched** (pending the human's go-ahead).
-- A harmless CRLF/autocrlf artifact may show `test/__snapshots__/*.snap` as modified; check `git diff --ignore-all-space` before worrying.
+- **Default branch:** `main` — current, clean, and **pushed** to `origin/main`.
+- **Tags:** `v1.0.0` and `v1.0.1` (pushed).
+- **`package.json` version:** `1.0.1` (published to npm).
+- **Repo is now an npm-workspaces monorepo:** core at root + `editors/vscode` + `playground` + `docs-site`, one root lockfile. `.gitattributes` enforces LF endings (so the old CRLF snapshot artifact is gone).
+- **Consumer `archcanvas`:** bumped to `^1.0.1` on branch `chore/bump-archlang-1.0.0` with PR #2 open (verified `tsc --noEmit` + `next build`); **not merged**.
 
 **v0.8 commits on `main` (oldest→newest):** `ed14e22` T2.1 → `cdb7a11` T2.2 → `425c7d4` T2.3 → `7e199e8` T2.4 → `2dc64f4` T2.5 → `a4662da` T2.6 → `d864add` T2.7 → `53a2ce6` T2.8 → `40ebd03` release 0.8.0 → `a345096` merge.
 
@@ -106,19 +112,41 @@ New tests: `test/plugins.test.ts`, `test/world.test.ts`, `test/import.test.ts`, 
 
 ---
 
-## 5. Remaining work — START HERE
+## 4c. What shipped — v0.11 (IDE-grade tooling & DX), T5.1–T5.5
 
-Implement strictly in roadmap order; each task is gated by its DoD (roadmap §6 for v0.9, §7–§9 for v0.10–v1.0).
+All tooling/internal; the core stayed pure/deterministic/zero-dep and every existing rendered output (SVG/DXF/PDF) is byte-identical.
 
-### v0.10 — ✅ COMPLETE (T4.1–T4.5 + release prep). Awaiting the human's go-ahead to:
-1. **Merge** `feat/v0.10-platform` → `main` (`--no-ff` when ready).
-2. **Publish** `npm publish --access public` (needs the human's npm 2FA OTP), then tag `v0.10.0` + `git push --tags`.
-3. **Consumer bump** `archcanvas` to `^0.10.0` (`npm install`, `npx tsc --noEmit`, `npm run build`); optionally expose plugins/World/imports/theming to its system prompt. Do NOT push `archcanvas main` unless asked.
+| Task | What | Key files |
+|---|---|---|
+| **T5.1** | **Lossless, error-recovering parse tree.** Lexer captures comments as trivia; AST gains an `ErrorNode` statement + `PlanNode.comments`/`bodyStart`; the parser never throws — a malformed header recovers (AST still present) and a broken line emits an `Error` node + diagnostic, keeping the rest. Read-only AST cursor. | `src/lexer.ts`, `src/ast.ts`, `src/parser.ts`, `src/cursor.ts` |
+| **T5.2** | **`arch fmt` formatter.** Zero-dep Wadler/Prettier `Doc` IR + `format(source)` (exported): deterministic, idempotent, comment- and semantics-preserving (`compile(x)===compile(format(x))`). CLI `arch fmt [--write]`; returns source unchanged on parse error. | `src/doc.ts`, `src/format.ts`, `src/cli.ts` |
+| **T5.3** | **Full LSP.** Hover, completion, go-to-definition, scope-aware rename, signature help — a pure, isomorphic, unit-tested core driven by an append-only `ElementDef.params` schema. The VS Code server delegates to it. | `src/lsp.ts`, `editors/vscode/src/server.ts` |
+| **T5.4** | **One grammar source of truth.** `src/grammar/tokens.ts` feeds the parser's statement-start set and generates both editor grammars; CI asserts no drift. | `src/grammar/tokens.ts`, `scripts/gen-grammars.ts` |
+| **T5.5** | **Error catalog.** Every `E_*`/`W_*` code with cause/fix/example in `src/error-catalog.ts`; powers `arch explain <CODE>` and the generated `docs/error-codes.md` (CI-checked). | `src/error-catalog.ts`, `scripts/gen-error-codes.ts` |
 
-(v0.9 was merged to `main` at `82ec142`; its publish/consumer-bump steps may still be pending the human — confirm before assuming 0.9.0 is on npm.)
+## 4d. What shipped — v1.0 (polish, ecosystem & launch), T6.1–T6.5
 
-### START HERE next: v0.11 (tooling/DX), then v1.0 (launch)
-See roadmap §8, §9. Highlights: lossless/recoverable parse tree (parser recovers, always returns an AST + errors), `arch fmt` (Wadler/Prettier Doc IR), full LSP, one-grammar-source (TextMate/Monarch/Prism), error catalog (T5.x); docs site + deployed playground, relational placement vocabulary, PNG backend, visual-regression, workspaces (T6.x). Each phase ends with a release + (version-only) consumer bump.
+The absolute/"manual" coordinate path stayed byte-identical to v0.11 throughout.
+
+| Task | What | Key files |
+|---|---|---|
+| **T6.2** | **Relational placement.** `room … right-of\|left-of\|below\|above <ref> [align <edge>] [gap <n>]` resolved to absolute coords by pure arithmetic in topological order — deterministic sugar, NOT an optimizer. Cycles → `E_LAYOUT_CYCLE`, unknown ref → `E_LAYOUT_REF`. Lexer learns `right-of`/`left-of` as compound keywords. | `src/layout.ts`, `src/elements/room.ts`, `src/ast.ts`, `src/ir.ts`, `src/lexer.ts`, `examples/relational.arch` |
+| **T6.3** | **PNG backend.** `renderPng(scene)` + `arch -f png` rasterize the SVG via the OPTIONAL, lazy `@resvg/resvg-js` + a **bundled font** (deterministic). Dep absent from the default bundle. | `src/backends/png.ts`, `assets/fonts/`, `tsup.config.ts` |
+| **T6.4** | **Visual-regression suite.** `pixelmatch` golden-PNG diffs (threshold 0); refresh with `UPDATE_GOLDENS=1`. Skips when resvg is absent. | `test/visual.test.ts`, `test/__goldens__/` |
+| **T6.1** | **Multi-format playground + docs site.** Playground downloads SVG/PNG/DXF/PDF (PNG/PDF via canvas + lazy jsPDF). VitePress `docs-site/` (guide, reference, errors, relational, examples gallery, ADRs) generated from canonical sources. **Both deployed** (see §1). | `playground/`, `docs-site/` |
+| **T6.5** | **Workspaces + maintainability.** npm workspaces (core at root + members); `bench --json` + `bench/compare.mjs` informational PR comment in CI; 4 ADRs; JSDoc; `language-reference.md`/`AGENTS.md`/`README.md` reconciled. | root `package.json`, `.github/workflows/ci.yml`, `docs/adr/`, `bench/` |
+
+**Post-1.0 fix (1.0.1):** the lazy optional-dep `import()`s now carry `/* webpackIgnore: true */ /* @vite-ignore */` so downstream webpack/Next.js builds don't choke on a native `.node` binary. **VS Code extension (0.2.0):** rebuilt as an esbuild-bundled, self-contained ~218 KB `.vsix` (core inlined; no `node_modules`/native binaries; grammar included); published as `ChanMeng.archlang` (publisher id is `ChanMeng`, not the npm scope `chanmeng666`; the name `archlang` because `archlang-vscode` is taken by an unrelated extension).
+
+---
+
+## 5. Where to continue (post-1.0)
+
+v1.0 is launched; there is no "next phase" queued. For new work:
+
+- **Roadmap deferrals worth revisiting** (noted in §4): PDF OCG layers, IFC wall *types*, `registerHatch` threading into the hatch table, value-function imports.
+- **Release process for the next version:** branch → implement (keep §6 golden rules + determinism) → bump `package.json` → update `CHANGELOG.md` → `npm publish --access public` (account uses auth-only 2FA, so no write-OTP) → tag `vX.Y.Z` + push → bump `archcanvas` to `^X.Y.Z` and verify. For the **VS Code extension**, bump `editors/vscode` + repackage with `npx vsce package --no-dependencies` and upload via the Marketplace web UI (no Azure DevOps org exists; see the memory note).
+- **Deployments** redeploy from `playground/`/`docs-site/` builds via the Vercel CLI (scope `she-sharp1`).
 
 ---
 
@@ -138,10 +166,11 @@ See roadmap §8, §9. Highlights: lossless/recoverable parse tree (parser recove
 
 ```bash
 cd D:\github_repository\archlang
-git branch --show-current          # expect: feat/v0.9-cad-fidelity
-git log --oneline -5               # see T3.1–T3.3
-npm install && npm test            # expect 204 passing
-npm run build && node dist/cli.js compile examples/studio.arch -o out.svg   # see cut walls + AIA layers
+git branch --show-current          # expect: main (clean, pushed)
+npm install && npm test            # expect 345 passing (one install bootstraps all workspaces)
+npm run build && node dist/cli.js compile examples/relational.arch -f svg -o out.svg   # relational placement
+node dist/cli.js compile examples/studio.arch -f png -o out.png                         # PNG (needs optional resvg)
 ```
 
-Then open the roadmap §6 (T3.4 onward) and continue.
+For the full current picture read **`AGENTS.md`** (status table + architecture); for the
+language read **`docs/language-reference.md`**; for design rationale **`docs/adr/`**.

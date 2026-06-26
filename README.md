@@ -17,6 +17,8 @@ A small declarative language that compiles to professional SVG floor plans — l
 [![Stars](https://img.shields.io/github/stars/chanmeng666/archlang?style=flat-square)](https://github.com/chanmeng666/archlang/stargazers)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-EA4AAA?style=flat-square&logo=githubsponsors)](https://github.com/sponsors/ChanMeng666)
 
+**[▶ Live Playground](https://archlang-playground.vercel.app)** · **[📖 Docs](https://archlang-docs.vercel.app)** · **[📦 npm](https://www.npmjs.com/package/@chanmeng666/archlang)** · **[🧩 VS Code extension](https://marketplace.visualstudio.com/items?itemName=ChanMeng.archlang)**
+
 </div>
 
 ## 🌟 Introduction
@@ -33,7 +35,8 @@ ideal both for humans and for AI agents that author or tweak plans and re-render
 *"make the bedroom 1 m wider"* becomes a one-number diff, not a re-roll of a raster image.
 
 The compiler is **pure TypeScript with zero runtime dependencies** and runs identically in
-**Node and the browser** — so the [playground](playground/index.html) is fully client-side.
+**Node and the browser** — so the **[live playground](https://archlang-playground.vercel.app)**
+is fully client-side.
 
 > ArchLang is the floor-plan engine behind [ArchCanvas](https://github.com/chanmeng666/archcanvas),
 > an AI design agent — but it stands alone and is useful in any app or script.
@@ -141,23 +144,33 @@ plan "Studio 1BR" {
 
 ### Try it live
 
-The [`playground/`](playground) is a Vite + CodeMirror 6 app — a client-side editor with syntax
-highlighting, inline lint (fed by the compiler's `diagnostics`), live SVG preview, example plans,
-and **SVG / PNG / DXF / PDF download**. From the repo root (npm workspaces):
+**▶ [archlang-playground.vercel.app](https://archlang-playground.vercel.app)** — a client-side
+Vite + CodeMirror 6 editor with syntax highlighting, inline lint (fed by the compiler's
+`diagnostics`), live SVG preview, example plans, and **SVG / PNG / DXF / PDF download**. Nothing
+is sent to a server.
+
+To run it locally from the repo root (npm workspaces):
 
 ```bash
 npm install            # bootstraps all workspaces
 npm run playground:dev # builds the core, then opens the playground dev server
 ```
 
+### Editor support
+
+Install the **[ArchLang VS Code extension](https://marketplace.visualstudio.com/items?itemName=ChanMeng.archlang)**
+(`ext install ChanMeng.archlang`) for syntax highlighting and full language support — live
+diagnostics, hover, completion, go-to-definition, rename, and signature help — on `.arch` files.
+
 ## 📚 Documentation
 
+- **[📖 Docs site](https://archlang-docs.vercel.app)** — the hosted guide, reference, error catalog, examples gallery, and ADRs.
 - **[Language Reference](docs/language-reference.md)** — every statement, with syntax and defaults.
 - **[Error catalog](docs/error-codes.md)** — every `E_*`/`W_*` code with a cause and a fix.
 - **[Architecture Decision Records](docs/adr)** — the key design decisions and their trade-offs.
 - **[Examples](examples)** — `studio`, `two-bed`, `parametric`, `themed`, `relational`.
-- **[AGENTS.md](AGENTS.md)** — orientation for AI agents working in this repo.
-- **Docs site** — `npm run docs:build` builds the VitePress site in `docs-site/`.
+- **[AGENTS.md](AGENTS.md)** — orientation for AI agents working in this repo (current status + architecture).
+- Build the docs site locally with `npm run docs:build` (VitePress, in `docs-site/`).
 
 ## 🤝 Contributing
 
