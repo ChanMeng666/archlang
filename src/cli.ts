@@ -3,7 +3,7 @@
 
 import { readFileSync, writeFileSync, watchFile } from "node:fs";
 import { resolve as resolvePath, dirname } from "node:path";
-import { compile, format, formatDiagnostic, loadClipperBackend, setGeometryBackend, toDxf, toPdf } from "./index.js";
+import { compile, explain, format, formatDiagnostic, loadClipperBackend, setGeometryBackend, toDxf, toPdf } from "./index.js";
 import type { World } from "./index.js";
 
 type Format = "svg" | "dxf" | "pdf";
@@ -128,10 +128,27 @@ async function main(): Promise<void> {
         `Usage:\n` +
         `  arch compile <in.arch> [-o out] [-w width] [-f svg|dxf|pdf]\n` +
         `  arch watch   <in.arch> [-o out] [-w width] [-f svg|dxf|pdf]\n` +
-        `  arch fmt     <in.arch> [--write]\n\n` +
+        `  arch fmt     <in.arch> [--write]\n` +
+        `  arch explain <CODE>            (e.g. E_ROOM_SIZE)\n\n` +
         `Formats: svg (default) · dxf (zero-dep) · pdf (needs optional pdfkit + svg-to-pdfkit)\n`,
     );
     process.exit(cmd ? 0 : 1);
+  }
+
+  // `explain` prints a catalog entry for an E_*/W_* code — no file needed.
+  if (cmd === "explain") {
+    const code = args._[0];
+    if (!code) {
+      process.stderr.write("error: missing error code (e.g. arch explain E_ROOM_SIZE)\n");
+      process.exit(1);
+    }
+    const text = explain(code.toUpperCase());
+    if (!text) {
+      process.stderr.write(`error: unknown error code "${code}"\n`);
+      process.exit(1);
+    }
+    process.stdout.write(text + "\n");
+    process.exit(0);
   }
 
   // `fmt` is a pure text→text command — no geometry backend, no output format.

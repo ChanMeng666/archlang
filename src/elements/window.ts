@@ -4,7 +4,7 @@ import type { Point, WindowNode } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RWindow } from "../ir.js";
-import { add, mul, normal, sub, unit } from "../geometry.js";
+import { add, mul, nearestWallNote, normal, sub, unit } from "../geometry.js";
 
 export const windowEl: ElementDef = {
   kind: "window",
@@ -43,7 +43,8 @@ export const windowEl: ElementDef = {
       ctx.diag({ severity: "error", message: `Window "${id}" must have a positive width`, code: "E_WINDOW_WIDTH", span: n.span });
     }
     if (ctx.walls.length > 0 && !ctx.isOnWall(at, n.wall)) {
-      ctx.diag({ severity: "warning", message: `Window "${id}" does not lie on any wall`, code: "W_WINDOW_OFF_WALL", span: n.span });
+      const note = nearestWallNote(at, ctx.walls);
+      ctx.diag({ severity: "warning", message: `Window "${id}" does not lie on any wall`, code: "W_WINDOW_OFF_WALL", span: n.span, relatedSpans: note ? [note] : undefined });
     }
     return { kind: "window", id, at, width, host: ctx.hostSegment(at, n.wall), span: n.span };
   },

@@ -41,6 +41,10 @@ export { format } from "./format.js";
 // a thin adapter; these are isomorphic and unit-testable.
 export { hover, completion, definition, rename, signatureHelp } from "./lsp.js";
 export type { HoverResult, CompletionItem, CompletionKind, TextEdit, SignatureResult } from "./lsp.js";
+// Error catalog (v0.11): every E_*/W_* code with cause/fix/example. Backs
+// `arch explain <CODE>` and the generated docs/error-codes.md.
+export { explain, ERROR_CATALOG, ERROR_CODES } from "./error-catalog.js";
+export type { CatalogEntry } from "./error-catalog.js";
 
 // IR + export backends (for consumers that want resolved geometry or other
 // output formats). `resolve`/`toDxf` are pure & zero-dep; `toPdf` lazily loads

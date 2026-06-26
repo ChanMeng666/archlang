@@ -54,6 +54,7 @@
     "cli": "tsx src/cli.ts",
     "bench": "tsx bench/run.ts",
     "gen:grammars": "tsx scripts/gen-grammars.ts",
+    "gen:errors": "tsx scripts/gen-error-codes.ts",
     "prepublishOnly": "npm run build && npm run test"
   },
   "devDependencies": {

@@ -1,0 +1,201 @@
+/**
+ * The ArchLang diagnostic catalog: every `E_*` / `W_*` code with its cause, fix,
+ * and a tiny example. One source for `arch explain <CODE>` and the generated
+ * `docs/error-codes.md` (see `scripts/gen-error-codes.ts`). The codes themselves
+ * are raised across `src/` (validate/resolve/import/builtins/elements); this file
+ * documents them.
+ */
+
+export interface CatalogEntry {
+  code: string;
+  severity: "error" | "warning";
+  /** One-line summary. */
+  message: string;
+  /** Why the compiler raises it. */
+  cause: string;
+  /** How to resolve it. */
+  fix: string;
+  /** A minimal snippet illustrating the cause (or the fix). */
+  example: string;
+}
+
+const E = (code: string, message: string, cause: string, fix: string, example: string): CatalogEntry => ({ code, severity: "error", message, cause, fix, example });
+const W = (code: string, message: string, cause: string, fix: string, example: string): CatalogEntry => ({ code, severity: "warning", message, cause, fix, example });
+
+/** The catalog, keyed by code. Frozen so it cannot be mutated at runtime. */
+export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.freeze({
+  E_ARGCOUNT: E("E_ARGCOUNT", "Component called with the wrong number of arguments.",
+    "A component instance supplies more or fewer arguments than the component declares parameters.",
+    "Pass exactly one argument per declared parameter.",
+    'component bed(x, y) { … }\nbed(300)        # error: expects 2 arguments'),
+  E_ARITY: E("E_ARITY", "Built-in function called with the wrong number of arguments.",
+    "A built-in (e.g. abs, sqrt, len) was called with the wrong argument count.",
+    "Check the function's arity; most built-ins take one argument.",
+    "let x = abs(1, 2)   # error: abs expects 1 argument"),
+  E_ASSIGN_UNDEF: E("E_ASSIGN_UNDEF", "Assignment to an undeclared name.",
+    "`NAME = value` was used for a name never introduced with `let`.",
+    "Declare it first with `let`, or fix a typo in the name.",
+    "x = 5           # error: declare with `let x = …` first"),
+  E_CALL_DEPTH: E("E_CALL_DEPTH", "Value-function call stack too deep.",
+    "A value-function recurses (directly or mutually) beyond the call-depth limit.",
+    "Make the recursion terminate, or rewrite it iteratively with a bounded `while`.",
+    "let f(n) = f(n + 1)   # error: never terminates"),
+  E_COLUMN_SIZE: E("E_COLUMN_SIZE", "Column must have a positive size.",
+    "A column's width or height evaluated to zero or a negative number.",
+    "Give the column a positive `size W x H`.",
+    "column at (0,0) size 0x300   # error: width is 0"),
+  E_DIV_ZERO: E("E_DIV_ZERO", "Division or modulo by zero.",
+    "An expression divides (or takes a remainder) by a value that evaluates to zero.",
+    "Guard the divisor, or use a non-zero value.",
+    "let x = 10 / 0   # error"),
+  E_DOMAIN: E("E_DOMAIN", "Math domain error.",
+    "A built-in received an out-of-domain argument (e.g. `sqrt` of a negative number).",
+    "Pass a value within the function's domain.",
+    "let x = sqrt(-1)   # error"),
+  E_DOOR_WIDTH: E("E_DOOR_WIDTH", "Door must have a positive width.",
+    "A door's width evaluated to zero or a negative number.",
+    "Give the door a positive `width`.",
+    "door at (0,0) width 0   # error"),
+  E_DUP_ID: E("E_DUP_ID", "Duplicate element id.",
+    "Two elements declare the same `id=…`; ids must be unique across the plan.",
+    "Rename one of them, or drop the explicit id to auto-generate a unique one.",
+    "room id=a at (0,0) size 1x1\nroom id=a at (1,0) size 1x1   # error: duplicate id \"a\""),
+  E_FURN_SIZE: E("E_FURN_SIZE", "Furniture must have a positive size.",
+    "A furniture item's width or height evaluated to zero or a negative number.",
+    "Give the item a positive `size W x H`.",
+    "furniture bed at (0,0) size 0x2000   # error"),
+  E_IMPORT_BAD_SPEC: E("E_IMPORT_BAD_SPEC", "Malformed import spec.",
+    "The string after `import` is not a recognizable module reference.",
+    'Use a relative path ("lib/x.arch") or a namespaced spec ("@scope/name:1.0.0").',
+    'import "???" : a   # error'),
+  E_IMPORT_CONFLICT: E("E_IMPORT_CONFLICT", "Imported name conflicts with an existing component.",
+    "An imported component has the same name as one already defined or imported.",
+    "Rename with `as`, or remove the duplicate.",
+    'import "lib.arch": bed as lib_bed'),
+  E_IMPORT_CYCLE: E("E_IMPORT_CYCLE", "Cyclic import.",
+    "Modules import each other in a cycle, which cannot be resolved.",
+    "Break the cycle so module dependencies form a tree.",
+    "# a.arch imports b.arch which imports a.arch  → error"),
+  E_IMPORT_NOT_EXPORTED: E("E_IMPORT_NOT_EXPORTED", "Imported name is not exported by the module.",
+    "The module has no component with the requested name.",
+    "Import a name the module actually defines (check its `component`s).",
+    'import "lib.arch": nope   # error if lib.arch has no `component nope`'),
+  E_IMPORT_NOT_FOUND: E("E_IMPORT_NOT_FOUND", "Import path could not be resolved.",
+    "The World could not read the module at the given path.",
+    "Check the path (relative to the importing file) and that the file exists.",
+    'import "lib/missing.arch": a   # error'),
+  E_IMPORT_PARSE: E("E_IMPORT_PARSE", "Imported module has a parse error.",
+    "The module referenced by `import` does not itself parse.",
+    "Fix the syntax error in the imported module.",
+    "# error originates in the imported file"),
+  E_INDEX: E("E_INDEX", "Array index out of range.",
+    "`arr[i]` used an index outside `0 .. len(arr) - 1`.",
+    "Clamp or check the index against `len(arr)`.",
+    "let a = [1, 2]\nlet x = a[5]   # error"),
+  E_RANGE_LIMIT: E("E_RANGE_LIMIT", "Range too large.",
+    "A `lo..hi` range would expand to more elements than the safety cap allows.",
+    "Use a smaller range, or restructure to avoid materializing it.",
+    "for i in 0..1000000 { … }   # error: range too large"),
+  E_RECURSION: E("E_RECURSION", "Component recursion too deep.",
+    "Component instantiation nested beyond the depth limit (usually unbounded self-instantiation).",
+    "Add a base case so the recursion terminates.",
+    "component r(n) { r(n) }   # error: never terminates"),
+  E_REDEF: E("E_REDEF", "Name already defined in this scope.",
+    "A `let` re-declares a name already bound in the same scope.",
+    "Rename one binding, or use `NAME = …` to reassign instead of redeclaring.",
+    "let x = 1\nlet x = 2   # error: redefinition"),
+  E_ROOM_SIZE: E("E_ROOM_SIZE", "Room must have a positive size.",
+    "A room's width or height evaluated to zero or a negative number.",
+    "Give the room a positive `size W x H`.",
+    "room at (0,0) size 0x4000   # error: width is 0"),
+  E_TYPE: E("E_TYPE", "Type mismatch.",
+    "A value was used where another type was required (e.g. a string where a number is expected, or a non-array in `for`).",
+    "Convert or supply the expected type.",
+    'room at (0,0) size "big" x 10   # error: size needs numbers'),
+  E_UNKNOWN_COMPONENT: E("E_UNKNOWN_COMPONENT", "Unknown component.",
+    "An instance calls a component name that is not defined or imported.",
+    "Define the component, import it, or fix the name (see the suggestion hint).",
+    "sofa(0, 0)   # error if no `component sofa` is in scope"),
+  E_UNKNOWN_FN: E("E_UNKNOWN_FN", "Unknown function.",
+    "A call uses a name that is neither a built-in nor a value-function in scope.",
+    "Define it with `let f(…) = …`, or fix the name.",
+    "let x = frobnicate(2)   # error"),
+  E_UNKNOWN_REF: E("E_UNKNOWN_REF", "Unknown reference.",
+    "An expression references a name that is not bound in scope.",
+    "Declare it with `let`, pass it as a parameter, or fix the typo.",
+    "let x = y + 1   # error if `y` is undefined"),
+  E_WALL_THICKNESS: E("E_WALL_THICKNESS", "Wall must have a positive thickness.",
+    "A wall's `thickness` evaluated to zero or a negative number.",
+    "Give the wall a positive `thickness`.",
+    "wall exterior thickness 0 { (0,0) (1,0) }   # error"),
+  E_WHILE_LIMIT: E("E_WHILE_LIMIT", "`while` exceeded its iteration cap.",
+    "A `while` ran more times than the safety cap allows (usually a condition that never becomes false).",
+    "Ensure the loop body updates a binding so the condition eventually fails.",
+    "let i = 0\nwhile i < 1 { column at (0,0) size 1x1 }   # error: i never changes"),
+  E_WINDOW_WIDTH: E("E_WINDOW_WIDTH", "Window must have a positive width.",
+    "A window's width evaluated to zero or a negative number.",
+    "Give the window a positive `width`.",
+    "window at (0,0) width 0   # error"),
+
+  W_DOOR_OFF_WALL: W("W_DOOR_OFF_WALL", "Door does not lie on any wall.",
+    "A door's position is not within tolerance of any wall segment, so it has no host.",
+    "Move the door onto a wall, or name its host with `wall <id|category>`. The diagnostic points at the nearest wall.",
+    "door at (9999,9999) width 900   # warning: not on a wall"),
+  W_EMPTY_PLAN: W("W_EMPTY_PLAN", "Empty plan.",
+    "The plan resolved to no drawable elements.",
+    "Add at least one element (wall, room, …).",
+    'plan "Empty" { units mm }   # warning'),
+  W_HATCH_SCALE: W("W_HATCH_SCALE", "Hatch scale must be positive; using 1.",
+    "A wall material `scale` evaluated to zero or a negative number.",
+    "Use a positive `scale`.",
+    "wall exterior thickness 200 material brick scale 0 { (0,0) (1,0) }"),
+  W_ROOM_OVERLAP: W("W_ROOM_OVERLAP", "Rooms overlap.",
+    "Two room rectangles intersect.",
+    "Adjust positions/sizes if the overlap is unintended (it is allowed).",
+    "room at (0,0) size 2000x2000\nroom at (1000,0) size 2000x2000   # warning"),
+  W_SANITIZED_CONFIG: W("W_SANITIZED_CONFIG", "A disallowed config value was stripped.",
+    "A theme/style value contained markup or a `data:` URL and was blanked for safety.",
+    "Use a plain colour/string value (no `<`, `>`, or `url(data:…)`).",
+    'theme { wall: "<script>" }   # warning: stripped'),
+  W_UNKNOWN_MATERIAL: W("W_UNKNOWN_MATERIAL", "Unknown wall material; using the default hatch.",
+    "A wall `material` name is not one of the known hatches.",
+    "Use a known material (e.g. brick, concrete, insulation, tile) or omit it.",
+    "wall exterior thickness 200 material marble { (0,0) (1,0) }   # warning"),
+  W_UNKNOWN_STYLE_KEY: W("W_UNKNOWN_STYLE_KEY", "Unknown style key.",
+    "A `style <kind> { … }` block uses a key not valid for that element kind.",
+    "Use a valid key (e.g. fill / stroke / label, depending on the kind).",
+    "style room { nope: \"#000\" }   # warning"),
+  W_UNKNOWN_THEME_KEY: W("W_UNKNOWN_THEME_KEY", "Unknown theme key.",
+    "A `theme { … }` block uses a key that is not a theme property or alias.",
+    "Use a known theme key (see the language reference / hover).",
+    "theme { nope: \"#000\" }   # warning"),
+  W_WINDOW_OFF_WALL: W("W_WINDOW_OFF_WALL", "Window does not lie on any wall.",
+    "A window's position is not within tolerance of any wall segment, so it has no host.",
+    "Move the window onto a wall, or name its host with `wall <id|category>`. The diagnostic points at the nearest wall.",
+    "window at (9999,9999) width 1200   # warning: not on a wall"),
+});
+
+/** All catalog codes, sorted (errors then warnings, alphabetically within). */
+export const ERROR_CODES: readonly string[] = Object.keys(ERROR_CATALOG).sort((a, b) => {
+  const sev = (c: string): number => (ERROR_CATALOG[c].severity === "error" ? 0 : 1);
+  return sev(a) - sev(b) || a.localeCompare(b);
+});
+
+/** Render a catalog entry as a plain-text block for `arch explain`, or null. */
+export function explain(code: string): string | null {
+  const e = ERROR_CATALOG[code];
+  if (!e) return null;
+  return [
+    `${e.code}  (${e.severity})`,
+    `  ${e.message}`,
+    "",
+    "Cause:",
+    `  ${e.cause}`,
+    "",
+    "Fix:",
+    `  ${e.fix}`,
+    "",
+    "Example:",
+    ...e.example.split("\n").map((l) => `  ${l}`),
+  ].join("\n");
+}

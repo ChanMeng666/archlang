@@ -145,6 +145,29 @@ export function hostSegmentForWalls(walls: WallLike[], at: Point, ref?: string):
 }
 
 /**
+ * The wall nearest to `p` (by closest segment), as a related-span diagnostic
+ * note — used to point a "door/window not on any wall" warning at the wall it
+ * was probably meant for. Returns null if no wall carries a span.
+ */
+export function nearestWallNote<T extends WallLike & { span?: { start: number; end: number } }>(
+  p: Point,
+  walls: readonly T[],
+): { span: { start: number; end: number }; message: string } | null {
+  let best: T | undefined;
+  let bestDist = Infinity;
+  for (const w of walls) {
+    for (const s of segmentsOfWall(w)) {
+      const dist = distPointToSegment(p, s.a, s.b);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = w;
+      }
+    }
+  }
+  return best?.span ? { span: best.span, message: `nearest wall "${best.id}" is here` } : null;
+}
+
+/**
  * Single-pass host lookup: the nearest wall segment AND whether the point lies
  * on some wall, computed in one scan (distPointToSegment evaluated once per
  * segment). Byte-identical to calling {@link hostSegmentForWalls} and
