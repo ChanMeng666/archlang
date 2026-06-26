@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-26
+
+### Added — Polish, ecosystem & launch (v1.0)
+
+The 1.0 release rounds out the language and ships the public surface that makes
+ArchLang adoptable: relational placement, a PNG backend, a visual-regression
+safety net, a multi-format playground, a docs site, and a workspaces monorepo.
+The core stays pure, deterministic, and zero-runtime-dependency, and **every
+existing rendered output (the absolute/manual coordinate path) is byte-identical**
+to v0.11.
+
+- **Relational placement (`right-of` / `left-of` / `below` / `above`).** A room
+  can be positioned relative to another with an optional `align` (`top|middle|
+  bottom` or `left|center|right`) and `gap`, instead of absolute `at (x,y)`.
+  Positions resolve to absolute coordinates by **pure arithmetic in dependency
+  order** (a topological pass in `src/layout.ts`) — deterministic sugar, not an
+  optimizer. Reference cycles raise `E_LAYOUT_CYCLE`; unknown references raise
+  `E_LAYOUT_REF`. The absolute path is unchanged and remains the default. The
+  lexer learns `right-of`/`left-of` as compound keywords; the formatter, error
+  catalog, and editor grammars are updated; new `examples/relational.arch`.
+- **PNG export backend.** `renderPng(scene)` (exported) and `arch compile -f png`
+  rasterize the Scene's SVG with the **optional, lazily-loaded** `@resvg/resvg-js`
+  and a **bundled font** (system fonts disabled), so output is deterministic and
+  byte-identical across machines. The dependency is absent from the default
+  bundle (`optionalDependencies`, external to the build, font read lazily).
+- **Visual-regression suite.** Golden PNGs are pixel-diffed with `pixelmatch`
+  (strict threshold) so geometry changes are caught visually; refresh with
+  `UPDATE_GOLDENS=1`. Skips when the optional raster dep is absent.
+- **Playground multi-format download.** The Vite + CodeMirror playground now
+  downloads **SVG, PNG, DXF, and PDF** (PNG/PDF via canvas + lazily-loaded jsPDF,
+  bounded so large plans don't overflow the canvas limit).
+- **Documentation site.** A VitePress site (`docs-site/`) with a guide, the
+  language reference, the error catalog, a relational-placement page, an examples
+  gallery, and the ADRs — all generated from the canonical repo sources so it
+  cannot drift.
+- **Workspaces monorepo.** The core stays the published root package; `editors/
+  vscode`, `playground`, and `docs-site` are npm-workspace members sharing one
+  root lockfile, so a single `npm install` bootstraps everything.
+- **Architecture Decision Records** (`docs/adr/`): hand-written parser vs Lezer;
+  optional-dependency geometry; expand-time scripting; relational placement is
+  not an optimizer.
+- **Benchmarks in CI.** `bench/run.ts --json` + `bench/compare.mjs` post an
+  informational per-stage regression comment on PRs (never gates the build).
+
+### Changed
+
+- `CompileResult` is unchanged in shape (append-only); the PNG output is produced
+  on demand from `scene`, not added as a field.
+- `docs/language-reference.md` folded forward to v1.0 (relational placement, the
+  four export formats); `AGENTS.md` and `README.md` refreshed to the current
+  Scene-IR / registry / World architecture and the v1.0 surface.
+- Repo-wide LF line endings enforced via `.gitattributes` (determinism hygiene).
+
 ## [0.11.0] - 2026-06-26
 
 ### Added — IDE-grade tooling & DX
