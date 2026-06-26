@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**30 errors** · **9 warnings**
+**30 errors** · **14 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -39,10 +39,15 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_WALL_THICKNESS`](#e_wall_thickness) | error | Wall must have a positive thickness. |
 | [`E_WHILE_LIMIT`](#e_while_limit) | error | `while` exceeded its iteration cap. |
 | [`E_WINDOW_WIDTH`](#e_window_width) | error | Window must have a positive width. |
+| [`W_BEDROOM_NO_WINDOW`](#w_bedroom_no_window) | warning | Bedroom has no window. |
+| [`W_DOOR_CLEARANCE`](#w_door_clearance) | warning | Door is narrower than the minimum clear width. |
 | [`W_DOOR_OFF_WALL`](#w_door_off_wall) | warning | Door does not lie on any wall. |
 | [`W_EMPTY_PLAN`](#w_empty_plan) | warning | Empty plan. |
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
+| [`W_NO_ENTRANCE`](#w_no_entrance) | warning | The plan has no exterior door. |
+| [`W_ROOM_DISCONNECTED`](#w_room_disconnected) | warning | Room has no door — it can't be entered. |
 | [`W_ROOM_OVERLAP`](#w_room_overlap) | warning | Rooms overlap. |
+| [`W_ROOM_TOO_SMALL`](#w_room_too_small) | warning | Room is implausibly small. |
 | [`W_SANITIZED_CONFIG`](#w_sanitized_config) | warning | A disallowed config value was stripped. |
 | [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material; using the default hatch. |
 | [`W_UNKNOWN_STYLE_KEY`](#w_unknown_style_key) | warning | Unknown style key. |
@@ -415,6 +420,30 @@ while i < 1 { column at (0,0) size 1x1 }   # error: i never changes
 window at (0,0) width 0   # error
 ```
 
+## W_BEDROOM_NO_WINDOW
+
+*warning* — Bedroom has no window.
+
+**Cause.** A room labelled as a bedroom has no window on its perimeter (natural light / egress).
+
+**Fix.** Add a `window` on an exterior wall of the room.
+
+```arch
+room at (0,0) size 3000x4000 label "Bedroom"   # lint: no window
+```
+
+## W_DOOR_CLEARANCE
+
+*warning* — Door is narrower than the minimum clear width.
+
+**Cause.** A door's width is below the configured minimum passable width (default 700 mm).
+
+**Fix.** Widen the door to at least the minimum clear width.
+
+```arch
+door at (0,0) width 500 wall exterior   # lint: under 700 mm
+```
+
 ## W_DOOR_OFF_WALL
 
 *warning* — Door does not lie on any wall.
@@ -451,6 +480,30 @@ plan "Empty" { units mm }   # warning
 wall exterior thickness 200 material brick scale 0 { (0,0) (1,0) }
 ```
 
+## W_NO_ENTRANCE
+
+*warning* — The plan has no exterior door.
+
+**Cause.** The plan has rooms and an exterior wall but no door hosted on an exterior wall, so the building cannot be entered.
+
+**Fix.** Add a `door` on an `exterior` wall.
+
+```arch
+wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }   # lint: no way in
+```
+
+## W_ROOM_DISCONNECTED
+
+*warning* — Room has no door — it can't be entered.
+
+**Cause.** No door lies on any of the room's walls, so there is no way into the room.
+
+**Fix.** Add a `door` on one of the room's walls.
+
+```arch
+room id=r at (0,0) size 3000x3000   # lint: no door on its perimeter
+```
+
 ## W_ROOM_OVERLAP
 
 *warning* — Rooms overlap.
@@ -462,6 +515,18 @@ wall exterior thickness 200 material brick scale 0 { (0,0) (1,0) }
 ```arch
 room at (0,0) size 2000x2000
 room at (1000,0) size 2000x2000   # warning
+```
+
+## W_ROOM_TOO_SMALL
+
+*warning* — Room is implausibly small.
+
+**Cause.** A room's floor area is below the configured minimum (default 4 m²).
+
+**Fix.** Increase its `size`, or merge it into an adjacent space.
+
+```arch
+room at (0,0) size 1000x1000 label "Closet"   # lint: 1 m²
 ```
 
 ## W_SANITIZED_CONFIG

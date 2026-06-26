@@ -118,6 +118,27 @@ arch fmt     floorplan.arch --write             # format source in place
 arch explain E_LAYOUT_CYCLE                      # explain a diagnostic
 ```
 
+### 🤖 Use it from an AI agent (CLI-native, no MCP)
+
+ArchLang's agent interface is its CLI — token-cheap, runs in any harness, nothing to configure.
+Every command takes `--json` (structured result on stdout, messages on stderr) with deterministic
+exit codes (`0` ok · `2` user-source error · `1` IO · `3` usage), and every diagnostic carries a
+`fix`, so the self-correction loop needs no docs lookup. *(There is deliberately no MCP server: a
+[CLI costs nothing in context until called](https://www.firecrawl.dev/blog/mcp-vs-cli), where an MCP
+schema sits in the window permanently.)* Point your agent at [`SKILL.md`](SKILL.md), or:
+
+```bash
+npx @chanmeng666/archlang spec                 # the WHOLE language in one page (~2k tokens) — read first
+npx @chanmeng666/archlang compile plan.arch -o out.svg --json   # render; JSON: { ok, diagnostics, summary }
+echo '<source>' | npx @chanmeng666/archlang compile - -o - -f svg   # stdin → SVG on stdout
+npx @chanmeng666/archlang describe plan.arch --json            # verify: rooms, areas, adjacency, door connections
+npx @chanmeng666/archlang lint plan.arch --json                # architectural soundness warnings
+```
+
+The loop: `spec` → write `.arch` → `compile --json` → on `ok:false` fix via each
+`diagnostics[].fix` → `describe --json` to confirm intent (room count, areas, adjacency) **without
+rendering an image**.
+
 **A taste of the language** (see [`examples/`](examples) and the
 [Language Reference](docs/language-reference.md)):
 

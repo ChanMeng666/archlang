@@ -1,0 +1,23 @@
+# A small open-plan office: open area + meeting room + kitchenette.
+plan "Small Office" {
+  units mm
+  grid 100
+  scale 1:100
+  north up
+
+  wall exterior thickness 200 { (0,0) (12000,0) (12000,8000) (0,8000) close }
+  wall partition thickness 100 { (8000,0) (8000,8000) }
+  wall partition thickness 100 { (8000,4000) (12000,4000) }
+
+  room id=r_open at (0,0)          size 8000x8000 label "Open Office"
+  room id=r_meet at (8000,0)       size 4000x4000 label "Meeting Room"
+  room id=r_kit  at (8000,4000)    size 4000x4000 label "Kitchenette"
+
+  door at (3000,8000) width 1200 wall exterior  hinge left swing in
+  door at (8000,2000) width 900  wall partition hinge left swing in
+  door at (8000,6000) width 900  wall partition hinge left swing in
+
+  window at (2000,0)     width 2400 wall exterior
+  window at (6000,0)     width 2400 wall exterior
+  window at (12000,2000) width 1800 wall exterior
+}

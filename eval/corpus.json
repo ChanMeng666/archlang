@@ -1,0 +1,32 @@
+[
+  {
+    "id": "studio-1br",
+    "prompt": "Draw a one-bedroom studio apartment of about 42 m². It should have a living/kitchen area, a separate bedroom, and a bathroom. Put a window in the bedroom and a front door.",
+    "golden": "examples/studio.arch",
+    "expect": {
+      "rooms": 3,
+      "labelsInclude": ["Bedroom", "Bath"],
+      "floorAreaM2": [40, 44]
+    }
+  },
+  {
+    "id": "two-bedroom-flat",
+    "prompt": "Lay out a two-bedroom flat with a kitchen/living area, a master bedroom, a second bedroom, a bathroom, and a hall connecting them. Add windows on the exterior walls.",
+    "golden": "examples/two-bed.arch",
+    "expect": {
+      "rooms": 5,
+      "labelsInclude": ["Master Bedroom", "Bedroom 2", "Bathroom"],
+      "floorAreaM2": [70, 90]
+    }
+  },
+  {
+    "id": "small-office",
+    "prompt": "Design a small open-plan office (~100 m²): one large open work area, a meeting room, and a kitchenette. Give each room a door and put windows on the outside walls.",
+    "golden": "eval/goldens/office.arch",
+    "expect": {
+      "rooms": 3,
+      "labelsInclude": ["Open Office", "Meeting Room"],
+      "floorAreaM2": [90, 100]
+    }
+  }
+]

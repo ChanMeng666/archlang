@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-27
+
+### Added — AI-agent-native interface (CLI-first)
+
+ArchLang's interface for AI agents is its **CLI** — token-cheap, harness-agnostic, and
+self-correcting — not an MCP server (a CLI costs nothing in context until called, where an MCP
+schema sits in the window permanently). All additions are pure and keep existing rendered output
+byte-identical.
+
+- **`describe(source)` → semantic JSON** (`src/describe.ts`). A text-only verification channel:
+  rooms (areas, bounding boxes, edge-touch adjacency), doors (what spaces they connect), windows
+  (the room they serve), and totals. Exported from the public surface and surfaced as
+  `arch describe --json`.
+- **`lint(source)` → architectural soundness** (`src/lint.ts`). Habitability rules as `W_*`
+  diagnostics: `W_ROOM_TOO_SMALL`, `W_ROOM_DISCONNECTED`, `W_BEDROOM_NO_WINDOW`, `W_DOOR_CLEARANCE`,
+  `W_NO_ENTRANCE`. Configurable ruleset; surfaced as `arch lint --json`. Codes documented in the
+  catalog (`arch explain`).
+- **Agent-native CLI** (`src/cli.ts`). Every command takes `--json` (result on stdout, messages on
+  stderr) with deterministic exit codes (`0` ok · `2` user-source error · `1` IO · `3` usage); each
+  JSON diagnostic carries the catalog `fix`. Source reads from stdin (`-`); artifacts write to
+  stdout (`-o -`). New verbs: `validate`, `describe`, `lint`, `spec`, `new`/`init`.
+- **`arch spec` / `spec.llm.md`** — the whole language in one page (~2k tokens), generated from
+  `src/grammar/tokens.ts` + `examples/` by `npm run gen:spec` (drift-guarded in CI).
+- **`SKILL.md`** — a filesystem agent Skill that teaches the `spec → write → compile/describe/lint`
+  loop. `llms.txt`, `AGENTS.md`, and the README now document the zero-install CLI loop
+  (`npx @chanmeng666/archlang …`).
+- **NL→ArchLang eval harness** (`eval/`). Scores natural-language prompts against semantic
+  expectations; offline mode (`npm run eval`) is a CI authorability-regression guard, live mode
+  (`--live`, needs `ANTHROPIC_API_KEY`) produces the headline number.
+- Shared pure analysis layer (`src/analyze.ts`) backs `describe` and `lint` (resolve pipeline +
+  rectilinear geometry, no duplication).
+
 ## [1.0.1] - 2026-06-26
 
 ### Fixed

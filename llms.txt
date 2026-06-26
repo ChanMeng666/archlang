@@ -14,11 +14,27 @@ of the project for large language models and AI agents.
 ## Key documents
 
 - [README](https://github.com/chanmeng666/archlang/blob/main/README.md): overview, features, installation, usage
+- [spec.llm.md](https://github.com/chanmeng666/archlang/blob/main/spec.llm.md): the WHOLE language in one page (~2k tokens) — read this to author `.arch`
+- [SKILL.md](https://github.com/chanmeng666/archlang/blob/main/SKILL.md): the agent skill — how to drive ArchLang via the CLI
 - [AGENTS.md](https://github.com/chanmeng666/archlang/blob/main/AGENTS.md): how AI agents should work in this repo
 - [CONTRIBUTING](https://github.com/chanmeng666/archlang/blob/main/CONTRIBUTING.md): development setup and contribution workflow
 - [CHANGELOG](https://github.com/chanmeng666/archlang/blob/main/CHANGELOG.md): version history
 
-## For agents
+## To USE ArchLang (author floor plans)
 
-To work effectively here: read the README and AGENTS.md first, then follow the commands and
-conventions they describe. Prefer the project's own scripts over ad-hoc commands.
+ArchLang is agent-native via its CLI — no server, no MCP, nothing to configure:
+
+```bash
+npx @chanmeng666/archlang spec                 # learn the whole language (read this first)
+npx @chanmeng666/archlang compile plan.arch -o out.svg --json   # render; JSON: { ok, diagnostics, summary }
+npx @chanmeng666/archlang describe plan.arch --json             # verify: rooms, areas, adjacency, door connections
+npx @chanmeng666/archlang lint plan.arch --json                 # architectural soundness warnings
+```
+
+Loop: `spec` → write `.arch` → `compile --json` → if `ok:false` (exit 2) fix via each
+`diagnostics[].fix` → `describe --json` to confirm intent. See [SKILL.md](https://github.com/chanmeng666/archlang/blob/main/SKILL.md).
+
+## To CONTRIBUTE (work on the repo)
+
+Read the README and AGENTS.md first, then follow the commands and conventions they describe. Prefer
+the project's own scripts over ad-hoc commands.

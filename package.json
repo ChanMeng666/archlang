@@ -1,6 +1,6 @@
 {
   "name": "@chanmeng666/archlang",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.",
   "keywords": [
     "architecture",
@@ -39,6 +39,8 @@
   "files": [
     "dist",
     "examples",
+    "spec.llm.md",
+    "SKILL.md",
     "README.md",
     "LICENSE"
   ],
@@ -61,6 +63,8 @@
     "bench:json": "tsx bench/run.ts --json",
     "gen:grammars": "tsx scripts/gen-grammars.ts",
     "gen:errors": "tsx scripts/gen-error-codes.ts",
+    "gen:spec": "tsx scripts/gen-llm-spec.ts",
+    "eval": "tsx eval/run.ts",
     "docs:dev": "npm run build && npm -w docs-site run dev",
     "docs:build": "npm run build && npm -w docs-site run build",
     "playground:dev": "npm run build && npm -w archlang-playground run dev",

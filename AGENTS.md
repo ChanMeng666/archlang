@@ -61,6 +61,7 @@ npm run cli -- compile examples/studio.arch -o studio.svg   # run the CLI from s
 npm run bench        # compile a generated ~1000-element plan and report per-stage timings
 npm run gen:grammars # regenerate editor grammars from src/grammar/tokens.ts (CI checks drift)
 npm run gen:errors   # regenerate docs/error-codes.md from the catalog (CI checks drift)
+npm run gen:spec     # regenerate spec.llm.md from tokens.ts + examples/ (CI checks drift)
 
 npm run playground:dev   # build core, then run the Vite playground dev server
 npm run docs:build       # build core, then build the VitePress docs site
@@ -68,6 +69,16 @@ npm run docs:build       # build core, then build the VitePress docs site
 
 Export to other formats from the CLI: `-f svg|dxf|pdf|png` (`pdf` needs optional
 `pdfkit`; `png` needs optional `@resvg/resvg-js`).
+
+**The CLI is agent-native.** Every command takes `--json` (structured result to stdout, messages to
+stderr) with deterministic exit codes (`0` ok · `2` user-source error · `1` IO/internal · `3` bad
+usage), and source can come from stdin (`-`). Beyond `compile`/`watch`/`fmt`/`explain` there are
+`arch spec` (print the whole language — `spec.llm.md`), `arch describe` (semantic JSON: rooms,
+areas, adjacency, door connections — backed by `describe()` in `src/describe.ts`), `arch lint`
+(architectural soundness `W_*` warnings — `src/lint.ts`), `arch validate` (parse+resolve+lint, no
+render), and `arch new` (scaffold). `describe`/`lint` share the pure analysis layer in
+`src/analyze.ts`; all are exported from `src/index.ts`. This is the standard interface for AI agents
+— there is intentionally no MCP server (see the README's agent section).
 
 ## Architecture & Conventions
 
@@ -117,6 +128,8 @@ source (.arch)
   (`editors/archlang.tmLanguage.json`, `playground/src/arch-language.js`) and
   `docs/error-codes.md` are generated from `src/grammar/tokens.ts` / `src/error-catalog.ts`
   — edit the source and run `npm run gen:grammars` / `npm run gen:errors` (CI fails on drift).
+  Likewise `spec.llm.md` is generated from `src/grammar/tokens.ts` + `examples/` by
+  `npm run gen:spec` (the curated prose lives in `scripts/gen-llm-spec.ts`); CI fails on drift.
 - **Determinism is tested.** The suite asserts `compile(s) === compile(s)` byte-for-byte, with
   the optional geometry engine both present and absent. Anything that varies output across runs
   (object key order, floats, time) will fail — route number formatting through `fmt()`.

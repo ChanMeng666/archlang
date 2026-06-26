@@ -181,6 +181,29 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "A window's position is not within tolerance of any wall segment, so it has no host.",
     "Move the window onto a wall, or name its host with `wall <id|category>`. The diagnostic points at the nearest wall.",
     "window at (9999,9999) width 1200   # warning: not on a wall"),
+
+  // Architectural lint rules (v1.1) — habitability checks raised by `arch lint`,
+  // not the core compile pass. See src/lint.ts.
+  W_BEDROOM_NO_WINDOW: W("W_BEDROOM_NO_WINDOW", "Bedroom has no window.",
+    "A room labelled as a bedroom has no window on its perimeter (natural light / egress).",
+    "Add a `window` on an exterior wall of the room.",
+    'room at (0,0) size 3000x4000 label "Bedroom"   # lint: no window'),
+  W_DOOR_CLEARANCE: W("W_DOOR_CLEARANCE", "Door is narrower than the minimum clear width.",
+    "A door's width is below the configured minimum passable width (default 700 mm).",
+    "Widen the door to at least the minimum clear width.",
+    "door at (0,0) width 500 wall exterior   # lint: under 700 mm"),
+  W_NO_ENTRANCE: W("W_NO_ENTRANCE", "The plan has no exterior door.",
+    "The plan has rooms and an exterior wall but no door hosted on an exterior wall, so the building cannot be entered.",
+    "Add a `door` on an `exterior` wall.",
+    "wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }   # lint: no way in"),
+  W_ROOM_DISCONNECTED: W("W_ROOM_DISCONNECTED", "Room has no door — it can't be entered.",
+    "No door lies on any of the room's walls, so there is no way into the room.",
+    "Add a `door` on one of the room's walls.",
+    "room id=r at (0,0) size 3000x3000   # lint: no door on its perimeter"),
+  W_ROOM_TOO_SMALL: W("W_ROOM_TOO_SMALL", "Room is implausibly small.",
+    "A room's floor area is below the configured minimum (default 4 m²).",
+    "Increase its `size`, or merge it into an adjacent space.",
+    'room at (0,0) size 1000x1000 label "Closet"   # lint: 1 m²'),
 });
 
 /** All catalog codes, sorted (errors then warnings, alphabetically within). */

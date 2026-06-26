@@ -36,6 +36,24 @@ export { formatDiagnostic, offsetToLineCol } from "./diagnostics.js";
 export type * from "./ast.js";
 // Source formatter (v0.11): pure text→text, comment-preserving, idempotent.
 export { format } from "./format.js";
+// Semantic summary (v1.1): pure source→facts. `describe(source)` returns rooms
+// (areas, bboxes, adjacency), doors (what they connect), windows, and totals —
+// the channel a text-only agent uses to verify a plan without rendering it.
+export { describe } from "./describe.js";
+export type {
+  SceneSummary,
+  RoomSummary,
+  DoorSummary,
+  WindowSummary,
+  FurnitureSummary,
+  BBox,
+  DescribeOptions,
+} from "./describe.js";
+// Architectural lint (v1.1): habitability rules as `W_*` diagnostics — every room
+// enterable, bedrooms have a window, doors wide enough, the building has an entrance.
+// Pure; the ruleset is data. Surfaced as `arch lint`.
+export { lint, DEFAULT_RULESET } from "./lint.js";
+export type { LintOptions, LintRuleset } from "./lint.js";
 // Language services (v0.11): pure LSP core (hover/completion/definition/rename/
 // signature help) over the CST cursor + registry schemas. The VS Code server is
 // a thin adapter; these are isomorphic and unit-testable.
