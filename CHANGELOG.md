@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-06-28
+
+### Added — architectural soundness, circulation facts & professional placement
+
+A Claude × Codex adversarial design pass. The compiler stays a faithful, deterministic renderer; the
+new "design intelligence" ships as **facts** (`describe`) and **advisory `lint`** — never as an
+auto-arranger (codified in `docs/adr/0005-no-invisible-architect.md`).
+
+- **Room `uses` tags** — `room … uses living|kitchen|bedroom|bath|wc|hall|…` makes room
+  classification authored intent instead of a label-regex guess. A central `roomUses()` classifier
+  (`src/analyze.ts`) wins over the regex; untagged plans behave identically. Surfaced as
+  `describe().rooms[].uses`.
+- **Modeled door/opening access graph** (`buildDoorAccessGraph`) — entrances, per-room
+  reachability + depth from a synthetic exterior node, and a widest-path clear-width bottleneck
+  (nominal vs estimated clear width). Surfaced append-only as `describe().access`.
+- **Cased `opening` element** — `opening at (x,y) width N [wall …]`, a leaf-less gap that voids the
+  wall and connects two spaces, so open-plan layouts read as connected in the access graph.
+- **`furniture rotate 0|90|180|270`** — quarter-turn the drawn symbol (exact integer rotation,
+  byte-stable), and **`furniture … against wall <id> [segment <n>] [offset <d>] [side left|right]
+  size <along>×<depth>`** — closed-form wall-anchored placement that derives position + rotation so
+  the symbol's back sits flush; `side` is inferred from `in <room>` when omitted.
+- **Furniture ownership** — `furniture … in <roomId>` declares the owning room.
+- **New lint rules**: `W_ROOM_UNREACHABLE`, `W_FURNITURE_OVERLAP`, `W_FIXTURE_FLOATING`,
+  `W_FIXTURE_WRONG_ROOM`, `W_FURN_CLEARANCE` (a fixture's use-space blocked by free-standing
+  furniture). New errors `E_OPENING_WIDTH`, `E_FURN_ROOM`, `E_FURN_ROTATE`, `E_FURN_AGAINST`.
+- **Advisory lint profiles** — `arch lint --profile residential-basic|accessibility-advisory`.
+  Honestly named (never `ada`/`iso`): an advisory check, not a compliance guarantee.
+
+### Fixed
+
+- **Door swing arcs were concave.** The SVG sweep flag in `doorSwing` was inverted, selecting the
+  wrong candidate circle; arcs are now convex quarter-discs centred on the hinge (SVG + PDF; DXF was
+  already correct).
+- **Overall/right-edge dimensions were drawn into the building.** Corrected the `synthDims` endpoint
+  order and the studio example so a positive `offset` always lands outside the footprint.
+- **The title block was crossed by the bottom dimension.** A new shared `src/chrome-layout.ts` stacks
+  the scale bar + title block below the dimension band and grows per-side page margins; the SVG and
+  PDF backends now build chrome from the one source.
+
+### Changed
+
+- `examples/studio.arch` now demonstrates `uses` tags and stays lint-clean. Snapshots, visual
+  goldens, the editor grammars, the embedded spec, and `docs/error-codes.md` were regenerated.
+- `WallSegment` carries `wallId` + `index`, so every opening host knows which wall (`AccessEdge.hostWallId`).
+
 ## [1.2.0] - 2026-06-27
 
 ### Added — architectural soundness, fixtures, auto-dimensioning

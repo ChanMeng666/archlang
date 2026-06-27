@@ -13,25 +13,29 @@ ArchLang — A small declarative language that compiles to professional SVG floo
 
 ## Project status & where things live (current)
 
-**ArchLang is shipped and launched (v1.2.0).** This is a published, deployed monorepo —
+**ArchLang is shipped and launched (v1.3.0).** This is a published, deployed monorepo —
 not a work-in-progress. Treat the live artifacts below as the source of truth.
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.2.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.3.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md` |
 | **VS Code extension** | `ChanMeng.archlang@0.3.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.2.0` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 388 passing (42 files); typecheck + build clean | — |
+| **Git** | `main`, tags `v1.0.0` → `v1.3.0` (latest) | github.com/ChanMeng666/archlang |
+| **Tests** | 439 passing (49 files); typecheck + build clean | — |
 
-**Latest release — v1.2.0 (architectural soundness, fixtures, auto-dims).** The mechanical compiler
-was sound but blind to tacit architectural knowledge. v1.2 adds: four `arch lint` rules
-(`W_BATH_VIA_BEDROOM`, `W_ROOM_NOT_ENCLOSED`, `W_SWING_OBSTRUCTED`, `W_ROOM_NO_FIXTURE`); **drawn
-fixture symbols** (`furniture wc|basin|shower|bathtub|kitchen_sink|counter|fridge|stove` render real
-plan glyphs, with `examples/lib/fixtures.arch` as a component library); `dims auto [overall|rooms|all]`
-to synthesize dimension strings; and a corrected, lint-clean `examples/studio.arch`. See `CHANGELOG.md`.
+**Latest release — v1.3.0 (architectural soundness, circulation facts & professional placement).**
+A Claude × Codex adversarial pass. The compiler stays a faithful deterministic renderer; the new
+"design intelligence" ships as **facts** (`describe`) and **advisory `lint`**, never an auto-arranger
+(see ADR 0005). v1.3 adds: **room `uses` tags** + a central classifier; a **modeled door/opening
+access graph** (`describe().access` — entrances, reachability, clear-width bottleneck); a leaf-less
+**`opening` element**; **furniture `rotate`**, closed-form **`against wall` placement**, and `in
+<room>` ownership; new lint (`W_ROOM_UNREACHABLE`, `W_FURNITURE_OVERLAP`, `W_FIXTURE_FLOATING`,
+`W_FIXTURE_WRONG_ROOM`, `W_FURN_CLEARANCE`); **advisory profiles** (`arch lint --profile`); and fixes
+for concave door arcs, dimensions drawn into the building, and the title-block overlap (shared
+`chrome-layout.ts`). See `CHANGELOG.md`.
 
 > Beware older docs that predate the launch: `docs/IMPLEMENTATION-PLAN-v0.7-v1.0.md`
 > is the (now-completed) roadmap, and the earlier half of `docs/WORK-LOG.md` is
