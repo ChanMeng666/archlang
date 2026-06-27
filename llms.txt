@@ -32,7 +32,14 @@ npx @chanmeng666/archlang lint plan.arch --json                 # architectural 
 ```
 
 Loop: `spec` → write `.arch` → `compile --json` → if `ok:false` (exit 2) fix via each
-`diagnostics[].fix` → `describe --json` to confirm intent. See [SKILL.md](https://github.com/chanmeng666/archlang/blob/main/SKILL.md).
+`diagnostics[].fix` → `describe --json` to confirm intent → `lint --json` to confirm soundness.
+See [SKILL.md](https://github.com/chanmeng666/archlang/blob/main/SKILL.md).
+
+`lint` catches tacit architectural mistakes, not just syntax: a bathroom reached only through a
+bedroom, a wet room that isn't fully walled in, a door swing hitting furniture, a bath/kitchen with
+no fixtures, a windowless bedroom, an unenterable room, a too-narrow door. Draw real fixtures with
+`furniture wc|basin|shower|bathtub|kitchen_sink|counter|fridge|stove …` (or the `lib/fixtures.arch`
+library), and let `dims auto` place dimension strings for you.
 
 ## To CONTRIBUTE (work on the repo)
 

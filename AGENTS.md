@@ -13,18 +13,25 @@ ArchLang — A small declarative language that compiles to professional SVG floo
 
 ## Project status & where things live (current)
 
-**ArchLang is shipped and launched (v1.1.0).** This is a published, deployed monorepo —
+**ArchLang is shipped and launched (v1.2.0).** This is a published, deployed monorepo —
 not a work-in-progress. Treat the live artifacts below as the source of truth.
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.1.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.2.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md` |
-| **VS Code extension** | `ChanMeng.archlang@0.2.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
+| **VS Code extension** | `ChanMeng.archlang@0.2.0` live on the Marketplace; **`0.3.0` packaged, pending web upload** (`editors/vscode/archlang-0.3.0.vsix`) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.1.0` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 371 passing (41 files); typecheck + build clean | — |
+| **Git** | `main`, tags `v1.0.0` → `v1.2.0` (latest) | github.com/ChanMeng666/archlang |
+| **Tests** | 388 passing (42 files); typecheck + build clean | — |
+
+**Latest release — v1.2.0 (architectural soundness, fixtures, auto-dims).** The mechanical compiler
+was sound but blind to tacit architectural knowledge. v1.2 adds: four `arch lint` rules
+(`W_BATH_VIA_BEDROOM`, `W_ROOM_NOT_ENCLOSED`, `W_SWING_OBSTRUCTED`, `W_ROOM_NO_FIXTURE`); **drawn
+fixture symbols** (`furniture wc|basin|shower|bathtub|kitchen_sink|counter|fridge|stove` render real
+plan glyphs, with `examples/lib/fixtures.arch` as a component library); `dims auto [overall|rooms|all]`
+to synthesize dimension strings; and a corrected, lint-clean `examples/studio.arch`. See `CHANGELOG.md`.
 
 > Beware older docs that predate the launch: `docs/IMPLEMENTATION-PLAN-v0.7-v1.0.md`
 > is the (now-completed) roadmap, and the earlier half of `docs/WORK-LOG.md` is
@@ -49,9 +56,13 @@ not a work-in-progress. Treat the live artifacts below as the source of truth.
 └─ test/              vitest: snapshot + fast-check + unit + visual-regression + CLI/describe/lint/eval
 ```
 
-Key `src/` modules added in v1.1 (all pure, exported from `src/index.ts`): `describe.ts`
-(semantic summary), `lint.ts` (architectural soundness rules), `analyze.ts` (shared resolve
-pipeline + rectilinear geometry behind both). The agent-facing CLI lives in `src/cli.ts`.
+Key agent-facing `src/` modules (all pure, exported from `src/index.ts`): `describe.ts`
+(semantic summary), `lint.ts` (architectural soundness rules — v1.2 added circulation/enclosure/
+swing-clearance/fixture checks), `analyze.ts` (shared resolve pipeline + rectilinear geometry —
+door connectivity, perimeter enclosure — behind both `describe` and `lint`). `geometry.ts` holds the
+shared door-swing quarter-disc geometry used by both the renderer and the linter;
+`elements/fixtures-glyphs.ts` (v1.2) draws the fixture symbols. The agent-facing CLI lives in
+`src/cli.ts`.
 
 A single `npm install` at the root bootstraps every workspace.
 
@@ -155,7 +166,16 @@ source (.arch)
 - **`npm run dev`** (repo root) runs `tsup --watch` (a rebuild watcher), not a web server. The
   playground/docs sites are separate Vite apps — use `npm run playground:dev` / `docs:dev`.
 - **Door `hinge left/right` is relative to the wall's traversal direction**, not the screen —
-  so the hinge side can flip depending on the order of a wall's points.
+  so the hinge side can flip depending on the order of a wall's points. The swing quarter-disc is
+  computed once in `geometry.ts` (`doorSwing`) and shared by `door.render()` and the
+  `W_SWING_OBSTRUCTED` lint rule — keep them on that one helper.
+- **Fixtures draw by category, not a new element kind.** `furniture.render()` dispatches the
+  category to `elements/fixtures-glyphs.ts`; a known fixture (`wc`, `basin`, `shower`, `bathtub`,
+  `kitchen_sink`/`sink`, `counter`, `fridge`, `stove`…) draws a symbol and ignores its `label`,
+  anything else falls back to the labelled rectangle. The lint rules key off the **room label**
+  (`/bath|wc|shower/i`, `/kitchen/i`) and the **fixture category** — keep those classifiers in sync.
+- **`examples/studio.arch` is import-free on purpose** (`test/world.test.ts` asserts the flagship
+  compiles from a single file with no World). Use inline `furniture <fixture>` there, not imports.
 
 ## Reading Order
 

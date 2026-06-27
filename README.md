@@ -45,7 +45,13 @@ is fully client-side.
 
 - **Code → professional drawing.** Poché-hatched walls (by material), door swing arcs, window
   glazing, computed room areas, dimension lines, layers, line weights/types, a north arrow, a
-  scale bar, and a title block.
+  scale bar, and a title block. **Drawn fixture symbols** for WC, basin, shower, bathtub, sink,
+  counter, fridge and stove (with a `lib/fixtures.arch` component library), and `dims auto` to
+  synthesize dimension strings for you.
+- **Architectural soundness, not just syntax.** `arch lint` checks habitability *and* tacit
+  professional knowledge: a bathroom reachable only through a bedroom, a wet room that isn't fully
+  walled in, a door whose swing hits furniture or another door, a bath/kitchen with no fixtures, a
+  windowless bedroom, an unenterable room, a too-narrow door. All tunable via the ruleset.
 - **Four export formats.** **SVG** and **DXF** with zero dependencies; **PDF** (vector,
   selectable text) and **PNG** (deterministic raster) via optional, lazily-loaded add-ons that
   the default install never pulls.
@@ -148,25 +154,32 @@ rendering an image**.
 [Language Reference](docs/language-reference.md)):
 
 ```
-plan "Studio 1BR" {
+plan "One-bed" {
   units mm
   grid 50
   scale 1:50
   north up
+  dims auto overall
 
-  wall exterior thickness 200 { (0,0) (7000,0) (7000,6000) (0,6000) close }
-  wall partition thickness 100 { (4000,0) (4000,4000) }
+  wall exterior  thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall partition thickness 100 { (4000,0) (4000,4000) }   # full-height: bath stays enclosed
 
-  room id=r_living at (0,0)    size 4000x6000 label "Living / Kitchen"
-  room id=r_bed    at (4000,0) size 3000x4000 label "Bedroom"
+  room id=r_living at (0,0)    size 4000x4000 label "Living / Kitchen"
+  room id=r_bath   at (4000,0) size 2000x4000 label "Bath"
 
-  door   id=d_main at (1000,6000) width 1000 wall exterior  hinge left swing in
-  window at (2500,0) width 1800 wall exterior
+  door   id=d_main at (1000,4000) width 1000 wall exterior  hinge left swing in
+  door   id=d_bath at (4000,1500) width 800  wall partition hinge left swing in
+  window at (2000,0) width 1800 wall exterior
 
-  dim (0,6000)->(7000,6000) offset 600 text "7000"
-  title { project "Studio Apartment" drawn_by "ArchLang" date "2026" }
+  furniture kitchen_sink at (300,300) size 800x600   # draws a real sink symbol
+  furniture wc           at (5300,300) size 400x700  # …and a WC
+
+  title { project "One-bed" drawn_by "ArchCanvas" date "2026" }
 }
 ```
+
+> The full, lint-clean flagship example (enclosed bath off a central hall, fitted kitchen + bath,
+> dimension strings) is [`examples/studio.arch`](examples/studio.arch).
 
 ### Try it live
 
