@@ -101,17 +101,17 @@
           "name": "keyword.control.arch"
         },
         {
-          "match": "\\b(wall|room|door|window|furniture|dim|column)\\b",
+          "match": "\\b(wall|room|door|window|opening|furniture|dim|column)\\b",
           "name": "storage.type.element.arch"
         },
         {
-          "match": "\\b(units|grid|scale|north|dims|material|angle|at|size|width|thickness|label|hinge|swing|offset|text|close|id|project|drawn_by|date|from|as|right-of|left-of|below|above|align|gap)\\b",
+          "match": "\\b(units|grid|scale|north|dims|material|angle|at|size|width|thickness|label|hinge|swing|offset|text|close|id|project|drawn_by|date|from|as|right-of|left-of|below|above|align|gap|uses)\\b",
           "name": "keyword.other.arch"
         }
       ]
     },
     "constants": {
-      "match": "\\b(up|down|left|right|in|out|mm|true|false|top|middle|bottom|center|auto)\\b",
+      "match": "\\b(up|down|left|right|in|out|mm|true|false|top|middle|bottom|center|auto|living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry)\\b",
       "name": "constant.language.arch"
     },
     "operators": {

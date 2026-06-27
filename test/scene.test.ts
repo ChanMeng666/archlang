@@ -68,6 +68,42 @@ describe("Scene IR", () => {
     expect(withAuto.length).toBeGreaterThan(0);
   });
 
+  it("places overall `dims auto` lines OUTSIDE the plan footprint, not inside it", () => {
+    const src =
+      `plan "P" { units mm dims auto overall wall exterior thickness 200 { (0,0) (3000,0) (3000,3000) (0,3000) close } room id=r at (0,0) size 3000x3000 label "R" }`;
+    const scene = sceneOf(src);
+    const b = scene.bounds;
+    // The overall width dim runs below the plan and the height dim runs to its left;
+    // both dimension *lines* (and their witness lines) must clear the footprint —
+    // a positive offset on the wrong endpoint order used to draw them inside (the
+    // "6000 dimension into the building" bug).
+    const lines = scene.nodes.filter((n) => n.layer === "dims" && n.prim.t === "line");
+    const below = lines.some((n: any) => n.prim.a.y > b.maxY + 1 && n.prim.b.y > b.maxY + 1);
+    const left = lines.some((n: any) => n.prim.a.x < b.minX - 1 && n.prim.b.x < b.minX - 1);
+    expect(below, "expected a width dimension below the plan").toBe(true);
+    expect(left, "expected a height dimension left of the plan").toBe(true);
+    // And NOTHING on the dims layer should sit strictly inside the footprint margin.
+    const insideX = (x: number) => x > b.minX + 1 && x < b.maxX - 1;
+    const insideY = (y: number) => y > b.minY + 1 && y < b.maxY - 1;
+    const overallLineInside = lines.some(
+      (n: any) => insideX(n.prim.a.x) && insideX(n.prim.b.x) && insideY(n.prim.a.y) && insideY(n.prim.b.y),
+    );
+    expect(overallLineInside, "no overall dim line should be fully inside the plan").toBe(false);
+  });
+
+  it("grows the page so a far right-side dimension never clips the viewBox", () => {
+    // A right-edge dim whose offset (4000) far exceeds the base margin used to escape
+    // the page (only the bottom margin grew). Per-side margins now contain it.
+    const src =
+      `plan "P" { units mm dim (3000,3000)->(3000,0) offset 4000 text "H" wall exterior thickness 200 { (0,0) (3000,0) (3000,3000) (0,3000) close } room id=r at (0,0) size 3000x3000 label "R" }`;
+    const { svg } = compile(src, { noCache: true });
+    const vb = svg.match(/viewBox="(-?[\d.]+) (-?[\d.]+) ([\d.]+) ([\d.]+)"/)!;
+    const right = Number(vb[1]) + Number(vb[3]);
+    const tx = Number(svg.match(/<text x="([\d.]+)"[^>]*>H<\/text>/)![1]);
+    expect(tx, "right dim sits outside the 3000 footprint").toBeGreaterThan(3100);
+    expect(tx, "right dim stays inside the grown viewBox").toBeLessThan(right);
+  });
+
   it("emits every primitive kind across the example corpus", () => {
     const kinds = new Set<string>();
     for (const name of ["studio.arch", "two-bed.arch", "parametric.arch", "themed.arch"]) {

@@ -28,6 +28,7 @@ import {
   compile,
   describe,
   lint,
+  LINT_PROFILE_NAMES,
   explain,
   format,
   formatDiagnostic,
@@ -57,6 +58,7 @@ interface Args {
   json?: boolean;
   quiet?: boolean;
   force?: boolean;
+  profile?: string;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -70,6 +72,7 @@ function parseArgs(argv: string[]): Args {
     else if (a === "--json") res.json = true;
     else if (a === "--quiet" || a === "-q") res.quiet = true;
     else if (a === "--force") res.force = true;
+    else if (a === "--profile") res.profile = argv[++i];
     else res._.push(a);
   }
   return res;
@@ -295,12 +298,16 @@ function cmdValidate(args: Args): number {
 }
 
 function cmdLint(args: Args): number {
+  if (args.profile && !LINT_PROFILE_NAMES.includes(args.profile)) {
+    process.stderr.write(`Unknown lint profile "${args.profile}". Available: ${LINT_PROFILE_NAMES.join(", ")}\n`);
+    return 3;
+  }
   return withSource(args, (source, input) => {
     const world = makeNodeWorld(baseDirOf(input));
     // Surface fatal errors too (lint() is silent on an unresolvable plan).
     const { diagnostics } = compile(source, { noCache: true, world });
     const errs = diagnostics.filter((d) => d.severity === "error");
-    return report(source, errs.length ? errs : lint(source, { world }), args);
+    return report(source, errs.length ? errs : lint(source, { world, profile: args.profile }), args);
   });
 }
 
@@ -411,7 +418,7 @@ Usage:
   arch watch    <in.arch> [-o out] [-w width] [-f …]
   arch validate <in.arch|-> [--json]      parse + resolve + lint (no render)
   arch describe <in.arch|-> [--json]      semantic facts (rooms, areas, adjacency)
-  arch lint     <in.arch|-> [--json]      architectural soundness warnings
+  arch lint     <in.arch|-> [--profile residential-basic|accessibility-advisory] [--json]   architectural soundness warnings
   arch fmt      <in.arch|-> [--write] [--json]
   arch spec     [--json]                  print the one-prompt language spec
   arch new      [-o out] [--force] [--json]   scaffold a starter .arch

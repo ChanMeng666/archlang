@@ -2,7 +2,8 @@
  *  — floor fill + label + computed area. The absolute `at` path is the default;
  *  the relational clause is resolved to absolute coords in `placeRelational`. */
 
-import type { Point, RelAlign, RelDir, RoomNode } from "../ast.js";
+import type { Point, RelAlign, RelDir, RoomNode, UseKind } from "../ast.js";
+import { USE_KINDS } from "../ast.js";
 import type { Expr } from "../expr.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
@@ -10,6 +11,7 @@ import type { RRoom } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 
 const REL_DIRS: ReadonlySet<string> = new Set<RelDir>(["right-of", "left-of", "below", "above"]);
+const USE_SET: ReadonlySet<string> = new Set<UseKind>(USE_KINDS);
 
 export const room: ElementDef = {
   kind: "room",
@@ -58,6 +60,20 @@ export const room: ElementDef = {
       ctx.next();
       node.label = ctx.parseStringExpr();
     }
+    // Optional `uses <kind> [<kind> …]` — explicit room classification. Greedily
+    // consume contiguous valid use-kind identifiers (they never collide with a
+    // following statement keyword), requiring at least one.
+    if (ctx.isKeyword("uses")) {
+      ctx.next();
+      const uses: UseKind[] = [];
+      while (ctx.peek().type === "ident" && USE_SET.has(ctx.peek().value)) {
+        uses.push(ctx.next().value as UseKind);
+      }
+      if (uses.length === 0) {
+        ctx.fail(`Expected one or more room uses (${USE_KINDS.join("|")}) after "uses" but found ${ctx.peek().value ? `"${ctx.peek().value}"` : "end of input"}`, ctx.peek());
+      }
+      node.uses = uses;
+    }
     return node;
   },
 
@@ -73,7 +89,7 @@ export const room: ElementDef = {
       if (size.w <= 0 || size.h <= 0) {
         ctx.diag({ severity: "error", message: `Room "${id}" must have a positive size`, code: "E_ROOM_SIZE", span: n.span });
       }
-      return { kind: "room", id, at, size, label: n.label !== undefined ? ctx.evalStr(n.label) : undefined, span: n.span };
+      return { kind: "room", id, at, size, label: n.label !== undefined ? ctx.evalStr(n.label) : undefined, ...(n.uses ? { uses: n.uses } : {}), span: n.span };
     }
     // —— Relational path: position computed later by placeRelational(), in
     //    dependency order. `at` is a placeholder until then. ——
@@ -89,6 +105,7 @@ export const room: ElementDef = {
       at: { x: 0, y: 0 },
       size,
       label: n.label !== undefined ? ctx.evalStr(n.label) : undefined,
+      ...(n.uses ? { uses: n.uses } : {}),
       span: n.span,
       _rel: { dir: rel.dir, ref: rel.ref, align: rel.align, gap, span: n.span },
     };

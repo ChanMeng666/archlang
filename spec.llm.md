@@ -35,10 +35,11 @@ plan "Title" {
 
 ```text
 wall <category> thickness <mm> [material <name>] { (x,y) (x,y) … [close] }   # category e.g. exterior/partition; `close` makes a loop
-room [id=<name>] at (x,y) size <W>x<H> [label "…"]   # OR relational: room [id=…] (right-of|left-of|below|above) <roomId> [align top|middle|bottom|left|right] [gap <mm>] size <W>x<H> [label "…"]
+room [id=<name>] at (x,y) size <W>x<H> [label "…"] [uses living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry …]   # OR relational: room [id=…] (right-of|left-of|below|above) <roomId> [align top|middle|bottom|left|right] [gap <mm>] size <W>x<H> [label "…"]
 door [id=<name>] at (x,y) width <mm> [wall <id|category>] [hinge left|right] [swing in|out]   # must sit on a wall
 window [id=<name>] at (x,y) width <mm> [wall <id|category>]   # must sit on a wall
-furniture <category> at (x,y) size <W>x<H> [label "…"]   # category e.g. bed/sofa/table
+opening [id=<name>] at (x,y) width <mm> [wall <id|category>]   # a leaf-less cased opening (gap in a wall) that still connects the two spaces
+furniture <category> at (x,y) size <W>x<H> [label "…"] [in <roomId>]   # category e.g. bed/sofa/table; `in` declares the owning room
 dim (x,y)->(x,y) offset <mm> [text "…"]   # a dimension line
 column [id=<name>] at (x,y) size <W>x<H>
 ```
@@ -56,9 +57,9 @@ column [id=<name>] at (x,y) size <W>x<H>
 ## Keyword reference
 
 - **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`
-- **Elements:** `wall`, `room`, `door`, `window`, `furniture`, `dim`, `column`
-- **Attributes:** `units`, `grid`, `scale`, `north`, `dims`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`
-- **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `auto`
+- **Elements:** `wall`, `room`, `door`, `window`, `opening`, `furniture`, `dim`, `column`
+- **Attributes:** `units`, `grid`, `scale`, `north`, `dims`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`
+- **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `auto`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`
 
 ## CLI loop (how an agent drives it)
 
@@ -112,10 +113,10 @@ plan "Studio 1BR" {
   wall partition thickness 100 { (4000,3000) (7000,3000) }
   wall partition thickness 100 { (4000,4400) (7000,4400) }
 
-  room id=r_living at (0,0)       size 4000x6000 label "Living / Kitchen"
-  room id=r_bed    at (4000,0)    size 3000x3000 label "Bedroom"
-  room id=r_hall   at (4000,3000) size 3000x1400 label "Hall"
-  room id=r_bath   at (4000,4400) size 3000x1600 label "Bath"
+  room id=r_living at (0,0)       size 4000x6000 label "Living / Kitchen" uses living kitchen
+  room id=r_bed    at (4000,0)    size 3000x3000 label "Bedroom"           uses bedroom
+  room id=r_hall   at (4000,3000) size 3000x1400 label "Hall"             uses hall
+  room id=r_bath   at (4000,4400) size 3000x1600 label "Bath"             uses bath
 
   # Entrance into the living space; the hall links it to the bedroom and the bath.
   door id=d_main   at (3000,6000) width 1000 wall exterior  hinge left  swing in
@@ -146,7 +147,7 @@ plan "Studio 1BR" {
   dim (4000,0)->(0,0)       offset 350 text "4000"
   dim (7000,0)->(4000,0)    offset 350 text "3000"
   dim (0,6000)->(7000,6000) offset 600 text "7000"
-  dim (7000,0)->(7000,6000) offset 600 text "6000"
+  dim (7000,6000)->(7000,0) offset 600 text "6000"
 
   title {
     project "Studio Apartment"

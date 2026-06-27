@@ -18,6 +18,7 @@ import type {
   RelDir,
   Statement,
   TitleNode,
+  UseKind,
 } from "./ast.js";
 import { placeRelational } from "./layout.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
@@ -81,6 +82,8 @@ export interface RRoom extends RBase {
   at: Point;
   size: { w: number; h: number };
   label?: string;
+  /** Declared function(s) from `uses …`; absent when the room is untagged. */
+  uses?: UseKind[];
   /** Present only when the room used a relational clause (`right-of`/…); its
    *  `at` above is a placeholder until {@link placeRelational} resolves it. */
   _rel?: RelConstraint;
@@ -99,12 +102,20 @@ export interface RWindow extends RBase {
   width: number;
   host: WallSegment | null;
 }
+export interface ROpening extends RBase {
+  kind: "opening";
+  at: Point;
+  width: number;
+  host: WallSegment | null;
+}
 export interface RFurniture extends RBase {
   kind: "furniture";
   category: string;
   at: Point;
   size: { w: number; h: number };
   label?: string;
+  /** Declared owning room id (`in <roomId>`), if any. */
+  room?: string;
 }
 export interface RDim extends RBase {
   kind: "dim";
@@ -119,7 +130,7 @@ export interface RColumn extends RBase {
   size: { w: number; h: number };
 }
 
-export type ResolvedElement = RWall | RRoom | RDoor | RWindow | RFurniture | RDim | RColumn;
+export type ResolvedElement = RWall | RRoom | RDoor | RWindow | ROpening | RFurniture | RDim | RColumn;
 
 export interface ResolvedPlan {
   name: string;
@@ -461,7 +472,7 @@ function resolveImpl(
       segmentsOfWall(w).some((s) => s.a.x === seg.a.x && s.a.y === seg.a.y && s.b.x === seg.b.x && s.b.y === seg.b.y),
     );
   for (const el of elements) {
-    if ((el.kind === "door" || el.kind === "window") && el.host) {
+    if ((el.kind === "door" || el.kind === "window" || el.kind === "opening") && el.host) {
       wallOfSegment(el.host)?.openings.push({ at: el.at, width: el.width });
     }
   }
@@ -513,6 +524,20 @@ function resolveImpl(
       code: "W_ROOM_OVERLAP",
       span: rooms[b].span,
     });
+  }
+
+  // A fixture's `in <roomId>` must name a real room (fail fast on an explicit ref —
+  // ADR 0005: the core never guesses which room was meant).
+  const roomIds = new Set(rooms.map((r) => r.id));
+  for (const el of elements) {
+    if (el.kind === "furniture" && el.room !== undefined && !roomIds.has(el.room)) {
+      diagnostics.push({
+        severity: "error",
+        message: `Furniture "${el.id}" is placed \`in ${el.room}\` but no room has that id`,
+        code: "E_FURN_ROOM",
+        span: el.span,
+      });
+    }
   }
 
   const ir: ResolvedPlan = {

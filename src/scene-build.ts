@@ -22,6 +22,7 @@ import type { GeometryBackend } from "./geometry/backend.js";
 import type { Point } from "./ast.js";
 import { patternId } from "./hatches.js";
 import type { HatchSpec } from "./hatches.js";
+import { layoutChrome } from "./chrome-layout.js";
 import { DEFAULT_THEME, THEMES, mergeTheme, sanitizeTheme, derivePoche } from "./theme.js";
 import type { Theme } from "./theme.js";
 
@@ -243,9 +244,12 @@ function synthDims(ir: ResolvedPlan, b: Bounds, sizes: RenderSizes): RDim[] {
 
   if (wantOverall) {
     const off = sizes.margin * 0.5;
-    // Width below the plan; height to the left of it (both in the page margin).
+    // Width below the plan; height to the left of it (both in the page margin). The
+    // dim element offsets along the *left normal* of from→to, so endpoint order
+    // chooses the side: width runs minX→maxX (normal points +y, below); height runs
+    // minY→maxY (normal points −x, left). Reversing either would push it *inside*.
     dims.push(mk({ x: b.minX, y: b.maxY }, { x: b.maxX, y: b.maxY }, off));
-    dims.push(mk({ x: b.minX, y: b.maxY }, { x: b.minX, y: b.minY }, off));
+    dims.push(mk({ x: b.minX, y: b.minY }, { x: b.minX, y: b.maxY }, off));
   }
 
   if (wantRooms) {
@@ -334,9 +338,15 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     }
   }
 
+  // Page chrome (scale bar + title block) sits below the dimension band; the page
+  // margins grow per-side so neither the chrome nor any dimension clips (shared with
+  // the SVG/PDF backends via the one layoutChrome source).
+  const chrome = layoutChrome({ bounds: b, refDim, baseMargin: sizes.margin, nodes, title: ir.title, scale: ir.scale });
+  const m = chrome.margin;
+
   return {
-    width: drawW + sizes.margin * 2,
-    height: drawH + sizes.margin * 2,
+    width: drawW + m.left + m.right,
+    height: drawH + m.top + m.bottom,
     bounds: b,
     nodes,
     theme,

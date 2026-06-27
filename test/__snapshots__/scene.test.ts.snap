@@ -15,7 +15,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "scale": 1,
     },
   ],
-  "height": 8648,
+  "height": 10213.6,
   "nodes": [
     {
       "layer": "floor",
@@ -335,7 +335,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
           "x": 3500,
           "y": 5000,
         },
-        "sweep": 1,
+        "sweep": 0,
         "t": "arc",
       },
     },
@@ -409,7 +409,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
           "x": 3100,
           "y": 3250,
         },
-        "sweep": 1,
+        "sweep": 0,
         "t": "arc",
       },
     },
@@ -483,7 +483,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
           "x": 6800,
           "y": 2200,
         },
-        "sweep": 1,
+        "sweep": 0,
         "t": "arc",
       },
     },
@@ -557,7 +557,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
           "x": 4200,
           "y": 3600,
         },
-        "sweep": 0,
+        "sweep": 1,
         "t": "arc",
       },
     },
@@ -2379,11 +2379,11 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "prim": {
         "a": {
           "x": 7000,
-          "y": 0,
+          "y": 6000,
         },
         "b": {
-          "x": 6400,
-          "y": 0,
+          "x": 7600,
+          "y": 6000,
         },
         "t": "line",
       },
@@ -2397,30 +2397,30 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "prim": {
         "a": {
           "x": 7000,
-          "y": 6000,
-        },
-        "b": {
-          "x": 6400,
-          "y": 6000,
-        },
-        "t": "line",
-      },
-    },
-    {
-      "layer": "dims",
-      "paint": {
-        "stroke": "#0E5484",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "a": {
-          "x": 6400,
           "y": 0,
         },
         "b": {
-          "x": 6400,
+          "x": 7600,
+          "y": 0,
+        },
+        "t": "line",
+      },
+    },
+    {
+      "layer": "dims",
+      "paint": {
+        "stroke": "#0E5484",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "a": {
+          "x": 7600,
           "y": 6000,
         },
+        "b": {
+          "x": 7600,
+          "y": 0,
+        },
         "t": "line",
       },
     },
@@ -2432,30 +2432,30 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "a": {
-          "x": 6338.9059741054825,
-          "y": 61.094025894517706,
+          "x": 7661.0940258945175,
+          "y": 5938.9059741054825,
         },
         "b": {
-          "x": 6461.0940258945175,
-          "y": -61.094025894517706,
-        },
-        "t": "line",
-      },
-    },
-    {
-      "layer": "dims",
-      "paint": {
-        "stroke": "#0E5484",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "a": {
-          "x": 6338.9059741054825,
+          "x": 7538.9059741054825,
           "y": 6061.0940258945175,
         },
+        "t": "line",
+      },
+    },
+    {
+      "layer": "dims",
+      "paint": {
+        "stroke": "#0E5484",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "a": {
+          "x": 7661.0940258945175,
+          "y": -61.094025894517706,
+        },
         "b": {
-          "x": 6461.0940258945175,
-          "y": 5938.9059741054825,
+          "x": 7538.9059741054825,
+          "y": 61.094025894517706,
         },
         "t": "line",
       },
@@ -2468,11 +2468,11 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "prim": {
         "anchor": "middle",
         "at": {
-          "x": 6299.2,
+          "x": 7700.8,
           "y": 3000,
         },
         "baseline": "central",
-        "rotate": 90,
+        "rotate": -90,
         "size": 144,
         "t": "text",
         "value": "6000",

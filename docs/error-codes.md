@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**30 errors** · **18 warnings**
+**32 errors** · **23 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -18,6 +18,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_DOMAIN`](#e_domain) | error | Math domain error. |
 | [`E_DOOR_WIDTH`](#e_door_width) | error | Door must have a positive width. |
 | [`E_DUP_ID`](#e_dup_id) | error | Duplicate element id. |
+| [`E_FURN_ROOM`](#e_furn_room) | error | Furniture placed `in` an unknown room. |
 | [`E_FURN_SIZE`](#e_furn_size) | error | Furniture must have a positive size. |
 | [`E_IMPORT_BAD_SPEC`](#e_import_bad_spec) | error | Malformed import spec. |
 | [`E_IMPORT_CONFLICT`](#e_import_conflict) | error | Imported name conflicts with an existing component. |
@@ -28,6 +29,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_INDEX`](#e_index) | error | Array index out of range. |
 | [`E_LAYOUT_CYCLE`](#e_layout_cycle) | error | Relational room placement forms a cycle. |
 | [`E_LAYOUT_REF`](#e_layout_ref) | error | Relational placement references an unknown room. |
+| [`E_OPENING_WIDTH`](#e_opening_width) | error | Opening must have a positive width. |
 | [`E_RANGE_LIMIT`](#e_range_limit) | error | Range too large. |
 | [`E_RECURSION`](#e_recursion) | error | Component recursion too deep. |
 | [`E_REDEF`](#e_redef) | error | Name already defined in this scope. |
@@ -44,13 +46,18 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_DOOR_CLEARANCE`](#w_door_clearance) | warning | Door is narrower than the minimum clear width. |
 | [`W_DOOR_OFF_WALL`](#w_door_off_wall) | warning | Door does not lie on any wall. |
 | [`W_EMPTY_PLAN`](#w_empty_plan) | warning | Empty plan. |
+| [`W_FIXTURE_FLOATING`](#w_fixture_floating) | warning | A plumbing/kitchen fixture is not against a wall. |
+| [`W_FIXTURE_WRONG_ROOM`](#w_fixture_wrong_room) | warning | Fixture sits outside its declared room. |
+| [`W_FURNITURE_OVERLAP`](#w_furniture_overlap) | warning | Two pieces of furniture overlap. |
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
 | [`W_NO_ENTRANCE`](#w_no_entrance) | warning | The plan has no exterior door. |
+| [`W_OPENING_OFF_WALL`](#w_opening_off_wall) | warning | Opening does not lie on any wall. |
 | [`W_ROOM_DISCONNECTED`](#w_room_disconnected) | warning | Room has no door — it can't be entered. |
 | [`W_ROOM_NO_FIXTURE`](#w_room_no_fixture) | warning | Bathroom or kitchen has no fixtures. |
 | [`W_ROOM_NOT_ENCLOSED`](#w_room_not_enclosed) | warning | Bathroom is not fully enclosed. |
 | [`W_ROOM_OVERLAP`](#w_room_overlap) | warning | Rooms overlap. |
 | [`W_ROOM_TOO_SMALL`](#w_room_too_small) | warning | Room is implausibly small. |
+| [`W_ROOM_UNREACHABLE`](#w_room_unreachable) | warning | Room cannot be reached from the entrance. |
 | [`W_SANITIZED_CONFIG`](#w_sanitized_config) | warning | A disallowed config value was stripped. |
 | [`W_SWING_OBSTRUCTED`](#w_swing_obstructed) | warning | Door swing is obstructed. |
 | [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material; using the default hatch. |
@@ -166,6 +173,18 @@ door at (0,0) width 0   # error
 ```arch
 room id=a at (0,0) size 1x1
 room id=a at (1,0) size 1x1   # error: duplicate id "a"
+```
+
+## E_FURN_ROOM
+
+*error* — Furniture placed `in` an unknown room.
+
+**Cause.** A furniture item names a room with `in <roomId>`, but no room has that id.
+
+**Fix.** Use the id of an existing `room id=…`, or drop the `in` clause.
+
+```arch
+furniture bed at (0,0) size 1500x2000 in bedrm   # error: no room id=bedrm
 ```
 
 ## E_FURN_SIZE
@@ -288,6 +307,18 @@ room id=b left-of a size 100x100   # error: a ↔ b cycle
 
 ```arch
 room id=k right-of ghost size 100x100   # error: no room "ghost"
+```
+
+## E_OPENING_WIDTH
+
+*error* — Opening must have a positive width.
+
+**Cause.** A cased opening's width evaluated to zero or a negative number.
+
+**Fix.** Give the opening a positive `width`.
+
+```arch
+opening at (0,0) width 0   # error
 ```
 
 ## E_RANGE_LIMIT
@@ -484,6 +515,43 @@ door at (9999,9999) width 900   # warning: not on a wall
 plan "Empty" { units mm }   # warning
 ```
 
+## W_FIXTURE_FLOATING
+
+*warning* — A plumbing/kitchen fixture is not against a wall.
+
+**Cause.** A fixture that conventionally needs a wall behind it (WC, basin, shower, sink, counter, stove, fridge…) sits with no wall backing any edge — it appears to float in the middle of the room.
+
+**Fix.** Move the fixture so one edge is against a wall (supply/waste/venting runs in the wall), or remove it.
+
+```arch
+furniture wc at (3000,3000) size 400x700   # lint: no wall behind it
+```
+
+## W_FIXTURE_WRONG_ROOM
+
+*warning* — Fixture sits outside its declared room.
+
+**Cause.** A furniture item declared `in <roomId>` has its centre outside that room's rectangle, so it is drawn in the wrong space.
+
+**Fix.** Move the fixture inside the named room, or correct the `in <roomId>`.
+
+```arch
+furniture wc at (100,100) size 400x700 in bath   # lint: centre is not inside "bath"
+```
+
+## W_FURNITURE_OVERLAP
+
+*warning* — Two pieces of furniture overlap.
+
+**Cause.** Two furniture/fixture rectangles occupy the same floor area, so they would physically collide — usually a coordinate or size mistake.
+
+**Fix.** Move or resize one so they no longer intersect; leave a walkway between them.
+
+```arch
+furniture sofa at (300,300) size 2000x900
+furniture bed  at (1000,500) size 1500x2000   # lint: overlaps the sofa
+```
+
 ## W_HATCH_SCALE
 
 *warning* — Hatch scale must be positive; using 1.
@@ -506,6 +574,18 @@ wall exterior thickness 200 material brick scale 0 { (0,0) (1,0) }
 
 ```arch
 wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }   # lint: no way in
+```
+
+## W_OPENING_OFF_WALL
+
+*warning* — Opening does not lie on any wall.
+
+**Cause.** A cased opening's position is not within tolerance of any wall segment, so it has no host.
+
+**Fix.** Move the opening onto a wall, or name its host with `wall <id|category>`. The diagnostic points at the nearest wall.
+
+```arch
+opening at (9999,9999) width 1000   # warning: not on a wall
 ```
 
 ## W_ROOM_DISCONNECTED
@@ -567,6 +647,18 @@ room at (1000,0) size 2000x2000   # warning
 
 ```arch
 room at (0,0) size 1000x1000 label "Closet"   # lint: 1 m²
+```
+
+## W_ROOM_UNREACHABLE
+
+*warning* — Room cannot be reached from the entrance.
+
+**Cause.** The building has an entrance, but this room has no door/opening path back to the exterior — it is sealed off from the circulation.
+
+**Fix.** Add a door or cased `opening` linking it (directly or through a hall) to a space that reaches the entrance.
+
+```arch
+room at (5000,0) size 3000x3000 label "Store"   # lint: no path from the entrance
 ```
 
 ## W_SANITIZED_CONFIG

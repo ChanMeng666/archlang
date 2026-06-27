@@ -9,13 +9,14 @@
  * through {@link fmt}; all interpolated text is escaped via {@link xml}.
  */
 
-import type { NorthDir, Point, TitleNode } from "../ast.js";
+import type { NorthDir, Point } from "../ast.js";
 import type { CompileOptions } from "../types.js";
 import type { LineType, LineWeight, Paint, RenderSizes, Scene, SceneNode } from "../scene.js";
 import { RENDER_PASSES, layerOf } from "../scene.js";
 import type { Bounds } from "../geometry.js";
 import { hatchPattern } from "../hatches.js";
 import type { Theme } from "../theme.js";
+import { layoutChrome, type ScaleBarBox, type TitleBlockBox } from "../chrome-layout.js";
 
 /** Round to 2 decimals and strip trailing zeros — keeps output stable & compact. */
 function fmt(v: number): string {
@@ -30,13 +31,6 @@ function xml(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
-}
-
-const NICE_LENGTHS = [500, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
-function niceBarLength(target: number): number {
-  let best = NICE_LENGTHS[0];
-  for (const v of NICE_LENGTHS) if (v <= target) best = v;
-  return best;
 }
 
 /**
@@ -138,10 +132,14 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
 
   const drawW = b.maxX - b.minX;
   const drawH = b.maxY - b.minY;
-  const vbX = b.minX - margin;
-  const vbY = b.minY - margin;
-  const vbW = drawW + margin * 2;
-  const vbH = drawH + margin * 2;
+  // Page chrome (scale bar + title block) is placed below the dimension band; the
+  // per-side margins grow to fit chrome + dims (shared with scene-build + PDF).
+  const chrome = layoutChrome({ bounds: b, refDim, baseMargin: margin, nodes: scene.nodes, title: scene.title, scale: scene.scale });
+  const m = chrome.margin;
+  const vbX = b.minX - m.left;
+  const vbY = b.minY - m.top;
+  const vbW = drawW + m.left + m.right;
+  const vbH = drawH + m.top + m.bottom;
 
   const out: string[] = [];
   const svgAttrs = opts.width
@@ -182,8 +180,8 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
 
   // Plan-level annotations (after element passes): north, scale bar, title block.
   out.push(northArrow(scene.north, b, margin, refDim, THEME));
-  out.push(scaleBar(b, margin, refDim, thin, THEME));
-  const tb = titleBlock(scene.title, scene.scale, b, margin, refDim, thin, THEME);
+  out.push(scaleBar(chrome.scaleBar, thin, THEME));
+  const tb = titleBlock(chrome.titleBlock, thin, THEME);
   if (tb) out.push(tb);
 
   out.push("</svg>");
@@ -220,12 +218,8 @@ function northArrow(north: NorthDir, b: Bounds, margin: number, refDim: number, 
   );
 }
 
-function scaleBar(b: Bounds, margin: number, refDim: number, thin: number, THEME: Theme): string {
-  const barLen = niceBarLength(refDim * 0.3);
-  const x0 = b.minX;
-  const y0 = b.maxY + margin * 0.55;
-  const hgt = refDim * 0.014;
-  const fs = refDim * 0.02;
+function scaleBar(s: ScaleBarBox, thin: number, THEME: Theme): string {
+  const { x0, y0, barLen, hgt, fs } = s;
   const parts: string[] = [];
   const half = barLen / 2;
   // two-segment alternating bar
@@ -242,26 +236,14 @@ function scaleBar(b: Bounds, margin: number, refDim: number, thin: number, THEME
   return `<g>${parts.join("")}</g>`;
 }
 
-function titleBlock(t: TitleNode | undefined, scale: string | undefined, b: Bounds, margin: number, refDim: number, thin: number, THEME: Theme): string | null {
-  if (!t && !scale) return null;
-  const boxW = refDim * 0.34;
-  const boxH = margin * 0.82;
-  const x0 = b.maxX - boxW;
-  const y0 = b.maxY + margin * 0.15;
-  const fs = refDim * 0.019;
-  const pad = boxW * 0.05;
-  const lines: { k: string; v: string }[] = [];
-  if (t?.project) lines.push({ k: "PROJECT", v: t.project });
-  if (t?.drawnBy) lines.push({ k: "DRAWN BY", v: t.drawnBy });
-  if (t?.date) lines.push({ k: "DATE", v: t.date });
-  if (scale) lines.push({ k: "SCALE", v: scale });
-
+function titleBlock(tb: TitleBlockBox | null, thin: number, THEME: Theme): string | null {
+  if (!tb) return null;
+  const { x0, y0, w: boxW, h: boxH, rowH, fs, pad, rows } = tb;
   const parts: string[] = [];
   parts.push(
     `<rect x="${fmt(x0)}" y="${fmt(y0)}" width="${fmt(boxW)}" height="${fmt(boxH)}" fill="none" stroke="${THEME.annotation}" stroke-width="${fmt(thin)}"/>`,
   );
-  const rowH = boxH / Math.max(lines.length, 1);
-  lines.forEach((ln, i) => {
+  rows.forEach((ln, i) => {
     const ly = y0 + rowH * (i + 0.5);
     parts.push(
       `<text x="${fmt(x0 + pad)}" y="${fmt(ly)}" font-size="${fmt(fs * 0.8)}" fill="${THEME.annotationMuted}" dominant-baseline="central">${xml(ln.k)}</text>`,

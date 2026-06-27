@@ -29,6 +29,7 @@ export type ElementKind =
   | "room"
   | "door"
   | "window"
+  | "opening"
   | "furniture"
   | "dim"
   | "column";
@@ -67,6 +68,32 @@ export type RelDir = "right-of" | "left-of" | "below" | "above";
  *  (`below`/`above`) uses `left|center|right` (`center`≡`middle`). */
 export type RelAlign = "top" | "middle" | "bottom" | "left" | "center" | "right";
 
+/**
+ * A room's declared function(s). Explicit `uses` make the analysis layer's room
+ * classification authored intent instead of a label-regex guess (see `roomUses` in
+ * analyze.ts); a room may have several (a studio is `living kitchen`). Classification
+ * only — it does not imply physical enclosure.
+ */
+export type UseKind =
+  | "living"
+  | "kitchen"
+  | "dining"
+  | "bedroom"
+  | "bath"
+  | "wc"
+  | "hall"
+  | "circulation"
+  | "storage"
+  | "utility"
+  | "office"
+  | "entry";
+
+/** Every {@link UseKind}, in canonical order — the parser/formatter/grammar source. */
+export const USE_KINDS: readonly UseKind[] = [
+  "living", "kitchen", "dining", "bedroom", "bath", "wc",
+  "hall", "circulation", "storage", "utility", "office", "entry",
+];
+
 /** `DIR REF [align EDGE] [gap EXPR]` — a room's position relative to another room.
  *  Resolved to absolute coordinates by pure arithmetic in dependency order. */
 export interface RoomRel {
@@ -89,6 +116,8 @@ export interface RoomNode extends NodeBase {
   size: { w: Expr; h: Expr };
   /** Label as a string-interpolation template, evaluated at resolve. */
   label?: Expr;
+  /** Declared function(s) — explicit room classification (`uses bedroom`, …). */
+  uses?: UseKind[];
 }
 
 export interface DoorNode extends NodeBase {
@@ -110,6 +139,15 @@ export interface WindowNode extends NodeBase {
   wall?: string;
 }
 
+/** `opening [id=] at (x,y) width N [wall ref]` — a leaf-less cased opening: a gap
+ *  in the wall (no door, no glazing) that still connects the two spaces. */
+export interface OpeningNode extends NodeBase {
+  kind: "opening";
+  at: ExprPoint;
+  width: Expr;
+  wall?: string;
+}
+
 export interface FurnitureNode extends NodeBase {
   kind: "furniture";
   /** Free-form category, e.g. "bed" or "sofa". */
@@ -118,6 +156,8 @@ export interface FurnitureNode extends NodeBase {
   size: { w: Expr; h: Expr };
   /** Label as a string-interpolation template, evaluated at resolve. */
   label?: Expr;
+  /** Declared owning room id (`in <roomId>`) — the room this fixture belongs to. */
+  room?: string;
 }
 
 export interface DimNode extends NodeBase {
@@ -142,6 +182,7 @@ export type AstElement =
   | RoomNode
   | DoorNode
   | WindowNode
+  | OpeningNode
   | FurnitureNode
   | DimNode
   | ColumnNode;

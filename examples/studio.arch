@@ -17,10 +17,10 @@ plan "Studio 1BR" {
   wall partition thickness 100 { (4000,3000) (7000,3000) }
   wall partition thickness 100 { (4000,4400) (7000,4400) }
 
-  room id=r_living at (0,0)       size 4000x6000 label "Living / Kitchen"
-  room id=r_bed    at (4000,0)    size 3000x3000 label "Bedroom"
-  room id=r_hall   at (4000,3000) size 3000x1400 label "Hall"
-  room id=r_bath   at (4000,4400) size 3000x1600 label "Bath"
+  room id=r_living at (0,0)       size 4000x6000 label "Living / Kitchen" uses living kitchen
+  room id=r_bed    at (4000,0)    size 3000x3000 label "Bedroom"           uses bedroom
+  room id=r_hall   at (4000,3000) size 3000x1400 label "Hall"             uses hall
+  room id=r_bath   at (4000,4400) size 3000x1600 label "Bath"             uses bath
 
   # Entrance into the living space; the hall links it to the bedroom and the bath.
   door id=d_main   at (3000,6000) width 1000 wall exterior  hinge left  swing in
@@ -51,7 +51,7 @@ plan "Studio 1BR" {
   dim (4000,0)->(0,0)       offset 350 text "4000"
   dim (7000,0)->(4000,0)    offset 350 text "3000"
   dim (0,6000)->(7000,6000) offset 600 text "7000"
-  dim (7000,0)->(7000,6000) offset 600 text "6000"
+  dim (7000,6000)->(7000,0) offset 600 text "6000"
 
   title {
     project "Studio Apartment"

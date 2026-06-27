@@ -160,13 +160,15 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       return concat([head, " ", body]);
     }
     case "room":
-      return `room ${id}${s.at ? `at ${ptStr(s.at)}` : relStr(s.rel!)} size ${sizeStr(s.size)}${s.label ? ` label ${exprStr(s.label)}` : ""}`;
+      return `room ${id}${s.at ? `at ${ptStr(s.at)}` : relStr(s.rel!)} size ${sizeStr(s.size)}${s.label ? ` label ${exprStr(s.label)}` : ""}${s.uses && s.uses.length ? ` uses ${s.uses.join(" ")}` : ""}`;
     case "door":
       return `door ${id}at ${ptStr(s.at)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${s.hinge ? ` hinge ${s.hinge}` : ""}${s.swing ? ` swing ${s.swing}` : ""}`;
     case "window":
       return `window ${id}at ${ptStr(s.at)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}`;
+    case "opening":
+      return `opening ${id}at ${ptStr(s.at)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}`;
     case "furniture":
-      return `furniture ${id}${s.category} at ${ptStr(s.at)} size ${sizeStr(s.size)}${s.label ? ` label ${exprStr(s.label)}` : ""}`;
+      return `furniture ${id}${s.category} at ${ptStr(s.at)} size ${sizeStr(s.size)}${s.label ? ` label ${exprStr(s.label)}` : ""}${s.room ? ` in ${s.room}` : ""}`;
     case "dim":
       return `dim ${ptStr(s.from)}->${ptStr(s.to)} offset ${exprStr(s.offset)}${s.text ? ` text ${exprStr(s.text)}` : ""}`;
     case "column":

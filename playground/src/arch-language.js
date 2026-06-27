@@ -12,9 +12,9 @@ import { tags as t } from "@lezer/highlight";
 import { compile } from "archlang";
 
 const CONTROL = new Set(["plan", "component", "let", "theme", "title", "style", "import", "for", "if", "while", "else", "set"]);
-const ELEMENT = new Set(["wall", "room", "door", "window", "furniture", "dim", "column"]);
-const ATTR = new Set(["units", "grid", "scale", "north", "dims", "material", "angle", "at", "size", "width", "thickness", "label", "hinge", "swing", "offset", "text", "close", "id", "project", "drawn_by", "date", "from", "as", "right-of", "left-of", "below", "above", "align", "gap"]);
-const ENUM = new Set(["up", "down", "left", "right", "in", "out", "mm", "true", "false", "top", "middle", "bottom", "center", "auto"]);
+const ELEMENT = new Set(["wall", "room", "door", "window", "opening", "furniture", "dim", "column"]);
+const ATTR = new Set(["units", "grid", "scale", "north", "dims", "material", "angle", "at", "size", "width", "thickness", "label", "hinge", "swing", "offset", "text", "close", "id", "project", "drawn_by", "date", "from", "as", "right-of", "left-of", "below", "above", "align", "gap", "uses"]);
+const ENUM = new Set(["up", "down", "left", "right", "in", "out", "mm", "true", "false", "top", "middle", "bottom", "center", "auto", "living", "kitchen", "dining", "bedroom", "bath", "wc", "hall", "circulation", "storage", "utility", "office", "entry"]);
 
 const archStream = StreamLanguage.define({
   name: "arch",

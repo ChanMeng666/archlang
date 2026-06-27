@@ -14,9 +14,10 @@ import { wall } from "./wall.js";
 import { room } from "./room.js";
 import { door } from "./door.js";
 import { windowEl } from "./window.js";
+import { opening } from "./opening.js";
 import { furniture } from "./furniture.js";
 import { dim } from "./dim.js";
 import { column } from "./column.js";
 
 /** Built-in element defs, in canonical (registration) order. */
-export const BUILTIN_DEFS: readonly ElementDef[] = [wall, room, door, windowEl, furniture, dim, column];
+export const BUILTIN_DEFS: readonly ElementDef[] = [wall, room, door, windowEl, opening, furniture, dim, column];

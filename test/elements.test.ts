@@ -9,6 +9,7 @@ describe("element registry", () => {
       "room",
       "door",
       "window",
+      "opening",
       "furniture",
       "dim",
       "column",

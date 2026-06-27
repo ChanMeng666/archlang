@@ -52,7 +52,7 @@ export type {
 // Architectural lint (v1.1): habitability rules as `W_*` diagnostics — every room
 // enterable, bedrooms have a window, doors wide enough, the building has an entrance.
 // Pure; the ruleset is data. Surfaced as `arch lint`.
-export { lint, DEFAULT_RULESET } from "./lint.js";
+export { lint, DEFAULT_RULESET, LINT_PROFILES, LINT_PROFILE_NAMES } from "./lint.js";
 export type { LintOptions, LintRuleset } from "./lint.js";
 // Language services (v0.11): pure LSP core (hover/completion/definition/rename/
 // signature help) over the CST cursor + registry schemas. The VS Code server is

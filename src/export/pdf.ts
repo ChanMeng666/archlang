@@ -22,6 +22,7 @@ import type { NorthDir, Point } from "../ast.js";
 import type { Paint, Scene, SceneNode } from "../scene.js";
 import { RENDER_PASSES } from "../scene.js";
 import type { Theme } from "../theme.js";
+import { layoutChrome, type TitleRow } from "../chrome-layout.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -110,9 +111,10 @@ export async function toPdf(scene: Scene): Promise<Uint8Array> {
   }
 
   const { theme, sizes, bounds: b } = scene;
-  const margin = sizes.margin;
-  const vbX = b.minX - margin;
-  const vbY = b.minY - margin;
+  // Per-side margins from the shared chrome layout (match scene.width/height).
+  const m = layoutChrome({ bounds: b, refDim: sizes.refDim, baseMargin: sizes.margin, nodes: scene.nodes, title: scene.title, scale: scene.scale }).margin;
+  const vbX = b.minX - m.left;
+  const vbY = b.minY - m.top;
   const W = scene.width;
   const H = scene.height;
 
@@ -170,13 +172,13 @@ function drawChrome(doc: any, scene: Scene): void {
     drawText(doc, { x: lx, y: ly }, "N", fs, "middle", undefined, theme.annotation);
   }
 
+  // Scale bar + title block come from the shared chrome layout (placed below the
+  // dimension band; the bottom margin already grew to fit — see scene.height).
+  const chrome = layoutChrome({ bounds: b, refDim, baseMargin: margin, nodes: scene.nodes, title: scene.title, scale: scene.scale });
+
   // Scale bar (two-segment alternating bar + end labels).
   {
-    const barLen = niceBarLength(refDim * 0.3);
-    const x0 = b.minX;
-    const y0 = b.maxY + margin * 0.55;
-    const hgt = refDim * 0.014;
-    const fs = refDim * 0.02;
+    const { x0, y0, barLen, hgt, fs } = chrome.scaleBar;
     const half = barLen / 2;
     doc.rect(x0, y0, half, hgt).fill(theme.annotation);
     doc.lineWidth(thin).undash();
@@ -186,23 +188,11 @@ function drawChrome(doc: any, scene: Scene): void {
   }
 
   // Title block (framed metadata rows).
-  const t = scene.title;
-  if (t || scene.scale) {
-    const boxW = refDim * 0.34;
-    const boxH = margin * 0.82;
-    const x0 = b.maxX - boxW;
-    const y0 = b.maxY + margin * 0.15;
-    const fs = refDim * 0.019;
-    const pad = boxW * 0.05;
-    const lines: { k: string; v: string }[] = [];
-    if (t?.project) lines.push({ k: "PROJECT", v: t.project });
-    if (t?.drawnBy) lines.push({ k: "DRAWN BY", v: t.drawnBy });
-    if (t?.date) lines.push({ k: "DATE", v: t.date });
-    if (scene.scale) lines.push({ k: "SCALE", v: scene.scale });
+  if (chrome.titleBlock) {
+    const { x0, y0, w: boxW, h: boxH, rowH, fs, pad, rows } = chrome.titleBlock;
     doc.lineWidth(thin).undash();
     doc.rect(x0, y0, boxW, boxH).stroke(theme.annotation);
-    const rowH = boxH / Math.max(lines.length, 1);
-    lines.forEach((ln, i) => {
+    rows.forEach((ln: TitleRow, i: number) => {
       const ly = y0 + rowH * (i + 0.5);
       drawText(doc, { x: x0 + pad, y: ly }, ln.k, fs * 0.8, "start", undefined, theme.annotationMuted);
       drawText(doc, { x: x0 + boxW - pad, y: ly }, ln.v, fs, "end", undefined, theme.annotation);
@@ -221,13 +211,6 @@ function northDegrees(north: NorthDir): number {
     case "right": return 90;
     default: return typeof north === "object" ? north.deg : 0;
   }
-}
-
-const NICE_LENGTHS = [500, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
-function niceBarLength(target: number): number {
-  let best = NICE_LENGTHS[0];
-  for (const v of NICE_LENGTHS) if (v <= target) best = v;
-  return best;
 }
 
 function concat(chunks: Uint8Array[]): Uint8Array {

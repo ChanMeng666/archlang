@@ -33,10 +33,11 @@ export const SPEC_EXAMPLES = ["studio.arch", "parametric.arch"] as const;
  */
 const ELEMENT_GRAMMAR: Record<string, string> = {
   wall: 'wall <category> thickness <mm> [material <name>] { (x,y) (x,y) … [close] }   # category e.g. exterior/partition; `close` makes a loop',
-  room: 'room [id=<name>] at (x,y) size <W>x<H> [label "…"]   # OR relational: room [id=…] (right-of|left-of|below|above) <roomId> [align top|middle|bottom|left|right] [gap <mm>] size <W>x<H> [label "…"]',
+  room: 'room [id=<name>] at (x,y) size <W>x<H> [label "…"] [uses living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry …]   # OR relational: room [id=…] (right-of|left-of|below|above) <roomId> [align top|middle|bottom|left|right] [gap <mm>] size <W>x<H> [label "…"]',
   door: 'door [id=<name>] at (x,y) width <mm> [wall <id|category>] [hinge left|right] [swing in|out]   # must sit on a wall',
   window: 'window [id=<name>] at (x,y) width <mm> [wall <id|category>]   # must sit on a wall',
-  furniture: 'furniture <category> at (x,y) size <W>x<H> [label "…"]   # category e.g. bed/sofa/table',
+  opening: 'opening [id=<name>] at (x,y) width <mm> [wall <id|category>]   # a leaf-less cased opening (gap in a wall) that still connects the two spaces',
+  furniture: 'furniture <category> at (x,y) size <W>x<H> [label "…"] [in <roomId>]   # category e.g. bed/sofa/table; `in` declares the owning room',
   dim: 'dim (x,y)->(x,y) offset <mm> [text "…"]   # a dimension line',
   column: "column [id=<name>] at (x,y) size <W>x<H>",
 };

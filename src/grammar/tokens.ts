@@ -20,15 +20,18 @@ export const KEYWORDS = {
   /** Statement / declaration keywords → TextMate `keyword.control`, CM `keyword`. */
   control: ["plan", "component", "let", "theme", "title", "style", "import", "for", "if", "while", "else", "set"],
   /** Built-in element kinds → `storage.type.element`, CM `typeName`. */
-  element: ["wall", "room", "door", "window", "furniture", "dim", "column"],
+  element: ["wall", "room", "door", "window", "opening", "furniture", "dim", "column"],
   /** Setting / attribute keywords → `keyword.other`, CM `propertyName`. */
   attribute: [
     "units", "grid", "scale", "north", "dims", "material", "angle", "at", "size", "width", "thickness",
     "label", "hinge", "swing", "offset", "text", "close", "id", "project", "drawn_by", "date", "from", "as",
-    "right-of", "left-of", "below", "above", "align", "gap",
+    "right-of", "left-of", "below", "above", "align", "gap", "uses",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
-  enum: ["up", "down", "left", "right", "in", "out", "mm", "true", "false", "top", "middle", "bottom", "center", "auto"],
+  enum: [
+    "up", "down", "left", "right", "in", "out", "mm", "true", "false", "top", "middle", "bottom", "center", "auto",
+    "living", "kitchen", "dining", "bedroom", "bath", "wc", "hall", "circulation", "storage", "utility", "office", "entry",
+  ],
 } as const;
 
 /** All operators the lexer recognises (multi-char forms first when generating regex). */

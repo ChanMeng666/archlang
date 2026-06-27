@@ -14,7 +14,7 @@
  * byte-stable across runs.
  */
 
-import type { ResolvedPlan, RRoom, RDoor, RWindow, RFurniture } from "./ir.js";
+import type { ResolvedPlan, RRoom, RDoor, RWindow, ROpening, RFurniture } from "./ir.js";
 import type { Diagnostic } from "./diagnostics.js";
 import {
   resolvePlan,
@@ -22,8 +22,11 @@ import {
   roomsAdjacent,
   roomsAtPoint,
   doorConnections,
+  roomUses,
+  buildDoorAccessGraph,
   DEFAULT_TOL,
   type AnalyzeOptions,
+  type AccessGraph,
   type BBox,
 } from "./analyze.js";
 
@@ -43,6 +46,8 @@ export interface DescribeOptions extends AnalyzeOptions {
 export interface RoomSummary {
   id: string;
   label?: string;
+  /** Declared or inferred function(s) of the room (e.g. `["living","kitchen"]`). */
+  uses: string[];
   /** Floor area in square metres, rounded to 2 decimals. */
   area_m2: number;
   bbox: BBox;
@@ -67,10 +72,19 @@ export interface WindowSummary {
   width: number;
 }
 
+export interface OpeningSummary {
+  id: string;
+  /** The one or two spaces this cased opening connects (room ids and/or `"exterior"`). */
+  between: string[];
+  width: number;
+}
+
 export interface FurnitureSummary {
   id: string;
   category: string;
   label?: string;
+  /** Declared owning room id (`in <roomId>`), if any. */
+  room?: string;
 }
 
 /** The semantic summary of a plan. `ok` is false when fatal errors prevented
@@ -85,7 +99,14 @@ export interface SceneSummary {
   rooms: RoomSummary[];
   doors: DoorSummary[];
   windows: WindowSummary[];
+  /** Leaf-less cased openings and the spaces they connect. */
+  openings: OpeningSummary[];
   furniture: FurnitureSummary[];
+  /**
+   * The modeled access graph: entrances, room reachability/depth from the exterior,
+   * and connector edges (doors and cased openings) with estimated clear widths.
+   */
+  access: AccessGraph;
   totals: { rooms: number; doors: number; windows: number; floor_area_m2: number };
   /** All problems from parse/link/resolve, with byte spans and codes. */
   diagnostics: Diagnostic[];
@@ -99,6 +120,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doorEls = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const windowEls = ir.elements.filter((e): e is RWindow => e.kind === "window");
+  const openingEls = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const furnEls = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
 
   const roomRects = new Map<string, BBox>(roomEls.map((r) => [r.id, rectOf(r)]));
@@ -113,6 +135,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     return {
       id: r.id,
       ...(r.label !== undefined ? { label: r.label } : {}),
+      uses: [...roomUses(r)],
       area_m2: r2((r.size.w * r.size.h) / 1_000_000),
       bbox: rect,
       adjacent,
@@ -132,11 +155,20 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     return { id: w.id, room: touching[0] ?? null, width: w.width };
   });
 
+  const openings: OpeningSummary[] = openingEls.map((o) => ({
+    id: o.id,
+    between: doorConnections(o, roomRects, tol),
+    width: o.width,
+  }));
+
   const furniture: FurnitureSummary[] = furnEls.map((f) => ({
     id: f.id,
     category: f.category,
     ...(f.label !== undefined ? { label: f.label } : {}),
+    ...(f.room !== undefined ? { room: f.room } : {}),
   }));
+
+  const access = buildDoorAccessGraph(roomEls, doorEls, tol, undefined, openingEls);
 
   // Drawing extent: union of wall points and sized-element rectangles.
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -163,7 +195,9 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     rooms,
     doors,
     windows,
+    openings,
     furniture,
+    access,
     totals: { rooms: rooms.length, doors: doors.length, windows: windows.length, floor_area_m2: floorArea },
   };
 }
@@ -190,7 +224,9 @@ export function describe(source: string, opts: DescribeOptions = {}): SceneSumma
       rooms: [],
       doors: [],
       windows: [],
+      openings: [],
       furniture: [],
+      access: { entrances: [], hasEntrance: false, edges: [], rooms: [] },
       totals: { rooms: 0, doors: 0, windows: 0, floor_area_m2: 0 },
       diagnostics,
     };

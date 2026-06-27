@@ -14,7 +14,7 @@
  * building-code packs can extend it later.
  */
 
-import type { RRoom, RDoor, RWindow, RFurniture } from "./ir.js";
+import type { RRoom, RDoor, RWindow, ROpening, RFurniture } from "./ir.js";
 import type { Diagnostic } from "./diagnostics.js";
 import {
   resolvePlan,
@@ -22,18 +22,17 @@ import {
   pointOnRoomEdge,
   doorConnections,
   largestPerimeterGap,
+  isBedroom,
+  isWetRoom,
+  isKitchen,
+  isAgainstWall,
   DEFAULT_TOL,
   type AnalyzeOptions,
   type BBox,
 } from "./analyze.js";
 import { doorSwing, sectorIntersectsRect, swingsCollide, type DoorSwing } from "./geometry.js";
+import { requiresWall } from "./fixtures-catalog.js";
 
-/** A room label that reads as a bedroom (sleeping space). */
-const BEDROOM_RE = /\bbed\b|bedroom/i;
-/** A room label that reads as a wet room (bathroom / WC / shower). */
-const WET_RE = /\bbath\b|bathroom|\bwc\b|toilet|ensuite|en-suite|shower|washroom/i;
-/** A room label that reads as a kitchen. */
-const KITCHEN_RE = /kitchen|kitchenette/i;
 /** Furniture categories that count as a plumbing fixture for a wet room. */
 const WET_FIX = new Set(["wc", "toilet", "basin", "sink", "shower", "bath", "bathtub", "tub"]);
 /** Furniture categories that count as a fixture/appliance for a kitchen. */
@@ -55,6 +54,12 @@ export interface LintRuleset {
   maxUnenclosedMm: number;
   /** Extra clearance (mm) added when testing door-swing collisions. Default 0. */
   swingClearanceMm: number;
+  /**
+   * How close (mm) a wall-requiring fixture's edge must be to a wall centerline to
+   * count as "against the wall". Default 300 — comfortably more than a wall's
+   * half-thickness (a fixture backs onto the wall *face*) plus a small setback.
+   */
+  fixtureWallTolMm: number;
 }
 
 export const DEFAULT_RULESET: LintRuleset = {
@@ -63,10 +68,37 @@ export const DEFAULT_RULESET: LintRuleset = {
   tolMm: DEFAULT_TOL,
   maxUnenclosedMm: 300,
   swingClearanceMm: 0,
+  fixtureWallTolMm: 300,
 };
 
+/**
+ * Named, **advisory** lint profiles — partial ruleset overrides over
+ * {@link DEFAULT_RULESET}. Deliberately NOT named after a standard (`ada`, `iso`):
+ * a profile is an advisory soundness check, never a compliance guarantee, and
+ * ArchLang does not model everything a code requires (clear opening width, approach
+ * clearances, hardware). Every override is a documented, traceable threshold.
+ */
+export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Object.freeze({
+  /** The shipped residential baseline (identical to {@link DEFAULT_RULESET}). */
+  "residential-basic": {},
+  /**
+   * Stricter passage + clearances inspired by accessibility guidance (e.g. the ADA's
+   * ~815 mm clear door opening and generous turning/approach space). Advisory only.
+   */
+  "accessibility-advisory": {
+    minDoorWidthMm: 850, // a nominal width giving roughly an 815 mm clear opening
+    minRoomAreaM2: 5,
+    swingClearanceMm: 150,
+  },
+});
+
+/** The names of the built-in {@link LINT_PROFILES}, for CLI validation. */
+export const LINT_PROFILE_NAMES: readonly string[] = Object.keys(LINT_PROFILES);
+
 export interface LintOptions extends AnalyzeOptions {
-  /** Override any subset of {@link DEFAULT_RULESET}. */
+  /** A named profile from {@link LINT_PROFILES} (applied before `ruleset`). */
+  profile?: string;
+  /** Override any subset of {@link DEFAULT_RULESET} (wins over `profile`). */
   ruleset?: Partial<LintRuleset>;
 }
 
@@ -79,15 +111,20 @@ const areaM2 = (r: RRoom): number => Math.round((r.size.w * r.size.h) / 1_000_00
  * check; compile/validate surfaces those). Never throws.
  */
 export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
-  const rules: LintRuleset = { ...DEFAULT_RULESET, ...opts.ruleset };
+  // Ruleset cascade: defaults → named profile → explicit per-call overrides.
+  const profileRules = opts.profile ? LINT_PROFILES[opts.profile] ?? {} : {};
+  const rules: LintRuleset = { ...DEFAULT_RULESET, ...profileRules, ...opts.ruleset };
   const { ir } = resolvePlan(source, opts);
   if (!ir) return [];
 
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const windows = ir.elements.filter((e): e is RWindow => e.kind === "window");
+  const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const furniture = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
   const roomRects = new Map<string, BBox>(rooms.map((r) => [r.id, rectOf(r)]));
+  // Both doors and cased openings connect a room to its neighbours.
+  const connectors = [...doors, ...openings];
 
   const out: Diagnostic[] = [];
   const labelOf = (r: RRoom): string => r.label ?? r.id;
@@ -105,22 +142,22 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
         hints: ["Increase its `size`, or merge it into an adjacent space."] });
     }
 
-    // No door on its perimeter, so it can't be entered.
-    if (!doors.some((d) => onEdge(d.at))) {
+    // No door or opening on its perimeter, so it can't be entered.
+    if (!connectors.some((c) => onEdge(c.at))) {
       out.push({ severity: "warning", code: "W_ROOM_DISCONNECTED", ...at(r.span),
-        message: `Room "${labelOf(r)}" has no door — it can't be entered.`,
-        hints: ["Add a `door` on one of its walls."] });
+        message: `Room "${labelOf(r)}" has no door or opening — it can't be entered.`,
+        hints: ["Add a `door` or a cased `opening` on one of its walls."] });
     }
 
     // A bedroom needs natural light / egress.
-    if (BEDROOM_RE.test(labelOf(r)) && !windows.some((win) => onEdge(win.at))) {
+    if (isBedroom(r) && !windows.some((win) => onEdge(win.at))) {
       out.push({ severity: "warning", code: "W_BEDROOM_NO_WINDOW", ...at(r.span),
         message: `Bedroom "${labelOf(r)}" has no window.`,
         hints: ["Add a `window` on an exterior wall of this room."] });
     }
 
     // A wet room not fully walled in (a partition that stops short leaves it open).
-    if (WET_RE.test(labelOf(r))) {
+    if (isWetRoom(r)) {
       const gap = largestPerimeterGap(rect, ir.walls, rules.tolMm);
       if (gap > rules.maxUnenclosedMm) {
         out.push({ severity: "warning", code: "W_ROOM_NOT_ENCLOSED", ...at(r.span),
@@ -130,9 +167,9 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
     }
 
     // A wet room or kitchen with no fixtures reads as an empty box.
-    const isWet = WET_RE.test(labelOf(r));
-    const isKitchen = KITCHEN_RE.test(labelOf(r));
-    if (isWet || isKitchen) {
+    const isWet = isWetRoom(r);
+    const isKit = isKitchen(r);
+    if (isWet || isKit) {
       const want = isWet ? WET_FIX : KITCHEN_FIX;
       const has = furniture.some((f) => {
         const fr = rectOf(f);
@@ -148,6 +185,52 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
     }
   }
 
+  // Furniture that overlaps another piece — a physical collision (each unordered
+  // pair reported once, in source order, against the second piece's span).
+  for (let i = 0; i < furniture.length; i++) {
+    for (let j = i + 1; j < furniture.length; j++) {
+      const a = rectOf(furniture[i]);
+      const b = rectOf(furniture[j]);
+      const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+      const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+      if (ox > 1 && oy > 1) {
+        const nameI = furniture[i].label ?? furniture[i].category;
+        const nameJ = furniture[j].label ?? furniture[j].category;
+        out.push({ severity: "warning", code: "W_FURNITURE_OVERLAP", ...at(furniture[j].span),
+          message: `Furniture "${nameJ}" overlaps "${nameI}".`,
+          hints: ["Move or resize one piece so they don't intersect; leave a walkway between them."] });
+      }
+    }
+  }
+
+  // A wall-requiring fixture (WC, basin, sink, counter, stove, fridge…) placed with
+  // no wall behind any edge — it floats in the room.
+  for (const f of furniture) {
+    if (requiresWall(f.category) && !isAgainstWall(rectOf(f), ir.walls, rules.fixtureWallTolMm)) {
+      const name = f.label ?? f.category;
+      out.push({ severity: "warning", code: "W_FIXTURE_FLOATING", ...at(f.span),
+        message: `Fixture "${name}" is not against a wall.`,
+        hints: ["Place it so one edge backs onto a wall — plumbing/venting runs in the wall."] });
+    }
+  }
+
+  // A fixture declared `in <room>` whose centre falls outside that room's rectangle
+  // (an unknown room id is the harder E_FURN_ROOM error, handled at resolve).
+  for (const f of furniture) {
+    if (f.room === undefined) continue;
+    const rect = roomRects.get(f.room);
+    if (!rect) continue;
+    const cx = f.at.x + f.size.w / 2;
+    const cy = f.at.y + f.size.h / 2;
+    const inside = cx >= rect.x && cx <= rect.x + rect.w && cy >= rect.y && cy <= rect.y + rect.h;
+    if (!inside) {
+      const name = f.label ?? f.category;
+      out.push({ severity: "warning", code: "W_FIXTURE_WRONG_ROOM", ...at(f.span),
+        message: `Fixture "${name}" sits outside its declared room "${f.room}".`,
+        hints: ["Move it inside that room, or correct the `in <roomId>`."] });
+    }
+  }
+
   // A wet room reachable from the entrance only by passing through a bedroom.
   // Build the room-connectivity graph from doors (rooms + the literal "exterior"),
   // then compare reachability with and without bedroom nodes.
@@ -159,13 +242,13 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
       adj.get(x)!.add(y);
       adj.get(y)!.add(x);
     };
-    for (const d of doors) {
-      const conn = doorConnections(d, roomRects, rules.tolMm);
+    for (const c of connectors) {
+      const conn = doorConnections(c, roomRects, rules.tolMm);
       if (conn.length === 2) addEdge(conn[0], conn[1]);
     }
-    const isBedroom = (id: string): boolean => {
+    const isBedroomId = (id: string): boolean => {
       const r = rooms.find((x) => x.id === id);
-      return r ? BEDROOM_RE.test(labelOf(r)) : false;
+      return r ? isBedroom(r) : false;
     };
     const bfs = (excludeBedrooms: boolean): Set<string> => {
       const seen = new Set<string>();
@@ -175,7 +258,7 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
       while (queue.length) {
         const cur = queue.shift()!;
         for (const nb of adj.get(cur) ?? []) {
-          if (seen.has(nb) || (excludeBedrooms && isBedroom(nb))) continue;
+          if (seen.has(nb) || (excludeBedrooms && isBedroomId(nb))) continue;
           seen.add(nb);
           queue.push(nb);
         }
@@ -186,10 +269,20 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
       const reachAll = bfs(false);
       const reachNoBed = bfs(true);
       for (const r of rooms) {
-        if (WET_RE.test(labelOf(r)) && reachAll.has(r.id) && !reachNoBed.has(r.id)) {
+        if (isWetRoom(r) && reachAll.has(r.id) && !reachNoBed.has(r.id)) {
           out.push({ severity: "warning", code: "W_BATH_VIA_BEDROOM", ...at(r.span),
             message: `Bathroom "${labelOf(r)}" is reachable only through a bedroom.`,
             hints: ["Connect it to a hall or living space — or, if it is an en-suite, add a second bathroom off circulation."] });
+        }
+        // Has a connector on its perimeter (so not W_ROOM_DISCONNECTED) yet no path
+        // back to the entrance — a sealed-off pocket. Only meaningful when an
+        // entrance exists (else W_NO_ENTRANCE already covers the whole plan).
+        const rect = roomRects.get(r.id)!;
+        const hasConnector = connectors.some((c) => pointOnRoomEdge(c.at, rect, rules.tolMm));
+        if (hasConnector && !reachAll.has(r.id)) {
+          out.push({ severity: "warning", code: "W_ROOM_UNREACHABLE", ...at(r.span),
+            message: `Room "${labelOf(r)}" can't be reached from the entrance.`,
+            hints: ["Add a door or cased `opening` linking it (directly or through a hall) to a space that reaches the entrance."] });
         }
       }
     }
@@ -220,18 +313,18 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
   for (const d of doors) {
     if (d.width < rules.minDoorWidthMm) {
       out.push({ severity: "warning", code: "W_DOOR_CLEARANCE", ...at(d.span),
-        message: `Door is ${d.width} mm wide (under the ${rules.minDoorWidthMm} mm minimum clear width).`,
+        message: `Door is ${d.width} mm wide (under the ${rules.minDoorWidthMm} mm minimum nominal width).`,
         hints: [`Widen it to at least ${rules.minDoorWidthMm} mm.`] });
     }
   }
 
   // The building has rooms and an outer shell but no way in.
   const hasExteriorWall = ir.walls.some((wl) => wl.category === "exterior");
-  const hasExteriorDoor = doors.some((d) => d.host?.category === "exterior");
-  if (rooms.length > 0 && hasExteriorWall && !hasExteriorDoor) {
+  const hasExteriorEntry = connectors.some((c) => c.host?.category === "exterior");
+  if (rooms.length > 0 && hasExteriorWall && !hasExteriorEntry) {
     out.push({ severity: "warning", code: "W_NO_ENTRANCE",
-      message: "The plan has no exterior door — there is no way into the building.",
-      hints: ["Add a `door` on an `exterior` wall."] });
+      message: "The plan has no exterior door or opening — there is no way into the building.",
+      hints: ["Add a `door` (or a cased `opening`) on an `exterior` wall."] });
   }
 
   return out;

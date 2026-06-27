@@ -111,7 +111,12 @@ export function doorSwing(d: DoorLike): DoorSwing | null {
   const leafEnd = add(hinge, mul(leafDir, d.width));
   const cross =
     (leafEnd.x - hinge.x) * (farJamb.y - hinge.y) - (leafEnd.y - hinge.y) * (farJamb.x - hinge.x);
-  const sweep: 0 | 1 = cross < 0 ? 1 : 0;
+  // SVG draws `M leafEnd A r r 0 0 sweep farJamb` with no explicit centre, so the
+  // sweep flag must select the candidate circle centred on the hinge (a convex
+  // quarter-disc). For the minor arc (large-arc-flag 0) that is sweep = 1 when the
+  // signed area (leafEnd−hinge)×(farJamb−hinge) is positive, 0 otherwise. The prior
+  // `cross < 0 ? 1 : 0` was inverted, selecting the other centre → a concave arc.
+  const sweep: 0 | 1 = cross > 0 ? 1 : 0;
   return { hinge, farJamb, leafEnd, radius: d.width, sweep };
 }
 
