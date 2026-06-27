@@ -26,12 +26,20 @@ import {
   isWetRoom,
   isKitchen,
   isAgainstWall,
+  frontClearanceRect,
   DEFAULT_TOL,
   type AnalyzeOptions,
   type BBox,
 } from "./analyze.js";
 import { doorSwing, sectorIntersectsRect, swingsCollide, type DoorSwing } from "./geometry.js";
-import { requiresWall } from "./fixtures-catalog.js";
+import { requiresWall, frontClearanceMm } from "./fixtures-catalog.js";
+
+/** Do two axis-aligned rects overlap by more than 1 mm on both axes? */
+function rectsOverlap(a: BBox, b: BBox): boolean {
+  const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+  const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+  return ox > 1 && oy > 1;
+}
 
 /** Furniture categories that count as a plumbing fixture for a wet room. */
 const WET_FIX = new Set(["wc", "toilet", "basin", "sink", "shower", "bath", "bathtub", "tub"]);
@@ -189,16 +197,33 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
   // pair reported once, in source order, against the second piece's span).
   for (let i = 0; i < furniture.length; i++) {
     for (let j = i + 1; j < furniture.length; j++) {
-      const a = rectOf(furniture[i]);
-      const b = rectOf(furniture[j]);
-      const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
-      const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
-      if (ox > 1 && oy > 1) {
+      if (rectsOverlap(rectOf(furniture[i]), rectOf(furniture[j]))) {
         const nameI = furniture[i].label ?? furniture[i].category;
         const nameJ = furniture[j].label ?? furniture[j].category;
         out.push({ severity: "warning", code: "W_FURNITURE_OVERLAP", ...at(furniture[j].span),
           message: `Furniture "${nameJ}" overlaps "${nameI}".`,
           hints: ["Move or resize one piece so they don't intersect; leave a walkway between them."] });
+      }
+    }
+  }
+
+  // A fixture's frontal activity clearance blocked by a *free-standing* piece of
+  // furniture (a sofa parked in front of the stove). Conservative on purpose: it
+  // ignores other plumbing/kitchen fixtures, so a compactly-packed bathroom or
+  // kitchen run never trips it — only a movable object in the use-space does.
+  for (const f of furniture) {
+    const clear = frontClearanceMm(f.category);
+    if (clear <= 0) continue;
+    const zone = frontClearanceRect(f, clear);
+    for (const g of furniture) {
+      if (g === f || requiresWall(g.category)) continue; // ignore other fixtures
+      if (rectsOverlap(zone, rectOf(g))) {
+        const fn = f.label ?? f.category;
+        const gn = g.label ?? g.category;
+        out.push({ severity: "warning", code: "W_FURN_CLEARANCE", ...at(f.span),
+          message: `Fixture "${fn}" has no clearance in front — "${gn}" is in the way.`,
+          hints: [`Leave at least ${clear} mm of clear space in front of it, or move "${gn}".`] });
+        break; // one warning per fixture
       }
     }
   }

@@ -148,14 +148,35 @@ export interface OpeningNode extends NodeBase {
   wall?: string;
 }
 
+/** `against wall <id> [segment <n>] [offset <d>] [side left|right]` — anchor a fixture
+ *  flush to a wall face. The renderer position + quarter-turn are computed from it
+ *  at resolve (closed-form). Mutually exclusive with {@link FurnitureNode.at}. */
+export interface FurnitureAgainst {
+  /** Host wall id to back onto. */
+  wall: string;
+  /** Which segment of a multi-segment wall (0-based); required when the wall has >1. */
+  segment?: Expr;
+  /** Distance (mm) along the segment from its start to the fixture's along-wall centre; default = segment midpoint. */
+  offset?: Expr;
+  /** Which face of the wall — left/right of the segment's start→end direction. */
+  side?: "left" | "right";
+  span?: Span;
+}
+
 export interface FurnitureNode extends NodeBase {
   kind: "furniture";
   /** Free-form category, e.g. "bed" or "sofa". */
   category: string;
-  at: ExprPoint;
+  /** Absolute top-left corner. Mutually exclusive with {@link FurnitureNode.against}. */
+  at?: ExprPoint;
+  /** Wall-anchored placement (computes at/size/rotation). Exclusive with `at`. */
+  against?: FurnitureAgainst;
+  /** In `at` mode: plan-axis width×height. In `against` mode: wall-relative along×depth. */
   size: { w: Expr; h: Expr };
   /** Label as a string-interpolation template, evaluated at resolve. */
   label?: Expr;
+  /** Quarter-turn rotation of the drawn symbol (0|90|180|270 degrees), evaluated at resolve. */
+  rotate?: Expr;
   /** Declared owning room id (`in <roomId>`) — the room this fixture belongs to. */
   room?: string;
 }

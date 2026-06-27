@@ -25,7 +25,7 @@ export const KEYWORDS = {
   attribute: [
     "units", "grid", "scale", "north", "dims", "material", "angle", "at", "size", "width", "thickness",
     "label", "hinge", "swing", "offset", "text", "close", "id", "project", "drawn_by", "date", "from", "as",
-    "right-of", "left-of", "below", "above", "align", "gap", "uses",
+    "right-of", "left-of", "below", "above", "align", "gap", "uses", "rotate", "against", "segment", "side",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
   enum: [

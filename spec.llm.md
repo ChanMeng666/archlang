@@ -39,7 +39,7 @@ room [id=<name>] at (x,y) size <W>x<H> [label "…"] [uses living|kitchen|dining
 door [id=<name>] at (x,y) width <mm> [wall <id|category>] [hinge left|right] [swing in|out]   # must sit on a wall
 window [id=<name>] at (x,y) width <mm> [wall <id|category>]   # must sit on a wall
 opening [id=<name>] at (x,y) width <mm> [wall <id|category>]   # a leaf-less cased opening (gap in a wall) that still connects the two spaces
-furniture <category> at (x,y) size <W>x<H> [label "…"] [in <roomId>]   # category e.g. bed/sofa/table; `in` declares the owning room
+furniture <category> (at (x,y) | against wall <id> [segment <n>] [offset <mm>] [side left|right]) size <W>x<H> [label "…"] [rotate 0|90|180|270] [in <roomId>]   # `at` size is plan W×H; `against` size is wall-relative along×depth and derives position+rotation, with `side` inferred from `in <roomId>` when omitted
 dim (x,y)->(x,y) offset <mm> [text "…"]   # a dimension line
 column [id=<name>] at (x,y) size <W>x<H>
 ```
@@ -58,7 +58,7 @@ column [id=<name>] at (x,y) size <W>x<H>
 
 - **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`
 - **Elements:** `wall`, `room`, `door`, `window`, `opening`, `furniture`, `dim`, `column`
-- **Attributes:** `units`, `grid`, `scale`, `north`, `dims`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`
+- **Attributes:** `units`, `grid`, `scale`, `north`, `dims`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`
 - **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `auto`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`
 
 ## CLI loop (how an agent drives it)

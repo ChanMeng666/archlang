@@ -241,6 +241,10 @@ export interface WallSegment {
   b: Point;
   thickness: number;
   category: string;
+  /** Id of the wall this segment belongs to (so a host knows *which* wall). */
+  wallId: string;
+  /** Index of this segment within its wall's point list (0-based). */
+  index: number;
 }
 
 /** Minimal wall shape needed by the segment/hosting helpers (a resolved wall). */
@@ -256,10 +260,10 @@ export interface WallLike {
 export function segmentsOfWall(w: WallLike): WallSegment[] {
   const segs: WallSegment[] = [];
   for (let k = 0; k < w.points.length - 1; k++) {
-    segs.push({ a: w.points[k], b: w.points[k + 1], thickness: w.thickness, category: w.category });
+    segs.push({ a: w.points[k], b: w.points[k + 1], thickness: w.thickness, category: w.category, wallId: w.id, index: k });
   }
   if (w.closed && w.points.length > 2) {
-    segs.push({ a: w.points[w.points.length - 1], b: w.points[0], thickness: w.thickness, category: w.category });
+    segs.push({ a: w.points[w.points.length - 1], b: w.points[0], thickness: w.thickness, category: w.category, wallId: w.id, index: w.points.length - 1 });
   }
   return segs;
 }

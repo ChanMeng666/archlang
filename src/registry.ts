@@ -9,7 +9,7 @@ import type { Token } from "./lexer.js";
 import type { AstElement, ElementKind, ExprPoint, Point } from "./ast.js";
 import type { Expr, Value } from "./expr.js";
 import type { Diagnostic } from "./diagnostics.js";
-import type { ResolvedElement, RWall } from "./ir.js";
+import type { ResolvedElement, RWall, RRoom } from "./ir.js";
 import type { Bounds, WallSegment } from "./geometry.js";
 import type { Theme } from "./theme.js";
 import type { GeometryBackend } from "./geometry/backend.js";
@@ -64,6 +64,9 @@ export interface ResolveCtx {
   id: string;
   /** Resolved walls, ready before openings resolve (walls resolve first). */
   walls: RWall[];
+  /** Resolved rooms (absolute ones carry final coords; relational ones are placed
+   *  after resolve, so their `at` is still a placeholder here). */
+  rooms: RRoom[];
   hostSegment(at: Point, ref?: string): WallSegment | null;
   isOnWall(at: Point, ref?: string): boolean;
   /** Active `set <kind>(…)` overrides for the element being resolved (by attr

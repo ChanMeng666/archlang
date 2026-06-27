@@ -78,3 +78,31 @@ describe("furniture `in <room>` ownership", () => {
     expect(format(src)).toContain("size 400x700 in bath");
   });
 });
+
+describe("fixture front-clearance lint", () => {
+  const kitchen = (furn: string) =>
+    `plan "P" {
+      units mm
+      wall exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+      room id=k at (0,0) size 4000x4000 label "Kitchen" uses kitchen
+      furniture stove at (200,100) size 600x600
+      ${furn}
+    }`;
+
+  it("flags a free-standing piece parked in the fixture's use-space", () => {
+    // Stove front faces south (y 700→1250); the sofa sits right there.
+    const c = lint(kitchen(`furniture sofa at (200,800) size 1500x900`)).map((d) => d.code ?? "");
+    expect(c).toContain("W_FURN_CLEARANCE");
+  });
+
+  it("does not flag furniture clear of the use-space", () => {
+    const c = lint(kitchen(`furniture sofa at (200,2000) size 1500x900`)).map((d) => d.code ?? "");
+    expect(c).not.toContain("W_FURN_CLEARANCE");
+  });
+
+  it("ignores another fixture in front (compact runs are fine)", () => {
+    // A counter directly south of the stove is a normal kitchen run, not a blockage.
+    const c = lint(kitchen(`furniture counter at (200,800) size 600x600`)).map((d) => d.code ?? "");
+    expect(c).not.toContain("W_FURN_CLEARANCE");
+  });
+});

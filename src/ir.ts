@@ -114,6 +114,8 @@ export interface RFurniture extends RBase {
   at: Point;
   size: { w: number; h: number };
   label?: string;
+  /** Quarter-turn rotation of the drawn symbol (0|90|180|270), default 0. */
+  rotate?: number;
   /** Declared owning room id (`in <roomId>`), if any. */
   room?: string;
 }
@@ -406,6 +408,7 @@ function resolveImpl(
   //    `activeEnv`/`activeId` are swapped per entry so each element evaluates
   //    its expressions against the env captured during expansion.
   const walls: RWall[] = [];
+  const rooms2: RRoom[] = [];
   let activeEnv: Env = new Map();
   const evalNum = (e: Expr): number =>
     asNum(evalExpr(e, activeEnv, (d) => diagnostics.push(d)), (d) => diagnostics.push(d), exprSpan(e));
@@ -435,6 +438,7 @@ function resolveImpl(
     evalPt,
     id: "",
     walls,
+    rooms: rooms2,
     hostSegment: (at, ref) => hostInfo(at, ref).host,
     isOnWall: (at, ref) => hostInfo(at, ref).onWall,
     ...(world.now ? { now: () => world.now!() } : {}),
@@ -449,6 +453,7 @@ function resolveImpl(
       const r = def.resolve(e.node, ctx);
       e.resolved = r;
       if (r.kind === "wall") walls.push(r);
+      else if (r.kind === "room") rooms2.push(r);
     }
   }
 

@@ -192,6 +192,8 @@ export interface AccessEdge {
   estimatedClearWidth: number;
   /** Category of the host wall, if any (`"exterior"`, `"partition"`, …). */
   hostCategory?: string;
+  /** Id of the host wall, if any (answers "which wall is this opening on?"). */
+  hostWallId?: string;
   /** Connects the exterior to a room (an entrance edge). */
   exterior: boolean;
   /** The point touched 3+ rooms, so its endpoints are not well-defined; it is
@@ -243,7 +245,7 @@ export function buildDoorAccessGraph(
 
   // Doors and cased openings are both connectors; an opening keeps its full width
   // as clear (no leaf), a door loses the leaf/stop allowance.
-  const connectors: Array<{ id: string; at: Point; width: number; host: { category: string } | null; kind: "door" | "opening" }> = [
+  const connectors: Array<{ id: string; at: Point; width: number; host: { category: string; wallId: string } | null; kind: "door" | "opening" }> = [
     ...doors.map((d) => ({ id: d.id, at: d.at, width: d.width, host: d.host, kind: "door" as const })),
     ...openings.map((o) => ({ id: o.id, at: o.at, width: o.width, host: o.host, kind: "opening" as const })),
   ];
@@ -259,6 +261,7 @@ export function buildDoorAccessGraph(
       nominalWidth: c.width,
       estimatedClearWidth: c.kind === "opening" ? c.width : Math.max(0, c.width - clearAllowanceMm),
       ...(c.host?.category !== undefined ? { hostCategory: c.host.category } : {}),
+      ...(c.host?.wallId !== undefined ? { hostWallId: c.host.wallId } : {}),
       exterior,
       ambiguous: touching.length >= 3,
     };
@@ -385,6 +388,27 @@ export function largestPerimeterGap(rect: BBox, walls: WallLike[], tol: number):
     if (gap > worst) worst = gap;
   }
   return worst;
+}
+
+/**
+ * The activity-clearance rectangle directly in front of a fixture — the space a
+ * person needs to use it. "Front" is the face opposite the symbol's back, derived
+ * from its quarter-turn `rotate` (0 = back north → front south, 90 → front west, …).
+ * Used by the clearance lint; returns a zero-area rect when `clearance` is 0.
+ */
+export function frontClearanceRect(
+  f: { at: Point; size: { w: number; h: number }; rotate?: number },
+  clearance: number,
+): BBox {
+  const { x, y } = f.at;
+  const { w, h } = f.size;
+  const rot = (((f.rotate ?? 0) % 360) + 360) % 360;
+  switch (rot) {
+    case 90: return { x: x - clearance, y, w: clearance, h }; // front west
+    case 180: return { x, y: y - clearance, w, h: clearance }; // front north
+    case 270: return { x: x + w, y, w: clearance, h }; // front east
+    default: return { x, y: y + h, w, h: clearance }; // rot 0 → front south
+  }
 }
 
 /**

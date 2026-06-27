@@ -13,6 +13,7 @@
 import type {
   ComponentDef,
   ExprPoint,
+  FurnitureNode,
   ImportNode,
   PlanNode,
   RoomRel,
@@ -109,6 +110,15 @@ function sizeStr(size: { w: Expr; h: Expr }): string {
   return `${exprStr(size.w)} x ${exprStr(size.h)}`;
 }
 
+/** A fixture's wall-anchored clause: `against wall <id> [segment n] [offset d] [side l|r]`. */
+function againstStr(ag: NonNullable<FurnitureNode["against"]>): string {
+  let out = `against wall ${ag.wall}`;
+  if (ag.segment !== undefined) out += ` segment ${exprStr(ag.segment)}`;
+  if (ag.offset !== undefined) out += ` offset ${exprStr(ag.offset)}`;
+  if (ag.side) out += ` side ${ag.side}`;
+  return out;
+}
+
 /** A room's relational placement clause: `DIR ref [align E] [gap n]`. */
 function relStr(rel: RoomRel): string {
   let out = `${rel.dir} ${rel.ref}`;
@@ -168,7 +178,7 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
     case "opening":
       return `opening ${id}at ${ptStr(s.at)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}`;
     case "furniture":
-      return `furniture ${id}${s.category} at ${ptStr(s.at)} size ${sizeStr(s.size)}${s.label ? ` label ${exprStr(s.label)}` : ""}${s.room ? ` in ${s.room}` : ""}`;
+      return `furniture ${id}${s.category} ${s.against ? againstStr(s.against) : `at ${ptStr(s.at!)}`} size ${sizeStr(s.size)}${s.label ? ` label ${exprStr(s.label)}` : ""}${s.rotate ? ` rotate ${exprStr(s.rotate)}` : ""}${s.room ? ` in ${s.room}` : ""}`;
     case "dim":
       return `dim ${ptStr(s.from)}->${ptStr(s.to)} offset ${exprStr(s.offset)}${s.text ? ` text ${exprStr(s.text)}` : ""}`;
     case "column":

@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**32 errors** · **23 warnings**
+**34 errors** · **24 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -18,7 +18,9 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_DOMAIN`](#e_domain) | error | Math domain error. |
 | [`E_DOOR_WIDTH`](#e_door_width) | error | Door must have a positive width. |
 | [`E_DUP_ID`](#e_dup_id) | error | Duplicate element id. |
+| [`E_FURN_AGAINST`](#e_furn_against) | error | Invalid `against wall` fixture placement. |
 | [`E_FURN_ROOM`](#e_furn_room) | error | Furniture placed `in` an unknown room. |
+| [`E_FURN_ROTATE`](#e_furn_rotate) | error | Furniture rotation must be a quarter-turn. |
 | [`E_FURN_SIZE`](#e_furn_size) | error | Furniture must have a positive size. |
 | [`E_IMPORT_BAD_SPEC`](#e_import_bad_spec) | error | Malformed import spec. |
 | [`E_IMPORT_CONFLICT`](#e_import_conflict) | error | Imported name conflicts with an existing component. |
@@ -48,6 +50,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_EMPTY_PLAN`](#w_empty_plan) | warning | Empty plan. |
 | [`W_FIXTURE_FLOATING`](#w_fixture_floating) | warning | A plumbing/kitchen fixture is not against a wall. |
 | [`W_FIXTURE_WRONG_ROOM`](#w_fixture_wrong_room) | warning | Fixture sits outside its declared room. |
+| [`W_FURN_CLEARANCE`](#w_furn_clearance) | warning | A fixture's use-space is blocked. |
 | [`W_FURNITURE_OVERLAP`](#w_furniture_overlap) | warning | Two pieces of furniture overlap. |
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
 | [`W_NO_ENTRANCE`](#w_no_entrance) | warning | The plan has no exterior door. |
@@ -175,6 +178,18 @@ room id=a at (0,0) size 1x1
 room id=a at (1,0) size 1x1   # error: duplicate id "a"
 ```
 
+## E_FURN_AGAINST
+
+*error* — Invalid `against wall` fixture placement.
+
+**Cause.** A wall-anchored fixture references an unknown wall, omits `segment` on a multi-segment wall, omits `side`, sits on a non-axis-aligned segment, has an out-of-range offset, or also sets `rotate`. The compiler will not guess which wall/side/segment was meant.
+
+**Fix.** Name an existing wall id, add `segment <n>` for multi-segment walls, give `side left|right`, keep the segment axis-aligned, and drop any explicit `rotate`.
+
+```arch
+furniture wc against wall w1 side left size 400x700   # error if w1 is unknown or multi-segment
+```
+
 ## E_FURN_ROOM
 
 *error* — Furniture placed `in` an unknown room.
@@ -185,6 +200,18 @@ room id=a at (1,0) size 1x1   # error: duplicate id "a"
 
 ```arch
 furniture bed at (0,0) size 1500x2000 in bedrm   # error: no room id=bedrm
+```
+
+## E_FURN_ROTATE
+
+*error* — Furniture rotation must be a quarter-turn.
+
+**Cause.** A furniture item's `rotate` is not one of 0, 90, 180, or 270 degrees.
+
+**Fix.** Use a quarter-turn: `rotate 0|90|180|270`.
+
+```arch
+furniture wc at (0,0) size 400x700 rotate 45   # error: not a quarter-turn
 ```
 
 ## E_FURN_SIZE
@@ -537,6 +564,19 @@ furniture wc at (3000,3000) size 400x700   # lint: no wall behind it
 
 ```arch
 furniture wc at (100,100) size 400x700 in bath   # lint: centre is not inside "bath"
+```
+
+## W_FURN_CLEARANCE
+
+*warning* — A fixture's use-space is blocked.
+
+**Cause.** The activity clearance directly in front of a fixture (WC, basin, sink, counter, stove…) is intruded by a free-standing piece of furniture, so the fixture can't be used comfortably. Other plumbing/kitchen fixtures are ignored, so a compact bathroom/kitchen run does not trip this.
+
+**Fix.** Leave the catalogued clearance clear in front of the fixture, or move the obstructing furniture.
+
+```arch
+furniture stove at (0,0) size 600x600
+furniture sofa at (0,650) size 2000x900   # lint: sofa blocks the stove front
 ```
 
 ## W_FURNITURE_OVERLAP

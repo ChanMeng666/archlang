@@ -37,7 +37,7 @@ const ELEMENT_GRAMMAR: Record<string, string> = {
   door: 'door [id=<name>] at (x,y) width <mm> [wall <id|category>] [hinge left|right] [swing in|out]   # must sit on a wall',
   window: 'window [id=<name>] at (x,y) width <mm> [wall <id|category>]   # must sit on a wall',
   opening: 'opening [id=<name>] at (x,y) width <mm> [wall <id|category>]   # a leaf-less cased opening (gap in a wall) that still connects the two spaces',
-  furniture: 'furniture <category> at (x,y) size <W>x<H> [label "…"] [in <roomId>]   # category e.g. bed/sofa/table; `in` declares the owning room',
+  furniture: 'furniture <category> (at (x,y) | against wall <id> [segment <n>] [offset <mm>] [side left|right]) size <W>x<H> [label "…"] [rotate 0|90|180|270] [in <roomId>]   # `at` size is plan W×H; `against` size is wall-relative along×depth and derives position+rotation, with `side` inferred from `in <roomId>` when omitted',
   dim: 'dim (x,y)->(x,y) offset <mm> [text "…"]   # a dimension line',
   column: "column [id=<name>] at (x,y) size <W>x<H>",
 };
