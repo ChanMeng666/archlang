@@ -20,7 +20,7 @@ not a work-in-progress. Treat the live artifacts below as the source of truth.
 |-------|---------|-------|
 | **Core package** | `@chanmeng666/archlang@1.2.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md` |
-| **VS Code extension** | `ChanMeng.archlang@0.2.0` live on the Marketplace; **`0.3.0` packaged, pending web upload** (`editors/vscode/archlang-0.3.0.vsix`) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
+| **VS Code extension** | `ChanMeng.archlang@0.3.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.2.0` (latest) | github.com/ChanMeng666/archlang |
