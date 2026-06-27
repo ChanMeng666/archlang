@@ -1,7 +1,7 @@
 {
   "name": "archlang",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "displayName": "ArchLang",
   "description": "Syntax highlighting plus full language support — live diagnostics, hover, completion, go-to-definition, rename, and signature help — for ArchLang (.arch) floor-plan source.",
   "license": "MIT",
@@ -14,15 +14,24 @@
   "engines": {
     "vscode": "^1.75.0"
   },
-  "categories": ["Programming Languages", "Linters"],
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
   "main": "./dist/extension.js",
-  "activationEvents": ["onLanguage:arch"],
+  "activationEvents": [
+    "onLanguage:arch"
+  ],
   "contributes": {
     "languages": [
       {
         "id": "arch",
-        "aliases": ["ArchLang"],
-        "extensions": [".arch"],
+        "aliases": [
+          "ArchLang"
+        ],
+        "extensions": [
+          ".arch"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
