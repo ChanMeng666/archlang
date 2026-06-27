@@ -45,6 +45,29 @@ describe("Scene IR", () => {
     }
   });
 
+  it("draws a glyph for a known fixture category and a labelled rectangle otherwise", () => {
+    const base = `plan "P" { units mm room id=r at (0,0) size 3000x3000 label "R"`;
+    const wc = sceneOf(`${base} furniture wc at (200,200) size 400x700 label "WC" }`).nodes
+      .filter((n) => n.layer === "furniture");
+    const box = sceneOf(`${base} furniture box at (200,200) size 400x700 label "Box" }`).nodes
+      .filter((n) => n.layer === "furniture");
+    // The fixture glyph emits several primitives and no label text; the plain box
+    // is exactly one polygon plus its label text.
+    expect(wc.some((n) => n.prim.t === "text")).toBe(false);
+    expect(wc.length).toBeGreaterThan(1);
+    expect(box.filter((n) => n.prim.t === "polygon").length).toBe(1);
+    expect(box.some((n) => n.prim.t === "text")).toBe(true);
+  });
+
+  it("synthesizes dimension nodes only when `dims auto` is set", () => {
+    const src = (head: string) =>
+      `plan "P" { units mm ${head} wall exterior thickness 200 { (0,0) (3000,0) (3000,3000) (0,3000) close } room id=r at (0,0) size 3000x3000 label "R" }`;
+    const without = sceneOf(src("")).nodes.filter((n) => n.layer === "dims");
+    const withAuto = sceneOf(src("dims auto")).nodes.filter((n) => n.layer === "dims");
+    expect(without.length).toBe(0);
+    expect(withAuto.length).toBeGreaterThan(0);
+  });
+
   it("emits every primitive kind across the example corpus", () => {
     const kinds = new Set<string>();
     for (const name of ["studio.arch", "two-bed.arch", "parametric.arch", "themed.arch"]) {

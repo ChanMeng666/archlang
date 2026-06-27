@@ -1,0 +1,42 @@
+# Standard plumbing & kitchen fixtures — importable components.
+#
+#   import "lib/fixtures.arch": wc, basin, shower
+#   wc(6200, 4600)
+#
+# Sizes are typical residential footprints in mm (origin = top-left corner). Each
+# fixture renders a drawn plan symbol (see src/elements/fixtures-glyphs.ts), placed
+# with its back along the top edge — orient by choosing the room wall it sits against.
+plan "fixtures" {
+  units mm
+  grid 50
+
+  # --- Bathroom ---------------------------------------------------------------
+  component wc(x, y) {
+    furniture wc at (x, y) size 400x700
+  }
+
+  component basin(x, y) {
+    furniture basin at (x, y) size 600x450
+  }
+
+  component shower(x, y) {
+    furniture shower at (x, y) size 900x900
+  }
+
+  component bathtub(x, y) {
+    furniture bathtub at (x, y) size 1700x700
+  }
+
+  # --- Kitchen ----------------------------------------------------------------
+  component kitchen_sink(x, y) {
+    furniture kitchen_sink at (x, y) size 800x600
+  }
+
+  component counter(x, y) {
+    furniture counter at (x, y) size 600x600
+  }
+
+  component fridge(x, y) {
+    furniture fridge at (x, y) size 600x650
+  }
+}

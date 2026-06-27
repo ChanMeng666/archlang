@@ -70,6 +70,138 @@ export function minorArcDegrees(center: Point, start: Point, end: Point): [numbe
   return ccw <= 180 ? [a1, a2] : [a2, a1];
 }
 
+/** The hinge/leaf/arc geometry of a door swing, in plan space (mm). */
+export interface DoorSwing {
+  /** Hinge point (arc centre). */
+  hinge: Point;
+  /** Far jamb — the other side of the opening; the closed-leaf position. */
+  farJamb: Point;
+  /** Tip of the leaf at the fully-open (90°) position. */
+  leafEnd: Point;
+  /** Quarter-disc radius (= door width). */
+  radius: number;
+  /** SVG sweep flag for the minor arc from `leafEnd` to `farJamb` about `hinge`. */
+  sweep: 0 | 1;
+}
+
+/** Minimal door shape the swing geometry needs (a resolved door). */
+export interface DoorLike {
+  at: Point;
+  width: number;
+  hinge: "left" | "right";
+  swing: "in" | "out";
+  host: { a: Point; b: Point; thickness: number } | null;
+}
+
+/**
+ * Hinge, far jamb, open-leaf tip and minor-arc orientation of a door's swing.
+ * Computed **once** from the host wall direction so the renderer (leaf line + arc
+ * primitive, every backend) and the linter (swing-clearance checks) agree on the
+ * exact quarter-disc the leaf sweeps. Returns `null` for an unhosted door.
+ */
+export function doorSwing(d: DoorLike): DoorSwing | null {
+  const seg = d.host;
+  if (!seg) return null;
+  const dir = unit(sub(seg.b, seg.a));
+  const n = normal(dir);
+  const hw = d.width / 2;
+  const hinge = d.hinge === "left" ? add(d.at, mul(dir, -hw)) : add(d.at, mul(dir, hw));
+  const farJamb = d.hinge === "left" ? add(d.at, mul(dir, hw)) : add(d.at, mul(dir, -hw));
+  const leafDir = d.swing === "in" ? n : mul(n, -1);
+  const leafEnd = add(hinge, mul(leafDir, d.width));
+  const cross =
+    (leafEnd.x - hinge.x) * (farJamb.y - hinge.y) - (leafEnd.y - hinge.y) * (farJamb.x - hinge.x);
+  const sweep: 0 | 1 = cross < 0 ? 1 : 0;
+  return { hinge, farJamb, leafEnd, radius: d.width, sweep };
+}
+
+/** Bounding box of a sized element, mm. */
+interface RectXYWH {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Is point `p` inside (or on) the axis-aligned rect, with an optional inflate? */
+function pointInRect(p: Point, r: RectXYWH, pad: number): boolean {
+  return p.x >= r.x - pad && p.x <= r.x + r.w + pad && p.y >= r.y - pad && p.y <= r.y + r.h + pad;
+}
+
+/** Is point `p` within the 90° wedge of swing `s` (between the two bounding radii)? */
+function pointInWedge(p: Point, s: DoorSwing): boolean {
+  const cr = (ux: number, uy: number, vx: number, vy: number): number => ux * vy - uy * vx;
+  const closed = sub(s.farJamb, s.hinge); // closed-leaf radius
+  const open = sub(s.leafEnd, s.hinge); // open-leaf radius
+  const pv = sub(p, s.hinge);
+  // p is in the wedge iff it is on the same rotational side of both bounding radii
+  // as the wedge interior (the other bounding radius).
+  const sideClosed = Math.sign(cr(closed.x, closed.y, open.x, open.y));
+  const sideOpen = Math.sign(cr(open.x, open.y, closed.x, closed.y));
+  const pc = Math.sign(cr(closed.x, closed.y, pv.x, pv.y));
+  const po = Math.sign(cr(open.x, open.y, pv.x, pv.y));
+  return (pc === sideClosed || pc === 0) && (po === sideOpen || po === 0);
+}
+
+/**
+ * Conservative test: does the 90° quarter-disc the door leaf sweeps overlap the
+ * axis-aligned rectangle `r` (inflated by `clearance`)? True when the hinge is in
+ * the rect, when any rect corner falls inside the swept wedge within the radius,
+ * or when the rect spans the hinge's row/column inside the radius. Used by the
+ * `W_SWING_OBSTRUCTED` lint rule — biased to flag (a clearance heuristic), so a
+ * door leaf that grazes a bed or fixture is reported.
+ */
+export function sectorIntersectsRect(s: DoorSwing, r: RectXYWH, clearance: number): boolean {
+  const R = s.radius + clearance;
+  if (pointInRect(s.hinge, r, clearance)) return true;
+  // Nearest point of the rect to the hinge — if it is beyond the radius, no overlap.
+  const nx = Math.max(r.x, Math.min(s.hinge.x, r.x + r.w));
+  const ny = Math.max(r.y, Math.min(s.hinge.y, r.y + r.h));
+  if (Math.hypot(nx - s.hinge.x, ny - s.hinge.y) > R) return false;
+  // The nearest point is within radius; accept if it (or any corner) is in the wedge.
+  const pad = clearance;
+  const corners: Point[] = [
+    { x: nx, y: ny },
+    { x: r.x - pad, y: r.y - pad },
+    { x: r.x + r.w + pad, y: r.y - pad },
+    { x: r.x + r.w + pad, y: r.y + r.h + pad },
+    { x: r.x - pad, y: r.y + r.h + pad },
+  ];
+  for (const c of corners) {
+    if (Math.hypot(c.x - s.hinge.x, c.y - s.hinge.y) <= R && pointInWedge(c, s)) return true;
+  }
+  // Wedge interior points (leaf tip, mid-swing) landing inside the rect.
+  const mid = add(s.hinge, mul(unit(add(sub(s.leafEnd, s.hinge), sub(s.farJamb, s.hinge))), s.radius));
+  for (const p of [s.leafEnd, mid]) {
+    if (pointInRect(p, r, clearance)) return true;
+  }
+  return false;
+}
+
+/** Do two door swings' quarter-discs overlap (within `clearance`)? */
+export function swingsCollide(a: DoorSwing, b: DoorSwing, clearance: number): boolean {
+  // Quick reject: if the hinges are farther apart than the sum of radii + clearance
+  // the discs cannot meet.
+  const hingeGap = Math.hypot(a.hinge.x - b.hinge.x, a.hinge.y - b.hinge.y);
+  if (hingeGap > a.radius + b.radius + clearance) return false;
+  // Sample b's wedge arc and test against a's wedge (and vice versa). Conservative.
+  const sampleInOther = (s: DoorSwing, o: DoorSwing): boolean => {
+    const c0 = sub(s.farJamb, s.hinge);
+    const c1 = sub(s.leafEnd, s.hinge);
+    const steps = 8;
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const vx = c0.x + (c1.x - c0.x) * t;
+      const vy = c0.y + (c1.y - c0.y) * t;
+      const p = add(s.hinge, mul(unit({ x: vx, y: vy }), s.radius));
+      const within = Math.hypot(p.x - o.hinge.x, p.y - o.hinge.y) <= o.radius + clearance;
+      if (within && pointInWedge(p, o)) return true;
+    }
+    return false;
+  };
+  return sampleInOther(a, b) || sampleInOther(b, a);
+}
+
 /** Axis-aligned rectangle corners (clockwise) from origin + size. */
 export function rectCorners(x: number, y: number, w: number, h: number): Point[] {
   return [

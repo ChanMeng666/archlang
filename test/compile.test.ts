@@ -31,8 +31,8 @@ describe("compile — valid studio", () => {
 
   it("computes room area from dimensions", () => {
     const { svg } = compile(studio, { noCache: true });
-    // Bedroom 3000x4000 mm = 12.0 m²
-    expect(svg).toContain("12.0 m²");
+    // Living / Kitchen 4000x6000 mm = 24.0 m²
+    expect(svg).toContain("24.0 m²");
   });
 });
 

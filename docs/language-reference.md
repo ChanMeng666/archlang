@@ -40,6 +40,7 @@ plan "My Home" {
 | `grid <n>` | Snap module in mm. All coordinates round to the nearest multiple. `0` disables. | `0` |
 | `scale 1:50` | Printed scale, shown in the title block. | none |
 | `north up\|down\|left\|right\|<deg>` | North direction for the north arrow. | `up` |
+| `dims auto [overall\|rooms\|all]` | Auto-draw dimension strings without hand-placing each `dim`: `overall` (the bounding extents), `rooms` (each room's width + height), or `all` (both; the default when no scope is given). | off |
 
 ## Values & expressions
 
@@ -333,7 +334,20 @@ An opening with the standard double-line glazing symbol.
 furniture <kind> [id=<id>] at (x,y) size <w>x<h> [label "<text>"]
 ```
 
-A schematic labelled rectangle (bed, sofa, counter…).
+A schematic labelled rectangle (bed, sofa, desk…). Known plumbing & kitchen
+**fixture** kinds draw a real plan symbol instead of an empty box and ignore any
+`label`: `wc`/`toilet`, `basin`, `shower`, `bathtub`, `kitchen_sink`/`sink`,
+`counter`, `fridge`, and `stove`/`hob`/`cooktop`. Any other kind falls back to the
+labelled rectangle. Symbols draw with their back along the top edge of the
+footprint — orient by the wall the fixture sits against.
+
+Standard fixtures are also available as importable components at typical
+residential sizes:
+
+```
+import "lib/fixtures.arch": wc, basin, shower
+wc(6200, 4600)
+```
 
 ### Dimension
 

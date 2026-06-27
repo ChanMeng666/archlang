@@ -57,8 +57,8 @@ column [id=<name>] at (x,y) size <W>x<H>
 
 - **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`
 - **Elements:** `wall`, `room`, `door`, `window`, `furniture`, `dim`, `column`
-- **Attributes:** `units`, `grid`, `scale`, `north`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`
-- **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`
+- **Attributes:** `units`, `grid`, `scale`, `north`, `dims`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`
+- **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `auto`
 
 ## CLI loop (how an agent drives it)
 
@@ -94,40 +94,64 @@ intent (right room count, areas, adjacency) without rendering an image.
 
 ```arch
 # A compact studio apartment — the canonical ArchLang example.
+#
+# Architecturally sound (passes `arch lint`): every room opens off a central hall,
+# so the bath is never reached through the bedroom; the bath is fully enclosed and
+# fitted with real fixtures; and no door leaf sweeps onto furniture. Self-contained
+# (no imports) so it compiles from a single file.
 plan "Studio 1BR" {
   units mm
   grid 50
   scale 1:50
   north up
 
-  # Exterior shell (closed) + one internal partition.
-  wall exterior thickness 200 { (0,0) (7000,0) (7000,6000) (0,6000) close }
-  wall partition thickness 100 { (4000,0) (4000,4000) }
-  wall partition thickness 100 { (4000,4000) (7000,4000) }
+  # Exterior shell + partitions. The x=4000 divider runs the FULL height so the bath
+  # is walled off from the living space; the right column splits into bedroom / hall / bath.
+  wall exterior  thickness 200 { (0,0) (7000,0) (7000,6000) (0,6000) close }
+  wall partition thickness 100 { (4000,0) (4000,6000) }
+  wall partition thickness 100 { (4000,3000) (7000,3000) }
+  wall partition thickness 100 { (4000,4400) (7000,4400) }
 
-  room id=r_living at (0,0)    size 4000x6000 label "Living / Kitchen"
-  room id=r_bed    at (4000,0) size 3000x4000 label "Bedroom"
-  room id=r_bath   at (4000,4000) size 3000x2000 label "Bath"
+  room id=r_living at (0,0)       size 4000x6000 label "Living / Kitchen"
+  room id=r_bed    at (4000,0)    size 3000x3000 label "Bedroom"
+  room id=r_hall   at (4000,3000) size 3000x1400 label "Hall"
+  room id=r_bath   at (4000,4400) size 3000x1600 label "Bath"
 
-  door id=d_main at (1000,6000) width 1000 wall exterior  hinge left  swing in
-  door id=d_bed  at (4000,1500) width 900  wall partition hinge left  swing in
-  door id=d_bath at (5200,4000) width 800  wall partition hinge right swing out
+  # Entrance into the living space; the hall links it to the bedroom and the bath.
+  door id=d_main   at (3000,6000) width 1000 wall exterior  hinge left  swing in
+  door id=d_living at (4000,3700) width 900  wall partition hinge left  swing in
+  door id=d_bed    at (6400,3000) width 800  wall partition hinge right swing out
+  door id=d_bath   at (4600,4400) width 800  wall partition hinge left  swing out
 
-  window at (2500,0)    width 1800 wall exterior
-  window at (7000,2000) width 1200 wall exterior
-  window at (7000,5000) width 800  wall exterior
+  window at (0,2000)    width 1500 wall exterior
+  window at (7000,1500) width 1200 wall exterior
+  window at (7000,5200) width 700  wall exterior
 
-  furniture bed   at (4300,300)  size 1500x2000 label "Bed"
-  furniture sofa  at (300,4200)  size 2000x900  label "Sofa"
-  furniture stove at (300,200)   size 600x600   label "Stove"
+  # Kitchen run along the north wall: sink · counter · stove · fridge (drawn as symbols).
+  furniture kitchen_sink at (300,250)  size 800x600
+  furniture counter      at (1200,250) size 600x600
+  furniture stove        at (1950,250) size 600x600
+  furniture fridge       at (2700,250) size 600x650
 
+  # Living + bedroom furniture, kept clear of the door swings.
+  furniture sofa at (350,4300) size 2000x900  label "Sofa"
+  furniture bed  at (4300,300) size 1500x2000 label "Bed"
+
+  # Bathroom fixtures: shower · basin · WC (the door swings out into the hall).
+  furniture shower at (4200,4650) size 900x900
+  furniture basin  at (5250,4650) size 600x450
+  furniture wc     at (5300,5150) size 400x700
+
+  # Dimension strings: room widths above, overall extents around.
+  dim (4000,0)->(0,0)       offset 350 text "4000"
+  dim (7000,0)->(4000,0)    offset 350 text "3000"
   dim (0,6000)->(7000,6000) offset 600 text "7000"
   dim (7000,0)->(7000,6000) offset 600 text "6000"
 
   title {
     project "Studio Apartment"
     drawn_by "ArchCanvas"
-    date "2026-06-25"
+    date "2026-06-27"
   }
 }
 ```

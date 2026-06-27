@@ -23,12 +23,12 @@ export const KEYWORDS = {
   element: ["wall", "room", "door", "window", "furniture", "dim", "column"],
   /** Setting / attribute keywords → `keyword.other`, CM `propertyName`. */
   attribute: [
-    "units", "grid", "scale", "north", "material", "angle", "at", "size", "width", "thickness",
+    "units", "grid", "scale", "north", "dims", "material", "angle", "at", "size", "width", "thickness",
     "label", "hinge", "swing", "offset", "text", "close", "id", "project", "drawn_by", "date", "from", "as",
     "right-of", "left-of", "below", "above", "align", "gap",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
-  enum: ["up", "down", "left", "right", "in", "out", "mm", "true", "false", "top", "middle", "bottom", "center"],
+  enum: ["up", "down", "left", "right", "in", "out", "mm", "true", "false", "top", "middle", "bottom", "center", "auto"],
 } as const;
 
 /** All operators the lexer recognises (multi-char forms first when generating regex). */
@@ -54,6 +54,6 @@ export const RULES = {
  * here. Consumed by `src/parser.ts` for statement dispatch and error recovery.
  */
 export const STATEMENT_STARTS: readonly string[] = [
-  "units", "grid", "scale", "north", "title", "theme", "style", "let", "component", "import",
+  "units", "grid", "scale", "north", "dims", "title", "theme", "style", "let", "component", "import",
   "for", "if", "while", "set",
 ];

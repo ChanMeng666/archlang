@@ -276,6 +276,8 @@ export interface PlanNode {
   /** e.g. "1:50". */
   scale?: string;
   north: NorthDir;
+  /** `dims auto [overall|rooms|all]` — synthesize dimension strings at render. */
+  autoDims?: "overall" | "rooms" | "all";
   title?: TitleNode;
   /** Theme overrides from the `theme { … }` directive. */
   theme?: Partial<Theme>;

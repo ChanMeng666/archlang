@@ -5,7 +5,7 @@ import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js
 import type { SceneNode } from "../scene.js";
 import type { RDoor } from "../ir.js";
 import type { Value } from "../expr.js";
-import { add, mul, nearestWallNote, normal, sub, unit } from "../geometry.js";
+import { add, doorSwing, mul, nearestWallNote, normal, sub, unit } from "../geometry.js";
 
 /** Read an enum override from the active `set` defaults, if valid. */
 function enumDefault<T extends string>(defaults: ReadonlyMap<string, Value> | undefined, key: string, allowed: readonly T[]): T | undefined {
@@ -98,22 +98,20 @@ export const door: ElementDef = {
     ];
     const nodes: SceneNode[] = [];
     nodes.push({ layer: "doors", prim: { t: "polygon", pts: cover }, paint: { fill: theme.opening } });
-    const hinge = dr.hinge === "left" ? add(dr.at, mul(d, -hw)) : add(dr.at, mul(d, hw));
-    const farJamb = dr.hinge === "left" ? add(dr.at, mul(d, hw)) : add(dr.at, mul(d, -hw));
-    const leafDir = dr.swing === "in" ? n : mul(n, -1);
-    const leafEnd = add(hinge, mul(leafDir, dr.width));
-    const cross = (leafEnd.x - hinge.x) * (farJamb.y - hinge.y) - (leafEnd.y - hinge.y) * (farJamb.x - hinge.x);
-    const sweep: 0 | 1 = cross < 0 ? 1 : 0;
-    nodes.push({
-      layer: "doors",
-      prim: { t: "line", a: hinge, b: leafEnd },
-      paint: { stroke: theme.doorLeaf, width: sizes.thin * 1.3 },
-    });
-    nodes.push({
-      layer: "doors",
-      prim: { t: "arc", center: hinge, r: dr.width, start: leafEnd, end: farJamb, sweep },
-      paint: { fill: "none", stroke: theme.doorLeaf, width: sizes.thin, dash: [sizes.thin * 4, sizes.thin * 3] },
-    });
+    // Leaf + minor-arc geometry is shared with the swing-clearance lint rule.
+    const swing = doorSwing(dr);
+    if (swing) {
+      nodes.push({
+        layer: "doors",
+        prim: { t: "line", a: swing.hinge, b: swing.leafEnd },
+        paint: { stroke: theme.doorLeaf, width: sizes.thin * 1.3 },
+      });
+      nodes.push({
+        layer: "doors",
+        prim: { t: "arc", center: swing.hinge, r: swing.radius, start: swing.leafEnd, end: swing.farJamb, sweep: swing.sweep },
+        paint: { fill: "none", stroke: theme.doorLeaf, width: sizes.thin, dash: [sizes.thin * 4, sizes.thin * 3] },
+      });
+    }
     return nodes;
   },
 };

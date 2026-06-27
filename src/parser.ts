@@ -237,6 +237,17 @@ class Parser {
             this.next();
             plan.north = this.parseNorth();
             break;
+          case "dims": {
+            this.next();
+            const a = this.eatIdent().value;
+            if (a !== "auto") this.fail(`Expected "auto" after "dims" but found "${a}"`, t);
+            let mode: "overall" | "rooms" | "all" = "all";
+            if (this.isType("ident") && ["overall", "rooms", "all"].includes(this.peek().value)) {
+              mode = this.eatIdent().value as "overall" | "rooms" | "all";
+            }
+            plan.autoDims = mode;
+            break;
+          }
           case "title": {
             const n = this.parseTitle();
             n.span = this.spanFrom(start);

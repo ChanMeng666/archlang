@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**30 errors** · **14 warnings**
+**30 errors** · **18 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -39,6 +39,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_WALL_THICKNESS`](#e_wall_thickness) | error | Wall must have a positive thickness. |
 | [`E_WHILE_LIMIT`](#e_while_limit) | error | `while` exceeded its iteration cap. |
 | [`E_WINDOW_WIDTH`](#e_window_width) | error | Window must have a positive width. |
+| [`W_BATH_VIA_BEDROOM`](#w_bath_via_bedroom) | warning | Bathroom is reachable only through a bedroom. |
 | [`W_BEDROOM_NO_WINDOW`](#w_bedroom_no_window) | warning | Bedroom has no window. |
 | [`W_DOOR_CLEARANCE`](#w_door_clearance) | warning | Door is narrower than the minimum clear width. |
 | [`W_DOOR_OFF_WALL`](#w_door_off_wall) | warning | Door does not lie on any wall. |
@@ -46,9 +47,12 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
 | [`W_NO_ENTRANCE`](#w_no_entrance) | warning | The plan has no exterior door. |
 | [`W_ROOM_DISCONNECTED`](#w_room_disconnected) | warning | Room has no door — it can't be entered. |
+| [`W_ROOM_NO_FIXTURE`](#w_room_no_fixture) | warning | Bathroom or kitchen has no fixtures. |
+| [`W_ROOM_NOT_ENCLOSED`](#w_room_not_enclosed) | warning | Bathroom is not fully enclosed. |
 | [`W_ROOM_OVERLAP`](#w_room_overlap) | warning | Rooms overlap. |
 | [`W_ROOM_TOO_SMALL`](#w_room_too_small) | warning | Room is implausibly small. |
 | [`W_SANITIZED_CONFIG`](#w_sanitized_config) | warning | A disallowed config value was stripped. |
+| [`W_SWING_OBSTRUCTED`](#w_swing_obstructed) | warning | Door swing is obstructed. |
 | [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material; using the default hatch. |
 | [`W_UNKNOWN_STYLE_KEY`](#w_unknown_style_key) | warning | Unknown style key. |
 | [`W_UNKNOWN_THEME_KEY`](#w_unknown_theme_key) | warning | Unknown theme key. |
@@ -420,6 +424,18 @@ while i < 1 { column at (0,0) size 1x1 }   # error: i never changes
 window at (0,0) width 0   # error
 ```
 
+## W_BATH_VIA_BEDROOM
+
+*warning* — Bathroom is reachable only through a bedroom.
+
+**Cause.** Every door path from the entrance to this bathroom/WC passes through a bedroom. That is fine for a private en-suite, but a dwelling's main bathroom should open off circulation (a hall or living space), not a bedroom.
+
+**Fix.** Add a door connecting the bathroom to a hall/living space, or route circulation so it is not reached only via a bedroom.
+
+```arch
+door id=d_bath at (5200,4000) width 800 wall partition   # lint: bath only off the bedroom
+```
+
 ## W_BEDROOM_NO_WINDOW
 
 *warning* — Bedroom has no window.
@@ -504,6 +520,30 @@ wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }   # li
 room id=r at (0,0) size 3000x3000   # lint: no door on its perimeter
 ```
 
+## W_ROOM_NO_FIXTURE
+
+*warning* — Bathroom or kitchen has no fixtures.
+
+**Cause.** A room labelled as a bathroom or kitchen contains no plumbing/kitchen fixture (WC, basin, shower, sink, counter…), so it is drawn as an empty box.
+
+**Fix.** Place the expected fixtures — e.g. import `lib/fixtures.arch` and add a `wc`, `basin`, `shower`, or `kitchen_sink`.
+
+```arch
+room at (4000,4000) size 3000x2000 label "Bath"   # lint: no fixtures inside
+```
+
+## W_ROOM_NOT_ENCLOSED
+
+*warning* — Bathroom is not fully enclosed.
+
+**Cause.** A run of this bathroom/WC's perimeter is not backed by a wall, so it is open to the adjacent space — a privacy problem for a wet room (a partition that stops short is the usual cause).
+
+**Fix.** Extend the partition so the room's perimeter is walled on all sides (a door/window in the wall is fine — only a missing wall counts).
+
+```arch
+wall partition thickness 100 { (4000,0) (4000,4000) }   # lint: stops short, bath left open
+```
+
 ## W_ROOM_OVERLAP
 
 *warning* — Rooms overlap.
@@ -539,6 +579,18 @@ room at (0,0) size 1000x1000 label "Closet"   # lint: 1 m²
 
 ```arch
 theme { wall: "<script>" }   # warning: stripped
+```
+
+## W_SWING_OBSTRUCTED
+
+*warning* — Door swing is obstructed.
+
+**Cause.** The quarter-circle a door leaf sweeps overlaps a piece of furniture/fixture or another door's swing, so the door cannot open fully.
+
+**Fix.** Move the door or the obstruction, flip the `hinge`/`swing`, or use a sliding door so the leaf clears.
+
+```arch
+door at (4000,1500) width 900 swing in   # lint: leaf sweeps onto the bed
 ```
 
 ## W_UNKNOWN_MATERIAL

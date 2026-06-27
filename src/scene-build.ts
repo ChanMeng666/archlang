@@ -9,7 +9,7 @@
  */
 
 import type { CompileOptions } from "./types.js";
-import type { Opening, ResolvedPlan, RWall } from "./ir.js";
+import type { Opening, ResolvedPlan, RWall, RRoom, RDim } from "./ir.js";
 import type { RenderCtx, Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode } from "./scene.js";
@@ -228,6 +228,42 @@ function themeBaseLookup(name: string | undefined, runtime: Runtime): Partial<Th
   return reg ? reg.theme : THEMES[name] ?? {};
 }
 
+/**
+ * Synthesize the dimension lines for `dims auto …`. Overall dims run along the
+ * bottom and left of the drawing, offset into the page margin; per-room dims run
+ * just inside each room's top and left edges (so neither pushes the page extent).
+ * Each is a plain {@link RDim} with no `text`, so the dim element formats the
+ * measured length itself — the same value a hand-written `dim` would show.
+ */
+function synthDims(ir: ResolvedPlan, b: Bounds, sizes: RenderSizes): RDim[] {
+  const dims: RDim[] = [];
+  const mk = (from: Point, to: Point, offset: number): RDim => ({ kind: "dim", id: "", from, to, offset });
+  const wantOverall = ir.autoDims === "overall" || ir.autoDims === "all";
+  const wantRooms = ir.autoDims === "rooms" || ir.autoDims === "all";
+
+  if (wantOverall) {
+    const off = sizes.margin * 0.5;
+    // Width below the plan; height to the left of it (both in the page margin).
+    dims.push(mk({ x: b.minX, y: b.maxY }, { x: b.maxX, y: b.maxY }, off));
+    dims.push(mk({ x: b.minX, y: b.maxY }, { x: b.minX, y: b.minY }, off));
+  }
+
+  if (wantRooms) {
+    const inset = sizes.dimFont * 1.6;
+    for (const el of ir.elements) {
+      if (el.kind !== "room") continue;
+      const r = el as RRoom;
+      const { x, y } = r.at;
+      const { w, h } = r.size;
+      // Width inside the top edge; height inside the left edge (points ordered so
+      // the dim's perpendicular offset lands inside the room).
+      dims.push(mk({ x, y }, { x: x + w, y }, inset));
+      dims.push(mk({ x, y: y + h }, { x, y }, inset));
+    }
+  }
+  return dims;
+}
+
 export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): Scene {
   const registry = runtime.registry;
   const backend = runtime.backend ?? getGeometryBackend();
@@ -286,6 +322,17 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     if (def) nodes.push(...def.render(el, ctxFor(el.kind)));
   }
   nodes.push(...lowerWalls(ir.walls, ctxFor("wall"), registry, backend));
+
+  // `dims auto …` — synthesize dimension strings (presentation only; never touches
+  // the IR, bounds, describe() or lint()). Overall dims sit in the page margin;
+  // per-room dims sit just inside each room, so the page extent is unchanged.
+  if (ir.autoDims) {
+    const dimDef = registry.byKind.get("dim");
+    if (dimDef) {
+      const dimCtx = ctxFor("dim");
+      for (const dm of synthDims(ir, b, sizes)) nodes.push(...dimDef.render(dm, dimCtx));
+    }
+  }
 
   return {
     width: drawW + sizes.margin * 2,

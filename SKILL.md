@@ -33,9 +33,10 @@ npx @chanmeng666/archlang help
 5. **Verify intent without an image:** `arch describe plan.arch --json` returns the rooms (with
    areas and adjacency), what each door connects, and totals. Confirm the room count, labels, and
    areas match what was asked.
-6. **Check soundness:** `arch lint plan.arch --json` flags habitability problems (a room with no
-   door, a windowless bedroom, an implausibly small room, a too-narrow door, no entrance). Fix the
-   warnings or tell the user about them.
+6. **Check soundness:** `arch lint plan.arch --json` flags habitability problems: a room with no
+   door, a windowless bedroom, an implausibly small room, a too-narrow door, no entrance, a bathroom
+   reachable only through a bedroom, a bathroom not fully walled in, a door whose swing hits furniture
+   or another door, and a bath/kitchen with no fixtures. Fix the warnings or tell the user about them.
 
 ## Commands
 
@@ -56,6 +57,10 @@ arch explain E_ROOM_SIZE --json        # look up any diagnostic code
 - **Units are millimetres** (a 4 m wall is `4000`).
 - **Origin is top-left; +x right, +y DOWN** (not math y-up).
 - **Doors/windows must sit on a wall segment**, or they warn.
+- **Fixtures draw real symbols:** `furniture wc|basin|shower|bathtub|kitchen_sink|counter|fridge|stove …`
+  renders a plan symbol (not an empty box); standard sizes are also in `lib/fixtures.arch`. Put fixtures
+  in every bath and kitchen so the plan reads professionally and lint stays quiet.
+- **`dims auto`** draws dimension strings for you (`overall`, `rooms`, or `all`) — no need to place each `dim`.
 - Edit is cheap: "make the bedroom 1 m wider" is a one-number change, then recompile.
 
 Treat the CLI as the source of truth — author, render, and verify through it rather than reasoning

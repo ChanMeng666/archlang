@@ -204,6 +204,22 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "A room's floor area is below the configured minimum (default 4 m²).",
     "Increase its `size`, or merge it into an adjacent space.",
     'room at (0,0) size 1000x1000 label "Closet"   # lint: 1 m²'),
+  W_BATH_VIA_BEDROOM: W("W_BATH_VIA_BEDROOM", "Bathroom is reachable only through a bedroom.",
+    "Every door path from the entrance to this bathroom/WC passes through a bedroom. That is fine for a private en-suite, but a dwelling's main bathroom should open off circulation (a hall or living space), not a bedroom.",
+    "Add a door connecting the bathroom to a hall/living space, or route circulation so it is not reached only via a bedroom.",
+    'door id=d_bath at (5200,4000) width 800 wall partition   # lint: bath only off the bedroom'),
+  W_ROOM_NOT_ENCLOSED: W("W_ROOM_NOT_ENCLOSED", "Bathroom is not fully enclosed.",
+    "A run of this bathroom/WC's perimeter is not backed by a wall, so it is open to the adjacent space — a privacy problem for a wet room (a partition that stops short is the usual cause).",
+    "Extend the partition so the room's perimeter is walled on all sides (a door/window in the wall is fine — only a missing wall counts).",
+    "wall partition thickness 100 { (4000,0) (4000,4000) }   # lint: stops short, bath left open"),
+  W_SWING_OBSTRUCTED: W("W_SWING_OBSTRUCTED", "Door swing is obstructed.",
+    "The quarter-circle a door leaf sweeps overlaps a piece of furniture/fixture or another door's swing, so the door cannot open fully.",
+    "Move the door or the obstruction, flip the `hinge`/`swing`, or use a sliding door so the leaf clears.",
+    "door at (4000,1500) width 900 swing in   # lint: leaf sweeps onto the bed"),
+  W_ROOM_NO_FIXTURE: W("W_ROOM_NO_FIXTURE", "Bathroom or kitchen has no fixtures.",
+    "A room labelled as a bathroom or kitchen contains no plumbing/kitchen fixture (WC, basin, shower, sink, counter…), so it is drawn as an empty box.",
+    "Place the expected fixtures — e.g. import `lib/fixtures.arch` and add a `wc`, `basin`, `shower`, or `kitchen_sink`.",
+    'room at (4000,4000) size 3000x2000 label "Bath"   # lint: no fixtures inside'),
 });
 
 /** All catalog codes, sorted (errors then warnings, alphabetically within). */

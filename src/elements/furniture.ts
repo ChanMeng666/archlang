@@ -5,6 +5,7 @@ import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js
 import type { SceneNode } from "../scene.js";
 import type { RFurniture } from "../ir.js";
 import { rectCorners } from "../geometry.js";
+import { fixtureGlyph } from "./fixtures-glyphs.js";
 
 export const furniture: ElementDef = {
   kind: "furniture",
@@ -54,6 +55,10 @@ export const furniture: ElementDef = {
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const f = resolved as RFurniture;
     const { theme, sizes } = ctx;
+    // Known plumbing/kitchen fixtures draw a real plan symbol; everything else
+    // (bed, sofa, desk, …) falls back to the labelled rectangle below.
+    const glyph = fixtureGlyph(f.category, { x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h }, theme, sizes);
+    if (glyph) return glyph;
     const nodes: SceneNode[] = [];
     const c = rectCorners(f.at.x, f.at.y, f.size.w, f.size.h);
     nodes.push({

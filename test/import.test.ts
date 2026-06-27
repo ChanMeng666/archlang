@@ -74,6 +74,34 @@ describe("T4.3 — import in a Node (real-fs) World", () => {
     expect(errors).toEqual([]);
     expect(svg).toContain("Bed");
   });
+
+  it("imports plumbing/kitchen fixtures from examples/lib/fixtures.arch", () => {
+    const world: World = {
+      read: (p) => {
+        try {
+          return readFileSync(resolvePath(examplesDir, p), "utf8");
+        } catch {
+          return null;
+        }
+      },
+    };
+    const src = `plan "P" {
+      units mm
+      grid 50
+      import "lib/fixtures.arch": wc, basin, shower, kitchen_sink
+      wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+      room id=bath at (0,0) size 4000x3000 label "Bath"
+      door at (1000,3000) width 900 wall exterior
+      shower(200, 200)
+      basin(1300, 200)
+      wc(2200, 200)
+      kitchen_sink(3000, 200)
+    }`;
+    const { svg, errors } = compile(src, { world, noCache: true });
+    expect(errors).toEqual([]);
+    // Fixtures draw symbols (polygons), not the empty labelled box.
+    expect(svg).toContain("<polygon");
+  });
 });
 
 describe("T4.3 — diagnostics", () => {

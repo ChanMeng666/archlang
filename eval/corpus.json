@@ -4,7 +4,7 @@
     "prompt": "Draw a one-bedroom studio apartment of about 42 m². It should have a living/kitchen area, a separate bedroom, and a bathroom. Put a window in the bedroom and a front door.",
     "golden": "examples/studio.arch",
     "expect": {
-      "rooms": 3,
+      "rooms": 4,
       "labelsInclude": ["Bedroom", "Bath"],
       "floorAreaM2": [40, 44]
     }

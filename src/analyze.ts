@@ -11,12 +11,13 @@
 import { parse } from "./parser.js";
 import { link } from "./import.js";
 import { resolve } from "./ir.js";
-import type { ResolvedPlan } from "./ir.js";
+import type { ResolvedPlan, RDoor } from "./ir.js";
 import { BUILTIN_REGISTRY, createRegistry } from "./registry.js";
 import { NULL_WORLD } from "./world.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { Point } from "./ast.js";
 import type { CompileOptions } from "./types.js";
+import { segmentsOfWall, type WallLike, type WallSegment } from "./geometry.js";
 
 /** Options shared by the analysis tools: a subset of {@link CompileOptions}. */
 export type AnalyzeOptions = Pick<CompileOptions, "plugins" | "world">;
@@ -88,4 +89,91 @@ export function pointOnRoomEdge(p: Point, r: BBox, tol: number): boolean {
     p.x >= r.x - tol &&
     p.x <= r.x + r.w + tol;
   return onLeftRight || onTopBottom;
+}
+
+/**
+ * Ids of the rooms whose perimeter point `p` sits on (within tolerance). Iterates
+ * `roomRects` in insertion order so callers get a stable, element-ordered list:
+ * ≤2 ids for a door on a shared partition, 1 for a window on an exterior wall.
+ */
+export function roomsAtPoint(p: Point, roomRects: Map<string, BBox>, tol: number): string[] {
+  const out: string[] = [];
+  for (const [id, rect] of roomRects) {
+    if (pointOnRoomEdge(p, rect, tol)) out.push(id);
+  }
+  return out;
+}
+
+/**
+ * The one or two spaces a door connects: room ids, and/or the literal `"exterior"`
+ * when the door sits on an outer wall with open space on one side. This is the
+ * adjacency-via-doors edge that both {@link import("./describe.js").describe} (for its
+ * `between` field) and the connectivity lint rules build their room graph from.
+ */
+export function doorConnections(d: RDoor, roomRects: Map<string, BBox>, tol: number): string[] {
+  const touching = roomsAtPoint(d.at, roomRects, tol);
+  const onExterior = d.host?.category === "exterior";
+  return touching.length >= 2 ? touching.slice(0, 2) : onExterior ? ["exterior", ...touching] : touching;
+}
+
+/** Total length covered by a set of 1-D intervals after merging overlaps. */
+function mergedLength(intervals: Array<[number, number]>): number {
+  if (intervals.length === 0) return 0;
+  const sorted = [...intervals].sort((a, b) => a[0] - b[0]);
+  let total = 0;
+  let [cs, ce] = sorted[0];
+  for (let i = 1; i < sorted.length; i++) {
+    const [s, e] = sorted[i];
+    if (s <= ce) ce = Math.max(ce, e);
+    else {
+      total += ce - cs;
+      cs = s;
+      ce = e;
+    }
+  }
+  return total + (ce - cs);
+}
+
+/**
+ * The largest contiguous run (mm) of a room's four edges that is **not** backed by
+ * a wall centerline — i.e. how open the room's perimeter is. For each axis-aligned
+ * edge, the orthogonal wall segments collinear with it (within `tol`) are clipped
+ * to the edge and merged; the worst edge's `edgeLength − coveredLength` is returned.
+ *
+ * Openings (doors/windows) are not split out of wall centerlines — they live in
+ * `RWall.openings` and are only subtracted at render time — so a wall carrying a
+ * door still counts as fully enclosing. Only a genuine missing wall registers as a
+ * gap (e.g. a partition that stops short, leaving a wet room open to a living space).
+ * Angled walls match no edge and contribute nothing; the rule is for orthogonal rooms.
+ */
+export function largestPerimeterGap(rect: BBox, walls: WallLike[], tol: number): number {
+  const segs: WallSegment[] = walls.flatMap((w) => segmentsOfWall(w));
+  const edges = [
+    { axis: "h" as const, fixed: rect.y, lo: rect.x, hi: rect.x + rect.w },
+    { axis: "h" as const, fixed: rect.y + rect.h, lo: rect.x, hi: rect.x + rect.w },
+    { axis: "v" as const, fixed: rect.x, lo: rect.y, hi: rect.y + rect.h },
+    { axis: "v" as const, fixed: rect.x + rect.w, lo: rect.y, hi: rect.y + rect.h },
+  ];
+  let worst = 0;
+  for (const e of edges) {
+    const covered: Array<[number, number]> = [];
+    for (const s of segs) {
+      const isH = Math.abs(s.a.y - s.b.y) < 1e-6;
+      const isV = Math.abs(s.a.x - s.b.x) < 1e-6;
+      if (e.axis === "h") {
+        if (!isH || Math.abs((s.a.y + s.b.y) / 2 - e.fixed) > tol) continue;
+        const slo = Math.min(s.a.x, s.b.x);
+        const shi = Math.max(s.a.x, s.b.x);
+        if (overlap1d(slo, shi, e.lo, e.hi) > 0) covered.push([Math.max(slo, e.lo), Math.min(shi, e.hi)]);
+      } else {
+        if (!isV || Math.abs((s.a.x + s.b.x) / 2 - e.fixed) > tol) continue;
+        const slo = Math.min(s.a.y, s.b.y);
+        const shi = Math.max(s.a.y, s.b.y);
+        if (overlap1d(slo, shi, e.lo, e.hi) > 0) covered.push([Math.max(slo, e.lo), Math.min(shi, e.hi)]);
+      }
+    }
+    const gap = e.hi - e.lo - mergedLength(covered);
+    if (gap > worst) worst = gap;
+  }
+  return worst;
 }

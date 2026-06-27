@@ -16,12 +16,12 @@
 
 import type { ResolvedPlan, RRoom, RDoor, RWindow, RFurniture } from "./ir.js";
 import type { Diagnostic } from "./diagnostics.js";
-import type { Point } from "./ast.js";
 import {
   resolvePlan,
   rectOf,
   roomsAdjacent,
-  pointOnRoomEdge,
+  roomsAtPoint,
+  doorConnections,
   DEFAULT_TOL,
   type AnalyzeOptions,
   type BBox,
@@ -120,19 +120,15 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
   });
 
   // Which rooms' perimeters does this opening sit on? (≤2 for a door, 1 for a window.)
-  const roomsAtPoint = (p: Point): string[] =>
-    roomEls.filter((r) => pointOnRoomEdge(p, roomRects.get(r.id)!, tol)).map((r) => r.id);
-
-  const doors: DoorSummary[] = doorEls.map((d) => {
-    const touching = roomsAtPoint(d.at);
-    const onExterior = d.host?.category === "exterior";
-    const between =
-      touching.length >= 2 ? touching.slice(0, 2) : onExterior ? ["exterior", ...touching] : touching;
-    return { id: d.id, between, width: d.width };
-  });
+  // Shared with the lint connectivity rules — see analyze.ts.
+  const doors: DoorSummary[] = doorEls.map((d) => ({
+    id: d.id,
+    between: doorConnections(d, roomRects, tol),
+    width: d.width,
+  }));
 
   const windows: WindowSummary[] = windowEls.map((w) => {
-    const touching = roomsAtPoint(w.at);
+    const touching = roomsAtPoint(w.at, roomRects, tol);
     return { id: w.id, room: touching[0] ?? null, width: w.width };
   });
 

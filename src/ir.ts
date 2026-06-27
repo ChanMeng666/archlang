@@ -127,6 +127,8 @@ export interface ResolvedPlan {
   grid: number;
   scale?: string;
   north: NorthDir;
+  /** `dims auto …` — synthesize dimension strings at scene-build (presentation only). */
+  autoDims?: "overall" | "rooms" | "all";
   title?: TitleNode;
   theme?: Partial<Theme>;
   /** Named theme base (`theme <name>`), resolved to colours at lowering. */
@@ -519,6 +521,7 @@ function resolveImpl(
     grid: ast.grid,
     scale: ast.scale,
     north: ast.north,
+    autoDims: ast.autoDims,
     title: ast.title,
     theme: ast.theme,
     themeBase: ast.themeBase,
