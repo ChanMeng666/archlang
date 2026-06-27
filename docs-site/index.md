@@ -1,20 +1,9 @@
 ---
 layout: home
 
-hero:
-  name: ArchLang
-  text: Code → floor plans
-  tagline: A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture. Zero-dependency, deterministic, isomorphic.
-  actions:
-    - theme: brand
-      text: Get started
-      link: /guide
-    - theme: alt
-      text: Language reference
-      link: /reference
-    - theme: alt
-      text: Examples
-      link: /examples
+# The hero is rendered by the custom BrandHero.vue (the dark "void" landing
+# section, injected via the home-hero-before slot) — see .vitepress/theme/.
+# We intentionally omit the default `hero:` block so only the branded one shows.
 
 features:
   - title: Deterministic by design

@@ -11,7 +11,8 @@
   </head>
   <body>
     <header>
-      <h1><b>Arch</b>Lang <span class="tag">— code → floor plans</span></h1>
+      <canvas class="brand-lines" aria-hidden="true"></canvas>
+      <h1><span class="wordmark"><b>Arch</b>Lang</span> <span class="badge">Playground</span></h1>
       <div class="spacer"></div>
       <select id="examples" aria-label="Load example"></select>
       <select id="format" aria-label="Download format">
@@ -21,8 +22,11 @@
         <option value="pdf">PDF</option>
       </select>
       <button id="download">Download</button>
+      <!-- brand-family navigation: back to the main docs site + sibling product -->
+      <a class="btn" href="https://archlang-docs.vercel.app" target="_blank" rel="noopener">Docs ↗</a>
       <a class="btn" href="https://archlang-docs.vercel.app/spec" target="_blank" rel="noopener">Spec</a>
       <a class="btn" href="https://github.com/chanmeng666/archlang" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn" href="https://archcanvas.chanmeng.org" target="_blank" rel="noopener">ArchCanvas ↗</a>
     </header>
     <main>
       <section class="pane">

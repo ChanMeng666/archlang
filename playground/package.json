@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@codemirror/commands": "^6.7.1",
+    "@fontsource/geist-mono": "^5.2.5",
+    "@fontsource/space-grotesk": "^5.2.5",
     "@codemirror/language": "^6.10.8",
     "@codemirror/lint": "^6.8.4",
     "@codemirror/state": "^6.5.0",

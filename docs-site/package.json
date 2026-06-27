@@ -11,6 +11,8 @@
     "preview": "vitepress preview"
   },
   "devDependencies": {
+    "@fontsource/geist-mono": "^5.2.5",
+    "@fontsource/space-grotesk": "^5.2.5",
     "vitepress": "^1.6.3"
   }
 }

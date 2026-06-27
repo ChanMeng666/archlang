@@ -1,47 +1,125 @@
+/**
+ * ArchLang playground styles.
+ *
+ * Shares the ArchLang/ArchCanvas brand kit (plum + Space Grotesk + Geist Mono +
+ * pill chrome). Keep the token block below in lockstep with the docs site
+ * (docs-site/.vitepress/theme/style.css) — the two build systems can't share a
+ * CSS import, so this short block is the pragmatic source of truth duplicated in
+ * both. The light working area (editor + preview) is kept for legibility; only
+ * the chrome adopts the dark-brand accent.
+ */
+
 :root {
+  /* ── shared brand kit (keep identical with docs) ── */
+  --plum: #8052ff; /* primary brand */
+  --plum-strong: #6a3df0; /* accent on light bg (AA) */
+  --void-bg: oklch(0.145 0 0);
+  --void-fg: oklch(0.985 0 0);
+  --void-border: oklch(1 0 0 / 12%);
+  --ash: #bdbdbd;
+
   --bg: #f6f5f1;
   --panel: #ffffff;
   --ink: #1b1b1b;
   --muted: #7a7a7a;
-  --accent: #0e5484;
+  --accent: var(--plum-strong); /* UI chrome accent → plum */
   --border: #e3e0d8;
   --err: #b3261e;
-  --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  --sans: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Helvetica, Arial, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo,
+    Consolas, monospace;
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--sans);
   color: var(--ink);
   background: var(--bg);
   display: flex;
   flex-direction: column;
 }
+
+/* ── unified brand nav (dark, echoes the docs hero & ArchCanvas navbar) ── */
 header {
+  position: relative;
+  isolation: isolate;
   display: flex;
-  align-items: baseline;
-  gap: 14px;
-  padding: 12px 18px;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel);
+  align-items: center;
+  gap: 12px;
+  padding: 11px 18px;
+  background: var(--void-bg);
+  color: var(--void-fg);
+  border-bottom: 1px solid var(--void-border);
   flex-wrap: wrap;
 }
-header h1 { font-size: 18px; margin: 0; letter-spacing: -0.01em; }
-header h1 b { color: var(--accent); }
-header .tag { color: var(--muted); font-size: 13px; }
+header .brand-lines {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.6;
+}
+header > *:not(.brand-lines) { position: relative; z-index: 1; }
+header h1 {
+  font-size: 17px;
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+header h1 .wordmark { letter-spacing: -0.01em; }
+header h1 b { color: #a98bff; font-weight: 700; }
+header .badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ash);
+  padding: 3px 9px;
+  border: 1px solid var(--void-border);
+  border-radius: 9999px;
+}
 header .spacer { flex: 1; }
-header select, header button, header a.btn {
+
+/* pill controls — selects, buttons, links all share the chrome */
+header select,
+header button,
+header a.btn {
   font: inherit;
   font-size: 13px;
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: #fff;
-  color: var(--ink);
+  padding: 6px 13px;
+  border: 1px solid var(--void-border);
+  border-radius: 9999px;
+  background: oklch(1 0 0 / 6%);
+  color: var(--void-fg);
   cursor: pointer;
   text-decoration: none;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
 }
-header button:hover, header a.btn:hover, header select:hover { border-color: var(--accent); }
+header select { padding-right: 8px; }
+header select option { color: var(--ink); }
+header button:hover,
+header a.btn:hover,
+header select:hover {
+  border-color: color-mix(in srgb, var(--plum) 65%, transparent);
+  background: oklch(1 0 0 / 12%);
+}
+/* the primary action (Download) gets the solid plum fill */
+header button#download {
+  background: var(--plum);
+  border-color: transparent;
+  font-weight: 500;
+}
+header button#download:hover {
+  background: color-mix(in srgb, var(--plum) 90%, #fff);
+}
+header a.btn:active, header button:active { transform: translateY(1px); }
+
 main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
 .pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 .pane + .pane { border-left: 1px solid var(--border); }
@@ -58,11 +136,11 @@ main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
 .tabs { display: inline-flex; gap: 4px; }
 .tab {
   font: inherit; font-size: 11px; text-transform: none; letter-spacing: 0;
-  padding: 3px 9px; border: 1px solid var(--border); border-radius: 6px;
+  padding: 3px 11px; border: 1px solid var(--border); border-radius: 9999px;
   background: #fff; color: var(--muted); cursor: pointer;
 }
 .tab:hover { border-color: var(--accent); }
-.tab.active { color: var(--accent); border-color: var(--accent); background: #eef4f8; }
+.tab.active { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--plum) 12%, #fff); }
 
 #editor { flex: 1; min-height: 0; overflow: auto; background: var(--panel); }
 

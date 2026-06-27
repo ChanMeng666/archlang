@@ -6,7 +6,19 @@ import { lintGutter } from "@codemirror/lint";
 import { compile, describe, lint, toDxf } from "archlang";
 import { archLanguage, archLinter } from "./arch-language.js";
 import { EXAMPLES } from "./examples.js";
+import { mountFlowingLines } from "./flowing-lines.js";
+// Self-hosted brand fonts (no CDN) — shared with the docs site.
+import "@fontsource/space-grotesk/400.css";
+import "@fontsource/space-grotesk/600.css";
+import "@fontsource/space-grotesk/700.css";
+import "@fontsource/geist-mono/400.css";
+import "@fontsource/geist-mono/500.css";
 import "./style.css";
+
+// Subtle ArchCanvas-signature flowing lines behind the brand nav (reduced-motion
+// safe — the helper renders a single static frame when motion is reduced).
+const brandLines = document.querySelector("header .brand-lines");
+if (brandLines) mountFlowingLines(brandLines, { lineCount: 6 });
 
 const preview = document.getElementById("preview");
 const describeEl = document.getElementById("describe");

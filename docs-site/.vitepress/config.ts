@@ -44,7 +44,19 @@ export default defineConfig({
       { text: "Errors", link: "/errors" },
       { text: "Examples", link: "/examples" },
       { text: "ADRs", link: "/adr/" },
+      // Keep one-click reach to the playground…
       { text: "Playground", link: "https://archlang-playground.vercel.app" },
+      // …and group the wider brand family (the ArchCanvas product + packages)
+      // under an Ecosystem dropdown so docs ↔ playground ↔ archcanvas all link.
+      {
+        text: "Ecosystem",
+        items: [
+          { text: "Playground ↗", link: "https://archlang-playground.vercel.app" },
+          { text: "ArchCanvas ↗", link: "https://archcanvas.chanmeng.org" },
+          { text: "npm ↗", link: "https://www.npmjs.com/package/@chanmeng666/archlang" },
+          { text: "GitHub ↗", link: "https://github.com/chanmeng666/archlang" },
+        ],
+      },
     ],
     sidebar: [
       {
@@ -82,9 +94,8 @@ export default defineConfig({
     ],
     socialLinks: [{ icon: "github", link: "https://github.com/chanmeng666/archlang" }],
     search: { provider: "local" },
-    footer: {
-      message: "Released under the MIT License.",
-      copyright: "Copyright © 2026 Chan Meng",
-    },
+    // The site-wide footer is rendered by FamilyFooter.vue (layout-bottom slot),
+    // which carries the MIT/copyright line plus the brand-family ecosystem links.
+    // Omitting the built-in `footer` here avoids a duplicate footer.
   },
 });
