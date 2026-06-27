@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-27
+
+### Added — architectural soundness, fixtures, auto-dimensioning
+
+The mechanical compiler was sound but blind to tacit architectural knowledge: the canonical studio
+passed `arch lint` despite a bathroom open to the living room and reachable only through the bedroom.
+This release makes wrong plans hard to ship and easy to detect, and makes wet rooms read
+professionally. Existing rendered output is unchanged except where a fixture symbol now draws.
+
+- **Four architectural lint rules** (`src/lint.ts`), tunable via the existing `LintRuleset`:
+  `W_BATH_VIA_BEDROOM` (a bath reachable from the entrance only by passing through a bedroom —
+  door-graph BFS), `W_ROOM_NOT_ENCLOSED` (a wet room with an unwalled perimeter run),
+  `W_SWING_OBSTRUCTED` (a door leaf sweeping onto furniture or another door's swing), and
+  `W_ROOM_NO_FIXTURE` (a bath/kitchen with no fixtures). Documented in the catalog (`arch explain`).
+- **Drawn fixture symbols** (`src/elements/fixtures-glyphs.ts`). `furniture wc|basin|shower|bathtub|
+  kitchen_sink|counter|fridge|stove …` draws a real plan symbol instead of an empty labelled box,
+  with a safe fallback to the rectangle for any other kind. Standard fixtures also ship as a
+  component library (`examples/lib/fixtures.arch`).
+- **`dims auto [overall|rooms|all]`** — synthesize dimension strings without hand-placing each `dim`.
+  Presentation-only (lowered in `scene-build.ts`), so `describe`/`lint` and the resolve cache are
+  unaffected.
+- Shared geometry — the door-swing quarter-disc, the room-connectivity graph, and perimeter
+  enclosure — is factored into `src/geometry.ts` / `src/analyze.ts` and reused by both the renderer
+  and the linter (no duplicated geometry).
+
+### Changed
+
+- **`examples/studio.arch`** rewritten to be architecturally sound: an enclosed bath off a central
+  hall (no longer reached through the bedroom), a fitted kitchen and bath, non-colliding door swings,
+  and dimension strings. It now lints clean. Snapshots, the visual golden, and the embedded spec were
+  regenerated; the editor grammars gained the `dims`/`auto` keywords.
+
 ## [1.1.0] - 2026-06-27
 
 ### Added — AI-agent-native interface (CLI-first)
