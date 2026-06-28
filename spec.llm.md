@@ -119,10 +119,12 @@ plan "Studio 1BR" {
   room id=r_bath   at (4000,4400) size 3000x1600 label "Bath"             uses bath
 
   # Entrance into the living space; the hall links it to the bedroom and the bath.
-  door id=d_main   at (3000,6000) width 1000 wall exterior  hinge left  swing in
-  door id=d_living at (4000,3700) width 900  wall partition hinge left  swing in
-  door id=d_bed    at (6400,3000) width 800  wall partition hinge right swing out
-  door id=d_bath   at (4600,4400) width 800  wall partition hinge left  swing out
+  # Living ↔ hall is a cased opening (circulation needs no door leaf); the bedroom
+  # and bath each get a real door off the hall.
+  door    id=d_main   at (3000,6000) width 1000 wall exterior  hinge left  swing in
+  opening id=o_living at (4000,3700) width 900  wall partition
+  door    id=d_bed    at (6400,3000) width 800  wall partition hinge right swing out
+  door    id=d_bath   at (4600,4400) width 800  wall partition hinge left  swing out
 
   window at (0,2000)    width 1500 wall exterior
   window at (7000,1500) width 1200 wall exterior
@@ -138,16 +140,22 @@ plan "Studio 1BR" {
   furniture sofa at (350,4300) size 2000x900  label "Sofa"
   furniture bed  at (4300,300) size 1500x2000 label "Bed"
 
-  # Bathroom fixtures: shower · basin · WC (the door swings out into the hall).
-  furniture shower at (4200,4650) size 900x900
-  furniture basin  at (5250,4650) size 600x450
-  furniture wc     at (5300,5150) size 400x700
+  # Bathroom fixtures, kept clear of the door's entry path (the door swings out into
+  # the hall): shower in the far corner, basin against the partition, WC on the south
+  # wall — the left third of the room stays open so you can actually step inside.
+  furniture shower at (6000,5000) size 900x900   # against the E + S walls (corner)
+  furniture basin  at (5200,4450) size 600x450   # back to the hall partition
+  furniture wc     at (5200,5200) size 400x700   # back to the south wall
 
-  # Dimension strings: room widths above, overall extents around.
-  dim (4000,0)->(0,0)       offset 350 text "4000"
-  dim (7000,0)->(4000,0)    offset 350 text "3000"
-  dim (0,6000)->(7000,6000) offset 600 text "7000"
-  dim (7000,6000)->(7000,0) offset 600 text "6000"
+  # Dimension strings: room widths above, overall extents around. The reference
+  # (witness) points sit on the building's OUTER faces (x=-100/7100, y=-100/6100 for
+  # the 200mm shell) so the extension lines start at the wall face and read outward,
+  # never poking back into the building — while the spans still measure centerline to
+  # centerline (4000 · 3000 · 7000 · 6000).
+  dim (4000,-100)->(0,-100)    offset 250 text "4000"
+  dim (7000,-100)->(4000,-100) offset 250 text "3000"
+  dim (0,6100)->(7000,6100)    offset 500 text "7000"
+  dim (7100,6000)->(7100,0)    offset 500 text "6000"
 
   title {
     project "Studio Apartment"
@@ -197,11 +205,15 @@ plan "Parametric — Studio Row" {
     window at (x + W / 2, 0) width WIN  wall exterior
 
     # The end unit carries a per-unit area dimension (computed by the function).
+    # Referenced to the outer face (y = H + WALL/2) so the extension lines start at
+    # the wall and read downward, away from the building.
     if i == COUNT - 1 {
-      dim (x, H)->(x + W, H) offset 700 text "{aream2(W, H)} m² each"
+      dim (x, H + WALL / 2)->(x + W, H + WALL / 2) offset 600 text "{aream2(W, H)} m² each"
     }
   }
 
-  dim (0,0)->(W * COUNT, 0) offset 1400 text "{COUNT} units"
+  # Overall run, dimensioned above the building: right-to-left so the offset lands
+  # ABOVE the row (outside), and referenced to the outer top face (y = -WALL/2).
+  dim (W * COUNT, 0 - WALL / 2)->(0, 0 - WALL / 2) offset 1300 text "{COUNT} units"
 }
 ```

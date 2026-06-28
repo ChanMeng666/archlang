@@ -35,10 +35,14 @@ plan "Parametric — Studio Row" {
     window at (x + W / 2, 0) width WIN  wall exterior
 
     # The end unit carries a per-unit area dimension (computed by the function).
+    # Referenced to the outer face (y = H + WALL/2) so the extension lines start at
+    # the wall and read downward, away from the building.
     if i == COUNT - 1 {
-      dim (x, H)->(x + W, H) offset 700 text "{aream2(W, H)} m² each"
+      dim (x, H + WALL / 2)->(x + W, H + WALL / 2) offset 600 text "{aream2(W, H)} m² each"
     }
   }
 
-  dim (0,0)->(W * COUNT, 0) offset 1400 text "{COUNT} units"
+  # Overall run, dimensioned above the building: right-to-left so the offset lands
+  # ABOVE the row (outside), and referenced to the outer top face (y = -WALL/2).
+  dim (W * COUNT, 0 - WALL / 2)->(0, 0 - WALL / 2) offset 1300 text "{COUNT} units"
 }
