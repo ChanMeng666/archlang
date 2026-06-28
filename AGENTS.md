@@ -18,12 +18,12 @@ not a work-in-progress. Treat the live artifacts below as the source of truth.
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.3.1` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.3.2` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md` |
 | **VS Code extension** | `ChanMeng.archlang@0.3.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.3.1` (latest) | github.com/ChanMeng666/archlang |
+| **Git** | `main`, tags `v1.0.0` → `v1.3.2` (latest) | github.com/ChanMeng666/archlang |
 | **Tests** | 439 passing (49 files); typecheck + build clean | — |
 
 **Latest release — v1.3.0 (architectural soundness, circulation facts & professional placement).**
