@@ -23,11 +23,16 @@ npx @chanmeng666/archlang help
 3. **Render** — `arch compile plan.arch -o plan.svg --json`. The JSON is `{ ok, diagnostics, summary }`.
 4. **Self-correct** — if `ok` is false (exit code `2`), read each `diagnostics[].fix` (with
    `line`/`col`), edit, and recompile.
-5. **Verify intent without an image** — `arch describe plan.arch --json` returns rooms (areas,
-   adjacency), what each door connects, windows, and totals. Confirm the room count, labels, and
+5. **Verify intent without an image** — `arch describe plan.arch --json` returns rooms (`uses`,
+   areas, adjacency), what each door/window/**opening** connects, the furniture, an **access graph**
+   (entrances, per-room reachability and depth), and totals. Confirm the room count, labels, and
    areas match the brief.
 6. **Check soundness** — `arch lint plan.arch --json` flags habitability problems (a room with no
-   door, a windowless bedroom, an implausibly small room, a too-narrow door, no entrance).
+   door, a windowless bedroom, an implausibly small room, a too-narrow door, no entrance, a fixture
+   floating off the wall). Tighten the bar with `--profile accessibility-advisory`.
+
+See [Analysis: describe & lint](/analysis) for the full output shapes, the access graph fields, and
+the complete rule list.
 
 ## Commands
 
@@ -39,8 +44,9 @@ IO/internal · `3` bad usage. Every JSON diagnostic carries the catalog **`fix`*
 arch spec                              # the whole language in one page — read first
 arch compile plan.arch -o out.svg --json   # render (also -f dxf|pdf|png)
 echo '<source>' | arch compile - -o - -f svg   # compile stdin → SVG on stdout
-arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, door connections
-arch lint plan.arch --json             # architectural soundness warnings
+arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, connections, access graph
+arch lint plan.arch --json             # architectural soundness warnings (default profile)
+arch lint plan.arch --profile accessibility-advisory --json   # stricter: ≥850mm doors, ≥5m² rooms
 arch validate plan.arch --json         # parse + resolve + lint, no render
 arch fmt plan.arch --write             # canonical formatting
 arch new -o plan.arch                  # scaffold a starter plan
@@ -57,16 +63,22 @@ For the [studio example](/examples), `arch describe --json` returns (abridged):
   "plan": "Studio 1BR",
   "bbox": { "w": 7000, "h": 6000 },
   "rooms": [
-    { "id": "r_living", "label": "Living / Kitchen", "area_m2": 24, "adjacent": ["r_bed", "r_bath"] },
-    { "id": "r_bed", "label": "Bedroom", "area_m2": 12, "adjacent": ["r_living", "r_bath"] }
+    { "id": "r_living", "label": "Living / Kitchen", "uses": ["living", "kitchen"], "area_m2": 24, "adjacent": ["r_bed", "r_hall", "r_bath"] },
+    { "id": "r_bed", "label": "Bedroom", "uses": ["bedroom"], "area_m2": 9, "adjacent": ["r_living", "r_hall"] }
   ],
-  "doors": [ { "id": "d_bed", "between": ["r_living", "r_bed"], "width": 900 } ],
-  "totals": { "rooms": 3, "floor_area_m2": 42 }
+  "doors": [ { "id": "d_bath", "between": ["r_hall", "r_bath"], "width": 800 } ],
+  "openings": [ { "id": "o_living", "between": ["r_living", "r_hall"], "width": 900 } ],
+  "access": {
+    "entrances": ["d_main"], "hasEntrance": true,
+    "rooms": [ { "id": "r_bath", "depthFromEntrance": 3, "reachable": true, "bottleneckClearWidth": 740 } ]
+  },
+  "totals": { "rooms": 4, "floor_area_m2": 42 }
 }
 ```
 
-A text-only agent can read this and confirm "3 rooms, 42 m², a bedroom adjacent to the living area,
-a door between them" — no rendering required.
+A text-only agent can read this and confirm "4 rooms, 42 m², the bath reached off the hall (not
+through the bedroom), every room reachable from the front door" — no rendering required. See the
+[full schema](/analysis).
 
 ## Also
 

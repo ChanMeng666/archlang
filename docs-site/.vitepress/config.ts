@@ -29,7 +29,7 @@ export default defineConfig({
   // which contain relative links to repo files (examples/*.arch, playground/,
   // error-codes.md → the site's /errors page) that are valid on GitHub but not
   // pages on this site under the same name. Don't fail the build on them.
-  ignoreDeadLinks: [/\.\.\/(examples|playground)\//, /\.\.\/\.\.\//, /error-codes/],
+  ignoreDeadLinks: [/\.\.\/(examples|playground)\//, /\.\.\/\.\.\//, /error-codes/, /language-reference/],
   // Register the ArchLang grammar with Shiki under the `arch` fence id (the
   // grammar's own `name` is "ArchLang"; its scopeName stays `source.arch`). The
   // `archlang` alias is accepted too.
@@ -40,6 +40,7 @@ export default defineConfig({
     nav: [
       { text: "Guide", link: "/guide" },
       { text: "Reference", link: "/reference" },
+      { text: "Analysis", link: "/analysis" },
       { text: "AI Agents", link: "/agents" },
       { text: "Errors", link: "/errors" },
       { text: "Examples", link: "/examples" },
@@ -78,6 +79,8 @@ export default defineConfig({
         items: [
           { text: "Language reference", link: "/reference" },
           { text: "Relational placement", link: "/relational" },
+          { text: "Furniture & fixtures", link: "/furniture" },
+          { text: "Analysis: describe & lint", link: "/analysis" },
           { text: "Error catalog", link: "/errors" },
         ],
       },
@@ -89,6 +92,7 @@ export default defineConfig({
           { text: "Optional-dependency geometry", link: "/adr/0002-optional-dep-geometry" },
           { text: "Expand-time scripting", link: "/adr/0003-expand-time-scripting" },
           { text: "Relational placement, not an optimizer", link: "/adr/0004-relational-placement-not-optimizer" },
+          { text: "No invisible architect", link: "/adr/0005-no-invisible-architect" },
         ],
       },
     ],

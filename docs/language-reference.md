@@ -1,4 +1,4 @@
-# ArchLang Language Reference (v1.0)
+# ArchLang Language Reference (v1.3)
 
 ArchLang is a small declarative language that compiles to a professional SVG
 floor plan. It is **explicit and parametric**: you give every element exact
@@ -14,9 +14,18 @@ byte-identical output.
 The output is professional CAD: layers, line weights, line types, wall poché
 hatches by material, openings that void their wall, dimensions, a north arrow,
 scale bar, and a title block — exportable to **SVG, DXF, PDF, or PNG**. Rooms can
-be placed absolutely or **relative to one another** (`right-of` / `below` / …).
+be placed absolutely or **relative to one another** (`right-of` / `below` / …),
+classified by what they're for (`uses bedroom`), and furnished with fixtures that
+draw real plan symbols — placed by coordinate or snapped **`against`** a wall.
 Plans can `import` components from other modules, select named **themes**, and be
-formatted with `arch fmt`. This reference covers the language through v1.0.
+formatted with `arch fmt`.
+
+Beyond rendering, ArchLang **reads back** what you wrote: `arch describe` returns
+the rooms, areas, adjacencies, and a modelled **access graph** (what connects to
+what, and how far each room is from the entrance); `arch lint` flags habitability
+problems against advisory profiles. Both are pure, text-only, and image-free — see
+[Analysis: describe & lint](analysis.md). This reference covers the language
+through **v1.3**.
 
 - **Unit:** millimetres (integers recommended).
 - **Coordinate system:** origin top-left, **+x** right, **+y** down (matches SVG).
@@ -280,12 +289,28 @@ wall exterior thickness 250 material brick scale 1.5 angle 30 { … }
 ### Room
 
 ```
-room [id=<id>] at (x,y) size <w>x<h> [label "<text>"]
-room [id=<id>] <right-of|left-of|below|above> <ref> [align <edge>] [gap <mm>] size <w>x<h> [label "<text>"]
+room [id=<id>] at (x,y) size <w>x<h> [label "<text>"] [uses <kind>…]
+room [id=<id>] <right-of|left-of|below|above> <ref> [align <edge>] [gap <mm>] size <w>x<h> [label "<text>"] [uses <kind>…]
 ```
 
 A rectangle. The compiler prints the `label` and the **computed area** (m²).
 Rooms describe space; walls are drawn separately.
+
+**Room purpose — `uses` (v1.3).** Tag a room with one or more space kinds so the
+analysis layer knows what it *is* without guessing from the label:
+
+```
+room id=r_living at (0,0)    size 4000x6000 label "Living / Kitchen" uses living kitchen
+room id=r_bath   at (4000,4400) size 3000x1600 label "Bath"         uses bath
+```
+
+The kinds are `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`,
+`circulation`, `storage`, `utility`, `office`, and `entry`. This is **authored
+intent**: it overrides the conservative label/id regex that `describe` and `lint`
+fall back to when `uses` is absent (so a room labelled "Master Suite" can still be
+tagged `uses bedroom`). The tags drive lint rules like *bedrooms need a window* and
+*wet rooms need fixtures*, and appear in `describe().rooms[].uses` — see
+[Analysis](analysis.md).
 
 **Relational placement (v1.0).** Instead of an absolute `at (x,y)`, a room may be
 positioned **relative to another room** with `right-of` / `left-of` / `below` /
@@ -328,21 +353,42 @@ window [id=<id>] at (x,y) width <mm> [wall <ref>]
 
 An opening with the standard double-line glazing symbol.
 
+### Opening (v1.3)
+
+```
+opening [id=<id>] at (x,y) width <mm> [wall <ref>]
+```
+
+A **cased, leaf-less gap** — it voids the wall like a door does, but draws no leaf
+and no swing arc and no glazing. Use it where two spaces flow into one another
+without a door: a living room into a hall, an open-plan kitchen, a wide cased
+passage. Like a door, an `opening` **connects two spaces** in the
+[access graph](analysis.md) — but because there is no leaf to subtract, its clear
+width equals its nominal width (a door loses ~60 mm to the leaf and stop).
+
+```
+opening id=o_living at (4000,3700) width 900 wall partition   # living ↔ hall, no door
+```
+
 ### Furniture
 
 ```
-furniture <kind> [id=<id>] at (x,y) size <w>x<h> [label "<text>"]
+furniture <kind> [id=<id>] at (x,y) size <w>x<h> [label "<text>"] [rotate 0|90|180|270] [in <room>]
+furniture <kind> [id=<id>] against wall <ref> [segment <n>] [offset <mm>] [side left|right] size <along>x<depth> [label "<text>"] [in <room>]
 ```
 
 A schematic labelled rectangle (bed, sofa, desk…). Known plumbing & kitchen
 **fixture** kinds draw a real plan symbol instead of an empty box and ignore any
 `label`: `wc`/`toilet`, `basin`, `shower`, `bathtub`, `kitchen_sink`/`sink`,
 `counter`, `fridge`, and `stove`/`hob`/`cooktop`. Any other kind falls back to the
-labelled rectangle. Symbols draw with their back along the top edge of the
-footprint — orient by the wall the fixture sits against.
+labelled rectangle.
 
-Standard fixtures are also available as importable components at typical
-residential sizes:
+A piece can be placed two ways: absolutely with `at (x,y)` (optionally turned with
+`rotate`), or snapped **`against wall <ref>`** so its back sits on the wall and its
+rotation is derived for you. `in <room>` records which room owns the piece (used by
+the lint rules). The full placement rules, the fixture symbol catalogue, and the
+fixture-aware lint checks live on the dedicated **[Furniture & fixtures](furniture.md)**
+page. Standard fixtures are also importable components at typical residential sizes:
 
 ```
 import "lib/fixtures.arch": wc, basin, shower
@@ -411,6 +457,37 @@ compile(src, { theme: { wallStroke: "#0000ff", lineWeight: 0.5 } });
 ```
 
 See [`examples/themed.arch`](../examples/themed.arch).
+
+## Analysis: `describe` & `lint`
+
+ArchLang doesn't just draw a plan — it can **read it back as facts**. Two pure
+functions (also surfaced as `arch describe` / `arch lint`) turn source into
+machine-readable, image-free output:
+
+- **`describe(source)`** → a semantic summary: every room with its `uses`, area,
+  bounding box and `adjacent` rooms; what each door, window, and opening connects;
+  the furniture; and a modelled **access graph** (entrances, per-room reachability,
+  door-hop depth from the entrance, and the clear-width bottleneck on the way in).
+- **`lint(source)`** → advisory `W_*` warnings about habitability (a room with no
+  way in, a windowless bedroom, a too-small room, a door leaf sweeping onto a
+  fixture, a wet room reached only through a bedroom…). Pick a ruleset with
+  `--profile`:
+
+  ```
+  arch lint plan.arch --profile residential-basic        # default: ≥700 mm doors, ≥4 m² rooms
+  arch lint plan.arch --profile accessibility-advisory   # stricter: ≥850 mm doors, ≥5 m² rooms, swing clearance
+  ```
+
+  Profiles are **advisory soundness checks, never a building-code guarantee.** The
+  programmatic form is `lint(src, { profile })`; the names come from
+  `LINT_PROFILES` (see `src/lint.ts`).
+
+These are deliberately **facts and advice, not an auto-arranger** — ArchLang never
+moves your geometry behind your back (see
+[ADR 0005](adr/0005-no-invisible-architect.md)). The full output shapes, the access
+graph, and the complete rule list are documented on the
+**[Analysis: describe & lint](analysis.md)** page; every code is in the
+[error catalog](error-codes.md).
 
 ## Compilation result
 

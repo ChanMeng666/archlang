@@ -12,7 +12,7 @@ plan "Studio 1BR" {
   north up
 
   wall exterior thickness 200 { (0,0) (7000,0) (7000,6000) (0,6000) close }
-  room id=living at (0,0) size 7000x6000 label "Living / Kitchen"
+  room id=living at (0,0) size 7000x6000 label "Living / Kitchen" uses living kitchen
   door at (1000,6000) width 1000 wall exterior hinge left swing in
   window at (2500,0) width 1800 wall exterior
   furniture bed at (4300,300) size 1500x2000 label "Bed"
@@ -32,6 +32,9 @@ plan "Studio 1BR" {
 - **Zero-dependency core** — the SVG path needs nothing installed. PNG, PDF, and
   angled-wall geometry are optional, lazily-loaded add-ons. See
   [ADR 0002](/adr/0002-optional-dep-geometry).
+- **Reads its own plans** — `arch describe` returns rooms, areas, adjacencies, and a
+  modelled access graph; `arch lint` flags habitability problems. Both are image-free
+  facts and advice, never an auto-arranger. See [Analysis](/analysis).
 
 ## Install & use
 
@@ -63,5 +66,9 @@ const { svg, diagnostics, scene } = compile(source);
   control-flow construct.
 - [Relational placement](/relational) lets rooms position themselves relative to
   one another.
+- [Furniture & fixtures](/furniture) covers placing pieces by coordinate or snapped
+  against a wall, and the fixture symbol catalogue.
+- [Analysis: describe & lint](/analysis) explains the semantic summary, the access
+  graph, and the soundness rules — the channel an AI agent uses to verify a plan.
 - The [error catalog](/errors) documents every diagnostic with a cause and a fix.
 - [Examples](/examples) shows complete plans and their rendered output.

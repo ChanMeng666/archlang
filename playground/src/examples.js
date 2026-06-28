@@ -7,10 +7,13 @@
 // in vite.config.js already whitelists the repo root, and `?raw` inlines the file
 // contents at build time. Edit examples/*.arch, not a duplicate.
 import studio from "../../examples/studio.arch?raw";
+import twoBed from "../../examples/two-bed.arch?raw";
+import relational from "../../examples/relational.arch?raw";
+import themed from "../../examples/themed.arch?raw";
 import parametric from "../../examples/parametric.arch?raw";
 
+// Ordered as a learning progression (the <select> preserves insertion order).
 export const EXAMPLES = {
-  "Studio (1BR)": studio,
   "Single room": `plan "One Room" {
   units mm
   grid 100
@@ -19,5 +22,9 @@ export const EXAMPLES = {
   door at (2500,4000) width 900 wall exterior hinge left swing in
   window at (0,2000) width 1500 wall exterior
 }`,
+  "Studio (1BR)": studio,
+  "Two-bed flat": twoBed,
+  "Relational (right-of / below)": relational,
+  "Themed (blueprint + brick)": themed,
   "Parametric (let + for loop)": parametric,
 };

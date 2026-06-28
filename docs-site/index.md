@@ -11,7 +11,9 @@ features:
   - title: Zero-dependency core
     details: The default SVG path pulls no runtime dependencies. Optional power (PNG raster, vector PDF, angled-wall geometry) loads lazily and is never required.
   - title: Professional CAD output
-    details: Layers, line weights, line types, wall poché hatches, openings that void walls, dimensions, north arrow, scale bar, and a title block. Export to SVG, DXF, PDF, or PNG.
+    details: Layers, line weights, line types, wall poché hatches, openings that void walls, real fixture symbols, dimensions, north arrow, scale bar, and a title block. Export to SVG, DXF, PDF, or PNG.
   - title: Parametric & scriptable
     details: Values, arithmetic, arrays, for/if/while, and pure functions — plus relational placement (right-of / below / …) resolved by deterministic topological arithmetic.
+  - title: Reads its own plans
+    details: "Beyond drawing, ArchLang reads a plan back as facts: describe returns rooms, areas, adjacencies, and a modelled access graph; lint flags habitability problems against advisory profiles — image-free, so an AI agent can verify intent without an image."
 ---

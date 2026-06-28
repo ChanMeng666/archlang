@@ -23,6 +23,8 @@ function page(src, dest) {
 
 console.log("syncing canonical docs into the site:");
 page("docs/language-reference.md", "reference.md");
+page("docs/furniture.md", "furniture.md");
+page("docs/analysis.md", "analysis.md");
 page("docs/error-codes.md", "errors.md");
 page("spec.llm.md", "spec.md");
 

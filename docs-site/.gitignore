@@ -5,6 +5,8 @@
 # Pages generated from canonical repo docs by sync-docs.mjs (do not edit/commit;
 # the source of truth is docs/*.md and docs/adr/*.md).
 reference.md
+furniture.md
+analysis.md
 errors.md
 spec.md
 adr/0*.md

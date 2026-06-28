@@ -3,7 +3,7 @@ import { EditorState } from "@codemirror/state";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { bracketMatching } from "@codemirror/language";
 import { lintGutter } from "@codemirror/lint";
-import { compile, describe, lint, toDxf } from "archlang";
+import { compile, describe, lint, toDxf, THEMES, LINT_PROFILE_NAMES } from "archlang";
 import { archLanguage, archLinter } from "./arch-language.js";
 import { EXAMPLES } from "./examples.js";
 import { mountFlowingLines } from "./flowing-lines.js";
@@ -28,6 +28,11 @@ const statusEl = document.getElementById("status");
 const statusText = document.getElementById("statusText");
 const select = document.getElementById("examples");
 const formatSelect = document.getElementById("format");
+const themeSelect = document.getElementById("theme");
+const lintProfileSelect = document.getElementById("lintProfile");
+const lintCaptionEl = document.getElementById("lintCaption");
+const lintOutput = document.getElementById("lintOutput");
+const copyLinkBtn = document.getElementById("copyLink");
 
 // ---- output tabs (Preview · Describe · Lint) ----
 const tabs = [...document.querySelectorAll(".tab")];
@@ -46,27 +51,128 @@ for (const name of Object.keys(EXAMPLES)) {
   select.appendChild(o);
 }
 
+// ---- lint-profile selector (advisory rule sets) ----
+// One-line description of what each profile tightens, shown under the selector.
+const LINT_PROFILE_CAPTIONS = {
+  "residential-basic": "Default — doors ≥ 700 mm, habitable rooms ≥ 4 m².",
+  "accessibility-advisory":
+    "Stricter — doors ≥ 850 mm, rooms ≥ 5 m², 150 mm door-swing clearance.",
+};
+for (const name of LINT_PROFILE_NAMES) {
+  const o = document.createElement("option");
+  o.value = name;
+  o.textContent = name;
+  lintProfileSelect.appendChild(o);
+}
+function syncLintCaption() {
+  lintCaptionEl.textContent = LINT_PROFILE_CAPTIONS[lintProfileSelect.value] ?? "";
+}
+syncLintCaption();
+
+// ---- shareable permalink (B5) ----
+// Source is round-tripped through `#src=<base64url>` so a plan can be shared by URL
+// with no backend. Caveat: browsers cap URL length (~practically tens of KB), so a
+// very large plan may overflow the address bar / fail to copy — fine for snippets.
+function encodeSrc(src) {
+  return btoa(unescape(encodeURIComponent(src)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+function decodeSrc(b64) {
+  try {
+    const s = b64.replace(/-/g, "+").replace(/_/g, "/");
+    return decodeURIComponent(escape(atob(s)));
+  } catch {
+    return null;
+  }
+}
+function srcFromHash() {
+  const m = location.hash.match(/[#&]src=([^&]*)/);
+  return m ? decodeSrc(m[1]) : null;
+}
+function updateHash(src) {
+  // replaceState — keep one entry, don't spam browser history on every keystroke.
+  // NB: `history` is shadowed by CodeMirror's `history` import above, so reach for
+  // the global explicitly via `window.history`.
+  window.history.replaceState(null, "", `#src=${encodeSrc(src)}`);
+}
+
 let lastSvg = "";
 let lastScene = null;
 
 /** Update the Describe (semantic facts) and Lint (soundness) tabs for `source`. */
 function updateAnalysis(source, ok) {
-  // Describe — the semantic summary a text-only agent would read.
+  // Describe — the semantic summary a text-only agent would read. We lead with a
+  // compact access-graph diagram (B4) and tuck the raw JSON into a <details>.
   const summary = describe(source, { noCache: true });
   const { diagnostics: _d, ...facts } = summary;
-  describeEl.textContent = ok ? JSON.stringify(facts, null, 2) : "Fix the errors to see the plan's semantic summary.";
-
-  // Lint — architectural soundness warnings (habitability rules).
-  const lintDiags = ok ? lint(source) : [];
-  if (!ok) {
-    lintEl.innerHTML = `<p class="empty">Fix the errors to run the soundness check.</p>`;
-  } else if (lintDiags.length === 0) {
-    lintEl.innerHTML = `<p class="ok">✓ No soundness warnings — every room is reachable, bedrooms have windows, the building has an entrance.</p>`;
+  if (ok) {
+    describeEl.innerHTML =
+      `<div class="ag-wrap">${renderAccessGraph(facts)}</div>` +
+      `<details class="describe-json"><summary>Raw describe JSON</summary>` +
+      `<pre>${escapeHtml(JSON.stringify(facts, null, 2))}</pre></details>`;
   } else {
-    lintEl.innerHTML = lintDiags
+    describeEl.innerHTML = `<p class="empty">Fix the errors to see the plan's semantic summary.</p>`;
+  }
+
+  // Lint — architectural soundness warnings (habitability rules), under the chosen
+  // advisory profile.
+  const lintDiags = ok ? lint(source, { profile: lintProfileSelect.value, noCache: true }) : [];
+  if (!ok) {
+    lintOutput.innerHTML = `<p class="empty">Fix the errors to run the soundness check.</p>`;
+  } else if (lintDiags.length === 0) {
+    lintOutput.innerHTML = `<p class="ok">✓ No soundness warnings — every room is reachable, bedrooms have windows, the building has an entrance.</p>`;
+  } else {
+    lintOutput.innerHTML = lintDiags
       .map((d) => `<div class="lintrow"><code>${d.code}</code> ${escapeHtml(d.message)}${d.hints?.length ? `<span class="hint">${escapeHtml(d.hints[0])}</span>` : ""}</div>`)
       .join("");
   }
+}
+
+/**
+ * Compact access-graph visual from `describe().access`: rooms laid out in flex
+ * columns by `depthFromEntrance` (exterior/entrance on the left), unreachable rooms
+ * flagged at the end. Zero-dep — pure DOM/CSS, no graph library.
+ */
+function renderAccessGraph(facts) {
+  const access = facts.access;
+  if (!access) return `<p class="ag-note">No access graph available for this plan.</p>`;
+  if (!access.hasEntrance) {
+    return `<p class="ag-note">No exterior entrance — add a <code>door</code> on an exterior wall to model reachability.</p>`;
+  }
+  const labelOf = new Map((facts.rooms ?? []).map((r) => [r.id, r.label ?? r.id]));
+  const card = (r) => {
+    const label = String(labelOf.get(r.id) ?? r.id);
+    const un = r.reachable === false;
+    const bn = r.bottleneckClearWidth != null ? `↔ ${r.bottleneckClearWidth} mm` : "↔ —";
+    const meta = un ? "unreachable" : `depth ${r.depthFromEntrance} · ${bn}`;
+    return `<div class="ag-card${un ? " ag-unreachable" : ""}"><div class="ag-card-label">${escapeHtml(label)}</div><div class="ag-card-meta">${escapeHtml(meta)}</div></div>`;
+  };
+
+  // Entrance column lists the modeled entrance doors.
+  const doors = access.entrances.length
+    ? access.entrances.map((id) => `<div class="ag-door">⮕ ${escapeHtml(id)}</div>`).join("")
+    : `<div class="ag-door">entrance</div>`;
+  const cols = [`<div class="ag-col"><div class="ag-col-h">Exterior / entrance</div>${doors}</div>`];
+
+  // One column per reachable depth, in order.
+  const depths = [
+    ...new Set(
+      access.rooms.filter((r) => r.reachable && r.depthFromEntrance != null).map((r) => r.depthFromEntrance),
+    ),
+  ].sort((a, b) => a - b);
+  for (const d of depths) {
+    const rooms = access.rooms.filter((r) => r.reachable && r.depthFromEntrance === d);
+    cols.push(`<div class="ag-col"><div class="ag-col-h">Depth ${d}</div>${rooms.map(card).join("")}</div>`);
+  }
+
+  // Trailing column for anything the entrance can't reach.
+  const unreachable = access.rooms.filter((r) => r.reachable === false);
+  if (unreachable.length) {
+    cols.push(`<div class="ag-col"><div class="ag-col-h ag-col-h-bad">Unreachable</div>${unreachable.map(card).join("")}</div>`);
+  }
+  return `<div class="ag">${cols.join(`<div class="ag-arrow">→</div>`)}</div>`;
 }
 
 function escapeHtml(s) {
@@ -74,7 +180,11 @@ function escapeHtml(s) {
 }
 
 function render(source) {
-  const { svg, errors, warnings, scene } = compile(source, { noCache: true });
+  // Theme: empty value = the source's own `theme` directive (pass nothing); a named
+  // key overrides it (compile's `theme` option wins over an in-source directive).
+  const themeKey = themeSelect.value;
+  const opts = themeKey ? { noCache: true, theme: THEMES[themeKey] } : { noCache: true };
+  const { svg, errors, warnings, scene } = compile(source, opts);
   const ok = errors.length === 0;
   updateAnalysis(source, ok);
   if (!ok) {
@@ -100,12 +210,23 @@ function render(source) {
 let debounce;
 const onDocChanged = (source) => {
   clearTimeout(debounce);
-  debounce = setTimeout(() => render(source), 250);
+  debounce = setTimeout(() => {
+    render(source);
+    updateHash(source); // keep the permalink in sync with the editor
+  }, 250);
 };
+
+// Prefer a shared `#src=` permalink over the default example on first load (B5).
+const sharedSrc = srcFromHash();
+const initialDoc = sharedSrc ?? EXAMPLES["Studio (1BR)"];
+// Reflect the actually-loaded example in the picker (the editor starts on the Studio
+// unless a permalink overrides it, in which case the source is custom — leave the
+// picker on its first option as a neutral default).
+if (!sharedSrc) select.value = "Studio (1BR)";
 
 const view = new EditorView({
   state: EditorState.create({
-    doc: EXAMPLES["Studio (1BR)"],
+    doc: initialDoc,
     extensions: [
       lineNumbers(),
       history(),
@@ -128,10 +249,36 @@ const view = new EditorView({
   parent: document.getElementById("editor"),
 });
 
+const currentSource = () => view.state.doc.toString();
+
 select.addEventListener("change", () => {
   const doc = EXAMPLES[select.value];
   view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: doc } });
   render(doc);
+});
+
+// Theme switch (B2) — re-render the preview only; describe/lint are theme-agnostic.
+themeSelect.addEventListener("change", () => render(currentSource()));
+
+// Lint-profile switch (B3) — update the caption and re-run the soundness check.
+lintProfileSelect.addEventListener("change", () => {
+  syncLintCaption();
+  render(currentSource());
+});
+
+// Copy permalink (B5) — the hash already carries the source; copy the full URL.
+copyLinkBtn.addEventListener("click", async () => {
+  updateHash(currentSource()); // ensure the URL reflects the latest edit
+  try {
+    await navigator.clipboard.writeText(location.href);
+    const prev = statusText.textContent;
+    statusText.textContent = "Copied";
+    setTimeout(() => {
+      statusText.textContent = prev;
+    }, 1200);
+  } catch {
+    statusText.textContent = "Copy failed";
+  }
 });
 
 // ---- multi-format download (SVG vector · DXF vector · PNG/PDF raster) ----

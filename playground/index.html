@@ -15,6 +15,13 @@
       <h1><span class="wordmark"><b>Arch</b>Lang</span> <span class="badge">Playground</span></h1>
       <div class="spacer"></div>
       <select id="examples" aria-label="Load example"></select>
+      <select id="theme" aria-label="Render theme">
+        <option value="">Default</option>
+        <option value="blueprint">Blueprint</option>
+        <option value="dark">Dark</option>
+        <option value="mono">Mono</option>
+        <option value="presentation">Presentation</option>
+      </select>
       <select id="format" aria-label="Download format">
         <option value="svg">SVG</option>
         <option value="png">PNG</option>
@@ -22,6 +29,7 @@
         <option value="pdf">PDF</option>
       </select>
       <button id="download">Download</button>
+      <button id="copyLink">Copy link</button>
       <!-- brand-family navigation: back to the main docs site + sibling product -->
       <a class="btn" href="https://archlang-docs.vercel.app" target="_blank" rel="noopener">Docs ↗</a>
       <a class="btn" href="https://archlang-docs.vercel.app/spec" target="_blank" rel="noopener">Spec</a>
@@ -45,8 +53,15 @@
           </span>
         </h2>
         <div id="preview" class="tabview active" role="tabpanel"></div>
-        <pre id="describe" class="tabview" role="tabpanel"></pre>
-        <div id="lint" class="tabview" role="tabpanel"></div>
+        <div id="describe" class="tabview" role="tabpanel"></div>
+        <div id="lint" class="tabview" role="tabpanel">
+          <div class="lint-controls">
+            <label for="lintProfile">Profile</label>
+            <select id="lintProfile" aria-label="Lint profile"></select>
+            <p id="lintCaption" class="lint-caption"></p>
+          </div>
+          <div id="lintOutput"></div>
+        </div>
       </section>
     </main>
 

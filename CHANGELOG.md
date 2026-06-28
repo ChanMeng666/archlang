@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-06-28
+
+### Changed — docs site & playground brought up to v1.3 (no compiler changes)
+
+A documentation/UX patch: the compiled core (`dist/`) is **byte-identical** to 1.3.0/1.3.1 — only the
+two visitor-facing surfaces changed. They had fallen a release behind the language and didn't show
+the v1.3 features (`opening`, room `uses`, wall-anchored furniture, the access graph, lint profiles).
+
+**Docs site (`docs/`, `docs-site/`):**
+
+- **`docs/language-reference.md` rewritten to v1.3** (synced verbatim to the site's `/reference`):
+  documents the cased **`opening`** element, room **`uses`** tags, the v1.3 furniture grammar
+  (`against wall [segment|offset|side]`, `rotate`, `in <room>`), lint **profiles**, and an Analysis
+  pointer.
+- **Two new pages**: `docs/furniture.md` (absolute vs wall-anchored placement, the fixture-symbol
+  catalogue, the importable fixture library, fixture lint rules) and `docs/analysis.md`
+  (`describe` schema, the modelled **access graph**, the lint rule families + profiles, the ADR-0005
+  "facts not an architect" framing). The JSON in both is pasted **verbatim from real
+  `arch describe` / `arch lint` output**.
+- **Wiring**: `sync-docs.mjs` copies the two pages; the VitePress sidebar/nav add them and surface
+  the previously-missing **ADR 0005**. The home/guide/agents/examples pages were refreshed (and the
+  agents page's stale `describe` example — wrong areas/adjacencies/room count — corrected).
+
+**Playground (`playground/`):**
+
+- **All canonical examples** in the picker as a learning progression (Single room → Studio →
+  Two-bed → Relational → Themed → Parametric), imported via Vite `?raw` so they can't drift.
+- **Theme switcher** (re-render in blueprint/dark/mono/presentation via `CompileOptions.theme`),
+  **lint-profile toggle** (`residential-basic` ↔ `accessibility-advisory`), an **access-graph
+  visual** in the Describe tab (rooms bucketed by depth-from-entrance with clear-width + reachability,
+  raw JSON kept in a `<details>`), and a backend-free **shareable permalink** (`#src=` base64url) with
+  a Copy-link button. No new dependencies.
+
+439 tests pass; typecheck, `docs:build`, and `playground:build` all clean; no codegen drift. Verified
+in-browser: every example renders, all four playground controls work, and the permalink round-trips.
+
 ## [1.3.1] - 2026-06-28
 
 ### Fixed — bundled examples & agent spec (no compiler changes)
