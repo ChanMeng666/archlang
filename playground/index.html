@@ -8,11 +8,25 @@
       name="description"
       content="Live playground for ArchLang — a small language that compiles to professional SVG floor plans. CodeMirror 6 editor with syntax highlighting and inline lint."
     />
+    <!-- ArchLang brand: spark favicon (SVG), apple-touch icon, dark theme colour,
+         and the OG/Twitter social card. Assets in public/brand/. -->
+    <link rel="icon" type="image/svg+xml" href="/brand/archlang-icon-plum.svg" />
+    <link rel="apple-touch-icon" href="/brand/archlang-apple-touch.png" />
+    <meta name="theme-color" content="#0f1115" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ArchLang Playground — code to floor plans" />
+    <meta
+      property="og:description"
+      content="Write ArchLang in the browser and watch it compile to a professional SVG floor plan — live, client-side."
+    />
+    <meta property="og:image" content="https://archlang-playground.vercel.app/brand/archlang-og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://archlang-playground.vercel.app/brand/archlang-og.png" />
   </head>
   <body>
     <header>
       <canvas class="brand-lines" aria-hidden="true"></canvas>
-      <h1><span class="wordmark"><b>Arch</b>Lang</span> <span class="badge">Playground</span></h1>
+      <h1><img class="brand-mark" src="/brand/archlang-icon.svg" alt="" width="22" height="22" /><span class="wordmark"><b>Arch</b>Lang</span> <span class="badge">Playground</span></h1>
       <div class="spacer"></div>
       <select id="examples" aria-label="Load example"></select>
       <select id="theme" aria-label="Render theme">

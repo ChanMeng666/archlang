@@ -8,7 +8,10 @@
 
 <div align="center">
 
-# ArchLang
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./brand/archlang-wordmark.svg" />
+  <img src="./brand/archlang-wordmark-black.svg" alt="ArchLang" width="440" />
+</picture>
 
 A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.
 

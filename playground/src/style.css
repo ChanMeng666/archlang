@@ -72,6 +72,7 @@ header h1 {
   align-items: center;
   gap: 9px;
 }
+header h1 .brand-mark { width: 22px; height: 22px; flex: none; display: block; }
 header h1 .wordmark { letter-spacing: -0.01em; }
 header h1 b { color: #a98bff; font-weight: 700; }
 header .badge {

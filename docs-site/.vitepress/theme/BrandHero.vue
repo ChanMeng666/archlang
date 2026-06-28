@@ -14,6 +14,7 @@ const PLAYGROUND = "https://archlang-playground.vercel.app";
     <FlowingLines class="brand-hero__lines" />
     <div class="brand-hero__scrim" />
     <div class="brand-hero__inner">
+      <img class="brand-hero__mark" src="/brand/archlang-icon-plum.svg" alt="ArchLang" width="56" height="56" />
       <a class="brand-hero__eyebrow" :href="ARCHCANVAS" target="_blank" rel="noopener">
         <span class="brand-hero__dot" />
         Part of the ArchCanvas family ↗
@@ -71,6 +72,13 @@ const PLAYGROUND = "https://archlang-playground.vercel.app";
   max-width: 720px;
   margin: 0 auto;
   text-align: center;
+}
+.brand-hero__mark {
+  display: block;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 24px;
+  filter: drop-shadow(0 4px 22px color-mix(in srgb, var(--plum) 45%, transparent));
 }
 .brand-hero__eyebrow {
   display: inline-flex;

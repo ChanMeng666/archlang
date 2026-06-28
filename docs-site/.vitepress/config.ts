@@ -20,6 +20,21 @@ const archGrammar = JSON.parse(
 export default defineConfig({
   title: "ArchLang",
   description: "A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.",
+  // Brand: the ArchLang spark favicon (SVG, scales), an apple-touch icon, the dark
+  // theme-colour, and an OG/Twitter social card (the 1200×630 wordmark banner). All
+  // assets live in public/brand/ (the lockup logo set).
+  head: [
+    ["link", { rel: "icon", type: "image/svg+xml", href: "/brand/archlang-icon-plum.svg" }],
+    ["link", { rel: "alternate icon", href: "/brand/archlang-favicon-32.png", sizes: "32x32" }],
+    ["link", { rel: "apple-touch-icon", href: "/brand/archlang-apple-touch.png" }],
+    ["meta", { name: "theme-color", content: "#0f1115" }],
+    ["meta", { property: "og:type", content: "website" }],
+    ["meta", { property: "og:title", content: "ArchLang — code to floor plans" }],
+    ["meta", { property: "og:description", content: "A declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture." }],
+    ["meta", { property: "og:image", content: "https://archlang-docs.vercel.app/brand/archlang-og.png" }],
+    ["meta", { name: "twitter:card", content: "summary_large_image" }],
+    ["meta", { name: "twitter:image", content: "https://archlang-docs.vercel.app/brand/archlang-og.png" }],
+  ],
   // Built into a subdir under the eventual GitHub Pages / Vercel project; "./"
   // keeps asset URLs relative so it works under any base path.
   base: "/",
@@ -37,6 +52,9 @@ export default defineConfig({
     languages: [{ ...archGrammar, name: "arch", aliases: ["archlang"] }],
   },
   themeConfig: {
+    // The ArchLang spark mark beside the "ArchLang" site title in the nav bar.
+    // The plum mark reads on both the light docs chrome and the dark mobile nav.
+    logo: "/brand/archlang-icon-plum.svg",
     // Calm, grouped top nav: a few primary links plus dropdowns, so the bar
     // stays readable on the home page and every doc page (it's one global nav).
     // Sub-topics live under Reference; the contributor-only ADRs stay in the
