@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-06-28
+
+### Fixed — bundled examples & agent spec (no compiler changes)
+
+A content/documentation patch: the compiled core (`dist/`) is **byte-identical** to 1.3.0 — only the
+shipped example sources and the generated agent spec changed. The flagship examples are embedded
+verbatim in `spec.llm.md` (what an agent ingests via `arch spec`) and consumed by the playground and
+docs gallery, and they taught a few unprofessional patterns. Fixed at the source:
+
+- **`examples/studio.arch`** — the bath door's inside entry path was blocked by the shower
+  (re-laid the fixtures: shower to the far corner, basin/WC against the walls, so the entry stays
+  clear); replaced the redundant living↔hall swing door with a leaf-less **`opening`** (circulation
+  stays sound — the bath is reached via the hall, never the bedroom); and referenced the perimeter
+  dimensions to the building's **outer faces** so the extension lines start at the wall and read
+  outward instead of denting back into it (spans unchanged: 4000 · 3000 · 7000 · 6000).
+- **`examples/parametric.arch`** — the overall "units" dimension ran left-to-right and landed
+  *inside* the building; reversed it and referenced the outer face so it sits above the row.
+- **`spec.llm.md`** regenerated from the corrected examples; SVG/scene snapshots and visual goldens
+  updated.
+- **Playground** now imports the canonical `examples/*.arch` via Vite `?raw` instead of a
+  hand-copied duplicate, so the live demo can no longer drift from the shipped source.
+
+439 tests pass; `arch lint examples/studio.arch` is clean; no codegen drift.
+
 ## [1.3.0] - 2026-06-28
 
 ### Added — architectural soundness, circulation facts & professional placement
