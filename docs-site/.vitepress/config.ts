@@ -37,25 +37,42 @@ export default defineConfig({
     languages: [{ ...archGrammar, name: "arch", aliases: ["archlang"] }],
   },
   themeConfig: {
+    // Calm, grouped top nav: a few primary links plus dropdowns, so the bar
+    // stays readable on the home page and every doc page (it's one global nav).
+    // Sub-topics live under Reference; the contributor-only ADRs stay in the
+    // sidebar (below) rather than the bar. Playground is the standalone CTA — it
+    // is intentionally NOT repeated inside Ecosystem.
     nav: [
       { text: "Guide", link: "/guide" },
-      { text: "Reference", link: "/reference" },
-      { text: "Analysis", link: "/analysis" },
-      { text: "AI Agents", link: "/agents" },
-      { text: "Errors", link: "/errors" },
+      {
+        text: "Reference",
+        items: [
+          { text: "Language reference", link: "/reference" },
+          { text: "Relational placement", link: "/relational" },
+          { text: "Furniture & fixtures", link: "/furniture" },
+          { text: "Analysis: describe & lint", link: "/analysis" },
+          { text: "Error catalog", link: "/errors" },
+        ],
+      },
       { text: "Examples", link: "/examples" },
-      { text: "ADRs", link: "/adr/" },
-      // Keep one-click reach to the playground…
+      {
+        text: "AI Agents",
+        items: [
+          { text: "Use it from an agent", link: "/agents" },
+          { text: "One-page spec", link: "/spec" },
+        ],
+      },
+      // Keep one-click reach to the playground… (VitePress appends the external
+      // ↗ icon itself for external links, so no manual arrow in the text.)
       { text: "Playground", link: "https://archlang-playground.vercel.app" },
       // …and group the wider brand family (the ArchCanvas product + packages)
-      // under an Ecosystem dropdown so docs ↔ playground ↔ archcanvas all link.
+      // under an Ecosystem dropdown so docs ↔ archcanvas ↔ packages all link.
       {
         text: "Ecosystem",
         items: [
-          { text: "Playground ↗", link: "https://archlang-playground.vercel.app" },
-          { text: "ArchCanvas ↗", link: "https://archcanvas.chanmeng.org" },
-          { text: "npm ↗", link: "https://www.npmjs.com/package/@chanmeng666/archlang" },
-          { text: "GitHub ↗", link: "https://github.com/chanmeng666/archlang" },
+          { text: "ArchCanvas", link: "https://archcanvas.chanmeng.org" },
+          { text: "npm", link: "https://www.npmjs.com/package/@chanmeng666/archlang" },
+          { text: "GitHub", link: "https://github.com/chanmeng666/archlang" },
         ],
       },
     ],

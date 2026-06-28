@@ -42,8 +42,10 @@ const PLAYGROUND = "https://archlang-playground.vercel.app";
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  /* full-bleed across the home container */
-  margin: -48px calc(50% - 50vw) 24px;
+  /* full-bleed across the home container, and up under the (transparent) fixed
+     nav so the dark void reaches the very top — no page-coloured strip above it.
+     --vp-nav-height (64px) is exactly the .VPContent top padding. */
+  margin: calc(-1 * var(--vp-nav-height, 64px)) calc(50% - 50vw) 24px;
   padding: clamp(72px, 14vw, 150px) 24px clamp(64px, 12vw, 132px);
   background: var(--void-bg);
   color: var(--void-fg);
