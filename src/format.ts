@@ -178,7 +178,7 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
     case "opening":
       return `opening ${id}at ${ptStr(s.at)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}`;
     case "furniture":
-      return `furniture ${id}${s.category} ${s.against ? againstStr(s.against) : `at ${ptStr(s.at!)}`} size ${sizeStr(s.size)}${s.label ? ` label ${exprStr(s.label)}` : ""}${s.rotate ? ` rotate ${exprStr(s.rotate)}` : ""}${s.room ? ` in ${s.room}` : ""}`;
+      return `furniture ${id}${s.category} ${s.against ? againstStr(s.against) : `at ${ptStr(s.at!)}`}${s.size ? ` size ${sizeStr(s.size)}` : ""}${s.label ? ` label ${exprStr(s.label)}` : ""}${s.rotate ? ` rotate ${exprStr(s.rotate)}` : ""}${s.room ? ` in ${s.room}` : ""}`;
     case "dim":
       return `dim ${ptStr(s.from)}->${ptStr(s.to)} offset ${exprStr(s.offset)}${s.text ? ` text ${exprStr(s.text)}` : ""}`;
     case "column":
@@ -310,7 +310,7 @@ function northStr(n: PlanNode["north"]): string {
   return typeof n === "object" ? numStr(n.deg) : n;
 }
 
-function formatPlan(plan: PlanNode, source: string): string {
+export function formatPlan(plan: PlanNode, source: string): string {
   const comments = plan.comments ?? [];
 
   // Header settings, in canonical order (no spans → emitted at the top).
@@ -318,6 +318,7 @@ function formatPlan(plan: PlanNode, source: string): string {
   if (plan.grid !== 0) settings.push(`grid ${numStr(plan.grid)}`);
   if (plan.scale) settings.push(`scale ${plan.scale}`);
   settings.push(`north ${northStr(plan.north)}`);
+  if (plan.autoDims) settings.push(`dims auto ${plan.autoDims}`);
 
   // Theme + per-element styles (hoisted under the settings).
   const sections: Doc[] = [];

@@ -96,4 +96,13 @@ describe("T5.2 — formatter never corrupts broken input", () => {
     const broken = 'plan "B" {\n  room at (0,0) size\n  totally not valid !!!\n}\n';
     expect(format(broken)).toBe(broken);
   });
+
+  it("preserves the `dims auto` directive (header setting must not be dropped)", () => {
+    for (const mode of ["overall", "rooms", "walls", "all"]) {
+      const src = `plan "P" { units mm dims auto ${mode} wall exterior thickness 200 { (0,0) (3000,0) (3000,3000) (0,3000) close } room id=r at (0,0) size 3000x3000 label "R" }`;
+      const out = format(src);
+      expect(out).toContain(`dims auto ${mode}`);
+      expect(format(out)).toBe(out); // idempotent
+    }
+  });
 });

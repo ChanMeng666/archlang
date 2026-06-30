@@ -171,8 +171,9 @@ export interface FurnitureNode extends NodeBase {
   at?: ExprPoint;
   /** Wall-anchored placement (computes at/size/rotation). Exclusive with `at`. */
   against?: FurnitureAgainst;
-  /** In `at` mode: plan-axis width×height. In `against` mode: wall-relative along×depth. */
-  size: { w: Expr; h: Expr };
+  /** In `at` mode: plan-axis width×height. In `against` mode: wall-relative along×depth.
+   *  Optional only with `against` + a fixture that has a catalogued default footprint. */
+  size?: { w: Expr; h: Expr };
   /** Label as a string-interpolation template, evaluated at resolve. */
   label?: Expr;
   /** Quarter-turn rotation of the drawn symbol (0|90|180|270 degrees), evaluated at resolve. */
@@ -338,8 +339,8 @@ export interface PlanNode {
   /** e.g. "1:50". */
   scale?: string;
   north: NorthDir;
-  /** `dims auto [overall|rooms|all]` — synthesize dimension strings at render. */
-  autoDims?: "overall" | "rooms" | "all";
+  /** `dims auto [overall|rooms|walls|all]` — synthesize dimension strings at render. */
+  autoDims?: "overall" | "rooms" | "walls" | "all";
   title?: TitleNode;
   /** Theme overrides from the `theme { … }` directive. */
   theme?: Partial<Theme>;

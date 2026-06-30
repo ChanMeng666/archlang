@@ -49,7 +49,7 @@ plan "My Home" {
 | `grid <n>` | Snap module in mm. All coordinates round to the nearest multiple. `0` disables. | `0` |
 | `scale 1:50` | Printed scale, shown in the title block. | none |
 | `north up\|down\|left\|right\|<deg>` | North direction for the north arrow. | `up` |
-| `dims auto [overall\|rooms\|all]` | Auto-draw dimension strings without hand-placing each `dim`: `overall` (the bounding extents), `rooms` (each room's width + height), or `all` (both; the default when no scope is given). | off |
+| `dims auto [overall\|rooms\|walls\|all]` | Auto-draw dimension strings without hand-placing each `dim`: `overall` (the bounding extents), `rooms` (each room's width + height, placed in the page margin on the side the room faces), `walls` (one deduped thickness call-out per distinct wall thickness), or `all` (all three; the default when no scope is given). | off |
 
 ## Values & expressions
 
@@ -374,7 +374,7 @@ opening id=o_living at (4000,3700) width 900 wall partition   # living ↔ hall,
 
 ```
 furniture <kind> [id=<id>] at (x,y) size <w>x<h> [label "<text>"] [rotate 0|90|180|270] [in <room>]
-furniture <kind> [id=<id>] against wall <ref> [segment <n>] [offset <mm>] [side left|right] size <along>x<depth> [label "<text>"] [in <room>]
+furniture <kind> [id=<id>] against wall <ref> [segment <n>] [offset <mm>] [side left|right] [size <along>x<depth>] [label "<text>"] [in <room>]
 ```
 
 A schematic labelled rectangle (bed, sofa, desk…). Known plumbing & kitchen
@@ -385,8 +385,10 @@ labelled rectangle.
 
 A piece can be placed two ways: absolutely with `at (x,y)` (optionally turned with
 `rotate`), or snapped **`against wall <ref>`** so its back sits on the wall and its
-rotation is derived for you. `in <room>` records which room owns the piece (used by
-the lint rules). The full placement rules, the fixture symbol catalogue, and the
+rotation is derived for you. A known fixture placed `against wall` may **omit `size`**
+to take its catalogued footprint (e.g. `furniture wc against wall w1 in bath`); `at`
+placement and uncatalogued kinds still need an explicit `size`. `in <room>` records
+which room owns the piece (used by the lint rules). The full placement rules, the fixture symbol catalogue, and the
 fixture-aware lint checks live on the dedicated **[Furniture & fixtures](furniture.md)**
 page. Standard fixtures are also importable components at typical residential sizes:
 

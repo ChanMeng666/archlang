@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**34 errors** · **24 warnings**
+**34 errors** · **27 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -47,15 +47,18 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_BEDROOM_NO_WINDOW`](#w_bedroom_no_window) | warning | Bedroom has no window. |
 | [`W_DOOR_CLEARANCE`](#w_door_clearance) | warning | Door is narrower than the minimum clear width. |
 | [`W_DOOR_OFF_WALL`](#w_door_off_wall) | warning | Door does not lie on any wall. |
+| [`W_DOORWAY_BLOCKED`](#w_doorway_blocked) | warning | A doorway's landing is blocked. |
 | [`W_EMPTY_PLAN`](#w_empty_plan) | warning | Empty plan. |
 | [`W_FIXTURE_FLOATING`](#w_fixture_floating) | warning | A plumbing/kitchen fixture is not against a wall. |
 | [`W_FIXTURE_WRONG_ROOM`](#w_fixture_wrong_room) | warning | Fixture sits outside its declared room. |
 | [`W_FURN_CLEARANCE`](#w_furn_clearance) | warning | A fixture's use-space is blocked. |
 | [`W_FURNITURE_OVERLAP`](#w_furniture_overlap) | warning | Two pieces of furniture overlap. |
+| [`W_FURNITURE_WALL_COLLISION`](#w_furniture_wall_collision) | warning | Furniture penetrates a wall. |
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
 | [`W_NO_ENTRANCE`](#w_no_entrance) | warning | The plan has no exterior door. |
 | [`W_OPENING_OFF_WALL`](#w_opening_off_wall) | warning | Opening does not lie on any wall. |
 | [`W_ROOM_DISCONNECTED`](#w_room_disconnected) | warning | Room has no door — it can't be entered. |
+| [`W_ROOM_NO_CLEAR_PATH`](#w_room_no_clear_path) | warning | A room cannot be entered or crossed. |
 | [`W_ROOM_NO_FIXTURE`](#w_room_no_fixture) | warning | Bathroom or kitchen has no fixtures. |
 | [`W_ROOM_NOT_ENCLOSED`](#w_room_not_enclosed) | warning | Bathroom is not fully enclosed. |
 | [`W_ROOM_OVERLAP`](#w_room_overlap) | warning | Rooms overlap. |
@@ -530,6 +533,19 @@ door at (0,0) width 500 wall exterior   # lint: under 700 mm
 door at (9999,9999) width 900   # warning: not on a wall
 ```
 
+## W_DOORWAY_BLOCKED
+
+*warning* — A doorway's landing is blocked.
+
+**Cause.** A piece of furniture/fixture sits in the clear landing space immediately on either side of a door opening, so you cannot pass through the doorway even when the leaf is open. This is the approach path, distinct from the leaf's swing arc (`W_SWING_OBSTRUCTED`).
+
+**Fix.** Clear the space directly in front of and behind the door, or move the door.
+
+```arch
+door at (6000,3000) width 800
+furniture wc at (5800,3050) size 700x400   # lint: WC blocks the doorway
+```
+
 ## W_EMPTY_PLAN
 
 *warning* — Empty plan.
@@ -592,6 +608,18 @@ furniture sofa at (300,300) size 2000x900
 furniture bed  at (1000,500) size 1500x2000   # lint: overlaps the sofa
 ```
 
+## W_FURNITURE_WALL_COLLISION
+
+*warning* — Furniture penetrates a wall.
+
+**Cause.** A furniture/fixture rectangle intrudes into a wall's solid (it crosses the wall's thickness band rather than sitting flush against its face), so it would physically pass through the wall — a coordinate or size mistake. A piece merely touching the wall face is fine.
+
+**Fix.** Move or resize the piece so it sits fully inside the room (against the wall face, not through it), or anchor it with `against wall <id>`.
+
+```arch
+furniture sofa at (350,2300) size 2000x900   # lint: crosses the partition at y3000
+```
+
 ## W_HATCH_SCALE
 
 *warning* — Hatch scale must be positive; using 1.
@@ -638,6 +666,18 @@ opening at (9999,9999) width 1000   # warning: not on a wall
 
 ```arch
 room id=r at (0,0) size 3000x3000   # lint: no door on its perimeter
+```
+
+## W_ROOM_NO_CLEAR_PATH
+
+*warning* — A room cannot be entered or crossed.
+
+**Cause.** Furniture, fixtures, door swings and their clearances fill the room so densely that a person stepping through a door/opening has no clear floor path into the usable space — the room is technically reachable but physically blocked.
+
+**Fix.** Open up the layout: move or shrink the furniture nearest the door so there is a continuous walkable strip from each entrance into the room.
+
+```arch
+furniture shower at (5000,3000) size 2000x2000   # lint: fills the bathroom against its only door
 ```
 
 ## W_ROOM_NO_FIXTURE

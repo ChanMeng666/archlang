@@ -31,6 +31,7 @@ import {
   LINT_PROFILE_NAMES,
   explain,
   format,
+  repair,
   formatDiagnostic,
   offsetToLineCol,
   ERROR_CATALOG,
@@ -59,6 +60,7 @@ interface Args {
   quiet?: boolean;
   force?: boolean;
   profile?: string;
+  strict?: boolean;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -73,6 +75,7 @@ function parseArgs(argv: string[]): Args {
     else if (a === "--quiet" || a === "-q") res.quiet = true;
     else if (a === "--force") res.force = true;
     else if (a === "--profile") res.profile = argv[++i];
+    else if (a === "--strict" || a === "--fail-on-warning") res.strict = true;
     else res._.push(a);
   }
   return res;
@@ -272,17 +275,23 @@ function cmdDescribe(args: Args): number {
   });
 }
 
-/** Shared reporter for `validate` and `lint`: emit diagnostics, pick exit code. */
+/**
+ * Shared reporter for `validate` and `lint`: emit diagnostics, pick exit code.
+ * `--strict` (alias `--fail-on-warning`) makes advisory warnings count toward failure
+ * too — the gate a generator pipeline runs so it can't ship a plan that lint flagged.
+ */
 function report(source: string, diags: Diagnostic[], args: Args): number {
-  const ok = !hasErrors(diags);
+  const e = diags.filter((d) => d.severity === "error").length;
+  const w = diags.length - e;
+  const ok = e === 0 && (!args.strict || w === 0);
   if (args.json) {
-    emitJson({ ok, diagnostics: diags.map((d) => diagToJson(source, d)) });
+    emitJson({ ok, strict: args.strict ?? false, diagnostics: diags.map((d) => diagToJson(source, d)) });
   } else {
     emitDiagnosticsHuman(source, diags, args.quiet);
     if (!args.quiet) {
-      const e = diags.filter((d) => d.severity === "error").length;
-      const w = diags.length - e;
-      process.stdout.write(ok ? `✓ ok${w ? ` (${w} warning${w === 1 ? "" : "s"})` : ""}\n` : `✗ ${e} error${e === 1 ? "" : "s"}, ${w} warning${w === 1 ? "" : "s"}\n`);
+      if (ok) process.stdout.write(`✓ ok${w ? ` (${w} warning${w === 1 ? "" : "s"})` : ""}\n`);
+      else if (e === 0) process.stdout.write(`✗ ${w} warning${w === 1 ? "" : "s"} (--strict)\n`);
+      else process.stdout.write(`✗ ${e} error${e === 1 ? "" : "s"}, ${w} warning${w === 1 ? "" : "s"}\n`);
     }
   }
   return ok ? EXIT.OK : EXIT.USER;
@@ -327,6 +336,36 @@ function cmdFmt(args: Args): number {
       emitJson({ ok: true, changed, formatted });
     } else {
       process.stdout.write(formatted);
+    }
+    return EXIT.OK;
+  });
+}
+
+/**
+ * `repair` — the explicit source-to-source corrector (ADR 0006). Emits new `.arch`
+ * source (furniture pushed out of walls) plus a change log; never edits render output.
+ * Writes corrected source to `-o <file>` (or stdout); the change log goes to stderr.
+ */
+function cmdRepair(args: Args): number {
+  return withSource(args, (source, input) => {
+    const r = repair(source);
+    if (args.json) {
+      emitJson({ ok: true, changed: r.changed, changes: r.changes, unresolved: r.unresolved, source: r.source });
+      return EXIT.OK;
+    }
+    const target = args.o;
+    if (target && target !== "-") {
+      writeFileSync(resolvePath(target), r.source, "utf8");
+      if (!args.quiet) process.stderr.write(`✓ ${input} → ${target} (${r.changes.length} change${r.changes.length === 1 ? "" : "s"})\n`);
+    } else {
+      process.stdout.write(r.source);
+    }
+    if (!args.quiet) {
+      for (const c of r.changes) {
+        process.stderr.write(`  moved ${c.id} (${c.from.x},${c.from.y}) → (${c.to.x},${c.to.y}) — ${c.reason}\n`);
+      }
+      for (const u of r.unresolved) process.stderr.write(`  ⚠ ${u.id}: ${u.reason}\n`);
+      if (!r.changed) process.stderr.write("  (no changes — nothing to repair)\n");
     }
     return EXIT.OK;
   });
@@ -416,16 +455,18 @@ const HELP = `arch — ArchLang compiler (agent-native)
 Usage:
   arch compile  <in.arch|-> [-o out|-] [-w width] [-f svg|dxf|pdf|png] [--json] [--quiet]
   arch watch    <in.arch> [-o out] [-w width] [-f …]
-  arch validate <in.arch|-> [--json]      parse + resolve + lint (no render)
+  arch validate <in.arch|-> [--strict] [--json]      parse + resolve + lint (no render)
   arch describe <in.arch|-> [--json]      semantic facts (rooms, areas, adjacency)
-  arch lint     <in.arch|-> [--profile residential-basic|accessibility-advisory] [--json]   architectural soundness warnings
+  arch lint     <in.arch|-> [--profile residential-basic|accessibility-advisory] [--strict] [--json]   architectural soundness warnings
   arch fmt      <in.arch|-> [--write] [--json]
+  arch repair   <in.arch|-> [-o out|-] [--json]   emit corrected source (furniture out of walls) + change log
   arch spec     [--json]                  print the one-prompt language spec
   arch new      [-o out] [--force] [--json]   scaffold a starter .arch
   arch explain  <CODE> [--json]           e.g. E_ROOM_SIZE
 
 Input  '-' reads source from stdin.   Output '-' writes the artifact to stdout.
 Every command takes --json: result on stdout, messages on stderr.
+--strict (validate/lint, alias --fail-on-warning): advisory warnings fail too (exit 2).
 Exit codes: 0 ok · 2 user-source error (don't retry) · 1 internal/IO · 3 bad usage.
 Formats: svg (default) · dxf (zero-dep) · pdf (optional pdfkit) · png (optional @resvg/resvg-js)
 `;
@@ -446,6 +487,7 @@ async function main(): Promise<void> {
     case "describe": process.exit(cmdDescribe(args));
     case "lint": process.exit(cmdLint(args));
     case "fmt": process.exit(cmdFmt(args));
+    case "repair": process.exit(cmdRepair(args));
     case "spec": process.exit(cmdSpec(args));
     case "new": case "init": process.exit(cmdNew(args));
     case "explain": process.exit(cmdExplain(args));

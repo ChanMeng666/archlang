@@ -37,13 +37,19 @@ export interface CorpusEntry {
   expect: Expect;
 }
 
+/** Lint codes that flag a *physically impossible* plan — never acceptable in a golden,
+ *  unlike habitability advisories (no window, small room) a brief may legitimately omit. */
+const PHYSICAL_CODES = new Set(["W_FURNITURE_WALL_COLLISION", "W_DOORWAY_BLOCKED", "W_ROOM_NO_CLEAR_PATH"]);
+
 export interface Score {
   id: string;
   /** Compiled with no errors and produced a drawing. */
   valid: boolean;
   /** Architectural lint warnings raised (0 = sound). */
   lintWarnings: number;
-  /** All semantic expectations met (implies valid). */
+  /** Physical-correctness violations (furniture through a wall, blocked doorway, sealed room). */
+  physicalWarnings: number;
+  /** All semantic expectations met (implies valid + no physical violations). */
   semanticPass: boolean;
   /** Human-readable reasons any check failed. */
   failures: string[];
@@ -67,10 +73,16 @@ export function scoreSource(entry: CorpusEntry, source: string): Score {
   const valid = c.errors.length === 0 && c.svg.length > 0;
   if (!valid) {
     for (const e of c.errors) failures.push(`compile: ${e.message}`);
-    return { id: entry.id, valid: false, lintWarnings: 0, semanticPass: false, failures };
+    return { id: entry.id, valid: false, lintWarnings: 0, physicalWarnings: 0, semanticPass: false, failures };
   }
 
-  const lintWarnings = lint(source).length;
+  const lintDiags = lint(source);
+  const lintWarnings = lintDiags.length;
+  const physicalWarnings = lintDiags.filter((d) => d.code && PHYSICAL_CODES.has(d.code)).length;
+  // A physically impossible plan never "authors correctly", whatever its room count.
+  for (const d of lintDiags) {
+    if (d.code && PHYSICAL_CODES.has(d.code)) failures.push(`physical: ${d.code} — ${d.message}`);
+  }
   const s = describePlan(source);
   const e = entry.expect;
 
@@ -92,7 +104,7 @@ export function scoreSource(entry: CorpusEntry, source: string): Score {
     }
   }
 
-  return { id: entry.id, valid, lintWarnings, semanticPass: failures.length === 0, failures };
+  return { id: entry.id, valid, lintWarnings, physicalWarnings, semanticPass: failures.length === 0, failures };
 }
 
 /** Score every entry; `getSource` decides where the `.arch` comes from (golden or model). */
@@ -106,7 +118,7 @@ export async function evaluate(
     try {
       source = await getSource(entry);
     } catch (err) {
-      results.push({ id: entry.id, valid: false, lintWarnings: 0, semanticPass: false, failures: [`source: ${(err as Error).message}`] });
+      results.push({ id: entry.id, valid: false, lintWarnings: 0, physicalWarnings: 0, semanticPass: false, failures: [`source: ${(err as Error).message}`] });
       continue;
     }
     results.push(scoreSource(entry, source));

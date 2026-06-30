@@ -260,6 +260,18 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "A furniture item declared `in <roomId>` has its centre outside that room's rectangle, so it is drawn in the wrong space.",
     "Move the fixture inside the named room, or correct the `in <roomId>`.",
     'furniture wc at (100,100) size 400x700 in bath   # lint: centre is not inside "bath"'),
+  W_FURNITURE_WALL_COLLISION: W("W_FURNITURE_WALL_COLLISION", "Furniture penetrates a wall.",
+    "A furniture/fixture rectangle intrudes into a wall's solid (it crosses the wall's thickness band rather than sitting flush against its face), so it would physically pass through the wall — a coordinate or size mistake. A piece merely touching the wall face is fine.",
+    "Move or resize the piece so it sits fully inside the room (against the wall face, not through it), or anchor it with `against wall <id>`.",
+    "furniture sofa at (350,2300) size 2000x900   # lint: crosses the partition at y3000"),
+  W_DOORWAY_BLOCKED: W("W_DOORWAY_BLOCKED", "A doorway's landing is blocked.",
+    "A piece of furniture/fixture sits in the clear landing space immediately on either side of a door opening, so you cannot pass through the doorway even when the leaf is open. This is the approach path, distinct from the leaf's swing arc (`W_SWING_OBSTRUCTED`).",
+    "Clear the space directly in front of and behind the door, or move the door.",
+    "door at (6000,3000) width 800\nfurniture wc at (5800,3050) size 700x400   # lint: WC blocks the doorway"),
+  W_ROOM_NO_CLEAR_PATH: W("W_ROOM_NO_CLEAR_PATH", "A room cannot be entered or crossed.",
+    "Furniture, fixtures, door swings and their clearances fill the room so densely that a person stepping through a door/opening has no clear floor path into the usable space — the room is technically reachable but physically blocked.",
+    "Open up the layout: move or shrink the furniture nearest the door so there is a continuous walkable strip from each entrance into the room.",
+    'furniture shower at (5000,3000) size 2000x2000   # lint: fills the bathroom against its only door'),
 });
 
 /** All catalog codes, sorted (errors then warnings, alphabetically within). */

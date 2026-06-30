@@ -39,7 +39,7 @@ room [id=<name>] at (x,y) size <W>x<H> [label "…"] [uses living|kitchen|dining
 door [id=<name>] at (x,y) width <mm> [wall <id|category>] [hinge left|right] [swing in|out]   # must sit on a wall
 window [id=<name>] at (x,y) width <mm> [wall <id|category>]   # must sit on a wall
 opening [id=<name>] at (x,y) width <mm> [wall <id|category>]   # a leaf-less cased opening (gap in a wall) that still connects the two spaces
-furniture <category> (at (x,y) | against wall <id> [segment <n>] [offset <mm>] [side left|right]) size <W>x<H> [label "…"] [rotate 0|90|180|270] [in <roomId>]   # `at` size is plan W×H; `against` size is wall-relative along×depth and derives position+rotation, with `side` inferred from `in <roomId>` when omitted
+furniture <category> (at (x,y) | against wall <id> [segment <n>] [offset <mm>] [side left|right]) [size <W>x<H>] [label "…"] [rotate 0|90|180|270] [in <roomId>]   # `at` size is plan W×H; `against` size is wall-relative along×depth and derives position+rotation, with `side` inferred from `in <roomId>` when omitted; a known fixture (wc/basin/shower/bathtub/kitchen_sink/counter/stove/fridge…) `against wall` may omit `size` to use its catalogued footprint
 dim (x,y)->(x,y) offset <mm> [text "…"]   # a dimension line
 column [id=<name>] at (x,y) size <W>x<H>
 ```
@@ -69,14 +69,23 @@ arch compile plan.arch -o out.svg --json   # render; JSON has { ok, diagnostics,
 echo '<source>' | arch compile - --json    # compile from stdin (no temp file)
 arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, what doors connect
 arch lint plan.arch --json             # architectural soundness warnings
-arch validate plan.arch --json         # parse + lint only (fast, no render)
+arch validate plan.arch --strict --json   # parse + lint, no render; --strict fails on warnings too
 arch explain E_ROOM_SIZE --json        # look up any error code
+arch repair plan.arch -o fixed.arch    # explicit corrector: emit new source w/ furniture pushed out of walls + change log
 ```
 
 **Self-correction loop:** compile/validate → if `ok` is false, read each `diagnostics[].fix` (and
 `line`/`col`/`span`), edit the source, recompile. Exit code `2` means a deterministic
 user-source error (fix it; don't blindly retry). Then `describe --json` to confirm the plan matches
-intent (right room count, areas, adjacency) without rendering an image.
+intent (right room count, areas, adjacency) without rendering an image. **Before shipping, gate with
+`arch validate --strict --json`** — it fails on advisory warnings too, so a plan that lint flags
+(furniture through a wall, a fixture blocking a doorway, a room you can't step into, an unreachable
+room) cannot pass silently.
+
+**Place furniture so it's physically sound:** keep every piece inside its room and off the walls
+(don't cross a wall centerline); back plumbing/kitchen fixtures onto a wall with `against wall <id>`
+(+ `in <roomId>`) rather than guessing an `at`; give every room a `door`/`opening`; and leave
+the doorway approach and the door's swing clear.
 
 ## Common mistakes
 

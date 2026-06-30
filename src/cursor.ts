@@ -44,7 +44,7 @@ export function statementExprs(s: Statement): Expr[] {
       break;
     case "furniture":
       pt(s.at);
-      out.push(s.size.w, s.size.h);
+      if (s.size) out.push(s.size.w, s.size.h);
       if (s.label) out.push(s.label);
       break;
     case "dim":

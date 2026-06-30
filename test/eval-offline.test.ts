@@ -33,4 +33,27 @@ describe("eval — committed goldens still author correctly", () => {
     expect(s.semanticPass).toBe(false);
     expect(s.failures.some((f) => f.startsWith("rooms:"))).toBe(true);
   });
+
+  it("no golden contains a physical-correctness violation", async () => {
+    const { results } = await evaluate(entries, (e) => readGolden(e));
+    const broken = results.filter((r) => r.physicalWarnings > 0);
+    expect(broken.map((r) => `${r.id}: ${r.failures.join(", ")}`)).toEqual([]);
+  });
+
+  it("scoreSource fails a plan with furniture drawn through a wall", () => {
+    const s = scoreSource(
+      { id: "y", prompt: "", golden: "", expect: { rooms: 2 } },
+      `plan "P" {
+        units mm
+        wall exterior  thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+        wall partition thickness 100 { (4000,0) (4000,4000) }
+        room id=a at (0,0)    size 4000x4000 label "A"
+        room id=b at (4000,0) size 4000x4000 label "B"
+        furniture sofa at (3500,1000) size 1000x900
+      }`,
+    );
+    expect(s.physicalWarnings).toBeGreaterThan(0);
+    expect(s.semanticPass).toBe(false);
+    expect(s.failures.some((f) => f.startsWith("physical:"))).toBe(true);
+  });
 });

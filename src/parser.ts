@@ -241,9 +241,9 @@ class Parser {
             this.next();
             const a = this.eatIdent().value;
             if (a !== "auto") this.fail(`Expected "auto" after "dims" but found "${a}"`, t);
-            let mode: "overall" | "rooms" | "all" = "all";
-            if (this.isType("ident") && ["overall", "rooms", "all"].includes(this.peek().value)) {
-              mode = this.eatIdent().value as "overall" | "rooms" | "all";
+            let mode: "overall" | "rooms" | "walls" | "all" = "all";
+            if (this.isType("ident") && ["overall", "rooms", "walls", "all"].includes(this.peek().value)) {
+              mode = this.eatIdent().value as "overall" | "rooms" | "walls" | "all";
             }
             plan.autoDims = mode;
             break;
