@@ -18,15 +18,23 @@ not a work-in-progress. Treat the live artifacts below as the source of truth.
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.3.2` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.4.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md` |
 | **VS Code extension** | `ChanMeng.archlang@0.3.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.3.2` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 439 passing (49 files); typecheck + build clean | — |
+| **Git** | `main`, tags `v1.0.0` → `v1.4.0` (latest) | github.com/ChanMeng666/archlang |
+| **Tests** | 461 passing (51 files); typecheck + build clean | — |
 
-**Latest release — v1.3.0 (architectural soundness, circulation facts & professional placement).**
+**Latest release — v1.4.0 (physical-correctness & circulation; a 2nd Claude × Codex pass).**
+The compiler stays a faithful deterministic renderer; corrective arranging is an **explicit
+source-to-source transform** (`arch repair`), never invisible render behavior (see ADR 0006). v1.4
+adds: **`dims auto walls`** + per-room dims in the page margin; lint **`W_FURNITURE_WALL_COLLISION`**,
+**`W_DOORWAY_BLOCKED`**, **`W_ROOM_NO_CLEAR_PATH`** (a grid flood-fill in `src/analyze/occupancy.ts`);
+**`arch validate --strict`** (warnings fail too — the pipeline ship-gate); catalogued fixture
+footprints (`against wall` may omit `size`); and **`arch repair`**. See `CHANGELOG.md`.
+
+**Prior release — v1.3.0 (architectural soundness, circulation facts & professional placement).**
 A Claude × Codex adversarial pass. The compiler stays a faithful deterministic renderer; the new
 "design intelligence" ships as **facts** (`describe`) and **advisory `lint`**, never an auto-arranger
 (see ADR 0005). v1.3 adds: **room `uses` tags** + a central classifier; a **modeled door/opening

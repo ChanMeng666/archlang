@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-06-30
+
 ### Added — physical-correctness & circulation (Claude × Codex adversarial pass)
 
 A second Claude Code × Codex review (prompted by AI-generated plans that rendered with furniture
