@@ -31,14 +31,84 @@ import {
   type AnalyzeOptions,
   type BBox,
 } from "./analyze.js";
-import { doorSwing, sectorIntersectsRect, swingsCollide, type DoorSwing } from "./geometry.js";
+import { doorSwing, sectorIntersectsRect, swingsCollide, segmentsOfWall, type DoorSwing, type WallSegment } from "./geometry.js";
 import { requiresWall, frontClearanceMm } from "./fixtures-catalog.js";
+import { overlap1d } from "./analyze.js";
+import { computeRoomClearances } from "./analyze/occupancy.js";
+
+/**
+ * Minimum intrusion (mm) into a wall solid that counts as a collision. Above plausible
+ * grid-snap noise from `against wall` placement, below any real penetration (a piece
+ * straddling even a 100 mm partition intrudes far more), so flush/anchored fixtures
+ * stay quiet while a sofa drawn through a wall is caught.
+ */
+const WALL_COLLISION_SLACK_MM = 30;
 
 /** Do two axis-aligned rects overlap by more than 1 mm on both axes? */
 function rectsOverlap(a: BBox, b: BBox): boolean {
   const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
   const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
   return ox > 1 && oy > 1;
+}
+
+/**
+ * How deep (mm) a furniture rectangle `fr` intrudes into an orthogonal wall
+ * segment's solid band, counting only the run that is *not* an opening (a door or
+ * window voids the wall there). A piece flush against the wall face intrudes ~0;
+ * one straddling the centerline intrudes by up to the wall thickness. Returns 0 for
+ * non-orthogonal segments (handled conservatively — angled walls don't trip this).
+ *
+ * "Intrusion" is the across-wall overlap; it is only meaningful when the along-wall
+ * overlap survives opening subtraction, so a counter under a window or a piece in a
+ * doorway isn't read as passing through solid wall.
+ */
+function wallIntrusionDepth(fr: BBox, s: WallSegment, openings: Array<{ at: { x: number; y: number }; width: number }>): number {
+  const horiz = s.a.y === s.b.y;
+  const vert = s.a.x === s.b.x;
+  if (horiz === vert) return 0; // diagonal or degenerate — skip
+  const half = s.thickness / 2;
+  if (horiz) {
+    const band = overlap1d(fr.y, fr.y + fr.h, s.a.y - half, s.a.y + half); // across-wall (depth)
+    if (band <= 0) return 0;
+    const segLo = Math.min(s.a.x, s.b.x);
+    const segHi = Math.max(s.a.x, s.b.x);
+    let lo = Math.max(fr.x, segLo);
+    let hi = Math.min(fr.x + fr.w, segHi);
+    if (hi - lo <= 1) return 0;
+    // Subtract opening spans that lie on this segment's line.
+    const voids = openings
+      .filter((o) => Math.abs(o.at.y - s.a.y) <= half + 1)
+      .map((o) => [o.at.x - o.width / 2, o.at.x + o.width / 2] as [number, number]);
+    return solidRemains(lo, hi, voids) ? band : 0;
+  }
+  const band = overlap1d(fr.x, fr.x + fr.w, s.a.x - half, s.a.x + half);
+  if (band <= 0) return 0;
+  const segLo = Math.min(s.a.y, s.b.y);
+  const segHi = Math.max(s.a.y, s.b.y);
+  let lo = Math.max(fr.y, segLo);
+  let hi = Math.min(fr.y + fr.h, segHi);
+  if (hi - lo <= 1) return 0;
+  const voids = openings
+    .filter((o) => Math.abs(o.at.x - s.a.x) <= half + 1)
+    .map((o) => [o.at.y - o.width / 2, o.at.y + o.width / 2] as [number, number]);
+  return solidRemains(lo, hi, voids) ? band : 0;
+}
+
+/** Is any > 1 mm of the interval [lo,hi] left uncovered by the `voids` intervals? */
+function solidRemains(lo: number, hi: number, voids: Array<[number, number]>): boolean {
+  let cuts = [lo, hi];
+  for (const [a, b] of voids) {
+    cuts.push(Math.max(lo, Math.min(hi, a)), Math.max(lo, Math.min(hi, b)));
+  }
+  cuts = [...new Set(cuts)].sort((p, q) => p - q);
+  for (let i = 0; i < cuts.length - 1; i++) {
+    const mid = (cuts[i] + cuts[i + 1]) / 2;
+    const len = cuts[i + 1] - cuts[i];
+    if (len <= 1) continue;
+    const inVoid = voids.some(([a, b]) => mid > a && mid < b);
+    if (!inVoid) return true;
+  }
+  return false;
 }
 
 /** Furniture categories that count as a plumbing fixture for a wet room. */
@@ -68,6 +138,18 @@ export interface LintRuleset {
    * half-thickness (a fixture backs onto the wall *face*) plus a small setback.
    */
   fixtureWallTolMm: number;
+  /**
+   * Clear landing depth (mm) required on each side of a door opening — the straight
+   * approach path through the doorway. Furniture inside this zone trips
+   * `W_DOORWAY_BLOCKED`. Default 300; accessibility guidance wants more.
+   */
+  doorwayLandingMm: number;
+  /**
+   * Minimum clear floor area (m²) a room's doorways must be able to reach by walking
+   * (grid flood-fill). Below this a reachable-but-packed room trips
+   * `W_ROOM_NO_CLEAR_PATH`. Default 1.0 — about enough to stand and turn.
+   */
+  minClearAreaM2: number;
 }
 
 export const DEFAULT_RULESET: LintRuleset = {
@@ -77,6 +159,8 @@ export const DEFAULT_RULESET: LintRuleset = {
   maxUnenclosedMm: 300,
   swingClearanceMm: 0,
   fixtureWallTolMm: 300,
+  doorwayLandingMm: 300,
+  minClearAreaM2: 1.0,
 };
 
 /**
@@ -97,6 +181,7 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
     minDoorWidthMm: 850, // a nominal width giving roughly an 815 mm clear opening
     minRoomAreaM2: 5,
     swingClearanceMm: 150,
+    doorwayLandingMm: 450, // a deeper clear approach in front of each door
   },
 });
 
@@ -256,6 +341,23 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
     }
   }
 
+  // Furniture that penetrates a wall solid (the sofa drawn straddling a partition).
+  // A piece flush against a wall face is fine; only a piece intruding into the wall's
+  // thickness band — past snap noise — trips. Reported once per piece, on the first
+  // wall it hits, in source order.
+  const wallSegs: WallSegment[] = ir.walls.flatMap((w) => segmentsOfWall(w).map((s) => ({ ...s })));
+  const wallOpenings = ir.walls.flatMap((w) => w.openings);
+  for (const f of furniture) {
+    const fr = rectOf(f);
+    const hit = wallSegs.some((s) => wallIntrusionDepth(fr, s, wallOpenings) > WALL_COLLISION_SLACK_MM);
+    if (hit) {
+      const name = f.label ?? f.category;
+      out.push({ severity: "warning", code: "W_FURNITURE_WALL_COLLISION", ...at(f.span),
+        message: `Furniture "${name}" penetrates a wall.`,
+        hints: ["Move or resize it so it sits against the wall face, not through it — or anchor it with `against wall <id>`."] });
+    }
+  }
+
   // A wet room reachable from the entrance only by passing through a bedroom.
   // Build the room-connectivity graph from doors (rooms + the literal "exterior"),
   // then compare reachability with and without bedroom nodes.
@@ -334,12 +436,50 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
     }
   }
 
+  // Furniture parked in a door's straight approach (the clear landing on each side of
+  // the opening), so you can't pass through even with the leaf open. Distinct from the
+  // swing arc above — this is the walk-through path, the thing that piles fixtures at a
+  // bathroom door. Built as an AABB straddling the opening on orthogonal host walls.
+  for (const d of doors) {
+    const seg = d.host;
+    if (!seg) continue;
+    const horiz = seg.a.y === seg.b.y;
+    const vert = seg.a.x === seg.b.x;
+    if (horiz === vert) continue; // angled host — skip
+    const halfW = d.width / 2;
+    const depth = rules.doorwayLandingMm;
+    const landing: BBox = horiz
+      ? { x: d.at.x - halfW, y: d.at.y - depth, w: d.width, h: depth * 2 }
+      : { x: d.at.x - depth, y: d.at.y - halfW, w: depth * 2, h: d.width };
+    const blocker = furniture.find((f) => rectsOverlap(landing, rectOf(f)));
+    if (blocker) {
+      const gn = blocker.label ?? blocker.category;
+      out.push({ severity: "warning", code: "W_DOORWAY_BLOCKED", ...at(d.span),
+        message: `Doorway is blocked — "${gn}" sits in the clear approach through the door.`,
+        hints: [`Keep at least ${depth} mm clear on each side of the opening, or move "${gn}".`] });
+    }
+  }
+
   // Door too narrow to pass comfortably.
   for (const d of doors) {
     if (d.width < rules.minDoorWidthMm) {
       out.push({ severity: "warning", code: "W_DOOR_CLEARANCE", ...at(d.span),
         message: `Door is ${d.width} mm wide (under the ${rules.minDoorWidthMm} mm minimum nominal width).`,
         hints: [`Widen it to at least ${rules.minDoorWidthMm} mm.`] });
+    }
+  }
+
+  // Circulation: a room whose doorways can't reach a usable patch of clear floor —
+  // technically reachable (it has a door) but so packed that you can't step in. A grid
+  // flood-fill fact (see analyze/occupancy.ts); only fires when there *is* enough free
+  // floor somewhere (totalClear ≥ the minimum) but the entrance can't get to it, so a
+  // genuinely tiny room isn't double-flagged for being small.
+  for (const rc of computeRoomClearances(rooms, furniture, doors, openings, ir.walls, rules.tolMm)) {
+    if (rc.hasConnector && rc.reachableClearAreaM2 < rules.minClearAreaM2 && rc.totalClearAreaM2 >= rules.minClearAreaM2) {
+      const r = rooms.find((x) => x.id === rc.roomId)!;
+      out.push({ severity: "warning", code: "W_ROOM_NO_CLEAR_PATH", ...at(r.span),
+        message: `Room "${labelOf(r)}" can't be entered — furniture and door swings seal off the floor by its door (only ${rc.reachableClearAreaM2} m² reachable).`,
+        hints: ["Move or shrink the pieces nearest the door so there's a continuous walkable path into the room."] });
     }
   }
 

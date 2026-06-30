@@ -100,8 +100,11 @@ usage), and source can come from stdin (`-`). Beyond `compile`/`watch`/`fmt`/`ex
 `arch spec` (print the whole language — `spec.llm.md`), `arch describe` (semantic JSON: rooms,
 areas, adjacency, door connections — backed by `describe()` in `src/describe.ts`), `arch lint`
 (architectural soundness `W_*` warnings — `src/lint.ts`), `arch validate` (parse+resolve+lint, no
-render), and `arch new` (scaffold). `describe`/`lint` share the pure analysis layer in
-`src/analyze.ts`; all are exported from `src/index.ts`. This is the standard interface for AI agents
+render; `--strict`/`--fail-on-warning` makes warnings fail too — the pipeline ship-gate), `arch new`
+(scaffold), and `arch repair` (the explicit opt-in source-to-source corrector — pushes furniture out
+of walls and emits new `.arch` + a change log; `src/repair.ts`, see ADR 0006). `describe`/`lint` share
+the pure analysis layer in `src/analyze.ts` (+ `src/analyze/occupancy.ts`, the circulation
+flood-fill); all are exported from `src/index.ts`. This is the standard interface for AI agents
 — there is intentionally no MCP server (see the README's agent section).
 
 ## Architecture & Conventions

@@ -54,6 +54,9 @@ export type {
 // Pure; the ruleset is data. Surfaced as `arch lint`.
 export { lint, DEFAULT_RULESET, LINT_PROFILES, LINT_PROFILE_NAMES } from "./lint.js";
 export type { LintOptions, LintRuleset } from "./lint.js";
+// Explicit opt-in source-to-source corrector (ADR 0006): never part of compile().
+export { repair } from "./repair.js";
+export type { RepairResult, RepairChange, RepairNote } from "./repair.js";
 // Language services (v0.11): pure LSP core (hover/completion/definition/rename/
 // signature help) over the CST cursor + registry schemas. The VS Code server is
 // a thin adapter; these are isomorphic and unit-testable.

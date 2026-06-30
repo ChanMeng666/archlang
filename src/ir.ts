@@ -141,7 +141,7 @@ export interface ResolvedPlan {
   scale?: string;
   north: NorthDir;
   /** `dims auto …` — synthesize dimension strings at scene-build (presentation only). */
-  autoDims?: "overall" | "rooms" | "all";
+  autoDims?: "overall" | "rooms" | "walls" | "all";
   title?: TitleNode;
   theme?: Partial<Theme>;
   /** Named theme base (`theme <name>`), resolved to colours at lowering. */

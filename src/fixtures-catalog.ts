@@ -19,29 +19,36 @@ export interface FixtureSpec {
    * 0 / omitted means "no frontal clearance check" (e.g. a shower you stand inside).
    */
   clearanceMm?: number;
+  /**
+   * A conventional default footprint (mm) in **wall-relative** axes — `along` runs
+   * parallel to the wall the fixture backs onto, `depth` projects into the room. Lets
+   * `furniture <cat> against wall <id>` omit an explicit `size`; closed-form, never a
+   * guess among alternatives (ADR 0005). Omitted for free-standing furniture.
+   */
+  footprint?: { along: number; depth: number };
 }
 
 /** Catalog entries, keyed by category (and its aliases). */
 const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   // Wet-room plumbing fixtures — need a wall behind them.
-  wc: { requiresWall: true, clearanceMm: 450 },
-  toilet: { requiresWall: true, clearanceMm: 450 },
-  basin: { requiresWall: true, clearanceMm: 450 },
-  lavatory: { requiresWall: true, clearanceMm: 450 },
-  bathtub: { requiresWall: true, clearanceMm: 550 },
-  tub: { requiresWall: true, clearanceMm: 550 },
-  bath: { requiresWall: true, clearanceMm: 550 },
-  shower: { requiresWall: true },
+  wc: { requiresWall: true, clearanceMm: 450, footprint: { along: 400, depth: 700 } },
+  toilet: { requiresWall: true, clearanceMm: 450, footprint: { along: 400, depth: 700 } },
+  basin: { requiresWall: true, clearanceMm: 450, footprint: { along: 600, depth: 450 } },
+  lavatory: { requiresWall: true, clearanceMm: 450, footprint: { along: 600, depth: 450 } },
+  bathtub: { requiresWall: true, clearanceMm: 550, footprint: { along: 1700, depth: 700 } },
+  tub: { requiresWall: true, clearanceMm: 550, footprint: { along: 1700, depth: 700 } },
+  bath: { requiresWall: true, clearanceMm: 550, footprint: { along: 1700, depth: 700 } },
+  shower: { requiresWall: true, footprint: { along: 900, depth: 900 } },
   // Kitchen run — counters/appliances line a wall; leave standing/working room.
-  kitchen_sink: { requiresWall: true, clearanceMm: 550 },
-  sink: { requiresWall: true, clearanceMm: 550 },
-  counter: { requiresWall: true, clearanceMm: 550 },
-  worktop: { requiresWall: true, clearanceMm: 550 },
-  stove: { requiresWall: true, clearanceMm: 550 },
-  hob: { requiresWall: true, clearanceMm: 550 },
-  cooktop: { requiresWall: true, clearanceMm: 550 },
-  fridge: { requiresWall: true, clearanceMm: 550 },
-  refrigerator: { requiresWall: true, clearanceMm: 550 },
+  kitchen_sink: { requiresWall: true, clearanceMm: 550, footprint: { along: 800, depth: 600 } },
+  sink: { requiresWall: true, clearanceMm: 550, footprint: { along: 800, depth: 600 } },
+  counter: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
+  worktop: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
+  stove: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
+  hob: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
+  cooktop: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
+  fridge: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 650 } },
+  refrigerator: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 650 } },
 });
 
 /** The catalog spec for a fixture category, or `null` for free-standing furniture. */
@@ -57,4 +64,9 @@ export function requiresWall(category: string): boolean {
 /** The frontal activity clearance (mm) for a fixture category, or 0 if none. */
 export function frontClearanceMm(category: string): number {
   return CATALOG[category]?.clearanceMm ?? 0;
+}
+
+/** A fixture category's conventional wall-relative footprint (along × depth), or null. */
+export function defaultFootprint(category: string): { along: number; depth: number } | null {
+  return CATALOG[category]?.footprint ?? null;
 }

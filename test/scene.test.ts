@@ -91,6 +91,47 @@ describe("Scene IR", () => {
     expect(overallLineInside, "no overall dim line should be fully inside the plan").toBe(false);
   });
 
+  it("places per-room `dims auto rooms` OUTSIDE the building, clear of the interior", () => {
+    // Two stacked rooms inside a 4000×6000 shell. Every room edge here is on the
+    // building perimeter, so each room's width/height dim should land in the margin
+    // (not over the centered label/furniture — the old just-inside placement bug).
+    const src =
+      `plan "P" { units mm dims auto rooms ` +
+      `wall exterior thickness 200 { (0,0) (4000,0) (4000,6000) (0,6000) close } ` +
+      `wall partition thickness 100 { (0,3000) (4000,3000) } ` +
+      `room id=top at (0,0) size 4000x3000 label "Top" ` +
+      `room id=bot at (0,3000) size 4000x3000 label "Bot" }`;
+    const scene = sceneOf(src);
+    const b = scene.bounds;
+    const texts = scene.nodes.filter((n: any) => n.layer === "dims" && n.prim.t === "text");
+    // No room-dim number should sit strictly inside the footprint interior.
+    const inside = texts.some(
+      (n: any) => n.prim.at.x > b.minX + 1 && n.prim.at.x < b.maxX - 1 && n.prim.at.y > b.minY + 1 && n.prim.at.y < b.maxY - 1,
+    );
+    expect(inside, "no per-room dim text should sit inside the building").toBe(false);
+    // Both dimensioned values are present (4000 width, 3000 height).
+    const vals = texts.map((n: any) => n.prim.value);
+    expect(vals).toContain("4000");
+    expect(vals).toContain("3000");
+  });
+
+  it("annotates each distinct wall thickness once with `dims auto walls`", () => {
+    // Exterior 200 + two 100 partitions: the thickness call-outs must be deduped to
+    // one "200" and one "100" (not one per partition), each carrying the thickness.
+    const src =
+      `plan "P" { units mm dims auto walls ` +
+      `wall exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close } ` +
+      `wall partition thickness 100 { (3000,0) (3000,4000) } ` +
+      `wall partition thickness 100 { (0,2000) (3000,2000) } ` +
+      `room id=r at (0,0) size 3000x4000 label "R" }`;
+    const scene = sceneOf(src);
+    const texts = scene.nodes
+      .filter((n: any) => n.layer === "dims" && n.prim.t === "text")
+      .map((n: any) => n.prim.value)
+      .sort();
+    expect(texts).toEqual(["100", "200"]);
+  });
+
   it("grows the page so a far right-side dimension never clips the viewBox", () => {
     // A right-edge dim whose offset (4000) far exceeds the base margin used to escape
     // the page (only the bottom margin grew). Per-side margins now contain it.

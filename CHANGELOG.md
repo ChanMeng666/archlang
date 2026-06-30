@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — physical-correctness & circulation (Claude × Codex adversarial pass)
+
+A second Claude Code × Codex review (prompted by AI-generated plans that rendered with furniture
+through walls, fixtures piled in doorways, and rooms with no door) hardened the renderer and the
+soundness layer, **without** turning `compile()` into an arranger. See the new
+[ADR 0006](docs/adr/0006-solver-as-explicit-transform.md): a solver may exist only as an explicit
+source-to-source transform, never as invisible render behavior.
+
+- **Render fidelity:** `dims auto walls` annotates each distinct wall thickness once (deduped); the
+  new mode is also included in `dims auto all`. Per-room dimensions (`dims auto rooms`) now sit in the
+  page margin on the side each room faces, instead of overlapping the room label/area inside the room.
+- **New lint rules (advisory, deterministic facts — ADR 0005-compliant):**
+  `W_FURNITURE_WALL_COLLISION` (a piece drawn through a wall solid, via AABB intrusion over
+  `segmentRectangle`, opening-aware), `W_DOORWAY_BLOCKED` (furniture in a door's clear landing — the
+  walk-through path, distinct from the swing arc), and `W_ROOM_NO_CLEAR_PATH` (a grid flood-fill in
+  `analyze/occupancy.ts` finds a room whose doorways can't reach a usable patch of floor). New ruleset
+  knobs `doorwayLandingMm` and `minClearAreaM2`; the accessibility profile tightens the landing depth.
+- **Strict gating:** `arch validate --strict` (alias `--fail-on-warning`) makes advisory warnings
+  fail too (exit `2`) — the gate a generation pipeline runs so it can't ship a plan lint flagged. The
+  agent contract (`SKILL.md`, `spec.llm.md`) now mandates this gate and an explicit furniture-placement
+  discipline (back fixtures to walls with `against wall`, keep every room reachable, keep doorways
+  clear).
+- **Catalogued footprints:** a known fixture placed `against wall` may omit `size` and take its
+  conventional footprint from `fixtures-catalog.ts` (closed-form, never a guess).
+- **`arch repair`:** a new opt-in, source-to-source corrector. It pushes furniture out of walls and
+  emits **new `.arch` source plus a change log** (never an invisible edit); ambiguous, scripted, or
+  `against wall` pieces are reported, not guessed. Exported as `repair()` from the public API.
+- **eval:** the offline harness now fails any golden that has a physical-correctness violation (the
+  three new codes), guarding authorability regressions.
+
+### Fixed
+
+- The formatter (`arch fmt`) silently dropped the `dims auto` directive; it is now preserved.
+
 ## [1.3.2] - 2026-06-28
 
 ### Changed — docs site & playground brought up to v1.3 (no compiler changes)

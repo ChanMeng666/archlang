@@ -7,6 +7,7 @@ import type { SceneNode } from "../scene.js";
 import type { RFurniture } from "../ir.js";
 import { rectCorners, segmentsOfWall, unit, normal, add, mul, sub, length } from "../geometry.js";
 import { fixtureGlyph } from "./fixtures-glyphs.js";
+import { defaultFootprint } from "../fixtures-catalog.js";
 
 export const furniture: ElementDef = {
   kind: "furniture",
@@ -39,9 +40,14 @@ export const furniture: ElementDef = {
       ctx.eatKeyword("at");
       at = ctx.parsePoint();
     }
-    ctx.eatKeyword("size");
-    const size = ctx.parseDimensions();
-    const node: FurnitureNode = { kind: "furniture", id, category, ...(at ? { at } : {}), ...(against ? { against } : {}), size, line: kw.line };
+    // `size` is optional only for an `against wall` fixture with a catalogued default
+    // footprint; resolve enforces that and errors otherwise.
+    let size: FurnitureNode["size"];
+    if (ctx.isKeyword("size")) {
+      ctx.next();
+      size = ctx.parseDimensions();
+    }
+    const node: FurnitureNode = { kind: "furniture", id, category, ...(at ? { at } : {}), ...(against ? { against } : {}), ...(size ? { size } : {}), line: kw.line };
     if (ctx.isKeyword("label")) {
       ctx.next();
       node.label = ctx.parseStringExpr();
@@ -64,11 +70,27 @@ export const furniture: ElementDef = {
   resolve(node, ctx: ResolveCtx): RFurniture {
     const n = node as FurnitureNode;
     const id = ctx.id;
-    // Authored dims: plan w×h for `at`, wall-relative along×depth for `against`.
-    const dw = ctx.snap(ctx.eval(n.size.w));
-    const dh = ctx.snap(ctx.eval(n.size.h));
+    // Authored dims: plan w×h for `at`, wall-relative along×depth for `against`. When
+    // `size` is omitted, an `against wall` fixture falls back to its catalogued default
+    // footprint (closed-form, never a guess); anything else is the E_FURN_SIZE error.
+    let dw: number;
+    let dh: number;
+    if (n.size) {
+      dw = ctx.snap(ctx.eval(n.size.w));
+      dh = ctx.snap(ctx.eval(n.size.h));
+    } else {
+      const fp = n.against ? defaultFootprint(n.category) : null;
+      if (!fp) {
+        ctx.diag({ severity: "error", message: `Furniture "${id}" needs a \`size WxH\` (no default footprint for "${n.category}")`, code: "E_FURN_SIZE", span: n.span });
+        dw = 0;
+        dh = 0;
+      } else {
+        dw = ctx.snap(fp.along);
+        dh = ctx.snap(fp.depth);
+      }
+    }
     if (dw <= 0 || dh <= 0) {
-      ctx.diag({ severity: "error", message: `Furniture "${id}" must have a positive size`, code: "E_FURN_SIZE", span: n.span });
+      if (n.size) ctx.diag({ severity: "error", message: `Furniture "${id}" must have a positive size`, code: "E_FURN_SIZE", span: n.span });
     }
     let rotate: number | undefined;
     if (n.rotate !== undefined) {

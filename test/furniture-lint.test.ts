@@ -79,6 +79,80 @@ describe("furniture `in <room>` ownership", () => {
   });
 });
 
+describe("furniture-vs-wall collision lint", () => {
+  // Two rooms split by a partition at x=4000.
+  const split = (furn: string) =>
+    `plan "P" {
+      units mm
+      wall exterior  thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+      wall partition thickness 100 { (4000,0) (4000,4000) }
+      room id=a at (0,0)    size 4000x4000 label "A"
+      room id=b at (4000,0) size 4000x4000 label "B"
+      ${furn}
+    }`;
+
+  it("flags furniture drawn straddling a wall", () => {
+    // Sofa crosses the x=4000 partition (x 3500→4500).
+    const c = codes(split(`furniture sofa at (3500,1000) size 1000x900`));
+    expect(c).toContain("W_FURNITURE_WALL_COLLISION");
+  });
+
+  it("does not flag furniture flush against the wall face", () => {
+    // Counter backs onto the partition's left face (x ends at 3950, the wall face).
+    const c = codes(split(`furniture sofa at (2950,1000) size 1000x900`));
+    expect(c).not.toContain("W_FURNITURE_WALL_COLLISION");
+  });
+});
+
+describe("doorway-blocked lint", () => {
+  const room = (furn: string) =>
+    `plan "P" {
+      units mm
+      wall exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+      room id=r at (0,0) size 4000x4000 label "R"
+      door at (1000,4000) width 900 wall exterior hinge left swing in
+      window at (3000,0) width 1200 wall exterior
+      ${furn}
+    }`;
+
+  it("flags furniture parked in the door's clear approach", () => {
+    const c = codes(room(`furniture wc at (700,3600) size 700x400`));
+    expect(c).toContain("W_DOORWAY_BLOCKED");
+  });
+
+  it("leaves a clear doorway alone", () => {
+    const c = codes(room(`furniture wc at (3500,3500) size 400x700`));
+    expect(c).not.toContain("W_DOORWAY_BLOCKED");
+  });
+});
+
+describe("room circulation (clear-path) lint", () => {
+  it("flags a room whose door reaches only a sealed-off sliver of floor", () => {
+    // A full-width barrier seals a thin strip at the door from the open room above.
+    // ~22 m² of free floor exists, but the door can reach < 1 m² of it.
+    const src = `plan "P" {
+      units mm
+      wall exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+      room id=r at (0,0) size 6000x4000 label "R"
+      door at (1000,4000) width 900 wall exterior hinge left swing in
+      furniture barrier at (0,3600) size 6000x300
+    }`;
+    expect(codes(src)).toContain("W_ROOM_NO_CLEAR_PATH");
+  });
+
+  it("does not flag a normally-furnished room", () => {
+    const src = `plan "P" {
+      units mm
+      wall exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+      room id=r at (0,0) size 6000x4000 label "R"
+      door at (1000,4000) width 900 wall exterior hinge left swing in
+      furniture sofa at (300,300) size 2000x900
+      furniture bed  at (3500,300) size 1500x2000
+    }`;
+    expect(codes(src)).not.toContain("W_ROOM_NO_CLEAR_PATH");
+  });
+});
+
 describe("fixture front-clearance lint", () => {
   const kitchen = (furn: string) =>
     `plan "P" {
