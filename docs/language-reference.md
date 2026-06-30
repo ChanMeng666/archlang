@@ -531,6 +531,14 @@ them and a default install emits SVG and DXF with nothing extra. The PNG backend
 rasterizes the SVG with a bundled font (no system fonts), so output is
 byte-identical across machines.
 
+For a quick **viewable** raster, `arch preview p.arch -o p.png` renders PNG at a
+sensible on-screen width (~1600 px) instead of the high-resolution native size — and
+where the optional renderer is absent it reports the catalogued `E_PNG_DEPENDENCY`
+(with a `fix`), or fetches it with `--install`. Render many files at once with
+`arch batch …`, and embed plans in Markdown with `arch md doc.md` (renders each
+fenced `arch` block to an image link). `arch manifest --json` prints this whole CLI
+surface — commands, flags, formats, lint profiles, error codes — as structured data.
+
 ### Diagnostics
 
 The compiler never throws on bad source: it recovers from syntax errors and

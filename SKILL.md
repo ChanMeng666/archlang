@@ -33,7 +33,11 @@ npx @chanmeng666/archlang help
 5. **Verify intent without an image:** `arch describe plan.arch --json` returns the rooms (with
    areas and adjacency), what each door connects, and totals. Confirm the room count, labels, and
    areas match what was asked.
-6. **Gate on soundness — don't ship a flagged plan.** Run `arch validate plan.arch --strict --json`
+6. **Show the user the result.** Run `arch preview plan.arch -o plan.png` to render a PNG you can
+   surface to the user (or inspect yourself). It defaults to a 2× raster; it works out of the box
+   where the optional renderer is installed, and if it reports `E_PNG_DEPENDENCY`, re-run with
+   `--install` to fetch it. (SVG from `compile` is always available with zero deps.)
+7. **Gate on soundness — don't ship a flagged plan.** Run `arch validate plan.arch --strict --json`
    (parse + resolve + lint in one pass). `--strict` makes **every advisory warning fail** too
    (exit `2`), so this is the gate a generation pipeline runs before it ships. If not `ok`, read each
    `diagnostics[].fix`, edit the source, and re-run until it passes — or, if a warning is a deliberate
@@ -117,13 +121,17 @@ window at (0,4500) width 1200 wall exterior                      # bedroom windo
 
 ```bash
 arch spec                              # the whole language in one page — READ THIS FIRST
+arch manifest --json                   # the whole CLI API as data: commands, flags, formats, lint rules, error codes
 arch compile plan.arch -o out.svg --json   # render (also -f dxf|pdf|png)
 echo '<source>' | arch compile - -o - -f svg   # compile stdin → SVG on stdout
+arch preview plan.arch -o plan.png --json  # render a PNG to SHOW the user (--install fetches resvg if missing)
 arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, door connections
 arch lint plan.arch --json             # architectural soundness warnings
 arch validate plan.arch --strict --json   # parse + resolve + lint; --strict fails on warnings too (the ship gate)
 arch fmt plan.arch --write             # canonical formatting
 arch repair plan.arch -o fixed.arch    # emit corrected source (furniture out of walls/doorways/swings, overlaps separated, fixtures into their room + snapped to walls) + change log
+arch batch a.arch b.arch -f svg --json # render many plans/variants at once → results[]
+arch md notes.md -o out.md -f svg      # render fenced arch blocks in a Markdown file → image links
 arch new -o plan.arch                  # scaffold a starter plan
 arch explain E_ROOM_SIZE --json        # look up any diagnostic code
 ```

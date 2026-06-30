@@ -26,6 +26,24 @@ interface Rect {
   h: number;
 }
 
+/**
+ * The fixture categories {@link fixtureGlyph} draws a dedicated plan symbol for
+ * (every `case` below, aliases included). Exported as the single source of truth
+ * so the CLI capability manifest (`arch manifest`) can advertise them without
+ * re-listing — keep this in sync with the `switch` in {@link fixtureGlyph}; the
+ * `test/cli-manifest.test.ts` drift guard asserts they match.
+ */
+export const FIXTURE_CATEGORIES: readonly string[] = [
+  "wc", "toilet",
+  "basin", "lavatory",
+  "shower",
+  "bathtub", "tub", "bath",
+  "kitchen_sink", "sink",
+  "counter", "worktop",
+  "stove", "hob", "cooktop",
+  "fridge", "refrigerator",
+];
+
 /** Closed polygon approximating an axis-aligned ellipse (24 points, deterministic). */
 function ellipse(cx: number, cy: number, rx: number, ry: number): Point[] {
   const n = 24;

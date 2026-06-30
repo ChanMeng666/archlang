@@ -65,13 +65,17 @@ column [id=<name>] at (x,y) size <W>x<H>
 
 ```bash
 arch spec                              # print this spec
+arch manifest --json                   # the whole CLI API as data: commands, flags, formats, lint rules, error codes
 arch compile plan.arch -o out.svg --json   # render; JSON has { ok, diagnostics, summary }
 echo '<source>' | arch compile - --json    # compile from stdin (no temp file)
+arch preview plan.arch -o out.png --json   # render a PNG you can SHOW the user (zero-install where resvg is present; --install fetches it)
 arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, what doors connect
 arch lint plan.arch --json             # architectural soundness warnings
 arch validate plan.arch --strict --json   # parse + lint, no render; --strict fails on warnings too
 arch explain E_ROOM_SIZE --json        # look up any error code
 arch repair plan.arch -o fixed.arch    # explicit corrector: new source w/ furniture out of walls/doorways/swings, overlaps separated, fixtures into their room + snapped to walls + change log
+arch batch a.arch b.arch -f svg --json # render many variants at once → results[]
+arch md notes.md -o out.md -f svg      # render every fenced arch block in a Markdown file → image links
 ```
 
 **Self-correction loop:** compile/validate → if `ok` is false, read each `diagnostics[].fix` (and

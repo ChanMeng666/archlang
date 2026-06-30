@@ -18,15 +18,24 @@ not a work-in-progress. Treat the live artifacts below as the source of truth.
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.7.1` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.8.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md` |
 | **VS Code extension** | `ChanMeng.archlang@0.3.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.7.1` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 466 passing (51 files); typecheck + build clean | — |
+| **Git** | `main`, tags `v1.0.0` → `v1.8.0` (latest) | github.com/ChanMeng666/archlang |
+| **Tests** | 483 passing (55 files); typecheck + build clean | — |
 
-**Latest release — v1.7.1** (docs: `SKILL.md` adds a verified agent procedure to repair plan
+**Latest release — v1.8.0 (agent CLI ergonomics).** Four additive commands, no core change and the
+core stays zero-dependency: **`arch preview`** (render a PNG an agent can look at; PNG-first @2×,
+zero-install where `@resvg/resvg-js` is present, else the catalogued `E_PNG_DEPENDENCY` + a `fix`, and
+opt-in `--install` fetches it); **`arch batch`** (render many files concurrently, `{ ok, results[] }`);
+**`arch md`** (render every ` ```arch ` block in a Markdown file → image links, via pure
+`extractArchBlocks`/`rewriteMarkdown`); and **`arch manifest --json`** (the whole CLI API as structured
+data, drift-tested against the dispatch + fixture glyphs). The auto-install is the one opt-in,
+networked action — confined to the CLI seam.
+
+**v1.7.1** (docs: `SKILL.md` adds a verified agent procedure to repair plan
 **topology** — make every room reachable & every bedroom lit by adding doors/windows from the
 `describe` access graph; the design choice stays in the agent layer per ADR 0005. No core change.)
 
@@ -126,11 +135,15 @@ usage), and source can come from stdin (`-`). Beyond `compile`/`watch`/`fmt`/`ex
 areas, adjacency, door connections — backed by `describe()` in `src/describe.ts`), `arch lint`
 (architectural soundness `W_*` warnings — `src/lint.ts`), `arch validate` (parse+resolve+lint, no
 render; `--strict`/`--fail-on-warning` makes warnings fail too — the pipeline ship-gate), `arch new`
-(scaffold), and `arch repair` (the explicit opt-in source-to-source corrector — pushes furniture out
-of walls and emits new `.arch` + a change log; `src/repair.ts`, see ADR 0006). `describe`/`lint` share
-the pure analysis layer in `src/analyze.ts` (+ `src/analyze/occupancy.ts`, the circulation
-flood-fill); all are exported from `src/index.ts`. This is the standard interface for AI agents
-— there is intentionally no MCP server (see the README's agent section).
+(scaffold), `arch repair` (the explicit opt-in source-to-source corrector — pushes furniture out
+of walls and emits new `.arch` + a change log; `src/repair.ts`, see ADR 0006), `arch preview`
+(render a PNG an agent can look at; opt-in `--install` fetches the optional `@resvg/resvg-js`),
+`arch batch` (render many files concurrently → `{ ok, results[] }`), `arch md` (render the
+` ```arch ` blocks in a Markdown file → image links; pure `src/markdown.ts`), and
+`arch manifest`/`capabilities` (the whole CLI API as structured data — `src/manifest.ts`).
+`describe`/`lint` share the pure analysis layer in `src/analyze.ts` (+ `src/analyze/occupancy.ts`, the
+circulation flood-fill); all are exported from `src/index.ts`. This is the standard interface for AI
+agents — there is intentionally no MCP server (see the README's agent section).
 
 ## Architecture & Conventions
 

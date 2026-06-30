@@ -49,7 +49,11 @@ arch compile plan.arch -f dxf -o plan.dxf       # DXF (zero-dep)
 arch compile plan.arch -f pdf -o plan.pdf       # PDF (needs optional pdfkit)
 arch compile plan.arch -f png -o plan.png       # PNG (needs optional @resvg/resvg-js)
 
+arch preview plan.arch -o plan.png               # a viewable PNG (~1600px; --install fetches resvg if missing)
+arch batch a.arch b.arch -o out/                 # render many files/variants at once
+arch md notes.md -o out.md                       # render fenced arch blocks in Markdown → image links
 arch fmt plan.arch --write                       # format in place
+arch manifest --json                             # the whole CLI API as structured data (for agents)
 arch explain E_LAYOUT_CYCLE                       # explain a diagnostic
 ```
 

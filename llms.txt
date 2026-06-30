@@ -26,14 +26,20 @@ ArchLang is agent-native via its CLI — no server, no MCP, nothing to configure
 
 ```bash
 npx @chanmeng666/archlang spec                 # learn the whole language (read this first)
+npx @chanmeng666/archlang manifest --json      # the whole CLI API as data: commands, flags, formats, lint rules, error codes
 npx @chanmeng666/archlang compile plan.arch -o out.svg --json   # render; JSON: { ok, diagnostics, summary }
+npx @chanmeng666/archlang preview plan.arch -o out.png --json   # render a PNG to SHOW the user (zero-install where resvg is present; --install fetches it)
 npx @chanmeng666/archlang describe plan.arch --json             # verify: rooms, areas, adjacency, door connections
 npx @chanmeng666/archlang lint plan.arch --json                 # architectural soundness warnings
+npx @chanmeng666/archlang batch a.arch b.arch -f svg --json     # render many plans/variants at once → results[]
+npx @chanmeng666/archlang md notes.md -o out.md -f svg          # render fenced arch blocks in Markdown → image links
 ```
 
 Loop: `spec` → write `.arch` → `compile --json` → if `ok:false` (exit 2) fix via each
-`diagnostics[].fix` → `describe --json` to confirm intent → `lint --json` to confirm soundness.
-See [SKILL.md](https://github.com/chanmeng666/archlang/blob/main/SKILL.md).
+`diagnostics[].fix` → `describe --json` to confirm intent → `preview` to show the user a raster →
+`lint --json` to confirm soundness. `manifest --json` is the one-call API map; `batch`/`md` cover
+variant exploration and embedding plans in Markdown. See
+[SKILL.md](https://github.com/chanmeng666/archlang/blob/main/SKILL.md).
 
 `lint` catches tacit architectural mistakes, not just syntax: a bathroom reached only through a
 bedroom, a wet room that isn't fully walled in, a door swing hitting furniture, a bath/kitchen with

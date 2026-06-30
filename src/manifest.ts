@@ -1,0 +1,205 @@
+/**
+ * CLI capability manifest (v1.8) — the whole `arch` API surface as one structured
+ * document, so an AI agent can discover commands, flags, formats, elements, lint
+ * profiles, error codes, and fixture categories in a single `arch manifest --json`
+ * call instead of parsing `--help`/`SKILL.md` prose.
+ *
+ * Pure: it assembles values that already exist as exports (`KEYWORDS`,
+ * `ERROR_CODES`, `LINT_PROFILES`, `FIXTURE_CATEGORIES`) — there is **no new source
+ * of truth** here except the command/flag table, which a drift test
+ * (`test/cli-manifest.test.ts`) keeps in sync with the CLI's command dispatch.
+ */
+
+import { KEYWORDS } from "./grammar/tokens.js";
+import { ERROR_CODES, ERROR_CATALOG } from "./error-catalog.js";
+import { LINT_PROFILE_NAMES, LINT_PROFILES, DEFAULT_RULESET } from "./lint.js";
+import { FIXTURE_CATEGORIES } from "./elements/fixtures-glyphs.js";
+
+export interface ManifestFlag {
+  flag: string;
+  alias?: string;
+  /** Placeholder for a flag that takes a value (e.g. `<file>`), else omitted. */
+  arg?: string;
+  description: string;
+}
+
+export interface ManifestCommand {
+  name: string;
+  aliases?: string[];
+  summary: string;
+  flags: ManifestFlag[];
+  /** Accepted input (e.g. `<file.arch|->`), or `none`. */
+  input: string;
+  /** Where output goes (stdout, a file, etc.). */
+  output: string;
+}
+
+export interface Manifest {
+  name: "arch";
+  version: string;
+  description: string;
+  exitCodes: Record<string, string>;
+  globalFlags: ManifestFlag[];
+  commands: ManifestCommand[];
+  formats: Array<{ id: string; zeroDep: boolean; optionalDep?: string }>;
+  elements: readonly string[];
+  keywords: typeof KEYWORDS;
+  fixtureCategories: readonly string[];
+  lint: {
+    profiles: readonly string[];
+    defaultRuleset: typeof DEFAULT_RULESET;
+    profileOverrides: Record<string, Partial<typeof DEFAULT_RULESET>>;
+  };
+  errorCodes: Array<{ code: string; severity: "error" | "warning" }>;
+}
+
+const JSON_FLAG: ManifestFlag = { flag: "--json", description: "structured result on stdout, messages on stderr" };
+const QUIET_FLAG: ManifestFlag = { flag: "--quiet", alias: "-q", description: "suppress human messages on stderr" };
+const OUT_FLAG: ManifestFlag = { flag: "--out", alias: "-o", arg: "<file|->", description: "output destination ('-' = stdout)" };
+const FMT_FLAG: ManifestFlag = { flag: "--format", alias: "-f", arg: "<svg|dxf|pdf|png>", description: "output format (default svg)" };
+const WIDTH_FLAG: ManifestFlag = { flag: "--width", alias: "-w", arg: "<px>", description: "page width hint in pixels" };
+
+/**
+ * The command table. Keys MUST cover exactly the verbs the CLI's `main()`
+ * dispatch handles (the manifest drift test enforces it both ways).
+ */
+const COMMANDS: ManifestCommand[] = [
+  {
+    name: "compile",
+    summary: "render a plan to SVG/DXF/PDF/PNG",
+    flags: [OUT_FLAG, FMT_FLAG, WIDTH_FLAG, { flag: "--install", description: "auto-install the optional dep for the chosen format if missing (PNG/PDF)" }, JSON_FLAG, QUIET_FLAG],
+    input: "<file.arch|->",
+    output: "file (or stdout with -o -)",
+  },
+  {
+    name: "batch",
+    summary: "render many .arch files in one call, concurrently",
+    flags: [{ flag: "--out", alias: "-o", arg: "<dir>", description: "output directory (default: alongside each input)" }, FMT_FLAG, { flag: "--jobs", alias: "-j", arg: "<n>", description: "max concurrent renders (default: CPU count)" }, JSON_FLAG, QUIET_FLAG],
+    input: "<a.arch> <b.arch> …",
+    output: "one file per input; --json gives a results[] array",
+  },
+  {
+    name: "md",
+    aliases: ["markdown"],
+    summary: "render every ```arch block in a Markdown file and rewrite to image links",
+    flags: [{ flag: "--out", alias: "-o", arg: "<out.md>", description: "rewritten Markdown destination" }, FMT_FLAG, JSON_FLAG, QUIET_FLAG],
+    input: "<doc.md>",
+    output: "out.md + one image per block",
+  },
+  {
+    name: "preview",
+    summary: "render a PNG you can look at (zero-install where the optional binary is present)",
+    flags: [{ flag: "--out", alias: "-o", arg: "<out.png>", description: "PNG destination (default: <name>.png)" }, { flag: "--scale", alias: "-s", arg: "<n>", description: "raster scale (default 2)" }, { flag: "--install", description: "auto-install @resvg/resvg-js if missing, then render" }, JSON_FLAG, QUIET_FLAG],
+    input: "<file.arch|->",
+    output: "PNG file",
+  },
+  {
+    name: "watch",
+    summary: "recompile on save (interactive)",
+    flags: [OUT_FLAG, FMT_FLAG, WIDTH_FLAG],
+    input: "<file.arch>",
+    output: "file, rewritten on each save",
+  },
+  {
+    name: "validate",
+    summary: "parse + resolve + lint, no render (is it valid & sound?)",
+    flags: [{ flag: "--strict", alias: "--fail-on-warning", description: "advisory warnings fail too (exit 2)" }, JSON_FLAG, QUIET_FLAG],
+    input: "<file.arch|->",
+    output: "diagnostics",
+  },
+  {
+    name: "describe",
+    summary: "semantic facts: rooms, areas, adjacency, what doors connect",
+    flags: [JSON_FLAG, QUIET_FLAG],
+    input: "<file.arch|->",
+    output: "facts (JSON or a summary)",
+  },
+  {
+    name: "lint",
+    summary: "architectural soundness warnings",
+    flags: [{ flag: "--profile", arg: `<${LINT_PROFILE_NAMES.join("|")}>`, description: "advisory ruleset" }, { flag: "--strict", alias: "--fail-on-warning", description: "warnings fail (exit 2)" }, JSON_FLAG, QUIET_FLAG],
+    input: "<file.arch|->",
+    output: "W_* warnings",
+  },
+  {
+    name: "fmt",
+    summary: "canonical formatting",
+    flags: [{ flag: "--write", description: "format the file in place" }, JSON_FLAG, QUIET_FLAG],
+    input: "<file.arch|->",
+    output: "formatted source (or in place with --write)",
+  },
+  {
+    name: "repair",
+    summary: "explicit source-to-source corrector (furniture out of walls) + change log",
+    flags: [OUT_FLAG, JSON_FLAG, QUIET_FLAG],
+    input: "<file.arch|->",
+    output: "corrected source + change log on stderr",
+  },
+  {
+    name: "manifest",
+    aliases: ["capabilities"],
+    summary: "this document: the whole CLI API as structured data",
+    flags: [JSON_FLAG],
+    input: "none",
+    output: "the manifest (JSON or a summary)",
+  },
+  {
+    name: "spec",
+    summary: "print the one-prompt language spec (spec.llm.md)",
+    flags: [JSON_FLAG],
+    input: "none",
+    output: "the spec",
+  },
+  {
+    name: "new",
+    aliases: ["init"],
+    summary: "scaffold a starter .arch",
+    flags: [{ flag: "--out", alias: "-o", arg: "<file>", description: "write the starter here" }, { flag: "--force", description: "overwrite an existing file" }, JSON_FLAG],
+    input: "none",
+    output: "starter source",
+  },
+  {
+    name: "explain",
+    summary: "look up an error code (cause / fix / example)",
+    flags: [JSON_FLAG],
+    input: "<CODE>",
+    output: "catalog entry",
+  },
+];
+
+/** Assemble the full {@link Manifest}. `version` is injected by the CLI. */
+export function buildManifest(version: string): Manifest {
+  return {
+    name: "arch",
+    version,
+    description: "ArchLang compiler — agent-native CLI. Compile .arch floor-plan source to SVG/PNG/PDF/DXF.",
+    exitCodes: {
+      "0": "ok",
+      "2": "user-source error (deterministic — fix it, don't blindly retry)",
+      "1": "internal / IO error",
+      "3": "bad usage",
+    },
+    globalFlags: [JSON_FLAG, QUIET_FLAG],
+    commands: COMMANDS,
+    formats: [
+      { id: "svg", zeroDep: true },
+      { id: "dxf", zeroDep: true },
+      { id: "pdf", zeroDep: false, optionalDep: "pdfkit" },
+      { id: "png", zeroDep: false, optionalDep: "@resvg/resvg-js" },
+    ],
+    elements: KEYWORDS.element,
+    keywords: KEYWORDS,
+    fixtureCategories: FIXTURE_CATEGORIES,
+    lint: {
+      profiles: LINT_PROFILE_NAMES,
+      defaultRuleset: DEFAULT_RULESET,
+      profileOverrides: Object.fromEntries(
+        LINT_PROFILE_NAMES.map((name) => [name, LINT_PROFILES[name] ?? {}]),
+      ),
+    },
+    errorCodes: ERROR_CODES.map((code) => ({ code, severity: ERROR_CATALOG[code].severity })),
+  };
+}
+
+/** The verb names the manifest documents (incl. aliases) — used by the drift test. */
+export const MANIFEST_COMMAND_NAMES: readonly string[] = COMMANDS.flatMap((c) => [c.name, ...(c.aliases ?? [])]);

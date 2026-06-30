@@ -127,8 +127,12 @@ else writeFileSync("tiny.svg", svg); // a finished floor plan
 arch compile floorplan.arch -o floorplan.svg   # compile once (SVG, default)
 arch compile floorplan.arch -f dxf             # also: dxf · pdf · png
 arch compile floorplan.arch -w 1000            # set output width (px)
+arch preview floorplan.arch -o floorplan.png   # render a viewable PNG (1600px; --install fetches resvg if missing)
+arch batch   a.arch b.arch -o out/             # render many files/variants at once
+arch md      notes.md -o out.md                # render fenced arch blocks in Markdown → image links
 arch watch   floorplan.arch                     # recompile on save
 arch fmt     floorplan.arch --write             # format source in place
+arch manifest                                   # the whole CLI API as structured data (for agents)
 arch explain E_LAYOUT_CYCLE                      # explain a diagnostic
 ```
 
@@ -143,15 +147,20 @@ schema sits in the window permanently.)* Point your agent at [`SKILL.md`](SKILL.
 
 ```bash
 npx @chanmeng666/archlang spec                 # the WHOLE language in one page (~2k tokens) — read first
+npx @chanmeng666/archlang manifest --json      # the whole CLI API as data: commands, flags, formats, lint rules, error codes
 npx @chanmeng666/archlang compile plan.arch -o out.svg --json   # render; JSON: { ok, diagnostics, summary }
 echo '<source>' | npx @chanmeng666/archlang compile - -o - -f svg   # stdin → SVG on stdout
+npx @chanmeng666/archlang preview plan.arch -o out.png --json  # render a PNG you can SHOW the user (--install fetches resvg if missing)
 npx @chanmeng666/archlang describe plan.arch --json            # verify: rooms, areas, adjacency, door connections
 npx @chanmeng666/archlang lint plan.arch --json                # architectural soundness warnings
+npx @chanmeng666/archlang batch a.arch b.arch -f svg --json    # render many variants at once → results[]
+npx @chanmeng666/archlang md notes.md -o out.md -f svg         # render fenced arch blocks in Markdown → image links
 ```
 
 The loop: `spec` → write `.arch` → `compile --json` → on `ok:false` fix via each
 `diagnostics[].fix` → `describe --json` to confirm intent (room count, areas, adjacency) **without
-rendering an image**.
+rendering an image** → `preview` to show the user a raster. `manifest --json` is the one-call API
+map; `batch`/`md` cover variant exploration and embedding plans in docs.
 
 **A taste of the language** (see [`examples/`](examples) and the
 [Language Reference](docs/language-reference.md)):

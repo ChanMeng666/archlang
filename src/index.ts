@@ -57,6 +57,14 @@ export type { LintOptions, LintRuleset } from "./lint.js";
 // Explicit opt-in source-to-source corrector (ADR 0006): never part of compile().
 export { repair } from "./repair.js";
 export type { RepairResult, RepairChange, RepairNote } from "./repair.js";
+// CLI capability manifest (v1.8): the whole `arch` API surface as structured data,
+// for agent discovery (`arch manifest --json`). Pure; assembles existing exports.
+export { buildManifest, MANIFEST_COMMAND_NAMES } from "./manifest.js";
+export type { Manifest, ManifestCommand, ManifestFlag } from "./manifest.js";
+// Markdown embedding (v1.8): extract ```arch blocks and rewrite them to image
+// links. Pure text helpers behind `arch md`.
+export { extractArchBlocks, rewriteMarkdown } from "./markdown.js";
+export type { ArchBlock } from "./markdown.js";
 // Language services (v0.11): pure LSP core (hover/completion/definition/rename/
 // signature help) over the CST cursor + registry schemas. The VS Code server is
 // a thin adapter; these are isomorphic and unit-testable.

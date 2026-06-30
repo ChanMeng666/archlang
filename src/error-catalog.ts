@@ -160,6 +160,10 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "A cased opening's width evaluated to zero or a negative number.",
     "Give the opening a positive `width`.",
     "opening at (0,0) width 0   # error"),
+  E_PNG_DEPENDENCY: E("E_PNG_DEPENDENCY", "PNG/PDF export needs an optional dependency that is not installed.",
+    "Rendering to PNG needs `@resvg/resvg-js` (PDF needs `pdfkit`); the optional binary is absent in this environment (it is not bundled, to keep the core zero-dependency).",
+    "Install the optional dependency (`npm install @resvg/resvg-js`), or re-run with `--install` to fetch it automatically, or render to SVG/DXF (zero-dependency).",
+    "arch preview plan.arch --install   # fetches @resvg/resvg-js, then renders the PNG"),
 
   W_DOOR_OFF_WALL: W("W_DOOR_OFF_WALL", "Door does not lie on any wall.",
     "A door's position is not within tolerance of any wall segment, so it has no host.",

@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-07-01
+
+### Added — agent CLI ergonomics (mermaid-cli-inspired): preview · batch · md · manifest
+
+Four additive commands close the gaps between the `arch` CLI and a frictionless agent workflow,
+without touching the zero-runtime-dependency, deterministic core:
+
+- **`arch preview <plan> -o out.png`** — render a PNG an agent can *look at*, PNG-first at `scale 2`.
+  Zero-install where the optional `@resvg/resvg-js` binary is present (a normal `npm i`/`npx`
+  installs it); when it is genuinely absent the failure is the catalogued, self-correcting
+  **`E_PNG_DEPENDENCY`** (with a `fix`) instead of an opaque thrown error, and `--install` fetches
+  the dep (detecting npm/pnpm/yarn) and retries. The auto-install is the one opt-in, networked CLI
+  action — confined to the CLI seam, never the core.
+- **`arch batch <a.arch> <b.arch> …`** — render many files concurrently (`-j` jobs, default CPU
+  count; `-o <dir>`), with a stable `{ ok, results: [...] }` JSON shape for exploring design variants.
+- **`arch md <doc.md> -o out.md`** — render every ` ```arch ` block in a Markdown file and rewrite
+  each to an image link (mermaid-cli's markdown mode). Pure `extractArchBlocks`/`rewriteMarkdown`
+  helpers back it.
+- **`arch manifest --json`** (alias `capabilities`) — the whole CLI API as one structured document
+  (commands, flags, formats + their optional deps, elements, keywords, lint profiles, fixture
+  categories, error codes) so an agent discovers the surface without parsing prose. A drift test
+  keeps it in lockstep with the command dispatch and the fixture glyphs.
+
+`spec.llm.md` (`arch spec`), `SKILL.md`, and the README agent section document the new commands;
+`--install` is opt-in and the core stays zero-dependency.
+
 ## [1.7.1] - 2026-06-30
 
 ### Added — agent guidance: repair topology (doors/windows) from the access graph

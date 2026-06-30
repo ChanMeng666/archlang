@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**34 errors** · **27 warnings**
+**35 errors** · **27 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -32,6 +32,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_LAYOUT_CYCLE`](#e_layout_cycle) | error | Relational room placement forms a cycle. |
 | [`E_LAYOUT_REF`](#e_layout_ref) | error | Relational placement references an unknown room. |
 | [`E_OPENING_WIDTH`](#e_opening_width) | error | Opening must have a positive width. |
+| [`E_PNG_DEPENDENCY`](#e_png_dependency) | error | PNG/PDF export needs an optional dependency that is not installed. |
 | [`E_RANGE_LIMIT`](#e_range_limit) | error | Range too large. |
 | [`E_RECURSION`](#e_recursion) | error | Component recursion too deep. |
 | [`E_REDEF`](#e_redef) | error | Name already defined in this scope. |
@@ -349,6 +350,18 @@ room id=k right-of ghost size 100x100   # error: no room "ghost"
 
 ```arch
 opening at (0,0) width 0   # error
+```
+
+## E_PNG_DEPENDENCY
+
+*error* — PNG/PDF export needs an optional dependency that is not installed.
+
+**Cause.** Rendering to PNG needs `@resvg/resvg-js` (PDF needs `pdfkit`); the optional binary is absent in this environment (it is not bundled, to keep the core zero-dependency).
+
+**Fix.** Install the optional dependency (`npm install @resvg/resvg-js`), or re-run with `--install` to fetch it automatically, or render to SVG/DXF (zero-dependency).
+
+```arch
+arch preview plan.arch --install   # fetches @resvg/resvg-js, then renders the PNG
 ```
 
 ## E_RANGE_LIMIT

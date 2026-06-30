@@ -27,9 +27,15 @@ npx @chanmeng666/archlang help
    areas, adjacency), what each door/window/**opening** connects, the furniture, an **access graph**
    (entrances, per-room reachability and depth), and totals. Confirm the room count, labels, and
    areas match the brief.
-6. **Check soundness** — `arch lint plan.arch --json` flags habitability problems (a room with no
+6. **Show the user the result** — `arch preview plan.arch -o plan.png` renders a viewable PNG
+   (~1600px, legible enough for your own vision *and* small enough to ingest). Zero-install where the
+   optional renderer is present; if it reports `E_PNG_DEPENDENCY`, re-run with `--install`.
+7. **Check soundness** — `arch lint plan.arch --json` flags habitability problems (a room with no
    door, a windowless bedroom, an implausibly small room, a too-narrow door, no entrance, a fixture
    floating off the wall). Tighten the bar with `--profile accessibility-advisory`.
+
+Discover the whole API in one call with `arch manifest --json` (commands, flags, formats, lint
+profiles, fixture categories, error codes) — no prose-parsing required.
 
 See [Analysis: describe & lint](/analysis) for the full output shapes, the access graph fields, and
 the complete rule list.
@@ -42,13 +48,18 @@ IO/internal · `3` bad usage. Every JSON diagnostic carries the catalog **`fix`*
 
 ```bash
 arch spec                              # the whole language in one page — read first
+arch manifest --json                   # the whole CLI API as data: commands, flags, formats, lint rules, error codes
 arch compile plan.arch -o out.svg --json   # render (also -f dxf|pdf|png)
 echo '<source>' | arch compile - -o - -f svg   # compile stdin → SVG on stdout
+arch preview plan.arch -o plan.png --json  # render a viewable PNG to SHOW the user (--install fetches resvg if missing)
 arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, connections, access graph
 arch lint plan.arch --json             # architectural soundness warnings (default profile)
 arch lint plan.arch --profile accessibility-advisory --json   # stricter: ≥850mm doors, ≥5m² rooms
 arch validate plan.arch --json         # parse + resolve + lint, no render
 arch fmt plan.arch --write             # canonical formatting
+arch repair plan.arch -o fixed.arch    # corrector: furniture out of walls/doorways/swings + change log
+arch batch a.arch b.arch -f svg --json # render many plans/variants at once → results[]
+arch md notes.md -o out.md -f svg      # render fenced arch blocks in a Markdown file → image links
 arch new -o plan.arch                  # scaffold a starter plan
 arch explain E_ROOM_SIZE --json        # look up any diagnostic code
 ```
