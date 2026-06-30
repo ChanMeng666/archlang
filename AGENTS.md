@@ -18,17 +18,22 @@ not a work-in-progress. Treat the live artifacts below as the source of truth.
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.6.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.7.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md` |
 | **VS Code extension** | `ChanMeng.archlang@0.3.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.6.0` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 465 passing (51 files); typecheck + build clean | — |
+| **Git** | `main`, tags `v1.0.0` → `v1.7.0` (latest) | github.com/ChanMeng666/archlang |
+| **Tests** | 466 passing (51 files); typecheck + build clean | — |
 
-**Latest release — v1.6.0 (`arch repair` separates overlaps + relocates wrong-room fixtures).** The
-corrector now fixes five furniture-placement faults via a global fixpoint (priority wall → wrong-room
-→ overlap → doorway → floating), deterministic and report-don't-guess (ADR 0006).
+**Latest release — v1.7.0 (`arch repair` also clears door-swing arcs).** The corrector now fixes six
+furniture-placement faults via a global fixpoint (priority wall → wrong-room → overlap → doorway →
+swing → floating), deterministic and report-don't-guess (ADR 0006). On the motivating plans it drives
+every furniture-placement and swing warning to zero.
+
+**v1.6.0 (`arch repair` separates overlaps + relocates wrong-room fixtures).** The
+corrector fixes furniture-placement faults via a global fixpoint, deterministic and report-don't-guess
+(ADR 0006).
 
 **v1.5.0 (`arch repair` clears doorways + snaps floating fixtures).** The corrector
 iterates each piece to a stable position across closed-form fixes, converges, and reports rather than

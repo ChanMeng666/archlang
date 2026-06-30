@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-06-30
+
 ### Changed — `arch repair` also clears door-swing arcs
 
 `arch repair` now fixes six furniture-placement faults (was five): a piece sitting in a
