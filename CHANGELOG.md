@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `arch repair` also clears door-swing arcs
+
+`arch repair` now fixes six furniture-placement faults (was five): a piece sitting in a
+door's **swing arc** (`W_SWING_OBSTRUCTED`) is moved out of the quarter-disc the leaf
+sweeps. Because the swing is a 90° sector (not a box), the minimal clearing shift along
+each axis is found by grid-stepping against the *same* predicate the lint uses
+(`sectorIntersectsRect`), so repair clears exactly what the warning flags — preferring a
+shift that doesn't drive the piece into a wall, reporting an exact tie. Priority is now
+wall → wrong-room → overlap → doorway → **swing** → floating. On the three motivating
+ArchCanvas plans, repair now drives every furniture-placement *and* swing warning to zero.
+
 ## [1.6.0] - 2026-06-30
 
 ### Changed — `arch repair` also separates overlaps and relocates wrong-room fixtures

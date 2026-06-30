@@ -14,7 +14,8 @@
  *   3. two **overlapping** pieces → the later one separated off the earlier;
  *   4. a piece in a **door's clear landing** → pushed out, preferring an exit that
  *      doesn't drive it into a wall;
- *   5. a wall-requiring **fixture floating** mid-room → snapped onto the nearest wall.
+ *   5. a piece in a **door's swing arc** → moved out of the quarter-disc the leaf sweeps;
+ *   6. a wall-requiring **fixture floating** mid-room → snapped onto the nearest wall.
  *
  * A global fixpoint iterates every piece (in source order, so overlap separation has a
  * deterministic mover) until nothing moves. A piece that would cycle, sits with no
@@ -27,7 +28,7 @@
 import { parse } from "./parser.js";
 import { formatPlan } from "./format.js";
 import { resolvePlan, overlap1d, isAgainstWall, type BBox } from "./analyze.js";
-import { segmentsOfWall } from "./geometry.js";
+import { segmentsOfWall, doorSwing, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
 import { DEFAULT_RULESET } from "./lint.js";
 import { requiresWall } from "./fixtures-catalog.js";
 import type { RWall, RDoor, RRoom } from "./ir.js";
@@ -224,6 +225,39 @@ function computeFloatingSnap(fr: BBox, walls: RWall[], grid: number): { dx: numb
   return { dx: best.dx, dy: best.dy };
 }
 
+/** Move `fr` out of every door-swing quarter-disc it sits in. The swing is a 90°
+ *  sector (not an AABB), so the minimal clearing distance along each axis is found by
+ *  grid-stepping against the *same* predicate the lint uses (`sectorIntersectsRect`) —
+ *  so repair clears exactly what `W_SWING_OBSTRUCTED` flags. The smallest clearing
+ *  shift wins, preferring one that doesn't drive the piece into a wall; an exact tie is
+ *  "ambiguous". Bounded: the disc has radius = door width, so a shift past it always
+ *  clears. */
+function computeSwingPush(fr: BBox, swings: DoorSwing[], walls: RWall[], grid: number): { dx: number; dy: number } | "ambiguous" | null {
+  const clr = DEFAULT_RULESET.swingClearanceMm;
+  const hit = swings.filter((s) => sectorIntersectsRect(s, fr, clr));
+  if (hit.length === 0 || grid <= 0) return null;
+  const maxR = Math.max(...hit.map((s) => s.radius));
+  const bound = 2 * maxR + Math.max(fr.w, fr.h) + 4 * grid;
+  let best: { shift: number; clean: boolean; dx: number; dy: number } | null = null;
+  let tie = false;
+  for (const [ux, uy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+    for (let k = grid; k <= bound; k += grid) {
+      const cand: BBox = { x: fr.x + ux * k, y: fr.y + uy * k, w: fr.w, h: fr.h };
+      if (hit.some((s) => sectorIntersectsRect(s, cand, clr))) continue;
+      const c = { shift: k, clean: !hitsWall(cand, walls), dx: ux * k, dy: uy * k };
+      const better = (c.clean && !(best?.clean ?? false)) ||
+        (best !== null && c.clean === best.clean && c.shift < best.shift - 1e-6);
+      const equal = best !== null && c.clean === best.clean && Math.abs(c.shift - best.shift) <= 1e-6;
+      if (!best || better) { best = c; tie = false; }
+      else if (equal && (c.dx !== best.dx || c.dy !== best.dy)) tie = true;
+      break; // first clearing step in this direction is its minimal shift
+    }
+  }
+  if (!best) return null;
+  if (tie) return "ambiguous";
+  return { dx: best.dx, dy: best.dy };
+}
+
 /** Move a fixture declared `in <room>` whose footprint has drifted out of that room
  *  back inside it — fully inside when it fits, else centred. Closed-form; null when it
  *  already sits in the room. */
@@ -289,6 +323,7 @@ interface FixCtx {
   earlier: BBox[];
   walls: RWall[];
   landings: BBox[];
+  swings: DoorSwing[];
   grid: number;
 }
 
@@ -312,6 +347,10 @@ function nextFix(fr: BBox, ctx: FixCtx): NextFix {
   const door = computeDoorwayPush(fr, ctx.landings, ctx.walls, ctx.grid);
   if (door === "ambiguous") return { ambiguous: "sits centred in a doorway — move it aside manually" };
   if (door) return { dx: door.dx, dy: door.dy, reason: "cleared the doorway approach" };
+
+  const swing = computeSwingPush(fr, ctx.swings, ctx.walls, ctx.grid);
+  if (swing === "ambiguous") return { ambiguous: "sits in a door's swing with no clear way out — move it manually" };
+  if (swing) return { dx: swing.dx, dy: swing.dy, reason: "moved out of a door's swing" };
 
   if (requiresWall(ctx.category) && !isAgainstWall(fr, ctx.walls, DEFAULT_RULESET.fixtureWallTolMm)) {
     const snap = computeFloatingSnap(fr, ctx.walls, ctx.grid);
@@ -353,6 +392,7 @@ export function repair(source: string): RepairResult {
   const walls = ir?.walls ?? [];
   const doors = (ir?.elements ?? []).filter((e): e is RDoor => e.kind === "door");
   const landings = doors.map((d) => landingOf(d, DEFAULT_RULESET.doorwayLandingMm)).filter((l): l is BBox => l !== null);
+  const swings = doors.map((d) => doorSwing(d)).filter((s): s is DoorSwing => s !== null);
   const roomRects = new Map<string, BBox>(
     (ir?.elements ?? []).filter((e): e is RRoom => e.kind === "room").map((r) => [r.id, { x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h }]),
   );
@@ -391,7 +431,7 @@ export function repair(source: string): RepairResult {
       if (p.stuck) continue;
       const fr = rectOfPiece(p);
       const earlier = pieces.slice(0, i).map(rectOfPiece);
-      const fix = nextFix(fr, { category: p.f.category, room: p.room, earlier, walls, landings, grid });
+      const fix = nextFix(fr, { category: p.f.category, room: p.room, earlier, walls, landings, swings, grid });
       if (fix === null) continue;
       if ("ambiguous" in fix) { note(p.id, fix.ambiguous); p.stuck = true; continue; }
       const next = { x: p.cur.x + fix.dx, y: p.cur.y + fix.dy };

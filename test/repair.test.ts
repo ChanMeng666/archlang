@@ -49,6 +49,22 @@ describe("arch repair", () => {
     expect(has(r.source, "W_DOORWAY_BLOCKED")).toBe(false);
   });
 
+  it("moves furniture out of a door's swing arc", () => {
+    const src = `plan "P" {
+      units mm grid 50
+      wall exterior thickness 200 { (0,0) (5000,0) (5000,5000) (0,5000) close }
+      room id=r at (0,0) size 5000x5000 label "R"
+      door at (1000,5000) width 1000 wall exterior hinge left swing in
+      window at (3000,0) width 1200 wall exterior
+      furniture sofa at (600,3800) size 1600x900
+    }`;
+    expect(has(src, "W_SWING_OBSTRUCTED")).toBe(true);
+    const r = repair(src);
+    expect(r.changed).toBe(true);
+    expect(r.changes[0].reason).toContain("swing");
+    expect(has(r.source, "W_SWING_OBSTRUCTED")).toBe(false);
+  });
+
   it("snaps a floating wall-fixture onto the nearest wall", () => {
     const src = `plan "P" {
       units mm grid 50
