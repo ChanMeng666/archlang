@@ -62,6 +62,57 @@ door). Avoid that by construction:
 - **Verify, then gate.** `arch describe --json` to confirm the intent (rooms, areas, access graph),
   then `arch validate --strict --json` to prove it's sound before you ship.
 
+## Fix the topology: add doors & windows from the access graph
+
+`arch repair` corrects **furniture** placement, but it never adds a door or a window — *where* to put
+one is a design choice the compiler must not make (it would be guessing among valid options). That is
+**your** job, and `arch describe --json` gives you the facts to do it deterministically. Do this when
+lint reports `W_ROOM_UNREACHABLE`, `W_ROOM_DISCONNECTED`, `W_NO_ENTRANCE`, `W_BATH_VIA_BEDROOM`, or
+`W_BEDROOM_NO_WINDOW`.
+
+1. **Read the facts.** From `describe()`: `access.rooms[]` gives each room's `reachable` +
+   `depthFromEntrance`; `rooms[]` gives each room's `bbox {x,y,w,h}`, `uses`, and `adjacent` ids;
+   `doors[]`/`openings[]` give `between`. The building extent is `minX = min(room.x)`,
+   `maxX = max(room.x + room.w)` (same for y) — a room edge lying on it is an **exterior** wall.
+
+2. **Connect every unreachable room**, choosing in priority:
+   1. If the room (or its open-plan group) has an exterior edge and reads as **living / kitchen / hall /
+      entry**, add a new exterior **entrance** `door` there. Best for the main space — and it avoids
+      routing circulation through a bedroom.
+   2. Else add a `door` (or cased `opening`) on the **shared wall** with an adjacent **reachable,
+      non-bedroom** room.
+   3. Never make a bathroom reachable *only* through a bedroom (`W_BATH_VIA_BEDROOM`) — prefer (1) for
+      the whole cut-off group.
+
+3. **Coordinates** — the `at` must sit on the wall centerline:
+   - **Exterior door** on room R: on its left edge (`R.x == minX`) → `door at (R.x, R.y + R.h/2) …
+     wall exterior`; right → `x = R.x + R.w`; top (`R.y == minY`) → `at (R.x + R.w/2, R.y)`; bottom →
+     `y = R.y + R.h`. Slide it along the wall to clear existing windows/doors. `width 900`.
+   - **Shared-wall door** between A and B: vertical shared edge at `x = X` over y-overlap `[lo,hi]` →
+     `door at (X, (lo+hi)/2)`; horizontal at `y = Y` over x-overlap → `door at ((lo+hi)/2, Y)`.
+     `width ≥ 800`.
+   - **Bedroom window**: pick an exterior edge of the bedroom and centre a `window … width 1200` on it,
+     clear of any door on that wall.
+
+4. **Re-repair, then gate.** A new door may now have furniture in its swing/landing — run
+   `arch repair` again, then `arch validate --strict --json`. Repeat until `ok: true`.
+
+> An *existing* door/window/opening that `validate` reports **off any wall**
+> (`W_DOOR_OFF_WALL` / `W_WINDOW_OFF_WALL` / `W_OPENING_OFF_WALL`) is a different fault — a
+> generator mis-coordinate, not a missing connector. Move its `at` onto the nearest wall
+> centerline (or delete it if your new doors already make the room reachable).
+
+**Worked example.** A studio where the bathroom + living were a cut-off pair (only a `living↔bath`
+door) and the bedroom held the sole entrance. `describe` shows `r_living`/`r_bath` `reachable:false`.
+One exterior entrance into the living/kitchen + a bedroom window makes the whole plan sound:
+
+```
+door   at (0,1500) width 900 wall exterior hinge left swing in   # entrance into Living/Kitchen (left exterior wall)
+window at (0,4500) width 1200 wall exterior                      # bedroom window (left exterior wall, below the door)
+```
+
+→ `arch repair` → `arch validate --strict` → `ok: true` (all rooms reachable, bedroom lit).
+
 ## Commands
 
 ```bash
