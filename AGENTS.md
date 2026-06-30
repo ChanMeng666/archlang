@@ -18,15 +18,19 @@ not a work-in-progress. Treat the live artifacts below as the source of truth.
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.7.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.7.1` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md` |
 | **VS Code extension** | `ChanMeng.archlang@0.3.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.7.0` (latest) | github.com/ChanMeng666/archlang |
+| **Git** | `main`, tags `v1.0.0` → `v1.7.1` (latest) | github.com/ChanMeng666/archlang |
 | **Tests** | 466 passing (51 files); typecheck + build clean | — |
 
-**Latest release — v1.7.0 (`arch repair` also clears door-swing arcs).** The corrector now fixes six
+**Latest release — v1.7.1** (docs: `SKILL.md` adds a verified agent procedure to repair plan
+**topology** — make every room reachable & every bedroom lit by adding doors/windows from the
+`describe` access graph; the design choice stays in the agent layer per ADR 0005. No core change.)
+
+**v1.7.0 (`arch repair` also clears door-swing arcs).** The corrector now fixes six
 furniture-placement faults via a global fixpoint (priority wall → wrong-room → overlap → doorway →
 swing → floating), deterministic and report-don't-guess (ADR 0006). On the motivating plans it drives
 every furniture-placement and swing warning to zero.
