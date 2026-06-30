@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-06-30
+
 ### Changed — `arch repair` also separates overlaps and relocates wrong-room fixtures
 
 `arch repair` now fixes five furniture-placement faults (was three), via a global
