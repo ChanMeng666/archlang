@@ -72,7 +72,7 @@ arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency
 arch lint plan.arch --json             # architectural soundness warnings
 arch validate plan.arch --strict --json   # parse + resolve + lint; --strict fails on warnings too (the ship gate)
 arch fmt plan.arch --write             # canonical formatting
-arch repair plan.arch -o fixed.arch    # emit corrected source (furniture pushed out of walls) + change log
+arch repair plan.arch -o fixed.arch    # emit corrected source (furniture out of walls/doorways, fixtures snapped to walls) + change log
 arch new -o plan.arch                  # scaffold a starter plan
 arch explain E_ROOM_SIZE --json        # look up any diagnostic code
 ```

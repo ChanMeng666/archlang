@@ -80,7 +80,7 @@ describe("CLI — agent contract", () => {
     const j = JSON.parse(r.stdout);
     expect(j.ok).toBe(true);
     expect(j.changed).toBe(true);
-    expect(j.changes[0].kind).toBe("moved-out-of-wall");
+    expect(j.changes[0].kind).toBe("moved");
     expect(typeof j.source).toBe("string");
   }, 30000);
 

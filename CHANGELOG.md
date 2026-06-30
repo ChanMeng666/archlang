@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `arch repair` now fixes all three furniture-placement faults
+
+`arch repair` previously only pushed furniture out of walls. It now iterates each piece
+to a stable position across three closed-form fixes (priority wall → doorway → floating):
+
+- **Clears door landings** — a piece in a door's clear approach is pushed out, preferring
+  an exit that doesn't drive it into a wall (so a fixture by a doorway moves into the room,
+  not into the wall behind it).
+- **Snaps floating fixtures** — a wall-requiring fixture floating mid-room is snapped onto
+  its nearest wall (within a sane distance; farther pieces are reported, not dragged).
+- **Convergence + honest reporting** — a piece that would cycle, sits with no majority
+  side, or floats too far is left at its best position and reported in `unresolved`.
+
+On the three motivating ArchCanvas plans, `arch repair` now drives every furniture
+placement warning (`W_FURNITURE_WALL_COLLISION` / `W_DOORWAY_BLOCKED` /
+`W_FIXTURE_FLOATING`) to **zero**, and is idempotent.
+
+`RepairChange.kind` is now `"moved"` (a single move may combine fixes); the per-piece
+`reason` string summarises every fix applied.
+
 ## [1.4.0] - 2026-06-30
 
 ### Added — physical-correctness & circulation (Claude × Codex adversarial pass)
