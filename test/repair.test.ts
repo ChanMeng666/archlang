@@ -64,6 +64,27 @@ describe("arch repair", () => {
     expect(has(r.source, "W_FIXTURE_FLOATING")).toBe(false);
   });
 
+  it("separates two overlapping pieces (the later one yields)", () => {
+    const src = split(`furniture sofa at (300,300) size 1500x900\n    furniture table at (800,500) size 1000x900`);
+    expect(has(src, "W_FURNITURE_OVERLAP")).toBe(true);
+    const r = repair(src);
+    expect(r.changed).toBe(true);
+    // The earlier piece (sofa) is the anchor; the later (table) is the mover.
+    expect(r.changes.map((c) => c.id.replace(/#.*/, ""))).toContain("table");
+    expect(r.changes.every((c) => !c.id.startsWith("sofa"))).toBe(true);
+    expect(has(r.source, "W_FURNITURE_OVERLAP")).toBe(false);
+  });
+
+  it("moves a fixture into its declared room", () => {
+    // wc declared `in b` but placed in room a's area.
+    const src = split(`furniture wc at (200,200) size 400x700 in b`);
+    expect(has(src, "W_FIXTURE_WRONG_ROOM")).toBe(true);
+    const r = repair(src);
+    expect(r.changed).toBe(true);
+    expect(r.changes[0].reason).toContain("declared room");
+    expect(has(r.source, "W_FIXTURE_WRONG_ROOM")).toBe(false);
+  });
+
   it("is idempotent — repairing a fixed plan makes no further change", () => {
     const r1 = repair(split(`furniture sofa at (3200,1000) size 1000x900`));
     const r2 = repair(r1.source);

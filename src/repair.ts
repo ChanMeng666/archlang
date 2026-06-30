@@ -7,19 +7,21 @@
  * its output is *new `.arch` source plus a change log* the author reviews — never an
  * invisible render-time edit.
  *
- * It fixes the three furniture-placement faults a geometry-blind generator produces,
- * each by a closed-form move (no search, no optimizer):
+ * It fixes the furniture-placement faults a geometry-blind generator produces, each by
+ * a closed-form move (no search, no optimizer), applied in priority order:
  *   1. a piece drawn **through a wall** → pushed flush against the nearest face;
- *   2. a piece in a **door's clear landing** → pushed out of the approach, preferring
- *      an exit that doesn't drive it into a wall;
- *   3. a wall-requiring **fixture floating** mid-room → snapped onto the nearest wall.
+ *   2. a fixture outside its declared `in <room>` → moved back inside that room;
+ *   3. two **overlapping** pieces → the later one separated off the earlier;
+ *   4. a piece in a **door's clear landing** → pushed out, preferring an exit that
+ *      doesn't drive it into a wall;
+ *   5. a wall-requiring **fixture floating** mid-room → snapped onto the nearest wall.
  *
- * Each piece is iterated to a stable position (wall → doorway → floating priority); a
- * piece that would have to cycle, that sits with no majority side, or that floats too
- * far from any wall is left at its best position and **reported** — repair never
- * guesses among equal options. Pieces placed `against wall` or with non-literal
- * coordinates are untouched. Pure: parse → resolve (wall/door geometry) → mutate the
- * parsed AST → re-emit via the formatter. No I/O, no time, deterministic.
+ * A global fixpoint iterates every piece (in source order, so overlap separation has a
+ * deterministic mover) until nothing moves. A piece that would cycle, sits with no
+ * majority side, or floats too far is left at its best position and **reported** —
+ * repair never guesses among equal options. Pieces placed `against wall` or with
+ * non-literal coordinates are untouched. Pure: parse → resolve (wall/door/room
+ * geometry) → mutate the parsed AST → re-emit via the formatter. No I/O, deterministic.
  */
 
 import { parse } from "./parser.js";
@@ -28,7 +30,7 @@ import { resolvePlan, overlap1d, isAgainstWall, type BBox } from "./analyze.js";
 import { segmentsOfWall } from "./geometry.js";
 import { DEFAULT_RULESET } from "./lint.js";
 import { requiresWall } from "./fixtures-catalog.js";
-import type { RWall, RDoor } from "./ir.js";
+import type { RWall, RDoor, RRoom } from "./ir.js";
 import type { FurnitureNode } from "./ast.js";
 import type { Expr } from "./expr.js";
 
@@ -36,8 +38,6 @@ import type { Expr } from "./expr.js";
 const SLACK_MM = 30;
 /** How far (mm) a floating fixture may be from a wall and still be auto-snapped to it. */
 const MAX_SNAP_MM = 1200;
-/** Safety cap on per-piece iterations (a stuck piece is reported, not thrashed). */
-const MAX_STEPS = 8;
 
 export interface RepairChange {
   id: string;
@@ -224,24 +224,97 @@ function computeFloatingSnap(fr: BBox, walls: RWall[], grid: number): { dx: numb
   return { dx: best.dx, dy: best.dy };
 }
 
+/** Move a fixture declared `in <room>` whose footprint has drifted out of that room
+ *  back inside it — fully inside when it fits, else centred. Closed-form; null when it
+ *  already sits in the room. */
+function computeWrongRoomPush(fr: BBox, room: BBox, grid: number): { dx: number; dy: number } | null {
+  const cx = fr.x + fr.w / 2;
+  const cy = fr.y + fr.h / 2;
+  if (cx >= room.x && cx <= room.x + room.w && cy >= room.y && cy <= room.y + room.h) return null; // centre inside
+  const fitX = fr.w <= room.w
+    ? Math.min(Math.max(fr.x, room.x), room.x + room.w - fr.w)
+    : room.x + (room.w - fr.w) / 2;
+  const fitY = fr.h <= room.h
+    ? Math.min(Math.max(fr.y, room.y), room.y + room.h - fr.h)
+    : room.y + (room.h - fr.h) / 2;
+  const snap = (v: number, lo: number, hi: number): number => {
+    if (grid <= 0) return v;
+    const r = Math.round(v / grid) * grid;
+    return Math.min(Math.max(r, lo), hi); // keep inside after snapping
+  };
+  const newX = snap(fitX, room.x, room.x + Math.max(0, room.w - fr.w));
+  const newY = snap(fitY, room.y, room.y + Math.max(0, room.h - fr.h));
+  if (newX === fr.x && newY === fr.y) return null;
+  return { dx: newX - fr.x, dy: newY - fr.y };
+}
+
+/** Separate `fr` from the earlier-placed piece it most overlaps, pushing it along the
+ *  axis of least overlap away from that piece's centre. "ambiguous" when the centres
+ *  coincide on the chosen axis; null when it overlaps nothing. `others` are the rects
+ *  this piece must yield to (earlier in source order — a deterministic mover order so
+ *  a pair never chases itself). */
+function computeOverlapPush(fr: BBox, others: BBox[], grid: number): { dx: number; dy: number } | "ambiguous" | null {
+  let worst: { o: BBox; ox: number; oy: number; area: number } | null = null;
+  for (const o of others) {
+    const ox = Math.min(fr.x + fr.w, o.x + o.w) - Math.max(fr.x, o.x);
+    const oy = Math.min(fr.y + fr.h, o.y + o.h) - Math.max(fr.y, o.y);
+    if (ox <= 1 || oy <= 1) continue;
+    const area = ox * oy;
+    if (!worst || area > worst.area) worst = { o, ox, oy, area };
+  }
+  if (!worst) return null;
+  const { o, ox, oy } = worst;
+  const cxF = fr.x + fr.w / 2, cyF = fr.y + fr.h / 2;
+  const cxO = o.x + o.w / 2, cyO = o.y + o.h / 2;
+  // Push along the smaller overlap; on a tie use the axis whose centres differ.
+  const useX = ox < oy || (ox === oy && cxF !== cxO);
+  if (useX) {
+    if (cxF === cxO) return "ambiguous";
+    const newX = cxF > cxO ? snapOut(fr.x + ox, +1, grid) : snapOut(fr.x - ox, -1, grid);
+    return { dx: newX - fr.x, dy: 0 };
+  }
+  if (cyF === cyO) return "ambiguous";
+  const newY = cyF > cyO ? snapOut(fr.y + oy, +1, grid) : snapOut(fr.y - oy, -1, grid);
+  return { dx: 0, dy: newY - fr.y };
+}
+
 // ---- the corrector ------------------------------------------------------------
 
 interface Fix { dx: number; dy: number; reason: string }
 type NextFix = Fix | { ambiguous: string } | null;
 
-/** The single highest-priority fix for a piece at rect `fr`: wall, then doorway, then
- *  (for a wall-requiring fixture) snap-to-wall. */
-function nextFix(fr: BBox, category: string, walls: RWall[], landings: BBox[], grid: number): NextFix {
-  const wall = computeWallPush(fr, walls, grid);
+interface FixCtx {
+  category: string;
+  room?: BBox;
+  earlier: BBox[];
+  walls: RWall[];
+  landings: BBox[];
+  grid: number;
+}
+
+/** The single highest-priority fix for a piece at rect `fr`, in order: out of a wall,
+ *  into its declared room, off an overlapping neighbour, out of a doorway, then (for a
+ *  wall-fixture) snapped to a wall. */
+function nextFix(fr: BBox, ctx: FixCtx): NextFix {
+  const wall = computeWallPush(fr, ctx.walls, ctx.grid);
   if (wall === "ambiguous") return { ambiguous: "is centred on a wall — move it onto one side, then re-run" };
   if (wall) return { dx: wall.dx, dy: wall.dy, reason: `pushed clear of wall "${wall.wallId}"` };
 
-  const door = computeDoorwayPush(fr, landings, walls, grid);
+  if (ctx.room) {
+    const wr = computeWrongRoomPush(fr, ctx.room, ctx.grid);
+    if (wr) return { dx: wr.dx, dy: wr.dy, reason: "moved into its declared room" };
+  }
+
+  const over = computeOverlapPush(fr, ctx.earlier, ctx.grid);
+  if (over === "ambiguous") return { ambiguous: "sits exactly on another piece — separate them manually" };
+  if (over) return { dx: over.dx, dy: over.dy, reason: "separated from an overlapping piece" };
+
+  const door = computeDoorwayPush(fr, ctx.landings, ctx.walls, ctx.grid);
   if (door === "ambiguous") return { ambiguous: "sits centred in a doorway — move it aside manually" };
   if (door) return { dx: door.dx, dy: door.dy, reason: "cleared the doorway approach" };
 
-  if (requiresWall(category) && !isAgainstWall(fr, walls, DEFAULT_RULESET.fixtureWallTolMm)) {
-    const snap = computeFloatingSnap(fr, walls, grid);
+  if (requiresWall(ctx.category) && !isAgainstWall(fr, ctx.walls, DEFAULT_RULESET.fixtureWallTolMm)) {
+    const snap = computeFloatingSnap(fr, ctx.walls, ctx.grid);
     if (snap === "ambiguous") return { ambiguous: "is equidistant from two walls — give it an explicit place" };
     if (snap === "too-far") return { ambiguous: "floats too far from any wall to snap automatically" };
     if (snap) return { dx: snap.dx, dy: snap.dy, reason: "snapped against the nearest wall" };
@@ -249,9 +322,27 @@ function nextFix(fr: BBox, category: string, walls: RWall[], landings: BBox[], g
   return null;
 }
 
+interface Piece {
+  f: FurnitureNode;
+  id: string;
+  orig: { x: number; y: number };
+  cur: { x: number; y: number };
+  w: number;
+  h: number;
+  room?: BBox;
+  visited: Set<string>;
+  reasons: string[];
+  stuck: boolean;
+}
+
+const rectOfPiece = (p: Piece): BBox => ({ x: p.cur.x, y: p.cur.y, w: p.w, h: p.h });
+
 /**
- * Correct a plan and return new source + a change log. Each top-level, literally-placed
- * piece is iterated to a stable position; anything left unfixable is reported.
+ * Correct a plan and return new source + a change log. Furniture is moved to a stable
+ * arrangement by a global fixpoint: each pass applies the highest-priority fix to each
+ * piece (in source order, so overlap separation has a deterministic mover); a piece
+ * that would cycle, or that has no unambiguous move, is left at its best position and
+ * reported. Anything left unfixable goes in `unresolved`.
  */
 export function repair(source: string): RepairResult {
   const { plan, diagnostics } = parse(source);
@@ -262,47 +353,63 @@ export function repair(source: string): RepairResult {
   const walls = ir?.walls ?? [];
   const doors = (ir?.elements ?? []).filter((e): e is RDoor => e.kind === "door");
   const landings = doors.map((d) => landingOf(d, DEFAULT_RULESET.doorwayLandingMm)).filter((l): l is BBox => l !== null);
+  const roomRects = new Map<string, BBox>(
+    (ir?.elements ?? []).filter((e): e is RRoom => e.kind === "room").map((r) => [r.id, { x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h }]),
+  );
   const grid = plan.grid;
 
-  const changes: RepairChange[] = [];
-  const unresolved: RepairNote[] = [];
+  // Collect the fixable pieces (top-level, literal `at` + size).
+  const pieces: Piece[] = [];
   let counter = 0;
-
   for (const st of plan.body) {
     if (st.kind !== "furniture") continue;
     const f = st as FurnitureNode;
     const idOf = f.id || `${f.category}#${++counter}`;
-    if (f.against || !f.at) continue; // wall-anchored placement is already closed-form
-    const ax = litNum(f.at.x);
-    const ay = litNum(f.at.y);
-    const sw = litNum(f.size?.w);
-    const sh = litNum(f.size?.h);
-    if (ax === null || ay === null || sw === null || sh === null) continue; // scripted coords
+    if (f.against || !f.at) continue;
+    const ax = litNum(f.at.x), ay = litNum(f.at.y);
+    const sw = litNum(f.size?.w), sh = litNum(f.size?.h);
+    if (ax === null || ay === null || sw === null || sh === null) continue;
+    pieces.push({
+      f, id: idOf, orig: { x: ax, y: ay }, cur: { x: ax, y: ay }, w: sw, h: sh,
+      room: f.room ? roomRects.get(f.room) : undefined,
+      visited: new Set([`${ax},${ay}`]), reasons: [], stuck: false,
+    });
+  }
 
-    const orig = { x: ax, y: ay };
-    let cur = { x: ax, y: ay };
-    const visited = new Set<string>([`${ax},${ay}`]);
-    const reasons: string[] = [];
-    for (let step = 0; step < MAX_STEPS; step++) {
-      const fr: BBox = { x: cur.x, y: cur.y, w: sw, h: sh };
-      const fix = nextFix(fr, f.category, walls, landings, grid);
-      if (fix === null) break; // stable
-      if ("ambiguous" in fix) { unresolved.push({ id: idOf, reason: fix.ambiguous }); break; }
-      const next = { x: cur.x + fix.dx, y: cur.y + fix.dy };
+  const unresolved: RepairNote[] = [];
+  const noted = new Set<string>();
+  const note = (id: string, reason: string): void => {
+    const key = `${id}|${reason}`;
+    if (!noted.has(key)) { noted.add(key); unresolved.push({ id, reason }); }
+  };
+
+  const MAX_PASSES = Math.min(64, pieces.length * 6 + 8);
+  for (let pass = 0; pass < MAX_PASSES; pass++) {
+    let moved = false;
+    for (let i = 0; i < pieces.length; i++) {
+      const p = pieces[i];
+      if (p.stuck) continue;
+      const fr = rectOfPiece(p);
+      const earlier = pieces.slice(0, i).map(rectOfPiece);
+      const fix = nextFix(fr, { category: p.f.category, room: p.room, earlier, walls, landings, grid });
+      if (fix === null) continue;
+      if ("ambiguous" in fix) { note(p.id, fix.ambiguous); p.stuck = true; continue; }
+      const next = { x: p.cur.x + fix.dx, y: p.cur.y + fix.dy };
       const key = `${next.x},${next.y}`;
-      if (visited.has(key)) { // would cycle — keep the best position so far, report
-        unresolved.push({ id: idOf, reason: "can't be placed without conflicting with a wall or door — adjust manually" });
-        break;
-      }
-      cur = next;
-      visited.add(key);
-      if (!reasons.includes(fix.reason)) reasons.push(fix.reason);
+      if (p.visited.has(key)) { note(p.id, "can't be placed without conflict — adjust manually"); p.stuck = true; continue; }
+      p.cur = next;
+      p.visited.add(key);
+      if (!p.reasons.includes(fix.reason)) p.reasons.push(fix.reason);
+      moved = true;
     }
+    if (!moved) break;
+  }
 
-    if (cur.x !== orig.x || cur.y !== orig.y) {
-      f.at = { x: numExpr(cur.x), y: numExpr(cur.y) };
-      changes.push({ id: idOf, category: f.category, kind: "moved", from: orig, to: cur, reason: reasons.join("; ") });
-    }
+  const changes: RepairChange[] = [];
+  for (const p of pieces) {
+    if (p.cur.x === p.orig.x && p.cur.y === p.orig.y) continue;
+    p.f.at = { x: numExpr(p.cur.x), y: numExpr(p.cur.y) };
+    changes.push({ id: p.id, category: p.f.category, kind: "moved", from: p.orig, to: p.cur, reason: p.reasons.join("; ") });
   }
 
   const out = changes.length ? formatPlan(plan, source) : source;

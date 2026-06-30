@@ -71,7 +71,7 @@ arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency
 arch lint plan.arch --json             # architectural soundness warnings
 arch validate plan.arch --strict --json   # parse + lint, no render; --strict fails on warnings too
 arch explain E_ROOM_SIZE --json        # look up any error code
-arch repair plan.arch -o fixed.arch    # explicit corrector: emit new source w/ furniture out of walls/doorways + fixtures snapped to walls + change log
+arch repair plan.arch -o fixed.arch    # explicit corrector: new source w/ furniture out of walls/doorways, overlaps separated, fixtures into their room + snapped to walls + change log
 ```
 
 **Self-correction loop:** compile/validate → if `ok` is false, read each `diagnostics[].fix` (and

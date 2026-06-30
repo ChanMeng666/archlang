@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `arch repair` also separates overlaps and relocates wrong-room fixtures
+
+`arch repair` now fixes five furniture-placement faults (was three), via a global
+fixpoint that iterates every piece to a stable arrangement:
+
+- **Separates overlapping pieces** (`W_FURNITURE_OVERLAP`) — the later piece in source
+  order yields, pushed along the axis of least overlap (a deterministic mover order, so
+  a pair never chases itself).
+- **Relocates a fixture to its declared room** (`W_FIXTURE_WRONG_ROOM`) — a piece placed
+  `in <room>` but drawn outside it is moved back inside (fully inside when it fits).
+
+These compose with the existing wall / doorway / floating fixes (priority: wall →
+wrong-room → overlap → doorway → floating), so e.g. a wrongly-placed fixture is moved
+into its room *and then* snapped to that room's wall in one repair. Still deterministic,
+closed-form, and report-don't-guess (cycling / ambiguous / too-far pieces go to
+`unresolved`).
+
 ## [1.5.0] - 2026-06-30
 
 ### Changed — `arch repair` now fixes all three furniture-placement faults
