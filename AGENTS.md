@@ -18,15 +18,20 @@ not a work-in-progress. Treat the live artifacts below as the source of truth.
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.4.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.5.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md` |
 | **VS Code extension** | `ChanMeng.archlang@0.3.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.4.0` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 461 passing (51 files); typecheck + build clean | — |
+| **Git** | `main`, tags `v1.0.0` → `v1.5.0` (latest) | github.com/ChanMeng666/archlang |
+| **Tests** | 463 passing (51 files); typecheck + build clean | — |
 
-**Latest release — v1.4.0 (physical-correctness & circulation; a 2nd Claude × Codex pass).**
+**Latest release — v1.5.0 (`arch repair` clears doorways + snaps floating fixtures).** The corrector
+now iterates each piece to a stable position across three closed-form fixes (wall → doorway →
+floating), converges, and reports rather than guesses (ADR 0006). On the motivating plans it drives
+every furniture-placement warning to zero.
+
+**v1.4.0 (physical-correctness & circulation; a 2nd Claude × Codex pass).**
 The compiler stays a faithful deterministic renderer; corrective arranging is an **explicit
 source-to-source transform** (`arch repair`), never invisible render behavior (see ADR 0006). v1.4
 adds: **`dims auto walls`** + per-room dims in the page margin; lint **`W_FURNITURE_WALL_COLLISION`**,

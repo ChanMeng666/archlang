@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-06-30
+
 ### Changed — `arch repair` now fixes all three furniture-placement faults
 
 `arch repair` previously only pushed furniture out of walls. It now iterates each piece
