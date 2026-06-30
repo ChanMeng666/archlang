@@ -149,6 +149,13 @@ room) cannot pass silently.
 (+ \`in <roomId>\`) rather than guessing an \`at\`; give every room a \`door\`/\`opening\`; and leave
 the doorway approach and the door's swing clear.
 
+**Fix topology from facts, not guesses.** \`arch repair\` corrects furniture but never adds a door or
+window (that is a design choice). When lint reports an unreachable room / no entrance / windowless
+bedroom, read \`describe --json\` — \`access.rooms[].reachable\`, room \`bbox\`/\`adjacent\`, building
+extent = min/max of room boxes — and add a \`door\`/\`opening\`/\`window\` on the right wall yourself
+(an exterior entrance into a cut-off living space beats routing through a bedroom), then re-\`repair\`
+and \`validate --strict\`. See SKILL.md for the exact arithmetic.
+
 ## Common mistakes
 
 | Mistake | Fix |

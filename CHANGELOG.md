@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — agent guidance: repair topology (doors/windows) from the access graph
+
+`SKILL.md` (and a pointer in the generated `spec.llm.md` / `arch spec`) now documents a concrete,
+verified procedure for the agent layer to make every room reachable and every bedroom lit by **adding
+doors/windows** — the design choice the core deliberately won't make (ADR 0005). It drives off
+`describe --json` (access graph, room bboxes/adjacency, building extent), with exact on-centerline
+coordinate arithmetic, a priority that gives a cut-off living space its own exterior entrance rather
+than routing circulation through a bedroom, and a re-`repair` → `validate --strict` loop. Verified
+end-to-end on two ArchCanvas plans (broken AI plan → `repair` + this procedure → fully clean). No core
+code change.
+
 ## [1.7.0] - 2026-06-30
 
 ### Changed — `arch repair` also clears door-swing arcs
