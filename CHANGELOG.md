@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-07-01
+
 ### Added — opt-in source annotation (`compile(src, { annotate: true })`)
 
 An additive, opt-in compile option that stamps `data-span="start:end"` (the source byte range) on

@@ -18,16 +18,15 @@ not a work-in-progress. Treat the live artifacts below as the source of truth.
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.8.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.9.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md` |
 | **VS Code extension** | `ChanMeng.archlang@0.3.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed (pan/zoom · autocomplete · history · click-to-source) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.8.0` (latest); `main` is ahead of `v1.8.0` (see "On `main`" below) | github.com/ChanMeng666/archlang |
+| **Git** | `main`, tags `v1.0.0` → `v1.9.0` (latest) | github.com/ChanMeng666/archlang |
 | **Tests** | 488 passing (56 files); typecheck + build clean | — |
 
-**On `main` (unreleased — ahead of the published v1.8.0).** Two things landed after the v1.8.0 tag,
-not yet cut into a published core release:
+**Latest release — v1.9.0 (opt-in source annotation + playground overhaul).** Two things:
 - **Core: opt-in source annotation.** `compile(src, { annotate: true })` stamps `data-span="start:end"`
   (source byte range) on each drawn SVG primitive that has a span, so a tool can map a clicked element
   back to its source. **Default output is byte-identical** (Scene IR + SVG unchanged, goldens
@@ -41,7 +40,7 @@ not yet cut into a published core release:
   `annotate`), and **hover-a-room → facts tooltip**. All client-side; exports strip the annotations.
   New modules: `playground/src/{pan-zoom,interact,snapshots,storage,arch-completion}.js`.
 
-**Latest release — v1.8.0 (agent CLI ergonomics).** Four additive commands, no core change and the
+**v1.8.0 (agent CLI ergonomics).** Four additive commands, no core change and the
 core stays zero-dependency: **`arch preview`** (render a PNG an agent can look at; PNG-first @2×,
 zero-install where `@resvg/resvg-js` is present, else the catalogued `E_PNG_DEPENDENCY` + a `fix`, and
 opt-in `--install` fetches it); **`arch batch`** (render many files concurrently, `{ ok, results[] }`);
