@@ -5,6 +5,10 @@ import { bracketMatching } from "@codemirror/language";
 import { lintGutter } from "@codemirror/lint";
 import { compile, describe, lint, toDxf, THEMES, LINT_PROFILE_NAMES } from "archlang";
 import { archLanguage, archLinter } from "./arch-language.js";
+import { archCompletion } from "./arch-completion.js";
+import { createPanZoom } from "./pan-zoom.js";
+import { mountSnapshots } from "./snapshots.js";
+import { KEYS, readStr, writeStr } from "./storage.js";
 import { EXAMPLES } from "./examples.js";
 import { mountFlowingLines } from "./flowing-lines.js";
 // Self-hosted brand fonts (no CDN) — shared with the docs site.
@@ -33,6 +37,14 @@ const lintProfileSelect = document.getElementById("lintProfile");
 const lintCaptionEl = document.getElementById("lintCaption");
 const lintOutput = document.getElementById("lintOutput");
 const copyLinkBtn = document.getElementById("copyLink");
+const savedBtn = document.getElementById("saved");
+const factsEl = document.getElementById("facts");
+const pzViewport = document.querySelector(".pz-viewport");
+const pzStage = document.querySelector(".pz-stage");
+const pzToolbar = document.querySelector(".pz-toolbar");
+
+// Pan/zoom controller for the preview (created once; survives every re-render).
+const pz = createPanZoom(pzViewport, pzStage);
 
 // ---- output tabs (Preview · Describe · Lint) ----
 const tabs = [...document.querySelectorAll(".tab")];
@@ -70,32 +82,68 @@ function syncLintCaption() {
 syncLintCaption();
 
 // ---- shareable permalink (B5) ----
-// Source is round-tripped through `#src=<base64url>` so a plan can be shared by URL
-// with no backend. Caveat: browsers cap URL length (~practically tens of KB), so a
-// very large plan may overflow the address bar / fail to copy — fine for snippets.
-function encodeSrc(src) {
-  return btoa(unescape(encodeURIComponent(src)))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+// Source is round-tripped through the URL hash so a plan can be shared with no
+// backend. The current scheme is `#z=<base64url(deflate-raw(utf8))>` — compressed
+// so larger plans fit the address bar. The legacy raw `#src=<base64url(utf8)>`
+// form is still *read* so previously-shared links keep working forever.
+
+/** base64url ⇄ bytes (UTF-8-safe; no `escape`/`unescape`). */
+function bytesToB64url(bytes) {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
-function decodeSrc(b64) {
+function b64urlToBytes(b64) {
+  const bin = atob(b64.replace(/-/g, "+").replace(/_/g, "/"));
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+async function pipeStream(stream, bytes) {
+  const w = stream.writable.getWriter();
+  w.write(bytes);
+  w.close();
+  return new Uint8Array(await new Response(stream.readable).arrayBuffer());
+}
+
+async function srcFromHash() {
+  const z = location.hash.match(/[#&]z=([^&]*)/);
+  if (z) {
+    if (typeof DecompressionStream === "undefined") return null;
+    try {
+      const bytes = await pipeStream(new DecompressionStream("deflate-raw"), b64urlToBytes(z[1]));
+      return new TextDecoder().decode(bytes);
+    } catch {
+      return null;
+    }
+  }
+  // Legacy `#src=` — base64url of the UTF-8 bytes (back-compat).
+  const m = location.hash.match(/[#&]src=([^&]*)/);
+  if (!m) return null;
   try {
-    const s = b64.replace(/-/g, "+").replace(/_/g, "/");
-    return decodeURIComponent(escape(atob(s)));
+    return new TextDecoder().decode(b64urlToBytes(m[1]));
   } catch {
     return null;
   }
 }
-function srcFromHash() {
-  const m = location.hash.match(/[#&]src=([^&]*)/);
-  return m ? decodeSrc(m[1]) : null;
-}
-function updateHash(src) {
+
+async function updateHash(src) {
+  const utf8 = new TextEncoder().encode(src);
+  let hash;
+  try {
+    if (typeof CompressionStream !== "undefined") {
+      const bytes = await pipeStream(new CompressionStream("deflate-raw"), utf8);
+      hash = `#z=${bytesToB64url(bytes)}`;
+    } else {
+      hash = `#src=${bytesToB64url(utf8)}`; // graceful fallback on ancient browsers
+    }
+  } catch {
+    hash = `#src=${bytesToB64url(utf8)}`;
+  }
   // replaceState — keep one entry, don't spam browser history on every keystroke.
   // NB: `history` is shadowed by CodeMirror's `history` import above, so reach for
   // the global explicitly via `window.history`.
-  window.history.replaceState(null, "", `#src=${encodeSrc(src)}`);
+  window.history.replaceState(null, "", hash);
 }
 
 let lastSvg = "";
@@ -107,6 +155,7 @@ function updateAnalysis(source, ok) {
   // compact access-graph diagram (B4) and tuck the raw JSON into a <details>.
   const summary = describe(source, { noCache: true });
   const { diagnostics: _d, ...facts } = summary;
+  renderFacts(summary, ok);
   if (ok) {
     describeEl.innerHTML =
       `<div class="ag-wrap">${renderAccessGraph(facts)}</div>` +
@@ -179,7 +228,49 @@ function escapeHtml(s) {
   return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 }
 
-function render(source) {
+/** Always-visible plan facts under the preview — a quick read of the describe()
+ *  totals (rooms / doors / windows / floor area) and whether the plan has an
+ *  exterior entrance. Differentiator: floor-plan facts a diagram tool can't show. */
+function renderFacts(summary, ok) {
+  const t = summary?.totals;
+  if (!ok || !t) {
+    factsEl.innerHTML = `<span class="fact">— fix the errors to see plan facts —</span>`;
+    return;
+  }
+  const entrance = summary.access?.hasEntrance;
+  factsEl.innerHTML =
+    `<span class="fact">Rooms <b>${t.rooms}</b></span>` +
+    `<span class="fact">Doors <b>${t.doors}</b></span>` +
+    `<span class="fact">Windows <b>${t.windows}</b></span>` +
+    `<span class="fact">Floor area <b>${t.floor_area_m2} m²</b></span>` +
+    `<span class="fact ${entrance ? "fact-ok" : "fact-bad"}">Entrance <b>${entrance ? "yes" : "none"}</b></span>`;
+}
+
+/** Inject the SVG into the pan/zoom stage, give it a definite pixel size from its
+ *  viewBox (so the stage has real dimensions to fit), and update the controller.
+ *  `refit` re-centres the view (first load / example switch); otherwise the user's
+ *  current pan/zoom is preserved across the keystroke re-render. */
+function showSvg(svg, refit) {
+  pzStage.innerHTML = svg;
+  const el = pzStage.firstElementChild;
+  let w = 800;
+  let h = 600;
+  if (el) {
+    const vb = el.getAttribute("viewBox");
+    if (vb) {
+      const p = vb.split(/[\s,]+/).map(Number);
+      if (p.length === 4 && p[2] > 0 && p[3] > 0) {
+        w = p[2];
+        h = p[3];
+      }
+    }
+    el.setAttribute("width", String(w));
+    el.setAttribute("height", String(h));
+  }
+  pz.setContent(w, h, refit);
+}
+
+function render(source, refit = false) {
   // Theme: empty value = the source's own `theme` directive (pass nothing); a named
   // key overrides it (compile's `theme` option wins over an in-source directive).
   const themeKey = themeSelect.value;
@@ -202,7 +293,7 @@ function render(source) {
   errorsEl.classList.toggle("show", warnings.length > 0);
   errorsEl.style.color = warnings.length ? "#8a6d00" : "";
   errorsEl.textContent = warnings.map((w) => `warning${w.line ? " line " + w.line : ""}: ${w.message}`).join("\n");
-  preview.innerHTML = svg;
+  showSvg(svg, refit);
   lastSvg = svg;
   lastScene = scene ?? null;
 }
@@ -212,74 +303,190 @@ const onDocChanged = (source) => {
   clearTimeout(debounce);
   debounce = setTimeout(() => {
     render(source);
-    updateHash(source); // keep the permalink in sync with the editor
+    writeStr(KEYS.source, source); // autosave the working draft (restored on reload)
+    void updateHash(source); // keep the permalink in sync (compression is async)
   }, 250);
 };
 
-// Prefer a shared `#src=` permalink over the default example on first load (B5).
-const sharedSrc = srcFromHash();
-const initialDoc = sharedSrc ?? EXAMPLES["Studio (1BR)"];
-// Reflect the actually-loaded example in the picker (the editor starts on the Studio
-// unless a permalink overrides it, in which case the source is custom — leave the
-// picker on its first option as a neutral default).
-if (!sharedSrc) select.value = "Studio (1BR)";
+// The editor view is created during init() once the (async) initial source is
+// resolved; everything below reaches it through `view`.
+let view;
+function currentSource() {
+  return view ? view.state.doc.toString() : "";
+}
+function loadSource(src, refit = true) {
+  if (!view) return;
+  view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: src } });
+  render(src, refit);
+}
 
-const view = new EditorView({
-  state: EditorState.create({
-    doc: initialDoc,
-    extensions: [
-      lineNumbers(),
-      history(),
-      bracketMatching(),
-      highlightActiveLine(),
-      lintGutter(),
-      keymap.of([...defaultKeymap, ...historyKeymap]),
-      archLanguage(),
-      archLinter(),
-      EditorView.theme({
-        "&": { height: "100%", fontSize: "13px" },
-        ".cm-scroller": { fontFamily: "var(--mono)", lineHeight: "1.55" },
-        ".cm-content": { padding: "10px 0" },
-      }),
-      EditorView.updateListener.of((u) => {
-        if (u.docChanged) onDocChanged(u.state.doc.toString());
-      }),
-    ],
-  }),
-  parent: document.getElementById("editor"),
-});
+/** Briefly show a message in the status text, then restore it. */
+function flash(msg) {
+  const prev = statusText.textContent;
+  statusText.textContent = msg;
+  setTimeout(() => {
+    statusText.textContent = prev;
+  }, 1200);
+}
 
-const currentSource = () => view.state.doc.toString();
+async function init() {
+  // First-load source precedence: shared URL hash → autosaved draft → default example.
+  const sharedSrc = await srcFromHash();
+  const savedSrc = sharedSrc ? null : readStr(KEYS.source);
+  const initialDoc = sharedSrc ?? savedSrc ?? EXAMPLES["Studio (1BR)"];
+  if (!sharedSrc && !savedSrc) select.value = "Studio (1BR)";
 
-select.addEventListener("change", () => {
-  const doc = EXAMPLES[select.value];
-  view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: doc } });
-  render(doc);
-});
-
-// Theme switch (B2) — re-render the preview only; describe/lint are theme-agnostic.
-themeSelect.addEventListener("change", () => render(currentSource()));
-
-// Lint-profile switch (B3) — update the caption and re-run the soundness check.
-lintProfileSelect.addEventListener("change", () => {
-  syncLintCaption();
-  render(currentSource());
-});
-
-// Copy permalink (B5) — the hash already carries the source; copy the full URL.
-copyLinkBtn.addEventListener("click", async () => {
-  updateHash(currentSource()); // ensure the URL reflects the latest edit
-  try {
-    await navigator.clipboard.writeText(location.href);
-    const prev = statusText.textContent;
-    statusText.textContent = "Copied";
-    setTimeout(() => {
-      statusText.textContent = prev;
-    }, 1200);
-  } catch {
-    statusText.textContent = "Copy failed";
+  // Restore persisted UI prefs (advisory — never block on storage).
+  const savedTheme = readStr(KEYS.theme);
+  if (savedTheme !== null && [...themeSelect.options].some((o) => o.value === savedTheme)) {
+    themeSelect.value = savedTheme;
   }
-});
+  const savedProfile = readStr(KEYS.lintProfile);
+  if (savedProfile && [...lintProfileSelect.options].some((o) => o.value === savedProfile)) {
+    lintProfileSelect.value = savedProfile;
+    syncLintCaption();
+  }
+
+  view = new EditorView({
+    state: EditorState.create({
+      doc: initialDoc,
+      extensions: [
+        lineNumbers(),
+        history(),
+        bracketMatching(),
+        highlightActiveLine(),
+        lintGutter(),
+        keymap.of([...defaultKeymap, ...historyKeymap]),
+        archLanguage(),
+        archCompletion(),
+        archLinter(),
+        EditorView.theme({
+          "&": { height: "100%", fontSize: "13px" },
+          ".cm-scroller": { fontFamily: "var(--mono)", lineHeight: "1.55" },
+          ".cm-content": { padding: "10px 0" },
+        }),
+        EditorView.updateListener.of((u) => {
+          if (u.docChanged) onDocChanged(u.state.doc.toString());
+        }),
+      ],
+    }),
+    parent: document.getElementById("editor"),
+  });
+
+  select.addEventListener("change", () => loadSource(EXAMPLES[select.value], true));
+
+  // Theme switch (B2) — re-render the preview only; describe/lint are theme-agnostic.
+  themeSelect.addEventListener("change", () => {
+    writeStr(KEYS.theme, themeSelect.value);
+    render(currentSource());
+  });
+
+  // Lint-profile switch (B3) — update the caption and re-run the soundness check.
+  lintProfileSelect.addEventListener("change", () => {
+    writeStr(KEYS.lintProfile, lintProfileSelect.value);
+    syncLintCaption();
+    render(currentSource());
+  });
+
+  // Copy permalink (B5) — the hash carries the source; copy the full URL.
+  copyLinkBtn.addEventListener("click", async () => {
+    await updateHash(currentSource()); // ensure the URL reflects the latest edit
+    try {
+      await navigator.clipboard.writeText(location.href);
+      flash("Link copied");
+    } catch {
+      flash("Copy failed");
+    }
+  });
+
+  // Saved snapshots (history) — named stashes in localStorage.
+  mountSnapshots({ button: savedBtn, getSource: currentSource, setSource: (src) => loadSource(src, true) });
+
+  // Floating preview toolbar — pan/zoom + copy.
+  pzToolbar.addEventListener("click", (e) => {
+    const action = e.target.closest("button")?.dataset.pz;
+    if (action === "in") pz.zoomIn();
+    else if (action === "out") pz.zoomOut();
+    else if (action === "fit") pz.fit();
+    else if (action === "full") toggleFullscreen();
+    else if (action === "copysvg") void copySvg();
+    else if (action === "copypng") void copyPng();
+  });
+
+  mountDivider();
+
+  // Initial render — fit the plan to the viewport, then re-fit once layout settles.
+  render(initialDoc, true);
+  requestAnimationFrame(() => pz.fit());
+}
+
+function toggleFullscreen() {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else pzViewport.requestFullscreen?.();
+}
+
+async function copySvg() {
+  if (!lastSvg) return;
+  try {
+    await navigator.clipboard.writeText(lastSvg);
+    flash("SVG copied");
+  } catch {
+    flash("Copy failed");
+  }
+}
+
+async function copyPng() {
+  if (!lastSvg) return;
+  try {
+    const canvas = await svgToCanvas(lastSvg);
+    const blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    flash("PNG copied");
+  } catch {
+    flash("Copy failed");
+  }
+}
+
+/** Draggable split divider over the pane seam (desktop two-column layout). */
+function mountDivider() {
+  const main = document.querySelector("main");
+  const divider = document.createElement("div");
+  divider.className = "divider";
+  divider.setAttribute("role", "separator");
+  divider.setAttribute("aria-label", "Resize panes");
+  main.appendChild(divider);
+
+  const applyRatio = (r) => {
+    main.style.gridTemplateColumns = `${r}fr ${1 - r}fr`;
+    divider.style.left = `${r * 100}%`;
+  };
+  let ratio = parseFloat(readStr(KEYS.split) ?? "");
+  if (!(ratio > 0.1 && ratio < 0.9)) ratio = 0.5;
+  applyRatio(ratio);
+
+  divider.addEventListener("pointerdown", (e) => {
+    if (window.innerWidth <= 760) return; // stacked layout — divider is inert
+    e.preventDefault();
+    divider.setPointerCapture(e.pointerId);
+    divider.classList.add("dragging");
+    const onMove = (ev) => {
+      const rect = main.getBoundingClientRect();
+      ratio = Math.min(0.8, Math.max(0.2, (ev.clientX - rect.left) / rect.width));
+      applyRatio(ratio);
+    };
+    const onUp = () => {
+      divider.classList.remove("dragging");
+      divider.removeEventListener("pointermove", onMove);
+      divider.removeEventListener("pointerup", onUp);
+      writeStr(KEYS.split, String(ratio));
+    };
+    divider.addEventListener("pointermove", onMove);
+    divider.addEventListener("pointerup", onUp);
+  });
+
+  // Keep the divider aligned to the seam on viewport resize.
+  window.addEventListener("resize", () => applyRatio(ratio));
+}
 
 // ---- multi-format download (SVG vector · DXF vector · PNG/PDF raster) ----
 
@@ -367,5 +574,5 @@ document.getElementById("download").addEventListener("click", () => {
   void downloadCurrent(formatSelect ? formatSelect.value : "svg");
 });
 
-// Initial render.
-render(view.state.doc.toString());
+// Bootstrap (async — resolves the shared/saved source, then builds the editor).
+void init();

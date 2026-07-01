@@ -44,6 +44,7 @@
       </select>
       <button id="download">Download</button>
       <button id="copyLink">Copy link</button>
+      <button id="saved" aria-haspopup="true">Saved ▾</button>
       <!-- brand-family navigation: back to the main docs site + sibling product -->
       <a class="btn" href="https://archlang-docs.vercel.app" target="_blank" rel="noopener">Docs ↗</a>
       <a class="btn" href="https://archlang-docs.vercel.app/spec" target="_blank" rel="noopener">Spec</a>
@@ -66,7 +67,21 @@
             <button class="tab" data-tab="lint" type="button">Lint</button>
           </span>
         </h2>
-        <div id="preview" class="tabview active" role="tabpanel"></div>
+        <div id="preview" class="tabview active" role="tabpanel">
+          <div class="pz-viewport">
+            <div class="pz-stage"></div>
+            <div class="pz-toolbar">
+              <button data-pz="out" type="button" title="Zoom out" aria-label="Zoom out">−</button>
+              <button data-pz="in" type="button" title="Zoom in" aria-label="Zoom in">+</button>
+              <button data-pz="fit" type="button" title="Fit to view" aria-label="Fit to view">⤢</button>
+              <button data-pz="full" type="button" title="Fullscreen" aria-label="Fullscreen">⛶</button>
+              <span class="pz-sep"></span>
+              <button data-pz="copysvg" type="button" title="Copy SVG markup" aria-label="Copy SVG">SVG</button>
+              <button data-pz="copypng" type="button" title="Copy PNG image" aria-label="Copy PNG">PNG</button>
+            </div>
+          </div>
+          <div id="facts" class="facts" aria-label="Plan facts"></div>
+        </div>
         <div id="describe" class="tabview" role="tabpanel"></div>
         <div id="lint" class="tabview" role="tabpanel">
           <div class="lint-controls">
