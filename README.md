@@ -199,9 +199,12 @@ plan "One-bed" {
 Vite + CodeMirror 6 editor with syntax highlighting, **autocomplete**, inline lint (fed by the
 compiler's `diagnostics`), and a live SVG preview with **pan / zoom / fit**. Load examples, save
 named **snapshots**, share a plan via a **compressed permalink**, and **copy** or **download**
-the drawing as **SVG / PNG / DXF / PDF**. Two floor-plan-specific touches: **click any element to
-jump the editor caret to its source**, and **hover a room to see its area & size**. Everything runs
-in the browser — nothing is sent to a server.
+the drawing as **SVG / PNG / DXF / PDF**. It surfaces the core's own tooling too: a **Format**
+button, a **Repair furniture** panel (review the deterministic corrector's change log, then apply
+it), and **clickable diagnostics** that jump to the offending source and show the error catalog's
+cause / fix / example. Two floor-plan-specific touches: **click any element to jump the editor caret
+to its source**, and **hover a room to see its area & size**. Everything runs in the browser —
+nothing is sent to a server.
 
 To run it locally from the repo root (npm workspaces):
 
@@ -209,6 +212,19 @@ To run it locally from the repo root (npm workspaces):
 npm install            # bootstraps all workspaces
 npm run playground:dev # builds the core, then opens the playground dev server
 ```
+
+### Embed a plan
+
+Drop a **live, self-contained floor plan** into any blog, doc, or wiki with a single `<iframe>` —
+no build step, nothing sent to a server. The playground's **Embed** button generates the snippet;
+the URL carries the source in a compressed hash:
+
+```html
+<iframe src="https://archlang-playground.vercel.app/embed.html#z=…" width="720" height="480"></iframe>
+```
+
+The embed page reads the same `#z=` share hash the playground writes, plus optional `&`-joined
+params: `editable=1` (show a compact editor that re-renders live), and `theme=blueprint|dark|mono|presentation`.
 
 ### Editor support
 
@@ -218,7 +234,7 @@ diagnostics, hover, completion, go-to-definition, rename, and signature help —
 
 ## 📚 Documentation
 
-- **[📖 Docs site](https://archlang-docs.vercel.app)** — the hosted guide, reference, error catalog, examples gallery, and ADRs.
+- **[📖 Docs site](https://archlang-docs.vercel.app)** — the hosted guide, reference, error catalog, ADRs, and a **live, editable examples gallery** (edit the source and the SVG recompiles in-browser).
 - **[spec.llm.md](spec.llm.md)** — the **whole language in one page** (~2k tokens) for AI agents; also `arch spec`.
 - **[SKILL.md](SKILL.md)** — the agent Skill: how to author plans via the CLI (`spec → compile → describe → lint`).
 - **[Language Reference](docs/language-reference.md)** — every statement, with syntax and defaults.

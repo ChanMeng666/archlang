@@ -106,8 +106,10 @@ for concave door arcs, dimensions drawn into the building, and the title-block o
 ├─ llms.txt           machine-readable project map (how to USE vs CONTRIBUTE)
 ├─ editors/vscode     archlang-vscode → published as ChanMeng.archlang (esbuild-bundled extension)
 ├─ editors/*.json     generated TextMate grammar + language-configuration (shared by the extension)
-├─ playground/        Vite + CodeMirror live editor (consumes the built core via dist/)
-├─ docs-site/         VitePress docs (pages generated from docs/*.md, examples/*.arch)
+├─ playground/        Vite + CodeMirror live editor (consumes the built core via dist/);
+│                     also ships embed.html — a chrome-less <iframe> viewer read from the #z= hash
+├─ docs-site/         VitePress docs (pages generated from docs/*.md, examples/*.arch);
+│                     examples are live/editable <ArchLive> widgets (compile in the browser)
 ├─ docs/              language-reference.md · error-codes.md · adr/ · WORK-LOG.md · roadmap
 ├─ examples/          studio · two-bed · parametric · themed · relational · lib/ · imports
 ├─ eval/              NL→ArchLang authorability harness (corpus.json, goldens/, run.ts)
