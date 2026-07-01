@@ -186,6 +186,7 @@ export function compile(source: string, opts: CompileOptions = {}): CompileResul
     idToken(opts.backend),
     idToken(opts.hatches),
     idToken(opts.world),
+    opts.annotate ?? null,
   ]);
   if (!opts.noCache) {
     const hit = cache.get(key);

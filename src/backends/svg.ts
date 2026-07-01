@@ -169,7 +169,14 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
       const lyr = layerOf(node);
       let bucket = groups.get(lyr);
       if (!bucket) groups.set(lyr, (bucket = []));
-      bucket.push(serialize(node, sizes));
+      let el = serialize(node, sizes);
+      // Opt-in editor affordance: stamp the source byte-span onto the element so a
+      // tool can map a clicked primitive back to its source (ADR 0007). Off by
+      // default → shipped SVGs are byte-identical to the un-annotated output.
+      if (opts.annotate && node.span) {
+        el = el.replace(/^(<[a-z]+)/, `$1 data-span="${node.span.start}:${node.span.end}"`);
+      }
+      bucket.push(el);
     }
   }
   for (const [lyr, els] of groups) {

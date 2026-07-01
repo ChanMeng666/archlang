@@ -8,6 +8,7 @@ import { archLanguage, archLinter } from "./arch-language.js";
 import { archCompletion } from "./arch-completion.js";
 import { createPanZoom } from "./pan-zoom.js";
 import { mountSnapshots } from "./snapshots.js";
+import { mountInteract } from "./interact.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 import { EXAMPLES } from "./examples.js";
 import { mountFlowingLines } from "./flowing-lines.js";
@@ -148,6 +149,11 @@ async function updateHash(src) {
 
 let lastSvg = "";
 let lastScene = null;
+let lastRooms = [];
+
+/** The current preview SVG with the editor-only `data-span` annotations removed —
+ *  used for every export so a downloaded/copied file never carries them. */
+const cleanSvg = () => lastSvg.replace(/ data-span="\d+:\d+"/g, "");
 
 /** Update the Describe (semantic facts) and Lint (soundness) tabs for `source`. */
 function updateAnalysis(source, ok) {
@@ -155,6 +161,7 @@ function updateAnalysis(source, ok) {
   // compact access-graph diagram (B4) and tuck the raw JSON into a <details>.
   const summary = describe(source, { noCache: true });
   const { diagnostics: _d, ...facts } = summary;
+  lastRooms = ok ? (summary.rooms ?? []) : [];
   renderFacts(summary, ok);
   if (ok) {
     describeEl.innerHTML =
@@ -274,7 +281,11 @@ function render(source, refit = false) {
   // Theme: empty value = the source's own `theme` directive (pass nothing); a named
   // key overrides it (compile's `theme` option wins over an in-source directive).
   const themeKey = themeSelect.value;
-  const opts = themeKey ? { noCache: true, theme: THEMES[themeKey] } : { noCache: true };
+  // annotate: stamp data-span on primitives so a click in the preview can jump to
+  // source (interact.js). Exports strip it (cleanSvg) so downloads stay clean.
+  const opts = themeKey
+    ? { noCache: true, annotate: true, theme: THEMES[themeKey] }
+    : { noCache: true, annotate: true };
   const { svg, errors, warnings, scene } = compile(source, opts);
   const ok = errors.length === 0;
   updateAnalysis(source, ok);
@@ -318,6 +329,14 @@ function loadSource(src, refit = true) {
   if (!view) return;
   view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: src } });
   render(src, refit);
+}
+
+/** Move the editor caret to a byte offset and reveal it (click-to-source). */
+function jumpToOffset(offset) {
+  if (!view) return;
+  const pos = Math.max(0, Math.min(offset, view.state.doc.length));
+  view.dispatch({ selection: { anchor: pos }, scrollIntoView: true });
+  view.focus();
 }
 
 /** Briefly show a message in the status text, then restore it. */
@@ -413,6 +432,15 @@ async function init() {
     else if (action === "copypng") void copyPng();
   });
 
+  // Preview interactions: hover a room for facts (C2), click any element to jump
+  // the editor caret to its source (C3, via the annotate data-span attributes).
+  mountInteract({
+    viewport: pzViewport,
+    stage: pzStage,
+    getRooms: () => lastRooms,
+    jumpToOffset,
+  });
+
   mountDivider();
 
   // Initial render — fit the plan to the viewport, then re-fit once layout settles.
@@ -428,7 +456,7 @@ function toggleFullscreen() {
 async function copySvg() {
   if (!lastSvg) return;
   try {
-    await navigator.clipboard.writeText(lastSvg);
+    await navigator.clipboard.writeText(cleanSvg());
     flash("SVG copied");
   } catch {
     flash("Copy failed");
@@ -438,7 +466,7 @@ async function copySvg() {
 async function copyPng() {
   if (!lastSvg) return;
   try {
-    const canvas = await svgToCanvas(lastSvg);
+    const canvas = await svgToCanvas(cleanSvg());
     const blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
     await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
     flash("PNG copied");
@@ -538,18 +566,18 @@ async function downloadCurrent(format) {
   if (!lastSvg) return;
   try {
     if (format === "svg") {
-      saveBlob(new Blob([lastSvg], { type: "image/svg+xml" }), "svg");
+      saveBlob(new Blob([cleanSvg()], { type: "image/svg+xml" }), "svg");
     } else if (format === "dxf") {
       if (!lastScene) return;
       saveBlob(new Blob([toDxf(lastScene)], { type: "application/dxf" }), "dxf");
     } else if (format === "png") {
-      const canvas = await svgToCanvas(lastSvg);
+      const canvas = await svgToCanvas(cleanSvg());
       const blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
       saveBlob(blob, "png");
     } else if (format === "pdf") {
       // Vector PDF needs Node-only pdfkit; in-browser we embed a high-res raster
       // via jsPDF (lazy-loaded so it never bloats the initial bundle).
-      const canvas = await svgToCanvas(lastSvg);
+      const canvas = await svgToCanvas(cleanSvg());
       const { jsPDF } = await import("jspdf");
       const pdf = new jsPDF({
         orientation: canvas.width >= canvas.height ? "landscape" : "portrait",

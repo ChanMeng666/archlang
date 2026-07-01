@@ -372,7 +372,15 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   for (const el of ir.elements) {
     if (el.kind === "wall") continue;
     const def = registry.byKind.get(el.kind);
-    if (def) nodes.push(...def.render(el, ctxFor(el.kind)));
+    if (!def) continue;
+    // Only when `annotate` is requested (ADR 0007): carry the element's source
+    // span onto every primitive it renders, so the SVG pass can map a drawn
+    // element back to its source. Off by default → the Scene IR is byte-identical
+    // to before. Purely metadata — never read by geometry/describe/lint. Walls are
+    // unioned across statements, so their per-node span is ambiguous → left unset.
+    const rendered = def.render(el, ctxFor(el.kind));
+    const span = opts.annotate ? (el as { span?: SceneNode["span"] }).span : undefined;
+    nodes.push(...(span ? rendered.map((n) => (n.span === undefined ? { ...n, span } : n)) : rendered));
   }
   nodes.push(...lowerWalls(ir.walls, ctxFor("wall"), registry, backend));
 

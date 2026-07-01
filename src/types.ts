@@ -28,6 +28,14 @@ export interface CompileOptions {
   /** Bypass the internal memoization cache (mostly for benchmarks/tests). */
   noCache?: boolean;
   /**
+   * When set, tag each drawn primitive that carries a source span with a
+   * `data-span="start:end"` attribute (byte offsets into the source). This is an
+   * **opt-in editor affordance** — it lets a tool map a clicked SVG element back
+   * to the source that produced it. Default output is unaffected (byte-identical)
+   * so shipped SVGs stay clean; see ADR 0007.
+   */
+  annotate?: boolean;
+  /**
    * Theme overrides applied on top of the plan's `theme { … }` directive and
    * the built-in defaults (these win). Any subset of keys may be supplied.
    */
