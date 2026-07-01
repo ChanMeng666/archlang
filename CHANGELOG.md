@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — embeddable playground viewer + live docs examples (sites only; core untouched)
+
+Two ZenUML-inspired distribution/UX wins, both entirely in the deployed sites — **no change to the
+published `@chanmeng666/archlang` core** (its `src/`, output, goldens, and 488-test suite are
+untouched):
+
+- **Playground — embeddable widget.** A new chrome-less `embed.html` page renders any plan from the
+  existing `#z=` share hash, so a floor plan can be dropped into a blog / Confluence / GitHub-Pages
+  via a single `<iframe>`. A new **Embed** button generates the iframe + Markdown snippet; the embed
+  supports `&editable=1` (live editor), `&theme=`, pan/zoom, and an attribution chip. The share codec
+  moved to `playground/src/share.js` (one scheme for both pages); SVG-sizing to `playground/src/viewer.js`.
+- **Playground — IDE-parity actions** wiring already-shipped core APIs into the UI: a **Format**
+  button (`format()`), a **Repair furniture** panel (`repair()`) that shows the change log with an
+  **Apply fixes** action (opt-in, reviewable — ADR 0006 preserved), and **clickable diagnostics** that
+  jump the caret to the source span and reveal the error-catalog cause/fix/example (`ERROR_CATALOG`).
+- **Docs — live, editable examples.** A new `<ArchLive>` VitePress component compiles a plan in the
+  browser (SSR-safe, so no-JS visitors still get the SVG) with a live editor, a `describe()` facts
+  strip, and an **Open in Playground** link. The examples gallery and the guide hero are now live;
+  example sources are generated into `examples-data.js` from `examples/*.arch` by `sync-docs.mjs`.
+
 ## [1.9.0] - 2026-07-01
 
 ### Added — opt-in source annotation (`compile(src, { annotate: true })`)

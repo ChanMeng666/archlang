@@ -21,10 +21,18 @@ not a work-in-progress. Treat the live artifacts below as the source of truth.
 | **Core package** | `@chanmeng666/archlang@1.9.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md` |
 | **VS Code extension** | `ChanMeng.archlang@0.3.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
-| **Playground** | deployed (pan/zoom · autocomplete · history · click-to-source) | https://archlang-playground.vercel.app |
-| **Docs site** | deployed (VitePress) | https://archlang-docs.vercel.app |
+| **Playground** | deployed (pan/zoom · autocomplete · history · click-to-source · **format · repair · error-explain · embeddable `embed.html`**) | https://archlang-playground.vercel.app |
+| **Docs site** | deployed (VitePress · **live editable `<ArchLive>` examples**) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.9.0` (latest) | github.com/ChanMeng666/archlang |
 | **Tests** | 488 passing (56 files); typecheck + build clean | — |
+
+**Unreleased (sites only, core untouched).** Two ZenUML-inspired wins in the deployed apps — **no
+change to the published core**: (1) an **embeddable playground viewer** (`playground/embed.html`,
+rendered from the `#z=` share hash, with an **Embed** snippet button and `&editable=1`), plus
+**IDE-parity actions** wiring shipped-but-unused core APIs into the UI (a **Format** button, a
+**Repair furniture** review-and-apply panel, and **clickable diagnostics** that jump to source and
+show the catalogued cause/fix/example); and (2) **live, editable docs examples** via a new
+SSR-safe `<ArchLive>` VitePress component (examples gallery + guide hero). See `CHANGELOG.md`.
 
 **Latest release — v1.9.0 (opt-in source annotation + playground overhaul).** Two things:
 - **Core: opt-in source annotation.** `compile(src, { annotate: true })` stamps `data-span="start:end"`
