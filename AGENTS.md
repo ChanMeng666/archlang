@@ -21,10 +21,25 @@ not a work-in-progress. Treat the live artifacts below as the source of truth.
 | **Core package** | `@chanmeng666/archlang@1.8.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md` |
 | **VS Code extension** | `ChanMeng.archlang@0.3.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
-| **Playground** | deployed | https://archlang-playground.vercel.app |
+| **Playground** | deployed (pan/zoom · autocomplete · history · click-to-source) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.8.0` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 483 passing (55 files); typecheck + build clean | — |
+| **Git** | `main`, tags `v1.0.0` → `v1.8.0` (latest); `main` is ahead of `v1.8.0` (see "On `main`" below) | github.com/ChanMeng666/archlang |
+| **Tests** | 488 passing (56 files); typecheck + build clean | — |
+
+**On `main` (unreleased — ahead of the published v1.8.0).** Two things landed after the v1.8.0 tag,
+not yet cut into a published core release:
+- **Core: opt-in source annotation.** `compile(src, { annotate: true })` stamps `data-span="start:end"`
+  (source byte range) on each drawn SVG primitive that has a span, so a tool can map a clicked element
+  back to its source. **Default output is byte-identical** (Scene IR + SVG unchanged, goldens
+  untouched, exports clean); `toScene` carries the span onto nodes only in this mode; walls are unioned
+  so they are intentionally unstamped. Deterministic, still zero-dependency. Programmatic only (no CLI
+  flag). See [ADR 0007](docs/adr/0007-opt-in-source-annotation.md).
+- **Playground: mermaid-live-editor parity + editor↔plan linking.** The Vite app now has preview
+  pan/zoom/fit, editor autocomplete (via the core `completion()`), compressed share links (`#z=`,
+  reads legacy `#src=`), autosave + named snapshot history (localStorage), copy SVG/PNG, resizable
+  panes, an always-visible `describe()` facts strip, **click-any-element → jump-to-source** (via
+  `annotate`), and **hover-a-room → facts tooltip**. All client-side; exports strip the annotations.
+  New modules: `playground/src/{pan-zoom,interact,snapshots,storage,arch-completion}.js`.
 
 **Latest release — v1.8.0 (agent CLI ergonomics).** Four additive commands, no core change and the
 core stays zero-dependency: **`arch preview`** (render a PNG an agent can look at; PNG-first @2×,
@@ -197,7 +212,11 @@ source (.arch)
   `npm run gen:spec` (the curated prose lives in `scripts/gen-llm-spec.ts`); CI fails on drift.
 - **Determinism is tested.** The suite asserts `compile(s) === compile(s)` byte-for-byte, with
   the optional geometry engine both present and absent. Anything that varies output across runs
-  (object key order, floats, time) will fail — route number formatting through `fmt()`.
+  (object key order, floats, time) will fail — route number formatting through `fmt()`. The one
+  opt-in output change is `compile(src, { annotate: true })` (adds `data-span` attributes for
+  editor tooling); it is itself deterministic and leaves the **default** output byte-identical, so
+  never emit annotation unconditionally (ADR 0007) — a test strips `data-span` and asserts equality
+  with the default SVG.
 - **Relational placement is deterministic, not an optimizer.** `src/layout.ts` resolves
   `right-of`/`below`/… by pure arithmetic in topological order; the absolute `at (x,y)` path
   must stay byte-identical (it is the default and has its own golden snapshots). See ADR 0004.

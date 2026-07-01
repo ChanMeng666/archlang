@@ -196,9 +196,12 @@ plan "One-bed" {
 ### Try it live
 
 **▶ [archlang-playground.vercel.app](https://archlang-playground.vercel.app)** — a client-side
-Vite + CodeMirror 6 editor with syntax highlighting, inline lint (fed by the compiler's
-`diagnostics`), live SVG preview, example plans, and **SVG / PNG / DXF / PDF download**. Nothing
-is sent to a server.
+Vite + CodeMirror 6 editor with syntax highlighting, **autocomplete**, inline lint (fed by the
+compiler's `diagnostics`), and a live SVG preview with **pan / zoom / fit**. Load examples, save
+named **snapshots**, share a plan via a **compressed permalink**, and **copy** or **download**
+the drawing as **SVG / PNG / DXF / PDF**. Two floor-plan-specific touches: **click any element to
+jump the editor caret to its source**, and **hover a room to see its area & size**. Everything runs
+in the browser — nothing is sent to a server.
 
 To run it locally from the repo root (npm workspaces):
 

@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — opt-in source annotation (`compile(src, { annotate: true })`)
+
+An additive, opt-in compile option that stamps `data-span="start:end"` (the source byte range) on
+each drawn SVG primitive that carries a span, so a tool can map a clicked element back to the source
+that produced it. **Default output is byte-identical** — with the flag off, the Scene IR and the SVG
+string are unchanged (existing goldens/snapshots untouched; exported files stay clean). `toScene`
+copies the resolved element's span onto its nodes only in this mode; walls are unioned across
+statements, so their per-node span is intentionally left unset. The option is folded into the compile
+cache key. The core stays zero-dependency and deterministic (the annotated output is itself stable).
+See **[ADR 0007](docs/adr/0007-opt-in-source-annotation.md)**. Programmatic only — not a CLI flag.
+
+### Changed — playground: mermaid-live-editor–grade editing + click-to-source
+
+The deployed playground (the Vite app, not the published package) was brought to
+mermaid-live-editor parity and given two floor-plan-specific affordances:
+
+- Preview **pan / zoom / fit** with a floating toolbar (zero-dep CSS-transform controller);
+- **Editor autocomplete**, reusing the core `completion()` language service;
+- **Compressed share links** (`#z=` deflate-raw via native `CompressionStream`; still reads the
+  legacy `#src=` form);
+- **Autosave + named snapshot history** in `localStorage`;
+- **Copy SVG / Copy PNG** to the clipboard, and **draggable resizable panes**;
+- An always-visible **facts strip** (`describe()` totals: rooms/doors/windows/area/entrance);
+- **Click any element → jump the editor caret to its source** (via the new `annotate` `data-span`);
+- **Hover a room → area/size tooltip** (geometric hit-test against `describe()` bboxes).
+
+Every export/copy strips the `data-span` annotations, so downloaded SVG/PNG/PDF stay clean.
+
 ## [1.8.0] - 2026-07-01
 
 ### Added — agent CLI ergonomics (mermaid-cli-inspired): preview · batch · md · manifest
