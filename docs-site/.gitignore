@@ -12,8 +12,10 @@ spec.md
 adr/0*.md
 adr/index.md
 
-# Example-gallery SVGs are regenerated from examples/*.arch by sync-docs.mjs.
+# Example-gallery SVGs + the live-widget source data are regenerated from
+# examples/*.arch by sync-docs.mjs.
 public/examples/
+.vitepress/theme/examples-data.js
 
 node_modules/
 

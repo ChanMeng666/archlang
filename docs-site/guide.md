@@ -1,11 +1,5 @@
-# What is ArchLang?
-
-ArchLang is a small declarative language that compiles to a professional SVG floor
-plan — think Typst/LaTeX, but for architecture. You describe a plan in plain text;
-the compiler produces a clean, deterministic drawing.
-
-```arch
-plan "Studio 1BR" {
+<script setup>
+const hero = `plan "Studio 1BR" {
   units mm
   grid 50
   scale 1:50
@@ -17,8 +11,19 @@ plan "Studio 1BR" {
   window at (2500,0) width 1800 wall exterior
   furniture bed at (4300,300) size 1500x2000 label "Bed"
   dim (0,6000)->(7000,6000) offset 600 text "7000"
-}
-```
+}`;
+</script>
+
+# What is ArchLang?
+
+ArchLang is a small declarative language that compiles to a professional SVG floor
+plan — think Typst/LaTeX, but for architecture. You describe a plan in plain text;
+the compiler produces a clean, deterministic drawing.
+
+**Edit the source below** and watch it recompile live — this runs the real compiler
+in your browser:
+
+<ArchLive :src="hero" :rows="14" />
 
 ## Core ideas
 

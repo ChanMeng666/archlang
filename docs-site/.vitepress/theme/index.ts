@@ -15,8 +15,14 @@ import "@fontsource/geist-mono/500.css";
 
 import "./style.css";
 import Layout from "./Layout.vue";
+import ArchLive from "./components/ArchLive.vue";
 
 export default {
   extends: DefaultTheme,
   Layout,
+  // `<ArchLive src="…">` — an inline, editable, live-compiled example. Registered
+  // globally so any docs page can drop one in.
+  enhanceApp({ app }) {
+    app.component("ArchLive", ArchLive);
+  },
 } satisfies Theme;

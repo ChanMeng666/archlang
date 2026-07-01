@@ -1,6 +1,7 @@
 import { defineConfig } from "vitepress";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 // The ArchLang TextMate grammar — generated from the single source of truth
 // (scripts/gen-grammars.ts → editors/archlang.tmLanguage.json, the same grammar
@@ -50,6 +51,22 @@ export default defineConfig({
   // `archlang` alias is accepted too.
   markdown: {
     languages: [{ ...archGrammar, name: "arch", aliases: ["archlang"] }],
+  },
+  // Let theme components (ArchLive) import the built core directly, so docs
+  // examples compile client-side — the same alias the playground uses. The core
+  // is built before the site (see vercel.json → docs:build), so dist/ exists.
+  // The optional Node-only backends are reached only via lazy import()s that never
+  // run in the browser — exclude them from prebundling so esbuild doesn't choke on
+  // native binaries.
+  vite: {
+    resolve: {
+      alias: {
+        archlang: fileURLToPath(new URL("../../dist/index.js", import.meta.url)),
+      },
+    },
+    server: { fs: { allow: [resolve(fileURLToPath(new URL("../..", import.meta.url)))] } },
+    optimizeDeps: { exclude: ["@resvg/resvg-js", "pdfkit", "clipper2-wasm", "archlang"] },
+    build: { rollupOptions: { external: [/^node:/, "@resvg/resvg-js", "pdfkit", "clipper2-wasm"] } },
   },
   themeConfig: {
     // The ArchLang spark mark beside the "ArchLang" site title in the nav bar.
