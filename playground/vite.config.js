@@ -24,6 +24,12 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true,
     rollupOptions: {
+      // Two pages: the full playground (index.html) and the chrome-less embed
+      // renderer (embed.html) that third-party pages iframe in.
+      input: {
+        index: resolve(__dirname, "index.html"),
+        embed: resolve(__dirname, "embed.html"),
+      },
       // The core's Node-only export backends (PNG via @resvg/resvg-js, PDF via
       // pdfkit, angled-geometry via clipper2-wasm) are reached only through lazy
       // `import()`s that never run in the browser — the playground rasterizes via

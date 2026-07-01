@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ArchLang — embedded floor plan</title>
+    <meta name="description" content="An embedded ArchLang floor plan — compiled client-side from declarative source to SVG." />
+    <link rel="icon" type="image/svg+xml" href="/brand/archlang-icon-plum.svg" />
+    <meta name="theme-color" content="#0f1115" />
+  </head>
+  <body class="embed">
+    <div class="embed-app">
+      <div class="embed-editor" hidden>
+        <textarea id="embedSrc" spellcheck="false" aria-label="ArchLang source"></textarea>
+      </div>
+      <div class="embed-preview">
+        <div class="pz-viewport">
+          <div class="pz-stage"></div>
+          <div class="pz-toolbar">
+            <button data-pz="out" type="button" title="Zoom out" aria-label="Zoom out">−</button>
+            <button data-pz="in" type="button" title="Zoom in" aria-label="Zoom in">+</button>
+            <button data-pz="fit" type="button" title="Fit to view" aria-label="Fit to view">⤢</button>
+          </div>
+          <a class="embed-brand" href="https://archlang-playground.vercel.app" target="_blank" rel="noopener" title="Open in the ArchLang playground">
+            <img src="/brand/archlang-icon.svg" alt="" width="15" height="15" /><span>ArchLang</span>
+          </a>
+        </div>
+      </div>
+      <div id="embedErr" class="embed-err" hidden></div>
+    </div>
+    <script type="module" src="/src/embed.js"></script>
+  </body>
+</html>

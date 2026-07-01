@@ -3,12 +3,25 @@ import { EditorState } from "@codemirror/state";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { bracketMatching } from "@codemirror/language";
 import { lintGutter } from "@codemirror/lint";
-import { compile, describe, lint, toDxf, THEMES, LINT_PROFILE_NAMES } from "archlang";
+import {
+  compile,
+  describe,
+  lint,
+  format,
+  repair,
+  ERROR_CATALOG,
+  offsetToLineCol,
+  toDxf,
+  THEMES,
+  LINT_PROFILE_NAMES,
+} from "archlang";
 import { archLanguage, archLinter } from "./arch-language.js";
 import { archCompletion } from "./arch-completion.js";
 import { createPanZoom } from "./pan-zoom.js";
 import { mountSnapshots } from "./snapshots.js";
 import { mountInteract } from "./interact.js";
+import { srcFromHash, updateHash, encodeSrc } from "./share.js";
+import { showSvgInStage } from "./viewer.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 import { EXAMPLES } from "./examples.js";
 import { mountFlowingLines } from "./flowing-lines.js";
@@ -39,6 +52,10 @@ const lintCaptionEl = document.getElementById("lintCaption");
 const lintOutput = document.getElementById("lintOutput");
 const copyLinkBtn = document.getElementById("copyLink");
 const savedBtn = document.getElementById("saved");
+const formatBtn = document.getElementById("format");
+const embedBtn = document.getElementById("embed");
+const repairBtn = document.getElementById("repair");
+const repairPanel = document.getElementById("repairPanel");
 const factsEl = document.getElementById("facts");
 const pzViewport = document.querySelector(".pz-viewport");
 const pzStage = document.querySelector(".pz-stage");
@@ -82,70 +99,8 @@ function syncLintCaption() {
 }
 syncLintCaption();
 
-// ---- shareable permalink (B5) ----
-// Source is round-tripped through the URL hash so a plan can be shared with no
-// backend. The current scheme is `#z=<base64url(deflate-raw(utf8))>` — compressed
-// so larger plans fit the address bar. The legacy raw `#src=<base64url(utf8)>`
-// form is still *read* so previously-shared links keep working forever.
-
-/** base64url ⇄ bytes (UTF-8-safe; no `escape`/`unescape`). */
-function bytesToB64url(bytes) {
-  let bin = "";
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-function b64urlToBytes(b64) {
-  const bin = atob(b64.replace(/-/g, "+").replace(/_/g, "/"));
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
-}
-async function pipeStream(stream, bytes) {
-  const w = stream.writable.getWriter();
-  w.write(bytes);
-  w.close();
-  return new Uint8Array(await new Response(stream.readable).arrayBuffer());
-}
-
-async function srcFromHash() {
-  const z = location.hash.match(/[#&]z=([^&]*)/);
-  if (z) {
-    if (typeof DecompressionStream === "undefined") return null;
-    try {
-      const bytes = await pipeStream(new DecompressionStream("deflate-raw"), b64urlToBytes(z[1]));
-      return new TextDecoder().decode(bytes);
-    } catch {
-      return null;
-    }
-  }
-  // Legacy `#src=` — base64url of the UTF-8 bytes (back-compat).
-  const m = location.hash.match(/[#&]src=([^&]*)/);
-  if (!m) return null;
-  try {
-    return new TextDecoder().decode(b64urlToBytes(m[1]));
-  } catch {
-    return null;
-  }
-}
-
-async function updateHash(src) {
-  const utf8 = new TextEncoder().encode(src);
-  let hash;
-  try {
-    if (typeof CompressionStream !== "undefined") {
-      const bytes = await pipeStream(new CompressionStream("deflate-raw"), utf8);
-      hash = `#z=${bytesToB64url(bytes)}`;
-    } else {
-      hash = `#src=${bytesToB64url(utf8)}`; // graceful fallback on ancient browsers
-    }
-  } catch {
-    hash = `#src=${bytesToB64url(utf8)}`;
-  }
-  // replaceState — keep one entry, don't spam browser history on every keystroke.
-  // NB: `history` is shadowed by CodeMirror's `history` import above, so reach for
-  // the global explicitly via `window.history`.
-  window.history.replaceState(null, "", hash);
-}
+// The shareable-permalink codec (`#z=` compressed / legacy `#src=`) lives in
+// `share.js` so the embed page reuses the exact same scheme.
 
 let lastSvg = "";
 let lastScene = null;
@@ -175,6 +130,11 @@ function updateAnalysis(source, ok) {
   // Lint — architectural soundness warnings (habitability rules), under the chosen
   // advisory profile.
   const lintDiags = ok ? lint(source, { profile: lintProfileSelect.value, noCache: true }) : [];
+  // `repair` only corrects furniture-placement faults — offer it exactly when one
+  // is present (ADR 0006: an explicit, reviewable transform, never auto-applied).
+  const repairable = lintDiags.some((d) => /FURNITURE|FIXTURE|DOORWAY|SWING/.test(d.code ?? ""));
+  if (repairBtn) repairBtn.hidden = !repairable;
+  if (!repairable && repairPanel) repairPanel.hidden = true;
   if (!ok) {
     lintOutput.innerHTML = `<p class="empty">Fix the errors to run the soundness check.</p>`;
   } else if (lintDiags.length === 0) {
@@ -253,28 +213,11 @@ function renderFacts(summary, ok) {
     `<span class="fact ${entrance ? "fact-ok" : "fact-bad"}">Entrance <b>${entrance ? "yes" : "none"}</b></span>`;
 }
 
-/** Inject the SVG into the pan/zoom stage, give it a definite pixel size from its
- *  viewBox (so the stage has real dimensions to fit), and update the controller.
- *  `refit` re-centres the view (first load / example switch); otherwise the user's
- *  current pan/zoom is preserved across the keystroke re-render. */
+/** Inject the SVG into the pan/zoom stage and size it from its viewBox. `refit`
+ *  re-centres the view (first load / example switch); otherwise the user's current
+ *  pan/zoom is preserved across the keystroke re-render. Shared logic in viewer.js. */
 function showSvg(svg, refit) {
-  pzStage.innerHTML = svg;
-  const el = pzStage.firstElementChild;
-  let w = 800;
-  let h = 600;
-  if (el) {
-    const vb = el.getAttribute("viewBox");
-    if (vb) {
-      const p = vb.split(/[\s,]+/).map(Number);
-      if (p.length === 4 && p[2] > 0 && p[3] > 0) {
-        w = p[2];
-        h = p[3];
-      }
-    }
-    el.setAttribute("width", String(w));
-    el.setAttribute("height", String(h));
-  }
-  pz.setContent(w, h, refit);
+  showSvgInStage(pzStage, pz, svg, refit);
 }
 
 function render(source, refit = false) {
@@ -286,27 +229,69 @@ function render(source, refit = false) {
   const opts = themeKey
     ? { noCache: true, annotate: true, theme: THEMES[themeKey] }
     : { noCache: true, annotate: true };
-  const { svg, errors, warnings, scene } = compile(source, opts);
+  const { svg, errors, diagnostics, scene } = compile(source, opts);
   const ok = errors.length === 0;
   updateAnalysis(source, ok);
+  renderDiagnostics(diagnostics ?? [], source);
   if (!ok) {
+    const n = errors.length;
     statusEl.classList.add("err");
-    statusText.textContent = `${errors.length} error${errors.length > 1 ? "s" : ""}`;
-    errorsEl.classList.add("show");
-    errorsEl.style.color = "";
-    errorsEl.textContent = errors
-      .map((e) => `line ${e.line ?? "?"}${e.col ? ":" + e.col : ""}  ${e.message}`)
-      .join("\n");
+    statusText.textContent = `${n} error${n > 1 ? "s" : ""}`;
     return; // keep last good preview
   }
   statusEl.classList.remove("err");
-  statusText.textContent = warnings.length ? `${warnings.length} warning(s)` : "ready";
-  errorsEl.classList.toggle("show", warnings.length > 0);
-  errorsEl.style.color = warnings.length ? "#8a6d00" : "";
-  errorsEl.textContent = warnings.map((w) => `warning${w.line ? " line " + w.line : ""}: ${w.message}`).join("\n");
+  const warns = (diagnostics ?? []).filter((d) => d.severity === "warning");
+  statusText.textContent = warns.length ? `${warns.length} warning${warns.length > 1 ? "s" : ""}` : "ready";
   showSvg(svg, refit);
   lastSvg = svg;
   lastScene = scene ?? null;
+}
+
+/**
+ * Render the compiler diagnostics into the `#errors` panel as clickable rows:
+ * clicking a row jumps the editor caret to the diagnostic's source span, and a
+ * disclosure reveals the error-catalog entry (cause / fix / example) — the same
+ * self-correcting context `arch explain <CODE>` gives an agent. Errors first,
+ * then warnings; the panel hides when the plan is clean.
+ */
+function renderDiagnostics(diagnostics, source) {
+  const rows = diagnostics
+    .filter((d) => d.severity === "error" || d.severity === "warning")
+    .sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "error" ? -1 : 1));
+  if (rows.length === 0) {
+    errorsEl.classList.remove("show");
+    errorsEl.innerHTML = "";
+    return;
+  }
+  errorsEl.classList.add("show");
+  errorsEl.innerHTML = rows
+    .map((d, i) => {
+      const offset = d.span ? d.span.start : null;
+      const loc = offset != null ? offsetToLineCol(source, offset) : null;
+      const locText = loc ? `${loc.line}:${loc.col}` : "";
+      const cat = ERROR_CATALOG[d.code] ?? null;
+      // Prefer the diagnostic's own fix, else the catalog's; show cause + example.
+      const fix = d.fix ?? cat?.fix ?? (d.hints && d.hints[0]) ?? "";
+      const detail = cat
+        ? `<div class="diag-detail">` +
+          (cat.cause ? `<p><b>Cause</b> ${escapeHtml(cat.cause)}</p>` : "") +
+          (fix ? `<p><b>Fix</b> ${escapeHtml(fix)}</p>` : "") +
+          (cat.example ? `<pre>${escapeHtml(cat.example)}</pre>` : "") +
+          `</div>`
+        : fix
+          ? `<div class="diag-detail"><p><b>Fix</b> ${escapeHtml(fix)}</p></div>`
+          : "";
+      return (
+        `<div class="diagrow diag-${d.severity}" data-i="${i}"${offset != null ? ` data-offset="${offset}"` : ""}>` +
+        `<div class="diag-head">` +
+        `<code>${escapeHtml(d.code ?? d.severity)}</code>` +
+        `<span class="diag-msg">${escapeHtml(d.message)}</span>` +
+        (locText ? `<span class="diag-loc">${locText}</span>` : "") +
+        (detail ? `<span class="diag-toggle" aria-hidden="true">▸</span>` : "") +
+        `</div>${detail}</div>`
+      );
+    })
+    .join("");
 }
 
 let debounce;
@@ -443,9 +428,113 @@ async function init() {
 
   mountDivider();
 
+  // Format (idempotent, comment-preserving) — rewrite the source in place.
+  formatBtn?.addEventListener("click", () => {
+    const src = currentSource();
+    const out = format(src);
+    if (out === src) {
+      flash("Already formatted");
+      return;
+    }
+    loadSource(out, false);
+    flash("Formatted");
+  });
+
+  // Repair furniture (ADR 0006) — run the deterministic corrector, show the change
+  // log, and let the user apply the new source. Never auto-applied.
+  repairBtn?.addEventListener("click", () => showRepair());
+
+  // Embed — build an <iframe> snippet pointing at the chrome-less embed page.
+  embedBtn?.addEventListener("click", () => void showEmbed());
+
+  // Diagnostics drill-down — click a row to jump to its source span and reveal the
+  // catalogued cause/fix/example.
+  errorsEl.addEventListener("click", (e) => {
+    const row = e.target.closest(".diagrow");
+    if (!row) return;
+    row.classList.toggle("open");
+    const off = row.dataset.offset;
+    if (off != null) jumpToOffset(Number(off));
+  });
+
   // Initial render — fit the plan to the viewport, then re-fit once layout settles.
   render(initialDoc, true);
   requestAnimationFrame(() => pz.fit());
+}
+
+/** Run `repair` on the current source and render its change log into the Lint tab,
+ *  with an "Apply fixes" action that swaps the corrected source into the editor. */
+function showRepair() {
+  if (!repairPanel) return;
+  const result = repair(currentSource());
+  if (!result.changed && result.unresolved.length === 0) {
+    repairPanel.hidden = false;
+    repairPanel.innerHTML = `<p class="repair-none">Nothing to repair — furniture placement is already sound.</p>`;
+    return;
+  }
+  const changeRows = result.changes
+    .map(
+      (c) =>
+        `<li><code>${escapeHtml(c.id)}</code> <span class="repair-cat">${escapeHtml(c.category)}</span>` +
+        `<span class="repair-move">(${c.from.x},${c.from.y}) → (${c.to.x},${c.to.y})</span>` +
+        `<span class="repair-reason">${escapeHtml(c.reason)}</span></li>`,
+    )
+    .join("");
+  const unresolvedRows = result.unresolved
+    .map((u) => `<li class="repair-un"><code>${escapeHtml(u.id)}</code> ${escapeHtml(u.reason)}</li>`)
+    .join("");
+  repairPanel.hidden = false;
+  repairPanel.innerHTML =
+    `<div class="repair-head"><strong>Repair — ${result.changes.length} fix${result.changes.length === 1 ? "" : "es"}` +
+    `${result.unresolved.length ? `, ${result.unresolved.length} unresolved` : ""}</strong>` +
+    (result.changed ? `<button class="repair-apply" type="button">Apply fixes</button>` : "") +
+    `</div>` +
+    (changeRows ? `<ul class="repair-list">${changeRows}</ul>` : "") +
+    (unresolvedRows
+      ? `<p class="repair-un-h">Left for you to resolve (repair never guesses):</p><ul class="repair-list">${unresolvedRows}</ul>`
+      : "");
+  repairPanel.querySelector(".repair-apply")?.addEventListener("click", () => {
+    loadSource(result.source, false);
+    repairPanel.hidden = true;
+    flash("Repaired");
+  });
+}
+
+/** Present a copyable iframe (and Markdown) snippet that embeds the current plan
+ *  via the chrome-less embed page, using the shared `#z=` share codec. */
+async function showEmbed() {
+  const hash = await encodeSrc(currentSource());
+  const origin = location.origin + location.pathname.replace(/[^/]*$/, "");
+  const embedUrl = `${origin}embed.html${hash}`;
+  const iframe = `<iframe src="${embedUrl}" width="720" height="480" style="border:1px solid #e3e0d8;border-radius:10px" title="ArchLang floor plan" loading="lazy"></iframe>`;
+  const md = `[![ArchLang floor plan](${origin}embed.html${hash})](${embedUrl})`;
+  const dialog = document.createElement("div");
+  dialog.className = "embed-dialog";
+  dialog.innerHTML =
+    `<div class="embed-box">` +
+    `<div class="embed-head"><strong>Embed this plan</strong><button class="embed-close" type="button" aria-label="Close">×</button></div>` +
+    `<label>iframe (HTML)</label><textarea class="embed-code" readonly rows="3">${escapeHtml(iframe)}</textarea>` +
+    `<label>Live editable link</label><input class="embed-link" readonly value="${escapeHtml(embedUrl)}&editable=1" />` +
+    `<div class="embed-actions"><button class="embed-copy" data-snippet="iframe" type="button">Copy iframe</button>` +
+    `<button class="embed-copy" data-snippet="md" type="button">Copy Markdown</button>` +
+    `<a class="embed-open" href="${embedUrl}&editable=1" target="_blank" rel="noopener">Open embed ↗</a></div>` +
+    `</div>`;
+  document.body.appendChild(dialog);
+  const close = () => dialog.remove();
+  dialog.addEventListener("click", (e) => {
+    if (e.target === dialog || e.target.closest(".embed-close")) close();
+  });
+  for (const btn of dialog.querySelectorAll(".embed-copy")) {
+    btn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.snippet === "md" ? md : iframe);
+        flash(btn.dataset.snippet === "md" ? "Markdown copied" : "Embed snippet copied");
+        close();
+      } catch {
+        flash("Copy failed");
+      }
+    });
+  }
 }
 
 function toggleFullscreen() {

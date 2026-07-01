@@ -43,7 +43,9 @@
         <option value="pdf">PDF</option>
       </select>
       <button id="download">Download</button>
+      <button id="format" title="Reformat the source to canonical style">Format</button>
       <button id="copyLink">Copy link</button>
+      <button id="embed" title="Copy an iframe snippet to embed this plan">Embed</button>
       <button id="saved" aria-haspopup="true">Saved ▾</button>
       <!-- brand-family navigation: back to the main docs site + sibling product -->
       <a class="btn" href="https://archlang-docs.vercel.app" target="_blank" rel="noopener">Docs ↗</a>
@@ -87,8 +89,10 @@
           <div class="lint-controls">
             <label for="lintProfile">Profile</label>
             <select id="lintProfile" aria-label="Lint profile"></select>
+            <button id="repair" class="repair-btn" hidden title="Deterministically fix furniture placement (ADR 0006)">Repair furniture ▸</button>
             <p id="lintCaption" class="lint-caption"></p>
           </div>
+          <div id="repairPanel" class="repair-panel" hidden></div>
           <div id="lintOutput"></div>
         </div>
       </section>
