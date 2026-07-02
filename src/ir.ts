@@ -34,6 +34,7 @@ import type { WallSegment } from "./geometry.js";
 import { segmentsOfWall, WallGrid } from "./geometry.js";
 import type { GridBox } from "./geometry/grid-index.js";
 import { GridIndex } from "./geometry/grid-index.js";
+import { rectsOverlap } from "./geometry/rect.js";
 import { BUILTIN_NAMES } from "./builtins.js";
 
 export interface RBase {
@@ -560,9 +561,9 @@ function resolveImpl(
     for (const b of rgrid.queryBox(roomBox(r1))) {
       if (b <= a) continue; // each unordered pair once, with a < b
       const r2 = rooms[b];
-      const ox = Math.max(0, Math.min(r1.at.x + r1.size.w, r2.at.x + r2.size.w) - Math.max(r1.at.x, r2.at.x));
-      const oy = Math.max(0, Math.min(r1.at.y + r1.size.h, r2.at.y + r2.size.h) - Math.max(r1.at.y, r2.at.y));
-      if (ox > 1 && oy > 1) {
+      const b1 = { x: r1.at.x, y: r1.at.y, w: r1.size.w, h: r1.size.h };
+      const b2 = { x: r2.at.x, y: r2.at.y, w: r2.size.w, h: r2.size.h };
+      if (rectsOverlap(b1, b2)) {
         const key = `${a},${b}`;
         if (!seenPair.has(key)) {
           seenPair.add(key);

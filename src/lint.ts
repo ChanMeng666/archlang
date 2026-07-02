@@ -40,7 +40,7 @@ import {
   type WallSegment,
 } from "./geometry.js";
 import { requiresWall, frontClearanceMm } from "./fixtures-catalog.js";
-import { overlap1d } from "./analyze.js";
+import { doorLandingRect, pointInRect, rectsOverlap, wallIntrusionDepth } from "./geometry/rect.js";
 import { computeRoomClearances } from "./analyze/occupancy.js";
 
 /**
@@ -50,77 +50,6 @@ import { computeRoomClearances } from "./analyze/occupancy.js";
  * stay quiet while a sofa drawn through a wall is caught.
  */
 const WALL_COLLISION_SLACK_MM = 30;
-
-/** Do two axis-aligned rects overlap by more than 1 mm on both axes? */
-function rectsOverlap(a: BBox, b: BBox): boolean {
-  const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
-  const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
-  return ox > 1 && oy > 1;
-}
-
-/**
- * How deep (mm) a furniture rectangle `fr` intrudes into an orthogonal wall
- * segment's solid band, counting only the run that is *not* an opening (a door or
- * window voids the wall there). A piece flush against the wall face intrudes ~0;
- * one straddling the centerline intrudes by up to the wall thickness. Returns 0 for
- * non-orthogonal segments (handled conservatively — angled walls don't trip this).
- *
- * "Intrusion" is the across-wall overlap; it is only meaningful when the along-wall
- * overlap survives opening subtraction, so a counter under a window or a piece in a
- * doorway isn't read as passing through solid wall.
- */
-function wallIntrusionDepth(
-  fr: BBox,
-  s: WallSegment,
-  openings: Array<{ at: { x: number; y: number }; width: number }>,
-): number {
-  const horiz = s.a.y === s.b.y;
-  const vert = s.a.x === s.b.x;
-  if (horiz === vert) return 0; // diagonal or degenerate — skip
-  const half = s.thickness / 2;
-  if (horiz) {
-    const band = overlap1d(fr.y, fr.y + fr.h, s.a.y - half, s.a.y + half); // across-wall (depth)
-    if (band <= 0) return 0;
-    const segLo = Math.min(s.a.x, s.b.x);
-    const segHi = Math.max(s.a.x, s.b.x);
-    const lo = Math.max(fr.x, segLo);
-    const hi = Math.min(fr.x + fr.w, segHi);
-    if (hi - lo <= 1) return 0;
-    // Subtract opening spans that lie on this segment's line.
-    const voids = openings
-      .filter((o) => Math.abs(o.at.y - s.a.y) <= half + 1)
-      .map((o) => [o.at.x - o.width / 2, o.at.x + o.width / 2] as [number, number]);
-    return solidRemains(lo, hi, voids) ? band : 0;
-  }
-  const band = overlap1d(fr.x, fr.x + fr.w, s.a.x - half, s.a.x + half);
-  if (band <= 0) return 0;
-  const segLo = Math.min(s.a.y, s.b.y);
-  const segHi = Math.max(s.a.y, s.b.y);
-  const lo = Math.max(fr.y, segLo);
-  const hi = Math.min(fr.y + fr.h, segHi);
-  if (hi - lo <= 1) return 0;
-  const voids = openings
-    .filter((o) => Math.abs(o.at.x - s.a.x) <= half + 1)
-    .map((o) => [o.at.y - o.width / 2, o.at.y + o.width / 2] as [number, number]);
-  return solidRemains(lo, hi, voids) ? band : 0;
-}
-
-/** Is any > 1 mm of the interval [lo,hi] left uncovered by the `voids` intervals? */
-function solidRemains(lo: number, hi: number, voids: Array<[number, number]>): boolean {
-  let cuts = [lo, hi];
-  for (const [a, b] of voids) {
-    cuts.push(Math.max(lo, Math.min(hi, a)), Math.max(lo, Math.min(hi, b)));
-  }
-  cuts = [...new Set(cuts)].sort((p, q) => p - q);
-  for (let i = 0; i < cuts.length - 1; i++) {
-    const mid = (cuts[i] + cuts[i + 1]) / 2;
-    const len = cuts[i + 1] - cuts[i];
-    if (len <= 1) continue;
-    const inVoid = voids.some(([a, b]) => mid > a && mid < b);
-    if (!inVoid) return true;
-  }
-  return false;
-}
 
 /** Furniture categories that count as a plumbing fixture for a wet room. */
 const WET_FIX = new Set(["wc", "toilet", "basin", "sink", "shower", "bath", "bathtub", "tub"]);
@@ -309,7 +238,7 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
         const fr = rectOf(f);
         const cx = fr.x + fr.w / 2;
         const cy = fr.y + fr.h / 2;
-        return want.has(f.category) && cx >= rect.x && cx <= rect.x + rect.w && cy >= rect.y && cy <= rect.y + rect.h;
+        return want.has(f.category) && pointInRect(cx, cy, rect);
       });
       if (!has) {
         out.push({
@@ -391,7 +320,7 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
     if (!rect) continue;
     const cx = f.at.x + f.size.w / 2;
     const cy = f.at.y + f.size.h / 2;
-    const inside = cx >= rect.x && cx <= rect.x + rect.w && cy >= rect.y && cy <= rect.y + rect.h;
+    const inside = pointInRect(cx, cy, rect);
     if (!inside) {
       const name = f.label ?? f.category;
       out.push({
@@ -528,16 +457,9 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
   // swing arc above — this is the walk-through path, the thing that piles fixtures at a
   // bathroom door. Built as an AABB straddling the opening on orthogonal host walls.
   for (const d of doors) {
-    const seg = d.host;
-    if (!seg) continue;
-    const horiz = seg.a.y === seg.b.y;
-    const vert = seg.a.x === seg.b.x;
-    if (horiz === vert) continue; // angled host — skip
-    const halfW = d.width / 2;
     const depth = rules.doorwayLandingMm;
-    const landing: BBox = horiz
-      ? { x: d.at.x - halfW, y: d.at.y - depth, w: d.width, h: depth * 2 }
-      : { x: d.at.x - depth, y: d.at.y - halfW, w: depth * 2, h: d.width };
+    const landing = doorLandingRect(d, depth);
+    if (!landing) continue; // no host, or an angled host — skip
     const blocker = furniture.find((f) => rectsOverlap(landing, rectOf(f)));
     if (blocker) {
       const gn = blocker.label ?? blocker.category;

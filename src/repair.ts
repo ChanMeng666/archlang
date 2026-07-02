@@ -27,7 +27,8 @@
 
 import { parse } from "./parser.js";
 import { formatPlan } from "./format.js";
-import { resolvePlan, overlap1d, isAgainstWall, type BBox } from "./analyze.js";
+import { resolvePlan, isAgainstWall, type BBox } from "./analyze.js";
+import { doorLandingRect, pointInRect, rectOverlapAmounts, wallIntrusion } from "./geometry/rect.js";
 import { segmentsOfWall, doorSwing, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
 import { DEFAULT_RULESET } from "./lint.js";
 import { requiresWall } from "./fixtures-catalog.js";
@@ -83,31 +84,6 @@ const snapOut = (v: number, dir: number, grid: number): number =>
 
 // ---- geometry over the static wall/door layout --------------------------------
 
-/** Signed across-wall intrusion of `fr` into one orthogonal wall segment (0 if none
- *  or non-orthogonal). Returns `{ depth, axis, center }` so callers can both test a
- *  collision and compute the push that clears it. */
-function wallIntrusion(
-  fr: BBox,
-  s: { a: { x: number; y: number }; b: { x: number; y: number }; thickness: number },
-): { depth: number; axis: "x" | "y"; center: number } | null {
-  const horiz = s.a.y === s.b.y;
-  const vert = s.a.x === s.b.x;
-  if (horiz === vert) return null;
-  const h2 = s.thickness / 2;
-  if (horiz) {
-    const band = overlap1d(fr.y, fr.y + fr.h, s.a.y - h2, s.a.y + h2);
-    const lo = Math.max(fr.x, Math.min(s.a.x, s.b.x));
-    const hi = Math.min(fr.x + fr.w, Math.max(s.a.x, s.b.x));
-    if (band <= 0 || hi - lo <= 1) return null;
-    return { depth: band, axis: "y", center: s.a.y };
-  }
-  const band = overlap1d(fr.x, fr.x + fr.w, s.a.x - h2, s.a.x + h2);
-  const lo = Math.max(fr.y, Math.min(s.a.y, s.b.y));
-  const hi = Math.min(fr.y + fr.h, Math.max(s.a.y, s.b.y));
-  if (band <= 0 || hi - lo <= 1) return null;
-  return { depth: band, axis: "x", center: s.a.x };
-}
-
 /** Does `fr` collide with any wall solid by more than the slack? */
 function hitsWall(fr: BBox, walls: RWall[]): boolean {
   for (const w of walls)
@@ -155,19 +131,6 @@ function computeWallPush(
   return ambiguous ? "ambiguous" : null;
 }
 
-/** The clear-landing rectangle straddling a door opening on its (orthogonal) host wall. */
-function landingOf(d: RDoor, depth: number): BBox | null {
-  const seg = d.host;
-  if (!seg) return null;
-  const horiz = seg.a.y === seg.b.y;
-  const vert = seg.a.x === seg.b.x;
-  if (horiz === vert) return null;
-  const halfW = d.width / 2;
-  return horiz
-    ? { x: d.at.x - halfW, y: d.at.y - depth, w: d.width, h: depth * 2 }
-    : { x: d.at.x - depth, y: d.at.y - halfW, w: depth * 2, h: d.width };
-}
-
 /** The minimal move that lifts `fr` out of any door landing it overlaps, preferring an
  *  exit that does not drive the piece into a wall. "ambiguous" when two equally-good
  *  exits tie; null when no landing is blocked. */
@@ -180,8 +143,7 @@ function computeDoorwayPush(
   let best: { shift: number; clean: boolean; dx: number; dy: number } | null = null;
   let tie = false;
   for (const L of landings) {
-    const ox = Math.min(fr.x + fr.w, L.x + L.w) - Math.max(fr.x, L.x);
-    const oy = Math.min(fr.y + fr.h, L.y + L.h) - Math.max(fr.y, L.y);
+    const { ox, oy } = rectOverlapAmounts(fr, L);
     if (ox <= 1 || oy <= 1) continue;
     const exits: Array<{ shift: number; x: number; y: number }> = [
       { shift: fr.x + fr.w - L.x, x: snapOut(fr.x - (fr.x + fr.w - L.x), -1, grid), y: fr.y }, // left
@@ -307,7 +269,7 @@ function computeSwingPush(
 function computeWrongRoomPush(fr: BBox, room: BBox, grid: number): { dx: number; dy: number } | null {
   const cx = fr.x + fr.w / 2;
   const cy = fr.y + fr.h / 2;
-  if (cx >= room.x && cx <= room.x + room.w && cy >= room.y && cy <= room.y + room.h) return null; // centre inside
+  if (pointInRect(cx, cy, room)) return null; // centre inside
   const fitX = fr.w <= room.w ? Math.min(Math.max(fr.x, room.x), room.x + room.w - fr.w) : room.x + (room.w - fr.w) / 2;
   const fitY = fr.h <= room.h ? Math.min(Math.max(fr.y, room.y), room.y + room.h - fr.h) : room.y + (room.h - fr.h) / 2;
   const snap = (v: number, lo: number, hi: number): number => {
@@ -329,8 +291,7 @@ function computeWrongRoomPush(fr: BBox, room: BBox, grid: number): { dx: number;
 function computeOverlapPush(fr: BBox, others: BBox[], grid: number): { dx: number; dy: number } | "ambiguous" | null {
   let worst: { o: BBox; ox: number; oy: number; area: number } | null = null;
   for (const o of others) {
-    const ox = Math.min(fr.x + fr.w, o.x + o.w) - Math.max(fr.x, o.x);
-    const oy = Math.min(fr.y + fr.h, o.y + o.h) - Math.max(fr.y, o.y);
+    const { ox, oy } = rectOverlapAmounts(fr, o);
     if (ox <= 1 || oy <= 1) continue;
     const area = ox * oy;
     if (!worst || area > worst.area) worst = { o, ox, oy, area };
@@ -437,7 +398,7 @@ export function repair(source: string): RepairResult {
   const walls = ir?.walls ?? [];
   const doors = (ir?.elements ?? []).filter((e): e is RDoor => e.kind === "door");
   const landings = doors
-    .map((d) => landingOf(d, DEFAULT_RULESET.doorwayLandingMm))
+    .map((d) => doorLandingRect(d, DEFAULT_RULESET.doorwayLandingMm))
     .filter((l): l is BBox => l !== null);
   const swings = doors.map((d) => doorSwing(d)).filter((s): s is DoorSwing => s !== null);
   const roomRects = new Map<string, BBox>(

@@ -19,17 +19,15 @@ import type { Diagnostic } from "./diagnostics.js";
 import type { Point } from "./ast.js";
 import type { CompileOptions } from "./types.js";
 import { segmentsOfWall, type WallLike, type WallSegment } from "./geometry.js";
+import { overlap1d, type BBox } from "./geometry/rect.js";
 
 /** Options shared by the analysis tools: a subset of {@link CompileOptions}. */
 export type AnalyzeOptions = Pick<CompileOptions, "plugins" | "world">;
 
-/** A millimetre bounding box (origin top-left, +x right, +y down). */
-export interface BBox {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+// Shared rect math lives in geometry/rect.ts; re-exported here so the many
+// existing `from "./analyze.js"` importers keep working unchanged.
+export { overlap1d };
+export type { BBox };
 
 /** Default mm tolerance for edge-touch / point-on-edge tests (≈ one partition wall). */
 export const DEFAULT_TOL = 200;
@@ -106,11 +104,6 @@ export const isCirculation = (room: { label?: string; id: string; uses?: UseKind
   const u = roomUses(room);
   return u.has("hall") || u.has("circulation") || u.has("entry");
 };
-
-/** Length of the overlap of two 1-D intervals (0 if they do not overlap). */
-export function overlap1d(aLo: number, aHi: number, bLo: number, bHi: number): number {
-  return Math.max(0, Math.min(aHi, bHi) - Math.max(aLo, bLo));
-}
 
 /** Do two room rectangles share an edge (touch) within tolerance? A shared corner
  *  alone does not count — the perpendicular overlap must be positive. */

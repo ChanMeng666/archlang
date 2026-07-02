@@ -17,6 +17,7 @@
 
 import type { RRoom, RDoor, ROpening, RFurniture, RWall } from "../ir.js";
 import { rectOf, pointOnRoomEdge } from "../analyze.js";
+import { pointInRect } from "../geometry/rect.js";
 
 export interface RoomClearance {
   roomId: string;
@@ -78,7 +79,7 @@ export function computeRoomClearances(
         const cy = rb.y + (iy + 0.5) * cellH;
         let blocked = false;
         for (const fr of furnRects) {
-          if (cx >= fr.x && cx <= fr.x + fr.w && cy >= fr.y && cy <= fr.y + fr.h) {
+          if (pointInRect(cx, cy, fr)) {
             blocked = true;
             break;
           }
