@@ -252,94 +252,97 @@ function themeBaseLookup(name: string | undefined, runtime: Runtime): Partial<Th
  */
 function synthDims(ir: ResolvedPlan, b: Bounds, sizes: RenderSizes): RDim[] {
   const dims: RDim[] = [];
-  const mk = (from: Point, to: Point, offset: number, text?: string): RDim => ({
-    kind: "dim",
-    id: "",
-    from,
-    to,
-    offset,
-    text,
-  });
-  const wantOverall = ir.autoDims === "overall" || ir.autoDims === "all";
-  const wantRooms = ir.autoDims === "rooms" || ir.autoDims === "all";
-  const wantWalls = ir.autoDims === "walls" || ir.autoDims === "all";
-
-  if (wantOverall) {
-    const off = sizes.margin * 0.5;
-    // Width below the plan; height to the left of it (both in the page margin). The
-    // dim element offsets along the *left normal* of from→to, so endpoint order
-    // chooses the side: width runs minX→maxX (normal points +y, below); height runs
-    // minY→maxY (normal points −x, left). Reversing either would push it *inside*.
-    dims.push(mk({ x: b.minX, y: b.maxY }, { x: b.maxX, y: b.maxY }, off));
-    dims.push(mk({ x: b.minX, y: b.minY }, { x: b.minX, y: b.maxY }, off));
-  }
-
-  if (wantRooms) {
-    const inset = sizes.dimFont * 1.6;
-    const rooms = ir.elements.filter((el): el is RRoom => el.kind === "room");
-    // Building extent over room rectangles (exact integers — same coordinate space,
-    // no wall-offset slop). A room edge lying on this extent faces the exterior, so
-    // its dimension can live in the page margin instead of cluttering the interior.
-    const rMinX = Math.min(...rooms.map((r) => r.at.x));
-    const rMinY = Math.min(...rooms.map((r) => r.at.y));
-    const rMaxX = Math.max(...rooms.map((r) => r.at.x + r.size.w));
-    const rMaxY = Math.max(...rooms.map((r) => r.at.y + r.size.h));
-    for (const r of rooms) {
-      const { x, y } = r.at;
-      const { w, h } = r.size;
-      // Width dim: prefer the horizontal edge that faces outside (top, else bottom)
-      // so the number sits in the margin clear of the label/furniture; a room with
-      // neither edge on the perimeter keeps the legacy just-inside-the-top placement.
-      // The dim element offsets along the left-normal of from→to, so endpoint order +
-      // offset sign choose the side (mirrors the overall-dim trick above).
-      if (y === rMinY)
-        dims.push(mk({ x: x + w, y }, { x, y }, inset)); // outside, above top edge
-      else if (y + h === rMaxY)
-        dims.push(mk({ x, y: y + h }, { x: x + w, y: y + h }, inset)); // outside, below bottom edge
-      else dims.push(mk({ x, y }, { x: x + w, y }, inset)); // interior room: just inside the top edge
-      // Height dim: prefer the vertical edge facing outside (left, else right).
-      if (x === rMinX)
-        dims.push(mk({ x, y }, { x, y: y + h }, inset)); // outside, left of left edge
-      else if (x + w === rMaxX)
-        dims.push(mk({ x: x + w, y: y + h }, { x: x + w, y }, inset)); // outside, right of right edge
-      else dims.push(mk({ x, y: y + h }, { x, y }, inset)); // interior room: just inside the left edge
-    }
-  }
-
-  if (wantWalls) {
-    // One thickness call-out per distinct wall thickness (deduped so eight identical
-    // partitions show "100" once, not eight times). For each thickness, the longest
-    // axis-aligned segment carrying it is the representative — most room for a clean
-    // annotation, chosen deterministically (max length, then source order). The dim
-    // runs face-to-face across the wall at the segment midpoint with the measured
-    // thickness as its text; its zero offset keeps it on the wall, the dim element
-    // pushes the number just to one side. Presentation only — never expands bounds
-    // meaningfully (faces sit ½-thickness off a centerline already inside `b`).
-    const repByThickness = new Map<number, { mid: Point; n: Vec; t: number; len: number }>();
-    for (const w of ir.walls) {
-      for (const s of segmentsOfWall(w)) {
-        const d = sub(s.b, s.a);
-        if (d.x !== 0 && d.y !== 0) continue; // orthogonal segments only
-        const len = Math.hypot(d.x, d.y);
-        if (len <= 0) continue;
-        const prev = repByThickness.get(s.thickness);
-        if (prev && prev.len >= len) continue;
-        const dir = unit(d);
-        repByThickness.set(s.thickness, {
-          mid: { x: (s.a.x + s.b.x) / 2, y: (s.a.y + s.b.y) / 2 },
-          n: normal(dir),
-          t: s.thickness,
-          len,
-        });
-      }
-    }
-    for (const t of [...repByThickness.keys()].sort((a, c) => a - c)) {
-      const rep = repByThickness.get(t)!;
-      const half = mul(rep.n, rep.t / 2);
-      dims.push(mk(add(rep.mid, half), add(rep.mid, mul(half, -1)), 0, fmtMm(rep.t)));
-    }
-  }
+  if (ir.autoDims === "overall" || ir.autoDims === "all") synthOverallDims(b, sizes, dims);
+  if (ir.autoDims === "rooms" || ir.autoDims === "all") synthRoomDims(ir, sizes, dims);
+  if (ir.autoDims === "walls" || ir.autoDims === "all") synthWallDims(ir, dims);
   return dims;
+}
+
+const mkDim = (from: Point, to: Point, offset: number, text?: string): RDim => ({
+  kind: "dim",
+  id: "",
+  from,
+  to,
+  offset,
+  text,
+});
+
+/** Overall width below the plan; height to the left of it (both in the page margin).
+ *  The dim element offsets along the *left normal* of from→to, so endpoint order
+ *  chooses the side: width runs minX→maxX (normal points +y, below); height runs
+ *  minY→maxY (normal points −x, left). Reversing either would push it *inside*. */
+function synthOverallDims(b: Bounds, sizes: RenderSizes, dims: RDim[]): void {
+  const off = sizes.margin * 0.5;
+  dims.push(mkDim({ x: b.minX, y: b.maxY }, { x: b.maxX, y: b.maxY }, off));
+  dims.push(mkDim({ x: b.minX, y: b.minY }, { x: b.minX, y: b.maxY }, off));
+}
+
+/** Per-room width/height dims, preferring the edge that faces the building exterior
+ *  so the number sits in the page margin clear of labels/furniture. */
+function synthRoomDims(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void {
+  const inset = sizes.dimFont * 1.6;
+  const rooms = ir.elements.filter((el): el is RRoom => el.kind === "room");
+  // Building extent over room rectangles (exact integers — same coordinate space,
+  // no wall-offset slop). A room edge lying on this extent faces the exterior, so
+  // its dimension can live in the page margin instead of cluttering the interior.
+  const rMinX = Math.min(...rooms.map((r) => r.at.x));
+  const rMinY = Math.min(...rooms.map((r) => r.at.y));
+  const rMaxX = Math.max(...rooms.map((r) => r.at.x + r.size.w));
+  const rMaxY = Math.max(...rooms.map((r) => r.at.y + r.size.h));
+  for (const r of rooms) {
+    const { x, y } = r.at;
+    const { w, h } = r.size;
+    // Width dim: prefer the horizontal edge that faces outside (top, else bottom)
+    // so the number sits in the margin clear of the label/furniture; a room with
+    // neither edge on the perimeter keeps the legacy just-inside-the-top placement.
+    // The dim element offsets along the left-normal of from→to, so endpoint order +
+    // offset sign choose the side (mirrors the overall-dim trick above).
+    if (y === rMinY)
+      dims.push(mkDim({ x: x + w, y }, { x, y }, inset)); // outside, above top edge
+    else if (y + h === rMaxY)
+      dims.push(mkDim({ x, y: y + h }, { x: x + w, y: y + h }, inset)); // outside, below bottom edge
+    else dims.push(mkDim({ x, y }, { x: x + w, y }, inset)); // interior room: just inside the top edge
+    // Height dim: prefer the vertical edge facing outside (left, else right).
+    if (x === rMinX)
+      dims.push(mkDim({ x, y }, { x, y: y + h }, inset)); // outside, left of left edge
+    else if (x + w === rMaxX)
+      dims.push(mkDim({ x: x + w, y: y + h }, { x: x + w, y }, inset)); // outside, right of right edge
+    else dims.push(mkDim({ x, y: y + h }, { x, y }, inset)); // interior room: just inside the left edge
+  }
+}
+
+/** One thickness call-out per distinct wall thickness (deduped so eight identical
+ *  partitions show "100" once, not eight times). For each thickness, the longest
+ *  axis-aligned segment carrying it is the representative — most room for a clean
+ *  annotation, chosen deterministically (max length, then source order). The dim
+ *  runs face-to-face across the wall at the segment midpoint with the measured
+ *  thickness as its text; its zero offset keeps it on the wall, the dim element
+ *  pushes the number just to one side. Presentation only — never expands bounds
+ *  meaningfully (faces sit ½-thickness off a centerline already inside the plan). */
+function synthWallDims(ir: ResolvedPlan, dims: RDim[]): void {
+  const repByThickness = new Map<number, { mid: Point; n: Vec; t: number; len: number }>();
+  for (const w of ir.walls) {
+    for (const s of segmentsOfWall(w)) {
+      const d = sub(s.b, s.a);
+      if (d.x !== 0 && d.y !== 0) continue; // orthogonal segments only
+      const len = Math.hypot(d.x, d.y);
+      if (len <= 0) continue;
+      const prev = repByThickness.get(s.thickness);
+      if (prev && prev.len >= len) continue;
+      const dir = unit(d);
+      repByThickness.set(s.thickness, {
+        mid: { x: (s.a.x + s.b.x) / 2, y: (s.a.y + s.b.y) / 2 },
+        n: normal(dir),
+        t: s.thickness,
+        len,
+      });
+    }
+  }
+  for (const t of [...repByThickness.keys()].sort((a, c) => a - c)) {
+    const rep = repByThickness.get(t)!;
+    const half = mul(rep.n, rep.t / 2);
+    dims.push(mkDim(add(rep.mid, half), add(rep.mid, mul(half, -1)), 0, fmtMm(rep.t)));
+  }
 }
 
 export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): Scene {

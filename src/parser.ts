@@ -220,40 +220,23 @@ class Parser {
       try {
         if (t.type !== "ident") this.fail(`Expected a statement but found ${describe(t)}`);
         switch (t.value) {
-          case "units": {
-            this.next();
-            const u = this.eatIdent().value;
-            if (u !== "mm") this.fail(`Unsupported units "${u}" (only "mm" is supported)`, t);
-            plan.units = "mm";
+          case "units":
+            this.parseUnitsSetting(plan, t);
             break;
-          }
           case "grid":
             this.next();
             plan.grid = this.eatNumber();
             break;
-          case "scale": {
-            this.next();
-            const a = this.eatNumber();
-            this.eat("colon");
-            const b = this.eatNumber();
-            plan.scale = `${a}:${b}`;
+          case "scale":
+            this.parseScaleSetting(plan);
             break;
-          }
           case "north":
             this.next();
             plan.north = this.parseNorth();
             break;
-          case "dims": {
-            this.next();
-            const a = this.eatIdent().value;
-            if (a !== "auto") this.fail(`Expected "auto" after "dims" but found "${a}"`, t);
-            let mode: "overall" | "rooms" | "walls" | "all" = "all";
-            if (this.isType("ident") && ["overall", "rooms", "walls", "all"].includes(this.peek().value)) {
-              mode = this.eatIdent().value as "overall" | "rooms" | "walls" | "all";
-            }
-            plan.autoDims = mode;
+          case "dims":
+            this.parseDimsSetting(plan, t);
             break;
-          }
           case "title": {
             const n = this.parseTitle();
             n.span = this.spanFrom(start);
@@ -317,6 +300,34 @@ class Parser {
 
   private isType(type: Token["type"]): boolean {
     return this.peek().type === type;
+  }
+
+  // ---- plan-level settings (one method per `parsePlan` switch case) ----------
+
+  private parseUnitsSetting(plan: PlanNode, t: Token): void {
+    this.next();
+    const u = this.eatIdent().value;
+    if (u !== "mm") this.fail(`Unsupported units "${u}" (only "mm" is supported)`, t);
+    plan.units = "mm";
+  }
+
+  private parseScaleSetting(plan: PlanNode): void {
+    this.next();
+    const a = this.eatNumber();
+    this.eat("colon");
+    const b = this.eatNumber();
+    plan.scale = `${a}:${b}`;
+  }
+
+  private parseDimsSetting(plan: PlanNode, t: Token): void {
+    this.next();
+    const a = this.eatIdent().value;
+    if (a !== "auto") this.fail(`Expected "auto" after "dims" but found "${a}"`, t);
+    let mode: "overall" | "rooms" | "walls" | "all" = "all";
+    if (this.isType("ident") && ["overall", "rooms", "walls", "all"].includes(this.peek().value)) {
+      mode = this.eatIdent().value as "overall" | "rooms" | "walls" | "all";
+    }
+    plan.autoDims = mode;
   }
 
   /** Optional `id=<ident>` prefix; returns "" when absent. */

@@ -421,28 +421,7 @@ function resolveImpl(
 
   // 1. Assign ids in registry (canonical) order. The flat stream is numbered
   //    globally per kind, so auto-ids stay unique across component instances.
-  const seen = new Set<string>();
-  const assignId = (provided: string, prefix: string, idx: number, span?: Span): string => {
-    if (provided) {
-      if (seen.has(provided)) {
-        diagnostics.push({ severity: "error", message: `Duplicate id "${provided}"`, code: "E_DUP_ID", span });
-      }
-      seen.add(provided);
-      return provided;
-    }
-    let auto = `${prefix}_${idx}`;
-    while (seen.has(auto)) auto = `${auto}_`;
-    seen.add(auto);
-    return auto;
-  };
-  for (const def of registry.order) {
-    let idx = 0;
-    for (const e of entries) {
-      if (e.node.kind !== def.kind) continue;
-      idx++;
-      e.id = assignId(e.node.id, def.idPrefix(e.node), idx, e.node.span);
-    }
-  }
+  assignIds(entries, registry, diagnostics);
 
   // 2. Resolve in registry order (walls first → openings can host against them).
   //    `activeEnv`/`activeId` are swapped per entry so each element evaluates
@@ -514,8 +493,65 @@ function resolveImpl(
     (d: Diagnostic) => diagnostics.push(d),
   );
 
-  // 3b. Register openings: each hosted door/window voids its wall's solid. The
-  //     host segment came from `segmentsOfWall`, so match by endpoint coords.
+  // 3b. Register openings: each hosted door/window voids its wall's solid.
+  registerOpenings(elements, walls);
+
+  // 4. Cross-element checks.
+  checkPlanDrawable(elements, diagnostics);
+  checkRoomOverlaps(elements, diagnostics);
+  checkFurnitureRooms(elements, diagnostics);
+
+  const ir: ResolvedPlan = {
+    name: ast.name,
+    units: ast.units,
+    grid: ast.grid,
+    scale: ast.scale,
+    north: ast.north,
+    autoDims: ast.autoDims,
+    title: ast.title,
+    theme: ast.theme,
+    themeBase: ast.themeBase,
+    themeFrom: ast.themeFrom,
+    styles: ast.styles,
+    elements,
+    walls,
+  };
+  return { ir, diagnostics };
+}
+
+// ---- resolveImpl stages (pure moves — each does one job) -----------------------
+
+/** Assign ids in registry order: explicit ids are checked for duplicates; missing
+ *  ones get `<prefix>_<n>` numbered globally per kind, so auto-ids stay unique
+ *  across component instances. */
+function assignIds(entries: Entry[], registry: Registry, diagnostics: Diagnostic[]): void {
+  const seen = new Set<string>();
+  const assignId = (provided: string, prefix: string, idx: number, span?: Span): string => {
+    if (provided) {
+      if (seen.has(provided)) {
+        diagnostics.push({ severity: "error", message: `Duplicate id "${provided}"`, code: "E_DUP_ID", span });
+      }
+      seen.add(provided);
+      return provided;
+    }
+    let auto = `${prefix}_${idx}`;
+    while (seen.has(auto)) auto = `${auto}_`;
+    seen.add(auto);
+    return auto;
+  };
+  for (const def of registry.order) {
+    let idx = 0;
+    for (const e of entries) {
+      if (e.node.kind !== def.kind) continue;
+      idx++;
+      e.id = assignId(e.node.id, def.idPrefix(e.node), idx, e.node.span);
+    }
+  }
+}
+
+/** Each hosted door/window/opening voids its wall's solid. The host segment came
+ *  from `segmentsOfWall`, so the owning wall is matched by endpoint coords. */
+function registerOpenings(elements: ResolvedElement[], walls: RWall[]): void {
   const wallOfSegment = (seg: WallSegment): RWall | undefined =>
     walls.find((w) =>
       segmentsOfWall(w).some((s) => s.a.x === seg.a.x && s.a.y === seg.a.y && s.b.x === seg.b.x && s.b.y === seg.b.y),
@@ -525,8 +561,10 @@ function resolveImpl(
       wallOfSegment(el.host)?.openings.push({ at: el.at, width: el.width });
     }
   }
+}
 
-  // 4. Cross-element checks.
+/** W_EMPTY_PLAN: the plan resolves but contains nothing drawable. */
+function checkPlanDrawable(elements: ResolvedElement[], diagnostics: Diagnostic[]): void {
   const drawable = elements.some(
     (e) => e.kind === "wall" || e.kind === "room" || e.kind === "furniture" || e.kind === "column",
   );
@@ -537,11 +575,14 @@ function resolveImpl(
       code: "W_EMPTY_PLAN",
     });
   }
-  // Room overlap: a spatial grid restricts the pairwise test to rooms sharing a
-  // cell (~O(n) for distributed plans) instead of all O(n²) pairs. Two rooms
-  // overlap ⟹ their boxes intersect ⟹ they share a cell, so this finds exactly
-  // the same overlaps; pairs are emitted in (a,b) order to keep diagnostics
-  // byte-identical to the former double loop.
+}
+
+/** W_ROOM_OVERLAP: a spatial grid restricts the pairwise test to rooms sharing a
+ *  cell (~O(n) for distributed plans) instead of all O(n²) pairs. Two rooms
+ *  overlap ⟹ their boxes intersect ⟹ they share a cell, so this finds exactly
+ *  the same overlaps; pairs are emitted in (a,b) order to keep diagnostics
+ *  byte-identical to the former double loop. */
+function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[]): void {
   const rooms = elements.filter((e): e is RRoom => e.kind === "room");
   const roomBox = (r: RRoom): GridBox => ({
     minX: r.at.x,
@@ -581,10 +622,12 @@ function resolveImpl(
       span: rooms[b].span,
     });
   }
+}
 
-  // A fixture's `in <roomId>` must name a real room (fail fast on an explicit ref —
-  // ADR 0005: the core never guesses which room was meant).
-  const roomIds = new Set(rooms.map((r) => r.id));
+/** E_FURN_ROOM: a fixture's `in <roomId>` must name a real room (fail fast on an
+ *  explicit ref — ADR 0005: the core never guesses which room was meant). */
+function checkFurnitureRooms(elements: ResolvedElement[], diagnostics: Diagnostic[]): void {
+  const roomIds = new Set(elements.filter((e): e is RRoom => e.kind === "room").map((r) => r.id));
   for (const el of elements) {
     if (el.kind === "furniture" && el.room !== undefined && !roomIds.has(el.room)) {
       diagnostics.push({
@@ -595,21 +638,4 @@ function resolveImpl(
       });
     }
   }
-
-  const ir: ResolvedPlan = {
-    name: ast.name,
-    units: ast.units,
-    grid: ast.grid,
-    scale: ast.scale,
-    north: ast.north,
-    autoDims: ast.autoDims,
-    title: ast.title,
-    theme: ast.theme,
-    themeBase: ast.themeBase,
-    themeFrom: ast.themeFrom,
-    styles: ast.styles,
-    elements,
-    walls,
-  };
-  return { ir, diagnostics };
 }
