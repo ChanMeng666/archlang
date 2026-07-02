@@ -27,13 +27,15 @@
 
 import { parse } from "./parser.js";
 import { formatPlan } from "./format.js";
-import { resolvePlan, isAgainstWall, type BBox } from "./analyze.js";
+import { resolvePlan, isAgainstWall, buildDoorAccessGraph, DEFAULT_TOL, type BBox } from "./analyze.js";
+import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
 import { doorLandingRect, pointInRect, rectOverlapAmounts, wallIntrusion } from "./geometry/rect.js";
 import { segmentsOfWall, doorSwing, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
 import { DEFAULT_RULESET } from "./lint.js";
 import { requiresWall } from "./fixtures-catalog.js";
-import type { RWall, RDoor, RRoom } from "./ir.js";
+import type { RWall, RDoor, RRoom, ROpening, RFurniture } from "./ir.js";
 import type { FurnitureNode } from "./ast.js";
+import type { Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
 
 /** Intrusion (mm) past which a piece counts as colliding with a wall — mirrors lint. */
@@ -382,6 +384,31 @@ interface Piece {
 
 const rectOfPiece = (p: Piece): BBox => ({ x: p.cur.x, y: p.cur.y, w: p.w, h: p.h });
 
+const spanKey = (s: Span | undefined): string => (s ? `${s.start}:${s.end}` : "");
+
+/**
+ * Circulation guard (ADR 0006/0008): the id of the first room/route whose entrance
+ * walk `after` a candidate move would squeeze below `min` mm **when it wasn't already
+ * below** `before`, or null when the move pinches nothing new. A move that leaves an
+ * already-tight (or unreachable) path no worse is allowed — repair never regresses a
+ * walk it can measure. Unreachable ⇒ a bottleneck of 0, so blocking the entrance or a
+ * room counts as a new pinch.
+ */
+function firstNewPinch(before: CirculationModel | null, after: CirculationModel | null, min: number): string | null {
+  const bRoom = new Map((before?.rooms ?? []).map((r) => [r.roomId, r.bottleneckClearWidthMm]));
+  const aRoom = new Map((after?.rooms ?? []).map((r) => [r.roomId, r.bottleneckClearWidthMm]));
+  for (const id of new Set([...bRoom.keys(), ...aRoom.keys()])) {
+    if ((aRoom.get(id) ?? 0) < min && (bRoom.get(id) ?? 0) >= min) return id;
+  }
+  const key = (rt: { fromRoomId: string; toRoomId: string }): string => `${rt.fromRoomId}→${rt.toRoomId}`;
+  const bRoute = new Map((before?.routes ?? []).map((rt) => [key(rt), rt.bottleneckClearWidthMm]));
+  const aRoute = new Map((after?.routes ?? []).map((rt) => [key(rt), rt.bottleneckClearWidthMm]));
+  for (const k of new Set([...bRoute.keys(), ...aRoute.keys()])) {
+    if ((aRoute.get(k) ?? 0) < min && (bRoute.get(k) ?? 0) >= min) return k;
+  }
+  return null;
+}
+
 /**
  * Correct a plan and return new source + a change log. Furniture is moved to a stable
  * arrangement by a global fixpoint: each pass applies the highest-priority fix to each
@@ -445,6 +472,42 @@ export function repair(source: string): RepairResult {
     }
   };
 
+  // ---- circulation guard (ADR 0006/0008) ----
+  // A furniture move is rejected if it would newly squeeze any room's entrance walk
+  // (or a key route) below the lint threshold. Static geometry (rooms/walls/doors) is
+  // hoisted; only the movable furniture varies, so a candidate check is one circulation
+  // compute. The guard is active only when there is an entrance to measure a walk from
+  // and every movable piece has a source span (the AST↔IR link the guard maps pieces by).
+  const minPathClear = DEFAULT_RULESET.minPathClearWidthMm;
+  const roomEls = (ir?.elements ?? []).filter((e): e is RRoom => e.kind === "room");
+  const openingEls = (ir?.elements ?? []).filter((e): e is ROpening => e.kind === "opening");
+  const irFurniture = (ir?.elements ?? []).filter((e): e is RFurniture => e.kind === "furniture");
+  const access = ir ? buildDoorAccessGraph(roomEls, doors, DEFAULT_TOL, undefined, openingEls) : null;
+  const pieceKeys = new Set(pieces.map((p) => spanKey(p.f.span)));
+  // Furniture NOT under repair's control (against-wall / scripted) stays put; the movable
+  // pieces contribute their live position instead.
+  const staticFurniture = irFurniture.filter((rf) => !pieceKeys.has(spanKey(rf.span)));
+  const guardActive = !!ir && !!access && access.hasEntrance && pieces.every((p) => p.f.span !== undefined);
+  const labelOf = new Map(roomEls.map((r) => [r.id, r.label ?? r.id]));
+
+  /** Circulation for the current arrangement, with piece `overrideIdx` at `pos`. */
+  const circWith = (overrideIdx: number, pos: { x: number; y: number }): CirculationModel | null => {
+    const dyn: RFurniture[] = pieces.map((p, i) => {
+      const at = i === overrideIdx ? pos : p.cur;
+      return {
+        kind: "furniture",
+        id: p.id,
+        category: p.f.category,
+        at: { x: at.x, y: at.y },
+        size: { w: p.w, h: p.h },
+      };
+    });
+    return computeCirculation(roomEls, walls, doors, openingEls, [...staticFurniture, ...dyn], access!, DEFAULT_TOL);
+  };
+  // Baseline circulation of the starting arrangement; updated in place as pieces move so
+  // each candidate check is a single compute (the accepted `after` becomes the next `before`).
+  let beforeCirc = guardActive ? circWith(-1, { x: 0, y: 0 }) : null;
+
   const MAX_PASSES = Math.min(64, pieces.length * 6 + 8);
   for (let pass = 0; pass < MAX_PASSES; pass++) {
     let moved = false;
@@ -466,6 +529,19 @@ export function repair(source: string): RepairResult {
         note(p.id, "can't be placed without conflict — adjust manually");
         p.stuck = true;
         continue;
+      }
+      // Circulation guard: reject a move that would newly pinch a walk below the
+      // threshold, terminating this piece like an "ambiguous" fix (report, don't guess).
+      if (guardActive) {
+        const after = circWith(i, next);
+        const pinched = firstNewPinch(beforeCirc, after, minPathClear);
+        if (pinched !== null) {
+          const label = labelOf.get(pinched) ?? pinched;
+          note(p.id, `would pinch the walk to "${label}" below ${minPathClear} mm — left in place; adjust manually`);
+          p.stuck = true;
+          continue;
+        }
+        beforeCirc = after; // accepted → this arrangement is the new baseline
       }
       p.cur = next;
       p.visited.add(key);
