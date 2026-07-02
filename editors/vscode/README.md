@@ -1,20 +1,32 @@
 # ArchLang — VS Code extension
 
-A minimal VS Code extension for `.arch` files: TextMate syntax highlighting (the
-grammar from [`../`](..)) plus **live diagnostics** from an LSP language server
-that reuses the compiler's resilient parser and `compile().diagnostics`.
+Published as [`ChanMeng.archlang`](https://marketplace.visualstudio.com/items?itemName=ChanMeng.archlang).
+Full IDE support for `.arch` files: TextMate syntax highlighting (the grammar from
+[`../`](..)) plus a proper **LSP language server** that reuses the core compiler's
+language services. It provides:
+
+- **Live diagnostics** — errors and warnings from `compile().diagnostics`, as
+  squiggles and in the Problems panel.
+- **Hover** — element/keyword docs at the cursor.
+- **Completion** — context-aware suggestions from the core `completion()` service.
+- **Go-to-definition** — jump to where an `id` / binding / component is defined.
+- **Rename** — rename an id/binding across the document.
+- **Signature help** — parameter hints for functions and components.
 
 **Not part of the published core.** All LSP deps live here; the core stays
 zero-dependency. The extension depends on the core via `file:../..` and pulls it
-in at runtime through a dynamic import (the core is ESM-only).
+in at runtime through a dynamic import (the core is ESM-only). The language-service
+functions (`hover`/`completion`/`definition`/`rename`/`signatureHelp`) all live in
+the pure core (`src/lsp.ts`); this server is a thin LSP adapter over them.
 
 ## Layout
 
 - `src/diagnostics.ts` — pure mapping of `compile().diagnostics` → LSP diagnostics
   (dependency-injected `compile`, no LSP import). Unit-tested by the core suite:
   `test/lsp-diagnostics.test.ts`.
-- `src/server.ts` — the language server: on document change, compile and
-  `sendDiagnostics`.
+- `src/server.ts` — the language server: declares the hover/completion/definition/
+  rename/signature-help capabilities and, on document change, compiles and
+  `sendDiagnostics`. Each request delegates to the corresponding core function.
 - `src/extension.ts` — the client: launches the server over IPC for
   `language === "arch"`.
 

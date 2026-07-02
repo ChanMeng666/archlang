@@ -9,9 +9,17 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const src = join(here, ".."); // editors/
+const repoRoot = join(here, "..", ".."); // repo root
 
 for (const f of ["archlang.tmLanguage.json", "language-configuration.json"]) {
   copyFileSync(join(src, f), join(here, f));
   // eslint-disable-next-line no-console
   console.log(`  copied ${f}`);
 }
+
+// The extension bundles the MIT-licensed core; ship the license inside the .vsix
+// (Marketplace/vsce expect a LICENSE next to package.json). Copied from the repo
+// root so it can never drift; the copy is git-ignored.
+copyFileSync(join(repoRoot, "LICENSE"), join(here, "LICENSE"));
+// eslint-disable-next-line no-console
+console.log("  copied LICENSE");

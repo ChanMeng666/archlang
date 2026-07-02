@@ -50,6 +50,37 @@ npm run build
 npm test
 ```
 
+## Releasing
+
+Two artifacts ship from this repo and are **released separately** — don't let them drift.
+
+### Core — `@chanmeng666/archlang` (npm)
+
+1. Update `CHANGELOG.md` and bump `version` in the root `package.json`.
+2. `npm run build && npm test` must be green.
+3. `npm publish` (manual), then tag: `git tag vX.Y.Z && git push --tags`.
+
+Pushing to `main` auto-deploys the playground and docs sites (Vercel) — no manual step.
+
+### VS Code extension — `ChanMeng.archlang` (Marketplace)
+
+**The extension bundles the core at build time** (esbuild, `--no-dependencies`), so a core
+release does **not** reach extension users until the extension is rebuilt and republished.
+**Whenever a core change touches the language surface** — grammar/keywords, completion, hover,
+diagnostics, or error/lint codes — republish the extension so its bundled services stay current:
+
+1. Bump `version` in `editors/vscode/package.json` and add an entry to
+   [`editors/vscode/CHANGELOG.md`](editors/vscode/CHANGELOG.md).
+2. If the core moved, bump the `@chanmeng666/archlang` dev-dependency pin there to match.
+3. `npm run build --prefix editors/vscode` then
+   `npm run package --prefix editors/vscode` (`vsce package --no-dependencies`) → a `.vsix`.
+4. Upload the `.vsix` at
+   <https://marketplace.visualstudio.com/manage/publishers/ChanMeng> (web upload; there is no
+   Azure DevOps org / CI publish for the extension).
+
+> Rule of thumb: **if you changed `src/grammar/tokens.ts`, the language services in
+> `src/lsp.ts`, or the error/lint catalogs, the extension is stale until you republish it.**
+
 ## Code of Conduct
 
 By participating, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md). For questions or

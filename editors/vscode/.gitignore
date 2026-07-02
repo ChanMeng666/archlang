@@ -6,5 +6,8 @@ dist/
 archlang.tmLanguage.json
 language-configuration.json
 
+# License copied from the repo root by copy-assets.mjs (canonical source is ../../LICENSE)
+LICENSE
+
 # Packaged extension bundles
 *.vsix
