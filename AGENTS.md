@@ -25,15 +25,22 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | **Playground** | deployed (pan/zoom · autocomplete · history · click-to-source · **format · repair · error-explain · embeddable `embed.html`**) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress · **live editable `<ArchLive>` examples**) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.9.0` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 515 passing (60 files); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
+| **Tests** | 535 passing (65 files); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
-**Unreleased (sites only, core untouched).** Two ZenUML-inspired wins in the deployed apps — **no
-change to the published core**: (1) an **embeddable playground viewer** (`playground/embed.html`,
-rendered from the `#z=` share hash, with an **Embed** snippet button and `&editable=1`), plus
-**IDE-parity actions** wiring shipped-but-unused core APIs into the UI (a **Format** button, a
-**Repair furniture** review-and-apply panel, and **clickable diagnostics** that jump to source and
-show the catalogued cause/fix/example); and (2) **live, editable docs examples** via a new
-SSR-safe `<ArchLive>` VitePress component (examples gallery + guide hero). See `CHANGELOG.md`.
+**Unreleased — three tranches (see `CHANGELOG.md` for detail):**
+1. **Human circulation ([ADR 0008](docs/adr/0008-circulation-as-facts.md)).** Facts →
+   `describe().circulation` (per-room walk distance / bottleneck clear width / detour ratio + key
+   routes, on a clearance-eroded nav grid in `src/analyze/circulation.ts`); advisory lint →
+   `W_PATH_TOO_NARROW` (default 700 mm; accessibility profile 900) + `W_CIRCUITOUS_PATH` (3.0×);
+   opt-in overlay → `compile(src, { overlays: ["circulation"] })` / `arch compile --overlay
+   circulation` + a playground **Paths** toggle; and a **repair guard** that declines any furniture
+   move that would newly pinch a walk below the lint threshold (reported in `unresolved`).
+2. **Foundation refactor** (default output byte-identical): wall-union rewrite (opening-heavy
+   `toScene` ~19.5→2.6 ms), render-free `validate`/`lint`, honest bench, one-module-per-lint-rule,
+   shared `geometry/rect.ts` + `num-format.ts`, drift-tested element/fixture/completion/format
+   joints, Biome + `noUncheckedIndexedAccess` + Node 22 CI, playground migrated to TypeScript.
+3. **Sites (earlier).** Embeddable playground viewer (`embed.html` + Embed button), IDE-parity
+   actions (Format / Repair panel / clickable diagnostics), live editable `<ArchLive>` docs examples.
 
 **Latest release — v1.9.0 (opt-in source annotation + playground overhaul).** Two things:
 - **Core: opt-in source annotation.** `compile(src, { annotate: true })` stamps `data-span="start:end"`

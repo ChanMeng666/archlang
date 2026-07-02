@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — human circulation: facts, lint, overlay & repair guard (ADR 0008)
+
+Circulation analysis grows from "is every room reachable?" to "how far, how wide, how direct is
+the walk?" — strictly as **facts + advisory + explicit transform** (ADR 0005/0006 discipline; no
+generative layout). The authoring language is untouched and **default output stays byte-identical**
+(pinned by tests).
+
+- **Facts** (`describe().circulation`, new `src/analyze/circulation.ts`): a whole-plan navigation
+  grid — walls rasterised, rooms stitched through door/opening portals, obstacles inflated by a
+  300 mm body radius — yields per-room `walkDistanceMm`, `bottleneckClearWidthMm` (widest-path
+  pinch) and `detourRatio` from the entrance, plus key-pair routes (kitchen↔living/dining,
+  bedroom↔bath). `null` when the plan has no entrance. Deterministic BFS; pure; zero-dep.
+- **Lint**: `W_PATH_TOO_NARROW` (a walk's unavoidable pinch below `minPathClearWidthMm`, default
+  700 mm = a standard door's clear opening; the `accessibility-advisory` profile raises it to
+  900 mm) and `W_CIRCUITOUS_PATH` (entrance walk > `maxDetourRatio` × straight-line, default 3.0).
+  Appended after all existing rules, so prior lint output order is unchanged; `examples/studio.arch`
+  stays lint-clean at defaults.
+- **Overlay** (opt-in, ADR 0007 pattern): `compile(src, { overlays: ["circulation"] })` /
+  `arch compile --overlay circulation` draws the entrance walks (dashed), key routes, and a
+  bottleneck marker + clear-width label per room on the annotations layer — appended after all
+  existing nodes, folded into the compile cache key; without the option the SVG is byte-equal to
+  the default (tested). The playground gains an off-by-default **Paths** toggle; exports stay
+  overlay-free.
+- **Repair guard**: `arch repair` now rejects a candidate furniture move that would *newly* pinch
+  any entrance walk or key route below `minPathClearWidthMm`, leaving the piece in place and
+  reporting it in `unresolved` (report-don't-guess; fixpoint convergence and all pre-existing
+  repair outputs verified byte-identical).
+
 ### Changed — foundation refactor: perf, architecture & tooling (default output byte-identical)
 
 A ground-up hardening pass. **Every default artifact is byte-identical** — SVG/PNG goldens, scene
