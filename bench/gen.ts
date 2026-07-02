@@ -45,7 +45,8 @@ export function genPlan(spec: GenSpec): string {
   }
   for (let i = 0; i < spec.furniture; i++) {
     const x = i * STEP;
-    lines.push(`  furniture chair id=ch${i} at (${x},7000) size 500x500 label "F${i}"`);
+    // furniture has no `id=` slot (ids are auto-assigned); category + at/size/label only.
+    lines.push(`  furniture chair at (${x},7000) size 500x500 label "F${i}"`);
   }
 
   lines.push("}", "");

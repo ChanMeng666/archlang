@@ -1,20 +1,29 @@
 {
   "BALANCED": {
-    "compile": 12.921,
-    "parse": 0.077,
-    "resolve": 0,
-    "render": 12.826
+    "compile": 27.689,
+    "parse": 6.522,
+    "resolve": 6.2,
+    "toScene": 8.024,
+    "renderSvg": 2.991,
+    "lint": 7.201,
+    "describe": 5.729
   },
   "ROOM_HEAVY": {
-    "compile": 4.141,
-    "parse": 0.09,
-    "resolve": 0,
-    "render": 4.048
+    "compile": 17.147,
+    "parse": 7.674,
+    "resolve": 4.459,
+    "toScene": 0.699,
+    "renderSvg": 2.784,
+    "lint": 2.393,
+    "describe": 28.734
   },
   "OPENING_HEAVY": {
-    "compile": 26.113,
-    "parse": 0.071,
-    "resolve": 0,
-    "render": 23.211
+    "compile": 51.897,
+    "parse": 6.597,
+    "resolve": 10.188,
+    "toScene": 22.04,
+    "renderSvg": 2.858,
+    "lint": 3.975,
+    "describe": 0.667
   }
 }

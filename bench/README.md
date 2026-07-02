@@ -4,13 +4,36 @@
 
 It compiles deterministically-generated plans (`bench/gen.ts`, no `Math.random`/
 `Date`, so source and SVG are byte-identical run to run), breaks the cost down by
-stage (parse / resolve / render), and runs two **skewed** plans to isolate the two
-suspected `resolve` hotspots.
+stage (parse / resolve / toScene / renderSvg), times the analysis entry points
+(lint / describe), and runs two **skewed** plans to isolate geometry hotspots.
 
-## What the benchmark answered
+## Methodology (fixed 2026-07)
 
-On a ~1000-element plan, `compile()` takes **~28 ms** (parse ~8, resolve ~6,
-render ~4). Profiling the two `resolve` hotspots with skewed plans:
+The pipeline stages memoize (lex by content hash, parse by source hash, resolve
+by AST identity), and the original harness timed repeated calls against the
+**same** source/AST — so the parse and resolve rows measured cache lookups
+(~0.08 ms), not work. Each timed closure now clears the stage caches it would
+otherwise hit; `lint`/`describe` deliberately run against warm parse/resolve
+caches so their rows isolate the analysis work itself. The generated BALANCED
+plan also carried 100 furniture parse errors (a stale `id=` slot), which made
+its lint/describe rows measure an early bail-out; the generator is fixed.
+Baselines from before this fix are **not comparable**.
+
+## Current stage picture (~1000 elements, median ms, one dev machine)
+
+| Plan | compile | parse | resolve | toScene | renderSvg | lint | describe |
+|------|--------:|------:|--------:|--------:|----------:|-----:|---------:|
+| BALANCED | 25.5 | 6.7 | 5.0 | 7.2 | 2.5 | 7.0 | 5.8 |
+| ROOM_HEAVY | 14.5 | 7.2 | 3.0 | 0.8 | 2.6 | 2.3 | **28.7** |
+| OPENING_HEAVY | 42.4 | 6.5 | 9.3 | **19.5** | 2.5 | 3.8 | 0.5 |
+
+The two standout hotspots: `toScene` on opening-heavy plans (the wall
+boolean-union in `src/geometry/union.ts`) and `describe` on room-heavy plans
+(pairwise room adjacency).
+
+## Earlier findings (historical)
+
+Profiling the two `resolve` hotspots with skewed plans:
 
 | Plan | Stresses | resolve (median) |
 |------|----------|------------------|

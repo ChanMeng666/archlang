@@ -1,17 +1,28 @@
 /**
  * ArchLang benchmark — `npm run bench`.
  *
- * Times compile() on a balanced ~1000-element plan, breaks the cost down by
- * stage (parse / resolve / render), and runs two skewed plans to expose which
- * resolve hotspot (room-overlap O(R^2) vs. per-opening host-segment scan)
- * dominates. Pure timing — no asserts, no determinism risk.
+ * Times compile() on a balanced ~1000-element plan and breaks the cost down by
+ * stage (parse / resolve / toScene / renderSvg), plus the analysis entry points
+ * (lint / describe). Two skewed plans expose which geometry hotspot dominates.
+ * Pure timing — no asserts, no determinism risk.
+ *
+ * Methodology: the pipeline stages memoize (lex by content hash, parse by
+ * source hash, resolve by AST identity), so each timed closure clears the
+ * caches it would otherwise hit — a stage row measures real work, not a cache
+ * lookup. The small clear-call overhead (~µs) is included and acceptable.
+ * `lint`/`describe` are the exception: they run against warm parse/resolve
+ * caches on purpose, so their rows isolate the analysis work itself.
  */
 
+import { renderSvg } from "../src/backends/svg.js";
+import { describe } from "../src/describe.js";
 import { compile } from "../src/index.js";
-import { parse } from "../src/parser.js";
-import { resolve } from "../src/ir.js";
-import { render } from "../src/render.js";
-import { genPlan, count, BALANCED, ROOM_HEAVY, OPENING_HEAVY, type GenSpec } from "./gen.js";
+import { clearResolveCache, resolve } from "../src/ir.js";
+import { clearLexCache } from "../src/lexer.js";
+import { lint } from "../src/lint.js";
+import { clearParseCache, parse } from "../src/parser.js";
+import { toScene } from "../src/scene-build.js";
+import { BALANCED, count, genPlan, type GenSpec, OPENING_HEAVY, ROOM_HEAVY } from "./gen.js";
 
 interface Stat {
   min: number;
@@ -40,16 +51,38 @@ const row = (label: string, s: Stat) =>
 /** `--json` emits machine-readable timings for CI regression comparison. */
 const JSON_MODE = process.argv.includes("--json");
 
+function clearStageCaches(): void {
+  clearLexCache();
+  clearParseCache();
+  clearResolveCache();
+}
+
 function benchPlan(name: string, spec: GenSpec, iters: number): Record<string, Stat> {
   const src = genPlan(spec);
   const { plan } = parse(src);
   const ir = resolve(plan!).ir;
+  const scene = toScene(ir, {});
 
   const stats = {
-    compile: timeit(() => compile(src, { noCache: true }), iters),
-    parse: timeit(() => parse(src), iters),
-    resolve: timeit(() => resolve(plan!), iters),
-    render: timeit(() => render(ir, {}), iters),
+    compile: timeit(() => {
+      clearStageCaches();
+      compile(src, { noCache: true });
+    }, iters),
+    parse: timeit(() => {
+      // Includes lexing — both memoize by content, so both caches are cleared.
+      clearLexCache();
+      clearParseCache();
+      parse(src);
+    }, iters),
+    resolve: timeit(() => {
+      clearResolveCache();
+      resolve(plan!);
+    }, iters),
+    toScene: timeit(() => toScene(ir, {}), iters),
+    renderSvg: timeit(() => renderSvg(scene, {}), iters),
+    // Warm caches on purpose: these rows isolate the analysis work itself.
+    lint: timeit(() => lint(src), iters),
+    describe: timeit(() => describe(src), iters),
   };
   if (!JSON_MODE) {
     console.log(
@@ -58,7 +91,10 @@ function benchPlan(name: string, spec: GenSpec, iters: number): Record<string, S
     console.log(row("compile (full)", stats.compile));
     console.log(row("  parse", stats.parse));
     console.log(row("  resolve", stats.resolve));
-    console.log(row("  render", stats.render));
+    console.log(row("  toScene", stats.toScene));
+    console.log(row("  renderSvg", stats.renderSvg));
+    console.log(row("lint", stats.lint));
+    console.log(row("describe", stats.describe));
   }
   return stats;
 }
