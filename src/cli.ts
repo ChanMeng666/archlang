@@ -47,6 +47,9 @@ import {
   rewriteMarkdown,
 } from "./index.js";
 import type { Diagnostic, World, Scene } from "./index.js";
+// Internal (not part of the public surface): parse → link → resolve without
+// rendering — validate/lint need only the diagnostics, never the SVG.
+import { resolvePlan } from "./analyze.js";
 
 type Format = "svg" | "dxf" | "pdf" | "png";
 
@@ -744,7 +747,10 @@ function report(source: string, diags: Diagnostic[], args: Args): number {
 function cmdValidate(args: Args): number {
   return withSource(args, (source, input) => {
     const world = makeNodeWorld(baseDirOf(input));
-    const { diagnostics } = compile(source, { noCache: true, world });
+    // resolvePlan yields exactly compile()'s diagnostics (toScene/renderSvg never
+    // emit any) without paying for the render; lint() then reuses the warm
+    // parse/resolve stage memos, so the whole command resolves once, renders never.
+    const { diagnostics } = resolvePlan(source, { world });
     const lintDiags = lint(source, { world });
     return report(source, [...diagnostics, ...lintDiags], args);
   });
@@ -758,7 +764,8 @@ function cmdLint(args: Args): number {
   return withSource(args, (source, input) => {
     const world = makeNodeWorld(baseDirOf(input));
     // Surface fatal errors too (lint() is silent on an unresolvable plan).
-    const { diagnostics } = compile(source, { noCache: true, world });
+    // Render-free: resolvePlan carries every diagnostic compile() would.
+    const { diagnostics } = resolvePlan(source, { world });
     const errs = diagnostics.filter((d) => d.severity === "error");
     return report(source, errs.length ? errs : lint(source, { world, profile: args.profile }), args);
   });

@@ -245,6 +245,9 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
   const labelOf = (r: RRoom): string => r.label ?? r.id;
   const at = (span: Diagnostic["span"]): { span?: Diagnostic["span"] } => (span ? { span } : {});
 
+  // Hoisted once: several rules scan every wall segment (per room / per fixture).
+  const wallSegs: WallSegment[] = ir.walls.flatMap((w) => segmentsOfWall(w).map((s) => ({ ...s })));
+
   for (const r of rooms) {
     const rect = roomRects.get(r.id)!;
     const onEdge = (p: { x: number; y: number }): boolean => pointOnRoomEdge(p, rect, rules.tolMm);
@@ -285,7 +288,7 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
 
     // A wet room not fully walled in (a partition that stops short leaves it open).
     if (isWetRoom(r)) {
-      const gap = largestPerimeterGap(rect, ir.walls, rules.tolMm);
+      const gap = largestPerimeterGap(rect, ir.walls, rules.tolMm, wallSegs);
       if (gap > rules.maxUnenclosedMm) {
         out.push({
           severity: "warning",
@@ -368,7 +371,7 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
   // A wall-requiring fixture (WC, basin, sink, counter, stove, fridge…) placed with
   // no wall behind any edge — it floats in the room.
   for (const f of furniture) {
-    if (requiresWall(f.category) && !isAgainstWall(rectOf(f), ir.walls, rules.fixtureWallTolMm)) {
+    if (requiresWall(f.category) && !isAgainstWall(rectOf(f), ir.walls, rules.fixtureWallTolMm, wallSegs)) {
       const name = f.label ?? f.category;
       out.push({
         severity: "warning",
@@ -405,7 +408,6 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
   // A piece flush against a wall face is fine; only a piece intruding into the wall's
   // thickness band — past snap noise — trips. Reported once per piece, on the first
   // wall it hits, in source order.
-  const wallSegs: WallSegment[] = ir.walls.flatMap((w) => segmentsOfWall(w).map((s) => ({ ...s })));
   const wallOpenings = ir.walls.flatMap((w) => w.openings);
   for (const f of furniture) {
     const fr = rectOf(f);

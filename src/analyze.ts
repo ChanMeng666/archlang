@@ -361,8 +361,13 @@ function mergedLength(intervals: Array<[number, number]>): number {
  * gap (e.g. a partition that stops short, leaving a wet room open to a living space).
  * Angled walls match no edge and contribute nothing; the rule is for orthogonal rooms.
  */
-export function largestPerimeterGap(rect: BBox, walls: WallLike[], tol: number): number {
-  const segs: WallSegment[] = walls.flatMap((w) => segmentsOfWall(w));
+export function largestPerimeterGap(
+  rect: BBox,
+  walls: WallLike[],
+  tol: number,
+  // Callers looping over many rooms hoist the segment list once and pass it in.
+  segs: readonly WallSegment[] = walls.flatMap((w) => segmentsOfWall(w)),
+): number {
   const edges = [
     { axis: "h" as const, fixed: rect.y, lo: rect.x, hi: rect.x + rect.w },
     { axis: "h" as const, fixed: rect.y + rect.h, lo: rect.x, hi: rect.x + rect.w },
@@ -425,8 +430,13 @@ export function frontClearanceRect(
  * wall's half-thickness (a fixture's back sits at the wall *face*, half a thickness
  * off the centerline) plus a small installation setback.
  */
-export function isAgainstWall(rect: BBox, walls: WallLike[], tol: number): boolean {
-  const segs: WallSegment[] = walls.flatMap((w) => segmentsOfWall(w));
+export function isAgainstWall(
+  rect: BBox,
+  walls: WallLike[],
+  tol: number,
+  // Callers looping over many fixtures hoist the segment list once and pass it in.
+  segs: readonly WallSegment[] = walls.flatMap((w) => segmentsOfWall(w)),
+): boolean {
   const edges = [
     { axis: "h" as const, fixed: rect.y, lo: rect.x, hi: rect.x + rect.w },
     { axis: "h" as const, fixed: rect.y + rect.h, lo: rect.x, hi: rect.x + rect.w },
