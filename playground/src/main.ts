@@ -144,6 +144,7 @@ const previewCtl = createPreview({
   getCleanSvg: cleanSvg,
   jumpToOffset,
   flash,
+  onPathsChange: () => render(currentSource()),
 });
 
 /** Update the Describe (semantic facts) and Lint (soundness) tabs for `source`. */
@@ -189,7 +190,11 @@ function render(source: string, refit = false) {
   statusEl.classList.remove("err");
   const warns = (diagnostics ?? []).filter((d) => d.severity === "warning");
   statusText.textContent = warns.length ? `${warns.length} warning${warns.length > 1 ? "s" : ""}` : "ready";
-  previewCtl.show(svg, refit);
+  // The export SVG (lastSvg) is always overlay-free; the "Paths" toggle re-compiles
+  // with the circulation overlay for the on-screen preview only, so downloads/copies
+  // never carry it (matching how annotate is stripped for export).
+  const displaySvg = previewCtl.pathsEnabled() ? compile(source, { ...opts, overlays: ["circulation"] }).svg : svg;
+  previewCtl.show(displaySvg, refit);
   lastSvg = svg;
   lastScene = scene ?? null;
 }

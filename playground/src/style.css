@@ -326,6 +326,14 @@ main {
   font-size: 10.5px;
   font-weight: 500;
 }
+.pz-toolbar button[data-pz="paths"] {
+  font-size: 11px;
+  font-weight: 600;
+}
+.pz-toolbar button.active {
+  background: color-mix(in srgb, var(--plum) 22%, #fff);
+  color: var(--accent);
+}
 .pz-sep {
   width: 1px;
   height: 16px;

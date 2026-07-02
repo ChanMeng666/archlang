@@ -15,6 +15,8 @@ export interface Preview {
   show(svg: string, refit: boolean): void;
   /** Re-centre/scale the current plan to the viewport. */
   fit(): void;
+  /** Whether the "Paths" circulation overlay toggle is on (drives the preview compile). */
+  pathsEnabled(): boolean;
 }
 
 interface PreviewOpts {
@@ -29,13 +31,19 @@ interface PreviewOpts {
   jumpToOffset: (offset: number) => void;
   /** Briefly surface a status message. */
   flash: (msg: string) => void;
+  /** Re-render the preview when the "Paths" overlay toggle flips. */
+  onPathsChange: () => void;
 }
 
 export function createPreview(opts: PreviewOpts): Preview {
-  const { viewport, stage, toolbar, getRooms, getCleanSvg, jumpToOffset, flash } = opts;
+  const { viewport, stage, toolbar, getRooms, getCleanSvg, jumpToOffset, flash, onPathsChange } = opts;
 
   // Pan/zoom controller for the preview (created once; survives every re-render).
   const pz = createPanZoom(viewport, stage);
+
+  // "Paths" circulation overlay — off by default; a diagnostic aid shown in the
+  // preview only (exports re-compile without it, so downloads stay clean).
+  let pathsOn = false;
 
   function toggleFullscreen() {
     if (document.fullscreenElement) document.exitFullscreen();
@@ -66,15 +74,22 @@ export function createPreview(opts: PreviewOpts): Preview {
     }
   }
 
-  // Floating preview toolbar — pan/zoom + copy.
+  // Floating preview toolbar — pan/zoom + copy + the Paths overlay toggle.
   toolbar.addEventListener("click", (e) => {
-    const action = (e.target as Element | null)?.closest<HTMLElement>("button")?.dataset.pz;
+    const btn = (e.target as Element | null)?.closest<HTMLElement>("button");
+    const action = btn?.dataset.pz;
     if (action === "in") pz.zoomIn();
     else if (action === "out") pz.zoomOut();
     else if (action === "fit") pz.fit();
     else if (action === "full") toggleFullscreen();
     else if (action === "copysvg") void copySvg();
     else if (action === "copypng") void copyPng();
+    else if (action === "paths") {
+      pathsOn = !pathsOn;
+      btn?.classList.toggle("active", pathsOn);
+      btn?.setAttribute("aria-pressed", String(pathsOn));
+      onPathsChange();
+    }
   });
 
   // Preview interactions: hover a room for facts (C2), click any element to jump
@@ -84,5 +99,6 @@ export function createPreview(opts: PreviewOpts): Preview {
   return {
     show: (svg, refit) => showSvgInStage(stage, pz, svg, refit),
     fit: () => pz.fit(),
+    pathsEnabled: () => pathsOn,
   };
 }
