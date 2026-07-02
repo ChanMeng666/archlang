@@ -39,12 +39,8 @@ export function format(source: string): string {
 
 // ---- expressions → text (single-line; precedence-correct parenthesisation) ----
 
-/** Deterministic number → string (mirrors render.ts `fmt`: trim to 3 dp). */
-function numStr(n: number): string {
-  if (!Number.isFinite(n)) return "0";
-  const r = Math.round(n * 1000) / 1000;
-  return Object.is(r, -0) ? "0" : String(r);
-}
+/** Deterministic number → string (trim to 3 dp, non-finite → "0"). */
+import { fmt3 as numStr } from "./num-format.js";
 
 const BIN_PREC: Record<string, number> = {
   "||": 1,

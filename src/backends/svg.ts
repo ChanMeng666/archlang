@@ -19,10 +19,7 @@ import type { Theme } from "../theme.js";
 import { layoutChrome, type ScaleBarBox, type TitleBlockBox } from "../chrome-layout.js";
 
 /** Round to 2 decimals and strip trailing zeros — keeps output stable & compact. */
-function fmt(v: number): string {
-  const r = Math.round(v * 100) / 100;
-  return Object.is(r, -0) ? "0" : String(r);
-}
+import { fmt2 as fmt } from "../num-format.js";
 const pt = (p: Point): string => `${fmt(p.x)},${fmt(p.y)}`;
 
 function xml(s: string): string {

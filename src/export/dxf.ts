@@ -19,12 +19,8 @@ import type { LineType, Scene, SceneNode } from "../scene.js";
 import { layerOf } from "../scene.js";
 import { minorArcDegrees } from "../geometry.js";
 import { dxfPatternName, isSolidFill } from "../hatches.js";
-
-/** Deterministic number formatting (round to 4dp, no -0). */
-function num(v: number): string {
-  const r = Math.round(v * 1e4) / 1e4;
-  return Object.is(r, -0) ? "0" : String(r);
-}
+// Deterministic number formatting (round to 4dp, no -0).
+import { fmt4 as num } from "../num-format.js";
 
 /** Map a Scene line type to a DXF LTYPE name; undefined (or continuous) → BYLAYER. */
 function dxfLineType(t: LineType | undefined): string | undefined {

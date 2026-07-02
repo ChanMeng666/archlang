@@ -107,12 +107,8 @@ export function asStr(v: Value): string {
   }
 }
 
-/** Deterministic number → string (mirrors render.ts `fmt`: trim to 3 dp). */
-function fmtNum(n: number): string {
-  if (!Number.isFinite(n)) return "0";
-  const r = Math.round(n * 1000) / 1000;
-  return Object.is(r, -0) ? "0" : String(r);
-}
+/** Deterministic number → string (trim to 3 dp, non-finite → "0"). */
+import { fmt3 as fmtNum } from "./num-format.js";
 
 /** Minimal token-stream the expression parser needs (satisfied by ParseCtx). */
 export interface ExprTokens {

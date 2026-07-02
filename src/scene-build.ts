@@ -38,10 +38,7 @@ import { DEFAULT_THEME, THEMES, mergeTheme, sanitizeTheme, derivePoche } from ".
 import type { Theme } from "./theme.js";
 
 /** Deterministic mm formatter for computed label text (round 2dp, strip zeros, no -0). */
-function fmtMm(n: number): string {
-  const r = Math.round(n * 100) / 100;
-  return Object.is(r, -0) ? "0" : String(r);
-}
+import { fmt2 as fmtMm } from "./num-format.js";
 
 /** Drawing bounds: each element contributes points via its registry `bounds`. */
 function planBounds(ir: ResolvedPlan, registry: Registry): Bounds {
