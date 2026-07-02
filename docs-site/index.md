@@ -15,5 +15,5 @@ features:
   - title: Parametric & scriptable
     details: Values, arithmetic, arrays, for/if/while, and pure functions — plus relational placement (right-of / below / …) resolved by deterministic topological arithmetic.
   - title: Reads its own plans
-    details: "Beyond drawing, ArchLang reads a plan back as facts: describe returns rooms, areas, adjacencies, and a modelled access graph; lint flags habitability problems against advisory profiles — image-free, so an AI agent can verify intent without an image."
+    details: "Beyond drawing, ArchLang reads a plan back as facts: describe returns rooms, areas, adjacencies, a modelled access graph, and human-circulation facts (walk distance, bottleneck width, detour); lint flags habitability and circulation problems against advisory profiles — image-free, so an AI agent can verify intent without an image."
 ---

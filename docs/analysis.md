@@ -4,7 +4,8 @@ ArchLang compiles a plan to a drawing — but it can also **read the plan back a
 facts**. Two pure functions turn source into machine-readable, image-free output:
 
 - **`describe(source)`** — a semantic summary: rooms, areas, adjacencies, what every
-  door/window/opening connects, the furniture, and a modelled **access graph**.
+  door/window/opening connects, the furniture, a modelled **access graph**, and a
+  **circulation** model (how far you walk to each room and the pinch on the way).
 - **`lint(source)`** — advisory `W_*` warnings about habitability, against a chosen
   profile.
 
@@ -126,6 +127,42 @@ openings) and walks it from the exterior. For the studio:
 This is what makes a sealed-off room or a wheelchair-impassable corridor visible as
 *data* — the playground's Describe tab draws it as a reachability diagram.
 
+## Circulation — how a person walks the plan
+
+Where the access graph counts *connectors*, `describe().circulation` measures the
+actual **walk**. It floods a nav grid whose free cells are eroded by a body radius,
+so a route only passes where a person really fits — through doors and cased openings,
+never through a furniture pinch. It is `null` when the plan has no modelled exterior
+entrance. For the studio:
+
+```json
+"circulation": {
+  "entranceId": "d_main",
+  "cellSizeMm": 100,
+  "bodyRadiusMm": 300,
+  "rooms": [
+    { "roomId": "r_living", "walkDistanceMm": 4000, "bottleneckClearWidthMm": 940, "detourRatio": 1.29 },
+    { "roomId": "r_bath",   "walkDistanceMm": 5300, "bottleneckClearWidthMm": 700, "detourRatio": 2.74 }
+  ],
+  "routes": [
+    { "fromRoomId": "r_bed", "toRoomId": "r_bath", "walkDistanceMm": 6000, "bottleneckClearWidthMm": 700, "detourRatio": 1.53 }
+  ]
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `entranceId` | the door the walk is measured from (first entrance in source order) |
+| `cellSizeMm` / `bodyRadiusMm` | the nav-grid quantum (distances are rounded to it, so they're coarse) and the radius obstacles were inflated by |
+| `rooms[].walkDistanceMm` | walking distance from the entrance to the room, over the eroded grid |
+| `rooms[].bottleneckClearWidthMm` | the narrowest unavoidable clear width on the way in (a door width, or a furniture pinch) |
+| `rooms[].detourRatio` | `walkDistance ÷ straight-line` — how far the route wanders from a beeline (`≥ ~1`) |
+| `routes[]` | key functional routes (kitchen → nearest living/dining, bedroom → nearest bath), same three metrics |
+
+Two advisory lint rules read this model, and the same model backs the opt-in
+`arch compile --overlay circulation` render overlay (see
+[ADR 0008 — circulation as facts](adr/0008-circulation-as-facts.md)).
+
 ## `lint` — architectural soundness
 
 `arch lint plan.arch --json` returns advisory `W_*` diagnostics, each with a byte
@@ -140,6 +177,7 @@ This is what makes a sealed-off room or a wheelchair-impassable corridor visible
 | Reachability | `W_ROOM_UNREACHABLE`, `W_BATH_VIA_BEDROOM` |
 | Wet rooms | `W_ROOM_NOT_ENCLOSED`, `W_ROOM_NO_FIXTURE` |
 | Furniture / fixtures | `W_FIXTURE_FLOATING`, `W_FIXTURE_WRONG_ROOM`, `W_FURNITURE_OVERLAP`, `W_FURN_CLEARANCE` |
+| Circulation quality | `W_ROOM_NO_CLEAR_PATH`, `W_PATH_TOO_NARROW`, `W_CIRCUITOUS_PATH` |
 
 Every code is documented — with cause, fix, and example — in the
 [error catalog](error-codes.md), or run `arch explain W_SWING_OBSTRUCTED`.
@@ -151,8 +189,8 @@ A **profile** is a named bundle of thresholds, applied with `--profile` (CLI) or
 
 | Profile | Thresholds |
 |---------|-----------|
-| `residential-basic` *(default)* | doors ≥ 700 mm, rooms ≥ 4 m², no swing-clearance buffer |
-| `accessibility-advisory` | doors ≥ 850 mm, rooms ≥ 5 m², 150 mm swing clearance |
+| `residential-basic` *(default)* | doors ≥ 700 mm, rooms ≥ 4 m², walk clear ≥ 700 mm, detour ≤ 3.0×, no swing-clearance buffer |
+| `accessibility-advisory` | doors ≥ 850 mm, rooms ≥ 5 m², walk clear ≥ 900 mm, detour ≤ 3.0×, 150 mm swing clearance |
 
 ```
 arch lint plan.arch                                  # residential-basic

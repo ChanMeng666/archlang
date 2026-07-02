@@ -1,4 +1,4 @@
-# ArchLang Language Reference (v1.3)
+# ArchLang Language Reference
 
 ArchLang is a small declarative language that compiles to a professional SVG
 floor plan. It is **explicit and parametric**: you give every element exact
@@ -21,11 +21,14 @@ Plans can `import` components from other modules, select named **themes**, and b
 formatted with `arch fmt`.
 
 Beyond rendering, ArchLang **reads back** what you wrote: `arch describe` returns
-the rooms, areas, adjacencies, and a modelled **access graph** (what connects to
-what, and how far each room is from the entrance); `arch lint` flags habitability
-problems against advisory profiles. Both are pure, text-only, and image-free — see
-[Analysis: describe & lint](analysis.md). This reference covers the language
-through **v1.3**.
+the rooms, areas, adjacencies, a modelled **access graph** (what connects to what,
+and how far each room is from the entrance), and **human-circulation** facts (how
+far you walk to each room, the narrowest pinch on the way, and how circuitous the
+route is); `arch lint` flags habitability problems against advisory profiles. Both
+are pure, text-only, and image-free — see [Analysis: describe & lint](analysis.md).
+
+This reference tracks the current language; for the exact version and per-release
+history see [`CHANGELOG.md`](../CHANGELOG.md).
 
 - **Unit:** millimetres (integers recommended).
 - **Coordinate system:** origin top-left, **+x** right, **+y** down (matches SVG).
@@ -468,12 +471,14 @@ machine-readable, image-free output:
 
 - **`describe(source)`** → a semantic summary: every room with its `uses`, area,
   bounding box and `adjacent` rooms; what each door, window, and opening connects;
-  the furniture; and a modelled **access graph** (entrances, per-room reachability,
-  door-hop depth from the entrance, and the clear-width bottleneck on the way in).
+  the furniture; a modelled **access graph** (entrances, per-room reachability,
+  door-hop depth from the entrance, and the clear-width bottleneck on the way in);
+  and a **circulation** model — see [Circulation](#circulation) below.
 - **`lint(source)`** → advisory `W_*` warnings about habitability (a room with no
   way in, a windowless bedroom, a too-small room, a door leaf sweeping onto a
-  fixture, a wet room reached only through a bedroom…). Pick a ruleset with
-  `--profile`:
+  fixture, a wet room reached only through a bedroom, a walk that squeezes too
+  narrow — `W_PATH_TOO_NARROW` — or wanders far from a straight line —
+  `W_CIRCUITOUS_PATH`…). Pick a ruleset with `--profile`:
 
   ```
   arch lint plan.arch --profile residential-basic        # default: ≥700 mm doors, ≥4 m² rooms
@@ -490,6 +495,55 @@ moves your geometry behind your back (see
 graph, and the complete rule list are documented on the
 **[Analysis: describe & lint](analysis.md)** page; every code is in the
 [error catalog](error-codes.md).
+
+### Circulation
+
+`describe(source).circulation` models how a person actually **walks** the plan.
+Distances are measured on a nav grid whose free cells are eroded by a body radius,
+so a walk only passes where a person really fits (through doors and cased openings,
+not through furniture pinches). It is `null` when the plan has no modelled exterior
+entrance — there is nothing to measure a walk from — otherwise a `CirculationModel`:
+
+```ts
+interface CirculationModel {
+  entranceId: string;   // door the walk starts from (first entrance in source order)
+  cellSizeMm: number;   // nav-grid quantum every distance is rounded to (coarse)
+  bodyRadiusMm: number; // obstacles were inflated by this
+  rooms: {              // one entry per room reachable from the entrance
+    roomId: string;
+    walkDistanceMm: number;        // entrance → room, over the eroded grid
+    bottleneckClearWidthMm: number;// narrowest unavoidable clear width on the way in
+    detourRatio: number;           // walkDistance ÷ straight-line (≥ ~1)
+  }[];
+  routes: {             // key functional routes (kitchen→living, bedroom→bath)
+    fromRoomId: string; toRoomId: string;
+    walkDistanceMm: number; bottleneckClearWidthMm: number; detourRatio: number;
+  }[];
+}
+```
+
+Two advisory lint rules read this model (see [ADR 0008](adr/0008-circulation-as-facts.md)):
+
+- **`W_PATH_TOO_NARROW`** — a walk pinches below `minPathClearWidthMm` (default
+  **700 mm**; the `accessibility-advisory` profile raises it to **900 mm**).
+- **`W_CIRCUITOUS_PATH`** — a room's `detourRatio` exceeds `maxDetourRatio`
+  (**3.0×**), i.e. it's reached the long way round.
+
+The same model backs an **opt-in render overlay** (see
+[`overlays`](#compilation-result) below) — the entrance→room walks, their pinch
+markers, and key routes drawn on top of the plan.
+
+### Correcting a plan — `arch repair`
+
+Because lint reports rather than rearranges, ArchLang ships an **explicit,
+opt-in** source-to-source corrector: `arch repair plan.arch -o fixed.arch` emits new
+`.arch` with furniture pushed out of walls, off doorway approaches and door swings,
+overlaps separated, and stray fixtures relocated into their room and snapped to a
+wall — plus a change log (see [ADR 0006](adr/0006-solver-as-explicit-transform.md)).
+It is deterministic and never guesses topology: it will **not** add a door or window
+(that is a design choice), and a **circulation guard** declines any furniture move
+that would newly pinch a walk below the lint threshold (reporting it in `unresolved`
+instead). Use [`SKILL.md`](../SKILL.md) for the full repair-then-gate loop.
 
 ## Compilation result
 
@@ -570,8 +624,23 @@ error[E_ROOM_SIZE]: room "bed" must have a positive size
 `offsetToLineCol(source, offset)` converts a byte offset to a 1-based
 `{ line, col }`. The `arch` CLI prints these frames for every diagnostic.
 
-Options: `width` (px for the `<svg>`; height derived from aspect ratio) and
-`noCache` (bypass the memoization cache).
+`compile(source, opts?)` options:
+
+- `width` — px for the `<svg>`; height derived from aspect ratio.
+- `noCache` — bypass the memoization cache.
+- `theme` — theme overrides layered on top of the plan's `theme { … }` directive.
+- `annotate` — stamp each drawn primitive that has a source span with a
+  `data-span="start:end"` attribute so tooling can map a clicked element back to its
+  source. **Default output is byte-identical** without it (see
+  [ADR 0007](adr/0007-opt-in-source-annotation.md)).
+- `overlays` — opt-in diagnostic overlays drawn on top of the plan. Currently only
+  `["circulation"]` (the entrance→room walks, bottleneck markers, and key routes from
+  the [circulation](#circulation) model — [ADR 0008](adr/0008-circulation-as-facts.md));
+  also via `arch compile --overlay circulation`. Default output is **byte-identical**
+  without it, so shipped SVGs stay clean.
+
+`annotate` and `overlays` are the only options that change SVG output, and both are
+opt-in — the default `compile(source)` is byte-stable and snapshot-tested.
 
 ## Worked example
 

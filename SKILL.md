@@ -45,8 +45,9 @@ npx @chanmeng666/archlang help
    implausibly small room, a too-narrow door, no entrance, a bathroom reachable only through a bedroom,
    a bathroom not fully walled in, a door whose swing hits furniture/another door, a bath/kitchen with
    no fixtures, **furniture drawn through a wall (`W_FURNITURE_WALL_COLLISION`)**, **a fixture blocking
-   a doorway (`W_DOORWAY_BLOCKED`)**, and **a room packed so you can't step in
-   (`W_ROOM_NO_CLEAR_PATH`)**.
+   a doorway (`W_DOORWAY_BLOCKED`)**, **a room packed so you can't step in
+   (`W_ROOM_NO_CLEAR_PATH`)**, **a walk that squeezes below a passable width
+   (`W_PATH_TOO_NARROW`)**, and **a room reached the long way round (`W_CIRCUITOUS_PATH`)**.
 
 ## Placement discipline (write it right the first time)
 
@@ -125,11 +126,12 @@ arch manifest --json                   # the whole CLI API as data: commands, fl
 arch compile plan.arch -o out.svg --json   # render (also -f dxf|pdf|png)
 echo '<source>' | arch compile - -o - -f svg   # compile stdin → SVG on stdout
 arch preview plan.arch -o plan.png --json  # render a PNG to SHOW the user (--install fetches resvg if missing)
-arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, door connections
+arch compile plan.arch -o walk.svg --overlay circulation   # opt-in: draw the entrance→room walks + pinch markers (default output unchanged)
+arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, door connections, + circulation (walk distance/bottleneck/detour)
 arch lint plan.arch --json             # architectural soundness warnings
 arch validate plan.arch --strict --json   # parse + resolve + lint; --strict fails on warnings too (the ship gate)
 arch fmt plan.arch --write             # canonical formatting
-arch repair plan.arch -o fixed.arch    # emit corrected source (furniture out of walls/doorways/swings, overlaps separated, fixtures into their room + snapped to walls) + change log
+arch repair plan.arch -o fixed.arch    # emit corrected source (furniture out of walls/doorways/swings, overlaps separated, fixtures into their room + snapped to walls) + change log; a circulation guard declines any move that would newly pinch a walk below the threshold
 arch batch a.arch b.arch -f svg --json # render many plans/variants at once → results[]
 arch md notes.md -o out.md -f svg      # render fenced arch blocks in a Markdown file → image links
 arch new -o plan.arch                  # scaffold a starter plan

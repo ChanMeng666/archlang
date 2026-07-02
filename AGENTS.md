@@ -25,7 +25,7 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | **Playground** | deployed (TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · **circulation Paths toggle**) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress · live editable `<ArchLive>` examples) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.10.0` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 535 passing (65 files); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
+| **Tests** | 535 passing (66 files); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
 **Latest release — v1.10.0 (human circulation + foundation refactor). Three tranches
 (see `CHANGELOG.md` for detail):**
@@ -119,7 +119,7 @@ for concave door arcs, dimensions drawn into the building, and the title-block o
 │                     also ships embed.html — a chrome-less <iframe> viewer read from the #z= hash
 ├─ docs-site/         VitePress docs (pages generated from docs/*.md, examples/*.arch);
 │                     examples are live/editable <ArchLive> widgets (compile in the browser)
-├─ docs/              language-reference.md · error-codes.md · adr/ · WORK-LOG.md · roadmap
+├─ docs/              language-reference.md · analysis.md · error-codes.md · adr/ · WORK-LOG.md
 ├─ examples/          studio · two-bed · parametric · themed · relational · lib/ · imports
 ├─ eval/              NL→ArchLang authorability harness (corpus.json, goldens/, run.ts)
 ├─ scripts/           gen-grammars · gen-error-codes · gen-llm-spec (single-source generators)

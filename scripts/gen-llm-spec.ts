@@ -133,7 +133,8 @@ arch manifest --json                   # the whole CLI API as data: commands, fl
 arch compile plan.arch -o out.svg --json   # render; JSON has { ok, diagnostics, summary }
 echo '<source>' | arch compile - --json    # compile from stdin (no temp file)
 arch preview plan.arch -o out.png --json   # render a PNG you can SHOW the user (zero-install where resvg is present; --install fetches it)
-arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, what doors connect
+arch compile plan.arch -o walk.svg --overlay circulation   # opt-in: draw the entrance→room walks + pinch markers on top (default output is unchanged)
+arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, what doors connect, + per-room circulation (walk distance, bottleneck width, detour)
 arch lint plan.arch --json             # architectural soundness warnings
 arch validate plan.arch --strict --json   # parse + lint, no render; --strict fails on warnings too
 arch explain E_ROOM_SIZE --json        # look up any error code
@@ -148,7 +149,8 @@ user-source error (fix it; don't blindly retry). Then \`describe --json\` to con
 intent (right room count, areas, adjacency) without rendering an image. **Before shipping, gate with
 \`arch validate --strict --json\`** — it fails on advisory warnings too, so a plan that lint flags
 (furniture through a wall, a fixture blocking a doorway, a room you can't step into, an unreachable
-room) cannot pass silently.
+room, a walk that squeezes too narrow — \`W_PATH_TOO_NARROW\` — or wanders the long way round —
+\`W_CIRCUITOUS_PATH\`) cannot pass silently.
 
 **Place furniture so it's physically sound:** keep every piece inside its room and off the walls
 (don't cross a wall centerline); back plumbing/kitchen fixtures onto a wall with \`against wall <id>\`

@@ -48,9 +48,16 @@ export default defineConfig({
   lastUpdated: true,
   // The reference/errors pages are synced verbatim from the canonical repo docs,
   // which contain relative links to repo files (examples/*.arch, playground/,
-  // error-codes.md → the site's /errors page) that are valid on GitHub but not
-  // pages on this site under the same name. Don't fail the build on them.
-  ignoreDeadLinks: [/\.\.\/(examples|playground)\//, /\.\.\/\.\.\//, /error-codes/, /language-reference/],
+  // CHANGELOG.md, SKILL.md, error-codes.md → the site's /errors page) that are
+  // valid on GitHub but not pages on this site under the same name. Don't fail
+  // the build on them.
+  ignoreDeadLinks: [
+    /\.\.\/(examples|playground)\//,
+    /\.\.\/\.\.\//,
+    /\.\.\/(CHANGELOG|SKILL)/,
+    /error-codes/,
+    /language-reference/,
+  ],
   // Register the ArchLang grammar with Shiki under the `arch` fence id (the
   // grammar's own `name` is "ArchLang"; its scopeName stays `source.arch`). The
   // `archlang` alias is accepted too.

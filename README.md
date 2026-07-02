@@ -55,6 +55,12 @@ is fully client-side.
   professional knowledge: a bathroom reachable only through a bedroom, a wet room that isn't fully
   walled in, a door whose swing hits furniture or another door, a bath/kitchen with no fixtures, a
   windowless bedroom, an unenterable room, a too-narrow door. All tunable via the ruleset.
+- **Human circulation as facts.** `arch describe` models how a person actually *walks* the plan on a
+  clearance-eroded nav grid — per-room walk distance, the narrowest pinch on the way in, and how
+  circuitous the route is — with advisory lint for a too-tight (`W_PATH_TOO_NARROW`) or roundabout
+  (`W_CIRCUITOUS_PATH`) walk, and an opt-in `arch compile --overlay circulation` that draws the
+  routes on top of the plan. Facts and advice, never an auto-arranger. `arch repair` is the one
+  *explicit* corrector — it pushes furniture out of walls/doorways/swings and won't pinch a walkway.
 - **Four export formats.** **SVG** and **DXF** with zero dependencies; **PDF** (vector,
   selectable text) and **PNG** (deterministic raster) via optional, lazily-loaded add-ons that
   the default install never pulls.
@@ -124,16 +130,23 @@ else writeFileSync("tiny.svg", svg); // a finished floor plan
 **As a CLI:**
 
 ```bash
-arch compile floorplan.arch -o floorplan.svg   # compile once (SVG, default)
-arch compile floorplan.arch -f dxf             # also: dxf · pdf · png
-arch compile floorplan.arch -w 1000            # set output width (px)
-arch preview floorplan.arch -o floorplan.png   # render a viewable PNG (1600px; --install fetches resvg if missing)
-arch batch   a.arch b.arch -o out/             # render many files/variants at once
-arch md      notes.md -o out.md                # render fenced arch blocks in Markdown → image links
-arch watch   floorplan.arch                     # recompile on save
-arch fmt     floorplan.arch --write             # format source in place
+arch compile  floorplan.arch -o floorplan.svg  # compile once (SVG, default)
+arch compile  floorplan.arch -f dxf            # also: dxf · pdf · png
+arch compile  floorplan.arch -w 1000           # set output width (px)
+arch compile  floorplan.arch --overlay circulation   # draw the walkability routes on top (opt-in)
+arch preview  floorplan.arch -o floorplan.png  # render a viewable PNG (1600px; --install fetches resvg if missing)
+arch describe floorplan.arch --json            # semantic facts: rooms, areas, adjacency, circulation
+arch lint     floorplan.arch --json            # architectural-soundness warnings (--profile to tune)
+arch validate floorplan.arch --strict          # parse + lint, no render; --strict fails on warnings (ship gate)
+arch repair   floorplan.arch -o fixed.arch     # explicit corrector: furniture out of walls/doorways/swings + change log
+arch batch    a.arch b.arch -o out/            # render many files/variants at once
+arch md       notes.md -o out.md               # render fenced arch blocks in Markdown → image links
+arch watch    floorplan.arch                    # recompile on save
+arch fmt      floorplan.arch --write            # format source in place
+arch new      -o floorplan.arch                 # scaffold a starter plan
+arch spec                                       # print the whole language in one page
 arch manifest                                   # the whole CLI API as structured data (for agents)
-arch explain E_LAYOUT_CYCLE                      # explain a diagnostic
+arch explain  E_LAYOUT_CYCLE                     # explain a diagnostic
 ```
 
 ### 🤖 Use it from an AI agent (CLI-native, no MCP)
@@ -151,8 +164,11 @@ npx @chanmeng666/archlang manifest --json      # the whole CLI API as data: comm
 npx @chanmeng666/archlang compile plan.arch -o out.svg --json   # render; JSON: { ok, diagnostics, summary }
 echo '<source>' | npx @chanmeng666/archlang compile - -o - -f svg   # stdin → SVG on stdout
 npx @chanmeng666/archlang preview plan.arch -o out.png --json  # render a PNG you can SHOW the user (--install fetches resvg if missing)
-npx @chanmeng666/archlang describe plan.arch --json            # verify: rooms, areas, adjacency, door connections
+npx @chanmeng666/archlang describe plan.arch --json            # verify: rooms, areas, adjacency, door connections, circulation
 npx @chanmeng666/archlang lint plan.arch --json                # architectural soundness warnings
+npx @chanmeng666/archlang validate plan.arch --strict --json   # parse + lint, no render; --strict fails on warnings (the ship gate)
+npx @chanmeng666/archlang repair plan.arch -o fixed.arch       # explicit corrector: furniture out of walls/doorways/swings + change log
+npx @chanmeng666/archlang compile plan.arch -o walk.svg --overlay circulation   # opt-in: draw the walkability routes on top
 npx @chanmeng666/archlang batch a.arch b.arch -f svg --json    # render many variants at once → results[]
 npx @chanmeng666/archlang md notes.md -o out.md -f svg         # render fenced arch blocks in Markdown → image links
 ```
