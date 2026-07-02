@@ -42,6 +42,20 @@ export interface LintRuleset {
    * `W_ROOM_NO_CLEAR_PATH`. Default 1.0 — about enough to stand and turn.
    */
   minClearAreaM2: number;
+  /**
+   * Minimum unavoidable clear width (mm) on the walk from the entrance into a room
+   * (and along key room→room routes). Below this the circulation model trips
+   * `W_PATH_TOO_NARROW`. Default 700 — a standard door's clear opening, matching
+   * `minDoorWidthMm`; the accessibility profile raises it toward wheelchair passage.
+   */
+  minPathClearWidthMm: number;
+  /**
+   * How many times its straight-line distance a room's walk from the entrance may be
+   * before it trips `W_CIRCUITOUS_PATH`. Default 3.0 — deliberately generous: a normal
+   * tucked-away wet room routed off a hall runs ~2.5–2.7×, so a tighter ratio would
+   * false-positive on sound plans; this catches only genuinely roundabout access.
+   */
+  maxDetourRatio: number;
 }
 
 export const DEFAULT_RULESET: LintRuleset = {
@@ -53,6 +67,8 @@ export const DEFAULT_RULESET: LintRuleset = {
   fixtureWallTolMm: 300,
   doorwayLandingMm: 300,
   minClearAreaM2: 1.0,
+  minPathClearWidthMm: 700,
+  maxDetourRatio: 3.0,
 };
 
 /**
@@ -74,6 +90,7 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
     minRoomAreaM2: 5,
     swingClearanceMm: 150,
     doorwayLandingMm: 450, // a deeper clear approach in front of each door
+    minPathClearWidthMm: 900, // a continuous clear width for wheelchair passage
   },
 });
 

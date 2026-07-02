@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**35 errors** · **27 warnings**
+**35 errors** · **29 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -46,6 +46,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_WINDOW_WIDTH`](#e_window_width) | error | Window must have a positive width. |
 | [`W_BATH_VIA_BEDROOM`](#w_bath_via_bedroom) | warning | Bathroom is reachable only through a bedroom. |
 | [`W_BEDROOM_NO_WINDOW`](#w_bedroom_no_window) | warning | Bedroom has no window. |
+| [`W_CIRCUITOUS_PATH`](#w_circuitous_path) | warning | A room is reached by a very roundabout path. |
 | [`W_DOOR_CLEARANCE`](#w_door_clearance) | warning | Door is narrower than the minimum clear width. |
 | [`W_DOOR_OFF_WALL`](#w_door_off_wall) | warning | Door does not lie on any wall. |
 | [`W_DOORWAY_BLOCKED`](#w_doorway_blocked) | warning | A doorway's landing is blocked. |
@@ -58,6 +59,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
 | [`W_NO_ENTRANCE`](#w_no_entrance) | warning | The plan has no exterior door. |
 | [`W_OPENING_OFF_WALL`](#w_opening_off_wall) | warning | Opening does not lie on any wall. |
+| [`W_PATH_TOO_NARROW`](#w_path_too_narrow) | warning | The walk to a room squeezes below a passable width. |
 | [`W_ROOM_DISCONNECTED`](#w_room_disconnected) | warning | Room has no door — it can't be entered. |
 | [`W_ROOM_NO_CLEAR_PATH`](#w_room_no_clear_path) | warning | A room cannot be entered or crossed. |
 | [`W_ROOM_NO_FIXTURE`](#w_room_no_fixture) | warning | Bathroom or kitchen has no fixtures. |
@@ -522,6 +524,18 @@ door id=d_bath at (5200,4000) width 800 wall partition   # lint: bath only off t
 room at (0,0) size 3000x4000 label "Bedroom"   # lint: no window
 ```
 
+## W_CIRCUITOUS_PATH
+
+*warning* — A room is reached by a very roundabout path.
+
+**Cause.** The walking distance from the entrance to a room is many times its straight-line distance — the room is reachable but only by a circuitous route (e.g. all the way around the plan). A coarse circulation fact (ADR 0008); the default ratio is generous so a normal tucked-away room does not trip it.
+
+**Fix.** Add a more direct connection — a door or a hall — so the room is not reached the long way round.
+
+```arch
+room id=bed at (0,0) size 3000x3000 label "Bed"   # only door is on the far side, forcing a long detour
+```
+
 ## W_DOOR_CLEARANCE
 
 *warning* — Door is narrower than the minimum clear width.
@@ -667,6 +681,19 @@ wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }   # li
 
 ```arch
 opening at (9999,9999) width 1000   # warning: not on a wall
+```
+
+## W_PATH_TOO_NARROW
+
+*warning* — The walk to a room squeezes below a passable width.
+
+**Cause.** The widest route from the entrance into a room (or between a key pair of rooms, e.g. bedroom→bath) has an unavoidable pinch narrower than the minimum passable clear width — a too-narrow door/opening, or furniture crowding the way. A coarse fact from the circulation nav grid (ADR 0008); the number is grid-quantised.
+
+**Fix.** Widen the tightest door/opening on the route, or move the furniture pinching it, so the whole path clears the minimum width.
+
+```arch
+door at (4000,1500) width 600
+furniture cabinet at (3600,300) size 700x1200   # lint: the way through squeezes below 700 mm
 ```
 
 ## W_ROOM_DISCONNECTED

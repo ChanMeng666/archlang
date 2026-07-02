@@ -235,22 +235,24 @@ function perRoomMax(g: NavGrid, vals: Float64Array, nRooms: number): Float64Arra
 }
 
 /**
- * Widest-path bottleneck from `source` to every cell: the maximum over all routes of
- * the minimum clear width along the route. This is the *unavoidable* squeeze between
- * two points (e.g. the narrowest door you must pass), not an artifact of the
- * shortest path hugging a wall — a max-min Dijkstra, the cell-grid analogue of the
- * access graph's widest-path clear-width. Deterministic: the best value per cell is
- * unique, so the heap's tie order does not affect the result.
+ * Widest-path bottleneck from one or more `sources` to every cell: the maximum over
+ * all routes of the minimum clear width along the route. This is the *unavoidable*
+ * squeeze between the sources and a cell (e.g. the narrowest door you must pass), not
+ * an artifact of the shortest path hugging a wall — a max-min Dijkstra, the cell-grid
+ * analogue of the access graph's widest-path clear-width. Each source is seeded with
+ * `seed` (the entrance's own clear width for the entrance walk; `+Infinity` for a
+ * room→room route, so the source room's internal furniture-crowding never caps it).
+ * Deterministic: the best value per cell is unique, so the heap's tie order does not
+ * affect the result.
  */
-function widestBottleneck(g: NavGrid, source: number, seed: number = g.clearMm[source]!): Float64Array {
+function widestBottleneck(g: NavGrid, sources: number[], seed: number): Float64Array {
   const n = g.nx * g.ny;
   const best = new Float64Array(n).fill(-Infinity);
   const done = new Uint8Array(n);
-  best[source] = seed;
 
   // Binary max-heap over (key = bottleneck-so-far, cell), on parallel arrays.
-  const hk: number[] = [best[source]!];
-  const hv: number[] = [source];
+  const hk: number[] = [];
+  const hv: number[] = [];
   const swap = (i: number, j: number): void => {
     [hk[i], hk[j]] = [hk[j]!, hk[i]!];
     [hv[i], hv[j]] = [hv[j]!, hv[i]!];
@@ -287,6 +289,13 @@ function widestBottleneck(g: NavGrid, source: number, seed: number = g.clearMm[s
     }
     return top;
   };
+
+  for (const s of sources) {
+    if (seed > best[s]!) {
+      best[s] = seed;
+      push(seed, s);
+    }
+  }
 
   while (hk.length > 0) {
     const u = pop();
@@ -504,14 +513,17 @@ export function computeCirculation(
   const g = buildGrid(rooms, walls, connectors, furniture, roomIndexById, tol, bodyRadiusMm);
   if (!g) return null;
 
-  // Room anchor = the free cell nearest each room's centroid (one pass, row-major so
-  // ties resolve to the first cell deterministically).
+  // In one pass: each room's anchor (free cell nearest its centroid, row-major so ties
+  // resolve deterministically) and its full free-cell list (route bottlenecks seed the
+  // whole source room so its internal crowding can't cap the route).
   const anchor = new Int32Array(rooms.length).fill(-1);
   const anchorDist = new Float64Array(rooms.length).fill(Infinity);
+  const roomCells: number[][] = rooms.map(() => []);
   const centroid = rects.map((rb) => ({ x: rb.x + rb.w / 2, y: rb.y + rb.h / 2 }));
   for (let k = 0; k < g.free.length; k++) {
     const ri = g.roomIdx[k]!;
     if (!g.free[k] || ri < 0) continue;
+    roomCells[ri]!.push(k);
     const c = centreOf(g, k);
     const cen = centroid[ri]!;
     const dsq = (c.x - cen.x) ** 2 + (c.y - cen.y) ** 2;
@@ -540,7 +552,7 @@ export function computeCirculation(
   if (entranceClear !== undefined) g.clearMm[source] = entranceClear;
 
   const { dist } = bfs(g, source);
-  const widest = widestBottleneck(g, source);
+  const widest = widestBottleneck(g, [source], g.clearMm[source]!); // seeded with the entrance width
   const roomWidest = perRoomMax(g, widest, rooms.length); // widest route *into* each room
   const origin = centreOf(g, source); // walk & straight-line share the threshold origin
 
@@ -580,9 +592,10 @@ export function computeCirculation(
     if (best < 0) return;
     const ta = anchor[best]!;
     const walkExact = r.dist[ta]! * g.cell;
-    // Seed with no cap: you start inside room A, so its own furniture-crowding must
-    // not limit the route — only the doors/corridors between A and B should.
-    const wide = perRoomMax(g, widestBottleneck(g, a, Number.POSITIVE_INFINITY), rooms.length);
+    // Seed from every cell of room A with no cap: you start inside room A, so its own
+    // furniture-crowding must not limit the route — only the doors/corridors between A
+    // and B should.
+    const wide = perRoomMax(g, widestBottleneck(g, roomCells[fromIdx]!, Number.POSITIVE_INFINITY), rooms.length);
     const from = centreOf(g, a);
     const to = centreOf(g, ta);
     const straight = Math.hypot(to.x - from.x, to.y - from.y);

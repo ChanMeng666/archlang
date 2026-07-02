@@ -476,6 +476,20 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Open up the layout: move or shrink the furniture nearest the door so there is a continuous walkable strip from each entrance into the room.",
     "furniture shower at (5000,3000) size 2000x2000   # lint: fills the bathroom against its only door",
   ),
+  W_PATH_TOO_NARROW: W(
+    "W_PATH_TOO_NARROW",
+    "The walk to a room squeezes below a passable width.",
+    "The widest route from the entrance into a room (or between a key pair of rooms, e.g. bedroom→bath) has an unavoidable pinch narrower than the minimum passable clear width — a too-narrow door/opening, or furniture crowding the way. A coarse fact from the circulation nav grid (ADR 0008); the number is grid-quantised.",
+    "Widen the tightest door/opening on the route, or move the furniture pinching it, so the whole path clears the minimum width.",
+    "door at (4000,1500) width 600\nfurniture cabinet at (3600,300) size 700x1200   # lint: the way through squeezes below 700 mm",
+  ),
+  W_CIRCUITOUS_PATH: W(
+    "W_CIRCUITOUS_PATH",
+    "A room is reached by a very roundabout path.",
+    "The walking distance from the entrance to a room is many times its straight-line distance — the room is reachable but only by a circuitous route (e.g. all the way around the plan). A coarse circulation fact (ADR 0008); the default ratio is generous so a normal tucked-away room does not trip it.",
+    "Add a more direct connection — a door or a hall — so the room is not reached the long way round.",
+    'room id=bed at (0,0) size 3000x3000 label "Bed"   # only door is on the far side, forcing a long detour',
+  ),
 });
 
 /** All catalog codes, sorted (errors then warnings, alphabetically within). */

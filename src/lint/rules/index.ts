@@ -6,6 +6,7 @@
 
 import type { LintRule } from "../context.js";
 import { roomNoClearPath } from "./circulation.js";
+import { circuitousPath, pathTooNarrow } from "./circulation-facts.js";
 import { doorClearance, doorwayBlocked, swingObstructed } from "./doors.js";
 import { noEntrance } from "./entrance.js";
 import {
@@ -31,6 +32,10 @@ export const LINT_RULES: readonly LintRule[] = [
   doorClearance,
   roomNoClearPath,
   noEntrance,
+  // Circulation-quality advisories (ADR 0008) — appended last so existing lint output
+  // ordering is unchanged.
+  pathTooNarrow,
+  circuitousPath,
 ];
 
 export type { LintContext, LintRule } from "../context.js";
