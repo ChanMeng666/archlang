@@ -56,6 +56,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
     "test": "vitest run",
     "test:watch": "vitest",
     "cli": "tsx src/cli.ts",
@@ -72,6 +74,7 @@
     "prepublishOnly": "npm run build && npm run test"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.2",
     "@types/node": "^22.20.0",
     "@types/pngjs": "^6.0.5",
     "fast-check": "^4.8.0",

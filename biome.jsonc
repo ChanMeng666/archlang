@@ -1,0 +1,59 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.2/schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": {
+    // Generated files (edit the source + `npm run gen:*` instead), goldens, and
+    // formats Biome has no business linting (.svg brand art / compiled examples,
+    // .vue SFCs where <script setup> imports are used by the template).
+    "includes": [
+      "**",
+      "!editors/archlang.tmLanguage.json",
+      "!editors/archlang.language-configuration.json",
+      "!playground/src/arch-language.js",
+      "!spec.llm.md",
+      "!docs/error-codes.md",
+      "!bench/baseline.json",
+      "!test/__snapshots__",
+      "!test/__goldens__",
+      "!docs-site/.vitepress/cache",
+      "!docs-site/.vitepress/theme/shims.d.ts",
+      "!**/*.svg",
+      "!**/*.vue"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 120
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "style": {
+        // Deliberate idiom: `!` asserts structural invariants the code just checked.
+        "noNonNullAssertion": "off",
+        // String concat vs template literal is pure preference; not worth the churn.
+        "useTemplate": "off"
+      },
+      // `any` is confined to the untyped optional-dep seam (pdfkit).
+      "suspicious": { "noExplicitAny": "off" },
+      // Existing site CSS uses !important on purpose in a few overrides.
+      "complexity": { "noImportantStyles": "off" },
+      // Deferred: playground/index.html button types get fixed in the playground
+      // TypeScript migration; brand SVGs are art assets, not documents.
+      "a11y": "off"
+    }
+  },
+  "assist": {
+    "actions": { "source": { "organizeImports": "off" } }
+  }
+}
