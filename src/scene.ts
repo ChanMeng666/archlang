@@ -20,6 +20,8 @@
  */
 
 import type { NorthDir, Point, TitleNode } from "./ast.js";
+// Type-only and erased at runtime, so the scene ↔ chrome-layout reference is not a real cycle.
+import type { ChromeLayout } from "./chrome-layout.js";
 import type { Span } from "./diagnostics.js";
 import type { Bounds } from "./geometry.js";
 import type { HatchSpec } from "./hatches.js";
@@ -203,4 +205,10 @@ export interface Scene {
   name: string;
   /** Distinct hatch specs in use (stable order), so the SVG backend can emit a `<pattern>` per spec. */
   hatches: HatchSpec[];
+  /**
+   * Page-chrome layout computed by `toScene` (the margins already shape
+   * `width`/`height`). Backends use it when present instead of re-running
+   * `layoutChrome`; optional so hand-built Scenes keep working (append-only).
+   */
+  chrome?: ChromeLayout;
 }

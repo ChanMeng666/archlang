@@ -138,14 +138,17 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
   const drawH = b.maxY - b.minY;
   // Page chrome (scale bar + title block) is placed below the dimension band; the
   // per-side margins grow to fit chrome + dims (shared with scene-build + PDF).
-  const chrome = layoutChrome({
-    bounds: b,
-    refDim,
-    baseMargin: margin,
-    nodes: scene.nodes,
-    title: scene.title,
-    scale: scene.scale,
-  });
+  // `toScene` already computed this layout; fall back for hand-built Scenes.
+  const chrome =
+    scene.chrome ??
+    layoutChrome({
+      bounds: b,
+      refDim,
+      baseMargin: margin,
+      nodes: scene.nodes,
+      title: scene.title,
+      scale: scene.scale,
+    });
   const m = chrome.margin;
   const vbX = b.minX - m.left;
   const vbY = b.minY - m.top;

@@ -206,10 +206,16 @@ function lowerAngledGroup(group: RWall[], h: HatchSpec, ctx: RenderCtx, backend:
  * optional {@link GeometryBackend} when one is registered (seamless joinery),
  * else falls back to the wall element's per-segment primitives.
  */
-function lowerWalls(walls: RWall[], ctx: RenderCtx, registry: Registry, backend: GeometryBackend | null): SceneNode[] {
+function lowerWalls(
+  walls: RWall[],
+  hatches: HatchSpec[],
+  ctx: RenderCtx,
+  registry: Registry,
+  backend: GeometryBackend | null,
+): SceneNode[] {
   if (walls.length === 0) return [];
   const nodes: SceneNode[] = [];
-  for (const h of hatchesUsed(walls)) {
+  for (const h of hatches) {
     const k = hatchKey(h);
     const group = walls.filter((w) => hatchKey(hatchOf(w)) === k);
     if (allOrthogonal(group)) {
@@ -404,7 +410,8 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     const span = opts.annotate ? (el as { span?: SceneNode["span"] }).span : undefined;
     nodes.push(...(span ? rendered.map((n) => (n.span === undefined ? { ...n, span } : n)) : rendered));
   }
-  nodes.push(...lowerWalls(ir.walls, ctxFor("wall"), registry, backend));
+  const hatches = hatchesUsed(ir.walls);
+  nodes.push(...lowerWalls(ir.walls, hatches, ctxFor("wall"), registry, backend));
 
   // `dims auto …` — synthesize dimension strings (presentation only; never touches
   // the IR, bounds, describe() or lint()). Overall dims sit in the page margin;
@@ -434,6 +441,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     scale: ir.scale,
     title: ir.title,
     name: ir.name,
-    hatches: hatchesUsed(ir.walls),
+    hatches,
+    chrome,
   };
 }

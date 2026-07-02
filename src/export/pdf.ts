@@ -118,14 +118,18 @@ export async function toPdf(scene: Scene): Promise<Uint8Array> {
 
   const { theme, sizes, bounds: b } = scene;
   // Per-side margins from the shared chrome layout (match scene.width/height).
-  const m = layoutChrome({
-    bounds: b,
-    refDim: sizes.refDim,
-    baseMargin: sizes.margin,
-    nodes: scene.nodes,
-    title: scene.title,
-    scale: scene.scale,
-  }).margin;
+  // `toScene` already computed the layout; fall back for hand-built Scenes.
+  const m = (
+    scene.chrome ??
+    layoutChrome({
+      bounds: b,
+      refDim: sizes.refDim,
+      baseMargin: sizes.margin,
+      nodes: scene.nodes,
+      title: scene.title,
+      scale: scene.scale,
+    })
+  ).margin;
   const vbX = b.minX - m.left;
   const vbY = b.minY - m.top;
   const W = scene.width;
@@ -187,14 +191,16 @@ function drawChrome(doc: any, scene: Scene): void {
 
   // Scale bar + title block come from the shared chrome layout (placed below the
   // dimension band; the bottom margin already grew to fit — see scene.height).
-  const chrome = layoutChrome({
-    bounds: b,
-    refDim,
-    baseMargin: margin,
-    nodes: scene.nodes,
-    title: scene.title,
-    scale: scene.scale,
-  });
+  const chrome =
+    scene.chrome ??
+    layoutChrome({
+      bounds: b,
+      refDim,
+      baseMargin: margin,
+      nodes: scene.nodes,
+      title: scene.title,
+      scale: scene.scale,
+    });
 
   // Scale bar (two-segment alternating bar + end labels).
   {
