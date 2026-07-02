@@ -60,9 +60,9 @@ export function rectBooleanOutline(solid: Rect[], holes: Rect[] = []): Point[][]
   // [xi(x0), xi(x1)) × [yi(y0), yi(y1)) (empty when inverted/degenerate, same
   // as the old strict centre test). Solids paint 1, holes clear to 0.
   const xi = new Map<number, number>();
-  for (let i = 0; i < xs.length; i++) xi.set(xs[i], i);
+  for (let i = 0; i < xs.length; i++) xi.set(xs[i]!, i);
   const yi = new Map<number, number>();
-  for (let j = 0; j < ys.length; j++) yi.set(ys[j], j);
+  for (let j = 0; j < ys.length; j++) yi.set(ys[j]!, j);
   const fill = new Uint8Array(nx * ny);
   const paint = (rects: Rect[], value: 0 | 1) => {
     for (const r of rects) {
@@ -111,8 +111,8 @@ export function rectBooleanOutline(solid: Rect[], holes: Rect[] = []): Point[][]
     }
   }
 
-  const px = (v: number) => xs[Math.floor(v / V)];
-  const py = (v: number) => ys[v % V];
+  const px = (v: number) => xs[Math.floor(v / V)]!;
+  const py = (v: number) => ys[v % V]!;
 
   // Walk the directed edges into closed loops. At a vertex with two outgoing
   // edges (a pinch point), prefer the one that turns left, keeping loops simple.
@@ -125,11 +125,11 @@ export function rectBooleanOutline(solid: Rect[], holes: Rect[] = []): Point[][]
     if (!list) return null;
     const candidates = list.filter((to) => !used.has(edgeKey(from, to)));
     if (candidates.length === 0) return null;
-    if (candidates.length === 1 || !prevDir) return candidates[0];
+    if (candidates.length === 1 || !prevDir) return candidates[0]!;
     // Prefer the left-most turn (cross product > 0 in y-down screen space).
     const fx = px(from);
     const fy = py(from);
-    let best = candidates[0];
+    let best = candidates[0]!;
     let bestScore = -Infinity;
     for (const c of candidates) {
       const dir = { x: px(c) - fx, y: py(c) - fy };
@@ -168,9 +168,9 @@ function mergeCollinear(loop: Point[]): Point[] {
   const n = loop.length;
   const out: Point[] = [];
   for (let i = 0; i < n; i++) {
-    const prev = loop[(i - 1 + n) % n];
-    const cur = loop[i];
-    const next = loop[(i + 1) % n];
+    const prev = loop[(i - 1 + n) % n]!;
+    const cur = loop[i]!;
+    const next = loop[(i + 1) % n]!;
     const d1x = cur.x - prev.x;
     const d1y = cur.y - prev.y;
     const d2x = next.x - cur.x;

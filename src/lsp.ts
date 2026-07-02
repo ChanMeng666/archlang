@@ -354,7 +354,7 @@ export function signatureHelp(
     if (t.start >= offset) break;
     if (t.type === "lparen") stack.push({ callee: prev && prev.type === "ident" ? prev.value : undefined, commas: 0 });
     else if (t.type === "rparen") stack.pop();
-    else if (t.type === "comma" && stack.length) stack[stack.length - 1].commas++;
+    else if (t.type === "comma" && stack.length) stack[stack.length - 1]!.commas++;
     if (t.type !== "eof") prev = t;
   }
   const top = stack[stack.length - 1];
@@ -370,7 +370,7 @@ export function signatureHelp(
     return { label: fn.detail.replace(/ = …$/, ""), params, activeParameter: top.commas };
   }
   if (top.callee in BUILTIN_SIGS) {
-    const sig = BUILTIN_SIGS[top.callee];
+    const sig = BUILTIN_SIGS[top.callee]!;
     const m = /\(([^)]*)\)/.exec(sig);
     const params = m?.[1] ? m[1].split(",").map((s) => s.trim()) : [];
     return { label: sig, params, activeParameter: Math.min(top.commas, Math.max(0, params.length - 1)) };

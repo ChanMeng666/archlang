@@ -61,7 +61,7 @@ const RANGE_PREC = 5;
 
 /** Binding strength of an expression (atoms/calls bind tightest). */
 function precOf(e: Expr): number {
-  if (e.t === "bin") return BIN_PREC[e.op];
+  if (e.t === "bin") return BIN_PREC[e.op]!;
   if (e.t === "range") return RANGE_PREC;
   return 99;
 }
@@ -104,7 +104,7 @@ function exprStr(e: Expr): string {
     case "unary":
       return `${e.op}${child(e.e, 99)}`;
     case "bin":
-      return `${child(e.l, BIN_PREC[e.op])} ${e.op} ${child(e.r, BIN_PREC[e.op] + 1)}`;
+      return `${child(e.l, BIN_PREC[e.op]!)} ${e.op} ${child(e.r, BIN_PREC[e.op]! + 1)}`;
     case "range":
       return `${child(e.lo, RANGE_PREC)}..${child(e.hi, RANGE_PREC + 1)}`;
     case "index":
@@ -294,10 +294,10 @@ function weaveSlots(slots: Slot[], comments: Comment[], source: string): Doc[] {
     if (slots.some((s) => s.block && c.span.start > s.start && c.span.start < s.end)) continue; // handled by recursion
     let prev = -1;
     for (let i = 0; i < slots.length; i++) {
-      if (slots[i].end <= c.span.start) prev = i;
+      if (slots[i]!.end <= c.span.start) prev = i;
       else break;
     }
-    if (prev >= 0 && sameLine(slots[prev].end, c.span.start, source)) add(trailing, prev, c);
+    if (prev >= 0 && sameLine(slots[prev]!.end, c.span.start, source)) add(trailing, prev, c);
     else {
       const next = slots.findIndex((s) => s.start > c.span.start);
       if (next >= 0) add(leading, next, c);
@@ -308,14 +308,14 @@ function weaveSlots(slots: Slot[], comments: Comment[], source: string): Doc[] {
   const lines: Doc[] = [];
   slots.forEach((s, i) => {
     const lead = leading.get(i) ?? [];
-    const leadStart = lead.length ? lead[0].span.start : s.start;
-    if (i > 0 && gapHasBlank(slots[i - 1].end, leadStart, source)) lines.push("");
+    const leadStart = lead.length ? lead[0]!.span.start : s.start;
+    if (i > 0 && gapHasBlank(slots[i - 1]!.end, leadStart, source)) lines.push("");
     for (const c of lead) lines.push(c.text);
     const tr = trailing.get(i) ?? [];
     lines.push(tr.length ? concat([s.doc, "  ", tr.map((t) => t.text).join("  ")]) : s.doc);
   });
   if (footer.length) {
-    if (slots.length && gapHasBlank(slots[slots.length - 1].end, footer[0].span.start, source)) lines.push("");
+    if (slots.length && gapHasBlank(slots[slots.length - 1]!.end, footer[0]!.span.start, source)) lines.push("");
     for (const c of footer) lines.push(c.text);
   }
   return lines;

@@ -70,7 +70,7 @@ const ALIASES: Record<string, keyof Theme> = {
 export function resolveThemeKey(key: string): keyof Theme | null {
   const owns = (o: object, k: string): boolean => Object.hasOwn(o, k);
   if (owns(DEFAULT_THEME, key)) return key as keyof Theme;
-  if (owns(ALIASES, key)) return ALIASES[key];
+  if (owns(ALIASES, key)) return ALIASES[key]!;
   return null;
 }
 
@@ -185,8 +185,8 @@ const STYLE_KEYS: Record<string, Record<string, keyof Theme>> = {
 export function resolveStyleKey(kind: string, key: string): keyof Theme | null {
   const owns = (o: object, k: string): boolean => Object.hasOwn(o, k);
   if (!owns(STYLE_KEYS, kind)) return null;
-  const m = STYLE_KEYS[kind];
-  return owns(m, key) ? m[key] : null;
+  const m = STYLE_KEYS[kind]!;
+  return owns(m, key) ? m[key]! : null;
 }
 
 /** Per-element style overrides, by element kind, as resolved Theme partials. */
@@ -198,7 +198,7 @@ export type StyleMap = Record<string, Partial<Theme>>;
 export function hexToHsl(hex: string): { h: number; s: number; l: number } | null {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   if (!m) return null;
-  const n = parseInt(m[1], 16);
+  const n = parseInt(m[1]!, 16);
   const r = ((n >> 16) & 255) / 255;
   const g = ((n >> 8) & 255) / 255;
   const b = (n & 255) / 255;

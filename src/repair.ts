@@ -449,7 +449,7 @@ export function repair(source: string): RepairResult {
   for (let pass = 0; pass < MAX_PASSES; pass++) {
     let moved = false;
     for (let i = 0; i < pieces.length; i++) {
-      const p = pieces[i];
+      const p = pieces[i]!;
       if (p.stuck) continue;
       const fr = rectOfPiece(p);
       const earlier = pieces.slice(0, i).map(rectOfPiece);

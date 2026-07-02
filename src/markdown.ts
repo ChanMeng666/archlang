@@ -39,11 +39,11 @@ export function extractArchBlocks(md: string): ArchBlock[] {
   let i = 0;
 
   while (i < lines.length) {
-    const line = lines[i];
+    const line = lines[i]!;
     const open = /^(\s*)(`{3,}|~{3,})\s*([^\s`~]*)/.exec(line);
     if (open) {
-      const fence = open[2];
-      const lang = open[3].toLowerCase();
+      const fence = open[2]!;
+      const lang = open[3]!.toLowerCase();
       const blockStart = offset;
       const closeRe = new RegExp(`^\\s*${fence[0] === "`" ? "`" : "~"}{${fence.length},}\\s*$`);
 
@@ -53,7 +53,7 @@ export function extractArchBlocks(md: string): ArchBlock[] {
       let j = i + 1;
       let closeEnd = -1; // offset just before the closing fence's trailing newline
       while (j < lines.length) {
-        const l = lines[j];
+        const l = lines[j]!;
         if (closeRe.test(l)) {
           closeEnd = contentOffset + l.length;
           break;
@@ -68,7 +68,7 @@ export function extractArchBlocks(md: string): ArchBlock[] {
           blocks.push({
             index: index++,
             source: content.join("\n"),
-            info: open[3],
+            info: open[3]!,
             range: [blockStart, Math.min(closeEnd, md.length)],
           });
         }

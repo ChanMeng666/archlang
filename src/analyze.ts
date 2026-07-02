@@ -329,9 +329,9 @@ function mergedLength(intervals: Array<[number, number]>): number {
   if (intervals.length === 0) return 0;
   const sorted = [...intervals].sort((a, b) => a[0] - b[0]);
   let total = 0;
-  let [cs, ce] = sorted[0];
+  let [cs, ce] = sorted[0]!;
   for (let i = 1; i < sorted.length; i++) {
-    const [s, e] = sorted[i];
+    const [s, e] = sorted[i]!;
     if (s <= ce) ce = Math.max(ce, e);
     else {
       total += ce - cs;

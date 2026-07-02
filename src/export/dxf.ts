@@ -79,7 +79,7 @@ class DxfBuilder {
   /** Closed loop of points as a chain of LINEs (R12-safe; no LWPOLYLINE). */
   loop(layer: string, pts: Point[], ltype?: string): void {
     for (let i = 0; i < pts.length; i++) {
-      this.line(layer, pts[i], pts[(i + 1) % pts.length], ltype);
+      this.line(layer, pts[i]!, pts[(i + 1) % pts.length]!, ltype);
     }
   }
 

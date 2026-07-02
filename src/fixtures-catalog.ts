@@ -74,7 +74,7 @@ export const CATALOG_CATEGORIES: readonly string[] = Object.freeze(Object.keys(C
 /** The categories that satisfy `zone` for W_ROOM_NO_FIXTURE — derived from the
  *  catalog so the lint rule and this data can never drift apart. */
 export function zoneFixtureCategories(zone: FixtureZone): ReadonlySet<string> {
-  return new Set(CATALOG_CATEGORIES.filter((c) => CATALOG[c].zones?.includes(zone)));
+  return new Set(CATALOG_CATEGORIES.filter((c) => CATALOG[c]!.zones?.includes(zone)));
 }
 
 /** The catalog spec for a fixture category, or `null` for free-standing furniture. */

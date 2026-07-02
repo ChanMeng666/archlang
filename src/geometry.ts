@@ -255,8 +255,8 @@ export function segmentsOfWall(w: WallLike): WallSegment[] {
   const segs: WallSegment[] = [];
   for (let k = 0; k < w.points.length - 1; k++) {
     segs.push({
-      a: w.points[k],
-      b: w.points[k + 1],
+      a: w.points[k]!,
+      b: w.points[k + 1]!,
       thickness: w.thickness,
       category: w.category,
       wallId: w.id,
@@ -265,8 +265,8 @@ export function segmentsOfWall(w: WallLike): WallSegment[] {
   }
   if (w.closed && w.points.length > 2) {
     segs.push({
-      a: w.points[w.points.length - 1],
-      b: w.points[0],
+      a: w.points[w.points.length - 1]!,
+      b: w.points[0]!,
       thickness: w.thickness,
       category: w.category,
       wallId: w.id,

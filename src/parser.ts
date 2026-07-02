@@ -128,11 +128,12 @@ class Parser {
     };
   }
 
+  // The token list always ends with EOF, so the clamped index is present.
   private peek(o = 0): Token {
-    return this.toks[Math.min(this.pos + o, this.toks.length - 1)];
+    return this.toks[Math.min(this.pos + o, this.toks.length - 1)]!;
   }
   private next(): Token {
-    return this.toks[Math.min(this.pos++, this.toks.length - 1)];
+    return this.toks[Math.min(this.pos++, this.toks.length - 1)]!;
   }
   private fail(msg: string, t = this.peek()): never {
     throw new ParseError(msg, { start: t.start, end: t.end });
@@ -140,7 +141,7 @@ class Parser {
 
   /** Span from a start offset to the end of the last consumed token. */
   private spanFrom(start: number): Span {
-    const last = this.toks[Math.max(0, Math.min(this.pos - 1, this.toks.length - 1))];
+    const last = this.toks[Math.max(0, Math.min(this.pos - 1, this.toks.length - 1))]!;
     return { start, end: last.end };
   }
 

@@ -18,7 +18,7 @@ import type { SceneNode } from "./scene.js";
 /** Standard scale-bar lengths (mm); the bar shows the largest that fits the target. */
 const NICE_LENGTHS = [500, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
 export function niceBarLength(target: number): number {
-  let best = NICE_LENGTHS[0];
+  let best = NICE_LENGTHS[0]!;
   for (const v of NICE_LENGTHS) if (v <= target) best = v;
   return best;
 }

@@ -196,7 +196,7 @@ class Scope {
     const m: Env = new Map();
     const chain: Scope[] = [];
     for (let s: Scope | undefined = this; s; s = s.parent) chain.push(s);
-    for (let i = chain.length - 1; i >= 0; i--) for (const [k, v] of chain[i].vars) m.set(k, v);
+    for (let i = chain.length - 1; i >= 0; i--) for (const [k, v] of chain[i]!.vars) m.set(k, v);
     return m;
   }
 
@@ -206,7 +206,7 @@ class Scope {
     const chain: Scope[] = [];
     for (let s: Scope | undefined = this; s; s = s.parent) chain.push(s);
     for (let i = chain.length - 1; i >= 0; i--) {
-      const m = chain[i].sets.get(kind);
+      const m = chain[i]!.sets.get(kind);
       if (m) merged = new Map([...(merged ?? []), ...m]);
     }
     return merged;
@@ -307,7 +307,7 @@ function expandScope(
         // Component scope = plan global + params; its lets are local.
         const childScope = new Scope(global);
         comp.params.forEach((p, i) => {
-          childScope.vars.set(p, argVals[i]);
+          childScope.vars.set(p, argVals[i]!);
         });
         out.push(...expandScope(comp.body, childScope, global, components, diagnostics, depth + 1));
         break;
@@ -601,7 +601,7 @@ function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[
   rooms.forEach((r1, a) => {
     for (const b of rgrid.queryBox(roomBox(r1))) {
       if (b <= a) continue; // each unordered pair once, with a < b
-      const r2 = rooms[b];
+      const r2 = rooms[b]!;
       const b1 = { x: r1.at.x, y: r1.at.y, w: r1.size.w, h: r1.size.h };
       const b2 = { x: r2.at.x, y: r2.at.y, w: r2.size.w, h: r2.size.h };
       if (rectsOverlap(b1, b2)) {
@@ -617,9 +617,9 @@ function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[
   for (const [a, b] of overlaps) {
     diagnostics.push({
       severity: "warning",
-      message: `Rooms "${rooms[a].id}" and "${rooms[b].id}" overlap`,
+      message: `Rooms "${rooms[a]!.id}" and "${rooms[b]!.id}" overlap`,
       code: "W_ROOM_OVERLAP",
-      span: rooms[b].span,
+      span: rooms[b]!.span,
     });
   }
 }

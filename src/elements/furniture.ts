@@ -239,14 +239,14 @@ function placeAgainst(
   if (matches.length === 0) return err(`is placed \`against wall ${ag.wall}\` but no wall has that id or category`);
   if (matches.length > 1)
     return err(`\`against wall ${ag.wall}\` matches ${matches.length} walls — reference a unique wall id`);
-  const wall = matches[0];
+  const wall = matches[0]!;
   const segs = segmentsOfWall(wall);
   let segIdx: number;
   if (ag.segment !== undefined) segIdx = Math.floor(ctx.eval(ag.segment));
   else if (segs.length === 1) segIdx = 0;
   else return err(`wall "${ag.wall}" has ${segs.length} segments — add \`segment <n>\``);
   if (segIdx < 0 || segIdx >= segs.length) return err(`segment ${segIdx} is out of range (0..${segs.length - 1})`);
-  const seg = segs[segIdx];
+  const seg = segs[segIdx]!;
   const d = unit(sub(seg.b, seg.a));
   const horiz = Math.abs(d.y) < 1e-9;
   const vert = Math.abs(d.x) < 1e-9;

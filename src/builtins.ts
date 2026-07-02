@@ -82,7 +82,7 @@ const BUILTINS: ReadonlyMap<string, BuiltinFn> = new Map<string, BuiltinFn>([
     "len",
     (a, e, s) => {
       if (!arity("len", a, 1, e, s)) return num(0);
-      const v = a[0];
+      const v = a[0]!;
       if (v.t === "arr") return num(v.v.length);
       if (v.t === "str") return num(v.v.length);
       e({
@@ -94,7 +94,7 @@ const BUILTINS: ReadonlyMap<string, BuiltinFn> = new Map<string, BuiltinFn>([
       return num(0);
     },
   ],
-  ["str", (a, e, s) => (arity("str", a, 1, e, s) ? { t: "str", v: asStr(a[0]) } : { t: "str", v: "" })],
+  ["str", (a, e, s) => (arity("str", a, 1, e, s) ? { t: "str", v: asStr(a[0]!) } : { t: "str", v: "" })],
 ]);
 
 /** Names injected into the global scope as `builtin` Values (shadowable by user

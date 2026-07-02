@@ -118,7 +118,7 @@ export function computeRoomClearances(
     }
     let reached = queue.length;
     for (let h = 0; h < queue.length; h++) {
-      const k = queue[h];
+      const k = queue[h]!;
       const ix = k % nx;
       const iy = (k - ix) / nx;
       const nbrs = [ix > 0 ? k - 1 : -1, ix < nx - 1 ? k + 1 : -1, iy > 0 ? k - nx : -1, iy < ny - 1 ? k + nx : -1];

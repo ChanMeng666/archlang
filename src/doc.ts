@@ -54,7 +54,7 @@ function fits(width: number, next: Cmd, rest: Cmd[]): boolean {
   while (remaining >= 0) {
     if (stack.length === 0) {
       if (restIdx < 0) return true;
-      stack.push(rest[restIdx--]);
+      stack.push(rest[restIdx--]!);
       continue;
     }
     const { ind, mode, doc } = stack.pop()!;
@@ -64,7 +64,7 @@ function fits(width: number, next: Cmd, rest: Cmd[]): boolean {
     }
     switch (doc.t) {
       case "concat":
-        for (let i = doc.parts.length - 1; i >= 0; i--) stack.push({ ind, mode, doc: doc.parts[i] });
+        for (let i = doc.parts.length - 1; i >= 0; i--) stack.push({ ind, mode, doc: doc.parts[i]! });
         break;
       case "indent":
         stack.push({ ind: ind + 1, mode, doc: doc.doc });
@@ -111,7 +111,7 @@ export function printDoc(doc: Doc, width = 80, tab = "  "): string {
     }
     switch (d.t) {
       case "concat":
-        for (let i = d.parts.length - 1; i >= 0; i--) cmds.push({ ind, mode, doc: d.parts[i] });
+        for (let i = d.parts.length - 1; i >= 0; i--) cmds.push({ ind, mode, doc: d.parts[i]! });
         break;
       case "indent":
         cmds.push({ ind: ind + 1, mode, doc: d.doc });

@@ -260,7 +260,7 @@ export function buildManifest(version: string): Manifest {
       defaultRuleset: DEFAULT_RULESET,
       profileOverrides: Object.fromEntries(LINT_PROFILE_NAMES.map((name) => [name, LINT_PROFILES[name] ?? {}])),
     },
-    errorCodes: ERROR_CODES.map((code) => ({ code, severity: ERROR_CATALOG[code].severity })),
+    errorCodes: ERROR_CODES.map((code) => ({ code, severity: ERROR_CATALOG[code]!.severity })),
   };
 }
 

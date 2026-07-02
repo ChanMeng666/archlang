@@ -57,7 +57,7 @@ type Format = ExportFormat;
 const FORMAT_IDS = new Set<string>(EXPORT_FORMATS.map((f) => f.id));
 const FORMAT_LIST = `${EXPORT_FORMATS.slice(0, -1)
   .map((f) => f.id)
-  .join(", ")}, or ${EXPORT_FORMATS[EXPORT_FORMATS.length - 1].id}`;
+  .join(", ")}, or ${EXPORT_FORMATS[EXPORT_FORMATS.length - 1]!.id}`;
 
 /** Deterministic exit codes (documented in `--help`). */
 const EXIT = { OK: 0, INTERNAL: 1, USER: 2, USAGE: 3 } as const;
@@ -86,7 +86,7 @@ interface Args {
 function parseArgs(argv: string[]): Args {
   const res: Args = { _: [] };
   for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
+    const a = argv[i]!;
     if (a === "-o" || a === "--out") res.o = argv[++i];
     else if (a === "-w" || a === "--width") res.width = Number(argv[++i]);
     else if (a === "-f" || a === "--format") res.format = argv[++i];
@@ -342,7 +342,7 @@ async function runPool<T>(tasks: Array<() => Promise<T>>, limit: number): Promis
   const worker = async (): Promise<void> => {
     while (next < tasks.length) {
       const i = next++;
-      results[i] = await tasks[i]();
+      results[i] = await tasks[i]!();
     }
   };
   const n = Math.max(1, Math.min(limit, tasks.length || 1));

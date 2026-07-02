@@ -6,6 +6,7 @@
     "lib": ["ES2022", "DOM"],
     "declaration": true,
     "strict": true,
+    "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitOverride": true,

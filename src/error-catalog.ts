@@ -480,7 +480,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
 
 /** All catalog codes, sorted (errors then warnings, alphabetically within). */
 export const ERROR_CODES: readonly string[] = Object.keys(ERROR_CATALOG).sort((a, b) => {
-  const sev = (c: string): number => (ERROR_CATALOG[c].severity === "error" ? 0 : 1);
+  const sev = (c: string): number => (ERROR_CATALOG[c]!.severity === "error" ? 0 : 1);
   return sev(a) - sev(b) || a.localeCompare(b);
 });
 

@@ -21,7 +21,7 @@ export const reachability: LintRule = {
     };
     for (const c of connectors) {
       const conn = doorConnections(c, roomRects, rules.tolMm);
-      if (conn.length === 2) addEdge(conn[0], conn[1]);
+      if (conn.length === 2) addEdge(conn[0]!, conn[1]!);
     }
     const isBedroomId = (id: string): boolean => {
       const r = rooms.find((x) => x.id === id);

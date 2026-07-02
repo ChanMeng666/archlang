@@ -97,8 +97,8 @@ function solidRemains(lo: number, hi: number, voids: Array<[number, number]>): b
   }
   cuts = [...new Set(cuts)].sort((p, q) => p - q);
   for (let i = 0; i < cuts.length - 1; i++) {
-    const mid = (cuts[i] + cuts[i + 1]) / 2;
-    const len = cuts[i + 1] - cuts[i];
+    const mid = (cuts[i]! + cuts[i + 1]!) / 2;
+    const len = cuts[i + 1]! - cuts[i]!;
     if (len <= 1) continue;
     const inVoid = voids.some(([a, b]) => mid > a && mid < b);
     if (!inVoid) return true;

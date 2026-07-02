@@ -27,13 +27,13 @@ export const furnitureOverlap: LintRule = {
     const out: Diagnostic[] = [];
     for (let i = 0; i < furniture.length; i++) {
       for (let j = i + 1; j < furniture.length; j++) {
-        if (rectsOverlap(rectOf(furniture[i]), rectOf(furniture[j]))) {
-          const nameI = furniture[i].label ?? furniture[i].category;
-          const nameJ = furniture[j].label ?? furniture[j].category;
+        if (rectsOverlap(rectOf(furniture[i]!), rectOf(furniture[j]!))) {
+          const nameI = furniture[i]!.label ?? furniture[i]!.category;
+          const nameJ = furniture[j]!.label ?? furniture[j]!.category;
           out.push({
             severity: "warning",
             code: "W_FURNITURE_OVERLAP",
-            ...at(furniture[j].span),
+            ...at(furniture[j]!.span),
             message: `Furniture "${nameJ}" overlaps "${nameI}".`,
             hints: ["Move or resize one piece so they don't intersect; leave a walkway between them."],
           });

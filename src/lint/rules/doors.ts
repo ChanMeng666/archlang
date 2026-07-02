@@ -21,11 +21,11 @@ export const swingObstructed: LintRule = {
       if (s) swings.push({ d, s });
     }
     for (let i = 0; i < swings.length; i++) {
-      const { d, s } = swings[i];
+      const { d, s } = swings[i]!;
       let blocked = furniture.some((f) => sectorIntersectsRect(s, rectOf(f), rules.swingClearanceMm));
       if (!blocked) {
         for (let j = i + 1; j < swings.length; j++) {
-          if (swingsCollide(s, swings[j].s, rules.swingClearanceMm)) {
+          if (swingsCollide(s, swings[j]!.s, rules.swingClearanceMm)) {
             blocked = true;
             break;
           }

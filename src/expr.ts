@@ -334,7 +334,7 @@ function parseTemplate(raw: string, baseOffset: number, outer: ExprTokens): Expr
         lit = "";
       }
       const lr = lex(inner);
-      if (lr.errors.length) outer.fail(lr.errors[0].message);
+      if (lr.errors.length) outer.fail(lr.errors[0]!.message);
       const its = tokensOver(lr.tokens, baseOffset + i + 1, outer);
       const ex = parseExpr(its);
       if (its.peek().type !== "eof") outer.fail(`Unexpected ${describe(its.peek())} in interpolation`);
@@ -354,11 +354,12 @@ function parseTemplate(raw: string, baseOffset: number, outer: ExprTokens): Expr
  *  shifting spans back into the original source and delegating `fail` outward. */
 function tokensOver(toks: Token[], shift: number, outer: ExprTokens): ExprTokens {
   let pos = 0;
-  const at = (o = 0) => toks[Math.min(pos + o, toks.length - 1)];
+  // A lexed token list always ends with EOF, so the clamped index is present.
+  const at = (o = 0) => toks[Math.min(pos + o, toks.length - 1)]!;
   const shifted = (t: Token): Token => ({ ...t, start: t.start + shift, end: t.end + shift });
   return {
     peek: (o = 0) => shifted(at(o)),
-    next: () => shifted(toks[Math.min(pos++, toks.length - 1)]),
+    next: () => shifted(toks[Math.min(pos++, toks.length - 1)]!),
     fail: (msg) => outer.fail(msg),
   };
 }
@@ -461,7 +462,7 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
         });
         return NUM0;
       }
-      return base.v[k];
+      return base.v[k]!;
     }
     case "if": {
       const c = asBool(evalExpr(e.cond, env, onError, depth), onError, e.span);
@@ -518,7 +519,7 @@ function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagno
 function valueEq(a: Value, b: Value): boolean {
   if (a.t !== b.t) return false;
   if (a.t === "arr" && b.t === "arr") {
-    return a.v.length === b.v.length && a.v.every((x, i) => valueEq(x, b.v[i]));
+    return a.v.length === b.v.length && a.v.every((x, i) => valueEq(x, b.v[i]!));
   }
   if (a.t === "fn" || a.t === "builtin") return a === b;
   // num/bool/str compare by primitive value.
@@ -601,13 +602,13 @@ function levenshtein(a: string, b: string): number {
   const n = b.length;
   const dp = Array.from({ length: m + 1 }, (_, i) => i);
   for (let j = 1; j <= n; j++) {
-    let prev = dp[0];
+    let prev = dp[0]!;
     dp[0] = j;
     for (let i = 1; i <= m; i++) {
-      const tmp = dp[i];
-      dp[i] = Math.min(dp[i] + 1, dp[i - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      const tmp = dp[i]!;
+      dp[i] = Math.min(dp[i]! + 1, dp[i - 1]! + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
       prev = tmp;
     }
   }
-  return dp[m];
+  return dp[m]!;
 }
