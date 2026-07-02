@@ -138,6 +138,7 @@ the repo root and is the published package; `editors/vscode`, `playground`, and
 npm install          # bootstraps ALL workspaces (core has ZERO runtime deps)
 npm run build        # build core library + CLI into dist/ (tsup)
 npm run typecheck    # tsc --noEmit
+npm run lint         # biome check . (format + lint; `npm run lint:fix` applies safe fixes)
 npm test             # run the vitest suite (test/**/*.test.ts)
 npm run cli -- compile examples/studio.arch -o studio.svg   # run the CLI from source via tsx
 npm run bench        # compile a generated ~1000-element plan and report per-stage timings

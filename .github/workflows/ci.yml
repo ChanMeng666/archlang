@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [18, 20]
+        node: [18, 20, 22]
     steps:
       - uses: actions/checkout@v5
 
@@ -29,6 +29,9 @@ jobs:
       - name: Type-check
         run: npm run typecheck
 
+      - name: Lint & format (Biome)
+        run: npx biome ci .
+
       - name: Editor grammars are in sync with the token source
         run: |
           npm run gen:grammars
@@ -38,6 +41,11 @@ jobs:
         run: |
           npm run gen:errors
           git diff --exit-code docs/error-codes.md
+
+      - name: LLM spec is in sync with the token source + examples
+        run: |
+          npm run gen:spec
+          git diff --exit-code spec.llm.md
 
       - name: Test
         run: npm test
