@@ -34,6 +34,7 @@ import type { Point } from "./ast.js";
 import { patternId } from "./hatches.js";
 import type { HatchSpec } from "./hatches.js";
 import { layoutChrome } from "./chrome-layout.js";
+import { circulationOverlayNodes } from "./overlays/circulation.js";
 import { DEFAULT_THEME, THEMES, mergeTheme, sanitizeTheme, derivePoche } from "./theme.js";
 import type { Theme } from "./theme.js";
 
@@ -429,6 +430,13 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // the SVG/PDF backends via the one layoutChrome source).
   const chrome = layoutChrome({ bounds: b, refDim, baseMargin: sizes.margin, nodes, title: ir.title, scale: ir.scale });
   const m = chrome.margin;
+
+  // Opt-in diagnostic overlays (ADR 0008): appended AFTER all nodes and after chrome
+  // layout, so the default Scene (no overlays) is byte-identical and the overlay never
+  // shifts the page or chrome. Off by default — never on the shipped-SVG path.
+  if (opts.overlays?.includes("circulation")) {
+    nodes.push(...circulationOverlayNodes(ir, theme, sizes));
+  }
 
   return {
     width: drawW + m.left + m.right,

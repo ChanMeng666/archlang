@@ -91,6 +91,12 @@ const WIDTH_FLAG: ManifestFlag = {
   arg: "<px>",
   description: "page width hint in pixels",
 };
+const OVERLAY_FLAG: ManifestFlag = {
+  flag: "--overlay",
+  arg: "<circulation>",
+  description:
+    "draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged",
+};
 
 /**
  * The command table. Keys MUST cover exactly the verbs the CLI's `main()`
@@ -104,6 +110,7 @@ const COMMANDS: ManifestCommand[] = [
       OUT_FLAG,
       FMT_FLAG,
       WIDTH_FLAG,
+      OVERLAY_FLAG,
       { flag: "--install", description: "auto-install the optional dep for the chosen format if missing (PNG/PDF)" },
       JSON_FLAG,
       QUIET_FLAG,

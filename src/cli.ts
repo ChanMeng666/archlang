@@ -81,6 +81,8 @@ interface Args {
   scale?: number;
   /** `--install`: auto-install a missing optional render dep, then retry. */
   install?: boolean;
+  /** `--overlay <name>`: draw an opt-in diagnostic overlay (currently `circulation`). */
+  overlay?: string;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -98,6 +100,7 @@ function parseArgs(argv: string[]): Args {
     else if (a === "--quiet" || a === "-q") res.quiet = true;
     else if (a === "--force") res.force = true;
     else if (a === "--profile") res.profile = argv[++i];
+    else if (a === "--overlay") res.overlay = argv[++i];
     else if (a === "--strict" || a === "--fail-on-warning") res.strict = true;
     else res._.push(a);
   }
@@ -263,6 +266,8 @@ async function renderArtifact(source: string, format: Format, args: Args, baseDi
     width: args.width,
     noCache: true,
     world: makeNodeWorld(baseDir),
+    // `--overlay circulation` draws the opt-in diagnostic overlay; unknown names are ignored.
+    ...(args.overlay === "circulation" ? { overlays: ["circulation"] as const } : {}),
   });
   if (hasErrors(diagnostics) || !scene) return { diagnostics };
   try {
@@ -913,7 +918,7 @@ function ioError(msg: string, json?: boolean, extra?: Record<string, unknown>): 
 const HELP = `arch — ArchLang compiler (agent-native)
 
 Usage:
-  arch compile  <in.arch|-> [-o out|-] [-w width] [-f svg|dxf|pdf|png] [--install] [--json] [--quiet]
+  arch compile  <in.arch|-> [-o out|-] [-w width] [-f svg|dxf|pdf|png] [--overlay circulation] [--install] [--json] [--quiet]
   arch preview  <in.arch|-> [-o out.png] [-s scale] [--install] [--json]   render a PNG you can look at
   arch batch    <a.arch> <b.arch> … [-o dir] [-f …] [-j jobs] [--json]   render many files concurrently
   arch md       <doc.md> [-o out.md] [-f svg|png] [--json]   render fenced arch blocks → image links

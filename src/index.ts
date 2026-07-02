@@ -190,6 +190,7 @@ export function compile(source: string, opts: CompileOptions = {}): CompileResul
     idToken(opts.hatches),
     idToken(opts.world),
     opts.annotate ?? null,
+    opts.overlays ?? null,
   ]);
   if (!opts.noCache) {
     const hit = cache.get(key);

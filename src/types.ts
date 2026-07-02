@@ -36,6 +36,14 @@ export interface CompileOptions {
    */
   annotate?: boolean;
   /**
+   * Opt-in diagnostic overlays drawn on top of the plan (on the `annotations`
+   * layer, after all existing nodes). Currently only `"circulation"` — the
+   * entrance→room walks, bottleneck markers and key routes from the circulation
+   * model (ADR 0008). Unknown names are ignored. Default output is **byte-identical**
+   * (no overlay), so shipped SVGs stay clean; folded into the compile cache key.
+   */
+  overlays?: readonly "circulation"[];
+  /**
    * Theme overrides applied on top of the plan's `theme { … }` directive and
    * the built-in defaults (these win). Any subset of keys may be supplied.
    */

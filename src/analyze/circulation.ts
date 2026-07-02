@@ -243,9 +243,11 @@ function perRoomMax(g: NavGrid, vals: Float64Array, nRooms: number): Float64Arra
  * `seed` (the entrance's own clear width for the entrance walk; `+Infinity` for a
  * room→room route, so the source room's internal furniture-crowding never caps it).
  * Deterministic: the best value per cell is unique, so the heap's tie order does not
- * affect the result.
+ * affect the result. When `pinch` is supplied it is filled with, per cell, the index
+ * of the limiting (narrowest) cell on that cell's widest route — used to place the
+ * overlay's bottleneck marker.
  */
-function widestBottleneck(g: NavGrid, sources: number[], seed: number): Float64Array {
+function widestBottleneck(g: NavGrid, sources: number[], seed: number, pinch?: Int32Array): Float64Array {
   const n = g.nx * g.ny;
   const best = new Float64Array(n).fill(-Infinity);
   const done = new Uint8Array(n);
@@ -293,6 +295,7 @@ function widestBottleneck(g: NavGrid, sources: number[], seed: number): Float64A
   for (const s of sources) {
     if (seed > best[s]!) {
       best[s] = seed;
+      if (pinch) pinch[s] = s;
       push(seed, s);
     }
   }
@@ -314,6 +317,8 @@ function widestBottleneck(g: NavGrid, sources: number[], seed: number): Float64A
       const cand = Math.min(best[u]!, g.clearMm[nb]!);
       if (cand > best[nb]!) {
         best[nb] = cand;
+        // The limiting cell is nb when it is the new narrowest, else u's limiter.
+        if (pinch) pinch[nb] = g.clearMm[nb]! < best[u]! ? nb : pinch[u]!;
         push(cand, nb);
       }
     }
@@ -477,15 +482,24 @@ function buildGrid(
   return g;
 }
 
-/**
- * Whole-plan circulation facts. Deterministic; returns null when the plan has no
- * modeled exterior entrance (there is nothing to measure a walk from — mirrors how
- * the access graph reports `hasEntrance: false`).
- *
- * @param access the door access graph already built by describe (source of the
- *   canonical entrance list and each connector's resolved room endpoints).
- */
-export function computeCirculation(
+/** Shared nav-grid setup for both the facts and overlay entry points: the grid, each
+ *  room's anchor + free-cell list, and the entrance seed cell (with its clear width
+ *  stamped). `none` → no entrance/rooms (null circulation); `empty` → an entrance but
+ *  nothing walkable from it (facts return an empty model). */
+type Nav =
+  | { kind: "none" }
+  | { kind: "empty"; entranceId: string; cellSizeMm: number }
+  | {
+      kind: "ok";
+      g: NavGrid;
+      anchor: Int32Array;
+      roomCells: number[][];
+      source: number;
+      entranceId: string;
+      entrancePoint: Point;
+    };
+
+function buildNav(
   rooms: RRoom[],
   walls: RWall[],
   doors: RDoor[],
@@ -493,9 +507,9 @@ export function computeCirculation(
   furniture: RFurniture[],
   access: AccessGraph,
   tol: number,
-  bodyRadiusMm: number = DEFAULT_BODY_RADIUS_MM,
-): CirculationModel | null {
-  if (rooms.length === 0 || !access.hasEntrance) return null;
+  bodyRadius: number,
+): Nav {
+  if (rooms.length === 0 || !access.hasEntrance) return { kind: "none" };
 
   const roomIndexById = new Map<string, number>(rooms.map((r, i) => [r.id, i]));
   const rects = rooms.map((r) => rectOf(r));
@@ -510,8 +524,8 @@ export function computeCirculation(
     .map((e) => ({ at: atById.get(e.doorId)!, between: e.between, clear: e.estimatedClearWidth }))
     .filter((c) => c.at !== undefined);
 
-  const g = buildGrid(rooms, walls, connectors, furniture, roomIndexById, tol, bodyRadiusMm);
-  if (!g) return null;
+  const g = buildGrid(rooms, walls, connectors, furniture, roomIndexById, tol, bodyRadius);
+  if (!g) return { kind: "none" };
 
   // In one pass: each room's anchor (free cell nearest its centroid, row-major so ties
   // resolve deterministically) and its full free-cell list (route bottlenecks seed the
@@ -533,23 +547,51 @@ export function computeCirculation(
     }
   }
 
-  const cellSizeMm = g.cell;
-  const empty: CirculationModel = { entranceId: "", cellSizeMm, bodyRadiusMm, rooms: [], routes: [] };
-
   const entranceId = access.entrances[0]!;
   const entranceEdge = access.edges.find((e) => e.doorId === entranceId);
   const entranceRoomId = entranceEdge?.between.find((s) => s !== EXTERIOR_NODE && s !== "");
   const entranceRoomIdx = entranceRoomId !== undefined ? roomIndexById.get(entranceRoomId) : undefined;
   const entrancePoint = atById.get(entranceId);
-  if (entranceRoomIdx === undefined || entrancePoint === undefined) return { ...empty, entranceId };
+  if (entranceRoomIdx === undefined || entrancePoint === undefined) {
+    return { kind: "empty", entranceId, cellSizeMm: g.cell };
+  }
 
   const source = seedCell(g, entrancePoint, rects[entranceRoomIdx]!, entranceRoomIdx, tol);
-  if (source < 0) return { ...empty, entranceId }; // sealed doorway → nothing walkable
+  if (source < 0) return { kind: "empty", entranceId, cellSizeMm: g.cell }; // sealed doorway
 
   // The entrance sits in the outer wall (no exterior cells to carve), so its inner
   // seed reads a degenerate 1-cell width; stamp the entrance's own clear width there.
   const entranceClear = entranceEdge?.estimatedClearWidth;
   if (entranceClear !== undefined) g.clearMm[source] = entranceClear;
+
+  return { kind: "ok", g, anchor, roomCells, source, entranceId, entrancePoint };
+}
+
+/**
+ * Whole-plan circulation facts. Deterministic; returns null when the plan has no
+ * modeled exterior entrance (there is nothing to measure a walk from — mirrors how
+ * the access graph reports `hasEntrance: false`).
+ *
+ * @param access the door access graph already built by describe (source of the
+ *   canonical entrance list and each connector's resolved room endpoints).
+ */
+export function computeCirculation(
+  rooms: RRoom[],
+  walls: RWall[],
+  doors: RDoor[],
+  openings: ROpening[],
+  furniture: RFurniture[],
+  access: AccessGraph,
+  tol: number,
+  bodyRadiusMm: number = DEFAULT_BODY_RADIUS_MM,
+): CirculationModel | null {
+  const nav = buildNav(rooms, walls, doors, openings, furniture, access, tol, bodyRadiusMm);
+  if (nav.kind === "none") return null;
+  if (nav.kind === "empty") {
+    return { entranceId: nav.entranceId, cellSizeMm: nav.cellSizeMm, bodyRadiusMm, rooms: [], routes: [] };
+  }
+  const { g, anchor, roomCells, source, entranceId } = nav;
+  const cellSizeMm = g.cell;
 
   const { dist } = bfs(g, source);
   const widest = widestBottleneck(g, [source], g.clearMm[source]!); // seeded with the entrance width
@@ -618,4 +660,135 @@ export function computeCirculation(
   }
 
   return { entranceId, cellSizeMm, bodyRadiusMm, rooms: roomFacts, routes };
+}
+
+// ---- overlay geometry (opt-in render only; describe()'s JSON is unaffected) ----
+
+/** The entrance walk into one room, for the render overlay. */
+export interface OverlayRoom {
+  roomId: string;
+  /** Shortest-walk polyline (mm, collinear-merged) from the entrance to the room target. */
+  path: Point[];
+  /** The tightest unavoidable squeeze on the widest route in, or null if none. */
+  pinch: { at: Point; clearMm: number } | null;
+}
+
+/** A key functional route's walk, for the render overlay. */
+export interface OverlayRoute {
+  fromRoomId: string;
+  toRoomId: string;
+  path: Point[];
+}
+
+/** Geometry for the opt-in circulation render overlay (ADR 0008). */
+export interface CirculationOverlay {
+  cellSizeMm: number;
+  entranceAt: Point;
+  rooms: OverlayRoom[];
+  routes: OverlayRoute[];
+}
+
+/** Drop collinear interior points from a polyline (grid paths run axis-aligned). */
+function simplifyPolyline(pts: Array<{ x: number; y: number }>): Point[] {
+  if (pts.length <= 2) return pts.map((p) => ({ x: p.x, y: p.y }));
+  const out: Point[] = [{ x: pts[0]!.x, y: pts[0]!.y }];
+  for (let i = 1; i < pts.length - 1; i++) {
+    const a = out[out.length - 1]!;
+    const b = pts[i]!;
+    const c = pts[i + 1]!;
+    if ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x) !== 0) out.push({ x: b.x, y: b.y });
+  }
+  out.push({ x: pts[pts.length - 1]!.x, y: pts[pts.length - 1]!.y });
+  return out;
+}
+
+/** Reconstruct a BFS shortest path (source→target) as simplified mm points. */
+function reconstructPath(g: NavGrid, parent: Int32Array, target: number): Point[] {
+  const cells: number[] = [];
+  for (let k = target; k >= 0; k = parent[k]!) cells.push(k);
+  cells.reverse();
+  return simplifyPolyline(cells.map((c) => centreOf(g, c)));
+}
+
+/**
+ * Geometry for the opt-in circulation overlay: per reachable room the shortest walk
+ * from the entrance (the {@link RoomCirculation.walkDistanceMm} route) plus the pinch
+ * cell of its widest route in (the {@link RoomCirculation.bottleneckClearWidthMm}
+ * point); and the same key routes as the facts. Rebuilds the same nav grid as
+ * {@link computeCirculation} via the shared {@link buildNav}, so the drawing matches
+ * the reported numbers. Null when there is no walkable entrance. Pure & deterministic;
+ * never called on the default compile path.
+ */
+export function computeCirculationOverlay(
+  rooms: RRoom[],
+  walls: RWall[],
+  doors: RDoor[],
+  openings: ROpening[],
+  furniture: RFurniture[],
+  access: AccessGraph,
+  tol: number,
+  bodyRadiusMm: number = DEFAULT_BODY_RADIUS_MM,
+): CirculationOverlay | null {
+  const nav = buildNav(rooms, walls, doors, openings, furniture, access, tol, bodyRadiusMm);
+  if (nav.kind !== "ok") return null;
+  const { g, anchor, source, entrancePoint } = nav;
+
+  const { dist, parent } = bfs(g, source);
+  const pinchOf = new Int32Array(g.nx * g.ny).fill(-1);
+  const widest = widestBottleneck(g, [source], g.clearMm[source]!, pinchOf);
+
+  const overlayRooms: OverlayRoom[] = [];
+  for (let ri = 0; ri < rooms.length; ri++) {
+    const a = anchor[ri]!;
+    if (a < 0 || dist[a]! < 0) continue;
+    // Pinch: the narrowest cell on the widest route into the room's best (widest) cell.
+    let bestCell = -1;
+    let bestVal = -Infinity;
+    for (const k of nav.roomCells[ri]!) {
+      if (widest[k]! > bestVal) {
+        bestVal = widest[k]!;
+        bestCell = k;
+      }
+    }
+    const pinchCell = bestCell >= 0 ? pinchOf[bestCell]! : -1;
+    overlayRooms.push({
+      roomId: rooms[ri]!.id,
+      path: reconstructPath(g, parent, a),
+      pinch: pinchCell >= 0 ? { at: centreOf(g, pinchCell), clearMm: Math.round(bestVal) } : null,
+    });
+  }
+
+  const overlayRoutes: OverlayRoute[] = [];
+  const addRoute = (fromIdx: number, targetIdxs: number[]): void => {
+    const a = anchor[fromIdx]!;
+    if (a < 0) return;
+    const r = bfs(g, a);
+    let best = -1;
+    let bestDist = Infinity;
+    for (const tj of targetIdxs) {
+      if (tj === fromIdx) continue;
+      const ta = anchor[tj]!;
+      if (ta < 0 || r.dist[ta]! < 0) continue;
+      if (r.dist[ta]! < bestDist) {
+        bestDist = r.dist[ta]!;
+        best = tj;
+      }
+    }
+    if (best < 0) return;
+    overlayRoutes.push({
+      fromRoomId: rooms[fromIdx]!.id,
+      toRoomId: rooms[best]!.id,
+      path: reconstructPath(g, r.parent, anchor[best]!),
+    });
+  };
+  const livingDining = rooms.map((r, i) => (isLivingOrDining(r) ? i : -1)).filter((i) => i >= 0);
+  const wetRooms = rooms.map((r, i) => (isWetRoom(r) ? i : -1)).filter((i) => i >= 0);
+  for (let i = 0; i < rooms.length; i++) {
+    if (isKitchen(rooms[i]!)) addRoute(i, livingDining);
+  }
+  for (let i = 0; i < rooms.length; i++) {
+    if (isBedroom(rooms[i]!)) addRoute(i, wetRooms);
+  }
+
+  return { cellSizeMm: g.cell, entranceAt: entrancePoint, rooms: overlayRooms, routes: overlayRoutes };
 }
