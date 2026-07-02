@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — foundation refactor: perf, architecture & tooling (default output byte-identical)
+
+A ground-up hardening pass. **Every default artifact is byte-identical** — SVG/PNG goldens, scene
+snapshots, DXF, the formatter and all `--json` outputs are unchanged (`UPDATE_GOLDENS` was never
+used); the public API only grew (`COMPLETION_KINDS`, `EXPORT_FORMATS`, `Scene.chrome`).
+
+- **Perf — wall union rewritten** (`src/geometry/union.ts`): coverage is rasterized once into a flat
+  cell grid with packed-integer edge keys instead of per-cell centre-in-rect scans over every
+  rectangle. Opening-heavy plans: `toScene` ~19.5 → ~2.6 ms (full compile ~42 → ~24 ms).
+  `toScene` also computes `hatchesUsed`/`layoutChrome` once and carries the chrome on the Scene
+  (new optional `Scene.chrome`; backends fall back for hand-built Scenes).
+- **Perf — `arch validate`/`arch lint` no longer render the SVG they discard**: both use the
+  internal resolve pipeline (diagnostics verified byte-identical), so the ship-gate path skips the
+  most expensive compile stage entirely.
+- **Bench told the truth for the first time**: stage rows had measured memo-cache hits (~0.08 ms)
+  and the generated BALANCED plan had 100 furniture parse errors from a stale `id=` slot. Timed
+  closures now clear the stage caches, `render` split into `toScene`/`renderSvg`, new `lint`/
+  `describe` rows, baseline regenerated (old numbers not comparable).
+- **Architecture**: `lint()`'s 290-line body is now one module per rule (`src/lint/rules/*`) over a
+  shared precomputed `LintContext`, with the emission order documented as contract; the duplicated
+  rect/wall-intrusion/door-landing math lives once in `src/geometry/rect.ts`; the deterministic
+  number formatter lives once in `src/num-format.ts` (per-site precisions preserved); the three
+  long orchestrators (`parsePlan`, `resolveImpl`, `synthDims`) are decomposed; the legacy
+  `render.ts` shim is gone.
+- **Drift joints pinned by tests**: `KEYWORDS.element` ↔ `BUILTIN_DEFS` (both directions + order),
+  fixture zone classification derived from the catalog (`zones` field; membership pinned to the
+  historical lint literals), glyph categories ⊆ catalog, and the VS Code completion-icon map is now
+  compile-time exhaustive over the new `COMPLETION_KINDS` core export. Export formats single-source
+  from `EXPORT_FORMATS` (deliberately not a public registry seam — documented in AGENTS.md).
+- **Tooling**: Biome adopted repo-wide (format + lint, CI-gated); `noUncheckedIndexedAccess`
+  enabled and fixed across `src/`; CI matrix gains Node 22 and an explicit `gen:spec` drift step.
+- **Playground is TypeScript**: all hand-written modules migrated under `strict` (the generated
+  `arch-language.js` stays JS), `main` split into focused modules (~695 → ~290 lines), and the
+  share codec / storage / snapshots / completion map gained 22 vitest tests wired into the root
+  suite. Suite: 488 → **515 tests**.
+- **Docs**: completed build plans archived under `docs/archive/`; AGENTS.md's headline no longer
+  embeds a version.
+
 ### Added — embeddable playground viewer + live docs examples (sites only; core untouched)
 
 Two ZenUML-inspired distribution/UX wins, both entirely in the deployed sites — **no change to the

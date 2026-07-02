@@ -25,7 +25,7 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | **Playground** | deployed (pan/zoom · autocomplete · history · click-to-source · **format · repair · error-explain · embeddable `embed.html`**) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress · **live editable `<ArchLive>` examples**) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.9.0` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 488 passing (56 files); typecheck + build clean | — |
+| **Tests** | 515 passing (60 files); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
 **Unreleased (sites only, core untouched).** Two ZenUML-inspired wins in the deployed apps — **no
 change to the published core**: (1) an **embeddable playground viewer** (`playground/embed.html`,
