@@ -4,7 +4,7 @@ import { compile } from "../src/index.js";
 
 /**
  * Property-based guards (golden rule: compile() never throws on user source
- * and stays deterministic). See docs/IMPLEMENTATION-PLAN.md §7.
+ * and stays deterministic — see AGENTS.md's invariants).
  */
 describe("compile — fuzz properties", () => {
   it("never throws and always returns a well-formed result on arbitrary input", () => {

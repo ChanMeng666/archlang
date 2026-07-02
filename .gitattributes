@@ -1,5 +1,5 @@
 # Enforce LF line endings everywhere so output stays byte-identical across
-# platforms (determinism is a core invariant — see docs/IMPLEMENTATION-PLAN §0).
+# platforms (determinism is a core invariant — see AGENTS.md).
 * text=auto eol=lf
 
 # Binary assets — never touch line endings.

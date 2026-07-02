@@ -13,8 +13,9 @@ ArchLang — A small declarative language that compiles to professional SVG floo
 
 ## Project status & where things live (current)
 
-**ArchLang is shipped and launched (v1.3.0).** This is a published, deployed monorepo —
-not a work-in-progress. Treat the live artifacts below as the source of truth.
+**ArchLang is shipped and launched.** This is a published, deployed monorepo —
+not a work-in-progress. Treat the live artifacts below as the source of truth
+(the exact current version lives in the table and `CHANGELOG.md`, never in prose).
 
 | Thing | Current | Where |
 |-------|---------|-------|
@@ -93,8 +94,8 @@ access graph** (`describe().access` — entrances, reachability, clear-width bot
 for concave door arcs, dimensions drawn into the building, and the title-block overlap (shared
 `chrome-layout.ts`). See `CHANGELOG.md`.
 
-> Beware older docs that predate the launch: `docs/IMPLEMENTATION-PLAN-v0.7-v1.0.md`
-> is the (now-completed) roadmap, and the earlier half of `docs/WORK-LOG.md` is
+> Beware older docs that predate the launch: the completed build plans live in
+> `docs/archive/` (see its README), and the earlier half of `docs/WORK-LOG.md` is
 > historical. The table above and `CHANGELOG.md` reflect what actually shipped.
 
 **Monorepo layout (npm workspaces, one root lockfile):**

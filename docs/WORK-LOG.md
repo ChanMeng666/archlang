@@ -1,11 +1,16 @@
 # ArchLang v0.7→v1.0 — Implementation Work Log (history) & current state
 
+> **⚠️ Historical document (frozen 2026-07).** Everything below records how
+> ArchLang reached 1.x — none of it is a pending plan. For current status read
+> **`AGENTS.md`** and **`CHANGELOG.md`**; the completed build plans live in
+> [`docs/archive/`](./archive/README.md).
+
 > **Purpose.** A record of how ArchLang reached its **1.0 launch** and the state it
 > is in now. The v0.7→v1.0 build is **complete** — there is no pending phase. A
 > fresh session should read **`AGENTS.md` first** (the canonical status + how to
 > work), then use this log for the per-phase implementation history (§3–§4d) and
 > the post-1.0 continuation notes (§5). The roadmap
-> [`docs/IMPLEMENTATION-PLAN-v0.7-v1.0.md`](./IMPLEMENTATION-PLAN-v0.7-v1.0.md) is
+> [`docs/archive/IMPLEMENTATION-PLAN-v0.7-v1.0.md`](./archive/IMPLEMENTATION-PLAN-v0.7-v1.0.md) is
 > the (now-completed) plan these phases executed.
 
 _Last updated: **v1.2.0 SHIPPED (architectural soundness).** Core published `@chanmeng666/archlang@1.2.0` (`latest`); VS Code extension `ChanMeng.archlang@0.3.0` published; playground + docs site deployed. v1.2 makes architecturally wrong plans hard to ship and easy to detect: four new `arch lint` rules (bath-via-bedroom, room-not-enclosed, door-swing-obstructed, no-fixtures), drawn plumbing/kitchen fixture symbols + a `lib/fixtures.arch` library, `dims auto` dimension synthesis, and a corrected, lint-clean `examples/studio.arch`. v1.1 (prior) made ArchLang drivable by an AI agent end-to-end through its CLI (no MCP): an agent-native CLI (`--json`, exit codes, stdin, `fix`-carrying diagnostics), `arch spec`/`spec.llm.md`, `arch describe` (semantic JSON), `arch lint` (soundness), a `SKILL.md`, and an NL→ArchLang `eval/` harness. Sections 3–4b below are the accurate v0.8–v0.10 implementation history; sections 1, 2, 4c, 4d, 5, 7 reflect the launched state. For the full v1.1/v1.2 detail read `CHANGELOG.md`._
