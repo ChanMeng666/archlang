@@ -48,6 +48,9 @@ export type {
   FurnitureSummary,
   BBox,
   DescribeOptions,
+  CirculationModel,
+  RoomCirculation,
+  CirculationRoute,
 } from "./describe.js";
 // Architectural lint (v1.1): habitability rules as `W_*` diagnostics — every room
 // enterable, bedrooms have a window, doors wide enough, the building has an entrance.

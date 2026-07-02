@@ -14,10 +14,14 @@
  * caches on purpose, so their rows isolate the analysis work itself.
  */
 
+import { readFileSync } from "node:fs";
+import { buildDoorAccessGraph, DEFAULT_TOL } from "../src/analyze.js";
+import { computeCirculation } from "../src/analyze/circulation.js";
 import { renderSvg } from "../src/backends/svg.js";
 import { describe } from "../src/describe.js";
 import { compile } from "../src/index.js";
 import { clearResolveCache, resolve } from "../src/ir.js";
+import type { RDoor, RFurniture, ROpening, RRoom } from "../src/ir.js";
 import { clearLexCache } from "../src/lexer.js";
 import { lint } from "../src/lint.js";
 import { clearParseCache, parse } from "../src/parser.js";
@@ -57,11 +61,18 @@ function clearStageCaches(): void {
   clearResolveCache();
 }
 
-function benchPlan(name: string, spec: GenSpec, iters: number): Record<string, Stat> {
-  const src = genPlan(spec);
+function benchPlan(name: string, iters: number, src: string, spec?: GenSpec): Record<string, Stat> {
   const { plan } = parse(src);
   const ir = resolve(plan!).ir;
   const scene = toScene(ir, {});
+
+  // Circulation runs on the resolved plan; precompute its inputs (with warm caches)
+  // so the row isolates the nav-grid BFS work itself, like the lint/describe rows.
+  const rooms = ir.elements.filter((e) => e.kind === "room") as RRoom[];
+  const doors = ir.elements.filter((e) => e.kind === "door") as RDoor[];
+  const openings = ir.elements.filter((e) => e.kind === "opening") as ROpening[];
+  const furniture = ir.elements.filter((e) => e.kind === "furniture") as RFurniture[];
+  const access = buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings);
 
   const stats = {
     compile: timeit(() => {
@@ -83,11 +94,17 @@ function benchPlan(name: string, spec: GenSpec, iters: number): Record<string, S
     // Warm caches on purpose: these rows isolate the analysis work itself.
     lint: timeit(() => lint(src), iters),
     describe: timeit(() => describe(src), iters),
+    // Circulation on pre-resolved inputs (null-fast when a plan has no entrance).
+    circulation: timeit(
+      () => computeCirculation(rooms, ir.walls, doors, openings, furniture, access, DEFAULT_TOL),
+      iters,
+    ),
   };
   if (!JSON_MODE) {
-    console.log(
-      `\n${name}  (${count(spec)} elements: ${spec.walls}W ${spec.rooms}R ${spec.doors}D ${spec.windows}Wn ${spec.furniture}F)`,
-    );
+    const meta = spec
+      ? `  (${count(spec)} elements: ${spec.walls}W ${spec.rooms}R ${spec.doors}D ${spec.windows}Wn ${spec.furniture}F)`
+      : `  (${rooms.length}R ${doors.length}D ${openings.length}O ${furniture.length}F)`;
+    console.log(`\n${name}${meta}`);
     console.log(row("compile (full)", stats.compile));
     console.log(row("  parse", stats.parse));
     console.log(row("  resolve", stats.resolve));
@@ -95,16 +112,22 @@ function benchPlan(name: string, spec: GenSpec, iters: number): Record<string, S
     console.log(row("  renderSvg", stats.renderSvg));
     console.log(row("lint", stats.lint));
     console.log(row("describe", stats.describe));
+    console.log(row("circulation", stats.circulation));
   }
   return stats;
 }
 
 const ITERS = JSON_MODE ? 25 : 40;
 if (!JSON_MODE) console.log(`ArchLang benchmark — ${ITERS} timed iterations each (after warmup)`);
+// A real connected plan (entrance + rooms + doors + furniture) so the circulation
+// row exercises the nav-grid BFS; the generated plans above have no entrance, so
+// their circulation row measures the null fast-path.
+const studioSrc = readFileSync(new URL("../examples/studio.arch", import.meta.url), "utf8");
 const results = {
-  BALANCED: benchPlan("BALANCED", BALANCED, ITERS),
-  ROOM_HEAVY: benchPlan("ROOM_HEAVY (O(R^2) overlap)", ROOM_HEAVY, ITERS),
-  OPENING_HEAVY: benchPlan("OPENING_HEAVY (host-segment scan)", OPENING_HEAVY, ITERS),
+  BALANCED: benchPlan("BALANCED", ITERS, genPlan(BALANCED), BALANCED),
+  ROOM_HEAVY: benchPlan("ROOM_HEAVY (O(R^2) overlap)", ITERS, genPlan(ROOM_HEAVY), ROOM_HEAVY),
+  OPENING_HEAVY: benchPlan("OPENING_HEAVY (host-segment scan)", ITERS, genPlan(OPENING_HEAVY), OPENING_HEAVY),
+  STUDIO: benchPlan("STUDIO (studio.arch — connected)", ITERS, studioSrc),
 };
 if (JSON_MODE) {
   // Stable JSON for CI diffing: median-ms per plan/stage, rounded to 3 dp.

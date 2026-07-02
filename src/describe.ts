@@ -29,6 +29,9 @@ import {
   type AccessGraph,
   type BBox,
 } from "./analyze.js";
+import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
+
+export type { CirculationModel, RoomCirculation, CirculationRoute } from "./analyze/circulation.js";
 
 export type { BBox } from "./analyze.js";
 
@@ -107,6 +110,13 @@ export interface SceneSummary {
    * and connector edges (doors and cased openings) with estimated clear widths.
    */
   access: AccessGraph;
+  /**
+   * Circulation facts on a clearance-eroded navigation grid: how far, how wide and
+   * how direct the walk is from the entrance to each room, plus key functional
+   * routes. Null when the plan has no modeled exterior entrance. Coarse & advisory —
+   * facts, never a generated layout (ADR 0008).
+   */
+  circulation: CirculationModel | null;
   totals: { rooms: number; doors: number; windows: number; floor_area_m2: number };
   /** All problems from parse/link/resolve, with byte spans and codes. */
   diagnostics: Diagnostic[];
@@ -169,6 +179,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
   }));
 
   const access = buildDoorAccessGraph(roomEls, doorEls, tol, undefined, openingEls);
+  const circulation = computeCirculation(roomEls, ir.walls, doorEls, openingEls, furnEls, access, tol);
 
   // Drawing extent: union of wall points and sized-element rectangles.
   let minX = Infinity,
@@ -201,6 +212,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     openings,
     furniture,
     access,
+    circulation,
     totals: { rooms: rooms.length, doors: doors.length, windows: windows.length, floor_area_m2: floorArea },
   };
 }
@@ -230,6 +242,7 @@ export function describe(source: string, opts: DescribeOptions = {}): SceneSumma
       openings: [],
       furniture: [],
       access: { entrances: [], hasEntrance: false, edges: [], rooms: [] },
+      circulation: null,
       totals: { rooms: 0, doors: 0, windows: 0, floor_area_m2: 0 },
       diagnostics,
     };
