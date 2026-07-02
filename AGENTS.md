@@ -19,15 +19,16 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.9.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.10.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md` |
 | **VS Code extension** | `ChanMeng.archlang@0.3.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
-| **Playground** | deployed (pan/zoom · autocomplete · history · click-to-source · **format · repair · error-explain · embeddable `embed.html`**) | https://archlang-playground.vercel.app |
-| **Docs site** | deployed (VitePress · **live editable `<ArchLive>` examples**) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.9.0` (latest) | github.com/ChanMeng666/archlang |
+| **Playground** | deployed (TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · **circulation Paths toggle**) | https://archlang-playground.vercel.app |
+| **Docs site** | deployed (VitePress · live editable `<ArchLive>` examples) | https://archlang-docs.vercel.app |
+| **Git** | `main`, tags `v1.0.0` → `v1.10.0` (latest) | github.com/ChanMeng666/archlang |
 | **Tests** | 535 passing (65 files); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
-**Unreleased — three tranches (see `CHANGELOG.md` for detail):**
+**Latest release — v1.10.0 (human circulation + foundation refactor). Three tranches
+(see `CHANGELOG.md` for detail):**
 1. **Human circulation ([ADR 0008](docs/adr/0008-circulation-as-facts.md)).** Facts →
    `describe().circulation` (per-room walk distance / bottleneck clear width / detour ratio + key
    routes, on a clearance-eroded nav grid in `src/analyze/circulation.ts`); advisory lint →
@@ -39,7 +40,7 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
    `toScene` ~19.5→2.6 ms), render-free `validate`/`lint`, honest bench, one-module-per-lint-rule,
    shared `geometry/rect.ts` + `num-format.ts`, drift-tested element/fixture/completion/format
    joints, Biome + `noUncheckedIndexedAccess` + Node 22 CI, playground migrated to TypeScript.
-3. **Sites (earlier).** Embeddable playground viewer (`embed.html` + Embed button), IDE-parity
+3. **Sites.** Embeddable playground viewer (`embed.html` + Embed button), IDE-parity
    actions (Format / Repair panel / clickable diagnostics), live editable `<ArchLive>` docs examples.
 
 **Latest release — v1.9.0 (opt-in source annotation + playground overhaul).** Two things:
