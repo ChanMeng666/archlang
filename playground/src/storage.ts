@@ -14,7 +14,7 @@ export const KEYS = {
   lintProfile: PREFIX + "lintProfile",
 };
 
-export function readStr(key) {
+export function readStr(key: string): string | null {
   try {
     return localStorage.getItem(key);
   } catch {
@@ -22,7 +22,7 @@ export function readStr(key) {
   }
 }
 
-export function writeStr(key, value) {
+export function writeStr(key: string, value: string): void {
   try {
     localStorage.setItem(key, value);
   } catch {
@@ -30,17 +30,17 @@ export function writeStr(key, value) {
   }
 }
 
-export function readJSON(key, fallback) {
+export function readJSON<T>(key: string, fallback: T): T {
   const raw = readStr(key);
   if (raw == null) return fallback;
   try {
-    return JSON.parse(raw);
+    return JSON.parse(raw) as T;
   } catch {
     return fallback;
   }
 }
 
-export function writeJSON(key, value) {
+export function writeJSON(key: string, value: unknown): void {
   try {
     writeStr(key, JSON.stringify(value));
   } catch {

@@ -10,9 +10,25 @@ import { KEYS, readJSON, writeJSON } from "./storage.js";
 
 const MAX_SNAPSHOTS = 20;
 
-const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+interface Snapshot {
+  name: string;
+  src: string;
+  ts: number;
+}
 
-function relTime(ts) {
+interface SnapshotsOpts {
+  /** the "Saved ▾" trigger in the header */
+  button: HTMLButtonElement;
+  /** read the current editor content */
+  getSource: () => string;
+  /** load content into the editor + render */
+  setSource: (src: string) => void;
+}
+
+const ENTITIES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
+const esc = (s: unknown) => String(s).replace(/[&<>"]/g, (c) => ENTITIES[c] ?? c);
+
+function relTime(ts: number): string {
   const d = Math.max(0, Date.now() - ts);
   const m = Math.floor(d / 60000);
   if (m < 1) return "just now";
@@ -24,14 +40,8 @@ function relTime(ts) {
   return new Date(ts).toLocaleDateString();
 }
 
-/**
- * @param {object} o
- * @param {HTMLButtonElement} o.button   the "Saved ▾" trigger in the header
- * @param {() => string} o.getSource     read the current editor content
- * @param {(src: string) => void} o.setSource  load content into the editor + render
- */
-export function mountSnapshots({ button, getSource, setSource }) {
-  let snaps = readJSON(KEYS.snapshots, []);
+export function mountSnapshots({ button, getSource, setSource }: SnapshotsOpts): void {
+  let snaps: Snapshot[] = readJSON<Snapshot[]>(KEYS.snapshots, []);
   if (!Array.isArray(snaps)) snaps = [];
 
   const pop = document.createElement("div");
@@ -52,13 +62,13 @@ export function mountSnapshots({ button, getSource, setSource }) {
     renderList();
   }
 
-  function restore(i) {
+  function restore(i: number) {
     const s = snaps[i];
     if (s) setSource(s.src);
     close();
   }
 
-  function remove(i) {
+  function remove(i: number) {
     snaps.splice(i, 1);
     persist();
     renderList();
@@ -100,10 +110,10 @@ export function mountSnapshots({ button, getSource, setSource }) {
     document.removeEventListener("pointerdown", onOutside, true);
     document.removeEventListener("keydown", onKey);
   }
-  const onOutside = (e) => {
-    if (!pop.contains(e.target) && e.target !== button) close();
+  const onOutside = (e: PointerEvent) => {
+    if (!pop.contains(e.target as Node | null) && e.target !== button) close();
   };
-  const onKey = (e) => {
+  const onKey = (e: KeyboardEvent) => {
     if (e.key === "Escape") close();
   };
 
@@ -113,11 +123,12 @@ export function mountSnapshots({ button, getSource, setSource }) {
   });
 
   pop.addEventListener("click", (e) => {
-    const save = e.target.closest(".snap-save");
+    const target = e.target as Element | null;
+    const save = target?.closest(".snap-save");
     if (save) return void saveAndKeepOpen();
-    const del = e.target.closest(".snap-del");
+    const del = target?.closest<HTMLElement>(".snap-del");
     if (del) return void remove(Number(del.dataset.i));
-    const res = e.target.closest(".snap-restore");
+    const res = target?.closest<HTMLElement>(".snap-restore");
     if (res) return void restore(Number(res.dataset.i));
   });
 

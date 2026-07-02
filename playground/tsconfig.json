@@ -1,0 +1,25 @@
+{
+  // Playground app typecheck config. Extends the core's compiler options but
+  // targets a Vite/browser ESM bundle: Bundler module resolution, `vite/client`
+  // ambient types (for `?raw` imports), and DOM.Iterable so NodeList/Map/Set
+  // spread & for..of work. noUncheckedIndexedAccess is deliberately relaxed here
+  // (the DOM/regex-heavy UI code reads indices it has already length-checked).
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "allowJs": true,
+    "noUncheckedIndexedAccess": false,
+    "declaration": false,
+    "noEmit": true,
+    // Mirror the Vite alias (`archlang` → the built core): a repo-root
+    // `node_modules/archlang` symlink points at the vscode extension, so without
+    // this TS would resolve the bare specifier to the wrong package.
+    "baseUrl": ".",
+    "paths": { "archlang": ["../dist/index.d.ts"] }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

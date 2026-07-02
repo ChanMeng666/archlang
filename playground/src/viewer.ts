@@ -4,7 +4,9 @@
  * has real dimensions to fit), and hands the size to the pan/zoom controller.
  * Used by both the main playground and the chrome-less embed page.
  */
-export function showSvgInStage(stage, pz, svg, refit) {
+import type { PanZoom } from "./pan-zoom.js";
+
+export function showSvgInStage(stage: HTMLElement, pz: PanZoom, svg: string, refit: boolean): void {
   stage.innerHTML = svg;
   const el = stage.firstElementChild;
   let w = 800;

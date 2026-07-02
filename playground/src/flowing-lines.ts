@@ -16,23 +16,45 @@
  * Usage: const stop = mountFlowingLines(canvasEl, { lineCount? }); // stop() to dispose.
  */
 
-const FALLBACK_PLUM = { r: 128, g: 82, b: 255 };
+interface Rgb {
+  r: number;
+  g: number;
+  b: number;
+}
 
-function hexToRgb(hex) {
+interface Line {
+  baseY: number;
+  amp: number;
+  freq: number;
+  phase: number;
+  phaseSpeed: number;
+  bobAmp: number;
+  bobPhase: number;
+  alpha: number;
+  weight: number;
+  accent: boolean;
+}
+
+const FALLBACK_PLUM: Rgb = { r: 128, g: 82, b: 255 };
+
+function hexToRgb(hex: string): Rgb | null {
   const m = hex.replace("#", "").match(/^([0-9a-f]{6})$/i);
   if (!m) return null;
   const n = parseInt(m[1], 16);
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
-export function mountFlowingLines(canvas, opts = {}) {
+export function mountFlowingLines(canvas: HTMLCanvasElement, opts: { lineCount?: number } = {}): () => void {
   const { lineCount } = opts;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return () => {};
+  const ctx2d = canvas.getContext("2d");
+  if (!ctx2d) return () => {};
+  // Bind to a non-null-typed const so the render closures below don't have to
+  // re-narrow (TS does not carry the null guard across closure boundaries).
+  const ctx: CanvasRenderingContext2D = ctx2d;
 
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const plum = hexToRgb(getComputedStyle(document.documentElement).getPropertyValue("--plum").trim()) ?? FALLBACK_PLUM;
-  const col = (a) => `rgba(${plum.r},${plum.g},${plum.b},${a})`;
+  const col = (a: number) => `rgba(${plum.r},${plum.g},${plum.b},${a})`;
 
   let width = 0;
   let height = 0;
@@ -40,9 +62,9 @@ export function mountFlowingLines(canvas, opts = {}) {
   let raf = 0;
   let running = false;
   let t = 0;
-  let lines = [];
+  let lines: Line[] = [];
 
-  const rand = (a, b) => a + Math.random() * (b - a);
+  const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
   function build() {
     const rect = canvas.getBoundingClientRect();

@@ -14,7 +14,16 @@ import {
   toDxf,
   THEMES,
   LINT_PROFILE_NAMES,
+  type CompileOptions,
+  type DescribeOptions,
+  type LintOptions,
+  type Diagnostic,
+  type SceneSummary,
+  type RoomSummary,
 } from "archlang";
+
+/** A room node in describe()'s access graph (the type is not exported directly). */
+type AccessRoomNode = SceneSummary["access"]["rooms"][number];
 import { archLanguage, archLinter } from "./arch-language.js";
 import { archCompletion } from "./arch-completion.js";
 import { createPanZoom } from "./pan-zoom.js";
@@ -35,38 +44,42 @@ import "./style.css";
 
 // Subtle ArchCanvas-signature flowing lines behind the brand nav (reduced-motion
 // safe — the helper renders a single static frame when motion is reduced).
-const brandLines = document.querySelector("header .brand-lines");
+const brandLines = document.querySelector<HTMLCanvasElement>("header .brand-lines");
 if (brandLines) mountFlowingLines(brandLines, { lineCount: 6 });
 
-const preview = document.getElementById("preview");
-const describeEl = document.getElementById("describe");
-const lintEl = document.getElementById("lint");
-const errorsEl = document.getElementById("errors");
-const statusEl = document.getElementById("status");
-const statusText = document.getElementById("statusText");
-const select = document.getElementById("examples");
-const formatSelect = document.getElementById("format");
-const themeSelect = document.getElementById("theme");
-const lintProfileSelect = document.getElementById("lintProfile");
-const lintCaptionEl = document.getElementById("lintCaption");
-const lintOutput = document.getElementById("lintOutput");
-const copyLinkBtn = document.getElementById("copyLink");
-const savedBtn = document.getElementById("saved");
-const formatBtn = document.getElementById("format");
+const preview = document.getElementById("preview")!;
+const describeEl = document.getElementById("describe")!;
+const lintEl = document.getElementById("lint")!;
+const errorsEl = document.getElementById("errors")!;
+const statusEl = document.getElementById("status")!;
+const statusText = document.getElementById("statusText")!;
+const select = document.getElementById("examples") as HTMLSelectElement;
+// NB: `#format` is shared by a <select> and a <button> in the HTML; getElementById
+// returns the first match (the <select>), so both handles below point at it — the
+// long-standing runtime behavior, preserved here rather than changed in a mechanical
+// migration.
+const formatSelect = document.getElementById("format") as HTMLSelectElement | null;
+const themeSelect = document.getElementById("theme") as HTMLSelectElement;
+const lintProfileSelect = document.getElementById("lintProfile") as HTMLSelectElement;
+const lintCaptionEl = document.getElementById("lintCaption")!;
+const lintOutput = document.getElementById("lintOutput")!;
+const copyLinkBtn = document.getElementById("copyLink")!;
+const savedBtn = document.getElementById("saved") as HTMLButtonElement;
+const formatBtn = document.getElementById("format") as HTMLButtonElement | null;
 const embedBtn = document.getElementById("embed");
 const repairBtn = document.getElementById("repair");
 const repairPanel = document.getElementById("repairPanel");
-const factsEl = document.getElementById("facts");
-const pzViewport = document.querySelector(".pz-viewport");
-const pzStage = document.querySelector(".pz-stage");
-const pzToolbar = document.querySelector(".pz-toolbar");
+const factsEl = document.getElementById("facts")!;
+const pzViewport = document.querySelector<HTMLElement>(".pz-viewport")!;
+const pzStage = document.querySelector<HTMLElement>(".pz-stage")!;
+const pzToolbar = document.querySelector<HTMLElement>(".pz-toolbar")!;
 
 // Pan/zoom controller for the preview (created once; survives every re-render).
 const pz = createPanZoom(pzViewport, pzStage);
 
 // ---- output tabs (Preview · Describe · Lint) ----
-const tabs = [...document.querySelectorAll(".tab")];
-const views = { preview, describe: describeEl, lint: lintEl };
+const tabs = [...document.querySelectorAll<HTMLElement>(".tab")];
+const views: Record<string, HTMLElement> = { preview, describe: describeEl, lint: lintEl };
 for (const tab of tabs) {
   tab.addEventListener("click", () => {
     for (const t of tabs) t.classList.toggle("active", t === tab);
@@ -83,7 +96,7 @@ for (const name of Object.keys(EXAMPLES)) {
 
 // ---- lint-profile selector (advisory rule sets) ----
 // One-line description of what each profile tightens, shown under the selector.
-const LINT_PROFILE_CAPTIONS = {
+const LINT_PROFILE_CAPTIONS: Record<string, string> = {
   "residential-basic": "Default — doors ≥ 700 mm, habitable rooms ≥ 4 m².",
   "accessibility-advisory": "Stricter — doors ≥ 850 mm, rooms ≥ 5 m², 150 mm door-swing clearance.",
 };
@@ -102,18 +115,18 @@ syncLintCaption();
 // `share.js` so the embed page reuses the exact same scheme.
 
 let lastSvg = "";
-let lastScene = null;
-let lastRooms = [];
+let lastScene: ReturnType<typeof compile>["scene"] | null = null;
+let lastRooms: RoomSummary[] = [];
 
 /** The current preview SVG with the editor-only `data-span` annotations removed —
  *  used for every export so a downloaded/copied file never carries them. */
 const cleanSvg = () => lastSvg.replace(/ data-span="\d+:\d+"/g, "");
 
 /** Update the Describe (semantic facts) and Lint (soundness) tabs for `source`. */
-function updateAnalysis(source, ok) {
+function updateAnalysis(source: string, ok: boolean) {
   // Describe — the semantic summary a text-only agent would read. We lead with a
   // compact access-graph diagram (B4) and tuck the raw JSON into a <details>.
-  const summary = describe(source, { noCache: true });
+  const summary = describe(source, { noCache: true } as DescribeOptions & { noCache?: boolean });
   const { diagnostics: _d, ...facts } = summary;
   lastRooms = ok ? (summary.rooms ?? []) : [];
   renderFacts(summary, ok);
@@ -128,7 +141,9 @@ function updateAnalysis(source, ok) {
 
   // Lint — architectural soundness warnings (habitability rules), under the chosen
   // advisory profile.
-  const lintDiags = ok ? lint(source, { profile: lintProfileSelect.value, noCache: true }) : [];
+  const lintDiags = ok
+    ? lint(source, { profile: lintProfileSelect.value, noCache: true } as LintOptions & { noCache?: boolean })
+    : [];
   // `repair` only corrects furniture-placement faults — offer it exactly when one
   // is present (ADR 0006: an explicit, reviewable transform, never auto-applied).
   const repairable = lintDiags.some((d) => /FURNITURE|FIXTURE|DOORWAY|SWING/.test(d.code ?? ""));
@@ -153,14 +168,14 @@ function updateAnalysis(source, ok) {
  * columns by `depthFromEntrance` (exterior/entrance on the left), unreachable rooms
  * flagged at the end. Zero-dep — pure DOM/CSS, no graph library.
  */
-function renderAccessGraph(facts) {
+function renderAccessGraph(facts: Omit<SceneSummary, "diagnostics">) {
   const access = facts.access;
   if (!access) return `<p class="ag-note">No access graph available for this plan.</p>`;
   if (!access.hasEntrance) {
     return `<p class="ag-note">No exterior entrance — add a <code>door</code> on an exterior wall to model reachability.</p>`;
   }
   const labelOf = new Map((facts.rooms ?? []).map((r) => [r.id, r.label ?? r.id]));
-  const card = (r) => {
+  const card = (r: AccessRoomNode) => {
     const label = String(labelOf.get(r.id) ?? r.id);
     const un = r.reachable === false;
     const bn = r.bottleneckClearWidth != null ? `↔ ${r.bottleneckClearWidth} mm` : "↔ —";
@@ -176,7 +191,7 @@ function renderAccessGraph(facts) {
 
   // One column per reachable depth, in order.
   const depths = [
-    ...new Set(access.rooms.filter((r) => r.reachable && r.depthFromEntrance != null).map((r) => r.depthFromEntrance)),
+    ...new Set(access.rooms.filter((r) => r.reachable && r.depthFromEntrance != null).map((r) => r.depthFromEntrance!)),
   ].sort((a, b) => a - b);
   for (const d of depths) {
     const rooms = access.rooms.filter((r) => r.reachable && r.depthFromEntrance === d);
@@ -193,14 +208,15 @@ function renderAccessGraph(facts) {
   return `<div class="ag">${cols.join(`<div class="ag-arrow">→</div>`)}</div>`;
 }
 
-function escapeHtml(s) {
-  return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const HTML_ENTITIES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"]/g, (c) => HTML_ENTITIES[c] ?? c);
 }
 
 /** Always-visible plan facts under the preview — a quick read of the describe()
  *  totals (rooms / doors / windows / floor area) and whether the plan has an
  *  exterior entrance. Differentiator: floor-plan facts a diagram tool can't show. */
-function renderFacts(summary, ok) {
+function renderFacts(summary: SceneSummary, ok: boolean) {
   const t = summary?.totals;
   if (!ok || !t) {
     factsEl.innerHTML = `<span class="fact">— fix the errors to see plan facts —</span>`;
@@ -218,17 +234,17 @@ function renderFacts(summary, ok) {
 /** Inject the SVG into the pan/zoom stage and size it from its viewBox. `refit`
  *  re-centres the view (first load / example switch); otherwise the user's current
  *  pan/zoom is preserved across the keystroke re-render. Shared logic in viewer.js. */
-function showSvg(svg, refit) {
+function showSvg(svg: string, refit: boolean) {
   showSvgInStage(pzStage, pz, svg, refit);
 }
 
-function render(source, refit = false) {
+function render(source: string, refit = false) {
   // Theme: empty value = the source's own `theme` directive (pass nothing); a named
   // key overrides it (compile's `theme` option wins over an in-source directive).
   const themeKey = themeSelect.value;
   // annotate: stamp data-span on primitives so a click in the preview can jump to
   // source (interact.js). Exports strip it (cleanSvg) so downloads stay clean.
-  const opts = themeKey
+  const opts: CompileOptions = themeKey
     ? { noCache: true, annotate: true, theme: THEMES[themeKey] }
     : { noCache: true, annotate: true };
   const { svg, errors, diagnostics, scene } = compile(source, opts);
@@ -256,7 +272,7 @@ function render(source, refit = false) {
  * self-correcting context `arch explain <CODE>` gives an agent. Errors first,
  * then warnings; the panel hides when the plan is clean.
  */
-function renderDiagnostics(diagnostics, source) {
+function renderDiagnostics(diagnostics: Diagnostic[], source: string) {
   const rows = diagnostics
     .filter((d) => d.severity === "error" || d.severity === "warning")
     .sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "error" ? -1 : 1));
@@ -271,9 +287,9 @@ function renderDiagnostics(diagnostics, source) {
       const offset = d.span ? d.span.start : null;
       const loc = offset != null ? offsetToLineCol(source, offset) : null;
       const locText = loc ? `${loc.line}:${loc.col}` : "";
-      const cat = ERROR_CATALOG[d.code] ?? null;
+      const cat = d.code ? (ERROR_CATALOG[d.code] ?? null) : null;
       // Prefer the diagnostic's own fix, else the catalog's; show cause + example.
-      const fix = d.fix ?? cat?.fix ?? d.hints?.[0] ?? "";
+      const fix = (d as { fix?: string }).fix ?? cat?.fix ?? d.hints?.[0] ?? "";
       const detail = cat
         ? `<div class="diag-detail">` +
           (cat.cause ? `<p><b>Cause</b> ${escapeHtml(cat.cause)}</p>` : "") +
@@ -296,8 +312,8 @@ function renderDiagnostics(diagnostics, source) {
     .join("");
 }
 
-let debounce;
-const onDocChanged = (source) => {
+let debounce: ReturnType<typeof setTimeout>;
+const onDocChanged = (source: string) => {
   clearTimeout(debounce);
   debounce = setTimeout(() => {
     render(source);
@@ -308,18 +324,18 @@ const onDocChanged = (source) => {
 
 // The editor view is created during init() once the (async) initial source is
 // resolved; everything below reaches it through `view`.
-let view;
+let view: EditorView | undefined;
 function currentSource() {
   return view ? view.state.doc.toString() : "";
 }
-function loadSource(src, refit = true) {
+function loadSource(src: string, refit = true) {
   if (!view) return;
   view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: src } });
   render(src, refit);
 }
 
 /** Move the editor caret to a byte offset and reveal it (click-to-source). */
-function jumpToOffset(offset) {
+function jumpToOffset(offset: number) {
   if (!view) return;
   const pos = Math.max(0, Math.min(offset, view.state.doc.length));
   view.dispatch({ selection: { anchor: pos }, scrollIntoView: true });
@@ -327,7 +343,7 @@ function jumpToOffset(offset) {
 }
 
 /** Briefly show a message in the status text, then restore it. */
-function flash(msg) {
+function flash(msg: string) {
   const prev = statusText.textContent;
   statusText.textContent = msg;
   setTimeout(() => {
@@ -376,7 +392,7 @@ async function init() {
         }),
       ],
     }),
-    parent: document.getElementById("editor"),
+    parent: document.getElementById("editor")!,
   });
 
   select.addEventListener("change", () => loadSource(EXAMPLES[select.value], true));
@@ -410,7 +426,7 @@ async function init() {
 
   // Floating preview toolbar — pan/zoom + copy.
   pzToolbar.addEventListener("click", (e) => {
-    const action = e.target.closest("button")?.dataset.pz;
+    const action = (e.target as Element | null)?.closest<HTMLElement>("button")?.dataset.pz;
     if (action === "in") pz.zoomIn();
     else if (action === "out") pz.zoomOut();
     else if (action === "fit") pz.fit();
@@ -452,7 +468,7 @@ async function init() {
   // Diagnostics drill-down — click a row to jump to its source span and reveal the
   // catalogued cause/fix/example.
   errorsEl.addEventListener("click", (e) => {
-    const row = e.target.closest(".diagrow");
+    const row = (e.target as Element | null)?.closest<HTMLElement>(".diagrow");
     if (!row) return;
     row.classList.toggle("open");
     const off = row.dataset.offset;
@@ -524,9 +540,10 @@ async function showEmbed() {
   document.body.appendChild(dialog);
   const close = () => dialog.remove();
   dialog.addEventListener("click", (e) => {
-    if (e.target === dialog || e.target.closest(".embed-close")) close();
+    const target = e.target as Element | null;
+    if (target === dialog || target?.closest(".embed-close")) close();
   });
-  for (const btn of dialog.querySelectorAll(".embed-copy")) {
+  for (const btn of dialog.querySelectorAll<HTMLElement>(".embed-copy")) {
     btn.addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(btn.dataset.snippet === "md" ? md : iframe);
@@ -558,8 +575,8 @@ async function copyPng() {
   if (!lastSvg) return;
   try {
     const canvas = await svgToCanvas(cleanSvg());
-    const blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
-    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob! })]);
     flash("PNG copied");
   } catch {
     flash("Copy failed");
@@ -568,14 +585,14 @@ async function copyPng() {
 
 /** Draggable split divider over the pane seam (desktop two-column layout). */
 function mountDivider() {
-  const main = document.querySelector("main");
+  const main = document.querySelector<HTMLElement>("main")!;
   const divider = document.createElement("div");
   divider.className = "divider";
   divider.setAttribute("role", "separator");
   divider.setAttribute("aria-label", "Resize panes");
   main.appendChild(divider);
 
-  const applyRatio = (r) => {
+  const applyRatio = (r: number) => {
     main.style.gridTemplateColumns = `${r}fr ${1 - r}fr`;
     divider.style.left = `${r * 100}%`;
   };
@@ -588,7 +605,7 @@ function mountDivider() {
     e.preventDefault();
     divider.setPointerCapture(e.pointerId);
     divider.classList.add("dragging");
-    const onMove = (ev) => {
+    const onMove = (ev: PointerEvent) => {
       const rect = main.getBoundingClientRect();
       ratio = Math.min(0.8, Math.max(0.2, (ev.clientX - rect.left) / rect.width));
       applyRatio(ratio);
@@ -610,7 +627,7 @@ function mountDivider() {
 // ---- multi-format download (SVG vector · DXF vector · PNG/PDF raster) ----
 
 /** Trigger a browser download of `blob` as `floorplan.<ext>`. */
-function saveBlob(blob, ext) {
+function saveBlob(blob: Blob, ext: string) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = `floorplan.${ext}`;
@@ -623,7 +640,7 @@ function saveBlob(blob, ext) {
 const MAX_RASTER_EDGE = 4000;
 
 /** Rasterize the current SVG to a canvas, scaled to fit within MAX_RASTER_EDGE. */
-function svgToCanvas(svg) {
+function svgToCanvas(svg: string): Promise<HTMLCanvasElement> {
   const m = svg.match(/viewBox="([\d.eE+-]+) ([\d.eE+-]+) ([\d.eE+-]+) ([\d.eE+-]+)"/);
   const vbW = m ? parseFloat(m[3]) : 800;
   const vbH = m ? parseFloat(m[4]) : 600;
@@ -634,13 +651,13 @@ function svgToCanvas(svg) {
   // Give the standalone SVG an intrinsic size so <img> rasterizes predictably.
   const sized = svg.includes(" width=") ? svg : svg.replace("<svg ", `<svg width="${vbW}" height="${vbH}" `);
   const url = URL.createObjectURL(new Blob([sized], { type: "image/svg+xml" }));
-  return new Promise((resolve, reject) => {
+  return new Promise<HTMLCanvasElement>((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
       canvas.width = W;
       canvas.height = H;
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext("2d")!;
       ctx.drawImage(img, 0, 0, W, H);
       URL.revokeObjectURL(url);
       resolve(canvas);
@@ -653,7 +670,7 @@ function svgToCanvas(svg) {
   });
 }
 
-async function downloadCurrent(format) {
+async function downloadCurrent(format: string) {
   if (!lastSvg) return;
   try {
     if (format === "svg") {
@@ -663,8 +680,8 @@ async function downloadCurrent(format) {
       saveBlob(new Blob([toDxf(lastScene)], { type: "application/dxf" }), "dxf");
     } else if (format === "png") {
       const canvas = await svgToCanvas(cleanSvg());
-      const blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
-      saveBlob(blob, "png");
+      const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
+      saveBlob(blob!, "png");
     } else if (format === "pdf") {
       // Vector PDF needs Node-only pdfkit; in-browser we embed a high-res raster
       // via jsPDF (lazy-loaded so it never bloats the initial bundle).
@@ -685,11 +702,11 @@ async function downloadCurrent(format) {
     statusEl.classList.add("err");
     statusText.textContent = `${format.toUpperCase()} export failed`;
     errorsEl.classList.add("show");
-    errorsEl.textContent = `${format.toUpperCase()} export failed: ${err?.message ?? err}`;
+    errorsEl.textContent = `${format.toUpperCase()} export failed: ${(err as { message?: string })?.message ?? err}`;
   }
 }
 
-document.getElementById("download").addEventListener("click", () => {
+document.getElementById("download")!.addEventListener("click", () => {
   void downloadCurrent(formatSelect ? formatSelect.value : "svg");
 });
 

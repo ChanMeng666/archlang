@@ -8,7 +8,7 @@
  *   editable=1    show a compact editor pane + live re-render on input
  *   theme=<key>   force a named render theme (blueprint | dark | mono | presentation)
  */
-import { compile, THEMES } from "archlang";
+import { compile, THEMES, type CompileOptions } from "archlang";
 import { createPanZoom } from "./pan-zoom.js";
 import { srcFromHash } from "./share.js";
 import { showSvgInStage } from "./viewer.js";
@@ -17,25 +17,26 @@ import "@fontsource/space-grotesk/600.css";
 import "@fontsource/geist-mono/400.css";
 import "./style.css";
 
-const stage = document.querySelector(".pz-stage");
-const viewport = document.querySelector(".pz-viewport");
-const toolbar = document.querySelector(".pz-toolbar");
-const editorWrap = document.querySelector(".embed-editor");
-const textarea = document.getElementById("embedSrc");
-const errEl = document.getElementById("embedErr");
+const stage = document.querySelector<HTMLElement>(".pz-stage")!;
+const viewport = document.querySelector<HTMLElement>(".pz-viewport")!;
+const toolbar = document.querySelector<HTMLElement>(".pz-toolbar");
+const editorWrap = document.querySelector<HTMLElement>(".embed-editor")!;
+const textarea = document.getElementById("embedSrc") as HTMLTextAreaElement;
+const errEl = document.getElementById("embedErr")!;
 
 const pz = createPanZoom(viewport, stage);
 
 /** Read a boolean/string param from the current hash (params live after the codec token). */
-function hashParam(name) {
+function hashParam(name: string): string | null {
   const m = location.hash.match(new RegExp(`[#&]${name}=([^&]*)`));
   return m ? decodeURIComponent(m[1]) : null;
 }
 
 const themeKey = hashParam("theme");
-const opts = themeKey && THEMES[themeKey] ? { noCache: true, theme: THEMES[themeKey] } : { noCache: true };
+const opts: CompileOptions =
+  themeKey && THEMES[themeKey] ? { noCache: true, theme: THEMES[themeKey] } : { noCache: true };
 
-function render(source, refit) {
+function render(source: string, refit: boolean): void {
   const { svg, errors } = compile(source, opts);
   if (errors.length) {
     errEl.hidden = false;
@@ -47,7 +48,7 @@ function render(source, refit) {
 }
 
 toolbar?.addEventListener("click", (e) => {
-  const action = e.target.closest("button")?.dataset.pz;
+  const action = (e.target as Element | null)?.closest<HTMLElement>("button")?.dataset.pz;
   if (action === "in") pz.zoomIn();
   else if (action === "out") pz.zoomOut();
   else if (action === "fit") pz.fit();
@@ -59,7 +60,7 @@ async function init() {
   if (editable) {
     editorWrap.hidden = false;
     textarea.value = source;
-    let debounce;
+    let debounce: ReturnType<typeof setTimeout>;
     textarea.addEventListener("input", () => {
       clearTimeout(debounce);
       debounce = setTimeout(() => render(textarea.value, false), 200);

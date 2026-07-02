@@ -12,14 +12,22 @@
 
 const DRAG_SLOP = 6; // px of pointer travel that reclassifies a click as a pan
 
-/**
- * @param {object} o
- * @param {HTMLElement} o.viewport
- * @param {HTMLElement} o.stage
- * @param {() => Array<{label?:string,id:string,area_m2:number,bbox:{x:number,y:number,w:number,h:number}}>} o.getRooms
- * @param {(offset:number) => void} o.jumpToOffset
- */
-export function mountInteract({ viewport, stage, getRooms, jumpToOffset }) {
+/** The subset of a describe() room this module hit-tests and labels. */
+interface PreviewRoom {
+  id: string;
+  label?: string;
+  area_m2: number;
+  bbox: { x: number; y: number; w: number; h: number };
+}
+
+interface InteractOpts {
+  viewport: HTMLElement;
+  stage: HTMLElement;
+  getRooms: () => readonly PreviewRoom[];
+  jumpToOffset: (offset: number) => void;
+}
+
+export function mountInteract({ viewport, stage, getRooms, jumpToOffset }: InteractOpts): void {
   const tip = document.createElement("div");
   tip.className = "room-tip";
   tip.hidden = true;
@@ -28,18 +36,18 @@ export function mountInteract({ viewport, stage, getRooms, jumpToOffset }) {
   const svgEl = () => stage.querySelector("svg");
 
   // Map a screen point to SVG user space (= plan mm). Returns null if unavailable.
-  function toUser(clientX, clientY) {
+  function toUser(clientX: number, clientY: number): DOMPoint | null {
     const svg = svgEl();
     const ctm = svg?.getScreenCTM();
-    if (!ctm) return null;
+    if (!ctm || !svg) return null;
     const p = svg.createSVGPoint();
     p.x = clientX;
     p.y = clientY;
     return p.matrixTransform(ctm.inverse());
   }
 
-  function roomAt(u) {
-    let hit = null;
+  function roomAt(u: DOMPoint): PreviewRoom | null {
+    let hit: PreviewRoom | null = null;
     for (const r of getRooms()) {
       const b = r.bbox;
       if (u.x >= b.x && u.x <= b.x + b.w && u.y >= b.y && u.y <= b.y + b.h) {
@@ -76,15 +84,15 @@ export function mountInteract({ viewport, stage, getRooms, jumpToOffset }) {
 
   // Click-to-source: ignore clicks that were really pans, then read the nearest
   // annotated element's span.
-  let down = null;
+  let down: { x: number; y: number } | null = null;
   viewport.addEventListener("pointerdown", (e) => {
     down = { x: e.clientX, y: e.clientY };
   });
   viewport.addEventListener("click", (e) => {
     if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > DRAG_SLOP) return;
-    const el = e.target.closest("[data-span]");
+    const el = (e.target as Element | null)?.closest("[data-span]");
     if (!el) return;
-    const start = Number(el.getAttribute("data-span").split(":")[0]);
+    const start = Number(el.getAttribute("data-span")!.split(":")[0]);
     if (Number.isFinite(start)) jumpToOffset(start);
   });
 }

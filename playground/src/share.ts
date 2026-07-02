@@ -10,28 +10,28 @@
  */
 
 /** base64url ⇄ bytes (UTF-8-safe; no `escape`/`unescape`). */
-export function bytesToB64url(bytes) {
+export function bytesToB64url(bytes: Uint8Array): string {
   let bin = "";
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
-export function b64urlToBytes(b64) {
+export function b64urlToBytes(b64: string): Uint8Array {
   const bin = atob(b64.replace(/-/g, "+").replace(/_/g, "/"));
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
 }
 
-async function pipeStream(stream, bytes) {
+async function pipeStream(stream: CompressionStream | DecompressionStream, bytes: Uint8Array): Promise<Uint8Array> {
   const w = stream.writable.getWriter();
-  w.write(bytes);
+  w.write(bytes as BufferSource);
   w.close();
   return new Uint8Array(await new Response(stream.readable).arrayBuffer());
 }
 
 /** Decode the plan source from `hash` (`#z=…` compressed, or legacy `#src=…`).
  *  Returns null when neither token is present or decoding fails. */
-export async function srcFromHash(hash = location.hash) {
+export async function srcFromHash(hash: string = location.hash): Promise<string | null> {
   const z = hash.match(/[#&]z=([^&]*)/);
   if (z) {
     if (typeof DecompressionStream === "undefined") return null;
@@ -53,7 +53,7 @@ export async function srcFromHash(hash = location.hash) {
 }
 
 /** Encode `src` to a hash fragment (`#z=…`, or `#src=…` on ancient browsers). */
-export async function encodeSrc(src) {
+export async function encodeSrc(src: string): Promise<string> {
   const utf8 = new TextEncoder().encode(src);
   try {
     if (typeof CompressionStream !== "undefined") {
@@ -68,7 +68,7 @@ export async function encodeSrc(src) {
 
 /** Rewrite the browser's URL hash to carry `src` (replaceState — one entry, no
  *  history spam on every keystroke). */
-export async function updateHash(src) {
+export async function updateHash(src: string): Promise<void> {
   const hash = await encodeSrc(src);
   // NB: in main.js `history` is shadowed by CodeMirror's import, so callers reach
   // the global via `window.history`; here we do the same for safety.

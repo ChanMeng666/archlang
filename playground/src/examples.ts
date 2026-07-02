@@ -13,7 +13,7 @@ import themed from "../../examples/themed.arch?raw";
 import parametric from "../../examples/parametric.arch?raw";
 
 // Ordered as a learning progression (the <select> preserves insertion order).
-export const EXAMPLES = {
+export const EXAMPLES: Record<string, string> = {
   "Single room": `plan "One Room" {
   units mm
   grid 100

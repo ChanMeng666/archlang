@@ -13,13 +13,22 @@ const MIN_SCALE = 0.01;
 const MAX_SCALE = 40;
 const FIT_PAD = 0.94; // leave a little breathing room around a fitted plan
 
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+/** The pan/zoom controller returned by {@link createPanZoom}. */
+export interface PanZoom {
+  fit(): void;
+  reset(): void;
+  setContent(w: number, h: number, refit: boolean): void;
+  zoomIn(): void;
+  zoomOut(): void;
+}
 
 /**
- * @param {HTMLElement} viewport  the clipping box (overflow:hidden, position:relative)
- * @param {HTMLElement} stage     the transformed wrapper holding the <svg>
+ * @param viewport  the clipping box (overflow:hidden, position:relative)
+ * @param stage     the transformed wrapper holding the <svg>
  */
-export function createPanZoom(viewport, stage) {
+export function createPanZoom(viewport: HTMLElement, stage: HTMLElement): PanZoom {
   let scale = 1;
   let tx = 0;
   let ty = 0;
@@ -43,7 +52,7 @@ export function createPanZoom(viewport, stage) {
   };
 
   // Zoom keeping the point (px,py) — in viewport pixels — fixed on screen.
-  const zoomAt = (nextScale, px, py) => {
+  const zoomAt = (nextScale: number, px: number, py: number) => {
     nextScale = clamp(nextScale, MIN_SCALE, MAX_SCALE);
     const cx = (px - tx) / scale;
     const cy = (py - ty) / scale;
@@ -54,7 +63,7 @@ export function createPanZoom(viewport, stage) {
     apply();
   };
 
-  const zoomCenter = (factor) => {
+  const zoomCenter = (factor: number) => {
     zoomAt(scale * factor, viewport.clientWidth / 2, viewport.clientHeight / 2);
   };
 
@@ -71,21 +80,21 @@ export function createPanZoom(viewport, stage) {
   );
 
   // ---- pointer drag (pan) + two-pointer pinch (zoom) ----
-  const pointers = new Map();
-  let pinchPrev = null; // { dist, mx, my }
+  const pointers = new Map<number, { x: number; y: number }>();
+  let pinchPrev: { dist: number; mx: number; my: number } | null = null;
 
-  const onDown = (e) => {
+  const onDown = (e: PointerEvent) => {
     // Ignore clicks that originate on the floating toolbar buttons.
-    if (e.target.closest(".pz-toolbar")) return;
+    if ((e.target as Element | null)?.closest(".pz-toolbar")) return;
     viewport.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     viewport.classList.add("pz-grabbing");
     if (pointers.size === 2) pinchPrev = null;
   };
 
-  const onMove = (e) => {
+  const onMove = (e: PointerEvent) => {
     if (!pointers.has(e.pointerId)) return;
-    const prev = pointers.get(e.pointerId);
+    const prev = pointers.get(e.pointerId)!;
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     if (pointers.size === 1) {
@@ -109,7 +118,7 @@ export function createPanZoom(viewport, stage) {
     }
   };
 
-  const onUp = (e) => {
+  const onUp = (e: PointerEvent) => {
     pointers.delete(e.pointerId);
     if (pointers.size < 2) pinchPrev = null;
     if (pointers.size === 0) viewport.classList.remove("pz-grabbing");
@@ -128,7 +137,7 @@ export function createPanZoom(viewport, stage) {
   }
 
   /** Set the content's natural size (px); `refit` re-centres, else preserves view. */
-  const setContent = (w, h, refit) => {
+  const setContent = (w: number, h: number, refit: boolean) => {
     contentW = w || 1;
     contentH = h || 1;
     if (refit) fit();
