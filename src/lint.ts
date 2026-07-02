@@ -31,7 +31,14 @@ import {
   type AnalyzeOptions,
   type BBox,
 } from "./analyze.js";
-import { doorSwing, sectorIntersectsRect, swingsCollide, segmentsOfWall, type DoorSwing, type WallSegment } from "./geometry.js";
+import {
+  doorSwing,
+  sectorIntersectsRect,
+  swingsCollide,
+  segmentsOfWall,
+  type DoorSwing,
+  type WallSegment,
+} from "./geometry.js";
 import { requiresWall, frontClearanceMm } from "./fixtures-catalog.js";
 import { overlap1d } from "./analyze.js";
 import { computeRoomClearances } from "./analyze/occupancy.js";
@@ -62,7 +69,11 @@ function rectsOverlap(a: BBox, b: BBox): boolean {
  * overlap survives opening subtraction, so a counter under a window or a piece in a
  * doorway isn't read as passing through solid wall.
  */
-function wallIntrusionDepth(fr: BBox, s: WallSegment, openings: Array<{ at: { x: number; y: number }; width: number }>): number {
+function wallIntrusionDepth(
+  fr: BBox,
+  s: WallSegment,
+  openings: Array<{ at: { x: number; y: number }; width: number }>,
+): number {
   const horiz = s.a.y === s.b.y;
   const vert = s.a.x === s.b.x;
   if (horiz === vert) return 0; // diagonal or degenerate — skip
@@ -72,8 +83,8 @@ function wallIntrusionDepth(fr: BBox, s: WallSegment, openings: Array<{ at: { x:
     if (band <= 0) return 0;
     const segLo = Math.min(s.a.x, s.b.x);
     const segHi = Math.max(s.a.x, s.b.x);
-    let lo = Math.max(fr.x, segLo);
-    let hi = Math.min(fr.x + fr.w, segHi);
+    const lo = Math.max(fr.x, segLo);
+    const hi = Math.min(fr.x + fr.w, segHi);
     if (hi - lo <= 1) return 0;
     // Subtract opening spans that lie on this segment's line.
     const voids = openings
@@ -85,8 +96,8 @@ function wallIntrusionDepth(fr: BBox, s: WallSegment, openings: Array<{ at: { x:
   if (band <= 0) return 0;
   const segLo = Math.min(s.a.y, s.b.y);
   const segHi = Math.max(s.a.y, s.b.y);
-  let lo = Math.max(fr.y, segLo);
-  let hi = Math.min(fr.y + fr.h, segHi);
+  const lo = Math.max(fr.y, segLo);
+  const hi = Math.min(fr.y + fr.h, segHi);
   if (hi - lo <= 1) return 0;
   const voids = openings
     .filter((o) => Math.abs(o.at.x - s.a.x) <= half + 1)
@@ -114,7 +125,18 @@ function solidRemains(lo: number, hi: number, voids: Array<[number, number]>): b
 /** Furniture categories that count as a plumbing fixture for a wet room. */
 const WET_FIX = new Set(["wc", "toilet", "basin", "sink", "shower", "bath", "bathtub", "tub"]);
 /** Furniture categories that count as a fixture/appliance for a kitchen. */
-const KITCHEN_FIX = new Set(["sink", "kitchen_sink", "stove", "hob", "cooktop", "oven", "counter", "worktop", "fridge", "refrigerator"]);
+const KITCHEN_FIX = new Set([
+  "sink",
+  "kitchen_sink",
+  "stove",
+  "hob",
+  "cooktop",
+  "oven",
+  "counter",
+  "worktop",
+  "fridge",
+  "refrigerator",
+]);
 
 /** Tunable thresholds for the lint rules. All distances in mm, areas in m². */
 export interface LintRuleset {
@@ -196,7 +218,7 @@ export interface LintOptions extends AnalyzeOptions {
 }
 
 /** Square metres of a room, rounded to 2 decimals. */
-const areaM2 = (r: RRoom): number => Math.round((r.size.w * r.size.h) / 1_000_000 * 100) / 100;
+const areaM2 = (r: RRoom): number => Math.round(((r.size.w * r.size.h) / 1_000_000) * 100) / 100;
 
 /**
  * Lint ArchLang `source` and return architectural-soundness warnings. Returns `[]`
@@ -205,7 +227,7 @@ const areaM2 = (r: RRoom): number => Math.round((r.size.w * r.size.h) / 1_000_00
  */
 export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
   // Ruleset cascade: defaults → named profile → explicit per-call overrides.
-  const profileRules = opts.profile ? LINT_PROFILES[opts.profile] ?? {} : {};
+  const profileRules = opts.profile ? (LINT_PROFILES[opts.profile] ?? {}) : {};
   const rules: LintRuleset = { ...DEFAULT_RULESET, ...profileRules, ...opts.ruleset };
   const { ir } = resolvePlan(source, opts);
   if (!ir) return [];
@@ -230,32 +252,48 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
     // Implausibly tiny room.
     const a = areaM2(r);
     if (a < rules.minRoomAreaM2) {
-      out.push({ severity: "warning", code: "W_ROOM_TOO_SMALL", ...at(r.span),
+      out.push({
+        severity: "warning",
+        code: "W_ROOM_TOO_SMALL",
+        ...at(r.span),
         message: `Room "${labelOf(r)}" is only ${a} m² (under ${rules.minRoomAreaM2} m²).`,
-        hints: ["Increase its `size`, or merge it into an adjacent space."] });
+        hints: ["Increase its `size`, or merge it into an adjacent space."],
+      });
     }
 
     // No door or opening on its perimeter, so it can't be entered.
     if (!connectors.some((c) => onEdge(c.at))) {
-      out.push({ severity: "warning", code: "W_ROOM_DISCONNECTED", ...at(r.span),
+      out.push({
+        severity: "warning",
+        code: "W_ROOM_DISCONNECTED",
+        ...at(r.span),
         message: `Room "${labelOf(r)}" has no door or opening — it can't be entered.`,
-        hints: ["Add a `door` or a cased `opening` on one of its walls."] });
+        hints: ["Add a `door` or a cased `opening` on one of its walls."],
+      });
     }
 
     // A bedroom needs natural light / egress.
     if (isBedroom(r) && !windows.some((win) => onEdge(win.at))) {
-      out.push({ severity: "warning", code: "W_BEDROOM_NO_WINDOW", ...at(r.span),
+      out.push({
+        severity: "warning",
+        code: "W_BEDROOM_NO_WINDOW",
+        ...at(r.span),
         message: `Bedroom "${labelOf(r)}" has no window.`,
-        hints: ["Add a `window` on an exterior wall of this room."] });
+        hints: ["Add a `window` on an exterior wall of this room."],
+      });
     }
 
     // A wet room not fully walled in (a partition that stops short leaves it open).
     if (isWetRoom(r)) {
       const gap = largestPerimeterGap(rect, ir.walls, rules.tolMm);
       if (gap > rules.maxUnenclosedMm) {
-        out.push({ severity: "warning", code: "W_ROOM_NOT_ENCLOSED", ...at(r.span),
+        out.push({
+          severity: "warning",
+          code: "W_ROOM_NOT_ENCLOSED",
+          ...at(r.span),
           message: `Bathroom "${labelOf(r)}" is not fully enclosed (~${Math.round(gap)} mm of its perimeter has no wall).`,
-          hints: ["Extend the partition so the room is walled on all sides — a door or window in the wall is fine."] });
+          hints: ["Extend the partition so the room is walled on all sides — a door or window in the wall is fine."],
+        });
       }
     }
 
@@ -271,9 +309,15 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
         return want.has(f.category) && cx >= rect.x && cx <= rect.x + rect.w && cy >= rect.y && cy <= rect.y + rect.h;
       });
       if (!has) {
-        out.push({ severity: "warning", code: "W_ROOM_NO_FIXTURE", ...at(r.span),
+        out.push({
+          severity: "warning",
+          code: "W_ROOM_NO_FIXTURE",
+          ...at(r.span),
           message: `${isWet ? "Bathroom" : "Kitchen"} "${labelOf(r)}" has no ${isWet ? "fixtures (WC, basin, shower…)" : "fixtures (sink, counter, stove…)"}.`,
-          hints: [`Add the expected fixtures — e.g. import \`lib/fixtures.arch\` and place a ${isWet ? "`wc`, `basin`, or `shower`" : "`kitchen_sink` and `counter`"}.`] });
+          hints: [
+            `Add the expected fixtures — e.g. import \`lib/fixtures.arch\` and place a ${isWet ? "`wc`, `basin`, or `shower`" : "`kitchen_sink` and `counter`"}.`,
+          ],
+        });
       }
     }
   }
@@ -285,9 +329,13 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
       if (rectsOverlap(rectOf(furniture[i]), rectOf(furniture[j]))) {
         const nameI = furniture[i].label ?? furniture[i].category;
         const nameJ = furniture[j].label ?? furniture[j].category;
-        out.push({ severity: "warning", code: "W_FURNITURE_OVERLAP", ...at(furniture[j].span),
+        out.push({
+          severity: "warning",
+          code: "W_FURNITURE_OVERLAP",
+          ...at(furniture[j].span),
           message: `Furniture "${nameJ}" overlaps "${nameI}".`,
-          hints: ["Move or resize one piece so they don't intersect; leave a walkway between them."] });
+          hints: ["Move or resize one piece so they don't intersect; leave a walkway between them."],
+        });
       }
     }
   }
@@ -305,9 +353,13 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
       if (rectsOverlap(zone, rectOf(g))) {
         const fn = f.label ?? f.category;
         const gn = g.label ?? g.category;
-        out.push({ severity: "warning", code: "W_FURN_CLEARANCE", ...at(f.span),
+        out.push({
+          severity: "warning",
+          code: "W_FURN_CLEARANCE",
+          ...at(f.span),
           message: `Fixture "${fn}" has no clearance in front — "${gn}" is in the way.`,
-          hints: [`Leave at least ${clear} mm of clear space in front of it, or move "${gn}".`] });
+          hints: [`Leave at least ${clear} mm of clear space in front of it, or move "${gn}".`],
+        });
         break; // one warning per fixture
       }
     }
@@ -318,9 +370,13 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
   for (const f of furniture) {
     if (requiresWall(f.category) && !isAgainstWall(rectOf(f), ir.walls, rules.fixtureWallTolMm)) {
       const name = f.label ?? f.category;
-      out.push({ severity: "warning", code: "W_FIXTURE_FLOATING", ...at(f.span),
+      out.push({
+        severity: "warning",
+        code: "W_FIXTURE_FLOATING",
+        ...at(f.span),
         message: `Fixture "${name}" is not against a wall.`,
-        hints: ["Place it so one edge backs onto a wall — plumbing/venting runs in the wall."] });
+        hints: ["Place it so one edge backs onto a wall — plumbing/venting runs in the wall."],
+      });
     }
   }
 
@@ -335,9 +391,13 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
     const inside = cx >= rect.x && cx <= rect.x + rect.w && cy >= rect.y && cy <= rect.y + rect.h;
     if (!inside) {
       const name = f.label ?? f.category;
-      out.push({ severity: "warning", code: "W_FIXTURE_WRONG_ROOM", ...at(f.span),
+      out.push({
+        severity: "warning",
+        code: "W_FIXTURE_WRONG_ROOM",
+        ...at(f.span),
         message: `Fixture "${name}" sits outside its declared room "${f.room}".`,
-        hints: ["Move it inside that room, or correct the `in <roomId>`."] });
+        hints: ["Move it inside that room, or correct the `in <roomId>`."],
+      });
     }
   }
 
@@ -352,9 +412,15 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
     const hit = wallSegs.some((s) => wallIntrusionDepth(fr, s, wallOpenings) > WALL_COLLISION_SLACK_MM);
     if (hit) {
       const name = f.label ?? f.category;
-      out.push({ severity: "warning", code: "W_FURNITURE_WALL_COLLISION", ...at(f.span),
+      out.push({
+        severity: "warning",
+        code: "W_FURNITURE_WALL_COLLISION",
+        ...at(f.span),
         message: `Furniture "${name}" penetrates a wall.`,
-        hints: ["Move or resize it so it sits against the wall face, not through it — or anchor it with `against wall <id>`."] });
+        hints: [
+          "Move or resize it so it sits against the wall face, not through it — or anchor it with `against wall <id>`.",
+        ],
+      });
     }
   }
 
@@ -397,9 +463,15 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
       const reachNoBed = bfs(true);
       for (const r of rooms) {
         if (isWetRoom(r) && reachAll.has(r.id) && !reachNoBed.has(r.id)) {
-          out.push({ severity: "warning", code: "W_BATH_VIA_BEDROOM", ...at(r.span),
+          out.push({
+            severity: "warning",
+            code: "W_BATH_VIA_BEDROOM",
+            ...at(r.span),
             message: `Bathroom "${labelOf(r)}" is reachable only through a bedroom.`,
-            hints: ["Connect it to a hall or living space — or, if it is an en-suite, add a second bathroom off circulation."] });
+            hints: [
+              "Connect it to a hall or living space — or, if it is an en-suite, add a second bathroom off circulation.",
+            ],
+          });
         }
         // Has a connector on its perimeter (so not W_ROOM_DISCONNECTED) yet no path
         // back to the entrance — a sealed-off pocket. Only meaningful when an
@@ -407,9 +479,15 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
         const rect = roomRects.get(r.id)!;
         const hasConnector = connectors.some((c) => pointOnRoomEdge(c.at, rect, rules.tolMm));
         if (hasConnector && !reachAll.has(r.id)) {
-          out.push({ severity: "warning", code: "W_ROOM_UNREACHABLE", ...at(r.span),
+          out.push({
+            severity: "warning",
+            code: "W_ROOM_UNREACHABLE",
+            ...at(r.span),
             message: `Room "${labelOf(r)}" can't be reached from the entrance.`,
-            hints: ["Add a door or cased `opening` linking it (directly or through a hall) to a space that reaches the entrance."] });
+            hints: [
+              "Add a door or cased `opening` linking it (directly or through a hall) to a space that reaches the entrance.",
+            ],
+          });
         }
       }
     }
@@ -426,13 +504,20 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
     let blocked = furniture.some((f) => sectorIntersectsRect(s, rectOf(f), rules.swingClearanceMm));
     if (!blocked) {
       for (let j = i + 1; j < swings.length; j++) {
-        if (swingsCollide(s, swings[j].s, rules.swingClearanceMm)) { blocked = true; break; }
+        if (swingsCollide(s, swings[j].s, rules.swingClearanceMm)) {
+          blocked = true;
+          break;
+        }
       }
     }
     if (blocked) {
-      out.push({ severity: "warning", code: "W_SWING_OBSTRUCTED", ...at(d.span),
+      out.push({
+        severity: "warning",
+        code: "W_SWING_OBSTRUCTED",
+        ...at(d.span),
         message: `Door swing is obstructed — the leaf cannot open fully.`,
-        hints: ["Move the door or the obstruction, flip its `hinge`/`swing`, or use a sliding door."] });
+        hints: ["Move the door or the obstruction, flip its `hinge`/`swing`, or use a sliding door."],
+      });
     }
   }
 
@@ -454,18 +539,26 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
     const blocker = furniture.find((f) => rectsOverlap(landing, rectOf(f)));
     if (blocker) {
       const gn = blocker.label ?? blocker.category;
-      out.push({ severity: "warning", code: "W_DOORWAY_BLOCKED", ...at(d.span),
+      out.push({
+        severity: "warning",
+        code: "W_DOORWAY_BLOCKED",
+        ...at(d.span),
         message: `Doorway is blocked — "${gn}" sits in the clear approach through the door.`,
-        hints: [`Keep at least ${depth} mm clear on each side of the opening, or move "${gn}".`] });
+        hints: [`Keep at least ${depth} mm clear on each side of the opening, or move "${gn}".`],
+      });
     }
   }
 
   // Door too narrow to pass comfortably.
   for (const d of doors) {
     if (d.width < rules.minDoorWidthMm) {
-      out.push({ severity: "warning", code: "W_DOOR_CLEARANCE", ...at(d.span),
+      out.push({
+        severity: "warning",
+        code: "W_DOOR_CLEARANCE",
+        ...at(d.span),
         message: `Door is ${d.width} mm wide (under the ${rules.minDoorWidthMm} mm minimum nominal width).`,
-        hints: [`Widen it to at least ${rules.minDoorWidthMm} mm.`] });
+        hints: [`Widen it to at least ${rules.minDoorWidthMm} mm.`],
+      });
     }
   }
 
@@ -475,11 +568,19 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
   // floor somewhere (totalClear ≥ the minimum) but the entrance can't get to it, so a
   // genuinely tiny room isn't double-flagged for being small.
   for (const rc of computeRoomClearances(rooms, furniture, doors, openings, ir.walls, rules.tolMm)) {
-    if (rc.hasConnector && rc.reachableClearAreaM2 < rules.minClearAreaM2 && rc.totalClearAreaM2 >= rules.minClearAreaM2) {
+    if (
+      rc.hasConnector &&
+      rc.reachableClearAreaM2 < rules.minClearAreaM2 &&
+      rc.totalClearAreaM2 >= rules.minClearAreaM2
+    ) {
       const r = rooms.find((x) => x.id === rc.roomId)!;
-      out.push({ severity: "warning", code: "W_ROOM_NO_CLEAR_PATH", ...at(r.span),
+      out.push({
+        severity: "warning",
+        code: "W_ROOM_NO_CLEAR_PATH",
+        ...at(r.span),
         message: `Room "${labelOf(r)}" can't be entered — furniture and door swings seal off the floor by its door (only ${rc.reachableClearAreaM2} m² reachable).`,
-        hints: ["Move or shrink the pieces nearest the door so there's a continuous walkable path into the room."] });
+        hints: ["Move or shrink the pieces nearest the door so there's a continuous walkable path into the room."],
+      });
     }
   }
 
@@ -487,9 +588,12 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
   const hasExteriorWall = ir.walls.some((wl) => wl.category === "exterior");
   const hasExteriorEntry = connectors.some((c) => c.host?.category === "exterior");
   if (rooms.length > 0 && hasExteriorWall && !hasExteriorEntry) {
-    out.push({ severity: "warning", code: "W_NO_ENTRANCE",
+    out.push({
+      severity: "warning",
+      code: "W_NO_ENTRANCE",
       message: "The plan has no exterior door or opening — there is no way into the building.",
-      hints: ["Add a `door` (or a cased `opening`) on an `exterior` wall."] });
+      hints: ["Add a `door` (or a cased `opening`) on an `exterior` wall."],
+    });
   }
 
   return out;

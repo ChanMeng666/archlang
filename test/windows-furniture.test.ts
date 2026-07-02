@@ -19,8 +19,7 @@ describe("window — placement & hosting", () => {
   });
 
   it("warns (W_WINDOW_OFF_WALL) when the window is off every wall", () => {
-    const src =
-      'plan "W" { wall exterior thickness 200 { (0,0) (4000,0) } window id=w at (2000,2000) width 1200 }';
+    const src = 'plan "W" { wall exterior thickness 200 { (0,0) (4000,0) } window id=w at (2000,2000) width 1200 }';
     const { warnings, errors, diagnostics } = compile(src, { noCache: true });
     expect(errors).toEqual([]);
     expect(warnings.some((w) => /Window "w" does not lie on any wall/.test(w.message))).toBe(true);
@@ -28,8 +27,7 @@ describe("window — placement & hosting", () => {
   });
 
   it("errors (E_WINDOW_WIDTH) on a non-positive width", () => {
-    const src =
-      'plan "W" { wall exterior thickness 200 { (0,0) (4000,0) } window at (2000,0) width 0 wall exterior }';
+    const src = 'plan "W" { wall exterior thickness 200 { (0,0) (4000,0) } window at (2000,0) width 0 wall exterior }';
     const { errors, svg } = compile(src, { noCache: true });
     expect(svg).toBe("");
     expect(errors.some((e) => /must have a positive width/.test(e.message))).toBe(true);

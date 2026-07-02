@@ -52,7 +52,9 @@ function benchPlan(name: string, spec: GenSpec, iters: number): Record<string, S
     render: timeit(() => render(ir, {}), iters),
   };
   if (!JSON_MODE) {
-    console.log(`\n${name}  (${count(spec)} elements: ${spec.walls}W ${spec.rooms}R ${spec.doors}D ${spec.windows}Wn ${spec.furniture}F)`);
+    console.log(
+      `\n${name}  (${count(spec)} elements: ${spec.walls}W ${spec.rooms}R ${spec.doors}D ${spec.windows}Wn ${spec.furniture}F)`,
+    );
     console.log(row("compile (full)", stats.compile));
     console.log(row("  parse", stats.parse));
     console.log(row("  resolve", stats.resolve));

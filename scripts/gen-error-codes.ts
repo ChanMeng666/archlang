@@ -31,7 +31,9 @@ export function renderErrorCodes(): string {
     "",
     "| Code | Severity | Summary |",
     "| --- | --- | --- |",
-    ...ERROR_CODES.map((c) => `| [\`${c}\`](#${c.toLowerCase()}) | ${ERROR_CATALOG[c].severity} | ${ERROR_CATALOG[c].message} |`),
+    ...ERROR_CODES.map(
+      (c) => `| [\`${c}\`](#${c.toLowerCase()}) | ${ERROR_CATALOG[c].severity} | ${ERROR_CATALOG[c].message} |`,
+    ),
     "",
   ];
 

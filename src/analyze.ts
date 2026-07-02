@@ -49,11 +49,7 @@ export function resolvePlan(
   const { plan, diagnostics: parseDiags } = parse(source, registry);
   const linked = plan ? link(plan, world, registry) : null;
   const resolved = linked ? resolve(linked.plan, registry, world) : null;
-  const diagnostics: Diagnostic[] = [
-    ...parseDiags,
-    ...(linked?.diagnostics ?? []),
-    ...(resolved?.diagnostics ?? []),
-  ];
+  const diagnostics: Diagnostic[] = [...parseDiags, ...(linked?.diagnostics ?? []), ...(resolved?.diagnostics ?? [])];
 
   const hasError = diagnostics.some((d) => d.severity === "error");
   return { ir: !resolved || hasError ? null : resolved.ir, diagnostics };
@@ -129,13 +125,9 @@ export function roomsAdjacent(a: BBox, b: BBox, tol: number): boolean {
 /** Does point `p` lie on the perimeter of rectangle `r` (within tolerance)? */
 export function pointOnRoomEdge(p: Point, r: BBox, tol: number): boolean {
   const onLeftRight =
-    (Math.abs(p.x - r.x) <= tol || Math.abs(p.x - (r.x + r.w)) <= tol) &&
-    p.y >= r.y - tol &&
-    p.y <= r.y + r.h + tol;
+    (Math.abs(p.x - r.x) <= tol || Math.abs(p.x - (r.x + r.w)) <= tol) && p.y >= r.y - tol && p.y <= r.y + r.h + tol;
   const onTopBottom =
-    (Math.abs(p.y - r.y) <= tol || Math.abs(p.y - (r.y + r.h)) <= tol) &&
-    p.x >= r.x - tol &&
-    p.x <= r.x + r.w + tol;
+    (Math.abs(p.y - r.y) <= tol || Math.abs(p.y - (r.y + r.h)) <= tol) && p.x >= r.x - tol && p.x <= r.x + r.w + tol;
   return onLeftRight || onTopBottom;
 }
 
@@ -245,7 +237,13 @@ export function buildDoorAccessGraph(
 
   // Doors and cased openings are both connectors; an opening keeps its full width
   // as clear (no leaf), a door loses the leaf/stop allowance.
-  const connectors: Array<{ id: string; at: Point; width: number; host: { category: string; wallId: string } | null; kind: "door" | "opening" }> = [
+  const connectors: Array<{
+    id: string;
+    at: Point;
+    width: number;
+    host: { category: string; wallId: string } | null;
+    kind: "door" | "opening";
+  }> = [
     ...doors.map((d) => ({ id: d.id, at: d.at, width: d.width, host: d.host, kind: "door" as const })),
     ...openings.map((o) => ({ id: o.id, at: o.at, width: o.width, host: o.host, kind: "opening" as const })),
   ];
@@ -305,7 +303,12 @@ export function buildDoorAccessGraph(
     let u: string | null = null;
     for (const id of order) {
       if (done.has(id) || !best.has(id)) continue;
-      if (u === null || best.get(id)! > best.get(u)! || (best.get(id)! === best.get(u)! && rank.get(id)! < rank.get(u)!)) u = id;
+      if (
+        u === null ||
+        best.get(id)! > best.get(u)! ||
+        (best.get(id)! === best.get(u)! && rank.get(id)! < rank.get(u)!)
+      )
+        u = id;
     }
     if (u === null) break;
     done.add(u);
@@ -321,7 +324,7 @@ export function buildDoorAccessGraph(
       id: r.id,
       depthFromEntrance: reachable ? depth.get(r.id)! : null,
       reachable,
-      bottleneckClearWidth: reachable ? best.get(r.id) ?? null : null,
+      bottleneckClearWidth: reachable ? (best.get(r.id) ?? null) : null,
     };
   });
 
@@ -404,10 +407,14 @@ export function frontClearanceRect(
   const { w, h } = f.size;
   const rot = (((f.rotate ?? 0) % 360) + 360) % 360;
   switch (rot) {
-    case 90: return { x: x - clearance, y, w: clearance, h }; // front west
-    case 180: return { x, y: y - clearance, w, h: clearance }; // front north
-    case 270: return { x: x + w, y, w: clearance, h }; // front east
-    default: return { x, y: y + h, w, h: clearance }; // rot 0 → front south
+    case 90:
+      return { x: x - clearance, y, w: clearance, h }; // front west
+    case 180:
+      return { x, y: y - clearance, w, h: clearance }; // front north
+    case 270:
+      return { x: x + w, y, w: clearance, h }; // front east
+    default:
+      return { x, y: y + h, w, h: clearance }; // rot 0 → front south
   }
 }
 

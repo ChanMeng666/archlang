@@ -29,7 +29,7 @@ const SETTING_KW: Record<string, string> = {
   scale: "Drawing scale, e.g. `scale 1:50`.",
   north: "North orientation: up | down | left | right | <degrees>.",
   title: "Title block (project / drawn_by / date).",
-  theme: "Theme: a named base, `{ key: value }` overrides, or `from \"#color\"`.",
+  theme: 'Theme: a named base, `{ key: value }` overrides, or `from "#color"`.',
   style: "Per-element-kind style overrides (`style room { fill … }`).",
   let: "Bind a value or define a value-function: `let NAME = …` / `let f(a) = …`.",
   component: "Define a reusable parameterised sub-plan.",
@@ -46,10 +46,15 @@ const CONTROL_KW: Record<string, string> = {
 const ENUM_KW = new Set(["up", "down", "left", "right", "out", "mm", "true", "false", "from", "as", "close", "id"]);
 
 const BUILTIN_SIGS: Record<string, string> = {
-  min: "min(a, b, …) → number", max: "max(a, b, …) → number",
-  abs: "abs(x) → number", sqrt: "sqrt(x) → number",
-  floor: "floor(x) → number", ceil: "ceil(x) → number", round: "round(x) → number",
-  len: "len(array) → number", str: "str(x) → string",
+  min: "min(a, b, …) → number",
+  max: "max(a, b, …) → number",
+  abs: "abs(x) → number",
+  sqrt: "sqrt(x) → number",
+  floor: "floor(x) → number",
+  ceil: "ceil(x) → number",
+  round: "round(x) → number",
+  len: "len(array) → number",
+  str: "str(x) → string",
 };
 
 // ---- public result shapes ----
@@ -115,10 +120,12 @@ function collectBindings(plan: PlanNode, tokens: Token[]): Binding[] {
     for (const s of stmts) {
       if (s.kind === "let") {
         const nameSpan = findNameSpan(tokens, s.span!.start, s.name);
-        if (nameSpan) out.push({ name: s.name, nameSpan, kind: s.value.t === "fnlit" ? "fn" : "let", detail: letDetail(s), scope });
+        if (nameSpan)
+          out.push({ name: s.name, nameSpan, kind: s.value.t === "fnlit" ? "fn" : "let", detail: letDetail(s), scope });
       } else if (s.kind === "for") {
         const nameSpan = findNameSpan(tokens, s.span!.start, s.varName);
-        if (nameSpan) out.push({ name: s.varName, nameSpan, kind: "loopvar", detail: `for ${s.varName} in …`, scope: s.span });
+        if (nameSpan)
+          out.push({ name: s.varName, nameSpan, kind: "loopvar", detail: `for ${s.varName} in …`, scope: s.span });
         visit(s.body, s.span);
       } else if (s.kind === "if") {
         visit(s.then, s.span);
@@ -133,10 +140,18 @@ function collectBindings(plan: PlanNode, tokens: Token[]): Binding[] {
   for (const comp of plan.components.values()) {
     const cstart = comp.span?.start ?? 0;
     const nameSpan = findNameSpan(tokens, cstart, comp.name);
-    if (nameSpan) out.push({ name: comp.name, nameSpan, kind: "component", detail: `component ${fnSig(comp.name, comp.params)}`, scope: undefined });
+    if (nameSpan)
+      out.push({
+        name: comp.name,
+        nameSpan,
+        kind: "component",
+        detail: `component ${fnSig(comp.name, comp.params)}`,
+        scope: undefined,
+      });
     for (const p of comp.params) {
       const ps = findNameSpan(tokens, nameSpan ? nameSpan.end : cstart, p);
-      if (ps) out.push({ name: p, nameSpan: ps, kind: "param", detail: `parameter ${p} of ${comp.name}`, scope: comp.span });
+      if (ps)
+        out.push({ name: p, nameSpan: ps, kind: "param", detail: `parameter ${p} of ${comp.name}`, scope: comp.span });
     }
     visit(comp.body, comp.span);
   }
@@ -229,12 +244,14 @@ export function hover(source: string, offset: number, registry: Registry = BUILT
   if (def) {
     const lines = [`\`\`\`arch\n${elementSignature(def.keyword, def.params)}\n\`\`\``];
     if (def.doc) lines.push(def.doc);
-    for (const p of def.params ?? []) lines.push(`- \`${p.name}\` — ${p.doc}${p.default ? ` (default ${p.default})` : ""}`);
+    for (const p of def.params ?? [])
+      lines.push(`- \`${p.name}\` — ${p.doc}${p.default ? ` (default ${p.default})` : ""}`);
     return { contents: lines.join("\n\n"), span };
   }
   if (word in SETTING_KW) return { contents: `**${word}** — ${SETTING_KW[word]}`, span };
   if (word in CONTROL_KW) return { contents: `**${word}** — ${CONTROL_KW[word]}`, span };
-  if (word in BUILTIN_SIGS) return { contents: `\`\`\`arch\n${BUILTIN_SIGS[word]}\n\`\`\`\n\nBuilt-in function.`, span };
+  if (word in BUILTIN_SIGS)
+    return { contents: `\`\`\`arch\n${BUILTIN_SIGS[word]}\n\`\`\`\n\nBuilt-in function.`, span };
 
   const b = resolveBinding(a.bindings, word, offset);
   if (b) return { contents: `\`\`\`arch\n${b.detail}\n\`\`\``, span };
@@ -248,7 +265,13 @@ export function completion(source: string, offset: number, registry: Registry = 
   const items: CompletionItem[] = [];
   for (const kw of Object.keys(SETTING_KW)) items.push({ label: kw, kind: "keyword", doc: SETTING_KW[kw] });
   for (const kw of Object.keys(CONTROL_KW)) items.push({ label: kw, kind: "keyword", doc: CONTROL_KW[kw] });
-  for (const def of registry.order) items.push({ label: def.keyword, kind: "element", detail: elementSignature(def.keyword, def.params), doc: def.doc });
+  for (const def of registry.order)
+    items.push({
+      label: def.keyword,
+      kind: "element",
+      detail: elementSignature(def.keyword, def.params),
+      doc: def.doc,
+    });
   for (const [name, sig] of Object.entries(BUILTIN_SIGS)) items.push({ label: name, kind: "function", detail: sig });
 
   const a = analyze(source, registry);
@@ -262,7 +285,11 @@ export function completion(source: string, offset: number, registry: Registry = 
   }
   // De-dup by label (in-scope bindings can repeat keyword names harmlessly).
   const seen = new Set<string>();
-  return items.filter((i) => (seen.has(i.label) ? false : (seen.add(i.label), true)));
+  return items.filter((i) => {
+    if (seen.has(i.label)) return false;
+    seen.add(i.label);
+    return true;
+  });
 }
 
 /** The defining occurrence's span for the symbol at `offset`, or null. */
@@ -276,7 +303,12 @@ export function definition(source: string, offset: number, registry: Registry = 
 }
 
 /** All edit sites to rename the symbol at `offset` to `newName`, or null. */
-export function rename(source: string, offset: number, newName: string, registry: Registry = BUILTIN_REGISTRY): TextEdit[] | null {
+export function rename(
+  source: string,
+  offset: number,
+  newName: string,
+  registry: Registry = BUILTIN_REGISTRY,
+): TextEdit[] | null {
   const a = analyze(source, registry);
   if (!a) return null;
   const tok = identAt(a.tokens, offset);
@@ -303,7 +335,11 @@ export function rename(source: string, offset: number, newName: string, registry
 }
 
 /** Signature help for an enclosing `callee(…)` at `offset`, or null. */
-export function signatureHelp(source: string, offset: number, registry: Registry = BUILTIN_REGISTRY): SignatureResult | null {
+export function signatureHelp(
+  source: string,
+  offset: number,
+  registry: Registry = BUILTIN_REGISTRY,
+): SignatureResult | null {
   const a = analyze(source, registry);
   if (!a) return null;
   // Walk tokens before the cursor, tracking open calls and the active argument.
@@ -320,17 +356,18 @@ export function signatureHelp(source: string, offset: number, registry: Registry
   if (!top?.callee) return null;
 
   const comp = a.plan.components.get(top.callee);
-  if (comp) return { label: `component ${fnSig(comp.name, comp.params)}`, params: comp.params, activeParameter: top.commas };
+  if (comp)
+    return { label: `component ${fnSig(comp.name, comp.params)}`, params: comp.params, activeParameter: top.commas };
   const fn = a.bindings.find((b) => b.name === top.callee && b.kind === "fn");
   if (fn) {
     const m = /\(([^)]*)\)/.exec(fn.detail);
-    const params = m && m[1] ? m[1].split(",").map((s) => s.trim()) : [];
+    const params = m?.[1] ? m[1].split(",").map((s) => s.trim()) : [];
     return { label: fn.detail.replace(/ = …$/, ""), params, activeParameter: top.commas };
   }
   if (top.callee in BUILTIN_SIGS) {
     const sig = BUILTIN_SIGS[top.callee];
     const m = /\(([^)]*)\)/.exec(sig);
-    const params = m && m[1] ? m[1].split(",").map((s) => s.trim()) : [];
+    const params = m?.[1] ? m[1].split(",").map((s) => s.trim()) : [];
     return { label: sig, params, activeParameter: Math.min(top.commas, Math.max(0, params.length - 1)) };
   }
   return null;

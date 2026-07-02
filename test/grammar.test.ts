@@ -28,9 +28,7 @@ async function tokenize(source: string): Promise<Tok[]> {
       createOnigString: (s: string) => new OnigString(s),
     }),
     loadGrammar: async (scope: string) =>
-      scope === "source.arch"
-        ? parseRawGrammar(readFileSync(grammarPath, "utf8"), "archlang.tmLanguage.json")
-        : null,
+      scope === "source.arch" ? parseRawGrammar(readFileSync(grammarPath, "utf8"), "archlang.tmLanguage.json") : null,
   });
   const grammar = await registry.loadGrammar("source.arch");
   if (!grammar) throw new Error("grammar failed to load");

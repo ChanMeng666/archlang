@@ -99,17 +99,39 @@ describe("swingsCollide", () => {
 });
 
 describe("largestPerimeterGap", () => {
-  const wall = (pts: { x: number; y: number }[], closed: boolean) => ({ id: "w", category: "x", thickness: 100, points: pts, closed });
+  const wall = (pts: { x: number; y: number }[], closed: boolean) => ({
+    id: "w",
+    category: "x",
+    thickness: 100,
+    points: pts,
+    closed,
+  });
   const room = { x: 0, y: 0, w: 3000, h: 3000 };
 
   it("is ~0 when every edge is backed by a wall", () => {
-    const shell = wall([{ x: 0, y: 0 }, { x: 3000, y: 0 }, { x: 3000, y: 3000 }, { x: 0, y: 3000 }], true);
+    const shell = wall(
+      [
+        { x: 0, y: 0 },
+        { x: 3000, y: 0 },
+        { x: 3000, y: 3000 },
+        { x: 0, y: 3000 },
+      ],
+      true,
+    );
     expect(largestPerimeterGap(room, [shell], 200)).toBeLessThanOrEqual(1);
   });
 
   it("reports the open run when a wall is missing on one edge", () => {
     // Three sides only — the right edge (x=3000) is unwalled.
-    const open = wall([{ x: 3000, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 3000 }, { x: 3000, y: 3000 }], false);
+    const open = wall(
+      [
+        { x: 3000, y: 0 },
+        { x: 0, y: 0 },
+        { x: 0, y: 3000 },
+        { x: 3000, y: 3000 },
+      ],
+      false,
+    );
     expect(largestPerimeterGap(room, [open], 200)).toBeCloseTo(3000);
   });
 });

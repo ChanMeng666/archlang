@@ -11,10 +11,7 @@ import { lex } from "./lexer.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 
 /** Binary operators, by category (arithmetic, comparison, equality, logical). */
-export type BinOp =
-  | "+" | "-" | "*" | "/" | "%"
-  | "<" | ">" | "<=" | ">=" | "==" | "!="
-  | "&&" | "||";
+export type BinOp = "+" | "-" | "*" | "/" | "%" | "<" | ">" | "<=" | ">=" | "==" | "!=" | "&&" | "||";
 
 export type Expr =
   | { t: "num"; value: number }
@@ -64,12 +61,17 @@ export function exprSpan(e: Expr): Span | undefined {
 /** Human-readable type name for diagnostics. */
 export function typeName(v: Value): string {
   switch (v.t) {
-    case "num": return "number";
-    case "bool": return "boolean";
-    case "str": return "string";
-    case "arr": return "array";
+    case "num":
+      return "number";
+    case "bool":
+      return "boolean";
+    case "str":
+      return "string";
+    case "arr":
+      return "array";
     case "fn":
-    case "builtin": return "function";
+    case "builtin":
+      return "function";
   }
 }
 
@@ -91,12 +93,17 @@ export function asBool(v: Value, onError: (d: Diagnostic) => void, span?: Span):
  *  deterministically; arrays render as `[a, b]`. Never errors. */
 export function asStr(v: Value): string {
   switch (v.t) {
-    case "str": return v.v;
-    case "num": return fmtNum(v.v);
-    case "bool": return v.v ? "true" : "false";
-    case "arr": return `[${v.v.map(asStr).join(", ")}]`;
+    case "str":
+      return v.v;
+    case "num":
+      return fmtNum(v.v);
+    case "bool":
+      return v.v ? "true" : "false";
+    case "arr":
+      return `[${v.v.map(asStr).join(", ")}]`;
     case "fn":
-    case "builtin": return "<function>";
+    case "builtin":
+      return "<function>";
   }
 }
 
@@ -123,17 +130,32 @@ export interface ExprTokens {
 const BIN_PREC: Partial<Record<TokenType, number>> = {
   or: 1,
   and: 2,
-  eq: 3, ne: 3,
-  lt: 4, gt: 4, le: 4, ge: 4,
-  plus: 6, minus: 6,
-  star: 7, slash: 7, percent: 7,
+  eq: 3,
+  ne: 3,
+  lt: 4,
+  gt: 4,
+  le: 4,
+  ge: 4,
+  plus: 6,
+  minus: 6,
+  star: 7,
+  slash: 7,
+  percent: 7,
 };
 const BIN_OP: Partial<Record<TokenType, BinOp>> = {
-  or: "||", and: "&&",
-  eq: "==", ne: "!=",
-  lt: "<", gt: ">", le: "<=", ge: ">=",
-  plus: "+", minus: "-",
-  star: "*", slash: "/", percent: "%",
+  or: "||",
+  and: "&&",
+  eq: "==",
+  ne: "!=",
+  lt: "<",
+  gt: ">",
+  le: "<=",
+  ge: ">=",
+  plus: "+",
+  minus: "-",
+  star: "*",
+  slash: "/",
+  percent: "%",
 };
 const RANGE_PREC = 5;
 
@@ -353,7 +375,8 @@ const MAX_CALL_DEPTH = 512;
 
 /** Built-in dispatch is injected by {@link setBuiltinDispatch} (from builtins.ts)
  *  to avoid a static import cycle. Until set, built-in calls are unknown. */
-let builtinDispatch: ((name: string, args: Value[], onError: (d: Diagnostic) => void, span?: Span) => Value) | null = null;
+let builtinDispatch: ((name: string, args: Value[], onError: (d: Diagnostic) => void, span?: Span) => Value) | null =
+  null;
 export function setBuiltinDispatch(fn: typeof builtinDispatch): void {
   builtinDispatch = fn;
 }
@@ -408,7 +431,12 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
       let n = 0;
       for (let v = lo; v < hi; v += 1) {
         if (n++ >= MAX_RANGE) {
-          onError({ severity: "error", message: `Range too large (limit ${MAX_RANGE})`, code: "E_RANGE_LIMIT", span: e.span });
+          onError({
+            severity: "error",
+            message: `Range too large (limit ${MAX_RANGE})`,
+            code: "E_RANGE_LIMIT",
+            span: e.span,
+          });
           break;
         }
         items.push({ t: "num", v });
@@ -419,12 +447,22 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
       const base = evalExpr(e.base, env, onError, depth);
       const i = asNum(evalExpr(e.idx, env, onError, depth), onError, e.span);
       if (base.t !== "arr") {
-        onError({ severity: "error", message: `Cannot index a ${typeName(base)} (only arrays)`, code: "E_TYPE", span: e.span });
+        onError({
+          severity: "error",
+          message: `Cannot index a ${typeName(base)} (only arrays)`,
+          code: "E_TYPE",
+          span: e.span,
+        });
         return NUM0;
       }
       const k = Math.trunc(i);
       if (k < 0 || k >= base.v.length) {
-        onError({ severity: "error", message: `Index ${k} out of range for array of length ${base.v.length}`, code: "E_INDEX", span: e.span });
+        onError({
+          severity: "error",
+          message: `Index ${k} out of range for array of length ${base.v.length}`,
+          code: "E_INDEX",
+          span: e.span,
+        });
         return NUM0;
       }
       return base.v[k];
@@ -443,14 +481,26 @@ function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagno
   const callee = env.get(e.callee);
   if (callee && callee.t === "fn") {
     if (args.length !== callee.params.length) {
-      onError({ severity: "error", message: `Function "${e.callee}" expects ${callee.params.length} argument(s) but got ${args.length}`, code: "E_ARITY", span: e.span });
+      onError({
+        severity: "error",
+        message: `Function "${e.callee}" expects ${callee.params.length} argument(s) but got ${args.length}`,
+        code: "E_ARITY",
+        span: e.span,
+      });
     }
     if (depth >= MAX_CALL_DEPTH) {
-      onError({ severity: "error", message: `Call stack too deep (limit ${MAX_CALL_DEPTH}) calling "${e.callee}"`, code: "E_CALL_DEPTH", span: e.span });
+      onError({
+        severity: "error",
+        message: `Call stack too deep (limit ${MAX_CALL_DEPTH}) calling "${e.callee}"`,
+        code: "E_CALL_DEPTH",
+        span: e.span,
+      });
       return NUM0;
     }
     const callEnv: Env = new Map(callee.closure);
-    callee.params.forEach((p, i) => callEnv.set(p, args[i] ?? NUM0));
+    callee.params.forEach((p, i) => {
+      callEnv.set(p, args[i] ?? NUM0);
+    });
     return evalExpr(callee.body, callEnv, onError, depth + 1);
   }
   if (callee && callee.t === "builtin" && builtinDispatch) {
@@ -497,17 +547,29 @@ function evalBin(e: Extract<Expr, { t: "bin" }>, env: Env, onError: (d: Diagnost
   const l = asNum(evalExpr(e.l, env, onError, depth), onError, e.span);
   const r = asNum(evalExpr(e.r, env, onError, depth), onError, e.span);
   switch (op) {
-    case "<": return { t: "bool", v: l < r };
-    case ">": return { t: "bool", v: l > r };
-    case "<=": return { t: "bool", v: l <= r };
-    case ">=": return { t: "bool", v: l >= r };
-    case "+": return { t: "num", v: l + r };
-    case "-": return { t: "num", v: l - r };
-    case "*": return { t: "num", v: l * r };
+    case "<":
+      return { t: "bool", v: l < r };
+    case ">":
+      return { t: "bool", v: l > r };
+    case "<=":
+      return { t: "bool", v: l <= r };
+    case ">=":
+      return { t: "bool", v: l >= r };
+    case "+":
+      return { t: "num", v: l + r };
+    case "-":
+      return { t: "num", v: l - r };
+    case "*":
+      return { t: "num", v: l * r };
     case "/":
     case "%":
       if (r === 0) {
-        onError({ severity: "error", message: `${op === "/" ? "Division" : "Modulo"} by zero`, code: "E_DIV_ZERO", span: e.span });
+        onError({
+          severity: "error",
+          message: `${op === "/" ? "Division" : "Modulo"} by zero`,
+          code: "E_DIV_ZERO",
+          span: e.span,
+        });
         return NUM0;
       }
       return { t: "num", v: op === "/" ? l / r : l % r };
@@ -547,11 +609,7 @@ function levenshtein(a: string, b: string): number {
     dp[0] = j;
     for (let i = 1; i <= m; i++) {
       const tmp = dp[i];
-      dp[i] = Math.min(
-        dp[i] + 1,
-        dp[i - 1] + 1,
-        prev + (a[i - 1] === b[j - 1] ? 0 : 1),
-      );
+      dp[i] = Math.min(dp[i] + 1, dp[i - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
       prev = tmp;
     }
   }

@@ -29,10 +29,14 @@ function num(v: number): string {
 /** Map a Scene line type to a DXF LTYPE name; undefined (or continuous) → BYLAYER. */
 function dxfLineType(t: LineType | undefined): string | undefined {
   switch (t) {
-    case "dashed": return "DASHED";
-    case "center": return "CENTER";
-    case "hidden": return "HIDDEN";
-    default: return undefined;
+    case "dashed":
+      return "DASHED";
+    case "center":
+      return "CENTER";
+    case "hidden":
+      return "HIDDEN";
+    default:
+      return undefined;
   }
 }
 
@@ -94,8 +98,12 @@ class DxfBuilder {
     this.pair(100, "AcDbEntity");
     this.pair(8, layer);
     this.pair(100, "AcDbHatch");
-    this.pair(10, 0); this.pair(20, 0); this.pair(30, 0); // elevation point
-    this.pair(210, 0); this.pair(220, 0); this.pair(230, 1); // extrusion
+    this.pair(10, 0);
+    this.pair(20, 0);
+    this.pair(30, 0); // elevation point
+    this.pair(210, 0);
+    this.pair(220, 0);
+    this.pair(230, 1); // extrusion
     this.pair(2, pattern);
     this.pair(70, solid ? 1 : 0);
     this.pair(71, 0); // non-associative
@@ -153,22 +161,41 @@ function header(): string {
   const h: string[] = [];
   const p = (c: number, v: string | number) => h.push(String(c), String(v));
   // Minimal HEADER declaring AutoCAD 2000 (AC1015) — the HATCH entity needs > R12.
-  p(0, "SECTION"); p(2, "HEADER"); p(9, "$ACADVER"); p(1, "AC1015"); p(0, "ENDSEC");
-  p(0, "SECTION"); p(2, "TABLES");
+  p(0, "SECTION");
+  p(2, "HEADER");
+  p(9, "$ACADVER");
+  p(1, "AC1015");
+  p(0, "ENDSEC");
+  p(0, "SECTION");
+  p(2, "TABLES");
   // LTYPE table FIRST, so the LAYER table (and entities) can reference linetypes.
-  p(0, "TABLE"); p(2, "LTYPE"); p(70, LTYPES.length);
+  p(0, "TABLE");
+  p(2, "LTYPE");
+  p(70, LTYPES.length);
   for (const lt of LTYPES) {
-    p(0, "LTYPE"); p(2, lt.name); p(70, 0); p(3, lt.desc); p(72, 65);
-    p(73, lt.pattern.length); p(40, num(lt.pattern.reduce((s, d) => s + Math.abs(d), 0)));
+    p(0, "LTYPE");
+    p(2, lt.name);
+    p(70, 0);
+    p(3, lt.desc);
+    p(72, 65);
+    p(73, lt.pattern.length);
+    p(40, num(lt.pattern.reduce((s, d) => s + Math.abs(d), 0)));
     for (const d of lt.pattern) p(49, num(d));
   }
   p(0, "ENDTAB");
   // LAYER table (AIA names + colours) so entities reference real layers.
-  p(0, "TABLE"); p(2, "LAYER"); p(70, AIA_LAYERS.length);
+  p(0, "TABLE");
+  p(2, "LAYER");
+  p(70, AIA_LAYERS.length);
   for (const { name, color } of AIA_LAYERS) {
-    p(0, "LAYER"); p(2, name); p(70, 0); p(62, color); p(6, "CONTINUOUS");
+    p(0, "LAYER");
+    p(2, name);
+    p(70, 0);
+    p(62, color);
+    p(6, "CONTINUOUS");
   }
-  p(0, "ENDTAB"); p(0, "ENDSEC");
+  p(0, "ENDTAB");
+  p(0, "ENDSEC");
   return h.join("\n") + "\n";
 }
 

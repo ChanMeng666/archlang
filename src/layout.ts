@@ -28,7 +28,13 @@ type RelRoom = RRoom & { _rel: RelConstraint };
  * (`below`/`above`) it is horizontal (`left`/`center`/`right`). `center`≡`middle`.
  * The default and any axis-mismatched edge fall back to the leading edge.
  */
-function alignOffset(start: number, refExtent: number, ownExtent: number, align: string | undefined, axis: "v" | "h"): number {
+function alignOffset(
+  start: number,
+  refExtent: number,
+  ownExtent: number,
+  align: string | undefined,
+  axis: "v" | "h",
+): number {
   const trailing = axis === "v" ? "bottom" : "right";
   if (align === trailing) return start + refExtent - ownExtent;
   if (align === "middle" || align === "center") return start + (refExtent - ownExtent) / 2;

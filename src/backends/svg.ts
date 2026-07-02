@@ -26,11 +26,7 @@ function fmt(v: number): string {
 const pt = (p: Point): string => `${fmt(p.x)},${fmt(p.y)}`;
 
 function xml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 /**
@@ -41,10 +37,14 @@ function xml(s: string): string {
  */
 function weightWidth(w: LineWeight, sizes: RenderSizes): number {
   switch (w) {
-    case "heavy": return sizes.wallStroke;
-    case "medium": return sizes.wallStroke * 0.6;
-    case "thin": return sizes.thin;
-    case "extraThin": return sizes.thin * 0.55;
+    case "heavy":
+      return sizes.wallStroke;
+    case "medium":
+      return sizes.wallStroke * 0.6;
+    case "thin":
+      return sizes.thin;
+    case "extraThin":
+      return sizes.thin * 0.55;
   }
 }
 
@@ -52,16 +52,20 @@ function weightWidth(w: LineWeight, sizes: RenderSizes): number {
 function dashPattern(t: LineType, sizes: RenderSizes): number[] | undefined {
   const u = sizes.thin;
   switch (t) {
-    case "continuous": return undefined;
-    case "dashed": return [u * 6, u * 4];
-    case "center": return [u * 12, u * 3, u * 3, u * 3];
-    case "hidden": return [u * 3, u * 3];
+    case "continuous":
+      return undefined;
+    case "dashed":
+      return [u * 6, u * 4];
+    case "center":
+      return [u * 12, u * 3, u * 3, u * 3];
+    case "hidden":
+      return [u * 3, u * 3];
   }
 }
 
 /** Effective stroke width: from the named weight if set, else the raw paint width. */
 function effWidth(node: SceneNode, sizes: RenderSizes): number {
-  return node.lineWeight ? weightWidth(node.lineWeight, sizes) : node.paint.width ?? 0;
+  return node.lineWeight ? weightWidth(node.lineWeight, sizes) : (node.paint.width ?? 0);
 }
 
 /** Effective dash array: from the named line type if set, else the raw paint dash. */
@@ -70,8 +74,7 @@ function effDash(node: SceneNode, sizes: RenderSizes): number[] | undefined {
   return node.paint.dash;
 }
 
-const dashAttr = (dash: number[] | undefined): string =>
-  dash ? ` stroke-dasharray="${dash.map(fmt).join(" ")}"` : "";
+const dashAttr = (dash: number[] | undefined): string => (dash ? ` stroke-dasharray="${dash.map(fmt).join(" ")}"` : "");
 
 /** Stroke attributes shared by `polygon`/`line` (omitted entirely when no stroke). */
 function strokeAttrs(paint: Paint, width: number, dash: number[] | undefined): string {
@@ -116,7 +119,8 @@ function serialize(node: SceneNode, sizes: RenderSizes): string {
       return `<path d="M ${pt(prim.start)} A ${fmt(prim.r)} ${fmt(prim.r)} 0 0 ${prim.sweep} ${pt(prim.end)}"${pathPaint(paint, width, dash)}/>`;
     case "text": {
       const weight = prim.weight !== undefined ? ` font-weight="${prim.weight}"` : "";
-      const transform = prim.rotate !== undefined ? ` transform="rotate(${fmt(prim.rotate)} ${fmt(prim.at.x)} ${fmt(prim.at.y)})"` : "";
+      const transform =
+        prim.rotate !== undefined ? ` transform="rotate(${fmt(prim.rotate)} ${fmt(prim.at.x)} ${fmt(prim.at.y)})"` : "";
       return `<text x="${fmt(prim.at.x)}" y="${fmt(prim.at.y)}" font-size="${fmt(prim.size)}" fill="${paint.fill ?? "none"}" text-anchor="${prim.anchor}" dominant-baseline="${prim.baseline}"${weight}${transform}>${xml(prim.value)}</text>`;
     }
   }
@@ -134,7 +138,14 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
   const drawH = b.maxY - b.minY;
   // Page chrome (scale bar + title block) is placed below the dimension band; the
   // per-side margins grow to fit chrome + dims (shared with scene-build + PDF).
-  const chrome = layoutChrome({ bounds: b, refDim, baseMargin: margin, nodes: scene.nodes, title: scene.title, scale: scene.scale });
+  const chrome = layoutChrome({
+    bounds: b,
+    refDim,
+    baseMargin: margin,
+    nodes: scene.nodes,
+    title: scene.title,
+    scale: scene.scale,
+  });
   const m = chrome.margin;
   const vbX = b.minX - m.left;
   const vbY = b.minY - m.top;
@@ -142,9 +153,7 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
   const vbH = drawH + m.top + m.bottom;
 
   const out: string[] = [];
-  const svgAttrs = opts.width
-    ? `width="${fmt(opts.width)}" height="${fmt((opts.width * vbH) / vbW)}"`
-    : "";
+  const svgAttrs = opts.width ? `width="${fmt(opts.width)}" height="${fmt((opts.width * vbH) / vbW)}"` : "";
   out.push(
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" ${svgAttrs} viewBox="${fmt(vbX)} ${fmt(vbY)} ${fmt(vbW)} ${fmt(vbH)}" font-family="${THEME.font}">`,
   );
@@ -168,7 +177,10 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
       if (node.layer !== pass) continue;
       const lyr = layerOf(node);
       let bucket = groups.get(lyr);
-      if (!bucket) groups.set(lyr, (bucket = []));
+      if (!bucket) {
+        bucket = [];
+        groups.set(lyr, bucket);
+      }
       let el = serialize(node, sizes);
       // Opt-in editor affordance: stamp the source byte-span onto the element so a
       // tool can map a clicked primitive back to its source (ADR 0007). Off by
@@ -201,11 +213,20 @@ function northArrow(north: NorthDir, b: Bounds, margin: number, refDim: number, 
   const cy = b.minY - margin * 0.55;
   let deg: number;
   switch (north) {
-    case "up": deg = 0; break;
-    case "down": deg = 180; break;
-    case "left": deg = 270; break;
-    case "right": deg = 90; break;
-    default: deg = typeof north === "object" ? north.deg : 0;
+    case "up":
+      deg = 0;
+      break;
+    case "down":
+      deg = 180;
+      break;
+    case "left":
+      deg = 270;
+      break;
+    case "right":
+      deg = 90;
+      break;
+    default:
+      deg = typeof north === "object" ? north.deg : 0;
   }
   const fs = refDim * 0.026;
   // Triangle points "up" before rotation; only the arrow rotates — the "N"
@@ -230,7 +251,9 @@ function scaleBar(s: ScaleBarBox, thin: number, THEME: Theme): string {
   const parts: string[] = [];
   const half = barLen / 2;
   // two-segment alternating bar
-  parts.push(`<rect x="${fmt(x0)}" y="${fmt(y0)}" width="${fmt(half)}" height="${fmt(hgt)}" fill="${THEME.annotation}"/>`);
+  parts.push(
+    `<rect x="${fmt(x0)}" y="${fmt(y0)}" width="${fmt(half)}" height="${fmt(hgt)}" fill="${THEME.annotation}"/>`,
+  );
   parts.push(
     `<rect x="${fmt(x0 + half)}" y="${fmt(y0)}" width="${fmt(half)}" height="${fmt(hgt)}" fill="none" stroke="${THEME.annotation}" stroke-width="${fmt(thin)}"/>`,
   );

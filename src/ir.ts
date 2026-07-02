@@ -240,7 +240,12 @@ function expandScope(
     switch (stmt.kind) {
       case "let": {
         if (scope.vars.has(stmt.name)) {
-          diag({ severity: "error", message: `"${stmt.name}" is already defined in this scope`, code: "E_REDEF", span: stmt.span });
+          diag({
+            severity: "error",
+            message: `"${stmt.name}" is already defined in this scope`,
+            code: "E_REDEF",
+            span: stmt.span,
+          });
           break;
         }
         const v = evalIn(stmt.value);
@@ -253,7 +258,13 @@ function expandScope(
         const owner = scope.owner(stmt.name);
         if (!owner) {
           const hint = closest(stmt.name, [...scope.flatten().keys()]);
-          diag({ severity: "error", message: `Cannot assign to undefined name "${stmt.name}" (declare it with "let" first)`, code: "E_ASSIGN_UNDEF", span: stmt.span, hints: hint ? [`did you mean "${hint}"?`] : undefined });
+          diag({
+            severity: "error",
+            message: `Cannot assign to undefined name "${stmt.name}" (declare it with "let" first)`,
+            code: "E_ASSIGN_UNDEF",
+            span: stmt.span,
+            hints: hint ? [`did you mean "${hint}"?`] : undefined,
+          });
           break;
         }
         owner.vars.set(stmt.name, evalIn(stmt.value));
@@ -263,29 +274,52 @@ function expandScope(
         const comp = components.get(stmt.name);
         if (!comp) {
           const hint = closest(stmt.name, [...components.keys()]);
-          diag({ severity: "error", message: `Unknown component "${stmt.name}"`, code: "E_UNKNOWN_COMPONENT", span: stmt.span, hints: hint ? [`did you mean "${hint}"?`] : undefined });
+          diag({
+            severity: "error",
+            message: `Unknown component "${stmt.name}"`,
+            code: "E_UNKNOWN_COMPONENT",
+            span: stmt.span,
+            hints: hint ? [`did you mean "${hint}"?`] : undefined,
+          });
           break;
         }
         if (depth >= MAX_DEPTH) {
-          diag({ severity: "error", message: `Component recursion too deep (limit ${MAX_DEPTH}) instantiating "${stmt.name}"`, code: "E_RECURSION", span: stmt.span });
+          diag({
+            severity: "error",
+            message: `Component recursion too deep (limit ${MAX_DEPTH}) instantiating "${stmt.name}"`,
+            code: "E_RECURSION",
+            span: stmt.span,
+          });
           break;
         }
         if (stmt.args.length !== comp.params.length) {
-          diag({ severity: "error", message: `Component "${stmt.name}" expects ${comp.params.length} argument(s) but got ${stmt.args.length}`, code: "E_ARGCOUNT", span: stmt.span });
+          diag({
+            severity: "error",
+            message: `Component "${stmt.name}" expects ${comp.params.length} argument(s) but got ${stmt.args.length}`,
+            code: "E_ARGCOUNT",
+            span: stmt.span,
+          });
         }
         const argVals: Value[] = comp.params.map((_, i) =>
           stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : { t: "num", v: 0 },
         );
         // Component scope = plan global + params; its lets are local.
         const childScope = new Scope(global);
-        comp.params.forEach((p, i) => childScope.vars.set(p, argVals[i]));
+        comp.params.forEach((p, i) => {
+          childScope.vars.set(p, argVals[i]);
+        });
         out.push(...expandScope(comp.body, childScope, global, components, diagnostics, depth + 1));
         break;
       }
       case "for": {
         const it = evalIn(stmt.iter);
         if (it.t !== "arr") {
-          diag({ severity: "error", message: `"for" expects an array or range but got a ${it.t === "num" ? "number" : it.t}`, code: "E_TYPE", span: stmt.span });
+          diag({
+            severity: "error",
+            message: `"for" expects an array or range but got a ${it.t === "num" ? "number" : it.t}`,
+            code: "E_TYPE",
+            span: stmt.span,
+          });
           break;
         }
         for (const item of it.v) {
@@ -305,7 +339,12 @@ function expandScope(
         let n = 0;
         while (asBool(evalIn(stmt.cond), diag, exprSpan(stmt.cond))) {
           if (n++ >= MAX_ITERATIONS) {
-            diag({ severity: "error", message: `"while" exceeded ${MAX_ITERATIONS} iterations (possible infinite loop)`, code: "E_WHILE_LIMIT", span: stmt.span });
+            diag({
+              severity: "error",
+              message: `"while" exceeded ${MAX_ITERATIONS} iterations (possible infinite loop)`,
+              code: "E_WHILE_LIMIT",
+              span: stmt.span,
+            });
             break;
           }
           out.push(...expandScope(stmt.body, new Scope(scope), global, components, diagnostics, depth));
@@ -411,7 +450,11 @@ function resolveImpl(
   const rooms2: RRoom[] = [];
   let activeEnv: Env = new Map();
   const evalNum = (e: Expr): number =>
-    asNum(evalExpr(e, activeEnv, (d) => diagnostics.push(d)), (d) => diagnostics.push(d), exprSpan(e));
+    asNum(
+      evalExpr(e, activeEnv, (d) => diagnostics.push(d)),
+      (d) => diagnostics.push(d),
+      exprSpan(e),
+    );
   const evalStr = (e: Expr): string => asStr(evalExpr(e, activeEnv, (d) => diagnostics.push(d)));
   const evalPt = (p: ExprPoint): Point => ({ x: evalNum(p.x), y: evalNum(p.y) });
   // Openings call isOnWall(at, ref) then hostSegment(at, ref) with identical
@@ -499,11 +542,18 @@ function resolveImpl(
   // the same overlaps; pairs are emitted in (a,b) order to keep diagnostics
   // byte-identical to the former double loop.
   const rooms = elements.filter((e): e is RRoom => e.kind === "room");
-  const roomBox = (r: RRoom): GridBox => ({ minX: r.at.x, minY: r.at.y, maxX: r.at.x + r.size.w, maxY: r.at.y + r.size.h });
+  const roomBox = (r: RRoom): GridBox => ({
+    minX: r.at.x,
+    minY: r.at.y,
+    maxX: r.at.x + r.size.w,
+    maxY: r.at.y + r.size.h,
+  });
   let rext = 0;
   for (const r of rooms) rext += r.size.w + r.size.h;
   const rgrid = new GridIndex<number>(rooms.length > 0 ? Math.max(rext / (rooms.length * 2), 1) : 1);
-  rooms.forEach((r, i) => rgrid.insert(roomBox(r), i));
+  rooms.forEach((r, i) => {
+    rgrid.insert(roomBox(r), i);
+  });
   const overlaps: [number, number][] = [];
   const seenPair = new Set<string>();
   rooms.forEach((r1, a) => {

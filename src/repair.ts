@@ -86,8 +86,10 @@ const snapOut = (v: number, dir: number, grid: number): number =>
 /** Signed across-wall intrusion of `fr` into one orthogonal wall segment (0 if none
  *  or non-orthogonal). Returns `{ depth, axis, center }` so callers can both test a
  *  collision and compute the push that clears it. */
-function wallIntrusion(fr: BBox, s: { a: { x: number; y: number }; b: { x: number; y: number }; thickness: number }):
-  { depth: number; axis: "x" | "y"; center: number } | null {
+function wallIntrusion(
+  fr: BBox,
+  s: { a: { x: number; y: number }; b: { x: number; y: number }; thickness: number },
+): { depth: number; axis: "x" | "y"; center: number } | null {
   const horiz = s.a.y === s.b.y;
   const vert = s.a.x === s.b.x;
   if (horiz === vert) return null;
@@ -108,16 +110,21 @@ function wallIntrusion(fr: BBox, s: { a: { x: number; y: number }; b: { x: numbe
 
 /** Does `fr` collide with any wall solid by more than the slack? */
 function hitsWall(fr: BBox, walls: RWall[]): boolean {
-  for (const w of walls) for (const s of segmentsOfWall(w)) {
-    const hit = wallIntrusion(fr, s);
-    if (hit && hit.depth > SLACK_MM) return true;
-  }
+  for (const w of walls)
+    for (const s of segmentsOfWall(w)) {
+      const hit = wallIntrusion(fr, s);
+      if (hit && hit.depth > SLACK_MM) return true;
+    }
   return false;
 }
 
 /** The push that clears `fr` from the wall it most penetrates, "ambiguous" when it
  *  straddles a centreline with no majority side, or null when it hits nothing. */
-function computeWallPush(fr: BBox, walls: RWall[], grid: number): { dx: number; dy: number; wallId: string } | "ambiguous" | null {
+function computeWallPush(
+  fr: BBox,
+  walls: RWall[],
+  grid: number,
+): { dx: number; dy: number; wallId: string } | "ambiguous" | null {
   let best: { depth: number; dx: number; dy: number; wallId: string } | null = null;
   let ambiguous = false;
   const cx = fr.x + fr.w / 2;
@@ -128,11 +135,17 @@ function computeWallPush(fr: BBox, walls: RWall[], grid: number): { dx: number; 
       if (!hit || hit.depth <= SLACK_MM) continue;
       const h2 = s.thickness / 2;
       if (hit.axis === "y") {
-        if (cy === hit.center) { ambiguous = true; continue; }
+        if (cy === hit.center) {
+          ambiguous = true;
+          continue;
+        }
         const newY = cy > hit.center ? snapOut(hit.center + h2, +1, grid) : snapOut(hit.center - h2 - fr.h, -1, grid);
         if (!best || hit.depth > best.depth) best = { depth: hit.depth, dx: 0, dy: newY - fr.y, wallId: w.id };
       } else {
-        if (cx === hit.center) { ambiguous = true; continue; }
+        if (cx === hit.center) {
+          ambiguous = true;
+          continue;
+        }
         const newX = cx > hit.center ? snapOut(hit.center + h2, +1, grid) : snapOut(hit.center - h2 - fr.w, -1, grid);
         if (!best || hit.depth > best.depth) best = { depth: hit.depth, dx: newX - fr.x, dy: 0, wallId: w.id };
       }
@@ -158,7 +171,12 @@ function landingOf(d: RDoor, depth: number): BBox | null {
 /** The minimal move that lifts `fr` out of any door landing it overlaps, preferring an
  *  exit that does not drive the piece into a wall. "ambiguous" when two equally-good
  *  exits tie; null when no landing is blocked. */
-function computeDoorwayPush(fr: BBox, landings: BBox[], walls: RWall[], grid: number): { dx: number; dy: number } | "ambiguous" | null {
+function computeDoorwayPush(
+  fr: BBox,
+  landings: BBox[],
+  walls: RWall[],
+  grid: number,
+): { dx: number; dy: number } | "ambiguous" | null {
   let best: { shift: number; clean: boolean; dx: number; dy: number } | null = null;
   let tie = false;
   for (const L of landings) {
@@ -167,19 +185,22 @@ function computeDoorwayPush(fr: BBox, landings: BBox[], walls: RWall[], grid: nu
     if (ox <= 1 || oy <= 1) continue;
     const exits: Array<{ shift: number; x: number; y: number }> = [
       { shift: fr.x + fr.w - L.x, x: snapOut(fr.x - (fr.x + fr.w - L.x), -1, grid), y: fr.y }, // left
-      { shift: L.x + L.w - fr.x, x: snapOut(fr.x + (L.x + L.w - fr.x), +1, grid), y: fr.y },   // right
+      { shift: L.x + L.w - fr.x, x: snapOut(fr.x + (L.x + L.w - fr.x), +1, grid), y: fr.y }, // right
       { shift: fr.y + fr.h - L.y, x: fr.x, y: snapOut(fr.y - (fr.y + fr.h - L.y), -1, grid) }, // up
-      { shift: L.y + L.h - fr.y, x: fr.x, y: snapOut(fr.y + (L.y + L.h - fr.y), +1, grid) },   // down
+      { shift: L.y + L.h - fr.y, x: fr.x, y: snapOut(fr.y + (L.y + L.h - fr.y), +1, grid) }, // down
     ];
     for (const e of exits) {
       if (e.shift <= 0) continue;
       const clean = !hitsWall({ x: e.x, y: e.y, w: fr.w, h: fr.h }, walls);
       const cand = { shift: e.shift, clean, dx: e.x - fr.x, dy: e.y - fr.y };
-      const better = (cand.clean && !(best?.clean ?? false)) ||
+      const better =
+        (cand.clean && !(best?.clean ?? false)) ||
         (best !== null && cand.clean === best.clean && cand.shift < best.shift - 1e-6);
       const equal = best !== null && cand.clean === best.clean && Math.abs(cand.shift - best.shift) <= 1e-6;
-      if (!best || better) { best = cand; tie = false; }
-      else if (equal && (cand.dx !== best.dx || cand.dy !== best.dy)) tie = true;
+      if (!best || better) {
+        best = cand;
+        tie = false;
+      } else if (equal && (cand.dx !== best.dx || cand.dy !== best.dy)) tie = true;
     }
   }
   if (!best) return null;
@@ -190,33 +211,42 @@ function computeDoorwayPush(fr: BBox, landings: BBox[], walls: RWall[], grid: nu
 /** Snap a floating wall-fixture onto its nearest wall face. "ambiguous" on an exact
  *  tie between two walls, "too-far" when no wall is within MAX_SNAP_MM, null when the
  *  piece already backs onto a wall span. */
-function computeFloatingSnap(fr: BBox, walls: RWall[], grid: number): { dx: number; dy: number } | "ambiguous" | "too-far" | null {
+function computeFloatingSnap(
+  fr: BBox,
+  walls: RWall[],
+  grid: number,
+): { dx: number; dy: number } | "ambiguous" | "too-far" | null {
   let best: { dist: number; dx: number; dy: number } | null = null;
   let tie = false;
   const cx = fr.x + fr.w / 2;
   const cy = fr.y + fr.h / 2;
-  for (const w of walls) for (const s of segmentsOfWall(w)) {
-    const horiz = s.a.y === s.b.y;
-    const vert = s.a.x === s.b.x;
-    if (horiz === vert) continue;
-    const h2 = s.thickness / 2;
-    let dist: number, dx: number, dy: number;
-    if (horiz) {
-      const segLo = Math.min(s.a.x, s.b.x), segHi = Math.max(s.a.x, s.b.x);
-      if (Math.min(fr.x + fr.w, segHi) - Math.max(fr.x, segLo) <= 0) continue; // no shared span
-      dy = cy >= s.a.y ? (s.a.y + h2) - fr.y : (s.a.y - h2 - fr.h) - fr.y;
-      dx = 0;
-      dist = Math.abs(dy);
-    } else {
-      const segLo = Math.min(s.a.y, s.b.y), segHi = Math.max(s.a.y, s.b.y);
-      if (Math.min(fr.y + fr.h, segHi) - Math.max(fr.y, segLo) <= 0) continue;
-      dx = cx >= s.a.x ? (s.a.x + h2) - fr.x : (s.a.x - h2 - fr.w) - fr.x;
-      dy = 0;
-      dist = Math.abs(dx);
+  for (const w of walls)
+    for (const s of segmentsOfWall(w)) {
+      const horiz = s.a.y === s.b.y;
+      const vert = s.a.x === s.b.x;
+      if (horiz === vert) continue;
+      const h2 = s.thickness / 2;
+      let dist: number, dx: number, dy: number;
+      if (horiz) {
+        const segLo = Math.min(s.a.x, s.b.x),
+          segHi = Math.max(s.a.x, s.b.x);
+        if (Math.min(fr.x + fr.w, segHi) - Math.max(fr.x, segLo) <= 0) continue; // no shared span
+        dy = cy >= s.a.y ? s.a.y + h2 - fr.y : s.a.y - h2 - fr.h - fr.y;
+        dx = 0;
+        dist = Math.abs(dy);
+      } else {
+        const segLo = Math.min(s.a.y, s.b.y),
+          segHi = Math.max(s.a.y, s.b.y);
+        if (Math.min(fr.y + fr.h, segHi) - Math.max(fr.y, segLo) <= 0) continue;
+        dx = cx >= s.a.x ? s.a.x + h2 - fr.x : s.a.x - h2 - fr.w - fr.x;
+        dy = 0;
+        dist = Math.abs(dx);
+      }
+      if (!best || dist < best.dist - 1e-6) {
+        best = { dist, dx, dy };
+        tie = false;
+      } else if (Math.abs(dist - best.dist) <= 1e-6 && (dx !== best.dx || dy !== best.dy)) tie = true;
     }
-    if (!best || dist < best.dist - 1e-6) { best = { dist, dx, dy }; tie = false; }
-    else if (Math.abs(dist - best.dist) <= 1e-6 && (dx !== best.dx || dy !== best.dy)) tie = true;
-  }
   if (!best) return null;
   if (best.dist <= 1) return null; // already flush
   if (best.dist > MAX_SNAP_MM) return "too-far";
@@ -232,7 +262,12 @@ function computeFloatingSnap(fr: BBox, walls: RWall[], grid: number): { dx: numb
  *  shift wins, preferring one that doesn't drive the piece into a wall; an exact tie is
  *  "ambiguous". Bounded: the disc has radius = door width, so a shift past it always
  *  clears. */
-function computeSwingPush(fr: BBox, swings: DoorSwing[], walls: RWall[], grid: number): { dx: number; dy: number } | "ambiguous" | null {
+function computeSwingPush(
+  fr: BBox,
+  swings: DoorSwing[],
+  walls: RWall[],
+  grid: number,
+): { dx: number; dy: number } | "ambiguous" | null {
   const clr = DEFAULT_RULESET.swingClearanceMm;
   const hit = swings.filter((s) => sectorIntersectsRect(s, fr, clr));
   if (hit.length === 0 || grid <= 0) return null;
@@ -240,16 +275,24 @@ function computeSwingPush(fr: BBox, swings: DoorSwing[], walls: RWall[], grid: n
   const bound = 2 * maxR + Math.max(fr.w, fr.h) + 4 * grid;
   let best: { shift: number; clean: boolean; dx: number; dy: number } | null = null;
   let tie = false;
-  for (const [ux, uy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+  for (const [ux, uy] of [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ] as const) {
     for (let k = grid; k <= bound; k += grid) {
       const cand: BBox = { x: fr.x + ux * k, y: fr.y + uy * k, w: fr.w, h: fr.h };
       if (hit.some((s) => sectorIntersectsRect(s, cand, clr))) continue;
       const c = { shift: k, clean: !hitsWall(cand, walls), dx: ux * k, dy: uy * k };
-      const better = (c.clean && !(best?.clean ?? false)) ||
+      const better =
+        (c.clean && !(best?.clean ?? false)) ||
         (best !== null && c.clean === best.clean && c.shift < best.shift - 1e-6);
       const equal = best !== null && c.clean === best.clean && Math.abs(c.shift - best.shift) <= 1e-6;
-      if (!best || better) { best = c; tie = false; }
-      else if (equal && (c.dx !== best.dx || c.dy !== best.dy)) tie = true;
+      if (!best || better) {
+        best = c;
+        tie = false;
+      } else if (equal && (c.dx !== best.dx || c.dy !== best.dy)) tie = true;
       break; // first clearing step in this direction is its minimal shift
     }
   }
@@ -265,12 +308,8 @@ function computeWrongRoomPush(fr: BBox, room: BBox, grid: number): { dx: number;
   const cx = fr.x + fr.w / 2;
   const cy = fr.y + fr.h / 2;
   if (cx >= room.x && cx <= room.x + room.w && cy >= room.y && cy <= room.y + room.h) return null; // centre inside
-  const fitX = fr.w <= room.w
-    ? Math.min(Math.max(fr.x, room.x), room.x + room.w - fr.w)
-    : room.x + (room.w - fr.w) / 2;
-  const fitY = fr.h <= room.h
-    ? Math.min(Math.max(fr.y, room.y), room.y + room.h - fr.h)
-    : room.y + (room.h - fr.h) / 2;
+  const fitX = fr.w <= room.w ? Math.min(Math.max(fr.x, room.x), room.x + room.w - fr.w) : room.x + (room.w - fr.w) / 2;
+  const fitY = fr.h <= room.h ? Math.min(Math.max(fr.y, room.y), room.y + room.h - fr.h) : room.y + (room.h - fr.h) / 2;
   const snap = (v: number, lo: number, hi: number): number => {
     if (grid <= 0) return v;
     const r = Math.round(v / grid) * grid;
@@ -298,8 +337,10 @@ function computeOverlapPush(fr: BBox, others: BBox[], grid: number): { dx: numbe
   }
   if (!worst) return null;
   const { o, ox, oy } = worst;
-  const cxF = fr.x + fr.w / 2, cyF = fr.y + fr.h / 2;
-  const cxO = o.x + o.w / 2, cyO = o.y + o.h / 2;
+  const cxF = fr.x + fr.w / 2,
+    cyF = fr.y + fr.h / 2;
+  const cxO = o.x + o.w / 2,
+    cyO = o.y + o.h / 2;
   // Push along the smaller overlap; on a tie use the axis whose centres differ.
   const useX = ox < oy || (ox === oy && cxF !== cxO);
   if (useX) {
@@ -314,7 +355,11 @@ function computeOverlapPush(fr: BBox, others: BBox[], grid: number): { dx: numbe
 
 // ---- the corrector ------------------------------------------------------------
 
-interface Fix { dx: number; dy: number; reason: string }
+interface Fix {
+  dx: number;
+  dy: number;
+  reason: string;
+}
 type NextFix = Fix | { ambiguous: string } | null;
 
 interface FixCtx {
@@ -391,10 +436,14 @@ export function repair(source: string): RepairResult {
   const { ir } = resolvePlan(source);
   const walls = ir?.walls ?? [];
   const doors = (ir?.elements ?? []).filter((e): e is RDoor => e.kind === "door");
-  const landings = doors.map((d) => landingOf(d, DEFAULT_RULESET.doorwayLandingMm)).filter((l): l is BBox => l !== null);
+  const landings = doors
+    .map((d) => landingOf(d, DEFAULT_RULESET.doorwayLandingMm))
+    .filter((l): l is BBox => l !== null);
   const swings = doors.map((d) => doorSwing(d)).filter((s): s is DoorSwing => s !== null);
   const roomRects = new Map<string, BBox>(
-    (ir?.elements ?? []).filter((e): e is RRoom => e.kind === "room").map((r) => [r.id, { x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h }]),
+    (ir?.elements ?? [])
+      .filter((e): e is RRoom => e.kind === "room")
+      .map((r) => [r.id, { x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h }]),
   );
   const grid = plan.grid;
 
@@ -406,13 +455,22 @@ export function repair(source: string): RepairResult {
     const f = st as FurnitureNode;
     const idOf = f.id || `${f.category}#${++counter}`;
     if (f.against || !f.at) continue;
-    const ax = litNum(f.at.x), ay = litNum(f.at.y);
-    const sw = litNum(f.size?.w), sh = litNum(f.size?.h);
+    const ax = litNum(f.at.x),
+      ay = litNum(f.at.y);
+    const sw = litNum(f.size?.w),
+      sh = litNum(f.size?.h);
     if (ax === null || ay === null || sw === null || sh === null) continue;
     pieces.push({
-      f, id: idOf, orig: { x: ax, y: ay }, cur: { x: ax, y: ay }, w: sw, h: sh,
+      f,
+      id: idOf,
+      orig: { x: ax, y: ay },
+      cur: { x: ax, y: ay },
+      w: sw,
+      h: sh,
       room: f.room ? roomRects.get(f.room) : undefined,
-      visited: new Set([`${ax},${ay}`]), reasons: [], stuck: false,
+      visited: new Set([`${ax},${ay}`]),
+      reasons: [],
+      stuck: false,
     });
   }
 
@@ -420,7 +478,10 @@ export function repair(source: string): RepairResult {
   const noted = new Set<string>();
   const note = (id: string, reason: string): void => {
     const key = `${id}|${reason}`;
-    if (!noted.has(key)) { noted.add(key); unresolved.push({ id, reason }); }
+    if (!noted.has(key)) {
+      noted.add(key);
+      unresolved.push({ id, reason });
+    }
   };
 
   const MAX_PASSES = Math.min(64, pieces.length * 6 + 8);
@@ -433,10 +494,18 @@ export function repair(source: string): RepairResult {
       const earlier = pieces.slice(0, i).map(rectOfPiece);
       const fix = nextFix(fr, { category: p.f.category, room: p.room, earlier, walls, landings, swings, grid });
       if (fix === null) continue;
-      if ("ambiguous" in fix) { note(p.id, fix.ambiguous); p.stuck = true; continue; }
+      if ("ambiguous" in fix) {
+        note(p.id, fix.ambiguous);
+        p.stuck = true;
+        continue;
+      }
       const next = { x: p.cur.x + fix.dx, y: p.cur.y + fix.dy };
       const key = `${next.x},${next.y}`;
-      if (p.visited.has(key)) { note(p.id, "can't be placed without conflict — adjust manually"); p.stuck = true; continue; }
+      if (p.visited.has(key)) {
+        note(p.id, "can't be placed without conflict — adjust manually");
+        p.stuck = true;
+        continue;
+      }
       p.cur = next;
       p.visited.add(key);
       if (!p.reasons.includes(fix.reason)) p.reasons.push(fix.reason);
@@ -449,7 +518,14 @@ export function repair(source: string): RepairResult {
   for (const p of pieces) {
     if (p.cur.x === p.orig.x && p.cur.y === p.orig.y) continue;
     p.f.at = { x: numExpr(p.cur.x), y: numExpr(p.cur.y) };
-    changes.push({ id: p.id, category: p.f.category, kind: "moved", from: p.orig, to: p.cur, reason: p.reasons.join("; ") });
+    changes.push({
+      id: p.id,
+      category: p.f.category,
+      kind: "moved",
+      from: p.orig,
+      to: p.cur,
+      reason: p.reasons.join("; "),
+    });
   }
 
   const out = changes.length ? formatPlan(plan, source) : source;

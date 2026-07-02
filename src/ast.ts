@@ -24,15 +24,7 @@ export interface ExprPoint {
 export type NorthDir = "up" | "down" | "left" | "right" | { deg: number };
 
 /** Discriminant identifying an element's type (also its registry keyword). */
-export type ElementKind =
-  | "wall"
-  | "room"
-  | "door"
-  | "window"
-  | "opening"
-  | "furniture"
-  | "dim"
-  | "column";
+export type ElementKind = "wall" | "room" | "door" | "window" | "opening" | "furniture" | "dim" | "column";
 
 /** Fields every element AST node carries. */
 export interface NodeBase {
@@ -90,8 +82,18 @@ export type UseKind =
 
 /** Every {@link UseKind}, in canonical order — the parser/formatter/grammar source. */
 export const USE_KINDS: readonly UseKind[] = [
-  "living", "kitchen", "dining", "bedroom", "bath", "wc",
-  "hall", "circulation", "storage", "utility", "office", "entry",
+  "living",
+  "kitchen",
+  "dining",
+  "bedroom",
+  "bath",
+  "wc",
+  "hall",
+  "circulation",
+  "storage",
+  "utility",
+  "office",
+  "entry",
 ];
 
 /** `DIR REF [align EDGE] [gap EXPR]` — a room's position relative to another room.

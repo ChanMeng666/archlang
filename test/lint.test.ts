@@ -15,8 +15,7 @@ const example = (name: string) => readFileSync(join(__dirname, "..", "examples",
  * has fatal errors (nothing sound to check).
  */
 
-const codes = (src: string, opts?: Parameters<typeof lint>[1]) =>
-  lint(src, opts).map((d) => d.code);
+const codes = (src: string, opts?: Parameters<typeof lint>[1]) => lint(src, opts).map((d) => d.code);
 
 // A sound one-room cottage: enterable, a window, a wide door, an entrance.
 const SOUND = `plan "Cottage" {
@@ -51,38 +50,46 @@ describe("lint — rules fire on the right violation", () => {
   });
 
   it("W_ROOM_DISCONNECTED when no door touches a room", () => {
-    expect(codes(`plan "P" {
+    expect(
+      codes(`plan "P" {
       units mm
       room id=r at (0,0) size 4000x3000 label "Living"
-    }`)).toContain("W_ROOM_DISCONNECTED");
+    }`),
+    ).toContain("W_ROOM_DISCONNECTED");
   });
 
   it("W_BEDROOM_NO_WINDOW for a windowless bedroom", () => {
-    expect(codes(`plan "P" {
+    expect(
+      codes(`plan "P" {
       units mm
       wall exterior thickness 200 { (0,0) (3000,0) (3000,4000) (0,4000) close }
       room id=b at (0,0) size 3000x4000 label "Bedroom"
       door at (1000,4000) width 900 wall exterior
-    }`)).toContain("W_BEDROOM_NO_WINDOW");
+    }`),
+    ).toContain("W_BEDROOM_NO_WINDOW");
   });
 
   it("W_DOOR_CLEARANCE for a sub-700mm door", () => {
-    expect(codes(`plan "P" {
+    expect(
+      codes(`plan "P" {
       units mm
       wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
       room id=r at (0,0) size 4000x3000 label "R"
       window at (2000,0) width 1200 wall exterior
       door at (1000,3000) width 500 wall exterior
-    }`)).toContain("W_DOOR_CLEARANCE");
+    }`),
+    ).toContain("W_DOOR_CLEARANCE");
   });
 
   it("W_NO_ENTRANCE when an enclosed plan has no exterior door", () => {
-    expect(codes(`plan "P" {
+    expect(
+      codes(`plan "P" {
       units mm
       wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
       room id=r at (0,0) size 4000x3000 label "R"
       window at (2000,0) width 1200 wall exterior
-    }`)).toContain("W_NO_ENTRANCE");
+    }`),
+    ).toContain("W_NO_ENTRANCE");
   });
 });
 

@@ -13,7 +13,13 @@ export const dim: ElementDef = {
   params: [
     { name: "from", type: "point", doc: "Start point (x, y); written before ->." },
     { name: "to", type: "point", doc: "End point (x, y); written after ->." },
-    { name: "offset", type: "number", optional: true, default: "300", doc: "Perpendicular offset of the dimension line, mm." },
+    {
+      name: "offset",
+      type: "number",
+      optional: true,
+      default: "300",
+      doc: "Perpendicular offset of the dimension line, mm.",
+    },
     { name: "text", type: "string", optional: true, doc: "Override text; defaults to the measured length." },
   ],
 
@@ -66,8 +72,16 @@ export const dim: ElementDef = {
     const thinPaint = { stroke: theme.dim, width: sizes.thin };
     const nodes: SceneNode[] = [];
     // Extension lines (lighter), then the dimension line.
-    nodes.push({ layer: "dims", prim: { t: "line", a: dm.from, b: p1 }, paint: { stroke: theme.dim, width: sizes.thin * 0.7 } });
-    nodes.push({ layer: "dims", prim: { t: "line", a: dm.to, b: p2 }, paint: { stroke: theme.dim, width: sizes.thin * 0.7 } });
+    nodes.push({
+      layer: "dims",
+      prim: { t: "line", a: dm.from, b: p1 },
+      paint: { stroke: theme.dim, width: sizes.thin * 0.7 },
+    });
+    nodes.push({
+      layer: "dims",
+      prim: { t: "line", a: dm.to, b: p2 },
+      paint: { stroke: theme.dim, width: sizes.thin * 0.7 },
+    });
     nodes.push({ layer: "dims", prim: { t: "line", a: p1, b: p2 }, paint: thinPaint });
     for (const p of [p1, p2]) {
       const t1 = add(p, mul(unit({ x: dir.x + n.x, y: dir.y + n.y }), tick));
@@ -84,7 +98,15 @@ export const dim: ElementDef = {
     const label = dm.text ?? fmt(length(sub(dm.to, dm.from)));
     nodes.push({
       layer: "dims",
-      prim: { t: "text", at: tp, value: label, size: sizes.dimFont, anchor: "middle", baseline: "central", rotate: angle },
+      prim: {
+        t: "text",
+        at: tp,
+        value: label,
+        size: sizes.dimFont,
+        anchor: "middle",
+        baseline: "central",
+        rotate: angle,
+      },
       paint: { fill: theme.dim },
     });
     return nodes;

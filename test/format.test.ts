@@ -11,7 +11,9 @@ import { describe, expect, it } from "vitest";
 import { compile, format } from "../src/index.js";
 
 const EXAMPLES = readdirSync("examples").filter((f) => f.endsWith(".arch"));
-const LIBS = readdirSync("examples/lib").filter((f) => f.endsWith(".arch")).map((f) => `lib/${f}`);
+const LIBS = readdirSync("examples/lib")
+  .filter((f) => f.endsWith(".arch"))
+  .map((f) => `lib/${f}`);
 const ALL = [...EXAMPLES, ...LIBS.map((f) => f.replace("lib/", ""))];
 const readExample = (name: string): string =>
   readFileSync(EXAMPLES.includes(name) ? `examples/${name}` : `examples/lib/${name}`, "utf8");
@@ -32,7 +34,10 @@ describe("T5.2 — formatter preserves comments", () => {
       const src = readExample(name);
       const out = format(src);
       // Each `#…` comment line in the source must appear in the output.
-      const comments = src.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.startsWith("#"));
+      const comments = src
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter((l) => l.startsWith("#"));
       for (const c of comments) {
         const text = c.replace(/\r$/, "");
         expect(out).toContain(text);

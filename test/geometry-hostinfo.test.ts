@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
-import {
-  hostInfoForWalls,
-  hostSegmentForWalls,
-  isOnSomeWall,
-  WallGrid,
-  type WallLike,
-} from "../src/geometry.js";
+import { hostInfoForWalls, hostSegmentForWalls, isOnSomeWall, WallGrid, type WallLike } from "../src/geometry.js";
 
 /**
  * The fused single-pass hostInfoForWalls() must stay byte-identical to the
@@ -75,7 +69,18 @@ describe("WallGrid — equivalence with brute-force hostInfoForWalls (T3.7)", ()
 
   it("handles far points and empty walls identically", () => {
     expect(new WallGrid([]).hostInfo({ x: 9e6, y: -9e6 })).toEqual({ host: null, onWall: false });
-    const walls: WallLike[] = [{ id: "w", category: "ext", thickness: 200, points: [{ x: 0, y: 0 }, { x: 1000, y: 0 }], closed: false }];
+    const walls: WallLike[] = [
+      {
+        id: "w",
+        category: "ext",
+        thickness: 200,
+        points: [
+          { x: 0, y: 0 },
+          { x: 1000, y: 0 },
+        ],
+        closed: false,
+      },
+    ];
     const at = { x: 50000, y: 50000 };
     expect(new WallGrid(walls).hostInfo(at)).toEqual(hostInfoForWalls(walls, at));
   });

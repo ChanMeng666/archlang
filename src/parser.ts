@@ -44,7 +44,10 @@ const FIXED_STATEMENT_STARTS: readonly string[] = STATEMENT_STARTS;
 
 /** Thrown internally by `eat*` helpers; always caught within the parser. */
 class ParseError extends Error {
-  constructor(public override message: string, public span: Span) {
+  constructor(
+    public override message: string,
+    public span: Span,
+  ) {
     super(message);
   }
 }
@@ -100,7 +103,10 @@ class Parser {
    *  registry's element keywords (so plugin elements resync correctly). */
   private readonly statementStarts: ReadonlySet<string>;
 
-  constructor(private toks: Token[], private readonly registry: Registry = BUILTIN_REGISTRY) {
+  constructor(
+    private toks: Token[],
+    private readonly registry: Registry = BUILTIN_REGISTRY,
+  ) {
     this.statementStarts = new Set<string>([...FIXED_STATEMENT_STARTS, ...registry.byKeyword.keys()]);
     this.ctx = {
       peek: (o) => this.peek(o),
@@ -563,7 +569,13 @@ class Parser {
         if (e instanceof ParseError) {
           this.diagnostics.push({ severity: "error", message: e.message, span: e.span });
           this.synchronize(stmtTok.start);
-          body.push({ kind: "error", id: "", line: stmtTok.line, message: e.message, span: this.spanFrom(stmtTok.start) });
+          body.push({
+            kind: "error",
+            id: "",
+            line: stmtTok.line,
+            message: e.message,
+            span: this.spanFrom(stmtTok.start),
+          });
         } else {
           throw e;
         }

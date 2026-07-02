@@ -233,7 +233,8 @@ async function runWithInstall<T>(fn: () => Promise<T>, pkg: string, args: Args):
 async function serialize(scene: Scene, svg: string, format: Format, args: Args): Promise<string | Uint8Array> {
   if (format === "dxf") return toDxf(scene);
   if (format === "pdf") return runWithInstall(() => toPdf(scene), "pdfkit", args);
-  if (format === "png") return runWithInstall(() => renderPng(scene, { width: args.width, scale: args.scale }), "@resvg/resvg-js", args);
+  if (format === "png")
+    return runWithInstall(() => renderPng(scene, { width: args.width, scale: args.scale }), "@resvg/resvg-js", args);
   return svg;
 }
 
@@ -249,7 +250,11 @@ interface Rendered {
 /** Compile + serialize one source to bytes (no file IO). Compile errors → no bytes. */
 async function renderArtifact(source: string, format: Format, args: Args, baseDir: string): Promise<Rendered> {
   await tryLoadGeometryBackend();
-  const { svg, diagnostics, scene } = compile(source, { width: args.width, noCache: true, world: makeNodeWorld(baseDir) });
+  const { svg, diagnostics, scene } = compile(source, {
+    width: args.width,
+    noCache: true,
+    world: makeNodeWorld(baseDir),
+  });
   if (hasErrors(diagnostics) || !scene) return { diagnostics };
   try {
     return { bytes: await serialize(scene, svg, format, args), diagnostics };
@@ -498,10 +503,21 @@ async function cmdPreview(args: Args): Promise<number> {
   const bytes = typeof r.bytes === "string" ? Buffer.byteLength(r.bytes) : r.bytes.length;
   const warnings = r.diagnostics.filter((d) => d.severity === "warning");
   if (args.json) {
-    emitJson({ ok: true, format, output: resolvePath(target), bytes, width: args.width ?? null, scale: args.scale, diagnostics: warnings.map((d) => diagToJson(source, d)) });
+    emitJson({
+      ok: true,
+      format,
+      output: resolvePath(target),
+      bytes,
+      width: args.width ?? null,
+      scale: args.scale,
+      diagnostics: warnings.map((d) => diagToJson(source, d)),
+    });
   } else {
     emitDiagnosticsHuman(source, warnings, args.quiet);
-    if (!args.quiet) process.stdout.write(`✓ ${input} → ${target} (${bytes} bytes, PNG${args.width ? ` ${args.width}px` : ""}@${args.scale}x)\n`);
+    if (!args.quiet)
+      process.stdout.write(
+        `✓ ${input} → ${target} (${bytes} bytes, PNG${args.width ? ` ${args.width}px` : ""}@${args.scale}x)\n`,
+      );
   }
   return EXIT.OK;
 }
@@ -566,7 +582,8 @@ async function cmdMd(args: Args): Promise<number> {
 
   // Output target: default `<name>.out.md`; in JSON mode never stream to stdout.
   let target = args.o ?? (input === "-" ? "out.md" : resolvePath(input).replace(/\.md$/i, "") + ".out.md");
-  if (args.json && target === "-") target = input === "-" ? "out.md" : resolvePath(input).replace(/\.md$/i, "") + ".out.md";
+  if (args.json && target === "-")
+    target = input === "-" ? "out.md" : resolvePath(input).replace(/\.md$/i, "") + ".out.md";
   const outAbs = target === "-" ? resolvePath("out.md") : resolvePath(target);
   const outDir = dirname(outAbs);
   const outBase = basename(outAbs).replace(/\.[^.]+$/, "");
@@ -580,19 +597,42 @@ async function cmdMd(args: Args): Promise<number> {
     const imgName = `${outBase}-${b.index + 1}.${format}`;
     const r = await renderArtifact(b.source, format, args, baseDir);
     if (r.error || r.bytes === undefined) {
-      images.push({ input: `block ${b.index + 1}`, ok: false, format, error: r.error, errorCode: r.errorCode, diagnostics: r.diagnostics, source: b.source });
+      images.push({
+        input: `block ${b.index + 1}`,
+        ok: false,
+        format,
+        error: r.error,
+        errorCode: r.errorCode,
+        diagnostics: r.diagnostics,
+        source: b.source,
+      });
       replacements[b.index] = undefined; // leave the failing block in place
       continue;
     }
     try {
       writeFileSync(resolvePath(outDir, imgName), r.bytes);
     } catch (e) {
-      images.push({ input: `block ${b.index + 1}`, ok: false, format, error: (e as Error).message, diagnostics: r.diagnostics, source: b.source });
+      images.push({
+        input: `block ${b.index + 1}`,
+        ok: false,
+        format,
+        error: (e as Error).message,
+        diagnostics: r.diagnostics,
+        source: b.source,
+      });
       replacements[b.index] = undefined;
       continue;
     }
     const bytes = typeof r.bytes === "string" ? Buffer.byteLength(r.bytes) : r.bytes.length;
-    images.push({ input: `block ${b.index + 1}`, ok: true, format, output: resolvePath(outDir, imgName), bytes, diagnostics: r.diagnostics, source: b.source });
+    images.push({
+      input: `block ${b.index + 1}`,
+      ok: true,
+      format,
+      output: resolvePath(outDir, imgName),
+      bytes,
+      diagnostics: r.diagnostics,
+      source: b.source,
+    });
     replacements[b.index] = `![${blockAlt(b.index)}](${imgName})`;
   }
 
@@ -608,10 +648,17 @@ async function cmdMd(args: Args): Promise<number> {
   }
 
   if (args.json) {
-    emitJson({ ok: images.every((i) => i.ok), output: target === "-" ? null : outAbs, blocks: blocks.length, images: images.map(perFileJson) });
+    emitJson({
+      ok: images.every((i) => i.ok),
+      output: target === "-" ? null : outAbs,
+      blocks: blocks.length,
+      images: images.map(perFileJson),
+    });
   } else if (!args.quiet) {
     const rendered = images.filter((i) => i.ok).length;
-    process.stdout.write(`✓ ${input} → ${target} (${blocks.length} block${blocks.length === 1 ? "" : "s"}, ${rendered} rendered)\n`);
+    process.stdout.write(
+      `✓ ${input} → ${target} (${blocks.length} block${blocks.length === 1 ? "" : "s"}, ${rendered} rendered)\n`,
+    );
   }
   return aggregateExit(images);
 }
@@ -661,7 +708,10 @@ function cmdDescribe(args: Args): number {
     } else {
       const lines = [
         `${summary.plan} — ${summary.totals.rooms} room(s), ${summary.totals.floor_area_m2} m²`,
-        ...summary.rooms.map((r) => `  ${r.id}${r.label ? ` "${r.label}"` : ""}: ${r.area_m2} m²${r.adjacent.length ? ` — adj: ${r.adjacent.join(", ")}` : ""}`),
+        ...summary.rooms.map(
+          (r) =>
+            `  ${r.id}${r.label ? ` "${r.label}"` : ""}: ${r.area_m2} m²${r.adjacent.length ? ` — adj: ${r.adjacent.join(", ")}` : ""}`,
+        ),
       ];
       process.stdout.write(lines.join("\n") + "\n");
     }
@@ -750,7 +800,10 @@ function cmdRepair(args: Args): number {
     const target = args.o;
     if (target && target !== "-") {
       writeFileSync(resolvePath(target), r.source, "utf8");
-      if (!args.quiet) process.stderr.write(`✓ ${input} → ${target} (${r.changes.length} change${r.changes.length === 1 ? "" : "s"})\n`);
+      if (!args.quiet)
+        process.stderr.write(
+          `✓ ${input} → ${target} (${r.changes.length} change${r.changes.length === 1 ? "" : "s"})\n`,
+        );
     } else {
       process.stdout.write(r.source);
     }
@@ -880,21 +933,39 @@ async function main(): Promise<void> {
   }
 
   switch (cmd) {
-    case "compile": process.exit(await cmdCompile(args));
-    case "preview": process.exit(await cmdPreview(args));
-    case "batch": process.exit(await cmdBatch(args));
-    case "md": case "markdown": process.exit(await cmdMd(args));
-    case "manifest": case "capabilities": process.exit(cmdManifest(args));
-    case "watch": process.exit(await cmdWatch(args));
-    case "validate": process.exit(cmdValidate(args));
-    case "describe": process.exit(cmdDescribe(args));
-    case "lint": process.exit(cmdLint(args));
-    case "fmt": process.exit(cmdFmt(args));
-    case "repair": process.exit(cmdRepair(args));
-    case "spec": process.exit(cmdSpec(args));
-    case "new": case "init": process.exit(cmdNew(args));
-    case "explain": process.exit(cmdExplain(args));
-    default: process.exit(usageError(`unknown command "${cmd}" (try \`arch help\`)`));
+    case "compile":
+      return process.exit(await cmdCompile(args));
+    case "preview":
+      return process.exit(await cmdPreview(args));
+    case "batch":
+      return process.exit(await cmdBatch(args));
+    case "md":
+    case "markdown":
+      return process.exit(await cmdMd(args));
+    case "manifest":
+    case "capabilities":
+      return process.exit(cmdManifest(args));
+    case "watch":
+      return process.exit(await cmdWatch(args));
+    case "validate":
+      return process.exit(cmdValidate(args));
+    case "describe":
+      return process.exit(cmdDescribe(args));
+    case "lint":
+      return process.exit(cmdLint(args));
+    case "fmt":
+      return process.exit(cmdFmt(args));
+    case "repair":
+      return process.exit(cmdRepair(args));
+    case "spec":
+      return process.exit(cmdSpec(args));
+    case "new":
+    case "init":
+      return process.exit(cmdNew(args));
+    case "explain":
+      return process.exit(cmdExplain(args));
+    default:
+      return process.exit(usageError(`unknown command "${cmd}" (try \`arch help\`)`));
   }
 }
 

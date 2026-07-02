@@ -31,9 +31,7 @@ export function mountFlowingLines(canvas, opts = {}) {
   if (!ctx) return () => {};
 
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const plum =
-    hexToRgb(getComputedStyle(document.documentElement).getPropertyValue("--plum").trim()) ??
-    FALLBACK_PLUM;
+  const plum = hexToRgb(getComputedStyle(document.documentElement).getPropertyValue("--plum").trim()) ?? FALLBACK_PLUM;
   const col = (a) => `rgba(${plum.r},${plum.g},${plum.b},${a})`;
 
   let width = 0;
@@ -128,10 +126,7 @@ export function mountFlowingLines(canvas, opts = {}) {
   draw();
   if (!reduce) start();
 
-  const io = new IntersectionObserver(
-    ([entry]) => (entry.isIntersecting ? start() : stop()),
-    { threshold: 0 },
-  );
+  const io = new IntersectionObserver(([entry]) => (entry.isIntersecting ? start() : stop()), { threshold: 0 });
   io.observe(canvas);
 
   const onVisibility = () => {

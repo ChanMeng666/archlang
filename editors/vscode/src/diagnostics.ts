@@ -75,7 +75,13 @@ export function lspDiagnostics(compile: CompileFn, text: string): LspDiagnostic[
     const start = d.span ? offsetToPosition(text, d.span.start) : { line: 0, character: 0 };
     const end = d.span ? offsetToPosition(text, d.span.end) : start;
     return {
-      range: { start, end: end.line === start.line && end.character === start.character ? { ...start, character: start.character + 1 } : end },
+      range: {
+        start,
+        end:
+          end.line === start.line && end.character === start.character
+            ? { ...start, character: start.character + 1 }
+            : end,
+      },
       severity: d.severity === "error" ? Severity.Error : Severity.Warning,
       message: d.message,
       code: d.code,

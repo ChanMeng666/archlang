@@ -30,10 +30,11 @@ describe("T4.5 — stage memo: parse", () => {
   it("changing the registry busts the parse memo (no cross-plugin bleed)", () => {
     clearCache();
     const tree = registerElement({
-      kind: "tree", keyword: "tree",
-      parse: (c) => ({ kind: "tree", id: "", line: c.eatKeyword("tree").line } as never),
+      kind: "tree",
+      keyword: "tree",
+      parse: (c) => ({ kind: "tree", id: "", line: c.eatKeyword("tree").line }) as never,
       idPrefix: () => "tree",
-      resolve: (_n, c) => ({ kind: "tree", id: c.id } as never),
+      resolve: (_n, c) => ({ kind: "tree", id: c.id }) as never,
       bounds: () => [],
       render: () => [],
     } as ElementDef);

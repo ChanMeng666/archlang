@@ -129,10 +129,9 @@ describe("compile — warnings never block rendering", () => {
 
 describe("compile — diagnostics shape is append-only", () => {
   it("exposes diagnostics alongside the unchanged legacy fields", () => {
-    const { diagnostics, errors, warnings, svg } = compile(
-      `plan "X" { room id=r at (0,0) size 1000x1000 label "R" }`,
-      { noCache: true },
-    );
+    const { diagnostics, errors, warnings, svg } = compile(`plan "X" { room id=r at (0,0) size 1000x1000 label "R" }`, {
+      noCache: true,
+    });
     expect(Array.isArray(diagnostics)).toBe(true);
     expect(Array.isArray(errors)).toBe(true);
     expect(Array.isArray(warnings)).toBe(true);

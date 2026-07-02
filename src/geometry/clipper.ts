@@ -58,7 +58,9 @@ async function loadModule(): Promise<Clipper2Module> {
   modulePromise = (async () => {
     let factory: () => Promise<Clipper2Module>;
     try {
-      const mod = (await import(/* webpackIgnore: true */ /* @vite-ignore */ "clipper2-wasm" as string)) as { default?: unknown };
+      const mod = (await import(/* webpackIgnore: true */ /* @vite-ignore */ "clipper2-wasm" as string)) as {
+        default?: unknown;
+      };
       factory = (mod.default ?? mod) as () => Promise<Clipper2Module>;
     } catch {
       throw new Error(

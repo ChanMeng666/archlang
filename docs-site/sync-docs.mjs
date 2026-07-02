@@ -32,13 +32,17 @@ page("spec.llm.md", "spec.md");
 const adrSrc = join(repo, "docs/adr");
 const adrDest = join(here, "adr");
 mkdirSync(adrDest, { recursive: true });
-const adrs = readdirSync(adrSrc).filter((f) => f.endsWith(".md") && f !== "index.md").sort();
+const adrs = readdirSync(adrSrc)
+  .filter((f) => f.endsWith(".md") && f !== "index.md")
+  .sort();
 for (const f of adrs) copyFileSync(join(adrSrc, f), join(adrDest, f));
 const index =
   "# Architecture Decision Records\n\nKey design decisions behind ArchLang, with their context and trade-offs.\n\n" +
   adrs
     .map((f) => {
-      const first = readFileSync(join(adrSrc, f), "utf8").split("\n").find((l) => l.startsWith("# "));
+      const first = readFileSync(join(adrSrc, f), "utf8")
+        .split("\n")
+        .find((l) => l.startsWith("# "));
       const title = first ? first.replace(/^#\s*/, "") : f;
       return `- [${title}](/adr/${f.replace(/\.md$/, "")})`;
     })

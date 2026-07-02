@@ -118,7 +118,14 @@ export async function evaluate(
     try {
       source = await getSource(entry);
     } catch (err) {
-      results.push({ id: entry.id, valid: false, lintWarnings: 0, physicalWarnings: 0, semanticPass: false, failures: [`source: ${(err as Error).message}`] });
+      results.push({
+        id: entry.id,
+        valid: false,
+        lintWarnings: 0,
+        physicalWarnings: 0,
+        semanticPass: false,
+        failures: [`source: ${(err as Error).message}`],
+      });
       continue;
     }
     results.push(scoreSource(entry, source));
@@ -157,11 +164,19 @@ async function authorWithModel(prompt: string): Promise<string> {
 }
 
 /** Render the scorecard as Markdown. */
-function renderResults(results: Score[], summary: { total: number; valid: number; semanticPass: number; sound: number }, mode: string): string {
+function renderResults(
+  results: Score[],
+  summary: { total: number; valid: number; semanticPass: number; sound: number },
+  mode: string,
+): string {
   const pct = (n: number): string => `${Math.round((n / summary.total) * 100)}%`;
   const rows = results.map((r) => {
     const status = r.semanticPass ? (r.lintWarnings === 0 ? "✅ pass" : "⚠️ warns") : "❌ fail";
-    const notes = r.failures.length ? r.failures.join("; ") : r.lintWarnings ? `${r.lintWarnings} lint warning(s)` : "—";
+    const notes = r.failures.length
+      ? r.failures.join("; ")
+      : r.lintWarnings
+        ? `${r.lintWarnings} lint warning(s)`
+        : "—";
     return `| \`${r.id}\` | ${status} | ${r.valid ? "yes" : "no"} | ${r.lintWarnings} | ${notes} |`;
   });
   return [

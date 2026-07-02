@@ -69,10 +69,9 @@ describe("wall rendering — clean joins", () => {
 
 describe("wall materials", () => {
   it("renders a material's distinct hatch pattern and fills with it", () => {
-    const { svg, errors } = compile(
-      `plan "M" { wall w thickness 400 material brick { (0,0) (4000,0) } }`,
-      { noCache: true },
-    );
+    const { svg, errors } = compile(`plan "M" { wall w thickness 400 material brick { (0,0) (4000,0) } }`, {
+      noCache: true,
+    });
     expect(errors).toEqual([]);
     expect(svg).toContain('id="hatch-brick"');
     expect(svg).toContain('fill="url(#hatch-brick)"');
@@ -85,10 +84,9 @@ describe("wall materials", () => {
   });
 
   it("warns on an unknown material and falls back to the default hatch", () => {
-    const { svg, diagnostics } = compile(
-      `plan "M" { wall w thickness 400 material marble { (0,0) (4000,0) } }`,
-      { noCache: true },
-    );
+    const { svg, diagnostics } = compile(`plan "M" { wall w thickness 400 material marble { (0,0) (4000,0) } }`, {
+      noCache: true,
+    });
     expect(diagnostics.some((d) => d.code === "W_UNKNOWN_MATERIAL")).toBe(true);
     expect(svg).toContain('fill="url(#poche)"');
     expect(svg).not.toContain("hatch-marble");

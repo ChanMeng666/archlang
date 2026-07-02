@@ -68,7 +68,7 @@ const ALIASES: Record<string, keyof Theme> = {
  *  own-property checks so prototype keys (`__proto__`, `constructor`) resolve to
  *  null (rejected as unknown) rather than slipping through `in`. */
 export function resolveThemeKey(key: string): keyof Theme | null {
-  const owns = (o: object, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);
+  const owns = (o: object, k: string): boolean => Object.hasOwn(o, k);
   if (owns(DEFAULT_THEME, key)) return key as keyof Theme;
   if (owns(ALIASES, key)) return ALIASES[key];
   return null;
@@ -83,36 +83,85 @@ export function resolveThemeKey(key: string): keyof Theme | null {
 export const THEMES: Record<string, Partial<Theme>> = {
   // Classic cyanotype: white linework on blueprint blue.
   blueprint: {
-    bg: "#0b3d6b", wallStroke: "#ffffff", pocheBase: "#0e4a82", pocheHatch: "#3b6ea5",
-    roomFill: "#0b3d6b", roomLabel: "#eaf2fb", areaLabel: "#a9c6e8",
-    furnitureStroke: "#9fc0e6", furnitureFill: "#0e4a82", furnitureLabel: "#cfe0f5",
-    opening: "#0b3d6b", doorLeaf: "#cfe0f5", windowPane: "#bcd6f2",
-    dim: "#eaf2fb", annotation: "#eaf2fb", annotationMuted: "#9fc0e6", column: "#ffffff",
+    bg: "#0b3d6b",
+    wallStroke: "#ffffff",
+    pocheBase: "#0e4a82",
+    pocheHatch: "#3b6ea5",
+    roomFill: "#0b3d6b",
+    roomLabel: "#eaf2fb",
+    areaLabel: "#a9c6e8",
+    furnitureStroke: "#9fc0e6",
+    furnitureFill: "#0e4a82",
+    furnitureLabel: "#cfe0f5",
+    opening: "#0b3d6b",
+    doorLeaf: "#cfe0f5",
+    windowPane: "#bcd6f2",
+    dim: "#eaf2fb",
+    annotation: "#eaf2fb",
+    annotationMuted: "#9fc0e6",
+    column: "#ffffff",
   },
   // Pure black & white, for crisp print / line drawings.
   mono: {
-    bg: "#ffffff", wallStroke: "#000000", pocheBase: "#ffffff", pocheHatch: "#000000",
-    roomFill: "#ffffff", roomLabel: "#000000", areaLabel: "#444444",
-    furnitureStroke: "#000000", furnitureFill: "#ffffff", furnitureLabel: "#333333",
-    opening: "#ffffff", doorLeaf: "#000000", windowPane: "#000000",
-    dim: "#000000", annotation: "#000000", annotationMuted: "#555555", column: "#000000",
+    bg: "#ffffff",
+    wallStroke: "#000000",
+    pocheBase: "#ffffff",
+    pocheHatch: "#000000",
+    roomFill: "#ffffff",
+    roomLabel: "#000000",
+    areaLabel: "#444444",
+    furnitureStroke: "#000000",
+    furnitureFill: "#ffffff",
+    furnitureLabel: "#333333",
+    opening: "#ffffff",
+    doorLeaf: "#000000",
+    windowPane: "#000000",
+    dim: "#000000",
+    annotation: "#000000",
+    annotationMuted: "#555555",
+    column: "#000000",
   },
   // Dark UI / screen presentation.
   dark: {
-    bg: "#1e2127", wallStroke: "#e8e8e8", pocheBase: "#3a3f4b", pocheHatch: "#5a6172",
-    roomFill: "#272b33", roomLabel: "#f0f0f0", areaLabel: "#9aa0aa",
-    furnitureStroke: "#6b7280", furnitureFill: "#2f343d", furnitureLabel: "#c9ced8",
-    opening: "#1e2127", doorLeaf: "#c9ced8", windowPane: "#6cb6ff",
-    dim: "#6cb6ff", annotation: "#cfd3da", annotationMuted: "#888f99", column: "#cbd1db",
+    bg: "#1e2127",
+    wallStroke: "#e8e8e8",
+    pocheBase: "#3a3f4b",
+    pocheHatch: "#5a6172",
+    roomFill: "#272b33",
+    roomLabel: "#f0f0f0",
+    areaLabel: "#9aa0aa",
+    furnitureStroke: "#6b7280",
+    furnitureFill: "#2f343d",
+    furnitureLabel: "#c9ced8",
+    opening: "#1e2127",
+    doorLeaf: "#c9ced8",
+    windowPane: "#6cb6ff",
+    dim: "#6cb6ff",
+    annotation: "#cfd3da",
+    annotationMuted: "#888f99",
+    column: "#cbd1db",
   },
   // Warm, soft, finished-looking — for slides and client decks.
   presentation: {
-    bg: "#faf7f2", wallStroke: "#2b2b2b", pocheBase: "#e7ded0", pocheHatch: "#b9a98f",
-    roomFill: "#fffdf9", roomLabel: "#2b2b2b", areaLabel: "#8a7f70",
-    furnitureStroke: "#b7a98f", furnitureFill: "#f3ece0", furnitureLabel: "#9a8d78",
-    opening: "#faf7f2", doorLeaf: "#6b5d49", windowPane: "#7fa8c9",
-    dim: "#3c6b8a", annotation: "#3a3a3a", annotationMuted: "#9a8d78", column: "#5a5044",
-    font: "Georgia, 'Times New Roman', serif", lineWeight: 1.1,
+    bg: "#faf7f2",
+    wallStroke: "#2b2b2b",
+    pocheBase: "#e7ded0",
+    pocheHatch: "#b9a98f",
+    roomFill: "#fffdf9",
+    roomLabel: "#2b2b2b",
+    areaLabel: "#8a7f70",
+    furnitureStroke: "#b7a98f",
+    furnitureFill: "#f3ece0",
+    furnitureLabel: "#9a8d78",
+    opening: "#faf7f2",
+    doorLeaf: "#6b5d49",
+    windowPane: "#7fa8c9",
+    dim: "#3c6b8a",
+    annotation: "#3a3a3a",
+    annotationMuted: "#9a8d78",
+    column: "#5a5044",
+    font: "Georgia, 'Times New Roman', serif",
+    lineWeight: 1.1,
   },
 };
 
@@ -134,7 +183,7 @@ const STYLE_KEYS: Record<string, Record<string, keyof Theme>> = {
 /** Resolve a `style <kind> { <key> … }` attribute to a Theme key, or null.
  *  Own-property checks keep prototype keys from resolving. */
 export function resolveStyleKey(kind: string, key: string): keyof Theme | null {
-  const owns = (o: object, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);
+  const owns = (o: object, k: string): boolean => Object.hasOwn(o, k);
   if (!owns(STYLE_KEYS, kind)) return null;
   const m = STYLE_KEYS[kind];
   return owns(m, key) ? m[key] : null;
@@ -188,7 +237,10 @@ export function hslToHex(h: number, s: number, l: number): string {
     g = hue2rgb(p, q, h);
     b = hue2rgb(p, q, h - 1 / 3);
   }
-  const to = (x: number): string => Math.round(x * 255).toString(16).padStart(2, "0");
+  const to = (x: number): string =>
+    Math.round(x * 255)
+      .toString(16)
+      .padStart(2, "0");
   return `#${to(r)}${to(g)}${to(b)}`;
 }
 

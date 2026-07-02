@@ -30,7 +30,7 @@ export function mountInteract({ viewport, stage, getRooms, jumpToOffset }) {
   // Map a screen point to SVG user space (= plan mm). Returns null if unavailable.
   function toUser(clientX, clientY) {
     const svg = svgEl();
-    const ctm = svg && svg.getScreenCTM();
+    const ctm = svg?.getScreenCTM();
     if (!ctm) return null;
     const p = svg.createSVGPoint();
     p.x = clientX;

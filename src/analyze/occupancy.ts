@@ -78,9 +78,15 @@ export function computeRoomClearances(
         const cy = rb.y + (iy + 0.5) * cellH;
         let blocked = false;
         for (const fr of furnRects) {
-          if (cx >= fr.x && cx <= fr.x + fr.w && cy >= fr.y && cy <= fr.y + fr.h) { blocked = true; break; }
+          if (cx >= fr.x && cx <= fr.x + fr.w && cy >= fr.y && cy <= fr.y + fr.h) {
+            blocked = true;
+            break;
+          }
         }
-        if (!blocked) { free[iy * nx + ix] = 1; totalFree++; }
+        if (!blocked) {
+          free[iy * nx + ix] = 1;
+          totalFree++;
+        }
       }
     }
 
@@ -99,7 +105,13 @@ export function computeRoomClearances(
         const sx = Math.min(nx - 1, Math.max(0, ix + dx * step));
         const sy = Math.min(ny - 1, Math.max(0, iy + dy * step));
         const k = sy * nx + sx;
-        if (free[k]) { if (!seen[k]) { seen[k] = 1; queue.push(k); } break; }
+        if (free[k]) {
+          if (!seen[k]) {
+            seen[k] = 1;
+            queue.push(k);
+          }
+          break;
+        }
         if ((dx === 0 || sx === (dx > 0 ? nx - 1 : 0)) && (dy === 0 || sy === (dy > 0 ? ny - 1 : 0))) break;
       }
     }
@@ -108,14 +120,13 @@ export function computeRoomClearances(
       const k = queue[h];
       const ix = k % nx;
       const iy = (k - ix) / nx;
-      const nbrs = [
-        ix > 0 ? k - 1 : -1,
-        ix < nx - 1 ? k + 1 : -1,
-        iy > 0 ? k - nx : -1,
-        iy < ny - 1 ? k + nx : -1,
-      ];
+      const nbrs = [ix > 0 ? k - 1 : -1, ix < nx - 1 ? k + 1 : -1, iy > 0 ? k - nx : -1, iy < ny - 1 ? k + nx : -1];
       for (const nb of nbrs) {
-        if (nb >= 0 && free[nb] && !seen[nb]) { seen[nb] = 1; queue.push(nb); reached++; }
+        if (nb >= 0 && free[nb] && !seen[nb]) {
+          seen[nb] = 1;
+          queue.push(nb);
+          reached++;
+        }
       }
     }
 

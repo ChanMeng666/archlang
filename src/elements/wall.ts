@@ -15,8 +15,20 @@ export const wall: ElementDef = {
     { name: "category", type: "name", doc: "Category, e.g. exterior or partition (also a door/window host)." },
     { name: "thickness", type: "number", doc: "Wall thickness in mm." },
     { name: "material", type: "name", optional: true, doc: "Hatch material (brick, concrete, …); defaults to poché." },
-    { name: "scale", type: "number", optional: true, default: "1", doc: "Hatch tile-size multiplier (after material)." },
-    { name: "angle", type: "number", optional: true, default: "0", doc: "Extra hatch rotation in degrees (after material)." },
+    {
+      name: "scale",
+      type: "number",
+      optional: true,
+      default: "1",
+      doc: "Hatch tile-size multiplier (after material).",
+    },
+    {
+      name: "angle",
+      type: "number",
+      optional: true,
+      default: "0",
+      doc: "Extra hatch rotation in degrees (after material).",
+    },
   ],
 
   parse(ctx: ParseCtx): WallNode {
@@ -59,7 +71,18 @@ export const wall: ElementDef = {
     }
     ctx.eat("rcurly");
     if (points.length < 2) ctx.fail("A wall needs at least two points", kw);
-    return { kind: "wall", id, category, thickness, material, materialScale, materialAngle, points, closed, line: kw.line };
+    return {
+      kind: "wall",
+      id,
+      category,
+      thickness,
+      material,
+      materialScale,
+      materialAngle,
+      points,
+      closed,
+      line: kw.line,
+    };
   },
 
   idPrefix: (node) => (node as WallNode).category || "wall",
@@ -71,7 +94,12 @@ export const wall: ElementDef = {
     const tv = ctx.eval(n.thickness);
     const thickness = ctx.snap(tv) || tv;
     if (thickness <= 0) {
-      ctx.diag({ severity: "error", message: `Wall "${id}" must have a positive thickness`, code: "E_WALL_THICKNESS", span: n.span });
+      ctx.diag({
+        severity: "error",
+        message: `Wall "${id}" must have a positive thickness`,
+        code: "E_WALL_THICKNESS",
+        span: n.span,
+      });
     }
     let material = DEFAULT_MATERIAL as string;
     if (n.material !== undefined) {
@@ -87,11 +115,28 @@ export const wall: ElementDef = {
     let hatchScale = n.materialScale !== undefined ? ctx.eval(n.materialScale) : 1;
     if (!(hatchScale > 0)) {
       if (n.materialScale !== undefined)
-        ctx.diag({ severity: "warning", message: `Wall "${id}" hatch scale must be positive; using 1`, code: "W_HATCH_SCALE", span: n.span });
+        ctx.diag({
+          severity: "warning",
+          message: `Wall "${id}" hatch scale must be positive; using 1`,
+          code: "W_HATCH_SCALE",
+          span: n.span,
+        });
       hatchScale = 1;
     }
     const hatchAngle = n.materialAngle !== undefined ? ctx.eval(n.materialAngle) : 0;
-    return { kind: "wall", id, category: n.category, thickness, material, hatchScale, hatchAngle, points, closed: n.closed, openings: [], span: n.span };
+    return {
+      kind: "wall",
+      id,
+      category: n.category,
+      thickness,
+      material,
+      hatchScale,
+      hatchAngle,
+      points,
+      closed: n.closed,
+      openings: [],
+      span: n.span,
+    };
   },
 
   bounds(resolved): Point[] {
@@ -123,8 +168,16 @@ export const wall: ElementDef = {
       const n = normal(d);
       const h = s.thickness / 2;
       const face = { stroke: theme.wallStroke, width: sizes.wallStroke, linecap: "square" as const };
-      nodes.push({ layer: "wallFace", prim: { t: "line", a: add(s.a, mul(n, h)), b: add(s.b, mul(n, h)) }, paint: face });
-      nodes.push({ layer: "wallFace", prim: { t: "line", a: add(s.a, mul(n, -h)), b: add(s.b, mul(n, -h)) }, paint: face });
+      nodes.push({
+        layer: "wallFace",
+        prim: { t: "line", a: add(s.a, mul(n, h)), b: add(s.b, mul(n, h)) },
+        paint: face,
+      });
+      nodes.push({
+        layer: "wallFace",
+        prim: { t: "line", a: add(s.a, mul(n, -h)), b: add(s.b, mul(n, -h)) },
+        paint: face,
+      });
     }
     return nodes;
   },

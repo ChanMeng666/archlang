@@ -46,28 +46,39 @@ describe("furniture against wall", () => {
   });
 
   it("places the fixture inside the room (no wrong-room / floating warnings)", () => {
-    const codes = lint(room(`furniture wc against wall exterior segment 2 offset 2000 side left size 400x700 in r`)).map((d) => d.code);
+    const codes = lint(
+      room(`furniture wc against wall exterior segment 2 offset 2000 side left size 400x700 in r`),
+    ).map((d) => d.code);
     expect(codes).not.toContain("W_FIXTURE_WRONG_ROOM");
     expect(codes).not.toContain("W_FIXTURE_FLOATING");
   });
 
   it("errors on a multi-segment wall with no `segment` selector", () => {
-    const { diagnostics } = compile(room(`furniture wc against wall exterior side left size 400x700`), { noCache: true });
+    const { diagnostics } = compile(room(`furniture wc against wall exterior side left size 400x700`), {
+      noCache: true,
+    });
     expect(diagnostics.some((d) => d.code === "E_FURN_AGAINST")).toBe(true);
   });
 
   it("errors on an unknown wall id", () => {
-    const { diagnostics } = compile(room(`furniture wc against wall nope segment 0 side left size 400x700`), { noCache: true });
+    const { diagnostics } = compile(room(`furniture wc against wall nope segment 0 side left size 400x700`), {
+      noCache: true,
+    });
     expect(diagnostics.some((d) => d.code === "E_FURN_AGAINST")).toBe(true);
   });
 
   it("errors when `side` is omitted", () => {
-    const { diagnostics } = compile(room(`furniture wc against wall exterior segment 0 size 400x700`), { noCache: true });
+    const { diagnostics } = compile(room(`furniture wc against wall exterior segment 0 size 400x700`), {
+      noCache: true,
+    });
     expect(diagnostics.some((d) => d.code === "E_FURN_AGAINST")).toBe(true);
   });
 
   it("errors when an explicit rotate is combined with against", () => {
-    const { diagnostics } = compile(room(`furniture wc against wall exterior segment 0 side left size 400x700 rotate 90`), { noCache: true });
+    const { diagnostics } = compile(
+      room(`furniture wc against wall exterior segment 0 side left size 400x700 rotate 90`),
+      { noCache: true },
+    );
     expect(diagnostics.some((d) => d.code === "E_FURN_AGAINST")).toBe(true);
   });
 
@@ -79,7 +90,9 @@ describe("furniture against wall", () => {
   });
 
   it("still errors when neither `side` nor `in <room>` is given", () => {
-    const { diagnostics } = compile(room(`furniture wc against wall exterior segment 0 size 400x700`), { noCache: true });
+    const { diagnostics } = compile(room(`furniture wc against wall exterior segment 0 size 400x700`), {
+      noCache: true,
+    });
     expect(diagnostics.some((d) => d.code === "E_FURN_AGAINST")).toBe(true);
   });
 

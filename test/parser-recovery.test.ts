@@ -62,7 +62,7 @@ describe("T5.1 — ast present on malformed header", () => {
 
 describe("T5.1 — comment trivia is captured losslessly", () => {
   it("collects line comments with spans and text", () => {
-    const src = ['# header comment', 'plan "C" {', '  # inner comment', "  room at (0,0) size 1000x1000", "}"].join(
+    const src = ["# header comment", 'plan "C" {', "  # inner comment", "  room at (0,0) size 1000x1000", "}"].join(
       "\n",
     );
     const { plan } = parse(src);

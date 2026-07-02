@@ -32,9 +32,18 @@ export const furniture: ElementDef = {
       ctx.eatKeyword("wall");
       const wall = ctx.eatIdent().value;
       const a: NonNullable<FurnitureNode["against"]> = { wall };
-      if (ctx.isKeyword("segment")) { ctx.next(); a.segment = ctx.parseExpr(); }
-      if (ctx.isKeyword("offset")) { ctx.next(); a.offset = ctx.parseExpr(); }
-      if (ctx.isKeyword("side")) { ctx.next(); a.side = ctx.eatIdent().value as "left" | "right"; }
+      if (ctx.isKeyword("segment")) {
+        ctx.next();
+        a.segment = ctx.parseExpr();
+      }
+      if (ctx.isKeyword("offset")) {
+        ctx.next();
+        a.offset = ctx.parseExpr();
+      }
+      if (ctx.isKeyword("side")) {
+        ctx.next();
+        a.side = ctx.eatIdent().value as "left" | "right";
+      }
       against = a;
     } else {
       ctx.eatKeyword("at");
@@ -47,7 +56,15 @@ export const furniture: ElementDef = {
       ctx.next();
       size = ctx.parseDimensions();
     }
-    const node: FurnitureNode = { kind: "furniture", id, category, ...(at ? { at } : {}), ...(against ? { against } : {}), ...(size ? { size } : {}), line: kw.line };
+    const node: FurnitureNode = {
+      kind: "furniture",
+      id,
+      category,
+      ...(at ? { at } : {}),
+      ...(against ? { against } : {}),
+      ...(size ? { size } : {}),
+      line: kw.line,
+    };
     if (ctx.isKeyword("label")) {
       ctx.next();
       node.label = ctx.parseStringExpr();
@@ -81,7 +98,12 @@ export const furniture: ElementDef = {
     } else {
       const fp = n.against ? defaultFootprint(n.category) : null;
       if (!fp) {
-        ctx.diag({ severity: "error", message: `Furniture "${id}" needs a \`size WxH\` (no default footprint for "${n.category}")`, code: "E_FURN_SIZE", span: n.span });
+        ctx.diag({
+          severity: "error",
+          message: `Furniture "${id}" needs a \`size WxH\` (no default footprint for "${n.category}")`,
+          code: "E_FURN_SIZE",
+          span: n.span,
+        });
         dw = 0;
         dh = 0;
       } else {
@@ -90,13 +112,24 @@ export const furniture: ElementDef = {
       }
     }
     if (dw <= 0 || dh <= 0) {
-      if (n.size) ctx.diag({ severity: "error", message: `Furniture "${id}" must have a positive size`, code: "E_FURN_SIZE", span: n.span });
+      if (n.size)
+        ctx.diag({
+          severity: "error",
+          message: `Furniture "${id}" must have a positive size`,
+          code: "E_FURN_SIZE",
+          span: n.span,
+        });
     }
     let rotate: number | undefined;
     if (n.rotate !== undefined) {
       rotate = ((ctx.eval(n.rotate) % 360) + 360) % 360; // normalize to [0,360)
       if (rotate !== 0 && rotate !== 90 && rotate !== 180 && rotate !== 270) {
-        ctx.diag({ severity: "error", message: `Furniture "${id}" rotate must be 0, 90, 180, or 270`, code: "E_FURN_ROTATE", span: n.span });
+        ctx.diag({
+          severity: "error",
+          message: `Furniture "${id}" rotate must be 0, 90, 180, or 270`,
+          code: "E_FURN_ROTATE",
+          span: n.span,
+        });
         rotate = 0;
       }
     }
@@ -105,15 +138,33 @@ export const furniture: ElementDef = {
     let size = { w: dw, h: dh };
     if (n.against) {
       if (rotate !== undefined) {
-        ctx.diag({ severity: "error", message: `Furniture "${id}" rotation is derived from the wall in \`against\` mode — drop \`rotate\``, code: "E_FURN_AGAINST", span: n.span });
+        ctx.diag({
+          severity: "error",
+          message: `Furniture "${id}" rotation is derived from the wall in \`against\` mode — drop \`rotate\``,
+          code: "E_FURN_AGAINST",
+          span: n.span,
+        });
       }
       const placed = placeAgainst(id, n.against, dw, dh, n.room, ctx, n.span);
       at = placed ? ctx.snapPt(placed.at) : { x: 0, y: 0 };
-      if (placed) { size = placed.size; rotate = placed.rotate; }
+      if (placed) {
+        size = placed.size;
+        rotate = placed.rotate;
+      }
     } else {
       at = ctx.snapPt(ctx.evalPt(n.at!));
     }
-    return { kind: "furniture", id, category: n.category, at, size, label: n.label !== undefined ? ctx.evalStr(n.label) : undefined, ...(rotate ? { rotate } : {}), ...(n.room ? { room: n.room } : {}), span: n.span };
+    return {
+      kind: "furniture",
+      id,
+      category: n.category,
+      at,
+      size,
+      label: n.label !== undefined ? ctx.evalStr(n.label) : undefined,
+      ...(rotate ? { rotate } : {}),
+      ...(n.room ? { room: n.room } : {}),
+      span: n.span,
+    };
   },
 
   bounds(resolved): Point[] {
@@ -149,7 +200,14 @@ export const furniture: ElementDef = {
         // Label stays at the centre (rotation-invariant) and upright.
         nodes.push({
           layer: "furniture",
-          prim: { t: "text", at: { x: cx, y: cy }, value: f.label, size: sizes.furnFont, anchor: "middle", baseline: "central" },
+          prim: {
+            t: "text",
+            at: { x: cx, y: cy },
+            value: f.label,
+            size: sizes.furnFont,
+            anchor: "middle",
+            baseline: "central",
+          },
           paint: { fill: theme.furnitureLabel },
         });
       }
@@ -179,7 +237,8 @@ function placeAgainst(
   };
   const matches = ctx.walls.filter((w) => w.id === ag.wall || w.category === ag.wall);
   if (matches.length === 0) return err(`is placed \`against wall ${ag.wall}\` but no wall has that id or category`);
-  if (matches.length > 1) return err(`\`against wall ${ag.wall}\` matches ${matches.length} walls — reference a unique wall id`);
+  if (matches.length > 1)
+    return err(`\`against wall ${ag.wall}\` matches ${matches.length} walls — reference a unique wall id`);
   const wall = matches[0];
   const segs = segmentsOfWall(wall);
   let segIdx: number;
@@ -191,7 +250,8 @@ function placeAgainst(
   const d = unit(sub(seg.b, seg.a));
   const horiz = Math.abs(d.y) < 1e-9;
   const vert = Math.abs(d.x) < 1e-9;
-  if (!horiz && !vert) return err(`segment ${segIdx} of wall "${ag.wall}" is not axis-aligned (placement supports quarter-turns only)`);
+  if (!horiz && !vert)
+    return err(`segment ${segIdx} of wall "${ag.wall}" is not axis-aligned (placement supports quarter-turns only)`);
   const segLen = length(sub(seg.b, seg.a));
   const off = ag.offset !== undefined ? ctx.eval(ag.offset) : segLen / 2;
   if (off < 0 || off > segLen) return err(`offset ${off} is outside the segment run (0..${segLen})`);
@@ -205,13 +265,17 @@ function placeAgainst(
   } else {
     const room = roomId ? ctx.rooms.find((r) => r.id === roomId) : undefined;
     if (!room) return err("needs `side left|right` (or `in <room>` to infer the wall face to back onto)");
-    if (room._rel) return err(`can't infer \`side\` from a relationally-placed room "${roomId}" — give \`side left|right\``);
+    if (room._rel)
+      return err(`can't infer \`side\` from a relationally-placed room "${roomId}" — give \`side left|right\``);
     const probe = (n: { x: number; y: number }) => add(add(seg.a, mul(d, off)), mul(n, seg.thickness / 2 + depth / 2));
     const inRoom = (p: Point): boolean =>
       p.x >= room.at.x && p.x <= room.at.x + room.size.w && p.y >= room.at.y && p.y <= room.at.y + room.size.h;
     const leftIn = inRoom(probe(nL));
     const rightIn = inRoom(probe(mul(nL, -1)));
-    if (leftIn === rightIn) return err(`can't infer \`side\` from \`in ${roomId}\` (neither/both faces fall inside) — give \`side left|right\``);
+    if (leftIn === rightIn)
+      return err(
+        `can't infer \`side\` from \`in ${roomId}\` (neither/both faces fall inside) — give \`side left|right\``,
+      );
     nSide = leftIn ? nL : mul(nL, -1);
   }
   const center = add(add(seg.a, mul(d, off)), mul(nSide, seg.thickness / 2 + depth / 2));
@@ -228,10 +292,14 @@ function rotatePoint(p: Point, c: Point, deg: number): Point {
   const dx = p.x - c.x;
   const dy = p.y - c.y;
   switch (deg) {
-    case 90: return { x: c.x - dy, y: c.y + dx };
-    case 180: return { x: c.x - dx, y: c.y - dy };
-    case 270: return { x: c.x + dy, y: c.y - dx };
-    default: return p;
+    case 90:
+      return { x: c.x - dy, y: c.y + dx };
+    case 180:
+      return { x: c.x - dx, y: c.y - dy };
+    case 270:
+      return { x: c.x + dy, y: c.y - dx };
+    default:
+      return p;
   }
 }
 
@@ -241,9 +309,13 @@ function rotateNode(n: SceneNode, c: Point, deg: number): SceneNode {
   const rp = (p: Point): Point => rotatePoint(p, c, deg);
   const prim = n.prim;
   switch (prim.t) {
-    case "polygon": return { ...n, prim: { ...prim, pts: prim.pts.map(rp) } };
-    case "line": return { ...n, prim: { ...prim, a: rp(prim.a), b: rp(prim.b) } };
-    case "text": return { ...n, prim: { ...prim, at: rp(prim.at) } };
-    default: return n;
+    case "polygon":
+      return { ...n, prim: { ...prim, pts: prim.pts.map(rp) } };
+    case "line":
+      return { ...n, prim: { ...prim, a: rp(prim.a), b: rp(prim.b) } };
+    case "text":
+      return { ...n, prim: { ...prim, at: rp(prim.at) } };
+    default:
+      return n;
   }
 }

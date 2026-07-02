@@ -19,9 +19,25 @@ export const room: ElementDef = {
   doc: "A room: a filled rectangle with a centered label and computed area.",
   params: [
     { name: "at", type: "point", optional: true, doc: "Absolute top-left corner (x, y) in mm." },
-    { name: "right-of|left-of|below|above", type: "ref", optional: true, doc: "Place relative to another room by id (instead of `at`)." },
-    { name: "align", type: "top|middle|bottom|left|center|right", optional: true, doc: "Edge to align with the reference room." },
-    { name: "gap", type: "number", optional: true, default: "0", doc: "Spacing (mm) from the reference room along the placement axis." },
+    {
+      name: "right-of|left-of|below|above",
+      type: "ref",
+      optional: true,
+      doc: "Place relative to another room by id (instead of `at`).",
+    },
+    {
+      name: "align",
+      type: "top|middle|bottom|left|center|right",
+      optional: true,
+      doc: "Edge to align with the reference room.",
+    },
+    {
+      name: "gap",
+      type: "number",
+      optional: true,
+      default: "0",
+      doc: "Spacing (mm) from the reference room along the placement axis.",
+    },
     { name: "size", type: "WxH", doc: "Width × height in mm (e.g. 4000x3000)." },
     { name: "label", type: "string", optional: true, doc: "Room label (supports {interpolation})." },
   ],
@@ -38,7 +54,10 @@ export const room: ElementDef = {
       // Relational clause: DIR REF [align EDGE] [gap EXPR].
       const dirTok = ctx.next();
       if (!REL_DIRS.has(dirTok.value)) {
-        ctx.fail(`Expected "at" or a relational direction (right-of|left-of|below|above) but found "${dirTok.value}"`, dirTok);
+        ctx.fail(
+          `Expected "at" or a relational direction (right-of|left-of|below|above) but found "${dirTok.value}"`,
+          dirTok,
+        );
       }
       const ref = ctx.eatIdent().value;
       let align: RelAlign | undefined;
@@ -70,7 +89,10 @@ export const room: ElementDef = {
         uses.push(ctx.next().value as UseKind);
       }
       if (uses.length === 0) {
-        ctx.fail(`Expected one or more room uses (${USE_KINDS.join("|")}) after "uses" but found ${ctx.peek().value ? `"${ctx.peek().value}"` : "end of input"}`, ctx.peek());
+        ctx.fail(
+          `Expected one or more room uses (${USE_KINDS.join("|")}) after "uses" but found ${ctx.peek().value ? `"${ctx.peek().value}"` : "end of input"}`,
+          ctx.peek(),
+        );
       }
       node.uses = uses;
     }
@@ -87,9 +109,22 @@ export const room: ElementDef = {
       const at = ctx.snapPt(ctx.evalPt(n.at));
       const size = { w: ctx.snap(ctx.eval(n.size.w)), h: ctx.snap(ctx.eval(n.size.h)) };
       if (size.w <= 0 || size.h <= 0) {
-        ctx.diag({ severity: "error", message: `Room "${id}" must have a positive size`, code: "E_ROOM_SIZE", span: n.span });
+        ctx.diag({
+          severity: "error",
+          message: `Room "${id}" must have a positive size`,
+          code: "E_ROOM_SIZE",
+          span: n.span,
+        });
       }
-      return { kind: "room", id, at, size, label: n.label !== undefined ? ctx.evalStr(n.label) : undefined, ...(n.uses ? { uses: n.uses } : {}), span: n.span };
+      return {
+        kind: "room",
+        id,
+        at,
+        size,
+        label: n.label !== undefined ? ctx.evalStr(n.label) : undefined,
+        ...(n.uses ? { uses: n.uses } : {}),
+        span: n.span,
+      };
     }
     // —— Relational path: position computed later by placeRelational(), in
     //    dependency order. `at` is a placeholder until then. ——
@@ -97,7 +132,12 @@ export const room: ElementDef = {
     const gap = rel.gap !== undefined ? ctx.eval(rel.gap) : 0;
     const size = { w: ctx.snap(ctx.eval(n.size.w)), h: ctx.snap(ctx.eval(n.size.h)) };
     if (size.w <= 0 || size.h <= 0) {
-      ctx.diag({ severity: "error", message: `Room "${id}" must have a positive size`, code: "E_ROOM_SIZE", span: n.span });
+      ctx.diag({
+        severity: "error",
+        message: `Room "${id}" must have a positive size`,
+        code: "E_ROOM_SIZE",
+        span: n.span,
+      });
     }
     return {
       kind: "room",
@@ -129,13 +169,28 @@ export const room: ElementDef = {
     if (r.label) {
       nodes.push({
         layer: "labels",
-        prim: { t: "text", at: { x: cx, y: cy - sizes.roomFont * 0.2 }, value: r.label, size: sizes.roomFont, anchor: "middle", baseline: "central", weight: 600 },
+        prim: {
+          t: "text",
+          at: { x: cx, y: cy - sizes.roomFont * 0.2 },
+          value: r.label,
+          size: sizes.roomFont,
+          anchor: "middle",
+          baseline: "central",
+          weight: 600,
+        },
         paint: { fill: theme.roomLabel },
       });
     }
     nodes.push({
       layer: "labels",
-      prim: { t: "text", at: { x: cx, y: cy + (r.label ? sizes.roomFont * 0.9 : 0) }, value: `${areaM2} m²`, size: sizes.areaFont, anchor: "middle", baseline: "central" },
+      prim: {
+        t: "text",
+        at: { x: cx, y: cy + (r.label ? sizes.roomFont * 0.9 : 0) },
+        value: `${areaM2} m²`,
+        size: sizes.areaFont,
+        anchor: "middle",
+        baseline: "central",
+      },
       paint: { fill: theme.areaLabel },
     });
     return nodes;

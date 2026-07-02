@@ -30,7 +30,11 @@ export function sanitizeConfig<T>(raw: unknown): { value: T; diagnostics: Diagno
   const walk = (v: unknown): unknown => {
     if (typeof v === "string") {
       if (isDisallowedConfigValue(v)) {
-        diagnostics.push({ severity: "warning", code: "W_SANITIZED_CONFIG", message: "Stripped a disallowed config value" });
+        diagnostics.push({
+          severity: "warning",
+          code: "W_SANITIZED_CONFIG",
+          message: "Stripped a disallowed config value",
+        });
         return "";
       }
       return v;
@@ -40,7 +44,11 @@ export function sanitizeConfig<T>(raw: unknown): { value: T; diagnostics: Diagno
       const out: Record<string, unknown> = {};
       for (const k of Object.keys(v as Record<string, unknown>)) {
         if (DENIED_KEYS.has(k)) {
-          diagnostics.push({ severity: "warning", code: "W_SANITIZED_CONFIG", message: `Ignored disallowed config key "${k}"` });
+          diagnostics.push({
+            severity: "warning",
+            code: "W_SANITIZED_CONFIG",
+            message: `Ignored disallowed config key "${k}"`,
+          });
           continue;
         }
         out[k] = walk((v as Record<string, unknown>)[k]);

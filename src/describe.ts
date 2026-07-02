@@ -171,7 +171,10 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
   const access = buildDoorAccessGraph(roomEls, doorEls, tol, undefined, openingEls);
 
   // Drawing extent: union of wall points and sized-element rectangles.
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
   const ext = (x: number, y: number): void => {
     if (x < minX) minX = x;
     if (y < minY) minY = y;

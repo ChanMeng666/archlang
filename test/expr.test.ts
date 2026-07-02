@@ -37,10 +37,9 @@ function room(body: string): { at: { x: number; y: number }; size: { w: number; 
 
 describe("expressions", () => {
   it("compiles the DoD example with parenthesised arithmetic in a size", () => {
-    const { svg, errors } = compile(
-      `plan "E" { room id=r at (0,0) size (3000) x (3000-500) label "R" }`,
-      { noCache: true },
-    );
+    const { svg, errors } = compile(`plan "E" { room id=r at (0,0) size (3000) x (3000-500) label "R" }`, {
+      noCache: true,
+    });
     expect(errors).toEqual([]);
     expect(svg.startsWith("<svg")).toBe(true);
     expect(room(`room id=r at (0,0) size (3000) x (3000-500) label "R"`).size).toEqual({ w: 3000, h: 2500 });
@@ -101,7 +100,15 @@ describe("Value coercions (errors-as-data, never thrown)", () => {
     expect(asStr({ t: "num", v: 3 })).toBe("3");
     expect(asStr({ t: "bool", v: true })).toBe("true");
     expect(asStr({ t: "str", v: "Bed" })).toBe("Bed");
-    expect(asStr({ t: "arr", v: [{ t: "num", v: 1 }, { t: "str", v: "a" }] })).toBe("[1, a]");
+    expect(
+      asStr({
+        t: "arr",
+        v: [
+          { t: "num", v: 1 },
+          { t: "str", v: "a" },
+        ],
+      }),
+    ).toBe("[1, a]");
   });
 
   it("typeName names each Value kind", () => {
@@ -149,15 +156,25 @@ describe("expression grammar (T2.2)", () => {
   });
 
   it("array literals", () => {
-    expect(ev("[10, 20, 30]").value).toEqual({ t: "arr", v: [
-      { t: "num", v: 10 }, { t: "num", v: 20 }, { t: "num", v: 30 },
-    ] });
+    expect(ev("[10, 20, 30]").value).toEqual({
+      t: "arr",
+      v: [
+        { t: "num", v: 10 },
+        { t: "num", v: 20 },
+        { t: "num", v: 30 },
+      ],
+    });
   });
 
   it("ranges are half-open integer arrays", () => {
-    expect(ev("0..3").value).toEqual({ t: "arr", v: [
-      { t: "num", v: 0 }, { t: "num", v: 1 }, { t: "num", v: 2 },
-    ] });
+    expect(ev("0..3").value).toEqual({
+      t: "arr",
+      v: [
+        { t: "num", v: 0 },
+        { t: "num", v: 1 },
+        { t: "num", v: 2 },
+      ],
+    });
     expect(ev("3..0").value).toEqual({ t: "arr", v: [] });
   });
 
@@ -176,7 +193,15 @@ describe("expression grammar (T2.2)", () => {
   it("string interpolation templates", () => {
     expect(ev('"plain"').value).toEqual({ t: "str", v: "plain" });
     expect(ev('"Bed {n}"', new Map([["n", { t: "num", v: 3 }]])).value).toEqual({ t: "str", v: "Bed 3" });
-    expect(ev('"sum {a + b}"', new Map([["a", { t: "num", v: 2 }], ["b", { t: "num", v: 5 }]])).value).toEqual({ t: "str", v: "sum 7" });
+    expect(
+      ev(
+        '"sum {a + b}"',
+        new Map([
+          ["a", { t: "num", v: 2 }],
+          ["b", { t: "num", v: 5 }],
+        ]),
+      ).value,
+    ).toEqual({ t: "str", v: "sum 7" });
     expect(ev('"x \\{ y"').value).toEqual({ t: "str", v: "x { y" }); // escaped brace
   });
 

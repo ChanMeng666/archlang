@@ -59,7 +59,9 @@ describe("opening element", () => {
       door id=d_in at (2000,4000) width 1000 wall exterior  hinge left swing in
       door id=d_cd at (6000,2000) width 800  wall partition hinge left swing in
     }`;
-    const codes = lint(src).filter((x) => x.code === "W_ROOM_UNREACHABLE").map((d) => d.message);
+    const codes = lint(src)
+      .filter((x) => x.code === "W_ROOM_UNREACHABLE")
+      .map((d) => d.message);
     expect(codes.some((m) => m.includes('"C"'))).toBe(true);
     expect(codes.some((m) => m.includes('"D"'))).toBe(true);
   });
@@ -73,7 +75,10 @@ describe("opening element", () => {
   });
 
   it("rejects a non-positive width and round-trips through the formatter", () => {
-    const { diagnostics } = compile(`plan "P" { units mm wall exterior thickness 200 { (0,0) (3000,0) } opening at (1500,0) width 0 }`, { noCache: true });
+    const { diagnostics } = compile(
+      `plan "P" { units mm wall exterior thickness 200 { (0,0) (3000,0) } opening at (1500,0) width 0 }`,
+      { noCache: true },
+    );
     expect(diagnostics.some((d) => d.code === "E_OPENING_WIDTH")).toBe(true);
     expect(format(openPlan)).toContain("opening id=op at (4000, 2000) width 1800 wall partition");
   });

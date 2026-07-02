@@ -55,9 +55,24 @@ export interface Manifest {
 
 const JSON_FLAG: ManifestFlag = { flag: "--json", description: "structured result on stdout, messages on stderr" };
 const QUIET_FLAG: ManifestFlag = { flag: "--quiet", alias: "-q", description: "suppress human messages on stderr" };
-const OUT_FLAG: ManifestFlag = { flag: "--out", alias: "-o", arg: "<file|->", description: "output destination ('-' = stdout)" };
-const FMT_FLAG: ManifestFlag = { flag: "--format", alias: "-f", arg: "<svg|dxf|pdf|png>", description: "output format (default svg)" };
-const WIDTH_FLAG: ManifestFlag = { flag: "--width", alias: "-w", arg: "<px>", description: "page width hint in pixels" };
+const OUT_FLAG: ManifestFlag = {
+  flag: "--out",
+  alias: "-o",
+  arg: "<file|->",
+  description: "output destination ('-' = stdout)",
+};
+const FMT_FLAG: ManifestFlag = {
+  flag: "--format",
+  alias: "-f",
+  arg: "<svg|dxf|pdf|png>",
+  description: "output format (default svg)",
+};
+const WIDTH_FLAG: ManifestFlag = {
+  flag: "--width",
+  alias: "-w",
+  arg: "<px>",
+  description: "page width hint in pixels",
+};
 
 /**
  * The command table. Keys MUST cover exactly the verbs the CLI's `main()`
@@ -67,14 +82,27 @@ const COMMANDS: ManifestCommand[] = [
   {
     name: "compile",
     summary: "render a plan to SVG/DXF/PDF/PNG",
-    flags: [OUT_FLAG, FMT_FLAG, WIDTH_FLAG, { flag: "--install", description: "auto-install the optional dep for the chosen format if missing (PNG/PDF)" }, JSON_FLAG, QUIET_FLAG],
+    flags: [
+      OUT_FLAG,
+      FMT_FLAG,
+      WIDTH_FLAG,
+      { flag: "--install", description: "auto-install the optional dep for the chosen format if missing (PNG/PDF)" },
+      JSON_FLAG,
+      QUIET_FLAG,
+    ],
     input: "<file.arch|->",
     output: "file (or stdout with -o -)",
   },
   {
     name: "batch",
     summary: "render many .arch files in one call, concurrently",
-    flags: [{ flag: "--out", alias: "-o", arg: "<dir>", description: "output directory (default: alongside each input)" }, FMT_FLAG, { flag: "--jobs", alias: "-j", arg: "<n>", description: "max concurrent renders (default: CPU count)" }, JSON_FLAG, QUIET_FLAG],
+    flags: [
+      { flag: "--out", alias: "-o", arg: "<dir>", description: "output directory (default: alongside each input)" },
+      FMT_FLAG,
+      { flag: "--jobs", alias: "-j", arg: "<n>", description: "max concurrent renders (default: CPU count)" },
+      JSON_FLAG,
+      QUIET_FLAG,
+    ],
     input: "<a.arch> <b.arch> …",
     output: "one file per input; --json gives a results[] array",
   },
@@ -82,14 +110,25 @@ const COMMANDS: ManifestCommand[] = [
     name: "md",
     aliases: ["markdown"],
     summary: "render every ```arch block in a Markdown file and rewrite to image links",
-    flags: [{ flag: "--out", alias: "-o", arg: "<out.md>", description: "rewritten Markdown destination" }, FMT_FLAG, JSON_FLAG, QUIET_FLAG],
+    flags: [
+      { flag: "--out", alias: "-o", arg: "<out.md>", description: "rewritten Markdown destination" },
+      FMT_FLAG,
+      JSON_FLAG,
+      QUIET_FLAG,
+    ],
     input: "<doc.md>",
     output: "out.md + one image per block",
   },
   {
     name: "preview",
     summary: "render a PNG you can look at (zero-install where the optional binary is present)",
-    flags: [{ flag: "--out", alias: "-o", arg: "<out.png>", description: "PNG destination (default: <name>.png)" }, { flag: "--scale", alias: "-s", arg: "<n>", description: "raster scale (default 2)" }, { flag: "--install", description: "auto-install @resvg/resvg-js if missing, then render" }, JSON_FLAG, QUIET_FLAG],
+    flags: [
+      { flag: "--out", alias: "-o", arg: "<out.png>", description: "PNG destination (default: <name>.png)" },
+      { flag: "--scale", alias: "-s", arg: "<n>", description: "raster scale (default 2)" },
+      { flag: "--install", description: "auto-install @resvg/resvg-js if missing, then render" },
+      JSON_FLAG,
+      QUIET_FLAG,
+    ],
     input: "<file.arch|->",
     output: "PNG file",
   },
@@ -103,7 +142,11 @@ const COMMANDS: ManifestCommand[] = [
   {
     name: "validate",
     summary: "parse + resolve + lint, no render (is it valid & sound?)",
-    flags: [{ flag: "--strict", alias: "--fail-on-warning", description: "advisory warnings fail too (exit 2)" }, JSON_FLAG, QUIET_FLAG],
+    flags: [
+      { flag: "--strict", alias: "--fail-on-warning", description: "advisory warnings fail too (exit 2)" },
+      JSON_FLAG,
+      QUIET_FLAG,
+    ],
     input: "<file.arch|->",
     output: "diagnostics",
   },
@@ -117,7 +160,12 @@ const COMMANDS: ManifestCommand[] = [
   {
     name: "lint",
     summary: "architectural soundness warnings",
-    flags: [{ flag: "--profile", arg: `<${LINT_PROFILE_NAMES.join("|")}>`, description: "advisory ruleset" }, { flag: "--strict", alias: "--fail-on-warning", description: "warnings fail (exit 2)" }, JSON_FLAG, QUIET_FLAG],
+    flags: [
+      { flag: "--profile", arg: `<${LINT_PROFILE_NAMES.join("|")}>`, description: "advisory ruleset" },
+      { flag: "--strict", alias: "--fail-on-warning", description: "warnings fail (exit 2)" },
+      JSON_FLAG,
+      QUIET_FLAG,
+    ],
     input: "<file.arch|->",
     output: "W_* warnings",
   },
@@ -154,7 +202,11 @@ const COMMANDS: ManifestCommand[] = [
     name: "new",
     aliases: ["init"],
     summary: "scaffold a starter .arch",
-    flags: [{ flag: "--out", alias: "-o", arg: "<file>", description: "write the starter here" }, { flag: "--force", description: "overwrite an existing file" }, JSON_FLAG],
+    flags: [
+      { flag: "--out", alias: "-o", arg: "<file>", description: "write the starter here" },
+      { flag: "--force", description: "overwrite an existing file" },
+      JSON_FLAG,
+    ],
     input: "none",
     output: "starter source",
   },
@@ -193,9 +245,7 @@ export function buildManifest(version: string): Manifest {
     lint: {
       profiles: LINT_PROFILE_NAMES,
       defaultRuleset: DEFAULT_RULESET,
-      profileOverrides: Object.fromEntries(
-        LINT_PROFILE_NAMES.map((name) => [name, LINT_PROFILES[name] ?? {}]),
-      ),
+      profileOverrides: Object.fromEntries(LINT_PROFILE_NAMES.map((name) => [name, LINT_PROFILES[name] ?? {}])),
     },
     errorCodes: ERROR_CODES.map((code) => ({ code, severity: ERROR_CATALOG[code].severity })),
   };

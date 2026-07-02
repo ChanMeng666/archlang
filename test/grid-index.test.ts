@@ -21,7 +21,9 @@ describe("GridIndex", () => {
       { minX: 500, minY: 500, maxX: 520, maxY: 520 },
       { minX: -300, minY: 40, maxX: -280, maxY: 60 },
     ];
-    boxes.forEach((b, i) => g.insert(b, i));
+    boxes.forEach((b, i) => {
+      g.insert(b, i);
+    });
     const p = { x: 0, y: 0 };
     const r = 600;
     const got = new Set(g.queryBox({ minX: p.x - r, minY: p.y - r, maxX: p.x + r, maxY: p.y + r }));

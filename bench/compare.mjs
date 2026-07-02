@@ -47,9 +47,11 @@ for (const [plan, stages] of Object.entries(current)) {
   }
 }
 lines.push("");
-lines.push(regressed
-  ? "> ⚠️ One or more stages regressed past the warning threshold. Timings are runner-dependent — confirm locally before acting."
-  : "> No stage regressed past the warning threshold.");
+lines.push(
+  regressed
+    ? "> ⚠️ One or more stages regressed past the warning threshold. Timings are runner-dependent — confirm locally before acting."
+    : "> No stage regressed past the warning threshold.",
+);
 
 const md = lines.join("\n") + "\n";
 process.stdout.write(md);

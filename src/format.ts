@@ -47,11 +47,19 @@ function numStr(n: number): string {
 }
 
 const BIN_PREC: Record<string, number> = {
-  "||": 1, "&&": 2,
-  "==": 3, "!=": 3,
-  "<": 4, ">": 4, "<=": 4, ">=": 4,
-  "+": 6, "-": 6,
-  "*": 7, "/": 7, "%": 7,
+  "||": 1,
+  "&&": 2,
+  "==": 3,
+  "!=": 3,
+  "<": 4,
+  ">": 4,
+  "<=": 4,
+  ">=": 4,
+  "+": 6,
+  "-": 6,
+  "*": 7,
+  "/": 7,
+  "%": 7,
 };
 const RANGE_PREC = 5;
 
@@ -87,18 +95,30 @@ function strStr(parts: (string | Expr)[]): string {
 
 function exprStr(e: Expr): string {
   switch (e.t) {
-    case "num": return numStr(e.value);
-    case "bool": return e.value ? "true" : "false";
-    case "ref": return e.name;
-    case "str": return strStr(e.parts);
-    case "arr": return `[${e.items.map(exprStr).join(", ")}]`;
-    case "unary": return `${e.op}${child(e.e, 99)}`;
-    case "bin": return `${child(e.l, BIN_PREC[e.op])} ${e.op} ${child(e.r, BIN_PREC[e.op] + 1)}`;
-    case "range": return `${child(e.lo, RANGE_PREC)}..${child(e.hi, RANGE_PREC + 1)}`;
-    case "index": return `${child(e.base, 99)}[${exprStr(e.idx)}]`;
-    case "call": return `${e.callee}(${e.args.map(exprStr).join(", ")})`;
-    case "fnlit": return `(${e.params.join(", ")}) = ${exprStr(e.body)}`;
-    case "if": return `if ${exprStr(e.cond)} { ${exprStr(e.then)} } else { ${exprStr(e.else)} }`;
+    case "num":
+      return numStr(e.value);
+    case "bool":
+      return e.value ? "true" : "false";
+    case "ref":
+      return e.name;
+    case "str":
+      return strStr(e.parts);
+    case "arr":
+      return `[${e.items.map(exprStr).join(", ")}]`;
+    case "unary":
+      return `${e.op}${child(e.e, 99)}`;
+    case "bin":
+      return `${child(e.l, BIN_PREC[e.op])} ${e.op} ${child(e.r, BIN_PREC[e.op] + 1)}`;
+    case "range":
+      return `${child(e.lo, RANGE_PREC)}..${child(e.hi, RANGE_PREC + 1)}`;
+    case "index":
+      return `${child(e.base, 99)}[${exprStr(e.idx)}]`;
+    case "call":
+      return `${e.callee}(${e.args.map(exprStr).join(", ")})`;
+    case "fnlit":
+      return `(${e.params.join(", ")}) = ${exprStr(e.body)}`;
+    case "if":
+      return `if ${exprStr(e.cond)} { ${exprStr(e.then)} } else { ${exprStr(e.else)} }`;
   }
 }
 
@@ -170,7 +190,7 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       return concat([head, " ", body]);
     }
     case "room":
-      return `room ${id}${s.at ? `at ${ptStr(s.at)}` : relStr(s.rel!)} size ${sizeStr(s.size)}${s.label ? ` label ${exprStr(s.label)}` : ""}${s.uses && s.uses.length ? ` uses ${s.uses.join(" ")}` : ""}`;
+      return `room ${id}${s.at ? `at ${ptStr(s.at)}` : relStr(s.rel!)} size ${sizeStr(s.size)}${s.label ? ` label ${exprStr(s.label)}` : ""}${s.uses?.length ? ` uses ${s.uses.join(" ")}` : ""}`;
     case "door":
       return `door ${id}at ${ptStr(s.at)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${s.hinge ? ` hinge ${s.hinge}` : ""}${s.swing ? ` swing ${s.swing}` : ""}`;
     case "window":
@@ -233,15 +253,15 @@ function themeDoc(plan: PlanNode): Doc | undefined {
   const entries = Object.entries(plan.theme ?? {});
   const base = plan.themeBase ? ` ${plan.themeBase}` : "";
   if (entries.length === 0) return base ? `theme${base}` : undefined;
-  const lines = entries.map(([k, v]) =>
-    `${k}: ${isNumericThemeKey(k as never) ? numStr(v as number) : JSON.stringify(v)}`,
+  const lines = entries.map(
+    ([k, v]) => `${k}: ${isNumericThemeKey(k as never) ? numStr(v as number) : JSON.stringify(v)}`,
   );
   return concat([`theme${base} {`, indent(concat([hardline, join(hardline, lines)])), hardline, "}"]);
 }
 
 function styleDoc(kind: string, st: Record<string, unknown>): Doc {
-  const lines = Object.entries(st).map(([k, v]) =>
-    `${k}: ${isNumericThemeKey(k as never) ? numStr(v as number) : JSON.stringify(v)}`,
+  const lines = Object.entries(st).map(
+    ([k, v]) => `${k}: ${isNumericThemeKey(k as never) ? numStr(v as number) : JSON.stringify(v)}`,
   );
   return concat([`style ${kind} {`, indent(concat([hardline, join(hardline, lines)])), hardline, "}"]);
 }
@@ -255,7 +275,8 @@ interface Slot {
   doc: Doc;
 }
 
-const sameLine = (a: number, b: number, src: string): boolean => !src.slice(Math.min(a, b), Math.max(a, b)).includes("\n");
+const sameLine = (a: number, b: number, src: string): boolean =>
+  !src.slice(Math.min(a, b), Math.max(a, b)).includes("\n");
 // A blank line in the gap — tolerant of CRLF (`\r\n\r\n`) as well as LF.
 const gapHasBlank = (a: number, b: number, src: string): boolean => b > a && /\r?\n[ \t]*\r?\n/.test(src.slice(a, b));
 
@@ -324,15 +345,25 @@ export function formatPlan(plan: PlanNode, source: string): string {
   const sections: Doc[] = [];
   const theme = themeDoc(plan);
   if (theme) sections.push(theme);
-  for (const [kind, st] of Object.entries(plan.styles ?? {})) sections.push(styleDoc(kind, st as Record<string, unknown>));
+  for (const [kind, st] of Object.entries(plan.styles ?? {}))
+    sections.push(styleDoc(kind, st as Record<string, unknown>));
 
   // Everything that carries a span — imports, components, body, title — emitted
   // in true source order, with comments and blank lines woven in.
   const slots: Slot[] = [];
-  for (const imp of plan.imports) slots.push({ start: imp.span!.start, end: imp.span!.end, block: false, doc: importDoc(imp) });
-  for (const def of plan.components.values()) slots.push({ start: def.span!.start, end: def.span!.end, block: true, doc: componentDoc(def, comments, source) });
-  for (const s of plan.body) slots.push({ start: s.span!.start, end: s.span!.end, block: BLOCK_KINDS.has(s.kind), doc: statementDoc(s, comments, source) });
-  if (plan.title?.span) slots.push({ start: plan.title.span.start, end: plan.title.span.end, block: true, doc: titleDoc(plan.title) });
+  for (const imp of plan.imports)
+    slots.push({ start: imp.span!.start, end: imp.span!.end, block: false, doc: importDoc(imp) });
+  for (const def of plan.components.values())
+    slots.push({ start: def.span!.start, end: def.span!.end, block: true, doc: componentDoc(def, comments, source) });
+  for (const s of plan.body)
+    slots.push({
+      start: s.span!.start,
+      end: s.span!.end,
+      block: BLOCK_KINDS.has(s.kind),
+      doc: statementDoc(s, comments, source),
+    });
+  if (plan.title?.span)
+    slots.push({ start: plan.title.span.start, end: plan.title.span.end, block: true, doc: titleDoc(plan.title) });
   slots.sort((a, b) => a.start - b.start);
 
   const bodyStart = plan.bodyStart ?? 0;

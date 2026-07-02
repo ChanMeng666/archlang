@@ -6,7 +6,11 @@ import { describe, expect, it } from "vitest";
 import { ERROR_CATALOG } from "../src/index.js";
 
 function run(args: string[], input?: string): { status: number | null; stdout: string; stderr: string } {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], { input, encoding: "utf8", cwd: process.cwd() });
+  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
+    input,
+    encoding: "utf8",
+    cwd: process.cwd(),
+  });
   return { status: r.status, stdout: r.stdout, stderr: r.stderr };
 }
 
@@ -34,7 +38,7 @@ describe("CLI — preview (PNG you can look at)", () => {
 
   it("the missing-PNG-dependency failure is a catalogued, self-correcting code", () => {
     // The CLI maps a resvg/pdfkit load failure to E_PNG_DEPENDENCY (+ fix) in --json.
-    const entry = ERROR_CATALOG["E_PNG_DEPENDENCY"];
+    const entry = ERROR_CATALOG.E_PNG_DEPENDENCY;
     expect(entry).toBeDefined();
     expect(entry.fix).toMatch(/@resvg\/resvg-js/);
   });

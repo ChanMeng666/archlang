@@ -139,15 +139,23 @@ export type ScenePrim =
  */
 export function aiaLayer(pass: RenderPass): string {
   switch (pass) {
-    case "floor": return "A-FLOR";
-    case "furniture": return "A-FURN";
+    case "floor":
+      return "A-FLOR";
+    case "furniture":
+      return "A-FURN";
     case "wallFill":
-    case "wallFace": return "A-WALL";
-    case "doors": return "A-DOOR";
-    case "windows": return "A-GLAZ";
-    case "labels": return "A-ANNO-TEXT";
-    case "dims": return "A-ANNO-DIMS";
-    case "annotations": return "A-ANNO";
+    case "wallFace":
+      return "A-WALL";
+    case "doors":
+      return "A-DOOR";
+    case "windows":
+      return "A-GLAZ";
+    case "labels":
+      return "A-ANNO-TEXT";
+    case "dims":
+      return "A-ANNO-DIMS";
+    case "annotations":
+      return "A-ANNO";
   }
 }
 

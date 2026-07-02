@@ -55,7 +55,15 @@ function applyPaint(doc: any, paint: Paint, theme: Theme): void {
 }
 
 /** Draw text honouring the primitive's anchor/baseline/rotation (selectable). */
-function drawText(doc: any, at: Point, value: string, size: number, anchor: string, rotate: number | undefined, color: string): void {
+function drawText(
+  doc: any,
+  at: Point,
+  value: string,
+  size: number,
+  anchor: string,
+  rotate: number | undefined,
+  color: string,
+): void {
   doc.undash();
   doc.fontSize(size).fillColor(color);
   const w = doc.widthOfString(value);
@@ -105,14 +113,19 @@ export async function toPdf(scene: Scene): Promise<Uint8Array> {
   try {
     PDFDocument = (await import(/* webpackIgnore: true */ /* @vite-ignore */ "pdfkit" as string)).default;
   } catch {
-    throw new Error(
-      "PDF export needs the optional dependency 'pdfkit'. Install it: npm install pdfkit",
-    );
+    throw new Error("PDF export needs the optional dependency 'pdfkit'. Install it: npm install pdfkit");
   }
 
   const { theme, sizes, bounds: b } = scene;
   // Per-side margins from the shared chrome layout (match scene.width/height).
-  const m = layoutChrome({ bounds: b, refDim: sizes.refDim, baseMargin: sizes.margin, nodes: scene.nodes, title: scene.title, scale: scene.scale }).margin;
+  const m = layoutChrome({
+    bounds: b,
+    refDim: sizes.refDim,
+    baseMargin: sizes.margin,
+    nodes: scene.nodes,
+    title: scene.title,
+    scale: scene.scale,
+  }).margin;
   const vbX = b.minX - m.left;
   const vbY = b.minY - m.top;
   const W = scene.width;
@@ -174,7 +187,14 @@ function drawChrome(doc: any, scene: Scene): void {
 
   // Scale bar + title block come from the shared chrome layout (placed below the
   // dimension band; the bottom margin already grew to fit — see scene.height).
-  const chrome = layoutChrome({ bounds: b, refDim, baseMargin: margin, nodes: scene.nodes, title: scene.title, scale: scene.scale });
+  const chrome = layoutChrome({
+    bounds: b,
+    refDim,
+    baseMargin: margin,
+    nodes: scene.nodes,
+    title: scene.title,
+    scale: scene.scale,
+  });
 
   // Scale bar (two-segment alternating bar + end labels).
   {
@@ -184,7 +204,15 @@ function drawChrome(doc: any, scene: Scene): void {
     doc.lineWidth(thin).undash();
     doc.rect(x0 + half, y0, half, hgt).stroke(theme.annotation);
     drawText(doc, { x: x0, y: y0 + hgt + fs }, "0", fs, "start", undefined, theme.annotation);
-    drawText(doc, { x: x0 + barLen, y: y0 + hgt + fs }, `${barLen / 1000} m`, fs, "middle", undefined, theme.annotation);
+    drawText(
+      doc,
+      { x: x0 + barLen, y: y0 + hgt + fs },
+      `${barLen / 1000} m`,
+      fs,
+      "middle",
+      undefined,
+      theme.annotation,
+    );
   }
 
   // Title block (framed metadata rows).
@@ -197,7 +225,11 @@ function drawChrome(doc: any, scene: Scene): void {
       drawText(doc, { x: x0 + pad, y: ly }, ln.k, fs * 0.8, "start", undefined, theme.annotationMuted);
       drawText(doc, { x: x0 + boxW - pad, y: ly }, ln.v, fs, "end", undefined, theme.annotation);
       if (i > 0) {
-        doc.lineWidth(thin * 0.5).moveTo(x0, y0 + rowH * i).lineTo(x0 + boxW, y0 + rowH * i).stroke(theme.annotation);
+        doc
+          .lineWidth(thin * 0.5)
+          .moveTo(x0, y0 + rowH * i)
+          .lineTo(x0 + boxW, y0 + rowH * i)
+          .stroke(theme.annotation);
       }
     });
   }
@@ -205,11 +237,16 @@ function drawChrome(doc: any, scene: Scene): void {
 
 function northDegrees(north: NorthDir): number {
   switch (north) {
-    case "up": return 0;
-    case "down": return 180;
-    case "left": return 270;
-    case "right": return 90;
-    default: return typeof north === "object" ? north.deg : 0;
+    case "up":
+      return 0;
+    case "down":
+      return 180;
+    case "left":
+      return 270;
+    case "right":
+      return 90;
+    default:
+      return typeof north === "object" ? north.deg : 0;
   }
 }
 

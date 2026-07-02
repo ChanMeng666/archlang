@@ -109,8 +109,7 @@ export function doorSwing(d: DoorLike): DoorSwing | null {
   const farJamb = d.hinge === "left" ? add(d.at, mul(dir, hw)) : add(d.at, mul(dir, -hw));
   const leafDir = d.swing === "in" ? n : mul(n, -1);
   const leafEnd = add(hinge, mul(leafDir, d.width));
-  const cross =
-    (leafEnd.x - hinge.x) * (farJamb.y - hinge.y) - (leafEnd.y - hinge.y) * (farJamb.x - hinge.x);
+  const cross = (leafEnd.x - hinge.x) * (farJamb.y - hinge.y) - (leafEnd.y - hinge.y) * (farJamb.x - hinge.x);
   // SVG draws `M leafEnd A r r 0 0 sweep farJamb` with no explicit centre, so the
   // sweep flag must select the candidate circle centred on the hinge (a convex
   // quarter-disc). For the minor arc (large-arc-flag 0) that is sweep = 1 when the
@@ -228,12 +227,7 @@ export function segmentRectangle(a: Point, b: Point, thickness: number): Point[]
   const half = thickness / 2;
   const a2 = add(a, mul(d, -half));
   const b2 = add(b, mul(d, half));
-  return [
-    add(a2, mul(n, half)),
-    add(b2, mul(n, half)),
-    add(b2, mul(n, -half)),
-    add(a2, mul(n, -half)),
-  ];
+  return [add(a2, mul(n, half)), add(b2, mul(n, half)), add(b2, mul(n, -half)), add(a2, mul(n, -half))];
 }
 
 export interface WallSegment {
@@ -260,10 +254,24 @@ export interface WallLike {
 export function segmentsOfWall(w: WallLike): WallSegment[] {
   const segs: WallSegment[] = [];
   for (let k = 0; k < w.points.length - 1; k++) {
-    segs.push({ a: w.points[k], b: w.points[k + 1], thickness: w.thickness, category: w.category, wallId: w.id, index: k });
+    segs.push({
+      a: w.points[k],
+      b: w.points[k + 1],
+      thickness: w.thickness,
+      category: w.category,
+      wallId: w.id,
+      index: k,
+    });
   }
   if (w.closed && w.points.length > 2) {
-    segs.push({ a: w.points[w.points.length - 1], b: w.points[0], thickness: w.thickness, category: w.category, wallId: w.id, index: w.points.length - 1 });
+    segs.push({
+      a: w.points[w.points.length - 1],
+      b: w.points[0],
+      thickness: w.thickness,
+      category: w.category,
+      wallId: w.id,
+      index: w.points.length - 1,
+    });
   }
   return segs;
 }
@@ -379,7 +387,10 @@ export class WallGrid {
     let count = 0;
     let extent = 0;
     let maxTol = 0;
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
     const segs: SegEntry[] = [];
     let index = 0;
     for (const w of walls) {
@@ -388,7 +399,7 @@ export class WallGrid {
       for (const seg of segmentsOfWall(w)) {
         const bb = segBox(seg);
         segs.push({ seg, id: w.id, category: w.category, tol, index: index++ });
-        extent += (bb.maxX - bb.minX) + (bb.maxY - bb.minY);
+        extent += bb.maxX - bb.minX + (bb.maxY - bb.minY);
         count++;
         if (bb.minX < minX) minX = bb.minX;
         if (bb.minY < minY) minY = bb.minY;
@@ -426,7 +437,12 @@ export class WallGrid {
     let radius = this.grid.cellSize;
     let entries: SegEntry[] = [];
     for (;;) {
-      entries = this.grid.queryBox({ minX: at.x - radius, minY: at.y - radius, maxX: at.x + radius, maxY: at.y + radius });
+      entries = this.grid.queryBox({
+        minX: at.x - radius,
+        minY: at.y - radius,
+        maxX: at.x + radius,
+        maxY: at.y + radius,
+      });
       let bestDist = Infinity;
       for (const e of entries) {
         if (!accept(e)) continue;

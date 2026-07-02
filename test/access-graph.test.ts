@@ -22,8 +22,7 @@ const chain = `plan "P" {
   door id=d_bc at (6000,1500) width 800  wall partition hinge left swing in
 }`;
 
-const roomById = (a: ReturnType<typeof describePlan>["access"], id: string) =>
-  a.rooms.find((r) => r.id === id)!;
+const roomById = (a: ReturnType<typeof describePlan>["access"], id: string) => a.rooms.find((r) => r.id === id)!;
 
 describe("door access graph", () => {
   it("finds the entrance and per-room depth from the exterior", () => {

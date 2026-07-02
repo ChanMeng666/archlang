@@ -122,8 +122,8 @@ describe("compile — error cases", () => {
   it("warns on overlapping rooms", () => {
     const src = [
       'plan "E" {',
-      "  room id=a at (0,0) size 3000x3000 label \"A\"",
-      "  room id=b at (1000,1000) size 3000x3000 label \"B\"",
+      '  room id=a at (0,0) size 3000x3000 label "A"',
+      '  room id=b at (1000,1000) size 3000x3000 label "B"',
       "}",
     ].join("\n");
     const { warnings } = compile(src, { noCache: true });

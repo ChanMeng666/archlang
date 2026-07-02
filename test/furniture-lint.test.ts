@@ -20,7 +20,9 @@ const room = (furniture: string) =>
 
 describe("furniture lint", () => {
   it("flags two overlapping furniture pieces", () => {
-    const c = codes(room(`furniture sofa at (300,300) size 2000x900\n    furniture table at (1000,500) size 1000x1000`));
+    const c = codes(
+      room(`furniture sofa at (300,300) size 2000x900\n    furniture table at (1000,500) size 1000x1000`),
+    );
     expect(c).toContain("W_FURNITURE_OVERLAP");
   });
 
@@ -68,7 +70,9 @@ describe("furniture `in <room>` ownership", () => {
   });
 
   it("errors when `in` names a room that does not exist", () => {
-    const { diagnostics } = compile(twoRoom(`furniture wc at (4200,200) size 400x700 in nosuchroom`), { noCache: true });
+    const { diagnostics } = compile(twoRoom(`furniture wc at (4200,200) size 400x700 in nosuchroom`), {
+      noCache: true,
+    });
     expect(diagnostics.some((d) => d.code === "E_FURN_ROOM")).toBe(true);
   });
 

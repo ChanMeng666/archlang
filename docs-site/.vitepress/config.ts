@@ -9,10 +9,7 @@ import { resolve } from "node:path";
 // instead of falling back to plain text, and keeps the site in lockstep with the
 // grammar (regenerate the grammar → the site picks it up; nothing to hand-sync).
 const archGrammar = JSON.parse(
-  readFileSync(
-    fileURLToPath(new URL("../../editors/archlang.tmLanguage.json", import.meta.url)),
-    "utf8",
-  ),
+  readFileSync(fileURLToPath(new URL("../../editors/archlang.tmLanguage.json", import.meta.url)), "utf8"),
 );
 
 // ArchLang docs site (T6.1). Static, isomorphic — no backend. Pages re-use the
@@ -20,7 +17,8 @@ const archGrammar = JSON.parse(
 // so the site never drifts from the source of truth.
 export default defineConfig({
   title: "ArchLang",
-  description: "A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.",
+  description:
+    "A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.",
   // Brand: the ArchLang spark favicon (SVG, scales), an apple-touch icon, the dark
   // theme-colour, and an OG/Twitter social card (the 1200×630 wordmark banner). All
   // assets live in public/brand/ (the lockup logo set).
@@ -31,7 +29,14 @@ export default defineConfig({
     ["meta", { name: "theme-color", content: "#0f1115" }],
     ["meta", { property: "og:type", content: "website" }],
     ["meta", { property: "og:title", content: "ArchLang — code to floor plans" }],
-    ["meta", { property: "og:description", content: "A declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture." }],
+    [
+      "meta",
+      {
+        property: "og:description",
+        content:
+          "A declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.",
+      },
+    ],
     ["meta", { property: "og:image", content: "https://archlang-docs.vercel.app/brand/archlang-og.png" }],
     ["meta", { name: "twitter:card", content: "summary_large_image" }],
     ["meta", { name: "twitter:image", content: "https://archlang-docs.vercel.app/brand/archlang-og.png" }],

@@ -90,7 +90,11 @@ export function extractArchBlocks(md: string): ArchBlock[] {
  * block to the first so the unmodified earlier offsets stay correct. A block with
  * no replacement (e.g. it failed to render) is left untouched.
  */
-export function rewriteMarkdown(md: string, blocks: ArchBlock[], replacements: ReadonlyArray<string | undefined>): string {
+export function rewriteMarkdown(
+  md: string,
+  blocks: ArchBlock[],
+  replacements: ReadonlyArray<string | undefined>,
+): string {
   let out = md;
   const ordered = [...blocks].sort((a, b) => b.range[0] - a.range[0]);
   for (const b of ordered) {

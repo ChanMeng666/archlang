@@ -88,7 +88,10 @@ connection.onHover(async (params): Promise<Hover | null> => {
   const text = doc.getText();
   const h = hover(text, positionToOffset(text, params.position));
   if (!h) return null;
-  return { contents: { kind: MarkupKind.Markdown, value: h.contents }, range: h.span ? spanToRange(text, h.span) : undefined };
+  return {
+    contents: { kind: MarkupKind.Markdown, value: h.contents },
+    range: h.span ? spanToRange(text, h.span) : undefined,
+  };
 });
 
 connection.onCompletion(async (params): Promise<CompletionItem[]> => {
@@ -120,7 +123,11 @@ connection.onRenameRequest(async (params): Promise<WorkspaceEdit | null> => {
   const text = doc.getText();
   const edits = rename(text, positionToOffset(text, params.position), params.newName);
   if (!edits) return null;
-  return { changes: { [params.textDocument.uri]: edits.map((e) => ({ range: spanToRange(text, e.span), newText: e.newText })) } };
+  return {
+    changes: {
+      [params.textDocument.uri]: edits.map((e) => ({ range: spanToRange(text, e.span), newText: e.newText })),
+    },
+  };
 });
 
 connection.onSignatureHelp(async (params): Promise<SignatureHelp | null> => {

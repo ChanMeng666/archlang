@@ -227,17 +227,11 @@ function compileUncached(source: string, opts: CompileOptions): CompileResult {
   // resolve (AST→IR, the single place semantics live) → render.
   const linked = plan ? link(plan, world, registry) : null;
   const resolved = linked ? resolve(linked.plan, registry, world) : null;
-  const diagnostics: Diagnostic[] = [
-    ...parseDiags,
-    ...(linked?.diagnostics ?? []),
-    ...(resolved?.diagnostics ?? []),
-  ];
+  const diagnostics: Diagnostic[] = [...parseDiags, ...(linked?.diagnostics ?? []), ...(resolved?.diagnostics ?? [])];
 
   const errs = diagnostics.filter((d) => d.severity === "error");
   const errors = errs.map((d) => toLegacy(source, d));
-  const warnings = diagnostics
-    .filter((d) => d.severity === "warning")
-    .map((d) => toLegacy(source, d));
+  const warnings = diagnostics.filter((d) => d.severity === "warning").map((d) => toLegacy(source, d));
 
   // Warnings never block rendering; any error (or no plan) aborts with svg = "".
   // The Scene is built once and serialized to SVG; it is also exposed on the

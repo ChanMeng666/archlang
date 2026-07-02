@@ -20,7 +20,9 @@ describe("let bindings", () => {
   });
 
   it("supports arithmetic over bindings", () => {
-    const r = elements(`plan "P" { let W = 3000 let H = W - 500 room at (0,0) size W x H }`).find((e) => e.kind === "room");
+    const r = elements(`plan "P" { let W = 3000 let H = W - 500 room at (0,0) size W x H }`).find(
+      (e) => e.kind === "room",
+    );
     expect(r.size).toEqual({ w: 3000, h: 2500 });
   });
 
@@ -100,37 +102,51 @@ describe("components", () => {
 
 describe("control flow (T2.3)", () => {
   it("for-over-range expands into the element stream (DoD)", () => {
-    const cols = elements(`plan "P" { for i in 0..3 { column at (i*600, 0) size 300x300 } }`).filter((e) => e.kind === "column");
+    const cols = elements(`plan "P" { for i in 0..3 { column at (i*600, 0) size 300x300 } }`).filter(
+      (e) => e.kind === "column",
+    );
     expect(cols.length).toBe(3);
     expect(cols.map((c) => c.at.x)).toEqual([0, 600, 1200]);
   });
 
   it("for-over-array literal", () => {
-    const cols = elements(`plan "P" { for x in [100, 400, 900] { column at (x, 0) size 50x50 } }`).filter((e) => e.kind === "column");
+    const cols = elements(`plan "P" { for x in [100, 400, 900] { column at (x, 0) size 50x50 } }`).filter(
+      (e) => e.kind === "column",
+    );
     expect(cols.map((c) => c.at.x)).toEqual([100, 400, 900]);
   });
 
   it("for body is a fresh scope each iteration (loop-local let, no redefinition)", () => {
     const d = diags(`plan "P" { for i in 0..2 { let w = i*100 column at (i*200, 0) size w x w } }`);
     expect(d.map((x) => x.code)).not.toContain("E_REDEF");
-    const cols = elements(`plan "P" { for i in 0..2 { let w = (i+1)*100 column at (i*200, 0) size w x w } }`).filter((e) => e.kind === "column");
+    const cols = elements(`plan "P" { for i in 0..2 { let w = (i+1)*100 column at (i*200, 0) size w x w } }`).filter(
+      (e) => e.kind === "column",
+    );
     expect(cols.map((c) => c.size.w)).toEqual([100, 200]);
   });
 
   it("if/else expands only the taken branch", () => {
-    const yes = elements(`plan "P" { let big = 5000 if big > 3000 { room at (0,0) size 100x100 label "Big" } else { room at (0,0) size 50x50 label "Small" } }`).filter((e) => e.kind === "room");
+    const yes = elements(
+      `plan "P" { let big = 5000 if big > 3000 { room at (0,0) size 100x100 label "Big" } else { room at (0,0) size 50x50 label "Small" } }`,
+    ).filter((e) => e.kind === "room");
     expect(yes.map((r) => r.label)).toEqual(["Big"]);
-    const no = elements(`plan "P" { if 1 > 2 { column at (0,0) size 9x9 } else { column at (5,5) size 1x1 } }`).filter((e) => e.kind === "column");
+    const no = elements(`plan "P" { if 1 > 2 { column at (0,0) size 9x9 } else { column at (5,5) size 1x1 } }`).filter(
+      (e) => e.kind === "column",
+    );
     expect(no.map((c) => [c.at.x, c.at.y])).toEqual([[5, 5]]);
   });
 
   it("if without else and a false condition expands nothing", () => {
-    const cols = elements(`plan "P" { column at (0,0) size 1x1 if false { column at (9,9) size 1x1 } }`).filter((e) => e.kind === "column");
+    const cols = elements(`plan "P" { column at (0,0) size 1x1 if false { column at (9,9) size 1x1 } }`).filter(
+      (e) => e.kind === "column",
+    );
     expect(cols.length).toBe(1);
   });
 
   it("while with reassignment terminates naturally (DoD)", () => {
-    const cols = elements(`plan "P" { let i = 0 while i < 4 { column at (i*300, 0) size 100x100 i = i + 1 } }`).filter((e) => e.kind === "column");
+    const cols = elements(`plan "P" { let i = 0 while i < 4 { column at (i*300, 0) size 100x100 i = i + 1 } }`).filter(
+      (e) => e.kind === "column",
+    );
     expect(cols.map((c) => c.at.x)).toEqual([0, 300, 600, 900]);
   });
 
@@ -147,7 +163,9 @@ describe("control flow (T2.3)", () => {
   });
 
   it("nested control flow composes (for containing if)", () => {
-    const cols = elements(`plan "P" { for i in 0..4 { if i % 2 == 0 { column at (i*100, 0) size 50x50 } } }`).filter((e) => e.kind === "column");
+    const cols = elements(`plan "P" { for i in 0..4 { if i % 2 == 0 { column at (i*100, 0) size 50x50 } } }`).filter(
+      (e) => e.kind === "column",
+    );
     expect(cols.map((c) => c.at.x)).toEqual([0, 200]); // only even i
   });
 
@@ -212,31 +230,43 @@ describe("scope chain (T2.4)", () => {
 
 describe("value-functions / closures (T2.5)", () => {
   it("a value-function computes a result usable in a coordinate (DoD)", () => {
-    const col = elements(`plan "P" { let dbl(x) = x * 2 column at (dbl(100), 0) size 50x50 }`).find((e) => e.kind === "column");
+    const col = elements(`plan "P" { let dbl(x) = x * 2 column at (dbl(100), 0) size 50x50 }`).find(
+      (e) => e.kind === "column",
+    );
     expect(col.at.x).toBe(200);
   });
 
   it("multi-parameter functions work in a size", () => {
-    const r = elements(`plan "P" { let area(w, h) = w * h room at (0,0) size area(40, 30) x 100 }`).find((e) => e.kind === "room");
+    const r = elements(`plan "P" { let area(w, h) = w * h room at (0,0) size area(40, 30) x 100 }`).find(
+      (e) => e.kind === "room",
+    );
     expect(r.size.w).toBe(1200);
   });
 
   it("a closure captures an outer let (DoD)", () => {
-    const col = elements(`plan "P" { let k = 1000 let addk(x) = x + k column at (addk(5), 0) size 1x1 }`).find((e) => e.kind === "column");
+    const col = elements(`plan "P" { let k = 1000 let addk(x) = x + k column at (addk(5), 0) size 1x1 }`).find(
+      (e) => e.kind === "column",
+    );
     expect(col.at.x).toBe(1005);
   });
 
   it("reports an arity mismatch (DoD)", () => {
-    expect(diags(`plan "P" { let f(a, b) = a + b column at (f(1), 0) size 1x1 }`).map((d) => d.code)).toContain("E_ARITY");
+    expect(diags(`plan "P" { let f(a, b) = a + b column at (f(1), 0) size 1x1 }`).map((d) => d.code)).toContain(
+      "E_ARITY",
+    );
   });
 
   it("supports self-recursion bounded by a call-depth cap", () => {
     // Factorial-ish, terminating.
-    const col = elements(`plan "P" { let sum(n) = if n == 0 { 0 } else { n + sum(n - 1) } column at (sum(4), 0) size 1x1 }`).find((e) => e.kind === "column");
+    const col = elements(
+      `plan "P" { let sum(n) = if n == 0 { 0 } else { n + sum(n - 1) } column at (sum(4), 0) size 1x1 }`,
+    ).find((e) => e.kind === "column");
     expect(col.at.x).toBe(10); // 4+3+2+1
 
     // Infinite recursion is caught, not a stack overflow throw.
-    expect(diags(`plan "P" { let loop(n) = loop(n + 1) column at (loop(0), 0) size 1x1 }`).map((d) => d.code)).toContain("E_CALL_DEPTH");
+    expect(
+      diags(`plan "P" { let loop(n) = loop(n + 1) column at (loop(0), 0) size 1x1 }`).map((d) => d.code),
+    ).toContain("E_CALL_DEPTH");
   });
 
   it("calling an unknown function gives a did-you-mean hint", () => {
@@ -352,7 +382,9 @@ describe("string-interpolated labels (T2.8)", () => {
   });
 
   it("a dim text override may interpolate", () => {
-    const d = elements(`plan "P" { let n = 3 dim (0,0)->(3000,0) offset 500 text "{n} units" }`).find((e) => e.kind === "dim");
+    const d = elements(`plan "P" { let n = 3 dim (0,0)->(3000,0) offset 500 text "{n} units" }`).find(
+      (e) => e.kind === "dim",
+    );
     expect(d.text).toBe("3 units");
   });
 });

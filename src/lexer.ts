@@ -68,8 +68,7 @@ export interface LexResult {
 }
 
 const isDigit = (c: string) => c >= "0" && c <= "9";
-const isIdentStart = (c: string) =>
-  (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_";
+const isIdentStart = (c: string) => (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_";
 const isIdentPart = (c: string) => isIdentStart(c) || isDigit(c);
 
 // Stage memo: lexing is a pure function of the source text. Keyed by content
@@ -176,35 +175,143 @@ function lexImpl(src: string): LexResult {
     }
 
     // Punctuation & operators
-    if (c === "(") { advance(); push("lparen", "(", startLine, startCol, startIdx); continue; }
-    if (c === ")") { advance(); push("rparen", ")", startLine, startCol, startIdx); continue; }
-    if (c === "{") { advance(); push("lcurly", "{", startLine, startCol, startIdx); continue; }
-    if (c === "}") { advance(); push("rcurly", "}", startLine, startCol, startIdx); continue; }
-    if (c === ",") { advance(); push("comma", ",", startLine, startCol, startIdx); continue; }
-    if (c === ":") { advance(); push("colon", ":", startLine, startCol, startIdx); continue; }
-    if (c === "[") { advance(); push("lbracket", "[", startLine, startCol, startIdx); continue; }
-    if (c === "]") { advance(); push("rbracket", "]", startLine, startCol, startIdx); continue; }
-    if (c === "-" && peek(1) === ">") { advance(); advance(); push("arrow", "->", startLine, startCol, startIdx); continue; }
+    if (c === "(") {
+      advance();
+      push("lparen", "(", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === ")") {
+      advance();
+      push("rparen", ")", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "{") {
+      advance();
+      push("lcurly", "{", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "}") {
+      advance();
+      push("rcurly", "}", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === ",") {
+      advance();
+      push("comma", ",", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === ":") {
+      advance();
+      push("colon", ":", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "[") {
+      advance();
+      push("lbracket", "[", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "]") {
+      advance();
+      push("rbracket", "]", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "-" && peek(1) === ">") {
+      advance();
+      advance();
+      push("arrow", "->", startLine, startCol, startIdx);
+      continue;
+    }
 
     // Comparison / equality / logical operators (multi-char forms first).
-    if (c === "=" && peek(1) === "=") { advance(); advance(); push("eq", "==", startLine, startCol, startIdx); continue; }
-    if (c === "=") { advance(); push("equals", "=", startLine, startCol, startIdx); continue; }
-    if (c === "!" && peek(1) === "=") { advance(); advance(); push("ne", "!=", startLine, startCol, startIdx); continue; }
-    if (c === "!") { advance(); push("bang", "!", startLine, startCol, startIdx); continue; }
-    if (c === "<" && peek(1) === "=") { advance(); advance(); push("le", "<=", startLine, startCol, startIdx); continue; }
-    if (c === "<") { advance(); push("lt", "<", startLine, startCol, startIdx); continue; }
-    if (c === ">" && peek(1) === "=") { advance(); advance(); push("ge", ">=", startLine, startCol, startIdx); continue; }
-    if (c === ">") { advance(); push("gt", ">", startLine, startCol, startIdx); continue; }
-    if (c === "&" && peek(1) === "&") { advance(); advance(); push("and", "&&", startLine, startCol, startIdx); continue; }
-    if (c === "|" && peek(1) === "|") { advance(); advance(); push("or", "||", startLine, startCol, startIdx); continue; }
-    if (c === "." && peek(1) === ".") { advance(); advance(); push("dotdot", "..", startLine, startCol, startIdx); continue; }
+    if (c === "=" && peek(1) === "=") {
+      advance();
+      advance();
+      push("eq", "==", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "=") {
+      advance();
+      push("equals", "=", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "!" && peek(1) === "=") {
+      advance();
+      advance();
+      push("ne", "!=", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "!") {
+      advance();
+      push("bang", "!", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "<" && peek(1) === "=") {
+      advance();
+      advance();
+      push("le", "<=", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "<") {
+      advance();
+      push("lt", "<", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === ">" && peek(1) === "=") {
+      advance();
+      advance();
+      push("ge", ">=", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === ">") {
+      advance();
+      push("gt", ">", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "&" && peek(1) === "&") {
+      advance();
+      advance();
+      push("and", "&&", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "|" && peek(1) === "|") {
+      advance();
+      advance();
+      push("or", "||", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "." && peek(1) === ".") {
+      advance();
+      advance();
+      push("dotdot", "..", startLine, startCol, startIdx);
+      continue;
+    }
 
     // Arithmetic operators (unary minus is handled by the expression parser).
-    if (c === "+") { advance(); push("plus", "+", startLine, startCol, startIdx); continue; }
-    if (c === "-") { advance(); push("minus", "-", startLine, startCol, startIdx); continue; }
-    if (c === "*") { advance(); push("star", "*", startLine, startCol, startIdx); continue; }
-    if (c === "/") { advance(); push("slash", "/", startLine, startCol, startIdx); continue; }
-    if (c === "%") { advance(); push("percent", "%", startLine, startCol, startIdx); continue; }
+    if (c === "+") {
+      advance();
+      push("plus", "+", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "-") {
+      advance();
+      push("minus", "-", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "*") {
+      advance();
+      push("star", "*", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "/") {
+      advance();
+      push("slash", "/", startLine, startCol, startIdx);
+      continue;
+    }
+    if (c === "%") {
+      advance();
+      push("percent", "%", startLine, startCol, startIdx);
+      continue;
+    }
 
     // Number (optionally part of a literal dimension WxH). Numbers are
     // non-negative; negation is a unary operator in expressions.

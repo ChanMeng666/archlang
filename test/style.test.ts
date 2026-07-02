@@ -19,10 +19,7 @@ const line = (y: number, extra: Partial<SceneNode>): SceneNode => ({
 
 describe("Scene style metadata (T3.1)", () => {
   it("line weights map to a named ramp (heavy is wider than extraThin)", () => {
-    const svg = renderSvg(sceneWith([
-      line(0, { lineWeight: "heavy" }),
-      line(500, { lineWeight: "extraThin" }),
-    ]));
+    const svg = renderSvg(sceneWith([line(0, { lineWeight: "heavy" }), line(500, { lineWeight: "extraThin" })]));
     const widths = [...svg.matchAll(/<line[^>]*stroke-width="([\d.]+)"/g)].map((m) => Number(m[1]));
     expect(widths.length).toBe(2);
     expect(widths[0]).toBeGreaterThan(widths[1]); // heavy > extraThin
@@ -56,10 +53,12 @@ describe("Scene style metadata (T3.1)", () => {
   });
 
   it("a dashed/center DXF entity carries a linetype (group code 6); continuous does not", () => {
-    const dxf = toDxf(sceneWith([
-      line(0, { lineType: "center" }),
-      line(500, {}), // continuous → BYLAYER, no code 6 on the entity
-    ]));
+    const dxf = toDxf(
+      sceneWith([
+        line(0, { lineType: "center" }),
+        line(500, {}), // continuous → BYLAYER, no code 6 on the entity
+      ]),
+    );
     expect(dxf).toContain("\n6\nCENTER\n"); // explicit linetype on the center line
     // Exactly one entity-level code-6 CENTER (the LTYPE table uses code 2 for names).
     expect((dxf.match(/\n6\nCENTER\n/g) ?? []).length).toBe(1);
@@ -85,7 +84,7 @@ describe("AIA layers (T3.2)", () => {
     for (const lyr of ["A-WALL", "A-FLOR", "A-DOOR", "A-COLS"]) {
       expect(svg).toContain(`<g id="${lyr}" inkscape:groupmode="layer"`);
     }
-    expect(svg).toContain('xmlns:inkscape=');
+    expect(svg).toContain("xmlns:inkscape=");
   });
 
   it("a column lands on A-COLS, not A-FURN", () => {
@@ -111,20 +110,26 @@ describe("openings void walls (T3.3)", () => {
 
   it("a door cuts its host wall into two pieces", () => {
     const intact = wallLoops(`plan "P" { wall exterior thickness 200 { (0,0) (4000,0) } }`);
-    const cut = wallLoops(`plan "P" { wall exterior thickness 200 { (0,0) (4000,0) } door at (2000,0) width 900 wall exterior }`);
+    const cut = wallLoops(
+      `plan "P" { wall exterior thickness 200 { (0,0) (4000,0) } door at (2000,0) width 900 wall exterior }`,
+    );
     expect(intact.length).toBe(1); // solid band
     expect(cut.length).toBe(2); // split by the opening
   });
 
   it("the opening gap matches the door width and position", () => {
-    const cut = wallLoops(`plan "P" { wall exterior thickness 200 { (0,0) (4000,0) } door at (2000,0) width 900 wall exterior }`);
+    const cut = wallLoops(
+      `plan "P" { wall exterior thickness 200 { (0,0) (4000,0) } door at (2000,0) width 900 wall exterior }`,
+    );
     const xs = new Set(cut.flat().map((p) => p.x));
     expect(xs.has(1550)).toBe(true); // 2000 - 450
     expect(xs.has(2450)).toBe(true); // 2000 + 450
   });
 
   it("a window also voids its host wall", () => {
-    const cut = wallLoops(`plan "P" { wall exterior thickness 200 { (0,0) (4000,0) } window at (2000,0) width 1200 wall exterior }`);
+    const cut = wallLoops(
+      `plan "P" { wall exterior thickness 200 { (0,0) (4000,0) } window at (2000,0) width 1200 wall exterior }`,
+    );
     expect(cut.length).toBe(2);
   });
 

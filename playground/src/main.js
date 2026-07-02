@@ -85,8 +85,7 @@ for (const name of Object.keys(EXAMPLES)) {
 // One-line description of what each profile tightens, shown under the selector.
 const LINT_PROFILE_CAPTIONS = {
   "residential-basic": "Default — doors ≥ 700 mm, habitable rooms ≥ 4 m².",
-  "accessibility-advisory":
-    "Stricter — doors ≥ 850 mm, rooms ≥ 5 m², 150 mm door-swing clearance.",
+  "accessibility-advisory": "Stricter — doors ≥ 850 mm, rooms ≥ 5 m², 150 mm door-swing clearance.",
 };
 for (const name of LINT_PROFILE_NAMES) {
   const o = document.createElement("option");
@@ -141,7 +140,10 @@ function updateAnalysis(source, ok) {
     lintOutput.innerHTML = `<p class="ok">✓ No soundness warnings — every room is reachable, bedrooms have windows, the building has an entrance.</p>`;
   } else {
     lintOutput.innerHTML = lintDiags
-      .map((d) => `<div class="lintrow"><code>${d.code}</code> ${escapeHtml(d.message)}${d.hints?.length ? `<span class="hint">${escapeHtml(d.hints[0])}</span>` : ""}</div>`)
+      .map(
+        (d) =>
+          `<div class="lintrow"><code>${d.code}</code> ${escapeHtml(d.message)}${d.hints?.length ? `<span class="hint">${escapeHtml(d.hints[0])}</span>` : ""}</div>`,
+      )
       .join("");
   }
 }
@@ -174,9 +176,7 @@ function renderAccessGraph(facts) {
 
   // One column per reachable depth, in order.
   const depths = [
-    ...new Set(
-      access.rooms.filter((r) => r.reachable && r.depthFromEntrance != null).map((r) => r.depthFromEntrance),
-    ),
+    ...new Set(access.rooms.filter((r) => r.reachable && r.depthFromEntrance != null).map((r) => r.depthFromEntrance)),
   ].sort((a, b) => a - b);
   for (const d of depths) {
     const rooms = access.rooms.filter((r) => r.reachable && r.depthFromEntrance === d);
@@ -186,7 +186,9 @@ function renderAccessGraph(facts) {
   // Trailing column for anything the entrance can't reach.
   const unreachable = access.rooms.filter((r) => r.reachable === false);
   if (unreachable.length) {
-    cols.push(`<div class="ag-col"><div class="ag-col-h ag-col-h-bad">Unreachable</div>${unreachable.map(card).join("")}</div>`);
+    cols.push(
+      `<div class="ag-col"><div class="ag-col-h ag-col-h-bad">Unreachable</div>${unreachable.map(card).join("")}</div>`,
+    );
   }
   return `<div class="ag">${cols.join(`<div class="ag-arrow">→</div>`)}</div>`;
 }
@@ -271,7 +273,7 @@ function renderDiagnostics(diagnostics, source) {
       const locText = loc ? `${loc.line}:${loc.col}` : "";
       const cat = ERROR_CATALOG[d.code] ?? null;
       // Prefer the diagnostic's own fix, else the catalog's; show cause + example.
-      const fix = d.fix ?? cat?.fix ?? (d.hints && d.hints[0]) ?? "";
+      const fix = d.fix ?? cat?.fix ?? d.hints?.[0] ?? "";
       const detail = cat
         ? `<div class="diag-detail">` +
           (cat.cause ? `<p><b>Cause</b> ${escapeHtml(cat.cause)}</p>` : "") +

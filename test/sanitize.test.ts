@@ -15,6 +15,7 @@ describe("T4.5 — sanitizeConfig utility", () => {
     const { value, diagnostics } = sanitizeConfig<Record<string, unknown>>(raw);
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
     expect(value.ok).toBe("fine");
+    // biome-ignore lint/suspicious/noProto: the test deliberately probes the __proto__ accessor
     expect(value.__proto__).toEqual(Object.prototype); // not an own key
     expect(diagnostics.some((d) => d.code === "W_SANITIZED_CONFIG")).toBe(true);
   });

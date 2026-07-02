@@ -41,11 +41,22 @@ export const opening: ElementDef = {
     const wv = ctx.eval(n.width);
     const width = ctx.snap(wv) || wv;
     if (width <= 0) {
-      ctx.diag({ severity: "error", message: `Opening "${id}" must have a positive width`, code: "E_OPENING_WIDTH", span: n.span });
+      ctx.diag({
+        severity: "error",
+        message: `Opening "${id}" must have a positive width`,
+        code: "E_OPENING_WIDTH",
+        span: n.span,
+      });
     }
     if (ctx.walls.length > 0 && !ctx.isOnWall(at, n.wall)) {
       const note = nearestWallNote(at, ctx.walls);
-      ctx.diag({ severity: "warning", message: `Opening "${id}" does not lie on any wall`, code: "W_OPENING_OFF_WALL", span: n.span, relatedSpans: note ? [note] : undefined });
+      ctx.diag({
+        severity: "warning",
+        message: `Opening "${id}" does not lie on any wall`,
+        code: "W_OPENING_OFF_WALL",
+        span: n.span,
+        relatedSpans: note ? [note] : undefined,
+      });
     }
     return { kind: "opening", id, at, width, host: ctx.hostSegment(at, n.wall), span: n.span };
   },

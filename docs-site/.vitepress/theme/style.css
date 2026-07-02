@@ -34,10 +34,9 @@
   --vp-button-brand-hover-border: transparent;
 
   /* ── typography → Space Grotesk + Geist Mono ── */
-  --vp-font-family-base: "Space Grotesk", -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --vp-font-family-mono: "Geist Mono", ui-monospace, "SF Mono", "Cascadia Code",
-    Menlo, Consolas, monospace;
+  --vp-font-family-base:
+    "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --vp-font-family-mono: "Geist Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
 
   /* home hero name gradient (used if the default hero is ever shown) */
   --vp-home-hero-name-color: transparent;

@@ -8,7 +8,11 @@ import type { Value } from "../expr.js";
 import { add, doorSwing, mul, nearestWallNote, normal, sub, unit } from "../geometry.js";
 
 /** Read an enum override from the active `set` defaults, if valid. */
-function enumDefault<T extends string>(defaults: ReadonlyMap<string, Value> | undefined, key: string, allowed: readonly T[]): T | undefined {
+function enumDefault<T extends string>(
+  defaults: ReadonlyMap<string, Value> | undefined,
+  key: string,
+  allowed: readonly T[],
+): T | undefined {
   const v = defaults?.get(key);
   return v && v.t === "str" && (allowed as readonly string[]).includes(v.v) ? (v.v as T) : undefined;
 }
@@ -61,11 +65,22 @@ export const door: ElementDef = {
     const wv = ctx.eval(n.width);
     const width = ctx.snap(wv) || wv;
     if (width <= 0) {
-      ctx.diag({ severity: "error", message: `Door "${id}" must have a positive width`, code: "E_DOOR_WIDTH", span: n.span });
+      ctx.diag({
+        severity: "error",
+        message: `Door "${id}" must have a positive width`,
+        code: "E_DOOR_WIDTH",
+        span: n.span,
+      });
     }
     if (ctx.walls.length > 0 && !ctx.isOnWall(at, n.wall)) {
       const note = nearestWallNote(at, ctx.walls);
-      ctx.diag({ severity: "warning", message: `Door "${id}" does not lie on any wall`, code: "W_DOOR_OFF_WALL", span: n.span, relatedSpans: note ? [note] : undefined });
+      ctx.diag({
+        severity: "warning",
+        message: `Door "${id}" does not lie on any wall`,
+        code: "W_DOOR_OFF_WALL",
+        span: n.span,
+        relatedSpans: note ? [note] : undefined,
+      });
     }
     // Precedence: explicit attribute > `set door(...)` default > hard default.
     const hinge = n.hinge ?? enumDefault(ctx.defaults, "hinge", ["left", "right"] as const) ?? "left";
@@ -108,7 +123,14 @@ export const door: ElementDef = {
       });
       nodes.push({
         layer: "doors",
-        prim: { t: "arc", center: swing.hinge, r: swing.radius, start: swing.leafEnd, end: swing.farJamb, sweep: swing.sweep },
+        prim: {
+          t: "arc",
+          center: swing.hinge,
+          r: swing.radius,
+          start: swing.leafEnd,
+          end: swing.farJamb,
+          sweep: swing.sweep,
+        },
         paint: { fill: "none", stroke: theme.doorLeaf, width: sizes.thin, dash: [sizes.thin * 4, sizes.thin * 3] },
       });
     }

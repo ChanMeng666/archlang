@@ -14,7 +14,18 @@ import type { RenderCtx, Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode } from "./scene.js";
 import type { Bounds, Vec } from "./geometry.js";
-import { add, distPointToSegment, emptyBounds, extendBounds, mul, normal, segmentRectangle, segmentsOfWall, sub, unit } from "./geometry.js";
+import {
+  add,
+  distPointToSegment,
+  emptyBounds,
+  extendBounds,
+  mul,
+  normal,
+  segmentRectangle,
+  segmentsOfWall,
+  sub,
+  unit,
+} from "./geometry.js";
 import type { Rect } from "./geometry/union.js";
 import { rectBooleanOutline } from "./geometry/union.js";
 import { getGeometryBackend } from "./geometry/backend.js";
@@ -40,7 +51,7 @@ function planBounds(ir: ResolvedPlan, registry: Registry): Bounds {
     if (!def) continue;
     for (const p of def.bounds(el)) extendBounds(b, p.x, p.y);
   }
-  if (!isFinite(b.minX)) {
+  if (!Number.isFinite(b.minX)) {
     // Nothing to draw; provide a default frame.
     return { minX: 0, minY: 0, maxX: 1000, maxY: 1000 };
   }
@@ -226,7 +237,7 @@ function lowerWalls(walls: RWall[], ctx: RenderCtx, registry: Registry, backend:
 function themeBaseLookup(name: string | undefined, runtime: Runtime): Partial<Theme> {
   if (!name) return {};
   const reg = runtime.themes?.find((t) => t.name === name);
-  return reg ? reg.theme : THEMES[name] ?? {};
+  return reg ? reg.theme : (THEMES[name] ?? {});
 }
 
 /**
@@ -238,7 +249,14 @@ function themeBaseLookup(name: string | undefined, runtime: Runtime): Partial<Th
  */
 function synthDims(ir: ResolvedPlan, b: Bounds, sizes: RenderSizes): RDim[] {
   const dims: RDim[] = [];
-  const mk = (from: Point, to: Point, offset: number, text?: string): RDim => ({ kind: "dim", id: "", from, to, offset, text });
+  const mk = (from: Point, to: Point, offset: number, text?: string): RDim => ({
+    kind: "dim",
+    id: "",
+    from,
+    to,
+    offset,
+    text,
+  });
   const wantOverall = ir.autoDims === "overall" || ir.autoDims === "all";
   const wantRooms = ir.autoDims === "rooms" || ir.autoDims === "all";
   const wantWalls = ir.autoDims === "walls" || ir.autoDims === "all";
@@ -271,12 +289,16 @@ function synthDims(ir: ResolvedPlan, b: Bounds, sizes: RenderSizes): RDim[] {
       // neither edge on the perimeter keeps the legacy just-inside-the-top placement.
       // The dim element offsets along the left-normal of from→to, so endpoint order +
       // offset sign choose the side (mirrors the overall-dim trick above).
-      if (y === rMinY) dims.push(mk({ x: x + w, y }, { x, y }, inset)); // outside, above top edge
-      else if (y + h === rMaxY) dims.push(mk({ x, y: y + h }, { x: x + w, y: y + h }, inset)); // outside, below bottom edge
+      if (y === rMinY)
+        dims.push(mk({ x: x + w, y }, { x, y }, inset)); // outside, above top edge
+      else if (y + h === rMaxY)
+        dims.push(mk({ x, y: y + h }, { x: x + w, y: y + h }, inset)); // outside, below bottom edge
       else dims.push(mk({ x, y }, { x: x + w, y }, inset)); // interior room: just inside the top edge
       // Height dim: prefer the vertical edge facing outside (left, else right).
-      if (x === rMinX) dims.push(mk({ x, y }, { x, y: y + h }, inset)); // outside, left of left edge
-      else if (x + w === rMaxX) dims.push(mk({ x: x + w, y: y + h }, { x: x + w, y }, inset)); // outside, right of right edge
+      if (x === rMinX)
+        dims.push(mk({ x, y }, { x, y: y + h }, inset)); // outside, left of left edge
+      else if (x + w === rMaxX)
+        dims.push(mk({ x: x + w, y: y + h }, { x: x + w, y }, inset)); // outside, right of right edge
       else dims.push(mk({ x, y: y + h }, { x, y }, inset)); // interior room: just inside the left edge
     }
   }

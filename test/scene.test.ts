@@ -47,10 +47,12 @@ describe("Scene IR", () => {
 
   it("draws a glyph for a known fixture category and a labelled rectangle otherwise", () => {
     const base = `plan "P" { units mm room id=r at (0,0) size 3000x3000 label "R"`;
-    const wc = sceneOf(`${base} furniture wc at (200,200) size 400x700 label "WC" }`).nodes
-      .filter((n) => n.layer === "furniture");
-    const box = sceneOf(`${base} furniture box at (200,200) size 400x700 label "Box" }`).nodes
-      .filter((n) => n.layer === "furniture");
+    const wc = sceneOf(`${base} furniture wc at (200,200) size 400x700 label "WC" }`).nodes.filter(
+      (n) => n.layer === "furniture",
+    );
+    const box = sceneOf(`${base} furniture box at (200,200) size 400x700 label "Box" }`).nodes.filter(
+      (n) => n.layer === "furniture",
+    );
     // The fixture glyph emits several primitives and no label text; the plain box
     // is exactly one polygon plus its label text.
     expect(wc.some((n) => n.prim.t === "text")).toBe(false);
@@ -69,8 +71,7 @@ describe("Scene IR", () => {
   });
 
   it("places overall `dims auto` lines OUTSIDE the plan footprint, not inside it", () => {
-    const src =
-      `plan "P" { units mm dims auto overall wall exterior thickness 200 { (0,0) (3000,0) (3000,3000) (0,3000) close } room id=r at (0,0) size 3000x3000 label "R" }`;
+    const src = `plan "P" { units mm dims auto overall wall exterior thickness 200 { (0,0) (3000,0) (3000,3000) (0,3000) close } room id=r at (0,0) size 3000x3000 label "R" }`;
     const scene = sceneOf(src);
     const b = scene.bounds;
     // The overall width dim runs below the plan and the height dim runs to its left;
@@ -106,7 +107,8 @@ describe("Scene IR", () => {
     const texts = scene.nodes.filter((n: any) => n.layer === "dims" && n.prim.t === "text");
     // No room-dim number should sit strictly inside the footprint interior.
     const inside = texts.some(
-      (n: any) => n.prim.at.x > b.minX + 1 && n.prim.at.x < b.maxX - 1 && n.prim.at.y > b.minY + 1 && n.prim.at.y < b.maxY - 1,
+      (n: any) =>
+        n.prim.at.x > b.minX + 1 && n.prim.at.x < b.maxX - 1 && n.prim.at.y > b.minY + 1 && n.prim.at.y < b.maxY - 1,
     );
     expect(inside, "no per-room dim text should sit inside the building").toBe(false);
     // Both dimensioned values are present (4000 width, 3000 height).
@@ -135,8 +137,7 @@ describe("Scene IR", () => {
   it("grows the page so a far right-side dimension never clips the viewBox", () => {
     // A right-edge dim whose offset (4000) far exceeds the base margin used to escape
     // the page (only the bottom margin grew). Per-side margins now contain it.
-    const src =
-      `plan "P" { units mm dim (3000,3000)->(3000,0) offset 4000 text "H" wall exterior thickness 200 { (0,0) (3000,0) (3000,3000) (0,3000) close } room id=r at (0,0) size 3000x3000 label "R" }`;
+    const src = `plan "P" { units mm dim (3000,3000)->(3000,0) offset 4000 text "H" wall exterior thickness 200 { (0,0) (3000,0) (3000,3000) (0,3000) close } room id=r at (0,0) size 3000x3000 label "R" }`;
     const { svg } = compile(src, { noCache: true });
     const vb = svg.match(/viewBox="(-?[\d.]+) (-?[\d.]+) ([\d.]+) ([\d.]+)"/)!;
     const right = Number(vb[1]) + Number(vb[3]);

@@ -39,7 +39,12 @@ export const column: ElementDef = {
     const at = ctx.snapPt(ctx.evalPt(n.at));
     const size = { w: ctx.snap(ctx.eval(n.size.w)), h: ctx.snap(ctx.eval(n.size.h)) };
     if (size.w <= 0 || size.h <= 0) {
-      ctx.diag({ severity: "error", message: `Column "${id}" must have a positive size`, code: "E_COLUMN_SIZE", span: n.span });
+      ctx.diag({
+        severity: "error",
+        message: `Column "${id}" must have a positive size`,
+        code: "E_COLUMN_SIZE",
+        span: n.span,
+      });
     }
     return { kind: "column", id, at, size, span: n.span };
   },

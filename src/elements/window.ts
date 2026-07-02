@@ -40,11 +40,22 @@ export const windowEl: ElementDef = {
     const wv = ctx.eval(n.width);
     const width = ctx.snap(wv) || wv;
     if (width <= 0) {
-      ctx.diag({ severity: "error", message: `Window "${id}" must have a positive width`, code: "E_WINDOW_WIDTH", span: n.span });
+      ctx.diag({
+        severity: "error",
+        message: `Window "${id}" must have a positive width`,
+        code: "E_WINDOW_WIDTH",
+        span: n.span,
+      });
     }
     if (ctx.walls.length > 0 && !ctx.isOnWall(at, n.wall)) {
       const note = nearestWallNote(at, ctx.walls);
-      ctx.diag({ severity: "warning", message: `Window "${id}" does not lie on any wall`, code: "W_WINDOW_OFF_WALL", span: n.span, relatedSpans: note ? [note] : undefined });
+      ctx.diag({
+        severity: "warning",
+        message: `Window "${id}" does not lie on any wall`,
+        code: "W_WINDOW_OFF_WALL",
+        span: n.span,
+        relatedSpans: note ? [note] : undefined,
+      });
     }
     return { kind: "window", id, at, width, host: ctx.hostSegment(at, n.wall), span: n.span };
   },

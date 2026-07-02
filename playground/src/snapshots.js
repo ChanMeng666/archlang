@@ -10,8 +10,7 @@ import { KEYS, readJSON, writeJSON } from "./storage.js";
 
 const MAX_SNAPSHOTS = 20;
 
-const esc = (s) =>
-  String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
 function relTime(ts) {
   const d = Math.max(0, Date.now() - ts);

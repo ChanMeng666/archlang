@@ -47,7 +47,8 @@ function resolveSpec(spec: string, baseDir: string): { path: string } | { error:
     const m = PKG_SPEC.exec(spec);
     if (!m) return { error: `Malformed package spec "${spec}" (expected @namespace/name:major.minor.patch)` };
     const [, ns, name, ver] = m;
-    if (ns !== "local") return { error: `Unknown package namespace "@${ns}" in "${spec}" (only "@local" is supported)` };
+    if (ns !== "local")
+      return { error: `Unknown package namespace "@${ns}" in "${spec}" (only "@local" is supported)` };
     return { path: `@local/${name}/${ver}/index.arch` };
   }
   return { path: joinPath(baseDir, spec) };
@@ -72,12 +73,22 @@ function loadModule(
   const cached = cache.get(path);
   if (cached !== undefined) return cached;
   if (stack.has(path)) {
-    diagnostics.push({ severity: "error", code: "E_IMPORT_CYCLE", message: `Cyclic import of module "${path}"`, span: atSpan });
+    diagnostics.push({
+      severity: "error",
+      code: "E_IMPORT_CYCLE",
+      message: `Cyclic import of module "${path}"`,
+      span: atSpan,
+    });
     return null;
   }
   const src = world.read(path);
   if (src == null) {
-    diagnostics.push({ severity: "error", code: "E_IMPORT_NOT_FOUND", message: `Cannot resolve imported module "${path}"`, span: atSpan });
+    diagnostics.push({
+      severity: "error",
+      code: "E_IMPORT_NOT_FOUND",
+      message: `Cannot resolve imported module "${path}"`,
+      span: atSpan,
+    });
     cache.set(path, null);
     return null;
   }
@@ -87,7 +98,12 @@ function loadModule(
   // at the import site, prefixed with the module path. (Warnings are dropped.)
   for (const d of pdiags) {
     if (d.severity === "error") {
-      diagnostics.push({ severity: "error", code: "E_IMPORT_PARSE", message: `In module "${path}": ${d.message}`, span: atSpan });
+      diagnostics.push({
+        severity: "error",
+        code: "E_IMPORT_PARSE",
+        message: `In module "${path}": ${d.message}`,
+        span: atSpan,
+      });
     }
   }
   const comps: CompMap = new Map(plan?.components ?? []);
@@ -121,11 +137,21 @@ function mergeImport(
   const bind = (name: string, as: string): void => {
     const def = mod.get(name);
     if (!def) {
-      diagnostics.push({ severity: "error", code: "E_IMPORT_NOT_EXPORTED", message: `Module "${r.path}" has no exported component "${name}"`, span: imp.span });
+      diagnostics.push({
+        severity: "error",
+        code: "E_IMPORT_NOT_EXPORTED",
+        message: `Module "${r.path}" has no exported component "${name}"`,
+        span: imp.span,
+      });
       return;
     }
     if (target.has(as)) {
-      diagnostics.push({ severity: "error", code: "E_IMPORT_CONFLICT", message: `Imported name "${as}" conflicts with an existing component`, span: imp.span });
+      diagnostics.push({
+        severity: "error",
+        code: "E_IMPORT_CONFLICT",
+        message: `Imported name "${as}" conflicts with an existing component`,
+        span: imp.span,
+      });
       return;
     }
     target.set(as, def);

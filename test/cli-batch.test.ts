@@ -6,7 +6,10 @@ import { describe, expect, it } from "vitest";
 
 /** Spawn the real CLI via the tsx loader (no build step), as in cli.test.ts. */
 function run(args: string[]): { status: number | null; stdout: string; stderr: string } {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], { encoding: "utf8", cwd: process.cwd() });
+  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
+    encoding: "utf8",
+    cwd: process.cwd(),
+  });
   return { status: r.status, stdout: r.stdout, stderr: r.stderr };
 }
 

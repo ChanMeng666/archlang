@@ -28,7 +28,8 @@ function run(args: string[], input?: string): Run {
 const VALID = 'plan "S" { units mm room at (0,0) size 4000x3000 label "R" door at (0,1500) width 900 }';
 const BAD = 'plan "B" { units mm room at (0,0) size 0x3000 }';
 // Compiles clean (no errors) but lints with warnings: a room with no door/entrance.
-const WARN = 'plan "W" { units mm wall exterior thickness 200 { (0,0) (2000,0) (2000,2000) (0,2000) close } room id=r at (0,0) size 2000x2000 label "R" }';
+const WARN =
+  'plan "W" { units mm wall exterior thickness 200 { (0,0) (2000,0) (2000,2000) (0,2000) close } room id=r at (0,0) size 2000x2000 label "R" }';
 
 describe("CLI — agent contract", () => {
   it("`spec` prints the one-prompt spec, exit 0", () => {

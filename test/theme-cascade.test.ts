@@ -10,13 +10,13 @@ const BASE = `plan "P" {
 }`;
 
 function withDirective(d: string): string {
-  return BASE.replace('grid 50', `grid 50\n  ${d}`);
+  return BASE.replace("grid 50", `grid 50\n  ${d}`);
 }
 
 describe("T4.4 — named theme bases", () => {
   it("`theme blueprint { }` applies the named base deterministically", () => {
     clearCache();
-    const src = withDirective('theme blueprint { }');
+    const src = withDirective("theme blueprint { }");
     const a = compile(src, { noCache: true });
     const b = compile(src, { noCache: true });
     expect(a.errors).toEqual([]);
@@ -25,7 +25,7 @@ describe("T4.4 — named theme bases", () => {
   });
 
   it("`theme blueprint` one-liner (no block) also applies", () => {
-    const src = withDirective('theme blueprint');
+    const src = withDirective("theme blueprint");
     const { svg, errors } = compile(src, { noCache: true });
     expect(errors).toEqual([]);
     expect(svg).toContain("#0b3d6b");
@@ -38,7 +38,7 @@ describe("T4.4 — named theme bases", () => {
   });
 
   it("an unknown named base is ignored (treated as default)", () => {
-    const src = withDirective('theme nonesuch { }');
+    const src = withDirective("theme nonesuch { }");
     const def = compile(BASE, { noCache: true });
     const unk = compile(src, { noCache: true });
     expect(unk.svg).toBe(def.svg); // unknown base contributes nothing
@@ -97,7 +97,7 @@ describe("T4.4 — registered themes", () => {
   it("registerTheme adds a named base usable via `theme <name>` and is cache-keyed", () => {
     clearCache();
     const neon = registerTheme("neon", { bg: "#00ff88", roomFill: "#00ff88" });
-    const src = withDirective('theme neon { }');
+    const src = withDirective("theme neon { }");
     const opts = { themes: [neon] }; // one array reference → stable identity
     const a = compile(src, opts);
     expect(a.svg).toContain("#00ff88");
