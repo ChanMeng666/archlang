@@ -7,25 +7,16 @@
 
 import { isBedroom, isKitchen, isWetRoom, largestPerimeterGap, pointOnRoomEdge, rectOf } from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
+import { zoneFixtureCategories } from "../../fixtures-catalog.js";
 import { pointInRect } from "../../geometry/rect.js";
 import type { RRoom } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
 
-/** Furniture categories that count as a plumbing fixture for a wet room. */
-export const WET_FIX = new Set(["wc", "toilet", "basin", "sink", "shower", "bath", "bathtub", "tub"]);
+/** Furniture categories that count as a plumbing fixture for a wet room — derived
+ *  from the catalog's `zones` data (single source; membership drift-tested). */
+export const WET_FIX = zoneFixtureCategories("wet");
 /** Furniture categories that count as a fixture/appliance for a kitchen. */
-export const KITCHEN_FIX = new Set([
-  "sink",
-  "kitchen_sink",
-  "stove",
-  "hob",
-  "cooktop",
-  "oven",
-  "counter",
-  "worktop",
-  "fridge",
-  "refrigerator",
-]);
+export const KITCHEN_FIX = zoneFixtureCategories("kitchen");
 
 /** Square metres of a room, rounded to 2 decimals. */
 const areaM2 = (r: RRoom): number => Math.round(((r.size.w * r.size.h) / 1_000_000) * 100) / 100;

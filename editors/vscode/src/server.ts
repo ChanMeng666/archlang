@@ -24,6 +24,11 @@ import {
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { lspDiagnostics, positionToOffset, spanToRange, type CompileFn } from "./diagnostics.js";
 
+// Type-only reference into the (ESM) core from this CJS module: typing the icon
+// map Record<CompletionKind, …> makes a newly added completion kind a compile
+// error here, not a silent fallback-to-Text icon.
+type CoreCompletionKind = import("@chanmeng666/archlang", { with: { "resolution-mode": "import" }}).CompletionKind;
+
 // Minimal structural types for the core language-service functions (the core is
 // dynamically imported, so we describe just what we call).
 interface Span {
@@ -33,7 +38,7 @@ interface Span {
 interface CoreLsp {
   compile: CompileFn;
   hover(src: string, off: number): { contents: string; span?: Span } | null;
-  completion(src: string, off: number): { label: string; kind: string; detail?: string; doc?: string }[];
+  completion(src: string, off: number): { label: string; kind: CoreCompletionKind; detail?: string; doc?: string }[];
   definition(src: string, off: number): Span | null;
   rename(src: string, off: number, newName: string): { span: Span; newText: string }[] | null;
   signatureHelp(src: string, off: number): { label: string; params: string[]; activeParameter: number } | null;
@@ -72,7 +77,7 @@ documents.onDidChangeContent((e) => {
   void validate(e.document);
 });
 
-const COMPLETION_KIND: Record<string, CompletionItemKind> = {
+const COMPLETION_KIND: Record<CoreCompletionKind, CompletionItemKind> = {
   keyword: CompletionItemKind.Keyword,
   element: CompletionItemKind.Class,
   variable: CompletionItemKind.Variable,

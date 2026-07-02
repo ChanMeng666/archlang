@@ -11,6 +11,24 @@
  */
 
 import { KEYWORDS } from "./grammar/tokens.js";
+
+/**
+ * The export formats the CLI can emit — the single source for `-f` validation
+ * (cli.ts `parseFormat`), the capability manifest, and the CLI serializer
+ * dispatch. Adding a format = one row here + one serializer line in cli.ts.
+ * Deliberately NOT a public registry seam like elements/themes/hatches: formats
+ * drag optional native deps and CLI flags with them, which a registry cannot
+ * abstract cleanly (see AGENTS.md).
+ */
+export const EXPORT_FORMATS = [
+  { id: "svg", zeroDep: true },
+  { id: "dxf", zeroDep: true },
+  { id: "pdf", zeroDep: false, optionalDep: "pdfkit" },
+  { id: "png", zeroDep: false, optionalDep: "@resvg/resvg-js" },
+] as const;
+
+/** A format id the CLI accepts for `-f`. */
+export type ExportFormat = (typeof EXPORT_FORMATS)[number]["id"];
 import { ERROR_CODES, ERROR_CATALOG } from "./error-catalog.js";
 import { LINT_PROFILE_NAMES, LINT_PROFILES, DEFAULT_RULESET } from "./lint.js";
 import { FIXTURE_CATEGORIES } from "./elements/fixtures-glyphs.js";
@@ -233,12 +251,7 @@ export function buildManifest(version: string): Manifest {
     },
     globalFlags: [JSON_FLAG, QUIET_FLAG],
     commands: COMMANDS,
-    formats: [
-      { id: "svg", zeroDep: true },
-      { id: "dxf", zeroDep: true },
-      { id: "pdf", zeroDep: false, optionalDep: "pdfkit" },
-      { id: "png", zeroDep: false, optionalDep: "@resvg/resvg-js" },
-    ],
+    formats: EXPORT_FORMATS.map((f) => ({ ...f })),
     elements: KEYWORDS.element,
     keywords: KEYWORDS,
     fixtureCategories: FIXTURE_CATEGORIES,

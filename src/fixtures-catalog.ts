@@ -26,30 +26,56 @@ export interface FixtureSpec {
    * guess among alternatives (ADR 0005). Omitted for free-standing furniture.
    */
   footprint?: { along: number; depth: number };
+  /**
+   * Which room zone(s) this category satisfies for the `W_ROOM_NO_FIXTURE` lint rule
+   * (a bathroom needs a wet fixture, a kitchen a kitchen fixture). The membership
+   * encodes lint's long-standing behaviour exactly — e.g. `sink` counts for both
+   * zones, while `lavatory` deliberately carries none (it never counted; flipping
+   * that is a behaviour change, not a refactor).
+   */
+  zones?: readonly FixtureZone[];
 }
+
+/** A room zone a fixture can satisfy (see {@link FixtureSpec.zones}). */
+export type FixtureZone = "wet" | "kitchen";
 
 /** Catalog entries, keyed by category (and its aliases). */
 const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   // Wet-room plumbing fixtures — need a wall behind them.
-  wc: { requiresWall: true, clearanceMm: 450, footprint: { along: 400, depth: 700 } },
-  toilet: { requiresWall: true, clearanceMm: 450, footprint: { along: 400, depth: 700 } },
-  basin: { requiresWall: true, clearanceMm: 450, footprint: { along: 600, depth: 450 } },
+  wc: { requiresWall: true, clearanceMm: 450, footprint: { along: 400, depth: 700 }, zones: ["wet"] },
+  toilet: { requiresWall: true, clearanceMm: 450, footprint: { along: 400, depth: 700 }, zones: ["wet"] },
+  basin: { requiresWall: true, clearanceMm: 450, footprint: { along: 600, depth: 450 }, zones: ["wet"] },
+  // No zone: lint's wet-fixture set never included `lavatory` (see FixtureSpec.zones).
   lavatory: { requiresWall: true, clearanceMm: 450, footprint: { along: 600, depth: 450 } },
-  bathtub: { requiresWall: true, clearanceMm: 550, footprint: { along: 1700, depth: 700 } },
-  tub: { requiresWall: true, clearanceMm: 550, footprint: { along: 1700, depth: 700 } },
-  bath: { requiresWall: true, clearanceMm: 550, footprint: { along: 1700, depth: 700 } },
-  shower: { requiresWall: true, footprint: { along: 900, depth: 900 } },
+  bathtub: { requiresWall: true, clearanceMm: 550, footprint: { along: 1700, depth: 700 }, zones: ["wet"] },
+  tub: { requiresWall: true, clearanceMm: 550, footprint: { along: 1700, depth: 700 }, zones: ["wet"] },
+  bath: { requiresWall: true, clearanceMm: 550, footprint: { along: 1700, depth: 700 }, zones: ["wet"] },
+  shower: { requiresWall: true, footprint: { along: 900, depth: 900 }, zones: ["wet"] },
   // Kitchen run — counters/appliances line a wall; leave standing/working room.
-  kitchen_sink: { requiresWall: true, clearanceMm: 550, footprint: { along: 800, depth: 600 } },
-  sink: { requiresWall: true, clearanceMm: 550, footprint: { along: 800, depth: 600 } },
-  counter: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
-  worktop: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
-  stove: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
-  hob: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
-  cooktop: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
-  fridge: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 650 } },
-  refrigerator: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 650 } },
+  kitchen_sink: { requiresWall: true, clearanceMm: 550, footprint: { along: 800, depth: 600 }, zones: ["kitchen"] },
+  // A bare `sink` satisfies either room kind (a bathroom basin or the kitchen sink).
+  sink: { requiresWall: true, clearanceMm: 550, footprint: { along: 800, depth: 600 }, zones: ["wet", "kitchen"] },
+  counter: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 }, zones: ["kitchen"] },
+  worktop: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 }, zones: ["kitchen"] },
+  stove: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 }, zones: ["kitchen"] },
+  hob: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 }, zones: ["kitchen"] },
+  cooktop: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 }, zones: ["kitchen"] },
+  fridge: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 650 }, zones: ["kitchen"] },
+  refrigerator: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 650 }, zones: ["kitchen"] },
+  // Zone-only entry: counts as a kitchen fixture but is free-standing (no wall,
+  // clearance or footprint semantics — identical to having no catalog entry for
+  // the other rules).
+  oven: { requiresWall: false, zones: ["kitchen"] },
 });
+
+/** All catalogued categories (aliases included), in declaration order. */
+export const CATALOG_CATEGORIES: readonly string[] = Object.freeze(Object.keys(CATALOG));
+
+/** The categories that satisfy `zone` for W_ROOM_NO_FIXTURE — derived from the
+ *  catalog so the lint rule and this data can never drift apart. */
+export function zoneFixtureCategories(zone: FixtureZone): ReadonlySet<string> {
+  return new Set(CATALOG_CATEGORIES.filter((c) => CATALOG[c].zones?.includes(zone)));
+}
 
 /** The catalog spec for a fixture category, or `null` for free-standing furniture. */
 export function fixtureSpec(category: string): FixtureSpec | null {

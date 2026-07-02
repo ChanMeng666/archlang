@@ -1,19 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { compile, toDxf } from "../src/index.js";
 import { registry, registryOrder } from "../src/elements/index.js";
+import { KEYWORDS } from "../src/grammar/tokens.js";
 
 describe("element registry", () => {
   it("registers every element keyword in canonical order", () => {
-    expect(registryOrder.map((d) => d.keyword)).toEqual([
-      "wall",
-      "room",
-      "door",
-      "window",
-      "opening",
-      "furniture",
-      "dim",
-      "column",
-    ]);
+    // Derived from the grammar's single source (itself drift-tested against
+    // BUILTIN_DEFS in element-keyword-drift.test.ts) so adding an element is
+    // genuinely a one-module + one-keyword change, not a third hand-edit here.
+    expect(registryOrder.map((d) => d.keyword)).toEqual([...KEYWORDS.element]);
     expect(registry.get("room")?.kind).toBe("room");
   });
 });

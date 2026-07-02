@@ -206,6 +206,10 @@ source (.arch)
   recovers and reports all problems in one pass.
 - **Adding an element = one module** in `src/elements/` exporting an `ElementDef`, registered
   in `src/elements/defs.ts`. Parse/resolve/render dispatch through the registry, not a switch.
+- **Output formats are deliberately NOT a public registry seam** (unlike elements/themes/
+  hatches/geometry-backend): formats drag optional native deps and CLI flags with them, which
+  a registry can't abstract cleanly. Adding one = a row in `EXPORT_FORMATS`
+  (`src/manifest.ts`) + a serializer line in `src/cli.ts` `serialize()`.
 - **Coordinates are millimetres**; origin top-left, +x right, +y down (matches SVG).
 - **Rendering constants** (colours, line weights, fonts) live in the theme (`src/theme.ts`)
   and the size formulas in the backends — tune there, not inline.

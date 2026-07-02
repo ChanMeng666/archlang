@@ -65,7 +65,12 @@ export interface HoverResult {
   /** The span the hover applies to (the token under the cursor). */
   span?: Span;
 }
-export type CompletionKind = "keyword" | "element" | "variable" | "function" | "component" | "enum";
+/** Every completion kind the core can emit — editors map these to their icon
+ *  enums; typing that map `Record<CompletionKind, …>` (or checking coverage
+ *  against this list) catches a newly added kind at build time instead of a
+ *  silent icon fallback. */
+export const COMPLETION_KINDS = ["keyword", "element", "variable", "function", "component", "enum"] as const;
+export type CompletionKind = (typeof COMPLETION_KINDS)[number];
 export interface CompletionItem {
   label: string;
   kind: CompletionKind;

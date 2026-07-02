@@ -45,13 +45,19 @@ import {
   buildManifest,
   extractArchBlocks,
   rewriteMarkdown,
+  EXPORT_FORMATS,
 } from "./index.js";
-import type { Diagnostic, World, Scene } from "./index.js";
+import type { Diagnostic, World, Scene, ExportFormat } from "./index.js";
 // Internal (not part of the public surface): parse → link → resolve without
 // rendering — validate/lint need only the diagnostics, never the SVG.
 import { resolvePlan } from "./analyze.js";
 
-type Format = "svg" | "dxf" | "pdf" | "png";
+type Format = ExportFormat;
+/** Known `-f` ids and the "svg, dxf, pdf, or png" usage phrasing, from the one table. */
+const FORMAT_IDS = new Set<string>(EXPORT_FORMATS.map((f) => f.id));
+const FORMAT_LIST = `${EXPORT_FORMATS.slice(0, -1)
+  .map((f) => f.id)
+  .join(", ")}, or ${EXPORT_FORMATS[EXPORT_FORMATS.length - 1].id}`;
 
 /** Deterministic exit codes (documented in `--help`). */
 const EXIT = { OK: 0, INTERNAL: 1, USER: 2, USAGE: 3 } as const;
@@ -183,7 +189,7 @@ function defaultOut(input: string, format: Format): string {
 /** Parse + validate the `-f` format, or `null` if it's not a known format. */
 function parseFormat(args: Args): Format | null {
   const fmt = (args.format ?? "svg").toLowerCase();
-  return fmt === "svg" || fmt === "dxf" || fmt === "pdf" || fmt === "png" ? (fmt as Format) : null;
+  return FORMAT_IDS.has(fmt) ? (fmt as Format) : null;
 }
 
 /** Does this error mean a lazy optional render dependency (resvg/pdfkit) is absent? */
@@ -353,7 +359,7 @@ async function cmdCompile(args: Args): Promise<number> {
   if (!input) return usageError("missing input file (use a path or `-` for stdin)");
 
   const format = parseFormat(args);
-  if (!format) return usageError(`unknown format "${args.format}" (use svg, dxf, pdf, or png)`);
+  if (!format) return usageError(`unknown format "${args.format}" (use ${FORMAT_LIST})`);
 
   let source: string;
   try {
@@ -535,7 +541,7 @@ async function cmdBatch(args: Args): Promise<number> {
   const inputs = args._;
   if (inputs.length === 0) return usageError("batch needs at least one input file");
   const format = parseFormat(args);
-  if (!format) return usageError(`unknown format "${args.format}" (use svg, dxf, pdf, or png)`);
+  if (!format) return usageError(`unknown format "${args.format}" (use ${FORMAT_LIST})`);
 
   const outDir = args.o && args.o !== "-" ? args.o : undefined;
   const targetFor = (input: string): string =>
