@@ -6,10 +6,17 @@
  * rectangles into clean outlines (no internal seams at corners/T-junctions) and,
  * since v0.9, to subtract door/window opening rectangles so openings truly void
  * the wall solid. Works via coordinate compression: the union of all rectangle
- * edges forms a grid; a cell is "in" when its centre is inside a solid rect and
- * not inside any hole rect; the boundary between in/out cells is then walked into
- * closed loops. Angled (non-axis-aligned) rectangles are not handled here — the
+ * edges forms a grid; a cell is "in" when it is covered by a solid rect and not
+ * by any hole rect; the boundary between in/out cells is then walked into closed
+ * loops. Angled (non-axis-aligned) rectangles are not handled here — the
  * renderer falls back to per-segment outlines for those.
+ *
+ * Every rect edge lies exactly on a grid line (the grid is built from the same
+ * coordinates), so coverage is rasterized once into a flat cell grid by index
+ * range — equivalent to the former per-cell centre-in-rect test, without the
+ * O(cells × rects) scans. Cell scan order and per-cell edge emission order are
+ * unchanged, so the output loops are byte-identical to the previous
+ * implementation.
  */
 
 import type { Point } from "../ast.js";
@@ -25,9 +32,6 @@ function uniqSorted(values: number[]): number[] {
   const out = [...new Set(values)].sort((a, b) => a - b);
   return out;
 }
-
-const insideAny = (rects: Rect[], cx: number, cy: number): boolean =>
-  rects.some((r) => cx > r.x0 && cx < r.x1 && cy > r.y0 && cy < r.y1);
 
 /**
  * Outline loops of the union of axis-aligned rectangles. Each loop is a closed
@@ -52,55 +56,83 @@ export function rectBooleanOutline(solid: Rect[], holes: Rect[] = []): Point[][]
   const nx = xs.length - 1;
   const ny = ys.length - 1;
 
+  // Rasterize coverage once. A rect covers exactly the cell index range
+  // [xi(x0), xi(x1)) × [yi(y0), yi(y1)) (empty when inverted/degenerate, same
+  // as the old strict centre test). Solids paint 1, holes clear to 0.
+  const xi = new Map<number, number>();
+  for (let i = 0; i < xs.length; i++) xi.set(xs[i], i);
+  const yi = new Map<number, number>();
+  for (let j = 0; j < ys.length; j++) yi.set(ys[j], j);
+  const fill = new Uint8Array(nx * ny);
+  const paint = (rects: Rect[], value: 0 | 1) => {
+    for (const r of rects) {
+      const i0 = xi.get(r.x0)!;
+      const i1 = xi.get(r.x1)!;
+      const j0 = yi.get(r.y0)!;
+      const j1 = yi.get(r.y1)!;
+      for (let i = i0; i < i1; i++) {
+        for (let j = j0; j < j1; j++) fill[i * ny + j] = value;
+      }
+    }
+  };
+  paint(solid, 1);
+  if (holes.length) paint(holes, 0);
+
   const filled = (i: number, j: number): boolean => {
     if (i < 0 || j < 0 || i >= nx || j >= ny) return false;
-    const cx = (xs[i] + xs[i + 1]) / 2;
-    const cy = (ys[j] + ys[j + 1]) / 2;
-    return insideAny(solid, cx, cy) && !insideAny(holes, cx, cy);
+    return fill[i * ny + j] === 1;
   };
 
   // Directed boundary edges, emitted per filled cell so the filled region is
-  // consistently on one side (CCW per cell). Key by start point.
-  const key = (x: number, y: number) => `${x},${y}`;
-  const starts = new Map<string, Point[]>();
-  const pushEdge = (ax: number, ay: number, bx: number, by: number) => {
-    const k = key(ax, ay);
-    const list = starts.get(k);
-    if (list) list.push({ x: bx, y: by });
-    else starts.set(k, [{ x: bx, y: by }]);
+  // consistently on one side (CCW per cell). Vertices are grid points
+  // (xs[i], ys[j]) keyed by the packed integer id i*(ny+1)+j; edges are keyed
+  // by start id. Emission order matches the former string-keyed maps, so Map
+  // insertion order — and therefore loop discovery order — is unchanged.
+  const V = ny + 1; // vertex id stride per x-index
+  const vertexCount = (nx + 1) * V;
+  const starts = new Map<number, number[]>();
+  const pushEdge = (a: number, b: number) => {
+    const list = starts.get(a);
+    if (list) list.push(b);
+    else starts.set(a, [b]);
   };
 
   for (let i = 0; i < nx; i++) {
     for (let j = 0; j < ny; j++) {
       if (!filled(i, j)) continue;
-      const x0 = xs[i];
-      const x1 = xs[i + 1];
-      const y0 = ys[j];
-      const y1 = ys[j + 1];
-      if (!filled(i, j - 1)) pushEdge(x1, y0, x0, y0); // top: right → left
-      if (!filled(i - 1, j)) pushEdge(x0, y0, x0, y1); // left: top → bottom
-      if (!filled(i, j + 1)) pushEdge(x0, y1, x1, y1); // bottom: left → right
-      if (!filled(i + 1, j)) pushEdge(x1, y1, x1, y0); // right: bottom → top
+      const v00 = i * V + j; // (xs[i],   ys[j])
+      const v01 = v00 + 1; // (xs[i],   ys[j+1])
+      const v10 = v00 + V; // (xs[i+1], ys[j])
+      const v11 = v10 + 1; // (xs[i+1], ys[j+1])
+      if (!filled(i, j - 1)) pushEdge(v10, v00); // top: right → left
+      if (!filled(i - 1, j)) pushEdge(v00, v01); // left: top → bottom
+      if (!filled(i, j + 1)) pushEdge(v01, v11); // bottom: left → right
+      if (!filled(i + 1, j)) pushEdge(v11, v10); // right: bottom → top
     }
   }
 
+  const px = (v: number) => xs[Math.floor(v / V)];
+  const py = (v: number) => ys[v % V];
+
   // Walk the directed edges into closed loops. At a vertex with two outgoing
   // edges (a pinch point), prefer the one that turns left, keeping loops simple.
-  const used = new Set<string>();
-  const edgeKey = (a: Point, b: Point) => `${a.x},${a.y}->${b.x},${b.y}`;
+  const used = new Set<number>();
+  const edgeKey = (a: number, b: number) => a * vertexCount + b;
   const loops: Point[][] = [];
 
-  const takeNext = (from: Point, prevDir: { x: number; y: number } | null): Point | null => {
-    const list = starts.get(key(from.x, from.y));
+  const takeNext = (from: number, prevDir: { x: number; y: number } | null): number | null => {
+    const list = starts.get(from);
     if (!list) return null;
     const candidates = list.filter((to) => !used.has(edgeKey(from, to)));
     if (candidates.length === 0) return null;
     if (candidates.length === 1 || !prevDir) return candidates[0];
     // Prefer the left-most turn (cross product > 0 in y-down screen space).
+    const fx = px(from);
+    const fy = py(from);
     let best = candidates[0];
     let bestScore = -Infinity;
     for (const c of candidates) {
-      const dir = { x: c.x - from.x, y: c.y - from.y };
+      const dir = { x: px(c) - fx, y: py(c) - fy };
       const cross = prevDir.x * dir.y - prevDir.y * dir.x;
       if (cross > bestScore) {
         bestScore = cross;
@@ -110,20 +142,18 @@ export function rectBooleanOutline(solid: Rect[], holes: Rect[] = []): Point[][]
     return best;
   };
 
-  for (const [startKey, ends] of starts) {
+  for (const [start, ends] of starts) {
     for (const firstEnd of ends) {
-      const [sx, sy] = startKey.split(",").map(Number);
-      const start: Point = { x: sx, y: sy };
       if (used.has(edgeKey(start, firstEnd))) continue;
-      const loop: Point[] = [start];
+      const loop: Point[] = [{ x: px(start), y: py(start) }];
       let cur = start;
-      let next: Point | null = firstEnd;
+      let next: number | null = firstEnd;
       let dir: { x: number; y: number } | null = null;
-      while (next) {
+      while (next !== null) {
         used.add(edgeKey(cur, next));
-        if (next.x === start.x && next.y === start.y) break;
-        loop.push(next);
-        dir = { x: next.x - cur.x, y: next.y - cur.y };
+        if (next === start) break;
+        loop.push({ x: px(next), y: py(next) });
+        dir = { x: px(next) - px(cur), y: py(next) - py(cur) };
         cur = next;
         next = takeNext(cur, dir);
       }
