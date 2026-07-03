@@ -52,6 +52,12 @@ export type {
   RoomCirculation,
   CirculationRoute,
 } from "./describe.js";
+// Semantic diff (v1.11): pure two-source→delta on top of `describe()`. `diffPlans`
+// returns which rooms/openings/furniture were added/removed/resized/relabeled, per-room
+// bbox edge deltas, circulation deltas, and frozen human-readable summary sentences —
+// the channel ArchCanvas uses to narrate an iteration without re-rendering.
+export { diffPlans } from "./diff.js";
+export type { PlanDiff, RoomChange, OpeningChange, FurnitureChange, CirculationChange } from "./diff.js";
 // Architectural lint (v1.1): habitability rules as `W_*` diagnostics — every room
 // enterable, bedrooms have a window, doors wide enough, the building has an entrance.
 // Pure; the ruleset is data. Surfaced as `arch lint`.

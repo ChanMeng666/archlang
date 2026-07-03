@@ -545,6 +545,47 @@ It is deterministic and never guesses topology: it will **not** add a door or wi
 that would newly pinch a walk below the lint threshold (reporting it in `unresolved`
 instead). Use [`SKILL.md`](../SKILL.md) for the full repair-then-gate loop.
 
+### Comparing two plans — `diffPlans`
+
+Where `describe(source)` turns **one** plan into facts, `diffPlans(sourceA, sourceB, opts?)`
+turns **two** into the *delta* between them. It runs entirely on top of `describe()` — no
+geometry of its own — so it is equally pure, deterministic, and never throws: if either side
+fails to resolve it returns `{ ok: false, … }` with the collected error diagnostics.
+
+```ts
+import { diffPlans, type PlanDiff } from "@chanmeng666/archlang";
+const d = diffPlans(before, after);
+if (d.ok) for (const s of d.summary) console.log(s);
+```
+
+The returned `PlanDiff` reports:
+
+- **`rooms`** — each room `added` / `removed` / `resized` / `relabeled`, with before/after
+  area and, for a resize, the signed mm delta of each bbox edge (`top`/`bottom`/`left`/`right`,
+  after − before, in plan coordinates).
+- **`openings`** — doors, windows, and openings `added` / `removed` / `resized` (before/after
+  clear width in mm, and what they sit `between`).
+- **`furniture`** — fixtures `added` / `removed`, by category.
+- **`circulation`** — per-room walk-distance and bottleneck (pinch) deltas, from the
+  [circulation](#circulation) model.
+- **`totals`** — floor area and room count before and after.
+- **`summary`** — human-readable one-line sentences describing each change above.
+
+**Matching** is by **id first, then a unique-label rescue**: a room/opening/fixture is paired
+across the two plans by its resolved id; if a room is unmatched by id (positional auto-ids can
+shift when statements are added), it is rescued only when exactly one room on the other side
+carries the same `label`. An `id` here is the element's **resolved id** — the explicit `id=` if
+you wrote one, otherwise the deterministic auto id (e.g. `room_1`).
+
+**Noise thresholds** keep sub-perceptual jitter out of the diff: a room counts as *resized* only
+past **0.05 m²** of area drift or **10 mm** on any bbox edge; a circulation change is reported only
+past **250 mm** of walk distance or **50 mm** of pinch width. Differences below these are ignored.
+
+The **`summary` sentences are stable, rendered strings** — their exact wording is a frozen part of
+the API (downstream UIs display them verbatim), so treat them as presentation, not as a parse
+target; read the structured `rooms` / `openings` / `furniture` / `circulation` fields when you need
+to branch on a change.
+
 ## Compilation result
 
 `compile(source, opts?)` returns:
@@ -641,6 +682,24 @@ error[E_ROOM_SIZE]: room "bed" must have a positive size
 
 `annotate` and `overlays` are the only options that change SVG output, and both are
 opt-in — the default `compile(source)` is byte-stable and snapshot-tested.
+
+### Source anchors (annotate mode)
+
+Alongside `data-span`, `annotate` also stamps two element-identity attributes on every
+element primitive — **`data-arch-id`** and **`data-arch-kind`** — so a hit-testing or
+selection UI can map a clicked SVG shape back to the element (and thence its source) it
+came from:
+
+- **`data-arch-id`** is the element's **resolved id** — the explicit `id=` if you wrote one,
+  otherwise the deterministic auto id (e.g. `room_1`).
+- **`data-arch-kind`** is the element kind: `room`, `door`, `window`, `opening`, or
+  `furniture`.
+
+**Walls carry no anchors.** A single wall in the SVG is unioned geometry stitched across
+many source statements, so there is no one element to point back to; anchors are stamped on
+the discrete element primitives only. Like `data-span`, these attributes appear **only** under
+`annotate` — default output stays byte-identical (see
+[ADR 0007](adr/0007-opt-in-source-annotation.md)).
 
 ## Worked example
 

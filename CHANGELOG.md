@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-07-03
+
+### Added
+
+- Annotate mode now stamps `data-arch-id` / `data-arch-kind` on element primitives
+  (rooms, doors, windows, openings, furniture; walls excluded — unioned geometry).
+  Default (non-annotate) output remains byte-identical.
+- `diffPlans(sourceA, sourceB, opts?)`: deterministic semantic diff of two plans built on
+  `describe()` — room/opening/furniture changes, per-room bbox edge deltas, circulation deltas,
+  and human-readable summary sentences.
+
 ## [1.10.0] - 2026-07-02
 
 ### Added — human circulation: facts, lint, overlay & repair guard (ADR 0008)

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { compile, clearCache } from "../src/index.js";
+import { compile, clearCache, diffPlans } from "../src/index.js";
 
 const studio = readFileSync(join(__dirname, "..", "examples", "studio.arch"), "utf8");
 
@@ -42,5 +42,11 @@ describe("source anchors — SVG attributes", () => {
     clearCache();
     const { svg } = compile(studio, { noCache: true });
     expect(svg).not.toContain("data-arch-");
+  });
+});
+
+describe("public API surface", () => {
+  it("exports diffPlans from the package root", () => {
+    expect(typeof diffPlans).toBe("function");
   });
 });
