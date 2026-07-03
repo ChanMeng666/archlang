@@ -1,0 +1,18 @@
+# Diff fixture A — a minimal, valid three-room plan with explicit room ids.
+# Compiles with zero errors; the paired fixture diff-b.arch applies exactly
+# three changes to it (see that file). Used by test/diff.test.ts.
+plan "Diff Fixture" {
+  units mm
+  grid 50
+
+  wall exterior  thickness 200 { (0,0) (7000,0) (7000,5000) (0,5000) close }
+  wall partition thickness 100 { (4000,0) (4000,5000) }
+  wall partition thickness 100 { (4000,3000) (7000,3000) }
+
+  room id=living at (0,0)       size 4000x5000 label "Living"  uses living
+  room id=bed    at (4000,0)    size 3000x2500 label "Bedroom" uses bedroom
+  room id=bath   at (4000,3000) size 3000x2000 label "Bath"    uses bath
+
+  door   id=d_bed at (4000,1200) width 800  wall partition hinge left swing in
+  window id=w1    at (0,2500)    width 1200 wall exterior
+}
