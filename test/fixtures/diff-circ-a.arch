@@ -1,0 +1,27 @@
+# Circulation-diff fixture A — a minimal two-room plan WITH an exterior entrance,
+# so describe() returns a non-null `circulation` model (unlike diff-a/diff-b, which
+# have no entrance and report `circulation: null`). Compiles with zero errors.
+#
+# The paired fixture diff-circ-b.arch relocates the interior door `d_int` 3000 mm
+# along the partition (from y=1000 to y=4000) and changes NOTHING else — same room
+# geometry, same door/window count and widths — so the ONLY delta between the two
+# plans is the walk distance into `bed`. Used by test/diff.test.ts to exercise the
+# circulation-delta path in src/diff.ts.
+plan "Circ Diff Fixture" {
+  units mm
+  grid 50
+
+  wall exterior  thickness 200 { (0,0) (7000,0) (7000,5000) (0,5000) close }
+  wall partition thickness 100 { (4000,0) (4000,5000) }
+
+  room id=living at (0,0)    size 4000x5000 label "Living"  uses living
+  room id=bed    at (4000,0) size 3000x5000 label "Bedroom" uses bedroom
+
+  # Exterior entrance into the living space (south wall) — this is what gives the
+  # plan a modeled entrance, so circulation is measurable.
+  door id=d_main at (2000,5000) width 1000 wall exterior  hinge left swing in
+  # Interior door living <-> bed, high on the partition.
+  door id=d_int  at (4000,1000) width 800  wall partition hinge left swing in
+
+  window id=w1 at (0,2500) width 1200 wall exterior
+}
