@@ -408,8 +408,19 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     // to before. Purely metadata — never read by geometry/describe/lint. Walls are
     // unioned across statements, so their per-node span is ambiguous → left unset.
     const rendered = def.render(el, ctxFor(el.kind));
-    const span = opts.annotate ? (el as { span?: SceneNode["span"] }).span : undefined;
-    nodes.push(...(span ? rendered.map((n) => (n.span === undefined ? { ...n, span } : n)) : rendered));
+    if (opts.annotate) {
+      const span = (el as { span?: SceneNode["span"] }).span;
+      nodes.push(
+        ...rendered.map((n) => ({
+          ...n,
+          elementId: el.id,
+          elementKind: el.kind,
+          span: n.span !== undefined ? n.span : span,
+        })),
+      );
+    } else {
+      nodes.push(...rendered);
+    }
   }
   const hatches = hatchesUsed(ir.walls);
   nodes.push(...lowerWalls(ir.walls, hatches, ctxFor("wall"), registry, backend));

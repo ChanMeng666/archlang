@@ -177,6 +177,10 @@ export interface SceneNode {
   lineType?: LineType;
   layerName?: string;
   span?: Span;
+  /** Resolved element id (e.g. "room_1", user-provided via `id=`). Annotate mode only. */
+  elementId?: string;
+  /** Element kind ("room" | "door" | ...). Annotate mode only. */
+  elementKind?: string;
 }
 
 /** Effective CAD layer for a node: explicit `layerName`, else the pass default. */
