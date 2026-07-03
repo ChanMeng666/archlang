@@ -9,9 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Annotate mode now stamps `data-arch-id` / `data-arch-kind` on element primitives
-  (rooms, doors, windows, openings, furniture; walls excluded — unioned geometry).
-  Default (non-annotate) output remains byte-identical.
+- Annotate mode now stamps `data-arch-id` / `data-arch-kind` on element primitives.
+  `data-arch-kind` is stamped for **every element kind except `wall`** — currently `room`,
+  `door`, `window`, `opening`, `furniture`, `dim`, and `column` (the non-wall members of
+  `ElementKind`; the set is open-ended and grows as kinds are added). Walls are excluded —
+  their SVG is unioned geometry stitched across many statements, so per-element attribution
+  is ambiguous. Default (non-annotate) output remains byte-identical.
 - `diffPlans(sourceA, sourceB, opts?)`: deterministic semantic diff of two plans built on
   `describe()` — room/opening/furniture changes, per-room bbox edge deltas, circulation deltas,
   and human-readable summary sentences.

@@ -692,8 +692,12 @@ came from:
 
 - **`data-arch-id`** is the element's **resolved id** — the explicit `id=` if you wrote one,
   otherwise the deterministic auto id (e.g. `room_1`).
-- **`data-arch-kind`** is the element kind: `room`, `door`, `window`, `opening`, or
-  `furniture`.
+- **`data-arch-kind`** is the element's kind. Anchors are stamped on **every element kind
+  except `wall`**, so the value is currently one of `room`, `door`, `window`, `opening`,
+  `furniture`, `dim`, or `column`. Treat this as **open-ended, not a closed enum** — the set
+  is exactly the non-wall members of the compiler's `ElementKind` union and grows whenever a
+  new element kind is added, so a consumer should switch on the kinds it knows and tolerate
+  unrecognized ones rather than assume a fixed list.
 
 **Walls carry no anchors.** A single wall in the SVG is unioned geometry stitched across
 many source statements, so there is no one element to point back to; anchors are stamped on
