@@ -30,11 +30,13 @@ describe("annotate (opt-in data-span)", () => {
     expect(svg).not.toContain("data-span");
   });
 
-  it("is purely additive — stripping data-span yields the default output", () => {
+  it("is purely additive — stripping data-span/data-arch-* yields the default output", () => {
     const plain = compile(SRC, { noCache: true }).svg;
     const annotated = compile(SRC, { annotate: true, noCache: true }).svg;
     expect(annotated).toContain('data-span="');
-    const stripped = annotated.replace(/ data-span="\d+:\d+"/g, "");
+    const stripped = annotated
+      .replace(/ data-span="\d+:\d+"/g, "")
+      .replace(/ data-arch-id="[^"]*" data-arch-kind="[^"]*"/g, "");
     expect(stripped).toBe(plain);
   });
 

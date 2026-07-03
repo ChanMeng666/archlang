@@ -24,3 +24,23 @@ describe("source anchors — scene metadata", () => {
     expect(scene!.nodes.every((n) => n.elementId === undefined && n.elementKind === undefined)).toBe(true);
   });
 });
+
+describe("source anchors — SVG attributes", () => {
+  it("annotate mode emits data-arch-id/data-arch-kind", () => {
+    clearCache();
+    const { svg, errors } = compile(studio, { noCache: true, annotate: true });
+    expect(errors).toEqual([]);
+    // studio.arch's first room carries an explicit `id=r_living`; the auto
+    // `room_N` convention only fires for rooms without one. Either way the
+    // frozen attribute names + `room` kind are what this contract guarantees.
+    expect(svg).toMatch(/data-arch-id="r_living" data-arch-kind="room"/);
+    // spans still emitted where available (existing behavior intact)
+    expect(svg).toContain("data-span=");
+  });
+
+  it("default mode emits no data-arch- attributes (byte-identical guarantee)", () => {
+    clearCache();
+    const { svg } = compile(studio, { noCache: true });
+    expect(svg).not.toContain("data-arch-");
+  });
+});

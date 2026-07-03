@@ -185,8 +185,13 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
       // Opt-in editor affordance: stamp the source byte-span onto the element so a
       // tool can map a clicked primitive back to its source (ADR 0007). Off by
       // default → shipped SVGs are byte-identical to the un-annotated output.
-      if (opts.annotate && node.span) {
-        el = el.replace(/^(<[a-z]+)/, `$1 data-span="${node.span.start}:${node.span.end}"`);
+      if (opts.annotate) {
+        const attrs: string[] = [];
+        if (node.span) attrs.push(`data-span="${node.span.start}:${node.span.end}"`);
+        if (node.elementId !== undefined) {
+          attrs.push(`data-arch-id="${xml(node.elementId)}" data-arch-kind="${xml(node.elementKind ?? "")}"`);
+        }
+        if (attrs.length > 0) el = el.replace(/^(<[a-z]+)/, `$1 ${attrs.join(" ")}`);
       }
       bucket.push(el);
     }
