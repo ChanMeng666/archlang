@@ -51,3 +51,26 @@ suite("diffPlans — structural", () => {
     expect(JSON.stringify(diffPlans(A, B))).toBe(JSON.stringify(diffPlans(A, B)));
   });
 });
+
+suite("diffPlans — summary & circulation", () => {
+  it("emits one sentence per structural change, rooms first", () => {
+    const d = diffPlans(A, B);
+    expect(d.summary.length).toBeGreaterThanOrEqual(3); // resized + relabeled + added window
+    expect(d.summary[0]).toMatch(/m²/); // room sentences lead
+    expect(d.summary.join(" ")).toMatch(/window/i);
+  });
+
+  it("identical sources yield an empty summary", () => {
+    expect(diffPlans(A, A).summary).toEqual([]);
+  });
+
+  it("reports circulation deltas only above the noise floor", () => {
+    const d = diffPlans(A, B);
+    for (const c of d.circulation) {
+      expect(
+        Math.abs(c.walkDistanceAfterMm - c.walkDistanceBeforeMm) > 250 ||
+          Math.abs(c.bottleneckAfterMm - c.bottleneckBeforeMm) > 50,
+      ).toBe(true);
+    }
+  });
+});

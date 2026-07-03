@@ -202,5 +202,56 @@ export function diffPlans(sourceA: string, sourceB: string, opts: DescribeOption
   }
   for (const f of afterFurn.values()) base.furniture.push({ id: f.id, category: f.category, change: "added" });
 
+  const WALK_EPS_MM = 250;
+  const PINCH_EPS_MM = 50;
+  const name = (id: string, label?: string) => label ?? id;
+  const mm = (v: number) => `${Math.round(v)} mm`;
+  const m2 = (v: number) => `${v.toFixed(1)} m²`;
+
+  if (before.circulation && after.circulation) {
+    const afterByRoom = new Map(after.circulation.rooms.map((r) => [r.roomId, r]));
+    for (const a of before.circulation.rooms) {
+      const b = afterByRoom.get(a.roomId);
+      if (!b) continue;
+      if (
+        Math.abs(b.walkDistanceMm - a.walkDistanceMm) > WALK_EPS_MM ||
+        Math.abs(b.bottleneckClearWidthMm - a.bottleneckClearWidthMm) > PINCH_EPS_MM
+      ) {
+        base.circulation.push({
+          roomId: a.roomId,
+          walkDistanceBeforeMm: a.walkDistanceMm,
+          walkDistanceAfterMm: b.walkDistanceMm,
+          bottleneckBeforeMm: a.bottleneckClearWidthMm,
+          bottleneckAfterMm: b.bottleneckClearWidthMm,
+        });
+      }
+    }
+  }
+
+  for (const r of base.rooms) {
+    if (r.change === "added") base.summary.push(`Added ${name(r.id, r.label)} (${m2(r.areaAfterM2!)})`);
+    else if (r.change === "removed") base.summary.push(`Removed ${name(r.id, r.label)} (${m2(r.areaBeforeM2!)})`);
+    else if (r.change === "relabeled") base.summary.push(`Relabeled ${r.id} to "${r.label ?? ""}"`);
+    else {
+      const delta = r.areaAfterM2! - r.areaBeforeM2!;
+      const edge = Object.entries(r.edges!).reduce((m, e) => (Math.abs(e[1]) > Math.abs(m[1]) ? e : m));
+      const edgeNote =
+        Math.abs(edge[1]) > EDGE_EPS_MM ? `; ${edge[0]} edge ${edge[1] > 0 ? "+" : ""}${mm(edge[1])}` : "";
+      base.summary.push(`${name(r.id, r.label)} ${delta >= 0 ? "+" : ""}${m2(delta)}${edgeNote}`);
+    }
+  }
+  for (const o of base.openings) {
+    if (o.change === "added") base.summary.push(`Added ${o.kind} ${o.id} (${mm(o.widthAfterMm!)})`);
+    else if (o.change === "removed") base.summary.push(`Removed ${o.kind} ${o.id}`);
+    else base.summary.push(`${o.kind} ${o.id} width ${mm(o.widthBeforeMm!)} → ${mm(o.widthAfterMm!)}`);
+  }
+  for (const f of base.furniture)
+    base.summary.push(`${f.change === "added" ? "Added" : "Removed"} ${f.category} ${f.id}`);
+  for (const c of base.circulation) {
+    base.summary.push(
+      `Walk to ${c.roomId}: ${mm(c.walkDistanceBeforeMm)} → ${mm(c.walkDistanceAfterMm)} (pinch ${mm(c.bottleneckBeforeMm)} → ${mm(c.bottleneckAfterMm)})`,
+    );
+  }
+
   return base;
 }
