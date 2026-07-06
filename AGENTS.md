@@ -27,7 +27,14 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | **Git** | `main`, tags `v1.0.0` → `v1.12.1` (latest) | github.com/ChanMeng666/archlang |
 | **Tests** | 600 passing (74 files) + offline authorability eval (18 briefs, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
-**Latest release — v1.12.0 (AI-first: agent context, error rendering, distribution &
+**Latest release — v1.12.1** — bundler-safety patch: the PNG backend's lazy
+`import("node:fs")`/`import("node:url")` (font lookup) now carry
+`/* webpackIgnore: true */ /* @vite-ignore */` like every other Node-only lazy import, so a
+webpack/Next.js consumer importing the core **client-side** no longer fails its build resolving
+`fs` for the browser (default output unchanged; found by a downstream product's first in-browser
+use of the core).
+
+**v1.12.0 (AI-first: agent context, error rendering, distribution &
 accessibility). Four tranches (see `CHANGELOG.md` for detail):**
 1. **Agent context & diagnostics.** Generated **`llms-full.txt`** (spec + agent workflow + CLI
    reference + error catalog in one ~40 KB system-prompt-ready bundle; `npm run gen:llms`,
@@ -284,10 +291,14 @@ source (.arch)
 - **The PNG backend is Node-only and async** (resvg is a native binding); it rasterizes the SVG
   with a **bundled font** so text is deterministic. Keep `node:*` imports lazy inside the
   function so the module stays browser-safe.
-- **Keep the optional-dep `import()`s bundler-safe.** The lazy `import()`s of `@resvg/resvg-js`,
-  `pdfkit`, and `clipper2-wasm` carry `/* webpackIgnore: true */ /* @vite-ignore */` so a
-  downstream webpack/Next.js consumer doesn't try to bundle a native `.node` binary and fail its
-  build (this was the 1.0.0→1.0.1 fix). Preserve those comments on any new optional-dep import.
+- **Keep every Node-only lazy `import()` bundler-safe.** The lazy `import()`s of `@resvg/resvg-js`,
+  `pdfkit`, and `clipper2-wasm` — **and** the PNG backend's font-lookup `import("node:fs")` /
+  `import("node:url")` — carry `/* webpackIgnore: true */ /* @vite-ignore */` so a downstream
+  webpack/Next.js consumer doesn't try to resolve a native `.node` binary or a `node:*` builtin for
+  the browser and fail its build (this was the 1.0.0→1.0.1 fix; the PNG `node:*` case was the
+  1.12.1 fix, found when a downstream consumer first imported the core client-side). The comments
+  are needed even though these paths never run in a browser. Preserve them on any new Node-only or
+  optional-dep import.
 - **`npm run dev`** (repo root) runs `tsup --watch` (a rebuild watcher), not a web server. The
   playground/docs sites are separate Vite apps — use `npm run playground:dev` / `docs:dev`.
 - **Door `hinge left/right` is relative to the wall's traversal direction**, not the screen —
