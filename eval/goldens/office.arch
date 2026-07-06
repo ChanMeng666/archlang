@@ -20,4 +20,8 @@ plan "Small Office" {
   window at (2000,0)     width 2400 wall exterior
   window at (6000,0)     width 2400 wall exterior
   window at (12000,2000) width 1800 wall exterior
+
+  # Kitchenette run along the south wall, clear of the doorway.
+  furniture kitchen_sink at (11000,7100) size 800x600
+  furniture counter      at (10100,7100) size 600x600
 }

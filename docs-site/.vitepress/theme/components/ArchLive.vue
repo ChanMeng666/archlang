@@ -3,11 +3,37 @@
 // `compile()` → inline SVG. SSR-safe (compile is isomorphic) so no-JS visitors still
 // get the rendered plan in static HTML; hydration makes it editable. Kept
 // dependency-light on purpose — a styled <textarea>, no CodeMirror.
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, useSlots } from "vue";
 import { compile, describe } from "archlang";
 
-const props = defineProps<{ src: string; rows?: number }>();
-const source = ref(props.src.trim());
+// `src` — plain-text source (explicit `<ArchLive src="…"/>` usage).
+// `b64` — base64(UTF-8) source, injected by the ```arch fence rule in
+// .vitepress/config.ts (avoids HTML-attribute / Vue-mustache escaping of raw
+// multi-line source). Exactly one is supplied; `b64` wins when present.
+const props = defineProps<{ src?: string; b64?: string; rows?: number }>();
+
+// Isomorphic base64(UTF-8) decode (atob + TextDecoder exist in Node 18+ and the
+// browser), so the initial source is ready during SSR and on the client alike.
+function decodeB64(b64: string): string {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+const source = ref((props.b64 ? decodeB64(props.b64) : (props.src ?? "")).trim());
+
+// When the fence rule injects a `#fallback` slot (the Shiki-highlighted <pre>),
+// show it during SSR and initial hydration, then swap to the live editor once
+// mounted — so the source stays readable with no JS and there is no hydration
+// mismatch. Explicit `<ArchLive src=…/>` usages have no fallback slot and keep
+// their original behaviour (live, SSR-rendered SVG) unchanged.
+const slots = useSlots();
+const hasFallback = computed(() => !!slots.fallback);
+const mounted = ref(false);
+onMounted(() => {
+  mounted.value = true;
+});
 
 const result = computed(() => compile(source.value, { noCache: true }));
 const svg = computed(() => (result.value.errors.length ? "" : result.value.svg));
@@ -55,7 +81,11 @@ async function openInPlayground() {
 </script>
 
 <template>
-  <div class="archlive">
+  <!-- No-JS / SSR fallback: the Shiki-highlighted source, swapped for the live
+       editor on mount. The fence rule wraps the slot content in its own `v-pre`
+       div so Vue never interpolates the raw Shiki HTML. -->
+  <div v-if="hasFallback && !mounted" class="archlive-fallback"><slot name="fallback" /></div>
+  <div v-else class="archlive">
     <div class="archlive-editor">
       <textarea
         v-model="source"
@@ -79,6 +109,9 @@ async function openInPlayground() {
 </template>
 
 <style scoped>
+/* The SSR/no-JS fallback wrapper carries the same vertical rhythm as the live
+   widget so the swap-on-mount doesn't shift surrounding content. */
+.archlive-fallback { margin: 18px 0; }
 .archlive {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);

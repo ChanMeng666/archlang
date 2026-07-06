@@ -97,6 +97,16 @@ const OVERLAY_FLAG: ManifestFlag = {
   description:
     "draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged",
 };
+const ERROR_SVG_FLAG: ManifestFlag = {
+  flag: "--error-svg",
+  description:
+    "on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2)",
+};
+const ACCESSIBLE_FLAG: ManifestFlag = {
+  flag: "--accessible",
+  description:
+    "emit <title>/<desc>/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged",
+};
 
 /**
  * The command table. Keys MUST cover exactly the verbs the CLI's `main()`
@@ -111,6 +121,8 @@ const COMMANDS: ManifestCommand[] = [
       FMT_FLAG,
       WIDTH_FLAG,
       OVERLAY_FLAG,
+      ERROR_SVG_FLAG,
+      ACCESSIBLE_FLAG,
       { flag: "--install", description: "auto-install the optional dep for the chosen format if missing (PNG/PDF)" },
       JSON_FLAG,
       QUIET_FLAG,
@@ -138,6 +150,7 @@ const COMMANDS: ManifestCommand[] = [
     flags: [
       { flag: "--out", alias: "-o", arg: "<out.md>", description: "rewritten Markdown destination" },
       FMT_FLAG,
+      ERROR_SVG_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -150,6 +163,7 @@ const COMMANDS: ManifestCommand[] = [
     flags: [
       { flag: "--out", alias: "-o", arg: "<out.png>", description: "PNG destination (default: <name>.png)" },
       { flag: "--scale", alias: "-s", arg: "<n>", description: "raster scale (default 2)" },
+      ERROR_SVG_FLAG,
       { flag: "--install", description: "auto-install @resvg/resvg-js if missing, then render" },
       JSON_FLAG,
       QUIET_FLAG,
@@ -222,6 +236,13 @@ const COMMANDS: ManifestCommand[] = [
     flags: [JSON_FLAG],
     input: "none",
     output: "the spec",
+  },
+  {
+    name: "context",
+    summary: "print the full bundled agent context (spec + workflow + CLI + errors)",
+    flags: [JSON_FLAG],
+    input: "none",
+    output: "the full agent context (llms-full.txt)",
   },
   {
     name: "new",

@@ -1,0 +1,37 @@
+# A wheelchair-accessible one-bedroom flat: 1000 mm doorways, generous rooms, and
+# wide clear circulation so it passes `arch lint --profile accessibility-advisory`
+# (min door 850 mm, min room 5 m², 450 mm doorway landings, 900 mm clear paths).
+plan "Accessible 1BR" {
+  units mm
+  grid 50
+  scale 1:50
+  north up
+
+  wall exterior thickness 200 { (0,0) (8500,0) (8500,7000) (0,7000) close }
+  wall id=w_spine partition thickness 100 { (4500,0) (4500,7000) }
+  wall partition thickness 100 { (4500,3000) (8500,3000) }
+  wall partition thickness 100 { (4500,4600) (8500,4600) }
+
+  room id=r_live at (0,0)       size 4500x7000 label "Living / Kitchen" uses living kitchen
+  room id=r_bed  at (4500,0)    size 4000x3000 label "Bedroom"          uses bedroom
+  room id=r_hall at (4500,3000) size 4000x1600 label "Hall"            uses hall
+  room id=r_bath at (4500,4600) size 4000x2400 label "Bathroom"        uses bath
+
+  door    id=d_main at (2250,7000) width 1100 wall exterior  hinge left  swing in
+  opening id=o_live at (4500,3800) width 1200 wall w_spine
+  door    id=d_bed  at (6500,3000) width 1000 wall partition hinge right swing in
+  door    id=d_bath at (6500,4600) width 1000 wall partition hinge right swing in
+
+  window at (0,3500)    width 1800 wall exterior
+  window at (6500,0)    width 1500 wall exterior
+  window at (8500,5800) width 1200 wall exterior
+
+  furniture kitchen_sink at (300,300)  size 800x600
+  furniture counter      at (1200,300) size 600x600
+  furniture stove        at (1900,300) size 600x600
+
+  # Fixtures hug the far corners so a 900 mm+ turning path stays clear.
+  furniture shower at (7500,6000) size 900x900
+  furniture wc     at (4800,6100) size 400x700
+  furniture basin  at (4800,4800) size 600x450
+}

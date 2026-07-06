@@ -28,6 +28,17 @@ page("docs/analysis.md", "analysis.md");
 page("docs/error-codes.md", "errors.md");
 page("spec.llm.md", "spec.md");
 
+// Serve the llms.txt map + the bundled full-context artifact at the site root
+// (per llmstxt.org: /llms.txt and /llms-full.txt). Both are generated from the
+// single sources of truth at the repo root (llms.txt hand-maintained;
+// llms-full.txt by `npm run gen:llms`); VitePress publishes public/ at root.
+const publicDir = join(here, "public");
+mkdirSync(publicDir, { recursive: true });
+for (const f of ["llms.txt", "llms-full.txt"]) {
+  copyFileSync(join(repo, f), join(publicDir, f));
+  console.log(`  ${f} → public/${f}`);
+}
+
 // ADRs: copy each, plus build an index.
 const adrSrc = join(repo, "docs/adr");
 const adrDest = join(here, "adr");

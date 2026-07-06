@@ -1,0 +1,38 @@
+# A one-bedroom flat with a galley kitchen whose run of appliances is anchored with
+# `against wall <id> in <room>` (catalogued footprints, no explicit sizes): sink,
+# counter, stove, and fridge line the same wall, spaced by offset.
+plan "Galley Kitchen Flat" {
+  units mm
+  grid 50
+  scale 1:50
+  north up
+
+  wall exterior thickness 200 { (0,0) (8000,0) (8000,7000) (0,7000) close }
+  wall id=w_spine partition thickness 100 { (4000,0) (4000,7000) }
+  wall id=w_kb    partition thickness 100 { (4000,2500) (8000,2500) }
+  wall id=w_bb    partition thickness 100 { (4000,4500) (8000,4500) }
+
+  room id=r_live    at (0,0)       size 4000x7000 label "Living / Dining" uses living dining
+  room id=r_kitchen at (4000,0)    size 4000x2500 label "Kitchen"         uses kitchen
+  room id=r_bed     at (4000,2500) size 4000x2000 label "Bedroom"         uses bedroom
+  room id=r_bath    at (4000,4500) size 4000x2500 label "Bathroom"        uses bath
+
+  door    id=d_main at (2000,7000) width 1000 wall exterior hinge left  swing in
+  opening id=o_kit  at (4000,1250) width 1200 wall w_spine
+  door    id=d_bed  at (4000,3500) width 800  wall w_spine  hinge left  swing in
+  door    id=d_bath at (4000,5500) width 800  wall w_spine  hinge right swing in
+
+  window at (0,3500)    width 1800 wall exterior
+  window at (6000,0)    width 1500 wall exterior
+  window at (8000,3500) width 1200 wall exterior
+
+  # Galley run: appliances line the south wall of the kitchen, spaced along it.
+  furniture kitchen_sink against wall w_kb offset 500  in r_kitchen
+  furniture counter      against wall w_kb offset 1300 in r_kitchen
+  furniture stove        against wall w_kb offset 2000 in r_kitchen
+  furniture fridge       against wall w_kb offset 3400 in r_kitchen
+
+  furniture shower at (7000,6000) size 900x900
+  furniture wc     at (4300,6100) size 400x700
+  furniture basin  at (4300,4800) size 600x450
+}

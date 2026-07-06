@@ -1,0 +1,46 @@
+# Two-bedroom flat organised around a central hall so no room is reached through
+# another. Both bedrooms face the exterior (windows); the bath opens off the hall.
+plan "Two-Bed Hall Flat" {
+  units mm
+  grid 50
+  scale 1:100
+  north up
+
+  wall exterior thickness 200 { (0,0) (10000,0) (10000,8000) (0,8000) close }
+  # Living occupies the full-height left column; a single opening links it to the hall.
+  wall id=w_spine partition thickness 100 { (3000,0) (3000,8000) }
+  # Hall is a horizontal spine; walls above and below it wall off the rooms.
+  wall partition thickness 100 { (3000,3500) (10000,3500) }
+  wall partition thickness 100 { (3000,4500) (10000,4500) }
+  wall partition thickness 100 { (6500,0) (6500,3500) }
+  wall partition thickness 100 { (6500,4500) (6500,8000) }
+
+  room id=r_live  at (0,0)       size 3000x8000 label "Kitchen / Living" uses living kitchen
+  room id=r_bed1  at (3000,0)    size 3500x3500 label "Master Bedroom"   uses bedroom
+  room id=r_bed2  at (6500,0)    size 3500x3500 label "Bedroom 2"        uses bedroom
+  room id=r_hall  at (3000,3500) size 7000x1000 label "Hall"            uses hall
+  room id=r_bath  at (3000,4500) size 3500x3500 label "Bathroom"        uses bath
+  room id=r_study at (6500,4500) size 3500x3500 label "Study"           uses office
+
+  door    id=d_main  at (1500,8000) width 1000 wall exterior  hinge left  swing in
+  opening id=o_live  at (3000,4000) width 900  wall w_spine
+  door    id=d_bed1  at (4500,3500) width 800  wall partition hinge left  swing in
+  door    id=d_bed2  at (8000,3500) width 800  wall partition hinge right swing in
+  door    id=d_bath  at (4500,4500) width 800  wall partition hinge left  swing in
+  door    id=d_study at (8000,4500) width 800  wall partition hinge right swing in
+
+  window at (4500,0)    width 1500 wall exterior
+  window at (8000,0)    width 1500 wall exterior
+  window at (0,4000)    width 1500 wall exterior
+  window at (4500,8000) width 900  wall exterior
+
+  # Kitchen run along the north wall of the living space.
+  furniture kitchen_sink at (300,300)  size 800x600
+  furniture counter      at (1200,300) size 600x600
+  furniture stove        at (1900,300) size 600x600
+
+  # Bathroom fixtures in the far corners, clear of the door swing.
+  furniture shower at (5400,7000) size 900x900
+  furniture wc     at (3300,7100) size 400x700
+  furniture basin  at (3300,5600) size 600x450
+}

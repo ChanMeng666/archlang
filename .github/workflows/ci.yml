@@ -50,6 +50,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Authorability eval (offline golden regression guard)
+        run: npm run eval:ci
+
   bench:
     name: Benchmark (informational)
     runs-on: ubuntu-latest

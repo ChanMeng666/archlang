@@ -3,8 +3,9 @@
  * saved snapshots, the multi-format Download, and the draggable pane divider.
  * Each is wired from an explicit context so main.ts stays composition-only.
  */
-import { format, repair, toDxf, type Scene } from "archlang";
+import { compile, describe, diagnosticToJson, format, repair, toDxf, type Scene } from "archlang";
 import { escapeHtml } from "./escape.js";
+import { buildLlmPrompt } from "./llm-prompt.js";
 import { encodeSrc, updateHash } from "./share.js";
 import { mountSnapshots } from "./snapshots.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
@@ -25,6 +26,7 @@ interface ActionsCtx {
     repairPanel: HTMLElement | null;
     embedBtn: HTMLElement | null;
     copyLinkBtn: HTMLElement;
+    copyLlmBtn: HTMLElement | null;
     savedBtn: HTMLButtonElement;
     downloadBtn: HTMLElement;
     formatSelect: HTMLSelectElement | null;
@@ -59,6 +61,26 @@ export function mountActions(ctx: ActionsCtx): void {
     try {
       await navigator.clipboard.writeText(location.href);
       flash("Link copied");
+    } catch {
+      flash("Copy failed");
+    }
+  });
+
+  // Copy-for-LLM — assemble one paste-ready prompt (source + describe() facts +
+  // diagnostics with fixes + a spec pointer) so a user can hand the plan to any
+  // AI assistant. All client-side; no API key. Same clipboard UX as Copy link.
+  els.copyLlmBtn?.addEventListener("click", async () => {
+    const source = getSource();
+    const facts = describe(source);
+    const { diagnostics } = compile(source);
+    const prompt = buildLlmPrompt({
+      source,
+      facts,
+      diagnostics: (diagnostics ?? []).map((d) => diagnosticToJson(source, d)),
+    });
+    try {
+      await navigator.clipboard.writeText(prompt);
+      flash("LLM prompt copied");
     } catch {
       flash("Copy failed");
     }

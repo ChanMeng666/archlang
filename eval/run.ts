@@ -143,7 +143,7 @@ export async function evaluate(
 async function authorWithModel(prompt: string): Promise<string> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set (required for --live)");
-  const model = process.env.ARCHLANG_EVAL_MODEL ?? "claude-sonnet-4-6";
+  const model = process.env.ARCHLANG_EVAL_MODEL ?? "claude-sonnet-5";
   const spec = readFileSync(resolve(ROOT, "spec.llm.md"), "utf8");
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {

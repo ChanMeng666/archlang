@@ -1,7 +1,7 @@
 [
   {
     "id": "studio-1br",
-    "prompt": "Draw a one-bedroom studio apartment of about 42 m². It should have a living/kitchen area, a separate bedroom, and a bathroom. Put a window in the bedroom and a front door.",
+    "prompt": "Draw a one-bedroom studio apartment of about 42 m². It should have a living/kitchen area, a separate bedroom, and a bathroom off a small hall. Put a window in the bedroom and a front door.",
     "golden": "examples/studio.arch",
     "expect": {
       "rooms": 4,
@@ -10,13 +10,43 @@
     }
   },
   {
-    "id": "two-bedroom-flat",
-    "prompt": "Lay out a two-bedroom flat with a kitchen/living area, a master bedroom, a second bedroom, a bathroom, and a hall connecting them. Add windows on the exterior walls.",
-    "golden": "examples/two-bed.arch",
+    "id": "two-bed-hall",
+    "prompt": "Lay out a two-bedroom flat organised around a central hall so no room is reached through another. Include a kitchen/living area, a master bedroom, a second bedroom, a bathroom off the hall, and a small study. Give both bedrooms a window.",
+    "golden": "eval/goldens/two-bed-hall.arch",
     "expect": {
-      "rooms": 5,
+      "rooms": 6,
       "labelsInclude": ["Master Bedroom", "Bedroom 2", "Bathroom"],
-      "floorAreaM2": [70, 90]
+      "floorAreaM2": [74, 86]
+    }
+  },
+  {
+    "id": "relational-studio",
+    "prompt": "Design a one-bedroom flat using relative placement: anchor the living room, then put the kitchen to its right, the bedroom below it, and the bathroom next to the bedroom. The bathroom should open off the kitchen, not through the bedroom.",
+    "golden": "eval/goldens/relational-studio.arch",
+    "expect": {
+      "rooms": 4,
+      "labelsInclude": ["Kitchen", "Bedroom", "Bathroom"],
+      "floorAreaM2": [56, 64]
+    }
+  },
+  {
+    "id": "dims-auto-cottage",
+    "prompt": "A compact cottage: one living/kitchen room, a bedroom, and a bathroom, both opening off the living space. Dimension the drawing automatically instead of placing dimension lines by hand.",
+    "golden": "eval/goldens/dims-auto-cottage.arch",
+    "expect": {
+      "rooms": 3,
+      "labelsInclude": ["Bedroom", "Bathroom"],
+      "floorAreaM2": [27, 33]
+    }
+  },
+  {
+    "id": "against-wall-bath",
+    "prompt": "A one-bedroom flat where the bathroom fixtures — WC, basin, and shower — are set against the walls rather than floating. Add a bed rotated to lie along the bedroom wall.",
+    "golden": "eval/goldens/against-wall-bath.arch",
+    "expect": {
+      "rooms": 3,
+      "labelsInclude": ["Bedroom", "Bathroom"],
+      "floorAreaM2": [33, 39]
     }
   },
   {
@@ -27,6 +57,126 @@
       "rooms": 3,
       "labelsInclude": ["Open Office", "Meeting Room"],
       "floorAreaM2": [90, 100]
+    }
+  },
+  {
+    "id": "core-and-shell",
+    "prompt": "Lay out a core-and-shell office floor for tenant fit-out: two demised suites, a tea-point zone, and a circulation core, all walled with doors and windows. Do not install any fixtures — the fit-out is the tenant's responsibility.",
+    "golden": "eval/goldens/core-and-shell.arch",
+    "expect": {
+      "rooms": 4,
+      "labelsInclude": ["Suite A", "Tea Point"],
+      "floorAreaM2": [118, 134]
+    }
+  },
+  {
+    "id": "two-bath-flat",
+    "prompt": "A two-bedroom flat with two bathrooms, both opening off the central hall so neither is reached through a bedroom. Both bedrooms should have a window.",
+    "golden": "eval/goldens/two-bath-flat.arch",
+    "expect": {
+      "rooms": 6,
+      "labelsInclude": ["Main Bathroom", "Bathroom 2"],
+      "floorAreaM2": [66, 78]
+    }
+  },
+  {
+    "id": "open-plan-loft",
+    "prompt": "An open-plan loft where the kitchen, dining, and living zones flow into one another through wide cased openings with no doors between them; only the bathroom is a fully enclosed room with a real door.",
+    "golden": "eval/goldens/open-plan-loft.arch",
+    "expect": {
+      "rooms": 4,
+      "labelsInclude": ["Kitchen", "Dining", "Living"],
+      "floorAreaM2": [50, 58]
+    }
+  },
+  {
+    "id": "scripting-units",
+    "prompt": "Generate a terrace of four identical studio units in a row, each its own room with a street door and a window. Use parameters so changing the unit count regenerates the whole terrace.",
+    "golden": "eval/goldens/scripting-units.arch",
+    "expect": {
+      "rooms": 4,
+      "labelsInclude": ["Unit A", "Unit D"],
+      "floorAreaM2": [76, 84]
+    }
+  },
+  {
+    "id": "three-bed-2bath",
+    "prompt": "A three-bedroom, two-bathroom family apartment on a central hall. Every bedroom and both bathrooms open off the hall, all three bedrooms get a window, and there is a kitchen/living area and a utility room.",
+    "golden": "eval/goldens/three-bed-2bath.arch",
+    "expect": {
+      "rooms": 8,
+      "labelsInclude": ["Master Bedroom", "Bedroom 3", "Main Bathroom"],
+      "floorAreaM2": [100, 116]
+    }
+  },
+  {
+    "id": "galley-kitchen",
+    "prompt": "A one-bedroom flat with a galley kitchen: line the sink, counter, stove, and fridge along one wall. Add a living/dining room, a bedroom with a window, and a bathroom.",
+    "golden": "eval/goldens/galley-kitchen.arch",
+    "expect": {
+      "rooms": 4,
+      "labelsInclude": ["Kitchen", "Bedroom", "Bathroom"],
+      "floorAreaM2": [52, 60]
+    }
+  },
+  {
+    "id": "l-shaped-flat",
+    "prompt": "A one-bedroom flat on an L-shaped footprint (not a plain rectangle). The living room wraps the inner corner, with the kitchen, bedroom, and bathroom each opening off it.",
+    "golden": "eval/goldens/l-shaped-flat.arch",
+    "expect": {
+      "rooms": 4,
+      "labelsInclude": ["Kitchen", "Bedroom", "Bathroom"],
+      "floorAreaM2": [56, 64]
+    }
+  },
+  {
+    "id": "accessible-flat",
+    "prompt": "A wheelchair-accessible one-bedroom flat: 1000 mm-plus doorways, generous rooms off a wide hall, and clear circulation throughout. It must satisfy accessibility guidance.",
+    "golden": "eval/goldens/accessible-flat.arch",
+    "expect": {
+      "rooms": 4,
+      "labelsInclude": ["Bedroom", "Hall", "Bathroom"],
+      "floorAreaM2": [55, 64]
+    }
+  },
+  {
+    "id": "accessible-bath",
+    "prompt": "A wheelchair-accessible one-bedroom flat with a generous wet room: wide 1000 mm doorways, a large clear turning space, and plumbing fixtures set against the walls. It must satisfy accessibility guidance.",
+    "golden": "eval/goldens/accessible-bath.arch",
+    "expect": {
+      "rooms": 3,
+      "labelsInclude": ["Bedroom", "Wet Room"],
+      "floorAreaM2": [45, 53]
+    }
+  },
+  {
+    "id": "compact-studio",
+    "prompt": "A compact studio flat: one main room with the bed as furniture (so it reads as a living space, not a walk-through bedroom), a kitchenette linked by a cased opening, and a separate bathroom.",
+    "golden": "eval/goldens/compact-studio.arch",
+    "expect": {
+      "rooms": 3,
+      "labelsInclude": ["Studio Room", "Kitchenette"],
+      "floorAreaM2": [27, 33]
+    }
+  },
+  {
+    "id": "bungalow",
+    "prompt": "A two-bedroom bungalow with a living room and kitchen on one side and two bedrooms plus the bathroom off a central hall. Label every room's dimensions automatically in the margin.",
+    "golden": "eval/goldens/bungalow.arch",
+    "expect": {
+      "rooms": 6,
+      "labelsInclude": ["Master Bedroom", "Bedroom 2", "Bathroom"],
+      "floorAreaM2": [82, 94]
+    }
+  },
+  {
+    "id": "reception-suite",
+    "prompt": "A small commercial office suite: a reception area, two private offices, a meeting room, a kitchenette, and a WC. Everything should be reachable from the reception entrance.",
+    "golden": "eval/goldens/reception-suite.arch",
+    "expect": {
+      "rooms": 6,
+      "labelsInclude": ["Reception", "Meeting Room", "WC"],
+      "floorAreaM2": [90, 102]
     }
   }
 ]

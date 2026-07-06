@@ -44,6 +44,25 @@ export interface CompileOptions {
    */
   overlays?: readonly "circulation"[];
   /**
+   * What to render when the plan has fatal errors. Default (unset): `svg` is
+   * left `""` — the historical, byte-identical behavior. `"svg"` opts in to a
+   * self-describing **error card** SVG (via `renderErrorSvg`) listing every
+   * diagnostic (severity, code, line:col, message, fix), so an agent loop or an
+   * embed always has visual feedback instead of a blank. This only affects the
+   * error path: `errors`/`warnings`/`diagnostics`/`ok` semantics are unchanged,
+   * and a plan with **no** errors renders byte-identically regardless.
+   */
+  onError?: "svg";
+  /**
+   * Emit accessibility metadata into the `<svg>` (borrowing Mermaid's lesson): a
+   * `<title>` (the plan name), a `<desc>` (the deterministic `describe()` caption),
+   * `role="img"`, and `aria-labelledby` wiring them so assistive tech — and machine
+   * consumers — get a self-describing drawing. **Opt-in and purely additive**:
+   * default output is byte-identical (no `<title>`/`<desc>`/`role`), so shipped SVGs
+   * stay clean; folded into the compile cache key. Only affects the SVG backend.
+   */
+  accessible?: boolean;
+  /**
    * Theme overrides applied on top of the plan's `theme { … }` directive and
    * the built-in defaults (these win). Any subset of keys may be supplied.
    */

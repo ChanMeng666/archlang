@@ -29,6 +29,8 @@ const SETTING_KW: Record<string, string> = {
   scale: "Drawing scale, e.g. `scale 1:50`.",
   north: "North orientation: up | down | left | right | <degrees>.",
   title: "Title block (project / drawn_by / date).",
+  accTitle: "Accessible title for the `--accessible` SVG `<title>` (overrides the plan name).",
+  accDescr: "Accessible description for the `--accessible` SVG `<desc>` (overrides the derived caption).",
   theme: 'Theme: a named base, `{ key: value }` overrides, or `from "#color"`.',
   style: "Per-element-kind style overrides (`style room { fill … }`).",
   let: "Bind a value or define a value-function: `let NAME = …` / `let f(a) = …`.",

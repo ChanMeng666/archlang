@@ -206,7 +206,20 @@ export interface Scene {
   north: NorthDir;
   scale?: string;
   title?: TitleNode;
+  /**
+   * The plan name. In accessible mode (`compile(src, { accessible: true })`) it is
+   * the effective accessible title — the plan name, or an explicit `accTitle "…"`
+   * override — which the SVG backend emits as `<title>`. Read nowhere else, so the
+   * override is invisible to default output.
+   */
   name: string;
+  /**
+   * Deterministic natural-language caption for the accessible `<desc>`: the
+   * `describe()` sentence, or an explicit `accDescr "…"` override. Set by `toScene`
+   * only in accessible mode (`compile(src, { accessible: true })`). Absent by
+   * default → output unchanged.
+   */
+  caption?: string;
   /** Distinct hatch specs in use (stable order), so the SVG backend can emit a `<pattern>` per spec. */
   hatches: HatchSpec[];
   /**

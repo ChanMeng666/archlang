@@ -344,6 +344,12 @@ export interface PlanNode {
   /** `dims auto [overall|rooms|walls|all]` — synthesize dimension strings at render. */
   autoDims?: "overall" | "rooms" | "walls" | "all";
   title?: TitleNode;
+  /** Explicit accessible title (`accTitle "…"`) — overrides the plan name in the
+   *  accessible-SVG `<title>` (`compile(src, { accessible: true })`). Metadata only. */
+  accTitle?: string;
+  /** Explicit accessible description (`accDescr "…"`) — overrides the derived
+   *  caption in the accessible-SVG `<desc>`. Metadata only. */
+  accDescr?: string;
   /** Theme overrides from the `theme { … }` directive. */
   theme?: Partial<Theme>;
   /** Named theme base from `theme <name> { … }` (resolved at lowering). */

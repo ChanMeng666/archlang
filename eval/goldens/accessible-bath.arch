@@ -1,0 +1,34 @@
+# A one-bedroom flat with a generous accessible wet room: 1000 mm doorways, a large
+# clear turning space, and plumbing fixtures anchored to the wall with `against wall
+# <id> in <room>`. Passes `arch lint --profile accessibility-advisory`.
+plan "Accessible Wet Room Flat" {
+  units mm
+  grid 50
+  scale 1:50
+  north up
+
+  wall exterior thickness 200 { (0,0) (7000,0) (7000,7000) (0,7000) close }
+  wall id=w_spine partition thickness 100 { (3500,0) (3500,7000) }
+  wall id=w_yb    partition thickness 100 { (3500,3500) (7000,3500) }
+
+  room id=r_live at (0,0)       size 3500x7000 label "Living / Kitchen" uses living kitchen
+  room id=r_bed  at (3500,0)    size 3500x3500 label "Bedroom"          uses bedroom
+  room id=r_bath at (3500,3500) size 3500x3500 label "Wet Room"         uses bath
+
+  door id=d_main at (1750,7000) width 1100 wall exterior hinge left  swing in
+  door id=d_bed  at (3500,1750) width 1000 wall w_spine  hinge left  swing in
+  door id=d_bath at (3500,5250) width 1000 wall w_spine  hinge right swing in
+
+  window at (0,3500)    width 1800 wall exterior
+  window at (5250,0)    width 1500 wall exterior
+  window at (7000,5250) width 1200 wall exterior
+
+  furniture kitchen_sink at (300,300)  size 800x600
+  furniture counter      at (1200,300) size 600x600
+  furniture stove        at (1900,300) size 600x600
+
+  # Fixtures anchored to the walls; the centre of the room stays clear for turning.
+  furniture basin  against wall w_yb offset 700  in r_bath
+  furniture wc     against wall w_yb offset 1700 in r_bath
+  furniture shower at (5900,5900) size 900x900
+}

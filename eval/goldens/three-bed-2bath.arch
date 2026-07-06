@@ -1,0 +1,56 @@
+# A three-bedroom, two-bathroom family apartment on a central hall spine. Every
+# bedroom and bathroom opens off the hall (never through another room); both baths
+# are off circulation; all three bedrooms face the exterior for daylight.
+plan "Three-Bed Two-Bath" {
+  units mm
+  grid 50
+  scale 1:100
+  north up
+
+  wall exterior thickness 250 { (0,0) (12000,0) (12000,9000) (0,9000) close }
+  wall id=w_spine partition thickness 100 { (4000,0) (4000,9000) }
+  wall partition thickness 100 { (4000,4000) (12000,4000) }
+  wall partition thickness 100 { (4000,5000) (12000,5000) }
+  wall partition thickness 100 { (7000,0) (7000,4000) }
+  wall partition thickness 100 { (9500,0) (9500,4000) }
+  wall partition thickness 100 { (7000,5000) (7000,9000) }
+  wall partition thickness 100 { (9500,5000) (9500,9000) }
+
+  room id=r_live  at (0,0)       size 4000x9000 label "Kitchen / Living" uses living kitchen
+  room id=r_bed1  at (4000,0)    size 3000x4000 label "Master Bedroom"   uses bedroom
+  room id=r_bed2  at (7000,0)    size 2500x4000 label "Bedroom 2"        uses bedroom
+  room id=r_bed3  at (9500,0)    size 2500x4000 label "Bedroom 3"        uses bedroom
+  room id=r_hall  at (4000,4000) size 8000x1000 label "Hall"            uses hall
+  room id=r_bath1 at (4000,5000) size 3000x4000 label "Main Bathroom"    uses bath
+  room id=r_bath2 at (7000,5000) size 2500x4000 label "Bathroom 2"       uses bath
+  room id=r_util  at (9500,5000) size 2500x4000 label "Utility"          uses utility
+
+  door    id=d_main  at (2000,9000) width 1000 wall exterior  hinge left  swing in
+  opening id=o_live  at (4000,4500) width 1000 wall w_spine
+  door    id=d_bed1  at (5500,4000) width 800  wall partition hinge left  swing in
+  door    id=d_bed2  at (8000,4000) width 800  wall partition hinge left  swing in
+  door    id=d_bed3  at (10500,4000) width 800 wall partition hinge right swing in
+  door    id=d_bath1 at (5500,5000) width 800  wall partition hinge left  swing in
+  door    id=d_bath2 at (8000,5000) width 800  wall partition hinge left  swing in
+  door    id=d_util  at (10500,5000) width 800 wall partition hinge right swing in
+
+  window at (5500,0)     width 1500 wall exterior
+  window at (8000,0)     width 1200 wall exterior
+  window at (10500,0)    width 1200 wall exterior
+  window at (0,4500)     width 1800 wall exterior
+  window at (5500,9000)  width 900  wall exterior
+  window at (8000,9000)  width 900  wall exterior
+
+  furniture kitchen_sink at (350,150)  size 800x600
+  furniture counter      at (1250,150) size 600x600
+  furniture stove        at (1950,150) size 600x600
+  furniture fridge       at (2700,150) size 600x650
+
+  furniture shower at (5950,7900) size 900x900
+  furniture wc     at (4150,8000) size 400x700
+  furniture basin  at (4100,6300) size 600x450
+
+  furniture shower at (8450,7900) size 900x900
+  furniture wc     at (7100,8000) size 400x700
+  furniture basin  at (7100,6300) size 600x450
+}

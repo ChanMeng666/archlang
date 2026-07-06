@@ -38,6 +38,19 @@ describe("CLI — agent contract", () => {
     expect(r.stdout).toContain("ArchLang in one prompt");
   }, 30000);
 
+  it("`context --json` emits the full bundled agent context, exit 0", () => {
+    const r = run(["context", "--json"]);
+    expect(r.status).toBe(0);
+    const j = JSON.parse(r.stdout);
+    expect(j.ok).toBe(true);
+    // The bundle stitches together every major section: language spec …
+    expect(j.context).toContain("ArchLang in one prompt");
+    // … the CLI loop …
+    expect(j.context).toContain("CLI loop");
+    // … and the error catalog.
+    expect(j.context).toContain("E_ROOM_SIZE");
+  }, 30000);
+
   it("`describe - --json` emits parseable facts on a valid plan, exit 0", () => {
     const r = run(["describe", "-", "--json"], VALID);
     expect(r.status).toBe(0);

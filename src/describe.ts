@@ -30,6 +30,7 @@ import {
   type BBox,
 } from "./analyze.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
+import { fmt2 } from "./num-format.js";
 
 export type { CirculationModel, RoomCirculation, CirculationRoute } from "./analyze/circulation.js";
 
@@ -95,6 +96,22 @@ export interface FurnitureSummary {
 export interface SceneSummary {
   ok: boolean;
   plan: string;
+  /**
+   * One deterministic natural-language sentence describing the plan, composed
+   * purely from the fields below (plan name, room labels/areas, totals, entrance).
+   * Feeds the accessible-SVG `<desc>` (`compile(src, { accessible: true })`) and is
+   * useful as ready-made alt text. Empty string when the plan failed to resolve.
+   */
+  caption: string;
+  /**
+   * Explicit accessible metadata from the plan-level `accTitle "…"` / `accDescr "…"`
+   * keywords, when present. In accessible-SVG output these override the plan name in
+   * `<title>` and the derived {@link caption} in `<desc>` respectively; here they are
+   * surfaced as facts alongside the always-derived {@link caption}. Absent when the
+   * plan declares neither, so existing summaries are unchanged.
+   */
+  accTitle?: string;
+  accDescr?: string;
   units: "mm";
   scale?: string;
   /** Overall drawing extent in mm. */
@@ -124,6 +141,70 @@ export interface SceneSummary {
 
 /** Round to 2 decimals, deterministically (avoids float drift in output). */
 const r2 = (n: number): number => Math.round(n * 100) / 100;
+
+/** How many rooms to name in a caption before collapsing the rest to "and N more". */
+const CAPTION_ROOM_CAP = 8;
+
+/** The minimal slice of a summary the caption is composed from. */
+interface CaptionInput {
+  plan: string;
+  rooms: Pick<RoomSummary, "id" | "label" | "area_m2">[];
+  totals: SceneSummary["totals"];
+  /** Door/opening ids that connect the exterior to a room (from the access graph). */
+  entrances: string[];
+}
+
+/**
+ * One deterministic caption sentence for a plan, e.g.
+ * `"Two-bed" — a 4-room floor plan, 42 m² total: Living / Kitchen (24 m²),
+ * Bedroom (12 m²); 3 doors, 3 windows, entrance via d_main.`
+ *
+ * Composed **only** from already-computed summary fields, in the summary's own
+ * (source) order, so it is byte-stable. Numbers route through {@link fmt2}. Long
+ * plans list the first {@link CAPTION_ROOM_CAP} rooms then "and N more" so the
+ * sentence stays bounded. Shared by {@link describe} (`summary.caption`) and the
+ * accessible-SVG `<desc>` so the two never diverge.
+ */
+export function buildCaption(s: CaptionInput): string {
+  const named = s.plan ? `"${s.plan}" — a` : "A";
+  let out = `${named} ${s.totals.rooms}-room floor plan, ${fmt2(s.totals.floor_area_m2)} m² total`;
+
+  if (s.rooms.length > 0) {
+    const shown = s.rooms.slice(0, CAPTION_ROOM_CAP);
+    const parts = shown.map((r) => `${r.label ?? r.id} (${fmt2(r.area_m2)} m²)`);
+    const more = s.rooms.length - shown.length;
+    out += `: ${parts.join(", ")}${more > 0 ? `, and ${more} more` : ""}`;
+  }
+
+  const counts: string[] = [];
+  if (s.totals.doors > 0) counts.push(`${s.totals.doors} door${s.totals.doors === 1 ? "" : "s"}`);
+  if (s.totals.windows > 0) counts.push(`${s.totals.windows} window${s.totals.windows === 1 ? "" : "s"}`);
+  if (counts.length > 0) out += `; ${counts.join(", ")}`;
+
+  if (s.entrances.length > 0) {
+    const sep = counts.length > 0 ? ", " : "; ";
+    if (s.entrances.length === 1) {
+      out += `${sep}entrance via ${s.entrances[0]}`;
+    } else {
+      const first = s.entrances.slice(0, 2);
+      const extra = s.entrances.length - first.length;
+      out += `${sep}entrances via ${first.join(", ")}${extra > 0 ? `, and ${extra} more` : ""}`;
+    }
+  }
+
+  return `${out}.`;
+}
+
+/**
+ * The caption for an already-resolved plan (the {@link compile} path, which has the
+ * IR but not a {@link SceneSummary}). Reuses the real {@link summarize} so it stays
+ * byte-identical to `describe(source).caption`; no re-parse. See ADR 0007's opt-in
+ * pattern — this only runs in accessible mode.
+ */
+export function captionForPlan(ir: ResolvedPlan, tol: number = DEFAULT_TOL): string {
+  const s = summarize(ir, tol);
+  return buildCaption({ plan: s.plan, rooms: s.rooms, totals: s.totals, entrances: s.access.entrances });
+}
 
 /** Build the summary from a fully resolved plan. */
 function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "diagnostics"> {
@@ -200,9 +281,13 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
   const bbox = minX === Infinity ? { w: 0, h: 0 } : { w: maxX - minX, h: maxY - minY };
 
   const floorArea = r2(rooms.reduce((s, r) => s + r.area_m2, 0));
+  const totals = { rooms: rooms.length, doors: doors.length, windows: windows.length, floor_area_m2: floorArea };
 
   return {
     plan: ir.name,
+    caption: buildCaption({ plan: ir.name, rooms, totals, entrances: access.entrances }),
+    ...(ir.accTitle !== undefined ? { accTitle: ir.accTitle } : {}),
+    ...(ir.accDescr !== undefined ? { accDescr: ir.accDescr } : {}),
     units: ir.units,
     ...(ir.scale !== undefined ? { scale: ir.scale } : {}),
     bbox,
@@ -213,7 +298,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     furniture,
     access,
     circulation,
-    totals: { rooms: rooms.length, doors: doors.length, windows: windows.length, floor_area_m2: floorArea },
+    totals,
   };
 }
 
@@ -234,6 +319,7 @@ export function describe(source: string, opts: DescribeOptions = {}): SceneSumma
     return {
       ok: false,
       plan: "",
+      caption: "",
       units: "mm",
       bbox: { w: 0, h: 0 },
       rooms: [],

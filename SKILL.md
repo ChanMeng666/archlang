@@ -122,9 +122,12 @@ window at (0,4500) width 1200 wall exterior                      # bedroom windo
 
 ```bash
 arch spec                              # the whole language in one page — READ THIS FIRST
+arch context                           # everything in one call: spec + this workflow + CLI reference + error catalog (drop into a system prompt)
 arch manifest --json                   # the whole CLI API as data: commands, flags, formats, lint rules, error codes
 arch compile plan.arch -o out.svg --json   # render (also -f dxf|pdf|png)
 echo '<source>' | arch compile - -o - -f svg   # compile stdin → SVG on stdout
+arch compile plan.arch -o out.svg --error-svg  # opt-in: a broken plan still renders a self-describing error-card SVG (codes, line:col, fixes)
+arch compile plan.arch -o out.svg --accessible # opt-in: SVG carries <title>/<desc> + aria (from the plan title + describe() caption; accTitle/accDescr override)
 arch preview plan.arch -o plan.png --json  # render a PNG to SHOW the user (--install fetches resvg if missing)
 arch compile plan.arch -o walk.svg --overlay circulation   # opt-in: draw the entrance→room walks + pinch markers (default output unchanged)
 arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, door connections, + circulation (walk distance/bottleneck/detour)

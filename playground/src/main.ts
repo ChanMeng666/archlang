@@ -51,6 +51,7 @@ const lintProfileSelect = document.getElementById("lintProfile") as HTMLSelectEl
 const lintCaptionEl = document.getElementById("lintCaption")!;
 const lintOutput = document.getElementById("lintOutput")!;
 const copyLinkBtn = document.getElementById("copyLink")!;
+const copyLlmBtn = document.getElementById("copyLlm");
 const savedBtn = document.getElementById("saved") as HTMLButtonElement;
 const formatBtn = document.getElementById("format") as HTMLButtonElement | null;
 const embedBtn = document.getElementById("embed");
@@ -267,6 +268,7 @@ async function init() {
       repairPanel,
       embedBtn,
       copyLinkBtn,
+      copyLlmBtn,
       savedBtn,
       downloadBtn,
       formatSelect,

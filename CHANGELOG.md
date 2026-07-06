@@ -5,6 +5,65 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-07-06
+
+AI-first release (Mermaid-inspired): make ArchLang maximally discoverable, self-describing and
+distributable for AI agents. Default SVG output stays byte-identical throughout; every new output
+behavior is opt-in (ADR 0007 discipline).
+
+### Added — agent context & diagnostics
+
+- **`llms-full.txt`** (generated, drift-tested via `npm run gen:llms` / `scripts/gen-llms-full.ts`):
+  the full language spec, the `SKILL.md` agent workflow, a manifest-derived CLI reference and the
+  complete diagnostic catalog bundled into one system-prompt-ready document (~40 KB). Ships in the
+  npm package; the docs site now serves **`/llms.txt`** and **`/llms-full.txt`** at its root
+  (copied into `docs-site/public/` by `sync-docs.mjs`, per llmstxt.org convention).
+- **`arch context`**: prints the bundle — one command gives a cold-start agent everything
+  (`arch spec` remains the language-only view).
+- **`diagnosticToJson(source, d)` + `DiagnosticJson`** (new `src/diagnostic-json.ts`, exported):
+  the CLI's agent-facing diagnostic projection (line/col from byte spans + catalogued `fix`) is now
+  public API for SDK/playground/LSP consumers. CLI JSON output is byte-identical.
+
+### Added — always-visible errors & eval spine
+
+- **Opt-in error-card SVG**: `compile(src, { onError: "svg" })` / `--error-svg` on
+  `compile`/`preview`/`md` — a plan that fails to compile still renders a deterministic,
+  self-describing SVG card (severity, code chip, line:col, message, catalogued fix; new
+  `src/backends/error-svg.ts`, exported `renderErrorSvg`). Errors/diagnostics/exit codes are
+  unchanged; without the opt-in, a broken plan still produces no bytes. `arch md --error-svg`
+  renders failing fenced blocks as error cards instead of skipping them. Also exported:
+  `renderPngFromSvg` (raster core extracted from the PNG backend).
+- **Authorability eval hardened**: corpus grown 3 → **18 briefs** with hand-verified goldens
+  (relational placement, `dims auto`, `against wall`, multi-bath topology, open-plan `opening`,
+  accessibility briefs, scripting, an intentional-warning shell, 30–126 m²); offline golden
+  regression gate wired into CI (**`npm run eval:ci`**, no API key); default live-eval model id
+  updated.
+
+### Added — distribution
+
+- **Docs site**: plain ```` ```arch ```` fences in any docs page now render as live, editable
+  `<ArchLive>` widgets (markdown-it fence transform; SSR/no-JS keeps the highlighted block;
+  ```` ```arch static ```` opts out). Explicit `<ArchLive>` usage is untouched.
+- **GitHub Action** `.github/actions/arch-render` (composite, in-repo): render every fenced
+  ` ```arch ` block in a repo's Markdown via `arch md` — inputs `files`/`format`/`out-dir`/
+  `error-svg`/`version`, with a self-test workflow. With `error-svg: true` (default) broken blocks
+  become error-card images and the job stays green.
+- **Playground**: **Copy-for-LLM** button (current source + `describe()` facts + diagnostics with
+  fixes + spec pointer as one paste-ready prompt; pure `buildLlmPrompt` helper) and diagnostics
+  now show their catalogued fix inline (full cause/example still behind the disclosure).
+
+### Added — accessibility as a language feature
+
+- **`compile(src, { accessible: true })` / `arch compile --accessible`**: the SVG carries
+  `<title>` (plan name), `<desc>` (a derived one-sentence caption) and `role="img"` +
+  `aria-labelledby`. The caption is also exposed as **`describe().caption`** (same sentence,
+  guaranteed identical). Default output byte-identical without the flag.
+- **`accTitle` / `accDescr`** plan-level keywords (the release's one language-surface change):
+  explicit accessible metadata overriding the derived title/caption. Duplicate → new
+  `W_DUP_ACC_METADATA` (last wins); misplaced → new `E_ACC_PLACEMENT`. Grammar/spec/editor
+  artifacts regenerated; new `examples/accessible.arch`; `arch fmt` prints and preserves both.
+  **VS Code extension repack required** (it bundles the core).
+
 ## [1.11.0] - 2026-07-03
 
 ### Added

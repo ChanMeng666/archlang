@@ -1,0 +1,86 @@
+name: arch-render self-test
+
+# Exercises the in-repo composite action .github/actions/arch-render against a
+# throwaway fixture with one valid and one intentionally broken ```arch block,
+# using the LOCAL CLI (use-local: true) since the working tree may be ahead of npm.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/actions/arch-render/**"
+      - ".github/workflows/arch-render-selftest.yml"
+  pull_request:
+    paths:
+      - ".github/actions/arch-render/**"
+      - ".github/workflows/arch-render-selftest.yml"
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies (for the local tsx CLI)
+        run: npm ci
+
+      - name: Write a fixture with a valid + a broken block
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p selftest-tmp
+          cat > selftest-tmp/fixture.md <<'EOF'
+          # arch-render self-test
+
+          A valid plan:
+
+          ```arch
+          plan "Studio" {
+            room at (0,0) size 4000x3000 label "Main"
+          }
+          ```
+
+          An intentionally broken plan:
+
+          ```arch
+          room Nowhere size 4000x3000
+          this is not valid @@@
+          ```
+          EOF
+
+      - name: Render with the local action
+        id: render
+        uses: ./.github/actions/arch-render
+        with:
+          files: selftest-tmp/fixture.md
+          format: svg
+          error-svg: "true"
+          use-local: "true"
+
+      - name: Assert the Markdown was rewritten and images exist
+        shell: bash
+        env:
+          RENDERED: ${{ steps.render.outputs.rendered }}
+          FAILED: ${{ steps.render.outputs.failed }}
+        run: |
+          set -euo pipefail
+          out="selftest-tmp/fixture.out.md"
+          test -f "$out" || { echo "missing rewritten markdown $out"; exit 1; }
+
+          links=$(grep -c '!\[' "$out")
+          if [ "$links" -ne 2 ]; then
+            echo "expected 2 image links in $out, found $links"; cat "$out"; exit 1
+          fi
+
+          test -f "selftest-tmp/fixture.out-1.svg" || { echo "missing image 1"; exit 1; }
+          test -f "selftest-tmp/fixture.out-2.svg" || { echo "missing image 2 (error card)"; exit 1; }
+
+          echo "action outputs: rendered=${RENDERED} failed=${FAILED}"
+          [ "${RENDERED}" = "1" ] || { echo "expected rendered=1"; exit 1; }
+          [ "${FAILED}" = "1" ] || { echo "expected failed=1"; exit 1; }
+
+          echo "arch-render self-test passed."

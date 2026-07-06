@@ -1,0 +1,45 @@
+# A two-bedroom bungalow: living and kitchen on the left, a central hall spine, and
+# two bedrooms plus the bathroom off it. `dims auto rooms` labels every room's
+# width and height in the page margin without hand-placed dimension lines.
+plan "Two-Bed Bungalow" {
+  units mm
+  grid 100
+  scale 1:100
+  north up
+  dims auto rooms
+
+  wall exterior thickness 250 { (0,0) (11000,0) (11000,8000) (0,8000) close }
+  wall id=w_hallL partition thickness 100 { (5000,0) (5000,8000) }
+  wall id=w_hallR partition thickness 100 { (6500,0) (6500,8000) }
+  wall partition thickness 100 { (0,5000) (5000,5000) }
+  wall partition thickness 100 { (6500,4000) (11000,4000) }
+  wall partition thickness 100 { (6500,6000) (11000,6000) }
+
+  room id=r_live  at (0,0)      size 5000x5000 label "Living"         uses living
+  room id=r_kit   at (0,5000)   size 5000x3000 label "Kitchen"        uses kitchen
+  room id=r_hall  at (5000,0)   size 1500x8000 label "Hall"          uses hall
+  room id=r_bed1  at (6500,0)   size 4500x4000 label "Master Bedroom" uses bedroom
+  room id=r_bed2  at (6500,4000) size 4500x2000 label "Bedroom 2"     uses bedroom
+  room id=r_bath  at (6500,6000) size 4500x2000 label "Bathroom"      uses bath
+
+  door    id=d_main at (2500,0)    width 1000 wall exterior  hinge left  swing in
+  opening id=o_live at (5000,2500) width 1200 wall w_hallL
+  door    id=d_kit  at (5000,6500) width 900  wall w_hallL   hinge left  swing in
+  door    id=d_bed1 at (6500,2000) width 900  wall w_hallR   hinge right swing in
+  door    id=d_bed2 at (6500,5000) width 900  wall w_hallR   hinge right swing in
+  door    id=d_bath at (6500,7000) width 900  wall w_hallR   hinge right swing in
+
+  window at (0,2500)     width 1800 wall exterior
+  window at (0,6500)     width 1500 wall exterior
+  window at (8750,0)     width 1800 wall exterior
+  window at (11000,5000) width 1200 wall exterior
+  window at (11000,7000) width 1000 wall exterior
+
+  furniture kitchen_sink at (350,7200) size 800x600
+  furniture counter      at (1250,7200) size 600x600
+  furniture stove        at (1950,7200) size 600x600
+
+  furniture shower at (9700,6900) size 900x900
+  furniture wc     at (8100,7100) size 400x700
+  furniture basin  at (8100,6200) size 600x450
+}

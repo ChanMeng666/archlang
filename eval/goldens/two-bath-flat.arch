@@ -1,0 +1,48 @@
+# A two-bedroom flat with TWO bathrooms, both opening off the central hall (never
+# through a bedroom) so the whole plan is fully reachable and no wet room is
+# private-only. Both bedrooms face the exterior for daylight.
+plan "Two-Bath Flat" {
+  units mm
+  grid 50
+  scale 1:100
+  north up
+
+  wall exterior thickness 200 { (0,0) (9000,0) (9000,8000) (0,8000) close }
+  wall id=w_spine partition thickness 100 { (3000,0) (3000,8000) }
+  wall partition thickness 100 { (3000,3500) (9000,3500) }
+  wall partition thickness 100 { (3000,4500) (9000,4500) }
+  wall partition thickness 100 { (6000,0) (6000,3500) }
+  wall partition thickness 100 { (6000,4500) (6000,8000) }
+
+  room id=r_live  at (0,0)       size 3000x8000 label "Kitchen / Living" uses living kitchen
+  room id=r_bed1  at (3000,0)    size 3000x3500 label "Master Bedroom"   uses bedroom
+  room id=r_bed2  at (6000,0)    size 3000x3500 label "Bedroom 2"        uses bedroom
+  room id=r_hall  at (3000,3500) size 6000x1000 label "Hall"            uses hall
+  room id=r_bath1 at (3000,4500) size 3000x3500 label "Main Bathroom"    uses bath
+  room id=r_bath2 at (6000,4500) size 3000x3500 label "Bathroom 2"       uses bath
+
+  door    id=d_main  at (1500,8000) width 1000 wall exterior  hinge left  swing in
+  opening id=o_live  at (3000,4000) width 900  wall w_spine
+  door    id=d_bed1  at (4500,3500) width 800  wall partition hinge left  swing in
+  door    id=d_bed2  at (7500,3500) width 800  wall partition hinge right swing in
+  door    id=d_bath1 at (4500,4500) width 800  wall partition hinge left  swing in
+  door    id=d_bath2 at (7500,4500) width 800  wall partition hinge right swing in
+
+  window at (4500,0)    width 1500 wall exterior
+  window at (7500,0)    width 1500 wall exterior
+  window at (0,4000)    width 1500 wall exterior
+  window at (4500,8000) width 900  wall exterior
+  window at (7500,8000) width 900  wall exterior
+
+  furniture kitchen_sink at (300,300)  size 800x600
+  furniture counter      at (1200,300) size 600x600
+  furniture stove        at (1900,300) size 600x600
+
+  furniture shower at (5000,7000) size 900x900
+  furniture wc     at (3300,7100) size 400x700
+  furniture basin  at (3300,5600) size 600x450
+
+  furniture shower at (8000,7000) size 900x900
+  furniture wc     at (6300,7100) size 400x700
+  furniture basin  at (6300,5600) size 600x450
+}

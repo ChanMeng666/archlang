@@ -1,0 +1,32 @@
+# A "core and shell" office floor delivered for tenant fit-out: the demised suites,
+# the tea-point zone, and the circulation core are walled and served by doors and
+# windows, but NO fixtures are installed (that is the tenant's fit-out). This plan
+# is deliberately NOT lint-clean — it carries W_ROOM_NO_FIXTURE on the tea point,
+# which is the CORRECT state for a base-build shell.
+plan "Core and Shell Office" {
+  units mm
+  grid 100
+  scale 1:100
+  north up
+
+  wall exterior thickness 250 { (0,0) (14000,0) (14000,9000) (0,9000) close }
+  wall id=w_core partition thickness 150 { (5000,0) (5000,9000) }
+  wall partition thickness 100 { (5000,4500) (14000,4500) }
+  wall id=w_core2 partition thickness 100 { (9500,4500) (9500,9000) }
+
+  room id=r_suite_a at (0,0)       size 5000x9000 label "Suite A"        uses office
+  room id=r_suite_b at (5000,0)    size 9000x4500 label "Suite B"        uses office
+  room id=r_tea     at (5000,4500) size 4500x4500 label "Tea Point"      uses kitchen
+  room id=r_core    at (9500,4500) size 4500x4500 label "Circulation Core" uses circulation
+
+  door id=d_main at (2500,9000) width 1500 wall exterior hinge left swing in
+  door id=d_a    at (5000,2000) width 1000 wall w_core   hinge left swing in
+  door id=d_b    at (7000,4500) width 1000 wall partition hinge left swing in
+  door id=d_tea  at (5000,6500) width 1000 wall w_core   hinge right swing in
+  door id=d_core at (9500,6500) width 1000 wall w_core2  hinge left  swing in
+
+  window at (2500,0)     width 3000 wall exterior
+  window at (10000,0)    width 3000 wall exterior
+  window at (0,4500)     width 2400 wall exterior
+  window at (14000,6500) width 2400 wall exterior
+}

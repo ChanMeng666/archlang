@@ -38,6 +38,13 @@ const W = (code: string, message: string, cause: string, fix: string, example: s
 
 /** The catalog, keyed by code. Frozen so it cannot be mutated at runtime. */
 export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.freeze({
+  E_ACC_PLACEMENT: E(
+    "E_ACC_PLACEMENT",
+    "`accTitle`/`accDescr` used outside the plan level.",
+    "An `accTitle` or `accDescr` accessibility-metadata statement appeared inside a component or a control-flow block. They describe the whole plan, so they are only legal as direct plan-level statements.",
+    "Move the `accTitle`/`accDescr` line up to the plan body, alongside `units`/`north`.",
+    'component c() { accDescr "x" }   # error: only allowed at plan level',
+  ),
   E_ARGCOUNT: E(
     "E_ARGCOUNT",
     "Component called with the wrong number of arguments.",
@@ -284,6 +291,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "arch preview plan.arch --install   # fetches @resvg/resvg-js, then renders the PNG",
   ),
 
+  W_DUP_ACC_METADATA: W(
+    "W_DUP_ACC_METADATA",
+    "Duplicate `accTitle`/`accDescr`.",
+    "A plan declares `accTitle` (or `accDescr`) more than once. Only one of each applies, so the last value silently wins.",
+    "Keep a single `accTitle` and a single `accDescr`; delete the extra line(s).",
+    'accTitle "A"\naccTitle "B"   # warning: "A" is discarded',
+  ),
   W_DOOR_OFF_WALL: W(
     "W_DOOR_OFF_WALL",
     "Door does not lie on any wall.",

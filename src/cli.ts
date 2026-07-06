@@ -35,10 +35,11 @@ import {
   format,
   repair,
   formatDiagnostic,
-  offsetToLineCol,
+  diagnosticToJson,
   ERROR_CATALOG,
   loadClipperBackend,
   renderPng,
+  renderPngFromSvg,
   setGeometryBackend,
   toDxf,
   toPdf,
@@ -83,6 +84,10 @@ interface Args {
   install?: boolean;
   /** `--overlay <name>`: draw an opt-in diagnostic overlay (currently `circulation`). */
   overlay?: string;
+  /** `--error-svg`: on a broken plan, still emit a self-describing error-card image. */
+  errorSvg?: boolean;
+  /** `--accessible`: emit <title>/<desc>/role/aria accessibility metadata into the SVG. */
+  accessible?: boolean;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -101,6 +106,8 @@ function parseArgs(argv: string[]): Args {
     else if (a === "--force") res.force = true;
     else if (a === "--profile") res.profile = argv[++i];
     else if (a === "--overlay") res.overlay = argv[++i];
+    else if (a === "--error-svg") res.errorSvg = true;
+    else if (a === "--accessible") res.accessible = true;
     else if (a === "--strict" || a === "--fail-on-warning") res.strict = true;
     else res._.push(a);
   }
@@ -152,24 +159,6 @@ async function tryLoadGeometryBackend(): Promise<void> {
   } catch {
     // clipper2-wasm not installed — angled walls fall back to per-segment.
   }
-}
-
-/** A diagnostic projected to the agent-friendly JSON shape (with `fix`). */
-function diagToJson(source: string, d: Diagnostic): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  if (d.code) out.code = d.code;
-  out.severity = d.severity;
-  out.message = d.message;
-  if (d.span) {
-    const { line, col } = offsetToLineCol(source, d.span.start);
-    out.line = line;
-    out.col = col;
-    out.span = [d.span.start, d.span.end];
-  }
-  const fix = d.code ? ERROR_CATALOG[d.code]?.fix : undefined;
-  if (fix) out.fix = fix;
-  if (d.hints?.length) out.hints = d.hints;
-  return out;
 }
 
 function emitJson(obj: unknown): void {
@@ -268,8 +257,40 @@ async function renderArtifact(source: string, format: Format, args: Args, baseDi
     world: makeNodeWorld(baseDir),
     // `--overlay circulation` draws the opt-in diagnostic overlay; unknown names are ignored.
     ...(args.overlay === "circulation" ? { overlays: ["circulation"] as const } : {}),
+    // `--error-svg`: a broken plan yields a self-describing error card in `svg`
+    // (instead of ""), so the branch below can serialize it. Off → svg stays "".
+    ...(args.errorSvg ? { onError: "svg" as const } : {}),
+    // `--accessible`: stamp <title>/<desc>/role/aria into the SVG (SVG-only; a raster
+    // format simply drops the metadata). Default output is byte-identical.
+    ...(args.accessible ? { accessible: true } : {}),
   });
-  if (hasErrors(diagnostics) || !scene) return { diagnostics };
+  if (hasErrors(diagnostics) || !scene) {
+    // A broken plan. With `--error-svg`, `svg` holds the error card — serialize it
+    // (as SVG, or rasterized to PNG) so the caller still gets an image; the
+    // diagnostics ride along, so the exit code stays a user-source error. Only SVG
+    // and PNG cards are meaningful (DXF/PDF error cards are not).
+    if (args.errorSvg && svg && (format === "svg" || format === "png")) {
+      try {
+        const bytes =
+          format === "png"
+            ? await runWithInstall(
+                () => renderPngFromSvg(svg, { width: args.width, scale: args.scale }),
+                "@resvg/resvg-js",
+                args,
+              )
+            : svg;
+        return { bytes, diagnostics };
+      } catch (e) {
+        const message = (e as Error).message;
+        if (isOptionalDepError(e)) {
+          const dep: Diagnostic = { severity: "error", code: "E_PNG_DEPENDENCY", message };
+          return { diagnostics: [...diagnostics, dep], error: message, errorCode: "E_PNG_DEPENDENCY" };
+        }
+        return { diagnostics, error: message };
+      }
+    }
+    return { diagnostics };
+  }
   try {
     return { bytes: await serialize(scene, svg, format, args), diagnostics };
   } catch (e) {
@@ -323,7 +344,7 @@ function perFileJson(r: PerFile): Record<string, unknown> {
   const o: Record<string, unknown> = { input: r.input, ok: r.ok, format: r.format };
   if (r.output) o.output = r.output;
   if (r.bytes !== undefined) o.bytes = r.bytes;
-  o.diagnostics = r.diagnostics.map((d) => diagToJson(r.source, d));
+  o.diagnostics = r.diagnostics.map((d) => diagnosticToJson(r.source, d));
   if (r.error) o.error = r.error;
   if (r.errorCode) {
     o.code = r.errorCode;
@@ -391,10 +412,12 @@ async function cmdCompile(args: Args): Promise<number> {
     return ioError(r.error, false, { format });
   }
 
+  const errored = hasErrors(r.diagnostics);
+
   if (r.bytes === undefined) {
     const diagnostics = r.diagnostics;
     if (args.json) {
-      emitJson({ ok: false, format, diagnostics: diagnostics.map((d) => diagToJson(source, d)) });
+      emitJson({ ok: false, format, diagnostics: diagnostics.map((d) => diagnosticToJson(source, d)) });
     } else {
       emitDiagnosticsHuman(source, diagnostics, args.quiet);
       const n = diagnostics.filter((d) => d.severity === "error").length;
@@ -409,6 +432,39 @@ async function cmdCompile(args: Args): Promise<number> {
   // Resolve output target. In JSON mode keep stdout clean: redirect `-` to a file.
   let target = args.o ?? defaultOut(input, format);
   if (args.json && target === "-") target = defaultOut(input === "-" ? "-" : input, format);
+
+  // `--error-svg` produced an error-card image for a *broken* plan: write it (so an
+  // agent/embed has visual feedback) but keep the user-source exit code and report
+  // the diagnostics — a broken plan never counts as a successful compile.
+  if (errored) {
+    if (target === "-") {
+      process.stdout.write(bytes);
+    } else {
+      try {
+        writeFileSync(resolvePath(target), bytes);
+      } catch (e) {
+        return ioError((e as Error).message, args.json, { format });
+      }
+    }
+    if (args.json) {
+      const o: Record<string, unknown> = {
+        ok: false,
+        format,
+        diagnostics: diagnostics.map((d) => diagnosticToJson(source, d)),
+      };
+      if (target !== "-") {
+        o.output = resolvePath(target);
+        o.bytes = typeof bytes === "string" ? Buffer.byteLength(bytes) : bytes.length;
+      }
+      emitJson(o);
+    } else {
+      emitDiagnosticsHuman(source, diagnostics, args.quiet);
+      const n = diagnostics.filter((d) => d.severity === "error").length;
+      if (!args.quiet && target !== "-")
+        process.stderr.write(`✗ compilation failed (${n} error${n === 1 ? "" : "s"}); wrote error card → ${target}\n`);
+    }
+    return EXIT.USER;
+  }
 
   if (target === "-") {
     process.stdout.write(bytes);
@@ -429,7 +485,7 @@ async function cmdCompile(args: Args): Promise<number> {
       format,
       output: resolvePath(target),
       bytes: typeof bytes === "string" ? Buffer.byteLength(bytes) : bytes.length,
-      diagnostics: warnings.map((d) => diagToJson(source, d)),
+      diagnostics: warnings.map((d) => diagnosticToJson(source, d)),
       summary,
     });
   } else {
@@ -494,7 +550,7 @@ async function cmdPreview(args: Args): Promise<number> {
   }
 
   if (r.bytes === undefined) {
-    if (args.json) emitJson({ ok: false, format, diagnostics: r.diagnostics.map((d) => diagToJson(source, d)) });
+    if (args.json) emitJson({ ok: false, format, diagnostics: r.diagnostics.map((d) => diagnosticToJson(source, d)) });
     else {
       emitDiagnosticsHuman(source, r.diagnostics, args.quiet);
       if (!args.quiet) process.stderr.write("✗ compilation failed\n");
@@ -502,8 +558,41 @@ async function cmdPreview(args: Args): Promise<number> {
     return EXIT.USER;
   }
 
+  const errored = hasErrors(r.diagnostics);
+
   let target = args.o ?? defaultOut(input, format);
   if (args.json && target === "-") target = defaultOut(input === "-" ? "-" : input, format);
+
+  // `--error-svg`: rasterized error-card PNG for a broken plan — write it, but keep
+  // the user-source exit code and report the diagnostics.
+  if (errored) {
+    if (target === "-") {
+      process.stdout.write(r.bytes);
+    } else {
+      try {
+        writeFileSync(resolvePath(target), r.bytes);
+      } catch (e) {
+        return ioError((e as Error).message, args.json, { format });
+      }
+    }
+    if (args.json) {
+      const o: Record<string, unknown> = {
+        ok: false,
+        format,
+        diagnostics: r.diagnostics.map((d) => diagnosticToJson(source, d)),
+      };
+      if (target !== "-") {
+        o.output = resolvePath(target);
+        o.bytes = typeof r.bytes === "string" ? Buffer.byteLength(r.bytes) : r.bytes.length;
+      }
+      emitJson(o);
+    } else {
+      emitDiagnosticsHuman(source, r.diagnostics, args.quiet);
+      if (!args.quiet && target !== "-") process.stderr.write(`✗ compilation failed; wrote error card → ${target}\n`);
+    }
+    return EXIT.USER;
+  }
+
   if (target === "-") {
     process.stdout.write(r.bytes);
     return EXIT.OK;
@@ -524,7 +613,7 @@ async function cmdPreview(args: Args): Promise<number> {
       bytes,
       width: args.width ?? null,
       scale: args.scale,
-      diagnostics: warnings.map((d) => diagToJson(source, d)),
+      diagnostics: warnings.map((d) => diagnosticToJson(source, d)),
     });
   } else {
     emitDiagnosticsHuman(source, warnings, args.quiet);
@@ -638,9 +727,12 @@ async function cmdMd(args: Args): Promise<number> {
       continue;
     }
     const bytes = typeof r.bytes === "string" ? Buffer.byteLength(r.bytes) : r.bytes.length;
+    // With `--error-svg`, a broken block still produced bytes (an error card): the
+    // image is written and the block rewritten to it, but `ok` reflects that the
+    // block errored, so the aggregate exit code stays a user-source error.
     images.push({
       input: `block ${b.index + 1}`,
-      ok: true,
+      ok: !hasErrors(r.diagnostics),
       format,
       output: resolvePath(outDir, imgName),
       bytes,
@@ -715,7 +807,7 @@ function cmdDescribe(args: Args): number {
   return withSource(args, (source, input) => {
     const summary = describe(source, { world: makeNodeWorld(baseDirOf(input)) });
     if (args.json) {
-      emitJson({ ...summary, diagnostics: summary.diagnostics.map((d) => diagToJson(source, d)) });
+      emitJson({ ...summary, diagnostics: summary.diagnostics.map((d) => diagnosticToJson(source, d)) });
     } else if (!summary.ok) {
       emitDiagnosticsHuman(source, summary.diagnostics, args.quiet);
       if (!args.quiet) process.stderr.write("✗ could not describe (plan has errors)\n");
@@ -743,7 +835,7 @@ function report(source: string, diags: Diagnostic[], args: Args): number {
   const w = diags.length - e;
   const ok = e === 0 && (!args.strict || w === 0);
   if (args.json) {
-    emitJson({ ok, strict: args.strict ?? false, diagnostics: diags.map((d) => diagToJson(source, d)) });
+    emitJson({ ok, strict: args.strict ?? false, diagnostics: diags.map((d) => diagnosticToJson(source, d)) });
   } else {
     emitDiagnosticsHuman(source, diags, args.quiet);
     if (!args.quiet) {
@@ -885,6 +977,23 @@ function cmdSpec(args: Args): number {
   return EXIT.OK;
 }
 
+/** Locate llms-full.txt relative to this module (shipped at the package root). */
+function readContext(): string | null {
+  for (const rel of ["../llms-full.txt", "../../llms-full.txt"]) {
+    const p = resolvePath(HERE, rel);
+    if (existsSync(p)) return readFileSync(p, "utf8");
+  }
+  return null;
+}
+
+function cmdContext(args: Args): number {
+  const context = readContext();
+  if (context === null) return ioError("llms-full.txt not found", args.json);
+  if (args.json) emitJson({ ok: true, context });
+  else process.stdout.write(context.endsWith("\n") ? context : context + "\n");
+  return EXIT.OK;
+}
+
 function cmdExplain(args: Args): number {
   const code = args._[0];
   if (!code) return usageError("missing error code (e.g. arch explain E_ROOM_SIZE)");
@@ -918,10 +1027,10 @@ function ioError(msg: string, json?: boolean, extra?: Record<string, unknown>): 
 const HELP = `arch — ArchLang compiler (agent-native)
 
 Usage:
-  arch compile  <in.arch|-> [-o out|-] [-w width] [-f svg|dxf|pdf|png] [--overlay circulation] [--install] [--json] [--quiet]
-  arch preview  <in.arch|-> [-o out.png] [-s scale] [--install] [--json]   render a PNG you can look at
+  arch compile  <in.arch|-> [-o out|-] [-w width] [-f svg|dxf|pdf|png] [--overlay circulation] [--error-svg] [--accessible] [--install] [--json] [--quiet]
+  arch preview  <in.arch|-> [-o out.png] [-s scale] [--error-svg] [--install] [--json]   render a PNG you can look at
   arch batch    <a.arch> <b.arch> … [-o dir] [-f …] [-j jobs] [--json]   render many files concurrently
-  arch md       <doc.md> [-o out.md] [-f svg|png] [--json]   render fenced arch blocks → image links
+  arch md       <doc.md> [-o out.md] [-f svg|png] [--error-svg] [--json]   render fenced arch blocks → image links
   arch watch    <in.arch> [-o out] [-w width] [-f …]
   arch validate <in.arch|-> [--strict] [--json]      parse + resolve + lint (no render)
   arch describe <in.arch|-> [--json]      semantic facts (rooms, areas, adjacency)
@@ -930,12 +1039,17 @@ Usage:
   arch repair   <in.arch|-> [-o out|-] [--json]   emit corrected source (furniture out of walls) + change log
   arch manifest [--json]                  the whole CLI API as structured data (for agents)
   arch spec     [--json]                  print the one-prompt language spec
+  arch context  [--json]                  print the full bundled agent context (spec + workflow + CLI + errors)
   arch new      [-o out] [--force] [--json]   scaffold a starter .arch
   arch explain  <CODE> [--json]           e.g. E_ROOM_SIZE
 
 Input  '-' reads source from stdin.   Output '-' writes the artifact to stdout.
 Every command takes --json: result on stdout, messages on stderr.
 --strict (validate/lint, alias --fail-on-warning): advisory warnings fail too (exit 2).
+--error-svg (compile/preview/md): on a broken plan, still emit a self-describing error-card image
+  (SVG, or PNG for preview) listing the diagnostics; exit code stays 2.
+--accessible (compile, SVG): emit <title>/<desc>/role="img"/aria-labelledby (the describe() caption)
+  so the drawing is self-describing for assistive tech and machine readers; default output is unchanged.
 --install (compile -f png/pdf, preview): auto-install the missing optional render dep, then retry.
 Exit codes: 0 ok · 2 user-source error (don't retry) · 1 internal/IO · 3 bad usage.
 Formats: svg (default) · dxf (zero-dep) · pdf (optional pdfkit) · png (optional @resvg/resvg-js)
@@ -977,6 +1091,8 @@ async function main(): Promise<void> {
       return process.exit(cmdRepair(args));
     case "spec":
       return process.exit(cmdSpec(args));
+    case "context":
+      return process.exit(cmdContext(args));
     case "new":
     case "init":
       return process.exit(cmdNew(args));

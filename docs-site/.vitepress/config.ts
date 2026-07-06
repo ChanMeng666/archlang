@@ -63,6 +63,32 @@ export default defineConfig({
   // `archlang` alias is accepted too.
   markdown: {
     languages: [{ ...archGrammar, name: "arch", aliases: ["archlang"] }],
+    // Auto-live `arch` fences (T3.1). Like mermaid's docs, every plain ```arch
+    // fenced block in a page becomes a live, editable <ArchLive> widget rather
+    // than a static highlighted block — with the original Shiki-highlighted
+    // <pre> kept as the SSR / no-JS fallback (ArchLive swaps to the editor on
+    // mount). This only rewrites fence tokens, so pages that already write an
+    // explicit <ArchLive> tag are untouched (no double render).
+    //
+    // Escape hatch: a fence with an extra `static` info token (```arch static)
+    // stays a plain highlighted block. `arch` is still the first info token so
+    // Shiki highlights it as ArchLang either way.
+    config(md) {
+      const defaultFence = md.renderer.rules.fence!;
+      md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+        const token = tokens[idx];
+        const info = token.info.trim();
+        const attrs = info.split(/\s+/).slice(1); // tokens after the language
+        const lang = info.split(/\s+/)[0];
+        const highlighted = defaultFence(tokens, idx, options, env, self);
+        if (lang !== "arch" || attrs.includes("static")) return highlighted;
+        // base64(UTF-8) sidesteps HTML-attribute + Vue-mustache escaping of the
+        // multi-line source; ArchLive decodes it. The fallback <pre> is wrapped
+        // in v-pre so Vue never interpolates the raw Shiki markup.
+        const b64 = Buffer.from(token.content, "utf8").toString("base64");
+        return `<ArchLive b64="${b64}">\n<template #fallback><div v-pre>${highlighted}</div></template>\n</ArchLive>\n`;
+      };
+    },
   },
   // Let theme components (ArchLive) import the built core directly, so docs
   // examples compile client-side — the same alias the playground uses. The core

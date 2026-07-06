@@ -144,6 +144,12 @@ export interface ResolvedPlan {
   /** `dims auto …` — synthesize dimension strings at scene-build (presentation only). */
   autoDims?: "overall" | "rooms" | "walls" | "all";
   title?: TitleNode;
+  /** Explicit accessible title (`accTitle "…"`), overriding the plan name in the
+   *  accessible-SVG `<title>`. Metadata only — never affects default output. */
+  accTitle?: string;
+  /** Explicit accessible description (`accDescr "…"`), overriding the derived
+   *  caption in the accessible-SVG `<desc>`. Metadata only. */
+  accDescr?: string;
   theme?: Partial<Theme>;
   /** Named theme base (`theme <name>`), resolved to colours at lowering. */
   themeBase?: string;
@@ -509,6 +515,8 @@ function resolveImpl(
     north: ast.north,
     autoDims: ast.autoDims,
     title: ast.title,
+    accTitle: ast.accTitle,
+    accDescr: ast.accDescr,
     theme: ast.theme,
     themeBase: ast.themeBase,
     themeFrom: ast.themeFrom,

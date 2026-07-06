@@ -58,7 +58,7 @@ column [id=<name>] at (x,y) size <W>x<H>
 
 - **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`
 - **Elements:** `wall`, `room`, `door`, `window`, `opening`, `furniture`, `dim`, `column`
-- **Attributes:** `units`, `grid`, `scale`, `north`, `dims`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`
+- **Attributes:** `units`, `grid`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`
 - **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `auto`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`
 
 ## CLI loop (how an agent drives it)

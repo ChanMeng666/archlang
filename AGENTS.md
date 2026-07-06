@@ -19,15 +19,39 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.10.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
-| **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md` |
-| **VS Code extension** | `ChanMeng.archlang@0.3.0` (published, live) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
-| **Playground** | deployed (TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · **circulation Paths toggle**) | https://archlang-playground.vercel.app |
-| **Docs site** | deployed (VitePress · live editable `<ArchLive>` examples) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.10.0` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 535 passing (66 files); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
+| **Core package** | `@chanmeng666/archlang@1.12.0` (npm publish pending; `latest` on npm is 1.11.0) | npmjs.com/package/@chanmeng666/archlang |
+| **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** (one-call bundled context) — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt` |
+| **VS Code extension** | `ChanMeng.archlang@0.3.1` (published; **0.4.0 repack required** by the v1.12 `accTitle`/`accDescr` keywords) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
+| **Playground** | deployed (TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
+| **Docs site** | deployed (VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt`) | https://archlang-docs.vercel.app |
+| **Git** | `main`, tags `v1.0.0` → `v1.11.0` (v1.12.0 tag on release) | github.com/ChanMeng666/archlang |
+| **Tests** | 600 passing (74 files) + offline authorability eval (18 briefs, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
-**Latest release — v1.10.0 (human circulation + foundation refactor). Three tranches
+**Latest release — v1.12.0 (AI-first: agent context, error rendering, distribution &
+accessibility). Four tranches (see `CHANGELOG.md` for detail):**
+1. **Agent context & diagnostics.** Generated **`llms-full.txt`** (spec + agent workflow + CLI
+   reference + error catalog in one ~40 KB system-prompt-ready bundle; `npm run gen:llms`,
+   drift-tested) — served by the docs site at **`/llms.txt` + `/llms-full.txt`**; new **`arch
+   context`** command prints it; **`diagnosticToJson`** (line/col/fix projection) promoted from a
+   private CLI helper to the public API (`src/diagnostic-json.ts`).
+2. **Always-visible errors & eval spine.** Opt-in **error-card SVG** (`compile(src, { onError:
+   "svg" })` / `--error-svg` on compile/preview/md — a broken plan still yields a self-describing
+   image; default path byte-identical); authorability **eval corpus 3→18** briefs with verified
+   goldens, offline regression gate **`npm run eval:ci` wired into CI**.
+3. **Distribution.** Docs-site markdown transform: **plain ```` ```arch ```` fences render as live
+   editable `<ArchLive>` widgets** (SSR fallback; ```` ```arch static ```` opt-out); in-repo
+   composite **GitHub Action** `.github/actions/arch-render` (render fenced blocks in any repo's
+   Markdown via `arch md`); playground **Copy-for-LLM** button (source + `describe()` facts +
+   diagnostics as one paste-ready prompt) + always-visible diagnostic fixes.
+4. **Accessibility as a language feature.** `compile(src, { accessible: true })` / `--accessible`
+   emits SVG `<title>`/`<desc>` + `role="img"`/`aria-labelledby` (caption derived from
+   `describe()`, now exposed as `describe().caption`); new plan-level **`accTitle` / `accDescr`**
+   keywords override the derived pair (codes `E_ACC_PLACEMENT`, `W_DUP_ACC_METADATA`;
+   `examples/accessible.arch`). The one language-surface change → VS Code extension repack.
+
+**v1.11.0** — annotate mode stamps `data-arch-id`/`data-arch-kind`; `diffPlans()` semantic diff.
+
+**Prior release — v1.10.0 (human circulation + foundation refactor). Three tranches
 (see `CHANGELOG.md` for detail):**
 1. **Human circulation ([ADR 0008](docs/adr/0008-circulation-as-facts.md)).** Facts →
    `describe().circulation` (per-room walk distance / bottleneck clear width / detour ratio + key
@@ -43,7 +67,7 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 3. **Sites.** Embeddable playground viewer (`embed.html` + Embed button), IDE-parity
    actions (Format / Repair panel / clickable diagnostics), live editable `<ArchLive>` docs examples.
 
-**Latest release — v1.9.0 (opt-in source annotation + playground overhaul).** Two things:
+**v1.9.0 (opt-in source annotation + playground overhaul).** Two things:
 - **Core: opt-in source annotation.** `compile(src, { annotate: true })` stamps `data-span="start:end"`
   (source byte range) on each drawn SVG primitive that has a span, so a tool can map a clicked element
   back to its source. **Default output is byte-identical** (Scene IR + SVG unchanged, goldens
@@ -113,6 +137,7 @@ for concave door arcs, dimensions drawn into the building, and the title-block o
 ├─ spec.llm.md        GENERATED one-page language spec for agents (`arch spec`); see scripts/gen-llm-spec.ts
 ├─ SKILL.md           agent Skill: the spec → compile → describe → lint loop (CLI-driven)
 ├─ llms.txt           machine-readable project map (how to USE vs CONTRIBUTE)
+├─ llms-full.txt      GENERATED full agent context (spec + skill + CLI + errors); see scripts/gen-llms-full.ts
 ├─ editors/vscode     archlang-vscode → published as ChanMeng.archlang (esbuild-bundled extension)
 ├─ editors/*.json     generated TextMate grammar + language-configuration (shared by the extension)
 ├─ playground/        Vite + CodeMirror live editor (consumes the built core via dist/);
@@ -154,6 +179,7 @@ npm run bench        # compile a generated ~1000-element plan and report per-sta
 npm run gen:grammars # regenerate editor grammars from src/grammar/tokens.ts (CI checks drift)
 npm run gen:errors   # regenerate docs/error-codes.md from the catalog (CI checks drift)
 npm run gen:spec     # regenerate spec.llm.md from tokens.ts + examples/ (CI checks drift)
+npm run gen:llms     # regenerate llms-full.txt from spec + SKILL.md + manifest + error catalog (CI checks drift)
 
 npm run playground:dev   # build core, then run the Vite playground dev server
 npm run docs:build       # build core, then build the VitePress docs site
@@ -233,6 +259,9 @@ source (.arch)
   — edit the source and run `npm run gen:grammars` / `npm run gen:errors` (CI fails on drift).
   Likewise `spec.llm.md` is generated from `src/grammar/tokens.ts` + `examples/` by
   `npm run gen:spec` (the curated prose lives in `scripts/gen-llm-spec.ts`); CI fails on drift.
+  `llms-full.txt` (the bundled full agent context) is generated from `spec.llm.md` + `SKILL.md` +
+  the manifest + the error catalog by `npm run gen:llms` (`scripts/gen-llms-full.ts`); CI fails on
+  drift — regenerate it after editing any of those sources.
 - **Determinism is tested.** The suite asserts `compile(s) === compile(s)` byte-for-byte, with
   the optional geometry engine both present and absent. Anything that varies output across runs
   (object key order, floats, time) will fail — route number formatting through `fmt()`. The one

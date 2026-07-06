@@ -105,7 +105,7 @@
           "name": "storage.type.element.arch"
         },
         {
-          "match": "\\b(units|grid|scale|north|dims|material|angle|at|size|width|thickness|label|hinge|swing|offset|text|close|id|project|drawn_by|date|from|as|right-of|left-of|below|above|align|gap|uses|rotate|against|segment|side)\\b",
+          "match": "\\b(units|grid|scale|north|dims|accTitle|accDescr|material|angle|at|size|width|thickness|label|hinge|swing|offset|text|close|id|project|drawn_by|date|from|as|right-of|left-of|below|above|align|gap|uses|rotate|against|segment|side)\\b",
           "name": "keyword.other.arch"
         }
       ]

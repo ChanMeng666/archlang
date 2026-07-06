@@ -244,6 +244,16 @@ class Parser {
             plan.title = n;
             break;
           }
+          case "accTitle":
+            this.next();
+            if (plan.accTitle !== undefined) this.warnDupAcc("accTitle", t);
+            plan.accTitle = this.eatString();
+            break;
+          case "accDescr":
+            this.next();
+            if (plan.accDescr !== undefined) this.warnDupAcc("accDescr", t);
+            plan.accDescr = this.eatString();
+            break;
           case "theme": {
             const r = this.parseTheme();
             if (r.base !== undefined) plan.themeBase = r.base;
@@ -304,6 +314,17 @@ class Parser {
   }
 
   // ---- plan-level settings (one method per `parsePlan` switch case) ----------
+
+  /** A repeated `accTitle`/`accDescr` at plan level: last value wins, but flag it
+   *  (catalogued warning) since a duplicate metadata line is almost always a mistake. */
+  private warnDupAcc(kw: string, t: Token): void {
+    this.diagnostics.push({
+      severity: "warning",
+      message: `Duplicate "${kw}" — the last one wins`,
+      code: "W_DUP_ACC_METADATA",
+      span: { start: t.start, end: t.end },
+    });
+  }
 
   private parseUnitsSetting(plan: PlanNode, t: Token): void {
     this.next();
@@ -546,6 +567,17 @@ class Parser {
     const t = this.peek();
     const start = t.start;
     if (t.type !== "ident") this.fail(`Expected a statement but found ${describe(t)}`);
+    // `accTitle`/`accDescr` are plan-level only. Reaching here means one appeared
+    // inside a component or control-flow block: consume it (with its string arg, if
+    // present) and report a catalogued error so recovery is clean and the message is
+    // specific rather than a generic "unknown statement".
+    if (t.value === "accTitle" || t.value === "accDescr") {
+      this.next();
+      if (this.isType("string")) this.next();
+      const msg = `"${t.value}" is only allowed at plan level, not inside a block or component`;
+      this.diagnostics.push({ severity: "error", message: msg, code: "E_ACC_PLACEMENT", span: this.spanFrom(start) });
+      return { kind: "error", id: "", line: t.line, message: msg };
+    }
     let node: Statement;
     if (t.value === "for") node = this.parseFor(components, selfName);
     else if (t.value === "if") node = this.parseIf(components, selfName);

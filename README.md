@@ -178,6 +178,12 @@ The loop: `spec` → write `.arch` → `compile --json` → on `ok:false` fix vi
 rendering an image** → `preview` to show the user a raster. `manifest --json` is the one-call API
 map; `batch`/`md` cover variant exploration and embedding plans in docs.
 
+**In CI:** the in-repo composite Action
+[`.github/actions/arch-render`](.github/actions/arch-render) renders every ` ```arch ` fence in your
+Markdown to images in one step — `uses: ChanMeng666/archlang/.github/actions/arch-render@v1.11.0`
+(pin a release tag or `@main`). See its [README](.github/actions/arch-render/README.md) for inputs
+and an auto-commit example.
+
 **A taste of the language** (see [`examples/`](examples) and the
 [Language Reference](docs/language-reference.md)):
 

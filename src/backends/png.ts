@@ -67,10 +67,13 @@ export interface PngOptions extends CompileOptions {
 }
 
 /**
- * Rasterize a {@link Scene} to a deterministic PNG (`Uint8Array`). Requires the
- * optional `@resvg/resvg-js`; throws a clear, actionable error when it is absent.
+ * Rasterize an already-rendered SVG string to a deterministic PNG
+ * (`Uint8Array`) — the shared raster core. Requires the optional
+ * `@resvg/resvg-js`; throws a clear, actionable error when it is absent. Used
+ * both by {@link renderPng} (the Scene path) and to rasterize the opt-in error
+ * card for `arch preview`/`md --error-svg`.
  */
-export async function renderPng(scene: Scene, opts: PngOptions = {}): Promise<Uint8Array> {
+export async function renderPngFromSvg(svg: string, opts: PngOptions = {}): Promise<Uint8Array> {
   let Resvg: typeof import("@resvg/resvg-js").Resvg;
   try {
     ({ Resvg } = await import(/* webpackIgnore: true */ /* @vite-ignore */ "@resvg/resvg-js" as string));
@@ -80,7 +83,6 @@ export async function renderPng(scene: Scene, opts: PngOptions = {}): Promise<Ui
     );
   }
 
-  const svg = renderSvg(scene, opts);
   const scale = opts.scale && opts.scale > 0 ? opts.scale : 1;
   const resvg = new Resvg(svg, {
     font: {
@@ -91,4 +93,12 @@ export async function renderPng(scene: Scene, opts: PngOptions = {}): Promise<Ui
     ...(scale !== 1 ? { fitTo: { mode: "zoom" as const, value: scale } } : {}),
   });
   return resvg.render().asPng();
+}
+
+/**
+ * Rasterize a {@link Scene} to a deterministic PNG (`Uint8Array`). Requires the
+ * optional `@resvg/resvg-js`; throws a clear, actionable error when it is absent.
+ */
+export async function renderPng(scene: Scene, opts: PngOptions = {}): Promise<Uint8Array> {
+  return renderPngFromSvg(renderSvg(scene, opts), opts);
 }

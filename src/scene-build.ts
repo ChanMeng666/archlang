@@ -35,6 +35,7 @@ import { patternId } from "./hatches.js";
 import type { HatchSpec } from "./hatches.js";
 import { layoutChrome } from "./chrome-layout.js";
 import { circulationOverlayNodes } from "./overlays/circulation.js";
+import { captionForPlan } from "./describe.js";
 import { DEFAULT_THEME, THEMES, mergeTheme, sanitizeTheme, derivePoche } from "./theme.js";
 import type { Theme } from "./theme.js";
 
@@ -462,5 +463,11 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     name: ir.name,
     hatches,
     chrome,
+    // Opt-in accessibility metadata (ADR 0007 pattern): carry the accessible
+    // <title>/<desc> text onto the Scene only when asked, so the SVG backend can emit
+    // them. An explicit `accTitle`/`accDescr` (plan-level keywords) overrides the
+    // derived pair — the plan name for the title, the deterministic describe() caption
+    // for the desc. Off by default → the Scene is byte-identical. Never read by geometry.
+    ...(opts.accessible ? { name: ir.accTitle ?? ir.name, caption: ir.accDescr ?? captionForPlan(ir) } : {}),
   };
 }

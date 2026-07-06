@@ -1,0 +1,25 @@
+# Accessible metadata demo — `accTitle` / `accDescr`.
+#
+# These two plan-level keywords supply the accessible SVG `<title>` and `<desc>`
+# used by `arch compile --accessible` (and `compile(src, { accessible: true })`).
+# They OVERRIDE the defaults: `accTitle` replaces the plan name in `<title>`, and
+# `accDescr` replaces the auto-derived describe() caption in `<desc>`. Default
+# (non-accessible) output is unaffected — this is metadata only.
+plan "Flat 2B" {
+  units mm
+  grid 50
+  north up
+  accTitle "Two-room flat — accessible floor plan"
+  accDescr "A small flat: a living room with the entrance, and a bedroom off it, joined by a single interior door."
+
+  wall exterior  thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall partition thickness 100 { (3500,0) (3500,4000) }
+
+  room id=r_living at (0,0)    size 3500x4000 label "Living" uses living
+  room id=r_bed    at (3500,0) size 2500x4000 label "Bedroom" uses bedroom
+
+  door    id=d_main at (1500,0)    width 1000 wall exterior  hinge left swing in
+  opening id=o_int  at (3500,2000) width 900  wall partition
+
+  window at (5000,4000) width 1200 wall exterior
+}

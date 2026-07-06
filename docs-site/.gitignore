@@ -17,6 +17,10 @@ adr/index.md
 public/examples/
 .vitepress/theme/examples-data.js
 
+# llms.txt map + full-context bundle, copied from the repo root by sync-docs.mjs.
+public/llms.txt
+public/llms-full.txt
+
 node_modules/
 
 .vercel

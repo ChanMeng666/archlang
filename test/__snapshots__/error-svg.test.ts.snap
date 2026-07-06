@@ -1,0 +1,19 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`onError: 'svg' (opt-in error card) > renderErrorSvg is a stable snapshot for a fixed broken source 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" width="800" height="210" viewBox="0 0 800 210" font-family="Helvetica, Arial, sans-serif">
+<rect x="0" y="0" width="800" height="210" fill="#fbfaf7"/>
+<rect x="0.5" y="0.5" width="799" height="209" fill="none" stroke="#888888" stroke-width="1"/>
+<rect x="28" y="26" width="4" height="20" fill="#d64545"/>
+<text x="42" y="44" font-size="20" font-weight="700" fill="#222222">ArchLang — could not render</text>
+<text x="42" y="65" font-size="13" fill="#888888">1 error</text>
+<rect x="28" y="93" width="744" height="93" fill="#ffffff" stroke="#888888" stroke-width="1"/>
+<rect x="28" y="93" width="4" height="93" fill="#d64545"/>
+<text x="48" y="118" font-size="13" font-weight="700" fill="#d64545">ERROR</text>
+<rect x="100.3" y="105" width="102.66" height="21" rx="3" fill="#e9e4db"/>
+<text x="107.3" y="117" font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace" fill="#1b1b1b">E_ROOM_SIZE</text>
+<text x="214.96" y="118" font-size="13" fill="#888888">line 2:3</text>
+<text x="48" y="145" font-size="14" fill="#222222">Room &quot;r&quot; must have a positive size</text>
+<text x="48" y="164" font-size="13" fill="#888888">Fix: Give the room a positive \`size W x H\`.</text>
+</svg>"
+`;

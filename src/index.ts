@@ -10,6 +10,7 @@ import { parse } from "./parser.js";
 import { resolve } from "./ir.js";
 import { toScene } from "./scene-build.js";
 import { renderSvg } from "./backends/svg.js";
+import { renderErrorSvg } from "./backends/error-svg.js";
 import { offsetToLineCol } from "./diagnostics.js";
 import { createRegistry, BUILTIN_REGISTRY } from "./registry.js";
 import type { Runtime } from "./registry.js";
@@ -33,6 +34,11 @@ export type {
   Severity,
 } from "./types.js";
 export { formatDiagnostic, offsetToLineCol } from "./diagnostics.js";
+// Agent-facing JSON projection of a diagnostic (line/col + catalogued `fix`) —
+// the canonical shape the CLI's `--json` output emits, exposed for programmatic
+// consumers (playground, LSP embedders, SDK users).
+export { diagnosticToJson } from "./diagnostic-json.js";
+export type { DiagnosticJson } from "./diagnostic-json.js";
 export type * from "./ast.js";
 // Source formatter (v0.11): pure text→text, comment-preserving, idempotent.
 export { format } from "./format.js";
@@ -108,8 +114,14 @@ export { toDxf } from "./export/dxf.js";
 export { toPdf } from "./export/pdf.js";
 // PNG raster backend (v1.0). Rasterizes the Scene's SVG with the OPTIONAL,
 // lazy-loaded `@resvg/resvg-js`; deterministic via a bundled font. Node-only.
-export { renderPng } from "./backends/png.js";
+export { renderPng, renderPngFromSvg } from "./backends/png.js";
 export type { PngOptions } from "./backends/png.js";
+// Error-card backend (opt-in). `compile(src, { onError: "svg" })` and the CLI's
+// `--error-svg` flag route a broken plan's diagnostics through this instead of
+// leaving `svg === ""`, so agent loops/embeds always get visual feedback. Pure,
+// deterministic, zero-dep; never touches the default (error-free) output.
+export { renderErrorSvg } from "./backends/error-svg.js";
+export type { ErrorSvgOptions } from "./backends/error-svg.js";
 // Optional polygon-geometry backend seam. The default path is zero-dependency
 // (rectilinear boolean); registering a backend (e.g. the lazily-loaded
 // `clipper2-wasm` adapter) unlocks seamless angled-wall joinery.
@@ -197,6 +209,8 @@ export function compile(source: string, opts: CompileOptions = {}): CompileResul
     idToken(opts.world),
     opts.annotate ?? null,
     opts.overlays ?? null,
+    opts.onError ?? null,
+    opts.accessible ?? null,
   ]);
   if (!opts.noCache) {
     const hit = cache.get(key);
@@ -251,6 +265,11 @@ function compileUncached(source: string, opts: CompileOptions): CompileResult {
   if (resolved && errs.length === 0) {
     scene = toScene(resolved.ir, opts, runtime);
     svg = renderSvg(scene, opts);
+  } else if (errs.length > 0 && opts.onError === "svg") {
+    // Opt-in only: a broken plan yields a self-describing error card instead of
+    // a blank. Default (no `onError`) leaves `svg === ""`, byte-identical to the
+    // historical behavior. Errors/warnings/diagnostics are untouched.
+    svg = renderErrorSvg(source, diagnostics);
   }
 
   return { svg, errors, warnings, diagnostics, ast: plan, scene };

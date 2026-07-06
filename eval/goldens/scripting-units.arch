@@ -1,0 +1,34 @@
+# A row of studio units generated with SCRIPTING: a `for` loop over a range, `let`
+# constants and a value-function, an array of names indexed per unit, and a scoped
+# `set` default. Change COUNT and the whole terrace regenerates. Each unit is its
+# own enclosed room with its own street door and window.
+plan "Studio Terrace" {
+  units mm
+  grid 50
+  scale 1:100
+  north up
+
+  let WALL  = 200
+  let W     = 4000
+  let H     = 5000
+  let DOOR  = 900
+  let WIN   = 1600
+  let COUNT = 4
+
+  let aream2(w, h) = w * h / 1000000
+  let names = ["Unit A", "Unit B", "Unit C", "Unit D"]
+
+  set door(swing: in)
+
+  for i in 0..COUNT {
+    let x = i * W
+    wall exterior thickness WALL { (x, 0) (x + W, 0) (x + W, H) (x, H) close }
+    room at (x, 0) size W x H label "{names[i]}" uses living
+    door   at (x + W / 2, H) width DOOR wall exterior hinge left
+    window at (x + W / 2, 0) width WIN  wall exterior
+
+    if i == COUNT - 1 {
+      dim (x, H + WALL / 2)->(x + W, H + WALL / 2) offset 600 text "{aream2(W, H)} m² each"
+    }
+  }
+}

@@ -5,10 +5,11 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**35 errors** · **29 warnings**
+**36 errors** · **30 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
+| [`E_ACC_PLACEMENT`](#e_acc_placement) | error | `accTitle`/`accDescr` used outside the plan level. |
 | [`E_ARGCOUNT`](#e_argcount) | error | Component called with the wrong number of arguments. |
 | [`E_ARITY`](#e_arity) | error | Built-in function called with the wrong number of arguments. |
 | [`E_ASSIGN_UNDEF`](#e_assign_undef) | error | Assignment to an undeclared name. |
@@ -50,6 +51,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_DOOR_CLEARANCE`](#w_door_clearance) | warning | Door is narrower than the minimum clear width. |
 | [`W_DOOR_OFF_WALL`](#w_door_off_wall) | warning | Door does not lie on any wall. |
 | [`W_DOORWAY_BLOCKED`](#w_doorway_blocked) | warning | A doorway's landing is blocked. |
+| [`W_DUP_ACC_METADATA`](#w_dup_acc_metadata) | warning | Duplicate `accTitle`/`accDescr`. |
 | [`W_EMPTY_PLAN`](#w_empty_plan) | warning | Empty plan. |
 | [`W_FIXTURE_FLOATING`](#w_fixture_floating) | warning | A plumbing/kitchen fixture is not against a wall. |
 | [`W_FIXTURE_WRONG_ROOM`](#w_fixture_wrong_room) | warning | Fixture sits outside its declared room. |
@@ -73,6 +75,18 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_UNKNOWN_STYLE_KEY`](#w_unknown_style_key) | warning | Unknown style key. |
 | [`W_UNKNOWN_THEME_KEY`](#w_unknown_theme_key) | warning | Unknown theme key. |
 | [`W_WINDOW_OFF_WALL`](#w_window_off_wall) | warning | Window does not lie on any wall. |
+
+## E_ACC_PLACEMENT
+
+*error* — `accTitle`/`accDescr` used outside the plan level.
+
+**Cause.** An `accTitle` or `accDescr` accessibility-metadata statement appeared inside a component or a control-flow block. They describe the whole plan, so they are only legal as direct plan-level statements.
+
+**Fix.** Move the `accTitle`/`accDescr` line up to the plan body, alongside `units`/`north`.
+
+```arch
+component c() { accDescr "x" }   # error: only allowed at plan level
+```
 
 ## E_ARGCOUNT
 
@@ -571,6 +585,19 @@ door at (9999,9999) width 900   # warning: not on a wall
 ```arch
 door at (6000,3000) width 800
 furniture wc at (5800,3050) size 700x400   # lint: WC blocks the doorway
+```
+
+## W_DUP_ACC_METADATA
+
+*warning* — Duplicate `accTitle`/`accDescr`.
+
+**Cause.** A plan declares `accTitle` (or `accDescr`) more than once. Only one of each applies, so the last value silently wins.
+
+**Fix.** Keep a single `accTitle` and a single `accDescr`; delete the extra line(s).
+
+```arch
+accTitle "A"
+accTitle "B"   # warning: "A" is discarded
 ```
 
 ## W_EMPTY_PLAN

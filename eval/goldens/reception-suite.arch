@@ -1,0 +1,42 @@
+# A small commercial office suite: a reception/circulation hub with two private
+# offices, a meeting room, a kitchenette, and a WC. Every room opens off reception
+# or the run beyond it, so the whole suite is reachable from the entrance.
+plan "Office Suite" {
+  units mm
+  grid 100
+  scale 1:100
+  north up
+
+  wall exterior thickness 200 { (0,0) (12000,0) (12000,8000) (0,8000) close }
+  wall id=w_hub  partition thickness 100 { (4000,0) (4000,8000) }
+  wall partition thickness 100 { (4000,4000) (12000,4000) }
+  wall id=w_off  partition thickness 100 { (8000,0) (8000,4000) }
+  wall id=w_kit  partition thickness 100 { (8000,4000) (8000,8000) }
+  wall id=w_wc   partition thickness 100 { (10000,4000) (10000,8000) }
+
+  room id=r_recep at (0,0)       size 4000x8000 label "Reception"    uses office
+  room id=r_off1  at (4000,0)    size 4000x4000 label "Office 1"     uses office
+  room id=r_off2  at (8000,0)    size 4000x4000 label "Office 2"     uses office
+  room id=r_meet  at (4000,4000) size 4000x4000 label "Meeting Room" uses office
+  room id=r_kit   at (8000,4000) size 2000x4000 label "Kitchenette"  uses kitchen
+  room id=r_wc    at (10000,4000) size 2000x4000 label "WC"          uses wc
+
+  door id=d_main  at (2000,0)     width 1200 wall exterior hinge left  swing in
+  door id=d_off1  at (4000,2000)  width 1000 wall w_hub    hinge left  swing in
+  door id=d_meet  at (4000,6000)  width 1000 wall w_hub    hinge right swing in
+  door id=d_off2  at (8000,2000)  width 900  wall w_off    hinge left  swing in
+  door id=d_kit   at (8000,6000)  width 900  wall w_kit    hinge left  swing in
+  door id=d_wc    at (10000,6000) width 900  wall w_wc     hinge left  swing in
+
+  window at (0,2000)     width 2000 wall exterior
+  window at (0,6000)     width 2000 wall exterior
+  window at (6000,0)     width 2000 wall exterior
+  window at (10000,0)    width 2000 wall exterior
+  window at (12000,6000) width 1500 wall exterior
+
+  furniture kitchen_sink at (8200,7100) size 800x600
+  furniture counter      at (9100,7100) size 600x600
+
+  furniture wc    at (10200,7100) size 400x700
+  furniture basin at (11200,7100) size 600x450
+}

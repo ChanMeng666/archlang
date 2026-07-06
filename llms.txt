@@ -15,6 +15,7 @@ of the project for large language models and AI agents.
 
 - [README](https://github.com/chanmeng666/archlang/blob/main/README.md): overview, features, installation, usage
 - [spec.llm.md](https://github.com/chanmeng666/archlang/blob/main/spec.llm.md): the WHOLE language in one page (~2k tokens) — read this to author `.arch`
+- [llms-full.txt](https://archlang-docs.vercel.app/llms-full.txt): the full agent context in one document — the spec, the workflow skill, the CLI reference, and every diagnostic code (also at `/llms-full.txt`)
 - [SKILL.md](https://github.com/chanmeng666/archlang/blob/main/SKILL.md): the agent skill — how to drive ArchLang via the CLI
 - [AGENTS.md](https://github.com/chanmeng666/archlang/blob/main/AGENTS.md): how AI agents should work in this repo
 - [CONTRIBUTING](https://github.com/chanmeng666/archlang/blob/main/CONTRIBUTING.md): development setup and contribution workflow
@@ -43,6 +44,10 @@ Loop: `spec` → write `.arch` → `compile --json` → if `ok:false` (exit 2) f
 `lint --json` to confirm soundness. `manifest --json` is the one-call API map; `batch`/`md` cover
 variant exploration and embedding plans in Markdown. See
 [SKILL.md](https://github.com/chanmeng666/archlang/blob/main/SKILL.md).
+
+In CI, the in-repo composite Action `ChanMeng666/archlang/.github/actions/arch-render@<tag>` renders
+every ```` ```arch ```` fence in a repo's Markdown to images in one step (see
+[.github/actions/arch-render/README.md](https://github.com/chanmeng666/archlang/blob/main/.github/actions/arch-render/README.md)).
 
 `lint` catches tacit architectural mistakes, not just syntax: a bathroom reached only through a
 bedroom, a wet room that isn't fully walled in, a door swing hitting furniture, a bath/kitchen with

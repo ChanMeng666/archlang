@@ -22,7 +22,9 @@ import { layoutChrome, type ScaleBarBox, type TitleBlockBox } from "../chrome-la
 import { fmt2 as fmt } from "../num-format.js";
 const pt = (p: Point): string => `${fmt(p.x)},${fmt(p.y)}`;
 
-function xml(s: string): string {
+/** XML-escape a string for safe interpolation into SVG text/attributes. Shared
+ *  with the error-card backend so both escape user text the same way. */
+export function xml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
@@ -154,9 +156,19 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
 
   const out: string[] = [];
   const svgAttrs = opts.width ? `width="${fmt(opts.width)}" height="${fmt((opts.width * vbH) / vbW)}"` : "";
+  // Opt-in accessibility metadata (ADR 0007 pattern): a self-describing drawing for
+  // assistive tech AND machine consumers. `role="img"` + `aria-labelledby` wire the
+  // <title>/<desc> emitted just below to fixed, deterministic ids. Off by default →
+  // no attributes, output byte-identical. (Inlining several accessible SVGs in one
+  // HTML page would duplicate these ids; an embedder that does so should rewrite them.)
+  const a11yAttrs = opts.accessible ? ` role="img" aria-labelledby="arch-title arch-desc"` : "";
   out.push(
-    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" ${svgAttrs} viewBox="${fmt(vbX)} ${fmt(vbY)} ${fmt(vbW)} ${fmt(vbH)}" font-family="${THEME.font}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" ${svgAttrs} viewBox="${fmt(vbX)} ${fmt(vbY)} ${fmt(vbW)} ${fmt(vbH)}" font-family="${THEME.font}"${a11yAttrs}>`,
   );
+  if (opts.accessible) {
+    out.push(`<title id="arch-title">${xml(scene.name)}</title>`);
+    out.push(`<desc id="arch-desc">${xml(scene.caption ?? "")}</desc>`);
+  }
 
   // Defs: a hatch <pattern> for each distinct hatch spec in use (material + scale
   // + angle). The default spec (poché, scale 1, angle 0) keeps the bare "poche" id.

@@ -1,0 +1,38 @@
+# A one-bedroom flat whose bathroom fixtures are anchored with `against wall <id>
+# in <room>` and NO explicit size — each plumbing fixture uses its catalogued
+# footprint and derives its position/side from the wall. A storage cabinet is
+# placed with `at` and `rotate 90` (rotate cannot combine with against wall).
+plan "Against-Wall Bath" {
+  units mm
+  grid 50
+  scale 1:50
+  north up
+
+  wall exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+  wall id=w_spine partition thickness 100 { (3000,0) (3000,6000) }
+  wall id=w_mid   partition thickness 100 { (3000,3000) (6000,3000) }
+
+  room id=r_live at (0,0)       size 3000x6000 label "Living / Kitchen" uses living kitchen
+  room id=r_bed  at (3000,0)    size 3000x3000 label "Bedroom"          uses bedroom
+  room id=r_bath at (3000,3000) size 3000x3000 label "Bathroom"         uses bath
+
+  door    id=d_main at (1500,6000) width 1000 wall exterior hinge left  swing in
+  opening id=o_bed  at (3000,600)  width 900  wall w_spine
+  door    id=d_bath at (3000,4500) width 800  wall w_spine  hinge right swing in
+
+  window at (0,3000)    width 1500 wall exterior
+  window at (4500,0)    width 1200 wall exterior
+
+  furniture kitchen_sink at (300,300)  size 800x600
+  furniture counter      at (1200,300) size 600x600
+
+  # Plumbing fixtures anchored to the door-free north wall of the bath; size omitted
+  # → catalogued footprint, side inferred from `in r_bath`, spaced along the wall.
+  furniture basin  against wall w_mid offset 500  in r_bath
+  furniture wc     against wall w_mid offset 1300 in r_bath
+  furniture shower against wall w_mid offset 2100 in r_bath
+
+  # A double bed rotated to lie along the wall (rotate demo; `bed` is not a plumbing
+  # fixture so it is exempt from the against-wall rule).
+  furniture bed at (3750,500) size 1400x2000 label "Bed" rotate 90
+}
