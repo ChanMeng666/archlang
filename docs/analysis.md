@@ -34,6 +34,7 @@ matter — run it yourself for the full object):
   "plan": "Studio 1BR",
   "units": "mm",
   "scale": "1:50",
+  "caption": "\"Studio 1BR\" — a 4-room floor plan, 42 m² total: Living / Kitchen (24 m²), Bath (4.8 m²), …; 3 doors, 3 windows, entrance via d_main.",
   "bbox": { "w": 7000, "h": 6000 },
   "rooms": [
     {
@@ -74,15 +75,25 @@ matter — run it yourself for the full object):
 
 | Field | Meaning |
 |-------|---------|
+| `caption` | one deterministic sentence summarising the whole plan (room count, total area, the rooms and their areas, door/window counts, entrance) — **always present**, composed only from the fields above so it never diverges from them |
 | `rooms[].uses` | the room's [`uses` tags](language-reference.md#room) (or the inferred kind when none were authored) |
 | `rooms[].area_m2` | floor area, `w × h ÷ 1 000 000`, rounded to 2 dp |
 | `rooms[].adjacent` | ids of rooms whose walls touch this one within tolerance (a shared corner alone doesn't count) |
 | `doors[].between` / `openings[].between` | the two spaces the connector joins — a room id or the literal `"exterior"` |
 | `windows[].room` | the room the window lights |
 | `totals` | room / door / window counts and total floor area |
+| `accTitle` / `accDescr` | the plan's declared [accessible metadata](language-reference.md#accessible-metadata-acctitle-accdescr) — **present only when the source declares them** |
 
 A text-only agent reads this and confirms "4 rooms, 42 m², a bath adjacent to the
 hall (not the bedroom), a 1000 mm front door" — no rendering required.
+
+The **`caption`** is the same sentence the accessible SVG puts in its `<desc>`
+(`compile(src, { accessible: true })` — see the
+[language reference](language-reference.md#accessible-metadata-acctitle-accdescr)); it is
+computed here, from facts, so the two can never disagree. When the source declares
+`accDescr`, that authored string overrides the derived caption in the SVG `<desc>` — but
+`describe().caption` always reports the *derived* sentence, and the declared strings are
+surfaced separately as `accTitle` / `accDescr`.
 
 ## The access graph
 
@@ -235,3 +246,33 @@ agent with no eyes on the drawing — see [Use ArchLang from an agent](agents.md
 2. `arch describe --json` — confirm the room count, labels, areas, and access match
    the brief.
 3. `arch lint --json` — clear the habitability warnings (each carries a `fix`).
+
+### Diagnostics as data, and seeing a failure
+
+The two feedback channels an agent relies on are both public, structured API:
+
+- **`diagnosticToJson(source, d)`** (exported; type `DiagnosticJson`) is the canonical
+  projection the CLI's `--json` output already uses for every diagnostic. It resolves the
+  byte `span` to 1-based `line`/`col` (via `offsetToLineCol`) and attaches the catalogued
+  `fix` for the code, so a self-correcting agent has the location and the remedy without a
+  docs lookup:
+
+  ```ts
+  import { compile, diagnosticToJson } from "@chanmeng666/archlang";
+  const { diagnostics } = compile(src);
+  const asJson = diagnostics.map((d) => diagnosticToJson(src, d));
+  // → { code, severity, message, line, col, span: [start,end], fix?, hints? }
+  ```
+
+- **The opt-in error card.** By default a plan that fails to compile produces **no image** —
+  correct for a pipeline, but blind for an agent watching the drawing. `compile(src, { onError:
+  "svg" })` / `--error-svg` (on `arch compile`, `arch preview`, and `arch md`) instead renders
+  a deterministic, self-describing SVG card — severity, code, `line:col`, message, and the
+  catalogued fix — so the failure is visible, not just returned. Errors, diagnostics, and exit
+  codes are unchanged; without the opt-in the failing plan still yields no bytes. The renderer
+  is exported as `renderErrorSvg`. See
+  [ADR 0009](adr/0009-ai-first-context-and-distribution.md).
+
+For a full cold start, `arch context` (and the shipped `llms-full.txt`) bundle this loop —
+the language spec, the `SKILL.md` workflow, the CLI reference, and the whole error catalog — into
+one system-prompt-ready document.

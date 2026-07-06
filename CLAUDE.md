@@ -25,9 +25,10 @@ than memory.
   are allowed **only** in `src/cli.ts`; everything else gets its environment via the `World` seam.
   Route number formatting through `fmt()` so floats don't drift.
 - **Don't hand-edit generated files.** `dist/`, `editors/*.tmLanguage.json`,
-  `playground/src/arch-language.js`, `docs/error-codes.md`, and `spec.llm.md` are generated — edit
-  the source (`src/grammar/tokens.ts`, `src/error-catalog.ts`, `examples/`) and run the matching
-  `npm run gen:grammars` / `gen:errors` / `gen:spec`. CI fails on drift.
+  `playground/src/arch-language.js`, `docs/error-codes.md`, `spec.llm.md`, and `llms-full.txt` are
+  generated — edit the source (`src/grammar/tokens.ts`, `src/error-catalog.ts`, `examples/`,
+  `SKILL.md`) and run the matching `npm run gen:grammars` / `gen:errors` / `gen:spec` / `gen:llms`.
+  CI fails on drift.
 - **Errors are returned, never thrown** for user-source problems: push a `Diagnostic` with a byte
   `span` and a catalogued `E_*`/`W_*` code (`src/error-catalog.ts` — a test enforces every raised
   code has an entry and vice-versa).

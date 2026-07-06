@@ -26,6 +26,7 @@ of the project for large language models and AI agents.
 ArchLang is agent-native via its CLI — no server, no MCP, nothing to configure:
 
 ```bash
+npx @chanmeng666/archlang context              # cold start: the whole bundled agent context (spec + skill + CLI + errors) in one call
 npx @chanmeng666/archlang spec                 # learn the whole language (read this first)
 npx @chanmeng666/archlang manifest --json      # the whole CLI API as data: commands, flags, formats, lint rules, error codes
 npx @chanmeng666/archlang compile plan.arch -o out.svg --json   # render; JSON: { ok, diagnostics, summary }

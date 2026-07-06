@@ -54,6 +54,36 @@ plan "My Home" {
 | `north up\|down\|left\|right\|<deg>` | North direction for the north arrow. | `up` |
 | `dims auto [overall\|rooms\|walls\|all]` | Auto-draw dimension strings without hand-placing each `dim`: `overall` (the bounding extents), `rooms` (each room's width + height, placed in the page margin on the side the room faces), `walls` (one deduped thickness call-out per distinct wall thickness), or `all` (all three; the default when no scope is given). | off |
 
+### Accessible metadata (`accTitle`, `accDescr`)
+
+Two optional plan-level keywords supply explicit accessible metadata:
+
+```
+plan "Flat 2B" {
+  accTitle "Two-room flat — accessible floor plan"
+  accDescr "A living room with the entrance and a bedroom off it, joined by an interior door."
+  …
+}
+```
+
+- `accTitle "<text>"` — a human title for the drawing.
+- `accDescr "<text>"` — a one-sentence description of the drawing.
+
+They exist for the accessible SVG (`compile(src, { accessible: true })` /
+`arch compile --accessible` — see [Compilation result](#compilation-result)): in that
+mode `accTitle` overrides the plan name in the SVG `<title>`, and `accDescr` overrides the
+auto-derived one-sentence caption (`describe().caption`, see [Analysis](analysis.md)) in the
+SVG `<desc>`. **They have no effect on the default (non-accessible) output** — it stays
+byte-identical whether or not they are present; this is metadata only, never geometry.
+
+- Both are **plan-level only**. Writing either inside a `component` body or a control-flow
+  block is [`E_ACC_PLACEMENT`](error-codes.md).
+- Repeating either at plan level is [`W_DUP_ACC_METADATA`](error-codes.md) (a warning; the
+  **last** value wins).
+- `arch fmt` prints and preserves both.
+
+See [`examples/accessible.arch`](../examples/accessible.arch).
+
 ## Values & expressions
 
 Expressions appear anywhere a value is expected (coordinates, sizes, widths,
@@ -679,9 +709,23 @@ error[E_ROOM_SIZE]: room "bed" must have a positive size
   the [circulation](#circulation) model — [ADR 0008](adr/0008-circulation-as-facts.md));
   also via `arch compile --overlay circulation`. Default output is **byte-identical**
   without it, so shipped SVGs stay clean.
+- `accessible` — emit a self-describing SVG for assistive tech and machine consumers: the
+  `<svg>` gains `role="img"` + `aria-labelledby` and a `<title>`/`<desc>` pair. The title is
+  the plan name (or [`accTitle`](#accessible-metadata-acctitle-accdescr) when declared) and
+  the description is a derived one-sentence caption (`describe().caption` — the same sentence,
+  or [`accDescr`](#accessible-metadata-acctitle-accdescr) when declared). Also via
+  `arch compile --accessible`. **Default output is byte-identical** without it (see
+  [ADR 0009](adr/0009-ai-first-context-and-distribution.md)).
+- `onError` — set to `"svg"` to render a **broken** plan as a deterministic, self-describing
+  error-card SVG (severity, code, `line:col`, message, catalogued fix) instead of returning
+  an empty `svg`. Errors, diagnostics, and exit codes are unchanged; **without this opt-in a
+  failing plan still produces no image** (`svg: ""`). Also via `--error-svg` on `arch compile`,
+  `arch preview`, and `arch md`. The card renderer is exported as `renderErrorSvg`
+  (see [ADR 0009](adr/0009-ai-first-context-and-distribution.md)).
 
-`annotate` and `overlays` are the only options that change SVG output, and both are
-opt-in — the default `compile(source)` is byte-stable and snapshot-tested.
+`annotate`, `overlays`, `accessible`, and `onError: "svg"` are the only options that change
+SVG output, and all are opt-in — the default `compile(source)` is byte-stable and
+snapshot-tested.
 
 ### Source anchors (annotate mode)
 

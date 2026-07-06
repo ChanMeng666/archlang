@@ -73,15 +73,24 @@ is fully client-side.
   path runs in Node and the browser with no native binaries.
 - **Errors as data.** `compile()` *returns* `diagnostics`/`errors`/`warnings` with byte spans — it
   never throws on bad source — making a tight authoring or LLM self-correction loop trivial.
-- **AI-agent-native, CLI-first.** `arch spec` teaches the whole language in one page; `arch describe
+- **AI-agent-native, CLI-first.** `arch context` prints the whole bundled agent context
+  ([`llms-full.txt`](https://archlang-docs.vercel.app/llms-full.txt) — spec, skill, CLI reference and
+  error catalog) in one call; `arch spec` teaches just the language in one page; `arch describe
   --json` returns the plan as **facts** (rooms, areas, adjacency, what doors connect) so a text-only
   agent verifies without an image; `arch lint --json` flags unsound plans. Every command is
-  `--json` with deterministic exit codes and `fix`-carrying diagnostics — no MCP, no server. See
-  [`SKILL.md`](SKILL.md).
+  `--json` with deterministic exit codes and `fix`-carrying diagnostics, and `--error-svg` renders a
+  self-describing error card when a plan won't compile — visual feedback for an agent loop. No MCP,
+  no server. See [`SKILL.md`](SKILL.md).
+- **Accessible output.** `arch compile --accessible` stamps the SVG with `<title>`/`<desc>` +
+  `role="img"` (a derived one-sentence caption, also readable as `describe().caption`), and the
+  `accTitle` / `accDescr` keywords let a plan override that metadata — opt-in, default output
+  unchanged.
 - **IDE-grade tooling.** A full LSP (hover, completion, go-to-definition, rename, signature
   help), an `arch fmt` formatter, an `arch explain <CODE>` error catalog, and a VS Code extension.
-- **Library + CLI + playground + docs.** Use the `compile()` API, the `arch` CLI, the live
-  editor, or the documentation site.
+- **Library + CLI + playground + docs.** Use the `compile()` API, the `arch` CLI, the live editor
+  (with a **Copy-for-LLM** button), or the documentation site — where plain ` ```arch ` fences render
+  as live, editable plans and a [GitHub Action](.github/actions/arch-render) renders the fences in
+  any repo's Markdown.
 
 ## 🚀 Getting Started
 
@@ -152,14 +161,20 @@ arch explain  E_LAYOUT_CYCLE                     # explain a diagnostic
 ### 🤖 Use it from an AI agent (CLI-native, no MCP)
 
 ArchLang's agent interface is its CLI — token-cheap, runs in any harness, nothing to configure.
-Every command takes `--json` (structured result on stdout, messages on stderr) with deterministic
+**Cold start with one command:** `arch context` prints the entire bundled agent context —
+the language spec, the workflow skill, the CLI reference and every diagnostic code in one
+system-prompt-ready document (the same
+[`llms-full.txt`](https://archlang-docs.vercel.app/llms-full.txt) the docs site serves). From there,
+every command takes `--json` (structured result on stdout, messages on stderr) with deterministic
 exit codes (`0` ok · `2` user-source error · `1` IO · `3` usage), and every diagnostic carries a
-`fix`, so the self-correction loop needs no docs lookup. *(There is deliberately no MCP server: a
+`fix`, so the self-correction loop needs no docs lookup; `--error-svg` even turns a plan that won't
+compile into a self-describing image an agent can look at. *(There is deliberately no MCP server: a
 [CLI costs nothing in context until called](https://www.firecrawl.dev/blog/mcp-vs-cli), where an MCP
 schema sits in the window permanently.)* Point your agent at [`SKILL.md`](SKILL.md), or:
 
 ```bash
-npx @chanmeng666/archlang spec                 # the WHOLE language in one page (~2k tokens) — read first
+npx @chanmeng666/archlang context              # EVERYTHING in one call: spec + skill + CLI reference + error catalog
+npx @chanmeng666/archlang spec                 # just the language in one page (~2k tokens)
 npx @chanmeng666/archlang manifest --json      # the whole CLI API as data: commands, flags, formats, lint rules, error codes
 npx @chanmeng666/archlang compile plan.arch -o out.svg --json   # render; JSON: { ok, diagnostics, summary }
 echo '<source>' | npx @chanmeng666/archlang compile - -o - -f svg   # stdin → SVG on stdout
@@ -180,7 +195,7 @@ map; `batch`/`md` cover variant exploration and embedding plans in docs.
 
 **In CI:** the in-repo composite Action
 [`.github/actions/arch-render`](.github/actions/arch-render) renders every ` ```arch ` fence in your
-Markdown to images in one step — `uses: ChanMeng666/archlang/.github/actions/arch-render@v1.11.0`
+Markdown to images in one step — `uses: ChanMeng666/archlang/.github/actions/arch-render@v1.12.0`
 (pin a release tag or `@main`). See its [README](.github/actions/arch-render/README.md) for inputs
 and an auto-commit example.
 
@@ -223,8 +238,9 @@ compiler's `diagnostics`), and a live SVG preview with **pan / zoom / fit**. Loa
 named **snapshots**, share a plan via a **compressed permalink**, and **copy** or **download**
 the drawing as **SVG / PNG / DXF / PDF**. It surfaces the core's own tooling too: a **Format**
 button, a **Repair furniture** panel (review the deterministic corrector's change log, then apply
-it), and **clickable diagnostics** that jump to the offending source and show the error catalog's
-cause / fix / example. Two floor-plan-specific touches: **click any element to jump the editor caret
+it), **clickable diagnostics** that jump to the offending source and show the error catalog's
+cause / fix / example, and a **Copy-for-LLM** button that bundles the source, `describe()` facts and
+diagnostics into one paste-ready prompt. Two floor-plan-specific touches: **click any element to jump the editor caret
 to its source**, and **hover a room to see its area & size**. Everything runs in the browser —
 nothing is sent to a server.
 
@@ -256,7 +272,7 @@ diagnostics, hover, completion, go-to-definition, rename, and signature help —
 
 ## 📚 Documentation
 
-- **[📖 Docs site](https://archlang-docs.vercel.app)** — the hosted guide, reference, error catalog, ADRs, and a **live, editable examples gallery** (edit the source and the SVG recompiles in-browser).
+- **[📖 Docs site](https://archlang-docs.vercel.app)** — the hosted guide, reference, error catalog, ADRs, and a **live, editable examples gallery** (edit the source and the SVG recompiles in-browser); every ` ```arch ` fence on a docs page is itself a live, editable plan.
 - **[spec.llm.md](spec.llm.md)** — the **whole language in one page** (~2k tokens) for AI agents; also `arch spec`.
 - **[SKILL.md](SKILL.md)** — the agent Skill: how to author plans via the CLI (`spec → compile → describe → lint`).
 - **[Language Reference](docs/language-reference.md)** — every statement, with syntax and defaults.

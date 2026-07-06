@@ -182,3 +182,39 @@ echo 'plan "X" { units mm room at (0,0) size 4000x3000 label "R" }' | node dist/
 
 For the full current picture read **`AGENTS.md`** (status table + architecture); for the
 language read **`docs/language-reference.md`**; for design rationale **`docs/adr/`**.
+
+---
+
+## 8. Post-launch — v1.12.0 (the AI-first release), 2026-07-06
+
+> **This continues the frozen log for one later release.** Sections 1–7 above are the
+> v0.7→v1.0 history and are not maintained release-by-release; the per-release story for
+> **v1.3 → v1.11** lives in [`CHANGELOG.md`](../CHANGELOG.md) and the `AGENTS.md` status
+> block, not here. This entry is added because v1.12.0 is a deliberate *strategic* turn —
+> the north star below — worth recording alongside the design rationale in `docs/adr/`.
+> As always the core stayed pure/deterministic/zero-dep and **default SVG output is
+> byte-identical**; every new output behaviour is opt-in.
+
+**AI-first release (Mermaid-inspired):** make ArchLang maximally discoverable,
+self-describing, and distributable for AI agents. Four tranches (see `CHANGELOG.md` for the
+full detail):
+
+| Tranche | What | Key files |
+|---|---|---|
+| **Agent context & diagnostics** | One generated, drift-tested **`llms-full.txt`** (spec + `SKILL.md` workflow + manifest-derived CLI reference + error catalog, ~40 KB), printed by **`arch context`** and served at the docs root as `/llms-full.txt` (llmstxt.org). **`diagnosticToJson` / `DiagnosticJson`** promoted to public API (the CLI's line/col + catalogued-`fix` projection). | `scripts/gen-llms-full.ts`, `src/cli.ts`, `src/diagnostic-json.ts` |
+| **Always-visible errors & eval spine** | Opt-in **error-card SVG** — `compile(src, { onError: "svg" })` / `--error-svg` (on `compile`/`preview`/`md`) renders a broken plan as a self-describing card (severity, code, `line:col`, message, fix); default no-bytes path unchanged. Authorability eval **3 → 18 briefs** with hand-verified goldens + an offline **`npm run eval:ci`** gate in CI. | `src/backends/error-svg.ts`, `eval/` |
+| **Distribution** | Docs-site ` ```arch ` fences auto-render as live `<ArchLive>` widgets (` ```arch static ` opts out); in-repo **GitHub Action** `.github/actions/arch-render` (render fenced blocks in any repo's Markdown via `arch md`); playground **Copy-for-LLM** button. | `docs-site/`, `.github/actions/arch-render`, `playground/` |
+| **Accessibility as a language feature** | `compile(src, { accessible: true })` / `--accessible` → SVG `<title>`/`<desc>` + `role="img"` + `aria-labelledby`, title/caption **derived from `describe()`**; new plan-level keywords **`accTitle` / `accDescr`** override them (`W_DUP_ACC_METADATA` on duplicate, `E_ACC_PLACEMENT` on misplacement). `describe().caption` exposes the derived sentence. Grammar/spec/editor artifacts regenerated. | `src/parser.ts`, `src/scene-build.ts`, `src/backends/svg.ts`, `examples/accessible.arch` |
+
+**Release mechanics.** Core published `@chanmeng666/archlang@1.12.0` (`latest`); the VS Code
+extension repacked and republished as `ChanMeng.archlang@0.4.0` (it bundles the core, so the
+one language-surface change — `accTitle`/`accDescr` — required a repack); playground and docs
+site redeployed. New design docs: **[ADR 0009](adr/0009-ai-first-context-and-distribution.md)**.
+
+**Design north star (why this release exists).** The Mermaid lesson: a tool reaches agents by
+**distribution and ingestible context**, not AI-specific machinery. So the bets are (1) one
+generated bundle an agent can swallow whole, (2) rendering *wherever agents already write*
+(live fences, a GitHub Action, `arch md`) rather than a protocol, and (3) opt-in visual
+feedback for failures. The agent surface stays **CLI-first, no MCP** — a CLI costs nothing in
+the context window until called; an MCP schema sits there permanently. MCP remains deferred to
+a possible hosted/monetize phase.

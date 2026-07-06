@@ -29,7 +29,7 @@ jobs:
           node-version: 20
 
       - name: Render arch fences
-        uses: ChanMeng666/archlang/.github/actions/arch-render@v1.11.0 # or @main
+        uses: ChanMeng666/archlang/.github/actions/arch-render@v1.12.0 # or @main
         with:
           files: "**/*.md"
           format: svg
@@ -45,7 +45,7 @@ The action never commits. Pair it with
 
 ```yaml
       - name: Render arch fences
-        uses: ChanMeng666/archlang/.github/actions/arch-render@v1.11.0
+        uses: ChanMeng666/archlang/.github/actions/arch-render@v1.12.0
         with:
           files: "docs/**/*.md"
 
@@ -97,5 +97,5 @@ for the most reliable, dependency-free CI.
 ## Pinning
 
 `ChanMeng666/archlang` tags every release as `vX.Y.Z`, so pin to a release
-(e.g. `@v1.11.0`) for reproducible builds, or `@main` to track the tip. There is no
+(e.g. `@v1.12.0`) for reproducible builds, or `@main` to track the tip. There is no
 maintained `@v1` alias — use a concrete tag or `@main`.

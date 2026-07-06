@@ -19,12 +19,12 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.12.0` (npm publish pending; `latest` on npm is 1.11.0) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.12.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** (one-call bundled context) — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt` |
-| **VS Code extension** | `ChanMeng.archlang@0.3.1` (published; **0.4.0 repack required** by the v1.12 `accTitle`/`accDescr` keywords) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
+| **VS Code extension** | `ChanMeng.archlang@0.4.0` (published, live — bundles core 1.12.0 with the `accTitle`/`accDescr` surface) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed (TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt`) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.11.0` (v1.12.0 tag on release) | github.com/ChanMeng666/archlang |
+| **Git** | `main`, tags `v1.0.0` → `v1.12.0` (latest) | github.com/ChanMeng666/archlang |
 | **Tests** | 600 passing (74 files) + offline authorability eval (18 briefs, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
 **Latest release — v1.12.0 (AI-first: agent context, error rendering, distribution &
@@ -146,8 +146,9 @@ for concave door arcs, dimensions drawn into the building, and the title-block o
 │                     examples are live/editable <ArchLive> widgets (compile in the browser)
 ├─ docs/              language-reference.md · analysis.md · error-codes.md · adr/ · WORK-LOG.md
 ├─ examples/          studio · two-bed · parametric · themed · relational · lib/ · imports
-├─ eval/              NL→ArchLang authorability harness (corpus.json, goldens/, run.ts)
-├─ scripts/           gen-grammars · gen-error-codes · gen-llm-spec (single-source generators)
+├─ eval/              NL→ArchLang authorability harness (corpus.json — 18 briefs, goldens/, run.ts;
+│                     offline golden gate `npm run eval:ci` in CI, no API key)
+├─ scripts/           gen-grammars · gen-error-codes · gen-llm-spec · gen-llms-full (single-source generators)
 ├─ bench/             ~1000-element timing harness (+ --json mode, CI regression comment)
 └─ test/              vitest: snapshot + fast-check + unit + visual-regression + CLI/describe/lint/eval
 ```
@@ -157,8 +158,11 @@ Key agent-facing `src/` modules (all pure, exported from `src/index.ts`): `descr
 swing-clearance/fixture checks), `analyze.ts` (shared resolve pipeline + rectilinear geometry —
 door connectivity, perimeter enclosure — behind both `describe` and `lint`). `geometry.ts` holds the
 shared door-swing quarter-disc geometry used by both the renderer and the linter;
-`elements/fixtures-glyphs.ts` (v1.2) draws the fixture symbols. The agent-facing CLI lives in
-`src/cli.ts`.
+`elements/fixtures-glyphs.ts` (v1.2) draws the fixture symbols. `diagnostic-json.ts` (v1.12) is the
+public line/col/`fix` projection of a `Diagnostic` (`diagnosticToJson`, used by the CLI/playground/
+LSP); `backends/error-svg.ts` (v1.12) renders the opt-in error card (`renderErrorSvg`); and
+`describe().caption` (v1.12) is the one-sentence accessible summary shared with `--accessible`. The
+agent-facing CLI lives in `src/cli.ts`.
 
 A single `npm install` at the root bootstraps every workspace.
 
@@ -191,7 +195,9 @@ Export to other formats from the CLI: `-f svg|dxf|pdf|png` (`pdf` needs optional
 **The CLI is agent-native.** Every command takes `--json` (structured result to stdout, messages to
 stderr) with deterministic exit codes (`0` ok · `2` user-source error · `1` IO/internal · `3` bad
 usage), and source can come from stdin (`-`). Beyond `compile`/`watch`/`fmt`/`explain` there are
-`arch spec` (print the whole language — `spec.llm.md`), `arch describe` (semantic JSON: rooms,
+`arch spec` (print the whole language — `spec.llm.md`), `arch context` (print the full bundled agent
+context — `llms-full.txt`: spec + skill + CLI reference + error catalog, for a cold-start agent),
+`arch describe` (semantic JSON: rooms,
 areas, adjacency, door connections — backed by `describe()` in `src/describe.ts`), `arch lint`
 (architectural soundness `W_*` warnings — `src/lint.ts`), `arch validate` (parse+resolve+lint, no
 render; `--strict`/`--fail-on-warning` makes warnings fail too — the pipeline ship-gate), `arch new`
@@ -201,6 +207,9 @@ of walls and emits new `.arch` + a change log; `src/repair.ts`, see ADR 0006), `
 `arch batch` (render many files concurrently → `{ ok, results[] }`), `arch md` (render the
 ` ```arch ` blocks in a Markdown file → image links; pure `src/markdown.ts`), and
 `arch manifest`/`capabilities` (the whole CLI API as structured data — `src/manifest.ts`).
+Two opt-in output flags: `--error-svg` (on `compile`/`preview`/`md`) renders a failing plan as a
+self-describing error-card SVG instead of no bytes, and `--accessible` (on `compile`) emits SVG
+`<title>`/`<desc>` + `role="img"`; both leave the default path byte-identical.
 `describe`/`lint` share the pure analysis layer in `src/analyze.ts` (+ `src/analyze/occupancy.ts`, the
 circulation flood-fill); all are exported from `src/index.ts`. This is the standard interface for AI
 agents — there is intentionally no MCP server (see the README's agent section).
