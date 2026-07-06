@@ -12,6 +12,15 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.4.0] - 2026-07-06
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.12.0`**, picking up the v1.12 language
+  surface: new plan-level **`accTitle` / `accDescr`** accessibility keywords (highlighting,
+  completion, hover) and the new diagnostic codes `E_ACC_PLACEMENT` / `W_DUP_ACC_METADATA`
+  in the bundled catalog.
+
 ## [0.3.1] - 2026-07-03
 
 ### Changed
