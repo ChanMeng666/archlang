@@ -39,8 +39,12 @@ async function fontPath(): Promise<string> {
   if (fontPathCache) return fontPathCache;
   // Namespace access (not destructuring) so browser bundlers that stub `node:*`
   // don't fail their static named-export check — this code never runs in a browser.
-  const fs = await import("node:fs");
-  const url = await import("node:url");
+  // The ignore comments keep webpack/Vite from trying to resolve `node:fs`/`node:url`
+  // for a browser bundle at all (same rule as the optional-dep imports; without them
+  // a webpack consumer importing the core client-side fails its build on this
+  // Node-only, never-reached-in-browser path).
+  const fs = await import(/* webpackIgnore: true */ /* @vite-ignore */ "node:fs");
+  const url = await import(/* webpackIgnore: true */ /* @vite-ignore */ "node:url");
   // String-CONCAT paths (not literals or template literals) so browser bundlers'
   // `new URL(..., import.meta.url)` asset plugins don't statically pick the font
   // up — it ships only in the npm tarball (dist/assets) and is read here at
