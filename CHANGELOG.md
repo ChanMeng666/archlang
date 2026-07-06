@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.1] - 2026-07-07
+
+### Fixed
+
+- The PNG backend's lazy `import("node:fs")` / `import("node:url")` (font lookup) now carry
+  `/* webpackIgnore: true */ /* @vite-ignore */` like every other Node-only lazy import, so a
+  webpack/Next.js consumer importing the core **client-side** no longer fails its build trying to
+  resolve `fs` for the browser (the code path never runs in a browser; same class of bug as the
+  1.0.0 → 1.0.1 fix). Found by ArchCanvas's first in-browser use of the core.
+
 ## [1.12.0] - 2026-07-06
 
 AI-first release (Mermaid-inspired): make ArchLang maximally discoverable, self-describing and

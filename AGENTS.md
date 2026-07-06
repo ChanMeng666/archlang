@@ -19,12 +19,12 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.12.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.12.1` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** (one-call bundled context) — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt` |
 | **VS Code extension** | `ChanMeng.archlang@0.4.0` (published, live — bundles core 1.12.0 with the `accTitle`/`accDescr` surface) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed (TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed (VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt`) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.12.0` (latest) | github.com/ChanMeng666/archlang |
+| **Git** | `main`, tags `v1.0.0` → `v1.12.1` (latest) | github.com/ChanMeng666/archlang |
 | **Tests** | 600 passing (74 files) + offline authorability eval (18 briefs, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
 **Latest release — v1.12.0 (AI-first: agent context, error rendering, distribution &
