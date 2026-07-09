@@ -1,9 +1,10 @@
 <script setup lang="ts">
 // The five features as drafting-sheet cards. Each card is a sheet: a numbered
-// title block (A-101 … A-105), a header that shows either a real compiled
-// artifact (an example plan's SVG) or a 45° poché-hatch band for the two
-// conceptual sheets, then the specification copy. Rows are separated by a
+// title block (A-101 … A-105), a header that shows a real compiled artifact (an
+// example plan's SVG), then the specification copy. Rows are separated by a
 // dimension line — the drawing detail that says "this is a measured document".
+// (The card__art--poche 45° hatch fallback stays for any future art-less sheet;
+// today every card carries a compiled drawing.)
 interface Sheet {
   no: string;
   tag: string;
@@ -19,6 +20,7 @@ const row1: Sheet[] = [
     title: "Deterministic by design",
     body:
       "The same source always compiles to byte-identical output — no clocks, no randomness, no I/O. Every loop, conditional and function is evaluated as the drawing is built.",
+    art: "/examples/studio.svg",
   },
   {
     no: "A-102",
@@ -26,6 +28,7 @@ const row1: Sheet[] = [
     title: "Zero-dependency core",
     body:
       "The default SVG path pulls no runtime dependencies. Optional power — PNG raster, vector PDF, angled-wall geometry — loads lazily and is never required.",
+    art: "/examples/themed.svg",
   },
   {
     no: "A-103",
@@ -33,7 +36,7 @@ const row1: Sheet[] = [
     title: "Professional CAD output",
     body:
       "Layers, line weights, wall poché, openings that void walls, real fixture symbols, dimensions, a north arrow, scale bar and a title block. Export to SVG, DXF, PDF or PNG.",
-    art: "/examples/studio.svg",
+    art: "/examples/two-bed.svg",
   },
 ];
 
@@ -52,7 +55,7 @@ const row2: Sheet[] = [
     title: "Reads its own plans",
     body:
       "describe() returns rooms, areas, adjacency, an access graph and circulation facts; lint() flags habitability problems — image-free, so an agent can verify intent without an image.",
-    art: "/examples/two-bed.svg",
+    art: "/examples/relational.svg",
   },
 ];
 </script>
