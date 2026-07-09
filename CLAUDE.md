@@ -19,7 +19,11 @@ than memory.
   every workspace.
 - **Brand:** the logo is an "A" drawn as an A-frame house floor plan.
   `brand/archlang-logo-master.svg` is the byte-sacred source — every variant is a **fill-swap only**
-  (never re-trace/simplify/re-fit path data, no small-size tier). Read `brand/README.md` first.
+  (never re-trace/simplify/re-fit path data, no small-size tier). The two public sites run the shared
+  **"The Compile Boundary"** design system (source-world dark / sheet-world paper, split by a compile
+  seam); its token block is **duplicated byte-identically** in `docs-site/.vitepress/theme/style.css`
+  and `playground/src/styles/tokens.css` (change one, change the other). See
+  [ADR 0010](docs/adr/0010-compile-boundary-design-system.md) and `brand/README.md` first.
 
 ## Non-negotiable invariants (break these and CI fails)
 

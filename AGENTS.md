@@ -21,9 +21,9 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 |-------|---------|-------|
 | **Core package** | `@chanmeng666/archlang@1.12.1` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** (one-call bundled context) — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt` |
-| **VS Code extension** | `ChanMeng.archlang@0.4.0` (published, live — bundles core 1.12.0 with the `accTitle`/`accDescr` surface) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
-| **Playground** | deployed (TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
-| **Docs site** | deployed (VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt`) | https://archlang-docs.vercel.app |
+| **VS Code extension** | `ChanMeng.archlang@0.4.0` (published, live — bundles core 1.12.0 with the `accTitle`/`accDescr` surface); **0.4.1** icon-only repack (`images/icon.png`, dark gallery banner) packaged & validated in-repo, awaiting manual Marketplace upload | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
+| **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
+| **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt`) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.12.1` (latest) | github.com/ChanMeng666/archlang |
 | **Tests** | 600 passing (74 files) + offline authorability eval (18 briefs, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
@@ -33,6 +33,16 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 webpack/Next.js consumer importing the core **client-side** no longer fails its build resolving
 `fs` for the browser (default output unchanged; found by a downstream product's first in-browser
 use of the core).
+
+**Sites redesign — "The Compile Boundary" (2026-07-10, deployed; not a core release —
+`@chanmeng666/archlang` stays 1.12.1).** Both public sites (docs + playground) were rebuilt on a
+shared two-world design system that makes the brand line "Designs that compile" literal — every
+surface is split by a visible **compile seam** into a dark **SOURCE world** (carbon, plum syntax
+accent) and a light **SHEET world** (drafting paper, ink, title blocks). The docs hero is the real
+compiler drawing a plan as source typewrites; a shipped bug where the playground **Format** button
+never worked (duplicate `id="format"`) is fixed. See the "sites' design system" subsection below and
+**[ADR 0010](docs/adr/0010-compile-boundary-design-system.md)**. VS Code extension bumped to 0.4.1
+(icon-only repack, awaiting manual upload); core untouched.
 
 **v1.12.0 (AI-first: agent context, error rendering, distribution &
 accessibility). Four tranches (see `CHANGELOG.md` for detail):**
@@ -148,8 +158,12 @@ for concave door arcs, dimensions drawn into the building, and the title-block o
 ├─ editors/vscode     archlang-vscode → published as ChanMeng.archlang (esbuild-bundled extension)
 ├─ editors/*.json     generated TextMate grammar + language-configuration (shared by the extension)
 ├─ playground/        Vite + CodeMirror live editor (consumes the built core via dist/);
+│                     styles split under src/styles/{tokens,chrome,editor,panels,embed}.css
+│                     (tokens.css = the shared "Compile Boundary" brand block);
 │                     also ships embed.html — a chrome-less <iframe> viewer read from the #z= hash
 ├─ docs-site/         VitePress docs (pages generated from docs/*.md, examples/*.arch);
+│                     theme CSS split as .vitepress/theme/{style,home,doc-pages}.css
+│                     (style.css = the shared "Compile Boundary" brand block + .dark mylar);
 │                     examples are live/editable <ArchLive> widgets (compile in the browser)
 ├─ docs/              language-reference.md · analysis.md · error-codes.md · adr/ · WORK-LOG.md
 ├─ brand/             logo kit + brand book (README.md); archlang-logo-master.svg is byte-sacred, variants are fill-swaps only
@@ -173,6 +187,31 @@ LSP); `backends/error-svg.ts` (v1.12) renders the opt-in error card (`renderErro
 agent-facing CLI lives in `src/cli.ts`.
 
 A single `npm install` at the root bootstraps every workspace.
+
+### The sites' design system — "The Compile Boundary" (docs + playground)
+
+Both public sites share one front-end system (deployed 2026-07-10; see
+[ADR 0010](docs/adr/0010-compile-boundary-design-system.md) and `brand/README.md`). It is **site
+chrome only** — no core/language change, and ArchCanvas keeps its own separate system.
+
+- **Two worlds split by a compile seam.** Dark **SOURCE world** (carbon `#0f1115` / `#171b23`, with
+  plum `#8052ff` surviving *only* as the syntax-highlight accent + logo fills) vs. light **SHEET
+  world** (drafting paper `#f5f2ea`, blue-black ink `#1c2430`, hairlines, drafting grids, title
+  blocks). One shared accent, **REDLINE** (`#c2362b` graphics / `#b3261e` text), for attention only
+  (CTAs, errors); amber `#8a6d00` stays advisory. Docs dark mode is a "mylar film" variant.
+- **Fonts** (self-hosted `@fontsource`, zero CDN): **Archivo Variable** (display, `wdth` axis) +
+  **Public Sans Variable** (body) + **IBM Plex Mono** (code/figures). Space Grotesk / Geist Mono are
+  retired from the sites (the wordmark asset still carries outlined Space Grotesk paths — unchanged).
+- **Token-lockstep law.** The brand token block is **duplicated byte-identically** — there is no
+  shared import, the two build systems are separate — in exactly these two files; change one, change
+  the other:
+  - `docs-site/.vitepress/theme/style.css`
+  - `playground/src/styles/tokens.css`
+- **Where each site's styles live.** Docs: `.vitepress/theme/{style,home,doc-pages}.css` (tokens +
+  VitePress mapping / landing / inner pages) plus `CompileSeam.vue` (compiler-as-hero), `SheetGrid`,
+  `FactsSection`, `TitleBlockFooter`, `ArchLive`. Playground:
+  `src/styles/{tokens,chrome,editor,panels,embed}.css`. The playground is a fixed two-world layout
+  with **no light/dark toggle** by design.
 
 ## Commands
 
@@ -278,7 +317,11 @@ source (.arch)
   `npm run gen:spec` (the curated prose lives in `scripts/gen-llm-spec.ts`); CI fails on drift.
   `llms-full.txt` (the bundled full agent context) is generated from `spec.llm.md` + `SKILL.md` +
   the manifest + the error catalog by `npm run gen:llms` (`scripts/gen-llms-full.ts`); CI fails on
-  drift — regenerate it after editing any of those sources.
+  drift — regenerate it after editing any of those sources. **Editor syntax colors also route
+  through the generator:** `playground/src/arch-language.js` emits each `HighlightStyle` tag as
+  `var(--syn-<name>, <fallback>)` (the on-carbon palette lives in `playground/src/styles/editor.css`)
+  — to recolor the live editor, edit the `scripts/gen-grammars.ts` template or the `--syn-*` values
+  and run `npm run gen:grammars`; never hand-edit `arch-language.js` (the tmLanguage JSON is byte-unchanged by this).
 - **Determinism is tested.** The suite asserts `compile(s) === compile(s)` byte-for-byte, with
   the optional geometry engine both present and absent. Anything that varies output across runs
   (object key order, floats, time) will fail — route number formatting through `fmt()`. The one
@@ -313,6 +356,16 @@ source (.arch)
   (`/bath|wc|shower/i`, `/kitchen/i`) and the **fixture category** — keep those classifiers in sync.
 - **`examples/studio.arch` is import-free on purpose** (`test/world.test.ts` asserts the flagship
   compiles from a single file with no World). Use inline `furniture <fixture>` there, not imports.
+- **(Sites) A partial `:global(.dark) …` selector inside a Vue `<style scoped>` block miscompiles.**
+  A `:global(.dark) .foo` written *inside* scoped styles collapses to a bare `.dark { … }` rule (it
+  once inverted the whole site). Put dark-mode overrides of a component's scoped internals in a
+  **separate unscoped `<style>` block**, not in the scoped one.
+- **(Sites) VitePress `.vp-doc a:hover` (specificity 0,2,1) outranks a two-class rule (0,2,0) on
+  hover.** Any `.vp-doc <class> a` control whose color must survive hover has to re-assert `color`
+  in its own `:hover` rule. Verify interactive states (hover/focus/active), not just static render.
+- **(Sites) A token that flips per mode is unsafe on ground that does not flip.** `--redline` (and
+  any mode-flipping var) must not be used on the fixed carbon terminal or the always-dark bands — use
+  a fixed hex + a comment there (e.g. the solid CTA is fixed `#b3261e` + white).
 
 ## Reading Order
 

@@ -81,6 +81,16 @@ diagnostics, or error/lint codes — republish the extension so its bundled serv
 > Rule of thumb: **if you changed `src/grammar/tokens.ts`, the language services in
 > `src/lsp.ts`, or the error/lint catalogs, the extension is stale until you republish it.**
 
+A repack can also be **non-language** — the icon, `galleryBanner`, or other marketplace metadata
+(e.g. `0.4.1` was an icon-only repack of `0.4.0`). Same steps 1–4 above (skip step 2 when the core
+did not move); the `.vsix` still needs a manual web upload.
+
+> **Editor syntax colors are generated, not hand-authored.** The live-editor highlight palette
+> flows through `scripts/gen-grammars.ts` → `playground/src/arch-language.js` as
+> `var(--syn-<name>, <fallback>)`, with the on-carbon values in `playground/src/styles/editor.css`.
+> To recolor: edit the generator template or the `--syn-*` values and run `npm run gen:grammars`;
+> never hand-edit `arch-language.js` (CI fails on drift).
+
 ## Code of Conduct
 
 By participating, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md). For questions or

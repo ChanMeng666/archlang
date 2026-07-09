@@ -218,3 +218,49 @@ generated bundle an agent can swallow whole, (2) rendering *wherever agents alre
 feedback for failures. The agent surface stays **CLI-first, no MCP** — a CLI costs nothing in
 the context window until called; an MCP schema sits there permanently. MCP remains deferred to
 a possible hosted/monetize phase.
+
+---
+
+## 9. Post-launch — sites redesign, "The Compile Boundary", 2026-07-10
+
+> **Site chrome only — not a core release.** `@chanmeng666/archlang` stays **1.12.1**; the
+> `src/` core had zero changes (the only in-repo source edit was the `scripts/gen-grammars.ts`
+> template + its regenerated `playground/src/arch-language.js`; the tmLanguage JSON is
+> byte-identical). Recorded here because it is a deliberate identity turn; full rationale in
+> **[ADR 0010](adr/0010-compile-boundary-design-system.md)** and `brand/README.md`.
+
+**What shipped.** Both public sites (docs + playground) were rebuilt on one shared design system
+that makes "Designs that compile" literal: every surface is split by a visible **compile seam**
+into a dark **SOURCE world** (carbon; plum survives only as syntax accent + logo fills) and a
+light **SHEET world** (drafting paper, ink, hairlines, title blocks, drafting grid). One shared
+**REDLINE** accent (`#c2362b`/`#b3261e`) for attention (CTAs + errors); amber stays advisory.
+Type is **Archivo Variable** + **Public Sans Variable** + **IBM Plex Mono**, self-hosted
+(`@fontsource`, zero CDN); Space Grotesk / Geist Mono retired from the sites.
+
+| Area | What | Key files |
+|---|---|---|
+| **Signature hero** | `CompileSeam.vue` — the **real compiler** draws `examples/studio.arch` while source typewrites (line-boundary prefix + auto-balanced `}` → `compile()` ~1.4 ms; parser recovers, keep-last-good SVG). SSR renders the settled final state (hydration-safe); viewBox-locked box → **CLS 0.01**; IntersectionObserver start; `prefers-reduced-motion` → static. | `docs-site/.vitepress/theme/CompileSeam.vue` |
+| **Docs theme** | CSS split `theme/{style,home,doc-pages}.css` (tokens + VitePress mapping / landing / inner pages; `.dark` = "mylar film", source world identical in both modes); new `SheetGrid`/`FactsSection`/`TitleBlockFooter`; `ArchLive` restyled as a mini seam. Deleted `BrandHero`, `FlowingLines(.js)`, `FamilyFooter`. | `docs-site/.vitepress/theme/` |
+| **Playground** | Header rebuilt as one row of title-block cells; **fixed two-world layout, no light/dark toggle**; editor = dark source world, preview = paper sheet + drafting grid; `src/style.css` → `styles/{tokens,chrome,editor,panels,embed}.css`; syntax colors now flow through `gen-grammars.ts` as `var(--syn-*)`. | `playground/index.html`, `playground/src/styles/` |
+| **Token lockstep** | The brand token block is **duplicated byte-identically** (no shared import — two build systems) in `docs-site/.vitepress/theme/style.css` **and** `playground/src/styles/tokens.css`. | (both files) |
+
+**Bug fixes surfaced in the rebuild.** A shipped duplicate `id="format"` (select + button) meant
+the playground **Format button never worked since it shipped** — the reformat control is now
+`id="formatSrc"` and live. Both sites added `<meta name="color-scheme" content="light dark">` +
+`robots.txt` (opting out of Chromium Auto Dark Mode, which had force-darkened a user's rendering).
+
+**Accessibility.** **Lighthouse 100/100/100** (a11y/BP/SEO) on both sites; AA contrast on both
+worlds/modes; real heading hierarchy + `role=main`; reduced-motion honored.
+
+**Release mechanics.** Core untouched (no npm publish). VS Code extension bumped to
+**`ChanMeng.archlang@0.4.1`** (icon-only repack: `images/icon.png`, dark gallery banner;
+`.vsix` packaged & validated — **manual Marketplace upload still pending**, listing is 0.4.0).
+`brand/README.md` gained a "The sites' design system" section. New design doc:
+**[ADR 0010](adr/0010-compile-boundary-design-system.md)**.
+
+**Hard-won engineering lessons** (also in `AGENTS.md` gotchas + ADR 0010 consequences): a partial
+`:global(.dark) …` selector inside a Vue `<style scoped>` block miscompiles to a bare `.dark {…}`
+rule (once inverted the whole site) — use a separate unscoped block; VitePress `.vp-doc a:hover`
+(0,2,1) outranks a two-class rule (0,2,0) on hover — re-assert `color` in `:hover` and verify
+interactive states; a mode-flipping token (`--redline`) is unsafe on ground that doesn't flip (the
+fixed carbon terminal / dark bands) — use a fixed hex there.
