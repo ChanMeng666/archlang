@@ -27,6 +27,9 @@ export default defineConfig({
     ["link", { rel: "alternate icon", href: "/brand/archlang-favicon-32.png", sizes: "32x32" }],
     ["link", { rel: "apple-touch-icon", href: "/brand/archlang-apple-touch.png" }],
     ["meta", { name: "theme-color", content: "#0f1115" }],
+    // Signal native dual-scheme support so Chromium's Auto Dark Mode leaves the page
+    // alone; VitePress's own color-scheme per .dark still governs actual rendering.
+    ["meta", { name: "color-scheme", content: "light dark" }],
     ["meta", { property: "og:type", content: "website" }],
     ["meta", { property: "og:title", content: "ArchLang — code to floor plans" }],
     [
