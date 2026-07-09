@@ -238,6 +238,9 @@
 .vp-doc .agents__btn--solid:hover {
   /* lighten the ground toward white; white stays 5.3:1 (AA) */
   background: color-mix(in srgb, #b3261e 88%, #fff);
+  /* VitePress's `.vp-doc a:hover` (0,2,1) outranks this two-class base rule's
+     color (0,2,0), so the hover state must re-assert the text color. */
+  color: #fff;
 }
 /* Ghost button — mode-aware. Light: hairline border + ink text, redline hover.
    Dark override (below) restores the source-world ghost. */
