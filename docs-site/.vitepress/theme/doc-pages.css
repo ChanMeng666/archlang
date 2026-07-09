@@ -1,0 +1,8 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Doc-pages restyle — owned by W2.
+
+   The sheet-world treatment for the reference/guide pages (sidebar, article
+   body, ArchLive widgets, code fences) lands here. Intentionally empty in W0:
+   the token + surface mapping in style.css already recolors the default theme;
+   this file is the seam W2 builds the doc-page design into.
+   ────────────────────────────────────────────────────────────────────────── */

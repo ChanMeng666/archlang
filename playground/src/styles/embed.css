@@ -1,0 +1,100 @@
+/**
+ * Embed page (embed.html) — chrome-less, fills the iframe. Uses .pz-* and
+ * .room-tip from panels.css plus the body.embed layout below. Rules moved
+ * verbatim from the pre-split style.css (owned by W4).
+ */
+
+/* ── embed page (embed.html) — chrome-less, fills the iframe ── */
+body.embed {
+  display: block;
+}
+.embed-app {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+.embed-app:has(.embed-editor:not([hidden])) {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+}
+.embed-editor {
+  min-width: 0;
+  border-right: 1px solid var(--border);
+  background: var(--panel);
+}
+.embed-editor[hidden] {
+  display: none;
+}
+.embed-editor textarea {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  resize: none;
+  padding: 12px 14px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--panel);
+  outline: none;
+}
+.embed-preview {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.embed-preview .pz-viewport {
+  flex: 1;
+}
+/* the "ArchLang" attribution chip, bottom-left of the embed preview */
+.embed-brand {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  background: color-mix(in srgb, #fff 88%, transparent);
+  backdrop-filter: blur(6px);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+.embed-brand:hover {
+  border-color: color-mix(in srgb, var(--plum) 55%, var(--border));
+  color: var(--accent);
+}
+.embed-err {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--err);
+  padding: 8px 12px;
+  background: #fff5f5;
+  border-top: 1px solid #f3d6d4;
+}
+.embed-err[hidden] {
+  display: none;
+}
+@media (max-width: 640px) {
+  .embed-app:has(.embed-editor:not([hidden])) {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+  .embed-editor {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+}

@@ -1,0 +1,62 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Home hero — on-dark nav bar.
+
+   The nav bar is transparent and floats over the dark "void" hero, and the
+   hero is dark in BOTH light and dark themes. Left alone, VitePress paints the
+   bar with the *page* theme's colours, so in light mode the links are dark grey
+   (unreadable on the near-black hero) and the search box is an opaque white
+   block that clashes with the otherwise-transparent bar.
+
+   So at scroll-top on the home page (`.VPNavBar.home.top`) force calm on-dark
+   colours and a ghost search trigger that echoes the hero's outline buttons —
+   regardless of the active theme, since the surface behind it is always dark.
+   Once the page is scrolled the `.top` class drops and the normal themed bar
+   returns; non-home pages never get `.home`, so they're unaffected.
+
+   NOTE: this whole block is transitional home-page chrome owned by W1 — it will
+   be reworked when the landing page is redesigned.
+   ────────────────────────────────────────────────────────────────────────── */
+.VPNavBar.home.top .VPNavBarTitle .title {
+  color: var(--void-fg);
+}
+.VPNavBar.home.top .VPNavBarMenuLink,
+.VPNavBar.home.top .VPNavBarMenuGroup .text {
+  color: var(--ash);
+}
+.VPNavBar.home.top .VPNavBarMenuLink:hover,
+.VPNavBar.home.top .VPNavBarMenuGroup:hover .text {
+  color: var(--void-fg);
+}
+.VPNavBar.home.top .VPSocialLink {
+  color: var(--ash);
+}
+.VPNavBar.home.top .VPSocialLink:hover {
+  color: var(--void-fg);
+}
+
+/* Search trigger → ghost button (transparent fill + light hairline outline),
+   echoing the hero's `.brand-btn--ghost` so it stops reading as a white block. */
+.VPNavBar.home.top .DocSearch-Button {
+  background: transparent;
+  border: 1px solid var(--void-border);
+  color: var(--ash);
+}
+.VPNavBar.home.top .DocSearch-Button:hover {
+  background: color-mix(in srgb, #fff 6%, transparent);
+  border-color: color-mix(in srgb, var(--plum) 55%, transparent);
+  color: var(--void-fg);
+}
+/* The magnifier and the ⌘/Ctrl-K key caps inherit the same on-dark treatment.
+   (The icons are mask glyphs tinted via `background-color`, not `color`.) */
+.VPNavBar.home.top .DocSearch-Button .DocSearch-Search-Icon {
+  background-color: var(--ash);
+}
+.VPNavBar.home.top .DocSearch-Button .DocSearch-Button-Placeholder {
+  color: var(--ash);
+}
+.VPNavBar.home.top .DocSearch-Button .DocSearch-Button-Key {
+  background: transparent;
+  border-color: var(--void-border);
+  box-shadow: none;
+  color: var(--ash);
+}

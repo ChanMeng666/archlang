@@ -16,8 +16,9 @@
     "@codemirror/lint": "^6.8.4",
     "@codemirror/state": "^6.5.0",
     "@codemirror/view": "^6.36.1",
-    "@fontsource/geist-mono": "^5.2.5",
-    "@fontsource/space-grotesk": "^5.2.5",
+    "@fontsource-variable/archivo": "^5.2.8",
+    "@fontsource-variable/public-sans": "^5.2.7",
+    "@fontsource/ibm-plex-mono": "^5.2.7",
     "@lezer/highlight": "^1.2.1",
     "jspdf": "^4.2.1"
   },

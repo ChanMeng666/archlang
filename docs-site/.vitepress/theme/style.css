@@ -1,116 +1,120 @@
 /**
- * ArchLang docs — brand overrides on the VitePress default theme.
+ * ArchLang docs — "The Compile Boundary" brand layer on the VitePress default theme.
  *
- * Shared design system with ArchCanvas (archcanvas/src/app/globals.css):
- * plum #8052ff brand, Space Grotesk display/UI, Geist Mono code, void colours
- * for the dark hero. Keep the token block below in lockstep with the playground
- * (playground/src/style.css) — the two build systems can't share a CSS import,
- * so this short block is the pragmatic source of truth duplicated in both.
+ * The design system has two worlds: a dark SOURCE world (carbon ground, plum
+ * syntax glow) and a light SHEET world (warm drafting film, blue-black ink),
+ * joined by a single REDLINE accent (the architect's markup red). The shared
+ * token block below is duplicated byte-for-byte in the playground
+ * (playground/src/styles/tokens.css) — the two build systems can't share a CSS
+ * import, so that duplicated block is the source of truth. Docs-only mapping
+ * (VitePress vars, mylar-film dark mode) follows the shared block.
  */
 
 :root {
-  /* ── shared brand kit (keep identical with playground) ── */
-  --plum: #8052ff; /* primary brand / action / focus */
-  --plum-strong: #6a3df0; /* links & text on light bg (AA) */
-  --void-bg: oklch(0.145 0 0); /* dark hero background */
-  --void-surface: oklch(0.205 0 0);
-  --void-fg: oklch(0.985 0 0);
-  --void-border: oklch(1 0 0 / 12%);
-  --ash: #bdbdbd;
-  --smoke: #9a9a9a;
+  /* ── The Compile Boundary — shared brand tokens ──────────────────────────
+     Keep this block byte-identical in docs-site/.vitepress/theme/style.css
+     and playground/src/styles/tokens.css (the two build systems cannot share
+     a CSS import; this duplicated block is the source of truth). ────────── */
 
-  /* ── VitePress brand palette → plum ── */
-  --vp-c-brand-1: var(--plum-strong); /* links / text on light: AA */
-  --vp-c-brand-2: var(--plum);
-  --vp-c-brand-3: var(--plum); /* solid button background */
-  --vp-c-brand-soft: color-mix(in srgb, var(--plum) 14%, transparent);
-  --vp-c-brand-softer: color-mix(in srgb, var(--plum) 8%, transparent);
+  /* SOURCE WORLD (dark) */
+  --carbon: #0f1115; /* source-world ground (= brand tile / theme-color) */
+  --carbon-2: #171b23; /* raised source surface */
+  --src-fg: #f2f3f5; /* source text — 17.0:1 on carbon */
+  --src-muted: #98a0ac; /* source secondary — 7.2:1 on carbon */
+  --src-border: oklch(1 0 0 / 12%);
+  --plum: #8052ff; /* syntax/glow accent — graphics & ≥24px text only (4.1:1) */
+  --plum-bright: #9a7bff; /* plum as body text on carbon — 6.0:1 AA */
 
-  /* brand "Get started" buttons (features/page CTAs) */
-  --vp-button-brand-bg: var(--plum);
-  --vp-button-brand-hover-bg: color-mix(in srgb, var(--plum) 90%, #fff);
-  --vp-button-brand-active-bg: var(--plum-strong);
+  /* SHEET WORLD (light drafting film) */
+  --paper: #f5f2ea; /* warm drafting-film ground */
+  --paper-panel: #fbfaf5; /* raised sheet / card ground */
+  --ink: #1c2430; /* blue-black drawing ink — 14.0:1 on paper */
+  --ink-muted: #5b6470; /* annotations — 5.4:1 on paper */
+  --hairline: #cfc9bb; /* sheet borders, dimension lines */
+  --grid-line: rgb(28 36 48 / 7%); /* fine drafting grid */
+
+  /* REDLINE — the single accent, both worlds (architect's markup red) */
+  --redline: #c2362b; /* strokes, markers, fills — 4.9:1 on paper */
+  --redline-ink: #b3261e; /* redline as TEXT on paper — 5.8:1 AA */
+
+  /* STATUS */
+  --ok: #2e7d32;
+  --warn-ink: #8a6d00;
+
+  /* TYPE ROLES */
+  --font-display: "Archivo Variable", Archivo, "Arial Narrow", sans-serif;
+  --font-body: "Public Sans Variable", "Public Sans", -apple-system, "Segoe UI", Roboto, Helvetica, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Docs-only mapping (below is NOT shared with the playground).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* VitePress brand palette → redline */
+  --vp-c-brand-1: var(--redline-ink); /* links / text on light: AA */
+  --vp-c-brand-2: var(--redline);
+  --vp-c-brand-3: var(--redline); /* solid button background */
+  --vp-c-brand-soft: color-mix(in srgb, var(--redline) 12%, transparent);
+  --vp-c-brand-softer: color-mix(in srgb, var(--redline) 7%, transparent);
+
+  /* brand "Get started" buttons (features/page CTAs) — white-on-#c2362b = 5.45:1 AA */
+  --vp-button-brand-bg: var(--redline);
+  --vp-button-brand-hover-bg: color-mix(in srgb, var(--redline) 92%, #000);
+  --vp-button-brand-active-bg: var(--redline-ink);
   --vp-button-brand-border: transparent;
   --vp-button-brand-hover-border: transparent;
 
-  /* ── typography → Space Grotesk + Geist Mono ── */
-  --vp-font-family-base:
-    "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --vp-font-family-mono: "Geist Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  /* typography → Public Sans body + IBM Plex Mono code */
+  --vp-font-family-base: var(--font-body);
+  --vp-font-family-mono: var(--font-mono);
 
-  /* home hero name gradient (used if the default hero is ever shown) */
-  --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: linear-gradient(92deg, var(--plum), #a98bff);
+  /* surfaces → sheet world (light drafting film) */
+  --vp-c-bg: var(--paper-panel);
+  --vp-c-bg-alt: var(--paper);
+  --vp-c-bg-soft: var(--paper);
+  --vp-c-bg-elv: var(--paper-panel);
+  --vp-c-divider: var(--hairline);
+  --vp-c-text-1: var(--ink);
+  --vp-c-text-2: var(--ink-muted);
+  --vp-c-text-3: var(--ink-muted);
+
+  /* LEGACY ALIASES (transitional; W1/W2 will burn them down) */
+  --plum-strong: var(--redline-ink);
+  --void-bg: var(--carbon);
+  --void-surface: var(--carbon-2);
+  --void-fg: var(--src-fg);
+  --void-border: var(--src-border);
+  --ash: var(--src-muted);
+  --smoke: var(--ink-muted);
 }
 
 .dark {
-  /* on the void, the brighter plum reads better than plum-strong */
-  --vp-c-brand-1: var(--plum);
-  --vp-c-brand-2: #9a7bff;
-  --vp-c-brand-3: var(--plum);
+  /* "mylar film" — the sheet world dimmed for dark mode */
+  --paper: #23262e;
+  --paper-panel: #2a2e38;
+  --ink: #e8e6dd;
+  --ink-muted: #a8adb8;
+  --hairline: oklch(1 0 0 / 16%);
+  --grid-line: rgb(232 230 221 / 6%);
+  --redline: #e2564a;
+  --redline-ink: #ff8577;
+  --warn-ink: #d9b13b;
+
+  /* re-state the var() mappings so the mylar values flow (VitePress redefines
+     these per mode; our vars cascade, so pointing them at the same tokens works) */
+  --vp-c-bg: var(--paper-panel);
+  --vp-c-bg-alt: var(--paper);
+  --vp-c-bg-soft: var(--paper);
+  --vp-c-bg-elv: var(--paper-panel);
+  --vp-c-divider: var(--hairline);
+  --vp-c-text-1: var(--ink);
+  --vp-c-text-2: var(--ink-muted);
+  --vp-c-text-3: var(--ink-muted);
 }
 
-/* Pill-shaped nav social/CTA + rounded code echoing the ArchCanvas radii. */
+/* Squared-off chrome — the drafting-sheet corner, not the ArchCanvas pill. */
 .VPButton {
-  border-radius: 9999px !important;
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
-   Home hero — on-dark nav bar.
-
-   The nav bar is transparent and floats over the dark "void" hero, and the
-   hero is dark in BOTH light and dark themes. Left alone, VitePress paints the
-   bar with the *page* theme's colours, so in light mode the links are dark grey
-   (unreadable on the near-black hero) and the search box is an opaque white
-   block that clashes with the otherwise-transparent bar.
-
-   So at scroll-top on the home page (`.VPNavBar.home.top`) force calm on-dark
-   colours and a ghost search trigger that echoes the hero's outline buttons —
-   regardless of the active theme, since the surface behind it is always dark.
-   Once the page is scrolled the `.top` class drops and the normal themed bar
-   returns; non-home pages never get `.home`, so they're unaffected.
-   ────────────────────────────────────────────────────────────────────────── */
-.VPNavBar.home.top .VPNavBarTitle .title {
-  color: var(--void-fg);
-}
-.VPNavBar.home.top .VPNavBarMenuLink,
-.VPNavBar.home.top .VPNavBarMenuGroup .text {
-  color: var(--ash);
-}
-.VPNavBar.home.top .VPNavBarMenuLink:hover,
-.VPNavBar.home.top .VPNavBarMenuGroup:hover .text {
-  color: var(--void-fg);
-}
-.VPNavBar.home.top .VPSocialLink {
-  color: var(--ash);
-}
-.VPNavBar.home.top .VPSocialLink:hover {
-  color: var(--void-fg);
-}
-
-/* Search trigger → ghost button (transparent fill + light hairline outline),
-   echoing the hero's `.brand-btn--ghost` so it stops reading as a white block. */
-.VPNavBar.home.top .DocSearch-Button {
-  background: transparent;
-  border: 1px solid var(--void-border);
-  color: var(--ash);
-}
-.VPNavBar.home.top .DocSearch-Button:hover {
-  background: color-mix(in srgb, #fff 6%, transparent);
-  border-color: color-mix(in srgb, var(--plum) 55%, transparent);
-  color: var(--void-fg);
-}
-/* The magnifier and the ⌘/Ctrl-K key caps inherit the same on-dark treatment.
-   (The icons are mask glyphs tinted via `background-color`, not `color`.) */
-.VPNavBar.home.top .DocSearch-Button .DocSearch-Search-Icon {
-  background-color: var(--ash);
-}
-.VPNavBar.home.top .DocSearch-Button .DocSearch-Button-Placeholder {
-  color: var(--ash);
-}
-.VPNavBar.home.top .DocSearch-Button .DocSearch-Button-Key {
-  background: transparent;
-  border-color: var(--void-border);
-  box-shadow: none;
-  color: var(--ash);
+  border-radius: 3px !important;
 }

@@ -1,0 +1,12 @@
+/**
+ * Playground editor pane. The CodeMirror mount is themed in editor-setup.js;
+ * this is just the scroll frame. Moved verbatim from the pre-split style.css
+ * (owned by W3).
+ */
+
+#editor {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--panel);
+}

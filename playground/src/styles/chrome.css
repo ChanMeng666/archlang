@@ -1,0 +1,241 @@
+/**
+ * Playground chrome — the shell around the app: reset, page frame, the dark
+ * brand header, the two-pane grid, pane headers, output tabs, the draggable
+ * split divider, and the mobile stacking. Tokens live in tokens.css. Rules here
+ * moved verbatim from the pre-split style.css (owned by W3).
+ */
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+body {
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── unified brand nav (dark, echoes the docs hero & ArchCanvas navbar) ── */
+header {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 18px;
+  background: var(--void-bg);
+  color: var(--void-fg);
+  border-bottom: 1px solid var(--void-border);
+  flex-wrap: wrap;
+}
+header .brand-lines {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.6;
+}
+header > *:not(.brand-lines) {
+  position: relative;
+  z-index: 1;
+}
+header h1 {
+  font-size: 17px;
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+header h1 .brand-mark {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  display: block;
+}
+header h1 .wordmark {
+  letter-spacing: -0.01em;
+}
+header h1 b {
+  color: #a98bff;
+  font-weight: 700;
+}
+header .badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ash);
+  padding: 3px 9px;
+  border: 1px solid var(--void-border);
+  border-radius: 9999px;
+}
+header .spacer {
+  flex: 1;
+}
+
+/* pill controls — selects, buttons, links all share the chrome */
+header select,
+header button,
+header a.btn {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 13px;
+  border: 1px solid var(--void-border);
+  border-radius: 9999px;
+  background: oklch(1 0 0 / 6%);
+  color: var(--void-fg);
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background 0.18s,
+    border-color 0.18s,
+    color 0.18s;
+}
+header select {
+  padding-right: 8px;
+}
+header select option {
+  color: var(--ink);
+}
+header button:hover,
+header a.btn:hover,
+header select:hover {
+  border-color: color-mix(in srgb, var(--plum) 65%, transparent);
+  background: oklch(1 0 0 / 12%);
+}
+/* the primary action (Download) gets the solid plum fill */
+header button#download {
+  background: var(--plum);
+  border-color: transparent;
+  font-weight: 500;
+}
+header button#download:hover {
+  background: color-mix(in srgb, var(--plum) 90%, #fff);
+}
+header a.btn:active,
+header button:active {
+  transform: translateY(1px);
+}
+
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 0;
+}
+.pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.pane + .pane {
+  border-left: 1px solid var(--border);
+}
+.pane h2 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34a853;
+}
+.dot.err {
+  background: var(--err);
+}
+.pane h2 .grow {
+  flex: 1;
+}
+
+/* output tabs */
+.tabs {
+  display: inline-flex;
+  gap: 4px;
+}
+.tab {
+  font: inherit;
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 3px 11px;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  background: #fff;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tab:hover {
+  border-color: var(--accent);
+}
+.tab.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--plum) 12%, #fff);
+}
+
+/* draggable split divider (desktop only) — sits over the pane seam */
+.divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  margin-left: -5px;
+  z-index: 5;
+  cursor: col-resize;
+  background: transparent;
+  touch-action: none;
+}
+.divider::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 1px;
+  background: transparent;
+  transition: background 0.15s;
+}
+.divider:hover::after,
+.divider.dragging::after {
+  background: var(--accent);
+  width: 2px;
+  left: 3.5px;
+}
+main {
+  position: relative;
+}
+
+@media (max-width: 760px) {
+  main {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 1fr 1fr;
+  }
+  .pane + .pane {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .divider {
+    display: none;
+  }
+}

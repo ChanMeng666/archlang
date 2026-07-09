@@ -12,10 +12,11 @@ import { compile, THEMES, type CompileOptions } from "archlang";
 import { createPanZoom } from "./pan-zoom.js";
 import { srcFromHash } from "./share.js";
 import { showSvgInStage } from "./viewer.js";
-import "@fontsource/space-grotesk/400.css";
-import "@fontsource/space-grotesk/600.css";
-import "@fontsource/geist-mono/400.css";
-import "./style.css";
+import "@fontsource-variable/public-sans/wght.css";
+import "@fontsource/ibm-plex-mono/400.css";
+import "./styles/tokens.css";
+import "./styles/panels.css";
+import "./styles/embed.css";
 
 const stage = document.querySelector<HTMLElement>(".pz-stage")!;
 const viewport = document.querySelector<HTMLElement>(".pz-viewport")!;

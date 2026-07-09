@@ -1,0 +1,56 @@
+:root {
+  /* ── The Compile Boundary — shared brand tokens ──────────────────────────
+     Keep this block byte-identical in docs-site/.vitepress/theme/style.css
+     and playground/src/styles/tokens.css (the two build systems cannot share
+     a CSS import; this duplicated block is the source of truth). ────────── */
+
+  /* SOURCE WORLD (dark) */
+  --carbon: #0f1115; /* source-world ground (= brand tile / theme-color) */
+  --carbon-2: #171b23; /* raised source surface */
+  --src-fg: #f2f3f5; /* source text — 17.0:1 on carbon */
+  --src-muted: #98a0ac; /* source secondary — 7.2:1 on carbon */
+  --src-border: oklch(1 0 0 / 12%);
+  --plum: #8052ff; /* syntax/glow accent — graphics & ≥24px text only (4.1:1) */
+  --plum-bright: #9a7bff; /* plum as body text on carbon — 6.0:1 AA */
+
+  /* SHEET WORLD (light drafting film) */
+  --paper: #f5f2ea; /* warm drafting-film ground */
+  --paper-panel: #fbfaf5; /* raised sheet / card ground */
+  --ink: #1c2430; /* blue-black drawing ink — 14.0:1 on paper */
+  --ink-muted: #5b6470; /* annotations — 5.4:1 on paper */
+  --hairline: #cfc9bb; /* sheet borders, dimension lines */
+  --grid-line: rgb(28 36 48 / 7%); /* fine drafting grid */
+
+  /* REDLINE — the single accent, both worlds (architect's markup red) */
+  --redline: #c2362b; /* strokes, markers, fills — 4.9:1 on paper */
+  --redline-ink: #b3261e; /* redline as TEXT on paper — 5.8:1 AA */
+
+  /* STATUS */
+  --ok: #2e7d32;
+  --warn-ink: #8a6d00;
+
+  /* TYPE ROLES */
+  --font-display: "Archivo Variable", Archivo, "Arial Narrow", sans-serif;
+  --font-body: "Public Sans Variable", "Public Sans", -apple-system, "Segoe UI", Roboto, Helvetica, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+}
+
+/* ── playground-only legacy aliases (transitional; W3/W4 will burn them down) ──
+   The old playground var names kept working, remapped onto the new tokens so the
+   ~1000 lines of rules below don't have to change in this move-only split. The
+   old `--ink: #1b1b1b` is superseded by the shared `--ink`. */
+:root {
+  --bg: var(--paper);
+  --panel: var(--paper-panel);
+  --muted: var(--ink-muted);
+  --accent: var(--redline-ink);
+  --border: var(--hairline);
+  --err: var(--redline-ink);
+  --plum-strong: var(--redline-ink);
+  --void-bg: var(--carbon);
+  --void-fg: var(--src-fg);
+  --void-border: var(--src-border);
+  --ash: var(--src-muted);
+  --sans: var(--font-body);
+  --mono: var(--font-mono);
+}

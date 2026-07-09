@@ -22,12 +22,16 @@ import { KEYS, readStr, writeStr } from "./storage.js";
 import { EXAMPLES } from "./examples.js";
 import { mountFlowingLines } from "./flowing-lines.js";
 // Self-hosted brand fonts (no CDN) — shared with the docs site.
-import "@fontsource/space-grotesk/400.css";
-import "@fontsource/space-grotesk/600.css";
-import "@fontsource/space-grotesk/700.css";
-import "@fontsource/geist-mono/400.css";
-import "@fontsource/geist-mono/500.css";
-import "./style.css";
+import "@fontsource-variable/archivo/wdth.css";
+import "@fontsource-variable/public-sans/wght.css";
+import "@fontsource/ibm-plex-mono/400.css";
+import "@fontsource/ibm-plex-mono/500.css";
+import "@fontsource/ibm-plex-mono/600.css";
+import "@fontsource/ibm-plex-mono/400-italic.css";
+import "./styles/tokens.css";
+import "./styles/chrome.css";
+import "./styles/editor.css";
+import "./styles/panels.css";
 
 // Subtle ArchCanvas-signature flowing lines behind the brand nav (reduced-motion
 // safe — the helper renders a single static frame when motion is reduced).
