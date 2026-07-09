@@ -247,12 +247,6 @@ html:not(.dark) .vp-doc .vp-code span {
 }
 
 .vp-doc .custom-block .custom-block-title {
-  font-family: var(--font-display);
-  font-variation-settings: "wdth" 85;
-  font-weight: 600;
-  font-size: 10.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   margin-bottom: 6px;
 }
 
@@ -287,10 +281,41 @@ html:not(.dark) .vp-doc .vp-code span {
   color: var(--redline-ink);
 }
 
-/* Note: the title WORDS (TIP / WARNING / DANGER) stay as VitePress emits them —
-   a CSS content-swap to NOTE / CAUTION / REVISION would clobber any author-set
-   custom title (CSS can't tell a default title from a custom one). The drafting
-   read comes from the micro-label typography + coloured left rule above. */
+/* Relabel the default container words to drafting vernacular: tip/info → NOTE,
+   warning → CAUTION, danger → REVISION. The original word is collapsed
+   (font-size: 0) and the drafting label is drawn as a micro-label ::before, so
+   the type-specific colour above still cascades to it.
+   CAVEAT: this is a content-swap keyed off the block TYPE, not its title text —
+   it assumes the DEFAULT title (bare `::: tip`). There are zero custom-titled
+   containers in the docs today; if a page ever writes `::: tip Some Title`, this
+   would overwrite it. Add a per-block opt-out class (or drop the swap) then. */
+.vp-doc .custom-block.tip > .custom-block-title,
+.vp-doc .custom-block.info > .custom-block-title,
+.vp-doc .custom-block.warning > .custom-block-title,
+.vp-doc .custom-block.danger > .custom-block-title {
+  font-size: 0; /* collapse the default word; ::before carries the label */
+}
+.vp-doc .custom-block.tip > .custom-block-title::before,
+.vp-doc .custom-block.info > .custom-block-title::before,
+.vp-doc .custom-block.warning > .custom-block-title::before,
+.vp-doc .custom-block.danger > .custom-block-title::before {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.vp-doc .custom-block.tip > .custom-block-title::before,
+.vp-doc .custom-block.info > .custom-block-title::before {
+  content: "Note";
+}
+.vp-doc .custom-block.warning > .custom-block-title::before {
+  content: "Caution";
+}
+.vp-doc .custom-block.danger > .custom-block-title::before {
+  content: "Revision";
+}
 
 /* details block stays quiet */
 .vp-doc .custom-block.details {
