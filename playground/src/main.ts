@@ -20,7 +20,6 @@ import { renderDiagnostics } from "./diagnostics-panel.js";
 import { srcFromHash, updateHash } from "./share.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 import { EXAMPLES } from "./examples.js";
-import { mountFlowingLines } from "./flowing-lines.js";
 // Self-hosted brand fonts (no CDN) — shared with the docs site.
 import "@fontsource-variable/archivo/wdth.css";
 import "@fontsource-variable/public-sans/wght.css";
@@ -33,11 +32,6 @@ import "./styles/chrome.css";
 import "./styles/editor.css";
 import "./styles/panels.css";
 
-// Subtle ArchCanvas-signature flowing lines behind the brand nav (reduced-motion
-// safe — the helper renders a single static frame when motion is reduced).
-const brandLines = document.querySelector<HTMLCanvasElement>("header .brand-lines");
-if (brandLines) mountFlowingLines(brandLines, { lineCount: 6 });
-
 const preview = document.getElementById("preview")!;
 const describeEl = document.getElementById("describe")!;
 const lintEl = document.getElementById("lint")!;
@@ -45,10 +39,9 @@ const errorsEl = document.getElementById("errors")!;
 const statusEl = document.getElementById("status")!;
 const statusText = document.getElementById("statusText")!;
 const select = document.getElementById("examples") as HTMLSelectElement;
-// NB: `#format` is shared by a <select> and a <button> in the HTML; getElementById
-// returns the first match (the <select>), so both handles below point at it — the
-// long-standing runtime behavior, preserved here rather than changed in a mechanical
-// migration.
+// `#format` is the download-format <select>; the reformat-source button is `#formatSrc`
+// (they collided on a single `format` id until the header rework — the button had never
+// been reachable via getElementById because the <select> won the duplicate id).
 const formatSelect = document.getElementById("format") as HTMLSelectElement | null;
 const themeSelect = document.getElementById("theme") as HTMLSelectElement;
 const lintProfileSelect = document.getElementById("lintProfile") as HTMLSelectElement;
@@ -57,7 +50,7 @@ const lintOutput = document.getElementById("lintOutput")!;
 const copyLinkBtn = document.getElementById("copyLink")!;
 const copyLlmBtn = document.getElementById("copyLlm");
 const savedBtn = document.getElementById("saved") as HTMLButtonElement;
-const formatBtn = document.getElementById("format") as HTMLButtonElement | null;
+const formatBtn = document.getElementById("formatSrc") as HTMLButtonElement | null;
 const embedBtn = document.getElementById("embed");
 const repairBtn = document.getElementById("repair");
 const repairPanel = document.getElementById("repairPanel");

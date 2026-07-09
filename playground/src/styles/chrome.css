@@ -1,8 +1,9 @@
 /**
- * Playground chrome — the shell around the app: reset, page frame, the dark
- * brand header, the two-pane grid, pane headers, output tabs, the draggable
- * split divider, and the mobile stacking. Tokens live in tokens.css. Rules here
- * moved verbatim from the pre-split style.css (owned by W3).
+ * Playground chrome — the shell around the app: reset, page frame, the carbon
+ * source-world header (a title-block toolbar), the two-pane grid, pane headers,
+ * output tabs, the compile-seam divider, and the mobile stacking. Tokens live in
+ * tokens.css. This is source-world chrome (carbon); the sheet-world panels are
+ * styled in panels.css (W4). Owned by W3.
  */
 
 * {
@@ -14,120 +15,237 @@ body {
   margin: 0;
 }
 body {
-  font-family: var(--sans);
+  font-family: var(--font-body);
   color: var(--ink);
   background: var(--bg);
   display: flex;
   flex-direction: column;
 }
 
-/* ── unified brand nav (dark, echoes the docs hero & ArchCanvas navbar) ── */
+/* ── Header = source-world chrome: a title-block toolbar on carbon ──────────
+   One row of hairline-separated cells, each a caps micro-label over its
+   controls — the drafting title block, not a strip of pills. */
 header {
-  position: relative;
-  isolation: isolate;
+  display: flex;
+  align-items: stretch;
+  background: var(--carbon);
+  color: var(--src-fg);
+  border-bottom: 1px solid var(--src-border);
+}
+
+/* a title-block cell: micro-label stacked over its controls, hairline-divided */
+.tb-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 9px 16px;
+  border-right: 1px solid var(--src-border);
+}
+.tb-label {
+  font-family: var(--font-display);
+  font-variation-settings:
+    "wdth" 85,
+    "wght" 600;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--src-muted);
+}
+.tb-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 11px 18px;
-  background: var(--void-bg);
-  color: var(--void-fg);
-  border-bottom: 1px solid var(--void-border);
-  flex-wrap: wrap;
+  gap: 6px;
 }
-header .brand-lines {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  opacity: 0.6;
-}
-header > *:not(.brand-lines) {
-  position: relative;
-  z-index: 1;
-}
-header h1 {
-  font-size: 17px;
-  margin: 0;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  display: inline-flex;
+
+/* brand cell — mark + wordmark + squared stamp badge, laid out as a row */
+.tb-brand {
+  flex-direction: row;
   align-items: center;
   gap: 9px;
+  padding-right: 18px;
 }
-header h1 .brand-mark {
-  width: 22px;
-  height: 22px;
+.tb-brand .brand-mark {
+  width: 20px;
+  height: 20px;
   flex: none;
   display: block;
 }
-header h1 .wordmark {
-  letter-spacing: -0.01em;
+.tb-brand .wordmark {
+  font-family: var(--font-display);
+  font-variation-settings:
+    "wdth" 100,
+    "wght" 600;
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  color: var(--src-fg);
 }
-header h1 b {
-  color: #a98bff;
+.tb-brand .wordmark b {
+  color: var(--plum-bright);
   font-weight: 700;
 }
-header .badge {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+.tb-brand .badge {
+  font-family: var(--font-display);
+  font-variation-settings:
+    "wdth" 85,
+    "wght" 600;
+  font-size: 9px;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
-  color: var(--ash);
-  padding: 3px 9px;
-  border: 1px solid var(--void-border);
-  border-radius: 9999px;
-}
-header .spacer {
-  flex: 1;
+  color: var(--src-muted);
+  padding: 3px 7px;
+  border: 1px solid var(--src-border);
+  border-radius: 2px;
 }
 
-/* pill controls — selects, buttons, links all share the chrome */
-header select,
-header button,
-header a.btn {
-  font: inherit;
-  font-size: 13px;
-  padding: 6px 13px;
-  border: 1px solid var(--void-border);
-  border-radius: 9999px;
-  background: oklch(1 0 0 / 6%);
-  color: var(--void-fg);
+/* squared carbon controls — selects & buttons share the chrome */
+.tb-controls select,
+.tb-controls button {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  line-height: 1.2;
+  padding: 5px 11px;
+  border: 1px solid var(--src-border);
+  border-radius: 3px;
+  background: oklch(1 0 0 / 5%);
+  color: var(--src-fg);
   cursor: pointer;
-  text-decoration: none;
   transition:
-    background 0.18s,
-    border-color 0.18s,
-    color 0.18s;
+    background 0.15s,
+    border-color 0.15s;
 }
-header select {
+/* dark-styled selects so the native dropdown text stays readable */
+.tb-controls select {
+  color-scheme: dark;
   padding-right: 8px;
 }
-header select option {
-  color: var(--ink);
+.tb-controls select option {
+  color: var(--src-fg);
+  background: var(--carbon-2);
 }
-header button:hover,
-header a.btn:hover,
-header select:hover {
-  border-color: color-mix(in srgb, var(--plum) 65%, transparent);
-  background: oklch(1 0 0 / 12%);
+.tb-controls select:hover,
+.tb-controls button:hover {
+  border-color: color-mix(in srgb, var(--plum) 60%, transparent);
+  background: oklch(1 0 0 / 10%);
 }
-/* the primary action (Download) gets the solid plum fill */
-header button#download {
-  background: var(--plum);
-  border-color: transparent;
-  font-weight: 500;
+.tb-controls select:focus-visible,
+.tb-controls button:focus-visible {
+  outline: 2px solid var(--plum-bright);
+  outline-offset: 1px;
 }
-header button#download:hover {
-  background: color-mix(in srgb, var(--plum) 90%, #fff);
-}
-header a.btn:active,
-header button:active {
+.tb-controls button:active {
   transform: translateY(1px);
 }
 
+/* Download — the one loud control: solid redline fill, both worlds' accent */
+.tb-controls button.tb-primary {
+  background: var(--redline);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+.tb-controls button.tb-primary:hover {
+  background: color-mix(in srgb, var(--redline) 88%, #fff);
+  border-color: transparent;
+}
+.tb-controls button.tb-primary:focus-visible {
+  outline-color: #fff;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* NAV — quiet text links, right-aligned, no boxes */
+.tb-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 18px;
+}
+.tb-nav a {
+  font-family: var(--font-display);
+  font-variation-settings:
+    "wdth" 90,
+    "wght" 500;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--src-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.tb-nav a:hover {
+  color: var(--src-fg);
+}
+.tb-nav a:focus-visible {
+  outline: 2px solid var(--plum-bright);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* NAV overflow disclosure (shown <1024px) — a "⋯" menu */
+.tb-nav-more {
+  display: none;
+  position: relative;
+  align-self: center;
+  margin: 0 12px 0 auto;
+}
+.tb-nav-more > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 4px 10px;
+  border: 1px solid var(--src-border);
+  border-radius: 3px;
+  color: var(--src-fg);
+  font-size: 14px;
+  line-height: 1;
+}
+.tb-nav-more > summary::-webkit-details-marker {
+  display: none;
+}
+.tb-nav-more > summary:focus-visible {
+  outline: 2px solid var(--plum-bright);
+  outline-offset: 1px;
+}
+.tb-nav-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  min-width: 150px;
+  background: var(--carbon-2);
+  border: 1px solid var(--src-border);
+  border-radius: 3px;
+  box-shadow: 0 8px 24px oklch(0 0 0 / 45%);
+}
+.tb-nav-panel a {
+  font-family: var(--font-display);
+  font-variation-settings:
+    "wdth" 90,
+    "wght" 500;
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+  color: var(--src-muted);
+  text-decoration: none;
+  padding: 6px 8px;
+  border-radius: 2px;
+}
+.tb-nav-panel a:hover {
+  color: var(--src-fg);
+  background: oklch(1 0 0 / 6%);
+}
+.tb-nav-panel a:focus-visible {
+  outline: 2px solid var(--plum-bright);
+  outline-offset: -1px;
+}
+
 main {
+  position: relative;
   flex: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -139,18 +257,23 @@ main {
   min-height: 0;
   min-width: 0;
 }
+/* hairline seam between panes — the compile boundary (the .divider rides over it) */
 .pane + .pane {
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--src-border);
 }
 .pane h2 {
+  font-family: var(--font-display);
+  font-variation-settings:
+    "wdth" 85,
+    "wght" 600;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--muted);
+  color: var(--ink-muted);
   margin: 0;
   padding: 8px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--paper-panel);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -159,42 +282,53 @@ main {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #34a853;
+  background: var(--ok);
 }
 .dot.err {
-  background: var(--err);
+  background: var(--redline);
 }
 .pane h2 .grow {
   flex: 1;
 }
 
-/* output tabs */
+/* output tabs — squared sheet tabs on the paper world: caps micro-labels, and
+   an active state marked by a redline underline rule + ink text (no pill, no fill) */
 .tabs {
   display: inline-flex;
-  gap: 4px;
+  gap: 2px;
 }
 .tab {
-  font: inherit;
-  font-size: 11px;
-  text-transform: none;
-  letter-spacing: 0;
-  padding: 3px 11px;
-  border: 1px solid var(--border);
-  border-radius: 9999px;
-  background: #fff;
-  color: var(--muted);
+  font-family: var(--font-display);
+  font-variation-settings:
+    "wdth" 85,
+    "wght" 600;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 4px 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-muted);
   cursor: pointer;
 }
 .tab:hover {
-  border-color: var(--accent);
+  color: var(--ink);
 }
 .tab.active {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--plum) 12%, #fff);
+  color: var(--ink);
+  border-bottom-color: var(--redline-ink);
+}
+.tab:focus-visible {
+  outline: 2px solid var(--redline-ink);
+  outline-offset: 1px;
 }
 
-/* draggable split divider (desktop only) — sits over the pane seam */
+/* ── the compile seam — the visible boundary between SOURCE and SHEET ───────
+   Keep the transparent hit-area pattern (9px, absolute, positioned by JS at
+   left:r*100%); the ::after is the drawn rule: a carbon-to-hairline gradient
+   with redline tick marks and a faint plum edge glow on the source side. */
 .divider {
   position: absolute;
   top: 0;
@@ -212,28 +346,56 @@ main {
   top: 0;
   bottom: 0;
   left: 4px;
-  width: 1px;
-  background: transparent;
-  transition: background 0.15s;
+  width: 2px;
+  background:
+    repeating-linear-gradient(to bottom, var(--redline) 0, var(--redline) 5px, transparent 5px, transparent 24px),
+    linear-gradient(to bottom, var(--src-border), var(--hairline));
+  box-shadow: -1px 0 7px -1px color-mix(in srgb, var(--plum) 45%, transparent);
+  transition:
+    width 0.15s,
+    box-shadow 0.15s;
 }
 .divider:hover::after,
 .divider.dragging::after {
-  background: var(--accent);
-  width: 2px;
+  width: 3px;
   left: 3.5px;
+  box-shadow: -1px 0 10px 0 color-mix(in srgb, var(--plum) 65%, transparent);
 }
-main {
-  position: relative;
+.divider:focus-visible {
+  outline: none;
+}
+.divider:focus-visible::after {
+  outline: 2px solid var(--plum-bright);
+  outline-offset: 2px;
 }
 
+/* ── responsive ────────────────────────────────────────────────────────────
+   <1024px: NAV links collapse into the "⋯" disclosure menu. */
+@media (max-width: 1024px) {
+  .tb-nav {
+    display: none;
+  }
+  .tb-nav-more {
+    display: block;
+  }
+}
+
+/* <760px: title-block cells wrap; panes stack; the seam becomes a hairline. */
 @media (max-width: 760px) {
+  header {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+  .tb-cell {
+    border-bottom: 1px solid var(--src-border);
+  }
   main {
     grid-template-columns: 1fr !important;
     grid-template-rows: 1fr 1fr;
   }
   .pane + .pane {
     border-left: 0;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--src-border);
   }
   .divider {
     display: none;

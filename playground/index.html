@@ -24,39 +24,76 @@
     <meta name="twitter:image" content="https://archlang-playground.vercel.app/brand/archlang-og.png" />
   </head>
   <body>
+    <!-- Header = source-world chrome (carbon): one row of title-block cells,
+         hairline-separated groups each with a caps micro-label above its controls. -->
     <header>
-      <canvas class="brand-lines" aria-hidden="true"></canvas>
-      <h1><img class="brand-mark" src="/brand/archlang-icon.svg" alt="" width="22" height="22" /><span class="wordmark"><b>Arch</b>Lang</span> <span class="badge">Playground</span></h1>
+      <div class="tb-cell tb-brand">
+        <img class="brand-mark" src="/brand/archlang-icon.svg" alt="" width="20" height="20" />
+        <span class="wordmark"><b>Arch</b>Lang</span>
+        <span class="badge">Playground</span>
+      </div>
+      <div class="tb-cell">
+        <span class="tb-label">Drawing</span>
+        <div class="tb-controls">
+          <select id="examples" aria-label="Load example"></select>
+          <button id="formatSrc" title="Reformat the source to canonical style">Format</button>
+          <button id="saved" aria-haspopup="true">Saved ▾</button>
+        </div>
+      </div>
+      <div class="tb-cell">
+        <span class="tb-label">View</span>
+        <div class="tb-controls">
+          <select id="theme" aria-label="Render theme">
+            <option value="">Default</option>
+            <option value="blueprint">Blueprint</option>
+            <option value="dark">Dark</option>
+            <option value="mono">Mono</option>
+            <option value="presentation">Presentation</option>
+          </select>
+        </div>
+      </div>
+      <div class="tb-cell">
+        <span class="tb-label">Issue</span>
+        <div class="tb-controls">
+          <select id="format" aria-label="Download format">
+            <option value="svg">SVG</option>
+            <option value="png">PNG</option>
+            <option value="dxf">DXF</option>
+            <option value="pdf">PDF</option>
+          </select>
+          <button id="download" class="tb-primary">Download</button>
+        </div>
+      </div>
+      <div class="tb-cell">
+        <span class="tb-label">Share</span>
+        <div class="tb-controls">
+          <button id="copyLink">Copy link</button>
+          <button id="copyLlm" title="Copy a paste-ready prompt (source + facts + diagnostics) for an AI assistant">Copy for LLM</button>
+          <button id="embed" title="Copy an iframe snippet to embed this plan">Embed</button>
+        </div>
+      </div>
       <div class="spacer"></div>
-      <select id="examples" aria-label="Load example"></select>
-      <select id="theme" aria-label="Render theme">
-        <option value="">Default</option>
-        <option value="blueprint">Blueprint</option>
-        <option value="dark">Dark</option>
-        <option value="mono">Mono</option>
-        <option value="presentation">Presentation</option>
-      </select>
-      <select id="format" aria-label="Download format">
-        <option value="svg">SVG</option>
-        <option value="png">PNG</option>
-        <option value="dxf">DXF</option>
-        <option value="pdf">PDF</option>
-      </select>
-      <button id="download">Download</button>
-      <button id="format" title="Reformat the source to canonical style">Format</button>
-      <button id="copyLink">Copy link</button>
-      <button id="copyLlm" title="Copy a paste-ready prompt (source + facts + diagnostics) for an AI assistant">Copy for LLM</button>
-      <button id="embed" title="Copy an iframe snippet to embed this plan">Embed</button>
-      <button id="saved" aria-haspopup="true">Saved ▾</button>
-      <!-- brand-family navigation: back to the main docs site + sibling product -->
-      <a class="btn" href="https://archlang-docs.vercel.app" target="_blank" rel="noopener">Docs ↗</a>
-      <a class="btn" href="https://archlang-docs.vercel.app/spec" target="_blank" rel="noopener">Spec</a>
-      <a class="btn" href="https://github.com/chanmeng666/archlang" target="_blank" rel="noopener">GitHub</a>
-      <a class="btn" href="https://archcanvas.chanmeng.org" target="_blank" rel="noopener">ArchCanvas ↗</a>
+      <!-- brand-family navigation: quiet text links (no boxes), right-aligned.
+           Collapses into the "⋯" disclosure below <1024px (CSS-only). -->
+      <nav class="tb-nav" aria-label="Related sites">
+        <a href="https://archlang-docs.vercel.app" target="_blank" rel="noopener">Docs ↗</a>
+        <a href="https://archlang-docs.vercel.app/spec" target="_blank" rel="noopener">Spec</a>
+        <a href="https://github.com/chanmeng666/archlang" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://archcanvas.chanmeng.org" target="_blank" rel="noopener">ArchCanvas ↗</a>
+      </nav>
+      <details class="tb-nav-more">
+        <summary aria-label="More links" title="More links">⋯</summary>
+        <div class="tb-nav-panel">
+          <a href="https://archlang-docs.vercel.app" target="_blank" rel="noopener">Docs ↗</a>
+          <a href="https://archlang-docs.vercel.app/spec" target="_blank" rel="noopener">Spec</a>
+          <a href="https://github.com/chanmeng666/archlang" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://archcanvas.chanmeng.org" target="_blank" rel="noopener">ArchCanvas ↗</a>
+        </div>
+      </details>
     </header>
     <main>
       <section class="pane">
-        <h2>source.arch</h2>
+        <h2 class="src-tab">SOURCE.ARCH</h2>
         <div id="editor"></div>
         <div id="errors"></div>
       </section>

@@ -153,15 +153,18 @@ const archStream = StreamLanguage.define({
   },
 });
 
+// Colours are CSS vars (valid style-mod values) so the source-world theme owns
+// them in editor.css; the fallback hex is the same carbon-ground value, checked
+// ≥4.5:1 on #0f1115. Change the palette in editor.css, not here.
 const highlightStyle = HighlightStyle.define([
-  { tag: t.keyword, color: "#0e5484", fontWeight: "600" },
-  { tag: t.typeName, color: "#9a3b1b", fontWeight: "600" },
-  { tag: t.propertyName, color: "#3a5e2a" },
-  { tag: t.atom, color: "#7a4fb3" },
-  { tag: t.number, color: "#1b6b7a" },
-  { tag: t.string, color: "#a06000" },
-  { tag: t.comment, color: "#9a968b", fontStyle: "italic" },
-  { tag: t.operator, color: "#6a6a6a" },
+  { tag: t.keyword, color: "var(--syn-keyword, #86adff)", fontWeight: "600" },
+  { tag: t.typeName, color: "var(--syn-typename, #eaa86a)", fontWeight: "600" },
+  { tag: t.propertyName, color: "var(--syn-propertyname, #9fce86)" },
+  { tag: t.atom, color: "var(--syn-atom, #b79bff)" },
+  { tag: t.number, color: "var(--syn-number, #6fc7d6)" },
+  { tag: t.string, color: "var(--syn-string, #e6c07b)" },
+  { tag: t.comment, color: "var(--syn-comment, #8b93a0)", fontStyle: "italic" },
+  { tag: t.operator, color: "var(--syn-operator, #a6adb8)" },
 ]);
 
 export function archLanguage() {
