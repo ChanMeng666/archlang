@@ -21,7 +21,7 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 |-------|---------|-------|
 | **Core package** | `@chanmeng666/archlang@1.12.1` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** (one-call bundled context) — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt` |
-| **VS Code extension** | `ChanMeng.archlang@0.4.0` (published, live — bundles core 1.12.0 with the `accTitle`/`accDescr` surface); **0.4.1** icon-only repack (`images/icon.png`, dark gallery banner) packaged & validated in-repo, awaiting manual Marketplace upload | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
+| **VS Code extension** | `ChanMeng.archlang@0.4.1` (published, live — icon + dark gallery banner; bundles core 1.12.0 with the `accTitle`/`accDescr` surface) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt`) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.12.1` (latest) | github.com/ChanMeng666/archlang |
@@ -42,7 +42,7 @@ accent) and a light **SHEET world** (drafting paper, ink, title blocks). The doc
 compiler drawing a plan as source typewrites; a shipped bug where the playground **Format** button
 never worked (duplicate `id="format"`) is fixed. See the "sites' design system" subsection below and
 **[ADR 0010](docs/adr/0010-compile-boundary-design-system.md)**. VS Code extension bumped to 0.4.1
-(icon-only repack, awaiting manual upload); core untouched.
+(icon-only repack, published & live on the Marketplace 2026-07-10); core untouched.
 
 **v1.12.0 (AI-first: agent context, error rendering, distribution &
 accessibility). Four tranches (see `CHANGELOG.md` for detail):**

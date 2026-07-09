@@ -254,7 +254,7 @@ worlds/modes; real heading hierarchy + `role=main`; reduced-motion honored.
 
 **Release mechanics.** Core untouched (no npm publish). VS Code extension bumped to
 **`ChanMeng.archlang@0.4.1`** (icon-only repack: `images/icon.png`, dark gallery banner;
-`.vsix` packaged & validated — **manual Marketplace upload still pending**, listing is 0.4.0).
+`.vsix` **published & live on the Marketplace 2026-07-10**, listing shows 0.4.1 with the new A-frame icon).
 `brand/README.md` gained a "The sites' design system" section. New design doc:
 **[ADR 0010](adr/0010-compile-boundary-design-system.md)**.
 
