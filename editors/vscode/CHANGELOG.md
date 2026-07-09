@@ -12,6 +12,15 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.4.1] - 2026-07-10
+
+### Added
+
+- **Marketplace icon.** The extension now ships a listing icon
+  (`images/icon.png` — the sanctioned void-tile + plum A-frame mark composition from the
+  brand kit) plus a dark `galleryBanner` (`#0f1115`), so `ChanMeng.archlang` no longer shows
+  the default placeholder. Icon-only repack; no language-surface or bundled-core change.
+
 ## [0.4.0] - 2026-07-06
 
 ### Changed

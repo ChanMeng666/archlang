@@ -70,6 +70,36 @@ founder reversed it: one geometry, everywhere. Do not re-add a simplified tier.
 | **Ink** | `#111111` | the mono mark on light surfaces |
 | **Void** | `#0f1115` | app-tile ground; site `theme-color`; OG-card ground |
 
+## The sites' design system — "The Compile Boundary"
+
+Distinct from the mark, but built on the same idea: the docs site and the playground
+run a shared front-end system called **"The Compile Boundary."** A single compile
+seam splits every surface into two worlds —
+
+- a dark **SOURCE world** — carbon grounds (`#0f1115` / `#171b23`), where **plum
+  `#8052ff` survives only** as the source-world syntax-highlighting accent and as the
+  logo fills (nowhere else in the chrome);
+- a light **SHEET world** — drafting paper (`#f5f2ea`), blue-black ink (`#1c2430`),
+  hairlines, drafting grids, and title blocks —
+
+joined by a single **REDLINE** accent, the architect's markup red (`#c2362b` for
+graphics, `#b3261e` for text). Site type is **Archivo Variable** (display, `wdth`
+axis) + **Public Sans Variable** (body) + **IBM Plex Mono** (code). The earlier
+Space Grotesk / Geist Mono pairing, the FlowingLines hero canvas, the `BrandHero`
+component, and the pill chrome are all **retired** from the sites.
+
+These tokens live in **two files that must stay in sync** — the Compile Boundary
+token block is duplicated by hand (not imported — the two build systems are
+separate) in:
+
+- **`docs-site/.vitepress/theme/style.css`**
+- **`playground/src/styles/tokens.css`**
+
+**ArchCanvas deliberately keeps its own design system** (its plum / Space Grotesk /
+dark-hero identity). The two products are **not** joined by shared site chrome —
+the family relationship lives entirely in the **logo grammar above** (ArchLang =
+SOURCE mark, ArchCanvas = COMPILED knockout tile; **"Designs that compile"**).
+
 ## Wordmark
 
 The horizontal lockup is the **full master mark** + **"ArchLang"** set in **Space
@@ -114,7 +144,7 @@ update all three by hand). The mirrors carry the SVGs + `favicon-32` + `apple-to
 |---|---|---|
 | README header (dark/light `<picture>`) | `README.md` | `archlang-wordmark.svg`, `-black.svg` |
 | Docs site favicon / nav / OG | `docs-site/.vitepress/config.ts` | `archlang-icon-plum.svg` (favicon + `nav logo`), `archlang-favicon-32.png`, `archlang-apple-touch.png`, `archlang-og.png` |
-| Docs hero | `docs-site/.vitepress/theme/BrandHero.vue` | `archlang-icon-plum.svg` |
+| Docs hero (compile-seam) | `docs-site/.vitepress/theme/CompileSeam.vue` | `archlang-icon-plum.svg` (eyebrow mark) |
 | Playground page | `playground/index.html` | `archlang-icon-plum.svg` (favicon), `archlang-apple-touch.png`, `archlang-og.png`, `archlang-icon.svg` (header) |
 | Playground embed viewer | `playground/embed.html` | `archlang-icon-plum.svg` (favicon), `archlang-icon.svg` (header) |
 
