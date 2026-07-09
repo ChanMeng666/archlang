@@ -3,8 +3,13 @@
  * pan/zoom preview viewport + toolbar + room tooltip, the facts strip, the
  * Describe (access-graph + JSON), Lint (rows + repair), Errors (diagnostics),
  * the embed-snippet dialog, and the saved-snapshots popover. The embed page
- * (embed.ts) reuses .pz-* and .room-tip from here. Rules moved verbatim from
- * the pre-split style.css (owned by W4).
+ * (embed.ts) reuses .pz-* and .room-tip from here.
+ *
+ * SHEET world: everything here is drafting film — paper grounds, ink text,
+ * hairline rules, REDLINE as the single accent (errors / active / primary),
+ * amber for advisory warnings, --ok green for pass. Plum belongs to the source
+ * world only; the one deliberate exception is .room-tip (a carbon annotation
+ * chip floating over the sheet). Owned by W4.
  */
 
 /* tab views: only the active one shows */
@@ -22,13 +27,19 @@
   display: flex;
 }
 
-/* pan/zoom viewport — clips, the inner stage is transformed */
+/* pan/zoom viewport — clips, the inner stage is transformed. Ground is paper
+   with a fine drafting grid (8px minor, 40px major) instead of a checkerboard. */
 .pz-viewport {
   position: relative;
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  background: repeating-conic-gradient(#f0efe9 0% 25%, #f6f5f1 0% 50%) 50% / 22px 22px;
+  background-color: var(--paper);
+  background-image:
+    repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px 40px),
+    repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 40px);
   cursor: grab;
   touch-action: none;
 }
@@ -40,18 +51,21 @@
   cursor: pointer;
 }
 
-/* hover-room tooltip (C2) */
+/* hover-room tooltip (C2) — deliberately CARBON: a piece of source-world
+   annotation floating over the sheet. Squared, mono figures. */
 .room-tip {
   position: absolute;
   z-index: 6;
   pointer-events: none;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: 3px;
+  border: 1px solid var(--src-border);
+  font-family: var(--font-mono);
   font-size: 11.5px;
   white-space: nowrap;
-  background: oklch(0.145 0 0 / 0.9);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  background: var(--carbon);
+  color: var(--src-fg);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.35);
 }
 .pz-stage {
   position: absolute;
@@ -60,31 +74,39 @@
   transform-origin: 0 0;
   will-change: transform;
 }
+/* the compiled plan floats as a sheet: white ground, hairline edge, small shadow */
 .pz-stage svg {
   display: block;
   max-width: none;
   max-height: none;
-  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--hairline);
+  box-shadow: 0 3px 12px rgb(28 36 48 / 0.14);
   background: #fff;
 }
 .pz-viewport:fullscreen {
-  background: #f6f5f1;
+  background-color: var(--paper);
+  background-image:
+    repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px 40px),
+    repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 40px);
 }
 
-/* floating preview toolbar (zoom · fit · fullscreen · copy) */
+/* floating preview toolbar (zoom · fit · fullscreen · copy) — a squared
+   paper-panel chip with a hairline border. */
 .pz-toolbar {
   position: absolute;
   top: 10px;
   right: 10px;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: 9999px;
-  background: color-mix(in srgb, #fff 88%, transparent);
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--paper-panel) 90%, transparent);
   backdrop-filter: blur(6px);
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 6px rgb(28 36 48 / 0.1);
 }
 .pz-toolbar button {
   font: inherit;
@@ -94,64 +116,98 @@
   height: 26px;
   padding: 0 7px;
   border: 0;
-  border-radius: 9999px;
+  border-radius: 2px;
   background: transparent;
   color: var(--ink);
   cursor: pointer;
 }
 .pz-toolbar button:hover {
-  background: color-mix(in srgb, var(--plum) 14%, #fff);
-  color: var(--accent);
+  background: color-mix(in srgb, var(--redline) 12%, transparent);
+  color: var(--redline-ink);
+}
+.pz-toolbar button[data-pz="copysvg"],
+.pz-toolbar button[data-pz="copypng"],
+.pz-toolbar button[data-pz="out"],
+.pz-toolbar button[data-pz="in"],
+.pz-toolbar button[data-pz="fit"],
+.pz-toolbar button[data-pz="full"] {
+  font-family: var(--font-mono);
 }
 .pz-toolbar button[data-pz="copysvg"],
 .pz-toolbar button[data-pz="copypng"] {
-  font-family: var(--mono);
   font-size: 10.5px;
   font-weight: 500;
 }
 .pz-toolbar button[data-pz="paths"] {
-  font-size: 11px;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-size: 10px;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 .pz-toolbar button.active {
-  background: color-mix(in srgb, var(--plum) 22%, #fff);
-  color: var(--accent);
+  background: var(--redline);
+  color: #fff;
+}
+.pz-toolbar button.active:hover {
+  background: var(--redline);
+  color: #fff;
 }
 .pz-sep {
   width: 1px;
   height: 16px;
-  background: var(--border);
+  background: var(--hairline);
   margin: 0 1px;
 }
 
-/* facts strip — always-visible plan totals under the preview */
+/* facts strip — always-visible plan totals under the preview, read as a
+   drafting SCHEDULE row: caps micro-labels, tabular-nums mono figures,
+   hairline column separators. */
 .facts {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 7px 14px;
-  padding: 7px 14px;
-  border-top: 1px solid var(--border);
-  background: var(--panel);
+  align-items: stretch;
+  gap: 0;
+  padding: 0 4px;
+  border-top: 1px solid var(--hairline);
+  background: var(--paper-panel);
   font-size: 12px;
-  color: var(--muted);
-  min-height: 33px;
+  color: var(--ink-muted);
+  min-height: 34px;
 }
 .facts .fact {
   display: inline-flex;
   align-items: baseline;
-  gap: 5px;
+  gap: 6px;
+  padding: 8px 12px;
+  border-left: 1px solid var(--hairline);
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-weight: 600;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+}
+.facts .fact:first-child {
+  border-left: 0;
 }
 .facts .fact b {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
+  font-variation-settings: normal;
   font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
 .facts .fact-bad b {
-  color: var(--err);
+  color: var(--redline-ink);
 }
 .facts .fact-ok b {
-  color: #2e7d32;
+  color: var(--ok);
 }
 .facts:empty {
   display: none;
@@ -161,7 +217,7 @@
   margin: 0;
   padding: 14px;
   overflow: auto;
-  background: var(--panel);
+  background: var(--paper-panel);
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--ink);
@@ -170,7 +226,7 @@
   display: block;
 }
 #describe .empty {
-  color: var(--muted);
+  color: var(--ink-muted);
   font-size: 13px;
   margin: 0;
 }
@@ -192,23 +248,27 @@
   gap: 6px;
   min-width: 120px;
 }
+/* column header — caps micro-label */
 .ag-col-h {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
   font-weight: 600;
   padding: 0 2px 2px;
 }
 .ag-col-h-bad {
-  color: var(--err);
+  color: var(--redline-ink);
 }
+/* room card — schedule card: paper-panel, hairline, 2px ink left rule */
 .ag-card {
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  border-radius: 6px;
+  border: 1px solid var(--hairline);
+  border-left: 2px solid var(--ink);
+  border-radius: 3px;
   padding: 7px 9px;
-  background: #fff;
+  background: var(--paper-panel);
 }
 .ag-card-label {
   font-size: 12.5px;
@@ -216,51 +276,56 @@
   color: var(--ink);
 }
 .ag-card-meta {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
   margin-top: 2px;
 }
 .ag-unreachable {
-  border-left-color: var(--err);
-  background: #fff5f5;
+  border-left-color: var(--redline);
+  background: color-mix(in srgb, var(--redline) 6%, var(--paper-panel));
 }
 .ag-unreachable .ag-card-meta {
-  color: var(--err);
+  color: var(--redline-ink);
 }
+/* modeled door/opening — dashed hairline chip, ink mono (no plum wash) */
 .ag-door {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 11.5px;
-  color: var(--accent);
-  border: 1px dashed color-mix(in srgb, var(--accent) 55%, var(--border));
-  border-radius: 6px;
+  color: var(--ink);
+  border: 1px dashed var(--hairline);
+  border-radius: 3px;
   padding: 7px 9px;
-  background: color-mix(in srgb, var(--plum) 6%, #fff);
+  background: var(--paper-panel);
 }
 .ag-arrow {
   align-self: center;
-  color: var(--muted);
+  color: var(--ink-muted);
   font-size: 14px;
   padding: 0 1px;
 }
 .ag-note {
-  color: var(--muted);
+  color: var(--ink-muted);
   font-size: 13px;
   margin: 0 0 14px;
 }
 .ag-note code {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--accent);
+  color: var(--redline-ink);
 }
 
-/* raw JSON, tucked under the visual */
+/* raw JSON, tucked under the visual as an appendix */
 .describe-json summary {
   cursor: pointer;
-  font-size: 11px;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
   user-select: none;
 }
 .describe-json[open] summary {
@@ -268,7 +333,11 @@
 }
 .describe-json pre {
   margin: 0;
-  font-family: var(--mono);
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: var(--paper-panel);
+  font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.5;
   color: var(--ink);
@@ -279,7 +348,7 @@
 #lint {
   overflow: auto;
   padding: 12px 14px;
-  background: var(--panel);
+  background: var(--paper-panel);
   flex-direction: column;
   gap: 8px;
 }
@@ -294,72 +363,78 @@
   flex-wrap: wrap;
   gap: 8px;
   padding-bottom: 10px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--hairline);
 }
 .lint-controls label {
-  font-size: 11px;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
 }
 .lint-controls select {
   font: inherit;
   font-size: 12.5px;
   padding: 4px 9px;
-  border: 1px solid var(--border);
-  border-radius: 9999px;
-  background: #fff;
+  border: 1px solid var(--hairline);
+  border-radius: 2px;
+  background: var(--paper-panel);
   color: var(--ink);
   cursor: pointer;
 }
 .lint-controls select:hover {
-  border-color: var(--accent);
+  border-color: var(--redline);
 }
 .lint-caption {
   flex-basis: 100%;
   margin: 0;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 #lintOutput {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
+/* advisory warning row — keep AMBER semantics: amber left rule on paper */
 .lintrow {
   font-size: 13px;
   padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-left: 3px solid #d99a00;
-  border-radius: 6px;
-  background: #fffdf6;
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--warn-ink);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--warn-ink) 6%, var(--paper-panel));
 }
 .lintrow code {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 11.5px;
-  color: #8a6d00;
+  color: var(--warn-ink);
   margin-right: 6px;
 }
 .lintrow .hint {
   display: block;
-  color: var(--muted);
+  color: var(--ink-muted);
   font-size: 12px;
   margin-top: 3px;
 }
 #lint .ok {
-  color: #2e7d32;
+  color: var(--ok);
   font-size: 13px;
   margin: 0;
 }
 #lint .empty {
-  color: var(--muted);
+  color: var(--ink-muted);
   font-size: 13px;
   margin: 0;
 }
+
+/* diagnostics drawer — paper with a redline top rule */
 #errors {
   padding: 8px 10px;
-  border-top: 1px solid var(--border);
-  background: #fff5f5;
+  border-top: 2px solid var(--redline);
+  background: var(--paper);
   display: none;
   max-height: 34%;
   overflow: auto;
@@ -370,17 +445,18 @@
   display: flex;
 }
 
-/* diagnostic rows — clickable: jump-to-source + explain disclosure */
+/* diagnostic rows — clickable: jump-to-source + explain disclosure.
+   Errors = redline 2px left rule; warnings = amber. */
 .diagrow {
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--err);
-  border-radius: 6px;
-  background: #fff;
+  border: 1px solid var(--hairline);
+  border-left: 2px solid var(--redline);
+  border-radius: 3px;
+  background: var(--paper-panel);
   overflow: hidden;
 }
 .diagrow.diag-warning {
-  border-left-color: #d99a00;
-  background: #fffdf6;
+  border-left-color: var(--warn-ink);
+  background: color-mix(in srgb, var(--warn-ink) 6%, var(--paper-panel));
 }
 .diag-head {
   display: flex;
@@ -391,33 +467,34 @@
   font-size: 13px;
 }
 .diag-head:hover {
-  background: color-mix(in srgb, var(--err) 5%, #fff);
+  background: color-mix(in srgb, var(--redline) 7%, var(--paper-panel));
 }
 .diag-warning .diag-head:hover {
-  background: color-mix(in srgb, #d99a00 8%, #fff);
+  background: color-mix(in srgb, var(--warn-ink) 10%, var(--paper-panel));
 }
 .diag-head code {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--err);
+  color: var(--redline-ink);
   flex: none;
 }
 .diag-warning .diag-head code {
-  color: #8a6d00;
+  color: var(--warn-ink);
 }
 .diag-msg {
   flex: 1;
   color: var(--ink);
 }
 .diag-loc {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
   flex: none;
 }
 .diag-toggle {
   font-size: 10px;
-  color: var(--muted);
+  color: var(--ink-muted);
   transition: transform 0.15s;
   flex: none;
 }
@@ -432,10 +509,13 @@
   color: var(--ink);
 }
 .diag-fix b {
-  font-size: 10.5px;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
   margin-right: 5px;
 }
 .diag-detail {
@@ -452,18 +532,22 @@
   color: var(--ink);
 }
 .diag-detail b {
-  font-size: 10.5px;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
   margin-right: 5px;
 }
 .diag-detail pre {
   margin: 6px 0 0;
   padding: 8px 10px;
-  background: #f6f5f1;
-  border-radius: 6px;
-  font-family: var(--mono);
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  font-family: var(--font-mono);
   font-size: 11.5px;
   line-height: 1.5;
   white-space: pre-wrap;
@@ -471,26 +555,27 @@
 }
 
 /* repair action + change-log panel (in the Lint tab) */
+/* redline ghost button */
 .repair-btn {
   font: inherit;
   font-size: 12.5px;
   padding: 4px 11px;
-  border: 1px solid var(--accent);
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--plum) 12%, #fff);
-  color: var(--accent);
+  border: 1px solid var(--redline);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--redline-ink);
   cursor: pointer;
 }
 .repair-btn:hover {
-  background: color-mix(in srgb, var(--plum) 20%, #fff);
+  background: color-mix(in srgb, var(--redline) 10%, transparent);
 }
 .repair-btn[hidden] {
   display: none;
 }
 .repair-panel {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: var(--paper-panel);
   padding: 10px 12px;
 }
 .repair-panel[hidden] {
@@ -506,19 +591,20 @@
 .repair-head strong {
   font-size: 12.5px;
 }
+/* solid redline primary */
 .repair-apply {
   font: inherit;
   font-size: 12px;
   padding: 4px 12px;
   border: 1px solid transparent;
-  border-radius: 9999px;
-  background: var(--plum);
+  border-radius: 2px;
+  background: var(--redline);
   color: #fff;
   cursor: pointer;
   font-weight: 500;
 }
 .repair-apply:hover {
-  background: color-mix(in srgb, var(--plum) 90%, #fff);
+  background: color-mix(in srgb, var(--redline) 88%, #000);
 }
 .repair-list {
   list-style: none;
@@ -536,39 +622,40 @@
   gap: 6px;
 }
 .repair-list code {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 11.5px;
-  color: var(--accent);
+  color: var(--ink);
 }
 .repair-cat {
   font-size: 11px;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 .repair-move {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
 .repair-reason {
   flex-basis: 100%;
-  color: var(--muted);
+  color: var(--ink-muted);
   font-size: 12px;
 }
 .repair-un code {
-  color: #8a6d00;
+  color: var(--warn-ink);
 }
 .repair-un-h {
   margin: 10px 0 6px;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 .repair-none {
   margin: 0;
   font-size: 13px;
-  color: #2e7d32;
+  color: var(--ok);
 }
 
-/* embed snippet dialog */
+/* embed snippet dialog — paper sheet modal */
 .embed-dialog {
   position: fixed;
   inset: 0;
@@ -576,28 +663,38 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: oklch(0.145 0 0 / 0.4);
+  background: color-mix(in srgb, var(--carbon) 55%, transparent);
   padding: 16px;
 }
 .embed-box {
   width: min(560px, 100%);
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
-  padding: 16px 18px;
+  background: var(--paper-panel);
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  box-shadow: 0 12px 40px rgb(28 36 48 / 0.28);
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
+  overflow: hidden;
 }
+/* title strip — micro-label header with a hairline bottom rule */
 .embed-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--paper);
 }
 .embed-head strong {
-  font-size: 14px;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
 }
 .embed-close {
   font: inherit;
@@ -606,65 +703,71 @@
   width: 30px;
   height: 30px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 2px;
   background: transparent;
-  color: var(--muted);
+  color: var(--ink-muted);
   cursor: pointer;
 }
 .embed-close:hover {
-  background: #f6f5f1;
-  color: var(--ink);
+  background: color-mix(in srgb, var(--redline) 10%, transparent);
+  color: var(--redline-ink);
 }
 .embed-box label {
-  font-size: 10.5px;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  margin-top: 6px;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  margin: 12px 18px 0;
 }
 .embed-code,
 .embed-link {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 12px;
   color: var(--ink);
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  width: calc(100% - 36px);
+  margin: 6px 18px 0;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
   padding: 8px 10px;
-  background: #f6f5f1;
+  background: var(--paper);
   resize: vertical;
 }
 .embed-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 12px;
+  margin: 12px 18px 16px;
 }
+/* solid redline primary */
 .embed-copy {
   font: inherit;
   font-size: 12.5px;
   padding: 6px 14px;
   border: 1px solid transparent;
-  border-radius: 9999px;
-  background: var(--plum);
+  border-radius: 2px;
+  background: var(--redline);
   color: #fff;
   cursor: pointer;
   font-weight: 500;
 }
 .embed-copy:hover {
-  background: color-mix(in srgb, var(--plum) 90%, #fff);
+  background: color-mix(in srgb, var(--redline) 88%, #000);
 }
+/* the Markdown variant → redline ghost */
 .embed-copy[data-snippet="md"] {
-  background: color-mix(in srgb, var(--plum) 12%, #fff);
-  color: var(--accent);
-  border-color: var(--accent);
+  background: transparent;
+  color: var(--redline-ink);
+  border-color: var(--redline);
 }
 .embed-copy[data-snippet="md"]:hover {
-  background: color-mix(in srgb, var(--plum) 20%, #fff);
+  background: color-mix(in srgb, var(--redline) 10%, transparent);
 }
 .embed-open {
   font-size: 12.5px;
-  color: var(--accent);
+  color: var(--redline-ink);
   text-decoration: none;
   margin-left: auto;
   padding: 6px 4px;
@@ -673,18 +776,18 @@
   text-decoration: underline;
 }
 
-/* saved-snapshots popover */
+/* saved-snapshots popover — paper-panel card */
 .snap-pop {
   position: fixed;
   z-index: 50;
   width: 280px;
   max-height: 60vh;
   overflow: auto;
-  background: var(--panel);
+  background: var(--paper-panel);
   color: var(--ink);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  box-shadow: 0 8px 28px rgb(28 36 48 / 0.2);
   padding: 6px;
 }
 .snap-head {
@@ -693,23 +796,30 @@
   justify-content: space-between;
   gap: 8px;
   padding: 6px 6px 8px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--hairline);
 }
 .snap-head strong {
-  font-size: 12px;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
 }
+/* redline ghost */
 .snap-save {
   font: inherit;
   font-size: 12px;
   padding: 4px 10px;
-  border: 1px solid var(--accent);
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--plum) 12%, #fff);
-  color: var(--accent);
+  border: 1px solid var(--redline);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--redline-ink);
   cursor: pointer;
 }
 .snap-save:hover {
-  background: color-mix(in srgb, var(--plum) 20%, #fff);
+  background: color-mix(in srgb, var(--redline) 10%, transparent);
 }
 .snap-list {
   list-style: none;
@@ -734,42 +844,43 @@
   text-align: left;
   padding: 7px 9px;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 2px;
   background: transparent;
   color: var(--ink);
   cursor: pointer;
 }
 .snap-restore:hover {
-  background: color-mix(in srgb, var(--plum) 8%, #fff);
-  border-color: var(--border);
+  background: color-mix(in srgb, var(--ink) 5%, var(--paper-panel));
+  border-color: var(--hairline);
 }
 .snap-name {
   font-size: 12.5px;
   font-weight: 600;
 }
 .snap-time {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
 }
 .snap-del {
   font: inherit;
   font-size: 12px;
   width: 28px;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 2px;
   background: transparent;
-  color: var(--muted);
+  color: var(--ink-muted);
   cursor: pointer;
 }
 .snap-del:hover {
-  background: #fff5f5;
-  color: var(--err);
-  border-color: #f3d6d4;
+  background: color-mix(in srgb, var(--redline) 10%, transparent);
+  color: var(--redline-ink);
+  border-color: color-mix(in srgb, var(--redline) 40%, var(--hairline));
 }
 .snap-empty {
   list-style: none;
   padding: 12px 9px;
-  color: var(--muted);
+  color: var(--ink-muted);
   font-size: 12.5px;
 }

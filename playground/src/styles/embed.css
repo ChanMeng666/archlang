@@ -1,7 +1,7 @@
 /**
  * Embed page (embed.html) — chrome-less, fills the iframe. Uses .pz-* and
- * .room-tip from panels.css plus the body.embed layout below. Rules moved
- * verbatim from the pre-split style.css (owned by W4).
+ * .room-tip from panels.css (the viewport paper + drafting grid comes from
+ * .pz-viewport there) plus the body.embed layout below. Owned by W4.
  */
 
 /* ── embed page (embed.html) — chrome-less, fills the iframe ── */
@@ -18,10 +18,13 @@ body.embed {
 .embed-app:has(.embed-editor:not([hidden])) {
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
 }
+/* editor pane stays a light paper editor, but a slim carbon top rule whispers
+   the source world into it */
 .embed-editor {
   min-width: 0;
-  border-right: 1px solid var(--border);
-  background: var(--panel);
+  border-right: 1px solid var(--hairline);
+  border-top: 3px solid var(--carbon);
+  background: var(--paper-panel);
 }
 .embed-editor[hidden] {
   display: none;
@@ -32,11 +35,11 @@ body.embed {
   border: 0;
   resize: none;
   padding: 12px 14px;
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.55;
   color: var(--ink);
-  background: var(--panel);
+  background: var(--paper-panel);
   outline: none;
 }
 .embed-preview {
@@ -48,7 +51,8 @@ body.embed {
 .embed-preview .pz-viewport {
   flex: 1;
 }
-/* the "ArchLang" attribution chip, bottom-left of the embed preview */
+/* the "ArchLang" attribution, bottom-left — a mini TITLE-BLOCK cell:
+   squared hairline chip, icon + caps micro-label + sheet number. */
 .embed-brand {
   position: absolute;
   left: 8px;
@@ -56,34 +60,54 @@ body.embed {
   z-index: 6;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 9px 3px 7px;
-  border: 1px solid var(--border);
-  border-radius: 9999px;
-  background: color-mix(in srgb, #fff 88%, transparent);
+  gap: 7px;
+  padding: 4px 9px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--paper-panel) 92%, transparent);
   backdrop-filter: blur(6px);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--ink);
   text-decoration: none;
-  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.embed-brand img {
+  display: block;
+}
+.embed-brand .embed-brand-name {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+.embed-brand .embed-brand-sheet {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+  padding-left: 7px;
+  border-left: 1px solid var(--hairline);
 }
 .embed-brand:hover {
-  border-color: color-mix(in srgb, var(--plum) 55%, var(--border));
-  color: var(--accent);
+  border-color: var(--redline);
 }
+.embed-brand:hover .embed-brand-name {
+  color: var(--redline-ink);
+}
+/* error bar — redline treatment on paper */
 .embed-err {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 20;
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 12.5px;
-  color: var(--err);
+  color: var(--redline-ink);
   padding: 8px 12px;
-  background: #fff5f5;
-  border-top: 1px solid #f3d6d4;
+  background: color-mix(in srgb, var(--redline) 8%, var(--paper));
+  border-top: 2px solid var(--redline);
 }
 .embed-err[hidden] {
   display: none;
@@ -95,6 +119,6 @@ body.embed {
   }
   .embed-editor {
     border-right: 0;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--hairline);
   }
 }
