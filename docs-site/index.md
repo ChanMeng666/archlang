@@ -1,19 +1,36 @@
 ---
 layout: home
 
-# The hero is rendered by the custom BrandHero.vue (the dark "void" landing
-# section, injected via the home-hero-before slot) — see .vitepress/theme/.
-# We intentionally omit the default `hero:` block so only the branded one shows.
-
-features:
-  - title: Deterministic by design
-    details: The same source always compiles to byte-identical output. No clocks, no randomness, no I/O — every loop, conditional, and function call is evaluated while the drawing is built.
-  - title: Zero-dependency core
-    details: The default SVG path pulls no runtime dependencies. Optional power (PNG raster, vector PDF, angled-wall geometry) loads lazily and is never required.
-  - title: Professional CAD output
-    details: Layers, line weights, line types, wall poché hatches, openings that void walls, real fixture symbols, dimensions, north arrow, scale bar, and a title block. Export to SVG, DXF, PDF, or PNG.
-  - title: Parametric & scriptable
-    details: Values, arithmetic, arrays, for/if/while, and pure functions — plus relational placement (right-of / below / …) resolved by deterministic topological arithmetic.
-  - title: Reads its own plans
-    details: "Beyond drawing, ArchLang reads a plan back as facts: describe returns rooms, areas, adjacencies, a modelled access graph, and human-circulation facts (walk distance, bottleneck width, detour); lint flags habitability and circulation problems against advisory profiles — image-free, so an AI agent can verify intent without an image."
+# The landing page is fully custom. The hero (the "compile seam") is injected via
+# the home-hero-before slot (CompileSeam.vue); the body below is composed from
+# globally-registered section components + one inline "built for agents" band.
+# We intentionally omit the default `hero:`/`features:` frontmatter so neither the
+# stock VitePress hero nor the VPFeatures grid renders.
 ---
+
+<SheetGrid />
+
+<FactsSection />
+
+<section class="agents" aria-label="Built for agents">
+  <div class="agents__inner">
+    <p class="agents__eyebrow">// built for agents</p>
+    <h2 class="agents__title">An interface, not just an image.</h2>
+    <p class="agents__lede">
+      ArchLang answers on an agent's own terms. Every <code class="agents__code">arch</code> command
+      takes <code class="agents__code">--json</code> with deterministic exit codes;
+      <code class="agents__code">arch context</code> prints the whole language, workflow and error
+      catalog as one system-prompt-ready bundle (<code class="agents__code">llms-full.txt</code>); and
+      <code class="agents__code">SKILL.md</code> is the write&nbsp;→&nbsp;compile&nbsp;→&nbsp;describe&nbsp;→&nbsp;repair
+      loop it follows. No pixels required to verify intent.
+    </p>
+    <div class="agents__term" aria-hidden="true">
+      <span class="agents__prompt">$</span> npx @chanmeng666/archlang describe plan.arch <span class="agents__flag">--json</span>
+      <br />{ <span class="agents__key">"rooms"</span>: 4, <span class="agents__key">"doors"</span>: 3, <span class="agents__key">"windows"</span>: 3, <span class="agents__key">"floor_area_m2"</span>: 42 }
+    </div>
+    <div class="agents__actions">
+      <a class="agents__btn agents__btn--solid" href="/agents">Use it from an agent →</a>
+      <a class="agents__btn agents__btn--ghost" href="/spec">One-page spec</a>
+    </div>
+  </div>
+</section>

@@ -1,62 +1,193 @@
 /* ──────────────────────────────────────────────────────────────────────────
-   Home hero — on-dark nav bar.
+   Landing-page chrome — "The Compile Boundary".
 
-   The nav bar is transparent and floats over the dark "void" hero, and the
-   hero is dark in BOTH light and dark themes. Left alone, VitePress paints the
-   bar with the *page* theme's colours, so in light mode the links are dark grey
-   (unreadable on the near-black hero) and the search box is an opaque white
-   block that clashes with the otherwise-transparent bar.
+   Owns: (1) the home nav bar, reworked into a SOURCE-world bar that sits opaque
+   and carbon over the hero; (2) full-bleed wiring for the landing sections, which
+   live inside VitePress's `.vp-doc` markdown container; (3) the inline "built for
+   agents" carbon band. The hero itself (CompileSeam.vue) and the section
+   components (SheetGrid / FactsSection) carry their own scoped styles.
 
-   So at scroll-top on the home page (`.VPNavBar.home.top`) force calm on-dark
-   colours and a ghost search trigger that echoes the hero's outline buttons —
-   regardless of the active theme, since the surface behind it is always dark.
-   Once the page is scrolled the `.top` class drops and the normal themed bar
-   returns; non-home pages never get `.home`, so they're unaffected.
-
-   NOTE: this whole block is transitional home-page chrome owned by W1 — it will
-   be reworked when the landing page is redesigned.
+   Specificity note: `.vp-doc` gives its bare-element rules a `.vp-doc x` prefix
+   (0,0,1,1). Every rule here that targets landing content therefore carries a
+   `.vp-doc` prefix so it deterministically wins, rather than relying on source
+   order against the default theme.
    ────────────────────────────────────────────────────────────────────────── */
+
+/* ═══ Home nav — the source-world bar ══════════════════════════════════════
+   At scroll-top on the home page the nav sits over the hero's carbon-left pane.
+   Paint it opaque carbon with a hairline underline (the divider-line is hidden
+   on `.home.top`) so it reads as one surface with the source world — in BOTH
+   light and dark, since the source world is identical across modes. Once
+   scrolled, `.top` drops and the normal themed (paper) bar returns; non-home
+   pages never get `.home`. */
+.VPNavBar.home.top {
+  background-color: var(--carbon);
+  border-bottom: 1px solid var(--src-border);
+}
 .VPNavBar.home.top .VPNavBarTitle .title {
-  color: var(--void-fg);
+  color: var(--src-fg);
 }
 .VPNavBar.home.top .VPNavBarMenuLink,
 .VPNavBar.home.top .VPNavBarMenuGroup .text {
-  color: var(--ash);
+  color: var(--src-muted);
 }
 .VPNavBar.home.top .VPNavBarMenuLink:hover,
 .VPNavBar.home.top .VPNavBarMenuGroup:hover .text {
-  color: var(--void-fg);
+  color: var(--src-fg);
 }
 .VPNavBar.home.top .VPSocialLink {
-  color: var(--ash);
+  color: var(--src-muted);
 }
 .VPNavBar.home.top .VPSocialLink:hover {
-  color: var(--void-fg);
+  color: var(--src-fg);
 }
 
-/* Search trigger → ghost button (transparent fill + light hairline outline),
-   echoing the hero's `.brand-btn--ghost` so it stops reading as a white block. */
+/* Search trigger → ghost button echoing the hero's ghost CTAs, so it stops
+   reading as a white block on the carbon bar. */
 .VPNavBar.home.top .DocSearch-Button {
   background: transparent;
-  border: 1px solid var(--void-border);
-  color: var(--ash);
+  border: 1px solid var(--src-border);
+  color: var(--src-muted);
 }
 .VPNavBar.home.top .DocSearch-Button:hover {
   background: color-mix(in srgb, #fff 6%, transparent);
   border-color: color-mix(in srgb, var(--plum) 55%, transparent);
-  color: var(--void-fg);
+  color: var(--src-fg);
 }
-/* The magnifier and the ⌘/Ctrl-K key caps inherit the same on-dark treatment.
-   (The icons are mask glyphs tinted via `background-color`, not `color`.) */
 .VPNavBar.home.top .DocSearch-Button .DocSearch-Search-Icon {
-  background-color: var(--ash);
+  background-color: var(--src-muted);
 }
 .VPNavBar.home.top .DocSearch-Button .DocSearch-Button-Placeholder {
-  color: var(--ash);
+  color: var(--src-muted);
 }
 .VPNavBar.home.top .DocSearch-Button .DocSearch-Button-Key {
   background: transparent;
-  border-color: var(--void-border);
+  border-color: var(--src-border);
   box-shadow: none;
-  color: var(--ash);
+  color: var(--src-muted);
+}
+
+/* ═══ Landing sections — full bleed ════════════════════════════════════════
+   The section components render inside `.vp-doc.container` (max-width + padding).
+   Pull them out to the full viewport width with VitePress's own `--vp-offset`
+   (the same var it exposes for full-bleed home blocks); each section keeps its
+   own inner max-width + gutters. */
+.vp-doc .sheets,
+.vp-doc .facts,
+.vp-doc .agents {
+  margin-left: var(--vp-offset, calc(50% - 50vw));
+  margin-right: var(--vp-offset, calc(50% - 50vw));
+}
+
+/* ═══ "Built for agents" band — the source world returns mid-page ══════════
+   A full-width carbon strip. Every element is class-targeted under `.vp-doc
+   .agents` so it beats the default markdown typography cleanly. */
+.vp-doc .agents {
+  background: var(--carbon);
+  color: var(--src-fg);
+  padding-block: clamp(56px, 8vw, 104px);
+}
+.vp-doc .agents__inner {
+  max-width: 1152px;
+  margin: 0 auto;
+  padding-inline: 24px;
+}
+.vp-doc .agents__eyebrow {
+  margin: 0 0 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--plum-bright);
+}
+.vp-doc .agents__title {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  max-width: 20ch;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 118;
+  font-weight: 640;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  font-size: clamp(2rem, 4.4vw, 3.2rem);
+  color: var(--src-fg);
+}
+.vp-doc .agents__lede {
+  margin: 20px 0 0;
+  max-width: 56ch;
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--src-muted);
+}
+.vp-doc .agents__code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  color: var(--plum-bright);
+  background: transparent;
+  padding: 0;
+  border: 0;
+}
+.vp-doc .agents__term {
+  margin: 28px 0 0;
+  max-width: 640px;
+  padding: 16px 18px;
+  border: 1px solid var(--src-border);
+  border-radius: 4px;
+  background: var(--carbon-2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--src-fg);
+  overflow-x: auto;
+}
+.vp-doc .agents__prompt {
+  color: var(--plum-bright);
+  user-select: none;
+}
+.vp-doc .agents__flag {
+  color: var(--redline);
+}
+.vp-doc .agents__key {
+  color: var(--plum-bright);
+}
+.vp-doc .agents__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 30px;
+}
+.vp-doc .agents__btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 550;
+  text-decoration: none;
+  transition:
+    transform 0.12s,
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+.vp-doc .agents__btn:active {
+  transform: translateY(1px);
+}
+.vp-doc .agents__btn--solid {
+  background: var(--redline);
+  color: #fff;
+}
+.vp-doc .agents__btn--solid:hover {
+  background: color-mix(in srgb, var(--redline) 90%, #fff);
+}
+.vp-doc .agents__btn--ghost {
+  border-color: var(--src-border);
+  color: var(--src-fg);
+}
+.vp-doc .agents__btn--ghost:hover {
+  border-color: color-mix(in srgb, var(--plum) 60%, transparent);
+  color: #fff;
 }

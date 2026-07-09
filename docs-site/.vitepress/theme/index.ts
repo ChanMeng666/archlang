@@ -17,13 +17,18 @@ import "./home.css";
 import "./doc-pages.css";
 import Layout from "./Layout.vue";
 import ArchLive from "./components/ArchLive.vue";
+import SheetGrid from "./SheetGrid.vue";
+import FactsSection from "./FactsSection.vue";
 
 export default {
   extends: DefaultTheme,
   Layout,
-  // `<ArchLive src="…">` — an inline, editable, live-compiled example. Registered
-  // globally so any docs page can drop one in.
+  // Global components: `<ArchLive src="…">` (inline live-compiled example) plus the
+  // landing-page sections (`<SheetGrid>`, `<FactsSection>`), registered so index.md
+  // can drop them into its markdown body.
   enhanceApp({ app }) {
     app.component("ArchLive", ArchLive);
+    app.component("SheetGrid", SheetGrid);
+    app.component("FactsSection", FactsSection);
   },
 } satisfies Theme;

@@ -1,10 +1,10 @@
 <script setup>
 // Wraps the VitePress default Layout to inject the brand-family pieces through
-// official slots: the dark void hero above the homepage features
-// (home-hero-before) and the brand-family footer site-wide (layout-bottom).
+// official slots: the "Compile Boundary" hero above the homepage body
+// (home-hero-before) and the title-block footer site-wide (layout-bottom).
 import DefaultTheme from "vitepress/theme";
-import BrandHero from "./BrandHero.vue";
-import FamilyFooter from "./FamilyFooter.vue";
+import CompileSeam from "./CompileSeam.vue";
+import TitleBlockFooter from "./TitleBlockFooter.vue";
 
 const { Layout } = DefaultTheme;
 </script>
@@ -12,10 +12,10 @@ const { Layout } = DefaultTheme;
 <template>
   <Layout>
     <template #home-hero-before>
-      <BrandHero />
+      <CompileSeam />
     </template>
     <template #layout-bottom>
-      <FamilyFooter />
+      <TitleBlockFooter />
     </template>
   </Layout>
 </template>
