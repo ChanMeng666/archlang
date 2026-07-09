@@ -65,7 +65,11 @@ const tabs = [...document.querySelectorAll<HTMLElement>(".tab")];
 const views: Record<string, HTMLElement> = { preview, describe: describeEl, lint: lintEl };
 for (const tab of tabs) {
   tab.addEventListener("click", () => {
-    for (const t of tabs) t.classList.toggle("active", t === tab);
+    for (const t of tabs) {
+      const on = t === tab;
+      t.classList.toggle("active", on);
+      t.setAttribute("aria-selected", String(on));
+    }
     for (const [name, el] of Object.entries(views)) el.classList.toggle("active", name === tab.dataset.tab);
   });
 }

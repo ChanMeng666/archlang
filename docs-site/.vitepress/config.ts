@@ -188,8 +188,9 @@ export default defineConfig({
     ],
     socialLinks: [{ icon: "github", link: "https://github.com/chanmeng666/archlang" }],
     search: { provider: "local" },
-    // The site-wide footer is rendered by FamilyFooter.vue (layout-bottom slot),
-    // which carries the MIT/copyright line plus the brand-family ecosystem links.
-    // Omitting the built-in `footer` here avoids a duplicate footer.
+    // The site-wide footer is rendered by TitleBlockFooter.vue (layout-bottom slot),
+    // a drawing title block carrying the project/license/issued cells plus the
+    // brand-family ecosystem links. Omitting the built-in `footer` here avoids a
+    // duplicate footer.
   },
 });

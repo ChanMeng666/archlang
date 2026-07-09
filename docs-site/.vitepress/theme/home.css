@@ -67,6 +67,42 @@
   color: var(--src-muted);
 }
 
+/* Mobile nav (<768px): the search trigger and the hamburger share the carbon
+   `.home.top` bar. The .DocSearch-Button rules above give the trigger its
+   source-world ghost look (the paper-world fill lives in doc-pages.css, scoped
+   off `.home.top`). The remaining mobile-only piece is the hamburger's three
+   bars, which default to the paper world's dark ink (--vp-c-text-1) and are
+   near-invisible on carbon — re-tint them to the source world. */
+.VPNavBar.home.top .DocSearch-Button:hover .DocSearch-Search-Icon {
+  background-color: var(--src-fg);
+}
+.VPNavBar.home.top .VPNavBarHamburger .top,
+.VPNavBar.home.top .VPNavBarHamburger .middle,
+.VPNavBar.home.top .VPNavBarHamburger .bottom {
+  background-color: var(--src-fg);
+}
+.VPNavBar.home.top .VPNavBarHamburger:hover .top,
+.VPNavBar.home.top .VPNavBarHamburger:hover .middle,
+.VPNavBar.home.top .VPNavBarHamburger:hover .bottom {
+  background-color: var(--plum-bright);
+}
+
+/* ═══ Landing bottom — deliberate footer gap ═══════════════════════════════
+   The last landing section is the carbon "agents" band; VitePress's default
+   `.VPHome` margin-bottom (96/128px) then drops the title-block footer, which
+   over a dark band reads as a pale void. Tighten it to a deliberate ~112px so
+   the footer follows the band as an intended step, not empty paper.
+   (Selector carries `.VPContent.is-home` so it outranks VitePress's scoped
+   `.VPHome[data-v-…]` default of 96/128px.) */
+.VPContent.is-home .VPHome {
+  margin-bottom: 96px;
+}
+@media (min-width: 768px) {
+  .VPContent.is-home .VPHome {
+    margin-bottom: 112px;
+  }
+}
+
 /* ═══ Landing sections — full bleed ════════════════════════════════════════
    The section components render inside `.vp-doc.container` (max-width + padding).
    Pull them out to the full viewport width with VitePress's own `--vp-offset`
@@ -146,7 +182,11 @@
   user-select: none;
 }
 .vp-doc .agents__flag {
-  color: var(--redline);
+  /* On-carbon redline: a FIXED lightened redline (the band is carbon in both
+     light and dark, so --redline — which flips per mode and is only AA on paper —
+     can't be used). #f0705f on carbon-2 (#171b23) = 5.9:1, well past AA for this
+     micro-label, and stays redline-family (distinct from the plum keys). */
+  color: #f0705f;
 }
 .vp-doc .agents__key {
   color: var(--plum-bright);

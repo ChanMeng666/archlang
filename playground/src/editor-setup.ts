@@ -28,6 +28,9 @@ export function createEditor({ parent, doc, onDocChanged }: EditorOpts): EditorV
         highlightActiveLine(),
         lintGutter(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
+        // Name the editable content region for assistive tech (the CodeMirror
+        // content div is otherwise an unlabelled textbox).
+        EditorView.contentAttributes.of({ "aria-label": "ArchLang source editor" }),
         archLanguage(),
         archCompletion(),
         archLinter(),

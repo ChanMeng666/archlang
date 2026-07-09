@@ -64,7 +64,7 @@ const row2: Sheet[] = [
     <div class="dimdiv" role="presentation">
       <span class="dimdiv__tick" />
       <span class="dimdiv__line" />
-      <span class="dimdiv__label">Features · Sheets A-101 — A-105</span>
+      <h2 class="dimdiv__label">Features · Sheets A-101 — A-105</h2>
       <span class="dimdiv__line" />
       <span class="dimdiv__tick" />
     </div>
@@ -138,10 +138,17 @@ const row2: Sheet[] = [
 }
 .dimdiv__label {
   flex: none;
+  /* It IS the section's h2 (heading order: hero h1 → this → card h3s), styled as
+     a dimension-line label. Reset the .vp-doc h2 box so the drawing detail is
+     visually unchanged. */
+  margin: 0;
+  border: 0;
+  padding: 0;
   font-family: var(--font-display);
   font-variation-settings: "wdth" 86;
   font-weight: 600;
   font-size: 11px;
+  line-height: 1;
   letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--ink-muted);

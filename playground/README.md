@@ -42,12 +42,14 @@ The playground is TypeScript; every module below is `.ts` except the generated g
 | `preview.ts` / `pan-zoom.ts` | SVG preview + circulation Paths overlay; CSS-transform pan/zoom/fit controller |
 | `interact.ts` | hover-room tooltip + click-to-source (`data-span`) |
 | `actions.ts` | header actions: **Format**, **Repair furniture**, **Embed**, copy-link |
+| `llm-prompt.ts` | builds the **Copy for LLM** payload (source + `describe()` facts + diagnostics) |
 | `embed.ts` / `viewer.ts` | Embed-snippet builder; the chrome-less `embed.html` viewer runtime |
 | `facts-strip.ts` / `describe-panel.ts` / `lint-panel.ts` / `diagnostics-panel.ts` | the `describe()`/`lint()` fact & diagnostic panels |
 | `share.ts` | `#z=` deflate-raw permalink encode/decode (reads legacy `#src=`) |
 | `raster-export.ts` | copy/download SVG · PNG · DXF · PDF |
 | `snapshots.ts` / `storage.ts` | named snapshot history UI + defensive `localStorage` helpers |
-| `examples.ts`, `flowing-lines.ts`, `escape.ts`, `style.css` | example plans, brand animation, HTML-escape helper, styles |
+| `examples.ts`, `escape.ts` | example plans, HTML-escape helper |
+| `styles/*.css` | the shell's styles, split by concern: `tokens.css` (the shared "Compile Boundary" brand tokens, byte-identical with the docs site), `chrome.css` (carbon source-world header + the compile-seam divider), `editor.css`, `panels.css` (sheet-world output panels), `embed.css` (the chrome-less viewer) |
 
 ## Run
 

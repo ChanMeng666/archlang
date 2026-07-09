@@ -74,7 +74,7 @@
       </div>
       <div class="spacer"></div>
       <!-- brand-family navigation: quiet text links (no boxes), right-aligned.
-           Collapses into the "⋯" disclosure below <1024px (CSS-only). -->
+           Collapses into the "⋯" disclosure below <1600px (CSS-only). -->
       <nav class="tb-nav" aria-label="Related sites">
         <a href="https://archlang-docs.vercel.app" target="_blank" rel="noopener">Docs ↗</a>
         <a href="https://archlang-docs.vercel.app/spec" target="_blank" rel="noopener">Spec</a>
@@ -101,13 +101,13 @@
         <h2>
           <span class="dot" id="status"></span><span id="statusText">ready</span>
           <span class="grow"></span>
-          <span class="tabs" role="tablist">
-            <button class="tab active" data-tab="preview" type="button">Preview</button>
-            <button class="tab" data-tab="describe" type="button">Describe</button>
-            <button class="tab" data-tab="lint" type="button">Lint</button>
+          <span class="tabs" role="tablist" aria-label="Output view">
+            <button class="tab active" id="tab-preview" data-tab="preview" type="button" role="tab" aria-selected="true" aria-controls="preview">Preview</button>
+            <button class="tab" id="tab-describe" data-tab="describe" type="button" role="tab" aria-selected="false" aria-controls="describe">Describe</button>
+            <button class="tab" id="tab-lint" data-tab="lint" type="button" role="tab" aria-selected="false" aria-controls="lint">Lint</button>
           </span>
         </h2>
-        <div id="preview" class="tabview active" role="tabpanel">
+        <div id="preview" class="tabview active" role="tabpanel" aria-labelledby="tab-preview">
           <div class="pz-viewport">
             <div class="pz-stage"></div>
             <div class="pz-toolbar">
@@ -124,8 +124,8 @@
           </div>
           <div id="facts" class="facts" aria-label="Plan facts"></div>
         </div>
-        <div id="describe" class="tabview" role="tabpanel"></div>
-        <div id="lint" class="tabview" role="tabpanel">
+        <div id="describe" class="tabview" role="tabpanel" aria-labelledby="tab-describe"></div>
+        <div id="lint" class="tabview" role="tabpanel" aria-labelledby="tab-lint">
           <div class="lint-controls">
             <label for="lintProfile">Profile</label>
             <select id="lintProfile" aria-label="Lint profile"></select>

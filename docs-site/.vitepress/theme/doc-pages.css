@@ -445,10 +445,21 @@ html:not(.dark) .vp-doc .vp-code span {
   color: var(--redline-ink);
 }
 
-.DocSearch-Button {
+/* Paper-world search trigger — everywhere EXCEPT the home page's carbon
+   `.home.top` bar, which paints its own source-world ghost trigger in home.css.
+   Scoped off `.home.top` (instead of an even louder !important there) so the
+   carbon bar's search doesn't read as a white block over the hero, at any width. */
+.VPNavBar:not(.home.top) .DocSearch-Button {
   border-radius: 3px !important;
   border: 1px solid var(--hairline) !important;
   background: var(--paper-panel) !important;
+}
+/* On the paper bar the placeholder + hotkey hint must be paper-world ink, not the
+   source-world --src-muted (#98a0ac → only 2.5:1 on --paper-panel). --ink-muted
+   is 5.4:1 AA. (The carbon .home.top bar keeps --src-muted via home.css.) */
+.VPNavBar:not(.home.top) .DocSearch-Button .DocSearch-Button-Placeholder,
+.VPNavBar:not(.home.top) .DocSearch-Button .DocSearch-Button-Key {
+  color: var(--ink-muted) !important;
 }
 
 /* ============================================================================

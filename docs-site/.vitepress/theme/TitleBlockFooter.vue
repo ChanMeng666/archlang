@@ -161,9 +161,6 @@ const ECOSYSTEM = [
 .cell__credit img {
   display: block;
 }
-:global(.dark) .cell__credit img {
-  filter: invert(1);
-}
 .cell__links {
   display: flex;
   flex-wrap: wrap;
@@ -178,5 +175,15 @@ const ECOSYSTEM = [
 }
 .cell__links a:hover {
   color: var(--redline-ink);
+}
+</style>
+
+<style>
+/* Unscoped on purpose: partial `:global(.dark) descendant` selectors are
+   miscompiled by the SFC compiler into a bare `.dark` rule (which inverted
+   the whole site). The credit mark is the one raster that needs inverting
+   on mylar. */
+.dark .cell__credit img {
+  filter: invert(1);
 }
 </style>

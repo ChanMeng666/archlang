@@ -38,8 +38,8 @@ header {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 5px;
-  padding: 9px 16px;
+  gap: 4px;
+  padding: 8px 12px;
   border-right: 1px solid var(--src-border);
 }
 .tb-label {
@@ -56,15 +56,15 @@ header {
 .tb-controls {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 /* brand cell — mark + wordmark + squared stamp badge, laid out as a row */
 .tb-brand {
   flex-direction: row;
   align-items: center;
-  gap: 9px;
-  padding-right: 18px;
+  gap: 8px;
+  padding-right: 14px;
 }
 .tb-brand .brand-mark {
   width: 20px;
@@ -105,12 +105,14 @@ header {
   font-family: var(--font-body);
   font-size: 12.5px;
   line-height: 1.2;
-  padding: 5px 11px;
+  padding: 5px 10px;
   border: 1px solid var(--src-border);
   border-radius: 3px;
   background: oklch(1 0 0 / 5%);
   color: var(--src-fg);
   cursor: pointer;
+  /* one text line each — no button ever wraps or stacks its label */
+  white-space: nowrap;
   transition:
     background 0.15s,
     border-color 0.15s;
@@ -119,6 +121,13 @@ header {
 .tb-controls select {
   color-scheme: dark;
   padding-right: 8px;
+}
+/* Keep the closed examples select compact so a long option label (e.g.
+   "Relational (right-of / below)") can't blow the header row wider than the
+   viewport; the open dropdown still shows every option in full. */
+#examples {
+  max-width: 168px;
+  text-overflow: ellipsis;
 }
 .tb-controls select option {
   color: var(--src-fg);
@@ -184,7 +193,7 @@ header {
   border-radius: 2px;
 }
 
-/* NAV overflow disclosure (shown <1024px) — a "⋯" menu */
+/* NAV overflow disclosure (shown <1600px) — a "⋯" menu */
 .tb-nav-more {
   display: none;
   position: relative;
@@ -370,8 +379,9 @@ main {
 }
 
 /* ── responsive ────────────────────────────────────────────────────────────
-   <1024px: NAV links collapse into the "⋯" disclosure menu. */
-@media (max-width: 1024px) {
+   <1600px: NAV text links collapse into the "⋯" disclosure menu, so mid-width
+   laptops (1280–1600) never clip a link. Full text links only ≥1600px. */
+@media (max-width: 1599px) {
   .tb-nav {
     display: none;
   }
