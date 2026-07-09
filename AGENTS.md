@@ -152,6 +152,7 @@ for concave door arcs, dimensions drawn into the building, and the title-block o
 ├─ docs-site/         VitePress docs (pages generated from docs/*.md, examples/*.arch);
 │                     examples are live/editable <ArchLive> widgets (compile in the browser)
 ├─ docs/              language-reference.md · analysis.md · error-codes.md · adr/ · WORK-LOG.md
+├─ brand/             logo kit + brand book (README.md); archlang-logo-master.svg is byte-sacred, variants are fill-swaps only
 ├─ examples/          studio · two-bed · parametric · themed · relational · lib/ · imports
 ├─ eval/              NL→ArchLang authorability harness (corpus.json — 18 briefs, goldens/, run.ts;
 │                     offline golden gate `npm run eval:ci` in CI, no API key)

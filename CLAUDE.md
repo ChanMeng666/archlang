@@ -17,6 +17,9 @@ than memory.
 - **Build & run:** `npm run build` · `npm test` (vitest) ·
   `npm run cli -- compile examples/studio.arch -o out.svg`. A single root `npm install` bootstraps
   every workspace.
+- **Brand:** the logo is an "A" drawn as an A-frame house floor plan.
+  `brand/archlang-logo-master.svg` is the byte-sacred source — every variant is a **fill-swap only**
+  (never re-trace/simplify/re-fit path data, no small-size tier). Read `brand/README.md` first.
 
 ## Non-negotiable invariants (break these and CI fails)
 

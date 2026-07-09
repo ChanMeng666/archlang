@@ -19,9 +19,9 @@ export default defineConfig({
   title: "ArchLang",
   description:
     "A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.",
-  // Brand: the ArchLang spark favicon (SVG, scales), an apple-touch icon, the dark
-  // theme-colour, and an OG/Twitter social card (the 1200×630 wordmark banner). All
-  // assets live in public/brand/ (the lockup logo set).
+  // Brand: the ArchLang A-frame-floor-plan favicon (SVG, scales), an apple-touch
+  // icon, the dark theme-colour, and an OG/Twitter social card (the 1200×630 wordmark
+  // banner). All assets live in public/brand/ — see brand/README.md for the geometry law.
   head: [
     ["link", { rel: "icon", type: "image/svg+xml", href: "/brand/archlang-icon-plum.svg" }],
     ["link", { rel: "alternate icon", href: "/brand/archlang-favicon-32.png", sizes: "32x32" }],
