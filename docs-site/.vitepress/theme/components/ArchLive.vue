@@ -87,6 +87,7 @@ async function openInPlayground() {
   <div v-if="hasFallback && !mounted" class="archlive-fallback"><slot name="fallback" /></div>
   <div v-else class="archlive">
     <div class="archlive-editor">
+      <span class="archlive-tab">SOURCE / .ARCH</span>
       <textarea
         v-model="source"
         :rows="rows ?? 12"
@@ -109,6 +110,11 @@ async function openInPlayground() {
 </template>
 
 <style scoped>
+/* ArchLive — the compile boundary as a widget: a SOURCE-world editor (carbon,
+   plum caret) meeting a SHEET-world preview (drafting-grid paper) across a 2px
+   carbon-to-paper seam. Tokens come from the shared brand layer (style.css);
+   the sheet⇄mylar flip in `.dark` carries through via those vars. */
+
 /* The SSR/no-JS fallback wrapper carries the same vertical rhythm as the live
    widget so the swap-on-mount doesn't shift surrounding content. */
 .archlive-fallback { margin: 18px 0; }
@@ -116,74 +122,134 @@ async function openInPlayground() {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   gap: 0;
-  border: 1px solid var(--vp-c-border);
-  border-radius: 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
   overflow: hidden;
   margin: 18px 0;
-  background: var(--vp-c-bg-soft);
+  background: var(--carbon);
 }
-.archlive-editor { min-width: 0; border-right: 1px solid var(--vp-c-border); }
+
+/* ── SOURCE world: carbon editor pane ──────────────────────────────────── */
+.archlive-editor {
+  position: relative;
+  min-width: 0;
+  /* the 2px seam: carbon meets paper */
+  border-right: 2px solid var(--paper);
+  background: var(--carbon);
+}
+.archlive-tab {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  padding: 3px 10px 4px;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--plum-bright);
+  background: var(--carbon-2);
+  border-right: 1px solid var(--src-border);
+  border-bottom: 1px solid var(--src-border);
+  border-radius: 0 0 3px 0;
+  pointer-events: none;
+}
 .archlive-editor textarea {
   width: 100%;
   height: 100%;
   min-height: 220px;
   border: 0;
   resize: vertical;
-  padding: 12px 14px;
-  font-family: var(--vp-font-family-mono);
+  padding: 30px 14px 12px;
+  font-family: var(--font-mono);
   font-size: 12.5px;
   line-height: 1.6;
-  color: var(--vp-c-text-1);
-  background: var(--vp-c-bg);
+  color: var(--src-fg);
+  background: transparent;
+  caret-color: var(--plum-bright);
   outline: none;
 }
-.archlive-preview { min-width: 0; display: flex; flex-direction: column; }
+.archlive-editor textarea::selection { background: color-mix(in srgb, var(--plum) 40%, transparent); }
+.archlive-editor textarea:focus-visible { box-shadow: inset 0 0 0 1px var(--plum); }
+
+/* ── SHEET world: paper preview pane on a fine drafting grid ────────────── */
+.archlive-preview { min-width: 0; display: flex; flex-direction: column; background: var(--paper); }
 .archlive-svg {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 14px;
+  padding: 18px;
   overflow: auto;
   background:
-    repeating-conic-gradient(var(--vp-c-bg-soft) 0% 25%, var(--vp-c-bg) 0% 50%) 50% / 20px 20px;
+    repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px 40px),
+    repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 40px);
+  background-color: var(--paper);
 }
-.archlive-svg :deep(svg) { max-width: 100%; height: auto; background: #fff; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1); }
+/* the compiled plan floats as a small sheet on the drafting grid */
+.archlive-svg :deep(svg) {
+  max-width: 100%;
+  height: auto;
+  background: #fff;
+  border: 1px solid var(--hairline);
+  box-shadow: 0 1px 6px rgb(28 36 48 / 12%);
+}
 .archlive-error {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--font-mono);
   font-size: 12.5px;
-  color: var(--vp-c-danger-1);
+  color: var(--redline-ink);
   text-align: center;
 }
+
+/* ── micro title block ─────────────────────────────────────────────────── */
 .archlive-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   padding: 7px 12px;
-  border-top: 1px solid var(--vp-c-border);
-  background: var(--vp-c-bg-soft);
+  border-top: 1px solid var(--hairline);
+  background: var(--paper-panel);
 }
-.archlive-facts { font-family: var(--vp-font-family-mono); font-size: 11.5px; color: var(--vp-c-text-2); }
+.archlive-facts {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+}
 .archlive-open {
-  font-size: 12px;
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 90;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   padding: 4px 12px;
-  border: 1px solid var(--vp-c-brand-1);
-  border-radius: 9999px;
-  color: var(--vp-c-brand-1);
+  border: 1px solid var(--redline);
+  border-radius: 3px;
+  color: var(--redline-ink);
   background: transparent;
   cursor: pointer;
   white-space: nowrap;
+  transition: background-color 0.2s;
 }
-.archlive-open:hover { background: var(--vp-c-brand-soft); }
+.archlive-open:hover { background: color-mix(in srgb, var(--redline) 12%, transparent); }
+.archlive-open:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
+
 @media (max-width: 720px) {
+  /* seam goes horizontal when stacked */
   .archlive { grid-template-columns: 1fr; }
-  .archlive-editor { border-right: 0; border-bottom: 1px solid var(--vp-c-border); }
+  .archlive-editor { border-right: 0; border-bottom: 2px solid var(--paper); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .archlive-open { transition: none; }
 }
 </style>

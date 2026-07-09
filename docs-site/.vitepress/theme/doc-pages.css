@@ -1,8 +1,491 @@
 /* ──────────────────────────────────────────────────────────────────────────
-   Doc-pages restyle — owned by W2.
+   Doc-pages restyle — "The Compile Boundary", owned by W2.
 
-   The sheet-world treatment for the reference/guide pages (sidebar, article
-   body, ArchLive widgets, code fences) lands here. Intentionally empty in W0:
-   the token + surface mapping in style.css already recolors the default theme;
-   this file is the seam W2 builds the doc-page design into.
+   The inner reference/guide pages are the SHEET world: paper (mylar in dark)
+   ground, blue-black ink, hairline rules and dimension-line dividers, schedule
+   tables and a sheet-index sidebar. The SOURCE world (carbon ground, plum
+   syntax) appears ONLY inside code fences and the ArchLive editor — the compile
+   boundary made literal on the page.
+
+   Tokens come from style.css (frozen, W0). Never hardcode a paper/ink hex here;
+   every colour is a var() so the sheet⇄mylar flip in `.dark` carries through.
+   Selectors are scoped to `.vp-doc` (article body) and doc-only chrome
+   (`.VPSidebar`, `.VPDocAside`, `.VPDocFooter`, `.VPLocalSearchBox`) so the W1
+   landing page is untouched.
    ────────────────────────────────────────────────────────────────────────── */
+
+/* A drafting micro-label: condensed display caps, used for sheet-index group
+   titles, schedule headers, note-box titles, aside/footer labels. Repeated
+   inline below (CSS has no mixins) — keep these five lines in sync if tuned. */
+
+/* ============================================================================
+   1 · CONTENT TYPOGRAPHY
+   ========================================================================== */
+
+.vp-doc {
+  font-family: var(--font-body);
+}
+
+/* Headings ride the display face with a deliberate width/weight per level.
+   h1 is the sheet title — wide and assertive; h2/h3 stay readable (moderate
+   width, NOT all-caps, long headings must not wrap awkwardly). */
+.vp-doc h1 {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 115;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+}
+
+.vp-doc h2 {
+  position: relative;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 100;
+  font-weight: 640;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  /* The top rule reads as a DIMENSION LINE: a hairline with witness ticks at
+     each end (via ::before / ::after crossing the rule). */
+  border-top: 1px solid var(--hairline);
+}
+
+.vp-doc h2::before,
+.vp-doc h2::after {
+  content: "";
+  position: absolute;
+  top: -5px; /* cross the 1px border-top line */
+  width: 1px;
+  height: 11px;
+  background: var(--hairline);
+}
+.vp-doc h2::before {
+  left: 0;
+}
+.vp-doc h2::after {
+  right: 0;
+}
+
+.vp-doc h3 {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 95;
+  font-weight: 620;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+
+.vp-doc h4,
+.vp-doc h5,
+.vp-doc h6 {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 90;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Heading anchor `#` — quiet ink-muted, redline on hover. */
+.vp-doc .header-anchor {
+  color: var(--ink-muted);
+  transition: color 0.2s;
+}
+.vp-doc .header-anchor:hover,
+.vp-doc h1:hover .header-anchor,
+.vp-doc h2:hover .header-anchor,
+.vp-doc h3:hover .header-anchor {
+  color: var(--redline-ink);
+}
+
+/* ============================================================================
+   2 · SIDEBAR → SHEET INDEX
+   ========================================================================== */
+
+/* Level-0 group titles become drafting micro-labels (the sheet index rubric). */
+.VPSidebarItem.level-0 > .item > .text,
+.VPSidebarItem.level-0 > .item > .link > .text {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* Hairline separator above each group beyond the first — sheet-index rules. */
+.VPSidebar .group + .group {
+  border-top: 1px solid var(--hairline);
+  padding-top: 22px;
+  margin-top: 6px;
+}
+
+/* Leaf items: mono index feel, ink-muted at rest. */
+.VPSidebarItem.level-1 .text,
+.VPSidebarItem.level-2 .text {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--ink-muted);
+  transition: color 0.2s;
+}
+
+.VPSidebarItem.level-1.is-link > .item > .link:hover .text,
+.VPSidebarItem.level-2.is-link > .item > .link:hover .text {
+  color: var(--ink);
+}
+
+/* Active leaf = redline text + a tick marker in the indicator rail. */
+.VPSidebarItem.level-1.is-active > .item .link > .text,
+.VPSidebarItem.level-2.is-active > .item .link > .text {
+  color: var(--redline-ink);
+  font-weight: 500;
+}
+.VPSidebarItem.level-1.is-active > .item > .indicator,
+.VPSidebarItem.level-2.is-active > .item > .indicator {
+  background-color: var(--redline);
+  border-radius: 0; /* squared tick, not a pill */
+}
+
+/* Nested item rails become hairlines (paper, not the default divider blue). */
+.VPSidebarItem.level-1 .items,
+.VPSidebarItem.level-2 .items {
+  border-left: 1px solid var(--hairline);
+}
+
+/* ============================================================================
+   3 · CODE BLOCKS → embedded SOURCE world (carbon in BOTH modes)
+   ========================================================================== */
+
+/* Scope the code-block surface vars to the article so the sheet stays paper but
+   fences drop to carbon. Inline code (handled in §4) intentionally stays sheet. */
+.vp-doc {
+  --vp-code-block-bg: var(--carbon);
+  --vp-code-block-color: var(--src-fg);
+  --vp-code-line-number-color: var(--src-muted);
+  --vp-code-block-divider-color: var(--src-border);
+  --vp-code-lang-color: var(--plum-bright);
+  --vp-code-line-highlight-color: oklch(1 0 0 / 8%);
+  /* copy button reads on carbon */
+  --vp-code-copy-code-bg: var(--carbon-2);
+  --vp-code-copy-code-hover-bg: var(--carbon-2);
+  --vp-code-copy-code-border-color: var(--src-border);
+  --vp-code-copy-code-hover-border-color: var(--src-border);
+  --vp-code-copy-code-active-text: var(--src-muted);
+}
+
+/* Squared drafting corner, not the default 8px. */
+.vp-doc div[class*="language-"] {
+  border-radius: 3px;
+  border: 1px solid var(--src-border);
+}
+
+/* LIGHT-MODE SHIKI FIX. VitePress dual-themes each token with
+   `--shiki-light` / `--shiki-dark`, swapping by `html:not(.dark)` /`.dark`.
+   Our fences are carbon in BOTH modes, so the light (github-light) palette would
+   be near-invisible on carbon. Re-point light mode at the dark palette — the one
+   designed for a dark ground — so tokens stay readable without a custom Shiki
+   theme. `.vp-doc` raises specificity over the built-in rule. */
+html:not(.dark) .vp-doc .vp-code span {
+  color: var(--shiki-dark, inherit);
+}
+
+/* Lang label as a sheet TAB: a small raised-carbon tab, caps micro-label
+   ("ARCH" / "TS"). VitePress fades it out on hover to reveal the copy button. */
+.vp-doc div[class*="language-"] > span.lang {
+  top: 0;
+  right: 0;
+  padding: 3px 10px 4px;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--plum-bright);
+  background: var(--carbon-2);
+  border-left: 1px solid var(--src-border);
+  border-bottom: 1px solid var(--src-border);
+  border-radius: 0 3px 0 3px;
+  opacity: 1;
+}
+
+.vp-doc div[class*="language-"] > button.copy {
+  border-radius: 3px;
+}
+
+/* ============================================================================
+   4 · INLINE CODE → paper chip
+   ========================================================================== */
+
+.vp-doc :not(pre, h1, h2, h3, h4, h5, h6) > code {
+  font-family: var(--font-mono);
+  color: var(--ink);
+  background-color: var(--paper-panel);
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  padding: 2px 5px;
+  font-size: 0.85em;
+}
+
+/* Code inside a link takes the redline ink (a link that happens to be code). */
+.vp-doc a > code {
+  color: var(--redline-ink);
+  border-color: color-mix(in srgb, var(--redline) 35%, var(--hairline));
+}
+
+/* ============================================================================
+   5 · CUSTOM CONTAINERS → drafting note boxes
+   ========================================================================== */
+
+.vp-doc .custom-block {
+  border: 1px solid var(--hairline);
+  border-left-width: 3px;
+  border-radius: 3px;
+  padding: 14px 18px 12px;
+  background: color-mix(in srgb, var(--paper-panel) 60%, transparent);
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.vp-doc .custom-block .custom-block-title {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.vp-doc .custom-block a {
+  color: var(--redline-ink);
+  font-weight: 500;
+}
+
+/* NOTE — ink left rule */
+.vp-doc .custom-block.tip,
+.vp-doc .custom-block.info {
+  border-left-color: var(--ink-muted);
+}
+.vp-doc .custom-block.tip .custom-block-title,
+.vp-doc .custom-block.info .custom-block-title {
+  color: var(--ink-muted);
+}
+
+/* CAUTION — amber left rule (advisory-warning colour) */
+.vp-doc .custom-block.warning {
+  border-left-color: var(--warn-ink);
+}
+.vp-doc .custom-block.warning .custom-block-title {
+  color: var(--warn-ink);
+}
+
+/* REVISION — redline left rule (attention) */
+.vp-doc .custom-block.danger {
+  border-left-color: var(--redline);
+}
+.vp-doc .custom-block.danger .custom-block-title {
+  color: var(--redline-ink);
+}
+
+/* Note: the title WORDS (TIP / WARNING / DANGER) stay as VitePress emits them —
+   a CSS content-swap to NOTE / CAUTION / REVISION would clobber any author-set
+   custom title (CSS can't tell a default title from a custom one). The drafting
+   read comes from the micro-label typography + coloured left rule above. */
+
+/* details block stays quiet */
+.vp-doc .custom-block.details {
+  background: color-mix(in srgb, var(--paper-panel) 60%, transparent);
+  border-left-color: var(--hairline);
+}
+
+/* ============================================================================
+   6 · TABLES → schedules
+   ========================================================================== */
+
+.vp-doc table {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  overflow-x: auto;
+}
+
+.vp-doc th {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding: 8px 14px;
+}
+
+.vp-doc td {
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  padding: 8px 14px;
+  font-size: 14px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Kill the default zebra striping — schedules read on ruled rows, not fills. */
+.vp-doc tr {
+  background: transparent;
+  transition: background-color 0.15s;
+}
+.vp-doc tbody tr:nth-child(2n) {
+  background: transparent;
+}
+.vp-doc tbody tr:hover {
+  background: color-mix(in srgb, var(--paper-panel) 70%, transparent);
+}
+
+/* ============================================================================
+   7 · LINKS
+   ========================================================================== */
+
+.vp-doc a {
+  color: var(--redline-ink);
+  text-decoration: none;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s;
+}
+.vp-doc a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--redline);
+}
+.vp-doc a:visited {
+  color: var(--redline-ink);
+}
+
+/* ============================================================================
+   8 · ON THIS PAGE / ASIDE
+   ========================================================================== */
+
+.VPDocAside .outline-title {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.VPDocAsideOutline .content {
+  border-left: 1px solid var(--hairline);
+}
+
+.VPDocAside .outline-link {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  transition: color 0.2s;
+}
+.VPDocAside .outline-link:hover,
+.VPDocAside .outline-link.active {
+  color: var(--redline-ink);
+}
+
+.VPDocAside .outline-marker {
+  background-color: var(--redline) !important;
+  border-radius: 0; /* squared active tick */
+}
+
+/* ============================================================================
+   9 · LOCAL SEARCH + DocSearch button (non-home chrome)
+   ========================================================================== */
+
+.VPLocalSearchBox .shell,
+.VPLocalSearchBox .search-bar,
+.VPLocalSearchBox .result {
+  border-radius: 3px !important;
+  border-color: var(--hairline) !important;
+}
+.VPLocalSearchBox .shell {
+  background: var(--paper-panel);
+}
+.VPLocalSearchBox .result.selected {
+  border-color: var(--redline) !important;
+}
+.VPLocalSearchBox .titles .title.text,
+.VPLocalSearchBox mark {
+  color: var(--redline-ink);
+}
+
+.DocSearch-Button {
+  border-radius: 3px !important;
+  border: 1px solid var(--hairline) !important;
+  background: var(--paper-panel) !important;
+}
+
+/* ============================================================================
+   10 · PREV/NEXT FOOTER · EDIT LINK · LAST UPDATED
+   ========================================================================== */
+
+.VPDocFooter {
+  border-top: 1px solid var(--hairline);
+  padding-top: 20px;
+}
+
+.VPDocFooter .pager-link {
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: transparent;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
+}
+.VPDocFooter .pager-link:hover {
+  border-color: var(--redline);
+  background: color-mix(in srgb, var(--paper-panel) 70%, transparent);
+}
+.VPDocFooter .pager-link .desc {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.VPDocFooter .pager-link .title {
+  color: var(--redline-ink);
+  font-weight: 500;
+}
+
+.VPDocFooter .edit-info .edit-link-button,
+.VPDocFooter .last-updated,
+.VPLastUpdated {
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+.VPDocFooter .edit-info .edit-link-button {
+  color: var(--redline-ink);
+}
+.VPDocFooter .last-updated .title,
+.VPLastUpdated .title {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+/* ============================================================================
+   11 · KILL RESIDUAL PILL RADII / STALE PLUM IN DOC CHROME
+   ========================================================================== */
+
+/* Any lingering rounded chrome inside doc content squares off to drafting 3px.
+   (Badges, custom containers' nested code groups, etc.) */
+.vp-doc .VPBadge {
+  border-radius: 3px;
+}
