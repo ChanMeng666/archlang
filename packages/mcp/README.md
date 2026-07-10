@@ -21,7 +21,8 @@ npx @chanmeng666/archlang compile plan.arch -o out.svg --json
 ```
 
 This MCP server exists so MCP-native hosts can **discover** ArchLang through the
-registry and drive it without a shell. It is the discoverability channel, not a
+registry and drive it without a shell. It is listed on the official MCP registry as
+**`io.github.ChanMeng666/archlang-mcp`**. It is the discoverability channel, not a
 replacement. See [ADR 0012](https://github.com/chanmeng666/archlang/blob/main/docs/adr/0012-mcp-shim-discoverability.md)
 (which amends [ADR 0009](https://github.com/chanmeng666/archlang/blob/main/docs/adr/0009-ai-first-context-and-distribution.md)'s distribution-over-protocol stance).
 

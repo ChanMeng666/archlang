@@ -264,3 +264,63 @@ rule (once inverted the whole site) — use a separate unscoped block; VitePress
 (0,2,1) outranks a two-class rule (0,2,0) on hover — re-assert `color` in `:hover` and verify
 interactive states; a mode-flipping token (`--redline`) is unsafe on ground that doesn't flip (the
 fixed carbon terminal / dark bands) — use a fixed hex there.
+
+---
+
+## 10. Post-launch — v1.13.0 (the AI-native authoring release), 2026-07-11
+
+> **A core release.** `@chanmeng666/archlang@1.13.0` published (`latest`); default SVG output stays
+> byte-identical throughout (every new output behavior is opt-in, ADR 0007 discipline). Full
+> per-change detail in `CHANGELOG.md`; the design decisions in
+> **[ADR 0011](adr/0011-machine-applicable-fixes.md)** and
+> **[ADR 0012](adr/0012-mcp-shim-discoverability.md)**.
+
+**Framing question.** v1.12 made ArchLang *discoverable and ingestible* for agents; v1.13 asked the
+next question — once an agent has the context, is the language **easy to author correctly, and easy
+to correct when it isn't?** The program opened with an audits + prior-art phase (studying Penrose and
+D2 for declarative-diagram authoring, Mermaid for agent distribution, `llama.cpp` **GBNF** for
+constrained decoding, and **rustc/rustfix** for the machine-applicable-suggestion model) before any
+code, so the surface borrowed proven shapes rather than inventing them.
+
+**Seven implementation tranches (T1–T7).**
+
+| Tranche | What | Key files |
+|---|---|---|
+| **T1 — placement sugar** | Author without hand-computed coordinates: opening **attachment** (`door\|window\|opening on <wall> at <pos>`, `swing into <room>`, `hinge near start\|end`), **`strip`** row/column layout (pure resolve-time sugar), and **furniture `anchor`** (snap to a room corner/edge). New codes `E_ATTACH_*`, `E_STRIP_*`; flagship `examples/attached.arch`. | `src/parser.ts`, `src/ir.ts`, `src/layout.ts` |
+| **T2 — machine-applicable fixes (ADR 0011)** | `Diagnostic.fixes` (rustc's 4-tier `Applicability`) + **`applyFixes`** (a pure piece-table replacer ported from rustfix); fix **producers**; **`arch fix`** (bounded self-checking fixpoint) and **`arch suggest`** (`suggestTopology`, advisory, never applied); LSP quick-fix `codeActions`. **`fix` = syntactic span edits; `repair` stays the geometric solver (ADR 0006)** — a hard boundary. | `src/fix-apply.ts`, `src/fix-producers.ts`, `src/diagnostic-json.ts`, `src/lsp.ts` |
+| **T3 — Plan JSON + intent graph + GBNF** | `planFromJson`/`planToJson`/`astToJson`/`checkGraph`/`PLAN_JSON_SCHEMA` behind `arch compile --from-json`, `arch ast`, `arch validate --graph`, `arch complete --at`; generated **`schemas/plan.schema.json`** (`gen:plan-schema`) and **`grammars/archlang.gbnf`** (`gen:gbnf`), both drift-tested. | `src/plan-json.ts`, `scripts/gen-{plan-schema,gbnf}.ts` |
+| **T4 — zero-dependency ASCII** | **`renderAscii`** behind `arch compile -f txt` / `arch preview --ascii` (`--cols`, `--charset`) — a text-only agent *sees* its plan with no raster binary. Every other format unchanged. | `src/backends/ascii.ts` |
+| **T5 — live eval** | An honest same-harness A/B against a real model (`gpt-5.5`), corpus grown to **22 briefs**, guarded `npm run eval:live` + a `workflow_dispatch` CI workflow, and a committed `eval/live-baseline.json`. | `eval/run.ts`, `eval/corpus.json`, `.github/workflows/eval-live.yml` |
+| **T6 — distribution** | Docs site serves every generated page as **raw markdown at `/<route>.md`** plus the machine-native **`/plan.schema.json`** and **`/archlang.gbnf`** at its root (advertised in `llms.txt`). | `docs-site/sync-docs.mjs` |
+| **T7 — release** | Publish core → MCP package → registry; VS Code 0.5.0 repack; tag + GitHub Release; site redeploy; three new CI drift gates green. | — |
+
+**The two keystone decisions.** (1) **`fix` vs `repair` is a hard line** (ADR 0011): `arch fix`
+applies **syntactic** span edits from catalogued diagnostics (safe by `Applicability` tier), while
+`arch repair` remains the **geometric** furniture solver (ADR 0006) that never touches syntax — two
+correctors, never merged. (2) **CLI stays primary; MCP is a discoverability channel** (ADR 0012,
+amending ADR 0009): a CLI costs nothing in an agent's context window until called, an MCP tool schema
+sits there permanently — so the MCP shim wraps the *same library functions* the CLI uses, adds no
+capability, and keeps the MCP SDK quarantined in `packages/mcp/` so the **core stays
+zero-dependency**.
+
+**Honest eval read (the finding worth recording).** The live A/B (same harness, model
+`gpt-5.5-2026-04-23`) showed one-shot authorability was **already near-ceiling** before v1.13:
+pre-v1.13 language = valid 17/18 (94%) · intent 1/18 · sound 3/18; v1.13 = valid 21/22 (95%) on a
+**harder 22-brief corpus** · intent 2/22 · sound 2/22. The one-shot `intent`/`sound` numbers stay in
+the single digits in both and v1.13 does not move them — because **v1.13's real gains are in the
+self-correction loop** (`arch fix` / `arch suggest` / `validate --graph` / `-f txt`), which a
+one-shot generation eval cannot measure. The win is drivability, not one-shot accuracy; the docs say
+so plainly. **Harness lesson:** reasoning models spend thinking tokens out of
+`max_completion_tokens` — the original 4096 cap truncated `gpt-5.5` into invalid output and produced
+a bogus low baseline (the first recorded `valid 10/18`); the cap is now 16384 and
+`eval/live-baseline.json` carries the corrected 17/18 baseline with a note.
+
+**Distribution outcomes.** Core `@chanmeng666/archlang@1.13.0` on npm (`latest`); optional
+`@chanmeng666/archlang-mcp@0.1.1` on npm **and** live on the official MCP registry as
+`io.github.ChanMeng666/archlang-mcp` (a same-day `0.1.0` → `0.1.1` patch fixed the registry
+namespace's case-sensitivity + `mcpName` exact-match + 100-char description cap); VS Code extension
+repacked and published as `ChanMeng.archlang@0.5.0` (manual web upload — the Marketplace page can't
+be browser-automated); both Vercel sites redeployed serving the new machine-native routes. Tests
+**758 passing (89 files)**; `eval:ci` **22/22** offline; typecheck + build + Biome + the three new
+drift gates green. The one prepped-but-not-taken step: SKILL.md submissions to skill directories
+(`anthropics/skills`, `awesome-claude-skills`).

@@ -19,16 +19,16 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.13.0` (**tagged `v1.13.0`, ready to publish — not yet on npm**; last published `latest` is `1.12.1`) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.13.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — now incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
-| **MCP server** | `@chanmeng666/archlang-mcp@0.1.0` (**ready to publish — not yet on npm**; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate/repair/fix/suggest/complete + spec/context/schema/grammar resources; SDK dep quarantined here, core stays zero-dep) | `packages/mcp/`, `server.json` |
-| **VS Code extension** | `ChanMeng.archlang@0.5.0` (**packaged `.vsix`, pending Marketplace upload**; bundles core 1.13.0 with the v1.13 language sugar — attachment/`strip`/anchor + the new codes); last live on the Marketplace is `0.4.1` | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
+| **MCP server** | `@chanmeng666/archlang-mcp@0.1.1` (published, `latest`; registry entry `io.github.ChanMeng666/archlang-mcp` v0.1.1 live on registry.modelcontextprotocol.io; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate/repair/fix/suggest/complete + spec/context/schema/grammar resources; SDK dep quarantined here, core stays zero-dep) | `packages/mcp/`, `server.json` |
+| **VS Code extension** | `ChanMeng.archlang@0.5.0` (published, live — bundles core 1.13.0 with the v1.13 language sugar — attachment/`strip`/anchor + the new codes) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.12.1` (latest published); `v1.13.0` tagged this commit, not yet pushed/published | github.com/ChanMeng666/archlang |
+| **Git** | `main`, tags `v1.0.0` → `v1.13.0` (latest) | github.com/ChanMeng666/archlang |
 | **Tests** | 758 passing (89 files, incl. the `packages/mcp` stdio smoke test) + offline authorability eval (22 briefs, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
-**Latest work — v1.13.0 (unreleased, in this tree; AI-native authoring). Six tranches
+**Latest release — v1.13.0 (2026-07-11; AI-native authoring). Six tranches
 (see `CHANGELOG.md` for detail):**
 1. **Placement sugar** (write plans without hand-computed coordinates). Openings attach to a wall by
    position — `door|window|opening on <wall> at <pos>` (mm or `%`), `swing into <room>`, `hinge near
@@ -51,14 +51,26 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
    **`arch preview --ascii`** (`--cols`, `--charset`) — a text-only agent can *see* its plan with no
    raster binary. Every other format's output is unchanged.
 5. **MCP server ([ADR 0012](docs/adr/0012-mcp-shim-discoverability.md)).** New `packages/mcp/`
-   workspace **`@chanmeng666/archlang-mcp@0.1.0`** — a stdio MCP shim wrapping the library (tools
+   workspace **`@chanmeng666/archlang-mcp@0.1.1`** (published; registry entry
+   `io.github.ChanMeng666/archlang-mcp`) — a stdio MCP shim wrapping the library (tools
    compile/describe/lint/validate/repair/fix/suggest/complete; resources spec/context/schema/grammar),
-   with a `server.json` for registry submission. **The core stays zero-dependency — the MCP SDK lives
+   published to the official MCP registry from its `server.json`. **The core stays zero-dependency — the MCP SDK lives
    only in this package.** The CLI remains primary (token cost); MCP is the discoverability channel,
    amending [ADR 0009](docs/adr/0009-ai-first-context-and-distribution.md)'s distribution-over-protocol point.
 6. **Docs distribution.** The docs site now serves every generated page as **raw markdown at
    `/<route>.md`** and the machine-native **`/plan.schema.json`** + **`/archlang.gbnf`** at its root
    (advertised in `llms.txt`).
+
+**Honest eval read (live A/B, same harness, `gpt-5.5-2026-04-23`).** One-shot authorability
+was already near-ceiling before v1.13 — pre-v1.13 language scored valid 17/18 (94%), and v1.13
+scores valid 21/22 (95%) on a **harder 22-brief corpus** (`eval/corpus.json`; offline gate
+`npm run eval:ci` = 22/22). One-shot `intent`/`sound` rates stay low in both (single-digit) and v1.13
+does **not** move them, because v1.13's real gains are in the **self-correction loop** (`arch fix` /
+`arch suggest` / `validate --graph` / `-f txt`), which a one-shot generation eval does not exercise.
+Record that honestly: the win is drivability, not one-shot accuracy. (Harness lesson: reasoning
+models spend thinking tokens out of `max_completion_tokens`; the original 4096 cap truncated
+`gpt-5.5` output — raised to 16384 in `eval/run.ts`; `eval/live-baseline.json` carries the corrected
+17/18 baseline.)
 
 **v1.12.1** — bundler-safety patch: the PNG backend's lazy
 `import("node:fs")`/`import("node:url")` (font lookup) now carry
@@ -407,6 +419,16 @@ source (.arch)
   optional-dep import.
 - **`npm run dev`** (repo root) runs `tsup --watch` (a rebuild watcher), not a web server. The
   playground/docs sites are separate Vite apps — use `npm run playground:dev` / `docs:dev`.
+- **(MCP registry) The `io.github.<Owner>/*` namespace is case-sensitive and identity-checked.**
+  registry.modelcontextprotocol.io exact-matches the published npm package's **`mcpName`** field
+  against `server.json`'s `name`, so the owner segment must match your GitHub login byte-for-byte
+  (`io.github.ChanMeng666/…`, not `chanmeng666`); it also **caps the server `description` at 100
+  chars**. A mismatch or an over-long description is rejected at publish — the 0.1.0 → 0.1.1 patch
+  fixed exactly this (casing + shortened description), which is why a same-day republish was needed.
+- **(Eval harness) Reasoning models spend thinking tokens out of `max_completion_tokens`.** The live
+  eval's original 4096 cap starved `gpt-5.5` into truncated (invalid) output and produced a bogus
+  low baseline; `eval/run.ts` uses 16384. If a new provider/model scores implausibly low, suspect a
+  token cap before the language — bump the budget and re-run before trusting the number.
 - **Door `hinge left/right` is relative to the wall's traversal direction**, not the screen —
   so the hinge side can flip depending on the order of a wall's points. The swing quarter-disc is
   computed once in `geometry.ts` (`doorSwing`) and shared by `door.render()` and the

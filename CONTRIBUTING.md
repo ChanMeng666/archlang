@@ -52,7 +52,8 @@ npm test
 
 ## Releasing
 
-Two artifacts ship from this repo and are **released separately** — don't let them drift.
+Several artifacts ship from this repo and are **released separately** — don't let them drift: the
+core npm package, the VS Code extension, and (as of v1.13) the optional MCP server.
 
 ### Core — `@chanmeng666/archlang` (npm)
 
@@ -90,6 +91,46 @@ did not move); the `.vsix` still needs a manual web upload.
 > `var(--syn-<name>, <fallback>)`, with the on-carbon values in `playground/src/styles/editor.css`.
 > To recolor: edit the generator template or the `--syn-*` values and run `npm run gen:grammars`;
 > never hand-edit `arch-language.js` (CI fails on drift).
+
+### MCP server — `@chanmeng666/archlang-mcp` (npm + MCP registry)
+
+The optional stdio shim in `packages/mcp/` is a **separately versioned** package (it starts at
+`0.1.x`, independent of the core). Publish it **after** the core it wraps:
+
+1. `npm run mcp:build` (builds the core first, then the shim + copies the resource files).
+2. Bump `version` in `packages/mcp/package.json` **and** `packages/mcp/server.json` (they must
+   match), then `npm publish -w packages/mcp`.
+3. Submit to the official registry from `packages/mcp/`:
+   `mcp-publisher login github` → `mcp-publisher publish` (the CLI lives outside the repo, e.g.
+   `D:\mcp-publisher\`). This validates `server.json` against the published npm package.
+
+> **Three registry pitfalls** (they cost a same-day `0.1.0` → `0.1.1` republish): the
+> `io.github.<Owner>/*` namespace is **case-sensitive** and the owner segment must match your
+> GitHub login byte-for-byte (`io.github.ChanMeng666/…`); the registry **exact-matches** the npm
+> package's **`mcpName`** field against `server.json`'s `name`; and the server **`description` is
+> capped at 100 chars**. Any mismatch is rejected at publish.
+
+### Live authorability eval (optional, gated)
+
+The offline `npm run eval:ci` (18→22 golden briefs, no API key) runs in CI. To re-measure against a
+real model, run the guarded live harness:
+
+```bash
+npm run eval:live -- --yes    # needs OPENAI_API_KEY; writes eval/results.live.md + a delta vs eval/live-baseline.json
+```
+
+It is also wired as the `workflow_dispatch` workflow `.github/workflows/eval-live.yml` (uses the
+repo secret `OPENAI_API_KEY`). **Harness gotcha:** reasoning models spend thinking tokens out of
+`max_completion_tokens` — the cap in `eval/run.ts` is 16384 (a 4096 cap truncated `gpt-5.5` into
+bogusly-low scores); suspect the token budget before the language if a new model scores implausibly
+low.
+
+### CI drift gates (regenerate before you push)
+
+Beyond the existing grammar/errors/spec/llms gates, three generators are now drift-checked in CI —
+regenerate and commit their output whenever their source changes:
+`npm run gen:llms` (`llms-full.txt`), `npm run gen:gbnf` (`grammars/archlang.gbnf`),
+`npm run gen:plan-schema` (`schemas/plan.schema.json`).
 
 ## Code of Conduct
 

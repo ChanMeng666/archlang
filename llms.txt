@@ -30,7 +30,7 @@ of the project for large language models and AI agents.
 
 ## To USE ArchLang (author floor plans)
 
-ArchLang is agent-native via its CLI — no server, no MCP, nothing to configure:
+ArchLang is agent-native via its CLI — no server required, nothing to configure (an optional MCP shim exists for MCP-native clients; the CLI stays primary):
 
 ```bash
 npx @chanmeng666/archlang context              # cold start: the whole bundled agent context (spec + skill + CLI + errors) in one call

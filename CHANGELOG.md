@@ -81,7 +81,7 @@ zero runtime dependencies; the default SVG output is byte-identical throughout.
 
 ### Added — MCP server ([ADR 0012](docs/adr/0012-mcp-shim-discoverability.md))
 
-- **`@chanmeng666/archlang-mcp`** (new `packages/mcp/` workspace, `0.1.0`): an optional
+- **`@chanmeng666/archlang-mcp`** (new `packages/mcp/` workspace, published `0.1.1`): an optional
   stdio Model Context Protocol server that wraps the **library** (never a CLI subprocess)
   — tools `compile` / `describe` / `lint` / `validate` (with the optional intent-graph
   check) / `repair` / `fix` / `suggest` / `complete`, and resources `archlang://spec`,
@@ -89,11 +89,20 @@ zero runtime dependencies; the default SVG output is byte-identical throughout.
   zero-dependency — the MCP SDK lives only in this package.** The CLI remains the primary,
   token-cheaper interface; the server is the *discoverability* channel (registry),
   amending [ADR 0009](docs/adr/0009-ai-first-context-and-distribution.md)'s
-  distribution-over-protocol stance. A `server.json` is ready for registry submission.
+  distribution-over-protocol stance. Published to the official MCP registry as
+  **`io.github.ChanMeng666/archlang-mcp`** (live on registry.modelcontextprotocol.io).
+  `0.1.0` was published then superseded the same day by `0.1.1`: the registry namespace is
+  case-sensitive and exact-matches the npm package's `mcpName` against `server.json`'s `name`,
+  and caps the server description at 100 chars — `0.1.1` fixed the casing
+  (`io.github.ChanMeng666/…`) and shortened the description.
 - **Docs site**: every generated doc page is now also served as **raw markdown at
   `/<route>.md`** (e.g. `/spec.md`, `/reference.md`), and the machine-native
   **`/plan.schema.json`** and **`/archlang.gbnf`** artifacts are served at the site root
   (advertised in `llms.txt`).
+- **VS Code extension** repacked and published as **`ChanMeng.archlang@0.5.0`** (bundles core
+  1.13.0, so the language-surface additions — the attachment / `strip` / `anchor` grammar and the
+  new codes — and the LSP quick-fix `codeActions` reach extension users). Marketplace upload stays a
+  manual web step.
 
 ## [1.12.1] - 2026-07-07
 

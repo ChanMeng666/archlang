@@ -79,8 +79,9 @@ is fully client-side.
   --json` returns the plan as **facts** (rooms, areas, adjacency, what doors connect) so a text-only
   agent verifies without an image; `arch lint --json` flags unsound plans. Every command is
   `--json` with deterministic exit codes and `fix`-carrying diagnostics, and `--error-svg` renders a
-  self-describing error card when a plan won't compile — visual feedback for an agent loop. No MCP,
-  no server. See [`SKILL.md`](SKILL.md).
+  self-describing error card when a plan won't compile — visual feedback for an agent loop. The CLI
+  stays primary; an optional [MCP server](#mcp-server-optional) exists for MCP-native hosts. See
+  [`SKILL.md`](SKILL.md).
 - **Accessible output.** `arch compile --accessible` stamps the SVG with `<title>`/`<desc>` +
   `role="img"` (a derived one-sentence caption, also readable as `describe().caption`), and the
   `accTitle` / `accDescr` keywords let a plan override that metadata — opt-in, default output
@@ -213,8 +214,9 @@ GBNF grammar to constrain a local model to parseable output).
 [`@chanmeng666/archlang-mcp`](packages/mcp) package is a stdio Model Context Protocol shim over the
 **library** (tools `compile`/`describe`/`lint`/`validate`/`repair`/`fix`/`suggest`/`complete`;
 resources `archlang://spec`/`context`/`schema`/`grammar`). The core stays zero-dependency — the SDK
-lives only in that package. Prefer the CLI when your agent has a shell (it costs nothing in context
-until called); use the server for discoverability. Add it to Claude Code with:
+lives only in that package. It is listed on the official MCP registry as
+`io.github.ChanMeng666/archlang-mcp`. Prefer the CLI when your agent has a shell (it costs nothing in
+context until called); use the server for discoverability. Add it to Claude Code with:
 
 ```bash
 claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp
@@ -224,7 +226,7 @@ See the [package README](packages/mcp/README.md) for Claude Desktop / Cursor / V
 
 **In CI:** the in-repo composite Action
 [`.github/actions/arch-render`](.github/actions/arch-render) renders every ` ```arch ` fence in your
-Markdown to images in one step — `uses: ChanMeng666/archlang/.github/actions/arch-render@v1.12.0`
+Markdown to images in one step — `uses: ChanMeng666/archlang/.github/actions/arch-render@v1.13.0`
 (pin a release tag or `@main`). See its [README](.github/actions/arch-render/README.md) for inputs
 and an auto-commit example.
 
@@ -307,7 +309,7 @@ diagnostics, hover, completion, go-to-definition, rename, and signature help —
 - **[Language Reference](docs/language-reference.md)** — every statement, with syntax and defaults.
 - **[Error catalog](docs/error-codes.md)** — every `E_*`/`W_*` code with a cause and a fix.
 - **[Architecture Decision Records](docs/adr)** — the key design decisions and their trade-offs.
-- **[Examples](examples)** — `studio`, `two-bed`, `parametric`, `themed`, `relational`.
+- **[Examples](examples)** — `studio`, `two-bed`, `parametric`, `themed`, `relational`, `attached`, `accessible`.
 - **[AGENTS.md](AGENTS.md)** — orientation for AI agents working in this repo (current status + architecture).
 - Build the docs site locally with `npm run docs:build` (VitePress, in `docs-site/`).
 
