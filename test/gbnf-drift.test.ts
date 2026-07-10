@@ -387,6 +387,28 @@ plan "Sugar" {
     for (const s of ok) expect(accepts(rules, s), s).toBe(true);
   });
 
+  it("accepts comments and blank lines in any position", () => {
+    // A leading comment, blank lines around/after `{`, a comment as the first
+    // statement, and trailing end-of-line comments are all layout the `ws` rule
+    // swallows — the grammar must never reject a well-formed plan over them.
+    const src = [
+      "# leading comment before the plan",
+      "",
+      'plan "Comments" {',
+      "",
+      "  # a comment as the first thing inside the block",
+      "  units mm   # trailing comment after a statement",
+      "",
+      "  grid 100",
+      "",
+      "  room at (0,0) size 4000x6000  # inline after a glued dimension",
+      "",
+      "}",
+      "",
+    ].join("\n");
+    expect(accepts(rules, src)).toBe(true);
+  });
+
   describe("rejects malformed input (no valid derivation)", () => {
     const bad: [string, string][] = [
       ["missing plan header", `units mm\nroom at (0,0) size 1x1\n`],
