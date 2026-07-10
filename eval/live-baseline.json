@@ -1,9 +1,10 @@
 {
   "provider": "openai",
   "model": "gpt-5.5-2026-04-23",
-  "date": "2026-07-10",
-  "valid": 10,
+  "date": "2026-07-11",
+  "valid": 17,
   "semanticPass": 1,
-  "sound": 1,
-  "total": 18
+  "sound": 3,
+  "total": 18,
+  "note": "Pre-v1.13 language (repo @ 08ee403) measured on the fixed harness (max_completion_tokens 16384 — the first 2026-07-10 measurement starved the reasoning model at 4096 and under-counted valid by 7)."
 }
