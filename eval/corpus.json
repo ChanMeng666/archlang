@@ -178,5 +178,45 @@
       "labelsInclude": ["Reception", "Meeting Room", "WC"],
       "floorAreaM2": [90, 102]
     }
+  },
+  {
+    "id": "strip-corridor",
+    "prompt": "A row of three identical consulting rooms opening off a single shared corridor that runs the full width in front of them. Lay the three rooms out end to end, give each its own door onto the corridor and a window, and put the entrance at the corridor.",
+    "golden": "eval/goldens/strip-corridor.arch",
+    "expect": {
+      "rooms": 4,
+      "labelsInclude": ["Room 1", "Room 3", "Corridor"],
+      "floorAreaM2": [38, 43]
+    }
+  },
+  {
+    "id": "attach-openings",
+    "prompt": "A one-bedroom flat — a living/kitchen area, a bedroom, and a bathroom off the living space — where every door and window is positioned by how far along its wall it sits rather than by an absolute point. The bath must open off the living area (not through the bedroom) and the bedroom needs a window.",
+    "golden": "eval/goldens/attach-openings.arch",
+    "expect": {
+      "rooms": 3,
+      "labelsInclude": ["Bedroom", "Bathroom"],
+      "floorAreaM2": [32, 38]
+    }
+  },
+  {
+    "id": "anchor-furniture",
+    "prompt": "A one-bedroom flat where the furniture is arranged by which corner or edge of its room each piece sits against, not by coordinates: a sofa centred in the living room, a table set in from one corner, the bed backed into a bedroom corner, and the bathroom fixtures tucked into the room's corners.",
+    "golden": "eval/goldens/anchor-furniture.arch",
+    "expect": {
+      "rooms": 3,
+      "labelsInclude": ["Living Room", "Bedroom", "Bathroom"],
+      "floorAreaM2": [39, 46]
+    }
+  },
+  {
+    "id": "strip-attach-clean",
+    "prompt": "A two-bedroom flat laid out as a run of rooms across the top with a hall and bathroom below. Every room must be reachable by a door off the hall, both bedrooms need a window, and the bathroom must open off the hall rather than through a bedroom. It should pass a strict validation with no warnings.",
+    "golden": "eval/goldens/strip-attach-clean.arch",
+    "expect": {
+      "rooms": 5,
+      "labelsInclude": ["Bedroom 1", "Bedroom 2", "Hall", "Bathroom"],
+      "floorAreaM2": [56, 64]
+    }
   }
 ]

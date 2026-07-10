@@ -1,10 +1,10 @@
 # ArchLang authorability scorecard
 
-Mode: **offline** · 18 prompts.
+Mode: **offline** · 22 prompts.
 
-- **Valid (compiles):** 18/18 (100%)
-- **Intent match (semantic):** 18/18 (100%)
-- **Sound (lint-clean):** 17/18 (94%)
+- **Valid (compiles):** 22/22 (100%)
+- **Intent match (semantic):** 22/22 (100%)
+- **Sound (lint-clean):** 21/22 (95%)
 
 | Prompt | Result | Valid | Lint | Notes |
 | --- | --- | --- | --- | --- |
@@ -26,3 +26,7 @@ Mode: **offline** · 18 prompts.
 | `compact-studio` | ✅ pass | yes | 0 | — |
 | `bungalow` | ✅ pass | yes | 0 | — |
 | `reception-suite` | ✅ pass | yes | 0 | — |
+| `strip-corridor` | ✅ pass | yes | 0 | — |
+| `attach-openings` | ✅ pass | yes | 0 | — |
+| `anchor-furniture` | ✅ pass | yes | 0 | — |
+| `strip-attach-clean` | ✅ pass | yes | 0 | — |

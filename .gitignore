@@ -7,3 +7,6 @@ playground/dist/
 playground/node_modules/
 *.tsbuildinfo
 *.vsix
+# Live eval output is ephemeral (moves with the model/day) — the committed
+# scorecard is eval/results.md; the live headline lives in eval/live-baseline.json.
+eval/results.live.md

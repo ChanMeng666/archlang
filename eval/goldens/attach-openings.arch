@@ -1,0 +1,40 @@
+# A one-bedroom flat where every opening is placed by how far it sits along its
+# wall (`door|window … on <wall> at <pos>`, v1.13) rather than by absolute (x,y).
+# The entrance and the bedroom door pick their swing with `swing into <room>`, so
+# the direction follows the room, not a hand-chosen in/out.
+plan "Attached Openings 1BR" {
+  units mm
+  grid 50
+  north up
+
+  room id=r_living at (0,0)    size 4000x5000 label "Living / Kitchen" uses living kitchen
+  room id=r_bed    at (4000,0) size 3000x3000 label "Bedroom"          uses bedroom
+  room id=r_bath   at (4000,3000) size 3000x2000 label "Bathroom"      uses bath
+
+  # Straight exterior walls (each a clean start→end to attach onto) + partitions.
+  wall id=w_north exterior  thickness 200 { (0,0) (7000,0) }
+  wall id=w_south exterior  thickness 200 { (0,5000) (7000,5000) }
+  wall id=w_west  exterior  thickness 200 { (0,0) (0,5000) }
+  wall id=w_east  exterior  thickness 200 { (7000,0) (7000,5000) }
+  wall id=w_vert  partition thickness 100 { (4000,0) (4000,5000) }
+  wall id=w_horiz partition thickness 100 { (4000,3000) (7000,3000) }
+
+  # Entrance 2000 mm along the south wall, opening into the living room.
+  door id=d_main on w_south at 2000 width 1000 hinge near start swing into r_living
+  # Bedroom off the living room; bath off the living room (never through the bedroom).
+  door id=d_bed  on w_vert  at 1500 width 900 swing into r_bed
+  door id=d_bath on w_vert  at 4000 width 800 swing into r_bath
+
+  # Windows placed by fraction of their wall run.
+  window on w_west at 50% width 1600
+  window on w_east at 20% width 1200
+
+  # Kitchen run along the north wall of the living space.
+  furniture kitchen_sink at (300,300)  size 800x600
+  furniture counter      at (1200,300) size 600x600
+
+  # Bathroom fixtures, kept clear of the door's swing at (4000,4000).
+  furniture wc     at (6300,4200) size 400x700
+  furniture basin  at (6300,3200) size 600x450
+  furniture shower at (5000,4000) size 900x900
+}

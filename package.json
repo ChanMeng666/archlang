@@ -73,6 +73,7 @@
     "gen:plan-schema": "tsx scripts/gen-plan-schema.ts",
     "eval": "tsx eval/run.ts",
     "eval:ci": "tsx eval/run.ts",
+    "eval:live": "tsx eval/run.ts --live",
     "docs:dev": "npm run build && npm -w docs-site run dev",
     "docs:build": "npm run build && npm -w docs-site run build",
     "mcp:build": "npm run build && npm -w @chanmeng666/archlang-mcp run build",

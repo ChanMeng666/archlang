@@ -1,0 +1,36 @@
+# A one-bedroom flat whose furniture is positioned by which corner or edge of its
+# room it sits against (`furniture … in <room> anchor <corner> [inset N]`, v1.13)
+# or dead-centre (`in <room> centered`) — never by a hand-computed coordinate.
+plan "Anchored Furniture 1BR" {
+  units mm
+  grid 50
+  north up
+
+  room id=r_living at (0,0)      size 5000x5000 label "Living Room" uses living
+  room id=r_bed    at (5000,0)   size 3500x3000 label "Bedroom"     uses bedroom
+  room id=r_bath   at (5000,3000) size 3500x2000 label "Bathroom"   uses bath
+
+  wall exterior thickness 200 { (0,0) (8500,0) (8500,5000) (0,5000) close }
+  wall id=w_vert  partition thickness 100 { (5000,0) (5000,5000) }
+  wall id=w_horiz partition thickness 100 { (5000,3000) (8500,3000) }
+
+  # The bath door swings out into the living room, keeping the small bath clear.
+  door id=d_main at (2500,5000) width 1000 wall exterior hinge left  swing in
+  door id=d_bed  at (5000,1500) width 900  wall w_vert   hinge left  swing out
+  door id=d_bath at (5000,3400) width 800  wall w_vert   hinge right swing in
+
+  window at (0,2500)    width 1600 wall exterior
+  window at (8500,1500) width 1200 wall exterior
+
+  # Living: sofa dead-centre, a table set in from the top-left corner.
+  furniture sofa  in r_living centered                  size 2000x900 label "Sofa"
+  furniture table in r_living anchor top-left inset 400 size 1000x600 label "Table"
+
+  # Bedroom: the bed backed into the top-right corner.
+  furniture bed in r_bed anchor top-right inset 200 size 1500x2000 label "Bed"
+
+  # Bath fixtures anchored to the room's edges and corners, away from the door.
+  furniture basin  in r_bath anchor top-right    inset 150 size 600x450
+  furniture wc     in r_bath anchor bottom-left  inset 200 size 400x700
+  furniture shower in r_bath anchor bottom-right inset 150 size 900x900
+}

@@ -1,0 +1,61 @@
+# Live NL→ArchLang authorability eval — the headline number, run on demand only.
+#
+# This is manual (workflow_dispatch): it calls a paid model API, once per brief, so
+# it never runs on push/PR (that is the offline `npm run eval:ci` gate inside CI).
+#
+# REQUIRED SECRET: OPENAI_API_KEY (Settings → Secrets and variables → Actions).
+# Without it the eval step is skipped, not failed, so the run stays green. The eval
+# defaults to the OpenAI provider when only that key is present; override the model
+# with the `model` input, or point at Anthropic instead by adding an ANTHROPIC_API_KEY
+# secret + env and setting ARCHLANG_EVAL_PROVIDER=anthropic.
+name: Eval (live)
+
+on:
+  workflow_dispatch:
+    inputs:
+      max:
+        description: "How many briefs to run (caps API cost)"
+        required: false
+        default: "18"
+      model:
+        description: "Model id (blank = provider default)"
+        required: false
+        default: ""
+
+jobs:
+  live:
+    name: Live authorability
+    runs-on: ubuntu-latest
+    env:
+      # Mapped to a job-level env so the guards below can test presence without
+      # referencing the secret directly in an `if:` expression.
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Warn when the API key secret is missing
+        if: ${{ env.OPENAI_API_KEY == '' }}
+        run: echo "::warning::OPENAI_API_KEY is not set — skipping the live eval. Add it under Settings → Secrets and variables → Actions."
+
+      - name: Run the live eval
+        if: ${{ env.OPENAI_API_KEY != '' }}
+        env:
+          ARCHLANG_EVAL_MODEL: ${{ inputs.model }}
+        run: npm run eval:live -- --yes --max ${{ inputs.max }}
+
+      - name: Upload results
+        if: ${{ always() && env.OPENAI_API_KEY != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results-live
+          path: eval/results.live.md
+          if-no-files-found: ignore

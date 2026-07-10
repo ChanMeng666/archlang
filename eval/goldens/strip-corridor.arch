@@ -1,0 +1,40 @@
+# Three consulting rooms opening off a shared corridor. The room run is laid out
+# with `strip` (v1.13) — rooms placed end to end from one anchor, sharing a depth —
+# so no per-room coordinate is written by hand; only the corridor and shell are absolute.
+plan "Consulting Corridor" {
+  units mm
+  grid 50
+  north up
+
+  # The room run: three equal rooms laid left-to-right, each 3 m deep.
+  strip right at (0,0) gap 0 height 3000 {
+    room id=r1 size 3000 label "Room 1" uses office
+    room id=r2 size 3000 label "Room 2" uses office
+    room id=r3 size 3000 label "Room 3" uses office
+  }
+
+  # Corridor running the full width below the rooms.
+  room id=r_corr at (0,3000) size 9000x1500 label "Corridor" uses circulation
+
+  # Exterior shell as four straight walls + the corridor partition and room dividers.
+  wall id=w_north exterior  thickness 200 { (0,0) (9000,0) }
+  wall id=w_south exterior  thickness 200 { (0,4500) (9000,4500) }
+  wall id=w_west  exterior  thickness 200 { (0,0) (0,4500) }
+  wall id=w_east  exterior  thickness 200 { (9000,0) (9000,4500) }
+  wall id=w_mid   partition thickness 100 { (0,3000) (9000,3000) }
+  wall partition thickness 100 { (3000,0) (3000,3000) }
+  wall partition thickness 100 { (6000,0) (6000,3000) }
+
+  # Each room opens onto the corridor; its door swings into the room, off the walk.
+  door id=d1 at (1500,3000) width 900 wall w_mid hinge left swing out
+  door id=d2 at (4500,3000) width 900 wall w_mid hinge left swing out
+  door id=d3 at (7500,3000) width 900 wall w_mid hinge left swing out
+
+  # Entrance into the corridor from outside.
+  door id=d_main at (4500,4500) width 1000 wall w_south hinge left swing out
+
+  # Daylight for each room on the north wall.
+  window at (1500,0) width 1000 wall w_north
+  window at (4500,0) width 1000 wall w_north
+  window at (7500,0) width 1000 wall w_north
+}

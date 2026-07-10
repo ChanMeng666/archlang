@@ -26,7 +26,7 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.12.1` (latest published); `v1.13.0` unreleased | github.com/ChanMeng666/archlang |
-| **Tests** | 758 passing (89 files, incl. the `packages/mcp` stdio smoke test) + offline authorability eval (18 briefs, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
+| **Tests** | 758 passing (89 files, incl. the `packages/mcp` stdio smoke test) + offline authorability eval (22 briefs, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
 **Latest work — v1.13.0 (unreleased, in this tree; AI-native authoring). Six tranches
 (see `CHANGELOG.md` for detail):**
@@ -205,8 +205,9 @@ for concave door arcs, dimensions drawn into the building, and the title-block o
 ├─ docs/              language-reference.md · analysis.md · error-codes.md · adr/ · WORK-LOG.md
 ├─ brand/             logo kit + brand book (README.md); archlang-logo-master.svg is byte-sacred, variants are fill-swaps only
 ├─ examples/          studio · two-bed · parametric · themed · relational · attached · accessible · lib/ · imports
-├─ eval/              NL→ArchLang authorability harness (corpus.json — 18 briefs, goldens/, run.ts;
-│                     offline golden gate `npm run eval:ci` in CI, no API key)
+├─ eval/              NL→ArchLang authorability harness (corpus.json — 22 briefs, goldens/, run.ts;
+│                     offline golden gate `npm run eval:ci` in CI, no API key; guarded live run
+│                     `npm run eval:live -- --yes` → eval/results.live.md + delta vs live-baseline.json)
 ├─ scripts/           gen-grammars · gen-error-codes · gen-llm-spec · gen-llms-full · gen-gbnf · gen-plan-schema (single-source generators)
 ├─ bench/             ~1000-element timing harness (+ --json mode, CI regression comment)
 └─ test/              vitest: snapshot + fast-check + unit + visual-regression + CLI/describe/lint/eval

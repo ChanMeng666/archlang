@@ -1,0 +1,50 @@
+# A two-bedroom flat that combines every v1.13 placement feature and passes
+# `arch validate --strict` with no warnings:
+#   • the room run across the top is a `strip` (no per-room coordinates)
+#   • every door and window is attached to its wall by position (`on … at …`)
+#   • doors pick their swing with `swing into <room>`
+# Every room opens off the central hall, both bedrooms have a window, and the bath
+# is reached from the hall (never through a bedroom).
+plan "Strip + Attach — 2BR" {
+  units mm
+  grid 50
+  north up
+
+  # Top row: bedroom 1, living, bedroom 2 — laid left-to-right, each 3.5 m deep.
+  strip right at (0,0) gap 0 height 3500 {
+    room id=r_bed1 size 3500 label "Bedroom 1"   uses bedroom
+    room id=r_live size 4000 label "Living Room" uses living
+    room id=r_bed2 size 3500 label "Bedroom 2"   uses bedroom
+  }
+
+  # Hall spanning most of the width below the rooms, with the bath off its east end.
+  room id=r_hall at (0,3500)    size 7500x2000 label "Hall"     uses hall
+  room id=r_bath at (7500,3500) size 3500x2000 label "Bathroom" uses bath
+
+  # Straight exterior shell + partitions (each a clean start→end to attach onto).
+  wall id=w_north exterior  thickness 200 { (0,0) (11000,0) }
+  wall id=w_south exterior  thickness 200 { (0,5500) (11000,5500) }
+  wall id=w_west  exterior  thickness 200 { (0,0) (0,5500) }
+  wall id=w_east  exterior  thickness 200 { (11000,0) (11000,5500) }
+  wall id=w_mid   partition thickness 100 { (0,3500) (11000,3500) }
+  wall partition thickness 100 { (3500,0) (3500,3500) }
+  wall partition thickness 100 { (7500,0) (7500,3500) }
+  wall id=w_bath  partition thickness 100 { (7500,3500) (7500,5500) }
+
+  # Entrance into the hall; every room opens off the hall.
+  door id=d_main on w_south at 5000 width 1000 hinge near start swing into r_hall
+  door id=d_bed1 on w_mid   at 1750 width 800  swing into r_bed1
+  door id=d_live on w_mid   at 5500 width 900  swing into r_live
+  door id=d_bed2 on w_mid   at 9250 width 800  swing into r_bed2
+  door id=d_bath on w_bath  at 250  width 800  swing into r_bath
+
+  # Both bedrooms and the living space face north; windows placed along the run.
+  window on w_north at 1750 width 1200
+  window on w_north at 5500 width 1500
+  window on w_north at 9250 width 1200
+
+  # Bathroom fixtures, backed into the far corners, clear of the door swing.
+  furniture shower in r_bath anchor bottom-right inset 150 size 900x900
+  furniture wc     in r_bath anchor bottom-left  inset 200 size 400x700
+  furniture basin  in r_bath anchor top-right    inset 150 size 600x450
+}
