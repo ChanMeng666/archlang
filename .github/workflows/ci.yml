@@ -52,6 +52,16 @@ jobs:
           npm run gen:llms
           git diff --exit-code llms-full.txt
 
+      - name: GBNF grammar is in sync with the token source
+        run: |
+          npm run gen:gbnf
+          git diff --exit-code grammars/archlang.gbnf
+
+      - name: Plan JSON schema is in sync with its in-code source
+        run: |
+          npm run gen:plan-schema
+          git diff --exit-code schemas/plan.schema.json
+
       - name: Test
         run: npm test
 
