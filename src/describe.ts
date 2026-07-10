@@ -30,6 +30,7 @@ import {
   type BBox,
 } from "./analyze.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
+import { roomTypeForUses, buildInputGraph } from "./plan-json.js";
 import { fmt2 } from "./num-format.js";
 
 export type { CirculationModel, RoomCirculation, CirculationRoute } from "./analyze/circulation.js";
@@ -52,9 +53,13 @@ export interface RoomSummary {
   label?: string;
   /** Declared or inferred function(s) of the room (e.g. `["living","kitchen"]`). */
   uses: string[];
+  /** Canonical RPLAN-style room category derived from {@link uses} (v1.13). */
+  room_type: string;
   /** Floor area in square metres, rounded to 2 decimals. */
   area_m2: number;
   bbox: BBox;
+  /** The room rectangle as a 4-point polygon, clockwise from top-left (v1.13). */
+  floor_polygon: { x: number; y: number }[];
   /** Ids of rooms whose edges touch this one (within the adjacency tolerance). */
   adjacent: string[];
 }
@@ -135,6 +140,13 @@ export interface SceneSummary {
    */
   circulation: CirculationModel | null;
   totals: { rooms: number; doors: number; windows: number; floor_area_m2: number };
+  /**
+   * Interior-door adjacency dict (v1.13): every room id → the ids of rooms it shares
+   * a door / cased opening with (exterior entrances excluded). Keys in room source
+   * order; each neighbour list sorted by room source order. Empty when the plan
+   * failed to resolve. The RPLAN-style `input_graph` an intent check compares against.
+   */
+  input_graph: Record<string, string[]>;
   /** All problems from parse/link/resolve, with byte spans and codes. */
   diagnostics: Diagnostic[];
 }
@@ -223,12 +235,20 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
       if (other.id === r.id) continue;
       if (roomsAdjacent(rect, roomRects.get(other.id)!, tol)) adjacent.push(other.id);
     }
+    const uses = roomUses(r);
     return {
       id: r.id,
       ...(r.label !== undefined ? { label: r.label } : {}),
-      uses: [...roomUses(r)],
+      uses: [...uses],
+      room_type: roomTypeForUses(uses),
       area_m2: r2((r.size.w * r.size.h) / 1_000_000),
       bbox: rect,
+      floor_polygon: [
+        { x: rect.x, y: rect.y },
+        { x: rect.x + rect.w, y: rect.y },
+        { x: rect.x + rect.w, y: rect.y + rect.h },
+        { x: rect.x, y: rect.y + rect.h },
+      ],
       adjacent,
     };
   });
@@ -299,6 +319,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     access,
     circulation,
     totals,
+    input_graph: buildInputGraph(roomEls, doorEls, openingEls, tol),
   };
 }
 
@@ -330,6 +351,7 @@ export function describe(source: string, opts: DescribeOptions = {}): SceneSumma
       access: { entrances: [], hasEntrance: false, edges: [], rooms: [] },
       circulation: null,
       totals: { rooms: 0, doors: 0, windows: 0, floor_area_m2: 0 },
+      input_graph: {},
       diagnostics,
     };
   }

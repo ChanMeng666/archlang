@@ -1,0 +1,593 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://archlang-docs.vercel.app/plan.schema.json",
+  "title": "ArchLang Plan",
+  "description": "A floor plan as structured JSON (RPLAN / DStruct2Design convention). Coordinates are millimetres; the origin is top-left with +x right and +y DOWN. Fields marked output-only are produced by planToJson and ignored on input. Scripting (let/for/if/component) and import are not representable — author those in .arch source.",
+  "type": "object",
+  "required": [
+    "plan",
+    "rooms",
+    "walls",
+    "openings",
+    "furniture"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1,
+      "description": "Schema version. Always 1."
+    },
+    "plan": {
+      "type": "string",
+      "description": "Plan name (shown in the title block)."
+    },
+    "units": {
+      "const": "mm",
+      "description": "Distance unit. Only millimetres are supported."
+    },
+    "grid": {
+      "type": "number",
+      "description": "Snap module in millimetres; 0 or omitted disables snapping."
+    },
+    "scale": {
+      "type": "string",
+      "pattern": "^\\d+:\\d+$",
+      "description": "Drawing scale (annotation only), e.g. \"1:50\"."
+    },
+    "north": {
+      "description": "North orientation: a cardinal keyword or an explicit bearing in degrees.",
+      "oneOf": [
+        {
+          "enum": [
+            "up",
+            "down",
+            "left",
+            "right"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "deg"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "deg": {
+              "type": "number"
+            }
+          }
+        }
+      ]
+    },
+    "room_count": {
+      "type": "integer",
+      "description": "Output-only: number of rooms."
+    },
+    "total_area": {
+      "type": "number",
+      "description": "Output-only: total floor area in square metres."
+    },
+    "room_types": {
+      "type": "array",
+      "description": "Output-only: the distinct room_type values present, in first-appearance order.",
+      "items": {
+        "enum": [
+          "LivingRoom",
+          "MasterRoom",
+          "Kitchen",
+          "Bathroom",
+          "DiningRoom",
+          "ChildRoom",
+          "StudyRoom",
+          "SecondRoom",
+          "GuestRoom",
+          "Balcony",
+          "Entrance",
+          "Storage",
+          "Room"
+        ]
+      }
+    },
+    "rooms": {
+      "type": "array",
+      "description": "Room rectangles.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique room id (referenced by furniture/openings)."
+          },
+          "label": {
+            "type": "string",
+            "description": "Human-readable room label drawn in the room."
+          },
+          "room_type": {
+            "enum": [
+              "LivingRoom",
+              "MasterRoom",
+              "Kitchen",
+              "Bathroom",
+              "DiningRoom",
+              "ChildRoom",
+              "StudyRoom",
+              "SecondRoom",
+              "GuestRoom",
+              "Balcony",
+              "Entrance",
+              "Storage",
+              "Room"
+            ],
+            "description": "Canonical RPLAN-style room category (mapped bidirectionally from `uses`)."
+          },
+          "uses": {
+            "type": "array",
+            "description": "Explicit ArchLang function tags; authoritative over room_type when present.",
+            "items": {
+              "enum": [
+                "living",
+                "kitchen",
+                "dining",
+                "bedroom",
+                "bath",
+                "wc",
+                "hall",
+                "circulation",
+                "storage",
+                "utility",
+                "office",
+                "entry"
+              ]
+            }
+          },
+          "x": {
+            "type": "number",
+            "description": "Top-left corner X in millimetres."
+          },
+          "y": {
+            "type": "number",
+            "description": "Top-left corner Y in millimetres."
+          },
+          "width": {
+            "type": "number",
+            "description": "Room width in millimetres."
+          },
+          "height": {
+            "type": "number",
+            "description": "Room height in millimetres."
+          },
+          "area": {
+            "type": "number",
+            "description": "Output-only: floor area in square metres (2 dp)."
+          },
+          "floor_polygon": {
+            "type": "array",
+            "description": "Output-only: the room rectangle as a 4-point polygon (clockwise from top-left).",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "x",
+                "y"
+              ],
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "description": "X coordinate in millimetres (origin top-left, +x right)."
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Y coordinate in millimetres (+y DOWN, screen convention)."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "walls": {
+      "type": "array",
+      "description": "Wall polylines (poché-filled; host doors/windows/openings).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "points"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique wall id."
+          },
+          "category": {
+            "type": "string",
+            "description": "Free-form category, e.g. \"exterior\" or \"partition\"; also a host reference."
+          },
+          "points": {
+            "type": "array",
+            "minItems": 2,
+            "description": "Polyline vertices in order.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "x",
+                "y"
+              ],
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "description": "X coordinate in millimetres (origin top-left, +x right)."
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Y coordinate in millimetres (+y DOWN, screen convention)."
+                }
+              }
+            }
+          },
+          "thickness": {
+            "type": "number",
+            "description": "Wall thickness in millimetres."
+          },
+          "closed": {
+            "type": "boolean",
+            "description": "Whether the polyline closes back to its first vertex."
+          },
+          "material": {
+            "type": "string",
+            "description": "Hatch material (brick, concrete, …); omitted for the default poché."
+          },
+          "material_scale": {
+            "type": "number",
+            "description": "Hatch tile-size multiplier (after material)."
+          },
+          "material_angle": {
+            "type": "number",
+            "description": "Extra hatch rotation in degrees (after material)."
+          }
+        }
+      }
+    },
+    "openings": {
+      "type": "array",
+      "description": "Doors, windows and leaf-less cased openings — all must lie on a wall.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "width"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "door",
+              "window",
+              "opening"
+            ],
+            "description": "Opening kind."
+          },
+          "id": {
+            "type": "string",
+            "description": "Unique opening id."
+          },
+          "x": {
+            "type": "number",
+            "description": "Center X in millimetres (on the wall centerline)."
+          },
+          "y": {
+            "type": "number",
+            "description": "Center Y in millimetres (on the wall centerline)."
+          },
+          "on": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "wall",
+              "at"
+            ],
+            "description": "Wall-attached placement (alternative to x/y): walk `wall` to position `at`.",
+            "properties": {
+              "wall": {
+                "type": "string",
+                "description": "Host wall id or category to walk."
+              },
+              "at": {
+                "type": "string",
+                "description": "Position along the wall: a percentage (\"40%\"), millimetres (\"1200\"), or \"center\"."
+              }
+            }
+          },
+          "width": {
+            "type": "number",
+            "description": "Opening width in millimetres."
+          },
+          "wall": {
+            "type": "string",
+            "description": "Host wall by id or category (else nearest)."
+          },
+          "hinge": {
+            "enum": [
+              "left",
+              "right"
+            ],
+            "description": "Door hinge side relative to the wall direction."
+          },
+          "swing": {
+            "enum": [
+              "in",
+              "out"
+            ],
+            "description": "Door swing direction."
+          }
+        }
+      }
+    },
+    "furniture": {
+      "type": "array",
+      "description": "Furniture and plumbing/kitchen fixtures.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category"
+        ],
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Furniture category, e.g. bed, sofa, wc, basin, stove."
+          },
+          "id": {
+            "type": "string",
+            "description": "Unique furniture id."
+          },
+          "room": {
+            "type": "string",
+            "description": "Owning room id (`in <room>`)."
+          },
+          "x": {
+            "type": "number",
+            "description": "Top-left corner X in millimetres (absolute placement)."
+          },
+          "y": {
+            "type": "number",
+            "description": "Top-left corner Y in millimetres (absolute placement)."
+          },
+          "width": {
+            "type": "number",
+            "description": "Width in millimetres."
+          },
+          "height": {
+            "type": "number",
+            "description": "Height in millimetres."
+          },
+          "rotate": {
+            "enum": [
+              0,
+              90,
+              180,
+              270
+            ],
+            "description": "Quarter-turn rotation of the drawn symbol."
+          },
+          "centered": {
+            "type": "boolean",
+            "description": "Room-relative placement: centre inside `room`."
+          },
+          "anchor": {
+            "enum": [
+              "top-left",
+              "top",
+              "top-right",
+              "left",
+              "center",
+              "right",
+              "bottom-left",
+              "bottom",
+              "bottom-right"
+            ],
+            "description": "Room-relative placement: anchor to a corner/edge of `room`."
+          },
+          "inset": {
+            "type": "number",
+            "description": "Inset (mm) from the anchored edge."
+          },
+          "against_wall": {
+            "type": "string",
+            "description": "Wall-anchored placement: back onto this wall id/category."
+          },
+          "segment": {
+            "type": "number",
+            "description": "Which segment of a multi-segment wall (for against_wall)."
+          },
+          "offset": {
+            "type": "number",
+            "description": "Distance (mm) along the segment (for against_wall)."
+          },
+          "side": {
+            "enum": [
+              "left",
+              "right"
+            ],
+            "description": "Which wall face to back onto (for against_wall)."
+          },
+          "label": {
+            "type": "string",
+            "description": "Label for the generic rectangle fallback."
+          }
+        }
+      }
+    },
+    "dims": {
+      "type": "array",
+      "description": "Dimension lines.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to"
+        ],
+        "properties": {
+          "from": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "x",
+              "y"
+            ],
+            "properties": {
+              "x": {
+                "type": "number",
+                "description": "X coordinate in millimetres (origin top-left, +x right)."
+              },
+              "y": {
+                "type": "number",
+                "description": "Y coordinate in millimetres (+y DOWN, screen convention)."
+              }
+            },
+            "description": "Start point."
+          },
+          "to": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "x",
+              "y"
+            ],
+            "properties": {
+              "x": {
+                "type": "number",
+                "description": "X coordinate in millimetres (origin top-left, +x right)."
+              },
+              "y": {
+                "type": "number",
+                "description": "Y coordinate in millimetres (+y DOWN, screen convention)."
+              }
+            },
+            "description": "End point."
+          },
+          "offset": {
+            "type": "number",
+            "description": "Perpendicular offset of the dimension line in millimetres."
+          },
+          "text": {
+            "type": "string",
+            "description": "Override text; defaults to the measured length."
+          }
+        }
+      }
+    },
+    "columns": {
+      "type": "array",
+      "description": "Structural columns.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique column id."
+          },
+          "x": {
+            "type": "number",
+            "description": "Top-left corner X in millimetres."
+          },
+          "y": {
+            "type": "number",
+            "description": "Top-left corner Y in millimetres."
+          },
+          "width": {
+            "type": "number",
+            "description": "Width in millimetres."
+          },
+          "height": {
+            "type": "number",
+            "description": "Height in millimetres."
+          }
+        }
+      }
+    },
+    "title": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Title-block metadata.",
+      "properties": {
+        "project": {
+          "type": "string",
+          "description": "Project name."
+        },
+        "drawn_by": {
+          "type": "string",
+          "description": "Author / drafter."
+        },
+        "date": {
+          "type": "string",
+          "description": "Date string."
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "description": "Output-only: connector edges from the modeled door/opening access graph.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to",
+          "via",
+          "type"
+        ],
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "One endpoint (room id or `exterior`)."
+          },
+          "to": {
+            "type": "string",
+            "description": "Other endpoint (room id or `exterior`)."
+          },
+          "via": {
+            "enum": [
+              "door",
+              "opening"
+            ],
+            "description": "Whether the connector is a door or a cased opening."
+          },
+          "type": {
+            "enum": [
+              "interior",
+              "front"
+            ],
+            "description": "`front` connects the exterior (an entrance); else `interior`."
+          }
+        }
+      }
+    },
+    "input_graph": {
+      "type": "object",
+      "description": "Output-only: interior-door adjacency dict, keyed by room id → neighbouring room ids.",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
