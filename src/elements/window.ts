@@ -6,6 +6,7 @@ import type { SceneNode } from "../scene.js";
 import type { RWindow } from "../ir.js";
 import { add, mul, nearestWallNote, normal, sub, unit } from "../geometry.js";
 import { parseAttachTarget, resolveAttachment } from "../attach.js";
+import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
 
 export const windowEl: ElementDef = {
   kind: "window",
@@ -51,6 +52,7 @@ export const windowEl: ElementDef = {
         message: `Window "${id}" must have a positive width`,
         code: "E_WINDOW_WIDTH",
         span: n.span,
+        ...fixesFrom(openingWidthFix("window", n)),
       });
     }
     if (n.attach) {
@@ -67,6 +69,7 @@ export const windowEl: ElementDef = {
         code: "W_WINDOW_OFF_WALL",
         span: n.span,
         relatedSpans: note ? [note] : undefined,
+        ...fixesFrom(offWallFix("window", n, at, ctx.walls)),
       });
     }
     return { kind: "window", id, at, width, host: ctx.hostSegment(at, n.wall), span: n.span };

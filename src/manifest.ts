@@ -239,6 +239,27 @@ const COMMANDS: ManifestCommand[] = [
     output: "corrected source + change log on stderr",
   },
   {
+    name: "fix",
+    summary: "apply the machine-applicable fix suggestions on a plan's diagnostics (bounded fixpoint)",
+    flags: [
+      OUT_FLAG,
+      { flag: "--unsafe", description: "also apply `maybe-incorrect` fixes (default: machine-applicable only)" },
+      { flag: "--dry-run", description: "compute the result but do not write it" },
+      { flag: "--force", description: "keep a pass even if it raises the error count" },
+      JSON_FLAG,
+      QUIET_FLAG,
+    ],
+    input: "<file.arch|->",
+    output: "fixed source (to the input file or -o) + change log on stderr",
+  },
+  {
+    name: "suggest",
+    summary: "advisory topology suggestions as data (door/window statements that resolve reachability/window faults)",
+    flags: [JSON_FLAG, QUIET_FLAG],
+    input: "<file.arch|->",
+    output: "suggestions (JSON or a summary)",
+  },
+  {
     name: "manifest",
     aliases: ["capabilities"],
     summary: "this document: the whole CLI API as structured data",

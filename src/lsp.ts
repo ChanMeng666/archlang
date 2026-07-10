@@ -20,6 +20,8 @@ import { BUILTIN_REGISTRY } from "./registry.js";
 import { lex, type Token } from "./lexer.js";
 import { parse } from "./parser.js";
 import { eachExpr, eachStatement } from "./cursor.js";
+import { resolvePlan } from "./analyze.js";
+import { diagnosticToJson, type DiagnosticJson } from "./diagnostic-json.js";
 
 // ---- keyword catalog (one place; T5.4 will source this from grammar/tokens) ----
 
@@ -339,6 +341,65 @@ export function rename(
     edits.push({ span: s, newText: newName });
   }
   return edits;
+}
+
+// ---- code actions (quickfix) ----
+
+/**
+ * An editor quickfix derived from a {@link import("./diagnostics.js").FixSuggestion}:
+ * a titled bundle of {@link TextEdit}s the editor applies as one. Structurally what
+ * an LSP `CodeAction` of kind `quickfix` needs (the VS Code server maps it to a
+ * `WorkspaceEdit`); `diagnostic` is the JSON projection of the diagnostic it
+ * resolves, so the adapter can echo it back on the action.
+ */
+export interface CodeAction {
+  title: string;
+  kind: "quickfix";
+  /** The diagnostic this action resolves (agent-facing JSON projection). */
+  diagnostic: DiagnosticJson;
+  edits: TextEdit[];
+  /** True only when this is the single machine-applicable fix on offer — the
+   *  editor may then apply it with one keystroke. */
+  isPreferred: boolean;
+}
+
+/** Do a diagnostic span and a request range touch (share ≥1 byte, or a shared endpoint)? */
+const spansTouch = (a: Span, b: Span): boolean => a.start <= b.end && a.end >= b.start;
+
+/**
+ * Quickfix code actions for the diagnostics overlapping `range` — one action per
+ * {@link import("./diagnostics.js").FixSuggestion} on those diagnostics. Pure: it
+ * re-resolves the source (the fixes are attached during resolve) and projects each
+ * suggestion's edits (already in original-source byte coordinates) to
+ * {@link TextEdit}s. `isPreferred` is set only when exactly one machine-applicable
+ * action is produced, so the editor never auto-elevates an ambiguous choice.
+ */
+export function codeActions(source: string, range: Span): CodeAction[] {
+  const { diagnostics } = resolvePlan(source);
+  // Build each action, remembering its applicability so a lone machine-applicable
+  // one can be marked preferred afterward.
+  const built: Array<{ action: CodeAction; machine: boolean }> = [];
+  for (const d of diagnostics) {
+    if (!d.span || !d.fixes?.length || !spansTouch(d.span, range)) continue;
+    const dj = diagnosticToJson(source, d);
+    for (const fix of d.fixes) {
+      built.push({
+        machine: fix.applicability === "machine-applicable",
+        action: {
+          title: fix.title,
+          kind: "quickfix",
+          diagnostic: dj,
+          edits: fix.edits.map((e) => ({ span: e.span, newText: e.newText })),
+          isPreferred: false,
+        },
+      });
+    }
+  }
+  // A lone machine-applicable fix is the preferred action; otherwise none is, so
+  // the editor never elevates an ambiguous/placeholder choice to a one-key apply.
+  const machine = built.filter((b) => b.machine);
+  if (machine.length === 1) machine[0]!.action.isPreferred = true;
+  return built.map((b) => b.action);
 }
 
 /** Signature help for an enclosing `callee(…)` at `offset`, or null. */

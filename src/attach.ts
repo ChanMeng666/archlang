@@ -11,10 +11,29 @@
  */
 
 import type { ExprPoint, OpeningAttach, Point } from "./ast.js";
-import type { Diagnostic } from "./diagnostics.js";
+import type { Diagnostic, FixSuggestion } from "./diagnostics.js";
 import type { ParseCtx } from "./registry.js";
 import type { WallLike, WallSegment } from "./geometry.js";
 import { add, length, mul, segmentsOfWall, sub, unit } from "./geometry.js";
+import { fmt3 as numStr } from "./num-format.js";
+
+/**
+ * The fix for `E_ATTACH_POS_RANGE`: clamp the out-of-range attach position to the
+ * nearer valid endpoint and rewrite the `on <wall> at <pos>` clause over its own
+ * span. Machine-applicable — the clamped position is always on the wall, so the
+ * applied edit compiles to a hosted opening (golden-tested).
+ */
+function attachClampFix(attach: OpeningAttach, valueText: string): FixSuggestion[] | undefined {
+  if (!attach.span) return undefined;
+  return [
+    {
+      title: `clamp the attachment position to ${valueText}`,
+      applicability: "machine-applicable",
+      fixId: "attach-pos-range",
+      edits: [{ span: attach.span, newText: `on ${attach.wall} at ${valueText}` }],
+    },
+  ];
+}
 
 /** Parse the attachment position after `at`: `40%` | `1200` (mm) | `center`. */
 function parseAttachPos(ctx: ParseCtx): { pos: OpeningAttach["pos"]; end: number } {
@@ -96,11 +115,14 @@ export function resolveAttachment(
   } else if (p.kind === "percent") {
     const pct = p.value ?? 0;
     if (pct < 0 || pct > 100) {
+      const clamped = Math.min(Math.max(pct, 0), 100);
+      const fixes = attachClampFix(attach, `${numStr(clamped)}%`);
       diag({
         severity: "error",
         message: `${what} attachment position ${pct}% is outside 0–100%`,
         code: "E_ATTACH_POS_RANGE",
         span: attach.span,
+        ...(fixes ? { fixes } : {}),
       });
       return null;
     }
@@ -108,11 +130,14 @@ export function resolveAttachment(
   } else {
     const mm = p.value ?? 0;
     if (mm < 0 || mm > total) {
+      const clamped = Math.min(Math.max(mm, 0), total);
+      const fixes = attachClampFix(attach, numStr(clamped));
       diag({
         severity: "error",
         message: `${what} attachment position ${mm} mm is outside the wall run (0…${total})`,
         code: "E_ATTACH_POS_RANGE",
         span: attach.span,
+        ...(fixes ? { fixes } : {}),
       });
       return null;
     }

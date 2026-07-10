@@ -34,6 +34,8 @@ import {
   explain,
   format,
   repair,
+  applyFixes,
+  suggestTopology,
   formatDiagnostic,
   diagnosticToJson,
   ERROR_CATALOG,
@@ -49,7 +51,7 @@ import {
   rewriteMarkdown,
   EXPORT_FORMATS,
 } from "./index.js";
-import type { Diagnostic, World, Scene, ExportFormat } from "./index.js";
+import type { Diagnostic, World, Scene, ExportFormat, FixSuggestion } from "./index.js";
 // Internal (not part of the public surface): parse → link → resolve without
 // rendering — validate/lint need only the diagnostics, never the SVG.
 import { resolvePlan } from "./analyze.js";
@@ -95,6 +97,10 @@ interface Args {
   cols?: number;
   /** `--charset unicode|ascii`: glyph set for the text renderer (default unicode). */
   charset?: string;
+  /** `--unsafe`: (fix) widen the applied-fix gate to also apply `maybe-incorrect` fixes. */
+  unsafe?: boolean;
+  /** `--dry-run`: (fix) compute the result but never write it. */
+  dryRun?: boolean;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -110,6 +116,8 @@ function parseArgs(argv: string[]): Args {
     else if (a === "--charset") res.charset = argv[++i];
     else if (a === "--ascii") res.ascii = true;
     else if (a === "--install") res.install = true;
+    else if (a === "--unsafe") res.unsafe = true;
+    else if (a === "--dry-run") res.dryRun = true;
     else if (a === "--write") res.write = true;
     else if (a === "--json") res.json = true;
     else if (a === "--quiet" || a === "-q") res.quiet = true;
@@ -985,6 +993,138 @@ function cmdRepair(args: Args): number {
   });
 }
 
+/**
+ * `arch fix` — apply the machine-applicable fix suggestions a compile attaches to
+ * its diagnostics (the *syntactic* corrector: off-wall openings → the attachment
+ * form, out-of-range attach positions clamped, …). A bounded fixpoint: each pass
+ * compiles, collects `diagnostics[].fixes`, applies them (default only
+ * `machine-applicable`; `--unsafe` also applies `maybe-incorrect`), then recompiles;
+ * a pass that *increases* the error count is rolled back and the loop stops (unless
+ * `--force`). Stops on zero progress or after 4 passes. Writes the result to the
+ * input file (or `-o`); `--dry-run` never writes. Report style mirrors `arch repair`.
+ */
+async function cmdFix(args: Args): Promise<number> {
+  const input = args._[0];
+  if (!input) return usageError("fix needs an input file (use a path or `-` for stdin)");
+  let source: string;
+  try {
+    source = readInput(input);
+  } catch {
+    return ioError(`cannot read ${input}`, args.json);
+  }
+
+  const world = makeNodeWorld(baseDirOf(input));
+  const maxApplicability = args.unsafe ? ("maybe-incorrect" as const) : ("machine-applicable" as const);
+  const MAX_PASSES = 4;
+
+  const errorsOf = (src: string): Diagnostic[] =>
+    compile(src, { noCache: true, world }).diagnostics.filter((d) => d.severity === "error");
+
+  const applied: Array<{ code?: string; title: string; applicability: string }> = [];
+  const skipped: Array<{ code?: string; reason: string }> = [];
+  const changeLog: string[] = [];
+  let current = source;
+  let passes = 0;
+  let stopReason: string | undefined;
+
+  for (let pass = 0; pass < MAX_PASSES; pass++) {
+    const { diagnostics } = compile(current, { noCache: true, world });
+    const fixes: FixSuggestion[] = [];
+    const codeOf = new Map<FixSuggestion, string | undefined>();
+    for (const d of diagnostics) {
+      for (const f of d.fixes ?? []) {
+        fixes.push(f);
+        codeOf.set(f, d.code);
+      }
+    }
+    if (fixes.length === 0) break;
+
+    const report = applyFixes(current, fixes, { maxApplicability });
+    if (report.applied.length === 0) break; // zero progress (all skipped/placeholders)
+
+    const errBefore = diagnostics.filter((d) => d.severity === "error").length;
+    const errAfter = errorsOf(report.output).length;
+    if (errAfter > errBefore && !args.force) {
+      stopReason = `pass ${pass + 1} would raise the error count ${errBefore} → ${errAfter}; rolled back (use --force to keep it)`;
+      break;
+    }
+
+    current = report.output;
+    passes++;
+    for (const f of report.applied) {
+      applied.push({ code: codeOf.get(f), title: f.title, applicability: f.applicability });
+      changeLog.push(`applied ${codeOf.get(f) ? `[${codeOf.get(f)}] ` : ""}${f.title}`);
+    }
+    for (const s of report.skipped) skipped.push({ code: codeOf.get(s.suggestion), reason: s.reason });
+  }
+
+  // Residue: distinct codes of remaining problems the loop could not clear (errors,
+  // or diagnostics that still carry a fix it declined to auto-apply).
+  const finalDiags = compile(current, { noCache: true, world }).diagnostics;
+  const unresolved = [
+    ...new Set(
+      finalDiags.filter((d) => d.severity === "error" || d.fixes?.length).flatMap((d) => (d.code ? [d.code] : [])),
+    ),
+  ];
+  const ok = finalDiags.every((d) => d.severity !== "error");
+
+  // Write the result (default: back to the input; `-o` redirects; `--dry-run` never
+  // writes). Stdin input with no `-o` streams to stdout.
+  const target = args.o ?? (input === "-" ? "-" : input);
+  const wrote = current !== source && !args.dryRun;
+  if (wrote && target !== "-") {
+    try {
+      writeFileSync(resolvePath(target), current, "utf8");
+    } catch (e) {
+      return ioError((e as Error).message, args.json);
+    }
+  }
+
+  if (args.json) {
+    emitJson({ ok, passes, applied, skipped, unresolved });
+  } else {
+    if (target === "-" && !args.dryRun) process.stdout.write(current);
+    if (!args.quiet) {
+      for (const c of changeLog) process.stderr.write(`  ${c}\n`);
+      for (const s of skipped) process.stderr.write(`  skipped${s.code ? ` [${s.code}]` : ""}: ${s.reason}\n`);
+      if (stopReason) process.stderr.write(`  ⚠ ${stopReason}\n`);
+      if (applied.length === 0) process.stderr.write("  (no fixes applied)\n");
+      else if (wrote && target !== "-")
+        process.stderr.write(
+          `✓ ${input} → ${target} (${applied.length} fix${applied.length === 1 ? "" : "es"}, ${passes} pass${passes === 1 ? "" : "es"})\n`,
+        );
+      if (unresolved.length) process.stderr.write(`  unresolved: ${unresolved.join(", ")}\n`);
+    }
+  }
+  return ok ? EXIT.OK : EXIT.USER;
+}
+
+/**
+ * `arch suggest` — advisory topology suggestions as data (never applied; ADR 0005).
+ * For a room with no path to the entrance or a bedroom with no window, prints
+ * ready-to-paste `door`/`window` statements (attachment form) plus a rationale.
+ */
+function cmdSuggest(args: Args): number {
+  return withSource(args, (source, input) => {
+    const suggestions = suggestTopology(source, { world: makeNodeWorld(baseDirOf(input)) });
+    if (args.json) {
+      emitJson({ ok: true, suggestions });
+      return EXIT.OK;
+    }
+    if (suggestions.length === 0) {
+      if (!args.quiet) process.stdout.write("no topology suggestions\n");
+      return EXIT.OK;
+    }
+    const lines: string[] = [];
+    for (const s of suggestions) {
+      lines.push(`${s.code}: ${s.problem}`);
+      for (const c of s.candidates) lines.push(`  ${c.insertText}\n    → ${c.rationale}`);
+    }
+    process.stdout.write(lines.join("\n") + "\n");
+    return EXIT.OK;
+  });
+}
+
 /** A minimal but complete starter plan for `arch new`. */
 const STARTER = `plan "New Plan" {
   units mm
@@ -1094,6 +1234,8 @@ Usage:
   arch lint     <in.arch|-> [--profile residential-basic|accessibility-advisory] [--strict] [--json]   architectural soundness warnings
   arch fmt      <in.arch|-> [--write] [--json]
   arch repair   <in.arch|-> [-o out|-] [--json]   emit corrected source (furniture out of walls) + change log
+  arch fix      <in.arch|-> [-o out|-] [--unsafe] [--dry-run] [--force] [--json]   apply machine-applicable diagnostic fixes
+  arch suggest  <in.arch|-> [--json]      advisory topology suggestions (door/window statements to paste)
   arch manifest [--json]                  the whole CLI API as structured data (for agents)
   arch spec     [--json]                  print the one-prompt language spec
   arch context  [--json]                  print the full bundled agent context (spec + workflow + CLI + errors)
@@ -1147,6 +1289,10 @@ async function main(): Promise<void> {
       return process.exit(cmdFmt(args));
     case "repair":
       return process.exit(cmdRepair(args));
+    case "fix":
+      return process.exit(await cmdFix(args));
+    case "suggest":
+      return process.exit(cmdSuggest(args));
     case "spec":
       return process.exit(cmdSpec(args));
     case "context":

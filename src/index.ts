@@ -65,6 +65,42 @@ export type {
   RoomCirculation,
   CirculationRoute,
 } from "./describe.js";
+// Structured JSON I/O (v1.13): the machine-native RPLAN/DStruct2Design plan shape.
+// `planFromJson` builds a PlanNode from JSON (catalogued E_JSON_* on bad shape),
+// `planToJson` projects a resolved plan OUT with enrichments (area/floor_polygon/
+// input_graph/edges), `astToJson` is a span-bearing AST projection, and `checkGraph`
+// compares an intended adjacency dict to a plan's interior-door connectivity. Pure,
+// deterministic, zero-dep. PLAN_JSON_SCHEMA is the JSON Schema (2020-12) source.
+export {
+  planFromJson,
+  planToJson,
+  planJsonToArch,
+  resolvedToJson,
+  astToJson,
+  checkGraph,
+  buildInputGraph,
+  PLAN_JSON_SCHEMA,
+  ROOM_TYPES,
+  USE_TO_ROOM_TYPE,
+  ROOM_TYPE_TO_USE,
+  roomTypeForUses,
+  usesForRoomType,
+} from "./plan-json.js";
+export type {
+  PlanJson,
+  RoomJson,
+  WallJson,
+  OpeningJson,
+  OpeningOnJson,
+  FurnitureJson,
+  DimJson,
+  ColumnJson,
+  TitleJson,
+  PointJson,
+  EdgeJson,
+  RoomType,
+  GraphCheck,
+} from "./plan-json.js";
 // Semantic diff (v1.11): pure two-source→delta on top of `describe()`. `diffPlans`
 // returns which rooms/openings/furniture were added/removed/resized/relabeled, per-room
 // bbox edge deltas, circulation deltas, and frozen human-readable summary sentences —
@@ -90,8 +126,13 @@ export type { ArchBlock } from "./markdown.js";
 // Language services (v0.11): pure LSP core (hover/completion/definition/rename/
 // signature help) over the CST cursor + registry schemas. The VS Code server is
 // a thin adapter; these are isomorphic and unit-testable.
-export { hover, completion, definition, rename, signatureHelp, COMPLETION_KINDS } from "./lsp.js";
-export type { HoverResult, CompletionItem, CompletionKind, TextEdit, SignatureResult } from "./lsp.js";
+export { hover, completion, definition, rename, signatureHelp, codeActions, COMPLETION_KINDS } from "./lsp.js";
+export type { HoverResult, CompletionItem, CompletionKind, TextEdit, SignatureResult, CodeAction } from "./lsp.js";
+// Topology suggestions (v1.13): advisory, never-applied `.arch` statements that
+// would resolve a room-unreachable / bedroom-no-window fault (`arch suggest`).
+// Data only (ADR 0005) — pure, deterministic, zero-dep.
+export { suggestTopology } from "./suggest.js";
+export type { Suggestion, SuggestionCandidate, SuggestOptions } from "./suggest.js";
 // Error catalog (v0.11): every E_*/W_* code with cause/fix/example. Backs
 // `arch explain <CODE>` and the generated docs/error-codes.md.
 export { explain, ERROR_CATALOG, ERROR_CODES } from "./error-catalog.js";

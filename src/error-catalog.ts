@@ -220,6 +220,20 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Clamp or check the index against `len(arr)`.",
     "let a = [1, 2]\nlet x = a[5]   # error",
   ),
+  E_JSON_SCHEMA: E(
+    "E_JSON_SCHEMA",
+    "Plan JSON does not match the schema.",
+    "A value passed to `planFromJson` has the wrong shape or type for its JSON path (e.g. a room missing a numeric `width`, a non-array `rooms`), or it uses a construct the JSON form cannot represent — scripting (`let`/`for`/`if`/`component`) and `import` are intentionally not supported.",
+    "Fix the value at the reported JSON path (the message names it, e.g. `/rooms/0/width`); express geometry as concrete numbers, and author scripting/imports in `.arch` source instead.",
+    '{ "rooms": [ { "x": 0, "y": 0, "width": "big", "height": 3000 } ] }   # error at /rooms/0/width: expected a number',
+  ),
+  E_JSON_KIND: E(
+    "E_JSON_KIND",
+    "Unknown element kind in plan JSON.",
+    "An element in the JSON names a `kind` (or lives in an array) the builder does not recognize — e.g. an opening whose `kind` is not `door`, `window`, or `opening`.",
+    "Use one of the supported kinds: opening `kind` must be `door` | `window` | `opening`.",
+    '{ "openings": [ { "kind": "portal", "width": 900 } ] }   # error at /openings/0/kind: unknown kind "portal"',
+  ),
   E_LAYOUT_CYCLE: E(
     "E_LAYOUT_CYCLE",
     "Relational room placement forms a cycle.",

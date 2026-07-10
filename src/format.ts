@@ -44,82 +44,9 @@ export function format(source: string): string {
 
 /** Deterministic number → string (trim to 3 dp, non-finite → "0"). */
 import { fmt3 as numStr } from "./num-format.js";
-
-const BIN_PREC: Record<string, number> = {
-  "||": 1,
-  "&&": 2,
-  "==": 3,
-  "!=": 3,
-  "<": 4,
-  ">": 4,
-  "<=": 4,
-  ">=": 4,
-  "+": 6,
-  "-": 6,
-  "*": 7,
-  "/": 7,
-  "%": 7,
-};
-const RANGE_PREC = 5;
-
-/** Binding strength of an expression (atoms/calls bind tightest). */
-function precOf(e: Expr): number {
-  if (e.t === "bin") return BIN_PREC[e.op]!;
-  if (e.t === "range") return RANGE_PREC;
-  return 99;
-}
-
-/** Render a child, wrapping in parens when its precedence is below `min`. */
-function child(e: Expr, min: number): string {
-  const s = exprStr(e);
-  return precOf(e) < min ? `(${s})` : s;
-}
-
-/** Escape a literal string segment back to ArchLang source form. */
-function escapeStr(s: string): string {
-  return s
-    .replace(/\\/g, "\\\\")
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, "\\n")
-    .replace(/\{/g, "\\{")
-    .replace(/\}/g, "\\}");
-}
-
-/** A string template `"…{expr}…"` rebuilt from its parts. */
-function strStr(parts: (string | Expr)[]): string {
-  let out = '"';
-  for (const p of parts) out += typeof p === "string" ? escapeStr(p) : `{${exprStr(p)}}`;
-  return out + '"';
-}
-
-function exprStr(e: Expr): string {
-  switch (e.t) {
-    case "num":
-      return numStr(e.value);
-    case "bool":
-      return e.value ? "true" : "false";
-    case "ref":
-      return e.name;
-    case "str":
-      return strStr(e.parts);
-    case "arr":
-      return `[${e.items.map(exprStr).join(", ")}]`;
-    case "unary":
-      return `${e.op}${child(e.e, 99)}`;
-    case "bin":
-      return `${child(e.l, BIN_PREC[e.op]!)} ${e.op} ${child(e.r, BIN_PREC[e.op]! + 1)}`;
-    case "range":
-      return `${child(e.lo, RANGE_PREC)}..${child(e.hi, RANGE_PREC + 1)}`;
-    case "index":
-      return `${child(e.base, 99)}[${exprStr(e.idx)}]`;
-    case "call":
-      return `${e.callee}(${e.args.map(exprStr).join(", ")})`;
-    case "fnlit":
-      return `(${e.params.join(", ")}) = ${exprStr(e.body)}`;
-    case "if":
-      return `if ${exprStr(e.cond)} { ${exprStr(e.then)} } else { ${exprStr(e.else)} }`;
-  }
-}
+// Expression re-emission lives in one place (shared with the fix producers) so
+// the formatter and `arch fix` render an expression byte-identically.
+import { exprToSource as exprStr } from "./expr-source.js";
 
 const ptStr = (p: ExprPoint): string => `(${exprStr(p.x)}, ${exprStr(p.y)})`;
 

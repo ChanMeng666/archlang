@@ -9,6 +9,7 @@ import type { Value } from "../expr.js";
 import type { WallSegment } from "../geometry.js";
 import { add, doorSwing, mul, nearestWallNote, normal, sub, unit } from "../geometry.js";
 import { parseAttachTarget, resolveAttachment } from "../attach.js";
+import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
 
 /** Read an enum override from the active `set` defaults, if valid. */
 function enumDefault<T extends string>(
@@ -136,6 +137,7 @@ export const door: ElementDef = {
         message: `Door "${id}" must have a positive width`,
         code: "E_DOOR_WIDTH",
         span: n.span,
+        ...fixesFrom(openingWidthFix("door", n)),
       });
     }
     // Position + host: either walk the attached wall, or the classic point + nearest
@@ -157,6 +159,7 @@ export const door: ElementDef = {
           code: "W_DOOR_OFF_WALL",
           span: n.span,
           relatedSpans: note ? [note] : undefined,
+          ...fixesFrom(offWallFix("door", n, at, ctx.walls)),
         });
       }
     }

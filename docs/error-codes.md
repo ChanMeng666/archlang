@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**41 errors** · **31 warnings**
+**43 errors** · **31 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -32,6 +32,8 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_IMPORT_NOT_FOUND`](#e_import_not_found) | error | Import path could not be resolved. |
 | [`E_IMPORT_PARSE`](#e_import_parse) | error | Imported module has a parse error. |
 | [`E_INDEX`](#e_index) | error | Array index out of range. |
+| [`E_JSON_KIND`](#e_json_kind) | error | Unknown element kind in plan JSON. |
+| [`E_JSON_SCHEMA`](#e_json_schema) | error | Plan JSON does not match the schema. |
 | [`E_LAYOUT_CYCLE`](#e_layout_cycle) | error | Relational room placement forms a cycle. |
 | [`E_LAYOUT_REF`](#e_layout_ref) | error | Relational placement references an unknown room. |
 | [`E_OPENING_WIDTH`](#e_opening_width) | error | Opening must have a positive width. |
@@ -359,6 +361,30 @@ import "lib/missing.arch": a   # error
 ```arch
 let a = [1, 2]
 let x = a[5]   # error
+```
+
+## E_JSON_KIND
+
+*error* — Unknown element kind in plan JSON.
+
+**Cause.** An element in the JSON names a `kind` (or lives in an array) the builder does not recognize — e.g. an opening whose `kind` is not `door`, `window`, or `opening`.
+
+**Fix.** Use one of the supported kinds: opening `kind` must be `door` | `window` | `opening`.
+
+```arch
+{ "openings": [ { "kind": "portal", "width": 900 } ] }   # error at /openings/0/kind: unknown kind "portal"
+```
+
+## E_JSON_SCHEMA
+
+*error* — Plan JSON does not match the schema.
+
+**Cause.** A value passed to `planFromJson` has the wrong shape or type for its JSON path (e.g. a room missing a numeric `width`, a non-array `rooms`), or it uses a construct the JSON form cannot represent — scripting (`let`/`for`/`if`/`component`) and `import` are intentionally not supported.
+
+**Fix.** Fix the value at the reported JSON path (the message names it, e.g. `/rooms/0/width`); express geometry as concrete numbers, and author scripting/imports in `.arch` source instead.
+
+```arch
+{ "rooms": [ { "x": 0, "y": 0, "width": "big", "height": 3000 } ] }   # error at /rooms/0/width: expected a number
 ```
 
 ## E_LAYOUT_CYCLE

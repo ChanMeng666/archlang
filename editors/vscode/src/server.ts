@@ -12,6 +12,7 @@ import {
   ProposedFeatures,
   TextDocumentSyncKind,
   CompletionItemKind,
+  CodeActionKind,
   MarkupKind,
   type InitializeResult,
   type Diagnostic,
@@ -20,6 +21,7 @@ import {
   type Definition,
   type WorkspaceEdit,
   type SignatureHelp,
+  type CodeAction,
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { lspDiagnostics, positionToOffset, spanToRange, type CompileFn } from "./diagnostics.js";
@@ -35,6 +37,21 @@ interface Span {
   start: number;
   end: number;
 }
+/** The agent-facing JSON projection of a diagnostic (subset the adapter reads). */
+interface CoreDiagnosticJson {
+  code?: string;
+  severity: "error" | "warning";
+  message: string;
+  span?: [number, number];
+}
+/** A core quickfix code action (see the core `codeActions`). */
+interface CoreCodeAction {
+  title: string;
+  kind: "quickfix";
+  diagnostic: CoreDiagnosticJson;
+  edits: { span: Span; newText: string }[];
+  isPreferred: boolean;
+}
 interface CoreLsp {
   compile: CompileFn;
   hover(src: string, off: number): { contents: string; span?: Span } | null;
@@ -42,6 +59,7 @@ interface CoreLsp {
   definition(src: string, off: number): Span | null;
   rename(src: string, off: number, newName: string): { span: Span; newText: string }[] | null;
   signatureHelp(src: string, off: number): { label: string; params: string[]; activeParameter: number } | null;
+  codeActions(src: string, range: Span): CoreCodeAction[];
 }
 
 let core: CoreLsp | null = null;
@@ -62,6 +80,7 @@ connection.onInitialize(
       renameProvider: true,
       completionProvider: { resolveProvider: false, triggerCharacters: [" "] },
       signatureHelpProvider: { triggerCharacters: ["(", ","] },
+      codeActionProvider: { codeActionKinds: [CodeActionKind.QuickFix] },
     },
   }),
 );
@@ -133,6 +152,40 @@ connection.onRenameRequest(async (params): Promise<WorkspaceEdit | null> => {
       [params.textDocument.uri]: edits.map((e) => ({ range: spanToRange(text, e.span), newText: e.newText })),
     },
   };
+});
+
+connection.onCodeAction(async (params): Promise<CodeAction[]> => {
+  const doc = documents.get(params.textDocument.uri);
+  if (!doc) return [];
+  const { codeActions } = await getCore();
+  const text = doc.getText();
+  // The request range → byte span (UTF-16 offset conversion shared with rename).
+  const range: Span = {
+    start: positionToOffset(text, params.range.start),
+    end: positionToOffset(text, params.range.end),
+  };
+  const uri = params.textDocument.uri;
+  return codeActions(text, range).map((a): CodeAction => {
+    const edit: WorkspaceEdit = {
+      changes: { [uri]: a.edits.map((e) => ({ range: spanToRange(text, e.span), newText: e.newText })) },
+    };
+    return {
+      title: a.title,
+      kind: CodeActionKind.QuickFix,
+      isPreferred: a.isPreferred,
+      diagnostics: a.diagnostic.span
+        ? [
+            {
+              range: spanToRange(text, { start: a.diagnostic.span[0], end: a.diagnostic.span[1] }),
+              message: a.diagnostic.message,
+              code: a.diagnostic.code,
+              severity: a.diagnostic.severity === "error" ? 1 : 2,
+            },
+          ]
+        : undefined,
+      edit,
+    };
+  });
 });
 
 connection.onSignatureHelp(async (params): Promise<SignatureHelp | null> => {

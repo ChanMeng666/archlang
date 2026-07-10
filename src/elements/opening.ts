@@ -7,6 +7,7 @@ import type { SceneNode } from "../scene.js";
 import type { ROpening } from "../ir.js";
 import { add, mul, nearestWallNote, normal, sub, unit } from "../geometry.js";
 import { parseAttachTarget, resolveAttachment } from "../attach.js";
+import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
 
 export const opening: ElementDef = {
   kind: "opening",
@@ -52,6 +53,7 @@ export const opening: ElementDef = {
         message: `Opening "${id}" must have a positive width`,
         code: "E_OPENING_WIDTH",
         span: n.span,
+        ...fixesFrom(openingWidthFix("opening", n)),
       });
     }
     // Attached: the point + host come from walking the named wall (no off-wall check).
@@ -69,6 +71,7 @@ export const opening: ElementDef = {
         code: "W_OPENING_OFF_WALL",
         span: n.span,
         relatedSpans: note ? [note] : undefined,
+        ...fixesFrom(offWallFix("opening", n, at, ctx.walls)),
       });
     }
     return { kind: "opening", id, at, width, host: ctx.hostSegment(at, n.wall), span: n.span };
