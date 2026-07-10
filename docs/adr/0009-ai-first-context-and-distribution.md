@@ -1,6 +1,9 @@
 # 9. AI-first: one bundled context artifact, opt-in error rendering, distribution over protocol
 
-- **Status:** Accepted
+- **Status:** Accepted — decision 4 ("distribution over protocol") **amended by
+  [ADR 0012](0012-mcp-shim-discoverability.md)**, which adds an optional MCP server as a
+  *discoverability* channel. The CLI-first, token-cost argument is unchanged; the CLI
+  remains the primary interface.
 - **Date:** 2026-07 (v1.12 planning)
 
 ## Context

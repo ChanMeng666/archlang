@@ -5,6 +5,96 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-07-11 (unreleased)
+
+AI-native authoring release: make ArchLang **easier to write correctly the first time**
+(placement sugar), **self-correcting as data** (machine-applicable fixes), **structured
+in and out** (Plan JSON + a constrained-decoding grammar), **visible without a raster**
+(ASCII), and **discoverable** where MCP hosts look (an optional server). The core stays
+zero runtime dependencies; the default SVG output is byte-identical throughout.
+
+### Added — placement sugar: write plans without hand-computed coordinates
+
+- **Opening attachment.** `door` / `window` / `opening` can attach to a wall **by
+  position** instead of absolute coordinates: `door on <wall> at <pos> …`, where `<pos>`
+  is millimetres along the wall or a percentage (`50%`). `swing into <room>` picks the
+  hinge/swing direction toward a named room; `hinge near start|end` hinges at the
+  segment end nearer a wall end. Off-wall or ambiguous references are the catalogued
+  `E_ATTACH_WALL_REF`; a position past the wall is `E_ATTACH_POS_RANGE`.
+- **`strip` layout.** `strip <right|left|down|up> at (x,y) gap <mm> [height|width <mm>] {
+  room … room … }` lays a row/column of rooms end to end, each sized on the run axis and
+  sharing the strip's cross dimension. Pure sugar — it expands to ordinary absolute-placed
+  rooms during resolve, so walls, doors, and relational references downstream are
+  unchanged (`E_STRIP_NEST`, `E_STRIP_SIZE`).
+- **Furniture by anchor.** `furniture <kind> in <room> anchor <corner|edge> [inset <mm>]
+  …` snaps a piece to a room corner/edge with an optional inset, so furniture never needs
+  a raw coordinate. New flagship example `examples/attached.arch` authors a full 1-BR with
+  no hand-computed openings or furniture. See the [language reference](docs/language-reference.md).
+
+### Added — machine-applicable fixes ([ADR 0011](docs/adr/0011-machine-applicable-fixes.md))
+
+- **Structured `Diagnostic.fixes`.** Alongside the prose `fix`, a diagnostic can carry
+  `FixSuggestion[]` — each a `title` plus byte-span edits and one of four rustc-style
+  applicability tiers (`machine-applicable` · `maybe-incorrect` · `has-placeholders` ·
+  `unspecified`). `diagnosticToJson` projects them; producers attach them (e.g. an
+  off-wall opening → the attachment form, `machine-applicable` only when the nearest wall
+  is unambiguous, else `maybe-incorrect`).
+- **`applyFixes`** (exported): a pure piece-table replacer ported from rustfix — applies
+  each suggestion atomically, rejects (never half-applies) any that overlaps an earlier
+  edit, and reports what it skipped.
+- **`arch fix`**: a bounded, self-checking fixpoint (compile → collect fixes → apply →
+  recompile, ≤4 passes) that applies **only `machine-applicable`** by default; `--unsafe`
+  widens to `maybe-incorrect`, `--dry-run` previews, `--force` keeps a pass that would
+  otherwise be rolled back for raising the error count. Distinct from `arch repair`, which
+  stays the geometric furniture solver ([ADR 0006](docs/adr/0006-solver-as-explicit-transform.md)).
+- **`arch suggest`**: advisory topology suggestions as data (`suggestTopology`, exported)
+  — ready-to-paste `door`/`window` statements (attachment form) that resolve an
+  unreachable room or a windowless bedroom, never applied (ADR 0005).
+- **LSP quick-fixes**: `codeActions` surfaces the same suggestions in-editor; a lone
+  `machine-applicable` fix is marked the preferred action.
+
+### Added — structured Plan JSON in & out, and a constrained-decoding grammar
+
+- **Plan JSON** (RPLAN / DStruct2Design shape): `planFromJson` builds a plan from a JSON
+  object, `planToJson`/`resolvedToJson` project a resolved plan out with enrichments
+  (area, floor polygon, `input_graph`, edges), and `astToJson` is a span-bearing AST
+  projection — all pure, deterministic, zero-dep, exported. Surfaced as **`arch compile
+  --from-json`** and **`arch ast`**. Bad shapes are catalogued `E_JSON_SCHEMA` /
+  `E_JSON_KIND`.
+- **`schemas/plan.schema.json`** — the Plan-JSON JSON Schema (2020-12), generated from the
+  `PLAN_JSON_SCHEMA` source (`npm run gen:plan-schema`, drift-tested).
+- **Intent-graph check.** `checkGraph(source, intent)` compares a plan's interior-door
+  adjacency to an intended `{ room: [neighbours] }` graph; surfaced as **`arch validate
+  --graph <g.json>`** (a mismatch is a user-source error).
+- **`grammars/archlang.gbnf`** — a GBNF constrained-decoding grammar generated from the
+  token source (`npm run gen:gbnf`, drift-tested), so a local model can be constrained to
+  emit only parseable ArchLang.
+- **`arch complete --at <offset>`** — the LSP `completion()` core as a CLI command.
+
+### Added — zero-dependency ASCII rendering
+
+- **`renderAscii(scene)`** (exported): serializes a Scene to a fixed-width text floor
+  plan — the channel a sandboxed, text-only agent uses to *see* its plan with no raster
+  binary. Surfaced as **`arch compile -f txt`** and **`arch preview --ascii`**, with
+  `--cols` (grid width) and `--charset unicode|ascii`. Deterministic; default output of
+  every other format is unchanged.
+
+### Added — MCP server ([ADR 0012](docs/adr/0012-mcp-shim-discoverability.md))
+
+- **`@chanmeng666/archlang-mcp`** (new `packages/mcp/` workspace, `0.1.0`): an optional
+  stdio Model Context Protocol server that wraps the **library** (never a CLI subprocess)
+  — tools `compile` / `describe` / `lint` / `validate` (with the optional intent-graph
+  check) / `repair` / `fix` / `suggest` / `complete`, and resources `archlang://spec`,
+  `archlang://context`, `archlang://schema`, `archlang://grammar`. **The core stays
+  zero-dependency — the MCP SDK lives only in this package.** The CLI remains the primary,
+  token-cheaper interface; the server is the *discoverability* channel (registry),
+  amending [ADR 0009](docs/adr/0009-ai-first-context-and-distribution.md)'s
+  distribution-over-protocol stance. A `server.json` is ready for registry submission.
+- **Docs site**: every generated doc page is now also served as **raw markdown at
+  `/<route>.md`** (e.g. `/spec.md`, `/reference.md`), and the machine-native
+  **`/plan.schema.json`** and **`/archlang.gbnf`** artifacts are served at the site root
+  (advertised in `llms.txt`).
+
 ## [1.12.1] - 2026-07-07
 
 ### Fixed

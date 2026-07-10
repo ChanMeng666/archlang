@@ -19,15 +19,48 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.12.1` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
-| **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** (one-call bundled context) — **no MCP** | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt` |
-| **VS Code extension** | `ChanMeng.archlang@0.4.1` (published, live — icon + dark gallery banner; bundles core 1.12.0 with the `accTitle`/`accDescr` surface) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
+| **Core package** | `@chanmeng666/archlang@1.13.0` (**unreleased, this tree** — last published `latest` is `1.12.1`) | npmjs.com/package/@chanmeng666/archlang |
+| **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — now incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
+| **MCP server** | `@chanmeng666/archlang-mcp@0.1.0` (**unreleased, this tree** — `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate/repair/fix/suggest/complete + spec/context/schema/grammar resources; SDK dep quarantined here, core stays zero-dep) | `packages/mcp/`, `server.json` |
+| **VS Code extension** | `ChanMeng.archlang@0.4.1` (published, live — icon + dark gallery banner; bundles core 1.12.0 with the `accTitle`/`accDescr` surface) — a repack for the v1.13 language sugar (attachment/`strip`/anchor) is pending | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
-| **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt`) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.12.1` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 600 passing (74 files) + offline authorability eval (18 briefs, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
+| **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
+| **Git** | `main`, tags `v1.0.0` → `v1.12.1` (latest published); `v1.13.0` unreleased | github.com/ChanMeng666/archlang |
+| **Tests** | 758 passing (89 files, incl. the `packages/mcp` stdio smoke test) + offline authorability eval (18 briefs, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
-**Latest release — v1.12.1** — bundler-safety patch: the PNG backend's lazy
+**Latest work — v1.13.0 (unreleased, in this tree; AI-native authoring). Six tranches
+(see `CHANGELOG.md` for detail):**
+1. **Placement sugar** (write plans without hand-computed coordinates). Openings attach to a wall by
+   position — `door|window|opening on <wall> at <pos>` (mm or `%`), `swing into <room>`, `hinge near
+   start|end` (`E_ATTACH_WALL_REF`, `E_ATTACH_POS_RANGE`); **`strip <dir> at (x,y) gap … { rooms }`**
+   lays rooms end to end (pure resolve-time sugar; `E_STRIP_NEST`, `E_STRIP_SIZE`); **`furniture …
+   in <room> anchor <a> [inset <mm>]`** snaps furniture to a room corner/edge. New flagship
+   `examples/attached.arch`. Documented in `docs/language-reference.md`.
+2. **Machine-applicable fixes ([ADR 0011](docs/adr/0011-machine-applicable-fixes.md)).** `Diagnostic.fixes`
+   (rustc's 4-tier `Applicability`) + **`applyFixes`** (a pure piece-table replacer ported from
+   rustfix, exported); fix producers (off-wall opening → attachment form); **`arch fix`** (bounded,
+   self-checking fixpoint; `--unsafe`/`--dry-run`/`--force`) and **`arch suggest`** (`suggestTopology`
+   — advisory door/window statements, never applied, ADR 0005); LSP quick-fixes. `fix` = syntactic
+   span edits; `repair` stays the geometric solver (ADR 0006) — a hard boundary.
+3. **Plan JSON + intent graph + GBNF.** `planFromJson`/`planToJson`/`astToJson`/`checkGraph`/
+   `PLAN_JSON_SCHEMA` (pure, exported) behind **`arch compile --from-json`**, **`arch ast`**,
+   **`arch validate --graph`**, **`arch complete --at`**; generated **`schemas/plan.schema.json`**
+   (`npm run gen:plan-schema`) and **`grammars/archlang.gbnf`** constrained-decoding grammar
+   (`npm run gen:gbnf`), both drift-tested. `E_JSON_SCHEMA`/`E_JSON_KIND`.
+4. **Zero-dependency ASCII.** **`renderAscii`** (exported) behind **`arch compile -f txt`** and
+   **`arch preview --ascii`** (`--cols`, `--charset`) — a text-only agent can *see* its plan with no
+   raster binary. Every other format's output is unchanged.
+5. **MCP server ([ADR 0012](docs/adr/0012-mcp-shim-discoverability.md)).** New `packages/mcp/`
+   workspace **`@chanmeng666/archlang-mcp@0.1.0`** — a stdio MCP shim wrapping the library (tools
+   compile/describe/lint/validate/repair/fix/suggest/complete; resources spec/context/schema/grammar),
+   with a `server.json` for registry submission. **The core stays zero-dependency — the MCP SDK lives
+   only in this package.** The CLI remains primary (token cost); MCP is the discoverability channel,
+   amending [ADR 0009](docs/adr/0009-ai-first-context-and-distribution.md)'s distribution-over-protocol point.
+6. **Docs distribution.** The docs site now serves every generated page as **raw markdown at
+   `/<route>.md`** and the machine-native **`/plan.schema.json`** + **`/archlang.gbnf`** at its root
+   (advertised in `llms.txt`).
+
+**v1.12.1** — bundler-safety patch: the PNG backend's lazy
 `import("node:fs")`/`import("node:url")` (font lookup) now carry
 `/* webpackIgnore: true */ /* @vite-ignore */` like every other Node-only lazy import, so a
 webpack/Next.js consumer importing the core **client-side** no longer fails its build resolving
@@ -152,9 +185,13 @@ for concave door arcs, dimensions drawn into the building, and the title-block o
 ```
 .                     @chanmeng666/archlang — the core (PUBLISHED package; src/, dist/)
 ├─ spec.llm.md        GENERATED one-page language spec for agents (`arch spec`); see scripts/gen-llm-spec.ts
-├─ SKILL.md           agent Skill: the spec → compile → describe → lint loop (CLI-driven)
+├─ SKILL.md           agent Skill: the spec → compile → fix → describe → validate loop (CLI-driven)
 ├─ llms.txt           machine-readable project map (how to USE vs CONTRIBUTE)
 ├─ llms-full.txt      GENERATED full agent context (spec + skill + CLI + errors); see scripts/gen-llms-full.ts
+├─ schemas/           GENERATED plan.schema.json — Plan-JSON JSON Schema (`gen:plan-schema`, drift-tested)
+├─ grammars/          GENERATED archlang.gbnf — GBNF constrained-decoding grammar (`gen:gbnf`, drift-tested)
+├─ packages/mcp/      @chanmeng666/archlang-mcp — stdio MCP shim over the library (SDK dep quarantined here);
+│                     src/server.ts, server.json (registry manifest), test/ smoke test — see ADR 0012
 ├─ editors/vscode     archlang-vscode → published as ChanMeng.archlang (esbuild-bundled extension)
 ├─ editors/*.json     generated TextMate grammar + language-configuration (shared by the extension)
 ├─ playground/        Vite + CodeMirror live editor (consumes the built core via dist/);
@@ -167,10 +204,10 @@ for concave door arcs, dimensions drawn into the building, and the title-block o
 │                     examples are live/editable <ArchLive> widgets (compile in the browser)
 ├─ docs/              language-reference.md · analysis.md · error-codes.md · adr/ · WORK-LOG.md
 ├─ brand/             logo kit + brand book (README.md); archlang-logo-master.svg is byte-sacred, variants are fill-swaps only
-├─ examples/          studio · two-bed · parametric · themed · relational · lib/ · imports
+├─ examples/          studio · two-bed · parametric · themed · relational · attached · accessible · lib/ · imports
 ├─ eval/              NL→ArchLang authorability harness (corpus.json — 18 briefs, goldens/, run.ts;
 │                     offline golden gate `npm run eval:ci` in CI, no API key)
-├─ scripts/           gen-grammars · gen-error-codes · gen-llm-spec · gen-llms-full (single-source generators)
+├─ scripts/           gen-grammars · gen-error-codes · gen-llm-spec · gen-llms-full · gen-gbnf · gen-plan-schema (single-source generators)
 ├─ bench/             ~1000-element timing harness (+ --json mode, CI regression comment)
 └─ test/              vitest: snapshot + fast-check + unit + visual-regression + CLI/describe/lint/eval
 ```
@@ -212,12 +249,18 @@ chrome only** — no core/language change, and ArchCanvas keeps its own separate
   `FactsSection`, `TitleBlockFooter`, `ArchLive`. Playground:
   `src/styles/{tokens,chrome,editor,panels,embed}.css`. The playground is a fixed two-world layout
   with **no light/dark toggle** by design.
+- **Machine-readable routes (v1.13).** `sync-docs.mjs` also publishes, at the docs-site root, a **raw
+  markdown copy of every generated page** at `/<route>.md` (e.g. `/spec.md`, `/reference.md`) plus the
+  **`/plan.schema.json`** and **`/archlang.gbnf`** artifacts. The `.md` copies live in `public/` and
+  are excluded from VitePress page parsing (`srcExclude: ["public/**"]`) so they serve verbatim
+  without being routed or dead-link-checked.
 
 ## Commands
 
 This is an **npm-workspaces monorepo**: the core (`@chanmeng666/archlang`) lives at
-the repo root and is the published package; `editors/vscode`, `playground`, and
-`docs-site` are workspace members sharing one root lockfile.
+the repo root and is the published package; `editors/vscode`, `playground`,
+`docs-site`, and `packages/*` (currently `packages/mcp`) are workspace members
+sharing one root lockfile.
 
 ```bash
 npm install          # bootstraps ALL workspaces (core has ZERO runtime deps)
@@ -231,13 +274,17 @@ npm run gen:grammars # regenerate editor grammars from src/grammar/tokens.ts (CI
 npm run gen:errors   # regenerate docs/error-codes.md from the catalog (CI checks drift)
 npm run gen:spec     # regenerate spec.llm.md from tokens.ts + examples/ (CI checks drift)
 npm run gen:llms     # regenerate llms-full.txt from spec + SKILL.md + manifest + error catalog (CI checks drift)
+npm run gen:gbnf     # regenerate grammars/archlang.gbnf from src/grammar/tokens.ts (CI checks drift)
+npm run gen:plan-schema  # regenerate schemas/plan.schema.json from PLAN_JSON_SCHEMA (CI checks drift)
 
 npm run playground:dev   # build core, then run the Vite playground dev server
 npm run docs:build       # build core, then build the VitePress docs site
+npm run mcp:build        # build core, then build the MCP shim (packages/mcp → dist/ + copied resources)
 ```
 
-Export to other formats from the CLI: `-f svg|dxf|pdf|png` (`pdf` needs optional
-`pdfkit`; `png` needs optional `@resvg/resvg-js`).
+Export to other formats from the CLI: `-f svg|dxf|txt|pdf|png` (`txt` is the
+zero-dep ASCII plan; `pdf` needs optional `pdfkit`; `png` needs optional
+`@resvg/resvg-js`).
 
 **The CLI is agent-native.** Every command takes `--json` (structured result to stdout, messages to
 stderr) with deterministic exit codes (`0` ok · `2` user-source error · `1` IO/internal · `3` bad
@@ -247,19 +294,28 @@ context — `llms-full.txt`: spec + skill + CLI reference + error catalog, for a
 `arch describe` (semantic JSON: rooms,
 areas, adjacency, door connections — backed by `describe()` in `src/describe.ts`), `arch lint`
 (architectural soundness `W_*` warnings — `src/lint.ts`), `arch validate` (parse+resolve+lint, no
-render; `--strict`/`--fail-on-warning` makes warnings fail too — the pipeline ship-gate), `arch new`
-(scaffold), `arch repair` (the explicit opt-in source-to-source corrector — pushes furniture out
-of walls and emits new `.arch` + a change log; `src/repair.ts`, see ADR 0006), `arch preview`
-(render a PNG an agent can look at; opt-in `--install` fetches the optional `@resvg/resvg-js`),
-`arch batch` (render many files concurrently → `{ ok, results[] }`), `arch md` (render the
-` ```arch ` blocks in a Markdown file → image links; pure `src/markdown.ts`), and
-`arch manifest`/`capabilities` (the whole CLI API as structured data — `src/manifest.ts`).
-Two opt-in output flags: `--error-svg` (on `compile`/`preview`/`md`) renders a failing plan as a
-self-describing error-card SVG instead of no bytes, and `--accessible` (on `compile`) emits SVG
-`<title>`/`<desc>` + `role="img"`; both leave the default path byte-identical.
+render; `--strict`/`--fail-on-warning` makes warnings fail too — the pipeline ship-gate; `--graph
+<g.json>` also checks interior-door adjacency against an intended graph via `checkGraph`), `arch ast`
+(parse-only span-bearing AST JSON — `astToJson`), `arch complete --at <offset>` (LSP `completion()`
+items in scope), `arch fix` (apply the machine-applicable `diagnostics[].fixes` via a bounded
+fixpoint — `applyFixes`, `--unsafe`/`--dry-run`/`--force`; ADR 0011), `arch suggest` (advisory
+door/window topology statements as data — `suggestTopology`, ADR 0005), `arch new` (scaffold),
+`arch repair` (the explicit source-to-source **geometric** corrector — pushes furniture out of walls
+and emits new `.arch` + a change log; `src/repair.ts`, see ADR 0006 — distinct from `fix`), `arch
+preview` (render a PNG an agent can look at, or `--ascii` for a zero-dep text plan; opt-in `--install`
+fetches the optional `@resvg/resvg-js`), `arch batch` (render many files concurrently → `{ ok,
+results[] }`), `arch md` (render the ` ```arch ` blocks in a Markdown file → image links; pure
+`src/markdown.ts`), and `arch manifest`/`capabilities` (the whole CLI API as structured data —
+`src/manifest.ts`). Output-shaping flags: `-f txt` (zero-dep ASCII plan via `renderAscii`),
+`compile --from-json` (read Plan JSON — `planFromJson` — instead of `.arch`); opt-in
+`--error-svg` (on `compile`/`preview`/`md`) renders a failing plan as a self-describing error-card
+SVG instead of no bytes, and `--accessible` (on `compile`) emits SVG `<title>`/`<desc>` +
+`role="img"`; the error-svg/accessible paths leave the default output byte-identical.
 `describe`/`lint` share the pure analysis layer in `src/analyze.ts` (+ `src/analyze/occupancy.ts`, the
-circulation flood-fill); all are exported from `src/index.ts`. This is the standard interface for AI
-agents — there is intentionally no MCP server (see the README's agent section).
+circulation flood-fill); all are exported from `src/index.ts`. The CLI is the **primary** agent
+interface; an optional stdio **MCP shim** (`packages/mcp`, `@chanmeng666/archlang-mcp`) wraps the same
+library functions for MCP-native hosts as a discoverability channel (see ADR 0012 and the README's
+agent section) — the core stays zero-dependency, the SDK lives only in that package.
 
 ## Architecture & Conventions
 
@@ -317,7 +373,12 @@ source (.arch)
   `npm run gen:spec` (the curated prose lives in `scripts/gen-llm-spec.ts`); CI fails on drift.
   `llms-full.txt` (the bundled full agent context) is generated from `spec.llm.md` + `SKILL.md` +
   the manifest + the error catalog by `npm run gen:llms` (`scripts/gen-llms-full.ts`); CI fails on
-  drift — regenerate it after editing any of those sources. **Editor syntax colors also route
+  drift — regenerate it after editing any of those sources. `grammars/archlang.gbnf` (GBNF grammar,
+  `npm run gen:gbnf`) and `schemas/plan.schema.json` (Plan-JSON schema, `npm run gen:plan-schema`)
+  are likewise generated from `src/grammar/tokens.ts` / `PLAN_JSON_SCHEMA` and CI-drift-tested.
+  The docs site copies the four root artifacts (`llms.txt`, `llms-full.txt`, `plan.schema.json`,
+  `archlang.gbnf`) and a raw markdown copy of each generated page into `public/` via
+  `docs-site/sync-docs.mjs` — edit the repo-root source, not the copies. **Editor syntax colors also route
   through the generator:** `playground/src/arch-language.js` emits each `HighlightStyle` tag as
   `var(--syn-<name>, <fallback>)` (the on-carbon palette lives in `playground/src/styles/editor.css`)
   — to recolor the live editor, edit the `scripts/gen-grammars.ts` template or the `--syn-*` values

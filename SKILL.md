@@ -6,8 +6,9 @@ description: Use when the user wants to create, edit, or inspect an architectura
 # ArchLang — author floor plans as code
 
 ArchLang turns a small `.arch` text file into a professional floor-plan drawing. It is built for
-agents: deterministic, self-correcting (errors carry a machine code and a `fix`), and verifiable
-without ever looking at an image (`arch describe`).
+agents: deterministic, self-correcting (errors carry a machine code, a prose `fix`, and often a
+**machine-applicable** fix `arch fix` can apply), and verifiable without ever looking at an image
+(`arch describe`).
 
 ## Setup (zero-install)
 
@@ -21,137 +22,133 @@ npx @chanmeng666/archlang help
 
 ## The loop (always follow this)
 
-1. **Learn the language first.** Run `arch spec` and read it. It is the entire language in one page
-   (~2k tokens): the grammar, the gotchas, the elements, and worked examples. Do this before writing
-   any `.arch`.
-2. **Write the plan** to a `.arch` file (or pipe via stdin with `-`).
+1. **Learn the language first.** Run `arch spec` and read it — the entire language in one page
+   (~2k tokens). (`arch context` prints *everything*: spec + this workflow + CLI reference + error
+   catalog.) Do this before writing any `.arch`.
+2. **Write the plan** to a `.arch` file (or pipe via stdin with `-`), preferring the **placement
+   sugar** below so you never hand-compute a coordinate.
 3. **Render it:** `arch compile plan.arch -o plan.svg --json`. The JSON is `{ ok, diagnostics,
    summary }`.
-4. **If `ok` is false** (exit code `2`): read each `diagnostics[].fix` (with `line`/`col`), edit the
-   source, and recompile. Exit code `2` means a deterministic user error — fix it, don't blindly
-   retry. Exit `1` is an IO/internal problem; `3` is bad CLI usage.
-5. **Verify intent without an image:** `arch describe plan.arch --json` returns the rooms (with
-   areas and adjacency), what each door connects, and totals. Confirm the room count, labels, and
-   areas match what was asked.
-6. **Show the user the result.** Run `arch preview plan.arch -o plan.png` to render a PNG you can
-   surface to the user (or inspect yourself). It defaults to a 2× raster; it works out of the box
-   where the optional renderer is installed, and if it reports `E_PNG_DEPENDENCY`, re-run with
-   `--install` to fetch it. (SVG from `compile` is always available with zero deps.)
-7. **Gate on soundness — don't ship a flagged plan.** Run `arch validate plan.arch --strict --json`
-   (parse + resolve + lint in one pass). `--strict` makes **every advisory warning fail** too
-   (exit `2`), so this is the gate a generation pipeline runs before it ships. If not `ok`, read each
-   `diagnostics[].fix`, edit the source, and re-run until it passes — or, if a warning is a deliberate
-   choice, tell the user explicitly. The lint flags: a room with no door, a windowless bedroom, an
-   implausibly small room, a too-narrow door, no entrance, a bathroom reachable only through a bedroom,
-   a bathroom not fully walled in, a door whose swing hits furniture/another door, a bath/kitchen with
-   no fixtures, **furniture drawn through a wall (`W_FURNITURE_WALL_COLLISION`)**, **a fixture blocking
-   a doorway (`W_DOORWAY_BLOCKED`)**, **a room packed so you can't step in
-   (`W_ROOM_NO_CLEAR_PATH`)**, **a walk that squeezes below a passable width
-   (`W_PATH_TOO_NARROW`)**, and **a room reached the long way round (`W_CIRCUITOUS_PATH`)**.
+4. **Auto-fix the mechanical faults:** if `ok` is false, run `arch fix plan.arch --dry-run --json`
+   to preview the **machine-applicable** edits (off-wall opening → attachment form, out-of-range
+   position clamped, …), then re-run without `--dry-run` to apply. Anything `fix` can't resolve stays
+   in `diagnostics[].fix` for you to edit by hand. Exit code `2` means a deterministic user error —
+   fix it, don't blindly retry (`1` = IO/internal, `3` = bad usage).
+5. **See the plan without an image:** `arch compile plan.arch -f txt` (or `arch preview plan.arch
+   --ascii`) prints a zero-dependency ASCII floor plan you can read straight from stdout.
+6. **Verify intent:** `arch describe plan.arch --json` returns the rooms (areas, adjacency), what each
+   door connects, and totals. Confirm the room count, labels, and areas match what was asked.
+7. **Gate on soundness — don't ship a flagged plan.** `arch validate plan.arch --strict --json`
+   (parse + resolve + lint). `--strict` makes **every advisory warning fail** (exit `2`) — the gate a
+   generation pipeline runs before it ships. Add `--graph g.json` to also assert the intended
+   room-to-room adjacency (`{ "living": ["kitchen","hall"], … }`); a mismatch fails. Read each
+   `diagnostics[].fix`, edit, and re-run until it passes — or, if a warning is deliberate, say so.
+8. **Fix furniture geometry:** `arch repair plan.arch -o fixed.arch` pushes furniture out of
+   walls/doorways/swing arcs (the geometric corrector; distinct from `fix`).
+9. **Show the user:** `arch preview plan.arch -o plan.png` renders a PNG (`--install` fetches the
+   optional renderer if missing).
 
-## Placement discipline (write it right the first time)
+## Write it right the first time (placement sugar — the preferred path)
 
-A geometry-blind generator that emits absolute coordinates and ignores lint produces plans that
-render but are physically wrong (furniture through walls, fixtures piled in doorways, rooms with no
-door). Avoid that by construction:
+A geometry-blind generator that emits absolute coordinates produces plans that render but are
+physically wrong (openings off their wall, furniture through walls). Author by **attachment** instead
+— the compiler computes the coordinate, and fails loudly if the reference is ambiguous:
 
-- **Every room needs a way in.** Put a `door` or a cased `opening` on a wall of *every* room — an
-  open-plan space still needs a modeled opening to the space it connects to, or it reads as sealed.
-- **Back plumbing/kitchen fixtures onto a wall with `against wall <id>`, not raw `at`.** `against wall`
-  is closed-form and fails loudly if ambiguous, so the fixture lands flush against the real wall face
-  instead of floating or penetrating. Use `in <roomId>` so the side is inferred.
-- **Keep furniture inside the room and out of the walls.** A piece's whole footprint must sit within
-  the room rectangle; never let it cross a wall centerline (that's `W_FURNITURE_WALL_COLLISION`).
-- **Leave the doorway clear.** Keep furniture out of the straight approach on both sides of every door
-  (≥300 mm), and out of the leaf's swing arc — so a person can actually walk in.
-- **Verify, then gate.** `arch describe --json` to confirm the intent (rooms, areas, access graph),
-  then `arch validate --strict --json` to prove it's sound before you ship.
+- **Attach openings to a wall by position, not `at (x,y)`.** `door on <wall> at <pos> …` /
+  `window on <wall> at <pos> …` / `opening on <wall> at <pos> …`, where `<pos>` is millimetres along
+  the wall or a percentage (`50%`). `swing into <room>` picks the swing direction toward a named room;
+  `hinge near start|end` hinges at the segment end nearer a wall end. (Off-wall/ambiguous →
+  `E_ATTACH_WALL_REF`; past the wall → `E_ATTACH_POS_RANGE`.)
+- **Lay rooms with `strip`.** `strip right at (0,0) gap 0 height 4000 { room … room … }` places a row
+  (or column, with `down`/`up` + `width`) of rooms end to end — no per-room `at`.
+- **Place furniture by anchor.** `furniture <kind> in <room> anchor <corner|edge> [inset <mm>] …`
+  snaps a piece flush to a room corner/edge; `against wall <id>` backs plumbing/kitchen fixtures onto a
+  real wall face. Both are closed-form and never float or penetrate.
+- **Every room still needs a way in** — put a `door` or cased `opening` on a wall of *every* room
+  (an open-plan space still needs a modeled opening), and keep furniture out of the doorway approach
+  (≥300 mm) and the leaf's swing.
+- **Absolute `at (x,y)` is the fallback**, not the default — reach for it only when no attachment
+  expresses what you mean.
 
-## Fix the topology: add doors & windows from the access graph
+See `examples/attached.arch` for a full one-bedroom authored this way, and `arch spec` for the grammar.
 
-`arch repair` corrects **furniture** placement, but it never adds a door or a window — *where* to put
-one is a design choice the compiler must not make (it would be guessing among valid options). That is
-**your** job, and `arch describe --json` gives you the facts to do it deterministically. Do this when
-lint reports `W_ROOM_UNREACHABLE`, `W_ROOM_DISCONNECTED`, `W_NO_ENTRANCE`, `W_BATH_VIA_BEDROOM`, or
-`W_BEDROOM_NO_WINDOW`.
+## Self-correct with data, not guesswork
 
-1. **Read the facts.** From `describe()`: `access.rooms[]` gives each room's `reachable` +
-   `depthFromEntrance`; `rooms[]` gives each room's `bbox {x,y,w,h}`, `uses`, and `adjacent` ids;
-   `doors[]`/`openings[]` give `between`. The building extent is `minX = min(room.x)`,
-   `maxX = max(room.x + room.w)` (same for y) — a room edge lying on it is an **exterior** wall.
+`arch compile --json` returns every problem as a `Diagnostic` with a byte span, `line`/`col`, a
+catalogued `E_*`/`W_*` code, and a prose `fix`. Where the correction is a mechanical text edit, the
+diagnostic also carries **machine-applicable `fixes`**:
 
-2. **Connect every unreachable room**, choosing in priority:
-   1. If the room (or its open-plan group) has an exterior edge and reads as **living / kitchen / hall /
-      entry**, add a new exterior **entrance** `door` there. Best for the main space — and it avoids
-      routing circulation through a bedroom.
-   2. Else add a `door` (or cased `opening`) on the **shared wall** with an adjacent **reachable,
-      non-bedroom** room.
-   3. Never make a bathroom reachable *only* through a bedroom (`W_BATH_VIA_BEDROOM`) — prefer (1) for
-      the whole cut-off group.
+- **`arch fix`** applies them in a bounded, self-checking fixpoint — **only `machine-applicable` by
+  default** (`--unsafe` also applies `maybe-incorrect`; `--dry-run` previews; `--force` keeps a pass
+  that would otherwise roll back). Use it to clear the syntactic faults before you touch anything by
+  hand.
+- **`arch fix` is syntactic; `arch repair` is geometric.** `fix` rewrites text where the right text is
+  known (e.g. an off-wall door → the attachment form); `repair` *moves furniture* to a position no
+  text edit could express. They compose — fix first, then repair.
 
-3. **Coordinates** — the `at` must sit on the wall centerline:
-   - **Exterior door** on room R: on its left edge (`R.x == minX`) → `door at (R.x, R.y + R.h/2) …
-     wall exterior`; right → `x = R.x + R.w`; top (`R.y == minY`) → `at (R.x + R.w/2, R.y)`; bottom →
-     `y = R.y + R.h`. Slide it along the wall to clear existing windows/doors. `width 900`.
-   - **Shared-wall door** between A and B: vertical shared edge at `x = X` over y-overlap `[lo,hi]` →
-     `door at (X, (lo+hi)/2)`; horizontal at `y = Y` over x-overlap → `door at ((lo+hi)/2, Y)`.
-     `width ≥ 800`.
-   - **Bedroom window**: pick an exterior edge of the bedroom and centre a `window … width 1200` on it,
-     clear of any door on that wall.
+## Fix the topology: add doors & windows the room graph needs
 
-4. **Re-repair, then gate.** A new door may now have furniture in its swing/landing — run
-   `arch repair` again, then `arch validate --strict --json`. Repeat until `ok: true`.
+`fix`/`repair` never add a door or a window — *where* to put one is a design choice the compiler must
+not make. When lint reports `W_ROOM_UNREACHABLE`, `W_ROOM_DISCONNECTED`, `W_NO_ENTRANCE`,
+`W_BATH_VIA_BEDROOM`, or `W_BEDROOM_NO_WINDOW`, ask ArchLang for candidates:
 
-> An *existing* door/window/opening that `validate` reports **off any wall**
-> (`W_DOOR_OFF_WALL` / `W_WINDOW_OFF_WALL` / `W_OPENING_OFF_WALL`) is a different fault — a
-> generator mis-coordinate, not a missing connector. Move its `at` onto the nearest wall
-> centerline (or delete it if your new doors already make the room reachable).
+- **`arch suggest plan.arch --json`** returns ready-to-paste `door`/`window` statements (in the
+  **attachment form**) plus a rationale for each — for the unreachable room or windowless bedroom.
+  Choose one and insert it, then re-run the loop. This replaces hand-computing coordinates.
+- **Manual fallback** (if `suggest` offers nothing that fits): from `describe().access`, connect each
+  unreachable room in priority — (1) a new **exterior entrance** `door on <exterior wall> at <pos>`
+  into a living/kitchen/hall with an exterior edge (avoids routing through a bedroom); else (2) a
+  `door on <shared wall> at <pos>` to an adjacent reachable, non-bedroom room; and give a windowless
+  bedroom a `window on <its exterior wall> at <pos> width 1200`. Never make a bathroom reachable only
+  through a bedroom. Then `arch repair` (a new door may pinch furniture) and re-gate.
 
-**Worked example.** A studio where the bathroom + living were a cut-off pair (only a `living↔bath`
-door) and the bedroom held the sole entrance. `describe` shows `r_living`/`r_bath` `reachable:false`.
-One exterior entrance into the living/kitchen + a bedroom window makes the whole plan sound:
+> An *existing* opening `validate` reports **off its wall** (`W_DOOR_OFF_WALL` /
+> `W_WINDOW_OFF_WALL` / `W_OPENING_OFF_WALL`) is a mis-coordinate, not a missing connector — run
+> `arch fix` (it rewrites it to the attachment form) rather than adding a new one.
 
-```
-door   at (0,1500) width 900 wall exterior hinge left swing in   # entrance into Living/Kitchen (left exterior wall)
-window at (0,4500) width 1200 wall exterior                      # bedroom window (left exterior wall, below the door)
-```
+## Structured authoring & constrained generation (optional)
 
-→ `arch repair` → `arch validate --strict` → `ok: true` (all rooms reachable, bedroom lit).
+- **Plan JSON.** Author or ingest the machine-native shape and compile it: `arch compile plan.json
+  --from-json -o out.svg`. The schema is served at
+  [`/plan.schema.json`](https://archlang-docs.vercel.app/plan.schema.json).
+- **GBNF.** To force a local model to emit only parseable ArchLang, constrain decoding with
+  [`/archlang.gbnf`](https://archlang-docs.vercel.app/archlang.gbnf).
 
 ## Commands
 
 ```bash
 arch spec                              # the whole language in one page — READ THIS FIRST
-arch context                           # everything in one call: spec + this workflow + CLI reference + error catalog (drop into a system prompt)
+arch context                           # everything in one call: spec + this workflow + CLI reference + error catalog
 arch manifest --json                   # the whole CLI API as data: commands, flags, formats, lint rules, error codes
-arch compile plan.arch -o out.svg --json   # render (also -f dxf|pdf|png)
-echo '<source>' | arch compile - -o - -f svg   # compile stdin → SVG on stdout
-arch compile plan.arch -o out.svg --error-svg  # opt-in: a broken plan still renders a self-describing error-card SVG (codes, line:col, fixes)
-arch compile plan.arch -o out.svg --accessible # opt-in: SVG carries <title>/<desc> + aria (from the plan title + describe() caption; accTitle/accDescr override)
-arch preview plan.arch -o plan.png --json  # render a PNG to SHOW the user (--install fetches resvg if missing)
-arch compile plan.arch -o walk.svg --overlay circulation   # opt-in: draw the entrance→room walks + pinch markers (default output unchanged)
-arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, door connections, + circulation (walk distance/bottleneck/detour)
+arch compile plan.arch -o out.svg --json   # render (also -f dxf|txt|pdf|png)
+arch compile plan.arch -f txt          # zero-dependency ASCII text plan on stdout (also `preview --ascii`)
+arch compile plan.json --from-json -o out.svg   # compile structured Plan JSON (see /plan.schema.json)
+echo '<source>' | arch compile - -o - -f svg    # compile stdin → SVG on stdout
+arch fix plan.arch --dry-run --json    # preview the machine-applicable diagnostic fixes (drop --dry-run to apply)
+arch suggest plan.arch --json          # advisory door/window statements for unreachable rooms / windowless bedrooms
+arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, door connections, circulation
 arch lint plan.arch --json             # architectural soundness warnings
-arch validate plan.arch --strict --json   # parse + resolve + lint; --strict fails on warnings too (the ship gate)
+arch validate plan.arch --strict --json           # parse + resolve + lint; --strict fails on warnings (the ship gate)
+arch validate plan.arch --graph g.json --json     # also check interior-door adjacency against an intended graph
+arch repair plan.arch -o fixed.arch    # geometric corrector: furniture out of walls/doorways/swings + change log
 arch fmt plan.arch --write             # canonical formatting
-arch repair plan.arch -o fixed.arch    # emit corrected source (furniture out of walls/doorways/swings, overlaps separated, fixtures into their room + snapped to walls) + change log; a circulation guard declines any move that would newly pinch a walk below the threshold
 arch batch a.arch b.arch -f svg --json # render many plans/variants at once → results[]
-arch md notes.md -o out.md -f svg      # render fenced arch blocks in a Markdown file → image links
+arch preview plan.arch -o plan.png     # render a PNG to SHOW the user (--install fetches resvg if missing)
 arch new -o plan.arch                  # scaffold a starter plan
 arch explain E_ROOM_SIZE --json        # look up any diagnostic code
 ```
 
+(An optional MCP server, `@chanmeng666/archlang-mcp`, wraps these same library functions for
+MCP-native hosts — prefer the CLI when you have a shell; it costs nothing in context until called.)
+
 ## Key rules (full detail in `arch spec`)
 
-- **Units are millimetres** (a 4 m wall is `4000`).
-- **Origin is top-left; +x right, +y DOWN** (not math y-up).
-- **Doors/windows must sit on a wall segment**, or they warn.
+- **Units are millimetres** (a 4 m wall is `4000`); **origin top-left, +x right, +y DOWN**.
+- **Attach openings to walls** (`on <wall> at <pos>`) so they always sit on a segment; a raw `at`
+  that lands off any wall warns (and `arch fix` rewrites it).
 - **Fixtures draw real symbols:** `furniture wc|basin|shower|bathtub|kitchen_sink|counter|fridge|stove …`
-  renders a plan symbol (not an empty box); standard sizes are also in `lib/fixtures.arch`. Put fixtures
-  in every bath and kitchen so the plan reads professionally and lint stays quiet.
-- **`dims auto`** draws dimension strings for you (`overall`, `rooms`, `walls`, or `all`) — no need to
-  place each `dim`. `rooms` puts each room's size in the margin (clear of the label); `walls` annotates
-  each distinct wall thickness once.
+  renders a plan symbol; put fixtures in every bath and kitchen so lint stays quiet.
+- **`dims auto`** draws dimension strings for you (`overall`, `rooms`, `walls`, or `all`).
 - Edit is cheap: "make the bedroom 1 m wider" is a one-number change, then recompile.
 
 Treat the CLI as the source of truth — author, render, and verify through it rather than reasoning

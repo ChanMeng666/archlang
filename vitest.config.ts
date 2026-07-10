@@ -10,10 +10,14 @@ export default defineConfig({
   resolve: {
     alias: {
       archlang: resolve(__dirname, "src/index.ts"),
+      // The MCP shim (packages/mcp) imports the core by its published name; alias it
+      // to the SOURCE entry too so its smoke test runs against src/ with no prior
+      // build (CI runs the suite without `npm run build`) — same rationale as above.
+      "@chanmeng666/archlang": resolve(__dirname, "src/index.ts"),
     },
   },
   test: {
-    include: ["test/**/*.test.ts", "playground/test/**/*.test.ts"],
+    include: ["test/**/*.test.ts", "playground/test/**/*.test.ts", "packages/*/test/**/*.test.ts"],
     environment: "node",
   },
 });

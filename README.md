@@ -147,7 +147,11 @@ arch preview  floorplan.arch -o floorplan.png  # render a viewable PNG (1600px; 
 arch describe floorplan.arch --json            # semantic facts: rooms, areas, adjacency, circulation
 arch lint     floorplan.arch --json            # architectural-soundness warnings (--profile to tune)
 arch validate floorplan.arch --strict          # parse + lint, no render; --strict fails on warnings (ship gate)
-arch repair   floorplan.arch -o fixed.arch     # explicit corrector: furniture out of walls/doorways/swings + change log
+arch validate floorplan.arch --graph g.json    # also check interior-door adjacency against an intended graph
+arch fix      floorplan.arch --dry-run         # preview the machine-applicable diagnostic fixes (drop --dry-run to apply)
+arch suggest  floorplan.arch --json            # advisory door/window statements to fix reachability / windowless rooms
+arch repair   floorplan.arch -o fixed.arch     # explicit geometric corrector: furniture out of walls/doorways/swings + change log
+arch compile  floorplan.arch -f txt            # zero-dependency ASCII text plan (also `preview --ascii`)
 arch batch    a.arch b.arch -o out/            # render many files/variants at once
 arch md       notes.md -o out.md               # render fenced arch blocks in Markdown → image links
 arch watch    floorplan.arch                    # recompile on save
@@ -158,7 +162,7 @@ arch manifest                                   # the whole CLI API as structure
 arch explain  E_LAYOUT_CYCLE                     # explain a diagnostic
 ```
 
-### 🤖 Use it from an AI agent (CLI-native, no MCP)
+### 🤖 Use it from an AI agent (CLI-first, MCP optional)
 
 ArchLang's agent interface is its CLI — token-cheap, runs in any harness, nothing to configure.
 **Cold start with one command:** `arch context` prints the entire bundled agent context —
@@ -167,10 +171,13 @@ system-prompt-ready document (the same
 [`llms-full.txt`](https://archlang-docs.vercel.app/llms-full.txt) the docs site serves). From there,
 every command takes `--json` (structured result on stdout, messages on stderr) with deterministic
 exit codes (`0` ok · `2` user-source error · `1` IO · `3` usage), and every diagnostic carries a
-`fix`, so the self-correction loop needs no docs lookup; `--error-svg` even turns a plan that won't
-compile into a self-describing image an agent can look at. *(There is deliberately no MCP server: a
+`fix` (and, where the edit is mechanical, machine-applicable `fixes` that `arch fix` applies), so the
+self-correction loop needs no docs lookup; `--error-svg` even turns a plan that won't compile into a
+self-describing image an agent can look at. *(The CLI stays primary because a
 [CLI costs nothing in context until called](https://www.firecrawl.dev/blog/mcp-vs-cli), where an MCP
-schema sits in the window permanently.)* Point your agent at [`SKILL.md`](SKILL.md), or:
+schema sits in the window permanently — but an optional [MCP server](#mcp-server-optional) now exists
+so MCP-native hosts can discover ArchLang through the registry.)* Point your agent at
+[`SKILL.md`](SKILL.md), or:
 
 ```bash
 npx @chanmeng666/archlang context              # EVERYTHING in one call: spec + skill + CLI reference + error catalog
@@ -182,16 +189,38 @@ npx @chanmeng666/archlang preview plan.arch -o out.png --json  # render a PNG yo
 npx @chanmeng666/archlang describe plan.arch --json            # verify: rooms, areas, adjacency, door connections, circulation
 npx @chanmeng666/archlang lint plan.arch --json                # architectural soundness warnings
 npx @chanmeng666/archlang validate plan.arch --strict --json   # parse + lint, no render; --strict fails on warnings (the ship gate)
-npx @chanmeng666/archlang repair plan.arch -o fixed.arch       # explicit corrector: furniture out of walls/doorways/swings + change log
-npx @chanmeng666/archlang compile plan.arch -o walk.svg --overlay circulation   # opt-in: draw the walkability routes on top
+npx @chanmeng666/archlang fix plan.arch --dry-run --json       # preview machine-applicable diagnostic fixes (drop --dry-run to apply)
+npx @chanmeng666/archlang suggest plan.arch --json             # advisory door/window statements for unreachable rooms / windowless bedrooms
+npx @chanmeng666/archlang repair plan.arch -o fixed.arch       # explicit geometric corrector: furniture out of walls/doorways/swings + change log
+npx @chanmeng666/archlang compile plan.arch -f txt             # zero-dependency ASCII text plan you can read straight from stdout
+npx @chanmeng666/archlang compile plan.json --from-json -o out.svg   # compile structured Plan JSON (see /plan.schema.json) instead of .arch
 npx @chanmeng666/archlang batch a.arch b.arch -f svg --json    # render many variants at once → results[]
 npx @chanmeng666/archlang md notes.md -o out.md -f svg         # render fenced arch blocks in Markdown → image links
 ```
 
-The loop: `spec` → write `.arch` → `compile --json` → on `ok:false` fix via each
-`diagnostics[].fix` → `describe --json` to confirm intent (room count, areas, adjacency) **without
-rendering an image** → `preview` to show the user a raster. `manifest --json` is the one-call API
-map; `batch`/`md` cover variant exploration and embedding plans in docs.
+The loop: `spec` → write `.arch` → `compile --json` → on `ok:false`, apply each
+`diagnostics[].fix` (or run `arch fix` for the machine-applicable ones) → `describe --json` to confirm
+intent (room count, areas, adjacency) **without rendering an image** → `validate --strict` as the ship
+gate, `preview` (or `-f txt`) to see the plan. `manifest --json` is the one-call API map; `batch`/`md`
+cover variant exploration and embedding plans in docs. Two machine-native artifacts help structured
+generation: **[`/plan.schema.json`](https://archlang-docs.vercel.app/plan.schema.json)** (the Plan-JSON
+schema for `--from-json`) and **[`/archlang.gbnf`](https://archlang-docs.vercel.app/archlang.gbnf)** (a
+GBNF grammar to constrain a local model to parseable output).
+
+<a id="mcp-server-optional"></a>
+
+**MCP server (optional).** For MCP-native hosts, the
+[`@chanmeng666/archlang-mcp`](packages/mcp) package is a stdio Model Context Protocol shim over the
+**library** (tools `compile`/`describe`/`lint`/`validate`/`repair`/`fix`/`suggest`/`complete`;
+resources `archlang://spec`/`context`/`schema`/`grammar`). The core stays zero-dependency — the SDK
+lives only in that package. Prefer the CLI when your agent has a shell (it costs nothing in context
+until called); use the server for discoverability. Add it to Claude Code with:
+
+```bash
+claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp
+```
+
+See the [package README](packages/mcp/README.md) for Claude Desktop / Cursor / VS Code config.
 
 **In CI:** the in-repo composite Action
 [`.github/actions/arch-render`](.github/actions/arch-render) renders every ` ```arch ` fence in your

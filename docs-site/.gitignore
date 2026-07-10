@@ -21,6 +21,17 @@ public/examples/
 public/llms.txt
 public/llms-full.txt
 
+# Machine-native artifacts + raw-markdown page copies, published at the site root
+# by sync-docs.mjs (schema/gbnf from the repo root; the *.md are the unbannered
+# canonical page bodies served at /<route>.md). Regenerated every build.
+public/plan.schema.json
+public/archlang.gbnf
+public/reference.md
+public/furniture.md
+public/analysis.md
+public/errors.md
+public/spec.md
+
 node_modules/
 
 .vercel

@@ -12,13 +12,25 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, "..");
 
-/** Copy a canonical doc into the site, prepending a "generated" banner. */
+// VitePress publishes public/ verbatim at the site root. Create it up front so
+// page() can also drop a raw-markdown copy of each generated page there.
+const publicDir = join(here, "public");
+mkdirSync(publicDir, { recursive: true });
+
+/**
+ * Copy a canonical doc into the site as a page source (with a "generated" banner),
+ * AND publish the raw canonical markdown at `/<route>.md` (public/<dest>) so a tool
+ * can fetch the plain source of any doc page by appending `.md` — the same
+ * append-`.md` convention llms.txt advertises. The raw copy is the unbannered body,
+ * i.e. exactly the repo's canonical markdown, so machines get clean text.
+ */
 function page(src, dest) {
   const body = readFileSync(join(repo, src), "utf8");
   const banner = `> _This page is generated from [\`${src}\`](https://github.com/chanmeng666/archlang/blob/main/${src}) — edit it there._\n\n`;
   writeFileSync(join(here, dest), banner + body);
+  writeFileSync(join(publicDir, dest), body); // raw markdown at /<route>.md
   // eslint-disable-next-line no-console
-  console.log(`  ${src} → ${dest}`);
+  console.log(`  ${src} → ${dest}  (+ /${dest})`);
 }
 
 console.log("syncing canonical docs into the site:");
@@ -32,11 +44,21 @@ page("spec.llm.md", "spec.md");
 // (per llmstxt.org: /llms.txt and /llms-full.txt). Both are generated from the
 // single sources of truth at the repo root (llms.txt hand-maintained;
 // llms-full.txt by `npm run gen:llms`); VitePress publishes public/ at root.
-const publicDir = join(here, "public");
-mkdirSync(publicDir, { recursive: true });
 for (const f of ["llms.txt", "llms-full.txt"]) {
   copyFileSync(join(repo, f), join(publicDir, f));
   console.log(`  ${f} → public/${f}`);
+}
+
+// Machine-native authoring artifacts, served at the site root so a tool can fetch
+// them directly (advertised in llms.txt): the Plan-JSON schema and the GBNF
+// constrained-decoding grammar. Both are generated at the repo root
+// (`npm run gen:plan-schema` / `npm run gen:gbnf`); copied flat here.
+for (const [src, dest] of [
+  ["schemas/plan.schema.json", "plan.schema.json"],
+  ["grammars/archlang.gbnf", "archlang.gbnf"],
+]) {
+  copyFileSync(join(repo, src), join(publicDir, dest));
+  console.log(`  ${src} → public/${dest}`);
 }
 
 // ADRs: copy each, plus build an index.

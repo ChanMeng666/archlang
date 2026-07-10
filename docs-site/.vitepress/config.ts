@@ -49,6 +49,12 @@ export default defineConfig({
   base: "/",
   cleanUrls: true,
   lastUpdated: true,
+  // sync-docs.mjs drops a RAW markdown copy of each generated page into public/
+  // (served verbatim at `/<route>.md` — the append-`.md` convention llms.txt
+  // advertises). Those copies are static assets, not pages: exclude them from
+  // markdown page parsing so VitePress neither routes them nor dead-link-checks
+  // their canonical relative links (which resolve on the real page, not the copy).
+  srcExclude: ["public/**"],
   // The reference/errors pages are synced verbatim from the canonical repo docs,
   // which contain relative links to repo files (examples/*.arch, playground/,
   // CHANGELOG.md, SKILL.md, error-codes.md → the site's /errors page) that are

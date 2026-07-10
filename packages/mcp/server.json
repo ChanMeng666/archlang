@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.chanmeng666/archlang-mcp",
+  "description": "Compile, describe, lint, validate, repair, fix and suggest architectural floor plans written in ArchLang. A thin shim over @chanmeng666/archlang; the agent-native CLI stays the primary, token-cheaper interface.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/chanmeng666/archlang",
+    "source": "github",
+    "subfolder": "packages/mcp"
+  },
+  "websiteUrl": "https://archlang-docs.vercel.app",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@chanmeng666/archlang-mcp",
+      "version": "0.1.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "name": "@chanmeng666/archlang-mcp",
+  "version": "0.1.0",
+  "description": "Model Context Protocol (MCP) server for ArchLang — compile, describe, lint, validate, repair, fix and suggest floor plans over stdio. A thin shim over @chanmeng666/archlang; the CLI stays the primary, token-cheaper interface.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "archlang",
+    "floor-plan",
+    "architecture",
+    "svg",
+    "dsl"
+  ],
+  "license": "MIT",
+  "author": "Chan Meng <chanmeng.dev@gmail.com>",
+  "homepage": "https://github.com/chanmeng666/archlang/tree/main/packages/mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chanmeng666/archlang.git",
+    "directory": "packages/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/chanmeng666/archlang/issues"
+  },
+  "type": "module",
+  "bin": {
+    "archlang-mcp": "dist/server.js"
+  },
+  "files": [
+    "dist",
+    "server.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup && node scripts/copy-resources.mjs",
+    "typecheck": "tsc --noEmit",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@chanmeng666/archlang": "file:../..",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  }
+}
