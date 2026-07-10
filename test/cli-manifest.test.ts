@@ -23,10 +23,11 @@ describe("manifest — no drift vs the CLI dispatch", () => {
 describe("manifest — content", () => {
   const m = buildManifest("9.9.9");
 
-  it("injects the version and advertises the four formats with their optional deps", () => {
+  it("injects the version and advertises the formats with their optional deps", () => {
     expect(m.version).toBe("9.9.9");
-    expect(m.formats.map((f) => f.id)).toEqual(["svg", "dxf", "pdf", "png"]);
+    expect(m.formats.map((f) => f.id)).toEqual(["svg", "dxf", "txt", "pdf", "png"]);
     expect(m.formats.find((f) => f.id === "svg")?.zeroDep).toBe(true);
+    expect(m.formats.find((f) => f.id === "txt")?.zeroDep).toBe(true);
     expect(m.formats.find((f) => f.id === "png")?.optionalDep).toBe("@resvg/resvg-js");
   });
 

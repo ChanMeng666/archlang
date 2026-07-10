@@ -40,6 +40,7 @@ import {
   loadClipperBackend,
   renderPng,
   renderPngFromSvg,
+  renderAscii,
   setGeometryBackend,
   toDxf,
   toPdf,
@@ -88,6 +89,12 @@ interface Args {
   errorSvg?: boolean;
   /** `--accessible`: emit <title>/<desc>/role/aria accessibility metadata into the SVG. */
   accessible?: boolean;
+  /** `--ascii`: (preview) print the plan as ASCII text instead of a PNG. */
+  ascii?: boolean;
+  /** `--cols <n>`: target grid width for the `txt` / `--ascii` text renderer. */
+  cols?: number;
+  /** `--charset unicode|ascii`: glyph set for the text renderer (default unicode). */
+  charset?: string;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -99,6 +106,9 @@ function parseArgs(argv: string[]): Args {
     else if (a === "-f" || a === "--format") res.format = argv[++i];
     else if (a === "-j" || a === "--jobs") res.jobs = Number(argv[++i]);
     else if (a === "-s" || a === "--scale") res.scale = Number(argv[++i]);
+    else if (a === "--cols") res.cols = Number(argv[++i]);
+    else if (a === "--charset") res.charset = argv[++i];
+    else if (a === "--ascii") res.ascii = true;
     else if (a === "--install") res.install = true;
     else if (a === "--write") res.write = true;
     else if (a === "--json") res.json = true;
@@ -230,9 +240,13 @@ async function runWithInstall<T>(fn: () => Promise<T>, pkg: string, args: Args):
   }
 }
 
+/** Normalize the `--charset` flag to the text backend's union (unknown → unicode). */
+const asciiCharset = (args: Args): "unicode" | "ascii" => (args.charset === "ascii" ? "ascii" : "unicode");
+
 /** Serialize a built Scene to the requested format (auto-installing optional deps if asked). */
 async function serialize(scene: Scene, svg: string, format: Format, args: Args): Promise<string | Uint8Array> {
   if (format === "dxf") return toDxf(scene);
+  if (format === "txt") return renderAscii(scene, { cols: args.cols, charset: asciiCharset(args) });
   if (format === "pdf") return runWithInstall(() => toPdf(scene), "pdfkit", args);
   if (format === "png")
     return runWithInstall(() => renderPng(scene, { width: args.width, scale: args.scale }), "@resvg/resvg-js", args);
@@ -263,6 +277,11 @@ async function renderArtifact(source: string, format: Format, args: Args, baseDi
     // `--accessible`: stamp <title>/<desc>/role/aria into the SVG (SVG-only; a raster
     // format simply drops the metadata). Default output is byte-identical.
     ...(args.accessible ? { accessible: true } : {}),
+    // The text renderer (`-f txt` / `preview --ascii`) needs the opt-in annotate
+    // metadata (elementId/elementKind) to place furniture markers — the only way to
+    // recover a fixture's identity from the geometry-only Scene. Other formats never
+    // set it, so their output stays byte-identical.
+    ...(format === "txt" || args.ascii ? { annotate: true } : {}),
   });
   if (hasErrors(diagnostics) || !scene) {
     // A broken plan. With `--error-svg`, `svg` holds the error card — serialize it
@@ -515,9 +534,47 @@ async function cmdWatch(args: Args): Promise<number> {
  * present (a normal `npm i`/`npx` installs it); otherwise the failure carries the
  * `E_PNG_DEPENDENCY` code + fix, and `--install` fetches it and retries.
  */
+/**
+ * `preview --ascii` — the text preview. Compiles to the `txt` backend and prints
+ * the plan to stdout (human) or as an `ascii` field (`--json`), following the same
+ * result shape as the PNG preview. Zero dependency: an agent gets a legible plan
+ * with no raster binary at all.
+ */
+async function cmdPreviewAscii(args: Args, input: string): Promise<number> {
+  const format: Format = "txt";
+  let source: string;
+  try {
+    source = readInput(input);
+  } catch {
+    return ioError(`cannot read ${input}`, args.json, { format });
+  }
+  const r = await renderArtifact(source, format, args, baseDirOf(input));
+  if (r.bytes === undefined) {
+    if (args.json) emitJson({ ok: false, format, diagnostics: r.diagnostics.map((d) => diagnosticToJson(source, d)) });
+    else {
+      emitDiagnosticsHuman(source, r.diagnostics, args.quiet);
+      if (!args.quiet) process.stderr.write("✗ compilation failed\n");
+    }
+    return EXIT.USER;
+  }
+  const ascii = typeof r.bytes === "string" ? r.bytes : Buffer.from(r.bytes).toString("utf8");
+  const warnings = r.diagnostics.filter((d) => d.severity === "warning");
+  if (args.json) {
+    emitJson({ ok: true, format, ascii, diagnostics: warnings.map((d) => diagnosticToJson(source, d)) });
+  } else {
+    process.stdout.write(ascii);
+  }
+  return EXIT.OK;
+}
+
 async function cmdPreview(args: Args): Promise<number> {
   const input = args._[0];
   if (!input) return usageError("preview needs an input file (use a path or `-` for stdin)");
+
+  // `--ascii`: a zero-install text preview an agent can read straight from stdout,
+  // no raster dependency. Reuses the same `renderAscii` backend as `-f txt`.
+  if (args.ascii) return cmdPreviewAscii(args, input);
+
   const format: Format = "png";
   // Target a sensible on-screen size by default: the native render is high-res
   // (thousands of px), so render the page at ~1600px wide unless the caller set
@@ -1027,8 +1084,8 @@ function ioError(msg: string, json?: boolean, extra?: Record<string, unknown>): 
 const HELP = `arch — ArchLang compiler (agent-native)
 
 Usage:
-  arch compile  <in.arch|-> [-o out|-] [-w width] [-f svg|dxf|pdf|png] [--overlay circulation] [--error-svg] [--accessible] [--install] [--json] [--quiet]
-  arch preview  <in.arch|-> [-o out.png] [-s scale] [--error-svg] [--install] [--json]   render a PNG you can look at
+  arch compile  <in.arch|-> [-o out|-] [-w width] [-f svg|dxf|txt|pdf|png] [--cols n] [--charset unicode|ascii] [--overlay circulation] [--error-svg] [--accessible] [--install] [--json] [--quiet]
+  arch preview  <in.arch|-> [-o out.png] [-s scale] [--ascii [--cols n] [--charset …]] [--error-svg] [--install] [--json]   render a PNG (or ASCII text) you can look at
   arch batch    <a.arch> <b.arch> … [-o dir] [-f …] [-j jobs] [--json]   render many files concurrently
   arch md       <doc.md> [-o out.md] [-f svg|png] [--error-svg] [--json]   render fenced arch blocks → image links
   arch watch    <in.arch> [-o out] [-w width] [-f …]
@@ -1051,8 +1108,9 @@ Every command takes --json: result on stdout, messages on stderr.
 --accessible (compile, SVG): emit <title>/<desc>/role="img"/aria-labelledby (the describe() caption)
   so the drawing is self-describing for assistive tech and machine readers; default output is unchanged.
 --install (compile -f png/pdf, preview): auto-install the missing optional render dep, then retry.
+--ascii (preview) / -f txt (compile): render a zero-dependency ASCII text plan (--cols, --charset).
 Exit codes: 0 ok · 2 user-source error (don't retry) · 1 internal/IO · 3 bad usage.
-Formats: svg (default) · dxf (zero-dep) · pdf (optional pdfkit) · png (optional @resvg/resvg-js)
+Formats: svg (default) · dxf (zero-dep) · txt (zero-dep ASCII) · pdf (optional pdfkit) · png (optional @resvg/resvg-js)
 `;
 
 async function main(): Promise<void> {

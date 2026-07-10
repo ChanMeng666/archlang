@@ -23,6 +23,7 @@ import { KEYWORDS } from "./grammar/tokens.js";
 export const EXPORT_FORMATS = [
   { id: "svg", zeroDep: true },
   { id: "dxf", zeroDep: true },
+  { id: "txt", zeroDep: true },
   { id: "pdf", zeroDep: false, optionalDep: "pdfkit" },
   { id: "png", zeroDep: false, optionalDep: "@resvg/resvg-js" },
 ] as const;
@@ -82,8 +83,18 @@ const OUT_FLAG: ManifestFlag = {
 const FMT_FLAG: ManifestFlag = {
   flag: "--format",
   alias: "-f",
-  arg: "<svg|dxf|pdf|png>",
+  arg: "<svg|dxf|txt|pdf|png>",
   description: "output format (default svg)",
+};
+const COLS_FLAG: ManifestFlag = {
+  flag: "--cols",
+  arg: "<n>",
+  description: "text renderer (-f txt / preview --ascii) grid width in characters (default 80)",
+};
+const CHARSET_FLAG: ManifestFlag = {
+  flag: "--charset",
+  arg: "<unicode|ascii>",
+  description: "text renderer glyph set (default unicode)",
 };
 const WIDTH_FLAG: ManifestFlag = {
   flag: "--width",
@@ -120,6 +131,8 @@ const COMMANDS: ManifestCommand[] = [
       OUT_FLAG,
       FMT_FLAG,
       WIDTH_FLAG,
+      COLS_FLAG,
+      CHARSET_FLAG,
       OVERLAY_FLAG,
       ERROR_SVG_FLAG,
       ACCESSIBLE_FLAG,
@@ -163,13 +176,16 @@ const COMMANDS: ManifestCommand[] = [
     flags: [
       { flag: "--out", alias: "-o", arg: "<out.png>", description: "PNG destination (default: <name>.png)" },
       { flag: "--scale", alias: "-s", arg: "<n>", description: "raster scale (default 2)" },
+      { flag: "--ascii", description: "print a zero-dependency ASCII text plan to stdout instead of a PNG" },
+      COLS_FLAG,
+      CHARSET_FLAG,
       ERROR_SVG_FLAG,
       { flag: "--install", description: "auto-install @resvg/resvg-js if missing, then render" },
       JSON_FLAG,
       QUIET_FLAG,
     ],
     input: "<file.arch|->",
-    output: "PNG file",
+    output: "PNG file (or ASCII text on stdout with --ascii)",
   },
   {
     name: "watch",
