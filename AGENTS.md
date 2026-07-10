@@ -19,13 +19,13 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.13.0` (**unreleased, this tree** — last published `latest` is `1.12.1`) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.13.0` (**tagged `v1.13.0`, ready to publish — not yet on npm**; last published `latest` is `1.12.1`) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — now incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
-| **MCP server** | `@chanmeng666/archlang-mcp@0.1.0` (**unreleased, this tree** — `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate/repair/fix/suggest/complete + spec/context/schema/grammar resources; SDK dep quarantined here, core stays zero-dep) | `packages/mcp/`, `server.json` |
-| **VS Code extension** | `ChanMeng.archlang@0.4.1` (published, live — icon + dark gallery banner; bundles core 1.12.0 with the `accTitle`/`accDescr` surface) — a repack for the v1.13 language sugar (attachment/`strip`/anchor) is pending | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
+| **MCP server** | `@chanmeng666/archlang-mcp@0.1.0` (**ready to publish — not yet on npm**; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate/repair/fix/suggest/complete + spec/context/schema/grammar resources; SDK dep quarantined here, core stays zero-dep) | `packages/mcp/`, `server.json` |
+| **VS Code extension** | `ChanMeng.archlang@0.5.0` (**packaged `.vsix`, pending Marketplace upload**; bundles core 1.13.0 with the v1.13 language sugar — attachment/`strip`/anchor + the new codes); last live on the Marketplace is `0.4.1` | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.12.1` (latest published); `v1.13.0` unreleased | github.com/ChanMeng666/archlang |
+| **Git** | `main`, tags `v1.0.0` → `v1.12.1` (latest published); `v1.13.0` tagged this commit, not yet pushed/published | github.com/ChanMeng666/archlang |
 | **Tests** | 758 passing (89 files, incl. the `packages/mcp` stdio smoke test) + offline authorability eval (22 briefs, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
 **Latest work — v1.13.0 (unreleased, in this tree; AI-native authoring). Six tranches

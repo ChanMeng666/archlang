@@ -12,6 +12,21 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.5.0] - 2026-07-11
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.13.0`**, picking up the v1.13 language
+  surface so highlighting, completion, hover, and diagnostics cover the new AI-native
+  authoring sugar: opening **attachment** (`door|window|opening on <wall> at <pos>`,
+  `swing into <room>`, `hinge near start|end`), the **`strip`** layout block, and
+  **`furniture … in <room> anchor <corner|edge> [inset <mm>]`**, plus the new catalogued
+  codes (`E_ATTACH_WALL_REF`, `E_ATTACH_POS_RANGE`, `E_STRIP_NEST`, `E_STRIP_SIZE`,
+  `E_JSON_SCHEMA`, `E_JSON_KIND`). Bumped the dev-dependency pin `^1.12.0` → `^1.13.0` to
+  match the bundled core.
+
+_No new configuration or runtime-behavior change beyond the newer bundled core._
+
 ## [0.4.1] - 2026-07-10
 
 ### Added
