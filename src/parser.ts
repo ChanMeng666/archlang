@@ -18,9 +18,13 @@ import type {
   SetNode,
   SetOverride,
   Statement,
+  StripNode,
+  StripRoomChild,
   TitleNode,
+  UseKind,
   WhileNode,
 } from "./ast.js";
+import { USE_KINDS } from "./ast.js";
 import type { Expr } from "./expr.js";
 import { parseExpr as parseExprPratt } from "./expr.js";
 import type { Theme } from "./theme.js";
@@ -279,6 +283,12 @@ class Parser {
             const imp = this.parseImport();
             imp.span = this.spanFrom(start);
             plan.imports.push(imp);
+            break;
+          }
+          case "strip": {
+            const strip = this.parseStrip();
+            strip.span = this.spanFrom(start);
+            plan.body.push(strip);
             break;
           }
           // Elements, `let`, instances, control flow, and assignment all flow
@@ -578,6 +588,14 @@ class Parser {
       this.diagnostics.push({ severity: "error", message: msg, code: "E_ACC_PLACEMENT", span: this.spanFrom(start) });
       return { kind: "error", id: "", line: t.line, message: msg };
     }
+    // `strip` is a plan-level block only. Inside a component/control-flow block (or
+    // another strip), consume it for clean recovery and report E_STRIP_NEST.
+    if (t.value === "strip") {
+      this.parseStrip();
+      const msg = `"strip" is only allowed at plan level, not inside a block, component, or another strip`;
+      this.diagnostics.push({ severity: "error", message: msg, code: "E_STRIP_NEST", span: this.spanFrom(start) });
+      return { kind: "error", id: "", line: t.line, message: msg };
+    }
     let node: Statement;
     if (t.value === "for") node = this.parseFor(components, selfName);
     else if (t.value === "if") node = this.parseIf(components, selfName);
@@ -747,7 +765,93 @@ class Parser {
     const body = this.parseBlockBody(components, name);
     return { name, params, body, line: kw.line };
   }
+
+  /**
+   * `strip <dir> at (x,y) gap G (height|width) H { room … }` — a row/column of
+   * rooms. `dir` is the fill axis; the cross keyword is `height` for a horizontal
+   * strip, `width` for a vertical one. Children must be `room`s; each gives a
+   * main-axis extent (and may override the shared cross with `size <main>x<cross>`).
+   */
+  private parseStrip(): StripNode {
+    const kw = this.eatKeyword("strip");
+    const dirTok = this.eatIdent();
+    const dir = dirTok.value;
+    if (dir !== "right" && dir !== "left" && dir !== "down" && dir !== "up") {
+      this.fail(`Expected a strip direction (right|left|down|up) but found "${dir}"`, dirTok);
+    }
+    this.eatKeyword("at");
+    const at = this.parsePoint();
+    this.eatKeyword("gap");
+    const gap = parseExprPratt(this.ctx);
+    const horiz = dir === "right" || dir === "left";
+    const crossKw = horiz ? "height" : "width";
+    let cross: StripNode["cross"];
+    if (this.isKeyword(crossKw)) {
+      this.next();
+      cross = parseExprPratt(this.ctx);
+    }
+    this.eat("lcurly");
+    const rooms: StripRoomChild[] = [];
+    while (!this.isType("rcurly") && !this.isType("eof")) {
+      // A nested strip is illegal — report it and consume it for recovery.
+      if (this.isKeyword("strip")) {
+        const nestStart = this.peek().start;
+        this.parseStrip();
+        this.diagnostics.push({
+          severity: "error",
+          message: `"strip" is only allowed at plan level, not inside another strip`,
+          code: "E_STRIP_NEST",
+          span: this.spanFrom(nestStart),
+        });
+        continue;
+      }
+      rooms.push(this.parseStripRoom());
+    }
+    this.eat("rcurly");
+    return { kind: "strip", id: "", dir, at, gap, ...(cross ? { cross } : {}), rooms, line: kw.line };
+  }
+
+  /** One `room [id=] size <main>[x<cross>] [label "…"] [uses …]` inside a strip. */
+  private parseStripRoom(): StripRoomChild {
+    const kw = this.eatKeyword("room");
+    const start = kw.start;
+    const id = this.parseIdOpt();
+    this.eatKeyword("size");
+    // `<main>` (cross inherited from the strip) or `<main>x<cross>` / `<main> x <cross>`.
+    let main: StripRoomChild["main"];
+    let cross: StripRoomChild["cross"];
+    if (this.isType("dimension")) {
+      const d = this.eat("dimension");
+      main = { t: "num", value: d.num! };
+      cross = { t: "num", value: d.num2! };
+    } else {
+      main = parseExprPratt(this.ctx);
+      if (this.isKeyword("x")) {
+        this.next();
+        cross = parseExprPratt(this.ctx);
+      }
+    }
+    const child: StripRoomChild = { id, main, ...(cross ? { cross } : {}), line: kw.line };
+    if (this.isKeyword("label")) {
+      this.next();
+      child.label = this.parseStringExpr();
+    }
+    if (this.isKeyword("uses")) {
+      this.next();
+      const uses: UseKind[] = [];
+      while (this.peek().type === "ident" && USE_SET.has(this.peek().value)) {
+        uses.push(this.next().value as UseKind);
+      }
+      if (uses.length === 0) this.fail(`Expected one or more room uses (${USE_KINDS.join("|")}) after "uses"`);
+      child.uses = uses;
+    }
+    child.span = this.spanFrom(start);
+    return child;
+  }
 }
+
+/** Room use-kind keywords, for the strip-child `uses` clause. */
+const USE_SET: ReadonlySet<string> = new Set<string>(USE_KINDS);
 
 function describe(t: Token): string {
   if (t.type === "eof") return "end of input";

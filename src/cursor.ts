@@ -57,6 +57,16 @@ export function statementExprs(s: Statement): Expr[] {
       pt(s.at);
       out.push(s.size.w, s.size.h);
       break;
+    case "strip":
+      pt(s.at);
+      out.push(s.gap);
+      if (s.cross) out.push(s.cross);
+      for (const r of s.rooms) {
+        out.push(r.main);
+        if (r.cross) out.push(r.cross);
+        if (r.label) out.push(r.label);
+      }
+      break;
     case "let":
     case "assign":
       out.push(s.value);

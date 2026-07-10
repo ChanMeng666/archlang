@@ -18,7 +18,21 @@
 /** Keyword categories, by highlighting role. Order within each is stable. */
 export const KEYWORDS = {
   /** Statement / declaration keywords → TextMate `keyword.control`, CM `keyword`. */
-  control: ["plan", "component", "let", "theme", "title", "style", "import", "for", "if", "while", "else", "set"],
+  control: [
+    "plan",
+    "component",
+    "let",
+    "theme",
+    "title",
+    "style",
+    "import",
+    "for",
+    "if",
+    "while",
+    "else",
+    "set",
+    "strip",
+  ],
   /** Built-in element kinds → `storage.type.element`, CM `typeName`. */
   element: ["wall", "room", "door", "window", "opening", "furniture", "dim", "column"],
   /** Setting / attribute keywords → `keyword.other`, CM `propertyName`. */
@@ -59,6 +73,12 @@ export const KEYWORDS = {
     "against",
     "segment",
     "side",
+    "on",
+    "into",
+    "near",
+    "anchor",
+    "inset",
+    "height",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
   enum: [
@@ -75,6 +95,13 @@ export const KEYWORDS = {
     "middle",
     "bottom",
     "center",
+    "centered",
+    "start",
+    "end",
+    "top-left",
+    "top-right",
+    "bottom-left",
+    "bottom-right",
     "auto",
     "living",
     "kitchen",
@@ -150,4 +177,5 @@ export const STATEMENT_STARTS: readonly string[] = [
   "if",
   "while",
   "set",
+  "strip",
 ];

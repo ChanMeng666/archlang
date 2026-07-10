@@ -56,10 +56,10 @@ column [id=<name>] at (x,y) size <W>x<H>
 
 ## Keyword reference
 
-- **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`
+- **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`, `strip`
 - **Elements:** `wall`, `room`, `door`, `window`, `opening`, `furniture`, `dim`, `column`
-- **Attributes:** `units`, `grid`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`
-- **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `auto`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`
+- **Attributes:** `units`, `grid`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`, `on`, `into`, `near`, `anchor`, `inset`, `height`
+- **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `centered`, `start`, `end`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `auto`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`
 
 ## CLI loop (how an agent drives it)
 

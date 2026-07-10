@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**36 errors** · **30 warnings**
+**41 errors** · **31 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -13,6 +13,8 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_ARGCOUNT`](#e_argcount) | error | Component called with the wrong number of arguments. |
 | [`E_ARITY`](#e_arity) | error | Built-in function called with the wrong number of arguments. |
 | [`E_ASSIGN_UNDEF`](#e_assign_undef) | error | Assignment to an undeclared name. |
+| [`E_ATTACH_POS_RANGE`](#e_attach_pos_range) | error | Opening attachment position is out of range. |
+| [`E_ATTACH_WALL_REF`](#e_attach_wall_ref) | error | Opening attached to an unknown or ambiguous wall. |
 | [`E_CALL_DEPTH`](#e_call_depth) | error | Value-function call stack too deep. |
 | [`E_COLUMN_SIZE`](#e_column_size) | error | Column must have a positive size. |
 | [`E_DIV_ZERO`](#e_div_zero) | error | Division or modulo by zero. |
@@ -33,11 +35,14 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_LAYOUT_CYCLE`](#e_layout_cycle) | error | Relational room placement forms a cycle. |
 | [`E_LAYOUT_REF`](#e_layout_ref) | error | Relational placement references an unknown room. |
 | [`E_OPENING_WIDTH`](#e_opening_width) | error | Opening must have a positive width. |
+| [`E_PLACE_REF`](#e_place_ref) | error | Furniture placed in an unknown or non-absolute room. |
 | [`E_PNG_DEPENDENCY`](#e_png_dependency) | error | PNG/PDF export needs an optional dependency that is not installed. |
 | [`E_RANGE_LIMIT`](#e_range_limit) | error | Range too large. |
 | [`E_RECURSION`](#e_recursion) | error | Component recursion too deep. |
 | [`E_REDEF`](#e_redef) | error | Name already defined in this scope. |
 | [`E_ROOM_SIZE`](#e_room_size) | error | Room must have a positive size. |
+| [`E_STRIP_NEST`](#e_strip_nest) | error | Illegal `strip` nesting. |
+| [`E_STRIP_SIZE`](#e_strip_size) | error | Room in a `strip` is missing a size. |
 | [`E_TYPE`](#e_type) | error | Type mismatch. |
 | [`E_UNKNOWN_COMPONENT`](#e_unknown_component) | error | Unknown component. |
 | [`E_UNKNOWN_FN`](#e_unknown_fn) | error | Unknown function. |
@@ -71,6 +76,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_ROOM_UNREACHABLE`](#w_room_unreachable) | warning | Room cannot be reached from the entrance. |
 | [`W_SANITIZED_CONFIG`](#w_sanitized_config) | warning | A disallowed config value was stripped. |
 | [`W_SWING_OBSTRUCTED`](#w_swing_obstructed) | warning | Door swing is obstructed. |
+| [`W_SWING_ROOM_NOT_ADJACENT`](#w_swing_room_not_adjacent) | warning | `swing into <room>` names a room the door does not border. |
 | [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material; using the default hatch. |
 | [`W_UNKNOWN_STYLE_KEY`](#w_unknown_style_key) | warning | Unknown style key. |
 | [`W_UNKNOWN_THEME_KEY`](#w_unknown_theme_key) | warning | Unknown theme key. |
@@ -123,6 +129,30 @@ let x = abs(1, 2)   # error: abs expects 1 argument
 
 ```arch
 x = 5           # error: declare with `let x = …` first
+```
+
+## E_ATTACH_POS_RANGE
+
+*error* — Opening attachment position is out of range.
+
+**Cause.** The `at <pos>` of an attached opening is outside the host wall: a percentage outside 0–100%, or a millimetre distance outside `0 … wall length`.
+
+**Fix.** Use a percentage in 0–100%, a millimetre distance within the wall's run, or `center`.
+
+```arch
+door on w1 at 150% width 900   # error: 150% is past the wall end
+```
+
+## E_ATTACH_WALL_REF
+
+*error* — Opening attached to an unknown or ambiguous wall.
+
+**Cause.** A `door`/`window`/`opening … on <wall> at <pos>` names a wall id (or category) that no wall has, or one that matches more than one wall — so the compiler cannot pick the polyline to walk.
+
+**Fix.** Reference an existing, unique wall id (add `id=` to the wall if needed).
+
+```arch
+door on w1 at 40% width 900   # error if no wall id=w1 (or several match)
 ```
 
 ## E_CALL_DEPTH
@@ -368,6 +398,18 @@ room id=k right-of ghost size 100x100   # error: no room "ghost"
 opening at (0,0) width 0   # error
 ```
 
+## E_PLACE_REF
+
+*error* — Furniture placed in an unknown or non-absolute room.
+
+**Cause.** A `furniture … in <room> centered|anchor …` names a room that does not exist, or one positioned relationally (`right-of`/…) whose box is not yet fixed when the fixture is placed.
+
+**Fix.** Reference an existing room given absolute `at (x,y)` coordinates.
+
+```arch
+furniture bed in bedrm centered size 1500x2000   # error: no room id=bedrm
+```
+
 ## E_PNG_DEPENDENCY
 
 *error* — PNG/PDF export needs an optional dependency that is not installed.
@@ -427,6 +469,30 @@ let x = 2   # error: redefinition
 
 ```arch
 room at (0,0) size 0x4000   # error: width is 0
+```
+
+## E_STRIP_NEST
+
+*error* — Illegal `strip` nesting.
+
+**Cause.** A `strip` block appears inside a component, a control-flow block, or another `strip`. Strips place rooms and are only legal as direct plan-level statements.
+
+**Fix.** Move the `strip` to the plan body, alongside the other elements.
+
+```arch
+component c() { strip right at (0,0) gap 0 { … } }   # error: nested strip
+```
+
+## E_STRIP_SIZE
+
+*error* — Room in a `strip` is missing a size.
+
+**Cause.** A room inside a `strip { … }` gives no main-axis extent, or gives none while the strip supplies no cross-axis `height`/`width` for it to inherit — so its rectangle is undetermined.
+
+**Fix.** Give the room a `size <main>` (main-axis extent) plus either a strip `height`/`width` or its own `size <main>x<cross>`.
+
+```arch
+strip right at (0,0) gap 100 { room size }   # error: no extent
 ```
 
 ## E_TYPE
@@ -830,6 +896,18 @@ theme { wall: "<script>" }   # warning: stripped
 
 ```arch
 door at (4000,1500) width 900 swing in   # lint: leaf sweeps onto the bed
+```
+
+## W_SWING_ROOM_NOT_ADJACENT
+
+*warning* — `swing into <room>` names a room the door does not border.
+
+**Cause.** A door's `swing into <room>` points the leaf toward a room, but that room does not share the door's host wall (its box does not touch the wall within tolerance), so which side it means is undefined.
+
+**Fix.** Point `swing into` at a room the door actually opens onto, or use explicit `swing in|out`. The door falls back to its default swing.
+
+```arch
+door on w1 at 50% width 800 swing into faraway   # warning: not on this wall
 ```
 
 ## W_UNKNOWN_MATERIAL

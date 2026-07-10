@@ -367,10 +367,41 @@ room id=bed     below living    align left gap 0 size 5000x3500 label "Bedroom"
 A reference cycle reports [`E_LAYOUT_CYCLE`](error-codes.md); an unknown reference
 reports `E_LAYOUT_REF`. See the dedicated guide page for the placement arithmetic.
 
+### Strip (v1.13)
+
+```
+strip <right|left|down|up> at (x,y) gap <mm> [height|width <mm>] {
+  room [id=<id>] size <main>[x<cross>] [label "<text>"] [uses <kind>…]
+  …
+}
+```
+
+A **row or column of rooms** laid out end to end. `<dir>` is the fill axis; each
+room's main-axis offset is the running sum of the previous rooms' extents plus
+`gap`, and the shared cross dimension is the strip's `height` (for a horizontal
+`right`/`left` strip) or `width` (for a vertical `down`/`up` strip). A room gives
+its **main-axis extent** with `size <main>`, and may override the shared cross with
+`size <main>x<cross>`. Declaration order is fill order.
+
+`strip` is pure sugar: it expands to ordinary absolute-placed rooms during resolve,
+so everything downstream — walls, doors, relational references **to** the strip's
+rooms — is unchanged. It is a **plan-level block only** (nesting it inside a
+component, control-flow block, or another strip is `E_STRIP_NEST`); a room that
+supplies no cross dimension while the strip supplies none is `E_STRIP_SIZE`.
+
+```
+strip down at (4000,0) gap 0 width 3000 {
+  room id=r_bed  size 3000 label "Bedroom" uses bedroom
+  room id=r_hall size 1400 label "Hall"    uses hall
+  room id=r_bath size 1600 label "Bath"    uses bath
+}
+```
+
 ### Door
 
 ```
-door [id=<id>] at (x,y) width <mm> [wall <ref>] [hinge left|right] [swing in|out]
+door [id=<id>] at (x,y) width <mm> [wall <ref>] [hinge left|right|near start|end] [swing in|out|into <room>]
+door [id=<id>] on <wall> at <pos> width <mm> [hinge …] [swing …]
 ```
 
 Drawn as an opening in the host wall plus a leaf and a quarter-circle swing arc.
@@ -378,18 +409,40 @@ Drawn as an opening in the host wall plus a leaf and a quarter-circle swing arc.
 wall hosts it. `hinge` is relative to the wall's direction. Defaults: `hinge
 left`, `swing in`.
 
+**Wall attachment (v1.13).** Instead of `at (x,y)`, place the opening **on** a
+named wall at a position along it: `<pos>` is a percentage of the wall's length
+(`40%`), an absolute distance in millimetres from the wall's start (`1200`), or
+`center`. The point is computed by walking the wall's polyline, so the door is
+pinned to that wall by construction (it can never be reported "off wall"). An
+unknown/ambiguous wall is [`E_ATTACH_WALL_REF`](error-codes.md); a position past
+the wall is `E_ATTACH_POS_RANGE`.
+
+**Room-directed swing & vertex hinge (v1.13).**
+- `swing into <room>` picks `in`/`out` so the leaf opens toward that room's side
+  of the host wall. If the room doesn't border the wall it warns
+  `W_SWING_ROOM_NOT_ADJACENT` and falls back to the default.
+- `hinge near start|end` hinges the leaf at the door-segment end nearer the host
+  wall's start/end vertex — independent of the wall's traversal wording.
+
+```
+door on w_south at 2000 width 1000 hinge near start swing into r_living
+```
+
 ### Window
 
 ```
 window [id=<id>] at (x,y) width <mm> [wall <ref>]
+window [id=<id>] on <wall> at <pos> width <mm>
 ```
 
-An opening with the standard double-line glazing symbol.
+An opening with the standard double-line glazing symbol. The `on <wall> at <pos>`
+attachment form works exactly as for doors.
 
 ### Opening (v1.3)
 
 ```
 opening [id=<id>] at (x,y) width <mm> [wall <ref>]
+opening [id=<id>] on <wall> at <pos> width <mm>
 ```
 
 A **cased, leaf-less gap** — it voids the wall like a door does, but draws no leaf
@@ -397,10 +450,12 @@ and no swing arc and no glazing. Use it where two spaces flow into one another
 without a door: a living room into a hall, an open-plan kitchen, a wide cased
 passage. Like a door, an `opening` **connects two spaces** in the
 [access graph](analysis.md) — but because there is no leaf to subtract, its clear
-width equals its nominal width (a door loses ~60 mm to the leaf and stop).
+width equals its nominal width (a door loses ~60 mm to the leaf and stop). It also
+takes the `on <wall> at <pos>` attachment form.
 
 ```
 opening id=o_living at (4000,3700) width 900 wall partition   # living ↔ hall, no door
+opening on w_part at 50% width 900                            # centred on the partition
 ```
 
 ### Furniture
@@ -408,6 +463,8 @@ opening id=o_living at (4000,3700) width 900 wall partition   # living ↔ hall,
 ```
 furniture <kind> [id=<id>] at (x,y) size <w>x<h> [label "<text>"] [rotate 0|90|180|270] [in <room>]
 furniture <kind> [id=<id>] against wall <ref> [segment <n>] [offset <mm>] [side left|right] [size <along>x<depth>] [label "<text>"] [in <room>]
+furniture <kind> [id=<id>] in <room> centered [size <w>x<h>] [label …] [rotate …]
+furniture <kind> [id=<id>] in <room> anchor <a> [inset <mm>] [size <w>x<h>] [label …] [rotate …]
 ```
 
 A schematic labelled rectangle (bed, sofa, desk…). Known plumbing & kitchen
@@ -416,12 +473,28 @@ A schematic labelled rectangle (bed, sofa, desk…). Known plumbing & kitchen
 `counter`, `fridge`, and `stove`/`hob`/`cooktop`. Any other kind falls back to the
 labelled rectangle.
 
-A piece can be placed two ways: absolutely with `at (x,y)` (optionally turned with
-`rotate`), or snapped **`against wall <ref>`** so its back sits on the wall and its
-rotation is derived for you. A known fixture placed `against wall` may **omit `size`**
-to take its catalogued footprint (e.g. `furniture wc against wall w1 in bath`); `at`
-placement and uncatalogued kinds still need an explicit `size`. `in <room>` records
-which room owns the piece (used by the lint rules). The full placement rules, the fixture symbol catalogue, and the
+A piece can be placed three ways: absolutely with `at (x,y)` (optionally turned with
+`rotate`), snapped **`against wall <ref>`** so its back sits on the wall and its
+rotation is derived for you, or **relative to a room** (v1.13). A known fixture
+placed `against wall` may **omit `size`** to take its catalogued footprint (e.g.
+`furniture wc against wall w1 in bath`); `at` and room-relative placement and
+uncatalogued kinds still need an explicit `size`. `in <room>` records which room
+owns the piece (used by the lint rules).
+
+**Room-relative placement (v1.13).** `in <room> centered` centres the fixture in
+that room's box; `in <room> anchor <a> [inset <mm>]` snaps it to a corner or edge.
+The anchor `<a>` is one of `top-left`, `top`, `top-right`, `left`, `center`,
+`right`, `bottom-left`, `bottom`, `bottom-right`; `inset` (default `0`) pulls it in
+from the referenced edge(s). The `in <room>` here both positions **and** owns the
+fixture. An unknown or relationally-placed room is
+[`E_PLACE_REF`](error-codes.md).
+
+```
+furniture bed  in r_bed    anchor top-left inset 300 size 1500x2000 label "Bed"
+furniture sofa in r_living centered                  size 2000x900  label "Sofa"
+```
+
+The full placement rules, the fixture symbol catalogue, and the
 fixture-aware lint checks live on the dedicated **[Furniture & fixtures](furniture.md)**
 page. Standard fixtures are also importable components at typical residential sizes:
 

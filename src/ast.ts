@@ -122,30 +122,54 @@ export interface RoomNode extends NodeBase {
   uses?: UseKind[];
 }
 
+/** Where along a named wall an opening attaches (`… on <wall> at <pos>`). The
+ *  position walks the wall polyline: a percentage of its total length, an
+ *  absolute millimetre distance from its start, or its midpoint. Resolved to an
+ *  absolute point + host segment in `src/attach.ts` (bypasses nearest-wall
+ *  search, so an attached opening can never be "off wall"). Append-only optional. */
+export interface OpeningAttach {
+  /** Host wall id (or category) whose polyline is walked. */
+  wall: string;
+  pos: { kind: "percent" | "mm" | "center"; value?: number };
+  span?: Span;
+}
+
 export interface DoorNode extends NodeBase {
   kind: "door";
-  at: ExprPoint;
+  /** Absolute hinge/center position. Absent when {@link DoorNode.attach} is used. */
+  at?: ExprPoint;
+  /** Wall-attached placement (`on <wall> at <pos>`). Exclusive with `at`. */
+  attach?: OpeningAttach;
   width: Expr;
-  /** Optional wall (id or category) the door is hosted by. */
+  /** Optional wall (id or category) the door is hosted by (in `at` mode). */
   wall?: string;
   /** Hinge/swing are explicit-only here; the default (and any `set door(...)`
    *  override) is applied at resolve so user-specified values always win. */
   hinge?: "left" | "right";
   swing?: "in" | "out";
+  /** `swing into <room>` — resolve chooses in/out so the leaf opens toward that
+   *  room's side of the host wall. Exclusive with `swing`. */
+  swingInto?: string;
+  /** `hinge near start|end` — hinge at the door-segment end nearer the wall's
+   *  start/end point, independent of traversal wording. Exclusive with `hinge`. */
+  hingeNear?: "start" | "end";
 }
 
 export interface WindowNode extends NodeBase {
   kind: "window";
-  at: ExprPoint;
+  at?: ExprPoint;
+  attach?: OpeningAttach;
   width: Expr;
   wall?: string;
 }
 
-/** `opening [id=] at (x,y) width N [wall ref]` — a leaf-less cased opening: a gap
- *  in the wall (no door, no glazing) that still connects the two spaces. */
+/** `opening [id=] (at (x,y) [wall ref] | on <wall> at <pos>) width N` — a leaf-less
+ *  cased opening: a gap in the wall (no door, no glazing) that still connects the
+ *  two spaces. */
 export interface OpeningNode extends NodeBase {
   kind: "opening";
-  at: ExprPoint;
+  at?: ExprPoint;
+  attach?: OpeningAttach;
   width: Expr;
   wall?: string;
 }
@@ -165,6 +189,36 @@ export interface FurnitureAgainst {
   span?: Span;
 }
 
+/** Anchor position inside a room box for `furniture … in <room> anchor <a>`. */
+export type FurnitureAnchor =
+  | "top-left"
+  | "top"
+  | "top-right"
+  | "left"
+  | "center"
+  | "right"
+  | "bottom-left"
+  | "bottom"
+  | "bottom-right";
+
+/** Every {@link FurnitureAnchor}, canonical order — parser/formatter/grammar source. */
+export const FURNITURE_ANCHORS: readonly FurnitureAnchor[] = [
+  "top-left",
+  "top",
+  "top-right",
+  "left",
+  "center",
+  "right",
+  "bottom-left",
+  "bottom",
+  "bottom-right",
+];
+
+/** `in <room> centered` | `in <room> anchor <a> [inset N]` — closed-form placement
+ *  of a fixture inside a resolved room's box. The `in <room>` also owns the fixture
+ *  (sets {@link FurnitureNode.room}). Exclusive with `at`/`against`. */
+export type FurniturePlace = { mode: "centered" } | { mode: "anchor"; anchor: FurnitureAnchor; inset?: Expr };
+
 export interface FurnitureNode extends NodeBase {
   kind: "furniture";
   /** Free-form category, e.g. "bed" or "sofa". */
@@ -173,6 +227,8 @@ export interface FurnitureNode extends NodeBase {
   at?: ExprPoint;
   /** Wall-anchored placement (computes at/size/rotation). Exclusive with `at`. */
   against?: FurnitureAgainst;
+  /** Room-relative placement (`in <room> centered|anchor …`). Exclusive with `at`/`against`. */
+  place?: FurniturePlace;
   /** In `at` mode: plan-axis width×height. In `against` mode: wall-relative along×depth.
    *  Optional only with `against` + a fixture that has a catalogued default footprint. */
   size?: { w: Expr; h: Expr };
@@ -198,6 +254,42 @@ export interface ColumnNode extends NodeBase {
   kind: "column";
   at: ExprPoint;
   size: { w: Expr; h: Expr };
+}
+
+/** One room child of a `strip` block. It carries its main-axis extent and an
+ *  optional cross-axis override; the strip supplies the shared cross dimension
+ *  when the child omits it. Expanded into an ordinary absolute {@link RoomNode}
+ *  during resolve. */
+export interface StripRoomChild {
+  id: string;
+  /** Main-axis extent (width for a right/left strip, height for a down/up strip). */
+  main: Expr;
+  /** Optional cross-axis extent — overrides the strip's shared `height`/`width`. */
+  cross?: Expr;
+  label?: Expr;
+  uses?: UseKind[];
+  line: number;
+  span?: Span;
+}
+
+/**
+ * `strip <dir> at (x,y) gap G (height|width) H { room … }` — a row/column of rooms
+ * laid out end to end. `dir` is the fill axis (`right`/`left`/`down`/`up`); each
+ * room's main-axis offset is the running sum of prior extents plus `gap`, and the
+ * shared cross dimension is the strip's `height` (horizontal) or `width` (vertical),
+ * overridable per room. Expanded to ordinary absolute-placed rooms in resolve, so
+ * everything downstream is unchanged. A top-level block only (no nesting).
+ */
+export interface StripNode extends NodeBase {
+  kind: "strip";
+  dir: "right" | "left" | "down" | "up";
+  /** Origin corner (top-left of the first room). */
+  at: ExprPoint;
+  /** Spacing (mm) between consecutive rooms along the fill axis. */
+  gap: Expr;
+  /** Shared cross-axis dimension (`height` for horizontal, `width` for vertical). */
+  cross?: Expr;
+  rooms: StripRoomChild[];
 }
 
 /** Discriminated union of all element AST nodes (registry-dispatchable). */
@@ -291,6 +383,7 @@ export type Statement =
   | WhileNode
   | AssignNode
   | SetNode
+  | StripNode
   | ErrorNode;
 
 /** `component NAME(params) { body }` — a reusable parameterised sub-plan. */

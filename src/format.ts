@@ -14,10 +14,13 @@ import type {
   ComponentDef,
   ExprPoint,
   FurnitureNode,
+  FurniturePlace,
   ImportNode,
+  OpeningAttach,
   PlanNode,
   RoomRel,
   Statement,
+  StripRoomChild,
   TitleNode,
 } from "./ast.js";
 import type { Comment } from "./lexer.js";
@@ -135,6 +138,41 @@ function againstStr(ag: NonNullable<FurnitureNode["against"]>): string {
   return out;
 }
 
+/** An attached opening's position: `40%` | `1200` (mm) | `center`. */
+function attachPosStr(pos: OpeningAttach["pos"]): string {
+  if (pos.kind === "center") return "center";
+  if (pos.kind === "percent") return `${numStr(pos.value ?? 0)}%`;
+  return numStr(pos.value ?? 0);
+}
+
+/** An opening's leading position: `on <wall> at <pos>` (attached) or `at (x,y)`. */
+function openingLead(s: { at?: ExprPoint; attach?: OpeningAttach }): string {
+  return s.attach ? `on ${s.attach.wall} at ${attachPosStr(s.attach.pos)}` : `at ${ptStr(s.at!)}`;
+}
+
+/** A fixture's room-relative placement clause: `in <room> centered|anchor …`. */
+function placeStr(place: FurniturePlace, room: string): string {
+  if (place.mode === "centered") return `in ${room} centered`;
+  return `in ${room} anchor ${place.anchor}${place.inset !== undefined ? ` inset ${exprStr(place.inset)}` : ""}`;
+}
+
+/** One strip room child: `room [id=] size <main>[x<cross>] [label …] [uses …]`. */
+function stripRoomStr(r: StripRoomChild): string {
+  const id = r.id ? `id=${r.id} ` : "";
+  let size: string;
+  if (r.cross !== undefined) {
+    size =
+      r.main.t === "num" && r.cross.t === "num"
+        ? `${numStr(r.main.value)}x${numStr(r.cross.value)}`
+        : `${exprStr(r.main)} x ${exprStr(r.cross)}`;
+  } else {
+    size = exprStr(r.main);
+  }
+  const label = r.label ? ` label ${exprStr(r.label)}` : "";
+  const uses = r.uses?.length ? ` uses ${r.uses.join(" ")}` : "";
+  return `room ${id}size ${size}${label}${uses}`;
+}
+
 /** A room's relational placement clause: `DIR ref [align E] [gap n]`. */
 function relStr(rel: RoomRel): string {
   let out = `${rel.dir} ${rel.ref}`;
@@ -187,14 +225,28 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
     }
     case "room":
       return `room ${id}${s.at ? `at ${ptStr(s.at)}` : relStr(s.rel!)} size ${sizeStr(s.size)}${s.label ? ` label ${exprStr(s.label)}` : ""}${s.uses?.length ? ` uses ${s.uses.join(" ")}` : ""}`;
-    case "door":
-      return `door ${id}at ${ptStr(s.at)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${s.hinge ? ` hinge ${s.hinge}` : ""}${s.swing ? ` swing ${s.swing}` : ""}`;
+    case "door": {
+      const hinge = s.hinge ? ` hinge ${s.hinge}` : s.hingeNear ? ` hinge near ${s.hingeNear}` : "";
+      const swing = s.swing ? ` swing ${s.swing}` : s.swingInto ? ` swing into ${s.swingInto}` : "";
+      return `door ${id}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${hinge}${swing}`;
+    }
     case "window":
-      return `window ${id}at ${ptStr(s.at)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}`;
+      return `window ${id}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}`;
     case "opening":
-      return `opening ${id}at ${ptStr(s.at)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}`;
-    case "furniture":
-      return `furniture ${id}${s.category} ${s.against ? againstStr(s.against) : `at ${ptStr(s.at!)}`}${s.size ? ` size ${sizeStr(s.size)}` : ""}${s.label ? ` label ${exprStr(s.label)}` : ""}${s.rotate ? ` rotate ${exprStr(s.rotate)}` : ""}${s.room ? ` in ${s.room}` : ""}`;
+      return `opening ${id}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}`;
+    case "furniture": {
+      const pos = s.against ? againstStr(s.against) : s.place ? placeStr(s.place, s.room!) : `at ${ptStr(s.at!)}`;
+      const roomTail = s.place ? "" : s.room ? ` in ${s.room}` : "";
+      return `furniture ${id}${s.category} ${pos}${s.size ? ` size ${sizeStr(s.size)}` : ""}${s.label ? ` label ${exprStr(s.label)}` : ""}${s.rotate ? ` rotate ${exprStr(s.rotate)}` : ""}${roomTail}`;
+    }
+    case "strip": {
+      const horiz = s.dir === "right" || s.dir === "left";
+      let head = `strip ${s.dir} at ${ptStr(s.at)} gap ${exprStr(s.gap)}`;
+      if (s.cross !== undefined) head += ` ${horiz ? "height" : "width"} ${exprStr(s.cross)}`;
+      if (s.rooms.length === 0) return concat([head, " { }"]);
+      const roomLines: Doc[] = s.rooms.map(stripRoomStr);
+      return concat([head, " {", indent(concat([hardline, join(hardline, roomLines)])), hardline, "}"]);
+    }
     case "dim":
       return `dim ${ptStr(s.from)}->${ptStr(s.to)} offset ${exprStr(s.offset)}${s.text ? ` text ${exprStr(s.text)}` : ""}`;
     case "column":

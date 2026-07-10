@@ -1,0 +1,39 @@
+# A one-bedroom flat authored with the v1.13 placement sugar — no hand-computed
+# coordinates for openings or furniture. It exercises, together:
+#   • `strip` — a row of rooms laid out end to end
+#   • openings attached to a wall by position (`door|window … on <wall> at <pos>`)
+#   • a door that opens toward a named room (`swing into`) hinged at a wall end
+#   • furniture placed relative to a room (`in <room> anchor …`)
+# Compiles clean and passes `arch lint`.
+plan "Attached 1BR" {
+  units mm
+  grid 100
+  north up
+
+  # Living + bedroom laid left-to-right by a strip, sharing a 4 m depth.
+  strip right at (0,0) gap 0 height 4000 {
+    room id=r_living size 4000 label "Living"  uses living
+    room id=r_bed    size 3000 label "Bedroom" uses bedroom
+  }
+
+  # Exterior shell as four straight walls (each a clean start→end to attach onto)
+  # plus the partition between the two rooms.
+  wall id=w_north exterior  thickness 200 { (0,0) (7000,0) }
+  wall id=w_south exterior  thickness 200 { (0,4000) (7000,4000) }
+  wall id=w_west  exterior  thickness 200 { (0,0) (0,4000) }
+  wall id=w_east  exterior  thickness 200 { (7000,0) (7000,4000) }
+  wall id=w_part  partition thickness 100 { (4000,0) (4000,4000) }
+
+  # Entrance 2000 mm along the south wall, hinged at that wall's start end and
+  # opening into the living room. The bedroom door on the partition opens inward.
+  door id=d_main on w_south at 2000 width 1000 hinge near start swing into r_living
+  door id=d_bed  on w_part  at 2000 width 900  swing into r_bed
+
+  # A window centred on each room's exterior wall.
+  window on w_west at 50% width 1400
+  window on w_east at 50% width 1200
+
+  # Furniture placed by anchor inside each room (never off a coordinate).
+  furniture sofa in r_living anchor top-left inset 300 size 2000x900  label "Sofa"
+  furniture bed  in r_bed    anchor right    inset 300 size 1500x2000 label "Bed"
+}

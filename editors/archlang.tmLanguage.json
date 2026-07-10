@@ -97,7 +97,7 @@
     "keywords": {
       "patterns": [
         {
-          "match": "\\b(plan|component|let|theme|title|style|import|for|if|while|else|set)\\b",
+          "match": "\\b(plan|component|let|theme|title|style|import|for|if|while|else|set|strip)\\b",
           "name": "keyword.control.arch"
         },
         {
@@ -105,13 +105,13 @@
           "name": "storage.type.element.arch"
         },
         {
-          "match": "\\b(units|grid|scale|north|dims|accTitle|accDescr|material|angle|at|size|width|thickness|label|hinge|swing|offset|text|close|id|project|drawn_by|date|from|as|right-of|left-of|below|above|align|gap|uses|rotate|against|segment|side)\\b",
+          "match": "\\b(units|grid|scale|north|dims|accTitle|accDescr|material|angle|at|size|width|thickness|label|hinge|swing|offset|text|close|id|project|drawn_by|date|from|as|right-of|left-of|below|above|align|gap|uses|rotate|against|segment|side|on|into|near|anchor|inset|height)\\b",
           "name": "keyword.other.arch"
         }
       ]
     },
     "constants": {
-      "match": "\\b(up|down|left|right|in|out|mm|true|false|top|middle|bottom|center|auto|living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry)\\b",
+      "match": "\\b(up|down|left|right|in|out|mm|true|false|top|middle|bottom|center|centered|start|end|top-left|top-right|bottom-left|bottom-right|auto|living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry)\\b",
       "name": "constant.language.arch"
     },
     "operators": {

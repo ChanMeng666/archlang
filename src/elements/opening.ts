@@ -6,6 +6,7 @@ import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js
 import type { SceneNode } from "../scene.js";
 import type { ROpening } from "../ir.js";
 import { add, mul, nearestWallNote, normal, sub, unit } from "../geometry.js";
+import { parseAttachTarget, resolveAttachment } from "../attach.js";
 
 export const opening: ElementDef = {
   kind: "opening",
@@ -20,12 +21,18 @@ export const opening: ElementDef = {
   parse(ctx: ParseCtx): OpeningNode {
     const kw = ctx.eatKeyword("opening");
     const id = ctx.parseIdOpt();
-    ctx.eatKeyword("at");
-    const at = ctx.parsePoint();
+    const { at, attach } = parseAttachTarget(ctx);
     ctx.eatKeyword("width");
     const width = ctx.parseExpr();
-    const node: OpeningNode = { kind: "opening", id, at, width, line: kw.line };
-    if (ctx.isKeyword("wall")) {
+    const node: OpeningNode = {
+      kind: "opening",
+      id,
+      width,
+      line: kw.line,
+      ...(at ? { at } : {}),
+      ...(attach ? { attach } : {}),
+    };
+    if (!attach && ctx.isKeyword("wall")) {
       ctx.next();
       node.wall = ctx.eatIdent().value;
     }
@@ -37,7 +44,6 @@ export const opening: ElementDef = {
   resolve(node, ctx: ResolveCtx): ROpening {
     const n = node as OpeningNode;
     const id = ctx.id;
-    const at = ctx.snapPt(ctx.evalPt(n.at));
     const wv = ctx.eval(n.width);
     const width = ctx.snap(wv) || wv;
     if (width <= 0) {
@@ -48,6 +54,13 @@ export const opening: ElementDef = {
         span: n.span,
       });
     }
+    // Attached: the point + host come from walking the named wall (no off-wall check).
+    if (n.attach) {
+      const a = resolveAttachment(n.attach, ctx.walls, ctx.snapPt, ctx.diag, `Opening "${id}"`);
+      const at = a ? a.at : { x: 0, y: 0 };
+      return { kind: "opening", id, at, width, host: a ? a.host : null, span: n.span };
+    }
+    const at = ctx.snapPt(ctx.evalPt(n.at!));
     if (ctx.walls.length > 0 && !ctx.isOnWall(at, n.wall)) {
       const note = nearestWallNote(at, ctx.walls);
       ctx.diag({

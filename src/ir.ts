@@ -16,7 +16,9 @@ import type {
   Point,
   RelAlign,
   RelDir,
+  RoomNode,
   Statement,
+  StripNode,
   TitleNode,
   UseKind,
 } from "./ast.js";
@@ -366,6 +368,15 @@ function expandScope(
         scope.sets.set(stmt.target, merged);
         break;
       }
+      case "strip": {
+        // Expand the strip into ordinary absolute-placed room entries. Positions
+        // are closed-form (running sum of extents + gap); the resulting rooms flow
+        // through room.resolve exactly like hand-authored `room at (x,y) size WxH`.
+        for (const child of stripRooms(stmt, evalIn, diag)) {
+          out.push({ node: child, env: scope.flatten(), id: "", defaults: scope.effectiveSet("room") });
+        }
+        break;
+      }
       case "error":
         // A statement that failed to parse — already reported as a diagnostic at
         // parse time. It carries no geometry, so there is nothing to expand.
@@ -376,6 +387,65 @@ function expandScope(
     }
   }
   return out;
+}
+
+/**
+ * Lower a `strip` block to a list of absolute-placed {@link RoomNode}s. The k-th
+ * room's main-axis offset is the running sum of previous extents plus `gap`; the
+ * cross axis is the strip origin, and the cross dimension is the strip's shared
+ * `height`/`width` (overridable per room). Deterministic pure arithmetic — the
+ * emitted rooms are byte-identical to hand-authored `room at (x,y) size WxH`.
+ */
+function stripRooms(strip: StripNode, evalIn: (e: Expr) => Value, diag: (d: Diagnostic) => void): RoomNode[] {
+  const num = (e: Expr): number => asNum(evalIn(e), diag, exprSpan(e));
+  const numE = (v: number): Expr => ({ t: "num", value: v });
+  const originX = num(strip.at.x);
+  const originY = num(strip.at.y);
+  const gap = num(strip.gap);
+  const horiz = strip.dir === "right" || strip.dir === "left";
+  const stripCross = strip.cross !== undefined ? num(strip.cross) : undefined;
+  const rooms: RoomNode[] = [];
+  let offset = 0;
+  for (const child of strip.rooms) {
+    const mainExt = num(child.main);
+    const crossExt = child.cross !== undefined ? num(child.cross) : stripCross;
+    if (crossExt === undefined) {
+      diag({
+        severity: "error",
+        message: `Room "${child.id || "(unnamed)"}" in a strip needs a cross-axis size — give the strip a \`${horiz ? "height" : "width"}\`, or the room its own \`size <main>x<cross>\``,
+        code: "E_STRIP_SIZE",
+        span: child.span,
+      });
+      continue;
+    }
+    let atx: number;
+    let aty: number;
+    let w: number;
+    let h: number;
+    if (horiz) {
+      w = mainExt;
+      h = crossExt;
+      aty = originY;
+      atx = strip.dir === "right" ? originX + offset : originX - offset - mainExt;
+    } else {
+      h = mainExt;
+      w = crossExt;
+      atx = originX;
+      aty = strip.dir === "down" ? originY + offset : originY - offset - mainExt;
+    }
+    rooms.push({
+      kind: "room",
+      id: child.id,
+      at: { x: numE(atx), y: numE(aty) },
+      size: { w: numE(w), h: numE(h) },
+      ...(child.label !== undefined ? { label: child.label } : {}),
+      ...(child.uses ? { uses: child.uses } : {}),
+      line: child.line,
+      span: child.span,
+    });
+    offset += mainExt + gap;
+  }
+  return rooms;
 }
 
 // Stage memo: resolution is a pure function of (ast, registry, world). The AST

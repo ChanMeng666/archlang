@@ -1,13 +1,16 @@
 /** `furniture <category> [id=] at (x,y) size WxH [label "…"]` — outlined fill + label. */
 
-import type { FurnitureNode, Point } from "../ast.js";
+import type { FurnitureAnchor, FurnitureNode, FurniturePlace, Point } from "../ast.js";
+import { FURNITURE_ANCHORS } from "../ast.js";
 import type { Span } from "../diagnostics.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
-import type { RFurniture } from "../ir.js";
+import type { RFurniture, RRoom } from "../ir.js";
 import { rectCorners, segmentsOfWall, unit, normal, add, mul, sub, length } from "../geometry.js";
 import { fixtureGlyph } from "./fixtures-glyphs.js";
 import { defaultFootprint } from "../fixtures-catalog.js";
+
+const ANCHOR_SET: ReadonlySet<string> = new Set<FurnitureAnchor>(FURNITURE_ANCHORS);
 
 export const furniture: ElementDef = {
   kind: "furniture",
@@ -24,9 +27,12 @@ export const furniture: ElementDef = {
     const kw = ctx.eatKeyword("furniture");
     const id = ctx.parseIdOpt();
     const category = ctx.eatIdent().value;
-    // Position: absolute `at (x,y)` OR wall-anchored `against wall <id> …`.
+    // Position: absolute `at (x,y)`, wall-anchored `against wall <id> …`, or
+    // room-relative `in <room> centered|anchor …`.
     let at: FurnitureNode["at"];
     let against: FurnitureNode["against"];
+    let place: FurnitureNode["place"];
+    let room: string | undefined;
     if (ctx.isKeyword("against")) {
       ctx.next();
       ctx.eatKeyword("wall");
@@ -45,6 +51,27 @@ export const furniture: ElementDef = {
         a.side = ctx.eatIdent().value as "left" | "right";
       }
       against = a;
+    } else if (ctx.isKeyword("in")) {
+      // `in <room> centered` | `in <room> anchor <a> [inset N]` — the `in` room
+      // both positions and owns the fixture.
+      ctx.next();
+      room = ctx.eatIdent().value;
+      if (ctx.isKeyword("centered")) {
+        ctx.next();
+        place = { mode: "centered" };
+      } else if (ctx.isKeyword("anchor")) {
+        ctx.next();
+        const a = ctx.eatIdent().value;
+        if (!ANCHOR_SET.has(a)) ctx.fail(`Expected an anchor (${FURNITURE_ANCHORS.join("|")}) but found "${a}"`);
+        const p: Extract<FurniturePlace, { mode: "anchor" }> = { mode: "anchor", anchor: a as FurnitureAnchor };
+        if (ctx.isKeyword("inset")) {
+          ctx.next();
+          p.inset = ctx.parseExpr();
+        }
+        place = p;
+      } else {
+        ctx.fail(`Expected "centered" or "anchor" after \`in ${room}\``);
+      }
     } else {
       ctx.eatKeyword("at");
       at = ctx.parsePoint();
@@ -62,6 +89,8 @@ export const furniture: ElementDef = {
       category,
       ...(at ? { at } : {}),
       ...(against ? { against } : {}),
+      ...(place ? { place } : {}),
+      ...(room ? { room } : {}),
       ...(size ? { size } : {}),
       line: kw.line,
     };
@@ -74,8 +103,9 @@ export const furniture: ElementDef = {
       ctx.next();
       node.rotate = ctx.parseExpr();
     }
-    // Optional `in <roomId>` — declare which room this fixture belongs to.
-    if (ctx.isKeyword("in")) {
+    // Optional trailing `in <roomId>` — declare the owning room (for the absolute
+    // `at`/`against` forms; the room-relative form already set it above).
+    if (node.room === undefined && ctx.isKeyword("in")) {
       ctx.next();
       node.room = ctx.eatIdent().value;
     }
@@ -136,6 +166,7 @@ export const furniture: ElementDef = {
 
     let at: Point;
     let size = { w: dw, h: dh };
+    let roomOut = n.room;
     if (n.against) {
       if (rotate !== undefined) {
         ctx.diag({
@@ -151,6 +182,11 @@ export const furniture: ElementDef = {
         size = placed.size;
         rotate = placed.rotate;
       }
+    } else if (n.place) {
+      // Room-relative: closed-form corner/edge/centre placement inside the room box.
+      const placed = placeInRoom(id, n.place, n.room!, dw, dh, ctx, n.span);
+      at = placed ? ctx.snapPt(placed) : { x: 0, y: 0 };
+      if (!placed) roomOut = undefined; // room ref invalid — don't double-report via E_FURN_ROOM
     } else {
       at = ctx.snapPt(ctx.evalPt(n.at!));
     }
@@ -162,7 +198,7 @@ export const furniture: ElementDef = {
       size,
       label: n.label !== undefined ? ctx.evalStr(n.label) : undefined,
       ...(rotate ? { rotate } : {}),
-      ...(n.room ? { room: n.room } : {}),
+      ...(roomOut ? { room: roomOut } : {}),
       span: n.span,
     };
   },
@@ -284,6 +320,51 @@ function placeAgainst(
   // The symbol's back faces the wall (−nSide); rotate 0 = back to the north.
   const rotate = Math.abs(nSide.x) < 1e-9 ? (nSide.y > 0 ? 0 : 180) : nSide.x < 0 ? 90 : 270;
   return { at: { x: center.x - bw / 2, y: center.y - bh / 2 }, size: { w: bw, h: bh }, rotate };
+}
+
+/**
+ * Closed-form room-relative placement (`in <room> centered|anchor …`): the
+ * fixture's top-left corner inside the resolved room box. Pure; pushes a
+ * catalogued `E_PLACE_REF` and returns `null` when the room is unknown or is
+ * positioned relationally (its box is not yet fixed when the fixture resolves).
+ */
+function placeInRoom(
+  id: string,
+  place: NonNullable<FurnitureNode["place"]>,
+  roomId: string,
+  w: number,
+  h: number,
+  ctx: ResolveCtx,
+  span: Span | undefined,
+): Point | null {
+  const room = ctx.rooms.find((r): r is RRoom => r.id === roomId);
+  if (!room || room._rel) {
+    ctx.diag({
+      severity: "error",
+      message: `Furniture "${id}" is placed \`in ${roomId}\` but no room with that id has fixed \`at\` coordinates`,
+      code: "E_PLACE_REF",
+      span,
+    });
+    return null;
+  }
+  const x0 = room.at.x;
+  const y0 = room.at.y;
+  const x1 = x0 + room.size.w;
+  const y1 = y0 + room.size.h;
+  const cx = x0 + room.size.w / 2;
+  const cy = y0 + room.size.h / 2;
+  if (place.mode === "centered") return { x: cx - w / 2, y: cy - h / 2 };
+  const inset = place.inset !== undefined ? ctx.eval(place.inset) : 0;
+  const a = place.anchor;
+  let x: number;
+  if (a === "top-left" || a === "left" || a === "bottom-left") x = x0 + inset;
+  else if (a === "top-right" || a === "right" || a === "bottom-right") x = x1 - w - inset;
+  else x = cx - w / 2; // top | center | bottom → horizontally centred
+  let y: number;
+  if (a === "top-left" || a === "top" || a === "top-right") y = y0 + inset;
+  else if (a === "bottom-left" || a === "bottom" || a === "bottom-right") y = y1 - h - inset;
+  else y = cy - h / 2; // left | center | right → vertically centred
+  return { x, y };
 }
 
 /** Rotate a point a quarter-turn about centre `c` (screen y-down, clockwise) using

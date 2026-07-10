@@ -79,10 +79,10 @@ column [id=<name>] at (x,y) size <W>x<H>
 
 ## Keyword reference
 
-- **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`
+- **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`, `strip`
 - **Elements:** `wall`, `room`, `door`, `window`, `opening`, `furniture`, `dim`, `column`
-- **Attributes:** `units`, `grid`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`
-- **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `auto`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`
+- **Attributes:** `units`, `grid`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`, `on`, `into`, `near`, `anchor`, `inset`, `height`
+- **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `centered`, `start`, `end`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `auto`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`
 
 ## CLI loop (how an agent drives it)
 
@@ -434,29 +434,29 @@ from a file or stdin (`-`). There is intentionally no MCP server — this CLI is
 
 **Global flags:** `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
 
-**Output formats (`-f`):** `svg` · `dxf` · `pdf` (needs `pdfkit`) · `png` (needs `@resvg/resvg-js`)
+**Output formats (`-f`):** `svg` · `dxf` · `txt` · `pdf` (needs `pdfkit`) · `png` (needs `@resvg/resvg-js`)
 
 ### Commands
 
 **`arch compile`** — render a plan to SVG/DXF/PDF/PNG
   - input: <file.arch|-> → output: file (or stdout with -o -)
-  - flags: `--out|-o <file|->` output destination ('-' = stdout) · `--format|-f <svg|dxf|pdf|png>` output format (default svg) · `--width|-w <px>` page width hint in pixels · `--overlay <circulation>` draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged · `--error-svg` on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) · `--accessible` emit <title>/<desc>/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged · `--install` auto-install the optional dep for the chosen format if missing (PNG/PDF) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - flags: `--out|-o <file|->` output destination ('-' = stdout) · `--format|-f <svg|dxf|txt|pdf|png>` output format (default svg) · `--width|-w <px>` page width hint in pixels · `--cols <n>` text renderer (-f txt / preview --ascii) grid width in characters (default 80) · `--charset <unicode|ascii>` text renderer glyph set (default unicode) · `--overlay <circulation>` draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged · `--error-svg` on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) · `--accessible` emit <title>/<desc>/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged · `--install` auto-install the optional dep for the chosen format if missing (PNG/PDF) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
 
 **`arch batch`** — render many .arch files in one call, concurrently
   - input: <a.arch> <b.arch> … → output: one file per input; --json gives a results[] array
-  - flags: `--out|-o <dir>` output directory (default: alongside each input) · `--format|-f <svg|dxf|pdf|png>` output format (default svg) · `--jobs|-j <n>` max concurrent renders (default: CPU count) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - flags: `--out|-o <dir>` output directory (default: alongside each input) · `--format|-f <svg|dxf|txt|pdf|png>` output format (default svg) · `--jobs|-j <n>` max concurrent renders (default: CPU count) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
 
 **`arch md`** (aliases: `markdown`) — render every ```arch block in a Markdown file and rewrite to image links
   - input: <doc.md> → output: out.md + one image per block
-  - flags: `--out|-o <out.md>` rewritten Markdown destination · `--format|-f <svg|dxf|pdf|png>` output format (default svg) · `--error-svg` on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - flags: `--out|-o <out.md>` rewritten Markdown destination · `--format|-f <svg|dxf|txt|pdf|png>` output format (default svg) · `--error-svg` on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
 
 **`arch preview`** — render a PNG you can look at (zero-install where the optional binary is present)
-  - input: <file.arch|-> → output: PNG file
-  - flags: `--out|-o <out.png>` PNG destination (default: <name>.png) · `--scale|-s <n>` raster scale (default 2) · `--error-svg` on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) · `--install` auto-install @resvg/resvg-js if missing, then render · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - input: <file.arch|-> → output: PNG file (or ASCII text on stdout with --ascii)
+  - flags: `--out|-o <out.png>` PNG destination (default: <name>.png) · `--scale|-s <n>` raster scale (default 2) · `--ascii` print a zero-dependency ASCII text plan to stdout instead of a PNG · `--cols <n>` text renderer (-f txt / preview --ascii) grid width in characters (default 80) · `--charset <unicode|ascii>` text renderer glyph set (default unicode) · `--error-svg` on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) · `--install` auto-install @resvg/resvg-js if missing, then render · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
 
 **`arch watch`** — recompile on save (interactive)
   - input: <file.arch> → output: file, rewritten on each save
-  - flags: `--out|-o <file|->` output destination ('-' = stdout) · `--format|-f <svg|dxf|pdf|png>` output format (default svg) · `--width|-w <px>` page width hint in pixels
+  - flags: `--out|-o <file|->` output destination ('-' = stdout) · `--format|-f <svg|dxf|txt|pdf|png>` output format (default svg) · `--width|-w <px>` page width hint in pixels
 
 **`arch validate`** — parse + resolve + lint, no render (is it valid & sound?)
   - input: <file.arch|-> → output: diagnostics
@@ -503,7 +503,7 @@ from a file or stdin (`-`). There is intentionally no MCP server — this CLI is
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**36 errors** (abort rendering) · **30 warnings** (advisory; `validate --strict` fails on them too).
+**41 errors** (abort rendering) · **31 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -511,6 +511,8 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_ARGCOUNT` — Component called with the wrong number of arguments. **Fix:** Pass exactly one argument per declared parameter.
 - `E_ARITY` — Built-in function called with the wrong number of arguments. **Fix:** Check the function's arity; most built-ins take one argument.
 - `E_ASSIGN_UNDEF` — Assignment to an undeclared name. **Fix:** Declare it first with `let`, or fix a typo in the name.
+- `E_ATTACH_POS_RANGE` — Opening attachment position is out of range. **Fix:** Use a percentage in 0–100%, a millimetre distance within the wall's run, or `center`.
+- `E_ATTACH_WALL_REF` — Opening attached to an unknown or ambiguous wall. **Fix:** Reference an existing, unique wall id (add `id=` to the wall if needed).
 - `E_CALL_DEPTH` — Value-function call stack too deep. **Fix:** Make the recursion terminate, or rewrite it iteratively with a bounded `while`.
 - `E_COLUMN_SIZE` — Column must have a positive size. **Fix:** Give the column a positive `size W x H`.
 - `E_DIV_ZERO` — Division or modulo by zero. **Fix:** Guard the divisor, or use a non-zero value.
@@ -531,11 +533,14 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_LAYOUT_CYCLE` — Relational room placement forms a cycle. **Fix:** Break the cycle by giving one of the rooms absolute `at (x,y)` coordinates.
 - `E_LAYOUT_REF` — Relational placement references an unknown room. **Fix:** Reference an existing room id, or fix the typo.
 - `E_OPENING_WIDTH` — Opening must have a positive width. **Fix:** Give the opening a positive `width`.
+- `E_PLACE_REF` — Furniture placed in an unknown or non-absolute room. **Fix:** Reference an existing room given absolute `at (x,y)` coordinates.
 - `E_PNG_DEPENDENCY` — PNG/PDF export needs an optional dependency that is not installed. **Fix:** Install the optional dependency (`npm install @resvg/resvg-js`), or re-run with `--install` to fetch it automatically, or render to SVG/DXF (zero-dependency).
 - `E_RANGE_LIMIT` — Range too large. **Fix:** Use a smaller range, or restructure to avoid materializing it.
 - `E_RECURSION` — Component recursion too deep. **Fix:** Add a base case so the recursion terminates.
 - `E_REDEF` — Name already defined in this scope. **Fix:** Rename one binding, or use `NAME = …` to reassign instead of redeclaring.
 - `E_ROOM_SIZE` — Room must have a positive size. **Fix:** Give the room a positive `size W x H`.
+- `E_STRIP_NEST` — Illegal `strip` nesting. **Fix:** Move the `strip` to the plan body, alongside the other elements.
+- `E_STRIP_SIZE` — Room in a `strip` is missing a size. **Fix:** Give the room a `size <main>` (main-axis extent) plus either a strip `height`/`width` or its own `size <main>x<cross>`.
 - `E_TYPE` — Type mismatch. **Fix:** Convert or supply the expected type.
 - `E_UNKNOWN_COMPONENT` — Unknown component. **Fix:** Define the component, import it, or fix the name (see the suggestion hint).
 - `E_UNKNOWN_FN` — Unknown function. **Fix:** Define it with `let f(…) = …`, or fix the name.
@@ -572,6 +577,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `W_ROOM_UNREACHABLE` — Room cannot be reached from the entrance. **Fix:** Add a door or cased `opening` linking it (directly or through a hall) to a space that reaches the entrance.
 - `W_SANITIZED_CONFIG` — A disallowed config value was stripped. **Fix:** Use a plain colour/string value (no `<`, `>`, or `url(data:…)`).
 - `W_SWING_OBSTRUCTED` — Door swing is obstructed. **Fix:** Move the door or the obstruction, flip the `hinge`/`swing`, or use a sliding door so the leaf clears.
+- `W_SWING_ROOM_NOT_ADJACENT` — `swing into <room>` names a room the door does not border. **Fix:** Point `swing into` at a room the door actually opens onto, or use explicit `swing in|out`. The door falls back to its default swing.
 - `W_UNKNOWN_MATERIAL` — Unknown wall material; using the default hatch. **Fix:** Use a known material (e.g. brick, concrete, insulation, tile) or omit it.
 - `W_UNKNOWN_STYLE_KEY` — Unknown style key. **Fix:** Use a valid key (e.g. fill / stroke / label, depending on the kind).
 - `W_UNKNOWN_THEME_KEY` — Unknown theme key. **Fix:** Use a known theme key (see the language reference / hover).

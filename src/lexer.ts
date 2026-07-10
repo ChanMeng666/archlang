@@ -359,6 +359,19 @@ function lexImpl(src: string): LexResult {
           continue;
         }
       }
+      // Corner-anchor keywords `top-left` / `top-right` / `bottom-left` /
+      // `bottom-right` lex as a single ident (same rule as `right-of`), so the
+      // hyphen is not mistaken for subtraction in `furniture … anchor top-left`.
+      if ((word === "top" || word === "bottom") && src[j] === "-") {
+        let k = j + 1;
+        while (k < src.length && isIdentPart(src[k]!)) k++;
+        const tail = src.slice(j + 1, k);
+        if ((tail === "left" || tail === "right") && !isIdentPart(src[k] ?? "")) {
+          while (i < k) advance();
+          push("ident", `${word}-${tail}`, startLine, startCol, startIdx);
+          continue;
+        }
+      }
       let value = "";
       while (i < src.length && isIdentPart(peek())) value += advance();
       push("ident", value, startLine, startCol, startIdx);

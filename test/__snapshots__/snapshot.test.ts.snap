@@ -1,5 +1,52 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`golden SVG snapshots > renders attached.arch deterministically 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"  viewBox="-1324 -1324 9648 6648" font-family="Helvetica, Arial, sans-serif">
+<defs><pattern id="poche" patternUnits="userSpaceOnUse" width="93.6" height="93.6" patternTransform="rotate(45)"><rect width="93.6" height="93.6" fill="#e9e4db"/><line x1="0" y1="0" x2="0" y2="93.6" stroke="#b9b1a4" stroke-width="8.06"/></pattern></defs>
+<rect x="-1324" y="-1324" width="9648" height="6648" fill="#ffffff"/>
+<g id="A-FLOR" inkscape:groupmode="layer" inkscape:label="A-FLOR">
+<polygon points="0,0 4000,0 4000,4000 0,4000" fill="#fbfaf7"/>
+<polygon points="4000,0 7000,0 7000,4000 4000,4000" fill="#fbfaf7"/>
+</g>
+<g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
+<polygon points="300,300 2300,300 2300,1200 300,1200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<text x="1300" y="750" font-size="122.4" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Sofa</text>
+<polygon points="5200,1000 6700,1000 6700,3000 5200,3000" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<text x="5950" y="2000" font-size="122.4" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bed</text>
+</g>
+<g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
+<path d="M -100,-100 L -100,1300 L 100,1300 L 100,100 L 3950,100 L 3950,1550 L 4050,1550 L 4050,100 L 6900,100 L 6900,1400 L 7100,1400 L 7100,-100 Z M 100,2700 L -100,2700 L -100,4100 L 1500,4100 L 1500,3900 L 100,3900 Z M 3950,3900 L 2500,3900 L 2500,4100 L 7100,4100 L 7100,2600 L 6900,2600 L 6900,3900 L 4050,3900 L 4050,2450 L 3950,2450 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -100,-100 L -100,1300 L 100,1300 L 100,100 L 3950,100 L 3950,1550 L 4050,1550 L 4050,100 L 6900,100 L 6900,1400 L 7100,1400 L 7100,-100 Z M 100,2700 L -100,2700 L -100,4100 L 1500,4100 L 1500,3900 L 100,3900 Z M 3950,3900 L 2500,3900 L 2500,4100 L 7100,4100 L 7100,2600 L 6900,2600 L 6900,3900 L 4050,3900 L 4050,2450 L 3950,2450 Z" fill="none" stroke="#1b1b1b" stroke-width="20.16" stroke-linejoin="miter"/>
+</g>
+<g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
+<polygon points="1500,4120.16 2500,4120.16 2500,3879.84 1500,3879.84" fill="#ffffff"/>
+<line x1="1500" y1="4000" x2="1500" y2="3000" stroke="#555555" stroke-width="14.98"/>
+<path d="M 1500,3000 A 1000 1000 0 0 1 2500,4000" fill="none" stroke="#555555" stroke-width="11.52" stroke-dasharray="46.08 34.56"/>
+<polygon points="3929.84,1550 3929.84,2450 4070.16,2450 4070.16,1550" fill="#ffffff"/>
+<line x1="4000" y1="1550" x2="4900" y2="1550" stroke="#555555" stroke-width="14.98"/>
+<path d="M 4900,1550 A 900 900 0 0 1 4000,2450" fill="none" stroke="#555555" stroke-width="11.52" stroke-dasharray="46.08 34.56"/>
+</g>
+<g id="A-GLAZ" inkscape:groupmode="layer" inkscape:label="A-GLAZ">
+<polygon points="-120.16,1300 -120.16,2700 120.16,2700 120.16,1300" fill="#ffffff"/>
+<line x1="-100" y1="1300" x2="-100" y2="2700" stroke="#1b1b1b" stroke-width="11.52"/>
+<line x1="100" y1="1300" x2="100" y2="2700" stroke="#1b1b1b" stroke-width="11.52"/>
+<line x1="0" y1="1300" x2="0" y2="2700" stroke="#3a6ea5" stroke-width="11.52"/>
+<polygon points="6879.84,1400 6879.84,2600 7120.16,2600 7120.16,1400" fill="#ffffff"/>
+<line x1="6900" y1="1400" x2="6900" y2="2600" stroke="#1b1b1b" stroke-width="11.52"/>
+<line x1="7100" y1="1400" x2="7100" y2="2600" stroke="#1b1b1b" stroke-width="11.52"/>
+<line x1="7000" y1="1400" x2="7000" y2="2600" stroke="#3a6ea5" stroke-width="11.52"/>
+</g>
+<g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
+<text x="2000" y="1956.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living</text>
+<text x="2000" y="2194.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">16.0 m²</text>
+<text x="5500" y="1956.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
+<text x="5500" y="2194.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
+</g>
+<g><polygon points="6776,-1097.2 6614,-578.8 6776,-692.2 6938,-578.8" fill="#333333" transform="rotate(0 6776 -773.2)"/><text x="6776" y="-1246.96" font-size="187.2" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
+<g><rect x="-100" y="4460" width="1000" height="100.8" fill="#333333"/><rect x="900" y="4460" width="1000" height="100.8" fill="none" stroke="#333333" stroke-width="11.52"/><text x="-100" y="4704.8" font-size="144" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="1900" y="4704.8" font-size="144" fill="#333333" text-anchor="middle" dominant-baseline="central">2 m</text></g>
+</svg>"
+`;
+
 exports[`golden SVG snapshots > renders parametric.arch deterministically 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"  viewBox="-2174 -2424.8 16348 10320.8" font-family="Helvetica, Arial, sans-serif">
 <defs><pattern id="poche" patternUnits="userSpaceOnUse" width="158.6" height="158.6" patternTransform="rotate(45)"><rect width="158.6" height="158.6" fill="#e9e4db"/><line x1="0" y1="0" x2="0" y2="158.6" stroke="#b9b1a4" stroke-width="13.66"/></pattern></defs>
