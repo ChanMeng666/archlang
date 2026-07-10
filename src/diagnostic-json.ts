@@ -8,9 +8,18 @@
  * Pure and isomorphic — it only maps data, no I/O.
  */
 
-import type { Diagnostic, Severity } from "./diagnostics.js";
+import type { Applicability, Diagnostic, Severity } from "./diagnostics.js";
 import { offsetToLineCol } from "./diagnostics.js";
 import { ERROR_CATALOG } from "./error-catalog.js";
+
+/** A {@link import("./diagnostics.js").FixSuggestion} projected to JSON — edit
+ *  spans become `[start, end]` tuples (like the diagnostic's own `span`). */
+export interface FixSuggestionJson {
+  title: string;
+  applicability: Applicability;
+  edits: { span: [number, number]; newText: string }[];
+  fixId?: string;
+}
 
 /** A {@link Diagnostic} projected to the agent-friendly JSON shape (with `fix`). */
 export interface DiagnosticJson {
@@ -28,6 +37,10 @@ export interface DiagnosticJson {
   fix?: string;
   /** Follow-up suggestions; present only when the diagnostic carries hints. */
   hints?: string[];
+  /** Machine-applicable fix alternatives; present only when the diagnostic
+   *  carries `fixes`. Each entry's edit spans are `[start, end)` byte ranges into
+   *  the original source (mutually-exclusive alternatives — apply at most one). */
+  fixes?: FixSuggestionJson[];
 }
 
 /** Project a {@link Diagnostic} into the agent-friendly JSON shape (with `fix`). */
@@ -45,5 +58,15 @@ export function diagnosticToJson(source: string, d: Diagnostic): DiagnosticJson 
   const fix = d.code ? ERROR_CATALOG[d.code]?.fix : undefined;
   if (fix) out.fix = fix;
   if (d.hints?.length) out.hints = d.hints;
+  if (d.fixes?.length)
+    out.fixes = d.fixes.map((f) => {
+      const j: FixSuggestionJson = {
+        title: f.title,
+        applicability: f.applicability,
+        edits: f.edits.map((e) => ({ span: [e.span.start, e.span.end], newText: e.newText })),
+      };
+      if (f.fixId !== undefined) j.fixId = f.fixId;
+      return j;
+    });
   return out;
 }

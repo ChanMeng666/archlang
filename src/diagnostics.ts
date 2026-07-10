@@ -16,6 +16,62 @@ export interface Span {
 
 export type Severity = "error" | "warning";
 
+/**
+ * How confident a {@link FixSuggestion} is that applying it is correct — the
+ * gate an automated applier (`applyFixes`, `arch fix`) uses to decide whether a
+ * fix may be applied without human review. Mirrors rustfix / rustc's
+ * `Applicability`.
+ *
+ * - `machine-applicable` — safe to apply automatically; the edit is correct and
+ *   complete (this is the only tier applied by default).
+ * - `maybe-incorrect` — likely correct but may need review; applied only when a
+ *   caller widens the gate.
+ * - `has-placeholders` — the `newText` contains `<...>` placeholders the user
+ *   must fill in; **never** auto-applied (would produce invalid source).
+ * - `unspecified` — confidence unknown; treated conservatively (never
+ *   auto-applied).
+ */
+export type Applicability = "machine-applicable" | "maybe-incorrect" | "has-placeholders" | "unspecified";
+
+/**
+ * A single atomic text replacement: replace the ORIGINAL-source bytes in
+ * `span` (a half-open `[start, end)` range of offsets into the *unmodified*
+ * source) with `newText`. An insertion is `span.start === span.end`.
+ *
+ * Structurally identical to (and unified with) the LSP {@link
+ * import("./lsp.js").TextEdit}; both names name this one shape.
+ */
+export interface FixEdit {
+  span: Span;
+  newText: string;
+}
+
+/**
+ * A proposed fix for a {@link Diagnostic}: a titled bundle of one or more
+ * {@link FixEdit}s.
+ *
+ * Semantics:
+ * - **Multiple `fixes` on one diagnostic are mutually-exclusive ALTERNATIVES** —
+ *   a tool picks at most one.
+ * - **All `edits` within one suggestion are applied together, atomically** — if
+ *   any edit of the suggestion cannot be applied (e.g. it overlaps an
+ *   already-applied edit) the whole suggestion is rolled back and skipped.
+ * - Every edit's `span` is in ORIGINAL-source coordinates (offsets into the
+ *   source as first seen), never shifted for earlier edits — the applier
+ *   ({@link import("./fix-apply.js").applyFixes}) accounts for shifts via a
+ *   piece table.
+ * - When `applicability` is `has-placeholders`, `newText` may contain `<...>`
+ *   placeholders and the suggestion is never auto-applied.
+ */
+export interface FixSuggestion {
+  /** Human-readable label, e.g. `"add a window to the bedroom"`. */
+  title: string;
+  applicability: Applicability;
+  edits: FixEdit[];
+  /** Optional stable id grouping related suggestions (e.g. one lint rule). */
+  fixId?: string;
+}
+
 /** A secondary source location that explains a diagnostic (e.g. the wall a
  *  misplaced door was expected to lie on). */
 export interface RelatedSpan {
@@ -35,6 +91,11 @@ export interface Diagnostic {
   /** Secondary locations that contextualize the problem (rendered as framed
    *  `note:` snippets after the primary span). */
   relatedSpans?: RelatedSpan[];
+  /** Machine-applicable fix suggestions (append-only field). Each entry is a
+   *  mutually-exclusive alternative; see {@link FixSuggestion}. Consumed by
+   *  {@link import("./fix-apply.js").applyFixes} and projected to JSON by
+   *  {@link import("./diagnostic-json.js").diagnosticToJson}. */
+  fixes?: FixSuggestion[];
 }
 
 /** Convert a byte offset into a 1-based `{line, col}`. Offsets are clamped. */

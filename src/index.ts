@@ -38,7 +38,14 @@ export { formatDiagnostic, offsetToLineCol } from "./diagnostics.js";
 // the canonical shape the CLI's `--json` output emits, exposed for programmatic
 // consumers (playground, LSP embedders, SDK users).
 export { diagnosticToJson } from "./diagnostic-json.js";
-export type { DiagnosticJson } from "./diagnostic-json.js";
+export type { DiagnosticJson, FixSuggestionJson } from "./diagnostic-json.js";
+// Machine-applicable fixes (v1.13): the `Diagnostic.fixes` model + a deterministic,
+// pure piece-table applier (ported from rustfix). `applyFixes` filters by
+// `Applicability`, applies each `FixSuggestion` atomically, and reports what it
+// skipped. Fix PRODUCERS attach these; `applyFixes` consumes them.
+export type { Applicability, FixEdit, FixSuggestion } from "./diagnostics.js";
+export { applyFixes } from "./fix-apply.js";
+export type { ApplyReport, ApplyFixesOptions } from "./fix-apply.js";
 export type * from "./ast.js";
 // Source formatter (v0.11): pure text→text, comment-preserving, idempotent.
 export { format } from "./format.js";
@@ -122,6 +129,12 @@ export type { PngOptions } from "./backends/png.js";
 // deterministic, zero-dep; never touches the default (error-free) output.
 export { renderErrorSvg } from "./backends/error-svg.js";
 export type { ErrorSvgOptions } from "./backends/error-svg.js";
+// ASCII text backend (v1.13). `renderAscii(scene)` serializes a Scene to a
+// fixed-width text floor plan — the channel a sandboxed, text-only agent uses to
+// *see* its plan. Pure, deterministic, zero-dep; behind `arch compile -f txt` and
+// `arch preview --ascii`. Furniture markers use opt-in `annotate` metadata.
+export { renderAscii } from "./backends/ascii.js";
+export type { AsciiOptions } from "./backends/ascii.js";
 // Optional polygon-geometry backend seam. The default path is zero-dependency
 // (rectilinear boolean); registering a backend (e.g. the lazily-loaded
 // `clipper2-wasm` adapter) unlocks seamless angled-wall joinery.

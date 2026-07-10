@@ -13,7 +13,7 @@
  */
 
 import type { PlanNode, Statement } from "./ast.js";
-import type { Span } from "./diagnostics.js";
+import type { FixEdit, Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
 import type { ParamDoc, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
@@ -79,10 +79,10 @@ export interface CompletionItem {
   detail?: string;
   doc?: string;
 }
-export interface TextEdit {
-  span: Span;
-  newText: string;
-}
+/** A single text replacement (span → newText). Unified with — and an alias of —
+ *  the core {@link FixEdit}; both names name one shape so an LSP `TextEdit` and a
+ *  diagnostic `FixEdit` are interchangeable. */
+export type TextEdit = FixEdit;
 export interface SignatureResult {
   label: string;
   params: string[];
