@@ -118,6 +118,21 @@ const ACCESSIBLE_FLAG: ManifestFlag = {
   description:
     "emit <title>/<desc>/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged",
 };
+const FROM_JSON_FLAG: ManifestFlag = {
+  flag: "--from-json",
+  description: "read the input as Plan JSON (RPLAN shape) instead of .arch, convert it, then compile",
+};
+const GRAPH_FLAG: ManifestFlag = {
+  flag: "--graph",
+  arg: "<graph.json>",
+  description:
+    "also check the plan's interior-door adjacency against an intended graph (bare dict or {input_graph:{…}}); mismatch → exit 2",
+};
+const AT_FLAG: ManifestFlag = {
+  flag: "--at",
+  arg: "<byteOffset>",
+  description: "source byte offset to list completions at (required)",
+};
 
 /**
  * The command table. Keys MUST cover exactly the verbs the CLI's `main()`
@@ -136,11 +151,12 @@ const COMMANDS: ManifestCommand[] = [
       OVERLAY_FLAG,
       ERROR_SVG_FLAG,
       ACCESSIBLE_FLAG,
+      FROM_JSON_FLAG,
       { flag: "--install", description: "auto-install the optional dep for the chosen format if missing (PNG/PDF)" },
       JSON_FLAG,
       QUIET_FLAG,
     ],
-    input: "<file.arch|->",
+    input: "<file.arch|-> (Plan JSON with --from-json)",
     output: "file (or stdout with -o -)",
   },
   {
@@ -199,11 +215,12 @@ const COMMANDS: ManifestCommand[] = [
     summary: "parse + resolve + lint, no render (is it valid & sound?)",
     flags: [
       { flag: "--strict", alias: "--fail-on-warning", description: "advisory warnings fail too (exit 2)" },
+      GRAPH_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
     input: "<file.arch|->",
-    output: "diagnostics",
+    output: "diagnostics (plus a graph{} report with --graph)",
   },
   {
     name: "describe",
@@ -223,6 +240,20 @@ const COMMANDS: ManifestCommand[] = [
     ],
     input: "<file.arch|->",
     output: "W_* warnings",
+  },
+  {
+    name: "ast",
+    summary: "parse only (no resolve/render) and print the span-bearing AST as JSON",
+    flags: [JSON_FLAG, QUIET_FLAG],
+    input: "<file.arch|->",
+    output: "AST JSON (scripting nodes unexpanded)",
+  },
+  {
+    name: "complete",
+    summary: "completion items in scope at a source byte offset (the LSP completion() core)",
+    flags: [AT_FLAG, JSON_FLAG, QUIET_FLAG],
+    input: "<file.arch|->",
+    output: "{ items: [...] } completion items",
   },
   {
     name: "fmt",

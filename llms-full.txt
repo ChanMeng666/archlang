@@ -439,8 +439,8 @@ from a file or stdin (`-`). There is intentionally no MCP server — this CLI is
 ### Commands
 
 **`arch compile`** — render a plan to SVG/DXF/PDF/PNG
-  - input: <file.arch|-> → output: file (or stdout with -o -)
-  - flags: `--out|-o <file|->` output destination ('-' = stdout) · `--format|-f <svg|dxf|txt|pdf|png>` output format (default svg) · `--width|-w <px>` page width hint in pixels · `--cols <n>` text renderer (-f txt / preview --ascii) grid width in characters (default 80) · `--charset <unicode|ascii>` text renderer glyph set (default unicode) · `--overlay <circulation>` draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged · `--error-svg` on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) · `--accessible` emit <title>/<desc>/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged · `--install` auto-install the optional dep for the chosen format if missing (PNG/PDF) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - input: <file.arch|-> (Plan JSON with --from-json) → output: file (or stdout with -o -)
+  - flags: `--out|-o <file|->` output destination ('-' = stdout) · `--format|-f <svg|dxf|txt|pdf|png>` output format (default svg) · `--width|-w <px>` page width hint in pixels · `--cols <n>` text renderer (-f txt / preview --ascii) grid width in characters (default 80) · `--charset <unicode|ascii>` text renderer glyph set (default unicode) · `--overlay <circulation>` draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged · `--error-svg` on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) · `--accessible` emit <title>/<desc>/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged · `--from-json` read the input as Plan JSON (RPLAN shape) instead of .arch, convert it, then compile · `--install` auto-install the optional dep for the chosen format if missing (PNG/PDF) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
 
 **`arch batch`** — render many .arch files in one call, concurrently
   - input: <a.arch> <b.arch> … → output: one file per input; --json gives a results[] array
@@ -459,8 +459,8 @@ from a file or stdin (`-`). There is intentionally no MCP server — this CLI is
   - flags: `--out|-o <file|->` output destination ('-' = stdout) · `--format|-f <svg|dxf|txt|pdf|png>` output format (default svg) · `--width|-w <px>` page width hint in pixels
 
 **`arch validate`** — parse + resolve + lint, no render (is it valid & sound?)
-  - input: <file.arch|-> → output: diagnostics
-  - flags: `--strict|--fail-on-warning` advisory warnings fail too (exit 2) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - input: <file.arch|-> → output: diagnostics (plus a graph{} report with --graph)
+  - flags: `--strict|--fail-on-warning` advisory warnings fail too (exit 2) · `--graph <graph.json>` also check the plan's interior-door adjacency against an intended graph (bare dict or {input_graph:{…}}); mismatch → exit 2 · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
 
 **`arch describe`** — semantic facts: rooms, areas, adjacency, what doors connect
   - input: <file.arch|-> → output: facts (JSON or a summary)
@@ -470,6 +470,14 @@ from a file or stdin (`-`). There is intentionally no MCP server — this CLI is
   - input: <file.arch|-> → output: W_* warnings
   - flags: `--profile <residential-basic|accessibility-advisory>` advisory ruleset · `--strict|--fail-on-warning` warnings fail (exit 2) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
 
+**`arch ast`** — parse only (no resolve/render) and print the span-bearing AST as JSON
+  - input: <file.arch|-> → output: AST JSON (scripting nodes unexpanded)
+  - flags: `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+
+**`arch complete`** — completion items in scope at a source byte offset (the LSP completion() core)
+  - input: <file.arch|-> → output: { items: [...] } completion items
+  - flags: `--at <byteOffset>` source byte offset to list completions at (required) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+
 **`arch fmt`** — canonical formatting
   - input: <file.arch|-> → output: formatted source (or in place with --write)
   - flags: `--write` format the file in place · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
@@ -477,6 +485,14 @@ from a file or stdin (`-`). There is intentionally no MCP server — this CLI is
 **`arch repair`** — explicit source-to-source corrector (furniture out of walls) + change log
   - input: <file.arch|-> → output: corrected source + change log on stderr
   - flags: `--out|-o <file|->` output destination ('-' = stdout) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+
+**`arch fix`** — apply the machine-applicable fix suggestions on a plan's diagnostics (bounded fixpoint)
+  - input: <file.arch|-> → output: fixed source (to the input file or -o) + change log on stderr
+  - flags: `--out|-o <file|->` output destination ('-' = stdout) · `--unsafe` also apply `maybe-incorrect` fixes (default: machine-applicable only) · `--dry-run` compute the result but do not write it · `--force` keep a pass even if it raises the error count · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+
+**`arch suggest`** — advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
+  - input: <file.arch|-> → output: suggestions (JSON or a summary)
+  - flags: `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
 
 **`arch manifest`** (aliases: `capabilities`) — this document: the whole CLI API as structured data
   - input: none → output: the manifest (JSON or a summary)
@@ -503,7 +519,7 @@ from a file or stdin (`-`). There is intentionally no MCP server — this CLI is
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**41 errors** (abort rendering) · **31 warnings** (advisory; `validate --strict` fails on them too).
+**43 errors** (abort rendering) · **31 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -530,6 +546,8 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_IMPORT_NOT_FOUND` — Import path could not be resolved. **Fix:** Check the path (relative to the importing file) and that the file exists.
 - `E_IMPORT_PARSE` — Imported module has a parse error. **Fix:** Fix the syntax error in the imported module.
 - `E_INDEX` — Array index out of range. **Fix:** Clamp or check the index against `len(arr)`.
+- `E_JSON_KIND` — Unknown element kind in plan JSON. **Fix:** Use one of the supported kinds: opening `kind` must be `door` | `window` | `opening`.
+- `E_JSON_SCHEMA` — Plan JSON does not match the schema. **Fix:** Fix the value at the reported JSON path (the message names it, e.g. `/rooms/0/width`); express geometry as concrete numbers, and author scripting/imports in `.arch` source instead.
 - `E_LAYOUT_CYCLE` — Relational room placement forms a cycle. **Fix:** Break the cycle by giving one of the rooms absolute `at (x,y)` coordinates.
 - `E_LAYOUT_REF` — Relational placement references an unknown room. **Fix:** Reference an existing room id, or fix the typo.
 - `E_OPENING_WIDTH` — Opening must have a positive width. **Fix:** Give the opening a positive `width`.

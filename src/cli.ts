@@ -50,11 +50,18 @@ import {
   extractArchBlocks,
   rewriteMarkdown,
   EXPORT_FORMATS,
+  planFromJson,
+  astToJson,
+  checkGraph,
+  completion,
 } from "./index.js";
 import type { Diagnostic, World, Scene, ExportFormat, FixSuggestion } from "./index.js";
 // Internal (not part of the public surface): parse → link → resolve without
 // rendering — validate/lint need only the diagnostics, never the SVG.
 import { resolvePlan } from "./analyze.js";
+// `arch ast` parses without resolving/rendering; parse() is not on the public
+// surface, so the CLI reaches for it directly (as it does resolvePlan above).
+import { parse } from "./parser.js";
 
 type Format = ExportFormat;
 /** Known `-f` ids and the "svg, dxf, pdf, or png" usage phrasing, from the one table. */
@@ -101,6 +108,12 @@ interface Args {
   unsafe?: boolean;
   /** `--dry-run`: (fix) compute the result but never write it. */
   dryRun?: boolean;
+  /** `--from-json`: (compile) read the input as Plan JSON (RPLAN shape), not `.arch`. */
+  fromJson?: boolean;
+  /** `--graph <file>`: (validate) also check adjacency against an intended graph. */
+  graph?: string;
+  /** `--at <byteOffset>`: (complete) source offset to list completions at. */
+  at?: number;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -113,7 +126,10 @@ function parseArgs(argv: string[]): Args {
     else if (a === "-j" || a === "--jobs") res.jobs = Number(argv[++i]);
     else if (a === "-s" || a === "--scale") res.scale = Number(argv[++i]);
     else if (a === "--cols") res.cols = Number(argv[++i]);
+    else if (a === "--at") res.at = Number(argv[++i]);
     else if (a === "--charset") res.charset = argv[++i];
+    else if (a === "--from-json") res.fromJson = true;
+    else if (a === "--graph") res.graph = argv[++i];
     else if (a === "--ascii") res.ascii = true;
     else if (a === "--install") res.install = true;
     else if (a === "--unsafe") res.unsafe = true;
@@ -190,6 +206,27 @@ function emitDiagnosticsHuman(source: string, diags: Diagnostic[], quiet?: boole
 }
 
 const hasErrors = (diags: Diagnostic[]): boolean => diags.some((d) => d.severity === "error");
+
+/** A plain (non-array) object — used to sniff the `--graph` / Plan-JSON shapes. */
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+
+/**
+ * Convert Plan-JSON text (`--from-json`) to canonical `.arch` source. On a JSON
+ * syntax error or a shape/kind problem, returns the error diagnostics (with the
+ * partially-generated source, when any, so line/col projection still works);
+ * on success returns the `.arch` string the compile pipeline then consumes.
+ */
+function sourceFromJson(jsonText: string): { source: string } | { error: Diagnostic[]; generated?: string } {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch (e) {
+    return { error: [{ severity: "error", code: "E_JSON_SCHEMA", message: `invalid JSON: ${(e as Error).message}` }] };
+  }
+  const { source, diagnostics } = planFromJson(parsed);
+  if (source === undefined || hasErrors(diagnostics)) return { error: diagnostics, generated: source };
+  return { source };
+}
 
 function defaultOut(input: string, format: Format): string {
   if (input === "-") return `out.${format}`;
@@ -419,6 +456,24 @@ async function cmdCompile(args: Args): Promise<number> {
     source = readInput(input);
   } catch {
     return ioError(`cannot read ${input}`, args.json, { format });
+  }
+
+  // `--from-json`: the input is Plan JSON (RPLAN shape), not `.arch`. Convert it to
+  // canonical `.arch` here, then fall through to the normal pipeline so every flag
+  // (-f/-o/--overlay/--accessible/--error-svg/--cols/--charset) composes unchanged.
+  if (args.fromJson) {
+    const conv = sourceFromJson(source);
+    if ("error" in conv) {
+      const projSrc = conv.generated ?? source;
+      if (args.json) {
+        emitJson({ ok: false, format, diagnostics: conv.error.map((d) => diagnosticToJson(projSrc, d)) });
+      } else {
+        emitDiagnosticsHuman(projSrc, conv.error, args.quiet);
+        if (!args.quiet) process.stderr.write("✗ plan JSON is invalid\n");
+      }
+      return EXIT.USER;
+    }
+    source = conv.source;
   }
 
   const r = await renderArtifact(source, format, args, baseDirOf(input));
@@ -920,8 +975,78 @@ function cmdValidate(args: Args): number {
     // parse/resolve stage memos, so the whole command resolves once, renders never.
     const { diagnostics } = resolvePlan(source, { world });
     const lintDiags = lint(source, { world });
-    return report(source, [...diagnostics, ...lintDiags], args);
+    const diags = [...diagnostics, ...lintDiags];
+    // `--graph <file>`: additionally check the plan's interior-door adjacency
+    // against an intended graph (an intent violation, so a mismatch fails).
+    if (args.graph !== undefined) return reportWithGraph(source, diags, args, world);
+    return report(source, diags, args);
   });
+}
+
+/**
+ * `validate --graph <graph.json>` — normal validate, plus a comparison of the
+ * plan's compiled interior-door adjacency against an intended graph. The file is
+ * either a bare adjacency dict (`{ "room": ["room", …] }`) or wrapped under
+ * `input_graph`. A graph mismatch is a user-source (intent) violation → exit 2.
+ */
+function reportWithGraph(source: string, diags: Diagnostic[], args: Args, world: World): number {
+  let graphText: string;
+  try {
+    graphText = readFileSync(resolvePath(args.graph!), "utf8");
+  } catch {
+    return ioError(`cannot read graph file ${args.graph}`, args.json);
+  }
+  let raw: unknown;
+  try {
+    raw = JSON.parse(graphText);
+  } catch (e) {
+    return usageError(`invalid --graph JSON: ${(e as Error).message}`);
+  }
+  // Accept a bare adjacency dict or a `{ input_graph: {…} }` wrapper.
+  const intentRaw = isRecord(raw) && isRecord(raw.input_graph) ? raw.input_graph : raw;
+  if (!isRecord(intentRaw)) {
+    return usageError("--graph must be an adjacency object { room: [neighbours] } (optionally under input_graph)");
+  }
+  const intent: Record<string, string[]> = {};
+  for (const [k, v] of Object.entries(intentRaw)) {
+    intent[k] = Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+  }
+
+  const gc = checkGraph(source, intent, { world });
+  const e = diags.filter((d) => d.severity === "error").length;
+  const w = diags.length - e;
+  const diagsOk = e === 0 && (!args.strict || w === 0);
+  const ok = diagsOk && gc.ok;
+
+  if (args.json) {
+    emitJson({
+      ok,
+      strict: args.strict ?? false,
+      diagnostics: diags.map((d) => diagnosticToJson(source, d)),
+      graph: {
+        ok: gc.ok,
+        missing_rooms: gc.missing_rooms,
+        missing_connections: gc.missing_connections,
+        extra_connections: gc.extra_connections,
+      },
+    });
+  } else {
+    emitDiagnosticsHuman(source, diags, args.quiet);
+    if (!args.quiet) {
+      for (const rm of gc.missing_rooms) process.stderr.write(`  graph: room "${rm}" not found in plan\n`);
+      for (const [a, b] of gc.missing_connections) process.stderr.write(`  graph: missing connection ${a} — ${b}\n`);
+      for (const [a, b] of gc.extra_connections) process.stderr.write(`  graph: unexpected connection ${a} — ${b}\n`);
+      if (ok) process.stdout.write(`✓ ok${w ? ` (${w} warning${w === 1 ? "" : "s"})` : ""}, graph matches\n`);
+      else {
+        const parts: string[] = [];
+        if (e) parts.push(`${e} error${e === 1 ? "" : "s"}`);
+        if (w) parts.push(`${w} warning${w === 1 ? "" : "s"}`);
+        if (!gc.ok) parts.push("graph mismatch");
+        process.stdout.write(`✗ ${parts.join(", ")}\n`);
+      }
+    }
+  }
+  return ok ? EXIT.OK : EXIT.USER;
 }
 
 function cmdLint(args: Args): number {
@@ -936,6 +1061,56 @@ function cmdLint(args: Args): number {
     const { diagnostics } = resolvePlan(source, { world });
     const errs = diagnostics.filter((d) => d.severity === "error");
     return report(source, errs.length ? errs : lint(source, { world, profile: args.profile }), args);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// ast / complete
+// ---------------------------------------------------------------------------
+
+/**
+ * `ast` — parse only (no resolve/render) and print the span-bearing AST as JSON
+ * (`astToJson`: scripting nodes appear as their kind, unexpanded). The parser
+ * recovers, so a partial AST is emitted even on error; error diagnostics still
+ * force exit 2. Human mode pretty-prints the same JSON (diagnostics → stderr).
+ */
+function cmdAst(args: Args): number {
+  return withSource(args, (source) => {
+    const { plan, diagnostics } = parse(source);
+    const ast = plan ? astToJson(plan) : undefined;
+    const errored = hasErrors(diagnostics);
+    if (args.json) {
+      const o: Record<string, unknown> = { ok: !errored };
+      if (ast !== undefined) o.ast = ast;
+      o.diagnostics = diagnostics.map((d) => diagnosticToJson(source, d));
+      emitJson(o);
+    } else {
+      if (diagnostics.length) emitDiagnosticsHuman(source, diagnostics, args.quiet);
+      if (ast !== undefined) process.stdout.write(JSON.stringify(ast, null, 2) + "\n");
+    }
+    return errored ? EXIT.USER : EXIT.OK;
+  });
+}
+
+/**
+ * `complete --at <byteOffset>` — the core LSP `completion()` projected as data: the
+ * items in scope at that source offset. Missing/invalid `--at` is a usage error.
+ */
+function cmdComplete(args: Args): number {
+  if (args.at === undefined || !Number.isFinite(args.at) || args.at < 0) {
+    return usageError("complete needs --at <byteOffset> (a non-negative integer)");
+  }
+  const offset = Math.trunc(args.at);
+  return withSource(args, (source) => {
+    const items = completion(source, offset);
+    if (args.json) {
+      emitJson({ ok: true, items });
+    } else if (!args.quiet) {
+      for (const it of items) {
+        process.stdout.write(`${it.label}\t${it.kind}${it.detail ? `\t${it.detail}` : ""}\n`);
+      }
+    }
+    return EXIT.OK;
   });
 }
 
@@ -1224,14 +1399,16 @@ function ioError(msg: string, json?: boolean, extra?: Record<string, unknown>): 
 const HELP = `arch — ArchLang compiler (agent-native)
 
 Usage:
-  arch compile  <in.arch|-> [-o out|-] [-w width] [-f svg|dxf|txt|pdf|png] [--cols n] [--charset unicode|ascii] [--overlay circulation] [--error-svg] [--accessible] [--install] [--json] [--quiet]
+  arch compile  <in.arch|-> [-o out|-] [-w width] [-f svg|dxf|txt|pdf|png] [--cols n] [--charset unicode|ascii] [--overlay circulation] [--error-svg] [--accessible] [--from-json] [--install] [--json] [--quiet]
   arch preview  <in.arch|-> [-o out.png] [-s scale] [--ascii [--cols n] [--charset …]] [--error-svg] [--install] [--json]   render a PNG (or ASCII text) you can look at
   arch batch    <a.arch> <b.arch> … [-o dir] [-f …] [-j jobs] [--json]   render many files concurrently
   arch md       <doc.md> [-o out.md] [-f svg|png] [--error-svg] [--json]   render fenced arch blocks → image links
   arch watch    <in.arch> [-o out] [-w width] [-f …]
-  arch validate <in.arch|-> [--strict] [--json]      parse + resolve + lint (no render)
+  arch validate <in.arch|-> [--strict] [--graph g.json] [--json]      parse + resolve + lint (no render)
   arch describe <in.arch|-> [--json]      semantic facts (rooms, areas, adjacency)
   arch lint     <in.arch|-> [--profile residential-basic|accessibility-advisory] [--strict] [--json]   architectural soundness warnings
+  arch ast      <in.arch|-> [--json]      parse only → span-bearing AST JSON (no resolve/render)
+  arch complete <in.arch|-> --at <n> [--json]   completion items in scope at a byte offset
   arch fmt      <in.arch|-> [--write] [--json]
   arch repair   <in.arch|-> [-o out|-] [--json]   emit corrected source (furniture out of walls) + change log
   arch fix      <in.arch|-> [-o out|-] [--unsafe] [--dry-run] [--force] [--json]   apply machine-applicable diagnostic fixes
@@ -1249,6 +1426,9 @@ Every command takes --json: result on stdout, messages on stderr.
   (SVG, or PNG for preview) listing the diagnostics; exit code stays 2.
 --accessible (compile, SVG): emit <title>/<desc>/role="img"/aria-labelledby (the describe() caption)
   so the drawing is self-describing for assistive tech and machine readers; default output is unchanged.
+--from-json (compile): read the input as Plan JSON (RPLAN shape), convert to .arch, then compile (all -f/-o flags apply).
+--graph <g.json> (validate): check interior-door adjacency against an intended graph (bare dict or {input_graph:{…}}); mismatch → exit 2.
+--at <byteOffset> (complete): required; the source offset to list completions at.
 --install (compile -f png/pdf, preview): auto-install the missing optional render dep, then retry.
 --ascii (preview) / -f txt (compile): render a zero-dependency ASCII text plan (--cols, --charset).
 Exit codes: 0 ok · 2 user-source error (don't retry) · 1 internal/IO · 3 bad usage.
@@ -1285,6 +1465,10 @@ async function main(): Promise<void> {
       return process.exit(cmdDescribe(args));
     case "lint":
       return process.exit(cmdLint(args));
+    case "ast":
+      return process.exit(cmdAst(args));
+    case "complete":
+      return process.exit(cmdComplete(args));
     case "fmt":
       return process.exit(cmdFmt(args));
     case "repair":

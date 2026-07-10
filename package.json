@@ -68,6 +68,8 @@
     "gen:errors": "tsx scripts/gen-error-codes.ts",
     "gen:spec": "tsx scripts/gen-llm-spec.ts",
     "gen:llms": "tsx scripts/gen-llms-full.ts",
+    "gen:gbnf": "tsx scripts/gen-gbnf.ts",
+    "gen:plan-schema": "tsx scripts/gen-plan-schema.ts",
     "eval": "tsx eval/run.ts",
     "eval:ci": "tsx eval/run.ts",
     "docs:dev": "npm run build && npm -w docs-site run dev",
