@@ -139,28 +139,75 @@ export async function evaluate(
   return { results, summary };
 }
 
-/** Ask a model to author a plan from the prompt, with the spec as the system prompt. */
-async function authorWithModel(prompt: string): Promise<string> {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error("ANTHROPIC_API_KEY is not set (required for --live)");
-  const model = process.env.ARCHLANG_EVAL_MODEL ?? "claude-sonnet-5";
-  const spec = readFileSync(resolve(ROOT, "spec.llm.md"), "utf8");
+/** Live provider/model, resolved from env: explicit `ARCHLANG_EVAL_PROVIDER`,
+ *  else OpenAI when only its key is present, else Anthropic (the default). */
+export function resolveProvider(): { provider: "anthropic" | "openai"; model: string } {
+  const explicit = process.env.ARCHLANG_EVAL_PROVIDER?.toLowerCase();
+  const hasOpenAI = Boolean(process.env.OPENAI_API_KEY);
+  const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY);
+  const useOpenAI = explicit === "openai" || (explicit !== "anthropic" && hasOpenAI && !hasAnthropic);
+  return useOpenAI
+    ? { provider: "openai", model: process.env.ARCHLANG_EVAL_MODEL ?? "gpt-5.5-2026-04-23" }
+    : { provider: "anthropic", model: process.env.ARCHLANG_EVAL_MODEL ?? "claude-sonnet-5" };
+}
 
+/** The one system prompt both providers get: the spec + a reply-format instruction. */
+function systemPrompt(): string {
+  const spec = readFileSync(resolve(ROOT, "spec.llm.md"), "utf8");
+  return `${spec}\n\nYou write ArchLang. Reply with ONLY one \`\`\`arch code block — no prose.`;
+}
+
+/** Pull the `.arch` source out of a model reply (fenced block if present, else raw). */
+function extractArch(text: string): string {
+  const m = text.match(/```(?:arch)?\n([\s\S]*?)```/);
+  return (m ? m[1] : text).trim();
+}
+
+/** Author a plan via the Anthropic Messages API. */
+async function authorWithAnthropic(prompt: string, system: string, model: string): Promise<string> {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) throw new Error("ANTHROPIC_API_KEY is not set (required for --live with the anthropic provider)");
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify({
       model,
       max_tokens: 2048,
-      system: `${spec}\n\nYou write ArchLang. Reply with ONLY one \`\`\`arch code block — no prose.`,
+      system,
       messages: [{ role: "user", content: prompt }],
     }),
   });
   if (!res.ok) throw new Error(`Anthropic API ${res.status}: ${await res.text()}`);
   const json = (await res.json()) as { content: { type: string; text?: string }[] };
-  const text = json.content.map((b) => b.text ?? "").join("");
-  const m = text.match(/```(?:arch)?\n([\s\S]*?)```/);
-  return (m ? m[1] : text).trim();
+  return extractArch(json.content.map((b) => b.text ?? "").join(""));
+}
+
+/** Author a plan via the OpenAI Chat Completions API (dependency-free `fetch`). */
+async function authorWithOpenAI(prompt: string, system: string, model: string): Promise<string> {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) throw new Error("OPENAI_API_KEY is not set (required for --live with the openai provider)");
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+    body: JSON.stringify({
+      model,
+      max_completion_tokens: 4096,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: prompt },
+      ],
+    }),
+  });
+  if (!res.ok) throw new Error(`OpenAI API ${res.status}: ${await res.text()}`);
+  const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  return extractArch(json.choices?.[0]?.message?.content ?? "");
+}
+
+/** Ask the resolved provider's model to author a plan from the prompt. */
+function makeAuthor(provider: "anthropic" | "openai", model: string): (prompt: string) => Promise<string> {
+  const system = systemPrompt();
+  const author = provider === "openai" ? authorWithOpenAI : authorWithAnthropic;
+  return (prompt: string) => author(prompt, system, model);
 }
 
 /** Render the scorecard as Markdown. */
@@ -198,10 +245,21 @@ function renderResults(
 async function main(): Promise<void> {
   const live = process.argv.includes("--live");
   const entries = loadCorpus();
-  const getSource = live ? (e: CorpusEntry) => authorWithModel(e.prompt) : (e: CorpusEntry) => readGolden(e);
+
+  let getSource: (e: CorpusEntry) => string | Promise<string>;
+  let mode: string;
+  if (live) {
+    const { provider, model } = resolveProvider();
+    const author = makeAuthor(provider, model);
+    getSource = (e: CorpusEntry) => author(e.prompt);
+    mode = `live (${provider} · ${model})`;
+  } else {
+    getSource = (e: CorpusEntry) => readGolden(e);
+    mode = "offline";
+  }
 
   const { results, summary } = await evaluate(entries, getSource);
-  const md = renderResults(results, summary, live ? "live" : "offline");
+  const md = renderResults(results, summary, mode);
   writeFileSync(resolve(ROOT, "eval/results.md"), md);
 
   process.stdout.write(md + "\n");

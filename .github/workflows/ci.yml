@@ -47,6 +47,11 @@ jobs:
           npm run gen:spec
           git diff --exit-code spec.llm.md
 
+      - name: Bundled agent context is in sync with its sources
+        run: |
+          npm run gen:llms
+          git diff --exit-code llms-full.txt
+
       - name: Test
         run: npm test
 

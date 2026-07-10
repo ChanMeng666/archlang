@@ -1,0 +1,9 @@
+{
+  "provider": "openai",
+  "model": "gpt-5.5-2026-04-23",
+  "date": "2026-07-10",
+  "valid": 10,
+  "semanticPass": 1,
+  "sound": 1,
+  "total": 18
+}
