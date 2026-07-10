@@ -199,7 +199,10 @@ async function authorWithOpenAI(prompt: string, system: string, model: string): 
     headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
     body: JSON.stringify({
       model,
-      max_completion_tokens: 4096,
+      // Reasoning models spend internal thinking tokens from this same budget — a
+      // 4096 cap starved gpt-5.5 into empty/truncated plans (8/18 briefs at first
+      // measurement). Sized so truncation measures authorability, not the budget.
+      max_completion_tokens: 16384,
       messages: [
         { role: "system", content: system },
         { role: "user", content: prompt },
