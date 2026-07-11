@@ -324,5 +324,78 @@
       },
       "reachable": true
     }
+  },
+  {
+    "id": "sized-kitchen-flat",
+    "prompt": "A one-bedroom flat with a kitchen of 12 m², a bedroom of at least 10 m², a living room, and a bathroom. The bedroom and bathroom open off the living room; give the bedroom a window and add a front door.",
+    "golden": "eval/goldens/sized-kitchen-flat.arch",
+    "expect": {
+      "rooms": 4,
+      "roomsInclude": [
+        { "concept": "kitchen", "areaM2": { "min": 10.8, "max": 13.2, "source": "brief: 'kitchen of 12 m²' ±10%" } },
+        { "concept": "bedroom", "areaM2": { "min": 10, "source": "brief: 'bedroom of at least 10 m²'" } },
+        { "concept": "living-room" },
+        { "concept": "bathroom" }
+      ],
+      "adjacency": {
+        "requiredEdges": { "living-room": ["bedroom", "bathroom"] },
+        "source": "brief: 'The bedroom and bathroom open off the living room'"
+      }
+    }
+  },
+  {
+    "id": "sized-bedrooms",
+    "prompt": "A two-bedroom flat where each bedroom is at least 11 m², plus a kitchen/living area and a bathroom. Both bedrooms open off the living space and each gets a window.",
+    "golden": "eval/goldens/sized-bedrooms.arch",
+    "expect": {
+      "rooms": 4,
+      "roomsInclude": [
+        {
+          "concept": "bedroom",
+          "count": { "min": 2 },
+          "areaM2": { "min": 11, "source": "brief: 'each bedroom is at least 11 m²'" }
+        },
+        { "concept": "living-room" },
+        { "concept": "bathroom" }
+      ],
+      "adjacency": {
+        "requiredEdges": { "living-room": ["bedroom"] },
+        "source": "brief: 'Both bedrooms open off the living space'"
+      }
+    }
+  },
+  {
+    "id": "sized-wet-room",
+    "prompt": "A wheelchair-accessible one-bedroom flat with a wet room of at least 5 m²: a living/kitchen area, a bedroom, and the wet room, all with 1000 mm doorways off a wide hall.",
+    "golden": "eval/goldens/sized-wet-room.arch",
+    "expect": {
+      "rooms": 4,
+      "roomsInclude": [
+        { "concept": "wet-room", "areaM2": { "min": 5, "source": "brief: 'wet room of at least 5 m²'" } },
+        { "concept": "bedroom" },
+        { "concept": "living-room" },
+        { "concept": "hall" }
+      ],
+      "adjacency": {
+        "requiredEdges": { "hall": ["living-room", "bedroom", "wet-room"] },
+        "source": "brief: 'all with 1000 mm doorways off a wide hall'"
+      },
+      "reachable": true
+    }
+  },
+  {
+    "id": "sized-office-mix",
+    "prompt": "A small office suite with a meeting room of about 20 m² and an open work area of at least 60 m², plus a kitchenette and a WC, every room reachable from the entrance.",
+    "golden": "eval/goldens/sized-office-mix.arch",
+    "expect": {
+      "rooms": 4,
+      "roomsInclude": [
+        { "concept": "meeting-room", "areaM2": { "min": 17, "max": 23, "source": "brief: 'about 20 m²' ±15%" } },
+        { "concept": "open-office", "areaM2": { "min": 60, "source": "brief: 'at least 60 m²'" } },
+        { "concept": "kitchenette" },
+        { "concept": "wc" }
+      ],
+      "reachable": true
+    }
   }
 ]

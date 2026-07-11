@@ -1,0 +1,38 @@
+# Two-bedroom flat where each bedroom is >=11 m². A combined kitchen/living area
+# is the hub; both bedrooms open off it, and each bedroom gets a window.
+plan "Sized Bedrooms Flat" {
+  units mm
+  grid 50
+  scale 1:100
+  north up
+
+  wall exterior thickness 200 { (0,0) (8000,0) (8000,7000) (0,7000) close }
+  # Two bedrooms across the top; the living space runs below them.
+  wall partition thickness 100 { (0,3000) (8000,3000) }
+  wall partition thickness 100 { (4000,0) (4000,3000) }
+  # Living space and bathroom split the lower half.
+  wall partition thickness 100 { (5500,3000) (5500,7000) }
+
+  room id=r_bed1 at (0,0)       size 4000x3000 label "Bedroom 1"        uses bedroom
+  room id=r_bed2 at (4000,0)    size 4000x3000 label "Bedroom 2"        uses bedroom
+  room id=r_live at (0,3000)    size 5500x4000 label "Kitchen / Living" uses living kitchen
+  room id=r_bath at (5500,3000) size 2500x4000 label "Bathroom"         uses bath
+
+  door id=d_main at (2500,7000) width 900 wall exterior  hinge left  swing in
+  door id=d_bed1 at (2000,3000) width 800 wall partition hinge left  swing in
+  door id=d_bed2 at (4750,3000) width 800 wall partition hinge right swing in
+  door id=d_bath at (5500,5000) width 800 wall partition hinge left  swing in
+
+  window at (2000,0) width 1500 wall exterior
+  window at (6000,0) width 1500 wall exterior
+
+  # Kitchen run down the west wall of the kitchen/living room.
+  furniture kitchen_sink at (300,3300) size 600x800
+  furniture counter      at (300,4200) size 600x800
+  furniture stove        at (300,5100) size 600x800
+
+  # Bathroom fixtures against the walls, clear of the door swing at the west wall.
+  furniture basin  at (5700,3200) size 600x450
+  furniture wc     at (7400,3300) size 400x700
+  furniture shower at (6700,5900) size 900x900
+}

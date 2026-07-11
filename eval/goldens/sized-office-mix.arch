@@ -1,0 +1,37 @@
+# Small office suite: a meeting room (~20 m²), an open work area (>=60 m²), a
+# kitchenette, and a WC — every room reachable from the entrance via the open area.
+plan "Sized Office Suite" {
+  units mm
+  grid 100
+  scale 1:100
+  north up
+
+  wall exterior thickness 200 { (0,0) (13000,0) (13000,8000) (0,8000) close }
+  # Open work area spans the top; the service rooms run along the bottom band.
+  wall partition thickness 100 { (0,5000) (13000,5000) }
+  wall partition thickness 100 { (6000,5000) (6000,8000) }
+  wall partition thickness 100 { (10000,5000) (10000,8000) }
+
+  room id=r_open at (0,0)        size 13000x5000 label "Open Office"  uses office
+  room id=r_meet at (0,5000)     size 6000x3000  label "Meeting Room"
+  room id=r_kit  at (6000,5000)  size 4000x3000  label "Kitchenette"
+  room id=r_wc   at (10000,5000) size 3000x3000  label "WC"          uses wc
+
+  door id=d_main at (2000,0)     width 1200 wall exterior  hinge left  swing in
+  door id=d_meet at (3000,5000)  width 900  wall partition hinge left  swing in
+  door id=d_kit  at (8000,5000)  width 900  wall partition hinge left  swing in
+  door id=d_wc   at (11500,5000) width 800  wall partition hinge right swing in
+
+  window at (5000,0)     width 2400 wall exterior
+  window at (9000,0)     width 2400 wall exterior
+  window at (13000,2500) width 1800 wall exterior
+
+  # Kitchenette run along the south wall.
+  furniture kitchen_sink at (6300,7100) size 800x600
+  furniture counter      at (7200,7100) size 600x600
+  furniture fridge       at (9100,7100) size 600x600
+
+  # WC fixtures against the south wall.
+  furniture wc    at (10300,7100) size 400x700
+  furniture basin at (12300,7100) size 600x450
+}

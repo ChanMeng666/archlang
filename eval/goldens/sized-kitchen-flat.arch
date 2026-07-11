@@ -1,0 +1,38 @@
+# One-bedroom flat with a sized kitchen (12 m²) and a sized bedroom (>=10 m²).
+# The bedroom and bathroom open off the living room; the kitchen opens off it too.
+plan "Sized Kitchen Flat" {
+  units mm
+  grid 50
+  scale 1:100
+  north up
+
+  wall exterior thickness 200 { (0,0) (8000,0) (8000,7000) (0,7000) close }
+  # Top row rooms sit above the living room; a spine wall separates them from it.
+  wall partition thickness 100 { (0,3000) (8000,3000) }
+  wall partition thickness 100 { (4000,0) (4000,3000) }
+  # Living room and bathroom split the lower half.
+  wall partition thickness 100 { (5500,3000) (5500,7000) }
+
+  room id=r_kit  at (0,0)       size 4000x3000 label "Kitchen"      uses kitchen
+  room id=r_bed  at (4000,0)    size 4000x3000 label "Bedroom"      uses bedroom
+  room id=r_live at (0,3000)    size 5500x4000 label "Living Room"  uses living
+  room id=r_bath at (5500,3000) size 2500x4000 label "Bathroom"     uses bath
+
+  door    id=d_main at (2500,7000) width 900  wall exterior  hinge left  swing in
+  opening id=o_kit  at (2000,3000) width 1000 wall partition
+  door    id=d_bed  at (4750,3000) width 800  wall partition hinge left  swing in
+  door    id=d_bath at (5500,5000) width 800  wall partition hinge left  swing in
+
+  window at (6000,0) width 1500 wall exterior
+
+  # Kitchen run along the north wall.
+  furniture kitchen_sink at (300,300)  size 800x600
+  furniture counter      at (1200,300) size 600x600
+  furniture stove        at (1900,300) size 600x600
+  furniture fridge       at (2600,300) size 600x600
+
+  # Bathroom fixtures against the walls, clear of the door swing at the west wall.
+  furniture basin  at (5700,3200) size 600x450
+  furniture wc     at (7400,3300) size 400x700
+  furniture shower at (6700,5900) size 900x900
+}

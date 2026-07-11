@@ -1,0 +1,39 @@
+# Wheelchair-accessible one-bedroom flat: a wet room (>=5 m²), a living/kitchen area,
+# and a bedroom, all reached through 1000 mm doorways off a wide central hall.
+plan "Sized Wet Room Flat" {
+  units mm
+  grid 50
+  scale 1:100
+  north up
+
+  wall exterior thickness 200 { (0,0) (8000,0) (8000,7000) (0,7000) close }
+  # A wide horizontal hall bands the middle; rooms open off it above and below.
+  wall partition thickness 100 { (0,3000) (8000,3000) }
+  wall partition thickness 100 { (0,4500) (8000,4500) }
+  # Bedroom and wet room split the lower band.
+  wall partition thickness 100 { (5000,4500) (5000,7000) }
+
+  room id=r_live at (0,0)       size 8000x3000 label "Kitchen / Living" uses living kitchen
+  room id=r_hall at (0,3000)    size 8000x1500 label "Hall"             uses hall
+  room id=r_bed  at (0,4500)    size 5000x2500 label "Bedroom"          uses bedroom
+  room id=r_wet  at (5000,4500) size 3000x2500 label "Wet Room"         uses bath
+
+  door id=d_main at (0,3750)    width 1000 wall exterior  hinge left  swing in
+  door id=d_live at (2000,3000) width 1000 wall partition hinge left  swing out
+  door id=d_bed  at (2500,4500) width 1000 wall partition hinge left  swing in
+  door id=d_wet  at (6500,4500) width 1000 wall partition hinge right swing in
+
+  window at (2000,0) width 1500 wall exterior
+  window at (2500,7000) width 1200 wall exterior
+
+  # Kitchen run along the north wall, east of the window.
+  furniture kitchen_sink at (4500,300) size 800x600
+  furniture counter      at (5400,300) size 600x600
+  furniture stove        at (6100,300) size 600x600
+  furniture fridge       at (6800,300) size 600x600
+
+  # Wet-room fixtures in the south half, clear of the door swing at the north wall.
+  furniture shower at (5100,5700) size 900x900
+  furniture basin  at (6300,6400) size 600x450
+  furniture wc     at (7400,6100) size 400x700
+}

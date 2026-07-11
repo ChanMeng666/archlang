@@ -1,10 +1,10 @@
 # ArchLang authorability scorecard
 
-Mode: **offline** · 22 prompts · judge v2 · synonyms v1.
+Mode: **offline** · 26 prompts · judge v2 · synonyms v1.
 
-- **Valid (compiles):** 22/22 (100%)
-- **Intent match (semantic):** 22/22 (100%)
-- **Sound (lint-clean):** 21/22 (95%)
+- **Valid (compiles):** 26/26 (100%)
+- **Intent match (semantic):** 26/26 (100%)
+- **Sound (lint-clean):** 25/26 (96%)
 
 Subscores per row: **R**ooms · **L**abels · **A**rea · **Adj**acency (– = unasserted; adjacency/reachability score but never gate).
 
@@ -32,3 +32,7 @@ Subscores per row: **R**ooms · **L**abels · **A**rea · **Adj**acency (– = u
 | `attach-openings` | ✅ pass | yes | 0 | R1 L1 A– Adj1 | — |
 | `anchor-furniture` | ✅ pass | yes | 0 | R1 L1 A– Adj– | — |
 | `strip-attach-clean` | ✅ pass | yes | 0 | R1 L1 A– Adj1 | — |
+| `sized-kitchen-flat` | ✅ pass | yes | 0 | R1 L1 A1 Adj1 | — |
+| `sized-bedrooms` | ✅ pass | yes | 0 | R1 L1 A1 Adj1 | — |
+| `sized-wet-room` | ✅ pass | yes | 0 | R1 L1 A1 Adj1 | — |
+| `sized-office-mix` | ✅ pass | yes | 0 | R1 L1 A1 Adj1 | — |
