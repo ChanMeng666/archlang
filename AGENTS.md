@@ -26,7 +26,37 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.13.0` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 758 passing (89 files, incl. the `packages/mcp` stdio smoke test) + offline authorability eval (22 briefs, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
+| **Tests** | 794 passing (90 files, incl. the `packages/mcp` stdio smoke test and the fault-injection L1 gate) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
+
+**Unreleased (post-1.13, on `main`) — v1.14 Tranches 1–2: the measurement foundation
+(2026-07-11; roadmap `docs/research/2026-07-roadmap-proposal.md`, verdicts in the
+companion deep-dive).** The eval's ruler is fixed and the deterministic-tool tier is
+measured on its own ledger:
+- **Judge v2** (`eval/assertions.ts` + `eval/synonyms.ts`): scoring lowered to an
+  intent-assertion data structure (room-count / room-exists / room-area / total-area /
+  adjacent / reachable — the shallow five-kind boundary a future `src/intent.ts` can
+  lift). Labels match through a versioned, oracle-isolated synonym/`room_type` concept
+  table (token-bounded, one-room-one-concept); area is checked **only where the brief
+  states a number** (±10–15% around the brief's number — all 20 golden-derived bands
+  deleted); room count follows the frozen rubric's policy B (±1 passes only when the
+  surplus room is pure circulation); adjacency/reachability score as subscores, never
+  gate (T4 hook). Policies frozen in `eval/rubric.md` (blind-drafted, then approved).
+- **Corpus 22 → 26**: three prompts amended so every room count is brief-derivable, plus
+  a per-room-area slice (`sized-*`) so the area dimension is no longer total-only (H5).
+- **Harness integrity**: Anthropic path 2048 → 16384 max_tokens + temperature 0 + prompt
+  caching; OpenAI seed pinned + `system_fingerprint` recorded; `--budget <n>tok|usd`
+  circuit breaker; baseline carries a `judge` field and cross-judge deltas are flagged
+  non-comparable.
+- **L1 deterministic-tool gate** (`eval/faults/` + `eval/l1.ts` +
+  `test/fault-injection.test.ts`, in CI): six fault-injected fixtures prove `fix`+`repair`
+  heal off-wall openings, wall collisions, and blocked doorways deterministically and
+  idempotently; `arch fix`-mirroring `l1Pipeline` powers the live `--l1` overlay
+  (ΔL0→L1, zero extra API calls). Found and fixed a real core bug on the way: `repair()`
+  mutated the parse-memo AST (see CHANGELOG Unreleased).
+- **Calibrated baseline** (26 briefs, gpt-5.5, seed-pinned, judge v2): valid 25/26 (96%),
+  **intent 13/26 (50%)**, sound 4/26 (15%); ΔL0→L1 = intent **+5** (69%), sound +2 —
+  see the honest-eval paragraph below. Next on the roadmap spine: Gate G1, then T3 (L2
+  loop vs equal-budget resampling).
 
 **Latest release — v1.13.0 (2026-07-11; AI-native authoring). Six tranches
 (see `CHANGELOG.md` for detail):**
@@ -61,16 +91,20 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
    `/<route>.md`** and the machine-native **`/plan.schema.json`** + **`/archlang.gbnf`** at its root
    (advertised in `llms.txt`).
 
-**Honest eval read (live A/B, same harness, `gpt-5.5-2026-04-23`).** One-shot authorability
-was already near-ceiling before v1.13 — pre-v1.13 language scored valid 17/18 (94%), and v1.13
-scores valid 21/22 (95%) on a **harder 22-brief corpus** (`eval/corpus.json`; offline gate
-`npm run eval:ci` = 22/22). One-shot `intent`/`sound` rates stay low in both (single-digit) and v1.13
-does **not** move them, because v1.13's real gains are in the **self-correction loop** (`arch fix` /
-`arch suggest` / `validate --graph` / `-f txt`), which a one-shot generation eval does not exercise.
-Record that honestly: the win is drivability, not one-shot accuracy. (Harness lesson: reasoning
-models spend thinking tokens out of `max_completion_tokens`; the original 4096 cap truncated
-`gpt-5.5` output — raised to 16384 in `eval/run.ts`; `eval/live-baseline.json` carries the corrected
-17/18 baseline.)
+**Honest eval read (calibrated 2026-07-11; judge v2, 26 briefs, `gpt-5.5-2026-04-23`,
+seed-pinned).** The single-digit one-shot intent number that motivated the round-2 research was
+~55–65% **measurement artifact** (deep-dive H2, dual-audit): judge v1 tested golden mimicry
+(label substrings, golden-derived area bands), not brief satisfaction. Under judge v2
+(brief-grounded assertions) the same model measures **valid 25/26 (96%) · intent 13/26 (50%) ·
+sound 4/26 (15%)** — inside the predicted 45–60% true-deliverable band. Residual true failures
+are dominated by **physical violations**, and the deterministic tools clear most of those for
+free: the same run's `--l1` overlay (fix+repair, zero extra API calls) scores **intent 18/26
+(69%, ΔL0→L1 +5) · sound +2**, with 7 briefs healed by 47 repair moves. That dividend belongs
+to the tool tier's ledger, never a model loop's (H3); whether a diagnostic feedback loop beats
+equal-budget resampling is T3's still-open question. Two standing harness lessons: reasoning
+models spend thinking tokens out of the completion cap (use 16384, both providers), and never
+compare rates across a judge change (the harness flags it). Judge-v1 numbers (9% intent) are
+kept only as history; `eval/live-baseline.json` carries the calibrated L0 baseline.
 
 **v1.12.1** — bundler-safety patch: the PNG backend's lazy
 `import("node:fs")`/`import("node:url")` (font lookup) now carry
@@ -217,7 +251,9 @@ for concave door arcs, dimensions drawn into the building, and the title-block o
 ├─ docs/              language-reference.md · analysis.md · error-codes.md · adr/ · WORK-LOG.md
 ├─ brand/             logo kit + brand book (README.md); archlang-logo-master.svg is byte-sacred, variants are fill-swaps only
 ├─ examples/          studio · two-bed · parametric · themed · relational · attached · accessible · lib/ · imports
-├─ eval/              NL→ArchLang authorability harness (corpus.json — 22 briefs, goldens/, run.ts;
+├─ eval/              NL→ArchLang authorability harness (corpus.json — 26 briefs, goldens/, run.ts,
+│                     assertions.ts + synonyms.ts — the judge-v2 intent-assertion core, rubric.md —
+│                     frozen review rubric, faults/ + l1.ts — the L1 deterministic-tool gate;
 │                     offline golden gate `npm run eval:ci` in CI, no API key; guarded live run
 │                     `npm run eval:live -- --yes` → eval/results.live.md + delta vs live-baseline.json)
 ├─ scripts/           gen-grammars · gen-error-codes · gen-llm-spec · gen-llms-full · gen-gbnf · gen-plan-schema (single-source generators)
