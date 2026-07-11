@@ -28,14 +28,43 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { compile, describe as describePlan, lint } from "../src/index.js";
+import {
+  type AssertionResult,
+  type Subscores,
+  JUDGE_VERSION,
+  checkPredicates,
+  compileExpect,
+  projectSubscores,
+} from "./assertions.js";
+import { SYNONYMS_VERSION } from "./synonyms.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
 
+/**
+ * A brief's semantic expectations — the judge-v2 shape. Every field is BRIEF-grounded
+ * (derived from the prompt's words, not the golden's labels/geometry): concepts come
+ * from the eval's private {@link import("./synonyms.js")} oracle, and quantitative
+ * bands (`areaM2`/`totalAreaM2`) carry a `source` quote from the brief so a failure can
+ * cite what licensed the number. `adjacency`/`reachable` are asserted only where the
+ * brief's own words license them; they score as subscores and never gate (see
+ * {@link import("./assertions.js")}).
+ */
 export interface Expect {
+  /** Exact expected room count. */
   rooms?: number;
-  labelsInclude?: string[];
-  floorAreaM2?: [number, number];
+  /** Rooms the brief names, as concepts, with an optional count band and area band. */
+  roomsInclude?: {
+    concept: string;
+    count?: { min?: number; max?: number };
+    areaM2?: { min?: number; max?: number; source: string };
+  }[];
+  /** Total floor-area band — only where the brief states a number (e.g. "about 42 m²"). */
+  totalAreaM2?: { min: number; max: number; source: string };
+  /** Interior-door adjacency the brief licenses: `{ conceptA: [conceptB, …] }`. */
+  adjacency?: { requiredEdges: Record<string, string[]>; source: string };
+  /** Every room reachable from a modeled entrance — asserted only on brief license. */
+  reachable?: boolean;
 }
 
 export interface CorpusEntry {
@@ -61,6 +90,12 @@ export interface Score {
   semanticPass: boolean;
   /** Human-readable reasons any check failed. */
   failures: string[];
+  /** Per-dimension scores (rooms/labels/area/adjacency). Omitted on the invalid path. */
+  subscores?: Subscores;
+  /** Every intent predicate's result (gating and subscore-only). Omitted when invalid. */
+  assertions?: AssertionResult[];
+  /** Scoring core version this row was produced by (`"2"` = intent assertions). */
+  judgeVersion?: string;
 }
 
 /** Load the corpus (entries with golden paths resolved relative to the repo root). */
@@ -80,8 +115,17 @@ export function scoreSource(entry: CorpusEntry, source: string): Score {
   const c = compile(source, { noCache: true });
   const valid = c.errors.length === 0 && c.svg.length > 0;
   if (!valid) {
+    // Invalid path: no facts to project subscores from — leave them undefined.
     for (const e of c.errors) failures.push(`compile: ${e.message}`);
-    return { id: entry.id, valid: false, lintWarnings: 0, physicalWarnings: 0, semanticPass: false, failures };
+    return {
+      id: entry.id,
+      valid: false,
+      lintWarnings: 0,
+      physicalWarnings: 0,
+      semanticPass: false,
+      failures,
+      judgeVersion: JUDGE_VERSION,
+    };
   }
 
   const lintDiags = lint(source);
@@ -91,28 +135,29 @@ export function scoreSource(entry: CorpusEntry, source: string): Score {
   for (const d of lintDiags) {
     if (d.code && PHYSICAL_CODES.has(d.code)) failures.push(`physical: ${d.code} — ${d.message}`);
   }
-  const s = describePlan(source);
-  const e = entry.expect;
 
-  if (e.rooms !== undefined && s.totals.rooms !== e.rooms) {
-    failures.push(`rooms: expected ${e.rooms}, got ${s.totals.rooms}`);
+  // Intent: compile the brief's Expect to predicates, check them against the facts.
+  const summary = describePlan(source);
+  const preds = compileExpect(entry.expect);
+  const assertions = checkPredicates(preds, summary);
+  // Only gating predicates (room-count/exists/area) fail a plan; adjacent/reachable
+  // are subscore-only in Tier 1. Conjunctive meaning unchanged from judge v1.
+  for (const a of assertions) {
+    if (a.predicate.gate && !a.pass) failures.push(a.detail);
   }
-  if (e.labelsInclude) {
-    const labels = s.rooms.map((r) => r.label ?? "");
-    for (const want of e.labelsInclude) {
-      if (!labels.some((l) => l.toLowerCase().includes(want.toLowerCase()))) {
-        failures.push(`label: missing a room labelled like "${want}"`);
-      }
-    }
-  }
-  if (e.floorAreaM2) {
-    const [lo, hi] = e.floorAreaM2;
-    if (s.totals.floor_area_m2 < lo || s.totals.floor_area_m2 > hi) {
-      failures.push(`area: ${s.totals.floor_area_m2} m² outside [${lo}, ${hi}]`);
-    }
-  }
+  const subscores = projectSubscores(assertions);
 
-  return { id: entry.id, valid, lintWarnings, physicalWarnings, semanticPass: failures.length === 0, failures };
+  return {
+    id: entry.id,
+    valid,
+    lintWarnings,
+    physicalWarnings,
+    semanticPass: failures.length === 0,
+    failures,
+    subscores,
+    assertions,
+    judgeVersion: JUDGE_VERSION,
+  };
 }
 
 /** Score every entry; `getSource` decides where the `.arch` comes from (golden or model). */
@@ -228,6 +273,13 @@ function renderResults(
   mode: string,
 ): string {
   const pct = (n: number): string => `${Math.round((n / summary.total) * 100)}%`;
+  // Compact per-dimension subscores, e.g. `R1 L0.67 A– Adj1` (– = dimension unasserted).
+  const sub = (n: number | null | undefined): string =>
+    n === null || n === undefined ? "–" : `${Math.round(n * 100) / 100}`;
+  const subCell = (r: Score): string =>
+    r.subscores
+      ? `R${sub(r.subscores.rooms)} L${sub(r.subscores.labels)} A${sub(r.subscores.area)} Adj${sub(r.subscores.adjacency)}`
+      : "—";
   const rows = results.map((r) => {
     const status = r.semanticPass ? (r.lintWarnings === 0 ? "✅ pass" : "⚠️ warns") : "❌ fail";
     const notes = r.failures.length
@@ -235,19 +287,21 @@ function renderResults(
       : r.lintWarnings
         ? `${r.lintWarnings} lint warning(s)`
         : "—";
-    return `| \`${r.id}\` | ${status} | ${r.valid ? "yes" : "no"} | ${r.lintWarnings} | ${notes} |`;
+    return `| \`${r.id}\` | ${status} | ${r.valid ? "yes" : "no"} | ${r.lintWarnings} | ${subCell(r)} | ${notes} |`;
   });
   return [
     "# ArchLang authorability scorecard",
     "",
-    `Mode: **${mode}** · ${summary.total} prompts.`,
+    `Mode: **${mode}** · ${summary.total} prompts · judge v${JUDGE_VERSION} · synonyms v${SYNONYMS_VERSION}.`,
     "",
     `- **Valid (compiles):** ${summary.valid}/${summary.total} (${pct(summary.valid)})`,
     `- **Intent match (semantic):** ${summary.semanticPass}/${summary.total} (${pct(summary.semanticPass)})`,
     `- **Sound (lint-clean):** ${summary.sound}/${summary.total} (${pct(summary.sound)})`,
     "",
-    "| Prompt | Result | Valid | Lint | Notes |",
-    "| --- | --- | --- | --- | --- |",
+    "Subscores per row: **R**ooms · **L**abels · **A**rea · **Adj**acency (– = unasserted; adjacency/reachability score but never gate).",
+    "",
+    "| Prompt | Result | Valid | Lint | Subscores | Notes |",
+    "| --- | --- | --- | --- | --- | --- |",
     ...rows,
     "",
   ].join("\n");

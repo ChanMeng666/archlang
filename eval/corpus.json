@@ -5,8 +5,17 @@
     "golden": "examples/studio.arch",
     "expect": {
       "rooms": 4,
-      "labelsInclude": ["Bedroom", "Bath"],
-      "floorAreaM2": [40, 44]
+      "roomsInclude": [
+        { "concept": "living-room" },
+        { "concept": "bedroom" },
+        { "concept": "hall" },
+        { "concept": "bathroom" }
+      ],
+      "totalAreaM2": { "min": 37.8, "max": 46.2, "source": "brief: 'about 42 m²' ±10%" },
+      "adjacency": {
+        "requiredEdges": { "hall": ["bathroom"] },
+        "source": "brief: 'a bathroom off a small hall'"
+      }
     }
   },
   {
@@ -15,8 +24,18 @@
     "golden": "eval/goldens/two-bed-hall.arch",
     "expect": {
       "rooms": 6,
-      "labelsInclude": ["Master Bedroom", "Bedroom 2", "Bathroom"],
-      "floorAreaM2": [74, 86]
+      "roomsInclude": [
+        { "concept": "living-room" },
+        { "concept": "bedroom", "count": { "min": 2 } },
+        { "concept": "bathroom" },
+        { "concept": "study" },
+        { "concept": "hall" }
+      ],
+      "adjacency": {
+        "requiredEdges": { "hall": ["living-room", "bedroom", "bathroom", "study"] },
+        "source": "brief: 'organised around a central hall so no room is reached through another'"
+      },
+      "reachable": true
     }
   },
   {
@@ -25,8 +44,16 @@
     "golden": "eval/goldens/relational-studio.arch",
     "expect": {
       "rooms": 4,
-      "labelsInclude": ["Kitchen", "Bedroom", "Bathroom"],
-      "floorAreaM2": [56, 64]
+      "roomsInclude": [
+        { "concept": "living-room" },
+        { "concept": "kitchen" },
+        { "concept": "bedroom" },
+        { "concept": "bathroom" }
+      ],
+      "adjacency": {
+        "requiredEdges": { "kitchen": ["bathroom"] },
+        "source": "brief: 'The bathroom should open off the kitchen, not through the bedroom'"
+      }
     }
   },
   {
@@ -35,18 +62,20 @@
     "golden": "eval/goldens/dims-auto-cottage.arch",
     "expect": {
       "rooms": 3,
-      "labelsInclude": ["Bedroom", "Bathroom"],
-      "floorAreaM2": [27, 33]
+      "roomsInclude": [{ "concept": "living-room" }, { "concept": "bedroom" }, { "concept": "bathroom" }],
+      "adjacency": {
+        "requiredEdges": { "living-room": ["bedroom", "bathroom"] },
+        "source": "brief: 'a bedroom, and a bathroom, both opening off the living space'"
+      }
     }
   },
   {
     "id": "against-wall-bath",
-    "prompt": "A one-bedroom flat where the bathroom fixtures — WC, basin, and shower — are set against the walls rather than floating. Add a bed rotated to lie along the bedroom wall.",
+    "prompt": "A one-bedroom flat — a living/kitchen area, a bedroom, and a bathroom — where the bathroom fixtures — WC, basin, and shower — are set against the walls rather than floating. Add a bed rotated to lie along the bedroom wall.",
     "golden": "eval/goldens/against-wall-bath.arch",
     "expect": {
       "rooms": 3,
-      "labelsInclude": ["Bedroom", "Bathroom"],
-      "floorAreaM2": [33, 39]
+      "roomsInclude": [{ "concept": "living-room" }, { "concept": "bedroom" }, { "concept": "bathroom" }]
     }
   },
   {
@@ -55,8 +84,8 @@
     "golden": "eval/goldens/office.arch",
     "expect": {
       "rooms": 3,
-      "labelsInclude": ["Open Office", "Meeting Room"],
-      "floorAreaM2": [90, 100]
+      "roomsInclude": [{ "concept": "open-office" }, { "concept": "meeting-room" }, { "concept": "kitchenette" }],
+      "totalAreaM2": { "min": 85, "max": 115, "source": "brief: '~100 m²' ±15%" }
     }
   },
   {
@@ -65,18 +94,29 @@
     "golden": "eval/goldens/core-and-shell.arch",
     "expect": {
       "rooms": 4,
-      "labelsInclude": ["Suite A", "Tea Point"],
-      "floorAreaM2": [118, 134]
+      "roomsInclude": [
+        { "concept": "suite", "count": { "min": 2 } },
+        { "concept": "tea-point" },
+        { "concept": "corridor" }
+      ]
     }
   },
   {
     "id": "two-bath-flat",
-    "prompt": "A two-bedroom flat with two bathrooms, both opening off the central hall so neither is reached through a bedroom. Both bedrooms should have a window.",
+    "prompt": "A two-bedroom flat with a kitchen/living area and two bathrooms, both bathrooms opening off the central hall so neither is reached through a bedroom. Both bedrooms should have a window.",
     "golden": "eval/goldens/two-bath-flat.arch",
     "expect": {
       "rooms": 6,
-      "labelsInclude": ["Main Bathroom", "Bathroom 2"],
-      "floorAreaM2": [66, 78]
+      "roomsInclude": [
+        { "concept": "living-room" },
+        { "concept": "bedroom", "count": { "min": 2 } },
+        { "concept": "bathroom", "count": { "min": 2 } },
+        { "concept": "hall" }
+      ],
+      "adjacency": {
+        "requiredEdges": { "hall": ["bathroom"] },
+        "source": "brief: 'two bathrooms, both opening off the central hall so neither is reached through a bedroom'"
+      }
     }
   },
   {
@@ -85,8 +125,16 @@
     "golden": "eval/goldens/open-plan-loft.arch",
     "expect": {
       "rooms": 4,
-      "labelsInclude": ["Kitchen", "Dining", "Living"],
-      "floorAreaM2": [50, 58]
+      "roomsInclude": [
+        { "concept": "kitchen" },
+        { "concept": "dining" },
+        { "concept": "living-room" },
+        { "concept": "bathroom" }
+      ],
+      "adjacency": {
+        "requiredEdges": { "dining": ["kitchen", "living-room"] },
+        "source": "brief: 'the kitchen, dining, and living zones flow into one another through wide cased openings'"
+      }
     }
   },
   {
@@ -95,8 +143,8 @@
     "golden": "eval/goldens/scripting-units.arch",
     "expect": {
       "rooms": 4,
-      "labelsInclude": ["Unit A", "Unit D"],
-      "floorAreaM2": [76, 84]
+      "roomsInclude": [{ "concept": "unit", "count": { "min": 4 } }],
+      "reachable": true
     }
   },
   {
@@ -105,8 +153,18 @@
     "golden": "eval/goldens/three-bed-2bath.arch",
     "expect": {
       "rooms": 8,
-      "labelsInclude": ["Master Bedroom", "Bedroom 3", "Main Bathroom"],
-      "floorAreaM2": [100, 116]
+      "roomsInclude": [
+        { "concept": "living-room" },
+        { "concept": "bedroom", "count": { "min": 3 } },
+        { "concept": "bathroom", "count": { "min": 2 } },
+        { "concept": "hall" },
+        { "concept": "utility" }
+      ],
+      "adjacency": {
+        "requiredEdges": { "hall": ["bedroom", "bathroom"] },
+        "source": "brief: 'Every bedroom and both bathrooms open off the hall'"
+      },
+      "reachable": true
     }
   },
   {
@@ -115,8 +173,12 @@
     "golden": "eval/goldens/galley-kitchen.arch",
     "expect": {
       "rooms": 4,
-      "labelsInclude": ["Kitchen", "Bedroom", "Bathroom"],
-      "floorAreaM2": [52, 60]
+      "roomsInclude": [
+        { "concept": "kitchen" },
+        { "concept": "living-room" },
+        { "concept": "bedroom" },
+        { "concept": "bathroom" }
+      ]
     }
   },
   {
@@ -125,8 +187,16 @@
     "golden": "eval/goldens/l-shaped-flat.arch",
     "expect": {
       "rooms": 4,
-      "labelsInclude": ["Kitchen", "Bedroom", "Bathroom"],
-      "floorAreaM2": [56, 64]
+      "roomsInclude": [
+        { "concept": "living-room" },
+        { "concept": "kitchen" },
+        { "concept": "bedroom" },
+        { "concept": "bathroom" }
+      ],
+      "adjacency": {
+        "requiredEdges": { "living-room": ["kitchen", "bedroom", "bathroom"] },
+        "source": "brief: 'the kitchen, bedroom, and bathroom each opening off it'"
+      }
     }
   },
   {
@@ -135,18 +205,21 @@
     "golden": "eval/goldens/accessible-flat.arch",
     "expect": {
       "rooms": 4,
-      "labelsInclude": ["Bedroom", "Hall", "Bathroom"],
-      "floorAreaM2": [55, 64]
+      "roomsInclude": [{ "concept": "bedroom" }, { "concept": "hall" }, { "concept": "bathroom" }],
+      "adjacency": {
+        "requiredEdges": { "hall": ["bedroom", "bathroom"] },
+        "source": "brief: 'generous rooms off a wide hall'"
+      },
+      "reachable": true
     }
   },
   {
     "id": "accessible-bath",
-    "prompt": "A wheelchair-accessible one-bedroom flat with a generous wet room: wide 1000 mm doorways, a large clear turning space, and plumbing fixtures set against the walls. It must satisfy accessibility guidance.",
+    "prompt": "A wheelchair-accessible one-bedroom flat — a living/kitchen area, a bedroom, and a generous wet room — with wide 1000 mm doorways, a large clear turning space, and plumbing fixtures set against the walls. It must satisfy accessibility guidance.",
     "golden": "eval/goldens/accessible-bath.arch",
     "expect": {
       "rooms": 3,
-      "labelsInclude": ["Bedroom", "Wet Room"],
-      "floorAreaM2": [45, 53]
+      "roomsInclude": [{ "concept": "bedroom" }, { "concept": "wet-room" }]
     }
   },
   {
@@ -155,8 +228,11 @@
     "golden": "eval/goldens/compact-studio.arch",
     "expect": {
       "rooms": 3,
-      "labelsInclude": ["Studio Room", "Kitchenette"],
-      "floorAreaM2": [27, 33]
+      "roomsInclude": [{ "concept": "studio-room" }, { "concept": "kitchenette" }, { "concept": "bathroom" }],
+      "adjacency": {
+        "requiredEdges": { "studio-room": ["kitchenette"] },
+        "source": "brief: 'a kitchenette linked by a cased opening'"
+      }
     }
   },
   {
@@ -165,8 +241,17 @@
     "golden": "eval/goldens/bungalow.arch",
     "expect": {
       "rooms": 6,
-      "labelsInclude": ["Master Bedroom", "Bedroom 2", "Bathroom"],
-      "floorAreaM2": [82, 94]
+      "roomsInclude": [
+        { "concept": "living-room" },
+        { "concept": "kitchen" },
+        { "concept": "bedroom", "count": { "min": 2 } },
+        { "concept": "bathroom" },
+        { "concept": "hall" }
+      ],
+      "adjacency": {
+        "requiredEdges": { "hall": ["bedroom", "bathroom"] },
+        "source": "brief: 'two bedrooms plus the bathroom off a central hall'"
+      }
     }
   },
   {
@@ -175,8 +260,14 @@
     "golden": "eval/goldens/reception-suite.arch",
     "expect": {
       "rooms": 6,
-      "labelsInclude": ["Reception", "Meeting Room", "WC"],
-      "floorAreaM2": [90, 102]
+      "roomsInclude": [
+        { "concept": "reception" },
+        { "concept": "private-office", "count": { "min": 2 } },
+        { "concept": "meeting-room" },
+        { "concept": "kitchenette" },
+        { "concept": "wc" }
+      ],
+      "reachable": true
     }
   },
   {
@@ -185,8 +276,12 @@
     "golden": "eval/goldens/strip-corridor.arch",
     "expect": {
       "rooms": 4,
-      "labelsInclude": ["Room 1", "Room 3", "Corridor"],
-      "floorAreaM2": [38, 43]
+      "roomsInclude": [{ "concept": "consulting-room", "count": { "min": 3 } }, { "concept": "corridor" }],
+      "adjacency": {
+        "requiredEdges": { "corridor": ["consulting-room"] },
+        "source": "brief: 'three consulting rooms opening off a single shared corridor'"
+      },
+      "reachable": true
     }
   },
   {
@@ -195,8 +290,11 @@
     "golden": "eval/goldens/attach-openings.arch",
     "expect": {
       "rooms": 3,
-      "labelsInclude": ["Bedroom", "Bathroom"],
-      "floorAreaM2": [32, 38]
+      "roomsInclude": [{ "concept": "living-room" }, { "concept": "bedroom" }, { "concept": "bathroom" }],
+      "adjacency": {
+        "requiredEdges": { "living-room": ["bathroom"] },
+        "source": "brief: 'The bath must open off the living area (not through the bedroom)'"
+      }
     }
   },
   {
@@ -205,8 +303,7 @@
     "golden": "eval/goldens/anchor-furniture.arch",
     "expect": {
       "rooms": 3,
-      "labelsInclude": ["Living Room", "Bedroom", "Bathroom"],
-      "floorAreaM2": [39, 46]
+      "roomsInclude": [{ "concept": "living-room" }, { "concept": "bedroom" }, { "concept": "bathroom" }]
     }
   },
   {
@@ -215,8 +312,17 @@
     "golden": "eval/goldens/strip-attach-clean.arch",
     "expect": {
       "rooms": 5,
-      "labelsInclude": ["Bedroom 1", "Bedroom 2", "Hall", "Bathroom"],
-      "floorAreaM2": [56, 64]
+      "roomsInclude": [
+        { "concept": "living-room" },
+        { "concept": "bedroom", "count": { "min": 2 } },
+        { "concept": "hall" },
+        { "concept": "bathroom" }
+      ],
+      "adjacency": {
+        "requiredEdges": { "hall": ["bedroom", "bathroom"] },
+        "source": "brief: 'Every room must be reachable by a door off the hall ... the bathroom must open off the hall rather than through a bedroom'"
+      },
+      "reachable": true
     }
   }
 ]
