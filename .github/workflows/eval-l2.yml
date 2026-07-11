@@ -1,0 +1,78 @@
+# L2 authorability experiment — does a diagnostic feedback loop beat equal-budget
+# resampling? Run on demand only (roadmap Tranche 3).
+#
+# This is manual (workflow_dispatch): it calls a paid model API MANY times per brief
+# (a loop arm of up to 3 calls per trial PLUS an equal-budget i.i.d. control arm), so it
+# never runs on push/PR. Budget it: the default --budget guards cumulative cost.
+#
+# REQUIRED SECRET: OPENAI_API_KEY (Settings → Secrets and variables → Actions).
+# Without it the eval step is skipped, not failed, so the run stays green. Override the
+# model with the `model` input (blank = the gpt-5.5 default).
+name: Eval (L2 loop vs resampling)
+
+on:
+  workflow_dispatch:
+    inputs:
+      max:
+        description: "How many briefs to run (caps API cost)"
+        required: false
+        default: "26"
+      trials:
+        description: "Repetitions per brief (for pass@n / pass^n and σ)"
+        required: false
+        default: "3"
+      model:
+        description: "Model id (blank = provider default)"
+        required: false
+        default: ""
+      budget:
+        description: "Cumulative circuit breaker, e.g. 15usd or 3000000tok"
+        required: false
+        default: "15usd"
+      concurrency:
+        description: "How many briefs to run in parallel"
+        required: false
+        default: "4"
+
+jobs:
+  l2:
+    name: L2 loop vs resampling
+    runs-on: ubuntu-latest
+    # These runs are long: a loop+control sweep over the corpus × trials makes many
+    # sequential API calls per brief.
+    timeout-minutes: 300
+    env:
+      # Mapped to a job-level env so the guards below can test presence without
+      # referencing the secret directly in an `if:` expression.
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Warn when the API key secret is missing
+        if: ${{ env.OPENAI_API_KEY == '' }}
+        run: echo "::warning::OPENAI_API_KEY is not set — skipping the L2 eval. Add it under Settings → Secrets and variables → Actions."
+
+      - name: Run the L2 eval
+        if: ${{ env.OPENAI_API_KEY != '' }}
+        env:
+          ARCHLANG_EVAL_MODEL: ${{ inputs.model }}
+        run: npm run eval:l2 -- --yes --max ${{ inputs.max }} --trials ${{ inputs.trials }} --budget ${{ inputs.budget }} --concurrency ${{ inputs.concurrency }}
+
+      - name: Upload results
+        if: ${{ always() && env.OPENAI_API_KEY != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results-l2
+          path: |
+            eval/results.l2.md
+            eval/results.l2.json
+          if-no-files-found: ignore
