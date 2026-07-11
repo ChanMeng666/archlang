@@ -439,6 +439,13 @@ source (.arch)
   editor tooling); it is itself deterministic and leaves the **default** output byte-identical, so
   never emit annotation unconditionally (ADR 0007) — a test strips `data-span` and asserts equality
   with the default SVG.
+- **The parse-stage memo's AST is shared — never mutate it downstream.** `parser.ts` memoizes
+  `parse()` by content key (parser.ts ~line 59–63) on the contract that the cached `PlanNode` is
+  never mutated. `repair()` violated it by rewriting furniture `at` nodes in place, so a second
+  `repair()` of byte-identical source reported zero changes — history-dependent output (an ADR 0006
+  violation; `compile()`'s SVG was never affected). Fixed in `51a47ee` by deep-cloning before
+  mutating. Rule: anything consuming `parse()` or any memoized structure treats it as immutable —
+  clone before you mutate.
 - **Relational placement is deterministic, not an optimizer.** `src/layout.ts` resolves
   `right-of`/`below`/… by pure arithmetic in topological order; the absolute `at (x,y)` path
   must stay byte-identical (it is the default and has its own golden snapshots). See ADR 0004.
@@ -465,6 +472,12 @@ source (.arch)
   eval's original 4096 cap starved `gpt-5.5` into truncated (invalid) output and produced a bogus
   low baseline; `eval/run.ts` uses 16384. If a new provider/model scores implausibly low, suspect a
   token cap before the language — bump the budget and re-run before trusting the number.
+- **(Eval harness) Never compare rates across a judge change.** `JUDGE_VERSION` / `SYNONYMS_VERSION`
+  are pinned by tests and stamped into every result + `live-baseline.json`'s `judge` field;
+  `renderDelta` prints a non-comparability warning when they differ. The judge-v1 → v2 recalibration
+  moved intent **9% → 50% with zero model change** — a cross-judge delta measures the ruler, not the
+  model. A judge change re-defines what "pass"/"sound" mean, so any rate straddling one is comparing
+  two different measurements; treat it as history, never as progress. See `eval/README.md`.
 - **Door `hinge left/right` is relative to the wall's traversal direction**, not the screen —
   so the hinge side can flip depending on the order of a wall's points. The swing quarter-disc is
   computed once in `geometry.ts` (`doorSwing`) and shared by `door.render()` and the
