@@ -436,5 +436,5 @@ value) was declined by the owner — the loop-vs-resampling question therefore R
 net-loop-gain claim may be made in any doc until "Eval (L2 loop vs resampling)" is dispatched and
 scored. L3/L4/L5 stay unbuilt.
 
-**Gates.** 842 tests passing (93 files); typecheck + Biome + `eval:ci` green throughout; every
+**Gates.** 842 tests passing (92 files); typecheck + Biome + `eval:ci` green throughout; every
 commit ran the four-gate set.

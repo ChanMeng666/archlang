@@ -112,7 +112,7 @@ The optional stdio shim in `packages/mcp/` is a **separately versioned** package
 
 ### Live authorability eval (optional, gated)
 
-The offline `npm run eval:ci` (18→22 golden briefs, no API key) runs in CI. To re-measure against a
+The offline `npm run eval:ci` (26 golden briefs, no API key) runs in CI. To re-measure against a
 real model, run the guarded live harness:
 
 ```bash
@@ -120,7 +120,11 @@ npm run eval:live -- --yes    # needs OPENAI_API_KEY; writes eval/results.live.m
 ```
 
 It is also wired as the `workflow_dispatch` workflow `.github/workflows/eval-live.yml` (uses the
-repo secret `OPENAI_API_KEY`). **Harness gotcha:** reasoning models spend thinking tokens out of
+repo secret `OPENAI_API_KEY`). Two further guarded, paid harnesses live beside it (same `--yes`
+guard and key handling; details in `eval/README.md`), each with its own `workflow_dispatch`
+workflow: `npm run eval:g1` (Gate G1 intent generation — already run, PASSED; kept for
+reproducibility) and `npm run eval:l2` (the T3 L2 loop-vs-equal-budget-resampling experiment —
+not yet run). **Harness gotcha:** reasoning models spend thinking tokens out of
 `max_completion_tokens` — the cap in `eval/run.ts` is 16384 (a 4096 cap truncated `gpt-5.5` into
 bogusly-low scores); suspect the token budget before the language if a new model scores implausibly
 low.

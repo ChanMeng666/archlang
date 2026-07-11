@@ -43,6 +43,8 @@ delta against it are L0).
 npm run eval        # offline: score the committed goldens (writes eval/results.md)
 npm run eval:ci     # same command — the CI regression gate (no API key; exit 1 on regression)
 npm run eval:live -- --yes [--max N] [--budget <n>tok|<n>usd] [--l1]   # live, paid, guarded
+npm run eval:g1 -- --yes [--max N]    # Gate G1: generate intent JSONs from briefs (paid, guarded; or the "Eval (G1 intent generation)" workflow)
+npm run eval:l2 -- --yes [--trials N] [--max N] [--budget <n>tok|usd] [--concurrency N]   # T3: L2 loop vs equal-budget resampling (paid, guarded; or the "Eval (L2 loop vs resampling)" workflow)
 ```
 
 - **Offline** (`run.ts` default) compiles → lints → describes each committed golden and scores it.

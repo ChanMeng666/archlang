@@ -26,7 +26,7 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.13.0` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 794 passing (90 files, incl. the `packages/mcp` stdio smoke test and the fault-injection L1 gate) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
+| **Tests** | 842 passing (92 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, and the L2 protocol tests) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
 **Unreleased (post-1.13, on `main`) — v1.14 Tranches 1–2: the measurement foundation
 (2026-07-11; roadmap `docs/research/2026-07-roadmap-proposal.md`, verdicts in the
@@ -273,7 +273,10 @@ for concave door arcs, dimensions drawn into the building, and the title-block o
 ├─ examples/          studio · two-bed · parametric · themed · relational · attached · accessible · lib/ · imports
 ├─ eval/              NL→ArchLang authorability harness (corpus.json — 26 briefs, goldens/, run.ts,
 │                     assertions.ts + synonyms.ts — the judge-v2 intent-assertion core, rubric.md —
-│                     frozen review rubric, faults/ + l1.ts — the L1 deterministic-tool gate;
+│                     frozen review rubric, faults/ + l1.ts — the L1 deterministic-tool gate,
+│                     g1/ — Gate G1 intent-faithfulness experiment (generate.ts + report.md, PASSED),
+│                     l2.ts + l2-run.ts — the T3 L2 diagnostic-loop-vs-equal-budget-resampling harness
+│                     (`npm run eval:l2`, guarded; live experiment not yet run);
 │                     offline golden gate `npm run eval:ci` in CI, no API key; guarded live run
 │                     `npm run eval:live -- --yes` → eval/results.live.md + delta vs live-baseline.json)
 ├─ scripts/           gen-grammars · gen-error-codes · gen-llm-spec · gen-llms-full · gen-gbnf · gen-plan-schema (single-source generators)

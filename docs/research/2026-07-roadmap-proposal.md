@@ -19,8 +19,9 @@ by a fresh implementation session with no other context beyond `AGENTS.md`.
 > L0 · 18/26 (69%) L1** — **inside** this proposal's predicted 45–60% true-deliverable band, and the
 > ~55–65% "measurement artifact" thesis (H2) held: the same model that scored 9% intent under
 > judge v1 scores 50% under judge v2. **Gate G1 and Tranche 3 (the decisive L2-loop-vs-resampling
-> experiment) remain the open next steps.** The tranche bodies below are the historical
-> spec-as-written and are left unedited.
+> experiment) remain the open next steps.** *(Since superseded — G1 passed and the T3 harness
+> landed 2026-07-12, its live run deferred; see the Status header above.)* The tranche bodies
+> below are the historical spec-as-written and are left unedited.
 
 ## The one-paragraph thesis
 
