@@ -55,8 +55,18 @@ measured on its own ledger:
   mutated the parse-memo AST (see CHANGELOG Unreleased).
 - **Calibrated baseline** (26 briefs, gpt-5.5, seed-pinned, judge v2): valid 25/26 (96%),
   **intent 13/26 (50%)**, sound 4/26 (15%); ΔL0→L1 = intent **+5** (69%), sound +2 —
-  see the honest-eval paragraph below. Next on the roadmap spine: Gate G1, then T3 (L2
-  loop vs equal-budget resampling).
+  see the honest-eval paragraph below.
+- **Gate G1: PASS (2026-07-12, `eval/g1/report.md`).** NL→intent-JSON per-assertion
+  faithfulness measured double-blind on all 26 briefs (gpt-5.5 generator, oracle-isolated
+  prompt; raters: 3 blind opus subagents + fable pre-registered, human adjudicated the 2
+  disagreements): **154/157 (98.1%)** vs direct-`.arch` per-assertion accuracy 155/166
+  (93.4%, reconstructed reproducibly in `eval/g1/baseline-accuracy.ts`) — ≥85% and
+  one-tailed z = 2.08 (p = .019). **T4 (the intent channel) is cleared** for a future
+  session; recorded caveat: against the valid-only control variant (95.7%) the margin is
+  below statistical resolution at n≈160/arm. All 3 unfaithful assertions were room-count/
+  topology derivations on under-determined briefs — T4's schema docs must make the band
+  conventions and "assert a count only when the brief enumerates it" normative.
+  Next on the roadmap spine: T3 (L2 loop vs equal-budget resampling).
 
 **Latest release — v1.13.0 (2026-07-11; AI-native authoring). Six tranches
 (see `CHANGELOG.md` for detail):**

@@ -163,6 +163,17 @@ proves a lint-clean golden passes through untouched. `l1Pipeline` **mirrors `arc
 (`cmdFix`): bounded passes of machine-applicable fixes, rolling back any pass that raises the error
 count, then one `repair` — the same pipeline the live `--l1` overlay uses.
 
+## The G1 intent-faithfulness experiment (`g1/`)
+
+Roadmap Gate G1, run 2026-07-12: can a model write the *intent contract itself* (an `Expect`-shaped
+JSON, lowered by `compileExpect`) faithfully from the brief? **PASS — 154/157 assertions (98.1%)
+faithful, vs 93.4% per-assertion accuracy of direct `.arch` generation** (one-tailed z = 2.08,
+p = .019; caveat: not resolvable against the valid-only control variant). The generation prompt is
+oracle-isolated (never sees `expect`/synonyms/goldens — `test/g1.test.ts` enforces it); grading was
+double-blind (opus subagents + an independently pre-registered second rater, human adjudication of
+disagreements). This clears T4 (`src/intent.ts` + `arch validate --intent`). Full record:
+`g1/report.md`; regenerate the control number with `npx tsx eval/g1/baseline-accuracy.ts`.
+
 ## Pointers
 
 - **`rubric.md`** — the frozen human review rubric (version 1, calibrates judge v2). Read it for the

@@ -1,7 +1,9 @@
 # v1.14 Roadmap Proposal — "Measure First, Then Believe"
 
 **Date:** 2026-07-11 · **Status:** **T1 + T2 implemented 2026-07-11** (commits
-`60f5a87`…`83dc0cc`); T3, Gate G1, and T4–T6 remain open ·
+`60f5a87`…`83dc0cc`); **Gate G1 PASSED 2026-07-12** (`eval/g1/report.md` — faithfulness
+154/157 = 98.1% vs direct-generation 93.4%, z = 2.08 p = .019; T4 cleared, with a
+valid-only-control sensitivity caveat recorded); T3 in flight, T4–T6 remain open ·
 **Evidence base:** [`2026-07-ai-first-deep-dive.md`](./2026-07-ai-first-deep-dive.md) — every
 tranche below cites its verdicts (H1–H5) and the underlying sources. Written to be executable
 by a fresh implementation session with no other context beyond `AGENTS.md`.
@@ -97,6 +99,10 @@ Report ΔL0→L1 on the live corpus as the "deterministic dividend."
 **Size:** ~100 LOC + fixtures. Pure determinism; no flakiness budget.
 
 ## Gate G1 — Intent-spec faithfulness go/no-go (half a day, zero core code)
+
+**Status: ✅ PASSED 2026-07-12** — full record in `eval/g1/report.md` (154/157 = 98.1%
+faithfulness, primary control 93.4%, z = 2.08 p = .019; the double-blind procedure was
+amended — human as adjudicator of rater disagreements — and is recorded there honestly).
 
 **Motivation:** H1 verdict — the single kill switch for the intent channel. Track D named the
 spec's own error rate as the route's only falsification point; the debate refined the metric.
