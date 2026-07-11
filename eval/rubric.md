@@ -139,10 +139,10 @@ reviewer.
 | `attach-openings` | none | brief-derived: living/kitchen + bedroom + bathroom = 3 | "bath must open off the living area (not through the bedroom)" | |
 | `anchor-furniture` | none | brief-derived: living + bedroom + bathroom = 3 | — (furniture-anchoring brief; no stated room edge) | |
 | `strip-attach-clean` | none | brief-derived: 2 bedrooms + kitchen/living + named "hall" + bathroom = 5 | "reachable by a door off the hall"; "bathroom must open off the hall rather than through a bedroom" | |
-| `sized-kitchen-flat` | _pending authoring (per-room-area brief)_ | _pending authoring_ | _pending authoring_ | |
-| `sized-bedrooms` | _pending authoring (per-room-area brief)_ | _pending authoring_ | _pending authoring_ | |
-| `sized-wet-room` | _pending authoring (per-room-area brief)_ | _pending authoring_ | _pending authoring_ | |
-| `sized-office-mix` | _pending authoring (per-room-area brief)_ | _pending authoring_ | _pending authoring_ | |
+| `sized-kitchen-flat` | "kitchen of 12 m²" (number, per-room); "bedroom of at least 10 m²" (number, per-room) | brief-derived: kitchen + bedroom + living room + bathroom = 4 | "The bedroom and bathroom open off the living room" | |
+| `sized-bedrooms` | "each bedroom is at least 11 m²" (number, per-room, applies to both) | brief-derived: 2 bedrooms + kitchen/living area + bathroom = 4 | "Both bedrooms open off the living space" (licenses living→bedroom only; bathroom edge not stated) | |
+| `sized-wet-room` | "wet room of at least 5 m²" (number, per-room); "1000 mm doorways" (doorway width, not room area) | brief-derived: living/kitchen + bedroom + wet room + named "wide hall" = 4 | "all with 1000 mm doorways off a wide hall" (licenses hall→living-room, bedroom, wet-room) | |
+| `sized-office-mix` | "meeting room of about 20 m²" (number, per-room); "open work area of at least 60 m²" (number, per-room) | brief-derived: meeting room + open work area + kitchenette + WC = 4 | "every room reachable from the entrance" (licenses reachability, not a specific edge) | |
 
 **Flag summary.** One hard flag: `two-bath-flat` — `expect.rooms`=6 is golden-derived (brief names
 only 5 rooms; the golden added an unnamed Kitchen/Living). Two soft flags: `against-wall-bath` and
