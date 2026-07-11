@@ -324,3 +324,81 @@ be browser-automated); both Vercel sites redeployed serving the new machine-nati
 **758 passing (89 files)**; `eval:ci` **22/22** offline; typecheck + build + Biome + the three new
 drift gates green. The one prepped-but-not-taken step: SKILL.md submissions to skill directories
 (`anthropics/skills`, `awesome-claude-skills`).
+
+---
+
+## 11. Post-launch — v1.14 Tranches 1–2: the measurement foundation, 2026-07-11
+
+> **A repo-internal round (no npm publish).** Everything here lives in `eval/` and CI; the published
+> `@chanmeng666/archlang` surface is unchanged. The **one** exception is a genuine core bug the work
+> uncovered — `repair()` mutating the parse-memo AST — fixed under CHANGELOG _Unreleased/Fixed_.
+> Roadmap: `docs/research/2026-07-roadmap-proposal.md`; hypotheses (H1–H5) in the companion
+> deep-dive; commits `60f5a87`…`83dc0cc`.
+
+**Framing question.** v1.13 shipped the AI-native authoring loop on the strength of a live A/B whose
+one-shot `intent`/`sound` numbers were stuck in the **single digits** — a result we recorded honestly
+but could not act on, because we did not know how much of it was the *language* and how much was the
+*ruler*. The round-2 research (deep-dive, dual-audited) answered: **~55–65% of that failure was a
+measurement artifact** — judge v1 tested golden **mimicry** (label substrings, golden-derived area
+bands), not whether the model satisfied the brief. So v1.14 opens not with capability but with
+**measurement**: fix the ruler (Tranche 1), measure the free deterministic-tool gains on their own
+ledger (Tranche 2), and only *then* — in the still-open Tranche 3 — spend an API budget on the one
+experiment worth running.
+
+**How it was built.** Five executor agents worked the tranches in parallel under a conductor that
+serialized the shared files and ran the gates between merges; the corpus-review rubric was
+**blind-drafted by an isolated agent** and frozen with the approver's decisions *before* anyone looked
+at model outputs (SWE-bench Verified discipline). The calibrated baseline was produced on GitHub
+Actions (the API key lives only there), not locally.
+
+**What shipped (Tranche 1 — judge v2 + corpus).**
+
+| Area | What | Key files |
+|---|---|---|
+| **Intent-assertion scoring** | `scoreSource` rewritten to lower each brief to a small data structure — `room-count` / `room-exists` / `room-area` / `total-area` / `adjacent` / `reachable` — and check the plan against *that*, not golden text. `JUDGE_VERSION = "2"`; the five-kind boundary is the one a future `src/intent.ts` can lift (T4 hook). | `eval/assertions.ts` |
+| **Oracle-isolated synonyms** | Versioned concept table (`SYNONYMS_VERSION = 1`), token-bounded, one-room-one-concept greedy assignment, **never shown to the model**. | `eval/synonyms.ts` |
+| **Brief-grounded area** | Area checked **only where the brief states a number** (±10–15% around the brief's number); all 20 golden-derived bands deleted; qualitative size words carry no cap yet (tier-b hook). | `eval/assertions.ts` |
+| **Frozen rubric** | Room-count **policy B** (±1 gate pass only when the surplus room is pure circulation, `planCirc >= expectedCirc + 1`); adjacency/reachability are **subscores, never a gate**. | `eval/rubric.md` |
+| **Corpus 22 → 26** | Three prompts amended so every room count is brief-derivable (`two-bath-flat`, `against-wall-bath`, `accessible-bath`); a new **per-room-area slice** (`sized-kitchen-flat`, `sized-bedrooms`, `sized-wet-room`, `sized-office-mix`) so area is no longer total-only (H5). | `eval/corpus.json`, `eval/goldens/` |
+| **Harness integrity** | Anthropic `max_tokens` 2048 → **16384** + `temperature 0` + prompt caching; OpenAI `seed = 20260711` + recorded `system_fingerprint`; `--budget <n>tok\|<n>usd` circuit breaker; `Baseline.judge` + cross-judge deltas flagged non-comparable. | `eval/run.ts` |
+
+**What shipped (Tranche 2 — the L1 deterministic-tool gate).** Six single-defect fault-injection
+fixtures (off-wall door/window/opening, furniture-through-wall, blocked-doorway, combined) drive
+`l1Pipeline` — a bounded machine-applicable-`fix` fixpoint (mirroring `arch fix`) then `repair()`,
+in the ADR 0011 → ADR 0006 order — and assert each defect **heals deterministically and is
+byte-idempotent**, with a clean golden a byte no-op. It runs in CI next to `eval:ci` (zero API cost).
+The live harness gained a `--l1` overlay that reports the **deterministic dividend** ΔL0→L1 (what the
+tools recover for free, zero extra API calls); the committed baseline delta stays L0-only so the tool
+tier is never mis-credited to a model loop (H3). The `eval-live.yml` workflow gained the `--l1` input
+(default on) and a corpus-covering `max` default of 26.
+
+**The core bug the work found.** Building the fault-injection idempotence assertion surfaced a real
+ADR 0006 violation: `repair()` mutated the **shared parse-stage memo's AST** in place (moving furniture
+`at` nodes), so a *second* `repair()` of byte-identical source saw already-moved pieces and reported
+zero changes — same input, history-dependent output. `compile()` output was never affected. Fixed by
+deep-cloning the parsed plan before the solver runs (`51a47ee`, regression-tested); the honest test
+paid for itself immediately.
+
+**The calibrated number (what it confirmed).** One live run (GitHub Actions,
+`gpt-5.5-2026-04-23`, 26 briefs, seed `20260711`, judge v2): **L0 valid 25/26 (96%) · intent
+13/26 (50%) · sound 4/26 (15%)**. The **same model** that scored 9% intent under judge v1 scores
+**50%** under judge v2 — the artifact thesis (H2) held, and the calibrated rate lands **inside** the
+roadmap's pre-committed 45–60% band (we predicted the interval before we measured, and did not move
+the goalposts). Residual *true* failures are dominated by **physical violations** (~7), with 3
+room-count, 3 placeholder-label, and 1 compile failure (the model inventing a `label` statement).
+The deterministic tools clear most of the physical bucket: the same run's `--l1` overlay scores
+**intent 18/26 (69%, ΔL0→L1 +5) · sound +2**, healing 7 briefs with 47 repair moves and 0 `fix`
+edits — the L1 half of H3, measured and credited to the **tool** ledger where it belongs.
+
+**Standing lessons (also in `AGENTS.md`).** Reasoning models spend thinking tokens out of the
+completion cap — use 16384 on both providers or a bogus low baseline results; and **never compare
+rates across a judge change** (the harness now flags it). Judge-v1 numbers (9% intent) are kept only
+as history in `eval/live-baseline.json`'s notes.
+
+**Gates.** Tests **794 passing (90 files)** incl. the new `test/fault-injection.test.ts`; `eval:ci`
+**26/26** offline; typecheck (`noUncheckedIndexedAccess`) + build + Biome green.
+
+**What's next (still open).** **Gate G1** (intent-spec faithfulness go/no-go) then **Tranche 3** — the
+decisive experiment: does an L2 diagnostic feedback loop beat equal-budget resampling? Everything
+downstream (the intent CLI channel, constraint syntax, the repair-trajectory dataset) stays gated on
+what T3's number says.

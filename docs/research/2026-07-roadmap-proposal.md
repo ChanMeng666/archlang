@@ -1,9 +1,21 @@
 # v1.14 Roadmap Proposal — "Measure First, Then Believe"
 
-**Date:** 2026-07-11 · **Status:** proposal (research complete, nothing implemented) ·
+**Date:** 2026-07-11 · **Status:** **T1 + T2 implemented 2026-07-11** (commits
+`60f5a87`…`83dc0cc`); T3, Gate G1, and T4–T6 remain open ·
 **Evidence base:** [`2026-07-ai-first-deep-dive.md`](./2026-07-ai-first-deep-dive.md) — every
 tranche below cites its verdicts (H1–H5) and the underlying sources. Written to be executable
 by a fresh implementation session with no other context beyond `AGENTS.md`.
+
+> **Implementation status (2026-07-11).** Tranches 1 and 2 — the measurement foundation — shipped
+> to `main` (commits `60f5a87`…`83dc0cc`): judge v2 (the intent-assertion scoring core +
+> oracle-isolated synonym table), the frozen corpus-review rubric, corpus 22 → 26 with a per-room-area
+> slice, the harness-integrity fixes, and the L1 fault-injection gate in CI. The **calibrated
+> judge-v2 baseline** (26 briefs, `gpt-5.5-2026-04-23`, seed-pinned) came in at **intent 13/26 (50%)
+> L0 · 18/26 (69%) L1** — **inside** this proposal's predicted 45–60% true-deliverable band, and the
+> ~55–65% "measurement artifact" thesis (H2) held: the same model that scored 9% intent under
+> judge v1 scores 50% under judge v2. **Gate G1 and Tranche 3 (the decisive L2-loop-vs-resampling
+> experiment) remain the open next steps.** The tranche bodies below are the historical
+> spec-as-written and are left unedited.
 
 ## The one-paragraph thesis
 
@@ -27,6 +39,8 @@ below requires amending any ADR.
 ---
 
 ## Tranche 1 — The measurement foundation (PR1; do first, blocks nothing else)
+
+**Status: ✅ implemented 2026-07-11** (`60f5a87`, `192f13a`, `13bd89b`, `0e63b51`, `abde90b`).
 
 **Motivation:** H2 verdict (final accounting: ~11–13 of 20 failures are judge artifacts;
 per-brief audit in the deep-dive §4-H2). Also two live harness bugs. Until this lands, no eval
@@ -67,6 +81,8 @@ real gains as false negatives; deep-dive §4-H3).
 by keeping the gate conjunctive and every relaxation brief-derivable.
 
 ## Tranche 2 — L1: the deterministic-tool gate, offline, in CI (PR2)
+
+**Status: ✅ implemented 2026-07-11** (`1cbfd8b`, `7bfc99c`, `9da334d`; core purity fix `51a47ee`).
 
 **Motivation:** H3 verdict. The "free" gains of `arch fix` + `arch repair` (which target the
 physical-violation bucket — the dominant *true* failure class after T1) must be measured

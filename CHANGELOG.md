@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+v1.14 Tranches 1–2 — **the measurement foundation** (roadmap
+`docs/research/2026-07-roadmap-proposal.md`). This is a repo-internal round: everything below lives
+in `eval/` and CI, so the **published package surface is unchanged** — the one exception is the
+`repair()` purity fix (see _Fixed_), a genuine core bug the fault-injection work uncovered. The
+point of the round was to **fix the ruler before measuring capability**: rebuild the eval judge on
+brief-grounded intent assertions, measure the free deterministic-tool gains on their own ledger, and
+write down a calibrated baseline honest enough to trust.
+
+### Added — judge v2: brief-grounded intent scoring
+
+- **Intent-assertion scoring core** (`eval/assertions.ts`, `JUDGE_VERSION = "2"`). `scoreSource` no
+  longer greps the goldens for label substrings and golden-derived area bands; it lowers each brief
+  to a small **intent-assertion data structure** — the shallow five kinds `room-count` /
+  `room-exists` / `room-area` / `total-area` / `adjacent` / `reachable` — and checks the model's
+  plan against *those*. The five-kind boundary is deliberately the one a future `src/intent.ts` can
+  lift wholesale (Tranche 4 hook). `Score` gains append-only `subscores` / `assertions` /
+  `judgeVersion` fields.
+- **Oracle-isolated synonym table** (`eval/synonyms.ts`, `SYNONYMS_VERSION = 1`). Room-label matching
+  runs through a versioned, **never-shown-to-the-model** concept table with token-bounded,
+  one-room-one-concept greedy assignment — so "wc"/"toilet"/"bath" resolve to one concept without
+  leaking the answer into the prompt.
+- **Brief-grounded area checks.** Area is verified **only where the brief states a number**, in a
+  ±10–15% band around *the brief's* number; all 20 golden-derived bands were deleted. Qualitative
+  size words ("compact", "generous") carry **no** cap yet (a documented tier-b hook, added the day a
+  real "oversized compact" instance appears).
+- **Frozen corpus-review rubric** (`eval/rubric.md`). Blind-drafted by an isolated agent, then frozen
+  with the approver's decisions: **room-count policy B** (a ±1 surplus passes the gate *only* when the
+  extra room is pure circulation, operationalized as `planCirc >= expectedCirc + 1`); one-room-one-concept
+  greedy assignment; qualitative size words carry no cap. Adjacency and reachability score as
+  **subscores only, never a gate** (Tranche 4 hook).
+- **Corpus 22 → 26.** Three prompts amended so every room count is brief-derivable
+  (`two-bath-flat`, `against-wall-bath`, `accessible-bath`), plus a new **per-room-area slice**
+  (`sized-kitchen-flat`, `sized-bedrooms`, `sized-wet-room`, `sized-office-mix`) so the area dimension
+  is no longer total-only (H5) — every band carries the brief-source quote it came from.
+- **L1 deterministic-tool gate** (`eval/faults/`, `eval/l1.ts`, `test/fault-injection.test.ts`, in CI
+  via `npm test`). Six single-defect fixtures (off-wall door/window/opening, furniture-through-wall,
+  blocked-doorway, and a combined case) prove the `l1Pipeline` — a bounded machine-applicable-`fix`
+  fixpoint (mirroring `arch fix`) followed by `repair()`, in the ADR 0011 → ADR 0006 order — **heals
+  every defect class deterministically and idempotently**, and is a byte no-op on a clean golden.
+- **`--l1` live overlay** (`eval/run.ts`, live runs only). Reports the **deterministic dividend**
+  ΔL0→L1 (what `fix`+`repair` recover for free, **zero extra API calls**) with a per-row heal column;
+  the committed baseline delta stays L0-only so cross-run comparisons don't silently fold the tool
+  tier into a model score.
+- **eval-live workflow inputs** (`.github/workflows/eval-live.yml`): a `--l1` toggle (default on) and
+  the corpus-covering `max` default of 26.
+
+### Changed — live-harness integrity
+
+- **Token budget & determinism.** Anthropic `max_tokens` 2048 → **16384** (reasoning models spend
+  thinking tokens out of the completion cap — the 2048 ceiling truncated output into false
+  invalidity) with `temperature: 0` and ephemeral **prompt caching**; the OpenAI path pins
+  `seed = 20260711` and records `system_fingerprint` (temperature deliberately not sent).
+- **`--budget <n>tok|<n>usd` circuit breaker** — a pre-call estimate halts the run before it
+  overspends; skipped briefs are excluded from the denominators (over-estimating direction, verified
+  price map).
+- **Cross-judge guard.** `Baseline` now carries a `judge` field and `renderDelta` flags any delta
+  taken across a judge-version change as **non-comparable** — a judge change is never a capability
+  result.
+- **Calibrated judge-v2 baseline** (`eval/live-baseline.json`; 26 briefs, `gpt-5.5-2026-04-23`,
+  seed-pinned, GitHub Actions): **L0 valid 25/26 (96%) · intent 13/26 (50%) · sound 4/26 (15%)**;
+  the `--l1` overlay lifts it to **intent 18/26 (69%, ΔL0→L1 +5) · sound 6/26 (+2)** — 7 briefs
+  healed by 47 repair moves, 0 `fix` edits. The old 9% one-shot intent was ~55–65% **measurement
+  artifact** (deep-dive H2); the calibrated 50% sits inside the roadmap's predicted 45–60% band.
+  Residual true failures are dominated by physical violations (which L1 clears), with a few
+  room-count and placeholder-label misses and one compile failure (the model inventing a `label`
+  statement). Judge-v1 numbers are kept only as history.
+
 ### Fixed
 
 - **`repair()` is pure again across repeated calls.** It mutated the shared parse-stage
