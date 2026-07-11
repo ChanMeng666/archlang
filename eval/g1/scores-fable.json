@@ -1,0 +1,62 @@
+{
+  "rater": "claude-fable-5 (session director; scored independently BEFORE reading any other rater's output)",
+  "date": "2026-07-12",
+  "note": "Rater B of the G1 double-blind pass. The roadmap called for a human rater; the user could not judge faithfulness cold and asked for assistance, so the process was amended (recorded honestly): rater B is a second independent model (different family from the gpt-5.5 generator), and the human's role moved to final adjudication of inter-rater disagreements with both reasonings shown. Faithful = the assertion is licensed by the brief's own words under the published band conventions (about/~/bare N → ±10%; 'at least N' → min only; qualitative words → no band); omissions never count against a written assertion.",
+  "briefs": {
+    "studio-1br": { "unfaithful": [], "total": 7 },
+    "two-bed-hall": {
+      "unfaithful": [],
+      "total": 8,
+      "omissions": [
+        "'organised around a central hall so no room is reached through another' licenses hall-adjacency for every room and reachability — not asserted"
+      ]
+    },
+    "relational-studio": { "unfaithful": [], "total": 6 },
+    "dims-auto-cottage": { "unfaithful": [], "total": 6 },
+    "against-wall-bath": { "unfaithful": [], "total": 4 },
+    "small-office": {
+      "unfaithful": [],
+      "total": 5,
+      "note": "A5 band ±10% follows the published '~N → ±10%' convention (the eval's own oracle uses ±15% here; convention-faithful, flagged for adjudication)"
+    },
+    "core-and-shell": { "unfaithful": [], "total": 4 },
+    "two-bath-flat": { "unfaithful": [], "total": 6 },
+    "open-plan-loft": {
+      "unfaithful": ["A7"],
+      "total": 8,
+      "reasons": {
+        "A7": "kitchen↔living direct edge over-asserts: 'the kitchen, dining, and living zones flow into one another' is satisfied by a kitchen–dining–living chain; only the dining-centred edges are safely licensed"
+      }
+    },
+    "scripting-units": { "unfaithful": [], "total": 2 },
+    "three-bed-2bath": { "unfaithful": [], "total": 8 },
+    "galley-kitchen": { "unfaithful": [], "total": 5 },
+    "l-shaped-flat": { "unfaithful": [], "total": 8 },
+    "accessible-flat": {
+      "unfaithful": ["A1"],
+      "total": 4,
+      "reasons": {
+        "A1": "rooms == 2 is an undercount the brief does not license: 'generous rooms' (plural) off the hall plus an implied bathroom/living in any one-bedroom flat make an exact count of 2 unsupportable"
+      }
+    },
+    "accessible-bath": { "unfaithful": [], "total": 4 },
+    "compact-studio": { "unfaithful": [], "total": 5 },
+    "bungalow": { "unfaithful": [], "total": 8 },
+    "reception-suite": { "unfaithful": [], "total": 7 },
+    "strip-corridor": { "unfaithful": [], "total": 4 },
+    "attach-openings": { "unfaithful": [], "total": 5 },
+    "anchor-furniture": { "unfaithful": [], "total": 4 },
+    "strip-attach-clean": {
+      "unfaithful": ["A1"],
+      "total": 7,
+      "reasons": {
+        "A1": "rooms == 4 undercounts: 'a run of rooms across the top' in a two-bedroom FLAT implies at least a living/kitchen space beyond the two bedrooms, hall, and bathroom; exact 4 is not licensed"
+      }
+    },
+    "sized-kitchen-flat": { "unfaithful": [], "total": 9 },
+    "sized-bedrooms": { "unfaithful": [], "total": 6 },
+    "sized-wet-room": { "unfaithful": [], "total": 9 },
+    "sized-office-mix": { "unfaithful": [], "total": 8 },
+    "summary": { "faithful": 154, "total": 157, "rate": 0.981 }
+  }
+}

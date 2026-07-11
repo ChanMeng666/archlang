@@ -1,0 +1,29 @@
+{
+  "role": "human final adjudication (process amendment — see note)",
+  "date": "2026-07-12",
+  "note": "The roadmap specified double-blind human + independent-model per-assertion scoring. The user could not judge faithfulness cold and asked for assistance, so the process was amended and is recorded honestly: rater A = three blind claude-opus-4-8 subagents (scores-model.json), rater B = claude-fable-5 scoring independently before reading rater A's output (scores-fable.json), and the human ruled ONLY on the inter-rater disagreements, with both raters' reasonings presented side by side. Both raters are model-family-independent of the gpt-5.5 generator.",
+  "disagreements": [
+    {
+      "brief": "open-plan-loft",
+      "assertion": "A7",
+      "raterA": "faithful — 'flow into one another' is reciprocal across all three zones, licensing kitchen↔living",
+      "raterB": "unfaithful — a kitchen–dining–living chain also satisfies 'flow into one another'; the direct kitchen↔living edge over-asserts",
+      "humanRuling": "unfaithful"
+    },
+    {
+      "brief": "strip-attach-clean",
+      "assertion": "A1",
+      "raterA": "faithful — enumerable rooms are 2 bedrooms + hall + bathroom = exactly 4",
+      "raterB": "unfaithful — 'a run of rooms across the top' in a flat implies at least a living/kitchen space beyond the two bedrooms; exact 4 is an undercount",
+      "humanRuling": "unfaithful"
+    }
+  ],
+  "agreedUnfaithful": [
+    {
+      "brief": "accessible-flat",
+      "assertion": "A1",
+      "reason": "rooms == 2 not brief-enumerable ('generous rooms' plural off the hall)"
+    }
+  ],
+  "final": { "faithful": 154, "total": 157, "rate": 0.9809, "interRaterAgreement": 0.9873, "cohenKappa": 0.495 }
+}

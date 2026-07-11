@@ -1,0 +1,1854 @@
+{
+  "model": "gpt-5.5-2026-04-23",
+  "seed": 20260711,
+  "date": "2026-07-11",
+  "systemFingerprint": null,
+  "totals": {
+    "inputTokens": 26753,
+    "outputTokens": 9918,
+    "calls": 26
+  },
+  "entries": [
+    {
+      "id": "studio-1br",
+      "expect": {
+        "rooms": 4,
+        "roomsInclude": [
+          {
+            "concept": "living/kitchen-area"
+          },
+          {
+            "concept": "bedroom"
+          },
+          {
+            "concept": "bathroom"
+          },
+          {
+            "concept": "hall"
+          }
+        ],
+        "totalAreaM2": {
+          "min": 37.8,
+          "max": 46.2,
+          "source": "brief: 'one-bedroom studio apartment of about 42 m²' ±10%"
+        },
+        "adjacency": {
+          "requiredEdges": {
+            "bathroom": ["hall"]
+          },
+          "source": "brief: 'a bathroom off a small hall'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 4,
+          "expectedCirc": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "living/kitchen-area",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "hall",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "total-area",
+          "minM2": 37.8,
+          "maxM2": 46.2,
+          "source": "brief: 'one-bedroom studio apartment of about 42 m²' ±10%",
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "bathroom",
+          "b": "hall",
+          "source": "brief: 'a bathroom off a small hall'",
+          "gate": false
+        }
+      ],
+      "raw": "{\n  \"rooms\": 4,\n  \"roomsInclude\": [\n    {\n      \"concept\": \"living/kitchen-area\"\n    },\n    {\n      \"concept\": \"bedroom\"\n    },\n    {\n      \"concept\": \"bathroom\"\n    },\n    {\n      \"concept\": \"hall\"\n    }\n  ],\n  \"totalAreaM2\": {\n    \"min\": 37.8,\n    \"max\": 46.2,\n    \"source\": \"brief: 'one-bedroom studio apartment of about 42 m²' ±10%\"\n  },\n  \"adjacency\": {\n    \"requiredEdges\": {\n      \"bathroom\": [\n        \"hall\"\n      ]\n    },\n    \"source\": \"brief: 'a bathroom off a small hall'\"\n  }\n}",
+      "usage": {
+        "input": 1029,
+        "output": 346
+      }
+    },
+    {
+      "id": "two-bed-hall",
+      "expect": {
+        "rooms": 6,
+        "roomsInclude": [
+          {
+            "concept": "hall"
+          },
+          {
+            "concept": "kitchen-living-area"
+          },
+          {
+            "concept": "master-bedroom"
+          },
+          {
+            "concept": "second-bedroom"
+          },
+          {
+            "concept": "bathroom"
+          },
+          {
+            "concept": "study"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "bathroom": ["hall"]
+          },
+          "source": "brief: 'a bathroom off the hall'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 6,
+          "expectedCirc": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "hall",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "kitchen-living-area",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "master-bedroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "second-bedroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "study",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "bathroom",
+          "b": "hall",
+          "source": "brief: 'a bathroom off the hall'",
+          "gate": false
+        }
+      ],
+      "raw": "{\"rooms\":6,\"roomsInclude\":[{\"concept\":\"hall\"},{\"concept\":\"kitchen-living-area\"},{\"concept\":\"master-bedroom\"},{\"concept\":\"second-bedroom\"},{\"concept\":\"bathroom\"},{\"concept\":\"study\"}],\"adjacency\":{\"requiredEdges\":{\"bathroom\":[\"hall\"]},\"source\":\"brief: 'a bathroom off the hall'\"}}",
+      "usage": {
+        "input": 1035,
+        "output": 820
+      }
+    },
+    {
+      "id": "relational-studio",
+      "expect": {
+        "rooms": 4,
+        "roomsInclude": [
+          {
+            "concept": "living-room"
+          },
+          {
+            "concept": "kitchen"
+          },
+          {
+            "concept": "bedroom"
+          },
+          {
+            "concept": "bathroom"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "bathroom": ["kitchen"]
+          },
+          "source": "brief: 'The bathroom should open off the kitchen'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 4,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "living-room",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "kitchen",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "bathroom",
+          "b": "kitchen",
+          "source": "brief: 'The bathroom should open off the kitchen'",
+          "gate": false
+        }
+      ],
+      "raw": "{\n  \"rooms\": 4,\n  \"roomsInclude\": [\n    {\n      \"concept\": \"living-room\"\n    },\n    {\n      \"concept\": \"kitchen\"\n    },\n    {\n      \"concept\": \"bedroom\"\n    },\n    {\n      \"concept\": \"bathroom\"\n    }\n  ],\n  \"adjacency\": {\n    \"requiredEdges\": {\n      \"bathroom\": [\n        \"kitchen\"\n      ]\n    },\n    \"source\": \"brief: 'The bathroom should open off the kitchen'\"\n  }\n}",
+      "usage": {
+        "input": 1032,
+        "output": 318
+      }
+    },
+    {
+      "id": "dims-auto-cottage",
+      "expect": {
+        "rooms": 3,
+        "roomsInclude": [
+          {
+            "concept": "living-kitchen-room"
+          },
+          {
+            "concept": "bedroom"
+          },
+          {
+            "concept": "bathroom"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "bedroom": ["living-kitchen-room"],
+            "bathroom": ["living-kitchen-room"]
+          },
+          "source": "brief: 'both opening off the living space'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 3,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "living-kitchen-room",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "bedroom",
+          "b": "living-kitchen-room",
+          "source": "brief: 'both opening off the living space'",
+          "gate": false
+        },
+        {
+          "kind": "adjacent",
+          "a": "bathroom",
+          "b": "living-kitchen-room",
+          "source": "brief: 'both opening off the living space'",
+          "gate": false
+        }
+      ],
+      "raw": "{\"rooms\":3,\"roomsInclude\":[{\"concept\":\"living-kitchen-room\"},{\"concept\":\"bedroom\"},{\"concept\":\"bathroom\"}],\"adjacency\":{\"requiredEdges\":{\"bedroom\":[\"living-kitchen-room\"],\"bathroom\":[\"living-kitchen-room\"]},\"source\":\"brief: 'both opening off the living space'\"}}",
+      "usage": {
+        "input": 1020,
+        "output": 313
+      }
+    },
+    {
+      "id": "against-wall-bath",
+      "expect": {
+        "rooms": 3,
+        "roomsInclude": [
+          {
+            "concept": "living-kitchen-area"
+          },
+          {
+            "concept": "bedroom"
+          },
+          {
+            "concept": "bathroom"
+          }
+        ]
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 3,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "living-kitchen-area",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 1,
+          "gate": true
+        }
+      ],
+      "raw": "{\"rooms\":3,\"roomsInclude\":[{\"concept\":\"living-kitchen-area\"},{\"concept\":\"bedroom\"},{\"concept\":\"bathroom\"}]}",
+      "usage": {
+        "input": 1034,
+        "output": 151
+      }
+    },
+    {
+      "id": "small-office",
+      "expect": {
+        "rooms": 3,
+        "roomsInclude": [
+          {
+            "concept": "open-work-area"
+          },
+          {
+            "concept": "meeting-room"
+          },
+          {
+            "concept": "kitchenette"
+          }
+        ],
+        "totalAreaM2": {
+          "min": 90,
+          "max": 110,
+          "source": "brief: 'small open-plan office (~100 m²)' ±10%"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 3,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "open-work-area",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "meeting-room",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "kitchenette",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "total-area",
+          "minM2": 90,
+          "maxM2": 110,
+          "source": "brief: 'small open-plan office (~100 m²)' ±10%",
+          "gate": true
+        }
+      ],
+      "raw": "{\"rooms\":3,\"roomsInclude\":[{\"concept\":\"open-work-area\"},{\"concept\":\"meeting-room\"},{\"concept\":\"kitchenette\"}],\"totalAreaM2\":{\"min\":90,\"max\":110,\"source\":\"brief: 'small open-plan office (~100 m²)' ±10%\"}}",
+      "usage": {
+        "input": 1022,
+        "output": 270
+      }
+    },
+    {
+      "id": "core-and-shell",
+      "expect": {
+        "rooms": 4,
+        "roomsInclude": [
+          {
+            "concept": "demised-suite",
+            "count": {
+              "min": 2
+            }
+          },
+          {
+            "concept": "tea-point-zone"
+          },
+          {
+            "concept": "circulation-core"
+          }
+        ]
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 4,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "demised-suite",
+          "min": 2,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "tea-point-zone",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "circulation-core",
+          "min": 1,
+          "gate": true
+        }
+      ],
+      "raw": "{\"rooms\":4,\"roomsInclude\":[{\"concept\":\"demised-suite\",\"count\":{\"min\":2}},{\"concept\":\"tea-point-zone\"},{\"concept\":\"circulation-core\"}]}",
+      "usage": {
+        "input": 1035,
+        "output": 158
+      }
+    },
+    {
+      "id": "two-bath-flat",
+      "expect": {
+        "rooms": 6,
+        "roomsInclude": [
+          {
+            "concept": "bedroom",
+            "count": {
+              "min": 2
+            }
+          },
+          {
+            "concept": "kitchen-living-area"
+          },
+          {
+            "concept": "bathroom",
+            "count": {
+              "min": 2
+            }
+          },
+          {
+            "concept": "central-hall"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "bathroom": ["central-hall"]
+          },
+          "source": "brief: 'both bathrooms opening off the central hall'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 6,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 2,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "kitchen-living-area",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 2,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "central-hall",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "bathroom",
+          "b": "central-hall",
+          "source": "brief: 'both bathrooms opening off the central hall'",
+          "gate": false
+        }
+      ],
+      "raw": "{\n  \"rooms\": 6,\n  \"roomsInclude\": [\n    {\n      \"concept\": \"bedroom\",\n      \"count\": {\n        \"min\": 2\n      }\n    },\n    {\n      \"concept\": \"kitchen-living-area\"\n    },\n    {\n      \"concept\": \"bathroom\",\n      \"count\": {\n        \"min\": 2\n      }\n    },\n    {\n      \"concept\": \"central-hall\"\n    }\n  ],\n  \"adjacency\": {\n    \"requiredEdges\": {\n      \"bathroom\": [\n        \"central-hall\"\n      ]\n    },\n    \"source\": \"brief: 'both bathrooms opening off the central hall'\"\n  }\n}",
+      "usage": {
+        "input": 1020,
+        "output": 499
+      }
+    },
+    {
+      "id": "open-plan-loft",
+      "expect": {
+        "rooms": 4,
+        "roomsInclude": [
+          {
+            "concept": "kitchen-zone"
+          },
+          {
+            "concept": "dining-zone"
+          },
+          {
+            "concept": "living-zone"
+          },
+          {
+            "concept": "bathroom"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "kitchen-zone": ["dining-zone", "living-zone"],
+            "dining-zone": ["living-zone"]
+          },
+          "source": "brief: 'the kitchen, dining, and living zones flow into one another through wide cased openings with no doors between them'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 4,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "kitchen-zone",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "dining-zone",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "living-zone",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "kitchen-zone",
+          "b": "dining-zone",
+          "source": "brief: 'the kitchen, dining, and living zones flow into one another through wide cased openings with no doors between them'",
+          "gate": false
+        },
+        {
+          "kind": "adjacent",
+          "a": "kitchen-zone",
+          "b": "living-zone",
+          "source": "brief: 'the kitchen, dining, and living zones flow into one another through wide cased openings with no doors between them'",
+          "gate": false
+        },
+        {
+          "kind": "adjacent",
+          "a": "dining-zone",
+          "b": "living-zone",
+          "source": "brief: 'the kitchen, dining, and living zones flow into one another through wide cased openings with no doors between them'",
+          "gate": false
+        }
+      ],
+      "raw": "{\"rooms\":4,\"roomsInclude\":[{\"concept\":\"kitchen-zone\"},{\"concept\":\"dining-zone\"},{\"concept\":\"living-zone\"},{\"concept\":\"bathroom\"}],\"adjacency\":{\"requiredEdges\":{\"kitchen-zone\":[\"dining-zone\",\"living-zone\"],\"dining-zone\":[\"living-zone\"]},\"source\":\"brief: 'the kitchen, dining, and living zones flow into one another through wide cased openings with no doors between them'\"}}",
+      "usage": {
+        "input": 1025,
+        "output": 608
+      }
+    },
+    {
+      "id": "scripting-units",
+      "expect": {
+        "rooms": 4,
+        "roomsInclude": [
+          {
+            "concept": "studio-unit",
+            "count": {
+              "min": 4,
+              "max": 4
+            }
+          }
+        ]
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 4,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "studio-unit",
+          "min": 4,
+          "max": 4,
+          "gate": true
+        }
+      ],
+      "raw": "{\"rooms\":4,\"roomsInclude\":[{\"concept\":\"studio-unit\",\"count\":{\"min\":4,\"max\":4}}]}",
+      "usage": {
+        "input": 1021,
+        "output": 299
+      }
+    },
+    {
+      "id": "three-bed-2bath",
+      "expect": {
+        "rooms": 8,
+        "roomsInclude": [
+          {
+            "concept": "bedroom",
+            "count": {
+              "min": 3
+            }
+          },
+          {
+            "concept": "bathroom",
+            "count": {
+              "min": 2
+            }
+          },
+          {
+            "concept": "hall"
+          },
+          {
+            "concept": "kitchen-living-area"
+          },
+          {
+            "concept": "utility-room"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "bedroom": ["hall"],
+            "bathroom": ["hall"]
+          },
+          "source": "brief: 'Every bedroom and both bathrooms open off the hall'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 8,
+          "expectedCirc": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 3,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 2,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "hall",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "kitchen-living-area",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "utility-room",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "bedroom",
+          "b": "hall",
+          "source": "brief: 'Every bedroom and both bathrooms open off the hall'",
+          "gate": false
+        },
+        {
+          "kind": "adjacent",
+          "a": "bathroom",
+          "b": "hall",
+          "source": "brief: 'Every bedroom and both bathrooms open off the hall'",
+          "gate": false
+        }
+      ],
+      "raw": "{\"rooms\":8,\"roomsInclude\":[{\"concept\":\"bedroom\",\"count\":{\"min\":3}},{\"concept\":\"bathroom\",\"count\":{\"min\":2}},{\"concept\":\"hall\"},{\"concept\":\"kitchen-living-area\"},{\"concept\":\"utility-room\"}],\"adjacency\":{\"requiredEdges\":{\"bedroom\":[\"hall\"],\"bathroom\":[\"hall\"]},\"source\":\"brief: 'Every bedroom and both bathrooms open off the hall'\"}}",
+      "usage": {
+        "input": 1029,
+        "output": 242
+      }
+    },
+    {
+      "id": "galley-kitchen",
+      "expect": {
+        "rooms": 4,
+        "roomsInclude": [
+          {
+            "concept": "galley-kitchen"
+          },
+          {
+            "concept": "living/dining-room"
+          },
+          {
+            "concept": "bedroom"
+          },
+          {
+            "concept": "bathroom"
+          }
+        ]
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 4,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "galley-kitchen",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "living/dining-room",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 1,
+          "gate": true
+        }
+      ],
+      "raw": "{\n  \"rooms\": 4,\n  \"roomsInclude\": [\n    {\n      \"concept\": \"galley-kitchen\"\n    },\n    {\n      \"concept\": \"living/dining-room\"\n    },\n    {\n      \"concept\": \"bedroom\"\n    },\n    {\n      \"concept\": \"bathroom\"\n    }\n  ]\n}",
+      "usage": {
+        "input": 1025,
+        "output": 220
+      }
+    },
+    {
+      "id": "l-shaped-flat",
+      "expect": {
+        "rooms": 4,
+        "roomsInclude": [
+          {
+            "concept": "living-room"
+          },
+          {
+            "concept": "kitchen"
+          },
+          {
+            "concept": "bedroom"
+          },
+          {
+            "concept": "bathroom"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "kitchen": ["living-room"],
+            "bedroom": ["living-room"],
+            "bathroom": ["living-room"]
+          },
+          "source": "brief: 'the kitchen, bedroom, and bathroom each opening off it'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 4,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "living-room",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "kitchen",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "kitchen",
+          "b": "living-room",
+          "source": "brief: 'the kitchen, bedroom, and bathroom each opening off it'",
+          "gate": false
+        },
+        {
+          "kind": "adjacent",
+          "a": "bedroom",
+          "b": "living-room",
+          "source": "brief: 'the kitchen, bedroom, and bathroom each opening off it'",
+          "gate": false
+        },
+        {
+          "kind": "adjacent",
+          "a": "bathroom",
+          "b": "living-room",
+          "source": "brief: 'the kitchen, bedroom, and bathroom each opening off it'",
+          "gate": false
+        }
+      ],
+      "raw": "{\n  \"rooms\": 4,\n  \"roomsInclude\": [\n    {\n      \"concept\": \"living-room\"\n    },\n    {\n      \"concept\": \"kitchen\"\n    },\n    {\n      \"concept\": \"bedroom\"\n    },\n    {\n      \"concept\": \"bathroom\"\n    }\n  ],\n  \"adjacency\": {\n    \"requiredEdges\": {\n      \"kitchen\": [\n        \"living-room\"\n      ],\n      \"bedroom\": [\n        \"living-room\"\n      ],\n      \"bathroom\": [\n        \"living-room\"\n      ]\n    },\n    \"source\": \"brief: 'the kitchen, bedroom, and bathroom each opening off it'\"\n  }\n}",
+      "usage": {
+        "input": 1020,
+        "output": 373
+      }
+    },
+    {
+      "id": "accessible-flat",
+      "expect": {
+        "rooms": 2,
+        "roomsInclude": [
+          {
+            "concept": "bedroom",
+            "count": {
+              "min": 1,
+              "max": 1
+            }
+          },
+          {
+            "concept": "hall"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "bedroom": ["hall"]
+          },
+          "source": "brief: 'rooms off a wide hall'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 2,
+          "expectedCirc": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 1,
+          "max": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "hall",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "bedroom",
+          "b": "hall",
+          "source": "brief: 'rooms off a wide hall'",
+          "gate": false
+        }
+      ],
+      "raw": "{\n  \"rooms\": 2,\n  \"roomsInclude\": [\n    {\n      \"concept\": \"bedroom\",\n      \"count\": {\n        \"min\": 1,\n        \"max\": 1\n      }\n    },\n    {\n      \"concept\": \"hall\"\n    }\n  ],\n  \"adjacency\": {\n    \"requiredEdges\": {\n      \"bedroom\": [\n        \"hall\"\n      ]\n    },\n    \"source\": \"brief: 'rooms off a wide hall'\"\n  }\n}",
+      "usage": {
+        "input": 1018,
+        "output": 624
+      }
+    },
+    {
+      "id": "accessible-bath",
+      "expect": {
+        "rooms": 3,
+        "roomsInclude": [
+          {
+            "concept": "living-kitchen-area"
+          },
+          {
+            "concept": "bedroom"
+          },
+          {
+            "concept": "wet-room"
+          }
+        ]
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 3,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "living-kitchen-area",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "wet-room",
+          "min": 1,
+          "gate": true
+        }
+      ],
+      "raw": "{\"rooms\":3,\"roomsInclude\":[{\"concept\":\"living-kitchen-area\"},{\"concept\":\"bedroom\"},{\"concept\":\"wet-room\"}]}",
+      "usage": {
+        "input": 1036,
+        "output": 196
+      }
+    },
+    {
+      "id": "compact-studio",
+      "expect": {
+        "rooms": 3,
+        "roomsInclude": [
+          {
+            "concept": "main-room"
+          },
+          {
+            "concept": "kitchenette"
+          },
+          {
+            "concept": "bathroom"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "kitchenette": ["main-room"]
+          },
+          "source": "brief: 'a kitchenette linked by a cased opening'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 3,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "main-room",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "kitchenette",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "kitchenette",
+          "b": "main-room",
+          "source": "brief: 'a kitchenette linked by a cased opening'",
+          "gate": false
+        }
+      ],
+      "raw": "{\n  \"rooms\": 3,\n  \"roomsInclude\": [\n    {\n      \"concept\": \"main-room\"\n    },\n    {\n      \"concept\": \"kitchenette\"\n    },\n    {\n      \"concept\": \"bathroom\"\n    }\n  ],\n  \"adjacency\": {\n    \"requiredEdges\": {\n      \"kitchenette\": [\n        \"main-room\"\n      ]\n    },\n    \"source\": \"brief: 'a kitchenette linked by a cased opening'\"\n  }\n}",
+      "usage": {
+        "input": 1026,
+        "output": 252
+      }
+    },
+    {
+      "id": "bungalow",
+      "expect": {
+        "rooms": 6,
+        "roomsInclude": [
+          {
+            "concept": "living-room"
+          },
+          {
+            "concept": "kitchen"
+          },
+          {
+            "concept": "bedroom",
+            "count": {
+              "min": 2
+            }
+          },
+          {
+            "concept": "bathroom"
+          },
+          {
+            "concept": "central-hall"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "bedroom": ["central-hall"],
+            "bathroom": ["central-hall"]
+          },
+          "source": "brief: 'two bedrooms plus the bathroom off a central hall'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 6,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "living-room",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "kitchen",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 2,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "central-hall",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "bedroom",
+          "b": "central-hall",
+          "source": "brief: 'two bedrooms plus the bathroom off a central hall'",
+          "gate": false
+        },
+        {
+          "kind": "adjacent",
+          "a": "bathroom",
+          "b": "central-hall",
+          "source": "brief: 'two bedrooms plus the bathroom off a central hall'",
+          "gate": false
+        }
+      ],
+      "raw": "{\n  \"rooms\": 6,\n  \"roomsInclude\": [\n    {\n      \"concept\": \"living-room\"\n    },\n    {\n      \"concept\": \"kitchen\"\n    },\n    {\n      \"concept\": \"bedroom\",\n      \"count\": {\n        \"min\": 2\n      }\n    },\n    {\n      \"concept\": \"bathroom\"\n    },\n    {\n      \"concept\": \"central-hall\"\n    }\n  ],\n  \"adjacency\": {\n    \"requiredEdges\": {\n      \"bedroom\": [\n        \"central-hall\"\n      ],\n      \"bathroom\": [\n        \"central-hall\"\n      ]\n    },\n    \"source\": \"brief: 'two bedrooms plus the bathroom off a central hall'\"\n  }\n}",
+      "usage": {
+        "input": 1018,
+        "output": 621
+      }
+    },
+    {
+      "id": "reception-suite",
+      "expect": {
+        "rooms": 6,
+        "roomsInclude": [
+          {
+            "concept": "reception-area"
+          },
+          {
+            "concept": "private-office",
+            "count": {
+              "min": 2,
+              "max": 2
+            }
+          },
+          {
+            "concept": "meeting-room"
+          },
+          {
+            "concept": "kitchenette"
+          },
+          {
+            "concept": "wc"
+          }
+        ],
+        "reachable": true
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 6,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "reception-area",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "private-office",
+          "min": 2,
+          "max": 2,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "meeting-room",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "kitchenette",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "wc",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "reachable",
+          "gate": false
+        }
+      ],
+      "raw": "{\"rooms\":6,\"roomsInclude\":[{\"concept\":\"reception-area\"},{\"concept\":\"private-office\",\"count\":{\"min\":2,\"max\":2}},{\"concept\":\"meeting-room\"},{\"concept\":\"kitchenette\"},{\"concept\":\"wc\"}],\"reachable\":true}",
+      "usage": {
+        "input": 1018,
+        "output": 550
+      }
+    },
+    {
+      "id": "strip-corridor",
+      "expect": {
+        "rooms": 4,
+        "roomsInclude": [
+          {
+            "concept": "consulting-room",
+            "count": {
+              "min": 3
+            }
+          },
+          {
+            "concept": "corridor"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "consulting-room": ["corridor"]
+          },
+          "source": "brief: 'three identical consulting rooms opening off a single shared corridor' and 'each its own door onto the corridor'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 4,
+          "expectedCirc": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "consulting-room",
+          "min": 3,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "corridor",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "consulting-room",
+          "b": "corridor",
+          "source": "brief: 'three identical consulting rooms opening off a single shared corridor' and 'each its own door onto the corridor'",
+          "gate": false
+        }
+      ],
+      "raw": "{\"rooms\":4,\"roomsInclude\":[{\"concept\":\"consulting-room\",\"count\":{\"min\":3}},{\"concept\":\"corridor\"}],\"adjacency\":{\"requiredEdges\":{\"consulting-room\":[\"corridor\"]},\"source\":\"brief: 'three identical consulting rooms opening off a single shared corridor' and 'each its own door onto the corridor'\"}}",
+      "usage": {
+        "input": 1036,
+        "output": 341
+      }
+    },
+    {
+      "id": "attach-openings",
+      "expect": {
+        "rooms": 3,
+        "roomsInclude": [
+          {
+            "concept": "living-kitchen-area"
+          },
+          {
+            "concept": "bedroom"
+          },
+          {
+            "concept": "bathroom"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "bathroom": ["living-kitchen-area"]
+          },
+          "source": "brief: 'a bathroom off the living space'; 'The bath must open off the living area'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 3,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "living-kitchen-area",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "bathroom",
+          "b": "living-kitchen-area",
+          "source": "brief: 'a bathroom off the living space'; 'The bath must open off the living area'",
+          "gate": false
+        }
+      ],
+      "raw": "{\n  \"rooms\": 3,\n  \"roomsInclude\": [\n    {\n      \"concept\": \"living-kitchen-area\"\n    },\n    {\n      \"concept\": \"bedroom\"\n    },\n    {\n      \"concept\": \"bathroom\"\n    }\n  ],\n  \"adjacency\": {\n    \"requiredEdges\": {\n      \"bathroom\": [\n        \"living-kitchen-area\"\n      ]\n    },\n    \"source\": \"brief: 'a bathroom off the living space'; 'The bath must open off the living area'\"\n  }\n}",
+      "usage": {
+        "input": 1049,
+        "output": 343
+      }
+    },
+    {
+      "id": "anchor-furniture",
+      "expect": {
+        "rooms": 3,
+        "roomsInclude": [
+          {
+            "concept": "living-room"
+          },
+          {
+            "concept": "bedroom"
+          },
+          {
+            "concept": "bathroom"
+          }
+        ]
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 3,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "living-room",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 1,
+          "gate": true
+        }
+      ],
+      "raw": "{\"rooms\":3,\"roomsInclude\":[{\"concept\":\"living-room\"},{\"concept\":\"bedroom\"},{\"concept\":\"bathroom\"}]}",
+      "usage": {
+        "input": 1045,
+        "output": 166
+      }
+    },
+    {
+      "id": "strip-attach-clean",
+      "expect": {
+        "rooms": 4,
+        "roomsInclude": [
+          {
+            "concept": "bedroom",
+            "count": {
+              "min": 2,
+              "max": 2
+            }
+          },
+          {
+            "concept": "hall"
+          },
+          {
+            "concept": "bathroom"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "bedroom": ["hall"],
+            "bathroom": ["hall"]
+          },
+          "source": "brief: 'Every room must be reachable by a door off the hall' and 'the bathroom must open off the hall rather than through a bedroom'"
+        },
+        "reachable": true
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 4,
+          "expectedCirc": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 2,
+          "max": 2,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "hall",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "bedroom",
+          "b": "hall",
+          "source": "brief: 'Every room must be reachable by a door off the hall' and 'the bathroom must open off the hall rather than through a bedroom'",
+          "gate": false
+        },
+        {
+          "kind": "adjacent",
+          "a": "bathroom",
+          "b": "hall",
+          "source": "brief: 'Every room must be reachable by a door off the hall' and 'the bathroom must open off the hall rather than through a bedroom'",
+          "gate": false
+        },
+        {
+          "kind": "reachable",
+          "gate": false
+        }
+      ],
+      "raw": "{\"rooms\":4,\"roomsInclude\":[{\"concept\":\"bedroom\",\"count\":{\"min\":2,\"max\":2}},{\"concept\":\"hall\"},{\"concept\":\"bathroom\"}],\"adjacency\":{\"requiredEdges\":{\"bedroom\":[\"hall\"],\"bathroom\":[\"hall\"]},\"source\":\"brief: 'Every room must be reachable by a door off the hall' and 'the bathroom must open off the hall rather than through a bedroom'\"},\"reachable\":true}",
+      "usage": {
+        "input": 1047,
+        "output": 612
+      }
+    },
+    {
+      "id": "sized-kitchen-flat",
+      "expect": {
+        "rooms": 4,
+        "roomsInclude": [
+          {
+            "concept": "kitchen",
+            "areaM2": {
+              "min": 10.8,
+              "max": 13.2,
+              "source": "brief: 'a kitchen of 12 m²' ±10%"
+            }
+          },
+          {
+            "concept": "bedroom",
+            "areaM2": {
+              "min": 10,
+              "source": "brief: 'a bedroom of at least 10 m²'"
+            }
+          },
+          {
+            "concept": "living-room"
+          },
+          {
+            "concept": "bathroom"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "bedroom": ["living-room"],
+            "bathroom": ["living-room"]
+          },
+          "source": "brief: 'The bedroom and bathroom open off the living room'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 4,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "kitchen",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-area",
+          "concept": "kitchen",
+          "min": 1,
+          "minM2": 10.8,
+          "maxM2": 13.2,
+          "source": "brief: 'a kitchen of 12 m²' ±10%",
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-area",
+          "concept": "bedroom",
+          "min": 1,
+          "minM2": 10,
+          "source": "brief: 'a bedroom of at least 10 m²'",
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "living-room",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "bedroom",
+          "b": "living-room",
+          "source": "brief: 'The bedroom and bathroom open off the living room'",
+          "gate": false
+        },
+        {
+          "kind": "adjacent",
+          "a": "bathroom",
+          "b": "living-room",
+          "source": "brief: 'The bedroom and bathroom open off the living room'",
+          "gate": false
+        }
+      ],
+      "raw": "{\"rooms\":4,\"roomsInclude\":[{\"concept\":\"kitchen\",\"areaM2\":{\"min\":10.8,\"max\":13.2,\"source\":\"brief: 'a kitchen of 12 m²' ±10%\"}},{\"concept\":\"bedroom\",\"areaM2\":{\"min\":10,\"source\":\"brief: 'a bedroom of at least 10 m²'\"}},{\"concept\":\"living-room\"},{\"concept\":\"bathroom\"}],\"adjacency\":{\"requiredEdges\":{\"bedroom\":[\"living-room\"],\"bathroom\":[\"living-room\"]},\"source\":\"brief: 'The bedroom and bathroom open off the living room'\"}}",
+      "usage": {
+        "input": 1036,
+        "output": 307
+      }
+    },
+    {
+      "id": "sized-bedrooms",
+      "expect": {
+        "rooms": 4,
+        "roomsInclude": [
+          {
+            "concept": "bedroom",
+            "count": {
+              "min": 2
+            },
+            "areaM2": {
+              "min": 11,
+              "source": "brief: 'each bedroom is at least 11 m²'"
+            }
+          },
+          {
+            "concept": "kitchen/living-area"
+          },
+          {
+            "concept": "bathroom"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "bedroom": ["kitchen/living-area"]
+          },
+          "source": "brief: 'Both bedrooms open off the living space'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 4,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 2,
+          "gate": true
+        },
+        {
+          "kind": "room-area",
+          "concept": "bedroom",
+          "min": 2,
+          "minM2": 11,
+          "source": "brief: 'each bedroom is at least 11 m²'",
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "kitchen/living-area",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bathroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "bedroom",
+          "b": "kitchen/living-area",
+          "source": "brief: 'Both bedrooms open off the living space'",
+          "gate": false
+        }
+      ],
+      "raw": "{\n  \"rooms\": 4,\n  \"roomsInclude\": [\n    {\n      \"concept\": \"bedroom\",\n      \"count\": {\n        \"min\": 2\n      },\n      \"areaM2\": {\n        \"min\": 11,\n        \"source\": \"brief: 'each bedroom is at least 11 m²'\"\n      }\n    },\n    {\n      \"concept\": \"kitchen/living-area\"\n    },\n    {\n      \"concept\": \"bathroom\"\n    }\n  ],\n  \"adjacency\": {\n    \"requiredEdges\": {\n      \"bedroom\": [\n        \"kitchen/living-area\"\n      ]\n    },\n    \"source\": \"brief: 'Both bedrooms open off the living space'\"\n  }\n}",
+      "usage": {
+        "input": 1022,
+        "output": 456
+      }
+    },
+    {
+      "id": "sized-wet-room",
+      "expect": {
+        "rooms": 4,
+        "roomsInclude": [
+          {
+            "concept": "living-kitchen-area"
+          },
+          {
+            "concept": "bedroom"
+          },
+          {
+            "concept": "wet-room",
+            "areaM2": {
+              "min": 5,
+              "source": "brief: 'a wet room of at least 5 m²'"
+            }
+          },
+          {
+            "concept": "hall"
+          }
+        ],
+        "adjacency": {
+          "requiredEdges": {
+            "living-kitchen-area": ["hall"],
+            "bedroom": ["hall"],
+            "wet-room": ["hall"]
+          },
+          "source": "brief: 'all with 1000 mm doorways off a wide hall'"
+        }
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 4,
+          "expectedCirc": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "living-kitchen-area",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "bedroom",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "wet-room",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-area",
+          "concept": "wet-room",
+          "min": 1,
+          "minM2": 5,
+          "source": "brief: 'a wet room of at least 5 m²'",
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "hall",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "adjacent",
+          "a": "living-kitchen-area",
+          "b": "hall",
+          "source": "brief: 'all with 1000 mm doorways off a wide hall'",
+          "gate": false
+        },
+        {
+          "kind": "adjacent",
+          "a": "bedroom",
+          "b": "hall",
+          "source": "brief: 'all with 1000 mm doorways off a wide hall'",
+          "gate": false
+        },
+        {
+          "kind": "adjacent",
+          "a": "wet-room",
+          "b": "hall",
+          "source": "brief: 'all with 1000 mm doorways off a wide hall'",
+          "gate": false
+        }
+      ],
+      "raw": "{\n  \"rooms\": 4,\n  \"roomsInclude\": [\n    {\n      \"concept\": \"living-kitchen-area\"\n    },\n    {\n      \"concept\": \"bedroom\"\n    },\n    {\n      \"concept\": \"wet-room\",\n      \"areaM2\": {\n        \"min\": 5,\n        \"source\": \"brief: 'a wet room of at least 5 m²'\"\n      }\n    },\n    {\n      \"concept\": \"hall\"\n    }\n  ],\n  \"adjacency\": {\n    \"requiredEdges\": {\n      \"living-kitchen-area\": [\n        \"hall\"\n      ],\n      \"bedroom\": [\n        \"hall\"\n      ],\n      \"wet-room\": [\n        \"hall\"\n      ]\n    },\n    \"source\": \"brief: 'all with 1000 mm doorways off a wide hall'\"\n  }\n}",
+      "usage": {
+        "input": 1030,
+        "output": 577
+      }
+    },
+    {
+      "id": "sized-office-mix",
+      "expect": {
+        "rooms": 4,
+        "roomsInclude": [
+          {
+            "concept": "meeting-room",
+            "areaM2": {
+              "min": 18,
+              "max": 22,
+              "source": "brief: 'a meeting room of about 20 m²' ±10%"
+            }
+          },
+          {
+            "concept": "open-work-area",
+            "areaM2": {
+              "min": 60,
+              "source": "brief: 'an open work area of at least 60 m²'"
+            }
+          },
+          {
+            "concept": "kitchenette"
+          },
+          {
+            "concept": "wc"
+          }
+        ],
+        "reachable": true
+      },
+      "predicates": [
+        {
+          "kind": "room-count",
+          "exact": 4,
+          "expectedCirc": 0,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "meeting-room",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-area",
+          "concept": "meeting-room",
+          "min": 1,
+          "minM2": 18,
+          "maxM2": 22,
+          "source": "brief: 'a meeting room of about 20 m²' ±10%",
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "open-work-area",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-area",
+          "concept": "open-work-area",
+          "min": 1,
+          "minM2": 60,
+          "source": "brief: 'an open work area of at least 60 m²'",
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "kitchenette",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "room-exists",
+          "concept": "wc",
+          "min": 1,
+          "gate": true
+        },
+        {
+          "kind": "reachable",
+          "gate": false
+        }
+      ],
+      "raw": "{\n  \"rooms\": 4,\n  \"roomsInclude\": [\n    {\n      \"concept\": \"meeting-room\",\n      \"areaM2\": {\n        \"min\": 18,\n        \"max\": 22,\n        \"source\": \"brief: 'a meeting room of about 20 m²' ±10%\"\n      }\n    },\n    {\n      \"concept\": \"open-work-area\",\n      \"areaM2\": {\n        \"min\": 60,\n        \"source\": \"brief: 'an open work area of at least 60 m²'\"\n      }\n    },\n    {\n      \"concept\": \"kitchenette\"\n    },\n    {\n      \"concept\": \"wc\"\n    }\n  ],\n  \"reachable\": true\n}",
+      "usage": {
+        "input": 1025,
+        "output": 256
+      }
+    }
+  ]
+}

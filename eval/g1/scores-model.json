@@ -1,0 +1,391 @@
+{
+  "rater": "claude-opus-4-8 x3 blind subagents (batches 1-3; no repo access, judged from inline brief + assertions only)",
+  "date": "2026-07-12",
+  "note": "Rater A of the G1 double-blind pass. Verbatim verdicts from the three batch judges; only re-serialized into one file. 157 assertions, 156 judged faithful; the single unfaithful verdict is accessible-flat A1.",
+  "briefs": {
+    "studio-1br": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "living/kitchen, bedroom, bathroom, hall = exactly 4 enumerable rooms." },
+        "A2": { "faithful": true, "reason": "'living/kitchen area' named." },
+        "A3": { "faithful": true, "reason": "'separate bedroom' named." },
+        "A4": { "faithful": true, "reason": "'a bathroom' named." },
+        "A5": { "faithful": true, "reason": "'a small hall' named, circulation counts." },
+        "A6": { "faithful": true, "reason": "42+-10% = [37.8,46.2] matches 'about 42 m2' band convention." },
+        "A7": { "faithful": true, "reason": "'a bathroom off a small hall' explicitly connects them." }
+      },
+      "omissions": ["window in bedroom (shape-inexpressible)", "front door (shape-inexpressible)"]
+    },
+    "two-bed-hall": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "hall, kitchen/living, master bed, second bed, bathroom, study = 6." },
+        "A2": { "faithful": true, "reason": "'central hall' named." },
+        "A3": { "faithful": true, "reason": "'kitchen/living area' named." },
+        "A4": { "faithful": true, "reason": "'master bedroom' named." },
+        "A5": { "faithful": true, "reason": "'a second bedroom' named." },
+        "A6": { "faithful": true, "reason": "'a bathroom off the hall' named." },
+        "A7": { "faithful": true, "reason": "'a small study' named." },
+        "A8": { "faithful": true, "reason": "'a bathroom off the hall' explicitly connects them." }
+      },
+      "omissions": [
+        "both bedrooms window (shape-inexpressible)",
+        "'no room reached through another' reachability/topology constraint not asserted"
+      ]
+    },
+    "relational-studio": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "living room, kitchen, bedroom, bathroom = 4." },
+        "A2": { "faithful": true, "reason": "'the living room' named as anchor." },
+        "A3": { "faithful": true, "reason": "'the kitchen' named." },
+        "A4": { "faithful": true, "reason": "'the bedroom' named." },
+        "A5": { "faithful": true, "reason": "'the bathroom' named." },
+        "A6": { "faithful": true, "reason": "'bathroom should open off the kitchen' explicitly connects them." }
+      },
+      "omissions": [
+        "relative placement (kitchen right of living, bedroom below, bathroom next to bedroom) not asserted",
+        "'not through the bedroom' reachability constraint not asserted"
+      ]
+    },
+    "dims-auto-cottage": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "living/kitchen, bedroom, bathroom = 3." },
+        "A2": { "faithful": true, "reason": "'one living/kitchen room' named." },
+        "A3": { "faithful": true, "reason": "'a bedroom' named." },
+        "A4": { "faithful": true, "reason": "'a bathroom' named." },
+        "A5": { "faithful": true, "reason": "'both opening off the living space' covers bedroom." },
+        "A6": { "faithful": true, "reason": "'both opening off the living space' covers bathroom." }
+      },
+      "omissions": [
+        "'compact' is qualitative, correctly yields no area assertion",
+        "automatic dimensioning (shape-inexpressible)"
+      ]
+    },
+    "against-wall-bath": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "living/kitchen, bedroom, bathroom = 3." },
+        "A2": { "faithful": true, "reason": "'a living/kitchen area' named." },
+        "A3": { "faithful": true, "reason": "'a bedroom' named." },
+        "A4": { "faithful": true, "reason": "'a bathroom' named." }
+      },
+      "omissions": [
+        "bathroom fixtures (WC, basin, shower) against walls (shape-inexpressible)",
+        "bed rotated along wall (shape-inexpressible)"
+      ]
+    },
+    "small-office": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "open work area, meeting room, kitchenette = 3." },
+        "A2": { "faithful": true, "reason": "'one large open work area' named." },
+        "A3": { "faithful": true, "reason": "'a meeting room' named." },
+        "A4": { "faithful": true, "reason": "'a kitchenette' named." },
+        "A5": { "faithful": true, "reason": "100+-10% = [90,110] matches '~100 m2' band convention." }
+      },
+      "omissions": ["door per room (shape-inexpressible)", "windows on outside walls (shape-inexpressible)"]
+    },
+    "core-and-shell": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "two suites + tea-point + circulation core = 4." },
+        "A2": { "faithful": true, "reason": "'two demised suites' -> >=2 correct." },
+        "A3": { "faithful": true, "reason": "'a tea-point zone' named." },
+        "A4": { "faithful": true, "reason": "'a circulation core' named." }
+      },
+      "omissions": ["walled with doors and windows (shape-inexpressible)", "install no fixtures (shape-inexpressible)"]
+    },
+    "two-bath-flat": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "2 bedrooms + kitchen/living + 2 bathrooms + central hall = 6." },
+        "A2": { "faithful": true, "reason": "'two-bedroom' -> >=2 bedroom correct." },
+        "A3": { "faithful": true, "reason": "'a kitchen/living area' named." },
+        "A4": { "faithful": true, "reason": "'two bathrooms' -> >=2 correct." },
+        "A5": { "faithful": true, "reason": "'the central hall' named." },
+        "A6": { "faithful": true, "reason": "'both bathrooms opening off the central hall' explicitly connects them." }
+      },
+      "omissions": [
+        "both bedrooms window (shape-inexpressible)",
+        "'neither reached through a bedroom' reachability constraint not asserted"
+      ]
+    },
+    "open-plan-loft": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "kitchen, dining, living, bathroom = 4." },
+        "A2": { "faithful": true, "reason": "'kitchen' zone named." },
+        "A3": { "faithful": true, "reason": "'dining' zone named." },
+        "A4": { "faithful": true, "reason": "'living' zone named." },
+        "A5": { "faithful": true, "reason": "'the bathroom' named as enclosed room." },
+        "A6": {
+          "faithful": true,
+          "reason": "'flow into one another through wide cased openings' connects kitchen-dining via opening."
+        },
+        "A7": {
+          "faithful": true,
+          "reason": "'flow into one another' is reciprocal across all three zones, licensing kitchen-living."
+        },
+        "A8": { "faithful": true, "reason": "'flow into one another' licenses dining-living connection." }
+      },
+      "omissions": [
+        "bathroom fully enclosed with a real door (shape-inexpressible)",
+        "no doors between the three zones (shape-inexpressible)"
+      ]
+    },
+    "scripting-units": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "four units each its own room enumerates to exactly 4" },
+        "A2": { "faithful": true, "reason": "brief specifies four studio units, matching the =4 band" }
+      },
+      "omissions": [
+        "street door per unit (shape-inexpressible)",
+        "window per unit (shape-inexpressible)",
+        "parametric/count-driven regeneration requirement"
+      ]
+    },
+    "three-bed-2bath": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "3 bedrooms + 2 bathrooms + hall + kitchen/living + utility = 8" },
+        "A2": { "faithful": true, "reason": "brief names three bedrooms" },
+        "A3": { "faithful": true, "reason": "brief names two bathrooms" },
+        "A4": { "faithful": true, "reason": "brief names a central hall" },
+        "A5": { "faithful": true, "reason": "brief names a kitchen/living area" },
+        "A6": { "faithful": true, "reason": "brief names a utility room" },
+        "A7": { "faithful": true, "reason": "brief: every bedroom opens off the hall" },
+        "A8": { "faithful": true, "reason": "brief: both bathrooms open off the hall" }
+      },
+      "omissions": ["all three bedrooms get a window (shape-inexpressible)"]
+    },
+    "galley-kitchen": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "galley kitchen + living/dining + bedroom + bathroom = 4" },
+        "A2": { "faithful": true, "reason": "brief names a galley kitchen" },
+        "A3": { "faithful": true, "reason": "brief names a living/dining room" },
+        "A4": { "faithful": true, "reason": "brief names a bedroom" },
+        "A5": { "faithful": true, "reason": "brief names a bathroom" }
+      },
+      "omissions": [
+        "sink/counter/stove/fridge lined along one wall (shape-inexpressible)",
+        "bedroom window (shape-inexpressible)"
+      ]
+    },
+    "l-shaped-flat": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "living + kitchen + bedroom + bathroom = 4" },
+        "A2": { "faithful": true, "reason": "brief names the living room" },
+        "A3": { "faithful": true, "reason": "brief names the kitchen" },
+        "A4": { "faithful": true, "reason": "brief names the bedroom" },
+        "A5": { "faithful": true, "reason": "brief names the bathroom" },
+        "A6": { "faithful": true, "reason": "brief: kitchen opens off the living room" },
+        "A7": { "faithful": true, "reason": "brief: bedroom opens off the living room" },
+        "A8": { "faithful": true, "reason": "brief: bathroom opens off the living room" }
+      },
+      "omissions": [
+        "L-shaped footprint / non-rectangular (shape-inexpressible)",
+        "living room wraps the inner corner (shape-inexpressible)"
+      ]
+    },
+    "accessible-flat": {
+      "assertions": {
+        "A1": {
+          "faithful": false,
+          "reason": "brief names only bedroom and hall explicitly, but 'generous rooms' (plural) off the hall implies more than 2 total rooms, so exactly 2 is not brief-enumerable"
+        },
+        "A2": { "faithful": true, "reason": "'one-bedroom flat' fixes exactly one bedroom" },
+        "A3": { "faithful": true, "reason": "brief names a wide hall" },
+        "A4": { "faithful": true, "reason": "brief: rooms off a wide hall, bedroom among them" }
+      },
+      "omissions": [
+        "1000 mm-plus doorways (shape-inexpressible)",
+        "clear circulation throughout",
+        "accessibility guidance compliance",
+        "the unnamed 'generous rooms' off the hall"
+      ]
+    },
+    "accessible-bath": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "living/kitchen + bedroom + wet room = 3" },
+        "A2": { "faithful": true, "reason": "brief names a living/kitchen area" },
+        "A3": { "faithful": true, "reason": "brief names a bedroom" },
+        "A4": { "faithful": true, "reason": "brief names a generous wet room" }
+      },
+      "omissions": [
+        "wide 1000 mm doorways (shape-inexpressible)",
+        "large clear turning space (shape-inexpressible)",
+        "plumbing fixtures against walls (shape-inexpressible)",
+        "accessibility guidance compliance"
+      ]
+    },
+    "compact-studio": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "main room + kitchenette + bathroom = 3" },
+        "A2": { "faithful": true, "reason": "brief names one main room" },
+        "A3": { "faithful": true, "reason": "brief names a kitchenette" },
+        "A4": { "faithful": true, "reason": "brief names a separate bathroom" },
+        "A5": { "faithful": true, "reason": "brief: kitchenette linked to main room by a cased opening" }
+      },
+      "omissions": [
+        "bed as furniture in the main room (shape-inexpressible)",
+        "'compact' qualitative descriptor yields no area assertion (correctly omitted)"
+      ]
+    },
+    "bungalow": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "living + kitchen + 2 bedrooms + bathroom + central hall = 6" },
+        "A2": { "faithful": true, "reason": "brief names a living room" },
+        "A3": { "faithful": true, "reason": "brief names a kitchen" },
+        "A4": { "faithful": true, "reason": "brief names two bedrooms" },
+        "A5": { "faithful": true, "reason": "brief names the bathroom" },
+        "A6": { "faithful": true, "reason": "brief names a central hall" },
+        "A7": { "faithful": true, "reason": "brief: two bedrooms off a central hall" },
+        "A8": { "faithful": true, "reason": "brief: bathroom off a central hall" }
+      },
+      "omissions": ["auto-label every room's dimensions in the margin (shape-inexpressible)"]
+    },
+    "reception-suite": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "reception + 2 offices + meeting + kitchenette + wc = 6" },
+        "A2": { "faithful": true, "reason": "brief names a reception area" },
+        "A3": { "faithful": true, "reason": "brief names exactly two private offices, matching the =2 band" },
+        "A4": { "faithful": true, "reason": "brief names a meeting room" },
+        "A5": { "faithful": true, "reason": "brief names a kitchenette" },
+        "A6": { "faithful": true, "reason": "brief names a WC" },
+        "A7": { "faithful": true, "reason": "brief: everything reachable from the reception entrance" }
+      },
+      "omissions": []
+    },
+    "strip-corridor": {
+      "assertions": {
+        "A1": {
+          "faithful": true,
+          "reason": "Three consulting rooms + one named corridor = exactly 4 enumerable rooms."
+        },
+        "A2": {
+          "faithful": true,
+          "reason": "Brief names 'three identical consulting rooms', so >=3 consulting-room holds."
+        },
+        "A3": { "faithful": true, "reason": "Brief names 'a single shared corridor'." },
+        "A4": {
+          "faithful": true,
+          "reason": "Brief: rooms 'opening off' the corridor with 'each its own door onto the corridor' -- door adjacency stated."
+        }
+      },
+      "omissions": [
+        "each room needs a window (shape-inexpressible)",
+        "entrance located at the corridor (shape-inexpressible)"
+      ]
+    },
+    "attach-openings": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "Living/kitchen + bedroom + bathroom = exactly 3 rooms." },
+        "A2": { "faithful": true, "reason": "Brief names a 'living/kitchen area'." },
+        "A3": { "faithful": true, "reason": "Brief names 'a bedroom'." },
+        "A4": { "faithful": true, "reason": "Brief names 'a bathroom'." },
+        "A5": {
+          "faithful": true,
+          "reason": "Brief: 'a bathroom off the living space' and 'The bath must open off the living area' -- door adjacency stated."
+        }
+      },
+      "omissions": [
+        "bedroom needs a window (shape-inexpressible)",
+        "openings positioned by distance-along-wall not absolute point (shape-inexpressible)",
+        "bath must not open through the bedroom -- negative constraint (shape-inexpressible)"
+      ]
+    },
+    "anchor-furniture": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "Living room + bedroom + bathroom = exactly 3 rooms." },
+        "A2": { "faithful": true, "reason": "Brief names 'the living room'." },
+        "A3": { "faithful": true, "reason": "Brief names 'a bedroom'." },
+        "A4": { "faithful": true, "reason": "Brief names 'the bathroom'." }
+      },
+      "omissions": [
+        "sofa centred in living room (shape-inexpressible)",
+        "table set in from a corner (shape-inexpressible)",
+        "bed backed into a bedroom corner (shape-inexpressible)",
+        "bathroom fixtures in corners (shape-inexpressible)"
+      ]
+    },
+    "strip-attach-clean": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "Two bedrooms + hall + bathroom = exactly 4 rooms." },
+        "A2": { "faithful": true, "reason": "'two-bedroom flat' fixes bedroom count at exactly 2." },
+        "A3": { "faithful": true, "reason": "Brief names 'a hall'." },
+        "A4": { "faithful": true, "reason": "Brief names 'bathroom'." },
+        "A5": {
+          "faithful": true,
+          "reason": "Brief: 'Every room must be reachable by a door off the hall' covers bedroom-hall adjacency."
+        },
+        "A6": {
+          "faithful": true,
+          "reason": "Brief: 'the bathroom must open off the hall rather than through a bedroom'."
+        },
+        "A7": {
+          "faithful": true,
+          "reason": "Brief requires every room reachable by a door off the hall (reachability requested)."
+        }
+      },
+      "omissions": [
+        "both bedrooms need a window (shape-inexpressible)",
+        "must pass strict validation with no warnings (shape-inexpressible)"
+      ]
+    },
+    "sized-kitchen-flat": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "Kitchen + bedroom + living room + bathroom = exactly 4 rooms." },
+        "A2": { "faithful": true, "reason": "Brief names 'a kitchen'." },
+        "A3": { "faithful": true, "reason": "Bare '12 m2' -> 12+-10% = [10.8,13.2], per band convention." },
+        "A4": { "faithful": true, "reason": "Brief names 'a bedroom'." },
+        "A5": { "faithful": true, "reason": "'at least 10 m2' -> min 10, no max." },
+        "A6": { "faithful": true, "reason": "Brief names 'a living room'." },
+        "A7": { "faithful": true, "reason": "Brief names 'a bathroom'." },
+        "A8": { "faithful": true, "reason": "Brief: 'The bedroom and bathroom open off the living room'." },
+        "A9": { "faithful": true, "reason": "Brief: 'The bedroom and bathroom open off the living room'." }
+      },
+      "omissions": ["bedroom needs a window (shape-inexpressible)", "add a front door (shape-inexpressible)"]
+    },
+    "sized-bedrooms": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "Two bedrooms + kitchen/living area + bathroom = exactly 4 rooms." },
+        "A2": { "faithful": true, "reason": "'two-bedroom flat' -> >=2 bedroom." },
+        "A3": { "faithful": true, "reason": "'each bedroom is at least 11 m2' -> 2 rooms with min 11, no max." },
+        "A4": { "faithful": true, "reason": "Brief names 'a kitchen/living area'." },
+        "A5": { "faithful": true, "reason": "Brief names 'a bathroom'." },
+        "A6": { "faithful": true, "reason": "Brief: 'Both bedrooms open off the living space'." }
+      },
+      "omissions": ["each bedroom gets a window (shape-inexpressible)"]
+    },
+    "sized-wet-room": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "Living/kitchen + bedroom + wet room + hall = exactly 4 rooms." },
+        "A2": { "faithful": true, "reason": "Brief names 'a living/kitchen area'." },
+        "A3": { "faithful": true, "reason": "Brief names 'a bedroom'." },
+        "A4": { "faithful": true, "reason": "Brief names 'the wet room'." },
+        "A5": { "faithful": true, "reason": "'a wet room of at least 5 m2' -> min 5, no max." },
+        "A6": { "faithful": true, "reason": "Brief names 'a wide hall'." },
+        "A7": {
+          "faithful": true,
+          "reason": "Brief: 'all with 1000 mm doorways off a wide hall' -- living/kitchen area doorway off hall."
+        },
+        "A8": { "faithful": true, "reason": "Brief: 'all ... off a wide hall' covers bedroom-hall adjacency." },
+        "A9": { "faithful": true, "reason": "Brief: 'all ... off a wide hall' covers wet-room-hall adjacency." }
+      },
+      "omissions": [
+        "1000 mm doorway width (shape-inexpressible)",
+        "wheelchair-accessible requirement (shape-inexpressible)",
+        "hall must be wide (shape-inexpressible)"
+      ]
+    },
+    "sized-office-mix": {
+      "assertions": {
+        "A1": { "faithful": true, "reason": "Meeting room + open work area + kitchenette + WC = exactly 4 rooms." },
+        "A2": { "faithful": true, "reason": "Brief names 'a meeting room'." },
+        "A3": { "faithful": true, "reason": "'about 20 m2' -> 20+-10% = [18,22], per band convention." },
+        "A4": { "faithful": true, "reason": "Brief names 'an open work area'." },
+        "A5": { "faithful": true, "reason": "'at least 60 m2' -> min 60, no max." },
+        "A6": { "faithful": true, "reason": "Brief names 'a kitchenette'." },
+        "A7": { "faithful": true, "reason": "Brief names 'a WC'." },
+        "A8": {
+          "faithful": true,
+          "reason": "Brief: 'every room reachable from the entrance' -- reachability requested."
+        }
+      },
+      "omissions": []
+    }
+  },
+  "summary": { "faithful": 156, "total": 157, "rate": 0.994 }
+}
