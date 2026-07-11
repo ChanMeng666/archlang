@@ -16,11 +16,15 @@ on:
       max:
         description: "How many briefs to run (caps API cost)"
         required: false
-        default: "18"
+        default: "26"
       model:
         description: "Model id (blank = provider default)"
         required: false
         default: ""
+      l1:
+        description: "Overlay the deterministic-repair tier (ΔL0→L1; no extra API calls)"
+        required: false
+        default: "true"
 
 jobs:
   live:
@@ -50,7 +54,7 @@ jobs:
         if: ${{ env.OPENAI_API_KEY != '' }}
         env:
           ARCHLANG_EVAL_MODEL: ${{ inputs.model }}
-        run: npm run eval:live -- --yes --max ${{ inputs.max }}
+        run: npm run eval:live -- --yes --max ${{ inputs.max }} ${{ inputs.l1 == 'true' && '--l1' || '' }}
 
       - name: Upload results
         if: ${{ always() && env.OPENAI_API_KEY != '' }}
