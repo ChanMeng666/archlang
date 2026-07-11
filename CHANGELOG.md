@@ -15,6 +15,22 @@ point of the round was to **fix the ruler before measuring capability**: rebuild
 brief-grounded intent assertions, measure the free deterministic-tool gains on their own ledger, and
 write down a calibrated baseline honest enough to trust.
 
+### Added — Gate G1 verdict + the L2 experiment harness (2026-07-12; still repo-internal)
+
+- **Gate G1: PASS** (`eval/g1/` — generator harness, generated intents, double-blind scores,
+  report). NL→intent-JSON per-assertion faithfulness on all 26 briefs: **154/157 (98.1%)** vs
+  93.4% per-assertion accuracy of direct `.arch` generation (one-tailed z = 2.08, p = .019;
+  valid-only sensitivity variant below resolution — recorded). The intent channel (roadmap T4:
+  `src/intent.ts`, `arch validate --intent`, `intent.schema.json`) is **cleared** for a future
+  release. The generation prompt is oracle-isolated and `test/g1.test.ts` enforces it.
+- **T3 harness: the L2 tier** (`eval/l2.ts` + `eval/l2-run.ts` + `.github/workflows/eval-l2.yml`,
+  `npm run eval:l2`). Diagnostic feedback loop (≤2 rounds, fed only compile/lint diagnostics +
+  `fix --dry-run` previews + trimmed `describe()` — oracle-isolated) against an **equal-token-budget
+  i.i.d. resampling control** (Olausson accounting, round-up favours the control), per-metric
+  best-of, mean±σ across trials, `pass@n`/`pass^n`, retrying author + per-brief error isolation.
+  Offline-tested (14 tests). **The live experiment has not been run** (cost declined) — the
+  loop-vs-resampling question remains open and no loop-gain claim is made.
+
 ### Added — judge v2: brief-grounded intent scoring
 
 - **Intent-assertion scoring core** (`eval/assertions.ts`, `JUDGE_VERSION = "2"`). `scoreSource` no

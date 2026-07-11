@@ -20,9 +20,16 @@ model loop (deep-dive H3).
   edits, ADR 0011) then `arch repair` (the geometric corrector, ADR 0006) — **no model in the loop,
   zero extra API calls.** ΔL0→L1 is the free tool dividend. Implemented in `l1.ts` (`l1Pipeline`),
   gated offline in CI by `test/fault-injection.test.ts`, and overlaid on a live run with `--l1`.
-- **L2 — a diagnostic feedback loop (planned, not built).** Roadmap Tranche 3: does feeding
-  diagnostics back to the model beat equal-budget resampling? Until that is measured, `adjacent` /
-  `reachable` stay subscore-only (the T4 hook) and no L2 code exists here.
+- **L2 — a diagnostic feedback loop (built, not yet measured).** Roadmap Tranche 3: does feeding
+  diagnostics back to the model beat **equal-token-budget i.i.d. resampling** (Olausson,
+  arXiv:2306.09896)? The harness is implemented and offline-tested — `l2.ts` (pure protocol: ≤2
+  feedback rounds fed only compile/lint diagnostics with their `fix --dry-run` previews + a trimmed
+  `describe()`, oracle-isolated; the control arm matches the loop's *measured* token spend,
+  rounding its sample count up, which favours the control) and `l2-run.ts` (guarded CLI:
+  `npm run eval:l2 -- --yes [--trials N] [--max N] [--budget …] [--concurrency N]`, or the
+  "Eval (L2 loop vs resampling)" workflow). **The live experiment has not been run** (cost was
+  declined 2026-07-12), so the loop-vs-resampling question is still open; until it is measured,
+  `adjacent`/`reachable` stay subscore-only (the T4 hook) and no net-loop-gain claim may be made.
 
 Calibrated L0 baseline (`gpt-5.5-2026-04-23`, seed `20260711`, 26 briefs, judge v2, 2026-07-11):
 **valid 25/26 (96%) · intent 13/26 (50%) · sound 4/26 (15%)**. Same run's `--l1` overlay: **intent

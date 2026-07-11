@@ -402,3 +402,39 @@ as history in `eval/live-baseline.json`'s notes.
 decisive experiment: does an L2 diagnostic feedback loop beat equal-budget resampling? Everything
 downstream (the intent CLI channel, constraint syntax, the repair-trajectory dataset) stays gated on
 what T3's number says.
+
+---
+
+## 2026-07-12 — Gate G1 (PASS) + T3 harness; the live L2 experiment deferred
+
+**Gate G1 — the intent channel's go/no-go: PASS** (`eval/g1/report.md`). A guarded,
+oracle-isolated harness (`eval/g1/generate.ts`, "Eval (G1 intent generation)" workflow) had
+gpt-5.5 write intent JSON (the `Expect` shape, lowered by `compileExpect`) from each of the 26
+briefs — 26/26 parsed, 157 assertions. Double-blind grading, with one honest process amendment:
+the human rater could not judge faithfulness cold, so rater A = three blind opus subagents
+(156/157 faithful), rater B = fable, pre-registered before reading A (154/157), agreement 98.7%
+(κ 0.50), and the human adjudicated the 2 disagreements (both ruled unfaithful). **Final:
+154/157 = 98.1%**, vs **93.4%** per-assertion accuracy of direct `.arch` generation
+(reconstructed reproducibly from the frozen calibrated-baseline scorecard by
+`eval/g1/baseline-accuracy.ts`, cross-checked row-by-row against its failure notes). Gate met:
+≥85% and one-tailed z = 2.08 (p = .019) above the primary control; recorded caveat — against the
+valid-only control variant (95.7%) the margin is below resolution at n≈160/arm. All three
+unfaithful assertions are room-count/topology derivations on under-determined briefs; the band
+conventions ("~N" → ±10% here vs the oracle's ±15%) must become normative schema documentation
+in T4. **T4 is cleared.**
+
+**T3 — harness shipped, experiment deferred.** The full L2 tier landed
+(`eval/l2.ts` pure protocol + `eval/l2-run.ts` guarded CLI + `eval-l2.yml`): diagnostic feedback
+≤2 rounds (compile/lint diagnostics + `fix --dry-run` previews + trimmed `describe()` only —
+oracle-isolated, statically tested), an **equal-token-budget i.i.d. resampling control**
+(Olausson `k = np + np·nfr` accounting in token form; the control's crossing sample is kept, so
+rounding favours the control — conservative toward the loop), per-metric best-of, mean±σ across
+trials, `pass@n`/`pass^n`, a retrying author (429/5xx/network backoff) and per-brief error
+isolation so one blip cannot sink a paid run. 14 offline tests; `eval:ci`/`results.md`
+byte-identical through the `run.ts` export refactor. **The ~440-call live run (est. $70–95 face
+value) was declined by the owner — the loop-vs-resampling question therefore REMAINS OPEN.** No
+net-loop-gain claim may be made in any doc until "Eval (L2 loop vs resampling)" is dispatched and
+scored. L3/L4/L5 stay unbuilt.
+
+**Gates.** 842 tests passing (93 files); typecheck + Biome + `eval:ci` green throughout; every
+commit ran the four-gate set.

@@ -66,7 +66,17 @@ measured on its own ledger:
   below statistical resolution at n≈160/arm. All 3 unfaithful assertions were room-count/
   topology derivations on under-determined briefs — T4's schema docs must make the band
   conventions and "assert a count only when the brief enumerates it" normative.
-  Next on the roadmap spine: T3 (L2 loop vs equal-budget resampling).
+- **T3: harness shipped, live experiment NOT run (2026-07-12).** The L2 tier is fully
+  implemented and offline-tested (`eval/l2.ts` pure protocol engine — diagnostic feedback
+  ≤2 rounds, oracle-isolated to compile/lint/`fix --dry-run`/trimmed-describe only;
+  `eval/l2-run.ts` guarded CLI with retrying author + per-brief error isolation; Olausson
+  **equal-token-budget i.i.d. resampling control** with round-up-favors-control accounting;
+  per-metric best-of, mean±σ over trials, `pass@n`/`pass^n`; `eval-l2.yml` workflow). The
+  ~440-call live run (est. $70–95) was **declined on cost** — so the decisive
+  loop-vs-resampling question **remains open**: do not claim a net model-loop gain (or its
+  absence) anywhere. To answer it later: dispatch **"Eval (L2 loop vs resampling)"** in
+  Actions (defaults = full run; smoke: `max 2, trials 1`). L3/L4/L5 stay unbuilt (gated on
+  an L2 net win).
 
 **Latest release — v1.13.0 (2026-07-11; AI-native authoring). Six tranches
 (see `CHANGELOG.md` for detail):**

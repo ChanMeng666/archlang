@@ -3,7 +3,10 @@
 **Date:** 2026-07-11 · **Status:** **T1 + T2 implemented 2026-07-11** (commits
 `60f5a87`…`83dc0cc`); **Gate G1 PASSED 2026-07-12** (`eval/g1/report.md` — faithfulness
 154/157 = 98.1% vs direct-generation 93.4%, z = 2.08 p = .019; T4 cleared, with a
-valid-only-control sensitivity caveat recorded); T3 in flight, T4–T6 remain open ·
+valid-only-control sensitivity caveat recorded); **T3 harness implemented 2026-07-12,
+live experiment deferred** (the ~440-call spend was declined — the loop-vs-resampling
+question stays open; dispatch the "Eval (L2 loop vs resampling)" workflow to answer it);
+T4–T6 remain open ·
 **Evidence base:** [`2026-07-ai-first-deep-dive.md`](./2026-07-ai-first-deep-dive.md) — every
 tranche below cites its verdicts (H1–H5) and the underlying sources. Written to be executable
 by a fresh implementation session with no other context beyond `AGENTS.md`.
@@ -116,6 +119,12 @@ Pass → Tranche 4 ships. Fail → intent assertions remain eval-internal; recor
 honestly in AGENTS.md and skip T4.
 
 ## Tranche 3 — L2: the decisive experiment (PR3)
+
+**Status: ⚙ harness implemented 2026-07-12** (`eval/l2.ts` + `eval/l2-run.ts` +
+`eval-l2.yml`, offline-tested in CI, spec below followed incl. the equal-budget control
+and oracle isolation); **the live run itself was deferred** — the user declined the
+~440-call cost, so no L2 number exists yet and the drivability question below is still
+unanswered. Run it any time via the "Eval (L2 loop vs resampling)" workflow_dispatch.
 
 **Motivation:** H3 verdict — the one artifact that can confirm, refute, or bound the
 AGENTS.md drivability narrative, and that gates T4's headline status, T6's scope, and H4's
