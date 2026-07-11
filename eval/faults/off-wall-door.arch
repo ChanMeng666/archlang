@@ -1,0 +1,12 @@
+# Fault: the (only) door declared ~400 mm below its host wall — beyond the 300 mm
+#   on-wall tolerance, so it hosts nothing.
+# Raises: W_DOOR_OFF_WALL  (the mis-coordinate also leaves the room unreachable until fixed).
+# Heals with: arch fix — offWallFix rewrites `at (x,y)` into the `on <wall> at <p>%`
+#   attachment form (ADR 0011: a syntactic span edit), which pins the door onto the wall.
+plan "Off-wall Door" {
+  units mm
+  grid 50
+  wall id=w_ext exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }
+  room id=r at (0,0) size 5000x4000 label "Room"
+  door id=d_off at (2500,4400) width 900 wall exterior hinge left swing in
+}

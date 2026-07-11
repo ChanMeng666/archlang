@@ -1,0 +1,13 @@
+# Fault: a chest parked in the clear approach (landing) of the entrance door.
+# Raises: W_DOORWAY_BLOCKED.
+# Heals with: arch repair — the geometric corrector clears furniture out of the door's
+#   landing (ADR 0006), leaving the approach walkable.
+plan "Blocked Doorway" {
+  units mm
+  grid 50
+  wall exterior thickness 200 { (0,0) (5000,0) (5000,5000) (0,5000) close }
+  room id=r at (0,0) size 5000x5000 label "R"
+  door at (1000,5000) width 900 wall exterior hinge left swing in
+  window at (3000,0) width 1200 wall exterior
+  furniture chest at (700,4400) size 800x500
+}

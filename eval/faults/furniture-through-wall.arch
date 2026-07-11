@@ -1,0 +1,13 @@
+# Fault: a sofa straddling the partition between rooms A and B (well past the 30 mm slack).
+# Raises: W_FURNITURE_WALL_COLLISION.
+# Heals with: arch repair — the geometric corrector pushes the piece off the wall into a
+#   clear position in one room (ADR 0006: a source-to-source move, not a fix span edit).
+plan "Furniture Through Wall" {
+  units mm
+  grid 50
+  wall exterior  thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+  wall partition thickness 100 { (4000,0) (4000,4000) }
+  room id=a at (0,0)    size 4000x4000 label "A"
+  room id=b at (4000,0) size 4000x4000 label "B"
+  furniture sofa at (3200,1000) size 1000x900
+}

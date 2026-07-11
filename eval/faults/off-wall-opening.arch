@@ -1,0 +1,12 @@
+# Fault: an opening declared ~400 mm outside (right of) its host wall.
+# Raises: W_OPENING_OFF_WALL  (the door entrance keeps the room otherwise sound).
+# Heals with: arch fix — offWallFix rewrites the opening onto its nearest wall via the
+#   `on <wall> at <p>%` attachment form (ADR 0011).
+plan "Off-wall Opening" {
+  units mm
+  grid 50
+  wall id=w_ext exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }
+  room id=r at (0,0) size 5000x4000 label "Room"
+  door id=d_main at (1000,4000) width 900 wall exterior hinge left swing in
+  opening id=op_off at (5400,2000) width 1000 wall exterior
+}
