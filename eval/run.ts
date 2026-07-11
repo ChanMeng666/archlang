@@ -45,6 +45,12 @@ import { l1Pipeline } from "./l1.js";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
 
+/** The judge/concept-table version tag stamped into every result header
+ *  (`judge v2 · synonyms v1`). Exported so the L2 harness (`eval/l2-run.ts`) can stamp
+ *  the same tag without importing the private oracle module directly — keeping its own
+ *  source free of any reference to that table (oracle isolation is source-checked). */
+export const VERSION_TAG = `judge v${JUDGE_VERSION} · synonyms v${SYNONYMS_VERSION}`;
+
 /**
  * A brief's semantic expectations — the judge-v2 shape. Every field is BRIEF-grounded
  * (derived from the prompt's words, not the golden's labels/geometry): concepts come
@@ -305,14 +311,16 @@ export function resolveProvider(): { provider: "anthropic" | "openai"; model: st
     : { provider: "anthropic", model: process.env.ARCHLANG_EVAL_MODEL ?? "claude-sonnet-5" };
 }
 
-/** The one system prompt both providers get: the spec + a reply-format instruction. */
-function systemPrompt(): string {
+/** The one system prompt both providers get: the spec + a reply-format instruction.
+ *  Exported so the L2 harness (`eval/l2-run.ts`) drives the same system prompt. */
+export function systemPrompt(): string {
   const spec = readFileSync(resolve(ROOT, "spec.llm.md"), "utf8");
   return `${spec}\n\nYou write ArchLang. Reply with ONLY one \`\`\`arch code block — no prose.`;
 }
 
-/** Pull the `.arch` source out of a model reply (fenced block if present, else raw). */
-function extractArch(text: string): string {
+/** Pull the `.arch` source out of a model reply (fenced block if present, else raw).
+ *  Exported so the L2 harness parses model replies identically to the L0 path. */
+export function extractArch(text: string): string {
   const m = text.match(/```(?:arch)?\n([\s\S]*?)```/);
   return (m ? m[1] : text).trim();
 }
@@ -602,7 +610,7 @@ const PRICES_USD_PER_MTOK: Record<string, { input: number; output: number }> = {
 /** Cumulative live-run usage tracker + `--budget` circuit breaker. Records per-call token
  *  usage (cache counts at face value) and, when the model's price is known, an approximate
  *  running cost; also captures OpenAI's first non-null `system_fingerprint`. */
-class LiveLedger {
+export class LiveLedger {
   calls = 0;
   inputTokens = 0;
   outputTokens = 0;
