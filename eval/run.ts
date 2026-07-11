@@ -17,9 +17,12 @@
  * Because live runs cost money, `--live` is guarded: it prints what it *would* send
  * (provider, model, brief count) and exits `3` **without calling any API** unless you
  * pass `--yes` (or set `ARCHLANG_EVAL_CONFIRM=1`). `--max <n>` caps how many briefs
- * run. Live output is written to `eval/results.live.md` (git-ignored, ephemeral — the
- * numbers move with the model and the day) and, when `eval/live-baseline.json` is
- * present, carries a "Delta vs baseline" section. The offline path is unchanged.
+ * run; `--budget <n>tok|usd` is a cumulative-usage circuit breaker; `--l1` overlays the
+ * deterministic-repair tier (ΔL0→L1, zero extra API calls) — all three are live-only.
+ * Live output is written to `eval/results.live.md` (git-ignored, ephemeral — the numbers
+ * move with the model and the day) and, when `eval/live-baseline.json` is present, carries
+ * a "Delta vs baseline" section (always L0, never mixed with L1). The offline path is
+ * unchanged.
  *
  * Run: `npm run eval` / `npm run eval:ci` (offline) · `npm run eval:live -- --yes`.
  */
@@ -37,6 +40,7 @@ import {
   projectSubscores,
 } from "./assertions.js";
 import { SYNONYMS_VERSION } from "./synonyms.js";
+import { l1Pipeline } from "./l1.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
@@ -161,6 +165,76 @@ export function scoreSource(entry: CorpusEntry, source: string): Score {
     assertions,
     judgeVersion: JUDGE_VERSION,
   };
+}
+
+/** A row's headline verdict, ordered fail < warns < pass (see {@link STATUS_RANK}). */
+type RowStatus = "pass" | "warns" | "fail";
+
+/** Classify a score into its table verdict. `semanticPass` with no lint = a clean pass;
+ *  `semanticPass` with advisory lint = warns; anything else = fail. */
+function statusOf(r: Score): RowStatus {
+  if (!r.semanticPass) return "fail";
+  return r.lintWarnings === 0 ? "pass" : "warns";
+}
+
+/** The exact status cell strings (kept identical to the historical inline literals). */
+const STATUS_LABEL: Record<RowStatus, string> = { pass: "✅ pass", warns: "⚠️ warns", fail: "❌ fail" };
+
+/** Verdict ordering so an L0→L1 transition can be called an improvement or a regression. */
+const STATUS_RANK: Record<RowStatus, number> = { fail: 0, warns: 1, pass: 2 };
+
+/** One brief's L1 overlay: the same authored source re-scored after the deterministic
+ *  {@link l1Pipeline} healers (`arch fix` + `arch repair`). `raw === undefined` means the
+ *  brief produced no source (an API/parse error) — there is nothing to heal, so L1 mirrors
+ *  L0 exactly (the deterministic tools cannot rescue a plan the model never emitted). */
+export interface L1Row {
+  id: string;
+  /** The L0 verdict, so a transition can be shown/counted. */
+  l0Status: RowStatus;
+  /** The L1 score (produced by {@link scoreSource} verbatim — same judge as L0). */
+  l1: Score;
+  /** Machine-applicable fix span-edits committed by the pipeline. */
+  fixesApplied: number;
+  /** Furniture pieces `repair` moved. */
+  repairChanges: number;
+}
+
+/** Build one brief's L1 overlay from its authored source. Pure and deterministic (a fixed
+ *  `(entry, l0, raw)` always yields a deeply-equal row); exported for unit testing. */
+export function l1Row(entry: CorpusEntry, l0: Score, raw: string | undefined): L1Row {
+  const l0Status = statusOf(l0);
+  if (raw === undefined) return { id: entry.id, l0Status, l1: l0, fixesApplied: 0, repairChanges: 0 };
+  const healed = l1Pipeline(raw);
+  return {
+    id: entry.id,
+    l0Status,
+    l1: scoreSource(entry, healed.source),
+    fixesApplied: healed.fixesApplied,
+    repairChanges: healed.repairChanges,
+  };
+}
+
+/** The L1 overlay for every NON-skipped brief (skipped briefs have no source to heal and
+ *  are excluded from both tiers). `rawById` carries each brief's authored L0 source. */
+function computeL1Overlay(entries: CorpusEntry[], l0: Score[], rawById: Map<string, string>): L1Row[] {
+  const byId = new Map(entries.map((e) => [e.id, e]));
+  return l0.filter((r) => !r.skipped).map((r) => l1Row(byId.get(r.id) as CorpusEntry, r, rawById.get(r.id)));
+}
+
+/** Summarise the L1 tier over the same non-skipped denominator as its L0 summary. */
+function summarizeL1(rows: L1Row[]): Summary {
+  return {
+    total: rows.length,
+    valid: rows.filter((x) => x.l1.valid).length,
+    semanticPass: rows.filter((x) => x.l1.semanticPass).length,
+    sound: rows.filter((x) => x.l1.valid && x.l1.lintWarnings === 0).length,
+  };
+}
+
+/** The L1 overlay bundle threaded into {@link renderResults}. */
+interface L1Overlay {
+  rows: L1Row[];
+  summary: Summary;
 }
 
 /** Score every entry; `getSource` decides where the `.arch` comes from (golden or model).
@@ -338,8 +412,43 @@ function makeAuthor(
   return (prompt: string) => author(prompt, system, model, ledger);
 }
 
-/** Render the scorecard as Markdown. */
-function renderResults(results: Score[], summary: Summary, mode: string): string {
+/** The L1 table cell for a brief: healers applied + any L0→L1 verdict transition. */
+function l1CellText(row: L1Row | undefined): string {
+  if (!row) return "—";
+  const heal = `f${row.fixesApplied} r${row.repairChanges}`;
+  const to = statusOf(row.l1);
+  return row.l0Status === to ? `${heal} · =` : `${heal} · ${row.l0Status}→${to}`;
+}
+
+/** The "After deterministic repair (L1)" summary block: L1 rates + explicit ΔL0→L1. */
+function renderL1Block(l0: Summary, l1: L1Overlay): string[] {
+  const pct = (n: number): string => `${Math.round((n / l1.summary.total) * 100)}%`;
+  const line = (name: string, a: number, b: number): string => {
+    const d = b - a;
+    return `- **${name}:** ${b}/${l1.summary.total} (${pct(b)}) — ΔL0→L1 ${d > 0 ? `+${d}` : `${d}`}`;
+  };
+  const healed = l1.rows.filter((x) => STATUS_RANK[statusOf(x.l1)] > STATUS_RANK[x.l0Status]).length;
+  const regressed = l1.rows.filter((x) => STATUS_RANK[statusOf(x.l1)] < STATUS_RANK[x.l0Status]).length;
+  const totalFix = l1.rows.reduce((n, x) => n + x.fixesApplied, 0);
+  const totalRepair = l1.rows.reduce((n, x) => n + x.repairChanges, 0);
+  return [
+    "### After deterministic repair (L1)",
+    "",
+    "The same authored briefs re-scored after `arch fix` + `arch repair` — deterministic, **zero extra API calls**. The delta is the free tool dividend (ΔL0→L1).",
+    "",
+    line("Valid (compiles)", l0.valid, l1.summary.valid),
+    line("Intent match (semantic)", l0.semanticPass, l1.summary.semanticPass),
+    line("Sound (lint-clean)", l0.sound, l1.summary.sound),
+    "",
+    `${healed} brief(s) healed (status improved)${regressed ? `, ${regressed} regressed` : ""}; ${totalFix} fix edit(s) + ${totalRepair} repair move(s) applied.`,
+    "",
+  ];
+}
+
+/** Render the scorecard as Markdown. The optional `l1` overlay (live `--l1` only) adds an
+ *  "After deterministic repair (L1)" block and a per-row `L1` column; without it the output
+ *  is byte-identical to the plain scorecard. */
+function renderResults(results: Score[], summary: Summary, mode: string, l1?: L1Overlay): string {
   const pct = (n: number): string => `${Math.round((n / summary.total) * 100)}%`;
   // Compact per-dimension subscores, e.g. `R1 L0.67 A– Adj1` (– = dimension unasserted).
   const sub = (n: number | null | undefined): string =>
@@ -348,16 +457,38 @@ function renderResults(results: Score[], summary: Summary, mode: string): string
     r.subscores
       ? `R${sub(r.subscores.rooms)} L${sub(r.subscores.labels)} A${sub(r.subscores.area)} Adj${sub(r.subscores.adjacency)}`
       : "—";
+  const l1ById = l1 ? new Map(l1.rows.map((x) => [x.id, x])) : undefined;
   const rows = results.map((r) => {
-    if (r.skipped) return `| \`${r.id}\` | ⏭️ skipped | — | — | — | ${r.failures.join("; ") || "budget"} |`;
-    const status = r.semanticPass ? (r.lintWarnings === 0 ? "✅ pass" : "⚠️ warns") : "❌ fail";
+    if (r.skipped) {
+      const cells = [
+        `\`${r.id}\``,
+        "⏭️ skipped",
+        "—",
+        "—",
+        "—",
+        ...(l1ById ? ["—"] : []),
+        r.failures.join("; ") || "budget",
+      ];
+      return `| ${cells.join(" | ")} |`;
+    }
+    const status = STATUS_LABEL[statusOf(r)];
     const notes = r.failures.length
       ? r.failures.join("; ")
       : r.lintWarnings
         ? `${r.lintWarnings} lint warning(s)`
         : "—";
-    return `| \`${r.id}\` | ${status} | ${r.valid ? "yes" : "no"} | ${r.lintWarnings} | ${subCell(r)} | ${notes} |`;
+    const cells = [
+      `\`${r.id}\``,
+      status,
+      r.valid ? "yes" : "no",
+      `${r.lintWarnings}`,
+      subCell(r),
+      ...(l1ById ? [l1CellText(l1ById.get(r.id))] : []),
+      notes,
+    ];
+    return `| ${cells.join(" | ")} |`;
   });
+  const ncol = 6 + (l1 ? 1 : 0);
   return [
     "# ArchLang authorability scorecard",
     "",
@@ -373,10 +504,11 @@ function renderResults(results: Score[], summary: Summary, mode: string): string
     `- **Intent match (semantic):** ${summary.semanticPass}/${summary.total} (${pct(summary.semanticPass)})`,
     `- **Sound (lint-clean):** ${summary.sound}/${summary.total} (${pct(summary.sound)})`,
     "",
+    ...(l1 ? renderL1Block(summary, l1) : []),
     "Subscores per row: **R**ooms · **L**abels · **A**rea · **Adj**acency (– = unasserted; adjacency/reachability score but never gate).",
     "",
-    "| Prompt | Result | Valid | Lint | Subscores | Notes |",
-    "| --- | --- | --- | --- | --- | --- |",
+    `| Prompt | Result | Valid | Lint | Subscores | ${l1 ? "L1 heal | " : ""}Notes |`,
+    `| ${Array(ncol).fill("---").join(" | ")} |`,
     ...rows,
     "",
   ].join("\n");
@@ -570,6 +702,13 @@ async function main(): Promise<void> {
 
   // OFFLINE — the CI regression guard. Behaviour and output kept byte-identical.
   if (!live) {
+    // `--l1` heals a model's authored source; offline scores committed goldens, so there
+    // is nothing to heal — reject the misuse (exit 3, consistent with parseMax) rather
+    // than silently ignore it.
+    if (argv.includes("--l1")) {
+      process.stderr.write("✗ --l1 requires --live (there is no model source to heal offline)\n");
+      process.exit(3);
+    }
     const entries = loadCorpus();
     const { results, summary } = await evaluate(entries, (e: CorpusEntry) => readGolden(e));
     const md = renderResults(results, summary, "offline");
@@ -587,6 +726,7 @@ async function main(): Promise<void> {
   const { provider, model } = resolveProvider();
   const max = parseMax(argv);
   const budget = parseBudget(argv);
+  const l1Mode = argv.includes("--l1");
   const all = loadCorpus();
   const entries = max !== undefined ? all.slice(0, max) : all;
   const confirmed = argv.includes("--yes") || process.env.ARCHLANG_EVAL_CONFIRM === "1";
@@ -599,6 +739,7 @@ async function main(): Promise<void> {
         `  model    : ${model}`,
         `  briefs   : ${entries.length}${max !== undefined ? ` (capped by --max ${max})` : " (all)"}`,
         `  budget   : ${budget ? `${budget.amount}${budget.kind}` : "none"}`,
+        `  L1       : ${l1Mode ? "on (deterministic fix+repair overlay, zero extra calls)" : "off"}`,
         "",
         "Re-run with --yes (or set ARCHLANG_EVAL_CONFIRM=1) to authorise the calls.",
         "",
@@ -615,17 +756,36 @@ async function main(): Promise<void> {
   }
 
   const author = makeAuthor(provider, model, ledger);
+  // With --l1 we keep each brief's authored L0 source so it can be healed and re-scored
+  // afterwards (no extra API calls). Off the L1 path this is the original thin wrapper.
+  const rawById = new Map<string, string>();
+  const getSource = l1Mode
+    ? async (e: CorpusEntry): Promise<string> => {
+        const src = await author(e.prompt);
+        rawById.set(e.id, src);
+        return src;
+      }
+    : (e: CorpusEntry) => author(e.prompt);
   // The breaker is checked BEFORE each brief: once cumulative usage reaches the limit,
   // every remaining brief is skipped (and excluded from the rates). No budget → no gate.
-  const { results, summary } = await evaluate(entries, (e: CorpusEntry) => author(e.prompt), {
+  const { results, summary } = await evaluate(entries, getSource, {
     beforeEach: budget ? () => ledger.over() : undefined,
   });
+
+  // L1 overlay: re-score each authored plan after the deterministic healers (same judge,
+  // same non-skipped denominator). Pure post-processing — no further API calls.
+  let l1: L1Overlay | undefined;
+  if (l1Mode) {
+    const rows = computeL1Overlay(entries, results, rawById);
+    l1 = { rows, summary: summarizeL1(rows) };
+  }
 
   // Live header records the pinned sampling settings (and OpenAI's backend fingerprint,
   // once seen) so a run is reproducible-by-record; judge version is stamped by renderResults.
   const pinned = provider === "anthropic" ? "temp 0" : `seed ${OPENAI_SEED}`;
   const fp = ledger.systemFingerprint ? ` · fp ${ledger.systemFingerprint}` : "";
-  let md = renderResults(results, summary, `live (${provider} · ${model} · ${pinned}${fp})`);
+  const l1Tag = l1Mode ? " · +L1" : "";
+  let md = renderResults(results, summary, `live (${provider} · ${model} · ${pinned}${fp}${l1Tag})`, l1);
   const baseline = readBaseline();
   if (baseline) md += renderDelta(baseline, summary);
   md = LIVE_HEADER + md;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RoomSummary } from "../src/index.js";
-import { evaluate, loadCorpus, parseBudget, readGolden, scoreSource } from "../eval/run.js";
+import { type CorpusEntry, evaluate, l1Row, loadCorpus, parseBudget, readGolden, scoreSource } from "../eval/run.js";
 import { JUDGE_VERSION } from "../eval/assertions.js";
 import { SYNONYMS_VERSION, roomsMatching } from "../eval/synonyms.js";
 
@@ -148,5 +148,61 @@ describe("eval — committed goldens still author correctly", () => {
     expect(s.physicalWarnings).toBeGreaterThan(0);
     expect(s.semanticPass).toBe(false);
     expect(s.failures.some((f) => f.startsWith("physical:"))).toBe(true);
+  });
+});
+
+// The L1 overlay (live `--l1`): re-score an authored plan after the deterministic healers.
+// These exercise the pure overlay helper without any API calls (fixed inline sources).
+//
+// NOTE the sources here are unique inline strings, not the shared `eval/faults/` fixtures:
+// `repair()` is not idempotent across calls on the SAME source string within one process
+// (it heals cold, then reads a warmed compile cache on repeat), so a fixture another test
+// may have already healed would make `repairChanges` order-dependent. A bespoke string is a
+// cold cache key, keeping these assertions stable regardless of suite execution order. (The
+// report itself stays deterministic across *fresh* runs — each brief's source is distinct.)
+describe("L1 deterministic-dividend overlay", () => {
+  const twoRooms: CorpusEntry = { id: "ft", prompt: "", golden: "", expect: { rooms: 2 } };
+
+  it("l1Row heals a repair-fixable plan: an L0 physical failure becomes an L1 pass", () => {
+    // A sofa straddling the partition — a physical collision `repair` clears by moving it.
+    const src = `plan "L1 Overlay Heal Fixture" {
+      units mm
+      grid 50
+      wall exterior  thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+      wall partition thickness 100 { (4000,0) (4000,4000) }
+      room id=a at (0,0)    size 4000x4000 label "Alpha"
+      room id=b at (4000,0) size 4000x4000 label "Beta"
+      furniture sofa at (3300,1200) size 1000x900
+    }`;
+    const l0 = scoreSource(twoRooms, src);
+    expect(l0.valid).toBe(true);
+    expect(l0.physicalWarnings).toBeGreaterThan(0);
+    expect(l0.semanticPass).toBe(false); // physical collision fails L0
+
+    const row = l1Row(twoRooms, l0, src);
+    expect(row.repairChanges).toBeGreaterThan(0); // repair moved the sofa
+    expect(row.l1.physicalWarnings).toBe(0);
+    expect(row.l1.semanticPass).toBe(true); // healed → intent + physical satisfied (the dividend)
+    expect(row.l0Status).toBe("fail");
+  });
+
+  it("l1Row mirrors L0 when the brief produced no source (raw undefined) — nothing to heal", () => {
+    const entry: CorpusEntry = { id: "x", prompt: "", golden: "", expect: { rooms: 5 } };
+    const l0 = scoreSource(entry, `plan "P" { units mm room at (0,0) size 4000x3000 label "Only" }`);
+    const row = l1Row(entry, l0, undefined);
+    expect(row.l1).toBe(l0); // same score object, untouched
+    expect(row.fixesApplied).toBe(0);
+    expect(row.repairChanges).toBe(0);
+  });
+
+  it("l1Row is deterministic on a clean plan (no-op heal → deeply-equal rows)", () => {
+    // A lint-clean plan is an l1Pipeline fixpoint, so repeated rows are byte-stable even
+    // through the shared compile cache (repair returns 0 both cold and warm).
+    const clean = `plan "L1 Overlay Clean Fixture" { units mm room at (0,0) size 4000x3000 label "Alpha" room at (4000,0) size 4000x3000 label "Beta" }`;
+    const l0 = scoreSource(twoRooms, clean);
+    const a = l1Row(twoRooms, l0, clean);
+    expect(a.fixesApplied).toBe(0);
+    expect(a.repairChanges).toBe(0);
+    expect(l1Row(twoRooms, l0, clean)).toEqual(a);
   });
 });
