@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RoomSummary } from "../src/index.js";
-import { evaluate, loadCorpus, readGolden, scoreSource } from "../eval/run.js";
+import { evaluate, loadCorpus, parseBudget, readGolden, scoreSource } from "../eval/run.js";
 import { JUDGE_VERSION } from "../eval/assertions.js";
 import { SYNONYMS_VERSION, roomsMatching } from "../eval/synonyms.js";
 
@@ -116,6 +116,15 @@ describe("eval — committed goldens still author correctly", () => {
     expect(s.failures.some((f) => f.includes('"bathroom"'))).toBe(false);
     expect(s.failures.some((f) => f.includes('"wc"'))).toBe(true);
     expect(s.semanticPass).toBe(false);
+  });
+
+  // Pure parse rule for the live `--budget` circuit breaker (the invalid path exits 3,
+  // so only the valid/absent branches are unit-checkable here).
+  it("parseBudget reads a required tok/usd suffix, else returns undefined", () => {
+    expect(parseBudget([])).toBeUndefined();
+    expect(parseBudget(["--live"])).toBeUndefined();
+    expect(parseBudget(["--budget", "500000tok"])).toEqual({ kind: "tok", amount: 500000 });
+    expect(parseBudget(["--budget", "2.50usd"])).toEqual({ kind: "usd", amount: 2.5 });
   });
 
   it("no golden contains a physical-correctness violation", async () => {

@@ -142,7 +142,10 @@ function conceptsAdjacent(a: string, b: string, summary: SceneSummary): boolean 
 
 /** Check one predicate that does NOT participate in the room assignment pool.
  *  (`room-exists`/`room-area` are handled in {@link checkRoomExists}/{@link checkRoomArea}.) */
-function checkOne(p: Exclude<Predicate, { kind: "room-exists" | "room-area" }>, summary: SceneSummary): AssertionResult {
+function checkOne(
+  p: Exclude<Predicate, { kind: "room-exists" | "room-area" }>,
+  summary: SceneSummary,
+): AssertionResult {
   switch (p.kind) {
     case "room-count": {
       // Policy B (approved rubric): exact, OR one surplus room attributable to
