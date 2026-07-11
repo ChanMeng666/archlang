@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **`repair()` is pure again across repeated calls.** It mutated the shared parse-stage
+  memo's AST in place (moving furniture `at` nodes), so a second `repair()` of the
+  byte-identical source saw already-moved pieces and reported zero changes — same input,
+  history-dependent output, violating ADR 0006's determinism promise. `repair` now works
+  on a private deep clone of the parsed plan; `compile()` output was never affected
+  (regression-tested in `test/repair.test.ts`). Found by the new fault-injection L1 gate.
+
 ## [1.13.0] - 2026-07-11
 
 AI-native authoring release: make ArchLang **easier to write correctly the first time**

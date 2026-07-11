@@ -417,10 +417,16 @@ function firstNewPinch(before: CirculationModel | null, after: CirculationModel 
  * reported. Anything left unfixable goes in `unresolved`.
  */
 export function repair(source: string): RepairResult {
-  const { plan, diagnostics } = parse(source);
-  if (!plan || diagnostics.some((d) => d.severity === "error")) {
+  const parsed = parse(source);
+  if (!parsed.plan || parsed.diagnostics.some((d) => d.severity === "error")) {
     return { source, changes: [], unresolved: [], changed: false };
   }
+  // The parse stage memo shares its PlanNode across callers on the contract that it is
+  // never mutated downstream (see parser.ts). repair rewrites furniture `at` nodes in
+  // place before printing, so it must work on a private deep clone — without this, a
+  // second repair() of the same source read the already-moved cached AST and reported
+  // zero changes (same input, history-dependent output: an ADR 0006 violation).
+  const plan = structuredClone(parsed.plan);
   const { ir } = resolvePlan(source);
   const walls = ir?.walls ?? [];
   const doors = (ir?.elements ?? []).filter((e): e is RDoor => e.kind === "door");

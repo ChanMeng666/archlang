@@ -126,4 +126,16 @@ describe("arch repair", () => {
     const r = repair(split(`furniture wc against wall partition side left in a size 400x700`));
     expect(r.changed).toBe(false);
   });
+
+  it("is pure across repeated calls on the same source (parse memo untouched)", () => {
+    // Regression: repair once mutated the shared parse-cache AST in place, so a second
+    // repair() of the byte-identical source saw already-moved furniture and reported
+    // zero changes — same input, history-dependent output (ADR 0006 violation).
+    const src = split(`furniture sofa at (3200,1000) size 1000x900`);
+    const r1 = repair(src);
+    const r2 = repair(src);
+    expect(r1.changes.length).toBeGreaterThan(0);
+    expect(r2.changes).toEqual(r1.changes);
+    expect(r2.source).toBe(r1.source);
+  });
 });
