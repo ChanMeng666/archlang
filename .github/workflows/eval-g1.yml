@@ -1,0 +1,60 @@
+# Gate G1 — intent generation, run on demand only.
+#
+# This is manual (workflow_dispatch): it calls a paid model API, once per brief, to have
+# a strong model write intent JSON from each NL brief. It never runs on push/PR. The
+# generated intents are the input to G1's downstream double-blind per-assertion grading.
+#
+# REQUIRED SECRET: OPENAI_API_KEY (Settings → Secrets and variables → Actions). Without it
+# the generation step is skipped, not failed, so the run stays green. Override the model
+# with the `model` input; `max` caps how many briefs run (and the API cost).
+name: Eval (G1 intent generation)
+
+on:
+  workflow_dispatch:
+    inputs:
+      max:
+        description: "How many briefs to run (caps API cost)"
+        required: false
+        default: "26"
+      model:
+        description: "Model id (blank = provider default)"
+        required: false
+        default: ""
+
+jobs:
+  generate:
+    name: Generate intents
+    runs-on: ubuntu-latest
+    env:
+      # Mapped to a job-level env so the guards below can test presence without
+      # referencing the secret directly in an `if:` expression.
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Warn when the API key secret is missing
+        if: ${{ env.OPENAI_API_KEY == '' }}
+        run: echo "::warning::OPENAI_API_KEY is not set — skipping G1 intent generation. Add it under Settings → Secrets and variables → Actions."
+
+      - name: Generate intents
+        if: ${{ env.OPENAI_API_KEY != '' }}
+        env:
+          ARCHLANG_EVAL_MODEL: ${{ inputs.model }}
+        run: npm run eval:g1 -- --yes --max ${{ inputs.max }}
+
+      - name: Upload intents
+        if: ${{ always() && env.OPENAI_API_KEY != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: g1-intents
+          path: eval/g1/intents.json
+          if-no-files-found: ignore
