@@ -25,6 +25,10 @@ on:
         description: "Overlay the deterministic-repair tier (ΔL0→L1; no extra API calls)"
         required: false
         default: "true"
+      budget:
+        description: "Cumulative-usage circuit breaker, e.g. 10usd or 500000tok (blank = none)"
+        required: false
+        default: "10usd"
 
 jobs:
   live:
@@ -54,7 +58,7 @@ jobs:
         if: ${{ env.OPENAI_API_KEY != '' }}
         env:
           ARCHLANG_EVAL_MODEL: ${{ inputs.model }}
-        run: npm run eval:live -- --yes --max ${{ inputs.max }} ${{ inputs.l1 == 'true' && '--l1' || '' }}
+        run: npm run eval:live -- --yes --max ${{ inputs.max }} ${{ inputs.l1 == 'true' && '--l1' || '' }} ${{ inputs.budget != '' && format('--budget {0}', inputs.budget) || '' }}
 
       - name: Upload results
         if: ${{ always() && env.OPENAI_API_KEY != '' }}
