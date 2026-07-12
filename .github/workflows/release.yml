@@ -1,0 +1,142 @@
+# Release (npm + MCP registry) via trusted publishing (OIDC)
+#
+# WHAT THIS DOES
+#   On a version tag (v*) — or a manual dispatch — this publishes, in order:
+#     1. the core package  @chanmeng666/archlang       (repo root)   → npm, with provenance
+#     2. the MCP shim      @chanmeng666/archlang-mcp    (packages/mcp) → npm, with provenance
+#     3. the MCP server manifest (packages/mcp/server.json) → the official MCP registry
+#   Each step is idempotent: it reads the version from the package's own package.json and
+#   skips the publish when that exact version already exists on the registry, so re-running
+#   a partially-failed release (or dispatching after a fix) is safe.
+#
+# TRUSTED PUBLISHING — NO NPM TOKEN EXISTS ANYWHERE
+#   Publishing authenticates via GitHub OIDC (`permissions: id-token: write`), not a stored
+#   secret. There is deliberately NO npm automation token in repo secrets, org secrets, or
+#   .npmrc. This works only because each package is registered ONCE, by hand, as a trusted
+#   publisher on npmjs.com:
+#     npmjs.com → each package → Settings → Trusted Publisher → GitHub Actions, with
+#       Owner/Repo = ChanMeng666/archlang  and  Workflow filename = release.yml
+#   Both @chanmeng666/archlang AND @chanmeng666/archlang-mcp must have that one-time
+#   registration pointing at THIS file. Without it, `npm publish` here fails with an auth
+#   error — that is the expected signal to (re)do the npmjs registration, not to add a token.
+#
+#   The MCP registry publish (step 3) also uses GitHub OIDC (`mcp-publisher login
+#   github-oidc`) — no secret. The registry validates server.json against the just-published
+#   npm package (mcpName ↔ name, case-sensitive io.github.ChanMeng666/… owner, ≤100-char
+#   description). NOTE: the MCP registry is in public preview and may reset data / change
+#   behaviour; this step is kept strict (fails loudly) so a regression surfaces here.
+#
+# House style mirrors ci.yml / deploy.yml (actions/checkout@v5, actions/setup-node@v5).
+
+name: Release (npm + MCP registry via OIDC)
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  id-token: write # OIDC token exchange for npm trusted publishing + mcp-publisher
+  contents: read
+
+jobs:
+  publish:
+    name: Publish (npm + MCP registry)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org' # required for OIDC token exchange
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci # with the bundled npm, like ci.yml
+
+      # Trusted publishing needs npm >= 11.5.1. Pin to 11.x on purpose, NOT npm@latest:
+      # npm 12 defaults allowScripts off, which would block esbuild's postinstall — and we
+      # only upgrade AFTER `npm ci` above has already run its install scripts.
+      - name: Pin npm to 11.x (trusted-publishing minimum)
+        run: |
+          npm install -g npm@^11.5.1
+          npm --version
+
+      # Idempotency: resolve each package's declared version and check whether it is already
+      # on the registry. `npm view pkg@ver version` prints the version if it exists, nothing
+      # if that version is absent, and errors if the package name is unknown (|| true).
+      - name: Resolve versions and decide what to publish
+        id: check
+        run: |
+          core_version=$(node -p "require('./package.json').version")
+          mcp_version=$(node -p "require('./packages/mcp/package.json').version")
+          echo "core_version=$core_version" >> "$GITHUB_OUTPUT"
+          echo "mcp_version=$mcp_version" >> "$GITHUB_OUTPUT"
+
+          core_on_registry=$(npm view "@chanmeng666/archlang@$core_version" version 2>/dev/null || true)
+          mcp_on_registry=$(npm view "@chanmeng666/archlang-mcp@$mcp_version" version 2>/dev/null || true)
+
+          if [ "$core_on_registry" = "$core_version" ]; then
+            echo "core_exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::@chanmeng666/archlang@$core_version already on npm — skipping core publish."
+          else
+            echo "core_exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Will publish @chanmeng666/archlang@$core_version to npm."
+          fi
+
+          if [ "$mcp_on_registry" = "$mcp_version" ]; then
+            echo "mcp_exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::@chanmeng666/archlang-mcp@$mcp_version already on npm — skipping mcp npm publish."
+          else
+            echo "mcp_exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Will publish @chanmeng666/archlang-mcp@$mcp_version to npm."
+          fi
+
+          # The MCP-registry state is checked INDEPENDENTLY of npm: if a previous run
+          # published to npm but died before the registry sync, `mcp_exists` is true on the
+          # re-run and must not also skip the sync. The search API is best-effort (the
+          # registry is in preview): if the probe fails or the shape changes, we attempt the
+          # sync and let `mcp-publisher publish` be the arbiter (a duplicate fails loudly).
+          reg_json=$(curl -fsSL "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.ChanMeng666/archlang-mcp" || echo "")
+          if echo "$reg_json" | grep -q "\"version\": *\"$mcp_version\""; then
+            echo "registry_synced=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::MCP registry already has $mcp_version — skipping registry sync."
+          else
+            echo "registry_synced=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Will sync io.github.ChanMeng666/archlang-mcp@$mcp_version to the MCP registry."
+          fi
+
+      # prepublishOnly (build + full test suite) is the release gate for the core.
+      - name: Publish core to npm (@chanmeng666/archlang)
+        if: ${{ success() && steps.check.outputs.core_exists != 'true' }}
+        run: npm publish --provenance --access public
+
+      # Runs only after the core step. prepack builds the shim (core stays external — the
+      # shim never re-bundles it, so it does not need the core's dist/ to be freshly built).
+      - name: Publish MCP shim to npm (@chanmeng666/archlang-mcp)
+        if: ${{ success() && steps.check.outputs.mcp_exists != 'true' }}
+        run: npm publish -w packages/mcp --provenance --access public
+
+      # MCP registry sync — whenever the registry lags server.json's version (independent of
+      # whether npm published this run: by this point npm has the version either way, and the
+      # registry validates against npm). Official install/auth flow from
+      # https://modelcontextprotocol.io/registry/github-actions (GitHub OIDC variant).
+      # server.json lives in packages/mcp, so run from there.
+      - name: Install mcp-publisher CLI
+        if: ${{ success() && steps.check.outputs.registry_synced != 'true' }}
+        working-directory: packages/mcp
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          test -x ./mcp-publisher && echo "mcp-publisher installed"
+
+      - name: Authenticate to MCP Registry (GitHub OIDC)
+        if: ${{ success() && steps.check.outputs.registry_synced != 'true' }}
+        working-directory: packages/mcp
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server to MCP Registry
+        if: ${{ success() && steps.check.outputs.registry_synced != 'true' }}
+        working-directory: packages/mcp
+        run: ./mcp-publisher publish
