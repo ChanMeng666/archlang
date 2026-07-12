@@ -88,6 +88,86 @@ describe("describe — semantic facts", () => {
   });
 });
 
+describe("describe — freedom (degrees-of-freedom placement report)", () => {
+  it("marks every absolute plan's elements `absolute`, with per-family totals", () => {
+    const f = describePlan(STUDIO).freedom;
+    expect(f.rooms).toEqual({ total: 3, absolute: 3, relational: 0, strip: 0 });
+    // Studio has 3 doors + 3 windows, all authored with a literal `at`.
+    expect(f.openings).toEqual({ total: 6, attached: 0, absolute: 6 });
+    expect(f.furniture).toEqual({ total: 0, anchored: 0, againstWall: 0, absolute: 0 });
+    // One row per placed element, all absolute, in emit order (rooms, then openings).
+    expect(f.elements.every((e) => e.placement === "absolute")).toBe(true);
+    expect(f.elements.map((e) => e.kind)).toEqual([
+      "room",
+      "room",
+      "room",
+      "door",
+      "door",
+      "door",
+      "window",
+      "window",
+      "window",
+    ]);
+  });
+
+  it("reports relationally-placed rooms as `relational` (the reference room stays absolute)", () => {
+    const REL = `plan "Rel" {
+      room id=a at (0,0) size 3000x3000
+      room id=b right-of a gap 200 size 3000x3000
+      room id=c below a gap 200 size 3000x3000
+    }`;
+    const f = describePlan(REL).freedom;
+    expect(f.rooms).toEqual({ total: 3, absolute: 1, relational: 2, strip: 0 });
+    expect(f.elements.map((e) => [e.id, e.placement])).toEqual([
+      ["a", "absolute"],
+      ["b", "relational"],
+      ["c", "relational"],
+    ]);
+  });
+
+  it("reports `strip`-laid rooms and `attached` openings as resolver-derived", () => {
+    const SRC = `plan "Strip" {
+      wall ext thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+      strip right at (0,0) gap 0 height 3000 {
+        room id=r_a size 3000 label "A"
+        room id=r_b size 3000 label "B"
+      }
+      door on ext at 50% width 900
+      window on ext at 25% width 1000
+    }`;
+    const f = describePlan(SRC).freedom;
+    expect(f.rooms).toEqual({ total: 2, absolute: 0, relational: 0, strip: 2 });
+    expect(f.openings).toEqual({ total: 2, attached: 2, absolute: 0 });
+    expect(f.elements.filter((e) => e.kind === "room").map((e) => e.placement)).toEqual(["strip", "strip"]);
+  });
+
+  it("distinguishes furniture placement paths (absolute / anchored / against-wall)", () => {
+    const SRC = `plan "Furn" {
+      wall w1 thickness 200 { (0,0) (4000,0) }
+      room id=r at (0,200) size 4000x3000
+      furniture desk at (500,500) size 1200x600
+      furniture bed in r anchor top-left inset 100 size 1600x2000
+      furniture sofa against wall w1 side left size 2000x800
+    }`;
+    const f = describePlan(SRC).freedom;
+    expect(f.furniture).toEqual({ total: 3, anchored: 1, againstWall: 1, absolute: 1 });
+    const byId = Object.fromEntries(f.elements.filter((e) => e.kind === "furniture").map((e) => [e.id, e.placement]));
+    expect(byId.desk_1).toBe("absolute");
+    expect(byId.bed_2).toBe("anchored");
+    expect(byId.sofa_3).toBe("against-wall");
+  });
+
+  it("is present and empty on a failed resolution", () => {
+    const f = describePlan(`plan "Bad" { room at (0,0) size 0x4000 label "X" }`).freedom;
+    expect(f).toEqual({
+      rooms: { total: 0, absolute: 0, relational: 0, strip: 0 },
+      openings: { total: 0, attached: 0, absolute: 0 },
+      furniture: { total: 0, anchored: 0, againstWall: 0, absolute: 0 },
+      elements: [],
+    });
+  });
+});
+
 describe("describe — errors", () => {
   it("returns ok:false with diagnostics on a fatal error, never throws", () => {
     const s = describePlan(`plan "Bad" { room at (0,0) size 0x4000 label "X" }`);

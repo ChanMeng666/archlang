@@ -174,6 +174,42 @@ Two advisory lint rules read this model, and the same model backs the opt-in
 `arch compile --overlay circulation` render overlay (see
 [ADR 0008 — circulation as facts](adr/0008-circulation-as-facts.md)).
 
+## Freedom — how constrained the plan is
+
+`describe().freedom` is a **degrees-of-freedom report**: for every placed element,
+whether its position was authored **absolutely** (a literal `at (x,y)`) or **derived**
+by the resolver from a higher-level clause. It is the "how much of this plan is
+pinned down vs computed" fact an agent reads before editing — moving a `relational`
+room shifts everything placed off it, while an `absolute` room moves alone. Facts
+only: no advice, no scoring, no thresholds.
+
+Each family carries counts plus one `elements` row per member, in `describe`'s own
+emission order (rooms, doors, windows, openings, furniture). For the strip-and-attach
+`examples/attached.arch`:
+
+```json
+"freedom": {
+  "rooms":     { "total": 2, "absolute": 0, "relational": 0, "strip": 2 },
+  "openings":  { "total": 4, "attached": 4, "absolute": 0 },
+  "furniture": { "total": 2, "anchored": 2, "againstWall": 0, "absolute": 0 },
+  "elements": [
+    { "id": "r_living", "kind": "room",      "placement": "strip" },
+    { "id": "d_main",   "kind": "door",      "placement": "attached" },
+    { "id": "sofa_1",   "kind": "furniture", "placement": "anchored" }
+  ]
+}
+```
+
+| Family | Placement values | Meaning |
+|--------|------------------|---------|
+| `rooms` | `absolute` · `relational` · `strip` | a literal `at`; a `right-of`/`below`/… clause; a `strip` block row |
+| `openings` (doors + windows + cased openings) | `attached` · `absolute` | `on <wall> at <pos>`; a literal `at (x,y)` |
+| `furniture` | `anchored` · `against-wall` · `absolute` | `in <room> anchor|centered`; `against wall …`; a literal `at` |
+
+Every derived placement is still resolved to concrete coordinates in the rest of the
+summary — `freedom` only records *how* each coordinate was arrived at. On a plan that
+failed to resolve, `freedom` is present with all-zero counts and an empty `elements`.
+
 ## `lint` — architectural soundness
 
 `arch lint plan.arch --json` returns advisory `W_*` diagnostics, each with a byte

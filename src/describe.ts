@@ -14,7 +14,17 @@
  * byte-stable across runs.
  */
 
-import type { ResolvedPlan, RRoom, RDoor, RWindow, ROpening, RFurniture } from "./ir.js";
+import type {
+  ResolvedPlan,
+  RRoom,
+  RDoor,
+  RWindow,
+  ROpening,
+  RFurniture,
+  RoomPlacement,
+  OpeningPlacement,
+  FurniturePlacement,
+} from "./ir.js";
 import type { Point } from "./ast.js";
 import type { Diagnostic } from "./diagnostics.js";
 import {
@@ -107,6 +117,32 @@ export interface FurnitureSummary {
   room?: string;
 }
 
+export type { RoomPlacement, OpeningPlacement, FurniturePlacement } from "./ir.js";
+
+/** How a single placed element's position was authored vs derived (v1.14). */
+export interface FreedomElement {
+  id: string;
+  kind: "room" | "door" | "window" | "opening" | "furniture";
+  /** `absolute` = a literal `at (x,y)`; anything else was computed by the
+   *  resolver from a higher-level clause (relational/strip/attach/anchor/wall). */
+  placement: RoomPlacement | OpeningPlacement | FurniturePlacement;
+}
+
+/**
+ * Degrees-of-freedom report (v1.14): for each placed element, whether its
+ * position was authored **absolutely** or **derived** by the resolver — the
+ * "how constrained is this plan" fact an agent reads before editing. Facts only
+ * (ADR 0005): no advice, no scoring, no thresholds. Counts per family plus one
+ * `elements` row each, in `describe()`'s own emission order (rooms, doors,
+ * windows, openings, furniture). Openings pools doors + windows + cased openings.
+ */
+export interface FreedomReport {
+  rooms: { total: number; absolute: number; relational: number; strip: number };
+  openings: { total: number; attached: number; absolute: number };
+  furniture: { total: number; anchored: number; againstWall: number; absolute: number };
+  elements: FreedomElement[];
+}
+
 /** The semantic summary of a plan. `ok` is false when fatal errors prevented
  *  resolution; inspect `diagnostics` in that case (the lists will be empty). */
 export interface SceneSummary {
@@ -158,6 +194,11 @@ export interface SceneSummary {
    * failed to resolve. The RPLAN-style `input_graph` an intent check compares against.
    */
   input_graph: Record<string, string[]>;
+  /**
+   * Degrees-of-freedom placement report (v1.14): which elements were positioned
+   * absolutely vs derived by the resolver. Facts only — see {@link FreedomReport}.
+   */
+  freedom: FreedomReport;
   /** All problems from parse/link/resolve, with byte spans and codes. */
   diagnostics: Diagnostic[];
 }
@@ -262,6 +303,58 @@ export function buildCaption(s: CaptionInput): string {
 export function captionForPlan(ir: ResolvedPlan, tol: number = DEFAULT_TOL): string {
   const s = summarize(ir, tol);
   return buildCaption({ plan: s.plan, rooms: s.rooms, totals: s.totals, entrances: s.access.entrances });
+}
+
+/** An all-zero {@link FreedomReport} (the failed-resolution path). */
+function emptyFreedom(): FreedomReport {
+  return {
+    rooms: { total: 0, absolute: 0, relational: 0, strip: 0 },
+    openings: { total: 0, attached: 0, absolute: 0 },
+    furniture: { total: 0, anchored: 0, againstWall: 0, absolute: 0 },
+    elements: [],
+  };
+}
+
+/**
+ * Build the {@link FreedomReport} from the resolved elements. Reads the internal
+ * `_placement` marker set during resolve (defaulting to `absolute` for the
+ * literal-`at` path). Pure tallying — one `elements` row per placed element in
+ * describe's own order (rooms, doors, windows, openings, furniture).
+ */
+function buildFreedom(
+  rooms: RRoom[],
+  doors: RDoor[],
+  windows: RWindow[],
+  openings: ROpening[],
+  furniture: RFurniture[],
+): FreedomReport {
+  const f = emptyFreedom();
+  const elements: FreedomElement[] = f.elements;
+
+  for (const r of rooms) {
+    const placement = r._placement ?? "absolute";
+    f.rooms.total++;
+    f.rooms[placement]++;
+    elements.push({ id: r.id, kind: "room", placement });
+  }
+
+  const opening = (id: string, kind: "door" | "window" | "opening", placement: OpeningPlacement): void => {
+    f.openings.total++;
+    f.openings[placement]++;
+    elements.push({ id, kind, placement });
+  };
+  for (const d of doors) opening(d.id, "door", d._placement ?? "absolute");
+  for (const w of windows) opening(w.id, "window", w._placement ?? "absolute");
+  for (const o of openings) opening(o.id, "opening", o._placement ?? "absolute");
+
+  for (const fu of furniture) {
+    const placement = fu._placement ?? "absolute";
+    f.furniture.total++;
+    f.furniture[placement === "against-wall" ? "againstWall" : placement]++;
+    elements.push({ id: fu.id, kind: "furniture", placement });
+  }
+
+  return f;
 }
 
 /** Build the summary from a fully resolved plan. */
@@ -383,6 +476,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     circulation,
     totals,
     input_graph: buildInputGraph(roomEls, doorEls, openingEls, tol),
+    freedom: buildFreedom(roomEls, doorEls, windowEls, openingEls, furnEls),
   };
 }
 
@@ -415,6 +509,7 @@ export function describe(source: string, opts: DescribeOptions = {}): SceneSumma
       circulation: null,
       totals: { rooms: 0, doors: 0, windows: 0, floor_area_m2: 0 },
       input_graph: {},
+      freedom: emptyFreedom(),
       diagnostics,
     };
   }

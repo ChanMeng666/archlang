@@ -9,9 +9,12 @@
 import type {
   AstElement,
   ComponentDef,
+  DoorNode,
   ElementKind,
   ExprPoint,
+  FurnitureNode,
   NorthDir,
+  OpeningNode,
   PlanNode,
   Point,
   RelAlign,
@@ -21,6 +24,7 @@ import type {
   StripNode,
   TitleNode,
   UseKind,
+  WindowNode,
 } from "./ast.js";
 import { placeRelational } from "./layout.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
@@ -80,6 +84,15 @@ export interface RelConstraint {
   span?: Span;
 }
 
+/**
+ * How an element's position was authored vs derived by the resolver — the
+ * degrees-of-freedom marker read by `describe().freedom` (facts only, ADR 0005).
+ * Internal: set during resolve, never serialized into the Scene/SVG/exports.
+ */
+export type RoomPlacement = "absolute" | "relational" | "strip";
+export type OpeningPlacement = "attached" | "absolute";
+export type FurniturePlacement = "anchored" | "against-wall" | "absolute";
+
 export interface RRoom extends RBase {
   kind: "room";
   at: Point;
@@ -90,6 +103,9 @@ export interface RRoom extends RBase {
   /** Present only when the room used a relational clause (`right-of`/…); its
    *  `at` above is a placeholder until {@link placeRelational} resolves it. */
   _rel?: RelConstraint;
+  /** How the position was authored (`absolute` `at`, `relational` clause, or
+   *  `strip` sugar). Internal marker for `describe().freedom`; never rendered. */
+  _placement?: RoomPlacement;
 }
 export interface RDoor extends RBase {
   kind: "door";
@@ -98,18 +114,25 @@ export interface RDoor extends RBase {
   hinge: "left" | "right";
   swing: "in" | "out";
   host: WallSegment | null;
+  /** `attached` (`on <wall> at <pos>`) vs `absolute` (`at (x,y)`). Internal
+   *  marker for `describe().freedom`; never rendered. */
+  _placement?: OpeningPlacement;
 }
 export interface RWindow extends RBase {
   kind: "window";
   at: Point;
   width: number;
   host: WallSegment | null;
+  /** `attached` vs `absolute` — see {@link RDoor._placement}. */
+  _placement?: OpeningPlacement;
 }
 export interface ROpening extends RBase {
   kind: "opening";
   at: Point;
   width: number;
   host: WallSegment | null;
+  /** `attached` vs `absolute` — see {@link RDoor._placement}. */
+  _placement?: OpeningPlacement;
 }
 export interface RFurniture extends RBase {
   kind: "furniture";
@@ -121,6 +144,9 @@ export interface RFurniture extends RBase {
   rotate?: number;
   /** Declared owning room id (`in <roomId>`), if any. */
   room?: string;
+  /** `anchored` (`in <room> anchor|centered`), `against-wall` (`against wall …`),
+   *  or `absolute` (`at (x,y)`). Internal marker for `describe().freedom`. */
+  _placement?: FurniturePlacement;
 }
 export interface RDim extends RBase {
   kind: "dim";
@@ -178,6 +204,9 @@ interface Entry {
   /** Active `set` overrides for this element's kind, captured at expansion. */
   defaults?: ReadonlyMap<string, Value>;
   resolved?: ResolvedElement;
+  /** True when this room was expanded from a `strip` block (it looks absolute in
+   *  the AST, so the origin has to be remembered for `describe().freedom`). */
+  fromStrip?: boolean;
 }
 
 /**
@@ -373,7 +402,13 @@ function expandScope(
         // are closed-form (running sum of extents + gap); the resulting rooms flow
         // through room.resolve exactly like hand-authored `room at (x,y) size WxH`.
         for (const child of stripRooms(stmt, evalIn, diag)) {
-          out.push({ node: child, env: scope.flatten(), id: "", defaults: scope.effectiveSet("room") });
+          out.push({
+            node: child,
+            env: scope.flatten(),
+            id: "",
+            defaults: scope.effectiveSet("room"),
+            fromStrip: true,
+          });
         }
         break;
       }
@@ -551,6 +586,7 @@ function resolveImpl(
       ctx.defaults = e.defaults;
       const r = def.resolve(e.node, ctx);
       e.resolved = r;
+      markPlacement(r, e.node, e.fromStrip === true);
       if (r.kind === "wall") walls.push(r);
       else if (r.kind === "room") rooms2.push(r);
     }
@@ -623,6 +659,30 @@ function assignIds(entries: Entry[], registry: Registry, diagnostics: Diagnostic
       if (e.node.kind !== def.kind) continue;
       idx++;
       e.id = assignId(e.node.id, def.idPrefix(e.node), idx, e.node.span);
+    }
+  }
+}
+
+/**
+ * Record how an element's position was authored — the degrees-of-freedom marker
+ * read by `describe().freedom`. Pure classification from the AST node (and the
+ * strip origin); sets an internal `_placement` field that never reaches the Scene.
+ * `node.kind === r.kind` here (the resolve loop matches by kind), so the casts are safe.
+ */
+function markPlacement(r: ResolvedElement, node: AstElement, fromStrip: boolean): void {
+  switch (r.kind) {
+    case "room":
+      r._placement = fromStrip ? "strip" : r._rel !== undefined ? "relational" : "absolute";
+      return;
+    case "door":
+    case "window":
+    case "opening":
+      r._placement = (node as DoorNode | WindowNode | OpeningNode).attach !== undefined ? "attached" : "absolute";
+      return;
+    case "furniture": {
+      const fn = node as FurnitureNode;
+      r._placement = fn.against !== undefined ? "against-wall" : fn.place !== undefined ? "anchored" : "absolute";
+      return;
     }
   }
 }
