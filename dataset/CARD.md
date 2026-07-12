@@ -14,6 +14,15 @@ tags:
   - reward-harness
 task_categories:
   - text2text-generation
+size_categories:
+  - 1K<n<10K
+configs:
+  - config_name: default
+    data_files:
+      - split: repair
+        path: repair.jsonl
+      - split: authoring
+        path: authoring.jsonl
 ---
 
 # ArchLang Repair Trajectories
