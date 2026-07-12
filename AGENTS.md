@@ -597,6 +597,20 @@ source (.arch)
   moved intent **9% → 50% with zero model change** — a cross-judge delta measures the ruler, not the
   model. A judge change re-defines what "pass"/"sound" mean, so any rate straddling one is comparing
   two different measurements; treat it as history, never as progress. See `eval/README.md`.
+- **(Dataset) The private eval holdout is never published, the canary is never regenerated, and
+  `repair`-split sources stay literal.** The `dataset/` generator (roadmap T5, HF
+  `ChanMeng666/archlang-repair-trajectories`) is bound by the contamination iron law: the 26-brief
+  eval corpus/goldens are a private holdout — `dataset/` imports only `../src/index.js`, never
+  `eval/`, and every row is double-deduplicated (text + `describe()` structure) against the holdout
+  (`test/dataset.test.ts` enforces it permanently; getting it wrong voids the eval forever). The
+  canary GUID in `dataset/canary.ts` is hardcoded once — **never regenerate it** (a new value
+  silently splits the corpus and defeats leakage probing). Plans in the `repair` split must stay
+  fully literal (no scripting) because `repair()` declines scripted sources. `dataset/out/` is
+  git-ignored (HF-only — the committed source is the generator + seed). On re-upload: the HF card's
+  `task_categories` must come from HF's official list (`text-generation`, not
+  `text2text-generation` — the upload warns otherwise), and the namespace uses the canonical
+  `ChanMeng666` casing (same identity-checked lesson as npm provenance / the MCP registry). See
+  `dataset/README.md` and [ADR 0013](docs/adr/0013-repair-trajectory-dataset.md).
 - **Door `hinge left/right` is relative to the wall's traversal direction**, not the screen —
   so the hinge side can flip depending on the order of a wall's points. The swing quarter-disc is
   computed once in `geometry.ts` (`doorSwing`) and shared by `door.render()` and the

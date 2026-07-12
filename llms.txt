@@ -28,6 +28,7 @@ of the project for large language models and AI agents.
 - [/archlang.gbnf](https://archlang-docs.vercel.app/archlang.gbnf): **GBNF** constrained-decoding grammar — force a local model to emit only parseable ArchLang
 - **Append `.md` to any generated doc route for raw markdown**: e.g. [/spec.md](https://archlang-docs.vercel.app/spec.md), `/reference.md`, `/errors.md`, `/analysis.md`, `/furniture.md`
 - **MCP server** — [`@chanmeng666/archlang-mcp`](https://www.npmjs.com/package/@chanmeng666/archlang-mcp): an optional stdio MCP shim over the library (tools: compile/describe/lint/validate/repair/fix/suggest/complete; resources: spec/context/schema/grammar). The CLI stays the primary, token-cheaper interface — see the README's agent section
+- **Dataset** — [`ChanMeng666/archlang-repair-trajectories`](https://huggingface.co/datasets/ChanMeng666/archlang-repair-trajectories): a fully synthetic, self-verifying corpus — `repair` trajectories (broken source + diagnostics → deterministically healed source) + `authoring` pairs (brief → golden + intent), CC0-1.0; generator + seed open source in `dataset/`
 
 ## To USE ArchLang (author floor plans)
 

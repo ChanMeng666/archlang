@@ -316,6 +316,7 @@ diagnostics, hover, completion, go-to-definition, rename, and signature help —
 - **[Error catalog](docs/error-codes.md)** — every `E_*`/`W_*` code with a cause and a fix.
 - **[Architecture Decision Records](docs/adr)** — the key design decisions and their trade-offs.
 - **[Examples](examples)** — `studio`, `two-bed`, `parametric`, `themed`, `relational`, `attached`, `accessible`.
+- **[🤗 Dataset — `ChanMeng666/archlang-repair-trajectories`](https://huggingface.co/datasets/ChanMeng666/archlang-repair-trajectories)** — a fully synthetic, self-verifying corpus of floor-plan **repair trajectories** (broken source + diagnostics → deterministically healed source) plus **authoring** pairs (brief → golden + intent), for training and experimentation. CC0-1.0; the generator + seed are open source in [`dataset/`](dataset).
 - **[AGENTS.md](AGENTS.md)** — orientation for AI agents working in this repo (current status + architecture).
 - Build the docs site locally with `npm run docs:build` (VitePress, in `docs-site/`).
 

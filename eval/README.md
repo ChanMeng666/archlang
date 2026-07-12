@@ -165,9 +165,14 @@ on all four dimensions. Adding a brief = brief-derivable expectations + a golden
 rubric row.
 
 > **Contamination warning (roadmap T5 iron law).** These briefs and goldens are a **private
-> holdout** for any future public dataset. **Never publish them.** A future public corpus must be
-> generated independently and deduplicated against this set — otherwise the holdout is burned and no
-> honest number can ever be reported against it again.
+> holdout**, and they stay private **forever**. **Never publish them.** The public dataset now
+> **exists** — HF `ChanMeng666/archlang-repair-trajectories`, generated independently by the
+> `dataset/` generator (which imports only `../src/index.js`, never `eval/`) and
+> double-deduplicated against this holdout (text Jaccard + 8-gram, and a structural `describe()`
+> fingerprint). `test/dataset.test.ts` enforces that disjointness **permanently, in CI**. That
+> enforcement does not relax the rule: this corpus is never published regardless — the moment it
+> leaks into a public set, the holdout is burned and no honest number can ever be reported against
+> it again.
 
 ## The fault-injection / L1 gate (`faults/`, `l1.ts`, `test/fault-injection.test.ts`)
 
