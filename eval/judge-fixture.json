@@ -1,0 +1,2163 @@
+{
+  "judgeVersion": "2",
+  "synonymsVersion": 1,
+  "scores": [
+    {
+      "id": "studio-1br",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": 1,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 4,
+            "expectedCirc": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 4, got 4",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "hall",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"hall\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "total-area",
+            "minM2": 37.8,
+            "maxM2": 46.2,
+            "source": "brief: 'about 42 m²' ±10%",
+            "gate": true
+          },
+          "pass": true,
+          "detail": "area: total 42 m² within [37.8, 46.2]"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "bathroom",
+            "source": "brief: 'a bathroom off a small hall'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"bathroom\" connected"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "two-bed-hall",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 6,
+            "expectedCirc": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 6, got 6",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 2,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 2)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "study",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"study\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "hall",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"hall\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "living-room",
+            "source": "brief: 'organised around a central hall so no room is reached through another'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"living-room\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "bedroom",
+            "source": "brief: 'organised around a central hall so no room is reached through another'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"bedroom\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "bathroom",
+            "source": "brief: 'organised around a central hall so no room is reached through another'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"bathroom\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "study",
+            "source": "brief: 'organised around a central hall so no room is reached through another'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"study\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "reachable",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "reachable: all 6 room(s) reachable"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "relational-studio",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 4,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 4, got 4",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "kitchen",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"kitchen\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "kitchen",
+            "b": "bathroom",
+            "source": "brief: 'The bathroom should open off the kitchen, not through the bedroom'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"kitchen\" ↔ \"bathroom\" connected"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "dims-auto-cottage",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 3,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 3, got 3",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "living-room",
+            "b": "bedroom",
+            "source": "brief: 'a bedroom, and a bathroom, both opening off the living space'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"living-room\" ↔ \"bedroom\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "living-room",
+            "b": "bathroom",
+            "source": "brief: 'a bedroom, and a bathroom, both opening off the living space'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"living-room\" ↔ \"bathroom\" connected"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "against-wall-bath",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": null
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 3,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 3, got 3",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "small-office",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": 1,
+        "adjacency": null
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 3,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 3, got 3",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "open-office",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"open-office\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "meeting-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"meeting-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "kitchenette",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"kitchenette\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "total-area",
+            "minM2": 85,
+            "maxM2": 115,
+            "source": "brief: '~100 m²' ±15%",
+            "gate": true
+          },
+          "pass": true,
+          "detail": "area: total 96 m² within [85, 115]"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "core-and-shell",
+      "valid": true,
+      "lintWarnings": 1,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": null
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 4,
+            "expectedCirc": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 4, got 4",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "suite",
+            "min": 2,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"suite\" ok (found 2)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "tea-point",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"tea-point\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "corridor",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"corridor\" ok (found 1)"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "two-bath-flat",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 6,
+            "expectedCirc": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 6, got 6",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 2,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 2)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 2,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 2)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "hall",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"hall\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "bathroom",
+            "source": "brief: 'two bathrooms, both opening off the central hall so neither is reached through a bedroom'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"bathroom\" connected"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "open-plan-loft",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 4,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 4, got 4",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "kitchen",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"kitchen\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "dining",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"dining\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "dining",
+            "b": "kitchen",
+            "source": "brief: 'the kitchen, dining, and living zones flow into one another through wide cased openings'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"dining\" ↔ \"kitchen\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "dining",
+            "b": "living-room",
+            "source": "brief: 'the kitchen, dining, and living zones flow into one another through wide cased openings'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"dining\" ↔ \"living-room\" connected"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "scripting-units",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 4,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 4, got 4",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "unit",
+            "min": 4,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"unit\" ok (found 4)"
+        },
+        {
+          "predicate": {
+            "kind": "reachable",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "reachable: all 4 room(s) reachable"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "three-bed-2bath",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 8,
+            "expectedCirc": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 8, got 8",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 3,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 3)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 2,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 2)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "hall",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"hall\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "utility",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"utility\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "bedroom",
+            "source": "brief: 'Every bedroom and both bathrooms open off the hall'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"bedroom\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "bathroom",
+            "source": "brief: 'Every bedroom and both bathrooms open off the hall'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"bathroom\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "reachable",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "reachable: all 8 room(s) reachable"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "galley-kitchen",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": null
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 4,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 4, got 4",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "kitchen",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"kitchen\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "l-shaped-flat",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 4,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 4, got 4",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "kitchen",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"kitchen\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "living-room",
+            "b": "kitchen",
+            "source": "brief: 'the kitchen, bedroom, and bathroom each opening off it'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"living-room\" ↔ \"kitchen\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "living-room",
+            "b": "bedroom",
+            "source": "brief: 'the kitchen, bedroom, and bathroom each opening off it'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"living-room\" ↔ \"bedroom\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "living-room",
+            "b": "bathroom",
+            "source": "brief: 'the kitchen, bedroom, and bathroom each opening off it'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"living-room\" ↔ \"bathroom\" connected"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "accessible-flat",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 4,
+            "expectedCirc": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 4, got 4",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "hall",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"hall\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "bedroom",
+            "source": "brief: 'generous rooms off a wide hall'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"bedroom\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "bathroom",
+            "source": "brief: 'generous rooms off a wide hall'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"bathroom\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "reachable",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "reachable: all 4 room(s) reachable"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "accessible-bath",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": null
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 3,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 3, got 3",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "wet-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"wet-room\" ok (found 1)"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "compact-studio",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 3,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 3, got 3",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "studio-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"studio-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "kitchenette",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"kitchenette\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "studio-room",
+            "b": "kitchenette",
+            "source": "brief: 'a kitchenette linked by a cased opening'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"studio-room\" ↔ \"kitchenette\" connected"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "bungalow",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 6,
+            "expectedCirc": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 6, got 6",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "kitchen",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"kitchen\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 2,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 2)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "hall",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"hall\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "bedroom",
+            "source": "brief: 'two bedrooms plus the bathroom off a central hall'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"bedroom\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "bathroom",
+            "source": "brief: 'two bedrooms plus the bathroom off a central hall'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"bathroom\" connected"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "reception-suite",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 6,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 6, got 6",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "reception",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"reception\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "private-office",
+            "min": 2,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"private-office\" ok (found 2)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "meeting-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"meeting-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "kitchenette",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"kitchenette\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "wc",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"wc\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "reachable",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "reachable: all 6 room(s) reachable"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "strip-corridor",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 4,
+            "expectedCirc": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 4, got 4",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "consulting-room",
+            "min": 3,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"consulting-room\" ok (found 3)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "corridor",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"corridor\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "corridor",
+            "b": "consulting-room",
+            "source": "brief: 'three consulting rooms opening off a single shared corridor'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"corridor\" ↔ \"consulting-room\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "reachable",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "reachable: all 4 room(s) reachable"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "attach-openings",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 3,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 3, got 3",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "living-room",
+            "b": "bathroom",
+            "source": "brief: 'The bath must open off the living area (not through the bedroom)'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"living-room\" ↔ \"bathroom\" connected"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "anchor-furniture",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": null
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 3,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 3, got 3",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "strip-attach-clean",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": null,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 5,
+            "expectedCirc": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 5, got 5",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 2,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 2)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "hall",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"hall\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "bedroom",
+            "source": "brief: 'Every room must be reachable by a door off the hall ... the bathroom must open off the hall rather than through a bedroom'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"bedroom\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "bathroom",
+            "source": "brief: 'Every room must be reachable by a door off the hall ... the bathroom must open off the hall rather than through a bedroom'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"bathroom\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "reachable",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "reachable: all 5 room(s) reachable"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "sized-kitchen-flat",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": 1,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 4,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 4, got 4",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "kitchen",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"kitchen\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-area",
+            "concept": "kitchen",
+            "min": 1,
+            "minM2": 10.8,
+            "maxM2": 13.2,
+            "source": "brief: 'kitchen of 12 m²' ±10%",
+            "gate": true
+          },
+          "pass": true,
+          "detail": "area: concept \"kitchen\" ok (1 within [10.8, 13.2] m²)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-area",
+            "concept": "bedroom",
+            "min": 1,
+            "minM2": 10,
+            "source": "brief: 'bedroom of at least 10 m²'",
+            "gate": true
+          },
+          "pass": true,
+          "detail": "area: concept \"bedroom\" ok (1 within [10, ∞] m²)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "living-room",
+            "b": "bedroom",
+            "source": "brief: 'The bedroom and bathroom open off the living room'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"living-room\" ↔ \"bedroom\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "living-room",
+            "b": "bathroom",
+            "source": "brief: 'The bedroom and bathroom open off the living room'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"living-room\" ↔ \"bathroom\" connected"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "sized-bedrooms",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": 1,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 4,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 4, got 4",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 2,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 2)"
+        },
+        {
+          "predicate": {
+            "kind": "room-area",
+            "concept": "bedroom",
+            "min": 2,
+            "minM2": 11,
+            "source": "brief: 'each bedroom is at least 11 m²'",
+            "gate": true
+          },
+          "pass": true,
+          "detail": "area: concept \"bedroom\" ok (2 within [11, ∞] m²)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bathroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bathroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "living-room",
+            "b": "bedroom",
+            "source": "brief: 'Both bedrooms open off the living space'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"living-room\" ↔ \"bedroom\" connected"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "sized-wet-room",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": 1,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 4,
+            "expectedCirc": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 4, got 4",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "wet-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"wet-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-area",
+            "concept": "wet-room",
+            "min": 1,
+            "minM2": 5,
+            "source": "brief: 'wet room of at least 5 m²'",
+            "gate": true
+          },
+          "pass": true,
+          "detail": "area: concept \"wet-room\" ok (1 within [5, ∞] m²)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "bedroom",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"bedroom\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "living-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"living-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "hall",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"hall\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "living-room",
+            "source": "brief: 'all with 1000 mm doorways off a wide hall'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"living-room\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "bedroom",
+            "source": "brief: 'all with 1000 mm doorways off a wide hall'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"bedroom\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "adjacent",
+            "a": "hall",
+            "b": "wet-room",
+            "source": "brief: 'all with 1000 mm doorways off a wide hall'",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "adjacency: \"hall\" ↔ \"wet-room\" connected"
+        },
+        {
+          "predicate": {
+            "kind": "reachable",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "reachable: all 4 room(s) reachable"
+        }
+      ],
+      "judgeVersion": "2"
+    },
+    {
+      "id": "sized-office-mix",
+      "valid": true,
+      "lintWarnings": 0,
+      "physicalWarnings": 0,
+      "semanticPass": true,
+      "failures": [],
+      "subscores": {
+        "rooms": 1,
+        "labels": 1,
+        "area": 1,
+        "adjacency": 1
+      },
+      "assertions": [
+        {
+          "predicate": {
+            "kind": "room-count",
+            "exact": 4,
+            "expectedCirc": 0,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "rooms: expected 4, got 4",
+          "score": 1
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "meeting-room",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"meeting-room\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-area",
+            "concept": "meeting-room",
+            "min": 1,
+            "minM2": 17,
+            "maxM2": 23,
+            "source": "brief: 'about 20 m²' ±15%",
+            "gate": true
+          },
+          "pass": true,
+          "detail": "area: concept \"meeting-room\" ok (1 within [17, 23] m²)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "open-office",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"open-office\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-area",
+            "concept": "open-office",
+            "min": 1,
+            "minM2": 60,
+            "source": "brief: 'at least 60 m²'",
+            "gate": true
+          },
+          "pass": true,
+          "detail": "area: concept \"open-office\" ok (1 within [60, ∞] m²)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "kitchenette",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"kitchenette\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "room-exists",
+            "concept": "wc",
+            "min": 1,
+            "gate": true
+          },
+          "pass": true,
+          "detail": "label: concept \"wc\" ok (found 1)"
+        },
+        {
+          "predicate": {
+            "kind": "reachable",
+            "gate": false
+          },
+          "pass": true,
+          "detail": "reachable: all 4 room(s) reachable"
+        }
+      ],
+      "judgeVersion": "2"
+    }
+  ]
+}
