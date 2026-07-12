@@ -133,6 +133,21 @@ const AT_FLAG: ManifestFlag = {
   arg: "<byteOffset>",
   description: "source byte offset to list completions at (required)",
 };
+const INTENT_FLAG: ManifestFlag = {
+  flag: "--intent",
+  arg: "<intent.json>",
+  description:
+    "gate the plan against a brief's intent JSON; a failing gating assertion (room count/existence/area/windows) → exit 2. Adjacency/reachability score but never gate. Composes with --graph.",
+};
+const FEEDBACK_FLAG: ManifestFlag = {
+  flag: "--feedback",
+  description: "with --intent, append a deterministic per-violation correction prompt (advisory data, never applied)",
+};
+const BRIEF_FLAG: ManifestFlag = {
+  flag: "--brief",
+  arg: "<intent.json>",
+  description: "the intent JSON to measure satisfaction against (required)",
+};
 
 /**
  * The command table. Keys MUST cover exactly the verbs the CLI's `main()`
@@ -216,11 +231,14 @@ const COMMANDS: ManifestCommand[] = [
     flags: [
       { flag: "--strict", alias: "--fail-on-warning", description: "advisory warnings fail too (exit 2)" },
       GRAPH_FLAG,
+      INTENT_FLAG,
+      FEEDBACK_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
     input: "<file.arch|->",
-    output: "diagnostics (plus a graph{} report with --graph)",
+    output:
+      "diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations } block with --intent)",
   },
   {
     name: "describe",
@@ -228,6 +246,15 @@ const COMMANDS: ManifestCommand[] = [
     flags: [JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
     output: "facts (JSON or a summary)",
+  },
+  {
+    name: "score",
+    summary:
+      "continuous intent satisfaction (satisfied/total) as data — the refine-loop reward. Measures, never gates (validate --intent is the gate).",
+    flags: [BRIEF_FLAG, JSON_FLAG, QUIET_FLAG],
+    input: "<file.arch|->",
+    output:
+      "{ ok, satisfied, total, score, subscores, violations } (exit 0 on a successful measurement, even when assertions fail)",
   },
   {
     name: "lint",

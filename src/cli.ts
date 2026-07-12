@@ -54,8 +54,20 @@ import {
   astToJson,
   checkGraph,
   completion,
+  validateIntent,
+  intentFromJson,
+  feedbackForResult,
 } from "./index.js";
-import type { Diagnostic, World, Scene, ExportFormat, FixSuggestion } from "./index.js";
+import type {
+  Diagnostic,
+  World,
+  Scene,
+  ExportFormat,
+  FixSuggestion,
+  Intent,
+  IntentCheckResult,
+  GraphCheck,
+} from "./index.js";
 // Internal (not part of the public surface): parse → link → resolve without
 // rendering — validate/lint need only the diagnostics, never the SVG.
 import { resolvePlan } from "./analyze.js";
@@ -112,6 +124,12 @@ interface Args {
   fromJson?: boolean;
   /** `--graph <file>`: (validate) also check adjacency against an intended graph. */
   graph?: string;
+  /** `--intent <file>`: (validate) also check the plan against a brief's intent JSON. */
+  intent?: string;
+  /** `--feedback`: (validate --intent) append deterministic per-violation correction prompts. */
+  feedback?: boolean;
+  /** `--brief <file>`: (score) the intent JSON to measure satisfaction against. */
+  brief?: string;
   /** `--at <byteOffset>`: (complete) source offset to list completions at. */
   at?: number;
 }
@@ -130,6 +148,9 @@ function parseArgs(argv: string[]): Args {
     else if (a === "--charset") res.charset = argv[++i];
     else if (a === "--from-json") res.fromJson = true;
     else if (a === "--graph") res.graph = argv[++i];
+    else if (a === "--intent") res.intent = argv[++i];
+    else if (a === "--brief") res.brief = argv[++i];
+    else if (a === "--feedback") res.feedback = true;
     else if (a === "--ascii") res.ascii = true;
     else if (a === "--install") res.install = true;
     else if (a === "--unsafe") res.unsafe = true;
@@ -976,77 +997,207 @@ function cmdValidate(args: Args): number {
     const { diagnostics } = resolvePlan(source, { world });
     const lintDiags = lint(source, { world });
     const diags = [...diagnostics, ...lintDiags];
-    // `--graph <file>`: additionally check the plan's interior-door adjacency
-    // against an intended graph (an intent violation, so a mismatch fails).
-    if (args.graph !== undefined) return reportWithGraph(source, diags, args, world);
+    // `--graph` and/or `--intent` layer an intent check onto plain validate; both
+    // blocks may appear in one call, and either failing gates the exit code. Plain
+    // validate (neither flag) stays byte-identical via `report`.
+    if (args.graph !== undefined || args.intent !== undefined) return reportWithChecks(source, diags, args, world);
     return report(source, diags, args);
   });
 }
 
+/** An IO/usage error that a check-loader hit — the exit code is already emitted, so
+ *  the caller just propagates it. Distinct from a resolved check result. */
+interface CheckError {
+  exit: number;
+}
+const isCheckError = (v: unknown): v is CheckError => isRecord(v) && typeof v.exit === "number";
+
 /**
- * `validate --graph <graph.json>` — normal validate, plus a comparison of the
- * plan's compiled interior-door adjacency against an intended graph. The file is
- * either a bare adjacency dict (`{ "room": ["room", …] }`) or wrapped under
- * `input_graph`. A graph mismatch is a user-source (intent) violation → exit 2.
+ * Read + parse a `--graph <graph.json>` file and compare it to the plan's compiled
+ * interior-door adjacency. The file is a bare adjacency dict (`{ "room": ["room", …] }`)
+ * or wrapped under `input_graph`. On an IO/usage problem the message is written and the
+ * exit code returned (as {@link CheckError}); otherwise the {@link GraphCheck} block.
  */
-function reportWithGraph(source: string, diags: Diagnostic[], args: Args, world: World): number {
+function loadGraphCheck(source: string, graphPath: string, args: Args, world: World): GraphCheck | CheckError {
   let graphText: string;
   try {
-    graphText = readFileSync(resolvePath(args.graph!), "utf8");
+    graphText = readFileSync(resolvePath(graphPath), "utf8");
   } catch {
-    return ioError(`cannot read graph file ${args.graph}`, args.json);
+    return { exit: ioError(`cannot read graph file ${graphPath}`, args.json) };
   }
   let raw: unknown;
   try {
     raw = JSON.parse(graphText);
   } catch (e) {
-    return usageError(`invalid --graph JSON: ${(e as Error).message}`);
+    return { exit: usageError(`invalid --graph JSON: ${(e as Error).message}`) };
   }
   // Accept a bare adjacency dict or a `{ input_graph: {…} }` wrapper.
   const intentRaw = isRecord(raw) && isRecord(raw.input_graph) ? raw.input_graph : raw;
   if (!isRecord(intentRaw)) {
-    return usageError("--graph must be an adjacency object { room: [neighbours] } (optionally under input_graph)");
+    return {
+      exit: usageError("--graph must be an adjacency object { room: [neighbours] } (optionally under input_graph)"),
+    };
   }
   const intent: Record<string, string[]> = {};
   for (const [k, v] of Object.entries(intentRaw)) {
     intent[k] = Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
   }
+  return checkGraph(source, intent, { world });
+}
 
-  const gc = checkGraph(source, intent, { world });
+/**
+ * Read + parse an intent JSON file (`--intent`/`--brief`) into a validated {@link Intent}.
+ * Mirrors {@link loadGraphCheck}'s error ladder: an unreadable file → IO error (exit 1); a
+ * JSON syntax error or an `intentFromJson` shape error → usage error (exit 3) listing the
+ * pathed messages. `flag` names the option in the messages.
+ */
+function loadIntent(intentPath: string, flag: string, args: Args): Intent | CheckError {
+  let text: string;
+  try {
+    text = readFileSync(resolvePath(intentPath), "utf8");
+  } catch {
+    return { exit: ioError(`cannot read intent file ${intentPath}`, args.json) };
+  }
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch (e) {
+    return { exit: usageError(`invalid ${flag} JSON: ${(e as Error).message}`) };
+  }
+  const { intent, errors } = intentFromJson(raw);
+  if (intent === null) return { exit: usageError(`invalid ${flag}: ${errors.join("; ")}`) };
+  return intent;
+}
+
+/** The agent-facing projection of a single intent violation (the predicate objects
+ *  are dropped — `maxM2` can be `Infinity`, which `JSON.stringify` would null). */
+const violationJson = (v: IntentCheckResult["violations"][number]): Record<string, unknown> => ({
+  code: v.code,
+  message: v.message,
+  gate: v.gate,
+});
+
+/**
+ * `validate --graph`/`--intent` — normal validate plus an optional graph-adjacency
+ * comparison and/or an intent check. Both blocks may appear together (`--graph` and
+ * `--intent` compose). Base diagnostics behave exactly as plain validate; a graph
+ * mismatch or a failing intent GATE additionally fails the command (exit 2). `--feedback`
+ * appends the deterministic per-violation correction prompts to the intent block.
+ */
+function reportWithChecks(source: string, diags: Diagnostic[], args: Args, world: World): number {
+  const graph = args.graph !== undefined ? loadGraphCheck(source, args.graph, args, world) : undefined;
+  if (isCheckError(graph)) return graph.exit;
+
+  let intentResult: IntentCheckResult | undefined;
+  let feedback: string[] | undefined;
+  if (args.intent !== undefined) {
+    const it = loadIntent(args.intent, "--intent", args);
+    if (isCheckError(it)) return it.exit;
+    intentResult = validateIntent(source, it, { world });
+    if (args.feedback) feedback = feedbackForResult(intentResult);
+  }
+
   const e = diags.filter((d) => d.severity === "error").length;
   const w = diags.length - e;
   const diagsOk = e === 0 && (!args.strict || w === 0);
-  const ok = diagsOk && gc.ok;
+  const graphOk = graph ? graph.ok : true;
+  const intentOk = intentResult ? intentResult.ok : true;
+  const ok = diagsOk && graphOk && intentOk;
 
   if (args.json) {
-    emitJson({
+    const o: Record<string, unknown> = {
       ok,
       strict: args.strict ?? false,
       diagnostics: diags.map((d) => diagnosticToJson(source, d)),
-      graph: {
-        ok: gc.ok,
-        missing_rooms: gc.missing_rooms,
-        missing_connections: gc.missing_connections,
-        extra_connections: gc.extra_connections,
-      },
-    });
+    };
+    if (graph) {
+      o.graph = {
+        ok: graph.ok,
+        missing_rooms: graph.missing_rooms,
+        missing_connections: graph.missing_connections,
+        extra_connections: graph.extra_connections,
+      };
+    }
+    if (intentResult) {
+      const block: Record<string, unknown> = {
+        ok: intentResult.ok,
+        satisfied: intentResult.satisfied,
+        total: intentResult.total,
+        subscores: intentResult.subscores,
+        violations: intentResult.violations.map(violationJson),
+      };
+      if (feedback) block.feedback = feedback;
+      o.intent = block;
+    }
+    emitJson(o);
   } else {
     emitDiagnosticsHuman(source, diags, args.quiet);
     if (!args.quiet) {
-      for (const rm of gc.missing_rooms) process.stderr.write(`  graph: room "${rm}" not found in plan\n`);
-      for (const [a, b] of gc.missing_connections) process.stderr.write(`  graph: missing connection ${a} — ${b}\n`);
-      for (const [a, b] of gc.extra_connections) process.stderr.write(`  graph: unexpected connection ${a} — ${b}\n`);
-      if (ok) process.stdout.write(`✓ ok${w ? ` (${w} warning${w === 1 ? "" : "s"})` : ""}, graph matches\n`);
-      else {
+      if (graph) {
+        for (const rm of graph.missing_rooms) process.stderr.write(`  graph: room "${rm}" not found in plan\n`);
+        for (const [a, b] of graph.missing_connections)
+          process.stderr.write(`  graph: missing connection ${a} — ${b}\n`);
+        for (const [a, b] of graph.extra_connections)
+          process.stderr.write(`  graph: unexpected connection ${a} — ${b}\n`);
+      }
+      if (intentResult) {
+        for (const v of intentResult.violations) process.stderr.write(`  ${v.code}: ${v.message}\n`);
+        if (feedback) for (const f of feedback) process.stderr.write(`  ${f}\n`);
+      }
+      if (ok) {
+        const extras: string[] = [];
+        if (graph) extras.push("graph matches");
+        if (intentResult) extras.push("intent satisfied");
+        process.stdout.write(
+          `✓ ok${w ? ` (${w} warning${w === 1 ? "" : "s"})` : ""}${extras.length ? `, ${extras.join(", ")}` : ""}\n`,
+        );
+      } else {
         const parts: string[] = [];
         if (e) parts.push(`${e} error${e === 1 ? "" : "s"}`);
         if (w) parts.push(`${w} warning${w === 1 ? "" : "s"}`);
-        if (!gc.ok) parts.push("graph mismatch");
+        if (graph && !graph.ok) parts.push("graph mismatch");
+        if (intentResult && !intentResult.ok) parts.push("intent violated");
         process.stdout.write(`✗ ${parts.join(", ")}\n`);
       }
     }
   }
   return ok ? EXIT.OK : EXIT.USER;
+}
+
+/**
+ * `score <file.arch|-> --brief <intent.json>` — the continuous intent-satisfaction
+ * METER (the H4 reward projection): reports satisfied/total, a scalar `score` in [0,1],
+ * the four subscores, and the violations. It measures, it does NOT gate — a successful
+ * measurement exits 0 even with failing assertions (`validate --intent` is the gate).
+ * IO/usage problems still exit 1/3. `ok` mirrors the intent gate so a caller can still
+ * read pass/fail, but never changes the exit code.
+ */
+function cmdScore(args: Args): number {
+  if (args.brief === undefined) return usageError("score needs --brief <intent.json>");
+  return withSource(args, (source, input) => {
+    const it = loadIntent(args.brief!, "--brief", args);
+    if (isCheckError(it)) return it.exit;
+    const result = validateIntent(source, it, { world: makeNodeWorld(baseDirOf(input)) });
+    // score = fraction of assertions satisfied (an empty intent scores a perfect 1),
+    // rounded to 4 decimals so the meter is deterministic across runs.
+    const score = result.total === 0 ? 1 : Math.round((result.satisfied / result.total) * 10000) / 10000;
+    if (args.json) {
+      emitJson({
+        ok: result.ok,
+        satisfied: result.satisfied,
+        total: result.total,
+        score,
+        subscores: result.subscores,
+        violations: result.violations.map(violationJson),
+      });
+    } else if (!args.quiet) {
+      const pct = Math.round(score * 100);
+      process.stdout.write(`score ${result.satisfied}/${result.total} (${pct}%) · ${result.ok ? "ok" : "gated"}\n`);
+      for (const v of result.violations) process.stderr.write(`  ${v.code}: ${v.message}\n`);
+    }
+    // The meter always exits 0 on a successful measurement, gated or not.
+    return EXIT.OK;
+  });
 }
 
 function cmdLint(args: Args): number {
@@ -1404,8 +1555,9 @@ Usage:
   arch batch    <a.arch> <b.arch> … [-o dir] [-f …] [-j jobs] [--json]   render many files concurrently
   arch md       <doc.md> [-o out.md] [-f svg|png] [--error-svg] [--json]   render fenced arch blocks → image links
   arch watch    <in.arch> [-o out] [-w width] [-f …]
-  arch validate <in.arch|-> [--strict] [--graph g.json] [--json]      parse + resolve + lint (no render)
+  arch validate <in.arch|-> [--strict] [--graph g.json] [--intent i.json [--feedback]] [--json]   parse + resolve + lint + optional graph/intent gate (no render)
   arch describe <in.arch|-> [--json]      semantic facts (rooms, areas, adjacency)
+  arch score    <in.arch|-> --brief i.json [--json]   continuous intent satisfaction (satisfied/total) — measures, never gates
   arch lint     <in.arch|-> [--profile residential-basic|accessibility-advisory] [--strict] [--json]   architectural soundness warnings
   arch ast      <in.arch|-> [--json]      parse only → span-bearing AST JSON (no resolve/render)
   arch complete <in.arch|-> --at <n> [--json]   completion items in scope at a byte offset
@@ -1428,6 +1580,8 @@ Every command takes --json: result on stdout, messages on stderr.
   so the drawing is self-describing for assistive tech and machine readers; default output is unchanged.
 --from-json (compile): read the input as Plan JSON (RPLAN shape), convert to .arch, then compile (all -f/-o flags apply).
 --graph <g.json> (validate): check interior-door adjacency against an intended graph (bare dict or {input_graph:{…}}); mismatch → exit 2.
+--intent <i.json> (validate): gate the plan against a brief's intent JSON; a failing gating assertion → exit 2 (adjacency/reachability score but never gate). --feedback appends per-violation correction prompts.
+--brief <i.json> (score): the intent JSON to measure against; score reports satisfied/total and always exits 0 on a successful measurement.
 --at <byteOffset> (complete): required; the source offset to list completions at.
 --install (compile -f png/pdf, preview): auto-install the missing optional render dep, then retry.
 --ascii (preview) / -f txt (compile): render a zero-dependency ASCII text plan (--cols, --charset).
@@ -1463,6 +1617,8 @@ async function main(): Promise<void> {
       return process.exit(cmdValidate(args));
     case "describe":
       return process.exit(cmdDescribe(args));
+    case "score":
+      return process.exit(cmdScore(args));
     case "lint":
       return process.exit(cmdLint(args));
     case "ast":

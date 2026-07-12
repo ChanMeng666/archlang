@@ -456,12 +456,16 @@ from a file or stdin (`-`). There is intentionally no MCP server — this CLI is
   - flags: `--out|-o <file|->` output destination ('-' = stdout) · `--format|-f <svg|dxf|txt|pdf|png>` output format (default svg) · `--width|-w <px>` page width hint in pixels
 
 **`arch validate`** — parse + resolve + lint, no render (is it valid & sound?)
-  - input: <file.arch|-> → output: diagnostics (plus a graph{} report with --graph)
-  - flags: `--strict|--fail-on-warning` advisory warnings fail too (exit 2) · `--graph <graph.json>` also check the plan's interior-door adjacency against an intended graph (bare dict or {input_graph:{…}}); mismatch → exit 2 · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - input: <file.arch|-> → output: diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations } block with --intent)
+  - flags: `--strict|--fail-on-warning` advisory warnings fail too (exit 2) · `--graph <graph.json>` also check the plan's interior-door adjacency against an intended graph (bare dict or {input_graph:{…}}); mismatch → exit 2 · `--intent <intent.json>` gate the plan against a brief's intent JSON; a failing gating assertion (room count/existence/area/windows) → exit 2. Adjacency/reachability score but never gate. Composes with --graph. · `--feedback` with --intent, append a deterministic per-violation correction prompt (advisory data, never applied) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
 
 **`arch describe`** — semantic facts: rooms, areas, adjacency, what doors connect
   - input: <file.arch|-> → output: facts (JSON or a summary)
   - flags: `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+
+**`arch score`** — continuous intent satisfaction (satisfied/total) as data — the refine-loop reward. Measures, never gates (validate --intent is the gate).
+  - input: <file.arch|-> → output: { ok, satisfied, total, score, subscores, violations } (exit 0 on a successful measurement, even when assertions fail)
+  - flags: `--brief <intent.json>` the intent JSON to measure satisfaction against (required) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
 
 **`arch lint`** — architectural soundness warnings
   - input: <file.arch|-> → output: W_* warnings
