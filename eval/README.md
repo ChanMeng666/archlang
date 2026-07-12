@@ -20,16 +20,19 @@ model loop (deep-dive H3).
   edits, ADR 0011) then `arch repair` (the geometric corrector, ADR 0006) — **no model in the loop,
   zero extra API calls.** ΔL0→L1 is the free tool dividend. Implemented in `l1.ts` (`l1Pipeline`),
   gated offline in CI by `test/fault-injection.test.ts`, and overlaid on a live run with `--l1`.
-- **L2 — a diagnostic feedback loop (built, not yet measured).** Roadmap Tranche 3: does feeding
-  diagnostics back to the model beat **equal-token-budget i.i.d. resampling** (Olausson,
-  arXiv:2306.09896)? The harness is implemented and offline-tested — `l2.ts` (pure protocol: ≤2
-  feedback rounds fed only compile/lint diagnostics with their `fix --dry-run` previews + a trimmed
-  `describe()`, oracle-isolated; the control arm matches the loop's *measured* token spend,
-  rounding its sample count up, which favours the control) and `l2-run.ts` (guarded CLI:
-  `npm run eval:l2 -- --yes [--trials N] [--max N] [--budget …] [--concurrency N]`, or the
-  "Eval (L2 loop vs resampling)" workflow). **The live experiment has not been run** (cost was
-  declined 2026-07-12), so the loop-vs-resampling question is still open; until it is measured,
-  `adjacent`/`reachable` stay subscore-only (the T4 hook) and no net-loop-gain claim may be made.
+- **L2 — a diagnostic feedback loop (built; the live experiment is PERMANENTLY DECLINED).**
+  Roadmap Tranche 3 asked: does feeding diagnostics back to the model beat
+  **equal-token-budget i.i.d. resampling** (Olausson, arXiv:2306.09896)? The harness is
+  implemented and offline-tested — `l2.ts` (pure protocol: ≤2 feedback rounds fed only
+  compile/lint diagnostics with their `fix --dry-run` previews + a trimmed `describe()`,
+  oracle-isolated; the control arm matches the loop's *measured* token spend, rounding its
+  sample count up, which favours the control) and `l2-run.ts` (guarded CLI + the
+  "Eval (L2 loop vs resampling)" workflow). **By owner decision (2026-07-12) the ~440-call
+  live run will NOT be performed — ever. Do not dispatch it.** The loop-vs-resampling
+  question is therefore **permanently unanswered**: no net-loop-gain claim (nor its absence)
+  may be made in any doc, prompt, or comment; `adjacent`/`reachable` stay subscore-only
+  permanently (the T4 gating-promotion hook is closed); the L3/L4/L5 tiers stay unbuilt.
+  The harness and its 14 offline tests are kept as the protocol's reference implementation.
 
 Calibrated L0 baseline (`gpt-5.5-2026-04-23`, seed `20260711`, 26 briefs, judge v2, 2026-07-11):
 **valid 25/26 (96%) · intent 13/26 (50%) · sound 4/26 (15%)**. Same run's `--l1` overlay: **intent
@@ -44,7 +47,7 @@ npm run eval        # offline: score the committed goldens (writes eval/results.
 npm run eval:ci     # same command — the CI regression gate (no API key; exit 1 on regression)
 npm run eval:live -- --yes [--max N] [--budget <n>tok|<n>usd] [--l1]   # live, paid, guarded
 npm run eval:g1 -- --yes [--max N]    # Gate G1: generate intent JSONs from briefs (paid, guarded; or the "Eval (G1 intent generation)" workflow)
-npm run eval:l2 -- --yes [--trials N] [--max N] [--budget <n>tok|usd] [--concurrency N]   # T3: L2 loop vs equal-budget resampling (paid, guarded; or the "Eval (L2 loop vs resampling)" workflow)
+npm run eval:l2 -- --yes …   # T3 harness — DO NOT RUN: the live experiment is permanently declined (owner decision 2026-07-12)
 ```
 
 - **Offline** (`run.ts` default) compiles → lints → describes each committed golden and scores it.
@@ -84,7 +87,8 @@ also checks a seventh kind (`room-windows`) that no corpus entry uses:
 
 Gating predicates are conjunctive — they decide `semanticPass`. `adjacent`/`reachable` **score but
 never fail** a plan in Tier 1: one-shot topology is what v1.13's *loop* tools address, not one-shot
-generation (the documented T4 hook promotes them once the loop-vs-one-shot split is measured).
+generation. (The T4 hook that would have promoted them to gating required T3's measurement;
+with the live experiment permanently declined, they stay advisory permanently.)
 
 - **Area is brief-grounded.** A band is asserted **only where the brief states a number** (±10–15%
   around it); each band carries a `source` quote so a failure cites what licensed the number.

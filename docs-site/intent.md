@@ -150,9 +150,9 @@ Adjacency and reachability are advisory on purpose. One-shot topology — which 
 onto which — is exactly what v1.13's loop tools (`arch fix`, `arch suggest`,
 `arch validate --graph`) exist to repair after the fact, not something a single generation
 pass is expected to nail. Whether iterating with those tools beats simply resampling the
-same generator under an equal token budget is an **open question** — the loop-vs-resampling
-experiment has not been run, and nothing here decides it. So these checks report and score
-the miss, but they do not fail the gate.
+same generator under an equal token budget is a question this project has chosen to leave
+**permanently unmeasured** — no experiment answers it, and nothing here decides or claims
+it either way. So these checks report and score the miss, but they do not fail the gate.
 
 ## From the CLI
 

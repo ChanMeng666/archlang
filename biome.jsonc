@@ -14,6 +14,10 @@
       "!docs/error-codes.md",
       "!schemas/plan.schema.json",
       "!schemas/intent.schema.json",
+      // …and their docs-site copies (sync-docs.mjs copyFileSync — must stay byte-identical
+      // to the generated sources, so the formatter must not touch them either):
+      "!docs-site/public/plan.schema.json",
+      "!docs-site/public/intent.schema.json",
       "!bench/baseline.json",
       "!test/__snapshots__",
       "!test/__goldens__",

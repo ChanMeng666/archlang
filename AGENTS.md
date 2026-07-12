@@ -72,12 +72,13 @@ to npm as `1.14.0` (core) + `0.2.0` (MCP shim) via the new tokenless OIDC releas
   ≤2 rounds, oracle-isolated to compile/lint/`fix --dry-run`/trimmed-describe only;
   `eval/l2-run.ts` guarded CLI with retrying author + per-brief error isolation; Olausson
   **equal-token-budget i.i.d. resampling control** with round-up-favors-control accounting;
-  per-metric best-of, mean±σ over trials, `pass@n`/`pass^n`; `eval-l2.yml` workflow). The
-  ~440-call live run (est. $70–95) was **declined on cost** — so the decisive
-  loop-vs-resampling question **remains open**: do not claim a net model-loop gain (or its
-  absence) anywhere. To answer it later: dispatch **"Eval (L2 loop vs resampling)"** in
-  Actions (defaults = full run; smoke: `max 2, trials 1`). L3/L4/L5 stay unbuilt (gated on
-  an L2 net win).
+  per-metric best-of, mean±σ over trials, `pass@n`/`pass^n`; `eval-l2.yml` workflow).
+  **OWNER DECISION (2026-07-12): the ~440-call live run (est. $70–95) is PERMANENTLY
+  DECLINED — it will never be dispatched.** The loop-vs-resampling question is therefore
+  permanently unanswered: never claim a net model-loop gain (or its absence) anywhere.
+  Everything gated on it is closed for good: L3/L4/L5 stay unbuilt, and T4's
+  adjacency/reachability assertions stay advisory (`gate: false`) permanently. The harness
+  + its offline tests are kept as the protocol's reference implementation only.
 - **Tranche 4: the intent channel (2026-07-12; core + CLI, zero new runtime deps).**
   The judge-v2 core is lifted into the core package:
   **`src/intent.ts`** (`validateIntent(source, intent)` → `{ ok, satisfied, total,

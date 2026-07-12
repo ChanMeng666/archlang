@@ -3,9 +3,10 @@
 **Date:** 2026-07-11 · **Status:** **T1 + T2 implemented 2026-07-11** (commits
 `60f5a87`…`83dc0cc`); **Gate G1 PASSED 2026-07-12** (`eval/g1/report.md` — faithfulness
 154/157 = 98.1% vs direct-generation 93.4%, z = 2.08 p = .019; T4 cleared, with a
-valid-only-control sensitivity caveat recorded); **T3 harness implemented 2026-07-12,
-live experiment deferred** (the ~440-call spend was declined — the loop-vs-resampling
-question stays open; dispatch the "Eval (L2 loop vs resampling)" workflow to answer it);
+valid-only-control sensitivity caveat recorded); **T3 harness implemented 2026-07-12;
+the live experiment is PERMANENTLY DECLINED by owner decision (2026-07-12)** — the
+loop-vs-resampling question is permanently unanswered (never claim a loop gain or its
+absence; L3–L5 and T4's gating promotion are closed for good);
 **T4 implemented 2026-07-12** (the intent channel — see the tranche's Status
 line; released same day as `@chanmeng666/archlang@1.14.0` + `archlang-mcp@0.2.0`);
 T5–T6 remain open ·
@@ -125,9 +126,10 @@ honestly in AGENTS.md and skip T4.
 
 **Status: ⚙ harness implemented 2026-07-12** (`eval/l2.ts` + `eval/l2-run.ts` +
 `eval-l2.yml`, offline-tested in CI, spec below followed incl. the equal-budget control
-and oracle isolation); **the live run itself was deferred** — the user declined the
-~440-call cost, so no L2 number exists yet and the drivability question below is still
-unanswered. Run it any time via the "Eval (L2 loop vs resampling)" workflow_dispatch.
+and oracle isolation); **the live run is PERMANENTLY DECLINED (owner decision,
+2026-07-12)** — no L2 number will ever exist, the drivability question below stays
+permanently unanswered, and the "Eval (L2 loop vs resampling)" workflow must not be
+dispatched. The harness remains as the protocol's reference implementation.
 
 **Motivation:** H3 verdict — the one artifact that can confirm, refute, or bound the
 AGENTS.md drivability narrative, and that gates T4's headline status, T6's scope, and H4's

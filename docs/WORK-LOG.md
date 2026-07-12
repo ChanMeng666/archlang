@@ -497,3 +497,15 @@ npm-ok/registry-failed partial run; they now probe the MCP registry's own state.
 **Verified.** npm: core `1.14.0` = latest, shim `0.2.0` = latest (both with provenance);
 MCP registry: `io.github.ChanMeng666/archlang-mcp` 0.2.0 isLatest. 942 tests / 96 files green
 at every commit; CONTRIBUTING's Releasing section rewritten for the new flow.
+
+## 2026-07-12 — Owner decision: the T3 live experiment is permanently declined
+
+The ~440-call L2 loop-vs-resampling run (est. $70–95) will **never** be performed — upgraded
+from "deferred on cost" to a standing decision. Consequences, now written through the docs
+(AGENTS.md, roadmap status + T3 tranche, eval/README.md, docs/intent.md, eval-l2.yml header):
+the loop-vs-resampling question is **permanently unanswered** and no net-loop-gain claim (nor
+its absence) may ever be made; T4's adjacency/reachability assertions stay advisory
+(`gate: false`) permanently — the gating-promotion hook is closed; L3/L4/L5 tiers stay
+unbuilt for good. The L2 harness (`eval/l2.ts`, `eval/l2-run.ts`, 14 offline tests) is kept
+as the protocol's reference implementation, and `eval-l2.yml` now opens with a DO-NOT-DISPATCH
+banner so no future session mistakes "manual dispatch available" for "should be dispatched".

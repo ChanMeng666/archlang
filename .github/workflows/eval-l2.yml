@@ -1,5 +1,12 @@
+# ─────────────────────────────────────────────────────────────────────────────────────
+# DO NOT DISPATCH — OWNER DECISION 2026-07-12: the live L2 experiment is PERMANENTLY
+# DECLINED (≈440 paid calls). The loop-vs-resampling question is deliberately left
+# unanswered forever; never claim a net model-loop gain or its absence. This workflow
+# is kept only as the harness's reference wiring. See eval/README.md + AGENTS.md.
+# ─────────────────────────────────────────────────────────────────────────────────────
+#
 # L2 authorability experiment — does a diagnostic feedback loop beat equal-budget
-# resampling? Run on demand only (roadmap Tranche 3).
+# resampling? (roadmap Tranche 3; harness offline-tested, live run permanently declined).
 #
 # This is manual (workflow_dispatch): it calls a paid model API MANY times per brief
 # (a loop arm of up to 3 calls per trial PLUS an equal-budget i.i.d. control arm), so it
