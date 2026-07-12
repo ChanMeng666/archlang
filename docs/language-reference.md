@@ -131,6 +131,30 @@ Lowest-to-highest precedence (use parentheses to override):
 - **Sizes** accept either the `WxH` literal (`4000x3000`) or `<expr> x <expr>`
   (`(2000+W) x H`). The bare `x` separates width and height.
 
+### Metric unit suffixes
+
+A numeric literal may carry an optional metric unit suffix, folded to
+millimetres by the lexer — so bare numbers still mean millimetres and every
+existing plan is unchanged:
+
+| Written | Value (mm) |
+|---------|-----------|
+| `3` | `3` (bare = mm) |
+| `3mm` | `3` (explicit, a no-op) |
+| `3cm` | `30` |
+| `3m` | `3000` |
+| `3.5m` | `3500` |
+| `40cm` | `400` |
+
+The conversion is exact (decimal-point shifting, never a floating-point
+multiply), so `3.333m` is exactly `3333` and `0.0005m` is exactly `0.5`. The
+suffix must sit **immediately** after the digits with no space (`3m`, not
+`3 m`), and it does not fire when a letter follows it — `3meters` is the number
+`3` followed by the identifier `meters`. Each component of a `WxH` literal may
+carry its own suffix (`3mx4m`, `3.5mx4200`, `30cmx40cm`). There is deliberately
+**no area unit** (`m²`); areas come from `describe()`. The formatter normalises a
+suffixed literal to its millimetre value (`3.5m` → `3500`).
+
 ### Arrays & ranges
 
 ```

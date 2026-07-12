@@ -9,7 +9,7 @@ a `fix`). This page is everything you need to author it. Print it any time with 
 
 ## The 7 rules that matter
 
-1. **Units are millimetres.** A 4-metre wall is `4000`, not `4`.
+1. **Units are millimetres.** A 4-metre wall is `4000`, not `4`. Optional metric suffixes fold to mm: `4m`=4000, `3.5m`=3500, `40cm`=400, `20mm`=20.
 2. **Origin is top-left; +x goes right, +y goes DOWN** (screen/SVG convention — *not* math y-up).
 3. **Coordinates are `(x, y)` tuples; sizes are `WxH`** (e.g. `4000x3000`) or `<expr> x <expr>` with spaces.
 4. **Doors and windows must lie ON a wall segment** (on its centerline), or you get a

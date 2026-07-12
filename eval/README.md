@@ -40,6 +40,12 @@ Calibrated L0 baseline (`gpt-5.5-2026-04-23`, seed `20260711`, 26 briefs, judge 
 `live-baseline.json`; the L1 numbers are recorded there as reference only (the baseline and every
 delta against it are L0).
 
+> **Prompt drift since this baseline.** The Unreleased metric-unit-suffix feature added a line to
+> `spec.llm.md` — the author prompt above. This baseline was measured under the pre-suffix prompt, so
+> a future live run authors under a (slightly) different prompt and its numbers are not strictly
+> comparable to the row above. No scoring/judge/fixture code changed; re-running the paid live
+> baseline under the new prompt is a separate, owner-approved action (default: not run).
+
 ## How to run
 
 ```bash

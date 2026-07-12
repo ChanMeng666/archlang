@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Optional metric unit suffixes on numeric literals** (roadmap Tranche 6 Track B). A number may
+  carry a `mm`/`cm`/`m` suffix, folded to millimetres at lex time: `3m` → `3000`, `3.5m` → `3500`,
+  `3cm` → `30`, `3mm` → `3` (an explicit no-op). Bare numbers still mean millimetres, so **every
+  existing plan's output is byte-identical** (a determinism/byte-equality test compiles a suffixed
+  plan and its bare-mm twin and asserts equal SVG). The conversion is exact — decimal-point
+  shifting on the digit string, never a floating-point multiply — so `3.333m` is exactly `3333` and
+  `0.0005m` is exactly `0.5` mm. The suffix must sit immediately after the digits (no space) and
+  does not fire when a letter follows (`3meters` = number `3` + ident `meters`); each component of a
+  `WxH` literal may carry its own suffix (`3mx4m`, `3.5mx4200`). Deliberately **no area unit**
+  (`m²`) — that belongs to the parked T6 area syntax (Gate G2 closed; see
+  `docs/research/2026-07-g2-verdict.md`). The formatter normalises a suffixed literal to its mm
+  value (`3.5m` → `3500`). Folded in the lexer (`src/lexer.ts`); the grammar source of truth
+  (`src/grammar/tokens.ts`) and every generated artifact — editor grammars, `grammars/archlang.gbnf`,
+  `spec.llm.md`, `llms-full.txt` — carry the optional suffix.
+- **Note (eval baseline):** `spec.llm.md` is the eval's author prompt, and this change adds a line
+  to it, so it now differs from the prompt behind the 2026-07-11/12 calibrated live baseline. No
+  scoring/judge/fixture code changed; re-running the paid live baseline under the new prompt stays a
+  separate, owner-approved action (default: not run).
+
 ## [1.14.0] - 2026-07-12
 
 v1.14 Tranches 1–2 + 4 — **the measurement foundation, then the intent channel it licensed**

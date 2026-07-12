@@ -71,6 +71,24 @@ const isDigit = (c: string) => c >= "0" && c <= "9";
 const isIdentStart = (c: string) => (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_";
 const isIdentPart = (c: string) => isIdentStart(c) || isDigit(c);
 
+/**
+ * Fold an optional metric unit suffix into millimetres by shifting the decimal
+ * point of the raw digit string `shift` places to the right (×10^shift) —
+ * cm→1, m→3, mm→0. Done on the string, never by float multiply, so
+ * `3.333m` is exactly `3333` and `0.0005m` is exactly `0.5` (mm). parseFloat is
+ * applied to the shifted string by the caller.
+ */
+function shiftDecimalLeft(raw: string, shift: number): string {
+  if (shift === 0) return raw;
+  const dot = raw.indexOf(".");
+  const intPart = dot === -1 ? raw : raw.slice(0, dot);
+  let fracPart = dot === -1 ? "" : raw.slice(dot + 1);
+  while (fracPart.length < shift) fracPart += "0";
+  const newInt = intPart + fracPart.slice(0, shift);
+  const newFrac = fracPart.slice(shift);
+  return newFrac.length > 0 ? `${newInt}.${newFrac}` : newInt;
+}
+
 // Stage memo: lexing is a pure function of the source text. Keyed by content
 // hash (verified against the stored source on hit). Speeds re-lex on reparse.
 const lexCache = new Map<string, { src: string; out: LexResult }>();
@@ -121,6 +139,48 @@ function lexImpl(src: string): LexResult {
     startIdx: number,
     extra?: Partial<Token>,
   ) => tokens.push({ type, value, line: startLine, col: startCol, ...extra, start: startIdx, end: i });
+
+  // The char after a metric unit suffix must not continue an identifier, EXCEPT
+  // an `x` that begins the dimension separator (`3mx4`) — so `3meters` stays a
+  // number plus the ident `meters`, while `3m` folds and `3mx4` still splits.
+  const unitBoundaryOk = (len: number) => {
+    const after = peek(len);
+    if (!isIdentPart(after)) return true;
+    return after === "x" && (isDigit(peek(len + 1)) || (peek(len + 1) === "." && isDigit(peek(len + 2))));
+  };
+  // Consume a trailing metric unit suffix (mm|cm|m, longest first) that sits
+  // immediately after the digits (no whitespace) and return its decimal shift;
+  // null if none applies. Advances past the suffix on a match.
+  const scanUnitSuffix = (): number | null => {
+    let shift = -1;
+    let len = 0;
+    if (peek(0) === "m" && peek(1) === "m" && unitBoundaryOk(2)) {
+      shift = 0;
+      len = 2;
+    } else if (peek(0) === "c" && peek(1) === "m" && unitBoundaryOk(2)) {
+      shift = 1;
+      len = 2;
+    } else if (peek(0) === "m" && unitBoundaryOk(1)) {
+      shift = 3;
+      len = 1;
+    }
+    if (len === 0) return null;
+    for (let k = 0; k < len; k++) advance();
+    return shift;
+  };
+  // Scan one numeric literal (digits, optional `.frac`, optional unit suffix)
+  // starting at the cursor and fold any suffix into a millimetre value.
+  const scanNum = (): number => {
+    let raw = "";
+    while (isDigit(peek())) raw += advance();
+    // A "." is a decimal point only when a digit follows; ".." is the range op.
+    if (peek() === "." && isDigit(peek(1))) {
+      raw += advance();
+      while (isDigit(peek())) raw += advance();
+    }
+    const shift = scanUnitSuffix();
+    return parseFloat(shift === null ? raw : shiftDecimalLeft(raw, shift));
+  };
 
   while (i < src.length) {
     const c = peek();
@@ -316,28 +376,15 @@ function lexImpl(src: string): LexResult {
     // Number (optionally part of a literal dimension WxH). Numbers are
     // non-negative; negation is a unary operator in expressions.
     if (isDigit(c) || (c === "." && isDigit(peek(1)))) {
-      let raw = "";
-      while (isDigit(peek())) raw += advance();
-      // A "." is a decimal point only when a digit follows; ".." is the range op.
-      if (peek() === "." && isDigit(peek(1))) {
-        raw += advance();
-        while (isDigit(peek())) raw += advance();
-      }
-      const first = parseFloat(raw);
-      // Dimension: <num>x<num>
+      const first = scanNum();
+      // Dimension: <num>x<num> (each component may carry its own unit suffix).
       if (peek() === "x" && (isDigit(peek(1)) || (peek(1) === "." && isDigit(peek(2))))) {
         advance(); // consume 'x'
-        let raw2 = "";
-        while (isDigit(peek())) raw2 += advance();
-        if (peek() === "." && isDigit(peek(1))) {
-          raw2 += advance();
-          while (isDigit(peek())) raw2 += advance();
-        }
-        const second = parseFloat(raw2);
-        push("dimension", `${raw}x${raw2}`, startLine, startCol, startIdx, { num: first, num2: second });
+        const second = scanNum();
+        push("dimension", src.slice(startIdx, i), startLine, startCol, startIdx, { num: first, num2: second });
         continue;
       }
-      push("number", raw, startLine, startCol, startIdx, { num: first });
+      push("number", src.slice(startIdx, i), startLine, startCol, startIdx, { num: first });
       continue;
     }
 

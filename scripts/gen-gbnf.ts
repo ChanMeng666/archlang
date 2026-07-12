@@ -212,9 +212,13 @@ function rules(): [string, string][] {
     ["if-expr", `"if" ws expr ws "{" ws expr ws "}" ws "else" ws "{" ws expr ws "}"`],
 
     // ---- lexical ---------------------------------------------------------
-    ["number", `digits frac?`],
+    // A numeric literal may carry an optional metric unit suffix (mm|cm|m),
+    // folded to millimetres by the lexer; the value is scaled, the token shape
+    // is otherwise a number.
+    ["number", `digits frac? unit?`],
     ["digits", `[0-9]+`],
     ["frac", `"." digits`],
+    ["unit", `"mm" | "cm" | "m"`],
     ["ident", `[a-zA-Z_] [a-zA-Z0-9_]*`],
     ["string", `"\\"" str-char* "\\""`],
     ["str-char", `str-plain | str-esc | interp`],

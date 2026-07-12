@@ -383,6 +383,9 @@ plan "Sugar" {
       `plan "d" {\n  room right-of a align top gap 0 size 1x1\n}\n`, // relational placement
       `plan "d" {\n  room at (0,0) size 1x1 label "a \\"q\\" \\{brace\\} end"\n}\n`, // string escapes
       `plan "d" {\n  wall x thickness 100 { (0,0) (1,0) (1,1) close }\n}\n`, // wall points + close
+      `plan "d" {\n  room at (0,0) size 3m x 4cm\n}\n`, // spaced dimension with metric unit suffixes
+      `plan "d" {\n  room at (0,0) size 3.5mx4200\n}\n`, // glued WxH, first component suffixed, second bare
+      `plan "d" {\n  door on w at 1.2m width 900mm\n}\n`, // suffixed attach position + width
     ];
     for (const s of ok) expect(accepts(rules, s), s).toBe(true);
   });
@@ -419,6 +422,7 @@ plan "Sugar" {
       ["statement soup", `plan "x" {\n  = = ) ( 3 3 ,\n}\n`],
       ["unterminated string", `plan "x" {\n  room at (0,0) size 1x1 label "oops\n}\n`],
       ["number where keyword expected", `plan "x" {\n  units 5\n}\n`],
+      ["unknown unit suffix", `plan "x" {\n  room at (0,0) size 3k x 4\n}\n`],
     ];
     for (const [label, src] of bad) {
       it(label, () => {

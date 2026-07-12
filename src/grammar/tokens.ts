@@ -149,9 +149,10 @@ export const RULES = {
   ident: "[A-Za-z_][A-Za-z0-9_]*",
   /** Line comment to end of line. */
   comment: "#.*$",
-  /** A number, optionally a literal dimension `WxH`. */
-  dimension: "[0-9]+(?:\\.[0-9]+)?x[0-9]+(?:\\.[0-9]+)?",
-  number: "[0-9]+(?:\\.[0-9]+)?",
+  /** A number, optionally a literal dimension `WxH`. Either component may carry
+   *  an optional metric unit suffix (`mm`|`cm`|`m`, folded to mm at lex time). */
+  dimension: "[0-9]+(?:\\.[0-9]+)?(?:mm|cm|m)?x[0-9]+(?:\\.[0-9]+)?(?:mm|cm|m)?",
+  number: "[0-9]+(?:\\.[0-9]+)?(?:mm|cm|m)?",
 } as const;
 
 /**
