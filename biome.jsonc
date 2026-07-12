@@ -13,6 +13,7 @@
       "!spec.llm.md",
       "!docs/error-codes.md",
       "!schemas/plan.schema.json",
+      "!schemas/intent.schema.json",
       "!bench/baseline.json",
       "!test/__snapshots__",
       "!test/__goldens__",

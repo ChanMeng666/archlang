@@ -516,7 +516,7 @@ from a file or stdin (`-`). There is intentionally no MCP server — this CLI is
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**43 errors** (abort rendering) · **31 warnings** (advisory; `validate --strict` fails on them too).
+**51 errors** (abort rendering) · **31 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -543,6 +543,14 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_IMPORT_NOT_FOUND` — Import path could not be resolved. **Fix:** Check the path (relative to the importing file) and that the file exists.
 - `E_IMPORT_PARSE` — Imported module has a parse error. **Fix:** Fix the syntax error in the imported module.
 - `E_INDEX` — Array index out of range. **Fix:** Clamp or check the index against `len(arr)`.
+- `E_INTENT_NO_DOOR` — The plan has no modeled entrance, so `reachable` cannot hold. **Fix:** Add an exterior entrance `door` on a perimeter wall. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).
+- `E_INTENT_NO_WINDOW` — A room the brief wants a window in has too few. **Fix:** Add a `window` on one of that room's walls. Gating tier: this failure DOES fail `validateIntent`'s `ok`.
+- `E_INTENT_NOT_ADJACENT` — Two rooms the brief wants adjacent share no interior door. **Fix:** Add a `door` (or `opening`) on the wall the two rooms share so they are directly connected. Advisory tier: this is scored and reported by `validateIntent` but does NOT fail `ok` (gate: false) — one-shot topology is what the loop tools address.
+- `E_INTENT_ROOM_AREA` — A named room's floor area is outside the brief's band. **Fix:** Resize the room so its floor area lands in the band. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number — qualitative size words license none.
+- `E_INTENT_ROOM_COUNT` — The plan's room count does not match the brief. **Fix:** Add or remove rooms to reach the enumerated count. Gating tier: this failure fails `validateIntent`'s `ok`.
+- `E_INTENT_ROOM_MISSING` — A room the brief names is absent from the plan. **Fix:** Add a `room` whose label, `uses`, or type matches the concept. Gating tier: this failure fails `validateIntent`'s `ok`.
+- `E_INTENT_TOTAL_AREA` — The plan's total floor area is outside the brief's band. **Fix:** Grow or shrink rooms so the total lands in the band. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number.
+- `E_INTENT_UNREACHABLE` — A room cannot be reached from the entrance through modeled doors. **Fix:** Add interior doors so every room connects back to the entrance. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).
 - `E_JSON_KIND` — Unknown element kind in plan JSON. **Fix:** Use one of the supported kinds: opening `kind` must be `door` | `window` | `opening`.
 - `E_JSON_SCHEMA` — Plan JSON does not match the schema. **Fix:** Fix the value at the reported JSON path (the message names it, e.g. `/rooms/0/width`); express geometry as concrete numbers, and author scripting/imports in `.arch` source instead.
 - `E_LAYOUT_CYCLE` — Relational room placement forms a cycle. **Fix:** Break the cycle by giving one of the rooms absolute `at (x,y)` coordinates.

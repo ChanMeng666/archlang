@@ -71,6 +71,7 @@
     "gen:llms": "tsx scripts/gen-llms-full.ts",
     "gen:gbnf": "tsx scripts/gen-gbnf.ts",
     "gen:plan-schema": "tsx scripts/gen-plan-schema.ts",
+    "gen:intent-schema": "tsx scripts/gen-intent-schema.ts",
     "eval": "tsx eval/run.ts",
     "eval:ci": "tsx eval/run.ts",
     "eval:live": "tsx eval/run.ts --live",

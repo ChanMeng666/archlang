@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**43 errors** · **31 warnings**
+**51 errors** · **31 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -32,6 +32,14 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_IMPORT_NOT_FOUND`](#e_import_not_found) | error | Import path could not be resolved. |
 | [`E_IMPORT_PARSE`](#e_import_parse) | error | Imported module has a parse error. |
 | [`E_INDEX`](#e_index) | error | Array index out of range. |
+| [`E_INTENT_NO_DOOR`](#e_intent_no_door) | error | The plan has no modeled entrance, so `reachable` cannot hold. |
+| [`E_INTENT_NO_WINDOW`](#e_intent_no_window) | error | A room the brief wants a window in has too few. |
+| [`E_INTENT_NOT_ADJACENT`](#e_intent_not_adjacent) | error | Two rooms the brief wants adjacent share no interior door. |
+| [`E_INTENT_ROOM_AREA`](#e_intent_room_area) | error | A named room's floor area is outside the brief's band. |
+| [`E_INTENT_ROOM_COUNT`](#e_intent_room_count) | error | The plan's room count does not match the brief. |
+| [`E_INTENT_ROOM_MISSING`](#e_intent_room_missing) | error | A room the brief names is absent from the plan. |
+| [`E_INTENT_TOTAL_AREA`](#e_intent_total_area) | error | The plan's total floor area is outside the brief's band. |
+| [`E_INTENT_UNREACHABLE`](#e_intent_unreachable) | error | A room cannot be reached from the entrance through modeled doors. |
 | [`E_JSON_KIND`](#e_json_kind) | error | Unknown element kind in plan JSON. |
 | [`E_JSON_SCHEMA`](#e_json_schema) | error | Plan JSON does not match the schema. |
 | [`E_LAYOUT_CYCLE`](#e_layout_cycle) | error | Relational room placement forms a cycle. |
@@ -361,6 +369,102 @@ import "lib/missing.arch": a   # error
 ```arch
 let a = [1, 2]
 let x = a[5]   # error
+```
+
+## E_INTENT_NO_DOOR
+
+*error* — The plan has no modeled entrance, so `reachable` cannot hold.
+
+**Cause.** An intent asserts `reachable: true`, but the plan has no door connecting a room to the exterior — nothing is enterable, so no room is reachable.
+
+**Fix.** Add an exterior entrance `door` on a perimeter wall. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).
+
+```arch
+door on exterior at 50% width 900   # a front door
+```
+
+## E_INTENT_NO_WINDOW
+
+*error* — A room the brief wants a window in has too few.
+
+**Cause.** An intent `roomsInclude[].windows` requires at least one window in a concept's room(s) (e.g. "give the bedroom a window"), but the plan places fewer than the required count.
+
+**Fix.** Add a `window` on one of that room's walls. Gating tier: this failure DOES fail `validateIntent`'s `ok`.
+
+```arch
+window on north at 40% width 1200   # light the bedroom
+```
+
+## E_INTENT_NOT_ADJACENT
+
+*error* — Two rooms the brief wants adjacent share no interior door.
+
+**Cause.** An intent `adjacency` edge names two concepts (e.g. hall ↔ bathroom) that are not joined by an interior door or cased opening in the plan's modeled connectivity.
+
+**Fix.** Add a `door` (or `opening`) on the wall the two rooms share so they are directly connected. Advisory tier: this is scored and reported by `validateIntent` but does NOT fail `ok` (gate: false) — one-shot topology is what the loop tools address.
+
+```arch
+door on wall_hall_bath width 800   # connect the hall to the bathroom
+```
+
+## E_INTENT_ROOM_AREA
+
+*error* — A named room's floor area is outside the brief's band.
+
+**Cause.** An intent `roomsInclude[].areaM2` gives a per-room area band (from a number in the brief, ±10% for "about N"), but the matched room's area falls outside it.
+
+**Fix.** Resize the room so its floor area lands in the band. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number — qualitative size words license none.
+
+```arch
+room at (0,0) size 4000x3000 label "Bedroom"   # 12 m²
+```
+
+## E_INTENT_ROOM_COUNT
+
+*error* — The plan's room count does not match the brief.
+
+**Cause.** An intent `rooms` count (asserted only when the brief ENUMERATES its rooms) does not match the plan's room total. A single surplus room passes only when it is pure circulation (a hall/corridor) — policy B.
+
+**Fix.** Add or remove rooms to reach the enumerated count. Gating tier: this failure fails `validateIntent`'s `ok`.
+
+```arch
+# brief lists 4 rooms; the plan draws 5 (and the extra is a bedroom, not a hall)
+```
+
+## E_INTENT_ROOM_MISSING
+
+*error* — A room the brief names is absent from the plan.
+
+**Cause.** An intent `roomsInclude[]` concept (e.g. "bathroom") matched no room by label, `room_type`, or `uses` — the plan is missing a room the brief asked for.
+
+**Fix.** Add a `room` whose label, `uses`, or type matches the concept. Gating tier: this failure fails `validateIntent`'s `ok`.
+
+```arch
+room at (0,0) size 2000x2000 label "Bathroom" uses bath   # supply the missing room
+```
+
+## E_INTENT_TOTAL_AREA
+
+*error* — The plan's total floor area is outside the brief's band.
+
+**Cause.** An intent `totalAreaM2` band (from a number in the brief, ±10% for "about N") does not contain the plan's total floor area.
+
+**Fix.** Grow or shrink rooms so the total lands in the band. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number.
+
+```arch
+# brief says "about 42 m²" (band 37.8–46.2); the plan totals 52 m²
+```
+
+## E_INTENT_UNREACHABLE
+
+*error* — A room cannot be reached from the entrance through modeled doors.
+
+**Cause.** An intent asserts `reachable: true` and the plan HAS an entrance, but one or more rooms are cut off — no chain of modeled doors reaches them from the exterior.
+
+**Fix.** Add interior doors so every room connects back to the entrance. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).
+
+```arch
+door on wall_hall_store width 800   # connect the isolated room
 ```
 
 ## E_JSON_KIND

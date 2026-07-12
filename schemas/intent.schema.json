@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://archlang-docs.vercel.app/intent.schema.json",
+  "title": "ArchLang Intent",
+  "description": "A floor-plan brief's checkable INTENT as structured data — what the source TEXT asked for, independent of any one drawing. Every field is BRIEF-grounded (derived from the prompt's words, not a golden's geometry). Area bands follow one convention everywhere: a brief's \"about/around/~N m²\" or a bare \"N m²\" sets both bounds to ±10% of N; \"at least N m²\" sets `min` only (open top); qualitative size words (compact, generous, large, spacious) license NO area assertion — omit the band rather than invent bounds. Assertions are checked against `describe()` facts; room count / existence / area / windows GATE (a real deliverable miss), while `adjacency`/`reachable` are ADVISORY (scored, never gating).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "rooms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Exact expected room count. RULE: assert a count ONLY when the brief ENUMERATES the rooms; do not derive a count from under-determined wording (\"a few rooms\", \"some bedrooms\"). A single surplus room is tolerated only when it is pure circulation (a hall/corridor) — policy B."
+    },
+    "roomsInclude": {
+      "type": "array",
+      "description": "Rooms the brief names, as CONCEPTS (bathroom, master-bedroom, tea-point, …) rather than literal labels, each optionally carrying a count band, area band, and window requirement.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "concept"
+        ],
+        "properties": {
+          "concept": {
+            "type": "string",
+            "description": "A brief-level room concept the plan must contain (e.g. \"bathroom\", \"living-room\"). Matched against produced rooms by label → room_type → uses."
+          },
+          "count": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "How many rooms of this concept the brief calls for (default: at least 1).",
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Minimum rooms of this concept (default 1)."
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Maximum rooms of this concept."
+              }
+            }
+          },
+          "areaM2": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source"
+            ],
+            "anyOf": [
+              {
+                "required": [
+                  "min"
+                ]
+              },
+              {
+                "required": [
+                  "max"
+                ]
+              }
+            ],
+            "description": "Per-room floor-area band in square metres. RULE — assert ONLY where the brief gives a number for this room: \"about/around/~N m²\" or a bare \"N m²\" → min/max at ±10% of N; \"at least N m²\" → `min` only; qualitative words (compact/generous/large) → assert NOTHING (omit areaM2).",
+            "properties": {
+              "min": {
+                "type": "number",
+                "description": "Lower bound (m²)."
+              },
+              "max": {
+                "type": "number",
+                "description": "Upper bound (m²); omit for an open \"at least\" band."
+              },
+              "source": {
+                "type": "string",
+                "description": "The brief phrase that licensed the band, quoted, so a failure can cite it."
+              }
+            }
+          },
+          "windows": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Window presence/count the brief requires for this room (GATING). Assert only where the brief asks for a window (\"give the bedroom a window\").",
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Minimum windows (defaults to 1 when `windows` is present)."
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Maximum windows in the room."
+              }
+            }
+          }
+        }
+      }
+    },
+    "totalAreaM2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "min"
+          ]
+        },
+        {
+          "required": [
+            "max"
+          ]
+        }
+      ],
+      "description": "Total floor-area band in square metres. Same band conventions as `areaM2`: \"about/~N\" or bare N → ±10%; \"at least N\" → `min` only; qualitative words → omit. At least one of min/max is required.",
+      "properties": {
+        "min": {
+          "type": "number",
+          "description": "Lower bound (m²)."
+        },
+        "max": {
+          "type": "number",
+          "description": "Upper bound (m²); omit for an open \"at least\" band."
+        },
+        "source": {
+          "type": "string",
+          "description": "The brief phrase that licensed the band, quoted."
+        }
+      }
+    },
+    "adjacency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requiredEdges",
+        "source"
+      ],
+      "description": "Interior-door adjacency the brief licenses. ADVISORY tier: each edge scores as a subscore but NEVER gates (a one-shot topology miss is what the loop tools — `arch fix`/`suggest`/`validate --graph` — address, not a hard fail). Assert only where the brief's words license it.",
+      "properties": {
+        "requiredEdges": {
+          "type": "object",
+          "description": "{ conceptA: [conceptB, …] } — each named pair of concepts must share an interior door or cased opening in the plan.",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "source": {
+          "type": "string",
+          "description": "The brief phrase that licensed the adjacency, quoted."
+        }
+      }
+    },
+    "reachable": {
+      "type": "boolean",
+      "description": "Assert that every room is reachable from a modeled entrance. ADVISORY tier: scored, never gating. Assert only where the brief's words license it (e.g. \"no room reached through another\")."
+    }
+  }
+}

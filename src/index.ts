@@ -101,6 +101,40 @@ export type {
   RoomType,
   GraphCheck,
 } from "./plan-json.js";
+// Intent channel (v1.14): author-time checking of a brief's INTENT against a plan.
+// `validateIntent(source, intent)` compiles the intent to predicates, checks them over
+// `describe()`'s facts, and returns catalogued E_INTENT_* violations with Nickel-style
+// blame; `feedbackForResult` turns them into advisory correction prompts (ADR 0005).
+// `intentFromJson` validates an untrusted Intent shape (pathed errors). The concept
+// vocabulary (`roomsMatchingConcept`/`isKnownConcept`) is production name resolution.
+// The eval consumes `compileIntent`/`checkPredicates`/`projectSubscores` (one judge, no
+// eval↔prod skew). INTENT_JSON_SCHEMA is the JSON Schema (2020-12) source. Pure, zero-dep.
+export {
+  validateIntent,
+  intentFromJson,
+  feedbackForResult,
+  compileIntent,
+  checkPredicates,
+  projectSubscores,
+  INTENT_JSON_SCHEMA,
+} from "./intent.js";
+export type {
+  Intent,
+  Predicate,
+  AssertionResult,
+  Subscores,
+  IntentViolation,
+  IntentCode,
+  IntentCheckResult,
+} from "./intent.js";
+export {
+  roomsMatchingConcept,
+  isKnownConcept,
+  isCirculationRoom,
+  CONCEPTS,
+  SYNONYMS_VERSION,
+} from "./intent-concepts.js";
+export type { Concept } from "./intent-concepts.js";
 // Semantic diff (v1.11): pure two-source→delta on top of `describe()`. `diffPlans`
 // returns which rooms/openings/furniture were added/removed/resized/relabeled, per-room
 // bbox edge deltas, circulation deltas, and frozen human-readable summary sentences —
