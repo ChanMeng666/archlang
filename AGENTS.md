@@ -22,7 +22,7 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | **Core package** | `@chanmeng666/archlang@1.15.0` (published, `latest`, with provenance — released tokenlessly via `.github/workflows/release.yml` OIDC trusted publishing) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — now incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`, and v1.14's `validate --intent`/`--feedback` + `score --brief`) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`schemas/intent.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
 | **MCP server** | `@chanmeng666/archlang-mcp@0.2.0` (published, `latest`; registry entry `io.github.ChanMeng666/archlang-mcp` v0.2.0 live on registry.modelcontextprotocol.io; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate (incl. `intent`)/**score**/repair/fix/suggest/complete + spec/context/schema/**intent-schema**/grammar resources; SDK dep quarantined here, core stays zero-dep) | `packages/mcp/`, `server.json` |
-| **VS Code extension** | `ChanMeng.archlang` — **0.7.0 repack built (rebundles core 1.15.0: unit-suffix grammar, `W_ALIAS_MATCH` quick fix), awaiting the owner's manual web upload**; 0.6.0 (core 1.14.0) is what's live meanwhile | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
+| **VS Code extension** | `ChanMeng.archlang@0.7.0` (published, live 2026-07-12 — rebundles core 1.15.0: unit-suffix grammar, `W_ALIAS_MATCH` quick fix, `rankFixes` ordering) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.15.0` (latest; a `v*` tag push triggers the tokenless OIDC release workflow) | github.com/ChanMeng666/archlang |
@@ -41,7 +41,7 @@ generator chain regenerated; `spec.llm.md` therefore drifted from the calibrated
 author prompt — see eval/README); and **`describe().freedom`** degrees-of-freedom placement
 report (append-only). Released as `@chanmeng666/archlang@1.15.0` via the tokenless OIDC
 tag-push flow (MCP shim stays 0.2.0 — its `^1.14.0` dep satisfies 1.15.0, no new tool surface);
-the VS Code 0.7.0 repack awaits the owner's web upload.
+VS Code 0.7.0 uploaded and live the same day.
 
 **Prior release — v1.14.0 (2026-07-12) — Tranches 1–2 + 4: the measurement foundation,
 then the intent channel it licensed (roadmap `docs/research/2026-07-roadmap-proposal.md`,
