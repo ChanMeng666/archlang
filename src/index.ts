@@ -44,7 +44,7 @@ export type { DiagnosticJson, FixSuggestionJson } from "./diagnostic-json.js";
 // `Applicability`, applies each `FixSuggestion` atomically, and reports what it
 // skipped. Fix PRODUCERS attach these; `applyFixes` consumes them.
 export type { Applicability, FixEdit, FixSuggestion } from "./diagnostics.js";
-export { applyFixes } from "./fix-apply.js";
+export { applyFixes, rankFixes } from "./fix-apply.js";
 export type { ApplyReport, ApplyFixesOptions } from "./fix-apply.js";
 export type * from "./ast.js";
 // Source formatter (v0.11): pure text→text, comment-preserving, idempotent.

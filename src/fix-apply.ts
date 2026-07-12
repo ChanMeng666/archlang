@@ -137,6 +137,43 @@ const APPLY_RANK: Record<Applicability, number> = {
   unspecified: Number.POSITIVE_INFINITY,
 };
 
+/** Total change magnitude of a suggestion: Σ over its edits of the bytes it
+ *  removes (`span.end - span.start`) plus the bytes it inserts (`newText.length`).
+ *  The smaller-change-wins term of {@link rankFixes} (egg-style extraction). */
+const editMagnitude = (s: FixSuggestion): number =>
+  s.edits.reduce((sum, e) => sum + (e.span.end - e.span.start) + e.newText.length, 0);
+
+/**
+ * Order the mutually-exclusive {@link FixSuggestion} ALTERNATIVES on **one**
+ * diagnostic (see {@link import("./diagnostics.js").FixSuggestion}) into a single
+ * canonical, deterministic sequence so every consumer — the `arch fix` fixpoint,
+ * LSP quick-fixes — picks or presents them the same way. Returns a **new** sorted
+ * array; the input is not mutated (pure).
+ *
+ * Suggestions are compared by a cost tuple, lexicographically:
+ * 1. {@link APPLY_RANK} of `applicability` — the more confidently applicable fix
+ *    first (`machine-applicable` < `maybe-incorrect` < placeholder/unspecified);
+ * 2. total edit magnitude ({@link editMagnitude}) — the smallest change wins;
+ * 3. earliest edit start offset ({@link firstEditStart});
+ * 4. original array index — a stable tie-break.
+ *
+ * On a singleton array (today's only shape — no producer emits more than one
+ * alternative per diagnostic) this is the identity, so existing behavior is
+ * unchanged.
+ */
+export function rankFixes(fixes: FixSuggestion[]): FixSuggestion[] {
+  return fixes
+    .map((fix, index) => ({ fix, index }))
+    .sort(
+      (a, b) =>
+        APPLY_RANK[a.fix.applicability] - APPLY_RANK[b.fix.applicability] ||
+        editMagnitude(a.fix) - editMagnitude(b.fix) ||
+        firstEditStart(a.fix) - firstEditStart(b.fix) ||
+        a.index - b.index,
+    )
+    .map(({ fix }) => fix);
+}
+
 /**
  * Apply `suggestions` to `source`, atomically per suggestion and deterministically.
  *
@@ -147,6 +184,12 @@ const APPLY_RANK: Record<Applicability, number> = {
  * table; if any of its edits conflicts (overlaps an already-applied edit, or is
  * out of range) the **whole** suggestion is rolled back and recorded in
  * `skipped`. Pure: no I/O, and the same inputs always yield the same report.
+ *
+ * This orders suggestions across diagnostics by edit position only; it does **not**
+ * treat the several `fixes` on one diagnostic as mutually-exclusive alternatives.
+ * A caller that wants the pick-one semantics those alternatives promise should
+ * reduce each diagnostic's `fixes` to its top-ranked one via {@link rankFixes}
+ * before handing them here.
  */
 export function applyFixes(source: string, suggestions: FixSuggestion[], opts: ApplyFixesOptions = {}): ApplyReport {
   const threshold = opts.maxApplicability === "maybe-incorrect" ? 1 : 0;

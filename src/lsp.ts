@@ -22,6 +22,7 @@ import { parse } from "./parser.js";
 import { eachExpr, eachStatement } from "./cursor.js";
 import { resolvePlan } from "./analyze.js";
 import { diagnosticToJson, type DiagnosticJson } from "./diagnostic-json.js";
+import { rankFixes } from "./fix-apply.js";
 
 // ---- keyword catalog (one place; T5.4 will source this from grammar/tokens) ----
 
@@ -382,7 +383,9 @@ export function codeActions(source: string, range: Span): CodeAction[] {
   for (const d of diagnostics) {
     if (!d.span || !d.fixes?.length || !spansTouch(d.span, range)) continue;
     const dj = diagnosticToJson(source, d);
-    for (const fix of d.fixes) {
+    // Present a diagnostic's mutually-exclusive alternatives in one canonical
+    // order (identity on today's singleton arrays).
+    for (const fix of rankFixes(d.fixes)) {
       built.push({
         machine: fix.applicability === "machine-applicable",
         action: {

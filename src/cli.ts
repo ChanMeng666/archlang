@@ -35,6 +35,7 @@ import {
   format,
   repair,
   applyFixes,
+  rankFixes,
   suggestTopology,
   formatDiagnostic,
   diagnosticToJson,
@@ -1368,10 +1369,13 @@ async function cmdFix(args: Args): Promise<number> {
     const fixes: FixSuggestion[] = [];
     const codeOf = new Map<FixSuggestion, string | undefined>();
     for (const d of diagnostics) {
-      for (const f of d.fixes ?? []) {
-        fixes.push(f);
-        codeOf.set(f, d.code);
-      }
+      // The `fixes` on one diagnostic are mutually-exclusive alternatives — take the
+      // single top-ranked one (rankFixes is the identity on today's singleton arrays,
+      // so this is byte-identical until a producer emits real alternatives).
+      const [chosen] = rankFixes(d.fixes ?? []);
+      if (!chosen) continue;
+      fixes.push(chosen);
+      codeOf.set(chosen, d.code);
     }
     if (fixes.length === 0) break;
 
