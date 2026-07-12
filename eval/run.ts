@@ -293,9 +293,13 @@ export function resolveProvider(): { provider: "anthropic" | "openai"; model: st
   const hasOpenAI = Boolean(process.env.OPENAI_API_KEY);
   const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY);
   const useOpenAI = explicit === "openai" || (explicit !== "anthropic" && hasOpenAI && !hasAnthropic);
+  // Trim + `||` (not bare `??`): the eval-live workflow exports ARCHLANG_EVAL_MODEL from an
+  // optional dispatch input, so an EMPTY string means "use the default" — `??` once let ""
+  // through and every call died with OpenAI 400 "you must provide a model parameter".
+  const modelOverride = process.env.ARCHLANG_EVAL_MODEL?.trim() || undefined;
   return useOpenAI
-    ? { provider: "openai", model: process.env.ARCHLANG_EVAL_MODEL ?? "gpt-5.5-2026-04-23" }
-    : { provider: "anthropic", model: process.env.ARCHLANG_EVAL_MODEL ?? "claude-sonnet-5" };
+    ? { provider: "openai", model: modelOverride ?? "gpt-5.5-2026-04-23" }
+    : { provider: "anthropic", model: modelOverride ?? "claude-sonnet-5" };
 }
 
 /** The one system prompt both providers get: the spec + a reply-format instruction.
