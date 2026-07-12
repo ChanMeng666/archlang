@@ -96,6 +96,11 @@ diagnostic also carries **machine-applicable `fixes`**:
 - **`arch fix` is syntactic; `arch repair` is geometric.** `fix` rewrites text where the right text is
   known (e.g. an off-wall door → the attachment form); `repair` *moves furniture* to a position no
   text edit could express. They compose — fix first, then repair.
+- **`arch fix` also applies fix-carrying *lint* advisories**, not only compile-stage faults — e.g.
+  `W_ALIAS_MATCH` (a room's use inferred from an indirect label alias) fixes by inserting the explicit
+  `uses …` it inferred. Before editing, `arch describe --json`'s **`freedom`** block tells you which
+  element positions were **hand-authored** (`absolute`) vs **derived** by the resolver
+  (relational/strip/attached/anchored/against-wall), so you know which numbers are safe to nudge.
 
 ## Fix the topology: add doors & windows the room graph needs
 
@@ -154,7 +159,9 @@ MCP-native hosts — prefer the CLI when you have a shell; it costs nothing in c
 
 ## Key rules (full detail in `arch spec`)
 
-- **Units are millimetres** (a 4 m wall is `4000`); **origin top-left, +x right, +y DOWN**.
+- **Units are millimetres** (a 4 m wall is `4000`); **origin top-left, +x right, +y DOWN**. An
+  optional metric suffix is exact sugar for the same mm value — `4m` = `4000`, `40cm` = `400`,
+  `20mm` = `20` — so you can write `4m` instead of hand-multiplying; bare numbers are unchanged.
 - **Attach openings to walls** (`on <wall> at <pos>`) so they always sit on a segment; a raw `at`
   that lands off any wall warns (and `arch fix` rewrites it).
 - **Fixtures draw real symbols:** `furniture wc|basin|shower|bathtub|kitchen_sink|counter|fridge|stove …`

@@ -34,8 +34,8 @@ structured JSON. `compile` also accepts `plan_json` (the Plan-JSON / RPLAN shape
 | Tool | What it does |
 |------|--------------|
 | `compile` | Render source (or `plan_json`) to SVG, or to zero-dep ASCII (`format:"txt"`). `accessible`, `overlay:"circulation"` opt-ins. Returns output + diagnostics. |
-| `describe` | Semantic facts (rooms, areas, adjacency, doors, circulation) — verify intent without an image. |
-| `lint` | Advisory `W_*` soundness warnings; `profile` selects a ruleset. |
+| `describe` | Semantic facts (rooms, areas, adjacency, doors, circulation, and a `freedom` report of which positions are hand-authored vs resolver-derived) — verify intent without an image. |
+| `lint` | Advisory `W_*` soundness warnings (may include the fix-carrying `W_ALIAS_MATCH` for a room use inferred from an indirect label alias); `profile` selects a ruleset. |
 | `validate` | Parse + resolve + lint, the ship gate. `strict` fails on warnings; `graph` checks interior-door adjacency against an intended room graph. |
 | `repair` | Explicit corrector: furniture out of walls/doorways/swings → new `.arch` source + change log. Never adds doors/windows. |
 | `fix` | Apply the machine-applicable fixes on a plan's diagnostics (syntactic corrector; bounded fixpoint). `unsafe` widens to `maybe-incorrect`. |

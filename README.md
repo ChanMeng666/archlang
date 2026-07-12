@@ -54,7 +54,9 @@ is fully client-side.
 - **Architectural soundness, not just syntax.** `arch lint` checks habitability *and* tacit
   professional knowledge: a bathroom reachable only through a bedroom, a wet room that isn't fully
   walled in, a door whose swing hits furniture or another door, a bath/kitchen with no fixtures, a
-  windowless bedroom, an unenterable room, a too-narrow door. All tunable via the ruleset.
+  windowless bedroom, an unenterable room, a too-narrow door, and a room whose use was only *inferred*
+  from an indirect label alias (`W_ALIAS_MATCH`, with a fix that pins the explicit `uses`). All tunable
+  via the ruleset.
 - **Human circulation as facts.** `arch describe` models how a person actually *walks* the plan on a
   clearance-eroded nav grid — per-room walk distance, the narrowest pinch on the way in, and how
   circuitous the route is — with advisory lint for a too-tight (`W_PATH_TOO_NARROW`) or roundabout
@@ -67,8 +69,10 @@ is fully client-side.
 - **Parametric + scriptable.** Values, arithmetic, arrays, `for`/`if`/`while`, and pure
   functions — plus **relational placement** (`right-of` / `below` / …) resolved by deterministic
   topological arithmetic. All expand-time: no runtime, no clock, no I/O.
-- **Explicit + deterministic.** Integer-millimetre coordinates with optional **grid snapping**;
-  byte-for-byte stable output, so renders are cacheable and visually regression-tested.
+- **Explicit + deterministic.** Integer-millimetre coordinates with optional **grid snapping** and
+  optional metric **unit suffixes** (`4m` / `40cm` / `20mm` fold exactly to millimetres at lex time;
+  bare numbers are unchanged); byte-for-byte stable output, so renders are cacheable and visually
+  regression-tested.
 - **Zero-dependency core, isomorphic.** Hand-written lexer + recursive-descent parser; the SVG
   path runs in Node and the browser with no native binaries.
 - **Errors as data.** `compile()` *returns* `diagnostics`/`errors`/`warnings` with byte spans — it
@@ -76,8 +80,9 @@ is fully client-side.
 - **AI-agent-native, CLI-first.** `arch context` prints the whole bundled agent context
   ([`llms-full.txt`](https://archlang-docs.vercel.app/llms-full.txt) — spec, skill, CLI reference and
   error catalog) in one call; `arch spec` teaches just the language in one page; `arch describe
-  --json` returns the plan as **facts** (rooms, areas, adjacency, what doors connect) so a text-only
-  agent verifies without an image; `arch lint --json` flags unsound plans. Every command is
+  --json` returns the plan as **facts** (rooms, areas, adjacency, what doors connect, and a
+  `freedom` degrees-of-freedom report of which positions are hand-authored vs resolver-derived) so a
+  text-only agent verifies without an image; `arch lint --json` flags unsound plans. Every command is
   `--json` with deterministic exit codes and `fix`-carrying diagnostics, and `--error-svg` renders a
   self-describing error card when a plan won't compile — visual feedback for an agent loop. The CLI
   stays primary; an optional [MCP server](#mcp-server-optional) exists for MCP-native hosts. See
@@ -172,8 +177,9 @@ system-prompt-ready document (the same
 [`llms-full.txt`](https://archlang-docs.vercel.app/llms-full.txt) the docs site serves). From there,
 every command takes `--json` (structured result on stdout, messages on stderr) with deterministic
 exit codes (`0` ok · `2` user-source error · `1` IO · `3` usage), and every diagnostic carries a
-`fix` (and, where the edit is mechanical, machine-applicable `fixes` that `arch fix` applies), so the
-self-correction loop needs no docs lookup; `--error-svg` even turns a plan that won't compile into a
+`fix` (and, where the edit is mechanical, machine-applicable `fixes` that `arch fix` applies —
+deterministically ordered by the exported `rankFixes`, so the top-ranked alternative is picked per
+diagnostic), so the self-correction loop needs no docs lookup; `--error-svg` even turns a plan that won't compile into a
 self-describing image an agent can look at. *(The CLI stays primary because a
 [CLI costs nothing in context until called](https://www.firecrawl.dev/blog/mcp-vs-cli), where an MCP
 schema sits in the window permanently — but an optional [MCP server](#mcp-server-optional) now exists

@@ -2,8 +2,8 @@
 
 Published as [`ChanMeng.archlang`](https://marketplace.visualstudio.com/items?itemName=ChanMeng.archlang).
 Full IDE support for `.arch` files: TextMate syntax highlighting (the grammar from
-[`../`](..)) plus a proper **LSP language server** that reuses the core compiler's
-language services. It provides:
+[`../`](..), which also highlights the optional metric unit suffixes `4m` / `40cm` / `20mm`) plus a
+proper **LSP language server** that reuses the core compiler's language services. It provides:
 
 - **Live diagnostics** — errors and warnings from `compile().diagnostics`, as
   squiggles and in the Problems panel.
@@ -12,6 +12,9 @@ language services. It provides:
 - **Go-to-definition** — jump to where an `id` / binding / component is defined.
 - **Rename** — rename an id/binding across the document.
 - **Signature help** — parameter hints for functions and components.
+- **Quick fixes** — code actions that apply a diagnostic's machine-applicable fix (in the core's
+  deterministic `rankFixes` order), including the `W_ALIAS_MATCH` fix that inserts the explicit
+  `uses …` for a room whose function was inferred from an indirect label alias.
 
 **Not part of the published core.** All LSP deps live here; the core stays
 zero-dependency. The extension depends on the core via `file:../..` and pulls it

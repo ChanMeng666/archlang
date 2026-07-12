@@ -53,7 +53,10 @@ door connections) · `arch lint --json` (architectural soundness). For the v1.13
 drive `arch fix --dry-run` (preview the machine-applicable diagnostic fixes), `arch suggest`
 (advisory door/window statements as data), `arch validate --graph` (interior-door adjacency vs. an
 intended graph), and `arch compile -f txt` (the zero-dep ASCII plan — a text-only look with no
-raster binary). Keep the flagship
+raster binary). For the v1.14–v1.15 additions also drive `arch validate --intent <f>` (gate a plan on
+a brief's intent contract, exit 2 on a gating miss) / `arch score --brief <f>` (the continuous
+intent-satisfaction meter), and read `arch describe --json`'s `freedom` block (which element positions
+are hand-authored vs resolver-derived) before nudging coordinates. Keep the flagship
 `examples/studio.arch` **lint-clean and import-free**, and update snapshots/goldens
 (`vitest -u`, `UPDATE_GOLDENS=1 vitest run test/visual.test.ts`) only after reviewing the diff.
 

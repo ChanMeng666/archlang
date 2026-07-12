@@ -42,6 +42,9 @@ npx @chanmeng666/archlang preview plan.arch -o out.png --json   # render a PNG t
 npx @chanmeng666/archlang describe plan.arch --json             # verify: rooms, areas, adjacency, door connections, circulation
 npx @chanmeng666/archlang lint plan.arch --json                 # architectural soundness warnings
 npx @chanmeng666/archlang validate plan.arch --strict --json    # parse + lint, no render; --strict fails on warnings (the ship gate)
+npx @chanmeng666/archlang fix plan.arch --dry-run --json        # preview the machine-applicable diagnostic fixes (drop --dry-run to apply)
+npx @chanmeng666/archlang suggest plan.arch --json              # advisory door/window topology statements for unreachable rooms / windowless bedrooms
+npx @chanmeng666/archlang score plan.arch --brief intent.json --json   # continuous intent-satisfaction meter against a brief (satisfied/total; exit 0)
 npx @chanmeng666/archlang repair plan.arch -o fixed.arch        # explicit corrector: furniture out of walls/doorways/swings + change log
 npx @chanmeng666/archlang compile plan.arch -o walk.svg --overlay circulation   # opt-in: draw the walkability routes on top
 npx @chanmeng666/archlang batch a.arch b.arch -f svg --json     # render many plans/variants at once → results[]
@@ -60,7 +63,8 @@ every ```` ```arch ```` fence in a repo's Markdown to images in one step (see
 
 `lint` catches tacit architectural mistakes, not just syntax: a bathroom reached only through a
 bedroom, a wet room that isn't fully walled in, a door swing hitting furniture, a bath/kitchen with
-no fixtures, a windowless bedroom, an unenterable room, a too-narrow door, plus **human-circulation**
+no fixtures, a windowless bedroom, an unenterable room, a too-narrow door, a room use only inferred
+from an indirect label alias (`W_ALIAS_MATCH`, with a fix that pins the explicit `uses`), plus **human-circulation**
 checks — a walk that squeezes below a passable width (`W_PATH_TOO_NARROW`) or wanders far from a
 straight line (`W_CIRCUITOUS_PATH`), measured on a clearance-eroded nav grid and also readable as
 facts from `describe().circulation` (per-room walk distance / bottleneck width / detour) or drawn with
