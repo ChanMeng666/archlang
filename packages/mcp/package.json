@@ -14,14 +14,14 @@
   ],
   "license": "MIT",
   "author": "Chan Meng <chanmeng.dev@gmail.com>",
-  "homepage": "https://github.com/chanmeng666/archlang/tree/main/packages/mcp#readme",
+  "homepage": "https://github.com/ChanMeng666/archlang/tree/main/packages/mcp#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chanmeng666/archlang.git",
+    "url": "git+https://github.com/ChanMeng666/archlang.git",
     "directory": "packages/mcp"
   },
   "bugs": {
-    "url": "https://github.com/chanmeng666/archlang/issues"
+    "url": "https://github.com/ChanMeng666/archlang/issues"
   },
   "type": "module",
   "bin": {

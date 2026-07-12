@@ -4,7 +4,7 @@
   "description": "Compile, describe, lint, validate, score and repair ArchLang floor plans (.arch to SVG) over stdio.",
   "version": "0.2.0",
   "repository": {
-    "url": "https://github.com/chanmeng666/archlang",
+    "url": "https://github.com/ChanMeng666/archlang",
     "source": "github",
     "subfolder": "packages/mcp"
   },

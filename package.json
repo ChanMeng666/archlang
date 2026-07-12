@@ -15,13 +15,13 @@
   ],
   "license": "MIT",
   "author": "Chan Meng <chanmeng.dev@gmail.com>",
-  "homepage": "https://github.com/chanmeng666/archlang#readme",
+  "homepage": "https://github.com/ChanMeng666/archlang#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chanmeng666/archlang.git"
+    "url": "git+https://github.com/ChanMeng666/archlang.git"
   },
   "bugs": {
-    "url": "https://github.com/chanmeng666/archlang/issues"
+    "url": "https://github.com/ChanMeng666/archlang/issues"
   },
   "type": "module",
   "main": "./dist/index.js",
