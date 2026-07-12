@@ -11,7 +11,11 @@ absence; L3–L5 and T4's gating promotion are closed for good);
 line; released same day as `@chanmeng666/archlang@1.14.0` + `archlang-mcp@0.2.0`);
 **Gate G2: CLOSED 2026-07-12 (residual area failures = 0/8 on the calibrated baseline —
 [`2026-07-g2-verdict.md`](./2026-07-g2-verdict.md); T6's area-syntax sugar is PARKED with
-frozen reversal triggers; only Track B's unconditional smalls proceed)**; T5 remains open ·
+frozen reversal triggers; only Track B's unconditional smalls proceed)**; **T5 implemented +
+published 2026-07-13** (the repair-trajectory dataset — HF `ChanMeng666/archlang-repair-trajectories`,
+CC0-1.0, repair 1200 + authoring 400 rows; generator `dataset/`, contamination CI guard
+`test/dataset.test.ts`; repo tooling only, core unchanged at 1.15.0 — **every tranche in this
+proposal is now resolved**) ·
 **Evidence base:** [`2026-07-ai-first-deep-dive.md`](./2026-07-ai-first-deep-dive.md) — every
 tranche below cites its verdicts (H1–H5) and the underlying sources. Written to be executable
 by a fresh implementation session with no other context beyond `AGENTS.md`.
@@ -193,6 +197,14 @@ DSPy reward / Nickel contract / Peña space program all point at the same artifa
 ~30 LOC in describe) third.
 
 ## Tranche 5 — The repair-trajectory dataset (after T1–T3)
+
+**Status: ✅ implemented + published 2026-07-13.** Shipped as repo tooling (no core change):
+the `dataset/` generator (`npm run dataset:gen`) + the permanent contamination CI guard
+`test/dataset.test.ts`, published to HF as `ChanMeng666/archlang-repair-trajectories`
+(CC0-1.0, repair 1200 + authoring 400 rows, deterministic from seed `20260712`,
+`archlang_version` 1.15.0). The iron law below held: zero holdout hits in the full run; the
+canary is documented openly in the card. Consistent with T3's permanent decline, the card
+claims no feedback-loop gain (or its absence).
 
 **Motivation:** H4 verdict; Track E + Track A independent convergence on repair trajectories
 as the one data asset aligned with the drivability claim (RustAssistant, APR survey).
