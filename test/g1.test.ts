@@ -61,7 +61,10 @@ describe("G1 generate — oracle isolation of the system prompt", () => {
 
   it("names no private-vocabulary module in its source (isolation is structural)", () => {
     const src = readFileSync(resolve(ROOT, "eval/g1/generate.ts"), "utf8");
+    // Neither the eval's `synonyms` shim nor the production `intent-concepts` table it
+    // re-exports may appear — the generator must never reach the concept vocabulary.
     expect(src).not.toMatch(/synonyms/);
+    expect(src).not.toMatch(/intent-concepts/);
   });
 });
 

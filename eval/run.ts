@@ -31,6 +31,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { compile, describe as describePlan, lint } from "../src/index.js";
+import type { Intent } from "../src/intent.js";
 import {
   type AssertionResult,
   type Subscores,
@@ -52,30 +53,16 @@ const ROOT = resolve(HERE, "..");
 export const VERSION_TAG = `judge v${JUDGE_VERSION} · synonyms v${SYNONYMS_VERSION}`;
 
 /**
- * A brief's semantic expectations — the judge-v2 shape. Every field is BRIEF-grounded
- * (derived from the prompt's words, not the golden's labels/geometry): concepts come
- * from the eval's private {@link import("./synonyms.js")} oracle, and quantitative
- * bands (`areaM2`/`totalAreaM2`) carry a `source` quote from the brief so a failure can
- * cite what licensed the number. `adjacency`/`reachable` are asserted only where the
- * brief's own words license them; they score as subscores and never gate (see
- * {@link import("./assertions.js")}).
+ * A brief's semantic expectations — the judge-v2 shape, now the production {@link Intent}
+ * type (lifted into `src/intent.ts` in v1.14 T4; re-exported here so the eval and shipped
+ * judge share ONE definition). Every field is BRIEF-grounded (derived from the prompt's
+ * words, not the golden's labels/geometry): concepts come from the {@link
+ * import("./synonyms.js")} oracle, and quantitative bands (`areaM2`/`totalAreaM2`) carry a
+ * `source` quote from the brief so a failure can cite what licensed the number.
+ * `adjacency`/`reachable` are asserted only where the brief's own words license them; they
+ * score as subscores and never gate.
  */
-export interface Expect {
-  /** Exact expected room count. */
-  rooms?: number;
-  /** Rooms the brief names, as concepts, with an optional count band and area band. */
-  roomsInclude?: {
-    concept: string;
-    count?: { min?: number; max?: number };
-    areaM2?: { min?: number; max?: number; source: string };
-  }[];
-  /** Total floor-area band — only where the brief states a number (e.g. "about 42 m²"). */
-  totalAreaM2?: { min: number; max: number; source: string };
-  /** Interior-door adjacency the brief licenses: `{ conceptA: [conceptB, …] }`. */
-  adjacency?: { requiredEdges: Record<string, string[]>; source: string };
-  /** Every room reachable from a modeled entrance — asserted only on brief license. */
-  reachable?: boolean;
-}
+export type Expect = Intent;
 
 export interface CorpusEntry {
   id: string;

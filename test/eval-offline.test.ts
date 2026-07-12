@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RoomSummary } from "../src/index.js";
 import { type CorpusEntry, evaluate, l1Row, loadCorpus, parseBudget, readGolden, scoreSource } from "../eval/run.js";
 import { JUDGE_VERSION } from "../eval/assertions.js";
-import { SYNONYMS_VERSION, roomsMatching } from "../eval/synonyms.js";
+import { SYNONYMS_VERSION, isKnownConcept, roomsMatching } from "../eval/synonyms.js";
 
 /**
  * Authorability regression guard (offline eval).
@@ -46,6 +46,25 @@ describe("eval — committed goldens still author correctly", () => {
   it("pins the scoring-core and synonym versions", () => {
     expect(SYNONYMS_VERSION).toBe(1);
     expect(JUDGE_VERSION).toBe("2");
+  });
+
+  // Loud-typo contract: since the judge now resolves concepts through the (lenient)
+  // production table, a corpus concept typo must still fail loudly here — every concept a
+  // brief's `expect` names has to be a known table key, so `roomsMatching`'s throw fires
+  // on a mistyped corpus concept rather than silently matching nothing.
+  it("every corpus expect names only known concept keys", () => {
+    const unknown: string[] = [];
+    for (const entry of entries) {
+      const e = entry.expect;
+      for (const inc of e.roomsInclude ?? []) {
+        if (!isKnownConcept(inc.concept)) unknown.push(`${entry.id}: roomsInclude concept "${inc.concept}"`);
+      }
+      for (const [a, bs] of Object.entries(e.adjacency?.requiredEdges ?? {})) {
+        if (!isKnownConcept(a)) unknown.push(`${entry.id}: adjacency key "${a}"`);
+        for (const b of bs) if (!isKnownConcept(b)) unknown.push(`${entry.id}: adjacency value "${b}"`);
+      }
+    }
+    expect(unknown).toEqual([]);
   });
 
   it("synonym matching is token-bounded (whole-word, not substring)", () => {
