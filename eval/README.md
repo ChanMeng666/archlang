@@ -34,17 +34,21 @@ model loop (deep-dive H3).
   permanently (the T4 gating-promotion hook is closed); the L3/L4/L5 tiers stay unbuilt.
   The harness and its 14 offline tests are kept as the protocol's reference implementation.
 
-Calibrated L0 baseline (`gpt-5.5-2026-04-23`, seed `20260711`, 26 briefs, judge v2, 2026-07-11):
-**valid 25/26 (96%) · intent 13/26 (50%) · sound 4/26 (15%)**. Same run's `--l1` overlay: **intent
-18/26 (69%, ΔL0→L1 +5) · sound +2**, 7 briefs healed by 47 repair moves. The L0 numbers live in
-`live-baseline.json`; the L1 numbers are recorded there as reference only (the baseline and every
-delta against it are L0).
+Calibrated L0 baseline (`gpt-5.5-2026-04-23`, seed `20260711`, 26 briefs, judge v2,
+**re-measured 2026-07-12 under the post-v1.15.0 author prompt**): **valid 23/26 (88%) ·
+intent 14/26 (54%) · sound 3/26 (12%)**. Same run's `--l1` overlay: **intent 18/26 (69%,
+ΔL0→L1 +4) · sound 7/26 (+4)**, 8 briefs healed / 1 regressed by 41 repair moves. The L0
+numbers live in `live-baseline.json`; the L1 numbers are recorded there as reference only
+(the baseline and every delta against it are L0).
 
-> **Prompt drift since this baseline.** The Unreleased metric-unit-suffix feature added a line to
-> `spec.llm.md` — the author prompt above. This baseline was measured under the pre-suffix prompt, so
-> a future live run authors under a (slightly) different prompt and its numbers are not strictly
-> comparable to the row above. No scoring/judge/fixture code changed; re-running the paid live
-> baseline under the new prompt is a separate, owner-approved action (default: not run).
+> **Prompt-drift history.** v1.15.0's metric-unit-suffix feature added one line to
+> `spec.llm.md` (the author prompt), so the original 2026-07-11 baseline (valid 25 · intent 13
+> · sound 4, pre-suffix prompt) was re-measured the next day under the current prompt — same
+> judge, same model, same seed. Movement (−2 valid / +1 intent / −1 sound) is within run noise
+> at n=26: the spec drift did not materially move the numbers, intent stayed inside the
+> predicted 45–60% band, L1 intent was identical (18/26), and all 8 area assertions passed
+> again (Gate G2's residual-0 verdict re-confirmed). Any future language-surface change to
+> `spec.llm.md` re-opens this question and needs the same owner-approved re-measurement.
 
 ## How to run
 

@@ -156,20 +156,25 @@ to npm as `1.14.0` (core) + `0.2.0` (MCP shim) via the new tokenless OIDC releas
    `/<route>.md`** and the machine-native **`/plan.schema.json`** + **`/archlang.gbnf`** at its root
    (advertised in `llms.txt`).
 
-**Honest eval read (calibrated 2026-07-11; judge v2, 26 briefs, `gpt-5.5-2026-04-23`,
-seed-pinned).** The single-digit one-shot intent number that motivated the round-2 research was
+**Honest eval read (calibrated; judge v2, 26 briefs, `gpt-5.5-2026-04-23`, seed-pinned;
+current baseline re-measured 2026-07-12 under the post-v1.15.0 author prompt).** The
+single-digit one-shot intent number that motivated the round-2 research was
 ~55–65% **measurement artifact** (deep-dive H2, dual-audit): judge v1 tested golden mimicry
 (label substrings, golden-derived area bands), not brief satisfaction. Under judge v2
-(brief-grounded assertions) the same model measures **valid 25/26 (96%) · intent 13/26 (50%) ·
-sound 4/26 (15%)** — inside the predicted 45–60% true-deliverable band. Residual true failures
-are dominated by **physical violations**, and the deterministic tools clear most of those for
-free: the same run's `--l1` overlay (fix+repair, zero extra API calls) scores **intent 18/26
-(69%, ΔL0→L1 +5) · sound +2**, with 7 briefs healed by 47 repair moves. That dividend belongs
-to the tool tier's ledger, never a model loop's (H3); whether a diagnostic feedback loop beats
-equal-budget resampling is T3's still-open question. Two standing harness lessons: reasoning
-models spend thinking tokens out of the completion cap (use 16384, both providers), and never
-compare rates across a judge change (the harness flags it). Judge-v1 numbers (9% intent) are
-kept only as history; `eval/live-baseline.json` carries the calibrated L0 baseline.
+(brief-grounded assertions) the same model measures **valid 23/26 (88%) · intent 14/26 (54%) ·
+sound 3/26 (12%)** — inside the predicted 45–60% true-deliverable band. (The original
+2026-07-11 read, pre-suffix prompt, was 25/13/4; the one-line spec drift moved nothing beyond
+run noise, and all 8 area assertions passed in both runs — Gate G2 re-confirmed.) Residual true
+failures are dominated by **physical violations**, and the deterministic tools clear most of
+those for free: the same run's `--l1` overlay (fix+repair, zero extra API calls) scores
+**intent 18/26 (69%, ΔL0→L1 +4) · sound 7/26 (+4)**, 8 briefs healed / 1 regressed by 41
+repair moves. That dividend belongs to the tool tier's ledger, never a model loop's (H3);
+whether a diagnostic feedback loop beats equal-budget resampling is **permanently unanswered**
+(the T3 live experiment was permanently declined by owner decision — never claim a loop gain
+or its absence). Two standing harness lessons: reasoning models spend thinking tokens out of
+the completion cap (use 16384, both providers), and never compare rates across a judge change
+(the harness flags it). Judge-v1 numbers (9% intent) are kept only as history;
+`eval/live-baseline.json` carries the calibrated L0 baseline.
 
 **v1.12.1** — bundler-safety patch: the PNG backend's lazy
 `import("node:fs")`/`import("node:url")` (font lookup) now carry

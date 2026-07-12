@@ -112,6 +112,13 @@ the new judge, not diffed against this read-out.
 - Nothing in this verdict concerns the model-loop question, which is permanently unanswered
   by owner decision (2026-07-12); no claim here depends on it.
 
+## Postscript (same day) — re-confirmed under the post-suffix prompt
+
+The owner approved a baseline re-measurement after v1.15.0's unit-suffix line changed
+`spec.llm.md` (GH Actions run 29190294073, same model/seed/judge): **all 8 area assertions
+passed again — 0 residual area failures, 6/6 area-asserting briefs `A1`**. The verdict above
+stands under the current prompt; the reversal triggers are unchanged.
+
 ## Files
 
 Frozen scorecard: `eval/g1/baseline-run-29150982395.md` · baseline:
