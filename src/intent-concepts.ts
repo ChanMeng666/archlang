@@ -27,6 +27,12 @@
  */
 
 import type { RoomSummary } from "./describe.js";
+import { normalizeLabel, synonymMatchesLabel } from "./vocabulary.js";
+
+// The token-bounded matcher core (`normalizeLabel`, `synonymMatchesLabel`) lives in
+// `vocabulary.ts` and is shared with the use-kind classifier; this module keeps the
+// concept table and re-exports `normalizeLabel` for the eval's `synonyms.ts` shim.
+export { normalizeLabel } from "./vocabulary.js";
 
 /** Bump when the concept table or matching semantics change (pinned by a test). */
 export const SYNONYMS_VERSION = 1;
@@ -179,36 +185,6 @@ export const CONCEPTS: Readonly<Record<string, Concept>> = Object.freeze({
     roomTypes: ["Bathroom"],
   },
 });
-
-/** Lowercase, turn `-_/` into spaces, collapse whitespace. The shared normal form. */
-export function normalizeLabel(s: string): string {
-  return s.toLowerCase().replace(/[-_/]/g, " ").replace(/\s+/g, " ").trim();
-}
-
-const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-/** Does one label token satisfy one synonym token? Exact, or the synonym followed by
- *  a fused numeric suffix ("bedroom" ⇢ "bedroom2"); a spaced suffix ("Bedroom 2",
- *  "Unit A") falls out for free as a separate, ignored token in the subsequence walk. */
-function tokenEq(synTok: string, labTok: string): boolean {
-  if (labTok === synTok) return true;
-  return /^[a-z]+$/.test(synTok) && new RegExp(`^${escapeRegExp(synTok)}[0-9]+$`).test(labTok);
-}
-
-/** Whole-word (token-bounded) subsequence match: every synonym token appears, in
- *  order, as a whole label token — so "hall" matches "Entrance Hall" but NOT
- *  "Hallmark", and "Bedroom 2" still matches "bedroom". */
-function synonymMatchesLabel(syn: string, label: string): boolean {
-  const synToks = normalizeLabel(syn).split(" ").filter(Boolean);
-  const labToks = normalizeLabel(label).split(" ").filter(Boolean);
-  if (synToks.length === 0) return false;
-  let i = 0;
-  for (const lt of labToks) {
-    const st = synToks[i];
-    if (st !== undefined && tokenEq(st, lt)) i++;
-  }
-  return i === synToks.length;
-}
 
 /** Whether a produced room satisfies a concept (label → room_type → uses order). */
 export function roomMatchesConcept(concept: Concept, room: RoomSummary): boolean {

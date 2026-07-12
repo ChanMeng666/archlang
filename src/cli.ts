@@ -1320,14 +1320,15 @@ function cmdRepair(args: Args): number {
 }
 
 /**
- * `arch fix` — apply the machine-applicable fix suggestions a compile attaches to
- * its diagnostics (the *syntactic* corrector: off-wall openings → the attachment
- * form, out-of-range attach positions clamped, …). A bounded fixpoint: each pass
- * compiles, collects `diagnostics[].fixes`, applies them (default only
- * `machine-applicable`; `--unsafe` also applies `maybe-incorrect`), then recompiles;
- * a pass that *increases* the error count is rolled back and the loop stops (unless
- * `--force`). Stops on zero progress or after 4 passes. Writes the result to the
- * input file (or `-o`); `--dry-run` never writes. Report style mirrors `arch repair`.
+ * `arch fix` — apply the machine-applicable fix suggestions the compiler and lint
+ * attach to their diagnostics (the *syntactic* corrector: off-wall openings → the
+ * attachment form, out-of-range attach positions clamped, an alias-inferred room use
+ * pinned with an explicit `uses`, …). A bounded fixpoint: each pass compiles + lints,
+ * collects `diagnostics[].fixes`, applies them (default only `machine-applicable`;
+ * `--unsafe` also applies `maybe-incorrect`), then re-checks; a pass that *increases*
+ * the error count is rolled back and the loop stops (unless `--force`). Stops on zero
+ * progress or after 4 passes. Writes the result to the input file (or `-o`);
+ * `--dry-run` never writes. Report style mirrors `arch repair`.
  */
 async function cmdFix(args: Args): Promise<number> {
   const input = args._[0];
@@ -1343,6 +1344,15 @@ async function cmdFix(args: Args): Promise<number> {
   const maxApplicability = args.unsafe ? ("maybe-incorrect" as const) : ("machine-applicable" as const);
   const MAX_PASSES = 4;
 
+  // Every fix-bearing diagnostic for a source: compile-stage (resolve) diagnostics plus
+  // the architectural-soundness lint warnings (some of which now carry a machine-applicable
+  // fix, e.g. W_ALIAS_MATCH). lint() is silent on an unresolvable plan, so this is exactly
+  // compile's diagnostics whenever there is a fatal error.
+  const diagsOf = (src: string): Diagnostic[] => [
+    ...compile(src, { noCache: true, world }).diagnostics,
+    ...lint(src, { world }),
+  ];
+
   const errorsOf = (src: string): Diagnostic[] =>
     compile(src, { noCache: true, world }).diagnostics.filter((d) => d.severity === "error");
 
@@ -1354,7 +1364,7 @@ async function cmdFix(args: Args): Promise<number> {
   let stopReason: string | undefined;
 
   for (let pass = 0; pass < MAX_PASSES; pass++) {
-    const { diagnostics } = compile(current, { noCache: true, world });
+    const diagnostics = diagsOf(current);
     const fixes: FixSuggestion[] = [];
     const codeOf = new Map<FixSuggestion, string | undefined>();
     for (const d of diagnostics) {
@@ -1386,7 +1396,7 @@ async function cmdFix(args: Args): Promise<number> {
 
   // Residue: distinct codes of remaining problems the loop could not clear (errors,
   // or diagnostics that still carry a fix it declined to auto-apply).
-  const finalDiags = compile(current, { noCache: true, world }).diagnostics;
+  const finalDiags = diagsOf(current);
   const unresolved = [
     ...new Set(
       finalDiags.filter((d) => d.severity === "error" || d.fixes?.length).flatMap((d) => (d.code ? [d.code] : [])),

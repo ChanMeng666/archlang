@@ -44,6 +44,7 @@ import {
   type BBox,
 } from "../analyze.js";
 import { pointInRect } from "../geometry/rect.js";
+import { matchesLivingDining } from "../vocabulary.js";
 
 /** Radius (mm) of the walking body obstacles are inflated by (clearance erosion). */
 export const DEFAULT_BODY_RADIUS_MM = 300;
@@ -92,11 +93,11 @@ export interface CirculationModel {
 }
 
 /** Rooms that read as a living or dining space (declared use, else a label match —
- *  analyze.roomUses only infers bedroom/bath/kitchen/hall/entry from a label). */
-const LIVING_DINING_RE = /living|lounge|sitting|family|dining/i;
+ *  analyze.roomUses only infers bedroom/bath/kitchen/hall/entry from a label, so the
+ *  living/dining label check is the shared `living` use vocabulary). */
 const isLivingOrDining = (r: RRoom): boolean => {
   const u = roomUses(r);
-  return u.has("living") || u.has("dining") || LIVING_DINING_RE.test(r.label ?? r.id);
+  return u.has("living") || u.has("dining") || matchesLivingDining(r.label ?? r.id);
 };
 
 const r2 = (n: number): number => Math.round(n * 100) / 100;

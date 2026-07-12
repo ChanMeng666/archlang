@@ -531,7 +531,7 @@ from a file or stdin (`-`). There is intentionally no MCP server — this CLI is
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**51 errors** (abort rendering) · **31 warnings** (advisory; `validate --strict` fails on them too).
+**51 errors** (abort rendering) · **32 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -589,6 +589,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 
 ### Warnings
 
+- `W_ALIAS_MATCH` — A room's use was inferred from an indirect alias, not stated. **Fix:** Add an explicit `uses …` to the room stating the inferred function — the machine-applicable fix inserts it for you. This pins the classification without changing the room's `describe()` type.
 - `W_BATH_VIA_BEDROOM` — Bathroom is reachable only through a bedroom. **Fix:** Add a door connecting the bathroom to a hall/living space, or route circulation so it is not reached only via a bedroom.
 - `W_BEDROOM_NO_WINDOW` — Bedroom has no window. **Fix:** Add a `window` on an exterior wall of the room.
 - `W_CIRCUITOUS_PATH` — A room is reached by a very roundabout path. **Fix:** Add a more direct connection — a door or a hall — so the room is not reached the long way round.

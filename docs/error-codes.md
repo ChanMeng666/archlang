@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**51 errors** · **31 warnings**
+**51 errors** · **32 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -60,6 +60,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_WALL_THICKNESS`](#e_wall_thickness) | error | Wall must have a positive thickness. |
 | [`E_WHILE_LIMIT`](#e_while_limit) | error | `while` exceeded its iteration cap. |
 | [`E_WINDOW_WIDTH`](#e_window_width) | error | Window must have a positive width. |
+| [`W_ALIAS_MATCH`](#w_alias_match) | warning | A room's use was inferred from an indirect alias, not stated. |
 | [`W_BATH_VIA_BEDROOM`](#w_bath_via_bedroom) | warning | Bathroom is reachable only through a bedroom. |
 | [`W_BEDROOM_NO_WINDOW`](#w_bedroom_no_window) | warning | Bedroom has no window. |
 | [`W_CIRCUITOUS_PATH`](#w_circuitous_path) | warning | A room is reached by a very roundabout path. |
@@ -708,6 +709,18 @@ while i < 1 { column at (0,0) size 1x1 }   # error: i never changes
 
 ```arch
 window at (0,0) width 0   # error
+```
+
+## W_ALIAS_MATCH
+
+*warning* — A room's use was inferred from an indirect alias, not stated.
+
+**Cause.** A room has no authored `uses`, and its function was guessed from its label via a non-canonical alias (an indirect term like `powder` → WC, `foyer` → entry) rather than a direct word (`wc`, `entrance`). The guess is reasonable but the intent is implicit, so a reader (or agent) cannot tell the classification was assumed.
+
+**Fix.** Add an explicit `uses …` to the room stating the inferred function — the machine-applicable fix inserts it for you. This pins the classification without changing the room's `describe()` type.
+
+```arch
+room at (0,0) size 2000x1500 label "Powder"   # warning: WC inferred from the alias "powder"; add `uses wc`
 ```
 
 ## W_BATH_VIA_BEDROOM

@@ -20,6 +20,7 @@ import type { Point } from "./ast.js";
 import type { CompileOptions } from "./types.js";
 import { segmentsOfWall, type WallLike, type WallSegment } from "./geometry.js";
 import { overlap1d, type BBox } from "./geometry/rect.js";
+import { classifyLabelUses } from "./vocabulary.js";
 
 /** Options shared by the analysis tools: a subset of {@link CompileOptions}. */
 export type AnalyzeOptions = Pick<CompileOptions, "plugins" | "world">;
@@ -58,34 +59,20 @@ export function rectOf(e: { at: Point; size: { w: number; h: number } }): BBox {
   return { x: e.at.x, y: e.at.y, w: e.size.w, h: e.size.h };
 }
 
-/** A room label/id that reads as a bedroom (sleeping space). */
-const BEDROOM_RE = /\bbed\b|bedroom/i;
-/** Reads as a wet room (bathroom / WC / shower). */
-const WET_RE = /\bbath\b|bathroom|\bwc\b|toilet|ensuite|en-suite|shower|washroom/i;
-/** A specifically WC-only wet room (vs a full bathroom). */
-const WC_RE = /\bwc\b|toilet|powder/i;
-/** Reads as a kitchen. */
-const KITCHEN_RE = /kitchen|kitchenette/i;
-/** Reads as circulation (hall/corridor) or an entry — high-confidence only. */
-const HALL_RE = /\bhall\b|hallway|corridor|landing/i;
-const ENTRY_RE = /\bfoyer\b|vestibule|\bentry\b|\bentrance\b|mudroom/i;
-
 /**
  * The function(s) a room is classified as. Explicit `uses …` are authored intent
  * and win; otherwise we fall back to a conservative keyword match on the label (or
  * id) — exactly the classification the lint rules used before `uses` existed, so an
  * untagged plan behaves identically. Returns a set (a studio is `living kitchen`).
+ *
+ * The keyword match is the shared closed vocabulary in `src/vocabulary.ts`
+ * ({@link classifyLabelUses}) — the token-bounded, data-driven form of the label
+ * regexes that used to live here. Behaviour on the committed corpus is pinned by
+ * `test/vocabulary-equivalence.test.ts`.
  */
 export function roomUses(room: { label?: string; id: string; uses?: UseKind[] }): Set<UseKind> {
   if (room.uses && room.uses.length > 0) return new Set(room.uses);
-  const text = room.label ?? room.id;
-  const s = new Set<UseKind>();
-  if (BEDROOM_RE.test(text)) s.add("bedroom");
-  if (WET_RE.test(text)) s.add(WC_RE.test(text) ? "wc" : "bath");
-  if (KITCHEN_RE.test(text)) s.add("kitchen");
-  if (ENTRY_RE.test(text)) s.add("entry");
-  else if (HALL_RE.test(text)) s.add("hall");
-  return s;
+  return new Set(classifyLabelUses(room.label ?? room.id).uses);
 }
 
 /** Does the room read as a bedroom? */

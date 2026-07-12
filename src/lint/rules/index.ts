@@ -5,6 +5,7 @@
  */
 
 import type { LintRule } from "../context.js";
+import { aliasMatch } from "./alias-match.js";
 import { roomNoClearPath } from "./circulation.js";
 import { circuitousPath, pathTooNarrow } from "./circulation-facts.js";
 import { doorClearance, doorwayBlocked, swingObstructed } from "./doors.js";
@@ -36,6 +37,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // ordering is unchanged.
   pathTooNarrow,
   circuitousPath,
+  // Classification advisory (Tranche 6): a room's use inferred from an indirect alias.
+  // Appended after the circulation advisories so existing output ordering is unchanged.
+  aliasMatch,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

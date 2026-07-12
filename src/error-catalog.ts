@@ -616,6 +616,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Add a more direct connection — a door or a hall — so the room is not reached the long way round.",
     'room id=bed at (0,0) size 3000x3000 label "Bed"   # only door is on the far side, forcing a long detour',
   ),
+  W_ALIAS_MATCH: W(
+    "W_ALIAS_MATCH",
+    "A room's use was inferred from an indirect alias, not stated.",
+    "A room has no authored `uses`, and its function was guessed from its label via a non-canonical alias (an indirect term like `powder` → WC, `foyer` → entry) rather than a direct word (`wc`, `entrance`). The guess is reasonable but the intent is implicit, so a reader (or agent) cannot tell the classification was assumed.",
+    "Add an explicit `uses …` to the room stating the inferred function — the machine-applicable fix inserts it for you. This pins the classification without changing the room's `describe()` type.",
+    'room at (0,0) size 2000x1500 label "Powder"   # warning: WC inferred from the alias "powder"; add `uses wc`',
+  ),
 });
 
 /** All catalog codes, sorted (errors then warnings, alphabetically within). */

@@ -1,0 +1,842 @@
+{
+  "eval/goldens/accessible-bath.arch": [
+    {
+      "id": "r_live",
+      "label": "Living / Kitchen",
+      "uses": ["living", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Wet Room",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/accessible-flat.arch": [
+    {
+      "id": "r_live",
+      "label": "Living / Kitchen",
+      "uses": ["living", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_hall",
+      "label": "Hall",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/against-wall-bath.arch": [
+    {
+      "id": "r_live",
+      "label": "Living / Kitchen",
+      "uses": ["living", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/anchor-furniture.arch": [
+    {
+      "id": "r_living",
+      "label": "Living Room",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/attach-openings.arch": [
+    {
+      "id": "r_living",
+      "label": "Living / Kitchen",
+      "uses": ["living", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/bungalow.arch": [
+    {
+      "id": "r_live",
+      "label": "Living",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_kit",
+      "label": "Kitchen",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_hall",
+      "label": "Hall",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_bed1",
+      "label": "Master Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bed2",
+      "label": "Bedroom 2",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/compact-studio.arch": [
+    {
+      "id": "r_main",
+      "label": "Studio Room",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_kit",
+      "label": "Kitchenette",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    }
+  ],
+  "eval/goldens/core-and-shell.arch": [
+    {
+      "id": "r_suite_a",
+      "label": "Suite A",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_suite_b",
+      "label": "Suite B",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_tea",
+      "label": "Tea Point",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_core",
+      "label": "Circulation Core",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    }
+  ],
+  "eval/goldens/dims-auto-cottage.arch": [
+    {
+      "id": "r_live",
+      "label": "Living / Kitchen",
+      "uses": ["living", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/galley-kitchen.arch": [
+    {
+      "id": "r_live",
+      "label": "Living / Dining",
+      "uses": ["living", "dining"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_kitchen",
+      "label": "Kitchen",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/l-shaped-flat.arch": [
+    {
+      "id": "r_live",
+      "label": "Living",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_kitchen",
+      "label": "Kitchen",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/office.arch": [
+    {
+      "id": "r_open",
+      "label": "Open Office",
+      "uses": [],
+      "room_type": "Room"
+    },
+    {
+      "id": "r_meet",
+      "label": "Meeting Room",
+      "uses": [],
+      "room_type": "Room"
+    },
+    {
+      "id": "r_kit",
+      "label": "Kitchenette",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    }
+  ],
+  "eval/goldens/open-plan-loft.arch": [
+    {
+      "id": "r_kitchen",
+      "label": "Kitchen",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_dining",
+      "label": "Dining",
+      "uses": ["dining"],
+      "room_type": "DiningRoom"
+    },
+    {
+      "id": "r_living",
+      "label": "Living",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/reception-suite.arch": [
+    {
+      "id": "r_recep",
+      "label": "Reception",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_off1",
+      "label": "Office 1",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_off2",
+      "label": "Office 2",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_meet",
+      "label": "Meeting Room",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_kit",
+      "label": "Kitchenette",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_wc",
+      "label": "WC",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/relational-studio.arch": [
+    {
+      "id": "living",
+      "label": "Living",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "kitchen",
+      "label": "Kitchen",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/scripting-units.arch": [
+    {
+      "id": "room_1",
+      "label": "Unit A",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "room_2",
+      "label": "Unit B",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "room_3",
+      "label": "Unit C",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "room_4",
+      "label": "Unit D",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    }
+  ],
+  "eval/goldens/sized-bedrooms.arch": [
+    {
+      "id": "r_bed1",
+      "label": "Bedroom 1",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bed2",
+      "label": "Bedroom 2",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_live",
+      "label": "Kitchen / Living",
+      "uses": ["living", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/sized-kitchen-flat.arch": [
+    {
+      "id": "r_kit",
+      "label": "Kitchen",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_live",
+      "label": "Living Room",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/sized-office-mix.arch": [
+    {
+      "id": "r_open",
+      "label": "Open Office",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_meet",
+      "label": "Meeting Room",
+      "uses": [],
+      "room_type": "Room"
+    },
+    {
+      "id": "r_kit",
+      "label": "Kitchenette",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_wc",
+      "label": "WC",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/sized-wet-room.arch": [
+    {
+      "id": "r_live",
+      "label": "Kitchen / Living",
+      "uses": ["living", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_hall",
+      "label": "Hall",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_wet",
+      "label": "Wet Room",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/strip-attach-clean.arch": [
+    {
+      "id": "r_bed1",
+      "label": "Bedroom 1",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_live",
+      "label": "Living Room",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed2",
+      "label": "Bedroom 2",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_hall",
+      "label": "Hall",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/strip-corridor.arch": [
+    {
+      "id": "r1",
+      "label": "Room 1",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r2",
+      "label": "Room 2",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r3",
+      "label": "Room 3",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_corr",
+      "label": "Corridor",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    }
+  ],
+  "eval/goldens/three-bed-2bath.arch": [
+    {
+      "id": "r_live",
+      "label": "Kitchen / Living",
+      "uses": ["living", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed1",
+      "label": "Master Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bed2",
+      "label": "Bedroom 2",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bed3",
+      "label": "Bedroom 3",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_hall",
+      "label": "Hall",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_bath1",
+      "label": "Main Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_bath2",
+      "label": "Bathroom 2",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_util",
+      "label": "Utility",
+      "uses": ["utility"],
+      "room_type": "Storage"
+    }
+  ],
+  "eval/goldens/two-bath-flat.arch": [
+    {
+      "id": "r_live",
+      "label": "Kitchen / Living",
+      "uses": ["living", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed1",
+      "label": "Master Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bed2",
+      "label": "Bedroom 2",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_hall",
+      "label": "Hall",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_bath1",
+      "label": "Main Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_bath2",
+      "label": "Bathroom 2",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "eval/goldens/two-bed-hall.arch": [
+    {
+      "id": "r_live",
+      "label": "Kitchen / Living",
+      "uses": ["living", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed1",
+      "label": "Master Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bed2",
+      "label": "Bedroom 2",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_hall",
+      "label": "Hall",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_study",
+      "label": "Study",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    }
+  ],
+  "examples/accessible.arch": [
+    {
+      "id": "r_living",
+      "label": "Living",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    }
+  ],
+  "examples/attached.arch": [
+    {
+      "id": "r_living",
+      "label": "Living",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    }
+  ],
+  "examples/imports.arch": [
+    {
+      "id": "r_main",
+      "label": "Studio",
+      "uses": [],
+      "room_type": "Room"
+    }
+  ],
+  "examples/parametric.arch": [
+    {
+      "id": "room_1",
+      "label": "Studio A",
+      "uses": [],
+      "room_type": "Room"
+    },
+    {
+      "id": "room_2",
+      "label": "Studio B",
+      "uses": [],
+      "room_type": "Room"
+    },
+    {
+      "id": "room_3",
+      "label": "Studio C",
+      "uses": [],
+      "room_type": "Room"
+    }
+  ],
+  "examples/relational.arch": [
+    {
+      "id": "living",
+      "label": "Living",
+      "uses": [],
+      "room_type": "Room"
+    },
+    {
+      "id": "kitchen",
+      "label": "Kitchen",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "bath",
+      "label": "Bath",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "examples/studio.arch": [
+    {
+      "id": "r_living",
+      "label": "Living / Kitchen",
+      "uses": ["living", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_hall",
+      "label": "Hall",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bath",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "examples/themed.arch": [
+    {
+      "id": "a",
+      "label": "Living",
+      "uses": [],
+      "room_type": "Room"
+    },
+    {
+      "id": "b",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    }
+  ],
+  "examples/two-bed.arch": [
+    {
+      "id": "r_kitchen",
+      "label": "Kitchen / Living",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_bed1",
+      "label": "Master Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bed2",
+      "label": "Bedroom 2",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_hall",
+      "label": "Hall",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    }
+  ]
+}
