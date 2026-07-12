@@ -19,16 +19,31 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.14.0` (published, `latest`, with provenance — released tokenlessly via `.github/workflows/release.yml` OIDC trusted publishing) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.15.0` (published, `latest`, with provenance — released tokenlessly via `.github/workflows/release.yml` OIDC trusted publishing) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — now incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`, and v1.14's `validate --intent`/`--feedback` + `score --brief`) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`schemas/intent.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
 | **MCP server** | `@chanmeng666/archlang-mcp@0.2.0` (published, `latest`; registry entry `io.github.ChanMeng666/archlang-mcp` v0.2.0 live on registry.modelcontextprotocol.io; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate (incl. `intent`)/**score**/repair/fix/suggest/complete + spec/context/schema/**intent-schema**/grammar resources; SDK dep quarantined here, core stays zero-dep) | `packages/mcp/`, `server.json` |
-| **VS Code extension** | `ChanMeng.archlang@0.6.0` (published, live 2026-07-12 — rebundles core 1.14.0 incl. the `E_INTENT_*` catalog) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
+| **VS Code extension** | `ChanMeng.archlang` — **0.7.0 repack built (rebundles core 1.15.0: unit-suffix grammar, `W_ALIAS_MATCH` quick fix), awaiting the owner's manual web upload**; 0.6.0 (core 1.14.0) is what's live meanwhile | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.14.0` (latest; a `v*` tag push triggers the tokenless OIDC release workflow) | github.com/ChanMeng666/archlang |
+| **Git** | `main`, tags `v1.0.0` → `v1.15.0` (latest; a `v*` tag push triggers the tokenless OIDC release workflow) | github.com/ChanMeng666/archlang |
 | **Tests** | 1018 passing (100 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, the L2 protocol tests, the judge byte-equivalence fixture, the intent-channel suites, and the vocabulary-equivalence classification pin) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
-**Latest release — v1.14.0 (2026-07-12) — Tranches 1–2 + 4: the measurement foundation,
+**Latest release — v1.15.0 (2026-07-12) — Tranche 6 resolved: Gate G2 closed and all four
+unconditional Track B smalls shipped** (see `CHANGELOG.md` for detail; the G2 verdict is
+recorded as a bullet in the v1.14.0 block below): `src/vocabulary.ts` shared closed-vocabulary
+matcher replacing the scattered room-label regexes + advisory fix-carrying **`W_ALIAS_MATCH`**
+(judge untouched — CONCEPTS/SYNONYMS_VERSION/fixture byte-green; `arch fix` now also applies
+lint-stage fixes, while the L1 gate's `l1Pipeline` stays the compile-stage-fix + `repair`
+reference); exported **`rankFixes`** deterministic cost ordering (cmdFix picks top-ranked per
+diagnostic, LSP presents in canonical order; identity on today's singletons); **optional metric
+unit suffixes** `3m`/`3cm`/`3mm` → mm folded exactly at lex time (language surface: full
+generator chain regenerated; `spec.llm.md` therefore drifted from the calibrated live baseline's
+author prompt — see eval/README); and **`describe().freedom`** degrees-of-freedom placement
+report (append-only). Released as `@chanmeng666/archlang@1.15.0` via the tokenless OIDC
+tag-push flow (MCP shim stays 0.2.0 — its `^1.14.0` dep satisfies 1.15.0, no new tool surface);
+the VS Code 0.7.0 repack awaits the owner's web upload.
+
+**Prior release — v1.14.0 (2026-07-12) — Tranches 1–2 + 4: the measurement foundation,
 then the intent channel it licensed (roadmap `docs/research/2026-07-roadmap-proposal.md`,
 verdicts in the companion deep-dive).** The eval's ruler is fixed, the deterministic-tool
 tier is measured on its own ledger, and Gate G1's PASS cleared Tranche 4 to ship. Published
@@ -107,19 +122,6 @@ to npm as `1.14.0` (core) + `0.2.0` (MCP shim) via the new tokenless OIDC releas
   suffixes deliberately exclude `m2`. Tranche 6's unconditional Track B smalls
   (`matchVocabulary`, `rankFixes`, unit suffixes, `describe().freedom`) were never gated
   on G2 and proceed.
-
-**Unreleased on `main` (2026-07-12, post-1.14.0) — Tranche 6 Track B, all four smalls landed**
-(see `CHANGELOG.md` [Unreleased] for detail): `src/vocabulary.ts` shared closed-vocabulary
-matcher replacing the scattered room-label regexes + advisory fix-carrying **`W_ALIAS_MATCH`**
-(judge untouched — CONCEPTS/SYNONYMS_VERSION/fixture byte-green; `arch fix` now also applies
-lint-stage fixes, while the L1 gate's `l1Pipeline` stays the compile-stage-fix + `repair`
-reference); exported **`rankFixes`** deterministic cost ordering (cmdFix picks top-ranked per
-diagnostic, LSP presents in canonical order; identity on today's singletons); **optional metric
-unit suffixes** `3m`/`3cm`/`3mm` → mm folded exactly at lex time (language surface: full
-generator chain regenerated; `spec.llm.md` therefore drifted from the calibrated live baseline's
-author prompt — see eval/README; **releasing this needs a VS Code extension repack**);
-**`describe().freedom`** degrees-of-freedom placement report (append-only). Release/version
-decision pending owner.
 
 **Prior release — v1.13.0 (2026-07-11; AI-native authoring). Six tranches
 (see `CHANGELOG.md` for detail):**

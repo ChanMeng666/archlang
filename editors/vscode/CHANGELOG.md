@@ -12,6 +12,18 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.7.0] - 2026-07-12
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.15.0`** — a language-surface release, so
+  the bundled services pick up: **optional metric unit suffixes** (`3m`/`3cm`/`3mm` fold to
+  millimetres; syntax highlighting via the regenerated TextMate grammar), the new advisory
+  **`W_ALIAS_MATCH`** (a room's use inferred from an indirect alias like "Powder" → WC) with
+  its **quick fix** inserting the explicit `uses …`, canonical quick-fix ordering via the
+  core's new `rankFixes`, and the `describe().freedom` placement facts. Bumped the
+  dev-dependency pin `^1.14.0` → `^1.15.0` to match the bundled core.
+
 ## [0.6.0] - 2026-07-12
 
 ### Changed

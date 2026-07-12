@@ -1,7 +1,7 @@
 {
   "name": "archlang",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.7.0",
   "displayName": "ArchLang",
   "description": "Syntax highlighting plus full language support — live diagnostics, hover, completion, go-to-definition, rename, and signature help — for ArchLang (.arch) floor-plan source.",
   "license": "MIT",
@@ -57,7 +57,7 @@
     "vscode:prepublish": "npm run build"
   },
   "devDependencies": {
-    "@chanmeng666/archlang": "^1.14.0",
+    "@chanmeng666/archlang": "^1.15.0",
     "@types/node": "^22.20.0",
     "@types/vscode": "^1.75.0",
     "@vscode/vsce": "^3.2.1",
