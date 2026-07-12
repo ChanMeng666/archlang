@@ -55,11 +55,29 @@ npm test
 Several artifacts ship from this repo and are **released separately** — don't let them drift: the
 core npm package, the VS Code extension, and (as of v1.13) the optional MCP server.
 
-### Core — `@chanmeng666/archlang` (npm)
+### Core — `@chanmeng666/archlang` (npm, via trusted publishing)
+
+**Since v1.14.0 the npm publish is tokenless and runs in CI** (`.github/workflows/release.yml`,
+OIDC trusted publishing with provenance — see the workflow's header comment). There is no npm
+token anywhere; do not add one.
 
 1. Update `CHANGELOG.md` and bump `version` in the root `package.json`.
-2. `npm run build && npm test` must be green.
-3. `npm publish` (manual), then tag: `git tag vX.Y.Z && git push --tags`.
+2. `npm run build && npm test` must be green (they also run inside the publish via
+   `prepublishOnly`).
+3. Commit, push, then tag: `git tag vX.Y.Z && git push origin vX.Y.Z`. The tag push triggers
+   `release.yml`, which publishes the core, then the MCP shim (if its version moved), then syncs
+   the MCP registry — each step skips versions already on its registry, so re-running a partial
+   failure is safe (`gh workflow run release.yml` re-dispatches).
+
+> **Provenance gotcha:** npm rejects the publish (E422) if `package.json`'s
+> `repository.url` casing differs from the real repo — it must say
+> `github.com/ChanMeng666/archlang` (owner casing byte-exact), not `chanmeng666`.
+
+> **One-time npmjs setup (already done for both packages):** each published package carries a
+> Trusted Publisher registration on npmjs.com pointing at `ChanMeng666/archlang` +
+> `release.yml`. Creating/changing that registration — like all token/maintainer/account
+> management — is an interactive human-with-2FA operation by npm policy (token-based bypass of
+> these is being retired through 2026–2027); agents cannot and should not automate it.
 
 Pushing to `main` auto-deploys the playground and docs sites (Vercel) — no manual step.
 
@@ -92,17 +110,21 @@ did not move); the `.vsix` still needs a manual web upload.
 > To recolor: edit the generator template or the `--syn-*` values and run `npm run gen:grammars`;
 > never hand-edit `arch-language.js` (CI fails on drift).
 
-### MCP server — `@chanmeng666/archlang-mcp` (npm + MCP registry)
+### MCP server — `@chanmeng666/archlang-mcp` (npm + MCP registry, via the same workflow)
 
-The optional stdio shim in `packages/mcp/` is a **separately versioned** package (it starts at
-`0.1.x`, independent of the core). Publish it **after** the core it wraps:
+The optional stdio shim in `packages/mcp/` is a **separately versioned** package, published
+**after** the core it wraps — and since 0.2.0 the whole chain rides the same `release.yml`:
 
-1. `npm run mcp:build` (builds the core first, then the shim + copies the resource files).
-2. Bump `version` in `packages/mcp/package.json` **and** `packages/mcp/server.json` (they must
-   match), then `npm publish -w packages/mcp`.
-3. Submit to the official registry from `packages/mcp/`:
-   `mcp-publisher login github` → `mcp-publisher publish` (the CLI lives outside the repo, e.g.
-   `D:\mcp-publisher\`). This validates `server.json` against the published npm package.
+1. Bump `version` in `packages/mcp/package.json` **and** `packages/mcp/server.json` (they must
+   match; also the `McpServer` constructor's version string in `src/server.ts`), and bump its
+   `@chanmeng666/archlang` dependency range if the core moved.
+2. The tag-triggered `release.yml` run publishes it to npm (OIDC + provenance) right after the
+   core, then syncs the MCP registry with `mcp-publisher login github-oidc` → `publish` — also
+   tokenless. The registry-sync step is guarded by the registry's own state, so an
+   npm-succeeded/registry-failed partial run is recoverable by re-running the workflow.
+3. Manual fallback (local): `npm run mcp:build`, `npm publish -w packages/mcp`, then from
+   `packages/mcp/`: `mcp-publisher login github` (interactive device flow; CLI lives outside the
+   repo, e.g. `D:\mcp-publisher\`) → `mcp-publisher publish`.
 
 > **Three registry pitfalls** (they cost a same-day `0.1.0` → `0.1.1` republish): the
 > `io.github.<Owner>/*` namespace is **case-sensitive** and the owner segment must match your

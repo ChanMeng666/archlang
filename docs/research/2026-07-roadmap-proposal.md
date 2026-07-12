@@ -6,8 +6,9 @@
 valid-only-control sensitivity caveat recorded); **T3 harness implemented 2026-07-12,
 live experiment deferred** (the ~440-call spend was declined — the loop-vs-resampling
 question stays open; dispatch the "Eval (L2 loop vs resampling)" workflow to answer it);
-**T4 implemented 2026-07-12** (the intent channel is on `main` — see the tranche's Status
-line; unreleased to npm); T5–T6 remain open ·
+**T4 implemented 2026-07-12** (the intent channel — see the tranche's Status
+line; released same day as `@chanmeng666/archlang@1.14.0` + `archlang-mcp@0.2.0`);
+T5–T6 remain open ·
 **Evidence base:** [`2026-07-ai-first-deep-dive.md`](./2026-07-ai-first-deep-dive.md) — every
 tranche below cites its verdicts (H1–H5) and the underlying sources. Written to be executable
 by a fresh implementation session with no other context beyond `AGENTS.md`.

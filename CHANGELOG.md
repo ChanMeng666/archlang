@@ -51,6 +51,24 @@ surface — the intent channel below.
   `test/eval-fixture.test.ts`) that every corpus per-assertion judgment is byte-identical across
   the lift; the fixture is regenerated only to record an approved bump, never to green a red suite.
 
+### Added — release engineering: tokenless OIDC publishing (npm + MCP registry)
+
+- **`.github/workflows/release.yml`** — a `v*` tag push (or manual dispatch) publishes the core,
+  then the MCP shim, to npm via **OIDC trusted publishing with provenance** (no npm token exists
+  anywhere; each package carries a one-time Trusted Publisher registration on npmjs.com pointing
+  at this workflow), then syncs the **MCP registry** with `mcp-publisher login github-oidc` —
+  also tokenless. Every step is idempotent (versions already on a registry are skipped, and the
+  registry sync is guarded by the registry's own state), so partial failures re-run safely.
+  Replaces the local granular-token publish flow that npm is deprecating through 2026–2027.
+- **MCP shim 0.2.0** (`@chanmeng666/archlang-mcp`, registry entry updated): the `validate` tool
+  takes an optional `intent` (gating assertions fail it; advisory ones score), a new **`score`**
+  tool is the continuous satisfaction meter, and `intent.schema.json` ships as the
+  `intent-schema` resource — the same `intentFromJson`/`validateIntent`/`feedbackForResult` path
+  the CLI uses.
+- Provenance gotcha, recorded: npm E422-rejects a publish whose `package.json`
+  `repository.url` casing differs from the OIDC-attested repo (`ChanMeng666`, not
+  `chanmeng666`) — fixed in both package.json files + server.json.
+
 ### Added — Gate G1 verdict + the L2 experiment harness (2026-07-12; still repo-internal)
 
 - **Gate G1: PASS** (`eval/g1/` — generator harness, generated intents, double-blind scores,

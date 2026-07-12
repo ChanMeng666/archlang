@@ -19,20 +19,20 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.13.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
-| **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — now incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`, and unreleased on `main`: `validate --intent`/`--feedback` + `score --brief`) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`schemas/intent.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
-| **MCP server** | `@chanmeng666/archlang-mcp@0.1.1` (published, `latest`; registry entry `io.github.ChanMeng666/archlang-mcp` v0.1.1 live on registry.modelcontextprotocol.io; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate/repair/fix/suggest/complete + spec/context/schema/grammar resources; SDK dep quarantined here, core stays zero-dep) | `packages/mcp/`, `server.json` |
+| **Core package** | `@chanmeng666/archlang@1.14.0` (published, `latest`, with provenance — released tokenlessly via `.github/workflows/release.yml` OIDC trusted publishing) | npmjs.com/package/@chanmeng666/archlang |
+| **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — now incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`, and v1.14's `validate --intent`/`--feedback` + `score --brief`) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`schemas/intent.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
+| **MCP server** | `@chanmeng666/archlang-mcp@0.2.0` (published, `latest`; registry entry `io.github.ChanMeng666/archlang-mcp` v0.2.0 live on registry.modelcontextprotocol.io; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate (incl. `intent`)/**score**/repair/fix/suggest/complete + spec/context/schema/**intent-schema**/grammar resources; SDK dep quarantined here, core stays zero-dep) | `packages/mcp/`, `server.json` |
 | **VS Code extension** | `ChanMeng.archlang@0.5.0` (published, live — bundles core 1.13.0 with the v1.13 language sugar — attachment/`strip`/anchor + the new codes) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.13.0` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 936 passing (96 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, the L2 protocol tests, the judge byte-equivalence fixture, and the intent-channel suites) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
+| **Git** | `main`, tags `v1.0.0` → `v1.14.0` (latest; a `v*` tag push triggers the tokenless OIDC release workflow) | github.com/ChanMeng666/archlang |
+| **Tests** | 942 passing (96 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, the L2 protocol tests, the judge byte-equivalence fixture, and the intent-channel suites) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
-**Unreleased (post-1.13, on `main`) — v1.14 Tranches 1–2 + 4: the measurement foundation,
-then the intent channel it licensed (2026-07-11/12; roadmap
-`docs/research/2026-07-roadmap-proposal.md`, verdicts in the companion deep-dive).** The
-eval's ruler is fixed, the deterministic-tool tier is measured on its own ledger, and Gate
-G1's PASS cleared Tranche 4 to ship:
+**Latest release — v1.14.0 (2026-07-12) — Tranches 1–2 + 4: the measurement foundation,
+then the intent channel it licensed (roadmap `docs/research/2026-07-roadmap-proposal.md`,
+verdicts in the companion deep-dive).** The eval's ruler is fixed, the deterministic-tool
+tier is measured on its own ledger, and Gate G1's PASS cleared Tranche 4 to ship. Published
+to npm as `1.14.0` (core) + `0.2.0` (MCP shim) via the new tokenless OIDC release workflow:
 - **Judge v2** (`eval/assertions.ts` + `eval/synonyms.ts`): scoring lowered to an
   intent-assertion data structure (room-count / room-exists / room-area / total-area /
   adjacent / reachable — the shallow five-kind boundary a future `src/intent.ts` can
@@ -78,8 +78,8 @@ G1's PASS cleared Tranche 4 to ship:
   absence) anywhere. To answer it later: dispatch **"Eval (L2 loop vs resampling)"** in
   Actions (defaults = full run; smoke: `max 2, trials 1`). L3/L4/L5 stay unbuilt (gated on
   an L2 net win).
-- **Tranche 4: the intent channel — SHIPPED to `main` (2026-07-12; core + CLI, zero new
-  runtime deps; unreleased to npm).** The judge-v2 core is lifted into the core package:
+- **Tranche 4: the intent channel (2026-07-12; core + CLI, zero new runtime deps).**
+  The judge-v2 core is lifted into the core package:
   **`src/intent.ts`** (`validateIntent(source, intent)` → `{ ok, satisfied, total,
   violations, subscores, assertions, diagnostics }`, `intentFromJson`, `feedbackForResult`
   — advisory prompts per ADR 0005, `compileIntent`/`checkPredicates`/`projectSubscores`)
@@ -97,7 +97,7 @@ G1's PASS cleared Tranche 4 to ship:
   pinned `eval/judge-fixture.json` byte-equivalence suite (regenerate it only to record an
   approved bump, never to green a red suite).
 
-**Latest release — v1.13.0 (2026-07-11; AI-native authoring). Six tranches
+**Prior release — v1.13.0 (2026-07-11; AI-native authoring). Six tranches
 (see `CHANGELOG.md` for detail):**
 1. **Placement sugar** (write plans without hand-computed coordinates). Openings attach to a wall by
    position — `door|window|opening on <wall> at <pos>` (mm or `%`), `swing into <room>`, `hinge near
@@ -513,6 +513,15 @@ source (.arch)
   optional-dep import.
 - **`npm run dev`** (repo root) runs `tsup --watch` (a rebuild watcher), not a web server. The
   playground/docs sites are separate Vite apps — use `npm run playground:dev` / `docs:dev`.
+- **(Releasing) npm provenance exact-matches `repository.url`'s casing.** The OIDC release
+  (`.github/workflows/release.yml` — tokenless trusted publishing; a `v*` tag push runs it)
+  fails with `E422` if `package.json`'s `repository.url` says `chanmeng666` where the
+  provenance statement says `ChanMeng666` — the owner segment must match the real repo
+  byte-for-byte (the v1.14.0 release needed a same-day casing fix + re-tag for exactly this).
+  Also: token/maintainer/trusted-publisher management on npmjs is human-with-interactive-2FA
+  by npm policy (2026–2027 GAT deprecations) — never try to automate those, and never add an
+  npm token to secrets or `.npmrc`; an auth failure in the workflow means "redo the npmjs
+  trusted-publisher registration", not "add a token".
 - **(MCP registry) The `io.github.<Owner>/*` namespace is case-sensitive and identity-checked.**
   registry.modelcontextprotocol.io exact-matches the published npm package's **`mcpName`** field
   against `server.json`'s `name`, so the owner segment must match your GitHub login byte-for-byte

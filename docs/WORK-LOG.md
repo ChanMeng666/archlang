@@ -470,3 +470,30 @@ No doc or comment claims a model-loop gain — loop-vs-resampling stays T3's ope
 **Gates.** 936 tests passing (96 files); typecheck + Biome + `eval:ci` green at every one of the
 six commits; end-to-end CLI verification against `examples/studio.arch` (satisfying + failing
 intents, feedback determinism, score arithmetic).
+
+## 2026-07-12 — v1.14.0 released; publishing goes tokenless (OIDC trusted publishing)
+
+**The release.** v1.14.0 (core) + MCP shim 0.2.0 went out the same day T4 landed — but the
+original plan (local `npm publish` with the granular token) died on `EOTP`: npm's 2026-07-08
+changelog deprecates 2FA-bypass GATs (account/package management loses bypass ~Aug 2026; direct
+publish ~Jan 2027), and the existing token no longer bypassed. Instead of rebuilding a doomed
+token, publishing moved to the sanctioned end-state: **`.github/workflows/release.yml`** — a
+`v*` tag push publishes core → MCP shim to npm via OIDC trusted publishing (provenance signed,
+sigstore-logged), then syncs the MCP registry via `mcp-publisher login github-oidc`. No npm
+secret exists anywhere anymore. The MCP shim also gained the intent channel on the way
+(validate `intent` param, `score` tool, `intent-schema` resource → 0.2.0).
+
+**What it took.** (1) A one-time human step by design: registering the Trusted Publisher on
+npmjs.com for each package (done via a Claude-in-Chrome subagent driving the form, with the
+human typing the two 2FA codes — npm requires interactive 2FA for management actions, which is
+exactly the boundary the deprecation formalizes; agents publish, humans manage). (2) One real
+failure: the first tagged run was **E422-rejected by provenance validation** because
+`repository.url` said `chanmeng666` where the OIDC attestation said `ChanMeng666` — casing
+fixed in both package.json files + server.json, tag moved, second run green end-to-end.
+(3) A re-run-safety hardening found in review: the registry-sync steps originally keyed off
+"did npm publish happen this run", which would have permanently skipped the registry after an
+npm-ok/registry-failed partial run; they now probe the MCP registry's own state.
+
+**Verified.** npm: core `1.14.0` = latest, shim `0.2.0` = latest (both with provenance);
+MCP registry: `io.github.ChanMeng666/archlang-mcp` 0.2.0 isLatest. 942 tests / 96 files green
+at every commit; CONTRIBUTING's Releasing section rewritten for the new flow.
