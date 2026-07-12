@@ -12,6 +12,20 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.6.0] - 2026-07-12
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.14.0`**, refreshing the bundled
+  language services and error catalog. Diagnostics and `explain` now recognize the eight
+  v1.14 **intent-channel** codes (`E_INTENT_ROOM_MISSING`, `E_INTENT_ROOM_COUNT`,
+  `E_INTENT_ROOM_AREA`, `E_INTENT_TOTAL_AREA`, `E_INTENT_NOT_ADJACENT`,
+  `E_INTENT_UNREACHABLE`, `E_INTENT_NO_DOOR`, `E_INTENT_NO_WINDOW`) surfaced by the core's
+  new intent verification (`validateIntent` / `arch validate --intent` / `arch score`).
+  Bumped the dev-dependency pin `^1.13.0` → `^1.14.0` to match the bundled core.
+
+_Rebundle only — no new extension configuration or runtime-behavior change beyond the newer bundled core._
+
 ## [0.5.0] - 2026-07-11
 
 ### Changed
