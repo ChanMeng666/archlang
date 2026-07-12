@@ -13,3 +13,5 @@ eval/results.live.md
 # L2 loop-vs-resampling output is ephemeral too (per-run, model/day-dependent).
 eval/results.l2.md
 eval/results.l2.json
+# Generated dataset artifacts (HF-only; the generator + seed are the committed source).
+dataset/out/
