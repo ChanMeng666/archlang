@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-07-12
+
 v1.14 Tranches 1–2 + 4 — **the measurement foundation, then the intent channel it licensed**
 (roadmap `docs/research/2026-07-roadmap-proposal.md`). Tranches 1–2 were repo-internal (eval/ and
 CI only; the one core exception is the `repair()` purity fix under _Fixed_): **fix the ruler before

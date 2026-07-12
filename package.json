@@ -1,6 +1,6 @@
 {
   "name": "@chanmeng666/archlang",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.",
   "keywords": [
     "architecture",
