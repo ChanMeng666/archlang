@@ -20,18 +20,19 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | Thing | Current | Where |
 |-------|---------|-------|
 | **Core package** | `@chanmeng666/archlang@1.13.0` (published, `latest`) | npmjs.com/package/@chanmeng666/archlang |
-| **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — now incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
+| **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — now incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`, and unreleased on `main`: `validate --intent`/`--feedback` + `score --brief`) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`schemas/intent.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
 | **MCP server** | `@chanmeng666/archlang-mcp@0.1.1` (published, `latest`; registry entry `io.github.ChanMeng666/archlang-mcp` v0.1.1 live on registry.modelcontextprotocol.io; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate/repair/fix/suggest/complete + spec/context/schema/grammar resources; SDK dep quarantined here, core stays zero-dep) | `packages/mcp/`, `server.json` |
 | **VS Code extension** | `ChanMeng.archlang@0.5.0` (published, live — bundles core 1.13.0 with the v1.13 language sugar — attachment/`strip`/anchor + the new codes) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.13.0` (latest) | github.com/ChanMeng666/archlang |
-| **Tests** | 842 passing (92 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, and the L2 protocol tests) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
+| **Tests** | 936 passing (96 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, the L2 protocol tests, the judge byte-equivalence fixture, and the intent-channel suites) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
-**Unreleased (post-1.13, on `main`) — v1.14 Tranches 1–2: the measurement foundation
-(2026-07-11; roadmap `docs/research/2026-07-roadmap-proposal.md`, verdicts in the
-companion deep-dive).** The eval's ruler is fixed and the deterministic-tool tier is
-measured on its own ledger:
+**Unreleased (post-1.13, on `main`) — v1.14 Tranches 1–2 + 4: the measurement foundation,
+then the intent channel it licensed (2026-07-11/12; roadmap
+`docs/research/2026-07-roadmap-proposal.md`, verdicts in the companion deep-dive).** The
+eval's ruler is fixed, the deterministic-tool tier is measured on its own ledger, and Gate
+G1's PASS cleared Tranche 4 to ship:
 - **Judge v2** (`eval/assertions.ts` + `eval/synonyms.ts`): scoring lowered to an
   intent-assertion data structure (room-count / room-exists / room-area / total-area /
   adjacent / reachable — the shallow five-kind boundary a future `src/intent.ts` can
@@ -77,6 +78,24 @@ measured on its own ledger:
   absence) anywhere. To answer it later: dispatch **"Eval (L2 loop vs resampling)"** in
   Actions (defaults = full run; smoke: `max 2, trials 1`). L3/L4/L5 stay unbuilt (gated on
   an L2 net win).
+- **Tranche 4: the intent channel — SHIPPED to `main` (2026-07-12; core + CLI, zero new
+  runtime deps; unreleased to npm).** The judge-v2 core is lifted into the core package:
+  **`src/intent.ts`** (`validateIntent(source, intent)` → `{ ok, satisfied, total,
+  violations, subscores, assertions, diagnostics }`, `intentFromJson`, `feedbackForResult`
+  — advisory prompts per ADR 0005, `compileIntent`/`checkPredicates`/`projectSubscores`)
+  + **`src/intent-concepts.ts`** (the concept table as production name resolution; unknown
+  concepts fall back to literal id → label → uses → `room_type`). Eight catalogued codes
+  (`E_INTENT_ROOM_MISSING/_ROOM_COUNT/_ROOM_AREA/_TOTAL_AREA/_NO_WINDOW` gate;
+  `_NOT_ADJACENT/_NO_DOOR/_UNREACHABLE` advisory — promotion parked on T3). Generated
+  **`schemas/intent.schema.json`** (`gen:intent-schema`, drift-tested) makes G1's two
+  lessons normative in its field docs (band conventions; count only when the brief
+  enumerates). CLI: **`arch validate --intent <f>` (gate, exit 2; `--feedback`) + `arch
+  score <file> --brief <f>`** (continuous meter, exit 0). `describe()` windows gain
+  `facing: N|S|E|W` (append-only) with an optional intent `windows.facing` assertion.
+  **The eval consumes the same implementation** (`eval/assertions.ts`/`synonyms.ts` are
+  re-export shims) — one judge, zero skew; **JUDGE_VERSION stays "2"**, proven by the
+  pinned `eval/judge-fixture.json` byte-equivalence suite (regenerate it only to record an
+  approved bump, never to green a red suite).
 
 **Latest release — v1.13.0 (2026-07-11; AI-native authoring). Six tranches
 (see `CHANGELOG.md` for detail):**
@@ -254,7 +273,7 @@ for concave door arcs, dimensions drawn into the building, and the title-block o
 ├─ SKILL.md           agent Skill: the spec → compile → fix → describe → validate loop (CLI-driven)
 ├─ llms.txt           machine-readable project map (how to USE vs CONTRIBUTE)
 ├─ llms-full.txt      GENERATED full agent context (spec + skill + CLI + errors); see scripts/gen-llms-full.ts
-├─ schemas/           GENERATED plan.schema.json — Plan-JSON JSON Schema (`gen:plan-schema`, drift-tested)
+├─ schemas/           GENERATED plan.schema.json (`gen:plan-schema`) + intent.schema.json (`gen:intent-schema`), both drift-tested
 ├─ grammars/          GENERATED archlang.gbnf — GBNF constrained-decoding grammar (`gen:gbnf`, drift-tested)
 ├─ packages/mcp/      @chanmeng666/archlang-mcp — stdio MCP shim over the library (SDK dep quarantined here);
 │                     src/server.ts, server.json (registry manifest), test/ smoke test — see ADR 0012
@@ -272,8 +291,9 @@ for concave door arcs, dimensions drawn into the building, and the title-block o
 ├─ brand/             logo kit + brand book (README.md); archlang-logo-master.svg is byte-sacred, variants are fill-swaps only
 ├─ examples/          studio · two-bed · parametric · themed · relational · attached · accessible · lib/ · imports
 ├─ eval/              NL→ArchLang authorability harness (corpus.json — 26 briefs, goldens/, run.ts,
-│                     assertions.ts + synonyms.ts — the judge-v2 intent-assertion core, rubric.md —
-│                     frozen review rubric, faults/ + l1.ts — the L1 deterministic-tool gate,
+│                     assertions.ts + synonyms.ts — re-export SHIMS over src/intent*.ts (the judge-v2
+│                     core lives in the core since T4; judge-fixture.json pins byte-equivalence),
+│                     rubric.md — frozen review rubric, faults/ + l1.ts — the L1 deterministic-tool gate,
 │                     g1/ — Gate G1 intent-faithfulness experiment (generate.ts + report.md, PASSED),
 │                     l2.ts + l2-run.ts — the T3 L2 diagnostic-loop-vs-equal-budget-resampling harness
 │                     (`npm run eval:l2`, guarded; live experiment not yet run);
@@ -292,8 +312,10 @@ shared door-swing quarter-disc geometry used by both the renderer and the linter
 `elements/fixtures-glyphs.ts` (v1.2) draws the fixture symbols. `diagnostic-json.ts` (v1.12) is the
 public line/col/`fix` projection of a `Diagnostic` (`diagnosticToJson`, used by the CLI/playground/
 LSP); `backends/error-svg.ts` (v1.12) renders the opt-in error card (`renderErrorSvg`); and
-`describe().caption` (v1.12) is the one-sentence accessible summary shared with `--accessible`. The
-agent-facing CLI lives in `src/cli.ts`.
+`describe().caption` (v1.12) is the one-sentence accessible summary shared with `--accessible`.
+`intent.ts` + `intent-concepts.ts` (v1.14 T4, unreleased) are the intent channel — the judge-v2
+scoring core as production API (`validateIntent`/`intentFromJson`/`feedbackForResult` +
+`INTENT_JSON_SCHEMA`), shared with the eval via shims. The agent-facing CLI lives in `src/cli.ts`.
 
 A single `npm install` at the root bootstraps every workspace.
 
@@ -348,6 +370,7 @@ npm run gen:spec     # regenerate spec.llm.md from tokens.ts + examples/ (CI che
 npm run gen:llms     # regenerate llms-full.txt from spec + SKILL.md + manifest + error catalog (CI checks drift)
 npm run gen:gbnf     # regenerate grammars/archlang.gbnf from src/grammar/tokens.ts (CI checks drift)
 npm run gen:plan-schema  # regenerate schemas/plan.schema.json from PLAN_JSON_SCHEMA (CI checks drift)
+npm run gen:intent-schema  # regenerate schemas/intent.schema.json from INTENT_JSON_SCHEMA (CI checks drift)
 
 npm run playground:dev   # build core, then run the Vite playground dev server
 npm run docs:build       # build core, then build the VitePress docs site
@@ -367,7 +390,11 @@ context — `llms-full.txt`: spec + skill + CLI reference + error catalog, for a
 areas, adjacency, door connections — backed by `describe()` in `src/describe.ts`), `arch lint`
 (architectural soundness `W_*` warnings — `src/lint.ts`), `arch validate` (parse+resolve+lint, no
 render; `--strict`/`--fail-on-warning` makes warnings fail too — the pipeline ship-gate; `--graph
-<g.json>` also checks interior-door adjacency against an intended graph via `checkGraph`), `arch ast`
+<g.json>` also checks interior-door adjacency against an intended graph via `checkGraph`; `--intent
+<intent.json>` gates on a brief's intent contract via `validateIntent` — exit 2 on a gating
+violation, `--feedback` appends deterministic correction prompts), `arch score` (`--brief
+<intent.json>` — the continuous intent-satisfaction meter, `satisfied/total` + subscores, exit 0 on
+any successful measurement; measures, never gates), `arch ast`
 (parse-only span-bearing AST JSON — `astToJson`), `arch complete --at <offset>` (LSP `completion()`
 items in scope), `arch fix` (apply the machine-applicable `diagnostics[].fixes` via a bounded
 fixpoint — `applyFixes`, `--unsafe`/`--dry-run`/`--force`; ADR 0011), `arch suggest` (advisory
@@ -446,10 +473,11 @@ source (.arch)
   `llms-full.txt` (the bundled full agent context) is generated from `spec.llm.md` + `SKILL.md` +
   the manifest + the error catalog by `npm run gen:llms` (`scripts/gen-llms-full.ts`); CI fails on
   drift — regenerate it after editing any of those sources. `grammars/archlang.gbnf` (GBNF grammar,
-  `npm run gen:gbnf`) and `schemas/plan.schema.json` (Plan-JSON schema, `npm run gen:plan-schema`)
-  are likewise generated from `src/grammar/tokens.ts` / `PLAN_JSON_SCHEMA` and CI-drift-tested.
-  The docs site copies the four root artifacts (`llms.txt`, `llms-full.txt`, `plan.schema.json`,
-  `archlang.gbnf`) and a raw markdown copy of each generated page into `public/` via
+  `npm run gen:gbnf`), `schemas/plan.schema.json` (Plan-JSON schema, `npm run gen:plan-schema`),
+  and `schemas/intent.schema.json` (intent schema, `npm run gen:intent-schema`) are likewise
+  generated from `src/grammar/tokens.ts` / `PLAN_JSON_SCHEMA` / `INTENT_JSON_SCHEMA` and CI-drift-tested.
+  The docs site copies the root artifacts (`llms.txt`, `llms-full.txt`, `plan.schema.json`,
+  `intent.schema.json`, `archlang.gbnf`) and a raw markdown copy of each generated page into `public/` via
   `docs-site/sync-docs.mjs` — edit the repo-root source, not the copies. **Editor syntax colors also route
   through the generator:** `playground/src/arch-language.js` emits each `HighlightStyle` tag as
   `var(--syn-<name>, <fallback>)` (the on-carbon palette lives in `playground/src/styles/editor.css`)

@@ -6,7 +6,8 @@
 valid-only-control sensitivity caveat recorded); **T3 harness implemented 2026-07-12,
 live experiment deferred** (the ~440-call spend was declined — the loop-vs-resampling
 question stays open; dispatch the "Eval (L2 loop vs resampling)" workflow to answer it);
-T4–T6 remain open ·
+**T4 implemented 2026-07-12** (the intent channel is on `main` — see the tranche's Status
+line; unreleased to npm); T5–T6 remain open ·
 **Evidence base:** [`2026-07-ai-first-deep-dive.md`](./2026-07-ai-first-deep-dive.md) — every
 tranche below cites its verdicts (H1–H5) and the underlying sources. Written to be executable
 by a fresh implementation session with no other context beyond `AGENTS.md`.
@@ -149,6 +150,13 @@ reversal triggers. Designed to be able to say "the loop does not pay."
 n=3 × ≤3 calls ≈ 400 calls — budgeted, cached, seed-pinned.
 
 ## Tranche 4 — The intent channel (CONDITIONAL on Gate G1)
+
+**Status: ✅ implemented 2026-07-12** (commits `2a5321e`…; `src/intent.ts` +
+`src/intent-concepts.ts` + `schemas/intent.schema.json` + `arch validate --intent`/`--feedback` +
+`arch score --brief` + `describe()` window `facing`; the eval rewired onto the same implementation
+with `JUDGE_VERSION` kept at "2" via the pinned byte-equivalence fixture; G1's two design notes
+made normative in the schema's field docs). Adjacency/reachability stay advisory — their gating
+promotion remains parked on T3's still-open loop-vs-resampling question.
 
 **Motivation:** H1 verdict (conditionally adopted); Track B/D convergence (BAML `@check` /
 DSPy reward / Nickel contract / Peña space program all point at the same artifact); H4 verdict

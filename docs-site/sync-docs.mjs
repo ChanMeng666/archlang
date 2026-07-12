@@ -37,6 +37,7 @@ console.log("syncing canonical docs into the site:");
 page("docs/language-reference.md", "reference.md");
 page("docs/furniture.md", "furniture.md");
 page("docs/analysis.md", "analysis.md");
+page("docs/intent.md", "intent.md");
 page("docs/error-codes.md", "errors.md");
 page("spec.llm.md", "spec.md");
 
@@ -55,6 +56,7 @@ for (const f of ["llms.txt", "llms-full.txt"]) {
 // (`npm run gen:plan-schema` / `npm run gen:gbnf`); copied flat here.
 for (const [src, dest] of [
   ["schemas/plan.schema.json", "plan.schema.json"],
+  ["schemas/intent.schema.json", "intent.schema.json"],
   ["grammars/archlang.gbnf", "archlang.gbnf"],
 ]) {
   copyFileSync(join(repo, src), join(publicDir, dest));

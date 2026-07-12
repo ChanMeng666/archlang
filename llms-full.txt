@@ -307,9 +307,20 @@ npx @chanmeng666/archlang help
    generation pipeline runs before it ships. Add `--graph g.json` to also assert the intended
    room-to-room adjacency (`{ "living": ["kitchen","hall"], … }`); a mismatch fails. Read each
    `diagnostics[].fix`, edit, and re-run until it passes — or, if a warning is deliberate, say so.
-8. **Fix furniture geometry:** `arch repair plan.arch -o fixed.arch` pushes furniture out of
+8. **Check the plan against the brief.** Write the user's brief as an `intent.json` — its checkable
+   expectations as data (room count, per-room concepts with area/window bands, total area, optional
+   adjacency/reachability). Two disciplines keep it brief-grounded: assert an area band only where the
+   brief gives a number ("about/~N" → ±10%; "at least N" → `min` only; qualitative words → nothing),
+   and assert the top-level room `count` only when the brief **enumerates** the rooms. Gate with
+   `arch validate plan.arch --intent intent.json --feedback --json`: a gating miss (room
+   count/existence/area/total-area/window) fails (exit `2`) with a per-violation correction prompt —
+   iterate on the feedback and re-run. Adjacency/reachability are advisory (reported, never fail the
+   gate). Use `arch score plan.arch --brief intent.json --json` as a continuous satisfaction meter
+   (always exit `0`) to watch the plan approach the brief across edits. See
+   [`/intent.schema.json`](https://archlang-docs.vercel.app/intent.schema.json).
+9. **Fix furniture geometry:** `arch repair plan.arch -o fixed.arch` pushes furniture out of
    walls/doorways/swing arcs (the geometric corrector; distinct from `fix`).
-9. **Show the user:** `arch preview plan.arch -o plan.png` renders a PNG (`--install` fetches the
+10. **Show the user:** `arch preview plan.arch -o plan.png` renders a PNG (`--install` fetches the
    optional renderer if missing).
 
 ## Write it right the first time (placement sugar — the preferred path)

@@ -438,3 +438,35 @@ scored. L3/L4/L5 stay unbuilt.
 
 **Gates.** 842 tests passing (92 files); typecheck + Biome + `eval:ci` green throughout; every
 commit ran the four-gate set.
+
+## 2026-07-12 — v1.14 Tranche 4: the intent channel shipped to main
+
+**What shipped (commits `2a5321e` → `91ced49` + the docs/truth-sync commit).** Gate G1's PASS
+licensed T4, and it landed the same day, offline, zero API spend. The judge-v2 scoring core was
+lifted wholesale into the core package as **`src/intent.ts`** (`validateIntent(source, intent)` →
+`{ ok, satisfied, total, violations, subscores, assertions, diagnostics }`, plus `intentFromJson`
+and the ADR-0005-advisory `feedbackForResult`) with the concept table as
+**`src/intent-concepts.ts`** (production name resolution; unknown concepts fall back to a literal
+id → label → uses → room_type match the eval never hits). Eight catalogued blame codes
+(`E_INTENT_*`; reachable splits by cause into `NO_DOOR`/`UNREACHABLE`; adjacency/reachability stay
+advisory pending T3). `schemas/intent.schema.json` (`gen:intent-schema`, drift-tested) makes G1's
+two measured lessons **normative field documentation**: the band conventions (about/~/bare N →
+±10%; at least N → min only; qualitative words → nothing) and "assert a room count only when the
+brief enumerates it". CLI: `arch validate --intent` (the gate, exit 2; `--feedback` prints the
+deterministic correction prompts) and `arch score --brief` (the continuous meter, exit 0 — the H4
+reward projection). `describe()` windows gained `facing: N|S|E|W` (append-only) with an optional
+intent `windows.facing` assertion.
+
+**The discipline that made it safe.** Step 0 pinned every corpus judgment as a fixture
+(`eval/judge-fixture.json` + `test/eval-fixture.test.ts`) BEFORE any code moved; the eval was then
+rewired onto the lifted implementation (`assertions.ts`/`synonyms.ts` are now re-export shims) and
+the fixture stayed green untouched — which is the recorded proof that **`JUDGE_VERSION` stays
+"2"** (bump criterion reworded to corpus-judgment equivalence; new corpus-unused predicate kinds
+like `room-windows` do not bump). Oracle isolation held: the eval author prompt is `spec.llm.md`
+only, which T4 never touched; `test/g1.test.ts`'s structural grep now also forbids
+`intent-concepts` in the generator; the synonym table is not enumerated in any agent-facing prose.
+No doc or comment claims a model-loop gain — loop-vs-resampling stays T3's open question.
+
+**Gates.** 936 tests passing (96 files); typecheck + Biome + `eval:ci` green at every one of the
+six commits; end-to-end CLI verification against `examples/studio.arch` (satisfying + failing
+intents, feedback determinism, score arithmetic).

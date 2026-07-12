@@ -7,13 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-v1.14 Tranches 1–2 — **the measurement foundation** (roadmap
-`docs/research/2026-07-roadmap-proposal.md`). This is a repo-internal round: everything below lives
-in `eval/` and CI, so the **published package surface is unchanged** — the one exception is the
-`repair()` purity fix (see _Fixed_), a genuine core bug the fault-injection work uncovered. The
-point of the round was to **fix the ruler before measuring capability**: rebuild the eval judge on
-brief-grounded intent assertions, measure the free deterministic-tool gains on their own ledger, and
-write down a calibrated baseline honest enough to trust.
+v1.14 Tranches 1–2 + 4 — **the measurement foundation, then the intent channel it licensed**
+(roadmap `docs/research/2026-07-roadmap-proposal.md`). Tranches 1–2 were repo-internal (eval/ and
+CI only; the one core exception is the `repair()` purity fix under _Fixed_): **fix the ruler before
+measuring capability**. Gate G1's PASS then cleared **Tranche 4**, which DOES extend the published
+surface — the intent channel below.
+
+### Added — Tranche 4: the intent channel (2026-07-12; core + CLI, zero new runtime deps)
+
+- **`src/intent.ts` — the judge-v2 scoring core, lifted into the core package.** A brief's
+  checkable expectations as data (`Intent`), lowered to the shallow predicate kinds
+  (`room-count` / `room-exists` / `room-area` / `total-area` / `adjacent` / `reachable`, plus a
+  new gating `room-windows`), checked against `describe()` facts.
+  **`validateIntent(source, intent)`** → `{ ok, satisfied, total, violations, subscores,
+  assertions, diagnostics }` with typed, catalogued violations and Nickel-style spanless blame
+  messages (`intent /roomsInclude/1: no room matching concept "bathroom" …`);
+  **`intentFromJson`** (zero-dep pathed shape walker); **`feedbackForResult`** (deterministic
+  per-violation correction prompts — advisory data, ADR 0005, never auto-applied).
+- **`src/intent-concepts.ts` — the concept vocabulary, now production name resolution.** Byte-
+  mirrors the eval's table; a known concept resolves exactly as the eval judges (label →
+  `room_type` → `uses`, token-bounded), an unknown one falls back to a literal
+  id → label → uses → room_type match.
+- **Eight catalogued codes**: `E_INTENT_ROOM_MISSING` / `_ROOM_COUNT` / `_ROOM_AREA` /
+  `_TOTAL_AREA` / `_NO_WINDOW` gate; `E_INTENT_NOT_ADJACENT` / `_NO_DOOR` / `_UNREACHABLE` are
+  advisory (`gate: false` — scored, never failing `ok`; `reachable` blames by cause: no entrance
+  → `NO_DOOR`, cut-off rooms → `UNREACHABLE`). Promoting adjacency/reachability to gating stays
+  parked on T3's still-open loop-vs-resampling question.
+- **`schemas/intent.schema.json`** (`npm run gen:intent-schema`, drift-tested, served by the docs
+  site). Its field docs make Gate G1's two lessons **normative**: the area **band conventions**
+  ("about/~/bare N m²" → ±10%; "at least N" → `min` only; qualitative words → no assertion) and
+  the **count discipline** ("assert a room count only when the brief enumerates it").
+- **CLI**: `arch validate --intent <intent.json>` (the gate — exit 2 on a gating violation;
+  composes with `--graph`/`--strict`; `--feedback` appends the correction prompts) and
+  **`arch score <file> --brief <intent.json>`** (the continuous meter — `satisfied/total` +
+  subscores, exit 0 on any successful measurement).
+- **`describe()` windows gain `facing: "N"|"S"|"E"|"W"`** (append-only; the outward normal of the
+  window's host wall), and intent `windows` assertions take an optional `facing`.
+- **The eval now consumes the same implementation** (`eval/assertions.ts`/`synonyms.ts` are thin
+  re-export shims; run.ts's `Expect` *is* the production `Intent`) — one judge, zero eval↔prod
+  skew. **`JUDGE_VERSION` stays "2"**, proven by a pinned fixture (`eval/judge-fixture.json` +
+  `test/eval-fixture.test.ts`) that every corpus per-assertion judgment is byte-identical across
+  the lift; the fixture is regenerated only to record an approved bump, never to green a red suite.
 
 ### Added — Gate G1 verdict + the L2 experiment harness (2026-07-12; still repo-internal)
 

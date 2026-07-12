@@ -68,7 +68,10 @@ only its key is present, else Anthropic.
 
 A brief's `expect` block compiles to a flat list of **predicates**, each checked against the plan's
 `describe()` facts (the same facts an agent verifies against). Six kinds, deliberately a shallow
-boundary a future `src/intent.ts` can lift:
+boundary — and since v1.14 T4 the implementation **lives in `src/intent.ts`** (`assertions.ts` /
+`synonyms.ts` are re-export shims; `judge-fixture.json` + `test/eval-fixture.test.ts` pin that the
+lift changed no corpus judgment, which is why `JUDGE_VERSION` stayed `"2"`). The production channel
+also checks a seventh kind (`room-windows`) that no corpus entry uses:
 
 | Predicate | Gates? | Rule |
 | --- | --- | --- |
