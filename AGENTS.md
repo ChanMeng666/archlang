@@ -26,7 +26,7 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.14.0` (latest; a `v*` tag push triggers the tokenless OIDC release workflow) | github.com/ChanMeng666/archlang |
-| **Tests** | 942 passing (96 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, the L2 protocol tests, the judge byte-equivalence fixture, and the intent-channel suites) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
+| **Tests** | 1018 passing (100 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, the L2 protocol tests, the judge byte-equivalence fixture, the intent-channel suites, and the vocabulary-equivalence classification pin) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
 **Latest release — v1.14.0 (2026-07-12) — Tranches 1–2 + 4: the measurement foundation,
 then the intent channel it licensed (roadmap `docs/research/2026-07-roadmap-proposal.md`,
@@ -107,6 +107,19 @@ to npm as `1.14.0` (core) + `0.2.0` (MCP shim) via the new tokenless OIDC releas
   suffixes deliberately exclude `m2`. Tranche 6's unconditional Track B smalls
   (`matchVocabulary`, `rankFixes`, unit suffixes, `describe().freedom`) were never gated
   on G2 and proceed.
+
+**Unreleased on `main` (2026-07-12, post-1.14.0) — Tranche 6 Track B, all four smalls landed**
+(see `CHANGELOG.md` [Unreleased] for detail): `src/vocabulary.ts` shared closed-vocabulary
+matcher replacing the scattered room-label regexes + advisory fix-carrying **`W_ALIAS_MATCH`**
+(judge untouched — CONCEPTS/SYNONYMS_VERSION/fixture byte-green; `arch fix` now also applies
+lint-stage fixes, while the L1 gate's `l1Pipeline` stays the compile-stage-fix + `repair`
+reference); exported **`rankFixes`** deterministic cost ordering (cmdFix picks top-ranked per
+diagnostic, LSP presents in canonical order; identity on today's singletons); **optional metric
+unit suffixes** `3m`/`3cm`/`3mm` → mm folded exactly at lex time (language surface: full
+generator chain regenerated; `spec.llm.md` therefore drifted from the calibrated live baseline's
+author prompt — see eval/README; **releasing this needs a VS Code extension repack**);
+**`describe().freedom`** degrees-of-freedom placement report (append-only). Release/version
+decision pending owner.
 
 **Prior release — v1.13.0 (2026-07-11; AI-native authoring). Six tranches
 (see `CHANGELOG.md` for detail):**
@@ -324,9 +337,14 @@ shared door-swing quarter-disc geometry used by both the renderer and the linter
 public line/col/`fix` projection of a `Diagnostic` (`diagnosticToJson`, used by the CLI/playground/
 LSP); `backends/error-svg.ts` (v1.12) renders the opt-in error card (`renderErrorSvg`); and
 `describe().caption` (v1.12) is the one-sentence accessible summary shared with `--accessible`.
-`intent.ts` + `intent-concepts.ts` (v1.14 T4, unreleased) are the intent channel — the judge-v2
+`intent.ts` + `intent-concepts.ts` (v1.14 T4) are the intent channel — the judge-v2
 scoring core as production API (`validateIntent`/`intentFromJson`/`feedbackForResult` +
-`INTENT_JSON_SCHEMA`), shared with the eval via shims. The agent-facing CLI lives in `src/cli.ts`.
+`INTENT_JSON_SCHEMA`), shared with the eval via shims. `vocabulary.ts` (unreleased, Tranche 6
+Track B) is the shared token-bounded label matcher: the concept table's matching core plus the
+`USE_VOCABULARY` room-use classifier behind `describe`/`lint` (advisory `W_ALIAS_MATCH` when a
+use was inferred from an indirect alias); `describe().freedom` (unreleased) reports each
+element's placement as authored-absolute vs resolver-derived. The agent-facing CLI lives in
+`src/cli.ts`.
 
 A single `npm install` at the root bootstraps every workspace.
 
@@ -557,8 +575,13 @@ source (.arch)
 - **Fixtures draw by category, not a new element kind.** `furniture.render()` dispatches the
   category to `elements/fixtures-glyphs.ts`; a known fixture (`wc`, `basin`, `shower`, `bathtub`,
   `kitchen_sink`/`sink`, `counter`, `fridge`, `stove`…) draws a symbol and ignores its `label`,
-  anything else falls back to the labelled rectangle. The lint rules key off the **room label**
-  (`/bath|wc|shower/i`, `/kitchen/i`) and the **fixture category** — keep those classifiers in sync.
+  anything else falls back to the labelled rectangle. The lint rules key off the **room-label
+  classification** and the **fixture category** — both are closed vocabularies now: room labels
+  classify through `src/vocabulary.ts` (`USE_VOCABULARY` + the token-bounded `matchVocabulary`;
+  the old `/bath|wc/i` regexes are gone, and an alias-only classification raises the advisory
+  `W_ALIAS_MATCH` with a fix), fixture categories through `src/fixtures-catalog.ts`. Corpus
+  classification is pinned by `test/vocabulary-equivalence.test.ts` — a mismatch there means fix
+  the vocabulary, never regenerate the pin.
 - **`examples/studio.arch` is import-free on purpose** (`test/world.test.ts` asserts the flagship
   compiles from a single file with no World). Use inline `furniture <fixture>` there, not imports.
 - **(Sites) A partial `:global(.dark) …` selector inside a Vue `<style scoped>` block miscompiles.**

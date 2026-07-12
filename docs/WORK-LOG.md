@@ -509,3 +509,47 @@ its absence) may ever be made; T4's adjacency/reachability assertions stay advis
 unbuilt for good. The L2 harness (`eval/l2.ts`, `eval/l2-run.ts`, 14 offline tests) is kept
 as the protocol's reference implementation, and `eval-l2.yml` now opens with a DO-NOT-DISPATCH
 banner so no future session mistakes "manual dispatch available" for "should be dispatched".
+
+## 2026-07-12 — Gate G2 closed (residual 0, T6 sugar parked) + Tranche 6 Track B lands
+
+**Gate G2 read out at zero API cost** from the frozen calibrated-baseline scorecard
+(`eval/g1/baseline-run-29150982395.md`): 0/8 area assertions failed at L0 across the six
+area-asserting briefs — including both two-sided per-room bands from the T1 `sized-*` slice —
+and the run's one invalid plan carries no area assertion, so nothing was blinded. Verdict per
+the roadmap's gate as written: only T4's assertion form ships (it already had), the T6
+area-syntax sugar is **parked** behind frozen reversal triggers (same-judge calibrated run with
+a gating area failure; a harder area corpus slice with residual > 0; a real downstream
+area-arithmetic failure report). Full record: `docs/research/2026-07-g2-verdict.md`; roadmap +
+AGENTS.md status headers synced. No `area` token enters the grammar.
+
+**Tranche 6's unconditional Track B smalls all landed** (four commits, each verified
+typecheck+lint+vitest+eval:ci green before commit; judge fixture byte-green throughout):
+
+- `feat(lint)` **matchVocabulary + W_ALIAS_MATCH** — the token-bounded matcher core extracted
+  to `src/vocabulary.ts` (intent-concepts imports it; CONCEPTS/SYNONYMS_VERSION untouched), the
+  six analyze.ts label regexes + circulation's LIVING_DINING_RE re-expressed as the data-driven
+  `USE_VOCABULARY`, and a new advisory that fires when a use was inferred from an indirect
+  alias, carrying a machine-applicable fix inserting the explicit `uses …`. Corpus
+  classification pinned byte-identical over all examples + eval goldens
+  (`test/vocabulary-equivalence.test.ts`). One deliberate reclassification: "Powder" now reads
+  as a WC (the word was dead under the old WET_RE-gated cascade). `arch fix` now collects
+  lint-stage fixes too.
+- `feat(fix)` **rankFixes** — deterministic cost ordering (applicability → edit magnitude →
+  offset → stable index) for a diagnostic's mutually-exclusive fix alternatives; cmdFix picks
+  the top-ranked one per diagnostic, LSP presents the canonical order; identity on today's
+  singleton arrays.
+- `feat(lang)` **optional metric unit suffixes** — `3m`/`3cm`/`3mm` fold to mm at lex time via
+  exact decimal-string shifting (never float multiply); bare numbers unchanged and
+  suffixed-vs-bare twins compile to byte-identical SVG; full generator chain regenerated
+  (grammars/gbnf/spec/llms). Recorded in CHANGELOG + eval/README: `spec.llm.md` (the eval author
+  prompt) has now drifted from the calibrated baseline — a re-run stays owner-approved, default
+  not run. Releasing this needs a VS Code repack (0.7.0).
+- `feat(describe)` **freedom** — append-only degrees-of-freedom report: per element,
+  authored-absolute vs resolver-derived placement (rooms absolute/relational/strip, openings
+  attached/absolute, furniture anchored/against-wall/absolute). Facts only; the internal
+  `_placement` marker never reaches the Scene.
+
+Orchestration: Fable 5 directed and verified; each code item was implemented by an Opus 4.8
+subagent, then the diff hand-reviewed and the four-gate suite re-run locally before each
+commit. Tests 942 → 1018 (96 → 100 files). Release/version decision (suggest 1.15.0 — new
+language surface) left to the owner.

@@ -7,8 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Roadmap Tranche 6 resolved (2026-07-12): **Gate G2 closed with residual area failures = 0/8**
+on the calibrated baseline (`docs/research/2026-07-g2-verdict.md`) — the T6 area-syntax sugar
+is **parked** behind frozen reversal triggers, and only the tranche's unconditional Track B
+items ship below.
+
 ### Added
 
+- **`matchVocabulary` — one shared closed-vocabulary matcher, and the advisory `W_ALIAS_MATCH`.**
+  The token-bounded matcher core (`normalizeLabel`/`synonymMatchesLabel`) moved from
+  `src/intent-concepts.ts` into new `src/vocabulary.ts`, and the scattered room-label regexes in
+  `analyze.ts`/`analyze/circulation.ts` are re-expressed as its data-driven `USE_VOCABULARY`
+  (canonical vs alias words per use kind). One matcher core, two vocabularies at two layers — the
+  brief-level `CONCEPTS` table and `SYNONYMS_VERSION` are untouched (judge fixture byte-green; no
+  second concept table). New advisory **`W_ALIAS_MATCH`** fires when a room with no authored
+  `uses` classifies only via an indirect alias ("Powder" → WC, "Foyer" → entry), carrying a
+  machine-applicable fix that inserts the explicit `uses …`; corpus classification is pinned
+  byte-identical by `test/vocabulary-equivalence.test.ts` over every example and eval golden.
+- **`rankFixes` — deterministic cost ordering for a diagnostic's fix alternatives** (exported).
+  Orders the mutually-exclusive `fixes` on one diagnostic by applicability rank → total edit
+  magnitude (smallest change wins) → earliest offset → stable index. `arch fix` now applies only
+  the top-ranked alternative per diagnostic; LSP code actions present alternatives in the same
+  canonical order. Identity on today's singleton arrays, so existing behavior is byte-identical.
+- **`describe().freedom` — a degrees-of-freedom placement report** (append-only). Per placed
+  element, whether its position was authored absolutely or derived by the resolver — rooms
+  `absolute`/`relational`/`strip`, openings `attached`/`absolute`, furniture
+  `anchored`/`against-wall`/`absolute` — as per-family counts plus one `elements` row each.
+  Facts only (ADR 0005); the internal marker never reaches the Scene, so rendered output is
+  unchanged.
 - **Optional metric unit suffixes on numeric literals** (roadmap Tranche 6 Track B). A number may
   carry a `mm`/`cm`/`m` suffix, folded to millimetres at lex time: `3m` → `3000`, `3.5m` → `3500`,
   `3cm` → `30`, `3mm` → `3` (an explicit no-op). Bare numbers still mean millimetres, so **every
@@ -27,6 +53,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to it, so it now differs from the prompt behind the 2026-07-11/12 calibrated live baseline. No
   scoring/judge/fixture code changed; re-running the paid live baseline under the new prompt stays a
   separate, owner-approved action (default: not run).
+
+### Changed
+
+- **`arch fix` now collects fixes from lint diagnostics too** (previously compile-stage
+  diagnostics only). `W_ALIAS_MATCH` is the first lint rule to carry a fix; the L1 gate's
+  `l1Pipeline` remains the compile-stage-fix + `repair` reference pipeline and is unaffected.
+- **A room labelled with a WC-only alias (e.g. "Powder") now classifies as a WC.** The word was
+  dead in the old regex cascade (`WC_RE` was only consulted after `WET_RE`, which never matched
+  it); the vocabulary form resolves it, flagged by `W_ALIAS_MATCH`. The one deliberate
+  reclassification — every other label classifies exactly as before (pinned by test).
 
 ## [1.14.0] - 2026-07-12
 
