@@ -59,7 +59,8 @@ core npm package, the VS Code extension, and (as of v1.13) the optional MCP serv
 
 **Since v1.14.0 the npm publish is tokenless and runs in CI** (`.github/workflows/release.yml`,
 OIDC trusted publishing with provenance — see the workflow's header comment). There is no npm
-token anywhere; do not add one.
+token anywhere; do not add one. The full transferable recipe (for this or any other repo) lives
+in [docs/npm-oidc-publishing-playbook.md](docs/npm-oidc-publishing-playbook.md).
 
 1. Update `CHANGELOG.md` and bump `version` in the root `package.json`.
 2. `npm run build && npm test` must be green (they also run inside the publish via
