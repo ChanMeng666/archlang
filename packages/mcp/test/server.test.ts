@@ -25,9 +25,17 @@ describe("archlang mcp server", () => {
   it("exposes the wrapping tools and resources", async () => {
     const client = await connect();
     const tools = (await client.listTools()).tools.map((t) => t.name).sort();
-    expect(tools).toEqual(["compile", "complete", "describe", "fix", "lint", "repair", "suggest", "validate"].sort());
+    expect(tools).toEqual(
+      ["compile", "complete", "describe", "fix", "lint", "repair", "score", "suggest", "validate"].sort(),
+    );
     const resources = (await client.listResources()).resources.map((r) => r.uri).sort();
-    expect(resources).toEqual(["archlang://context", "archlang://grammar", "archlang://schema", "archlang://spec"]);
+    expect(resources).toEqual([
+      "archlang://context",
+      "archlang://grammar",
+      "archlang://intent-schema",
+      "archlang://schema",
+      "archlang://spec",
+    ]);
   });
 
   it("compile returns SVG + diagnostics for a valid plan", async () => {
@@ -56,10 +64,66 @@ describe("archlang mcp server", () => {
     expect((out.rooms as unknown[]).length).toBe(1);
   });
 
+  it("validate accepts an intent and passes a satisfied brief", async () => {
+    const client = await connect();
+    const out = payload(await client.callTool({ name: "validate", arguments: { source: TINY, intent: { rooms: 1 } } }));
+    expect(out.ok).toBe(true);
+    const intent = out.intent as Record<string, unknown>;
+    expect(intent.ok).toBe(true);
+    expect(intent.satisfied).toBe(intent.total);
+    expect(Array.isArray(intent.feedback)).toBe(true);
+  });
+
+  it("validate fails when a gating intent assertion is missed", async () => {
+    const client = await connect();
+    const out = payload(await client.callTool({ name: "validate", arguments: { source: TINY, intent: { rooms: 3 } } }));
+    expect(out.ok).toBe(false);
+    const intent = out.intent as Record<string, unknown>;
+    expect(intent.ok).toBe(false);
+    const violations = intent.violations as Array<{ code: string; gate: boolean }>;
+    expect(violations.some((v) => v.code === "E_INTENT_ROOM_COUNT" && v.gate === true)).toBe(true);
+  });
+
+  it("validate returns intentErrors (data) for a malformed intent", async () => {
+    const client = await connect();
+    const out = payload(
+      await client.callTool({ name: "validate", arguments: { source: TINY, intent: { rooms: 2.5 } } }),
+    );
+    expect(out.ok).toBe(false);
+    expect((out.intentErrors as unknown[]).length).toBeGreaterThan(0);
+    expect(out.intent).toBeUndefined();
+  });
+
+  it("score meters a brief without gating", async () => {
+    const client = await connect();
+    const out = payload(await client.callTool({ name: "score", arguments: { source: TINY, brief: { rooms: 3 } } }));
+    // A missed gating assertion → ok:false, but score still reports a fraction in [0,1].
+    expect(out.ok).toBe(false);
+    expect(typeof out.score).toBe("number");
+    expect(out.score as number).toBeGreaterThanOrEqual(0);
+    expect(out.score as number).toBeLessThanOrEqual(1);
+    expect(out.total).toBe(1);
+  });
+
+  it("score returns intentErrors (data) for a malformed brief", async () => {
+    const client = await connect();
+    const out = payload(await client.callTool({ name: "score", arguments: { source: TINY, brief: { rooms: 2.5 } } }));
+    expect(out.ok).toBe(false);
+    expect((out.intentErrors as unknown[]).length).toBeGreaterThan(0);
+  });
+
   it("serves the language spec resource", async () => {
     const client = await connect();
     const res = await client.readResource({ uri: "archlang://spec" });
     const text = (res.contents[0] as { text?: string }).text ?? "";
     expect(text.length).toBeGreaterThan(100);
+  });
+
+  it("serves the intent JSON schema resource", async () => {
+    const client = await connect();
+    const res = await client.readResource({ uri: "archlang://intent-schema" });
+    const text = (res.contents[0] as { text?: string }).text ?? "";
+    expect(text).toContain("roomsInclude");
+    expect(() => JSON.parse(text)).not.toThrow();
   });
 });

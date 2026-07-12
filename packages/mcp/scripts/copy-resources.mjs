@@ -12,12 +12,13 @@ const repo = join(here, "..", "..", ".."); // packages/mcp/scripts → repo root
 const dist = join(here, "..", "dist");
 mkdirSync(dist, { recursive: true });
 
-/** [repo-relative source, flat dest name] — the four `archlang://…` resources. */
+/** [repo-relative source, flat dest name] — the five `archlang://…` resources. */
 const RESOURCES = [
   ["spec.llm.md", "spec.llm.md"],
   ["llms-full.txt", "llms-full.txt"],
   ["schemas/plan.schema.json", "plan.schema.json"],
   ["grammars/archlang.gbnf", "archlang.gbnf"],
+  ["schemas/intent.schema.json", "intent.schema.json"],
 ];
 
 for (const [src, dest] of RESOURCES) {

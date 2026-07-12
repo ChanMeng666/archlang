@@ -21,12 +21,16 @@ import {
   describe,
   diagnosticToJson,
   type Diagnostic,
+  feedbackForResult,
   type FixSuggestion,
+  intentFromJson,
+  type IntentCheckResult,
   lint,
   planFromJson,
   renderAscii,
   repair,
   suggestTopology,
+  validateIntent,
 } from "@chanmeng666/archlang";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -56,6 +60,29 @@ function json(obj: unknown) {
 const errorCount = (ds: Diagnostic[]): number => ds.filter((d) => d.severity === "error").length;
 const toJson = (source: string, ds: Diagnostic[]) => ds.map((d) => diagnosticToJson(source, d));
 
+/** The agent-facing projection of one intent violation. The predicate objects are dropped
+ *  on purpose — a band's `maxM2` can be `Infinity`, which `JSON.stringify` would null. */
+const violationJson = (v: IntentCheckResult["violations"][number]) => ({
+  code: v.code,
+  message: v.message,
+  gate: v.gate,
+});
+
+/**
+ * Run a raw intent object through the same gate/meter path the CLI uses. Returns pathed
+ * shape errors as DATA (never a throw) when the intent JSON is malformed; otherwise the
+ * checked result plus its deterministic per-violation feedback prompts.
+ */
+function checkIntent(
+  source: string,
+  intentRaw: unknown,
+): { intentErrors: string[] } | { result: IntentCheckResult; feedback: string[] } {
+  const { intent, errors } = intentFromJson(intentRaw);
+  if (intent === null) return { intentErrors: errors };
+  const result = validateIntent(source, intent);
+  return { result, feedback: feedbackForResult(result) };
+}
+
 /** Resolve a tool's `source` | `plan_json` input to `.arch` source (or JSON error diagnostics). */
 function resolveSource(input: {
   source?: string;
@@ -76,7 +103,7 @@ function resolveSource(input: {
 
 /** Build the fully-configured ArchLang MCP server (tools + resources). */
 export function createServer(): McpServer {
-  const server = new McpServer({ name: "archlang", version: "0.1.0" });
+  const server = new McpServer({ name: "archlang", version: "0.2.0" });
 
   server.registerTool(
     "compile",
@@ -144,7 +171,7 @@ export function createServer(): McpServer {
     {
       title: "Validate (parse + resolve + lint)",
       description:
-        "The ship gate: parse + resolve + lint in one pass, no render. `strict:true` makes advisory warnings fail too. Optional `graph` checks the plan's interior-door adjacency against an intended room graph (`{ room: [neighbours] }`); a mismatch fails. Returns { ok, diagnostics, graph? }.",
+        "The ship gate: parse + resolve + lint in one pass, no render. `strict:true` makes advisory warnings fail too. Optional `graph` checks the plan's interior-door adjacency against an intended room graph (`{ room: [neighbours] }`); a mismatch fails. Optional `intent` (a brief's expectations per /intent.schema.json) is checked against the plan — a failing GATING assertion (room count / existence / area / total-area / windows) fails validate, while adjacency and reachability are advisory and only score. A malformed intent returns `{ ok:false, intentErrors }` (data, never a throw). Returns { ok, diagnostics, graph?, intent? }.",
       inputSchema: {
         source: z.string().describe("ArchLang source."),
         strict: z.boolean().optional().describe("Advisory warnings fail too."),
@@ -152,9 +179,13 @@ export function createServer(): McpServer {
           .record(z.array(z.string()))
           .optional()
           .describe("Intended interior-door adjacency: { room: [neighbour rooms] }."),
+        intent: z
+          .record(z.any())
+          .optional()
+          .describe("A brief's intent JSON (per /intent.schema.json); gating assertions fail validate."),
       },
     },
-    async ({ source, strict, graph }) => {
+    async ({ source, strict, graph, intent }) => {
       const { diagnostics } = compile(source, { noCache: true });
       const all = [...diagnostics, ...lint(source)];
       const errs = errorCount(all);
@@ -171,12 +202,62 @@ export function createServer(): McpServer {
           extra_connections: gc.extra_connections,
         };
       }
-      const ok = errs === 0 && (!strict || warns === 0) && graphOk;
+      let intentBlock: Record<string, unknown> | undefined;
+      let intentErrors: string[] | undefined;
+      let intentOk = true;
+      if (intent !== undefined) {
+        const checked = checkIntent(source, intent);
+        if ("intentErrors" in checked) {
+          intentErrors = checked.intentErrors;
+          intentOk = false;
+        } else {
+          const { result, feedback } = checked;
+          intentOk = result.ok;
+          intentBlock = {
+            ok: result.ok,
+            satisfied: result.satisfied,
+            total: result.total,
+            subscores: result.subscores,
+            violations: result.violations.map(violationJson),
+            feedback,
+          };
+        }
+      }
+      const ok = errs === 0 && (!strict || warns === 0) && graphOk && intentOk;
+      if (intentErrors) return json({ ok: false, strict: strict ?? false, intentErrors });
       return json({
         ok,
         strict: strict ?? false,
         diagnostics: toJson(source, all),
         ...(graph ? { graph: graphReport } : {}),
+        ...(intentBlock ? { intent: intentBlock } : {}),
+      });
+    },
+  );
+
+  server.registerTool(
+    "score",
+    {
+      title: "Score a plan against a brief (intent meter)",
+      description:
+        "The continuous intent-satisfaction METER: check a brief's intent JSON (per /intent.schema.json) against a plan and report how much it satisfies. Returns { ok, satisfied, total, score, subscores, violations } where `score` is satisfied/total in [0,1] (an empty intent scores 1). It MEASURES, it never gates — so you can watch a plan approach the brief across edits. A malformed intent returns `{ ok:false, intentErrors }` (data, never a throw).",
+      inputSchema: {
+        source: z.string().describe("ArchLang source."),
+        brief: z.record(z.any()).describe("A brief's intent JSON (per /intent.schema.json) to measure against."),
+      },
+    },
+    async ({ source, brief }) => {
+      const checked = checkIntent(source, brief);
+      if ("intentErrors" in checked) return json({ ok: false, intentErrors: checked.intentErrors });
+      const { result } = checked;
+      const score = result.total === 0 ? 1 : Math.round((result.satisfied / result.total) * 10000) / 10000;
+      return json({
+        ok: result.ok,
+        satisfied: result.satisfied,
+        total: result.total,
+        score,
+        subscores: result.subscores,
+        violations: result.violations.map(violationJson),
       });
     },
   );
@@ -300,6 +381,14 @@ export function createServer(): McpServer {
       "GBNF constrained-decoding grammar for guaranteed-parseable generation.",
       "text/plain",
       readResource("archlang.gbnf", "grammars/archlang.gbnf"),
+    ],
+    [
+      "intent-schema",
+      "archlang://intent-schema",
+      "ArchLang intent JSON schema",
+      "JSON Schema (2020-12) for a brief's Intent — the shape `validate`'s `intent` and `score`'s `brief` take.",
+      "application/schema+json",
+      readResource("intent.schema.json", "schemas/intent.schema.json"),
     ],
   ];
   for (const [name, uri, title, description, mimeType, text] of RESOURCES) {
