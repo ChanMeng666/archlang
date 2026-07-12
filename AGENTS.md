@@ -586,6 +586,13 @@ source (.arch)
   the vocabulary, never regenerate the pin.
 - **`examples/studio.arch` is import-free on purpose** (`test/world.test.ts` asserts the flagship
   compiles from a single file with no World). Use inline `furniture <fixture>` there, not imports.
+- **(Sites) A bare `|` inside inline code in a Markdown TABLE cell breaks the docs build.** GFM
+  splits table cells on `|` *before* inline-code parsing, so `` `anchor|centered` `` in a cell
+  severs the backtick pair and any `<token>` inside leaks out as raw HTML — VitePress/Vue then
+  fails the whole site build with "Element is missing end tag" (this took the docs deploy down
+  for four pushes on 2026-07-12). Write `\|` inside table cells, and treat **`npm run
+  docs:build` as part of verification for any `docs/*.md` edit** — the core test suite does not
+  compile the site, so it cannot catch this class.
 - **(Sites) A partial `:global(.dark) …` selector inside a Vue `<style scoped>` block miscompiles.**
   A `:global(.dark) .foo` written *inside* scoped styles collapses to a bare `.dark { … }` rule (it
   once inverted the whole site). Put dark-mode overrides of a component's scoped internals in a

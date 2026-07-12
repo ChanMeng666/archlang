@@ -204,7 +204,7 @@ emission order (rooms, doors, windows, openings, furniture). For the strip-and-a
 |--------|------------------|---------|
 | `rooms` | `absolute` · `relational` · `strip` | a literal `at`; a `right-of`/`below`/… clause; a `strip` block row |
 | `openings` (doors + windows + cased openings) | `attached` · `absolute` | `on <wall> at <pos>`; a literal `at (x,y)` |
-| `furniture` | `anchored` · `against-wall` · `absolute` | `in <room> anchor|centered`; `against wall …`; a literal `at` |
+| `furniture` | `anchored` · `against-wall` · `absolute` | `in <room> anchor\|centered`; `against wall …`; a literal `at` |
 
 Every derived placement is still resolved to concrete coordinates in the rest of the
 summary — `freedom` only records *how* each coordinate was arrived at. On a plan that
