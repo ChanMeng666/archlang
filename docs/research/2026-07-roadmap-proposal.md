@@ -9,7 +9,9 @@ loop-vs-resampling question is permanently unanswered (never claim a loop gain o
 absence; L3–L5 and T4's gating promotion are closed for good);
 **T4 implemented 2026-07-12** (the intent channel — see the tranche's Status
 line; released same day as `@chanmeng666/archlang@1.14.0` + `archlang-mcp@0.2.0`);
-T5–T6 remain open ·
+**Gate G2: CLOSED 2026-07-12 (residual area failures = 0/8 on the calibrated baseline —
+[`2026-07-g2-verdict.md`](./2026-07-g2-verdict.md); T6's area-syntax sugar is PARKED with
+frozen reversal triggers; only Track B's unconditional smalls proceed)**; T5 remains open ·
 **Evidence base:** [`2026-07-ai-first-deep-dive.md`](./2026-07-ai-first-deep-dive.md) — every
 tranche below cites its verdicts (H1–H5) and the underlying sources. Written to be executable
 by a fresh implementation session with no other context beyond `AGENTS.md`.
@@ -211,6 +213,13 @@ as the one data asset aligned with the drivability claim (RustAssistant, APR sur
 **Size:** a generation script + card; near-zero marginal cost by design.
 
 ## Tranche 6 — Language surface: constraint-expressing syntax (CONDITIONAL, scope set by T1 re-run)
+
+**Status: ⛔ Gate G2 CLOSED 2026-07-12 — residual = 0, sugar parked.** The calibrated
+baseline's read-out ([`2026-07-g2-verdict.md`](./2026-07-g2-verdict.md)): 0/8 area
+assertions failed at L0 (incl. both two-sided per-room bands from T1's `sized-*` slice), so
+per the gate below only the assertion form ships (T4 already shipped it) and the syntax
+sugar is parked behind the verdict doc's frozen reversal triggers. The unconditional
+Track B smalls in this tranche proceed independently.
 
 **Motivation:** H5 final verdict — "decorative sugar is not the priority; constraint-expressing
 syntax (taking geometric arithmetic away from the model) is the right direction." Per-room

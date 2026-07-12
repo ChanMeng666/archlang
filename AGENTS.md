@@ -97,6 +97,16 @@ to npm as `1.14.0` (core) + `0.2.0` (MCP shim) via the new tokenless OIDC releas
   re-export shims) — one judge, zero skew; **JUDGE_VERSION stays "2"**, proven by the
   pinned `eval/judge-fixture.json` byte-equivalence suite (regenerate it only to record an
   approved bump, never to green a red suite).
+- **Gate G2: CLOSED (2026-07-12, `docs/research/2026-07-g2-verdict.md`) — residual area
+  failures = 0/8 on the calibrated baseline** (incl. both two-sided per-room bands from the
+  `sized-*` slice; the one invalid plan carries no area assertion, so nothing is blinded).
+  Per the roadmap's gate: only T4's assertion form ships; **T6's area-syntax sugar is
+  PARKED** behind the verdict doc's frozen reversal triggers (a same-judge calibrated run
+  with ≥1 gating area failure; a harder area corpus slice with residual > 0; or a real
+  downstream area-arithmetic failure report). No `area` token enters the grammar; unit
+  suffixes deliberately exclude `m2`. Tranche 6's unconditional Track B smalls
+  (`matchVocabulary`, `rankFixes`, unit suffixes, `describe().freedom`) were never gated
+  on G2 and proceed.
 
 **Prior release — v1.13.0 (2026-07-11; AI-native authoring). Six tranches
 (see `CHANGELOG.md` for detail):**
