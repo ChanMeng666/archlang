@@ -15,6 +15,7 @@
  */
 
 import type { ResolvedPlan, RRoom, RDoor, RWindow, ROpening, RFurniture } from "./ir.js";
+import type { Point } from "./ast.js";
 import type { Diagnostic } from "./diagnostics.js";
 import {
   resolvePlan,
@@ -79,6 +80,16 @@ export interface WindowSummary {
   /** The room this window serves, or `null` if it sits on no room edge. */
   room: string | null;
   width: number;
+  /**
+   * Compass direction the window's wall faces (the outward normal of its host wall
+   * segment). ArchLang geometry is rectilinear and +y is DOWN, so a window on a room's
+   * TOP edge faces `"N"`, its bottom edge `"S"`, its left edge `"W"`, its right edge
+   * `"E"`. When the window has a host {@link WindowSummary.room}, facing is which of
+   * that room's four edges the window sits closest to; for a room-less window it is the
+   * host wall's orientation resolved to the outward side of the plan (see
+   * {@link windowFacing}). Always one of the four; deterministic. (v1.14)
+   */
+  facing: "N" | "S" | "E" | "W";
 }
 
 export interface OpeningSummary {
@@ -153,6 +164,41 @@ export interface SceneSummary {
 
 /** Round to 2 decimals, deterministically (avoids float drift in output). */
 const r2 = (n: number): number => Math.round(n * 100) / 100;
+
+/**
+ * The compass direction a window's wall faces (its outward normal), for
+ * {@link WindowSummary.facing}. Pure and deterministic; +y is DOWN.
+ *
+ * - **With a host room** (the common case): facing is which of the room's four edges the
+ *   window point `at` lies closest to — top → `"N"`, bottom → `"S"`, left → `"W"`, right →
+ *   `"E"`. Ties (a corner window equidistant from two edges) resolve to the horizontal
+ *   edge first (`N`/`S`), then to `N`/`W` — a fixed, documented order so output is stable.
+ * - **Without a host room** (`room` is null — the window sits on no room edge): the axis
+ *   comes from the host wall segment's orientation (a horizontal segment → `N`/`S`, a
+ *   vertical one → `E`/`W`), and the outward side is the half of the plan the window sits
+ *   in relative to `planCenter` (above centre → `N`, left of centre → `W`). With no host
+ *   segment either, the axis falls back to the window's dominant offset from `planCenter`.
+ */
+function windowFacing(
+  at: Point,
+  roomRect: BBox | null,
+  host: RWindow["host"],
+  planCenter: Point,
+): "N" | "S" | "E" | "W" {
+  if (roomRect) {
+    const dTop = Math.abs(at.y - roomRect.y);
+    const dBottom = Math.abs(at.y - (roomRect.y + roomRect.h));
+    const dLeft = Math.abs(at.x - roomRect.x);
+    const dRight = Math.abs(at.x - (roomRect.x + roomRect.w));
+    if (Math.min(dTop, dBottom) <= Math.min(dLeft, dRight)) return dTop <= dBottom ? "N" : "S";
+    return dLeft <= dRight ? "W" : "E";
+  }
+  const horizontal = host
+    ? Math.abs(host.a.y - host.b.y) <= Math.abs(host.a.x - host.b.x)
+    : Math.abs(at.y - planCenter.y) >= Math.abs(at.x - planCenter.x);
+  if (horizontal) return at.y <= planCenter.y ? "N" : "S";
+  return at.x <= planCenter.x ? "W" : "E";
+}
 
 /** How many rooms to name in a caption before collapsing the rest to "and N more". */
 const CAPTION_ROOM_CAP = 8;
@@ -261,9 +307,26 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     width: d.width,
   }));
 
+  // Plan centre (union of room rectangles) — only the outward-side fallback for a
+  // room-less window uses it, but it is cheap and deterministic to compute up front.
+  let pcMinX = Infinity,
+    pcMinY = Infinity,
+    pcMaxX = -Infinity,
+    pcMaxY = -Infinity;
+  for (const rect of roomRects.values()) {
+    if (rect.x < pcMinX) pcMinX = rect.x;
+    if (rect.y < pcMinY) pcMinY = rect.y;
+    if (rect.x + rect.w > pcMaxX) pcMaxX = rect.x + rect.w;
+    if (rect.y + rect.h > pcMaxY) pcMaxY = rect.y + rect.h;
+  }
+  const planCenter: Point =
+    pcMinX === Infinity ? { x: 0, y: 0 } : { x: (pcMinX + pcMaxX) / 2, y: (pcMinY + pcMaxY) / 2 };
+
   const windows: WindowSummary[] = windowEls.map((w) => {
     const touching = roomsAtPoint(w.at, roomRects, tol);
-    return { id: w.id, room: touching[0] ?? null, width: w.width };
+    const room = touching[0] ?? null;
+    const roomRect = room ? (roomRects.get(room) ?? null) : null;
+    return { id: w.id, room, width: w.width, facing: windowFacing(w.at, roomRect, w.host, planCenter) };
   });
 
   const openings: OpeningSummary[] = openingEls.map((o) => ({

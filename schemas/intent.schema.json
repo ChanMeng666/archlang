@@ -90,6 +90,16 @@
                 "type": "integer",
                 "minimum": 0,
                 "description": "Maximum windows in the room."
+              },
+              "facing": {
+                "type": "string",
+                "enum": [
+                  "N",
+                  "S",
+                  "E",
+                  "W"
+                ],
+                "description": "Compass direction the window's wall faces; +y-down plan → a top-edge window faces N, bottom S, left W, right E. Restricts the count to windows facing this way. Assert ONLY when the brief states an orientation."
               }
             }
           }

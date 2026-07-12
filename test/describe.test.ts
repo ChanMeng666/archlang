@@ -64,6 +64,25 @@ describe("describe — semantic facts", () => {
     expect(s.windows.map((w) => w.room)).toEqual(["r_living", "r_bed", "r_bath"]);
   });
 
+  it("derives each window's compass facing from the room edge it sits on (+y down)", () => {
+    // One room with a window on every edge: top→N, bottom→S, left→W, right→E.
+    const FOUR = `plan "FourWin" {
+      units mm
+      wall exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+      room id=r at (0,0) size 4000x4000 label "Room"
+      window id=w_top    at (2000,0)    width 1000 wall exterior
+      window id=w_bottom at (2000,4000) width 1000 wall exterior
+      window id=w_left   at (0,2000)    width 1000 wall exterior
+      window id=w_right  at (4000,2000) width 1000 wall exterior
+    }`;
+    const s = describePlan(FOUR);
+    const facing = Object.fromEntries(s.windows.map((w) => [w.id, w.facing]));
+    expect(facing).toEqual({ w_top: "N", w_bottom: "S", w_left: "W", w_right: "E" });
+    // The studio's windows: top of Living (N) and the two right-edge windows (E).
+    const studio = describePlan(STUDIO);
+    expect(studio.windows.map((w) => w.facing)).toEqual(["N", "E", "E"]);
+  });
+
   it("is deterministic (same source → byte-identical summary)", () => {
     expect(JSON.stringify(describePlan(STUDIO))).toBe(JSON.stringify(describePlan(STUDIO)));
   });

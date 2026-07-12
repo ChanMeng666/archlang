@@ -164,6 +164,32 @@ describe("validateIntent — per-kind gating", () => {
   });
 });
 
+describe("validateIntent — window facing", () => {
+  // TWO_ROOM's window sits on the bedroom's LEFT edge (x=0) → faces W.
+  it("a matching facing passes; a wrong facing fails with E_INTENT_NO_WINDOW (gating)", () => {
+    const w = validateIntent(TWO_ROOM, {
+      roomsInclude: [{ concept: "bedroom", windows: { min: 1, facing: "W" } }],
+    });
+    expect(w.ok).toBe(true);
+
+    const s = validateIntent(TWO_ROOM, {
+      roomsInclude: [{ concept: "bedroom", windows: { min: 1, facing: "S" } }],
+    });
+    expect(s.ok).toBe(false);
+    const v = s.violations.find((x) => x.code === "E_INTENT_NO_WINDOW");
+    expect(v?.gate).toBe(true);
+    // The facing is named in the blame message and the feedback prompt.
+    expect(v?.message).toContain("facing S");
+    expect(feedbackForResult(s).join("\n")).toContain("facing S");
+  });
+
+  it("the no-facing detail strings are unchanged when facing is absent", () => {
+    const r = validateIntent(TWO_ROOM, { roomsInclude: [{ concept: "bedroom", windows: { min: 1 } }] });
+    const a = r.assertions.find((x) => x.predicate.kind === "room-windows");
+    expect(a?.detail).toBe('windows: concept "bedroom" ok (found 1)');
+  });
+});
+
 describe("roomsMatchingConcept — unknown-concept literal fallback", () => {
   const room = (over: Partial<RoomSummary>): RoomSummary => ({
     id: "r",
@@ -231,6 +257,17 @@ describe("intentFromJson", () => {
     );
     // Any error nulls the intent.
     expect(intentFromJson({ rooms: -1 }).intent).toBeNull();
+  });
+
+  it("accepts a valid windows.facing enum and rejects a bad one with a pathed error", () => {
+    const good = intentFromJson({ roomsInclude: [{ concept: "bedroom", windows: { min: 1, facing: "N" } }] });
+    expect(good.errors).toEqual([]);
+    expect(good.intent?.roomsInclude?.[0]?.windows?.facing).toBe("N");
+
+    const bad = intentFromJson({ roomsInclude: [{ concept: "bedroom", windows: { facing: "north" } }] });
+    expect(bad.intent).toBeNull();
+    expect(bad.errors[0]).toContain("/roomsInclude/0/windows/facing");
+    expect(bad.errors[0]).toContain('"N", "S", "E", "W"');
   });
 });
 

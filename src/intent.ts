@@ -58,8 +58,10 @@ export interface Intent {
     concept: string;
     count?: { min?: number; max?: number };
     areaM2?: { min?: number; max?: number; source: string };
-    /** Window presence/count the brief requires for this room (gating). */
-    windows?: { min?: number; max?: number };
+    /** Window presence/count the brief requires for this room (gating). `facing`, when
+     *  present, restricts the count to windows whose host wall faces that compass
+     *  direction — assert it only when the brief states an orientation. */
+    windows?: { min?: number; max?: number; facing?: "N" | "S" | "E" | "W" };
   }[];
   /** Total floor-area band — only where the brief states a number. At least one bound;
    *  an open top ("at least N m²") sets `min` alone. */
@@ -80,7 +82,7 @@ export type Predicate =
   | { kind: "total-area"; minM2: number; maxM2: number; source: string; gate: true }
   | { kind: "adjacent"; a: string; b: string; source: string; gate: false }
   | { kind: "reachable"; gate: false }
-  | { kind: "room-windows"; concept: string; min: number; max?: number; gate: true };
+  | { kind: "room-windows"; concept: string; min: number; max?: number; facing?: "N" | "S" | "E" | "W"; gate: true };
 
 export interface AssertionResult {
   predicate: Predicate;
@@ -198,6 +200,7 @@ function compileWithPaths(e: Intent): { predicates: Predicate[]; paths: string[]
           concept: inc.concept,
           min: inc.windows.min ?? 1,
           ...(inc.windows.max !== undefined ? { max: inc.windows.max } : {}),
+          ...(inc.windows.facing !== undefined ? { facing: inc.windows.facing } : {}),
           gate: true,
         },
         `/roomsInclude/${i}/windows`,
@@ -361,8 +364,11 @@ function checkRoomArea(
 
 /** A `room-windows` check over a concept's ASSIGNED rooms (same claim pool as
  *  `room-area`): count the plan's windows whose host room is one this concept claimed;
- *  pass when the count is within `[min, max ?? ∞]`. Falls back to a full concept match if
- *  no `room-exists` preceded it (defensive; compileIntent always emits one). */
+ *  pass when the count is within `[min, max ?? ∞]`. A `facing` on the predicate restricts
+ *  the count to windows whose wall faces that compass direction. Falls back to a full
+ *  concept match if no `room-exists` preceded it (defensive; compileIntent always emits
+ *  one). The no-facing detail strings are unchanged (the `facing` clause only appears when
+ *  a facing is asserted). */
 function checkRoomWindows(
   p: Extract<Predicate, { kind: "room-windows" }>,
   summary: SceneSummary,
@@ -370,12 +376,15 @@ function checkRoomWindows(
 ): AssertionResult {
   const assigned = claims.get(p.concept) ?? roomsMatchingConcept(p.concept, summary.rooms);
   const ids = new Set(assigned.map((r) => r.id));
-  const count = summary.windows.filter((w: WindowSummary) => w.room !== null && ids.has(w.room)).length;
+  const count = summary.windows.filter(
+    (w: WindowSummary) => w.room !== null && ids.has(w.room) && (p.facing === undefined || w.facing === p.facing),
+  ).length;
   const pass = count >= p.min && (p.max === undefined || count <= p.max);
   const want = p.max !== undefined ? `${p.min}–${p.max}` : `${p.min}`;
+  const facing = p.facing !== undefined ? ` facing ${p.facing}` : "";
   const detail = pass
-    ? `windows: concept "${p.concept}" ok (found ${count})`
-    : `windows: only ${count} window(s) in room(s) matching "${p.concept}" (needed ${want})`;
+    ? `windows: concept "${p.concept}" ok (found ${count}${facing})`
+    : `windows: only ${count} window(s)${facing} in room(s) matching "${p.concept}" (needed ${want})`;
   return { predicate: p, pass, detail };
 }
 
@@ -527,7 +536,8 @@ function feedbackForViolation(v: IntentViolation, result: IntentCheckResult): st
       return `Add interior doors to connect the unreachable room(s) to the rest of the plan (${fact}).`;
     case "E_INTENT_NO_WINDOW": {
       const concept = p.kind === "room-windows" ? p.concept : "";
-      return `Add a window to the "${concept}" room — e.g. \`window on <wall> at <pos>\` (${fact}).`;
+      const facing = p.kind === "room-windows" && p.facing !== undefined ? ` facing ${p.facing}` : "";
+      return `Add a window${facing} to the "${concept}" room — e.g. \`window on <wall> at <pos>\` (${fact}).`;
     }
   }
 }
@@ -592,6 +602,9 @@ function checkBand(
   if (opts.requireOne && !hasMin && !hasMax) errs.push(path, "expected at least one of min/max");
 }
 
+/** The four compass directions a `windows.facing` may take. */
+const FACINGS = new Set(["N", "S", "E", "W"]);
+
 const ROOMS_INCLUDE_KEYS = new Set(["concept", "count", "areaM2", "windows"]);
 const INTENT_KEYS = new Set(["rooms", "roomsInclude", "totalAreaM2", "adjacency", "reachable"]);
 
@@ -630,8 +643,18 @@ export function intentFromJson(value: unknown): { intent: Intent | null; errors:
           checkBand(inc.count, `${path}/count`, errs, { integer: true, requireSource: false, requireOne: false });
         if (inc.areaM2 !== undefined)
           checkBand(inc.areaM2, `${path}/areaM2`, errs, { integer: false, requireSource: true, requireOne: true });
-        if (inc.windows !== undefined)
-          checkBand(inc.windows, `${path}/windows`, errs, { integer: true, requireSource: false, requireOne: false });
+        if (inc.windows !== undefined) {
+          checkBand(inc.windows, `${path}/windows`, errs, {
+            integer: true,
+            requireSource: false,
+            requireOne: false,
+            extraKeys: ["facing"],
+          });
+          if (isObj(inc.windows) && inc.windows.facing !== undefined) {
+            if (!isStr(inc.windows.facing) || !FACINGS.has(inc.windows.facing))
+              errs.push(`${path}/windows/facing`, 'expected one of "N", "S", "E", "W"');
+          }
+        }
       });
     }
   }
@@ -745,6 +768,12 @@ export const INTENT_JSON_SCHEMA = {
                 description: "Minimum windows (defaults to 1 when `windows` is present).",
               },
               max: { type: "integer", minimum: 0, description: "Maximum windows in the room." },
+              facing: {
+                type: "string",
+                enum: ["N", "S", "E", "W"],
+                description:
+                  "Compass direction the window's wall faces; +y-down plan → a top-edge window faces N, bottom S, left W, right E. Restricts the count to windows facing this way. Assert ONLY when the brief states an orientation.",
+              },
             },
           },
         },
