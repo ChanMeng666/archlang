@@ -26,7 +26,8 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.15.0` (latest; a `v*` tag push triggers the tokenless OIDC release workflow) | github.com/ChanMeng666/archlang |
-| **Tests** | 1018 passing (100 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, the L2 protocol tests, the judge byte-equivalence fixture, the intent-channel suites, and the vocabulary-equivalence classification pin) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
+| **Dataset** | HF `chanmeng666/archlang-repair-trajectories` — two splits (`repair` + `authoring`), fully synthetic, self-verifying, CC0-1.0, deterministic from seed `20260712`; generator `dataset/` (`npm run dataset:gen`), permanent CI leakage guard `test/dataset.test.ts`; **generated; HF upload pending owner credentials** | `dataset/`, huggingface.co/datasets/chanmeng666/archlang-repair-trajectories |
+| **Tests** | 1032 passing (101 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, the L2 protocol tests, the judge byte-equivalence fixture, the intent-channel suites, the vocabulary-equivalence classification pin, and the dataset contamination/determinism guard) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
 **Latest release — v1.15.0 (2026-07-12) — Tranche 6 resolved: Gate G2 closed and all four
 unconditional Track B smalls shipped** (see `CHANGELOG.md` for detail; the G2 verdict is
@@ -42,6 +43,21 @@ author prompt — see eval/README); and **`describe().freedom`** degrees-of-free
 report (append-only). Released as `@chanmeng666/archlang@1.15.0` via the tokenless OIDC
 tag-push flow (MCP shim stays 0.2.0 — its `^1.14.0` dep satisfies 1.15.0, no new tool surface);
 VS Code 0.7.0 uploaded and live the same day.
+
+**Tranche 5 — the repair-trajectory dataset (2026-07-13; repo tooling only, no core change,
+no release).** The roadmap's last open item (deep-dive H4, conditionally adopted) ships as a
+new top-level `dataset/` generator (`npm run dataset:gen`) producing two fully synthetic,
+self-verifying splits — `repair` (broken `.arch` + catalogued diagnostics → deterministically
+healed source + diff + per-stage steps) and `authoring` (NL brief + golden + `describe()` facts +
+intent contract) — deterministic from a pinned seed, with `archlang_version` pinned to 1.15.0.
+It imports only the pure core surface; the core stays zero-dependency and unchanged at 1.15.0.
+The T5 iron law is enforced permanently by `test/dataset.test.ts`: the private 26-brief eval
+holdout is never published, and every dataset row is double-deduplicated against it (text
+Jaccard + n-gram, structural `describe()` fingerprint) and carries the canary twice for downstream
+leakage probing. The card frames the asset as *drivability* packaging plus reward-harness
+documentation; consistent with the permanently-declined T3 experiment, **no diagnostic-feedback
+loop gain (or its absence) is claimed anywhere.** HF upload (`chanmeng666/archlang-repair-trajectories`,
+CC0-1.0) is pending owner credentials.
 
 **Prior release — v1.14.0 (2026-07-12) — Tranches 1–2 + 4: the measurement foundation,
 then the intent channel it licensed (roadmap `docs/research/2026-07-roadmap-proposal.md`,
@@ -330,6 +346,11 @@ for concave door arcs, dimensions drawn into the building, and the title-block o
 │                     (`npm run eval:l2`, guarded; live experiment not yet run);
 │                     offline golden gate `npm run eval:ci` in CI, no API key; guarded live run
 │                     `npm run eval:live -- --yes` → eval/results.live.md + delta vs live-baseline.json)
+├─ dataset/           repair-trajectory + authoring dataset generator (`npm run dataset:gen`, tsx, no new dep):
+│                     generate.ts · templates.ts · faults.ts · trajectory.ts · briefs.ts · rng.ts · diff.ts ·
+│                     dedup.ts (dual holdout dedup) · canary.ts · CARD.md (HF README) · out/ (.gitignore'd
+│                     repair.jsonl + authoring.jsonl + report.json); imports ONLY the pure core, nothing from eval/;
+│                     contamination iron law enforced by test/dataset.test.ts — HF chanmeng666/archlang-repair-trajectories, CC0
 ├─ scripts/           gen-grammars · gen-error-codes · gen-llm-spec · gen-llms-full · gen-gbnf · gen-plan-schema (single-source generators)
 ├─ bench/             ~1000-element timing harness (+ --json mode, CI regression comment)
 └─ test/              vitest: snapshot + fast-check + unit + visual-regression + CLI/describe/lint/eval

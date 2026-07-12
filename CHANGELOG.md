@@ -5,6 +5,37 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Repo tooling only — **no core code change; the published core stays at 1.15.0** (no new tag, no
+release). Roadmap Tranche 5.
+
+### Added
+
+- **`dataset/` — the repair-trajectory + authoring dataset generator** (`npm run dataset:gen`;
+  tsx, no new dependency). Produces two fully synthetic, self-verifying splits, deterministic from
+  a pinned seed (default `20260712`), with `archlang_version` pinned to 1.15.0:
+  - `repair` — a procedurally generated base plan, one injected fault (mirroring the six classes of
+    the repository's fault-injection gate), the machine-readable diagnostics it raises, the source
+    healed by the deterministic `fix` → `repair` pipeline, a unified diff, per-stage healing steps,
+    and a `fix_kind` (`fix`/`repair`/`both`) that preserves the ADR 0011/0006 boundary in the data;
+  - `authoring` — an NL brief, its golden `.arch`, the `describe()` facts, and a machine-checkable
+    intent contract, all descending from one ground truth.
+
+  Every row is constructed and re-checked by the deterministic compiler at generation time; a
+  candidate that fails any gate is rejected and counted in `report.json`, never silently emitted.
+  The generator imports only the pure core surface and nothing from `eval/`.
+- **`test/dataset.test.ts` — the permanent contamination CI guard.** Generates a small fixed-seed
+  corpus and asserts zero leakage against the private 26-brief eval holdout (dual dedup: normalized
+  text Jaccard + 8-word n-gram, and structural `describe()` fingerprint), that the canary appears in
+  every row's field and source comment, that generation is deterministic, and that a sample of rows
+  replays its own verification. The private holdout is never published.
+
+Consistent with the permanently-declined T3 experiment, the dataset and its card make **no claim
+that a diagnostic-feedback loop does or does not beat equal-token-budget resampling** — only
+structural facts. HF upload (`chanmeng666/archlang-repair-trajectories`, CC0-1.0) is pending owner
+credentials.
+
 ## [1.15.0] - 2026-07-12
 
 Roadmap Tranche 6 resolved (2026-07-12): **Gate G2 closed with residual area failures = 0/8**

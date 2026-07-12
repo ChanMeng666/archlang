@@ -553,3 +553,40 @@ Orchestration: Fable 5 directed and verified; each code item was implemented by 
 subagent, then the diff hand-reviewed and the four-gate suite re-run locally before each
 commit. Tests 942 → 1018 (96 → 100 files). Release/version decision (suggest 1.15.0 — new
 language surface) left to the owner.
+
+## 2026-07-13 — Tranche 5: the repair-trajectory dataset (repo tooling, no core change)
+
+The roadmap's last open item (deep-dive H4, conditionally adopted) shipped as a new top-level
+`dataset/` generator (`npm run dataset:gen`; tsx, no new dependency — not an npm workspace).
+It produces two fully synthetic, self-verifying splits, deterministic from a pinned seed
+(default `20260712`) with `archlang_version` pinned to 1.15.0:
+
+- **`repair`** — a procedurally generated base plan (three template families), one injected fault
+  (mirroring the six classes of `eval/faults/`), the machine-readable diagnostics it raises, the
+  source healed by the deterministic `fix` → `repair` pipeline (the same `l1Pipeline` contract),
+  a unified diff, per-stage healing steps, and a `fix_kind` (`fix`/`repair`/`both`) that keeps the
+  ADR 0011 (syntactic span edit) / ADR 0006 (geometric solve) boundary visible in the data;
+- **`authoring`** — an NL brief, its golden `.arch`, the `describe()` facts, and a machine-checkable
+  intent contract, all descending from one ground truth so they cannot drift.
+
+Every row is built and re-checked by the deterministic compiler at generation time; a candidate
+that fails any gate is rejected and counted in `report.json`, never silently emitted. The generator
+imports only the pure core surface (`compile`/`applyFixes`/`repair`/`lint`/`describe`/
+`diagnosticToJson`/`validateIntent`) and nothing from `eval/`. **No core code changed; the
+published core stays 1.15.0, no tag, no release.**
+
+**Contamination iron law, enforced permanently** by the new CI guard `test/dataset.test.ts`: the
+private 26-brief eval holdout is never published, and every dataset row is double-deduplicated
+against it — normalized text Jaccard (≥ 0.5 rejects) plus any shared 8-word n-gram, and a
+structural `describe()` fingerprint (room-label multiset with 0.5 m² area rounding, adjacency edge
+set, room count) against every golden. Every row carries the canary
+(`ARCHLANG-DATASET-CANARY-422d0bc5-c0c6-4c6b-b3c5-3fbc401aefbf`) twice — a field and a first-line
+source comment — for downstream leakage probing.
+
+The card (`dataset/CARD.md`, the HF README) is written around three red lines: (1) it packages
+*drivability*, not one-shot intent satisfaction; (2) it is an SFT-shaped asset plus reward-harness
+documentation, carrying no training-outcome claim (and SFT-validity evidence is not RLVR evidence,
+or vice versa); (3) consistent with the permanently-declined T3 experiment, it makes no claim that
+a diagnostic-feedback loop does or does not beat equal-token-budget resampling — only structural
+facts. HF upload (`chanmeng666/archlang-repair-trajectories`, CC0-1.0) is pending owner
+credentials.
