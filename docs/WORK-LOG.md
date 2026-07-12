@@ -588,5 +588,6 @@ The card (`dataset/CARD.md`, the HF README) is written around three red lines: (
 documentation, carrying no training-outcome claim (and SFT-validity evidence is not RLVR evidence,
 or vice versa); (3) consistent with the permanently-declined T3 experiment, it makes no claim that
 a diagnostic-feedback loop does or does not beat equal-token-budget resampling — only structural
-facts. HF upload (`chanmeng666/archlang-repair-trajectories`, CC0-1.0) is pending owner
-credentials.
+facts. Published to HF as `ChanMeng666/archlang-repair-trajectories` (CC0-1.0) the same day —
+repair 1200 + authoring 400 rows, uploaded with the owner's existing `hf` CLI credentials (the
+canonical `ChanMeng666` namespace casing, per the npm-provenance / MCP-registry lessons).

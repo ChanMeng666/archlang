@@ -13,7 +13,7 @@ tags:
   - deterministic
   - reward-harness
 task_categories:
-  - text2text-generation
+  - text-generation
 size_categories:
   - 1K<n<10K
 configs:

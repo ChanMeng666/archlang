@@ -33,8 +33,8 @@ release). Roadmap Tranche 5.
 
 Consistent with the permanently-declined T3 experiment, the dataset and its card make **no claim
 that a diagnostic-feedback loop does or does not beat equal-token-budget resampling** — only
-structural facts. HF upload (`chanmeng666/archlang-repair-trajectories`, CC0-1.0) is pending owner
-credentials.
+structural facts. Published to HF as `ChanMeng666/archlang-repair-trajectories` (CC0-1.0) on
+2026-07-13 — repair 1200 + authoring 400 rows.
 
 ## [1.15.0] - 2026-07-12
 

@@ -26,7 +26,7 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.15.0` (latest; a `v*` tag push triggers the tokenless OIDC release workflow) | github.com/ChanMeng666/archlang |
-| **Dataset** | HF `chanmeng666/archlang-repair-trajectories` — two splits (`repair` + `authoring`), fully synthetic, self-verifying, CC0-1.0, deterministic from seed `20260712`; generator `dataset/` (`npm run dataset:gen`), permanent CI leakage guard `test/dataset.test.ts`; **generated; HF upload pending owner credentials** | `dataset/`, huggingface.co/datasets/chanmeng666/archlang-repair-trajectories |
+| **Dataset** | HF `ChanMeng666/archlang-repair-trajectories` (**published, live 2026-07-13** — repair 1200 + authoring 400 rows) — two splits, fully synthetic, self-verifying, CC0-1.0, deterministic from seed `20260712`; generator `dataset/` (`npm run dataset:gen`), permanent CI leakage guard `test/dataset.test.ts` | `dataset/`, huggingface.co/datasets/ChanMeng666/archlang-repair-trajectories |
 | **Tests** | 1032 passing (101 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, the L2 protocol tests, the judge byte-equivalence fixture, the intent-channel suites, the vocabulary-equivalence classification pin, and the dataset contamination/determinism guard) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
 **Latest release — v1.15.0 (2026-07-12) — Tranche 6 resolved: Gate G2 closed and all four
@@ -56,8 +56,9 @@ holdout is never published, and every dataset row is double-deduplicated against
 Jaccard + n-gram, structural `describe()` fingerprint) and carries the canary twice for downstream
 leakage probing. The card frames the asset as *drivability* packaging plus reward-harness
 documentation; consistent with the permanently-declined T3 experiment, **no diagnostic-feedback
-loop gain (or its absence) is claimed anywhere.** HF upload (`chanmeng666/archlang-repair-trajectories`,
-CC0-1.0) is pending owner credentials.
+loop gain (or its absence) is claimed anywhere.** Published to HF as
+`ChanMeng666/archlang-repair-trajectories` (CC0-1.0) on 2026-07-13 — repair 1200 + authoring 400
+rows, uploaded via the owner's existing `hf` CLI credentials.
 
 **Prior release — v1.14.0 (2026-07-12) — Tranches 1–2 + 4: the measurement foundation,
 then the intent channel it licensed (roadmap `docs/research/2026-07-roadmap-proposal.md`,
