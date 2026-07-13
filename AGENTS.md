@@ -29,383 +29,114 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | **Dataset** | HF `ChanMeng666/archlang-repair-trajectories` (**published, live 2026-07-13** — repair 1200 + authoring 400 rows) — two splits, fully synthetic, self-verifying, CC0-1.0, deterministic from seed `20260712`; generator `dataset/` (`npm run dataset:gen`), permanent CI leakage guard `test/dataset.test.ts` | `dataset/`, huggingface.co/datasets/ChanMeng666/archlang-repair-trajectories |
 | **Tests** | 1032 passing (101 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, the L2 protocol tests, the judge byte-equivalence fixture, the intent-channel suites, the vocabulary-equivalence classification pin, and the dataset contamination/determinism guard) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
-**Latest release — v1.15.0 (2026-07-12) — Tranche 6 resolved: Gate G2 closed and all four
-unconditional Track B smalls shipped** (see `CHANGELOG.md` for detail; the G2 verdict is
-recorded as a bullet in the v1.14.0 block below): `src/vocabulary.ts` shared closed-vocabulary
-matcher replacing the scattered room-label regexes + advisory fix-carrying **`W_ALIAS_MATCH`**
-(judge untouched — CONCEPTS/SYNONYMS_VERSION/fixture byte-green; `arch fix` now also applies
-lint-stage fixes, while the L1 gate's `l1Pipeline` stays the compile-stage-fix + `repair`
-reference); exported **`rankFixes`** deterministic cost ordering (cmdFix picks top-ranked per
-diagnostic, LSP presents in canonical order; identity on today's singletons); **optional metric
-unit suffixes** `3m`/`3cm`/`3mm` → mm folded exactly at lex time (language surface: full
-generator chain regenerated; `spec.llm.md` therefore drifted from the calibrated live baseline's
-author prompt — see eval/README); and **`describe().freedom`** degrees-of-freedom placement
-report (append-only). Released as `@chanmeng666/archlang@1.15.0` via the tokenless OIDC
-tag-push flow (MCP shim stays 0.2.0 — its `^1.14.0` dep satisfies 1.15.0, no new tool surface);
-VS Code 0.7.0 uploaded and live the same day.
+**Latest release: v1.15.0 (2026-07-12)** — the table above is what is live. Canonical release notes
+live in `CHANGELOG.md`; per-tranche research verdicts in `docs/research/`. The full per-release
+narrative (v1.3.0 → v1.15.0, honest eval read, sites redesign, every tranche summary) is archived
+verbatim at
+**[`docs/archive/agents-status-history-2026-07.md`](docs/archive/agents-status-history-2026-07.md)** —
+its permanent conclusions are distilled into "Standing decisions & iron laws" just below, so read
+*that*, not the archive, for what still binds you. Older docs predating the launch (build plans in
+`docs/archive/`, the earlier half of `docs/WORK-LOG.md`) are historical — the table above and
+`CHANGELOG.md` reflect what shipped.
 
-**Tranche 5 — the repair-trajectory dataset (2026-07-13; repo tooling only, no core change,
-no release).** The roadmap's last open item (deep-dive H4, conditionally adopted) ships as a
-new top-level `dataset/` generator (`npm run dataset:gen`) producing two fully synthetic,
-self-verifying splits — `repair` (broken `.arch` + catalogued diagnostics → deterministically
-healed source + diff + per-stage steps) and `authoring` (NL brief + golden + `describe()` facts +
-intent contract) — deterministic from a pinned seed, with `archlang_version` pinned to 1.15.0.
-It imports only the pure core surface; the core stays zero-dependency and unchanged at 1.15.0.
-The T5 iron law is enforced permanently by `test/dataset.test.ts`: the private 26-brief eval
-holdout is never published, and every dataset row is double-deduplicated against it (text
-Jaccard + n-gram, structural `describe()` fingerprint) and carries the canary twice for downstream
-leakage probing. The card frames the asset as *drivability* packaging plus reward-harness
-documentation; consistent with the permanently-declined T3 experiment, **no diagnostic-feedback
-loop gain (or its absence) is claimed anywhere.** Published to HF as
-`ChanMeng666/archlang-repair-trajectories` (CC0-1.0) on 2026-07-13 — repair 1200 + authoring 400
-rows, uploaded via the owner's existing `hf` CLI credentials.
+## Standing decisions & iron laws (never re-litigate)
 
-**Prior release — v1.14.0 (2026-07-12) — Tranches 1–2 + 4: the measurement foundation,
-then the intent channel it licensed (roadmap `docs/research/2026-07-roadmap-proposal.md`,
-verdicts in the companion deep-dive).** The eval's ruler is fixed, the deterministic-tool
-tier is measured on its own ledger, and Gate G1's PASS cleared Tranche 4 to ship. Published
-to npm as `1.14.0` (core) + `0.2.0` (MCP shim) via the new tokenless OIDC release workflow:
-- **Judge v2** (`eval/assertions.ts` + `eval/synonyms.ts`): scoring lowered to an
-  intent-assertion data structure (room-count / room-exists / room-area / total-area /
-  adjacent / reachable — the shallow five-kind boundary a future `src/intent.ts` can
-  lift). Labels match through a versioned, oracle-isolated synonym/`room_type` concept
-  table (token-bounded, one-room-one-concept); area is checked **only where the brief
-  states a number** (±10–15% around the brief's number — all 20 golden-derived bands
-  deleted); room count follows the frozen rubric's policy B (±1 passes only when the
-  surplus room is pure circulation); adjacency/reachability score as subscores, never
-  gate (T4 hook). Policies frozen in `eval/rubric.md` (blind-drafted, then approved).
-- **Corpus 22 → 26**: three prompts amended so every room count is brief-derivable, plus
-  a per-room-area slice (`sized-*`) so the area dimension is no longer total-only (H5).
-- **Harness integrity**: Anthropic path 2048 → 16384 max_tokens + temperature 0 + prompt
-  caching; OpenAI seed pinned + `system_fingerprint` recorded; `--budget <n>tok|usd`
-  circuit breaker; baseline carries a `judge` field and cross-judge deltas are flagged
-  non-comparable.
-- **L1 deterministic-tool gate** (`eval/faults/` + `eval/l1.ts` +
-  `test/fault-injection.test.ts`, in CI): six fault-injected fixtures prove `fix`+`repair`
-  heal off-wall openings, wall collisions, and blocked doorways deterministically and
-  idempotently; `arch fix`-mirroring `l1Pipeline` powers the live `--l1` overlay
-  (ΔL0→L1, zero extra API calls). Found and fixed a real core bug on the way: `repair()`
-  mutated the parse-memo AST (see CHANGELOG Unreleased).
-- **Calibrated baseline** (26 briefs, gpt-5.5, seed-pinned, judge v2): valid 25/26 (96%),
-  **intent 13/26 (50%)**, sound 4/26 (15%); ΔL0→L1 = intent **+5** (69%), sound +2 —
-  see the honest-eval paragraph below.
-- **Gate G1: PASS (2026-07-12, `eval/g1/report.md`).** NL→intent-JSON per-assertion
-  faithfulness measured double-blind on all 26 briefs (gpt-5.5 generator, oracle-isolated
-  prompt; raters: 3 blind opus subagents + fable pre-registered, human adjudicated the 2
-  disagreements): **154/157 (98.1%)** vs direct-`.arch` per-assertion accuracy 155/166
-  (93.4%, reconstructed reproducibly in `eval/g1/baseline-accuracy.ts`) — ≥85% and
-  one-tailed z = 2.08 (p = .019). **T4 (the intent channel) is cleared** for a future
-  session; recorded caveat: against the valid-only control variant (95.7%) the margin is
-  below statistical resolution at n≈160/arm. All 3 unfaithful assertions were room-count/
-  topology derivations on under-determined briefs — T4's schema docs must make the band
-  conventions and "assert a count only when the brief enumerates it" normative.
-- **T3: harness shipped, live experiment NOT run (2026-07-12).** The L2 tier is fully
-  implemented and offline-tested (`eval/l2.ts` pure protocol engine — diagnostic feedback
-  ≤2 rounds, oracle-isolated to compile/lint/`fix --dry-run`/trimmed-describe only;
-  `eval/l2-run.ts` guarded CLI with retrying author + per-brief error isolation; Olausson
-  **equal-token-budget i.i.d. resampling control** with round-up-favors-control accounting;
-  per-metric best-of, mean±σ over trials, `pass@n`/`pass^n`; `eval-l2.yml` workflow).
-  **OWNER DECISION (2026-07-12): the ~440-call live run (est. $70–95) is PERMANENTLY
-  DECLINED — it will never be dispatched.** The loop-vs-resampling question is therefore
-  permanently unanswered: never claim a net model-loop gain (or its absence) anywhere.
-  Everything gated on it is closed for good: L3/L4/L5 stay unbuilt, and T4's
-  adjacency/reachability assertions stay advisory (`gate: false`) permanently. The harness
-  + its offline tests are kept as the protocol's reference implementation only.
-- **Tranche 4: the intent channel (2026-07-12; core + CLI, zero new runtime deps).**
-  The judge-v2 core is lifted into the core package:
-  **`src/intent.ts`** (`validateIntent(source, intent)` → `{ ok, satisfied, total,
-  violations, subscores, assertions, diagnostics }`, `intentFromJson`, `feedbackForResult`
-  — advisory prompts per ADR 0005, `compileIntent`/`checkPredicates`/`projectSubscores`)
-  + **`src/intent-concepts.ts`** (the concept table as production name resolution; unknown
-  concepts fall back to literal id → label → uses → `room_type`). Eight catalogued codes
-  (`E_INTENT_ROOM_MISSING/_ROOM_COUNT/_ROOM_AREA/_TOTAL_AREA/_NO_WINDOW` gate;
-  `_NOT_ADJACENT/_NO_DOOR/_UNREACHABLE` advisory — promotion parked on T3). Generated
-  **`schemas/intent.schema.json`** (`gen:intent-schema`, drift-tested) makes G1's two
-  lessons normative in its field docs (band conventions; count only when the brief
-  enumerates). CLI: **`arch validate --intent <f>` (gate, exit 2; `--feedback`) + `arch
-  score <file> --brief <f>`** (continuous meter, exit 0). `describe()` windows gain
-  `facing: N|S|E|W` (append-only) with an optional intent `windows.facing` assertion.
-  **The eval consumes the same implementation** (`eval/assertions.ts`/`synonyms.ts` are
-  re-export shims) — one judge, zero skew; **JUDGE_VERSION stays "2"**, proven by the
-  pinned `eval/judge-fixture.json` byte-equivalence suite (regenerate it only to record an
-  approved bump, never to green a red suite).
-- **Gate G2: CLOSED (2026-07-12, `docs/research/2026-07-g2-verdict.md`) — residual area
-  failures = 0/8 on the calibrated baseline** (incl. both two-sided per-room bands from the
-  `sized-*` slice; the one invalid plan carries no area assertion, so nothing is blinded).
-  Per the roadmap's gate: only T4's assertion form ships; **T6's area-syntax sugar is
-  PARKED** behind the verdict doc's frozen reversal triggers (a same-judge calibrated run
-  with ≥1 gating area failure; a harder area corpus slice with residual > 0; or a real
-  downstream area-arithmetic failure report). No `area` token enters the grammar; unit
-  suffixes deliberately exclude `m2`. Tranche 6's unconditional Track B smalls
-  (`matchVocabulary`, `rankFixes`, unit suffixes, `describe().freedom`) were never gated
-  on G2 and proceed.
+Permanent decisions distilled from the archived narrative and `docs/research/`. Settled — do not
+re-propose, re-open, or contradict them anywhere.
 
-**Prior release — v1.13.0 (2026-07-11; AI-native authoring). Six tranches
-(see `CHANGELOG.md` for detail):**
-1. **Placement sugar** (write plans without hand-computed coordinates). Openings attach to a wall by
-   position — `door|window|opening on <wall> at <pos>` (mm or `%`), `swing into <room>`, `hinge near
-   start|end` (`E_ATTACH_WALL_REF`, `E_ATTACH_POS_RANGE`); **`strip <dir> at (x,y) gap … { rooms }`**
-   lays rooms end to end (pure resolve-time sugar; `E_STRIP_NEST`, `E_STRIP_SIZE`); **`furniture …
-   in <room> anchor <a> [inset <mm>]`** snaps furniture to a room corner/edge. New flagship
-   `examples/attached.arch`. Documented in `docs/language-reference.md`.
-2. **Machine-applicable fixes ([ADR 0011](docs/adr/0011-machine-applicable-fixes.md)).** `Diagnostic.fixes`
-   (rustc's 4-tier `Applicability`) + **`applyFixes`** (a pure piece-table replacer ported from
-   rustfix, exported); fix producers (off-wall opening → attachment form); **`arch fix`** (bounded,
-   self-checking fixpoint; `--unsafe`/`--dry-run`/`--force`) and **`arch suggest`** (`suggestTopology`
-   — advisory door/window statements, never applied, ADR 0005); LSP quick-fixes. `fix` = syntactic
-   span edits; `repair` stays the geometric solver (ADR 0006) — a hard boundary.
-3. **Plan JSON + intent graph + GBNF.** `planFromJson`/`planToJson`/`astToJson`/`checkGraph`/
-   `PLAN_JSON_SCHEMA` (pure, exported) behind **`arch compile --from-json`**, **`arch ast`**,
-   **`arch validate --graph`**, **`arch complete --at`**; generated **`schemas/plan.schema.json`**
-   (`npm run gen:plan-schema`) and **`grammars/archlang.gbnf`** constrained-decoding grammar
-   (`npm run gen:gbnf`), both drift-tested. `E_JSON_SCHEMA`/`E_JSON_KIND`.
-4. **Zero-dependency ASCII.** **`renderAscii`** (exported) behind **`arch compile -f txt`** and
-   **`arch preview --ascii`** (`--cols`, `--charset`) — a text-only agent can *see* its plan with no
-   raster binary. Every other format's output is unchanged.
-5. **MCP server ([ADR 0012](docs/adr/0012-mcp-shim-discoverability.md)).** New `packages/mcp/`
-   workspace **`@chanmeng666/archlang-mcp@0.1.1`** (published; registry entry
-   `io.github.ChanMeng666/archlang-mcp`) — a stdio MCP shim wrapping the library (tools
-   compile/describe/lint/validate/repair/fix/suggest/complete; resources spec/context/schema/grammar),
-   published to the official MCP registry from its `server.json`. **The core stays zero-dependency — the MCP SDK lives
-   only in this package.** The CLI remains primary (token cost); MCP is the discoverability channel,
-   amending [ADR 0009](docs/adr/0009-ai-first-context-and-distribution.md)'s distribution-over-protocol point.
-6. **Docs distribution.** The docs site now serves every generated page as **raw markdown at
-   `/<route>.md`** and the machine-native **`/plan.schema.json`** + **`/archlang.gbnf`** at its root
-   (advertised in `llms.txt`).
-
-**Honest eval read (calibrated; judge v2, 26 briefs, `gpt-5.5-2026-04-23`, seed-pinned;
-current baseline re-measured 2026-07-12 under the post-v1.15.0 author prompt).** The
-single-digit one-shot intent number that motivated the round-2 research was
-~55–65% **measurement artifact** (deep-dive H2, dual-audit): judge v1 tested golden mimicry
-(label substrings, golden-derived area bands), not brief satisfaction. Under judge v2
-(brief-grounded assertions) the same model measures **valid 23/26 (88%) · intent 14/26 (54%) ·
-sound 3/26 (12%)** — inside the predicted 45–60% true-deliverable band. (The original
-2026-07-11 read, pre-suffix prompt, was 25/13/4; the one-line spec drift moved nothing beyond
-run noise, and all 8 area assertions passed in both runs — Gate G2 re-confirmed.) Residual true
-failures are dominated by **physical violations**, and the deterministic tools clear most of
-those for free: the same run's `--l1` overlay (fix+repair, zero extra API calls) scores
-**intent 18/26 (69%, ΔL0→L1 +4) · sound 7/26 (+4)**, 8 briefs healed / 1 regressed by 41
-repair moves. That dividend belongs to the tool tier's ledger, never a model loop's (H3);
-whether a diagnostic feedback loop beats equal-budget resampling is **permanently unanswered**
-(the T3 live experiment was permanently declined by owner decision — never claim a loop gain
-or its absence). Two standing harness lessons: reasoning models spend thinking tokens out of
-the completion cap (use 16384, both providers), and never compare rates across a judge change
-(the harness flags it). Judge-v1 numbers (9% intent) are kept only as history;
-`eval/live-baseline.json` carries the calibrated L0 baseline.
-
-**v1.12.1** — bundler-safety patch: the PNG backend's lazy
-`import("node:fs")`/`import("node:url")` (font lookup) now carry
-`/* webpackIgnore: true */ /* @vite-ignore */` like every other Node-only lazy import, so a
-webpack/Next.js consumer importing the core **client-side** no longer fails its build resolving
-`fs` for the browser (default output unchanged; found by a downstream product's first in-browser
-use of the core).
-
-**Sites redesign — "The Compile Boundary" (2026-07-10, deployed; not a core release —
-`@chanmeng666/archlang` stays 1.12.1).** Both public sites (docs + playground) were rebuilt on a
-shared two-world design system that makes the brand line "Designs that compile" literal — every
-surface is split by a visible **compile seam** into a dark **SOURCE world** (carbon, plum syntax
-accent) and a light **SHEET world** (drafting paper, ink, title blocks). The docs hero is the real
-compiler drawing a plan as source typewrites; a shipped bug where the playground **Format** button
-never worked (duplicate `id="format"`) is fixed. See the "sites' design system" subsection below and
-**[ADR 0010](docs/adr/0010-compile-boundary-design-system.md)**. VS Code extension bumped to 0.4.1
-(icon-only repack, published & live on the Marketplace 2026-07-10); core untouched.
-
-**v1.12.0 (AI-first: agent context, error rendering, distribution &
-accessibility). Four tranches (see `CHANGELOG.md` for detail):**
-1. **Agent context & diagnostics.** Generated **`llms-full.txt`** (spec + agent workflow + CLI
-   reference + error catalog in one ~40 KB system-prompt-ready bundle; `npm run gen:llms`,
-   drift-tested) — served by the docs site at **`/llms.txt` + `/llms-full.txt`**; new **`arch
-   context`** command prints it; **`diagnosticToJson`** (line/col/fix projection) promoted from a
-   private CLI helper to the public API (`src/diagnostic-json.ts`).
-2. **Always-visible errors & eval spine.** Opt-in **error-card SVG** (`compile(src, { onError:
-   "svg" })` / `--error-svg` on compile/preview/md — a broken plan still yields a self-describing
-   image; default path byte-identical); authorability **eval corpus 3→18** briefs with verified
-   goldens, offline regression gate **`npm run eval:ci` wired into CI**.
-3. **Distribution.** Docs-site markdown transform: **plain ```` ```arch ```` fences render as live
-   editable `<ArchLive>` widgets** (SSR fallback; ```` ```arch static ```` opt-out); in-repo
-   composite **GitHub Action** `.github/actions/arch-render` (render fenced blocks in any repo's
-   Markdown via `arch md`); playground **Copy-for-LLM** button (source + `describe()` facts +
-   diagnostics as one paste-ready prompt) + always-visible diagnostic fixes.
-4. **Accessibility as a language feature.** `compile(src, { accessible: true })` / `--accessible`
-   emits SVG `<title>`/`<desc>` + `role="img"`/`aria-labelledby` (caption derived from
-   `describe()`, now exposed as `describe().caption`); new plan-level **`accTitle` / `accDescr`**
-   keywords override the derived pair (codes `E_ACC_PLACEMENT`, `W_DUP_ACC_METADATA`;
-   `examples/accessible.arch`). The one language-surface change → VS Code extension repack.
-
-**v1.11.0** — annotate mode stamps `data-arch-id`/`data-arch-kind`; `diffPlans()` semantic diff.
-
-**Prior release — v1.10.0 (human circulation + foundation refactor). Three tranches
-(see `CHANGELOG.md` for detail):**
-1. **Human circulation ([ADR 0008](docs/adr/0008-circulation-as-facts.md)).** Facts →
-   `describe().circulation` (per-room walk distance / bottleneck clear width / detour ratio + key
-   routes, on a clearance-eroded nav grid in `src/analyze/circulation.ts`); advisory lint →
-   `W_PATH_TOO_NARROW` (default 700 mm; accessibility profile 900) + `W_CIRCUITOUS_PATH` (3.0×);
-   opt-in overlay → `compile(src, { overlays: ["circulation"] })` / `arch compile --overlay
-   circulation` + a playground **Paths** toggle; and a **repair guard** that declines any furniture
-   move that would newly pinch a walk below the lint threshold (reported in `unresolved`).
-2. **Foundation refactor** (default output byte-identical): wall-union rewrite (opening-heavy
-   `toScene` ~19.5→2.6 ms), render-free `validate`/`lint`, honest bench, one-module-per-lint-rule,
-   shared `geometry/rect.ts` + `num-format.ts`, drift-tested element/fixture/completion/format
-   joints, Biome + `noUncheckedIndexedAccess` + Node 22 CI, playground migrated to TypeScript.
-3. **Sites.** Embeddable playground viewer (`embed.html` + Embed button), IDE-parity
-   actions (Format / Repair panel / clickable diagnostics), live editable `<ArchLive>` docs examples.
-
-**v1.9.0 (opt-in source annotation + playground overhaul).** Two things:
-- **Core: opt-in source annotation.** `compile(src, { annotate: true })` stamps `data-span="start:end"`
-  (source byte range) on each drawn SVG primitive that has a span, so a tool can map a clicked element
-  back to its source. **Default output is byte-identical** (Scene IR + SVG unchanged, goldens
-  untouched, exports clean); `toScene` carries the span onto nodes only in this mode; walls are unioned
-  so they are intentionally unstamped. Deterministic, still zero-dependency. Programmatic only (no CLI
-  flag). See [ADR 0007](docs/adr/0007-opt-in-source-annotation.md).
-- **Playground: mermaid-live-editor parity + editor↔plan linking.** The Vite app now has preview
-  pan/zoom/fit, editor autocomplete (via the core `completion()`), compressed share links (`#z=`,
-  reads legacy `#src=`), autosave + named snapshot history (localStorage), copy SVG/PNG, resizable
-  panes, an always-visible `describe()` facts strip, **click-any-element → jump-to-source** (via
-  `annotate`), and **hover-a-room → facts tooltip**. All client-side; exports strip the annotations.
-  New modules: `playground/src/{pan-zoom,interact,snapshots,storage,arch-completion}.js`.
-
-**v1.8.0 (agent CLI ergonomics).** Four additive commands, no core change and the
-core stays zero-dependency: **`arch preview`** (render a PNG an agent can look at; PNG-first @2×,
-zero-install where `@resvg/resvg-js` is present, else the catalogued `E_PNG_DEPENDENCY` + a `fix`, and
-opt-in `--install` fetches it); **`arch batch`** (render many files concurrently, `{ ok, results[] }`);
-**`arch md`** (render every ` ```arch ` block in a Markdown file → image links, via pure
-`extractArchBlocks`/`rewriteMarkdown`); and **`arch manifest --json`** (the whole CLI API as structured
-data, drift-tested against the dispatch + fixture glyphs). The auto-install is the one opt-in,
-networked action — confined to the CLI seam.
-
-**v1.7.1** (docs: `SKILL.md` adds a verified agent procedure to repair plan
-**topology** — make every room reachable & every bedroom lit by adding doors/windows from the
-`describe` access graph; the design choice stays in the agent layer per ADR 0005. No core change.)
-
-**v1.7.0 (`arch repair` also clears door-swing arcs).** The corrector now fixes six
-furniture-placement faults via a global fixpoint (priority wall → wrong-room → overlap → doorway →
-swing → floating), deterministic and report-don't-guess (ADR 0006). On the motivating plans it drives
-every furniture-placement and swing warning to zero.
-
-**v1.6.0 (`arch repair` separates overlaps + relocates wrong-room fixtures).** The
-corrector fixes furniture-placement faults via a global fixpoint, deterministic and report-don't-guess
-(ADR 0006).
-
-**v1.5.0 (`arch repair` clears doorways + snaps floating fixtures).** The corrector
-iterates each piece to a stable position across closed-form fixes, converges, and reports rather than
-guesses (ADR 0006). On the motivating plans it drives every furniture-placement warning to zero.
-
-**v1.4.0 (physical-correctness & circulation; a 2nd Claude × Codex pass).**
-The compiler stays a faithful deterministic renderer; corrective arranging is an **explicit
-source-to-source transform** (`arch repair`), never invisible render behavior (see ADR 0006). v1.4
-adds: **`dims auto walls`** + per-room dims in the page margin; lint **`W_FURNITURE_WALL_COLLISION`**,
-**`W_DOORWAY_BLOCKED`**, **`W_ROOM_NO_CLEAR_PATH`** (a grid flood-fill in `src/analyze/occupancy.ts`);
-**`arch validate --strict`** (warnings fail too — the pipeline ship-gate); catalogued fixture
-footprints (`against wall` may omit `size`); and **`arch repair`**. See `CHANGELOG.md`.
-
-**Prior release — v1.3.0 (architectural soundness, circulation facts & professional placement).**
-A Claude × Codex adversarial pass. The compiler stays a faithful deterministic renderer; the new
-"design intelligence" ships as **facts** (`describe`) and **advisory `lint`**, never an auto-arranger
-(see ADR 0005). v1.3 adds: **room `uses` tags** + a central classifier; a **modeled door/opening
-access graph** (`describe().access` — entrances, reachability, clear-width bottleneck); a leaf-less
-**`opening` element**; **furniture `rotate`**, closed-form **`against wall` placement**, and `in
-<room>` ownership; new lint (`W_ROOM_UNREACHABLE`, `W_FURNITURE_OVERLAP`, `W_FIXTURE_FLOATING`,
-`W_FIXTURE_WRONG_ROOM`, `W_FURN_CLEARANCE`); **advisory profiles** (`arch lint --profile`); and fixes
-for concave door arcs, dimensions drawn into the building, and the title-block overlap (shared
-`chrome-layout.ts`). See `CHANGELOG.md`.
-
-> Beware older docs that predate the launch: the completed build plans live in
-> `docs/archive/` (see its README), and the earlier half of `docs/WORK-LOG.md` is
-> historical. The table above and `CHANGELOG.md` reflect what actually shipped.
+- **T3 — the diagnostic-loop live experiment is PERMANENTLY DECLINED** (owner, 2026-07-12). Never
+  trigger `eval-l2.yml` live, never re-propose it, and **never claim a net model-loop gain OR its
+  absence** anywhere (loop-vs-equal-budget-resampling stays permanently unanswered). So L3/L4/L5 stay
+  unbuilt and the intent channel's adjacency/reachability assertions stay **advisory (`gate: false`)
+  permanently**; the L2 harness (`eval/l2.ts`, `eval/l2-run.ts`) is kept only as reference.
+- **T6 — area-syntax sugar is PARKED** behind the frozen reversal triggers in
+  `docs/research/2026-07-g2-verdict.md` (Gate G2 CLOSED, residual 0/8). No `area` token enters the
+  grammar and unit suffixes deliberately exclude `m2` unless one of that doc's triggers fires; only
+  the intent channel's assertion form ships for area.
+- **Dataset contamination iron law** (`test/dataset.test.ts` enforces it permanently; getting it
+  wrong voids the eval forever). The 26-brief eval corpus/goldens are a **private holdout, never
+  published**; `dataset/` imports only `../src/index.js`, never `eval/`; every row is double-
+  deduplicated (text + `describe()`) against the holdout. The canary GUID in `dataset/canary.ts` is
+  hardcoded once and **NEVER regenerated** (a new value silently splits the corpus, defeating leakage
+  probing). `repair`-split sources stay fully literal (`repair()` declines scripting).
+- **Judge comparability** — never compare eval rates across a `JUDGE_VERSION` / `SYNONYMS_VERSION`
+  change (it measures the ruler, not the model; judge v1→v2 moved intent 9%→50% with zero model
+  change). Regenerate `eval/judge-fixture.json` **only** for an approved bump, **never to green a red suite**.
+- **Releases are tokenless OIDC trusted publishing only** (`v*` tag push → `.github/workflows/release.yml`).
+  **Never add an npm token** anywhere (an auth failure means "redo the npmjs trusted-publisher
+  registration", not "add a token"); **never automate npmjs account / 2FA / publisher management**
+  (human-with-2FA only); `package.json`'s `repository.url` owner must be **`ChanMeng666` byte-for-byte**
+  (else provenance E422s). Recipe: `docs/npm-oidc-publishing-playbook.md`.
+- **Brand assets are byte-sacred.** `brand/archlang-logo-master.svg` is the one source; every variant
+  is a **fill-swap only** (never re-trace/simplify/re-fit path data). The "Compile Boundary" brand
+  token block is **duplicated byte-identically** in `docs-site/.vitepress/theme/style.css` and
+  `playground/src/styles/tokens.css` (no shared import — change one, change the other).
+- **`eval/rubric.md` policies are frozen** (blind-drafted, then approved) and **`npm run eval:live` is
+  paid and owner-only** — the offline `npm run eval:ci` golden gate is what runs in CI.
 
 **Monorepo layout (npm workspaces, one root lockfile):**
 
 ```
 .                     @chanmeng666/archlang — the core (PUBLISHED package; src/, dist/)
-├─ spec.llm.md        GENERATED one-page language spec for agents (`arch spec`); see scripts/gen-llm-spec.ts
-├─ SKILL.md           agent Skill: the spec → compile → fix → describe → validate loop (CLI-driven)
-├─ llms.txt           machine-readable project map (how to USE vs CONTRIBUTE)
-├─ llms-full.txt      GENERATED full agent context (spec + skill + CLI + errors); see scripts/gen-llms-full.ts
+├─ spec.llm.md        GENERATED one-page language spec for agents (`arch spec`, `gen:spec`)
+├─ SKILL.md           agent Skill: the spec → compile → fix → describe → validate loop
+├─ llms.txt           machine-readable project map (USE vs CONTRIBUTE)
+├─ llms-full.txt      GENERATED full agent context (spec + skill + CLI + errors; `gen:llms`)
 ├─ schemas/           GENERATED plan.schema.json (`gen:plan-schema`) + intent.schema.json (`gen:intent-schema`), both drift-tested
-├─ grammars/          GENERATED archlang.gbnf — GBNF constrained-decoding grammar (`gen:gbnf`, drift-tested)
-├─ packages/mcp/      @chanmeng666/archlang-mcp — stdio MCP shim over the library (SDK dep quarantined here);
-│                     src/server.ts, server.json (registry manifest), test/ smoke test — see ADR 0012
+├─ grammars/          GENERATED archlang.gbnf — GBNF constrained-decoding grammar (`gen:gbnf`)
+├─ packages/mcp/      @chanmeng666/archlang-mcp — stdio MCP shim over the library (SDK dep quarantined
+│                     here): src/server.ts, server.json (registry manifest), test/ smoke test — see ADR 0012
 ├─ editors/vscode     archlang-vscode → published as ChanMeng.archlang (esbuild-bundled extension)
 ├─ editors/*.json     generated TextMate grammar + language-configuration (shared by the extension)
-├─ playground/        Vite + CodeMirror live editor (consumes the built core via dist/);
-│                     styles split under src/styles/{tokens,chrome,editor,panels,embed}.css
-│                     (tokens.css = the shared "Compile Boundary" brand block);
+├─ playground/        Vite + CodeMirror live editor (consumes built core via dist/); styles under
+│                     src/styles/{tokens,chrome,editor,panels,embed}.css (tokens.css = the brand block);
 │                     also ships embed.html — a chrome-less <iframe> viewer read from the #z= hash
-├─ docs-site/         VitePress docs (pages generated from docs/*.md, examples/*.arch);
-│                     theme CSS split as .vitepress/theme/{style,home,doc-pages}.css
-│                     (style.css = the shared "Compile Boundary" brand block + .dark mylar);
-│                     examples are live/editable <ArchLive> widgets (compile in the browser)
+├─ docs-site/         VitePress docs (pages generated from docs/*.md, examples/*.arch); theme CSS as
+│                     .vitepress/theme/{style,home,doc-pages}.css (style.css = the brand block + .dark
+│                     mylar); examples are live/editable <ArchLive> widgets
 ├─ docs/              language-reference.md · analysis.md · error-codes.md · adr/ · WORK-LOG.md
-├─ brand/             logo kit + brand book (README.md); archlang-logo-master.svg is byte-sacred, variants are fill-swaps only
-├─ examples/          studio · two-bed · parametric · themed · relational · attached · accessible · lib/ · imports
-├─ eval/              NL→ArchLang authorability harness (corpus.json — 26 briefs, goldens/, run.ts,
-│                     assertions.ts + synonyms.ts — re-export SHIMS over src/intent*.ts (the judge-v2
-│                     core lives in the core since T4; judge-fixture.json pins byte-equivalence),
-│                     rubric.md — frozen review rubric, faults/ + l1.ts — the L1 deterministic-tool gate,
-│                     g1/ — Gate G1 intent-faithfulness experiment (generate.ts + report.md, PASSED),
-│                     l2.ts + l2-run.ts — the T3 L2 diagnostic-loop-vs-equal-budget-resampling harness
-│                     (`npm run eval:l2`, guarded; live experiment not yet run);
-│                     offline golden gate `npm run eval:ci` in CI, no API key; guarded live run
-│                     `npm run eval:live -- --yes` → eval/results.live.md + delta vs live-baseline.json)
-├─ dataset/           repair-trajectory + authoring dataset generator (`npm run dataset:gen`, tsx, no new dep):
+├─ brand/             logo kit + brand book (README.md) — archlang-logo-master.svg is byte-sacred (iron law)
+├─ examples/          studio · two-bed · parametric · themed · relational · attached · accessible · lib/
+├─ eval/              NL→ArchLang authorability harness: corpus.json (26 briefs) · goldens/ · run.ts ·
+│                     assertions.ts + synonyms.ts (re-export SHIMS over src/intent*.ts since T4) ·
+│                     judge-fixture.json (byte-equivalence) · rubric.md (frozen) · faults/ + l1.ts (L1 gate) ·
+│                     g1/ (Gate G1, PASSED) · l2.ts + l2-run.ts (T3 harness, live run never dispatched);
+│                     offline gate `npm run eval:ci` in CI; guarded live `npm run eval:live` (see iron laws)
+├─ dataset/           repair + authoring dataset generator (`npm run dataset:gen`, tsx, no new dep):
 │                     generate.ts · templates.ts · faults.ts · trajectory.ts · briefs.ts · rng.ts · diff.ts ·
-│                     dedup.ts (dual holdout dedup) · canary.ts · CARD.md (HF README) · out/ (.gitignore'd
-│                     repair.jsonl + authoring.jsonl + report.json); imports ONLY the pure core, nothing from eval/;
-│                     contamination iron law enforced by test/dataset.test.ts — HF chanmeng666/archlang-repair-trajectories, CC0
-├─ scripts/           gen-grammars · gen-error-codes · gen-llm-spec · gen-llms-full · gen-gbnf · gen-plan-schema (single-source generators)
+│                     dedup.ts · canary.ts · CARD.md (HF README) · out/ (.gitignore'd jsonl); imports ONLY
+│                     the pure core, never eval/; contamination iron law enforced by test/dataset.test.ts — CC0
+├─ scripts/           single-source generators behind the `gen:*` npm scripts (gen-grammars, gen-error-codes, gen-llm-spec, …)
 ├─ bench/             ~1000-element timing harness (+ --json mode, CI regression comment)
 └─ test/              vitest: snapshot + fast-check + unit + visual-regression + CLI/describe/lint/eval
 ```
 
-Key agent-facing `src/` modules (all pure, exported from `src/index.ts`): `describe.ts`
-(semantic summary), `lint.ts` (architectural soundness rules — v1.2 added circulation/enclosure/
-swing-clearance/fixture checks), `analyze.ts` (shared resolve pipeline + rectilinear geometry —
-door connectivity, perimeter enclosure — behind both `describe` and `lint`). `geometry.ts` holds the
-shared door-swing quarter-disc geometry used by both the renderer and the linter;
-`elements/fixtures-glyphs.ts` (v1.2) draws the fixture symbols. `diagnostic-json.ts` (v1.12) is the
-public line/col/`fix` projection of a `Diagnostic` (`diagnosticToJson`, used by the CLI/playground/
-LSP); `backends/error-svg.ts` (v1.12) renders the opt-in error card (`renderErrorSvg`); and
-`describe().caption` (v1.12) is the one-sentence accessible summary shared with `--accessible`.
-`intent.ts` + `intent-concepts.ts` (v1.14 T4) are the intent channel — the judge-v2
-scoring core as production API (`validateIntent`/`intentFromJson`/`feedbackForResult` +
-`INTENT_JSON_SCHEMA`), shared with the eval via shims. `vocabulary.ts` (unreleased, Tranche 6
-Track B) is the shared token-bounded label matcher: the concept table's matching core plus the
-`USE_VOCABULARY` room-use classifier behind `describe`/`lint` (advisory `W_ALIAS_MATCH` when a
-use was inferred from an indirect alias); `describe().freedom` (unreleased) reports each
-element's placement as authored-absolute vs resolver-derived. The agent-facing CLI lives in
-`src/cli.ts`.
-
-A single `npm install` at the root bootstraps every workspace.
+Key agent-facing `src/` modules (all pure, exported from `src/index.ts`): `describe.ts` (semantic
+summary; `.caption` = accessible one-liner, `.freedom` = authored-absolute vs resolver-derived
+placement), `lint.ts` (soundness rules), `analyze.ts` (shared resolve pipeline + rectilinear geometry
+behind both), `geometry.ts` (shared door-swing quarter-disc), `elements/fixtures-glyphs.ts` (fixture
+symbols), `diagnostic-json.ts` (`diagnosticToJson` line/col/`fix` projection), `backends/error-svg.ts`
+(`renderErrorSvg`), `intent.ts` + `intent-concepts.ts` (intent channel, shared with the eval via
+shims), `vocabulary.ts` (`matchVocabulary` label matcher). The CLI lives in `src/cli.ts`; a single
+root `npm install` bootstraps every workspace.
 
 ### The sites' design system — "The Compile Boundary" (docs + playground)
 
-Both public sites share one front-end system (deployed 2026-07-10; see
-[ADR 0010](docs/adr/0010-compile-boundary-design-system.md) and `brand/README.md`). It is **site
-chrome only** — no core/language change, and ArchCanvas keeps its own separate system.
+Both public sites share one front-end system — **site chrome only**, no core/language change. Full
+rationale in **[ADR 0010](docs/adr/0010-compile-boundary-design-system.md)** and `brand/README.md`.
 
-- **Two worlds split by a compile seam.** Dark **SOURCE world** (carbon `#0f1115` / `#171b23`, with
-  plum `#8052ff` surviving *only* as the syntax-highlight accent + logo fills) vs. light **SHEET
-  world** (drafting paper `#f5f2ea`, blue-black ink `#1c2430`, hairlines, drafting grids, title
-  blocks). One shared accent, **REDLINE** (`#c2362b` graphics / `#b3261e` text), for attention only
-  (CTAs, errors); amber `#8a6d00` stays advisory. Docs dark mode is a "mylar film" variant.
-- **Fonts** (self-hosted `@fontsource`, zero CDN): **Archivo Variable** (display, `wdth` axis) +
-  **Public Sans Variable** (body) + **IBM Plex Mono** (code/figures). Space Grotesk / Geist Mono are
-  retired from the sites (the wordmark asset still carries outlined Space Grotesk paths — unchanged).
-- **Token-lockstep law.** The brand token block is **duplicated byte-identically** — there is no
-  shared import, the two build systems are separate — in exactly these two files; change one, change
-  the other:
-  - `docs-site/.vitepress/theme/style.css`
-  - `playground/src/styles/tokens.css`
-- **Where each site's styles live.** Docs: `.vitepress/theme/{style,home,doc-pages}.css` (tokens +
-  VitePress mapping / landing / inner pages) plus `CompileSeam.vue` (compiler-as-hero), `SheetGrid`,
-  `FactsSection`, `TitleBlockFooter`, `ArchLive`. Playground:
-  `src/styles/{tokens,chrome,editor,panels,embed}.css`. The playground is a fixed two-world layout
-  with **no light/dark toggle** by design.
-- **Machine-readable routes (v1.13).** `sync-docs.mjs` also publishes, at the docs-site root, a **raw
-  markdown copy of every generated page** at `/<route>.md` (e.g. `/spec.md`, `/reference.md`) plus the
-  **`/plan.schema.json`** and **`/archlang.gbnf`** artifacts. The `.md` copies live in `public/` and
-  are excluded from VitePress page parsing (`srcExclude: ["public/**"]`) so they serve verbatim
-  without being routed or dead-link-checked.
+- **Two worlds split by a compile seam.** A dark **SOURCE world** (carbon, plum surviving *only* as
+  the syntax accent + logo fills) vs. a light **SHEET world** (drafting paper, blue-black ink, title
+  blocks). One shared attention accent, **REDLINE**, for CTAs and errors only. Docs dark mode is a
+  "mylar film" variant; the playground is fixed with **no light/dark toggle**.
+- **Fonts** (self-hosted `@fontsource`, zero CDN): **Archivo Variable** (display) + **Public Sans
+  Variable** (body) + **IBM Plex Mono** (code).
+- **Token-lockstep law.** The brand token block is **duplicated byte-identically** in
+  `docs-site/.vitepress/theme/style.css` and `playground/src/styles/tokens.css` — change one, change
+  the other (the brand iron law above).
+- **Machine-readable routes.** `sync-docs.mjs` publishes at the docs-site root a raw markdown copy of
+  every generated page at `/<route>.md` plus **`/plan.schema.json`** + **`/archlang.gbnf`** — the copies
+  live in `public/`, excluded from page parsing so they serve verbatim.
 
 ## Commands
 
@@ -522,128 +253,90 @@ source (.arch)
 
 ## Gotchas & Anti-patterns
 
-- **Don't edit `dist/` or generated files.** `dist/` is a build output. The editor grammars
-  (`editors/archlang.tmLanguage.json`, `playground/src/arch-language.js`) and
-  `docs/error-codes.md` are generated from `src/grammar/tokens.ts` / `src/error-catalog.ts`
-  — edit the source and run `npm run gen:grammars` / `npm run gen:errors` (CI fails on drift).
-  Likewise `spec.llm.md` is generated from `src/grammar/tokens.ts` + `examples/` by
-  `npm run gen:spec` (the curated prose lives in `scripts/gen-llm-spec.ts`); CI fails on drift.
-  `llms-full.txt` (the bundled full agent context) is generated from `spec.llm.md` + `SKILL.md` +
-  the manifest + the error catalog by `npm run gen:llms` (`scripts/gen-llms-full.ts`); CI fails on
-  drift — regenerate it after editing any of those sources. `grammars/archlang.gbnf` (GBNF grammar,
-  `npm run gen:gbnf`), `schemas/plan.schema.json` (Plan-JSON schema, `npm run gen:plan-schema`),
-  and `schemas/intent.schema.json` (intent schema, `npm run gen:intent-schema`) are likewise
-  generated from `src/grammar/tokens.ts` / `PLAN_JSON_SCHEMA` / `INTENT_JSON_SCHEMA` and CI-drift-tested.
-  The docs site copies the root artifacts (`llms.txt`, `llms-full.txt`, `plan.schema.json`,
-  `intent.schema.json`, `archlang.gbnf`) and a raw markdown copy of each generated page into `public/` via
-  `docs-site/sync-docs.mjs` — edit the repo-root source, not the copies. **Editor syntax colors also route
-  through the generator:** `playground/src/arch-language.js` emits each `HighlightStyle` tag as
-  `var(--syn-<name>, <fallback>)` (the on-carbon palette lives in `playground/src/styles/editor.css`)
-  — to recolor the live editor, edit the `scripts/gen-grammars.ts` template or the `--syn-*` values
-  and run `npm run gen:grammars`; never hand-edit `arch-language.js` (the tmLanguage JSON is byte-unchanged by this).
-- **Determinism is tested.** The suite asserts `compile(s) === compile(s)` byte-for-byte, with
-  the optional geometry engine both present and absent. Anything that varies output across runs
-  (object key order, floats, time) will fail — route number formatting through `fmt()`. The one
-  opt-in output change is `compile(src, { annotate: true })` (adds `data-span` attributes for
-  editor tooling); it is itself deterministic and leaves the **default** output byte-identical, so
-  never emit annotation unconditionally (ADR 0007) — a test strips `data-span` and asserts equality
-  with the default SVG.
+- **Don't edit `dist/` or generated files.** `dist/` is a build output. The generated artifacts —
+  editor grammars (`editors/archlang.tmLanguage.json`, `playground/src/arch-language.js`),
+  `docs/error-codes.md`, `spec.llm.md`, `llms-full.txt`, `grammars/archlang.gbnf`, and the two
+  `schemas/*.schema.json` — each come from a single source (`src/grammar/tokens.ts` /
+  `src/error-catalog.ts` / `examples/` / `SKILL.md` + manifest / `PLAN_JSON_SCHEMA` /
+  `INTENT_JSON_SCHEMA`) via the matching `npm run gen:*` (order: `gen:spec` before `gen:llms`, which
+  consumes it). **CI fails on drift** — edit the source and regenerate, never hand-edit. The docs site
+  copies the root artifacts + a raw markdown copy of each page into `public/` via
+  `docs-site/sync-docs.mjs` — edit the repo-root source, not the copies. **Editor syntax colors also
+  route through the generator:** `arch-language.js` emits each `HighlightStyle` tag as
+  `var(--syn-<name>, <fallback>)` (palette in `playground/src/styles/editor.css`) — recolor via the
+  `scripts/gen-grammars.ts` template or `--syn-*` values + `npm run gen:grammars`, never by hand.
+- **Determinism is tested.** The suite asserts `compile(s) === compile(s)` byte-for-byte, geometry
+  engine both present and absent. Anything varying output across runs (object key order, floats, time)
+  fails — route number formatting through `fmt()`. The one opt-in output change is
+  `compile(src, { annotate: true })` (adds `data-span`); it is deterministic and leaves the **default**
+  output byte-identical, so never emit annotation unconditionally (ADR 0007) — a test enforces equality.
 - **The parse-stage memo's AST is shared — never mutate it downstream.** `parser.ts` memoizes
-  `parse()` by content key (parser.ts ~line 59–63) on the contract that the cached `PlanNode` is
-  never mutated. `repair()` violated it by rewriting furniture `at` nodes in place, so a second
-  `repair()` of byte-identical source reported zero changes — history-dependent output (an ADR 0006
-  violation; `compile()`'s SVG was never affected). Fixed in `51a47ee` by deep-cloning before
-  mutating. Rule: anything consuming `parse()` or any memoized structure treats it as immutable —
-  clone before you mutate.
+  `parse()` by content key (parser.ts ~line 59–63) on the contract that the cached `PlanNode` is never
+  mutated. Anything consuming `parse()` or any memoized structure treats it as immutable — clone before
+  you mutate (an in-place `repair()` edit once made output history-dependent; fixed in `51a47ee`).
 - **Relational placement is deterministic, not an optimizer.** `src/layout.ts` resolves
-  `right-of`/`below`/… by pure arithmetic in topological order; the absolute `at (x,y)` path
-  must stay byte-identical (it is the default and has its own golden snapshots). See ADR 0004.
-- **The PNG backend is Node-only and async** (resvg is a native binding); it rasterizes the SVG
-  with a **bundled font** so text is deterministic. Keep `node:*` imports lazy inside the
-  function so the module stays browser-safe.
+  `right-of`/`below`/… by pure arithmetic in topological order; the absolute `at (x,y)` path must stay
+  byte-identical (it is the default and has its own golden snapshots). See ADR 0004.
+- **The PNG backend is Node-only and async** (resvg is a native binding); it rasterizes the SVG with a
+  **bundled font** so text is deterministic. Keep `node:*` imports lazy so the module stays browser-safe.
 - **Keep every Node-only lazy `import()` bundler-safe.** The lazy `import()`s of `@resvg/resvg-js`,
-  `pdfkit`, and `clipper2-wasm` — **and** the PNG backend's font-lookup `import("node:fs")` /
-  `import("node:url")` — carry `/* webpackIgnore: true */ /* @vite-ignore */` so a downstream
-  webpack/Next.js consumer doesn't try to resolve a native `.node` binary or a `node:*` builtin for
-  the browser and fail its build (this was the 1.0.0→1.0.1 fix; the PNG `node:*` case was the
-  1.12.1 fix, found when a downstream consumer first imported the core client-side). The comments
-  are needed even though these paths never run in a browser. Preserve them on any new Node-only or
-  optional-dep import.
-- **`npm run dev`** (repo root) runs `tsup --watch` (a rebuild watcher), not a web server. The
-  playground/docs sites are separate Vite apps — use `npm run playground:dev` / `docs:dev`.
+  `pdfkit`, `clipper2-wasm` — **and** the PNG font-lookup `import("node:fs")` / `import("node:url")` —
+  carry `/* webpackIgnore: true */ /* @vite-ignore */` so a downstream webpack/Next.js consumer doesn't
+  try to resolve a native `.node` binary or a `node:*` builtin for the browser and fail its build. The
+  comments are needed even though these paths never run in a browser — preserve them on any new
+  Node-only or optional-dep import (the 1.0.0→1.0.1 + 1.12.1 fixes).
+- **`npm run dev`** (repo root) runs `tsup --watch` (a rebuild watcher), not a web server — the
+  playground/docs sites are separate Vite apps (`npm run playground:dev` / `docs:dev`).
 - **(Releasing) npm provenance exact-matches `repository.url`'s casing.** The OIDC release
-  (`.github/workflows/release.yml` — tokenless trusted publishing; a `v*` tag push runs it)
-  fails with `E422` if `package.json`'s `repository.url` says `chanmeng666` where the
-  provenance statement says `ChanMeng666` — the owner segment must match the real repo
-  byte-for-byte (the v1.14.0 release needed a same-day casing fix + re-tag for exactly this).
-  Also: token/maintainer/trusted-publisher management on npmjs is human-with-interactive-2FA
-  by npm policy (2026–2027 GAT deprecations) — never try to automate those, and never add an
-  npm token to secrets or `.npmrc`; an auth failure in the workflow means "redo the npmjs
-  trusted-publisher registration", not "add a token". The transferable recipe is
-  `docs/npm-oidc-publishing-playbook.md`.
+  (`.github/workflows/release.yml`; a `v*` tag push runs it) fails with `E422` if `repository.url`'s
+  owner segment isn't `ChanMeng666` byte-for-byte (the v1.14.0 release needed a same-day casing fix +
+  re-tag). See the release/npmjs iron law above and `docs/npm-oidc-publishing-playbook.md`.
 - **(MCP registry) The `io.github.<Owner>/*` namespace is case-sensitive and identity-checked.**
-  registry.modelcontextprotocol.io exact-matches the published npm package's **`mcpName`** field
-  against `server.json`'s `name`, so the owner segment must match your GitHub login byte-for-byte
+  registry.modelcontextprotocol.io exact-matches the published npm package's **`mcpName`** against
+  `server.json`'s `name`, so the owner segment must match your GitHub login byte-for-byte
   (`io.github.ChanMeng666/…`, not `chanmeng666`); it also **caps the server `description` at 100
-  chars**. A mismatch or an over-long description is rejected at publish — the 0.1.0 → 0.1.1 patch
-  fixed exactly this (casing + shortened description), which is why a same-day republish was needed.
-- **(Eval harness) Reasoning models spend thinking tokens out of `max_completion_tokens`.** The live
-  eval's original 4096 cap starved `gpt-5.5` into truncated (invalid) output and produced a bogus
-  low baseline; `eval/run.ts` uses 16384. If a new provider/model scores implausibly low, suspect a
-  token cap before the language — bump the budget and re-run before trusting the number.
-- **(Eval harness) Never compare rates across a judge change.** `JUDGE_VERSION` / `SYNONYMS_VERSION`
-  are pinned by tests and stamped into every result + `live-baseline.json`'s `judge` field;
-  `renderDelta` prints a non-comparability warning when they differ. The judge-v1 → v2 recalibration
-  moved intent **9% → 50% with zero model change** — a cross-judge delta measures the ruler, not the
-  model. A judge change re-defines what "pass"/"sound" mean, so any rate straddling one is comparing
-  two different measurements; treat it as history, never as progress. See `eval/README.md`.
-- **(Dataset) The private eval holdout is never published, the canary is never regenerated, and
-  `repair`-split sources stay literal.** The `dataset/` generator (roadmap T5, HF
-  `ChanMeng666/archlang-repair-trajectories`) is bound by the contamination iron law: the 26-brief
-  eval corpus/goldens are a private holdout — `dataset/` imports only `../src/index.js`, never
-  `eval/`, and every row is double-deduplicated (text + `describe()` structure) against the holdout
-  (`test/dataset.test.ts` enforces it permanently; getting it wrong voids the eval forever). The
-  canary GUID in `dataset/canary.ts` is hardcoded once — **never regenerate it** (a new value
-  silently splits the corpus and defeats leakage probing). Plans in the `repair` split must stay
-  fully literal (no scripting) because `repair()` declines scripted sources. `dataset/out/` is
-  git-ignored (HF-only — the committed source is the generator + seed). On re-upload: the HF card's
-  `task_categories` must come from HF's official list (`text-generation`, not
-  `text2text-generation` — the upload warns otherwise), and the namespace uses the canonical
-  `ChanMeng666` casing (same identity-checked lesson as npm provenance / the MCP registry). See
-  `dataset/README.md` and [ADR 0013](docs/adr/0013-repair-trajectory-dataset.md).
-- **Door `hinge left/right` is relative to the wall's traversal direction**, not the screen —
-  so the hinge side can flip depending on the order of a wall's points. The swing quarter-disc is
-  computed once in `geometry.ts` (`doorSwing`) and shared by `door.render()` and the
-  `W_SWING_OBSTRUCTED` lint rule — keep them on that one helper.
-- **Fixtures draw by category, not a new element kind.** `furniture.render()` dispatches the
-  category to `elements/fixtures-glyphs.ts`; a known fixture (`wc`, `basin`, `shower`, `bathtub`,
-  `kitchen_sink`/`sink`, `counter`, `fridge`, `stove`…) draws a symbol and ignores its `label`,
-  anything else falls back to the labelled rectangle. The lint rules key off the **room-label
-  classification** and the **fixture category** — both are closed vocabularies now: room labels
-  classify through `src/vocabulary.ts` (`USE_VOCABULARY` + the token-bounded `matchVocabulary`;
-  the old `/bath|wc/i` regexes are gone, and an alias-only classification raises the advisory
-  `W_ALIAS_MATCH` with a fix), fixture categories through `src/fixtures-catalog.ts`. Corpus
-  classification is pinned by `test/vocabulary-equivalence.test.ts` — a mismatch there means fix
-  the vocabulary, never regenerate the pin.
+  chars**. A mismatch or over-long description is rejected at publish (the 0.1.0 → 0.1.1 patch fixed exactly this).
+- **(Eval harness) Reasoning models spend thinking tokens out of `max_completion_tokens`.** A too-low
+  cap starves the model into truncated (invalid) output and a bogus low baseline; `eval/run.ts` uses
+  16384. If a model scores implausibly low, suspect a token cap before the language.
+- **(Eval harness) Never compare rates across a judge change** (an iron law above; the mechanics:
+  `JUDGE_VERSION` / `SYNONYMS_VERSION` are pinned by tests and stamped into every result +
+  `live-baseline.json`'s `judge` field, and `renderDelta` prints a non-comparability warning when they
+  differ). See `eval/README.md`.
+- **(Dataset) Holdout never published, canary never regenerated, `repair`-split sources stay literal**
+  — the contamination iron law above, enforced by `test/dataset.test.ts`. Operationally: `dataset/out/`
+  is git-ignored (HF-only); on re-upload the HF card's `task_categories` must come from HF's official
+  list (`text-generation`, not `text2text-generation` — the upload warns), namespace uses the canonical
+  `ChanMeng666` casing. See `dataset/README.md` and [ADR 0013](docs/adr/0013-repair-trajectory-dataset.md).
+- **Door `hinge left/right` is relative to the wall's traversal direction**, not the screen — so the
+  hinge side can flip with the order of a wall's points. The swing quarter-disc is computed once in
+  `geometry.ts` (`doorSwing`) and shared by `door.render()` and the `W_SWING_OBSTRUCTED` lint rule —
+  keep them on that one helper.
+- **Fixtures draw by category, not a new element kind.** `furniture.render()` dispatches the category
+  to `elements/fixtures-glyphs.ts`; a known fixture (`wc`, `basin`, `shower`, `sink`, `counter`…) draws
+  a symbol and ignores its `label`, anything else falls back to the labelled rectangle. The lint rules
+  key off two closed vocabularies: room-label classification through `src/vocabulary.ts`
+  (`USE_VOCABULARY` + token-bounded `matchVocabulary`; an alias-only classification raises advisory
+  `W_ALIAS_MATCH` with a fix) and fixture category through `src/fixtures-catalog.ts`. Corpus
+  classification is pinned by `test/vocabulary-equivalence.test.ts` — fix the vocabulary, never regenerate the pin.
 - **`examples/studio.arch` is import-free on purpose** (`test/world.test.ts` asserts the flagship
-  compiles from a single file with no World). Use inline `furniture <fixture>` there, not imports.
+  compiles from a single file with no World) — use inline `furniture <fixture>` there, not imports.
 - **(Sites) A bare `|` inside inline code in a Markdown TABLE cell breaks the docs build.** GFM
-  splits table cells on `|` *before* inline-code parsing, so `` `anchor|centered` `` in a cell
-  severs the backtick pair and any `<token>` inside leaks out as raw HTML — VitePress/Vue then
-  fails the whole site build with "Element is missing end tag" (this took the docs deploy down
-  for four pushes on 2026-07-12). Write `\|` inside table cells, and treat **`npm run
-  docs:build` as part of verification for any `docs/*.md` edit** — the core test suite does not
-  compile the site, so it cannot catch this class.
-- **(Sites) A partial `:global(.dark) …` selector inside a Vue `<style scoped>` block miscompiles.**
-  A `:global(.dark) .foo` written *inside* scoped styles collapses to a bare `.dark { … }` rule (it
-  once inverted the whole site). Put dark-mode overrides of a component's scoped internals in a
-  **separate unscoped `<style>` block**, not in the scoped one.
+  splits table cells on `|` *before* inline-code parsing, so `` `anchor|centered` `` severs the
+  backtick pair and any `<token>` inside leaks out as raw HTML — VitePress/Vue then fails the whole
+  build with "Element is missing end tag" (took the docs deploy down for four pushes on 2026-07-12).
+  Write `\|` inside table cells, and treat **`npm run docs:build` as verification for any `docs/*.md`
+  edit** — the core test suite doesn't compile the site.
+- **(Sites) A partial `:global(.dark) …` selector inside a Vue `<style scoped>` block miscompiles**
+  — `:global(.dark) .foo` inside scoped styles collapses to a bare `.dark { … }` rule (it once
+  inverted the whole site). Put dark-mode overrides of a component's scoped internals in a
+  **separate unscoped `<style>` block**.
 - **(Sites) VitePress `.vp-doc a:hover` (specificity 0,2,1) outranks a two-class rule (0,2,0) on
-  hover.** Any `.vp-doc <class> a` control whose color must survive hover has to re-assert `color`
-  in its own `:hover` rule. Verify interactive states (hover/focus/active), not just static render.
-- **(Sites) A token that flips per mode is unsafe on ground that does not flip.** `--redline` (and
-  any mode-flipping var) must not be used on the fixed carbon terminal or the always-dark bands — use
-  a fixed hex + a comment there (e.g. the solid CTA is fixed `#b3261e` + white).
+  hover.** Any `.vp-doc <class> a` control whose color must survive hover has to re-assert `color` in
+  its own `:hover` rule. Verify interactive states (hover/focus/active), not just static render.
+- **(Sites) A token that flips per mode is unsafe on ground that does not flip.** `--redline` (and any
+  mode-flipping var) must not be used on the fixed carbon terminal or the always-dark bands — use a
+  fixed hex + a comment (e.g. the solid CTA is fixed `#b3261e` + white).
 
 ## Reading Order
 
@@ -662,3 +355,6 @@ intent. Zero install: `npx @chanmeng666/archlang …`.
 - Follow [Conventional Commits](https://www.conventionalcommits.org/).
 - Run the project's lint/test commands before proposing changes.
 - Keep this file up to date when you change build steps, structure, or conventions.
+- Ongoing release narrative goes in `CHANGELOG.md` only — do not re-grow per-release prose here (the
+  historical narrative is archived at `docs/archive/agents-status-history-2026-07.md`).
+</content>
