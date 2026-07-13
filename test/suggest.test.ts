@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { suggestTopology } from "../src/suggest.js";
 import { lint, compile } from "../src/index.js";
+import { rectOf, resolvePlan } from "../src/analyze.js";
+import type { RFurniture } from "../src/ir.js";
 
 /**
  * Topology suggestions (T2f) — `suggestTopology` proposes ready-to-paste `.arch`
@@ -149,5 +151,67 @@ describe("suggestTopology — W_BATH_VIA_BEDROOM", () => {
     const fixed = BATH_VIA_BEDROOM.replace(/}\s*$/, `  ${top.insertText}\n}`);
     expect(compile(fixed).diagnostics.filter((d) => d.severity === "error")).toHaveLength(0);
     expect(lint(fixed).map((d) => d.code)).not.toContain("W_BATH_VIA_BEDROOM");
+  });
+});
+
+// The `faulty` unreachable-bedroom shape, but a wardrobe stands against the `part`
+// partition (the living↔bedroom wall), INSIDE the bedroom's door-approach strip and
+// over the naive mid-wall site. A furniture-aware door builder must slide the partition
+// door candidate to the long clear span past the wardrobe rather than open onto it.
+const FURNITURE_BLOCKED = `plan "FurnitureBlocked" {
+  units mm
+  grid 50
+  wall id=ext exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+  wall id=part partition thickness 100 { (5000,0) (5000,5000) }
+  room id=living at (0,0) size 5000x5000 label "Living"
+  room id=bed at (5000,0) size 3000x5000 label "Bedroom"
+  furniture wardrobe at (5100,500) size 400x1000 label "Wardrobe"
+  door id=entry at (2500,0) width 900 wall exterior
+}`;
+
+// The exact twin of FURNITURE_BLOCKED with the wardrobe removed — the free-run math
+// must be untouched here, so the partition candidate stays at the mid-wall (50%).
+const FURNITURE_CLEAR = `plan "FurnitureClear" {
+  units mm
+  grid 50
+  wall id=ext exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+  wall id=part partition thickness 100 { (5000,0) (5000,5000) }
+  room id=living at (0,0) size 5000x5000 label "Living"
+  room id=bed at (5000,0) size 3000x5000 label "Bedroom"
+  door id=entry at (2500,0) width 900 wall exterior
+}`;
+
+describe("suggestTopology — furniture-aware door candidates", () => {
+  // The partition wall `part` runs (5000,0)→(5000,5000); a candidate's along-wall pct
+  // maps 1:1 to the wardrobe's y-span, so we can convert its footprint to a pct span.
+  const partCandidate = (source: string): { insertText: string; pct: number } => {
+    const unreach = suggestTopology(source).find((x) => x.code === "W_ROOM_UNREACHABLE")!;
+    const c = unreach.candidates.find((x) => x.insertText.includes(" part "))!;
+    return { insertText: c.insertText, pct: Number.parseFloat(/at ([\d.]+)%/.exec(c.insertText)![1]!) };
+  };
+
+  it("keeps the partition candidate at the mid-wall when nothing blocks the approach", () => {
+    expect(partCandidate(FURNITURE_CLEAR).insertText).toBe("door on part at 50% width 900");
+  });
+
+  it("slides the partition door candidate off the furniture-blocked approach span", () => {
+    // Blocked along-wall span, computed from the resolved wardrobe footprint.
+    const { ir } = resolvePlan(FURNITURE_BLOCKED);
+    const wardrobe = ir!.elements.find((e): e is RFurniture => e.kind === "furniture")!;
+    const rect = rectOf(wardrobe);
+    const loPct = (rect.y / 5000) * 100; // 10%
+    const hiPct = ((rect.y + rect.h) / 5000) * 100; // 30%
+    const { pct } = partCandidate(FURNITURE_BLOCKED);
+    // The wardrobe blocks [10%, 30%]; the aware candidate lands on the long clear span
+    // past it (the naive mid-wall would have sat at 50%, but the block reshapes the run).
+    expect(pct > loPct && pct < hiPct).toBe(false);
+    expect(partCandidate(FURNITURE_BLOCKED).insertText).toBe("door on part at 65% width 900");
+  });
+
+  it("the slid candidate still clears W_ROOM_UNREACHABLE on round-trip", () => {
+    const { insertText } = partCandidate(FURNITURE_BLOCKED);
+    const fixed = FURNITURE_BLOCKED.replace("  door id=entry", `  ${insertText}\n  door id=entry`);
+    expect(compile(fixed).diagnostics.filter((d) => d.severity === "error")).toHaveLength(0);
+    expect(lint(fixed).map((d) => d.code)).not.toContain("W_ROOM_UNREACHABLE");
   });
 });

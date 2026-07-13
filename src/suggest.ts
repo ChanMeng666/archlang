@@ -35,7 +35,7 @@ import { segmentsOfWall, type WallSegment } from "./geometry.js";
 import { projectPointOntoWall, type AttachableWall } from "./fix-producers.js";
 import { fmt3 as numStr } from "./num-format.js";
 import type { Point } from "./ast.js";
-import type { RDoor, ROpening, RRoom, RWall, RWindow } from "./ir.js";
+import type { RDoor, RFurniture, ROpening, RRoom, RWall, RWindow } from "./ir.js";
 
 /** One concrete statement that would resolve a suggested fault, with a reason. */
 export interface SuggestionCandidate {
@@ -62,6 +62,9 @@ const DOOR_WIDTH = 900;
 const WINDOW_WIDTH = 1200;
 /** Clear space (mm) kept on each side of an existing opening when siting a new one. */
 const OPENING_CLEARANCE = 100;
+/** Depth (mm) of the door-approach strip kept clear inside a room in front of a new
+ *  door — a door sited where furniture intrudes into this strip would open onto it. */
+const APPROACH_DEPTH = 900;
 
 interface Edge {
   axis: "h" | "v";
@@ -167,6 +170,30 @@ function blockedRuns(e: Edge, connectors: Array<{ at: Point; width: number }>, t
   return out;
 }
 
+/** Along-edge intervals of edge `e` where furniture inside room `rect` intrudes into
+ *  the door-approach strip — the band inside the room along `e`, {@link APPROACH_DEPTH}
+ *  deep. A door sited over such a span would open straight onto the piece, so these
+ *  spans are blocked for DOOR candidates only; windows (which don't swing) ignore them.
+ *  Axis-aligned throughout; fail-open — a piece clear of the strip contributes nothing. */
+function furnitureBlockedRuns(e: Edge, rect: BBox, furniture: BBox[]): Array<[number, number]> {
+  // The strip spans the full edge along-axis; on the perpendicular (depth) axis it
+  // reaches APPROACH_DEPTH from the edge line into the room interior. The edge sitting
+  // below the room centre is a min-side (top/left) edge — the interior lies past it.
+  const centre = e.axis === "h" ? rect.y + rect.h / 2 : rect.x + rect.w / 2;
+  const [depthLo, depthHi] =
+    e.fixed < centre ? [e.fixed, e.fixed + APPROACH_DEPTH] : [e.fixed - APPROACH_DEPTH, e.fixed];
+  const out: Array<[number, number]> = [];
+  for (const f of furniture) {
+    const [pLo, pHi] = e.axis === "h" ? [f.y, f.y + f.h] : [f.x, f.x + f.w];
+    if (Math.min(pHi, depthHi) - Math.max(pLo, depthLo) <= 0) continue; // clear of the strip depth
+    const [aLo, aHi] = e.axis === "h" ? [f.x, f.x + f.w] : [f.y, f.y + f.h];
+    const lo = Math.max(aLo, e.lo);
+    const hi = Math.min(aHi, e.hi);
+    if (hi > lo) out.push([lo, hi]);
+  }
+  return out;
+}
+
 /** A raw candidate before ordering (carries its run length for the sort). */
 interface RawCandidate extends SuggestionCandidate {
   len: number;
@@ -208,6 +235,9 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const windows = ir.elements.filter((e): e is RWindow => e.kind === "window");
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
+  // Furniture footprints (mm rects) — used only to keep a suggested door's approach
+  // strip clear (door builders); windows ignore them.
+  const furniture = ir.elements.filter((e): e is RFurniture => e.kind === "furniture").map(rectOf);
   const walls = ir.walls;
   if (rooms.length === 0 || walls.length === 0) return [];
 
@@ -225,6 +255,10 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   // (non-bedroom, non-wet) room's exterior wall; fall back to any room only when no
   // habitable room offers a viable exterior run.
   const hasExteriorWall = walls.some((w) => w.category === "exterior");
+  // `!access.hasEntrance` is the GEOMETRIC entrance test (a door/opening whose position
+  // resolves onto an exterior wall), the same definition the W_ROOM_UNREACHABLE gate
+  // below uses — not entrance.ts's declared host-category check. They agree except on
+  // contrived geometry (e.g. a door declared `wall exterior` but sited off every one).
   if (!access.hasEntrance && hasExteriorWall) {
     const suitable: Array<RawCandidate & { roomId: string }> = [];
     const rest: Array<RawCandidate & { roomId: string }> = [];
@@ -236,7 +270,8 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
         const host = hostWallForEdge(e, walls, tol);
         if (host?.wall.category !== "exterior") continue;
         if (neighboursOnEdge(e, rooms, room.id, tol).length > 0) continue; // interior wall
-        const free = longestFreeRun(e.lo, e.hi, blockedRuns(e, connectors, tol));
+        const blocked = [...blockedRuns(e, connectors, tol), ...furnitureBlockedRuns(e, rect, furniture)];
+        const free = longestFreeRun(e.lo, e.hi, blocked);
         if (!free || free.len < DOOR_WIDTH) continue;
         const { pct } = projectPointOntoWall(host.wall as AttachableWall, edgePoint(e, free.mid));
         bucket.push({
@@ -280,7 +315,8 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
         const isExteriorEdge = neighbours.length === 0 && host.wall.category === "exterior";
         if (!reachableNeighbour && !isExteriorEdge) continue;
 
-        const free = longestFreeRun(e.lo, e.hi, blockedRuns(e, connectors, tol));
+        const blocked = [...blockedRuns(e, connectors, tol), ...furnitureBlockedRuns(e, rect, furniture)];
+        const free = longestFreeRun(e.lo, e.hi, blocked);
         if (!free || free.len < DOOR_WIDTH) continue;
         const { pct } = projectPointOntoWall(host.wall as AttachableWall, edgePoint(e, free.mid));
         const via = reachableNeighbour
@@ -393,7 +429,8 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
         const goodNeighbour = neighbours.find((id) => reachNoBed.has(id) && !isBedroomId(id));
         const isExteriorEdge = neighbours.length === 0 && host.wall.category === "exterior";
         if (!goodNeighbour && !isExteriorEdge) continue;
-        const free = longestFreeRun(e.lo, e.hi, blockedRuns(e, connectors, tol));
+        const blocked = [...blockedRuns(e, connectors, tol), ...furnitureBlockedRuns(e, rect, furniture)];
+        const free = longestFreeRun(e.lo, e.hi, blocked);
         if (!free || free.len < DOOR_WIDTH) continue;
         const { pct } = projectPointOntoWall(host.wall as AttachableWall, edgePoint(e, free.mid));
         const rationale = goodNeighbour
