@@ -41,6 +41,19 @@ const TOPO = `plan "T" {
   door id=entry at (2500,0) width 900 wall exterior
 }`;
 
+// A sealed building (no exterior door) — trips W_NO_ENTRANCE.
+const NO_ENTRANCE = `plan "NoEntrance" {
+  units mm
+  grid 50
+  wall id=ext exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+  wall id=part partition thickness 100 { (5000,0) (5000,5000) }
+  room id=living at (0,0) size 5000x5000 label "Living"
+  room id=bed at (5000,0) size 3000x5000 label "Bedroom"
+  door id=inner on part at 50% width 900
+  window id=wliv on ext at 8% width 1200
+  window id=wbed on ext at 25% width 1200
+}`;
+
 describe("arch fix", () => {
   it("`fix - --dry-run --json` reports the applied fixes and streams to stdout, exit 0", () => {
     const r = run(["fix", "-", "--dry-run", "--json"], OFF_WALL);
@@ -80,5 +93,14 @@ describe("arch suggest", () => {
     expect(codes).toContain("W_BEDROOM_NO_WINDOW");
     const unreach = j.suggestions.find((s: { code: string }) => s.code === "W_ROOM_UNREACHABLE");
     expect(unreach.candidates[0].insertText).toMatch(/^door on \w+ at [\d.]+% width \d+$/);
+  }, 30000);
+
+  it("`suggest - --json` surfaces the new W_NO_ENTRANCE kind, exit 0", () => {
+    const r = run(["suggest", "-", "--json"], NO_ENTRANCE);
+    expect(r.status).toBe(0);
+    const j = JSON.parse(r.stdout);
+    expect(j.ok).toBe(true);
+    const codes = j.suggestions.map((s: { code: string }) => s.code);
+    expect(codes).toContain("W_NO_ENTRANCE");
   }, 30000);
 });

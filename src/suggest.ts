@@ -3,12 +3,15 @@
  *
  * Per [ADR 0005](../docs/adr/0005-facts-and-lint-not-an-architect.md) the compiler
  * is a faithful renderer and never invents architecture. This is the *advisory*
- * counterpart to `arch lint`: for the two connectivity faults a generator most
- * often produces — a room with no path back to the entrance
- * (`W_ROOM_UNREACHABLE`) and a bedroom with no window (`W_BEDROOM_NO_WINDOW`) — it
- * emits concrete, ready-to-paste `.arch` statements (using the v1.13 `on <wall> at
- * <p>%` attachment form) that would resolve the fault, with a rationale. The agent
- * (or human) chooses; nothing here edits the plan.
+ * counterpart to `arch lint`: for the connectivity faults a generator most often
+ * produces — a room with no path back to the entrance (`W_ROOM_UNREACHABLE`), a
+ * bedroom with no window (`W_BEDROOM_NO_WINDOW`), a building with no way in
+ * (`W_NO_ENTRANCE`), and a wet room reachable only through a bedroom
+ * (`W_BATH_VIA_BEDROOM`) — it emits concrete, ready-to-paste `.arch` statements
+ * (using the v1.13 `on <wall> at <p>%` attachment form) that would resolve the
+ * fault, with a rationale. Each builder mirrors the SEMANTICS of the matching lint
+ * rule so a suggestion fires iff the lint fires. The agent (or human) chooses;
+ * nothing here edits the plan.
  *
  * Pure and deterministic: rooms are processed in source order; each candidate is
  * the midpoint of the longest opening-free run of a shared/exterior wall, ordered
@@ -16,7 +19,17 @@
  * layer as `describe`/`lint`.
  */
 
-import { buildDoorAccessGraph, DEFAULT_TOL, isBedroom, rectOf, resolvePlan, type AnalyzeOptions } from "./analyze.js";
+import {
+  buildDoorAccessGraph,
+  DEFAULT_TOL,
+  doorConnections,
+  EXTERIOR_NODE,
+  isBedroom,
+  isWetRoom,
+  rectOf,
+  resolvePlan,
+  type AnalyzeOptions,
+} from "./analyze.js";
 import type { BBox } from "./geometry/rect.js";
 import { segmentsOfWall, type WallSegment } from "./geometry.js";
 import { projectPointOntoWall, type AttachableWall } from "./fix-producers.js";
@@ -38,7 +51,7 @@ export interface Suggestion {
   /** Human-readable description of the fault. */
   problem: string;
   /** The lint code this suggestion would resolve. */
-  code: "W_ROOM_UNREACHABLE" | "W_BEDROOM_NO_WINDOW";
+  code: "W_ROOM_UNREACHABLE" | "W_BEDROOM_NO_WINDOW" | "W_NO_ENTRANCE" | "W_BATH_VIA_BEDROOM";
   /** Id of the room the suggestion is about. */
   roomId: string;
   candidates: SuggestionCandidate[];
@@ -161,13 +174,20 @@ interface RawCandidate extends SuggestionCandidate {
   pct: number;
 }
 
+/** Sort raw candidates in place, longest run first, ties by wall id then position.
+ *  Generic so callers keep any extra fields (e.g. a per-candidate room id). */
+function sortRaw<T extends RawCandidate>(raw: T[]): T[] {
+  return raw.sort((a, b) => b.len - a.len || (a.wallId < b.wallId ? -1 : a.wallId > b.wallId ? 1 : a.pct - b.pct));
+}
+
+/** Strip a sorted raw list to at most three public candidates. */
+const toCandidates = (raw: RawCandidate[]): SuggestionCandidate[] =>
+  raw.slice(0, 3).map(({ insertText, rationale }) => ({ insertText, rationale }));
+
 /** Build up to three ordered candidates from a set of raw ones (longest run first,
  *  ties by wall id then position). */
 function orderCandidates(raw: RawCandidate[]): SuggestionCandidate[] {
-  return raw
-    .sort((a, b) => b.len - a.len || (a.wallId < b.wallId ? -1 : a.wallId > b.wallId ? 1 : a.pct - b.pct))
-    .slice(0, 3)
-    .map(({ insertText, rationale }) => ({ insertText, rationale }));
+  return toCandidates(sortRaw(raw));
 }
 
 /** Point at along-edge coordinate `along` on edge `e`. */
@@ -199,13 +219,58 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
 
   const suggestions: Suggestion[] = [];
 
+  // ---- W_NO_ENTRANCE: the building has an outer shell but no way in ----
+  // Mirrors src/lint/rules/entrance.ts: fires when there is an exterior wall but no
+  // door/opening on one. Propose a single entrance door, preferring a habitable
+  // (non-bedroom, non-wet) room's exterior wall; fall back to any room only when no
+  // habitable room offers a viable exterior run.
+  const hasExteriorWall = walls.some((w) => w.category === "exterior");
+  if (!access.hasEntrance && hasExteriorWall) {
+    const suitable: Array<RawCandidate & { roomId: string }> = [];
+    const rest: Array<RawCandidate & { roomId: string }> = [];
+    for (const room of rooms) {
+      const rect = rectOf(room);
+      const label = room.label ?? room.id;
+      const bucket = !isBedroom(room) && !isWetRoom(room) ? suitable : rest;
+      for (const e of edgesOf(rect)) {
+        const host = hostWallForEdge(e, walls, tol);
+        if (host?.wall.category !== "exterior") continue;
+        if (neighboursOnEdge(e, rooms, room.id, tol).length > 0) continue; // interior wall
+        const free = longestFreeRun(e.lo, e.hi, blockedRuns(e, connectors, tol));
+        if (!free || free.len < DOOR_WIDTH) continue;
+        const { pct } = projectPointOntoWall(host.wall as AttachableWall, edgePoint(e, free.mid));
+        bucket.push({
+          insertText: `door on ${host.wall.id} at ${numStr(pct)}% width ${DOOR_WIDTH}`,
+          rationale: `A door on exterior wall "${host.wall.id}" opens "${label}" to the outside as the building's entrance.`,
+          len: free.len,
+          wallId: host.wall.id,
+          pct,
+          roomId: room.id,
+        });
+      }
+    }
+    const raw = suitable.length > 0 ? suitable : rest;
+    if (raw.length > 0) {
+      const sorted = sortRaw(raw);
+      suggestions.push({
+        problem: "The building has no entrance — no exterior door or opening lets anyone in.",
+        code: "W_NO_ENTRANCE",
+        roomId: sorted[0]!.roomId,
+        candidates: toCandidates(sorted),
+      });
+    }
+  }
+
   for (const room of rooms) {
     const rect = rectOf(room);
     const label = room.label ?? room.id;
     const node = access.rooms.find((r) => r.id === room.id);
 
     // ---- W_ROOM_UNREACHABLE: a room with no path back to the entrance ----
-    if (node && !node.reachable) {
+    // Only meaningful when an entrance exists — with no way into the building the
+    // lint emits W_NO_ENTRANCE for the whole plan, not per-room unreachability, so
+    // this builder stays silent to fire iff the lint fires (see W_NO_ENTRANCE below).
+    if (access.hasEntrance && node && !node.reachable) {
       const raw: RawCandidate[] = [];
       for (const e of edgesOf(rect)) {
         const host = hostWallForEdge(e, walls, tol);
@@ -271,6 +336,86 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
           code: "W_BEDROOM_NO_WINDOW",
           roomId: room.id,
           candidates: orderCandidates(raw),
+        });
+      }
+    }
+  }
+
+  // ---- W_BATH_VIA_BEDROOM: a wet room reachable only through a bedroom ----
+  // Mirrors src/lint/rules/reachability.ts: build the door/opening room graph, then
+  // compare reach-all vs reach-excluding-bedrooms from the exterior. A wet room in
+  // the first set but not the second is en-suite-trapped. Propose a door on a wall it
+  // shares with a non-bedroom space that still reaches the entrance (preferred), with
+  // exterior-wall doors as a fallback. Only runs when an entrance exists.
+  const roomRects = new Map(rooms.map((r) => [r.id, rectOf(r)] as const));
+  const graphConnectors = [...doors, ...openings];
+  const adj = new Map<string, Set<string>>();
+  const addEdge = (x: string, y: string): void => {
+    if (!adj.has(x)) adj.set(x, new Set());
+    if (!adj.has(y)) adj.set(y, new Set());
+    adj.get(x)!.add(y);
+    adj.get(y)!.add(x);
+  };
+  for (const c of graphConnectors) {
+    const conn = doorConnections(c, roomRects, tol);
+    if (conn.length === 2) addEdge(conn[0]!, conn[1]!);
+  }
+  const isBedroomId = (id: string): boolean => {
+    const r = rooms.find((x) => x.id === id);
+    return r ? isBedroom(r) : false;
+  };
+  if (adj.has(EXTERIOR_NODE)) {
+    const bfs = (excludeBedrooms: boolean): Set<string> => {
+      const seen = new Set<string>([EXTERIOR_NODE]);
+      const queue = [EXTERIOR_NODE];
+      while (queue.length) {
+        const cur = queue.shift()!;
+        for (const nb of adj.get(cur) ?? []) {
+          if (seen.has(nb) || (excludeBedrooms && isBedroomId(nb))) continue;
+          seen.add(nb);
+          queue.push(nb);
+        }
+      }
+      return seen;
+    };
+    const reachAll = bfs(false);
+    const reachNoBed = bfs(true);
+    for (const room of rooms) {
+      if (!isWetRoom(room) || !reachAll.has(room.id) || reachNoBed.has(room.id)) continue;
+      const rect = rectOf(room);
+      const label = room.label ?? room.id;
+      const preferred: RawCandidate[] = [];
+      const fallback: RawCandidate[] = [];
+      for (const e of edgesOf(rect)) {
+        const host = hostWallForEdge(e, walls, tol);
+        if (!host) continue;
+        const neighbours = neighboursOnEdge(e, rooms, room.id, tol);
+        const goodNeighbour = neighbours.find((id) => reachNoBed.has(id) && !isBedroomId(id));
+        const isExteriorEdge = neighbours.length === 0 && host.wall.category === "exterior";
+        if (!goodNeighbour && !isExteriorEdge) continue;
+        const free = longestFreeRun(e.lo, e.hi, blockedRuns(e, connectors, tol));
+        if (!free || free.len < DOOR_WIDTH) continue;
+        const { pct } = projectPointOntoWall(host.wall as AttachableWall, edgePoint(e, free.mid));
+        const rationale = goodNeighbour
+          ? `A door on wall "${host.wall.id}" links "${label}" to "${goodNeighbour}", giving it a route that avoids the bedroom.`
+          : `A door on exterior wall "${host.wall.id}" opens "${label}" directly to the outside, off the bedroom.`;
+        (goodNeighbour ? preferred : fallback).push({
+          insertText: `door on ${host.wall.id} at ${numStr(pct)}% width ${DOOR_WIDTH}`,
+          rationale,
+          len: free.len,
+          wallId: host.wall.id,
+          pct,
+        });
+      }
+      // Preferred (connect-to-circulation) candidates always outrank exterior fallbacks,
+      // regardless of run length — reconnecting to the hall is the real fix.
+      const ordered = [...sortRaw(preferred), ...sortRaw(fallback)];
+      if (ordered.length > 0) {
+        suggestions.push({
+          problem: `Bathroom "${label}" is reachable only through a bedroom.`,
+          code: "W_BATH_VIA_BEDROOM",
+          roomId: room.id,
+          candidates: toCandidates(ordered),
         });
       }
     }

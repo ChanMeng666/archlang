@@ -64,4 +64,90 @@ describe("suggestTopology", () => {
     expect(codes).not.toContain("W_ROOM_DISCONNECTED");
     expect(codes).not.toContain("W_BEDROOM_NO_WINDOW");
   });
+
+  it("a plan with an entrance never yields a W_NO_ENTRANCE suggestion", () => {
+    // Regression companion to the goldens above: `faulty` has an exterior door, so
+    // the whole-building no-entrance builder must stay silent for it.
+    expect(lint(faulty).map((d) => d.code)).not.toContain("W_NO_ENTRANCE");
+    expect(suggestTopology(faulty).every((s) => s.code !== "W_NO_ENTRANCE")).toBe(true);
+  });
+});
+
+// A sealed building: living + bedroom joined by a partition door, each with a
+// window, but NO exterior door — the plan trips lint `W_NO_ENTRANCE`.
+const NO_ENTRANCE = `plan "NoEntrance" {
+  units mm
+  grid 50
+  wall id=ext exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+  wall id=part partition thickness 100 { (5000,0) (5000,5000) }
+  room id=living at (0,0) size 5000x5000 label "Living"
+  room id=bed at (5000,0) size 3000x5000 label "Bedroom"
+  door id=inner on part at 50% width 900
+  window id=wliv on ext at 8% width 1200
+  window id=wbed on ext at 25% width 1200
+}`;
+
+describe("suggestTopology — W_NO_ENTRANCE", () => {
+  it("the fixture actually trips the lint (suggestion fires iff lint fires)", () => {
+    expect(lint(NO_ENTRANCE).map((d) => d.code)).toContain("W_NO_ENTRANCE");
+  });
+
+  it("proposes an entrance door on a habitable room's exterior wall", () => {
+    const s = suggestTopology(NO_ENTRANCE);
+    const noEntry = s.find((x) => x.code === "W_NO_ENTRANCE");
+    expect(noEntry).toBeDefined();
+    const top = noEntry!.candidates[0]!;
+    expect(top.insertText).toMatch(/^door on \w+ at [\d.]+% width 900$/);
+    // The entrance is sited on the LIVING room (habitable), never the bedroom.
+    expect(top.rationale).toContain("Living");
+    expect(noEntry!.candidates.every((c) => c.rationale.includes("Living"))).toBe(true);
+  });
+
+  it("applying the top candidate clears W_NO_ENTRANCE", () => {
+    const top = suggestTopology(NO_ENTRANCE).find((x) => x.code === "W_NO_ENTRANCE")!.candidates[0]!;
+    const fixed = NO_ENTRANCE.replace(/}\s*$/, `  ${top.insertText}\n}`);
+    expect(compile(fixed).diagnostics.filter((d) => d.severity === "error")).toHaveLength(0);
+    expect(lint(fixed).map((d) => d.code)).not.toContain("W_NO_ENTRANCE");
+  });
+});
+
+// Entrance → living; the bath is reachable ONLY through the bedroom (living↔bedroom
+// door + bedroom↔bath door), and living↔bath share the `pmid` wall with no opening.
+// Trips lint `W_BATH_VIA_BEDROOM`.
+const BATH_VIA_BEDROOM = `plan "BathViaBed" {
+  units mm
+  grid 50
+  wall id=ext exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+  wall id=pmid partition thickness 100 { (4000,0) (4000,5000) }
+  wall id=phorz partition thickness 100 { (4000,2500) (8000,2500) }
+  room id=living at (0,0) size 4000x5000 label "Living"
+  room id=bed at (4000,0) size 4000x2500 label "Bedroom"
+  room id=bath at (4000,2500) size 4000x2500 label "Bath"
+  door id=entry at (2000,0) width 900 wall exterior
+  door id=lb on pmid at 25% width 900
+  door id=bb on phorz at 50% width 900
+  window id=wb on ext at 25% width 1200
+}`;
+
+describe("suggestTopology — W_BATH_VIA_BEDROOM", () => {
+  it("the fixture actually trips the lint (suggestion fires iff lint fires)", () => {
+    expect(lint(BATH_VIA_BEDROOM).map((d) => d.code)).toContain("W_BATH_VIA_BEDROOM");
+  });
+
+  it("proposes a door on the living↔bath shared wall, preferred over exterior fallbacks", () => {
+    const s = suggestTopology(BATH_VIA_BEDROOM);
+    const via = s.find((x) => x.code === "W_BATH_VIA_BEDROOM");
+    expect(via).toBeDefined();
+    expect(via!.roomId).toBe("bath");
+    // The shared living↔bath wall is `pmid`; that connection is the top candidate
+    // even though an exterior wall offers a longer free run.
+    expect(via!.candidates[0]!.insertText).toMatch(/^door on pmid at [\d.]+% width 900$/);
+  });
+
+  it("applying the top candidate clears W_BATH_VIA_BEDROOM", () => {
+    const top = suggestTopology(BATH_VIA_BEDROOM).find((x) => x.code === "W_BATH_VIA_BEDROOM")!.candidates[0]!;
+    const fixed = BATH_VIA_BEDROOM.replace(/}\s*$/, `  ${top.insertText}\n}`);
+    expect(compile(fixed).diagnostics.filter((d) => d.severity === "error")).toHaveLength(0);
+    expect(lint(fixed).map((d) => d.code)).not.toContain("W_BATH_VIA_BEDROOM");
+  });
 });
