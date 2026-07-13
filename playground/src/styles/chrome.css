@@ -413,3 +413,29 @@ main {
     display: none;
   }
 }
+
+/* a11y toggle — opt into the SVG <title>/<desc> metadata (compile's `accessible`).
+   Sits beside the download format, since it changes the exported bytes. */
+.tb-check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  line-height: 1.2;
+  padding: 5px 8px;
+  border: 1px solid var(--src-rule);
+  border-radius: 3px;
+  background: var(--src-surface);
+  color: var(--src-fg);
+  cursor: pointer;
+  user-select: none;
+}
+.tb-check input {
+  accent-color: var(--plum-deep);
+  margin: 0;
+  cursor: pointer;
+}
+.tb-check:hover {
+  border-color: var(--plum-deep);
+}

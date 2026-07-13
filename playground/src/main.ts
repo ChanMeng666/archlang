@@ -1,10 +1,14 @@
 import {
+  applyFixes,
   compile,
   describe,
   lint,
+  rankFixes,
+  suggestTopology,
   THEMES,
   LINT_PROFILE_NAMES,
   type CompileOptions,
+  type Diagnostic,
   type DescribeOptions,
   type LintOptions,
   type RoomSummary,
@@ -17,6 +21,8 @@ import { renderFacts } from "./facts-strip.js";
 import { renderDescribe } from "./describe-panel.js";
 import { renderLint } from "./lint-panel.js";
 import { renderDiagnostics } from "./diagnostics-panel.js";
+import { renderIntent, STARTER_INTENT } from "./intent-panel.js";
+import { renderSuggest } from "./suggest-panel.js";
 import { srcFromHash, updateHash } from "./share.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 import { EXAMPLES } from "./examples.js";
@@ -44,6 +50,7 @@ const select = document.getElementById("examples") as HTMLSelectElement;
 // been reachable via getElementById because the <select> won the duplicate id).
 const formatSelect = document.getElementById("format") as HTMLSelectElement | null;
 const themeSelect = document.getElementById("theme") as HTMLSelectElement;
+const accessibleToggle = document.getElementById("accessible") as HTMLInputElement | null;
 const lintProfileSelect = document.getElementById("lintProfile") as HTMLSelectElement;
 const lintCaptionEl = document.getElementById("lintCaption")!;
 const lintOutput = document.getElementById("lintOutput")!;
@@ -54,15 +61,21 @@ const formatBtn = document.getElementById("formatSrc") as HTMLButtonElement | nu
 const embedBtn = document.getElementById("embed");
 const repairBtn = document.getElementById("repair");
 const repairPanel = document.getElementById("repairPanel");
+const suggestBtn = document.getElementById("suggest");
+const suggestPanel = document.getElementById("suggestPanel");
+const intentEl = document.getElementById("intent")!;
+const intentSrc = document.getElementById("intentSrc") as HTMLTextAreaElement;
+const intentRunBtn = document.getElementById("intentRun")!;
+const intentOutput = document.getElementById("intentOutput")!;
 const factsEl = document.getElementById("facts")!;
 const downloadBtn = document.getElementById("download")!;
 const pzViewport = document.querySelector<HTMLElement>(".pz-viewport")!;
 const pzStage = document.querySelector<HTMLElement>(".pz-stage")!;
 const pzToolbar = document.querySelector<HTMLElement>(".pz-toolbar")!;
 
-// ---- output tabs (Preview · Describe · Lint) ----
+// ---- output tabs (Preview · Describe · Lint · Intent) ----
 const tabs = [...document.querySelectorAll<HTMLElement>(".tab")];
-const views: Record<string, HTMLElement> = { preview, describe: describeEl, lint: lintEl };
+const views: Record<string, HTMLElement> = { preview, describe: describeEl, lint: lintEl, intent: intentEl };
 for (const tab of tabs) {
   tab.addEventListener("click", () => {
     for (const t of tabs) {
@@ -104,6 +117,10 @@ syncLintCaption();
 let lastSvg = "";
 let lastScene: ReturnType<typeof compile>["scene"] | null = null;
 let lastRooms: RoomSummary[] = [];
+/** Diagnostics in panel display order — `data-i` on a row indexes into this. */
+let lastDiagRows: Diagnostic[] = [];
+/** Same, for the Lint tab's rows (some lint rules carry their own applicable fix). */
+let lastLintRows: Diagnostic[] = [];
 
 /** The current preview SVG with the editor-only `data-span` annotations removed —
  *  used for every export so a downloaded/copied file never carries them. */
@@ -167,7 +184,32 @@ function updateAnalysis(source: string, ok: boolean) {
   const repairable = lintDiags.some((d) => /FURNITURE|FIXTURE|DOORWAY|SWING/.test(d.code ?? ""));
   if (repairBtn) repairBtn.hidden = !repairable;
   if (!repairable && repairPanel) repairPanel.hidden = true;
-  renderLint(lintOutput, lintDiags, ok);
+
+  // `suggest` covers the two faults repair deliberately won't touch — adding a door or a
+  // window is a design choice, so it proposes statements instead of applying them.
+  const suggestable = lintDiags.some((d) => d.code === "W_ROOM_UNREACHABLE" || d.code === "W_BEDROOM_NO_WINDOW");
+  if (suggestBtn) suggestBtn.hidden = !suggestable;
+  if (!suggestable && suggestPanel) suggestPanel.hidden = true;
+
+  lastLintRows = renderLint(lintOutput, lintDiags, ok);
+}
+
+/**
+ * Apply the best-ranked machine-applicable fix on `rows[index]` — the same
+ * `rankFixes` → `applyFixes` path `arch fix` takes, so the button and the CLI make the
+ * identical edit. Shared by the diagnostics panel and the Lint tab.
+ */
+function applyFixAt(rows: Diagnostic[], index: number): void {
+  const fixes = rows[index]?.fixes;
+  const best = fixes?.length ? rankFixes(fixes)[0] : undefined;
+  if (!best) return;
+  const report = applyFixes(currentSource(), [best]);
+  if (report.applied.length === 0) {
+    flash(report.skipped[0]?.reason ?? "Fix no longer applies");
+    return;
+  }
+  loadSource(report.output, false);
+  flash(best.title);
 }
 
 function render(source: string, refit = false) {
@@ -176,13 +218,20 @@ function render(source: string, refit = false) {
   const themeKey = themeSelect.value;
   // annotate: stamp data-span on primitives so a click in the preview can jump to
   // source (interact.js). Exports strip it (cleanSvg) so downloads stay clean.
+  // accessible: emit SVG <title>/<desc>/role from `accTitle`/`accDescr` (or, absent
+  // those, describe()'s caption). Opt-in — the default output stays byte-identical
+  // (ADR 0007), which is exactly why it needs a toggle to be visible at all.
+  const accessible = accessibleToggle?.checked === true;
   const opts: CompileOptions = themeKey
-    ? { noCache: true, annotate: true, theme: THEMES[themeKey] }
-    : { noCache: true, annotate: true };
+    ? { noCache: true, annotate: true, accessible, theme: THEMES[themeKey] }
+    : { noCache: true, annotate: true, accessible };
   const { svg, errors, diagnostics, scene } = compile(source, opts);
   const ok = errors.length === 0;
   updateAnalysis(source, ok);
-  renderDiagnostics(errorsEl, diagnostics ?? [], source);
+  lastDiagRows = renderDiagnostics(errorsEl, diagnostics ?? [], source);
+  // Keep an already-run intent verdict live as the source changes (but don't run it
+  // unprompted — an untouched Intent tab stays empty until you ask).
+  if (intentOutput.innerHTML) renderIntent(intentOutput, source, intentSrc.value);
   if (!ok) {
     const n = errors.length;
     statusEl.classList.add("err");
@@ -247,6 +296,10 @@ async function init() {
     render(currentSource());
   });
 
+  // a11y metadata switch — re-compile so the <title>/<desc> land in the preview SVG
+  // (and therefore in every SVG export, which reads from the same bytes).
+  accessibleToggle?.addEventListener("change", () => render(currentSource()));
+
   // Lint-profile switch (B3) — update the caption and re-run the soundness check.
   lintProfileSelect.addEventListener("change", () => {
     writeStr(KEYS.lintProfile, lintProfileSelect.value);
@@ -276,10 +329,56 @@ async function init() {
     },
   });
 
+  // A lint rule can carry its own machine-applicable fix (W_ALIAS_MATCH → add the `uses`
+  // the label only implied). Make it actionable here too, not just readable.
+  lintOutput.addEventListener("click", (e) => {
+    const apply = (e.target as Element | null)?.closest<HTMLElement>(".diag-apply");
+    if (apply) applyFixAt(lastLintRows, Number(apply.dataset.i));
+  });
+
+  // ---- Suggest (advisory topology) ----
+  // Never edits the plan: it lists candidate `door`/`window` statements and lets you
+  // insert one (ADR 0005 — facts and options, not an invisible architect).
+  suggestBtn?.addEventListener("click", () => {
+    if (!suggestPanel) return;
+    renderSuggest(suggestPanel, suggestTopology(currentSource()));
+  });
+  suggestPanel?.addEventListener("click", (e) => {
+    const btn = (e.target as Element | null)?.closest<HTMLElement>(".sug-insert");
+    const stmt = btn?.dataset.stmt;
+    if (!stmt || !view) return;
+    // Insert just inside the plan's closing brace — the statement is plan-level.
+    const src = currentSource();
+    const close = src.lastIndexOf("}");
+    if (close < 0) return;
+    loadSource(`${src.slice(0, close)}  ${stmt}\n${src.slice(close)}`, false);
+    flash("Statement inserted");
+  });
+
+  // ---- Intent (the brief as a contract) ----
+  intentSrc.value = STARTER_INTENT;
+  const runIntent = () => renderIntent(intentOutput, currentSource(), intentSrc.value);
+  intentRunBtn.addEventListener("click", runIntent);
+  // Check once when the tab is first opened, so it is never an empty panel.
+  document.getElementById("tab-intent")?.addEventListener("click", () => {
+    if (!intentOutput.innerHTML) runIntent();
+  });
+
   // Diagnostics drill-down — click a row to jump to its source span and reveal the
-  // catalogued cause/fix/example.
+  // catalogued cause/fix/example. "Apply fix" runs the diagnostic's machine-applicable
+  // fix through the same `applyFixes` the `arch fix` CLI uses, so the playground and the
+  // command line make the identical edit.
   errorsEl.addEventListener("click", (e) => {
-    const row = (e.target as Element | null)?.closest<HTMLElement>(".diagrow");
+    const target = e.target as Element | null;
+
+    const apply = target?.closest<HTMLElement>(".diag-apply");
+    if (apply) {
+      e.stopPropagation(); // don't also toggle/jump the row underneath
+      applyFixAt(lastDiagRows, Number(apply.dataset.i));
+      return;
+    }
+
+    const row = target?.closest<HTMLElement>(".diagrow");
     if (!row) return;
     row.classList.toggle("open");
     const off = row.dataset.offset;
