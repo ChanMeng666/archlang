@@ -36,12 +36,13 @@ plan "Title" {
 ```text
 wall <category> thickness <mm> [material <name>] { (x,y) (x,y) … [close] }   # category e.g. exterior/partition; `close` makes a loop
 room [id=<name>] at (x,y) size <W>x<H> [label "…"] [uses living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry …]   # OR relational: room [id=…] (right-of|left-of|below|above) <roomId> [align top|middle|bottom|left|right] [gap <mm>] size <W>x<H> [label "…"]
-door [id=<name>] at (x,y) width <mm> [wall <id|category>] [hinge left|right] [swing in|out]   # must sit on a wall
-window [id=<name>] at (x,y) width <mm> [wall <id|category>]   # must sit on a wall
-opening [id=<name>] at (x,y) width <mm> [wall <id|category>]   # a leaf-less cased opening (gap in a wall) that still connects the two spaces
-furniture <category> (at (x,y) | against wall <id> [segment <n>] [offset <mm>] [side left|right]) [size <W>x<H>] [label "…"] [rotate 0|90|180|270] [in <roomId>]   # `at` size is plan W×H; `against` size is wall-relative along×depth and derives position+rotation, with `side` inferred from `in <roomId>` when omitted; a known fixture (wc/basin/shower/bathtub/kitchen_sink/counter/stove/fridge…) `against wall` may omit `size` to use its catalogued footprint
+door [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [hinge left|right|near start|near end] [swing in|out|into <roomId>]   # `at (x,y)` must sit on a wall; `on <wall> at <pos>` pins it BY CONSTRUCTION (<pos> = `40%` | mm from the wall's start | `center`) and can never be reported off-wall — prefer it
+window [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # same two placement forms as door
+opening [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # a leaf-less cased opening (gap in a wall) that still connects the two spaces in the access graph
+furniture <category> [id=<name>] (at (x,y) | against wall <id> [segment <n>] [offset <mm>] [side left|right] | in <roomId> centered | in <roomId> anchor <a> [inset <mm>]) [size <W>x<H>] [label "…"] [rotate 0|90|180|270] [in <roomId>]   # `at` size is plan W×H; `against` size is wall-relative along×depth and derives position+rotation, with `side` inferred from `in <roomId>` when omitted; a known fixture (wc/basin/shower/bathtub/kitchen_sink/counter/stove/fridge…) `against wall` may omit `size` to use its catalogued footprint. `anchor <a>` is top-left|top|top-right|left|center|right|bottom-left|bottom|bottom-right; `inset` (default 0) pulls it in from that edge
 dim (x,y)->(x,y) offset <mm> [text "…"]   # a dimension line
 column [id=<name>] at (x,y) size <W>x<H>
+strip <right|left|down|up> at (x,y) gap <mm> [height|width <mm>] { room [id=<id>] size <main>[x<cross>] [label "…"] [uses …] … }   # a row/column of rooms laid end to end: each room's offset is the running sum of the previous extents + gap, and the shared cross dimension is the strip's height (right/left) or width (down/up). Pure sugar — expands to absolute rooms. Plan-level block only
 ```
 
 ## Scripting (all expand-time, deterministic)
@@ -56,27 +57,49 @@ column [id=<name>] at (x,y) size <W>x<H>
 
 ## Keyword reference
 
+(Elements are fully specced above; these are the rest.)
+
 - **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`, `strip`
-- **Elements:** `wall`, `room`, `door`, `window`, `opening`, `furniture`, `dim`, `column`
 - **Attributes:** `units`, `grid`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`, `on`, `into`, `near`, `anchor`, `inset`, `height`
 - **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `centered`, `start`, `end`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `auto`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`
 
 ## CLI loop (how an agent drives it)
 
+Every command takes `--json` (structured result on **stdout**, human messages on **stderr**) and
+reads source from a file or stdin (`-`). Exit codes: `0` ok · `1` internal / IO error · `2` user-source error (deterministic — fix it, don't blindly retry) · `3` bad usage.
+
+```text
+arch compile   # render a plan to SVG/DXF/TXT/PDF/PNG
+arch batch     # render many .arch files in one call, concurrently
+arch md        # render every ```arch block in a Markdown file and rewrite to image links
+arch preview   # render a PNG you can look at (zero-install where the optional binary is present)
+arch watch     # recompile on save (interactive)
+arch validate  # parse + resolve + lint, no render (is it valid & sound?)
+arch describe  # semantic facts: rooms, areas, adjacency, what doors connect
+arch score     # continuous intent satisfaction (satisfied/total) as data — the refine-loop reward
+arch lint      # architectural soundness warnings
+arch ast       # parse only (no resolve/render) and print the span-bearing AST as JSON
+arch complete  # completion items in scope at a source byte offset (the LSP completion() core)
+arch fmt       # canonical formatting
+arch repair    # explicit source-to-source corrector (furniture out of walls) + change log
+arch fix       # apply the machine-applicable fix suggestions on a plan's diagnostics (bounded fixpoint)
+arch suggest   # advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
+arch manifest  # this document: the whole CLI API as structured data
+arch spec      # print the one-prompt language spec (spec.llm.md)
+arch context   # print the full bundled agent context (spec + workflow + CLI + errors)
+arch new       # scaffold a starter .arch
+arch explain   # look up an error code (cause / fix / example)
+```
+
+The flags that matter (the verb list above covers the rest):
+
 ```bash
-arch spec                              # print this spec
-arch manifest --json                   # the whole CLI API as data: commands, flags, formats, lint rules, error codes
-arch compile plan.arch -o out.svg --json   # render; JSON has { ok, diagnostics, summary }
-echo '<source>' | arch compile - --json    # compile from stdin (no temp file)
-arch preview plan.arch -o out.png --json   # render a PNG you can SHOW the user (zero-install where resvg is present; --install fetches it)
-arch compile plan.arch -o walk.svg --overlay circulation   # opt-in: draw the entrance→room walks + pinch markers on top (default output is unchanged)
-arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, what doors connect, + per-room circulation (walk distance, bottleneck width, detour)
-arch lint plan.arch --json             # architectural soundness warnings
-arch validate plan.arch --strict --json   # parse + lint, no render; --strict fails on warnings too
-arch explain E_ROOM_SIZE --json        # look up any error code
-arch repair plan.arch -o fixed.arch    # explicit corrector: new source w/ furniture out of walls/doorways/swings, overlaps separated, fixtures into their room + snapped to walls + change log
-arch batch a.arch b.arch -f svg --json # render many variants at once → results[]
-arch md notes.md -o out.md -f svg      # render every fenced arch block in a Markdown file → image links
+arch compile plan.arch -o out.svg --json    # JSON: { ok, diagnostics, summary }.  -f txt = zero-dep ASCII plan
+echo '<source>' | arch compile - --json     # stdin, no temp file
+arch validate plan.arch --strict --json     # ship-gate: --strict fails on warnings too
+arch fix plan.arch --dry-run --json         # preview/apply the machine-applicable diagnostics[].fixes
+arch validate plan.arch --intent brief.json --feedback --json   # gate on a brief's intent contract (miss → exit 2)
+arch score plan.arch --brief brief.json --json                  # satisfied/total — measures, never gates
 ```
 
 **Self-correction loop:** compile/validate → if `ok` is false, read each `diagnostics[].fix` (and

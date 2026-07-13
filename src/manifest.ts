@@ -156,7 +156,7 @@ const BRIEF_FLAG: ManifestFlag = {
 const COMMANDS: ManifestCommand[] = [
   {
     name: "compile",
-    summary: "render a plan to SVG/DXF/PDF/PNG",
+    summary: "render a plan to SVG/DXF/TXT/PDF/PNG",
     flags: [
       OUT_FLAG,
       FMT_FLAG,
