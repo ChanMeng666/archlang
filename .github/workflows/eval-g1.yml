@@ -21,6 +21,9 @@ on:
         required: false
         default: ""
 
+permissions:
+  contents: read
+
 jobs:
   generate:
     name: Generate intents
@@ -30,10 +33,10 @@ jobs:
       # referencing the secret directly in an `if:` expression.
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
           cache: npm
@@ -53,7 +56,7 @@ jobs:
 
       - name: Upload intents
         if: ${{ always() && env.OPENAI_API_KEY != '' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: g1-intents
           path: eval/g1/intents.json

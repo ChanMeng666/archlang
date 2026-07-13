@@ -15,3 +15,10 @@ eval/results.l2.md
 eval/results.l2.json
 # Generated dataset artifacts (HF-only; the generator + seed are the committed source).
 dataset/out/
+# local env & agent-session artifacts
+.env
+.env.*
+.claude/settings.local.json
+.superpowers/
+.agents/
+.codex/
