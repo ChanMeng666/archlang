@@ -1,6 +1,6 @@
 {
   "name": "@chanmeng666/archlang-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "mcpName": "io.github.ChanMeng666/archlang-mcp",
   "description": "Model Context Protocol (MCP) server for ArchLang — compile, describe, lint, validate, score, repair, fix and suggest floor plans over stdio, plus the v1.14 intent channel (gate + continuous score against a brief). A thin shim over @chanmeng666/archlang; the CLI stays the primary, token-cheaper interface.",
   "keywords": [

@@ -59,7 +59,9 @@ default SVG output is byte-identical throughout.
   `cmdSuggest` doc comment (`src/cli/commands-author.ts`), and the MCP `suggest` tool description
   (`packages/mcp/src/server.ts`) now name unreachable / no-entrance / bath-via-bedroom / windowless-bedroom
   and note the attachment form + furniture-awareness. No wiring change — the raw `Suggestion[]` passes
-  through untouched.
+  through untouched. The MCP shim republishes as **`@chanmeng666/archlang-mcp@0.2.1`** (version-bump-only
+  release so the refreshed tool description actually reaches npm and the MCP registry — the release
+  workflow's idempotency guard would have skipped an unbumped 0.2.0).
 - **`suggestTopology`'s pre-existing `W_ROOM_UNREACHABLE` builder is now gated on the plan having an
   entrance.** An entrance-less plan previously produced per-room `W_ROOM_UNREACHABLE` suggestions; it now
   yields the single `W_NO_ENTRANCE` suggestion instead, matching the lint's own suppression behavior (the
