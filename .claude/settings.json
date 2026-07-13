@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:fix)",
+      "Bash(npm run lint:ci)",
+      "Bash(npm test)",
+      "Bash(npx vitest run:*)",
+      "Bash(npm run check)",
+      "Bash(npm run check:drift)",
+      "Bash(npm run gen:*)",
+      "Bash(npm run cli:*)",
+      "Bash(npm run bench)",
+      "Bash(npm run docs:build)",
+      "Bash(npm run mcp:build)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)"
+    ],
+    "ask": [
+      "Bash(npm publish:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
