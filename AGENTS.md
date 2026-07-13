@@ -36,8 +36,8 @@ verbatim at
 **[`docs/archive/agents-status-history-2026-07.md`](docs/archive/agents-status-history-2026-07.md)** —
 its permanent conclusions are distilled into "Standing decisions & iron laws" just below, so read
 *that*, not the archive, for what still binds you. Older docs predating the launch (build plans in
-`docs/archive/`, the earlier half of `docs/WORK-LOG.md`) are historical — the table above and
-`CHANGELOG.md` reflect what shipped.
+`docs/archive/`, the now-frozen work log `docs/archive/WORK-LOG-v0.7-v1.15.md`) are historical — the
+table above and `CHANGELOG.md` reflect what shipped.
 
 ## Standing decisions & iron laws (never re-litigate)
 
@@ -94,7 +94,7 @@ re-propose, re-open, or contradict them anywhere.
 ├─ docs-site/         VitePress docs (pages generated from docs/*.md, examples/*.arch); theme CSS as
 │                     .vitepress/theme/{style,home,doc-pages}.css (style.css = the brand block + .dark
 │                     mylar); examples are live/editable <ArchLive> widgets
-├─ docs/              language-reference.md · analysis.md · error-codes.md · adr/ · WORK-LOG.md
+├─ docs/              language-reference.md · analysis.md · error-codes.md · adr/ (archive/ holds the frozen WORK-LOG)
 ├─ brand/             logo kit + brand book (README.md) — archlang-logo-master.svg is byte-sacred (iron law)
 ├─ examples/          studio · two-bed · parametric · themed · relational · attached · accessible · lib/
 ├─ eval/              NL→ArchLang authorability harness: corpus.json (26 briefs) · goldens/ · run.ts ·
@@ -361,4 +361,6 @@ intent. Zero install: `npx @chanmeng666/archlang …`.
 - Keep this file up to date when you change build steps, structure, or conventions.
 - Ongoing release narrative goes in `CHANGELOG.md` only — do not re-grow per-release prose here (the
   historical narrative is archived at `docs/archive/agents-status-history-2026-07.md`).
+- Release and work history is recorded in `CHANGELOG.md` **only** — do not create or append
+  per-session work logs under `docs/` (the old top-level `WORK-LOG.md` is frozen in `docs/archive/`).
 </content>

@@ -1,16 +1,18 @@
 # ArchLang v0.7→v1.0 — Implementation Work Log (history) & current state
 
-> **⚠️ Historical document (frozen 2026-07).** Everything below records how
-> ArchLang reached 1.x — none of it is a pending plan. For current status read
-> **`AGENTS.md`** and **`CHANGELOG.md`**; the completed build plans live in
-> [`docs/archive/`](./archive/README.md).
+> **⚠️ Frozen historical document — appends stopped 2026-07-13.** This file now
+> lives in `docs/archive/` and is closed: no further entries are appended here.
+> Everything below records how ArchLang reached 1.x — none of it is a pending
+> plan. **Ongoing release history lives in `CHANGELOG.md` ONLY**; for current
+> status read **`AGENTS.md`**. The completed build plans live alongside this file
+> in [`docs/archive/`](./README.md).
 
 > **Purpose.** A record of how ArchLang reached its **1.0 launch** and the state it
 > is in now. The v0.7→v1.0 build is **complete** — there is no pending phase. A
 > fresh session should read **`AGENTS.md` first** (the canonical status + how to
 > work), then use this log for the per-phase implementation history (§3–§4d) and
 > the post-1.0 continuation notes (§5). The roadmap
-> [`docs/archive/IMPLEMENTATION-PLAN-v0.7-v1.0.md`](./archive/IMPLEMENTATION-PLAN-v0.7-v1.0.md) is
+> [`docs/archive/IMPLEMENTATION-PLAN-v0.7-v1.0.md`](./IMPLEMENTATION-PLAN-v0.7-v1.0.md) is
 > the (now-completed) plan these phases executed.
 
 _Last updated: **v1.2.0 SHIPPED (architectural soundness).** Core published `@chanmeng666/archlang@1.2.0` (`latest`); VS Code extension `ChanMeng.archlang@0.3.0` published; playground + docs site deployed. v1.2 makes architecturally wrong plans hard to ship and easy to detect: four new `arch lint` rules (bath-via-bedroom, room-not-enclosed, door-swing-obstructed, no-fixtures), drawn plumbing/kitchen fixture symbols + a `lib/fixtures.arch` library, `dims auto` dimension synthesis, and a corrected, lint-clean `examples/studio.arch`. v1.1 (prior) made ArchLang drivable by an AI agent end-to-end through its CLI (no MCP): an agent-native CLI (`--json`, exit codes, stdin, `fix`-carrying diagnostics), `arch spec`/`spec.llm.md`, `arch describe` (semantic JSON), `arch lint` (soundness), a `SKILL.md`, and an NL→ArchLang `eval/` harness. Sections 3–4b below are the accurate v0.8–v0.10 implementation history; sections 1, 2, 4c, 4d, 5, 7 reflect the launched state. For the full v1.1/v1.2 detail read `CHANGELOG.md`._
@@ -189,7 +191,7 @@ language read **`docs/language-reference.md`**; for design rationale **`docs/adr
 
 > **This continues the frozen log for one later release.** Sections 1–7 above are the
 > v0.7→v1.0 history and are not maintained release-by-release; the per-release story for
-> **v1.3 → v1.11** lives in [`CHANGELOG.md`](../CHANGELOG.md) and the `AGENTS.md` status
+> **v1.3 → v1.11** lives in [`CHANGELOG.md`](../../CHANGELOG.md) and the `AGENTS.md` status
 > block, not here. This entry is added because v1.12.0 is a deliberate *strategic* turn —
 > the north star below — worth recording alongside the design rationale in `docs/adr/`.
 > As always the core stayed pure/deterministic/zero-dep and **default SVG output is
@@ -209,7 +211,7 @@ full detail):
 **Release mechanics.** Core published `@chanmeng666/archlang@1.12.0` (`latest`); the VS Code
 extension repacked and republished as `ChanMeng.archlang@0.4.0` (it bundles the core, so the
 one language-surface change — `accTitle`/`accDescr` — required a repack); playground and docs
-site redeployed. New design docs: **[ADR 0009](adr/0009-ai-first-context-and-distribution.md)**.
+site redeployed. New design docs: **[ADR 0009](../adr/0009-ai-first-context-and-distribution.md)**.
 
 **Design north star (why this release exists).** The Mermaid lesson: a tool reaches agents by
 **distribution and ingestible context**, not AI-specific machinery. So the bets are (1) one
@@ -227,7 +229,7 @@ a possible hosted/monetize phase.
 > `src/` core had zero changes (the only in-repo source edit was the `scripts/gen-grammars.ts`
 > template + its regenerated `playground/src/arch-language.js`; the tmLanguage JSON is
 > byte-identical). Recorded here because it is a deliberate identity turn; full rationale in
-> **[ADR 0010](adr/0010-compile-boundary-design-system.md)** and `brand/README.md`.
+> **[ADR 0010](../adr/0010-compile-boundary-design-system.md)** and `brand/README.md`.
 
 **What shipped.** Both public sites (docs + playground) were rebuilt on one shared design system
 that makes "Designs that compile" literal: every surface is split by a visible **compile seam**
@@ -256,7 +258,7 @@ worlds/modes; real heading hierarchy + `role=main`; reduced-motion honored.
 **`ChanMeng.archlang@0.4.1`** (icon-only repack: `images/icon.png`, dark gallery banner;
 `.vsix` **published & live on the Marketplace 2026-07-10**, listing shows 0.4.1 with the new A-frame icon).
 `brand/README.md` gained a "The sites' design system" section. New design doc:
-**[ADR 0010](adr/0010-compile-boundary-design-system.md)**.
+**[ADR 0010](../adr/0010-compile-boundary-design-system.md)**.
 
 **Hard-won engineering lessons** (also in `AGENTS.md` gotchas + ADR 0010 consequences): a partial
 `:global(.dark) …` selector inside a Vue `<style scoped>` block miscompiles to a bare `.dark {…}`
@@ -272,8 +274,8 @@ fixed carbon terminal / dark bands) — use a fixed hex there.
 > **A core release.** `@chanmeng666/archlang@1.13.0` published (`latest`); default SVG output stays
 > byte-identical throughout (every new output behavior is opt-in, ADR 0007 discipline). Full
 > per-change detail in `CHANGELOG.md`; the design decisions in
-> **[ADR 0011](adr/0011-machine-applicable-fixes.md)** and
-> **[ADR 0012](adr/0012-mcp-shim-discoverability.md)**.
+> **[ADR 0011](../adr/0011-machine-applicable-fixes.md)** and
+> **[ADR 0012](../adr/0012-mcp-shim-discoverability.md)**.
 
 **Framing question.** v1.12 made ArchLang *discoverable and ingestible* for agents; v1.13 asked the
 next question — once an agent has the context, is the language **easy to author correctly, and easy
