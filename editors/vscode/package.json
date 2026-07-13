@@ -64,7 +64,7 @@
     "esbuild": "^0.24.2",
     "typescript": "^5.7.2",
     "vscode-languageclient": "^9.0.1",
-    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver": "^10.1.0",
     "vscode-languageserver-textdocument": "^1.0.12"
   }
 }
