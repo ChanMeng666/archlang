@@ -29,7 +29,7 @@ than memory.
 
 - **`compile()` is pure, synchronous, deterministic.** No I/O, no `Date.now()`, no `Math.random()`
   in `src/` core; output is byte-for-byte stable and snapshot/golden-tested. Node APIs and real time
-  are allowed **only** in `src/cli.ts`; everything else gets its environment via the `World` seam.
+  are allowed **only** in `src/cli.ts` + `src/cli/`; everything else gets its environment via the `World` seam.
   Route number formatting through `fmt()` so floats don't drift. The parse-stage memo's `PlanNode`
   is shared and must never be mutated downstream — clone before mutating (a `repair()` in-place edit
   made output history-dependent; fixed in `51a47ee`).
