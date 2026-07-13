@@ -160,6 +160,10 @@ npm run gen:llms     # regenerate llms-full.txt from spec + SKILL.md + manifest 
 npm run gen:gbnf     # regenerate grammars/archlang.gbnf from src/grammar/tokens.ts (CI checks drift)
 npm run gen:plan-schema  # regenerate schemas/plan.schema.json from PLAN_JSON_SCHEMA (CI checks drift)
 npm run gen:intent-schema  # regenerate schemas/intent.schema.json from INTENT_JSON_SCHEMA (CI checks drift)
+npm run gen:all      # run every gen:* generator in dependency order (gen:spec before gen:llms)
+npm run check        # typecheck + lint + test — the local pre-push gate
+npm run check:drift  # run every generator and fail if any generated artifact drifted (CI drift gate)
+npm run lint:ci      # biome ci . — the non-writing lint entry CI uses
 
 npm run playground:dev   # build core, then run the Vite playground dev server
 npm run docs:build       # build core, then build the VitePress docs site
