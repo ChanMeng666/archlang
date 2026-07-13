@@ -5,6 +5,71 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2026-07-14
+
+Downstream-driven round: ArchCanvas's archlang-1.15 adoption surfaced two upstream gaps its own
+ship gate + topology fixer had already filled locally, so those capabilities move **upstream as
+advisory data** and the generated agent docs are re-pointed to teach the v1.13 placement sugar
+where models actually imitate it — the worked examples. Core stays zero runtime dependencies; the
+default SVG output is byte-identical throughout.
+
+### Added
+
+- **`suggestTopology` gains two connectivity-fault kinds** — `Suggestion.code` widens 2 → 4 to
+  `W_ROOM_UNREACHABLE | W_BEDROOM_NO_WINDOW | W_NO_ENTRANCE | W_BATH_VIA_BEDROOM`. Both new builders
+  are ported from capabilities proven in ArchCanvas's production topology fixer and each mirrors the
+  semantics of the matching `arch lint` rule so a suggestion fires iff the lint fires:
+  - **`W_NO_ENTRANCE`** — fires when the plan has an exterior wall but no entrance
+    (`access.hasEntrance === false`). Emits `door on <wall> at <pct>% width 900` candidates on the
+    longest opening-free exterior run of an entrance-suitable room (not a bedroom, not a wet room),
+    falling back to the remaining rooms only when no suitable room touches an exterior wall; the
+    rationale names the room and that this creates the building's entrance.
+  - **`W_BATH_VIA_BEDROOM`** — reuses the two-BFS pattern from the reachability lint (reach-all vs
+    reach-excluding-bedrooms) to find a wet room reachable only through a bedroom, and suggests a
+    door onto a neighbour that itself has a bedroom-free route (non-bedroom neighbours preferred over
+    an exterior-wall fallback regardless of run length — reconnecting to circulation is the real fix).
+    One suggestion per affected wet room.
+
+  Both stay ADR 0005-compliant ([facts and lint, not an architect](docs/adr/0005-facts-and-lint-not-an-architect.md)):
+  deterministic, closed-form, data-only, fail-open (`[]` on ambiguity or a resolve error), ordered by
+  the existing free-run-length → wall-id → position tie-break, top 3 — never applied.
+- **Furniture-aware door candidates.** For **door** candidates only, the blocked-span computation now
+  also subtracts wall runs where a furniture footprint intrudes into the door's approach corridor — the
+  strip inside the target room along that wall, `APPROACH_DEPTH = 900` mm deep — so a suggested door
+  never opens straight onto a piece. Windows are exempt (furniture under a window is normal). The three
+  door builders (`W_NO_ENTRANCE`, `W_ROOM_UNREACHABLE`, `W_BATH_VIA_BEDROOM`) feed the furniture-blocked
+  runs into `longestFreeRun`; the window builder is unchanged. Fail-open — a furniture-free plan yields
+  no blocked runs, so every pinned golden (all furniture-free fixtures) stays byte-identical.
+
+### Changed
+
+- **The generated agent spec now teaches attachment-first through its worked example.**
+  `scripts/gen-llm-spec.ts`'s `SPEC_EXAMPLES` swaps the coordinate-math `studio.arch` for the
+  attachment/strip/anchor `attached.arch` as the flagship worked example (`parametric.arch` stays second
+  as the sanctioned computed-`at` idiom); neither `examples/*.arch` file changed. The `## Common
+  mistakes` table is rewritten from coordinate fixes to attachment-first guidance (off-wall opening →
+  `on <wall> at <pos>`, hosted by construction; hand-summed room offsets → `strip`; a guessed furniture
+  `at` → `in <room> anchor <9-point>`), keeping the genuinely universal rows (mm units, +y down, unique
+  ids). The fix-topology prose now names all four suggest kinds and leads with `arch suggest --json`.
+  `spec.llm.md` regenerated (~15.9 → ~14.8 KB; `llms-full.txt` regenerated in the same chain).
+- **`SKILL.md` anchor grammar corrected.** The stale `anchor <corner|edge>` placeholder becomes the real
+  nine-point token list (`top-left, top, top-right, left, center, right, bottom-left, bottom, bottom-right`),
+  and the topology section names all four suggest faults and notes the candidates are furniture-aware.
+- **CLI / MCP prose lists all four suggest kinds.** The `arch suggest` usage line (`src/cli.ts`), the
+  `cmdSuggest` doc comment (`src/cli/commands-author.ts`), and the MCP `suggest` tool description
+  (`packages/mcp/src/server.ts`) now name unreachable / no-entrance / bath-via-bedroom / windowless-bedroom
+  and note the attachment form + furniture-awareness. No wiring change — the raw `Suggestion[]` passes
+  through untouched.
+- **`suggestTopology`'s pre-existing `W_ROOM_UNREACHABLE` builder is now gated on the plan having an
+  entrance.** An entrance-less plan previously produced per-room `W_ROOM_UNREACHABLE` suggestions; it now
+  yields the single `W_NO_ENTRANCE` suggestion instead, matching the lint's own suppression behavior (the
+  reachability rule reports no-entrance, not per-room unreachability, when there is no way in). No pinned
+  golden is affected — the existing `faulty` fixture has an entrance.
+- **Note (eval baseline):** `spec.llm.md` is the eval's author prompt, and this change replaces a worked
+  example in it, so it now differs from the prompt behind the calibrated live baseline. No scoring/judge/fixture
+  code changed; re-running the paid live baseline under the new prompt stays a separate, owner-approved action
+  (default: not run).
+
 ## [Unreleased]
 
 Repo tooling only — **no core code change; the published core stays at 1.15.0** (no new tag, no
