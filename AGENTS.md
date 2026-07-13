@@ -117,8 +117,8 @@ placement), `lint.ts` (soundness rules), `analyze.ts` (shared resolve pipeline +
 behind both), `geometry.ts` (shared door-swing quarter-disc), `elements/fixtures-glyphs.ts` (fixture
 symbols), `diagnostic-json.ts` (`diagnosticToJson` line/col/`fix` projection), `backends/error-svg.ts`
 (`renderErrorSvg`), `intent.ts` + `intent-concepts.ts` (intent channel, shared with the eval via
-shims), `vocabulary.ts` (`matchVocabulary` label matcher). The CLI lives in `src/cli.ts`; a single
-root `npm install` bootstraps every workspace.
+shims), `vocabulary.ts` (`matchVocabulary` label matcher). The CLI lives in `src/cli.ts` (dispatch) +
+`src/cli/` (command modules); a single root `npm install` bootstraps every workspace.
 
 ### The sites' design system — "The Compile Boundary" (docs + playground)
 
@@ -234,9 +234,9 @@ source (.arch)
   **append-only** — add fields, never remove/rename.
 - **`compile()` is pure, synchronous, and isomorphic** — no I/O, no `Date.now()`, no
   `Math.random()`. This guarantees determinism and lets it run in the browser. Do **not**
-  introduce non-determinism or Node-only APIs into the `src/` core. The CLI (`src/cli.ts`)
-  is the one place Node APIs and real time are allowed; everything else gets its environment
-  injected through the **`World`** seam (`src/world.ts`).
+  introduce non-determinism or Node-only APIs into the `src/` core. The CLI (`src/cli.ts` +
+  `src/cli/`) is the one place Node APIs and real time are allowed; everything else gets its
+  environment injected through the **`World`** seam (`src/world.ts`).
 - **Optional power is lazily `import()`ed.** Heavy/native deps (Clipper2 geometry, pdfkit,
   resvg) are `optionalDependencies`, loaded only at point of use, so the default SVG path
   pulls nothing. See ADRs in `docs/adr/`.
@@ -248,7 +248,7 @@ source (.arch)
 - **Output formats are deliberately NOT a public registry seam** (unlike elements/themes/
   hatches/geometry-backend): formats drag optional native deps and CLI flags with them, which
   a registry can't abstract cleanly. Adding one = a row in `EXPORT_FORMATS`
-  (`src/manifest.ts`) + a serializer line in `src/cli.ts` `serialize()`.
+  (`src/manifest.ts`) + a serializer line in `src/cli/serialize.ts` `serialize()`.
 - **Coordinates are millimetres**; origin top-left, +x right, +y down (matches SVG).
 - **Rendering constants** (colours, line weights, fonts) live in the theme (`src/theme.ts`)
   and the size formulas in the backends — tune there, not inline.
