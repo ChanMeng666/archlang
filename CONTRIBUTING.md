@@ -48,6 +48,9 @@ npm run build
 
 # Run the test suite
 npm test
+
+# Pre-push gate: typecheck + lint + test in one shot
+npm run check
 ```
 
 ## Releasing
@@ -191,10 +194,11 @@ low.
 
 ### CI drift gates (regenerate before you push)
 
-Beyond the existing grammar/errors/spec/llms gates, three generators are now drift-checked in CI —
-regenerate and commit their output whenever their source changes:
-`npm run gen:llms` (`llms-full.txt`), `npm run gen:gbnf` (`grammars/archlang.gbnf`),
-`npm run gen:plan-schema` (`schemas/plan.schema.json`).
+Every generated artifact is drift-checked in CI by a single `npm run check:drift` step (grammars,
+error-code docs, `spec.llm.md`, `llms-full.txt`, `grammars/archlang.gbnf`, `schemas/plan.schema.json`,
+and now `schemas/intent.schema.json`). Whenever a generator's source changes, run `npm run gen:all` to
+regenerate every artifact in dependency order (`gen:spec` before `gen:llms`) and commit the output;
+generated files must never be hand-edited. `npm run check:drift` reproduces the CI gate locally.
 
 ## Code of Conduct
 
