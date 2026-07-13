@@ -4,10 +4,15 @@ ArchLang is built to be driven by an AI agent end-to-end — **through its CLI**
 nothing to configure. An agent can learn the whole language, author a plan, render it, and **verify
 it matches intent without ever looking at an image** — token-cheap and in any harness.
 
-> **Why a CLI and not an MCP server?** A CLI costs nothing in an agent's context until it is called;
-> an MCP server's tool schemas sit in the context window permanently. So ArchLang's agent interface
-> is the `arch` CLI plus a filesystem [Skill](https://github.com/chanmeng666/archlang/blob/main/SKILL.md)
-> — not an MCP server. (MCP remains an option for a future hosted/multi-tenant offering.)
+> **CLI first — but there is an MCP server too.** A CLI costs nothing in an agent's context until it
+> is called; an MCP server's tool schemas sit in the context window permanently. So the CLI (plus a
+> filesystem [Skill](https://github.com/chanmeng666/archlang/blob/main/SKILL.md)) stays the
+> **primary** interface, and an agent with a shell should use it. But an MCP-native host that
+> *cannot* run a shell command needs a way to reach ArchLang at all, so an optional stdio shim —
+> **[`@chanmeng666/archlang-mcp`](https://www.npmjs.com/package/@chanmeng666/archlang-mcp)**, listed
+> on the MCP registry — wraps the same pure library functions. It is a discoverability channel, not
+> a replacement; the core stays zero-dependency. See
+> [ADR 0012](/adr/0012-mcp-shim-discoverability).
 
 ## Zero-install
 
@@ -15,54 +20,53 @@ it matches intent without ever looking at an image** — token-cheap and in any 
 npx @chanmeng666/archlang help
 ```
 
+## Cold start
+
+One call gives a fresh agent everything — the language spec, the authoring workflow, the CLI
+reference and the error catalog, as a single system-prompt-ready bundle:
+
+```bash
+arch context          # == llms-full.txt
+```
+
+If you only need the language, `arch spec` prints the [one-page spec](/spec) (~2k tokens). For the
+whole CLI as data rather than prose, `arch manifest --json`.
+
 ## The loop
 
-1. **Learn the language** — run `arch spec` (or read the [one-page spec](/spec)). It is the entire
-   language in ~2k tokens: grammar, gotchas, elements, worked examples.
+1. **Learn the language** — `arch spec` (or `arch context` for spec + workflow + CLI + errors).
 2. **Write** a `.arch` file (or pipe source via stdin with `-`).
 3. **Render** — `arch compile plan.arch -o plan.svg --json`. The JSON is `{ ok, diagnostics, summary }`.
 4. **Self-correct** — if `ok` is false (exit code `2`), read each `diagnostics[].fix` (with
-   `line`/`col`), edit, and recompile.
+   `line`/`col`). Many diagnostics also carry **machine-applicable** fixes: `arch fix plan.arch
+   --dry-run --json` previews them and `arch fix --write` applies them, so the mechanical edits
+   don't cost you a turn.
 5. **Verify intent without an image** — `arch describe plan.arch --json` returns rooms (`uses`,
    areas, adjacency), what each door/window/**opening** connects, the furniture, an **access graph**
    (entrances, per-room reachability and depth), and totals. Confirm the room count, labels, and
-   areas match the brief.
-6. **Show the user the result** — `arch preview plan.arch -o plan.png` renders a viewable PNG
-   (~1600px, legible enough for your own vision *and* small enough to ingest). Zero-install where the
-   optional renderer is present; if it reports `E_PNG_DEPENDENCY`, re-run with `--install`.
-7. **Check soundness** — `arch lint plan.arch --json` flags habitability problems (a room with no
+   areas match the brief. `arch compile -f txt` will even print a zero-dependency ASCII plan if you
+   want to "look" without a raster.
+6. **Check soundness** — `arch lint plan.arch --json` flags habitability problems (a room with no
    door, a windowless bedroom, an implausibly small room, a too-narrow door, no entrance, a fixture
-   floating off the wall). Tighten the bar with `--profile accessibility-advisory`.
+   floating off the wall). Tighten the bar with `--profile accessibility-advisory`. For the faults
+   lint can't fix on its own (an unreachable room, a windowless bedroom), `arch suggest --json`
+   returns the `door`/`window` statements that would resolve them — as data, for you to choose from.
+7. **Gate on the brief** — write the brief down as an [intent contract](/intent) and
+   `arch validate plan.arch --intent brief.json --feedback --json` fails (exit `2`) when the plan
+   misses a gating expectation. `arch score --brief brief.json --json` gives the continuous
+   `satisfied/total` reading instead — it measures, it never gates.
+8. **Show the user the result** — `arch preview plan.arch -o plan.png` renders a viewable PNG
+   (~1600px, legible enough for your own vision *and* small enough to ingest). If it reports
+   `E_PNG_DEPENDENCY`, re-run with `--install`.
 
-Discover the whole API in one call with `arch manifest --json` (commands, flags, formats, lint
-profiles, fixture categories, error codes) — no prose-parsing required.
+Every command and flag is on the **[CLI reference](/cli)** — generated from the same manifest
+`arch manifest --json` serves, so it cannot fall behind the tool.
 
-See [Analysis: describe & lint](/analysis) for the full output shapes, the access graph fields, and
-the complete rule list.
-
-## Commands
+## Exit codes & JSON
 
 Every command takes `--json` (structured result on **stdout**, human messages on **stderr**) with
 deterministic exit codes: `0` ok · `2` user-source error (fix it, don't blindly retry) · `1`
-IO/internal · `3` bad usage. Every JSON diagnostic carries the catalog **`fix`**.
-
-```bash
-arch spec                              # the whole language in one page — read first
-arch manifest --json                   # the whole CLI API as data: commands, flags, formats, lint rules, error codes
-arch compile plan.arch -o out.svg --json   # render (also -f dxf|pdf|png)
-echo '<source>' | arch compile - -o - -f svg   # compile stdin → SVG on stdout
-arch preview plan.arch -o plan.png --json  # render a viewable PNG to SHOW the user (--install fetches resvg if missing)
-arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, connections, access graph
-arch lint plan.arch --json             # architectural soundness warnings (default profile)
-arch lint plan.arch --profile accessibility-advisory --json   # stricter: ≥850mm doors, ≥5m² rooms
-arch validate plan.arch --json         # parse + resolve + lint, no render
-arch fmt plan.arch --write             # canonical formatting
-arch repair plan.arch -o fixed.arch    # corrector: furniture out of walls/doorways/swings + change log
-arch batch a.arch b.arch -f svg --json # render many plans/variants at once → results[]
-arch md notes.md -o out.md -f svg      # render fenced arch blocks in a Markdown file → image links
-arch new -o plan.arch                  # scaffold a starter plan
-arch explain E_ROOM_SIZE --json        # look up any diagnostic code
-```
+IO/internal · `3` bad usage. Every JSON diagnostic carries the catalogued **`fix`**.
 
 ## Example: `describe` as a verification channel
 
@@ -91,10 +95,30 @@ A text-only agent can read this and confirm "4 rooms, 42 m², the bath reached o
 through the bedroom), every room reachable from the front door" — no rendering required. See the
 [full schema](/analysis).
 
+`describe --json` also reports **`freedom`**: for every placed element, whether its coordinates were
+hand-authored or derived by the resolver. Read it before nudging a number — it tells you which
+positions are yours to move and which fall out of the layout.
+
+## Machine-readable artifacts
+
+Served at this site's root, so a tool can fetch them directly:
+
+| Artifact | What it is |
+| --- | --- |
+| [`/llms.txt`](/llms.txt) | the project map (USE vs CONTRIBUTE) |
+| [`/llms-full.txt`](/llms-full.txt) | the full agent context — same bytes as `arch context` |
+| [`/plan.schema.json`](/plan.schema.json) | Plan JSON schema — emit it and `arch compile --from-json` |
+| [`/intent.schema.json`](/intent.schema.json) | the [intent contract](/intent) schema |
+| [`/archlang.gbnf`](/archlang.gbnf) | GBNF grammar for constrained decoding |
+
+Any docs page also serves its raw markdown at `/<route>.md` (e.g. [`/cli.md`](/cli.md)).
+
 ## Also
 
-- The same functions are exported from the library: `import { compile, describe, lint } from "@chanmeng666/archlang"`.
-- These power the live preview, **Describe**, and **Lint** tabs in the
+- The same functions are exported from the library — `compile`, `describe`, `lint`, `validate`,
+  `score`, `repair`, `applyFixes`, `suggestTopology`, `renderAscii` and more:
+  `import { compile, describe, lint } from "@chanmeng666/archlang"`.
+- These power the live preview, **Describe**, **Lint** and **Intent** tabs in the
   [playground](https://archlang-playground.vercel.app).
 - See [`SKILL.md`](https://github.com/chanmeng666/archlang/blob/main/SKILL.md) and
   [`llms.txt`](https://github.com/chanmeng666/archlang/blob/main/llms.txt) in the repo.
