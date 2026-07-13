@@ -32,13 +32,9 @@ and built so an **AI agent can verify its own plan without ever looking at an im
 
 ## 👀 See it
 
-This is the whole program on the left, and **the actual drawing it compiles to** on the right —
-not a mock-up. Walls join and hatch themselves, the door draws its own swing arc, the window
-draws its glazing, and the furniture is placed by *anchor*, never by hand-computed coordinates.
-
-<table>
-<tr>
-<td width="52%" valign="top">
+Here is a **whole program**, and below it **the actual drawing it compiles to** — not a mock-up.
+Walls join and hatch themselves, the door draws its own swing arc, the window draws its glazing,
+and the furniture is placed by *anchor*, never by hand-computed coordinates.
 
 ```arch
 plan "Attached 1BR" {
@@ -46,7 +42,7 @@ plan "Attached 1BR" {
   grid 100
   north up
 
-  strip right at (0,0) gap 0 height 4000 {
+  strip right at (0,0) gap 0 height 4000 {          # a row of rooms, laid end to end
     room id=r_living size 4000 label "Living"  uses living
     room id=r_bed    size 3000 label "Bedroom" uses bedroom
   }
@@ -58,9 +54,9 @@ plan "Attached 1BR" {
   wall id=w_part  partition thickness 100 { (4000,0) (4000,4000) }
 
   door id=d_main on w_south at 2000 width 1000 hinge near start swing into r_living
-  door id=d_bed  on w_part  at 2000 width 900  swing into r_bed
+  door id=d_bed  on w_part  at 2000 width 900  swing into r_bed   # opens INTO the bedroom
 
-  window on w_west at 50% width 1400
+  window on w_west at 50% width 1400                # centred on the wall, by construction
   window on w_east at 50% width 1200
 
   furniture sofa in r_living anchor top-left inset 300 size 2000x900  label "Sofa"
@@ -68,16 +64,16 @@ plan "Attached 1BR" {
 }
 ```
 
-</td>
-<td width="48%" valign="top">
+<div align="center">
 
-<img src="./examples/attached.svg" alt="The floor plan compiled from the source on the left" width="100%" />
+<img src="./examples/attached.svg" alt="The floor plan the program above compiles to" width="620" />
 
-</td>
-</tr>
-</table>
+**↑ `arch compile attached.arch` — that program, rendered.** Nothing above places a wall corner,
+a door leaf or a sofa by hand.
 
-> ▶ **[Open this in the playground](https://archlang-playground.vercel.app)** and edit it live — the
+</div>
+
+> ▶ **[Open it in the playground](https://archlang-playground.vercel.app)** and edit it live — the
 > compiler runs in your browser, nothing is sent to a server. Source:
 > [`examples/attached.arch`](examples/attached.arch).
 
@@ -331,17 +327,17 @@ source.
 <table>
 <tr>
 <td width="33%" align="center" valign="top">
-<a href="examples/studio.arch"><img src="./examples/studio.svg" width="100%" alt="Studio 1BR" /></a><br/>
+<a href="examples/studio.arch"><img src="./examples/studio.svg" width="270" alt="Studio 1BR" /></a><br/>
 <b><a href="examples/studio.arch">studio</a></b><br/>
 <sub>The flagship: fitted kitchen & bath,<br/>enclosed bath off a central hall.<br/><b>Lint-clean.</b></sub>
 </td>
 <td width="33%" align="center" valign="top">
-<a href="examples/two-bed.arch"><img src="./examples/two-bed.svg" width="100%" alt="Two-bedroom flat" /></a><br/>
+<a href="examples/two-bed.arch"><img src="./examples/two-bed.svg" width="270" alt="Two-bedroom flat" /></a><br/>
 <b><a href="examples/two-bed.arch">two-bed</a></b><br/>
 <sub>A larger plan: central corridor,<br/>multiple rooms and openings.</sub>
 </td>
 <td width="33%" align="center" valign="top">
-<a href="examples/attached.arch"><img src="./examples/attached.svg" width="100%" alt="Attached 1BR" /></a><br/>
+<a href="examples/attached.arch"><img src="./examples/attached.svg" width="270" alt="Attached 1BR" /></a><br/>
 <b><a href="examples/attached.arch">attached</a></b><br/>
 <sub>No hand-computed coordinates:<br/>strips, on-wall openings, anchors.</sub>
 </td>
