@@ -44,10 +44,10 @@ jobs:
     name: Publish (npm + MCP registry)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
           registry-url: 'https://registry.npmjs.org' # required for OIDC token exchange
@@ -61,7 +61,7 @@ jobs:
       # only upgrade AFTER `npm ci` above has already run its install scripts.
       - name: Pin npm to 11.x (trusted-publishing minimum)
         run: |
-          npm install -g npm@^11.5.1
+          npm install -g npm@11.18.0
           npm --version
 
       # Idempotency: resolve each package's declared version and check whether it is already
@@ -127,8 +127,15 @@ jobs:
       - name: Install mcp-publisher CLI
         if: ${{ success() && steps.check.outputs.registry_synced != 'true' }}
         working-directory: packages/mcp
+        # Pinned + checksum-verified (the runner is linux/amd64). To bump: update VERSION
+        # and SHA256 together (sha256sum of the linux_amd64 tarball).
+        env:
+          MCP_PUBLISHER_VERSION: v1.7.9
+          MCP_PUBLISHER_SHA256: ab128162b0616090b47cf245afe0a23f3ef08936fdce19074f5ba0a4469281ac
         run: |
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          curl -fsSLo mcp-publisher.tar.gz "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+          echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum -c -
+          tar xz -f mcp-publisher.tar.gz mcp-publisher
           test -x ./mcp-publisher && echo "mcp-publisher installed"
 
       - name: Authenticate to MCP Registry (GitHub OIDC)
