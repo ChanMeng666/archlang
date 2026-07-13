@@ -120,22 +120,23 @@ An agent can author a plan, correct itself, and **confirm the plan matches the b
 rendering an image at all** — which is what makes ArchLang cheap to drive from a text-only model.
 
 ```mermaid
-flowchart LR
-    B([Brief]) --> S["<b>arch context</b><br/><i>the whole language,<br/>one call</i>"]
-    S --> W["Write<br/><b>.arch</b>"]
+flowchart TD
+    B([Brief]) --> S["<b>arch context</b> — the whole language, one call"]
+    S --> W["Write <b>.arch</b>"]
     W --> C{"<b>arch compile --json</b>"}
-    C -->|"ok: false"| F["<b>arch fix</b><br/><i>diagnostics carry<br/>their own fix</i>"]
+    C -->|"ok: false"| F["<b>arch fix</b><br/><i>each diagnostic carries its own fix</i>"]
     F --> C
-    C -->|"ok: true"| D["<b>arch describe --json</b><br/><i>rooms · areas · adjacency<br/>· access graph</i>"]
-    D --> V{"<b>arch validate --intent</b><br/><i>meets the brief?</i>"}
-    V -->|no| G["<b>arch suggest</b><br/><i>candidate door / window<br/>statements</i>"]
+    C -->|"ok: true"| D["<b>arch describe --json</b><br/><i>rooms · areas · adjacency · access graph</i>"]
+    D --> V{"<b>arch validate --intent</b><br/><i>does it meet the brief?</i>"}
+    V -->|"no"| G["<b>arch suggest</b><br/><i>candidate door / window statements</i>"]
     G --> W
-    V -->|yes| O([SVG · DXF · PDF · PNG])
+    V -->|"yes"| O([SVG · DXF · PDF · PNG])
 
     style B fill:#ede7f6,stroke:#6b3ae0,color:#1a1a1a
     style O fill:#e8f5e9,stroke:#2e7d32,color:#1a1a1a
     style C fill:#fff8e1,stroke:#7a6000,color:#1a1a1a
     style V fill:#fff8e1,stroke:#7a6000,color:#1a1a1a
+    style D fill:#e8f5e9,stroke:#2e7d32,color:#1a1a1a
     style F fill:#fdecea,stroke:#b3261e,color:#1a1a1a
     style G fill:#fdecea,stroke:#b3261e,color:#1a1a1a
 ```
@@ -360,8 +361,8 @@ flowchart TD
     LEX --> PAR["<b>parser</b><br/><i>recursive descent → AST · recovers, never throws</i>"]
     PAR --> IR["<b>resolve()</b><br/><i>expand scripting · grid-snap<br/>relational placement · host openings</i>"]
 
-    IR -->|"render"| SCN["<b>toScene()</b><br/><i>wall union & offset · hatches · page sizing</i>"]
-    IR -->|"read back"| DESC["<b>describe() · lint() · validateIntent()</b><br/><i>the SAME resolved plan, as FACTS<br/>— no rendering required</i>"]
+    IR -->|"render"| SCN["<b>toScene()</b><br/><i>wall union · hatches · page</i>"]
+    IR -->|"read back"| DESC["<b>describe() · lint() · validateIntent()</b><br/><i>the SAME resolved plan, as FACTS —<br/>no rendering required</i>"]
 
     SCN --> SVG["<b>SVG</b><br/><sub>zero-dep</sub>"]
     SCN --> DXF["<b>DXF</b><br/><sub>zero-dep</sub>"]
