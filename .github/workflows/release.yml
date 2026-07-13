@@ -37,7 +37,7 @@ on:
 
 permissions:
   id-token: write # OIDC token exchange for npm trusted publishing + mcp-publisher
-  contents: read
+  contents: write # create the GitHub Release for the pushed v* tag (read is not enough)
 
 jobs:
   publish:
@@ -147,3 +147,33 @@ jobs:
         if: ${{ success() && steps.check.outputs.registry_synced != 'true' }}
         working-directory: packages/mcp
         run: ./mcp-publisher publish
+
+      # The GitHub Release. This step used to not exist: releases were created by hand, so
+      # they drifted — 23 tags shipped with NO Release at all, including the two newest, and
+      # the Releases page advertised v1.13.0 as "Latest" while npm served 1.15.0.
+      #
+      # Notes are EXTRACTED from CHANGELOG.md (the canonical release narrative — AGENTS.md
+      # keeps it there and nowhere else) rather than hand-written or derived from commit
+      # subjects, so the Release page cannot say something the changelog doesn't. The
+      # extractor exits non-zero when a version has no section, so an undocumented release
+      # fails loudly instead of shipping with an empty body.
+      #
+      # Last, and only on success: a Release is the human-visible announcement, so it must
+      # not appear for a run whose npm/registry publish failed. Idempotent — a re-run over an
+      # existing Release skips instead of failing (matching how the publish steps behave).
+      - name: Create the GitHub Release
+        if: ${{ success() && startsWith(github.ref, 'refs/tags/v') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::notice::GitHub Release $TAG already exists — skipping."
+            exit 0
+          fi
+          node scripts/changelog-section.mjs "$TAG" > release-notes.md
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file release-notes.md \
+            --verify-tag
+          echo "::notice::Created GitHub Release $TAG from its CHANGELOG.md section."
