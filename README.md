@@ -66,15 +66,23 @@ plan "Attached 1BR" {
 
 <div align="center">
 
-<img src="./examples/attached.svg" alt="The floor plan the program above compiles to" width="620" />
+<a href="https://archlang-playground.vercel.app/#z=hVXbaiNHEH2frzjIhJWIJUZeLSHBNnhDAoE8JXm3StMlTZOZrqG7xuNcDH7aDwj5gjzsh_lLQnePbibBTx7aVadOnao6usAdxPF8w8aLtNg2pKBea_FsMFitoTXjYblYvkfXUMUtO0Xod-Tx8vw3nKAmZ-aVtF2vbIoLVCLeWEfKAVvxkI6ddbsA8dj23lntPS_wg4If2Vc2cLiEyo61Zv9NcQHg5fkfrIN6261TFYKXAbJFJBnQkDWQXsHOQCX-OaQdqpEqVTWnAMJATYPNb-gkWLXiMF0bEf_nYJ2RAS_PnyEO1zHsFqS47iTcrmcHWEIMh9akqUSAykDegOCoZZOYYboOg3U7WKeynqG2bscmwo0ETokepMi6GnhuSO0DZ8IjnnW4jp-3IFfVEkX_nGh9K21nGw6oGiYHcgYdhcABa_JVjcY6XS-KriGHyd1ei-XHnyb4owB6ZzWgbQtg563BsiwLwInXGn1XFMAFfrQPsZkvsd-OpHvDW52rzL3d1RolJaRJXSLU5GMCYYUWhjutFwXyf5HDSTEtL8sZdtShRM3pdVWWZWKF3LY1N_6-ydWD_Z1zQEMbbjDJrCZAH5vNUa9SN2ziQ0p9f5L6MfcxyaljVwXwlPv97lHZW_EINTcNKK5v7yN_SjTjCAOmTFUNGnUPSl5fPv01bmJeOohTmSXMrulDOqGOvObN27AOzC696iB5p6NQaUWsuRnu8xx4zwda2-pXxyHgKio1ajj9qizTx9NZcpD-reSo5z4_f59DDBwUb9f_72SmN5L3tP-_fhQLJ5IdIZYZYrWHWJ1C5Ck69eQqjtVKtC2oEbdLamdlYpnLk9tMNx0f34U8zmQr5EyCG_0knXQCGfcyTm2BX2o-XEcyCHGvpp3NwrpoFnHIKcqaG3PfknUxfj8x0kx5sEbr2GiZScIx-ZHZ0V6wv5AzzLT5CTNLeI75dVniHGLDJqt2h9EJK3YavV8c0qLH1t6F4zijUGlZc3iqldaFFB_KL_bsV8lPToPSWpwHXZVlrv79ay-MtpL9zrpgDR-5YOr4gT1ku41HePitmUVSR08NsiVYd1BpD6fSzaODRVzW6A7ZJqJKj0mf0St-li1NziCTtgly9JcRMjsb8Bpy-aEsH6_O7WdSPBX_Ag">
+<img src="./examples/attached.svg" alt="The floor plan the program above compiles to — click to open it in the live playground" width="620" />
+</a>
 
 **↑ `arch compile attached.arch` — that program, rendered.** Nothing above places a wall corner,
 a door leaf or a sofa by hand.
 
+**▶ [Click the drawing](https://archlang-playground.vercel.app/#z=hVXbaiNHEH2frzjIhJWIJUZeLSHBNnhDAoE8JXm3StMlTZOZrqG7xuNcDH7aDwj5gjzsh_lLQnePbibBTx7aVadOnao6usAdxPF8w8aLtNg2pKBea_FsMFitoTXjYblYvkfXUMUtO0Xod-Tx8vw3nKAmZ-aVtF2vbIoLVCLeWEfKAVvxkI6ddbsA8dj23lntPS_wg4If2Vc2cLiEyo61Zv9NcQHg5fkfrIN6261TFYKXAbJFJBnQkDWQXsHOQCX-OaQdqpEqVTWnAMJATYPNb-gkWLXiMF0bEf_nYJ2RAS_PnyEO1zHsFqS47iTcrmcHWEIMh9akqUSAykDegOCoZZOYYboOg3U7WKeynqG2bscmwo0ETokepMi6GnhuSO0DZ8IjnnW4jp-3IFfVEkX_nGh9K21nGw6oGiYHcgYdhcABa_JVjcY6XS-KriGHyd1ei-XHnyb4owB6ZzWgbQtg563BsiwLwInXGn1XFMAFfrQPsZkvsd-OpHvDW52rzL3d1RolJaRJXSLU5GMCYYUWhjutFwXyf5HDSTEtL8sZdtShRM3pdVWWZWKF3LY1N_6-ydWD_Z1zQEMbbjDJrCZAH5vNUa9SN2ziQ0p9f5L6MfcxyaljVwXwlPv97lHZW_EINTcNKK5v7yN_SjTjCAOmTFUNGnUPSl5fPv01bmJeOohTmSXMrulDOqGOvObN27AOzC696iB5p6NQaUWsuRnu8xx4zwda2-pXxyHgKio1ajj9qizTx9NZcpD-reSo5z4_f59DDBwUb9f_72SmN5L3tP-_fhQLJ5IdIZYZYrWHWJ1C5Ck69eQqjtVKtC2oEbdLamdlYpnLk9tMNx0f34U8zmQr5EyCG_0knXQCGfcyTm2BX2o-XEcyCHGvpp3NwrpoFnHIKcqaG3PfknUxfj8x0kx5sEbr2GiZScIx-ZHZ0V6wv5AzzLT5CTNLeI75dVniHGLDJqt2h9EJK3YavV8c0qLH1t6F4zijUGlZc3iqldaFFB_KL_bsV8lPToPSWpwHXZVlrv79ay-MtpL9zrpgDR-5YOr4gT1ku41HePitmUVSR08NsiVYd1BpD6fSzaODRVzW6A7ZJqJKj0mf0St-li1NziCTtgly9JcRMjsb8Bpy-aEsH6_O7WdSPBX_Ag)** — it opens the
+live playground with **this exact plan already loaded**. Change a number and watch it redraw;
+the compiler runs in your browser, nothing is sent to a server.
+
 </div>
 
-> ▶ **[Open it in the playground](https://archlang-playground.vercel.app)** and edit it live — the
-> compiler runs in your browser, nothing is sent to a server. Source:
+> **Why a link and not a live embed?** ArchLang *does* ship an embeddable viewer — but
+> **GitHub's markdown sanitizer strips `<iframe>`** (it comes back as escaped text, exactly like
+> `<script>`), so no README on GitHub can host one. The embed works everywhere GitHub isn't:
+> see [Embed a plan anywhere](#embed-a-plan-anywhere). Source:
 > [`examples/attached.arch`](examples/attached.arch).
 
 ## 🌟 Introduction
@@ -406,15 +414,22 @@ The only place Node APIs are allowed is the CLI; everything else gets its enviro
 
 ### Embed a plan anywhere
 
-A live, self-contained plan in any blog or wiki — one `<iframe>`, no build step, nothing sent to a
-server (the source rides in a compressed hash):
+A **live, editable** plan in any blog, wiki or docs page — one `<iframe>`, no build step, nothing
+sent to a server (the source rides in the compressed `#z=` hash, so the page is self-contained):
 
 ```html
 <iframe src="https://archlang-playground.vercel.app/embed.html#z=…" width="720" height="480"></iframe>
 ```
 
-The playground's **Embed** button generates it. Optional params: `editable=1`, and
-`theme=blueprint|dark|mono|presentation`.
+The playground's **Embed** button generates the snippet. Optional params: `editable=1` (show a
+compact editor that re-renders as you type) and `theme=blueprint|dark|mono|presentation`.
+
+> **Not on GitHub, though.** GitHub's markdown sanitizer strips `<iframe>` — it renders as escaped
+> text, the same way `<script>` does — so a README (here or anywhere on github.com) *cannot* host a
+> live embed, no matter how it's written. The honest substitutes GitHub does allow are what this
+> README uses: a **static SVG the compiler really produced**, linked to a **playground permalink
+> that opens the same plan live**. On the [docs site](https://archlang-docs.vercel.app/examples),
+> where the sanitizer doesn't apply, every plan *is* live and editable in place.
 
 ## 📚 Documentation
 
