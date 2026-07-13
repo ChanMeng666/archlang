@@ -128,8 +128,10 @@ const archStream = StreamLanguage.define({
       return "string";
     }
 
-    // Number, optionally a literal dimension WxH.
-    if (stream.match(/^[0-9]+(?:\\.[0-9]+)?(?:x[0-9]+(?:\\.[0-9]+)?)?/)) return "number";
+    // Number, or a literal dimension WxH. Dimension first (it starts like a number),
+    // and both come from RULES so the optional metric unit suffix stays in step.
+    if (stream.match(/^${RULES.dimension}/)) return "number";
+    if (stream.match(/^${RULES.number}/)) return "number";
     if (stream.match(/^\\.[0-9]+/)) return "number";
 
     // Arrow before minus; multi-char operators before single.

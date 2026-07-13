@@ -94,7 +94,8 @@ re-propose, re-open, or contradict them anywhere.
 ├─ docs-site/         VitePress docs (pages generated from docs/*.md, examples/*.arch); theme CSS as
 │                     .vitepress/theme/{style,home,doc-pages}.css (style.css = the brand block);
 │                     examples are live/editable <ArchLive> widgets
-├─ docs/              language-reference.md · analysis.md · error-codes.md · adr/ (archive/ holds the frozen WORK-LOG)
+├─ docs/              language-reference.md · analysis.md · intent.md · error-codes.md (GEN) ·
+│                     cli-reference.md (GEN from src/manifest.ts, `gen:cli`) · adr/ (archive/ holds the frozen WORK-LOG)
 ├─ brand/             logo kit + brand book (README.md) — archlang-logo-master.svg is byte-sacred (iron law)
 ├─ examples/          studio · two-bed · parametric · themed · relational · attached · accessible · lib/
 ├─ eval/              NL→ArchLang authorability harness: corpus.json (26 briefs) · goldens/ · run.ts ·
@@ -164,6 +165,7 @@ npm run cli -- compile examples/studio.arch -o studio.svg   # run the CLI from s
 npm run bench        # compile a generated ~1000-element plan and report per-stage timings
 npm run gen:grammars # regenerate editor grammars from src/grammar/tokens.ts (CI checks drift)
 npm run gen:errors   # regenerate docs/error-codes.md from the catalog (CI checks drift)
+npm run gen:cli      # regenerate docs/cli-reference.md from src/manifest.ts (CI checks drift)
 npm run gen:spec     # regenerate spec.llm.md from tokens.ts + examples/ (CI checks drift)
 npm run gen:llms     # regenerate llms-full.txt from spec + SKILL.md + manifest + error catalog (CI checks drift)
 npm run gen:gbnf     # regenerate grammars/archlang.gbnf from src/grammar/tokens.ts (CI checks drift)

@@ -34,17 +34,30 @@ function hashParam(name: string): string | null {
 }
 
 const themeKey = hashParam("theme");
+// `onError: "svg"` makes a failing compile hand back a self-describing error CARD
+// instead of no bytes. An embed is a chrome-less <iframe> with no editor to fall back
+// on, so a plan that is broken on FIRST load would otherwise render as a blank box.
 const opts: CompileOptions =
-  themeKey && THEMES[themeKey] ? { noCache: true, theme: THEMES[themeKey] } : { noCache: true };
+  themeKey && THEMES[themeKey]
+    ? { noCache: true, onError: "svg", theme: THEMES[themeKey] }
+    : { noCache: true, onError: "svg" };
+
+/** True once a good plan has rendered — after that, a transient error keeps the last
+ *  good preview (nicer while typing in an `?editable=1` embed) rather than swapping in
+ *  the error card. */
+let hasGoodRender = false;
 
 function render(source: string, refit: boolean): void {
   const { svg, errors } = compile(source, opts);
   if (errors.length) {
     errEl.hidden = false;
     errEl.textContent = `${errors.length} error${errors.length > 1 ? "s" : ""}: ${errors[0].message}`;
-    return; // keep the last good preview
+    if (hasGoodRender) return; // keep the last good preview
+    showSvgInStage(stage, pz, svg, refit); // nothing to keep — show the error card
+    return;
   }
   errEl.hidden = true;
+  hasGoodRender = true;
   showSvgInStage(stage, pz, svg, refit);
 }
 

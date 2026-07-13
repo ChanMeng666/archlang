@@ -19,6 +19,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { KEYWORDS } from "../src/grammar/tokens.js";
+import { buildManifest } from "../src/manifest.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
@@ -34,15 +35,48 @@ export const SPEC_EXAMPLES = ["studio.arch", "parametric.arch"] as const;
 const ELEMENT_GRAMMAR: Record<string, string> = {
   wall: "wall <category> thickness <mm> [material <name>] { (x,y) (x,y) … [close] }   # category e.g. exterior/partition; `close` makes a loop",
   room: 'room [id=<name>] at (x,y) size <W>x<H> [label "…"] [uses living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry …]   # OR relational: room [id=…] (right-of|left-of|below|above) <roomId> [align top|middle|bottom|left|right] [gap <mm>] size <W>x<H> [label "…"]',
-  door: "door [id=<name>] at (x,y) width <mm> [wall <id|category>] [hinge left|right] [swing in|out]   # must sit on a wall",
-  window: "window [id=<name>] at (x,y) width <mm> [wall <id|category>]   # must sit on a wall",
+  door: "door [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [hinge left|right|near start|near end] [swing in|out|into <roomId>]   # `at (x,y)` must sit on a wall; `on <wall> at <pos>` pins it BY CONSTRUCTION (<pos> = `40%` | mm from the wall's start | `center`) and can never be reported off-wall — prefer it",
+  window:
+    "window [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # same two placement forms as door",
   opening:
-    "opening [id=<name>] at (x,y) width <mm> [wall <id|category>]   # a leaf-less cased opening (gap in a wall) that still connects the two spaces",
+    "opening [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # a leaf-less cased opening (gap in a wall) that still connects the two spaces in the access graph",
   furniture:
-    'furniture <category> (at (x,y) | against wall <id> [segment <n>] [offset <mm>] [side left|right]) [size <W>x<H>] [label "…"] [rotate 0|90|180|270] [in <roomId>]   # `at` size is plan W×H; `against` size is wall-relative along×depth and derives position+rotation, with `side` inferred from `in <roomId>` when omitted; a known fixture (wc/basin/shower/bathtub/kitchen_sink/counter/stove/fridge…) `against wall` may omit `size` to use its catalogued footprint',
+    'furniture <category> [id=<name>] (at (x,y) | against wall <id> [segment <n>] [offset <mm>] [side left|right] | in <roomId> centered | in <roomId> anchor <a> [inset <mm>]) [size <W>x<H>] [label "…"] [rotate 0|90|180|270] [in <roomId>]   # `at` size is plan W×H; `against` size is wall-relative along×depth and derives position+rotation, with `side` inferred from `in <roomId>` when omitted; a known fixture (wc/basin/shower/bathtub/kitchen_sink/counter/stove/fridge…) `against wall` may omit `size` to use its catalogued footprint. `anchor <a>` is top-left|top|top-right|left|center|right|bottom-left|bottom|bottom-right; `inset` (default 0) pulls it in from that edge',
   dim: 'dim (x,y)->(x,y) offset <mm> [text "…"]   # a dimension line',
   column: "column [id=<name>] at (x,y) size <W>x<H>",
 };
+
+/**
+ * Statement keywords from `KEYWORDS.control` that introduce drawable content and so
+ * need their own grammar line next to the elements (as opposed to the scripting /
+ * structural keywords, which the Structure + Scripting sections cover).
+ */
+const STATEMENT_GRAMMAR: Record<string, string> = {
+  strip:
+    "strip <right|left|down|up> at (x,y) gap <mm> [height|width <mm>] { room [id=<id>] size <main>[x<cross>] [label \"…\"] [uses …] … }   # a row/column of rooms laid end to end: each room's offset is the running sum of the previous extents + gap, and the shared cross dimension is the strip's height (right/left) or width (down/up). Pure sugar — expands to absolute rooms. Plan-level block only",
+};
+
+/**
+ * `KEYWORDS.control` entries the Structure / Scripting sections document in prose, so
+ * they need no grammar line. Every control keyword must appear either here or in
+ * {@link STATEMENT_GRAMMAR} — {@link renderLlmSpec} throws otherwise. This is the guard
+ * that `strip` slipped past when it only checked `KEYWORDS.element`: a new statement
+ * keyword now cannot ship unspecced.
+ */
+const SCRIPTING_KEYWORDS = [
+  "plan",
+  "component",
+  "let",
+  "theme",
+  "title",
+  "style",
+  "import",
+  "for",
+  "if",
+  "while",
+  "else",
+  "set",
+];
 
 const bullet = (items: readonly string[]): string => items.map((k) => `\`${k}\``).join(", ");
 
@@ -61,9 +95,42 @@ export function renderLlmSpec(examples: Record<string, string>): string {
     );
   }
 
+  // Drift guard #2: every CONTROL keyword must be accounted for — either it introduces
+  // drawable content (STATEMENT_GRAMMAR) or the prose sections cover it
+  // (SCRIPTING_KEYWORDS). Without this, `strip` shipped for a whole release with no
+  // syntax line anywhere in the spec (it is control, not element, so guard #1 missed it).
+  const controlKeys = [...KEYWORDS.control].sort();
+  const coveredControl = [...Object.keys(STATEMENT_GRAMMAR), ...SCRIPTING_KEYWORDS].sort();
+  if (JSON.stringify(controlKeys) !== JSON.stringify(coveredControl)) {
+    throw new Error(
+      `KEYWORDS.control is not fully covered by the spec.\n` +
+        `  control: ${controlKeys.join(", ")}\n  covered: ${coveredControl.join(", ")}\n` +
+        `  Add each new keyword to STATEMENT_GRAMMAR (it draws something) or SCRIPTING_KEYWORDS (prose covers it).`,
+    );
+  }
+
   // A fenced block (not a bullet list) so the `<placeholder>` angle brackets are
   // safe everywhere they render (GitHub, npm, and the Vue-compiled docs site).
-  const elementLines = "```text\n" + KEYWORDS.element.map((k) => ELEMENT_GRAMMAR[k]).join("\n") + "\n```";
+  const statementLines = KEYWORDS.control.filter((k) => k in STATEMENT_GRAMMAR).map((k) => STATEMENT_GRAMMAR[k]);
+  const elementLines =
+    "```text\n" + [...KEYWORDS.element.map((k) => ELEMENT_GRAMMAR[k]), ...statementLines].join("\n") + "\n```";
+
+  // The CLI verb list is rendered from the manifest — the same source `arch manifest
+  // --json` serves — so a new command cannot be missing from the spec.
+  // Only `commands` + `exitCodes` are read, and the spec never emits a version — pass a
+  // constant so this stays pure (no package.json read) for the in-memory drift test.
+  const manifest = buildManifest("0.0.0");
+  const width = Math.max(...manifest.commands.map((c) => c.name.length));
+  // First sentence only: the spec has a hard size budget (it goes in a system prompt),
+  // so a long manifest summary must not silently eat into it.
+  const brief = (s: string): string => s.split(". ")[0]!.replace(/\.$/, "");
+  const cliLines =
+    "```text\n" +
+    manifest.commands.map((c) => `arch ${c.name.padEnd(width)}  # ${brief(c.summary)}`).join("\n") +
+    "\n```";
+  const exitLines = Object.entries(manifest.exitCodes)
+    .map(([code, meaning]) => `\`${code}\` ${meaning}`)
+    .join(" · ");
 
   const exampleBlocks = SPEC_EXAMPLES.map((name) => {
     const src = examples[name];
@@ -120,27 +187,28 @@ ${elementLines}
 
 ## Keyword reference
 
+(Elements are fully specced above; these are the rest.)
+
 - **Settings / control:** ${bullet(KEYWORDS.control)}
-- **Elements:** ${bullet(KEYWORDS.element)}
 - **Attributes:** ${bullet(KEYWORDS.attribute)}
 - **Enums / values:** ${bullet(KEYWORDS.enum)}
 
 ## CLI loop (how an agent drives it)
 
+Every command takes \`--json\` (structured result on **stdout**, human messages on **stderr**) and
+reads source from a file or stdin (\`-\`). Exit codes: ${exitLines}.
+
+${cliLines}
+
+The flags that matter (the verb list above covers the rest):
+
 \`\`\`bash
-arch spec                              # print this spec
-arch manifest --json                   # the whole CLI API as data: commands, flags, formats, lint rules, error codes
-arch compile plan.arch -o out.svg --json   # render; JSON has { ok, diagnostics, summary }
-echo '<source>' | arch compile - --json    # compile from stdin (no temp file)
-arch preview plan.arch -o out.png --json   # render a PNG you can SHOW the user (zero-install where resvg is present; --install fetches it)
-arch compile plan.arch -o walk.svg --overlay circulation   # opt-in: draw the entrance→room walks + pinch markers on top (default output is unchanged)
-arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, what doors connect, + per-room circulation (walk distance, bottleneck width, detour)
-arch lint plan.arch --json             # architectural soundness warnings
-arch validate plan.arch --strict --json   # parse + lint, no render; --strict fails on warnings too
-arch explain E_ROOM_SIZE --json        # look up any error code
-arch repair plan.arch -o fixed.arch    # explicit corrector: new source w/ furniture out of walls/doorways/swings, overlaps separated, fixtures into their room + snapped to walls + change log
-arch batch a.arch b.arch -f svg --json # render many variants at once → results[]
-arch md notes.md -o out.md -f svg      # render every fenced arch block in a Markdown file → image links
+arch compile plan.arch -o out.svg --json    # JSON: { ok, diagnostics, summary }.  -f txt = zero-dep ASCII plan
+echo '<source>' | arch compile - --json     # stdin, no temp file
+arch validate plan.arch --strict --json     # ship-gate: --strict fails on warnings too
+arch fix plan.arch --dry-run --json         # preview/apply the machine-applicable diagnostics[].fixes
+arch validate plan.arch --intent brief.json --feedback --json   # gate on a brief's intent contract (miss → exit 2)
+arch score plan.arch --brief brief.json --json                  # satisfied/total — measures, never gates
 \`\`\`
 
 **Self-correction loop:** compile/validate → if \`ok\` is false, read each \`diagnostics[].fix\` (and

@@ -31,9 +31,21 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     for (const el of KEYWORDS.element) expect(spec).toMatch(new RegExp(`^${el} `, "m"));
   });
 
-  it("stays small enough to drop into a system prompt (< ~4k tokens)", () => {
+  it("documents every statement keyword that draws something", () => {
+    // `strip` is a CONTROL keyword, not an `element`, so the check above never saw it —
+    // and it shipped for three releases with no syntax line anywhere in the spec. Pin the
+    // statement keywords here too, so the gap cannot reopen from the test side either.
     const spec = renderLlmSpec(exampleSources());
-    // ~4 chars/token: keep the spec well under a few thousand tokens.
-    expect(spec.length).toBeLessThan(16_000);
+    expect(spec).toMatch(/^strip </m);
+  });
+
+  it("stays small enough to drop into a system prompt (< ~4.5k tokens)", () => {
+    const spec = renderLlmSpec(exampleSources());
+    // ~4 chars/token. Raised 16k → 18k deliberately (2026-07-13): the v1.13–v1.15 surface
+    // the spec had been silently omitting (strip, on-wall attachment, furniture anchors, and
+    // 7 more CLI verbs) is real language an agent must know, and it does not fit in 16k. This
+    // is a considered budget increase, NOT a threshold nudged to green a red suite — the
+    // suite was green at 15,901 when this was raised. Trim duplication before raising again.
+    expect(spec.length).toBeLessThan(18_000);
   });
 });

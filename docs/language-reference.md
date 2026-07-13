@@ -745,13 +745,18 @@ are pure serializers of the same `scene`:
 |--------|-----|-----|------------|
 | SVG | `compile().svg` | `arch compile p.arch` | none (default) |
 | DXF | `toDxf(scene)` | `arch compile p.arch -f dxf` | none (zero-dep) |
+| TXT | `renderAscii(scene)` | `arch compile p.arch -f txt` | none (zero-dep ASCII plan) |
 | PDF | `toPdf(scene)` | `arch compile p.arch -f pdf` | optional `pdfkit` (vector, text selectable) |
 | PNG | `renderPng(scene)` | `arch compile p.arch -f png` | optional `@resvg/resvg-js` (deterministic raster) |
 
 The optional dependencies are lazily `import()`ed, so the core never requires
-them and a default install emits SVG and DXF with nothing extra. The PNG backend
+them and a default install emits SVG, DXF and TXT with nothing extra. The PNG backend
 rasterizes the SVG with a bundled font (no system fonts), so output is
 byte-identical across machines.
+
+The **TXT** backend draws the plan as an ASCII/Unicode grid — no image, no binary, no
+dependency. It exists so a text-only agent (or a terminal) can *see* the layout at a
+glance; tune it with `--cols <n>` and `--charset unicode|ascii`.
 
 For a quick **viewable** raster, `arch preview p.arch -o p.png` renders PNG at a
 sensible on-screen width (~1600 px) instead of the high-resolution native size — and

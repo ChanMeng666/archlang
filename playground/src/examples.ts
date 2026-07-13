@@ -9,6 +9,8 @@
 import studio from "../../examples/studio.arch?raw";
 import twoBed from "../../examples/two-bed.arch?raw";
 import relational from "../../examples/relational.arch?raw";
+import attached from "../../examples/attached.arch?raw";
+import accessible from "../../examples/accessible.arch?raw";
 import themed from "../../examples/themed.arch?raw";
 import parametric from "../../examples/parametric.arch?raw";
 
@@ -25,6 +27,8 @@ export const EXAMPLES: Record<string, string> = {
   "Studio (1BR)": studio,
   "Two-bed flat": twoBed,
   "Relational (right-of / below)": relational,
+  "Attached (strip + on-wall + anchor)": attached,
+  "Accessible (accTitle / accDescr)": accessible,
   "Themed (blueprint + brick)": themed,
   "Parametric (let + for loop)": parametric,
 };

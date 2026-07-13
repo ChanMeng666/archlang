@@ -5,12 +5,18 @@
 # Pages generated from canonical repo docs by sync-docs.mjs (do not edit/commit;
 # the source of truth is docs/*.md and docs/adr/*.md).
 reference.md
+cli.md
 furniture.md
 analysis.md
+intent.md
 errors.md
 spec.md
 adr/0*.md
 adr/index.md
+
+# The ADR sidebar, generated from docs/adr/*.md by sync-docs.mjs and imported by
+# .vitepress/config.ts (so the sidebar can never freeze behind the ADR directory).
+.vitepress/theme/adr-data.js
 
 # Example-gallery SVGs + the live-widget source data are regenerated from
 # examples/*.arch by sync-docs.mjs.
@@ -25,10 +31,13 @@ public/llms-full.txt
 # by sync-docs.mjs (schema/gbnf from the repo root; the *.md are the unbannered
 # canonical page bodies served at /<route>.md). Regenerated every build.
 public/plan.schema.json
+public/intent.schema.json
 public/archlang.gbnf
 public/reference.md
+public/cli.md
 public/furniture.md
 public/analysis.md
+public/intent.md
 public/errors.md
 public/spec.md
 

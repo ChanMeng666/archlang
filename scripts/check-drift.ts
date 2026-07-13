@@ -22,6 +22,7 @@ const ROOT = resolve(HERE, "..");
 const GENERATORS: readonly { script: string; artifacts: readonly string[] }[] = [
   { script: "gen:grammars", artifacts: ["editors/archlang.tmLanguage.json", "playground/src/arch-language.js"] },
   { script: "gen:errors", artifacts: ["docs/error-codes.md"] },
+  { script: "gen:cli", artifacts: ["docs/cli-reference.md"] },
   { script: "gen:spec", artifacts: ["spec.llm.md"] },
   { script: "gen:llms", artifacts: ["llms-full.txt"] },
   { script: "gen:gbnf", artifacts: ["grammars/archlang.gbnf"] },

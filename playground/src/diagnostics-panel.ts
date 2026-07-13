@@ -8,16 +8,21 @@
  * click wiring lives in main.ts (it needs the editor's jump-to-source).
  */
 import { escapeHtml } from "./escape.js";
-import { ERROR_CATALOG, offsetToLineCol, type Diagnostic } from "archlang";
+import { ERROR_CATALOG, offsetToLineCol, rankFixes, type Diagnostic } from "archlang";
 
-export function renderDiagnostics(el: HTMLElement, diagnostics: Diagnostic[], source: string): void {
+/**
+ * Render the panel and return the rows in display order — `data-i` on each row indexes
+ * into the returned array, so the caller can resolve a click back to its diagnostic
+ * (and its `fixes`) without re-deriving the sort.
+ */
+export function renderDiagnostics(el: HTMLElement, diagnostics: Diagnostic[], source: string): Diagnostic[] {
   const rows = diagnostics
     .filter((d) => d.severity === "error" || d.severity === "warning")
     .sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "error" ? -1 : 1));
   if (rows.length === 0) {
     el.classList.remove("show");
     el.innerHTML = "";
-    return;
+    return rows;
   }
   el.classList.add("show");
   el.innerHTML = rows
@@ -29,7 +34,18 @@ export function renderDiagnostics(el: HTMLElement, diagnostics: Diagnostic[], so
       // Prefer the diagnostic's own fix, else the catalog's; shown inline (always
       // visible) so the remedy needs no click.
       const fix = (d as { fix?: string }).fix ?? cat?.fix ?? d.hints?.[0] ?? "";
-      const fixRow = fix ? `<div class="diag-fix"><b>Fix</b> ${escapeHtml(fix)}</div>` : "";
+      // A machine-applicable fix (ADR 0011) can be applied for real, not just read.
+      // `rankFixes` picks the same best candidate `arch fix` would take, so the button
+      // and the CLI agree. Multiple fixes on one diagnostic are ALTERNATIVES — offer one.
+      const best = d.fixes?.length ? rankFixes(d.fixes)[0] : undefined;
+      const applyBtn = best
+        ? `<button class="diag-apply" type="button" data-i="${i}" title="${escapeHtml(best.title)}">Apply fix</button>`
+        : "";
+      const fixRow = fix
+        ? `<div class="diag-fix"><b>Fix</b> ${escapeHtml(fix)}${applyBtn}</div>`
+        : applyBtn
+          ? `<div class="diag-fix">${applyBtn}</div>`
+          : "";
       // The disclosure carries the fuller catalog context (cause + example); the
       // fix already sits inline above, so it isn't repeated here.
       const hasDetail = cat && (cat.cause || cat.example);
@@ -50,4 +66,5 @@ export function renderDiagnostics(el: HTMLElement, diagnostics: Diagnostic[], so
       );
     })
     .join("");
+  return rows;
 }

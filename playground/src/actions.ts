@@ -3,7 +3,7 @@
  * saved snapshots, the multi-format Download, and the draggable pane divider.
  * Each is wired from an explicit context so main.ts stays composition-only.
  */
-import { compile, describe, diagnosticToJson, format, repair, toDxf, type Scene } from "archlang";
+import { compile, describe, diagnosticToJson, format, renderAscii, repair, toDxf, type Scene } from "archlang";
 import { escapeHtml } from "./escape.js";
 import { buildLlmPrompt } from "./llm-prompt.js";
 import { encodeSrc, updateHash } from "./share.js";
@@ -173,7 +173,7 @@ export function mountActions(ctx: ActionsCtx): void {
     }
   }
 
-  // ---- multi-format download (SVG vector · DXF vector · PNG/PDF raster) ----
+  // ---- multi-format download (SVG vector · DXF vector · TXT ascii · PNG/PDF raster) ----
   async function downloadCurrent(format: string) {
     const clean = getCleanSvg();
     if (!clean) return;
@@ -184,6 +184,11 @@ export function mountActions(ctx: ActionsCtx): void {
         const scene = getScene();
         if (!scene) return;
         saveBlob(new Blob([toDxf(scene)], { type: "application/dxf" }), "dxf");
+      } else if (format === "txt") {
+        // The zero-dep ASCII plan — the same bytes `arch compile -f txt` emits.
+        const scene = getScene();
+        if (!scene) return;
+        saveBlob(new Blob([renderAscii(scene)], { type: "text/plain" }), "txt");
       } else if (format === "png") {
         const canvas = await svgToCanvas(clean);
         const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));

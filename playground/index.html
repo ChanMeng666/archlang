@@ -66,8 +66,13 @@
             <option value="svg">SVG</option>
             <option value="png">PNG</option>
             <option value="dxf">DXF</option>
+            <option value="txt">TXT</option>
             <option value="pdf">PDF</option>
           </select>
+          <label class="tb-check" title="Emit SVG <title>/<desc>/role accessibility metadata (accTitle/accDescr, else the describe() caption)">
+            <input type="checkbox" id="accessible" />
+            a11y
+          </label>
           <button id="download" class="tb-primary">Download</button>
         </div>
       </div>
@@ -112,6 +117,7 @@
             <button class="tab active" id="tab-preview" data-tab="preview" type="button" role="tab" aria-selected="true" aria-controls="preview">Preview</button>
             <button class="tab" id="tab-describe" data-tab="describe" type="button" role="tab" aria-selected="false" aria-controls="describe">Describe</button>
             <button class="tab" id="tab-lint" data-tab="lint" type="button" role="tab" aria-selected="false" aria-controls="lint">Lint</button>
+            <button class="tab" id="tab-intent" data-tab="intent" type="button" role="tab" aria-selected="false" aria-controls="intent">Intent</button>
           </span>
         </h2>
         <div id="preview" class="tabview active" role="tabpanel" aria-labelledby="tab-preview">
@@ -137,10 +143,24 @@
             <label for="lintProfile">Profile</label>
             <select id="lintProfile" aria-label="Lint profile"></select>
             <button id="repair" class="repair-btn" hidden title="Deterministically fix furniture placement (ADR 0006)">Repair furniture ▸</button>
+            <button id="suggest" class="repair-btn" hidden title="Suggest door/window statements that resolve reachability and window faults">Suggest topology ▸</button>
             <p id="lintCaption" class="lint-caption"></p>
           </div>
           <div id="repairPanel" class="repair-panel" hidden></div>
+          <div id="suggestPanel" class="repair-panel" hidden></div>
           <div id="lintOutput"></div>
+        </div>
+        <div id="intent" class="tabview" role="tabpanel" aria-labelledby="tab-intent">
+          <div class="lint-controls">
+            <label for="intentSrc">Brief (intent JSON)</label>
+            <button id="intentRun" class="repair-btn">Check ▸</button>
+            <p class="lint-caption">
+              Write the brief down as data, then gate the plan on it — the same contract
+              <code>arch validate --intent</code> and <code>arch score --brief</code> use.
+            </p>
+          </div>
+          <textarea id="intentSrc" class="intent-src" spellcheck="false" aria-label="Intent JSON"></textarea>
+          <div id="intentOutput"></div>
         </div>
       </section>
     </main>

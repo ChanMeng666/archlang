@@ -51,16 +51,21 @@ npm install @chanmeng666/archlang
 # Compile to any format:
 arch compile plan.arch -o plan.svg              # SVG (default, zero-dep)
 arch compile plan.arch -f dxf -o plan.dxf       # DXF (zero-dep)
+arch compile plan.arch -f txt                   # ASCII plan on stdout (zero-dep)
 arch compile plan.arch -f pdf -o plan.pdf       # PDF (needs optional pdfkit)
 arch compile plan.arch -f png -o plan.png       # PNG (needs optional @resvg/resvg-js)
 
-arch preview plan.arch -o plan.png               # a viewable PNG (~1600px; --install fetches resvg if missing)
-arch batch a.arch b.arch -o out/                 # render many files/variants at once
-arch md notes.md -o out.md                       # render fenced arch blocks in Markdown → image links
+# Inspect and correct it:
+arch describe plan.arch --json                   # rooms, areas, adjacency, access graph — as data
+arch lint plan.arch --json                       # architectural soundness warnings
+arch validate plan.arch --strict                 # the ship-gate: valid AND sound
+arch fix plan.arch --dry-run                     # preview the machine-applicable diagnostic fixes
 arch fmt plan.arch --write                       # format in place
-arch manifest --json                             # the whole CLI API as structured data (for agents)
-arch explain E_LAYOUT_CYCLE                       # explain a diagnostic
 ```
+
+That is a slice — the CLI has 20 commands. The full, always-current list (every flag, format and
+exit code) is the **[CLI reference](/cli)**, generated from the same manifest that
+`arch manifest --json` serves.
 
 Or call it as a library:
 
