@@ -117,11 +117,14 @@ room, a walk that squeezes too narrow — `W_PATH_TOO_NARROW` — or wanders the
 the doorway approach and the door's swing clear.
 
 **Fix topology from facts, not guesses.** `arch repair` corrects furniture but never adds a door or
-window (that is a design choice). When lint reports an unreachable room / no entrance / windowless
-bedroom, read `describe --json` — `access.rooms[].reachable`, room `bbox`/`adjacent`, building
-extent = min/max of room boxes — and add a `door`/`opening`/`window` on the right wall yourself
-(an exterior entrance into a cut-off living space beats routing through a bedroom), then re-`repair`
-and `validate --strict`. See SKILL.md for the exact arithmetic.
+window (that is a design choice). When lint reports `W_ROOM_UNREACHABLE`, `W_NO_ENTRANCE`,
+`W_BEDROOM_NO_WINDOW`, or `W_BATH_VIA_BEDROOM`, run `arch suggest --json` — it returns
+ready-to-paste `door`/`window` statements in the attachment form (furniture-aware: a door candidate
+never opens onto a wardrobe) with a rationale; pick one and insert it. If nothing fits, read
+`describe --json` (`access.rooms[].reachable`, room `bbox`/`adjacent`, building extent =
+min/max of room boxes) and attach the opening yourself — an exterior entrance into a cut-off living
+space beats routing a bath through a bedroom — then re-`repair` and `validate --strict`. See
+SKILL.md for the full recipe.
 
 ## Common mistakes
 
@@ -129,84 +132,56 @@ and `validate --strict`. See SKILL.md for the exact arithmetic.
 | --- | --- |
 | Using metres (`size 4x3`) | Use millimetres (`size 4000x3000`). |
 | Expecting +y to go up | +y goes **down**; a room below another has a larger y. |
-| Door/window floating in space | Put its `at` on a wall segment's centerline. |
+| Door/window floating off its wall | Attach it: `door on <wall> at <pos>` — hosted by construction, it can never be off-wall. |
+| Hand-summing room offsets | Lay the row with `strip` — each room's `at` is computed for you. |
+| Furniture floated at a guessed (or copy-pasted) `at` | Place it `in <room> anchor <9-point> [inset]` or `against wall <id>` — closed-form, never floats or penetrates. |
 | `size 4000` (no height) | Sizes are `WxH`: `size 4000x3000` (or `W x H` with spaces). |
 | Reusing an `id` | Ids are unique; omit `id=` to auto-generate. |
 | String math without interpolation | Use `"{expr}"`, e.g. `label "{aream2(W,H)} m²"`. |
 
 ## Worked examples
 
-### `examples/studio.arch`
+### `examples/attached.arch`
 
 ```arch
-# A compact studio apartment — the canonical ArchLang example.
-#
-# Architecturally sound (passes `arch lint`): every room opens off a central hall,
-# so the bath is never reached through the bedroom; the bath is fully enclosed and
-# fitted with real fixtures; and no door leaf sweeps onto furniture. Self-contained
-# (no imports) so it compiles from a single file.
-plan "Studio 1BR" {
+# A one-bedroom flat authored with the v1.13 placement sugar — no hand-computed
+# coordinates for openings or furniture. It exercises, together:
+#   • `strip` — a row of rooms laid out end to end
+#   • openings attached to a wall by position (`door|window … on <wall> at <pos>`)
+#   • a door that opens toward a named room (`swing into`) hinged at a wall end
+#   • furniture placed relative to a room (`in <room> anchor …`)
+# Compiles clean and passes `arch lint`.
+plan "Attached 1BR" {
   units mm
-  grid 50
-  scale 1:50
+  grid 100
   north up
 
-  # Exterior shell + partitions. The x=4000 divider runs the FULL height so the bath
-  # is walled off from the living space; the right column splits into bedroom / hall / bath.
-  wall exterior  thickness 200 { (0,0) (7000,0) (7000,6000) (0,6000) close }
-  wall partition thickness 100 { (4000,0) (4000,6000) }
-  wall partition thickness 100 { (4000,3000) (7000,3000) }
-  wall partition thickness 100 { (4000,4400) (7000,4400) }
-
-  room id=r_living at (0,0)       size 4000x6000 label "Living / Kitchen" uses living kitchen
-  room id=r_bed    at (4000,0)    size 3000x3000 label "Bedroom"           uses bedroom
-  room id=r_hall   at (4000,3000) size 3000x1400 label "Hall"             uses hall
-  room id=r_bath   at (4000,4400) size 3000x1600 label "Bath"             uses bath
-
-  # Entrance into the living space; the hall links it to the bedroom and the bath.
-  # Living ↔ hall is a cased opening (circulation needs no door leaf); the bedroom
-  # and bath each get a real door off the hall.
-  door    id=d_main   at (3000,6000) width 1000 wall exterior  hinge left  swing in
-  opening id=o_living at (4000,3700) width 900  wall partition
-  door    id=d_bed    at (6400,3000) width 800  wall partition hinge right swing out
-  door    id=d_bath   at (4600,4400) width 800  wall partition hinge left  swing out
-
-  window at (0,2000)    width 1500 wall exterior
-  window at (7000,1500) width 1200 wall exterior
-  window at (7000,5200) width 700  wall exterior
-
-  # Kitchen run along the north wall: sink · counter · stove · fridge (drawn as symbols).
-  furniture kitchen_sink at (300,250)  size 800x600
-  furniture counter      at (1200,250) size 600x600
-  furniture stove        at (1950,250) size 600x600
-  furniture fridge       at (2700,250) size 600x650
-
-  # Living + bedroom furniture, kept clear of the door swings.
-  furniture sofa at (350,4300) size 2000x900  label "Sofa"
-  furniture bed  at (4300,300) size 1500x2000 label "Bed"
-
-  # Bathroom fixtures, kept clear of the door's entry path (the door swings out into
-  # the hall): shower in the far corner, basin against the partition, WC on the south
-  # wall — the left third of the room stays open so you can actually step inside.
-  furniture shower at (6000,5000) size 900x900   # against the E + S walls (corner)
-  furniture basin  at (5200,4450) size 600x450   # back to the hall partition
-  furniture wc     at (5200,5200) size 400x700   # back to the south wall
-
-  # Dimension strings: room widths above, overall extents around. The reference
-  # (witness) points sit on the building's OUTER faces (x=-100/7100, y=-100/6100 for
-  # the 200mm shell) so the extension lines start at the wall face and read outward,
-  # never poking back into the building — while the spans still measure centerline to
-  # centerline (4000 · 3000 · 7000 · 6000).
-  dim (4000,-100)->(0,-100)    offset 250 text "4000"
-  dim (7000,-100)->(4000,-100) offset 250 text "3000"
-  dim (0,6100)->(7000,6100)    offset 500 text "7000"
-  dim (7100,6000)->(7100,0)    offset 500 text "6000"
-
-  title {
-    project "Studio Apartment"
-    drawn_by "ArchCanvas"
-    date "2026-06-27"
+  # Living + bedroom laid left-to-right by a strip, sharing a 4 m depth.
+  strip right at (0,0) gap 0 height 4000 {
+    room id=r_living size 4000 label "Living"  uses living
+    room id=r_bed    size 3000 label "Bedroom" uses bedroom
   }
+
+  # Exterior shell as four straight walls (each a clean start→end to attach onto)
+  # plus the partition between the two rooms.
+  wall id=w_north exterior  thickness 200 { (0,0) (7000,0) }
+  wall id=w_south exterior  thickness 200 { (0,4000) (7000,4000) }
+  wall id=w_west  exterior  thickness 200 { (0,0) (0,4000) }
+  wall id=w_east  exterior  thickness 200 { (7000,0) (7000,4000) }
+  wall id=w_part  partition thickness 100 { (4000,0) (4000,4000) }
+
+  # Entrance 2000 mm along the south wall, hinged at that wall's start end and
+  # opening into the living room. The bedroom door on the partition opens inward.
+  door id=d_main on w_south at 2000 width 1000 hinge near start swing into r_living
+  door id=d_bed  on w_part  at 2000 width 900  swing into r_bed
+
+  # A window centred on each room's exterior wall.
+  window on w_west at 50% width 1400
+  window on w_east at 50% width 1200
+
+  # Furniture placed by anchor inside each room (never off a coordinate).
+  furniture sofa in r_living anchor top-left inset 300 size 2000x900  label "Sofa"
+  furniture bed  in r_bed    anchor right    inset 300 size 1500x2000 label "Bed"
 }
 ```
 

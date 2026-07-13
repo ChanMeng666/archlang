@@ -24,8 +24,8 @@ import { buildManifest } from "../src/manifest.js";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
 
-/** The example files embedded verbatim, in order. */
-export const SPEC_EXAMPLES = ["studio.arch", "parametric.arch"] as const;
+/** The example files embedded verbatim, in order (attachment-first flagship leads). */
+export const SPEC_EXAMPLES = ["attached.arch", "parametric.arch"] as const;
 
 /**
  * One-line grammar for each built-in element, keyed by element keyword. Keys MUST
@@ -226,11 +226,14 @@ room, a walk that squeezes too narrow — \`W_PATH_TOO_NARROW\` — or wanders t
 the doorway approach and the door's swing clear.
 
 **Fix topology from facts, not guesses.** \`arch repair\` corrects furniture but never adds a door or
-window (that is a design choice). When lint reports an unreachable room / no entrance / windowless
-bedroom, read \`describe --json\` — \`access.rooms[].reachable\`, room \`bbox\`/\`adjacent\`, building
-extent = min/max of room boxes — and add a \`door\`/\`opening\`/\`window\` on the right wall yourself
-(an exterior entrance into a cut-off living space beats routing through a bedroom), then re-\`repair\`
-and \`validate --strict\`. See SKILL.md for the exact arithmetic.
+window (that is a design choice). When lint reports \`W_ROOM_UNREACHABLE\`, \`W_NO_ENTRANCE\`,
+\`W_BEDROOM_NO_WINDOW\`, or \`W_BATH_VIA_BEDROOM\`, run \`arch suggest --json\` — it returns
+ready-to-paste \`door\`/\`window\` statements in the attachment form (furniture-aware: a door candidate
+never opens onto a wardrobe) with a rationale; pick one and insert it. If nothing fits, read
+\`describe --json\` (\`access.rooms[].reachable\`, room \`bbox\`/\`adjacent\`, building extent =
+min/max of room boxes) and attach the opening yourself — an exterior entrance into a cut-off living
+space beats routing a bath through a bedroom — then re-\`repair\` and \`validate --strict\`. See
+SKILL.md for the full recipe.
 
 ## Common mistakes
 
@@ -238,7 +241,9 @@ and \`validate --strict\`. See SKILL.md for the exact arithmetic.
 | --- | --- |
 | Using metres (\`size 4x3\`) | Use millimetres (\`size 4000x3000\`). |
 | Expecting +y to go up | +y goes **down**; a room below another has a larger y. |
-| Door/window floating in space | Put its \`at\` on a wall segment's centerline. |
+| Door/window floating off its wall | Attach it: \`door on <wall> at <pos>\` — hosted by construction, it can never be off-wall. |
+| Hand-summing room offsets | Lay the row with \`strip\` — each room's \`at\` is computed for you. |
+| Furniture floated at a guessed (or copy-pasted) \`at\` | Place it \`in <room> anchor <9-point> [inset]\` or \`against wall <id>\` — closed-form, never floats or penetrates. |
 | \`size 4000\` (no height) | Sizes are \`WxH\`: \`size 4000x3000\` (or \`W x H\` with spaces). |
 | Reusing an \`id\` | Ids are unique; omit \`id=\` to auto-generate. |
 | String math without interpolation | Use \`"{expr}"\`, e.g. \`label "{aream2(W,H)} m²"\`. |

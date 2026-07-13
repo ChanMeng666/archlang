@@ -72,9 +72,10 @@ physically wrong (openings off their wall, furniture through walls). Author by *
   `E_ATTACH_WALL_REF`; past the wall → `E_ATTACH_POS_RANGE`.)
 - **Lay rooms with `strip`.** `strip right at (0,0) gap 0 height 4000 { room … room … }` places a row
   (or column, with `down`/`up` + `width`) of rooms end to end — no per-room `at`.
-- **Place furniture by anchor.** `furniture <kind> in <room> anchor <corner|edge> [inset <mm>] …`
-  snaps a piece flush to a room corner/edge; `against wall <id>` backs plumbing/kitchen fixtures onto a
-  real wall face. Both are closed-form and never float or penetrate.
+- **Place furniture by anchor.** `furniture <kind> in <room> anchor <9-point anchor> [inset <mm>] …`
+  snaps a piece flush to a room corner or edge — the anchor is one of `top-left`, `top`, `top-right`,
+  `left`, `center`, `right`, `bottom-left`, `bottom`, `bottom-right`; `against wall <id>` backs
+  plumbing/kitchen fixtures onto a real wall face. Both are closed-form and never float or penetrate.
 - **Every room still needs a way in** — put a `door` or cased `opening` on a wall of *every* room
   (an open-plan space still needs a modeled opening), and keep furniture out of the doorway approach
   (≥300 mm) and the leaf's swing.
@@ -109,8 +110,11 @@ not make. When lint reports `W_ROOM_UNREACHABLE`, `W_ROOM_DISCONNECTED`, `W_NO_E
 `W_BATH_VIA_BEDROOM`, or `W_BEDROOM_NO_WINDOW`, ask ArchLang for candidates:
 
 - **`arch suggest plan.arch --json`** returns ready-to-paste `door`/`window` statements (in the
-  **attachment form**) plus a rationale for each — for the unreachable room or windowless bedroom.
-  Choose one and insert it, then re-run the loop. This replaces hand-computing coordinates.
+  **attachment form**, and furniture-aware — a door candidate never opens onto a wardrobe) plus a
+  rationale for each — for a room with no path back (`W_ROOM_UNREACHABLE`), a building with no way in
+  (`W_NO_ENTRANCE`), a bath reachable only through a bedroom (`W_BATH_VIA_BEDROOM`), or a windowless
+  bedroom (`W_BEDROOM_NO_WINDOW`). Choose one and insert it, then re-run the loop. This replaces
+  hand-computing coordinates.
 - **Manual fallback** (if `suggest` offers nothing that fits): from `describe().access`, connect each
   unreachable room in priority — (1) a new **exterior entrance** `door on <exterior wall> at <pos>`
   into a living/kitchen/hall with an exterior edge (avoids routing through a bedroom); else (2) a
@@ -141,7 +145,7 @@ arch compile plan.arch -f txt          # zero-dependency ASCII text plan on stdo
 arch compile plan.json --from-json -o out.svg   # compile structured Plan JSON (see /plan.schema.json)
 echo '<source>' | arch compile - -o - -f svg    # compile stdin → SVG on stdout
 arch fix plan.arch --dry-run --json    # preview the machine-applicable diagnostic fixes (drop --dry-run to apply)
-arch suggest plan.arch --json          # advisory door/window statements for unreachable rooms / windowless bedrooms
+arch suggest plan.arch --json          # advisory door/window statements: unreachable room / no entrance / bath-via-bedroom / windowless bedroom
 arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, door connections, circulation
 arch lint plan.arch --json             # architectural soundness warnings
 arch validate plan.arch --strict --json           # parse + resolve + lint; --strict fails on warnings (the ship gate)

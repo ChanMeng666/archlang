@@ -49,7 +49,7 @@ Usage:
   arch fmt      <in.arch|-> [--write] [--json]
   arch repair   <in.arch|-> [-o out|-] [--json]   emit corrected source (furniture out of walls) + change log
   arch fix      <in.arch|-> [-o out|-] [--unsafe] [--dry-run] [--force] [--json]   apply machine-applicable diagnostic fixes
-  arch suggest  <in.arch|-> [--json]      advisory topology suggestions (door/window statements to paste)
+  arch suggest  <in.arch|-> [--json]      advisory door/window statements to paste (unreachable / no-entrance / bath-via-bedroom / windowless-bedroom)
   arch manifest [--json]                  the whole CLI API as structured data (for agents)
   arch spec     [--json]                  print the one-prompt language spec
   arch context  [--json]                  print the full bundled agent context (spec + workflow + CLI + errors)

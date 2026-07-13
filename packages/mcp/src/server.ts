@@ -328,7 +328,7 @@ export function createServer(): McpServer {
     {
       title: "Suggest topology fixes (advisory)",
       description:
-        "Advisory topology suggestions as DATA — never applied (ADR 0005). For a room with no path to the entrance or a bedroom with no window, returns ready-to-paste `door`/`window` statements (attachment form) plus a rationale, for the agent to choose among and insert.",
+        "Advisory topology suggestions as DATA — never applied (ADR 0005). For a room with no path back, a building with no entrance, a bath reachable only through a bedroom, or a windowless bedroom, returns ready-to-paste `door`/`window` statements (attachment form, furniture-aware) plus a rationale, for the agent to choose among and insert.",
       inputSchema: { source: z.string().describe("ArchLang source.") },
     },
     async ({ source }) => json({ ok: true, suggestions: suggestTopology(source) }),
