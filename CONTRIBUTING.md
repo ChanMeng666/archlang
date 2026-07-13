@@ -110,9 +110,12 @@ did not move); the `.vsix` still needs a manual web upload.
 
 > **Editor syntax colors are generated, not hand-authored.** The live-editor highlight palette
 > flows through `scripts/gen-grammars.ts` → `playground/src/arch-language.js` as
-> `var(--syn-<name>, <fallback>)`, with the on-carbon values in `playground/src/styles/editor.css`.
-> To recolor: edit the generator template or the `--syn-*` values and run `npm run gen:grammars`;
-> never hand-edit `arch-language.js` (CI fails on drift).
+> `var(--syn-<name>, <fallback>)`. Since [ADR 0014](docs/adr/0014-one-light-world.md) the `--syn-*`
+> values are **shared**: they live in the brand token block (duplicated byte-identically in
+> `playground/src/styles/tokens.css` and `docs-site/.vitepress/theme/style.css`) and are also mirrored
+> by the `archlangLight` Shiki theme in `docs-site/.vitepress/config.ts`. To recolor, change all four
+> — the two token blocks, the generator's fallback hexes, and the Shiki theme — then run
+> `npm run gen:grammars`; never hand-edit `arch-language.js` (CI fails on drift).
 
 ### MCP server — `@chanmeng666/archlang-mcp` (npm + MCP registry, via the same workflow)
 

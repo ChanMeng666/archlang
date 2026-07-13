@@ -23,8 +23,8 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — now incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`, and v1.14's `validate --intent`/`--feedback` + `score --brief`) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`schemas/intent.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
 | **MCP server** | `@chanmeng666/archlang-mcp@0.2.0` (published, `latest`; registry entry `io.github.ChanMeng666/archlang-mcp` v0.2.0 live on registry.modelcontextprotocol.io; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate (incl. `intent`)/**score**/repair/fix/suggest/complete + spec/context/schema/**intent-schema**/grammar resources; SDK dep quarantined here, core stays zero-dep) | `packages/mcp/`, `server.json` |
 | **VS Code extension** | `ChanMeng.archlang@0.7.0` (published, live 2026-07-12 — rebundles core 1.15.0: unit-suffix grammar, `W_ALIAS_MATCH` quick fix, `rankFixes` ordering) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
-| **Playground** | deployed, redesigned (**"The Compile Boundary"** two-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
-| **Docs site** | deployed, redesigned (**"The Compile Boundary"** two-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
+| **Playground** | deployed, redesigned (**"The Compile Boundary"** one-light-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
+| **Docs site** | deployed, redesigned (**"The Compile Boundary"** one-light-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
 | **Git** | `main`, tags `v1.0.0` → `v1.15.0` (latest; a `v*` tag push triggers the tokenless OIDC release workflow) | github.com/ChanMeng666/archlang |
 | **Dataset** | HF `ChanMeng666/archlang-repair-trajectories` (**published, live 2026-07-13** — repair 1200 + authoring 400 rows) — two splits, fully synthetic, self-verifying, CC0-1.0, deterministic from seed `20260712`; generator `dataset/` (`npm run dataset:gen`), permanent CI leakage guard `test/dataset.test.ts` | `dataset/`, huggingface.co/datasets/ChanMeng666/archlang-repair-trajectories |
 | **Tests** | 1032 passing (101 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, the L2 protocol tests, the judge byte-equivalence fixture, the intent-channel suites, the vocabulary-equivalence classification pin, and the dataset contamination/determinism guard) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
@@ -92,8 +92,8 @@ re-propose, re-open, or contradict them anywhere.
 │                     src/styles/{tokens,chrome,editor,panels,embed}.css (tokens.css = the brand block);
 │                     also ships embed.html — a chrome-less <iframe> viewer read from the #z= hash
 ├─ docs-site/         VitePress docs (pages generated from docs/*.md, examples/*.arch); theme CSS as
-│                     .vitepress/theme/{style,home,doc-pages}.css (style.css = the brand block + .dark
-│                     mylar); examples are live/editable <ArchLive> widgets
+│                     .vitepress/theme/{style,home,doc-pages}.css (style.css = the brand block);
+│                     examples are live/editable <ArchLive> widgets
 ├─ docs/              language-reference.md · analysis.md · error-codes.md · adr/ (archive/ holds the frozen WORK-LOG)
 ├─ brand/             logo kit + brand book (README.md) — archlang-logo-master.svg is byte-sacred (iron law)
 ├─ examples/          studio · two-bed · parametric · themed · relational · attached · accessible · lib/
@@ -123,12 +123,21 @@ shims), `vocabulary.ts` (`matchVocabulary` label matcher). The CLI lives in `src
 ### The sites' design system — "The Compile Boundary" (docs + playground)
 
 Both public sites share one front-end system — **site chrome only**, no core/language change. Full
-rationale in **[ADR 0010](docs/adr/0010-compile-boundary-design-system.md)** and `brand/README.md`.
+rationale in **[ADR 0014](docs/adr/0014-one-light-world.md)** (which supersedes ADR 0010 §1/§2/§6/§7 —
+read 0010's carbon/mylar prose as history) and `brand/README.md`.
 
-- **Two worlds split by a compile seam.** A dark **SOURCE world** (carbon, plum surviving *only* as
-  the syntax accent + logo fills) vs. a light **SHEET world** (drafting paper, blue-black ink, title
-  blocks). One shared attention accent, **REDLINE**, for CTAs and errors only. Docs dark mode is a
-  "mylar film" variant; the playground is fixed with **no light/dark toggle**.
+- **ONE LIGHT WORLD. There is no dark mode and no dark surface on either site.** Two worlds still split
+  by a compile seam, but both are LIGHT and differ by **temperature + texture**, never by darkness: a
+  cool **SOURCE world** (`--src-bg` #eceef2 / `--src-surface` #fbfbfc — code, mono type, syntax colour;
+  plum survives *only* as the syntax accent + logo fills) vs. a warm **SHEET world** (drafting paper,
+  blue-black ink, grid, title blocks). The seam is a solid plum rule (a glow reads as dirt on light).
+  One shared attention accent, **REDLINE**, for CTAs and errors only. Body-size plum is `--plum-deep`;
+  bare `--plum` (4.1:1) is graphics/≥24px only. A control's only border must be `--src-rule` (3.2:1),
+  never the decorative `--src-border` (1.3:1).
+- **One syntax palette, three renderers.** The eight `--syn-*` tokens live in the shared block and feed
+  the playground's CodeMirror (via `scripts/gen-grammars.ts`'s fallbacks), the docs hero's typing pane,
+  and the docs fences (via the custom `archlangLight` Shiki theme in `docs-site/.vitepress/config.ts`).
+  Change a syntax colour in ALL FOUR places, then `npm run gen:grammars`.
 - **Fonts** (self-hosted `@fontsource`, zero CDN): **Archivo Variable** (display) + **Public Sans
   Variable** (body) + **IBM Plex Mono** (code).
 - **Token-lockstep law.** The brand token block is **duplicated byte-identically** in
@@ -331,16 +340,19 @@ source (.arch)
   build with "Element is missing end tag" (took the docs deploy down for four pushes on 2026-07-12).
   Write `\|` inside table cells, and treat **`npm run docs:build` as verification for any `docs/*.md`
   edit** — the core test suite doesn't compile the site.
-- **(Sites) A partial `:global(.dark) …` selector inside a Vue `<style scoped>` block miscompiles**
-  — `:global(.dark) .foo` inside scoped styles collapses to a bare `.dark { … }` rule (it once
-  inverted the whole site). Put dark-mode overrides of a component's scoped internals in a
-  **separate unscoped `<style>` block**.
+- **(Sites) There is no dark mode — if you are writing a `.dark` rule, you are on the wrong plan.**
+  (History, in case you are tempted: a partial `:global(.dark) …` selector inside a Vue `<style scoped>`
+  block miscompiles to a bare `.dark { … }` rule and once inverted the whole site.) The docs site sets
+  `appearance: false`, and `color-scheme: only light` in the shared `:root` is what keeps Chromium's
+  Auto Dark Mode off — do not "restore" a `light dark` declaration.
 - **(Sites) VitePress `.vp-doc a:hover` (specificity 0,2,1) outranks a two-class rule (0,2,0) on
   hover.** Any `.vp-doc <class> a` control whose color must survive hover has to re-assert `color` in
   its own `:hover` rule. Verify interactive states (hover/focus/active), not just static render.
-- **(Sites) A token that flips per mode is unsafe on ground that does not flip.** `--redline` (and any
-  mode-flipping var) must not be used on the fixed carbon terminal or the always-dark bands — use a
-  fixed hex + a comment (e.g. the solid CTA is fixed `#b3261e` + white).
+- **(Sites) Nothing flips per mode any more, so a fixed hex in the site CSS is a FOSSIL** — convert it
+  to a token. (The old rule was "a mode-flipping token is unsafe on ground that doesn't flip", which is
+  why the CTAs and the terminal once carried literal `#b3261e` / `#f0705f`. ADR 0014 retired all of
+  them.) The one legitimate literal left is the CodeMirror lint squiggle's data-URI hex — a `var()`
+  cannot cross into an SVG — so keep it in step with `--redline` / `--warn-ink` by hand.
 
 ## Reading Order
 

@@ -34,46 +34,52 @@ export function createEditor({ parent, doc, onDocChanged }: EditorOpts): EditorV
         archLanguage(),
         archCompletion(),
         archLinter(),
-        // Source-world dark theme (carbon ground, plum selection/brackets). Values
-        // are CSS var() references into tokens.css; the two lint-underline squiggles
-        // must inline their colour into a data URI (var() can't cross into an SVG),
-        // so they carry the literal --redline (#c2362b) / --warn-ink (#8a6d00) hexes.
+        // Source-world LIGHT theme (cool ground, plum selection/brackets — ADR 0014).
+        // Values are CSS var() references into tokens.css; the two lint-underline
+        // squiggles must inline their colour into a data URI (var() can't cross into
+        // an SVG), so they carry the literal --redline (#c2362b) / --warn-ink (#7a6000)
+        // hexes — keep them in step with the tokens.
         EditorView.theme(
           {
             "&": {
               height: "100%",
               fontSize: "13px",
-              backgroundColor: "var(--carbon)",
+              backgroundColor: "var(--src-surface)",
               color: "var(--src-fg)",
             },
             ".cm-scroller": { fontFamily: "var(--font-mono)", lineHeight: "1.55" },
             ".cm-content": { padding: "10px 0", caretColor: "var(--src-fg)" },
             ".cm-gutters": {
-              backgroundColor: "var(--carbon-2)",
+              backgroundColor: "var(--src-bg)",
               color: "var(--src-muted)",
               border: "none",
               borderRight: "1px solid var(--src-border)",
             },
-            ".cm-activeLine": { backgroundColor: "var(--carbon-2)" },
-            ".cm-activeLineGutter": { backgroundColor: "var(--carbon-2)", color: "var(--src-fg)" },
+            ".cm-activeLine": { backgroundColor: "color-mix(in srgb, var(--plum) 6%, transparent)" },
+            ".cm-activeLineGutter": {
+              backgroundColor: "color-mix(in srgb, var(--plum) 10%, transparent)",
+              color: "var(--src-fg)",
+            },
             ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--src-fg)" },
             "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": {
               backgroundColor: "rgba(128, 82, 255, 0.28)",
             },
             ".cm-selectionMatch": { backgroundColor: "rgba(128, 82, 255, 0.16)" },
             "&.cm-focused .cm-matchingBracket": {
-              outline: "1px solid var(--plum-bright)",
+              outline: "1px solid var(--plum-deep)",
               backgroundColor: "transparent",
             },
-            // autocomplete + lint tooltips on carbon-2 with a hairline; selected item plum-tinted
+            // autocomplete + lint tooltips: a raised card on the source ground. On a
+            // light ground a floating panel needs elevation, not just a border.
             ".cm-tooltip": {
-              backgroundColor: "var(--carbon-2)",
-              border: "1px solid var(--src-border)",
+              backgroundColor: "var(--src-surface)",
+              border: "1px solid var(--src-rule)",
               color: "var(--src-fg)",
+              boxShadow: "0 8px 24px rgb(28 36 48 / 18%)",
             },
             ".cm-tooltip.cm-tooltip-autocomplete > ul > li": { color: "var(--src-fg)" },
             ".cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected]": {
-              backgroundColor: "rgba(128, 82, 255, 0.28)",
+              backgroundColor: "rgba(128, 82, 255, 0.20)",
               color: "var(--src-fg)",
             },
             ".cm-completionDetail": { color: "var(--src-muted)" },
@@ -86,20 +92,21 @@ export function createEditor({ parent, doc, onDocChanged }: EditorOpts): EditorV
             },
             ".cm-lintRange-warning": {
               backgroundImage:
-                'url(\'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="3"><path d="m0 3 l2 -2 l1 0 l2 2 l1 0" stroke="%238a6d00" fill="none" stroke-width=".7"/></svg>\')',
+                'url(\'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="3"><path d="m0 3 l2 -2 l1 0 l2 2 l1 0" stroke="%237a6000" fill="none" stroke-width=".7"/></svg>\')',
             },
             // search / go-to panels
-            ".cm-panels": { backgroundColor: "var(--carbon-2)", color: "var(--src-fg)" },
+            ".cm-panels": { backgroundColor: "var(--src-bg)", color: "var(--src-fg)" },
             ".cm-panels.cm-panels-top": { borderBottom: "1px solid var(--src-border)" },
             ".cm-panels.cm-panels-bottom": { borderTop: "1px solid var(--src-border)" },
             ".cm-panel input, .cm-panel button": {
-              backgroundColor: "var(--carbon)",
+              backgroundColor: "var(--src-surface)",
               color: "var(--src-fg)",
-              border: "1px solid var(--src-border)",
+              border: "1px solid var(--src-rule)",
               borderRadius: "3px",
             },
           },
-          { dark: true },
+          // Light: this is what keeps CodeMirror's own scrollbars/native chrome light.
+          { dark: false },
         ),
         EditorView.updateListener.of((u) => {
           if (u.docChanged) onDocChanged(u.state.doc.toString());

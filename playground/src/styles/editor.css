@@ -1,34 +1,21 @@
 /**
- * Playground editor pane = the SOURCE world (carbon ground, plum syntax glow —
- * plum lives only here). The CodeMirror mount is themed in editor-setup.ts; this
- * file owns the pane frame, the carbon sheet-tab header, and the syntax-color
- * variables the generated HighlightStyle reads. Owned by W3.
+ * Playground editor pane = the SOURCE world (a cool light ground; the plum family
+ * lives only here). The CodeMirror mount is themed in editor-setup.ts; this file
+ * owns the pane frame and the sheet-tab header. The syntax palette (--syn-*) is
+ * SHARED — it lives in tokens.css so the docs hero and the docs Shiki theme can
+ * carry the same eight colours (ADR 0014).
  */
 
-/* ── syntax palette — read by the generated CodeMirror HighlightStyle ────────
-   (scripts/gen-grammars.ts emits `var(--syn-*, <hex>)`). All checked ≥4.5:1 on
-   the carbon ground (#0f1115); see the W3 report for the contrast figures. */
-:root {
-  --syn-keyword: #86adff;
-  --syn-typename: #eaa86a;
-  --syn-propertyname: #9fce86;
-  --syn-atom: #b79bff;
-  --syn-number: #6fc7d6;
-  --syn-string: #e6c07b;
-  --syn-comment: #8b93a0;
-  --syn-operator: #a6adb8;
-}
-
-/* left pane header — a carbon sheet-tab, not the paper panel header */
+/* left pane header — a source-world sheet-tab, not the paper panel header */
 .pane h2.src-tab {
-  background: var(--carbon);
+  background: var(--src-bg);
   color: var(--src-muted);
-  border-bottom: 1px solid var(--src-border);
+  border-bottom: 1px solid var(--hairline);
 }
 
 #editor {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  background: var(--carbon);
+  background: var(--src-surface);
 }

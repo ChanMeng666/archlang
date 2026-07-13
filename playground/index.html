@@ -8,12 +8,14 @@
       name="description"
       content="Live playground for ArchLang — a small language that compiles to professional SVG floor plans. CodeMirror 6 editor with syntax highlighting and inline lint."
     />
-    <!-- ArchLang brand: A-frame-floor-plan favicon (SVG), apple-touch icon, dark theme
-         colour, and the OG/Twitter social card. Assets in public/brand/ (see brand/README.md). -->
+    <!-- ArchLang brand: A-frame-floor-plan favicon (SVG), apple-touch icon, the source-world
+         theme colour, and the OG/Twitter social card. Assets in public/brand/ (see brand/README.md). -->
     <link rel="icon" type="image/svg+xml" href="/brand/archlang-icon-plum.svg" />
     <link rel="apple-touch-icon" href="/brand/archlang-apple-touch.png" />
-    <meta name="theme-color" content="#0f1115" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#eceef2" />
+    <!-- Light-only (ADR 0014). The real Chromium Auto-Dark opt-out is the CSS
+         `color-scheme: only light` in styles/tokens.css; this states the same intent. -->
+    <meta name="color-scheme" content="light" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="ArchLang Playground — code to floor plans" />
     <meta
@@ -25,11 +27,12 @@
     <meta name="twitter:image" content="https://archlang-playground.vercel.app/brand/archlang-og.png" />
   </head>
   <body>
-    <!-- Header = source-world chrome (carbon): one row of title-block cells,
+    <!-- Header = source-world chrome (cool grey): one row of title-block cells,
          hairline-separated groups each with a caps micro-label above its controls. -->
     <header>
       <div class="tb-cell tb-brand">
-        <img class="brand-mark" src="/brand/archlang-icon.svg" alt="" width="20" height="20" />
+        <!-- The plum mark, not the white one: the header is a light surface. -->
+        <img class="brand-mark" src="/brand/archlang-icon-plum.svg" alt="" width="20" height="20" />
         <span class="wordmark"><b>Arch</b>Lang</span>
         <span class="badge">Playground</span>
       </div>
@@ -44,6 +47,9 @@
       <div class="tb-cell">
         <span class="tb-label">View</span>
         <div class="tb-controls">
+          <!-- The COMPILER's render themes — these style the produced SVG plan, not the
+               app chrome. "Dark" is a language feature (src/theme.ts), not a dark mode
+               for this page: the app itself is light-only (ADR 0014). Leave it be. -->
           <select id="theme" aria-label="Render theme">
             <option value="">Default</option>
             <option value="blueprint">Blueprint</option>

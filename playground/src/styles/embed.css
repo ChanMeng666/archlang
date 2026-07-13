@@ -18,12 +18,12 @@ body.embed {
 .embed-app:has(.embed-editor:not([hidden])) {
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
 }
-/* editor pane stays a light paper editor, but a slim carbon top rule whispers
-   the source world into it */
+/* editor pane stays a light paper editor, with a slim plum top rule — the compile
+   seam — whispering the source world into it */
 .embed-editor {
   min-width: 0;
   border-right: 1px solid var(--hairline);
-  border-top: 3px solid var(--carbon);
+  border-top: 3px solid var(--plum);
   background: var(--paper-panel);
 }
 .embed-editor[hidden] {

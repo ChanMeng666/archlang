@@ -12,6 +12,36 @@ const archGrammar = JSON.parse(
   readFileSync(fileURLToPath(new URL("../../editors/archlang.tmLanguage.json", import.meta.url)), "utf8"),
 );
 
+// The one light source-world syntax palette (ADR 0014). Same eight hexes as the
+// `--syn-*` tokens in theme/style.css and the fallbacks in scripts/gen-grammars.ts
+// — all ≥4.5:1 on the code-fence grounds (--src-bg #eceef2 / --src-surface #fbfbfc).
+// A SINGLE theme (not a {light,dark} pair) makes Shiki emit plain `color:#hex`
+// with no --shiki-* vars to swap. Neither stock light theme was usable: github-light's
+// comment (#6e7781) is 4.40:1 on our grounds, and github-light-high-contrast's keyword
+// is red — which would collide with "redline means attention only".
+const archlangLight = {
+  name: "archlang-light",
+  type: "light" as const,
+  colors: { "editor.background": "#eceef2", "editor.foreground": "#1a1d23" },
+  tokenColors: [
+    { scope: ["comment", "punctuation.definition.comment"], settings: { foreground: "#5a616e", fontStyle: "italic" } },
+    { scope: ["string", "constant.other.symbol"], settings: { foreground: "#8a5a00" } },
+    { scope: ["constant.numeric", "constant.language.boolean"], settings: { foreground: "#0f6f7a" } },
+    { scope: ["constant.language", "constant.character", "variable.language"], settings: { foreground: "#0b57d0" } },
+    { scope: ["keyword", "storage.modifier"], settings: { foreground: "#6b3ae0", fontStyle: "bold" } },
+    {
+      scope: ["storage.type", "entity.name.type", "entity.name.class", "support.type", "support.class"],
+      settings: { foreground: "#9a4a06", fontStyle: "bold" },
+    },
+    {
+      scope: ["entity.name.function", "support.function", "entity.name.tag", "variable.other.property"],
+      settings: { foreground: "#14602a" },
+    },
+    { scope: ["keyword.operator", "punctuation"], settings: { foreground: "#464d59" } },
+    { scope: ["variable", "entity.name", "meta.definition.variable"], settings: { foreground: "#1a1d23" } },
+  ],
+};
+
 // ArchLang docs site (T6.1). Static, isomorphic — no backend. Pages re-use the
 // canonical docs maintained in the repo root (language reference, error catalog)
 // so the site never drifts from the source of truth.
@@ -19,17 +49,22 @@ export default defineConfig({
   title: "ArchLang",
   description:
     "A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.",
+  // The site is LIGHT-ONLY (ADR 0014): no appearance toggle, no .dark class, no
+  // dark surface anywhere. VitePress's toggle + its localStorage/prefers-color-scheme
+  // script are switched off here, so `.dark` never lands on <html>.
+  appearance: false,
   // Brand: the ArchLang A-frame-floor-plan favicon (SVG, scales), an apple-touch
-  // icon, the dark theme-colour, and an OG/Twitter social card (the 1200×630 wordmark
+  // icon, the paper theme-colour, and an OG/Twitter social card (the 1200×630 wordmark
   // banner). All assets live in public/brand/ — see brand/README.md for the geometry law.
   head: [
     ["link", { rel: "icon", type: "image/svg+xml", href: "/brand/archlang-icon-plum.svg" }],
     ["link", { rel: "alternate icon", href: "/brand/archlang-favicon-32.png", sizes: "32x32" }],
     ["link", { rel: "apple-touch-icon", href: "/brand/archlang-apple-touch.png" }],
-    ["meta", { name: "theme-color", content: "#0f1115" }],
-    // Signal native dual-scheme support so Chromium's Auto Dark Mode leaves the page
-    // alone; VitePress's own color-scheme per .dark still governs actual rendering.
-    ["meta", { name: "color-scheme", content: "light dark" }],
+    ["meta", { name: "theme-color", content: "#f5f2ea" }],
+    // Declare the page light-only. The real opt-out from Chromium's Auto Dark Mode is
+    // the CSS `color-scheme: only light` in theme/style.css's :root; this meta just
+    // states the same intent for UAs that read it first.
+    ["meta", { name: "color-scheme", content: "light" }],
     ["meta", { property: "og:type", content: "website" }],
     ["meta", { property: "og:title", content: "ArchLang — code to floor plans" }],
     [
@@ -72,6 +107,7 @@ export default defineConfig({
   // `archlang` alias is accepted too.
   markdown: {
     languages: [{ ...archGrammar, name: "arch", aliases: ["archlang"] }],
+    theme: archlangLight,
     // Auto-live `arch` fences (T3.1). Like mermaid's docs, every plain ```arch
     // fenced block in a page becomes a live, editable <ArchLive> widget rather
     // than a static highlighted block — with the original Shiki-highlighted

@@ -110,10 +110,10 @@ async function openInPlayground() {
 </template>
 
 <style scoped>
-/* ArchLive — the compile boundary as a widget: a SOURCE-world editor (carbon,
+/* ArchLive — the compile boundary as a widget: a SOURCE-world editor (cool grey,
    plum caret) meeting a SHEET-world preview (drafting-grid paper) across a 2px
-   carbon-to-paper seam. Tokens come from the shared brand layer (style.css);
-   the sheet⇄mylar flip in `.dark` carries through via those vars. */
+   plum seam. Both worlds are light (ADR 0014). Tokens come from the shared brand
+   layer (style.css). */
 
 /* The SSR/no-JS fallback wrapper carries the same vertical rhythm as the live
    widget so the swap-on-mount doesn't shift surrounding content. */
@@ -126,16 +126,16 @@ async function openInPlayground() {
   border-radius: 3px;
   overflow: hidden;
   margin: 18px 0;
-  background: var(--carbon);
+  background: var(--src-bg);
 }
 
-/* ── SOURCE world: carbon editor pane ──────────────────────────────────── */
+/* ── SOURCE world: the cool-grey editor pane ───────────────────────────── */
 .archlive-editor {
   position: relative;
   min-width: 0;
-  /* the 2px seam: carbon meets paper */
-  border-right: 2px solid var(--paper);
-  background: var(--carbon);
+  /* the 2px seam: the compiler, drawn as a plum rule */
+  border-right: 2px solid var(--plum);
+  background: var(--src-surface);
 }
 .archlive-tab {
   position: absolute;
@@ -149,8 +149,8 @@ async function openInPlayground() {
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--plum-bright);
-  background: var(--carbon-2);
+  color: var(--plum-deep);
+  background: var(--src-bg);
   border-right: 1px solid var(--src-border);
   border-bottom: 1px solid var(--src-border);
   border-radius: 0 0 3px 0;
@@ -168,10 +168,10 @@ async function openInPlayground() {
   line-height: 1.6;
   color: var(--src-fg);
   background: transparent;
-  caret-color: var(--plum-bright);
+  caret-color: var(--plum-deep);
   outline: none;
 }
-.archlive-editor textarea::selection { background: color-mix(in srgb, var(--plum) 40%, transparent); }
+.archlive-editor textarea::selection { background: color-mix(in srgb, var(--plum) 22%, transparent); }
 .archlive-editor textarea:focus-visible { box-shadow: inset 0 0 0 1px var(--plum); }
 
 /* ── SHEET world: paper preview pane on a fine drafting grid ────────────── */
@@ -247,7 +247,7 @@ async function openInPlayground() {
 @media (max-width: 720px) {
   /* seam goes horizontal when stacked */
   .archlive { grid-template-columns: 1fr; }
-  .archlive-editor { border-right: 0; border-bottom: 2px solid var(--paper); }
+  .archlive-editor { border-right: 0; border-bottom: 2px solid var(--plum); }
 }
 @media (prefers-reduced-motion: reduce) {
   .archlive-open { transition: none; }

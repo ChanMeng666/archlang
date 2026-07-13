@@ -2,7 +2,7 @@
 // The site footer IS a drawing's title block: a hairline-ruled grid of labelled
 // cells (PROJECT / DRAWN BY / LICENSE / ISSUED / SHEET) plus an ECOSYSTEM cell of
 // family links. Rendered via the layout-bottom slot. Lives in the SHEET world, so
-// it reads on paper (light) and mylar (.dark) automatically through the tokens.
+// it reads on paper through the shared tokens.
 const ECOSYSTEM = [
   { href: "https://archlang-playground.vercel.app", label: "Playground ↗" },
   { href: "https://archcanvas.chanmeng.org", label: "ArchCanvas ↗" },
@@ -175,15 +175,5 @@ const ECOSYSTEM = [
 }
 .cell__links a:hover {
   color: var(--redline-ink);
-}
-</style>
-
-<style>
-/* Unscoped on purpose: partial `:global(.dark) descendant` selectors are
-   miscompiled by the SFC compiler into a bare `.dark` rule (which inverted
-   the whole site). The credit mark is the one raster that needs inverting
-   on mylar. */
-.dark .cell__credit img {
-  filter: invert(1);
 }
 </style>

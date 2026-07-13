@@ -20,10 +20,13 @@ than memory.
 - **Brand:** the logo is an "A" drawn as an A-frame house floor plan.
   `brand/archlang-logo-master.svg` is the byte-sacred source — every variant is a **fill-swap only**
   (never re-trace/simplify/re-fit path data, no small-size tier). The two public sites run the shared
-  **"The Compile Boundary"** design system (source-world dark / sheet-world paper, split by a compile
-  seam); its token block is **duplicated byte-identically** in `docs-site/.vitepress/theme/style.css`
-  and `playground/src/styles/tokens.css` (change one, change the other). See
-  [ADR 0010](docs/adr/0010-compile-boundary-design-system.md) and `brand/README.md` first.
+  **"The Compile Boundary"** design system — a cool source surface and a warm sheet surface split by a
+  compile seam, **both LIGHT: there is no dark mode and no dark surface on either site**. Its token
+  block is **duplicated byte-identically** in `docs-site/.vitepress/theme/style.css` and
+  `playground/src/styles/tokens.css` (change one, change the other). See
+  [ADR 0014](docs/adr/0014-one-light-world.md) — which supersedes
+  [ADR 0010](docs/adr/0010-compile-boundary-design-system.md) §1/§2/§6/§7, so read 0010's carbon/mylar
+  prose as history — and `brand/README.md` first.
 
 ## Non-negotiable invariants (break these and CI fails)
 

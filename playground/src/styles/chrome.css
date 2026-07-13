@@ -1,9 +1,9 @@
 /**
- * Playground chrome — the shell around the app: reset, page frame, the carbon
+ * Playground chrome — the shell around the app: reset, page frame, the cool-grey
  * source-world header (a title-block toolbar), the two-pane grid, pane headers,
  * output tabs, the compile-seam divider, and the mobile stacking. Tokens live in
- * tokens.css. This is source-world chrome (carbon); the sheet-world panels are
- * styled in panels.css (W4). Owned by W3.
+ * tokens.css. This is source-world chrome; the sheet-world panels are styled in
+ * panels.css. Both worlds are LIGHT (ADR 0014) — no dark surface anywhere.
  */
 
 * {
@@ -28,9 +28,9 @@ body {
 header {
   display: flex;
   align-items: stretch;
-  background: var(--carbon);
+  background: var(--src-bg);
   color: var(--src-fg);
-  border-bottom: 1px solid var(--src-border);
+  border-bottom: 1px solid var(--hairline);
 }
 
 /* a title-block cell: micro-label stacked over its controls, hairline-divided */
@@ -82,7 +82,7 @@ header {
   color: var(--src-fg);
 }
 .tb-brand .wordmark b {
-  color: var(--plum-bright);
+  color: var(--plum-deep);
   font-weight: 700;
 }
 .tb-brand .badge {
@@ -106,9 +106,10 @@ header {
   font-size: 12.5px;
   line-height: 1.2;
   padding: 5px 10px;
-  border: 1px solid var(--src-border);
+  /* a control's only edge must clear 3:1 — --src-rule, not the decorative --src-border */
+  border: 1px solid var(--src-rule);
   border-radius: 3px;
-  background: oklch(1 0 0 / 5%);
+  background: var(--src-surface);
   color: var(--src-fg);
   cursor: pointer;
   /* one text line each — no button ever wraps or stacks its label */
@@ -117,9 +118,7 @@ header {
     background 0.15s,
     border-color 0.15s;
 }
-/* dark-styled selects so the native dropdown text stays readable */
 .tb-controls select {
-  color-scheme: dark;
   padding-right: 8px;
 }
 /* Keep the closed examples select compact so a long option label (e.g.
@@ -131,35 +130,36 @@ header {
 }
 .tb-controls select option {
   color: var(--src-fg);
-  background: var(--carbon-2);
+  background: var(--src-surface);
 }
 .tb-controls select:hover,
 .tb-controls button:hover {
-  border-color: color-mix(in srgb, var(--plum) 60%, transparent);
-  background: oklch(1 0 0 / 10%);
+  border-color: var(--plum);
+  background: color-mix(in srgb, var(--plum) 8%, var(--src-surface));
 }
 .tb-controls select:focus-visible,
 .tb-controls button:focus-visible {
-  outline: 2px solid var(--plum-bright);
+  outline: 2px solid var(--plum-deep);
   outline-offset: 1px;
 }
 .tb-controls button:active {
   transform: translateY(1px);
 }
 
-/* Download — the one loud control: solid redline fill, both worlds' accent */
+/* Download — the one loud control: solid redline fill, both worlds' accent.
+   White on --redline-ink = 6.5:1; the hover lightens to --redline, still 5.4:1. */
 .tb-controls button.tb-primary {
-  background: var(--redline);
+  background: var(--redline-ink);
   border-color: transparent;
   color: #fff;
   font-weight: 600;
 }
 .tb-controls button.tb-primary:hover {
-  background: color-mix(in srgb, var(--redline) 88%, #fff);
+  background: var(--redline);
   border-color: transparent;
 }
 .tb-controls button.tb-primary:focus-visible {
-  outline-color: #fff;
+  outline-color: var(--src-fg);
 }
 
 .spacer {
@@ -188,7 +188,7 @@ header {
   color: var(--src-fg);
 }
 .tb-nav a:focus-visible {
-  outline: 2px solid var(--plum-bright);
+  outline: 2px solid var(--plum-deep);
   outline-offset: 2px;
   border-radius: 2px;
 }
@@ -214,7 +214,7 @@ header {
   display: none;
 }
 .tb-nav-more > summary:focus-visible {
-  outline: 2px solid var(--plum-bright);
+  outline: 2px solid var(--plum-deep);
   outline-offset: 1px;
 }
 .tb-nav-panel {
@@ -227,10 +227,10 @@ header {
   gap: 2px;
   padding: 6px;
   min-width: 150px;
-  background: var(--carbon-2);
-  border: 1px solid var(--src-border);
+  background: var(--src-surface);
+  border: 1px solid var(--src-rule);
   border-radius: 3px;
-  box-shadow: 0 8px 24px oklch(0 0 0 / 45%);
+  box-shadow: 0 8px 24px rgb(28 36 48 / 18%);
 }
 .tb-nav-panel a {
   font-family: var(--font-display);
@@ -246,10 +246,10 @@ header {
 }
 .tb-nav-panel a:hover {
   color: var(--src-fg);
-  background: oklch(1 0 0 / 6%);
+  background: color-mix(in srgb, var(--plum) 8%, transparent);
 }
 .tb-nav-panel a:focus-visible {
-  outline: 2px solid var(--plum-bright);
+  outline: 2px solid var(--plum-deep);
   outline-offset: -1px;
 }
 
@@ -358,8 +358,10 @@ main {
   width: 2px;
   background:
     repeating-linear-gradient(to bottom, var(--redline) 0, var(--redline) 5px, transparent 5px, transparent 24px),
-    linear-gradient(to bottom, var(--src-border), var(--hairline));
-  box-shadow: -1px 0 7px -1px color-mix(in srgb, var(--plum) 45%, transparent);
+    linear-gradient(to bottom, var(--src-rule), var(--hairline));
+  /* The seam is a hard plum edge, not a glow: on a light ground a soft plum
+     bloom reads as dirt rather than as light. */
+  box-shadow: -1px 0 0 0 var(--plum);
   transition:
     width 0.15s,
     box-shadow 0.15s;
@@ -368,13 +370,13 @@ main {
 .divider.dragging::after {
   width: 3px;
   left: 3.5px;
-  box-shadow: -1px 0 10px 0 color-mix(in srgb, var(--plum) 65%, transparent);
+  box-shadow: -2px 0 0 0 var(--plum);
 }
 .divider:focus-visible {
   outline: none;
 }
 .divider:focus-visible::after {
-  outline: 2px solid var(--plum-bright);
+  outline: 2px solid var(--plum-deep);
   outline-offset: 2px;
 }
 

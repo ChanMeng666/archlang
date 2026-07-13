@@ -4,16 +4,36 @@
      and playground/src/styles/tokens.css (the two build systems cannot share
      a CSS import; this duplicated block is the source of truth). ────────── */
 
-  /* SOURCE WORLD (dark) */
-  --carbon: #0f1115; /* source-world ground (= brand tile / theme-color) */
-  --carbon-2: #171b23; /* raised source surface */
-  --src-fg: #f2f3f5; /* source text — 17.0:1 on carbon */
-  --src-muted: #98a0ac; /* source secondary — 7.2:1 on carbon */
-  --src-border: oklch(1 0 0 / 12%);
-  --plum: #8052ff; /* syntax/glow accent — graphics & ≥24px text only (4.1:1) */
-  --plum-bright: #9a7bff; /* plum as body text on carbon — 6.0:1 AA */
+  /* ONE LIGHT WORLD (ADR 0014). Two surfaces, BOTH light: SOURCE is cool
+     neutral grey, SHEET is warm drafting paper. They differ by temperature +
+     texture, never by darkness. No dark mode, no dark surfaces. */
+  color-scheme: only light; /* opts the page out of Chromium's forced Auto Dark */
 
-  /* SHEET WORLD (light drafting film) */
+  /* SOURCE WORLD (cool light — code lives here) */
+  --src-bg: #eceef2; /* world ground: panes, header, gutters, bands */
+  --src-surface: #fbfbfc; /* the code PAGE: fences, editor content, tooltips */
+  --src-fg: #1a1d23; /* source text — 14.5:1 on --src-bg, 16.3:1 on --src-surface */
+  --src-muted: #5a616e; /* source secondary — 5.4:1 / 6.0:1 */
+  --src-border: oklch(0 0 0 / 12%); /* DECORATIVE hairline only (1.3:1) — never a control edge */
+  --src-rule: #7f858f; /* control edges, seams — 3.2:1 on --src-bg (AA non-text) */
+  --plum: #8052ff; /* brand plum — GRAPHICS & ≥24px text ONLY (4.1:1 on --src-bg) */
+  --plum-deep: #6b3ae0; /* plum as body text — 5.5:1 on --src-bg, 5.7:1 on --paper */
+
+  /* SYNTAX — ONE palette for all three code surfaces (playground CodeMirror,
+     docs Shiki fences, the docs hero's typing pane). All ≥4.5:1 on BOTH
+     --src-bg and --src-surface. The same hexes are duplicated as literal
+     fallbacks in scripts/gen-grammars.ts and as the Shiki theme in
+     docs-site/.vitepress/config.ts — keep all four in sync. */
+  --syn-keyword: #6b3ae0; /* = --plum-deep · 5.5:1 / 6.1:1 · bold */
+  --syn-typename: #9a4a06; /* 5.4:1 / 6.1:1 · bold */
+  --syn-propertyname: #14602a; /* 6.6:1 / 7.4:1 */
+  --syn-atom: #0b57d0; /* 5.5:1 / 6.2:1 */
+  --syn-number: #0f6f7a; /* 5.1:1 / 5.7:1 */
+  --syn-string: #8a5a00; /* 5.1:1 / 5.7:1 */
+  --syn-comment: #5a616e; /* = --src-muted · 5.4:1 / 6.0:1 · italic */
+  --syn-operator: #464d59; /* 7.3:1 / 8.2:1 */
+
+  /* SHEET WORLD (warm drafting film) */
   --paper: #f5f2ea; /* warm drafting-film ground */
   --paper-panel: #fbfaf5; /* raised sheet / card ground */
   --ink: #1c2430; /* blue-black drawing ink — 14.0:1 on paper */
@@ -21,13 +41,13 @@
   --hairline: #cfc9bb; /* sheet borders, dimension lines */
   --grid-line: rgb(28 36 48 / 7%); /* fine drafting grid */
 
-  /* REDLINE — the single accent, both worlds (architect's markup red) */
-  --redline: #c2362b; /* strokes, markers, fills — 4.9:1 on paper */
-  --redline-ink: #b3261e; /* redline as TEXT on paper — 5.8:1 AA */
+  /* REDLINE — the single accent, ATTENTION ONLY (CTAs + errors) */
+  --redline: #c2362b; /* strokes, markers, fills — white-on-it 5.4:1 */
+  --redline-ink: #b3261e; /* redline as TEXT — 5.8:1 on paper, 5.6:1 on --src-bg */
 
   /* STATUS */
   --ok: #2e7d32;
-  --warn-ink: #8a6d00;
+  --warn-ink: #7a6000; /* advisory amber as TEXT — 5.4:1 on paper */
 
   /* TYPE ROLES */
   --font-display: "Archivo Variable", Archivo, "Arial Narrow", sans-serif;
@@ -46,11 +66,6 @@
   --accent: var(--redline-ink);
   --border: var(--hairline);
   --err: var(--redline-ink);
-  --plum-strong: var(--redline-ink);
-  --void-bg: var(--carbon);
-  --void-fg: var(--src-fg);
-  --void-border: var(--src-border);
-  --ash: var(--src-muted);
   --sans: var(--font-body);
   --mono: var(--font-mono);
 }

@@ -1,7 +1,15 @@
 # 10. "The Compile Boundary" — one two-world design system for both public sites
 
-- **Status:** Accepted
+- **Status:** Accepted — **superseded in part by [ADR 0014](0014-one-light-world.md)**
 - **Date:** 2026-07 (2026-07-10 rollout)
+
+> **Superseded in part (2026-07-13).** [ADR 0014](0014-one-light-world.md) makes both sites **one
+> light world**: the two worlds survive but differ by temperature and texture, not by darkness, and
+> there is no dark mode or dark surface anywhere. That retires **§1**'s dark/light framing, **§2**'s
+> palette, **§6**'s dark editor pane, and **§7** (docs dark mode) outright. **§3** (fonts), **§4** (the
+> token-lockstep law), **§5** (the live compiler hero), **§8** (ArchCanvas keeps its own identity) and
+> **§9** (the accessibility floor) still bind — read them here, and read everything about carbon,
+> mylar, and the dark source world as history.
 
 ## Context
 

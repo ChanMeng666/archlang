@@ -47,7 +47,7 @@ const displaySvg = shallowRef(finalSvg);
 const phase = ref<"settled" | "typing">("settled");
 const mounted = ref(false);
 
-// ── Minimal ArchLang syntax tint (source world → plum family on carbon). A tiny
+// ── Minimal ArchLang syntax tint (source world → the shared --syn-* palette). A tiny
 //    regex tokenizer, not a real parser: it re-highlights the visible prefix each
 //    frame, which is cheap and looks alive mid-token. Deterministic → SSR-safe. */
 const KEYWORDS = new Set(
@@ -270,7 +270,7 @@ onBeforeUnmount(() => {
   display: flex;
 }
 .pane--source {
-  background: var(--carbon);
+  background: var(--src-bg);
   padding: clamp(32px, 5vw, 72px) clamp(24px, 4vw, 60px);
   align-items: center;
   justify-content: flex-end;
@@ -299,7 +299,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 8px;
   padding: 5px 12px 5px 8px;
-  border: 1px solid var(--src-border);
+  border: 1px solid var(--src-rule);
   border-radius: 3px;
   font-family: var(--font-mono);
   font-size: 12px;
@@ -316,7 +316,7 @@ onBeforeUnmount(() => {
   display: block;
 }
 .eyebrow__arrow {
-  color: var(--plum-bright);
+  color: var(--plum-deep);
 }
 
 /* ── Headline ────────────────────────────────────────────────────────────── */
@@ -333,7 +333,10 @@ onBeforeUnmount(() => {
   color: var(--src-fg);
 }
 .headline__accent {
-  color: var(--plum-bright);
+  /* The headline clamps to ≥44px, so large-text 3:1 applies and the brand plum
+     can finally appear at full saturation (4.1:1 on --src-bg). Body-size plum
+     must still use --plum-deep. */
+  color: var(--plum);
 }
 
 .tagline {
@@ -368,19 +371,21 @@ onBeforeUnmount(() => {
   transform: translateY(1px);
 }
 .btn--solid {
-  background: var(--redline);
+  /* white on --redline-ink = 6.5:1; hover lightens to the graphics redline, 5.4:1 */
+  background: var(--redline-ink);
   color: #fff;
 }
 .btn--solid:hover {
-  background: color-mix(in srgb, var(--redline) 90%, #fff);
+  background: var(--redline);
 }
 .btn--ghost {
-  border-color: var(--src-border);
+  /* a control edge, so --src-rule (3.2:1), not the decorative --src-border */
+  border-color: var(--src-rule);
   color: var(--src-fg);
 }
 .btn--ghost:hover {
-  border-color: color-mix(in srgb, var(--plum) 60%, transparent);
-  color: #fff;
+  border-color: var(--plum);
+  color: var(--plum-deep);
 }
 
 /* ── Code stage (types itself) ───────────────────────────────────────────── */
@@ -388,7 +393,7 @@ onBeforeUnmount(() => {
   margin-top: 34px;
   border: 1px solid var(--src-border);
   border-radius: 4px;
-  background: var(--carbon-2);
+  background: var(--src-surface);
   overflow: hidden;
 }
 .code-chrome {
@@ -408,7 +413,7 @@ onBeforeUnmount(() => {
   color: var(--src-muted);
 }
 .code-chrome__status {
-  color: var(--plum-bright);
+  color: var(--plum-deep);
 }
 .code-stage[data-phase="settled"] .code-chrome__status {
   color: var(--src-muted);
@@ -431,16 +436,16 @@ onBeforeUnmount(() => {
   display: none;
 }
 .code-pre :deep(.t-kw) {
-  color: var(--plum-bright);
+  color: var(--syn-keyword);
 }
 .code-pre :deep(.t-st) {
-  color: #cbb9ff;
+  color: var(--syn-string);
 }
 .code-pre :deep(.t-nu) {
-  color: #d6cfc0;
+  color: var(--syn-number);
 }
 .code-pre :deep(.t-cm) {
-  color: var(--src-muted);
+  color: var(--syn-comment);
   font-style: italic;
 }
 .caret {
@@ -461,9 +466,9 @@ onBeforeUnmount(() => {
 /* ── The seam ────────────────────────────────────────────────────────────── */
 .seam {
   position: relative;
-  background: var(--carbon-2);
-  /* plum glow bleeds LEFT into the source world */
-  box-shadow: -10px 0 30px -8px color-mix(in srgb, var(--plum) 45%, transparent);
+  /* The seam IS a solid plum rule now. On a light ground a soft plum glow reads
+     as dirt, not as light — so the compiler is drawn as a hard line. */
+  background: var(--plum);
 }
 .seam::after {
   /* redline tick row on the PAPER side */
@@ -560,9 +565,6 @@ onBeforeUnmount(() => {
   .pane--sheet {
     justify-content: center;
     padding: clamp(30px, 7vw, 44px) 22px clamp(40px, 9vw, 56px);
-  }
-  .seam {
-    box-shadow: 0 -10px 30px -8px color-mix(in srgb, var(--plum) 45%, transparent);
   }
   .seam::after {
     top: var(--seam-w);

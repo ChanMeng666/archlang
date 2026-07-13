@@ -64,18 +64,20 @@ const archStream = StreamLanguage.define({
   },
 });
 
-// Colours are CSS vars (valid style-mod values) so the source-world theme owns
-// them in editor.css; the fallback hex is the same carbon-ground value, checked
-// ≥4.5:1 on #0f1115. Change the palette in editor.css, not here.
+// Colours are CSS vars (valid style-mod values) so the shared token block owns
+// them (playground/src/styles/tokens.css == docs-site/.vitepress/theme/style.css);
+// the fallback hex repeats the same value, each checked ≥4.5:1 on BOTH light source
+// grounds (--src-bg #eceef2 and --src-surface #fbfbfc). Change the palette in the
+// token block — and mirror it in docs-site/.vitepress/config.ts's Shiki theme — not here.
 const highlightStyle = HighlightStyle.define([
-  { tag: t.keyword, color: "var(--syn-keyword, #86adff)", fontWeight: "600" },
-  { tag: t.typeName, color: "var(--syn-typename, #eaa86a)", fontWeight: "600" },
-  { tag: t.propertyName, color: "var(--syn-propertyname, #9fce86)" },
-  { tag: t.atom, color: "var(--syn-atom, #b79bff)" },
-  { tag: t.number, color: "var(--syn-number, #6fc7d6)" },
-  { tag: t.string, color: "var(--syn-string, #e6c07b)" },
-  { tag: t.comment, color: "var(--syn-comment, #8b93a0)", fontStyle: "italic" },
-  { tag: t.operator, color: "var(--syn-operator, #a6adb8)" },
+  { tag: t.keyword, color: "var(--syn-keyword, #6b3ae0)", fontWeight: "600" },
+  { tag: t.typeName, color: "var(--syn-typename, #9a4a06)", fontWeight: "600" },
+  { tag: t.propertyName, color: "var(--syn-propertyname, #14602a)" },
+  { tag: t.atom, color: "var(--syn-atom, #0b57d0)" },
+  { tag: t.number, color: "var(--syn-number, #0f6f7a)" },
+  { tag: t.string, color: "var(--syn-string, #8a5a00)" },
+  { tag: t.comment, color: "var(--syn-comment, #5a616e)", fontStyle: "italic" },
+  { tag: t.operator, color: "var(--syn-operator, #464d59)" },
 ]);
 
 export function archLanguage() {

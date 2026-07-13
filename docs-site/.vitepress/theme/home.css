@@ -1,10 +1,9 @@
 /* ──────────────────────────────────────────────────────────────────────────
    Landing-page chrome — "The Compile Boundary".
 
-   Owns: (1) the home nav bar, reworked into a SOURCE-world bar that sits opaque
-   and carbon over the hero; (2) full-bleed wiring for the landing sections, which
-   live inside VitePress's `.vp-doc` markdown container; (3) the inline "built for
-   agents" carbon band. The hero itself (CompileSeam.vue) and the section
+   Owns: (1) the home nav bar; (2) full-bleed wiring for the landing sections,
+   which live inside VitePress's `.vp-doc` markdown container; (3) the inline
+   "built for agents" band. The hero itself (CompileSeam.vue) and the section
    components (SheetGrid / FactsSection) carry their own scoped styles.
 
    Specificity note: `.vp-doc` gives its bare-element rules a `.vp-doc x` prefix
@@ -13,85 +12,27 @@
    order against the default theme.
    ────────────────────────────────────────────────────────────────────────── */
 
-/* ═══ Home nav — the source-world bar ══════════════════════════════════════
-   At scroll-top on the home page the nav sits over the hero's carbon-left pane.
-   Paint it opaque carbon with a hairline underline (the divider-line is hidden
-   on `.home.top`) so it reads as one surface with the source world — in BOTH
-   light and dark, since the source world is identical across modes. Once
-   scrolled, `.top` drops and the normal themed (paper) bar returns; non-home
-   pages never get `.home`. */
+/* ═══ Home nav — the paper bar, at every scroll position ═══════════════════
+   VitePress leaves `.VPNavBar.home.top` TRANSPARENT (it expects a hero to show
+   through) and only fills the bar once `.top` drops on the first pixel of
+   scroll. This page's nav used to exploit that to paint itself carbon over the
+   hero, which meant the bar visibly changed colour the moment you scrolled.
+   Assert the themed paper background positively so the bar is identical at
+   scroll-top and scrolled — deleting the old rule alone would leave it
+   see-through, a different bug. Reuse `.divider-line` rather than a
+   `border-bottom` so there is no 1px height jump against the scrolled bar. */
 .VPNavBar.home.top {
-  background-color: var(--carbon);
-  border-bottom: 1px solid var(--src-border);
+  background-color: var(--vp-nav-bg-color);
 }
-.VPNavBar.home.top .VPNavBarTitle .title {
-  color: var(--src-fg);
-}
-.VPNavBar.home.top .VPNavBarMenuLink,
-.VPNavBar.home.top .VPNavBarMenuGroup .text {
-  color: var(--src-muted);
-}
-.VPNavBar.home.top .VPNavBarMenuLink:hover,
-.VPNavBar.home.top .VPNavBarMenuGroup:hover .text {
-  color: var(--src-fg);
-}
-.VPNavBar.home.top .VPSocialLink {
-  color: var(--src-muted);
-}
-.VPNavBar.home.top .VPSocialLink:hover {
-  color: var(--src-fg);
-}
-
-/* Search trigger → ghost button echoing the hero's ghost CTAs, so it stops
-   reading as a white block on the carbon bar. */
-.VPNavBar.home.top .DocSearch-Button {
-  background: transparent;
-  border: 1px solid var(--src-border);
-  color: var(--src-muted);
-}
-.VPNavBar.home.top .DocSearch-Button:hover {
-  background: color-mix(in srgb, #fff 6%, transparent);
-  border-color: color-mix(in srgb, var(--plum) 55%, transparent);
-  color: var(--src-fg);
-}
-.VPNavBar.home.top .DocSearch-Button .DocSearch-Search-Icon {
-  background-color: var(--src-muted);
-}
-.VPNavBar.home.top .DocSearch-Button .DocSearch-Button-Placeholder {
-  color: var(--src-muted);
-}
-.VPNavBar.home.top .DocSearch-Button .DocSearch-Button-Key {
-  background: transparent;
-  border-color: var(--src-border);
-  box-shadow: none;
-  color: var(--src-muted);
-}
-
-/* Mobile nav (<768px): the search trigger and the hamburger share the carbon
-   `.home.top` bar. The .DocSearch-Button rules above give the trigger its
-   source-world ghost look (the paper-world fill lives in doc-pages.css, scoped
-   off `.home.top`). The remaining mobile-only piece is the hamburger's three
-   bars, which default to the paper world's dark ink (--vp-c-text-1) and are
-   near-invisible on carbon — re-tint them to the source world. */
-.VPNavBar.home.top .DocSearch-Button:hover .DocSearch-Search-Icon {
-  background-color: var(--src-fg);
-}
-.VPNavBar.home.top .VPNavBarHamburger .top,
-.VPNavBar.home.top .VPNavBarHamburger .middle,
-.VPNavBar.home.top .VPNavBarHamburger .bottom {
-  background-color: var(--src-fg);
-}
-.VPNavBar.home.top .VPNavBarHamburger:hover .top,
-.VPNavBar.home.top .VPNavBarHamburger:hover .middle,
-.VPNavBar.home.top .VPNavBarHamburger:hover .bottom {
-  background-color: var(--plum-bright);
+.VPNavBar.home.top .divider-line {
+  background-color: var(--vp-c-divider);
 }
 
 /* ═══ Landing bottom — deliberate footer gap ═══════════════════════════════
-   The last landing section is the carbon "agents" band; VitePress's default
-   `.VPHome` margin-bottom (96/128px) then drops the title-block footer, which
-   over a dark band reads as a pale void. Tighten it to a deliberate ~112px so
-   the footer follows the band as an intended step, not empty paper.
+   The last landing section is the "agents" band; VitePress's default `.VPHome`
+   margin-bottom (96/128px) then drops the title-block footer far below it,
+   reading as a stranded gap. Tighten it to a deliberate ~112px so the footer
+   follows the band as an intended step, not empty paper.
    (Selector carries `.VPContent.is-home` so it outranks VitePress's scoped
    `.VPHome[data-v-…]` default of 96/128px.) */
 .VPContent.is-home .VPHome {
@@ -116,21 +57,15 @@
 }
 
 /* ═══ "Built for agents" band — mode-aware ════════════════════════════════
-   Follows the appearance toggle. In LIGHT mode it is a sheet-world section:
-   warm paper ground bounded by hairline dimension rules top and bottom, ink
-   copy, a redline eyebrow — a distinct measured section against the page bg.
-   In DARK mode the `.dark` overrides at the foot of this block restore the
-   original carbon "source world returns mid-page" strip exactly.
+   This is the SOURCE world returning mid-page: the cool grey ground stepping out
+   of the warm paper, bounded by hairline dimension rules top and bottom, with
+   the terminal block raised on it as the code page. Both worlds are light
+   (ADR 0014) — the band reads as a different *surface*, not a different mode.
    Every element is class-targeted under `.vp-doc .agents` so it beats the
-   default markdown typography cleanly.
-
-   The one constant across modes is the `.agents__term` terminal block: source
-   lives in the terminal, so it stays carbon in both modes (mirroring how
-   inner-page code blocks are carbon on paper). The solid CTA is a fixed-color
-   redline (see `--solid` below) valid on either ground. */
+   default markdown typography cleanly. */
 .vp-doc .agents {
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--src-bg);
+  color: var(--src-fg);
   border-block: 1px solid var(--hairline);
   padding-block: clamp(56px, 8vw, 104px);
 }
@@ -144,7 +79,7 @@
   font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: 0.04em;
-  color: var(--redline-ink); /* light: redline-ink on paper 5.8:1 */
+  color: var(--redline-ink); /* 5.6:1 on --src-bg */
 }
 .vp-doc .agents__title {
   margin: 0;
@@ -157,7 +92,7 @@
   letter-spacing: -0.01em;
   line-height: 1.05;
   font-size: clamp(2rem, 4.4vw, 3.2rem);
-  color: var(--ink); /* light: ink on paper 14:1 */
+  color: var(--src-fg); /* 14.5:1 on --src-bg */
 }
 .vp-doc .agents__lede {
   margin: 20px 0 0;
@@ -165,12 +100,12 @@
   font-family: var(--font-body);
   font-size: 1.05rem;
   line-height: 1.65;
-  color: var(--ink-muted); /* light: ink-muted on paper 5.4:1 */
+  color: var(--src-muted); /* 5.4:1 on --src-bg */
 }
 .vp-doc .agents__code {
   font-family: var(--font-mono);
   font-size: 0.88em;
-  color: var(--redline-ink); /* light: redline-ink on paper 5.8:1 */
+  color: var(--plum-deep); /* 5.5:1 on --src-bg */
   background: transparent;
   padding: 0;
   border: 0;
@@ -181,7 +116,7 @@
   padding: 16px 18px;
   border: 1px solid var(--src-border);
   border-radius: 4px;
-  background: var(--carbon-2);
+  background: var(--src-surface);
   font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.7;
@@ -189,18 +124,14 @@
   overflow-x: auto;
 }
 .vp-doc .agents__prompt {
-  color: var(--plum-bright);
+  color: var(--plum-deep);
   user-select: none;
 }
 .vp-doc .agents__flag {
-  /* On-carbon redline: a FIXED lightened redline (the band is carbon in both
-     light and dark, so --redline — which flips per mode and is only AA on paper —
-     can't be used). #f0705f on carbon-2 (#171b23) = 5.9:1, well past AA for this
-     micro-label, and stays redline-family (distinct from the plum keys). */
-  color: #f0705f;
+  color: var(--redline-ink); /* 6.3:1 on --src-surface */
 }
 .vp-doc .agents__key {
-  color: var(--plum-bright);
+  color: var(--plum-deep);
 }
 .vp-doc .agents__actions {
   display: flex;
@@ -228,54 +159,28 @@
   transform: translateY(1px);
 }
 .vp-doc .agents__btn--solid {
-  /* FIXED redline — never mode-flips. var(--redline) becomes #e2564a in dark,
-     where white-on-it is only 3.7:1 (fails AA); a fixed #b3261e gives
-     white-on-it 6.5:1 on either ground. Same fixed-color reasoning as the
-     .agents__flag micro-label above. */
-  background: #b3261e;
+  /* white-on-redline-ink = 6.5:1. (These used to be fixed hexes because the band
+     was carbon in dark mode while --redline flipped; nothing flips now, so they
+     are tokens again.) */
+  background: var(--redline-ink);
   color: #fff;
 }
 .vp-doc .agents__btn--solid:hover {
-  /* lighten the ground toward white; white stays 5.3:1 (AA) */
-  background: color-mix(in srgb, #b3261e 88%, #fff);
+  /* lighten the ground toward the graphics redline; white stays 5.4:1 (AA) */
+  background: var(--redline);
   /* VitePress's `.vp-doc a:hover` (0,2,1) outranks this two-class base rule's
-     color (0,2,0), so the hover state must re-assert the text color. */
+     color (0,2,0), so the hover state must re-assert the text color. (The
+     :visited leak that made the base text invisible is fixed in doc-pages.css §7
+     by excluding .agents__btn from the link-colour rules.) */
   color: #fff;
 }
-/* Ghost button — mode-aware. Light: hairline border + ink text, redline hover.
-   Dark override (below) restores the source-world ghost. */
+/* Ghost button — a control, so its border must clear 3:1: --src-rule, not the
+   decorative --src-border. */
 .vp-doc .agents__btn--ghost {
-  border-color: var(--hairline);
-  color: var(--ink);
+  border-color: var(--src-rule);
+  color: var(--src-fg);
 }
 .vp-doc .agents__btn--ghost:hover {
-  border-color: color-mix(in srgb, var(--redline) 60%, transparent);
+  border-color: var(--redline);
   color: var(--redline-ink);
-}
-
-/* ── Dark mode: restore the original carbon "source world" band ──────────── */
-.dark .vp-doc .agents {
-  background: var(--carbon);
-  color: var(--src-fg);
-  border-block-color: transparent;
-}
-.dark .vp-doc .agents__eyebrow {
-  color: var(--plum-bright);
-}
-.dark .vp-doc .agents__title {
-  color: var(--src-fg);
-}
-.dark .vp-doc .agents__lede {
-  color: var(--src-muted);
-}
-.dark .vp-doc .agents__code {
-  color: var(--plum-bright);
-}
-.dark .vp-doc .agents__btn--ghost {
-  border-color: var(--src-border);
-  color: var(--src-fg);
-}
-.dark .vp-doc .agents__btn--ghost:hover {
-  border-color: color-mix(in srgb, var(--plum) 60%, transparent);
-  color: #fff;
 }

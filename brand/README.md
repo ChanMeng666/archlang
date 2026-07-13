@@ -68,25 +68,39 @@ founder reversed it: one geometry, everywhere. Do not re-add a simplified tier.
 | **Plum, light-surface** | `#6a3df0` | the accent when it sits on a light/ivory background (more contrast) |
 | **White** | `#ffffff` | the mark on dark / photographic surfaces |
 | **Ink** | `#111111` | the mono mark on light surfaces |
-| **Void** | `#0f1115` | app-tile ground; site `theme-color`; OG-card ground |
+| **Void** | `#0f1115` | app-tile ground; OG-card ground (the *assets*; the sites are light — see below) |
 
 ## The sites' design system — "The Compile Boundary"
 
 Distinct from the mark, but built on the same idea: the docs site and the playground
 run a shared front-end system called **"The Compile Boundary."** A single compile
-seam splits every surface into two worlds —
+seam splits every surface into two worlds — and as of
+[ADR 0014](../docs/adr/0014-one-light-world.md) **both worlds are LIGHT. There is no
+dark mode and no dark surface on either site.** They differ by *temperature and
+texture*, never by darkness:
 
-- a dark **SOURCE world** — carbon grounds (`#0f1115` / `#171b23`), where **plum
-  `#8052ff` survives only** as the source-world syntax-highlighting accent and as the
-  logo fills (nowhere else in the chrome);
-- a light **SHEET world** — drafting paper (`#f5f2ea`), blue-black ink (`#1c2430`),
-  hairlines, drafting grids, and title blocks —
+- a cool **SOURCE world** — where code lives: `--src-bg` `#eceef2` (panes, header,
+  gutters, bands) and `--src-surface` `#fbfbfc` (the code page: fences, the editor,
+  tooltips), mono type, and the eight-colour `--syn-*` syntax palette. **Plum
+  `#8052ff` survives only** as the syntax/seam accent and as the logo fills (nowhere
+  else in the chrome); as *text* it must be `--plum-deep` `#6b3ae0` (`#8052ff` is
+  4.1:1 — graphics and ≥24px display text only);
+- a warm **SHEET world** — drafting paper (`#f5f2ea` / `#fbfaf5`), blue-black ink
+  (`#1c2430`), hairlines, drafting grids, and title blocks —
 
 joined by a single **REDLINE** accent, the architect's markup red (`#c2362b` for
-graphics, `#b3261e` for text). Site type is **Archivo Variable** (display, `wdth`
-axis) + **Public Sans Variable** (body) + **IBM Plex Mono** (code). The earlier
-Space Grotesk / Geist Mono pairing, the FlowingLines hero canvas, the `BrandHero`
-component, and the pill chrome are all **retired** from the sites.
+graphics, `#b3261e` for text), which means **attention only** (CTAs and errors). The
+seam itself is drawn as a solid plum rule — on a light ground a plum *glow* reads as
+dirt, not as light. Site type is **Archivo Variable** (display, `wdth` axis) +
+**Public Sans Variable** (body) + **IBM Plex Mono** (code). The earlier Space Grotesk
+/ Geist Mono pairing, the FlowingLines hero canvas, the `BrandHero` component, and the
+pill chrome are all **retired** from the sites — as are the carbon grounds
+(`#0f1115` / `#171b23`) and the "mylar film" dark mode that ADR 0010 shipped.
+
+The white-on-dark **assets** (`archlang-icon.svg`, `archlang-wordmark.svg`, the
+`-app` tiles, the OG card) still ship and are still correct for dark grounds
+elsewhere — but nothing on the two sites is a dark ground any more, so the sites use
+the plum and ink variants.
 
 These tokens live in **two files that must stay in sync** — the Compile Boundary
 token block is duplicated by hand (not imported — the two build systems are

@@ -1,14 +1,15 @@
 /* ──────────────────────────────────────────────────────────────────────────
    Doc-pages restyle — "The Compile Boundary", owned by W2.
 
-   The inner reference/guide pages are the SHEET world: paper (mylar in dark)
-   ground, blue-black ink, hairline rules and dimension-line dividers, schedule
-   tables and a sheet-index sidebar. The SOURCE world (carbon ground, plum
-   syntax) appears ONLY inside code fences and the ArchLive editor — the compile
-   boundary made literal on the page.
+   The inner reference/guide pages are the SHEET world: warm paper ground,
+   blue-black ink, hairline rules and dimension-line dividers, schedule tables
+   and a sheet-index sidebar. The SOURCE world (cool grey ground, syntax colour)
+   appears ONLY inside code fences and the ArchLive editor — the compile boundary
+   made literal on the page. Both worlds are LIGHT (ADR 0014); there is no dark
+   mode and no `.dark` class.
 
-   Tokens come from style.css (frozen, W0). Never hardcode a paper/ink hex here;
-   every colour is a var() so the sheet⇄mylar flip in `.dark` carries through.
+   Tokens come from style.css. Never hardcode a paper/ink hex here; every colour
+   is a var() so the palette stays in one place.
    Selectors are scoped to `.vp-doc` (article body) and doc-only chrome
    (`.VPSidebar`, `.VPDocAside`, `.VPDocFooter`, `.VPLocalSearchBox`) so the W1
    landing page is untouched.
@@ -152,23 +153,26 @@
 }
 
 /* ============================================================================
-   3 · CODE BLOCKS → embedded SOURCE world (carbon in BOTH modes)
+   3 · CODE BLOCKS → the embedded SOURCE world (cool grey on warm paper)
    ========================================================================== */
 
-/* Scope the code-block surface vars to the article so the sheet stays paper but
-   fences drop to carbon. Inline code (handled in §4) intentionally stays sheet. */
+/* Scope the code-block surface vars to the article so the sheet stays warm paper
+   but fences step to the cool source ground. Inline code (handled in §4)
+   intentionally stays sheet. Syntax colour comes from the single light Shiki
+   theme registered in config.ts (`archlangLight`), which carries the same eight
+   hexes as the shared --syn-* tokens. */
 .vp-doc {
-  --vp-code-block-bg: var(--carbon);
+  --vp-code-block-bg: var(--src-bg);
   --vp-code-block-color: var(--src-fg);
   --vp-code-line-number-color: var(--src-muted);
   --vp-code-block-divider-color: var(--src-border);
-  --vp-code-lang-color: var(--plum-bright);
-  --vp-code-line-highlight-color: oklch(1 0 0 / 8%);
-  /* copy button reads on carbon */
-  --vp-code-copy-code-bg: var(--carbon-2);
-  --vp-code-copy-code-hover-bg: var(--carbon-2);
-  --vp-code-copy-code-border-color: var(--src-border);
-  --vp-code-copy-code-hover-border-color: var(--src-border);
+  --vp-code-lang-color: var(--plum-deep);
+  --vp-code-line-highlight-color: color-mix(in srgb, var(--plum) 8%, transparent);
+  /* copy button reads on the source ground */
+  --vp-code-copy-code-bg: var(--src-surface);
+  --vp-code-copy-code-hover-bg: var(--src-surface);
+  --vp-code-copy-code-border-color: var(--src-rule);
+  --vp-code-copy-code-hover-border-color: var(--src-rule);
   --vp-code-copy-code-active-text: var(--src-muted);
 }
 
@@ -178,17 +182,7 @@
   border: 1px solid var(--src-border);
 }
 
-/* LIGHT-MODE SHIKI FIX. VitePress dual-themes each token with
-   `--shiki-light` / `--shiki-dark`, swapping by `html:not(.dark)` /`.dark`.
-   Our fences are carbon in BOTH modes, so the light (github-light) palette would
-   be near-invisible on carbon. Re-point light mode at the dark palette — the one
-   designed for a dark ground — so tokens stay readable without a custom Shiki
-   theme. `.vp-doc` raises specificity over the built-in rule. */
-html:not(.dark) .vp-doc .vp-code span {
-  color: var(--shiki-dark, inherit);
-}
-
-/* Lang label as a sheet TAB: a small raised-carbon tab, caps micro-label
+/* Lang label as a sheet TAB: a small raised tab, caps micro-label
    ("ARCH" / "TS"). VitePress fades it out on hover to reveal the copy button. */
 .vp-doc div[class*="language-"] > span.lang {
   top: 0;
@@ -200,8 +194,8 @@ html:not(.dark) .vp-doc .vp-code span {
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--plum-bright);
-  background: var(--carbon-2);
+  color: var(--plum-deep);
+  background: var(--src-surface);
   border-left: 1px solid var(--src-border);
   border-bottom: 1px solid var(--src-border);
   border-radius: 0 3px 0 3px;
@@ -376,17 +370,24 @@ html:not(.dark) .vp-doc .vp-code span {
    7 · LINKS
    ========================================================================== */
 
-.vp-doc a {
+/* The landing CTAs (.agents__btn, styled in home.css) are CONTROLS, not prose
+   links — exclude them from the link-colour rules entirely. Otherwise
+   `.vp-doc a:visited` (specificity 0,2,1) outranks `.vp-doc .agents__btn--solid`
+   (0,2,0) and, once /agents has been visited, repaints the solid CTA's text
+   --redline-ink on its own --redline-ink ground: invisible until hovered.
+   Excluding beats out-specifying — a `.vp-doc a.agents__btn--solid` rule would
+   only TIE :visited and then depend on home.css loading after this file. */
+.vp-doc a:not(.agents__btn) {
   color: var(--redline-ink);
   text-decoration: none;
   text-underline-offset: 3px;
   transition: text-decoration-color 0.2s;
 }
-.vp-doc a:hover {
+.vp-doc a:not(.agents__btn):hover {
   text-decoration: underline;
   text-decoration-color: var(--redline);
 }
-.vp-doc a:visited {
+.vp-doc a:not(.agents__btn):visited {
   color: var(--redline-ink);
 }
 
@@ -445,20 +446,19 @@ html:not(.dark) .vp-doc .vp-code span {
   color: var(--redline-ink);
 }
 
-/* Paper-world search trigger — everywhere EXCEPT the home page's carbon
-   `.home.top` bar, which paints its own source-world ghost trigger in home.css.
-   Scoped off `.home.top` (instead of an even louder !important there) so the
-   carbon bar's search doesn't read as a white block over the hero, at any width. */
-.VPNavBar:not(.home.top) .DocSearch-Button {
+/* Paper-world search trigger — on EVERY bar, including the home page's. The nav
+   is the paper bar everywhere now (ADR 0014), so the old `:not(.home.top)` guard
+   that carved out a carbon home bar has nothing left to exclude. The !importants
+   fight DocSearch's own CSS, not our rules. */
+.VPNavBar .DocSearch-Button {
   border-radius: 3px !important;
   border: 1px solid var(--hairline) !important;
   background: var(--paper-panel) !important;
 }
-/* On the paper bar the placeholder + hotkey hint must be paper-world ink, not the
-   source-world --src-muted (#98a0ac → only 2.5:1 on --paper-panel). --ink-muted
-   is 5.4:1 AA. (The carbon .home.top bar keeps --src-muted via home.css.) */
-.VPNavBar:not(.home.top) .DocSearch-Button .DocSearch-Button-Placeholder,
-.VPNavBar:not(.home.top) .DocSearch-Button .DocSearch-Button-Key {
+/* The placeholder + hotkey hint take paper-world ink: --ink-muted is 5.4:1 AA on
+   --paper-panel. */
+.VPNavBar .DocSearch-Button .DocSearch-Button-Placeholder,
+.VPNavBar .DocSearch-Button .DocSearch-Button-Key {
   color: var(--ink-muted) !important;
 }
 
