@@ -20,9 +20,6 @@
       "Bash(git log:*)",
       "Bash(git show:*)"
     ],
-    "ask": [
-      "Bash(npm publish:*)",
-      "Bash(git push:*)"
-    ]
+    "ask": ["Bash(npm publish:*)", "Bash(git push:*)"]
   }
 }
