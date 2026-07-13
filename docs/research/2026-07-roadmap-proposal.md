@@ -1,5 +1,7 @@
 # v1.14 Roadmap Proposal — "Measure First, Then Believe"
 
+> **Status: RESOLVED — every tranche closed as of 2026-07-13.** Historical record; do not execute. The standing decisions it produced (T3 permanently declined, T6 area sugar parked) live in AGENTS.md § "Standing decisions & iron laws".
+
 **Date:** 2026-07-11 · **Status:** **T1 + T2 implemented 2026-07-11** (commits
 `60f5a87`…`83dc0cc`); **Gate G1 PASSED 2026-07-12** (`eval/g1/report.md` — faithfulness
 154/157 = 98.1% vs direct-generation 93.4%, z = 2.08 p = .019; T4 cleared, with a

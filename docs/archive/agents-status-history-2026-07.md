@@ -291,7 +291,8 @@ for concave door arcs, dimensions drawn into the building, and the title-block o
 `chrome-layout.ts`). See `CHANGELOG.md`.
 
 > Beware older docs that predate the launch: the completed build plans live in
-> `docs/archive/` (see its README), and the earlier half of `docs/WORK-LOG.md` is
-> historical. The table above and `CHANGELOG.md` reflect what actually shipped.
+> `docs/archive/` (see its README), and the now-frozen work log
+> `docs/archive/WORK-LOG-v0.7-v1.15.md` is historical. The table above and
+> `CHANGELOG.md` reflect what actually shipped.
 </content>
 </invoke>

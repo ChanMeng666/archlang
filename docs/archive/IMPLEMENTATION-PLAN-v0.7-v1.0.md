@@ -1,6 +1,6 @@
 # ArchLang Optimization — Detailed Implementation Plan (v0.7 → v1.0)
 
-> **STATUS: ✅ COMPLETE — this roadmap is fully executed and ArchLang 1.0 is launched** (core `@chanmeng666/archlang@1.0.1` on npm; extension `ChanMeng.archlang@0.2.0` on the Marketplace; playground + docs deployed). This file is retained as the historical plan. For the current state read `AGENTS.md`; for what shipped per phase read `docs/WORK-LOG.md`.
+> **STATUS: ✅ COMPLETE — this roadmap is fully executed and ArchLang 1.0 is launched** (core `@chanmeng666/archlang@1.0.1` on npm; extension `ChanMeng.archlang@0.2.0` on the Marketplace; playground + docs deployed). This file is retained as the historical plan. For the current state read `AGENTS.md`; for what shipped per phase read the frozen `docs/archive/WORK-LOG-v0.7-v1.15.md`.
 
 > **Audience (historical):** a fresh Claude Code session executing this plan task-by-task with **no prior conversation context**. Read §0, §1, §2 first, then implement phases in order. Each task has a **Definition of Done (DoD)**; do not move on until it's met. This plan is the successor to `docs/IMPLEMENTATION-PLAN.md` (which delivered v0.2→v0.5 and is now shipped); it carries the same golden rules and per-task discipline.
 
