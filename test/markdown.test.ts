@@ -1,4 +1,9 @@
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { FORMAT_LIST } from "../src/cli/io.js";
 import { extractArchBlocks, rewriteMarkdown } from "../src/index.js";
 
 /**
@@ -69,4 +74,64 @@ describe("rewriteMarkdown", () => {
     expect(out.indexOf("[[A]]")).toBeLessThan(out.indexOf("[[B]]"));
     expect(out).not.toContain("```");
   });
+});
+
+function run(args: string[]): { status: number | null; stdout: string; stderr: string } {
+  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
+    encoding: "utf8",
+    cwd: process.cwd(),
+  });
+  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+}
+
+const MD_DOC = '# doc\n\n```arch\nplan "P" { units mm room at (0,0) size 3000x3000 label "Hall" }\n```\n';
+
+function writeDoc(): { dir: string; doc: string } {
+  const dir = mkdtempSync(join(tmpdir(), "arch-md-"));
+  const doc = join(dir, "doc.md");
+  writeFileSync(doc, MD_DOC, "utf8");
+  return { dir, doc };
+}
+
+/**
+ * `arch md` routes `-f` through the one shared `parseFormat`, so an unknown id gets
+ * the same full-format-list error as every other command, and a *known but
+ * unembeddable* id (dxf/pdf/txt) gets the subset error. Both are usage errors (3).
+ */
+describe("CLI — md format handling", () => {
+  it("renders the arch blocks with the default svg format, exit 0", () => {
+    const { dir, doc } = writeDoc();
+    const out = join(dir, "doc.out.md");
+    const r = run(["md", doc, "-o", out, "--json"]);
+    expect(r.status).toBe(0);
+    const j = JSON.parse(r.stdout);
+    expect(j.ok).toBe(true);
+    expect(j.blocks).toBe(1);
+    expect(j.images[0].format).toBe("svg");
+    expect(existsSync(join(dir, "doc.out-1.svg"))).toBe(true);
+    expect(readFileSync(out, "utf8")).toContain("![Floor plan 1](doc.out-1.svg)");
+  }, 60000);
+
+  it("accepts -f png (the other embeddable format)", () => {
+    const { dir, doc } = writeDoc();
+    const out = join(dir, "doc.out.md");
+    const r = run(["md", doc, "-o", out, "-f", "png", "--json"]);
+    expect(r.status).toBe(0);
+    const j = JSON.parse(r.stdout);
+    expect(j.images[0].format).toBe("png");
+  }, 60000);
+
+  it("rejects a known-but-unembeddable format (-f dxf) with exit 3, naming the svg|png subset", () => {
+    const { doc } = writeDoc();
+    const r = run(["md", doc, "-f", "dxf"]);
+    expect(r.status).toBe(3);
+    expect(r.stderr.trim()).toBe('error: md supports -f svg or png (got "dxf")');
+  }, 60000);
+
+  it("rejects an unknown format (-f bogus) with exit 3 and the shared format-list message", () => {
+    const { doc } = writeDoc();
+    const r = run(["md", doc, "-f", "bogus"]);
+    expect(r.status).toBe(3);
+    expect(r.stderr.trim()).toBe(`error: unknown format "bogus" (use ${FORMAT_LIST})`);
+  }, 60000);
 });

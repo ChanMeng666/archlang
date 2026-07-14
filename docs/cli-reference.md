@@ -52,9 +52,10 @@ render a plan to SVG/DXF/TXT/PDF/PNG
 
 | Flag | Does |
 | --- | --- |
-| `--out, -o <file\|->` | output destination ('-' = stdout) |
+| `--out, -o <file\|->` | output file, or '-' for stdout (default: the input path with the format's extension) |
 | `--format, -f <svg\|dxf\|txt\|pdf\|png>` | output format (default svg) |
 | `--width, -w <px>` | page width hint in pixels |
+| `--scale, -s <n>` | raster scale for the PNG backend (ignored by the non-raster formats) |
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
 | `--charset <unicode\|ascii>` | text renderer glyph set (default unicode) |
 | `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
@@ -65,6 +66,19 @@ render a plan to SVG/DXF/TXT/PDF/PNG
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
+**Examples**
+
+```bash
+# render SVG next to the input; structured result on stdout
+$ arch compile plan.arch --json
+
+# compile source from stdin straight to SVG on stdout
+$ arch compile - -o - < plan.arch
+
+# rasterize to PNG, fetching the optional renderer if it is missing
+$ arch compile plan.arch -f png --install --json
+```
+
 ### `arch batch`
 
 render many .arch files in one call, concurrently
@@ -73,11 +87,29 @@ render many .arch files in one call, concurrently
 
 | Flag | Does |
 | --- | --- |
-| `--out, -o <dir>` | output directory (default: alongside each input) |
+| `--out, -o <dir>` | output DIRECTORY for every rendered file (default: alongside each input) |
 | `--format, -f <svg\|dxf\|txt\|pdf\|png>` | output format (default svg) |
 | `--jobs, -j <n>` | max concurrent renders (default: CPU count) |
+| `--width, -w <px>` | page width hint in pixels |
+| `--scale, -s <n>` | raster scale for the PNG backend (ignored by the non-raster formats) |
+| `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
+| `--charset <unicode\|ascii>` | text renderer glyph set (default unicode) |
+| `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
+| `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) |
+| `--accessible` | emit &lt;title&gt;/&lt;desc&gt;/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged |
+| `--install` | auto-install the optional dep for the chosen format if missing (PNG/PDF) |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
+
+**Examples**
+
+```bash
+# render design variants concurrently; one result row per input
+$ arch batch a.arch b.arch c.arch -o out/ --json
+
+# export a whole directory to DXF, 4 renders at a time
+$ arch batch plans/*.arch -f dxf -j 4 --json
+```
 
 ### `arch md` _(alias: `markdown`)_
 
@@ -87,11 +119,26 @@ render every ```arch block in a Markdown file and rewrite to image links
 
 | Flag | Does |
 | --- | --- |
-| `--out, -o <out.md>` | rewritten Markdown destination |
-| `--format, -f <svg\|dxf\|txt\|pdf\|png>` | output format (default svg) |
+| `--out, -o <out.md\|->` | rewritten Markdown file, or '-' for stdout (default: &lt;name&gt;.out.md) |
+| `--format, -f <svg\|png>` | image format for the blocks (default svg) |
+| `--width, -w <px>` | page width hint in pixels |
+| `--scale, -s <n>` | raster scale for the PNG backend (ignored by the non-raster formats) |
+| `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
 | `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) |
+| `--accessible` | emit &lt;title&gt;/&lt;desc&gt;/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged |
+| `--install` | auto-install the optional dep for the chosen format if missing (PNG/PDF) |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
+
+**Examples**
+
+```bash
+# render the fenced arch blocks to SVGs and rewrite them to image links
+$ arch md README.md -o README.out.md --json
+
+# PNG images; a broken block still yields an error card
+$ arch md doc.md -f png --error-svg --json
+```
 
 ### `arch preview`
 
@@ -101,15 +148,27 @@ render a PNG you can look at (zero-install where the optional binary is present)
 
 | Flag | Does |
 | --- | --- |
-| `--out, -o <out.png>` | PNG destination (default: &lt;name&gt;.png) |
-| `--scale, -s <n>` | raster scale (default 2) |
+| `--out, -o <out.png\|->` | output PNG file, or '-' for stdout (default: &lt;name&gt;.png) |
+| `--scale, -s <n>` | raster scale (default 1; without -w/-s the page auto-targets ~1600px wide for legibility) |
+| `--width, -w <px>` | page width hint in pixels |
 | `--ascii` | print a zero-dependency ASCII text plan to stdout instead of a PNG |
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
 | `--charset <unicode\|ascii>` | text renderer glyph set (default unicode) |
+| `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
 | `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) |
 | `--install` | auto-install @resvg/resvg-js if missing, then render |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
+
+**Examples**
+
+```bash
+# a zero-dependency text plan an agent can read on stdout
+$ arch preview plan.arch --ascii --json
+
+# raster the plan so a vision model can look at it
+$ arch preview plan.arch -o plan.png --json
+```
 
 ### `arch watch`
 
@@ -119,9 +178,26 @@ recompile on save (interactive)
 
 | Flag | Does |
 | --- | --- |
-| `--out, -o <file\|->` | output destination ('-' = stdout) |
+| `--out, -o <file\|->` | output file, or '-' for stdout (default: the input path with the format's extension) |
 | `--format, -f <svg\|dxf\|txt\|pdf\|png>` | output format (default svg) |
 | `--width, -w <px>` | page width hint in pixels |
+| `--scale, -s <n>` | raster scale for the PNG backend (ignored by the non-raster formats) |
+| `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
+| `--charset <unicode\|ascii>` | text renderer glyph set (default unicode) |
+| `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
+| `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) |
+| `--accessible` | emit &lt;title&gt;/&lt;desc&gt;/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged |
+| `--from-json` | read the input as Plan JSON (RPLAN shape) instead of .arch, convert it, then compile |
+| `--install` | auto-install the optional dep for the chosen format if missing (PNG/PDF) |
+| `--json` | structured result on stdout, messages on stderr |
+| `--quiet, -q` | suppress human messages on stderr |
+
+**Examples**
+
+```bash
+# recompile on every save (interactive; agents should use compile)
+$ arch watch plan.arch -o plan.svg
+```
 
 ### `arch validate`
 
@@ -135,19 +211,55 @@ parse + resolve + lint, no render (is it valid & sound?)
 | `--graph <graph.json>` | also check the plan's interior-door adjacency against an intended graph (bare dict or {input_graph:{…}}); mismatch → exit 2 |
 | `--intent <intent.json>` | gate the plan against a brief's intent JSON; a failing gating assertion (room count/existence/area/windows) → exit 2. Adjacency/reachability score but never gate. Composes with --graph. |
 | `--feedback` | with --intent, append a deterministic per-violation correction prompt (advisory data, never applied) |
+| `--code <CODE[,CODE…]>` | show only diagnostics with these codes — a DISPLAY filter: the exit code and `ok` still come from the unfiltered set |
+| `--severity <error\|warning>` | show only diagnostics of this severity — a DISPLAY filter, like --code (never changes the exit code) |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
+
+**Examples**
+
+```bash
+# the ship gate: errors and advisory warnings both fail
+$ arch validate plan.arch --strict --json
+
+# gate on a brief's intent contract and get per-violation correction prompts
+$ arch validate plan.arch --intent brief.json --feedback --json
+
+# check interior-door adjacency against an intended room graph
+$ arch validate plan.arch --graph rooms.json --json
+
+# read only the blocking errors; `ok` and the exit code still weigh every diagnostic
+$ arch validate plan.arch --severity error --json
+```
 
 ### `arch describe`
 
 semantic facts: rooms, areas, adjacency, what doors connect
 
-**Input:** `<file.arch|->` · **Output:** facts (JSON or a summary)
+**Input:** `<file.arch|->` · **Output:** facts (JSON or a summary), narrowed by --room/--select
 
 | Flag | Does |
 | --- | --- |
+| `--room <id[,id…]>` | keep only these rooms; doors/windows/openings/furniture narrow to the ones touching them (plan-level facts — bbox, totals, caption — stay whole-plan) |
+| `--select <key[,key…]>` | emit only these top-level keys of the --json object (rooms, doors, totals, access, circulation, freedom, …); the ok/plan/units/diagnostics envelope is always kept |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
+
+**Examples**
+
+```bash
+# rooms, areas, adjacency, door connections, caption, freedom — confirm the plan means what you intended
+$ arch describe plan.arch --json
+
+# describe source piped on stdin, no temp file
+$ arch describe - --json < plan.arch
+
+# just the rooms and the totals — keep a big plan's facts inside a bounded context
+$ arch describe plan.arch --select rooms,totals --json
+
+# only those two rooms and the doors/windows/furniture that touch them
+$ arch describe plan.arch --room kitchen,bath --json
+```
 
 ### `arch score`
 
@@ -161,18 +273,40 @@ continuous intent satisfaction (satisfied/total) as data — the refine-loop rew
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
+**Examples**
+
+```bash
+# continuous intent satisfaction as the refine-loop reward; always exits 0 on a measurement
+$ arch score plan.arch --brief brief.json --json
+```
+
 ### `arch lint`
 
 architectural soundness warnings
 
-**Input:** `<file.arch|->` · **Output:** W_* warnings
+**Input:** `<file.arch|->` · **Output:** W_* warnings (narrowed by --code/--severity; `filtered`/`total_diagnostics` mark a filtered result)
 
 | Flag | Does |
 | --- | --- |
 | `--profile <residential-basic\|accessibility-advisory>` | advisory ruleset |
 | `--strict, --fail-on-warning` | warnings fail (exit 2) |
+| `--code <CODE[,CODE…]>` | show only diagnostics with these codes — a DISPLAY filter: the exit code and `ok` still come from the unfiltered set |
+| `--severity <error\|warning>` | show only diagnostics of this severity — a DISPLAY filter, like --code (never changes the exit code) |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
+
+**Examples**
+
+```bash
+# architectural soundness warnings as data, each with a fix
+$ arch lint plan.arch --json
+
+# gate on the accessibility ruleset (any warning exits 2)
+$ arch lint plan.arch --profile accessibility-advisory --strict
+
+# read only the reachability warnings; the exit code still reflects every diagnostic
+$ arch lint plan.arch --code W_ROOM_UNREACHABLE,W_NO_ENTRANCE --json
+```
 
 ### `arch ast`
 
@@ -184,6 +318,13 @@ parse only (no resolve/render) and print the span-bearing AST as JSON
 | --- | --- |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
+
+**Examples**
+
+```bash
+# span-bearing parse tree with no resolve or render — locate a statement by byte offset
+$ arch ast plan.arch --json
+```
 
 ### `arch complete`
 
@@ -197,6 +338,16 @@ completion items in scope at a source byte offset (the LSP completion() core)
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
+**Examples**
+
+```bash
+# what may legally be written at byte offset 120
+$ arch complete plan.arch --at 120 --json
+
+# completions for source on stdin
+$ arch complete - --at 0 --json < plan.arch
+```
+
 ### `arch fmt`
 
 canonical formatting
@@ -209,6 +360,16 @@ canonical formatting
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
+**Examples**
+
+```bash
+# canonical source plus a `changed` flag, nothing written
+$ arch fmt plan.arch --json
+
+# rewrite the file in canonical form
+$ arch fmt plan.arch --write
+```
+
 ### `arch repair`
 
 explicit source-to-source corrector (furniture out of walls) + change log
@@ -217,24 +378,51 @@ explicit source-to-source corrector (furniture out of walls) + change log
 
 | Flag | Does |
 | --- | --- |
-| `--out, -o <file\|->` | output destination ('-' = stdout) |
+| `--out, -o <file\|->` | output file for the corrected source, or '-' for stdout (default: stdout) |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
+
+**Examples**
+
+```bash
+# the geometric corrector: `source` + a `changes[]` log of every furniture move
+$ arch repair plan.arch --json
+
+# write the corrected source to a new file
+$ arch repair plan.arch -o repaired.arch
+```
 
 ### `arch fix`
 
 apply the machine-applicable fix suggestions on a plan's diagnostics (bounded fixpoint)
 
-**Input:** `<file.arch|->` · **Output:** fixed source (to the input file or -o) + change log on stderr
+**Input:** `<file.arch|->` · **Output:** fixed source (to the input file or -o) + a unified diff and change log on stderr
 
 | Flag | Does |
 | --- | --- |
-| `--out, -o <file\|->` | output destination ('-' = stdout) |
+| `--out, -o <file\|->` | output file for the fixed source, or '-' for stdout (default: rewrite the input file in place) |
 | `--unsafe` | also apply `maybe-incorrect` fixes (default: machine-applicable only) |
-| `--dry-run` | compute the result but do not write it |
+| `--dry-run` | compute the result but do not write it (the diff preview still prints) |
+| `--backup` | before rewriting a file in place, save the original bytes to &lt;file&gt;.bak |
 | `--force` | keep a pass even if it raises the error count |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
+
+**Examples**
+
+```bash
+# preview the exact unified diff `fix` would write, changing nothing on disk
+$ arch fix plan.arch --dry-run
+
+# the same preview as data: which fixes would be applied, plus the `diff` they produce
+$ arch fix plan.arch --dry-run --json
+
+# apply the machine-applicable fixes in place, keeping the original as plan.arch.bak
+$ arch fix plan.arch --backup --json
+
+# also apply the maybe-incorrect fixes, leaving the input untouched
+$ arch fix plan.arch -o fixed.arch --unsafe --json
+```
 
 ### `arch suggest`
 
@@ -247,6 +435,13 @@ advisory topology suggestions as data (door/window statements that resolve reach
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
+**Examples**
+
+```bash
+# ready-to-paste door/window statements for unreachable rooms, no entrance, or a windowless bedroom
+$ arch suggest plan.arch --json
+```
+
 ### `arch manifest` _(alias: `capabilities`)_
 
 this document: the whole CLI API as structured data
@@ -256,6 +451,13 @@ this document: the whole CLI API as structured data
 | Flag | Does |
 | --- | --- |
 | `--json` | structured result on stdout, messages on stderr |
+
+**Examples**
+
+```bash
+# discover every command, flag, format, and error code in one call
+$ arch manifest --json
+```
 
 ### `arch spec`
 
@@ -267,15 +469,33 @@ print the one-prompt language spec (spec.llm.md)
 | --- | --- |
 | `--json` | structured result on stdout, messages on stderr |
 
+**Examples**
+
+```bash
+# the whole language on one page — read this before authoring
+$ arch spec
+```
+
 ### `arch context`
 
 print the full bundled agent context (spec + workflow + CLI + errors)
 
-**Input:** `none` · **Output:** the full agent context (llms-full.txt)
+**Input:** `none` · **Output:** the full agent context (llms-full.txt), or one --section of it
 
 | Flag | Does |
 | --- | --- |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all ~50KB of it (spec = the language, workflow = the agent loop, cli = every command, errors = the diagnostic catalog) |
 | `--json` | structured result on stdout, messages on stderr |
+
+**Examples**
+
+```bash
+# the cold-start bundle: spec + workflow + CLI reference + every diagnostic
+$ arch context
+
+# just the diagnostic catalog — read one section instead of paying for the whole ~50KB bundle
+$ arch context --section errors
+```
 
 ### `arch new` _(alias: `init`)_
 
@@ -285,9 +505,20 @@ scaffold a starter .arch
 
 | Flag | Does |
 | --- | --- |
-| `--out, -o <file>` | write the starter here |
+| `--out, -o <file\|->` | output file — refuses to overwrite an existing one without --force (default: stdout) |
 | `--force` | overwrite an existing file |
 | `--json` | structured result on stdout, messages on stderr |
+| `--quiet, -q` | suppress human messages on stderr |
+
+**Examples**
+
+```bash
+# get the starter plan as a `template` string, writing nothing
+$ arch new --json
+
+# scaffold a starter file to edit
+$ arch new -o plan.arch
+```
 
 ### `arch explain`
 
@@ -298,3 +529,10 @@ look up an error code (cause / fix / example)
 | Flag | Does |
 | --- | --- |
 | `--json` | structured result on stdout, messages on stderr |
+
+**Examples**
+
+```bash
+# the catalog entry for a diagnostic code: cause, fix, example
+$ arch explain E_ROOM_SIZE --json
+```

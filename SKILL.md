@@ -126,6 +126,32 @@ not make. When lint reports `W_ROOM_UNREACHABLE`, `W_ROOM_DISCONNECTED`, `W_NO_E
 > `W_WINDOW_OFF_WALL` / `W_OPENING_OFF_WALL`) is a mis-coordinate, not a missing connector — run
 > `arch fix` (it rewrites it to the attachment form) rather than adding a new one.
 
+## Ask the CLI, and read only what you need
+
+The CLI documents itself, and every read can be narrowed at the source — never pull a whole plan's
+facts into context just to filter them yourself.
+
+- **`arch <cmd> --help`** (or `arch help <cmd>`) prints that one command's flags *and worked
+  examples* — every command carries at least one copy-pasteable invocation. `arch help` lists the
+  commands; `arch --version` prints the version. A flag a command doesn't take is a usage error
+  (exit `3`) with a did-you-mean, never a silently-swallowed filename — so a typo fails loudly
+  instead of compiling the wrong thing.
+- **`arch describe --select <keys>`** emits only the named top-level keys (`rooms`, `doors`,
+  `windows`, `openings`, `furniture`, `access`, `circulation`, `totals`, `freedom`, `caption`, …);
+  the `ok`/`plan`/`units`/`diagnostics` envelope is always kept, so narrowing can't lose the verdict.
+  **`arch describe --room <ids>`** keeps only those rooms plus the doors/windows/furniture that touch
+  them (whole-plan facts — `bbox`, `totals`, `caption`, each room's `adjacent` — stay whole-plan, so a
+  narrowed read never lies about the building). Both mark the result with `filtered: true`.
+- **`arch lint|validate --code <CODE,…>` / `--severity error|warning`** show only the diagnostics you
+  asked for. These are **display filters only**: `ok` and the exit code are always computed from the
+  *unfiltered* set, so reading less can never turn a failing plan green. A filtered result carries
+  `filtered: true` + `total_diagnostics`.
+- **`arch context --section spec|workflow|cli|errors`** prints one section of the ~50 KB bundle
+  instead of all of it — `errors` for the diagnostic catalog, `cli` for the command reference.
+- **`arch fix --dry-run`** prints the exact unified diff it would write (to stderr; `--json` also
+  carries it as `diff`) and touches nothing. When you do apply in place, **`--backup`** keeps the
+  original bytes at `<file>.bak`.
+
 ## Structured authoring & constrained generation (optional)
 
 - **Plan JSON.** Author or ingest the machine-native shape and compile it: `arch compile plan.json
@@ -139,15 +165,19 @@ not make. When lint reports `W_ROOM_UNREACHABLE`, `W_ROOM_DISCONNECTED`, `W_NO_E
 ```bash
 arch spec                              # the whole language in one page — READ THIS FIRST
 arch context                           # everything in one call: spec + this workflow + CLI reference + error catalog
+arch context --section errors          # just one section of it (spec|workflow|cli|errors)
+arch help <cmd>                        # flags + worked examples for one command (same as `arch <cmd> --help`)
 arch manifest --json                   # the whole CLI API as data: commands, flags, formats, lint rules, error codes
 arch compile plan.arch -o out.svg --json   # render (also -f dxf|txt|pdf|png)
 arch compile plan.arch -f txt          # zero-dependency ASCII text plan on stdout (also `preview --ascii`)
 arch compile plan.json --from-json -o out.svg   # compile structured Plan JSON (see /plan.schema.json)
 echo '<source>' | arch compile - -o - -f svg    # compile stdin → SVG on stdout
-arch fix plan.arch --dry-run --json    # preview the machine-applicable diagnostic fixes (drop --dry-run to apply)
+arch fix plan.arch --dry-run --json    # preview the machine-applicable fixes as a unified diff (drop --dry-run to apply; --backup keeps <file>.bak)
 arch suggest plan.arch --json          # advisory door/window statements: unreachable room / no entrance / bath-via-bedroom / windowless bedroom
 arch describe plan.arch --json         # semantic facts: rooms, areas, adjacency, door connections, circulation
+arch describe plan.arch --select rooms,totals --room kitchen --json   # narrow the facts to what you actually need
 arch lint plan.arch --json             # architectural soundness warnings
+arch lint plan.arch --code W_NO_ENTRANCE --json   # display filter only — never changes `ok` or the exit code
 arch validate plan.arch --strict --json           # parse + resolve + lint; --strict fails on warnings (the ship gate)
 arch validate plan.arch --graph g.json --json     # also check interior-door adjacency against an intended graph
 arch repair plan.arch -o fixed.arch    # geometric corrector: furniture out of walls/doorways/swings + change log

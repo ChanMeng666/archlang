@@ -15,7 +15,7 @@
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { buildManifest, type ManifestFlag } from "../src/manifest.js";
+import { buildManifest, type ManifestExample, type ManifestFlag } from "../src/manifest.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
@@ -55,6 +55,18 @@ function flagTable(flags: readonly ManifestFlag[]): string {
     ...flags.map((f) => `| ${codeCell(flagSignature(f))} | ${proseCell(f.description)} |`),
     "",
   ].join("\n");
+}
+
+/**
+ * The command's worked invocations, as a bash fence. A fence — not a table — on
+ * purpose: an example line carries `|`, `<`, `>` and `*` freely, and inside a fenced
+ * block markdown neither splits cells nor hands the brackets to the Vue compiler, so
+ * none of the {@link prose}/{@link codeCell} escaping applies (and must not: an escaped
+ * `\|` would be copy-pasted verbatim into a shell).
+ */
+function exampleFence(examples: readonly ManifestExample[]): string {
+  const body = examples.map((e) => `# ${e.note}\n$ ${e.cmd}`).join("\n\n");
+  return ["**Examples**", "", "```bash", body, "```", ""].join("\n");
 }
 
 /** Render the whole CLI reference page (string). Pure — safe for the drift test. */
@@ -113,6 +125,7 @@ export function renderCliReference(): string {
       `**Input:** \`${c.input}\` · **Output:** ${prose(c.output)}`,
       "",
       flagTable(c.flags),
+      exampleFence(c.examples),
     );
   }
 

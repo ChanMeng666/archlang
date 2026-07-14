@@ -5,7 +5,7 @@
  * monolithic `src/cli.ts` (mechanical; behavior unchanged).
  */
 
-import { writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve as resolvePath } from "node:path";
 import {
   compile,
@@ -18,6 +18,7 @@ import {
   astToJson,
   completion,
   diagnosticToJson,
+  unifiedDiff,
 } from "../index.js";
 import type { Diagnostic, FixSuggestion } from "../index.js";
 // `arch ast` parses without resolving/rendering; parse() is not on the public
@@ -151,6 +152,12 @@ export function cmdRepair(args: Args): number {
  * the error count is rolled back and the loop stops (unless `--force`). Stops on zero
  * progress or after 4 passes. Writes the result to the input file (or `-o`);
  * `--dry-run` never writes. Report style mirrors `arch repair`.
+ *
+ * Because the default target is the input file itself, this rewrite is the CLI's one
+ * destructive act — so it is previewable and reversible: whenever the source changes, a
+ * unified diff of exactly what would be written goes to stderr (human mode, `--dry-run`
+ * included) and into `--json` as `diff`, and `--backup` saves the target's original bytes
+ * to `<target>.bak` before overwriting (opt-in, so a plain `fix` leaves no `.bak` litter).
  */
 export async function cmdFix(args: Args): Promise<number> {
   const input = args._[0];
@@ -232,7 +239,29 @@ export async function cmdFix(args: Args): Promise<number> {
   // Write the result (default: back to the input; `-o` redirects; `--dry-run` never
   // writes). Stdin input with no `-o` streams to stdout.
   const target = args.o ?? (input === "-" ? "-" : input);
-  const wrote = current !== source && !args.dryRun;
+  const changed = current !== source;
+  const wrote = changed && !args.dryRun;
+  // The exact bytes the write would produce, as a patch — the preview an agent needs to
+  // decide whether to accept an in-place rewrite. Empty when nothing changed.
+  const diff = changed
+    ? unifiedDiff(source, current, `a/${input === "-" ? "stdin" : input}`, `b/${target === "-" ? "stdout" : target}`)
+    : "";
+
+  // `--backup`: preserve what is about to be clobbered. Only a real file that already
+  // exists has anything to lose, so `-o new-file.arch` and stdout write no `.bak`.
+  let backup: string | undefined;
+  if (wrote && target !== "-" && args.backup) {
+    const path = resolvePath(target);
+    if (existsSync(path)) {
+      try {
+        writeFileSync(`${path}.bak`, readFileSync(path, "utf8"), "utf8");
+        backup = `${target}.bak`;
+      } catch (e) {
+        return ioError((e as Error).message, args.json);
+      }
+    }
+  }
+
   if (wrote && target !== "-") {
     try {
       writeFileSync(resolvePath(target), current, "utf8");
@@ -242,14 +271,23 @@ export async function cmdFix(args: Args): Promise<number> {
   }
 
   if (args.json) {
-    emitJson({ ok, passes, applied, skipped, unresolved });
+    // Append-only: `wrote`/`target` say whether (and where) bytes landed, `backup` names
+    // the saved original, `diff` carries the patch. The four are omitted-when-absent only
+    // for `backup`/`diff`, which have no meaningful empty value.
+    const out: Record<string, unknown> = { ok, passes, applied, skipped, unresolved, wrote, target };
+    if (backup) out.backup = backup;
+    if (diff) out.diff = diff;
+    emitJson(out);
   } else {
     if (target === "-" && !args.dryRun) process.stdout.write(current);
     if (!args.quiet) {
+      if (diff) process.stderr.write(diff);
       for (const c of changeLog) process.stderr.write(`  ${c}\n`);
       for (const s of skipped) process.stderr.write(`  skipped${s.code ? ` [${s.code}]` : ""}: ${s.reason}\n`);
       if (stopReason) process.stderr.write(`  ⚠ ${stopReason}\n`);
+      if (backup) process.stderr.write(`  backup: ${backup}\n`);
       if (applied.length === 0) process.stderr.write("  (no fixes applied)\n");
+      else if (args.dryRun) process.stderr.write("  (dry run — nothing written)\n");
       else if (wrote && target !== "-")
         process.stderr.write(
           `✓ ${input} → ${target} (${applied.length} fix${applied.length === 1 ? "" : "es"}, ${passes} pass${passes === 1 ? "" : "es"})\n`,

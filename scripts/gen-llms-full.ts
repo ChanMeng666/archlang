@@ -55,11 +55,19 @@ function flagStr(f: ManifestFlag): string {
   return `\`${names}${arg}\` ${f.description}`;
 }
 
-/** One command as a compact block: name, summary, input/output, key flags. */
+/**
+ * One command as a compact block: name, summary, input/output, key flags, and ONE
+ * worked invocation. Only the first example ships: the bundle is already ~50KB and
+ * goes into a system prompt, so it buys the "what does a real call look like" signal
+ * without paying for the full example set (that lives in `docs/cli-reference.md`).
+ */
 function commandBlock(c: ManifestCommand): string {
   const aliases = c.aliases?.length ? ` (aliases: ${c.aliases.map((a) => `\`${a}\``).join(", ")})` : "";
   const lines = [`**\`arch ${c.name}\`**${aliases} — ${c.summary}`, `  - input: ${c.input} → output: ${c.output}`];
   if (c.flags.length) lines.push(`  - flags: ${c.flags.map(flagStr).join(" · ")}`);
+  const [first] = c.examples;
+  if (!first) throw new Error(`command "${c.name}" has no example — every command must carry at least one`);
+  lines.push(`  - example: \`${first.cmd}\` — ${first.note}`);
   return lines.join("\n");
 }
 
@@ -73,7 +81,8 @@ function cliReference(m: Manifest): string {
     `The \`arch\` CLI is the agent interface. ${m.description}`,
     "",
     "Every command takes `--json` (structured result on stdout, messages on stderr) and reads source",
-    "from a file or stdin (`-`). There is intentionally no MCP server — this CLI is the whole API.",
+    "from a file or stdin (`-`). This CLI is the primary agent interface; an optional stdio MCP shim",
+    "(`@chanmeng666/archlang-mcp`) wraps the same library functions for MCP-native hosts.",
     "",
     `**Exit codes:** ${exit}`,
     "",

@@ -20,7 +20,7 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | Thing | Current | Where |
 |-------|---------|-------|
 | **Core package** | `@chanmeng666/archlang@1.16.0` (published, `latest`, with provenance — released tokenlessly via `.github/workflows/release.yml` OIDC trusted publishing) | npmjs.com/package/@chanmeng666/archlang |
-| **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — now incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`, and v1.14's `validate --intent`/`--feedback` + `score --brief`) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`schemas/intent.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
+| **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`, v1.14's `validate --intent`/`--feedback` + `score --brief`, and the v1.17 **self-describing + bounded-output** layer: manifest-rendered per-command `--help` with worked examples, `--version`, exit-3 did-you-mean on an unknown flag/verb, `describe --room/--select`, `lint\|validate --code/--severity`, `context --section`, `fix --dry-run/--backup` + unified diff) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`schemas/intent.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
 | **MCP server** | `@chanmeng666/archlang-mcp@0.2.1` (published, `latest`; registry entry `io.github.ChanMeng666/archlang-mcp` v0.2.1 live on registry.modelcontextprotocol.io; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate (incl. `intent`)/**score**/repair/fix/suggest/complete + spec/context/schema/**intent-schema**/grammar resources; SDK dep quarantined here, core stays zero-dep) | `packages/mcp/`, `server.json` |
 | **VS Code extension** | `ChanMeng.archlang@0.7.0` (published, live 2026-07-12 — rebundles core 1.15.0: unit-suffix grammar, `W_ALIAS_MATCH` quick fix, `rankFixes` ordering) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** one-light-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
@@ -198,9 +198,17 @@ zero-dep ASCII plan; `pdf` needs optional `pdfkit`; `png` needs optional
 
 **The CLI is agent-native.** Every command takes `--json` (structured result to stdout, messages to
 stderr) with deterministic exit codes (`0` ok · `2` user-source error · `1` IO/internal · `3` bad
-usage), and source can come from stdin (`-`). Beyond `compile`/`watch`/`fmt`/`explain` there are
+usage), and source can come from stdin (`-`). **It is also self-describing and hard to misuse:** the
+manifest (`src/manifest.ts`) declares each command's *exact* flag set plus at least one worked
+`examples[]` entry, and `src/cli/help.ts` renders `arch --help` / `arch <cmd> --help` / `arch help
+<cmd>` **from that manifest** — so help can never list a flag the command doesn't take (a bidirectional
+drift test pins the manifest against both the parser's `FLAG_KEYS` table and the dispatch table). An
+undeclared flag or an unknown verb is a **usage error (exit 3)** with a `closest()` did-you-mean and a
+`usage:` echo — never a silently-swallowed filename. `arch --version` prints the version.
+Beyond `compile`/`watch`/`fmt`/`explain` there are
 `arch spec` (print the whole language — `spec.llm.md`), `arch context` (print the full bundled agent
-context — `llms-full.txt`: spec + skill + CLI reference + error catalog, for a cold-start agent),
+context — `llms-full.txt`: spec + skill + CLI reference + error catalog, for a cold-start agent;
+`--section spec|workflow|cli|errors` prints just one slice instead of the whole ~60KB bundle),
 `arch describe` (semantic JSON: rooms,
 areas, adjacency, door connections — backed by `describe()` in `src/describe.ts`), `arch lint`
 (architectural soundness `W_*` warnings — `src/lint.ts`), `arch validate` (parse+resolve+lint, no
@@ -212,7 +220,9 @@ violation, `--feedback` appends deterministic correction prompts), `arch score` 
 any successful measurement; measures, never gates), `arch ast`
 (parse-only span-bearing AST JSON — `astToJson`), `arch complete --at <offset>` (LSP `completion()`
 items in scope), `arch fix` (apply the machine-applicable `diagnostics[].fixes` via a bounded
-fixpoint — `applyFixes`, `--unsafe`/`--dry-run`/`--force`; ADR 0011), `arch suggest` (advisory
+fixpoint — `applyFixes`, `--unsafe`/`--dry-run`/`--force`; ADR 0011 — it prints a **unified diff** of
+what it would write on stderr, `--dry-run` included, and `--backup` saves the original bytes to
+`<file>.bak` before rewriting in place), `arch suggest` (advisory
 door/window topology statements as data — `suggestTopology`, ADR 0005), `arch new` (scaffold),
 `arch repair` (the explicit source-to-source **geometric** corrector — pushes furniture out of walls
 and emits new `.arch` + a change log; `src/repair.ts`, see ADR 0006 — distinct from `fix`), `arch
@@ -225,6 +235,15 @@ results[] }`), `arch md` (render the ` ```arch ` blocks in a Markdown file → i
 `--error-svg` (on `compile`/`preview`/`md`) renders a failing plan as a self-describing error-card
 SVG instead of no bytes, and `--accessible` (on `compile`) emits SVG `<title>`/`<desc>` +
 `role="img"`; the error-svg/accessible paths leave the default output byte-identical.
+**Bounded output** (so a big plan can't blow an agent's context): `describe --select <keys>` emits only
+the named top-level keys and `describe --room <ids>` keeps only those rooms plus the elements touching
+them (whole-plan facts — `bbox`, `totals`, `caption`, `adjacent` — stay whole-plan, so a narrowed read
+never lies about the building), while `lint`/`validate --code <CODE,…>` / `--severity <error|warning>`
+narrow which diagnostics are *shown*. **The `--code`/`--severity` filters are DISPLAY-only and must stay
+that way — `ok` and the exit code are always computed from the unfiltered diagnostic set**, so reading
+less can never turn a failing plan green (a filtered result is marked `filtered: true` +
+`total_diagnostics`/`selected_rooms`). The narrowing lives in the CLI layer (`src/cli/commands-analyze.ts`),
+never in the library: `describe()`/`lint()` stay pure whole-plan fact producers.
 `describe`/`lint` share the pure analysis layer in `src/analyze.ts` (+ `src/analyze/occupancy.ts`, the
 circulation flood-fill); all are exported from `src/index.ts`. The CLI is the **primary** agent
 interface; an optional stdio **MCP shim** (`packages/mcp`, `@chanmeng666/archlang-mcp`) wraps the same

@@ -42,15 +42,33 @@ export interface ManifestFlag {
   description: string;
 }
 
+/**
+ * A copy-pasteable invocation. `cmd` always starts with `arch ` and its verb is the
+ * command's `name` or one of its `aliases` (a test enforces both); `note` says what
+ * the call does. Agent-oriented on purpose: prefer `--json`, stdin `-`, and `-o -`.
+ */
+export interface ManifestExample {
+  cmd: string;
+  note: string;
+}
+
 export interface ManifestCommand {
   name: string;
   aliases?: string[];
   summary: string;
+  /**
+   * EXACTLY the flags this command honors — the CLI's flag parser rejects anything
+   * else, so a flag a `cmd*` function reads must be listed here or it stops working.
+   * Global flags (`--json`/`--quiet`) are repeated per command when the command
+   * actually honors them (`manifest`/`spec`/`context`/`explain` ignore `--quiet`).
+   */
   flags: ManifestFlag[];
   /** Accepted input (e.g. `<file.arch|->`), or `none`. */
   input: string;
   /** Where output goes (stdout, a file, etc.). */
   output: string;
+  /** At least one worked invocation (see {@link ManifestExample}). */
+  examples: readonly ManifestExample[];
 }
 
 export interface Manifest {
@@ -74,17 +92,29 @@ export interface Manifest {
 
 const JSON_FLAG: ManifestFlag = { flag: "--json", description: "structured result on stdout, messages on stderr" };
 const QUIET_FLAG: ManifestFlag = { flag: "--quiet", alias: "-q", description: "suppress human messages on stderr" };
+/**
+ * `-o/--out` is deliberately overloaded across commands (kept for backward compat):
+ * a FILE for compile/watch/preview/md/repair/fix/new, a DIRECTORY for batch. Each
+ * command therefore declares its own `--out` with its real semantics rather than
+ * sharing one vague description.
+ */
 const OUT_FLAG: ManifestFlag = {
   flag: "--out",
   alias: "-o",
   arg: "<file|->",
-  description: "output destination ('-' = stdout)",
+  description: "output file, or '-' for stdout (default: the input path with the format's extension)",
 };
 const FMT_FLAG: ManifestFlag = {
   flag: "--format",
   alias: "-f",
   arg: "<svg|dxf|txt|pdf|png>",
   description: "output format (default svg)",
+};
+const SCALE_FLAG: ManifestFlag = {
+  flag: "--scale",
+  alias: "-s",
+  arg: "<n>",
+  description: "raster scale for the PNG backend (ignored by the non-raster formats)",
 };
 const COLS_FLAG: ManifestFlag = {
   flag: "--cols",
@@ -149,81 +179,204 @@ const BRIEF_FLAG: ManifestFlag = {
   description: "the intent JSON to measure satisfaction against (required)",
 };
 
+const INSTALL_FLAG: ManifestFlag = {
+  flag: "--install",
+  description: "auto-install the optional dep for the chosen format if missing (PNG/PDF)",
+};
+
+/**
+ * The narrowing flags (v1.17) — bounded, high-signal output. On a large plan an agent
+ * used to have to pull EVERY room / diagnostic into its context and filter client-side;
+ * these do it at the source. `--code`/`--severity` are DISPLAY filters only: the exit
+ * code and `ok` are always computed from the unfiltered diagnostic set, so narrowing
+ * what you read can never change what gates (see `report` in cli/commands-analyze.ts).
+ */
+const ROOM_FLAG: ManifestFlag = {
+  flag: "--room",
+  arg: "<id[,id…]>",
+  description:
+    "keep only these rooms; doors/windows/openings/furniture narrow to the ones touching them (plan-level facts — bbox, totals, caption — stay whole-plan)",
+};
+const SELECT_FLAG: ManifestFlag = {
+  flag: "--select",
+  arg: "<key[,key…]>",
+  description:
+    "emit only these top-level keys of the --json object (rooms, doors, totals, access, circulation, freedom, …); the ok/plan/units/diagnostics envelope is always kept",
+};
+const CODE_FLAG: ManifestFlag = {
+  flag: "--code",
+  arg: "<CODE[,CODE…]>",
+  description:
+    "show only diagnostics with these codes — a DISPLAY filter: the exit code and `ok` still come from the unfiltered set",
+};
+const SEVERITY_FLAG: ManifestFlag = {
+  flag: "--severity",
+  arg: "<error|warning>",
+  description: "show only diagnostics of this severity — a DISPLAY filter, like --code (never changes the exit code)",
+};
+const SECTION_FLAG: ManifestFlag = {
+  flag: "--section",
+  arg: "<spec|workflow|cli|errors>",
+  description:
+    "print only one section of the bundle instead of all ~50KB of it (spec = the language, workflow = the agent loop, cli = every command, errors = the diagnostic catalog)",
+};
+
+/**
+ * The render pipeline's flag set. `compile` and `watch` share it byte-for-byte
+ * because `cmdWatch` re-enters `cmdCompile` on every save — it honors literally
+ * everything compile does, so it must declare it (the parser rejects the rest).
+ */
+const COMPILE_FLAGS: ManifestFlag[] = [
+  OUT_FLAG,
+  FMT_FLAG,
+  WIDTH_FLAG,
+  SCALE_FLAG,
+  COLS_FLAG,
+  CHARSET_FLAG,
+  OVERLAY_FLAG,
+  ERROR_SVG_FLAG,
+  ACCESSIBLE_FLAG,
+  FROM_JSON_FLAG,
+  INSTALL_FLAG,
+  JSON_FLAG,
+  QUIET_FLAG,
+];
+
 /**
  * The command table. Keys MUST cover exactly the verbs the CLI's `main()`
- * dispatch handles (the manifest drift test enforces it both ways).
+ * dispatch handles (the manifest drift test enforces it both ways), and each
+ * command's `flags` must be EXACTLY the flags its `cmd*` function honors — the
+ * two are checked against each other, and an undeclared flag is rejected at parse.
  */
 const COMMANDS: ManifestCommand[] = [
   {
     name: "compile",
     summary: "render a plan to SVG/DXF/TXT/PDF/PNG",
-    flags: [
-      OUT_FLAG,
-      FMT_FLAG,
-      WIDTH_FLAG,
-      COLS_FLAG,
-      CHARSET_FLAG,
-      OVERLAY_FLAG,
-      ERROR_SVG_FLAG,
-      ACCESSIBLE_FLAG,
-      FROM_JSON_FLAG,
-      { flag: "--install", description: "auto-install the optional dep for the chosen format if missing (PNG/PDF)" },
-      JSON_FLAG,
-      QUIET_FLAG,
-    ],
+    flags: COMPILE_FLAGS,
     input: "<file.arch|-> (Plan JSON with --from-json)",
     output: "file (or stdout with -o -)",
+    examples: [
+      { cmd: "arch compile plan.arch --json", note: "render SVG next to the input; structured result on stdout" },
+      { cmd: "arch compile - -o - < plan.arch", note: "compile source from stdin straight to SVG on stdout" },
+      {
+        cmd: "arch compile plan.arch -f png --install --json",
+        note: "rasterize to PNG, fetching the optional renderer if it is missing",
+      },
+    ],
   },
   {
     name: "batch",
     summary: "render many .arch files in one call, concurrently",
     flags: [
-      { flag: "--out", alias: "-o", arg: "<dir>", description: "output directory (default: alongside each input)" },
+      {
+        flag: "--out",
+        alias: "-o",
+        arg: "<dir>",
+        description: "output DIRECTORY for every rendered file (default: alongside each input)",
+      },
       FMT_FLAG,
       { flag: "--jobs", alias: "-j", arg: "<n>", description: "max concurrent renders (default: CPU count)" },
+      WIDTH_FLAG,
+      SCALE_FLAG,
+      COLS_FLAG,
+      CHARSET_FLAG,
+      OVERLAY_FLAG,
+      ERROR_SVG_FLAG,
+      ACCESSIBLE_FLAG,
+      INSTALL_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
     input: "<a.arch> <b.arch> …",
     output: "one file per input; --json gives a results[] array",
+    examples: [
+      {
+        cmd: "arch batch a.arch b.arch c.arch -o out/ --json",
+        note: "render design variants concurrently; one result row per input",
+      },
+      {
+        cmd: "arch batch plans/*.arch -f dxf -j 4 --json",
+        note: "export a whole directory to DXF, 4 renders at a time",
+      },
+    ],
   },
   {
     name: "md",
     aliases: ["markdown"],
     summary: "render every ```arch block in a Markdown file and rewrite to image links",
     flags: [
-      { flag: "--out", alias: "-o", arg: "<out.md>", description: "rewritten Markdown destination" },
-      FMT_FLAG,
+      {
+        flag: "--out",
+        alias: "-o",
+        arg: "<out.md|->",
+        description: "rewritten Markdown file, or '-' for stdout (default: <name>.out.md)",
+      },
+      { flag: "--format", alias: "-f", arg: "<svg|png>", description: "image format for the blocks (default svg)" },
+      WIDTH_FLAG,
+      SCALE_FLAG,
+      OVERLAY_FLAG,
       ERROR_SVG_FLAG,
+      ACCESSIBLE_FLAG,
+      INSTALL_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
     input: "<doc.md>",
     output: "out.md + one image per block",
+    examples: [
+      {
+        cmd: "arch md README.md -o README.out.md --json",
+        note: "render the fenced arch blocks to SVGs and rewrite them to image links",
+      },
+      {
+        cmd: "arch md doc.md -f png --error-svg --json",
+        note: "PNG images; a broken block still yields an error card",
+      },
+    ],
   },
   {
     name: "preview",
     summary: "render a PNG you can look at (zero-install where the optional binary is present)",
     flags: [
-      { flag: "--out", alias: "-o", arg: "<out.png>", description: "PNG destination (default: <name>.png)" },
-      { flag: "--scale", alias: "-s", arg: "<n>", description: "raster scale (default 2)" },
+      {
+        flag: "--out",
+        alias: "-o",
+        arg: "<out.png|->",
+        description: "output PNG file, or '-' for stdout (default: <name>.png)",
+      },
+      {
+        ...SCALE_FLAG,
+        description: "raster scale (default 1; without -w/-s the page auto-targets ~1600px wide for legibility)",
+      },
+      WIDTH_FLAG,
       { flag: "--ascii", description: "print a zero-dependency ASCII text plan to stdout instead of a PNG" },
       COLS_FLAG,
       CHARSET_FLAG,
+      OVERLAY_FLAG,
       ERROR_SVG_FLAG,
-      { flag: "--install", description: "auto-install @resvg/resvg-js if missing, then render" },
+      { ...INSTALL_FLAG, description: "auto-install @resvg/resvg-js if missing, then render" },
       JSON_FLAG,
       QUIET_FLAG,
     ],
     input: "<file.arch|->",
     output: "PNG file (or ASCII text on stdout with --ascii)",
+    examples: [
+      { cmd: "arch preview plan.arch --ascii --json", note: "a zero-dependency text plan an agent can read on stdout" },
+      { cmd: "arch preview plan.arch -o plan.png --json", note: "raster the plan so a vision model can look at it" },
+    ],
   },
   {
     name: "watch",
     summary: "recompile on save (interactive)",
-    flags: [OUT_FLAG, FMT_FLAG, WIDTH_FLAG],
+    flags: COMPILE_FLAGS,
     input: "<file.arch>",
     output: "file, rewritten on each save",
+    examples: [
+      {
+        cmd: "arch watch plan.arch -o plan.svg",
+        note: "recompile on every save (interactive; agents should use compile)",
+      },
+    ],
   },
   {
     name: "validate",
@@ -233,19 +386,51 @@ const COMMANDS: ManifestCommand[] = [
       GRAPH_FLAG,
       INTENT_FLAG,
       FEEDBACK_FLAG,
+      CODE_FLAG,
+      SEVERITY_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
     input: "<file.arch|->",
     output:
       "diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations } block with --intent)",
+    examples: [
+      { cmd: "arch validate plan.arch --strict --json", note: "the ship gate: errors and advisory warnings both fail" },
+      {
+        cmd: "arch validate plan.arch --intent brief.json --feedback --json",
+        note: "gate on a brief's intent contract and get per-violation correction prompts",
+      },
+      {
+        cmd: "arch validate plan.arch --graph rooms.json --json",
+        note: "check interior-door adjacency against an intended room graph",
+      },
+      {
+        cmd: "arch validate plan.arch --severity error --json",
+        note: "read only the blocking errors; `ok` and the exit code still weigh every diagnostic",
+      },
+    ],
   },
   {
     name: "describe",
     summary: "semantic facts: rooms, areas, adjacency, what doors connect",
-    flags: [JSON_FLAG, QUIET_FLAG],
+    flags: [ROOM_FLAG, SELECT_FLAG, JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
-    output: "facts (JSON or a summary)",
+    output: "facts (JSON or a summary), narrowed by --room/--select",
+    examples: [
+      {
+        cmd: "arch describe plan.arch --json",
+        note: "rooms, areas, adjacency, door connections, caption, freedom — confirm the plan means what you intended",
+      },
+      { cmd: "arch describe - --json < plan.arch", note: "describe source piped on stdin, no temp file" },
+      {
+        cmd: "arch describe plan.arch --select rooms,totals --json",
+        note: "just the rooms and the totals — keep a big plan's facts inside a bounded context",
+      },
+      {
+        cmd: "arch describe plan.arch --room kitchen,bath --json",
+        note: "only those two rooms and the doors/windows/furniture that touch them",
+      },
+    ],
   },
   {
     name: "score",
@@ -255,6 +440,12 @@ const COMMANDS: ManifestCommand[] = [
     input: "<file.arch|->",
     output:
       "{ ok, satisfied, total, score, subscores, violations } (exit 0 on a successful measurement, even when assertions fail)",
+    examples: [
+      {
+        cmd: "arch score plan.arch --brief brief.json --json",
+        note: "continuous intent satisfaction as the refine-loop reward; always exits 0 on a measurement",
+      },
+    ],
   },
   {
     name: "lint",
@@ -262,11 +453,24 @@ const COMMANDS: ManifestCommand[] = [
     flags: [
       { flag: "--profile", arg: `<${LINT_PROFILE_NAMES.join("|")}>`, description: "advisory ruleset" },
       { flag: "--strict", alias: "--fail-on-warning", description: "warnings fail (exit 2)" },
+      CODE_FLAG,
+      SEVERITY_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
     input: "<file.arch|->",
-    output: "W_* warnings",
+    output: "W_* warnings (narrowed by --code/--severity; `filtered`/`total_diagnostics` mark a filtered result)",
+    examples: [
+      { cmd: "arch lint plan.arch --json", note: "architectural soundness warnings as data, each with a fix" },
+      {
+        cmd: "arch lint plan.arch --profile accessibility-advisory --strict",
+        note: "gate on the accessibility ruleset (any warning exits 2)",
+      },
+      {
+        cmd: "arch lint plan.arch --code W_ROOM_UNREACHABLE,W_NO_ENTRANCE --json",
+        note: "read only the reachability warnings; the exit code still reflects every diagnostic",
+      },
+    ],
   },
   {
     name: "ast",
@@ -274,6 +478,12 @@ const COMMANDS: ManifestCommand[] = [
     flags: [JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
     output: "AST JSON (scripting nodes unexpanded)",
+    examples: [
+      {
+        cmd: "arch ast plan.arch --json",
+        note: "span-bearing parse tree with no resolve or render — locate a statement by byte offset",
+      },
+    ],
   },
   {
     name: "complete",
@@ -281,6 +491,10 @@ const COMMANDS: ManifestCommand[] = [
     flags: [AT_FLAG, JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
     output: "{ items: [...] } completion items",
+    examples: [
+      { cmd: "arch complete plan.arch --at 120 --json", note: "what may legally be written at byte offset 120" },
+      { cmd: "arch complete - --at 0 --json < plan.arch", note: "completions for source on stdin" },
+    ],
   },
   {
     name: "fmt",
@@ -288,27 +502,70 @@ const COMMANDS: ManifestCommand[] = [
     flags: [{ flag: "--write", description: "format the file in place" }, JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
     output: "formatted source (or in place with --write)",
+    examples: [
+      { cmd: "arch fmt plan.arch --json", note: "canonical source plus a `changed` flag, nothing written" },
+      { cmd: "arch fmt plan.arch --write", note: "rewrite the file in canonical form" },
+    ],
   },
   {
     name: "repair",
     summary: "explicit source-to-source corrector (furniture out of walls) + change log",
-    flags: [OUT_FLAG, JSON_FLAG, QUIET_FLAG],
+    flags: [
+      {
+        ...OUT_FLAG,
+        description: "output file for the corrected source, or '-' for stdout (default: stdout)",
+      },
+      JSON_FLAG,
+      QUIET_FLAG,
+    ],
     input: "<file.arch|->",
     output: "corrected source + change log on stderr",
+    examples: [
+      {
+        cmd: "arch repair plan.arch --json",
+        note: "the geometric corrector: `source` + a `changes[]` log of every furniture move",
+      },
+      { cmd: "arch repair plan.arch -o repaired.arch", note: "write the corrected source to a new file" },
+    ],
   },
   {
     name: "fix",
     summary: "apply the machine-applicable fix suggestions on a plan's diagnostics (bounded fixpoint)",
     flags: [
-      OUT_FLAG,
+      {
+        ...OUT_FLAG,
+        description: "output file for the fixed source, or '-' for stdout (default: rewrite the input file in place)",
+      },
       { flag: "--unsafe", description: "also apply `maybe-incorrect` fixes (default: machine-applicable only)" },
-      { flag: "--dry-run", description: "compute the result but do not write it" },
+      { flag: "--dry-run", description: "compute the result but do not write it (the diff preview still prints)" },
+      {
+        flag: "--backup",
+        description: "before rewriting a file in place, save the original bytes to <file>.bak",
+      },
       { flag: "--force", description: "keep a pass even if it raises the error count" },
       JSON_FLAG,
       QUIET_FLAG,
     ],
     input: "<file.arch|->",
-    output: "fixed source (to the input file or -o) + change log on stderr",
+    output: "fixed source (to the input file or -o) + a unified diff and change log on stderr",
+    examples: [
+      {
+        cmd: "arch fix plan.arch --dry-run",
+        note: "preview the exact unified diff `fix` would write, changing nothing on disk",
+      },
+      {
+        cmd: "arch fix plan.arch --dry-run --json",
+        note: "the same preview as data: which fixes would be applied, plus the `diff` they produce",
+      },
+      {
+        cmd: "arch fix plan.arch --backup --json",
+        note: "apply the machine-applicable fixes in place, keeping the original as plan.arch.bak",
+      },
+      {
+        cmd: "arch fix plan.arch -o fixed.arch --unsafe --json",
+        note: "also apply the maybe-incorrect fixes, leaving the input untouched",
+      },
+    ],
   },
   {
     name: "suggest",
@@ -316,6 +573,12 @@ const COMMANDS: ManifestCommand[] = [
     flags: [JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
     output: "suggestions (JSON or a summary)",
+    examples: [
+      {
+        cmd: "arch suggest plan.arch --json",
+        note: "ready-to-paste door/window statements for unreachable rooms, no entrance, or a windowless bedroom",
+      },
+    ],
   },
   {
     name: "manifest",
@@ -324,6 +587,9 @@ const COMMANDS: ManifestCommand[] = [
     flags: [JSON_FLAG],
     input: "none",
     output: "the manifest (JSON or a summary)",
+    examples: [
+      { cmd: "arch manifest --json", note: "discover every command, flag, format, and error code in one call" },
+    ],
   },
   {
     name: "spec",
@@ -331,25 +597,43 @@ const COMMANDS: ManifestCommand[] = [
     flags: [JSON_FLAG],
     input: "none",
     output: "the spec",
+    examples: [{ cmd: "arch spec", note: "the whole language on one page — read this before authoring" }],
   },
   {
     name: "context",
     summary: "print the full bundled agent context (spec + workflow + CLI + errors)",
-    flags: [JSON_FLAG],
+    flags: [SECTION_FLAG, JSON_FLAG],
     input: "none",
-    output: "the full agent context (llms-full.txt)",
+    output: "the full agent context (llms-full.txt), or one --section of it",
+    examples: [
+      { cmd: "arch context", note: "the cold-start bundle: spec + workflow + CLI reference + every diagnostic" },
+      {
+        cmd: "arch context --section errors",
+        note: "just the diagnostic catalog — read one section instead of paying for the whole ~50KB bundle",
+      },
+    ],
   },
   {
     name: "new",
     aliases: ["init"],
     summary: "scaffold a starter .arch",
     flags: [
-      { flag: "--out", alias: "-o", arg: "<file>", description: "write the starter here" },
+      {
+        flag: "--out",
+        alias: "-o",
+        arg: "<file|->",
+        description: "output file — refuses to overwrite an existing one without --force (default: stdout)",
+      },
       { flag: "--force", description: "overwrite an existing file" },
       JSON_FLAG,
+      QUIET_FLAG,
     ],
     input: "none",
     output: "starter source",
+    examples: [
+      { cmd: "arch new --json", note: "get the starter plan as a `template` string, writing nothing" },
+      { cmd: "arch new -o plan.arch", note: "scaffold a starter file to edit" },
+    ],
   },
   {
     name: "explain",
@@ -357,6 +641,9 @@ const COMMANDS: ManifestCommand[] = [
     flags: [JSON_FLAG],
     input: "<CODE>",
     output: "catalog entry",
+    examples: [
+      { cmd: "arch explain E_ROOM_SIZE --json", note: "the catalog entry for a diagnostic code: cause, fix, example" },
+    ],
   },
 ];
 
