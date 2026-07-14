@@ -228,8 +228,9 @@ the doorway approach and the door's swing clear.
 **Fix topology from facts, not guesses.** \`arch repair\` corrects furniture but never adds a door or
 window (that is a design choice). When lint reports \`W_ROOM_UNREACHABLE\`, \`W_NO_ENTRANCE\`,
 \`W_BEDROOM_NO_WINDOW\`, or \`W_BATH_VIA_BEDROOM\`, run \`arch suggest --json\` — it returns
-ready-to-paste \`door\`/\`window\` statements in the attachment form (furniture-aware: a door candidate
-never opens onto a wardrobe) with a rationale; pick one and insert it. If nothing fits, read
+ready-to-paste \`door\`/\`window\` statements (furniture-aware: a door candidate never opens onto a
+wardrobe) that reference a wall only by a stable ref (an authored id or a unique category) or absolute
+coordinates — never a re-bindable positional auto-id — with a rationale; pick one and insert it. If nothing fits, read
 \`describe --json\` (\`access.rooms[].reachable\`, room \`bbox\`/\`adjacent\`, building extent =
 min/max of room boxes) and attach the opening yourself — an exterior entrance into a cut-off living
 space beats routing a bath through a bedroom — then re-\`repair\` and \`validate --strict\`. See

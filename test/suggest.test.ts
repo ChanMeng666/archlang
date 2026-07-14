@@ -38,14 +38,21 @@ describe("suggestTopology", () => {
     expect(suggestTopology('plan "X" { units mm room at (0,0) size 0x100 }')).toEqual([]);
   });
 
-  it("proposes doors that reconnect an unreachable room, longest shared wall first", () => {
+  it("ranks the interior reconnection first for a PRIVATE unreachable room", () => {
     const s = suggestTopology(faulty);
     const unreach = s.find((x) => x.code === "W_ROOM_UNREACHABLE")!;
     expect(unreach.roomId).toBe("bed");
-    // Best candidate is the longest opening-free wall run (the east exterior wall).
-    expect(unreach.candidates[0]!.insertText).toBe("door on ext at 40.385% width 900");
-    // A door on the shared partition reconnects the bedroom to the reachable living room.
-    expect(unreach.candidates.map((c) => c.insertText)).toContain("door on part at 50% width 900");
+    // `bed` is a bedroom (private): the interior door onto the shared partition
+    // (reconnecting to the reachable living room) outranks any exterior door, even
+    // though the east exterior wall offers a longer opening-free run.
+    expect(unreach.candidates[0]!.insertText).toBe("door on part at 50% width 900");
+    // The exterior candidate (longest free run) is still offered, just lower.
+    expect(unreach.candidates.map((c) => c.insertText)).toContain("door on ext at 40.385% width 900");
+    // Explicit interior-before-exterior ordering for the private room.
+    const idxInterior = unreach.candidates.findIndex((c) => c.insertText.includes(" part "));
+    const idxExterior = unreach.candidates.findIndex((c) => c.insertText.includes(" ext "));
+    expect(idxInterior).toBeGreaterThanOrEqual(0);
+    expect(idxExterior).toBeGreaterThan(idxInterior);
   });
 
   it("proposes a window on an exterior wall for a windowless bedroom", () => {
@@ -103,6 +110,10 @@ describe("suggestTopology — W_NO_ENTRANCE", () => {
     // The entrance is sited on the LIVING room (habitable), never the bedroom.
     expect(top.rationale).toContain("Living");
     expect(noEntry!.candidates.every((c) => c.rationale.includes("Living"))).toBe(true);
+    // An entrance is exterior by definition — the architectural reordering of the
+    // private-room builder never touches W_NO_ENTRANCE, so it stays exterior-first.
+    expect(top.insertText.startsWith("door on ext ")).toBe(true);
+    expect(noEntry!.candidates.every((c) => c.insertText.startsWith("door on ext "))).toBe(true);
   });
 
   it("applying the top candidate clears W_NO_ENTRANCE", () => {
@@ -213,5 +224,104 @@ describe("suggestTopology — furniture-aware door candidates", () => {
     const fixed = FURNITURE_BLOCKED.replace("  door id=entry", `  ${insertText}\n  door id=entry`);
     expect(compile(fixed).diagnostics.filter((d) => d.severity === "error")).toHaveLength(0);
     expect(lint(fixed).map((d) => d.code)).not.toContain("W_ROOM_UNREACHABLE");
+  });
+});
+
+// `faulty`, but with NO wall ids declared — the walls take positional auto-ids
+// (`exterior_1`, `partition_1`), while each CATEGORY is unique across the plan. A
+// candidate must reference the bare unique category (`on partition` / `on exterior`),
+// never the re-bindable positional id.
+const UNIQUE_CAT = `plan "UniqueCat" {
+  units mm
+  grid 50
+  wall exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+  wall partition thickness 100 { (5000,0) (5000,5000) }
+  room id=living at (0,0) size 5000x5000 label "Living"
+  room id=bed at (5000,0) size 3000x5000 label "Bedroom"
+  door id=entry at (2500,0) width 900 wall exterior
+}`;
+
+// Two undeclared PARTITION walls, so the `partition` category is no longer unique:
+// the bedroom's interior host can't be named by id (positional, re-bindable) or by
+// category (ambiguous), so the candidate must fall back to absolute coordinates. The
+// second partition is a free stub inside the living room — it makes `partition`
+// non-unique without creating a second unreachable room, so the round-trip fully clears.
+const MULTI_PART = `plan "MultiPart" {
+  units mm
+  grid 50
+  wall exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+  wall partition thickness 100 { (5000,0) (5000,5000) }
+  wall partition thickness 100 { (2000,2000) (2000,3000) }
+  room id=living at (0,0) size 5000x5000 label "Living"
+  room id=bed at (5000,0) size 3000x5000 label "Bedroom"
+  door id=entry at (2500,0) width 900 wall exterior
+}`;
+
+// A NON-private unreachable room (`store`): the architectural interior-first
+// reordering must NOT apply, so candidates keep the pure geometric (longest-run)
+// order — here the exterior top wall (3000mm run) outranks the shorter shared
+// partition (2000mm run) it could also reconnect through.
+const NON_PRIVATE = `plan "NonPrivate" {
+  units mm
+  grid 50
+  wall id=ext exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+  wall id=part partition thickness 100 { (5000,0) (5000,2000) }
+  room id=hall at (0,0) size 5000x5000 label "Hall"
+  room id=store at (5000,0) size 3000x2000 label "Store"
+  door id=entry at (2500,0) width 900 wall exterior
+}`;
+
+describe("suggestTopology — stable wall references", () => {
+  const noPositionalId = (s: ReturnType<typeof suggestTopology>): void => {
+    for (const sug of s) {
+      for (const c of sug.candidates) {
+        // A positional auto-id looks like `on <category>_<n>` — never emit one.
+        expect(c.insertText).not.toMatch(/on \w+_\d+/);
+      }
+    }
+  };
+
+  it("references a bare UNIQUE category when the host wall id was auto-assigned", () => {
+    const s = suggestTopology(UNIQUE_CAT);
+    noPositionalId(s);
+    const unreach = s.find((x) => x.code === "W_ROOM_UNREACHABLE")!;
+    // Private bedroom → interior partition first, by bare unique category.
+    expect(unreach.candidates[0]!.insertText).toBe("door on partition at 50% width 900");
+    expect(unreach.candidates.map((c) => c.insertText)).toContain("door on exterior at 40.385% width 900");
+    // The windowless-bedroom builder is stable-ref too (unique `exterior`).
+    const nowin = s.find((x) => x.code === "W_BEDROOM_NO_WINDOW")!;
+    expect(nowin.candidates[0]!.insertText).toMatch(/^window on exterior at [\d.]+% width 1200$/);
+  });
+
+  it("falls back to ABSOLUTE coordinates when neither id nor category is stable", () => {
+    const s = suggestTopology(MULTI_PART);
+    noPositionalId(s);
+    const unreach = s.find((x) => x.code === "W_ROOM_UNREACHABLE" && x.roomId === "bed")!;
+    // `partition` is ambiguous (two of them) and the id is positional → absolute point.
+    expect(unreach.candidates[0]!.insertText).toBe("door at (5000, 2500) width 900");
+  });
+
+  it("the absolute-fallback candidate hosts onto the intended wall on round-trip", () => {
+    const top = suggestTopology(MULTI_PART).find((x) => x.code === "W_ROOM_UNREACHABLE" && x.roomId === "bed")!
+      .candidates[0]!;
+    const fixed = MULTI_PART.replace("  door id=entry", `  ${top.insertText}\n  door id=entry`);
+    const diags = compile(fixed).diagnostics;
+    expect(diags.filter((d) => d.severity === "error")).toHaveLength(0);
+    const codes = lint(fixed).map((d) => d.code);
+    // Hosted by nearest-wall detection — no off-wall warning, and reachability restored.
+    expect(codes).not.toContain("W_DOOR_OFF_WALL");
+    expect(codes).not.toContain("W_ROOM_UNREACHABLE");
+  });
+
+  it("keeps the pure geometric order for a NON-private unreachable room", () => {
+    const s = suggestTopology(NON_PRIVATE);
+    const unreach = s.find((x) => x.code === "W_ROOM_UNREACHABLE" && x.roomId === "store")!;
+    // Geometric (longest-run) order: the exterior top wall outranks the shorter
+    // interior partition — the private-room interior-first rule does NOT apply here.
+    expect(unreach.candidates[0]!.insertText.startsWith("door on ext ")).toBe(true);
+    expect(unreach.candidates.map((c) => c.insertText)).toContain("door on part at 50% width 900");
+    const idxExterior = unreach.candidates.findIndex((c) => c.insertText.includes(" ext "));
+    const idxInterior = unreach.candidates.findIndex((c) => c.insertText.includes(" part "));
+    expect(idxExterior).toBeLessThan(idxInterior);
   });
 });

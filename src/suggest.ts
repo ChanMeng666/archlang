@@ -13,6 +13,12 @@
  * rule so a suggestion fires iff the lint fires. The agent (or human) chooses;
  * nothing here edits the plan.
  *
+ * Every candidate references its host wall only by a STABLE ref that cannot silently
+ * re-bind: an author-declared wall id, else a unique wall category, else absolute
+ * coordinates (see {@link composeOpening}). A positional auto-id (`partition_3`) is
+ * never emitted, since a later same-category wall would re-index it and corrupt a
+ * persisted suggestion.
+ *
  * Pure and deterministic: rooms are processed in source order; each candidate is
  * the midpoint of the longest opening-free run of a shared/exterior wall, ordered
  * by that run's length. Zero-dependency; built on the same resolve + access-graph
@@ -39,7 +45,9 @@ import type { RDoor, RFurniture, ROpening, RRoom, RWall, RWindow } from "./ir.js
 
 /** One concrete statement that would resolve a suggested fault, with a reason. */
 export interface SuggestionCandidate {
-  /** A complete `.arch` statement to paste (uses the `on <wall> at <p>%` form). */
+  /** A complete `.arch` statement to paste. References its host wall by a stable ref
+   *  — `on <id>`, `on <category>` (when unique), or absolute `at (x, y)` — never a
+   *  positional auto-id (see {@link composeOpening}). */
   insertText: string;
   /** Why this candidate is proposed (which wall, what it connects / lights). */
   rationale: string;
@@ -221,6 +229,30 @@ function orderCandidates(raw: RawCandidate[]): SuggestionCandidate[] {
 const edgePoint = (e: Edge, along: number): Point =>
   e.axis === "h" ? { x: along, y: e.fixed } : { x: e.fixed, y: along };
 
+/**
+ * Compose a paste-ready opening statement that references its host wall ONLY by a
+ * ref that can never re-bind — the FIRST available of:
+ *   1. an author-declared id → `on <wall.id>`;
+ *   2. a unique category → `on <wall.category>` (valid iff exactly one wall carries it);
+ *   3. absolute coordinates → `at (x, y)` (names no wall; the compiler's nearest-wall
+ *      hosting binds the intended wall, since run midpoints sit far from corners).
+ * A positional auto-id (`partition_3`, assigned per-kind in `assignIds`) is DELIBERATELY
+ * never emitted: inserting a later same-category wall re-indexes it, silently corrupting
+ * any persisted suggestion. `categoryCount` is the wall-count-per-category over the plan.
+ */
+function composeOpening(
+  kind: "door" | "window",
+  wall: RWall,
+  pct: number,
+  point: Point,
+  width: number,
+  categoryCount: ReadonlyMap<string, number>,
+): string {
+  if (wall._idAuthored) return `${kind} on ${wall.id} at ${numStr(pct)}% width ${width}`;
+  if (categoryCount.get(wall.category) === 1) return `${kind} on ${wall.category} at ${numStr(pct)}% width ${width}`;
+  return `${kind} at (${numStr(point.x)}, ${numStr(point.y)}) width ${width}`;
+}
+
 export type SuggestOptions = AnalyzeOptions;
 
 /**
@@ -242,6 +274,9 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   if (rooms.length === 0 || walls.length === 0) return [];
 
   const tol = DEFAULT_TOL;
+  // Wall count per category — a bare `on <category>` stable ref is valid iff unique.
+  const categoryCount = new Map<string, number>();
+  for (const w of walls) categoryCount.set(w.category, (categoryCount.get(w.category) ?? 0) + 1);
   const access = buildDoorAccessGraph(rooms, doors, tol, undefined, openings);
   const reachable = new Set(access.rooms.filter((r) => r.reachable).map((r) => r.id));
   // Every connector (door/opening) that can block a new opening's site.
@@ -273,9 +308,10 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
         const blocked = [...blockedRuns(e, connectors, tol), ...furnitureBlockedRuns(e, rect, furniture)];
         const free = longestFreeRun(e.lo, e.hi, blocked);
         if (!free || free.len < DOOR_WIDTH) continue;
-        const { pct } = projectPointOntoWall(host.wall as AttachableWall, edgePoint(e, free.mid));
+        const point = edgePoint(e, free.mid);
+        const { pct } = projectPointOntoWall(host.wall as AttachableWall, point);
         bucket.push({
-          insertText: `door on ${host.wall.id} at ${numStr(pct)}% width ${DOOR_WIDTH}`,
+          insertText: composeOpening("door", host.wall, pct, point, DOOR_WIDTH, categoryCount),
           rationale: `A door on exterior wall "${host.wall.id}" opens "${label}" to the outside as the building's entrance.`,
           len: free.len,
           wallId: host.wall.id,
@@ -306,7 +342,13 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
     // lint emits W_NO_ENTRANCE for the whole plan, not per-room unreachability, so
     // this builder stays silent to fire iff the lint fires (see W_NO_ENTRANCE below).
     if (access.hasEntrance && node && !node.reachable) {
-      const raw: RawCandidate[] = [];
+      // Interior candidates connect to a room that already reaches the entrance;
+      // exterior candidates cut a brand-new outside door. For a PRIVATE room
+      // (bedroom/wet room) the interior reconnection is architecturally preferred,
+      // so those rank above exterior ones regardless of run length; a non-private
+      // room keeps the pure geometric (longest-run-first) order across both.
+      const interior: RawCandidate[] = [];
+      const exterior: RawCandidate[] = [];
       for (const e of edgesOf(rect)) {
         const host = hostWallForEdge(e, walls, tol);
         if (!host) continue;
@@ -318,24 +360,29 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
         const blocked = [...blockedRuns(e, connectors, tol), ...furnitureBlockedRuns(e, rect, furniture)];
         const free = longestFreeRun(e.lo, e.hi, blocked);
         if (!free || free.len < DOOR_WIDTH) continue;
-        const { pct } = projectPointOntoWall(host.wall as AttachableWall, edgePoint(e, free.mid));
+        const point = edgePoint(e, free.mid);
+        const { pct } = projectPointOntoWall(host.wall as AttachableWall, point);
         const via = reachableNeighbour
           ? `connects "${label}" to "${reachableNeighbour}" (which reaches the entrance)`
           : `opens "${label}" directly to the exterior (a new entrance)`;
-        raw.push({
-          insertText: `door on ${host.wall.id} at ${numStr(pct)}% width ${DOOR_WIDTH}`,
+        (reachableNeighbour ? interior : exterior).push({
+          insertText: composeOpening("door", host.wall, pct, point, DOOR_WIDTH, categoryCount),
           rationale: `A door on wall "${host.wall.id}" ${via}.`,
           len: free.len,
           wallId: host.wall.id,
           pct,
         });
       }
-      if (raw.length > 0) {
+      const isPrivate = isBedroom(room) || isWetRoom(room);
+      const candidates = isPrivate
+        ? toCandidates([...sortRaw(interior), ...sortRaw(exterior)])
+        : orderCandidates([...interior, ...exterior]);
+      if (interior.length + exterior.length > 0) {
         suggestions.push({
           problem: `Room "${label}" can't be reached from the entrance.`,
           code: "W_ROOM_UNREACHABLE",
           roomId: room.id,
-          candidates: orderCandidates(raw),
+          candidates,
         });
       }
     }
@@ -357,9 +404,10 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
         if (neighboursOnEdge(e, rooms, room.id, tol).length > 0) continue; // interior wall
         const free = longestFreeRun(e.lo, e.hi, blockedRuns(e, connectors, tol));
         if (!free || free.len < WINDOW_WIDTH) continue;
-        const { pct } = projectPointOntoWall(host.wall as AttachableWall, edgePoint(e, free.mid));
+        const point = edgePoint(e, free.mid);
+        const { pct } = projectPointOntoWall(host.wall as AttachableWall, point);
         raw.push({
-          insertText: `window on ${host.wall.id} at ${numStr(pct)}% width ${WINDOW_WIDTH}`,
+          insertText: composeOpening("window", host.wall, pct, point, WINDOW_WIDTH, categoryCount),
           rationale: `A window on exterior wall "${host.wall.id}" gives "${label}" natural light and egress.`,
           len: free.len,
           wallId: host.wall.id,
@@ -432,12 +480,13 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
         const blocked = [...blockedRuns(e, connectors, tol), ...furnitureBlockedRuns(e, rect, furniture)];
         const free = longestFreeRun(e.lo, e.hi, blocked);
         if (!free || free.len < DOOR_WIDTH) continue;
-        const { pct } = projectPointOntoWall(host.wall as AttachableWall, edgePoint(e, free.mid));
+        const point = edgePoint(e, free.mid);
+        const { pct } = projectPointOntoWall(host.wall as AttachableWall, point);
         const rationale = goodNeighbour
           ? `A door on wall "${host.wall.id}" links "${label}" to "${goodNeighbour}", giving it a route that avoids the bedroom.`
           : `A door on exterior wall "${host.wall.id}" opens "${label}" directly to the outside, off the bedroom.`;
         (goodNeighbour ? preferred : fallback).push({
-          insertText: `door on ${host.wall.id} at ${numStr(pct)}% width ${DOOR_WIDTH}`,
+          insertText: composeOpening("door", host.wall, pct, point, DOOR_WIDTH, categoryCount),
           rationale,
           len: free.len,
           wallId: host.wall.id,
