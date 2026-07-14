@@ -5,6 +5,67 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2026-07-14
+
+Agent-CLI round: the `arch` CLI audited against the **[7 Principles for Agent-Friendly
+CLIs](https://x.com/trevin/status/2037250000821059933)** rubric and hardened where it fell short.
+The audit's good news is that the foundations already held — zero interactive prompts, zero ANSI
+colour, `--json` almost everywhere, a documented `0/2/1/3` exit contract, a uniform stdin `-` seam,
+and JSON diagnostics that already carry their own fixes. What it found was **one blocker** (a CLI an
+agent literally could not ask for help), a parser that **silently swallowed typo'd flags as
+filenames**, a `fix` that **clobbered your source with no preview and no recovery**, and reads that
+had **no way to be narrowed**. All four are closed here. The language is untouched; `compile()` stays
+pure and its default output byte-identical.
+
+### Added
+
+- **Per-command help — the blocker.** `arch <cmd> --help` and `arch help <cmd>` now print help.
+  Before this, `--help` after a verb fell through `parseArgs` into the positionals and was read as a
+  *filename* (`cannot read --help`), so the standard two-hop probe an agent uses to learn a CLI —
+  top-level help, then subcommand help — was broken at the second hop.
+- **The manifest now carries worked `examples[]` per command** (a required field), and a new
+  `src/cli/help.ts` renders **both** the top-level and the per-command help **from the manifest**.
+  The hand-maintained `HELP` string — a second, un-drift-tested source of truth for the command list
+  — is gone, so help can no longer advertise a flag a command doesn't take.
+- **`arch --version`.**
+- **`arch fix --backup`** — saves the original bytes to `<file>.bak` before rewriting in place
+  (opt-in, so no `.bak` litter by default), and `fix` now prints the **unified diff it would write**
+  to stderr, `--dry-run` included. `fix` rewrites your *source*; it should be previewable and
+  reversible.
+- **Bounded reads** (so one big plan can't blow an agent's context window):
+  `arch describe --select <keys>` / `--room <ids>`, `arch lint|validate --code <CODE>` /
+  `--severity <sev>`, and `arch context --section <spec|workflow|cli|errors>` — the error catalog
+  alone drops the bundle from **60,187 → 13,161 bytes**.
+- `unifiedDiff` moves from `dataset/` into the pure core as `src/unified-diff.ts` (zero-dep,
+  deterministic); `dataset/diff.ts` re-exports it.
+
+### Changed
+
+- **An unrecognized flag or verb is now a usage error (exit 3), not a silently-swallowed filename.**
+  A `FLAG_KEYS` parse table replaces the old if/else chain and is **bidirectionally drift-tested
+  against the manifest**, so the parser, the help, and the docs cannot disagree about what a command
+  accepts. `arch lint --jsn` now exits 3 with `did you mean \`--json\`?` and a `usage:` echo;
+  `arch comple` suggests `compile`.
+- **Human-mode diagnostics print the catalog's `= fix:` line.** JSON mode already carried it; a
+  human (or an agent reading stderr) previously had to make a second call to `arch explain <CODE>`.
+- `arch lint --profile <bogus>` routes through `usageError` like every other bad-usage path (it used
+  to return a bare `3` with an ad-hoc, prefix-less message).
+- `arch md` validates `-f` through the shared `parseFormat` instead of a hand-rolled check, so an
+  unknown format gives the same error everywhere.
+- Bare `arch` prints its help to **stderr** (exit code 3, unchanged) rather than stdout — a missing
+  command is a usage error, and its output shouldn't pollute a pipe.
+- Previously-ignored misplaced flags (e.g. `arch describe --strict`, on a command that takes no such
+  flag) now exit 3 instead of being ignored.
+
+### Invariants pinned by tests
+
+- **A display filter never changes gating.** `--code` / `--severity` / `--select` / `--room` filter
+  what is *shown*; the exit code and `ok` are computed from the **unfiltered** diagnostic set, so
+  `lint --code W_FOO` on a plan failing for a different reason still fails.
+- **The `context --section` splitter is welded to its generator** by a test that regenerates
+  `llms-full.txt` in memory and asserts the split — a format change breaks loudly instead of
+  silently slicing garbage.
+
 ## [1.16.0] - 2026-07-14
 
 Downstream-driven round: ArchCanvas's archlang-1.15 adoption surfaced two upstream gaps its own

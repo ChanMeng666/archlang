@@ -67,7 +67,15 @@ intended graph), and `arch compile -f txt` (the zero-dep ASCII plan — a text-o
 raster binary). For the v1.14–v1.15 additions also drive `arch validate --intent <f>` (gate a plan on
 a brief's intent contract, exit 2 on a gating miss) / `arch score --brief <f>` (the continuous
 intent-satisfaction meter), and read `arch describe --json`'s `freedom` block (which element positions
-are hand-authored vs resolver-derived) before nudging coordinates. Keep the flagship
+are hand-authored vs resolver-derived) before nudging coordinates. For the v1.17 CLI surface, drive
+the affordances an agent actually reaches for: `arch <cmd> --help` (manifest-rendered flags + worked
+examples — if you are guessing a flag, ask the CLI instead), the narrowing reads `arch describe
+--select <keys>` / `--room <ids>` and `arch lint|validate --code <CODE>` / `--severity <sev>`, `arch
+context --section <spec|workflow|cli|errors>`, and `arch fix --dry-run` (which now prints the exact
+unified diff it would write) / `--backup`. Two invariants to prove, not assume, whenever you touch
+that layer: **a display filter must never change an exit code or `ok`** (they come from the unfiltered
+diagnostic set), and **an unrecognized flag or verb must exit 3** with a did-you-mean — never be
+swallowed as a filename. Keep the flagship
 `examples/studio.arch` **lint-clean and import-free**, and update snapshots/goldens
 (`vitest -u`, `UPDATE_GOLDENS=1 vitest run test/visual.test.ts`) only after reviewing the diff.
 

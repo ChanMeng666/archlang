@@ -379,9 +379,12 @@ function blockAlt(index: number): string {
 export async function cmdMd(args: Args): Promise<number> {
   const input = args._[0];
   if (!input) return usageError("md needs a Markdown file");
-  const fmt = (args.format ?? "svg").toLowerCase();
-  if (fmt !== "svg" && fmt !== "png") return usageError(`md supports -f svg or png (got "${args.format ?? "svg"}")`);
-  const format = fmt as Format;
+  // Route through the one shared `-f` parser (so an unknown id gets the same
+  // full-format-list error every other command gives), then narrow to the subset
+  // `md` can actually embed as an image link.
+  const format = parseFormat(args);
+  if (!format) return usageError(`unknown format "${args.format}" (use ${FORMAT_LIST})`);
+  if (format !== "svg" && format !== "png") return usageError(`md supports -f svg or png (got "${format}")`);
 
   let md: string;
   try {

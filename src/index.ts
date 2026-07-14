@@ -146,6 +146,11 @@ export type { Concept } from "./intent-concepts.js";
 // the channel ArchCanvas uses to narrate an iteration without re-rendering.
 export { diffPlans } from "./diff.js";
 export type { PlanDiff, RoomChange, OpeningChange, FurnitureChange, CirculationChange } from "./diff.js";
+// Textual diff: a zero-dep line-based unified diff between two sources. The *syntactic*
+// counterpart to `diffPlans`'s semantic delta — what `arch fix` prints so an agent can
+// preview (`--dry-run`) exactly which bytes a fix pass would rewrite, and what the
+// dataset generator records as each repair trajectory's patch.
+export { unifiedDiff } from "./unified-diff.js";
 // Architectural lint (v1.1): habitability rules as `W_*` diagnostics — every room
 // enterable, bedrooms have a window, doors wide enough, the building has an entrance.
 // Pure; the ruleset is data. Surfaced as `arch lint`.
@@ -157,7 +162,7 @@ export type { RepairResult, RepairChange, RepairNote } from "./repair.js";
 // CLI capability manifest (v1.8): the whole `arch` API surface as structured data,
 // for agent discovery (`arch manifest --json`). Pure; assembles existing exports.
 export { buildManifest, MANIFEST_COMMAND_NAMES, EXPORT_FORMATS } from "./manifest.js";
-export type { Manifest, ManifestCommand, ManifestFlag, ExportFormat } from "./manifest.js";
+export type { Manifest, ManifestCommand, ManifestExample, ManifestFlag, ExportFormat } from "./manifest.js";
 // Markdown embedding (v1.8): extract ```arch blocks and rewrite them to image
 // links. Pure text helpers behind `arch md`.
 export { extractArchBlocks, rewriteMarkdown } from "./markdown.js";

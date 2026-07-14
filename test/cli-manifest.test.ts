@@ -40,6 +40,40 @@ describe("manifest — content", () => {
   });
 });
 
+/**
+ * The per-command `examples` are what an agent copy-pastes (they are rendered into
+ * `docs/cli-reference.md` and `llms-full.txt`), so a typo'd verb would ship a call
+ * that exits 3. These guards keep every example addressed to its own command.
+ */
+describe("manifest — examples", () => {
+  const m = buildManifest("9.9.9");
+
+  it("gives every command at least one example", () => {
+    for (const c of m.commands) {
+      expect(c.examples.length, `command "${c.name}" has no example`).toBeGreaterThan(0);
+    }
+  });
+
+  it("addresses every example to its own command (`arch <name|alias> …`)", () => {
+    for (const c of m.commands) {
+      const verbs = [c.name, ...(c.aliases ?? [])];
+      for (const e of c.examples) {
+        expect(e.cmd.startsWith("arch "), `example "${e.cmd}" must start with "arch "`).toBe(true);
+        const verb = e.cmd.split(/\s+/)[1];
+        expect(verbs, `example "${e.cmd}" is not addressed to \`arch ${c.name}\``).toContain(verb);
+        expect(e.note.length, `example "${e.cmd}" has an empty note`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("declares each flag once per command", () => {
+    for (const c of m.commands) {
+      const names = c.flags.map((f) => f.flag);
+      expect([...new Set(names)], `command "${c.name}" declares a flag twice`).toEqual(names);
+    }
+  });
+});
+
 describe("manifest — fixture categories match the glyph renderer", () => {
   it("FIXTURE_CATEGORIES equals the fixtureGlyph switch cases", () => {
     const src = readFileSync("src/elements/fixtures-glyphs.ts", "utf8");

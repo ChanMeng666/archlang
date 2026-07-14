@@ -8,8 +8,16 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve as resolvePath, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { formatDiagnostic, setGeometryBackend, loadClipperBackend, EXPORT_FORMATS, planFromJson } from "../index.js";
-import type { Diagnostic, World, ExportFormat } from "../index.js";
+import {
+  formatDiagnostic,
+  setGeometryBackend,
+  loadClipperBackend,
+  EXPORT_FORMATS,
+  planFromJson,
+  buildManifest,
+  ERROR_CATALOG,
+} from "../index.js";
+import type { Diagnostic, World, ExportFormat, ManifestCommand, ManifestFlag } from "../index.js";
 
 export type Format = ExportFormat;
 /** Known `-f` ids and the "svg, dxf, pdf, or png" usage phrasing, from the one table. */
@@ -56,6 +64,8 @@ export interface Args {
   unsafe?: boolean;
   /** `--dry-run`: (fix) compute the result but never write it. */
   dryRun?: boolean;
+  /** `--backup`: (fix) save the original bytes to `<target>.bak` before overwriting in place. */
+  backup?: boolean;
   /** `--from-json`: (compile) read the input as Plan JSON (RPLAN shape), not `.arch`. */
   fromJson?: boolean;
   /** `--graph <file>`: (validate) also check adjacency against an intended graph. */
@@ -68,39 +78,127 @@ export interface Args {
   brief?: string;
   /** `--at <byteOffset>`: (complete) source offset to list completions at. */
   at?: number;
+  /** `--room <id[,id…]>`: (describe) keep only these rooms and what touches them. */
+  room?: string;
+  /** `--select <key[,key…]>`: (describe) emit only these top-level keys of the JSON. */
+  select?: string;
+  /** `--code <CODE[,…]>`: (lint/validate) DISPLAY-filter diagnostics by code — never gating. */
+  code?: string;
+  /** `--severity <error|warning>`: (lint/validate) DISPLAY-filter diagnostics — never gating. */
+  severity?: string;
+  /** `--section <spec|workflow|cli|errors>`: (context) print one section of the bundle, not all of it. */
+  section?: string;
+  /** `--help`/`-h`: print the command's help instead of running it (handled in `main`). */
+  help?: boolean;
+  /** Tokens that look like flags but this command does not accept — `main` exits 3 on any. */
+  unknownFlags?: string[];
 }
 
-export function parseArgs(argv: string[]): Args {
+/** How a flag token is parsed: which {@link Args} field it fills, and with what. */
+export interface FlagSpec {
+  key: keyof Args;
+  kind: "string" | "number" | "boolean";
+}
+
+/**
+ * The one parse table: EVERY flag name and alias the CLI accepts, mapped to the
+ * {@link Args} field it fills. Two invariants a drift test
+ * (`test/cli-help.test.ts`) enforces both ways:
+ *
+ *  - every flag/alias in the manifest's command table (and its `globalFlags`) has an
+ *    entry here, and every entry here is documented by the manifest;
+ *  - a flag with a manifest `arg` is a value-taking (non-`boolean`) kind, and vice-versa.
+ *
+ * So the parser, the help renderer, `arch manifest --json`, and `docs/cli-reference.md`
+ * all describe the same CLI — an undeclared flag can no longer be silently swallowed as
+ * a positional (which is how `--jsn` used to become an input filename).
+ */
+export const FLAG_KEYS: Record<string, FlagSpec> = {
+  "--out": { key: "o", kind: "string" },
+  "-o": { key: "o", kind: "string" },
+  "--width": { key: "width", kind: "number" },
+  "-w": { key: "width", kind: "number" },
+  "--format": { key: "format", kind: "string" },
+  "-f": { key: "format", kind: "string" },
+  "--jobs": { key: "jobs", kind: "number" },
+  "-j": { key: "jobs", kind: "number" },
+  "--scale": { key: "scale", kind: "number" },
+  "-s": { key: "scale", kind: "number" },
+  "--cols": { key: "cols", kind: "number" },
+  "--at": { key: "at", kind: "number" },
+  "--charset": { key: "charset", kind: "string" },
+  "--profile": { key: "profile", kind: "string" },
+  "--overlay": { key: "overlay", kind: "string" },
+  "--room": { key: "room", kind: "string" },
+  "--select": { key: "select", kind: "string" },
+  "--code": { key: "code", kind: "string" },
+  "--severity": { key: "severity", kind: "string" },
+  "--section": { key: "section", kind: "string" },
+  "--graph": { key: "graph", kind: "string" },
+  "--intent": { key: "intent", kind: "string" },
+  "--brief": { key: "brief", kind: "string" },
+  "--from-json": { key: "fromJson", kind: "boolean" },
+  "--feedback": { key: "feedback", kind: "boolean" },
+  "--ascii": { key: "ascii", kind: "boolean" },
+  "--install": { key: "install", kind: "boolean" },
+  "--unsafe": { key: "unsafe", kind: "boolean" },
+  "--dry-run": { key: "dryRun", kind: "boolean" },
+  "--backup": { key: "backup", kind: "boolean" },
+  "--write": { key: "write", kind: "boolean" },
+  "--json": { key: "json", kind: "boolean" },
+  "--quiet": { key: "quiet", kind: "boolean" },
+  "-q": { key: "quiet", kind: "boolean" },
+  "--force": { key: "force", kind: "boolean" },
+  "--error-svg": { key: "errorSvg", kind: "boolean" },
+  "--accessible": { key: "accessible", kind: "boolean" },
+  "--strict": { key: "strict", kind: "boolean" },
+  "--fail-on-warning": { key: "strict", kind: "boolean" },
+};
+
+/** `--help`/`-h` is accepted by every command and handled inside {@link parseArgs}. */
+export const HELP_FLAGS: readonly string[] = ["--help", "-h"];
+
+const flagNames = (flags: readonly ManifestFlag[]): string[] =>
+  flags.flatMap((f) => (f.alias ? [f.flag, f.alias] : [f.flag]));
+
+/** The global flags every command tolerates (`--json`/`--quiet`), from the manifest. */
+const GLOBAL_FLAG_NAMES: readonly string[] = flagNames(buildManifest("0.0.0").globalFlags);
+
+/** Every flag token `command` accepts: its own flags + the global ones + help. */
+export function allowedFlags(command: ManifestCommand): string[] {
+  return [...new Set([...flagNames(command.flags), ...GLOBAL_FLAG_NAMES, ...HELP_FLAGS])];
+}
+
+/**
+ * Parse `argv` against {@link FLAG_KEYS}. When a `command` is given, a flag it does not
+ * declare is rejected (collected into `unknownFlags`) rather than swallowed as a
+ * positional; `--help`/`-h` short-circuits to `help: true` so `arch describe --help`
+ * prints help instead of failing on the missing input file.
+ */
+export function parseArgs(argv: string[], command?: ManifestCommand): Args {
+  const allowed = command ? new Set(allowedFlags(command)) : null;
   const res: Args = { _: [] };
+  const bag = res as unknown as Record<string, unknown>;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
-    if (a === "-o" || a === "--out") res.o = argv[++i];
-    else if (a === "-w" || a === "--width") res.width = Number(argv[++i]);
-    else if (a === "-f" || a === "--format") res.format = argv[++i];
-    else if (a === "-j" || a === "--jobs") res.jobs = Number(argv[++i]);
-    else if (a === "-s" || a === "--scale") res.scale = Number(argv[++i]);
-    else if (a === "--cols") res.cols = Number(argv[++i]);
-    else if (a === "--at") res.at = Number(argv[++i]);
-    else if (a === "--charset") res.charset = argv[++i];
-    else if (a === "--from-json") res.fromJson = true;
-    else if (a === "--graph") res.graph = argv[++i];
-    else if (a === "--intent") res.intent = argv[++i];
-    else if (a === "--brief") res.brief = argv[++i];
-    else if (a === "--feedback") res.feedback = true;
-    else if (a === "--ascii") res.ascii = true;
-    else if (a === "--install") res.install = true;
-    else if (a === "--unsafe") res.unsafe = true;
-    else if (a === "--dry-run") res.dryRun = true;
-    else if (a === "--write") res.write = true;
-    else if (a === "--json") res.json = true;
-    else if (a === "--quiet" || a === "-q") res.quiet = true;
-    else if (a === "--force") res.force = true;
-    else if (a === "--profile") res.profile = argv[++i];
-    else if (a === "--overlay") res.overlay = argv[++i];
-    else if (a === "--error-svg") res.errorSvg = true;
-    else if (a === "--accessible") res.accessible = true;
-    else if (a === "--strict" || a === "--fail-on-warning") res.strict = true;
-    else res._.push(a);
+    if (HELP_FLAGS.includes(a)) {
+      res.help = true;
+      continue;
+    }
+    const spec = FLAG_KEYS[a];
+    if (spec && (!allowed || allowed.has(a))) {
+      if (spec.kind === "boolean") bag[spec.key] = true;
+      else {
+        const raw = argv[++i];
+        bag[spec.key] = spec.kind === "number" ? Number(raw) : raw;
+      }
+      continue;
+    }
+    // A `-`-leading token that isn't a flag this command takes is an error, never a
+    // filename. Bare `-` stays the stdin sentinel. No value is consumed for it.
+    if (a !== "-" && a.startsWith("-")) {
+      res.unknownFlags = [...(res.unknownFlags ?? []), a];
+    } else res._.push(a);
   }
   return res;
 }
@@ -156,10 +254,23 @@ export function emitJson(obj: unknown): void {
   process.stdout.write(JSON.stringify(obj, null, 2) + "\n");
 }
 
-/** Print diagnostics as framed snippets to stderr (unless quiet). */
+/**
+ * The catalog's one-line remedy for a diagnostic, rendered in `formatDiagnostic`'s
+ * `= help:` style — or `""` when the code is uncatalogued (or carries no fix), so a
+ * bare `= fix:` line is never printed. JSON mode already carries this field
+ * (`diagnosticToJson`); this is the human-mode parity so a reader of stderr does not
+ * have to run `arch explain <CODE>` to learn the remedy.
+ */
+function catalogFixLine(d: Diagnostic): string {
+  const fix = d.code ? ERROR_CATALOG[d.code]?.fix : undefined;
+  return fix ? `\n  = fix: ${fix}` : "";
+}
+
+/** Print diagnostics as framed snippets to stderr (unless quiet), each followed by
+ *  the error catalog's `fix` line when the code has one. */
 export function emitDiagnosticsHuman(source: string, diags: Diagnostic[], quiet?: boolean): void {
   if (quiet) return;
-  for (const d of diags) process.stderr.write(`${formatDiagnostic(source, d)}\n\n`);
+  for (const d of diags) process.stderr.write(`${formatDiagnostic(source, d)}${catalogFixLine(d)}\n\n`);
 }
 
 export const hasErrors = (diags: Diagnostic[]): boolean => diags.some((d) => d.severity === "error");
