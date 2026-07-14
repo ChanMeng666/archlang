@@ -19,19 +19,19 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.15.0` (published, `latest`, with provenance — released tokenlessly via `.github/workflows/release.yml` OIDC trusted publishing) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.16.0` (published, `latest`, with provenance — released tokenlessly via `.github/workflows/release.yml` OIDC trusted publishing) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — now incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`, and v1.14's `validate --intent`/`--feedback` + `score --brief`) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`schemas/intent.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
-| **MCP server** | `@chanmeng666/archlang-mcp@0.2.0` (published, `latest`; registry entry `io.github.ChanMeng666/archlang-mcp` v0.2.0 live on registry.modelcontextprotocol.io; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate (incl. `intent`)/**score**/repair/fix/suggest/complete + spec/context/schema/**intent-schema**/grammar resources; SDK dep quarantined here, core stays zero-dep) | `packages/mcp/`, `server.json` |
+| **MCP server** | `@chanmeng666/archlang-mcp@0.2.1` (published, `latest`; registry entry `io.github.ChanMeng666/archlang-mcp` v0.2.1 live on registry.modelcontextprotocol.io; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate (incl. `intent`)/**score**/repair/fix/suggest/complete + spec/context/schema/**intent-schema**/grammar resources; SDK dep quarantined here, core stays zero-dep) | `packages/mcp/`, `server.json` |
 | **VS Code extension** | `ChanMeng.archlang@0.7.0` (published, live 2026-07-12 — rebundles core 1.15.0: unit-suffix grammar, `W_ALIAS_MATCH` quick fix, `rankFixes` ordering) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** one-light-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://archlang-playground.vercel.app |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** one-light-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang-docs.vercel.app |
-| **Git** | `main`, tags `v1.0.0` → `v1.15.0` (latest; a `v*` tag push triggers the tokenless OIDC release workflow) | github.com/ChanMeng666/archlang |
+| **Git** | `main`, tags `v1.0.0` → `v1.16.0` (latest; a `v*` tag push triggers the tokenless OIDC release workflow) | github.com/ChanMeng666/archlang |
 | **Dataset** | HF `ChanMeng666/archlang-repair-trajectories` (**published, live 2026-07-13** — repair 1200 + authoring 400 rows) — two splits, fully synthetic, self-verifying, CC0-1.0, deterministic from seed `20260712`; generator `dataset/` (`npm run dataset:gen`), permanent CI leakage guard `test/dataset.test.ts` | `dataset/`, huggingface.co/datasets/ChanMeng666/archlang-repair-trajectories |
-| **Tests** | 1033 passing (101 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, the L2 protocol tests, the judge byte-equivalence fixture, the intent-channel suites, the vocabulary-equivalence classification pin, and the dataset contamination/determinism guard) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
+| **Tests** | 1046 passing (102 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, the L2 protocol tests, the judge byte-equivalence fixture, the intent-channel suites, the vocabulary-equivalence classification pin, and the dataset contamination/determinism guard) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
-**Latest release: v1.15.0 (2026-07-12)** — the table above is what is live. Canonical release notes
+**Latest release: v1.16.0 (2026-07-14)** — the table above is what is live. Canonical release notes
 live in `CHANGELOG.md`; per-tranche research verdicts in `docs/research/`. The full per-release
-narrative (v1.3.0 → v1.15.0, honest eval read, sites redesign, every tranche summary) is archived
+narrative (v1.3.0 → v1.16.0, honest eval read, sites redesign, every tranche summary) is archived
 verbatim at
 **[`docs/archive/agents-status-history-2026-07.md`](docs/archive/agents-status-history-2026-07.md)** —
 its permanent conclusions are distilled into "Standing decisions & iron laws" just below, so read
@@ -67,6 +67,17 @@ re-propose, re-open, or contradict them anywhere.
   registration", not "add a token"); **never automate npmjs account / 2FA / publisher management**
   (human-with-2FA only); `package.json`'s `repository.url` owner must be **`ChanMeng666` byte-for-byte**
   (else provenance E422s). Recipe: `docs/npm-oidc-publishing-playbook.md`.
+- **A `packages/mcp` prose-only change (a tool description, a README) publishes ONLY with a version
+  bump** — and the bump must land in BOTH `packages/mcp/package.json` AND `packages/mcp/server.json`
+  (both of `server.json`'s `version` fields). The release workflow resolves each package's declared
+  version and `npm view`-skips the publish when that exact version already exists on the registry, so
+  an unbumped description edit silently never reaches npm or the MCP registry. (v1.16.0's 0.2.0 → 0.2.1
+  bump existed only to ship a refreshed `suggest` tool description.)
+- **The GitHub Release body is sliced from `CHANGELOG.md` by `scripts/changelog-section.mjs`**, which
+  scans from `## [<version>]` to the next `## ` heading — so section ORDER doesn't affect extraction: a
+  release section placed ABOVE `[Unreleased]` still extracts correctly (v1.16.0 shipped that way).
+  Keep-a-changelog convention still prefers `[Unreleased]` on top, so when 1.17 lands consider lifting
+  it back to the top.
 - **Brand assets are byte-sacred.** `brand/archlang-logo-master.svg` is the one source; every variant
   is a **fill-swap only** (never re-trace/simplify/re-fit path data). The "Compile Boundary" brand
   token block is **duplicated byte-identically** in `docs-site/.vitepress/theme/style.css` and
