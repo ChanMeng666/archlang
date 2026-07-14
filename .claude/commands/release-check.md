@@ -29,6 +29,10 @@ you observed. Do NOT push anything — this command only verifies.
 
 5. **Gates green.**
    - `npm run check` — typecheck + lint + tests all pass.
+   - `npm run check:drift` — all nine generated artifacts are in sync with their sources. This is
+     a hard CI gate (`.github/workflows/ci.yml`) and it is separate from `npm run check`, which
+     does **not** run it. It is the gate that catches a `src/manifest.ts` edit whose
+     `docs/cli-reference.md` was never regenerated — the single most common way a release goes red.
    - `npm run docs:build` — the docs site still builds (the core suite does not compile it).
 
 ## Reminders (do not act on these here — they are context for the push)

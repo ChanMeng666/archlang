@@ -27,7 +27,7 @@ of the project for large language models and AI agents.
 - [/intent.schema.json](https://archlang-docs.vercel.app/intent.schema.json): JSON Schema (2020-12) for an **Intent** — a brief's checkable expectations as data (`arch validate --intent` / `arch score --brief`)
 - [/archlang.gbnf](https://archlang-docs.vercel.app/archlang.gbnf): **GBNF** constrained-decoding grammar — force a local model to emit only parseable ArchLang
 - **Append `.md` to any generated doc route for raw markdown**: e.g. [/spec.md](https://archlang-docs.vercel.app/spec.md), `/reference.md`, `/errors.md`, `/analysis.md`, `/furniture.md`
-- **MCP server** — [`@chanmeng666/archlang-mcp`](https://www.npmjs.com/package/@chanmeng666/archlang-mcp): an optional stdio MCP shim over the library (tools: compile/describe/lint/validate/repair/fix/suggest/complete; resources: spec/context/schema/grammar). The CLI stays the primary, token-cheaper interface — see the README's agent section
+- **MCP server** — [`@chanmeng666/archlang-mcp`](https://www.npmjs.com/package/@chanmeng666/archlang-mcp): an optional stdio MCP shim over the library (tools: compile/describe/lint/validate/score/repair/fix/suggest/complete; resources: spec/context/schema/intent-schema/grammar). The CLI stays the primary, token-cheaper interface — see the README's agent section
 - **Dataset** — [`ChanMeng666/archlang-repair-trajectories`](https://huggingface.co/datasets/ChanMeng666/archlang-repair-trajectories): a fully synthetic, self-verifying corpus — `repair` trajectories (broken source + diagnostics → deterministically healed source) + `authoring` pairs (brief → golden + intent), CC0-1.0; generator + seed open source in `dataset/`
 
 ## To USE ArchLang (author floor plans)
@@ -36,14 +36,20 @@ ArchLang is agent-native via its CLI — no server required, nothing to configur
 
 ```bash
 npx @chanmeng666/archlang context              # cold start: the whole bundled agent context (spec + skill + CLI + errors) in one call
+npx @chanmeng666/archlang context --section spec   # ...or one section only: spec | workflow | cli | errors (the catalog alone: 60KB → 13KB)
 npx @chanmeng666/archlang spec                 # learn the whole language (read this first)
+npx @chanmeng666/archlang help compile         # per-command help + worked examples, rendered from the manifest (`arch <cmd> --help` works too)
 npx @chanmeng666/archlang manifest --json      # the whole CLI API as data: commands, flags, formats, lint rules, error codes
+npx @chanmeng666/archlang --version            # the core version, for a bug report or a capability check
 npx @chanmeng666/archlang compile plan.arch -o out.svg --json   # render; JSON: { ok, diagnostics, summary }
 npx @chanmeng666/archlang preview plan.arch -o out.png --json   # render a PNG to SHOW the user (zero-install where resvg is present; --install fetches it)
 npx @chanmeng666/archlang describe plan.arch --json             # verify: rooms, areas, adjacency, door connections, circulation
+npx @chanmeng666/archlang describe plan.arch --select rooms,totals --room kitchen,bath --json   # bounded read: only those keys / those rooms
 npx @chanmeng666/archlang lint plan.arch --json                 # architectural soundness warnings
+npx @chanmeng666/archlang lint plan.arch --code W_ROOM_UNREACHABLE --json   # bounded read: one code (or --severity error) — a DISPLAY filter; the exit code still weighs every diagnostic
 npx @chanmeng666/archlang validate plan.arch --strict --json    # parse + lint, no render; --strict fails on warnings (the ship gate)
-npx @chanmeng666/archlang fix plan.arch --dry-run --json        # preview the machine-applicable diagnostic fixes (drop --dry-run to apply)
+npx @chanmeng666/archlang fix plan.arch --dry-run --json        # preview the machine-applicable diagnostic fixes AND the exact unified diff they produce
+npx @chanmeng666/archlang fix plan.arch --backup --json         # apply them in place, keeping the original bytes as plan.arch.bak (fix rewrites your SOURCE)
 npx @chanmeng666/archlang suggest plan.arch --json              # advisory door/window topology statements for unreachable rooms / windowless bedrooms
 npx @chanmeng666/archlang score plan.arch --brief intent.json --json   # continuous intent-satisfaction meter against a brief (satisfied/total; exit 0)
 npx @chanmeng666/archlang repair plan.arch -o fixed.arch        # explicit corrector: furniture out of walls/doorways/swings + change log
@@ -54,9 +60,17 @@ npx @chanmeng666/archlang md notes.md -o out.md -f svg          # render fenced 
 
 Loop: `spec` → write `.arch` → `compile --json` → if `ok:false` (exit 2) fix via each
 `diagnostics[].fix` → `describe --json` to confirm intent → `preview` to show the user a raster →
-`lint --json` to confirm soundness. `manifest --json` is the one-call API map; `batch`/`md` cover
-variant exploration and embedding plans in Markdown. See
+`lint --json` to confirm soundness. `arch <cmd> --help` is the cheap way to learn one command;
+`manifest --json` is the whole API map in one call, and the help, the flag parser and the CLI
+reference are all rendered from it, so none of them can claim a flag a command doesn't take.
+`batch`/`md` cover variant exploration and embedding plans in Markdown. See
 [SKILL.md](https://github.com/chanmeng666/archlang/blob/main/SKILL.md).
+
+Exit codes: `0` ok · `2` user-source error (deterministic — fix it, don't retry) · `1` IO/internal ·
+`3` bad usage. Misuse is loud, never silent: an unknown flag or verb exits 3 with a did-you-mean —
+a typo'd `--jsn` on `lint` answers `error: unknown flag "--jsn" for \`arch lint\` — did you mean
+\`--json\`?` plus a `usage:` echo — so a hallucinated flag fails fast instead of being read as a
+filename. Source can come from stdin (`-`) on every command that takes a file.
 
 In CI, the in-repo composite Action `ChanMeng666/archlang/.github/actions/arch-render@<tag>` renders
 every ```` ```arch ```` fence in a repo's Markdown to images in one step (see

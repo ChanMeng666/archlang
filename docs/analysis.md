@@ -87,6 +87,17 @@ matter — run it yourself for the full object):
 A text-only agent reads this and confirms "4 rooms, 42 m², a bath adjacent to the
 hall (not the bedroom), a 1000 mm front door" — no rendering required.
 
+On a large plan the whole summary can be more than you want to read. Two flags bound
+it at the source: `--select rooms,totals` emits only those top-level keys (the
+`ok`/`plan`/`units`/`diagnostics` envelope is always kept), and `--room r_bath,r_hall`
+keeps only those rooms and the doors, windows, openings and furniture that touch them
+(plan-level facts — `bbox`, `totals`, `caption` — stay whole-plan).
+
+```
+arch describe plan.arch --select rooms,totals --json
+arch describe plan.arch --room r_bath,r_hall --json
+```
+
 The **`caption`** is the same sentence the accessible SVG puts in its `<desc>`
 (`compile(src, { accessible: true })` — see the
 [language reference](language-reference.md#accessible-metadata-acctitle-accdescr)); it is
@@ -227,7 +238,22 @@ failed to resolve, `freedom` is present with all-zero counts and an empty `eleme
 | Circulation quality | `W_ROOM_NO_CLEAR_PATH`, `W_PATH_TOO_NARROW`, `W_CIRCUITOUS_PATH` |
 
 Every code is documented — with cause, fix, and example — in the
-[error catalog](error-codes.md), or run `arch explain W_SWING_OBSTRUCTED`.
+[error catalog](error-codes.md), or run `arch explain W_SWING_OBSTRUCTED`. (In human
+mode each diagnostic already prints its catalogued `= fix:` line, so the lookup is
+usually unnecessary.)
+
+Narrow a noisy report with `--code` or `--severity` — on `lint` and on `validate`:
+
+```
+arch lint plan.arch --code W_ROOM_UNREACHABLE,W_NO_ENTRANCE --json   # only these codes
+arch validate plan.arch --severity error --json                      # only the blocking errors
+```
+
+> **A display filter never changes gating.** `--code` and `--severity` (like `describe`'s
+> `--select` / `--room`) filter what is *shown*; `ok` and the exit code are always computed
+> from the **unfiltered** diagnostic set, and a narrowed result marks itself with
+> `filtered: true` and a `total_diagnostics` count. Reading less can never make a broken
+> plan look sound.
 
 ### Profiles
 
@@ -276,7 +302,8 @@ under the accessibility thresholds:
 ## The agent loop
 
 Together, `describe` and `lint` close the author → render → **verify** loop for an AI
-agent with no eyes on the drawing — see [Use ArchLang from an agent](agents.md):
+agent with no eyes on the drawing — see
+[Use ArchLang from an agent](https://archlang-docs.vercel.app/agents):
 
 1. `arch compile` — render and get errors as data.
 2. `arch describe --json` — confirm the room count, labels, areas, and access match

@@ -155,16 +155,31 @@ same [`llms-full.txt`](https://archlang-docs.vercel.app/llms-full.txt) the docs 
 
 ```bash
 npx @chanmeng666/archlang context                       # EVERYTHING: spec + skill + CLI + error catalog
+npx @chanmeng666/archlang context --section errors      # …or one section of it (the catalog alone: 60 KB → 13 KB)
 npx @chanmeng666/archlang spec                          # just the language, one page (~2k tokens)
+npx @chanmeng666/archlang help describe                 # one command, with worked examples
 npx @chanmeng666/archlang compile plan.arch --json      # render → { ok, diagnostics, summary }
-npx @chanmeng666/archlang fix plan.arch --dry-run       # preview the machine-applicable fixes
+npx @chanmeng666/archlang fix plan.arch --dry-run       # the exact unified diff it would write, applying nothing
 npx @chanmeng666/archlang describe plan.arch --json     # VERIFY, without an image
 npx @chanmeng666/archlang validate plan.arch --strict   # the ship gate
 ```
 
 Every command takes `--json` (result on stdout, messages on stderr) with deterministic exit codes
-(`0` ok · `2` user-source error · `1` IO · `3` usage). Full list: **[CLI reference](https://archlang-docs.vercel.app/cli)**
-· `arch manifest --json` returns the same thing as data. See [`SKILL.md`](SKILL.md).
+(`0` ok · `2` user-source error · `1` IO · `3` usage) — and a typo *earns* that `3`: `arch lint
+--jsn` exits 3 with `did you mean --json?` rather than quietly reading `--jsn` as a filename, and
+`arch comple` suggests `compile`.
+
+**One manifest, no drift.** The per-command help (`arch <cmd> --help`), the flag parser, and the
+generated **[CLI reference](https://archlang-docs.vercel.app/cli)** are all rendered from the same
+manifest — which is why they cannot advertise a flag a command doesn't take. `arch manifest --json`
+is that manifest as data, and `arch <cmd> --help` is the cheap way to read one row of it.
+
+Reads are bounded, so a big plan can't flood a context window: `describe --select`/`--room`,
+`lint|validate --code`/`--severity`, `context --section`. Filtering what you *read* never changes
+what *gates* — the exit code always weighs every diagnostic. And because `arch fix` rewrites your
+source, it prints the unified diff first and takes `--backup`.
+
+See [`SKILL.md`](SKILL.md).
 
 <details>
 <summary><b>Machine-native artifacts</b> — Plan JSON, a GBNF grammar, an intent schema, and an optional MCP server</summary>
@@ -272,7 +287,9 @@ and **PNG** (deterministic raster) via optional, lazily-loaded add-ons the defau
 pulls. `arch compile --accessible` stamps the SVG with `<title>`/`<desc>` + `role="img"`.
 
 A full **LSP** (hover, completion, go-to-definition, rename, signature help), an `arch fmt`
-formatter, an `arch explain <CODE>` catalog, and a [VS Code extension](https://marketplace.visualstudio.com/items?itemName=ChanMeng.archlang).
+formatter, an `arch explain <CODE>` catalog, a self-documenting CLI (`arch <cmd> --help`, rendered
+from the manifest, worked examples included), and a
+[VS Code extension](https://marketplace.visualstudio.com/items?itemName=ChanMeng.archlang).
 
 </details>
 

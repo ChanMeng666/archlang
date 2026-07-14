@@ -766,6 +766,12 @@ where the optional renderer is absent it reports the catalogued `E_PNG_DEPENDENC
 fenced `arch` block to an image link). `arch manifest --json` prints this whole CLI
 surface — commands, flags, formats, lint profiles, error codes — as structured data.
 
+To read that surface rather than parse it: `arch help` lists every command,
+`arch <cmd> --help` prints one command's flags and worked examples, and
+`arch --version` prints the version. Help and the
+[CLI reference](https://archlang-docs.vercel.app/cli) are both rendered from the
+manifest, so none of the three can disagree.
+
 ### Diagnostics
 
 The compiler never throws on bad source: it recovers from syntax errors and

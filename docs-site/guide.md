@@ -63,9 +63,11 @@ arch fix plan.arch --dry-run                     # preview the machine-applicabl
 arch fmt plan.arch --write                       # format in place
 ```
 
-That is a slice — the CLI has 20 commands. The full, always-current list (every flag, format and
-exit code) is the **[CLI reference](/cli)**, generated from the same manifest that
-`arch manifest --json` serves.
+That is a slice — the CLI has 20 commands. Ask it about any one of them with **`arch <cmd> --help`**
+(flags and worked examples for that command); `arch help` lists them all and `arch --version` prints
+the version. The full, always-current list (every flag, format and exit code) is the
+**[CLI reference](/cli)**, generated from the same manifest that `arch manifest --json` serves — the
+manifest the help itself is rendered from.
 
 Or call it as a library:
 

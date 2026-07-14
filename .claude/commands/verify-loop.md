@@ -16,12 +16,14 @@ scripts and report a pass/fail table.
    from its committed form.
    - If a drift step fails, run the matching `npm run gen:*` (or `npm run gen:all`) to regenerate
      the artifact **from its source**, then re-run `npm run check:drift`.
-   - **NEVER hand-edit a generated file** to make drift pass. The generated artifacts
+   - **NEVER hand-edit a generated file** to make drift pass. The nine generated artifacts
      (`editors/archlang.tmLanguage.json`, `playground/src/arch-language.js`, `docs/error-codes.md`,
-     `spec.llm.md`, `llms-full.txt`, `grammars/archlang.gbnf`, `schemas/plan.schema.json`,
-     `schemas/intent.schema.json`) are outputs — edit the source
-     (`src/grammar/tokens.ts`, `src/error-catalog.ts`, `SKILL.md`, `examples/`, `PLAN_JSON_SCHEMA`,
-     `INTENT_JSON_SCHEMA`, `src/manifest.ts`) and regenerate.
+     `docs/cli-reference.md`, `spec.llm.md`, `llms-full.txt`, `grammars/archlang.gbnf`,
+     `schemas/plan.schema.json`, `schemas/intent.schema.json`) are outputs — edit the source
+     (`src/grammar/tokens.ts`, `src/error-catalog.ts`, `src/manifest.ts`, `SKILL.md`, `examples/`,
+     `PLAN_JSON_SCHEMA`, `INTENT_JSON_SCHEMA`) and regenerate.
+   - If you touched the CLI, expect `docs/cli-reference.md` to move — it is generated from
+     `src/manifest.ts`. **Read that diff**; it is the one artifact a CLI change always rewrites.
 
 3. **If tests fail, fix the root cause.** Do not paper over a red suite.
    - Never run `vitest -u` or `UPDATE_GOLDENS=1 vitest run test/visual.test.ts` without first
@@ -41,6 +43,7 @@ Finish with a pass/fail table:
 | drift: editors/archlang.tmLanguage.json | pass/fail |
 | drift: playground/src/arch-language.js | pass/fail |
 | drift: docs/error-codes.md | pass/fail |
+| drift: docs/cli-reference.md | pass/fail |
 | drift: spec.llm.md | pass/fail |
 | drift: llms-full.txt | pass/fail |
 | drift: grammars/archlang.gbnf | pass/fail |

@@ -66,8 +66,11 @@ token anywhere; do not add one. The full transferable recipe (for this or any ot
 in [docs/npm-oidc-publishing-playbook.md](docs/npm-oidc-publishing-playbook.md).
 
 1. Update `CHANGELOG.md` and bump `version` in the root `package.json`.
-2. `npm run build && npm test` must be green (they also run inside the publish via
-   `prepublishOnly`).
+2. `npm run check` (typecheck + lint + test) **and `npm run check:drift`** must both be green.
+   `check:drift` is a **separate hard CI gate** that `npm run check` does not cover — it
+   regenerates every artifact and fails if one drifted (see [CI drift gates](#ci-drift-gates-regenerate-before-you-push)).
+   `npm run build && npm test` also run inside the publish via `prepublishOnly`, but they will
+   **not** catch a `src/manifest.ts` edit whose `docs/cli-reference.md` was never regenerated.
 3. Commit, push, then tag: `git tag vX.Y.Z && git push origin vX.Y.Z`. The tag push triggers
    `release.yml`, which publishes the core, then the MCP shim (if its version moved), then syncs
    the MCP registry — each step skips versions already on its registry, so re-running a partial
@@ -197,11 +200,48 @@ low.
 
 ### CI drift gates (regenerate before you push)
 
-Every generated artifact is drift-checked in CI by a single `npm run check:drift` step (grammars,
-error-code docs, `spec.llm.md`, `llms-full.txt`, `grammars/archlang.gbnf`, `schemas/plan.schema.json`,
-and now `schemas/intent.schema.json`). Whenever a generator's source changes, run `npm run gen:all` to
-regenerate every artifact in dependency order (`gen:spec` before `gen:llms`) and commit the output;
-generated files must never be hand-edited. `npm run check:drift` reproduces the CI gate locally.
+**Eight generators** produce **nine artifacts**, and CI drift-checks all of them in a single
+`npm run check:drift` step. The authoritative list is the `GENERATORS` table in
+`scripts/check-drift.ts` — this table mirrors it:
+
+| Generated artifact | Generator | Source of truth |
+|--------------------|-----------|-----------------|
+| `editors/archlang.tmLanguage.json`, `playground/src/arch-language.js` | `gen:grammars` | `src/grammar/tokens.ts` |
+| `docs/error-codes.md` | `gen:errors` | `src/error-catalog.ts` |
+| `docs/cli-reference.md` | `gen:cli` | `src/manifest.ts` |
+| `spec.llm.md` | `gen:spec` | `src/grammar/tokens.ts` + `examples/` |
+| `llms-full.txt` | `gen:llms` | `spec.llm.md` + `SKILL.md` + `src/manifest.ts` + `src/error-catalog.ts` |
+| `grammars/archlang.gbnf` | `gen:gbnf` | `src/grammar/tokens.ts` |
+| `schemas/plan.schema.json` | `gen:plan-schema` | `PLAN_JSON_SCHEMA` |
+| `schemas/intent.schema.json` | `gen:intent-schema` | `INTENT_JSON_SCHEMA` |
+
+Whenever a generator's source changes, run `npm run gen:all` to regenerate every artifact in
+dependency order (`gen:spec` before `gen:llms`, which consumes it) and commit the output;
+**generated files must never be hand-edited.** `npm run check:drift` reproduces the CI gate locally.
+
+### The CLI surface lives in `src/manifest.ts`
+
+`src/manifest.ts` is the **single source of truth for the whole CLI** — not just its docs. Each
+command declares its exact flag set plus at least one worked example, and three things are derived
+from that one declaration:
+
+- **`docs/cli-reference.md`** is generated from it (`npm run gen:cli`) and drift-gated in CI.
+- **Help is rendered from it.** `src/cli/help.ts` builds both top-level and per-command help
+  (`arch <cmd> --help`) out of the manifest — including the `examples[]`, which a test requires to
+  be non-empty for every command.
+- **The parser is drift-tested against it.** `FLAG_KEYS` in `src/cli/io.ts` is checked
+  **bidirectionally** by the "FLAG_KEYS — no drift vs the manifest" suite in `test/cli-help.test.ts`:
+  every manifest flag (and alias) must have a parse-table entry, every parse-table entry must be
+  declared by some command, and the two must agree on whether the flag takes a value. An undeclared
+  flag is **rejected** at parse time (exit `3`, with a did-you-mean), never swallowed as a filename.
+
+So **adding or changing a CLI flag or command is a four-part edit**, and skipping any part fails a
+test or the drift gate:
+
+1. Declare it in `src/manifest.ts` (the flag, plus an `examples[]` entry for a new command).
+2. Add its `FLAG_KEYS` entry in `src/cli/io.ts` (matching `kind` — value-taking vs `boolean`).
+3. Implement it in the command module under `src/cli/`.
+4. `npm run gen:cli` (or `gen:all`) and commit the regenerated `docs/cli-reference.md`.
 
 ## Code of Conduct
 
