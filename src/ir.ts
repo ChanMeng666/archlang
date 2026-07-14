@@ -71,6 +71,11 @@ export interface RWall extends RBase {
   closed: boolean;
   /** Openings (doors/windows) hosted on this wall; subtracted from its solid. */
   openings: Opening[];
+  /** True when this wall's `id` was author-declared, not an assigned positional
+   *  auto-id (`<category>_<n>`). Lets `suggestTopology` reference the wall by a
+   *  STABLE ref that can't re-bind. Internal: set during resolve, never serialized
+   *  into the Scene/SVG/exports (the `_` prefix keeps it out). */
+  _idAuthored?: boolean;
 }
 /** A resolved relational-placement constraint carried on an unplaced room until
  *  `placeRelational` computes its absolute `at` in dependency order. */
@@ -201,6 +206,9 @@ interface Entry {
   node: AstElement;
   env: Env;
   id: string;
+  /** True when `node.id` was author-declared (vs an assigned positional auto-id);
+   *  copied onto the resolved wall as {@link RWall._idAuthored}. */
+  idAuthored?: boolean;
   /** Active `set` overrides for this element's kind, captured at expansion. */
   defaults?: ReadonlyMap<string, Value>;
   resolved?: ResolvedElement;
@@ -587,8 +595,10 @@ function resolveImpl(
       const r = def.resolve(e.node, ctx);
       e.resolved = r;
       markPlacement(r, e.node, e.fromStrip === true);
-      if (r.kind === "wall") walls.push(r);
-      else if (r.kind === "room") rooms2.push(r);
+      if (r.kind === "wall") {
+        r._idAuthored = e.idAuthored === true;
+        walls.push(r);
+      } else if (r.kind === "room") rooms2.push(r);
     }
   }
 
@@ -658,6 +668,7 @@ function assignIds(entries: Entry[], registry: Registry, diagnostics: Diagnostic
     for (const e of entries) {
       if (e.node.kind !== def.kind) continue;
       idx++;
+      e.idAuthored = Boolean(e.node.id);
       e.id = assignId(e.node.id, def.idPrefix(e.node), idx, e.node.span);
     }
   }

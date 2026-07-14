@@ -5,6 +5,38 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] - 2026-07-15
+
+Two behaviour improvements to `arch suggest` (`suggestTopology`), requested by the downstream
+ArchCanvas product, which persists a chosen candidate's `insertText` back into `.arch` source. Both
+are **unconditional** — per [ADR 0005](docs/adr/0005-facts-and-lint-not-an-architect.md) suggestions
+are deterministic data, and the new behaviour is strictly more correct, so there is no opt-in flag.
+The public `Suggestion` / `SuggestionCandidate` types are **unchanged**; only the string a candidate
+carries (and, for one fault, candidate order) changes.
+
+### Changed
+
+- **Candidates reference walls only by a STABLE ref.** A candidate's `insertText` used to be able to
+  name a wall by its *positional* auto-id (e.g. `door on partition_3 at 50%`), which re-indexes
+  silently when a later edit inserts an earlier same-category wall — corrupting any persisted
+  suggestion. Each candidate now composes its placement as the first available of: an **author-declared
+  wall id** (`on <id>`), a **unique wall category** (`on <category>`, valid iff exactly one wall carries
+  it), or **absolute coordinates** (`at (x, y)`, which name no wall — the compiler's nearest-wall
+  hosting binds the intended one). A positional auto-id is never emitted. Applies to all four
+  builders (entrance, unreachable-room, bedroom-window, bath-via-bedroom).
+- **A private unreachable room prefers reconnecting inward.** For `W_ROOM_UNREACHABLE` on a **private**
+  room (bedroom or wet room), interior candidates that reconnect to a space already reaching the
+  entrance now rank **above** exterior (new-outside-door) candidates, regardless of run length; within
+  each group the existing longest-free-run order is kept. Non-private rooms keep the pure geometric
+  order. `W_NO_ENTRANCE` (exterior-first by design), `W_BATH_VIA_BEDROOM` (already interior-preferred),
+  and `W_BEDROOM_NO_WINDOW` (windows are exterior-only) are unchanged.
+
+### Internal
+
+- `RWall` carries an internal `_idAuthored` marker (set in `resolve` from `assignIds`' knowledge of
+  whether the id was author-declared; `_`-prefixed, never serialized into the Scene/exports), so
+  `suggestTopology` can tell an authored id from an assigned positional one.
+
 ## [1.17.0] - 2026-07-14
 
 Agent-CLI round: the `arch` CLI audited against the **[7 Principles for Agent-Friendly

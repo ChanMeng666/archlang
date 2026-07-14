@@ -109,8 +109,9 @@ diagnostic also carries **machine-applicable `fixes`**:
 not make. When lint reports `W_ROOM_UNREACHABLE`, `W_ROOM_DISCONNECTED`, `W_NO_ENTRANCE`,
 `W_BATH_VIA_BEDROOM`, or `W_BEDROOM_NO_WINDOW`, ask ArchLang for candidates:
 
-- **`arch suggest plan.arch --json`** returns ready-to-paste `door`/`window` statements (in the
-  **attachment form**, and furniture-aware — a door candidate never opens onto a wardrobe) plus a
+- **`arch suggest plan.arch --json`** returns ready-to-paste `door`/`window` statements (furniture-aware
+  — a door candidate never opens onto a wardrobe; each references its wall by a **stable ref** — an
+  authored id or a unique category — or absolute coordinates, never a re-bindable positional id) plus a
   rationale for each — for a room with no path back (`W_ROOM_UNREACHABLE`), a building with no way in
   (`W_NO_ENTRANCE`), a bath reachable only through a bedroom (`W_BATH_VIA_BEDROOM`), or a windowless
   bedroom (`W_BEDROOM_NO_WINDOW`). Choose one and insert it, then re-run the loop. This replaces
