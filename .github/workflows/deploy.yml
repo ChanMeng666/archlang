@@ -39,11 +39,11 @@ jobs:
           - name: docs
             dir: docs-site
             project_id: prj_BQBn15EITtFL5hw4bGBcEBm6gb91
-            url: https://archlang-docs.vercel.app
+            url: https://archlang.uk
           - name: playground
             dir: playground
             project_id: prj_fKCyuxicxftbsIqgh6M7AxBAwEE0
-            url: https://archlang-playground.vercel.app
+            url: https://playground.archlang.uk
     env:
       VERCEL_ORG_ID: team_B067BUpWFoVPBxfQ0TWllunK
       VERCEL_PROJECT_ID: ${{ matrix.project_id }}

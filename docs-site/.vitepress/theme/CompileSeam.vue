@@ -19,7 +19,7 @@ import { EXAMPLES } from "./examples-data.js";
 const raw: string = EXAMPLES.studio;
 
 const ARCHCANVAS = "https://archcanvas.chanmeng.org";
-const PLAYGROUND = "https://archlang-playground.vercel.app";
+const PLAYGROUND = "https://playground.archlang.uk";
 
 // ── The source text and its final compiled drawing (computed once, at setup,
 //    so it exists during SSR and initial hydration alike). ──────────────────

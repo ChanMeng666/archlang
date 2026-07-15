@@ -34,7 +34,7 @@ Two entry points, a gate and a meter:
 ## The shape
 
 An intent is a small JSON object. The machine-readable schema is served at
-[`/intent.schema.json`](https://archlang-docs.vercel.app/intent.schema.json); a
+[`/intent.schema.json`](https://archlang.uk/intent.schema.json); a
 representative, annotated example:
 
 ```json

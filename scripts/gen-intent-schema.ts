@@ -3,7 +3,7 @@
  * (`INTENT_JSON_SCHEMA` in `src/intent.ts`). Run with `npx tsx scripts/gen-intent-schema.ts`.
  *
  * The committed file is what tools and LLMs fetch at
- * https://archlang-docs.vercel.app/intent.schema.json; a vitest drift test
+ * https://archlang.uk/intent.schema.json; a vitest drift test
  * (`test/intent-schema-drift.test.ts`) regenerates it in-memory and compares, so CI
  * fails if the schema object and the committed JSON diverge.
  */

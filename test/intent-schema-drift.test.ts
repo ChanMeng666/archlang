@@ -17,6 +17,6 @@ describe("intent.schema.json drift", () => {
 
   it("is valid JSON with the advertised $id", () => {
     const parsed = JSON.parse(readFileSync("schemas/intent.schema.json", "utf8"));
-    expect(parsed.$id).toBe("https://archlang-docs.vercel.app/intent.schema.json");
+    expect(parsed.$id).toBe("https://archlang.uk/intent.schema.json");
   });
 });

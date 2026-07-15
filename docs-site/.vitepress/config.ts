@@ -77,15 +77,18 @@ export default defineConfig({
           "A declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.",
       },
     ],
-    ["meta", { property: "og:image", content: "https://archlang-docs.vercel.app/brand/archlang-og.png" }],
+    ["meta", { property: "og:image", content: "https://archlang.uk/brand/archlang-og.png" }],
     ["meta", { name: "twitter:card", content: "summary_large_image" }],
-    ["meta", { name: "twitter:image", content: "https://archlang-docs.vercel.app/brand/archlang-og.png" }],
+    ["meta", { name: "twitter:image", content: "https://archlang.uk/brand/archlang-og.png" }],
   ],
   // Built into a subdir under the eventual GitHub Pages / Vercel project; "./"
   // keeps asset URLs relative so it works under any base path.
   base: "/",
   cleanUrls: true,
   lastUpdated: true,
+  // Now that the site has a stable custom domain, emit a sitemap.xml so search
+  // engines index the canonical archlang.uk URLs (not the old *.vercel.app host).
+  sitemap: { hostname: "https://archlang.uk" },
   // sync-docs.mjs drops a RAW markdown copy of each generated page into public/
   // (served verbatim at `/<route>.md` — the append-`.md` convention llms.txt
   // advertises). Those copies are static assets, not pages: exclude them from
@@ -191,7 +194,7 @@ export default defineConfig({
       },
       // Keep one-click reach to the playground… (VitePress appends the external
       // ↗ icon itself for external links, so no manual arrow in the text.)
-      { text: "Playground", link: "https://archlang-playground.vercel.app" },
+      { text: "Playground", link: "https://playground.archlang.uk" },
       // …and group the wider brand family (the ArchCanvas product + packages)
       // under an Ecosystem dropdown so docs ↔ archcanvas ↔ packages all link.
       {

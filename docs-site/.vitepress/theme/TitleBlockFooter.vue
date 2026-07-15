@@ -4,7 +4,7 @@
 // family links. Rendered via the layout-bottom slot. Lives in the SHEET world, so
 // it reads on paper through the shared tokens.
 const ECOSYSTEM = [
-  { href: "https://archlang-playground.vercel.app", label: "Playground ↗" },
+  { href: "https://playground.archlang.uk", label: "Playground ↗" },
   { href: "https://archcanvas.chanmeng.org", label: "ArchCanvas ↗" },
   { href: "https://www.npmjs.com/package/@chanmeng666/archlang", label: "npm ↗" },
   { href: "https://github.com/chanmeng666/archlang", label: "GitHub ↗" },

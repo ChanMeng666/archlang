@@ -12,7 +12,7 @@ facts**. Two pure functions turn source into machine-readable, image-free output
 Both are exported from the package (`import { describe, lint } from "@chanmeng666/archlang"`)
 and surfaced on the CLI as `arch describe` / `arch lint` (add `--json` for the
 structured form). They power the **Describe** and **Lint** tabs in the
-[playground](https://archlang-playground.vercel.app). Neither renders anything, so a
+[playground](https://playground.archlang.uk). Neither renders anything, so a
 text-only agent can author a plan and **verify it matches intent without ever
 looking at an image**.
 
@@ -303,7 +303,7 @@ under the accessibility thresholds:
 
 Together, `describe` and `lint` close the author → render → **verify** loop for an AI
 agent with no eyes on the drawing — see
-[Use ArchLang from an agent](https://archlang-docs.vercel.app/agents):
+[Use ArchLang from an agent](https://archlang.uk/agents):
 
 1. `arch compile` — render and get errors as data.
 2. `arch describe --json` — confirm the room count, labels, areas, and access match

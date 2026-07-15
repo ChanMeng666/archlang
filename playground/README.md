@@ -3,7 +3,7 @@
 A Vite + CodeMirror 6 web app that edits `.arch` source and shows the compiled SVG
 floor plan live, entirely client-side. **Not published** — it's a dev/demo app that
 consumes the built core (`../dist/index.js`). Deployed at
-[archlang-playground.vercel.app](https://archlang-playground.vercel.app).
+[playground.archlang.uk](https://playground.archlang.uk).
 
 ## Features
 

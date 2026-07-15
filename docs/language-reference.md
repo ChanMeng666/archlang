@@ -769,7 +769,7 @@ surface — commands, flags, formats, lint profiles, error codes — as structur
 To read that surface rather than parse it: `arch help` lists every command,
 `arch <cmd> --help` prints one command's flags and worked examples, and
 `arch --version` prints the version. Help and the
-[CLI reference](https://archlang-docs.vercel.app/cli) are both rendered from the
+[CLI reference](https://archlang.uk/cli) are both rendered from the
 manifest, so none of the three can disagree.
 
 ### Diagnostics

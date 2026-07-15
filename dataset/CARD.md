@@ -227,6 +227,6 @@ than gatekeeping it.
 ## Links
 
 - **Repository:** https://github.com/ChanMeng666/archlang (generator: `dataset/`)
-- **Docs:** https://archlang-docs.vercel.app
+- **Docs:** https://archlang.uk
 - **npm:** https://www.npmjs.com/package/@chanmeng666/archlang
 - **License:** CC0-1.0

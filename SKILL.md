@@ -53,7 +53,7 @@ npx @chanmeng666/archlang help
    iterate on the feedback and re-run. Adjacency/reachability are advisory (reported, never fail the
    gate). Use `arch score plan.arch --brief intent.json --json` as a continuous satisfaction meter
    (always exit `0`) to watch the plan approach the brief across edits. See
-   [`/intent.schema.json`](https://archlang-docs.vercel.app/intent.schema.json).
+   [`/intent.schema.json`](https://archlang.uk/intent.schema.json).
 9. **Fix furniture geometry:** `arch repair plan.arch -o fixed.arch` pushes furniture out of
    walls/doorways/swing arcs (the geometric corrector; distinct from `fix`).
 10. **Show the user:** `arch preview plan.arch -o plan.png` renders a PNG (`--install` fetches the
@@ -157,9 +157,9 @@ facts into context just to filter them yourself.
 
 - **Plan JSON.** Author or ingest the machine-native shape and compile it: `arch compile plan.json
   --from-json -o out.svg`. The schema is served at
-  [`/plan.schema.json`](https://archlang-docs.vercel.app/plan.schema.json).
+  [`/plan.schema.json`](https://archlang.uk/plan.schema.json).
 - **GBNF.** To force a local model to emit only parseable ArchLang, constrain decoding with
-  [`/archlang.gbnf`](https://archlang-docs.vercel.app/archlang.gbnf).
+  [`/archlang.gbnf`](https://archlang.uk/archlang.gbnf).
 
 ## Commands
 

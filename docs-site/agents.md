@@ -145,6 +145,6 @@ Any docs page also serves its raw markdown at `/<route>.md` (e.g. [`/cli.md`](/c
   `score`, `repair`, `applyFixes`, `suggestTopology`, `renderAscii` and more:
   `import { compile, describe, lint } from "@chanmeng666/archlang"`.
 - These power the live preview, **Describe**, **Lint** and **Intent** tabs in the
-  [playground](https://archlang-playground.vercel.app).
+  [playground](https://playground.archlang.uk).
 - See [`SKILL.md`](https://github.com/chanmeng666/archlang/blob/main/SKILL.md) and
   [`llms.txt`](https://github.com/chanmeng666/archlang/blob/main/llms.txt) in the repo.

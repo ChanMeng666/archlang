@@ -23,7 +23,7 @@ import { describe, expect, it } from "vitest";
 
 /** Every `#z=` hash the README links to. */
 function permalinkHashes(readme: string): string[] {
-  return [...readme.matchAll(/archlang-playground\.vercel\.app\/#z=([A-Za-z0-9_-]+)/g)].map((m) => m[1]!);
+  return [...readme.matchAll(/playground\.archlang\.uk\/#z=([A-Za-z0-9_-]+)/g)].map((m) => m[1]!);
 }
 
 /** The `#z=` codec, mirroring `playground/src/share.ts`: base64url of raw-deflated UTF-8. */

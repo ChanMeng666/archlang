@@ -18,7 +18,7 @@
 import { readFileSync } from "node:fs";
 import { deflateRawSync, inflateRawSync } from "node:zlib";
 
-const PLAYGROUND = "https://archlang-playground.vercel.app";
+const PLAYGROUND = "https://playground.archlang.uk";
 
 /** Encode plan source into the `#z=` share hash (base64url of the raw-deflated UTF-8). */
 export function encodePlanHash(source) {

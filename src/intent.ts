@@ -704,7 +704,7 @@ export function intentFromJson(value: unknown): { intent: Intent | null; errors:
  */
 export const INTENT_JSON_SCHEMA = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://archlang-docs.vercel.app/intent.schema.json",
+  $id: "https://archlang.uk/intent.schema.json",
   title: "ArchLang Intent",
   description:
     'A floor-plan brief\'s checkable INTENT as structured data — what the source TEXT asked for, independent of any one drawing. Every field is BRIEF-grounded (derived from the prompt\'s words, not a golden\'s geometry). Area bands follow one convention everywhere: a brief\'s "about/around/~N m²" or a bare "N m²" sets both bounds to ±10% of N; "at least N m²" sets `min` only (open top); qualitative size words (compact, generous, large, spacious) license NO area assertion — omit the band rather than invent bounds. Assertions are checked against `describe()` facts; room count / existence / area / windows GATE (a real deliverable miss), while `adjacency`/`reachable` are ADVISORY (scored, never gating).',
