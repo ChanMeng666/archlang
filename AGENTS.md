@@ -84,6 +84,14 @@ re-propose, re-open, or contradict them anywhere.
   `playground/src/styles/tokens.css` (no shared import — change one, change the other).
 - **`eval/rubric.md` policies are frozen** (blind-drafted, then approved) and **`npm run eval:live` is
   paid and owner-only** — the offline `npm run eval:ci` golden gate is what runs in CI.
+- **Custom domain `archlang.uk` (Cloudflare DNS + Vercel), live since 2026-07-15.** Docs → `archlang.uk`
+  (apex), playground → `playground.archlang.uk`. Two things a future agent must not get wrong: (1) the
+  Vercel **project names** and npm **workspace names** are still `archlang-docs` / `archlang-playground`
+  — those are NOT the URLs and must never be renamed to match the domain (a grep for them legitimately
+  hits `package.json`/`deploy.yml`); (2) the Cloudflare records must stay **"DNS only" (grey cloud), never
+  proxied** — proxying breaks Vercel's SSL. The old `*.vercel.app` hosts are kept and **301**-redirect to
+  the new ones. Full recipe (DNS records, TLS = Full strict, redirects, and how to change a public URL in
+  code without the escaped-dot grep trap): `docs/hosting-and-domains.md`.
 
 **Monorepo layout (npm workspaces, one root lockfile):**
 
@@ -385,6 +393,14 @@ source (.arch)
   why the CTAs and the terminal once carried literal `#b3261e` / `#f0705f`. ADR 0014 retired all of
   them.) The one legitimate literal left is the CodeMirror lint squiggle's data-URI hex — a `var()`
   cannot cross into an SVG — so keep it in step with `--redline` / `--warn-ink` by hand.
+- **(Sites) The public hosts are `archlang.uk` / `playground.archlang.uk` — the old `*.vercel.app`
+  URLs are gone from source (only 301 redirects + the Vercel project names remain).** If you ever
+  change a public host again: grep the host **prefix without dots** (`archlang-playground`, not
+  `archlang-playground.vercel.app`) — some references are regexes with escaped dots (e.g.
+  `test/readme-permalink.test.ts`) that a literal-dot grep misses. Edit sources and regenerate (schema
+  `$id`s in `src/plan-json.ts`/`src/intent.ts` → `gen:*-schema`; agent-context URLs in `SKILL.md` →
+  `gen:llms`); never hand-edit `schemas/*.json` or `llms-full.txt`. The README `#z=` permalinks are
+  base-independent, so only the host prefix swaps. Full playbook: `docs/hosting-and-domains.md`.
 
 ## Reading Order
 
