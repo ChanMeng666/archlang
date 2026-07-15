@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Both public sites moved to the `archlang.uk` custom domain** (Cloudflare DNS + Vercel), live
+  2026-07-15. Docs → `https://archlang.uk` (apex), playground → `https://playground.archlang.uk`. All
+  hard-coded `*.vercel.app` URLs across the site configs, cross-links, OG/Twitter images, agent-context
+  files (`SKILL.md`, `llms.txt`), README permalinks, and CI were swapped; the plan/intent JSON Schema
+  `$id`s moved to `archlang.uk` (edited in `src/plan-json.ts` / `src/intent.ts`, `schemas/*.json`
+  regenerated). Added a VitePress `sitemap.hostname`. The old `*.vercel.app` hosts are kept and
+  **301**-redirect to the new ones (no broken links); the Vercel project and npm workspace names
+  (`archlang-docs`, `archlang-playground`) are unchanged. No change to the published core package's
+  runtime behaviour. Operational recipe: [`docs/hosting-and-domains.md`](docs/hosting-and-domains.md).
+
 ## [1.18.0] - 2026-07-15
 
 Two behaviour improvements to `arch suggest` (`suggestTopology`), requested by the downstream
