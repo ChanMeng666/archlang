@@ -39,7 +39,7 @@ structured JSON. `compile` also accepts `plan_json` (the Plan-JSON / RPLAN shape
 | `validate` | Parse + resolve + lint, the ship gate. `strict` fails on warnings; `graph` checks interior-door adjacency against an intended room graph. |
 | `repair` | Explicit corrector: furniture out of walls/doorways/swings → new `.arch` source + change log. Never adds doors/windows. |
 | `fix` | Apply the machine-applicable fixes on a plan's diagnostics (syntactic corrector; bounded fixpoint). `unsafe` widens to `maybe-incorrect`. |
-| `suggest` | Advisory door/window statements (attachment form) to resolve unreachable rooms / windowless bedrooms — data, never applied. |
+| `suggest` | Advisory door/window statements (each referencing its wall by a stable ref — an authored id or a unique category — or absolute coordinates, never a re-bindable positional id) to resolve unreachable rooms / windowless bedrooms — data, never applied. |
 | `complete` | LSP completion items in scope at a source byte offset. |
 
 ## Resources

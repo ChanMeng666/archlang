@@ -302,7 +302,8 @@ export async function cmdFix(args: Args): Promise<number> {
  * `arch suggest` — advisory topology suggestions as data (never applied; ADR 0005).
  * For a room with no path back, a building with no entrance, a bath reachable only
  * through a bedroom, or a windowless bedroom, prints ready-to-paste `door`/`window`
- * statements (attachment form, furniture-aware) plus a rationale.
+ * statements (furniture-aware, each referencing its wall by a stable ref — an authored
+ * id or a unique category — or absolute coordinates) plus a rationale.
  */
 export function cmdSuggest(args: Args): number {
   return withSource(args, (source, input) => {
