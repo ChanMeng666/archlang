@@ -8,7 +8,8 @@
  * bedroom with no window (`W_BEDROOM_NO_WINDOW`), a building with no way in
  * (`W_NO_ENTRANCE`), and a wet room reachable only through a bedroom
  * (`W_BATH_VIA_BEDROOM`) — it emits concrete, ready-to-paste `.arch` statements
- * (using the v1.13 `on <wall> at <p>%` attachment form) that would resolve the
+ * (each referencing its host wall by a stable ref, or by absolute coordinates — see
+ * the next paragraph) that would resolve the
  * fault, with a rationale. Each builder mirrors the SEMANTICS of the matching lint
  * rule so a suggestion fires iff the lint fires. The agent (or human) chooses;
  * nothing here edits the plan.

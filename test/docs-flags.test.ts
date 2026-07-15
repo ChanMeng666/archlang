@@ -97,3 +97,39 @@ describe("docs never document a flag the command doesn't take", () => {
     expect(undeclaredUsages(file, readFileSync(file, "utf8"), byCommand)).toEqual([]);
   });
 });
+
+/**
+ * Docs↔suggest gate: a `door`/`window` example that reads as an `arch suggest`
+ * candidate must NEVER reference a wall by its positional auto-id (`on partition_3`).
+ *
+ * Since v1.18 `suggestTopology` composes every candidate's `insertText` from a STABLE
+ * ref only — an author-declared id, else a unique category, else absolute `at (x, y)` —
+ * because a positional id (`<category>_<n>`) re-indexes when a later same-category wall
+ * is inserted, silently corrupting a suggestion a downstream product persisted. The code
+ * golden (`test/suggest.test.ts`'s `noPositionalId`) pins the output; this pins the prose,
+ * so a doc can't teach the re-bindable form the CLI stopped emitting. Same `on \w+_\d+`
+ * idiom as that golden. Author ids like `wall_hall_bath` (no trailing digits) don't match.
+ */
+describe("docs never show a suggest candidate that names a wall by a positional auto-id", () => {
+  /** Every `door|window on <cat>_<n> …` in `text` (the re-bindable positional form). */
+  const positionalRefs = (file: string, text: string): string[] => {
+    const bad: string[] = [];
+    text.split("\n").forEach((line, i) => {
+      for (const hit of line.matchAll(/\b(?:door|window) on (\w+_\d+)\b/g)) {
+        bad.push(`${file}:${i + 1} — suggest example names wall by positional id \`${hit[1]}\``);
+      }
+    });
+    return bad;
+  };
+
+  it("catches a positional-id suggest example (the re-binding hazard this gate exists for)", () => {
+    const bad = positionalRefs("canary.md", "Insert `door on partition_3 at 50% width 900`.");
+    expect(bad).toHaveLength(1);
+    expect(bad[0]).toContain("partition_3");
+  });
+
+  it.each(DOCS)("%s", (file) => {
+    if (!existsSync(file)) return;
+    expect(positionalRefs(file, readFileSync(file, "utf8"))).toEqual([]);
+  });
+});
