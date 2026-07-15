@@ -3,7 +3,7 @@
  * (`PLAN_JSON_SCHEMA` in `src/plan-json.ts`). Run with `npx tsx scripts/gen-plan-schema.ts`.
  *
  * The committed file is what tools and LLMs fetch at
- * https://archlang-docs.vercel.app/plan.schema.json; a vitest drift test
+ * https://archlang.uk/plan.schema.json; a vitest drift test
  * (`test/plan-schema-drift.test.ts`) regenerates it in-memory and compares, so CI
  * fails if the schema object and the committed JSON diverge.
  */

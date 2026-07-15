@@ -53,7 +53,7 @@ const facts = computed(() => {
 // base64url(deflate-raw(utf8)) — the playground's `#z=` share scheme (duplicated
 // here so docs stay self-contained; ~byte-identical to playground/src/share.js).
 async function playgroundUrl(): Promise<string> {
-  const base = "https://archlang-playground.vercel.app/";
+  const base = "https://playground.archlang.uk/";
   const utf8 = new TextEncoder().encode(source.value);
   try {
     if (typeof CompressionStream !== "undefined") {

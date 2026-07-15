@@ -81,6 +81,6 @@ export function buildLlmPrompt({ source, facts, diagnostics }: LlmPromptInput): 
     "## Diagnostics",
     renderDiagnostics(diagnostics),
     "",
-    "Full language spec: run `npx @chanmeng666/archlang spec` or see https://archlang-docs.vercel.app/spec",
+    "Full language spec: run `npx @chanmeng666/archlang spec` or see https://archlang.uk/spec",
   ].join("\n");
 }

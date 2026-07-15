@@ -998,7 +998,7 @@ const POINT_SCHEMA = {
  */
 export const PLAN_JSON_SCHEMA = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://archlang-docs.vercel.app/plan.schema.json",
+  $id: "https://archlang.uk/plan.schema.json",
   title: "ArchLang Plan",
   description:
     "A floor plan as structured JSON (RPLAN / DStruct2Design convention). Coordinates are millimetres; the origin is top-left with +x right and +y DOWN. Fields marked output-only are produced by planToJson and ignored on input. Scripting (let/for/if/component) and import are not representable — author those in .arch source.",

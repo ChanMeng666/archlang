@@ -30,7 +30,7 @@ describe("buildLlmPrompt", () => {
     expect(out).toContain("```arch");
     expect(out).toContain('room id=r1 at (0,0) size 5000x4000 label "Living" uses living');
     expect(out).toContain("npx @chanmeng666/archlang spec");
-    expect(out).toContain("https://archlang-docs.vercel.app/spec");
+    expect(out).toContain("https://archlang.uk/spec");
   });
 
   it("embeds a compact facts JSON block with rooms and an access summary", () => {

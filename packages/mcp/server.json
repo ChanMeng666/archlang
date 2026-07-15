@@ -8,7 +8,7 @@
     "source": "github",
     "subfolder": "packages/mcp"
   },
-  "websiteUrl": "https://archlang-docs.vercel.app",
+  "websiteUrl": "https://archlang.uk",
   "packages": [
     {
       "registryType": "npm",

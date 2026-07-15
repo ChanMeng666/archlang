@@ -26,7 +26,7 @@ and built so an **AI agent can verify its own plan without ever looking at an im
 [![Stars](https://img.shields.io/github/stars/chanmeng666/archlang?style=flat-square)](https://github.com/chanmeng666/archlang/stargazers)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-EA4AAA?style=flat-square&logo=githubsponsors)](https://github.com/sponsors/ChanMeng666)
 
-**[▶ Live Playground](https://archlang-playground.vercel.app)** · **[📖 Docs](https://archlang-docs.vercel.app)** · **[⌨ CLI reference](https://archlang-docs.vercel.app/cli)** · **[📦 npm](https://www.npmjs.com/package/@chanmeng666/archlang)** · **[🧩 VS Code](https://marketplace.visualstudio.com/items?itemName=ChanMeng.archlang)**
+**[▶ Live Playground](https://playground.archlang.uk)** · **[📖 Docs](https://archlang.uk)** · **[⌨ CLI reference](https://archlang.uk/cli)** · **[📦 npm](https://www.npmjs.com/package/@chanmeng666/archlang)** · **[🧩 VS Code](https://marketplace.visualstudio.com/items?itemName=ChanMeng.archlang)**
 
 </div>
 
@@ -66,14 +66,14 @@ plan "Attached 1BR" {
 
 <div align="center">
 
-<a href="https://archlang-playground.vercel.app/#z=hVXbaiNHEH2frzjIhJWIJUZeLSHBNnhDAoE8JXm3StMlTZOZrqG7xuNcDH7aDwj5gjzsh_lLQnePbibBTx7aVadOnao6usAdxPF8w8aLtNg2pKBea_FsMFitoTXjYblYvkfXUMUtO0Xod-Tx8vw3nKAmZ-aVtF2vbIoLVCLeWEfKAVvxkI6ddbsA8dj23lntPS_wg4If2Vc2cLiEyo61Zv9NcQHg5fkfrIN6261TFYKXAbJFJBnQkDWQXsHOQCX-OaQdqpEqVTWnAMJATYPNb-gkWLXiMF0bEf_nYJ2RAS_PnyEO1zHsFqS47iTcrmcHWEIMh9akqUSAykDegOCoZZOYYboOg3U7WKeynqG2bscmwo0ETokepMi6GnhuSO0DZ8IjnnW4jp-3IFfVEkX_nGh9K21nGw6oGiYHcgYdhcABa_JVjcY6XS-KriGHyd1ei-XHnyb4owB6ZzWgbQtg563BsiwLwInXGn1XFMAFfrQPsZkvsd-OpHvDW52rzL3d1RolJaRJXSLU5GMCYYUWhjutFwXyf5HDSTEtL8sZdtShRM3pdVWWZWKF3LY1N_6-ydWD_Z1zQEMbbjDJrCZAH5vNUa9SN2ziQ0p9f5L6MfcxyaljVwXwlPv97lHZW_EINTcNKK5v7yN_SjTjCAOmTFUNGnUPSl5fPv01bmJeOohTmSXMrulDOqGOvObN27AOzC696iB5p6NQaUWsuRnu8xx4zwda2-pXxyHgKio1ajj9qizTx9NZcpD-reSo5z4_f59DDBwUb9f_72SmN5L3tP-_fhQLJ5IdIZYZYrWHWJ1C5Ck69eQqjtVKtC2oEbdLamdlYpnLk9tMNx0f34U8zmQr5EyCG_0knXQCGfcyTm2BX2o-XEcyCHGvpp3NwrpoFnHIKcqaG3PfknUxfj8x0kx5sEbr2GiZScIx-ZHZ0V6wv5AzzLT5CTNLeI75dVniHGLDJqt2h9EJK3YavV8c0qLH1t6F4zijUGlZc3iqldaFFB_KL_bsV8lPToPSWpwHXZVlrv79ay-MtpL9zrpgDR-5YOr4gT1ku41HePitmUVSR08NsiVYd1BpD6fSzaODRVzW6A7ZJqJKj0mf0St-li1NziCTtgly9JcRMjsb8Bpy-aEsH6_O7WdSPBX_Ag">
+<a href="https://playground.archlang.uk/#z=hVXbaiNHEH2frzjIhJWIJUZeLSHBNnhDAoE8JXm3StMlTZOZrqG7xuNcDH7aDwj5gjzsh_lLQnePbibBTx7aVadOnao6usAdxPF8w8aLtNg2pKBea_FsMFitoTXjYblYvkfXUMUtO0Xod-Tx8vw3nKAmZ-aVtF2vbIoLVCLeWEfKAVvxkI6ddbsA8dj23lntPS_wg4If2Vc2cLiEyo61Zv9NcQHg5fkfrIN6261TFYKXAbJFJBnQkDWQXsHOQCX-OaQdqpEqVTWnAMJATYPNb-gkWLXiMF0bEf_nYJ2RAS_PnyEO1zHsFqS47iTcrmcHWEIMh9akqUSAykDegOCoZZOYYboOg3U7WKeynqG2bscmwo0ETokepMi6GnhuSO0DZ8IjnnW4jp-3IFfVEkX_nGh9K21nGw6oGiYHcgYdhcABa_JVjcY6XS-KriGHyd1ei-XHnyb4owB6ZzWgbQtg563BsiwLwInXGn1XFMAFfrQPsZkvsd-OpHvDW52rzL3d1RolJaRJXSLU5GMCYYUWhjutFwXyf5HDSTEtL8sZdtShRM3pdVWWZWKF3LY1N_6-ydWD_Z1zQEMbbjDJrCZAH5vNUa9SN2ziQ0p9f5L6MfcxyaljVwXwlPv97lHZW_EINTcNKK5v7yN_SjTjCAOmTFUNGnUPSl5fPv01bmJeOohTmSXMrulDOqGOvObN27AOzC696iB5p6NQaUWsuRnu8xx4zwda2-pXxyHgKio1ajj9qizTx9NZcpD-reSo5z4_f59DDBwUb9f_72SmN5L3tP-_fhQLJ5IdIZYZYrWHWJ1C5Ck69eQqjtVKtC2oEbdLamdlYpnLk9tMNx0f34U8zmQr5EyCG_0knXQCGfcyTm2BX2o-XEcyCHGvpp3NwrpoFnHIKcqaG3PfknUxfj8x0kx5sEbr2GiZScIx-ZHZ0V6wv5AzzLT5CTNLeI75dVniHGLDJqt2h9EJK3YavV8c0qLH1t6F4zijUGlZc3iqldaFFB_KL_bsV8lPToPSWpwHXZVlrv79ay-MtpL9zrpgDR-5YOr4gT1ku41HePitmUVSR08NsiVYd1BpD6fSzaODRVzW6A7ZJqJKj0mf0St-li1NziCTtgly9JcRMjsb8Bpy-aEsH6_O7WdSPBX_Ag">
 <img src="./examples/attached.svg" alt="The floor plan the program above compiles to — click to open it in the live playground" width="620" />
 </a>
 
 **↑ `arch compile attached.arch` — that program, rendered.** Nothing above places a wall corner,
 a door leaf or a sofa by hand.
 
-**▶ [Click the drawing](https://archlang-playground.vercel.app/#z=hVXbaiNHEH2frzjIhJWIJUZeLSHBNnhDAoE8JXm3StMlTZOZrqG7xuNcDH7aDwj5gjzsh_lLQnePbibBTx7aVadOnao6usAdxPF8w8aLtNg2pKBea_FsMFitoTXjYblYvkfXUMUtO0Xod-Tx8vw3nKAmZ-aVtF2vbIoLVCLeWEfKAVvxkI6ddbsA8dj23lntPS_wg4If2Vc2cLiEyo61Zv9NcQHg5fkfrIN6261TFYKXAbJFJBnQkDWQXsHOQCX-OaQdqpEqVTWnAMJATYPNb-gkWLXiMF0bEf_nYJ2RAS_PnyEO1zHsFqS47iTcrmcHWEIMh9akqUSAykDegOCoZZOYYboOg3U7WKeynqG2bscmwo0ETokepMi6GnhuSO0DZ8IjnnW4jp-3IFfVEkX_nGh9K21nGw6oGiYHcgYdhcABa_JVjcY6XS-KriGHyd1ei-XHnyb4owB6ZzWgbQtg563BsiwLwInXGn1XFMAFfrQPsZkvsd-OpHvDW52rzL3d1RolJaRJXSLU5GMCYYUWhjutFwXyf5HDSTEtL8sZdtShRM3pdVWWZWKF3LY1N_6-ydWD_Z1zQEMbbjDJrCZAH5vNUa9SN2ziQ0p9f5L6MfcxyaljVwXwlPv97lHZW_EINTcNKK5v7yN_SjTjCAOmTFUNGnUPSl5fPv01bmJeOohTmSXMrulDOqGOvObN27AOzC696iB5p6NQaUWsuRnu8xx4zwda2-pXxyHgKio1ajj9qizTx9NZcpD-reSo5z4_f59DDBwUb9f_72SmN5L3tP-_fhQLJ5IdIZYZYrWHWJ1C5Ck69eQqjtVKtC2oEbdLamdlYpnLk9tMNx0f34U8zmQr5EyCG_0knXQCGfcyTm2BX2o-XEcyCHGvpp3NwrpoFnHIKcqaG3PfknUxfj8x0kx5sEbr2GiZScIx-ZHZ0V6wv5AzzLT5CTNLeI75dVniHGLDJqt2h9EJK3YavV8c0qLH1t6F4zijUGlZc3iqldaFFB_KL_bsV8lPToPSWpwHXZVlrv79ay-MtpL9zrpgDR-5YOr4gT1ku41HePitmUVSR08NsiVYd1BpD6fSzaODRVzW6A7ZJqJKj0mf0St-li1NziCTtgly9JcRMjsb8Bpy-aEsH6_O7WdSPBX_Ag)** — it opens the
+**▶ [Click the drawing](https://playground.archlang.uk/#z=hVXbaiNHEH2frzjIhJWIJUZeLSHBNnhDAoE8JXm3StMlTZOZrqG7xuNcDH7aDwj5gjzsh_lLQnePbibBTx7aVadOnao6usAdxPF8w8aLtNg2pKBea_FsMFitoTXjYblYvkfXUMUtO0Xod-Tx8vw3nKAmZ-aVtF2vbIoLVCLeWEfKAVvxkI6ddbsA8dj23lntPS_wg4If2Vc2cLiEyo61Zv9NcQHg5fkfrIN6261TFYKXAbJFJBnQkDWQXsHOQCX-OaQdqpEqVTWnAMJATYPNb-gkWLXiMF0bEf_nYJ2RAS_PnyEO1zHsFqS47iTcrmcHWEIMh9akqUSAykDegOCoZZOYYboOg3U7WKeynqG2bscmwo0ETokepMi6GnhuSO0DZ8IjnnW4jp-3IFfVEkX_nGh9K21nGw6oGiYHcgYdhcABa_JVjcY6XS-KriGHyd1ei-XHnyb4owB6ZzWgbQtg563BsiwLwInXGn1XFMAFfrQPsZkvsd-OpHvDW52rzL3d1RolJaRJXSLU5GMCYYUWhjutFwXyf5HDSTEtL8sZdtShRM3pdVWWZWKF3LY1N_6-ydWD_Z1zQEMbbjDJrCZAH5vNUa9SN2ziQ0p9f5L6MfcxyaljVwXwlPv97lHZW_EINTcNKK5v7yN_SjTjCAOmTFUNGnUPSl5fPv01bmJeOohTmSXMrulDOqGOvObN27AOzC696iB5p6NQaUWsuRnu8xx4zwda2-pXxyHgKio1ajj9qizTx9NZcpD-reSo5z4_f59DDBwUb9f_72SmN5L3tP-_fhQLJ5IdIZYZYrWHWJ1C5Ck69eQqjtVKtC2oEbdLamdlYpnLk9tMNx0f34U8zmQr5EyCG_0knXQCGfcyTm2BX2o-XEcyCHGvpp3NwrpoFnHIKcqaG3PfknUxfj8x0kx5sEbr2GiZScIx-ZHZ0V6wv5AzzLT5CTNLeI75dVniHGLDJqt2h9EJK3YavV8c0qLH1t6F4zijUGlZc3iqldaFFB_KL_bsV8lPToPSWpwHXZVlrv79ay-MtpL9zrpgDR-5YOr4gT1ku41HePitmUVSR08NsiVYd1BpD6fSzaODRVzW6A7ZJqJKj0mf0St-li1NziCTtgly9JcRMjsb8Bpy-aEsH6_O7WdSPBX_Ag)** — it opens the
 live playground with **this exact plan already loaded**. Change a number and watch it redraw;
 the compiler runs in your browser, nothing is sent to a server.
 
@@ -97,7 +97,7 @@ produces byte-identical bytes, and changing one number changes exactly one thing
 too.
 
 The compiler is **pure TypeScript with zero runtime dependencies** and is isomorphic — the same code
-runs in Node and in the browser, which is why the [playground](https://archlang-playground.vercel.app)
+runs in Node and in the browser, which is why the [playground](https://playground.archlang.uk)
 is fully client-side.
 
 > ArchLang is the floor-plan engine behind [ArchCanvas](https://github.com/chanmeng666/archcanvas),
@@ -151,7 +151,7 @@ flowchart TD
 
 **Cold start in one command.** `arch context` prints the entire agent context — language spec,
 workflow skill, CLI reference and every diagnostic code — as one system-prompt-ready document (the
-same [`llms-full.txt`](https://archlang-docs.vercel.app/llms-full.txt) the docs site serves).
+same [`llms-full.txt`](https://archlang.uk/llms-full.txt) the docs site serves).
 
 ```bash
 npx @chanmeng666/archlang context                       # EVERYTHING: spec + skill + CLI + error catalog
@@ -170,7 +170,7 @@ Every command takes `--json` (result on stdout, messages on stderr) with determi
 `arch comple` suggests `compile`.
 
 **One manifest, no drift.** The per-command help (`arch <cmd> --help`), the flag parser, and the
-generated **[CLI reference](https://archlang-docs.vercel.app/cli)** are all rendered from the same
+generated **[CLI reference](https://archlang.uk/cli)** are all rendered from the same
 manifest — which is why they cannot advertise a flag a command doesn't take. `arch manifest --json`
 is that manifest as data, and `arch <cmd> --help` is the cheap way to read one row of it.
 
@@ -188,10 +188,10 @@ See [`SKILL.md`](SKILL.md).
 
 | Artifact | Use |
 |---|---|
-| [`/plan.schema.json`](https://archlang-docs.vercel.app/plan.schema.json) | Emit structured JSON, compile it with `arch compile --from-json` |
-| [`/archlang.gbnf`](https://archlang-docs.vercel.app/archlang.gbnf) | Constrain a local model to parseable output |
-| [`/intent.schema.json`](https://archlang-docs.vercel.app/intent.schema.json) | Write the brief down as a contract; gate on it with `validate --intent` |
-| [`/llms-full.txt`](https://archlang-docs.vercel.app/llms-full.txt) | The whole context bundle (`arch context`) |
+| [`/plan.schema.json`](https://archlang.uk/plan.schema.json) | Emit structured JSON, compile it with `arch compile --from-json` |
+| [`/archlang.gbnf`](https://archlang.uk/archlang.gbnf) | Constrain a local model to parseable output |
+| [`/intent.schema.json`](https://archlang.uk/intent.schema.json) | Write the brief down as a contract; gate on it with `validate --intent` |
+| [`/llms-full.txt`](https://archlang.uk/llms-full.txt) | The whole context bundle (`arch context`) |
 
 **MCP server (optional).** [`@chanmeng666/archlang-mcp`](packages/mcp) is a stdio Model Context
 Protocol shim over the library, listed on the official registry as `io.github.ChanMeng666/archlang-mcp`:
@@ -372,7 +372,7 @@ source.
 
 Also in [`examples/`](examples): `parametric` (a `for` loop that generates units), `themed` (a custom
 theme + brick hatch), `relational` (`right-of` / `below`), and `accessible` (`accTitle`/`accDescr`).
-The [docs gallery](https://archlang-docs.vercel.app/examples) renders all of them **live and
+The [docs gallery](https://archlang.uk/examples) renders all of them **live and
 editable** in the browser.
 
 ## 🏗️ How it works
@@ -424,8 +424,8 @@ The only place Node APIs are allowed is the CLI; everything else gets its enviro
 | **[`@chanmeng666/archlang`](https://www.npmjs.com/package/@chanmeng666/archlang)** | The core: compiler, CLI, analysis. Zero runtime deps, isomorphic. |
 | **[`@chanmeng666/archlang-mcp`](packages/mcp)** | Optional stdio MCP server (the SDK is quarantined here). |
 | **[VS Code extension](https://marketplace.visualstudio.com/items?itemName=ChanMeng.archlang)** | Syntax + live diagnostics, hover, completion, rename. |
-| **[Playground](https://archlang-playground.vercel.app)** | Client-side editor: preview, describe, lint, **intent scoring**, apply-fix, embed. |
-| **[Docs site](https://archlang-docs.vercel.app)** | Guide, reference, [CLI reference](https://archlang-docs.vercel.app/cli), ADRs, live examples. |
+| **[Playground](https://playground.archlang.uk)** | Client-side editor: preview, describe, lint, **intent scoring**, apply-fix, embed. |
+| **[Docs site](https://archlang.uk)** | Guide, reference, [CLI reference](https://archlang.uk/cli), ADRs, live examples. |
 | **[🤗 Dataset](https://huggingface.co/datasets/ChanMeng666/archlang-repair-trajectories)** | Synthetic, self-verifying **repair trajectories** + authoring pairs. CC0. |
 | **[GitHub Action](.github/actions/arch-render)** | Render ` ```arch ` fences in any repo's Markdown. |
 
@@ -435,7 +435,7 @@ A **live, editable** plan in any blog, wiki or docs page — one `<iframe>`, no 
 sent to a server (the source rides in the compressed `#z=` hash, so the page is self-contained):
 
 ```html
-<iframe src="https://archlang-playground.vercel.app/embed.html#z=…" width="720" height="480"></iframe>
+<iframe src="https://playground.archlang.uk/embed.html#z=…" width="720" height="480"></iframe>
 ```
 
 The playground's **Embed** button generates the snippet. Optional params: `editable=1` (show a
@@ -445,13 +445,13 @@ compact editor that re-renders as you type) and `theme=blueprint|dark|mono|prese
 > text, the same way `<script>` does — so a README (here or anywhere on github.com) *cannot* host a
 > live embed, no matter how it's written. The honest substitutes GitHub does allow are what this
 > README uses: a **static SVG the compiler really produced**, linked to a **playground permalink
-> that opens the same plan live**. On the [docs site](https://archlang-docs.vercel.app/examples),
+> that opens the same plan live**. On the [docs site](https://archlang.uk/examples),
 > where the sanitizer doesn't apply, every plan *is* live and editable in place.
 
 ## 📚 Documentation
 
-- **[📖 Docs site](https://archlang-docs.vercel.app)** — guide, reference, error catalog, ADRs, and a **live, editable** examples gallery. Every ` ```arch ` fence on a docs page is itself an editable plan.
-- **[⌨ CLI reference](https://archlang-docs.vercel.app/cli)** — every command, flag and exit code (generated from the manifest, so it can't fall behind).
+- **[📖 Docs site](https://archlang.uk)** — guide, reference, error catalog, ADRs, and a **live, editable** examples gallery. Every ` ```arch ` fence on a docs page is itself an editable plan.
+- **[⌨ CLI reference](https://archlang.uk/cli)** — every command, flag and exit code (generated from the manifest, so it can't fall behind).
 - **[spec.llm.md](spec.llm.md)** — the **whole language in one page** (~2k tokens) for AI agents; also `arch spec`.
 - **[SKILL.md](SKILL.md)** — the agent Skill: the `spec → compile → fix → describe → validate` loop.
 - **[Language Reference](docs/language-reference.md)** · **[Error catalog](docs/error-codes.md)** · **[The intent contract](docs/intent.md)** · **[ADRs](docs/adr)**

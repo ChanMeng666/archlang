@@ -245,7 +245,7 @@ describe("plan-json — describe() additions", () => {
 
 describe("plan-json — schema object", () => {
   it("advertises the id, required roots and the room_type enum", () => {
-    expect(PLAN_JSON_SCHEMA.$id).toBe("https://archlang-docs.vercel.app/plan.schema.json");
+    expect(PLAN_JSON_SCHEMA.$id).toBe("https://archlang.uk/plan.schema.json");
     expect(PLAN_JSON_SCHEMA.required).toEqual(["plan", "rooms", "walls", "openings", "furniture"]);
     expect(PLAN_JSON_SCHEMA.properties.room_types.items.enum).toEqual([...ROOM_TYPES]);
   });
