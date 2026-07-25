@@ -17,6 +17,7 @@
 import { readFileSync } from "node:fs";
 import { buildDoorAccessGraph, DEFAULT_TOL } from "../src/analyze.js";
 import { computeCirculation } from "../src/analyze/circulation.js";
+import { computeRoomClearances } from "../src/analyze/occupancy.js";
 import { renderSvg } from "../src/backends/svg.js";
 import { describe } from "../src/describe.js";
 import { compile } from "../src/index.js";
@@ -99,6 +100,8 @@ function benchPlan(name: string, iters: number, src: string, spec?: GenSpec): Re
       () => computeCirculation(rooms, ir.walls, doors, openings, furniture, access, DEFAULT_TOL),
       iters,
     ),
+    // The per-room occupancy flood-fill — the other area-budgeted grid.
+    occupancy: timeit(() => computeRoomClearances(rooms, furniture, doors, openings, ir.walls, DEFAULT_TOL), iters),
   };
   if (!JSON_MODE) {
     const meta = spec
@@ -113,6 +116,7 @@ function benchPlan(name: string, iters: number, src: string, spec?: GenSpec): Re
     console.log(row("lint", stats.lint));
     console.log(row("describe", stats.describe));
     console.log(row("circulation", stats.circulation));
+    console.log(row("occupancy", stats.occupancy));
   }
   return stats;
 }
@@ -123,11 +127,16 @@ if (!JSON_MODE) console.log(`ArchLang benchmark — ${ITERS} timed iterations ea
 // row exercises the nav-grid BFS; the generated plans above have no entrance, so
 // their circulation row measures the null fast-path.
 const studioSrc = readFileSync(new URL("../examples/studio.arch", import.meta.url), "utf8");
+// The LARGE-building case: at 100 x 60 m both analysis grids sit on their cell BUDGET
+// (~250k nav cells, ~25k per room) rather than at MIN_CELL_MM, so this is the row that
+// guards the cost of scale-aware resolution (ADR 0008 addendum).
+const museumSrc = readFileSync(new URL("../examples/museum.arch", import.meta.url), "utf8");
 const results = {
   BALANCED: benchPlan("BALANCED", ITERS, genPlan(BALANCED), BALANCED),
   ROOM_HEAVY: benchPlan("ROOM_HEAVY (O(R^2) overlap)", ITERS, genPlan(ROOM_HEAVY), ROOM_HEAVY),
   OPENING_HEAVY: benchPlan("OPENING_HEAVY (host-segment scan)", ITERS, genPlan(OPENING_HEAVY), OPENING_HEAVY),
   STUDIO: benchPlan("STUDIO (studio.arch — connected)", ITERS, studioSrc),
+  MUSEUM: benchPlan("MUSEUM (museum.arch — 100 x 60 m)", ITERS, museumSrc),
 };
 if (JSON_MODE) {
   // Stable JSON for CI diffing: median-ms per plan/stage, rounded to 3 dp.
