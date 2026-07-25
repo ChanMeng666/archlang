@@ -393,7 +393,14 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // Collect non-wall elements (source order), then lower walls — exactly the v0.1
   // op order, so layer-bucketing in a backend reproduces the original draw order.
   // Each kind gets its styled theme when `style <kind>` applies, else the base ctx.
-  const baseCtx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm };
+  // Will the wall lowering below actually void the wall solid at every opening? The
+  // rectilinear boolean does (it subtracts `openingRect` per opening), so an
+  // all-orthogonal wall set is voided for sure; a set containing an angled wall may
+  // fall through to the per-segment wall primitives, which subtract nothing. Derived
+  // from wall geometry only — never from backend presence — so output stays
+  // byte-identical with and without a registered geometry backend.
+  const openingsVoided = allOrthogonal(ir.walls);
+  const baseCtx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm, openingsVoided };
   const ctxFor = (kind: string): RenderCtx => {
     const st = styledByKind.get(kind);
     return st ? { ...baseCtx, theme: st } : baseCtx;

@@ -39,6 +39,7 @@ export const RENDER_PASSES = [
   "wallFill",
   "wallFace",
   "doors",
+  "openings",
   "windows",
   "labels",
   "dims",
@@ -149,6 +150,9 @@ export function aiaLayer(pass: RenderPass): string {
     case "wallFace":
       return "A-WALL";
     case "doors":
+    // A cased opening is a door-family void, not glazing — it belongs on A-DOOR
+    // (an `openings` node on A-GLAZ made a leaf-less passage read as a window).
+    case "openings":
       return "A-DOOR";
     case "windows":
       return "A-GLAZ";

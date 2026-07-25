@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { describe as describePlan, lint, compile } from "../src/index.js";
 import { format } from "../src/format.js";
+import { aiaLayer } from "../src/scene.js";
+import type { Scene, SceneNode } from "../src/scene.js";
+import { renderAscii } from "../src/backends/ascii.js";
+import { toDxf } from "../src/export/dxf.js";
 
 /**
  * Cased `opening` — a leaf-less gap in a wall that still connects two spaces. It
@@ -81,5 +85,120 @@ describe("opening element", () => {
     );
     expect(diagnostics.some((d) => d.code === "E_OPENING_WIDTH")).toBe(true);
     expect(format(openPlan)).toContain("opening id=op at (4000, 2000) width 1800 wall partition");
+  });
+});
+
+/**
+ * The wall boolean in `scene-build.ts` already severs the wall solid at every
+ * registered opening (jamb end-caps included, floor continuous through the gap), so
+ * an element must NOT then repaint that gap: `theme.opening` is the page background
+ * in every theme, and the cover polygon over-reaches a whole `wallStroke` past each
+ * wall face — which laid a white band across the floor either side of every cased
+ * opening and every interior doorway. The cover survives, unpainted, only because the
+ * ASCII/DXF backends locate the passage by that polygon.
+ */
+
+/** Living | Kitchen split by ONE orthogonal partition with a single cased opening —
+ *  no door, no window, so every door-family primitive in the scene is the opening's. */
+const orthoOpening = `plan "Op" {
+  units mm
+  wall exterior  thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+  wall partition thickness 100 { (4000,0) (4000,4000) }
+  room id=living  at (0,0)    size 4000x4000 label "Living"
+  room id=kitchen at (4000,0) size 4000x4000 label "Kitchen"
+  opening id=op   at (4000,2000) width 1800 wall partition
+}`;
+
+/** The same plan plus an ANGLED partition, which drops the whole wall set out of the
+ *  rectilinear boolean; with no geometry backend registered the cover polygon is then
+ *  the only thing voiding the wall, so it must stay opaque. */
+const angledOpening = `plan "Angled" {
+  units mm
+  wall exterior  thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+  wall partition thickness 100 { (2000,4000) (5000,1000) }
+  room id=living  at (0,0)    size 4000x4000 label "Living"
+  room id=kitchen at (4000,0) size 4000x4000 label "Kitchen"
+  opening id=op   at (3500,2500) width 800 wall partition
+  door    id=d_in at (2000,4000) width 1000 wall exterior hinge left swing in
+}`;
+
+const sceneOf = (src: string): Scene => compile(src, { noCache: true }).scene!;
+const on = (s: Scene, pass: SceneNode["layer"]): SceneNode[] => s.nodes.filter((n) => n.layer === pass);
+const coverOf = (s: Scene, pass: SceneNode["layer"]): SceneNode => on(s, pass).find((n) => n.prim.t === "polygon")!;
+
+describe("cased opening rendering — never repaint the void the wall union opened", () => {
+  it("puts its primitives on the `openings` pass, which is CAD layer A-DOOR (not A-GLAZ)", () => {
+    expect(aiaLayer("openings")).toBe("A-DOOR");
+    const s = sceneOf(orthoOpening);
+    expect(on(s, "openings")).toHaveLength(3); // cover + two lintel lines
+    expect(on(s, "windows")).toHaveLength(0); // a leaf-less passage is not glazing
+    // The LAYER table declares every AIA layer, so assert on the ENTITIES section:
+    // the opening's linework must reference A-DOOR and nothing must sit on A-GLAZ.
+    const entities = toDxf(s).slice(toDxf(s).indexOf("\nENTITIES\n"));
+    expect(entities).toContain("A-DOOR");
+    expect(entities).not.toContain("A-GLAZ"); // this plan has no window at all
+  });
+
+  it("emits an UNPAINTED cover, shrunk to the wall faces, on an orthogonal host", () => {
+    const s = sceneOf(orthoOpening);
+    const cover = coverOf(s, "openings");
+    expect(cover.paint.fill).toBe("none"); // never theme.opening — that is the page bg
+    expect(cover.paint.fill).not.toBe(s.theme.opening);
+    // Half-extent is exactly thickness/2 (4000 ± 50), no wallStroke overhang into the
+    // floor; it still spans the full 1800 opening (2000 ± 900) for the ASCII locator.
+    const pts = cover.prim.t === "polygon" ? cover.prim.pts : [];
+    expect([...new Set(pts.map((p) => p.x))].sort((a, b) => a - b)).toEqual([3950, 4050]);
+    expect([...new Set(pts.map((p) => p.y))].sort((a, b) => a - b)).toEqual([1100, 2900]);
+  });
+
+  it("draws the head as two DASHED lintels, never a solid line bridging the gap", () => {
+    const s = sceneOf(orthoOpening);
+    const lines = on(s, "openings").filter((n) => n.prim.t === "line");
+    expect(lines).toHaveLength(2); // one at each wall face
+    for (const l of lines) {
+      expect(l.paint.dash).toBeDefined(); // a solid run here re-closes the passage
+      expect(l.paint.dash![0]).toBeGreaterThan(0);
+      expect(l.paint.stroke).toBe(s.theme.wallStroke);
+      // …and each lintel is exactly as long as the opening (1800), on a wall face.
+      if (l.prim.t !== "line") continue;
+      expect(Math.abs(l.prim.b.y - l.prim.a.y)).toBe(1800);
+      expect(Math.abs(l.prim.a.x - 4000)).toBe(50);
+    }
+  });
+
+  it("KEEPS the opaque cover on an angled host, where nothing else voids the wall", () => {
+    const s = sceneOf(angledOpening);
+    // No geometry backend is registered in the suite, so the angled wall set falls
+    // back to per-segment rectangles that subtract nothing.
+    expect(coverOf(s, "openings").paint.fill).toBe(s.theme.opening);
+    expect(coverOf(s, "doors").paint.fill).toBe(s.theme.opening);
+  });
+
+  it("reads as a door-style gap (·), not a window (=), in the ASCII plan", () => {
+    const out = renderAscii(sceneOf(orthoOpening));
+    expect(out).toContain("·"); // the passage carved out of the partition
+    expect(out).not.toContain("="); // there is no window in this plan
+  });
+
+  it("compiles byte-identically twice (the cover change stays deterministic)", () => {
+    expect(compile(orthoOpening, { noCache: true }).svg).toBe(compile(orthoOpening, { noCache: true }).svg);
+    expect(compile(angledOpening, { noCache: true }).svg).toBe(compile(angledOpening, { noCache: true }).svg);
+  });
+});
+
+describe("interior doorway rendering — the same white-band fix", () => {
+  it("emits an unpainted, face-tight cover on an orthogonal host", () => {
+    const src = orthoOpening.replace(
+      "opening id=op   at (4000,2000) width 1800 wall partition",
+      "door id=d at (4000,2000) width 800 wall partition hinge left swing in",
+    );
+    const s = sceneOf(src);
+    const cover = coverOf(s, "doors");
+    expect(cover.paint.fill).toBe("none");
+    const pts = cover.prim.t === "polygon" ? cover.prim.pts : [];
+    expect([...new Set(pts.map((p) => p.x))].sort((a, b) => a - b)).toEqual([3950, 4050]);
+    // The leaf + swing arc are untouched by this fix.
+    expect(on(s, "doors").filter((n) => n.prim.t === "arc")).toHaveLength(1);
+    expect(on(s, "doors").filter((n) => n.prim.t === "line")).toHaveLength(1);
   });
 });

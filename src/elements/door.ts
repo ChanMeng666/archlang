@@ -186,7 +186,13 @@ export const door: ElementDef = {
     const { theme, sizes } = ctx;
     const d = unit(sub(seg.b, seg.a));
     const n = normal(d);
-    const h = seg.thickness / 2 + sizes.wallStroke;
+    // Only paint the cover when the wall lowering has NOT already voided the wall at
+    // this doorway (see `RenderCtx.openingsVoided`): `theme.opening` is the page
+    // background, so covering a real hole laid a white band across the floor either
+    // side of the door. When the hole is real the polygon stays — invisible — because
+    // the ASCII/DXF backends locate the doorway by the cover polygon on this pass.
+    const voided = ctx.openingsVoided === true && (seg.a.x === seg.b.x || seg.a.y === seg.b.y);
+    const h = seg.thickness / 2 + (voided ? 0 : sizes.wallStroke);
     const hw = dr.width / 2;
     const cover: Point[] = [
       add(add(dr.at, mul(d, -hw)), mul(n, h)),
@@ -195,7 +201,11 @@ export const door: ElementDef = {
       add(add(dr.at, mul(d, -hw)), mul(n, -h)),
     ];
     const nodes: SceneNode[] = [];
-    nodes.push({ layer: "doors", prim: { t: "polygon", pts: cover }, paint: { fill: theme.opening } });
+    nodes.push({
+      layer: "doors",
+      prim: { t: "polygon", pts: cover },
+      paint: voided ? { fill: "none" } : { fill: theme.opening },
+    });
     // Leaf + minor-arc geometry is shared with the swing-clearance lint rule.
     const swing = doorSwing(dr);
     if (swing) {

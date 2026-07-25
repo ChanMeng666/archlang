@@ -268,25 +268,25 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     {
       "layer": "doors",
       "paint": {
-        "fill": "#ffffff",
+        "fill": "none",
       },
       "prim": {
         "pts": [
           {
             "x": 3500,
-            "y": 5879.84,
+            "y": 5900,
           },
           {
             "x": 2500,
-            "y": 5879.84,
+            "y": 5900,
           },
           {
             "x": 2500,
-            "y": 6120.16,
+            "y": 6100,
           },
           {
             "x": 3500,
-            "y": 6120.16,
+            "y": 6100,
           },
         ],
         "t": "polygon",
@@ -340,26 +340,26 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
     },
     {
-      "layer": "windows",
+      "layer": "openings",
       "paint": {
-        "fill": "#ffffff",
+        "fill": "none",
       },
       "prim": {
         "pts": [
           {
-            "x": 3929.84,
+            "x": 3950,
             "y": 3250,
           },
           {
-            "x": 3929.84,
+            "x": 3950,
             "y": 4150,
           },
           {
-            "x": 4070.16,
+            "x": 4050,
             "y": 4150,
           },
           {
-            "x": 4070.16,
+            "x": 4050,
             "y": 3250,
           },
         ],
@@ -367,8 +367,12 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
     },
     {
-      "layer": "windows",
+      "layer": "openings",
       "paint": {
+        "dash": [
+          46.080000000000005,
+          34.56,
+        ],
         "stroke": "#1b1b1b",
         "width": 11.520000000000001,
       },
@@ -385,8 +389,12 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
     },
     {
-      "layer": "windows",
+      "layer": "openings",
       "paint": {
+        "dash": [
+          46.080000000000005,
+          34.56,
+        ],
         "stroke": "#1b1b1b",
         "width": 11.520000000000001,
       },
@@ -405,25 +413,25 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     {
       "layer": "doors",
       "paint": {
-        "fill": "#ffffff",
+        "fill": "none",
       },
       "prim": {
         "pts": [
           {
             "x": 6000,
-            "y": 3070.16,
+            "y": 3050,
           },
           {
             "x": 6800,
-            "y": 3070.16,
+            "y": 3050,
           },
           {
             "x": 6800,
-            "y": 2929.84,
+            "y": 2950,
           },
           {
             "x": 6000,
-            "y": 2929.84,
+            "y": 2950,
           },
         ],
         "t": "polygon",
@@ -479,25 +487,25 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     {
       "layer": "doors",
       "paint": {
-        "fill": "#ffffff",
+        "fill": "none",
       },
       "prim": {
         "pts": [
           {
             "x": 4200,
-            "y": 4470.16,
+            "y": 4450,
           },
           {
             "x": 5000,
-            "y": 4470.16,
+            "y": 4450,
           },
           {
             "x": 5000,
-            "y": 4329.84,
+            "y": 4350,
           },
           {
             "x": 4200,
-            "y": 4329.84,
+            "y": 4350,
           },
         ],
         "t": "polygon",
