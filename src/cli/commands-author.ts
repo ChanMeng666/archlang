@@ -133,14 +133,24 @@ export function cmdRepair(args: Args): number {
     }
     if (!args.quiet) {
       for (const c of r.changes) {
+        // `via` says WHICH clause was rewritten — an `at` point, the `inset` of a
+        // room-anchored placement, or the placement itself (which became an `at`). It is
+        // worth showing for anything but the plain `at` case, because the reviewer is
+        // about to read a different line than they might expect.
+        const clause = c.via && c.via !== "at" && c.via !== "rotate" ? ` [${c.via}]` : "";
         const what =
           c.kind === "rotated"
             ? `rotated ${c.id} ${c.fromRotate ?? 0}° → ${c.toRotate ?? 0}°`
-            : `moved ${c.id} (${c.from.x},${c.from.y}) → (${c.to.x},${c.to.y})`;
+            : `moved ${c.id}${clause} (${c.from.x},${c.from.y}) → (${c.to.x},${c.to.y})`;
         process.stderr.write(`  ${what} — ${c.reason}\n`);
       }
       for (const u of r.unresolved) process.stderr.write(`  ⚠ ${u.id}: ${u.reason}\n`);
-      if (!r.changed) process.stderr.write("  (no changes — nothing to repair)\n");
+      if (!r.changed)
+        process.stderr.write(
+          r.unresolved.length > 0
+            ? `  (no changes — ${r.unresolved.length} problem${r.unresolved.length === 1 ? "" : "s"} repair declined to guess at; see above)\n`
+            : "  (no changes — nothing to repair)\n",
+        );
     }
     return EXIT.OK;
   });

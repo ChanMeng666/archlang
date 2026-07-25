@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`repair()` no longer returns a silent no-op for furniture it cannot see.** Its statement scan read
+  only *top-level* `furniture … at (x,y)` statements with literal coordinates, so a plan whose pieces
+  came out of a `for`/`while`/`if` body, a component, or an `in <room> anchor …` placement got back
+  `{ changed: false, changes: [], unresolved: [] }` — a clean-looking run while `lint` reported real
+  collisions (verified: three heavily-overlapping benches from one `for` statement → 3 ×
+  `W_FURNITURE_OVERLAP`, repair reported nothing). The scan now walks into every nested body and reads
+  each statement's *resolved instances*, and the postcondition is a test: **every piece the
+  wall/room/overlap/landing/swing/floating/orientation passes flag ends up with a change entry or an
+  `unresolved` entry — never nothing.**
+  - A statement with exactly one resolved instance and literal coordinates is rewritten (so a
+    component instantiated once, or a taken `if` branch, is repaired in place).
+  - `in <room> anchor <a> [flush] [inset N]` is repaired **in its own form**: a minimal `inset` edit
+    when the move runs along the anchored axis — computed in the wall-face reference frame when the
+    placement is `flush` — else the whole placement becomes an absolute `at`, which now also writes out
+    the `rotate` the anchor had *derived* (dropping it would have silently spun the fixture).
+  - A statement repair may not rewrite — more than one resolved instance, expression coordinates or
+    `inset`, an `against wall` anchor — is left byte-identical and **reported**, with the fault and the
+    reason it was left alone (naming the `for`/component and the resolved piece ids for a scripted
+    statement). A plan that does not parse or resolve is reported too, instead of a quiet no-op.
+  - A wall-anchored (`against wall`) fixture is now an **obstacle** the mover respects: a movable piece
+    placed after it is separated off it (previously it was invisible to overlap separation).
+  - `RepairChange`/`RepairNote` gain (append-only) `via` — which clause was rewritten (`at` \| `inset`
+    \| `placement` \| `rotate`) — and `span`, the statement's byte range. `arch repair`'s human change
+    log shows the clause and, on a no-op with a non-empty `unresolved`, says how many problems it
+    declined to guess at.
+
 ### Changed
 
 - **Both public sites moved to the `archlang.uk` custom domain** (Cloudflare DNS + Vercel), live

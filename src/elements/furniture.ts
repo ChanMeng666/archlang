@@ -10,6 +10,7 @@ import { rectCorners, segmentsOfWall, unit, normal, add, mul, sub, length } from
 import { fixtureGlyph } from "./fixtures-glyphs.js";
 import { defaultFootprint, orientationMatters } from "../fixtures-catalog.js";
 import {
+  ANCHOR_BACK_EDGES,
   backCandidateEdges,
   backingWallForRoomEdge,
   FIXTURE_WALL_TOL_MM,
@@ -376,23 +377,6 @@ function placeAgainst(
   const rotate = rotateForBackEdge(backEdge);
   return { at: { x: center.x - bw / 2, y: center.y - bh / 2 }, size: { w: bw, h: bh }, rotate };
 }
-
-/**
- * The room edge(s) an anchor backs a fixture onto: one for an edge anchor, two for
- * a corner, none for a centred piece. This is the *candidate* set — a rotation is
- * derived only when exactly one candidate actually has a wall behind it.
- */
-const ANCHOR_BACK_EDGES: Readonly<Record<FurnitureAnchor, readonly RectEdge[]>> = Object.freeze({
-  "top-left": ["top", "left"],
-  top: ["top"],
-  "top-right": ["top", "right"],
-  left: ["left"],
-  center: [],
-  right: ["right"],
-  "bottom-left": ["bottom", "left"],
-  bottom: ["bottom"],
-  "bottom-right": ["bottom", "right"],
-});
 
 /**
  * `flush` is only meaningful when the placement pushes the piece onto an edge, since
