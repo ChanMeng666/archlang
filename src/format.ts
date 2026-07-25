@@ -179,7 +179,7 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       return concat([head, " {", indent(concat([hardline, join(hardline, roomLines)])), hardline, "}"]);
     }
     case "dim":
-      return `dim ${ptStr(s.from)}->${ptStr(s.to)} offset ${exprStr(s.offset)}${s.text ? ` text ${exprStr(s.text)}` : ""}`;
+      return `dim ${s.ref ? `${s.ref} ` : ""}${ptStr(s.from)}->${ptStr(s.to)} offset ${exprStr(s.offset)}${s.text ? ` text ${exprStr(s.text)}` : ""}`;
     case "column":
       return `column ${id}at ${ptStr(s.at)} size ${sizeStr(s.size)}`;
     case "let":

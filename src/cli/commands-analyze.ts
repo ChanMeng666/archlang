@@ -96,6 +96,7 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "accDescr",
   "scale",
   "bbox",
+  "bbox_outer",
   "rooms",
   "doors",
   "windows",
@@ -137,7 +138,7 @@ function recountFreedom(elements: FreedomElement[]): FreedomReport {
  * (a door/opening whose `between` names a kept room, a window/furniture whose host room
  * is kept), plus the access/circulation/freedom rows for those elements.
  *
- * Deliberately NOT narrowed: `bbox`, `totals`, `caption` and each room's `adjacent`
+ * Deliberately NOT narrowed: `bbox`/`bbox_outer`, `totals`, `caption` and each room's `adjacent`
  * list. Those are facts about the whole plan, and an agent reading one room still needs
  * to know the plan is 8 rooms wide and what its neighbours are called — silently
  * rewriting them to the selection would make a narrowed read lie about the building.

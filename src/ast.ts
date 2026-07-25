@@ -262,8 +262,16 @@ export interface FurnitureNode extends NodeBase {
   room?: string;
 }
 
+/** How a `dim`'s endpoints are referenced to the walls they touch.
+ *  Absent = the written points are used verbatim (the historical behaviour). */
+export type DimRef = "faces" | "clear";
+
 export interface DimNode extends NodeBase {
   kind: "dim";
+  /** `dim faces …` / `dim clear …` — push each endpoint OUTWARD onto the hosting
+   *  wall's outer face (an outside-to-outside span), or INWARD onto its inner face
+   *  (a clear width), instead of measuring the written centerline points. */
+  ref?: DimRef;
   from: ExprPoint;
   to: ExprPoint;
   /** Perpendicular offset of the dimension line from the measured segment, mm. */

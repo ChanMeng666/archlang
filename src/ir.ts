@@ -167,6 +167,13 @@ export interface RDim extends RBase {
   to: Point;
   offset: number;
   text?: string;
+  /**
+   * The whole `dim` statement re-emitted with its two endpoints SWAPPED — the
+   * machine-applicable fix text for `W_DIM_INSIDE`. Computed in `dim.resolve`
+   * (where the AST expressions still exist) because lint sees only the IR.
+   * Internal: never rendered, never part of describe()/Plan JSON.
+   */
+  _swapText?: string;
 }
 export interface RColumn extends RBase {
   kind: "column";

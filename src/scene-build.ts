@@ -13,7 +13,7 @@ import type { Opening, ResolvedPlan, RWall, RRoom, RDim } from "./ir.js";
 import type { RenderCtx, Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode } from "./scene.js";
-import type { Bounds, Vec } from "./geometry.js";
+import type { Bounds, Vec, WallSegment } from "./geometry.js";
 import {
   add,
   distPointToSegment,
@@ -246,16 +246,15 @@ function themeBaseLookup(name: string | undefined, runtime: Runtime): Partial<Th
 }
 
 /**
- * Synthesize the dimension lines for `dims auto …`. Overall dims run along the
- * bottom and left of the drawing, offset into the page margin; per-room dims run
- * just inside each room's top and left edges (so neither pushes the page extent).
+ * Synthesize the dimension lines for `dims auto …` — the GB/T 50104 exterior
+ * dimensioning convention: parallel CHAINS on the facades, all outside the
+ * building, stepping outward from the wall faces (see {@link synthGbChains}).
  * Each is a plain {@link RDim} with no `text`, so the dim element formats the
  * measured length itself — the same value a hand-written `dim` would show.
  */
-function synthDims(ir: ResolvedPlan, b: Bounds, sizes: RenderSizes): RDim[] {
+function synthDims(ir: ResolvedPlan, sizes: RenderSizes): RDim[] {
   const dims: RDim[] = [];
-  if (ir.autoDims === "overall" || ir.autoDims === "all") synthOverallDims(b, sizes, dims);
-  if (ir.autoDims === "rooms" || ir.autoDims === "all") synthRoomDims(ir, sizes, dims);
+  if (ir.autoDims !== "walls") synthGbChains(ir, sizes, dims);
   if (ir.autoDims === "walls" || ir.autoDims === "all") synthWallDims(ir, dims);
   return dims;
 }
@@ -269,47 +268,234 @@ const mkDim = (from: Point, to: Point, offset: number, text?: string): RDim => (
   text,
 });
 
-/** Overall width below the plan; height to the left of it (both in the page margin).
- *  The dim element offsets along the *left normal* of from→to, so endpoint order
- *  chooses the side: width runs minX→maxX (normal points +y, below); height runs
- *  minY→maxY (normal points −x, left). Reversing either would push it *inside*. */
-function synthOverallDims(b: Bounds, sizes: RenderSizes, dims: RDim[]): void {
-  const off = sizes.margin * 0.5;
-  dims.push(mkDim({ x: b.minX, y: b.maxY }, { x: b.maxX, y: b.maxY }, off));
-  dims.push(mkDim({ x: b.minX, y: b.minY }, { x: b.minX, y: b.maxY }, off));
+/** The four facades a dimension chain can run along. */
+type Side = "bottom" | "left" | "top" | "right";
+const SIDES: readonly Side[] = ["bottom", "left", "top", "right"];
+
+/** Which axis a side measures along: `h` = along x (bottom/top), `v` = along y. */
+const SIDE_AXIS: Record<Side, "h" | "v"> = { bottom: "h", top: "h", left: "v", right: "v" };
+/** Outward direction along the side's CROSS axis (+1 = increasing coordinate). */
+const SIDE_OUT: Record<Side, 1 | -1> = { bottom: 1, right: 1, top: -1, left: -1 };
+
+/**
+ * Where one facade's chains live: the axis they measure along, the outer-face
+ * coordinate they are offset from, the along-axis outer extent (corner to corner),
+ * and the endpoint order that makes the dim element's left-normal offset point
+ * AWAY from the building.
+ */
+interface SideGeom {
+  axis: "h" | "v";
+  /** Cross-axis coordinate of this facade's OUTER face (y for h sides, x for v). */
+  outer: number;
+  /** Centerline coordinate of the hosting exterior wall, or null when there is none. */
+  line: number | null;
+  /** Half the hosting wall's thickness (0 without one). */
+  half: number;
+  /** Along-axis outer extent (the two outer corners), always lo < hi. */
+  lo: number;
+  hi: number;
+  /** +1 = emit each span lo→hi; −1 = hi→lo (what puts the offset outside). */
+  sign: 1 | -1;
 }
 
-/** Per-room width/height dims, preferring the edge that faces the building exterior
- *  so the number sits in the page margin clear of labels/furniture. */
-function synthRoomDims(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void {
-  const inset = sizes.dimFont * 1.6;
+/** A point on a side's chain baseline, at along-axis coordinate `v`. */
+const sidePt = (s: SideGeom, v: number): Point => (s.axis === "h" ? { x: v, y: s.outer } : { x: s.outer, y: v });
+
+/** Chain slots, in multiples of `dimFont` outward from the wall face. Fixed per
+ *  chain (not packed), so omitting a chain leaves its slot empty instead of
+ *  reflowing the others — the openings chain is always the innermost. */
+const CHAIN_BASE = 1.2;
+const CHAIN_STEP = 2.2;
+const chainOffset = (sizes: RenderSizes, slot: number): number => sizes.dimFont * (CHAIN_BASE + slot * CHAIN_STEP);
+
+/** Ticks closer than this (mm) are the same tick — a corner and an opening edge
+ *  landing together must not emit a zero-length span. */
+const TICK_TOL = 0.5;
+
+/** The measurement coordinate space: room rectangles when there are rooms (the
+ *  coordinate space room boundaries live in), else the wall centerlines. Null when
+ *  there is nothing to measure. */
+function measureExtent(ir: ResolvedPlan): Bounds | null {
+  const b = emptyBounds();
   const rooms = ir.elements.filter((el): el is RRoom => el.kind === "room");
-  // Building extent over room rectangles (exact integers — same coordinate space,
-  // no wall-offset slop). A room edge lying on this extent faces the exterior, so
-  // its dimension can live in the page margin instead of cluttering the interior.
-  const rMinX = Math.min(...rooms.map((r) => r.at.x));
-  const rMinY = Math.min(...rooms.map((r) => r.at.y));
-  const rMaxX = Math.max(...rooms.map((r) => r.at.x + r.size.w));
-  const rMaxY = Math.max(...rooms.map((r) => r.at.y + r.size.h));
   for (const r of rooms) {
-    const { x, y } = r.at;
-    const { w, h } = r.size;
-    // Width dim: prefer the horizontal edge that faces outside (top, else bottom)
-    // so the number sits in the margin clear of the label/furniture; a room with
-    // neither edge on the perimeter keeps the legacy just-inside-the-top placement.
-    // The dim element offsets along the left-normal of from→to, so endpoint order +
-    // offset sign choose the side (mirrors the overall-dim trick above).
-    if (y === rMinY)
-      dims.push(mkDim({ x: x + w, y }, { x, y }, inset)); // outside, above top edge
-    else if (y + h === rMaxY)
-      dims.push(mkDim({ x, y: y + h }, { x: x + w, y: y + h }, inset)); // outside, below bottom edge
-    else dims.push(mkDim({ x, y }, { x: x + w, y }, inset)); // interior room: just inside the top edge
-    // Height dim: prefer the vertical edge facing outside (left, else right).
-    if (x === rMinX)
-      dims.push(mkDim({ x, y }, { x, y: y + h }, inset)); // outside, left of left edge
-    else if (x + w === rMaxX)
-      dims.push(mkDim({ x: x + w, y: y + h }, { x: x + w, y }, inset)); // outside, right of right edge
-    else dims.push(mkDim({ x, y: y + h }, { x, y }, inset)); // interior room: just inside the left edge
+    extendBounds(b, r.at.x, r.at.y);
+    extendBounds(b, r.at.x + r.size.w, r.at.y + r.size.h);
+  }
+  if (rooms.length === 0) {
+    for (const w of ir.walls) for (const p of w.points) extendBounds(b, p.x, p.y);
+  }
+  return Number.isFinite(b.minX) ? b : null;
+}
+
+/**
+ * The exterior wall bounding one facade: the nearest wall segment PARALLEL to that
+ * facade at the matching edge of the measured extent, found with the same
+ * nearest-segment idiom {@link openingRect} uses. Returns its centerline coordinate
+ * and half thickness, or null when that side has no wall (then the caller falls back
+ * to the extent itself — never a crash).
+ */
+function probeSide(walls: RWall[], ext: Bounds, side: Side): { line: number; half: number } | null {
+  const horiz = SIDE_AXIS[side] === "h";
+  const cross = side === "bottom" ? ext.maxY : side === "top" ? ext.minY : side === "left" ? ext.minX : ext.maxX;
+  const mid = horiz ? (ext.minX + ext.maxX) / 2 : (ext.minY + ext.maxY) / 2;
+  const p: Point = horiz ? { x: mid, y: cross } : { x: cross, y: mid };
+  let best: WallSegment | null = null;
+  let bestDist = Infinity;
+  for (const w of walls) {
+    for (const s of segmentsOfWall(w)) {
+      const isH = s.a.y === s.b.y;
+      const isV = s.a.x === s.b.x;
+      if (isH && isV) continue; // degenerate
+      if (horiz ? !isH : !isV) continue; // not parallel to this facade
+      const d = distPointToSegment(p, s.a, s.b);
+      if (d < bestDist) {
+        bestDist = d;
+        best = s;
+      }
+    }
+  }
+  if (!best || bestDist > Math.max(best.thickness, 1)) return null;
+  return { line: horiz ? best.a.y : best.a.x, half: best.thickness / 2 };
+}
+
+/** The four facades' chain geometry, derived once. */
+function sideGeoms(ir: ResolvedPlan, ext: Bounds): Record<Side, SideGeom> {
+  const probes = {} as Record<Side, { line: number; half: number } | null>;
+  for (const s of SIDES) probes[s] = probeSide(ir.walls, ext, s);
+  const outerOf = (s: Side): number => {
+    const pr = probes[s];
+    const base = s === "bottom" ? ext.maxY : s === "top" ? ext.minY : s === "left" ? ext.minX : ext.maxX;
+    return pr ? pr.line + SIDE_OUT[s] * pr.half : base;
+  };
+  const o = { bottom: outerOf("bottom"), top: outerOf("top"), left: outerOf("left"), right: outerOf("right") };
+  const mk = (side: Side, lo: number, hi: number, sign: 1 | -1): SideGeom => ({
+    axis: SIDE_AXIS[side],
+    outer: o[side],
+    line: probes[side]?.line ?? null,
+    half: probes[side]?.half ?? 0,
+    lo,
+    hi,
+    sign,
+  });
+  return {
+    bottom: mk("bottom", o.left, o.right, 1),
+    left: mk("left", o.top, o.bottom, 1),
+    top: mk("top", o.left, o.right, -1),
+    right: mk("right", o.top, o.bottom, -1),
+  };
+}
+
+/** One opening, reduced to the facade line it sits on and its along-axis centre. */
+interface FacadeOpening {
+  axis: "h" | "v";
+  /** Centerline coordinate of the hosting segment (y for a horizontal wall). */
+  line: number;
+  /** Centre of the opening along the wall. */
+  along: number;
+  width: number;
+}
+
+/** Every door/window/cased opening, projected onto its hosting wall's line +
+ *  along-axis centre. Angled hosts are skipped (no facade to chain them on). */
+function facadeOpenings(ir: ResolvedPlan): FacadeOpening[] {
+  const out: FacadeOpening[] = [];
+  for (const w of ir.walls) {
+    for (const op of w.openings) {
+      let seg: WallSegment | null = null;
+      let best = Infinity;
+      for (const s of segmentsOfWall(w)) {
+        const d = distPointToSegment(op.at, s.a, s.b);
+        if (d < best) {
+          best = d;
+          seg = s;
+        }
+      }
+      if (!seg) continue;
+      if (seg.a.y === seg.b.y && seg.a.x !== seg.b.x)
+        out.push({ axis: "h", line: seg.a.y, along: op.at.x, width: op.width });
+      else if (seg.a.x === seg.b.x && seg.a.y !== seg.b.y)
+        out.push({ axis: "v", line: seg.a.x, along: op.at.y, width: op.width });
+    }
+  }
+  return out;
+}
+
+/** Sorted ticks with near-duplicates and out-of-range values removed. */
+function cleanTicks(values: readonly number[], lo: number, hi: number): number[] {
+  const inRange = values.filter((v) => v >= lo - TICK_TOL && v <= hi + TICK_TOL).sort((a, b) => a - b);
+  const out: number[] = [];
+  for (const v of inRange) {
+    const prev = out[out.length - 1];
+    if (prev === undefined || v - prev > TICK_TOL) out.push(v);
+  }
+  return out;
+}
+
+/** Emit one chain: a dim per span between consecutive ticks, all at one offset. */
+function emitChain(side: SideGeom, ticks: readonly number[], offset: number, dims: RDim[]): void {
+  if (ticks.length < 2) return;
+  for (let i = 0; i + 1 < ticks.length; i++) {
+    const a = ticks[i]!;
+    const b = ticks[i + 1]!;
+    const [from, to] = side.sign > 0 ? [a, b] : [b, a];
+    dims.push(mkDim(sidePt(side, from), sidePt(side, to), offset));
+  }
+}
+
+/**
+ * `dims auto` — GB/T 50104 exterior dimensioning: up to three parallel chains per
+ * facade, ALL outside the building and all measured from the outer wall faces,
+ * stepping outward from the wall.
+ *
+ * 1. **openings** (innermost) — a tick at every opening edge on that facade, so the
+ *    chain reads corner · pier · opening · pier · corner. Skipped on a facade with
+ *    no openings.
+ * 2. **centerline** — the sorted unique room-boundary coordinates projected on that
+ *    axis: the partition axes, the classic "4000 · 3000" room chain. This is what
+ *    `dims auto rooms` emits on its own, and it replaced the old per-room dims,
+ *    which measured room rectangles (short by half a wall thickness at each end) and
+ *    fell back to drawing INSIDE any room that touched no perimeter.
+ * 3. **overall** (outermost) — one span, outer face to outer face.
+ *
+ * Bottom + left always carry chains (the reading convention); top and right only when
+ * an openings chain is actually being drawn there (`dims auto all` AND that facade has
+ * openings of its own) — so `dims auto rooms`/`overall` stay two-sided, and a fully
+ * dimensioned plan reads all four facades. Presentation only: never
+ * touches the IR, describe() or lint(), and the page margins grow from the emitted
+ * geometry via `dimReach`, so nothing clips.
+ */
+function synthGbChains(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void {
+  const ext = measureExtent(ir);
+  if (!ext) return;
+  const mode = ir.autoDims;
+  const wantOpenings = mode === "all";
+  const wantAxis = mode === "rooms" || mode === "all";
+  const wantOverall = mode === "overall" || mode === "all";
+
+  const geoms = sideGeoms(ir, ext);
+  const openings = facadeOpenings(ir);
+  const rooms = ir.elements.filter((el): el is RRoom => el.kind === "room");
+
+  for (const side of SIDES) {
+    const g = geoms[side];
+    // Opening edges on this facade (its own wall line, same orientation).
+    const mine =
+      g.line === null
+        ? []
+        : openings.filter((op) => op.axis === g.axis && Math.abs(op.line - g.line!) <= Math.max(g.half, 1));
+    // Top/right are only dimensioned when an openings chain will be drawn there.
+    if ((side === "top" || side === "right") && !(wantOpenings && mine.length > 0)) continue;
+
+    if (wantOpenings && mine.length > 0) {
+      const edges = mine.flatMap((op) => [op.along - op.width / 2, op.along + op.width / 2]);
+      emitChain(g, cleanTicks([g.lo, ...edges, g.hi], g.lo, g.hi), chainOffset(sizes, 0), dims);
+    }
+    if (wantAxis) {
+      const bounds = rooms.flatMap((r) => (g.axis === "h" ? [r.at.x, r.at.x + r.size.w] : [r.at.y, r.at.y + r.size.h]));
+      emitChain(g, cleanTicks(bounds, g.lo, g.hi), chainOffset(sizes, 1), dims);
+    }
+    if (wantOverall) emitChain(g, [g.lo, g.hi], chainOffset(sizes, 2), dims);
   }
 }
 
@@ -434,13 +620,14 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   nodes.push(...lowerWalls(ir.walls, hatches, ctxFor("wall"), registry, backend));
 
   // `dims auto …` — synthesize dimension strings (presentation only; never touches
-  // the IR, bounds, describe() or lint()). Overall dims sit in the page margin;
-  // per-room dims sit just inside each room, so the page extent is unchanged.
+  // the IR, bounds, describe() or lint()). Every chain sits OUTSIDE the building,
+  // stepping outward from the wall faces; the page margins grow to contain them
+  // through `dimReach` below.
   if (ir.autoDims) {
     const dimDef = registry.byKind.get("dim");
     if (dimDef) {
       const dimCtx = ctxFor("dim");
-      for (const dm of synthDims(ir, b, sizes)) nodes.push(...dimDef.render(dm, dimCtx));
+      for (const dm of synthDims(ir, sizes)) nodes.push(...dimDef.render(dm, dimCtx));
     }
   }
 

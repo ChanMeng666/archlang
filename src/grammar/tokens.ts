@@ -80,6 +80,8 @@ export const KEYWORDS = {
     "inset",
     "flush",
     "height",
+    "faces",
+    "clear",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
   enum: [

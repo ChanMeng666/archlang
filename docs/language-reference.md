@@ -49,10 +49,10 @@ plan "My Home" {
 | Statement | Meaning | Default |
 |-----------|---------|---------|
 | `units mm` | Measurement unit (only `mm` in v0.1). | `mm` |
-| `grid <n>` | Snap module in mm. All coordinates round to the nearest multiple. `0` disables. | `0` |
+| `grid <n>` | Snap module in mm. All *built* coordinates round to the nearest multiple (a `dim`'s endpoints do not — a dimension measures, it is not built). `0` disables. | `0` |
 | `scale 1:50` | Printed scale, shown in the title block. | none |
 | `north up\|down\|left\|right\|<deg>` | North direction for the north arrow. | `up` |
-| `dims auto [overall\|rooms\|walls\|all]` | Auto-draw dimension strings without hand-placing each `dim`: `overall` (the bounding extents), `rooms` (each room's width + height, placed in the page margin on the side the room faces), `walls` (one deduped thickness call-out per distinct wall thickness), or `all` (all three; the default when no scope is given). | off |
+| `dims auto [overall\|rooms\|walls\|all]` | Auto-draw dimension **chains** without hand-placing each `dim`, in the GB/T 50104 exterior convention — every chain outside the building, measured from the outer wall faces (see [Automatic dimension chains](#automatic-dimension-chains)): `overall` (one outer-face-to-outer-face span per dimensioned facade), `rooms` (the room/partition axis chain), `walls` (one deduped thickness call-out per distinct wall thickness), or `all` (the openings chain + the axis chain + the overall span, and the default when no scope is given). | off |
 
 ### Accessible metadata (`accTitle`, `accDescr`)
 
@@ -559,11 +559,72 @@ wc(6200, 4600)
 ### Dimension
 
 ```
-dim (x1,y1)->(x2,y2) [offset <mm>] [text "<override>"]
+dim [faces|clear] (x1,y1)->(x2,y2) [offset <mm>] [text "<override>"]
 ```
 
 A dimension line offset perpendicular from the measured segment, with tick
-marks and a label. Without `text`, the measured length (mm) is shown.
+marks and a label. Without `text`, the measured length (mm) is shown. Endpoints
+are measured verbatim (never grid-snapped) and a zero `offset` draws the line on
+the measured segment itself, with no witness lines.
+
+**Which side it lands on is the endpoint ORDER.** The offset runs along the *left
+normal* of from→to, so `dim (0,6000)->(7000,6000) offset 500` reads below the
+plan while the same pair reversed reads above it. Getting this backwards pushes
+the line into the building, across labels and poché — the advisory
+[`W_DIM_INSIDE`](error-codes.md), whose machine-applicable fix swaps the two
+endpoints for you.
+
+#### `faces` / `clear` — let the walls place the endpoints
+
+A room rectangle's edges are wall **centerlines**, so a hand-written overall dim
+between two room corners is short by half a wall thickness at each end — the
+classic "the drawing says 10000 but the building is 10300" mistake (and the
+`text` override written to match it is wrong the moment the wall changes).
+
+Both forms push each endpoint along the measurement axis, away from the other
+one, onto the face of the wall that endpoint runs into:
+
+| Form | Each endpoint lands on | Measures |
+|------|------------------------|----------|
+| `dim faces …` | the **outer** face | the outside-to-outside span |
+| `dim clear …` | the **inner** face | the clear (free) width between the walls |
+
+```arch
+plan "Faces" {
+  units mm
+  wall exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }
+  room id=r at (0,0) size 5000x4000 label "Studio"
+  dim faces (0,4000)->(5000,4000) offset 600   # prints 5200, not 5000
+  dim clear (0,2000)->(5000,2000) offset 0     # prints 4800 — the clear width
+}
+```
+
+The wall is found as the nearest wall segment *perpendicular to the dimension's
+own direction* (at a corner, only the wall the measurement runs into can bound
+it). The projection is closed-form and idempotent — an endpoint already on the
+outer face stays put — and an endpoint with no wall across the axis keeps its
+written coordinate and raises the advisory `W_DIM_NO_WALL`.
+
+#### Automatic dimension chains
+
+`dims auto …` (see [Plan-level settings](#plan-level-settings)) draws the whole
+exterior dimensioning for you, in the GB/T 50104 convention: parallel **chains**
+on the facades, all outside the building, all measured from the outer wall faces,
+stepping outward from the wall.
+
+| Chain | Slot | Ticks |
+|-------|------|-------|
+| openings | innermost | every opening edge on that facade, between the two outer corners — so the chain reads corner · pier · opening · pier · corner |
+| axis | middle | the sorted unique room-boundary coordinates on that axis (the partition axes — the classic `4000 · 3000` room chain) |
+| overall | outermost | one span, outer face to outer face |
+
+`dims auto rooms` emits just the axis chain, `dims auto overall` just the overall
+span, and `dims auto all` all three (plus the `walls` thickness call-outs). The
+bottom and left facades are always dimensioned; the top and right are added when
+`all` finds openings of their own to chain there. A chain with fewer than two
+distinct ticks is skipped, and nothing is ever drawn inside the building.
+Dimensioning is presentation only: it never changes `describe()`, `lint()` or the
+resolved plan.
 
 ### Column
 

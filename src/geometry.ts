@@ -120,7 +120,7 @@ export function doorSwing(d: DoorLike): DoorSwing | null {
 }
 
 /** Bounding box of a sized element, mm. */
-interface RectXYWH {
+export interface RectXYWH {
   x: number;
   y: number;
   w: number;
@@ -469,6 +469,72 @@ export class WallGrid {
     }
     return { host, onWall };
   }
+}
+
+/**
+ * Outer-face extent of a building: the union of every wall's **offset rectangle**
+ * (so the box lands on the wall faces, half a thickness outside each centerline)
+ * and any sized-element rectangles passed in. This is the box a GB/T overall
+ * dimension measures and what `describe().bbox_outer` reports — distinct from the
+ * centerline extent (`describe().bbox`, the union of raw wall points + room rects).
+ *
+ * Falls back to the supplied rectangles when there are no walls, and to a
+ * degenerate empty box when there is nothing at all (never throws).
+ */
+export function outerFaceBounds(walls: readonly WallLike[], rects: readonly RectXYWH[] = []): Bounds {
+  const b = emptyBounds();
+  for (const w of walls) {
+    for (const s of segmentsOfWall(w)) {
+      for (const c of segmentRectangle(s.a, s.b, s.thickness)) extendBounds(b, c.x, c.y);
+    }
+  }
+  for (const r of rects) {
+    extendBounds(b, r.x, r.y);
+    extendBounds(b, r.x + r.w, r.y + r.h);
+  }
+  return b;
+}
+
+/**
+ * Push `p` along the unit direction `u` onto a wall FACE: `"faces"` lands on the
+ * far (outer) face of the nearest wall crossing `p` in that direction, `"clear"`
+ * on the near (inner) one. Only segments **perpendicular to `u`** are candidates —
+ * at a building corner two walls are equidistant and only the one the measurement
+ * runs into can bound it — and the nearest of those must be within the same
+ * tolerance band {@link hostInfoForWalls} uses.
+ *
+ * Closed-form and idempotent: a point already on the outer face projects to
+ * itself. Returns `null` when no perpendicular wall is near enough, so the caller
+ * can keep the raw point and warn (`W_DIM_NO_WALL`).
+ */
+export function projectToWallFace(
+  walls: readonly WallLike[],
+  p: Point,
+  u: Vec,
+  mode: "faces" | "clear",
+): { at: Point; seg: WallSegment } | null {
+  const EPS = 1e-9;
+  let best: WallSegment | null = null;
+  let bestDist = Infinity;
+  for (const w of walls) {
+    for (const s of segmentsOfWall(w)) {
+      const d = sub(s.b, s.a);
+      if (Math.abs(d.x) < EPS && Math.abs(d.y) < EPS) continue; // degenerate
+      const dir = unit(d);
+      if (Math.abs(dir.x * u.x + dir.y * u.y) > 1e-6) continue; // not perpendicular to u
+      const dist = distPointToSegment(p, s.a, s.b);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = s;
+      }
+    }
+  }
+  if (!best) return null;
+  if (bestDist > best.thickness / 2 + Math.max(best.thickness, 1)) return null;
+  // Signed distance from p to the segment's line, measured along u.
+  const along = (best.a.x - p.x) * u.x + (best.a.y - p.y) * u.y;
+  const half = best.thickness / 2;
+  return { at: add(p, mul(u, mode === "faces" ? along + half : along - half)), seg: best };
 }
 
 /** Whether a point lies within tolerance of some wall (filtered by ref if given). */

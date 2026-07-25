@@ -197,6 +197,31 @@ export function fixtureRotateFix(
 }
 
 /**
+ * The fix for `W_DIM_INSIDE`: swap the dimension's two endpoints, which flips the
+ * side its line lands on (the offset runs along the LEFT normal of from→to, so
+ * reversing the order mirrors it to the outside) without changing the measured
+ * length or any other clause.
+ *
+ * The replacement text is the whole statement re-emitted from the AST in
+ * `dim.resolve` and carried on the IR as `_swapText` — lint sees only the IR, and
+ * re-emitting there keeps the authored expressions (`H + WALL / 2`, an interpolated
+ * `text`) intact rather than baking in resolved numbers. `machine-applicable`: the
+ * swap is the unique answer, not a guess. Returns `null` without a span to write
+ * into (a synthesized `dims auto` dim never has one).
+ */
+export function dimSwapFix(dm: { span?: Span; _swapText?: string }): FixSuggestion[] | null {
+  if (!dm.span || !dm._swapText) return null;
+  return [
+    {
+      title: "swap the dimension's endpoints so the line reads outside the building",
+      applicability: "machine-applicable",
+      fixId: "dim-inside",
+      edits: [{ span: dm.span, newText: dm._swapText }],
+    },
+  ];
+}
+
+/**
  * The fix for `E_{DOOR,WINDOW,OPENING}_WIDTH` (width ≤ 0): rewrite the element with
  * a `width <positive-number>` placeholder. `has-placeholders`, so it is surfaced
  * in the editor but never auto-applied (the placeholder is not valid source). The
