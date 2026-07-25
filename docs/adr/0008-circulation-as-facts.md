@@ -71,3 +71,49 @@ to read — never a target the compiler silently solves for.
 - This does **not** reopen ADR 0005/0006. Circulation *describes* how a plan walks; if a tool
   wants to improve it, that remains the agent's job (edit the source, re-`describe`) or an
   explicit transform — never an invisible optimiser in `compile()`.
+
+## Addendum (2026-07): resolution scales with area, not a fixed cell count
+
+The decision above stands unchanged — circulation is still facts on a clearance-eroded nav
+grid, still coarse, still advisory. What this addendum replaces is one *implementation*
+choice inside it: "Cost is bounded: the grid is clamped per axis, so a large plan grows the
+cell, not the work."
+
+**The problem.** Bounding the grid by a fixed cell COUNT (10 000 cells, 200 per axis) makes
+every measurement scale-relative. At `examples/museum.arch`'s 100 × 60 m the cell reached
+**775 mm**, and at that resolution the model can no longer see what it exists to measure: a
+900 mm door is one cell, the 300 mm body-radius erosion is a third of a cell, and clear
+width quantises in ~775 mm steps — so a compliant 1.8 m corridor and an illegal 1.0 m one
+report the *same* number. All 14 museum rooms read an identical 1940 mm bottleneck. The
+per-room occupancy grid had the same shape: a 26 × 26 m gallery gridded at ~520 mm, and
+because blocking is "is the cell CENTRE inside the footprint", a fixture only a few hundred
+mm deep could fall between two rows of centres and be measured as **not there at all**.
+
+**The change.** The knob becomes a target cell **size** bounded by a total cell **budget**:
+
+```
+nav grid:   cell = max(100 mm, ceil(sqrt(planArea / 250 000)))
+occupancy:  cell = max(100 mm, ceil(sqrt(roomArea /  25 000)))
+```
+
+- `MIN_CELL_MM = 100` is unchanged, so **every dwelling-scale plan is byte-for-byte
+  unaffected**: the floor holds to 2500 m² (nav) and 250 m² (per room). The museum drops
+  from 775 mm to **155 mm**, and its bottlenecks now discriminate (1140 vs 1940 mm).
+- The **per-axis clamp is dropped**. Total cells ≈ `area / cell²` ≤ the budget whichever
+  branch of the `max` wins, so the budget alone bounds the grid — and a per-axis cap would
+  re-introduce exactly the quantisation this removes on a long, thin building.
+- Still closed-form, integral, monotonic in the area, and therefore deterministic.
+
+**What paid for it.** ~250 000 cells is 25× the old grid, so two scans that were
+`O(cells × rects)` were restructured to per-rect bbox scans — same predicate on the same
+cells, `O(cells + covered)` — and the widest-path heap stopped allocating an array per
+swap. `bench/` gains a `MUSEUM` case (and an `occupancy` row) to hold the line.
+
+**One consequence worth naming.** A finer cell exposed a latent assumption in the threshold
+carve: a connector was modelled as the single cell at its centre point, which is fine while
+the opening is about one cell wide. At 155 mm a 4 m opening spans two dozen cells, and the
+museum's cafe — a 6 m servery parked across half of its 4 m threshold — read as *sealed*.
+The carve now tries the centre first (so any plan that already carves is untouched) and,
+only if that is blocked, carves the parts of the opening that are genuinely walkable. A
+fully covered opening still reports the room as unreachable: no room is ever connected by
+fiat.

@@ -218,6 +218,34 @@ Two advisory lint rules read this model, and the same model backs the opt-in
 `arch compile --overlay circulation` render overlay (see
 [ADR 0008 — circulation as facts](adr/0008-circulation-as-facts.md)).
 
+### Grid resolution — why `cellSizeMm` is worth reading
+
+**Areas are exact; anything measured on a grid is an approximation, and `cellSizeMm`
+tells you how coarse.** Room areas, adjacency and the access graph come from exact
+rectangle arithmetic. Circulation distances and clear widths are read off a raster, so
+they are quantised to the cell — treat them as "about", never as a dimension to build to.
+
+The cell is derived from the plan's own area: a **target cell size bounded by a total
+cell budget**, `cell = max(100 mm, ceil(sqrt(planArea / 250 000)))`. So resolution is
+what stays fixed, and cost is what is capped:
+
+- Every plan up to **2500 m²** — which is every dwelling — grids at exactly **100 mm**.
+- Past that the cell grows as `sqrt(area)`: `examples/museum.arch` (100 × 60 m) sits at
+  **155 mm**, and four times the area only doubles the cell.
+- The grid never exceeds ~250 000 cells whatever the shape, so the budget alone bounds
+  the work; there is no per-axis clamp (one would re-introduce the scale-relative
+  quantisation this replaces on a long, thin building).
+
+The per-room occupancy grid behind `W_ROOM_NO_CLEAR_PATH` follows the same rule on a
+proportionate budget: `max(100 mm, ceil(sqrt(roomArea / 25 000)))`, so every room up to
+250 m² is measured at 100 mm.
+
+This matters because the numbers a large plan most needs are the ones a cell-count-based
+grid destroyed: at 100 × 60 m the cell used to reach 775 mm, so a 900 mm door was a
+single cell, the 300 mm body radius was a third of one, and a compliant 1.8 m corridor
+and an illegal 1.0 m one reported the same clear width. See
+[ADR 0008](adr/0008-circulation-as-facts.md#addendum-2026-07-resolution-scales-with-area-not-a-fixed-cell-count).
+
 ## Positioning axes — the datum grid, as facts
 
 When the plan declares [positioning axes](language-reference.md#positioning-axes-定位轴线),
