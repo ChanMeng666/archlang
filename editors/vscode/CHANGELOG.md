@@ -12,6 +12,25 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.9.0] - 2026-07-26
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.20.0`** — the "sheet & datum" release, so the
+  bundled services pick up the whole new sheet surface:
+  - four new statement keywords in the regenerated TextMate grammar and in completion —
+    **`paper <size> [orientation]`** (with the `A4`…`A0` / `landscape` / `portrait` value
+    vocabulary), **`axes { x at … / y at … }`**, **`schedule rooms`** and **`legend`**;
+  - the new catalogued code **`W_SCALE_OVERFLOW`** with its hover (a declared `paper` + `scale`
+    the building does not fit — advisory, your scale is never silently overridden);
+  - the operative drawing scale itself: a `paper` plan's annotation sizes are now a constant number
+    of millimetres on the sheet × the scale denominator, so the preview of a large building is
+    legible instead of carrying metre-tall room labels;
+  - `describe()`'s three new keys (`axes`, `sheet`, `schedule`) behind the same language services.
+
+A plan that declares none of `paper` / `axes` / `schedule` / `legend` renders exactly as it did
+under 0.8.0.
+
 ## [0.8.0] - 2026-07-25
 
 ### Changed
