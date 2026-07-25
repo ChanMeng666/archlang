@@ -379,7 +379,9 @@ class Parser {
           code: "E_LEVEL_DUP",
           message: `Level ${l.level} is already declared — each level number may appear once`,
           span: l.span,
-          ...(first.span ? { relatedSpans: [{ span: first.span, message: `level ${l.level} first declared here` }] } : {}),
+          ...(first.span
+            ? { relatedSpans: [{ span: first.span, message: `level ${l.level} first declared here` }] }
+            : {}),
         });
       } else {
         seen.set(l.level, l);

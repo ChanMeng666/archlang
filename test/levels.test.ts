@@ -32,7 +32,7 @@ const TWO_LEVELS = `plan "P" {
 }`;
 
 suite("v1.21 levels — parsing + the either/or shape", () => {
-  it("parses `level <n> [\"Name\"] { … }` into ascending storeys", () => {
+  it('parses `level <n> ["Name"] { … }` into ascending storeys', () => {
     const { plan, diagnostics } = parse(`plan "P" {\n  level 2 "Upper" { }\n  level 1 "Ground" { }\n}`);
     expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
     // Source order in the AST, drawing order from `levelBlocks`.

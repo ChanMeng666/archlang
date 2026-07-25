@@ -51,7 +51,8 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // *structural* keyword — an agent that does not know it cannot write a two-storey plan at
     // all, and cannot read `compile`'s per-level output — and the baseline was already at
     // 17,960 with nothing duplicated left to cut. The line it adds is one deliberately dense
-    // sentence (~570 chars), not prose. Trim duplication before raising again.
+    // sentence (537 chars), not prose — the suite is green at 18,498. Trim duplication before
+    // raising again.
     expect(spec.length).toBeLessThan(18_500);
   });
 });

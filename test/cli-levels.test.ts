@@ -156,9 +156,9 @@ suite("v1.21 CLI — describe --level is a display filter", () => {
     expect(r.status).toBe(2);
     const out = JSON.parse(r.stdout);
     expect(out.ok).toBe(false);
-    expect(out.diagnostics.some((d: { code: string; level?: number }) => d.code === "E_ROOM_SIZE" && d.level === 2)).toBe(
-      true,
-    );
+    expect(
+      out.diagnostics.some((d: { code: string; level?: number }) => d.code === "E_ROOM_SIZE" && d.level === 2),
+    ).toBe(true);
   });
 
   it("`--select levels` and `--room` compose with it", () => {

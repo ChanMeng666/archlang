@@ -747,12 +747,7 @@ function outerExtent(ir: ResolvedPlan): { w: number; h: number } {
  * `W_SCALE_OVERFLOW` that goes with it is raised ONCE, for the building, rather than once
  * per page — hence it carries no `level`.
  */
-function resolveLevelsImpl(
-  ast: PlanNode,
-  blocks: LevelNode[],
-  registry: Registry,
-  world: World,
-): PlanResolution {
+function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registry, world: World): PlanResolution {
   const stampOf = (b: LevelNode): LevelStamp => ({ level: b.level, ...(b.name !== undefined ? { name: b.name } : {}) });
   const shared: Diagnostic[] = [];
 

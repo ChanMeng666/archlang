@@ -316,7 +316,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Two `level` blocks declare the same storey number.",
     "Level numbers identify the storeys of one building, so each may be declared once; two `level 1` blocks would produce two pages both claiming to be level 1.",
     "Renumber one of them, or merge the two bodies into a single `level` block.",
-    'level 1 { room at (0,0) size 3000x3000 }\nlevel 1 { room at (0,0) size 3000x3000 }   # error: level 1 twice',
+    "level 1 { room at (0,0) size 3000x3000 }\nlevel 1 { room at (0,0) size 3000x3000 }   # error: level 1 twice",
   ),
   E_LEVEL_MIX: E(
     "E_LEVEL_MIX",
