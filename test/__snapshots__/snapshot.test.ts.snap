@@ -1009,8 +1009,21 @@ exports[`golden SVG snapshots > renders two-storey.arch as one page per level > 
 <polygon points="3084,3806 3358,3806 3358,4166 3084,4166" fill="#ffffff" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="3442,3806 3716,3806 3716,4166 3442,4166" fill="#ffffff" stroke="#a8a29a" stroke-width="9"/>
 <line x1="3400" y1="3698" x2="3400" y2="3770" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="100,100 1000,100 1000,2700 100,2700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<text x="550" y="1400" font-size="100" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Stair up</text>
+</g>
+<g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
+<polygon points="100,1500 1000,1500 1000,4100 100,4100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
+<line x1="46" y1="3169.44" x2="1054" y2="2719.44" stroke="#a8a29a" stroke-width="9"/>
+<line x1="46" y1="2880.56" x2="1054" y2="2430.56" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="3811.11" x2="1000" y2="3811.11" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="3522.22" x2="1000" y2="3522.22" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="3233.33" x2="1000" y2="3233.33" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="2366.67" x2="1000" y2="2366.67" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="2077.78" x2="1000" y2="2077.78" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="1788.89" x2="1000" y2="1788.89" stroke="#a8a29a" stroke-width="9"/>
+<line x1="550" y1="3753.33" x2="550" y2="1615.56" stroke="#333333" stroke-width="9"/>
+<line x1="550" y1="1615.56" x2="701.2" y2="1867.56" stroke="#333333" stroke-width="9"/>
+<line x1="550" y1="1615.56" x2="398.8" y2="1867.56" stroke="#333333" stroke-width="9"/>
+<text x="550" y="3955.56" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -100,-100 L -100,7100 L 600,7100 L 600,6900 L 100,6900 L 100,100 L 2150,100 L 2150,1350 L 2250,1350 L 2250,100 L 4100,100 L 4100,-100 Z M 2150,6900 L 1600,6900 L 1600,7100 L 8100,7100 L 8100,5900 L 7900,5900 L 7900,6900 L 2250,6900 L 2250,5750 L 2150,5750 Z M 2250,2250 L 2150,2250 L 2150,4850 L 2250,4850 L 2250,3650 L 7900,3650 L 7900,4700 L 8100,4700 L 8100,-100 L 5900,-100 L 5900,100 L 7900,100 L 7900,3550 L 2250,3550 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -1207,17 +1220,27 @@ exports[`golden SVG snapshots > renders two-storey.arch as one page per level > 
 <polygon points="2150,6900 1550,6900 1550,6450 2150,6450" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="1646,6648 1652.95,6610.73 1673.33,6576 1705.75,6546.18 1748,6523.29 1797.2,6508.91 1850,6504 1902.8,6508.91 1952,6523.29 1994.25,6546.18 2026.67,6576 2047.05,6610.73 2054,6648 2047.05,6685.27 2026.67,6720 1994.25,6749.82 1952,6772.71 1902.8,6787.09 1850,6792 1797.2,6787.09 1748,6772.71 1705.75,6749.82 1673.33,6720 1652.95,6685.27" fill="#ffffff" stroke="#a8a29a" stroke-width="9"/>
 <line x1="1850" y1="6855" x2="1850" y2="6792" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="100,100 1000,100 1000,2700 100,2700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<text x="550" y="1400" font-size="100" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Stair down</text>
+</g>
+<g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
+<polygon points="100,1500 1000,1500 1000,4100 100,4100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1054" y1="2430.56" x2="46" y2="2880.56" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1054" y1="2719.44" x2="46" y2="3169.44" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1000" y1="1788.89" x2="100" y2="1788.89" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1000" y1="2077.78" x2="100" y2="2077.78" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1000" y1="2366.67" x2="100" y2="2366.67" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1000" y1="3233.33" x2="100" y2="3233.33" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1000" y1="3522.22" x2="100" y2="3522.22" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1000" y1="3811.11" x2="100" y2="3811.11" stroke="#a8a29a" stroke-width="9"/>
+<line x1="550" y1="1846.67" x2="550" y2="3984.44" stroke="#333333" stroke-width="9"/>
+<line x1="550" y1="3984.44" x2="398.8" y2="3732.44" stroke="#333333" stroke-width="9"/>
+<line x1="550" y1="3984.44" x2="701.2" y2="3732.44" stroke="#333333" stroke-width="9"/>
+<text x="550" y="1644.44" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">DN</text>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
-<path d="M -100,-100 L -100,5500 L 100,5500 L 100,4650 L 700,4650 L 700,4550 L 100,4550 L 100,100 L 1150,100 L 1150,-100 Z M -100,6100 L -100,7100 L 8100,7100 L 8100,5900 L 7900,5900 L 7900,6900 L 2250,6900 L 2250,4550 L 1500,4550 L 1500,4650 L 2150,4650 L 2150,6900 L 100,6900 L 100,6100 Z M 2050,-100 L 2050,100 L 2150,100 L 2150,1350 L 2250,1350 L 2250,100 L 4250,100 L 4250,-100 Z M 2250,2250 L 2150,2250 L 2150,3650 L 7900,3650 L 7900,4700 L 8100,4700 L 8100,-100 L 5750,-100 L 5750,100 L 7900,100 L 7900,3550 L 2250,3550 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M -100,-100 L -100,5500 L 100,5500 L 100,4650 L 700,4650 L 700,4550 L 100,4550 L 100,100 L 1150,100 L 1150,-100 Z M -100,6100 L -100,7100 L 8100,7100 L 8100,5900 L 7900,5900 L 7900,6900 L 2250,6900 L 2250,4550 L 1500,4550 L 1500,4650 L 2150,4650 L 2150,6900 L 100,6900 L 100,6100 Z M 2050,-100 L 2050,100 L 2150,100 L 2150,1350 L 2250,1350 L 2250,100 L 4250,100 L 4250,-100 Z M 2250,2250 L 2150,2250 L 2150,3650 L 7900,3650 L 7900,4700 L 8100,4700 L 8100,-100 L 5750,-100 L 5750,100 L 7900,100 L 7900,3550 L 2250,3550 Z" fill="none" stroke="#1b1b1b" stroke-width="25" stroke-linejoin="miter"/>
+<path d="M -100,-100 L -100,5500 L 100,5500 L 100,4650 L 700,4650 L 700,4550 L 100,4550 L 100,100 L 2150,100 L 2150,1350 L 2250,1350 L 2250,100 L 4250,100 L 4250,-100 Z M -100,6100 L -100,7100 L 8100,7100 L 8100,5900 L 7900,5900 L 7900,6900 L 2250,6900 L 2250,4550 L 1500,4550 L 1500,4650 L 2150,4650 L 2150,6900 L 100,6900 L 100,6100 Z M 2250,2250 L 2150,2250 L 2150,3650 L 7900,3650 L 7900,4700 L 8100,4700 L 8100,-100 L 5750,-100 L 5750,100 L 7900,100 L 7900,3550 L 2250,3550 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -100,-100 L -100,5500 L 100,5500 L 100,4650 L 700,4650 L 700,4550 L 100,4550 L 100,100 L 2150,100 L 2150,1350 L 2250,1350 L 2250,100 L 4250,100 L 4250,-100 Z M -100,6100 L -100,7100 L 8100,7100 L 8100,5900 L 7900,5900 L 7900,6900 L 2250,6900 L 2250,4550 L 1500,4550 L 1500,4650 L 2150,4650 L 2150,6900 L 100,6900 L 100,6100 Z M 2250,2250 L 2150,2250 L 2150,3650 L 7900,3650 L 7900,4700 L 8100,4700 L 8100,-100 L 5750,-100 L 5750,100 L 7900,100 L 7900,3550 L 2250,3550 Z" fill="none" stroke="#1b1b1b" stroke-width="25" stroke-linejoin="miter"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
-<polygon points="1150,100 2050,100 2050,-100 1150,-100" fill="none"/>
-<line x1="1150" y1="0" x2="1150" y2="-900" stroke="#555555" stroke-width="11.7"/>
-<path d="M 1150,-900 A 900 900 0 0 1 2050,0" fill="none" stroke="#555555" stroke-width="9" stroke-dasharray="36 27"/>
 <polygon points="2150,1350 2150,2250 2250,2250 2250,1350" fill="none"/>
 <line x1="2200" y1="1350" x2="3100" y2="1350" stroke="#555555" stroke-width="11.7"/>
 <path d="M 3100,1350 A 900 900 0 0 1 2200,2250" fill="none" stroke="#555555" stroke-width="9" stroke-dasharray="36 27"/>
@@ -1313,24 +1336,12 @@ exports[`golden SVG snapshots > renders two-storey.arch as one page per level > 
 <line x1="-842.43" y1="-57.57" x2="-757.57" y2="-142.43" stroke="#0E5484" stroke-width="9"/>
 <line x1="-842.43" y1="7142.43" x2="-757.57" y2="7057.57" stroke="#0E5484" stroke-width="9"/>
 <text x="-887.5" y="3500" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(90 -887.5 3500)">7200</text>
-<line x1="1150" y1="-100" x2="1150" y2="-250" stroke="#0E5484" stroke-width="6.3"/>
-<line x1="-100" y1="-100" x2="-100" y2="-250" stroke="#0E5484" stroke-width="6.3"/>
-<line x1="1150" y1="-250" x2="-100" y2="-250" stroke="#0E5484" stroke-width="9"/>
-<line x1="1107.57" y1="-292.43" x2="1192.43" y2="-207.57" stroke="#0E5484" stroke-width="9"/>
-<line x1="-142.43" y1="-292.43" x2="-57.57" y2="-207.57" stroke="#0E5484" stroke-width="9"/>
-<text x="525" y="-337.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 525 -337.5)">1250</text>
-<line x1="2050" y1="-100" x2="2050" y2="-250" stroke="#0E5484" stroke-width="6.3"/>
-<line x1="1150" y1="-100" x2="1150" y2="-250" stroke="#0E5484" stroke-width="6.3"/>
-<line x1="2050" y1="-250" x2="1150" y2="-250" stroke="#0E5484" stroke-width="9"/>
-<line x1="2007.57" y1="-292.43" x2="2092.43" y2="-207.57" stroke="#0E5484" stroke-width="9"/>
-<line x1="1107.57" y1="-292.43" x2="1192.43" y2="-207.57" stroke="#0E5484" stroke-width="9"/>
-<text x="1600" y="-337.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 1600 -337.5)">900</text>
 <line x1="4250" y1="-100" x2="4250" y2="-250" stroke="#0E5484" stroke-width="6.3"/>
-<line x1="2050" y1="-100" x2="2050" y2="-250" stroke="#0E5484" stroke-width="6.3"/>
-<line x1="4250" y1="-250" x2="2050" y2="-250" stroke="#0E5484" stroke-width="9"/>
+<line x1="-100" y1="-100" x2="-100" y2="-250" stroke="#0E5484" stroke-width="6.3"/>
+<line x1="4250" y1="-250" x2="-100" y2="-250" stroke="#0E5484" stroke-width="9"/>
 <line x1="4207.57" y1="-292.43" x2="4292.43" y2="-207.57" stroke="#0E5484" stroke-width="9"/>
-<line x1="2007.57" y1="-292.43" x2="2092.43" y2="-207.57" stroke="#0E5484" stroke-width="9"/>
-<text x="3150" y="-337.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 3150 -337.5)">2200</text>
+<line x1="-142.43" y1="-292.43" x2="-57.57" y2="-207.57" stroke="#0E5484" stroke-width="9"/>
+<text x="2075" y="-337.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 2075 -337.5)">4350</text>
 <line x1="5750" y1="-100" x2="5750" y2="-250" stroke="#0E5484" stroke-width="6.3"/>
 <line x1="4250" y1="-100" x2="4250" y2="-250" stroke="#0E5484" stroke-width="6.3"/>
 <line x1="5750" y1="-250" x2="4250" y2="-250" stroke="#0E5484" stroke-width="9"/>

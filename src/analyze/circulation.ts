@@ -34,6 +34,7 @@
 
 import type { RRoom, RDoor, ROpening, RFurniture, RWall } from "../ir.js";
 import type { Point } from "../ast.js";
+import { outsideOpenEdge, type RVertical, type VerticalObstacle, verticalObstacles } from "../vertical.js";
 import {
   rectOf,
   roomUses,
@@ -389,6 +390,7 @@ function buildGrid(
   walls: RWall[],
   connectors: Array<{ at: Point; between: [string, string]; clear: number }>,
   furniture: RFurniture[],
+  verticals: RVertical[],
   roomIndexById: Map<string, number>,
   tol: number,
   bodyRadius: number,
@@ -413,7 +415,13 @@ function buildGrid(
   const nx = Math.max(1, Math.ceil(W / cell));
   const ny = Math.max(1, Math.ceil(H / cell));
 
-  const furnRects = furniture.map((f) => rectOf(f));
+  // Obstacles: furniture footprints (halo on every side) plus each vertical run's
+  // footprint, whose halo is suppressed outside its entry edge(s) — you have to be able
+  // to stand at the foot of a flight to use it (see `src/vertical.ts`).
+  const obstacles: VerticalObstacle[] = [
+    ...furniture.map((f) => ({ rect: rectOf(f), open: [] as VerticalObstacle["open"] })),
+    ...verticalObstacles(verticals),
+  ];
   const free = new Uint8Array(nx * ny);
   const roomIdx = new Int32Array(nx * ny).fill(-1);
   const eroded = new Uint8Array(nx * ny); // in-room cell blocked by furniture (never carved)
@@ -448,7 +456,8 @@ function buildGrid(
 
   // Clearance erosion, scanned per furniture piece over its body-radius-inflated bbox
   // rather than per cell over every piece — the same predicate on the same cells.
-  for (const fr of furnRects) {
+  for (const ob of obstacles) {
+    const fr = ob.rect;
     const [ix0, ix1] = window(fr.x - bodyRadius, fr.x + fr.w + bodyRadius, minX, nx);
     const [iy0, iy1] = window(fr.y - bodyRadius, fr.y + fr.h + bodyRadius, minY, ny);
     for (let iy = iy0; iy <= iy1; iy++) {
@@ -456,7 +465,10 @@ function buildGrid(
       for (let ix = ix0; ix <= ix1; ix++) {
         const k = iy * nx + ix;
         if (roomIdx[k]! < 0 || eroded[k]) continue; // outside every room, or already eroded
-        if (distPointToRect(minX + (ix + 0.5) * cell, cy, fr) <= bodyRadius) {
+        const cx = minX + (ix + 0.5) * cell;
+        // The halo (but never the footprint itself) is lifted on an entry side.
+        if (ob.open.length > 0 && outsideOpenEdge(cx, cy, fr, ob.open)) continue;
+        if (distPointToRect(cx, cy, fr) <= bodyRadius) {
           eroded[k] = 1;
           free[k] = 0;
         }
@@ -586,6 +598,7 @@ function buildNav(
   doors: RDoor[],
   openings: ROpening[],
   furniture: RFurniture[],
+  verticals: RVertical[],
   access: AccessGraph,
   tol: number,
   bodyRadius: number,
@@ -605,7 +618,7 @@ function buildNav(
     .map((e) => ({ at: atById.get(e.doorId)!, between: e.between, clear: e.estimatedClearWidth }))
     .filter((c) => c.at !== undefined);
 
-  const g = buildGrid(rooms, walls, connectors, furniture, roomIndexById, tol, bodyRadius);
+  const g = buildGrid(rooms, walls, connectors, furniture, verticals, roomIndexById, tol, bodyRadius);
   if (!g) return { kind: "none" };
 
   // In one pass: each room's anchor (free cell nearest its centroid, row-major so ties
@@ -665,8 +678,11 @@ export function computeCirculation(
   access: AccessGraph,
   tol: number,
   bodyRadiusMm: number = DEFAULT_BODY_RADIUS_MM,
+  /** Vertical runs on this storey — obstacles with a walkable entry side. Append-only:
+   *  omitting it is exactly the pre-v1.21 behaviour. */
+  verticals: RVertical[] = [],
 ): CirculationModel | null {
-  const nav = buildNav(rooms, walls, doors, openings, furniture, access, tol, bodyRadiusMm);
+  const nav = buildNav(rooms, walls, doors, openings, furniture, verticals, access, tol, bodyRadiusMm);
   if (nav.kind === "none") return null;
   if (nav.kind === "empty") {
     return { entranceId: nav.entranceId, cellSizeMm: nav.cellSizeMm, bodyRadiusMm, rooms: [], routes: [] };
@@ -809,8 +825,10 @@ export function computeCirculationOverlay(
   access: AccessGraph,
   tol: number,
   bodyRadiusMm: number = DEFAULT_BODY_RADIUS_MM,
+  /** Vertical runs on this storey — see {@link computeCirculation}. */
+  verticals: RVertical[] = [],
 ): CirculationOverlay | null {
-  const nav = buildNav(rooms, walls, doors, openings, furniture, access, tol, bodyRadiusMm);
+  const nav = buildNav(rooms, walls, doors, openings, furniture, verticals, access, tol, bodyRadiusMm);
   if (nav.kind !== "ok") return null;
   const { g, anchor, source, entrancePoint } = nav;
 

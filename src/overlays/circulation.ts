@@ -13,6 +13,7 @@
 
 import { buildDoorAccessGraph, DEFAULT_TOL } from "../analyze.js";
 import { computeCirculationOverlay } from "../analyze/circulation.js";
+import { verticalsOf } from "../vertical.js";
 import type { Point } from "../ast.js";
 import type { RDoor, RFurniture, ROpening, RRoom, ResolvedPlan } from "../ir.js";
 import type { Paint, RenderSizes, SceneNode } from "../scene.js";
@@ -24,7 +25,17 @@ export function circulationOverlayNodes(ir: ResolvedPlan, theme: Theme, sizes: R
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const furniture = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
   const access = buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings);
-  const overlay = computeCirculationOverlay(rooms, ir.walls, doors, openings, furniture, access, DEFAULT_TOL);
+  const overlay = computeCirculationOverlay(
+    rooms,
+    ir.walls,
+    doors,
+    openings,
+    furniture,
+    access,
+    DEFAULT_TOL,
+    undefined,
+    verticalsOf(ir),
+  );
   if (!overlay) return [];
 
   const nodes: SceneNode[] = [];

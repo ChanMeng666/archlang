@@ -337,11 +337,81 @@ can never make a broken plan look sound. It composes with `--room` (which then n
 *within* that storey).
 
 `lint()` runs the rules **per storey** and concatenates the results in level order: each
-floor needs its own entrance, its own reachable rooms, its own bedroom windows. Every
-diagnostic a storey raises carries `level`, in the library and in `--json`, so a gate sees
-the whole building while a reader still knows which floor to open. (Vertical circulation is
-not a modelled connector yet, so an upper storey with no exterior opening reads as having no
-entrance — see the language reference.)
+floor needs its own reachable rooms and its own bedroom windows. Every diagnostic a storey
+raises carries `level`, in the library and in `--json`, so a gate sees the whole building
+while a reader still knows which floor to open. What a floor does *not* need is its own
+front door — see the next section.
+
+## Vertical circulation — the building graph (v1.21)
+
+Rooms, adjacency and circulation are per-storey facts. **Vertical circulation is not**: a
+`stair`/`elevator`/`escalator` drawn with the **same id** on two
+[`level` blocks](language-reference.md#vertical-circulation--stair-elevator-escalator-v121)
+is one shaft, and that is the only thing in the language that joins two floors. Identity is
+the whole rule — nothing is inferred from geometry (ADR 0005), so two runs at the same
+coordinates with different ids stay two different shafts.
+
+Two fields carry it, and they sit at deliberately different levels:
+
+- **`levels[i].verticals`** — the runs drawn on *that* storey, as facts:
+  `{ id, kind, dir?, room, bbox, flight_width? }`. `room` is the room whose rectangle
+  contains the footprint's centre (or `null`). Absent when a storey draws none.
+- **`vertical`** — a **whole-building** block, present only at the top level (never inside
+  `levels[i]`) and only when a run actually spans two or more storeys:
+
+```json
+"vertical": {
+  "connections": [
+    {
+      "id": "stair",
+      "kind": "stair",
+      "levels": [1, 2],
+      "stops": [
+        { "level": 1, "dir": "up", "room": "hall" },
+        { "level": 2, "dir": "down", "room": "landing" }
+      ]
+    }
+  ],
+  "reachable_levels": [1, 2]
+}
+```
+
+**Reachability through a shaft.** A storey is *grounded* when its own access graph has an
+exterior entrance. Reachability then spreads along the connections to a fixpoint: a storey
+joined by a shaft to a reachable storey is itself reachable, and the room that shaft lands
+in becomes an **arrival room** — the floor's entrance, one floor up. `reachable_levels` is
+the answer.
+
+Two lint rules read that, per storey:
+
+- **`W_NO_ENTRANCE`** stands down on a storey with an arrival room. Before v1.21 an upper
+  floor had to invent a balcony door to lint clean; `examples/two-storey.arch` no longer
+  does.
+- **`W_ROOM_UNREACHABLE`** treats each arrival room as joined to `exterior`, so the same
+  BFS answers the same question one floor up.
+
+Each storey's own `access.hasEntrance` stays **honest** — it reports that floor's doors, so
+the upper storey of a house with one front door reads `false`. The cross-storey answer is
+`vertical.reachable_levels`, never a doctored per-storey graph.
+
+**`W_STAIR_UNMATCHED`** is the other side of the identity rule: a run whose id appears on
+exactly *one* storey of a multi-storey plan connects nothing — usually a typo. It is
+advisory and deliberately simple, so a top-floor flight to a roof hatch, and a lift that
+stops short of a storey it passes, both carry it.
+
+**`validate --graph` across floors.** For a multi-storey plan the intended-graph check is
+the **whole building's**, not page 1's: storeys are scanned in ascending order and their
+rooms pooled in that order (a repeated room id resolves to the lower storey). Nodes stay
+rooms; a shaft contributes **one undirected edge per adjacent pair of its storeys**, between
+the rooms it lands in on each — a lift serving levels 1/2/3 links 1–2 and 2–3, never 1–3. A
+run that lands in no room on one of the two storeys contributes no edge there.
+
+**Circulation.** A run's footprint obstructs the nav grid exactly like furniture, with one
+exception: the body-radius halo is lifted outside its **entry edge(s)**, so the landing you
+cross to reach it stays walkable. A stair has one entry edge — the arrow's tail, which is
+the foot of a `dir up` flight and the head of a `dir down` one, so the same shaft is
+approached from opposite ends on the two storeys it joins. An escalator has both narrow
+ends; a lift car its south edge.
 
 ## Freedom — how constrained the plan is
 

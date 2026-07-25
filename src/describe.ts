@@ -15,6 +15,7 @@
  */
 
 import type {
+  ResolvedLevel,
   ResolvedPlan,
   RRoom,
   RDoor,
@@ -25,7 +26,7 @@ import type {
   OpeningPlacement,
   FurniturePlacement,
 } from "./ir.js";
-import type { Point } from "./ast.js";
+import type { Point, VerticalDir } from "./ast.js";
 import type { Diagnostic } from "./diagnostics.js";
 import {
   resolvePlan,
@@ -45,9 +46,20 @@ import type { PaperOrientation, PaperSize } from "./sheet.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
 import { roomTypeForUses, buildInputGraph } from "./plan-json.js";
 import { roomSchedule, type ScheduleRow } from "./sheet-tables.js";
+import {
+  type RVertical,
+  roomOfVertical,
+  type VerticalConnection,
+  verticalConnections,
+  type VerticalKind,
+  verticalReach,
+  verticalsOf,
+} from "./vertical.js";
 import { fmt2 } from "./num-format.js";
 
 export type { ScheduleRow } from "./sheet-tables.js";
+
+export type { VerticalConnection, VerticalKind, VerticalStop } from "./vertical.js";
 
 export type { CirculationModel, RoomCirculation, CirculationRoute } from "./analyze/circulation.js";
 
@@ -122,6 +134,40 @@ export interface FurnitureSummary {
   room?: string;
 }
 
+/**
+ * One run of vertical circulation ON THIS STOREY (v1.21). Present in the summary only
+ * when the storey draws at least one `stair`/`elevator`/`escalator`, so every existing
+ * summary is unchanged. The cross-storey view is {@link SceneSummary.vertical}.
+ */
+export interface VerticalSummary {
+  id: string;
+  kind: VerticalKind;
+  /** `up`/`down` as declared on THIS storey; absent for an `elevator`. */
+  dir?: VerticalDir;
+  /** The room whose rectangle contains the footprint's centre, or `null`. */
+  room: string | null;
+  bbox: BBox;
+  /** Flight width across the run (mm) — `stair` only. */
+  flight_width?: number;
+}
+
+/**
+ * The building's **vertical connections** (v1.21): every `stair`/`elevator`/`escalator`
+ * id drawn on two or more storeys. Identity is the whole rule — same id, same shaft —
+ * so nothing is inferred from geometry (ADR 0005). Present only on a multi-storey plan
+ * that actually has one; a run on a single storey is not a connection and is what
+ * `W_STAIR_UNMATCHED` reports.
+ *
+ * `reachable_levels` is the reason this block matters to an agent: a storey with no
+ * exterior door of its own is still reachable if a shaft joins it to one that has —
+ * which is exactly the reachability `lint` now evaluates per storey.
+ */
+export interface VerticalReport {
+  connections: VerticalConnection[];
+  /** Level numbers reachable from the outside once shafts are counted, ascending. */
+  reachable_levels: number[];
+}
+
 export type { RoomPlacement, OpeningPlacement, FurniturePlacement } from "./ir.js";
 
 /** How a single placed element's position was authored vs derived (v1.14). */
@@ -189,7 +235,7 @@ export interface SheetSummary {
  * access, circulation, totals, freedom, …). So an agent reads `levels[i]` with the code it
  * already has for a whole plan — a storey IS a plan.
  */
-export interface LevelSummary extends Omit<SceneSummary, "ok" | "diagnostics" | "levels"> {
+export interface LevelSummary extends Omit<SceneSummary, "ok" | "diagnostics" | "levels" | "vertical"> {
   /** The authored storey number (integer; 0/negative legal). */
   level: number;
   /** The storey's name (`level 1 "Ground floor"`), when the source gave one. */
@@ -259,6 +305,11 @@ export interface SceneSummary {
   openings: OpeningSummary[];
   furniture: FurnitureSummary[];
   /**
+   * The vertical-circulation runs drawn on this storey (v1.21) — `stair`, `elevator`,
+   * `escalator`. Absent when the storey draws none, so existing summaries are unchanged.
+   */
+  verticals?: VerticalSummary[];
+  /**
    * The modeled access graph: entrances, room reachability/depth from the exterior,
    * and connector edges (doors and cased openings) with estimated clear widths.
    */
@@ -304,6 +355,14 @@ export interface SceneSummary {
    * Diagnostics stay whole-plan (aggregated across storeys, each tagged with its `level`).
    */
   levels?: LevelSummary[];
+  /**
+   * The BUILDING's vertical connections (v1.21) — which shafts join which storeys, and
+   * which storeys that makes reachable from outside. A whole-building fact, so it exists
+   * only at the top level (never inside `levels[i]`) and only when the plan is
+   * multi-storey AND a run appears on two or more of its storeys. See
+   * {@link VerticalReport}.
+   */
+  vertical?: VerticalReport;
   /** All problems from parse/link/resolve, with byte spans and codes. */
   diagnostics: Diagnostic[];
 }
@@ -469,6 +528,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
   const windowEls = ir.elements.filter((e): e is RWindow => e.kind === "window");
   const openingEls = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const furnEls = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
+  const verticalEls: RVertical[] = verticalsOf(ir);
 
   const roomRects = new Map<string, BBox>(roomEls.map((r) => [r.id, rectOf(r)]));
 
@@ -540,8 +600,27 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     ...(f.room !== undefined ? { room: f.room } : {}),
   }));
 
+  const verticals: VerticalSummary[] = verticalEls.map((v) => ({
+    id: v.id,
+    kind: v.kind as VerticalKind,
+    ...(v.kind === "elevator" ? {} : { dir: v.dir }),
+    room: roomOfVertical(v, roomEls),
+    bbox: rectOf(v),
+    ...(v.kind === "stair" ? { flight_width: v.width } : {}),
+  }));
+
   const access = buildDoorAccessGraph(roomEls, doorEls, tol, undefined, openingEls);
-  const circulation = computeCirculation(roomEls, ir.walls, doorEls, openingEls, furnEls, access, tol);
+  const circulation = computeCirculation(
+    roomEls,
+    ir.walls,
+    doorEls,
+    openingEls,
+    furnEls,
+    access,
+    tol,
+    undefined,
+    verticalEls,
+  );
 
   // Drawing extent: union of wall points and sized-element rectangles.
   let minX = Infinity,
@@ -605,6 +684,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     windows,
     openings,
     furniture,
+    ...(verticals.length > 0 ? { verticals } : {}),
     access,
     circulation,
     totals,
@@ -614,6 +694,27 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     // in the SVG and this JSON can never disagree. Opt-in only.
     ...(ir.schedule === "rooms" ? { schedule: roomSchedule(roomEls).rows } : {}),
   };
+}
+
+/**
+ * The building-level vertical report for a multi-storey plan, or `undefined` when no run
+ * spans two storeys. A storey is *grounded* when it has its own exterior entrance (the
+ * same access-graph fact `lint` reads); reachability then spreads along the shafts.
+ */
+function buildVerticalReport(levels: readonly ResolvedLevel[], tol: number): VerticalReport | undefined {
+  const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
+  const connections = verticalConnections(inputs);
+  if (connections.length === 0) return undefined;
+  const grounded = (n: number): boolean => {
+    const l = levels.find((x) => x.level === n);
+    if (!l) return false;
+    const rooms = l.ir.elements.filter((e): e is RRoom => e.kind === "room");
+    const doors = l.ir.elements.filter((e): e is RDoor => e.kind === "door");
+    const openings = l.ir.elements.filter((e): e is ROpening => e.kind === "opening");
+    return buildDoorAccessGraph(rooms, doors, tol, undefined, openings).hasEntrance;
+  };
+  const reach = verticalReach(inputs, grounded);
+  return { connections, reachable_levels: [...reach.reachable].sort((a, b) => a - b) };
 }
 
 /**
@@ -663,5 +764,15 @@ export function describe(source: string, opts: DescribeOptions = {}): SceneSumma
         }))
       : undefined;
 
-  return { ok: true, ...summarize(ir, tol), ...(perLevel ? { levels: perLevel } : {}), diagnostics };
+  // Vertical connections are a BUILDING fact: they only exist across storeys, so they
+  // are computed once from the whole level set and never per level.
+  const vertical = levels.length > 0 ? buildVerticalReport(levels, tol) : undefined;
+
+  return {
+    ok: true,
+    ...summarize(ir, tol),
+    ...(perLevel ? { levels: perLevel } : {}),
+    ...(vertical ? { vertical } : {}),
+    diagnostics,
+  };
 }

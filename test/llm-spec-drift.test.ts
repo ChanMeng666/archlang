@@ -53,6 +53,14 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // 17,960 with nothing duplicated left to cut. The line it adds is one deliberately dense
     // sentence (537 chars), not prose — the suite is green at 18,498. Trim duplication before
     // raising again.
-    expect(spec.length).toBeLessThan(18_500);
+    //
+    // Raised 18.5k → 19.5k for the same reason (v1.21, vertical circulation): `stair` /
+    // `elevator` / `escalator` are three new ELEMENTS, and the stair line has to carry the
+    // one rule that is not guessable — that the same id on two `level` blocks is a shaft,
+    // which is what makes an upper storey reachable and what `W_STAIR_UNMATCHED` reports.
+    // The three lines were trimmed to 800 chars total before this was raised (the first
+    // draft was 1,230), and the suite is green at 19,363. Trim duplication before raising
+    // again.
+    expect(spec.length).toBeLessThan(19_500);
   });
 });

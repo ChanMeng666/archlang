@@ -2,6 +2,11 @@
  * Room-graph reachability: builds the room-connectivity graph from doors/openings
  * (rooms + the literal "exterior") once, then — per room, in source order — emits
  * W_BATH_VIA_BEDROOM and W_ROOM_UNREACHABLE, preserving the historical interleaving.
+ *
+ * On a storey with no exterior door that a shaft nevertheless reaches (v1.21), the room
+ * the shaft lands in is joined to "exterior" as an arrival point — coming down the stairs
+ * and out of the front door below IS a way out — so the same BFS answers the same
+ * question one storey up. A single-storey plan contributes no such edge and is unchanged.
  */
 
 import { doorConnections, isBedroom, isWetRoom, pointOnRoomEdge } from "../../analyze.js";
@@ -10,7 +15,7 @@ import type { LintContext, LintRule } from "../context.js";
 
 export const reachability: LintRule = {
   name: "reachability",
-  check({ rooms, connectors, roomRects, rules, labelOf, at }: LintContext): Diagnostic[] {
+  check({ rooms, connectors, roomRects, rules, labelOf, at, building }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
     const adj = new Map<string, Set<string>>();
     const addEdge = (x: string, y: string): void => {
@@ -23,6 +28,8 @@ export const reachability: LintRule = {
       const conn = doorConnections(c, roomRects, rules.tolMm);
       if (conn.length === 2) addEdge(conn[0]!, conn[1]!);
     }
+    // A shaft arriving from a reachable storey is this floor's entrance.
+    for (const id of building.arrivalRooms) if (roomRects.has(id)) addEdge("exterior", id);
     const isBedroomId = (id: string): boolean => {
       const r = rooms.find((x) => x.id === id);
       return r ? isBedroom(r) : false;

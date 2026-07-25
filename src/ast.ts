@@ -25,7 +25,18 @@ export interface ExprPoint {
 export type NorthDir = "up" | "down" | "left" | "right" | { deg: number };
 
 /** Discriminant identifying an element's type (also its registry keyword). */
-export type ElementKind = "wall" | "room" | "door" | "window" | "opening" | "furniture" | "dim" | "column";
+export type ElementKind =
+  | "wall"
+  | "room"
+  | "door"
+  | "window"
+  | "opening"
+  | "furniture"
+  | "dim"
+  | "column"
+  | "stair"
+  | "elevator"
+  | "escalator";
 
 /** Fields every element AST node carries. */
 export interface NodeBase {
@@ -287,6 +298,51 @@ export interface ColumnNode extends NodeBase {
   size: { w: Expr; h: Expr };
 }
 
+/**
+ * Which way a run of vertical circulation goes **from the storey it is drawn on**:
+ * `up` rises toward the next level (the plan symbol reads UP), `down` descends toward
+ * the previous one (DN). It is declared PER STOREY and never inferred across levels —
+ * the only cross-level inference ArchLang makes is identity (same id ⇒ same shaft), see
+ * ADR 0005.
+ */
+export type VerticalDir = "up" | "down";
+
+/**
+ * `stair [id=] at (x,y) size WxH dir up|down [width <expr>]` — a straight flight of
+ * stairs, drawn as the conventional plan symbol (tread lines, a mid-flight break line,
+ * a direction arrow labelled UP/DN).
+ *
+ * `at` is the footprint's TOP-LEFT corner (as for `room`/`furniture`, not `column`'s
+ * centre). `width` is the FLIGHT width across the run; it defaults to the footprint's
+ * cross-axis extent and may not exceed it (`E_STAIR_WIDTH`). v1 draws a single straight
+ * flight: a narrower `width` leaves the rest of the footprint as an un-drawn return/void.
+ */
+export interface StairNode extends NodeBase {
+  kind: "stair";
+  at: ExprPoint;
+  size: { w: Expr; h: Expr };
+  dir: VerticalDir;
+  /** Flight width across the run (mm); defaults to the footprint's cross extent. */
+  width?: Expr;
+}
+
+/** `elevator [id=] at (x,y) size WxH` — a lift shaft: the car rectangle with the
+ *  conventional crossed diagonals. No `dir` — a lift serves every storey it appears on. */
+export interface ElevatorNode extends NodeBase {
+  kind: "elevator";
+  at: ExprPoint;
+  size: { w: Expr; h: Expr };
+}
+
+/** `escalator [id=] at (x,y) size WxH dir up|down` — a moving stair: parallel chevrons
+ *  along the run plus a direction arrow labelled UP/DN. */
+export interface EscalatorNode extends NodeBase {
+  kind: "escalator";
+  at: ExprPoint;
+  size: { w: Expr; h: Expr };
+  dir: VerticalDir;
+}
+
 /** One room child of a `strip` block. It carries its main-axis extent and an
  *  optional cross-axis override; the strip supplies the shared cross dimension
  *  when the child omits it. Expanded into an ordinary absolute {@link RoomNode}
@@ -359,7 +415,10 @@ export type AstElement =
   | OpeningNode
   | FurnitureNode
   | DimNode
-  | ColumnNode;
+  | ColumnNode
+  | StairNode
+  | ElevatorNode
+  | EscalatorNode;
 
 /** `let NAME = <expr>` — a binding statement. */
 export interface LetNode extends NodeBase {

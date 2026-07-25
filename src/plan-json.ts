@@ -38,6 +38,7 @@ import {
   DEFAULT_TOL,
   type AnalyzeOptions,
 } from "./analyze.js";
+import { verticalConnections } from "./vertical.js";
 import { DEFAULT_MATERIAL } from "./hatches.js";
 
 // ---------------------------------------------------------------------------
@@ -899,16 +900,35 @@ export interface GraphCheck {
  * are undirected; output pairs use the plan's resolved room ids and are ordered by
  * room source order, so results are deterministic. On a fatal compile error every
  * intended room is reported missing.
+ *
+ * **Multi-storey** (`level <n> { … }`, v1.21): the graph is the WHOLE BUILDING's, not
+ * page 1's — storeys are scanned in ascending level order and their rooms pooled in that
+ * order (a room id that repeats on two storeys resolves to the LOWER storey's room, which
+ * is also the rank used for output ordering). Nodes stay rooms: a `stair`/`elevator`/
+ * `escalator` drawn with the same id on two storeys contributes ONE extra undirected edge
+ * per adjacent pair of its storeys, **between the rooms whose rectangles contain its
+ * footprint centre on each of them**. A run whose footprint centre falls in no room on one
+ * of the two storeys contributes no edge there, and a run that appears on only one storey
+ * contributes nothing at all (that is `W_STAIR_UNMATCHED`).
  */
 export function checkGraph(source: string, intent: Record<string, string[]>, opts: AnalyzeOptions = {}): GraphCheck {
   const intentKeys = Object.keys(intent);
-  const { ir } = resolvePlan(source, opts);
+  const { ir, levels } = resolvePlan(source, opts);
   if (!ir) {
     return { ok: false, missing_rooms: [...intentKeys], missing_connections: [], extra_connections: [] };
   }
-  const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
-  const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
-  const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
+  // Single-storey: the plan IS the building. Multi-storey: pool every storey's rooms in
+  // ascending level order, so an intended edge may span floors.
+  const plans: ResolvedPlan[] = levels.length > 0 ? levels.map((l) => l.ir) : [ir];
+  const rooms: RRoom[] = [];
+  const seenRoomIds = new Set<string>();
+  for (const p of plans) {
+    for (const r of p.elements) {
+      if (r.kind !== "room" || seenRoomIds.has(r.id)) continue;
+      seenRoomIds.add(r.id);
+      rooms.push(r);
+    }
+  }
   const rank = new Map<string, number>(rooms.map((r, i) => [r.id, i]));
 
   // Resolve an intent name → a plan room id (or null).
@@ -950,13 +970,30 @@ export function checkGraph(source: string, intent: Record<string, string[]>, opt
     }
   }
 
-  // Actual interior adjacency, as the same undirected id pairs.
-  const graph = buildInputGraph(rooms, doors, openings);
+  // Actual interior adjacency, as the same undirected id pairs — per storey, then the
+  // cross-storey edges each vertical shaft contributes.
   const actual = new Map<string, [string, string]>();
-  for (const a of Object.keys(graph)) {
-    for (const b of graph[a] ?? []) {
-      const [x, y] = (rank.get(a) ?? 0) <= (rank.get(b) ?? 0) ? [a, b] : [b, a];
-      actual.set(pairKey(a, b), [x, y]);
+  const addActual = (a: string, b: string): void => {
+    if (a === b || !rank.has(a) || !rank.has(b)) return;
+    const [x, y] = (rank.get(a) ?? 0) <= (rank.get(b) ?? 0) ? [a, b] : [b, a];
+    actual.set(pairKey(a, b), [x, y]);
+  };
+  for (const p of plans) {
+    const pr = p.elements.filter((e): e is RRoom => e.kind === "room");
+    const pd = p.elements.filter((e): e is RDoor => e.kind === "door");
+    const po = p.elements.filter((e): e is ROpening => e.kind === "opening");
+    const graph = buildInputGraph(pr, pd, po);
+    for (const a of Object.keys(graph)) for (const b of graph[a] ?? []) addActual(a, b);
+  }
+  if (levels.length > 0) {
+    for (const c of verticalConnections(levels.map((l) => ({ level: l.level, ir: l.ir })))) {
+      // One edge per ADJACENT pair of the shaft's storeys: a lift serving 1/2/3 links
+      // 1–2 and 2–3, never 1–3 (you pass through the intervening floor's room).
+      for (let i = 1; i < c.stops.length; i++) {
+        const a = c.stops[i - 1]!.room;
+        const b = c.stops[i]!.room;
+        if (a !== null && b !== null) addActual(a, b);
+      }
     }
   }
 

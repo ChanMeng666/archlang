@@ -50,6 +50,19 @@ export type { ApplyReport, ApplyFixesOptions } from "./fix-apply.js";
 export type * from "./ast.js";
 // Source formatter (v0.11): pure text→text, comment-preserving, idempotent.
 export { format } from "./format.js";
+// Vertical circulation (v1.21): the shared semantics of `stair`/`elevator`/`escalator` —
+// which end a run is entered from, what it does to the nav grid, and (the part that only
+// exists across storeys) which shafts join which `level` blocks. Pure, zero-dep.
+export {
+  entryEdges,
+  flightAxis,
+  isVertical,
+  verticalConnections,
+  verticalReach,
+  verticalsOf,
+  VERTICAL_KINDS,
+} from "./vertical.js";
+export type { RVertical, VerticalLevelInput, VerticalObstacle, VerticalReach } from "./vertical.js";
 // Semantic summary (v1.1): pure source→facts. `describe(source)` returns rooms
 // (areas, bboxes, adjacency), doors (what they connect), windows, and totals —
 // the channel a text-only agent uses to verify a plan without rendering it.
@@ -58,6 +71,11 @@ export type {
   SceneSummary,
   LevelSummary,
   SheetSummary,
+  VerticalSummary,
+  VerticalReport,
+  VerticalConnection,
+  VerticalKind,
+  VerticalStop,
   RoomSummary,
   DoorSummary,
   WindowSummary,

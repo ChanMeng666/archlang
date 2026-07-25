@@ -107,7 +107,7 @@ function rules(): [string, string][] {
     ["block-stmt", `element | let-stmt | for-stmt | if-stmt | while-stmt | set-stmt | instance-stmt | assign-stmt`],
     [
       "element",
-      `wall-stmt | room-stmt | door-stmt | window-stmt | opening-stmt | furniture-stmt | dim-stmt | column-stmt`,
+      `wall-stmt | room-stmt | door-stmt | window-stmt | opening-stmt | furniture-stmt | dim-stmt | column-stmt | stair-stmt | elevator-stmt | escalator-stmt`,
     ],
 
     // ---- plan settings ---------------------------------------------------
@@ -206,6 +206,10 @@ function rules(): [string, string][] {
     ["dim-stmt", `"dim" ( rws dim-ref )? ws point ws "->" ws point ( ws "offset" ws expr )? ( ws "text" ws string )?`],
     ["dim-ref", `"faces" | "clear"`],
     ["column-stmt", `"column" rws id-opt "at" ws point ws "size" ws dims`],
+    ["stair-stmt", `"stair" rws id-opt "at" ws point ws "size" ws dims ws "dir" rws vert-dir ( ws "width" ws expr )?`],
+    ["elevator-stmt", `"elevator" rws id-opt "at" ws point ws "size" ws dims`],
+    ["escalator-stmt", `"escalator" rws id-opt "at" ws point ws "size" ws dims ws "dir" rws vert-dir`],
+    ["vert-dir", `"up" | "down"`],
 
     // ---- shared clause pieces -------------------------------------------
     ["id-opt", `( "id" ws "=" ws ident rws )?`],

@@ -183,6 +183,12 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       return `dim ${s.ref ? `${s.ref} ` : ""}${ptStr(s.from)}->${ptStr(s.to)} offset ${exprStr(s.offset)}${s.text ? ` text ${exprStr(s.text)}` : ""}`;
     case "column":
       return `column ${id}at ${ptStr(s.at)} size ${sizeStr(s.size)}`;
+    case "stair":
+      return `stair ${id}at ${ptStr(s.at)} size ${sizeStr(s.size)} dir ${s.dir}${s.width !== undefined ? ` width ${exprStr(s.width)}` : ""}`;
+    case "elevator":
+      return `elevator ${id}at ${ptStr(s.at)} size ${sizeStr(s.size)}`;
+    case "escalator":
+      return `escalator ${id}at ${ptStr(s.at)} size ${sizeStr(s.size)} dir ${s.dir}`;
     case "let":
       return s.value.t === "fnlit"
         ? `let ${s.name}(${s.value.params.join(", ")}) = ${exprStr(s.value.body)}`

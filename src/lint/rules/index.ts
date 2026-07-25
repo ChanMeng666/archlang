@@ -21,6 +21,7 @@ import {
 } from "./furniture.js";
 import { perRoomRules } from "./per-room.js";
 import { reachability } from "./reachability.js";
+import { stairUnmatched } from "./vertical.js";
 
 export const LINT_RULES: readonly LintRule[] = [
   perRoomRules,
@@ -48,6 +49,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // Annotation advisory: a hand-written dimension line reading inside the building.
   // Appended last for the same reason.
   dimInside,
+  // Multi-storey advisory (v1.21): a vertical run whose id matches nothing on any other
+  // storey. Appended last so no existing plan's diagnostic ORDER moves.
+  stairUnmatched,
 ];
 
 export type { LintContext, LintRule } from "../context.js";
