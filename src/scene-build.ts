@@ -9,7 +9,7 @@
  */
 
 import type { CompileOptions } from "./types.js";
-import type { Opening, ResolvedPlan, RWall, RRoom, RDim } from "./ir.js";
+import type { Opening, ResolvedPlan, RWall, RRoom, RDim, RFurniture } from "./ir.js";
 import type { RenderCtx, Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode, SceneSheet } from "./scene.js";
@@ -36,6 +36,7 @@ import type { HatchSpec } from "./hatches.js";
 import { anchorChromeToSheet, dimReach, layoutChrome } from "./chrome-layout.js";
 import { axesNodes } from "./axes.js";
 import { CHAIN_BASE, CHAIN_STEP, SHEET_MM, sizesFromPaper } from "./sheet.js";
+import { legendEntries, roomSchedule, sheetTableNodes } from "./sheet-tables.js";
 import { circulationOverlayNodes } from "./overlays/circulation.js";
 import { captionForPlan } from "./describe.js";
 import { DEFAULT_THEME, THEMES, mergeTheme, sanitizeTheme, derivePoche } from "./theme.js";
@@ -667,10 +668,32 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     nodes.push(...axesNodes(ir.axes, b, sizes, theme, dimReach(b, nodes, ["dims"])));
   }
 
+  // Opt-in sheet tables (`schedule rooms` / `legend`) — derived closed-form from the plan
+  // (see `sheet-tables.ts`). Computed before chrome layout because the table heights are
+  // what grow the bottom margin; a plan that opts into neither passes null and every
+  // margin below reduces to the previous arithmetic, so its bytes are unchanged.
+  const scheduleData =
+    ir.schedule === "rooms" ? roomSchedule(ir.elements.filter((e): e is RRoom => e.kind === "room")) : null;
+  const legendData = ir.legend
+    ? legendEntries(
+        hatches,
+        ir.elements.filter((e): e is RFurniture => e.kind === "furniture"),
+      )
+    : null;
+
   // Page chrome (scale bar + title block) sits below the dimension band; the page
   // margins grow per-side so neither the chrome nor any dimension clips (shared with
   // the SVG/PDF backends via the one layoutChrome source).
-  let chrome = layoutChrome({ bounds: b, refDim, baseMargin: sizes.margin, nodes, title: ir.title, scale: ir.scale });
+  let chrome = layoutChrome({
+    bounds: b,
+    refDim,
+    baseMargin: sizes.margin,
+    nodes,
+    title: ir.title,
+    scale: ir.scale,
+    schedule: scheduleData,
+    legend: legendData,
+  });
   const m = chrome.margin;
 
   // The page. Without a sheet it is the content box (drawing + grown margins) — the
@@ -693,8 +716,15 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     sheet = { ...ir.sheet, page, grown };
     // On a sheet the bottom chrome belongs in the sheet's corners, not beside the plan —
     // but only when the corner band is provably clear of the drawing (see the helper).
-    chrome = anchorChromeToSheet(chrome, page, sizes.margin, content.y + content.h);
+    chrome = anchorChromeToSheet(chrome, page, sizes.margin, content.y + content.h, refDim);
   }
+
+  // The sheet tables are ordinary `annotations`-pass primitives, so every backend that
+  // walks RENDER_PASSES draws them from this one lowering (unlike the title block, whose
+  // geometry each backend still redraws). Lowered AFTER any sheet re-anchoring above, so
+  // they are drawn wherever the final chrome layout put them; like the overlays below,
+  // they are outside the dimension reach and shift nothing.
+  if (chrome.tables) nodes.push(...sheetTableNodes(chrome.tables, theme, sizes));
 
   // Opt-in diagnostic overlays (ADR 0008): appended AFTER all nodes and after chrome
   // layout, so the default Scene (no overlays) is byte-identical and the overlay never

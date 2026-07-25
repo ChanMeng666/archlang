@@ -55,6 +55,8 @@ plan "My Home" {
 | `north up\|down\|left\|right\|<deg>` | North direction for the north arrow. | `up` |
 | `dims auto [overall\|rooms\|walls\|all]` | Auto-draw dimension **chains** without hand-placing each `dim`, in the GB/T 50104 exterior convention — every chain outside the building, measured from the outer wall faces (see [Automatic dimension chains](#automatic-dimension-chains)): `overall` (one outer-face-to-outer-face span per dimensioned facade), `rooms` (the room/partition axis chain), `walls` (one deduped thickness call-out per distinct wall thickness), or `all` (the openings chain + the axis chain + the overall span, and the default when no scope is given). | off |
 | `axes { x at … y at … }` | The plan's **positioning axes** (定位轴线) — declared structural datum lines, drawn dash-dot with a labelled bubble and used as the ticks of the middle dimension chain. See [Positioning axes](#positioning-axes-定位轴线). | none |
+| `schedule rooms` | Draw the **ROOM SCHEDULE** table in the sheet's bottom band — number, name and area per room, closed by a total. Rows are derived from the rooms, never authored. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
+| `legend` | Draw the **LEGEND** table beside the schedule — one row per wall hatch material and per fixture symbol the drawing actually uses, each with a real swatch. Fully derived; nothing to configure. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
 
 ### Paper and scale (the sheet)
 
@@ -782,6 +784,56 @@ inserting an axis in the middle renumbers everything after it:
 - `describe()` reports them as facts (`axes.x` / `axes.y`, in label order — see
   [Analysis](analysis.md)). They are presentation + datum metadata: no axis becomes an
   element, gets an id, or can be referenced by a door/room clause.
+
+### Sheet tables — room schedule & legend
+
+```
+plan "Clinic" {
+  units mm
+  dims auto all
+  schedule rooms      # the ROOM SCHEDULE table
+  legend              # the LEGEND table, derived from the plan
+  # … walls, rooms, fixtures …
+}
+```
+
+A finished sheet is not only the drawing: it carries tabular blocks in the margin that
+let a reader audit the plan without measuring it. Both are **opt-in**, both draw in a
+second row **below** the scale bar and title block (so they never cross a dimension
+chain or an axis bubble), and the page grows to contain them. A plan that sets neither
+renders exactly as before.
+
+**`schedule rooms`** draws the room schedule (房间明细表):
+
+| Column | Contents |
+|--------|----------|
+| `NO.` | 1-based **source order**, zero-padded to a uniform width (`01`…`09`, `001`…`100`). |
+| `NAME` | The room's `label`, falling back to its `id` when unlabelled. |
+| `AREA (m²)` | The room rectangle's area to two decimals — the same number `describe()` reports as `rooms[].area_m2`. |
+
+A final **`TOTAL`** row closes the table with the same number as
+`describe().totals.floor_area_m2`, so the drawn table and the JSON can never disagree.
+`rooms` is the only subject in v1.20; the keyword takes one anyway so `doors`,
+`windows` or `finishes` can be added later without a respelling — anything else is a
+parse error with a did-you-mean, never a silently ignored word.
+
+**`legend`** draws a legend derived closed-form from the drawing:
+
+- one row per distinct **wall hatch** in use, its swatch filled with the very pattern
+  the walls are filled with (`brick`, `poche`, …), in the Scene's stable order;
+- one row per **fixture category** actually placed that has a plan symbol (`wc`,
+  `basin`, `shower`, …), its swatch drawn with the real glyph, in catalog order.
+
+Nothing is listed that is not drawn, and a category that renders as a plain labelled
+rectangle gets no row (there is no symbol to explain). There is nothing to configure —
+which is the point: the legend cannot drift from the drawing.
+
+Both tables are ordinary `annotations`-pass primitives on the CAD layer **`A-ANNO`**, so
+SVG, PNG, PDF and DXF all draw them from one implementation; the ASCII plan (`-f txt`)
+has no sheet chrome and still has none. Every size derives from the drawing's size
+system, so the tables scale with the sheet. `describe()` reports the schedule as
+`schedule[]` (see [Analysis](analysis.md)); `legend` is pure rendering and adds no
+field — every fact it shows is already in `furniture` and the source.
 
 ## Theming
 

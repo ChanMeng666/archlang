@@ -89,12 +89,56 @@ A plan that declares no `axes` block is **byte-identical** to before — no node
   a WC stack whose fixture rows are placed by `against wall <id> offset …`, and `dims auto all`.
   Lint-clean under `arch validate --strict`.
 
+- **`schedule rooms` — the ROOM SCHEDULE table.** A finished sheet carries tabular blocks in the
+  margin that let a reader audit the plan without measuring it (GB/T's 房间明细表). A plan can now ask
+  for one:
+
+  ```arch
+  schedule rooms
+  ```
+
+  Columns are `NO.` (1-based **source order**, zero-padded to one uniform width across the table —
+  `01`…`09`, `001`…`100`), `NAME` (the room's `label`, falling back to its `id`) and `AREA (m²)` to two
+  decimals, closed by a **`TOTAL`** row. Every row is **derived from the rooms, never authored**, by the
+  one `roomSchedule()` that both the renderer and `describe()` call — so the drawn areas are literally
+  `describe().rooms[].area_m2` and the drawn total is literally `totals.floor_area_m2`; the table and
+  the JSON cannot disagree by a rounding step. `rooms` is the only subject, but the keyword takes one
+  anyway so `doors`/`windows`/`finishes` can arrive later without a respelling — anything else is a
+  parse error carrying a `closest()` did-you-mean and the available list, spanned on the offending
+  word, never a silently ignored setting.
+- **`legend` — a legend that cannot drift from the drawing.** One row per wall hatch spec actually in
+  use, its swatch filled with the very `<pattern>` the walls are filled with; one row per placed
+  fixture category that has a plan symbol, its swatch drawn with the real glyph from
+  `elements/fixtures-glyphs.ts`, in catalog order. Nothing is listed that is not drawn, a category that
+  renders as a plain labelled rectangle gets no row, and there is **nothing to configure** — which is
+  the point.
+- **Both tables are Scene primitives, not per-backend chrome.** They lay out in `layoutChrome` in a row
+  **below** the scale bar / title block band (so they never cross a dimension chain or an axis bubble),
+  and lower to ordinary `annotations`-pass nodes on the AIA layer **`A-ANNO`** — so SVG, PNG, PDF and DXF
+  all draw them from the one `src/sheet-tables.ts`, rather than each redrawing the geometry as they
+  still do for the title block. The page margins grow to contain them. On a `paper` sheet they
+  re-anchor with the bottom chrome to the sheet's margin, in the row just **above** the corner band,
+  and every size reads from `RenderSizes`, so a 1:50 A1 gets 3.4 mm rows on the sheet automatically.
+- **`describe().schedule`** reports the drawn table as data (`[{ no, id, name, area_m2 }…]`) so an agent
+  can read the schedule it just rendered without OCR'ing the image — present only when the plan opts
+  in, and selectable via `describe --select schedule`. Also exported: `roomSchedule` / `legendEntries`
+  and the `ScheduleRow` / `RoomSchedule` / `LegendEntry` types. `legend` deliberately gets **no**
+  `describe()` field: it is pure rendering, and every fact it shows is already in `furniture`.
+
 ### Compatibility
 
 - **A plan with no `paper` is byte-for-byte unchanged** — `scale` included. The reference-dimension
   size formulas are untouched (and now pinned by their own test), no `sheet` appears on the Scene or
   in `describe()`, and the SVG root emits no `width`/`height`. Adding the museum example touched no
   existing golden, snapshot or vocabulary-pin row.
+- **A plan with no `schedule`/`legend` is byte-for-byte unchanged** — no node on the `annotations`
+  pass, no `tables` key on the chrome layout, and every `layoutChrome` margin expression reduces to
+  exactly the previous arithmetic. No shipped example opts in (asserted by a test, not assumed), so no
+  golden or snapshot churned; the ASCII plan (`-f txt`) reads only the fabric layers and stays
+  chrome-free. Table text is ASCII + `m²` only rather than 编号/名称/面积, because the PNG backend
+  rasterizes with a bundled Roboto that carries no Han glyphs — the same portability constraint that
+  keeps the axis bubbles off `①`/`Ⓐ`. No `area`/`m2` token enters the grammar: printing a computed area
+  in the sheet chrome is rendering, which the parked area-syntax decision never covered.
 
 ## [1.19.0] - 2026-07-25
 

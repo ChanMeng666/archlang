@@ -33,6 +33,8 @@ export const KEYWORDS = {
     "set",
     "strip",
     "axes",
+    "schedule",
+    "legend",
   ],
   /** Built-in element kinds → `storage.type.element`, CM `typeName`. */
   element: ["wall", "room", "door", "window", "opening", "furniture", "dim", "column"],
@@ -193,4 +195,6 @@ export const STATEMENT_STARTS: readonly string[] = [
   "set",
   "strip",
   "axes",
+  "schedule",
+  "legend",
 ];

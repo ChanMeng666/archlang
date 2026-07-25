@@ -62,6 +62,7 @@ export type {
   FurnitureSummary,
   AxesSummary,
   AxisSummary,
+  ScheduleRow,
   FreedomReport,
   FreedomElement,
   RoomPlacement,
@@ -239,6 +240,11 @@ export {
   usablePlanMm,
 } from "./sheet.js";
 export type { PaperOrientation, PaperSize, PaperSpec, ResolvedSheet, SheetFitInput } from "./sheet.js";
+// Sheet tables (v1.20): the `schedule rooms` room schedule and the `legend` derived from
+// the plan's hatches + fixture symbols. Exposed so a tool can render or audit the same
+// rows the drawing prints (`describe().schedule` is the schedule half as data).
+export { roomSchedule, legendEntries } from "./sheet-tables.js";
+export type { RoomSchedule, LegendEntry } from "./sheet-tables.js";
 export { toDxf } from "./export/dxf.js";
 export { toPdf } from "./export/pdf.js";
 // PNG raster backend (v1.0). Rasterizes the Scene's SVG with the OPTIONAL,

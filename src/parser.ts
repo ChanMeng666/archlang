@@ -25,9 +25,10 @@ import type {
   UseKind,
   WhileNode,
 } from "./ast.js";
-import { USE_KINDS } from "./ast.js";
+import type { ScheduleSubject } from "./ast.js";
+import { SCHEDULE_SUBJECTS, USE_KINDS } from "./ast.js";
 import type { Expr } from "./expr.js";
-import { parseExpr as parseExprPratt } from "./expr.js";
+import { closest, parseExpr as parseExprPratt } from "./expr.js";
 import type { Theme } from "./theme.js";
 import { isNumericThemeKey, resolveThemeKey, resolveStyleKey } from "./theme.js";
 import { isDisallowedConfigValue } from "./sanitize.js";
@@ -262,6 +263,13 @@ class Parser {
             plan.axes = plan.axes ? { ...plan.axes, x: [...plan.axes.x, ...n.x], y: [...plan.axes.y, ...n.y] } : n;
             break;
           }
+          case "schedule":
+            this.parseScheduleSetting(plan);
+            break;
+          case "legend":
+            this.next();
+            plan.legend = true;
+            break;
           case "accTitle":
             this.next();
             if (plan.accTitle !== undefined) this.warnDupAcc("accTitle", t);
@@ -395,6 +403,28 @@ class Parser {
       mode = this.eatIdent().value as "overall" | "rooms" | "walls" | "all";
     }
     plan.autoDims = mode;
+  }
+
+  /**
+   * `schedule <subject>` — opt into a sheet schedule table. The subject is required and
+   * closed (`SCHEDULE_SUBJECTS`, currently just `rooms`) so the surface can grow without
+   * a respelling; an unknown word fails with the available list plus a `closest()`
+   * did-you-mean, spanned on the OFFENDING WORD rather than the keyword. Repeating the
+   * statement is idempotent (declarative), never a duplicate error.
+   */
+  private parseScheduleSetting(plan: PlanNode): void {
+    this.next();
+    const st = this.eatIdent();
+    const subject = st.value;
+    if (!(SCHEDULE_SUBJECTS as readonly string[]).includes(subject)) {
+      const hint = closest(subject, [...SCHEDULE_SUBJECTS]);
+      this.fail(
+        `Unknown schedule subject "${subject}"${hint ? ` — did you mean "${hint}"?` : ""}` +
+          ` (available: ${SCHEDULE_SUBJECTS.join(", ")})`,
+        st,
+      );
+    }
+    plan.schedule = subject as ScheduleSubject;
   }
 
   /** Optional `id=<ident>` prefix; returns "" when absent. */

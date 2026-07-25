@@ -32,7 +32,7 @@ import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { KEYWORDS, OPERATORS } from "../src/grammar/tokens.js";
-import { USE_KINDS, FURNITURE_ANCHORS } from "../src/ast.js";
+import { USE_KINDS, FURNITURE_ANCHORS, SCHEDULE_SUBJECTS } from "../src/ast.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "../src/sheet.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -111,7 +111,10 @@ function rules(): [string, string][] {
     ],
 
     // ---- plan settings ---------------------------------------------------
-    ["setting", `units-stmt | grid-stmt | paper-stmt | scale-stmt | north-stmt | dims-stmt`],
+    [
+      "setting",
+      `units-stmt | grid-stmt | paper-stmt | scale-stmt | north-stmt | dims-stmt | schedule-stmt | legend-stmt`,
+    ],
     ["units-stmt", `"units" rws "mm"`],
     ["grid-stmt", `"grid" rws number`],
     ["paper-stmt", `"paper" rws paper-size ( rws paper-orientation )?`],
@@ -122,6 +125,11 @@ function rules(): [string, string][] {
     ["north-dir", `"up" | "down" | "left" | "right" | number`],
     ["dims-stmt", `"dims" rws "auto" ( rws dims-mode )?`],
     ["dims-mode", `"overall" | "rooms" | "walls" | "all"`],
+    // Sheet tables: `schedule <subject>` (subjects injected from SCHEDULE_SUBJECTS, the
+    // parser's own closed list) and the bare `legend` flag.
+    ["schedule-stmt", `"schedule" rws schedule-subject`],
+    ["schedule-subject", litAlt(SCHEDULE_SUBJECTS)],
+    ["legend-stmt", `"legend"`],
     ["acc-stmt", `( "accTitle" | "accDescr" ) rws string`],
 
     // ---- title / theme / style ------------------------------------------
