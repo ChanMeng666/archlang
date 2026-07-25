@@ -7,6 +7,7 @@
 
 import type { AnalyzeOptions } from "../analyze.js";
 import { DEFAULT_TOL } from "../analyze.js";
+import { FIXTURE_WALL_TOL_MM } from "../fixture-orientation.js";
 
 /** Tunable thresholds for the lint rules. All distances in mm, areas in m². */
 export interface LintRuleset {
@@ -28,6 +29,8 @@ export interface LintRuleset {
    * How close (mm) a wall-requiring fixture's edge must be to a wall centerline to
    * count as "against the wall". Default 300 — comfortably more than a wall's
    * half-thickness (a fixture backs onto the wall *face*) plus a small setback.
+   * The default is {@link FIXTURE_WALL_TOL_MM}, the same constant resolve uses to
+   * derive a room-anchored fixture's rotation, so the two can never drift.
    */
   fixtureWallTolMm: number;
   /**
@@ -64,7 +67,7 @@ export const DEFAULT_RULESET: LintRuleset = {
   tolMm: DEFAULT_TOL,
   maxUnenclosedMm: 300,
   swingClearanceMm: 0,
-  fixtureWallTolMm: 300,
+  fixtureWallTolMm: FIXTURE_WALL_TOL_MM,
   doorwayLandingMm: 300,
   minClearAreaM2: 1.0,
   minPathClearWidthMm: 700,

@@ -8,7 +8,14 @@ import type { SceneNode } from "../scene.js";
 import type { RFurniture, RRoom } from "../ir.js";
 import { rectCorners, segmentsOfWall, unit, normal, add, mul, sub, length } from "../geometry.js";
 import { fixtureGlyph } from "./fixtures-glyphs.js";
-import { defaultFootprint } from "../fixtures-catalog.js";
+import { defaultFootprint, orientationMatters } from "../fixtures-catalog.js";
+import {
+  backCandidateEdges,
+  backingWallForRoomEdge,
+  FIXTURE_WALL_TOL_MM,
+  type RectEdge,
+  rotateForBackEdge,
+} from "../fixture-orientation.js";
 
 const ANCHOR_SET: ReadonlySet<string> = new Set<FurnitureAnchor>(FURNITURE_ANCHORS);
 
@@ -98,10 +105,17 @@ export const furniture: ElementDef = {
       ctx.next();
       node.label = ctx.parseStringExpr();
     }
-    // Optional `rotate <0|90|180|270>` — quarter-turn the drawn symbol.
+    // Optional `rotate <0|90|180|270>` — quarter-turn the drawn symbol. Its byte
+    // span (or the zero-width point where one could be inserted, which is HERE —
+    // before the trailing `in <room>` the grammar puts last) is recorded on the node
+    // so an orientation fix can rewrite the clause; see FurnitureNode.rotateSpan.
+    const rotateAt = ctx.peek(-1).end;
     if (ctx.isKeyword("rotate")) {
-      ctx.next();
+      const rotKw = ctx.next();
       node.rotate = ctx.parseExpr();
+      node.rotateSpan = { start: rotKw.start, end: ctx.peek(-1).end };
+    } else {
+      node.rotateSpan = { start: rotateAt, end: rotateAt };
     }
     // Optional trailing `in <roomId>` — declare the owning room (for the absolute
     // `at`/`against` forms; the room-relative form already set it above).
@@ -184,8 +198,23 @@ export const furniture: ElementDef = {
       }
     } else if (n.place) {
       // Room-relative: closed-form corner/edge/centre placement inside the room box.
-      const placed = placeInRoom(id, n.place, n.room!, dw, dh, ctx, n.span);
-      at = placed ? ctx.snapPt(placed) : { x: 0, y: 0 };
+      // The anchor also names which room edge the piece backs onto, so for a fixture
+      // whose facing means something and that the author did not turn by hand, the
+      // rotation is derived from the wall on that edge — closed-form, and only when
+      // exactly one candidate edge is walled (ADR 0005: no guess among alternatives).
+      const placed = placeInRoom(
+        id,
+        n.place,
+        n.room!,
+        n.category,
+        dw,
+        dh,
+        ctx,
+        n.span,
+        rotate === undefined && orientationMatters(n.category),
+      );
+      at = placed ? ctx.snapPt(placed.at) : { x: 0, y: 0 };
+      if (placed?.rotate !== undefined) rotate = placed.rotate;
       if (!placed) roomOut = undefined; // room ref invalid — don't double-report via E_FURN_ROOM
     } else {
       at = ctx.snapPt(ctx.evalPt(n.at!));
@@ -199,6 +228,7 @@ export const furniture: ElementDef = {
       label: n.label !== undefined ? ctx.evalStr(n.label) : undefined,
       ...(rotate ? { rotate } : {}),
       ...(roomOut ? { room: roomOut } : {}),
+      ...(n.rotateSpan ? { _rotateSpan: n.rotateSpan } : {}),
       span: n.span,
     };
   },
@@ -317,26 +347,58 @@ function placeAgainst(
   const center = add(add(seg.a, mul(d, off)), mul(nSide, seg.thickness / 2 + depth / 2));
   const bw = horiz ? along : depth;
   const bh = horiz ? depth : along;
-  // The symbol's back faces the wall (−nSide); rotate 0 = back to the north.
-  const rotate = Math.abs(nSide.x) < 1e-9 ? (nSide.y > 0 ? 0 : 180) : nSide.x < 0 ? 90 : 270;
+  // The wall sits on the −nSide face, so the symbol's back goes on that footprint
+  // edge; the edge → quarter-turn mapping is the shared one (rotate 0 = back north),
+  // so `against wall` and the room-anchored derivation can never disagree.
+  const backEdge: RectEdge =
+    Math.abs(nSide.x) < 1e-9 ? (nSide.y > 0 ? "top" : "bottom") : nSide.x < 0 ? "right" : "left";
+  const rotate = rotateForBackEdge(backEdge);
   return { at: { x: center.x - bw / 2, y: center.y - bh / 2 }, size: { w: bw, h: bh }, rotate };
 }
 
 /**
+ * The room edge(s) an anchor backs a fixture onto: one for an edge anchor, two for
+ * a corner, none for a centred piece. This is the *candidate* set — a rotation is
+ * derived only when exactly one candidate actually has a wall behind it.
+ */
+const ANCHOR_BACK_EDGES: Readonly<Record<FurnitureAnchor, readonly RectEdge[]>> = Object.freeze({
+  "top-left": ["top", "left"],
+  top: ["top"],
+  "top-right": ["top", "right"],
+  left: ["left"],
+  center: [],
+  right: ["right"],
+  "bottom-left": ["bottom", "left"],
+  bottom: ["bottom"],
+  "bottom-right": ["bottom", "right"],
+});
+
+/**
  * Closed-form room-relative placement (`in <room> centered|anchor …`): the
- * fixture's top-left corner inside the resolved room box. Pure; pushes a
- * catalogued `E_PLACE_REF` and returns `null` when the room is unknown or is
- * positioned relationally (its box is not yet fixed when the fixture resolves).
+ * fixture's top-left corner inside the resolved room box, plus — when `derive` is
+ * set — the quarter-turn that puts the fixture's back against the wall the anchor
+ * names. Pure; pushes a catalogued `E_PLACE_REF` and returns `null` when the room
+ * is unknown or is positioned relationally (its box is not yet fixed when the
+ * fixture resolves).
+ *
+ * The derivation is deliberately narrow (ADR 0005 — no invisible architect): the
+ * anchor must name a **unique** backed edge. `anchor bottom` on a room whose south
+ * edge carries a wall is one unambiguous answer, so it is derived; a corner anchor
+ * with walls on both of its edges, or an anchor whose edge has no wall at all, has
+ * no unique answer, so nothing is derived and `lint` says so instead
+ * (`W_FIXTURE_BACK_TO_ROOM`). `centered` names no edge, so it never derives.
  */
 function placeInRoom(
   id: string,
   place: NonNullable<FurnitureNode["place"]>,
   roomId: string,
+  category: string,
   w: number,
   h: number,
   ctx: ResolveCtx,
   span: Span | undefined,
-): Point | null {
+  derive: boolean,
+): { at: Point; rotate?: number } | null {
   const room = ctx.rooms.find((r): r is RRoom => r.id === roomId);
   if (!room || room._rel) {
     ctx.diag({
@@ -353,7 +415,7 @@ function placeInRoom(
   const y1 = y0 + room.size.h;
   const cx = x0 + room.size.w / 2;
   const cy = y0 + room.size.h / 2;
-  if (place.mode === "centered") return { x: cx - w / 2, y: cy - h / 2 };
+  if (place.mode === "centered") return { at: { x: cx - w / 2, y: cy - h / 2 } };
   const inset = place.inset !== undefined ? ctx.eval(place.inset) : 0;
   const a = place.anchor;
   let x: number;
@@ -364,7 +426,17 @@ function placeInRoom(
   if (a === "top-left" || a === "top" || a === "top-right") y = y0 + inset;
   else if (a === "bottom-left" || a === "bottom" || a === "bottom-right") y = y1 - h - inset;
   else y = cy - h / 2; // left | center | right → vertically centred
-  return { x, y };
+  const at = { x, y };
+  if (!derive) return { at };
+  const roomRect = { x: x0, y: y0, w: room.size.w, h: room.size.h };
+  // Two independent closed-form constraints: the anchor names the edge(s) the piece
+  // is pushed against, and the footprint's aspect says which edges can physically be
+  // its back. A single walled edge in both = one answer; anything else = no rotation.
+  const shape = backCandidateEdges({ w, h }, defaultFootprint(category));
+  const backed = ANCHOR_BACK_EDGES[a].filter(
+    (e) => shape.includes(e) && backingWallForRoomEdge(roomRect, e, ctx.walls, FIXTURE_WALL_TOL_MM) !== null,
+  );
+  return backed.length === 1 ? { at, rotate: rotateForBackEdge(backed[0]!) } : { at };
 }
 
 /** Rotate a point a quarter-turn about centre `c` (screen y-down, clockwise) using

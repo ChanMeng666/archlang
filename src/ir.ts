@@ -152,6 +152,10 @@ export interface RFurniture extends RBase {
   /** `anchored` (`in <room> anchor|centered`), `against-wall` (`against wall …`),
    *  or `absolute` (`at (x,y)`). Internal marker for `describe().freedom`. */
   _placement?: FurniturePlacement;
+  /** Byte span of the authored `rotate` clause, or the zero-width point where one
+   *  can be inserted — copied from {@link import("./ast.js").FurnitureNode.rotateSpan}
+   *  so an orientation lint fix can rewrite it. Internal; never reaches the Scene. */
+  _rotateSpan?: Span;
 }
 export interface RDim extends RBase {
   kind: "dim";

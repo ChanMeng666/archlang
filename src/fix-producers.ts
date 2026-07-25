@@ -165,6 +165,38 @@ export function offWallFix(
 }
 
 /**
+ * The fix for `W_FIXTURE_BACK_TO_ROOM`: turn a wall-requiring fixture so its back
+ * faces the wall it is standing against — `rotate <n>`, replacing an authored
+ * clause or inserted where the grammar allows one.
+ *
+ * The edit is driven by `_rotateSpan` (recorded by the parser, carried onto the
+ * resolved fixture): a non-empty span is the authored `rotate <expr>` run and is
+ * REPLACED; a zero-width span is the insertion point — always before the optional
+ * trailing `in <room>`, which must stay last — and gets a leading space. Either way
+ * the offsets are original-source bytes, so {@link import("./fix-apply.js").applyFixes}
+ * can apply it deterministically. `machine-applicable`: the caller only asks for a
+ * rotation when exactly one edge of the fixture is walled, so `n` is the unique
+ * answer, not a guess (ADR 0005). Returns `null` without a span to write into.
+ */
+export function fixtureRotateFix(
+  fixture: { category: string; label?: string; _rotateSpan?: Span },
+  rotate: number,
+): FixSuggestion[] | null {
+  const span = fixture._rotateSpan;
+  if (!span) return null;
+  const insert = span.start === span.end;
+  const name = fixture.label ?? fixture.category;
+  return [
+    {
+      title: `turn "${name}" to \`rotate ${rotate}\` so its back is against the wall`,
+      applicability: "machine-applicable",
+      fixId: "fixture-back-to-room",
+      edits: [{ span, newText: `${insert ? " " : ""}rotate ${rotate}` }],
+    },
+  ];
+}
+
+/**
  * The fix for `E_{DOOR,WINDOW,OPENING}_WIDTH` (width ≤ 0): rewrite the element with
  * a `width <positive-number>` placeholder. `has-placeholders`, so it is surfaced
  * in the editor but never auto-applied (the placeholder is not valid source). The

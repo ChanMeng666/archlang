@@ -19,8 +19,19 @@ import type { Diagnostic } from "./diagnostics.js";
 import type { Point } from "./ast.js";
 import type { CompileOptions } from "./types.js";
 import { segmentsOfWall, type WallLike, type WallSegment } from "./geometry.js";
-import { overlap1d, type BBox } from "./geometry/rect.js";
+import { mergedLength, overlap1d, type BBox } from "./geometry/rect.js";
 import { classifyLabelUses } from "./vocabulary.js";
+import {
+  BACK_EDGE_ROTATE,
+  backCandidateEdges,
+  backEdgeForRotate,
+  backedEdgeList,
+  backingWallForRoomEdge,
+  FIXTURE_WALL_TOL_MM,
+  RECT_EDGES,
+  rotateForBackEdge,
+  wallBackedEdges,
+} from "./fixture-orientation.js";
 
 /** Options shared by the analysis tools: a subset of {@link CompileOptions}. */
 export type AnalyzeOptions = Pick<CompileOptions, "plugins" | "world">;
@@ -29,6 +40,23 @@ export type AnalyzeOptions = Pick<CompileOptions, "plugins" | "world">;
 // existing `from "./analyze.js"` importers keep working unchanged.
 export { overlap1d };
 export type { BBox };
+
+// Fixture orientation (back edge ⇄ quarter-turn) and per-edge wall backing live in
+// `fixture-orientation.ts` — below this layer, so an element module can derive a
+// rotation without a cycle through the registry. Re-exported here because this is
+// the analysis surface the lint rules, `repair`, and `src/index.ts` read from.
+export {
+  backCandidateEdges,
+  backedEdgeList,
+  backEdgeForRotate,
+  backingWallForRoomEdge,
+  BACK_EDGE_ROTATE,
+  FIXTURE_WALL_TOL_MM,
+  RECT_EDGES,
+  rotateForBackEdge,
+  wallBackedEdges,
+};
+export type { EdgeBacking, RectEdge } from "./fixture-orientation.js";
 
 /** Default mm tolerance for edge-touch / point-on-edge tests (≈ one partition wall). */
 export const DEFAULT_TOL = 200;
@@ -311,24 +339,6 @@ export function buildDoorAccessGraph(
   return { entrances, hasEntrance: entrances.length > 0, edges, rooms: roomNodes };
 }
 
-/** Total length covered by a set of 1-D intervals after merging overlaps. */
-function mergedLength(intervals: Array<[number, number]>): number {
-  if (intervals.length === 0) return 0;
-  const sorted = [...intervals].sort((a, b) => a[0] - b[0]);
-  let total = 0;
-  let [cs, ce] = sorted[0]!;
-  for (let i = 1; i < sorted.length; i++) {
-    const [s, e] = sorted[i]!;
-    if (s <= ce) ce = Math.max(ce, e);
-    else {
-      total += ce - cs;
-      cs = s;
-      ce = e;
-    }
-  }
-  return total + (ce - cs);
-}
-
 /**
  * The largest contiguous run (mm) of a room's four edges that is **not** backed by
  * a wall centerline — i.e. how open the room's perimeter is. For each axis-aligned
@@ -409,6 +419,11 @@ export function frontClearanceRect(
  * wall from one floating in the middle of a room. `tol` should comfortably exceed a
  * wall's half-thickness (a fixture's back sits at the wall *face*, half a thickness
  * off the centerline) plus a small installation setback.
+ *
+ * The boolean summary of {@link wallBackedEdges} (same per-edge test, same order) —
+ * kept as the entry point every existing caller already uses. Ask
+ * {@link wallBackedEdges} / {@link backingWallForRoomEdge} instead when you need to
+ * know *which* edge is backed (which way a fixture should face).
  */
 export function isAgainstWall(
   rect: BBox,
@@ -417,32 +432,6 @@ export function isAgainstWall(
   // Callers looping over many fixtures hoist the segment list once and pass it in.
   segs: readonly WallSegment[] = walls.flatMap((w) => segmentsOfWall(w)),
 ): boolean {
-  const edges = [
-    { axis: "h" as const, fixed: rect.y, lo: rect.x, hi: rect.x + rect.w },
-    { axis: "h" as const, fixed: rect.y + rect.h, lo: rect.x, hi: rect.x + rect.w },
-    { axis: "v" as const, fixed: rect.x, lo: rect.y, hi: rect.y + rect.h },
-    { axis: "v" as const, fixed: rect.x + rect.w, lo: rect.y, hi: rect.y + rect.h },
-  ];
-  for (const e of edges) {
-    const len = e.hi - e.lo;
-    if (len <= 0) continue;
-    const covered: Array<[number, number]> = [];
-    for (const s of segs) {
-      const isH = Math.abs(s.a.y - s.b.y) < 1e-6;
-      const isV = Math.abs(s.a.x - s.b.x) < 1e-6;
-      if (e.axis === "h") {
-        if (!isH || Math.abs((s.a.y + s.b.y) / 2 - e.fixed) > tol) continue;
-        const slo = Math.min(s.a.x, s.b.x);
-        const shi = Math.max(s.a.x, s.b.x);
-        if (overlap1d(slo, shi, e.lo, e.hi) > 0) covered.push([Math.max(slo, e.lo), Math.min(shi, e.hi)]);
-      } else {
-        if (!isV || Math.abs((s.a.x + s.b.x) / 2 - e.fixed) > tol) continue;
-        const slo = Math.min(s.a.y, s.b.y);
-        const shi = Math.max(s.a.y, s.b.y);
-        if (overlap1d(slo, shi, e.lo, e.hi) > 0) covered.push([Math.max(slo, e.lo), Math.min(shi, e.hi)]);
-      }
-    }
-    if (mergedLength(covered) >= len * 0.5) return true;
-  }
-  return false;
+  const backing = wallBackedEdges(rect, walls, tol, segs);
+  return RECT_EDGES.some((e) => backing[e] !== null);
 }
