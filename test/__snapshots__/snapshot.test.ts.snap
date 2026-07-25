@@ -167,12 +167,12 @@ exports[`golden SVG snapshots > renders relational.arch deterministically 1`] = 
 <text x="6500" y="5971.4" font-size="180.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">10.5 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
-<line x1="0" y1="7500" x2="0" y2="8100" stroke="#0E5484" stroke-width="9.18"/>
-<line x1="8000" y1="7500" x2="8000" y2="8100" stroke="#0E5484" stroke-width="9.18"/>
-<line x1="0" y1="8100" x2="8000" y2="8100" stroke="#0E5484" stroke-width="13.12"/>
-<line x1="69.58" y1="8169.58" x2="-69.58" y2="8030.42" stroke="#0E5484" stroke-width="13.12"/>
-<line x1="8069.58" y1="8169.58" x2="7930.42" y2="8030.42" stroke="#0E5484" stroke-width="13.12"/>
-<text x="4000" y="8214.8" font-size="164" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 4000 8214.8)">8000</text>
+<line x1="-100" y1="7500" x2="-100" y2="8100" stroke="#0E5484" stroke-width="9.18"/>
+<line x1="8100" y1="7500" x2="8100" y2="8100" stroke="#0E5484" stroke-width="9.18"/>
+<line x1="-100" y1="8100" x2="8100" y2="8100" stroke="#0E5484" stroke-width="13.12"/>
+<line x1="-30.42" y1="8169.58" x2="-169.58" y2="8030.42" stroke="#0E5484" stroke-width="13.12"/>
+<line x1="8169.58" y1="8169.58" x2="8030.42" y2="8030.42" stroke="#0E5484" stroke-width="13.12"/>
+<text x="4000" y="8214.8" font-size="164" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 4000 8214.8)">8200</text>
 </g>
 <g><polygon points="7731,-1235.7 7546.5,-645.3 7731,-774.45 7915.5,-645.3" fill="#333333" transform="rotate(0 7731 -866.7)"/><text x="7731" y="-1406.26" font-size="213.2" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
 <g><rect x="-100" y="8788.8" width="1000" height="114.8" fill="#333333"/><rect x="900" y="8788.8" width="1000" height="114.8" fill="none" stroke="#333333" stroke-width="13.12"/><text x="-100" y="9067.6" font-size="164" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="1900" y="9067.6" font-size="164" fill="#333333" text-anchor="middle" dominant-baseline="central">2 m</text></g>
@@ -333,12 +333,12 @@ exports[`golden SVG snapshots > renders themed.arch deterministically 1`] = `
 <text x="4500" y="2168.75" font-size="137.5" fill="#9aa0aa" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
-<line x1="0" y1="4000" x2="0" y2="4600" stroke="#6cb6ff" stroke-width="9.1"/>
-<line x1="6000" y1="4000" x2="6000" y2="4600" stroke="#6cb6ff" stroke-width="9.1"/>
-<line x1="0" y1="4600" x2="6000" y2="4600" stroke="#6cb6ff" stroke-width="13"/>
-<line x1="53.03" y1="4653.03" x2="-53.03" y2="4546.97" stroke="#6cb6ff" stroke-width="13"/>
-<line x1="6053.03" y1="4653.03" x2="5946.97" y2="4546.97" stroke="#6cb6ff" stroke-width="13"/>
-<text x="3000" y="4687.5" font-size="125" fill="#6cb6ff" text-anchor="middle" dominant-baseline="central" transform="rotate(0 3000 4687.5)">6000</text>
+<line x1="-125" y1="4000" x2="-125" y2="4600" stroke="#6cb6ff" stroke-width="9.1"/>
+<line x1="6125" y1="4000" x2="6125" y2="4600" stroke="#6cb6ff" stroke-width="9.1"/>
+<line x1="-125" y1="4600" x2="6125" y2="4600" stroke="#6cb6ff" stroke-width="13"/>
+<line x1="-71.97" y1="4653.03" x2="-178.03" y2="4546.97" stroke="#6cb6ff" stroke-width="13"/>
+<line x1="6178.03" y1="4653.03" x2="6071.97" y2="4546.97" stroke="#6cb6ff" stroke-width="13"/>
+<text x="3000" y="4687.5" font-size="125" fill="#6cb6ff" text-anchor="middle" dominant-baseline="central" transform="rotate(0 3000 4687.5)">6250</text>
 </g>
 <g><polygon points="5843.75,-990.62 5703.13,-540.62 5843.75,-639.06 5984.38,-540.62" fill="#cfd3da" transform="rotate(0 5843.75 -709.37)"/><text x="5843.75" y="-1120.62" font-size="162.5" fill="#cfd3da" text-anchor="middle" dominant-baseline="central">N</text></g>
 <g><rect x="-125" y="5125" width="500" height="87.5" fill="#cfd3da"/><rect x="375" y="5125" width="500" height="87.5" fill="none" stroke="#cfd3da" stroke-width="13"/><text x="-125" y="5337.5" font-size="125" fill="#cfd3da" text-anchor="start" dominant-baseline="central">0</text><text x="875" y="5337.5" font-size="125" fill="#cfd3da" text-anchor="middle" dominant-baseline="central">1 m</text></g>
@@ -409,18 +409,18 @@ exports[`golden SVG snapshots > renders two-bed.arch deterministically 1`] = `
 <text x="8500" y="6778.1" font-size="226.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">9.0 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
-<line x1="0" y1="8000" x2="0" y2="8700" stroke="#0E5484" stroke-width="11.54"/>
-<line x1="10000" y1="8000" x2="10000" y2="8700" stroke="#0E5484" stroke-width="11.54"/>
-<line x1="0" y1="8700" x2="10000" y2="8700" stroke="#0E5484" stroke-width="16.48"/>
-<line x1="87.4" y1="8787.4" x2="-87.4" y2="8612.6" stroke="#0E5484" stroke-width="16.48"/>
-<line x1="10087.4" y1="8787.4" x2="9912.6" y2="8612.6" stroke="#0E5484" stroke-width="16.48"/>
-<text x="5000" y="8844.2" font-size="206" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 5000 8844.2)">10000</text>
-<line x1="0" y1="0" x2="-700" y2="0" stroke="#0E5484" stroke-width="11.54"/>
-<line x1="0" y1="8000" x2="-700" y2="8000" stroke="#0E5484" stroke-width="11.54"/>
-<line x1="-700" y1="0" x2="-700" y2="8000" stroke="#0E5484" stroke-width="16.48"/>
-<line x1="-787.4" y1="87.4" x2="-612.6" y2="-87.4" stroke="#0E5484" stroke-width="16.48"/>
-<line x1="-787.4" y1="8087.4" x2="-612.6" y2="7912.6" stroke="#0E5484" stroke-width="16.48"/>
-<text x="-844.2" y="4000" font-size="206" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(90 -844.2 4000)">8000</text>
+<line x1="-150" y1="8000" x2="-150" y2="8700" stroke="#0E5484" stroke-width="11.54"/>
+<line x1="10150" y1="8000" x2="10150" y2="8700" stroke="#0E5484" stroke-width="11.54"/>
+<line x1="-150" y1="8700" x2="10150" y2="8700" stroke="#0E5484" stroke-width="16.48"/>
+<line x1="-62.6" y1="8787.4" x2="-237.4" y2="8612.6" stroke="#0E5484" stroke-width="16.48"/>
+<line x1="10237.4" y1="8787.4" x2="10062.6" y2="8612.6" stroke="#0E5484" stroke-width="16.48"/>
+<text x="5000" y="8844.2" font-size="206" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 5000 8844.2)">10300</text>
+<line x1="0" y1="-150" x2="-700" y2="-150" stroke="#0E5484" stroke-width="11.54"/>
+<line x1="0" y1="8150" x2="-700" y2="8150" stroke="#0E5484" stroke-width="11.54"/>
+<line x1="-700" y1="-150" x2="-700" y2="8150" stroke="#0E5484" stroke-width="16.48"/>
+<line x1="-787.4" y1="-62.6" x2="-612.6" y2="-237.4" stroke="#0E5484" stroke-width="16.48"/>
+<line x1="-787.4" y1="8237.4" x2="-612.6" y2="8062.6" stroke="#0E5484" stroke-width="16.48"/>
+<text x="-844.2" y="4000" font-size="206" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(90 -844.2 4000)">8300</text>
 </g>
 <g><polygon points="9686.5,-1576.55 9454.75,-834.95 9686.5,-997.18 9918.25,-834.95" fill="#333333" transform="rotate(90 9686.5 -1113.05)"/><text x="10364.24" y="-1113.05" font-size="267.8" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
 <g><rect x="-150" y="9565.2" width="1000" height="144.2" fill="#333333"/><rect x="850" y="9565.2" width="1000" height="144.2" fill="none" stroke="#333333" stroke-width="16.48"/><text x="-150" y="9915.4" font-size="206" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="1850" y="9915.4" font-size="206" fill="#333333" text-anchor="middle" dominant-baseline="central">2 m</text></g>

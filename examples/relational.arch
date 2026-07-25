@@ -22,7 +22,9 @@ plan "Relational 1BR" {
 
   furniture bed at (300,4300) size 1500x2000 label "Bed"
 
-  dim (0,7500)->(8000,7500) offset 600 text "8000"
+  # Overall width, outside face to outside face (`faces` projects each endpoint onto
+  # the wall it runs into, so it prints the true 8200 rather than the 8000 room grid).
+  dim faces (0,7500)->(8000,7500) offset 600
 
   title {
     project "Relational Layout Demo"

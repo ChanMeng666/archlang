@@ -36,5 +36,7 @@ plan "Themed Duplex" {
   window at (1500,0)    width 1600 wall exterior
   window at (4500,0)    width 1200 wall exterior
 
-  dim (0,H)->(W,H) offset 600 text "6000"
+  # `faces` measures outside-to-outside: 6000 of room grid + half the 250 shell at
+  # each end = the 6250 the building actually is.
+  dim faces (0,H)->(W,H) offset 600
 }

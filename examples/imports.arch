@@ -20,5 +20,6 @@ plan "Imports Demo" {
   single(2000, 4000, 1000)
   glazing(4000, 0, 1200)
 
-  dim (0,4000)->(5000,4000) offset 600 text "5000"
+  # Outside-face overall width (5000 room grid + half the 200 shell each end = 5200).
+  dim faces (0,4000)->(5000,4000) offset 600
 }
