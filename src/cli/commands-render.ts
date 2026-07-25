@@ -23,7 +23,9 @@ import {
   parseFormat,
   readInput,
   sourceFromJson,
+  stdoutJsonConflict,
   usageError,
+  usageErrorFor,
 } from "./io.js";
 import { type PerFile, aggregateExit, compileToFile, perFileJson, renderArtifact, runPool } from "./serialize.js";
 
@@ -37,6 +39,9 @@ export async function cmdCompile(args: Args): Promise<number> {
 
   const format = parseFormat(args);
   if (!format) return usageError(`unknown format "${args.format}" (use ${FORMAT_LIST})`);
+  // Checked before any read: two writers for one stdout is a usage error, not a silent
+  // redirect to `out.svg` (see `stdoutJsonConflict`).
+  if (args.json && args.o === "-") return stdoutJsonConflict("compile");
 
   let source: string;
   try {
@@ -98,9 +103,7 @@ export async function cmdCompile(args: Args): Promise<number> {
   const bytes = r.bytes;
   const diagnostics = r.diagnostics;
 
-  // Resolve output target. In JSON mode keep stdout clean: redirect `-` to a file.
-  let target = args.o ?? defaultOut(input, format);
-  if (args.json && target === "-") target = defaultOut(input === "-" ? "-" : input, format);
+  const target = args.o ?? defaultOut(input, format);
 
   // `--error-svg` produced an error-card image for a *broken* plan: write it (so an
   // agent/embed has visual feedback) but keep the user-source exit code and report
@@ -226,6 +229,7 @@ export async function cmdPreview(args: Args): Promise<number> {
   if (args.ascii) return cmdPreviewAscii(args, input);
 
   const format: Format = "png";
+  if (args.json && args.o === "-") return stdoutJsonConflict("preview");
   // Target a sensible on-screen size by default: the native render is high-res
   // (thousands of px), so render the page at ~1600px wide unless the caller set
   // an explicit width/scale. That keeps the PNG legible *and* small enough for an
@@ -267,8 +271,7 @@ export async function cmdPreview(args: Args): Promise<number> {
 
   const errored = hasErrors(r.diagnostics);
 
-  let target = args.o ?? defaultOut(input, format);
-  if (args.json && target === "-") target = defaultOut(input === "-" ? "-" : input, format);
+  const target = args.o ?? defaultOut(input, format);
 
   // `--error-svg`: rasterized error-card PNG for a broken plan — write it, but keep
   // the user-source exit code and report the diagnostics.
@@ -343,8 +346,16 @@ export async function cmdBatch(args: Args): Promise<number> {
   if (inputs.length === 0) return usageError("batch needs at least one input file");
   const format = parseFormat(args);
   if (!format) return usageError(`unknown format "${args.format}" (use ${FORMAT_LIST})`);
+  // `batch -o` is an output DIRECTORY and `batch` writes one file per input, so there is
+  // no single stream `-` could mean — with or without `--json`. It used to be dropped on
+  // the floor (outputs landing next to each input, unannounced); say so instead.
+  if (args.o === "-")
+    return usageErrorFor(
+      "batch",
+      "`-o -` is not a batch target: -o takes an output DIRECTORY and batch writes one file per input — give a directory, or omit -o to write alongside each input",
+    );
 
-  const outDir = args.o && args.o !== "-" ? args.o : undefined;
+  const outDir = args.o;
   const targetFor = (input: string): string =>
     outDir ? resolvePath(outDir, basename(input).replace(/\.arch$/i, "") + "." + format) : defaultOut(input, format);
 
@@ -385,6 +396,7 @@ export async function cmdMd(args: Args): Promise<number> {
   const format = parseFormat(args);
   if (!format) return usageError(`unknown format "${args.format}" (use ${FORMAT_LIST})`);
   if (format !== "svg" && format !== "png") return usageError(`md supports -f svg or png (got "${format}")`);
+  if (args.json && args.o === "-") return stdoutJsonConflict("md");
 
   let md: string;
   try {
@@ -393,10 +405,9 @@ export async function cmdMd(args: Args): Promise<number> {
     return ioError(`cannot read ${input}`, args.json);
   }
 
-  // Output target: default `<name>.out.md`; in JSON mode never stream to stdout.
-  let target = args.o ?? (input === "-" ? "out.md" : resolvePath(input).replace(/\.md$/i, "") + ".out.md");
-  if (args.json && target === "-")
-    target = input === "-" ? "out.md" : resolvePath(input).replace(/\.md$/i, "") + ".out.md";
+  // Output target: default `<name>.out.md` (`-o -` streams it, and cannot be combined
+  // with `--json` — rejected above).
+  const target = args.o ?? (input === "-" ? "out.md" : resolvePath(input).replace(/\.md$/i, "") + ".out.md");
   const outAbs = target === "-" ? resolvePath("out.md") : resolvePath(target);
   const outDir = dirname(outAbs);
   const outBase = basename(outAbs).replace(/\.[^.]+$/, "");

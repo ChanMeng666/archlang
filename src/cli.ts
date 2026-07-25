@@ -7,7 +7,9 @@
  * deterministic — `0` ok · `2` user-source error (don't blindly retry) · `1`
  * internal/IO · `3` bad usage — and every JSON diagnostic carries the catalog `fix`,
  * so the self-correction loop needs no docs lookup. Source can come from a file or
- * from stdin (`-`), and artifacts can go to stdout (`-o -`).
+ * from stdin (`-`), and artifacts can go to stdout (`-o -`) — but not together with
+ * `--json`, whose envelope owns stdout: that combination is a usage error (exit 3),
+ * never a quiet redirect to a file the caller never named.
  *
  * Verbs:
  *   compile   render a plan to SVG/DXF/PDF/PNG
@@ -26,8 +28,8 @@
  * in `src/` gets its environment via the `World` seam.
  */
 
-import { EXIT, VERSION, allowedFlags, parseArgs, usageError } from "./cli/io.js";
-import { findCommand, renderCommandHelp, renderTopHelp, usageLine } from "./cli/help.js";
+import { EXIT, VERSION, allowedFlags, parseArgs, usageError, usageErrorFor } from "./cli/io.js";
+import { findCommand, renderCommandHelp, renderTopHelp } from "./cli/help.js";
 import { buildManifest, MANIFEST_COMMAND_NAMES } from "./manifest.js";
 import { closest } from "./expr.js";
 import { cmdBatch, cmdCompile, cmdMd, cmdPreview, cmdWatch } from "./cli/commands-render.js";
@@ -87,9 +89,7 @@ async function main(): Promise<void> {
     const bad = args.unknownFlags[0]!;
     const hint = closest(bad, allowedFlags(command));
     const mean = hint ? ` — did you mean \`${hint}\`?` : "";
-    const code = usageError(`unknown flag "${bad}" for \`arch ${command.name}\`${mean}`);
-    process.stderr.write(`usage: ${usageLine(command)}   (try \`arch ${command.name} --help\`)\n`);
-    process.exit(code);
+    process.exit(usageErrorFor(command.name, `unknown flag "${bad}" for \`arch ${command.name}\`${mean}`));
   }
 
   switch (cmd) {

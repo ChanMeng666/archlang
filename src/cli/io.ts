@@ -18,6 +18,7 @@ import {
   ERROR_CATALOG,
 } from "../index.js";
 import type { Diagnostic, World, ExportFormat, ManifestCommand, ManifestFlag } from "../index.js";
+import { findCommand, usageLine } from "./help.js";
 
 export type Format = ExportFormat;
 /** Known `-f` ids and the "svg, dxf, pdf, or png" usage phrasing, from the one table. */
@@ -314,6 +315,33 @@ export const asciiCharset = (args: Args): "unicode" | "ascii" => (args.charset =
 export function usageError(msg: string): number {
   process.stderr.write(`error: ${msg}\n`);
   return EXIT.USAGE;
+}
+
+/**
+ * The exit-3 shape `main` uses for a rejected flag: `error: <msg>` followed by the
+ * manifest-derived `usage:` echo and the `--help` pointer. Exported so a command that
+ * rejects a flag *combination* (which `main` cannot see, because it is not an unknown
+ * token) reports it in exactly the same way — one usage-error path, not two.
+ */
+export function usageErrorFor(command: string, msg: string): number {
+  const code = usageError(msg);
+  const c = findCommand(buildManifest(VERSION), command);
+  if (c) process.stderr.write(`usage: ${usageLine(c)}   (try \`arch ${c.name} --help\`)\n`);
+  return code;
+}
+
+/**
+ * `-o -` streams the artifact to stdout; `--json` puts its result envelope there. Both
+ * at once is unresolvable — and quietly redirecting the artifact to a default filename
+ * (what `compile`/`preview`/`md` used to do) writes a file the caller never asked for
+ * and never hears about. So it is a loud usage error (exit 3) instead: silent misuse is
+ * exactly what the self-describing CLI surface exists to prevent.
+ */
+export function stdoutJsonConflict(command: string): number {
+  return usageErrorFor(
+    command,
+    "`-o -` (stream to stdout) conflicts with --json (the JSON envelope owns stdout) — drop --json or give `-o <file>`",
+  );
 }
 
 export function ioError(msg: string, json?: boolean, extra?: Record<string, unknown>): number {
