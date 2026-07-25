@@ -7,6 +7,112 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-07-25
+
+Professional-drawing-quality round: six independent defects and gaps found by reading the rendered
+output against how the drawings are actually produced and read — GB/T 50104 dimensioning, wall-face
+referencing, fixture orientation — rather than against the test suite, which was green throughout.
+`compile()` stays pure, synchronous and deterministic; the language gains one keyword (`flush`) and
+one statement form (`dim faces` / `dim clear`).
+
+**Rendering output changes for two existing inputs** (no API break, but regenerate any golden you
+keep): `dims auto` now emits GB/T exterior dimension chains instead of per-room centerline dims, and
+cased openings / interior doorways no longer paint an opaque band across the floor.
+
+### Added
+
+- **`flush` — wall-face-referenced in-room placement.** A room's rectangle is drawn on wall
+  *centerlines*, so `furniture wc in r_bath anchor bottom` put the piece half a wall thickness inside
+  the solid (a built-in `W_FURNITURE_WALL_COLLISION`); the workaround was to hand-compute the
+  half-thickness of a wall you never named. `flush` changes what `inset` is measured **from** — for each
+  anchored edge that has a wall behind it, the reference becomes that wall's **inner face** instead of
+  the room rectangle's edge — not what `inset` means (it still defaults to `0`, so
+  `anchor bottom flush inset 50` is 50 mm off the face). It applies per edge independently, so a corner
+  anchor can be flush on one edge and room-referenced on the other, and an anchored edge with no wall
+  behind it simply keeps the room reference (a no-op, not an error). It composes with the derived
+  rotation below — both ask the same "is there a wall behind this edge?" question, so they can never
+  disagree about which wall the piece is on. Needs an anchored edge: `centered` touches none, which is
+  the new catalogued **`E_FURN_FLUSH`**, reported on the `flush` keyword's own span.
+- **`dim faces` / `dim clear` — let the walls place the endpoints.** Each endpoint is pushed along the
+  measurement axis, away from the other, onto the outer (`faces`) or inner (`clear`) face of the wall it
+  runs into, so `dim faces (0,4000)->(5000,4000)` prints the outside-to-outside 5200 and `dim clear`
+  the 4800 clear width, with no hand arithmetic. Only segments *perpendicular* to the measurement are
+  candidates; closed-form and idempotent. An endpoint with no wall across the axis keeps its written
+  coordinate and raises the new advisory **`W_DIM_NO_WALL`**.
+- **Fixture orientation is derived for room-anchored placement, and `W_FIXTURE_BACK_TO_ROOM` flags what
+  isn't.** Fixture glyphs draw with their back on the top edge of the footprint, so which way a WC's
+  cistern (or a basin's tap, or a counter's nosing) faces is entirely its quarter-turn `rotate` — and
+  only `against wall` ever derived one. `in <room> anchor <edge>` now derives it too, closed-form and
+  only when the answer is **unique** ([ADR 0005](docs/adr/0005-facts-and-lint-not-an-architect.md)):
+  the anchored edge must be walled *and* the footprint's aspect must allow that edge as a back (a
+  400 × 700 WC is 400 along the wall and 700 deep, so only a horizontal edge can be its back). An
+  explicit `rotate` always wins. `W_FIXTURE_BACK_TO_ROOM` is the new advisory for a fixture that *is*
+  against a wall but faces its back into the room — distinct from `W_FIXTURE_FLOATING`, which still owns
+  "touches no wall at all" — and carries a machine-applicable `rotate <n>` fix that rewrites an
+  authored clause or inserts one before the trailing `in <room>`. A rotation-symmetric symbol
+  (`shower`) never fires and is never turned. The back-edge ⇄ quarter-turn mapping, per-edge wall
+  backing and the footprint-aspect constraint now live once, in `src/fixture-orientation.ts`.
+- **`W_DIM_INSIDE`** — a hand dim whose line lands inside the room-extents box, almost always reversed
+  endpoints (the offset runs along the left normal of from→to). The machine-applicable fix **swaps
+  them**, re-emitted from the AST so authored expressions and interpolated `text` survive. One warning
+  per source statement. Zero hits across `examples/` and `eval/goldens/`.
+- **`describe()` appends `bbox_outer`** — the outer-face extent (studio: 7200 × 6200). `bbox` stays
+  centerline and normative; both are documented in [`docs/analysis.md`](docs/analysis.md).
+- **`arch repair` gains an orientation pass** and `RepairChange.kind: "rotated"` (append-only, with
+  `fromRotate`/`toRotate`), rendered as `rotated wc#1 0° → 180°` in the change log. It runs after every
+  position is final, reports instead of guessing when no single wall is the back, and moves nothing —
+  so the circulation guard has nothing to re-check.
+
+### Changed
+
+- **`dims auto` is now GB/T 50104 exterior dimensioning.** It measured the wrong thing in the wrong
+  place: per-room dims measured room *rectangles* (wall centerlines), so every number was short by half
+  a thickness at each end and the witness lines started inside the wall poché. It now emits parallel
+  **chains** per facade — all outside the building, all measured from the **outer wall faces**, stepping
+  outward in fixed `dimFont` slots: openings (every opening edge between the two outer corners →
+  corner · pier · opening · pier · corner) innermost, then the centerline/axis chain (the sorted unique
+  room-boundary coordinates — the classic `4000 · 3000` chain, which **replaces the per-room dims**;
+  `dims auto rooms` emits exactly this), then one overall span outer-face to outer-face. Bottom and left
+  always; top and right when `all` finds openings of their own to chain there. The per-side outer face
+  comes from the nearest wall segment *parallel* to that facade, so per-side thicknesses dimension
+  correctly and a side with no wall falls back to the room extent. Presentation only — the chains never
+  touch the IR, `describe()` or `lint()`.
+- **A cased opening is a door-family void, not glazing, and no longer repaints the floor.** The wall
+  boolean union already severs the wall solid at every registered opening, but `opening.render()` and
+  `door.render()` then painted an **opaque cover polygon** over that gap filled with the page
+  background — a bright white band across the floor either side of every cased opening and every
+  interior doorway (on `examples/themed.arch` the cover stayed `#ffffff` against a `#1e2127` page, so
+  the doorway read as a glowing white slab). The cover is now painted **only when nothing else voided
+  the wall** — a plan with an angled wall drops out of the boolean and falls back to per-segment
+  rectangles that subtract nothing, where the cover is still the sole void mechanism — and is otherwise
+  `fill: "none"` and shrunk to `thickness/2`, kept because the ASCII and DXF backends *locate* the
+  passage by it. Alongside: a new **`openings` render pass** mapped to DXF layer **`A-DOOR`** (it used
+  to ride the `windows` pass, so a passage was filed under `A-GLAZ` and drawn by ASCII as the window
+  glyph `=`; it is now the door-style `·`), and the opening's two solid full-length face lines — which
+  visually re-bridged the very gap the union had opened — become **dashed lintels**, the professional
+  cased-opening convention. Door leaf, swing arc, and `window.ts` are untouched. All five visual
+  goldens move, confined to the door/opening cover bands.
+- **`-o -` combined with `--json` is a usage error (exit 3)** on `compile`, `preview` and `md`. It used
+  to be resolved *silently* in favour of `--json`, so `arch compile - -o - --json` wrote `./out.svg` — a
+  file the caller never named and is never told about. The guards run before any read or render, so
+  nothing is compiled, rasterized or written on the way to the error. `batch -o -` is now rejected with
+  or without `--json` (`batch -o` is an output *directory*; `-o -` used to be dropped on the floor and
+  every render landed next to its input) — a behaviour change for anyone who passed it and relied on
+  that. The non-JSON stream `arch compile plan.arch -o -` is unchanged. One shared `usageErrorFor()` in
+  `src/cli/io.ts` now backs both this and the unknown-flag path.
+- **Dim endpoints are no longer grid-snapped.** A dimension annotates; it is not built, and half a wall
+  thickness is legitimately off-grid. This also makes the Plan JSON round-trip exact (the emitted source
+  is re-resolved with the same grid).
+- **Both public sites moved to the `archlang.uk` custom domain** (Cloudflare DNS + Vercel), live
+  2026-07-15. Docs → `https://archlang.uk` (apex), playground → `https://playground.archlang.uk`. All
+  hard-coded `*.vercel.app` URLs across the site configs, cross-links, OG/Twitter images, agent-context
+  files (`SKILL.md`, `llms.txt`), README permalinks, and CI were swapped; the plan/intent JSON Schema
+  `$id`s moved to `archlang.uk` (edited in `src/plan-json.ts` / `src/intent.ts`, `schemas/*.json`
+  regenerated). Added a VitePress `sitemap.hostname`. The old `*.vercel.app` hosts are kept and
+  **301**-redirect to the new ones (no broken links); the Vercel project and npm workspace names
+  (`archlang-docs`, `archlang-playground`) are unchanged. No change to the published core package's
+  runtime behaviour. Operational recipe: [`docs/hosting-and-domains.md`](docs/hosting-and-domains.md).
+
 ### Fixed
 
 - **`repair()` no longer returns a silent no-op for furniture it cannot see.** Its statement scan read
@@ -34,18 +140,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     \| `placement` \| `rotate`) — and `span`, the statement's byte range. `arch repair`'s human change
     log shows the clause and, on a no-op with a non-empty `unresolved`, says how many problems it
     declined to guess at.
+  - `ANCHOR_BACK_EDGES` moved into `src/fixture-orientation.ts`, so resolve's placement arithmetic and
+    repair's inverse read one table — the `flush` inset reference frame cannot drift from the derivation.
+- **`dims auto` drew interior dimensions inside the building.** Any room touching no perimeter fell
+  through to a fallback that placed its dimension *on top of the plan*, contradicting the documented
+  "placed in the page margin" promise (reproducible on `eval/goldens/bungalow.arch`, where the hall and
+  bath numbers landed over the rooms). The GB/T chains above are all exterior by construction.
+- **A zero-offset dim no longer emits two zero-length witness lines** (wall-thickness call-outs at
+  `offset 0` emitted one pair each).
+- **Four shipped examples printed dimension text the building is not.** `examples/two-bed.arch` said
+  `10000` where its walls measure `10300`; `two-bed`, `relational`, `themed` and `imports` are converted
+  to `dim faces` with the hardcoded `text` deleted, so the numbers are now derived → `10300 × 8300`,
+  `8200`, `6250`, `5200`. `studio.arch` and `parametric.arch` keep their hand dims deliberately (already
+  correct, deliberately centerline, or carrying computed text).
+- **`examples/studio.arch`'s WC faced the wrong way and linted clean.** Line 52 read
+  `furniture wc at (5200,5200) size 400x700   # back to the south wall` while drawing the cistern *into*
+  the room — and because `frontClearanceRect` is rotation-aware, the WC's activity clearance was being
+  computed inside the wall. It is now `in r_bath anchor bottom flush`, so `rotate 180` is derived and the
+  position is byte-identical to the hand-computed one it replaces. The flagship stays lint-clean and
+  import-free.
 
-### Changed
+### Internal
 
-- **Both public sites moved to the `archlang.uk` custom domain** (Cloudflare DNS + Vercel), live
-  2026-07-15. Docs → `https://archlang.uk` (apex), playground → `https://playground.archlang.uk`. All
-  hard-coded `*.vercel.app` URLs across the site configs, cross-links, OG/Twitter images, agent-context
-  files (`SKILL.md`, `llms.txt`), README permalinks, and CI were swapped; the plan/intent JSON Schema
-  `$id`s moved to `archlang.uk` (edited in `src/plan-json.ts` / `src/intent.ts`, `schemas/*.json`
-  regenerated). Added a VitePress `sitemap.hostname`. The old `*.vercel.app` hosts are kept and
-  **301**-redirect to the new ones (no broken links); the Vercel project and npm workspace names
-  (`archlang-docs`, `archlang-playground`) are unchanged. No change to the published core package's
-  runtime behaviour. Operational recipe: [`docs/hosting-and-domains.md`](docs/hosting-and-domains.md).
+- `eval/results.md` regenerated (offline, no API call) after `W_FIXTURE_BACK_TO_ROOM`: **sound 25/26
+  (96%) → 8/26 (31%)**, valid and intent unchanged at 100%, header still judge v2 · synonyms v1, so the
+  rates stay comparable. The drop is the new advisory rule surfacing a **real systematic model failure**,
+  not a regression — of the 39 warnings the goldens now raise, 38 are `W_FIXTURE_BACK_TO_ROOM`
+  (model-authored plans put a WC's cistern or a basin's tap facing the room). No golden `.arch`,
+  `JUDGE_VERSION`, rubric or corpus entry was touched; `eval/judge-fixture.json` was re-pinned in its own
+  commit after verifying field-by-field that **only `Score.lintWarnings` moved**.
+- `mergedLength` moved to `geometry/rect.ts` so both edge-coverage scans share it; new
+  `RenderCtx.openingsVoided` (optional, derived from wall geometry only — never from backend presence,
+  so output stays byte-identical with and without a registered geometry backend).
+- Suite: **1269 tests across 113 files** (was 1159), including `test/fixture-orientation.test.ts`,
+  `test/furniture-flush.test.ts`, `test/opening.test.ts` and `test/repair-coverage.test.ts`.
+- **`@chanmeng666/archlang-mcp` 0.2.1 → 0.2.2** — no code change; the shim carries two unpublished
+  prose/metadata edits from the 1.18.0 → 1.19.0 window (the npm README's `suggest` row rewritten for
+  the stable-ref emission, and `server.json`'s `websiteUrl` moved to `https://archlang.uk`), and the
+  release workflow `npm view`-skips a version that already exists — so an unbumped edit would never
+  have reached npm or the MCP registry. Its `^1.14.0` core range already covers 1.19.0.
 
 ## [1.18.0] - 2026-07-15
 
@@ -207,7 +340,7 @@ default SVG output is byte-identical throughout.
   code changed; re-running the paid live baseline under the new prompt stays a separate, owner-approved action
   (default: not run).
 
-## [Unreleased]
+## [Unversioned] - 2026-07-13
 
 Repo tooling only — **no core code change; the published core stays at 1.15.0** (no new tag, no
 release). Roadmap Tranche 5.
