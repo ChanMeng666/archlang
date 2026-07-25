@@ -515,6 +515,8 @@ function rotateNode(n: SceneNode, c: Point, deg: number): SceneNode {
       return { ...n, prim: { ...prim, a: rp(prim.a), b: rp(prim.b) } };
     case "text":
       return { ...n, prim: { ...prim, at: rp(prim.at) } };
+    case "circle":
+      return { ...n, prim: { ...prim, center: rp(prim.center) } };
     default:
       return n;
   }

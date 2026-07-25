@@ -116,6 +116,8 @@ function serialize(node: SceneNode, sizes: RenderSizes): string {
       return `<path d="${regionPath(prim.region)}"${pathPaint(paint, width, dash)}/>`;
     case "arc":
       return `<path d="M ${pt(prim.start)} A ${fmt(prim.r)} ${fmt(prim.r)} 0 0 ${prim.sweep} ${pt(prim.end)}"${pathPaint(paint, width, dash)}/>`;
+    case "circle":
+      return `<circle cx="${fmt(prim.center.x)}" cy="${fmt(prim.center.y)}" r="${fmt(prim.r)}"${pathPaint(paint, width, dash)}/>`;
     case "text": {
       const weight = prim.weight !== undefined ? ` font-weight="${prim.weight}"` : "";
       const transform =

@@ -78,6 +78,11 @@ function pointsOf(prim: ScenePrim): Point[] {
       return prim.region.flat();
     case "arc":
       return [prim.start, prim.end, prim.center];
+    case "circle":
+      return [
+        { x: prim.center.x - prim.r, y: prim.center.y - prim.r },
+        { x: prim.center.x + prim.r, y: prim.center.y + prim.r },
+      ];
     case "text":
       return [prim.at];
   }

@@ -5,6 +5,7 @@ import { lex } from "./lexer.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type {
   AssignNode,
+  AxesNode,
   ComponentDef,
   ExprPoint,
   ForNode,
@@ -248,6 +249,14 @@ class Parser {
             plan.title = n;
             break;
           }
+          case "axes": {
+            const n = this.parseAxes();
+            n.span = plan.axes?.span ?? this.spanFrom(start);
+            // Repeated blocks merge (both lists append), like `theme`; the first
+            // block's span is kept so the formatter re-emits one block in place.
+            plan.axes = plan.axes ? { ...plan.axes, x: [...plan.axes.x, ...n.x], y: [...plan.axes.y, ...n.y] } : n;
+            break;
+          }
           case "accTitle":
             this.next();
             if (plan.accTitle !== undefined) this.warnDupAcc("accTitle", t);
@@ -429,6 +438,34 @@ class Parser {
           break;
         default:
           this.fail(`Unknown title field "${t.value}"`, t);
+      }
+    }
+    this.eat("rcurly");
+    return node;
+  }
+
+  /**
+   * `axes { x at <expr>, <expr>, … y at <expr>, … }` — plan-level positioning axes
+   * (定位轴线). One row per direction, each row a comma-separated expression list;
+   * rows may repeat and appear in either order (they append). `at` is the existing
+   * attribute keyword, so no new token enters the grammar beyond `axes` itself.
+   */
+  private parseAxes(): AxesNode {
+    const kw = this.eatKeyword("axes");
+    this.eat("lcurly");
+    const node: AxesNode = { x: [], y: [], line: kw.line };
+    while (!this.isType("rcurly") && !this.isType("eof")) {
+      const t = this.peek();
+      if (t.type !== "ident" || (t.value !== "x" && t.value !== "y")) {
+        this.fail(`Expected an axis direction ("x" or "y") but found ${describe(t)}`, t);
+      }
+      this.next();
+      this.eatKeyword("at");
+      const into = t.value === "x" ? node.x : node.y;
+      into.push(parseExprPratt(this.ctx));
+      while (this.isType("comma")) {
+        this.next();
+        into.push(parseExprPratt(this.ctx));
       }
     }
     this.eat("rcurly");

@@ -68,6 +68,14 @@ class DxfBuilder {
     this.pair(51, num(endDeg));
   }
 
+  /** A native CIRCLE entity (an axis bubble), so CAD sees a circle, not two arcs. */
+  circle(layer: string, center: Point, radius: number, ltype?: string): void {
+    this.begin("CIRCLE", layer, ltype);
+    this.pair(10, num(center.x));
+    this.pair(20, num(-center.y));
+    this.pair(40, num(radius));
+  }
+
   text(layer: string, at: Point, height: number, value: string, ltype?: string): void {
     this.begin("TEXT", layer, ltype);
     this.pair(10, num(at.x));
@@ -135,6 +143,7 @@ class DxfBuilder {
 const AIA_LAYERS: { name: string; color: number }[] = [
   { name: "A-WALL", color: 7 },
   { name: "A-FLOR", color: 8 },
+  { name: "A-GRID", color: 4 },
   { name: "A-FURN", color: 3 },
   { name: "A-COLS", color: 1 },
   { name: "A-DOOR", color: 4 },
@@ -218,6 +227,9 @@ function emit(b: DxfBuilder, node: SceneNode): void {
       b.arc(layer, prim.center, prim.r, a0, a1, lt);
       break;
     }
+    case "circle":
+      b.circle(layer, prim.center, prim.r, lt);
+      break;
     case "text":
       b.text(layer, prim.at, prim.size, prim.value, lt);
       break;

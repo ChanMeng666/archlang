@@ -101,6 +101,10 @@ function drawNode(doc: any, node: SceneNode, theme: Theme): void {
       doc.path(`M ${prim.start.x} ${prim.start.y} A ${prim.r} ${prim.r} 0 0 ${prim.sweep} ${prim.end.x} ${prim.end.y}`);
       applyPaint(doc, paint, theme);
       break;
+    case "circle":
+      doc.circle(prim.center.x, prim.center.y, prim.r);
+      applyPaint(doc, paint, theme);
+      break;
     case "text":
       drawText(doc, prim.at, prim.value, prim.size, prim.anchor, prim.rotate, fillColor(paint, theme) ?? "#000000");
       break;

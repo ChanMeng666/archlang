@@ -59,6 +59,8 @@ export type {
   DoorSummary,
   WindowSummary,
   FurnitureSummary,
+  AxesSummary,
+  AxisSummary,
   FreedomReport,
   FreedomElement,
   RoomPlacement,
@@ -196,12 +198,16 @@ export type {
   RFurniture,
   RDim,
   RColumn,
+  RAxis,
 } from "./ir.js";
 // Scene IR (the backend-neutral drawing target) + its builder. Backends consume
 // a Scene: `toDxf(scene)` / `toPdf(scene)`; build one with `toScene(ir)` or read
 // `compile().scene`.
 export { toScene } from "./scene-build.js";
 export type { Scene, SceneNode, ScenePrim, Paint, RenderPass, RenderSizes, LineWeight, LineType } from "./scene.js";
+// Positioning axes (定位轴线): the GB/T numbering rules, exposed so a tool can label an
+// axis grid the same way the drawing does (`ir.axes` already carries the labels).
+export { numberAxes, axisLetter, AXIS_LETTERS } from "./axes.js";
 export { toDxf } from "./export/dxf.js";
 export { toPdf } from "./export/pdf.js";
 // PNG raster backend (v1.0). Rasterizes the Scene's SVG with the OPTIONAL,

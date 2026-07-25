@@ -14,7 +14,7 @@
 # Deterministic bytes (no version / date).
 
 root ::= ws "plan" rws string ws "{" ws ( plan-stmt ws )* "}" ws
-plan-stmt ::= setting | title-stmt | acc-stmt | theme-stmt | style-stmt | component-stmt | import-stmt | strip-stmt | block-stmt
+plan-stmt ::= setting | title-stmt | axes-stmt | acc-stmt | theme-stmt | style-stmt | component-stmt | import-stmt | strip-stmt | block-stmt
 block-stmt ::= element | let-stmt | for-stmt | if-stmt | while-stmt | set-stmt | instance-stmt | assign-stmt
 element ::= wall-stmt | room-stmt | door-stmt | window-stmt | opening-stmt | furniture-stmt | dim-stmt | column-stmt
 setting ::= units-stmt | grid-stmt | scale-stmt | north-stmt | dims-stmt
@@ -28,6 +28,8 @@ dims-mode ::= "overall" | "rooms" | "walls" | "all"
 acc-stmt ::= ( "accTitle" | "accDescr" ) rws string
 title-stmt ::= "title" ws "{" ws ( title-field ws )* "}"
 title-field ::= ( "project" | "drawn_by" | "date" ) rws string
+axes-stmt ::= "axes" ws "{" ws ( axes-row ws )* "}"
+axes-row ::= ( "x" | "y" ) rws "at" ws expr ( ws "," ws expr )*
 theme-stmt ::= "theme" ( rws "from" rws string | rws ident ( ws theme-block )? | ws theme-block )
 theme-block ::= "{" ws ( theme-entry ws )* "}"
 theme-entry ::= ident ws ":"? ws config-value

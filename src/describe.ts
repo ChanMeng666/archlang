@@ -144,6 +144,25 @@ export interface FreedomReport {
   elements: FreedomElement[];
 }
 
+/** One positioning axis as a fact: where the datum is and what it is called. */
+export interface AxisSummary {
+  /** mm along the axis's own direction (x for a vertical axis, y for a horizontal one). */
+  pos: number;
+  /** The GB/T label drawn in its bubble — derived from position, never authored. */
+  label: string;
+}
+
+/**
+ * The plan's declared **positioning axes** (定位轴线), in label order: `x` numbered
+ * `1 2 3 …` left-to-right, `y` lettered `A B C …` bottom-to-top (so `y[0]` is `A`, the
+ * BOTTOM-most axis — +y points down). Absent from the summary entirely when the plan
+ * declares no axes, so existing summaries are unchanged.
+ */
+export interface AxesSummary {
+  x: AxisSummary[];
+  y: AxisSummary[];
+}
+
 /** The semantic summary of a plan. `ok` is false when fatal errors prevented
  *  resolution; inspect `diagnostics` in that case (the lists will be empty). */
 export interface SceneSummary {
@@ -182,6 +201,13 @@ export interface SceneSummary {
    * coordinates and `bbox_outer` when quoting the building's size.
    */
   bbox_outer: { w: number; h: number };
+  /**
+   * The plan's positioning axes (定位轴线) — the datum grid every GB/T dimension is read
+   * from, with the labels the drawing prints. Present only when the plan declares an
+   * `axes` block; read it to know which coordinates are structural datums (and, with
+   * `dims auto rooms|all`, what the middle dimension chain measures).
+   */
+  axes?: AxesSummary;
   rooms: RoomSummary[];
   doors: DoorSummary[];
   windows: WindowSummary[];
@@ -487,6 +513,14 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     ...(ir.scale !== undefined ? { scale: ir.scale } : {}),
     bbox,
     bbox_outer,
+    ...(ir.axes && ir.axes.length > 0
+      ? {
+          axes: {
+            x: ir.axes.filter((a) => a.axis === "x").map((a) => ({ pos: a.pos, label: a.label })),
+            y: ir.axes.filter((a) => a.axis === "y").map((a) => ({ pos: a.pos, label: a.label })),
+          },
+        }
+      : {}),
     rooms,
     doors,
     windows,

@@ -1,0 +1,28 @@
+# A two-bay shell on a declared GB/T positioning-axis grid (定位轴线), with the
+# automatic three-chain exterior dimensioning so the middle chain becomes the
+# axis chain. Test fixture only — the shipped examples stay axis-free.
+plan "Axis Grid" {
+  units mm
+  north up
+  dims auto all
+
+  let BAY = 4000
+
+  axes {
+    x at 0, BAY, 2 * BAY
+    y at 0, 3000
+  }
+
+  wall id=shell exterior thickness 200 {
+    (0,0) (8000,0) (8000,3000) (0,3000) close
+  }
+  wall partition thickness 100 {
+    (4000,0) (4000,3000)
+  }
+
+  room id=left at (0,0) size 4000x3000 label "Left" uses living
+  room id=right at (4000,0) size 4000x3000 label "Right" uses bedroom
+
+  door on shell at 20% width 900
+  window at (2000,0) width 1200
+}
