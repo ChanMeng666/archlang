@@ -14,6 +14,8 @@
 import type { Point, TitleNode } from "./ast.js";
 import type { Bounds } from "./geometry.js";
 import type { SceneNode } from "./scene.js";
+import type { LegendEntry, RoomSchedule, SheetTables } from "./sheet-tables.js";
+import { layoutSheetTables, translateSheetTables } from "./sheet-tables.js";
 
 /**
  * Chrome geometry as fractions of the drawing's reference dimension. Named (rather
@@ -76,6 +78,16 @@ export interface ChromeLayout {
   margin: PageMargins;
   scaleBar: ScaleBarBox;
   titleBlock: TitleBlockBox | null;
+  /**
+   * The opt-in sheet tables (`schedule rooms` / `legend`), laid out in a row **below**
+   * the scale bar + title block band — or just **above** it once the band is re-anchored
+   * to a paper sheet's corners (see {@link anchorChromeToSheet}). Absent entirely when
+   * the plan opts into neither, so an existing drawing's chrome object — and therefore
+   * its bytes — is unchanged. Named `tables` rather than `sheet` to keep it clear of the
+   * paper layer's {@link import("./scene.js").SceneSheet}, a different thing entirely.
+   * Lowered to Scene primitives by `sheetTableNodes`, not by the backends.
+   */
+  tables?: SheetTables;
 }
 
 export interface ChromeInput {
@@ -86,6 +98,10 @@ export interface ChromeInput {
   nodes: readonly SceneNode[];
   title?: TitleNode;
   scale?: string;
+  /** Room-schedule rows when the plan set `schedule rooms` (see `sheet-tables.ts`). */
+  schedule?: RoomSchedule | null;
+  /** Derived legend rows when the plan set `legend`. */
+  legend?: readonly LegendEntry[] | null;
 }
 
 /** The title-block rows that exist (project/drawn-by/date, plus scale if present). */
@@ -150,7 +166,8 @@ export function dimReach(
 /**
  * Lay out the bottom chrome. The scale bar (bottom-left) and title block
  * (bottom-right) share a band that starts just below the deepest bottom dimension,
- * and the returned `bottomMargin` is grown so both fit inside the page.
+ * the opt-in sheet tables sit in a second row below that band, and the returned
+ * margins are grown so everything fits inside the page.
  */
 export function layoutChrome(input: ChromeInput): ChromeLayout {
   const { bounds: b, refDim, baseMargin, nodes } = input;
@@ -189,13 +206,26 @@ export function layoutChrome(input: ChromeInput): ChromeLayout {
     titleBottom = bandTop + h;
   }
 
+  // Sheet tables (`schedule rooms` / `legend`) — a second row under the band. They are
+  // annotation-pass geometry, so they never feed `dimReach`; instead their extent grows
+  // the bottom/right margins directly here. Null when the plan opted into neither, in
+  // which case every expression below reduces to exactly the pre-v1.20 arithmetic.
+  const bandBottom = Math.max(scaleBottom, titleBottom);
+  const tables = layoutSheetTables({
+    bounds: b,
+    refDim,
+    top: bandBottom + gap,
+    schedule: input.schedule ?? null,
+    legend: input.legend ?? null,
+  });
+
   const margin: PageMargins = {
     top: Math.max(baseMargin, reach.top + gap),
-    right: Math.max(baseMargin, reach.right + gap),
-    bottom: Math.max(baseMargin, Math.max(scaleBottom, titleBottom) - b.maxY + gap),
+    right: Math.max(baseMargin, Math.max(reach.right, tables ? tables.right - b.maxX : 0) + gap),
+    bottom: Math.max(baseMargin, Math.max(bandBottom, tables ? tables.bottom : bandBottom) - b.maxY + gap),
     left: Math.max(baseMargin, reach.left + gap),
   };
-  return { margin, scaleBar, titleBlock };
+  return { margin, scaleBar, titleBlock, ...(tables ? { tables } : {}) };
 }
 
 /**
@@ -218,26 +248,38 @@ export function chromeBandDepth(refDim: number, titleRowCount: number): number {
  * a real sheet reads, and it is only reachable in paper mode (`src/sheet.ts`), where a
  * fixed page exists to anchor to.
  *
- * Applied ONLY when the corner band is clear of `contentBottom` (the laid-out drawing
- * plus its grown margins), so re-anchoring can never drop the title block on top of
- * the plan; the caller keeps the drawing-anchored layout otherwise. Pure: returns a new
- * layout, margins untouched (they already sized the content box).
+ * The opt-in sheet tables move with the band, but to the row **above** it (nothing fits
+ * below the sheet's bottom corners), left-aligned on the same margin — where a
+ * draughtsman stacks a schedule. So the whole bottom assembly stays one block whichever
+ * anchoring wins.
+ *
+ * Applied ONLY when that whole assembly — the corner band plus any table row above it —
+ * is clear of `contentBottom` (the laid-out drawing plus its grown margins), so
+ * re-anchoring can never drop the title block or a table on top of the plan; the caller
+ * keeps the drawing-anchored layout otherwise. Pure: returns a new layout, margins
+ * untouched (they already sized the content box).
  */
 export function anchorChromeToSheet(
   chrome: ChromeLayout,
   page: { x: number; y: number; w: number; h: number },
   margin: number,
   contentBottom: number,
+  refDim: number,
 ): ChromeLayout {
+  const gap = refDim * GAP_F;
   const bandH = Math.max(chrome.scaleBar.hgt + chrome.scaleBar.fs * SCALEBAR_LABEL_F, chrome.titleBlock?.h ?? 0);
   const bandTop = page.y + page.h - margin - bandH;
-  if (bandTop < contentBottom) return chrome;
+  const t = chrome.tables;
+  // The table row sits a gap above the band; its top is what must clear the drawing.
+  const tablesTop = t ? bandTop - gap - (t.bottom - t.top) : bandTop;
+  if (Math.min(bandTop, tablesTop) < contentBottom) return chrome;
   return {
     margin: chrome.margin,
     scaleBar: { ...chrome.scaleBar, x0: page.x + margin, y0: bandTop },
     titleBlock: chrome.titleBlock
       ? { ...chrome.titleBlock, x0: page.x + page.w - margin - chrome.titleBlock.w, y0: bandTop }
       : null,
+    ...(t ? { tables: translateSheetTables(t, page.x + margin - t.left, tablesTop - t.top) } : {}),
   };
 }
 

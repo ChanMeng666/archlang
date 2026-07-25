@@ -249,6 +249,31 @@ coordinates that are *meant* to be structural, and with `dims auto rooms|all` th
 also the ticks of the middle dimension chain — so moving a room boundary that sits on
 an axis changes a dimension a human is reading off the grid.
 
+## The room schedule — the drawn table, as data
+
+When the plan sets [`schedule rooms`](language-reference.md#sheet-tables--room-schedule--legend),
+`describe().schedule` reports the ROOM SCHEDULE **exactly as the sheet draws it** — so an
+agent can read the numbered table it just rendered without OCR'ing the image. The key is
+**absent entirely** when the plan does not opt in, so an existing summary is unchanged.
+
+```json
+"schedule": [
+  { "no": "01", "id": "living", "name": "Living", "area_m2": 12 },
+  { "no": "02", "id": "bath",   "name": "bath",   "area_m2": 9 }
+]
+```
+
+- `no` is the drawn number: 1-based **source order**, zero-padded to one uniform width
+  across the table (`01`…`09`, `001`…`100`) — cite it the way a reviewer will ("room 02").
+- `name` is the room's `label`, falling back to its `id` when unlabelled (`bath` above).
+- `area_m2` is byte-identical to that room's `rooms[].area_m2`, and the drawn `TOTAL` row
+  is `totals.floor_area_m2` — one derivation feeds both the drawing and this JSON, so the
+  table on the sheet and the facts here can never disagree.
+
+The `legend` setting has **no counterpart here**, deliberately: it is pure rendering, and
+every fact it shows (the wall materials, the fixture categories placed) is already in
+`furniture` and the source.
+
 ## Freedom — how constrained the plan is
 
 `describe().freedom` is a **degrees-of-freedom report**: for every placed element,

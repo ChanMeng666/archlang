@@ -334,6 +334,8 @@ export function formatPlan(plan: PlanNode, source: string): string {
   if (plan.scale) settings.push(`scale ${plan.scale}`);
   settings.push(`north ${northStr(plan.north)}`);
   if (plan.autoDims) settings.push(`dims auto ${plan.autoDims}`);
+  if (plan.schedule) settings.push(`schedule ${plan.schedule}`);
+  if (plan.legend) settings.push("legend");
   if (plan.accTitle !== undefined) settings.push(`accTitle ${JSON.stringify(plan.accTitle)}`);
   if (plan.accDescr !== undefined) settings.push(`accDescr ${JSON.stringify(plan.accDescr)}`);
 

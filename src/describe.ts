@@ -44,7 +44,10 @@ import { outerFaceBounds } from "./geometry.js";
 import type { PaperOrientation, PaperSize } from "./sheet.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
 import { roomTypeForUses, buildInputGraph } from "./plan-json.js";
+import { roomSchedule, type ScheduleRow } from "./sheet-tables.js";
 import { fmt2 } from "./num-format.js";
+
+export type { ScheduleRow } from "./sheet-tables.js";
 
 export type { CirculationModel, RoomCirculation, CirculationRoute } from "./analyze/circulation.js";
 
@@ -267,6 +270,17 @@ export interface SceneSummary {
    * absolutely vs derived by the resolver. Facts only — see {@link FreedomReport}.
    */
   freedom: FreedomReport;
+  /**
+   * The ROOM SCHEDULE exactly as the sheet draws it (v1.20) — `{ no, id, name, area_m2 }`
+   * per room in source order, so an agent can read the numbered table it just rendered
+   * without OCR'ing the SVG. Present **only when the plan sets `schedule rooms`**; absent
+   * otherwise, so existing summaries are unchanged. `area_m2` matches
+   * {@link RoomSummary.area_m2} and the drawn TOTAL matches {@link totals}`.floor_area_m2`.
+   * The `legend` setting has no counterpart here on purpose: it is pure rendering, and
+   * every fact it shows (wall materials, furniture categories) is already in `furniture`
+   * and the source.
+   */
+  schedule?: ScheduleRow[];
   /** All problems from parse/link/resolve, with byte spans and codes. */
   diagnostics: Diagnostic[];
 }
@@ -573,6 +587,9 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     totals,
     input_graph: buildInputGraph(roomEls, doorEls, openingEls, tol),
     freedom: buildFreedom(roomEls, doorEls, windowEls, openingEls, furnEls),
+    // The drawn schedule, from the same pure derivation the renderer uses — so the table
+    // in the SVG and this JSON can never disagree. Opt-in only.
+    ...(ir.schedule === "rooms" ? { schedule: roomSchedule(roomEls).rows } : {}),
   };
 }
 

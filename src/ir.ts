@@ -20,6 +20,7 @@ import type {
   RelAlign,
   RelDir,
   RoomNode,
+  ScheduleSubject,
   Statement,
   StripNode,
   TitleNode,
@@ -229,6 +230,13 @@ export interface ResolvedPlan {
    * declares an empty one), so a plan without axes is byte-identical to before.
    */
   axes?: RAxis[];
+  /**
+   * `schedule rooms` — the sheet schedule table the drawing carries. Presentation only:
+   * copied straight from the AST, never derived, and absent unless the plan opts in.
+   */
+  schedule?: ScheduleSubject;
+  /** `legend` — draw the derived materials/fixtures legend. Presentation only. */
+  legend?: boolean;
   title?: TitleNode;
   /** Explicit accessible title (`accTitle "…"`), overriding the plan name in the
    *  accessible-SVG `<title>`. Metadata only — never affects default output. */
@@ -709,6 +717,10 @@ function resolveImpl(
     north: ast.north,
     autoDims: ast.autoDims,
     ...(axes ? { axes } : {}),
+    // Sheet-table opt-ins: presentation flags carried through untouched. Spread so an
+    // opted-out plan has no key at all and the IR stays byte-identical to before.
+    ...(ast.schedule ? { schedule: ast.schedule } : {}),
+    ...(ast.legend ? { legend: true } : {}),
     title: ast.title,
     accTitle: ast.accTitle,
     accDescr: ast.accDescr,

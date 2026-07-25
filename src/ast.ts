@@ -480,6 +480,16 @@ export interface AxesNode {
   span?: Span;
 }
 
+/**
+ * What a `schedule <subject>` statement tabulates. **Only `rooms` exists in v1.20** —
+ * the keyword takes an explicit subject purely so a later release can add `doors`,
+ * `windows` or `finishes` without a second keyword or a breaking respelling. An
+ * unrecognised subject is a parse error with a did-you-mean over this list, never a
+ * silently ignored word.
+ */
+export const SCHEDULE_SUBJECTS = ["rooms"] as const;
+export type ScheduleSubject = (typeof SCHEDULE_SUBJECTS)[number];
+
 export interface PlanNode {
   name: string;
   /** Only "mm" is supported. */
@@ -507,6 +517,16 @@ export interface PlanNode {
   autoDims?: "overall" | "rooms" | "walls" | "all";
   /** `axes { x at … y at … }` — author-declared positioning axes (定位轴线). */
   axes?: AxesNode;
+  /**
+   * `schedule rooms` — draw the ROOM SCHEDULE table in the sheet's bottom band.
+   * Absent unless the plan opts in, so an existing drawing is byte-identical.
+   */
+  schedule?: ScheduleSubject;
+  /**
+   * `legend` — draw the LEGEND table (wall materials + fixture symbols actually used),
+   * derived closed-form from the plan. Absent unless the plan opts in.
+   */
+  legend?: boolean;
   title?: TitleNode;
   /** Explicit accessible title (`accTitle "…"`) — overrides the plan name in the
    *  accessible-SVG `<title>` (`compile(src, { accessible: true })`). Metadata only. */

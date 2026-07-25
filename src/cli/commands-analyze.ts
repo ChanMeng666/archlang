@@ -109,6 +109,7 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "totals",
   "input_graph",
   "freedom",
+  "schedule",
 ];
 
 /** Tally a {@link FreedomReport} bucket without fighting the placement unions. */
