@@ -11,6 +11,7 @@
  */
 
 import type {
+  AxesNode,
   ComponentDef,
   ExprPoint,
   FurnitureNode,
@@ -227,6 +228,16 @@ function titleDoc(title: TitleNode): Doc {
   return concat(["title {", indent(concat([hardline, join(hardline, fields)])), hardline, "}"]);
 }
 
+/** `axes { x at … y at … }` — one row per direction, only the rows that exist.
+ *  Positions keep their authored expressions (`W`, `2*W`), never their values. */
+function axesDoc(axes: AxesNode): Doc {
+  const rows: Doc[] = [];
+  if (axes.x.length) rows.push(`x at ${axes.x.map(exprStr).join(", ")}`);
+  if (axes.y.length) rows.push(`y at ${axes.y.map(exprStr).join(", ")}`);
+  if (rows.length === 0) return "axes { }";
+  return concat(["axes {", indent(concat([hardline, join(hardline, rows)])), hardline, "}"]);
+}
+
 function themeDoc(plan: PlanNode): Doc | undefined {
   if (plan.themeFrom !== undefined) return `theme from ${JSON.stringify(plan.themeFrom)}`;
   const entries = Object.entries(plan.theme ?? {});
@@ -345,6 +356,8 @@ export function formatPlan(plan: PlanNode, source: string): string {
     });
   if (plan.title?.span)
     slots.push({ start: plan.title.span.start, end: plan.title.span.end, block: true, doc: titleDoc(plan.title) });
+  if (plan.axes?.span)
+    slots.push({ start: plan.axes.span.start, end: plan.axes.span.end, block: true, doc: axesDoc(plan.axes) });
   slots.sort((a, b) => a.start - b.start);
 
   const bodyStart = plan.bodyStart ?? 0;

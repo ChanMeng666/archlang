@@ -27,6 +27,7 @@ import type {
   WindowNode,
 } from "./ast.js";
 import { placeRelational } from "./layout.js";
+import { numberAxes } from "./axes.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Env, Expr, Value } from "./expr.js";
 import { asBool, asNum, asStr, closest, evalExpr, exprSpan } from "./expr.js";
@@ -183,6 +184,23 @@ export interface RColumn extends RBase {
 
 export type ResolvedElement = RWall | RRoom | RDoor | RWindow | ROpening | RFurniture | RDim | RColumn;
 
+/**
+ * One resolved **positioning axis** (定位轴线): an author-declared datum line at `pos`
+ * mm, with the label GB/T 50001 gives it. Not a {@link ResolvedElement} — an axis is a
+ * plan-level datum, not a drawable element, so it never enters `elements`, gets no id,
+ * and cannot be referenced by a door/room clause.
+ *
+ * `label` is **always derived** from sorted position by {@link import("./axes.js").numberAxes}
+ * — `"1"`, `"2"`, … for `x`; `"A"`, `"B"`, … for `y`, bottom-to-top.
+ */
+export interface RAxis {
+  axis: "x" | "y";
+  /** x coordinate for an `x` axis, y coordinate for a `y` axis (mm, grid-snapped). */
+  pos: number;
+  /** The derived GB/T label drawn in the axis bubble. */
+  label: string;
+}
+
 export interface ResolvedPlan {
   name: string;
   units: "mm";
@@ -191,6 +209,12 @@ export interface ResolvedPlan {
   north: NorthDir;
   /** `dims auto …` — synthesize dimension strings at scene-build (presentation only). */
   autoDims?: "overall" | "rooms" | "walls" | "all";
+  /**
+   * Resolved positioning axes (定位轴线) in **label order** — `x` axes `1…n` left-to-right,
+   * then `y` axes `A…` bottom-to-top. Absent when the plan declares no `axes` block (or
+   * declares an empty one), so a plan without axes is byte-identical to before.
+   */
+  axes?: RAxis[];
   title?: TitleNode;
   /** Explicit accessible title (`accTitle "…"`), overriding the plan name in the
    *  accessible-SVG `<title>`. Metadata only — never affects default output. */
@@ -638,6 +662,22 @@ function resolveImpl(
   checkRoomOverlaps(elements, diagnostics);
   checkFurnitureRooms(elements, diagnostics);
 
+  // 5. Positioning axes (定位轴线): plan-level datums, not elements. Their positions are
+  //    expressions, evaluated here against the plan's GLOBAL bindings — the block is a
+  //    plan setting, not a body statement, so it sees every plan-level `let` regardless
+  //    of where it sits in the file. Snapped like every other coordinate (an off-grid
+  //    datum would not line up with the rooms it dimensions), then sorted, deduped and
+  //    labelled by the GB/T rules. An empty block resolves to no axes at all, so
+  //    `ir.axes` stays absent and the drawing is byte-identical.
+  let axes: RAxis[] | undefined;
+  if (ast.axes) {
+    activeEnv = globalScope.flatten();
+    const xs = ast.axes.x.map((e) => snap(evalNum(e)));
+    const ys = ast.axes.y.map((e) => snap(evalNum(e)));
+    const labelled = numberAxes(xs, ys);
+    if (labelled.length > 0) axes = labelled;
+  }
+
   const ir: ResolvedPlan = {
     name: ast.name,
     units: ast.units,
@@ -645,6 +685,7 @@ function resolveImpl(
     scale: ast.scale,
     north: ast.north,
     autoDims: ast.autoDims,
+    ...(axes ? { axes } : {}),
     title: ast.title,
     accTitle: ast.accTitle,
     accDescr: ast.accDescr,

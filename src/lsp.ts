@@ -32,6 +32,7 @@ const SETTING_KW: Record<string, string> = {
   scale: "Drawing scale, e.g. `scale 1:50`.",
   north: "North orientation: up | down | left | right | <degrees>.",
   title: "Title block (project / drawn_by / date).",
+  axes: "Positioning axes (定位轴线): `axes { x at 0, 6000  y at 0, 8000 }`. Labels ①/Ⓐ are derived from position.",
   accTitle: "Accessible title for the `--accessible` SVG `<title>` (overrides the plan name).",
   accDescr: "Accessible description for the `--accessible` SVG `<desc>` (overrides the derived caption).",
   theme: 'Theme: a named base, `{ key: value }` overrides, or `from "#color"`.',

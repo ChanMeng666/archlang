@@ -455,6 +455,30 @@ export interface TitleNode {
   span?: Span;
 }
 
+/**
+ * `axes { x at <expr>, … y at <expr>, … }` — the plan's **positioning axes**
+ * (定位轴线, GB/T 50001): author-declared structural datum lines the whole drawing
+ * is measured from. Two lists of positions in mm: `x` are vertical lines (read
+ * left-to-right, numbered ①②③…), `y` are horizontal ones (read bottom-to-top,
+ * lettered ⒶⒷⒸ…).
+ *
+ * Positions are {@link Expr}s so they evaluate at expand time like every other
+ * coordinate (`let W = 6000` then `x at 0, W, 2*W` is legal). They are **datums the
+ * author declares, never geometry the compiler derives from walls** (ADR 0005: facts,
+ * no invisible architect) — and the labels are the reverse: always derived from
+ * sorted position, never authored.
+ *
+ * Repeated `axes` blocks merge (both lists append), like `theme`.
+ */
+export interface AxesNode {
+  /** Vertical axis positions (x coordinates), in source order. */
+  x: Expr[];
+  /** Horizontal axis positions (y coordinates), in source order. */
+  y: Expr[];
+  line: number;
+  span?: Span;
+}
+
 export interface PlanNode {
   name: string;
   /** Only "mm" is supported. */
@@ -466,6 +490,8 @@ export interface PlanNode {
   north: NorthDir;
   /** `dims auto [overall|rooms|walls|all]` — synthesize dimension strings at render. */
   autoDims?: "overall" | "rooms" | "walls" | "all";
+  /** `axes { x at … y at … }` — author-declared positioning axes (定位轴线). */
+  axes?: AxesNode;
   title?: TitleNode;
   /** Explicit accessible title (`accTitle "…"`) — overrides the plan name in the
    *  accessible-SVG `<title>` (`compile(src, { accessible: true })`). Metadata only. */

@@ -98,7 +98,7 @@ function rules(): [string, string][] {
     ["root", `ws "plan" rws string ws "{" ws ( plan-stmt ws )* "}" ws`],
     [
       "plan-stmt",
-      `setting | title-stmt | acc-stmt | theme-stmt | style-stmt | component-stmt | import-stmt | strip-stmt | block-stmt`,
+      `setting | title-stmt | axes-stmt | acc-stmt | theme-stmt | style-stmt | component-stmt | import-stmt | strip-stmt | block-stmt`,
     ],
     ["block-stmt", `element | let-stmt | for-stmt | if-stmt | while-stmt | set-stmt | instance-stmt | assign-stmt`],
     [
@@ -120,6 +120,10 @@ function rules(): [string, string][] {
     // ---- title / theme / style ------------------------------------------
     ["title-stmt", `"title" ws "{" ws ( title-field ws )* "}"`],
     ["title-field", `( "project" | "drawn_by" | "date" ) rws string`],
+    // Positioning axes (定位轴线): one row per direction, each a comma-separated
+    // expression list. Rows may repeat and appear in either order (the parser appends).
+    ["axes-stmt", `"axes" ws "{" ws ( axes-row ws )* "}"`],
+    ["axes-row", `( "x" | "y" ) rws "at" ws expr ( ws "," ws expr )*`],
     ["theme-stmt", `"theme" ( rws "from" rws string | rws ident ( ws theme-block )? | ws theme-block )`],
     ["theme-block", `"{" ws ( theme-entry ws )* "}"`],
     ["theme-entry", `ident ws ":"? ws config-value`],

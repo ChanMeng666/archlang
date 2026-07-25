@@ -97,7 +97,7 @@
     "keywords": {
       "patterns": [
         {
-          "match": "\\b(plan|component|let|theme|title|style|import|for|if|while|else|set|strip)\\b",
+          "match": "\\b(plan|component|let|theme|title|style|import|for|if|while|else|set|strip|axes)\\b",
           "name": "keyword.control.arch"
         },
         {

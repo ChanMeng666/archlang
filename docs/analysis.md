@@ -86,6 +86,7 @@ matter — run it yourself for the full object):
 | `windows[].room` | the room the window lights |
 | `totals` | room / door / window counts and total floor area |
 | `accTitle` / `accDescr` | the plan's declared [accessible metadata](language-reference.md#accessible-metadata-acctitle-accdescr) — **present only when the source declares them** |
+| `axes` | the plan's declared [positioning axes](language-reference.md#positioning-axes-定位轴线) — **present only when the source declares an `axes` block** |
 
 A text-only agent reads this and confirms "4 rooms, 42 m², a bath adjacent to the
 hall (not the bedroom), a 1000 mm front door" — no rendering required.
@@ -187,6 +188,37 @@ entrance. For the studio:
 Two advisory lint rules read this model, and the same model backs the opt-in
 `arch compile --overlay circulation` render overlay (see
 [ADR 0008 — circulation as facts](adr/0008-circulation-as-facts.md)).
+
+## Positioning axes — the datum grid, as facts
+
+When the plan declares [positioning axes](language-reference.md#positioning-axes-定位轴线),
+`describe().axes` reports them with the labels the drawing prints. The key is **absent
+entirely** on a plan that declares none, so an existing summary is unchanged.
+
+```json
+"axes": {
+  "x": [
+    { "pos": 0,    "label": "1" },
+    { "pos": 4000, "label": "2" },
+    { "pos": 8000, "label": "3" }
+  ],
+  "y": [
+    { "pos": 3000, "label": "A" },
+    { "pos": 0,    "label": "B" }
+  ]
+}
+```
+
+Both lists are in **label order**, not coordinate order: `x` runs left to right
+(ascending `pos`), and `y` runs **bottom to top** — since `+y` points down, `y[0]` is
+the axis with the *largest* `pos`, which is why `A` reads `3000` above. Labels are
+derived from sorted position (never authored), so they are exactly what the bubbles
+show and what a reviewer will cite ("the wall on axis ②").
+
+This is the read an agent wants before nudging a coordinate: the axes are the
+coordinates that are *meant* to be structural, and with `dims auto rooms|all` they are
+also the ticks of the middle dimension chain — so moving a room boundary that sits on
+an axis changes a dimension a human is reading off the grid.
 
 ## Freedom — how constrained the plan is
 

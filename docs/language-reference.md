@@ -53,6 +53,7 @@ plan "My Home" {
 | `scale 1:50` | Printed scale, shown in the title block. | none |
 | `north up\|down\|left\|right\|<deg>` | North direction for the north arrow. | `up` |
 | `dims auto [overall\|rooms\|walls\|all]` | Auto-draw dimension **chains** without hand-placing each `dim`, in the GB/T 50104 exterior convention — every chain outside the building, measured from the outer wall faces (see [Automatic dimension chains](#automatic-dimension-chains)): `overall` (one outer-face-to-outer-face span per dimensioned facade), `rooms` (the room/partition axis chain), `walls` (one deduped thickness call-out per distinct wall thickness), or `all` (the openings chain + the axis chain + the overall span, and the default when no scope is given). | off |
+| `axes { x at … y at … }` | The plan's **positioning axes** (定位轴线) — declared structural datum lines, drawn dash-dot with a labelled bubble and used as the ticks of the middle dimension chain. See [Positioning axes](#positioning-axes-定位轴线). | none |
 
 ### Accessible metadata (`accTitle`, `accDescr`)
 
@@ -615,7 +616,7 @@ stepping outward from the wall.
 | Chain | Slot | Ticks |
 |-------|------|-------|
 | openings | innermost | every opening edge on that facade, between the two outer corners — so the chain reads corner · pier · opening · pier · corner |
-| axis | middle | the sorted unique room-boundary coordinates on that axis (the partition axes — the classic `4000 · 3000` room chain) |
+| axis | middle | the declared [positioning axes](#positioning-axes-定位轴线) on that direction, when the plan has any — the GB/T axis chain proper. Otherwise the sorted unique room-boundary coordinates on that axis (the partition axes — the classic `4000 · 3000` room chain) |
 | overall | outermost | one span, outer face to outer face |
 
 `dims auto rooms` emits just the axis chain, `dims auto overall` just the overall
@@ -646,6 +647,59 @@ title {
 ```
 
 Rendered as a title block in the lower-right corner (with `scale` if set).
+
+### Positioning axes (定位轴线)
+
+```
+axes {
+  x at 0, 6000, 12000, 18000
+  y at 0, 8000, 16000
+}
+```
+
+An architectural drawing is not dimensioned from the paper edge — it is dimensioned
+from a named grid of **structural datum lines**. `axes` declares that grid, in the
+GB/T 50001 convention: `x` positions are vertical axes, `y` positions horizontal
+ones, both in mm in the same coordinate space as everything else.
+
+Each axis draws as a thin **dash-dot** line spanning the drawing with a short
+protrusion past each end, tagged with a **circled label** at the bottom end (`x`
+axes) or the left end (`y` axes) — placed outside any dimension chains, exactly where
+a draughtsman puts it. The nodes go on the `axes` render pass and land on the CAD
+layer **`A-GRID`**, so a DXF consumer can freeze the datum grid on its own.
+
+**Labels are derived, never authored.** They fall out of sorted position, so
+inserting an axis in the middle renumbers everything after it:
+
+| Direction | Reading order | Labels |
+|-----------|---------------|--------|
+| `x` (vertical axes) | left to right (ascending `x`) | `1`, `2`, `3`, … |
+| `y` (horizontal axes) | **bottom to top** — and `+y` points DOWN, so descending `y` | `A`, `B`, `C`, … |
+
+- The letter sequence **skips `I`, `O` and `Z`** (they misread as `1`, `0` and `2` at
+  drawing scale), giving 23 letters `A…Y`. Past the 23rd axis it continues `AA`, `AB`,
+  … `AY`, `BA`, … — GB/T 50001 §6.2 permits either a doubled letter or a
+  letter-with-subscript once the alphabet runs out; ArchLang takes the doubled form
+  and continues it lexicographically, so no label ever repeats and no subscript glyph
+  is needed. There is deliberately **no label syntax** in v1.20; a future release may
+  add an explicit override.
+- Positions are **expressions**, like every other coordinate — `let BAY = 6000` then
+  `x at 0, BAY, 2 * BAY` is legal — and are **grid-snapped** by `grid <n>` (an
+  off-grid datum would not line up with the rooms it dimensions).
+- Positions are **sorted and deduped**: declaring the same datum twice collapses
+  silently. That is declarative idempotence, not an error.
+- Rows may appear in either order and repeat, and repeated `axes` blocks merge (both
+  lists append), like `theme`.
+- **The axes are what you declare — never what the compiler infers.** ArchLang does not
+  guess your structural grid from the walls (see [ADR 0005](adr/0005-no-invisible-architect.md)).
+- With `dims auto rooms` or `dims auto all`, the **middle dimension chain measures the
+  axes** instead of the room boundaries — the GB/T axis chain (轴线间距). The switch is
+  per direction: declaring only `x` axes leaves the vertical facades' chains on room
+  boundaries. The chain stays outside the building at the same offset; only the ticks
+  move.
+- `describe()` reports them as facts (`axes.x` / `axes.y`, in label order — see
+  [Analysis](analysis.md)). They are presentation + datum metadata: no axis becomes an
+  element, gets an id, or can be referenced by a door/room clause.
 
 ## Theming
 

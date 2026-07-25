@@ -33,7 +33,8 @@ import type { GeometryBackend } from "./geometry/backend.js";
 import type { Point } from "./ast.js";
 import { patternId } from "./hatches.js";
 import type { HatchSpec } from "./hatches.js";
-import { layoutChrome } from "./chrome-layout.js";
+import { dimReach, layoutChrome } from "./chrome-layout.js";
+import { axesNodes } from "./axes.js";
 import { circulationOverlayNodes } from "./overlays/circulation.js";
 import { captionForPlan } from "./describe.js";
 import { DEFAULT_THEME, THEMES, mergeTheme, sanitizeTheme, derivePoche } from "./theme.js";
@@ -451,11 +452,17 @@ function emitChain(side: SideGeom, ticks: readonly number[], offset: number, dim
  * 1. **openings** (innermost) — a tick at every opening edge on that facade, so the
  *    chain reads corner · pier · opening · pier · corner. Skipped on a facade with
  *    no openings.
- * 2. **centerline** — the sorted unique room-boundary coordinates projected on that
- *    axis: the partition axes, the classic "4000 · 3000" room chain. This is what
+ * 2. **centerline / axis** — when the plan declares **positioning axes** on this
+ *    facade's direction (`axes { x at … }` for bottom/top, `y at …` for left/right),
+ *    the ticks are those axis positions: the GB/T *axis* chain proper (轴线间距), the
+ *    number a structural engineer reads. Without declared axes on that direction it
+ *    falls back to the sorted unique room-boundary coordinates projected on that axis
+ *    — the partition axes, the classic "4000 · 3000" room chain. This is what
  *    `dims auto rooms` emits on its own, and it replaced the old per-room dims,
  *    which measured room rectangles (short by half a wall thickness at each end) and
- *    fell back to drawing INSIDE any room that touched no perimeter.
+ *    fell back to drawing INSIDE any room that touched no perimeter. Either way the
+ *    chain stays OUTSIDE the building at the same slot offset: declaring axes changes
+ *    only WHERE THE TICKS FALL, never the chain's position or reference faces.
  * 3. **overall** (outermost) — one span, outer face to outer face.
  *
  * Bottom + left always carry chains (the reading convention); top and right only when
@@ -492,8 +499,15 @@ function synthGbChains(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void
       emitChain(g, cleanTicks([g.lo, ...edges, g.hi], g.lo, g.hi), chainOffset(sizes, 0), dims);
     }
     if (wantAxis) {
-      const bounds = rooms.flatMap((r) => (g.axis === "h" ? [r.at.x, r.at.x + r.size.w] : [r.at.y, r.at.y + r.size.h]));
-      emitChain(g, cleanTicks(bounds, g.lo, g.hi), chainOffset(sizes, 1), dims);
+      // Declared axes on this direction win: the middle chain becomes the true GB/T
+      // axis chain. The fallback is per-DIRECTION, so a plan that declares only `x`
+      // axes still gets the room-boundary chain on its vertical facades.
+      const declared = (ir.axes ?? []).filter((a) => a.axis === (g.axis === "h" ? "x" : "y")).map((a) => a.pos);
+      const ticks =
+        declared.length > 0
+          ? declared
+          : rooms.flatMap((r) => (g.axis === "h" ? [r.at.x, r.at.x + r.size.w] : [r.at.y, r.at.y + r.size.h]));
+      emitChain(g, cleanTicks(ticks, g.lo, g.hi), chainOffset(sizes, 1), dims);
     }
     if (wantOverall) emitChain(g, [g.lo, g.hi], chainOffset(sizes, 2), dims);
   }
@@ -629,6 +643,15 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
       const dimCtx = ctxFor("dim");
       for (const dm of synthDims(ir, sizes)) nodes.push(...dimDef.render(dm, dimCtx));
     }
+  }
+
+  // Positioning axes (定位轴线) — the author-declared datum grid. Emitted AFTER the dims
+  // so the bubbles can be placed outside whatever dimension chains exist on each side
+  // (measured on the `dims` pass alone — the axis nodes we are about to add must not
+  // push themselves further out). `layoutChrome` below then sees both bands, so the page
+  // grows to contain the bubbles. No `axes` block → nothing emitted, output unchanged.
+  if (ir.axes && ir.axes.length > 0) {
+    nodes.push(...axesNodes(ir.axes, b, sizes, theme, dimReach(b, nodes, ["dims"])));
   }
 
   // Page chrome (scale bar + title block) sits below the dimension band; the page

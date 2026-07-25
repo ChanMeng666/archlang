@@ -32,6 +32,7 @@ export const KEYWORDS = {
     "else",
     "set",
     "strip",
+    "axes",
   ],
   /** Built-in element kinds → `storage.type.element`, CM `typeName`. */
   element: ["wall", "room", "door", "window", "opening", "furniture", "dim", "column"],
@@ -182,4 +183,5 @@ export const STATEMENT_STARTS: readonly string[] = [
   "while",
   "set",
   "strip",
+  "axes",
 ];

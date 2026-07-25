@@ -88,9 +88,22 @@ export function titleRows(title: TitleNode | undefined, scale: string | undefine
  * and the grown page margins, so neither a bottom dimension nor a side dimension
  * (e.g. a right-edge `offset` larger than the base margin) ever clips the page.
  * Line endpoints are exact; text is bounded by its anchor point inflated by its
- * font size (a conservative box that covers any anchor/rotation).
+ * font size (a conservative box that covers any anchor/rotation), and a circle by
+ * its centre ± radius.
+ *
+ * `layers` selects which passes count. The default covers **both** annotation bands
+ * that live outside the building — dimensions and the positioning-axis lines/bubbles
+ * — so an axis tag grows the page exactly like a dimension does. Pass a narrower set
+ * to measure one band on its own (`toScene` measures just `dims` to decide where the
+ * axis bubbles go, before those bubbles exist).
  */
-export function dimReach(bounds: Bounds, nodes: readonly SceneNode[]): PageMargins {
+const REACH_LAYERS: readonly SceneNode["layer"][] = ["dims", "axes"];
+
+export function dimReach(
+  bounds: Bounds,
+  nodes: readonly SceneNode[],
+  layers: readonly SceneNode["layer"][] = REACH_LAYERS,
+): PageMargins {
   let top = 0;
   let right = 0;
   let bottom = 0;
@@ -102,7 +115,7 @@ export function dimReach(bounds: Bounds, nodes: readonly SceneNode[]): PageMargi
     left = Math.max(left, bounds.minX - x);
   };
   for (const n of nodes) {
-    if (n.layer !== "dims") continue;
+    if (!layers.includes(n.layer)) continue;
     const p = n.prim;
     if (p.t === "line") {
       ext(p.a.x, p.a.y);
@@ -110,6 +123,9 @@ export function dimReach(bounds: Bounds, nodes: readonly SceneNode[]): PageMargi
     } else if (p.t === "text") {
       ext(p.at.x - p.size, p.at.y - p.size);
       ext(p.at.x + p.size, p.at.y + p.size);
+    } else if (p.t === "circle") {
+      ext(p.center.x - p.r, p.center.y - p.r);
+      ext(p.center.x + p.r, p.center.y + p.r);
     }
   }
   return { top: Math.max(0, top), right: Math.max(0, right), bottom: Math.max(0, bottom), left: Math.max(0, left) };

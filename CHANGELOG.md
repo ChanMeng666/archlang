@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`axes { … }` — GB/T 50001 positioning axes (定位轴线).** An architectural drawing is not
+  dimensioned from the paper edge; it is dimensioned from a named grid of structural datum lines.
+  A plan can now declare that grid:
+
+  ```arch
+  axes {
+    x at 0, 6000, 12000, 18000
+    y at 0, 8000, 16000
+  }
+  ```
+
+  Positions are ordinary expressions (`let BAY = 6000` … `x at 0, BAY, 2 * BAY`), grid-snapped like
+  every other coordinate, and **sorted + deduped** — declaring the same datum twice collapses
+  silently, which is declarative idempotence rather than an error. Rows may repeat, appear in either
+  order, and repeated `axes` blocks merge, like `theme`.
+
+  **Positions are author-declared; labels are always derived.** Per GB/T 50001, `x` axes are numbered
+  `1 2 3 …` **left to right** and `y` axes lettered `A B C …` **bottom to top** — and since ArchLang's
+  `+y` points DOWN, bottom-to-top means descending `y`, so the axis with the largest `y` is `A`. The
+  letter sequence **skips `I`, `O` and `Z`** (they misread as `1`, `0`, `2` at drawing scale), giving
+  23 letters, and continues `AA`, `AB`, … `BA` past them (the standard permits a doubled letter or a
+  subscript; we take the doubled form so no drawing font needs a subscript glyph). There is
+  deliberately no label syntax: inserting an axis renumbers everything after it exactly as a
+  draughtsman would. Which axes exist is never inferred from the walls
+  ([ADR 0005](docs/adr/0005-no-invisible-architect.md)).
+- **The axes render as a real drawing convention.** Each is a thin **dash-dot** line spanning the
+  drawing with a short protrusion past each end, tagged with a **circle bubble + label** at the bottom
+  end (`x`) or the left end (`y`), placed *outside* whatever dimension chains that side already
+  carries. The label is a plain glyph inside a drawn circle, never a `①`/`Ⓐ` codepoint, so it survives
+  the PNG backend's bundled font and a CAD backend that has no such glyph. Nodes go on a new `axes`
+  render pass and land on the AIA layer **`A-GRID`** (declared in the DXF layer table, so a CAD user can
+  freeze the datum grid on its own); the page margins grow so no bubble clips. The Scene IR gains a
+  `circle` primitive — the DXF backend emits one native `CIRCLE` entity for it rather than two arcs.
+- **`dims auto` chain 2 becomes the true axis chain.** With `dims auto rooms` or `all`, the middle
+  chain's ticks are the declared axis positions on that facade's direction (轴线间距) instead of the
+  room-boundary coordinates. The switch is **per direction** — declaring only `x` axes leaves the
+  vertical facades' chains on room boundaries — and the chain stays outside the building at the same
+  slot offset, measured from the same outer faces: only the ticks move.
+- **`describe().axes`** reports the grid as facts (`{ x: [{ pos, label }…], y: […] }`, in label order),
+  absent entirely on a plan that declares none, and selectable via `describe --select axes`. Also
+  exported: `numberAxes` / `axisLetter` / `AXIS_LETTERS` and the `RAxis` / `AxesSummary` types.
+
+A plan that declares no `axes` block is **byte-identical** to before — no node on the new pass, no
+`axes` key in `describe()`, no change to any dimension chain.
+
 ## [1.19.0] - 2026-07-25
 
 Professional-drawing-quality round: six independent defects and gaps found by reading the rendered

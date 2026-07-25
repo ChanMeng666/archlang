@@ -13,10 +13,11 @@
  * render target consumed by independent backends). ArchLang has no nested
  * transforms, so unlike Typst's `Frame` the node list is flat (no sub-frames).
  *
- * Phase v0.7 keeps this deliberately small: line-weight/line-type/named-layer
- * metadata, hatch primitives, and circles are intentionally deferred to Phase v0.9
- * (roadmap §6). Poché stays an SVG `<pattern>` fill string; page chrome (north
- * arrow, scale bar, title block) stays in the backends for now.
+ * Phase v0.7 kept this deliberately small: line-weight/line-type/named-layer
+ * metadata and hatch primitives arrived in Phase v0.9 (roadmap §6), and the `circle`
+ * primitive in v1.20 with the positioning-axis bubbles. Poché stays an SVG
+ * `<pattern>` fill string; page chrome (north arrow, scale bar, title block) stays in
+ * the backends for now.
  */
 
 import type { NorthDir, Point, TitleNode } from "./ast.js";
@@ -35,6 +36,13 @@ import type { Theme } from "./theme.js";
  */
 export const RENDER_PASSES = [
   "floor",
+  // Positioning axes (定位轴线) sit just above the room floor fills and below the built
+  // fabric: a datum line reads *through* the drawing (visible in the rooms and outside
+  // the building, hidden inside the wall poché), which is how GB/T sheets read. Their
+  // bubbles land outside the building where nothing overlaps. A plan with no `axes`
+  // block emits no node on this pass, so inserting it here leaves every existing
+  // drawing byte-identical.
+  "axes",
   "furniture",
   "wallFill",
   "wallFace",
@@ -115,6 +123,13 @@ export type ScenePrim =
    */
   | { t: "arc"; center: Point; r: number; start: Point; end: Point; sweep: 0 | 1 }
   /**
+   * A full circle (an axis bubble). Kept distinct from `arc` so a CAD backend emits one
+   * native `CIRCLE` entity rather than two half-arcs, and so a raster/vector backend
+   * needs no sweep bookkeeping. Added in v1.20 (the deferral note above); nothing else
+   * emits one, so existing output is unaffected.
+   */
+  | { t: "circle"; center: Point; r: number }
+  /**
    * A hatched (poché) region: closed loops filled with a named material pattern,
    * scaled and rotated. The SVG backend bakes `scale`→tile size and `angle`→
    * `patternTransform`; the DXF backend emits a real `HATCH` entity. `origin` is
@@ -144,6 +159,10 @@ export function aiaLayer(pass: RenderPass): string {
   switch (pass) {
     case "floor":
       return "A-FLOR";
+    // The AIA layer for a planning/structural grid — a CAD user freezes A-GRID to get
+    // the drawing without its datum lines.
+    case "axes":
+      return "A-GRID";
     case "furniture":
       return "A-FURN";
     case "wallFill":
