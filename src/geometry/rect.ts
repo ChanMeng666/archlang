@@ -24,6 +24,28 @@ export function overlap1d(aLo: number, aHi: number, bLo: number, bHi: number): n
   return Math.max(0, Math.min(aHi, bHi) - Math.max(aLo, bLo));
 }
 
+/**
+ * Total length covered by a set of 1-D intervals after merging overlaps. Used by
+ * every "how much of this edge is backed by a wall?" scan (perimeter gaps, fixture
+ * wall-backing), so they all measure coverage the same way.
+ */
+export function mergedLength(intervals: Array<[number, number]>): number {
+  if (intervals.length === 0) return 0;
+  const sorted = [...intervals].sort((a, b) => a[0] - b[0]);
+  let total = 0;
+  let [cs, ce] = sorted[0]!;
+  for (let i = 1; i < sorted.length; i++) {
+    const [s, e] = sorted[i]!;
+    if (s <= ce) ce = Math.max(ce, e);
+    else {
+      total += ce - cs;
+      cs = s;
+      ce = e;
+    }
+  }
+  return total + (ce - cs);
+}
+
 /** Signed per-axis overlap amounts of two rects (negative when separated). */
 export function rectOverlapAmounts(a: BBox, b: BBox): { ox: number; oy: number } {
   const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);

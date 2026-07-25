@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**51 errors** · **32 warnings**
+**51 errors** · **33 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -69,6 +69,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_DOORWAY_BLOCKED`](#w_doorway_blocked) | warning | A doorway's landing is blocked. |
 | [`W_DUP_ACC_METADATA`](#w_dup_acc_metadata) | warning | Duplicate `accTitle`/`accDescr`. |
 | [`W_EMPTY_PLAN`](#w_empty_plan) | warning | Empty plan. |
+| [`W_FIXTURE_BACK_TO_ROOM`](#w_fixture_back_to_room) | warning | A fixture stands against a wall but faces the wrong way. |
 | [`W_FIXTURE_FLOATING`](#w_fixture_floating) | warning | A plumbing/kitchen fixture is not against a wall. |
 | [`W_FIXTURE_WRONG_ROOM`](#w_fixture_wrong_room) | warning | Fixture sits outside its declared room. |
 | [`W_FURN_CLEARANCE`](#w_furn_clearance) | warning | A fixture's use-space is blocked. |
@@ -819,6 +820,18 @@ accTitle "B"   # warning: "A" is discarded
 
 ```arch
 plan "Empty" { units mm }   # warning
+```
+
+## W_FIXTURE_BACK_TO_ROOM
+
+*warning* — A fixture stands against a wall but faces the wrong way.
+
+**Cause.** A fixture whose symbol has a distinct back (a WC's cistern, a basin's tap, a counter's nosing) is touching a wall, but its back is turned to the room instead of to that wall — the drawing shows the WC's tank sticking into the floor space. Position right, quarter-turn wrong: fixture symbols are drawn with their back on the TOP edge, so `rotate` is what aims them (0 = back to the north, 90 = east, 180 = south, 270 = west). A rotation-symmetric symbol (a shower tray) never trips this, and a fixture touching no wall at all is `W_FIXTURE_FLOATING` instead.
+
+**Fix.** Add the `rotate` that puts the back on the walled edge — the machine-applicable fix inserts it when exactly one edge is walled. Better still, place the piece with `against wall <id>` or `in <room> anchor <edge>` and let the rotation be derived.
+
+```arch
+furniture wc at (5200,5200) size 400x700   # warning: south wall behind it, cistern facing north
 ```
 
 ## W_FIXTURE_FLOATING

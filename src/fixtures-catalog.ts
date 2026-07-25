@@ -34,6 +34,15 @@ export interface FixtureSpec {
    * that is a behaviour change, not a refactor).
    */
   zones?: readonly FixtureZone[];
+  /**
+   * The drawn plan symbol is **rotation-symmetric** — it has no distinguishable
+   * back, so which way the piece faces carries no meaning (a shower tray: outline,
+   * both diagonals, a centre drain). Orientation reasoning skips these: they still
+   * need a wall (`requiresWall`) but never trip `W_FIXTURE_BACK_TO_ROOM` and never
+   * get a derived `rotate`. Omitted = the symbol has a back (a WC's cistern, a
+   * basin's tap, a counter's nosing), so its facing is a real architectural fact.
+   */
+  symmetric?: boolean;
 }
 
 /** A room zone a fixture can satisfy (see {@link FixtureSpec.zones}). */
@@ -50,7 +59,9 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   bathtub: { requiresWall: true, clearanceMm: 550, footprint: { along: 1700, depth: 700 }, zones: ["wet"] },
   tub: { requiresWall: true, clearanceMm: 550, footprint: { along: 1700, depth: 700 }, zones: ["wet"] },
   bath: { requiresWall: true, clearanceMm: 550, footprint: { along: 1700, depth: 700 }, zones: ["wet"] },
-  shower: { requiresWall: true, footprint: { along: 900, depth: 900 }, zones: ["wet"] },
+  // The tray symbol is drawn symmetrically (outline + both diagonals + a centre
+  // drain), so it has no back to face at a wall — see FixtureSpec.symmetric.
+  shower: { requiresWall: true, footprint: { along: 900, depth: 900 }, zones: ["wet"], symmetric: true },
   // Kitchen run — counters/appliances line a wall; leave standing/working room.
   kitchen_sink: { requiresWall: true, clearanceMm: 550, footprint: { along: 800, depth: 600 }, zones: ["kitchen"] },
   // A bare `sink` satisfies either room kind (a bathroom basin or the kitchen sink).
@@ -85,6 +96,18 @@ export function fixtureSpec(category: string): FixtureSpec | null {
 /** Does this fixture category conventionally need a wall behind it? */
 export function requiresWall(category: string): boolean {
   return CATALOG[category]?.requiresWall ?? false;
+}
+
+/**
+ * Does which way this fixture faces mean anything? True for a wall-requiring
+ * fixture whose symbol has a distinguishable back (a WC's cistern, a basin's tap,
+ * a counter's nosing) — the categories whose orientation can be derived, flagged
+ * (`W_FIXTURE_BACK_TO_ROOM`) and corrected. False for free-standing furniture and
+ * for a rotation-symmetric symbol (see {@link FixtureSpec.symmetric}).
+ */
+export function orientationMatters(category: string): boolean {
+  const spec = CATALOG[category];
+  return spec?.requiresWall === true && spec.symmetric !== true;
 }
 
 /** The frontal activity clearance (mm) for a fixture category, or 0 if none. */

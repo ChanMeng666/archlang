@@ -95,7 +95,7 @@
     {
       "id": "two-bed-hall",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 2,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -225,7 +225,7 @@
     {
       "id": "relational-studio",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 1,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -304,7 +304,7 @@
     {
       "id": "dims-auto-cottage",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 1,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -442,7 +442,7 @@
     {
       "id": "small-office",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 2,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -569,7 +569,7 @@
     {
       "id": "two-bath-flat",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 4,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -648,7 +648,7 @@
     {
       "id": "open-plan-loft",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 1,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -784,7 +784,7 @@
     {
       "id": "three-bed-2bath",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 4,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -892,7 +892,7 @@
     {
       "id": "galley-kitchen",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 1,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -960,7 +960,7 @@
     {
       "id": "l-shaped-flat",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 2,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -1061,7 +1061,7 @@
     {
       "id": "accessible-flat",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 1,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -1197,7 +1197,7 @@
     {
       "id": "compact-studio",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 1,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -1266,7 +1266,7 @@
     {
       "id": "bungalow",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 4,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -1366,7 +1366,7 @@
     {
       "id": "reception-suite",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 4,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -1519,7 +1519,7 @@
     {
       "id": "attach-openings",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 1,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -1859,7 +1859,7 @@
     {
       "id": "sized-bedrooms",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 2,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -1940,7 +1940,7 @@
     {
       "id": "sized-wet-room",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 2,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -2061,7 +2061,7 @@
     {
       "id": "sized-office-mix",
       "valid": true,
-      "lintWarnings": 0,
+      "lintWarnings": 5,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],

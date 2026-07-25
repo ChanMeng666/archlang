@@ -133,7 +133,11 @@ export function cmdRepair(args: Args): number {
     }
     if (!args.quiet) {
       for (const c of r.changes) {
-        process.stderr.write(`  moved ${c.id} (${c.from.x},${c.from.y}) → (${c.to.x},${c.to.y}) — ${c.reason}\n`);
+        const what =
+          c.kind === "rotated"
+            ? `rotated ${c.id} ${c.fromRotate ?? 0}° → ${c.toRotate ?? 0}°`
+            : `moved ${c.id} (${c.from.x},${c.from.y}) → (${c.to.x},${c.to.y})`;
+        process.stderr.write(`  ${what} — ${c.reason}\n`);
       }
       for (const u of r.unresolved) process.stderr.write(`  ⚠ ${u.id}: ${u.reason}\n`);
       if (!r.changed) process.stderr.write("  (no changes — nothing to repair)\n");

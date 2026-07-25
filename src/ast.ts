@@ -236,6 +236,16 @@ export interface FurnitureNode extends NodeBase {
   label?: Expr;
   /** Quarter-turn rotation of the drawn symbol (0|90|180|270 degrees), evaluated at resolve. */
   rotate?: Expr;
+  /**
+   * Byte span the `rotate` clause occupies in the ORIGINAL source — the authored
+   * `rotate <expr>` run, or the **zero-width** point where one can be inserted
+   * (`start === end`, always *before* the optional trailing `in <room>`, which the
+   * grammar requires to come last). Recorded by the parser purely so a diagnostic
+   * fix can rewrite the fixture's orientation with correct offsets
+   * ({@link import("../fix-producers.js").fixtureRotateFix}); it carries no
+   * semantics and never affects output.
+   */
+  rotateSpan?: Span;
   /** Declared owning room id (`in <roomId>`) — the room this fixture belongs to. */
   room?: string;
 }

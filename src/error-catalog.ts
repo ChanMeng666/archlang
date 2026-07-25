@@ -567,6 +567,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Move the fixture so one edge is against a wall (supply/waste/venting runs in the wall), or remove it.",
     "furniture wc at (3000,3000) size 400x700   # lint: no wall behind it",
   ),
+  W_FIXTURE_BACK_TO_ROOM: W(
+    "W_FIXTURE_BACK_TO_ROOM",
+    "A fixture stands against a wall but faces the wrong way.",
+    "A fixture whose symbol has a distinct back (a WC's cistern, a basin's tap, a counter's nosing) is touching a wall, but its back is turned to the room instead of to that wall — the drawing shows the WC's tank sticking into the floor space. Position right, quarter-turn wrong: fixture symbols are drawn with their back on the TOP edge, so `rotate` is what aims them (0 = back to the north, 90 = east, 180 = south, 270 = west). A rotation-symmetric symbol (a shower tray) never trips this, and a fixture touching no wall at all is `W_FIXTURE_FLOATING` instead.",
+    "Add the `rotate` that puts the back on the walled edge — the machine-applicable fix inserts it when exactly one edge is walled. Better still, place the piece with `against wall <id>` or `in <room> anchor <edge>` and let the rotation be derived.",
+    "furniture wc at (5200,5200) size 400x700   # warning: south wall behind it, cistern facing north",
+  ),
   W_FURN_CLEARANCE: W(
     "W_FURN_CLEARANCE",
     "A fixture's use-space is blocked.",

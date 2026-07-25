@@ -17,6 +17,10 @@
  *   5. a piece in a **door's swing arc** → moved out of the quarter-disc the leaf sweeps;
  *   6. a wall-requiring **fixture floating** mid-room → snapped onto the nearest wall.
  *
+ * Then, once every position is final, one **orientation** pass: a fixture standing
+ * flush against a single wall but with its back to the room is turned to face it
+ * (a `rotate` rewrite, not a move — the `W_FIXTURE_BACK_TO_ROOM` correction).
+ *
  * A global fixpoint iterates every piece (in source order, so overlap separation has a
  * deterministic mover) until nothing moves. A piece that would cycle, sits with no
  * majority side, or floats too far is left at its best position and **reported** —
@@ -27,12 +31,23 @@
 
 import { parse } from "./parser.js";
 import { formatPlan } from "./format.js";
-import { resolvePlan, isAgainstWall, buildDoorAccessGraph, DEFAULT_TOL, type BBox } from "./analyze.js";
+import {
+  backCandidateEdges,
+  backedEdgeList,
+  backEdgeForRotate,
+  buildDoorAccessGraph,
+  DEFAULT_TOL,
+  isAgainstWall,
+  resolvePlan,
+  rotateForBackEdge,
+  wallBackedEdges,
+  type BBox,
+} from "./analyze.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
 import { doorLandingRect, pointInRect, rectOverlapAmounts, wallIntrusion } from "./geometry/rect.js";
 import { segmentsOfWall, doorSwing, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
 import { DEFAULT_RULESET } from "./lint.js";
-import { requiresWall } from "./fixtures-catalog.js";
+import { defaultFootprint, orientationMatters, requiresWall } from "./fixtures-catalog.js";
 import type { RWall, RDoor, RRoom, ROpening, RFurniture } from "./ir.js";
 import type { FurnitureNode } from "./ast.js";
 import type { Span } from "./diagnostics.js";
@@ -46,10 +61,19 @@ const MAX_SNAP_MM = 1200;
 export interface RepairChange {
   id: string;
   category: string;
-  /** What was done. A single move may combine reasons across iteration steps. */
-  kind: "moved";
+  /**
+   * What was done: the piece was `moved` (a new `at`), or `rotated` in place (a new
+   * `rotate`, so its back faces the wall it stands against). A piece that needed both
+   * gets one entry of each — a move and a turn are separate, separately-reviewable
+   * edits. A single move may combine reasons across iteration steps.
+   */
+  kind: "moved" | "rotated";
+  /** Footprint corner before/after. Equal for a `rotated` change (nothing moves). */
   from: { x: number; y: number };
   to: { x: number; y: number };
+  /** Quarter-turn before/after — present on a `rotated` change only. */
+  fromRotate?: number;
+  toRotate?: number;
   /** Human summary of every fix applied to this piece, in order. */
   reason: string;
 }
@@ -380,6 +404,8 @@ interface Piece {
   visited: Set<string>;
   reasons: string[];
   stuck: boolean;
+  /** Set by the orientation pass: the quarter-turn before/after, and why. */
+  turn?: { from: number; to: number; reason: string };
 }
 
 const rectOfPiece = (p: Piece): BBox => ({ x: p.cur.x, y: p.cur.y, w: p.w, h: p.h });
@@ -557,18 +583,65 @@ export function repair(source: string): RepairResult {
     if (!moved) break;
   }
 
+  // ---- orientation pass -------------------------------------------------------
+  // Positions are final, so "which wall is this piece standing on?" now has a stable
+  // answer. A fixture whose facing means something (a WC's cistern, a basin's tap —
+  // not a symmetric shower tray) that sits against exactly ONE wall with its back to
+  // the room is turned to face that wall. A corner piece has two equally valid walls,
+  // so it is reported, never guessed (ADR 0005). A turn moves nothing, so it can't
+  // pinch a walk — the circulation guard has nothing to re-check. A scripted `rotate`
+  // is left alone, exactly as a scripted `at` is.
+  for (const p of pieces) {
+    if (!orientationMatters(p.f.category)) continue;
+    if (p.f.rotate !== undefined && litNum(p.f.rotate) === null) continue;
+    const cur = litNum(p.f.rotate) ?? 0;
+    const backing = wallBackedEdges(rectOfPiece(p), walls, DEFAULT_RULESET.fixtureWallTolMm);
+    if (backing[backEdgeForRotate(cur)] !== null) continue; // already facing its wall
+    const walled = backedEdgeList(backing);
+    if (walled.length === 0) continue; // floats against nothing — the mover pass owns that
+    // Narrow by the footprint's aspect, exactly as the lint fix does: a 400×700 WC can
+    // only back onto a horizontal edge, so a corner often has one valid answer after all.
+    const shape = backCandidateEdges({ w: p.w, h: p.h }, defaultFootprint(p.f.category));
+    const targets = walled.filter((e) => shape.includes(e));
+    if (targets.length !== 1) {
+      note(
+        p.id,
+        `faces the room with no single wall to back onto (walls on its ${walled.join("/")} side) — set \`rotate\` yourself`,
+      );
+      continue;
+    }
+    const to = rotateForBackEdge(targets[0]!);
+    if (to === cur) continue;
+    p.turn = { from: cur, to, reason: `turned to put its back against the wall on its ${walled[0]} side` };
+  }
+
   const changes: RepairChange[] = [];
   for (const p of pieces) {
-    if (p.cur.x === p.orig.x && p.cur.y === p.orig.y) continue;
-    p.f.at = { x: numExpr(p.cur.x), y: numExpr(p.cur.y) };
-    changes.push({
-      id: p.id,
-      category: p.f.category,
-      kind: "moved",
-      from: p.orig,
-      to: p.cur,
-      reason: p.reasons.join("; "),
-    });
+    const shifted = p.cur.x !== p.orig.x || p.cur.y !== p.orig.y;
+    if (shifted) {
+      p.f.at = { x: numExpr(p.cur.x), y: numExpr(p.cur.y) };
+      changes.push({
+        id: p.id,
+        category: p.f.category,
+        kind: "moved",
+        from: p.orig,
+        to: p.cur,
+        reason: p.reasons.join("; "),
+      });
+    }
+    if (p.turn) {
+      p.f.rotate = numExpr(p.turn.to);
+      changes.push({
+        id: p.id,
+        category: p.f.category,
+        kind: "rotated",
+        from: p.cur,
+        to: p.cur,
+        fromRotate: p.turn.from,
+        toRotate: p.turn.to,
+        reason: p.turn.reason,
+      });
+    }
   }
 
   const out = changes.length ? formatPlan(plan, source) : source;

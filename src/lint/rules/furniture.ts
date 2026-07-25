@@ -5,10 +5,20 @@
  * `rules/index.ts`.
  */
 
-import { frontClearanceRect, isAgainstWall, rectOf } from "../../analyze.js";
+import {
+  backCandidateEdges,
+  backedEdgeList,
+  backEdgeForRotate,
+  frontClearanceRect,
+  isAgainstWall,
+  rectOf,
+  rotateForBackEdge,
+  wallBackedEdges,
+} from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { pointInRect, rectsOverlap, wallIntrusionDepth } from "../../geometry/rect.js";
-import { frontClearanceMm, requiresWall } from "../../fixtures-catalog.js";
+import { fixesFrom, fixtureRotateFix } from "../../fix-producers.js";
+import { defaultFootprint, frontClearanceMm, orientationMatters, requiresWall } from "../../fixtures-catalog.js";
 import type { LintContext, LintRule } from "../context.js";
 
 /**
@@ -93,6 +103,54 @@ export const fixtureFloating: LintRule = {
           hints: ["Place it so one edge backs onto a wall — plumbing/venting runs in the wall."],
         });
       }
+    }
+    return out;
+  },
+};
+
+/**
+ * A wall-requiring fixture that IS touching a wall but has its **back to the room**
+ * — the WC whose cistern faces the space instead of the wall it stands on. Distinct
+ * from `W_FIXTURE_FLOATING` (which is about a fixture touching no wall at all): here
+ * the position is right and only the quarter-turn is wrong, so the fix is a `rotate`.
+ *
+ * It fires only for a category whose symbol has a distinguishable back
+ * ({@link orientationMatters} — a shower tray is symmetric, so its facing means
+ * nothing), and only when at least one other edge *is* walled. The
+ * machine-applicable `rotate <n>` fix is attached only when the target is UNIQUE:
+ * exactly one walled edge that the footprint's aspect also allows as a back
+ * ({@link backCandidateEdges} — a 400×700 WC can only back onto a horizontal edge).
+ * A corner with two valid walls, or a walled edge the shape rules out, leaves the
+ * warning standing on its own for the author to resolve — lint never guesses between
+ * alternatives (ADR 0005).
+ */
+export const fixtureBackToRoom: LintRule = {
+  name: "fixture-back-to-room",
+  check({ furniture, ir, rules, wallSegs, at }: LintContext): Diagnostic[] {
+    const out: Diagnostic[] = [];
+    for (const f of furniture) {
+      if (!orientationMatters(f.category)) continue;
+      const backing = wallBackedEdges(rectOf(f), ir.walls, rules.fixtureWallTolMm, wallSegs);
+      const back = backEdgeForRotate(f.rotate);
+      if (backing[back] !== null) continue; // back is on a wall — correctly oriented
+      const walled = backedEdgeList(backing);
+      if (walled.length === 0) continue; // touches no wall at all — W_FIXTURE_FLOATING's business
+      const name = f.label ?? f.category;
+      const shape = backCandidateEdges(f.size, defaultFootprint(f.category));
+      const targets = walled.filter((e) => shape.includes(e));
+      const unique = targets.length === 1 ? rotateForBackEdge(targets[0]!) : null;
+      out.push({
+        severity: "warning",
+        code: "W_FIXTURE_BACK_TO_ROOM",
+        ...at(f.span),
+        message: `Fixture "${name}" has its back to the room — the wall it stands against is on its ${walled.join("/")} side.`,
+        hints: [
+          unique !== null
+            ? `Add \`rotate ${unique}\` so the symbol's back faces the wall (rotate 0 = back to the north).`
+            : "Give it an explicit `rotate` for the wall you mean it to back onto, or place it with `against wall <id>` / `in <room> anchor <edge>` and let the rotation be derived.",
+        ],
+        ...(unique !== null ? fixesFrom(fixtureRotateFix(f, unique)) : {}),
+      });
     }
     return out;
   },

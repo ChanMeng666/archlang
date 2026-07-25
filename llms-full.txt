@@ -593,7 +593,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**51 errors** (abort rendering) · **32 warnings** (advisory; `validate --strict` fails on them too).
+**51 errors** (abort rendering) · **33 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -660,6 +660,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `W_DOORWAY_BLOCKED` — A doorway's landing is blocked. **Fix:** Clear the space directly in front of and behind the door, or move the door.
 - `W_DUP_ACC_METADATA` — Duplicate `accTitle`/`accDescr`. **Fix:** Keep a single `accTitle` and a single `accDescr`; delete the extra line(s).
 - `W_EMPTY_PLAN` — Empty plan. **Fix:** Add at least one element (wall, room, …).
+- `W_FIXTURE_BACK_TO_ROOM` — A fixture stands against a wall but faces the wrong way. **Fix:** Add the `rotate` that puts the back on the walled edge — the machine-applicable fix inserts it when exactly one edge is walled. Better still, place the piece with `against wall <id>` or `in <room> anchor <edge>` and let the rotation be derived.
 - `W_FIXTURE_FLOATING` — A plumbing/kitchen fixture is not against a wall. **Fix:** Move the fixture so one edge is against a wall (supply/waste/venting runs in the wall), or remove it.
 - `W_FIXTURE_WRONG_ROOM` — Fixture sits outside its declared room. **Fix:** Move the fixture inside the named room, or correct the `in <roomId>`.
 - `W_FURN_CLEARANCE` — A fixture's use-space is blocked. **Fix:** Leave the catalogued clearance clear in front of the fixture, or move the obstructing furniture.

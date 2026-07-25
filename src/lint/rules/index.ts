@@ -11,6 +11,7 @@ import { circuitousPath, pathTooNarrow } from "./circulation-facts.js";
 import { doorClearance, doorwayBlocked, swingObstructed } from "./doors.js";
 import { noEntrance } from "./entrance.js";
 import {
+  fixtureBackToRoom,
   fixtureFloating,
   fixtureWrongRoom,
   furnClearance,
@@ -40,6 +41,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // Classification advisory (Tranche 6): a room's use inferred from an indirect alias.
   // Appended after the circulation advisories so existing output ordering is unchanged.
   aliasMatch,
+  // Orientation advisory: a fixture standing on a wall but facing the wrong way.
+  // Appended last, again to leave every existing plan's diagnostic ORDER unchanged.
+  fixtureBackToRoom,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

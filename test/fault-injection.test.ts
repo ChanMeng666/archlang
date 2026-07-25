@@ -76,8 +76,13 @@ describe("fault-injection gate — the L1 deterministic pipeline heals seeded de
 });
 
 describe("fault-injection gate — a clean plan is untouched", () => {
+  // `against-wall-bath` is lint-clean *by construction*: every fixture is placed
+  // `against wall`, so its position AND its orientation are compiler-derived, leaving
+  // the pipeline nothing to correct. (It replaced `two-bed-hall`, which stopped being
+  // a clean plan when `W_FIXTURE_BACK_TO_ROOM` shipped — that golden's WC and basin
+  // genuinely stand against a wall facing the room, so the pipeline now rotates them.)
   it("passes a lint-clean golden through l1Pipeline byte-for-byte", () => {
-    const src = golden("two-bed-hall");
+    const src = golden("against-wall-bath");
     const result = l1Pipeline(src);
     expect(result.source).toBe(src);
     expect(result.fixesApplied).toBe(0);

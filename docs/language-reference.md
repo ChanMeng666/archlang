@@ -518,6 +518,13 @@ from the referenced edge(s). The `in <room>` here both positions **and** owns th
 fixture. An unknown or relationally-placed room is
 [`E_PLACE_REF`](error-codes.md).
 
+An anchor also **derives the rotation** of a wall-requiring fixture you did not turn
+by hand: the anchored edge names the wall its back should face. It is derived only
+when that answer is unique — the edge must be walled, and the footprint's aspect must
+allow it as the back — and an explicit `rotate` always wins. A fixture left facing the
+room is [`W_FIXTURE_BACK_TO_ROOM`](error-codes.md), with a `rotate` fix. See
+[Furniture & fixtures](furniture.md).
+
 ```
 furniture bed  in r_bed    anchor top-left inset 300 size 1500x2000 label "Bed"
 furniture sofa in r_living centered                  size 2000x900  label "Sofa"
