@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-07-26
+
+**"Vertical"** — the second sub-release of the large-building batch. v1.20.0 gave a plan a sheet; a
+building still had exactly one floor. This release makes a plan a **set of drawings**: `level` blocks
+render one complete sheet per storey, `stair` / `elevator` / `escalator` draw the conventional plan
+symbols and carry the only rule in the language that joins two floors, and the circulation analysis
+stops being scale-relative so a 100 m building's clear widths mean what they say.
+
+`compile()` stays pure, synchronous and deterministic, and a single-storey plan with no vertical
+element is **byte-for-byte unchanged**. The language gains four statement keywords (`level`, `stair`,
+`elevator`, `escalator`) plus the `dir up|down` clause, six catalogued codes (**`E_LEVEL_MIX`**,
+**`E_LEVEL_DUP`**, **`E_LEVEL_NEST`**, **`E_VERT_SIZE`**, **`E_STAIR_WIDTH`**, **`W_STAIR_UNMATCHED`**);
+`compile()` gains the append-only `pages`, `describe()` the append-only `levels` / `vertical`, and
+`Diagnostic` an append-only `level`.
+
 ### Added
 
 - **`level <n> ["Name"] { … }` — multi-storey plans: one drawing per storey.** A building is not one
@@ -101,6 +116,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     building's: storeys are pooled in ascending order (a repeated room id resolves to the lower
     storey), and a shaft contributes one undirected edge per ADJACENT pair of its storeys, between the
     rooms it lands in on each.
+
+### Changed
+
+- **The circulation and occupancy grids now scale with the plan's area, so a big building's numbers
+  discriminate.** Both grids picked their cell from a fixed cell COUNT (10k whole-plan, 2500 per room,
+  clamped per axis), which made every grid measurement scale-relative: on a 100 × 60 m plan the nav
+  cell reached 775 mm, so a 900 mm door was one cell, the 300 mm body-radius erosion was a third of
+  one, and clear width quantised in ~775 mm steps — all 14 rooms of the museum fixture reported an
+  identical 1940 mm bottleneck and a compliant 1.8 m corridor read the same as an illegal 1.0 m one.
+  The count is replaced by a target cell SIZE bounded by a total cell BUDGET —
+  `cell = max(100 mm, ceil(sqrt(area / 250_000)))` for the nav grid and `/ 25_000` for per-room
+  occupancy — and the per-axis clamp is **dropped**, not re-tuned (the budget alone bounds the grid;
+  a per-axis cap would re-introduce exactly this quantisation on a long, thin building). `MIN_CELL_MM`
+  is unchanged, so the floor holds to 2500 m² (nav) / 250 m² (room) and **every dwelling-scale plan is
+  byte-for-byte unaffected** — verified across all of `examples/`; the museum drops to a 155 mm cell
+  and its bottlenecks separate (1140 vs 1940 mm). The ~25× extra cells are paid for by turning the two
+  O(cells × rects) scans into per-rect bbox scans and dropping a per-swap allocation in the
+  widest-path heap. `describe()` reports the cell actually used as `cellSizeMm`; both formulas are
+  closed-form, integral and monotonic in the area, so determinism is preserved. See `docs/analysis.md`
+  → "Grid resolution" and the ADR 0008 addendum.
+- **The threshold carve tries the connector's centre first, then only the walkable part of the
+  opening.** A finer cell exposed a latent assumption: a connector was modelled as the single cell at
+  its centre point, which is fine while an opening is about one cell wide. At 155 mm a 4 m opening
+  spans two dozen cells, and a 6 m servery parked across half of a 4 m threshold read as SEALED. Any
+  plan that already carves is untouched, and a fully covered opening still reports the room
+  unreachable — no room is connected by fiat.
 
 ### Notes
 
