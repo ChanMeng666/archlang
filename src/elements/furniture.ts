@@ -13,11 +13,21 @@ import {
   backCandidateEdges,
   backingWallForRoomEdge,
   FIXTURE_WALL_TOL_MM,
+  innerFaceOfRoomEdge,
   type RectEdge,
   rotateForBackEdge,
 } from "../fixture-orientation.js";
 
 const ANCHOR_SET: ReadonlySet<string> = new Set<FurnitureAnchor>(FURNITURE_ANCHORS);
+
+/** Consume an optional `flush` modifier, recording its own byte span (so the
+ *  "flush on a centred piece" diagnostic can point at the word, not the statement).
+ *  Returns a spreadable partial so an absent `flush` adds no keys at all. */
+function eatFlushOpt(ctx: ParseCtx): { flush?: true; flushSpan?: Span } {
+  if (!ctx.isKeyword("flush")) return {};
+  const t = ctx.next();
+  return { flush: true, flushSpan: { start: t.start, end: t.end } };
+}
 
 export const furniture: ElementDef = {
   kind: "furniture",
@@ -59,21 +69,31 @@ export const furniture: ElementDef = {
       }
       against = a;
     } else if (ctx.isKeyword("in")) {
-      // `in <room> centered` | `in <room> anchor <a> [inset N]` — the `in` room
-      // both positions and owns the fixture.
+      // `in <room> centered` | `in <room> anchor <a> [flush] [inset N]` — the `in`
+      // room both positions and owns the fixture. `flush` comes before `inset`
+      // because it re-bases it (room centerline → wall face), and the canonical
+      // order is what the formatter emits.
       ctx.next();
       room = ctx.eatIdent().value;
       if (ctx.isKeyword("centered")) {
         ctx.next();
-        place = { mode: "centered" };
+        // A centred piece is anchored to no edge, so `flush` has nothing to be
+        // flush with — accepted here only so resolve can say so (E_FURN_FLUSH).
+        place = { mode: "centered", ...eatFlushOpt(ctx) };
       } else if (ctx.isKeyword("anchor")) {
         ctx.next();
         const a = ctx.eatIdent().value;
         if (!ANCHOR_SET.has(a)) ctx.fail(`Expected an anchor (${FURNITURE_ANCHORS.join("|")}) but found "${a}"`);
-        const p: Extract<FurniturePlace, { mode: "anchor" }> = { mode: "anchor", anchor: a as FurnitureAnchor };
+        const p: Extract<FurniturePlace, { mode: "anchor" }> = {
+          mode: "anchor",
+          anchor: a as FurnitureAnchor,
+          ...eatFlushOpt(ctx),
+        };
         if (ctx.isKeyword("inset")) {
           ctx.next();
           p.inset = ctx.parseExpr();
+          if (ctx.isKeyword("flush"))
+            ctx.fail(`\`flush\` comes before \`inset\` — write \`anchor ${a} flush inset <mm>\``);
         }
         place = p;
       } else {
@@ -227,6 +247,7 @@ export const furniture: ElementDef = {
       size,
       label: n.label !== undefined ? ctx.evalStr(n.label) : undefined,
       ...(rotate ? { rotate } : {}),
+      ...(n.place?.flush ? { flush: true } : {}),
       ...(roomOut ? { room: roomOut } : {}),
       ...(n.rotateSpan ? { _rotateSpan: n.rotateSpan } : {}),
       span: n.span,
@@ -374,6 +395,29 @@ const ANCHOR_BACK_EDGES: Readonly<Record<FurnitureAnchor, readonly RectEdge[]>> 
 });
 
 /**
+ * `flush` is only meaningful when the placement pushes the piece onto an edge, since
+ * an edge is the only thing that has a wall face to be flush with. A centred piece
+ * (`centered`, or the equivalent `anchor center`) names none, so this reports the
+ * combination as a usage error instead of silently ignoring the word. Points at the
+ * `flush` keyword itself when the parser recorded its span. No-op when `flush` is absent.
+ */
+function flushWithoutEdge(
+  id: string,
+  place: NonNullable<FurnitureNode["place"]>,
+  ctx: ResolveCtx,
+  span: Span | undefined,
+): void {
+  if (!place.flush) return;
+  const where = place.mode === "centered" ? "`centered`" : "`anchor center`";
+  ctx.diag({
+    severity: "error",
+    message: `Furniture "${id}" is ${where}, which touches no edge — \`flush\` has no wall face to measure from`,
+    code: "E_FURN_FLUSH",
+    span: place.flushSpan ?? span,
+  });
+}
+
+/**
  * Closed-form room-relative placement (`in <room> centered|anchor …`): the
  * fixture's top-left corner inside the resolved room box, plus — when `derive` is
  * set — the quarter-turn that puts the fixture's back against the wall the anchor
@@ -387,6 +431,14 @@ const ANCHOR_BACK_EDGES: Readonly<Record<FurnitureAnchor, readonly RectEdge[]>> 
  * with walls on both of its edges, or an anchor whose edge has no wall at all, has
  * no unique answer, so nothing is derived and `lint` says so instead
  * (`W_FIXTURE_BACK_TO_ROOM`). `centered` names no edge, so it never derives.
+ *
+ * `flush` re-bases the `inset` of each anchored edge from the room rectangle (a wall
+ * CENTERLINE) to that wall's inner face, per edge and independently — a corner anchor
+ * can be flush on one edge and room-referenced on the other, and an edge with no wall
+ * behind it keeps the room-rect reference (there is no face to measure from). It is a
+ * *position* rule only: it runs before the rotation derivation and shares its
+ * "is there a wall behind this edge?" question, so the two always agree about which
+ * wall the piece is on.
  */
 function placeInRoom(
   id: string,
@@ -415,20 +467,31 @@ function placeInRoom(
   const y1 = y0 + room.size.h;
   const cx = x0 + room.size.w / 2;
   const cy = y0 + room.size.h / 2;
-  if (place.mode === "centered") return { at: { x: cx - w / 2, y: cy - h / 2 } };
+  if (place.mode === "centered") {
+    flushWithoutEdge(id, place, ctx, span);
+    return { at: { x: cx - w / 2, y: cy - h / 2 } };
+  }
   const inset = place.inset !== undefined ? ctx.eval(place.inset) : 0;
   const a = place.anchor;
+  const roomRect = { x: x0, y: y0, w: room.size.w, h: room.size.h };
+  // `flush` re-bases the anchored edge(s) from the room rectangle (wall centerlines)
+  // to the backing wall's inner face. `null` = keep the room-rect edge, either because
+  // the author did not ask for `flush` or because that edge has no wall behind it.
+  if (place.flush && ANCHOR_BACK_EDGES[a].length === 0) flushWithoutEdge(id, place, ctx, span);
+  const face = (e: RectEdge): number | null =>
+    place.flush && ANCHOR_BACK_EDGES[a].includes(e)
+      ? innerFaceOfRoomEdge(roomRect, e, ctx.walls, FIXTURE_WALL_TOL_MM)
+      : null;
   let x: number;
-  if (a === "top-left" || a === "left" || a === "bottom-left") x = x0 + inset;
-  else if (a === "top-right" || a === "right" || a === "bottom-right") x = x1 - w - inset;
+  if (a === "top-left" || a === "left" || a === "bottom-left") x = (face("left") ?? x0) + inset;
+  else if (a === "top-right" || a === "right" || a === "bottom-right") x = (face("right") ?? x1) - w - inset;
   else x = cx - w / 2; // top | center | bottom → horizontally centred
   let y: number;
-  if (a === "top-left" || a === "top" || a === "top-right") y = y0 + inset;
-  else if (a === "bottom-left" || a === "bottom" || a === "bottom-right") y = y1 - h - inset;
+  if (a === "top-left" || a === "top" || a === "top-right") y = (face("top") ?? y0) + inset;
+  else if (a === "bottom-left" || a === "bottom" || a === "bottom-right") y = (face("bottom") ?? y1) - h - inset;
   else y = cy - h / 2; // left | center | right → vertically centred
   const at = { x, y };
   if (!derive) return { at };
-  const roomRect = { x: x0, y: y0, w: room.size.w, h: room.size.h };
   // Two independent closed-form constraints: the anchor names the edge(s) the piece
   // is pushed against, and the footprint's aspect says which edges can physically be
   // its back. A single walled edge in both = one answer; anything else = no rotation.

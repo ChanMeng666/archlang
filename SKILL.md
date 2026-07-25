@@ -72,10 +72,16 @@ physically wrong (openings off their wall, furniture through walls). Author by *
   `E_ATTACH_WALL_REF`; past the wall → `E_ATTACH_POS_RANGE`.)
 - **Lay rooms with `strip`.** `strip right at (0,0) gap 0 height 4000 { room … room … }` places a row
   (or column, with `down`/`up` + `width`) of rooms end to end — no per-room `at`.
-- **Place furniture by anchor.** `furniture <kind> in <room> anchor <9-point anchor> [inset <mm>] …`
-  snaps a piece flush to a room corner or edge — the anchor is one of `top-left`, `top`, `top-right`,
+- **Place furniture by anchor.** `furniture <kind> in <room> anchor <9-point anchor> [flush] [inset <mm>] …`
+  snaps a piece to a room corner or edge — the anchor is one of `top-left`, `top`, `top-right`,
   `left`, `center`, `right`, `bottom-left`, `bottom`, `bottom-right`; `against wall <id>` backs
   plumbing/kitchen fixtures onto a real wall face. Both are closed-form and never float or penetrate.
+- **Add `flush` and never compute half a wall thickness.** A room's rectangle runs along wall
+  *centerlines*, so a bare `anchor bottom` leaves the piece's back inside the solid
+  (`W_FURNITURE_WALL_COLLISION`). `anchor bottom flush` measures from the backing wall's inner **face**
+  instead, and `flush inset 50` from 50 mm off it — so write `furniture wc in r_bath anchor bottom flush
+  size 400x700`, not an `inset 100` you worked out from a thickness you never named. (`flush` needs an
+  anchored edge: on `centered`/`anchor center` it is `E_FURN_FLUSH`.)
 - **Every room still needs a way in** — put a `door` or cased `opening` on a wall of *every* room
   (an open-plan space still needs a modeled opening), and keep furniture out of the doorway approach
   (≥300 mm) and the leaf's swing.

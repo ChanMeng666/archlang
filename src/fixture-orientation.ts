@@ -162,6 +162,43 @@ export function backingWallForRoomEdge(
   return mergedLength(covered) >= len * 0.5 ? (best?.seg ?? null) : null;
 }
 
+/**
+ * Where the **inner face** of the wall backing `edge` sits, as a coordinate on that
+ * edge's fixed axis (`y` for `top`/`bottom`, `x` for `left`/`right`), or `null` when
+ * the edge has no wall behind it.
+ *
+ * A room rectangle's edges are wall CENTERLINES, so the solid reaches half a
+ * thickness into the room. The face is that centerline pushed `thickness / 2` in the
+ * direction the room lies — `+` for `top`/`left`, `−` for `bottom`/`right`, read off
+ * the edge alone (the room is always on the inward side of its own edge). Taken from
+ * the backing segment's own centerline rather than the rect edge, so the answer is the
+ * real wall's face — exactly the plane `W_FURNITURE_WALL_COLLISION` measures against.
+ *
+ * This is the geometry behind `furniture … in <room> anchor <a> flush`: with it,
+ * `inset` starts at the plaster instead of inside the wall.
+ */
+export function innerFaceOfRoomEdge(
+  rect: BBox,
+  edge: RectEdge,
+  walls: WallLike[],
+  tol: number = FIXTURE_WALL_TOL_MM,
+  segs: readonly WallSegment[] = walls.flatMap((w) => segmentsOfWall(w)),
+): number | null {
+  const seg = backingWallForRoomEdge(rect, edge, walls, tol, segs);
+  if (!seg) return null;
+  const half = seg.thickness / 2;
+  switch (edge) {
+    case "top":
+      return (seg.a.y + seg.b.y) / 2 + half;
+    case "bottom":
+      return (seg.a.y + seg.b.y) / 2 - half;
+    case "left":
+      return (seg.a.x + seg.b.x) / 2 + half;
+    case "right":
+      return (seg.a.x + seg.b.x) / 2 - half;
+  }
+}
+
 /** {@link backingWallForRoomEdge} for all four edges of `rect` at once. */
 export function wallBackedEdges(
   rect: BBox,

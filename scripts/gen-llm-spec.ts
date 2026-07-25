@@ -41,7 +41,7 @@ const ELEMENT_GRAMMAR: Record<string, string> = {
   opening:
     "opening [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # a leaf-less cased opening (gap in a wall) that still connects the two spaces in the access graph",
   furniture:
-    'furniture <category> [id=<name>] (at (x,y) | against wall <id> [segment <n>] [offset <mm>] [side left|right] | in <roomId> centered | in <roomId> anchor <a> [inset <mm>]) [size <W>x<H>] [label "…"] [rotate 0|90|180|270] [in <roomId>]   # `at` size is plan W×H; `against` size is wall-relative along×depth and derives position+rotation, with `side` inferred from `in <roomId>` when omitted; a known fixture (wc/basin/shower/bathtub/kitchen_sink/counter/stove/fridge…) `against wall` may omit `size` to use its catalogued footprint. `anchor <a>` is top-left|top|top-right|left|center|right|bottom-left|bottom|bottom-right; `inset` (default 0) pulls it in from that edge',
+    'furniture <category> [id=<name>] (at (x,y) | against wall <id> [segment <n>] [offset <mm>] [side left|right] | in <roomId> centered | in <roomId> anchor <a> [flush] [inset <mm>]) [size <W>x<H>] [label "…"] [rotate 0|90|180|270] [in <roomId>]   # `at` size is plan W×H; `against` size is wall-relative along×depth and derives position+rotation, with `side` inferred from `in <roomId>` when omitted; a known fixture (wc/basin/shower/bathtub/kitchen_sink/counter/stove/fridge…) `against wall` may omit `size` to use its catalogued footprint. `anchor <a>` is top-left|top|top-right|left|center|right|bottom-left|bottom|bottom-right; `inset` (default 0) pulls it in from that edge, measured from the room rectangle (a wall CENTERLINE) — add `flush` to measure from the backing wall\'s inner FACE instead, so `anchor bottom flush` sits on the plaster with no half-thickness arithmetic (`flush` needs an anchored edge: it is E_FURN_FLUSH on `centered`/`anchor center`)',
   dim: 'dim (x,y)->(x,y) offset <mm> [text "…"]   # a dimension line',
   column: "column [id=<name>] at (x,y) size <W>x<H>",
 };
@@ -244,7 +244,8 @@ SKILL.md for the full recipe.
 | Expecting +y to go up | +y goes **down**; a room below another has a larger y. |
 | Door/window floating off its wall | Attach it: \`door on <wall> at <pos>\` — hosted by construction, it can never be off-wall. |
 | Hand-summing room offsets | Lay the row with \`strip\` — each room's \`at\` is computed for you. |
-| Furniture floated at a guessed (or copy-pasted) \`at\` | Place it \`in <room> anchor <9-point> [inset]\` or \`against wall <id>\` — closed-form, never floats or penetrates. |
+| Furniture floated at a guessed (or copy-pasted) \`at\` | Place it \`in <room> anchor <9-point> [flush] [inset]\` or \`against wall <id>\` — closed-form, never floats or penetrates. |
+| Hand-computing half a wall thickness as \`inset\` (\`anchor bottom inset 100\` for a 200 wall) | Write \`anchor bottom flush\` — the inset is measured from the wall face, so you never name a thickness. |
 | \`size 4000\` (no height) | Sizes are \`WxH\`: \`size 4000x3000\` (or \`W x H\` with spaces). |
 | Reusing an \`id\` | Ids are unique; omit \`id=\` to auto-generate. |
 | String math without interpolation | Use \`"{expr}"\`, e.g. \`label "{aream2(W,H)} m²"\`. |

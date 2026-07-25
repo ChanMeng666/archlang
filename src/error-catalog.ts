@@ -136,6 +136,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Name an existing wall id, add `segment <n>` for multi-segment walls, give `side left|right`, keep the segment axis-aligned, and drop any explicit `rotate`.",
     "furniture wc against wall w1 side left size 400x700   # error if w1 is unknown or multi-segment",
   ),
+  E_FURN_FLUSH: E(
+    "E_FURN_FLUSH",
+    "`flush` on a placement that touches no edge.",
+    "`flush` measures `inset` from the inner face of the wall behind an *anchored edge*. A `centered` piece (or the equivalent `anchor center`) is pushed against no edge, so there is no wall face to measure from.",
+    "Anchor the piece to the edge you want it flush with (`anchor bottom flush`, `anchor top-left flush`), or drop `flush` and keep it centred.",
+    "furniture wc in bath centered flush size 400x700   # error: centred, so nothing to be flush with",
+  ),
   E_ATTACH_WALL_REF: E(
     "E_ATTACH_WALL_REF",
     "Opening attached to an unknown or ambiguous wall.",

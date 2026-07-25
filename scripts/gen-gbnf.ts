@@ -178,7 +178,7 @@ function rules(): [string, string][] {
     ["furniture-stmt", `"furniture" rws id-opt ident rws furn-pos ( ws furn-clause )*`],
     ["furn-pos", `"against" rws "wall" rws ident ( ws against-opt )* | "in" rws ident rws in-place | "at" ws point`],
     ["against-opt", `"segment" ws expr | "offset" ws expr | "side" rws ident`],
-    ["in-place", `"centered" | "anchor" rws anchor ( ws "inset" ws expr )?`],
+    ["in-place", `"centered" | "anchor" rws anchor ( ws "flush" )? ( ws "inset" ws expr )?`],
     ["anchor", anchor],
     ["furn-clause", `"size" ws dims | "label" ws string | "rotate" ws expr | "in" rws ident`],
     ["dim-stmt", `"dim" ws point ws "->" ws point ( ws "offset" ws expr )? ( ws "text" ws string )?`],

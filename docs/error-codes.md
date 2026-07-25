@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**51 errors** · **33 warnings**
+**52 errors** · **33 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -22,6 +22,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_DOOR_WIDTH`](#e_door_width) | error | Door must have a positive width. |
 | [`E_DUP_ID`](#e_dup_id) | error | Duplicate element id. |
 | [`E_FURN_AGAINST`](#e_furn_against) | error | Invalid `against wall` fixture placement. |
+| [`E_FURN_FLUSH`](#e_furn_flush) | error | `flush` on a placement that touches no edge. |
 | [`E_FURN_ROOM`](#e_furn_room) | error | Furniture placed `in` an unknown room. |
 | [`E_FURN_ROTATE`](#e_furn_rotate) | error | Furniture rotation must be a quarter-turn. |
 | [`E_FURN_SIZE`](#e_furn_size) | error | Furniture must have a positive size. |
@@ -250,6 +251,18 @@ room id=a at (1,0) size 1x1   # error: duplicate id "a"
 
 ```arch
 furniture wc against wall w1 side left size 400x700   # error if w1 is unknown or multi-segment
+```
+
+## E_FURN_FLUSH
+
+*error* — `flush` on a placement that touches no edge.
+
+**Cause.** `flush` measures `inset` from the inner face of the wall behind an *anchored edge*. A `centered` piece (or the equivalent `anchor center`) is pushed against no edge, so there is no wall face to measure from.
+
+**Fix.** Anchor the piece to the edge you want it flush with (`anchor bottom flush`, `anchor top-left flush`), or drop `flush` and keep it centred.
+
+```arch
+furniture wc in bath centered flush size 400x700   # error: centred, so nothing to be flush with
 ```
 
 ## E_FURN_ROOM

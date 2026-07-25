@@ -149,6 +149,10 @@ export interface RFurniture extends RBase {
   rotate?: number;
   /** Declared owning room id (`in <roomId>`), if any. */
   room?: string;
+  /** The author wrote `flush`: this piece's anchored edge(s) are measured from the
+   *  backing wall's inner face, not the room rectangle's centerline edge. Position is
+   *  already resolved into {@link RFurniture.at} — this records *how*, for tooling. */
+  flush?: boolean;
   /** `anchored` (`in <room> anchor|centered`), `against-wall` (`against wall …`),
    *  or `absolute` (`at (x,y)`). Internal marker for `describe().freedom`. */
   _placement?: FurniturePlacement;
