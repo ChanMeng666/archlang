@@ -762,6 +762,26 @@ It is deterministic and never guesses topology: it will **not** add a door or wi
 that would newly pinch a walk below the lint threshold (reporting it in `unresolved`
 instead). Use [`SKILL.md`](../SKILL.md) for the full repair-then-gate loop.
 
+**It reads every furniture statement, and never goes quiet.** The scan walks *into*
+`for` / `while` / `if` bodies and component definitions, so scripted pieces are no
+longer invisible to it, and it rewrites a placement **in the form you wrote it**:
+
+| How the piece is written | What repair rewrites |
+|---|---|
+| `at (x,y)` with literal coordinates | the `at` point |
+| `in <room> anchor <a> [flush] [inset N]` | the `inset`, minimally — in the wall-face frame when the placement is `flush` |
+| the same, when the move runs across the anchored axis | the whole placement becomes an absolute `at`, carrying the `rotate` the anchor had *derived* |
+| a statement with **more than one** resolved instance (a `for` body, a component used twice) | nothing — reported |
+| expression coordinates / an expression `inset` | nothing — reported (rewriting would discard your arithmetic) |
+| `against wall <id> …` | nothing — the wall is authoritative; reported |
+
+Anything in the last three rows is still *accounted for*: if a mover or orientation
+pass flags it, the piece appears in `unresolved` with the fault **and** the reason it
+was left alone (naming the `for`/component and the resolved piece ids for a scripted
+statement) — so a scripted collision can never read as a clean run. Every entry, change
+or note, carries the statement's byte `span`. A wall-anchored fixture is also an
+*obstacle*: a movable piece placed after it is separated off it.
+
 ### Comparing two plans — `diffPlans`
 
 Where `describe(source)` turns **one** plan into facts, `diffPlans(sourceA, sourceB, opts?)`

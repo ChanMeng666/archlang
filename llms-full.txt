@@ -319,7 +319,12 @@ npx @chanmeng666/archlang help
    (always exit `0`) to watch the plan approach the brief across edits. See
    [`/intent.schema.json`](https://archlang.uk/intent.schema.json).
 9. **Fix furniture geometry:** `arch repair plan.arch -o fixed.arch` pushes furniture out of
-   walls/doorways/swing arcs (the geometric corrector; distinct from `fix`).
+   walls/doorways/swing arcs (the geometric corrector; distinct from `fix`). It rewrites a piece in
+   the form you wrote it (an `at` point, or the `inset` of an `in <room> anchor …` placement) — and
+   **always read `unresolved`**: a piece it may not rewrite (one `for`/component statement drawing
+   several pieces, expression coordinates, an `against wall` anchor) is reported there with the fault
+   and why, never silently skipped. `changed: false` with a non-empty `unresolved` means *you* edit
+   the source.
 10. **Show the user:** `arch preview plan.arch -o plan.png` renders a PNG (`--install` fetches the
    optional renderer if missing).
 

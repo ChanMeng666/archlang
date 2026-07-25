@@ -22,6 +22,7 @@ import { segmentsOfWall, type WallLike, type WallSegment } from "./geometry.js";
 import { mergedLength, overlap1d, type BBox } from "./geometry/rect.js";
 import { classifyLabelUses } from "./vocabulary.js";
 import {
+  ANCHOR_BACK_EDGES,
   BACK_EDGE_ROTATE,
   backCandidateEdges,
   backEdgeForRotate,
@@ -47,6 +48,7 @@ export type { BBox };
 // rotation without a cycle through the registry. Re-exported here because this is
 // the analysis surface the lint rules, `repair`, and `src/index.ts` read from.
 export {
+  ANCHOR_BACK_EDGES,
   backCandidateEdges,
   backedEdgeList,
   backEdgeForRotate,

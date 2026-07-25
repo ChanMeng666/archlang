@@ -21,6 +21,7 @@
  * without a cycle through the registry.
  */
 
+import type { FurnitureAnchor } from "./ast.js";
 import type { WallLike, WallSegment } from "./geometry.js";
 import { segmentsOfWall } from "./geometry.js";
 import { type BBox, mergedLength, overlap1d } from "./geometry/rect.js";
@@ -100,6 +101,28 @@ export function backCandidateEdges(
   // the back edge is perpendicular to.
   return size.h > size.w === footprint.depth > footprint.along ? ["top", "bottom"] : ["left", "right"];
 }
+
+/**
+ * The room-rectangle edge(s) a `furniture … in <room> anchor <a>` placement pushes a
+ * fixture against: one for an edge anchor, two for a corner, none for a centred piece.
+ *
+ * It is the *candidate* set for two independent questions, which is why it lives here
+ * next to the backing-wall geometry rather than inside the element module: `resolve`
+ * derives a rotation only when exactly one candidate has a wall behind it, and `repair`
+ * re-expresses a move as an `inset` only along the axes these edges anchor. One table,
+ * so the placement, the derived rotation, and the repair rewrite cannot disagree.
+ */
+export const ANCHOR_BACK_EDGES: Readonly<Record<FurnitureAnchor, readonly RectEdge[]>> = Object.freeze({
+  "top-left": ["top", "left"],
+  top: ["top"],
+  "top-right": ["top", "right"],
+  left: ["left"],
+  center: [],
+  right: ["right"],
+  "bottom-left": ["bottom", "left"],
+  bottom: ["bottom"],
+  "bottom-right": ["bottom", "right"],
+});
 
 /** Geometry of one rectangle edge as a 1-D run on a fixed orthogonal line. */
 function edgeRun(rect: BBox, edge: RectEdge): { axis: "h" | "v"; fixed: number; lo: number; hi: number } {
