@@ -493,7 +493,7 @@ opening on w_part at 50% width 900                            # centred on the p
 furniture <kind> [id=<id>] at (x,y) size <w>x<h> [label "<text>"] [rotate 0|90|180|270] [in <room>]
 furniture <kind> [id=<id>] against wall <ref> [segment <n>] [offset <mm>] [side left|right] [size <along>x<depth>] [label "<text>"] [in <room>]
 furniture <kind> [id=<id>] in <room> centered [size <w>x<h>] [label …] [rotate …]
-furniture <kind> [id=<id>] in <room> anchor <a> [inset <mm>] [size <w>x<h>] [label …] [rotate …]
+furniture <kind> [id=<id>] in <room> anchor <a> [flush] [inset <mm>] [size <w>x<h>] [label …] [rotate …]
 ```
 
 A schematic labelled rectangle (bed, sofa, desk…). Known plumbing & kitchen
@@ -518,6 +518,22 @@ from the referenced edge(s). The `in <room>` here both positions **and** owns th
 fixture. An unknown or relationally-placed room is
 [`E_PLACE_REF`](error-codes.md).
 
+**`flush` — measure from the wall face, not the centerline.** A room's rectangle is
+drawn on wall **centerlines**, so `anchor bottom` with `inset 0` puts the piece's back
+half a wall thickness *inside* the solid (a `W_FURNITURE_WALL_COLLISION`) — the reason
+you would otherwise hand-write `inset 100` for a 200 mm wall you never named. Adding
+`flush` re-bases `inset` (still defaulting to `0`) onto the **inner face** of the wall
+behind each anchored edge: centerline + thickness / 2, toward the room. So
+`anchor bottom flush` sits on the plaster, and `anchor bottom flush inset 50` sits
+50 mm off it.
+
+The rule is per edge and independent, so a corner anchor can be flush on one edge and
+room-referenced on the other, and an anchored edge with **no** wall behind it simply
+keeps the room-rectangle reference (there is no face to measure from). `flush` is a
+position rule only — it composes with the derived rotation below, and it needs an
+anchored edge: on `centered` (or the equivalent `anchor center`) it is
+[`E_FURN_FLUSH`](error-codes.md). It comes before `inset`, which it re-bases.
+
 An anchor also **derives the rotation** of a wall-requiring fixture you did not turn
 by hand: the anchored edge names the wall its back should face. It is derived only
 when that answer is unique — the edge must be walled, and the footprint's aspect must
@@ -528,6 +544,7 @@ room is [`W_FIXTURE_BACK_TO_ROOM`](error-codes.md), with a `rotate` fix. See
 ```
 furniture bed  in r_bed    anchor top-left inset 300 size 1500x2000 label "Bed"
 furniture sofa in r_living centered                  size 2000x900  label "Sofa"
+furniture wc   in r_bath   anchor bottom flush       size 400x700   # back on the wall face
 ```
 
 The full placement rules, the fixture symbol catalogue, and the

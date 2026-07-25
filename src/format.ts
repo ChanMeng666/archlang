@@ -77,10 +77,14 @@ function openingLead(s: { at?: ExprPoint; attach?: OpeningAttach }): string {
   return s.attach ? `on ${s.attach.wall} at ${attachPosStr(s.attach.pos)}` : `at ${ptStr(s.at!)}`;
 }
 
-/** A fixture's room-relative placement clause: `in <room> centered|anchor …`. */
+/** A fixture's room-relative placement clause: `in <room> centered|anchor …`.
+ *  `flush` prints before `inset` — the one order the grammar accepts, since it
+ *  re-bases what `inset` is measured from. */
 function placeStr(place: FurniturePlace, room: string): string {
-  if (place.mode === "centered") return `in ${room} centered`;
-  return `in ${room} anchor ${place.anchor}${place.inset !== undefined ? ` inset ${exprStr(place.inset)}` : ""}`;
+  const flush = place.flush ? " flush" : "";
+  if (place.mode === "centered") return `in ${room} centered${flush}`;
+  const inset = place.inset !== undefined ? ` inset ${exprStr(place.inset)}` : "";
+  return `in ${room} anchor ${place.anchor}${flush}${inset}`;
 }
 
 /** One strip room child: `room [id=] size <main>[x<cross>] [label …] [uses …]`. */

@@ -214,10 +214,22 @@ export const FURNITURE_ANCHORS: readonly FurnitureAnchor[] = [
   "bottom-right",
 ];
 
-/** `in <room> centered` | `in <room> anchor <a> [inset N]` — closed-form placement
- *  of a fixture inside a resolved room's box. The `in <room>` also owns the fixture
- *  (sets {@link FurnitureNode.room}). Exclusive with `at`/`against`. */
-export type FurniturePlace = { mode: "centered" } | { mode: "anchor"; anchor: FurnitureAnchor; inset?: Expr };
+/**
+ * `in <room> centered` | `in <room> anchor <a> [flush] [inset N]` — closed-form
+ * placement of a fixture inside a resolved room's box. The `in <room>` also owns the
+ * fixture (sets {@link FurnitureNode.room}). Exclusive with `at`/`against`.
+ *
+ * `flush` changes what `inset` is measured **from**: the room rectangle's edges are
+ * wall *centerlines*, so `inset 0` alone leaves the piece half a wall thickness inside
+ * the solid. With `flush`, each anchored edge that has a wall behind it is referenced
+ * from that wall's **inner face** instead (centerline + thickness/2, toward the room),
+ * so `inset` starts at the plaster. It is carried on the `centered` variant too only so
+ * resolve can report the meaningless combination (`E_FURN_FLUSH`) instead of a bare
+ * parse error; `flushSpan` is the `flush` keyword's own byte span, for that diagnostic.
+ */
+export type FurniturePlace =
+  | { mode: "centered"; flush?: boolean; flushSpan?: Span }
+  | { mode: "anchor"; anchor: FurnitureAnchor; inset?: Expr; flush?: boolean; flushSpan?: Span };
 
 export interface FurnitureNode extends NodeBase {
   kind: "furniture";

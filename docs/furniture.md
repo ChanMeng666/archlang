@@ -20,7 +20,7 @@ non-absolute modes derive the piece's rotation for you.
 |------|---------|----------|------------------|
 | **Absolute** | `furniture <kind> at (x,y) size <w>x<h> [rotate 0\|90\|180\|270] [in <room>]` | corner, footprint, optional quarter-turn | nothing — what you write is what's drawn |
 | **Against wall** | `furniture <kind> against wall <ref> [segment <n>] [offset <mm>] [side left\|right] size <along>x<depth> [in <room>]` | which wall, how far along, depth | the position **and** the rotation, from the wall |
-| **In a room** | `furniture <kind> in <room> centered\|anchor <a> [inset <mm>] size <w>x<h> [rotate …]` | which room, which corner/edge, footprint | the position from the room's box, and — for a fixture — the rotation from the wall the anchor names |
+| **In a room** | `furniture <kind> in <room> centered\|anchor <a> [flush] [inset <mm>] size <w>x<h> [rotate …]` | which room, which corner/edge, footprint | the position from the room's box (or, with `flush`, from the backing wall's face), and — for a fixture — the rotation from the wall the anchor names |
 
 ```
 # Absolute: a bed in the top-left, turned a quarter turn so its head is on the left wall.
@@ -31,8 +31,8 @@ furniture bed at (4300,300) size 1500x2000 rotate 90 in r_bed
 furniture counter against wall north offset 300 side left size 1800x600 in r_kitchen
 
 # In a room: a WC on the bathroom's south edge — `rotate 180` (cistern to that wall) is
-# derived, and `inset 100` clears a 200-mm shell's inner face.
-furniture wc in r_bath anchor bottom inset 100 size 400x700
+# derived, and `flush` puts its back on that wall's inner face (no thickness to work out).
+furniture wc in r_bath anchor bottom flush size 400x700
 ```
 
 - **`rotate`** turns the footprint a whole quarter-turn about its centre (`0`, `90`,
@@ -51,6 +51,17 @@ furniture wc in r_bath anchor bottom inset 100 size 400x700
   lets `against` infer the interior side. A non-existent id is
   [`E_FURN_ROOM`](error-codes.md). The leading form (`in <room> centered\|anchor …`)
   both positions and owns the piece.
+- **`flush` measures the inset from the wall FACE.** A room's rectangle runs along wall
+  **centerlines**, so `anchor bottom` alone leaves the piece's back half a wall thickness
+  inside the solid — which is why you would otherwise write `inset 100` for a 200-mm wall
+  you never named ([`W_FURNITURE_WALL_COLLISION`](error-codes.md) if you forget). `flush`
+  re-bases `inset` (default still `0`) onto the **inner face** of the wall behind each
+  anchored edge — centerline + thickness / 2, toward the room — so `anchor bottom flush`
+  lands on the plaster and `anchor bottom flush inset 50` sits 50 mm off it. It applies
+  per edge and independently (a corner anchor can be flush on one edge only), an anchored
+  edge with no wall behind it keeps the room-rectangle reference, and it needs an anchored
+  edge at all: `centered` / `anchor center` is [`E_FURN_FLUSH`](error-codes.md). Write it
+  **before** `inset`, whose reference it changes.
 - **`anchor <edge>` also aims a fixture.** An anchor names the wall(s) the piece is
   pushed against, so for a fixture whose facing means something the quarter-turn is
   derived — no `rotate` to work out by hand. It is derived only when the answer is
