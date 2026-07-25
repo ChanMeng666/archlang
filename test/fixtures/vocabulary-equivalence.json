@@ -924,5 +924,49 @@
       "uses": ["hall"],
       "room_type": "Entrance"
     }
+  ],
+  "examples/two-storey.arch": [
+    {
+      "id": "hall",
+      "label": "Hall",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "living",
+      "label": "Living",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "kitchen",
+      "label": "Kitchen",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "landing",
+      "label": "Landing",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "bath",
+      "label": "Bath",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "bed1",
+      "label": "Bedroom 1",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "bed2",
+      "label": "Bedroom 2",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    }
   ]
 }

@@ -76,6 +76,22 @@ dimensioning), a column grid written with `for`, and fixture rows placed by
 
 <ArchLive :src="EXAMPLES['museum']" :rows="26" />
 
+## Two-storey house (one drawing per level)
+
+A compact house written as two [`level` blocks](/reference#levels-a-multi-storey-building-v1-21)
+— a storey is a complete drawing, so this source compiles to **two sheets**
+(`two-storey.L1.svg`, `two-storey.L2.svg`), each with its own dimension chains and a title
+block stamped `LEVEL 1 — Ground floor` / `LEVEL 2 — First floor`. The settings (`paper A3`,
+`dims auto all`) and the `let`s sit *outside* the levels and apply to both: one building,
+one sheet spec, one scale. `stair` exists on both floors with the same id — within a level
+ids are unique, so the same id across levels is legal and reads as vertical identity.
+
+The live widget below shows **page 1** (the lowest storey), which is what `compile().svg`
+returns; `compile().pages` carries the whole set, and `arch describe --level 2 --json` reads
+the upper floor's facts.
+
+<ArchLive :src="EXAMPLES['two-storey']" :rows="28" />
+
 ## Accessible metadata
 
 `accTitle` and `accDescr` supply the SVG `<title>`/`<desc>` emitted by

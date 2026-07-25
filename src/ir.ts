@@ -13,6 +13,7 @@ import type {
   ElementKind,
   ExprPoint,
   FurnitureNode,
+  LevelNode,
   NorthDir,
   OpeningNode,
   PlanNode,
@@ -40,6 +41,7 @@ import { NULL_WORLD } from "./world.js";
 import { idToken } from "./identity.js";
 import type { WallSegment } from "./geometry.js";
 import { outerFaceBounds, segmentsOfWall, WallGrid } from "./geometry.js";
+import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
 import type { ResolvedSheet } from "./sheet.js";
 import { resolveSheetSpec } from "./sheet.js";
@@ -251,6 +253,15 @@ export interface ResolvedPlan {
   themeFrom?: string;
   /** Per-element style overrides (`style <kind> { … }`), applied at lowering. */
   styles?: Record<string, Partial<Theme>>;
+  /**
+   * Which **storey** this IR is, for a multi-storey plan (`level <n> { … }`): the authored
+   * level number. Absent for a single-storey plan, so its IR — and therefore its Scene and
+   * bytes — is unchanged. Derived page identity, never authored on the AST: it is what
+   * stamps the `LEVEL` title-block row so a drawing SET is readable.
+   */
+  level?: number;
+  /** The storey's name (`level 1 "Ground floor"`), when one was given. */
+  levelName?: string;
   /** Resolved elements, in source order (for rendering). */
   elements: ResolvedElement[];
   /** Resolved walls (for bounds/hosting), in source order. */
@@ -485,6 +496,13 @@ function expandScope(
         // A statement that failed to parse — already reported as a diagnostic at
         // parse time. It carries no geometry, so there is nothing to expand.
         break;
+      case "level":
+        // Storeys are partitioned OUT of the body before a level is resolved (see
+        // `levelPlanFor`), so one can only reach here if a caller resolved a multi-storey
+        // AST through the single-plan path. Skip it rather than treat it as an element:
+        // the levels are drawn by `resolveAll`, and `E_LEVEL_MIX` already covers the
+        // shape. Never a silent geometry change.
+        break;
       default:
         // An element: snapshot the scope's visible bindings + active set-defaults.
         out.push({ node: stmt, env: scope.flatten(), id: "", defaults: scope.effectiveSet(stmt.kind) });
@@ -558,10 +576,66 @@ function stripRooms(strip: StripNode, evalIn: (e: Expr) => Value, diag: (d: Diag
 // scene-building reads it read-only.
 const resolveCache = new Map<string, { ir: ResolvedPlan; diagnostics: Diagnostic[] }>();
 const RESOLVE_CACHE_MAX = 32;
+/** Per-level synthetic PlanNodes, memoized so the resolve memo above can hit. */
+const levelPlanCache = new Map<string, PlanNode>();
+/** Whole multi-storey resolutions, memoized by the same (ast, registry, world) key. */
+const levelsCache = new Map<string, PlanResolution>();
 
 /** Clear the resolve stage memo (called by `clearCache`). */
 export function clearResolveCache(): void {
   resolveCache.clear();
+  levelPlanCache.clear();
+  levelsCache.clear();
+}
+
+/**
+ * A **resolved storey** of a multi-storey plan: the level's own {@link ResolvedPlan} (one
+ * drawing) plus the diagnostics it raised, each tagged with {@link Diagnostic.level}.
+ */
+export interface ResolvedLevel {
+  /** The authored level number (integer; 0/negative legal). */
+  level: number;
+  /** The storey's name, when the source gave one. */
+  name?: string;
+  ir: ResolvedPlan;
+  diagnostics: Diagnostic[];
+}
+
+/**
+ * The whole result of resolving a plan, single- or multi-storey.
+ *
+ * `ir` is the PRIMARY plan — for a multi-storey plan, the LOWEST level (page 1), which is
+ * what `compile().svg`/`scene` and `describe()`'s top-level facts mean. `diagnostics`
+ * aggregates every storey's problems, so nothing a level raised can hide from a gate.
+ * `levels` is empty for a single-storey plan (the historical shape).
+ */
+export interface PlanResolution {
+  ir: ResolvedPlan;
+  diagnostics: Diagnostic[];
+  levels: ResolvedLevel[];
+}
+
+/**
+ * Extra, non-authored inputs to one resolution — the multi-storey seam. Both are derived
+ * facts a *caller* knows and the AST cannot: which storey this pass is for, and the sheet
+ * shared by every storey (a building is issued on ONE paper at ONE scale, so auto-fit
+ * cannot be allowed to pick a finer scale for the smaller floor).
+ */
+interface ResolveExtras {
+  level?: LevelStamp;
+  /** A pre-resolved sheet to adopt verbatim (skips deriving one + its overflow warning). */
+  sheet?: ResolvedSheet;
+}
+
+/** A value-based key for {@link ResolveExtras}, so the memo hits across calls (an
+ *  identity token would miss every time — the sheet object is rebuilt per call). */
+function extrasKey(extras: ResolveExtras | undefined): string {
+  if (!extras) return "";
+  const l = extras.level ? `L${extras.level.level}/${extras.level.name ?? ""}` : "";
+  const s = extras.sheet
+    ? `S${extras.sheet.size}/${extras.sheet.orientation}/${extras.sheet.denom}/${extras.sheet.auto ? 1 : 0}/${extras.sheet.fits ? 1 : 0}`
+    : "";
+  return `${l}|${s}`;
 }
 
 export function resolve(
@@ -569,10 +643,164 @@ export function resolve(
   registry: Registry = BUILTIN_REGISTRY,
   world: World = NULL_WORLD,
 ): { ir: ResolvedPlan; diagnostics: Diagnostic[] } {
+  // The single-storey path returns the memoized result OBJECT itself (not a copy) — the
+  // stage-memo contract is identity, not just equality (`test/stage-cache.test.ts`).
+  if (levelBlocks(ast).length === 0) return resolveCached(ast, registry, world);
+  const { ir, diagnostics } = resolveAll(ast, registry, world);
+  return { ir, diagnostics };
+}
+
+/**
+ * Resolve a plan, honouring `level` blocks: one {@link ResolvedPlan} per storey.
+ *
+ * This is the entry point every consumer that cares about pages uses (`compile`,
+ * `describe`, `lint`); {@link resolve} is the narrow historical projection of it. For a
+ * plan with no `level` block it is exactly the old single resolution, memoized as before.
+ *
+ * For a multi-storey plan each level's body is resolved as its OWN plan — sharing the plan
+ * settings, components, imports and plan-global `let`/`set`, but with per-level element
+ * namespaces (so `stair` may exist on every floor and mean vertical identity, and auto-ids
+ * restart per storey). Levels come back sorted ASCENDING, so the lowest is page 1.
+ */
+export function resolveAll(
+  ast: PlanNode,
+  registry: Registry = BUILTIN_REGISTRY,
+  world: World = NULL_WORLD,
+): PlanResolution {
+  const blocks = levelBlocks(ast);
+  if (blocks.length === 0) {
+    const { ir, diagnostics } = resolveCached(ast, registry, world);
+    return { ir, diagnostics, levels: [] };
+  }
   const key = `${idToken(ast)}:${idToken(registry)}:${idToken(world)}`;
+  const hit = levelsCache.get(key);
+  if (hit) return hit;
+  const out = resolveLevelsImpl(ast, blocks, registry, world);
+  if (levelsCache.size >= RESOLVE_CACHE_MAX) {
+    const oldest = levelsCache.keys().next().value;
+    if (oldest !== undefined) levelsCache.delete(oldest);
+  }
+  levelsCache.set(key, out);
+  return out;
+}
+
+/**
+ * The plan's `level` blocks in DRAWING order — ascending by level number, and with a
+ * duplicate number kept only once (the first block wins; the parser already reported
+ * `E_LEVEL_DUP`, and resolving a second storey with the same number would emit a second
+ * page claiming to be the same floor). Empty for a single-storey plan. The sort is stable
+ * on source order, so it is deterministic.
+ */
+export function levelBlocks(ast: PlanNode): LevelNode[] {
+  const out: LevelNode[] = [];
+  const seen = new Set<number>();
+  for (const s of ast.body) {
+    if (s.kind !== "level" || seen.has(s.level)) continue;
+    seen.add(s.level);
+    out.push(s);
+  }
+  return out.sort((a, b) => a.level - b.level);
+}
+
+/**
+ * The synthetic {@link PlanNode} for one storey: the plan's settings and declarations, its
+ * plan-global body statements (`let`/`set`/…, which apply to every level), then the
+ * level's own body. Memoized per (ast, level, dropPaper) so the resolve memo keys on a
+ * stable object identity instead of a fresh clone each call.
+ *
+ * The parse-stage AST is never mutated (iron law): this is a shallow clone with a new
+ * `body` array. `dropPaper` builds the geometry-only variant the shared-sheet pass uses —
+ * the sheet affects annotation SIZES, never geometry, so measuring extents without it is
+ * exact.
+ */
+function levelPlanFor(ast: PlanNode, block: LevelNode, dropPaper: boolean): PlanNode {
+  const key = `${idToken(ast)}:${block.level}:${dropPaper ? 1 : 0}`;
+  const hit = levelPlanCache.get(key);
+  if (hit) return hit;
+  const shared = ast.body.filter((s) => s.kind !== "level");
+  const plan: PlanNode = {
+    ...ast,
+    ...(dropPaper ? { paper: undefined } : {}),
+    body: [...shared, ...block.body],
+  };
+  if (levelPlanCache.size >= RESOLVE_CACHE_MAX * 4) levelPlanCache.clear();
+  levelPlanCache.set(key, plan);
+  return plan;
+}
+
+/** The outer-wall-face extent of a resolved plan (what a sheet fit is measured on). */
+function outerExtent(ir: ResolvedPlan): { w: number; h: number } {
+  const rects = ir.elements
+    .filter((e): e is RRoom => e.kind === "room")
+    .map((r) => ({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h }));
+  const ob = outerFaceBounds(ir.walls, rects);
+  return Number.isFinite(ob.minX) ? { w: ob.maxX - ob.minX, h: ob.maxY - ob.minY } : { w: 0, h: 0 };
+}
+
+/**
+ * Resolve every storey of a multi-storey plan.
+ *
+ * With a `paper` declaration this runs a first, geometry-only pass to measure the
+ * BUILDING (the largest extent over all storeys) and resolve **one** sheet from it, which
+ * every page then adopts: a drawing set is issued on one paper at one scale, so auto-fit
+ * must not draw the smaller top floor at 1:50 while the ground floor gets 1:100. The
+ * `W_SCALE_OVERFLOW` that goes with it is raised ONCE, for the building, rather than once
+ * per page — hence it carries no `level`.
+ */
+function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registry, world: World): PlanResolution {
+  const stampOf = (b: LevelNode): LevelStamp => ({ level: b.level, ...(b.name !== undefined ? { name: b.name } : {}) });
+  const shared: Diagnostic[] = [];
+
+  let sheet: ResolvedSheet | undefined;
+  if (ast.paper) {
+    let w = 0;
+    let h = 0;
+    for (const b of blocks) {
+      const probe = resolveCached(levelPlanFor(ast, b, true), registry, world, { level: stampOf(b) });
+      const e = outerExtent(probe.ir);
+      w = Math.max(w, e.w);
+      h = Math.max(h, e.h);
+    }
+    sheet = resolveSheetSpec(ast.paper, ast.scale, {
+      extent: { w, h },
+      autoDims: ast.autoDims !== undefined,
+      // Every page carries the same rows (the LEVEL row included), so the band the fit
+      // reserves is level-independent; a placeholder scale keeps it denominator-independent.
+      titleRows: titleRows(ast.title, "1:1", stampOf(blocks[0]!)).length,
+    });
+    if (!sheet.fits) shared.push(scaleOverflowDiagnostic(ast, sheet, { w, h }));
+  }
+
+  const levels: ResolvedLevel[] = blocks.map((b) => {
+    const extras: ResolveExtras = { level: stampOf(b), ...(sheet ? { sheet } : {}) };
+    const { ir, diagnostics } = resolveCached(levelPlanFor(ast, b, false), registry, world, extras);
+    return {
+      level: b.level,
+      ...(b.name !== undefined ? { name: b.name } : {}),
+      ir,
+      // Tag by copy — the cached diagnostics are shared and must never be mutated.
+      diagnostics: diagnostics.map((d) => ({ ...d, level: b.level })),
+    };
+  });
+
+  return {
+    ir: levels[0]!.ir,
+    diagnostics: [...shared, ...levels.flatMap((l) => l.diagnostics)],
+    levels,
+  };
+}
+
+/** The memoized single-plan resolution (the historical `resolve`). */
+function resolveCached(
+  ast: PlanNode,
+  registry: Registry,
+  world: World,
+  extras?: ResolveExtras,
+): { ir: ResolvedPlan; diagnostics: Diagnostic[] } {
+  const key = `${idToken(ast)}:${idToken(registry)}:${idToken(world)}:${extrasKey(extras)}`;
   const hit = resolveCache.get(key);
   if (hit) return hit;
-  const out = resolveImpl(ast, registry, world);
+  const out = resolveImpl(ast, registry, world, extras);
   if (resolveCache.size >= RESOLVE_CACHE_MAX) {
     const oldest = resolveCache.keys().next().value;
     if (oldest !== undefined) resolveCache.delete(oldest);
@@ -585,6 +813,7 @@ function resolveImpl(
   ast: PlanNode,
   registry: Registry = BUILTIN_REGISTRY,
   world: World = NULL_WORLD,
+  extras: ResolveExtras = {},
 ): { ir: ResolvedPlan; diagnostics: Diagnostic[] } {
   const diagnostics: Diagnostic[] = [];
   const g = ast.grid;
@@ -703,7 +932,10 @@ function resolveImpl(
   // 6. The sheet: resolve `paper` (+ the authored `scale`) into an operative scale
   //    denominator, and report an overflow. Purely arithmetic over the extent already
   //    computed above — no rendering, so `describe()` and `toScene()` both just read it.
-  const sheet = resolveSheet(ast, elements, walls, diagnostics);
+  //    A multi-storey plan hands one shared sheet in instead (`extras.sheet`), measured
+  //    on the whole BUILDING, so every page is issued at the same scale and the overflow
+  //    warning is raised once by the caller rather than once per storey.
+  const sheet = extras.sheet ?? resolveSheet(ast, elements, walls, diagnostics);
 
   const ir: ResolvedPlan = {
     name: ast.name,
@@ -721,6 +953,9 @@ function resolveImpl(
     // opted-out plan has no key at all and the IR stays byte-identical to before.
     ...(ast.schedule ? { schedule: ast.schedule } : {}),
     ...(ast.legend ? { legend: true } : {}),
+    // Page identity for a multi-storey plan (absent otherwise → byte-identical IR).
+    ...(extras.level ? { level: extras.level.level } : {}),
+    ...(extras.level?.name !== undefined ? { levelName: extras.level.name } : {}),
     title: ast.title,
     accTitle: ast.accTitle,
     accDescr: ast.accDescr,
@@ -775,18 +1010,22 @@ function resolveSheet(
     autoDims: ast.autoDims !== undefined,
     titleRows: titleRows(ast.title, "1:1").length,
   });
-  if (!sheet.fits) {
-    diagnostics.push({
-      severity: "warning",
-      code: "W_SCALE_OVERFLOW",
-      message:
-        `The drawing does not fit ${sheet.size} ${sheet.orientation} at 1:${fmtDenom(sheet.denom)} — ` +
-        `the building measures ${Math.round(extent.w)}×${Math.round(extent.h)} mm on its outer faces. ` +
-        `The page grows to contain it; use a larger sheet or a coarser scale.`,
-      span: ast.scaleSpan ?? ast.paperSpan,
-    });
-  }
+  if (!sheet.fits) diagnostics.push(scaleOverflowDiagnostic(ast, sheet, extent));
   return sheet;
+}
+
+/** The advisory `W_SCALE_OVERFLOW`, built in one place so the single-storey path and the
+ *  multi-storey shared-sheet pass word it identically. */
+function scaleOverflowDiagnostic(ast: PlanNode, sheet: ResolvedSheet, extent: { w: number; h: number }): Diagnostic {
+  return {
+    severity: "warning",
+    code: "W_SCALE_OVERFLOW",
+    message:
+      `The drawing does not fit ${sheet.size} ${sheet.orientation} at 1:${fmtDenom(sheet.denom)} — ` +
+      `the building measures ${Math.round(extent.w)}×${Math.round(extent.h)} mm on its outer faces. ` +
+      `The page grows to contain it; use a larger sheet or a coarser scale.`,
+    span: ast.scaleSpan ?? ast.paperSpan,
+  };
 }
 
 /** Assign ids in registry order: explicit ids are checked for duplicates; missing

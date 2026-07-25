@@ -179,6 +179,18 @@ const BRIEF_FLAG: ManifestFlag = {
   description: "the intent JSON to measure satisfaction against (required)",
 };
 
+/**
+ * `--level <n>` — the multi-storey selector (v1.21). A plan with `level` blocks compiles to
+ * ONE FILE PER STOREY (`<stem>.L<level>.<ext>`); this narrows the call to a single storey,
+ * which is also the only way to stream a multi-storey plan to stdout (`-o -`).
+ */
+const LEVEL_FLAG: ManifestFlag = {
+  flag: "--level",
+  arg: "<n>",
+  description:
+    "render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one <stem>.L<level>.<ext> file per level",
+};
+
 const INSTALL_FLAG: ManifestFlag = {
   flag: "--install",
   description: "auto-install the optional dep for the chosen format if missing (PNG/PDF)",
@@ -229,6 +241,7 @@ const SECTION_FLAG: ManifestFlag = {
 const COMPILE_FLAGS: ManifestFlag[] = [
   OUT_FLAG,
   FMT_FLAG,
+  LEVEL_FLAG,
   WIDTH_FLAG,
   SCALE_FLAG,
   COLS_FLAG,
@@ -261,6 +274,14 @@ const COMMANDS: ManifestCommand[] = [
       {
         cmd: "arch compile plan.arch -f png --install --json",
         note: "rasterize to PNG, fetching the optional renderer if it is missing",
+      },
+      {
+        cmd: "arch compile house.arch --json",
+        note: "a multi-storey plan writes one sheet per level (house.L1.svg, house.L2.svg …) and reports outputs[]",
+      },
+      {
+        cmd: "arch compile house.arch --level 2 -o upper.svg",
+        note: "render just the upper storey of a multi-storey plan to one file",
       },
     ],
   },
@@ -350,6 +371,10 @@ const COMMANDS: ManifestCommand[] = [
       },
       WIDTH_FLAG,
       { flag: "--ascii", description: "print a zero-dependency ASCII text plan to stdout instead of a PNG" },
+      {
+        ...LEVEL_FLAG,
+        description: "preview this storey of a multi-storey plan (default: the lowest level, i.e. page 1)",
+      },
       COLS_FLAG,
       CHARSET_FLAG,
       OVERLAY_FLAG,
@@ -363,6 +388,10 @@ const COMMANDS: ManifestCommand[] = [
     examples: [
       { cmd: "arch preview plan.arch --ascii --json", note: "a zero-dependency text plan an agent can read on stdout" },
       { cmd: "arch preview plan.arch -o plan.png --json", note: "raster the plan so a vision model can look at it" },
+      {
+        cmd: "arch preview house.arch --level 2 -o upper.png --json",
+        note: "look at one storey of a multi-storey plan",
+      },
     ],
   },
   {
@@ -413,9 +442,19 @@ const COMMANDS: ManifestCommand[] = [
   {
     name: "describe",
     summary: "semantic facts: rooms, areas, adjacency, what doors connect",
-    flags: [ROOM_FLAG, SELECT_FLAG, JSON_FLAG, QUIET_FLAG],
+    flags: [
+      ROOM_FLAG,
+      SELECT_FLAG,
+      {
+        ...LEVEL_FLAG,
+        description:
+          "report this storey of a multi-storey plan as the top-level facts (a DISPLAY filter — `ok` and the exit code still weigh the whole plan)",
+      },
+      JSON_FLAG,
+      QUIET_FLAG,
+    ],
     input: "<file.arch|->",
-    output: "facts (JSON or a summary), narrowed by --room/--select",
+    output: "facts (JSON or a summary), narrowed by --room/--select/--level",
     examples: [
       {
         cmd: "arch describe plan.arch --json",
@@ -429,6 +468,10 @@ const COMMANDS: ManifestCommand[] = [
       {
         cmd: "arch describe plan.arch --room kitchen,bath --json",
         note: "only those two rooms and the doors/windows/furniture that touch them",
+      },
+      {
+        cmd: "arch describe house.arch --level 2 --json",
+        note: "the upper storey's rooms/areas/access as the top-level facts (`levels[]` carries every storey)",
       },
     ],
   },

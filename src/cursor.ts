@@ -95,6 +95,10 @@ export function statementBodies(s: Statement): Statement[][] {
   switch (s.kind) {
     case "for":
     case "while":
+    // A `level` block's body is an ordinary statement list, so every walker built on
+    // this helper (the cursor, `eachStatement`, `eachExpr`, and therefore the LSP) sees
+    // inside a storey exactly as it sees inside a loop.
+    case "level":
       return [s.body];
     case "if":
       return s.else ? [s.then, s.else] : [s.then];

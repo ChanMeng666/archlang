@@ -311,6 +311,27 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Reference an existing room id, or fix the typo.",
     'room id=k right-of ghost size 100x100   # error: no room "ghost"',
   ),
+  E_LEVEL_DUP: E(
+    "E_LEVEL_DUP",
+    "Two `level` blocks declare the same storey number.",
+    "Level numbers identify the storeys of one building, so each may be declared once; two `level 1` blocks would produce two pages both claiming to be level 1.",
+    "Renumber one of them, or merge the two bodies into a single `level` block.",
+    "level 1 { room at (0,0) size 3000x3000 }\nlevel 1 { room at (0,0) size 3000x3000 }   # error: level 1 twice",
+  ),
+  E_LEVEL_MIX: E(
+    "E_LEVEL_MIX",
+    "A drawable statement sits beside `level` blocks.",
+    "A plan is either single-storey (no `level` block) or entirely made of them: anything that draws belongs to exactly one storey, so a room/wall/door/`for`/`strip`/component call at plan level next to a `level` block has no storey to belong to.",
+    "Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.",
+    'plan "H" {\n  room at (0,0) size 3000x3000   # error: move it into a level\n  level 1 { wall exterior thickness 200 { (0,0) (3000,0) close } }\n}',
+  ),
+  E_LEVEL_NEST: E(
+    "E_LEVEL_NEST",
+    "`level` used inside a block or component.",
+    "A `level` block is a plan-level statement: it partitions the whole plan into storeys, so it cannot be nested inside another `level`, a `for`/`if`/`while` body, a `strip`, or a component definition.",
+    "Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.",
+    "component c() { level 1 { } }   # error: only allowed at plan level",
+  ),
   E_RANGE_LIMIT: E(
     "E_RANGE_LIMIT",
     "Range too large.",

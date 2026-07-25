@@ -65,7 +65,12 @@ function actualRows(relPath: string): RoomRow[] {
   const abs = join(ROOT, relPath);
   const src = readFileSync(abs, "utf8");
   const d = describePlan(src, { world: worldFor(dirname(abs)) });
-  return d.rooms.map((r) => ({
+  // A multi-storey plan's top-level `rooms` is only its LOWEST level, so pin every
+  // storey's rooms in level order — otherwise the upper floors' labels would go
+  // unclassified by this gate. Single-storey plans have no `levels`, so their rows are
+  // exactly as before.
+  const rooms = d.levels ? d.levels.flatMap((l) => l.rooms) : d.rooms;
+  return rooms.map((r) => ({
     id: r.id,
     label: r.label ?? null,
     uses: r.uses,

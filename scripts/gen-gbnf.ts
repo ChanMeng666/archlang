@@ -102,7 +102,7 @@ function rules(): [string, string][] {
     ["root", `ws "plan" rws string ws "{" ws ( plan-stmt ws )* "}" ws`],
     [
       "plan-stmt",
-      `setting | title-stmt | axes-stmt | acc-stmt | theme-stmt | style-stmt | component-stmt | import-stmt | strip-stmt | block-stmt`,
+      `setting | title-stmt | axes-stmt | acc-stmt | theme-stmt | style-stmt | component-stmt | import-stmt | strip-stmt | level-stmt | block-stmt`,
     ],
     ["block-stmt", `element | let-stmt | for-stmt | if-stmt | while-stmt | set-stmt | instance-stmt | assign-stmt`],
     [
@@ -173,6 +173,9 @@ function rules(): [string, string][] {
     ["strip-cross", `( "height" | "width" ) ws expr`],
     ["strip-room", `"room" rws id-opt "size" ws strip-size ( ws room-label )? ( ws room-uses )?`],
     ["strip-size", `expr ( ws "x" ws expr )?`],
+
+    // ---- level (one storey; a plan-level block, body = ordinary statements) ----
+    ["level-stmt", `"level" rws ( "-" ws )? number ( rws string )? ws block`],
 
     // ---- elements --------------------------------------------------------
     [

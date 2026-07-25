@@ -123,7 +123,7 @@ function setValStr(e: Expr): string {
 
 // ---- statements → Doc ----
 
-const BLOCK_KINDS = new Set(["for", "if", "while"]);
+const BLOCK_KINDS = new Set(["for", "if", "while", "level"]);
 
 /** Build the `{ … }` Doc for a block body, weaving in its inner comments. */
 function blockDoc(stmts: Statement[], span: { start: number; end: number }, comments: Comment[], source: string): Doc {
@@ -202,6 +202,14 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       if (s.else) parts.push(" else ", blockDoc(s.else, s.span!, comments, source));
       return concat(parts);
     }
+    case "level":
+      // `level <n> ["Name"] { … }` — a storey. Formatted like any other block so the
+      // multi-storey shape survives `fmt` untouched (dropping it would silently merge two
+      // floors into one drawing).
+      return concat([
+        `level ${numStr(s.level)}${s.name !== undefined ? ` ${JSON.stringify(s.name)}` : ""} `,
+        blockDoc(s.body, s.span!, comments, source),
+      ]);
     case "error":
       // Re-emit the broken region verbatim — formatting must never corrupt it.
       return s.span ? source.slice(s.span.start, s.span.end) : "";

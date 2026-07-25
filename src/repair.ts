@@ -67,7 +67,7 @@ import { doorLandingRect, pointInRect, rectOverlapAmounts, wallIntrusion } from 
 import { segmentsOfWall, doorSwing, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
 import { DEFAULT_RULESET } from "./lint.js";
 import { defaultFootprint, orientationMatters, requiresWall } from "./fixtures-catalog.js";
-import type { RWall, RDoor, RRoom, ROpening, RFurniture } from "./ir.js";
+import type { ResolvedPlan, RWall, RDoor, RRoom, ROpening, RFurniture } from "./ir.js";
 import type { ComponentDef, FurnitureAnchor, FurnitureNode, FurniturePlace, PlanNode, Statement } from "./ast.js";
 import type { Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
@@ -106,6 +106,10 @@ export interface RepairChange {
   span?: Span;
   /** Human summary of every fix applied to this piece, in order. */
   reason: string;
+  /** The storey this piece is on, for a multi-storey plan (`level <n> { … }`). Absent for
+   *  a single-storey plan. Ids are unique per LEVEL, so this is what tells two `wc`
+   *  entries on different floors apart. */
+  level?: number;
 }
 
 export interface RepairNote {
@@ -113,6 +117,8 @@ export interface RepairNote {
   reason: string;
   /** Byte span of the furniture statement the note is about, when there is one. */
   span?: Span;
+  /** The storey the note is about (multi-storey plans only) — see {@link RepairChange.level}. */
+  level?: number;
 }
 
 export interface RepairResult {
@@ -566,6 +572,14 @@ function collectSites(plan: PlanNode): Site[] {
         case "for":
           walk(st.body, { what: "a `for` statement", line: st.line }, depth + 1);
           break;
+        // A storey. Its body is where a multi-storey plan's furniture actually lives, so
+        // NOT recursing here would silently skip every piece above the ground floor (the
+        // exact class of bug this walk exists to kill). A level is not an expansion
+        // construct — one statement is still one drawn piece — so no `Enclosure` is
+        // pushed: `repair` can rewrite an `at`/`inset` inside a level in place.
+        case "level":
+          walk(st.body, enc, depth + 1);
+          break;
         case "while":
           walk(st.body, { what: "a `while` statement", line: st.line }, depth + 1);
           break;
@@ -794,13 +808,17 @@ function firstNewPinch(before: CirculationModel | null, after: CirculationModel 
 export function repair(source: string): RepairResult {
   const unresolved: RepairNote[] = [];
   const noted = new Set<string>();
-  const notedIds = new Set<string>();
-  const note = (id: string, reason: string, span?: Span): void => {
-    const key = `${id}|${reason}`;
-    notedIds.add(id);
+  /**
+   * Record a declined fix. Dedup is per (storey, id, reason): furniture ids are unique
+   * within a LEVEL, so on a multi-storey plan the same `wc` id exists on every floor and a
+   * globally-keyed dedup would silence the upper storeys' notes.
+   */
+  const note = (id: string, reason: string, span?: Span, level?: number, seenIds?: Set<string>): void => {
+    const key = `${level ?? ""}|${id}|${reason}`;
+    seenIds?.add(id);
     if (!noted.has(key)) {
       noted.add(key);
-      unresolved.push({ id, reason, ...(span ? { span } : {}) });
+      unresolved.push({ id, reason, ...(span ? { span } : {}), ...(level !== undefined ? { level } : {}) });
     }
   };
 
@@ -815,13 +833,48 @@ export function repair(source: string): RepairResult {
   // second repair() of the same source read the already-moved cached AST and reported
   // zero changes (same input, history-dependent output: an ADR 0006 violation).
   const plan = structuredClone(parsed.plan);
-  const { ir } = resolvePlan(source);
+  const { ir, levels } = resolvePlan(source);
   if (!ir) {
     // No resolved geometry ⇒ no positions to reason about. Say so: a plan that does not
     // resolve is exactly the case where a silent `changed: false` reads as "all clear".
     note("plan", "the plan does not resolve — fix the errors first (`arch validate`), then re-run repair");
     return { source, changes: [], unresolved, changed: false };
   }
+
+  // One storey is one building as far as geometry goes — its own walls, rooms, doors and
+  // circulation — so a multi-storey plan is repaired level by level against that level's
+  // own IR. The statements live in ONE cloned AST (each level's nodes are disjoint), so
+  // every storey's rewrites land in the same source and are printed once at the end.
+  const storeys: Array<{ level?: number; ir: ResolvedPlan }> =
+    levels.length > 0 ? levels.map((l) => ({ level: l.level, ir: l.ir })) : [{ ir }];
+  const changes: RepairChange[] = [];
+  for (const st of storeys) {
+    const seenIds = new Set<string>();
+    changes.push(
+      ...repairStorey(st.ir, plan, st.level, (id, reason, span) => note(id, reason, span, st.level, seenIds), seenIds),
+    );
+  }
+
+  const out = changes.length ? formatPlan(plan, source) : source;
+  return { source: out, changes, unresolved, changed: changes.length > 0 };
+}
+
+/**
+ * Repair ONE resolved plan — a single-storey plan, or one `level` of a multi-storey one.
+ *
+ * `plan` is repair's private AST clone: the statements this pass rewrites are the ones
+ * whose resolved instances appear in `ir`, so a storey only ever edits its own floor
+ * (statements belonging to another level resolve to nothing here and are left untouched).
+ * `note` is already bound to this storey, and `notedIds` tracks the ids it reported so the
+ * postcondition sweep below does not double-report them.
+ */
+function repairStorey(
+  ir: ResolvedPlan,
+  plan: PlanNode,
+  level: number | undefined,
+  note: (id: string, reason: string, span?: Span) => void,
+  notedIds: Set<string>,
+): RepairChange[] {
   const walls = ir.walls;
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const landings = doors
@@ -1059,6 +1112,7 @@ export function repair(source: string): RepairResult {
         via,
         ...(p.f.span ? { span: p.f.span } : {}),
         reason: [...p.reasons, ...extra].join("; "),
+        ...(level !== undefined ? { level } : {}),
       });
       changedIds.add(p.id);
     }
@@ -1075,6 +1129,7 @@ export function repair(source: string): RepairResult {
         via: "rotate",
         ...(p.f.span ? { span: p.f.span } : {}),
         reason: p.turn.reason,
+        ...(level !== undefined ? { level } : {}),
       });
       changedIds.add(p.id);
     }
@@ -1114,8 +1169,7 @@ export function repair(source: string): RepairResult {
     note(o.id, say(verdict), o.span);
   }
 
-  const out = changes.length ? formatPlan(plan, source) : source;
-  return { source: out, changes, unresolved, changed: changes.length > 0 };
+  return changes;
 }
 
 /**

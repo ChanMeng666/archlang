@@ -14,6 +14,7 @@ import type {
   ImportNode,
   InstanceNode,
   LetNode,
+  LevelNode,
   NorthDir,
   PlanNode,
   SetNode,
@@ -26,7 +27,7 @@ import type {
   WhileNode,
 } from "./ast.js";
 import type { ScheduleSubject } from "./ast.js";
-import { SCHEDULE_SUBJECTS, USE_KINDS } from "./ast.js";
+import { LEVEL_SHARED_KINDS, SCHEDULE_SUBJECTS, USE_KINDS } from "./ast.js";
 import type { Expr } from "./expr.js";
 import { closest, parseExpr as parseExprPratt } from "./expr.js";
 import type { Theme } from "./theme.js";
@@ -313,6 +314,15 @@ class Parser {
             plan.body.push(strip);
             break;
           }
+          // A storey. Kept in `body` in source order (like `strip`) so every
+          // statement walker — the formatter, the cursor, `repair` — sees it; the
+          // level machinery in `ir.ts` partitions on it.
+          case "level": {
+            const lvl = this.parseLevel(plan.components);
+            lvl.span = this.spanFrom(start);
+            plan.body.push(lvl);
+            break;
+          }
           // Elements, `let`, instances, control flow, and assignment all flow
           // through the shared body-statement parser.
           default:
@@ -338,7 +348,80 @@ class Parser {
         throw e;
       }
     }
+    this.checkLevels(plan);
     return plan;
+  }
+
+  /**
+   * Whole-plan checks for the multi-storey shape (`level <n> { … }`), run once the body
+   * is parsed so they see every statement whatever the source order:
+   *
+   *  - **`E_LEVEL_DUP`** — a storey number declared twice. Reported on the *second*
+   *    block, with the first as a related span.
+   *  - **`E_LEVEL_MIX`** — a drawable statement sitting beside the level blocks. A plan
+   *    is either single-storey or entirely levels; only the plan-global scope
+   *    ({@link LEVEL_SHARED_KINDS}) may stay outside. Spanned on the offending statement,
+   *    one diagnostic each, so a fix loop can move them one at a time.
+   *
+   * A plan with no `level` block returns immediately, so nothing about single-storey
+   * parsing changes.
+   */
+  private checkLevels(plan: PlanNode): void {
+    const levels = plan.body.filter((s): s is LevelNode => s.kind === "level");
+    if (levels.length === 0) return;
+
+    const seen = new Map<number, LevelNode>();
+    for (const l of levels) {
+      const first = seen.get(l.level);
+      if (first) {
+        this.diagnostics.push({
+          severity: "error",
+          code: "E_LEVEL_DUP",
+          message: `Level ${l.level} is already declared — each level number may appear once`,
+          span: l.span,
+          ...(first.span
+            ? { relatedSpans: [{ span: first.span, message: `level ${l.level} first declared here` }] }
+            : {}),
+        });
+      } else {
+        seen.set(l.level, l);
+      }
+    }
+
+    for (const s of plan.body) {
+      if (LEVEL_SHARED_KINDS.includes(s.kind)) continue;
+      this.diagnostics.push({
+        severity: "error",
+        code: "E_LEVEL_MIX",
+        message:
+          `"${s.kind}" cannot sit at plan level in a multi-storey plan — move it inside the \`level\` block it belongs to ` +
+          `(settings, \`component\`/\`import\`, and plan-global \`let\`/\`set\` stay outside and apply to every level)`,
+        span: s.span,
+      });
+    }
+  }
+
+  /**
+   * `level <int> ["Name"] { <statements> }` — one storey. The number may be negative
+   * (`level -1 "Basement"`) and must be a whole number: a fractional storey is a parse
+   * error rather than a silently truncated page. The body is an ordinary statement block,
+   * so scripting inside a level works exactly as it does in a single-storey plan.
+   */
+  private parseLevel(components: Map<string, ComponentDef>): LevelNode {
+    const kw = this.eatKeyword("level");
+    let sign = 1;
+    if (this.isType("minus")) {
+      this.next();
+      sign = -1;
+    }
+    const numTok = this.peek();
+    const n = sign * this.eatNumber();
+    if (!Number.isInteger(n)) {
+      this.fail(`Level number must be a whole number (got ${n})`, numTok);
+    }
+    const name = this.isType("string") ? this.eatString() : undefined;
+    const body = this.parseBlockBody(components, undefined);
+    return { kind: "level", id: "", level: n, ...(name !== undefined ? { name } : {}), body, line: kw.line };
   }
 
   private isType(type: Token["type"]): boolean {
@@ -679,6 +762,15 @@ class Parser {
       if (this.isType("string")) this.next();
       const msg = `"${t.value}" is only allowed at plan level, not inside a block or component`;
       this.diagnostics.push({ severity: "error", message: msg, code: "E_ACC_PLACEMENT", span: this.spanFrom(start) });
+      return { kind: "error", id: "", line: t.line, message: msg };
+    }
+    // `level` partitions the WHOLE plan into storeys, so it is a plan-level block only.
+    // Reaching here means one appeared inside another level, a control-flow body, a strip,
+    // or a component: consume it for clean recovery and report E_LEVEL_NEST.
+    if (t.value === "level") {
+      this.parseLevel(components);
+      const msg = `"level" is only allowed at plan level, not inside a block, component, or another level`;
+      this.diagnostics.push({ severity: "error", message: msg, code: "E_LEVEL_NEST", span: this.spanFrom(start) });
       return { kind: "error", id: "", line: t.line, message: msg };
     }
     // `strip` is a plan-level block only. Inside a component/control-flow block (or

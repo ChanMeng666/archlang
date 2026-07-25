@@ -92,19 +92,55 @@ async function serialize(scene: Scene, svg: string, format: Format, args: Args):
   return svg;
 }
 
+/** One serialized page of a multi-storey plan (`level <n> { … }`). */
+export interface RenderedPage {
+  level: number;
+  name?: string;
+  bytes: string | Uint8Array;
+}
+
 /** A single rendered artifact (or a failure), the shared core of compile/batch/md/preview. */
 export interface Rendered {
+  /**
+   * The artifact, when the call renders ONE: a single-storey plan, or a multi-storey plan
+   * narrowed to a storey (`page: {level}` / `"first"`). Undefined with `page: "all"` on a
+   * multi-storey plan — read {@link pages} instead.
+   */
   bytes?: string | Uint8Array;
+  /** One entry per storey, ascending — only with `page: "all"` on a multi-storey plan. */
+  pages?: RenderedPage[];
+  /** The plan's storey numbers, ascending; `[]` for a single-storey plan. Always reported
+   *  (even on a failure) so a command can word a `--level`/`-o -` usage error precisely. */
+  levels: number[];
+  /** The caller asked for a `--level` this plan does not declare — a usage error (exit 3),
+   *  raised by the command so the message can name the command. */
+  badLevel?: boolean;
   diagnostics: Diagnostic[];
   /** Serialize/dependency error message (compile errors are in `diagnostics`). */
   error?: string;
   errorCode?: string;
 }
 
+/**
+ * Which page(s) of a multi-storey plan to serialize:
+ *  - `"first"` (default) — the lowest storey, i.e. what `compile().svg` means. What the
+ *    single-artifact commands (`preview`, `md`, `batch`) render.
+ *  - `"all"` — every storey, one artifact each (`compile`, which writes a file per level).
+ *  - `{ level }` — exactly that storey (`--level <n>`).
+ * A single-storey plan renders the same one artifact whichever is asked for.
+ */
+export type PageSelect = "first" | "all" | { level: number };
+
 /** Compile + serialize one source to bytes (no file IO). Compile errors → no bytes. */
-export async function renderArtifact(source: string, format: Format, args: Args, baseDir: string): Promise<Rendered> {
+export async function renderArtifact(
+  source: string,
+  format: Format,
+  args: Args,
+  baseDir: string,
+  page: PageSelect = "first",
+): Promise<Rendered> {
   await tryLoadGeometryBackend();
-  const { svg, diagnostics, scene } = compile(source, {
+  const { svg, diagnostics, scene, pages } = compile(source, {
     width: args.width,
     noCache: true,
     world: makeNodeWorld(baseDir),
@@ -122,6 +158,7 @@ export async function renderArtifact(source: string, format: Format, args: Args,
     // set it, so their output stays byte-identical.
     ...(format === "txt" || args.ascii ? { annotate: true } : {}),
   });
+  const levels = pages?.map((p) => p.level) ?? [];
   if (hasErrors(diagnostics) || !scene) {
     // A broken plan. With `--error-svg`, `svg` holds the error card — serialize it
     // (as SVG, or rasterized to PNG) so the caller still gets an image; the
@@ -137,29 +174,49 @@ export async function renderArtifact(source: string, format: Format, args: Args,
                 args,
               )
             : svg;
-        return { bytes, diagnostics };
+        return { bytes, diagnostics, levels };
       } catch (e) {
         const message = (e as Error).message;
         if (isOptionalDepError(e)) {
           const dep: Diagnostic = { severity: "error", code: "E_PNG_DEPENDENCY", message };
-          return { diagnostics: [...diagnostics, dep], error: message, errorCode: "E_PNG_DEPENDENCY" };
+          return { diagnostics: [...diagnostics, dep], levels, error: message, errorCode: "E_PNG_DEPENDENCY" };
         }
-        return { diagnostics, error: message };
+        return { diagnostics, levels, error: message };
       }
     }
-    return { diagnostics };
+    return { diagnostics, levels };
   }
   try {
-    return { bytes: await serialize(scene, svg, format, args), diagnostics };
+    // Multi-storey: serialize the requested page(s). A single-storey plan has no `pages`,
+    // so it takes the one-artifact path below exactly as before.
+    if (pages && pages.length > 0) {
+      if (page === "all") {
+        const out: RenderedPage[] = [];
+        for (const p of pages) {
+          out.push({
+            level: p.level,
+            ...(p.name !== undefined ? { name: p.name } : {}),
+            bytes: await serialize(p.scene, p.svg, format, args),
+          });
+        }
+        return { pages: out, levels, diagnostics };
+      }
+      const want = page === "first" ? pages[0]! : pages.find((p) => p.level === page.level);
+      if (!want) return { diagnostics, levels, badLevel: true };
+      return { bytes: await serialize(want.scene, want.svg, format, args), levels, diagnostics };
+    }
+    // A `--level` on a single-storey plan is a usage error, not a silently ignored flag.
+    if (typeof page === "object") return { diagnostics, levels, badLevel: true };
+    return { bytes: await serialize(scene, svg, format, args), levels, diagnostics };
   } catch (e) {
     const message = (e as Error).message;
     if (isOptionalDepError(e)) {
       // A missing optional render dependency — surface it as the catalogued,
       // self-correcting code (with `fix`) rather than an opaque thrown error.
       const dep: Diagnostic = { severity: "error", code: "E_PNG_DEPENDENCY", message };
-      return { diagnostics: [...diagnostics, dep], error: message, errorCode: "E_PNG_DEPENDENCY" };
+      return { diagnostics: [...diagnostics, dep], levels, error: message, errorCode: "E_PNG_DEPENDENCY" };
     }
-    return { diagnostics, error: message };
+    return { diagnostics, levels, error: message };
   }
 }
 

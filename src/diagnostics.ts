@@ -96,6 +96,17 @@ export interface Diagnostic {
    *  {@link import("./fix-apply.js").applyFixes} and projected to JSON by
    *  {@link import("./diagnostic-json.js").diagnosticToJson}. */
   fixes?: FixSuggestion[];
+  /**
+   * Which **storey** raised it, for a multi-storey plan (`level <n> { … }`) — the
+   * authored level number, not an index. Absent for a single-storey plan and for
+   * whole-file problems (lex/parse/link diagnostics, and the one sheet warning that
+   * describes the building rather than a page), so existing output is unchanged.
+   *
+   * Append-only field. Every level resolves separately, so the same source span can be
+   * reported once per storey (a shared `let` that fails, say); this is how a consumer
+   * tells those apart and how `arch describe --level N` attributes a problem.
+   */
+  level?: number;
 }
 
 /** Convert a byte offset into a 1-based `{line, col}`. Offsets are clamped. */

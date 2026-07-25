@@ -183,6 +183,19 @@ export interface SheetSummary {
   fits: boolean;
 }
 
+/**
+ * One **storey** of a multi-storey plan as facts: the level number and name plus the exact
+ * same fact shape a single-storey plan reports at the top level (rooms, areas, adjacency,
+ * access, circulation, totals, freedom, …). So an agent reads `levels[i]` with the code it
+ * already has for a whole plan — a storey IS a plan.
+ */
+export interface LevelSummary extends Omit<SceneSummary, "ok" | "diagnostics" | "levels"> {
+  /** The authored storey number (integer; 0/negative legal). */
+  level: number;
+  /** The storey's name (`level 1 "Ground floor"`), when the source gave one. */
+  name?: string;
+}
+
 /** The semantic summary of a plan. `ok` is false when fatal errors prevented
  *  resolution; inspect `diagnostics` in that case (the lists will be empty). */
 export interface SceneSummary {
@@ -281,6 +294,16 @@ export interface SceneSummary {
    * and the source.
    */
   schedule?: ScheduleRow[];
+  /**
+   * The plan's **storeys**, ascending by level — present **only** when the plan declares
+   * `level` blocks (so every existing summary is unchanged).
+   *
+   * Every field ABOVE describes the LOWEST storey (page 1), because a storey is what a
+   * floor plan is: rooms, adjacency and circulation only mean something within one floor.
+   * Read `levels` to see the whole building — `levels[0]` repeats the top-level facts.
+   * Diagnostics stay whole-plan (aggregated across storeys, each tagged with its `level`).
+   */
+  levels?: LevelSummary[];
   /** All problems from parse/link/resolve, with byte spans and codes. */
   diagnostics: Diagnostic[];
 }
@@ -604,7 +627,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
  */
 export function describe(source: string, opts: DescribeOptions = {}): SceneSummary {
   const tol = opts.adjacencyTolMm ?? DEFAULT_TOL;
-  const { ir, diagnostics } = resolvePlan(source, opts);
+  const { ir, diagnostics, levels } = resolvePlan(source, opts);
 
   if (!ir) {
     return {
@@ -628,5 +651,17 @@ export function describe(source: string, opts: DescribeOptions = {}): SceneSumma
     };
   }
 
-  return { ok: true, ...summarize(ir, tol), diagnostics };
+  // Multi-storey: the top-level facts are the LOWEST storey (`levels[0].ir === ir`), and
+  // `levels` adds one same-shaped summary per storey. `summarize` is reused verbatim per
+  // level, so a storey's facts can never be computed a second, different way.
+  const perLevel: LevelSummary[] | undefined =
+    levels.length > 0
+      ? levels.map((l) => ({
+          level: l.level,
+          ...(l.name !== undefined ? { name: l.name } : {}),
+          ...summarize(l.ir, tol),
+        }))
+      : undefined;
+
+  return { ok: true, ...summarize(ir, tol), ...(perLevel ? { levels: perLevel } : {}), diagnostics };
 }

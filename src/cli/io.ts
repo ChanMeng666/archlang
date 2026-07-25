@@ -89,6 +89,8 @@ export interface Args {
   severity?: string;
   /** `--section <spec|workflow|cli|errors>`: (context) print one section of the bundle, not all of it. */
   section?: string;
+  /** `--level <n>`: (compile/watch/preview/describe) narrow a multi-storey plan to one storey. */
+  level?: number;
   /** `--help`/`-h`: print the command's help instead of running it (handled in `main`). */
   help?: boolean;
   /** Tokens that look like flags but this command does not accept — `main` exits 3 on any. */
@@ -126,6 +128,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--scale": { key: "scale", kind: "number" },
   "-s": { key: "scale", kind: "number" },
   "--cols": { key: "cols", kind: "number" },
+  "--level": { key: "level", kind: "number" },
   "--at": { key: "at", kind: "number" },
   "--charset": { key: "charset", kind: "string" },
   "--profile": { key: "profile", kind: "string" },
@@ -301,6 +304,44 @@ export function sourceFromJson(jsonText: string): { source: string } | { error: 
 export function defaultOut(input: string, format: Format): string {
   if (input === "-") return `out.${format}`;
   return resolvePath(input).replace(/\.arch$/i, "") + "." + format;
+}
+
+/**
+ * The per-storey output path for a multi-storey plan: `<stem>.L<level>.<ext>` — `plan.svg`
+ * becomes `plan.L1.svg`, `plan.L-1.svg` for a basement. Derived from whatever target the
+ * caller gave (`-o` or the default), so `-o out/house.svg` writes `out/house.L1.svg` and a
+ * level's file always sits where a single-file compile would have.
+ */
+export function levelTarget(target: string, level: number): string {
+  const i = target.lastIndexOf(".");
+  const slash = Math.max(target.lastIndexOf("/"), target.lastIndexOf("\\"));
+  // No extension (or the only dot is in a directory name) → just append the suffix.
+  if (i <= slash) return `${target}.L${level}`;
+  return `${target.slice(0, i)}.L${level}${target.slice(i)}`;
+}
+
+/**
+ * `-o -` streams ONE artifact, but a multi-storey plan renders one per storey — so the two
+ * only compose with `--level <n>`. Same doctrine as {@link stdoutJsonConflict}: refuse
+ * loudly (exit 3) instead of silently picking a page or writing files nobody asked for.
+ */
+export function stdoutMultiPage(command: string, levels: readonly number[]): number {
+  return usageErrorFor(
+    command,
+    `\`-o -\` streams a single drawing, but this plan has ${levels.length} levels (${levels.join(", ")}) and renders one file per level — ` +
+      `add \`--level <n>\` to stream one storey, or give \`-o <file>\` to write <stem>.L<level> files`,
+  );
+}
+
+/** The exit-3 usage error for a `--level <n>` that the plan does not declare. */
+export function unknownLevel(command: string, want: number, levels: readonly number[]): number {
+  if (levels.length === 0) {
+    return usageErrorFor(
+      command,
+      `--level ${want} was given but this plan declares no \`level\` blocks (it is single-storey) — drop --level`,
+    );
+  }
+  return usageErrorFor(command, `unknown --level ${want} (plan has ${levels.join(", ")})`);
 }
 
 /** Parse + validate the `-f` format, or `null` if it's not a known format. */

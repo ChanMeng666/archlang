@@ -8,6 +8,7 @@ import { writeFileSync, watchFile } from "node:fs";
 import { resolve as resolvePath, dirname, basename } from "node:path";
 import { cpus } from "node:os";
 import { describe, diagnosticToJson, ERROR_CATALOG, extractArchBlocks, rewriteMarkdown } from "../index.js";
+import type { Diagnostic } from "../index.js";
 import {
   type Args,
   type Format,
@@ -19,15 +20,33 @@ import {
   emitJson,
   hasErrors,
   ioError,
+  levelTarget,
   makeNodeWorld,
   parseFormat,
   readInput,
   sourceFromJson,
   stdoutJsonConflict,
+  stdoutMultiPage,
+  unknownLevel,
   usageError,
   usageErrorFor,
 } from "./io.js";
-import { type PerFile, aggregateExit, compileToFile, perFileJson, renderArtifact, runPool } from "./serialize.js";
+import {
+  type PageSelect,
+  type PerFile,
+  aggregateExit,
+  compileToFile,
+  perFileJson,
+  renderArtifact,
+  runPool,
+} from "./serialize.js";
+
+/** Byte length of a rendered artifact (string or binary). */
+const byteLen = (b: string | Uint8Array): number => (typeof b === "string" ? Buffer.byteLength(b) : b.length);
+
+/** Which page(s) a render command should produce, from `--level`. */
+const pageSelect = (args: Args, whenAbsent: PageSelect): PageSelect =>
+  args.level !== undefined ? { level: args.level } : whenAbsent;
 
 // ---------------------------------------------------------------------------
 // compile
@@ -68,7 +87,10 @@ export async function cmdCompile(args: Args): Promise<number> {
     source = conv.source;
   }
 
-  const r = await renderArtifact(source, format, args, baseDirOf(input));
+  // A multi-storey plan (`level` blocks) renders one artifact per storey unless `--level`
+  // narrows it to one; a single-storey plan is unaffected by either.
+  const r = await renderArtifact(source, format, args, baseDirOf(input), pageSelect(args, "all"));
+  if (r.badLevel) return unknownLevel("compile", args.level!, r.levels);
 
   if (r.error) {
     // A serialize / missing-optional-dependency failure (compile succeeded). In
@@ -87,6 +109,14 @@ export async function cmdCompile(args: Args): Promise<number> {
   }
 
   const errored = hasErrors(r.diagnostics);
+
+  // ---- multi-storey: one sheet per level -----------------------------------------
+  // `-o -` cannot mean "several drawings on one stream", so it is a usage error (exit 3)
+  // unless `--level` picked a single storey — the same doctrine as `-o -` + `--json`.
+  if (r.pages) {
+    if (args.o === "-") return stdoutMultiPage("compile", r.levels);
+    return writePages(r.pages, r.diagnostics, source, input, format, args);
+  }
 
   if (r.bytes === undefined) {
     const diagnostics = r.diagnostics;
@@ -168,6 +198,67 @@ export async function cmdCompile(args: Args): Promise<number> {
   return EXIT.OK;
 }
 
+/**
+ * Write one file per storey of a multi-storey plan: `<stem>.L<level>.<ext>`, derived from
+ * the `-o` target (or the default output) so a level's sheet lands exactly where a
+ * single-file compile would have put the drawing.
+ *
+ * The `--json` envelope reports `outputs[]` (every path, in level order) plus a `pages[]`
+ * row per storey — there is no single `output`, and inventing one would be a lie. The
+ * `summary` stays the whole-plan `describe()`, whose `levels[]` mirrors these pages.
+ */
+function writePages(
+  pages: NonNullable<Awaited<ReturnType<typeof renderArtifact>>["pages"]>,
+  diagnostics: Diagnostic[],
+  source: string,
+  input: string,
+  format: Format,
+  args: Args,
+): number {
+  const base = args.o ?? defaultOut(input, format);
+  const written: Array<Record<string, unknown>> = [];
+  for (const p of pages) {
+    const target = levelTarget(base, p.level);
+    try {
+      writeFileSync(resolvePath(target), p.bytes);
+    } catch (e) {
+      return ioError((e as Error).message, args.json, { format });
+    }
+    written.push({
+      level: p.level,
+      ...(p.name !== undefined ? { name: p.name } : {}),
+      output: resolvePath(target),
+      bytes: byteLen(p.bytes),
+    });
+  }
+
+  // Warnings are per storey (each carries its `level`), so they are reported for the whole
+  // set exactly once — a page is not a separate compile.
+  const warnings = diagnostics.filter((d) => d.severity === "warning");
+  if (args.json) {
+    const s = describe(source, { world: makeNodeWorld(baseDirOf(input)) });
+    const { ok: _ok, diagnostics: _d, ...summary } = s;
+    emitJson({
+      ok: true,
+      format,
+      outputs: written.map((w) => w.output),
+      pages: written,
+      diagnostics: warnings.map((d) => diagnosticToJson(source, d)),
+      summary,
+    });
+  } else {
+    emitDiagnosticsHuman(source, warnings, args.quiet);
+    if (!args.quiet) {
+      for (const w of written) {
+        process.stdout.write(
+          `✓ ${input} → ${w.output as string} (level ${w.level as number}, ${w.bytes as number} bytes, ${format.toUpperCase()})\n`,
+        );
+      }
+    }
+  }
+  return EXIT.OK;
+}
+
 export async function cmdWatch(args: Args): Promise<number> {
   const input = args._[0];
   if (!input || input === "-") return usageError("watch needs a file path");
@@ -201,7 +292,8 @@ async function cmdPreviewAscii(args: Args, input: string): Promise<number> {
   } catch {
     return ioError(`cannot read ${input}`, args.json, { format });
   }
-  const r = await renderArtifact(source, format, args, baseDirOf(input));
+  const r = await renderArtifact(source, format, args, baseDirOf(input), pageSelect(args, "first"));
+  if (r.badLevel) return unknownLevel("preview", args.level!, r.levels);
   if (r.bytes === undefined) {
     if (args.json) emitJson({ ok: false, format, diagnostics: r.diagnostics.map((d) => diagnosticToJson(source, d)) });
     else {
@@ -244,7 +336,9 @@ export async function cmdPreview(args: Args): Promise<number> {
     return ioError(`cannot read ${input}`, args.json, { format });
   }
 
-  const r = await renderArtifact(source, format, args, baseDirOf(input));
+  // Multi-storey: preview the storey `--level` names, else the lowest (page 1).
+  const r = await renderArtifact(source, format, args, baseDirOf(input), pageSelect(args, "first"));
+  if (r.badLevel) return unknownLevel("preview", args.level!, r.levels);
 
   if (r.error) {
     if (args.json) {

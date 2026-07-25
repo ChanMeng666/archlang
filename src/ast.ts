@@ -323,6 +323,33 @@ export interface StripNode extends NodeBase {
   rooms: StripRoomChild[];
 }
 
+/**
+ * `level <n> ["Name"] { … }` — one **storey** of a multi-storey building.
+ *
+ * A plan is either single-storey (no `level` block anywhere, the historical shape) or
+ * entirely made of level blocks: a drawable statement sitting beside a level block is
+ * `E_LEVEL_MIX`. Plan-level *settings* (`units`/`grid`/`paper`/`scale`/`north`/`dims`/
+ * `title`/`axes`/`schedule`/`legend`) and the plan-global scope (`let`/`set`/`component`/
+ * `import`) stay OUTSIDE the levels and apply to every one of them — one building, one
+ * sheet spec, one set of components.
+ *
+ * `level` is an integer: `0` and negatives are legal (`level -1 "Basement"`). Numbers must
+ * be unique (`E_LEVEL_DUP`) and are drawn in ASCENDING order — the lowest level is page 1
+ * (`compile().svg`, `describe()`'s top-level facts). Ids are unique *within* a level, so
+ * the same id on two levels is legal and means vertical identity (a stair, a riser).
+ *
+ * Everything stays expand-time (ADR 0003): each level's body resolves to its own
+ * {@link import("./ir.js").ResolvedPlan} and its own Scene, so a storey is one drawing.
+ */
+export interface LevelNode extends NodeBase {
+  kind: "level";
+  /** The storey number as authored (integer; 0/negative legal). */
+  level: number;
+  /** Optional storey name (`level 1 "Ground floor"`) — a fact + a title-block row. */
+  name?: string;
+  body: Statement[];
+}
+
 /** Discriminated union of all element AST nodes (registry-dispatchable). */
 export type AstElement =
   | WallNode
@@ -415,7 +442,18 @@ export type Statement =
   | AssignNode
   | SetNode
   | StripNode
+  | LevelNode
   | ErrorNode;
+
+/**
+ * Statement kinds that may sit at plan level in a MULTI-STOREY plan (beside the `level`
+ * blocks): the plan-global scope only — `let` bindings, `set` defaults, an `assign`, and
+ * an already-reported parse `error`. Anything else draws, so it belongs to exactly one
+ * storey and mixing it with levels is `E_LEVEL_MIX`. (Settings, `component`s and
+ * `import`s are not body statements at all — they are plan fields — so they are always
+ * shared.)
+ */
+export const LEVEL_SHARED_KINDS: readonly Statement["kind"][] = ["let", "set", "assign", "error", "level"];
 
 /** `component NAME(params) { body }` — a reusable parameterised sub-plan. */
 export interface ComponentDef {

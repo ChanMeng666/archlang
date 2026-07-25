@@ -110,6 +110,7 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "input_graph",
   "freedom",
   "schedule",
+  "levels",
 ];
 
 /** Tally a {@link FreedomReport} bucket without fighting the placement unions. */
@@ -204,6 +205,21 @@ function selectKeys(obj: Record<string, unknown>, keys: string[]): Record<string
   return out;
 }
 
+/**
+ * `describe --level N` — read ONE storey of a multi-storey plan: that level's facts become
+ * the top-level ones (they are the same shape) and `levels` narrows to it alone.
+ *
+ * A DISPLAY filter like `--room`/`--select`: `ok`, `diagnostics` and the exit code still
+ * come from the whole plan, so reading one floor can never make a broken building look
+ * sound. The `filtered`/`selected_level` markers say the read was narrowed.
+ */
+function narrowToLevel(s: SceneSummary, level: number): SceneSummary {
+  const want = s.levels?.find((l) => l.level === level);
+  if (!want) return s;
+  const { level: _l, name: _n, ...facts } = want;
+  return { ...s, ...facts, levels: [want] };
+}
+
 export function cmdDescribe(args: Args): number {
   // Both narrowing flags are validated BEFORE any work: a typo'd room id or key is a
   // usage error (exit 3), not a silently empty result.
@@ -226,16 +242,31 @@ export function cmdDescribe(args: Args): number {
     // rather than a misleading `unknown room` (the room list is empty for a reason).
     let summary = full;
     let filtered = false;
-    if (wantRooms && full.ok) {
+    // `--level` is applied FIRST: it picks which storey the rest of the read is about, so a
+    // following `--room` narrows within that storey rather than across floors.
+    if (args.level !== undefined && full.ok) {
+      const have = (full.levels ?? []).map((l) => l.level);
+      if (!have.includes(args.level)) {
+        return usageError(
+          have.length === 0
+            ? `--level ${args.level} was given but this plan declares no \`level\` blocks (it is single-storey) — drop --level`
+            : `unknown --level ${args.level} (plan has ${echoList(have.map(String))})`,
+        );
+      }
+      summary = narrowToLevel(full, args.level);
+      filtered = true;
+    }
+    if (wantRooms && summary.ok) {
       // Unknown room id → usage error listing what the plan actually has (capped, so
-      // the error stays as bounded as the output it is guarding).
-      const have = full.rooms.map((r) => r.id);
+      // the error stays as bounded as the output it is guarding). "What it has" is the
+      // storey in view, so `--level 2 --room bed1` reports level 2's rooms.
+      const have = summary.rooms.map((r) => r.id);
       for (const id of wantRooms) {
         if (!have.includes(id)) {
           return usageError(`unknown room "${id}"${didYouMean(id, have)} (plan has ${have.length}: ${echoList(have)})`);
         }
       }
-      summary = narrowToRooms(full, wantRooms);
+      summary = narrowToRooms(summary, wantRooms);
       filtered = true;
     }
 
@@ -247,13 +278,23 @@ export function cmdDescribe(args: Args): number {
       const shaped = selected ? selectKeys(base, selected) : base;
       // The markers ride OUTSIDE `--select` — a narrowed read must always be able to
       // tell that it is narrowed.
-      emitJson(filtered ? { ...shaped, filtered: true, selected_rooms: wantRooms } : shaped);
+      emitJson(
+        filtered
+          ? {
+              ...shaped,
+              filtered: true,
+              ...(wantRooms ? { selected_rooms: wantRooms } : {}),
+              ...(args.level !== undefined ? { selected_level: args.level } : {}),
+            }
+          : shaped,
+      );
     } else if (!summary.ok) {
       emitDiagnosticsHuman(source, summary.diagnostics, args.quiet);
       if (!args.quiet) process.stderr.write("✗ could not describe (plan has errors)\n");
     } else {
+      const storey = args.level !== undefined ? ` [level ${args.level}]` : "";
       const lines = [
-        `${summary.plan} — ${summary.totals.rooms} room(s), ${summary.totals.floor_area_m2} m²${filtered ? ` (showing ${summary.rooms.length})` : ""}`,
+        `${summary.plan}${storey} — ${summary.totals.rooms} room(s), ${summary.totals.floor_area_m2} m²${filtered ? ` (showing ${summary.rooms.length})` : ""}`,
         ...summary.rooms.map(
           (r) =>
             `  ${r.id}${r.label ? ` "${r.label}"` : ""}: ${r.area_m2} m²${r.adjacent.length ? ` — adj: ${r.adjacent.join(", ")}` : ""}`,

@@ -54,6 +54,7 @@ render a plan to SVG/DXF/TXT/PDF/PNG
 | --- | --- |
 | `--out, -o <file\|->` | output file, or '-' for stdout (default: the input path with the format's extension) |
 | `--format, -f <svg\|dxf\|txt\|pdf\|png>` | output format (default svg) |
+| `--level <n>` | render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one &lt;stem&gt;.L&lt;level&gt;.&lt;ext&gt; file per level |
 | `--width, -w <px>` | page width hint in pixels |
 | `--scale, -s <n>` | raster scale for the PNG backend (ignored by the non-raster formats) |
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
@@ -77,6 +78,12 @@ $ arch compile - -o - < plan.arch
 
 # rasterize to PNG, fetching the optional renderer if it is missing
 $ arch compile plan.arch -f png --install --json
+
+# a multi-storey plan writes one sheet per level (house.L1.svg, house.L2.svg …) and reports outputs[]
+$ arch compile house.arch --json
+
+# render just the upper storey of a multi-storey plan to one file
+$ arch compile house.arch --level 2 -o upper.svg
 ```
 
 ### `arch batch`
@@ -152,6 +159,7 @@ render a PNG you can look at (zero-install where the optional binary is present)
 | `--scale, -s <n>` | raster scale (default 1; without -w/-s the page auto-targets ~1600px wide for legibility) |
 | `--width, -w <px>` | page width hint in pixels |
 | `--ascii` | print a zero-dependency ASCII text plan to stdout instead of a PNG |
+| `--level <n>` | preview this storey of a multi-storey plan (default: the lowest level, i.e. page 1) |
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
 | `--charset <unicode\|ascii>` | text renderer glyph set (default unicode) |
 | `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
@@ -168,6 +176,9 @@ $ arch preview plan.arch --ascii --json
 
 # raster the plan so a vision model can look at it
 $ arch preview plan.arch -o plan.png --json
+
+# look at one storey of a multi-storey plan
+$ arch preview house.arch --level 2 -o upper.png --json
 ```
 
 ### `arch watch`
@@ -180,6 +191,7 @@ recompile on save (interactive)
 | --- | --- |
 | `--out, -o <file\|->` | output file, or '-' for stdout (default: the input path with the format's extension) |
 | `--format, -f <svg\|dxf\|txt\|pdf\|png>` | output format (default svg) |
+| `--level <n>` | render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one &lt;stem&gt;.L&lt;level&gt;.&lt;ext&gt; file per level |
 | `--width, -w <px>` | page width hint in pixels |
 | `--scale, -s <n>` | raster scale for the PNG backend (ignored by the non-raster formats) |
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
@@ -236,12 +248,13 @@ $ arch validate plan.arch --severity error --json
 
 semantic facts: rooms, areas, adjacency, what doors connect
 
-**Input:** `<file.arch|->` · **Output:** facts (JSON or a summary), narrowed by --room/--select
+**Input:** `<file.arch|->` · **Output:** facts (JSON or a summary), narrowed by --room/--select/--level
 
 | Flag | Does |
 | --- | --- |
 | `--room <id[,id…]>` | keep only these rooms; doors/windows/openings/furniture narrow to the ones touching them (plan-level facts — bbox, totals, caption — stay whole-plan) |
 | `--select <key[,key…]>` | emit only these top-level keys of the --json object (rooms, doors, totals, access, circulation, freedom, …); the ok/plan/units/diagnostics envelope is always kept |
+| `--level <n>` | report this storey of a multi-storey plan as the top-level facts (a DISPLAY filter — `ok` and the exit code still weigh the whole plan) |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -259,6 +272,9 @@ $ arch describe plan.arch --select rooms,totals --json
 
 # only those two rooms and the doors/windows/furniture that touch them
 $ arch describe plan.arch --room kitchen,bath --json
+
+# the upper storey's rooms/areas/access as the top-level facts (`levels[]` carries every storey)
+$ arch describe house.arch --level 2 --json
 ```
 
 ### `arch score`
