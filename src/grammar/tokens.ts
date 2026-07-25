@@ -38,7 +38,19 @@ export const KEYWORDS = {
     "legend",
   ],
   /** Built-in element kinds → `storage.type.element`, CM `typeName`. */
-  element: ["wall", "room", "door", "window", "opening", "furniture", "dim", "column"],
+  element: [
+    "wall",
+    "room",
+    "door",
+    "window",
+    "opening",
+    "furniture",
+    "dim",
+    "column",
+    "stair",
+    "elevator",
+    "escalator",
+  ],
   /** Setting / attribute keywords → `keyword.other`, CM `propertyName`. */
   attribute: [
     "units",
@@ -87,6 +99,7 @@ export const KEYWORDS = {
     "height",
     "faces",
     "clear",
+    "dir",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
   enum: [

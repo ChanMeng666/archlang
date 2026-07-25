@@ -178,6 +178,20 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Move the `strip` to the plan body, alongside the other elements.",
     "component c() { strip right at (0,0) gap 0 { … } }   # error: nested strip",
   ),
+  E_VERT_SIZE: E(
+    "E_VERT_SIZE",
+    "Vertical circulation must have a positive size.",
+    "A `stair`, `elevator` or `escalator` footprint's width or height evaluated to zero or a negative number, so there is no run to draw.",
+    "Give it a positive `size W x H` — the footprint the run occupies on this storey.",
+    "stair id=s at (0,0) size 900x0 dir up   # error: zero depth",
+  ),
+  E_STAIR_WIDTH: E(
+    "E_STAIR_WIDTH",
+    "Stair flight `width` is outside the footprint.",
+    "A `stair`'s optional `width` is the FLIGHT width measured across the run, so it has to be positive and no wider than the footprint's cross-axis extent (the short side — the flight always runs along the long one). This value is not.",
+    "Drop `width` to fill the footprint, or give a value between 0 and the footprint's short side.",
+    "stair id=s at (0,0) size 900x2600 dir up width 1200   # error: cross extent is 900",
+  ),
   E_IMPORT_BAD_SPEC: E(
     "E_IMPORT_BAD_SPEC",
     "Malformed import spec.",
@@ -678,6 +692,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "The plan declares a `paper` size, so `scale` is operative: the building's outer-face extent has to fit the sheet minus its margins, the `dims auto` dimension bands and the bottom chrome band (scale bar + title block). At the scale in force it does not. Your scale is NEVER silently overridden — a drawing is issued at the scale printed in its own title block — so the page simply grows past the sheet to contain the whole drawing. Advisory: an oversize sheet you intend to trim or tile is legitimate.",
     "Pick a coarser scale (a larger denominator draws the building smaller), move up a paper size, or drop the `scale` line and let the sheet auto-fit choose the finest scale from 1:50 / 1:100 / 1:200 / 1:500.",
     "paper A4 landscape\nscale 1:50   # warning on a 20 m building: 1:100 or `paper A2` fits, or omit `scale` to auto-fit",
+  ),
+  W_STAIR_UNMATCHED: W(
+    "W_STAIR_UNMATCHED",
+    "A run of vertical circulation appears on only one storey.",
+    "In a multi-storey plan the ONLY thing that joins two floors is identity: a `stair`/`elevator`/`escalator` with the same `id` in two `level` blocks is one shaft. This id appears on exactly one storey, so it connects nothing — usually a typo in the id, or the matching run was never drawn on the floor above or below. **Known limitation:** a top-floor stair that genuinely goes only to a roof hatch, and a lift that stops short of a storey it passes, both trip this rule; it is advisory, so leave it.",
+    "Draw the same run with the SAME `id` on the neighbouring storey (each storey declares its own `dir` — `up` on the lower floor, `down` on the upper one), or fix the id.",
+    'level 1 "G" { stair id=s at (0,0) size 900x2600 dir up }\nlevel 2 "1" { }   # warning: "s" is on level 1 only',
   ),
 });
 

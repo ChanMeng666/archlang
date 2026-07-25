@@ -18,6 +18,21 @@ import { opening } from "./opening.js";
 import { furniture } from "./furniture.js";
 import { dim } from "./dim.js";
 import { column } from "./column.js";
+import { stair } from "./stair.js";
+import { elevator } from "./elevator.js";
+import { escalator } from "./escalator.js";
 
 /** Built-in element defs, in canonical (registration) order. */
-export const BUILTIN_DEFS: readonly ElementDef[] = [wall, room, door, windowEl, opening, furniture, dim, column];
+export const BUILTIN_DEFS: readonly ElementDef[] = [
+  wall,
+  room,
+  door,
+  windowEl,
+  opening,
+  furniture,
+  dim,
+  column,
+  stair,
+  elevator,
+  escalator,
+];

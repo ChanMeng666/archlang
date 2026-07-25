@@ -101,11 +101,11 @@
           "name": "keyword.control.arch"
         },
         {
-          "match": "\\b(wall|room|door|window|opening|furniture|dim|column)\\b",
+          "match": "\\b(wall|room|door|window|opening|furniture|dim|column|stair|elevator|escalator)\\b",
           "name": "storage.type.element.arch"
         },
         {
-          "match": "\\b(units|grid|paper|scale|north|dims|accTitle|accDescr|material|angle|at|size|width|thickness|label|hinge|swing|offset|text|close|id|project|drawn_by|date|from|as|right-of|left-of|below|above|align|gap|uses|rotate|against|segment|side|on|into|near|anchor|inset|flush|height|faces|clear)\\b",
+          "match": "\\b(units|grid|paper|scale|north|dims|accTitle|accDescr|material|angle|at|size|width|thickness|label|hinge|swing|offset|text|close|id|project|drawn_by|date|from|as|right-of|left-of|below|above|align|gap|uses|rotate|against|segment|side|on|into|near|anchor|inset|flush|height|faces|clear|dir)\\b",
           "name": "keyword.other.arch"
         }
       ]

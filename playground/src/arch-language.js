@@ -12,8 +12,8 @@ import { tags as t } from "@lezer/highlight";
 import { compile } from "archlang";
 
 const CONTROL = new Set(["plan", "component", "let", "theme", "title", "style", "import", "for", "if", "while", "else", "set", "strip", "level", "axes", "schedule", "legend"]);
-const ELEMENT = new Set(["wall", "room", "door", "window", "opening", "furniture", "dim", "column"]);
-const ATTR = new Set(["units", "grid", "paper", "scale", "north", "dims", "accTitle", "accDescr", "material", "angle", "at", "size", "width", "thickness", "label", "hinge", "swing", "offset", "text", "close", "id", "project", "drawn_by", "date", "from", "as", "right-of", "left-of", "below", "above", "align", "gap", "uses", "rotate", "against", "segment", "side", "on", "into", "near", "anchor", "inset", "flush", "height", "faces", "clear"]);
+const ELEMENT = new Set(["wall", "room", "door", "window", "opening", "furniture", "dim", "column", "stair", "elevator", "escalator"]);
+const ATTR = new Set(["units", "grid", "paper", "scale", "north", "dims", "accTitle", "accDescr", "material", "angle", "at", "size", "width", "thickness", "label", "hinge", "swing", "offset", "text", "close", "id", "project", "drawn_by", "date", "from", "as", "right-of", "left-of", "below", "above", "align", "gap", "uses", "rotate", "against", "segment", "side", "on", "into", "near", "anchor", "inset", "flush", "height", "faces", "clear", "dir"]);
 const ENUM = new Set(["up", "down", "left", "right", "in", "out", "mm", "true", "false", "top", "middle", "bottom", "center", "centered", "start", "end", "top-left", "top-right", "bottom-left", "bottom-right", "auto", "A4", "A3", "A2", "A1", "A0", "landscape", "portrait", "living", "kitchen", "dining", "bedroom", "bath", "wc", "hall", "circulation", "storage", "utility", "office", "entry"]);
 
 const archStream = StreamLanguage.define({

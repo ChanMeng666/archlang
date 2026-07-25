@@ -54,8 +54,15 @@ export function statementExprs(s: Statement): Expr[] {
       if (s.text) out.push(s.text);
       break;
     case "column":
+    case "elevator":
+    case "escalator":
       pt(s.at);
       out.push(s.size.w, s.size.h);
+      break;
+    case "stair":
+      pt(s.at);
+      out.push(s.size.w, s.size.h);
+      if (s.width) out.push(s.width);
       break;
     case "strip":
       pt(s.at);

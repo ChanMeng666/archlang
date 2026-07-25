@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**55 errors** · **36 warnings**
+**57 errors** · **37 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -55,12 +55,14 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_RECURSION`](#e_recursion) | error | Component recursion too deep. |
 | [`E_REDEF`](#e_redef) | error | Name already defined in this scope. |
 | [`E_ROOM_SIZE`](#e_room_size) | error | Room must have a positive size. |
+| [`E_STAIR_WIDTH`](#e_stair_width) | error | Stair flight `width` is outside the footprint. |
 | [`E_STRIP_NEST`](#e_strip_nest) | error | Illegal `strip` nesting. |
 | [`E_STRIP_SIZE`](#e_strip_size) | error | Room in a `strip` is missing a size. |
 | [`E_TYPE`](#e_type) | error | Type mismatch. |
 | [`E_UNKNOWN_COMPONENT`](#e_unknown_component) | error | Unknown component. |
 | [`E_UNKNOWN_FN`](#e_unknown_fn) | error | Unknown function. |
 | [`E_UNKNOWN_REF`](#e_unknown_ref) | error | Unknown reference. |
+| [`E_VERT_SIZE`](#e_vert_size) | error | Vertical circulation must have a positive size. |
 | [`E_WALL_THICKNESS`](#e_wall_thickness) | error | Wall must have a positive thickness. |
 | [`E_WHILE_LIMIT`](#e_while_limit) | error | `while` exceeded its iteration cap. |
 | [`E_WINDOW_WIDTH`](#e_window_width) | error | Window must have a positive width. |
@@ -94,6 +96,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_ROOM_UNREACHABLE`](#w_room_unreachable) | warning | Room cannot be reached from the entrance. |
 | [`W_SANITIZED_CONFIG`](#w_sanitized_config) | warning | A disallowed config value was stripped. |
 | [`W_SCALE_OVERFLOW`](#w_scale_overflow) | warning | The drawing does not fit the declared paper at the declared scale. |
+| [`W_STAIR_UNMATCHED`](#w_stair_unmatched) | warning | A run of vertical circulation appears on only one storey. |
 | [`W_SWING_OBSTRUCTED`](#w_swing_obstructed) | warning | Door swing is obstructed. |
 | [`W_SWING_ROOM_NOT_ADJACENT`](#w_swing_room_not_adjacent) | warning | `swing into <room>` names a room the door does not border. |
 | [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material; using the default hatch. |
@@ -662,6 +665,18 @@ let x = 2   # error: redefinition
 room at (0,0) size 0x4000   # error: width is 0
 ```
 
+## E_STAIR_WIDTH
+
+*error* — Stair flight `width` is outside the footprint.
+
+**Cause.** A `stair`'s optional `width` is the FLIGHT width measured across the run, so it has to be positive and no wider than the footprint's cross-axis extent (the short side — the flight always runs along the long one). This value is not.
+
+**Fix.** Drop `width` to fill the footprint, or give a value between 0 and the footprint's short side.
+
+```arch
+stair id=s at (0,0) size 900x2600 dir up width 1200   # error: cross extent is 900
+```
+
 ## E_STRIP_NEST
 
 *error* — Illegal `strip` nesting.
@@ -732,6 +747,18 @@ let x = frobnicate(2)   # error
 
 ```arch
 let x = y + 1   # error if `y` is undefined
+```
+
+## E_VERT_SIZE
+
+*error* — Vertical circulation must have a positive size.
+
+**Cause.** A `stair`, `elevator` or `escalator` footprint's width or height evaluated to zero or a negative number, so there is no run to draw.
+
+**Fix.** Give it a positive `size W x H` — the footprint the run occupies on this storey.
+
+```arch
+stair id=s at (0,0) size 900x0 dir up   # error: zero depth
 ```
 
 ## E_WALL_THICKNESS
@@ -1137,6 +1164,19 @@ theme { wall: "<script>" }   # warning: stripped
 ```arch
 paper A4 landscape
 scale 1:50   # warning on a 20 m building: 1:100 or `paper A2` fits, or omit `scale` to auto-fit
+```
+
+## W_STAIR_UNMATCHED
+
+*warning* — A run of vertical circulation appears on only one storey.
+
+**Cause.** In a multi-storey plan the ONLY thing that joins two floors is identity: a `stair`/`elevator`/`escalator` with the same `id` in two `level` blocks is one shaft. This id appears on exactly one storey, so it connects nothing — usually a typo in the id, or the matching run was never drawn on the floor above or below. **Known limitation:** a top-floor stair that genuinely goes only to a roof hatch, and a lift that stops short of a storey it passes, both trip this rule; it is advisory, so leave it.
+
+**Fix.** Draw the same run with the SAME `id` on the neighbouring storey (each storey declares its own `dir` — `up` on the lower floor, `down` on the upper one), or fix the id.
+
+```arch
+level 1 "G" { stair id=s at (0,0) size 900x2600 dir up }
+level 2 "1" { }   # warning: "s" is on level 1 only
 ```
 
 ## W_SWING_OBSTRUCTED

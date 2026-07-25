@@ -232,7 +232,11 @@ suite("v1.21 levels — describe()/lint() per storey", () => {
     // Each storey is summarized with the full single-plan shape.
     const upper = s.levels![1]!;
     expect(upper.rooms.map((r) => r.id)).toEqual(["landing", "bath", "bed1", "bed2"]);
-    expect(upper.access.hasEntrance).toBe(true);
+    // The upper storey has NO exterior door of its own — its own door access graph says
+    // so, honestly — and is reached by the stair instead (v1.21). `access` stays a
+    // per-storey fact; the cross-storey answer lives in the building's `vertical` block.
+    expect(upper.access.hasEntrance).toBe(false);
+    expect(s.vertical!.reachable_levels).toEqual([1, 2]);
     expect(upper.caption).toContain("Bedroom 1");
   });
 

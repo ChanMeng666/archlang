@@ -51,18 +51,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `-o -` on a multi-storey plan is a usage error (exit 3) unless `--level` picks one, and an unknown
   `--level` (or `--level` on a single-storey plan) exits 3 naming the levels the plan has.
   `describe --level` is a DISPLAY filter: `ok` and the exit code still weigh the whole building.
-- **`examples/two-storey.arch`** — a lint-clean two-storey house (A3, `dims auto all`, `stair` on both
-  floors), with a golden + snapshot per page.
+- **`examples/two-storey.arch`** — a lint-clean two-storey house (A3, `dims auto all`, a real `stair`
+  on both floors), with a golden + snapshot per page.
 - Library exports `resolveAll` / `levelBlocks` and the `CompilePage`, `LevelSummary`, `ResolvedLevel`,
   `PlanResolution` types.
+- **`stair` / `elevator` / `escalator` — vertical circulation, as access-graph facts.** Three new
+  elements (one module each in `src/elements/`, registered in `defs.ts` — no switch anywhere) that
+  draw the conventional plan symbols AND carry the only rule in the language that joins two floors:
+
+  ```arch
+  stair     [id=<id>] at (x,y) size <w>x<h> dir up|down [width <mm>]
+  elevator  [id=<id>] at (x,y) size <w>x<h>
+  escalator [id=<id>] at (x,y) size <w>x<h> dir up|down
+  ```
+
+  - **The symbols.** A stair draws tread lines at a 280 mm nominal going, a mid-flight **break line**
+    (the paired-diagonal cut, with the treads it crosses omitted) and an `UP`/`DN` direction arrow; an
+    elevator the car rectangle with crossed diagonals; an escalator parallel chevrons plus the same
+    arrow. They draw on the furniture pass, on CAD layers `A-FLOR-STRS` (stair, escalator) and
+    `A-FLOR-EVTR` (elevator).
+  - **Which way a run reads** is closed-form and shared by the renderer and the analysis layer
+    (`src/vertical.ts`): the flight lies along the footprint's LONG axis; a *rising* flight starts at
+    that axis's larger-coordinate end (so `dir up` points north/west) and a *descending* one is met at
+    its head, so `dir down` is entered from the opposite end with its arrow reversed. One shaft
+    therefore reads correctly on both storeys — `UP` below, `DN` above, pointing opposite ways — with
+    no cross-level inference beyond the shared id (ADR 0005). `dir` is declared **per storey**.
+  - **`width`** (stairs) is the FLIGHT width across the run, defaulting to the footprint's cross
+    extent; wider is the new **`E_STAIR_WIDTH`**. v1 always draws one straight flight — a narrower
+    `width` centres the band and leaves the rest as an un-drawn return/void. A non-positive footprint
+    is **`E_VERT_SIZE`**.
+  - **Circulation.** A footprint obstructs the nav grid exactly like furniture, EXCEPT that the
+    body-radius halo is lifted outside its entry edge(s), so the landing you cross to reach the run
+    stays walkable. A stair has one entry edge, an escalator both narrow ends, a lift car its south
+    edge.
+  - **Vertical identity.** In a multi-storey plan the SAME id on two `level` blocks is **one shaft**.
+    `describe()` gains an append-only **`vertical`** block at the top level —
+    `{ connections: [{ id, kind, levels[], stops[] }], reachable_levels }` — present only when a run
+    actually spans two storeys, plus a per-storey **`levels[i].verticals`** list. Both are selectable
+    through `describe --select`.
+  - **Reachability through a shaft.** A storey with no exterior door of its own is reachable when a
+    shaft joins it to one that has: `W_NO_ENTRANCE` stands down there and `W_ROOM_UNREACHABLE` treats
+    the room the shaft lands in as an arrival point. Each storey's own `access.hasEntrance` stays
+    honest (it reports that floor's doors); the cross-storey answer is `vertical.reachable_levels`.
+    `examples/two-storey.arch` no longer needs its invented balcony door.
+  - **New `W_STAIR_UNMATCHED`**: a run whose id appears on exactly one storey of a multi-storey plan
+    connects nothing. Advisory and deliberately simple — a top-floor flight to a roof hatch, and a
+    lift that stops short of a storey, both carry it (documented in the catalog entry).
+  - **`validate --graph` spans floors.** For a multi-storey plan the intended-graph check is the whole
+    building's: storeys are pooled in ascending order (a repeated room id resolves to the lower
+    storey), and a shaft contributes one undirected edge per ADJACENT pair of its storeys, between the
+    rooms it lands in on each.
 
 ### Notes
 
-- Vertical circulation is **not** a modelled connector yet (the next item): each storey's access graph
-  and circulation are read on that floor alone, so an upper storey needs its own exterior opening to
-  register an entrance.
 - A multi-page PDF is deliberately not built — `-f pdf` writes one file per storey, one drawing per
   sheet. `md` and `batch` render the lowest storey.
+- Vertical circulation's entry edge is a **fixed drafting convention**, not a search for the nearest
+  door — the same answer in the renderer and in the analysis layer, on every storey. A flight
+  genuinely approached from the north or the west draws its arrow the wrong way round in v1; swap the
+  authored coordinates, or wait for an `entry <edge>` clause. The three elements are deliberately NOT
+  in Plan JSON yet (`compile --from-json` covers rooms/walls/openings/furniture/dims/columns).
+- The `spec.llm.md` size budget was raised 18.5k → 19.5k chars for the three new element lines (they
+  were trimmed from 1,230 to 800 chars first); see the comment in `test/llm-spec-drift.test.ts`.
 
 ## [1.20.0] - 2026-07-26
 

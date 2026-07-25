@@ -104,6 +104,7 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "windows",
   "openings",
   "furniture",
+  "verticals",
   "access",
   "circulation",
   "totals",
@@ -111,6 +112,7 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "freedom",
   "schedule",
   "levels",
+  "vertical",
 ];
 
 /** Tally a {@link FreedomReport} bucket without fighting the placement unions. */
@@ -217,7 +219,13 @@ function narrowToLevel(s: SceneSummary, level: number): SceneSummary {
   const want = s.levels?.find((l) => l.level === level);
   if (!want) return s;
   const { level: _l, name: _n, ...facts } = want;
-  return { ...s, ...facts, levels: [want] };
+  const out: SceneSummary = { ...s, ...facts, levels: [want] };
+  // Optional per-storey keys are absent from `facts` when THIS storey has none, so the
+  // spread would leave the previous top-level value (page 1's) standing and the narrowed
+  // read would lie. Whole-BUILDING keys (`vertical`) legitimately survive; per-storey
+  // ones must not. `verticals` is the only key that genuinely varies per storey today.
+  if (facts.verticals === undefined) delete out.verticals;
+  return out;
 }
 
 export function cmdDescribe(args: Args): number {

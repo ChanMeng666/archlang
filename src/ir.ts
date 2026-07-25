@@ -26,6 +26,7 @@ import type {
   StripNode,
   TitleNode,
   UseKind,
+  VerticalDir,
   WindowNode,
 } from "./ast.js";
 import { placeRelational } from "./layout.js";
@@ -188,7 +189,44 @@ export interface RColumn extends RBase {
   size: { w: number; h: number };
 }
 
-export type ResolvedElement = RWall | RRoom | RDoor | RWindow | ROpening | RFurniture | RDim | RColumn;
+/** A resolved straight flight of stairs. `width` is always concrete (defaulted to the
+ *  footprint's cross-axis extent at resolve), so nothing downstream re-derives it. */
+export interface RStair extends RBase {
+  kind: "stair";
+  at: Point;
+  size: { w: number; h: number };
+  dir: VerticalDir;
+  /** Flight width across the run (mm). */
+  width: number;
+}
+
+/** A resolved lift shaft. */
+export interface RElevator extends RBase {
+  kind: "elevator";
+  at: Point;
+  size: { w: number; h: number };
+}
+
+/** A resolved escalator run. */
+export interface REscalator extends RBase {
+  kind: "escalator";
+  at: Point;
+  size: { w: number; h: number };
+  dir: VerticalDir;
+}
+
+export type ResolvedElement =
+  | RWall
+  | RRoom
+  | RDoor
+  | RWindow
+  | ROpening
+  | RFurniture
+  | RDim
+  | RColumn
+  | RStair
+  | RElevator
+  | REscalator;
 
 /**
  * One resolved **positioning axis** (定位轴线): an author-declared datum line at `pos`
@@ -1098,7 +1136,14 @@ function registerOpenings(elements: ResolvedElement[], walls: RWall[]): void {
 /** W_EMPTY_PLAN: the plan resolves but contains nothing drawable. */
 function checkPlanDrawable(elements: ResolvedElement[], diagnostics: Diagnostic[]): void {
   const drawable = elements.some(
-    (e) => e.kind === "wall" || e.kind === "room" || e.kind === "furniture" || e.kind === "column",
+    (e) =>
+      e.kind === "wall" ||
+      e.kind === "room" ||
+      e.kind === "furniture" ||
+      e.kind === "column" ||
+      e.kind === "stair" ||
+      e.kind === "elevator" ||
+      e.kind === "escalator",
   );
   if (!drawable) {
     diagnostics.push({

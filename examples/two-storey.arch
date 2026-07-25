@@ -2,8 +2,10 @@
 #
 # Settings and the plan-global `let`s live OUTSIDE the levels and apply to every one of
 # them: one building is issued on one sheet at one scale. Each level's body is an ordinary
-# plan body, and ids are unique WITHIN a level — so `stair` exists on both floors at the
-# same coordinates and means the same shaft.
+# plan body, and ids are unique WITHIN a level — so the `stair` below exists on both floors
+# at the same coordinates, and that shared id is what declares one shaft: `describe --json`
+# reports it under `vertical.connections`, and it is why the first floor needs no front
+# door of its own to lint clean.
 plan "Two-storey house" {
   units mm
   grid 50
@@ -34,7 +36,7 @@ plan "Two-storey house" {
 
     furniture sofa in living anchor top flush inset 300 size 2000x850 label "Sofa"
     furniture kitchen_sink against wall kitchen_w offset 1200 in kitchen
-    furniture stair in hall anchor top-left flush size 900x2600 label "Stair up"
+    stair id=stair at (100,1500) size 900x2600 dir up
   }
 
   level 2 "First floor" {
@@ -48,9 +50,10 @@ plan "Two-storey house" {
     room id=bed1 at (2200,0) size 5800x3600 label "Bedroom 1" uses bedroom
     room id=bed2 at (2200,3600) size 5800x3400 label "Bedroom 2" uses bedroom
 
-    # The upper storey's own front door is its balcony door — the stair (vertical
-    # circulation) is not yet a modelled connector, so this is what the access graph reads.
-    door id=balcony on shell at 1600 width 900 swing out
+    # No exterior door up here: the `stair` below carries the same id as the ground
+    # floor's, so the access graph reads the landing as reached from outside via the
+    # storey below. (Before vertical circulation was modelled this floor needed a
+    # made-up balcony door to lint clean.)
     door id=d_bed1 on hall_w at 1800 width 900 swing into bed1
     door id=d_bed2 on hall_w at 4100 width 900 swing into bed2
     door id=d_bath on bath_w at 1100 width 800 swing into bath
@@ -63,7 +66,7 @@ plan "Two-storey house" {
     furniture bed in bed2 anchor bottom flush inset 300 size 1000x2000 label "Single"
     furniture wc in bath anchor bottom-left flush size 400x700
     furniture basin in bath anchor bottom-right flush size 600x450
-    furniture stair in landing anchor top-left flush size 900x2600 label "Stair down"
+    stair id=stair at (100,1500) size 900x2600 dir down
   }
 
   title {

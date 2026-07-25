@@ -63,6 +63,7 @@ import {
   type BBox,
 } from "./analyze.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
+import { verticalsOf } from "./vertical.js";
 import { doorLandingRect, pointInRect, rectOverlapAmounts, wallIntrusion } from "./geometry/rect.js";
 import { segmentsOfWall, doorSwing, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
 import { DEFAULT_RULESET } from "./lint.js";
@@ -1013,7 +1014,17 @@ function repairStorey(
         size: { w: p.w, h: p.h },
       };
     });
-    return computeCirculation(roomEls, walls, doors, openingEls, [...staticFurniture, ...dyn], access, DEFAULT_TOL);
+    return computeCirculation(
+      roomEls,
+      walls,
+      doors,
+      openingEls,
+      [...staticFurniture, ...dyn],
+      access,
+      DEFAULT_TOL,
+      undefined,
+      verticalsOf(ir),
+    );
   };
   // Baseline circulation of the starting arrangement; updated in place as pieces move so
   // each candidate check is a single compute (the accepted `after` becomes the next `before`).

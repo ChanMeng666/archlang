@@ -720,6 +720,92 @@ column [id=<id>] at (x,y) size <w>x<h>
 A solid structural column (filled square). Useful for grids of columns in
 larger plans.
 
+### Vertical circulation — `stair`, `elevator`, `escalator` (v1.21)
+
+```
+stair     [id=<id>] at (x,y) size <w>x<h> dir up|down [width <mm>]
+elevator  [id=<id>] at (x,y) size <w>x<h>
+escalator [id=<id>] at (x,y) size <w>x<h> dir up|down
+```
+
+Three elements that draw the conventional plan symbols — and, in a multi-storey plan, the
+only thing that joins two floors.
+
+| | drawn as | `dir` | CAD layer |
+| --- | --- | --- | --- |
+| `stair` | tread lines at a 280 mm nominal going, a mid-flight **break line** (the paired-diagonal cut, with the treads it crosses omitted) and a direction arrow labelled `UP`/`DN` | required | `A-FLOR-STRS` |
+| `elevator` | the car rectangle with crossed diagonals | — a lift serves every storey it appears on | `A-FLOR-EVTR` |
+| `escalator` | parallel chevrons pointing the way of travel, plus the same `UP`/`DN` arrow | required | `A-FLOR-STRS` |
+
+`at` is the footprint's **top-left corner** (as for `room` and `furniture`). They draw on
+the same pass as furniture, under the wall poché.
+
+**Which way the run reads.** Two rules compose.
+
+1. *Geometry.* The flight lies along the footprint's **long axis**, and a **rising** flight
+   starts at the end of that axis with the **larger coordinate**: the bottom end of a
+   portrait footprint, the right end of a landscape one. So a `dir up` arrow points north
+   (or west).
+2. *`dir`.* You meet a **descending** flight at its head, not its foot, so a `dir down` run
+   is entered from the **opposite** end and its arrow points the other way. That is what
+   makes one shaft read correctly on both storeys — the `UP` on the floor below and the
+   `DN` on the floor above point in opposite directions, as a drawing set should, with no
+   cross-level inference beyond the shared id.
+
+The geometric half is a **fixed drafting convention, not a search for the nearest door** —
+it is the same answer in the renderer and in the analysis layer, on every storey, whatever
+else the plan contains. A flight genuinely approached from the north or the west therefore
+draws its arrow the wrong way round in v1; swap the footprint's authored coordinates, or
+wait for the `entry <edge>` clause a later release can add without changing this default.
+
+**`width` (stairs only)** is the FLIGHT width measured across the run. It defaults to the
+footprint's cross-axis extent, and may not exceed it
+([`E_STAIR_WIDTH`](error-codes.md#e_stair_width)). v1 always draws **one straight flight**:
+a narrower `width` centres the flight band in the footprint and leaves the remainder as an
+un-drawn return/void, so a dog-leg stair is modelled as its footprint plus a narrower run
+rather than as two flights.
+
+**What it does to circulation.** The footprint obstructs the
+[navigation grid](analysis.md#circulation--how-a-person-walks-the-plan) exactly like a piece
+of furniture — you cannot walk over a lift shaft — **except** that the body-radius halo is
+lifted outside its entry edge(s), so the landing you cross to reach the flight stays
+walkable. A stair has one entry edge (the arrow's tail, so it moves with `dir`), an
+escalator has both narrow ends (you step on at one and off at the other), a lift car is
+entered from its south edge.
+
+**Vertical identity.** In a plan made of [`level` blocks](#levels--a-multi-storey-building-v121),
+a run carrying the **same id on two storeys is one shaft**. That single rule buys three
+things:
+
+- `describe()` reports it under `vertical.connections` (see
+  [analysis.md](analysis.md#vertical-circulation--the-building-graph-v121));
+- the upper storey is **reachable** — a floor with no exterior door of its own no longer
+  raises `W_NO_ENTRANCE`, because you arrive in the room the shaft lands in;
+- `validate --graph` counts it as a connector between the rooms it lands in on each floor.
+
+Nothing is inferred from geometry: two flights at the same coordinates with different ids
+are two different shafts. A run whose id appears on exactly one storey of a multi-storey
+plan is [`W_STAIR_UNMATCHED`](error-codes.md#w_stair_unmatched) — advisory, so a top-floor
+flight to a roof hatch simply carries the warning.
+
+```arch
+plan "Two-storey" {
+  units mm
+  level 1 "Ground" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+    room id=hall at (0,0) size 6000x6000 label "Hall" uses hall
+    door id=front on shell at 15000 width 1000 swing into hall
+    stair id=stair at (500,2000) size 900x2600 dir up
+  }
+  level 2 "First" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+    room id=landing at (0,0) size 6000x6000 label "Landing" uses circulation
+    window id=w on shell at 3000 width 1200
+    stair id=stair at (500,2000) size 900x2600 dir down
+  }
+}
+```
+
 ### Title block
 
 ```
@@ -847,13 +933,13 @@ plan "Two-storey house" {
   level 1 "Ground floor" {
     wall id=shell exterior thickness 200 { (0,0) (W,0) (W,7000) (0,7000) close }
     room id=hall at (0,0) size 2200x7000 label "Hall" uses hall
-    furniture stair in hall anchor top-left flush size 900x2600 label "Stair up"
+    stair id=stair at (100,1500) size 900x2600 dir up
   }
 
   level 2 "First floor" {
     wall id=shell exterior thickness 200 { (0,0) (W,0) (W,7000) (0,7000) close }
     room id=landing at (0,0) size 2200x4600 label "Landing" uses circulation
-    furniture stair in landing anchor top-left flush size 900x2600 label "Stair down"
+    stair id=stair at (100,1500) size 900x2600 dir down
   }
 }
 ```
@@ -886,9 +972,12 @@ put it in a `component` and call it from each.
 
 **Ids are unique WITHIN a level**, not across the building. The same id on two storeys is
 legal and means **vertical identity** — the `stair` above is the same shaft on both floors,
-and a riser, a duct or a column keeps its name as it goes up. (Vertical circulation is not
-yet a modelled connector: each storey's access graph is read on its own floor, so an upper
-storey needs its own exterior opening — a balcony door, say — to have an entrance.)
+and a riser, a duct or a column keeps its name as it goes up. Since v1.21 that identity is
+**operative** for the three [vertical-circulation
+elements](#vertical-circulation--stair-elevator-escalator-v121): a `stair`/`elevator`/
+`escalator` with one id on two storeys is a shaft, so the upper floor is reachable through
+it and needs no exterior door of its own. (For every other element the shared id is still
+just a name.)
 
 **One building, one sheet.** `paper`/`scale` are resolved **once for the whole building**,
 from the largest storey: auto-fit cannot hand the small top floor a finer scale than the

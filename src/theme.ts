@@ -178,6 +178,11 @@ const STYLE_KEYS: Record<string, Record<string, keyof Theme>> = {
   window: { pane: "windowPane", opening: "opening" },
   dim: { stroke: "dim", label: "dim" },
   column: { fill: "column", stroke: "wallStroke" },
+  // Vertical circulation shares the furniture palette (it draws on the same pass); the
+  // UP/DN word is an annotation, so `label` points at the annotation ink.
+  stair: { fill: "furnitureFill", stroke: "furnitureStroke", label: "annotation" },
+  elevator: { fill: "furnitureFill", stroke: "furnitureStroke" },
+  escalator: { fill: "furnitureFill", stroke: "furnitureStroke", label: "annotation" },
 };
 
 /** Resolve a `style <kind> { <key> … }` attribute to a Theme key, or null.
