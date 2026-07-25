@@ -24,12 +24,22 @@ a `fix`). This page is everything you need to author it. Print it any time with 
 plan "Title" {
   units mm            # required-ish settings come first
   grid 50             # snap grid in mm
-  scale 1:50          # drawing scale (annotation only)
+  paper A3 landscape  # OPTIONAL sheet: A4|A3|A2|A1|A0, landscape (default) | portrait
+  scale 1:50          # drawing scale — OPERATIVE with `paper`, annotation-only without it
   north up            # up | down | left | right
   # … elements and scripting …
   title { project "…" drawn_by "…" date "…" }
 }
 ```
+
+**`paper` is what makes `scale` real.** Without it every drawn size (label height, wall
+stroke, margin) is a fraction of the drawing's own size, so a 100 m building gets 3 m labels;
+`scale` is then just a title-block row. With `paper`, every annotation is a fixed number of
+millimetres ON THE SHEET (3.5 mm room labels, 0.5 mm wall lines, 15 mm margins) × the scale
+denominator — the same ink at any building size. Write `paper` and omit `scale` to auto-fit the
+finest of 1:50 / 1:100 / 1:200 / 1:500 that fits; declare both and a plan too big for the sheet
+warns `W_SCALE_OVERFLOW` (your scale is never silently overridden). `arch describe --json`
+reports the result as `sheet`. Big plan? `paper A1` + `dims auto all` is the professional default.
 
 ## Elements
 
@@ -61,8 +71,8 @@ axes { x at <mm>, <mm>, … y at <mm>, <mm>, … }   # GB/T 50001 positioning ax
 (Elements are fully specced above; these are the rest.)
 
 - **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`, `strip`, `axes`
-- **Attributes:** `units`, `grid`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`, `on`, `into`, `near`, `anchor`, `inset`, `flush`, `height`, `faces`, `clear`
-- **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `centered`, `start`, `end`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `auto`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`
+- **Attributes:** `units`, `grid`, `paper`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`, `on`, `into`, `near`, `anchor`, `inset`, `flush`, `height`, `faces`, `clear`
+- **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `centered`, `start`, `end`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `auto`, `A4`, `A3`, `A2`, `A1`, `A0`, `landscape`, `portrait`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`
 
 ## CLI loop (how an agent drives it)
 
@@ -139,6 +149,7 @@ SKILL.md for the full recipe.
 | Furniture floated at a guessed (or copy-pasted) `at` | Place it `in <room> anchor <9-point> [flush] [inset]` or `against wall <id>` — closed-form, never floats or penetrates. |
 | Hand-computing half a wall thickness as `inset` (`anchor bottom inset 100` for a 200 wall) | Write `anchor bottom flush` — the inset is measured from the wall face, so you never name a thickness. |
 | `size 4000` (no height) | Sizes are `WxH`: `size 4000x3000` (or `W x H` with spaces). |
+| A big building drawn with metre-tall room labels and fat walls | Declare a sheet: `paper A1` (+ `scale 1:200`, or omit `scale` to auto-fit) — annotation sizes then stay fixed in sheet mm. |
 | Reusing an `id` | Ids are unique; omit `id=` to auto-generate. |
 | String math without interpolation | Use `"{expr}"`, e.g. `label "{aream2(W,H)} m²"`. |
 

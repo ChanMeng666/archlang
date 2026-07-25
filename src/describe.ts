@@ -41,6 +41,7 @@ import {
   type BBox,
 } from "./analyze.js";
 import { outerFaceBounds } from "./geometry.js";
+import type { PaperOrientation, PaperSize } from "./sheet.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
 import { roomTypeForUses, buildInputGraph } from "./plan-json.js";
 import { fmt2 } from "./num-format.js";
@@ -163,6 +164,22 @@ export interface AxesSummary {
   y: AxisSummary[];
 }
 
+/**
+ * The sheet facts for a plan that declares `paper` (v1.20): which sheet, which way
+ * round, the operative scale denominator, and whether the building fits on it at that
+ * scale. `fits: false` is the `W_SCALE_OVERFLOW` condition — the drawing is still
+ * produced, on a page grown past the sheet.
+ */
+export interface SheetSummary {
+  paper: PaperSize;
+  orientation: PaperOrientation;
+  /** The `<denom>` of `1:<denom>` — authored, or chosen by auto-fit. */
+  scale_denominator: number;
+  /** True when the denominator was chosen by auto-fit (the plan declared no `scale`). */
+  scale_auto: boolean;
+  fits: boolean;
+}
+
 /** The semantic summary of a plan. `ok` is false when fatal errors prevented
  *  resolution; inspect `diagnostics` in that case (the lists will be empty). */
 export interface SceneSummary {
@@ -185,7 +202,18 @@ export interface SceneSummary {
   accTitle?: string;
   accDescr?: string;
   units: "mm";
+  /**
+   * The EFFECTIVE drawing scale, e.g. `"1:200"`. Annotation-only on its own; when
+   * {@link sheet} is present it is operative (every annotation size derives from it),
+   * and it is the scale auto-fit chose if the plan declared none.
+   */
   scale?: string;
+  /**
+   * The sheet the drawing is issued on — present only when the plan declares `paper`.
+   * Absent (the default) means reference-dimension sizing: no paper, and `scale` is a
+   * title-block annotation. See [the sheet layer](../src/sheet.ts).
+   */
+  sheet?: SheetSummary;
   /**
    * Overall drawing extent in mm, measured on wall **centerlines** (the union of raw
    * wall points and room rectangles). This is the coordinate space the source is
@@ -511,6 +539,20 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     ...(ir.accDescr !== undefined ? { accDescr: ir.accDescr } : {}),
     units: ir.units,
     ...(ir.scale !== undefined ? { scale: ir.scale } : {}),
+    // Append-only: present only for a plan that declares `paper`, so every existing
+    // summary is unchanged. Read straight off the IR — `resolve()` already picked the
+    // operative scale, so describe() and the drawing can never disagree.
+    ...(ir.sheet
+      ? {
+          sheet: {
+            paper: ir.sheet.size,
+            orientation: ir.sheet.orientation,
+            scale_denominator: ir.sheet.denom,
+            scale_auto: ir.sheet.auto,
+            fits: ir.sheet.fits,
+          },
+        }
+      : {}),
     bbox,
     bbox_outer,
     ...(ir.axes && ir.axes.length > 0

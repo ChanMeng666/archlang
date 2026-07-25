@@ -19,6 +19,7 @@ describe("golden SVG snapshots", () => {
     "themed.arch",
     "relational.arch",
     "attached.arch",
+    "museum.arch",
   ]) {
     it(`renders ${name} deterministically`, () => {
       const { svg, errors } = compile(example(name), { noCache: true });

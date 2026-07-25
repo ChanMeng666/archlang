@@ -120,7 +120,8 @@ re-propose, re-open, or contradict them anywhere.
 ├─ docs/              language-reference.md · analysis.md · intent.md · error-codes.md (GEN) ·
 │                     cli-reference.md (GEN from src/manifest.ts, `gen:cli`) · adr/ (archive/ holds the frozen WORK-LOG)
 ├─ brand/             logo kit + brand book (README.md) — archlang-logo-master.svg is byte-sacred (iron law)
-├─ examples/          studio · two-bed · parametric · themed · relational · attached · accessible · lib/
+├─ examples/          studio · two-bed · parametric · themed · relational · attached · accessible ·
+│                     museum (the LARGE-building flagship: paper A1 @ 1:200) · lib/
 ├─ eval/              NL→ArchLang authorability harness: corpus.json (26 briefs) · goldens/ · run.ts ·
 │                     assertions.ts + synonyms.ts (re-export SHIMS over src/intent*.ts since T4) ·
 │                     judge-fixture.json (byte-equivalence) · rubric.md (frozen) · faults/ + l1.ts (L1 gate) ·
@@ -141,7 +142,9 @@ placement), `lint.ts` (soundness rules), `analyze.ts` (shared resolve pipeline +
 behind both), `geometry.ts` (shared door-swing quarter-disc), `elements/fixtures-glyphs.ts` (fixture
 symbols), `diagnostic-json.ts` (`diagnosticToJson` line/col/`fix` projection), `backends/error-svg.ts`
 (`renderErrorSvg`), `intent.ts` + `intent-concepts.ts` (intent channel, shared with the eval via
-shims), `vocabulary.ts` (`matchVocabulary` label matcher). The CLI lives in `src/cli.ts` (dispatch) +
+shims), `vocabulary.ts` (`matchVocabulary` label matcher), `sheet.ts` (the sheet layer: the ISO 216 table, the
+sheet-millimetre drafting constants, `sizesFromPaper` — the second `RenderSizes` constructor — and the
+closed-form fit/auto-fit rule; a plan with no `paper` never reaches it). The CLI lives in `src/cli.ts` (dispatch) +
 `src/cli/` (command modules); a single root `npm install` bootstraps every workspace.
 
 ### The sites' design system — "The Compile Boundary" (docs + playground)

@@ -721,6 +721,92 @@
       "room_type": "Room"
     }
   ],
+  "examples/museum.arch": [
+    {
+      "id": "g1",
+      "label": "Gallery 1",
+      "uses": [],
+      "room_type": "Room"
+    },
+    {
+      "id": "g2",
+      "label": "Gallery 2",
+      "uses": [],
+      "room_type": "Room"
+    },
+    {
+      "id": "g3",
+      "label": "Gallery 3",
+      "uses": [],
+      "room_type": "Room"
+    },
+    {
+      "id": "store",
+      "label": "Store",
+      "uses": ["storage"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "office",
+      "label": "Offices",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "spine",
+      "label": "Concourse",
+      "uses": ["circulation", "hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "g4",
+      "label": "Gallery 4",
+      "uses": [],
+      "room_type": "Room"
+    },
+    {
+      "id": "hall",
+      "label": "Entrance Hall",
+      "uses": ["entry", "hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "g5",
+      "label": "Gallery 5",
+      "uses": [],
+      "room_type": "Room"
+    },
+    {
+      "id": "link",
+      "label": "Lobby",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "wcw",
+      "label": "WC Women",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "wcm",
+      "label": "WC Men",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "plant",
+      "label": "Plant",
+      "uses": ["utility"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "cafe",
+      "label": "Cafe",
+      "uses": ["dining"],
+      "room_type": "DiningRoom"
+    }
+  ],
   "examples/parametric.arch": [
     {
       "id": "room_1",

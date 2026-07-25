@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**52 errors** · **35 warnings**
+**52 errors** · **36 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -90,6 +90,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_ROOM_TOO_SMALL`](#w_room_too_small) | warning | Room is implausibly small. |
 | [`W_ROOM_UNREACHABLE`](#w_room_unreachable) | warning | Room cannot be reached from the entrance. |
 | [`W_SANITIZED_CONFIG`](#w_sanitized_config) | warning | A disallowed config value was stripped. |
+| [`W_SCALE_OVERFLOW`](#w_scale_overflow) | warning | The drawing does not fit the declared paper at the declared scale. |
 | [`W_SWING_OBSTRUCTED`](#w_swing_obstructed) | warning | Door swing is obstructed. |
 | [`W_SWING_ROOM_NOT_ADJACENT`](#w_swing_room_not_adjacent) | warning | `swing into <room>` names a room the door does not border. |
 | [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material; using the default hatch. |
@@ -1080,6 +1081,19 @@ room at (5000,0) size 3000x3000 label "Store"   # lint: no path from the entranc
 
 ```arch
 theme { wall: "<script>" }   # warning: stripped
+```
+
+## W_SCALE_OVERFLOW
+
+*warning* — The drawing does not fit the declared paper at the declared scale.
+
+**Cause.** The plan declares a `paper` size, so `scale` is operative: the building's outer-face extent has to fit the sheet minus its margins, the `dims auto` dimension bands and the bottom chrome band (scale bar + title block). At the scale in force it does not. Your scale is NEVER silently overridden — a drawing is issued at the scale printed in its own title block — so the page simply grows past the sheet to contain the whole drawing. Advisory: an oversize sheet you intend to trim or tile is legitimate.
+
+**Fix.** Pick a coarser scale (a larger denominator draws the building smaller), move up a paper size, or drop the `scale` line and let the sheet auto-fit choose the finest scale from 1:50 / 1:100 / 1:200 / 1:500.
+
+```arch
+paper A4 landscape
+scale 1:50   # warning on a 20 m building: 1:100 or `paper A2` fits, or omit `scale` to auto-fit
 ```
 
 ## W_SWING_OBSTRUCTED

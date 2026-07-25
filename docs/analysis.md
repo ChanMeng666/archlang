@@ -87,6 +87,8 @@ matter — run it yourself for the full object):
 | `totals` | room / door / window counts and total floor area |
 | `accTitle` / `accDescr` | the plan's declared [accessible metadata](language-reference.md#accessible-metadata-acctitle-accdescr) — **present only when the source declares them** |
 | `axes` | the plan's declared [positioning axes](language-reference.md#positioning-axes-定位轴线) — **present only when the source declares an `axes` block** |
+| `scale` | the **effective** drawing scale. Annotation only on its own; with a `sheet` it is operative, and it is the scale auto-fit chose when the plan declared none |
+| `sheet` | the sheet the drawing is issued on — **present only when the plan declares [`paper`](language-reference.md#paper-and-scale-the-sheet)**. See [The sheet](#the-sheet) |
 
 A text-only agent reads this and confirms "4 rooms, 42 m², a bath adjacent to the
 hall (not the bedroom), a 1000 mm front door" — no rendering required.
@@ -109,6 +111,33 @@ computed here, from facts, so the two can never disagree. When the source declar
 `accDescr`, that authored string overrides the derived caption in the SVG `<desc>` — but
 `describe().caption` always reports the *derived* sentence, and the declared strings are
 surfaced separately as `accTitle` / `accDescr`.
+
+## The sheet
+
+A plan that declares [`paper`](language-reference.md#paper-and-scale-the-sheet) is issued
+on a real sheet at a real scale, and `describe()` reports which:
+
+```json
+"scale": "1:200",
+"sheet": {
+  "paper": "A1",
+  "orientation": "landscape",
+  "scale_denominator": 200,
+  "scale_auto": false,
+  "fits": true
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `paper` / `orientation` | the declared sheet (`A4`…`A0`, `landscape` or `portrait`) |
+| `scale_denominator` | the **operative** denominator — the `200` of `1:200`. Every annotation size is a fixed sheet-millimetre value times this |
+| `scale_auto` | `true` when the plan declared no `scale` and the sheet auto-fitted one (the finest of 1:50 / 1:100 / 1:200 / 1:500 that fits) |
+| `fits` | does the building's `bbox_outer` fit the sheet at this scale, after the margins, the `dims auto` bands and the bottom chrome band? `false` is the [`W_SCALE_OVERFLOW`](errors.md#w-scale-overflow) condition — the drawing is still produced, on a page grown past the sheet |
+
+The whole `sheet` key is **absent** for a plan with no `paper`, so an existing summary is
+unchanged. `scale` and `sheet` always agree: the operative scale is resolved once, before
+anything is drawn.
 
 ## The access graph
 

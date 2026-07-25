@@ -15,6 +15,22 @@ import type { Point, TitleNode } from "./ast.js";
 import type { Bounds } from "./geometry.js";
 import type { SceneNode } from "./scene.js";
 
+/**
+ * Chrome geometry as fractions of the drawing's reference dimension. Named (rather
+ * than inline) because the sheet layer must reserve exactly the band this chrome
+ * occupies without retyping the numbers — see `chromeBandDepth` and `src/sheet.ts`.
+ * In paper mode `refDim` is 100 mm of sheet × the scale denominator, so each fraction
+ * reads directly as drafting millimetres (0.05 → a 5 mm gap, 0.046 → a 4.6 mm row).
+ */
+const GAP_F = 0.05;
+const SCALEBAR_HGT_F = 0.014;
+const SCALEBAR_FS_F = 0.02;
+const SCALEBAR_LABEL_F = 1.6;
+const SCALEBAR_TARGET_F = 0.3;
+const TITLE_W_F = 0.34;
+const TITLE_ROW_F = 0.046;
+const TITLE_FS_F = 0.019;
+
 /** Standard scale-bar lengths (mm); the bar shows the largest that fits the target. */
 const NICE_LENGTHS = [500, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
 export function niceBarLength(target: number): number {
@@ -138,27 +154,27 @@ export function dimReach(
  */
 export function layoutChrome(input: ChromeInput): ChromeLayout {
   const { bounds: b, refDim, baseMargin, nodes } = input;
-  const gap = refDim * 0.05;
+  const gap = refDim * GAP_F;
   const reach = dimReach(b, nodes);
   const bandTop = b.maxY + reach.bottom + gap;
 
-  const sHgt = refDim * 0.014;
-  const sFs = refDim * 0.02;
+  const sHgt = refDim * SCALEBAR_HGT_F;
+  const sFs = refDim * SCALEBAR_FS_F;
   const scaleBar: ScaleBarBox = {
     x0: b.minX,
     y0: bandTop,
-    barLen: niceBarLength(refDim * 0.3),
+    barLen: niceBarLength(refDim * SCALEBAR_TARGET_F),
     hgt: sHgt,
     fs: sFs,
   };
-  const scaleBottom = bandTop + sHgt + sFs * 1.6;
+  const scaleBottom = bandTop + sHgt + sFs * SCALEBAR_LABEL_F;
 
   const rows = titleRows(input.title, input.scale);
   let titleBlock: TitleBlockBox | null = null;
   let titleBottom = bandTop;
   if (rows.length > 0) {
-    const w = refDim * 0.34;
-    const rowH = refDim * 0.046;
+    const w = refDim * TITLE_W_F;
+    const rowH = refDim * TITLE_ROW_F;
     const h = rowH * rows.length;
     titleBlock = {
       x0: b.maxX - w,
@@ -166,7 +182,7 @@ export function layoutChrome(input: ChromeInput): ChromeLayout {
       w,
       h,
       rowH,
-      fs: refDim * 0.019,
+      fs: refDim * TITLE_FS_F,
       pad: w * 0.05,
       rows,
     };
@@ -180,6 +196,49 @@ export function layoutChrome(input: ChromeInput): ChromeLayout {
     left: Math.max(baseMargin, reach.left + gap),
   };
   return { margin, scaleBar, titleBlock };
+}
+
+/**
+ * How deep the bottom chrome band is, given a reference dimension and how many title
+ * rows will be drawn: a gap above, the taller of the scale bar and the title block,
+ * and a gap below. Derived from the same fractions {@link layoutChrome} lays the
+ * chrome out with, so the sheet fit test (`src/sheet.ts`) reserves exactly the band
+ * that gets drawn instead of guessing at it.
+ */
+export function chromeBandDepth(refDim: number, titleRowCount: number): number {
+  const gap = refDim * GAP_F;
+  const scaleBar = refDim * SCALEBAR_HGT_F + refDim * SCALEBAR_FS_F * SCALEBAR_LABEL_F;
+  const titleBlock = refDim * TITLE_ROW_F * titleRowCount;
+  return gap + Math.max(scaleBar, titleBlock) + gap;
+}
+
+/**
+ * Move the bottom chrome from beside the drawing to the **sheet's** bottom corners:
+ * scale bar bottom-left, title block bottom-right, both inset by `margin`. This is how
+ * a real sheet reads, and it is only reachable in paper mode (`src/sheet.ts`), where a
+ * fixed page exists to anchor to.
+ *
+ * Applied ONLY when the corner band is clear of `contentBottom` (the laid-out drawing
+ * plus its grown margins), so re-anchoring can never drop the title block on top of
+ * the plan; the caller keeps the drawing-anchored layout otherwise. Pure: returns a new
+ * layout, margins untouched (they already sized the content box).
+ */
+export function anchorChromeToSheet(
+  chrome: ChromeLayout,
+  page: { x: number; y: number; w: number; h: number },
+  margin: number,
+  contentBottom: number,
+): ChromeLayout {
+  const bandH = Math.max(chrome.scaleBar.hgt + chrome.scaleBar.fs * SCALEBAR_LABEL_F, chrome.titleBlock?.h ?? 0);
+  const bandTop = page.y + page.h - margin - bandH;
+  if (bandTop < contentBottom) return chrome;
+  return {
+    margin: chrome.margin,
+    scaleBar: { ...chrome.scaleBar, x0: page.x + margin, y0: bandTop },
+    titleBlock: chrome.titleBlock
+      ? { ...chrome.titleBlock, x0: page.x + page.w - margin - chrome.titleBlock.w, y0: bandTop }
+      : null,
+  };
 }
 
 /** A point on the bottom band, kept here so backends share the witness geometry. */

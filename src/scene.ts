@@ -26,6 +26,7 @@ import type { ChromeLayout } from "./chrome-layout.js";
 import type { Span } from "./diagnostics.js";
 import type { Bounds } from "./geometry.js";
 import type { HatchSpec } from "./hatches.js";
+import type { ResolvedSheet } from "./sheet.js";
 import type { Theme } from "./theme.js";
 
 /**
@@ -66,6 +67,19 @@ export type LineWeight = (typeof LINE_WEIGHTS)[number];
 /** Named line types (dash conventions). `continuous` is the default solid line. */
 export const LINE_TYPES = ["continuous", "dashed", "center", "hidden"] as const;
 export type LineType = (typeof LINE_TYPES)[number];
+
+/**
+ * The sheet a paper-mode drawing is laid out on: the resolved paper + operative scale
+ * (see `src/sheet.ts`), plus the **page rectangle in plan millimetres** the drawing is
+ * centred on. Present only when the plan declares `paper`; absent → the backends size
+ * the page from the drawing extent + margins exactly as before (byte-identical).
+ */
+export interface SceneSheet extends ResolvedSheet {
+  /** The page in plan mm: `w`/`h` are the paper mm × the scale denominator. */
+  page: { x: number; y: number; w: number; h: number };
+  /** True when the laid-out drawing overflowed the sheet and the page grew to fit. */
+  grown: boolean;
+}
 
 /** Render-derived sizes (in mm), scaled from the drawing's reference dimension. */
 export interface RenderSizes {
@@ -218,7 +232,8 @@ export function layerOf(node: SceneNode): string {
  * into node paint already — it is carried here only for the page chrome.
  */
 export interface Scene {
-  /** Padded page width/height in mm (drawing extent + annotation margin). */
+  /** Padded page width/height in mm (drawing extent + annotation margin — or the
+   *  sheet, when {@link sheet} is set). */
   width: number;
   height: number;
   /** Tight drawing bounds (before margin), for chrome placement. */
@@ -251,4 +266,11 @@ export interface Scene {
    * `layoutChrome`; optional so hand-built Scenes keep working (append-only).
    */
   chrome?: ChromeLayout;
+  /**
+   * The sheet this drawing is issued on (`paper …`), with the page rectangle the
+   * backends must use for the viewBox / PDF page instead of deriving one from the
+   * drawing extent. Absent for a plan with no `paper` — optional so hand-built Scenes
+   * and every existing plan keep working (append-only).
+   */
+  sheet?: SceneSheet;
 }

@@ -26,6 +26,9 @@ import { layoutChrome, type TitleRow } from "../chrome-layout.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/** PostScript points per millimetre (72 dpi ÷ 25.4 mm/in) — the true-page-size factor. */
+const PT_PER_MM = 72 / 25.4;
+
 /** Resolve a Paint fill to a concrete PDF colour, or null for no fill. */
 function fillColor(paint: Paint, theme: Theme): string | null {
   const f = paint.fill;
@@ -134,12 +137,22 @@ export async function toPdf(scene: Scene): Promise<Uint8Array> {
       scale: scene.scale,
     })
   ).margin;
-  const vbX = b.minX - m.left;
-  const vbY = b.minY - m.top;
+  const page = scene.sheet?.page;
+  const vbX = page ? page.x : b.minX - m.left;
+  const vbY = page ? page.y : b.minY - m.top;
   const W = scene.width;
   const H = scene.height;
 
-  const doc = new PDFDocument({ size: [W, H], margin: 0 });
+  // Page size + the plan→page mapping.
+  //
+  //  • No sheet (the historical path): 1 mm is treated as 1 pt, so the page is the
+  //    drawing's own padded extent. Unchanged.
+  //  • With a sheet: the page is the TRUE paper size in PostScript points and user
+  //    space is scaled by (pt/mm ÷ denominator), so the drawing prints at exactly its
+  //    declared scale — a 1:200 A1 sheet measures 841 × 594 mm in the PDF. Stroke
+  //    widths and font sizes ride the CTM, so they land at their sheet-mm values.
+  const k = page && scene.sheet ? PT_PER_MM / scene.sheet.denom : 1;
+  const doc = new PDFDocument({ size: [W * k, H * k], margin: 0 });
   const chunks: Uint8Array[] = [];
   const done = new Promise<void>((resolve, reject) => {
     doc.on("data", (c: Uint8Array) => chunks.push(c));
@@ -149,6 +162,7 @@ export async function toPdf(scene: Scene): Promise<Uint8Array> {
 
   // Map scene space → page space (top-left of the viewBox to the page origin).
   doc.save();
+  if (k !== 1) doc.scale(k);
   doc.translate(-vbX, -vbY);
 
   // Background fills the whole padded page.

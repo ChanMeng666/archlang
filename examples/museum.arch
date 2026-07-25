@@ -1,0 +1,142 @@
+# A ~100 x 60 m single-level museum — the LARGE-BUILDING flagship.
+#
+# What this example is for: everything else in examples/ is a dwelling, where the old
+# "every size is a fraction of the drawing" rule happens to look right. At 100 m it does
+# not — room labels come out metres tall. So this plan declares a SHEET:
+#
+#   paper A1 landscape   the drawing is issued on a real 841 x 594 mm sheet
+#   scale 1:200          which makes every annotation a fixed size ON THAT SHEET
+#                        (3.5 mm room labels, 0.5 mm wall lines, 15 mm margins)
+#
+# A1 at 1:200 is the conventional GB/T presentation for a public building of this size:
+# the 100 x 60 m footprint lands at 500 x 300 mm of ink with room for the three
+# dimension chains and the title block. Drop the `scale` line and the sheet auto-fits
+# the finest of 1:50 / 1:100 / 1:200 / 1:500 that fits — here, the same 1:200.
+plan "City Museum" {
+  units mm
+  grid 100
+  paper A1 landscape
+  scale 1:200
+  north up
+  dims auto all
+
+  # ---- shell + structure ----------------------------------------------------
+  wall id=shell exterior thickness 300 { (0,0) (100000,0) (100000,60000) (0,60000) close }
+
+  # The spine: one 6 m corridor the full width of the building, with everything
+  # opening off it. Its two faces are the only walls the galleries need.
+  wall id=spine_n partition thickness 200 { (0,26000) (100000,26000) }
+  wall id=spine_s partition thickness 200 { (0,32000) (100000,32000) }
+
+  # North row dividers (galleries, then the service wing at the east end).
+  wall partition thickness 200 { (26000,0) (26000,26000) }
+  wall partition thickness 200 { (52000,0) (52000,26000) }
+  wall partition thickness 200 { (78000,0) (78000,26000) }
+  wall partition thickness 200 { (78000,14000) (100000,14000) }
+
+  # South row dividers (galleries, entrance hall, the WC stack and the cafe).
+  wall partition thickness 200 { (30000,32000) (30000,60000) }
+  wall partition thickness 200 { (48000,32000) (48000,60000) }
+  wall partition thickness 200 { (70000,32000) (70000,60000) }
+  wall id=wc_west partition thickness 200 { (76000,32000) (76000,60000) }
+  wall partition thickness 200 { (86000,32000) (86000,60000) }
+  wall id=wcw_s partition thickness 200 { (76000,42000) (86000,42000) }
+  wall id=wcm_s partition thickness 200 { (76000,52000) (86000,52000) }
+
+  # ---- north row ------------------------------------------------------------
+  room id=g1 at (0,0) size 26000x26000 label "Gallery 1"
+  room id=g2 at (26000,0) size 26000x26000 label "Gallery 2"
+  room id=g3 at (52000,0) size 26000x26000 label "Gallery 3"
+  room id=store at (78000,0) size 22000x14000 label "Store" uses storage
+  room id=office at (78000,14000) size 22000x12000 label "Offices" uses office
+
+  # ---- the spine ------------------------------------------------------------
+  room id=spine at (0,26000) size 100000x6000 label "Concourse" uses circulation hall
+
+  # ---- south row ------------------------------------------------------------
+  room id=g4 at (0,32000) size 30000x28000 label "Gallery 4"
+  room id=hall at (30000,32000) size 18000x28000 label "Entrance Hall" uses entry hall
+  room id=g5 at (48000,32000) size 22000x28000 label "Gallery 5"
+  room id=link at (70000,32000) size 6000x28000 label "Lobby" uses circulation
+  room id=wcw at (76000,32000) size 10000x10000 label "WC Women" uses wc
+  room id=wcm at (76000,42000) size 10000x10000 label "WC Men" uses wc
+  room id=plant at (76000,52000) size 10000x8000 label "Plant" uses utility
+  room id=cafe at (86000,32000) size 14000x28000 label "Cafe" uses dining
+
+  # ---- openings: the public route -------------------------------------------
+  # Main entrance (south facade) into the hall, then a wide threshold to the spine.
+  door at (39000,60000) width 2000 swing out
+  opening at (39000,32000) width 4000
+
+  # Galleries read off the spine through cased openings, not doors.
+  opening at (13000,26000) width 3000
+  opening at (39000,26000) width 3000
+  opening at (65000,26000) width 3000
+  opening at (15000,32000) width 3000
+  opening at (59000,32000) width 3000
+  opening at (73000,32000) width 3000
+  opening at (93000,32000) width 4000
+
+  # Service wing: offices off the spine, the store through the offices, and its own
+  # exterior service door on the north facade.
+  door at (89000,26000) width 1200
+  door at (89000,14000) width 1200
+  door at (89000,0) width 1200 swing out
+
+  # The WC stack + plant room open off the lobby.
+  door at (76000,37000) width 1200
+  door at (76000,47000) width 1200
+  door at (76000,56000) width 1200
+
+  # ---- glazing --------------------------------------------------------------
+  window at (13000,0) width 4000
+  window at (39000,0) width 4000
+  window at (65000,0) width 4000
+  window at (0,13000) width 3000
+  window at (0,46000) width 3000
+  window at (100000,20000) width 3000
+  window at (100000,45000) width 4000
+  window at (15000,60000) width 4000
+  window at (59000,60000) width 4000
+
+  # ---- structure: gallery column bays ---------------------------------------
+  # Four columns per north gallery, on the bay third-points (grid-snapped).
+  let BAY = 8700
+  for i in 0..3 {
+    let x0 = i * 26000
+    column at (x0 + BAY, 8700) size 600x600
+    column at (x0 + 2 * BAY, 8700) size 600x600
+    column at (x0 + BAY, 17400) size 600x600
+    column at (x0 + 2 * BAY, 17400) size 600x600
+  }
+  # The two deep south galleries carry their own bays.
+  for i in 0..2 {
+    column at (10000 + i * 10000, 41000) size 600x600
+    column at (10000 + i * 10000, 51000) size 600x600
+    column at (54000 + i * 12000, 41000) size 600x600
+    column at (54000 + i * 12000, 51000) size 600x600
+  }
+
+  # ---- sanitary fixtures ----------------------------------------------------
+  # `against wall <id>` places each piece BY CONSTRUCTION: the offset runs along that
+  # wall, the depth comes off its face, the rotation is derived from which side it lands
+  # on (`in <room>` picks the side), and a catalogued fixture needs no `size`. So a row
+  # of WCs is three offsets — no coordinates, no half-thickness arithmetic, and no
+  # fixture can end up floating or facing its own wall.
+  furniture wc against wall wcw_s offset 1500 in wcw
+  furniture wc against wall wcw_s offset 5000 in wcw
+  furniture wc against wall wcw_s offset 8500 in wcw
+  furniture basin against wall spine_s offset 79000 in wcw
+  furniture basin against wall spine_s offset 83000 in wcw
+
+  furniture wc against wall wcm_s offset 1500 in wcm
+  furniture wc against wall wcm_s offset 5000 in wcm
+  furniture wc against wall wcm_s offset 8500 in wcm
+  furniture basin against wall wcw_s offset 3000 in wcm
+  furniture basin against wall wcw_s offset 7000 in wcm
+
+  # ---- cafe fit-out ---------------------------------------------------------
+  furniture counter against wall spine_s offset 90000 size 6000x800 label "Servery" in cafe
+
+  title { project "City Museum" drawn_by "ArchLang" date "2026-07-26" }
+}

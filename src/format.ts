@@ -327,6 +327,10 @@ export function formatPlan(plan: PlanNode, source: string): string {
   // Header settings, in canonical order (no spans → emitted at the top).
   const settings: Doc[] = ["units mm"];
   if (plan.grid !== 0) settings.push(`grid ${numStr(plan.grid)}`);
+  // `paper` precedes `scale`: it is what makes the scale operative (src/sheet.ts), so
+  // it reads as the sheet declaration the scale hangs off. Orientation is always
+  // emitted — the default is a real choice a reader should not have to remember.
+  if (plan.paper) settings.push(`paper ${plan.paper.size} ${plan.paper.orientation}`);
   if (plan.scale) settings.push(`scale ${plan.scale}`);
   settings.push(`north ${northStr(plan.north)}`);
   if (plan.autoDims) settings.push(`dims auto ${plan.autoDims}`);

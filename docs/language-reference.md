@@ -50,10 +50,92 @@ plan "My Home" {
 |-----------|---------|---------|
 | `units mm` | Measurement unit (only `mm` in v0.1). | `mm` |
 | `grid <n>` | Snap module in mm. All *built* coordinates round to the nearest multiple (a `dim`'s endpoints do not — a dimension measures, it is not built). `0` disables. | `0` |
-| `scale 1:50` | Printed scale, shown in the title block. | none |
+| `paper A4\|A3\|A2\|A1\|A0 [landscape\|portrait]` | The sheet the drawing is issued on. Declaring it makes `scale` **operative** — every annotation size becomes a fixed number of millimetres on that sheet (see [Paper and scale](#paper-and-scale-the-sheet)). Orientation defaults to `landscape`. | none |
+| `scale 1:50` | Drawing scale. On its own, annotation only (a title-block row). **With `paper`, it is the operative scale** every size derives from; omit it and the sheet auto-fits one. | none |
 | `north up\|down\|left\|right\|<deg>` | North direction for the north arrow. | `up` |
 | `dims auto [overall\|rooms\|walls\|all]` | Auto-draw dimension **chains** without hand-placing each `dim`, in the GB/T 50104 exterior convention — every chain outside the building, measured from the outer wall faces (see [Automatic dimension chains](#automatic-dimension-chains)): `overall` (one outer-face-to-outer-face span per dimensioned facade), `rooms` (the room/partition axis chain), `walls` (one deduped thickness call-out per distinct wall thickness), or `all` (the openings chain + the axis chain + the overall span, and the default when no scope is given). | off |
 | `axes { x at … y at … }` | The plan's **positioning axes** (定位轴线) — declared structural datum lines, drawn dash-dot with a labelled bubble and used as the ticks of the middle dimension chain. See [Positioning axes](#positioning-axes-定位轴线). | none |
+
+### Paper and scale (the sheet)
+
+`scale` has two quite different jobs, and which one it does depends entirely on whether
+the plan also declares `paper`.
+
+**Without `paper`, `scale` is annotation only.** It prints a `SCALE` row in the title
+block and changes nothing else. Every drawn size — room label height, wall line weight,
+hatch pitch, page margin — is a fraction of the drawing's own *reference dimension*
+(the larger of its width and height). That is self-similar, so a small dwelling looks
+right at any zoom; but it does not scale to a large building. A 100 m museum gets 3 m
+room labels, 280 mm wall strokes and 17 m margins, because the annotations grow with the
+building instead of staying fixed on the page.
+
+**With `paper`, `scale` becomes operative** — the way a drawing board works. Every
+annotation size is a constant number of millimetres **on the sheet**, multiplied by the
+scale denominator to land in plan millimetres:
+
+| Annotation | Sheet size |
+|-----------|------------|
+| Room name | 3.5 mm |
+| Room area, dimension text | 2.5 mm |
+| Furniture / fixture label | 2 mm |
+| Cut wall outline (the heavy pen) | 0.5 mm |
+| Dimensions, glazing, chrome (the thin pen) | 0.18 mm |
+| Poché hatch pitch | 1.2 mm |
+| Page margin | 15 mm per side |
+
+So a 3.5 mm room label is 3.5 mm of ink whether the building is 7 m or 100 m across;
+only how much building fits on the sheet changes.
+
+```arch
+plan "City Museum" {
+  paper A1 landscape   # 841 x 594 mm
+  scale 1:200          # operative: 3.5 mm labels land at 700 plan mm
+  dims auto all
+  # …
+}
+```
+
+Orientation defaults to **`landscape`** — floor plans are wider than they are tall.
+Paper sizes are the ISO 216 series: A4 210 × 297, A3 297 × 420, A2 420 × 594,
+A1 594 × 841, A0 841 × 1189 mm (portrait; `landscape` swaps them).
+
+#### Auto-fit
+
+Declare `paper` and **omit `scale`**, and the sheet picks the *finest* scale that still
+fits, from a fixed list — 1:50, 1:100, 1:200, 1:500. The chosen scale is stamped into the
+title block, the scale bar, and `describe()`:
+
+```arch
+plan "House" {
+  paper A3        # no `scale` — auto-fit chooses one
+}
+```
+
+The fit test is closed-form: the building's **outer-face** extent has to fit the sheet
+minus the page margins, minus a dimension band on each side when `dims auto` is on, minus
+the bottom chrome band (scale bar and title block).
+
+#### When it does not fit
+
+An authored `scale` is **never silently overridden** — a drawing is issued at the scale
+printed in its own title block. If the building does not fit at that scale you get the
+advisory [`W_SCALE_OVERFLOW`](errors.md#w-scale-overflow) and the page grows past the
+sheet so nothing is clipped. Fix it by choosing a coarser scale, a larger sheet, or by
+dropping the `scale` line and letting auto-fit choose.
+
+#### What paper mode changes in the output
+
+- **SVG** — the root carries the true paper size (`width="841mm" height="594mm"`), so the
+  file opens and prints at sheet size and at its declared scale. The `viewBox` becomes
+  the whole sheet in plan millimetres, with the drawing centred on it and the scale bar
+  and title block moved to the sheet's bottom corners. An explicit `--width` still wins.
+- **PDF** — the page is the true ISO size in PostScript points, so `-f pdf` prints 1:200
+  on a real A1.
+- **`describe()`** — gains a [`sheet`](analysis.md#the-sheet) block. It is absent for a
+  plan with no `paper`.
+
+A plan that declares no `paper` renders **byte-for-byte** as it did before this feature
+existed, `scale` included.
 
 ### Accessible metadata (`accTitle`, `accDescr`)
 

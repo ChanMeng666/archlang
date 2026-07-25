@@ -54,6 +54,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A plan that declares no `axes` block is **byte-identical** to before — no node on the new pass, no
 `axes` key in `describe()`, no change to any dimension chain.
 
+- **`paper <size> [orientation]` — a real sheet, and an OPERATIVE drawing scale.** Until now every
+  drawn size was a fixed fraction of the drawing's own reference dimension (`max(width, height)`), and
+  `scale` was annotation only — a title-block row that drove nothing. That is self-similar, so a
+  dwelling looks right at any zoom, but it does not scale to a building: a 100 × 60 m museum got 3 m
+  room labels, 280 mm wall strokes (wider than the partition they outline), 1.3 m hatch pitch and 17 m
+  page margins, and its labels physically collided. `paper A1 landscape` + `scale 1:200` inverts the
+  rule the way a drawing board does — **every annotation size becomes a constant number of millimetres
+  ON THE SHEET × the scale denominator**: 3.5 mm room names, 2.5 mm area and dimension text, 2 mm
+  fixture labels, a 0.5 mm / 0.18 mm heavy-thin pen pair, 1.2 mm poché pitch, 15 mm margins (GB/T
+  50001 practice, one table in `src/sheet.ts`). A 3.5 mm label is 3.5 mm of ink whether the building is
+  7 m or 100 m across. Sizes are the ISO 216 series `A4`…`A0`; orientation defaults to **`landscape`**
+  (floor plans are wide).
+- **Auto-fit.** Declare `paper` and omit `scale`, and the sheet picks the **finest** scale that still
+  fits from a fixed candidate list — 1:50, 1:100, 1:200, 1:500 — and stamps it into the title block,
+  the scale bar and `describe()`. Closed form: four fit tests, no search. The fit rule is one
+  function of the building's **outer-face** extent versus the sheet minus its margins, the `dims auto`
+  chain bands and the bottom chrome band, and it lives in exactly one place, so `resolve()`,
+  `describe()` and the drawing can never disagree about the scale in force.
+- **`W_SCALE_OVERFLOW`** — a declared `paper` + `scale` the building does not fit. Your scale is
+  **never** silently overridden (a drawing is issued at the scale printed in its own title block):
+  the warning is advisory and the page grows past the sheet so nothing is clipped.
+- **`describe().sheet`** — `{ paper, orientation, scale_denominator, scale_auto, fits }`, and
+  `describe().scale` now reports the *effective* scale (auto-fit's choice included). Append-only: the
+  whole `sheet` key is absent for a plan with no `paper`, and it is selectable via `describe --select`.
+- **True-size output in paper mode.** The SVG root carries the real paper size
+  (`width="841mm" height="594mm"`) over a viewBox that is the whole sheet in plan mm, with the drawing
+  centred and the scale bar / title block moved to the sheet's bottom corners; PDF export emits the
+  true ISO page in PostScript points. So an A1 1:200 file opens, prints and measures at 1:200. (A
+  side-effect worth knowing: a 100 m plan without `paper` has no intrinsic size, so rasterising it
+  needed an explicit `--width`; on a sheet, `-f png` just works.)
+- **`examples/museum.arch`** — a ~100 × 60 m, 14-room, 6000 m² single-level museum on `paper A1` at
+  1:200: a full-width concourse spine, five galleries with `for`-generated column bays, a service wing,
+  a WC stack whose fixture rows are placed by `against wall <id> offset …`, and `dims auto all`.
+  Lint-clean under `arch validate --strict`.
+
+### Compatibility
+
+- **A plan with no `paper` is byte-for-byte unchanged** — `scale` included. The reference-dimension
+  size formulas are untouched (and now pinned by their own test), no `sheet` appears on the Scene or
+  in `describe()`, and the SVG root emits no `width`/`height`. Adding the museum example touched no
+  existing golden, snapshot or vocabulary-pin row.
+
 ## [1.19.0] - 2026-07-25
 
 Professional-drawing-quality round: six independent defects and gaps found by reading the rendered

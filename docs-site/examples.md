@@ -62,6 +62,20 @@ a named room (`swing into`), and furniture anchored inside a room
 
 <ArchLive :src="EXAMPLES['attached']" :rows="24" />
 
+## Museum (a real sheet, at a real scale)
+
+A ~100 × 60 m single-level museum — the large-building flagship. Everything above is a
+dwelling, where sizing every annotation as a fraction of the drawing happens to look
+right; at 100 m it does not, and room labels come out metres tall. So this plan declares
+a **sheet**: [`paper A1 landscape`](/reference#paper-and-scale-the-sheet) +
+[`scale 1:200`](/reference#paper-and-scale-the-sheet), which makes every annotation a
+fixed size **on that sheet** — 3.5 mm room labels and 0.5 mm wall lines whatever the
+building measures. It also drives `dims auto all` (the GB/T three-chain exterior
+dimensioning), a column grid written with `for`, and fixture rows placed by
+`against wall <id> offset …` so no coordinate is hand-computed.
+
+<ArchLive :src="EXAMPLES['museum']" :rows="26" />
+
 ## Accessible metadata
 
 `accTitle` and `accDescr` supply the SVG `<title>`/`<desc>` emitted by
