@@ -87,9 +87,17 @@ export const opening: ElementDef = {
     const d = unit(sub(seg.b, seg.a));
     const n = normal(d);
     const h = seg.thickness / 2;
-    const he = h + sizes.wallStroke;
     const hw = op.width / 2;
-    // Void the wall solid across the opening (same cover the door/window use).
+    // Has the wall solid already been voided here? The boolean union in
+    // `scene-build.ts` severs the wall at every registered opening — jamb end-caps
+    // and all — with the floor running continuously through the gap. Repainting that
+    // gap with an opaque `theme.opening` (which is the page background in every
+    // theme) is what used to lay a white band across the floor, overhanging a whole
+    // `wallStroke` past each wall face. So: only paint the cover when nothing else
+    // opened the hole (an angled host on the no-geometry-backend fallback, where this
+    // polygon is the ONLY void mechanism).
+    const voided = ctx.openingsVoided === true && (seg.a.x === seg.b.x || seg.a.y === seg.b.y);
+    const he = voided ? h : h + sizes.wallStroke;
     const cover: Point[] = [
       add(add(op.at, mul(d, -hw)), mul(n, he)),
       add(add(op.at, mul(d, hw)), mul(n, he)),
@@ -97,15 +105,24 @@ export const opening: ElementDef = {
       add(add(op.at, mul(d, -hw)), mul(n, -he)),
     ];
     const nodes: SceneNode[] = [];
-    nodes.push({ layer: "windows", prim: { t: "polygon", pts: cover }, paint: { fill: theme.opening } });
-    // Jamb lines only — the two wall ends. No leaf, no swing, no pane.
+    // The cover polygon is emitted even when invisible: it is how the ASCII and DXF
+    // backends *locate* the passage (they read the polygon on the `openings` pass).
+    nodes.push({
+      layer: "openings",
+      prim: { t: "polygon", pts: cover },
+      paint: voided ? { fill: "none" } : { fill: theme.opening },
+    });
+    // Head/lintel above the passage, drawn **dashed** at each wall face — the
+    // cased-opening convention. It must not be the solid full-length line a glazed
+    // window draws: on a voided wall that re-bridges the gap the union just opened.
     const jA = add(op.at, mul(d, -hw));
     const jB = add(op.at, mul(d, hw));
+    const dash: [number, number] = [sizes.thin * 4, sizes.thin * 3];
     for (const off of [h, -h]) {
       nodes.push({
-        layer: "windows",
+        layer: "openings",
         prim: { t: "line", a: add(jA, mul(n, off)), b: add(jB, mul(n, off)) },
-        paint: { stroke: theme.wallStroke, width: sizes.thin },
+        paint: { stroke: theme.wallStroke, width: sizes.thin, dash },
       });
     }
     return nodes;

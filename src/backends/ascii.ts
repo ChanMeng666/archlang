@@ -192,7 +192,11 @@ export function renderAscii(scene: Scene, opts: AsciiOptions = {}): string {
 
   // ---- Pass 2: openings (overwrite wall cells along each opening centerline) ----
   for (const node of scene.nodes) {
-    const ch = node.layer === "doors" ? g.door : node.layer === "windows" ? g.window : null;
+    // A cased `opening` is a leaf-less *gap*, so it carves the wall exactly like a
+    // doorway — it must not read as the window glyph (which is what an `openings`
+    // node on the old `windows` pass used to draw).
+    const ch =
+      node.layer === "doors" || node.layer === "openings" ? g.door : node.layer === "windows" ? g.window : null;
     if (ch === null || node.prim.t !== "polygon") continue; // the cover polygon only
     const p = node.prim.pts;
     if (p.length < 4) continue;

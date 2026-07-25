@@ -98,6 +98,21 @@ export interface RenderCtx {
    * `text` primitive reads identically in every backend (SVG, DXF, …).
    */
   fmt(n: number): string;
+  /**
+   * `true` when the wall lowering will **subtract every opening from the wall
+   * solid** — i.e. the boolean union in `scene-build.ts` has already opened a real
+   * hole at each door/opening, jamb end-caps included, with the floor continuous
+   * through it. `toScene` sets it for an all-orthogonal wall set (the zero-dep
+   * rectilinear boolean always subtracts); a plan mixing in an angled wall may fall
+   * back to per-segment wall rectangles with **no** subtraction, so it stays unset.
+   *
+   * An element that draws an opening cover must only paint it opaque when this is
+   * NOT true: painting `theme.opening` (= the page background) over an
+   * already-voided wall bleeds a white band into the floor either side of the
+   * passage. Optional, and absent means "assume nothing was voided", so a hand-built
+   * `RenderCtx` (a plugin, a unit test) keeps the safe opaque behaviour.
+   */
+  openingsVoided?: boolean;
 }
 
 /**

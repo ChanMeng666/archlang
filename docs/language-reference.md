@@ -477,6 +477,11 @@ passage. Like a door, an `opening` **connects two spaces** in the
 width equals its nominal width (a door loses ~60 mm to the leaf and stop). It also
 takes the `on <wall> at <pos>` attachment form.
 
+It is drawn the way an architect draws a cased opening: the wall solid is genuinely
+severed (jambs capped, floor continuous through the passage), with a **dashed lintel**
+line at each wall face standing for the head above — never a solid line closing the
+gap back up. It lives on the CAD layer `A-DOOR`, not `A-GLAZ`.
+
 ```
 opening id=o_living at (4000,3700) width 900 wall partition   # living ↔ hall, no door
 opening on w_part at 50% width 900                            # centred on the partition

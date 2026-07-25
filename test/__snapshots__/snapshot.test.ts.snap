@@ -19,10 +19,10 @@ exports[`golden SVG snapshots > renders attached.arch deterministically 1`] = `
 <path d="M -100,-100 L -100,1300 L 100,1300 L 100,100 L 3950,100 L 3950,1550 L 4050,1550 L 4050,100 L 6900,100 L 6900,1400 L 7100,1400 L 7100,-100 Z M 100,2700 L -100,2700 L -100,4100 L 1500,4100 L 1500,3900 L 100,3900 Z M 3950,3900 L 2500,3900 L 2500,4100 L 7100,4100 L 7100,2600 L 6900,2600 L 6900,3900 L 4050,3900 L 4050,2450 L 3950,2450 Z" fill="none" stroke="#1b1b1b" stroke-width="20.16" stroke-linejoin="miter"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
-<polygon points="1500,4120.16 2500,4120.16 2500,3879.84 1500,3879.84" fill="#ffffff"/>
+<polygon points="1500,4100 2500,4100 2500,3900 1500,3900" fill="none"/>
 <line x1="1500" y1="4000" x2="1500" y2="3000" stroke="#555555" stroke-width="14.98"/>
 <path d="M 1500,3000 A 1000 1000 0 0 1 2500,4000" fill="none" stroke="#555555" stroke-width="11.52" stroke-dasharray="46.08 34.56"/>
-<polygon points="3929.84,1550 3929.84,2450 4070.16,2450 4070.16,1550" fill="#ffffff"/>
+<polygon points="3950,1550 3950,2450 4050,2450 4050,1550" fill="none"/>
 <line x1="4000" y1="1550" x2="4900" y2="1550" stroke="#555555" stroke-width="14.98"/>
 <path d="M 4900,1550 A 900 900 0 0 1 4000,2450" fill="none" stroke="#555555" stroke-width="11.52" stroke-dasharray="46.08 34.56"/>
 </g>
@@ -75,13 +75,13 @@ exports[`golden SVG snapshots > renders parametric.arch deterministically 1`] = 
 <path d="M -100,-100 L -100,5100 L 1550,5100 L 1550,4900 L 100,4900 L 100,100 L 1200,100 L 1200,-100 Z M 2450,4900 L 2450,5100 L 5550,5100 L 5550,4900 L 4100,4900 L 4100,100 L 5200,100 L 5200,-100 L 2800,-100 L 2800,100 L 3900,100 L 3900,4900 Z M 6450,4900 L 6450,5100 L 9550,5100 L 9550,4900 L 8100,4900 L 8100,100 L 9200,100 L 9200,-100 L 6800,-100 L 6800,100 L 7900,100 L 7900,4900 Z M 10450,4900 L 10450,5100 L 12100,5100 L 12100,-100 L 10800,-100 L 10800,100 L 11900,100 L 11900,4900 Z" fill="none" stroke="#1b1b1b" stroke-width="34.16" stroke-linejoin="miter"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
-<polygon points="2450,4865.84 1550,4865.84 1550,5134.16 2450,5134.16" fill="#ffffff"/>
+<polygon points="2450,4900 1550,4900 1550,5100 2450,5100" fill="none"/>
 <line x1="2450" y1="5000" x2="2450" y2="5900" stroke="#555555" stroke-width="25.38"/>
 <path d="M 2450,5900 A 900 900 0 0 1 1550,5000" fill="none" stroke="#555555" stroke-width="19.52" stroke-dasharray="78.08 58.56"/>
-<polygon points="6450,4865.84 5550,4865.84 5550,5134.16 6450,5134.16" fill="#ffffff"/>
+<polygon points="6450,4900 5550,4900 5550,5100 6450,5100" fill="none"/>
 <line x1="6450" y1="5000" x2="6450" y2="5900" stroke="#555555" stroke-width="25.38"/>
 <path d="M 6450,5900 A 900 900 0 0 1 5550,5000" fill="none" stroke="#555555" stroke-width="19.52" stroke-dasharray="78.08 58.56"/>
-<polygon points="10450,4865.84 9550,4865.84 9550,5134.16 10450,5134.16" fill="#ffffff"/>
+<polygon points="10450,4900 9550,4900 9550,5100 10450,5100" fill="none"/>
 <line x1="10450" y1="5000" x2="10450" y2="5900" stroke="#555555" stroke-width="25.38"/>
 <path d="M 10450,5900 A 900 900 0 0 1 9550,5000" fill="none" stroke="#555555" stroke-width="19.52" stroke-dasharray="78.08 58.56"/>
 </g>
@@ -146,7 +146,7 @@ exports[`golden SVG snapshots > renders relational.arch deterministically 1`] = 
 <path d="M -100,-100 L -100,7600 L 8100,7600 L 8100,-100 L 7400,-100 L 7400,100 L 7900,100 L 7900,7400 L 100,7400 L 100,100 L 500,100 L 500,-100 Z M 5600,-100 L 1500,-100 L 1500,100 L 5600,100 Z" fill="none" stroke="#1b1b1b" stroke-width="22.96" stroke-linejoin="miter"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
-<polygon points="500,122.96 1500,122.96 1500,-122.96 500,-122.96" fill="#ffffff"/>
+<polygon points="500,100 1500,100 1500,-100 500,-100" fill="none"/>
 <line x1="500" y1="0" x2="500" y2="1000" stroke="#555555" stroke-width="17.06"/>
 <path d="M 500,1000 A 1000 1000 0 0 0 1500,0" fill="none" stroke="#555555" stroke-width="13.12" stroke-dasharray="52.48 39.36"/>
 </g>
@@ -224,20 +224,20 @@ exports[`golden SVG snapshots > renders studio.arch deterministically 1`] = `
 <path d="M -100,-100 L -100,1250 L 100,1250 L 100,100 L 3950,100 L 3950,3250 L 4050,3250 L 4050,3050 L 6000,3050 L 6000,2950 L 4050,2950 L 4050,100 L 6900,100 L 6900,900 L 7100,900 L 7100,-100 Z M 100,2750 L -100,2750 L -100,6100 L 2500,6100 L 2500,5900 L 100,5900 Z M 3950,5900 L 3500,5900 L 3500,6100 L 7100,6100 L 7100,5550 L 6900,5550 L 6900,5900 L 4050,5900 L 4050,4450 L 4200,4450 L 4200,4350 L 4050,4350 L 4050,4150 L 3950,4150 Z M 5000,4350 L 5000,4450 L 6900,4450 L 6900,4850 L 7100,4850 L 7100,2100 L 6900,2100 L 6900,2950 L 6800,2950 L 6800,3050 L 6900,3050 L 6900,4350 Z" fill="none" stroke="#1b1b1b" stroke-width="20.16" stroke-linejoin="miter"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
-<polygon points="3500,5879.84 2500,5879.84 2500,6120.16 3500,6120.16" fill="#ffffff"/>
+<polygon points="3500,5900 2500,5900 2500,6100 3500,6100" fill="none"/>
 <line x1="3500" y1="6000" x2="3500" y2="5000" stroke="#555555" stroke-width="14.98"/>
 <path d="M 3500,5000 A 1000 1000 0 0 0 2500,6000" fill="none" stroke="#555555" stroke-width="11.52" stroke-dasharray="46.08 34.56"/>
-<polygon points="6000,3070.16 6800,3070.16 6800,2929.84 6000,2929.84" fill="#ffffff"/>
+<polygon points="6000,3050 6800,3050 6800,2950 6000,2950" fill="none"/>
 <line x1="6800" y1="3000" x2="6800" y2="2200" stroke="#555555" stroke-width="14.98"/>
 <path d="M 6800,2200 A 800 800 0 0 0 6000,3000" fill="none" stroke="#555555" stroke-width="11.52" stroke-dasharray="46.08 34.56"/>
-<polygon points="4200,4470.16 5000,4470.16 5000,4329.84 4200,4329.84" fill="#ffffff"/>
+<polygon points="4200,4450 5000,4450 5000,4350 4200,4350" fill="none"/>
 <line x1="4200" y1="4400" x2="4200" y2="3600" stroke="#555555" stroke-width="14.98"/>
 <path d="M 4200,3600 A 800 800 0 0 1 5000,4400" fill="none" stroke="#555555" stroke-width="11.52" stroke-dasharray="46.08 34.56"/>
+<polygon points="3950,3250 3950,4150 4050,4150 4050,3250" fill="none"/>
+<line x1="3950" y1="3250" x2="3950" y2="4150" stroke="#1b1b1b" stroke-width="11.52" stroke-dasharray="46.08 34.56"/>
+<line x1="4050" y1="3250" x2="4050" y2="4150" stroke="#1b1b1b" stroke-width="11.52" stroke-dasharray="46.08 34.56"/>
 </g>
 <g id="A-GLAZ" inkscape:groupmode="layer" inkscape:label="A-GLAZ">
-<polygon points="3929.84,3250 3929.84,4150 4070.16,4150 4070.16,3250" fill="#ffffff"/>
-<line x1="3950" y1="3250" x2="3950" y2="4150" stroke="#1b1b1b" stroke-width="11.52"/>
-<line x1="4050" y1="3250" x2="4050" y2="4150" stroke="#1b1b1b" stroke-width="11.52"/>
 <polygon points="120.16,2750 120.16,1250 -120.16,1250 -120.16,2750" fill="#ffffff"/>
 <line x1="100" y1="2750" x2="100" y2="1250" stroke="#1b1b1b" stroke-width="11.52"/>
 <line x1="-100" y1="2750" x2="-100" y2="1250" stroke="#1b1b1b" stroke-width="11.52"/>
@@ -312,7 +312,7 @@ exports[`golden SVG snapshots > renders themed.arch deterministically 1`] = `
 <path d="M 3050,-50 L 2950,-50 L 2950,1550 L 3050,1550 Z M 3050,2450 L 2950,2450 L 2950,4050 L 3050,4050 Z" fill="none" stroke="#e8e8e8" stroke-width="22.75" stroke-linejoin="miter"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
-<polygon points="2927.25,1550 2927.25,2450 3072.75,2450 3072.75,1550" fill="#ffffff"/>
+<polygon points="2950,1550 2950,2450 3050,2450 3050,1550" fill="none"/>
 <line x1="3000" y1="1550" x2="2100" y2="1550" stroke="#555555" stroke-width="16.9"/>
 <path d="M 2100,1550 A 900 900 0 0 0 3000,2450" fill="none" stroke="#555555" stroke-width="13" stroke-dasharray="52 39"/>
 </g>
@@ -368,13 +368,13 @@ exports[`golden SVG snapshots > renders two-bed.arch deterministically 1`] = `
 <path d="M -150,-150 L -150,2250 L 150,2250 L 150,150 L 1000,150 L 1000,-150 Z M 150,3750 L -150,3750 L -150,8150 L 10150,8150 L 10150,3750 L 9850,3750 L 9850,4950 L 5900,4950 L 5900,5050 L 6950,5050 L 6950,6050 L 7050,6050 L 7050,5050 L 9850,5050 L 9850,7850 L 7050,7850 L 7050,6950 L 6950,6950 L 6950,7850 L 150,7850 Z M 3000,-150 L 3000,150 L 3950,150 L 3950,2050 L 4050,2050 L 4050,150 L 6800,150 L 6800,-150 Z M 4050,2950 L 3950,2950 L 3950,5050 L 5100,5050 L 5100,4950 L 4050,4950 Z M 9200,-150 L 9200,150 L 9850,150 L 9850,2250 L 10150,2250 L 10150,-150 Z" fill="none" stroke="#1b1b1b" stroke-width="28.84" stroke-linejoin="miter"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
-<polygon points="3921.16,2050 3921.16,2950 4078.84,2950 4078.84,2050" fill="#ffffff"/>
+<polygon points="3950,2050 3950,2950 4050,2950 4050,2050" fill="none"/>
 <line x1="4000" y1="2050" x2="3100" y2="2050" stroke="#555555" stroke-width="21.42"/>
 <path d="M 3100,2050 A 900 900 0 0 0 4000,2950" fill="none" stroke="#555555" stroke-width="16.48" stroke-dasharray="65.92 49.44"/>
-<polygon points="5100,5078.84 5900,5078.84 5900,4921.16 5100,4921.16" fill="#ffffff"/>
+<polygon points="5100,5050 5900,5050 5900,4950 5100,4950" fill="none"/>
 <line x1="5100" y1="5000" x2="5100" y2="5800" stroke="#555555" stroke-width="21.42"/>
 <path d="M 5100,5800 A 800 800 0 0 0 5900,5000" fill="none" stroke="#555555" stroke-width="16.48" stroke-dasharray="65.92 49.44"/>
-<polygon points="6921.16,6050 6921.16,6950 7078.84,6950 7078.84,6050" fill="#ffffff"/>
+<polygon points="6950,6050 6950,6950 7050,6950 7050,6050" fill="none"/>
 <line x1="7000" y1="6950" x2="6100" y2="6950" stroke="#555555" stroke-width="21.42"/>
 <path d="M 6100,6950 A 900 900 0 0 1 7000,6050" fill="none" stroke="#555555" stroke-width="16.48" stroke-dasharray="65.92 49.44"/>
 </g>
