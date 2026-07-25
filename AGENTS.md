@@ -19,21 +19,26 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 
 | Thing | Current | Where |
 |-------|---------|-------|
-| **Core package** | `@chanmeng666/archlang@1.19.0` (published, `latest`, with provenance — released tokenlessly via `.github/workflows/release.yml` OIDC trusted publishing) | npmjs.com/package/@chanmeng666/archlang |
+| **Core package** | `@chanmeng666/archlang@1.20.0` (published, `latest`, with provenance — released tokenlessly via `.github/workflows/release.yml` OIDC trusted publishing) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`, v1.14's `validate --intent`/`--feedback` + `score --brief`, and the v1.17 **self-describing + bounded-output** layer: manifest-rendered per-command `--help` with worked examples, `--version`, exit-3 did-you-mean on an unknown flag/verb, `describe --room/--select`, `lint\|validate --code/--severity`, `context --section`, `fix --dry-run/--backup` + unified diff) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`schemas/intent.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
 | **MCP server** | `@chanmeng666/archlang-mcp@0.2.2` (published, `latest`; registry entry `io.github.ChanMeng666/archlang-mcp` v0.2.2 live on registry.modelcontextprotocol.io; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate (incl. `intent`)/**score**/repair/fix/suggest/complete + spec/context/schema/**intent-schema**/grammar resources; SDK dep quarantined here, core stays zero-dep) | `packages/mcp/`, `server.json` |
-| **VS Code extension** | `ChanMeng.archlang@0.8.0` **live on the Marketplace** (2026-07-26; rebundles core 1.19.0 — `flush`, `dim faces`/`clear`, `W_FIXTURE_BACK_TO_ROOM`/`W_DIM_INSIDE`/`W_DIM_NO_WALL`/`E_FURN_FLUSH`, stable-ref `suggest`). Upload stays a human web step at marketplace.visualstudio.com/manage/publishers/ChanMeng (no CI publish exists) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
+| **VS Code extension** | `ChanMeng.archlang@0.8.0` **live on the Marketplace** (2026-07-26; rebundles core 1.19.0 — `flush`, `dim faces`/`clear`, `W_FIXTURE_BACK_TO_ROOM`/`W_DIM_INSIDE`/`W_DIM_NO_WALL`/`E_FURN_FLUSH`, stable-ref `suggest`). **0.9.0 rebundle pending** for v1.20.0's grammar surface (`paper`/`axes`/`schedule`/`legend` + `W_SCALE_OVERFLOW`) — the extension bundles the core at build time. Upload stays a human web step at marketplace.visualstudio.com/manage/publishers/ChanMeng (no CI publish exists) | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** one-light-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://playground.archlang.uk |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** one-light-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang.uk |
-| **Git** | `main`, tags `v1.0.0` → `v1.19.0` (latest; a `v*` tag push triggers the tokenless OIDC release workflow) | github.com/ChanMeng666/archlang |
+| **Git** | `main`, tags `v1.0.0` → `v1.20.0` (latest; a `v*` tag push triggers the tokenless OIDC release workflow) | github.com/ChanMeng666/archlang |
 | **Dataset** | HF `ChanMeng666/archlang-repair-trajectories` (**published, live 2026-07-13** — repair 1200 + authoring 400 rows) — two splits, fully synthetic, self-verifying, CC0-1.0, deterministic from seed `20260712`; generator `dataset/` (`npm run dataset:gen`), permanent CI leakage guard `test/dataset.test.ts` | `dataset/`, huggingface.co/datasets/ChanMeng666/archlang-repair-trajectories |
-| **Tests** | 1269 passing (113 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, the L2 protocol tests, the judge byte-equivalence fixture, the intent-channel suites, the vocabulary-equivalence classification pin, the dataset contamination/determinism guard, and v1.17's CLI-surface suites — FLAG_KEYS↔manifest bidirectional drift, per-command help/examples, filters-never-gate, the `context --section` splitter-to-generator weld, and `test/docs-flags.test.ts`, the docs↔manifest gate that fails if any hand-written doc names a flag its command doesn't declare, plus v1.19's drawing-quality suites — fixture orientation, `flush` placement, the openings render pass, and `test/repair-coverage.test.ts`, whose postcondition is that every piece a lint pass flags gets a change entry or an `unresolved` entry, never nothing) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
+| **Tests** | 1395 passing (116 files, incl. the fault-injection L1 gate, the G1 oracle-isolation guards, the L2 protocol tests, the judge byte-equivalence fixture, the intent-channel suites, the vocabulary-equivalence classification pin, the dataset contamination/determinism guard, and v1.17's CLI-surface suites — FLAG_KEYS↔manifest bidirectional drift, per-command help/examples, filters-never-gate, the `context --section` splitter-to-generator weld, and `test/docs-flags.test.ts`, the docs↔manifest gate that fails if any hand-written doc names a flag its command doesn't declare, plus v1.19's drawing-quality suites — fixture orientation, `flush` placement, the openings render pass, and `test/repair-coverage.test.ts`, whose postcondition is that every piece a lint pass flags gets a change entry or an `unresolved` entry, never nothing, plus v1.20's sheet-and-datum suites — `test/axes.test.ts` (GB/T numbering incl. the `I`/`O`/`Z` skip and the descending-`y` lettering), `test/sheet.test.ts` (the paper/scale size table, closed-form auto-fit, `W_SCALE_OVERFLOW`, and a pin that a plan with no `paper` is byte-identical) and `test/schedule.test.ts` (schedule rows equal `describe()`'s own areas, legend lists only what is drawn)) + offline authorability eval (26 briefs, judge v2, `npm run eval:ci`, in CI); typecheck (`noUncheckedIndexedAccess` on) + build + `npm run lint` (Biome) clean | — |
 
-**Latest release: v1.19.0 (2026-07-25)** — drawing-quality round: GB/T three-chain `dims auto` +
-`dim faces`/`clear` + `describe().bbox_outer`, the `flush` keyword, derived fixture orientation with
-`W_FIXTURE_BACK_TO_ROOM`, cased openings no longer repainting the floor, `repair()` covering
-scripted/component/in-room placements, and `-o -` with `--json` as an exit-3 usage error. (v1.18.0,
-2026-07-15, was the `arch suggest` stable-ref round.) The table above is what is live. Canonical release notes
+**Latest release: v1.20.0 (2026-07-26)** — Batch-2 sub-release **"sheet & datum"**: `paper <size>
+[orientation]` makes the drawing scale **operative** (every annotation size becomes a constant number
+of mm on the sheet × the scale denominator, with closed-form auto-fit and the advisory
+`W_SCALE_OVERFLOW`), `axes { x at … / y at … }` adds the GB/T 50001 positioning-axis grid (derived
+`1 2 3` / `A B C` labels, dash-dot lines + bubbles on layer `A-GRID`, and `dims auto` chain 2 becomes
+the true axis chain), and `schedule rooms` + `legend` add margin tables derived from the plan itself.
+New `describe()` keys `axes` / `sheet` / `schedule`; new flagship `examples/museum.arch` (~100 × 60 m,
+14 rooms, A1 at 1:200). A plan declaring none of the four keywords is byte-for-byte unchanged.
+(v1.19.0, 2026-07-25, was the drawing-quality round — `flush`, GB/T `dims auto`, derived fixture
+orientation.) The table above is what is live. Canonical release notes
 live in `CHANGELOG.md`; per-tranche research verdicts in `docs/research/`. The full per-release
 narrative (v1.3.0 → v1.16.0, honest eval read, sites redesign, every tranche summary) is archived
 verbatim at
@@ -144,7 +149,10 @@ symbols), `diagnostic-json.ts` (`diagnosticToJson` line/col/`fix` projection), `
 (`renderErrorSvg`), `intent.ts` + `intent-concepts.ts` (intent channel, shared with the eval via
 shims), `vocabulary.ts` (`matchVocabulary` label matcher), `sheet.ts` (the sheet layer: the ISO 216 table, the
 sheet-millimetre drafting constants, `sizesFromPaper` — the second `RenderSizes` constructor — and the
-closed-form fit/auto-fit rule; a plan with no `paper` never reaches it). The CLI lives in `src/cli.ts` (dispatch) +
+closed-form fit/auto-fit rule; a plan with no `paper` never reaches it), `axes.ts` (`numberAxes` /
+`axisLetter` — the GB/T positioning-axis grid and its derived labels) and `sheet-tables.ts`
+(`roomSchedule` / `legendEntries` + their Scene layout, so all four backends draw the margin tables
+from one place). The CLI lives in `src/cli.ts` (dispatch) +
 `src/cli/` (command modules); a single root `npm install` bootstraps every workspace.
 
 ### The sites' design system — "The Compile Boundary" (docs + playground)

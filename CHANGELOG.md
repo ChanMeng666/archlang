@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-07-26
+
+**"Sheet & datum"** — the first sub-release of the large-building batch. Until now a plan was a
+drawing with no paper and no datum: every annotation size was a fixed fraction of the drawing's own
+extent (self-similar, so a dwelling looked right at any zoom but a 100 m museum got 3 m room labels),
+dimensions ran from the building's own faces rather than a structural grid, and nothing in the margin
+let a reader audit the rooms without measuring them. This release adds the three things a real sheet
+has: a **paper size with an operative scale**, a **GB/T 50001 positioning-axis grid**, and **tabular
+margin blocks** (room schedule + legend). Every one of them is opt-in, and a plan that declares none
+of `paper` / `axes` / `schedule` / `legend` is **byte-for-byte unchanged**.
+
+`compile()` stays pure, synchronous and deterministic. The language gains four statement keywords
+(`paper`, `axes`, `schedule`, `legend`) plus the `A4`…`A0` / `landscape` / `portrait` value
+vocabulary, and one catalogued code (**`W_SCALE_OVERFLOW`**); `describe()` gains three append-only
+keys (`axes`, `sheet`, `schedule`).
+
 ### Added
 
 - **`axes { … }` — GB/T 50001 positioning axes (定位轴线).** An architectural drawing is not
@@ -139,6 +155,17 @@ A plan that declares no `axes` block is **byte-identical** to before — no node
   rasterizes with a bundled Roboto that carries no Han glyphs — the same portability constraint that
   keeps the axis bubbles off `①`/`Ⓐ`. No `area`/`m2` token enters the grammar: printing a computed area
   in the sheet chrome is rendering, which the parked area-syntax decision never covered.
+
+### Meta
+
+- **VS Code extension 0.8.0** was packaged and published to the Marketplace in this window,
+  rebundling core 1.19.0 (`flush`, `dim faces`/`clear`, the three new warnings) — see
+  [`editors/vscode/CHANGELOG.md`](editors/vscode/CHANGELOG.md). The extension bundles the core at
+  build time, so this release's grammar surface needs its own republish.
+- **The `release-check` skill now opens with a mandatory true-latest-version probe** (`npm view` +
+  `git tag` + `gh release list` + the `CHANGELOG.md` headings) and requires the target to be strictly
+  greater than all four with a semver class matched against the real diff — after a stale AGENTS.md
+  status table caused an approved plan to target a version that was already published.
 
 ## [1.19.0] - 2026-07-25
 
