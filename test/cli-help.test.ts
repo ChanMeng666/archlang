@@ -1,4 +1,7 @@
 import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildManifest } from "../src/index.js";
 import { FLAG_KEYS, HELP_FLAGS } from "../src/cli/io.js";
@@ -189,5 +192,80 @@ describe("CLI — unknown command / unknown flag", () => {
     const r = run(["lint", "-", "--json"], VALID);
     expect(r.status).toBe(0);
     expect(() => JSON.parse(r.stdout)).not.toThrow();
+  }, 30000);
+});
+
+/**
+ * `-o -` + `--json` — a flag COMBINATION `main` cannot catch (both tokens are declared),
+ * so each render command rejects it itself. It used to be *silently* resolved in favour
+ * of `--json`: the artifact was redirected to `defaultOut(...)`, so `compile - -o - --json`
+ * wrote `./out.svg` in the caller's cwd and said nothing about it. Same doctrine as the
+ * unknown-flag path above: exit 3 with the `usage:` echo, never a quiet reinterpretation.
+ */
+describe("CLI — `-o -` conflicts with --json", () => {
+  /**
+   * A throwaway directory holding the input. The old silent redirect derived its target
+   * from the INPUT path (`defaultOut`), so every unasked-for artifact would land in here
+   * — which makes "wrote a file nobody asked for" an assertion, not an eyeball.
+   */
+  function tmpWith(name: string, content: string): { dir: string; file: string } {
+    const dir = mkdtempSync(join(tmpdir(), "arch-stdout-json-"));
+    const file = join(dir, name);
+    writeFileSync(file, content);
+    return { dir, file };
+  }
+
+  it("`compile <file> -o - --json` is a usage error (exit 3) and writes no file", () => {
+    const { dir, file } = tmpWith("p.arch", VALID);
+    const r = run(["compile", file, "-o", "-", "--json"]);
+    expect(r.status).toBe(3);
+    expect(r.stderr).toContain("`-o -`");
+    expect(r.stderr).toContain("--json");
+    expect(r.stderr).toContain("usage: arch compile");
+    // Nothing on stdout (there is no envelope to parse) and no silent `p.svg`.
+    expect(r.stdout).toBe("");
+    expect(readdirSync(dir)).toEqual(["p.arch"]);
+  }, 30000);
+
+  it("`compile - -o - --json` (stdin) is the same usage error, not a quiet `out.svg`", () => {
+    const r = run(["compile", "-", "-o", "-", "--json"], VALID);
+    expect(r.status).toBe(3);
+    expect(r.stderr).toContain("`-o -`");
+    expect(r.stdout).toBe("");
+    expect(existsSync(join(process.cwd(), "out.svg"))).toBe(false);
+  }, 30000);
+
+  it("`compile <file> -o -` without --json still streams SVG to stdout, exit 0", () => {
+    const { dir, file } = tmpWith("p.arch", VALID);
+    const r = run(["compile", file, "-o", "-"]);
+    expect(r.status).toBe(0);
+    expect(r.stdout.trimStart().startsWith("<svg")).toBe(true);
+    expect(readdirSync(dir)).toEqual(["p.arch"]);
+  }, 30000);
+
+  it("`preview -o - --json` is rejected before any raster work", () => {
+    const { dir, file } = tmpWith("p.arch", VALID);
+    const r = run(["preview", file, "-o", "-", "--json"]);
+    expect(r.status).toBe(3);
+    expect(r.stderr).toContain("usage: arch preview");
+    expect(readdirSync(dir)).toEqual(["p.arch"]);
+  }, 30000);
+
+  it("`md -o - --json` is rejected", () => {
+    const { dir, file } = tmpWith("doc.md", "# Doc\n\n```arch\n" + VALID + "\n```\n");
+    const r = run(["md", file, "-o", "-", "--json"]);
+    expect(r.status).toBe(3);
+    expect(r.stderr).toContain("usage: arch md");
+    expect(readdirSync(dir)).toEqual(["doc.md"]);
+  }, 30000);
+
+  it("`batch -o -` is rejected outright: -o is a DIRECTORY, batch never streams", () => {
+    const { dir, file } = tmpWith("p.arch", VALID);
+    const r = run(["batch", file, "-o", "-", "--json"]);
+    expect(r.status).toBe(3);
+    expect(r.stderr).toContain("DIRECTORY");
+    expect(r.stderr).toContain("usage: arch batch");
+    // It used to drop the `-` and render alongside the input instead.
+    expect(readdirSync(dir)).toEqual(["p.arch"]);
   }, 30000);
 });
