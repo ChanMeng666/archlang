@@ -12,6 +12,26 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.8.0] - 2026-07-25
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.19.0`** — two language-surface releases had
+  accumulated (1.18.0's `arch suggest` round shipped without an extension repack), so the bundled
+  services pick up:
+  - the new **`flush`** keyword (wall-face-referenced in-room placement) in the regenerated TextMate
+    grammar and in completion;
+  - the new **`dim faces` / `dim clear`** statement forms;
+  - four new catalogued codes with their hovers and, where they carry one, their **quick fixes** —
+    **`W_FIXTURE_BACK_TO_ROOM`** (a fixture against a wall with its back to the room; fix inserts or
+    rewrites `rotate <n>`), **`W_DIM_INSIDE`** (a hand dim whose line lands inside the plan; fix swaps
+    the reversed endpoints), **`W_DIM_NO_WALL`**, and the error **`E_FURN_FLUSH`** (`flush` with no
+    anchored edge);
+  - derived fixture orientation for `in <room> anchor <edge>` placement, `describe().bbox_outer`, and
+    1.18.0's stable-ref `suggest` candidates (a suggestion the extension surfaces no longer names a
+    wall by a positional auto-id that re-binds on a later edit).
+- Bumped the dev-dependency pin `^1.15.0` → `^1.19.0` to match the bundled core.
+
 ## [0.7.0] - 2026-07-12
 
 ### Changed
