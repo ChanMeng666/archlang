@@ -45,25 +45,38 @@ async function hasResvg(): Promise<boolean> {
   }
 }
 
+/** Rasterize one Scene and pixel-diff it against `<key>.png` (or write it with UPDATE). */
+async function diffAgainstGolden(key: string, scene: Parameters<typeof renderPng>[0]): Promise<void> {
+  const actual = await renderPng(scene, { scale: GOLDEN_SCALE });
+  if (UPDATE) {
+    mkdirSync(goldenDir, { recursive: true });
+    writeFileSync(goldenPath(key), Buffer.from(actual));
+    return;
+  }
+  const a = PNG.sync.read(Buffer.from(actual));
+  const b = PNG.sync.read(readFileSync(goldenPath(key)));
+  expect({ w: a.width, h: a.height }).toEqual({ w: b.width, h: b.height });
+  const mismatched = pixelmatch(a.data, b.data, undefined, a.width, a.height, { threshold: 0 });
+  expect(mismatched).toBe(0);
+}
+
 describe("visual regression — golden PNG pixel-diff", () => {
   for (const name of EXAMPLES) {
     it(`${name} matches its golden`, async () => {
       if (!(await hasResvg())) return; // optional dep absent — skip
       const { scene, errors } = compile(example(name), { noCache: true });
       expect(errors).toEqual([]);
-      const actual = await renderPng(scene!, { scale: GOLDEN_SCALE });
-
-      if (UPDATE) {
-        mkdirSync(goldenDir, { recursive: true });
-        writeFileSync(goldenPath(name), Buffer.from(actual));
-        return;
-      }
-
-      const a = PNG.sync.read(Buffer.from(actual));
-      const b = PNG.sync.read(readFileSync(goldenPath(name)));
-      expect({ w: a.width, h: a.height }).toEqual({ w: b.width, h: b.height });
-      const mismatched = pixelmatch(a.data, b.data, undefined, a.width, a.height, { threshold: 0 });
-      expect(mismatched).toBe(0);
+      await diffAgainstGolden(name, scene!);
     });
   }
+
+  // Multi-storey: one golden per PAGE. A single golden of `scene` would pin only the
+  // lowest level, leaving an upper storey's drawing unguarded.
+  it("two-storey.arch matches a golden per level", async () => {
+    if (!(await hasResvg())) return;
+    const { pages, errors } = compile(example("two-storey.arch"), { noCache: true });
+    expect(errors).toEqual([]);
+    expect(pages).toHaveLength(2);
+    for (const p of pages!) await diffAgainstGolden(`two-storey.arch.L${p.level}`, p.scene);
+  });
 });

@@ -102,15 +102,35 @@ export interface ChromeInput {
   schedule?: RoomSchedule | null;
   /** Derived legend rows when the plan set `legend`. */
   legend?: readonly LegendEntry[] | null;
+  /** Which storey this page draws, for a multi-storey plan (see {@link titleRows}). */
+  level?: LevelStamp;
 }
 
-/** The title-block rows that exist (project/drawn-by/date, plus scale if present). */
-export function titleRows(title: TitleNode | undefined, scale: string | undefined): TitleRow[] {
+/**
+ * Which storey a page draws — the identity a multi-storey drawing SET must carry, so two
+ * pages of the same building are not indistinguishable. Absent for a single-storey plan.
+ */
+export interface LevelStamp {
+  level: number;
+  name?: string;
+}
+
+/**
+ * The title-block rows that exist (project/drawn-by/date, plus scale if present, plus the
+ * storey for a multi-storey plan).
+ *
+ * The `LEVEL` row is what makes a drawing set readable: with `level` blocks every page is
+ * stamped `LEVEL: 1 — Ground floor`, and a plan whose only title-block content is that
+ * row still gets a title block. A single-storey plan passes no stamp, so its rows — and
+ * therefore its bytes — are exactly as before.
+ */
+export function titleRows(title: TitleNode | undefined, scale: string | undefined, level?: LevelStamp): TitleRow[] {
   const rows: TitleRow[] = [];
   if (title?.project) rows.push({ k: "PROJECT", v: title.project });
   if (title?.drawnBy) rows.push({ k: "DRAWN BY", v: title.drawnBy });
   if (title?.date) rows.push({ k: "DATE", v: title.date });
   if (scale) rows.push({ k: "SCALE", v: scale });
+  if (level) rows.push({ k: "LEVEL", v: level.name ? `${level.level} — ${level.name}` : String(level.level) });
   return rows;
 }
 
@@ -186,7 +206,7 @@ export function layoutChrome(input: ChromeInput): ChromeLayout {
   };
   const scaleBottom = bandTop + sHgt + sFs * SCALEBAR_LABEL_F;
 
-  const rows = titleRows(input.title, input.scale);
+  const rows = titleRows(input.title, input.scale, input.level);
   let titleBlock: TitleBlockBox | null = null;
   let titleBottom = bandTop;
   if (rows.length > 0) {

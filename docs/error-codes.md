@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**52 errors** · **36 warnings**
+**55 errors** · **36 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -45,6 +45,9 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_JSON_SCHEMA`](#e_json_schema) | error | Plan JSON does not match the schema. |
 | [`E_LAYOUT_CYCLE`](#e_layout_cycle) | error | Relational room placement forms a cycle. |
 | [`E_LAYOUT_REF`](#e_layout_ref) | error | Relational placement references an unknown room. |
+| [`E_LEVEL_DUP`](#e_level_dup) | error | Two `level` blocks declare the same storey number. |
+| [`E_LEVEL_MIX`](#e_level_mix) | error | A drawable statement sits beside `level` blocks. |
+| [`E_LEVEL_NEST`](#e_level_nest) | error | `level` used inside a block or component. |
 | [`E_OPENING_WIDTH`](#e_opening_width) | error | Opening must have a positive width. |
 | [`E_PLACE_REF`](#e_place_ref) | error | Furniture placed in an unknown or non-absolute room. |
 | [`E_PNG_DEPENDENCY`](#e_png_dependency) | error | PNG/PDF export needs an optional dependency that is not installed. |
@@ -532,6 +535,46 @@ room id=b left-of a size 100x100   # error: a ↔ b cycle
 
 ```arch
 room id=k right-of ghost size 100x100   # error: no room "ghost"
+```
+
+## E_LEVEL_DUP
+
+*error* — Two `level` blocks declare the same storey number.
+
+**Cause.** Level numbers identify the storeys of one building, so each may be declared once; two `level 1` blocks would produce two pages both claiming to be level 1.
+
+**Fix.** Renumber one of them, or merge the two bodies into a single `level` block.
+
+```arch
+level 1 { room at (0,0) size 3000x3000 }
+level 1 { room at (0,0) size 3000x3000 }   # error: level 1 twice
+```
+
+## E_LEVEL_MIX
+
+*error* — A drawable statement sits beside `level` blocks.
+
+**Cause.** A plan is either single-storey (no `level` block) or entirely made of them: anything that draws belongs to exactly one storey, so a room/wall/door/`for`/`strip`/component call at plan level next to a `level` block has no storey to belong to.
+
+**Fix.** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.
+
+```arch
+plan "H" {
+  room at (0,0) size 3000x3000   # error: move it into a level
+  level 1 { wall exterior thickness 200 { (0,0) (3000,0) close } }
+}
+```
+
+## E_LEVEL_NEST
+
+*error* — `level` used inside a block or component.
+
+**Cause.** A `level` block is a plan-level statement: it partitions the whole plan into storeys, so it cannot be nested inside another `level`, a `for`/`if`/`while` body, a `strip`, or a component definition.
+
+**Fix.** Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.
+
+```arch
+component c() { level 1 { } }   # error: only allowed at plan level
 ```
 
 ## E_OPENING_WIDTH

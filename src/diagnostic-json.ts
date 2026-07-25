@@ -41,6 +41,9 @@ export interface DiagnosticJson {
    *  carries `fixes`. Each entry's edit spans are `[start, end)` byte ranges into
    *  the original source (mutually-exclusive alternatives — apply at most one). */
   fixes?: FixSuggestionJson[];
+  /** The storey that raised it (a multi-storey plan's authored `level` number);
+   *  present only when the diagnostic carries one. See {@link Diagnostic.level}. */
+  level?: number;
 }
 
 /** Project a {@link Diagnostic} into the agent-friendly JSON shape (with `fix`). */
@@ -68,5 +71,6 @@ export function diagnosticToJson(source: string, d: Diagnostic): DiagnosticJson 
       if (f.fixId !== undefined) j.fixId = f.fixId;
       return j;
     });
+  if (d.level !== undefined) out.level = d.level;
   return out;
 }

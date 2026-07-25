@@ -53,6 +53,8 @@ const ELEMENT_GRAMMAR: Record<string, string> = {
  */
 const STATEMENT_GRAMMAR: Record<string, string> = {
   axes: "axes { x at <mm>, <mm>, … y at <mm>, <mm>, … }   # GB/T 50001 positioning axes (定位轴线): dash-dot datum lines with a labelled bubble. `x` are vertical (numbered 1,2,3… left-to-right), `y` horizontal (lettered A,B,C… BOTTOM-to-top, skipping I/O/Z). Positions are expressions; labels are DERIVED from sorted position, never authored. With `dims auto rooms|all` the middle chain measures the AXES instead of room boundaries. Plan-level block only",
+  level:
+    'level <int> ["Name"] { …statements… }   # ONE STOREY = one complete drawing. A plan is either single-storey or ALL levels (a drawable statement beside them is E_LEVEL_MIX); settings, `component`/`import` and plan-global `let`/`set` stay OUTSIDE and apply to every level (one building = one sheet, one scale). Integers, unique, 0/negative legal (`level -1 "Basement"`), drawn ASCENDING — lowest = page 1. Ids are unique WITHIN a level, so the same id on two floors is legal (a stair). `arch compile` writes plan.L1.svg, plan.L2.svg … (`--level <n>` for one); `describe --json` adds `levels[]`. Plan-level block only',
   strip:
     "strip <right|left|down|up> at (x,y) gap <mm> [height|width <mm>] { room [id=<id>] size <main>[x<cross>] [label \"…\"] [uses …] … }   # a row/column of rooms laid end to end: each room's offset is the running sum of the previous extents + gap, and the shared cross dimension is the strip's height (right/left) or width (down/up). Pure sugar — expands to absolute rooms. Plan-level block only",
   schedule:

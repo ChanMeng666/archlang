@@ -36,14 +36,27 @@ export { LINT_RULES } from "./lint/rules/index.js";
  * Lint ArchLang `source` and return architectural-soundness warnings. Returns `[]`
  * when the plan has fatal errors (resolution failed — there is nothing sound to
  * check; compile/validate surfaces those). Never throws.
+ *
+ * **Multi-storey** (`level <n> { … }`): every storey is a building in its own right —
+ * each needs its own entrance, its own reachable rooms, its own windows — so the rules run
+ * per level and the results are concatenated in level order, each warning tagged with
+ * {@link Diagnostic.level}. A single-storey plan takes the one-plan path unchanged.
  */
 export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
   // Ruleset cascade: defaults → named profile → explicit per-call overrides.
   const profileRules = opts.profile ? (LINT_PROFILES[opts.profile] ?? {}) : {};
   const rules: LintRuleset = { ...DEFAULT_RULESET, ...profileRules, ...opts.ruleset };
-  const { ir } = resolvePlan(source, opts);
+  const { ir, levels } = resolvePlan(source, opts);
   if (!ir) return [];
 
+  if (levels.length > 0) {
+    return levels.flatMap((l) => lintOne(l.ir, rules).map((d) => ({ ...d, level: l.level })));
+  }
+  return lintOne(ir, rules);
+}
+
+/** Fold the ordered rule list over one resolved plan (one storey, or the whole plan). */
+function lintOne(ir: Parameters<typeof buildLintContext>[0], rules: LintRuleset): Diagnostic[] {
   const ctx = buildLintContext(ir, rules);
   const out: Diagnostic[] = [];
   for (const rule of LINT_RULES) out.push(...rule.check(ctx));

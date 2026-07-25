@@ -10,8 +10,8 @@
 
 import { parse } from "./parser.js";
 import { link } from "./import.js";
-import { resolve } from "./ir.js";
-import type { ResolvedPlan, RDoor, RRoom, ROpening } from "./ir.js";
+import { resolveAll } from "./ir.js";
+import type { ResolvedLevel, ResolvedPlan, RDoor, RRoom, ROpening } from "./ir.js";
 import type { UseKind } from "./ast.js";
 import { BUILTIN_REGISTRY, createRegistry } from "./registry.js";
 import { NULL_WORLD } from "./world.js";
@@ -67,23 +67,32 @@ export const DEFAULT_TOL = 200;
 
 /**
  * Run parse → link → resolve (the same pipeline as `compile`, semantics live in
- * {@link resolve}). Returns the resolved IR, or `null` when fatal errors prevented
- * resolution, alongside every diagnostic. Never throws on user-source problems.
+ * {@link import("./ir.js").resolveAll}). Returns the resolved IR, or `null` when fatal
+ * errors prevented resolution, alongside every diagnostic. Never throws on user-source
+ * problems.
+ *
+ * Multi-storey (`level <n> { … }`): `ir` is the LOWEST storey — the same "page 1" that
+ * `compile().svg` draws, so every existing single-plan consumer keeps working — while
+ * `diagnostics` aggregates EVERY storey's problems (each tagged with `Diagnostic.level`),
+ * so a fault on the top floor can never slip past a gate that only read `ir`. `levels`
+ * carries the whole set for consumers that summarize or lint per storey; it is `[]` for a
+ * single-storey plan (append-only field).
  */
 export function resolvePlan(
   source: string,
   opts: AnalyzeOptions = {},
-): { ir: ResolvedPlan | null; diagnostics: Diagnostic[] } {
+): { ir: ResolvedPlan | null; diagnostics: Diagnostic[]; levels: ResolvedLevel[] } {
   const registry = opts.plugins?.length ? createRegistry(opts.plugins) : BUILTIN_REGISTRY;
   const world = opts.world ?? NULL_WORLD;
 
   const { plan, diagnostics: parseDiags } = parse(source, registry);
   const linked = plan ? link(plan, world, registry) : null;
-  const resolved = linked ? resolve(linked.plan, registry, world) : null;
+  const resolved = linked ? resolveAll(linked.plan, registry, world) : null;
   const diagnostics: Diagnostic[] = [...parseDiags, ...(linked?.diagnostics ?? []), ...(resolved?.diagnostics ?? [])];
 
   const hasError = diagnostics.some((d) => d.severity === "error");
-  return { ir: !resolved || hasError ? null : resolved.ir, diagnostics };
+  const ok = resolved !== null && !hasError;
+  return { ir: ok ? resolved.ir : null, diagnostics, levels: ok ? resolved.levels : [] };
 }
 
 /** Axis-aligned rectangle of a sized element. */

@@ -302,6 +302,47 @@ The `legend` setting has **no counterpart here**, deliberately: it is pure rende
 every fact it shows (the wall materials, the fixture categories placed) is already in
 `furniture` and the source.
 
+## Levels — one storey's facts at a time (v1.21)
+
+A plan built from [`level` blocks](language-reference.md#levels--a-multi-storey-building-v121)
+is a **drawing set**, and rooms, adjacency and circulation only mean something *within* one
+storey. So `describe()` keeps its contract and appends one:
+
+- every top-level field — `rooms`, `doors`, `access`, `circulation`, `totals`,
+  `input_graph`, `freedom`, `schedule`, … — describes the **lowest storey** (page 1, the
+  same drawing `compile().svg` returns);
+- **`levels[]`** appends one summary per storey, ascending, each with the **full
+  single-plan shape** plus `level` and `name`. `levels[0]` therefore repeats the top-level
+  facts. The key is **absent** for a single-storey plan, so every existing summary is
+  unchanged.
+
+```json
+"levels": [
+  {
+    "level": 1,
+    "name": "Ground floor",
+    "rooms": [{ "id": "hall", "label": "Hall", "area_m2": 15.4, "adjacent": ["living", "kitchen"] }],
+    "totals": { "rooms": 3, "doors": 3, "windows": 2, "floor_area_m2": 56 },
+    "access": { "entrances": ["front"], "hasEntrance": true }
+  },
+  { "level": 2, "name": "First floor", "…": "…" }
+]
+```
+
+Read one storey with `arch describe house.arch --level 2 --json`: that level's facts become
+the top-level ones and `levels[]` narrows to it, marked `filtered: true` +
+`selected_level: 2`. Like `--room`/`--select` it is a **display filter** — `ok`,
+`diagnostics` and the exit code always come from the whole building, so reading one floor
+can never make a broken plan look sound. It composes with `--room` (which then narrows
+*within* that storey).
+
+`lint()` runs the rules **per storey** and concatenates the results in level order: each
+floor needs its own entrance, its own reachable rooms, its own bedroom windows. Every
+diagnostic a storey raises carries `level`, in the library and in `--json`, so a gate sees
+the whole building while a reader still knows which floor to open. (Vertical circulation is
+not a modelled connector yet, so an upper storey with no exterior opening reads as having no
+entrance — see the language reference.)
+
 ## Freedom — how constrained the plan is
 
 `describe().freedom` is a **degrees-of-freedom report**: for every placed element,

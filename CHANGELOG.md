@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`level <n> ["Name"] { … }` — multi-storey plans: one drawing per storey.** A building is not one
+  drawing; it is a drawing per floor. A plan can now be written as `level` blocks, each of which
+  resolves and renders as its **own complete sheet** — its own walls, rooms, dimension chains, axes,
+  schedule and title block:
+
+  ```arch
+  plan "Two-storey house" {
+    paper A3 landscape        # settings are SHARED: one building, one sheet, one scale
+    let W = 8000
+    level 1 "Ground floor" { … }
+    level 2 "First floor"  { … }
+  }
+  ```
+
+  - **Either/or, never mixed.** A plan is single-storey (no `level` block anywhere — the historical
+    shape, byte-for-byte unchanged) or entirely levels. A drawable statement beside a `level` block
+    has no floor to belong to: new catalogued **`E_LEVEL_MIX`**, spanned on the offender. Settings
+    (`units`/`grid`/`paper`/`scale`/`north`/`dims`/`title`/`axes`/`schedule`/`legend`/`theme`),
+    `component`/`import` declarations, and the plan-global `let`/`set` stay OUTSIDE and apply to
+    **every** level.
+  - **Numbering.** Integers, unique (**`E_LEVEL_DUP`**), `0`/negative legal (`level -1 "Basement"`),
+    drawn ascending — the lowest storey is page 1. A nested `level` is **`E_LEVEL_NEST`**.
+  - **Ids are unique WITHIN a level**, so the same id on two storeys is legal and means vertical
+    identity (a stair, a riser, a column). Auto-id counters restart per storey.
+  - **One building, one sheet.** `paper`/`scale` resolve once for the whole building, measured on the
+    largest storey, so auto-fit cannot draw the small top floor at a finer scale than the ground
+    floor; `W_SCALE_OVERFLOW` is raised once for the building, not once per page.
+  - Every page's title block carries a **`LEVEL` row** (`1 — Ground floor`), so a set is readable.
+- **`compile().pages`** (append-only): `{ level, name?, svg, scene }` per storey, ascending. `svg`,
+  `scene` and `ast` keep meaning **page 1** (the lowest storey), so a level-unaware consumer still
+  gets a complete drawing.
+- **`describe().levels`** (append-only): one full single-plan summary per storey. The top-level facts
+  describe the lowest storey (rooms and adjacency only mean something within a floor); `levels[0]`
+  repeats them. `lint()` runs the rules per storey and concatenates.
+- **`Diagnostic.level`** (append-only, also in `--json`): which storey raised it. Diagnostics
+  aggregate across storeys, so a fault on the top floor can never slip past a gate.
+- **CLI.** `arch compile house.arch` writes one file per storey — `<stem>.L<level>.<ext>`
+  (`house.L1.svg`, `house.L2.svg`, …) — and reports `outputs[]` + `pages[]` in `--json`, for every
+  format. New **`--level <n>`** (compile/watch/preview/describe) renders or reads a single storey;
+  `-o -` on a multi-storey plan is a usage error (exit 3) unless `--level` picks one, and an unknown
+  `--level` (or `--level` on a single-storey plan) exits 3 naming the levels the plan has.
+  `describe --level` is a DISPLAY filter: `ok` and the exit code still weigh the whole building.
+- **`examples/two-storey.arch`** — a lint-clean two-storey house (A3, `dims auto all`, `stair` on both
+  floors), with a golden + snapshot per page.
+- Library exports `resolveAll` / `levelBlocks` and the `CompilePage`, `LevelSummary`, `ResolvedLevel`,
+  `PlanResolution` types.
+
+### Notes
+
+- Vertical circulation is **not** a modelled connector yet (the next item): each storey's access graph
+  and circulation are read on that floor alone, so an upper storey needs its own exterior opening to
+  register an entrance.
+- A multi-page PDF is deliberately not built — `-f pdf` writes one file per storey, one drawing per
+  sheet. `md` and `batch` render the lowest storey.
+
 ## [1.20.0] - 2026-07-26
 
 **"Sheet & datum"** — the first sub-release of the large-building batch. Until now a plan was a

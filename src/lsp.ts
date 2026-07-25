@@ -143,6 +143,9 @@ function collectBindings(plan: PlanNode, tokens: Token[]): Binding[] {
         if (s.else) visit(s.else, s.span);
       } else if (s.kind === "while") {
         visit(s.body, s.span);
+      } else if (s.kind === "level") {
+        // A storey's body binds like any block body (its `let`s are level-local).
+        visit(s.body, s.span);
       }
     }
   };

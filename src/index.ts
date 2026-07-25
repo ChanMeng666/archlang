@@ -7,7 +7,7 @@
  */
 
 import { parse } from "./parser.js";
-import { resolve } from "./ir.js";
+import { resolveAll } from "./ir.js";
 import { toScene } from "./scene-build.js";
 import { renderSvg } from "./backends/svg.js";
 import { renderErrorSvg } from "./backends/error-svg.js";
@@ -22,11 +22,12 @@ import { clearResolveCache } from "./ir.js";
 import { idToken } from "./identity.js";
 import type { Scene } from "./scene.js";
 import type { Diagnostic } from "./diagnostics.js";
-import type { CompileError, CompileOptions, CompileResult } from "./types.js";
+import type { CompileError, CompileOptions, CompilePage, CompileResult } from "./types.js";
 
 export type {
   CompileError,
   CompileOptions,
+  CompilePage,
   CompileResult,
   CompileWarning,
   Diagnostic,
@@ -55,6 +56,7 @@ export { format } from "./format.js";
 export { describe } from "./describe.js";
 export type {
   SceneSummary,
+  LevelSummary,
   SheetSummary,
   RoomSummary,
   DoorSummary,
@@ -190,6 +192,12 @@ export type { CatalogEntry } from "./error-catalog.js";
 // output formats). `resolve`/`toDxf` are pure & zero-dep; `toPdf` lazily loads
 // optional deps. None of these are part of `compile()`.
 export { resolve } from "./ir.js";
+// Multi-storey resolve (v1.21): `resolveAll` is the level-aware entry — one
+// `ResolvedPlan` per `level` block (`levels: []` for a single-storey plan, whose `ir` is
+// exactly what `resolve()` returns). `levelBlocks(ast)` is the AST-side helper: the plan's
+// storeys in drawing order (ascending, duplicates dropped).
+export { levelBlocks, resolveAll } from "./ir.js";
+export type { PlanResolution, ResolvedLevel } from "./ir.js";
 export type {
   ResolvedPlan,
   ResolvedElement,
@@ -389,9 +397,10 @@ function compileUncached(source: string, opts: CompileOptions): CompileResult {
   const { plan, diagnostics: parseDiags } = parse(source, registry);
 
   // parse → link (resolve `import`s through the World — the one I/O phase) →
-  // resolve (AST→IR, the single place semantics live) → render.
+  // resolve (AST→IR, the single place semantics live) → render. `resolveAll` is the
+  // level-aware resolve: one ResolvedPlan per `level` block (none → one plan, as before).
   const linked = plan ? link(plan, world, registry) : null;
-  const resolved = linked ? resolve(linked.plan, registry, world) : null;
+  const resolved = linked ? resolveAll(linked.plan, registry, world) : null;
   const diagnostics: Diagnostic[] = [...parseDiags, ...(linked?.diagnostics ?? []), ...(resolved?.diagnostics ?? [])];
 
   const errs = diagnostics.filter((d) => d.severity === "error");
@@ -401,11 +410,23 @@ function compileUncached(source: string, opts: CompileOptions): CompileResult {
   // Warnings never block rendering; any error (or no plan) aborts with svg = "".
   // The Scene is built once and serialized to SVG; it is also exposed on the
   // result so consumers can target other backends (toDxf/toPdf) without re-resolving.
+  // A multi-storey plan renders one page per storey, ascending — `svg`/`scene` are page 1
+  // (the lowest level), so a level-unaware consumer still gets a complete drawing.
   let svg = "";
   let scene: Scene | undefined;
+  let pages: CompilePage[] | undefined;
   if (resolved && errs.length === 0) {
-    scene = toScene(resolved.ir, opts, runtime);
-    svg = renderSvg(scene, opts);
+    if (resolved.levels.length > 0) {
+      pages = resolved.levels.map((l) => {
+        const s = toScene(l.ir, opts, runtime);
+        return { level: l.level, ...(l.name !== undefined ? { name: l.name } : {}), svg: renderSvg(s, opts), scene: s };
+      });
+      scene = pages[0]!.scene;
+      svg = pages[0]!.svg;
+    } else {
+      scene = toScene(resolved.ir, opts, runtime);
+      svg = renderSvg(scene, opts);
+    }
   } else if (errs.length > 0 && opts.onError === "svg") {
     // Opt-in only: a broken plan yields a self-describing error card instead of
     // a blank. Default (no `onError`) leaves `svg === ""`, byte-identical to the
@@ -413,7 +434,8 @@ function compileUncached(source: string, opts: CompileOptions): CompileResult {
     svg = renderErrorSvg(source, diagnostics);
   }
 
-  return { svg, errors, warnings, diagnostics, ast: plan, scene };
+  // `pages` is spread so a single-storey result has no such key at all (append-only).
+  return { svg, errors, warnings, diagnostics, ast: plan, scene, ...(pages ? { pages } : {}) };
 }
 
 /** Clear the internal compile cache + all per-stage memos (lex/parse/resolve). */

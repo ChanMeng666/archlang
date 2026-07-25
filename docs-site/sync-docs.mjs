@@ -100,7 +100,19 @@ console.log(`  ${adrs.length} ADRs → adr/  (+ .vitepress/theme/adr-data.js)`);
 // editable `<ArchLive>` widgets from the same single source of truth.
 const exDest = join(here, "public", "examples");
 mkdirSync(exDest, { recursive: true });
-const examples = ["studio", "two-bed", "parametric", "themed", "relational", "attached", "accessible", "museum"];
+// NB `two-storey` is a MULTI-STOREY plan: `compile().svg` (and therefore the gallery SVG
+// and the live widget) is page 1 — the lowest level. The whole set is `compile().pages`.
+const examples = [
+  "studio",
+  "two-bed",
+  "parametric",
+  "themed",
+  "relational",
+  "attached",
+  "accessible",
+  "museum",
+  "two-storey",
+];
 const sources = {};
 for (const name of examples) {
   sources[name] = readFileSync(join(repo, "examples", `${name}.arch`), "utf8");

@@ -27,4 +27,18 @@ describe("golden SVG snapshots", () => {
       expect(svg).toMatchSnapshot();
     });
   }
+
+  // A multi-storey plan is one drawing PER LEVEL, so every page needs its own golden —
+  // `svg` alone would only ever pin page 1 and an upper storey could drift unnoticed.
+  it("renders two-storey.arch as one page per level", () => {
+    const { svg, pages, errors } = compile(example("two-storey.arch"), { noCache: true });
+    expect(errors).toEqual([]);
+    expect(pages?.map((p) => [p.level, p.name])).toEqual([
+      [1, "Ground floor"],
+      [2, "First floor"],
+    ]);
+    // `svg` is page 1 (the lowest level) — the level-unaware view of the same drawing.
+    expect(svg).toBe(pages![0]!.svg);
+    for (const p of pages!) expect(p.svg).toMatchSnapshot(`two-storey.arch L${p.level}`);
+  });
 });

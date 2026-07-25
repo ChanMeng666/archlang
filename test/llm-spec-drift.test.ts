@@ -39,13 +39,19 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     expect(spec).toMatch(/^strip </m);
   });
 
-  it("stays small enough to drop into a system prompt (< ~4.5k tokens)", () => {
+  it("stays small enough to drop into a system prompt (< ~4.6k tokens)", () => {
     const spec = renderLlmSpec(exampleSources());
     // ~4 chars/token. Raised 16k → 18k deliberately (2026-07-13): the v1.13–v1.15 surface
     // the spec had been silently omitting (strip, on-wall attachment, furniture anchors, and
     // 7 more CLI verbs) is real language an agent must know, and it does not fit in 16k. This
     // is a considered budget increase, NOT a threshold nudged to green a red suite — the
     // suite was green at 15,901 when this was raised. Trim duplication before raising again.
-    expect(spec.length).toBeLessThan(18_000);
+    //
+    // Raised 18k → 18.5k for the same reason (v1.21, multi-storey): `level` is a new
+    // *structural* keyword — an agent that does not know it cannot write a two-storey plan at
+    // all, and cannot read `compile`'s per-level output — and the baseline was already at
+    // 17,960 with nothing duplicated left to cut. The line it adds is one deliberately dense
+    // sentence (~570 chars), not prose. Trim duplication before raising again.
+    expect(spec.length).toBeLessThan(18_500);
   });
 });

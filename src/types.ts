@@ -93,8 +93,31 @@ export interface CompileOptions {
   world?: import("./world.js").World;
 }
 
+/**
+ * One rendered **page** of a multi-storey plan (`level <n> { … }`) — a storey is a
+ * drawing, so a two-level house compiles to two complete sheets.
+ *
+ * Pages come back sorted ascending by {@link level}, so `pages[0]` is the lowest storey —
+ * and it is exactly what {@link CompileResult.svg}/`scene` carry, so a consumer that knows
+ * nothing about levels still gets a valid drawing (page 1) instead of nothing.
+ */
+export interface CompilePage {
+  /** The authored storey number (integer; 0/negative legal). */
+  level: number;
+  /** The storey's name (`level 1 "Ground floor"`), when the source gave one. */
+  name?: string;
+  /** This storey's rendered SVG document. */
+  svg: string;
+  /** This storey's backend-neutral Scene — feed it to `toDxf`/`toPdf`/`renderPng`/
+   *  `renderAscii` to export the page in another format. */
+  scene: import("./scene.js").Scene;
+}
+
 export interface CompileResult {
-  /** The rendered SVG document, or `""` when there were fatal errors. */
+  /**
+   * The rendered SVG document, or `""` when there were fatal errors. For a multi-storey
+   * plan this is the FIRST page — the lowest `level` — i.e. `pages[0].svg`.
+   */
   svg: string;
   /** Fatal problems. When non-empty, `svg` is `""`. Derived from {@link diagnostics}. */
   errors: CompileError[];
@@ -110,7 +133,18 @@ export interface CompileResult {
   /**
    * The backend-neutral Scene IR (positioned drawing primitives), present
    * whenever rendering succeeded (i.e. no fatal errors). Feed it to alternate
-   * backends: `toDxf(scene)`, `toPdf(scene)`.
+   * backends: `toDxf(scene)`, `toPdf(scene)`. For a multi-storey plan this is the FIRST
+   * page's scene (`pages[0].scene`).
    */
   scene?: import("./scene.js").Scene;
+  /**
+   * One entry per **storey**, ascending by level — present **only** when the plan declares
+   * `level` blocks and rendering succeeded. A single-storey plan has no `pages` key at all,
+   * so every existing result shape is unchanged (append-only).
+   *
+   * `svg`/`scene`/`ast` above describe `pages[0]` (the lowest storey, "page 1"); read
+   * `pages` to write the whole set. `diagnostics` aggregates every storey's problems, each
+   * tagged with {@link import("./diagnostics.js").Diagnostic.level}.
+   */
+  pages?: CompilePage[];
 }

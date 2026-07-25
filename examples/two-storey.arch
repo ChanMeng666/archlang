@@ -1,0 +1,74 @@
+# A compact two-storey house — one drawing per storey, from `level` blocks.
+#
+# Settings and the plan-global `let`s live OUTSIDE the levels and apply to every one of
+# them: one building is issued on one sheet at one scale. Each level's body is an ordinary
+# plan body, and ids are unique WITHIN a level — so `stair` exists on both floors at the
+# same coordinates and means the same shaft.
+plan "Two-storey house" {
+  units mm
+  grid 50
+  paper A3 landscape
+  north up
+  dims auto all
+
+  let W = 8000        # outer width (wall centerlines)
+  let D = 7000        # outer depth
+  let T = 200         # exterior wall thickness
+  let HALL = 2200     # the stair hall / landing runs the full depth on the left
+
+  level 1 "Ground floor" {
+    wall id=shell exterior thickness T { (0,0) (W,0) (W,D) (0,D) close }
+    wall id=hall_w partition thickness 100 { (HALL,0) (HALL,D) }
+    wall id=kitchen_w partition thickness 100 { (HALL,3600) (W,3600) }
+
+    room id=hall at (0,0) size 2200x7000 label "Hall" uses hall
+    room id=living at (2200,0) size 5800x3600 label "Living" uses living
+    room id=kitchen at (2200,3600) size 5800x3400 label "Kitchen" uses kitchen
+
+    door id=front on shell at 21900 width 1000 swing into hall
+    door id=d_living on hall_w at 1800 width 900 swing into living
+    door id=d_kitchen on hall_w at 5300 width 900 swing into kitchen
+
+    window id=w_living on shell at 5000 width 1800
+    window id=w_kitchen on shell at 13300 width 1200
+
+    furniture sofa in living anchor top flush inset 300 size 2000x850 label "Sofa"
+    furniture kitchen_sink against wall kitchen_w offset 1200 in kitchen
+    furniture stair in hall anchor top-left flush size 900x2600 label "Stair up"
+  }
+
+  level 2 "First floor" {
+    wall id=shell exterior thickness T { (0,0) (W,0) (W,D) (0,D) close }
+    wall id=hall_w partition thickness 100 { (HALL,0) (HALL,D) }
+    wall id=bath_w partition thickness 100 { (0,4600) (HALL,4600) }
+    wall id=bed_w partition thickness 100 { (HALL,3600) (W,3600) }
+
+    room id=landing at (0,0) size 2200x4600 label "Landing" uses circulation
+    room id=bath at (0,4600) size 2200x2400 label "Bath" uses bath
+    room id=bed1 at (2200,0) size 5800x3600 label "Bedroom 1" uses bedroom
+    room id=bed2 at (2200,3600) size 5800x3400 label "Bedroom 2" uses bedroom
+
+    # The upper storey's own front door is its balcony door — the stair (vertical
+    # circulation) is not yet a modelled connector, so this is what the access graph reads.
+    door id=balcony on shell at 1600 width 900 swing out
+    door id=d_bed1 on hall_w at 1800 width 900 swing into bed1
+    door id=d_bed2 on hall_w at 4100 width 900 swing into bed2
+    door id=d_bath on bath_w at 1100 width 800 swing into bath
+
+    window id=w_bed1 on shell at 5000 width 1500
+    window id=w_bed2 on shell at 13300 width 1200
+    window id=w_bath on shell at 24200 width 600
+
+    furniture bed in bed1 anchor top-right flush inset 300 size 1500x2000 label "Double"
+    furniture bed in bed2 anchor bottom flush inset 300 size 1000x2000 label "Single"
+    furniture wc in bath anchor bottom-left flush size 400x700
+    furniture basin in bath anchor bottom-right flush size 600x450
+    furniture stair in landing anchor top-left flush size 900x2600 label "Stair down"
+  }
+
+  title {
+    project "Two-storey house"
+    drawn_by "ArchLang"
+    date "2026-07-26"
+  }
+}

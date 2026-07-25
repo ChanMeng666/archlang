@@ -835,6 +835,86 @@ system, so the tables scale with the sheet. `describe()` reports the schedule as
 `schedule[]` (see [Analysis](analysis.md)); `legend` is pure rendering and adds no
 field — every fact it shows is already in `furniture` and the source.
 
+## Levels — a multi-storey building (v1.21)
+
+```
+plan "Two-storey house" {
+  units mm
+  paper A3 landscape        # settings are SHARED: one building, one sheet, one scale
+  dims auto all
+  let W = 8000
+
+  level 1 "Ground floor" {
+    wall id=shell exterior thickness 200 { (0,0) (W,0) (W,7000) (0,7000) close }
+    room id=hall at (0,0) size 2200x7000 label "Hall" uses hall
+    furniture stair in hall anchor top-left flush size 900x2600 label "Stair up"
+  }
+
+  level 2 "First floor" {
+    wall id=shell exterior thickness 200 { (0,0) (W,0) (W,7000) (0,7000) close }
+    room id=landing at (0,0) size 2200x4600 label "Landing" uses circulation
+    furniture stair in landing anchor top-left flush size 900x2600 label "Stair down"
+  }
+}
+```
+
+A `level` block is **one storey**, and a storey is **one complete drawing**: its own
+walls, rooms, dimension chains, axes, schedule and title block. `examples/two-storey.arch`
+is the worked version of the sketch above.
+
+**A plan is either single-storey or entirely levels.** Anything that draws belongs to
+exactly one storey, so a `room`/`wall`/`door`/`for`/`strip`/component call sitting *beside*
+a `level` block has no floor to belong to — that is
+[`E_LEVEL_MIX`](error-codes.md#e_level_mix), reported on the offending statement. What
+stays outside (and applies to **every** level):
+
+- every plan **setting** — `units`, `grid`, `paper`, `scale`, `north`, `dims auto`,
+  `title`, `axes`, `schedule`, `legend`, `theme`/`style`, `accTitle`/`accDescr`;
+- **declarations** — `component` and `import`;
+- the **plan-global scope** — `let` bindings and `set` defaults.
+
+So `let W = 8000` written once is the same `W` on every floor, and one `component` can be
+called from each level.
+
+**Numbering.** Level numbers are integers and must be unique
+([`E_LEVEL_DUP`](error-codes.md#e_level_dup)). `0` and negatives are legal — `level -1
+"Basement"` — and storeys are drawn in **ascending** order, so the lowest level is page 1.
+The optional name (`level 1 "Ground floor"`) is stamped into the title block as a `LEVEL`
+row and reported by `describe()`. A `level` inside a block, a component, or another level
+is [`E_LEVEL_NEST`](error-codes.md#e_level_nest) — to repeat content on several storeys,
+put it in a `component` and call it from each.
+
+**Ids are unique WITHIN a level**, not across the building. The same id on two storeys is
+legal and means **vertical identity** — the `stair` above is the same shaft on both floors,
+and a riser, a duct or a column keeps its name as it goes up. (Vertical circulation is not
+yet a modelled connector: each storey's access graph is read on its own floor, so an upper
+storey needs its own exterior opening — a balcony door, say — to have an entrance.)
+
+**One building, one sheet.** `paper`/`scale` are resolved **once for the whole building**,
+from the largest storey: auto-fit cannot hand the small top floor a finer scale than the
+ground floor, and `W_SCALE_OVERFLOW` is raised once for the building rather than once per
+page. Every page is therefore the same paper at the same scale — a drawing set.
+
+**What comes out.** `compile()` returns `pages[]` — `{ level, name?, svg, scene }` per
+storey, ascending — and `svg`/`scene`/`ast` keep meaning **page 1** (the lowest storey), so
+a level-unaware consumer still gets a complete drawing. On the CLI:
+
+```bash
+arch compile house.arch --json          # writes house.L1.svg, house.L2.svg …; reports outputs[]
+arch compile house.arch --level 2 -o upper.svg   # just that storey, to the plain target
+arch compile house.arch --level 1 -o -           # `-o -` streams ONE drawing, so it needs --level
+arch describe house.arch --json                  # top-level facts = lowest storey, plus levels[]
+arch describe house.arch --level 2 --json        # read one storey (a display filter)
+arch preview house.arch --level 2 -o upper.png   # look at one storey
+```
+
+Every format works per level (`-f svg|dxf|txt|pdf|png` each write `<stem>.L<level>.<ext>`);
+a multi-page PDF is deliberately not built — one file per storey is one drawing per sheet.
+`md` and `batch` render the lowest storey. Diagnostics aggregate across storeys and each
+carries a `level`, so `lint`/`validate` gate on the whole building while still saying which
+floor a warning is about; `arch repair` walks into every level and tags its changes the same
+way.
+
 ## Theming
 
 A `theme { … }` directive overrides colours, line weight, and font. Resolution
