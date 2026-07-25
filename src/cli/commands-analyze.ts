@@ -95,6 +95,7 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "accTitle",
   "accDescr",
   "scale",
+  "sheet",
   "bbox",
   "bbox_outer",
   "axes",

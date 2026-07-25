@@ -12,7 +12,7 @@ import type { CompileOptions } from "./types.js";
 import type { Opening, ResolvedPlan, RWall, RRoom, RDim } from "./ir.js";
 import type { RenderCtx, Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
-import type { RenderSizes, Scene, SceneNode } from "./scene.js";
+import type { RenderSizes, Scene, SceneNode, SceneSheet } from "./scene.js";
 import type { Bounds, Vec, WallSegment } from "./geometry.js";
 import {
   add,
@@ -33,8 +33,9 @@ import type { GeometryBackend } from "./geometry/backend.js";
 import type { Point } from "./ast.js";
 import { patternId } from "./hatches.js";
 import type { HatchSpec } from "./hatches.js";
-import { dimReach, layoutChrome } from "./chrome-layout.js";
+import { anchorChromeToSheet, dimReach, layoutChrome } from "./chrome-layout.js";
 import { axesNodes } from "./axes.js";
+import { CHAIN_BASE, CHAIN_STEP, SHEET_MM, sizesFromPaper } from "./sheet.js";
 import { circulationOverlayNodes } from "./overlays/circulation.js";
 import { captionForPlan } from "./describe.js";
 import { DEFAULT_THEME, THEMES, mergeTheme, sanitizeTheme, derivePoche } from "./theme.js";
@@ -304,9 +305,9 @@ const sidePt = (s: SideGeom, v: number): Point => (s.axis === "h" ? { x: v, y: s
 
 /** Chain slots, in multiples of `dimFont` outward from the wall face. Fixed per
  *  chain (not packed), so omitting a chain leaves its slot empty instead of
- *  reflowing the others — the openings chain is always the innermost. */
-const CHAIN_BASE = 1.2;
-const CHAIN_STEP = 2.2;
+ *  reflowing the others — the openings chain is always the innermost. The two
+ *  constants live in `src/sheet.ts` because the sheet fit test must reserve exactly
+ *  the band these chains occupy. */
 const chainOffset = (sizes: RenderSizes, slot: number): number => sizes.dimFont * (CHAIN_BASE + slot * CHAIN_STEP);
 
 /** Ticks closer than this (mm) are the same tick — a corner and an opening edge
@@ -576,19 +577,31 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   const b = planBounds(ir, registry);
   const drawW = b.maxX - b.minX;
   const drawH = b.maxY - b.minY;
-  const refDim = Math.max(drawW, drawH, 1);
 
-  const sizes: RenderSizes = {
-    refDim,
-    wallStroke: refDim * 0.0028 * lw,
-    thin: refDim * 0.0016 * lw,
-    roomFont: refDim * 0.03,
-    areaFont: refDim * 0.022,
-    dimFont: refDim * 0.02,
-    furnFont: refDim * 0.017,
-    margin: refDim * 0.17,
-    hatchGap: refDim * 0.013,
-  };
+  // Two RenderSizes constructors, one struct (so nothing below branches):
+  //
+  //  • No `paper` — the historical path. Every size is a fraction of the drawing's own
+  //    reference dimension. Self-similar, and BYTE-IDENTICAL to every release before
+  //    the sheet layer: this arithmetic must never change.
+  //  • With `paper` — `sizesFromPaper` (src/sheet.ts): every size a fixed number of
+  //    millimetres ON THE SHEET × the scale denominator, so a 100 m building gets the
+  //    same 3.5 mm room label a 7 m one does. `refDim` becomes 100 mm of sheet × the
+  //    denominator, which makes the `refDim * <fraction>` chrome/tick formulas
+  //    downstream read as plain drafting millimetres with no second code path.
+  const refDim = ir.sheet ? SHEET_MM.ref * ir.sheet.denom : Math.max(drawW, drawH, 1);
+  const sizes: RenderSizes = ir.sheet
+    ? sizesFromPaper(ir.sheet, lw)
+    : {
+        refDim,
+        wallStroke: refDim * 0.0028 * lw,
+        thin: refDim * 0.0016 * lw,
+        roomFont: refDim * 0.03,
+        areaFont: refDim * 0.022,
+        dimFont: refDim * 0.02,
+        furnFont: refDim * 0.017,
+        margin: refDim * 0.17,
+        hatchGap: refDim * 0.013,
+      };
 
   // Collect non-wall elements (source order), then lower walls — exactly the v0.1
   // op order, so layer-bucketing in a backend reproduces the original draw order.
@@ -657,8 +670,31 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // Page chrome (scale bar + title block) sits below the dimension band; the page
   // margins grow per-side so neither the chrome nor any dimension clips (shared with
   // the SVG/PDF backends via the one layoutChrome source).
-  const chrome = layoutChrome({ bounds: b, refDim, baseMargin: sizes.margin, nodes, title: ir.title, scale: ir.scale });
+  let chrome = layoutChrome({ bounds: b, refDim, baseMargin: sizes.margin, nodes, title: ir.title, scale: ir.scale });
   const m = chrome.margin;
+
+  // The page. Without a sheet it is the content box (drawing + grown margins) — the
+  // historical page, byte-for-byte. With a sheet it is the PAPER (paper mm × the scale
+  // denominator) and the content box is centred on it; if the laid-out content is
+  // bigger than the sheet (an authored scale we warned about with `W_SCALE_OVERFLOW`)
+  // the page grows to contain it, so a drawing is never clipped to make a sheet fit.
+  const content = { x: b.minX - m.left, y: b.minY - m.top, w: drawW + m.left + m.right, h: drawH + m.top + m.bottom };
+  let sheet: SceneSheet | undefined;
+  if (ir.sheet) {
+    const pageW = Math.max(ir.sheet.widthMm * ir.sheet.denom, content.w);
+    const pageH = Math.max(ir.sheet.heightMm * ir.sheet.denom, content.h);
+    const page = {
+      x: content.x + (content.w - pageW) / 2,
+      y: content.y + (content.h - pageH) / 2,
+      w: pageW,
+      h: pageH,
+    };
+    const grown = pageW > ir.sheet.widthMm * ir.sheet.denom || pageH > ir.sheet.heightMm * ir.sheet.denom;
+    sheet = { ...ir.sheet, page, grown };
+    // On a sheet the bottom chrome belongs in the sheet's corners, not beside the plan —
+    // but only when the corner band is provably clear of the drawing (see the helper).
+    chrome = anchorChromeToSheet(chrome, page, sizes.margin, content.y + content.h);
+  }
 
   // Opt-in diagnostic overlays (ADR 0008): appended AFTER all nodes and after chrome
   // layout, so the default Scene (no overlays) is byte-identical and the overlay never
@@ -668,8 +704,8 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   }
 
   return {
-    width: drawW + m.left + m.right,
-    height: drawH + m.top + m.bottom,
+    width: sheet ? sheet.page.w : content.w,
+    height: sheet ? sheet.page.h : content.h,
     bounds: b,
     nodes,
     theme,
@@ -680,6 +716,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     name: ir.name,
     hatches,
     chrome,
+    ...(sheet ? { sheet } : {}),
     // Opt-in accessibility metadata (ADR 0007 pattern): carry the accessible
     // <title>/<desc> text onto the Scene only when asked, so the SVG backend can emit
     // them. An explicit `accTitle`/`accDescr` (plan-level keywords) overrides the

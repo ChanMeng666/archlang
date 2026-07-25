@@ -7,6 +7,7 @@
 import type { Span } from "./diagnostics.js";
 import type { Comment } from "./lexer.js";
 import type { Expr } from "./expr.js";
+import type { PaperSpec } from "./sheet.js";
 import type { Theme } from "./theme.js";
 
 export interface Point {
@@ -485,8 +486,22 @@ export interface PlanNode {
   units: "mm";
   /** Snap module in mm; 0 disables snapping. */
   grid: number;
-  /** e.g. "1:50". */
+  /**
+   * `paper A1 [landscape|portrait]` — the sheet the drawing is issued on. Declaring it
+   * makes {@link scale} **operative**: every annotation size becomes a fixed number of
+   * millimetres on that sheet instead of a fraction of the drawing's own size. Absent
+   * (the default) → the historical reference-dimension sizing, byte-for-byte.
+   */
+  paper?: PaperSpec;
+  /** Byte span of the `paper` statement, for the sheet diagnostics. */
+  paperSpan?: Span;
+  /**
+   * e.g. "1:50". Annotation-only (a title-block row) on its own; with {@link paper} it
+   * is the operative drawing scale every size is derived from.
+   */
   scale?: string;
+  /** Byte span of the `scale` statement, for the sheet diagnostics. */
+  scaleSpan?: Span;
   north: NorthDir;
   /** `dims auto [overall|rooms|walls|all]` — synthesize dimension strings at render. */
   autoDims?: "overall" | "rooms" | "walls" | "all";

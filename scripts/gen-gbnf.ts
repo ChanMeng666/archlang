@@ -1,7 +1,8 @@
 /**
  * Generate `grammars/archlang.gbnf` — a GBNF constrained-decoding grammar for the
  * ArchLang language, from the one grammar source of truth (`src/grammar/tokens.ts`,
- * plus the `USE_KINDS` / `FURNITURE_ANCHORS` enum vocabularies in `src/ast.ts`).
+ * plus the `USE_KINDS` / `FURNITURE_ANCHORS` enum vocabularies in `src/ast.ts` and the
+ * `PAPER_SIZES` / `PAPER_ORIENTATIONS` sheet vocabularies in `src/sheet.ts`).
  *
  * The grammar is meant to be fed to a llama.cpp-style constrained sampler (the
  * `--grammar-file` flag / the `grammar` field on a server completion) so a model
@@ -32,6 +33,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { KEYWORDS, OPERATORS } from "../src/grammar/tokens.js";
 import { USE_KINDS, FURNITURE_ANCHORS } from "../src/ast.js";
+import { PAPER_ORIENTATIONS, PAPER_SIZES } from "../src/sheet.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
@@ -92,6 +94,8 @@ function rules(): [string, string][] {
   const elementKw = litAlt(KEYWORDS.element);
   const useKind = litAlt(USE_KINDS);
   const anchor = litAlt(FURNITURE_ANCHORS);
+  const paperSize = litAlt(PAPER_SIZES);
+  const paperOrientation = litAlt(PAPER_ORIENTATIONS);
 
   return [
     // ---- top level -------------------------------------------------------
@@ -107,9 +111,12 @@ function rules(): [string, string][] {
     ],
 
     // ---- plan settings ---------------------------------------------------
-    ["setting", `units-stmt | grid-stmt | scale-stmt | north-stmt | dims-stmt`],
+    ["setting", `units-stmt | grid-stmt | paper-stmt | scale-stmt | north-stmt | dims-stmt`],
     ["units-stmt", `"units" rws "mm"`],
     ["grid-stmt", `"grid" rws number`],
+    ["paper-stmt", `"paper" rws paper-size ( rws paper-orientation )?`],
+    ["paper-size", paperSize],
+    ["paper-orientation", paperOrientation],
     ["scale-stmt", `"scale" rws number ws ":" ws number`],
     ["north-stmt", `"north" rws north-dir`],
     ["north-dir", `"up" | "down" | "left" | "right" | number`],

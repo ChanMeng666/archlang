@@ -651,6 +651,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Swap the two endpoints — the machine-applicable fix does it for you — or negate the `offset`.",
     'dim (0,6000)->(7000,6000) offset -500 text "7000"   # warning: the -500 offset pulls the line back inside',
   ),
+  W_SCALE_OVERFLOW: W(
+    "W_SCALE_OVERFLOW",
+    "The drawing does not fit the declared paper at the declared scale.",
+    "The plan declares a `paper` size, so `scale` is operative: the building's outer-face extent has to fit the sheet minus its margins, the `dims auto` dimension bands and the bottom chrome band (scale bar + title block). At the scale in force it does not. Your scale is NEVER silently overridden — a drawing is issued at the scale printed in its own title block — so the page simply grows past the sheet to contain the whole drawing. Advisory: an oversize sheet you intend to trim or tile is legitimate.",
+    "Pick a coarser scale (a larger denominator draws the building smaller), move up a paper size, or drop the `scale` line and let the sheet auto-fit choose the finest scale from 1:50 / 1:100 / 1:200 / 1:500.",
+    "paper A4 landscape\nscale 1:50   # warning on a 20 m building: 1:100 or `paper A2` fits, or omit `scale` to auto-fit",
+  ),
 });
 
 /** All catalog codes, sorted (errors then warnings, alphabetically within). */

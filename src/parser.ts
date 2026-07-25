@@ -36,6 +36,8 @@ import { idToken } from "./identity.js";
 import type { ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
 import { STATEMENT_STARTS } from "./grammar/tokens.js";
+import type { PaperOrientation, PaperSize } from "./sheet.js";
+import { PAPER_ORIENTATIONS, PAPER_SIZES } from "./sheet.js";
 
 export interface ParseOutcome {
   plan?: PlanNode;
@@ -233,8 +235,11 @@ class Parser {
             this.next();
             plan.grid = this.eatNumber();
             break;
+          case "paper":
+            this.parsePaperSetting(plan, t);
+            break;
           case "scale":
-            this.parseScaleSetting(plan);
+            this.parseScaleSetting(plan, t);
             break;
           case "north":
             this.next();
@@ -352,12 +357,33 @@ class Parser {
     plan.units = "mm";
   }
 
-  private parseScaleSetting(plan: PlanNode): void {
+  private parseScaleSetting(plan: PlanNode, t: Token): void {
     this.next();
     const a = this.eatNumber();
     this.eat("colon");
     const b = this.eatNumber();
     plan.scale = `${a}:${b}`;
+    plan.scaleSpan = this.spanFrom(t.start);
+  }
+
+  /**
+   * `paper A4|A3|A2|A1|A0 [landscape|portrait]` — the sheet the drawing is issued on.
+   * Orientation defaults to `landscape` (floor plans are wide). Declaring `paper` makes
+   * `scale` operative; see `src/sheet.ts`.
+   */
+  private parsePaperSetting(plan: PlanNode, t: Token): void {
+    this.next();
+    const sizeTok = this.eatIdent();
+    const size = sizeTok.value.toUpperCase();
+    if (!(PAPER_SIZES as readonly string[]).includes(size)) {
+      this.fail(`Unknown paper size "${sizeTok.value}" (expected ${PAPER_SIZES.join("|")})`, sizeTok);
+    }
+    let orientation: PaperOrientation = "landscape";
+    if (this.isType("ident") && (PAPER_ORIENTATIONS as readonly string[]).includes(this.peek().value)) {
+      orientation = this.eatIdent().value as PaperOrientation;
+    }
+    plan.paper = { size: size as PaperSize, orientation };
+    plan.paperSpan = this.spanFrom(t.start);
   }
 
   private parseDimsSetting(plan: PlanNode, t: Token): void {

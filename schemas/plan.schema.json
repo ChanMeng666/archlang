@@ -32,7 +32,7 @@
     "scale": {
       "type": "string",
       "pattern": "^\\d+:\\d+$",
-      "description": "Drawing scale (annotation only), e.g. \"1:50\"."
+      "description": "Drawing scale, e.g. \"1:50\". Annotation only in Plan JSON — the operative-scale form needs a `paper` sheet, which is authored in .arch (see the language reference)."
     },
     "north": {
       "description": "North orientation: a cardinal keyword or an explicit bearing in degrees.",

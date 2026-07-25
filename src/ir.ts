@@ -38,7 +38,10 @@ import type { World } from "./world.js";
 import { NULL_WORLD } from "./world.js";
 import { idToken } from "./identity.js";
 import type { WallSegment } from "./geometry.js";
-import { segmentsOfWall, WallGrid } from "./geometry.js";
+import { outerFaceBounds, segmentsOfWall, WallGrid } from "./geometry.js";
+import { titleRows } from "./chrome-layout.js";
+import type { ResolvedSheet } from "./sheet.js";
+import { resolveSheetSpec } from "./sheet.js";
 import type { GridBox } from "./geometry/grid-index.js";
 import { GridIndex } from "./geometry/grid-index.js";
 import { rectsOverlap } from "./geometry/rect.js";
@@ -205,7 +208,18 @@ export interface ResolvedPlan {
   name: string;
   units: "mm";
   grid: number;
+  /**
+   * The EFFECTIVE scale, e.g. "1:50". With a `paper` declaration this is always set —
+   * either as authored or as auto-fit chose it — and it is what the title block and
+   * {@link sheet} report. Without `paper` it is the authored value (annotation only).
+   */
   scale?: string;
+  /**
+   * The resolved sheet (`paper …` + the operative scale denominator), or absent when
+   * the plan declares no `paper`. Computed once here so scene-build, `describe()` and
+   * the diagnostics can never disagree about which scale is in force. See `src/sheet.ts`.
+   */
+  sheet?: ResolvedSheet;
   north: NorthDir;
   /** `dims auto …` — synthesize dimension strings at scene-build (presentation only). */
   autoDims?: "overall" | "rooms" | "walls" | "all";
@@ -678,11 +692,20 @@ function resolveImpl(
     if (labelled.length > 0) axes = labelled;
   }
 
+  // 6. The sheet: resolve `paper` (+ the authored `scale`) into an operative scale
+  //    denominator, and report an overflow. Purely arithmetic over the extent already
+  //    computed above — no rendering, so `describe()` and `toScene()` both just read it.
+  const sheet = resolveSheet(ast, elements, walls, diagnostics);
+
   const ir: ResolvedPlan = {
     name: ast.name,
     units: ast.units,
     grid: ast.grid,
-    scale: ast.scale,
+    // With a sheet the EFFECTIVE scale is stamped in (auto-fit's choice when the author
+    // wrote none), so the title block, the scale bar and describe() all quote the scale
+    // the drawing was actually made at.
+    scale: sheet ? `1:${fmtDenom(sheet.denom)}` : ast.scale,
+    ...(sheet ? { sheet } : {}),
     north: ast.north,
     autoDims: ast.autoDims,
     ...(axes ? { axes } : {}),
@@ -700,6 +723,59 @@ function resolveImpl(
 }
 
 // ---- resolveImpl stages (pure moves — each does one job) -----------------------
+
+/** A scale denominator as it appears in `1:<denom>`: integral when it is whole. */
+function fmtDenom(d: number): string {
+  return Number.isInteger(d) ? String(d) : String(Number(d.toFixed(4)));
+}
+
+/**
+ * Resolve the plan's `paper` declaration into a {@link ResolvedSheet}, and raise the
+ * advisory `W_SCALE_OVERFLOW` when the building does not fit the sheet at the scale in
+ * force. Returns undefined for a plan with no `paper` — the historical
+ * reference-dimension sizing path, byte-for-byte unchanged.
+ *
+ * The fit is measured on the building's OUTER wall faces (what a builder and a GB/T
+ * overall dimension see), against the sheet minus its margins, the `dims auto` chain
+ * bands and the bottom chrome band — the one rule in `src/sheet.ts`.
+ *
+ * An authored `scale` is never overridden: an overflow is reported and the page grows
+ * to contain the drawing (scene-build), because silently re-scaling a drawing out from
+ * under the scale in its own title block would be a lie.
+ */
+function resolveSheet(
+  ast: PlanNode,
+  elements: ResolvedElement[],
+  walls: RWall[],
+  diagnostics: Diagnostic[],
+): ResolvedSheet | undefined {
+  if (!ast.paper) return undefined;
+  const rects = elements
+    .filter((e): e is RRoom => e.kind === "room")
+    .map((r) => ({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h }));
+  const ob = outerFaceBounds(walls, rects);
+  const extent = Number.isFinite(ob.minX) ? { w: ob.maxX - ob.minX, h: ob.maxY - ob.minY } : { w: 0, h: 0 };
+  // A sheet always carries a SCALE row (the effective scale is stamped in below), so the
+  // row count is scale-independent — pass a placeholder so the band reserved for the
+  // title block does not depend on which denominator we are testing.
+  const sheet = resolveSheetSpec(ast.paper, ast.scale, {
+    extent,
+    autoDims: ast.autoDims !== undefined,
+    titleRows: titleRows(ast.title, "1:1").length,
+  });
+  if (!sheet.fits) {
+    diagnostics.push({
+      severity: "warning",
+      code: "W_SCALE_OVERFLOW",
+      message:
+        `The drawing does not fit ${sheet.size} ${sheet.orientation} at 1:${fmtDenom(sheet.denom)} — ` +
+        `the building measures ${Math.round(extent.w)}×${Math.round(extent.h)} mm on its outer faces. ` +
+        `The page grows to contain it; use a larger sheet or a coarser scale.`,
+      span: ast.scaleSpan ?? ast.paperSpan,
+    });
+  }
+  return sheet;
+}
 
 /** Assign ids in registry order: explicit ids are checked for duplicates; missing
  *  ones get `<prefix>_<n>` numbered globally per kind, so auto-ids stay unique

@@ -55,6 +55,7 @@ export { format } from "./format.js";
 export { describe } from "./describe.js";
 export type {
   SceneSummary,
+  SheetSummary,
   RoomSummary,
   DoorSummary,
   WindowSummary,
@@ -204,10 +205,40 @@ export type {
 // a Scene: `toDxf(scene)` / `toPdf(scene)`; build one with `toScene(ir)` or read
 // `compile().scene`.
 export { toScene } from "./scene-build.js";
-export type { Scene, SceneNode, ScenePrim, Paint, RenderPass, RenderSizes, LineWeight, LineType } from "./scene.js";
 // Positioning axes (定位轴线): the GB/T numbering rules, exposed so a tool can label an
 // axis grid the same way the drawing does (`ir.axes` already carries the labels).
 export { numberAxes, axisLetter, AXIS_LETTERS } from "./axes.js";
+export type {
+  Scene,
+  SceneNode,
+  ScenePrim,
+  Paint,
+  RenderPass,
+  RenderSizes,
+  SceneSheet,
+  LineWeight,
+  LineType,
+} from "./scene.js";
+// Sheet layer (v1.20): `paper A1 landscape` makes `scale` OPERATIVE — every annotation
+// size becomes a fixed number of millimetres on the sheet × the scale denominator,
+// instead of a fraction of the drawing's own size. Pure arithmetic; a plan with no
+// `paper` never touches it and renders byte-identically. `sizesFromPaper` is the second
+// `RenderSizes` constructor; `chooseScaleDenominator` is the 4-candidate auto-fit.
+export {
+  AUTO_SCALE_DENOMINATORS,
+  chooseScaleDenominator,
+  fitsOnSheet,
+  PAPER_MM,
+  PAPER_ORIENTATIONS,
+  PAPER_SIZES,
+  paperMm,
+  resolveSheetSpec,
+  scaleDenominator,
+  SHEET_MM,
+  sizesFromPaper,
+  usablePlanMm,
+} from "./sheet.js";
+export type { PaperOrientation, PaperSize, PaperSpec, ResolvedSheet, SheetFitInput } from "./sheet.js";
 export { toDxf } from "./export/dxf.js";
 export { toPdf } from "./export/pdf.js";
 // PNG raster backend (v1.0). Rasterizes the Scene's SVG with the OPTIONAL,

@@ -34,7 +34,7 @@ const goldenPath = (name: string) => join(goldenDir, `${name}.png`);
 const GOLDEN_SCALE = 0.25;
 const UPDATE = process.env.UPDATE_GOLDENS === "1";
 
-const EXAMPLES = ["studio.arch", "two-bed.arch", "parametric.arch", "themed.arch", "relational.arch"];
+const EXAMPLES = ["studio.arch", "two-bed.arch", "parametric.arch", "themed.arch", "relational.arch", "museum.arch"];
 
 async function hasResvg(): Promise<boolean> {
   try {

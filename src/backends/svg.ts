@@ -127,6 +127,9 @@ function serialize(node: SceneNode, sizes: RenderSizes): string {
   }
 }
 
+/** Plan mm → sheet mm at a scale denominator (the page's physical size). */
+const sheetMm = (planMm: number, denom: number): number => planMm / denom;
+
 /** Serialize a {@link Scene} to a complete SVG document. */
 export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
   const THEME = scene.theme;
@@ -151,13 +154,25 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
       scale: scene.scale,
     });
   const m = chrome.margin;
-  const vbX = b.minX - m.left;
-  const vbY = b.minY - m.top;
-  const vbW = drawW + m.left + m.right;
-  const vbH = drawH + m.top + m.bottom;
+  // The viewBox is always the PAGE in plan mm. Without a sheet that is the drawing plus
+  // its grown margins (unchanged); with one it is the sheet's page rectangle, which the
+  // drawing is centred on (`src/sheet.ts`).
+  const page = scene.sheet?.page;
+  const vbX = page ? page.x : b.minX - m.left;
+  const vbY = page ? page.y : b.minY - m.top;
+  const vbW = page ? page.w : drawW + m.left + m.right;
+  const vbH = page ? page.h : drawH + m.top + m.bottom;
 
   const out: string[] = [];
-  const svgAttrs = opts.width ? `width="${fmt(opts.width)}" height="${fmt((opts.width * vbH) / vbW)}"` : "";
+  // Root size. An explicit `opts.width` always wins (a pixel box for an embedder). Else,
+  // on a sheet, the root carries the TRUE paper size in millimetres — so the file prints
+  // at its declared scale and a viewer opens it at sheet size. A plan with no `paper`
+  // emits no width/height at all, exactly as before (byte-identical).
+  const svgAttrs = opts.width
+    ? `width="${fmt(opts.width)}" height="${fmt((opts.width * vbH) / vbW)}"`
+    : scene.sheet
+      ? `width="${fmt(sheetMm(scene.sheet.page.w, scene.sheet.denom))}mm" height="${fmt(sheetMm(scene.sheet.page.h, scene.sheet.denom))}mm"`
+      : "";
   // Opt-in accessibility metadata (ADR 0007 pattern): a self-describing drawing for
   // assistive tech AND machine consumers. `role="img"` + `aria-labelledby` wire the
   // <title>/<desc> emitted just below to fixed, deterministic ids. Off by default →

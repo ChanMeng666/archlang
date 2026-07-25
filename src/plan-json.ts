@@ -853,6 +853,7 @@ export function astToJson(ast: PlanNode): object {
     name: ast.name,
     units: ast.units,
     grid: ast.grid,
+    ...(ast.paper ? { paper: ast.paper } : {}),
     ...(ast.scale !== undefined ? { scale: ast.scale } : {}),
     north: ast.north,
     ...(ast.autoDims !== undefined ? { autoDims: ast.autoDims } : {}),
@@ -1010,7 +1011,12 @@ export const PLAN_JSON_SCHEMA = {
     plan: { type: "string", description: "Plan name (shown in the title block)." },
     units: { const: "mm", description: "Distance unit. Only millimetres are supported." },
     grid: { type: "number", description: "Snap module in millimetres; 0 or omitted disables snapping." },
-    scale: { type: "string", pattern: "^\\d+:\\d+$", description: 'Drawing scale (annotation only), e.g. "1:50".' },
+    scale: {
+      type: "string",
+      pattern: "^\\d+:\\d+$",
+      description:
+        'Drawing scale, e.g. "1:50". Annotation only in Plan JSON — the operative-scale form needs a `paper` sheet, which is authored in .arch (see the language reference).',
+    },
     north: {
       description: "North orientation: a cardinal keyword or an explicit bearing in degrees.",
       oneOf: [
