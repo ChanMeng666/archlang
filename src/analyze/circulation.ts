@@ -5,9 +5,10 @@
  * building's entrance to each room, and along a few key functional routes.
  *
  * The model is a whole-plan **navigation grid** with the same discipline as
- * occupancy.ts (fixed cell size, integer cell coordinates, source-ordered seeds,
- * row-major iteration — never a float as a key). Three things make it a *walking*
- * model rather than a bare reachability one:
+ * occupancy.ts (one cell size for the whole plan — derived closed-form from its area by
+ * {@link navCellSizeMm}, so RESOLUTION rather than cell count is what is held steady —
+ * integer cell coordinates, source-ordered seeds, row-major iteration — never a float as
+ * a key). Three things make it a *walking* model rather than a bare reachability one:
  *
  *   - WALLS BLOCK, DOORS CARVE. Walls are rasterised as blocked cells (a wall thinner
  *     than a cell occupies no cell centre, so without this adjacent rooms would leak
@@ -49,11 +50,33 @@ import { matchesLivingDining } from "../vocabulary.js";
 /** Radius (mm) of the walking body obstacles are inflated by (clearance erosion). */
 export const DEFAULT_BODY_RADIUS_MM = 300;
 
-/** Target cell count over the whole plan; the cell grows for a large plan so the
- *  grid stays bounded regardless of size. */
-const TARGET_CELLS = 10_000;
+/**
+ * Nav-grid resolution. The knob is a **target cell SIZE bounded by a total cell
+ * BUDGET**, not a fixed cell count: `cell = max(MIN_CELL_MM, ceil(sqrt(area /
+ * MAX_CELLS)))`, so resolution scales with the plan's area instead of being divided
+ * out of it (ADR 0008 addendum). A fixed count made every measurement scale-relative —
+ * at 100 × 60 m the cell reached ~775 mm, so a 900 mm door was one cell, the 300 mm
+ * body-radius erosion was a third of a cell, and every clear width quantised to the
+ * same number: a compliant 1.8 m corridor and an illegal 0.9 m one read identically.
+ *
+ * `MIN_CELL_MM` keeps a dwelling at exactly the resolution it has always had (any plan
+ * up to MAX_CELLS · MIN_CELL_MM² = 2500 m² sits on 100 mm cells), and `MAX_CELLS` caps
+ * the work: total cells ≈ area / cell² ≤ MAX_CELLS whichever branch wins, so the budget
+ * alone bounds the grid and **no per-axis clamp is needed** — a per-axis cap would
+ * re-introduce exactly the scale-relative quantisation this replaces (it silently
+ * coarsened one axis of a long building).
+ */
 const MIN_CELL_MM = 100;
-const MAX_CELLS_PER_AXIS = 200;
+const MAX_CELLS = 250_000;
+
+/**
+ * The nav-grid cell size (mm) for a plan of `areaMm2` — the one place the whole-plan
+ * grid's resolution is decided. Closed-form, integral and monotonic in the area, so it
+ * is deterministic and stable: the same plan always grids the same way.
+ */
+export function navCellSizeMm(areaMm2: number): number {
+  return Math.max(MIN_CELL_MM, Math.ceil(Math.sqrt(areaMm2 / MAX_CELLS)));
+}
 
 /** Circulation facts for one room, measured from the building entrance. */
 export interface RoomCirculation {
@@ -163,38 +186,56 @@ function seedCell(g: NavGrid, at: Point, rb: BBox, roomIndex: number, tol: numbe
 }
 
 /**
- * Carve a walkable Manhattan path between two seeds through the wall band that
- * separates them, and record each carved cell's connector clear width in `clearAt`
- * (min when connectors overlap). Opens any cell that is not furniture-eroded (so it
- * reconnects rasterised wall cells) — the carved threshold is a ~1-cell slit whose
- * grid clearance is degenerate, so the recorded connector width is the honest number.
+ * The cells a Manhattan carve from seed `a` to seed `b` would open through the wall band
+ * that separates them — or null when the run meets a furniture-eroded cell, since we
+ * never carve through furniture. Pure: the caller applies the result, so a blocked
+ * attempt leaves no half-open slit behind and another threshold point can be tried.
  */
-function carve(
-  g: NavGrid,
-  eroded: Uint8Array,
-  a: number,
-  b: number,
-  clear: number,
-  clearAt: Map<number, number>,
-): void {
+function carvePath(g: NavGrid, eroded: Uint8Array, a: number, b: number): number[] | null {
   let ax = a % g.nx;
   let ay = (a - ax) / g.nx;
   const bx = b % g.nx;
   const by = (b - bx) / g.nx;
-  const open = (x: number, y: number): void => {
+  const cells: number[] = [];
+  const step = (x: number, y: number): boolean => {
     const k = y * g.nx + x;
-    if (eroded[k]) return; // never carve through furniture
-    g.free[k] = 1;
-    clearAt.set(k, Math.min(clearAt.get(k) ?? Infinity, clear));
+    if (eroded[k]) return false;
+    cells.push(k);
+    return true;
   };
   while (ax !== bx) {
     ax += ax < bx ? 1 : -1;
-    open(ax, ay);
+    if (!step(ax, ay)) return null;
   }
   while (ay !== by) {
     ay += ay < by ? 1 : -1;
-    open(ax, ay);
+    if (!step(ax, ay)) return null;
   }
+  return cells;
+}
+
+/**
+ * Threshold points to try across one connector's opening: its centre **first** (so any
+ * plan whose thresholds already carve is unaffected), then alternating outward along the
+ * wall in whole cells, bounded by the connector's own clear width.
+ *
+ * A connector is a WIDTH, not a point. While the cell was scale-relative that made no
+ * difference — the opening was about one cell wide — but at a real resolution a 4 m
+ * opening spans a couple of dozen cells, and a fixture parked across one half of it must
+ * not read as sealing the whole of it (the museum's servery covers 6 m of the cafe's 4 m
+ * threshold; the other half is walkable and now measures that way).
+ */
+function thresholdPoints(g: NavGrid, at: Point, rb: BBox, clear: number, tol: number): Point[] {
+  // The connector lies on a shared room edge; a horizontal edge means it spans in x.
+  const spansX = Math.abs(at.y - rb.y) <= tol || Math.abs(at.y - (rb.y + rb.h)) <= tol;
+  const steps = Math.floor(Math.max(0, clear / 2 - g.cell / 2) / g.cell);
+  const out: Point[] = [at];
+  for (let i = 1; i <= steps; i++) {
+    const d = i * g.cell;
+    out.push(spansX ? { x: at.x + d, y: at.y } : { x: at.x, y: at.y + d });
+    out.push(spansX ? { x: at.x - d, y: at.y } : { x: at.x, y: at.y - d });
+  }
+  return out;
 }
 
 /** 4-connected uniform-cost BFS from `source`; returns hop distance + parent. */
@@ -256,9 +297,15 @@ function widestBottleneck(g: NavGrid, sources: number[], seed: number, pinch?: I
   // Binary max-heap over (key = bottleneck-so-far, cell), on parallel arrays.
   const hk: number[] = [];
   const hv: number[] = [];
+  // Plain temp swaps, not destructuring: a `[a,b]=[b,a]` here allocates an array per
+  // swap, which at the grid's cell budget is the single hottest allocation in analysis.
   const swap = (i: number, j: number): void => {
-    [hk[i], hk[j]] = [hk[j]!, hk[i]!];
-    [hv[i], hv[j]] = [hv[j]!, hv[i]!];
+    const tk = hk[i]!;
+    hk[i] = hk[j]!;
+    hk[j] = tk;
+    const tv = hv[i]!;
+    hv[i] = hv[j]!;
+    hv[j] = tv;
   };
   const push = (key: number, cell: number): void => {
     hk.push(key);
@@ -362,12 +409,7 @@ function buildGrid(
   const H = maxY - minY;
   if (W <= 0 || H <= 0) return null;
 
-  const cell = Math.max(
-    MIN_CELL_MM,
-    Math.ceil(Math.sqrt((W * H) / TARGET_CELLS)),
-    Math.ceil(W / MAX_CELLS_PER_AXIS),
-    Math.ceil(H / MAX_CELLS_PER_AXIS),
-  );
+  const cell = navCellSizeMm(W * H);
   const nx = Math.max(1, Math.ceil(W / cell));
   const ny = Math.max(1, Math.ceil(H / cell));
 
@@ -378,35 +420,52 @@ function buildGrid(
   const g: NavGrid = { minX, minY, cell, nx, ny, free, roomIdx, clearMm: new Float64Array(nx * ny) };
   const furnObstacle: number[] = []; // in-room cells eroded by furniture (clearance seeds)
 
-  for (let iy = 0; iy < ny; iy++) {
-    for (let ix = 0; ix < nx; ix++) {
-      const cx = minX + (ix + 0.5) * cell;
+  /** Cell-index window covering an mm range, widened by one so a boundary cell centre
+   *  is never missed — the exact containment test still runs per cell. */
+  const window = (lo: number, hi: number, origin: number, n: number): [number, number] => [
+    Math.max(0, Math.floor((lo - origin) / cell) - 1),
+    Math.min(n - 1, Math.ceil((hi - origin) / cell)),
+  ];
+
+  // Each cell takes the FIRST room (source order) whose closed rect holds its centre.
+  // Filling per-rect in REVERSE source order — so an earlier room overwrites a later
+  // one where they touch — is equivalent to the per-cell "first match wins" scan, but
+  // costs O(sum of room areas) instead of O(cells × rooms). At the grid's cell budget
+  // that is the difference between usable and unusable.
+  for (let j = rects.length - 1; j >= 0; j--) {
+    const rb = rects[j]!;
+    const [ix0, ix1] = window(rb.x, rb.x + rb.w, minX, nx);
+    const [iy0, iy1] = window(rb.y, rb.y + rb.h, minY, ny);
+    for (let iy = iy0; iy <= iy1; iy++) {
       const cy = minY + (iy + 0.5) * cell;
-      let ri = -1;
-      for (let j = 0; j < rects.length; j++) {
-        if (pointInRect(cx, cy, rects[j]!)) {
-          ri = j;
-          break; // first room in source order wins (rooms normally do not overlap)
-        }
-      }
-      const k = iy * nx + ix;
-      roomIdx[k] = ri;
-      if (ri < 0) continue; // outside every room → wall / exterior, blocked
-      let blocked = false;
-      for (const fr of furnRects) {
-        if (distPointToRect(cx, cy, fr) <= bodyRadius) {
-          blocked = true;
-          break;
-        }
-      }
-      if (blocked) {
-        eroded[k] = 1;
-        furnObstacle.push(k); // in-room, eroded by furniture — a real squeeze
-      } else {
-        free[k] = 1;
+      for (let ix = ix0; ix <= ix1; ix++) {
+        if (pointInRect(minX + (ix + 0.5) * cell, cy, rb)) roomIdx[iy * nx + ix] = j;
       }
     }
   }
+  // Every in-room cell starts walkable; the erosion below takes cells back.
+  for (let k = 0; k < roomIdx.length; k++) if (roomIdx[k]! >= 0) free[k] = 1;
+
+  // Clearance erosion, scanned per furniture piece over its body-radius-inflated bbox
+  // rather than per cell over every piece — the same predicate on the same cells.
+  for (const fr of furnRects) {
+    const [ix0, ix1] = window(fr.x - bodyRadius, fr.x + fr.w + bodyRadius, minX, nx);
+    const [iy0, iy1] = window(fr.y - bodyRadius, fr.y + fr.h + bodyRadius, minY, ny);
+    for (let iy = iy0; iy <= iy1; iy++) {
+      const cy = minY + (iy + 0.5) * cell;
+      for (let ix = ix0; ix <= ix1; ix++) {
+        const k = iy * nx + ix;
+        if (roomIdx[k]! < 0 || eroded[k]) continue; // outside every room, or already eroded
+        if (distPointToRect(minX + (ix + 0.5) * cell, cy, fr) <= bodyRadius) {
+          eroded[k] = 1;
+          free[k] = 0;
+        }
+      }
+    }
+  }
+  // Row-major, exactly as the old single pass collected them. The distance transform
+  // below is a multi-source BFS, so its result is seed-order independent anyway.
+  for (let k = 0; k < eroded.length; k++) if (eroded[k]) furnObstacle.push(k);
 
   // Rasterise walls as blocked cells so adjacent rooms don't leak into each other
   // across a shared partition (a wall thinner than a cell occupies no cell centre);
@@ -444,9 +503,30 @@ function buildGrid(
     const ai = roomIndexById.get(c.between[0]);
     const bi = roomIndexById.get(c.between[1]);
     if (ai === undefined || bi === undefined) continue; // exterior / unknown endpoint
-    const a = seedCell(g, c.at, rects[ai]!, ai, tol);
-    const b = seedCell(g, c.at, rects[bi]!, bi, tol);
-    if (a >= 0 && b >= 0) carve(g, eroded, a, b, c.clear, clearAt);
+    const pathAt = (at: Point): number[] | null => {
+      const a = seedCell(g, at, rects[ai]!, ai, tol);
+      const b = seedCell(g, at, rects[bi]!, bi, tol);
+      return a < 0 || b < 0 ? null : carvePath(g, eroded, a, b);
+    };
+    const apply = (path: number[]): void => {
+      for (const k of path) {
+        g.free[k] = 1;
+        clearAt.set(k, Math.min(clearAt.get(k) ?? Infinity, c.clear));
+      }
+    };
+    const points = thresholdPoints(g, c.at, rects[ai]!, c.clear, tol);
+    const centre = pathAt(points[0]!);
+    if (centre) {
+      apply(centre); // the canonical one-cell threshold slit at the opening's centre
+      continue;
+    }
+    // The centre of the opening is sealed by furniture. Carve every part of the rest of
+    // its width that IS walkable, so a fixture across half a wide threshold narrows the
+    // way (the widest path then finds the clear half) instead of closing the room off.
+    for (let i = 1; i < points.length; i++) {
+      const p = pathAt(points[i]!);
+      if (p) apply(p);
+    }
   }
 
   // Clearance comes from distance to FURNITURE, not to walls: inside a room you walk

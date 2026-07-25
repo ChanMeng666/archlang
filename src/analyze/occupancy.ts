@@ -8,8 +8,9 @@
  * cells from the room's doorways and measure how much clear floor the entrance can
  * actually reach. (Door *swing* arcs are deliberately NOT occupancy here — the leaf
  * opens flat against a wall and you stand in the doorway to enter; swing clearance is
- * its own rule, `W_SWING_OBSTRUCTED`.) Pure and deterministic: fixed cell size, integer
- * cell coordinates, source-ordered seeds, row-major iteration — no floats as keys.
+ * its own rule, `W_SWING_OBSTRUCTED`.) Pure and deterministic: one cell size per room,
+ * derived closed-form from that room's area by {@link roomCellSizeMm}, integer cell
+ * coordinates, source-ordered seeds, row-major iteration — no floats as keys.
  *
  * It computes a **fact** (reachable clear floor area); the lint rule decides whether
  * that is too little. It never moves anything — see ADR 0006.
@@ -29,11 +30,29 @@ export interface RoomClearance {
   totalClearAreaM2: number;
 }
 
-/** Target ~cell count per room; the cell size grows for large rooms so the grid
- *  stays bounded (and fast) regardless of plan size. */
-const TARGET_CELLS = 2500;
+/**
+ * Occupancy-grid resolution, the per-room counterpart of the whole-plan nav grid's
+ * budget (`circulation.ts`, ADR 0008 addendum): the knob is a target cell **size**
+ * bounded by a total cell **budget**, `cell = max(MIN_CELL_MM, ceil(sqrt(roomArea /
+ * MAX_CELLS_ROOM)))`, so a big room is measured at the same resolution as a small one
+ * instead of having a fixed cell count divided out of its area. A fixed count made a
+ * 26 × 26 m gallery grid at ~520 mm, where blocking is "is the cell CENTRE inside the
+ * footprint" — a 600 mm-deep counter could fall between two centres and vanish.
+ *
+ * `MIN_CELL_MM` keeps every room up to MAX_CELLS_ROOM · MIN_CELL_MM² = 250 m² on the
+ * 100 mm cells it has always used, and the budget alone bounds the work (nx·ny ≤
+ * roomArea / cell² ≤ MAX_CELLS_ROOM), so no per-axis clamp is needed.
+ */
 const MIN_CELL_MM = 100;
-const MAX_CELLS_PER_AXIS = 200;
+const MAX_CELLS_ROOM = 25_000;
+
+/**
+ * The occupancy-grid cell size (mm) for a room of `areaMm2`. Closed-form, integral and
+ * monotonic in the area — the same room always grids the same way.
+ */
+export function roomCellSizeMm(areaMm2: number): number {
+  return Math.max(MIN_CELL_MM, Math.ceil(Math.sqrt(areaMm2 / MAX_CELLS_ROOM)));
+}
 
 /**
  * Compute, per room, how much clear floor its doorways can reach. Deterministic and
@@ -60,36 +79,38 @@ export function computeRoomClearances(
       return { roomId: r.id, hasConnector: false, reachableClearAreaM2: 0, totalClearAreaM2: 0 };
     }
 
-    // Cell size: aim for ~TARGET_CELLS cells, never finer than MIN_CELL_MM, and clamp
-    // the per-axis count so a huge room can't blow up the grid.
-    const ideal = Math.sqrt((rb.w * rb.h) / TARGET_CELLS);
-    const cell = Math.max(MIN_CELL_MM, Math.ceil(ideal));
-    const nx = Math.min(MAX_CELLS_PER_AXIS, Math.max(1, Math.floor(rb.w / cell)));
-    const ny = Math.min(MAX_CELLS_PER_AXIS, Math.max(1, Math.floor(rb.h / cell)));
+    // Cell size: never coarser than the room's area budget asks for, never finer than
+    // MIN_CELL_MM. The cell is then stretched to tile the room exactly (cellW/cellH),
+    // so the measured areas still sum to the room's own area.
+    const cell = roomCellSizeMm(rb.w * rb.h);
+    const nx = Math.max(1, Math.floor(rb.w / cell));
+    const ny = Math.max(1, Math.floor(rb.h / cell));
     const cellW = rb.w / nx;
     const cellH = rb.h / ny;
     const area1 = (cellW * cellH) / 1_000_000;
 
     // free[iy*nx+ix] — true when the cell centre is clear of every furniture footprint.
-    const free = new Uint8Array(nx * ny);
-    let totalFree = 0;
-    for (let iy = 0; iy < ny; iy++) {
-      for (let ix = 0; ix < nx; ix++) {
-        const cx = rb.x + (ix + 0.5) * cellW;
+    // Every cell starts free and each piece then clears the cells inside its own bbox
+    // window (the exact containment test still runs per cell, widened by one so a
+    // boundary centre is never missed). Same predicate on the same cells as a per-cell
+    // scan over every piece, but O(cells + covered) instead of O(cells × pieces) —
+    // which is what makes the finer, area-budgeted grid affordable.
+    const free = new Uint8Array(nx * ny).fill(1);
+    for (const fr of furnRects) {
+      const ix0 = Math.max(0, Math.floor((fr.x - rb.x) / cellW) - 1);
+      const ix1 = Math.min(nx - 1, Math.ceil((fr.x + fr.w - rb.x) / cellW));
+      const iy0 = Math.max(0, Math.floor((fr.y - rb.y) / cellH) - 1);
+      const iy1 = Math.min(ny - 1, Math.ceil((fr.y + fr.h - rb.y) / cellH));
+      for (let iy = iy0; iy <= iy1; iy++) {
         const cy = rb.y + (iy + 0.5) * cellH;
-        let blocked = false;
-        for (const fr of furnRects) {
-          if (pointInRect(cx, cy, fr)) {
-            blocked = true;
-            break;
-          }
-        }
-        if (!blocked) {
-          free[iy * nx + ix] = 1;
-          totalFree++;
+        for (let ix = ix0; ix <= ix1; ix++) {
+          const k = iy * nx + ix;
+          if (free[k] && pointInRect(rb.x + (ix + 0.5) * cellW, cy, fr)) free[k] = 0;
         }
       }
     }
+    let totalFree = 0;
+    for (let k = 0; k < free.length; k++) if (free[k]) totalFree++;
 
     // Seed BFS from the doorway. The connector sits on a room edge, so step inward
     // (perpendicular to that edge) to the first free cell — a doorway whose whole
