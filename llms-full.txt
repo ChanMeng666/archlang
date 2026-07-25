@@ -63,7 +63,7 @@ door [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]
 window [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # same two placement forms as door
 opening [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # a leaf-less cased opening (gap in a wall) that still connects the two spaces in the access graph
 furniture <category> [id=<name>] (at (x,y) | against wall <id> [segment <n>] [offset <mm>] [side left|right] | in <roomId> centered | in <roomId> anchor <a> [flush] [inset <mm>]) [size <W>x<H>] [label "…"] [rotate 0|90|180|270] [in <roomId>]   # `at` size is plan W×H; `against` size is wall-relative along×depth and derives position+rotation, with `side` inferred from `in <roomId>` when omitted; a known fixture (wc/basin/shower/bathtub/kitchen_sink/counter/stove/fridge…) `against wall` may omit `size` to use its catalogued footprint. `anchor <a>` is top-left|top|top-right|left|center|right|bottom-left|bottom|bottom-right; `inset` (default 0) pulls it in from that edge, measured from the room rectangle (a wall CENTERLINE) — add `flush` to measure from the backing wall's inner FACE instead, so `anchor bottom flush` sits on the plaster with no half-thickness arithmetic (`flush` needs an anchored edge: it is E_FURN_FLUSH on `centered`/`anchor center`)
-dim (x,y)->(x,y) offset <mm> [text "…"]   # a dimension line
+dim [faces|clear] (x,y)->(x,y) offset <mm> [text "…"]   # a dimension line. Endpoint ORDER + the offset sign choose which side it lands on (the offset runs along the LEFT normal of from→to), so a reversed pair draws it INSIDE the building — `W_DIM_INSIDE`. `faces` pushes each endpoint out onto the wall it runs into (a true outside-to-outside span, no half-thickness arithmetic); `clear` pulls both in to the inner faces (a clear width). Or skip hand dims entirely: `dims auto all` draws the GB/T openings + axis + overall chains outside every dimensioned facade
 column [id=<name>] at (x,y) size <W>x<H>
 strip <right|left|down|up> at (x,y) gap <mm> [height|width <mm>] { room [id=<id>] size <main>[x<cross>] [label "…"] [uses …] … }   # a row/column of rooms laid end to end: each room's offset is the running sum of the previous extents + gap, and the shared cross dimension is the strip's height (right/left) or width (down/up). Pure sugar — expands to absolute rooms. Plan-level block only
 ```
@@ -83,7 +83,7 @@ strip <right|left|down|up> at (x,y) gap <mm> [height|width <mm>] { room [id=<id>
 (Elements are fully specced above; these are the rest.)
 
 - **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`, `strip`
-- **Attributes:** `units`, `grid`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`, `on`, `into`, `near`, `anchor`, `inset`, `flush`, `height`
+- **Attributes:** `units`, `grid`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`, `on`, `into`, `near`, `anchor`, `inset`, `flush`, `height`, `faces`, `clear`
 - **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `centered`, `start`, `end`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `auto`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`
 
 ## CLI loop (how an agent drives it)
@@ -600,7 +600,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**52 errors** (abort rendering) · **33 warnings** (advisory; `validate --strict` fails on them too).
+**52 errors** (abort rendering) · **35 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -663,6 +663,8 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `W_BATH_VIA_BEDROOM` — Bathroom is reachable only through a bedroom. **Fix:** Add a door connecting the bathroom to a hall/living space, or route circulation so it is not reached only via a bedroom.
 - `W_BEDROOM_NO_WINDOW` — Bedroom has no window. **Fix:** Add a `window` on an exterior wall of the room.
 - `W_CIRCUITOUS_PATH` — A room is reached by a very roundabout path. **Fix:** Add a more direct connection — a door or a hall — so the room is not reached the long way round.
+- `W_DIM_INSIDE` — A hand-written dimension line lands inside the building. **Fix:** Swap the two endpoints — the machine-applicable fix does it for you — or negate the `offset`.
+- `W_DIM_NO_WALL` — A `dim faces`/`dim clear` endpoint has no wall to measure to. **Fix:** Put the endpoint on the centerline of the wall the dimension runs into (the room-rectangle corner coordinate), or drop the `faces`/`clear` keyword and write the face coordinate yourself.
 - `W_DOOR_CLEARANCE` — Door is narrower than the minimum clear width. **Fix:** Widen the door to at least the minimum clear width.
 - `W_DOOR_OFF_WALL` — Door does not lie on any wall. **Fix:** Move the door onto a wall, or name its host with `wall <id|category>`. The diagnostic points at the nearest wall.
 - `W_DOORWAY_BLOCKED` — A doorway's landing is blocked. **Fix:** Clear the space directly in front of and behind the door, or move the door.

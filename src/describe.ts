@@ -40,6 +40,7 @@ import {
   type AccessGraph,
   type BBox,
 } from "./analyze.js";
+import { outerFaceBounds } from "./geometry.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
 import { roomTypeForUses, buildInputGraph } from "./plan-json.js";
 import { fmt2 } from "./num-format.js";
@@ -166,8 +167,21 @@ export interface SceneSummary {
   accDescr?: string;
   units: "mm";
   scale?: string;
-  /** Overall drawing extent in mm. */
+  /**
+   * Overall drawing extent in mm, measured on wall **centerlines** (the union of raw
+   * wall points and room rectangles). This is the coordinate space the source is
+   * written in — a room's `at`/`size`, a door's `at`, a wall point — so it is the
+   * number to reason with when placing elements. Normative and unchanged.
+   */
   bbox: { w: number; h: number };
+  /**
+   * Overall extent in mm measured on the **outer wall faces** — the building as a
+   * builder or a GB/T overall dimension sees it: `bbox` plus half a wall thickness at
+   * each end (a 7000×6000 centerline plan inside a 200 shell is 7200×6200 outside).
+   * This is what `dims auto`'s outermost chain prints. Use `bbox` for authoring
+   * coordinates and `bbox_outer` when quoting the building's size.
+   */
+  bbox_outer: { w: number; h: number };
   rooms: RoomSummary[];
   doors: DoorSummary[];
   windows: WindowSummary[];
@@ -455,6 +469,11 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     ext(rect.x + rect.w, rect.y + rect.h);
   }
   const bbox = minX === Infinity ? { w: 0, h: 0 } : { w: maxX - minX, h: maxY - minY };
+  // Outer-face extent: the same union taken over each wall's OFFSET rectangle, so the
+  // box lands on the wall faces rather than their centerlines (the shared helper the
+  // `dims auto` overall chain measures with).
+  const ob = outerFaceBounds(ir.walls, [...roomRects.values()]);
+  const bbox_outer = Number.isFinite(ob.minX) ? { w: ob.maxX - ob.minX, h: ob.maxY - ob.minY } : { w: 0, h: 0 };
 
   const floorArea = r2(rooms.reduce((s, r) => s + r.area_m2, 0));
   const totals = { rooms: rooms.length, doors: doors.length, windows: windows.length, floor_area_m2: floorArea };
@@ -467,6 +486,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     units: ir.units,
     ...(ir.scale !== undefined ? { scale: ir.scale } : {}),
     bbox,
+    bbox_outer,
     rooms,
     doors,
     windows,
@@ -500,6 +520,7 @@ export function describe(source: string, opts: DescribeOptions = {}): SceneSumma
       caption: "",
       units: "mm",
       bbox: { w: 0, h: 0 },
+      bbox_outer: { w: 0, h: 0 },
       rooms: [],
       doors: [],
       windows: [],

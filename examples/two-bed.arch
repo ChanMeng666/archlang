@@ -28,8 +28,13 @@ plan "Two-Bedroom Flat" {
   furniture bed at (5000,300) size 1800x2100 label "Bed"
   furniture bed at (300,5300) size 1400x2000 label "Bed"
 
-  dim (0,8000)->(10000,8000) offset 700 text "10000"
-  dim (0,0)->(0,8000) offset 700 text "8000"
+  # Overall extents, outside face to outside face: `faces` pushes each endpoint out
+  # onto the wall it runs into, so the printed span is the true 10300 × 8300 the
+  # building measures — the 10000 × 8000 room grid plus half the shell at each end,
+  # and note the shell is 300 not 250 here because `grid 100` snaps the thickness.
+  # Exactly the arithmetic a hand-written `text` gets wrong (it used to say 10000).
+  dim faces (0,8000)->(10000,8000) offset 700
+  dim faces (0,0)->(0,8000) offset 700
 
   title {
     project "Two-Bedroom Flat"

@@ -7,6 +7,7 @@
 import type { LintRule } from "../context.js";
 import { aliasMatch } from "./alias-match.js";
 import { roomNoClearPath } from "./circulation.js";
+import { dimInside } from "./dims.js";
 import { circuitousPath, pathTooNarrow } from "./circulation-facts.js";
 import { doorClearance, doorwayBlocked, swingObstructed } from "./doors.js";
 import { noEntrance } from "./entrance.js";
@@ -44,6 +45,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // Orientation advisory: a fixture standing on a wall but facing the wrong way.
   // Appended last, again to leave every existing plan's diagnostic ORDER unchanged.
   fixtureBackToRoom,
+  // Annotation advisory: a hand-written dimension line reading inside the building.
+  // Appended last for the same reason.
+  dimInside,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

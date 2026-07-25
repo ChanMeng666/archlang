@@ -36,6 +36,7 @@ matter — run it yourself for the full object):
   "scale": "1:50",
   "caption": "\"Studio 1BR\" — a 4-room floor plan, 42 m² total: Living / Kitchen (24 m²), Bath (4.8 m²), …; 3 doors, 3 windows, entrance via d_main.",
   "bbox": { "w": 7000, "h": 6000 },
+  "bbox_outer": { "w": 7200, "h": 6200 },
   "rooms": [
     {
       "id": "r_living",
@@ -76,6 +77,8 @@ matter — run it yourself for the full object):
 | Field | Meaning |
 |-------|---------|
 | `caption` | one deterministic sentence summarising the whole plan (room count, total area, the rooms and their areas, door/window counts, entrance) — **always present**, composed only from the fields above so it never diverges from them |
+| `bbox` | overall extent on wall **centerlines** — the coordinate space the source is written in (room `at`/`size`, wall points), so this is the number to compute *with* |
+| `bbox_outer` | overall extent on the **outer wall faces** — `bbox` plus half a wall thickness at each end (7000×6000 inside a 200 shell is 7200×6200 outside). What a builder measures, what `dims auto`'s overall chain prints, and what to quote when someone asks how big the building is |
 | `rooms[].uses` | the room's [`uses` tags](language-reference.md#room) (or the inferred kind when none were authored) |
 | `rooms[].area_m2` | floor area, `w × h ÷ 1 000 000`, rounded to 2 dp |
 | `rooms[].adjacent` | ids of rooms whose walls touch this one within tolerance (a shared corner alone doesn't count) |
@@ -91,7 +94,7 @@ On a large plan the whole summary can be more than you want to read. Two flags b
 it at the source: `--select rooms,totals` emits only those top-level keys (the
 `ok`/`plan`/`units`/`diagnostics` envelope is always kept), and `--room r_bath,r_hall`
 keeps only those rooms and the doors, windows, openings and furniture that touch them
-(plan-level facts — `bbox`, `totals`, `caption` — stay whole-plan).
+(plan-level facts — `bbox`, `bbox_outer`, `totals`, `caption` — stay whole-plan).
 
 ```
 arch describe plan.arch --select rooms,totals --json

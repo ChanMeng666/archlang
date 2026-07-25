@@ -637,6 +637,20 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Add an explicit `uses …` to the room stating the inferred function — the machine-applicable fix inserts it for you. This pins the classification without changing the room's `describe()` type.",
     'room at (0,0) size 2000x1500 label "Powder"   # warning: WC inferred from the alias "powder"; add `uses wc`',
   ),
+  W_DIM_NO_WALL: W(
+    "W_DIM_NO_WALL",
+    "A `dim faces`/`dim clear` endpoint has no wall to measure to.",
+    "The endpoint-projection forms push each endpoint onto the FACE of the wall the measurement runs into, found as the nearest wall segment perpendicular to the dimension's own direction. One (or both) endpoints has no such wall within tolerance — the point is off the wall centerline, the wall is angled, or the plan has no wall there — so there is no face to project onto and the written point is measured as-is.",
+    "Put the endpoint on the centerline of the wall the dimension runs into (the room-rectangle corner coordinate), or drop the `faces`/`clear` keyword and write the face coordinate yourself.",
+    "wall exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }\ndim faces (0,9000)->(5000,9000) offset 600   # warning: nothing to project onto at y9000",
+  ),
+  W_DIM_INSIDE: W(
+    "W_DIM_INSIDE",
+    "A hand-written dimension line lands inside the building.",
+    "A `dim`'s line is drawn at `offset` along the LEFT normal of from→to, so the ENDPOINT ORDER chooses which side it lands on. This dimension's line (not its witness lines) falls inside the room-extents bounding box, where it crosses room labels, furniture and poché instead of reading in the page margin. Almost always the endpoints are simply the wrong way round. Advisory: an interior dimension you actually want (a clear width inside a room) is legitimate — reverse it or leave the warning.",
+    "Swap the two endpoints — the machine-applicable fix does it for you — or negate the `offset`.",
+    'dim (0,6000)->(7000,6000) offset -500 text "7000"   # warning: the -500 offset pulls the line back inside',
+  ),
 });
 
 /** All catalog codes, sorted (errors then warnings, alphabetically within). */

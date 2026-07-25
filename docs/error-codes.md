@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**52 errors** · **33 warnings**
+**52 errors** · **35 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -65,6 +65,8 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_BATH_VIA_BEDROOM`](#w_bath_via_bedroom) | warning | Bathroom is reachable only through a bedroom. |
 | [`W_BEDROOM_NO_WINDOW`](#w_bedroom_no_window) | warning | Bedroom has no window. |
 | [`W_CIRCUITOUS_PATH`](#w_circuitous_path) | warning | A room is reached by a very roundabout path. |
+| [`W_DIM_INSIDE`](#w_dim_inside) | warning | A hand-written dimension line lands inside the building. |
+| [`W_DIM_NO_WALL`](#w_dim_no_wall) | warning | A `dim faces`/`dim clear` endpoint has no wall to measure to. |
 | [`W_DOOR_CLEARANCE`](#w_door_clearance) | warning | Door is narrower than the minimum clear width. |
 | [`W_DOOR_OFF_WALL`](#w_door_off_wall) | warning | Door does not lie on any wall. |
 | [`W_DOORWAY_BLOCKED`](#w_doorway_blocked) | warning | A doorway's landing is blocked. |
@@ -771,6 +773,31 @@ room at (0,0) size 3000x4000 label "Bedroom"   # lint: no window
 
 ```arch
 room id=bed at (0,0) size 3000x3000 label "Bed"   # only door is on the far side, forcing a long detour
+```
+
+## W_DIM_INSIDE
+
+*warning* — A hand-written dimension line lands inside the building.
+
+**Cause.** A `dim`'s line is drawn at `offset` along the LEFT normal of from→to, so the ENDPOINT ORDER chooses which side it lands on. This dimension's line (not its witness lines) falls inside the room-extents bounding box, where it crosses room labels, furniture and poché instead of reading in the page margin. Almost always the endpoints are simply the wrong way round. Advisory: an interior dimension you actually want (a clear width inside a room) is legitimate — reverse it or leave the warning.
+
+**Fix.** Swap the two endpoints — the machine-applicable fix does it for you — or negate the `offset`.
+
+```arch
+dim (0,6000)->(7000,6000) offset -500 text "7000"   # warning: the -500 offset pulls the line back inside
+```
+
+## W_DIM_NO_WALL
+
+*warning* — A `dim faces`/`dim clear` endpoint has no wall to measure to.
+
+**Cause.** The endpoint-projection forms push each endpoint onto the FACE of the wall the measurement runs into, found as the nearest wall segment perpendicular to the dimension's own direction. One (or both) endpoints has no such wall within tolerance — the point is off the wall centerline, the wall is angled, or the plan has no wall there — so there is no face to project onto and the written point is measured as-is.
+
+**Fix.** Put the endpoint on the centerline of the wall the dimension runs into (the room-rectangle corner coordinate), or drop the `faces`/`clear` keyword and write the face coordinate yourself.
+
+```arch
+wall exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }
+dim faces (0,9000)->(5000,9000) offset 600   # warning: nothing to project onto at y9000
 ```
 
 ## W_DOOR_CLEARANCE

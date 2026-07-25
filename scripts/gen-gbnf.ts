@@ -181,7 +181,8 @@ function rules(): [string, string][] {
     ["in-place", `"centered" | "anchor" rws anchor ( ws "flush" )? ( ws "inset" ws expr )?`],
     ["anchor", anchor],
     ["furn-clause", `"size" ws dims | "label" ws string | "rotate" ws expr | "in" rws ident`],
-    ["dim-stmt", `"dim" ws point ws "->" ws point ( ws "offset" ws expr )? ( ws "text" ws string )?`],
+    ["dim-stmt", `"dim" ( rws dim-ref )? ws point ws "->" ws point ( ws "offset" ws expr )? ( ws "text" ws string )?`],
+    ["dim-ref", `"faces" | "clear"`],
     ["column-stmt", `"column" rws id-opt "at" ws point ws "size" ws dims`],
 
     // ---- shared clause pieces -------------------------------------------
