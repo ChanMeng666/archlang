@@ -46,6 +46,9 @@ const CONTROL_KW: Record<string, string> = {
   if: "Conditionally expand a body: `if <cond> { … } else { … }`.",
   while: "Expand a body while a condition holds (bounded).",
   set: "Scoped default overrides for an element kind: `set door(swing: out)`.",
+  place:
+    "Instantiate a component as an addressable instance: `place wing() as west at (0,0) [rotate 90] [mirror x]`. " +
+    "The body is authored in LOCAL coordinates from (0,0); ids inside become `west.<id>`.",
   else: "The alternative branch of an `if`.",
   in: "Separates the loop variable from its iterable in a `for`.",
 };
