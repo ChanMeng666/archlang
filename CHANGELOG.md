@@ -7,7 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.0] - 2026-07-26
+
 ### Added
+
+- **`zone <id> ["Label"] { … }` — declarative wing / department / phase grouping.** A large brief
+  does not talk about rooms, it talks about *the west wing*, *the clinical block*, *phase 2* — and
+  until now the language had no word for that. `zone` is a purely **lexical** container with **zero
+  geometric semantics**: everything inside resolves exactly as if the wrapper were deleted (same
+  coordinates, same ids, same auto-id numbering, same `let`/`set` visibility — a zone is
+  deliberately **not** a scope), so **wrapping a plan in zones compiles to byte-identical SVG**.
+
+  ```
+  zone west "West Wing" {
+    room main at (0,0) size 12000x9000 uses gallery
+  }
+  ```
+
+  - **Membership is by DECLARATION, never inferred from position** (ADR 0005): a room is in the
+    west wing because it was written there, not because a solver decided it looks western.
+  - Zones **nest** (`west.galleries`, innermost wins) and are legal wherever a statement is,
+    including inside a `level` block and a `component` body.
+  - **`describe().zones[]`** — id/label/path/level/rooms/room_count/floor_area_m2, present only when
+    the plan declares a zone. Nesting **rolls up**, so a parent zone's area deliberately overlaps
+    its children's and is not the plan total.
+  - **`arch describe --zone <path[,…]>`** — a DISPLAY filter over the zone's member rooms, composing
+    with `--level`/`--room`/`--select`. As with every other filter, `ok`, the diagnostics and the
+    exit code still come from the whole plan.
+  - **`schedule rooms` groups by zone**: the drawn table groups rows by innermost zone with a
+    per-group **subtotal** (a partition, so the subtotals add to the TOTAL). An unzoned plan draws
+    the flat table byte for byte as before.
+  - No new lint rules — zones are declarative metadata with no geometry, so no soundness rule can
+    key off them without inventing spatial meaning.
 
 - **`place <component>(…) as <name> at (x,y) [rotate 0|90|180|270] [mirror x|y]` — component v2:
   a component becomes an addressable, transformable INSTANCE.** Until now a component was a text
@@ -44,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Analysis still sees one building.** Flattening happens before `lint`, `describe()` and the wall
     union, so cross-instance room overlap fires, `dims auto` measures the composed facade, and the
     positioning axes pick up instance openings.
-  - **A `place`d instance is implicitly a [zone](#unreleased)** named after the instance, so
+  - **A `place`d instance is implicitly a `zone`** named after the instance, so
     `describe().zones`, `arch describe --zone west` and the grouped `schedule rooms` table all work
     with no `zone` declaration.
 
