@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.0] - 2026-07-26
+
 ### Added
 
 - **`room [id=…] polygon (x,y) (x,y) (x,y) …` — rooms that are not rectangles.** An
