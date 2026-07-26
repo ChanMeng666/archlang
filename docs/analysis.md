@@ -147,6 +147,36 @@ reporting it in `unresolved`. `W_ROOM_OVERLAP`, by contrast, **was** generalised
 an exact ring-vs-ring intersection test, so a room tucked into an L's notch — overlapping
 boxes, disjoint floors — does not warn, while two floors that really do intersect still do.
 
+### Curves: what is exact, and what is chordal (v1.24)
+
+A curve has two truthful descriptions — the circle it is, and a polygon close enough to it
+— and this layer deliberately uses each where it belongs. The rule is short:
+
+| Fact | How it is computed |
+| --- | --- |
+| A circular room's `area_m2` (label, `describe()`, `schedule rooms`, Plan JSON) | **Exact** — πR², closed form |
+| `floor_circle`, `dim diameter`, `dim radius`, the `dims auto` R/φ call-outs | **Exact** — the authored centre and radius |
+| The drawing extent, a wall's outer-face box, a spatial-index cell | **Exact** — the arc's closed-form extremes, so a bulge is never clipped |
+| Which wall hosts an opening, and how far along it sits | **Exact** — distance to the arc, and run length `R·θ` |
+| The occupancy grid, the circulation flood-fill, path widths | **Chordal** — a 48-sided inscribed ring (7.5° per chord) |
+| Room-vs-room overlap, and a fixture's wall collision | **Chordal** — the same ring, through the polygon tests |
+| The drawn poché fill of a curved wall | **Chordal** — the visible faces stay true arcs |
+
+The chordal ring is inscribed, so it is **conservatively small**: a grid answer never
+claims floor the circle does not have. At 7.5° a chord's sagitta is about `R/1400` — 6 mm on
+a 9 m radius — which is well inside the tolerances the circulation rules already work at.
+Where the difference would be visible in a *number a reader trusts*, the exact form is used
+instead; that is why the area is never taken from the ring (a 48-gon is 0.14% short, enough
+to move a `toFixed(1)` label).
+
+**One reported fact a curve legitimately lacks.** `adjacent` means "shares a boundary
+**run**", and has always excluded a shared corner. A circle meets a straight wall at a
+single point, so a circular room reports no adjacent rooms even when it is tangent to one.
+Its connectivity comes from its doors instead: a door at the tangent point belongs to both
+rooms, appears in `describe().doors[].between`, and carries reachability — which is how the
+aquarium's rotunda is reached from its entrance. Do not read the empty `adjacent` as a
+missing measurement; adjacency-by-tangency would be an invented semantic (ADR 0005).
+
 ## The sheet
 
 A plan that declares [`paper`](language-reference.md#paper-and-scale-the-sheet) is issued

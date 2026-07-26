@@ -105,6 +105,26 @@ the chain off the rooms' vertex coordinates.
 
 <ArchLive :src="EXAMPLES['gallery-l']" :rows="30" />
 
+## Harbour Aquarium (curves)
+
+A ~60 × 46 m public aquarium — the [curved-geometry](/reference#curved-walls-arc-edges-v1-24)
+flagship. Everything above is rectilinear; an aquarium is the building type that is not. Its
+centrepiece is a cylindrical tank you walk around, written as a
+[circular room](/reference#circular-rooms-v1-24) (`room circle at (cx,cy) radius R`) inside a
+drum wall made of two `arc` edges, and its public frontage turns the south-east corner as a
+quarter circle of R12000 instead of mitring it.
+
+Two things to read off the drawing. The curved faces are **true arcs** — SVG `A` commands,
+native DXF `ARC` entities — so the rotunda never looks faceted however far you zoom in. And
+because a linear dimension chain cannot describe an arc, `dims auto` dimensions the round
+things the way GB/T 50104 does: an `R` leader per distinct arc and a `φ` call-out across the
+circular room, while the three exterior chains stay on the straight facades. Both rotunda
+doors sit **on** the curve — `on rotunda at 25%` walks the wall by run length, so an arc
+contributes its arc length rather than its chord — and their leaves swing off the tangent at
+the doorway.
+
+<ArchLive :src="EXAMPLES['aquarium']" :rows="30" />
+
 ## Accessible metadata
 
 `accTitle` and `accDescr` supply the SVG `<title>`/`<desc>` emitted by

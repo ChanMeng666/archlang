@@ -562,11 +562,12 @@ wall exterior thickness 250 material brick scale 1.5 angle 30 { … }
 room [id=<id>] at (x,y) size <w>x<h> [label "<text>" [at (x,y)]] [uses <kind>…]
 room [id=<id>] <right-of|left-of|below|above> <ref> [align <edge>] [gap <mm>] size <w>x<h> [label "<text>"] [uses <kind>…]
 room [id=<id>] polygon (x,y) (x,y) (x,y) … [label "<text>" [at (x,y)]] [uses <kind>…]
+room [id=<id>] circle at (cx,cy) radius <mm> [label "<text>" [at (x,y)]] [uses <kind>…]
 ```
 
-A rectangle — or, with the third form, [any simple polygon](#polygonal-rooms-v1-23).
-The compiler prints the `label` and the **computed area** (m²). Rooms describe space;
-walls are drawn separately.
+A rectangle — or [any simple polygon](#polygonal-rooms-v1-23), or a
+[circle](#circular-rooms-v1-24). The compiler prints the `label` and the **computed area**
+(m²). Rooms describe space; walls are drawn separately.
 
 **Room purpose — `uses` (v1.3).** Tag a room with one or more space kinds so the
 analysis layer knows what it *is* without guessing from the label:
@@ -668,6 +669,146 @@ the room has no north/south/east/west sides. `arch repair` likewise declines to 
 piece into a polygon room and says so in its `unresolved` list, and `arch suggest` offers
 no door/window candidate *on* a polygon room rather than propose one on an edge the room
 does not have.
+
+### Curved walls — `arc` edges (v1.24)
+
+```
+wall [id=<id>] <category> thickness <mm> [material …] {
+  (x,y) … arc (x,y) radius <mm> [cw|ccw] [major] … [close]
+}
+```
+
+An `arc (x,y) radius R` clause makes the edge **from the previous vertex to this one** a
+circular arc instead of a straight run. Write it where the vertex goes; everything else
+about the wall is unchanged.
+
+```arch
+plan "Bowed facade" {
+  units mm
+  wall id=front exterior thickness 300 {
+    (0,0)
+    (12000,0)
+    arc (24000,12000) radius 12000
+    (24000,24000)
+  }
+  door id=d on front at 60% width 1200
+}
+```
+
+**Which of the two circles.** Two endpoints and a radius describe *four* arcs: two
+candidate circles, and two ways round each. Two optional words pick one, and the defaults
+are the common case:
+
+| Clause | Meaning |
+| --- | --- |
+| *(nothing)* | the **minor** arc turning **`ccw`** as drawn — a shallow bow to the left of travel |
+| `cw` | turn clockwise as drawn (the centre sits to the **right** of the direction of travel) |
+| `ccw` | turn counter-clockwise (centre to the **left**) — the default |
+| `major` | take the **long way round** — the arc greater than a half circle |
+
+"Clockwise" means clockwise **on the sheet**, as the reader sees it. Reverse the two words
+and you get the concave version of the same corner, which is why the aquarium's rounded
+frontage says `cw`: walking the shell south-west, clockwise puts the centre inside the
+building, so the facade bows outward.
+
+**A radius has a minimum.** No circle of radius `R` passes through two points more than
+`2R` apart, so a radius under half the chord is [`E_ARC_RADIUS`](error-codes.md) — with a
+machine-applicable fix that substitutes the minimum. The offending edge stays straight so
+the rest of the plan still draws.
+
+**A closed curve is written as its halves.** There is no "arc back to the start" form: a
+full circle is two `arc` edges, each with its radius visible in the source.
+
+```arch
+plan "Rotunda" {
+  units mm
+  wall id=drum partition thickness 200 {
+    (38000,14000)
+    arc (22000,14000) radius 8000
+    arc (38000,14000) radius 8000
+  }
+}
+```
+
+**Openings on a curve work.** `on <wall> at <pos>` walks the wall by **run length**, and an
+arc contributes its arc length `R·θ` — not its chord — so `at 50%` lands halfway along the
+wall *as walked*. An absolute `at (x,y)` is attributed to the curve by its distance to the
+arc itself. A door's leaf and swing are taken from the **tangent at the doorway**, so
+`hinge left|right` keeps its usual meaning (relative to the direction of travel along the
+wall, which on an arc is the direction the arc turns); a window's pane runs along that
+tangent with its jambs radial.
+
+**What a curve looks like.** The two visible faces are emitted as **true arcs** — SVG `A`
+commands, native DXF `ARC` entities — so a curve is never drawn faceted at any zoom. Only
+the poché *fill* is tessellated (a fill has to be a polygon for every backend), at a fixed
+7.5° step. A wall carrying an arc is lowered per segment rather than through the polygon
+boolean, which is what makes an arc plan's output identical whether or not the optional
+`clipper2-wasm` dependency is installed. One consequence to know: like any non-orthogonal
+wall, a curved wall's openings are drawn with an opaque cover rather than a real hole
+punched in the solid, so a doorway on a curve paints over the floor immediately either side
+of it.
+
+**What declines rather than guesses.** `furniture … against wall <id>` on an arc segment
+raises [`E_FURN_AGAINST`](error-codes.md): a curve has no single back direction, so place
+the piece with `at (x,y)` and an explicit `rotate`. An arc edge inside a `room polygon`
+ring is not supported yet and says so at parse time (planned for v1.25); use a
+[circular room](#circular-rooms-v1-24), or a curved wall with a straight-edged room behind
+it.
+
+### Circular rooms (v1.24)
+
+```
+room [id=<id>] circle at (cx,cy) radius <mm> [label "<text>" [at (x,y)]] [uses <kind>…]
+```
+
+A round floor, given by its centre and radius instead of `at` + `size`. A non-positive
+radius is [`E_ROOM_RADIUS`](error-codes.md).
+
+```arch
+plan "Tank" {
+  units mm
+  room id=tank circle at (30000,14000) radius 8000 label "Ocean Rotunda" uses hall
+}
+```
+
+**What is exact.** The area is **πR²**, in closed form — the same number in the drawn
+label, `describe().rooms[].area_m2`, the `schedule rooms` table and Plan JSON. The floor is
+drawn as a real circle, not a polygon. `describe()` reports the exact centre and radius as
+`floor_circle` and leaves `floor_polygon` empty (a 48-vertex ring is an implementation
+detail of the grid layer, not the truth about the floor); `bbox` — and the resolved room's
+`at`/`size` — is the enclosing square, so a reader written for rectangles still sees a
+truthful box.
+
+**What is chordal.** The occupancy and circulation grids, room-vs-room overlap, and door
+attribution work on a 48-sided inscribed ring, exactly the machinery polygon rooms use.
+That is a deliberate split, described in [Analysis](analysis.md#curves-what-is-exact-and-what-is-chordal-v1-24).
+
+**Annulus is not a form.** A ring-shaped gallery around a tank is two rooms and two walls,
+not one room with a hole; there is no doughnut syntax and none is planned for v1.24.
+
+### Dimensioning a curve (v1.24)
+
+A linear dimension chain cannot describe an arc, so `dims auto` dimensions round things the
+way GB/T 50104 does — and the manual forms are there when you want to place one yourself:
+
+```
+dim radius <wallId> [segment <n>] [offset <mm>] [text "<text>"]
+dim diameter <roomId> [offset <mm>] [text "<text>"]
+```
+
+`dim radius` draws an `R<r>` leader from an arc's centre out to its midpoint; `dim diameter`
+draws a `φ<d>` call-out across a circular room. Both **derive** their geometry and their
+text from the element they name, so the number can never disagree with the drawing. Name a
+wall with several arcs and you must add `segment <n>`; anything unresolvable is
+[`E_DIM_CURVE_REF`](error-codes.md) rather than a guess.
+
+`dims auto` synthesizes one `R` leader per distinct arc (deduplicated by centre and radius,
+so a circle written as two semicircles gets one call-out) and one `φ` per circular room,
+while the linear chains stay on the straight facades — a curved facade carries no chain and
+no tick. The `φ` call-out sits **on** the diameter, through the centre, which is where a
+room name would otherwise be: move the *name* with `label "…" at (x,y)`, since the compiler
+never relocates a dimension to make room for a label. Arc-length dimensions are not
+implemented.
 
 ### Strip (v1.13)
 

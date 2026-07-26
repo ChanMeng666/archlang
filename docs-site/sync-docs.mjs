@@ -113,6 +113,7 @@ const examples = [
   "museum",
   "two-storey",
   "gallery-l",
+  "aquarium",
 ];
 const sources = {};
 for (const name of examples) {
