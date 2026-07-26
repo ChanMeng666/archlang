@@ -606,6 +606,21 @@ function collectSites(plan: PlanNode): Site[] {
           }
           break;
         }
+        // A `place`d instance. Same shape as a bare call — ONE statement can draw N
+        // pieces, so the body is walked once and every site inside it is enclosed, which
+        // is what turns a would-be rewrite into an `unresolved` entry instead of an edit
+        // that silently moves every instance. It is enclosed even for a SINGLE `place`,
+        // because the piece's coordinates are the component's local ones while the move
+        // repair computed is in plan coordinates: under a `rotate`/`mirror` the two are
+        // not the same number, so the honest answer is to say so.
+        case "place": {
+          const def = plan.components.get(st.name);
+          if (def && !seen.has(def)) {
+            seen.add(def);
+            walk(def.body, { what: `component "${st.name}" (placed as "${st.alias}")`, line: def.line }, depth + 1);
+          }
+          break;
+        }
         default:
           break;
       }

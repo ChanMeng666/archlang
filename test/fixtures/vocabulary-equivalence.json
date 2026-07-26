@@ -721,6 +721,88 @@
       "room_type": "Room"
     }
   ],
+  "examples/museum-wing.arch": [
+    {
+      "id": "g1",
+      "label": "Gallery A",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "g2",
+      "label": "Gallery B",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "g3",
+      "label": "Gallery C",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "corridor",
+      "label": "Corridor",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    }
+  ],
+  "examples/museum-wings.arch": [
+    {
+      "id": "west.g1",
+      "label": "Gallery A",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "west.g2",
+      "label": "Gallery B",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "west.g3",
+      "label": "Gallery C",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "west.corridor",
+      "label": "Corridor",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "east.g1",
+      "label": "Gallery A",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "east.g2",
+      "label": "Gallery B",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "east.g3",
+      "label": "Gallery C",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "east.corridor",
+      "label": "Corridor",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "hall",
+      "label": "Entrance hall",
+      "uses": ["entry", "hall"],
+      "room_type": "Entrance"
+    }
+  ],
   "examples/museum.arch": [
     {
       "id": "g1",

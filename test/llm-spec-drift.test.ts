@@ -69,6 +69,17 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // trimmed from 1,050 chars to 590, and the `schedule` line's addendum from 200 to 90
     // (the whole feature costs 730 chars); the suite is green at 20,135. Trim duplication
     // before raising again.
-    expect(spec.length).toBeLessThan(20_300);
+    //
+    // Raised 20.3k → 21k for the same reason (v1.22, component v2): `place` is the fifth
+    // *structural* keyword, and the one an agent will get wrong by guessing — a bare
+    // `wing()` call and `place wing() as west at (…)` look interchangeable and are not
+    // (id namespace, local coordinates, the transform, and the fact that an instance IS
+    // a zone). Its line has to carry five facts that cannot be inferred: `as`+`at` are
+    // required, the body is authored from (0,0), ids become `<instance>.<id>` and are
+    // addressed dotted, a whole FILE can be the component, and the bare call is still the
+    // old inline macro. It was trimmed from 742 to 645 chars before this was raised (the
+    // `describe()`/freedom and nesting details went to the language reference), and the
+    // suite is green at 20,770. Trim duplication before raising again.
+    expect(spec.length).toBeLessThan(21_000);
   });
 });

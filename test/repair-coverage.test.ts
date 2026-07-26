@@ -386,6 +386,38 @@ describe("repair — the postcondition: nothing flagged is left silent", () => {
     expect(repair(MIXED).source).toBe(repair(MIXED).source);
   });
 
+  it("a component `place`d TWICE is reported once, never rewritten in silence", () => {
+    // One `furniture` statement, two drawn pieces — and the two are in different places
+    // on the page, so no single edit to the component body can fix both. The v1.19
+    // postcondition still has to hold: the piece lint flags gets an entry, and it is an
+    // `unresolved` one naming the component, not a change that would move both instances.
+    const src = `plan "Twins" {
+  units mm
+  grid 50
+  component pod() {
+    wall id=w exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+    room id=r at (0,0) size 4000x4000 label "Pod" uses bedroom
+    door id=d at (2000,4000) width 900 wall exterior hinge left swing in
+    furniture id=bed bed at (-100,500) size 1600x2000
+  }
+  place pod() as west at (0,0)
+  place pod() as east at (6000,0)
+}`;
+    const before = lint(src).filter((d) => FURNITURE_CODES.has(d.code));
+    // BOTH instances are flagged — lint sees one plan — and both point at the one
+    // statement that drew them.
+    expect(before.length).toBe(2);
+    expect(new Set(before.map((d) => d.span!.start)).size).toBe(1);
+
+    const r = repair(src);
+    // Nothing was silently rewritten …
+    expect(r.changes).toEqual([]);
+    // … and the piece IS accounted for, with the component named in the reason.
+    expect(r.unresolved.length).toBeGreaterThan(0);
+    expect(r.unresolved.map((u) => u.reason).join(" ")).toContain('component "pod"');
+    expect(reportedSpans(src).has(src.indexOf("furniture id=bed"))).toBe(true);
+  });
+
   it("says so instead of returning a clean no-op when the plan does not resolve", () => {
     const broken = `plan "P" {
   units mm

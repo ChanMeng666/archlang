@@ -58,7 +58,7 @@
       ]
     },
     "id-binding": {
-      "match": "\\b(id)\\s*(=)\\s*([A-Za-z_][A-Za-z0-9_]*)",
+      "match": "\\b(id)\\s*(=)\\s*([A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)",
       "captures": {
         "1": {
           "name": "keyword.other.arch"
@@ -72,7 +72,7 @@
       }
     },
     "component-def": {
-      "match": "\\b(component)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+      "match": "\\b(component)\\s+([A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)",
       "captures": {
         "1": {
           "name": "keyword.control.arch"
@@ -97,7 +97,7 @@
     "keywords": {
       "patterns": [
         {
-          "match": "\\b(plan|component|let|theme|title|style|import|for|if|while|else|set|strip|level|zone|axes|schedule|legend)\\b",
+          "match": "\\b(plan|component|let|theme|title|style|import|for|if|while|else|set|strip|level|zone|place|axes|schedule|legend)\\b",
           "name": "keyword.control.arch"
         },
         {
@@ -105,7 +105,7 @@
           "name": "storage.type.element.arch"
         },
         {
-          "match": "\\b(units|grid|paper|scale|north|dims|accTitle|accDescr|material|angle|at|size|width|thickness|label|hinge|swing|offset|text|close|id|project|drawn_by|date|from|as|right-of|left-of|below|above|align|gap|uses|rotate|against|segment|side|on|into|near|anchor|inset|flush|height|faces|clear|dir)\\b",
+          "match": "\\b(units|grid|paper|scale|north|dims|accTitle|accDescr|material|angle|at|size|width|thickness|label|hinge|swing|offset|text|close|id|project|drawn_by|date|from|as|right-of|left-of|below|above|align|gap|uses|rotate|against|segment|side|on|into|near|anchor|inset|flush|mirror|height|faces|clear|dir)\\b",
           "name": "keyword.other.arch"
         }
       ]

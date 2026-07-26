@@ -81,6 +81,7 @@ escalator [id=<name>] at (x,y) size <W>x<H> dir up|down   # a moving stair: chev
 strip <right|left|down|up> at (x,y) gap <mm> [height|width <mm>] { room [id=<id>] size <main>[x<cross>] [label "…"] [uses …] … }   # a row/column of rooms laid end to end: each room's offset is the running sum of the previous extents + gap, and the shared cross dimension is the strip's height (right/left) or width (down/up). Pure sugar — expands to absolute rooms. Plan-level block only
 level <int> ["Name"] { … }   # ONE STOREY = one whole drawing. A plan is single-storey or ALL levels (a drawable statement beside them = E_LEVEL_MIX); settings/`component`/`import`/plan-global `let`/`set` stay OUTSIDE, applying to every level (one building = one sheet + scale). Integers, unique, 0/negative legal, ASCENDING — lowest = page 1. Ids unique WITHIN a level, so one id on two floors is legal (a stair). `arch compile` writes plan.L1.svg, plan.L2.svg … (`--level <n>` = one); `describe --json` adds `levels[]`. Plan-level only
 zone <id> ["Label"] { … }   # a WING/DEPARTMENT grouping: pure metadata, ZERO geometry — every statement inside resolves as if the wrapper were deleted (same coordinates, same ids; a zone is NOT a scope), so the SVG is byte-identical. Membership is DECLARED, never inferred from position. Nests (`zone west { zone galleries { … } }` → path `west.galleries`, innermost wins) and is legal wherever a statement is, incl. inside `level`. `describe --json` adds `zones[]` (path/rooms/floor_area_m2; nested rooms roll UP, so summing zones double-counts) + `describe --zone <path>` to read one wing
+place <component>(<args>) as <name> at (x,y) [rotate 0|90|180|270] [mirror x|y]   # instantiate a component as an ADDRESSABLE instance, authored in LOCAL coords from (0,0); `as`+`at` required. Ids inside become `<name>.<id>` (auto-ids restart per instance) and the plan addresses them dotted — `door on west.perimeter at 50%`, `furniture bed in west.main centered`, `describe --room west.main`. `mirror x` flips left↔right, `y` top↔bottom: a real reflection, so door swings mirror. `import "wing.arch" as wing` makes a WHOLE FILE a zero-arg component. Bare `<component>(<args>)` stays the old INLINE macro — caller's coords and id space, no namespace
 axes { x at <mm>, <mm>, … y at <mm>, <mm>, … }   # GB/T 50001 positioning axes (定位轴线): dash-dot datum lines with a labelled bubble. `x` are vertical (numbered 1,2,3… left-to-right), `y` horizontal (lettered A,B,C… BOTTOM-to-top, skipping I/O/Z). Positions are expressions; labels are DERIVED from sorted position, never authored. With `dims auto rooms|all` the middle chain measures the AXES instead of room boundaries. Plan-level block only
 schedule rooms   # draw the ROOM SCHEDULE table below the title block: NO. (01, 02, … source order) · NAME (label, else id) · AREA (m²) + a TOTAL row, all derived from the rooms. `rooms` is the only subject (anything else is a parse error). Same rows as `describe --json`'s `schedule[]`. With `zone` blocks the rows group by zone, each closed by a SUBTOTAL row
 legend   # draw the LEGEND table beside the schedule: a row per wall hatch material used and per placed fixture category that has a plan symbol, each with a real swatch. Fully derived; nothing to configure. Pure rendering — no `describe()` field
@@ -100,8 +101,8 @@ legend   # draw the LEGEND table beside the schedule: a row per wall hatch mater
 
 (Elements are fully specced above; these are the rest.)
 
-- **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`, `strip`, `level`, `zone`, `axes`, `schedule`, `legend`
-- **Attributes:** `units`, `grid`, `paper`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`, `on`, `into`, `near`, `anchor`, `inset`, `flush`, `height`, `faces`, `clear`, `dir`
+- **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`, `strip`, `level`, `zone`, `place`, `axes`, `schedule`, `legend`
+- **Attributes:** `units`, `grid`, `paper`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`, `on`, `into`, `near`, `anchor`, `inset`, `flush`, `mirror`, `height`, `faces`, `clear`, `dir`
 - **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `centered`, `start`, `end`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `auto`, `A4`, `A3`, `A2`, `A1`, `A0`, `landscape`, `portrait`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`
 
 ## CLI loop (how an agent drives it)
@@ -378,6 +379,44 @@ physically wrong (openings off their wall, furniture through walls). Author by *
 
 See `examples/attached.arch` for a full one-bedroom authored this way, and `arch spec` for the grammar.
 
+## Author a repeating piece ONCE, then place it (v1.22)
+
+When a building repeats — two wings, six wards, a floor of identical units — do **not** copy the
+statements and re-add an offset to every coordinate. That is how a plan gets 40 hand-edited numbers
+that drift apart the first time the brief changes. Author the piece in its **own** coordinates from
+`(0,0)` and place it:
+
+```
+component wing() {
+  wall id=shell exterior thickness 300 { (0,0) (18000,0) (18000,12000) (0,12000) close }
+  room id=main at (0,0) size 18000x9000 label "Gallery" uses living
+  room id=corr at (0,9000) size 18000x3000 label "Corridor" uses circulation
+}
+
+place wing() as west at (0,0)
+place wing() as east at (42000,0) mirror x
+```
+
+- **`as` names the instance, `at` places it; both are required.** Ids inside become
+  `west.main` / `east.main`, and you address them by that dotted name everywhere a reference is
+  taken: `wall west.shell`, `in west.main`, `arch describe --room west.main`. (A dotted name in a
+  *declaration* is `E_DOTTED_DECL` — the namespace belongs to the `place`.)
+- **`rotate 0|90|180|270` and `mirror x|y` are exact**, and a mirror is real physics: door swings,
+  fire exits and fixture facings all come out mirror-image. Prefer `mirror x` over `rotate 180` for a
+  symmetrical pair — a 180° turn also swaps which side the corridor is on.
+- **A whole FILE can be the component:** `import "wing.arch" as wing` binds that file's top-level
+  drawable statements as a zero-argument component (its plan settings are ignored — the root plan
+  owns the sheet). One file, one room or wing, exactly as you would organise components in code.
+- **A `place`d instance is also a zone**, so `describe().zones`, `arch describe --zone west` and the
+  grouped `schedule rooms` table work with no extra declaration.
+- **The bare call `wing()` is the OLD inline macro** — caller's coordinates, caller's id counters, no
+  namespace. Keep it for a small parameterised motif; use `place` for a piece of building.
+- **A component is a closed world going out:** the plan can reach into it (`wall west.shell`), but
+  the component cannot reach out. Let the parent draw the connecting doors — that is the whole
+  composition contract. Verify with `arch describe --json` → `instances[]`.
+
+See `examples/museum-wing.arch` + `examples/museum-wings.arch`.
+
 ## Self-correct with data, not guesswork
 
 `arch compile --json` returns every problem as a `Diagnostic` with a byte span, `line`/`col`, a
@@ -624,7 +663,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**57 errors** (abort rendering) · **37 warnings** (advisory; `validate --strict` fails on them too).
+**59 errors** (abort rendering) · **38 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -639,7 +678,9 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_DIV_ZERO` — Division or modulo by zero. **Fix:** Guard the divisor, or use a non-zero value.
 - `E_DOMAIN` — Math domain error. **Fix:** Pass a value within the function's domain.
 - `E_DOOR_WIDTH` — Door must have a positive width. **Fix:** Give the door a positive `width`.
+- `E_DOTTED_DECL` — A dotted name cannot be declared. **Fix:** Declare the short name and address it from outside as `<instance>.<name>`.
 - `E_DUP_ID` — Duplicate element id. **Fix:** Rename one of them, or drop the explicit id to auto-generate a unique one.
+- `E_DUP_INSTANCE` — Duplicate `place … as <name>` instance name. **Fix:** Give each instance its own name (`as west` / `as east`).
 - `E_FURN_AGAINST` — Invalid `against wall` fixture placement. **Fix:** Name an existing wall id, add `segment <n>` for multi-segment walls, give `side left|right`, keep the segment axis-aligned, and drop any explicit `rotate`.
 - `E_FURN_FLUSH` — `flush` on a placement that touches no edge. **Fix:** Anchor the piece to the edge you want it flush with (`anchor bottom flush`, `anchor top-left flush`), or drop `flush` and keep it centred.
 - `E_FURN_ROOM` — Furniture placed `in` an unknown room. **Fix:** Use the id of an existing `room id=…`, or drop the `in` clause.
@@ -706,6 +747,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `W_FURNITURE_OVERLAP` — Two pieces of furniture overlap. **Fix:** Move or resize one so they no longer intersect; leave a walkway between them.
 - `W_FURNITURE_WALL_COLLISION` — Furniture penetrates a wall. **Fix:** Move or resize the piece so it sits fully inside the room (against the wall face, not through it), or anchor it with `against wall <id>`.
 - `W_HATCH_SCALE` — Hatch scale must be positive; using 1. **Fix:** Use a positive `scale`.
+- `W_IMPORT_EMPTY_FILE` — Whole-file import binds an empty component. **Fix:** Draw in the module's plan body, or import one of its named components with `import "<file>": <name>`.
 - `W_NO_ENTRANCE` — The plan has no exterior door. **Fix:** Add a `door` on an `exterior` wall.
 - `W_OPENING_OFF_WALL` — Opening does not lie on any wall. **Fix:** Move the opening onto a wall, or name its host with `wall <id|category>`. The diagnostic points at the nearest wall.
 - `W_PATH_TOO_NARROW` — The walk to a room squeezes below a passable width. **Fix:** Widen the tightest door/opening on the route, or move the furniture pinching it, so the whole path clears the minimum width.

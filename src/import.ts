@@ -13,7 +13,7 @@
  * than looping; a plan with no imports is a strict no-op (same PlanNode back).
  */
 
-import type { ComponentDef, ImportNode, PlanNode } from "./ast.js";
+import type { ComponentDef, ImportNode, PlanNode, Statement } from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Registry } from "./registry.js";
 import type { World } from "./world.js";
@@ -56,6 +56,41 @@ function resolveSpec(spec: string, baseDir: string): { path: string } | { error:
 
 type CompMap = Map<string, ComponentDef>;
 
+/** One loaded module: the components it exports, plus the whole-file body it *is*. */
+interface Module {
+  comps: CompMap;
+  /** The module's own top-level statements — the body of its implicit whole-file component. */
+  body: Statement[];
+}
+
+/**
+ * Build the implicit zero-parameter component a `import "<path>" as <name>` names: the
+ * module's own top-level DRAWABLE statements, in source order.
+ *
+ * Two deliberate rules, both because ONE drawing is issued on ONE sheet at ONE scale:
+ *
+ *  - the module's plan-level **settings** (`units`/`grid`/`paper`/`scale`/`north`/`dims`/
+ *    `title`/`axes`/`schedule`/`legend`) are IGNORED — they are not body statements, so
+ *    they simply never reach here; the root plan's settings govern;
+ *  - a module's `level` blocks are DROPPED (a storey is a page, and a component is a
+ *    piece of one page, so a multi-storey file cannot be a component). Everything else —
+ *    elements, `let`/`set`, control flow, `strip`, nested `place` — comes through.
+ *
+ * `scope` is the module's OWN component map, so a file that calls its private helpers
+ * still expands when the importer knows only the file's name.
+ */
+function wholeFileComponent(name: string, path: string, body: Statement[], comps: CompMap): ComponentDef {
+  return {
+    name,
+    params: [],
+    body: body.filter((s) => s.kind !== "level"),
+    line: 1,
+    file: path,
+    scope: comps,
+    wholeFile: true,
+  };
+}
+
 /**
  * Load a module's component set (its own components plus those it imports),
  * memoized per canonical path. Returns `null` (and emits a diagnostic at the
@@ -68,8 +103,8 @@ function loadModule(
   diagnostics: Diagnostic[],
   atSpan: Span | undefined,
   stack: Set<string>,
-  cache: Map<string, CompMap | null>,
-): CompMap | null {
+  cache: Map<string, Module | null>,
+): Module | null {
   const cached = cache.get(path);
   if (cached !== undefined) return cached;
   if (stack.has(path)) {
@@ -106,13 +141,19 @@ function loadModule(
       });
     }
   }
-  const comps: CompMap = new Map(plan?.components ?? []);
+  // Tag every component DECLARED here with its file. Its body's spans are offsets into
+  // THIS source, not the importer's, and that provenance is what stops a diagnostic (and
+  // its machine-applicable fix) from being applied to the wrong file — see
+  // `Diagnostic.file` and `applyFixes`.
+  const comps: CompMap = new Map();
+  for (const [k, def] of plan?.components ?? []) comps.set(k, { ...def, file: path });
   if (plan) {
     for (const imp of plan.imports) mergeImport(comps, imp, dirOf(path), world, registry, diagnostics, stack, cache);
   }
   stack.delete(path);
-  cache.set(path, comps);
-  return comps;
+  const mod: Module = { comps, body: plan ? plan.body : [] };
+  cache.set(path, mod);
+  return mod;
 }
 
 /** Resolve one import statement and merge its components into `target`. */
@@ -124,7 +165,7 @@ function mergeImport(
   registry: Registry,
   diagnostics: Diagnostic[],
   stack: Set<string>,
-  cache: Map<string, CompMap | null>,
+  cache: Map<string, Module | null>,
 ): void {
   const r = resolveSpec(imp.spec, baseDir);
   if ("error" in r) {
@@ -134,8 +175,33 @@ function mergeImport(
   const mod = loadModule(r.path, world, registry, diagnostics, imp.span, stack, cache);
   if (!mod) return;
 
+  // `import "<path>" as <name>` — the whole file becomes one component (see
+  // `wholeFileComponent`). A name clash is the same conflict error as a named import.
+  if (imp.wholeAs !== undefined) {
+    if (target.has(imp.wholeAs)) {
+      diagnostics.push({
+        severity: "error",
+        code: "E_IMPORT_CONFLICT",
+        message: `Imported name "${imp.wholeAs}" conflicts with an existing component`,
+        span: imp.span,
+      });
+      return;
+    }
+    if (mod.body.filter((s) => s.kind !== "level").length === 0) {
+      diagnostics.push({
+        severity: "warning",
+        code: "W_IMPORT_EMPTY_FILE",
+        message: `Module "${r.path}" has no top-level statements, so \`import … as ${imp.wholeAs}\` binds an empty component`,
+        span: imp.span,
+        hints: [`draw in the module's plan body, or import a named \`component\` with \`import "…": <name>\``],
+      });
+    }
+    target.set(imp.wholeAs, wholeFileComponent(imp.wholeAs, r.path, mod.body, mod.comps));
+    return;
+  }
+
   const bind = (name: string, as: string): void => {
-    const def = mod.get(name);
+    const def = mod.comps.get(name);
     if (!def) {
       diagnostics.push({
         severity: "error",
@@ -158,7 +224,7 @@ function mergeImport(
   };
 
   if (imp.star) {
-    for (const name of mod.keys()) bind(name, name);
+    for (const name of mod.comps.keys()) bind(name, name);
   } else {
     for (const it of imp.items) bind(it.name, it.alias ?? it.name);
   }
@@ -176,7 +242,7 @@ export function link(plan: PlanNode, world: World, registry: Registry): { plan: 
   // Clone the components map so the (possibly stage-cached) parsed AST is never mutated.
   const merged: CompMap = new Map(plan.components);
   const stack = new Set<string>();
-  const cache = new Map<string, CompMap | null>();
+  const cache = new Map<string, Module | null>();
   for (const imp of plan.imports) mergeImport(merged, imp, "", world, registry, diagnostics, stack, cache);
 
   return { plan: { ...plan, components: merged }, diagnostics };

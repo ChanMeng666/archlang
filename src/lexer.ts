@@ -421,6 +421,15 @@ function lexImpl(src: string): LexResult {
       }
       let value = "";
       while (i < src.length && isIdentPart(peek())) value += advance();
+      // A DOTTED tail (`west.perimeter`) lexes as one ident — the namespaced name of
+      // an element inside a `place`d component instance. Only a dot followed by an
+      // identifier START continues the word, so `1..5` (the range operator) and a
+      // stray trailing `.` are untouched. Reference positions accept it; declaration
+      // positions reject it (`E_DOTTED_DECL`) — see `parser.ts`.
+      while (peek() === "." && isIdentStart(peek(1))) {
+        value += advance(); // "."
+        while (i < src.length && isIdentPart(peek())) value += advance();
+      }
       push("ident", value, startLine, startCol, startIdx);
       continue;
     }

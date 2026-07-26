@@ -197,6 +197,12 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       return `${s.name} = ${exprStr(s.value)}`;
     case "instance":
       return `${s.name}(${s.args.map(exprStr).join(", ")})`;
+    case "place":
+      // `place C(a) as name at (x,y) [rotate n] [mirror x|y]` — the clause order is the
+      // grammar's, so a formatted `place` re-parses to the same frame.
+      return `place ${s.name}(${s.args.map(exprStr).join(", ")}) as ${s.alias} at ${ptStr(s.at)}${
+        s.rotate ? ` rotate ${s.rotate}` : ""
+      }${s.mirror ? ` mirror ${s.mirror}` : ""}`;
     case "set":
       return `set ${s.target}(${s.over.map((o) => `${o.key}: ${setValStr(o.value)}`).join(", ")})`;
     case "for":
@@ -233,6 +239,8 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
 // ---- plan-level constructs ----
 
 function importDoc(imp: ImportNode): Doc {
+  // Whole-file instantiation has no item list — the file IS the component.
+  if (imp.wholeAs !== undefined) return `import ${JSON.stringify(imp.spec)} as ${imp.wholeAs}`;
   const items = imp.star ? "*" : imp.items.map((it) => (it.alias ? `${it.name} as ${it.alias}` : it.name)).join(", ");
   return `import ${JSON.stringify(imp.spec)}: ${items}`;
 }

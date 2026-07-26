@@ -7,6 +7,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`place <component>(…) as <name> at (x,y) [rotate 0|90|180|270] [mirror x|y]` — component v2:
+  a component becomes an addressable, transformable INSTANCE.** Until now a component was a text
+  macro: it spliced its body into the caller's coordinate system and the caller's id space, so
+  drawing the same wing twice meant re-deriving every coordinate and every id by hand. `place`
+  makes one `.arch` body — authored in **local coordinates from `(0,0)`** — into a piece of
+  building you compose:
+
+  ```
+  place wing() as west at (0,0)
+  place wing() as east at (42000,0) mirror x
+  ```
+
+  If you know React, you already know the shape: `component` is the component, `place … as` is the
+  element, `at`/`rotate`/`mirror` are its props, and `west.main` is how the parent reaches a child.
+
+  - **`as` and `at` are required.** An instance that cannot be addressed is not a component, and
+    one that lands wherever its literals point is the old macro (still spelled `wing()`, semantics
+    untouched). The grammar refuses to blur the two.
+  - **Ids are namespaced per instance** (`west.main`, `east.main`) with auto-id counters restarting
+    per instance, so two instances are **order-independent**. Dotted names work in every REFERENCE
+    position — `door … wall west.shell`, `furniture … in west.main`, `arch describe --room west.main`
+    — and are rejected in DECLARATION positions (**`E_DOTTED_DECL`**). A repeated instance name is
+    **`E_DUP_INSTANCE`**.
+  - **`rotate`/`mirror` are exact integer isometries** (a 2×2 signed-permutation matrix in the new
+    `src/frame.ts`; no trigonometry, no float drift) and they **compose**, so a `place` inside a
+    component body just multiplies frames. A mirror is real physics: door swings, fire exits and
+    fixture facings all come out mirror-image.
+  - **An instance is a closed world going out.** It resolves entirely in its own frame, against its
+    own walls and rooms, and one rigid transform carries the result into the plan — which is what
+    makes `anchor top-left`, `against wall … side`, `swing into`, `right-of` and `hinge left` mean
+    inside a rotated instance exactly what they mean when the component is drawn alone. The plan can
+    reach into an instance; a component cannot reach out of itself.
+  - **Analysis still sees one building.** Flattening happens before `lint`, `describe()` and the wall
+    union, so cross-instance room overlap fires, `dims auto` measures the composed facade, and the
+    positioning axes pick up instance openings.
+  - **A `place`d instance is implicitly a [zone](#unreleased)** named after the instance, so
+    `describe().zones`, `arch describe --zone west` and the grouped `schedule rooms` table all work
+    with no `zone` declaration.
+
+- **`import "wing.arch" as wing` — a whole FILE is a component.** With `as` instead of an item list,
+  `import` binds the module's own top-level drawable statements as an implicit zero-parameter
+  component: one `.arch` file authors one room, one wing, one unit. The module's plan-level settings
+  (`units`/`grid`/`paper`/`scale`/`north`/`title`/`axes`/`schedule`/`legend`) are deliberately
+  **ignored** — one drawing is issued on one sheet at one scale, and the root plan owns it — and its
+  `level` blocks are dropped (a storey is a page). A module with no drawable body warns with
+  **`W_IMPORT_EMPTY_FILE`** rather than binding silence. A module's own `component`s stay available
+  to its body, so a file may call its private helpers.
+
+- **`describe()` reports the composition.** New append-only `instances[]` (name, component, origin,
+  transform); `instance`/`component` on rooms and fixtures, `instance` on doors, and `instance` on
+  every `freedom.elements` row; `rotate` on `FurnitureSummary`. `--select instances` reads it alone.
+
+- **`examples/museum-wing.arch` + `examples/museum-wings.arch`** — the multi-file flagship: a
+  gallery wing that is a complete plan in its own right, and the 42 × 12 m building that imports
+  that FILE and places it on both sides of a shared entrance hall, the east one mirrored. Both are
+  `validate --strict` clean; both carry SVG snapshots and visual goldens.
+
+### Fixed
+
+- **A diagnostic raised inside an `import`ed component body no longer points at the wrong file — and
+  `arch fix` no longer corrupts the importer.** A component's statements carry spans into the file
+  they were *written* in, while the diagnostic is reported against the file being *compiled*, so
+  those offsets silently addressed unrelated bytes of the importer. Worse, the offsets rode along in
+  `diagnostics[].fixes`, and `applyFixes` spliced them in: an off-wall door inside an imported
+  component rewrote the middle of the importer's `wall` statement. `Diagnostic` now carries
+  append-only **`file`** (the module the span is measured in) plus **`instance`**/**`component`**,
+  `FixSuggestion` carries **`file`**, and **`applyFixes` skips any suggestion carrying one**, with a
+  reason naming the file the edit belongs to. Present since imports shipped in v0.10.
+
+### Changed
+
+- Identifiers may now contain a **dotted tail** (`west.perimeter`). Only a dot followed by an
+  identifier start continues the word, so the `1..5` range operator is untouched.
+- `arch repair` walks into a `place`d component body and reports each site as `unresolved`, naming
+  the component and the instance, rather than rewriting a body whose local coordinates are not the
+  plan coordinates the move was computed in. The v1.19 postcondition — every flagged piece gets a
+  change entry or an `unresolved` entry, never nothing — holds for a twice-placed component.
+
 ## [1.21.0] - 2026-07-26
 
 **"Vertical"** — the second sub-release of the large-building batch. v1.20.0 gave a plan a sheet; a

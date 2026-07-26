@@ -34,6 +34,7 @@ export const KEYWORDS = {
     "strip",
     "level",
     "zone",
+    "place",
     "axes",
     "schedule",
     "legend",
@@ -97,6 +98,7 @@ export const KEYWORDS = {
     "anchor",
     "inset",
     "flush",
+    "mirror",
     "height",
     "faces",
     "clear",
@@ -174,8 +176,11 @@ export const OPERATORS = [
 
 /** Lexical-rule fragments shared by the editor grammars. */
 export const RULES = {
-  /** Identifier (also matches keywords; the parser/highlighter classifies). */
-  ident: "[A-Za-z_][A-Za-z0-9_]*",
+  /** Identifier (also matches keywords; the parser/highlighter classifies). A
+   *  dotted tail names an element inside a `place`d component instance
+   *  (`west.perimeter`); it is legal in REFERENCE positions only — a declaration
+   *  (`id=`, `let`, `as`) rejects it with `E_DOTTED_DECL`. */
+  ident: "[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*",
   /** Line comment to end of line. */
   comment: "#.*$",
   /** A number, optionally a literal dimension `WxH`. Either component may carry
@@ -211,6 +216,7 @@ export const STATEMENT_STARTS: readonly string[] = [
   "strip",
   "level",
   "zone",
+  "place",
   "axes",
   "schedule",
   "legend",

@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**57 errors** · **37 warnings**
+**59 errors** · **38 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -20,7 +20,9 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_DIV_ZERO`](#e_div_zero) | error | Division or modulo by zero. |
 | [`E_DOMAIN`](#e_domain) | error | Math domain error. |
 | [`E_DOOR_WIDTH`](#e_door_width) | error | Door must have a positive width. |
+| [`E_DOTTED_DECL`](#e_dotted_decl) | error | A dotted name cannot be declared. |
 | [`E_DUP_ID`](#e_dup_id) | error | Duplicate element id. |
+| [`E_DUP_INSTANCE`](#e_dup_instance) | error | Duplicate `place … as <name>` instance name. |
 | [`E_FURN_AGAINST`](#e_furn_against) | error | Invalid `against wall` fixture placement. |
 | [`E_FURN_FLUSH`](#e_furn_flush) | error | `flush` on a placement that touches no edge. |
 | [`E_FURN_ROOM`](#e_furn_room) | error | Furniture placed `in` an unknown room. |
@@ -84,6 +86,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_FURNITURE_OVERLAP`](#w_furniture_overlap) | warning | Two pieces of furniture overlap. |
 | [`W_FURNITURE_WALL_COLLISION`](#w_furniture_wall_collision) | warning | Furniture penetrates a wall. |
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
+| [`W_IMPORT_EMPTY_FILE`](#w_import_empty_file) | warning | Whole-file import binds an empty component. |
 | [`W_NO_ENTRANCE`](#w_no_entrance) | warning | The plan has no exterior door. |
 | [`W_OPENING_OFF_WALL`](#w_opening_off_wall) | warning | Opening does not lie on any wall. |
 | [`W_PATH_TOO_NARROW`](#w_path_too_narrow) | warning | The walk to a room squeezes below a passable width. |
@@ -237,6 +240,18 @@ let x = sqrt(-1)   # error
 door at (0,0) width 0   # error
 ```
 
+## E_DOTTED_DECL
+
+*error* — A dotted name cannot be declared.
+
+**Cause.** A dotted name like `west.main` addresses an element INSIDE a `place`d instance. The namespace belongs to the `place`, so a dotted name is only ever a reference — it can never be declared with `id=`, `let`, `as`, or `for`.
+
+**Fix.** Declare the short name and address it from outside as `<instance>.<name>`.
+
+```arch
+room id=main at (0,0) size 3000x3000   # then, in the plan: furniture bed in west.main centered
+```
+
 ## E_DUP_ID
 
 *error* — Duplicate element id.
@@ -248,6 +263,19 @@ door at (0,0) width 0   # error
 ```arch
 room id=a at (0,0) size 1x1
 room id=a at (1,0) size 1x1   # error: duplicate id "a"
+```
+
+## E_DUP_INSTANCE
+
+*error* — Duplicate `place … as <name>` instance name.
+
+**Cause.** Two `place` statements claim the same instance name. The name is the id NAMESPACE for everything inside the instance, so reusing it would silently merge two instances' ids.
+
+**Fix.** Give each instance its own name (`as west` / `as east`).
+
+```arch
+place wing() as west at (0,0)
+place wing() as west at (9000,0)   # error: instance "west" already used
 ```
 
 ## E_FURN_AGAINST
@@ -1017,6 +1045,18 @@ furniture sofa at (350,2300) size 2000x900   # lint: crosses the partition at y3
 
 ```arch
 wall exterior thickness 200 material brick scale 0 { (0,0) (1,0) }
+```
+
+## W_IMPORT_EMPTY_FILE
+
+*warning* — Whole-file import binds an empty component.
+
+**Cause.** `import "<file>" as <name>` turns a module's TOP-LEVEL drawable statements into one component, but that module's plan body has none (it may only declare `component`s, or only `level` blocks — a storey is a page, so levels are dropped).
+
+**Fix.** Draw in the module's plan body, or import one of its named components with `import "<file>": <name>`.
+
+```arch
+import "lib.arch" as lib   # warning when lib.arch only declares components
 ```
 
 ## W_NO_ENTRANCE

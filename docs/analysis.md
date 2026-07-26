@@ -354,6 +354,55 @@ touching them, marked `filtered: true` + `selected_zones`. Whole-plan facts (`bb
 `diagnostics` and the exit code come from the **unfiltered** plan, so reading one wing can
 never make a broken building look sound. It composes with `--level` and `--room`.
 
+### Placed instances are zones
+
+A [`place`d component instance](language-reference.md#placing-instances--place-v122) is
+implicitly a zone named after the instance, so a building composed of wings reports its
+grouping with **no `zone` declaration at all**:
+
+```json
+"instances": [
+  { "name": "west", "component": "wing", "at": { "x": 0, "y": 0 }, "rotate": 0 },
+  { "name": "east", "component": "wing", "at": { "x": 42000, "y": 0 }, "rotate": 0, "mirror": "x" }
+],
+"zones": [
+  { "id": "west", "path": "west", "rooms": ["west.g1", "west.g2", "west.g3", "west.corridor"],
+    "room_count": 4, "floor_area_m2": 216 },
+  { "id": "east", "path": "east", "rooms": ["east.g1", "east.g2", "east.g3", "east.corridor"],
+    "room_count": 4, "floor_area_m2": 216 }
+]
+```
+
+An implicit zone carries no `label` — the instance name *is* the heading, so the drawn
+schedule groups read `west` / `east` rather than the component's name printed twice. Note
+the zone path and the id namespace are separate concerns: wrapping a `place` in
+`zone north` makes the zone `north.west` while the rooms stay `west.*`, because a zone is
+metadata and never renames anything. A **legacy bare call** (`wing()`) declares no zone —
+it is a macro, not a thing.
+
+## Instances — the composition, as facts (v1.22)
+
+`describe().instances` lists the plan's [`place`d component
+instances](language-reference.md#placing-instances--place-v122) in source order: the
+addressable name (which is also the id namespace of everything inside), the component it
+was made from, where its local `(0,0)` landed, and the exact rigid transform it carries.
+Absent entirely when the plan places none.
+
+Every room, door, window, opening and fixture born inside an instance also carries
+`instance` (and rooms/fixtures `component`), so a flat list of ids is still attributable:
+
+```json
+"rooms": [
+  { "id": "west.main", "instance": "west", "component": "wing", "area_m2": 54, … }
+]
+```
+
+Read it as the answer to *"what are this building's real degrees of freedom?"* — a wing is
+one `at`, not N coordinates. `freedom.elements` says the same thing element by element:
+inside an instance, `placement` describes how the element was authored **within its
+component**, and the `instance` field says its position on the page additionally derives
+from that instance's frame.
+
 ## Levels — one storey's facts at a time (v1.21)
 
 A plan built from [`level` blocks](language-reference.md#levels--a-multi-storey-building-v121)
@@ -496,6 +545,12 @@ emission order (rooms, doors, windows, openings, furniture). For the strip-and-a
 | `rooms` | `absolute` · `relational` · `strip` | a literal `at`; a `right-of`/`below`/… clause; a `strip` block row |
 | `openings` (doors + windows + cased openings) | `attached` · `absolute` | `on <wall> at <pos>`; a literal `at (x,y)` |
 | `furniture` | `anchored` · `against-wall` · `absolute` | `in <room> anchor\|centered`; `against wall …`; a literal `at` |
+
+An element inside a [`place`d instance](#instances--the-composition-as-facts-v122) adds an
+`instance` field to its row. Read the pair together: `placement` is how the element was
+authored **inside its component**, and `instance` says its position on the page *also*
+derives from that instance's frame — so the one genuinely free number is the `place`'s
+`at`, and nudging a wing is one edit rather than N.
 
 Every derived placement is still resolved to concrete coordinates in the rest of the
 summary — `freedom` only records *how* each coordinate was arrived at. On a plan that

@@ -95,6 +95,44 @@ physically wrong (openings off their wall, furniture through walls). Author by *
 
 See `examples/attached.arch` for a full one-bedroom authored this way, and `arch spec` for the grammar.
 
+## Author a repeating piece ONCE, then place it (v1.22)
+
+When a building repeats — two wings, six wards, a floor of identical units — do **not** copy the
+statements and re-add an offset to every coordinate. That is how a plan gets 40 hand-edited numbers
+that drift apart the first time the brief changes. Author the piece in its **own** coordinates from
+`(0,0)` and place it:
+
+```
+component wing() {
+  wall id=shell exterior thickness 300 { (0,0) (18000,0) (18000,12000) (0,12000) close }
+  room id=main at (0,0) size 18000x9000 label "Gallery" uses living
+  room id=corr at (0,9000) size 18000x3000 label "Corridor" uses circulation
+}
+
+place wing() as west at (0,0)
+place wing() as east at (42000,0) mirror x
+```
+
+- **`as` names the instance, `at` places it; both are required.** Ids inside become
+  `west.main` / `east.main`, and you address them by that dotted name everywhere a reference is
+  taken: `wall west.shell`, `in west.main`, `arch describe --room west.main`. (A dotted name in a
+  *declaration* is `E_DOTTED_DECL` — the namespace belongs to the `place`.)
+- **`rotate 0|90|180|270` and `mirror x|y` are exact**, and a mirror is real physics: door swings,
+  fire exits and fixture facings all come out mirror-image. Prefer `mirror x` over `rotate 180` for a
+  symmetrical pair — a 180° turn also swaps which side the corridor is on.
+- **A whole FILE can be the component:** `import "wing.arch" as wing` binds that file's top-level
+  drawable statements as a zero-argument component (its plan settings are ignored — the root plan
+  owns the sheet). One file, one room or wing, exactly as you would organise components in code.
+- **A `place`d instance is also a zone**, so `describe().zones`, `arch describe --zone west` and the
+  grouped `schedule rooms` table work with no extra declaration.
+- **The bare call `wing()` is the OLD inline macro** — caller's coordinates, caller's id counters, no
+  namespace. Keep it for a small parameterised motif; use `place` for a piece of building.
+- **A component is a closed world going out:** the plan can reach into it (`wall west.shell`), but
+  the component cannot reach out. Let the parent draw the connecting doors — that is the whole
+  composition contract. Verify with `arch describe --json` → `instances[]`.
+
+See `examples/museum-wing.arch` + `examples/museum-wings.arch`.
+
 ## Self-correct with data, not guesswork
 
 `arch compile --json` returns every problem as a `Diagnostic` with a byte span, `line`/`col`, a

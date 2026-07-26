@@ -16,6 +16,7 @@ import type {
   LevelNode,
   NorthDir,
   OpeningNode,
+  PlaceNode,
   PlanNode,
   Point,
   RelAlign,
@@ -31,6 +32,8 @@ import type {
 } from "./ast.js";
 import { placeRelational } from "./layout.js";
 import { numberAxes } from "./axes.js";
+import type { Frame } from "./frame.js";
+import { composeFrame, makeFrame, transformElement } from "./frame.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Env, Expr, Value } from "./expr.js";
 import { asBool, asNum, asStr, closest, evalExpr, exprSpan } from "./expr.js";
@@ -62,8 +65,21 @@ export interface RBase {
    * geometry. Internal: set during resolve, never serialized into the Scene/SVG/exports
    * (the `_` prefix keeps it out), so a zoned plan renders byte-identically to the same
    * plan with the wrappers deleted.
+   *
+   * A `place`d instance IS implicitly a zone (see {@link RBase._instance}), so an element
+   * inside one carries the instance path here too — an author who composes by wing gets
+   * the grouping for free from the composition already written.
    */
   _zone?: string;
+  /**
+   * The `place … as <name>` instance this element was born inside (dotted for a nested
+   * one), or absent at the root — which includes every legacy bare component call.
+   * Internal: set when the instance is transformed into plan coordinates, surfaced by
+   * `describe()`, never serialized into the Scene/SVG/exports (the `_` prefix keeps it out).
+   */
+  _instance?: string;
+  /** The component {@link RBase._instance} was made from. Internal, as above. */
+  _component?: string;
 }
 
 /**
@@ -78,6 +94,21 @@ export interface RZone {
   path: string;
   /** Printed name from `zone west "West wing"`, when the source gave one. */
   label?: string;
+}
+
+/**
+ * A `place`d component instance as a resolved FACT: where its local origin landed in plan
+ * coordinates and which rigid transform it carries. Not a {@link ResolvedElement} — an
+ * instance draws nothing of its own; it is the frame its contents were drawn in.
+ */
+export interface RInstance {
+  /** Dotted instance path — also the id namespace of everything inside it. */
+  name: string;
+  component: string;
+  /** Where the component's local `(0,0)` landed, in plan coordinates. */
+  at: Point;
+  rotate: 0 | 90 | 180 | 270;
+  mirror?: "x" | "y";
 }
 
 /** An opening (door/window) registered on a wall — voids the wall solid. */
@@ -334,6 +365,11 @@ export interface ResolvedPlan {
   elements: ResolvedElement[];
   /** Resolved walls (for bounds/hosting), in source order. */
   walls: RWall[];
+  /**
+   * The plan's `place`d component instances, in source order. Absent when the plan places
+   * none, so a pre-v1.22 plan's IR — and therefore its Scene and its bytes — is unchanged.
+   */
+  instances?: RInstance[];
 }
 
 /** Max component-instantiation nesting depth before bailing out. */
@@ -358,6 +394,31 @@ interface Entry {
   /** Dotted path of the innermost `zone` this element was written inside, copied onto
    *  the resolved element as {@link RBase._zone}. Absent outside every zone. */
   zone?: string;
+  /**
+   * The `place`d instance frame this element belongs to, or absent for the root plan
+   * (which includes every LEGACY bare component call — those splice into the caller's
+   * coordinate space by design and must stay byte-identical). Entries sharing a frame
+   * share an object identity, which is what groups them into one sub-resolution.
+   */
+  frame?: Frame;
+  /**
+   * The `.arch` file this element's `node.span` is measured in, when it came in through
+   * an `import`. Stamped onto every diagnostic the element raises as
+   * {@link Diagnostic.file}. Absent = the compiled source.
+   */
+  file?: string;
+}
+
+/** Ambient state threaded down {@link expandScope} — everything a `place` needs. */
+interface ExpandCtx {
+  /** The frame in force (absent at the root). */
+  frame?: Frame;
+  /** The file the statements being expanded were written in (absent = compiled source). */
+  file?: string;
+  /** Grid snap, so a `place` origin lands on the module like every other coordinate. */
+  snap(v: number): number;
+  /** Instance paths already taken, so `as west` twice is an error, not a silent merge. */
+  seenInstances: Set<string>;
 }
 
 /**
@@ -381,6 +442,24 @@ const rootZoneFrame = (): ZoneFrame => ({ path: [], declared: new Map() });
 
 /** `{ zone: "a.b" }`, or `{}` at plan level — spread onto an {@link Entry}. */
 const zoneOf = (z: ZoneFrame): { zone?: string } => (z.path.length > 0 ? { zone: z.path.join(".") } : {});
+
+/**
+ * Open a nested zone named `id` on top of `frame`, recording the declaration the first
+ * time that path is seen. This is the ONE way a zone segment is pushed: a `zone` block
+ * uses it, and so does a `place`d instance — which is why an instance is a zone with no
+ * second declaration and no duplicated bookkeeping. `label` is what the grouped schedule
+ * and `describe().zones` print.
+ */
+function declareZone(frame: ZoneFrame, id: string, label?: string): ZoneFrame {
+  const path = [...frame.path, id];
+  const key = path.join(".");
+  // First declaration wins — a zone re-opened (by a loop, or written twice) merges its
+  // members rather than declaring a second, identically-named group.
+  if (!frame.declared.has(key)) {
+    frame.declared.set(key, { id, path: key, ...(label !== undefined ? { label } : {}) });
+  }
+  return { path, declared: frame.declared };
+}
 
 /**
  * A lexical scope: its own bindings plus a link to the enclosing scope. `let`
@@ -441,10 +520,19 @@ function expandScope(
   components: Map<string, ComponentDef>,
   diagnostics: Diagnostic[],
   depth: number,
+  ectx: ExpandCtx,
   zone: ZoneFrame = rootZoneFrame(),
 ): Entry[] {
-  const diag = (d: Diagnostic) => diagnostics.push(d);
+  // Every diagnostic raised while expanding THIS body inherits the body's provenance:
+  // which file its spans are measured in, and which placed instance it belongs to.
+  const diag = (d: Diagnostic) => diagnostics.push(stampProvenance(d, ectx.frame, ectx.file));
   const out: Entry[] = [];
+  /** Element/statement entries carry the same provenance, for resolve-time diagnostics. */
+  const prov = {
+    ...(ectx.frame ? { frame: ectx.frame } : {}),
+    ...(ectx.file !== undefined ? { file: ectx.file } : {}),
+    ...zoneOf(zone),
+  };
   /** Evaluate an expression against this scope's currently-visible bindings. */
   const evalIn = (e: Expr): Value => evalExpr(e, scope.flatten(), diag);
 
@@ -520,13 +608,64 @@ function expandScope(
         comp.params.forEach((p, i) => {
           childScope.vars.set(p, argVals[i]!);
         });
-        // component-v2 hook: a `place comp() as <name> at …` instance is implicitly a
-        // zone, so when instances land they push their own segment onto the frame here —
-        // `expandScope(comp.body, …, pushZone(zone, stmt.as, …))` — and every element the
-        // component expands inherits that membership through the same one mechanism a
-        // hand-written `zone` block uses. A plain (unnamed) instance stays transparent,
-        // which is what this line does today.
-        out.push(...expandScope(comp.body, childScope, global, components, diagnostics, depth + 1, zone));
+        // A LEGACY bare call is TRANSPARENT to zones as it is to coordinates and ids: it
+        // splices its body into the caller verbatim, so it pushes no zone segment. Only
+        // its statements' spans differ — they belong to the file the component was
+        // WRITTEN in, which is what the `file` swap records.
+        out.push(
+          ...expandScope(
+            comp.body,
+            childScope,
+            global,
+            comp.scope ?? components,
+            diagnostics,
+            depth + 1,
+            { ...ectx, ...(comp.file !== undefined ? { file: comp.file } : { file: undefined }) },
+            zone,
+          ),
+        );
+        break;
+      }
+      case "place": {
+        const child = placeFrame(stmt, evalIn, diag, components, ectx, depth);
+        if (!child) break;
+        const comp = components.get(stmt.name)!;
+        const argVals: Value[] = comp.params.map((_, i) =>
+          stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : { t: "num", v: 0 },
+        );
+        const childScope = new Scope(global);
+        comp.params.forEach((p, i) => {
+          childScope.vars.set(p, argVals[i]!);
+        });
+        // **A `place`d instance IS a zone.** `as west` already names an addressable group
+        // of elements with its own id namespace, which is exactly what a `zone` block
+        // declares — so the instance pushes its own segment onto the zone frame and every
+        // element the component expands inherits membership through the identical
+        // mechanism a hand-written `zone` uses. Composing by wing therefore GIVES you the
+        // grouping: `describe().zones`, the grouped room schedule and `describe --zone
+        // west` all work with no second declaration. (A bare call pushes nothing — it is
+        // a macro, not a thing.) An explicit `zone` around a `place` still nests, so the
+        // instance's path is `<outer>.<instance>`.
+        out.push(
+          ...expandScope(
+            comp.body,
+            childScope,
+            global,
+            comp.scope ?? components,
+            diagnostics,
+            depth + 1,
+            {
+              frame: child,
+              ...(comp.file !== undefined ? { file: comp.file } : { file: undefined }),
+              snap: ectx.snap,
+              seenInstances: ectx.seenInstances,
+            },
+            // No label: the instance NAME is already the heading a reader wants, and
+            // inventing one ("wing instance") would print the same text for every
+            // instance of a component. `describe().instances` says which component.
+            declareZone(zone, stmt.alias),
+          ),
+        );
         break;
       }
       case "for": {
@@ -543,14 +682,16 @@ function expandScope(
         for (const item of it.v) {
           const child = new Scope(scope);
           child.vars.set(stmt.varName, item);
-          out.push(...expandScope(stmt.body, child, global, components, diagnostics, depth, zone));
+          out.push(...expandScope(stmt.body, child, global, components, diagnostics, depth, ectx, zone));
         }
         break;
       }
       case "if": {
         const cond = asBool(evalIn(stmt.cond), diag, exprSpan(stmt.cond));
         const branch = cond ? stmt.then : stmt.else;
-        if (branch) out.push(...expandScope(branch, new Scope(scope), global, components, diagnostics, depth, zone));
+        if (branch) {
+          out.push(...expandScope(branch, new Scope(scope), global, components, diagnostics, depth, ectx, zone));
+        }
         break;
       }
       case "while": {
@@ -565,7 +706,7 @@ function expandScope(
             });
             break;
           }
-          out.push(...expandScope(stmt.body, new Scope(scope), global, components, diagnostics, depth, zone));
+          out.push(...expandScope(stmt.body, new Scope(scope), global, components, diagnostics, depth, ectx, zone));
         }
         break;
       }
@@ -588,7 +729,7 @@ function expandScope(
             id: "",
             defaults: scope.effectiveSet("room"),
             fromStrip: true,
-            ...zoneOf(zone),
+            ...prov,
           });
         }
         break;
@@ -598,22 +739,17 @@ function expandScope(
         // The body is expanded against the *same* Scope, so a `let`/`set` written inside a
         // zone behaves exactly as it would with the braces deleted — that is what makes
         // the byte-identity law (`test/zones.test.ts`) total rather than approximate.
-        const path = [...zone.path, stmt.id];
-        const key = path.join(".");
-        // First declaration wins: a `zone` re-opened (by a loop, or written twice) merges
-        // its members rather than declaring a second, identically-named group.
-        if (!zone.declared.has(key)) {
-          zone.declared.set(key, {
-            id: stmt.id,
-            path: key,
-            ...(stmt.label !== undefined ? { label: stmt.label } : {}),
-          });
-        }
         out.push(
-          ...expandScope(stmt.body, scope, global, components, diagnostics, depth, {
-            path,
-            declared: zone.declared,
-          }),
+          ...expandScope(
+            stmt.body,
+            scope,
+            global,
+            components,
+            diagnostics,
+            depth,
+            ectx,
+            declareZone(zone, stmt.id, stmt.label),
+          ),
         );
         break;
       }
@@ -630,16 +766,114 @@ function expandScope(
         break;
       default:
         // An element: snapshot the scope's visible bindings + active set-defaults.
-        out.push({
-          node: stmt,
-          env: scope.flatten(),
-          id: "",
-          defaults: scope.effectiveSet(stmt.kind),
-          ...zoneOf(zone),
-        });
+        out.push({ node: stmt, env: scope.flatten(), id: "", defaults: scope.effectiveSet(stmt.kind), ...prov });
     }
   }
   return out;
+}
+
+/**
+ * Stamp a diagnostic with the provenance of the statement that raised it: which FILE its
+ * `span` (and every fix edit derived from it) is measured in, and which placed INSTANCE
+ * it belongs to.
+ *
+ * Both are append-only fields, and both are absent for the root plan of the compiled
+ * source — so a plan with no `place` and no `import` gets byte-identical diagnostics.
+ *
+ * The `file` stamp also travels onto `fixes[].file`, which is what stops `arch fix` from
+ * splicing an imported component's edit into the importing file (before this existed it
+ * did exactly that, corrupting the importer). When the `place` itself is in the compiled
+ * source, a related span points at it, so a reader always has one location it can render.
+ */
+function stampProvenance(d: Diagnostic, frame: Frame | undefined, file: string | undefined): Diagnostic {
+  if (!frame && file === undefined) return d;
+  const out: Diagnostic = { ...d };
+  if (file !== undefined) {
+    out.file = file;
+    if (d.fixes) out.fixes = d.fixes.map((f) => ({ ...f, file }));
+  }
+  if (frame) {
+    out.instance = frame.prefix;
+    out.component = frame.component;
+    // A related span is rendered against the COMPILED source, so only offer one when the
+    // `place` statement actually lives there.
+    if (frame.span && frame.file === undefined) {
+      out.relatedSpans = [
+        ...(d.relatedSpans ?? []),
+        { span: frame.span, message: `in instance "${frame.prefix}" placed here` },
+      ];
+    }
+  }
+  return out;
+}
+
+/**
+ * Validate one `place` statement and build the frame its body expands in, or return
+ * `null` (after a catalogued diagnostic) when it cannot be placed.
+ *
+ * The origin is evaluated in the CALLER's scope and grid-snapped exactly like any other
+ * coordinate, then composed with the caller's own frame — which is what makes a `place`
+ * inside a placed component body work (the frames simply multiply).
+ */
+function placeFrame(
+  stmt: PlaceNode,
+  evalIn: (e: Expr) => Value,
+  diag: (d: Diagnostic) => void,
+  components: Map<string, ComponentDef>,
+  ectx: ExpandCtx,
+  depth: number,
+): Frame | null {
+  const comp = components.get(stmt.name);
+  if (!comp) {
+    const hint = closest(stmt.name, [...components.keys()]);
+    diag({
+      severity: "error",
+      message: `Unknown component "${stmt.name}"`,
+      code: "E_UNKNOWN_COMPONENT",
+      span: stmt.span,
+      hints: hint ? [`did you mean "${hint}"?`] : undefined,
+    });
+    return null;
+  }
+  if (depth >= MAX_DEPTH) {
+    diag({
+      severity: "error",
+      message: `Component recursion too deep (limit ${MAX_DEPTH}) placing "${stmt.name}"`,
+      code: "E_RECURSION",
+      span: stmt.span,
+    });
+    return null;
+  }
+  if (stmt.args.length !== comp.params.length) {
+    diag({
+      severity: "error",
+      message: `Component "${stmt.name}" expects ${comp.params.length} argument(s) but got ${stmt.args.length}`,
+      code: "E_ARGCOUNT",
+      span: stmt.span,
+    });
+  }
+  const path = ectx.frame?.prefix ? `${ectx.frame.prefix}.${stmt.alias}` : stmt.alias;
+  if (ectx.seenInstances.has(path)) {
+    diag({
+      severity: "error",
+      message: `Instance name "${path}" is already used — every \`place … as <name>\` must be unique (it is the id namespace)`,
+      code: "E_DUP_INSTANCE",
+      span: stmt.aliasSpan ?? stmt.span,
+    });
+    return null;
+  }
+  ectx.seenInstances.add(path);
+  const num = (e: Expr): number => ectx.snap(asNum(evalIn(e), diag, exprSpan(e)));
+  const local = makeFrame({
+    origin: { x: num(stmt.at.x), y: num(stmt.at.y) },
+    ...(stmt.rotate !== undefined ? { rotate: stmt.rotate } : {}),
+    ...(stmt.mirror ? { mirror: stmt.mirror } : {}),
+    prefix: path,
+    component: stmt.name,
+    ...(stmt.span ? { span: stmt.span } : {}),
+    ...(ectx.file !== undefined ? { file: ectx.file } : {}),
+  });
+  return ectx.frame ? composeFrame(ectx.frame, local) : local;
 }
 
 /**
@@ -958,43 +1192,64 @@ function resolveImpl(
   for (const name of BUILTIN_NAMES) builtinScope.vars.set(name, { t: "builtin", name });
   const globalScope = new Scope(builtinScope);
   // The zone frame is created here and filled during expansion: `zoneFrame.declared` ends
-  // up holding every `zone` the plan declares, in first-declaration order.
+  // up holding every `zone` the plan declares — and every `place`d instance, which is
+  // implicitly one — in first-declaration order.
   const zoneFrame = rootZoneFrame();
-  const entries = expandScope(ast.body, globalScope, globalScope, ast.components, diagnostics, 0, zoneFrame);
+  const entries = expandScope(
+    ast.body,
+    globalScope,
+    globalScope,
+    ast.components,
+    diagnostics,
+    0,
+    { snap, seenInstances: new Set<string>() },
+    zoneFrame,
+  );
 
-  // 1. Assign ids in registry (canonical) order. The flat stream is numbered
-  //    globally per kind, so auto-ids stay unique across component instances.
-  assignIds(entries, registry, diagnostics);
+  // 1. Partition the flat stream into RESOLUTION GROUPS: one per `place`d instance, plus
+  //    the root plan. A plan with no `place` has exactly one group (the root) holding
+  //    every entry — including every legacy bare component call — so everything below is
+  //    the historical single pass, byte for byte.
+  const groups = groupEntries(entries);
 
-  // 2. Resolve in registry order (walls first → openings can host against them).
-  //    `activeEnv`/`activeId` are swapped per entry so each element evaluates
-  //    its expressions against the env captured during expansion.
+  // 2. Assign ids PER GROUP, so an instance's auto-id counters restart at 1 and two
+  //    instances of one component get order-independent ids (`west.wall_1` / `east.wall_1`
+  //    rather than `wall_1` / `wall_4`). Ids inside a group stay unprefixed until the
+  //    group is transformed, which is what lets an intra-instance reference (`door on
+  //    perimeter`) resolve against the instance's own namespace.
+  for (const grp of groups) assignIds(grp.entries, registry, diagnostics);
+
+  // 3. Resolve each group in registry order (walls first → openings can host against
+  //    them), then transform the instance groups into plan coordinates.
+  //
+  //    A `place`d instance is a CLOSED WORLD: it resolves entirely in its own local frame
+  //    against its OWN walls and rooms, and one rigid transform then carries the result
+  //    into the plan. That is what makes every derived-geometry rule (`anchor top-left`,
+  //    `against wall … side`, `swing into`, `right-of`) mean inside a rotated instance
+  //    exactly what it means when the component is authored on its own — see `frame.ts`.
+  //    The root plan resolves LAST and sees every instance's walls and rooms under their
+  //    namespaced ids, which is how `door on west.perimeter` and `furniture … in west.main`
+  //    work. The reverse does not hold, by design: a component cannot reach out of itself.
   const walls: RWall[] = [];
   const rooms2: RRoom[] = [];
+  const instances: RInstance[] = [];
   let activeEnv: Env = new Map();
-  const evalNum = (e: Expr): number =>
-    asNum(
-      evalExpr(e, activeEnv, (d) => diagnostics.push(d)),
-      (d) => diagnostics.push(d),
-      exprSpan(e),
-    );
-  const evalStr = (e: Expr): string => asStr(evalExpr(e, activeEnv, (d) => diagnostics.push(d)));
+  /** The entry being resolved — the provenance every diagnostic below inherits. */
+  let activeEntry: Entry | undefined;
+  const pushDiag = (d: Diagnostic): void => {
+    diagnostics.push(activeEntry ? stampProvenance(d, activeEntry.frame, activeEntry.file) : d);
+  };
+  const evalNum = (e: Expr): number => asNum(evalExpr(e, activeEnv, pushDiag), pushDiag, exprSpan(e));
+  const evalStr = (e: Expr): string => asStr(evalExpr(e, activeEnv, pushDiag));
   const evalPt = (p: ExprPoint): Point => ({ x: evalNum(p.x), y: evalNum(p.y) });
   // Openings call isOnWall(at, ref) then hostSegment(at, ref) with identical
   // args back-to-back; a one-entry memo fuses those into a single wall scan.
-  // walls is fully populated before any opening resolves (registry order:
+  // ctx.walls is fully populated before any opening resolves (registry order:
   // walls first), so the spatial index is built lazily on first use and reused.
+  // Both are reset when the pass moves to the next group's wall set.
   let wallGrid: WallGrid | null = null;
   let hiKey = "";
   let hiVal: { host: WallSegment | null; onWall: boolean } | null = null;
-  const hostInfo = (at: Point, ref?: string) => {
-    const key = `${at.x},${at.y},${ref ?? ""}`;
-    if (key === hiKey && hiVal) return hiVal;
-    if (!wallGrid) wallGrid = new WallGrid(walls);
-    hiKey = key;
-    hiVal = wallGrid.hostInfo(at, ref);
-    return hiVal;
-  };
   const ctx: ResolveCtx = {
     grid: g,
     snap,
@@ -1008,24 +1263,66 @@ function resolveImpl(
     hostSegment: (at, ref) => hostInfo(at, ref).host,
     isOnWall: (at, ref) => hostInfo(at, ref).onWall,
     ...(world.now ? { now: () => world.now!() } : {}),
-    diag: (d) => diagnostics.push(d),
+    diag: pushDiag,
   };
-  for (const def of registry.order) {
-    for (const e of entries) {
-      if (e.node.kind !== def.kind) continue;
-      activeEnv = e.env;
-      ctx.id = e.id;
-      ctx.defaults = e.defaults;
-      const r = def.resolve(e.node, ctx);
-      e.resolved = r;
-      markPlacement(r, e.node, e.fromStrip === true);
-      // Declared zone membership. Set only for an element actually written inside a
-      // `zone` block, so an unzoned plan's IR carries no new key at all.
-      if (e.zone !== undefined) r._zone = e.zone;
-      if (r.kind === "wall") {
-        r._idAuthored = e.idAuthored === true;
-        walls.push(r);
-      } else if (r.kind === "room") rooms2.push(r);
+  function hostInfo(at: Point, ref?: string): { host: WallSegment | null; onWall: boolean } {
+    const key = `${at.x},${at.y},${ref ?? ""}`;
+    if (key === hiKey && hiVal) return hiVal;
+    if (!wallGrid) wallGrid = new WallGrid(ctx.walls);
+    hiKey = key;
+    hiVal = wallGrid.hostInfo(at, ref);
+    return hiVal;
+  }
+
+  for (const grp of groups) {
+    // The root group accumulates into the plan-wide arrays (already carrying every
+    // instance's transformed walls/rooms); an instance group gets its own local pair.
+    const grpWalls: RWall[] = grp.frame ? [] : walls;
+    const grpRooms: RRoom[] = grp.frame ? [] : rooms2;
+    ctx.walls = grpWalls;
+    ctx.rooms = grpRooms;
+    wallGrid = null;
+    hiKey = "";
+    hiVal = null;
+    for (const def of registry.order) {
+      for (const e of grp.entries) {
+        if (e.node.kind !== def.kind) continue;
+        activeEnv = e.env;
+        activeEntry = e;
+        ctx.id = e.id;
+        ctx.defaults = e.defaults;
+        const r = def.resolve(e.node, ctx);
+        e.resolved = r;
+        markPlacement(r, e.node, e.fromStrip === true);
+        // Declared zone membership — a `zone` block the element was written inside, or
+        // the `place`d instance that expanded it (an instance IS a zone). Set only when
+        // there is one, so an unzoned plan's IR carries no new key at all.
+        if (e.zone !== undefined) r._zone = e.zone;
+        if (r.kind === "wall") {
+          r._idAuthored = e.idAuthored === true;
+          grpWalls.push(r);
+        } else if (r.kind === "room") grpRooms.push(r);
+      }
+    }
+    activeEntry = undefined;
+    if (!grp.frame) continue;
+    instances.push({
+      name: grp.frame.prefix,
+      component: grp.frame.component,
+      at: { x: grp.frame.tx, y: grp.frame.ty },
+      rotate: grp.frame.rotate,
+      ...(grp.frame.mirror ? { mirror: grp.frame.mirror } : {}),
+    });
+    // The instance's own relational placement runs HERE, in the local frame, because
+    // `right-of` means the COMPONENT's right — resolving it after the transform would
+    // read the page's right instead (ADR 0004 arithmetic, one frame at a time).
+    placeRelational(grpRooms, snapPt, (d) => diagnostics.push(stampProvenance(d, grp.frame, undefined)));
+    const f = grp.frame;
+    for (const e of grp.entries) {
+      const t = transformElement(f, e.resolved!);
+      e.resolved = t;
+      if (t.kind === "wall") walls.push(t);
+      else if (t.kind === "room") rooms2.push(t);
     }
   }
 
@@ -1105,6 +1402,7 @@ function resolveImpl(
     styles: ast.styles,
     elements,
     walls,
+    ...(instances.length > 0 ? { instances } : {}),
   };
   return { ir, diagnostics };
 }
@@ -1166,6 +1464,45 @@ function scaleOverflowDiagnostic(ast: PlanNode, sheet: ResolvedSheet, extent: { 
       `The page grows to contain it; use a larger sheet or a coarser scale.`,
     span: ast.scaleSpan ?? ast.paperSpan,
   };
+}
+
+/** One resolution group: the entries of a single coordinate frame. */
+interface ResolveGroup {
+  /** The instance frame, or absent for the root plan. */
+  frame?: Frame;
+  entries: Entry[];
+}
+
+/**
+ * Partition the expanded entry stream by coordinate frame — one group per `place`d
+ * instance (keyed on the frame OBJECT, which every entry of that instance shares), plus
+ * the root plan.
+ *
+ * Instance groups come FIRST, in first-appearance order, and the root LAST. That ordering
+ * is what lets the plan reference an instance's walls and rooms by their namespaced ids
+ * (`door on west.perimeter`) while keeping the instance itself sealed. Element ORDER in
+ * the drawing is untouched — `elements` is rebuilt from `entries` in source order after
+ * every group has resolved — so this affects only which facts each group can see.
+ *
+ * A plan with no `place` yields exactly one group holding every entry: the historical
+ * single pass.
+ */
+function groupEntries(entries: Entry[]): ResolveGroup[] {
+  const byFrame = new Map<Frame, Entry[]>();
+  const root: Entry[] = [];
+  for (const e of entries) {
+    if (!e.frame) {
+      root.push(e);
+      continue;
+    }
+    const got = byFrame.get(e.frame);
+    if (got) got.push(e);
+    else byFrame.set(e.frame, [e]);
+  }
+  const out: ResolveGroup[] = [];
+  for (const [frame, grouped] of byFrame) out.push({ frame, entries: grouped });
+  out.push({ entries: root });
+  return out;
 }
 
 /** Assign ids in registry order: explicit ids are checked for duplicates; missing

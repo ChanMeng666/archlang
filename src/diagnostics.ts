@@ -70,6 +70,17 @@ export interface FixSuggestion {
   edits: FixEdit[];
   /** Optional stable id grouping related suggestions (e.g. one lint rule). */
   fixId?: string;
+  /**
+   * The module path this suggestion's edit spans are offsets into, when that is NOT the
+   * source being fixed — i.e. the defect lives in an `import`ed `.arch` file. Absent (the
+   * overwhelmingly common case) means "the source you passed in", exactly as before.
+   *
+   * {@link import("./fix-apply.js").applyFixes} **refuses** to apply a suggestion that
+   * carries one. Applying it would splice bytes measured in another file into this one:
+   * before v1.22 that is precisely what happened, and an off-wall door inside an imported
+   * component rewrote the middle of the importer's `wall` statement. Append-only field.
+   */
+  file?: string;
 }
 
 /** A secondary source location that explains a diagnostic (e.g. the wall a
@@ -107,6 +118,28 @@ export interface Diagnostic {
    * tells those apart and how `arch describe --level N` attributes a problem.
    */
   level?: number;
+  /**
+   * The FILE this diagnostic's `span` (and every `fixes[].edits[].span`) is measured in,
+   * when that is not the compiled source: the module path of the `import`ed `.arch` file
+   * whose component body raised it. Absent = the source passed to `compile()` — every
+   * pre-v1.22 diagnostic, unchanged.
+   *
+   * This exists because a component's body statements carry spans into the file they were
+   * WRITTEN in, while the diagnostic is reported against the file being COMPILED. Without
+   * it those offsets silently address unrelated bytes of the importer (verified: an
+   * imported component's `W_DOOR_OFF_WALL` fix rewrote the middle of the importer's
+   * `wall` statement). Consumers must treat a diagnostic with `file` as pointing into
+   * that file, and never render it against the compiled source. Append-only field.
+   */
+  file?: string;
+  /**
+   * The `place … as <name>` instance whose expansion raised it — dotted for a nested
+   * instance (`west.inner`). Absent for the root plan and for a legacy bare component
+   * call (which has no instance identity by design). Append-only field.
+   */
+  instance?: string;
+  /** The component the {@link instance} was made from. Append-only field. */
+  component?: string;
 }
 
 /** Convert a byte offset into a 1-based `{line, col}`. Offsets are clamped. */

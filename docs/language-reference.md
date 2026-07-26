@@ -336,6 +336,134 @@ bath(3000, 0)
 See [`examples/parametric.arch`](../examples/parametric.arch) for a worked
 example using all of these.
 
+A bare `bath(0, 0)` call is an **inline macro**: it splices the body into the
+caller's coordinate system and the caller's id space. That is exactly what you
+want for a small parameterised motif, and it is unchanged. When you want a
+*reusable piece of building* instead — a wing, a ward, a unit — use `place`.
+
+### Placing instances — `place` (v1.22)
+
+```
+component wing() {
+  wall id=shell exterior thickness 300 { (0,0) (18000,0) (18000,12000) (0,12000) close }
+  room id=main  at (0,0) size 18000x9000 label "Gallery"  uses living
+  room id=corr  at (0,9000) size 18000x3000 label "Corridor" uses circulation
+  opening id=o1 on shell at 50% width 2400
+}
+
+place wing() as west at (0,0)
+place wing() as east at (42000,0) mirror x
+```
+
+**If you know React, you already know this.** `component` is the component,
+`place … as <name>` is the element, `at`/`rotate`/`mirror` are its props, and
+`west.main` is how the parent reaches a child by name. The component is written
+once, in its **own local coordinates from `(0,0)`**, and knows nothing about
+where it ends up — the `place` supplies that. Composition is the parent's job.
+
+`as` and `at` are both **required**, and deliberately so. An instance that
+cannot be addressed is not a component, and one that lands wherever its literals
+happen to point is the old inline macro (still spelled `wing()`). The grammar
+refuses to blur the two.
+
+**Ids are namespaced.** Every id born inside the instance becomes
+`<instance>.<id>`, and auto-id counters restart per instance — so two instances
+of one component are **order-independent** (`west.wall_1` / `east.wall_1`, never
+`wall_1` / `wall_4`). Dotted names then work in every **reference** position:
+
+```
+door id=d_west at (18000,10500) width 1800 wall west.shell swing into hall
+furniture id=desk desk in west.main centered size 1600x800
+```
+
+```bash
+arch describe museum.arch --room west.main --json
+```
+
+A dotted name in a **declaration** position (`room id=west.main`, `let west.x`,
+`place … as west.main`) is [`E_DOTTED_DECL`](error-codes.md#e_dotted_decl): the
+namespace belongs to the `place`, so a dotted name can only ever be a reference.
+Reusing an instance name is [`E_DUP_INSTANCE`](error-codes.md#e_dup_instance).
+
+**`rotate` and `mirror` are exact.** `rotate 0|90|180|270` and `mirror x|y` are
+integer isometries — no trigonometry, no floating-point drift, and they compose,
+so a `place` inside a component body just multiplies frames. `mirror x` flips
+the instance left↔right; `mirror y` flips it top↔bottom.
+
+A mirror is **physics, not decoration**: the instance is genuinely reflected, so
+door swings come out mirror-image, an outward-opening fire exit stays outward,
+and a fixture's facing follows. (Handed *glyphs* are re-oriented by quarter-turn
+rather than reflected — reflection is not a drawing primitive — which for
+ArchLang's rectilinear fixture symbols is the same picture.)
+
+**An instance is a closed world — one way.** It resolves entirely in its own
+frame, against its **own** walls and rooms, and one rigid transform then carries
+the result into the plan. That is what makes `anchor top-left`, `against wall …
+side left`, `swing into`, `right-of` and `hinge left` mean inside a rotated
+instance exactly what they mean when the component is drawn on its own. The
+consequence to know: **the plan can reach into an instance (`wall west.shell`),
+but a component cannot reach out of itself.** A component that needs to touch
+its surroundings takes the reference as a parameter, or the parent draws the
+connecting element — as `examples/museum-wings.arch` does with its hall doors.
+
+**Analysis still sees one building.** Flattening happens before `lint`,
+`describe()` and the wall union run, so two overlapping instances raise
+`W_ROOM_OVERLAP` across the instance boundary, `dims auto` measures the whole
+composed facade, and the positioning axes pick up instance openings.
+
+**An instance is implicitly a [zone](#zones--wings-and-departments-v122)**, named
+after the instance. Composing by wing therefore *gives* you the grouping:
+`describe().zones`, `arch describe --zone west` and the grouped room schedule all
+work with no `zone` declaration. (An explicit `zone` around a `place` still nests
+— but note the zone path and the id namespace are separate: wrapping a `place` in
+`zone north` makes the zone `north.west` while the rooms stay `west.*`, because a
+zone is metadata and never renames anything.)
+
+**`describe()` reports the composition:** an `instances[]` block (name,
+component, origin, transform), plus `instance`/`component` on each room and
+fixture, and an `instance` marker in `freedom`. Read it as: the instance's
+placement is the one authored-absolute degree of freedom, and everything inside
+derives from it — so nudging a wing is one edit, not N.
+
+### Whole-file instantiation — `import "…" as <name>` (v1.22)
+
+```
+import "wing.arch" as wing
+
+place wing() as west at (0,0)
+```
+
+**One `.arch` file authors one room, one wing, one unit.** With `as` instead of
+an item list, `import` binds the module's own top-level **drawable statements**
+as an implicit zero-parameter component — so a file that draws a wing *is* the
+wing component, with no `component` wrapper and no export list.
+
+Two rules follow from "one drawing is issued on one sheet at one scale":
+
+- the module's **plan-level settings** (`units`, `grid`, `paper`, `scale`,
+  `north`, `dims`, `title`, `axes`, `schedule`, `legend`) are **ignored** — the
+  root plan's settings govern. The module keeps them so it still compiles, and
+  reads correctly, on its own;
+- a module's `level` blocks are **dropped** (a storey is a page, and a component
+  is a piece of one page). A module with no drawable body at all warns with
+  [`W_IMPORT_EMPTY_FILE`](error-codes.md#w_import_empty_file) rather than binding
+  silence.
+
+The module's own `component`s stay available to its body, so a file may call its
+private helpers even though the importer knows only the file's name. Parametric
+components keep the named form: `import "lib/fixtures.arch": wc, basin`.
+
+**A diagnostic raised inside an imported body names its file.** Its `span` is
+measured in *that* module, so `Diagnostic.file` says which one, and
+`arch fix` **refuses** to apply a fix whose edits belong to another file — it
+tells you where the real edit goes instead of splicing foreign byte offsets into
+the importer.
+
+See [`examples/museum-wing.arch`](../examples/museum-wing.arch) (the wing, a
+complete plan in its own right) and
+[`examples/museum-wings.arch`](../examples/museum-wings.arch) (the building that
+places it twice, once mirrored).
+
 ## Control flow
 
 `for`, `if`, and `while` **expand** into the element stream while the drawing is
