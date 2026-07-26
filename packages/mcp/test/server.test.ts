@@ -1,7 +1,8 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { describe, expect, it } from "vitest";
-import { createServer } from "../src/server.js";
+import pkg from "../package.json" with { type: "json" };
+import { createServer, SHIM_VERSION } from "../src/server.js";
 
 /** Link a fresh server to a client over the SDK's in-process transport. */
 async function connect(): Promise<Client> {
@@ -20,6 +21,17 @@ function payload(result: unknown): Record<string, unknown> {
 }
 
 const TINY = 'plan "Smoke" {\n  room at (0,0) size 4000x3000 label "Room"\n}\n';
+
+/** Two storeys — the shape that used to come back as the ground floor alone. */
+const TWO_STOREY = `plan "Stack" {
+  level 1 "Ground floor" {
+    room at (0,0) size 4000x3000 label "Living"
+  }
+  level 2 "First floor" {
+    room at (0,0) size 4000x3000 label "Bedroom"
+  }
+}
+`;
 
 describe("archlang mcp server", () => {
   it("exposes the wrapping tools and resources", async () => {
@@ -55,6 +67,46 @@ describe("archlang mcp server", () => {
     );
     expect(out.ok).toBe(false);
     expect((out.diagnostics as unknown[]).length).toBeGreaterThan(0);
+  });
+
+  it("introduces itself with its REAL version, not a hardcoded literal", async () => {
+    const client = await connect();
+    // The handshake version was frozen at "0.2.0" through 0.2.1–0.2.2; deriving it from
+    // package.json is what keeps it honest, so pin it to the package rather than to a string.
+    expect(SHIM_VERSION).toBe(pkg.version);
+    expect(client.getServerVersion()?.version).toBe(pkg.version);
+  });
+
+  it("compile returns every storey of a multi-storey plan, not just the ground floor", async () => {
+    const client = await connect();
+    const out = payload(await client.callTool({ name: "compile", arguments: { source: TWO_STOREY } }));
+    expect(out.ok).toBe(true);
+    const pages = out.pages as Array<{ level: number; name?: string; output: string }>;
+    expect(pages.map((p) => p.level)).toEqual([1, 2]);
+    expect(pages.map((p) => p.name)).toEqual(["Ground floor", "First floor"]);
+    // `output` stays the lowest storey, so a level-unaware caller is unaffected.
+    expect(out.output).toBe(pages[0]?.output);
+    // Each storey is its own drawing: the upper floor is not a copy of the ground floor.
+    expect(pages[1]?.output).not.toBe(pages[0]?.output);
+  });
+
+  it("compile --level renders one storey, and refuses one the plan lacks", async () => {
+    const client = await connect();
+    const one = payload(await client.callTool({ name: "compile", arguments: { source: TWO_STOREY, level: 2 } }));
+    expect(one.ok).toBe(true);
+    expect(one.level).toBe(2);
+    expect(one.pages).toBeUndefined();
+    const bad = payload(await client.callTool({ name: "compile", arguments: { source: TWO_STOREY, level: 7 } }));
+    expect(bad.ok).toBe(false);
+    expect(bad.levels).toEqual([1, 2]);
+    expect(bad.output).toBeUndefined();
+  });
+
+  it("a single-storey compile carries no pages key", async () => {
+    const client = await connect();
+    const out = payload(await client.callTool({ name: "compile", arguments: { source: TINY } }));
+    expect(out.ok).toBe(true);
+    expect(out.pages).toBeUndefined();
   });
 
   it("describe returns rooms and totals", async () => {

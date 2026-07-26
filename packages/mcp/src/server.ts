@@ -48,6 +48,29 @@ function readResource(flat: string, repoRel: string): string {
   return `(${flat} not found — run \`npm run mcp:build\`)`;
 }
 
+/**
+ * This shim's own version, for the MCP handshake — **derived, never retyped**. It was a
+ * hardcoded literal through 0.2.1–0.2.2, so the published server introduced itself as
+ * "0.2.0" and a host had no reliable way to tell which shim it was talking to. Mirrors the
+ * core's `readVersion()` (`src/cli/io.ts`): `../package.json` resolves from both `dist/`
+ * (the packed artifact — npm always includes package.json) and `src/` (the tests).
+ */
+function readShimVersion(): string {
+  for (const rel of ["../package.json", "../../package.json"]) {
+    const p = resolve(HERE, rel);
+    if (existsSync(p)) {
+      try {
+        const v = JSON.parse(readFileSync(p, "utf8")).version;
+        if (typeof v === "string") return v;
+      } catch {
+        /* fall through to the next candidate */
+      }
+    }
+  }
+  return "0.0.0";
+}
+export const SHIM_VERSION = readShimVersion();
+
 // ---------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------
@@ -103,14 +126,14 @@ function resolveSource(input: {
 
 /** Build the fully-configured ArchLang MCP server (tools + resources). */
 export function createServer(): McpServer {
-  const server = new McpServer({ name: "archlang", version: "0.2.0" });
+  const server = new McpServer({ name: "archlang", version: SHIM_VERSION });
 
   server.registerTool(
     "compile",
     {
       title: "Compile ArchLang → SVG or ASCII",
       description:
-        'Compile ArchLang `.arch` source (or a Plan-JSON object) to an SVG floor plan, or to a zero-dependency ASCII text plan (format:"txt"). Returns the rendered output plus diagnostics — each a byte span, line/col, catalogued E_/W_ code, and a machine-applicable fix. Errors are DATA, never exceptions: read `diagnostics` and correct the source.',
+        'Compile ArchLang `.arch` source (or a Plan-JSON object) to an SVG floor plan, or to a zero-dependency ASCII text plan (format:"txt"). Returns the rendered output plus diagnostics — each a byte span, line/col, catalogued E_/W_ code, and a machine-applicable fix. Errors are DATA, never exceptions: read `diagnostics` and correct the source. A MULTI-STOREY plan (`level <n> { … }`) is a set of drawings: `output` is the lowest storey and every storey comes back in `pages[]` ({ level, name, output }), so pass `level` to render just one.',
       inputSchema: {
         source: z.string().optional().describe('ArchLang source (a `plan "…" { … }`). Provide this OR plan_json.'),
         plan_json: z
@@ -120,13 +143,18 @@ export function createServer(): McpServer {
         format: z.enum(["svg", "txt"]).optional().describe("svg (default) or txt (zero-dependency ASCII)."),
         accessible: z.boolean().optional().describe("Emit <title>/<desc>/role/aria accessibility metadata (SVG only)."),
         overlay: z.enum(["circulation"]).optional().describe("Draw an opt-in circulation overlay (SVG only)."),
+        level: z
+          .number()
+          .int()
+          .optional()
+          .describe("Render only this storey of a multi-storey plan. An undeclared level is an error, not a guess."),
       },
     },
     async (a) => {
       const r = resolveSource(a);
       if ("diagnostics" in r) return json({ ok: false, diagnostics: r.diagnostics });
       const format = a.format ?? "svg";
-      const { svg, diagnostics, scene } = compile(r.source, {
+      const { svg, diagnostics, scene, pages } = compile(r.source, {
         noCache: true,
         ...(a.accessible ? { accessible: true } : {}),
         ...(a.overlay === "circulation" ? { overlays: ["circulation"] as const } : {}),
@@ -134,7 +162,40 @@ export function createServer(): McpServer {
       });
       const diags = toJson(r.source, diagnostics);
       if (errorCount(diagnostics) > 0 || !scene) return json({ ok: false, format, diagnostics: diags });
-      return json({ ok: true, format, output: format === "txt" ? renderAscii(scene) : svg, diagnostics: diags });
+      const render = (pageSvg: string, pageScene: typeof scene) =>
+        format === "txt" ? renderAscii(pageScene) : pageSvg;
+      // A `level` this plan does not declare is refused with the real set — never silently
+      // answered with the ground floor, which would look like a successful render of it.
+      if (a.level !== undefined) {
+        const levels = pages?.map((p) => p.level) ?? [];
+        const want = pages?.find((p) => p.level === a.level);
+        if (!want)
+          return json({ ok: false, format, error: `no level ${a.level} in this plan`, levels, diagnostics: diags });
+        return json({
+          ok: true,
+          format,
+          level: want.level,
+          output: render(want.svg, want.scene),
+          levels,
+          diagnostics: diags,
+        });
+      }
+      return json({
+        ok: true,
+        format,
+        output: render(svg, scene),
+        // Present only for a genuinely multi-storey plan, so a single-storey result is unchanged.
+        ...(pages
+          ? {
+              pages: pages.map((p) => ({
+                level: p.level,
+                ...(p.name !== undefined ? { name: p.name } : {}),
+                output: render(p.svg, p.scene),
+              })),
+            }
+          : {}),
+        diagnostics: diags,
+      });
     },
   );
 
@@ -143,7 +204,7 @@ export function createServer(): McpServer {
     {
       title: "Describe a plan (facts, no render)",
       description:
-        "Semantic facts about a plan without rendering: rooms (areas, bboxes, adjacency, uses), doors (what they connect), windows, circulation (walk distance / bottleneck width / detour), and totals. The channel a text-only agent uses to VERIFY that a plan matches intent.",
+        "Semantic facts about a plan without rendering: rooms (areas, bboxes, adjacency, uses, and the exact shape — `floor_polygon` for a `room polygon`, `floor_circle` for a `room circle`, whose area is exact πR²), doors (what they connect), windows, circulation (walk distance / bottleneck width / detour), zones, storeys (`levels[i]` carries the same facts per floor) with the shafts that join them and which storeys stay reachable (`vertical`), the drawing extent (`bbox`, `bbox_outer`), `freedom` (which positions are hand-authored vs resolver-derived), and totals. The channel a text-only agent uses to VERIFY that a plan matches intent.",
       inputSchema: { source: z.string().describe("ArchLang source.") },
     },
     async ({ source }) => {
