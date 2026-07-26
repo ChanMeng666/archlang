@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.24.0] - 2026-07-26
+
 ### Added
 
 - **`arc (x,y) radius R [cw|ccw] [major]` — curved wall edges.** Written where a vertex goes
@@ -69,6 +71,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the poché fill are chordal on an inscribed 48-gon. It also records why a circular room
   legitimately reports no **`adjacent`** rooms (a circle meets a straight wall at a point, and
   `adjacent` has always meant a shared *run*) and carries its connectivity through its doors.
+
+### MCP shim (`@chanmeng666/archlang-mcp` 0.2.3)
+
+- **Its shipped context resources were five releases stale.** `archlang://spec`,
+  `archlang://context` and `archlang://grammar` are copied into the package at pack time, so the
+  published 0.2.2 described the **v1.19** language while its dependency range resolved to a current
+  core — an MCP-native agent was told nothing about `paper`/`scale`, `level`, `place`, `zone`,
+  `room polygon` or `arc`, and the GBNF grammar it was handed could not *decode* them at all. This
+  republish refreshes all five resources; the dependency range is now `^1.24.0`, so the range can
+  no longer promise a surface the installed core lacks.
+- **`compile` no longer answers a multi-storey plan with the ground floor alone.** It returns every
+  storey in `pages[]` (`{ level, name, output }`) and takes a `level` selector; `output` still holds
+  the lowest storey, so a level-unaware caller is unchanged, and a single-storey result carries no
+  `pages` key. An undeclared `level` comes back as an error naming the real `levels` — never a
+  silent substitution that would read as a successful render of the storey you asked for.
+- **The handshake reports the shim's real version.** It was a hardcoded `"0.2.0"` from 0.2.1 on, so
+  the server misintroduced itself to every host; it is now derived from `package.json` the way the
+  core CLI derives its own, and a test pins the two together.
+- Tool descriptions now name the current surface (the shape facts `floor_polygon` / `floor_circle`,
+  `zones`, `levels`, `vertical`, `bbox_outer`, `freedom`) instead of the v1.14 one.
 
 ### Diagnostics
 

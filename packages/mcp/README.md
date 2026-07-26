@@ -33,10 +33,11 @@ structured JSON. `compile` also accepts `plan_json` (the Plan-JSON / RPLAN shape
 
 | Tool | What it does |
 |------|--------------|
-| `compile` | Render source (or `plan_json`) to SVG, or to zero-dep ASCII (`format:"txt"`). `accessible`, `overlay:"circulation"` opt-ins. Returns output + diagnostics. |
-| `describe` | Semantic facts (rooms, areas, adjacency, doors, circulation, and a `freedom` report of which positions are hand-authored vs resolver-derived) — verify intent without an image. |
+| `compile` | Render source (or `plan_json`) to SVG, or to zero-dep ASCII (`format:"txt"`). `accessible`, `overlay:"circulation"` opt-ins. Returns output + diagnostics. A multi-storey plan returns every storey in `pages[]`; `level` renders one. |
+| `describe` | Semantic facts (rooms, areas, adjacency, doors, circulation, zones, storeys, the exact `floor_polygon`/`floor_circle` shape, and a `freedom` report of which positions are hand-authored vs resolver-derived) — verify intent without an image. |
 | `lint` | Advisory `W_*` soundness warnings (may include the fix-carrying `W_ALIAS_MATCH` for a room use inferred from an indirect label alias); `profile` selects a ruleset. |
-| `validate` | Parse + resolve + lint, the ship gate. `strict` fails on warnings; `graph` checks interior-door adjacency against an intended room graph. |
+| `validate` | Parse + resolve + lint, the ship gate. `strict` fails on warnings; `graph` checks interior-door adjacency against an intended room graph; `intent` gates on a brief's contract (per `archlang://intent-schema`). |
+| `score` | The continuous intent METER: how much of a brief a plan satisfies (`satisfied`/`total`/`score`/`subscores`). Measures, never gates. |
 | `repair` | Explicit corrector: furniture out of walls/doorways/swings → new `.arch` source + change log. Never adds doors/windows. |
 | `fix` | Apply the machine-applicable fixes on a plan's diagnostics (syntactic corrector; bounded fixpoint). `unsafe` widens to `maybe-incorrect`. |
 | `suggest` | Advisory door/window statements (each referencing its wall by a stable ref — an authored id or a unique category — or absolute coordinates, never a re-bindable positional id) to resolve unreachable rooms / windowless bedrooms — data, never applied. |
@@ -50,6 +51,7 @@ structured JSON. `compile` also accepts `plan_json` (the Plan-JSON / RPLAN shape
 | `archlang://context` | Full agent context: spec + workflow + CLI reference + error catalog (`llms-full.txt`). |
 | `archlang://schema` | JSON Schema (2020-12) for the Plan-JSON compile input. |
 | `archlang://grammar` | GBNF constrained-decoding grammar for guaranteed-parseable generation. |
+| `archlang://intent-schema` | JSON Schema (2020-12) for a brief's Intent — the shape `validate`'s `intent` and `score`'s `brief` take. |
 
 ## Install
 
