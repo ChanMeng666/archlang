@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.24.0] - 2026-07-26
+
 ### Added
 
 - **`arc (x,y) radius R [cw|ccw] [major]` — curved wall edges.** Written where a vertex goes
