@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`arc (x,y) radius R [cw|ccw] [major]` — curved wall edges.** Written where a vertex goes
+  inside a `wall` body, an `arc` clause makes **that edge** a circular arc from the previous
+  vertex instead of a straight run, so a bowed facade or a cylindrical drum is one statement.
+  Two endpoints and a radius describe four arcs; the defaults pick the common one (the **minor**
+  arc turning **`ccw` as drawn**, bulging left of travel) and `cw` / `major` select the other
+  circle / the long way round. A closed curve is written as its halves — there is no
+  "arc back to the start" form, so every edge's radius stays visible in the source.
+
+  - **The visible faces are TRUE arcs** at `r ± t/2` — SVG `A` commands, native DXF `ARC`
+    entities — so a curve is never drawn faceted at any zoom. Only the poché *fill* is
+    tessellated, at a fixed 7.5° step (48 chords to the full circle).
+  - **Openings work on a curve.** `on <wall> at <pos>` walks the wall by **run length**, and an
+    arc contributes its arc length `R·θ` rather than its chord, so `at 50%` lands halfway along
+    the wall *as walked*; an absolute `at (x,y)` is attributed by distance to the arc itself. A
+    door's leaf and swing, and a window's pane and jambs, are taken from the **tangent at the
+    opening**, so `hinge left|right` keeps its traversal-relative meaning.
+  - **A `place`d component's curve is mapped exactly** — a frame is an integer isometry, so the
+    radius and the swept angle survive a quarter turn, and a reflection reverses the arc's
+    rotational sense.
+
+- **`room [id=…] circle at (cx,cy) radius R` — circular floors.** The area is **exact πR²**,
+  in closed form, through the one shared expression that feeds the drawn label,
+  `describe().rooms[].area_m2`, the `schedule rooms` row and Plan JSON — never the tessellation
+  the grid layer uses (a 48-gon is 0.14% short, enough to move the label). `describe()` reports
+  the exact centre and radius as **`floor_circle`** (append-only) and leaves `floor_polygon`
+  empty; `at`/`size` remain the enclosing square, so rectangle-shaped readers stay truthful. The
+  floor is drawn as a real `<circle>`.
+
+- **GB/T dimensioning for curves.** A linear chain cannot describe an arc, so `dims auto` now
+  emits the round-geometry forms: one **`R<r>` leader** per distinct arc (deduplicated by centre
+  and radius, so a circle written as two semicircles gets one call-out) and one **`φ<d>`**
+  call-out across every circular room, while the exterior chains stay on the straight facades —
+  a curved facade carries no chain and no tick. The manual forms **`dim radius <wallId>
+  [segment <n>]`** and **`dim diameter <roomId>`** derive both geometry and text from the element
+  they name, so the number can never disagree with the drawing.
+
+- **`examples/aquarium.arch`** — a ~60 × 46 m public aquarium, the curved-geometry flagship and
+  the first non-rectilinear example in the corpus: a cylindrical tank as a `room circle` inside a
+  drum wall of two arcs, a south-east frontage turned as a quarter circle of R12000, doors **on**
+  the curve, straight service wings, A2 at 1:200 with `dims auto all` + `schedule rooms` and
+  positioning axes on the straight structural grid only. `validate --strict` clean.
+
+### Changed
+
+- **A wall carrying an `arc` is lowered per segment, never through the polygon boolean.** That is
+  what keeps a curved plan's bytes independent of the **optional** `clipper2-wasm` dependency
+  (the determinism suite compiles with the backend both registered and cleared), and what keeps
+  the faces true arcs rather than a unioned 48-gon path. The split is **per wall**, so a plan
+  mixing a curved facade with straight service wings keeps the straight walls' existing union —
+  and therefore their bytes. A plan with no `arc` is **byte-identical**.
+- Like any non-orthogonal wall, a curved wall's openings are drawn with an opaque cover rather
+  than a real hole punched in the solid, so a doorway on a curve paints over the floor
+  immediately either side of it. `WallSegment.arcWall` now marks **every** segment of an
+  arc-bearing wall — including its straight ones — so an opening on such a wall no longer
+  wrongly believes the boolean voided it.
+- `docs/analysis.md` documents the deliberate **exact-vs-chordal** split: areas, call-outs, the
+  drawing extent and opening attribution are exact; the occupancy/circulation grids, room overlap
+  and the poché fill are chordal on an inscribed 48-gon. It also records why a circular room
+  legitimately reports no **`adjacent`** rooms (a circle meets a straight wall at a point, and
+  `adjacent` has always meant a shared *run*) and carries its connectivity through its doors.
+
+### Diagnostics
+
+- **`E_ARC_RADIUS`** — a radius under half the chord describes no circle through the two
+  endpoints. Carries a **machine-applicable fix** substituting the minimum radius; the offending
+  edge stays straight so the rest of the plan still draws.
+- **`E_ROOM_RADIUS`** — a `room circle` with a non-positive radius.
+- **`E_DIM_CURVE_REF`** — a `dim radius`/`dim diameter` naming a missing, ambiguous or
+  wrong-shaped element (a `diameter` on a rectangular room, a `radius` on a wall with no arc, or
+  a multi-arc wall with no `segment <n>`). Never a guess.
+- **`E_FURN_AGAINST`** now covers `furniture … against wall <id>` on an **arc** segment: a curve
+  has no single back direction, so the message points at `at (x,y)` + `rotate`. Relatedly, an arc
+  segment never "backs" a fixture edge — its chord can be collinear with a room side while the
+  wall bows metres away — so `W_FIXTURE_BACK_TO_ROOM` declines instead of deriving a wrong
+  rotation.
+
+### Deferred (named, not silent)
+
+- An `arc` edge **inside a `room polygon` ring** is refused at parse time, naming **v1.25**: the
+  ring's whole analysis layer (effective-vertex count, self-intersection, centroid, adjacency) is
+  written on literal vertices. Use `room circle`, or a curved wall with a straight-edged room.
+- **No annulus form** (a ring-shaped gallery is two rooms and two walls) and **no arc-length
+  dimensions**.
+
 ## [1.23.0] - 2026-07-26
 
 ### Added
