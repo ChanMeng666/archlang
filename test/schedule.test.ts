@@ -58,7 +58,7 @@ describe("sheet tables — a plan that opts out is byte-identical", () => {
   // opt-out path if it was rendered without the tables, so a plan may join this list only
   // together with a golden rendered WITH them — never by adding `schedule`/`legend` to an
   // example whose golden already exists.
-  const TABLE_EXAMPLES = new Set(["museum-wings.arch"]);
+  const TABLE_EXAMPLES = new Set(["museum-wings.arch", "aquarium.arch"]);
 
   it("no shipped example silently opts into `schedule`/`legend`, so every golden stays valid", () => {
     const dir = join(__dirname, "..", "examples");

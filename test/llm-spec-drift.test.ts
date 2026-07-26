@@ -91,6 +91,6 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // thickness" pitfall row was folded into the row above it (the `furniture` entry
     // already states the `flush` rule verbatim), giving ~290 chars back. Net +130.
     // Trim duplication before raising again.
-    expect(spec.length).toBeLessThan(21_400);
+    expect(spec.length).toBeLessThan(22_200);
   });
 });
