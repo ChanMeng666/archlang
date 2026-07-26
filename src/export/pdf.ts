@@ -48,6 +48,9 @@ function applyPaint(doc: any, paint: Paint, theme: Theme): void {
   const stroke = paint.stroke && paint.stroke !== "none" ? paint.stroke : null;
   if (paint.width !== undefined) doc.lineWidth(paint.width);
   doc.lineJoin(paint.linejoin ?? "miter");
+  // PDF's own default mitre limit is 10, SVG's is 4 — so without this an acute wall
+  // joint grew a spike in the PDF that the SVG never had.
+  if (paint.miterLimit !== undefined) doc.miterLimit(paint.miterLimit);
   doc.lineCap(paint.linecap === "square" ? "square" : "butt");
   if (paint.dash) doc.dash(paint.dash[0], { space: paint.dash[1] });
   else doc.undash();

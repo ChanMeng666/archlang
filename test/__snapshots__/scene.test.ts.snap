@@ -2695,6 +2695,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "paint": {
         "fill": "none",
         "linejoin": "miter",
+        "miterLimit": 4,
         "stroke": "#1b1b1b",
         "width": 20.16,
       },

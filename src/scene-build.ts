@@ -13,6 +13,7 @@ import type { Opening, ResolvedPlan, RWall, RRoom, RDim, RFurniture } from "./ir
 import type { RenderCtx, Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode, SceneSheet } from "./scene.js";
+import { MITER_LIMIT } from "./scene.js";
 import type { Bounds, Vec, WallSegment } from "./geometry.js";
 import {
   add,
@@ -153,7 +154,13 @@ function emitRegion(loops: Point[][], h: HatchSpec, ctx: RenderCtx): SceneNode[]
     {
       layer: "wallFace",
       prim: { t: "region", loops },
-      paint: { fill: "none", stroke: ctx.theme.wallStroke, width: ctx.sizes.wallStroke, linejoin: "miter" },
+      paint: {
+        fill: "none",
+        stroke: ctx.theme.wallStroke,
+        width: ctx.sizes.wallStroke,
+        linejoin: "miter",
+        miterLimit: MITER_LIMIT,
+      },
     },
   ];
 }
@@ -508,7 +515,16 @@ function synthGbChains(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void
       const ticks =
         declared.length > 0
           ? declared
-          : rooms.flatMap((r) => (g.axis === "h" ? [r.at.x, r.at.x + r.size.w] : [r.at.y, r.at.y + r.size.h]));
+          : rooms.flatMap((r) =>
+              // A polygon room contributes every vertex coordinate on this axis — the
+              // room boundaries it actually has. `cleanTicks` dedupes and clips, so the
+              // interior ones simply fall out; only those on the facade survive.
+              r.poly
+                ? r.poly.map((p) => (g.axis === "h" ? p.x : p.y))
+                : g.axis === "h"
+                  ? [r.at.x, r.at.x + r.size.w]
+                  : [r.at.y, r.at.y + r.size.h],
+            );
       emitChain(g, cleanTicks(ticks, g.lo, g.hi), chainOffset(sizes, 1), dims);
     }
     if (wantOverall) emitChain(g, [g.lo, g.hi], chainOffset(sizes, 2), dims);
