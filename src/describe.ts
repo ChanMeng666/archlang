@@ -659,14 +659,21 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
       // `bbox` stays a plain {x,y,w,h} — never the RoomBox, whose `poly` would leak a
       // fifth key into the JSON. A polygon room's true floor is `floor_polygon`.
       bbox: { x: rect.x, y: rect.y, w: rect.w, h: rect.h },
-      floor_polygon: r.poly
-        ? r.poly.map((p) => ({ x: p.x, y: p.y }))
-        : [
-            { x: rect.x, y: rect.y },
-            { x: rect.x + rect.w, y: rect.y },
-            { x: rect.x + rect.w, y: rect.y + rect.h },
-            { x: rect.x, y: rect.y + rect.h },
-          ],
+      // A CIRCULAR room reports its exact centre + radius (append-only) INSTEAD of a
+      // 48-vertex ring: the tessellation is an implementation detail of the grid layer,
+      // and dumping it would bloat an agent's context with numbers that are not the
+      // truth about the floor. `area_m2` above is πR², exact.
+      ...(r.circle ? { floor_circle: { cx: r.circle.c.x, cy: r.circle.c.y, r: r.circle.r } } : {}),
+      floor_polygon: r.circle
+        ? []
+        : r.poly
+          ? r.poly.map((p) => ({ x: p.x, y: p.y }))
+          : [
+              { x: rect.x, y: rect.y },
+              { x: rect.x + rect.w, y: rect.y },
+              { x: rect.x + rect.w, y: rect.y + rect.h },
+              { x: rect.x, y: rect.y + rect.h },
+            ],
       adjacent,
       ...instanceOf(r),
     };

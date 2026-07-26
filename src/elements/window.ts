@@ -4,7 +4,7 @@ import type { Point, WindowNode } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RWindow } from "../ir.js";
-import { add, mul, nearestWallNote, normal, sub, unit } from "../geometry.js";
+import { add, mul, nearestWallNote, normal, segmentDirAt } from "../geometry.js";
 import { parseAttachTarget, resolveAttachment } from "../attach.js";
 import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
 
@@ -82,7 +82,8 @@ export const windowEl: ElementDef = {
     const seg = wn.host;
     if (!seg) return [];
     const { theme, sizes } = ctx;
-    const d = unit(sub(seg.b, seg.a));
+    // Tangent at the opening on a curved host (pane along it, jambs radial).
+    const d = segmentDirAt(seg, wn.at);
     const n = normal(d);
     const h = seg.thickness / 2;
     const he = h + sizes.wallStroke;

@@ -2,7 +2,9 @@
  * Opening attachment (`door|window|opening … on <wall> at <pos>`).
  *
  * Resolves a wall-relative position into an absolute point + the exact host wall
- * segment, by walking the named wall's polyline by cumulative length. Unlike the
+ * segment, by walking the named wall's polyline by cumulative RUN length — an `arc` edge
+ * contributes its arc length, so a percentage means the same thing on a curve as on a
+ * straight run. Unlike the
  * nearest-wall search openings normally use, this pins the opening to the wall
  * *by construction*, so an attached opening can never be reported "off wall".
  *
@@ -14,7 +16,7 @@ import type { ExprPoint, OpeningAttach, Point } from "./ast.js";
 import type { Diagnostic, FixSuggestion } from "./diagnostics.js";
 import type { ParseCtx } from "./registry.js";
 import type { WallLike, WallSegment } from "./geometry.js";
-import { add, length, mul, segmentsOfWall, sub, unit } from "./geometry.js";
+import { segmentLength, segmentPointAlong, segmentsOfWall } from "./geometry.js";
 import { fmt3 as numStr } from "./num-format.js";
 
 /**
@@ -105,7 +107,10 @@ export function resolveAttachment(
   }
   const wall = matches[0]!;
   const segs = segmentsOfWall(wall);
-  const total = segs.reduce((s, seg) => s + length(sub(seg.b, seg.a)), 0);
+  // RUN LENGTH, not chord length: an arc edge contributes its arc length `r·theta`, so
+  // `on <wall> at 50%` lands halfway along the wall as WALKED — mid-curve on a curved
+  // run — rather than halfway along a chord shorter than the wall it stands for.
+  const total = segs.reduce((s, seg) => s + segmentLength(seg), 0);
 
   // Distance from the wall's start to the attachment point, along the polyline.
   let dist: number;
@@ -149,11 +154,10 @@ export function resolveAttachment(
   let acc = 0;
   for (let k = 0; k < segs.length; k++) {
     const seg = segs[k]!;
-    const segLen = length(sub(seg.b, seg.a));
+    const segLen = segmentLength(seg);
     if (dist <= acc + segLen || k === segs.length - 1) {
       const along = dist - acc;
-      const at = add(seg.a, mul(unit(sub(seg.b, seg.a)), along));
-      return { at: snapPt(at), host: seg };
+      return { at: snapPt(segmentPointAlong(seg, along)), host: seg };
     }
     acc += segLen;
   }

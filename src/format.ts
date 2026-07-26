@@ -149,7 +149,13 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
         if (s.materialScale !== undefined) head += ` scale ${exprStr(s.materialScale)}`;
         if (s.materialAngle !== undefined) head += ` angle ${exprStr(s.materialAngle)}`;
       }
-      const pts: Doc[] = s.points.map(ptStr);
+      // A curved edge re-emits as `arc (x,y) radius R [cw|ccw] [major]` — the canonical
+      // clause order, so formatting is idempotent (a `fmt` of a `fmt` is a fixed point).
+      const pts: Doc[] = s.points.map((p, i) => {
+        const arc = i > 0 ? s.arcs?.[i - 1] : undefined;
+        if (!arc) return ptStr(p);
+        return `arc ${ptStr(p)} radius ${exprStr(arc.radius)}${arc.dir ? ` ${arc.dir}` : ""}${arc.major ? " major" : ""}`;
+      });
       if (s.closed) pts.push("close");
       // Flat: `{ (0,0) (1,1) close }`; broken: one point per indented line.
       const body = group(concat(["{", indent(concat([line, join(line, pts)])), line, "}"]));
@@ -158,7 +164,9 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
     case "room": {
       const shape = s.polygon
         ? `polygon ${s.polygon.map(ptStr).join(" ")}`
-        : `${s.at ? `at ${ptStr(s.at)}` : relStr(s.rel!)} size ${sizeStr(s.size!)}`;
+        : s.circle
+          ? `circle at ${ptStr(s.circle.c)} radius ${exprStr(s.circle.r)}`
+          : `${s.at ? `at ${ptStr(s.at)}` : relStr(s.rel!)} size ${sizeStr(s.size!)}`;
       const label = s.label ? ` label ${exprStr(s.label)}${s.labelAt ? ` at ${ptStr(s.labelAt)}` : ""}` : "";
       return `room ${id}${shape}${label}${s.uses?.length ? ` uses ${s.uses.join(" ")}` : ""}`;
     }
@@ -184,8 +192,15 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       const roomLines: Doc[] = s.rooms.map(stripRoomStr);
       return concat([head, " {", indent(concat([hardline, join(hardline, roomLines)])), hardline, "}"]);
     }
-    case "dim":
-      return `dim ${s.ref ? `${s.ref} ` : ""}${ptStr(s.from)}->${ptStr(s.to)} offset ${exprStr(s.offset)}${s.text ? ` text ${exprStr(s.text)}` : ""}`;
+    case "dim": {
+      const text = s.text ? ` text ${exprStr(s.text)}` : "";
+      // A curve call-out has no written points to re-emit — only its reference.
+      if (s.curve) {
+        const seg = s.curve.segment !== undefined ? ` segment ${exprStr(s.curve.segment)}` : "";
+        return `dim ${s.curve.what} ${s.curve.ref}${seg} offset ${exprStr(s.offset)}${text}`;
+      }
+      return `dim ${s.ref ? `${s.ref} ` : ""}${ptStr(s.from)}->${ptStr(s.to)} offset ${exprStr(s.offset)}${text}`;
+    }
     case "column":
       return `column ${id}at ${ptStr(s.at)} size ${sizeStr(s.size)}`;
     case "stair":

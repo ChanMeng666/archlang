@@ -1,6 +1,16 @@
 /** Pure geometry helpers. All coordinates in millimetres. Deterministic. */
 
 import type { Point } from "./ast.js";
+import type { Arc } from "./geometry/arc.js";
+import {
+  arcBandRing,
+  arcExtremes,
+  arcLength,
+  arcOffset,
+  arcPointAt,
+  arcTangentAt,
+  distPointToArc,
+} from "./geometry/arc.js";
 import type { GridBox } from "./geometry/grid-index.js";
 import { GridIndex } from "./geometry/grid-index.js";
 
@@ -90,7 +100,7 @@ export interface DoorLike {
   width: number;
   hinge: "left" | "right";
   swing: "in" | "out";
-  host: { a: Point; b: Point; thickness: number } | null;
+  host: { a: Point; b: Point; thickness: number; arc?: Arc } | null;
 }
 
 /**
@@ -98,11 +108,17 @@ export interface DoorLike {
  * Computed **once** from the host wall direction so the renderer (leaf line + arc
  * primitive, every backend) and the linter (swing-clearance checks) agree on the
  * exact quarter-disc the leaf sweeps. Returns `null` for an unhosted door.
+ *
+ * On a CURVED host the direction is the tangent **at the door's own position** (see
+ * {@link segmentDirAt}), so the leaf is a chord of the wall at the doorway and the
+ * quarter-disc swings off the true face. `hinge left|right` keeps its meaning — it is
+ * relative to the direction of travel along the wall, which on an arc is the direction
+ * the arc turns (`ccw` by default), not the chord.
  */
 export function doorSwing(d: DoorLike): DoorSwing | null {
   const seg = d.host;
   if (!seg) return null;
-  const dir = unit(sub(seg.b, seg.a));
+  const dir = segmentDirAt(seg, d.at);
   const n = normal(dir);
   const hw = d.width / 2;
   const hinge = d.hinge === "left" ? add(d.at, mul(dir, -hw)) : add(d.at, mul(dir, hw));
@@ -239,6 +255,23 @@ export interface WallSegment {
   wallId: string;
   /** Index of this segment within its wall's point list (0-based). */
   index: number;
+  /**
+   * Present only when this edge is a circular **arc** (`arc (x,y) radius R`, v1.24).
+   * `a`/`b` stay the CHORD endpoints, so every consumer written against a straight
+   * run still reads a truthful, in-place edge and degrades gracefully; a consumer
+   * that must be exact on a curve reads this and generalises (or declines with a
+   * catalogued diagnostic — never silently approximates).
+   */
+  arc?: Arc;
+  /**
+   * True on EVERY segment of a wall that carries at least one `arc` edge — including its
+   * straight ones. Such a wall is lowered per-segment and never through the boolean (see
+   * `lowerWalls`), so NONE of its openings is a real hole: an opening on its straight run
+   * still needs its opaque cover. Without this the cover was skipped whenever
+   * `RenderCtx.openingsVoided` was true for the plan's *other* walls, and the doorway
+   * drew as solid wall with a leaf floating over it.
+   */
+  arcWall?: boolean;
 }
 
 /** Minimal wall shape needed by the segment/hosting helpers (a resolved wall). */
@@ -248,12 +281,21 @@ export interface WallLike {
   thickness: number;
   points: Point[];
   closed: boolean;
+  /**
+   * Curved edges, indexed by SEGMENT index: entry `k` is the arc from `points[k]` to
+   * `points[k+1]`. Absent (or an absent entry) = a straight run, which is every plan
+   * written before v1.24 — that is what keeps their geometry byte-identical.
+   */
+  arcs?: ReadonlyArray<Arc | undefined>;
 }
 
 /** Flatten a single wall into its individual segments. */
 export function segmentsOfWall(w: WallLike): WallSegment[] {
   const segs: WallSegment[] = [];
+  const arcAt = (k: number): Arc | undefined => w.arcs?.[k];
+  const curved = wallHasArc(w);
   for (let k = 0; k < w.points.length - 1; k++) {
+    const arc = arcAt(k);
     segs.push({
       a: w.points[k]!,
       b: w.points[k + 1]!,
@@ -261,19 +303,85 @@ export function segmentsOfWall(w: WallLike): WallSegment[] {
       category: w.category,
       wallId: w.id,
       index: k,
+      ...(arc ? { arc } : {}),
+      ...(curved ? { arcWall: true } : {}),
     });
   }
   if (w.closed && w.points.length > 2) {
+    const k = w.points.length - 1;
+    const arc = arcAt(k);
     segs.push({
-      a: w.points[w.points.length - 1]!,
+      a: w.points[k]!,
       b: w.points[0]!,
       thickness: w.thickness,
       category: w.category,
       wallId: w.id,
-      index: w.points.length - 1,
+      index: k,
+      ...(arc ? { arc } : {}),
+      ...(curved ? { arcWall: true } : {}),
     });
   }
   return segs;
+}
+
+/** Does this wall carry any curved edge? (The one predicate the lowering splits on.) */
+export function wallHasArc(w: WallLike): boolean {
+  return w.arcs?.some((a) => a !== undefined) === true;
+}
+
+/**
+ * Distance from `p` to a wall segment — the arc-aware generalisation of
+ * {@link distPointToSegment}. Every nearest-host, on-wall and adjacency scan routes
+ * through this, so a curve competes for an opening on the same footing as a straight
+ * run instead of being measured by its chord.
+ */
+export function distPointToWallSegment(p: Point, s: { a: Point; b: Point; arc?: Arc }): number {
+  return s.arc ? distPointToArc(p, s.arc) : distPointToSegment(p, s.a, s.b);
+}
+
+/**
+ * Unit direction of travel along a wall segment **at** `p`: the chord direction for a
+ * straight run, the TANGENT for an arc. This is the single seam through which every
+ * traversal-relative rule (a door's hinge side and swing normal, a window's pane and
+ * jambs, an opening's cover) keeps meaning the same thing on a curve as on a straight
+ * wall — none of them learns about arcs.
+ */
+export function segmentDirAt(s: { a: Point; b: Point; arc?: Arc }, p: Point): Vec {
+  return s.arc ? arcTangentAt(s.arc, p) : unit(sub(s.b, s.a));
+}
+
+/** Run length of a wall segment (arc length for a curve, chord length otherwise). */
+export function segmentLength(s: { a: Point; b: Point; arc?: Arc }): number {
+  return s.arc ? arcLength(s.arc) : length(sub(s.b, s.a));
+}
+
+/** The point `along` mm from a segment's start, measured along the edge itself. */
+export function segmentPointAlong(s: { a: Point; b: Point; arc?: Arc }, along: number): Point {
+  if (s.arc) {
+    const total = arcLength(s.arc);
+    return arcPointAt(s.arc, total === 0 ? 0 : along / total);
+  }
+  return add(s.a, mul(unit(sub(s.b, s.a)), along));
+}
+
+/**
+ * The `thickness`-wide solid of one wall segment as a closed ring: the square-capped
+ * offset rectangle for a straight run, the tessellated concentric band for an arc.
+ * The ONE place a wall segment becomes an area.
+ */
+export function segmentSolid(s: { a: Point; b: Point; arc?: Arc }, thickness: number): Point[] {
+  return s.arc ? arcBandRing(s.arc, thickness) : segmentRectangle(s.a, s.b, thickness);
+}
+
+/**
+ * The extreme points of a segment's OUTER face — what a page must contain. Closed-form
+ * for an arc (endpoints plus any axis extreme inside the sweep), so a bulge is never
+ * clipped and never sized from its tessellation.
+ */
+export function segmentFaceExtremes(s: { a: Point; b: Point; arc?: Arc }, thickness: number): Point[] {
+  if (!s.arc) return segmentRectangle(s.a, s.b, thickness);
+  const half = thickness / 2;
+  return [...arcExtremes(arcOffset(s.arc, half)), ...arcExtremes(arcOffset(s.arc, -half))];
 }
 
 /** The wall segment hosting an opening point (nearest), filtered by ref if given. */
@@ -283,7 +391,7 @@ export function hostSegmentForWalls(walls: WallLike[], at: Point, ref?: string):
   let bestDist = Infinity;
   for (const w of candidates) {
     for (const s of segmentsOfWall(w)) {
-      const dist = distPointToSegment(at, s.a, s.b);
+      const dist = distPointToWallSegment(at, s);
       if (dist < bestDist) {
         bestDist = dist;
         best = s;
@@ -306,7 +414,7 @@ export function nearestWallNote<T extends WallLike & { span?: { start: number; e
   let bestDist = Infinity;
   for (const w of walls) {
     for (const s of segmentsOfWall(w)) {
-      const dist = distPointToSegment(p, s.a, s.b);
+      const dist = distPointToWallSegment(p, s);
       if (dist < bestDist) {
         bestDist = dist;
         best = w;
@@ -337,7 +445,7 @@ export function hostInfoForWalls(
   for (const w of candidates) {
     const tol = w.thickness / 2 + Math.max(w.thickness, 1);
     for (const s of segmentsOfWall(w)) {
-      const dist = distPointToSegment(at, s.a, s.b);
+      const dist = distPointToWallSegment(at, s);
       if (dist < bestDist) {
         bestDist = dist;
         host = s;
@@ -359,12 +467,22 @@ interface SegEntry {
   index: number;
 }
 
-const segBox = (s: WallSegment): GridBox => ({
-  minX: Math.min(s.a.x, s.b.x),
-  minY: Math.min(s.a.y, s.b.y),
-  maxX: Math.max(s.a.x, s.b.x),
-  maxY: Math.max(s.a.y, s.b.y),
-});
+/** Tight box of a wall segment — the arc's TRUE extremes (closed-form), not its chord:
+ *  a curve indexed by its chord would be missed by a query box over its bulge. */
+const segBox = (s: WallSegment): GridBox => {
+  const pts = s.arc ? arcExtremes(s.arc) : [s.a, s.b];
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const p of pts) {
+    if (p.x < minX) minX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y > maxY) maxY = p.y;
+  }
+  return { minX, minY, maxX, maxY };
+};
 
 /**
  * Spatial index over wall segments giving a grid-accelerated {@link hostInfoForWalls}.
@@ -446,7 +564,7 @@ export class WallGrid {
       let bestDist = Infinity;
       for (const e of entries) {
         if (!accept(e)) continue;
-        const d = distPointToSegment(at, e.seg.a, e.seg.b);
+        const d = distPointToWallSegment(at, e.seg);
         if (d < bestDist) bestDist = d;
       }
       // The box now holds every segment within `radius`. Once `radius` covers both
@@ -460,7 +578,7 @@ export class WallGrid {
     let bestDist = Infinity;
     let onWall = false;
     for (const e of filtered) {
-      const d = distPointToSegment(at, e.seg.a, e.seg.b);
+      const d = distPointToWallSegment(at, e.seg);
       if (d < bestDist) {
         bestDist = d;
         host = e.seg;
@@ -485,7 +603,7 @@ export function outerFaceBounds(walls: readonly WallLike[], rects: readonly Rect
   const b = emptyBounds();
   for (const w of walls) {
     for (const s of segmentsOfWall(w)) {
-      for (const c of segmentRectangle(s.a, s.b, s.thickness)) extendBounds(b, c.x, c.y);
+      for (const c of segmentFaceExtremes(s, s.thickness)) extendBounds(b, c.x, c.y);
     }
   }
   for (const r of rects) {
@@ -518,6 +636,10 @@ export function projectToWallFace(
   let bestDist = Infinity;
   for (const w of walls) {
     for (const s of segmentsOfWall(w)) {
+      // A curved edge has no single face coordinate along a measurement axis, so it
+      // never bounds a `dim faces|clear`; the caller warns (`W_DIM_NO_WALL`) instead of
+      // projecting onto a chord that is not where the wall is.
+      if (s.arc) continue;
       const d = sub(s.b, s.a);
       if (Math.abs(d.x) < EPS && Math.abs(d.y) < EPS) continue; // degenerate
       const dir = unit(d);
@@ -543,7 +665,7 @@ export function isOnSomeWall(walls: WallLike[], at: Point, ref?: string): boolea
   for (const w of candidates) {
     const tol = w.thickness / 2 + Math.max(w.thickness, 1);
     for (const s of segmentsOfWall(w)) {
-      if (distPointToSegment(at, s.a, s.b) <= tol) return true;
+      if (distPointToWallSegment(at, s) <= tol) return true;
     }
   }
   return false;

@@ -7,7 +7,7 @@ import type { SceneNode } from "../scene.js";
 import type { RDoor, RRoom } from "../ir.js";
 import type { Value } from "../expr.js";
 import type { WallSegment } from "../geometry.js";
-import { add, doorSwing, mul, nearestWallNote, normal, sub, unit } from "../geometry.js";
+import { add, doorSwing, mul, nearestWallNote, normal, segmentDirAt, sub, unit } from "../geometry.js";
 import { parseAttachTarget, resolveAttachment } from "../attach.js";
 import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
 
@@ -184,14 +184,21 @@ export const door: ElementDef = {
     const seg = dr.host;
     if (!seg) return [];
     const { theme, sizes } = ctx;
-    const d = unit(sub(seg.b, seg.a));
+    // On a CURVED host the direction is the TANGENT at the doorway, so the cover spans a
+    // chord of the wall at that point and the jambs run radially — and the leaf and swing
+    // (computed from the same tangent inside `doorSwing`) can never disagree with it.
+    const d = segmentDirAt(seg, dr.at);
     const n = normal(d);
     // Only paint the cover when the wall lowering has NOT already voided the wall at
     // this doorway (see `RenderCtx.openingsVoided`): `theme.opening` is the page
     // background, so covering a real hole laid a white band across the floor either
     // side of the door. When the hole is real the polygon stays — invisible — because
     // the ASCII/DXF backends locate the doorway by the cover polygon on this pass.
-    const voided = ctx.openingsVoided === true && (seg.a.x === seg.b.x || seg.a.y === seg.b.y);
+    // A wall carrying ANY `arc` edge is lowered per-segment and subtracts nothing, so no
+    // doorway on it is a real hole — not on the curve, and not on its straight runs
+    // either. `seg.arcWall` is that per-wall fact (`seg.arc` alone would miss the
+    // straight segments, and a semicircle's chord is axis-aligned anyway).
+    const voided = ctx.openingsVoided === true && !seg.arcWall && (seg.a.x === seg.b.x || seg.a.y === seg.b.y);
     const h = seg.thickness / 2 + (voided ? 0 : sizes.wallStroke);
     const hw = dr.width / 2;
     const cover: Point[] = [

@@ -44,6 +44,7 @@ import type { World } from "./world.js";
 import { NULL_WORLD } from "./world.js";
 import { idToken } from "./identity.js";
 import type { WallSegment } from "./geometry.js";
+import type { Arc } from "./geometry/arc.js";
 import { outerFaceBounds, segmentsOfWall, WallGrid } from "./geometry.js";
 import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
@@ -131,6 +132,13 @@ export interface RWall extends RBase {
   /** Extra hatch rotation in degrees (default 0). */
   hatchAngle: number;
   points: Point[];
+  /**
+   * Solved curved edges (v1.24), indexed by SEGMENT index: entry `k` is the arc from
+   * `points[k]` to `points[k+1]`. Solved ONCE here at resolve (centre, radius, signed
+   * sweep) so no consumer re-derives a curve. Absent for an all-straight polyline —
+   * which is every wall written before v1.24, and why their bytes are unchanged.
+   */
+  arcs?: Array<Arc | undefined>;
   closed: boolean;
   /** Openings (doors/windows) hosted on this wall; subtracted from its solid. */
   openings: Opening[];
@@ -175,6 +183,13 @@ export interface RRoom extends RBase {
    * floor. Vertices are grid-snapped, in source order, with no repeated last point.
    */
   poly?: Point[];
+  /**
+   * A CIRCULAR floor (`room circle at (cx,cy) radius R`, v1.24) — the exact centre and
+   * radius. When present, {@link RRoom.poly} also holds the 48-gon tessellation (so every
+   * ring consumer works unchanged) and `at`/`size` the bounding box; the AREA must be
+   * taken from this in closed form (πR²), never from the tessellation.
+   */
+  circle?: { c: Point; r: number };
   /** Explicit label/area anchor (`label "…" at (x,y)`); absent = the derived centre. */
   labelAt?: Point;
   label?: string;

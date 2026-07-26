@@ -5,11 +5,12 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**62 errors** · **39 warnings**
+**65 errors** · **39 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
 | [`E_ACC_PLACEMENT`](#e_acc_placement) | error | `accTitle`/`accDescr` used outside the plan level. |
+| [`E_ARC_RADIUS`](#e_arc_radius) | error | Arc radius too small for its chord. |
 | [`E_ARGCOUNT`](#e_argcount) | error | Component called with the wrong number of arguments. |
 | [`E_ARITY`](#e_arity) | error | Built-in function called with the wrong number of arguments. |
 | [`E_ASSIGN_UNDEF`](#e_assign_undef) | error | Assignment to an undeclared name. |
@@ -17,6 +18,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_ATTACH_WALL_REF`](#e_attach_wall_ref) | error | Opening attached to an unknown or ambiguous wall. |
 | [`E_CALL_DEPTH`](#e_call_depth) | error | Value-function call stack too deep. |
 | [`E_COLUMN_SIZE`](#e_column_size) | error | Column must have a positive size. |
+| [`E_DIM_CURVE_REF`](#e_dim_curve_ref) | error | Invalid `dim radius`/`dim diameter` reference. |
 | [`E_DIV_ZERO`](#e_div_zero) | error | Division or modulo by zero. |
 | [`E_DOMAIN`](#e_domain) | error | Math domain error. |
 | [`E_DOOR_WIDTH`](#e_door_width) | error | Door must have a positive width. |
@@ -59,6 +61,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_REDEF`](#e_redef) | error | Name already defined in this scope. |
 | [`E_ROOM_POLY_DEGENERATE`](#e_room_poly_degenerate) | error | Polygon room has fewer than three effective vertices. |
 | [`E_ROOM_POLY_SELF_INTERSECT`](#e_room_poly_self_intersect) | error | Polygon room intersects itself. |
+| [`E_ROOM_RADIUS`](#e_room_radius) | error | Circular room needs a positive radius. |
 | [`E_ROOM_SIZE`](#e_room_size) | error | Room must have a positive size. |
 | [`E_STAIR_WIDTH`](#e_stair_width) | error | Stair flight `width` is outside the footprint. |
 | [`E_STRIP_NEST`](#e_strip_nest) | error | Illegal `strip` nesting. |
@@ -121,6 +124,18 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 
 ```arch
 component c() { accDescr "x" }   # error: only allowed at plan level
+```
+
+## E_ARC_RADIUS
+
+*error* — Arc radius too small for its chord.
+
+**Cause.** An `arc (x,y) radius R` edge asks for a circle of radius R through the previous vertex and this one, but R is less than half the straight-line distance between them (or is not positive) — no such circle exists.
+
+**Fix.** Raise the radius to at least half the chord (the message states the minimum), or move the endpoints closer together. `arch fix` applies the minimum for you.
+
+```arch
+wall exterior thickness 200 { (0,0) arc (10000,0) radius 3000 }   # error: needs R >= 5000
 ```
 
 ## E_ARGCOUNT
@@ -206,6 +221,18 @@ let f(n) = f(n + 1)   # error: never terminates
 
 ```arch
 column at (0,0) size 0x300   # error: width is 0
+```
+
+## E_DIM_CURVE_REF
+
+*error* — Invalid `dim radius`/`dim diameter` reference.
+
+**Cause.** A curve call-out references an element that does not exist, is not the right shape (a `diameter` on a rectangular room, a `radius` on a wall with no `arc` edge), matches several walls, or omits `segment <n>` on a wall with more than one arc. The compiler will not guess which curve was meant.
+
+**Fix.** Name an existing, unique wall id whose edge is an `arc` (adding `segment <n>` when it has several), or an existing `room circle` id for `diameter`.
+
+```arch
+dim radius w1   # error if w1 is straight, unknown, or has two arc edges
 ```
 
 ## E_DIV_ZERO
@@ -720,6 +747,18 @@ room polygon (0,0) (4000,0) (8000,0)   # error: all three are collinear
 
 ```arch
 room polygon (0,0) (4000,4000) (4000,0) (0,4000)   # error: bow-tie
+```
+
+## E_ROOM_RADIUS
+
+*error* — Circular room needs a positive radius.
+
+**Cause.** A `room circle at (cx,cy) radius R` has R of zero or less, so it encloses no floor — there is no area, no centroid and no containment test to compute.
+
+**Fix.** Give the room a positive radius in millimetres.
+
+```arch
+room circle at (5000,5000) radius 0   # error: no floor
 ```
 
 ## E_ROOM_SIZE

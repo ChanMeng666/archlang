@@ -32,6 +32,7 @@
 
 import type { Point } from "../ast.js";
 import type { Scene, SceneNode, ScenePrim } from "../scene.js";
+import { arcFromPrimitive, arcTessellate } from "../geometry/arc.js";
 
 export interface AsciiOptions {
   /** Target grid width in characters (default 80). Clamped to ≥ 1. */
@@ -99,8 +100,14 @@ function polylinesOf(prim: ScenePrim): Array<{ pts: Point[]; closed: boolean }> 
       return prim.region.map((l) => ({ pts: l, closed: true }));
     case "line":
       return [{ pts: [prim.a, prim.b], closed: false }];
+    case "arc":
+      // A CURVED WALL FACE rasterizes as its tessellation. This is reached only for arcs
+      // on the wall passes (the caller filters to `wallFill`/`wallFace`), and until v1.24
+      // the only arc in the language was a door swing on the `doors` pass — so every
+      // pre-existing plan's ASCII output is unchanged.
+      return [{ pts: arcTessellate(arcFromPrimitive(prim)), closed: false }];
     default:
-      return []; // arc / text contribute no wall linework
+      return []; // text contributes no wall linework
   }
 }
 
@@ -256,8 +263,11 @@ export function renderAscii(scene: Scene, opts: AsciiOptions = {}): string {
       n.layer === "labels" && n.prim.t === "text" && n.prim.weight !== undefined,
   );
   for (const node of scene.nodes) {
-    if (node.layer !== "floor" || node.prim.t !== "polygon") continue; // room floor rect
-    const pts = node.prim.pts;
+    // A room floor is a polygon (rect / polygon room) or — since v1.24 — a true `circle`
+    // (a circular room). Both reduce to the box the label is centred in. No other floor
+    // primitive exists, so nothing else is skipped here.
+    if (node.layer !== "floor" || (node.prim.t !== "polygon" && node.prim.t !== "circle")) continue;
+    const pts = pointsOf(node.prim);
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;

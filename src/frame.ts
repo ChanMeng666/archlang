@@ -31,6 +31,7 @@
 import type { Point } from "./ast.js";
 import type { Span } from "./diagnostics.js";
 import type { WallSegment } from "./geometry.js";
+import type { Arc } from "./geometry/arc.js";
 import type { ResolvedElement, RFurniture, RRoom, RWall } from "./ir.js";
 
 /**
@@ -247,9 +248,33 @@ export function nsId(f: Frame, id: string): string {
   return f.prefix ? `${f.prefix}.${id}` : id;
 }
 
+/**
+ * Map a solved arc into global coordinates. A frame is a signed permutation + translation
+ * — an EXACT isometry — so a circle stays a circle of the same radius: the centre and both
+ * endpoints transform as points, and the swept ANGLE is preserved in magnitude while its
+ * ROTATIONAL SENSE reverses under a reflection (a mirrored clockwise curve reads
+ * counter-clockwise). `start` is re-derived from the transformed centre and endpoint rather
+ * than rotated numerically, so a quarter-turn is bit-exact.
+ */
+function transformArc(f: Frame, arc: Arc): Arc {
+  const center = tp(f, arc.center);
+  const a = tp(f, arc.a);
+  const b = tp(f, arc.b);
+  return {
+    center,
+    r: arc.r,
+    a,
+    b,
+    sweep: det(f) < 0 ? -arc.sweep : arc.sweep,
+    start: Math.atan2(a.y - center.y, a.x - center.x),
+  };
+}
+
 /** Map a wall segment (a door's resolved host) into global coordinates. */
 function transformSegment(f: Frame, s: WallSegment): WallSegment {
-  return { ...s, a: tp(f, s.a), b: tp(f, s.b), wallId: nsId(f, s.wallId) };
+  const out: WallSegment = { ...s, a: tp(f, s.a), b: tp(f, s.b), wallId: nsId(f, s.wallId) };
+  if (s.arc) out.arc = transformArc(f, s.arc);
+  return out;
 }
 
 /**
@@ -280,6 +305,9 @@ function transformGeometry(f: Frame, el: ResolvedElement, id: string, reflected:
         points: el.points.map((p) => tp(f, p)),
         openings: el.openings.map((o) => ({ at: tp(f, o.at), width: o.width })),
       };
+      // Curved edges ride along exactly (see `transformArc`): a placed component's
+      // curved facade is the same curve, turned or mirrored, never a re-fitted one.
+      if (el.arcs) w.arcs = el.arcs.map((arc) => (arc ? transformArc(f, arc) : undefined));
       return w;
     }
     case "room": {
@@ -291,6 +319,9 @@ function transformGeometry(f: Frame, el: ResolvedElement, id: string, reflected:
       // which flips the winding under a reflection; nothing downstream reads winding
       // (area is taken absolute, containment is a crossing count).
       if (el.poly) out.poly = el.poly.map((p) => tp(f, p));
+      // A circle is invariant under an isometry apart from where its centre lands, so
+      // the radius carries over untouched and the area stays EXACTLY πR².
+      if (el.circle) out.circle = { c: tp(f, el.circle.c), r: el.circle.r };
       if (el.labelAt) out.labelAt = tp(f, el.labelAt);
       // The relational constraint is DISCHARGED by the instance's own placement pass
       // (which ran in the local frame, where `right-of` means the component's right).

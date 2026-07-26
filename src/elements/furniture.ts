@@ -335,6 +335,14 @@ function placeAgainst(
   else return err(`wall "${ag.wall}" has ${segs.length} segments — add \`segment <n>\``);
   if (segIdx < 0 || segIdx >= segs.length) return err(`segment ${segIdx} is out of range (0..${segs.length - 1})`);
   const seg = segs[segIdx]!;
+  // A CURVED segment has no single back direction: a rectangular piece flush against it
+  // would touch at one point and gap everywhere else, and the quarter-turn rotation this
+  // derives has no meaning on a tangent that changes along the run. Decline crisply
+  // rather than pick an angle (ADR 0005 — no invisible architect).
+  if (seg.arc)
+    return err(
+      `segment ${segIdx} of wall "${ag.wall}" is an arc — a curved wall has no single back direction, so place the piece with \`at (x,y)\` + \`rotate\` instead`,
+    );
   const d = unit(sub(seg.b, seg.a));
   const horiz = Math.abs(d.y) < 1e-9;
   const vert = Math.abs(d.x) < 1e-9;
