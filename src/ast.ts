@@ -463,6 +463,47 @@ export interface InstanceNode extends NodeBase {
   args: Expr[];
 }
 
+/** A quarter-turn a `place` may apply to a component instance. */
+export type PlaceRotate = 0 | 90 | 180 | 270;
+
+/**
+ * `place NAME(args) as <name> at (x,y) [rotate 0|90|180|270] [mirror x|y]` —
+ * instantiate a component as an **addressable, transformed instance** (component v2).
+ *
+ * This is the counterpart of the bare call `NAME(args)`, which stays a **legacy macro**:
+ * it splices the body into the caller's coordinate system and the caller's id space, with
+ * global per-kind auto-id counters. `place` instead treats the component as a closed
+ * world authored in LOCAL coordinates from `(0,0)`:
+ *
+ *  - `as <name>` is REQUIRED — the instance is addressable, and every id born inside it is
+ *    namespaced `<name>.<id>` (auto-id counters restart per instance, so two instances are
+ *    order-independent).
+ *  - `at (x,y)` is REQUIRED — where the component's local origin lands. There is no
+ *    implicit placement: a component that must be positioned by the caller says so.
+ *  - `rotate`/`mirror` are a **rigid transform of the whole instance**, applied to the
+ *    resolved sub-plan. Both are exact (quarter turns + axis reflections, integer
+ *    arithmetic — never trig), so output stays byte-stable.
+ *
+ * `mirror x` flips the instance LEFT↔RIGHT (its x coordinates negate); `mirror y` flips it
+ * TOP↔BOTTOM. A mirror is a real physical reflection: door swings come out mirror-image.
+ */
+export interface PlaceNode extends NodeBase {
+  kind: "place";
+  /** Component (or whole-file import alias) being instantiated. */
+  name: string;
+  args: Expr[];
+  /** The `as <name>` instance name — required; also the id namespace prefix. */
+  alias: string;
+  /** Byte span of the alias token, for the duplicate-instance diagnostic. */
+  aliasSpan?: Span;
+  /** Where the component's local origin lands in the caller's coordinates. */
+  at: ExprPoint;
+  /** Quarter-turn applied to the instance (default 0). */
+  rotate?: PlaceRotate;
+  /** Axis reflection applied to the instance before the rotation. */
+  mirror?: "x" | "y";
+}
+
 /** `for NAME in <expr> { body }` — expanded over the iterable during resolve. */
 export interface ForNode extends NodeBase {
   kind: "for";
@@ -524,6 +565,7 @@ export type Statement =
   | AstElement
   | LetNode
   | InstanceNode
+  | PlaceNode
   | ForNode
   | IfNode
   | WhileNode
@@ -551,6 +593,28 @@ export interface ComponentDef {
   body: Statement[];
   line: number;
   span?: Span;
+  /**
+   * The module path this definition was parsed from, when it came in through an
+   * `import`. Its `body`'s spans (and therefore every fix edit derived from them) are
+   * offsets into THAT file, not into the compiled source — so every diagnostic raised
+   * while expanding this body carries it as {@link import("./diagnostics.js").Diagnostic.file},
+   * and `applyFixes` refuses to splice a foreign-file edit into the importer. Absent for
+   * a component declared in the compiled source (the historical case).
+   */
+  file?: string;
+  /**
+   * The component map this body's calls resolve against, when it is not the importing
+   * plan's. Set for the synthetic whole-file component built by `import "x.arch" as N`,
+   * so a module that calls its OWN private helpers still expands after being imported by
+   * name alone. Absent = resolve against the instantiating plan's components.
+   */
+  scope?: Map<string, ComponentDef>;
+  /**
+   * True for the synthetic component `import "<file>" as <name>` builds out of a
+   * module's top-level drawable statements — the "one file authors one room/area"
+   * form. Recorded for diagnostics only.
+   */
+  wholeFile?: boolean;
 }
 
 /** One named item in an `import` list, optionally renamed with `as`. */
@@ -571,6 +635,15 @@ export interface ImportNode {
   items: ImportItem[];
   /** `import "x": *` — bring in every exported component. */
   star: boolean;
+  /**
+   * `import "wing.arch" as wing` (no `:` item list) — **whole-file instantiation**: the
+   * module's own top-level DRAWABLE statements become one implicit zero-parameter
+   * component bound to this name, so a file that draws a room IS a component. The
+   * module's plan-level settings (`units`/`grid`/`paper`/`scale`/`north`/`title`/…) are
+   * deliberately IGNORED — settings come from the root plan, because one drawing is
+   * issued on one sheet at one scale.
+   */
+  wholeAs?: string;
   line: number;
   span?: Span;
 }

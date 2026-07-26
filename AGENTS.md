@@ -128,7 +128,9 @@ re-propose, re-open, or contradict them anywhere.
 │                     cli-reference.md (GEN from src/manifest.ts, `gen:cli`) · adr/ (archive/ holds the frozen WORK-LOG)
 ├─ brand/             logo kit + brand book (README.md) — archlang-logo-master.svg is byte-sacred (iron law)
 ├─ examples/          studio · two-bed · parametric · themed · relational · attached · accessible ·
-│                     museum (the LARGE-building flagship: paper A1 @ 1:200) · lib/
+│                     museum (the LARGE-building flagship: paper A1 @ 1:200) · two-storey ·
+│                     museum-wing + museum-wings (the COMPONENT-v2 flagship: one wing authored in
+│                     local coords, imported as a whole FILE and placed twice, once mirrored) · lib/
 ├─ eval/              NL→ArchLang authorability harness: corpus.json (26 briefs) · goldens/ · run.ts ·
 │                     assertions.ts + synonyms.ts (re-export SHIMS over src/intent*.ts since T4) ·
 │                     judge-fixture.json (byte-equivalence) · rubric.md (frozen) · faults/ + l1.ts (L1 gate) ·
@@ -158,7 +160,10 @@ from one place), and `vertical.ts` (the shared `stair`/`elevator`/`escalator` se
 run is entered from — a closed-form drafting convention, `dir`-dependent, used by BOTH the symbol and
 the nav grid — what its footprint does to circulation, and `verticalConnections`/`verticalReach`, the
 same-id-on-two-levels shaft graph that `describe().vertical`, `lint`'s per-storey reachability and
-`checkGraph` all read). The CLI lives in `src/cli.ts` (dispatch) +
+`checkGraph` all read), and `frame.ts` (the `place` transform: a frame is a 2×2 signed-permutation
+matrix + translation — exact, composable, no trig — and `transformElement` is the ONE place a
+resolved element crosses from an instance's local frame into plan coordinates, including the handed
+flips a reflection forces; see [ADR 0016](docs/adr/0016-component-instances-and-frames.md)). The CLI lives in `src/cli.ts` (dispatch) +
 `src/cli/` (command modules); a single root `npm install` bootstraps every workspace.
 
 ### The sites' design system — "The Compile Boundary" (docs + playground)
@@ -382,6 +387,24 @@ source (.arch)
   is git-ignored (HF-only); on re-upload the HF card's `task_categories` must come from HF's official
   list (`text-generation`, not `text2text-generation` — the upload warns), namespace uses the canonical
   `ChanMeng666` casing. See `dataset/README.md` and [ADR 0013](docs/adr/0013-repair-trajectory-dataset.md).
+- **(`place`) NEVER pre-transform a resolver's INPUT coordinates.** A `place`d instance resolves in
+  its OWN frame — against its own walls and rooms, with its own `placeRelational` pass — and
+  `frame.ts`'s `transformElement` then carries the resolved element into plan coordinates. That is
+  not an implementation accident: every derived-geometry rule is stated in world terms (`anchor
+  top-left` names a corner of the page, `against wall … side left` a face, `hinge left` a wall
+  handedness, `right-of` the page's +x, a room's `at` its TOP-LEFT — which a turn moves), so
+  feeding rotated coordinates in would silently change what each one means and force every element
+  resolver to learn about frames. Add a handed rule ⇒ add its flip to `transformElement` (`det < 0`),
+  not a frame parameter to the element. See [ADR 0016](docs/adr/0016-component-instances-and-frames.md).
+- **(`place`) A bare `wing()` call is still the LEGACY MACRO and must stay byte-identical** — caller's
+  coordinates, caller's GLOBAL auto-id counters, no namespace, no zone. A plan with no `place` has
+  exactly one resolution group and takes the historical single pass; the SVG snapshots and visual
+  goldens are the gate. Never "unify" the two forms.
+- **A diagnostic's `span` is not always in the file you compiled.** A component's body statements
+  carry spans into the module they were WRITTEN in, so `Diagnostic.file` names that module when it is
+  not the compiled source — and `applyFixes` **skips** any `FixSuggestion` carrying a `file`. Before
+  v1.22 it did not, and an imported component's off-wall-door fix rewrote the middle of the
+  importer's `wall` statement. Any new consumer of `diagnostics[].fixes` must honour `file`.
 - **Door `hinge left/right` is relative to the wall's traversal direction**, not the screen — so the
   hinge side can flip with the order of a wall's points. The swing quarter-disc is computed once in
   `geometry.ts` (`doorSwing`) and shared by `door.render()` and the `W_SWING_OBSTRUCTED` lint rule —

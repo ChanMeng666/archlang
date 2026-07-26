@@ -74,10 +74,32 @@ const OPS_USED = [
   "[",
   "]",
 ];
-function assertVocab(): void {
+/**
+ * `KEYWORDS.control` entries the grammar covers structurally rather than as a literal of
+ * their own: `plan` is the root, `else` rides `if-stmt`. Everything else must appear as a
+ * quoted terminal somewhere in the productions.
+ */
+const CONTROL_COVERED_STRUCTURALLY = ["plan", "else"];
+
+function assertVocab(body: [string, string][]): void {
   const missing = OPS_USED.filter((o) => !(OPERATORS as readonly string[]).includes(o));
   if (missing.length) {
     throw new Error(`gen-gbnf: operators used by the grammar are missing from OPERATORS: ${missing.join(" ")}`);
+  }
+  // The guard `place` needed. A new statement keyword that never reaches the grammar
+  // produces a decoding grammar that silently REJECTS valid source — the constrained
+  // sampler simply cannot emit it — and `check:drift` stays green the whole time,
+  // because the generator reproduces its own stale output perfectly. Same failure mode
+  // `gen-llm-spec` grew a guard for; this is that guard, for this generator.
+  const emitted = body.map(([, prod]) => prod).join(" ");
+  const uncovered = KEYWORDS.control.filter(
+    (k) => !CONTROL_COVERED_STRUCTURALLY.includes(k) && !emitted.includes(lit(k)),
+  );
+  if (uncovered.length) {
+    throw new Error(
+      `gen-gbnf: KEYWORDS.control entries have no production: ${uncovered.join(", ")}. ` +
+        `Add a rule that emits the literal, or list it in CONTROL_COVERED_STRUCTURALLY.`,
+    );
   }
 }
 
@@ -106,7 +128,9 @@ function rules(): [string, string][] {
     ],
     [
       "block-stmt",
-      `element | let-stmt | for-stmt | if-stmt | while-stmt | set-stmt | zone-stmt | instance-stmt | assign-stmt`,
+      // `place-stmt` precedes `instance-stmt`: both begin with a word, and the bare-call
+      // rule would otherwise consume `place` as the component name.
+      `element | let-stmt | for-stmt | if-stmt | while-stmt | set-stmt | zone-stmt | place-stmt | instance-stmt | assign-stmt`,
     ],
     [
       "element",
@@ -152,7 +176,9 @@ function rules(): [string, string][] {
     // ---- decls / control -------------------------------------------------
     ["component-stmt", `"component" rws ident ws "(" ws param-list? ws ")" ws block`],
     ["param-list", `ident ( ws "," ws ident )*`],
-    ["import-stmt", `"import" rws string ws ":" ws import-items`],
+    // `import "x.arch" as name` (no item list) is WHOLE-FILE instantiation: the module's
+    // own top-level statements become one zero-argument component.
+    ["import-stmt", `"import" rws string ( ws ":" ws import-items | rws "as" rws ident )`],
     ["import-items", `"*" | import-item ( ws "," ws import-item )*`],
     ["import-item", `ident ( rws "as" rws ident )?`],
     ["let-stmt", `"let" rws ident ( ws "(" ws param-list? ws ")" )? ws "=" ws expr`],
@@ -164,6 +190,14 @@ function rules(): [string, string][] {
     ["set-entries", `set-entry ( ws "," ws set-entry )*`],
     ["set-entry", `ident ws ":" ws expr`],
     ["instance-stmt", `ident ws "(" ws ( expr ( ws "," ws expr )* )? ws ")"`],
+    // `place C(args) as name at (x,y) [rotate n] [mirror x|y]` — `as` and `at` are both
+    // REQUIRED, and the grammar says so: an optional `as` would let a decoder emit the
+    // legacy inline macro while believing it wrote an addressable instance.
+    [
+      "place-stmt",
+      `"place" rws ident ws "(" ws ( expr ( ws "," ws expr )* )? ws ")" rws "as" rws ident rws "at" ws point ( rws "rotate" ws number )? ( rws "mirror" rws mirror-axis )?`,
+    ],
+    ["mirror-axis", `"x" | "y"`],
     ["assign-stmt", `ident ws "=" ws expr`],
     ["block", `"{" ws ( block-stmt ws )* "}"`],
 
@@ -190,25 +224,25 @@ function rules(): [string, string][] {
     ],
     ["wall-material", `"material" rws ident ( rws ( "scale" | "angle" ) ws expr ){0,2}`],
     ["room-stmt", `"room" rws id-opt room-pos ws "size" ws dims ( ws room-label )? ( ws room-uses )?`],
-    ["room-pos", `"at" ws point | rel-dir rws ident ( rws "align" rws ident )? ( rws "gap" ws expr )?`],
+    ["room-pos", `"at" ws point | rel-dir rws ref ( rws "align" rws ident )? ( rws "gap" ws expr )?`],
     ["rel-dir", `"right-of" | "left-of" | "below" | "above"`],
     ["room-label", `"label" ws string`],
     ["room-uses", `"uses" rws use-kind ( rws use-kind )*`],
     ["use-kind", useKind],
     ["door-stmt", `"door" rws id-opt opening-target ws "width" ws expr ( ws door-clause )*`],
-    ["door-clause", `"wall" rws ident | "hinge" rws hinge-val | "swing" rws swing-val`],
+    ["door-clause", `"wall" rws ref | "hinge" rws hinge-val | "swing" rws swing-val`],
     ["hinge-val", `"near" rws ( "start" | "end" ) | "left" | "right"`],
-    ["swing-val", `"into" rws ident | "in" | "out"`],
-    ["window-stmt", `"window" rws id-opt opening-target ws "width" ws expr ( ws "wall" rws ident )?`],
-    ["opening-stmt", `"opening" rws id-opt opening-target ws "width" ws expr ( ws "wall" rws ident )?`],
-    ["opening-target", `"at" ws point | "on" rws ident rws "at" ws attach-pos`],
+    ["swing-val", `"into" rws ref | "in" | "out"`],
+    ["window-stmt", `"window" rws id-opt opening-target ws "width" ws expr ( ws "wall" rws ref )?`],
+    ["opening-stmt", `"opening" rws id-opt opening-target ws "width" ws expr ( ws "wall" rws ref )?`],
+    ["opening-target", `"at" ws point | "on" rws ref rws "at" ws attach-pos`],
     ["attach-pos", `"center" | number ws "%" | number`],
     ["furniture-stmt", `"furniture" rws id-opt ident rws furn-pos ( ws furn-clause )*`],
-    ["furn-pos", `"against" rws "wall" rws ident ( ws against-opt )* | "in" rws ident rws in-place | "at" ws point`],
+    ["furn-pos", `"against" rws "wall" rws ref ( ws against-opt )* | "in" rws ref rws in-place | "at" ws point`],
     ["against-opt", `"segment" ws expr | "offset" ws expr | "side" rws ident`],
     ["in-place", `"centered" | "anchor" rws anchor ( ws "flush" )? ( ws "inset" ws expr )?`],
     ["anchor", anchor],
-    ["furn-clause", `"size" ws dims | "label" ws string | "rotate" ws expr | "in" rws ident`],
+    ["furn-clause", `"size" ws dims | "label" ws string | "rotate" ws expr | "in" rws ref`],
     ["dim-stmt", `"dim" ( rws dim-ref )? ws point ws "->" ws point ( ws "offset" ws expr )? ( ws "text" ws string )?`],
     ["dim-ref", `"faces" | "clear"`],
     ["column-stmt", `"column" rws id-opt "at" ws point ws "size" ws dims`],
@@ -253,6 +287,10 @@ function rules(): [string, string][] {
     ["frac", `"." digits`],
     ["unit", `"mm" | "cm" | "m"`],
     ["ident", `[a-zA-Z_] [a-zA-Z0-9_]*`],
+    // A REFERENCE to an element, which may be namespaced by a `place`d instance
+    // (`west.perimeter`). Declarations keep the undotted `ident` — a dotted name in a
+    // declaration position is `E_DOTTED_DECL`, and the grammar must not invite one.
+    ["ref", `ident ( "." ident )*`],
     ["string", `"\\"" str-char* "\\""`],
     ["str-char", `str-plain | str-esc | interp`],
     ["str-plain", `[^"\\\\{}\\n]`],
@@ -287,10 +325,9 @@ const HEADER = `# ArchLang GBNF grammar — a constrained-decoding grammar for l
 
 /** The GBNF grammar text (pure — safe for the drift test). */
 export function renderGbnf(): string {
-  assertVocab();
-  const body = rules()
-    .map(([name, prod]) => `${name} ::= ${prod}`)
-    .join("\n");
+  const pairs = rules();
+  assertVocab(pairs);
+  const body = pairs.map(([name, prod]) => `${name} ::= ${prod}`).join("\n");
   return `${HEADER}\n${body}\n`;
 }
 

@@ -16,6 +16,8 @@ import type {
   LetNode,
   LevelNode,
   NorthDir,
+  PlaceNode,
+  PlaceRotate,
   PlanNode,
   SetNode,
   SetOverride,
@@ -530,9 +532,30 @@ class Parser {
     if (this.isKeyword("id")) {
       this.next();
       this.eat("equals");
-      return this.eatIdent().value;
+      return this.declName(this.eatIdent());
     }
     return "";
+  }
+
+  /**
+   * A name in a DECLARATION position. A dotted name (`west.main`) addresses an element
+   * inside a `place`d instance — it can only ever be a REFERENCE, because the namespace
+   * belongs to the `place`, not to the statement being declared. Report it (once, with
+   * the undotted suggestion) and keep the last segment so the rest of the statement
+   * still parses.
+   */
+  private declName(t: Token): string {
+    const dot = t.value.indexOf(".");
+    if (dot < 0) return t.value;
+    const tail = t.value.slice(t.value.lastIndexOf(".") + 1);
+    this.diagnostics.push({
+      severity: "error",
+      code: "E_DOTTED_DECL",
+      message: `"${t.value}" cannot be DECLARED — a dotted name addresses an element inside a \`place\`d instance, so it is a reference only`,
+      span: { start: t.start, end: t.end },
+      hints: [`declare it as "${tail}" and address it from outside as "<instance>.${tail}"`],
+    });
+    return tail;
   }
 
   private parseNorth(): NorthDir {
@@ -718,7 +741,7 @@ class Parser {
 
   private parseLet(): LetNode {
     const kw = this.eatKeyword("let");
-    const name = this.eatIdent().value;
+    const name = this.declName(this.eatIdent());
     // `let NAME(params) = body` defines a value-function (closure).
     if (this.isType("lparen")) {
       this.next();
@@ -736,6 +759,70 @@ class Parser {
     this.eat("equals");
     const value = parseExprPratt(this.ctx);
     return { kind: "let", id: "", name, value, line: kw.line };
+  }
+
+  /**
+   * `place NAME(args) as <name> at (x,y) [rotate 0|90|180|270] [mirror x|y]` — the
+   * component-v2 instantiation form.
+   *
+   * `as` and `at` are both REQUIRED, and the grammar says so rather than defaulting: an
+   * instance that cannot be addressed is not a component, and one that lands wherever the
+   * body's literals happen to point is the legacy macro (which is still spelled
+   * `NAME(args)` and is unchanged). Rejecting the omission here, at parse time, is what
+   * keeps the two forms from blurring into each other.
+   */
+  private parsePlace(): PlaceNode {
+    const kw = this.eatKeyword("place");
+    const nameTok = this.eatIdent();
+    this.eat("lparen");
+    const args: Expr[] = [];
+    while (!this.isType("rparen") && !this.isType("eof")) {
+      args.push(parseExprPratt(this.ctx));
+      if (this.isType("comma")) this.next();
+      else break;
+    }
+    this.eat("rparen");
+    if (!this.isKeyword("as")) {
+      this.fail(
+        `\`place ${nameTok.value}(…)\` needs \`as <name>\` — a placed instance is addressable (write \`${nameTok.value}(…)\` for the legacy inline macro)`,
+      );
+    }
+    this.next();
+    const aliasTok = this.eatIdent();
+    const alias = this.declName(aliasTok);
+    if (!this.isKeyword("at")) {
+      this.fail(`\`place ${nameTok.value}(…) as ${alias}\` needs \`at (x, y)\` — a component is authored from (0,0)`);
+    }
+    this.next();
+    const at = this.parsePoint();
+    const node: PlaceNode = {
+      kind: "place",
+      id: "",
+      name: nameTok.value,
+      args,
+      alias,
+      aliasSpan: { start: aliasTok.start, end: aliasTok.end },
+      at,
+      line: kw.line,
+    };
+    if (this.isKeyword("rotate")) {
+      this.next();
+      const rt = this.peek();
+      const deg = this.eatNumber();
+      if (deg !== 0 && deg !== 90 && deg !== 180 && deg !== 270) {
+        this.fail(`\`place … rotate\` must be 0, 90, 180 or 270 (got ${deg})`, rt);
+      }
+      node.rotate = deg as PlaceRotate;
+    }
+    if (this.isKeyword("mirror")) {
+      this.next();
+      const mt = this.eatIdent();
+      if (mt.value !== "x" && mt.value !== "y") {
+        this.fail(`\`place … mirror\` must be "x" (flip left↔right) or "y" (flip top↔bottom)`, mt);
+      }
+      node.mirror = mt.value;
+    }
+    return node;
   }
 
   private parseInstance(): InstanceNode {
@@ -800,8 +887,9 @@ class Parser {
     // `zone` is legal wherever a statement is — plan level, inside a `level` block, inside
     // a control-flow body or a component — because it is a pure metadata wrapper with no
     // geometric semantics. Handled here (not in `parsePlan`'s switch) so all of those
-    // positions get it from one place.
+    // positions get it from one place. `place` rides the same seam.
     if (t.value === "zone") node = this.parseZone(components, selfName);
+    else if (t.value === "place") node = this.parsePlace();
     else if (t.value === "for") node = this.parseFor(components, selfName);
     else if (t.value === "if") node = this.parseIf(components, selfName);
     else if (t.value === "while") node = this.parseWhile(components, selfName);
@@ -855,7 +943,7 @@ class Parser {
   /** `for NAME in <expr> { body }`. */
   private parseFor(components: Map<string, ComponentDef>, selfName?: string): ForNode {
     const kw = this.eatKeyword("for");
-    const varName = this.eatIdent().value;
+    const varName = this.declName(this.eatIdent());
     this.eatKeyword("in");
     const iter = parseExprPratt(this.ctx);
     const body = this.parseBlockBody(components, selfName);
@@ -883,6 +971,22 @@ class Parser {
   private parseImport(): ImportNode {
     const kw = this.eatKeyword("import");
     const spec = this.eatString();
+    // `import "wing.arch" as wing` (no `:`) — WHOLE-FILE instantiation: the module's own
+    // top-level drawable statements become one implicit zero-parameter component. It is
+    // spelled without the item list precisely because there is no item to name: the file
+    // itself is the component.
+    if (this.isKeyword("as")) {
+      this.next();
+      const aliasTok = this.eatIdent();
+      return {
+        kind: "import",
+        spec,
+        items: [],
+        star: false,
+        wholeAs: this.declName(aliasTok),
+        line: kw.line,
+      };
+    }
     this.eat("colon");
     const items: ImportItem[] = [];
     let star = false;
@@ -958,7 +1062,7 @@ class Parser {
   /** `component NAME(p1, p2, …) { <statements> }`. */
   private parseComponent(components: Map<string, ComponentDef>): ComponentDef {
     const kw = this.eatKeyword("component");
-    const name = this.eatIdent().value;
+    const name = this.declName(this.eatIdent());
     this.eat("lparen");
     const params: string[] = [];
     while (!this.isType("rparen") && !this.isType("eof")) {

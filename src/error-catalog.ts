@@ -108,6 +108,20 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Rename one of them, or drop the explicit id to auto-generate a unique one.",
     'room id=a at (0,0) size 1x1\nroom id=a at (1,0) size 1x1   # error: duplicate id "a"',
   ),
+  E_DUP_INSTANCE: E(
+    "E_DUP_INSTANCE",
+    "Duplicate `place … as <name>` instance name.",
+    "Two `place` statements claim the same instance name. The name is the id NAMESPACE for everything inside the instance, so reusing it would silently merge two instances' ids.",
+    "Give each instance its own name (`as west` / `as east`).",
+    'place wing() as west at (0,0)\nplace wing() as west at (9000,0)   # error: instance "west" already used',
+  ),
+  E_DOTTED_DECL: E(
+    "E_DOTTED_DECL",
+    "A dotted name cannot be declared.",
+    "A dotted name like `west.main` addresses an element INSIDE a `place`d instance. The namespace belongs to the `place`, so a dotted name is only ever a reference — it can never be declared with `id=`, `let`, `as`, or `for`.",
+    "Declare the short name and address it from outside as `<instance>.<name>`.",
+    "room id=main at (0,0) size 3000x3000   # then, in the plan: furniture bed in west.main centered",
+  ),
   E_FURN_SIZE: E(
     "E_FURN_SIZE",
     "Furniture must have a positive size.",
@@ -438,6 +452,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "arch preview plan.arch --install   # fetches @resvg/resvg-js, then renders the PNG",
   ),
 
+  W_IMPORT_EMPTY_FILE: W(
+    "W_IMPORT_EMPTY_FILE",
+    "Whole-file import binds an empty component.",
+    "`import \"<file>\" as <name>` turns a module's TOP-LEVEL drawable statements into one component, but that module's plan body has none (it may only declare `component`s, or only `level` blocks — a storey is a page, so levels are dropped).",
+    'Draw in the module\'s plan body, or import one of its named components with `import "<file>": <name>`.',
+    'import "lib.arch" as lib   # warning when lib.arch only declares components',
+  ),
   W_DUP_ACC_METADATA: W(
     "W_DUP_ACC_METADATA",
     "Duplicate `accTitle`/`accDescr`.",

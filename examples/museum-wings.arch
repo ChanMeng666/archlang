@@ -1,0 +1,67 @@
+# COMPONENT v2 — one wing authored once, placed twice (v1.22).
+#
+# The whole building is three statements of composition. `museum-wing.arch` draws ONE
+# gallery wing in its own local coordinates; this file imports that FILE as a component
+# and places it on both sides of a shared entrance hall — the east one MIRRORED, so the
+# pair reads as one symmetrical building instead of two copies facing the same way.
+#
+# Read this the way you would read a React page: `wing` is the component, `place … as`
+# is the element, `at`/`mirror` are its props, and `west.corridor` is how the parent
+# reaches a child by name. Nothing about the wing changed to make it reusable.
+#
+#   west wing  x 0…18000     hall  x 18000…24000     east wing  x 24000…42000
+#
+# The east wing is `mirror x`, not `rotate 180`: mirroring flips it left↔right so its
+# corridor still runs along the SOUTH edge facing the hall, while a 180° turn would swing
+# the corridor round to the north and leave the galleries between it and the entrance.
+# A mirror is a real reflection — the fire exit and every door swing come out
+# mirror-image, which is exactly what a symmetrical building wants.
+plan "Museum — two wings" {
+  units mm
+  grid 100
+  paper A1 landscape
+  north up
+  dims auto all
+  schedule rooms
+
+  # A whole FILE as a component: no `component` declaration, no parameters, no wrapper.
+  import "museum-wing.arch" as wing
+
+  # Structural datums: the wing faces, the hall faces, and the corridor spine.
+  axes {
+    x at 0, 18000, 24000, 42000
+    y at 0, 9000, 12000
+  }
+
+  title {
+    project "Municipal museum — ground floor"
+    drawn_by "ArchLang"
+    date "2026-07-26"
+  }
+
+  # The two wings. Each `place` is one addressable instance: every id inside it becomes
+  # `west.<id>` / `east.<id>`, with auto-id counters restarting per instance, so the two
+  # are order-independent. Each is also implicitly a ZONE, which is why the room schedule
+  # below groups by wing without a single `zone` declaration.
+  place wing() as west at (0,0)
+  place wing() as east at (42000,0) mirror x
+
+  # The entrance hall between them. It borrows the wings' own shells for its east and west
+  # sides — the only walls it declares are the two it does not share.
+  wall id=hall_north exterior thickness 300 { (18000,0) (24000,0) }
+  wall id=hall_south exterior thickness 300 { (18000,12000) (24000,12000) }
+
+  room id=hall at (18000,0) size 6000x12000 label "Entrance hall" uses entry hall
+
+  # Main entrance, and the two doors that join the hall to each wing's corridor. These are
+  # the composition: the parent cuts them, by DOTTED reference into the instances' shells
+  # (`west.shell` is the wing's `wall id=shell`, namespaced by `as west`).
+  # `swing into hall` rather than `swing in`: `in`/`out` are relative to the host wall's
+  # TRAVERSAL direction, so the correct answer here depends on which way `hall_south` was
+  # written. Naming the room says what is meant and cannot be broken by editing the wall.
+  door id=d_main at (21000,12000) width 1800 wall hall_south hinge left swing into hall
+  door id=d_west at (18000,10500) width 1800 wall west.shell  hinge left  swing into hall
+  door id=d_east at (24000,10500) width 1800 wall east.shell  hinge right swing into hall
+
+  window id=w_hall_n at (21000,0) width 3000 wall hall_north
+}

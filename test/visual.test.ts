@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import pixelmatch from "pixelmatch";
 import { PNG } from "pngjs";
-import { compile, renderPng } from "../src/index.js";
+import { compile, makeVirtualWorld, renderPng } from "../src/index.js";
 
 /**
  * Visual-regression suite (T6.4).
@@ -34,7 +34,17 @@ const goldenPath = (name: string) => join(goldenDir, `${name}.png`);
 const GOLDEN_SCALE = 0.25;
 const UPDATE = process.env.UPDATE_GOLDENS === "1";
 
-const EXAMPLES = ["studio.arch", "two-bed.arch", "parametric.arch", "themed.arch", "relational.arch", "museum.arch"];
+const EXAMPLES = [
+  "studio.arch",
+  "two-bed.arch",
+  "parametric.arch",
+  "themed.arch",
+  "relational.arch",
+  "museum.arch",
+  // The wing on its own — the same file the composed building imports, so this golden
+  // pins the component's own drawing independently of the transform applied to it.
+  "museum-wing.arch",
+];
 
 async function hasResvg(): Promise<boolean> {
   try {
@@ -69,6 +79,18 @@ describe("visual regression — golden PNG pixel-diff", () => {
       await diffAgainstGolden(name, scene!);
     });
   }
+
+  // Component v2: the multi-file flagship. It needs a World (it `import`s the wing file),
+  // so it cannot ride the loop above. This golden is the one that would move if a
+  // `place`'s transform, its id namespacing or the zone-grouped schedule ever drifted —
+  // the drawing is one wing rendered twice, once mirrored.
+  it("museum-wings.arch (two placed instances) matches its golden", async () => {
+    if (!(await hasResvg())) return;
+    const world = makeVirtualWorld({ "museum-wing.arch": example("museum-wing.arch") });
+    const { scene, errors } = compile(example("museum-wings.arch"), { world, noCache: true });
+    expect(errors).toEqual([]);
+    await diffAgainstGolden("museum-wings.arch", scene!);
+  });
 
   // Multi-storey: one golden per PAGE. A single golden of `scene` would pin only the
   // lowest level, leaving an upper storey's drawing unguarded.

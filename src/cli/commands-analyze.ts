@@ -99,6 +99,7 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "bbox",
   "bbox_outer",
   "axes",
+  "instances",
   "rooms",
   "doors",
   "windows",

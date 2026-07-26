@@ -81,6 +81,10 @@ export function statementExprs(s: Statement): Expr[] {
     case "instance":
       out.push(...s.args);
       break;
+    case "place":
+      out.push(...s.args);
+      pt(s.at);
+      break;
     case "for":
       out.push(s.iter);
       break;

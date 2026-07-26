@@ -90,10 +90,16 @@ export interface RoomSummary {
   floor_polygon: { x: number; y: number }[];
   /** Ids of rooms whose edges touch this one (within the adjacency tolerance). */
   adjacent: string[];
+  /** The `place`d instance this room was drawn inside (v1.22); absent at plan level. */
+  instance?: string;
+  /** The component {@link RoomSummary.instance} was made from. */
+  component?: string;
 }
 
 export interface DoorSummary {
   id: string;
+  /** The `place`d instance this door was drawn inside (v1.22); absent at plan level. */
+  instance?: string;
   /**
    * The one or two spaces this door connects: room ids, and/or the literal
    * `"exterior"` when the door sits on an outer wall with open space on one side.
@@ -132,6 +138,16 @@ export interface FurnitureSummary {
   label?: string;
   /** Declared owning room id (`in <roomId>`), if any. */
   room?: string;
+  /**
+   * The quarter-turn the drawn symbol carries (0/90/180/270), when it is not 0 — either
+   * authored (`rotate`), derived from the backing wall, or carried through a `place`d
+   * instance's own turn. Absent for an upright symbol. (v1.22)
+   */
+  rotate?: number;
+  /** The `place`d instance this piece was drawn inside (v1.22); absent at plan level. */
+  instance?: string;
+  /** The component {@link FurnitureSummary.instance} was made from. */
+  component?: string;
 }
 
 /**
@@ -168,6 +184,19 @@ export interface VerticalReport {
   reachable_levels: number[];
 }
 
+/**
+ * One `place`d component instance as a fact (v1.22): its addressable name — which is also
+ * the id namespace of everything inside it — the component it was made from, where its
+ * local `(0,0)` landed, and the exact rigid transform applied.
+ */
+export interface InstanceSummary {
+  name: string;
+  component: string;
+  at: { x: number; y: number };
+  rotate: 0 | 90 | 180 | 270;
+  mirror?: "x" | "y";
+}
+
 export type { RoomPlacement, OpeningPlacement, FurniturePlacement } from "./ir.js";
 
 /** How a single placed element's position was authored vs derived (v1.14). */
@@ -177,6 +206,15 @@ export interface FreedomElement {
   /** `absolute` = a literal `at (x,y)`; anything else was computed by the
    *  resolver from a higher-level clause (relational/strip/attach/anchor/wall). */
   placement: RoomPlacement | OpeningPlacement | FurniturePlacement;
+  /**
+   * The `place`d instance this element lives in (v1.22). When present, `placement`
+   * describes how the element was authored **inside its component** — its position ON
+   * THE PAGE additionally derives from the instance frame, which is the authored-absolute
+   * thing (see {@link SceneSummary.instances}). So: an instance is a degree of freedom,
+   * and everything inside it is derived from that one. Absent at plan level, so existing
+   * reports are unchanged.
+   */
+  instance?: string;
 }
 
 /**
@@ -331,6 +369,16 @@ export interface SceneSummary {
    * `dims auto rooms|all`, what the middle dimension chain measures).
    */
   axes?: AxesSummary;
+  /**
+   * The `place`d component instances this drawing is made of (v1.22), in source order:
+   * where each one's local origin landed and the rigid transform it carries. Present only
+   * when the plan places at least one, so existing summaries are unchanged.
+   *
+   * This is the block that says WHICH degrees of freedom the plan really has: everything
+   * with a matching `instance` field is positioned by its component's own coordinates
+   * plus this frame, so moving a wing is one edit here, not N edits inside.
+   */
+  instances?: InstanceSummary[];
   rooms: RoomSummary[];
   doors: DoorSummary[];
   windows: WindowSummary[];
@@ -539,26 +587,41 @@ function buildFreedom(
     const placement = r._placement ?? "absolute";
     f.rooms.total++;
     f.rooms[placement]++;
-    elements.push({ id: r.id, kind: "room", placement });
+    elements.push({ id: r.id, kind: "room", placement, ...inst(r._instance) });
   }
 
-  const opening = (id: string, kind: "door" | "window" | "opening", placement: OpeningPlacement): void => {
+  const opening = (
+    id: string,
+    kind: "door" | "window" | "opening",
+    placement: OpeningPlacement,
+    instance: string | undefined,
+  ): void => {
     f.openings.total++;
     f.openings[placement]++;
-    elements.push({ id, kind, placement });
+    elements.push({ id, kind, placement, ...inst(instance) });
   };
-  for (const d of doors) opening(d.id, "door", d._placement ?? "absolute");
-  for (const w of windows) opening(w.id, "window", w._placement ?? "absolute");
-  for (const o of openings) opening(o.id, "opening", o._placement ?? "absolute");
+  for (const d of doors) opening(d.id, "door", d._placement ?? "absolute", d._instance);
+  for (const w of windows) opening(w.id, "window", w._placement ?? "absolute", w._instance);
+  for (const o of openings) opening(o.id, "opening", o._placement ?? "absolute", o._instance);
 
   for (const fu of furniture) {
     const placement = fu._placement ?? "absolute";
     f.furniture.total++;
     f.furniture[placement === "against-wall" ? "againstWall" : placement]++;
-    elements.push({ id: fu.id, kind: "furniture", placement });
+    elements.push({ id: fu.id, kind: "furniture", placement, ...inst(fu._instance) });
   }
 
   return f;
+}
+
+/** Spreadable instance stamp for a resolved element — nothing at all at plan level. */
+function instanceOf(e: { _instance?: string; _component?: string }): { instance?: string; component?: string } {
+  return e._instance === undefined ? {} : { instance: e._instance, component: e._component };
+}
+
+/** Spreadable instance stamp for a {@link FreedomElement}. */
+function inst(instance: string | undefined): { instance?: string } {
+  return instance === undefined ? {} : { instance };
 }
 
 /** Build the summary from a fully resolved plan. */
@@ -594,6 +657,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
         { x: rect.x, y: rect.y + rect.h },
       ],
       adjacent,
+      ...instanceOf(r),
     };
   });
 
@@ -601,6 +665,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
   // Shared with the lint connectivity rules — see analyze.ts.
   const doors: DoorSummary[] = doorEls.map((d) => ({
     id: d.id,
+    ...(d._instance !== undefined ? { instance: d._instance } : {}),
     between: doorConnections(d, roomRects, tol),
     width: d.width,
   }));
@@ -638,6 +703,8 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     category: f.category,
     ...(f.label !== undefined ? { label: f.label } : {}),
     ...(f.room !== undefined ? { room: f.room } : {}),
+    ...(f.rotate ? { rotate: f.rotate } : {}),
+    ...instanceOf(f),
   }));
 
   const verticals: VerticalSummary[] = verticalEls.map((v) => ({
@@ -739,6 +806,10 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
           },
         }
       : {}),
+    // Append-only: present only for a plan that `place`s a component, so every existing
+    // summary is unchanged. Copied straight off the IR — the frames the resolver actually
+    // applied, never re-derived from the elements.
+    ...(ir.instances ? { instances: ir.instances.map((i) => ({ ...i })) } : {}),
     rooms,
     doors,
     windows,

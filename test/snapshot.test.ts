@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { compile } from "../src/index.js";
+import { compile, makeVirtualWorld } from "../src/index.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const example = (name: string) => readFileSync(join(__dirname, "..", "examples", name), "utf8");
@@ -20,6 +20,7 @@ describe("golden SVG snapshots", () => {
     "relational.arch",
     "attached.arch",
     "museum.arch",
+    "museum-wing.arch",
   ]) {
     it(`renders ${name} deterministically`, () => {
       const { svg, errors } = compile(example(name), { noCache: true });
@@ -27,6 +28,16 @@ describe("golden SVG snapshots", () => {
       expect(svg).toMatchSnapshot();
     });
   }
+
+  // Component v2: the composed building. Its SVG is one wing serialized twice, the second
+  // time mirrored, so this golden is where an id-namespacing or transform drift would show
+  // up as a string diff. It needs a World, hence its own case.
+  it("renders museum-wings.arch (two placed instances) deterministically", () => {
+    const world = makeVirtualWorld({ "museum-wing.arch": example("museum-wing.arch") });
+    const { svg, errors } = compile(example("museum-wings.arch"), { world, noCache: true });
+    expect(errors).toEqual([]);
+    expect(svg).toMatchSnapshot();
+  });
 
   // A multi-storey plan is one drawing PER LEVEL, so every page needs its own golden —
   // `svg` alone would only ever pin page 1 and an upper storey could drift unnoticed.

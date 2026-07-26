@@ -1,0 +1,61 @@
+# ONE FILE, ONE WING — the component-v2 authoring unit (v1.22).
+#
+# This file is a complete, compilable plan in its OWN right: a gallery wing drawn in
+# LOCAL coordinates from (0,0). It is also, without any extra ceremony, a COMPONENT —
+# `import "museum-wing.arch" as wing` in another plan turns these top-level statements
+# into a zero-argument component you can `place` as many times as you like:
+#
+#   place wing() as west at (0,0)
+#   place wing() as east at (42000,0) mirror x
+#
+# See examples/museum-wings.arch for the building that does exactly that.
+#
+# Two rules make this work, and both are worth internalising:
+#   1. AUTHOR FROM (0,0). Every coordinate here is wing-local, so the wing knows nothing
+#      about where it ends up. The `place` supplies the position and the transform.
+#   2. THE ROOT PLAN OWNS THE SHEET. The `units`/`grid`/`paper`/`scale`/`north`/`title`
+#      settings below apply when this file is compiled ON ITS OWN; when it is imported
+#      they are IGNORED, because one drawing is issued on one sheet at one scale.
+plan "Museum wing" {
+  units mm
+  grid 100
+  paper A2 landscape
+  north up
+  dims auto all
+
+  # Shell + the two cross partitions that split the gallery range into three bays,
+  # and the spine partition that separates the range from the circulation corridor.
+  wall id=shell     exterior  thickness 300 { (0,0) (18000,0) (18000,12000) (0,12000) close }
+  wall id=spine     partition thickness 200 { (0,9000) (18000,9000) }
+  wall id=bay_west  partition thickness 200 { (6000,0) (6000,9000) }
+  wall id=bay_east  partition thickness 200 { (12000,0) (12000,9000) }
+
+  room id=g1       at (0,0)     size 6000x9000  label "Gallery A"  uses living
+  room id=g2       at (6000,0)  size 6000x9000  label "Gallery B"  uses living
+  room id=g3       at (12000,0) size 6000x9000  label "Gallery C"  uses living
+  room id=corridor at (0,9000)  size 18000x3000 label "Corridor"   uses circulation
+
+  # Every bay opens onto the corridor through a cased opening — a gallery route wants no
+  # door leaf swinging into the circulation.
+  opening id=o1 on spine at 16.7% width 2400
+  opening id=o2 on spine at 50%   width 2400
+  opening id=o3 on spine at 83.3% width 2400
+
+  # North daylight for each bay.
+  window id=w1 at (3000,0)  width 2400 wall shell
+  window id=w2 at (9000,0)  width 2400 wall shell
+  window id=w3 at (15000,0) width 2400 wall shell
+
+  # Egress at the far end of the corridor, opening OUT as an exit door must. Placed in
+  # local coordinates like everything else, so the mirrored east wing gets its fire exit
+  # at the far side of the building automatically — that is the point of composing.
+  door id=exit at (0,10500) width 1200 wall shell hinge left swing out
+
+  # Corridor seating.
+  furniture id=bench1 bench at (4200,10200) size 1800x600 label "Bench" in corridor
+  furniture id=bench2 bench at (12000,10200) size 1800x600 label "Bench" in corridor
+
+  # The wing does NOT cut its own hall door: which end joins the building is the parent's
+  # decision, and the parent makes it with a dotted reference to this shell —
+  # `door … wall west.shell`. That is the whole composition contract.
+}

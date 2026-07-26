@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { compile, describe as describePlan, legendEntries, roomSchedule, toDxf } from "../src/index.js";
 import { renderAscii } from "../src/backends/ascii.js";
@@ -54,7 +54,13 @@ const roomsOf = (src: string): RRoom[] =>
 // ---------------------------------------------------------------------------
 
 describe("sheet tables — a plan that opts out is byte-identical", () => {
-  it("no shipped example sets `schedule` or `legend`, so every golden stays valid", () => {
+  // Examples that deliberately DO opt in. An example's golden is only evidence about the
+  // opt-out path if it was rendered without the tables, so a plan may join this list only
+  // together with a golden rendered WITH them — never by adding `schedule`/`legend` to an
+  // example whose golden already exists.
+  const TABLE_EXAMPLES = new Set(["museum-wings.arch"]);
+
+  it("no shipped example silently opts into `schedule`/`legend`, so every golden stays valid", () => {
     const dir = join(__dirname, "..", "examples");
     const walk = (d: string): string[] =>
       readdirSync(d, { withFileTypes: true }).flatMap((e) =>
@@ -63,6 +69,7 @@ describe("sheet tables — a plan that opts out is byte-identical", () => {
     const files = walk(dir);
     expect(files.length).toBeGreaterThan(5);
     for (const f of files) {
+      if (TABLE_EXAMPLES.has(basename(f))) continue;
       const { plan } = parse(readFileSync(f, "utf8"));
       expect(plan!.schedule, f).toBeUndefined();
       expect(plan!.legend, f).toBeUndefined();
