@@ -80,7 +80,9 @@ matter — run it yourself for the full object):
 | `bbox` | overall extent on wall **centerlines** — the coordinate space the source is written in (room `at`/`size`, wall points), so this is the number to compute *with* |
 | `bbox_outer` | overall extent on the **outer wall faces** — `bbox` plus half a wall thickness at each end (7000×6000 inside a 200 shell is 7200×6200 outside). What a builder measures, what `dims auto`'s overall chain prints, and what to quote when someone asks how big the building is |
 | `rooms[].uses` | the room's [`uses` tags](language-reference.md#room) (or the inferred kind when none were authored) |
-| `rooms[].area_m2` | floor area, `w × h ÷ 1 000 000`, rounded to 2 dp |
+| `rooms[].area_m2` | floor area in m², rounded to 2 dp — `w × h` for a rectangle, the exact **shoelace** area of the ring for a [polygon room](language-reference.md#polygonal-rooms-v1-23) |
+| `rooms[].floor_polygon` | the room's floor as a closed ring: a rectangle's four corners, or the polygon's own vertices. This — not `bbox` — is the room's shape |
+| `rooms[].bbox` | the room's **vertex extent**. For a polygon room it is the box the ring fits in, which is bigger than the floor |
 | `rooms[].adjacent` | ids of rooms whose walls touch this one within tolerance (a shared corner alone doesn't count) |
 | `doors[].between` / `openings[].between` | the two spaces the connector joins — a room id or the literal `"exterior"` |
 | `windows[].room` | the room the window lights |
@@ -111,6 +113,39 @@ computed here, from facts, so the two can never disagree. When the source declar
 `accDescr`, that authored string overrides the derived caption in the SVG `<desc>` — but
 `describe().caption` always reports the *derived* sentence, and the declared strings are
 surfaced separately as `accTitle` / `accDescr`.
+
+### Polygon rooms: what is exact, and what is measured (v1.23)
+
+A [polygon room](language-reference.md#polygonal-rooms-v1-23) is not approximated by its
+bounding box anywhere in this layer. Three of its facts are **exact** — closed-form
+arithmetic on the ring, identical on every run and with or without the optional geometry
+backend:
+
+- **Area** — the shoelace formula. `describe().rooms[].area_m2`, the drawn area label, the
+  `schedule rooms` row and Plan JSON's `area` all read that one number.
+- **Adjacency** — two rooms are adjacent when their **boundaries share a run of positive
+  length**: an edge of one and an edge of the other are parallel, no further apart than the
+  tolerance (one partition thickness), and overlap along that direction. This is the same
+  question the rectangle rule asks — a shared corner still does not count — asked of edges
+  at any angle, so a trapezoid's sloping party wall joins the room behind it.
+- **Containment** — a door, window or cased opening is attributed to a polygon room by its
+  distance to *that room's own edges*, so an entrance on an angled facade connects the room
+  it actually opens into. A fixture is "in" the room when its centre is inside the ring.
+
+The circulation facts are **measured on a grid**, exactly as they are for rectangles, and
+are therefore resolution-bounded rather than exact: each room is rasterised over its
+bounding box and every cell whose **centre** falls outside the ring is dropped before the
+flood-fill, so an L's notch is never counted as floor and the reachable-area number lands
+within a cell of the true area (see [Grid resolution](#grid-resolution-why-cellsizemm-is-worth-reading)).
+The doorway seed is the free cell nearest the connector, since "step inward perpendicular
+to the edge" has no direction on a ring.
+
+Two rules keep the rectangle they are written about, and say so rather than guess:
+`W_FIXTURE_BACK_TO_ROOM` does not fire inside a polygon room (no north/south/east/west
+side to be the fixture's back), and `arch repair` declines to push a piece into one,
+reporting it in `unresolved`. `W_ROOM_OVERLAP`, by contrast, **was** generalised: it runs
+an exact ring-vs-ring intersection test, so a room tucked into an L's notch — overlapping
+boxes, disjoint floors — does not warn, while two floors that really do intersect still do.
 
 ## The sheet
 

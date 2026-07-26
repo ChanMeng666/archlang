@@ -19,7 +19,16 @@ import type { Diagnostic } from "./diagnostics.js";
 import type { Point } from "./ast.js";
 import type { CompileOptions } from "./types.js";
 import { segmentsOfWall, type WallLike, type WallSegment } from "./geometry.js";
-import { mergedLength, overlap1d, type BBox } from "./geometry/rect.js";
+import { mergedLength, overlap1d, pointInRect, type BBox } from "./geometry/rect.js";
+import {
+  collinearOverlapLength,
+  pointInPolygon,
+  polygonArea,
+  pointOnPolygonEdge,
+  polygonEdges,
+  rectRing,
+  ringsAdjacent,
+} from "./geometry/polygon.js";
 import { classifyLabelUses } from "./vocabulary.js";
 import {
   ANCHOR_BACK_EDGES,
@@ -101,6 +110,41 @@ export function rectOf(e: { at: Point; size: { w: number; h: number } }): BBox {
 }
 
 /**
+ * A room's extent for the analysis layer: its bounding box, plus the floor RING when
+ * the room is polygonal (v1.23). Carrying the ring on the box — rather than threading a
+ * second map through a dozen signatures — is what keeps a rectangular plan's behaviour
+ * (and its bytes) untouched: `poly` is simply absent, and every `x/y/w/h` reader is
+ * unchanged. The shape-aware helpers below (`roomsAdjacent`, `pointOnRoomEdge`,
+ * `pointInRoomBox`) check `poly` first and fall back to the historical rect arithmetic.
+ */
+export type RoomBox = BBox & { poly?: Point[] };
+
+/** The {@link RoomBox} of a resolved room — bbox for a rect, bbox + ring for a polygon. */
+export function roomBox(r: { at: Point; size: { w: number; h: number }; poly?: Point[] }): RoomBox {
+  const box: RoomBox = { x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h };
+  if (r.poly) box.poly = r.poly;
+  return box;
+}
+
+/** The room's floor as a ring: its polygon, or its rectangle's four corners. */
+export const roomRing = (b: RoomBox): Point[] => b.poly ?? rectRing(b);
+
+/**
+ * A room's floor area in mm² — the ONE expression every area reader shares
+ * (`describe().rooms[].area_m2`, the room schedule, Plan JSON, the too-small lint, the
+ * drawn area label). A rectangle keeps the exact historical product; a polygon is
+ * measured by the shoelace formula, which is exact (not sampled) for any simple ring.
+ */
+export function roomAreaMm2(r: { size: { w: number; h: number }; poly?: Point[] }): number {
+  return r.poly ? polygonArea(r.poly) : r.size.w * r.size.h;
+}
+
+/** Is the point inside the room's floor (closed bounds — the boundary counts)? */
+export function pointInRoomBox(p: Point, b: RoomBox): boolean {
+  return b.poly ? pointInPolygon(p.x, p.y, b.poly) : pointInRect(p.x, p.y, b);
+}
+
+/**
  * The function(s) a room is classified as. Explicit `uses …` are authored intent
  * and win; otherwise we fall back to a conservative keyword match on the label (or
  * id) — exactly the classification the lint rules used before `uses` existed, so an
@@ -134,8 +178,14 @@ export const isCirculation = (room: { label?: string; id: string; uses?: UseKind
 };
 
 /** Do two room rectangles share an edge (touch) within tolerance? A shared corner
- *  alone does not count — the perpendicular overlap must be positive. */
-export function roomsAdjacent(a: BBox, b: BBox, tol: number): boolean {
+ *  alone does not count — the perpendicular overlap must be positive.
+ *
+ *  With a polygon room on either side the same question is asked of the two RINGS
+ *  ({@link ringsAdjacent}): a shared boundary run of positive length, with the two
+ *  edges no more than `tol` apart (a partition thickness). Two rectangles keep the
+ *  closed-form test below, exactly as before. */
+export function roomsAdjacent(a: RoomBox, b: RoomBox, tol: number): boolean {
+  if (a.poly || b.poly) return ringsAdjacent(roomRing(a), roomRing(b), tol);
   const vTouch = Math.abs(a.x + a.w - b.x) <= tol || Math.abs(b.x + b.w - a.x) <= tol;
   if (vTouch && overlap1d(a.y, a.y + a.h, b.y, b.y + b.h) > 0) return true;
   const hTouch = Math.abs(a.y + a.h - b.y) <= tol || Math.abs(b.y + b.h - a.y) <= tol;
@@ -143,8 +193,12 @@ export function roomsAdjacent(a: BBox, b: BBox, tol: number): boolean {
   return false;
 }
 
-/** Does point `p` lie on the perimeter of rectangle `r` (within tolerance)? */
-export function pointOnRoomEdge(p: Point, r: BBox, tol: number): boolean {
+/** Does point `p` lie on the perimeter of a room (within tolerance)? A polygon room
+ *  is measured against its own edges; a rectangle keeps the historical test. This is
+ *  what attributes a door/window to the room(s) it opens onto, so a door on a polygon
+ *  room's wall connects that room exactly as it would a rectangular one. */
+export function pointOnRoomEdge(p: Point, r: RoomBox, tol: number): boolean {
+  if (r.poly) return pointOnPolygonEdge(p, r.poly, tol);
   const onLeftRight =
     (Math.abs(p.x - r.x) <= tol || Math.abs(p.x - (r.x + r.w)) <= tol) && p.y >= r.y - tol && p.y <= r.y + r.h + tol;
   const onTopBottom =
@@ -157,7 +211,7 @@ export function pointOnRoomEdge(p: Point, r: BBox, tol: number): boolean {
  * `roomRects` in insertion order so callers get a stable, element-ordered list:
  * ≤2 ids for a door on a shared partition, 1 for a window on an exterior wall.
  */
-export function roomsAtPoint(p: Point, roomRects: Map<string, BBox>, tol: number): string[] {
+export function roomsAtPoint(p: Point, roomRects: Map<string, RoomBox>, tol: number): string[] {
   const out: string[] = [];
   for (const [id, rect] of roomRects) {
     if (pointOnRoomEdge(p, rect, tol)) out.push(id);
@@ -173,7 +227,7 @@ export function roomsAtPoint(p: Point, roomRects: Map<string, BBox>, tol: number
  */
 export function doorConnections(
   d: { at: Point; host: { category: string } | null },
-  roomRects: Map<string, BBox>,
+  roomRects: Map<string, RoomBox>,
   tol: number,
 ): string[] {
   const touching = roomsAtPoint(d.at, roomRects, tol);
@@ -254,7 +308,7 @@ export function buildDoorAccessGraph(
   clearAllowanceMm: number = DEFAULT_CLEAR_ALLOWANCE_MM,
   openings: ROpening[] = [],
 ): AccessGraph {
-  const roomRects = new Map<string, BBox>(rooms.map((r) => [r.id, rectOf(r)]));
+  const roomRects = new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)]));
 
   // Doors and cased openings are both connectors; an opening keeps its full width
   // as clear (no leaf), a door loses the leaf/stop allowance.
@@ -396,6 +450,43 @@ export function largestPerimeterGap(
       }
     }
     const gap = e.hi - e.lo - mergedLength(covered);
+    if (gap > worst) worst = gap;
+  }
+  return worst;
+}
+
+/**
+ * {@link largestPerimeterGap} for an arbitrary room RING: the worst run of any edge —
+ * at any angle — not backed by a collinear wall centerline. Same measure, same
+ * tolerance, expressed with the parallel-and-within-`tol` test from
+ * {@link collinearOverlapLength} instead of the four axis-aligned edge cases, so a
+ * trapezoid's sloping wall counts as enclosing it exactly as a square's side does.
+ *
+ * Kept separate from the rect version deliberately: the rect path is byte-pinned by
+ * the lint corpus and must keep its own float arithmetic.
+ */
+export function largestPerimeterGapRing(
+  ring: readonly Point[],
+  walls: WallLike[],
+  tol: number,
+  segs: readonly WallSegment[] = walls.flatMap((w) => segmentsOfWall(w)),
+): number {
+  let worst = 0;
+  for (const [a, b] of polygonEdges(ring)) {
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    if (len === 0) continue;
+    const ux = (b.x - a.x) / len;
+    const uy = (b.y - a.y) / len;
+    const covered: Array<[number, number]> = [];
+    for (const s of segs) {
+      if (collinearOverlapLength(a, b, s.a, s.b, tol) <= 0) continue;
+      const t1 = (s.a.x - a.x) * ux + (s.a.y - a.y) * uy;
+      const t2 = (s.b.x - a.x) * ux + (s.b.y - a.y) * uy;
+      const lo = Math.max(0, Math.min(t1, t2));
+      const hi = Math.min(len, Math.max(t1, t2));
+      if (hi > lo) covered.push([lo, hi]);
+    }
+    const gap = len - mergedLength(covered);
     if (gap > worst) worst = gap;
   }
   return worst;

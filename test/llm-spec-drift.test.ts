@@ -80,6 +80,17 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // old inline macro. It was trimmed from 742 to 645 chars before this was raised (the
     // `describe()`/freedom and nesting details went to the language reference), and the
     // suite is green at 20,770. Trim duplication before raising again.
-    expect(spec.length).toBeLessThan(21_000);
+    //
+    // Raised 21k → 21.4k for v1.23 (polygonal rooms). `room polygon …` is a THIRD room
+    // form, not a modifier: an agent that does not know it exists writes a bounding-box
+    // rectangle and silently loses the notch, and one that does know must also be told
+    // the two rings that are rejected and — the important half — that the rectangle-only
+    // clauses REFUSE a polygon room (E_PLACE_POLY) instead of approximating it, so it
+    // reaches for `at (x,y)` rather than fighting an anchor. Trimmed first, twice: the
+    // entry went 700 → 460 chars, and the duplicated "hand-computing half a wall
+    // thickness" pitfall row was folded into the row above it (the `furniture` entry
+    // already states the `flush` rule verbatim), giving ~290 chars back. Net +130.
+    // Trim duplication before raising again.
+    expect(spec.length).toBeLessThan(21_400);
   });
 });

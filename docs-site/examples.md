@@ -92,6 +92,19 @@ the upper floor's facts.
 
 <ArchLive :src="EXAMPLES['two-storey']" :rows="28" />
 
+## Gallery L (rooms that are not rectangles)
+
+Two [polygonal rooms](/reference#polygonal-rooms-v1-23): an **L**-shaped gallery wrapping a
+**trapezoid** lobby, so the building has an angled south-west facade. `room polygon (x,y) …`
+replaces `at` + `size` with the room's own ring, and everything downstream follows the ring
+rather than a bounding box — the gallery reports its exact **132 m²** (its box would claim
+168), the two rooms read as adjacent across the boundary they actually share, and the label
+sits at the polygon's centroid (the lobby pins its own with `label "…" at (x,y)`). The
+entrance door is hosted on the *angled* wall the ordinary way, and `dims auto all` measures
+the chain off the rooms' vertex coordinates.
+
+<ArchLive :src="EXAMPLES['gallery-l']" :rows="30" />
+
 ## Accessible metadata
 
 `accTitle` and `accDescr` supply the SVG `<title>`/`<desc>` emitted by

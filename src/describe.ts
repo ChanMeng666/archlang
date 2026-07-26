@@ -31,6 +31,8 @@ import type { Diagnostic } from "./diagnostics.js";
 import {
   resolvePlan,
   rectOf,
+  roomAreaMm2,
+  roomBox,
   roomsAdjacent,
   roomsAtPoint,
   doorConnections,
@@ -40,6 +42,7 @@ import {
   type AnalyzeOptions,
   type AccessGraph,
   type BBox,
+  type RoomBox,
 } from "./analyze.js";
 import { outerFaceBounds } from "./geometry.js";
 import type { PaperOrientation, PaperSize } from "./sheet.js";
@@ -86,7 +89,11 @@ export interface RoomSummary {
   /** Floor area in square metres, rounded to 2 decimals. */
   area_m2: number;
   bbox: BBox;
-  /** The room rectangle as a 4-point polygon, clockwise from top-left (v1.13). */
+  /**
+   * The room's FLOOR as a closed ring (v1.13): a rectangle's four corners clockwise from
+   * top-left, or — for a `room polygon` (v1.23) — its authored vertices in source order.
+   * This, not `bbox`, is the room's actual shape; `bbox` is the vertex extent.
+   */
   floor_polygon: { x: number; y: number }[];
   /** Ids of rooms whose edges touch this one (within the adjacency tolerance). */
   adjacent: string[];
@@ -633,7 +640,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
   const furnEls = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
   const verticalEls: RVertical[] = verticalsOf(ir);
 
-  const roomRects = new Map<string, BBox>(roomEls.map((r) => [r.id, rectOf(r)]));
+  const roomRects = new Map<string, RoomBox>(roomEls.map((r) => [r.id, roomBox(r)]));
 
   const rooms: RoomSummary[] = roomEls.map((r) => {
     const rect = roomRects.get(r.id)!;
@@ -648,14 +655,18 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
       ...(r.label !== undefined ? { label: r.label } : {}),
       uses: [...uses],
       room_type: roomTypeForUses(uses),
-      area_m2: r2((r.size.w * r.size.h) / 1_000_000),
-      bbox: rect,
-      floor_polygon: [
-        { x: rect.x, y: rect.y },
-        { x: rect.x + rect.w, y: rect.y },
-        { x: rect.x + rect.w, y: rect.y + rect.h },
-        { x: rect.x, y: rect.y + rect.h },
-      ],
+      area_m2: r2(roomAreaMm2(r) / 1_000_000),
+      // `bbox` stays a plain {x,y,w,h} — never the RoomBox, whose `poly` would leak a
+      // fifth key into the JSON. A polygon room's true floor is `floor_polygon`.
+      bbox: { x: rect.x, y: rect.y, w: rect.w, h: rect.h },
+      floor_polygon: r.poly
+        ? r.poly.map((p) => ({ x: p.x, y: p.y }))
+        : [
+            { x: rect.x, y: rect.y },
+            { x: rect.x + rect.w, y: rect.y },
+            { x: rect.x + rect.w, y: rect.y + rect.h },
+            { x: rect.x, y: rect.y + rect.h },
+          ],
       adjacent,
       ...instanceOf(r),
     };
@@ -688,7 +699,11 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
   const windows: WindowSummary[] = windowEls.map((w) => {
     const touching = roomsAtPoint(w.at, roomRects, tol);
     const room = touching[0] ?? null;
-    const roomRect = room ? (roomRects.get(room) ?? null) : null;
+    const box = room ? (roomRects.get(room) ?? null) : null;
+    // A POLYGON room has no four sides to pick the nearest of, and its bounding box
+    // would answer for an edge the window is not on — so it falls through to the
+    // host-segment rule, which is exact at any wall angle.
+    const roomRect = box && !box.poly ? box : null;
     return { id: w.id, room, width: w.width, facing: windowFacing(w.at, roomRect, w.host, planCenter) };
   });
 

@@ -713,6 +713,20 @@
       "room_type": "MasterRoom"
     }
   ],
+  "examples/gallery-l.arch": [
+    {
+      "id": "gallery",
+      "label": "Gallery",
+      "uses": [],
+      "room_type": "Room"
+    },
+    {
+      "id": "lobby",
+      "label": "Lobby",
+      "uses": ["entry"],
+      "room_type": "Entrance"
+    }
+  ],
   "examples/imports.arch": [
     {
       "id": "r_main",

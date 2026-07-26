@@ -34,7 +34,7 @@ export const SPEC_EXAMPLES = ["attached.arch", "parametric.arch"] as const;
  */
 const ELEMENT_GRAMMAR: Record<string, string> = {
   wall: "wall <category> thickness <mm> [material <name>] { (x,y) (x,y) … [close] }   # category e.g. exterior/partition; `close` makes a loop",
-  room: 'room [id=<name>] at (x,y) size <W>x<H> [label "…"] [uses living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry …]   # OR relational: room [id=…] (right-of|left-of|below|above) <roomId> [align top|middle|bottom|left|right] [gap <mm>] size <W>x<H> [label "…"]',
+  room: 'room [id=<name>] at (x,y) size <W>x<H> [label "…" [at (x,y)]] [uses living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry …]   # OR relational: room [id=…] (right-of|left-of|below|above) <roomId> [align top|middle|bottom|left|right] [gap <mm>] size <W>x<H>. OR POLYGONAL: room [id=…] polygon (x,y) (x,y) (x,y) … — an implicitly-closed SIMPLE polygon (>=3 vertices) instead of at+size (an L, a trapezoid): exact shoelace area, label at the CENTROID (override: `label "…" at (x,y)`). A crossing or all-collinear ring errors (E_ROOM_POLY_SELF_INTERSECT/E_ROOM_POLY_DEGENERATE); rectangle-only clauses (relational placement, `furniture … in <poly> anchor|centered`) REFUSE it with E_PLACE_POLY — use `at (x,y)` [+ rotate]',
   door: "door [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [hinge left|right|near start|near end] [swing in|out|into <roomId>]   # `at (x,y)` must sit on a wall; `on <wall> at <pos>` pins it BY CONSTRUCTION (<pos> = `40%` | mm from the wall's start | `center`) and can never be reported off-wall — prefer it",
   window:
     "window [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # same two placement forms as door",
@@ -270,8 +270,7 @@ SKILL.md for the full recipe.
 | Expecting +y to go up | +y goes **down**; a room below another has a larger y. |
 | Door/window floating off its wall | Attach it: \`door on <wall> at <pos>\` — hosted by construction, it can never be off-wall. |
 | Hand-summing room offsets | Lay the row with \`strip\` — each room's \`at\` is computed for you. |
-| Furniture floated at a guessed (or copy-pasted) \`at\` | Place it \`in <room> anchor <9-point> [flush] [inset]\` or \`against wall <id>\` — closed-form, never floats or penetrates. |
-| Hand-computing half a wall thickness as \`inset\` (\`anchor bottom inset 100\` for a 200 wall) | Write \`anchor bottom flush\` — the inset is measured from the wall face, so you never name a thickness. |
+| Furniture floated at a guessed \`at\`, or an \`inset\` hand-computed from a wall thickness | Place it \`in <room> anchor <9-point> [flush] [inset]\` or \`against wall <id>\` — closed-form, never floats, penetrates, or names a thickness. |
 | \`size 4000\` (no height) | Sizes are \`WxH\`: \`size 4000x3000\` (or \`W x H\` with spaces). |
 | A big building drawn with metre-tall room labels and fat walls | Declare a sheet: \`paper A1\` (+ \`scale 1:200\`, or omit \`scale\` to auto-fit) — annotation sizes then stay fixed in sheet mm. |
 | Reusing an \`id\` | Ids are unique; omit \`id=\` to auto-generate. |

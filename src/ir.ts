@@ -52,6 +52,7 @@ import { resolveSheetSpec } from "./sheet.js";
 import type { GridBox } from "./geometry/grid-index.js";
 import { GridIndex } from "./geometry/grid-index.js";
 import { rectsOverlap } from "./geometry/rect.js";
+import { polygonsOverlap, rectRing } from "./geometry/polygon.js";
 import { BUILTIN_NAMES } from "./builtins.js";
 
 export interface RBase {
@@ -162,8 +163,20 @@ export type FurniturePlacement = "anchored" | "against-wall" | "absolute";
 
 export interface RRoom extends RBase {
   kind: "room";
+  /** Top-left of the room. For a {@link RRoom.poly} room this is the ring's BOUNDING
+   *  BOX corner, so a rect-shaped consumer still reads a truthful extent. */
   at: Point;
+  /** Extent of the room — the ring's bounding box for a {@link RRoom.poly} room. */
   size: { w: number; h: number };
+  /**
+   * The room's floor as an explicit, implicitly-closed simple polygon (`room polygon
+   * (x,y) …`, v1.23). Absent for a rectangular room, which is what keeps every existing
+   * plan byte-identical: a consumer must read this before assuming `at`/`size` IS the
+   * floor. Vertices are grid-snapped, in source order, with no repeated last point.
+   */
+  poly?: Point[];
+  /** Explicit label/area anchor (`label "…" at (x,y)`); absent = the derived centre. */
+  labelAt?: Point;
   label?: string;
   /** Declared function(s) from `uses …`; absent when the room is untagged. */
   uses?: UseKind[];
@@ -1620,7 +1633,14 @@ function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[
       const r2 = rooms[b]!;
       const b1 = { x: r1.at.x, y: r1.at.y, w: r1.size.w, h: r1.size.h };
       const b2 = { x: r2.at.x, y: r2.at.y, w: r2.size.w, h: r2.size.h };
-      if (rectsOverlap(b1, b2)) {
+      // A polygon room is tested EXACTLY (its own ring against the other's), never by
+      // its bounding box — an L and the room tucked into its notch have overlapping
+      // boxes and disjoint floors, and a bbox answer there would be a plain lie.
+      const overlapping =
+        r1.poly || r2.poly
+          ? rectsOverlap(b1, b2) && polygonsOverlap(r1.poly ?? rectRing(b1), r2.poly ?? rectRing(b2))
+          : rectsOverlap(b1, b2);
+      if (overlapping) {
         const key = `${a},${b}`;
         if (!seenPair.has(key)) {
           seenPair.add(key);

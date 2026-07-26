@@ -47,6 +47,151 @@ exports[`golden SVG snapshots > renders attached.arch deterministically 1`] = `
 </svg>"
 `;
 
+exports[`golden SVG snapshots > renders gallery-l.arch deterministically 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="420mm" height="297mm" viewBox="-15381.87 -6910 42000 29700" font-family="Helvetica, Arial, sans-serif">
+<defs><pattern id="poche" patternUnits="userSpaceOnUse" width="120" height="120" patternTransform="rotate(45)"><rect width="120" height="120" fill="#e9e4db"/><line x1="0" y1="0" x2="0" y2="120" stroke="#b9b1a4" stroke-width="12.6"/></pattern></defs>
+<rect x="-15381.87" y="-6910" width="42000" height="29700" fill="#ffffff"/>
+<g id="A-FLOR" inkscape:groupmode="layer" inkscape:label="A-FLOR">
+<polygon points="0,0 12000,0 12000,8000 6000,8000 6000,14000 0,14000" fill="#fbfaf7"/>
+<polygon points="6000,8000 12000,8000 12000,9000 6000,14000" fill="#fbfaf7"/>
+</g>
+<g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
+<path d="M -150,150 L 12150,150 L 12150,-150 L -150,-150 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M 11850,-150 L 11850,9150 L 12150,9150 L 12150,-150 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M 12019.21,8788.74 L 5788.74,13980.79 L 5980.79,14211.26 L 12211.26,9019.21 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M 6150,13850 L -150,13850 L -150,14150 L 6150,14150 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M 150,14150 L 150,-150 L -150,-150 L -150,14150 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M 5900,7900 L 5900,14100 L 6100,14100 L 6100,7900 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M 5900,8100 L 12100,8100 L 12100,7900 L 5900,7900 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<line x1="0" y1="150" x2="12000" y2="150" stroke="#1b1b1b" stroke-width="50" stroke-linecap="square"/>
+<line x1="0" y1="-150" x2="12000" y2="-150" stroke="#1b1b1b" stroke-width="50" stroke-linecap="square"/>
+<line x1="11850" y1="0" x2="11850" y2="9000" stroke="#1b1b1b" stroke-width="50" stroke-linecap="square"/>
+<line x1="12150" y1="0" x2="12150" y2="9000" stroke="#1b1b1b" stroke-width="50" stroke-linecap="square"/>
+<line x1="11903.97" y1="8884.77" x2="5903.97" y2="13884.77" stroke="#1b1b1b" stroke-width="50" stroke-linecap="square"/>
+<line x1="12096.03" y1="9115.23" x2="6096.03" y2="14115.23" stroke="#1b1b1b" stroke-width="50" stroke-linecap="square"/>
+<line x1="6000" y1="13850" x2="0" y2="13850" stroke="#1b1b1b" stroke-width="50" stroke-linecap="square"/>
+<line x1="6000" y1="14150" x2="0" y2="14150" stroke="#1b1b1b" stroke-width="50" stroke-linecap="square"/>
+<line x1="150" y1="14000" x2="150" y2="0" stroke="#1b1b1b" stroke-width="50" stroke-linecap="square"/>
+<line x1="-150" y1="14000" x2="-150" y2="0" stroke="#1b1b1b" stroke-width="50" stroke-linecap="square"/>
+<line x1="5900" y1="8000" x2="5900" y2="14000" stroke="#1b1b1b" stroke-width="50" stroke-linecap="square"/>
+<line x1="6100" y1="8000" x2="6100" y2="14000" stroke="#1b1b1b" stroke-width="50" stroke-linecap="square"/>
+<line x1="6000" y1="8100" x2="12000" y2="8100" stroke="#1b1b1b" stroke-width="50" stroke-linecap="square"/>
+<line x1="6000" y1="7900" x2="12000" y2="7900" stroke="#1b1b1b" stroke-width="50" stroke-linecap="square"/>
+</g>
+<g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
+<polygon points="9448.13,10866.22 8295.8,11826.49 8551.87,12133.78 9704.2,11173.51" fill="#ffffff"/>
+<line x1="9576.17" y1="11019.86" x2="8615.89" y2="9867.53" stroke="#555555" stroke-width="23.4"/>
+<path d="M 8615.89,9867.53 A 1500 1500 0 0 0 8423.83,11980.14" fill="none" stroke="#555555" stroke-width="18" stroke-dasharray="72 54"/>
+<polygon points="5850,10400 5850,11600 6150,11600 6150,10400" fill="#ffffff"/>
+<line x1="6000" y1="10400" x2="4800" y2="10400" stroke="#555555" stroke-width="23.4"/>
+<path d="M 4800,10400 A 1200 1200 0 0 0 6000,11600" fill="none" stroke="#555555" stroke-width="18" stroke-dasharray="72 54"/>
+</g>
+<g id="A-GLAZ" inkscape:groupmode="layer" inkscape:label="A-GLAZ">
+<polygon points="8300,200 11300,200 11300,-200 8300,-200" fill="#ffffff"/>
+<line x1="8300" y1="150" x2="11300" y2="150" stroke="#1b1b1b" stroke-width="18"/>
+<line x1="8300" y1="-150" x2="11300" y2="-150" stroke="#1b1b1b" stroke-width="18"/>
+<line x1="8300" y1="0" x2="11300" y2="0" stroke="#3a6ea5" stroke-width="18"/>
+</g>
+<g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
+<text x="5181.82" y="5839.09" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Gallery</text>
+<text x="5181.82" y="6224.09" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">132.0 m²</text>
+<text x="8200" y="10130" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Lobby</text>
+<text x="8200" y="10515" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">21.0 m²</text>
+</g>
+<g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
+<line x1="0" y1="14150" x2="0" y2="15000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="6000" y1="14150" x2="6000" y2="15000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="0" y1="15000" x2="6000" y2="15000" stroke="#0E5484" stroke-width="18"/>
+<line x1="84.85" y1="15084.85" x2="-84.85" y2="14915.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="6084.85" y1="15084.85" x2="5915.15" y2="14915.15" stroke="#0E5484" stroke-width="18"/>
+<text x="3000" y="15175" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 3000 15175)">6000</text>
+<line x1="6000" y1="14150" x2="6000" y2="15000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="12000" y1="14150" x2="12000" y2="15000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="6000" y1="15000" x2="12000" y2="15000" stroke="#0E5484" stroke-width="18"/>
+<line x1="6084.85" y1="15084.85" x2="5915.15" y2="14915.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="12084.85" y1="15084.85" x2="11915.15" y2="14915.15" stroke="#0E5484" stroke-width="18"/>
+<text x="9000" y="15175" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 9000 15175)">6000</text>
+<line x1="-150" y1="14150" x2="-150" y2="15550" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="12150" y1="14150" x2="12150" y2="15550" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="-150" y1="15550" x2="12150" y2="15550" stroke="#0E5484" stroke-width="18"/>
+<line x1="-65.15" y1="15634.85" x2="-234.85" y2="15465.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="12234.85" y1="15634.85" x2="12065.15" y2="15465.15" stroke="#0E5484" stroke-width="18"/>
+<text x="6000" y="15725" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 6000 15725)">12300</text>
+<line x1="-150" y1="0" x2="-1000" y2="0" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="-150" y1="8000" x2="-1000" y2="8000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="-1000" y1="0" x2="-1000" y2="8000" stroke="#0E5484" stroke-width="18"/>
+<line x1="-1084.85" y1="84.85" x2="-915.15" y2="-84.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="-1084.85" y1="8084.85" x2="-915.15" y2="7915.15" stroke="#0E5484" stroke-width="18"/>
+<text x="-1175" y="4000" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(90 -1175 4000)">8000</text>
+<line x1="-150" y1="8000" x2="-1000" y2="8000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="-150" y1="9000" x2="-1000" y2="9000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="-1000" y1="8000" x2="-1000" y2="9000" stroke="#0E5484" stroke-width="18"/>
+<line x1="-1084.85" y1="8084.85" x2="-915.15" y2="7915.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="-1084.85" y1="9084.85" x2="-915.15" y2="8915.15" stroke="#0E5484" stroke-width="18"/>
+<text x="-1175" y="8500" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(90 -1175 8500)">1000</text>
+<line x1="-150" y1="9000" x2="-1000" y2="9000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="-150" y1="14000" x2="-1000" y2="14000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="-1000" y1="9000" x2="-1000" y2="14000" stroke="#0E5484" stroke-width="18"/>
+<line x1="-1084.85" y1="9084.85" x2="-915.15" y2="8915.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="-1084.85" y1="14084.85" x2="-915.15" y2="13915.15" stroke="#0E5484" stroke-width="18"/>
+<text x="-1175" y="11500" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(90 -1175 11500)">5000</text>
+<line x1="-150" y1="-150" x2="-1550" y2="-150" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="-150" y1="14150" x2="-1550" y2="14150" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="-1550" y1="-150" x2="-1550" y2="14150" stroke="#0E5484" stroke-width="18"/>
+<line x1="-1634.85" y1="-65.15" x2="-1465.15" y2="-234.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="-1634.85" y1="14234.85" x2="-1465.15" y2="14065.15" stroke="#0E5484" stroke-width="18"/>
+<text x="-1725" y="7000" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(90 -1725 7000)">14300</text>
+<line x1="8300" y1="-150" x2="8300" y2="-450" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="-150" y1="-150" x2="-150" y2="-450" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="8300" y1="-450" x2="-150" y2="-450" stroke="#0E5484" stroke-width="18"/>
+<line x1="8215.15" y1="-534.85" x2="8384.85" y2="-365.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="-234.85" y1="-534.85" x2="-65.15" y2="-365.15" stroke="#0E5484" stroke-width="18"/>
+<text x="4075" y="-625" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 4075 -625)">8450</text>
+<line x1="11300" y1="-150" x2="11300" y2="-450" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="8300" y1="-150" x2="8300" y2="-450" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="11300" y1="-450" x2="8300" y2="-450" stroke="#0E5484" stroke-width="18"/>
+<line x1="11215.15" y1="-534.85" x2="11384.85" y2="-365.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="8215.15" y1="-534.85" x2="8384.85" y2="-365.15" stroke="#0E5484" stroke-width="18"/>
+<text x="9800" y="-625" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 9800 -625)">3000</text>
+<line x1="12150" y1="-150" x2="12150" y2="-450" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="11300" y1="-150" x2="11300" y2="-450" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="12150" y1="-450" x2="11300" y2="-450" stroke="#0E5484" stroke-width="18"/>
+<line x1="12065.15" y1="-534.85" x2="12234.85" y2="-365.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="11215.15" y1="-534.85" x2="11384.85" y2="-365.15" stroke="#0E5484" stroke-width="18"/>
+<text x="11725" y="-625" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 11725 -625)">850</text>
+<line x1="6000" y1="-150" x2="6000" y2="-1000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="0" y1="-150" x2="0" y2="-1000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="6000" y1="-1000" x2="0" y2="-1000" stroke="#0E5484" stroke-width="18"/>
+<line x1="5915.15" y1="-1084.85" x2="6084.85" y2="-915.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="-84.85" y1="-1084.85" x2="84.85" y2="-915.15" stroke="#0E5484" stroke-width="18"/>
+<text x="3000" y="-1175" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 3000 -1175)">6000</text>
+<line x1="12000" y1="-150" x2="12000" y2="-1000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="6000" y1="-150" x2="6000" y2="-1000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="12000" y1="-1000" x2="6000" y2="-1000" stroke="#0E5484" stroke-width="18"/>
+<line x1="11915.15" y1="-1084.85" x2="12084.85" y2="-915.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="5915.15" y1="-1084.85" x2="6084.85" y2="-915.15" stroke="#0E5484" stroke-width="18"/>
+<text x="9000" y="-1175" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 9000 -1175)">6000</text>
+<line x1="12150" y1="-150" x2="12150" y2="-1550" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="-150" y1="-150" x2="-150" y2="-1550" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="12150" y1="-1550" x2="-150" y2="-1550" stroke="#0E5484" stroke-width="18"/>
+<line x1="12065.15" y1="-1634.85" x2="12234.85" y2="-1465.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="-234.85" y1="-1634.85" x2="-65.15" y2="-1465.15" stroke="#0E5484" stroke-width="18"/>
+<text x="6000" y="-1725" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 6000 -1725)">12300</text>
+<line x1="5900" y1="11000" x2="6100" y2="11000" stroke="#0E5484" stroke-width="18"/>
+<line x1="5984.85" y1="11084.85" x2="5815.15" y2="10915.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="6184.85" y1="11084.85" x2="6015.15" y2="10915.15" stroke="#0E5484" stroke-width="18"/>
+<text x="6000" y="11175" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 6000 11175)">200</text>
+<line x1="150" y1="7000" x2="-150" y2="7000" stroke="#0E5484" stroke-width="18"/>
+<line x1="65.15" y1="6915.15" x2="234.85" y2="7084.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="-234.85" y1="6915.15" x2="-65.15" y2="7084.85" stroke="#0E5484" stroke-width="18"/>
+<text x="0" y="6825" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 0 6825)">300</text>
+</g>
+<g><polygon points="11761.26,-1425 11536.26,-705 11761.26,-862.5 11986.26,-705" fill="#333333" transform="rotate(0 11761.26 -975)"/><text x="11761.26" y="-1633" font-size="260" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
+<g><rect x="-13881.87" y="19910" width="1000" height="140" fill="#333333"/><rect x="-12881.87" y="19910" width="1000" height="140" fill="none" stroke="#333333" stroke-width="18"/><text x="-13881.87" y="20250" font-size="200" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="-11881.87" y="20250" font-size="200" fill="#333333" text-anchor="middle" dominant-baseline="central">2 m</text></g>
+<g><rect x="21718.13" y="19910" width="3400" height="1380" fill="none" stroke="#333333" stroke-width="18"/><text x="21888.13" y="20140" font-size="152" fill="#888888" dominant-baseline="central">PROJECT</text><text x="24948.13" y="20140" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">Polygon rooms</text><text x="21888.13" y="20600" font-size="152" fill="#888888" dominant-baseline="central">DRAWN BY</text><text x="24948.13" y="20600" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">ArchLang</text><line x1="21718.13" y1="20370" x2="25118.13" y2="20370" stroke="#333333" stroke-width="9"/><text x="21888.13" y="21060" font-size="152" fill="#888888" dominant-baseline="central">SCALE</text><text x="24948.13" y="21060" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1:100</text><line x1="21718.13" y1="20830" x2="25118.13" y2="20830" stroke="#333333" stroke-width="9"/></g>
+</svg>"
+`;
+
 exports[`golden SVG snapshots > renders museum.arch deterministically 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="841mm" height="594mm" viewBox="-34100 -27060 168200 118800" font-family="Helvetica, Arial, sans-serif">
 <defs><pattern id="poche" patternUnits="userSpaceOnUse" width="240" height="240" patternTransform="rotate(45)"><rect width="240" height="240" fill="#e9e4db"/><line x1="0" y1="0" x2="0" y2="240" stroke="#b9b1a4" stroke-width="25.2"/></pattern></defs>

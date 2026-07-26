@@ -4,8 +4,8 @@
  * once per `lint()` run, so no rule re-derives them.
  */
 
-import type { BBox } from "../analyze.js";
-import { rectOf } from "../analyze.js";
+import type { RoomBox } from "../analyze.js";
+import { roomBox } from "../analyze.js";
 import type { Diagnostic } from "../diagnostics.js";
 import { segmentsOfWall, type WallSegment } from "../geometry.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RWindow, ResolvedPlan } from "../ir.js";
@@ -46,7 +46,8 @@ export interface LintContext {
   building: BuildingContext;
   /** Both doors and cased openings connect a room to its neighbours. */
   connectors: Array<RDoor | ROpening>;
-  roomRects: Map<string, BBox>;
+  /** Per-room extent: bbox, plus the floor ring for a `room polygon` (v1.23). */
+  roomRects: Map<string, RoomBox>;
   /** Every wall segment, hoisted once (several rules scan them per room/fixture). */
   wallSegs: WallSegment[];
   wallOpenings: Array<{ at: { x: number; y: number }; width: number }>;
@@ -82,7 +83,7 @@ export function buildLintContext(
     verticals: verticalsOf(ir),
     building,
     connectors: [...doors, ...openings],
-    roomRects: new Map<string, BBox>(rooms.map((r) => [r.id, rectOf(r)])),
+    roomRects: new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)])),
     wallSegs: ir.walls.flatMap((w) => segmentsOfWall(w).map((s) => ({ ...s }))),
     wallOpenings: ir.walls.flatMap((w) => w.openings),
     labelOf: (r) => r.label ?? r.id,

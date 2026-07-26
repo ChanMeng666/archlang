@@ -68,7 +68,7 @@ reports the result as `sheet`. Big plan? `paper A1` + `dims auto all` is the pro
 
 ```text
 wall <category> thickness <mm> [material <name>] { (x,y) (x,y) … [close] }   # category e.g. exterior/partition; `close` makes a loop
-room [id=<name>] at (x,y) size <W>x<H> [label "…"] [uses living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry …]   # OR relational: room [id=…] (right-of|left-of|below|above) <roomId> [align top|middle|bottom|left|right] [gap <mm>] size <W>x<H> [label "…"]
+room [id=<name>] at (x,y) size <W>x<H> [label "…" [at (x,y)]] [uses living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry …]   # OR relational: room [id=…] (right-of|left-of|below|above) <roomId> [align top|middle|bottom|left|right] [gap <mm>] size <W>x<H>. OR POLYGONAL: room [id=…] polygon (x,y) (x,y) (x,y) … — an implicitly-closed SIMPLE polygon (>=3 vertices) instead of at+size (an L, a trapezoid): exact shoelace area, label at the CENTROID (override: `label "…" at (x,y)`). A crossing or all-collinear ring errors (E_ROOM_POLY_SELF_INTERSECT/E_ROOM_POLY_DEGENERATE); rectangle-only clauses (relational placement, `furniture … in <poly> anchor|centered`) REFUSE it with E_PLACE_POLY — use `at (x,y)` [+ rotate]
 door [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [hinge left|right|near start|near end] [swing in|out|into <roomId>]   # `at (x,y)` must sit on a wall; `on <wall> at <pos>` pins it BY CONSTRUCTION (<pos> = `40%` | mm from the wall's start | `center`) and can never be reported off-wall — prefer it
 window [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # same two placement forms as door
 opening [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # a leaf-less cased opening (gap in a wall) that still connects the two spaces in the access graph
@@ -102,7 +102,7 @@ legend   # draw the LEGEND table beside the schedule: a row per wall hatch mater
 (Elements are fully specced above; these are the rest.)
 
 - **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`, `strip`, `level`, `zone`, `place`, `axes`, `schedule`, `legend`
-- **Attributes:** `units`, `grid`, `paper`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`, `on`, `into`, `near`, `anchor`, `inset`, `flush`, `mirror`, `height`, `faces`, `clear`, `dir`
+- **Attributes:** `units`, `grid`, `paper`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `polygon`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`, `on`, `into`, `near`, `anchor`, `inset`, `flush`, `mirror`, `height`, `faces`, `clear`, `dir`
 - **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `centered`, `start`, `end`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `auto`, `A4`, `A3`, `A2`, `A1`, `A0`, `landscape`, `portrait`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`
 
 ## CLI loop (how an agent drives it)
@@ -177,8 +177,7 @@ SKILL.md for the full recipe.
 | Expecting +y to go up | +y goes **down**; a room below another has a larger y. |
 | Door/window floating off its wall | Attach it: `door on <wall> at <pos>` — hosted by construction, it can never be off-wall. |
 | Hand-summing room offsets | Lay the row with `strip` — each room's `at` is computed for you. |
-| Furniture floated at a guessed (or copy-pasted) `at` | Place it `in <room> anchor <9-point> [flush] [inset]` or `against wall <id>` — closed-form, never floats or penetrates. |
-| Hand-computing half a wall thickness as `inset` (`anchor bottom inset 100` for a 200 wall) | Write `anchor bottom flush` — the inset is measured from the wall face, so you never name a thickness. |
+| Furniture floated at a guessed `at`, or an `inset` hand-computed from a wall thickness | Place it `in <room> anchor <9-point> [flush] [inset]` or `against wall <id>` — closed-form, never floats, penetrates, or names a thickness. |
 | `size 4000` (no height) | Sizes are `WxH`: `size 4000x3000` (or `W x H` with spaces). |
 | A big building drawn with metre-tall room labels and fat walls | Declare a sheet: `paper A1` (+ `scale 1:200`, or omit `scale` to auto-fit) — annotation sizes then stay fixed in sheet mm. |
 | Reusing an `id` | Ids are unique; omit `id=` to auto-generate. |
@@ -663,7 +662,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**59 errors** (abort rendering) · **38 warnings** (advisory; `validate --strict` fails on them too).
+**62 errors** (abort rendering) · **39 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -709,11 +708,14 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_LEVEL_MIX` — A drawable statement sits beside `level` blocks. **Fix:** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.
 - `E_LEVEL_NEST` — `level` used inside a block or component. **Fix:** Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.
 - `E_OPENING_WIDTH` — Opening must have a positive width. **Fix:** Give the opening a positive `width`.
+- `E_PLACE_POLY` — A rectangle-only placement clause aimed at a polygon room. **Fix:** Place the room or the fixture with explicit `at (x,y)` coordinates (a fixture may add `rotate`), or make the referenced room rectangular.
 - `E_PLACE_REF` — Furniture placed in an unknown or non-absolute room. **Fix:** Reference an existing room given absolute `at (x,y)` coordinates.
 - `E_PNG_DEPENDENCY` — PNG/PDF export needs an optional dependency that is not installed. **Fix:** Install the optional dependency (`npm install @resvg/resvg-js`), or re-run with `--install` to fetch it automatically, or render to SVG/DXF (zero-dependency).
 - `E_RANGE_LIMIT` — Range too large. **Fix:** Use a smaller range, or restructure to avoid materializing it.
 - `E_RECURSION` — Component recursion too deep. **Fix:** Add a base case so the recursion terminates.
 - `E_REDEF` — Name already defined in this scope. **Fix:** Rename one binding, or use `NAME = …` to reassign instead of redeclaring.
+- `E_ROOM_POLY_DEGENERATE` — Polygon room has fewer than three effective vertices. **Fix:** Give the room at least three vertices that actually turn a corner.
+- `E_ROOM_POLY_SELF_INTERSECT` — Polygon room intersects itself. **Fix:** Reorder the vertices so the ring is traced once around the room without crossing itself (a bow-tie usually means two vertices are swapped).
 - `E_ROOM_SIZE` — Room must have a positive size. **Fix:** Give the room a positive `size W x H`.
 - `E_STAIR_WIDTH` — Stair flight `width` is outside the footprint. **Fix:** Drop `width` to fill the footprint, or give a value between 0 and the footprint's short side.
 - `E_STRIP_NEST` — Illegal `strip` nesting. **Fix:** Move the `strip` to the plan body, alongside the other elements.
@@ -752,6 +754,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `W_OPENING_OFF_WALL` — Opening does not lie on any wall. **Fix:** Move the opening onto a wall, or name its host with `wall <id|category>`. The diagnostic points at the nearest wall.
 - `W_PATH_TOO_NARROW` — The walk to a room squeezes below a passable width. **Fix:** Widen the tightest door/opening on the route, or move the furniture pinching it, so the whole path clears the minimum width.
 - `W_ROOM_DISCONNECTED` — Room has no door — it can't be entered. **Fix:** Add a `door` on one of the room's walls.
+- `W_ROOM_LABEL_OUTSIDE` — A room's explicit label anchor falls outside the room. **Fix:** Move the anchor inside the room, or drop the `at (…)` and let the centroid decide (which is what a convex room wants anyway).
 - `W_ROOM_NO_CLEAR_PATH` — A room cannot be entered or crossed. **Fix:** Open up the layout: move or shrink the furniture nearest the door so there is a continuous walkable strip from each entrance into the room.
 - `W_ROOM_NO_FIXTURE` — Bathroom or kitchen has no fixtures. **Fix:** Place the expected fixtures — e.g. import `lib/fixtures.arch` and add a `wc`, `basin`, `shower`, or `kitchen_sink`.
 - `W_ROOM_NOT_ENCLOSED` — Bathroom is not fully enclosed. **Fix:** Extend the partition so the room's perimeter is walled on all sides (a door/window in the wall is fine — only a missing wall counts).

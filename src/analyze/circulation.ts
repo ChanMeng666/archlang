@@ -37,6 +37,7 @@ import type { Point } from "../ast.js";
 import { outsideOpenEdge, type RVertical, type VerticalObstacle, verticalObstacles } from "../vertical.js";
 import {
   rectOf,
+  roomBox,
   roomUses,
   isBedroom,
   isKitchen,
@@ -44,8 +45,10 @@ import {
   EXTERIOR_NODE,
   type AccessGraph,
   type BBox,
+  type RoomBox,
 } from "../analyze.js";
 import { pointInRect } from "../geometry/rect.js";
+import { pointInPolygon, polygonCentroid, polygonEdges } from "../geometry/polygon.js";
 import { matchesLivingDining } from "../vocabulary.js";
 
 /** Radius (mm) of the walking body obstacles are inflated by (clearance erosion). */
@@ -170,8 +173,34 @@ function centreOf(g: NavGrid, k: number): { x: number; y: number } {
  * (mirrors occupancy.ts' inward seeding). Returns −1 when the doorway's inward run
  * is sealed by furniture, so a blocked doorway simply yields no seed.
  */
-function seedCell(g: NavGrid, at: Point, rb: BBox, roomIndex: number, tol: number): number {
+function seedCell(g: NavGrid, at: Point, rb: RoomBox, roomIndex: number, tol: number): number {
   const { ix, iy } = cellOf(g, at.x, at.y);
+  // A POLYGON room's doorway need not sit on a bounding-box side, so the "step inward
+  // perpendicular to that side" walk has no direction to take. Take the room's nearest
+  // free cell to the doorway instead — scanned by increasing Chebyshev ring, row-major
+  // inside each ring, so the answer is deterministic and local.
+  if (rb.poly) {
+    const reach = Math.ceil(tol / g.cell) + 2;
+    for (let rad = 0; rad <= reach; rad++) {
+      let best = -1;
+      let bestD = Infinity;
+      for (let sy = Math.max(0, iy - rad); sy <= Math.min(g.ny - 1, iy + rad); sy++) {
+        for (let sx = Math.max(0, ix - rad); sx <= Math.min(g.nx - 1, ix + rad); sx++) {
+          if (Math.max(Math.abs(sx - ix), Math.abs(sy - iy)) !== rad) continue;
+          const k = sy * g.nx + sx;
+          if (g.roomIdx[k] !== roomIndex || !g.free[k]) continue;
+          const c = centreOf(g, k);
+          const d = (c.x - at.x) ** 2 + (c.y - at.y) ** 2;
+          if (d < bestD) {
+            bestD = d;
+            best = k;
+          }
+        }
+      }
+      if (best >= 0) return best;
+    }
+    return -1;
+  }
   const dx = Math.abs(at.x - rb.x) <= tol ? 1 : Math.abs(at.x - (rb.x + rb.w)) <= tol ? -1 : 0;
   const dy = Math.abs(at.y - rb.y) <= tol ? 1 : Math.abs(at.y - (rb.y + rb.h)) <= tol ? -1 : 0;
   for (let step = 0; step < g.nx + g.ny; step++) {
@@ -226,11 +255,34 @@ function carvePath(g: NavGrid, eroded: Uint8Array, a: number, b: number): number
  * not read as sealing the whole of it (the museum's servery covers 6 m of the cafe's 4 m
  * threshold; the other half is walkable and now measures that way).
  */
-function thresholdPoints(g: NavGrid, at: Point, rb: BBox, clear: number, tol: number): Point[] {
-  // The connector lies on a shared room edge; a horizontal edge means it spans in x.
-  const spansX = Math.abs(at.y - rb.y) <= tol || Math.abs(at.y - (rb.y + rb.h)) <= tol;
+function thresholdPoints(g: NavGrid, at: Point, rb: RoomBox, clear: number, tol: number): Point[] {
   const steps = Math.floor(Math.max(0, clear / 2 - g.cell / 2) / g.cell);
   const out: Point[] = [at];
+  // A polygon room's opening runs along whichever of ITS edges the connector sits on —
+  // at any angle — so the walk direction is that edge's unit vector rather than a
+  // choice between the two bbox axes.
+  if (rb.poly) {
+    let ux = 1;
+    let uy = 0;
+    let bestD = Infinity;
+    for (const [a, b] of polygonEdges(rb.poly)) {
+      const d = distPointToSeg(at.x, at.y, a.x, a.y, b.x, b.y);
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      if (d < bestD && len > 0) {
+        bestD = d;
+        ux = (b.x - a.x) / len;
+        uy = (b.y - a.y) / len;
+      }
+    }
+    for (let i = 1; i <= steps; i++) {
+      const d = i * g.cell;
+      out.push({ x: at.x + ux * d, y: at.y + uy * d });
+      out.push({ x: at.x - ux * d, y: at.y - uy * d });
+    }
+    return out;
+  }
+  // The connector lies on a shared room edge; a horizontal edge means it spans in x.
+  const spansX = Math.abs(at.y - rb.y) <= tol || Math.abs(at.y - (rb.y + rb.h)) <= tol;
   for (let i = 1; i <= steps; i++) {
     const d = i * g.cell;
     out.push(spansX ? { x: at.x + d, y: at.y } : { x: at.x, y: at.y + d });
@@ -395,7 +447,7 @@ function buildGrid(
   tol: number,
   bodyRadius: number,
 ): NavGrid | null {
-  const rects = rooms.map((r) => rectOf(r));
+  const rects = rooms.map((r) => roomBox(r));
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -447,7 +499,11 @@ function buildGrid(
     for (let iy = iy0; iy <= iy1; iy++) {
       const cy = minY + (iy + 0.5) * cell;
       for (let ix = ix0; ix <= ix1; ix++) {
-        if (pointInRect(minX + (ix + 0.5) * cell, cy, rb)) roomIdx[iy * nx + ix] = j;
+        // Membership is "is the cell CENTRE inside the room?" — the polygon ring when the
+        // room has one, the rectangle otherwise. Same predicate, same cells.
+        const cx = minX + (ix + 0.5) * cell;
+        const inside = rb.poly ? pointInPolygon(cx, cy, rb.poly) : pointInRect(cx, cy, rb);
+        if (inside) roomIdx[iy * nx + ix] = j;
       }
     }
   }
@@ -606,7 +662,7 @@ function buildNav(
   if (rooms.length === 0 || !access.hasEntrance) return { kind: "none" };
 
   const roomIndexById = new Map<string, number>(rooms.map((r, i) => [r.id, i]));
-  const rects = rooms.map((r) => rectOf(r));
+  const rects = rooms.map((r) => roomBox(r));
   const atById = new Map<string, Point>();
   for (const d of doors) atById.set(d.id, d.at);
   for (const o of openings) atById.set(o.id, o.at);
@@ -627,7 +683,7 @@ function buildNav(
   const anchor = new Int32Array(rooms.length).fill(-1);
   const anchorDist = new Float64Array(rooms.length).fill(Infinity);
   const roomCells: number[][] = rooms.map(() => []);
-  const centroid = rects.map((rb) => ({ x: rb.x + rb.w / 2, y: rb.y + rb.h / 2 }));
+  const centroid = rects.map((rb) => (rb.poly ? polygonCentroid(rb.poly) : { x: rb.x + rb.w / 2, y: rb.y + rb.h / 2 }));
   for (let k = 0; k < g.free.length; k++) {
     const ri = g.roomIdx[k]!;
     if (!g.free[k] || ri < 0) continue;

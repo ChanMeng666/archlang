@@ -67,6 +67,7 @@ export const KEYWORDS = {
     "angle",
     "at",
     "size",
+    "polygon",
     "width",
     "thickness",
     "label",

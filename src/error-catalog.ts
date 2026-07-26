@@ -178,6 +178,27 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Reference an existing room given absolute `at (x,y)` coordinates.",
     "furniture bed in bedrm centered size 1500x2000   # error: no room id=bedrm",
   ),
+  E_PLACE_POLY: E(
+    "E_PLACE_POLY",
+    "A rectangle-only placement clause aimed at a polygon room.",
+    "Relational room placement (`right-of`/`left-of`/`below`/`above`) and room-relative furniture placement (`in <room> centered|anchor …`) are closed-form arithmetic on a room's four RECTANGLE edges. A `room polygon` has no such edges, and its bounding box is not its floor — an anchor could land the piece in a notch that is outside the room — so the compiler refuses instead of guessing (ADR 0005).",
+    "Place the room or the fixture with explicit `at (x,y)` coordinates (a fixture may add `rotate`), or make the referenced room rectangular.",
+    "room id=L polygon (0,0) (6000,0) (6000,4000) (3000,4000) (3000,6000) (0,6000)\nfurniture wc in L anchor bottom-left   # error: L is a polygon room",
+  ),
+  E_ROOM_POLY_DEGENERATE: E(
+    "E_ROOM_POLY_DEGENERATE",
+    "Polygon room has fewer than three effective vertices.",
+    "After removing duplicate and straight-through (collinear) points, the ring encloses no area — so it has no floor, no centroid and no containment test.",
+    "Give the room at least three vertices that actually turn a corner.",
+    "room polygon (0,0) (4000,0) (8000,0)   # error: all three are collinear",
+  ),
+  E_ROOM_POLY_SELF_INTERSECT: E(
+    "E_ROOM_POLY_SELF_INTERSECT",
+    "Polygon room intersects itself.",
+    "Two of the ring's edges cross (or run along each other), so the polygon is not simple and which side is 'inside' is undefined — area, containment and adjacency would all be meaningless.",
+    "Reorder the vertices so the ring is traced once around the room without crossing itself (a bow-tie usually means two vertices are swapped).",
+    "room polygon (0,0) (4000,4000) (4000,0) (0,4000)   # error: bow-tie",
+  ),
   E_STRIP_SIZE: E(
     "E_STRIP_SIZE",
     "Room in a `strip` is missing a size.",
@@ -580,6 +601,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "No door lies on any of the room's walls, so there is no way into the room.",
     "Add a `door` on one of the room's walls.",
     "room id=r at (0,0) size 3000x3000   # lint: no door on its perimeter",
+  ),
+  W_ROOM_LABEL_OUTSIDE: W(
+    "W_ROOM_LABEL_OUTSIDE",
+    "A room's explicit label anchor falls outside the room.",
+    '`label "…" at (x,y)` pins the label and area text at a point that is not inside the room\'s floor, so the text will be drawn over whatever is there instead.',
+    "Move the anchor inside the room, or drop the `at (…)` and let the centroid decide (which is what a convex room wants anyway).",
+    'room polygon (0,0) (6000,0) (6000,6000) (0,6000) label "Hall" at (9000,9000)   # warning',
   ),
   W_ROOM_TOO_SMALL: W(
     "W_ROOM_TOO_SMALL",

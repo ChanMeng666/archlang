@@ -35,10 +35,12 @@ import {
   isWetRoom,
   rectOf,
   resolvePlan,
+  roomBox,
   type AnalyzeOptions,
 } from "./analyze.js";
 import type { BBox } from "./geometry/rect.js";
 import { segmentsOfWall, type WallSegment } from "./geometry.js";
+import { collinearOverlapLength, polygonEdges } from "./geometry/polygon.js";
 import { projectPointOntoWall, type AttachableWall } from "./fix-producers.js";
 import { fmt3 as numStr } from "./num-format.js";
 import type { Point } from "./ast.js";
@@ -132,8 +134,17 @@ function hostWallForEdge(e: Edge, walls: RWall[], tol: number): { wall: RWall; c
 /** Ids of rooms (other than `selfId`) that share edge `e` — a wall neighbour across it. */
 function neighboursOnEdge(e: Edge, rooms: RRoom[], selfId: string, tol: number): string[] {
   const out: string[] = [];
+  const ea: Point = e.axis === "h" ? { x: e.lo, y: e.fixed } : { x: e.fixed, y: e.lo };
+  const eb: Point = e.axis === "h" ? { x: e.hi, y: e.fixed } : { x: e.fixed, y: e.hi };
   for (const r of rooms) {
     if (r.id === selfId) continue;
+    // A polygon neighbour is tested against ITS OWN edges: a suggested "exterior" door
+    // must not land on a wall an L-shaped gallery is actually behind.
+    if (r.poly) {
+      const shares = polygonEdges(r.poly).some(([a, b]) => collinearOverlapLength(ea, eb, a, b, tol) > 0);
+      if (shares) out.push(r.id);
+      continue;
+    }
     const rect = rectOf(r);
     const edges = e.axis === "h" ? [rect.y, rect.y + rect.h] : [rect.x, rect.x + rect.w];
     const onLine = edges.some((f) => Math.abs(f - e.fixed) <= tol);
@@ -265,6 +276,13 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   if (!ir) return [];
 
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
+  // Every candidate this module composes is derived from a room's four RECTANGLE edges
+  // (`edgesOf`) — where on that side a door or window could go. A polygon room has no
+  // such sides, so it contributes no candidates: `suggest` is advisory, and offering an
+  // opening on a bounding-box edge the room does not have would be worse than silence.
+  // Polygon rooms still take part in the reachability graph below, so a fault involving
+  // one is still DIAGNOSED (by `lint`) — only the auto-composed statement is withheld.
+  const rectRooms = rooms.filter((r) => !r.poly);
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const windows = ir.elements.filter((e): e is RWindow => e.kind === "window");
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
@@ -298,7 +316,7 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   if (!access.hasEntrance && hasExteriorWall) {
     const suitable: Array<RawCandidate & { roomId: string }> = [];
     const rest: Array<RawCandidate & { roomId: string }> = [];
-    for (const room of rooms) {
+    for (const room of rectRooms) {
       const rect = rectOf(room);
       const label = room.label ?? room.id;
       const bucket = !isBedroom(room) && !isWetRoom(room) ? suitable : rest;
@@ -333,7 +351,7 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
     }
   }
 
-  for (const room of rooms) {
+  for (const room of rectRooms) {
     const rect = rectOf(room);
     const label = room.label ?? room.id;
     const node = access.rooms.find((r) => r.id === room.id);
@@ -432,7 +450,7 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   // the first set but not the second is en-suite-trapped. Propose a door on a wall it
   // shares with a non-bedroom space that still reaches the entrance (preferred), with
   // exterior-wall doors as a fallback. Only runs when an entrance exists.
-  const roomRects = new Map(rooms.map((r) => [r.id, rectOf(r)] as const));
+  const roomRects = new Map(rooms.map((r) => [r.id, roomBox(r)] as const));
   const graphConnectors = [...doors, ...openings];
   const adj = new Map<string, Set<string>>();
   const addEdge = (x: string, y: string): void => {
@@ -465,7 +483,7 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
     };
     const reachAll = bfs(false);
     const reachNoBed = bfs(true);
-    for (const room of rooms) {
+    for (const room of rectRooms) {
       if (!isWetRoom(room) || !reachAll.has(room.id) || reachNoBed.has(room.id)) continue;
       const rect = rectOf(room);
       const label = room.label ?? room.id;

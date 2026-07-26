@@ -5,10 +5,19 @@
  * by tests and by agents diffing `--json` output).
  */
 
-import { isBedroom, isKitchen, isWetRoom, largestPerimeterGap, pointOnRoomEdge, rectOf } from "../../analyze.js";
+import {
+  isBedroom,
+  isKitchen,
+  isWetRoom,
+  largestPerimeterGap,
+  largestPerimeterGapRing,
+  pointInRoomBox,
+  pointOnRoomEdge,
+  rectOf,
+  roomAreaMm2,
+} from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { zoneFixtureCategories } from "../../fixtures-catalog.js";
-import { pointInRect } from "../../geometry/rect.js";
 import type { RRoom } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
 
@@ -18,8 +27,8 @@ export const WET_FIX = zoneFixtureCategories("wet");
 /** Furniture categories that count as a fixture/appliance for a kitchen. */
 export const KITCHEN_FIX = zoneFixtureCategories("kitchen");
 
-/** Square metres of a room, rounded to 2 decimals. */
-const areaM2 = (r: RRoom): number => Math.round(((r.size.w * r.size.h) / 1_000_000) * 100) / 100;
+/** Square metres of a room (exact for a polygon too), rounded to 2 decimals. */
+const areaM2 = (r: RRoom): number => Math.round((roomAreaMm2(r) / 1_000_000) * 100) / 100;
 
 export const perRoomRules: LintRule = {
   name: "per-room",
@@ -67,7 +76,11 @@ export const perRoomRules: LintRule = {
 
       // A wet room not fully walled in (a partition that stops short leaves it open).
       if (isWetRoom(r)) {
-        const gap = largestPerimeterGap(rect, ir.walls, rules.tolMm, wallSegs);
+        // A polygon room is measured around its own ring (any edge angle); a rectangle
+        // keeps the four-sided test, byte-for-byte.
+        const gap = r.poly
+          ? largestPerimeterGapRing(r.poly, ir.walls, rules.tolMm, wallSegs)
+          : largestPerimeterGap(rect, ir.walls, rules.tolMm, wallSegs);
         if (gap > rules.maxUnenclosedMm) {
           out.push({
             severity: "warning",
@@ -88,7 +101,7 @@ export const perRoomRules: LintRule = {
           const fr = rectOf(f);
           const cx = fr.x + fr.w / 2;
           const cy = fr.y + fr.h / 2;
-          return want.has(f.category) && pointInRect(cx, cy, rect);
+          return want.has(f.category) && pointInRoomBox({ x: cx, y: cy }, rect);
         });
         if (!has) {
           out.push({

@@ -11,12 +11,14 @@ import {
   backEdgeForRotate,
   frontClearanceRect,
   isAgainstWall,
+  pointInRoomBox,
   rectOf,
   rotateForBackEdge,
   wallBackedEdges,
 } from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
-import { pointInRect, rectsOverlap, wallIntrusionDepth } from "../../geometry/rect.js";
+import { rectsOverlap, wallIntrusionDepth } from "../../geometry/rect.js";
+import { pointInPolygon } from "../../geometry/polygon.js";
 import { fixesFrom, fixtureRotateFix } from "../../fix-producers.js";
 import { defaultFootprint, frontClearanceMm, orientationMatters, requiresWall } from "../../fixtures-catalog.js";
 import type { LintContext, LintRule } from "../context.js";
@@ -126,10 +128,17 @@ export const fixtureFloating: LintRule = {
  */
 export const fixtureBackToRoom: LintRule = {
   name: "fixture-back-to-room",
-  check({ furniture, ir, rules, wallSegs, at }: LintContext): Diagnostic[] {
+  check({ furniture, ir, rooms, rules, wallSegs, at }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
+    // A POLYGON room has no north/south/east/west sides, so "which edge is the back?"
+    // has no answer there — the rule declines rather than derive a rotation from a
+    // bounding box the room does not have (ADR 0005: no invisible architect).
+    const polyRooms = rooms.filter((r) => r.poly).map((r) => r.poly!);
     for (const f of furniture) {
       if (!orientationMatters(f.category)) continue;
+      const cx = f.at.x + f.size.w / 2;
+      const cy = f.at.y + f.size.h / 2;
+      if (polyRooms.some((ring) => pointInPolygon(cx, cy, ring))) continue;
       const backing = wallBackedEdges(rectOf(f), ir.walls, rules.fixtureWallTolMm, wallSegs);
       const back = backEdgeForRotate(f.rotate);
       if (backing[back] !== null) continue; // back is on a wall — correctly oriented
@@ -168,7 +177,7 @@ export const fixtureWrongRoom: LintRule = {
       if (!rect) continue;
       const cx = f.at.x + f.size.w / 2;
       const cy = f.at.y + f.size.h / 2;
-      if (!pointInRect(cx, cy, rect)) {
+      if (!pointInRoomBox({ x: cx, y: cy }, rect)) {
         const name = f.label ?? f.category;
         out.push({
           severity: "warning",

@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**59 errors** · **38 warnings**
+**62 errors** · **39 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -51,11 +51,14 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_LEVEL_MIX`](#e_level_mix) | error | A drawable statement sits beside `level` blocks. |
 | [`E_LEVEL_NEST`](#e_level_nest) | error | `level` used inside a block or component. |
 | [`E_OPENING_WIDTH`](#e_opening_width) | error | Opening must have a positive width. |
+| [`E_PLACE_POLY`](#e_place_poly) | error | A rectangle-only placement clause aimed at a polygon room. |
 | [`E_PLACE_REF`](#e_place_ref) | error | Furniture placed in an unknown or non-absolute room. |
 | [`E_PNG_DEPENDENCY`](#e_png_dependency) | error | PNG/PDF export needs an optional dependency that is not installed. |
 | [`E_RANGE_LIMIT`](#e_range_limit) | error | Range too large. |
 | [`E_RECURSION`](#e_recursion) | error | Component recursion too deep. |
 | [`E_REDEF`](#e_redef) | error | Name already defined in this scope. |
+| [`E_ROOM_POLY_DEGENERATE`](#e_room_poly_degenerate) | error | Polygon room has fewer than three effective vertices. |
+| [`E_ROOM_POLY_SELF_INTERSECT`](#e_room_poly_self_intersect) | error | Polygon room intersects itself. |
 | [`E_ROOM_SIZE`](#e_room_size) | error | Room must have a positive size. |
 | [`E_STAIR_WIDTH`](#e_stair_width) | error | Stair flight `width` is outside the footprint. |
 | [`E_STRIP_NEST`](#e_strip_nest) | error | Illegal `strip` nesting. |
@@ -91,6 +94,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_OPENING_OFF_WALL`](#w_opening_off_wall) | warning | Opening does not lie on any wall. |
 | [`W_PATH_TOO_NARROW`](#w_path_too_narrow) | warning | The walk to a room squeezes below a passable width. |
 | [`W_ROOM_DISCONNECTED`](#w_room_disconnected) | warning | Room has no door — it can't be entered. |
+| [`W_ROOM_LABEL_OUTSIDE`](#w_room_label_outside) | warning | A room's explicit label anchor falls outside the room. |
 | [`W_ROOM_NO_CLEAR_PATH`](#w_room_no_clear_path) | warning | A room cannot be entered or crossed. |
 | [`W_ROOM_NO_FIXTURE`](#w_room_no_fixture) | warning | Bathroom or kitchen has no fixtures. |
 | [`W_ROOM_NOT_ENCLOSED`](#w_room_not_enclosed) | warning | Bathroom is not fully enclosed. |
@@ -620,6 +624,19 @@ component c() { level 1 { } }   # error: only allowed at plan level
 opening at (0,0) width 0   # error
 ```
 
+## E_PLACE_POLY
+
+*error* — A rectangle-only placement clause aimed at a polygon room.
+
+**Cause.** Relational room placement (`right-of`/`left-of`/`below`/`above`) and room-relative furniture placement (`in <room> centered|anchor …`) are closed-form arithmetic on a room's four RECTANGLE edges. A `room polygon` has no such edges, and its bounding box is not its floor — an anchor could land the piece in a notch that is outside the room — so the compiler refuses instead of guessing (ADR 0005).
+
+**Fix.** Place the room or the fixture with explicit `at (x,y)` coordinates (a fixture may add `rotate`), or make the referenced room rectangular.
+
+```arch
+room id=L polygon (0,0) (6000,0) (6000,4000) (3000,4000) (3000,6000) (0,6000)
+furniture wc in L anchor bottom-left   # error: L is a polygon room
+```
+
 ## E_PLACE_REF
 
 *error* — Furniture placed in an unknown or non-absolute room.
@@ -679,6 +696,30 @@ component r(n) { r(n) }   # error: never terminates
 ```arch
 let x = 1
 let x = 2   # error: redefinition
+```
+
+## E_ROOM_POLY_DEGENERATE
+
+*error* — Polygon room has fewer than three effective vertices.
+
+**Cause.** After removing duplicate and straight-through (collinear) points, the ring encloses no area — so it has no floor, no centroid and no containment test.
+
+**Fix.** Give the room at least three vertices that actually turn a corner.
+
+```arch
+room polygon (0,0) (4000,0) (8000,0)   # error: all three are collinear
+```
+
+## E_ROOM_POLY_SELF_INTERSECT
+
+*error* — Polygon room intersects itself.
+
+**Cause.** Two of the ring's edges cross (or run along each other), so the polygon is not simple and which side is 'inside' is undefined — area, containment and adjacency would all be meaningless.
+
+**Fix.** Reorder the vertices so the ring is traced once around the room without crossing itself (a bow-tie usually means two vertices are swapped).
+
+```arch
+room polygon (0,0) (4000,4000) (4000,0) (0,4000)   # error: bow-tie
 ```
 
 ## E_ROOM_SIZE
@@ -1106,6 +1147,18 @@ furniture cabinet at (3600,300) size 700x1200   # lint: the way through squeezes
 
 ```arch
 room id=r at (0,0) size 3000x3000   # lint: no door on its perimeter
+```
+
+## W_ROOM_LABEL_OUTSIDE
+
+*warning* — A room's explicit label anchor falls outside the room.
+
+**Cause.** `label "…" at (x,y)` pins the label and area text at a point that is not inside the room's floor, so the text will be drawn over whatever is there instead.
+
+**Fix.** Move the anchor inside the room, or drop the `at (…)` and let the centroid decide (which is what a convex room wants anyway).
+
+```arch
+room polygon (0,0) (6000,0) (6000,6000) (0,6000) label "Hall" at (9000,9000)   # warning
 ```
 
 ## W_ROOM_NO_CLEAR_PATH

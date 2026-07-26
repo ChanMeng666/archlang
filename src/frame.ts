@@ -285,6 +285,13 @@ function transformGeometry(f: Frame, el: ResolvedElement, id: string, reflected:
     case "room": {
       const r = transformRect(f, el.at, el.size);
       const out: RRoom = { ...el, id, at: r.at, size: r.size };
+      // A polygon room's ring is carried through vertex by vertex — a frame is an
+      // integer isometry, so the turned/mirrored ring is EXACT (same area, same shape,
+      // no float drift) and its bbox above still bounds it. Ring ORDER is preserved,
+      // which flips the winding under a reflection; nothing downstream reads winding
+      // (area is taken absolute, containment is a crossing count).
+      if (el.poly) out.poly = el.poly.map((p) => tp(f, p));
+      if (el.labelAt) out.labelAt = tp(f, el.labelAt);
       // The relational constraint is DISCHARGED by the instance's own placement pass
       // (which ran in the local frame, where `right-of` means the component's right).
       // Keeping it would let the plan-level pass re-place the room in global terms.

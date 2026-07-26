@@ -559,12 +559,14 @@ wall exterior thickness 250 material brick scale 1.5 angle 30 { … }
 ### Room
 
 ```
-room [id=<id>] at (x,y) size <w>x<h> [label "<text>"] [uses <kind>…]
+room [id=<id>] at (x,y) size <w>x<h> [label "<text>" [at (x,y)]] [uses <kind>…]
 room [id=<id>] <right-of|left-of|below|above> <ref> [align <edge>] [gap <mm>] size <w>x<h> [label "<text>"] [uses <kind>…]
+room [id=<id>] polygon (x,y) (x,y) (x,y) … [label "<text>" [at (x,y)]] [uses <kind>…]
 ```
 
-A rectangle. The compiler prints the `label` and the **computed area** (m²).
-Rooms describe space; walls are drawn separately.
+A rectangle — or, with the third form, [any simple polygon](#polygonal-rooms-v1-23).
+The compiler prints the `label` and the **computed area** (m²). Rooms describe space;
+walls are drawn separately.
 
 **Room purpose — `uses` (v1.3).** Tag a room with one or more space kinds so the
 analysis layer knows what it *is* without guessing from the label:
@@ -603,6 +605,69 @@ room id=bed     below living    align left gap 0 size 5000x3500 label "Bedroom"
 
 A reference cycle reports [`E_LAYOUT_CYCLE`](error-codes.md); an unknown reference
 reports `E_LAYOUT_REF`. See the dedicated guide page for the placement arithmetic.
+
+### Polygonal rooms (v1.23)
+
+```
+room [id=<id>] polygon (x,y) (x,y) (x,y) … [label "<text>" [at (x,y)]] [uses <kind>…]
+```
+
+Not every room is a rectangle. The `polygon` form gives a room its own **ring** instead
+of `at` + `size`: three or more vertices, in order, **implicitly closed** (do not repeat
+the first point), grid-snapped like every other coordinate. An L-shaped gallery, a
+trapezoid lobby with an angled facade, a chamfered corner — all one statement.
+
+```
+room id=gallery polygon (0,0) (12000,0) (12000,8000) (6000,8000) (6000,14000) (0,14000)
+  label "Gallery"
+room id=lobby polygon (6000,8000) (12000,8000) (12000,9000) (6000,14000)
+  label "Lobby" at (8200,10200) uses entry
+```
+
+**What is exact.** The area is the **shoelace** area of the ring — the gallery above is
+132 m², not the 168 m² its bounding box would claim — and it is the same number in the
+drawn label, `describe().rooms[].area_m2`, the `schedule rooms` table and Plan JSON.
+`describe()` reports the ring as `floor_polygon`; `bbox` remains the **vertex extent**,
+which is also what the resolved room's `at`/`size` are, so a reader written for
+rectangles still sees a truthful box (just not the floor).
+
+**Where the label goes.** At the polygon's **area centroid**, computed closed-form. For a
+concave room whose centroid falls outside the floor — a deep C or U — pin it yourself with
+`label "…" at (x,y)`; a point outside the room is advisory
+[`W_ROOM_LABEL_OUTSIDE`](error-codes.md), never an error.
+
+**The ring must be simple.** Edges that cross (a bow-tie, usually two swapped vertices)
+report [`E_ROOM_POLY_SELF_INTERSECT`](error-codes.md); a ring with fewer than three
+*effective* vertices once duplicate and straight-through points are removed reports
+[`E_ROOM_POLY_DEGENERATE`](error-codes.md). A redundant point sitting on an edge is fine.
+
+**What refuses rather than approximates.** Two clauses are arithmetic on a room's four
+rectangle edges, and a bounding box is not a substitute — `anchor bottom-left` on an L
+could land a fixture in the notch, outside the room. Both raise
+[`E_PLACE_POLY`](error-codes.md) and name the way out:
+
+| Clause | With a polygon room |
+| --- | --- |
+| `room … right-of <poly>` (and `left-of`/`below`/`above`) | `E_PLACE_POLY` — place this room with `at (x,y)` |
+| `furniture … in <poly> anchor <a>` / `in <poly> centered` | `E_PLACE_POLY` — place the piece with `at (x,y)` (plus `rotate`) |
+| `furniture … against wall <id>` | **Works** — a wall is a wall whatever shape the room is |
+| `furniture … at (x,y) in <poly>` | **Works** — an absolute position with declared membership |
+| `strip { room … }` | Not applicable — a strip child is a sized rectangle by construction |
+
+Everything else follows the ring, not the box: adjacency is a **shared boundary run**
+between two rooms' edges at any angle, a door or window is attributed to a polygon room
+by its distance to that room's own edges (so an entrance on an angled facade connects the
+room behind it), and the circulation grids test whether a cell centre is **inside the
+polygon**. Two rooms whose boxes overlap but whose floors do not — a room tucked into an
+L's notch — do **not** raise `W_ROOM_OVERLAP`; the check is an exact ring-vs-ring test.
+See [Analysis](analysis.md) for the measured facts and their limits.
+
+One rule keeps its rectangle: the fixture-orientation warning `W_FIXTURE_BACK_TO_ROOM`
+does not fire inside a polygon room, because "which edge is the back?" has no answer where
+the room has no north/south/east/west sides. `arch repair` likewise declines to push a
+piece into a polygon room and says so in its `unresolved` list, and `arch suggest` offers
+no door/window candidate *on* a polygon room rather than propose one on an edge the room
+does not have.
 
 ### Strip (v1.13)
 

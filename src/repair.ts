@@ -910,6 +910,13 @@ function repairStorey(
       .filter((e): e is RRoom => e.kind === "room")
       .map((r) => [r.id, { x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h }]),
   );
+  // Rooms whose floor is a POLYGON, not the rectangle above. Every containment push
+  // repair knows ("move it back inside its declared room") is rectangle arithmetic, so
+  // a piece belonging to one of these is DECLINED and reported in `unresolved` — never
+  // pushed towards a bounding box that includes floor the room does not have.
+  const polyRoomIds = new Set(
+    ir.elements.filter((e): e is RRoom => e.kind === "room" && e.poly !== undefined).map((r) => r.id),
+  );
   const grid = plan.grid;
   const snap = (v: number): number => (grid > 0 ? Math.round(v / grid) * grid : v);
 
@@ -952,6 +959,8 @@ function repairStorey(
       ...(room ? { room } : {}),
     };
     const blocked = ((): Blocked => {
+      if (rf.room !== undefined && polyRoomIds.has(rf.room))
+        return `its declared room "${rf.room}" is a polygon (\`room polygon …\`), whose floor is not a rectangle — repair has no containing push for that shape; move the piece by hand`;
       if (!site || ambiguousKeys.has(k))
         return "repair could not tie it back to a single statement in this file (an imported or duplicated statement) — adjust the source it comes from";
       const f = site.f;
