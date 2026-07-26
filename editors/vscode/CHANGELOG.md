@@ -12,7 +12,49 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.13.0] - 2026-07-26
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.24.0`** — the "geometry II" release, so the
+  bundled services stop assuming every edge is straight:
+  - six new tokens in the regenerated TextMate grammar and in completion — the **`arc (x,y) radius
+    R`** wall-body clause with its **`cw`**/**`ccw`** and **`major`** modifiers, and **`room …
+    circle at (cx,cy) radius R`**;
+  - three new catalogued codes with their hovers — **`E_ARC_RADIUS`** (a radius under half the
+    chord describes no circle; the hover's quick fix substitutes the minimum radius),
+    **`E_ROOM_RADIUS`**, and **`E_DIM_CURVE_REF`** (a `dim radius`/`dim diameter` naming a missing,
+    ambiguous or wrong-shaped element);
+  - the analysis behind the language services follows the curve rather than its chord: a circular
+    room's area is exact **πR²** in `describe()`, openings on an arc are attributed by **arc
+    length**, and `describe().rooms[].floor_circle` reports the true centre and radius.
+- Bumped the dev-dependency pin `^1.22.0` → `^1.24.0` to match the bundled core.
+- **This upload supersedes 0.11.0 and 0.12.0, which were packaged but never uploaded** — the
+  Marketplace still lists 0.10.0 (core 1.21.0) as its only version, so installing this one carries
+  the composition, polygon and curve tiers at once.
+
+## [0.12.0] - 2026-07-26
+
+> Packaged but **never uploaded** to the Marketplace; 0.13.0 supersedes it.
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.23.0`** — the "geometry I" release:
+  - the **`polygon`** keyword in the regenerated grammar and in completion, making a room a simple
+    closed ring (`room … polygon (x,y) (x,y) (x,y) …`) instead of a rectangle;
+  - four new catalogued codes with their hovers — **`E_PLACE_POLY`** (relational and in-room
+    placement refuse a ring rather than approximating it),
+    **`E_ROOM_POLY_SELF_INTERSECT`**, **`E_ROOM_POLY_DEGENERATE`**, and the advisory
+    **`W_ROOM_LABEL_OUTSIDE`**;
+  - exact shoelace areas and centroid labelling in `describe()`, plus
+    `describe().rooms[].floor_polygon`;
+  - the `Paint.miterLimit` cap, so an acute wall joint no longer grows a mitre spike in the PDF
+    export.
+
 ## [0.11.0] - 2026-07-26
+
+> Packaged but **never uploaded** to the Marketplace; 0.13.0 supersedes it.
+
 
 ### Changed
 
