@@ -74,8 +74,24 @@ you observed. Do NOT push anything — this command only verifies.
   management is human-with-interactive-2FA only.
 - **The VS Code extension bundles the core at build time.** A language-surface change (new
   token/keyword, grammar change, new quick-fix) means a Marketplace republish of
-  `ChanMeng.archlang` — see `CONTRIBUTING.md#releasing`. Verify the `.vsix` by grepping the built
+  `ChanMeng.archlang` — see `CONTRIBUTING.md#releasing`. Verify the `.vsix` by searching the built
   `editors/vscode/dist/server.js` for a new keyword/code, not by reading the version string.
+  **Verify it by COUNT, with Node — a bare "no match" is not evidence.** Read the bundle and count
+  occurrences of each new symbol, so a present symbol shows a number and an absent one shows `0`:
+
+  ```bash
+  node -e "const s=require('fs').readFileSync('editors/vscode/dist/server.js','utf8'); \
+    for (const k of ['E_LEVEL_MIX','escalator']) console.log(k, s.split(k).length - 1)"
+  ```
+
+  This is immune to two ways a grep-style check lies about a build artifact: the bundle's line
+  shape (esbuild's wrapping is not guaranteed, and a line-oriented matcher on a one-line bundle can
+  read as a false negative), and regex metacharacters in the pattern — several of this language's
+  surface strings contain `|`, `"`, or `-` (`dir up|down`, `"stair"`, `--level`), which a PowerShell
+  `Select-String` will interpret as a regex unless you pass `-SimpleMatch`. A `0` count for a symbol
+  the new core defines is the real failure signal; anything else means the rebundle took.
+  *(2026-07-26, v1.21.0: `server.js` was 24,595 lines / 3,983 max line and `Select-String` did work —
+  but the count is what proved it, and it costs nothing to be shape-independent.)*
 - **Known drift, unfixed:** `packages/mcp/src/server.ts` hardcodes its `McpServer` version
   (`"0.2.0"` since 0.2.1), so the published shim misreports itself in the MCP handshake.
   `CONTRIBUTING.md#releasing` says that string must match. Fix it by deriving the version from

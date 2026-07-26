@@ -12,6 +12,28 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.10.0] - 2026-07-26
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.21.0`** — the "vertical" release, so the bundled
+  services stop treating a building as one floor:
+  - four new statement keywords in the regenerated TextMate grammar and in completion —
+    **`level <n> ["Name"] { … }`**, **`stair`**, **`elevator`** and **`escalator`** (with the
+    `dir up|down` clause and the stair's `width <mm>`);
+  - six new catalogued codes with their hovers — **`E_LEVEL_MIX`** (a drawable statement beside a
+    `level` block has no floor to belong to), **`E_LEVEL_DUP`**, **`E_LEVEL_NEST`**,
+    **`E_VERT_SIZE`**, **`E_STAIR_WIDTH`**, and the advisory **`W_STAIR_UNMATCHED`** (a shaft whose
+    id appears on only one storey connects nothing);
+  - diagnostics now carry the storey that raised them, so a fault on the top floor is reported
+    against the right level rather than pooled;
+  - the analysis behind the language services: `describe()`'s new `levels` / `vertical` keys, and
+    circulation clear widths that are measured on a grid sized from the plan's **area**, so a large
+    building's numbers discriminate instead of quantising to one coarse cell.
+- Bumped the dev-dependency pin `^1.19.0` → `^1.21.0` to match the bundled core.
+
+A single-storey plan with no vertical element behaves exactly as it did under 0.9.0.
+
 ## [0.9.0] - 2026-07-26
 
 ### Changed
