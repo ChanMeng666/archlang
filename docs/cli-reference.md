@@ -248,11 +248,12 @@ $ arch validate plan.arch --severity error --json
 
 semantic facts: rooms, areas, adjacency, what doors connect
 
-**Input:** `<file.arch|->` · **Output:** facts (JSON or a summary), narrowed by --room/--select/--level
+**Input:** `<file.arch|->` · **Output:** facts (JSON or a summary), narrowed by --room/--zone/--select/--level
 
 | Flag | Does |
 | --- | --- |
 | `--room <id[,id…]>` | keep only these rooms; doors/windows/openings/furniture narrow to the ones touching them (plan-level facts — bbox, totals, caption — stay whole-plan) |
+| `--zone <path[,path…]>` | keep only the rooms declared in these `zone` blocks (nested zones roll up; paths are dotted, e.g. west.galleries) — a DISPLAY filter: `ok` and the exit code still weigh the whole plan |
 | `--select <key[,key…]>` | emit only these top-level keys of the --json object (rooms, doors, totals, access, circulation, freedom, …); the ok/plan/units/diagnostics envelope is always kept |
 | `--level <n>` | report this storey of a multi-storey plan as the top-level facts (a DISPLAY filter — `ok` and the exit code still weigh the whole plan) |
 | `--json` | structured result on stdout, messages on stderr |
@@ -272,6 +273,9 @@ $ arch describe plan.arch --select rooms,totals --json
 
 # only those two rooms and the doors/windows/furniture that touch them
 $ arch describe plan.arch --room kitchen,bath --json
+
+# only the west wing's rooms and what touches them; `zones[]` reports every declared wing, its rooms and its area
+$ arch describe museum.arch --zone west --json
 
 # the upper storey's rooms/areas/access as the top-level facts (`levels[]` carries every storey)
 $ arch describe house.arch --level 2 --json

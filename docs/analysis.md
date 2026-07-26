@@ -302,6 +302,58 @@ The `legend` setting has **no counterpart here**, deliberately: it is pure rende
 every fact it shows (the wall materials, the fixture categories placed) is already in
 `furniture` and the source.
 
+When the plan also declares [`zone` blocks](language-reference.md#zones--wings-and-departments-v122)
+the rows **group by zone**: they are ordered wing by wing, each row carries the dotted path
+of its innermost zone, and `no` becomes the row's position in the **table** (which is what
+the drawn number labels) rather than in the source. The drawn table gains a heading row and
+a `SUBTOTAL` row per group. Grouping is on the *innermost* zone, so every room appears
+exactly once and the subtotals add up to the `TOTAL`.
+
+```json
+"schedule": [
+  { "no": "01", "id": "lobby", "name": "Lobby",     "area_m2": 32, "zone": "west" },
+  { "no": "02", "id": "gal_a", "name": "Gallery A", "area_m2": 16, "zone": "west.galleries" }
+]
+```
+
+## Zones — the declared grouping
+
+`describe().zones` reports the plan's [`zone` blocks](language-reference.md#zones--wings-and-departments-v122)
+— wings, departments, phases — and the rooms each groups. The key is **absent entirely**
+when the plan declares no zone, so an existing summary is unchanged.
+
+```json
+"zones": [
+  { "id": "west",      "label": "West wing",      "path": "west",
+    "rooms": ["lobby", "gal_a", "gal_b"], "room_count": 3, "floor_area_m2": 64 },
+  { "id": "galleries", "label": "West galleries", "path": "west.galleries",
+    "rooms": ["gal_a", "gal_b"],          "room_count": 2, "floor_area_m2": 32 },
+  { "id": "east",      "label": "East wing",      "path": "east",
+    "rooms": ["office", "store"],         "room_count": 2, "floor_area_m2": 32 }
+]
+```
+
+- **`path` is the identity**, not `id`: nested zones are dotted (`west.galleries`), and it
+  is what `describe --zone` selects on. Zones are listed in declaration order.
+- **Membership is declared, never inferred** — a room is here because it was *written*
+  inside that block ([ADR 0005](adr/0005-no-invisible-architect.md)).
+- **Nesting rolls up.** `west` lists the galleries' rooms too, so a wing reports its whole
+  area however its interior is subdivided. The cost of that is deliberate **overlap**:
+  `west` and `west.galleries` both count `gal_a`, so **summing `floor_area_m2` across
+  `zones` double-counts** and is not the plan total. `totals.floor_area_m2` stays the one
+  whole-plan figure. (The drawn schedule takes the other view — it partitions on the
+  innermost zone, so *its* subtotals do add up.)
+- **`level`** is present on a multi-storey plan: a zone belongs to the storey it was written
+  on, so the same zone id on two floors is two entries. Top-level `zones` is the lowest
+  storey's, like every other top-level fact; `levels[i].zones` is that storey's.
+
+Read one wing with `arch describe museum.arch --zone west --json`: the rooms narrow to that
+zone's members (nested zones included) and so do the doors/windows/openings/furniture
+touching them, marked `filtered: true` + `selected_zones`. Whole-plan facts (`bbox`,
+`totals`, `caption`) stay whole-plan, and — as with every other narrowing flag — `ok`,
+`diagnostics` and the exit code come from the **unfiltered** plan, so reading one wing can
+never make a broken building look sound. It composes with `--level` and `--room`.
+
 ## Levels — one storey's facts at a time (v1.21)
 
 A plan built from [`level` blocks](language-reference.md#levels--a-multi-storey-building-v121)

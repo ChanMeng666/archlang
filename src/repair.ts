@@ -581,6 +581,14 @@ function collectSites(plan: PlanNode): Site[] {
         case "level":
           walk(st.body, enc, depth + 1);
           break;
+        // A wing/department grouping. Like a level it is NOT an expansion construct — one
+        // statement inside it is still one drawn piece — so no `Enclosure` is pushed and
+        // `repair` can rewrite an `at`/`inset` inside a zone in place. Failing to recurse
+        // here would silently skip every fixture in a zoned plan, which the repair-coverage
+        // postcondition (`test/repair-coverage.test.ts`) forbids.
+        case "zone":
+          walk(st.body, enc, depth + 1);
+          break;
         case "while":
           walk(st.body, { what: "a `while` statement", line: st.line }, depth + 1);
           break;

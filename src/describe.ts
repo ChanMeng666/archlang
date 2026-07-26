@@ -230,6 +230,39 @@ export interface SheetSummary {
 }
 
 /**
+ * One declared **zone** — a wing, a department, a phase — and the rooms it groups (v1.22).
+ *
+ * Membership is by DECLARATION, never geometry (ADR 0005): a room is listed here because
+ * it was written inside that `zone` block, not because the compiler decided it looks like
+ * it belongs there. A zone has no geometric semantics at all — deleting every `zone`
+ * wrapper from a plan leaves the drawing byte-identical.
+ *
+ * **Nesting rolls up.** `rooms` lists the zone's own rooms *plus* every room in a zone
+ * nested inside it, so `west` reports the whole west wing even when its rooms are written
+ * in `west.galleries` and `west.stores`. That makes the list a rollup, not a partition:
+ * **summing `floor_area_m2` over `zones` double-counts** whenever zones nest, and it is
+ * not the plan total. `totals.floor_area_m2` remains the one whole-plan figure. (The
+ * drawn ROOM SCHEDULE groups by the *innermost* zone instead, so its subtotals do
+ * partition the rooms and do add up to its TOTAL.)
+ */
+export interface ZoneSummary {
+  /** The zone's own id — the last segment of {@link path}. */
+  id: string;
+  /** The printed name from `zone west "West wing"`, when the source gave one. */
+  label?: string;
+  /** Dotted path from the outermost enclosing zone (`"west.galleries"`). Its identity —
+   *  the value `describe --zone` selects on, and what `id` alone cannot disambiguate. */
+  path: string;
+  /** The storey this zone was declared on, for a multi-storey plan. Absent otherwise. */
+  level?: number;
+  /** Member room ids in source order — the zone's own rooms and every nested zone's. */
+  rooms: string[];
+  room_count: number;
+  /** Sum of the member rooms' (rounded) areas, in m². See the rollup caveat above. */
+  floor_area_m2: number;
+}
+
+/**
  * One **storey** of a multi-storey plan as facts: the level number and name plus the exact
  * same fact shape a single-storey plan reports at the top level (rooms, areas, adjacency,
  * access, circulation, totals, freedom, …). So an agent reads `levels[i]` with the code it
@@ -345,6 +378,13 @@ export interface SceneSummary {
    * and the source.
    */
   schedule?: ScheduleRow[];
+  /**
+   * The plan's declared **zones** (v1.22) — wings, departments, phases — in
+   * first-declaration order, with the rooms each groups. Present **only** when the plan
+   * declares a `zone` block, so every existing summary is unchanged. See
+   * {@link ZoneSummary} for the nesting-rollup caveat.
+   */
+  zones?: ZoneSummary[];
   /**
    * The plan's **storeys**, ascending by level — present **only** when the plan declares
    * `level` blocks (so every existing summary is unchanged).
@@ -648,6 +688,26 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
   const floorArea = r2(rooms.reduce((s, r) => s + r.area_m2, 0));
   const totals = { rooms: rooms.length, doors: doors.length, windows: windows.length, floor_area_m2: floorArea };
 
+  // Declared zones. Membership ROLLS UP through nesting (`west` contains everything in
+  // `west.galleries`), and each area is summed from the same rounded per-room number
+  // `totals.floor_area_m2` uses, so a zone's figure and the room list can never disagree.
+  const areaOf = new Map<string, number>(rooms.map((r) => [r.id, r.area_m2]));
+  const zones: ZoneSummary[] | undefined =
+    ir.zones && ir.zones.length > 0
+      ? ir.zones.map((z) => {
+          const members = roomEls.filter((r) => inZone(r._zone, z.path)).map((r) => r.id);
+          return {
+            id: z.id,
+            ...(z.label !== undefined ? { label: z.label } : {}),
+            path: z.path,
+            ...(ir.level !== undefined ? { level: ir.level } : {}),
+            rooms: members,
+            room_count: members.length,
+            floor_area_m2: r2(members.reduce((s, id) => s + (areaOf.get(id) ?? 0), 0)),
+          };
+        })
+      : undefined;
+
   return {
     plan: ir.name,
     caption: buildCaption({ plan: ir.name, rooms, totals, entrances: access.entrances }),
@@ -691,9 +751,20 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     input_graph: buildInputGraph(roomEls, doorEls, openingEls, tol),
     freedom: buildFreedom(roomEls, doorEls, windowEls, openingEls, furnEls),
     // The drawn schedule, from the same pure derivation the renderer uses — so the table
-    // in the SVG and this JSON can never disagree. Opt-in only.
-    ...(ir.schedule === "rooms" ? { schedule: roomSchedule(roomEls).rows } : {}),
+    // in the SVG and this JSON can never disagree. Opt-in only. `ir.zones` is passed for
+    // exactly the same reason: the rows here must be the rows drawn, grouping included.
+    ...(ir.schedule === "rooms" ? { schedule: roomSchedule(roomEls, ir.zones).rows } : {}),
+    ...(zones ? { zones } : {}),
   };
+}
+
+/**
+ * Does an element declared in zone `member` belong to the zone at `path`? True for the
+ * zone itself and for anything nested inside it — membership rolls up, and the test is on
+ * whole dotted segments, so `west` never captures `westwing`.
+ */
+function inZone(member: string | undefined, path: string): boolean {
+  return member !== undefined && (member === path || member.startsWith(`${path}.`));
 }
 
 /**

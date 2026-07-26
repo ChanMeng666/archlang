@@ -1004,6 +1004,86 @@ carries a `level`, so `lint`/`validate` gate on the whole building while still s
 floor a warning is about; `arch repair` walks into every level and tags its changes the same
 way.
 
+## Zones — wings and departments (v1.22)
+
+```
+plan "Museum" {
+  units mm
+  schedule rooms
+
+  zone west "West wing" {
+    room id=lobby at (0,0) size 4000x8000 label "Lobby" uses hall
+
+    zone galleries "West galleries" {
+      room id=gal_a at (4000,0) size 4000x4000 label "Gallery A"
+      room id=gal_b at (4000,4000) size 4000x4000 label "Gallery B"
+    }
+  }
+
+  zone east "East wing" {
+    room id=office at (8000,0) size 4000x4000 label "Office" uses office
+    room id=store  at (8000,4000) size 4000x4000 label "Store" uses storage
+  }
+}
+```
+
+A `zone` block groups statements into a **wing, a department, a phase** — whatever
+organisational unit the brief talks about. It is the answer to "how big is the west wing?"
+on a building too large to hold in your head.
+
+**A zone has zero geometric semantics.** Everything inside it resolves *exactly* as if the
+`zone … { }` wrapper were deleted: the same coordinates, the same ids, the same auto-id
+numbering, the same output bytes. Deleting every zone from a plan cannot change its
+drawing — that law is pinned by a byte-identity test. Two consequences worth stating
+plainly:
+
+- **A zone is not a scope.** A `let` or a `set` written inside one is visible after the
+  closing brace, exactly as it would be without the braces. (This is *why* the byte-identity
+  law is total rather than approximate.)
+- **A zone draws nothing** — no outline, no tint, no label on the drawing. The only place it
+  becomes visible is the room schedule (below) and `describe()`.
+
+**Membership is declared, never inferred.** A room is in the west wing because you wrote it
+inside `zone west`, not because the compiler noticed it sits on the west side. ArchLang
+reports facts and never plays architect ([ADR 0005](adr/0005-no-invisible-architect.md)) — a
+zone is you telling it something it could not know.
+
+**Zones nest, and the path is the identity.** `gal_a` above is in `west.galleries`; its
+*innermost* zone is the one it belongs to directly. Membership then **rolls up**: the
+`west` zone reports `lobby`, `gal_a` and `gal_b`. So zone areas deliberately overlap when
+zones nest — summing them is not the plan total, and `totals.floor_area_m2` remains the one
+whole-plan figure.
+
+**Where a zone is legal.** Anywhere a statement is: at plan level, inside a `level` block,
+inside a `for`/`if`/`while` body, inside a `component`. A zone is scoped to the storey it is
+written on, so the same zone id on two levels is two separate groups. (A `level` inside a
+zone is still [`E_LEVEL_NEST`](error-codes.md#e_level_nest), and a `zone` sitting beside the
+level blocks of a multi-storey plan is [`E_LEVEL_MIX`](error-codes.md#e_level_mix) like any
+other drawable statement — it belongs to a floor.) Re-declaring the same path merges into
+the zone already declared; the first declaration's label wins.
+
+**Reading the grouping back.** `describe()` gains a `zones[]` block — see
+[Analysis](analysis.md#zones--the-declared-grouping) — and the CLI can read one wing at a
+time:
+
+```bash
+arch describe museum.arch --json                        # rooms + zones[]: every wing, its rooms, its area
+arch describe museum.arch --zone west --json            # just the west wing (nested zones roll up)
+arch describe museum.arch --zone west.galleries --json  # just the nested one, by its dotted path
+arch describe museum.arch --select zones --json         # the grouping alone
+```
+
+`--zone` is a **display filter** like `--room`/`--level`: `ok`, the diagnostics and the exit
+code always come from the whole plan, so reading one wing can never make a broken building
+look sound.
+
+**With `schedule rooms`,** the drawn table groups its rows by zone — a heading row per
+zone, a `SUBTOTAL` closing each group, and the usual `TOTAL` closing the table. The schedule
+groups on the **innermost** zone, so every room appears exactly once and the subtotals add
+up to the total (unlike `describe().zones`, which rolls up). Rooms outside every zone get a
+trailing `(no zone)` group. A plan with no zones draws the flat table, byte for byte as
+before.
+
 ## Theming
 
 A `theme { … }` directive overrides colours, line weight, and font. Resolution

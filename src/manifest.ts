@@ -209,6 +209,17 @@ const ROOM_FLAG: ManifestFlag = {
   description:
     "keep only these rooms; doors/windows/openings/furniture narrow to the ones touching them (plan-level facts — bbox, totals, caption — stay whole-plan)",
 };
+/**
+ * `--zone <path[,path…]>` — read one wing/department of a zoned plan (v1.22). A DISPLAY
+ * filter over the rooms the zone DECLARES (nested zones roll up), so it narrows exactly
+ * what `--room` would with that zone's member list typed out by hand.
+ */
+const ZONE_FLAG: ManifestFlag = {
+  flag: "--zone",
+  arg: "<path[,path…]>",
+  description:
+    "keep only the rooms declared in these `zone` blocks (nested zones roll up; paths are dotted, e.g. west.galleries) — a DISPLAY filter: `ok` and the exit code still weigh the whole plan",
+};
 const SELECT_FLAG: ManifestFlag = {
   flag: "--select",
   arg: "<key[,key…]>",
@@ -444,6 +455,7 @@ const COMMANDS: ManifestCommand[] = [
     summary: "semantic facts: rooms, areas, adjacency, what doors connect",
     flags: [
       ROOM_FLAG,
+      ZONE_FLAG,
       SELECT_FLAG,
       {
         ...LEVEL_FLAG,
@@ -454,7 +466,7 @@ const COMMANDS: ManifestCommand[] = [
       QUIET_FLAG,
     ],
     input: "<file.arch|->",
-    output: "facts (JSON or a summary), narrowed by --room/--select/--level",
+    output: "facts (JSON or a summary), narrowed by --room/--zone/--select/--level",
     examples: [
       {
         cmd: "arch describe plan.arch --json",
@@ -468,6 +480,10 @@ const COMMANDS: ManifestCommand[] = [
       {
         cmd: "arch describe plan.arch --room kitchen,bath --json",
         note: "only those two rooms and the doors/windows/furniture that touch them",
+      },
+      {
+        cmd: "arch describe museum.arch --zone west --json",
+        note: "only the west wing's rooms and what touches them; `zones[]` reports every declared wing, its rooms and its area",
       },
       {
         cmd: "arch describe house.arch --level 2 --json",

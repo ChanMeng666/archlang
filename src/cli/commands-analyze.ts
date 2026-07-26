@@ -111,6 +111,7 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "input_graph",
   "freedom",
   "schedule",
+  "zones",
   "levels",
   "vertical",
 ];
@@ -198,6 +199,25 @@ function narrowToRooms(s: SceneSummary, ids: string[]): SceneSummary {
   };
 }
 
+/**
+ * `describe --zone west,east` — read one wing/department of a zoned plan (v1.22).
+ *
+ * A zone is a DECLARED grouping with no geometry of its own, so this is defined entirely
+ * in terms of the rooms the zone lists (nested zones roll up — see `ZoneSummary`): it
+ * resolves the selection to member room ids and then narrows exactly as `--room` does, so
+ * the two filters can never disagree about what "the elements touching these rooms" means.
+ * `zones` itself narrows to the selected zones and anything nested inside them.
+ *
+ * A DISPLAY filter like every other: `ok`, `diagnostics` and the exit code still come from
+ * the whole plan.
+ */
+function narrowToZones(s: SceneSummary, paths: string[]): SceneSummary {
+  const want = new Set(paths);
+  const inSelection = (p: string): boolean => want.has(p) || paths.some((sel) => p.startsWith(`${sel}.`));
+  const roomIds = [...new Set((s.zones ?? []).filter((z) => want.has(z.path)).flatMap((z) => z.rooms))];
+  return { ...narrowToRooms(s, roomIds), zones: (s.zones ?? []).filter((z) => inSelection(z.path)) };
+}
+
 /** `--select k1,k2` — keep the envelope plus the named keys, in the summary's own key
  *  order (so a selected object is a strict subset of the full one, never a reshuffle). */
 function selectKeys(obj: Record<string, unknown>, keys: string[]): Record<string, unknown> {
@@ -242,6 +262,7 @@ export function cmdDescribe(args: Args): number {
     }
   }
   const wantRooms = args.room === undefined ? null : csv(args.room);
+  const wantZones = args.zone === undefined ? null : csv(args.zone);
 
   return withSource(args, (source, input) => {
     const full = describe(source, { world: makeNodeWorld(baseDirOf(input)) });
@@ -262,6 +283,22 @@ export function cmdDescribe(args: Args): number {
         );
       }
       summary = narrowToLevel(full, args.level);
+      filtered = true;
+    }
+    // `--zone` sits between `--level` and `--room`: it picks the wing, `--room` may then
+    // pick rooms within it.
+    if (wantZones && summary.ok) {
+      const have = (summary.zones ?? []).map((z) => z.path);
+      for (const p of wantZones) {
+        if (!have.includes(p)) {
+          return usageError(
+            have.length === 0
+              ? `--zone ${p} was given but this plan declares no \`zone\` blocks — drop --zone`
+              : `unknown zone "${p}"${didYouMean(p, have)} (plan has ${have.length}: ${echoList(have)})`,
+          );
+        }
+      }
+      summary = narrowToZones(summary, wantZones);
       filtered = true;
     }
     if (wantRooms && summary.ok) {
@@ -291,6 +328,7 @@ export function cmdDescribe(args: Args): number {
           ? {
               ...shaped,
               filtered: true,
+              ...(wantZones ? { selected_zones: wantZones } : {}),
               ...(wantRooms ? { selected_rooms: wantRooms } : {}),
               ...(args.level !== undefined ? { selected_level: args.level } : {}),
             }

@@ -123,7 +123,7 @@ function setValStr(e: Expr): string {
 
 // ---- statements → Doc ----
 
-const BLOCK_KINDS = new Set(["for", "if", "while", "level"]);
+const BLOCK_KINDS = new Set(["for", "if", "while", "level", "zone"]);
 
 /** Build the `{ … }` Doc for a block body, weaving in its inner comments. */
 function blockDoc(stmts: Statement[], span: { start: number; end: number }, comments: Comment[], source: string): Doc {
@@ -214,6 +214,14 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       // floors into one drawing).
       return concat([
         `level ${numStr(s.level)}${s.name !== undefined ? ` ${JSON.stringify(s.name)}` : ""} `,
+        blockDoc(s.body, s.span!, comments, source),
+      ]);
+    case "zone":
+      // `zone <id> ["Label"] { … }` — a wing/department grouping. Formatted like any other
+      // block: dropping the wrapper would silently erase the plan's declared grouping
+      // (and, with `schedule rooms`, the table's group headings).
+      return concat([
+        `zone ${s.id}${s.label !== undefined ? ` ${JSON.stringify(s.label)}` : ""} `,
         blockDoc(s.body, s.span!, comments, source),
       ]);
     case "error":

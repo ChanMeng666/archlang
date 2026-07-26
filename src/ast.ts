@@ -406,6 +406,35 @@ export interface LevelNode extends NodeBase {
   body: Statement[];
 }
 
+/**
+ * `zone <id> ["Label"] { … }` — a **wing / department / departmental grouping**: a purely
+ * LEXICAL container that labels the statements written inside it.
+ *
+ * It has **zero geometric semantics**. Every statement in the body resolves *exactly* as
+ * if the `zone … { }` wrapper were not written — same coordinates, same ids, same
+ * auto-id numbering, same `let`/`set` visibility (a zone is deliberately **not** a scope,
+ * which is what makes that law total), byte-identical Scene and SVG. The only thing it
+ * adds is metadata: every element born inside it records the zone's dotted **path**, and
+ * `describe().zones` reports the grouping.
+ *
+ * Membership is by **DECLARATION, never by geometry** (ADR 0005 — facts, no invisible
+ * architect): a room is in a wing because the author wrote it in that wing's block, not
+ * because the compiler noticed it sits on the west side of the building.
+ *
+ * Zones **nest**: a `room` inside `zone west { zone galleries { … } }` records the path
+ * `west.galleries`, and the innermost zone is the one it belongs to directly. A zone may
+ * be written wherever a statement may (plan level, inside a `level` block, inside a
+ * `for`/`if`/`while` body, inside a `component`); re-declaring the same path (a `zone` in
+ * a `for` loop, say) MERGES — the first declaration's label wins.
+ */
+export interface ZoneNode extends NodeBase {
+  kind: "zone";
+  // The zone's own identifier is {@link NodeBase.id} — the last segment of its path.
+  /** Optional printed name (`zone west "West wing"`), a fact + a schedule group heading. */
+  label?: string;
+  body: Statement[];
+}
+
 /** Discriminated union of all element AST nodes (registry-dispatchable). */
 export type AstElement =
   | WallNode
@@ -502,6 +531,7 @@ export type Statement =
   | SetNode
   | StripNode
   | LevelNode
+  | ZoneNode
   | ErrorNode;
 
 /**

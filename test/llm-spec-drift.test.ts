@@ -61,6 +61,14 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // The three lines were trimmed to 800 chars total before this was raised (the first
     // draft was 1,230), and the suite is green at 19,363. Trim duplication before raising
     // again.
-    expect(spec.length).toBeLessThan(19_500);
+    //
+    // Raised 19.5k → 20.3k for the same reason (v1.22, zones): `zone` is a new *structural*
+    // keyword whose whole point is that it is invisible in the output, so an agent that does
+    // not know it cannot read a zoned plan's source, cannot use `describe --zone`, and cannot
+    // tell why its `schedule rooms` table grew SUBTOTAL rows. Its line is one dense sentence
+    // trimmed from 1,050 chars to 590, and the `schedule` line's addendum from 200 to 90
+    // (the whole feature costs 730 chars); the suite is green at 20,135. Trim duplication
+    // before raising again.
+    expect(spec.length).toBeLessThan(20_300);
   });
 });
