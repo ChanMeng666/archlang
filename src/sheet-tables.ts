@@ -37,6 +37,7 @@ import type { RenderSizes, SceneNode } from "./scene.js";
 import type { Theme } from "./theme.js";
 import { FIXTURE_CATEGORIES, fixtureGlyph } from "./elements/fixtures-glyphs.js";
 import { fmt2 } from "./num-format.js";
+import { roomAreaMm2 } from "./analyze.js";
 
 /** Round to 2 decimals, deterministically — the same rounding `describe()` applies. */
 const r2 = (n: number): number => Math.round(n * 100) / 100;
@@ -122,7 +123,7 @@ export function roomSchedule(rooms: readonly RRoom[], zones?: readonly ZoneRef[]
     no: String(i + 1).padStart(width, "0"),
     id: r.id,
     name: r.label ?? r.id,
-    area_m2: r2((r.size.w * r.size.h) / 1_000_000),
+    area_m2: r2(roomAreaMm2(r) / 1_000_000),
     ...(r._zone !== undefined ? { zone: r._zone } : {}),
   }));
   const total_m2 = r2(rows.reduce((s, r) => s + r.area_m2, 0));

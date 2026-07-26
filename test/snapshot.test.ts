@@ -21,6 +21,9 @@ describe("golden SVG snapshots", () => {
     "attached.arch",
     "museum.arch",
     "museum-wing.arch",
+    // v1.23: the polygon-room flagship — an L and a trapezoid, an angled facade, and
+    // `dims auto` measured off vertex coordinates rather than room rectangles.
+    "gallery-l.arch",
   ]) {
     it(`renders ${name} deterministically`, () => {
       const { svg, errors } = compile(example(name), { noCache: true });

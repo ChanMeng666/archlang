@@ -445,6 +445,20 @@ function placeInRoom(
     });
     return null;
   }
+  // `in <room> anchor|centered` measures from the room RECTANGLE's corners, edges and
+  // centre. A polygon room has none of those as a whole — its bounding box is not its
+  // floor, so "anchor bottom-left" could land the piece in a notch that is outside the
+  // room. Refuse and name the alternative rather than place it somewhere plausible-
+  // looking and wrong (ADR 0005 — the core never guesses).
+  if (room.poly) {
+    ctx.diag({
+      severity: "error",
+      message: `Furniture "${id}" is placed \`in ${roomId}\` with \`${place.mode === "centered" ? "centered" : `anchor ${place.anchor}`}\`, but "${roomId}" is a polygon room — anchored placement needs a rectangular room. Place it with \`at (x,y)\` (plus \`rotate\`) instead.`,
+      code: "E_PLACE_POLY",
+      span,
+    });
+    return null;
+  }
   const x0 = room.at.x;
   const y0 = room.at.y;
   const x1 = x0 + room.size.w;

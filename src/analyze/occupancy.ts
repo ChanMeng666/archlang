@@ -17,8 +17,9 @@
  */
 
 import type { RRoom, RDoor, ROpening, RFurniture, RWall } from "../ir.js";
-import { rectOf, pointOnRoomEdge } from "../analyze.js";
+import { rectOf, roomBox, pointOnRoomEdge } from "../analyze.js";
 import { pointInRect } from "../geometry/rect.js";
+import { pointInPolygon } from "../geometry/polygon.js";
 
 export interface RoomClearance {
   roomId: string;
@@ -73,7 +74,7 @@ export function computeRoomClearances(
   ];
 
   return rooms.map((r) => {
-    const rb = rectOf(r);
+    const rb = roomBox(r);
     const onPerim = connectors.filter((c) => pointOnRoomEdge(c.at, rb, tolMm));
     if (onPerim.length === 0) {
       return { roomId: r.id, hasConnector: false, reachableClearAreaM2: 0, totalClearAreaM2: 0 };
@@ -96,6 +97,19 @@ export function computeRoomClearances(
     // scan over every piece, but O(cells + covered) instead of O(cells × pieces) —
     // which is what makes the finer, area-budgeted grid affordable.
     const free = new Uint8Array(nx * ny).fill(1);
+    // A POLYGON room is rasterised onto the same bbox grid, with every cell whose CENTRE
+    // falls outside the ring taken out first — the same "is the centre inside?" rule the
+    // rect path applies implicitly, so the flood-fill measures the real floor and the
+    // notch of an L never counts as reachable area.
+    if (r.poly) {
+      const ring = r.poly;
+      for (let iy = 0; iy < ny; iy++) {
+        const cy = rb.y + (iy + 0.5) * cellH;
+        for (let ix = 0; ix < nx; ix++) {
+          if (!pointInPolygon(rb.x + (ix + 0.5) * cellW, cy, ring)) free[iy * nx + ix] = 0;
+        }
+      }
+    }
     for (const fr of furnRects) {
       const ix0 = Math.max(0, Math.floor((fr.x - rb.x) / cellW) - 1);
       const ix1 = Math.min(nx - 1, Math.ceil((fr.x + fr.w - rb.x) / cellW));
@@ -120,6 +134,35 @@ export function computeRoomClearances(
     for (const c of onPerim) {
       const ix = Math.min(nx - 1, Math.max(0, Math.floor((c.at.x - rb.x) / cellW)));
       const iy = Math.min(ny - 1, Math.max(0, Math.floor((c.at.y - rb.y) / cellH)));
+      // A POLYGON room's doorway is not on a bbox side, so "step inward perpendicular to
+      // the edge it lies on" has no meaning: seed the FREE cell nearest the connector
+      // instead (ties row-major, so the choice is deterministic). Equivalent in spirit —
+      // you stand in the doorway and take the first clear floor — and a doorway sealed by
+      // furniture still contributes no seed, because a blocked cell is never free.
+      if (r.poly) {
+        let bestK = -1;
+        let bestD = Infinity;
+        for (let jy = 0; jy < ny; jy++) {
+          const cy = rb.y + (jy + 0.5) * cellH;
+          for (let jx = 0; jx < nx; jx++) {
+            const k = jy * nx + jx;
+            if (!free[k]) continue;
+            const d = Math.hypot(rb.x + (jx + 0.5) * cellW - c.at.x, cy - c.at.y);
+            if (d < bestD) {
+              bestD = d;
+              bestK = k;
+            }
+          }
+        }
+        // Out of reach of the doorway (further than a cell diagonal + the tolerance) is
+        // a sealed entrance, not a seed.
+        const reach = Math.hypot(cellW, cellH) + tolMm;
+        if (bestK >= 0 && bestD <= reach && !seen[bestK]) {
+          seen[bestK] = 1;
+          queue.push(bestK);
+        }
+        continue;
+      }
       // Inward step from whichever edge the connector lies on.
       const dx = Math.abs(c.at.x - rb.x) <= tolMm ? 1 : Math.abs(c.at.x - (rb.x + rb.w)) <= tolMm ? -1 : 0;
       const dy = Math.abs(c.at.y - rb.y) <= tolMm ? 1 : Math.abs(c.at.y - (rb.y + rb.h)) <= tolMm ? -1 : 0;

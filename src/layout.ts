@@ -107,6 +107,22 @@ export function placeRelational(rooms: RRoom[], snapPt: (p: Point) => Point, dia
         continue;
       }
       if (isResolved(r._rel.ref)) {
+        // A relational clause is closed-form arithmetic on the REFERENCE's rectangle
+        // ("its right edge, its top edge"). A polygon room has no such edges, and
+        // silently using its bounding box would put the room against an edge the
+        // reference does not have — so this is an error naming the way out, never a
+        // guess (ADR 0005).
+        if (ref.poly) {
+          diag({
+            severity: "error",
+            message: `Room "${r.id}" is placed \`${r._rel.dir} ${r._rel.ref}\`, but "${r._rel.ref}" is a polygon room — relational placement needs a rectangular reference. Place this room with \`at (x,y)\` instead.`,
+            code: "E_PLACE_POLY",
+            span: r._rel.span,
+          });
+          unresolved.delete(r.id);
+          changed = true;
+          continue;
+        }
         place(r, ref, snapPt);
         unresolved.delete(r.id);
         changed = true;

@@ -16,6 +16,7 @@
 
 import type { Point } from "../ast.js";
 import type { GeometryBackend, JoinKind } from "./backend.js";
+import { MITER_LIMIT } from "../scene.js";
 
 /** Integer scale factor: 1000 ⇒ sub-micron precision into the integer engine. */
 const SCALE = 1000;
@@ -145,7 +146,9 @@ export async function loadClipperBackend(): Promise<GeometryBackend> {
     },
     offset(path: Point[], delta: number, join: JoinKind): Point[][] {
       const paths = toPaths64(m, [path]);
-      const res = m.InflatePaths64(paths, delta * SCALE, joinType(m, join), m.EndType.Polygon, 2, 0);
+      // Same mitre cap the wall outline is stroked with, so an offset polygon and the
+      // line drawn round it agree about where an acute corner stops.
+      const res = m.InflatePaths64(paths, delta * SCALE, joinType(m, join), m.EndType.Polygon, MITER_LIMIT, 0);
       const out = fromPaths64(res);
       res.delete();
       paths.delete();

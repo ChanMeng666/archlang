@@ -90,6 +90,7 @@ function pathPaint(paint: Paint, width: number, dash: number[] | undefined): str
   if (paint.fillRule) s += ` fill-rule="${paint.fillRule}"`;
   if (paint.stroke) s += ` stroke="${paint.stroke}" stroke-width="${fmt(width)}"`;
   if (paint.linejoin) s += ` stroke-linejoin="${paint.linejoin}"`;
+  if (paint.miterLimit !== undefined) s += ` stroke-miterlimit="${fmt(paint.miterLimit)}"`;
   s += dashAttr(dash);
   return s;
 }

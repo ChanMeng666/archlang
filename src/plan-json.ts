@@ -33,6 +33,7 @@ import { parse } from "./parser.js";
 import {
   resolvePlan,
   roomUses,
+  roomAreaMm2,
   buildDoorAccessGraph,
   EXTERIOR_NODE,
   DEFAULT_TOL,
@@ -172,9 +173,16 @@ export interface RoomJson {
   y: number;
   width: number;
   height: number;
-  /** Output-only: floor area in m² (2 dp). Ignored on input. */
+  /**
+   * An explicit, implicitly-closed simple polygon of ≥3 vertices (v1.23) — the room's
+   * floor when it is not a rectangle. Present on OUTPUT for a `room polygon`, and
+   * honoured on INPUT, where it replaces `x`/`y`/`width`/`height` (which stay on output
+   * as the polygon's bounding box, so a rect-only reader still sees a truthful extent).
+   */
+  polygon?: PointJson[];
+  /** Output-only: floor area in m² (2 dp) — exact (shoelace) for a polygon. Ignored on input. */
   area?: number;
-  /** Output-only: the room rectangle as a 4-point polygon. Ignored on input. */
+  /** Output-only: the room's floor ring — the rectangle's four corners, or the polygon. */
   floor_polygon?: PointJson[];
 }
 
@@ -367,7 +375,7 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
 
   const rooms: RoomJson[] = roomEls.map((r) => {
     const uses = [...roomUses(r)];
-    const area = r2((r.size.w * r.size.h) / 1_000_000);
+    const area = r2(roomAreaMm2(r) / 1_000_000);
     return {
       id: r.id,
       ...(r.label !== undefined ? { label: r.label } : {}),
@@ -379,8 +387,11 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
       y: r.at.y,
       width: r.size.w,
       height: r.size.h,
+      ...(r.poly ? { polygon: r.poly.map((pt) => ({ x: pt.x, y: pt.y })) } : {}),
       area,
-      floor_polygon: rectPolygon(r.at.x, r.at.y, r.size.w, r.size.h),
+      floor_polygon: r.poly
+        ? r.poly.map((pt) => ({ x: pt.x, y: pt.y }))
+        : rectPolygon(r.at.x, r.at.y, r.size.w, r.size.h),
     };
   });
 
@@ -591,8 +602,18 @@ function validateRoom(r: unknown, path: string, val: Validator): void {
     val.err(path, "expected an object");
     return;
   }
-  for (const key of ["x", "y", "width", "height"]) {
-    if (!isNum(r[key])) val.err(`${path}/${key}`, "expected a number");
+  // A polygon room carries its ring instead of a rectangle; a rect room still needs all
+  // four numbers. Exactly one of the two forms must be usable.
+  if (r.polygon !== undefined) {
+    if (!Array.isArray(r.polygon)) val.err(`${path}/polygon`, "expected an array of points");
+    else {
+      if (r.polygon.length < 3) val.err(`${path}/polygon`, "a polygon room needs at least three vertices");
+      r.polygon.forEach((pt, i) => void reqPoint(pt, `${path}/polygon/${i}`, val));
+    }
+  } else {
+    for (const key of ["x", "y", "width", "height"]) {
+      if (!isNum(r[key])) val.err(`${path}/${key}`, "expected a number");
+    }
   }
   if (r.id !== undefined && !isStr(r.id)) val.err(`${path}/id`, "expected a string");
   if (r.label !== undefined && !isStr(r.label)) val.err(`${path}/label`, "expected a string");
@@ -729,7 +750,13 @@ function emitArch(p: PlanJson): string {
   }
 
   for (const r of p.rooms ?? []) {
-    let line = `  room ${idAttr(r.id)}at (${num(r.x)},${num(r.y)}) size ${num(r.width)}x${num(r.height)}`;
+    // A polygon room round-trips through its RING, never its bounding box — emitting
+    // `at`+`size` for it would quietly turn an L-shaped gallery back into a rectangle.
+    const shape =
+      r.polygon && r.polygon.length >= 3
+        ? `polygon ${r.polygon.map((pt) => `(${num(pt.x)},${num(pt.y)})`).join(" ")}`
+        : `at (${num(r.x)},${num(r.y)}) size ${num(r.width)}x${num(r.height)}`;
+    let line = `  room ${idAttr(r.id)}${shape}`;
     if (r.label !== undefined) line += ` label ${q(r.label)}`;
     const uses = usesForRoom(r);
     if (uses.length > 0) line += ` uses ${uses.join(" ")}`;
@@ -1070,11 +1097,11 @@ export const PLAN_JSON_SCHEMA = {
     },
     rooms: {
       type: "array",
-      description: "Room rectangles.",
+      description: "Rooms — a rectangle (x/y/width/height) or an explicit `polygon` ring.",
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["x", "y", "width", "height"],
+        anyOf: [{ required: ["x", "y", "width", "height"] }, { required: ["polygon"] }],
         properties: {
           id: { type: "string", description: "Unique room id (referenced by furniture/openings)." },
           label: { type: "string", description: "Human-readable room label drawn in the room." },
@@ -1106,10 +1133,18 @@ export const PLAN_JSON_SCHEMA = {
           y: { type: "number", description: "Top-left corner Y in millimetres." },
           width: { type: "number", description: "Room width in millimetres." },
           height: { type: "number", description: "Room height in millimetres." },
+          polygon: {
+            type: "array",
+            minItems: 3,
+            description:
+              "An implicitly-closed simple polygon of >=3 vertices — the room's floor when it is not a rectangle. Replaces x/y/width/height on input; on output those remain as its bounding box.",
+            items: POINT_SCHEMA,
+          },
           area: { type: "number", description: "Output-only: floor area in square metres (2 dp)." },
           floor_polygon: {
             type: "array",
-            description: "Output-only: the room rectangle as a 4-point polygon (clockwise from top-left).",
+            description:
+              "Output-only: the room's floor ring — a rectangle's four corners (clockwise from top-left), or the polygon's own vertices.",
             items: POINT_SCHEMA,
           },
         },

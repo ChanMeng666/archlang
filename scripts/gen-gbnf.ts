@@ -223,10 +223,14 @@ function rules(): [string, string][] {
       `"wall" rws id-opt ident rws "thickness" ws expr ( ws wall-material )? ws "{" ws ( point ws )* ( "close" ws )? "}"`,
     ],
     ["wall-material", `"material" rws ident ( rws ( "scale" | "angle" ) ws expr ){0,2}`],
-    ["room-stmt", `"room" rws id-opt room-pos ws "size" ws dims ( ws room-label )? ( ws room-uses )?`],
+    // Two shapes: the rectangle (`at`/relational + `size`) and the explicit RING
+    // (`polygon` + >=3 points, no `size`). Both take the same trailing clauses.
+    ["room-stmt", `"room" rws id-opt ( room-rect | room-poly ) ( ws room-label )? ( ws room-uses )?`],
+    ["room-rect", `room-pos ws "size" ws dims`],
+    ["room-poly", `"polygon" ws point ws point ( ws point )*`],
     ["room-pos", `"at" ws point | rel-dir rws ref ( rws "align" rws ident )? ( rws "gap" ws expr )?`],
     ["rel-dir", `"right-of" | "left-of" | "below" | "above"`],
-    ["room-label", `"label" ws string`],
+    ["room-label", `"label" ws string ( ws "at" ws point )?`],
     ["room-uses", `"uses" rws use-kind ( rws use-kind )*`],
     ["use-kind", useKind],
     ["door-stmt", `"door" rws id-opt opening-target ws "width" ws expr ( ws door-clause )*`],

@@ -155,8 +155,13 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       const body = group(concat(["{", indent(concat([line, join(line, pts)])), line, "}"]));
       return concat([head, " ", body]);
     }
-    case "room":
-      return `room ${id}${s.at ? `at ${ptStr(s.at)}` : relStr(s.rel!)} size ${sizeStr(s.size)}${s.label ? ` label ${exprStr(s.label)}` : ""}${s.uses?.length ? ` uses ${s.uses.join(" ")}` : ""}`;
+    case "room": {
+      const shape = s.polygon
+        ? `polygon ${s.polygon.map(ptStr).join(" ")}`
+        : `${s.at ? `at ${ptStr(s.at)}` : relStr(s.rel!)} size ${sizeStr(s.size!)}`;
+      const label = s.label ? ` label ${exprStr(s.label)}${s.labelAt ? ` at ${ptStr(s.labelAt)}` : ""}` : "";
+      return `room ${id}${shape}${label}${s.uses?.length ? ` uses ${s.uses.join(" ")}` : ""}`;
+    }
     case "door": {
       const hinge = s.hinge ? ` hinge ${s.hinge}` : s.hingeNear ? ` hinge near ${s.hingeNear}` : "";
       const swing = s.swing ? ` swing ${s.swing}` : s.swingInto ? ` swing into ${s.swingInto}` : "";

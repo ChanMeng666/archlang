@@ -122,14 +122,27 @@ export interface RoomRel {
 
 export interface RoomNode extends NodeBase {
   kind: "room";
-  /** Absolute top-left corner. Mutually exclusive with {@link RoomNode.rel};
-   *  exactly one is present. The absolute path is the default and is unchanged. */
+  /** Absolute top-left corner. Mutually exclusive with {@link RoomNode.rel} and
+   *  {@link RoomNode.polygon}; exactly one of the three is present. The absolute path
+   *  is the default and is unchanged. */
   at?: ExprPoint;
   /** Relational placement clause (when `at` is absent). */
   rel?: RoomRel;
-  size: { w: Expr; h: Expr };
+  /**
+   * `room polygon (x,y) (x,y) (x,y) …` — an explicit, implicitly-closed simple polygon
+   * (v1.23). Mutually exclusive with `at`/`rel`, and it replaces `size` (the room's
+   * extent IS its vertex ring), so `size` is absent exactly when this is present.
+   */
+  polygon?: ExprPoint[];
+  /** Width × height — absent only on the {@link RoomNode.polygon} form. */
+  size?: { w: Expr; h: Expr };
   /** Label as a string-interpolation template, evaluated at resolve. */
   label?: Expr;
+  /** Explicit label/area anchor (`label "…" at (x,y)`) — for a concave polygon whose
+   *  centroid falls outside the floor. Absent = the derived centre. */
+  labelAt?: ExprPoint;
+  /** Byte span of the `label … at (x,y)` override, for its own diagnostic. */
+  labelAtSpan?: Span;
   /** Declared function(s) — explicit room classification (`uses bedroom`, …). */
   uses?: UseKind[];
 }

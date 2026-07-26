@@ -1,0 +1,38 @@
+# Polygonal rooms (v1.23): a floor whose spaces are not rectangles.
+#
+# `room polygon (x,y) …` gives a room an explicit, implicitly-closed ring instead of
+# `at` + `size`. Two shapes a rectangle cannot express are drawn here:
+#
+#   · gallery — an L, wrapping the entrance hall on two sides. Its area (132 m²) is the
+#     exact shoelace area of the ring, not its 12 × 14 m bounding box.
+#   · lobby   — a trapezoid, so the building has an angled south-west facade. The joint
+#     where that facade meets the south wall is 40°, which is what the wall outline's
+#     mitre cap is there for.
+#
+# Everything else is ordinary: the walls, the doors and `dims auto` neither know nor
+# care that a room is polygonal.
+plan "Gallery L" {
+  units mm
+  grid 100
+  paper A3 landscape
+  north up
+  dims auto all
+  title { project "Polygon rooms" drawn_by "ArchLang" }
+
+  wall exterior thickness 300 {
+    (0,0) (12000,0) (12000,9000) (6000,14000) (0,14000) close
+  }
+  wall id=spine partition thickness 150 { (6000,8000) (6000,14000) }
+  wall id=north_face partition thickness 150 { (6000,8000) (12000,8000) }
+
+  room id=gallery polygon (0,0) (12000,0) (12000,8000) (6000,8000) (6000,14000) (0,14000)
+    label "Gallery"
+  room id=lobby polygon (6000,8000) (12000,8000) (12000,9000) (6000,14000)
+    label "Lobby" at (8200,10200) uses entry
+
+  # The entrance sits on the ANGLED south-west facade, so it opens into the trapezoid
+  # lobby — a door on a wall that is not axis-aligned, hosted the ordinary way.
+  door id=entry on exterior at 51% width 1500 swing in
+  door id=inner on spine at 50% width 1200 hinge left swing in
+  window id=north_light on exterior at 20% width 3000
+}

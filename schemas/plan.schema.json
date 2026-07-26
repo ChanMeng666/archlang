@@ -90,15 +90,24 @@
     },
     "rooms": {
       "type": "array",
-      "description": "Room rectangles.",
+      "description": "Rooms — a rectangle (x/y/width/height) or an explicit `polygon` ring.",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "x",
-          "y",
-          "width",
-          "height"
+        "anyOf": [
+          {
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ]
+          },
+          {
+            "required": [
+              "polygon"
+            ]
+          }
         ],
         "properties": {
           "id": {
@@ -163,13 +172,36 @@
             "type": "number",
             "description": "Room height in millimetres."
           },
+          "polygon": {
+            "type": "array",
+            "minItems": 3,
+            "description": "An implicitly-closed simple polygon of >=3 vertices — the room's floor when it is not a rectangle. Replaces x/y/width/height on input; on output those remain as its bounding box.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "x",
+                "y"
+              ],
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "description": "X coordinate in millimetres (origin top-left, +x right)."
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Y coordinate in millimetres (+y DOWN, screen convention)."
+                }
+              }
+            }
+          },
           "area": {
             "type": "number",
             "description": "Output-only: floor area in square metres (2 dp)."
           },
           "floor_polygon": {
             "type": "array",
-            "description": "Output-only: the room rectangle as a 4-point polygon (clockwise from top-left).",
+            "description": "Output-only: the room's floor ring — a rectangle's four corners (clockwise from top-left), or the polygon's own vertices.",
             "items": {
               "type": "object",
               "additionalProperties": false,

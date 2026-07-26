@@ -44,6 +44,9 @@ const EXAMPLES = [
   // The wing on its own — the same file the composed building imports, so this golden
   // pins the component's own drawing independently of the transform applied to it.
   "museum-wing.arch",
+  // v1.23: the polygon-room flagship. This is the golden that would move if a room's
+  // ring, its centroid label anchor or the wall outline's mitre cap ever drifted.
+  "gallery-l.arch",
 ];
 
 async function hasResvg(): Promise<boolean> {

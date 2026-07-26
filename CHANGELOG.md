@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`room [id=…] polygon (x,y) (x,y) (x,y) …` — rooms that are not rectangles.** An
+  implicitly-closed **simple polygon** of three or more grid-snapped vertices replaces `at` +
+  `size`, so an L-shaped gallery, a trapezoid lobby with an angled facade or a chamfered corner is
+  one statement. The resolved room still carries `at`/`size` as the ring's **bounding box**, so
+  every reader written for rectangles sees a truthful extent — but nothing measures the room by it:
+
+  - **area is the exact shoelace area** (an L reports 132 m², not the 168 m² its box would claim),
+    through one shared expression feeding the drawn label, `describe().rooms[].area_m2`, the
+    `schedule rooms` row and Plan JSON's `area`;
+  - **the label sits at the polygon's area centroid** (closed-form), overridable for a concave room
+    with `label "…" at (x,y)` — advisory `W_ROOM_LABEL_OUTSIDE` when that point is off the floor;
+  - **adjacency is a shared boundary run** between two rooms' edges at any angle, **doors and
+    windows attribute by distance to the room's own edges** (so an entrance on an angled facade
+    connects the room behind it), and the **occupancy / nav grids** drop every cell whose centre
+    falls outside the ring, so an L's notch is never counted as floor;
+  - **`W_ROOM_OVERLAP` became exact** — a room tucked into an L's notch has an overlapping bounding
+    box and a disjoint floor, and no longer warns; two floors that really intersect still do;
+  - `dims auto`'s room chain takes polygon **vertex** coordinates, and a `place`d instance
+    transforms the ring vertex-by-vertex (a frame is an integer isometry, so the turn is exact).
+
+  **Rectangle-only clauses refuse rather than approximate** — the discipline of the feature. New
+  `E_PLACE_POLY` covers relational placement against a polygon reference and
+  `furniture … in <poly> anchor|centered`, each naming the way out (`at (x,y)`, plus `rotate`);
+  `against wall` and absolute `at` are unaffected. `W_FIXTURE_BACK_TO_ROOM` does not fire inside a
+  polygon room (there is no north/south/east/west side to be a fixture's back), `arch repair`
+  declines and says so in `unresolved`, and `arch suggest` proposes no opening on an edge the room
+  does not have. A crossing ring is `E_ROOM_POLY_SELF_INTERSECT`, one with fewer than three
+  effective vertices `E_ROOM_POLY_DEGENERATE`.
+
+  New flagship `examples/gallery-l.arch` (lint-clean under `--strict`). **An all-rectangle plan is
+  byte-identical**, `poly` being simply absent from its IR.
+
+### Fixed
+
+- **Acute wall joints can no longer grow a mitre spike.** A mitred join's point grows as
+  `1 / sin(θ/2)` — 1.41 × the line weight at the 90° corners the rectilinear boolean produces,
+  23 × at 5°. The cap now rides on the Scene `Paint` (`miterLimit`) instead of being left to each
+  backend, because the backends' defaults **disagree**: SVG's is 4, PDF's is 10, so the same
+  drawing spiked in the PDF export and not in the SVG. SVG now emits `stroke-miterlimit="4"`
+  (the spec default — rendered output is unchanged), the PDF export emits `4 M`, and the clipper2
+  offset uses the same limit.
+
 ## [1.22.0] - 2026-07-26
 
 ### Added

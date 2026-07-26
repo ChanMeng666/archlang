@@ -101,6 +101,16 @@ export interface RenderSizes {
  * the exact SVG attributes the original element emitters used, so the SVG
  * serializer reproduces today's output byte-for-byte.
  */
+/**
+ * Mitre cap for a mitred join, in stroke widths. A mitre's point grows as
+ * `1 / sin(θ/2)`: harmless at the 90° corners the rectilinear wall boolean produces
+ * (1.41×), but 12× the line weight where two walls meet at 10° — a black needle shot
+ * out of the building. 4 is the SVG default (so SVG output is visually unchanged and
+ * the attribute merely makes the contract explicit) and is what the PDF export, whose
+ * own default is 10, is now held to as well.
+ */
+export const MITER_LIMIT = 4;
+
 export interface Paint {
   /** A colour, `"none"`, or an SVG pattern ref like `"url(#poche)"`. */
   fill?: string;
@@ -111,6 +121,14 @@ export interface Paint {
   dash?: [number, number];
   linecap?: "square";
   linejoin?: "miter";
+  /**
+   * Cap on a mitred join's spike, as a multiple of the stroke width. A mitre grows as
+   * `1 / sin(θ/2)`, so at an ACUTE wall joint the point runs away — 12× the line weight
+   * at 10°. Beyond the limit the renderer bevels the corner instead. Carried on the
+   * paint (not hardcoded per backend) because the backends' own defaults DISAGREE: SVG
+   * defaults to 4, PDF to 10, so the same drawing spiked in one export and not the other.
+   */
+  miterLimit?: number;
   fillRule?: "nonzero";
 }
 
