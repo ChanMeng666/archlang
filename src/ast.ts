@@ -60,8 +60,29 @@ export interface WallNode extends NodeBase {
   materialAngle?: Expr;
   /** Polyline vertices in order. */
   points: ExprPoint[];
+  /**
+   * Curved edges (`arc (x,y) radius R [cw|ccw] [major]`, v1.24), indexed by SEGMENT
+   * index: entry `k` describes the edge from `points[k]` to `points[k+1]`. Absent for
+   * an all-straight polyline, which is every wall written before v1.24 — that absence
+   * is what keeps their geometry and bytes unchanged.
+   */
+  arcs?: Array<WallArcNode | undefined>;
   /** Whether the polyline closes back to its first vertex. */
   closed: boolean;
+}
+
+/**
+ * One `arc … radius R [cw|ccw] [major]` clause, attached to the vertex it arrives at.
+ * `dir` is the turn as the reader sees it on the sheet (default `ccw`), and `major`
+ * takes the long way round. Together they pick which of the two circles of radius `R`
+ * through the two endpoints is meant — see `src/geometry/arc.ts`.
+ */
+export interface WallArcNode {
+  radius: Expr;
+  dir?: "cw" | "ccw";
+  major?: boolean;
+  /** Byte span of the `arc …` clause, for `E_ARC_RADIUS`. */
+  span?: Span;
 }
 
 /** Relational-placement direction: the side of the reference room to sit on. */
@@ -134,7 +155,13 @@ export interface RoomNode extends NodeBase {
    * extent IS its vertex ring), so `size` is absent exactly when this is present.
    */
   polygon?: ExprPoint[];
-  /** Width × height — absent only on the {@link RoomNode.polygon} form. */
+  /**
+   * `room circle at (cx,cy) radius R` — a circular floor (v1.24). Mutually exclusive
+   * with `at`/`rel`/`polygon`, and it replaces `size`. Its area is measured in CLOSED
+   * FORM (πR²), never from the tessellation the grids use.
+   */
+  circle?: { c: ExprPoint; r: Expr };
+  /** Width × height — absent only on the {@link RoomNode.polygon}/{@link RoomNode.circle} forms. */
   size?: { w: Expr; h: Expr };
   /** Label as a string-interpolation template, evaluated at resolve. */
   label?: Expr;
@@ -291,13 +318,36 @@ export interface FurnitureNode extends NodeBase {
  *  Absent = the written points are used verbatim (the historical behaviour). */
 export type DimRef = "faces" | "clear";
 
+/**
+ * A `dim radius <wallId> [segment <n>]` / `dim diameter <roomId>` call-out (v1.24) — the
+ * GB/T form for a round thing, which a linear chain cannot express. The measured geometry
+ * is looked up from the referenced element at resolve, so the author never retypes a
+ * radius the compiler already knows (and the two can never disagree).
+ */
+export interface DimCurve {
+  what: "radius" | "diameter";
+  /** Wall id (for `radius`) or room id (for `diameter`). */
+  ref: string;
+  /** Which arc edge of a multi-segment wall — required only when it has several. */
+  segment?: Expr;
+  span?: Span;
+}
+
 export interface DimNode extends NodeBase {
   kind: "dim";
+  /**
+   * `dim radius|diameter <ref>` — a curve call-out instead of two written endpoints.
+   * When present, `from`/`to` are DERIVED at resolve (centre → arc midpoint for a radius,
+   * the horizontal diameter for a circle) and the text is `R<r>` / `phi<d>`.
+   */
+  curve?: DimCurve;
   /** `dim faces …` / `dim clear …` — push each endpoint OUTWARD onto the hosting
    *  wall's outer face (an outside-to-outside span), or INWARD onto its inner face
    *  (a clear width), instead of measuring the written centerline points. */
   ref?: DimRef;
+  /** Written start point. A placeholder on the {@link DimNode.curve} form, which derives it. */
   from: ExprPoint;
+  /** Written end point. A placeholder on the {@link DimNode.curve} form, which derives it. */
   to: ExprPoint;
   /** Perpendicular offset of the dimension line from the measured segment, mm. */
   offset: Expr;

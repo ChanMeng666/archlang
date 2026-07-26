@@ -185,6 +185,27 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Place the room or the fixture with explicit `at (x,y)` coordinates (a fixture may add `rotate`), or make the referenced room rectangular.",
     "room id=L polygon (0,0) (6000,0) (6000,4000) (3000,4000) (3000,6000) (0,6000)\nfurniture wc in L anchor bottom-left   # error: L is a polygon room",
   ),
+  E_DIM_CURVE_REF: E(
+    "E_DIM_CURVE_REF",
+    "Invalid `dim radius`/`dim diameter` reference.",
+    "A curve call-out references an element that does not exist, is not the right shape (a `diameter` on a rectangular room, a `radius` on a wall with no `arc` edge), matches several walls, or omits `segment <n>` on a wall with more than one arc. The compiler will not guess which curve was meant.",
+    "Name an existing, unique wall id whose edge is an `arc` (adding `segment <n>` when it has several), or an existing `room circle` id for `diameter`.",
+    "dim radius w1   # error if w1 is straight, unknown, or has two arc edges",
+  ),
+  E_ARC_RADIUS: E(
+    "E_ARC_RADIUS",
+    "Arc radius too small for its chord.",
+    "An `arc (x,y) radius R` edge asks for a circle of radius R through the previous vertex and this one, but R is less than half the straight-line distance between them (or is not positive) — no such circle exists.",
+    "Raise the radius to at least half the chord (the message states the minimum), or move the endpoints closer together. `arch fix` applies the minimum for you.",
+    "wall exterior thickness 200 { (0,0) arc (10000,0) radius 3000 }   # error: needs R >= 5000",
+  ),
+  E_ROOM_RADIUS: E(
+    "E_ROOM_RADIUS",
+    "Circular room needs a positive radius.",
+    "A `room circle at (cx,cy) radius R` has R of zero or less, so it encloses no floor — there is no area, no centroid and no containment test to compute.",
+    "Give the room a positive radius in millimetres.",
+    "room circle at (5000,5000) radius 0   # error: no floor",
+  ),
   E_ROOM_POLY_DEGENERATE: E(
     "E_ROOM_POLY_DEGENERATE",
     "Polygon room has fewer than three effective vertices.",

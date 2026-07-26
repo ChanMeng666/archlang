@@ -699,6 +699,56 @@
       "room_type": "MasterRoom"
     }
   ],
+  "examples/aquarium.arch": [
+    {
+      "id": "rotunda_r",
+      "label": "Ocean Rotunda",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "reef",
+      "label": "Reef Gallery",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "kelp",
+      "label": "Kelp Forest",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "plant",
+      "label": "Filtration",
+      "uses": ["utility"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "concourse",
+      "label": "Concourse",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "foyer",
+      "label": "Entrance Foyer",
+      "uses": ["entry"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "shop",
+      "label": "Shop",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "cafe",
+      "label": "Cafe",
+      "uses": ["dining"],
+      "room_type": "DiningRoom"
+    }
+  ],
   "examples/attached.arch": [
     {
       "id": "r_living",

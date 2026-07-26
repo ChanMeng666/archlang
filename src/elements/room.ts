@@ -1,9 +1,12 @@
 /** `room [id=] (at (x,y) | DIR ref [align E] [gap n]) size WxH [label "…"]`
  *  or `room [id=] polygon (x,y) (x,y) (x,y) … [label "…" [at (x,y)]]`
+ *  or `room [id=] circle at (cx,cy) radius R [label "…"]`
  *  — floor fill + label + computed area. The absolute `at` path is the default;
  *  the relational clause is resolved to absolute coords in `placeRelational`; the
  *  `polygon` form carries its own vertex ring (v1.23) and derives `at`/`size` as the
- *  ring's bounding box, so every rect-shaped consumer still sees a sane extent. */
+ *  ring's bounding box, so every rect-shaped consumer still sees a sane extent; the
+ *  `circle` form (v1.24) adds an exact centre+radius, a tessellated ring for the grid
+ *  layer, and that same derived bounding box. */
 
 import type { ExprPoint, Point, RelAlign, RelDir, RoomNode, UseKind } from "../ast.js";
 import { USE_KINDS } from "../ast.js";
@@ -12,6 +15,7 @@ import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js
 import type { SceneNode } from "../scene.js";
 import type { RRoom } from "../ir.js";
 import { rectCorners } from "../geometry.js";
+import { arcTessellate, fullCircleArc } from "../geometry/arc.js";
 import {
   effectiveVertices,
   pointInPolygon,
@@ -91,6 +95,12 @@ export const room: ElementDef = {
       optional: true,
       doc: "An implicitly-closed simple polygon of ≥3 vertices, instead of `at` + `size`.",
     },
+    {
+      name: "circle at … radius",
+      type: "point + number",
+      optional: true,
+      doc: "A circular floor: centre (cx,cy) and radius R in mm, instead of `at` + `size`.",
+    },
     { name: "size", type: "WxH", doc: "Width × height in mm (e.g. 4000x3000)." },
     { name: "label", type: "string", optional: true, doc: "Room label (supports {interpolation})." },
     {
@@ -111,10 +121,33 @@ export const room: ElementDef = {
       ctx.eatKeyword("polygon");
       const polygon: ExprPoint[] = [];
       while (ctx.isType("lparen")) polygon.push(ctx.parsePoint());
+      // A curved edge inside a polygon ring is DEFERRED, not silently dropped: the
+      // ring's whole analysis layer (effective-vertex count, self-intersection,
+      // centroid, adjacency) is written on literal vertices, and splicing a
+      // tessellation in would make every one of those answers about a 48-gon. Say so.
+      if (ctx.isKeyword("arc")) {
+        ctx.fail(
+          "An `arc` edge is not supported inside a `room polygon` ring yet (planned for v1.25) — " +
+            "use `room circle at (cx,cy) radius R` for a round floor, or a curved `wall … { … arc (x,y) radius R … }` " +
+            "with a straight-edged room behind it",
+          ctx.peek(),
+        );
+      }
       if (polygon.length < 3) {
         ctx.fail(`A polygon room needs at least three vertices but found ${polygon.length}`, kw);
       }
       const node: RoomNode = { kind: "room", id, polygon, line: kw.line };
+      parseTail(ctx, node);
+      return node;
+    }
+    // —— `circle at (cx,cy) radius R` — the circular-floor form (no `size`). ——
+    if (ctx.isKeyword("circle")) {
+      ctx.eatKeyword("circle");
+      ctx.eatKeyword("at");
+      const c = ctx.parsePoint();
+      ctx.eatKeyword("radius");
+      const r = ctx.parseExpr();
+      const node: RoomNode = { kind: "room", id, circle: { c, r }, line: kw.line };
       parseTail(ctx, node);
       return node;
     }
@@ -155,6 +188,7 @@ export const room: ElementDef = {
   resolve(node, ctx: ResolveCtx): RRoom {
     const n = node as RoomNode;
     const id = ctx.id;
+    if (n.circle) return resolveCircle(n, id, ctx);
     if (n.polygon) return resolvePolygon(n, id, ctx);
     if (n.at) {
       // —— Absolute / "manual" path — UNCHANGED, byte-identical to v0.11. ——
@@ -213,20 +247,41 @@ export const room: ElementDef = {
     const r = resolved as RRoom;
     const { theme, sizes } = ctx;
     const nodes: SceneNode[] = [];
-    const c = r.poly ?? rectCorners(r.at.x, r.at.y, r.size.w, r.size.h);
-    nodes.push({ layer: "floor", prim: { t: "polygon", pts: c }, paint: { fill: theme.roomFill } });
+    // A circular floor is drawn as a TRUE `circle` primitive (an SVG `<circle>`, a DXF
+    // `CIRCLE`), so its edge is never faceted — the tessellated `poly` it also carries
+    // exists for the grid/adjacency layer, not for the drawing.
+    if (r.circle) {
+      nodes.push({
+        layer: "floor",
+        prim: { t: "circle", center: r.circle.c, r: r.circle.r },
+        paint: { fill: theme.roomFill },
+      });
+    } else {
+      const c = r.poly ?? rectCorners(r.at.x, r.at.y, r.size.w, r.size.h);
+      nodes.push({ layer: "floor", prim: { t: "polygon", pts: c }, paint: { fill: theme.roomFill } });
+    }
 
-    // Label/area anchor: the room centre for a rectangle, the area CENTROID for a
-    // polygon (closed form), or the author's `label … at (x,y)` when one is given.
+    // Label/area anchor: the room centre for a rectangle, the circle's centre, the area
+    // CENTROID for a polygon (closed form), or the author's `label … at (x,y)`.
     const centre =
-      r.labelAt ?? (r.poly ? polygonCentroid(r.poly) : { x: r.at.x + r.size.w / 2, y: r.at.y + r.size.h / 2 });
+      r.labelAt ??
+      (r.circle
+        ? r.circle.c
+        : r.poly
+          ? polygonCentroid(r.poly)
+          : { x: r.at.x + r.size.w / 2, y: r.at.y + r.size.h / 2 });
     const cx = centre.x;
     const cy = centre.y;
-    // The rectangle keeps its exact historical expression (float-for-float); a polygon
-    // is measured by the shoelace formula, which is exact for any simple ring.
-    const areaM2 = r.poly
-      ? (polygonArea(r.poly) / 1_000_000).toFixed(1)
-      : ((r.size.w / 1000) * (r.size.h / 1000)).toFixed(1);
+    // Each shape keeps its OWN expression, written out rather than routed through one
+    // helper: the rectangle's `(w/1000)*(h/1000)` and the polygon's shoelace differ from
+    // an `area/1e6` rewrite by an ulp, and an ulp at a `.x5` boundary flips `toFixed(1)`
+    // — so a "tidier" single expression would silently move an existing drawing's bytes.
+    // A circle is πR², exact — never the 48-gon the grid layer uses (0.1% short).
+    const areaM2 = r.circle
+      ? ((Math.PI * r.circle.r * r.circle.r) / 1_000_000).toFixed(1)
+      : r.poly
+        ? (polygonArea(r.poly) / 1_000_000).toFixed(1)
+        : ((r.size.w / 1000) * (r.size.h / 1000)).toFixed(1);
     if (r.label) {
       nodes.push({
         layer: "labels",
@@ -257,6 +312,58 @@ export const room: ElementDef = {
     return nodes;
   },
 };
+
+/**
+ * The `circle` form (v1.24). The resolved room carries THREE views of the same floor,
+ * each for the consumer that needs it:
+ *
+ *  - `circle` — the exact centre + radius. `describe()` measures πR² from this, and the
+ *    drawing emits a true `circle` primitive, so neither is ever a facet count.
+ *  - `poly` — the 48-gon tessellation, so every ring-shaped consumer written for v1.23's
+ *    polygon rooms (occupancy grid, circulation flood-fill, adjacency, containment,
+ *    overlap) works VERBATIM on a curve with no second code path.
+ *  - `at`/`size` — the bounding box, so every older rect-shaped consumer still reads a
+ *    truthful extent.
+ *
+ * The one thing a consumer must not do is compute the AREA from `poly`: that is the
+ * documented exact-vs-chordal split (docs/analysis.md).
+ */
+function resolveCircle(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
+  const c = ctx.snapPt(ctx.evalPt(n.circle!.c));
+  const rv = ctx.eval(n.circle!.r);
+  const r = ctx.snap(rv) || rv;
+  const label = n.label !== undefined ? ctx.evalStr(n.label) : undefined;
+  if (!(r > 0)) {
+    ctx.diag({
+      severity: "error",
+      message: `Room "${id}" must have a positive radius`,
+      code: "E_ROOM_RADIUS",
+      span: n.span,
+    });
+  }
+  const rr = Math.max(0, r);
+  const labelAt = n.labelAt ? ctx.snapPt(ctx.evalPt(n.labelAt)) : undefined;
+  if (labelAt && rr > 0 && Math.hypot(labelAt.x - c.x, labelAt.y - c.y) > rr) {
+    ctx.diag({
+      severity: "warning",
+      message: `Room "${id}" pins its label at (${labelAt.x}, ${labelAt.y}), which is outside the room`,
+      code: "W_ROOM_LABEL_OUTSIDE",
+      span: n.labelAtSpan ?? n.span,
+    });
+  }
+  return {
+    kind: "room",
+    id,
+    at: { x: c.x - rr, y: c.y - rr },
+    size: { w: 2 * rr, h: 2 * rr },
+    circle: { c, r: rr },
+    poly: arcTessellate(fullCircleArc(c, rr)).slice(0, -1),
+    ...(labelAt ? { labelAt } : {}),
+    label,
+    ...(n.uses ? { uses: n.uses } : {}),
+    span: n.span,
+  };
+}
 
 /**
  * The `polygon` form (v1.23). Vertices are grid-snapped like every other coordinate,

@@ -47,6 +47,12 @@ const EXAMPLES = [
   // v1.23: the polygon-room flagship. This is the golden that would move if a room's
   // ring, its centroid label anchor or the wall outline's mitre cap ever drifted.
   "gallery-l.arch",
+  // v1.24: the curved-geometry flagship. This is the golden that would move if the arc
+  // solve, the tessellation step, the true-arc faces, the tangent-borne openings or the
+  // R/φ call-outs ever drifted — and, because it mixes a curved facade with straight
+  // service wings, it also pins the per-wall split that keeps the straight walls on the
+  // rectilinear boolean.
+  "aquarium.arch",
 ];
 
 async function hasResvg(): Promise<boolean> {

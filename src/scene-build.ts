@@ -17,16 +17,19 @@ import { MITER_LIMIT } from "./scene.js";
 import type { Bounds, Vec, WallSegment } from "./geometry.js";
 import {
   add,
-  distPointToSegment,
+  distPointToWallSegment,
   emptyBounds,
   extendBounds,
   mul,
   normal,
+  segmentFaceExtremes,
   segmentRectangle,
   segmentsOfWall,
   sub,
   unit,
+  wallHasArc,
 } from "./geometry.js";
+import { arcPointAt, diameterText, radiusText } from "./geometry/arc.js";
 import type { Rect } from "./geometry/union.js";
 import { rectBooleanOutline } from "./geometry/union.js";
 import { getGeometryBackend } from "./geometry/backend.js";
@@ -61,9 +64,11 @@ function planBounds(ir: ResolvedPlan, registry: Registry): Bounds {
   return b;
 }
 
-/** Is every segment of every wall axis-aligned (horizontal or vertical)? */
+/** Is every segment of every wall axis-aligned (horizontal or vertical)? A CURVED edge
+ *  never is — its chord may well be axis-aligned (a semicircle's is), so the arc marker
+ *  is what decides, not the endpoints. */
 function allOrthogonal(walls: RWall[]): boolean {
-  return walls.every((w) => segmentsOfWall(w).every((s) => s.a.x === s.b.x || s.a.y === s.b.y));
+  return walls.every((w) => segmentsOfWall(w).every((s) => !s.arc && (s.a.x === s.b.x || s.a.y === s.b.y)));
 }
 
 /** The hatch spec a wall fills with (material + scale + angle). */
@@ -96,7 +101,8 @@ function openingRect(w: RWall, op: Opening): Rect | null {
   let seg = null as null | { a: { x: number; y: number }; b: { x: number; y: number } };
   let best = Infinity;
   for (const s of segmentsOfWall(w)) {
-    const d = distPointToSegment(op.at, s.a, s.b);
+    if (s.arc) continue; // a curve never reaches the axis-aligned boolean (see lowerWalls)
+    const d = distPointToWallSegment(op.at, s);
     if (d < best) {
       best = d;
       seg = s;
@@ -124,7 +130,8 @@ function openingPoly(w: RWall, op: Opening): Point[] | null {
   let seg = null as null | { a: Point; b: Point };
   let best = Infinity;
   for (const s of segmentsOfWall(w)) {
-    const d = distPointToSegment(op.at, s.a, s.b);
+    if (s.arc) continue; // a curve never reaches the polygon boolean (see lowerWalls)
+    const d = distPointToWallSegment(op.at, s);
     if (d < best) {
       best = d;
       seg = s;
@@ -224,20 +231,37 @@ function lowerWalls(
 ): SceneNode[] {
   if (walls.length === 0) return [];
   const nodes: SceneNode[] = [];
+  const wallDef = registry.byKind.get("wall")!;
   for (const h of hatches) {
     const k = hatchKey(h);
-    const group = walls.filter((w) => hatchKey(hatchOf(w)) === k);
-    if (allOrthogonal(group)) {
-      nodes.push(...lowerOrthogonalGroup(group, h, ctx));
-      continue;
+    const inGroup = walls.filter((w) => hatchKey(hatchOf(w)) === k);
+    // CURVED walls are lowered by the wall element itself, ALWAYS — never through a
+    // boolean. Two reasons, both load-bearing:
+    //
+    //  1. The unioned `region` primitive is a straight-segment path, so routing a curve
+    //     through it would draw a faceted 48-gon face. The element path emits TRUE `arc`
+    //     primitives (SVG `A`, DXF `ARC`) at r ± t/2, so a curve is never faceted.
+    //  2. `lowerAngledGroup` runs only when the optional clipper2 backend is registered.
+    //     Sending a curve down it would make an arc plan's bytes DEPEND ON AN OPTIONAL
+    //     DEPENDENCY — exactly what the determinism suite (which compiles with the
+    //     backend both present and absent) forbids.
+    //
+    // The split is PER WALL, not per group, so a plan mixing a curved facade with
+    // straight service wings keeps the straight walls' existing union — and therefore
+    // their bytes — untouched. A plan with no arc has an empty `curved` list and takes
+    // exactly the code it always did.
+    const curved = inGroup.filter(wallHasArc);
+    const group = curved.length === 0 ? inGroup : inGroup.filter((w) => !wallHasArc(w));
+    if (group.length > 0) {
+      if (allOrthogonal(group)) {
+        nodes.push(...lowerOrthogonalGroup(group, h, ctx));
+      } else {
+        const viaBackend = backend ? lowerAngledGroup(group, h, ctx, backend) : null;
+        if (viaBackend) nodes.push(...viaBackend);
+        else nodes.push(...group.flatMap((w) => wallDef.render(w, ctx)));
+      }
     }
-    const viaBackend = backend ? lowerAngledGroup(group, h, ctx, backend) : null;
-    if (viaBackend) {
-      nodes.push(...viaBackend);
-    } else {
-      const def = registry.byKind.get("wall")!;
-      nodes.push(...group.flatMap((w) => def.render(w, ctx)));
-    }
+    for (const w of curved) nodes.push(...wallDef.render(w, ctx));
   }
   return nodes;
 }
@@ -264,9 +288,43 @@ function themeBaseLookup(name: string | undefined, runtime: Runtime): Partial<Th
  */
 function synthDims(ir: ResolvedPlan, sizes: RenderSizes): RDim[] {
   const dims: RDim[] = [];
-  if (ir.autoDims !== "walls") synthGbChains(ir, sizes, dims);
+  if (ir.autoDims !== "walls") {
+    synthGbChains(ir, sizes, dims);
+    synthCurveDims(ir, dims);
+  }
   if (ir.autoDims === "walls" || ir.autoDims === "all") synthWallDims(ir, dims);
   return dims;
+}
+
+/**
+ * `dims auto` for CURVES — the GB/T 50104 convention for anything round: a linear chain
+ * cannot describe an arc, so a curve is dimensioned by its RADIUS and a circle by its
+ * DIAMETER.
+ *
+ * One `R<r>` leader per distinct arc edge, drawn from the centre out to the arc's
+ * midpoint (so it reads as the radius it measures), and one `phi<d>` across every circular
+ * room through its centre. Deduplicated by (centre, radius) so a full circle written as
+ * two semicircles gets ONE call-out, not two. Presentation only — like every other
+ * `dims auto` chain it never touches the IR, `describe()` or `lint()`, and a plan with no
+ * curve emits nothing here.
+ */
+function synthCurveDims(ir: ResolvedPlan, dims: RDim[]): void {
+  const seen = new Set<string>();
+  for (const w of ir.walls) {
+    for (const s of segmentsOfWall(w)) {
+      if (!s.arc) continue;
+      const key = `${fmtMm(s.arc.center.x)}|${fmtMm(s.arc.center.y)}|${fmtMm(s.arc.r)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      dims.push(mkDim(s.arc.center, arcPointAt(s.arc, 0.5), 0, radiusText(s.arc.r, fmtMm)));
+    }
+  }
+  for (const el of ir.elements) {
+    if (el.kind !== "room") continue;
+    const c = (el as RRoom).circle;
+    if (!c || !(c.r > 0)) continue;
+    dims.push(mkDim({ x: c.c.x - c.r, y: c.c.y }, { x: c.c.x + c.r, y: c.c.y }, 0, diameterText(c.r, fmtMm)));
+  }
 }
 
 const mkDim = (from: Point, to: Point, offset: number, text?: string): RDim => ({
@@ -333,7 +391,14 @@ function measureExtent(ir: ResolvedPlan): Bounds | null {
     extendBounds(b, r.at.x + r.size.w, r.at.y + r.size.h);
   }
   if (rooms.length === 0) {
-    for (const w of ir.walls) for (const p of w.points) extendBounds(b, p.x, p.y);
+    for (const w of ir.walls) {
+      for (const p of w.points) extendBounds(b, p.x, p.y);
+      // A curve's chord endpoints are already in `points`; its BULGE is not, and a
+      // dimension chain measured to a chord would be short by the sagitta.
+      for (const s of segmentsOfWall(w)) {
+        if (s.arc) for (const p of segmentFaceExtremes(s, 0)) extendBounds(b, p.x, p.y);
+      }
+    }
   }
   return Number.isFinite(b.minX) ? b : null;
 }
@@ -354,11 +419,14 @@ function probeSide(walls: RWall[], ext: Bounds, side: Side): { line: number; hal
   let bestDist = Infinity;
   for (const w of walls) {
     for (const s of segmentsOfWall(w)) {
+      // A curved facade has no single face coordinate to offset a chain from, so it
+      // never hosts one (`synthCurveDims` gives it an R call-out instead).
+      if (s.arc) continue;
       const isH = s.a.y === s.b.y;
       const isV = s.a.x === s.b.x;
       if (isH && isV) continue; // degenerate
       if (horiz ? !isH : !isV) continue; // not parallel to this facade
-      const d = distPointToSegment(p, s.a, s.b);
+      const d = distPointToWallSegment(p, s);
       if (d < bestDist) {
         bestDist = d;
         best = s;
@@ -415,13 +483,16 @@ function facadeOpenings(ir: ResolvedPlan): FacadeOpening[] {
       let seg: WallSegment | null = null;
       let best = Infinity;
       for (const s of segmentsOfWall(w)) {
-        const d = distPointToSegment(op.at, s.a, s.b);
+        const d = distPointToWallSegment(op.at, s);
         if (d < best) {
           best = d;
           seg = s;
         }
       }
-      if (!seg) continue;
+      // An opening on a CURVE has no facade line to be chained on — its position along
+      // the wall is an angle, not a coordinate — so it contributes no tick. GB/T
+      // dimensions a curved wall by radius, which `synthCurveDims` emits.
+      if (!seg || seg.arc) continue;
       if (seg.a.y === seg.b.y && seg.a.x !== seg.b.x)
         out.push({ axis: "h", line: seg.a.y, along: op.at.x, width: op.width });
       else if (seg.a.x === seg.b.x && seg.a.y !== seg.b.y)
@@ -543,6 +614,7 @@ function synthWallDims(ir: ResolvedPlan, dims: RDim[]): void {
   const repByThickness = new Map<number, { mid: Point; n: Vec; t: number; len: number }>();
   for (const w of ir.walls) {
     for (const s of segmentsOfWall(w)) {
+      if (s.arc) continue; // a curve's thickness call-out would sit on its chord, not on it
       const d = sub(s.b, s.a);
       if (d.x !== 0 && d.y !== 0) continue; // orthogonal segments only
       const len = Math.hypot(d.x, d.y);
@@ -629,7 +701,10 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // fall through to the per-segment wall primitives, which subtract nothing. Derived
   // from wall geometry only — never from backend presence — so output stays
   // byte-identical with and without a registered geometry backend.
-  const openingsVoided = allOrthogonal(ir.walls);
+  // Curved walls are lowered per-segment and subtract nothing, so they are excluded from
+  // the question — a door on a straight orthogonal host in a plan that ALSO has a curved
+  // facade keeps its real hole (and its bytes) instead of regressing to an opaque cover.
+  const openingsVoided = allOrthogonal(ir.walls.filter((w) => !wallHasArc(w)));
   const baseCtx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm, openingsVoided };
   const ctxFor = (kind: string): RenderCtx => {
     const st = styledByKind.get(kind);

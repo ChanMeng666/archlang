@@ -220,14 +220,22 @@ function rules(): [string, string][] {
     // ---- elements --------------------------------------------------------
     [
       "wall-stmt",
-      `"wall" rws id-opt ident rws "thickness" ws expr ( ws wall-material )? ws "{" ws ( point ws )* ( "close" ws )? "}"`,
+      `"wall" rws id-opt ident rws "thickness" ws expr ( ws wall-material )? ws "{" ws ( wall-vertex ws )* ( "close" ws )? "}"`,
     ],
     ["wall-material", `"material" rws ident ( rws ( "scale" | "angle" ) ws expr ){0,2}`],
+    // A wall vertex is a plain point or a CURVED edge arriving at one (v1.24). `arc`
+    // cannot lead the list (there would be nothing to curve from), but that is a
+    // resolve-time diagnostic, not a grammar rule — a constrained decoder should be able
+    // to emit the form and be told, the same way it can emit an off-wall door.
+    ["wall-vertex", `point | wall-arc`],
+    ["wall-arc", `"arc" ws point ws "radius" ws expr ( rws arc-dir )? ( rws "major" )?`],
+    ["arc-dir", `"cw" | "ccw"`],
     // Two shapes: the rectangle (`at`/relational + `size`) and the explicit RING
     // (`polygon` + >=3 points, no `size`). Both take the same trailing clauses.
-    ["room-stmt", `"room" rws id-opt ( room-rect | room-poly ) ( ws room-label )? ( ws room-uses )?`],
+    ["room-stmt", `"room" rws id-opt ( room-rect | room-poly | room-circle ) ( ws room-label )? ( ws room-uses )?`],
     ["room-rect", `room-pos ws "size" ws dims`],
     ["room-poly", `"polygon" ws point ws point ( ws point )*`],
+    ["room-circle", `"circle" rws "at" ws point ws "radius" ws expr`],
     ["room-pos", `"at" ws point | rel-dir rws ref ( rws "align" rws ident )? ( rws "gap" ws expr )?`],
     ["rel-dir", `"right-of" | "left-of" | "below" | "above"`],
     ["room-label", `"label" ws string ( ws "at" ws point )?`],
@@ -247,7 +255,11 @@ function rules(): [string, string][] {
     ["in-place", `"centered" | "anchor" rws anchor ( ws "flush" )? ( ws "inset" ws expr )?`],
     ["anchor", anchor],
     ["furn-clause", `"size" ws dims | "label" ws string | "rotate" ws expr | "in" rws ref`],
-    ["dim-stmt", `"dim" ( rws dim-ref )? ws point ws "->" ws point ( ws "offset" ws expr )? ( ws "text" ws string )?`],
+    [
+      "dim-stmt",
+      `"dim" ( ( rws dim-ref )? ws point ws "->" ws point | rws dim-curve ) ( ws "offset" ws expr )? ( ws "text" ws string )?`,
+    ],
+    ["dim-curve", `"radius" rws ref ( rws "segment" ws expr )? | "diameter" rws ref`],
     ["dim-ref", `"faces" | "clear"`],
     ["column-stmt", `"column" rws id-opt "at" ws point ws "size" ws dims`],
     ["stair-stmt", `"stair" rws id-opt "at" ws point ws "size" ws dims ws "dir" rws vert-dir ( ws "width" ws expr )?`],

@@ -5,7 +5,7 @@ import type { Point, OpeningNode } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { ROpening } from "../ir.js";
-import { add, mul, nearestWallNote, normal, sub, unit } from "../geometry.js";
+import { add, mul, nearestWallNote, normal, segmentDirAt } from "../geometry.js";
 import { parseAttachTarget, resolveAttachment } from "../attach.js";
 import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
 
@@ -84,7 +84,8 @@ export const opening: ElementDef = {
     const seg = op.host;
     if (!seg) return [];
     const { theme, sizes } = ctx;
-    const d = unit(sub(seg.b, seg.a));
+    // Tangent at the passage on a curved host (cover along it, jambs radial).
+    const d = segmentDirAt(seg, op.at);
     const n = normal(d);
     const h = seg.thickness / 2;
     const hw = op.width / 2;
@@ -96,7 +97,9 @@ export const opening: ElementDef = {
     // `wallStroke` past each wall face. So: only paint the cover when nothing else
     // opened the hole (an angled host on the no-geometry-backend fallback, where this
     // polygon is the ONLY void mechanism).
-    const voided = ctx.openingsVoided === true && (seg.a.x === seg.b.x || seg.a.y === seg.b.y);
+    // …and a CURVED host never voids (it is lowered per-segment), whatever its chord's
+    // orientation suggests.
+    const voided = ctx.openingsVoided === true && !seg.arcWall && (seg.a.x === seg.b.x || seg.a.y === seg.b.y);
     const he = voided ? h : h + sizes.wallStroke;
     const cover: Point[] = [
       add(add(op.at, mul(d, -hw)), mul(n, he)),

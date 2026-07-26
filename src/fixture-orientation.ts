@@ -164,6 +164,12 @@ export function backingWallForRoomEdge(
   const covered: Array<[number, number]> = [];
   let best: { seg: WallSegment; overlap: number } | null = null;
   for (const s of segs) {
+    // A CURVED edge never "backs" a rectangle edge: the test below is a collinear-overlap
+    // test on the segment's endpoints, and an arc's chord can be exactly collinear with a
+    // room edge while the wall itself bows metres away from it. So an arc-backed edge
+    // reads as unwalled — which is what makes `W_FIXTURE_BACK_TO_ROOM` decline to derive
+    // a rotation from a curve instead of asserting a wrong one.
+    if (s.arc) continue;
     const isH = Math.abs(s.a.y - s.b.y) < 1e-6;
     const isV = Math.abs(s.a.x - s.b.x) < 1e-6;
     let slo: number;

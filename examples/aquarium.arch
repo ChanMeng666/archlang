@@ -1,0 +1,128 @@
+# A ~60 x 46 m public aquarium — the CURVED-GEOMETRY flagship (v1.24).
+#
+# Everything else in examples/ is rectilinear, because until v1.24 the language was. An
+# aquarium is the building type that is NOT: its centrepiece is a cylindrical tank you
+# walk around, and its public frontage bows. This plan exercises both curve forms and
+# nothing else that is new:
+#
+#   arc (x,y) radius R [cw|ccw] [major]   a CURVED WALL EDGE, from the previous vertex to
+#                                         this one along a circle of radius R. Default is
+#                                         the minor arc turning `ccw` as drawn.
+#   room circle at (cx,cy) radius R       a CIRCULAR FLOOR. Its area is measured exactly
+#                                         (piR^2), never from the tessellation the grid
+#                                         and adjacency layers use.
+#
+# Two things to read off the drawing. (1) The curved faces are TRUE arcs — SVG `A`
+# commands, DXF `ARC` entities — so the rotunda never looks faceted at any zoom.
+# (2) `dims auto` cannot chain a curve, so it dimensions the round things the way GB/T
+# 50104 does: an `R` leader per distinct arc and a `phi` call-out across the circular
+# room, while the linear chains stay on the straight facades where they belong.
+#
+# Issued on A2 at 1:200, the conventional GB/T presentation for a public building this
+# size, with the positioning axes on the straight structural grid only.
+plan "Harbour Aquarium" {
+  units mm
+  grid 100
+  paper A2 landscape
+  scale 1:200
+  north up
+  dims auto all
+  schedule rooms
+
+  # ---- shell: three straight facades and one curved one ---------------------
+  #
+  # The south-east corner is turned as a quarter circle of R12000 rather than mitred —
+  # the curved public frontage facing the harbour. `cw` puts the centre on the RIGHT of
+  # travel (the wall is walked (60000,28000) -> (48000,40000), heading south-west), which
+  # is the inside of the building, so the facade bows OUTWARD. Swap it to `ccw` and the
+  # same two endpoints give the concave corner instead.
+  wall id=shell exterior thickness 300 {
+    (0,0)
+    (60000,0)
+    (60000,28000)
+    arc (48000,40000) radius 12000 cw
+    (0,40000)
+    close
+  }
+
+  # ---- the cylindrical tank: one full circle from two semicircular arcs -----
+  #
+  # There is no `close`-an-arc form on purpose: a closed curve is written as the two
+  # halves it is, which keeps every edge's radius visible in the source. Both are the
+  # default `ccw`, so the wall is walked east -> south -> west -> north -> east, and the
+  # `hinge`/`swing` of a door on it reads against THAT direction of travel (the tangent
+  # at the doorway), exactly as it would on a straight run.
+  #
+  # The circle is tangent to the concourse at its south point (30000,22000) and to the
+  # plant room at its north point (30000,6000), so a door at either lands on a real
+  # room boundary and connects two spaces.
+  wall id=rotunda partition thickness 200 {
+    (38000,14000)
+    arc (22000,14000) radius 8000
+    arc (38000,14000) radius 8000
+  }
+
+  # ---- straight structure ---------------------------------------------------
+  wall id=concourse_n partition thickness 200 { (0,22000) (21000,22000) }
+  wall id=concourse_n2 partition thickness 200 { (39000,22000) (60000,22000) }
+  wall id=concourse_s partition thickness 200 { (0,30000) (60000,30000) }
+  wall partition thickness 200 { (21000,0) (21000,22000) }
+  wall partition thickness 200 { (39000,0) (39000,22000) }
+  wall partition thickness 200 { (21000,6000) (39000,6000) }
+  wall id=foyer_w partition thickness 200 { (20000,30000) (20000,40000) }
+  wall id=foyer_e partition thickness 200 { (40000,30000) (40000,40000) }
+
+  # ---- rooms ----------------------------------------------------------------
+  # `dims auto` puts the phi call-out ON the diameter, through the centre — which is where
+  # GB/T wants it and where the room name would otherwise be. Moving the NAME is the
+  # author's job (the compiler never relocates a dimension to make room for a label), so
+  # this one is pinned above the centre line with `label … at`.
+  room id=rotunda_r circle at (30000,14000) radius 8000 label "Ocean Rotunda" at (30000,10500) uses hall
+  room id=reef      at (0,6000)      size 21000x16000 label "Reef Gallery"    uses living
+  room id=kelp      at (39000,6000)  size 21000x16000 label "Kelp Forest"     uses living
+  room id=plant     at (21000,0)     size 18000x6000  label "Filtration"      uses utility
+  room id=concourse at (0,22000)     size 60000x8000  label "Concourse"       uses circulation
+  room id=foyer     at (20000,30000) size 20000x10000 label "Entrance Foyer"  uses entry
+  room id=shop      at (0,30000)     size 20000x10000 label "Shop"            uses office
+  room id=cafe      at (40000,30000) size 20000x10000 label "Cafe"            uses dining
+
+  # ---- openings -------------------------------------------------------------
+  #
+  # Both rotunda doors sit ON the curve. `on rotunda at <pct>` walks the wall by RUN
+  # length — an arc contributes its arc length R*theta, not its chord — so 25% is a
+  # quarter of the way round from the wall's start at the EAST point. The default `ccw`
+  # runs east -> north -> west -> south, so 25% is the north point (the staff door into
+  # Filtration) and 75% the south one (the public door off the Concourse).
+  door id=d_rot_n on rotunda at 25% width 1200
+  door id=d_rot_s on rotunda at 75% width 1800
+
+  # The main entrance is on the CURVED facade, at 15% of the shell's run measured from
+  # its start — which lands on the straight south wall; the pair of harbour-side windows
+  # below sit on the arc itself, their panes along the tangent and their jambs radial.
+  door id=d_main at (30000,40000) width 2400 wall shell swing in
+  window id=w_arc1 on shell at 47% width 2000
+  window id=w_arc2 on shell at 50% width 2000
+  window at (10000,0) width 3000 wall shell
+  window at (50000,0) width 3000 wall shell
+  window at (0,14000) width 3000 wall shell
+  window at (60000,14000) width 3000 wall shell
+
+  opening id=o_shop at (20000,35000) width 2400 wall foyer_w
+  opening id=o_cafe at (40000,35000) width 2400 wall foyer_e
+  opening id=o_foyer at (30000,30000) width 4000 wall concourse_s
+  opening id=o_reef at (10500,22000) width 3000 wall concourse_n
+  opening id=o_kelp at (49500,22000) width 3000 wall concourse_n2
+
+  # ---- positioning axes: the STRAIGHT structural grid only ------------------
+  # A curve has no datum line, so it carries none; its radius is its dimension.
+  axes {
+    x at 0
+    x at 21000
+    x at 39000
+    x at 60000
+    y at 0
+    y at 22000
+    y at 30000
+    y at 40000
+  }
+}
