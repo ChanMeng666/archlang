@@ -12,6 +12,27 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.11.0] - 2026-07-26
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.22.0`** — the "composition" release, so the
+  bundled services stop seeing a component as a text macro and a plan as one flat list of rooms:
+  - three new statement keywords in the regenerated TextMate grammar and in completion —
+    **`zone <id> ["Label"] { … }`**, **`place <component>(…) as <name> at (x,y)`** and the
+    **`mirror x|y`** clause (alongside `rotate 0|90|180|270`);
+  - **dotted identifiers highlight and complete** (`west.main`, `west.perimeter`): the lexer's
+    identifier rule now takes a dotted tail, which is legal in reference positions only;
+  - three new catalogued codes with their hovers — **`E_DOTTED_DECL`** (a dotted name used where a
+    declaration is expected), **`E_DUP_INSTANCE`** (two `place`s share an instance name), and the
+    advisory **`W_IMPORT_EMPTY_FILE`** (`import "x.arch" as x` where the module has no drawable
+    body);
+  - **a diagnostic raised inside an imported component body now points at the file it was written
+    in.** The bundled quick-fix path inherits the accompanying safety fix: `applyFixes` refuses any
+    suggestion carrying a `file`, so a "Fix" action on an imported component's diagnostic can no
+    longer splice foreign byte offsets into the file you have open (a corruption present since
+    imports shipped in v0.10).
+
 ## [0.10.0] - 2026-07-26
 
 ### Changed
