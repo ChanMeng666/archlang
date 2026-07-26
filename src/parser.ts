@@ -25,6 +25,7 @@ import type {
   TitleNode,
   UseKind,
   WhileNode,
+  ZoneNode,
 } from "./ast.js";
 import type { ScheduleSubject } from "./ast.js";
 import { LEVEL_SHARED_KINDS, SCHEDULE_SUBJECTS, USE_KINDS } from "./ast.js";
@@ -424,6 +425,20 @@ class Parser {
     return { kind: "level", id: "", level: n, ...(name !== undefined ? { name } : {}), body, line: kw.line };
   }
 
+  /**
+   * `zone <id> ["Label"] { <statements> }` — a wing/department grouping. The body is an
+   * ordinary statement block, so anything legal in a plan (including a nested `zone`) is
+   * legal inside one; `level` is not, and `parseOneBodyStatement` already rejects it with
+   * `E_LEVEL_NEST`.
+   */
+  private parseZone(components: Map<string, ComponentDef>, selfName?: string): ZoneNode {
+    const kw = this.eatKeyword("zone");
+    const id = this.eatIdent().value;
+    const label = this.isType("string") ? this.eatString() : undefined;
+    const body = this.parseBlockBody(components, selfName);
+    return { kind: "zone", id, ...(label !== undefined ? { label } : {}), body, line: kw.line };
+  }
+
   private isType(type: Token["type"]): boolean {
     return this.peek().type === type;
   }
@@ -782,7 +797,12 @@ class Parser {
       return { kind: "error", id: "", line: t.line, message: msg };
     }
     let node: Statement;
-    if (t.value === "for") node = this.parseFor(components, selfName);
+    // `zone` is legal wherever a statement is — plan level, inside a `level` block, inside
+    // a control-flow body or a component — because it is a pure metadata wrapper with no
+    // geometric semantics. Handled here (not in `parsePlan`'s switch) so all of those
+    // positions get it from one place.
+    if (t.value === "zone") node = this.parseZone(components, selfName);
+    else if (t.value === "for") node = this.parseFor(components, selfName);
     else if (t.value === "if") node = this.parseIf(components, selfName);
     else if (t.value === "while") node = this.parseWhile(components, selfName);
     else if (t.value === "set") node = this.parseSet();

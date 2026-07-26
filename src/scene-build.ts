@@ -673,7 +673,12 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // what grow the bottom margin; a plan that opts into neither passes null and every
   // margin below reduces to the previous arithmetic, so its bytes are unchanged.
   const scheduleData =
-    ir.schedule === "rooms" ? roomSchedule(ir.elements.filter((e): e is RRoom => e.kind === "room")) : null;
+    ir.schedule === "rooms"
+      ? roomSchedule(
+          ir.elements.filter((e): e is RRoom => e.kind === "room"),
+          ir.zones,
+        )
+      : null;
   const legendData = ir.legend
     ? legendEntries(
         hatches,

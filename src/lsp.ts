@@ -146,6 +146,11 @@ function collectBindings(plan: PlanNode, tokens: Token[]): Binding[] {
       } else if (s.kind === "level") {
         // A storey's body binds like any block body (its `let`s are level-local).
         visit(s.body, s.span);
+      } else if (s.kind === "zone") {
+        // A zone is NOT a scope (see `expandScope`): a `let` inside one is visible after
+        // the closing brace exactly as if it were not written, so its bindings are
+        // collected with no `scope` span narrowing them.
+        visit(s.body, undefined);
       }
     }
   };

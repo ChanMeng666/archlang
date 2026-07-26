@@ -81,6 +81,8 @@ export interface Args {
   at?: number;
   /** `--room <id[,id…]>`: (describe) keep only these rooms and what touches them. */
   room?: string;
+  /** `--zone <path[,path…]>`: (describe) keep only these declared zones' rooms. */
+  zone?: string;
   /** `--select <key[,key…]>`: (describe) emit only these top-level keys of the JSON. */
   select?: string;
   /** `--code <CODE[,…]>`: (lint/validate) DISPLAY-filter diagnostics by code — never gating. */
@@ -134,6 +136,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--profile": { key: "profile", kind: "string" },
   "--overlay": { key: "overlay", kind: "string" },
   "--room": { key: "room", kind: "string" },
+  "--zone": { key: "zone", kind: "string" },
   "--select": { key: "select", kind: "string" },
   "--code": { key: "code", kind: "string" },
   "--severity": { key: "severity", kind: "string" },

@@ -83,6 +83,7 @@ export type {
   AxesSummary,
   AxisSummary,
   ScheduleRow,
+  ZoneSummary,
   FreedomReport,
   FreedomElement,
   RoomPlacement,
@@ -227,6 +228,7 @@ export type {
   RDim,
   RColumn,
   RAxis,
+  RZone,
 } from "./ir.js";
 // Scene IR (the backend-neutral drawing target) + its builder. Backends consume
 // a Scene: `toDxf(scene)` / `toPdf(scene)`; build one with `toScene(ir)` or read
@@ -270,7 +272,7 @@ export type { PaperOrientation, PaperSize, PaperSpec, ResolvedSheet, SheetFitInp
 // the plan's hatches + fixture symbols. Exposed so a tool can render or audit the same
 // rows the drawing prints (`describe().schedule` is the schedule half as data).
 export { roomSchedule, legendEntries } from "./sheet-tables.js";
-export type { RoomSchedule, LegendEntry } from "./sheet-tables.js";
+export type { RoomSchedule, ScheduleGroup, LegendEntry } from "./sheet-tables.js";
 export { toDxf } from "./export/dxf.js";
 export { toPdf } from "./export/pdf.js";
 // PNG raster backend (v1.0). Rasterizes the Scene's SVG with the OPTIONAL,

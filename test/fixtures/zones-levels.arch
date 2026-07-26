@@ -1,0 +1,24 @@
+# Zones inside `level` blocks: the same zone id declared on two storeys is two separate
+# groups (a zone belongs to the storey it is written on). Fixture for test/zones.test.ts.
+plan "Zoned storeys" {
+  units mm
+  grid 100
+
+  level 1 "Ground" {
+    zone north "North wing" {
+      room id=g_a at (0,0) size 4000x4000 label "G-A" uses office
+    }
+    zone south "South wing" {
+      room id=g_b at (0,4000) size 4000x4000 label "G-B" uses office
+    }
+    stair id=core at (4000,0) size 2600x4000 dir up
+    door id=front at (0,2000) width 1000
+  }
+
+  level 2 "Upper" {
+    zone north "North wing" {
+      room id=u_a at (0,0) size 4000x4000 label "U-A" uses office
+    }
+    stair id=core at (4000,0) size 2600x4000 dir down
+  }
+}

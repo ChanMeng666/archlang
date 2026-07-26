@@ -106,6 +106,10 @@ export function statementBodies(s: Statement): Statement[][] {
     // this helper (the cursor, `eachStatement`, `eachExpr`, and therefore the LSP) sees
     // inside a storey exactly as it sees inside a loop.
     case "level":
+    // A `zone` block is a pure metadata wrapper around an ordinary statement list, so
+    // every walker must see straight through it — a cursor inside a zoned room still
+    // resolves to that room, and `eachStatement` still reaches it.
+    case "zone":
       return [s.body];
     case "if":
       return s.else ? [s.then, s.else] : [s.then];

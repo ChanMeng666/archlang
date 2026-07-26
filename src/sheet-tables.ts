@@ -58,6 +58,31 @@ export interface ScheduleRow {
   name: string;
   /** Floor area in m², rounded to 2dp — byte-identical to `describe().rooms[].area_m2`. */
   area_m2: number;
+  /**
+   * Dotted path of the **innermost** `zone` the room was declared in (v1.22), when the
+   * plan declares zones. Absent for an unzoned room and for every plan that declares no
+   * zone at all, so an existing schedule is unchanged.
+   */
+  zone?: string;
+}
+
+/**
+ * One group of a zone-grouped ROOM SCHEDULE: a run of consecutive {@link ScheduleRow}s
+ * that share an innermost zone, plus the subtotal row that closes it.
+ *
+ * Groups **partition** the rooms — every room is in exactly one, keyed on its innermost
+ * zone — so the subtotals add up to the table's TOTAL. (`describe().zones` is the other
+ * view: a rollup where a nested zone's rooms count toward its ancestors too.)
+ */
+export interface ScheduleGroup {
+  /** The zone path this group is, or absent for the trailing un-zoned rooms. */
+  path?: string;
+  /** The printed heading: the zone's label, else its path (else "(no zone)"). */
+  name: string;
+  /** How many consecutive rows belong to it (they start where the previous group ended). */
+  count: number;
+  /** Sum of this group's rounded areas, rounded the same way {@link RoomSchedule.total_m2} is. */
+  subtotal_m2: number;
 }
 
 /** The whole ROOM SCHEDULE as data: its rows plus the total that closes it. */
@@ -69,22 +94,84 @@ export interface RoomSchedule {
    * never disagree by a rounding step.
    */
   total_m2: number;
+  /**
+   * Zone groups, when the plan declares zones AND at least one room sits in one. Empty
+   * otherwise — which is what keeps an unzoned plan's table (and its bytes) unchanged.
+   */
+  groups: ScheduleGroup[];
 }
 
 /**
- * Derive the room schedule from the resolved rooms, in **source order**. Pure tallying:
- * area is the room rectangle in m², the same expression `describe()` uses, so the table
- * and the semantic summary are one number.
+ * Derive the room schedule from the resolved rooms. Pure tallying: area is the room
+ * rectangle in m², the same expression `describe()` uses, so the table and the semantic
+ * summary are one number.
+ *
+ * **Without zones** the rows are the rooms in **source order** — unchanged, byte for byte.
+ *
+ * **With zones** (`zones` given and some room declared inside one) the rows are grouped:
+ * one block per innermost zone in the plan's zone-declaration order, then a trailing block
+ * of un-zoned rooms. `no` is then the row's position in the TABLE (which is what the
+ * number labels), not in the source. A zone that owns no room directly gets no block — a
+ * heading with nothing under it would be a lie about the drawing.
  */
-export function roomSchedule(rooms: readonly RRoom[]): RoomSchedule {
-  const width = Math.max(2, String(rooms.length).length);
-  const rows: ScheduleRow[] = rooms.map((r, i) => ({
+export function roomSchedule(rooms: readonly RRoom[], zones?: readonly ZoneRef[]): RoomSchedule {
+  const grouped = groupRoomsByZone(rooms, zones);
+  const ordered = grouped ? grouped.flatMap((g) => g.rooms) : rooms;
+  const width = Math.max(2, String(ordered.length).length);
+  const rows: ScheduleRow[] = ordered.map((r, i) => ({
     no: String(i + 1).padStart(width, "0"),
     id: r.id,
     name: r.label ?? r.id,
     area_m2: r2((r.size.w * r.size.h) / 1_000_000),
+    ...(r._zone !== undefined ? { zone: r._zone } : {}),
   }));
-  return { rows, total_m2: r2(rows.reduce((s, r) => s + r.area_m2, 0)) };
+  const total_m2 = r2(rows.reduce((s, r) => s + r.area_m2, 0));
+  if (!grouped) return { rows, total_m2, groups: [] };
+
+  const groups: ScheduleGroup[] = [];
+  let at = 0;
+  for (const g of grouped) {
+    const slice = rows.slice(at, at + g.rooms.length);
+    groups.push({
+      ...(g.path !== undefined ? { path: g.path } : {}),
+      name: g.name,
+      count: slice.length,
+      subtotal_m2: r2(slice.reduce((s, r) => s + r.area_m2, 0)),
+    });
+    at += g.rooms.length;
+  }
+  return { rows, total_m2, groups };
+}
+
+/** The zone facts the schedule needs — structurally `RZone` from the IR, restated here so
+ *  this module keeps depending only on data it actually reads. */
+interface ZoneRef {
+  path: string;
+  label?: string;
+}
+
+/**
+ * Partition the rooms by their INNERMOST declared zone, in the plan's zone-declaration
+ * order, with un-zoned rooms in a final block. Returns null when there is nothing to
+ * group (no zones declared, or no room inside one) — the signal that keeps the ungrouped
+ * table byte-identical. Rooms stay in source order within their block.
+ */
+function groupRoomsByZone(
+  rooms: readonly RRoom[],
+  zones: readonly ZoneRef[] | undefined,
+): { path?: string; name: string; rooms: RRoom[] }[] | null {
+  if (!zones || zones.length === 0) return null;
+  if (!rooms.some((r) => r._zone !== undefined)) return null;
+  const out: { path?: string; name: string; rooms: RRoom[] }[] = [];
+  for (const z of zones) {
+    const members = rooms.filter((r) => r._zone === z.path);
+    if (members.length > 0) out.push({ path: z.path, name: z.label ?? z.path, rooms: members });
+  }
+  // A room whose declared zone is not in `zones` cannot exist (the ledger is filled by the
+  // very expansion that stamps membership), so the remainder is exactly the un-zoned rooms.
+  const loose = rooms.filter((r) => r._zone === undefined);
+  if (loose.length > 0) out.push({ name: "(no zone)", rooms: loose });
+  return out;
 }
 
 // ---- legend data -------------------------------------------------------------
@@ -166,6 +253,8 @@ export interface ScheduleTableBox extends TableBox {
   cols: TableColumn[];
   rows: ScheduleRow[];
   total_m2: number;
+  /** Zone groups, in row order; empty for an unzoned plan (which draws the flat table). */
+  groups: ScheduleGroup[];
 }
 
 export interface LegendTableBox extends TableBox {
@@ -234,7 +323,9 @@ export function layoutSheetTables(input: SheetTablesInput): SheetTables | null {
     ];
     const w = cols.reduce((s, c) => s + c.w, 0);
     // Rows: caption + column headings + one per room + the TOTAL that closes the table.
-    const h = rowH * (3 + sched.rows.length);
+    // Each zone group adds two more: its heading and its subtotal (none when unzoned, so
+    // the height — and therefore the whole sheet's layout — is unchanged).
+    const h = rowH * (3 + sched.rows.length + 2 * sched.groups.length);
     schedule = {
       x0: x,
       y0: top,
@@ -247,6 +338,7 @@ export function layoutSheetTables(input: SheetTablesInput): SheetTables | null {
       cols,
       rows: sched.rows,
       total_m2: sched.total_m2,
+      groups: sched.groups,
     };
     x += w + refDim * TABLE_GAP;
     bottom = Math.max(bottom, top + h);
@@ -368,8 +460,19 @@ const BOLD = 600;
  */
 const areaCell = (m2: number): string => m2.toFixed(2);
 
-/** The ROOM SCHEDULE table's primitives. */
+/**
+ * The ROOM SCHEDULE table's primitives.
+ *
+ * Two shapes, one number set. With no zone groups this is the flat table, emitted exactly
+ * as it always was (the ungrouped path below is untouched, which is what makes an unzoned
+ * plan byte-identical); with groups it delegates to {@link groupedScheduleNodes}, whose
+ * merged heading rows need column rules segmented per block rather than run full height.
+ */
 function scheduleNodes(t: ScheduleTableBox, theme: Theme, sizes: RenderSizes, out: SceneNode[]): void {
+  if (t.groups.length > 0) {
+    groupedScheduleNodes(t, theme, sizes, out);
+    return;
+  }
   const d = drawer(theme, sizes, out);
   const { x0, y0, w, h, rowH, fs, pad } = t;
   d.frame(x0, y0, w, h);
@@ -418,6 +521,84 @@ function scheduleNodes(t: ScheduleTableBox, theme: Theme, sizes: RenderSizes, ou
     areaCol.align,
     { weight: BOLD },
   );
+}
+
+/**
+ * The ZONE-GROUPED ROOM SCHEDULE (v1.22): the same table, with each zone's rooms under a
+ * merged heading row and closed by a SUBTOTAL row, before the TOTAL that closes the table.
+ *
+ * The subtotals **partition** the rooms (each room sits under its innermost zone exactly
+ * once), so they add up to the TOTAL — a reader can audit the wing without re-measuring.
+ * Column rules are drawn per data block rather than full height, so no merged cell (the
+ * caption, a group heading, a subtotal label) is ever cut in half.
+ */
+function groupedScheduleNodes(t: ScheduleTableBox, theme: Theme, sizes: RenderSizes, out: SceneNode[]): void {
+  const d = drawer(theme, sizes, out);
+  const { x0, y0, w, h, rowH, fs, pad } = t;
+  d.frame(x0, y0, w, h);
+
+  const rowTop = (i: number): number => y0 + rowH * i;
+  const rowMid = (i: number): number => y0 + rowH * (i + 0.5);
+
+  // Rows 0/1: the merged caption and the column headings (identical to the flat table).
+  d.text({ x: x0 + pad, y: rowMid(0) }, t.caption, fs, "start", { weight: BOLD });
+  d.rule({ x: x0, y: rowTop(1) }, { x: x0 + w, y: rowTop(1) });
+  let cx = x0;
+  for (const c of t.cols) {
+    d.text({ x: anchorX(cx, c.w, pad, c.align), y: rowMid(1) }, c.heading, fs * 0.8, c.align, {
+      weight: BOLD,
+      muted: true,
+    });
+    cx += c.w;
+  }
+  d.rule({ x: x0, y: rowTop(2) }, { x: x0 + w, y: rowTop(2) });
+
+  const areaCol = t.cols[t.cols.length - 1]!;
+  const areaX = anchorX(x0 + w - areaCol.w, areaCol.w, pad, areaCol.align);
+
+  // One block per group: heading, its rows, its subtotal.
+  let row = 2;
+  let firstRow = 0;
+  for (const g of t.groups) {
+    if (row > 2) d.rule({ x: x0, y: rowTop(row) }, { x: x0 + w, y: rowTop(row) });
+    d.text({ x: x0 + pad, y: rowMid(row) }, g.name, fs, "start", { weight: BOLD, muted: true });
+    row++;
+
+    const dataTop = rowTop(row);
+    for (let i = 0; i < g.count; i++) {
+      const r = t.rows[firstRow + i]!;
+      if (i > 0) d.rule({ x: x0, y: rowTop(row) }, { x: x0 + w, y: rowTop(row) }, true);
+      const cells = [r.no, r.name, areaCell(r.area_m2)];
+      let x = x0;
+      t.cols.forEach((c, ci) => {
+        d.text({ x: anchorX(x, c.w, pad, c.align), y: rowMid(row) }, cells[ci]!, fs, c.align);
+        x += c.w;
+      });
+      row++;
+    }
+    firstRow += g.count;
+
+    // Column rules span only this block's data rows, so the merged heading/subtotal
+    // rows above and below stay whole.
+    const dataBottom = rowTop(row);
+    let vx = x0;
+    t.cols.forEach((c, i) => {
+      if (i > 0) d.rule({ x: vx, y: dataTop }, { x: vx, y: dataBottom }, true);
+      vx += c.w;
+    });
+
+    d.rule({ x: x0, y: dataBottom }, { x: x0 + w, y: dataBottom }, true);
+    d.text({ x: x0 + pad, y: rowMid(row) }, "SUBTOTAL", fs, "start", { weight: BOLD, muted: true });
+    d.text({ x: areaX, y: rowMid(row) }, areaCell(g.subtotal_m2), fs, areaCol.align, { weight: BOLD, muted: true });
+    row++;
+  }
+
+  // TOTAL closes the table — the same number as `describe().totals.floor_area_m2`, and
+  // the sum of the subtotals above it.
+  const totalTop = y0 + h - rowH;
+  d.rule({ x: x0, y: totalTop }, { x: x0 + w, y: totalTop });
+  d.text({ x: x0 + pad, y: totalTop + rowH / 2 }, "TOTAL", fs, "start", { weight: BOLD });
+  d.text({ x: areaX, y: totalTop + rowH / 2 }, areaCell(t.total_m2), fs, areaCol.align, { weight: BOLD });
 }
 
 /** The LEGEND table's primitives — each row a real swatch beside its name. */

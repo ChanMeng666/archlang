@@ -15,7 +15,7 @@
 
 root ::= ws "plan" rws string ws "{" ws ( plan-stmt ws )* "}" ws
 plan-stmt ::= setting | title-stmt | axes-stmt | acc-stmt | theme-stmt | style-stmt | component-stmt | import-stmt | strip-stmt | level-stmt | block-stmt
-block-stmt ::= element | let-stmt | for-stmt | if-stmt | while-stmt | set-stmt | instance-stmt | assign-stmt
+block-stmt ::= element | let-stmt | for-stmt | if-stmt | while-stmt | set-stmt | zone-stmt | instance-stmt | assign-stmt
 element ::= wall-stmt | room-stmt | door-stmt | window-stmt | opening-stmt | furniture-stmt | dim-stmt | column-stmt | stair-stmt | elevator-stmt | escalator-stmt
 setting ::= units-stmt | grid-stmt | paper-stmt | scale-stmt | north-stmt | dims-stmt | schedule-stmt | legend-stmt
 units-stmt ::= "units" rws "mm"
@@ -64,6 +64,7 @@ strip-cross ::= ( "height" | "width" ) ws expr
 strip-room ::= "room" rws id-opt "size" ws strip-size ( ws room-label )? ( ws room-uses )?
 strip-size ::= expr ( ws "x" ws expr )?
 level-stmt ::= "level" rws ( "-" ws )? number ( rws string )? ws block
+zone-stmt ::= "zone" rws ident ( rws string )? ws block
 wall-stmt ::= "wall" rws id-opt ident rws "thickness" ws expr ( ws wall-material )? ws "{" ws ( point ws )* ( "close" ws )? "}"
 wall-material ::= "material" rws ident ( rws ( "scale" | "angle" ) ws expr ){0,2}
 room-stmt ::= "room" rws id-opt room-pos ws "size" ws dims ( ws room-label )? ( ws room-uses )?

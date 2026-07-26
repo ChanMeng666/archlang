@@ -55,6 +55,29 @@ export interface RBase {
   kind: ElementKind;
   id: string;
   span?: Span;
+  /**
+   * Dotted path of the innermost `zone` block this element was written inside
+   * (`"west"`, `"west.galleries"`), or absent when it sits in no zone. Pure declared
+   * metadata — read by `describe().zones` and the grouped room schedule, never by any
+   * geometry. Internal: set during resolve, never serialized into the Scene/SVG/exports
+   * (the `_` prefix keeps it out), so a zoned plan renders byte-identically to the same
+   * plan with the wrappers deleted.
+   */
+  _zone?: string;
+}
+
+/**
+ * A `zone` block as the resolver sees it: the declaration, not its contents. Zones are
+ * collected in first-declaration order during expansion (a `zone` re-opened by a `for`
+ * loop is recorded once), so the list is deterministic.
+ */
+export interface RZone {
+  /** The zone's own id — the last segment of {@link path}. */
+  id: string;
+  /** Dotted path from the outermost enclosing zone (`"west.galleries"`). Its identity. */
+  path: string;
+  /** Printed name from `zone west "West wing"`, when the source gave one. */
+  label?: string;
 }
 
 /** An opening (door/window) registered on a wall — voids the wall solid. */
@@ -300,6 +323,13 @@ export interface ResolvedPlan {
   level?: number;
   /** The storey's name (`level 1 "Ground floor"`), when one was given. */
   levelName?: string;
+  /**
+   * The `zone` blocks this plan declares, in first-declaration order — the wing/department
+   * grouping (v1.22). Absent when the plan declares none, so an existing IR (and therefore
+   * its Scene and its bytes) is unchanged. Each element's membership rides on
+   * {@link RBase._zone}; nothing here has geometric meaning.
+   */
+  zones?: RZone[];
   /** Resolved elements, in source order (for rendering). */
   elements: ResolvedElement[];
   /** Resolved walls (for bounds/hosting), in source order. */
@@ -325,7 +355,32 @@ interface Entry {
   /** True when this room was expanded from a `strip` block (it looks absolute in
    *  the AST, so the origin has to be remembered for `describe().freedom`). */
   fromStrip?: boolean;
+  /** Dotted path of the innermost `zone` this element was written inside, copied onto
+   *  the resolved element as {@link RBase._zone}. Absent outside every zone. */
+  zone?: string;
 }
+
+/**
+ * The zone frame threaded through {@link expandScope}: which `zone` blocks are currently
+ * open, and the ledger of every zone declared so far.
+ *
+ * This is the ONE place membership is decided, and it is decided lexically — an element
+ * belongs to the zone whose braces it was written inside, full stop (ADR 0005: no spatial
+ * inference). It is also the insertion point for any future construct that wants to stamp
+ * an implicit frame onto the elements it expands (see the `instance` case below).
+ */
+interface ZoneFrame {
+  /** Open zones, outermost first. Empty at plan level. */
+  readonly path: readonly string[];
+  /** Every zone declared so far, keyed by dotted path; first declaration wins. */
+  readonly declared: Map<string, RZone>;
+}
+
+/** A fresh, empty zone frame (plan level, nothing declared). */
+const rootZoneFrame = (): ZoneFrame => ({ path: [], declared: new Map() });
+
+/** `{ zone: "a.b" }`, or `{}` at plan level — spread onto an {@link Entry}. */
+const zoneOf = (z: ZoneFrame): { zone?: string } => (z.path.length > 0 ? { zone: z.path.join(".") } : {});
 
 /**
  * A lexical scope: its own bindings plus a link to the enclosing scope. `let`
@@ -386,6 +441,7 @@ function expandScope(
   components: Map<string, ComponentDef>,
   diagnostics: Diagnostic[],
   depth: number,
+  zone: ZoneFrame = rootZoneFrame(),
 ): Entry[] {
   const diag = (d: Diagnostic) => diagnostics.push(d);
   const out: Entry[] = [];
@@ -464,7 +520,13 @@ function expandScope(
         comp.params.forEach((p, i) => {
           childScope.vars.set(p, argVals[i]!);
         });
-        out.push(...expandScope(comp.body, childScope, global, components, diagnostics, depth + 1));
+        // component-v2 hook: a `place comp() as <name> at …` instance is implicitly a
+        // zone, so when instances land they push their own segment onto the frame here —
+        // `expandScope(comp.body, …, pushZone(zone, stmt.as, …))` — and every element the
+        // component expands inherits that membership through the same one mechanism a
+        // hand-written `zone` block uses. A plain (unnamed) instance stays transparent,
+        // which is what this line does today.
+        out.push(...expandScope(comp.body, childScope, global, components, diagnostics, depth + 1, zone));
         break;
       }
       case "for": {
@@ -481,14 +543,14 @@ function expandScope(
         for (const item of it.v) {
           const child = new Scope(scope);
           child.vars.set(stmt.varName, item);
-          out.push(...expandScope(stmt.body, child, global, components, diagnostics, depth));
+          out.push(...expandScope(stmt.body, child, global, components, diagnostics, depth, zone));
         }
         break;
       }
       case "if": {
         const cond = asBool(evalIn(stmt.cond), diag, exprSpan(stmt.cond));
         const branch = cond ? stmt.then : stmt.else;
-        if (branch) out.push(...expandScope(branch, new Scope(scope), global, components, diagnostics, depth));
+        if (branch) out.push(...expandScope(branch, new Scope(scope), global, components, diagnostics, depth, zone));
         break;
       }
       case "while": {
@@ -503,7 +565,7 @@ function expandScope(
             });
             break;
           }
-          out.push(...expandScope(stmt.body, new Scope(scope), global, components, diagnostics, depth));
+          out.push(...expandScope(stmt.body, new Scope(scope), global, components, diagnostics, depth, zone));
         }
         break;
       }
@@ -526,8 +588,33 @@ function expandScope(
             id: "",
             defaults: scope.effectiveSet("room"),
             fromStrip: true,
+            ...zoneOf(zone),
           });
         }
+        break;
+      }
+      case "zone": {
+        // A PURE metadata wrapper: no new scope, no new depth, no expansion of its own.
+        // The body is expanded against the *same* Scope, so a `let`/`set` written inside a
+        // zone behaves exactly as it would with the braces deleted — that is what makes
+        // the byte-identity law (`test/zones.test.ts`) total rather than approximate.
+        const path = [...zone.path, stmt.id];
+        const key = path.join(".");
+        // First declaration wins: a `zone` re-opened (by a loop, or written twice) merges
+        // its members rather than declaring a second, identically-named group.
+        if (!zone.declared.has(key)) {
+          zone.declared.set(key, {
+            id: stmt.id,
+            path: key,
+            ...(stmt.label !== undefined ? { label: stmt.label } : {}),
+          });
+        }
+        out.push(
+          ...expandScope(stmt.body, scope, global, components, diagnostics, depth, {
+            path,
+            declared: zone.declared,
+          }),
+        );
         break;
       }
       case "error":
@@ -543,7 +630,13 @@ function expandScope(
         break;
       default:
         // An element: snapshot the scope's visible bindings + active set-defaults.
-        out.push({ node: stmt, env: scope.flatten(), id: "", defaults: scope.effectiveSet(stmt.kind) });
+        out.push({
+          node: stmt,
+          env: scope.flatten(),
+          id: "",
+          defaults: scope.effectiveSet(stmt.kind),
+          ...zoneOf(zone),
+        });
     }
   }
   return out;
@@ -864,7 +957,10 @@ function resolveImpl(
   const builtinScope = new Scope();
   for (const name of BUILTIN_NAMES) builtinScope.vars.set(name, { t: "builtin", name });
   const globalScope = new Scope(builtinScope);
-  const entries = expandScope(ast.body, globalScope, globalScope, ast.components, diagnostics, 0);
+  // The zone frame is created here and filled during expansion: `zoneFrame.declared` ends
+  // up holding every `zone` the plan declares, in first-declaration order.
+  const zoneFrame = rootZoneFrame();
+  const entries = expandScope(ast.body, globalScope, globalScope, ast.components, diagnostics, 0, zoneFrame);
 
   // 1. Assign ids in registry (canonical) order. The flat stream is numbered
   //    globally per kind, so auto-ids stay unique across component instances.
@@ -923,6 +1019,9 @@ function resolveImpl(
       const r = def.resolve(e.node, ctx);
       e.resolved = r;
       markPlacement(r, e.node, e.fromStrip === true);
+      // Declared zone membership. Set only for an element actually written inside a
+      // `zone` block, so an unzoned plan's IR carries no new key at all.
+      if (e.zone !== undefined) r._zone = e.zone;
       if (r.kind === "wall") {
         r._idAuthored = e.idAuthored === true;
         walls.push(r);
@@ -991,6 +1090,9 @@ function resolveImpl(
     // opted-out plan has no key at all and the IR stays byte-identical to before.
     ...(ast.schedule ? { schedule: ast.schedule } : {}),
     ...(ast.legend ? { legend: true } : {}),
+    // Declared wing/department grouping (v1.22) — metadata only, absent when the plan
+    // declares no `zone`, so an existing IR is byte-identical.
+    ...(zoneFrame.declared.size > 0 ? { zones: [...zoneFrame.declared.values()] } : {}),
     // Page identity for a multi-storey plan (absent otherwise → byte-identical IR).
     ...(extras.level ? { level: extras.level.level } : {}),
     ...(extras.level?.name !== undefined ? { levelName: extras.level.name } : {}),

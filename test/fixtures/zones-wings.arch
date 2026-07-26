@@ -1,0 +1,29 @@
+# A single-storey plan grouped into two wings, with a nested zone inside the west one.
+# Used by test/zones.test.ts to exercise zone paths, the rolled-up areas and the
+# zone-grouped ROOM SCHEDULE. Not a shipped example — a fixture.
+plan "Zoned wings" {
+  units mm
+  grid 100
+  paper A3 landscape
+  scale 1:100
+  schedule rooms
+
+  wall exterior thickness 200 { (0,0) (12000,0) (12000,8000) (0,8000) close }
+
+  zone west "West wing" {
+    room id=lobby at (0,0) size 4000x8000 label "Lobby" uses hall
+    zone galleries "West galleries" {
+      room id=gal_a at (4000,0) size 4000x4000 label "Gallery A"
+      room id=gal_b at (4000,4000) size 4000x4000 label "Gallery B"
+    }
+  }
+
+  zone east "East wing" {
+    room id=office at (8000,0) size 4000x4000 label "Office" uses office
+    room id=store at (8000,4000) size 4000x4000 label "Store" uses storage
+  }
+
+  door id=front at (0,4000) width 1200
+  door id=d_gal at (4000,2000) width 900
+  door id=d_east at (8000,2000) width 900
+}

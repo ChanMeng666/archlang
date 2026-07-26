@@ -104,7 +104,10 @@ function rules(): [string, string][] {
       "plan-stmt",
       `setting | title-stmt | axes-stmt | acc-stmt | theme-stmt | style-stmt | component-stmt | import-stmt | strip-stmt | level-stmt | block-stmt`,
     ],
-    ["block-stmt", `element | let-stmt | for-stmt | if-stmt | while-stmt | set-stmt | instance-stmt | assign-stmt`],
+    [
+      "block-stmt",
+      `element | let-stmt | for-stmt | if-stmt | while-stmt | set-stmt | zone-stmt | instance-stmt | assign-stmt`,
+    ],
     [
       "element",
       `wall-stmt | room-stmt | door-stmt | window-stmt | opening-stmt | furniture-stmt | dim-stmt | column-stmt | stair-stmt | elevator-stmt | escalator-stmt`,
@@ -176,6 +179,9 @@ function rules(): [string, string][] {
 
     // ---- level (one storey; a plan-level block, body = ordinary statements) ----
     ["level-stmt", `"level" rws ( "-" ws )? number ( rws string )? ws block`],
+
+    // ---- zone (a wing/department grouping; legal wherever a statement is) ----
+    ["zone-stmt", `"zone" rws ident ( rws string )? ws block`],
 
     // ---- elements --------------------------------------------------------
     [
