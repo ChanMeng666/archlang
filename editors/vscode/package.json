@@ -1,7 +1,7 @@
 {
   "name": "archlang",
   "private": true,
-  "version": "0.11.0",
+  "version": "0.12.0",
   "displayName": "ArchLang",
   "description": "Syntax highlighting plus full language support — live diagnostics, hover, completion, go-to-definition, rename, and signature help — for ArchLang (.arch) floor-plan source.",
   "license": "MIT",
