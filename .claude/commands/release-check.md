@@ -92,8 +92,23 @@ you observed. Do NOT push anything — this command only verifies.
   the new core defines is the real failure signal; anything else means the rebundle took.
   *(2026-07-26, v1.21.0: `server.js` was 24,595 lines / 3,983 max line and `Select-String` did work —
   but the count is what proved it, and it costs nothing to be shape-independent.)*
-- **Known drift, unfixed:** `packages/mcp/src/server.ts` hardcodes its `McpServer` version
-  (`"0.2.0"` since 0.2.1), so the published shim misreports itself in the MCP handshake.
-  `CONTRIBUTING.md#releasing` says that string must match. Fix it by deriving the version from
-  `package.json` (as the core CLI does via `buildManifest(version)`) on the next shim change that is
-  bumping anyway — it cannot reach users without a bump, so don't spend one on it alone.
+- **The shim's handshake drift is FIXED** (0.2.3, 2026-07-26): `packages/mcp/src/server.ts` derives
+  its `McpServer` version from `package.json` via `readShimVersion()`, mirroring the core's
+  `readVersion()` in `src/cli/io.ts`, and a test pins the two together. Don't "fix" it again — and
+  don't reintroduce a literal.
+- **Ask what the shim SHIPS, not just what its diff says.** Its `archlang://spec` / `context` /
+  `grammar` resources are copied into the tarball at **pack time**
+  (`packages/mcp/scripts/copy-resources.mjs`), so they freeze at the last publish while the `^1.x`
+  dep range resolves to a current core. Nothing catches that: `check:drift` compares the *repo-root*
+  artifacts, and `git diff <lasttag>..main -- packages/mcp` is empty. Published 0.2.2 handed hosts a
+  **v1.19 GBNF grammar that could not decode** `arc`/`polygon`/`zone`/`level` at all. On any release
+  that changed the language surface, unpack the published shim and **count** symbols:
+
+  ```bash
+  npm pack @chanmeng666/archlang-mcp@<published> && tar -xzf chanmeng666-archlang-mcp-*.tgz
+  node -e "const s=require('fs').readFileSync('package/dist/archlang.gbnf','utf8'); \
+    for (const k of ['arc','circle','polygon','zone','level','paper']) console.log(k, s.split(k).length-1)"
+  ```
+
+  A `0` for a keyword the current core defines means the shim is lying to hosts, and **only a version
+  bump ships the fix** — that is a legitimate reason to spend one even when the diff is empty.
