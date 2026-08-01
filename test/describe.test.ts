@@ -36,9 +36,9 @@ describe("describe — semantic facts", () => {
     expect(s.scale).toBe("1:50");
     expect(s.totals.rooms).toBe(3);
     const byId = Object.fromEntries(s.rooms.map((r) => [r.id, r]));
-    expect(byId.r_living.area_m2).toBe(24);
-    expect(byId.r_bed.area_m2).toBe(12);
-    expect(byId.r_bath.area_m2).toBe(6);
+    expect(byId.r_living!.area_m2).toBe(24);
+    expect(byId.r_bed!.area_m2).toBe(12);
+    expect(byId.r_bath!.area_m2).toBe(6);
     expect(s.totals.floor_area_m2).toBe(42);
   });
 
@@ -46,17 +46,17 @@ describe("describe — semantic facts", () => {
     const s = describePlan(STUDIO);
     const byId = Object.fromEntries(s.rooms.map((r) => [r.id, r]));
     // All three rooms touch each other in the studio layout.
-    expect([...byId.r_living.adjacent].sort()).toEqual(["r_bath", "r_bed"]);
-    expect([...byId.r_bed.adjacent].sort()).toEqual(["r_bath", "r_living"]);
-    expect([...byId.r_bath.adjacent].sort()).toEqual(["r_bed", "r_living"]);
+    expect([...byId.r_living!.adjacent].sort()).toEqual(["r_bath", "r_bed"]);
+    expect([...byId.r_bed!.adjacent].sort()).toEqual(["r_bath", "r_living"]);
+    expect([...byId.r_bath!.adjacent].sort()).toEqual(["r_bed", "r_living"]);
   });
 
   it("connects doors to the spaces on either side", () => {
     const s = describePlan(STUDIO);
     const byId = Object.fromEntries(s.doors.map((d) => [d.id, d]));
-    expect([...byId.d_main.between].sort()).toEqual(["exterior", "r_living"]);
-    expect([...byId.d_bed.between].sort()).toEqual(["r_bed", "r_living"]);
-    expect([...byId.d_bath.between].sort()).toEqual(["r_bath", "r_bed"]);
+    expect([...byId.d_main!.between].sort()).toEqual(["exterior", "r_living"]);
+    expect([...byId.d_bed!.between].sort()).toEqual(["r_bed", "r_living"]);
+    expect([...byId.d_bath!.between].sort()).toEqual(["r_bath", "r_bed"]);
   });
 
   it("attributes each window to the room it serves", () => {

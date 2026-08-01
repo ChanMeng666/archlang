@@ -15,12 +15,12 @@ describe("room uses", () => {
   it("surfaces explicit uses (a multi-use studio room) in describe()", () => {
     const s = describePlan(wrap(`room id=r at (0,0) size 4000x3000 label "Open Plan" uses living kitchen`));
     expect(s.ok).toBe(true);
-    expect(s.rooms[0].uses).toEqual(["living", "kitchen"]);
+    expect(s.rooms[0]!.uses).toEqual(["living", "kitchen"]);
   });
 
   it("infers uses from the label when untagged (unchanged behaviour)", () => {
     const s = describePlan(wrap(`room id=r at (0,0) size 4000x3000 label "Bedroom 1"`));
-    expect(s.rooms[0].uses).toEqual(["bedroom"]);
+    expect(s.rooms[0]!.uses).toEqual(["bedroom"]);
   });
 
   it("lets an explicit use OVERRIDE the label-regex guess", () => {
@@ -43,6 +43,6 @@ describe("room uses", () => {
   it("reports a clear error for an unknown use value (no crash)", () => {
     const { errors } = compile(wrap(`room id=r at (0,0) size 4000x3000 uses lounge`), { noCache: true });
     expect(errors.length).toBeGreaterThan(0);
-    expect(errors[0].message).toMatch(/room uses/i);
+    expect(errors[0]!.message).toMatch(/room uses/i);
   });
 });

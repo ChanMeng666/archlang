@@ -203,11 +203,11 @@ suite("v1.21 levels — compile().pages", () => {
 
   it("every page carries a LEVEL row in its title block", () => {
     const r = compile(TWO_LEVELS, { noCache: true });
-    const rows = r.pages!.map((p) => p.scene.chrome.titleBlock!.rows.find((x) => x.k === "LEVEL")!.v);
+    const rows = r.pages!.map((p) => p.scene.chrome!.titleBlock!.rows.find((x) => x.k === "LEVEL")!.v);
     expect(rows).toEqual(["1 — Ground", "2 — Upper"]);
     // A single-storey plan gets no LEVEL row (and, with no title, no title block at all).
     const single = compile(`plan "P" { ${shell("A")} }`, { noCache: true });
-    expect(single.scene!.chrome.titleBlock).toBeNull();
+    expect(single.scene!.chrome!.titleBlock).toBeNull();
   });
 
   it("is deterministic: two compiles are byte-equal, page for page", () => {
@@ -311,7 +311,7 @@ suite("v1.21 levels — the level-free corpus is byte-identical", () => {
     it(`${name} still compiles with no pages and no level fields`, () => {
       const r = compile(readFileSync(`examples/${name}`, "utf8"), { noCache: true, world });
       expect(r.pages).toBeUndefined();
-      expect(r.scene?.chrome.titleBlock?.rows.some((x) => x.k === "LEVEL") ?? false).toBe(false);
+      expect(r.scene?.chrome?.titleBlock?.rows.some((x) => x.k === "LEVEL") ?? false).toBe(false);
       expect(r.diagnostics.every((d) => d.level === undefined)).toBe(true);
     });
   }

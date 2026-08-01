@@ -29,7 +29,7 @@ function sweepOf(hinge: string, swing: string): string {
   // `A <rx> <ry> 0 0 <sweep> ` — capture the sweep flag.
   const m = svg.match(/A [\d.]+ [\d.]+ 0 0 ([01]) /);
   expect(m, `expected a swing arc for ${hinge}/${swing}`).not.toBeNull();
-  return m![1];
+  return m![1]!;
 }
 
 describe("door swing — all four hinge×swing combos", () => {

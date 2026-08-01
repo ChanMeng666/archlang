@@ -32,7 +32,7 @@ const FURNITURE_CODES = new Set([
   "W_FIXTURE_BACK_TO_ROOM",
 ]);
 
-const codes = (src: string): string[] => lint(src).map((d) => d.code);
+const codes = (src: string): string[] => lint(src).map((d) => d.code!);
 
 /** Statement offsets repair reported on, as changes ∪ unresolved. */
 const reportedSpans = (src: string): Set<number> => {
@@ -76,7 +76,7 @@ describe("repair — scripted statements are reported, not skipped", () => {
     expect(r.unresolved.map((u) => u.id)).toEqual(["bench_2", "bench_3"]);
     // …and every flagged statement span is accounted for (the postcondition, locally).
     const flagged = lint(LOOP_BENCHES)
-      .filter((d) => FURNITURE_CODES.has(d.code))
+      .filter((d) => FURNITURE_CODES.has(d.code!))
       .map((d) => d.span!.start);
     const reported = reportedSpans(LOOP_BENCHES);
     for (const s of flagged) expect(reported.has(s)).toBe(true);
@@ -340,7 +340,7 @@ describe("repair — the postcondition: nothing flagged is left silent", () => {
   it("reports a change or an unresolved entry for every flagged piece", () => {
     const before = lint(MIXED);
     // The plan really is a mess: several distinct furniture faults, from several forms.
-    const furnitureDiags = before.filter((d) => FURNITURE_CODES.has(d.code));
+    const furnitureDiags = before.filter((d) => FURNITURE_CODES.has(d.code!));
     expect(new Set(furnitureDiags.map((d) => d.code)).size).toBeGreaterThanOrEqual(3);
 
     const r = repair(MIXED);
@@ -403,7 +403,7 @@ describe("repair — the postcondition: nothing flagged is left silent", () => {
   place pod() as west at (0,0)
   place pod() as east at (6000,0)
 }`;
-    const before = lint(src).filter((d) => FURNITURE_CODES.has(d.code));
+    const before = lint(src).filter((d) => FURNITURE_CODES.has(d.code!));
     // BOTH instances are flagged — lint sees one plan — and both point at the one
     // statement that drew them.
     expect(before.length).toBe(2);

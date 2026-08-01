@@ -16,10 +16,10 @@ describe("extractArchBlocks", () => {
     const md = '# Title\n\n```arch\nplan "X" { room at (0,0) size 1x1 }\n```\n\nafter\n';
     const blocks = extractArchBlocks(md);
     expect(blocks).toHaveLength(1);
-    expect(blocks[0].index).toBe(0);
-    expect(blocks[0].info).toBe("arch");
-    expect(blocks[0].source).toBe('plan "X" { room at (0,0) size 1x1 }');
-    const slice = md.slice(blocks[0].range[0], blocks[0].range[1]);
+    expect(blocks[0]!.index).toBe(0);
+    expect(blocks[0]!.info).toBe("arch");
+    expect(blocks[0]!.source).toBe('plan "X" { room at (0,0) size 1x1 }');
+    const slice = md.slice(blocks[0]!.range[0], blocks[0]!.range[1]);
     expect(slice.startsWith("```arch")).toBe(true);
     expect(slice.trimEnd().endsWith("```")).toBe(true);
   });
@@ -35,7 +35,7 @@ describe("extractArchBlocks", () => {
     const md = "~~~arch\nplan x\n~~~\n";
     const blocks = extractArchBlocks(md);
     expect(blocks).toHaveLength(1);
-    expect(blocks[0].source).toBe("plan x");
+    expect(blocks[0]!.source).toBe("plan x");
   });
 
   it("ignores an unterminated fence (no block)", () => {

@@ -22,7 +22,7 @@ describe("Scene style metadata (T3.1)", () => {
     const svg = renderSvg(sceneWith([line(0, { lineWeight: "heavy" }), line(500, { lineWeight: "extraThin" })]));
     const widths = [...svg.matchAll(/<line[^>]*stroke-width="([\d.]+)"/g)].map((m) => Number(m[1]));
     expect(widths.length).toBe(2);
-    expect(widths[0]).toBeGreaterThan(widths[1]); // heavy > extraThin
+    expect(widths[0]).toBeGreaterThan(widths[1]!); // heavy > extraThin
   });
 
   it("a dashed line round-trips to an SVG stroke-dasharray", () => {
@@ -34,7 +34,7 @@ describe("Scene style metadata (T3.1)", () => {
     const svg = renderSvg(sceneWith([line(0, { lineType: "center" })]));
     const m = svg.match(/stroke-dasharray="([^"]+)"/);
     expect(m).not.toBeNull();
-    expect(m![1].split(" ").length).toBe(4);
+    expect(m![1]!.split(" ").length).toBe(4);
   });
 
   it("a continuous (or unset) line emits no dash array", () => {
