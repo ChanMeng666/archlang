@@ -21,7 +21,10 @@
     "paths": { "archlang": ["../dist/index.d.ts"] }
   },
   // `test` is included so the playground's own vitest suites are typechecked too —
-  // they were previously invisible to every typecheck in the repo.
+  // they were previously invisible to every typecheck in the repo. `e2e/` is NOT
+  // here: the Playwright specs run in Node (`node:fs/promises`, `Buffer`) under a
+  // different lib/types set, so they get their own `tsconfig.e2e.json`, which the
+  // workspace `typecheck` script runs straight after this one.
   "include": ["src", "test"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "e2e"]
 }

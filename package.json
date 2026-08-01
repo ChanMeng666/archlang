@@ -85,6 +85,7 @@
     "eval:live": "tsx eval/run.ts --live",
     "eval:g1": "tsx eval/g1/generate.ts",
     "eval:l2": "tsx eval/l2-run.ts",
+    "e2e:playground": "playwright test -c playground",
     "dataset:gen": "tsx dataset/generate.ts",
     "docs:dev": "npm run build && npm -w docs-site run dev",
     "docs:build": "npm run build && npm -w docs-site run build",
@@ -100,6 +101,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.2",
+    "@playwright/test": "^1.62.1",
     "@types/node": "^22.20.0",
     "@types/pngjs": "^6.0.5",
     "@vitest/coverage-v8": "^2.1.9",
