@@ -125,7 +125,17 @@ export function mountInteract({ viewport, stage, getRooms, jumpToOffset }: Inter
   });
   viewport.addEventListener("click", (e) => {
     if (isDragNotClick(down, e.clientX, e.clientY)) return;
-    const el = (e.target as Element | null)?.closest("[data-span]");
+    // Hit-test the POINT, not `e.target`.
+    //
+    // The pan/zoom controller calls `viewport.setPointerCapture()` on
+    // pointerdown, which retargets the pointerup to the viewport — and a click's
+    // target is the nearest common ancestor of its pointerdown/pointerup targets,
+    // so `e.target` was ALWAYS the viewport <div> and `closest("[data-span]")`
+    // ALWAYS null. Click-to-source silently never fired with a real mouse; a
+    // Playwright spec caught it (`panels.spec.ts`). `elementFromPoint` is
+    // capture-independent, and `.room-tip` is `pointer-events: none`, so the
+    // tooltip can never shadow the drawing.
+    const el = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-span]");
     if (!el) return;
     const start = Number(el.getAttribute("data-span")!.split(":")[0]);
     if (Number.isFinite(start)) jumpToOffset(start);
