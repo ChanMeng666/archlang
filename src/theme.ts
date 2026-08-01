@@ -6,6 +6,8 @@
  * subset of keys may be supplied at either layer.
  */
 
+import { xmlText } from "./text-safe.js";
+
 export interface Theme {
   bg: string;
   pocheBase: string;
@@ -289,16 +291,16 @@ export function mergeTheme(...layers: (Partial<Theme> | undefined)[]): Theme {
  * untrusted `.arch` source (the `theme { … }` directive / `CompileOptions.theme`)
  * and are interpolated into SVG *attributes*; escaping `& < > "` here, once,
  * makes attribute breakout impossible regardless of how each render site emits
- * them. Numeric values (lineWeight) pass through. Valid colours/fonts contain no
+ * them — and `xmlText` additionally drops the characters XML forbids outright, so
+ * a control character in a theme value cannot make the document ill-formed.
+ * Numeric values (lineWeight) pass through. Valid colours/fonts contain no
  * escapable characters, so output is unchanged for well-formed themes.
  */
 export function sanitizeTheme(theme: Theme): Theme {
-  const esc = (s: string): string =>
-    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const out: Theme = { ...theme };
   for (const k of Object.keys(out) as (keyof Theme)[]) {
     const v = out[k];
-    if (typeof v === "string") (out as unknown as Record<string, unknown>)[k] = esc(v);
+    if (typeof v === "string") (out as unknown as Record<string, unknown>)[k] = xmlText(v);
   }
   return out;
 }
