@@ -27,16 +27,14 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /**
- * Frozen history, and NOT published: `sync-docs.mjs` copies only its `PAGES` table plus
- * `docs/adr/*`, so nothing under here reaches the site and no build can break on it. It is
- * excluded for a second reason too — it contains a real, uncorrected instance of exactly
- * this fault (see the "detector works on real data" case below), which serves as this
- * gate's positive control. Removing this exclusion means fixing that row first.
+ * Nothing is excluded any more. `docs/archive/` used to be, because it held a real,
+ * uncorrected instance of this fault (`|to−from|` in the frozen work log) that served as the
+ * gate's real-data positive control. That row was escaped on 2026-08-01 and the archive
+ * joined the scanned set; the unit-level pin at the bottom of this file is what keeps the
+ * detector's fire proven. Re-adding an exclusion here means a Markdown file stops being
+ * checked — don't, unless it genuinely cannot reach any build.
  */
-const EXCLUDED_PREFIXES = ["docs/archive/"];
-
-/** The known offender inside the excluded archive — the detector's real-data positive control. */
-const KNOWN_ARCHIVED_OFFENDER = "docs/archive/WORK-LOG-v0.7-v1.15.md";
+const EXCLUDED_PREFIXES: string[] = [];
 
 /** Every Markdown file git tracks (so generated site copies and node_modules never appear). */
 function trackedMarkdown(): string[] {
@@ -168,21 +166,6 @@ describe("no Markdown table cell severs an inline code span with a bare `|`", ()
             `what docs/cli-reference.md already does everywhere. Then re-run \`npm run docs:build\`: ` +
             `the core test suite does not compile the site, so that is the only full verification.`,
     ).toEqual([]);
-  });
-
-  it("the detector works on real data, not just on the clean set", () => {
-    // The frozen work log carries a genuine instance — `|to−from|` inside inline code in a
-    // table row. It is excluded from the scan (it is history and never published), and it is
-    // named here so this gate can prove it actually FIRES on the fault it exists to catch,
-    // without any synthetic fixture. If someone fixes that row, this case says so.
-    const offences = scan(KNOWN_ARCHIVED_OFFENDER);
-    expect(
-      offences.length,
-      `${KNOWN_ARCHIVED_OFFENDER} no longer contains the known bare-pipe row that proves this ` +
-        `detector fires. If it was fixed (good), drop "docs/archive/" from EXCLUDED_PREFIXES so the ` +
-        `archive joins the scanned set, and delete this case.`,
-    ).toBeGreaterThan(0);
-    expect(offences[0]!.text).toContain("|to−from|");
   });
 
   it("recognises the escaped form as correct, and the bare form as broken", () => {
