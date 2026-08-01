@@ -1,0 +1,59 @@
+name: CodeQL
+
+# Static security analysis of the whole monorepo (core, CLI, generators, sites,
+# MCP shim) with CodeQL's default query suite. It runs on every PR and push to
+# main so a newly introduced injection/taint path is caught in review, and weekly
+# so an *existing* path is re-flagged when GitHub ships new queries — that second
+# trigger is the point of the cron, since the code need not change for a query to.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "dist/**"
+      - "docs-site/.vitepress/cache/**"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "dist/**"
+      - "docs-site/.vitepress/cache/**"
+  schedule:
+    # Weekly, Monday 04:27 UTC (off the hour so it doesn't queue with the crowd).
+    - cron: "27 4 * * 1"
+
+# Least privilege, as in ci.yml: read-only by default, with the one extra scope
+# the upload needs granted on the job that needs it.
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write # upload the SARIF results to code scanning
+      actions: read # read workflow run metadata for the analysis
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@f205ea1c3313d32999d8d6a48b4f6530d4437b38 # v4.37.4
+        with:
+          languages: ${{ matrix.language }}
+          # Nothing to compile for analysis: the core is plain TypeScript and the
+          # extractor reads the sources directly, so no `npm ci` / build step.
+          build-mode: none
+          # DEFAULT query suite on purpose, and nothing excluded: no custom pack,
+          # no `paths-ignore` config, no query filters. Tune only in response to a
+          # real finding, and say why in the diff.
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@f205ea1c3313d32999d8d6a48b4f6530d4437b38 # v4.37.4
+        with:
+          category: "/language:${{ matrix.language }}"
