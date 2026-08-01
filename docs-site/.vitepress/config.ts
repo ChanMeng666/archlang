@@ -130,7 +130,9 @@ export default defineConfig({
     config(md) {
       const defaultFence = md.renderer.rules.fence!;
       md.renderer.rules.fence = (tokens, idx, options, env, self) => {
-        const token = tokens[idx];
+        // markdown-it only ever calls a fence rule with an in-range `idx`; the `!`
+        // states that invariant for `noUncheckedIndexedAccess`.
+        const token = tokens[idx]!;
         const info = token.info.trim();
         const attrs = info.split(/\s+/).slice(1); // tokens after the language
         const lang = info.split(/\s+/)[0];

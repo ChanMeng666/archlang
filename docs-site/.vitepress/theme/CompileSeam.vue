@@ -93,19 +93,19 @@ const lineEnds: number[] = (() => {
 let rafId = 0;
 let startTime = 0;
 let nextLineEnd = 0;
-let lastGoodSvg = "";
 let hasRun = false;
 
+// NB the "last good SVG" IS `displaySvg` — it is only ever assigned from a clean
+// compile, so an erroring intermediate prefix leaves the previous drawing on the
+// stage. A separate `lastGoodSvg` accumulator used to shadow that: written on every
+// clean compile, read nowhere. (Found by the first vue-tsc pass, `noUnusedLocals`.)
 function compileAt(end: number) {
   const prefix = raw.slice(0, end);
   const open = (prefix.match(/{/g) || []).length;
   const close = (prefix.match(/}/g) || []).length;
   const balanced = prefix + "\n" + "}".repeat(Math.max(0, open - close));
   const r = compile(balanced, { noCache: true });
-  if (!r.errors.length && r.svg) {
-    lastGoodSvg = r.svg;
-    displaySvg.value = r.svg;
-  }
+  if (!r.errors.length && r.svg) displaySvg.value = r.svg;
 }
 
 function tick(now: number) {
@@ -118,8 +118,9 @@ function tick(now: number) {
   // (one compile per frame). Skips comment-only prefixes cheaply — they compile
   // to the same last-good drawing.
   let crossed = -1;
-  while (nextLineEnd < lineEnds.length && charIndex >= lineEnds[nextLineEnd]) {
-    crossed = lineEnds[nextLineEnd];
+  // `nextLineEnd < lineEnds.length` is the in-range check the `!` asserts.
+  while (nextLineEnd < lineEnds.length && charIndex >= lineEnds[nextLineEnd]!) {
+    crossed = lineEnds[nextLineEnd]!;
     nextLineEnd++;
   }
   if (crossed >= 0) compileAt(crossed);
@@ -145,7 +146,6 @@ function play() {
   hasRun = true;
   startTime = 0;
   nextLineEnd = 0;
-  lastGoodSvg = "";
   typed.value = "";
   displaySvg.value = "";
   phase.value = "typing";

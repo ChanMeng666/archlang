@@ -1,0 +1,25 @@
+{
+  // Typecheck config for the docs-site Playwright E2E specs — the same split the
+  // playground uses (playground/tsconfig.e2e.json), for the same reason.
+  //
+  // They are NOT theme code: Playwright runs them in Node, so they need the `node`
+  // types (`node:fs`, `node:path`, `process.env.CI`) that the theme config
+  // deliberately omits, and they must NOT be compiled by `vue-tsc` as part of the
+  // site. They still reach across into `playground/src/share.ts` — archlive.spec.ts
+  // decodes the widget's real "Open in Playground" hash through the playground's own
+  // canonical codec — so the DOM lib stays on for that file's `CompressionStream`.
+  //
+  // Run by the workspace `typecheck` script alongside the theme config, so
+  // `npm run typecheck:all` covers the specs too. Playwright itself only transpiles;
+  // without this, a type error here would surface as a runtime crash in CI.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    // playground/src is browser code written under the playground's own relaxed
+    // setting; it is a dependency here, not the subject, so match it rather than
+    // re-litigating its index reads.
+    "noUncheckedIndexedAccess": false
+  },
+  "include": ["e2e", "playwright.config.ts"],
+  "exclude": ["node_modules", ".vitepress/dist", ".vitepress/cache"]
+}

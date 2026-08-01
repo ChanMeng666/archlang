@@ -8,12 +8,14 @@
     "sync": "node sync-docs.mjs",
     "dev": "npm run sync && vitepress dev",
     "build": "npm run sync && vitepress build",
-    "preview": "vitepress preview"
+    "preview": "vitepress preview",
+    "typecheck": "npm run sync && vue-tsc --noEmit -p . && tsc -p tsconfig.e2e.json --noEmit"
   },
   "devDependencies": {
     "@fontsource-variable/archivo": "^5.2.8",
     "@fontsource-variable/public-sans": "^5.2.7",
     "@fontsource/ibm-plex-mono": "^5.2.7",
-    "vitepress": "^1.6.3"
+    "vitepress": "^1.6.3",
+    "vue-tsc": "^3.3.9"
   }
 }
