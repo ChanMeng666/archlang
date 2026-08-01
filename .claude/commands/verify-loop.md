@@ -25,11 +25,34 @@ scripts and report a pass/fail table.
    - If you touched the CLI, expect `docs/cli-reference.md` to move — it is generated from
      `src/manifest.ts`. **Read that diff**; it is the one artifact a CLI change always rewrites.
 
-3. **If tests fail, fix the root cause.** Do not paper over a red suite.
-   - Never run `vitest -u` or `UPDATE_GOLDENS=1 vitest run test/visual.test.ts` without first
-     reviewing the diff and being able to justify **every changed byte**. `compile()` output is
-     byte-for-byte stable and snapshot/golden-tested; an unexplained golden change is a real
-     regression, not a snapshot to bless.
+3. **`npm run typecheck:all`** — REQUIRED whenever the change touched anything outside `src/` +
+   `test/`; skippable (and worth skipping, it is slow) when it did not. Step 1's `typecheck` only
+   covers `src`; this adds the root dev config (`test`, `eval`, `dataset`, `scripts`, `bench`) plus
+   the playground, docs-site (vue-tsc), MCP shim and VS Code extension. CI runs it in the `builds`
+   job.
+   - A `TS2345 … | undefined` on a workspace file that `tsc -p <workspace>` calls clean means a
+     ROOT test imported that module into the strict root program. Fix it in the shared module —
+     never by relaxing the root option (AGENTS.md → Gotchas; `docs/testing.md` §4).
+
+4. **Conditional gates — run the ones the diff earns:**
+   - touched `docs/*.md` or `docs-site/` ⇒ **`npm run docs:build`** (the core suite never compiles
+     the site).
+   - touched `playground/` ⇒ `npm run build && npm run playground:build:only && npm run
+     e2e:playground`.
+   - touched `docs-site/` ⇒ `npm run build && npm run docs:build:only && npm run e2e:docs`.
+   - touched `packages/mcp` ⇒ `npm run mcp:build && node packages/mcp/scripts/check-dist-resources.mjs`.
+   - touched `editors/vscode` ⇒ `npm run vscode:build:only && npx vitest run editors/vscode`
+     (the stdio + bundle-freshness tests SKIP without a built bundle).
+
+5. **If tests fail, fix the root cause.** Do not paper over a red suite.
+   - Never run `vitest -u`, `UPDATE_GOLDENS=1 vitest run test/visual.test.ts` or
+     `ASCII_UPDATE=1 vitest run test/ascii.test.ts` without first reviewing the diff and being able
+     to justify **every changed byte**. `compile()` output is byte-for-byte stable and
+     snapshot/golden-tested; an unexplained golden change is a real regression, not a snapshot to
+     bless.
+   - For any other red guard — a lockstep pin, a docs tripwire, an MCP gate — look up its row in
+     **`docs/testing.md` §2** before touching it: each says whether the answer is *fix the source*,
+     *regenerate*, or *consciously update the pin*.
 
 ## Report
 
@@ -50,5 +73,10 @@ Finish with a pass/fail table:
 | drift: schemas/plan.schema.json | pass/fail |
 | drift: schemas/intent.schema.json | pass/fail |
 
-Note: `docs:build` is a separate gate — the core suite does NOT compile the docs site, so a
-`docs/*.md` edit still needs `npm run docs:build` to catch a broken site build.
+Add a row for each conditional gate you ran (`typecheck:all`, `docs:build`, `e2e:playground`,
+`e2e:docs`, MCP dist resources, vscode bundle tests) and mark the ones the diff did not earn as
+`n/a — <reason>`. Never report a gate you skipped as `pass`.
+
+Note: `npm run check` covers neither `check:drift` nor `typecheck:all` nor `docs:build` — the core
+suite does not compile the docs site or any workspace. Full map of what each gate catches, and the
+red-run response for every guard: `docs/testing.md`.
