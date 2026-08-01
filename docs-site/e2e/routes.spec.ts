@@ -13,6 +13,16 @@
  *
  * Every route list here is DERIVED from sync-docs.mjs (see fixtures.ts) — adding a page or
  * an example extends this suite automatically.
+ *
+ * TAG `@prod` — WHOLE FILE (one tag per describe, so a describe added later must opt in
+ * explicitly). `.github/workflows/nightly.yml` re-runs the tagged subset against the LIVE
+ * https://archlang.uk (`E2E_BASE_URL` + `--grep @prod`). Everything here is a plain GET or a
+ * navigation, which is why the whole file qualifies — and against production it buys one
+ * thing more than it does in CI: the byte-equality cases below compare the DEPLOYED bytes
+ * against the LOCAL checkout of `main`, so a docs deploy that silently went stale (a failed
+ * build, a rolled-back deployment, a `public/` copy that never re-synced) fails here. That
+ * staleness probe is the point, not an accident — do not relax those assertions to make a
+ * red night green.
  */
 import { expect, test } from "@playwright/test";
 import {
@@ -24,7 +34,7 @@ import {
   ROOT_COPY_ROUTES,
 } from "./fixtures.js";
 
-test.describe("the homepage renders", () => {
+test.describe("the homepage renders", { tag: "@prod" }, () => {
   test("/ serves HTML carrying the hand-written agents band", async ({ page }) => {
     const res = await page.goto("/");
     expect(res?.status()).toBe(200);
@@ -35,7 +45,7 @@ test.describe("the homepage renders", () => {
   });
 });
 
-test.describe("machine-readable root artifacts", () => {
+test.describe("machine-readable root artifacts", { tag: "@prod" }, () => {
   test("every ROOT_COPIES route is served and non-empty", async ({ request }) => {
     // Derived, so /llms.txt, /llms-full.txt, both schemas and the grammar are all covered
     // — and so is anything added to that table later.
@@ -76,7 +86,7 @@ test.describe("machine-readable root artifacts", () => {
   });
 });
 
-test.describe("the raw /<page>.md copies serve the canonical markdown", () => {
+test.describe("the raw /<page>.md copies serve the canonical markdown", { tag: "@prod" }, () => {
   test("there are as many routes as sync-docs publishes pages", () => {
     expect(PAGE_ROUTES.length).toBe(7);
   });
@@ -101,7 +111,7 @@ test.describe("the raw /<page>.md copies serve the canonical markdown", () => {
   }
 });
 
-test.describe("the example gallery", () => {
+test.describe("the example gallery", { tag: "@prod" }, () => {
   test("the derived gallery is non-trivial and holds the flagships", () => {
     expect(GALLERY_EXAMPLES.length).toBeGreaterThan(5);
     for (const flagship of ["studio", "museum", "aquarium", "gallery-l"]) {

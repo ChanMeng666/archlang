@@ -9,8 +9,17 @@ import { watchForProblems } from "./fixtures.js";
  * externalisation mistake, or a module-scope throw — none of which the unit
  * suite or `vite build` can see, because both succeed on a page that then dies
  * in the browser.
+ *
+ * TAG `@prod` — WHOLE FILE. `.github/workflows/nightly.yml` re-runs the tagged
+ * subset against the LIVE https://playground.archlang.uk (`E2E_BASE_URL` +
+ * `--grep @prod`), so a tag here is a promise about production, not just about a
+ * preview server. Every case below keeps it: they navigate, read the DOM and
+ * assert — nothing downloads, writes to the clipboard, or depends on state
+ * surviving a reload. (`selectOption` on the examples picker mutates only this
+ * throwaway browser context.) Do NOT tag a case that downloads a file, reads or
+ * writes the clipboard, or asserts on localStorage persistence.
  */
-test.describe("boot", () => {
+test.describe("boot", { tag: "@prod" }, () => {
   test("renders the default example into the stage", async ({ page }) => {
     await page.goto("/");
     const svg = page.locator(".pz-stage svg");

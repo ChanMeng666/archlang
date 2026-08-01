@@ -160,33 +160,104 @@ jobs:
       - run: npm test
 
   # ---------------------------------------------------------------------------
-  # PLACEHOLDER — read-only end-to-end checks against production (Playwright).
+  # Read-only end-to-end checks against PRODUCTION (Playwright).
   #
-  # DISABLED ON PURPOSE. This repo has no Playwright config or browser install step
-  # yet; those land with workstreams C (playground E2E) and D (docs E2E). Enabling
-  # this job before then would just fail on a missing config, so it stays commented
-  # out rather than guessing at spec paths that do not exist.
+  # `prod-smoke` above proves the routes answer; this proves the sites still WORK —
+  # the playground boots and compiles a plan in a real browser, the embed page draws
+  # from a `#z=` link, the docs site's machine artifacts are byte-identical to this
+  # checkout, and `<ArchLive>` hydrates into a live compiler rather than a dead
+  # `<pre>`. ci.yml runs the same specs against a locally BUILT site before merge;
+  # this runs a subset against what visitors actually get.
   #
-  # To enable, AFTER C/D have landed their configs: delete the comment markers, point
-  # `--config`/`--project` at whatever those workstreams actually committed (do not
-  # invent paths here), and keep the run READ-ONLY — this drives *production*, so no
-  # form submits, no writes, no state mutation, only navigation and assertions.
+  # Two rules govern this job, and neither is negotiable:
   #
-  # e2e-prod:
-  #   name: E2E against production (read-only)
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-  #     - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-  #       with:
-  #         node-version: 22
-  #         cache: npm
-  #     - run: npm ci
-  #     - run: npx playwright install --with-deps chromium
-  #     - run: <the E2E command workstream C/D committed>
-  #       env:
-  #         PLAYWRIGHT_BASE_URL: https://playground.archlang.uk
+  #   1. READ-ONLY. It drives production, so the run is restricted to `--grep @prod`
+  #      — a tag each spec file carries a comment explaining. Tagged cases navigate,
+  #      read and assert; nothing downloads, writes the clipboard, submits a form or
+  #      depends on persisted state. Never widen this to the full suite.
+  #   2. NO BUILD. `E2E_BASE_URL` makes each config drop its `webServer` and point at
+  #      the live origin, so there is nothing to build and no preview server — which
+  #      is also what makes the docs byte-equality cases meaningful here: they compare
+  #      PRODUCTION's bytes against THIS checkout of `main`, i.e. they fail when a
+  #      deploy has silently gone stale.
+  #
+  # A red night here means production is broken or stale, not that a PR is bad — it
+  # lands in the same pinned issue the `report` job writes.
   # ---------------------------------------------------------------------------
+  e2e-prod:
+    name: E2E against production (read-only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          # Node 22, matching ci.yml's e2e-docs leg: archlive.spec.ts imports the
+          # playground's `#z=` decoder, which needs `DecompressionStream("deflate-raw")`
+          # (Node ≥ 21.2) at module scope even when the tagged subset never calls it.
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # NB: no `npm run build`, no site build. With E2E_BASE_URL set, neither config
+      # starts a preview server — the specs drive the live origins directly.
+
+      # Keyed on the RESOLVED @playwright/test version: a browser build is pinned
+      # to its driver, so a version bump must miss the cache rather than reuse an
+      # incompatible download. (Same key as ci.yml's e2e jobs, so a nightly can hit
+      # a cache a PR run populated.)
+      - name: Resolve Playwright version
+        id: pw
+        run: |
+          version=$(node -p "require('@playwright/test/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      # On a cache hit the browser binary is already there but the OS packages it
+      # links against are not (they live outside the cached path), so the two
+      # cases install different things.
+      - name: Install Chromium (browser + system deps)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Chromium system deps only (cached browser)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Playground — https://playground.archlang.uk
+        run: npx playwright test -c playground --grep @prod
+        env:
+          E2E_BASE_URL: https://playground.archlang.uk
+
+      # `!cancelled()`, not the default: if the playground is down, the docs site's
+      # verdict is still worth having tonight. Both still fail the job.
+      - name: Docs site — https://archlang.uk
+        if: ${{ !cancelled() }}
+        run: npx playwright test -c docs-site --grep @prod
+        env:
+          E2E_BASE_URL: https://archlang.uk
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report-prod
+          path: |
+            playground/playwright-report
+            playground/test-results
+            docs-site/playwright-report
+            docs-site/test-results
+          retention-days: 7
+          if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
   # One writer for the pinned issue. Folding "advisories found" and "a job failed"
@@ -195,7 +266,7 @@ jobs:
   # ---------------------------------------------------------------------------
   report:
     name: Report
-    needs: [prod-smoke, audit, secrets, full-matrix]
+    needs: [prod-smoke, audit, secrets, full-matrix, e2e-prod]
     if: always()
     runs-on: ubuntu-latest
     permissions:

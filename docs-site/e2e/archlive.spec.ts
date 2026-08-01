@@ -10,6 +10,16 @@
  * and this component's inline copy), and `test/share-codec.test.ts` welds the copies by
  * extracting this one's body and evaluating it. That is a static check. This is the runtime
  * one — the real button, in the real bundle, decoded by the playground's real codec.
+ *
+ * TAG `@prod` — ONE DESCRIBE ONLY: "the widget hydrates into a live compiler".
+ * `.github/workflows/nightly.yml` re-runs the tagged subset against the LIVE
+ * https://archlang.uk (`E2E_BASE_URL` + `--grep @prod`), and hydration is the case that
+ * answers the production question — "is what is deployed a live compiler, or a dead <pre>?"
+ * — by loading two pages and looking. The three describes below it are deliberately
+ * UNTAGGED: they all TYPE into the widget (`setArchLiveSource`), including the XSS probe,
+ * and the nightly subset is meant to stay small, read-only and boringly deterministic.
+ * A new describe here does NOT get the tag by default — add it only if the case is pure
+ * load-and-look.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -33,7 +43,7 @@ const EXPLICIT_PAGE = "/guide";
 /** A page whose ArchLives come from plain ```arch fences (fallback slot → swap on mount). */
 const FENCE_PAGE = "/relational";
 
-test.describe("the widget hydrates into a live compiler", () => {
+test.describe("the widget hydrates into a live compiler", { tag: "@prod" }, () => {
   test("a plain ```arch fence ships as a highlighted <pre> and becomes an editor on mount", async ({
     page,
     request,

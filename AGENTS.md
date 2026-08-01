@@ -242,6 +242,9 @@ npm run typecheck:all    # full-repo typecheck: root tsconfig.dev.json (src+test
 npm run test:coverage    # vitest run --coverage — report-only v8 coverage over src/ (CI: Node 22 leg)
 npm run e2e:playground   # Playwright E2E against the built playground (build core + playground:build:only first)
 npm run e2e:docs         # Playwright E2E against the built docs site (build core + docs:build:only first)
+                         # Set E2E_BASE_URL=<origin> on either and the config drops its webServer and
+                         # drives THAT origin — no build, no preview server. Nightly pairs it with
+                         # `--grep @prod` (the READ-ONLY subset) against the live sites.
 
 npm run playground:dev   # build core, then run the Vite playground dev server
 npm run docs:build       # build core, then build the VitePress docs site
@@ -252,8 +255,13 @@ CI runs five PR gates in parallel: the Node 18/20/22 test matrix (+ report-only 
 the 22 leg), a **builds** job (all four workspaces compile, `typecheck:all`, MCP dist-resource
 freshness, VS Code bundle tests), a **Windows** leg (tests + drift at runner-default line
 endings), two **Playwright E2E** jobs (playground, docs), and **CodeQL**; `nightly.yml` adds
-production smoke (`scripts/smoke.mjs`), `npm audit` (report-only issue), gitleaks and a full
-OS×Node matrix.
+production smoke (`scripts/smoke.mjs`), `npm audit` (report-only issue), gitleaks, a full
+OS×Node matrix, and **`e2e-prod`** — the `@prod`-tagged READ-ONLY Playwright subset re-run
+against the live `playground.archlang.uk` / `archlang.uk` via `E2E_BASE_URL` (no build, no
+preview server). Only tag a case `@prod` if it purely navigates, reads and asserts: no
+downloads, no clipboard, no persisted-state or typing flows. Its docs half is also a
+**deploy-staleness probe** — the raw `/<page>.md` cases compare production's bytes against
+the checkout's, so a stale deploy fails the night.
 
 Export to other formats from the CLI: `-f svg|dxf|txt|pdf|png` (`txt` is the
 zero-dep ASCII plan; `pdf` needs optional `pdfkit`; `png` needs optional

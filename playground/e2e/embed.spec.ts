@@ -8,9 +8,19 @@ import { BROKEN_PLAN, SIMPLE_PLAN, embedHash, waitForPlan, watchForProblems } fr
  * failure modes are the interesting part: a broken plan must draw the
  * self-describing error CARD, an undecodable link must still draw SOMETHING, and
  * a live edit must never blank a plan that already rendered.
+ *
+ * TAG `@prod` — PER TEST, deliberately NOT on the describe.
+ * `.github/workflows/nightly.yml` re-runs the tagged subset against the LIVE
+ * https://playground.archlang.uk (`E2E_BASE_URL` + `--grep @prod`), so only the
+ * pure LOAD-AND-LOOK cases carry the tag: navigate to a `#z=` URL, assert what
+ * was drawn. The typing cases below (`editable=1`, the transient-error latch),
+ * the theme swap and the zoom toolbar stay UNTAGGED — not because they are unsafe
+ * against production, but because the nightly subset is meant to be small and
+ * boringly deterministic. Anything that downloads, touches the clipboard, or
+ * depends on persisted state must never be tagged.
  */
 test.describe("embed page", () => {
-  test("renders a plan from a #z= link", async ({ page }) => {
+  test("renders a plan from a #z= link", { tag: "@prod" }, async ({ page }) => {
     await page.goto(`/embed.html${await embedHash(SIMPLE_PLAN)}`);
     await waitForPlan(page);
     await expect(page.locator(".pz-stage svg")).toContainText("Main");
@@ -20,7 +30,7 @@ test.describe("embed page", () => {
     await expect(page.locator(".embed-editor")).toBeHidden();
   });
 
-  test("loads every asset — no 404s, no console errors", async ({ page }) => {
+  test("loads every asset — no 404s, no console errors", { tag: "@prod" }, async ({ page }) => {
     // The page source references `/brand/*.svg` and `/src/embed.ts` with ROOT-
     // ABSOLUTE paths while vite's `base` is "./". This asserts that the BUILT
     // page's paths actually resolve under `vite preview` — see the verdict note
@@ -63,7 +73,9 @@ test.describe("embed page", () => {
     expect(await page.locator(".pz-stage svg").getAttribute("viewBox")).toBe(good);
   });
 
-  test("a plan that is broken on FIRST load draws the self-describing error card", async ({ page }) => {
+  test("a plan that is broken on FIRST load draws the self-describing error card", { tag: "@prod" }, async ({
+    page,
+  }) => {
     await page.goto(`/embed.html${await embedHash(BROKEN_PLAN)}`);
     // No good render to keep, so `onError: "svg"` renders the card instead of a blank box.
     await expect(page.locator("#embedErr")).toBeVisible();
@@ -95,7 +107,7 @@ test.describe("embed page", () => {
     await expect(page.locator("#embedErr")).toBeHidden();
   });
 
-  test("an undecodable #z= payload falls back to the built-in demo plan", async ({ page }) => {
+  test("an undecodable #z= payload falls back to the built-in demo plan", { tag: "@prod" }, async ({ page }) => {
     // ACTUAL behaviour, pinned: `srcFromHash` returns null and `init()` falls back
     // to its own one-room default, which compiles — so `#embedErr` stays HIDDEN.
     // The error strip reports COMPILE failures, not link failures. A stale or
