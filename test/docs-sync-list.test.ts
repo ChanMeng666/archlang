@@ -1,37 +1,47 @@
 /**
- * Docs-site sync gate — the hand-written lists and the tracked copies inside
- * `docs-site/`, neither of which any build step compares against its source.
+ * Docs-site sync gate — the two things about `docs-site/sync-docs.mjs` that no build step
+ * checks: what it deliberately leaves OUT, and what it writes that git must never hold.
  *
- * 1. THE EXAMPLE GALLERY LIST. `docs-site/sync-docs.mjs` hard-codes the example names it
- *    compiles into `public/examples/*.svg` and inlines into the live `<ArchLive>` widgets.
- *    A new `examples/*.arch` therefore ships to npm, the spec and the README while being
- *    invisible on the docs site — silently, because nothing reads the directory. (This is
- *    the same rot the ADR sidebar had before sync-docs started deriving it: a hand-list
- *    frozen at 0005 while `docs/adr/` grew to 0014.) Adding an example is now a two-file
- *    change or an explicit decision, never an oversight: every `examples/*.arch` must be in
- *    sync-docs' list or in EXCLUDED below, with a reason.
+ * 1. THE EXAMPLE GALLERY. sync-docs used to hard-code the example names it compiles into
+ *    `public/examples/*.svg` and inlines into the live `<ArchLive>` widgets, so a new
+ *    `examples/*.arch` shipped to npm, the spec and the README while being invisible on
+ *    the docs site — silently, because nothing read the directory. It now DERIVES the
+ *    gallery from `readdirSync("examples")` minus an explicit `EXCLUDED_EXAMPLES` table,
+ *    which makes that staleness structurally impossible. So this half no longer guards a
+ *    hand-list; it guards the two things derivation cannot: that the derivation is still
+ *    what sync-docs does, and that every EXCLUSION is a conscious, still-valid decision
+ *    (an exclusion whose file is gone, or one nobody documented, hides an example just as
+ *    effectively as the old frozen list did).
  *
- * 2. THE TRACKED GENERATED COPIES. `docs-site/.gitignore` lists the sync-docs outputs, but
- *    three of them predate that ignore and are still TRACKED (`git ls-files` shows them):
- *    `docs-site/intent.md`, `docs-site/public/intent.md`, `docs-site/public/intent.schema.json`.
- *    A tracked generated file is a stale copy waiting to happen — the repo would ship one
- *    `intent.md` in `docs/` and a different one on the site. These assert the committed
- *    bytes still equal what sync-docs would write from the canonical sources.
- *    NOTE for WS-D: if those three get untracked, replace these cases with a `git ls-files`
- *    assertion that no sync-docs output is tracked at all.
+ *    Plus the ONE hand-list that survives: `docs-site/examples.md` names each example in
+ *    prose, so a new example gets a gallery SVG automatically but no widget on the page
+ *    unless someone writes about it. That gap is asserted here.
+ *
+ * 2. NOTHING SYNC-DOCS WRITES IS TRACKED. `docs-site/.gitignore` lists the outputs, but
+ *    three of them predated that ignore and were still tracked (`docs-site/intent.md`,
+ *    `docs-site/public/intent.md`, `docs-site/public/intent.schema.json`) — a tracked
+ *    generated file is a stale copy waiting to happen, one `intent.md` in `docs/` and a
+ *    different one on the site. They were untracked in WS-D; this asserts the class stays
+ *    empty, deriving the full output list from sync-docs' own source tables rather than
+ *    naming those three.
  */
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const SYNC = "docs-site/sync-docs.mjs";
+const GALLERY_PAGE = "docs-site/examples.md";
+const syncSrc = readFileSync(SYNC, "utf8");
 
 /**
- * Examples deliberately absent from the docs gallery. One comment per entry — an example
- * lands here only for a reason that would survive review, never to green this test.
+ * Examples deliberately absent from the docs gallery — the expectation half of the guard.
+ * One comment per entry: an example lands here only for a reason that would survive
+ * review, never to green this test. sync-docs.mjs carries the same set (with the same
+ * reasons) in its `EXCLUDED_EXAMPLES` table; the cases below weld the two together.
  */
-const EXCLUDED: ReadonlyArray<readonly [string, string]> = [
+const EXPECTED_EXCLUSIONS: ReadonlyArray<readonly [string, string]> = [
   // Resolves `import "lib/…"` through the World seam (file I/O). The gallery compiles with
   // the pure browser-safe `compile()` and no World, so it cannot be rendered here.
   ["imports.arch", "needs the World seam to read examples/lib/*.arch"],
@@ -44,16 +54,23 @@ const EXCLUDED: ReadonlyArray<readonly [string, string]> = [
   ["museum-wing.arch", "a component source, only meaningful as half of museum-wings"],
 ];
 
-/** The hard-coded `const examples = [ … ]` gallery list in sync-docs.mjs. */
-function galleryList(): string[] {
-  const text = readFileSync(SYNC, "utf8");
-  const m = text.match(/const examples = \[([\s\S]*?)\];/);
+/**
+ * Read one of sync-docs' literal `["src", "dest"],` tuple tables. They are declared in
+ * that uniform shape so this test and `scripts/smoke.mjs` can both derive from them
+ * instead of retyping the lists.
+ */
+function tupleTable(name: string): Array<[string, string]> {
+  const block = new RegExp(`const ${name} = \\[([\\s\\S]*?)\\n\\];`).exec(syncSrc);
   expect(
-    m,
-    `${SYNC} no longer declares \`const examples = [ … ]\` — that array IS the docs gallery, ` +
-      `and this gate's anchor. If it became derived from readdirSync("examples"), delete this test.`,
+    block,
+    `${SYNC} no longer declares \`const ${name} = [ … ];\` as a literal table. The three tables ` +
+      `(PAGES, ROOT_COPIES, EXCLUDED_EXAMPLES) are the docs site's single source of truth for what ` +
+      `it publishes, and both this gate and scripts/smoke.mjs parse them. Restore the shape, or ` +
+      `update both parsers together.`,
   ).toBeTruthy();
-  return [...m![1]!.matchAll(/"([^"]+)"/g)].map((e) => e[1]!);
+  const rows = [...block![1]!.matchAll(/\["([^"]+)",\s*"([^"]*)"\]/g)].map((m) => [m[1]!, m[2]!] as [string, string]);
+  expect(rows.length, `\`${name}\` in ${SYNC} parsed to zero rows.`).toBeGreaterThan(0);
+  return rows;
 }
 
 /** Every `examples/*.arch` (top level only — `examples/lib/` holds component libraries). */
@@ -62,96 +79,142 @@ const exampleFiles = (): string[] =>
     .filter((f) => f.endsWith(".arch") && statSync(join("examples", f)).isFile())
     .sort();
 
-describe("the docs example gallery lists every examples/*.arch (or excludes it on purpose)", () => {
-  const listed = galleryList();
-  const excluded = new Map(EXCLUDED);
+/** The gallery sync-docs derives: every top-level example minus the excluded ones. */
+function galleryExamples(): string[] {
+  const excluded = new Set(tupleTable("EXCLUDED_EXAMPLES").map(([file]) => file));
+  return exampleFiles()
+    .filter((f) => !excluded.has(f))
+    .map((f) => f.replace(/\.arch$/, ""));
+}
 
-  it("the list is non-trivial and names the flagships", () => {
-    expect(listed.length).toBeGreaterThan(5);
-    for (const flagship of ["studio", "museum", "aquarium", "gallery-l"]) expect(listed).toContain(flagship);
+describe("the docs example gallery is derived, and every exclusion is deliberate", () => {
+  it("sync-docs derives the gallery from the directory, not a hand-written list", () => {
+    const why =
+      `${SYNC} no longer derives its example gallery from \`readdirSync\` over \`examples/\`. A ` +
+      `hand-written list freezes: an example added to the repo would ship to npm, the spec and the ` +
+      `README while staying invisible on the docs site. Keep the derivation; put a deliberate ` +
+      `omission in EXCLUDED_EXAMPLES (with its reason) instead.`;
+    expect(syncSrc, why).toMatch(/const examples = readdirSync\(join\(repo, "examples"\)\)/);
+    expect(syncSrc, why).toMatch(/!excluded\.has\(f\)/);
+    // The old frozen array must not creep back in alongside the derivation.
+    expect(syncSrc, why).not.toMatch(/const examples = \[/);
   });
 
-  it("every example is either published or explicitly excluded", () => {
-    const missing = exampleFiles().filter((f) => !listed.includes(f.replace(/\.arch$/, "")) && !excluded.has(f));
+  it("sync-docs' EXCLUDED_EXAMPLES is exactly the set documented here", () => {
     expect(
-      missing,
-      `examples/*.arch that the docs site would never show:\n` +
-        missing.map((f) => `  - ${f}`).join("\n") +
-        `\nAn example not in ${SYNC}'s \`examples\` array gets no gallery SVG and no live ` +
-        `<ArchLive> widget — it ships everywhere else and is invisible on the site. Either add ` +
-        `its name to that array, or add it to EXCLUDED in this test with the reason it stays off.`,
-    ).toEqual([]);
+      tupleTable("EXCLUDED_EXAMPLES")
+        .map(([file]) => file)
+        .sort(),
+      `${SYNC}'s EXCLUDED_EXAMPLES no longer matches EXPECTED_EXCLUSIONS in this test. Every ` +
+        `exclusion keeps a real example off the public site, so it is a decision, not a detail: ` +
+        `update this test's list — with the reason, as a comment — in the same commit that changes ` +
+        `sync-docs, so the two are reviewed together.`,
+    ).toEqual(EXPECTED_EXCLUSIONS.map(([file]) => file).sort());
   });
 
-  it("nothing in the list points at a file that no longer exists", () => {
+  it("each exclusion still names a real file (a stale one hides a new example)", () => {
     const files = new Set(exampleFiles());
-    const dangling = listed.filter((n) => !files.has(`${n}.arch`));
-    expect(
-      dangling,
-      `${SYNC} lists example(s) with no source file: ${dangling.join(", ")}. sync-docs reads each ` +
-        `name with readFileSync, so the docs build would crash. Remove the name or restore the file.`,
-    ).toEqual([]);
-  });
-
-  it("EXCLUDED names real files (a stale exclusion hides a new example)", () => {
-    const files = new Set(exampleFiles());
-    for (const [name] of EXCLUDED) {
-      expect(files.has(name), `EXCLUDED names examples/${name}, which no longer exists — drop the entry.`).toBe(true);
+    for (const [name] of EXPECTED_EXCLUSIONS) {
+      expect(
+        files.has(name),
+        `EXCLUDED_EXAMPLES names examples/${name}, which no longer exists. A stale exclusion is ` +
+          `dead weight at best; at worst a future example reusing that name is silently hidden. ` +
+          `Drop the entry from ${SYNC} and from this test.`,
+      ).toBe(true);
     }
   });
 
-  it("no example is both listed and excluded", () => {
-    for (const [name] of EXCLUDED) expect(listed).not.toContain(name.replace(/\.arch$/, ""));
+  it("the derived gallery is non-trivial and carries the flagships", () => {
+    const gallery = galleryExamples();
+    expect(gallery.length).toBeGreaterThan(5);
+    for (const flagship of ["studio", "museum", "aquarium", "gallery-l"]) expect(gallery).toContain(flagship);
+  });
+
+  it("the examples PAGE shows every gallery example (the one surviving hand-list)", () => {
+    const page = readFileSync(GALLERY_PAGE, "utf8");
+    const missing = galleryExamples().filter((n) => !page.includes(`EXAMPLES['${n}']`));
+    expect(
+      missing,
+      `${GALLERY_PAGE} has no live <ArchLive> widget for:\n` +
+        missing.map((n) => `  - ${n}`).join("\n") +
+        `\nsync-docs now derives the gallery SVGs from the directory, so these DO get a ` +
+        `/examples/<name>.svg — but the page itself is hand-written prose, so the example is still ` +
+        `invisible to a reader. Add a section with <ArchLive :src="EXAMPLES['<name>']" />, or ` +
+        `exclude the example in ${SYNC}'s EXCLUDED_EXAMPLES with a reason.`,
+    ).toEqual([]);
   });
 });
 
-describe("the docs-site copies that are still TRACKED equal their canonical sources", () => {
-  const sync = readFileSync(SYNC, "utf8");
+describe("no sync-docs output is tracked by git", () => {
+  /**
+   * Every path sync-docs writes, relative to the repo root — derived from its own source
+   * tables plus the two directories it reads, so a new page or artifact is covered the day
+   * it is added.
+   */
+  function outputPaths(): string[] {
+    const pages = tupleTable("PAGES").map(([, dest]) => dest);
+    const rootCopies = tupleTable("ROOT_COPIES").map(([, dest]) => dest);
+    const adrs = readdirSync("docs/adr").filter((f) => f.endsWith(".md") && f !== "index.md");
+    return [
+      // page(): the bannered page source AND the raw copy served at /<dest>.
+      ...pages.map((d) => `docs-site/${d}`),
+      ...pages.map((d) => `docs-site/public/${d}`),
+      ...rootCopies.map((d) => `docs-site/public/${d}`),
+      ...adrs.map((f) => `docs-site/adr/${f}`),
+      "docs-site/adr/index.md",
+      ...galleryExamples().map((n) => `docs-site/public/examples/${n}.svg`),
+      "docs-site/.vitepress/theme/adr-data.js",
+      "docs-site/.vitepress/theme/examples-data.js",
+    ];
+  }
 
-  /** sync-docs' page() banner, replicated here — the assertions below are only as good as this. */
-  const banner = (src: string) =>
-    `> _This page is generated from [\`${src}\`](https://github.com/chanmeng666/archlang/blob/main/${src}) — edit it there._\n\n`;
+  const tracked = new Set(
+    execFileSync("git", ["ls-files", "-z", "docs-site"], { encoding: "utf8" }).split("\0").filter(Boolean),
+  );
 
-  it("sync-docs still writes the banner this test replicates", () => {
-    // Pieces, not the whole template literal — the interpolation between them is `${src}`,
-    // which cannot be written here without Biome reading it as an accidental placeholder.
-    const stale =
-      `${SYNC}'s page() banner changed shape, so the expectations below are stale. Update \`banner()\` ` +
-      `in this test to match, then re-run \`npm run docs:build\` to rewrite the tracked copies.`;
-    for (const piece of [
-      "`> _This page is generated from [\\`",
-      "\\`](https://github.com/chanmeng666/archlang/blob/main/",
-      "— edit it there._\\n\\n`",
-    ]) {
-      expect(sync, stale).toContain(piece);
+  it("git tracks docs-site at all (so the assertion below cannot pass vacuously)", () => {
+    expect(tracked.has("docs-site/sync-docs.mjs")).toBe(true);
+    expect(tracked.size).toBeGreaterThan(10);
+  });
+
+  it("every path sync-docs writes is untracked", () => {
+    const paths = outputPaths();
+    expect(paths.length, "derived zero output paths — the derivation above is broken").toBeGreaterThan(20);
+    const leaked = paths.filter((p) => tracked.has(p));
+    expect(
+      leaked,
+      `these files are GENERATED by ${SYNC} on every docs build, yet git tracks them:\n` +
+        leaked.map((p) => `  - ${p}`).join("\n") +
+        `\nA tracked generated file is a stale copy waiting to happen: the repo would ship one ` +
+        `version in docs/ and a different one on the site, and every docs build would leave the ` +
+        `tree dirty. docs-site/.gitignore already lists them — run \`git rm --cached <path>\` ` +
+        `(exactly how docs-site/intent.md, public/intent.md and public/intent.schema.json were fixed).`,
+    ).toEqual([]);
+  });
+
+  it("docs-site/.gitignore covers every output, so none can be re-added", () => {
+    const paths = outputPaths();
+    // `--stdin -z` (NUL in, NUL out) rather than argv: the path list is long, and a filename
+    // is not shell-safe in general. `git check-ignore` exits 1 when NOTHING matches, which
+    // execFileSync throws on — and an empty match set is itself the failure this case
+    // reports, so swallow the status and read stdout either way.
+    let stdout = "";
+    try {
+      stdout = execFileSync("git", ["check-ignore", "--no-index", "--stdin", "-z"], {
+        encoding: "utf8",
+        input: paths.join("\0"),
+      });
+    } catch (e) {
+      stdout = (e as { stdout?: string }).stdout ?? "";
     }
-  });
-
-  it("docs-site/intent.md is docs/intent.md plus the generated banner", () => {
+    const ignored = new Set(stdout.split("\0").filter(Boolean));
+    const uncovered = paths.filter((p) => !ignored.has(p));
     expect(
-      readFileSync("docs-site/intent.md", "utf8"),
-      `docs-site/intent.md (TRACKED, though .gitignore lists it) drifted from docs/intent.md. It is a ` +
-        `sync-docs OUTPUT — never hand-edit it. Edit docs/intent.md and run \`npm run docs:build\` ` +
-        `(or \`node docs-site/sync-docs.mjs\`), then commit the regenerated copy.`,
-    ).toBe(banner("docs/intent.md") + readFileSync("docs/intent.md", "utf8"));
-  });
-
-  it("docs-site/public/intent.md is the raw, unbannered docs/intent.md", () => {
-    expect(
-      readFileSync("docs-site/public/intent.md", "utf8"),
-      `docs-site/public/intent.md drifted from docs/intent.md. That file is served verbatim at ` +
-        `/intent.md — the append-\`.md\` machine route llms.txt advertises — so it must be the raw ` +
-        `canonical markdown, no banner. Regenerate with \`npm run docs:build\`.`,
-    ).toBe(readFileSync("docs/intent.md", "utf8"));
-  });
-
-  it("docs-site/public/intent.schema.json is a byte copy of schemas/intent.schema.json", () => {
-    const want = readFileSync("schemas/intent.schema.json");
-    expect(
-      readFileSync("docs-site/public/intent.schema.json").equals(want),
-      `docs-site/public/intent.schema.json drifted from schemas/intent.schema.json. Both are ` +
-        `generated (\`npm run gen:intent-schema\`) and the site copy is a plain copyFileSync — never ` +
-        `hand-edit either. Regenerate the schema, then \`npm run docs:build\`.`,
-    ).toBe(true);
+      uncovered,
+      `docs-site/.gitignore does not cover these ${SYNC} outputs:\n` +
+        uncovered.map((p) => `  - ${p}`).join("\n") +
+        `\nAn uncovered output shows up as an untracked file after every docs build and will be ` +
+        `committed by the first \`git add -A\`. Add it to docs-site/.gitignore.`,
+    ).toEqual([]);
   });
 });

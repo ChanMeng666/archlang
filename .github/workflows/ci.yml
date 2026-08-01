@@ -108,8 +108,11 @@ jobs:
 
       # Fails fast, before the slower site builds. Covers the root dev tsconfig
       # (src + test + eval + dataset + scripts + bench) plus the playground, the
-      # MCP shim and the VS Code extension. The playground leg resolves the bare
-      # `archlang` specifier to ../dist/index.d.ts, hence after the build above.
+      # docs site (vue-tsc over .vitepress + every theme SFC, and tsc over the docs
+      # E2E specs), the MCP shim and the VS Code extension. The playground and docs
+      # legs both resolve the bare `archlang` specifier to ../dist/index.d.ts, hence
+      # after the build above; the docs leg also runs `sync-docs.mjs` first, since
+      # config.ts and CompileSeam.vue import its generated modules.
       - name: Type-check every workspace
         run: npm run typecheck:all
 
@@ -283,5 +286,92 @@ jobs:
           path: |
             playground/playwright-report
             playground/test-results
+          retention-days: 7
+          if-no-files-found: ignore
+
+  e2e-docs:
+    name: Docs site E2E (Playwright)
+    runs-on: ubuntu-latest
+    # `builds` proves the docs site COMPILES and `scripts/smoke.mjs` proves its routes
+    # exist AFTER a deploy — neither opens the site. This job serves the built output
+    # and checks the two contracts that are invisible to both:
+    #
+    #   1. The MACHINE routes llms.txt advertises — the raw `/<page>.md` copies (byte
+    #      -for-byte the repo's canonical markdown), /llms-full.txt, both JSON schemas,
+    #      /archlang.gbnf and one SVG per gallery example. A `srcExclude` or public/
+    #      mistake turns any of them into an HTML 404 while the site still builds,
+    #      still deploys and still looks perfect to a human.
+    #   2. `<ArchLive>` — the claim that every ```arch fence in the docs is a real
+    #      compiler in the reader's tab: the SSR fallback swapping to a live editor,
+    #      an edit recompiling, a hostile room label reaching the v-html'd SVG as TEXT,
+    #      and "Open in Playground" minting a `#z=` hash that the PLAYGROUND's own
+    #      decoder reads back. That last one is the runtime weld on the third copy of
+    #      the share codec (test/share-codec.test.ts is the static one).
+    #
+    # Route lists are derived from docs-site/sync-docs.mjs, so a new page or example
+    # extends this job the day it lands.
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          # Node 22, not 18/20: archlive.spec.ts decodes the widget's `#z=` hash with
+          # `DecompressionStream("deflate-raw")`, which Node only gained in 21.2.
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `vitepress preview` (the config's `webServer`) only SERVES
+      # docs-site/.vitepress/dist/ — it never builds it. Both builds below are
+      # prerequisites, not conveniences: the core first, since the theme aliases the
+      # bare `archlang` specifier to ../dist/index.js (and sync-docs compiles every
+      # gallery example through it), then the site itself.
+      - name: Build core
+        run: npm run build
+
+      - name: Build docs site
+        run: npm run docs:build:only
+
+      # Keyed on the RESOLVED @playwright/test version: a browser build is pinned
+      # to its driver, so a version bump must miss the cache rather than reuse an
+      # incompatible download.
+      - name: Resolve Playwright version
+        id: pw
+        run: |
+          version=$(node -p "require('@playwright/test/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      # On a cache hit the browser binary is already there but the OS packages it
+      # links against are not (they live outside the cached path), so the two
+      # cases install different things.
+      - name: Install Chromium (browser + system deps)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Chromium system deps only (cached browser)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Run E2E specs
+        run: npx playwright test -c docs-site
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report-docs
+          path: |
+            docs-site/playwright-report
+            docs-site/test-results
           retention-days: 7
           if-no-files-found: ignore

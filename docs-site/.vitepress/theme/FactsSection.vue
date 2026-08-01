@@ -23,7 +23,11 @@ const SRC = `plan "Garden Loft" {
 }`;
 
 const svg = compile(SRC, { noCache: true }).svg;
-const facts = describe(SRC, { noCache: true });
+// NB no `noCache` here: `describe()` takes `DescribeOptions` (plugins/world/tolerance)
+// and has no result cache to bypass — it re-derives from `parse()`, whose memo is keyed
+// on the source text, so the same source always yields the same facts. The option was an
+// ignored excess property; the first vue-tsc pass over this file caught it.
+const facts = describe(SRC);
 const rooms = facts.rooms;
 const totals = facts.totals;
 </script>

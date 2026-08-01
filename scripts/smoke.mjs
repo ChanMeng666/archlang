@@ -20,7 +20,7 @@
  * Exit codes: 0 all checks passed · 1 at least one check failed · 2 bad usage.
  */
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -34,25 +34,46 @@ const RETRY_MS = 5000;
 // ---------------------------------------------------------------------------
 
 /**
- * The raw-markdown routes the docs site publishes at `/<route>.md`: every `page(src, dest)`
- * call in sync-docs.mjs also writes `public/<dest>`. Parse them so a new doc page is smoke-
- * tested the day it is added.
+ * Pull one of sync-docs.mjs's literal `["src", "dest"],` tuple tables out of the file.
+ * The three tables (`PAGES`, `ROOT_COPIES`, `EXCLUDED_EXAMPLES`) are the site's single
+ * source of truth for what it publishes, and they are declared in that uniform shape
+ * precisely so this parser (and test/docs-sync-list.test.ts) can read them instead of
+ * retyping the list — a retyped list is exactly how a generator goes stale (AGENTS.md).
  */
-function docsPageRoutes(syncSrc) {
-  const routes = [...syncSrc.matchAll(/^page\("[^"]+",\s*"([^"]+)"\);/gm)].map((m) => `/${m[1]}`);
-  if (routes.length === 0) {
-    throw new Error("could not parse any page() routes out of docs-site/sync-docs.mjs — has its shape changed?");
+function tupleTable(syncSrc, name) {
+  const block = new RegExp(`const ${name} = \\[([\\s\\S]*?)\\n\\];`).exec(syncSrc);
+  if (!block) {
+    throw new Error(`could not find \`const ${name} = [ … ];\` in docs-site/sync-docs.mjs — has its shape changed?`);
   }
-  return routes;
+  const rows = [...block[1].matchAll(/\["([^"]+)",\s*"([^"]*)"\]/g)].map((m) => [m[1], m[2]]);
+  if (rows.length === 0) {
+    throw new Error(`\`${name}\` in docs-site/sync-docs.mjs parsed to zero rows — has its shape changed?`);
+  }
+  return rows;
 }
 
-/** The example gallery SVGs: `const examples = [ … ]` → `public/examples/<name>.svg`. */
+/**
+ * The raw-markdown routes the docs site publishes at `/<route>.md`: every `PAGES` row
+ * writes both the bannered page and `public/<dest>`. Parsed, so a new doc page is
+ * smoke-tested the day it is added.
+ */
+function docsPageRoutes(syncSrc) {
+  return tupleTable(syncSrc, "PAGES").map(([, dest]) => `/${dest}`);
+}
+
+/**
+ * The example gallery SVGs at `/examples/<name>.svg`. sync-docs.mjs DERIVES the gallery
+ * from `readdirSync("examples")` minus its `EXCLUDED_EXAMPLES` table, so this mirrors
+ * that derivation rather than reading a list — the list no longer exists to read.
+ */
 function docsExampleRoutes(syncSrc) {
-  const block = /const examples = \[([\s\S]*?)\];/.exec(syncSrc);
-  const names = block ? [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]) : [];
-  if (names.length === 0) {
-    throw new Error("could not parse the examples list out of docs-site/sync-docs.mjs — has its shape changed?");
-  }
+  const excluded = new Set(tupleTable(syncSrc, "EXCLUDED_EXAMPLES").map(([file]) => file));
+  const dir = join(ROOT, "examples");
+  const names = readdirSync(dir)
+    .filter((f) => f.endsWith(".arch") && statSync(join(dir, f)).isFile() && !excluded.has(f))
+    .map((f) => f.replace(/\.arch$/, ""))
+    .sort();
+  if (names.length === 0) throw new Error("no gallery examples derived from examples/*.arch — is the checkout intact?");
   return names.map((n) => `/examples/${n}.svg`);
 }
 

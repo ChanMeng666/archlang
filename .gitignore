@@ -9,6 +9,9 @@ playground/node_modules/
 playground/test-results/
 playground/playwright-report/
 playground/blob-report/
+docs-site/test-results/
+docs-site/playwright-report/
+docs-site/blob-report/
 *.tsbuildinfo
 *.vsix
 # Live eval output is ephemeral (moves with the model/day) — the committed

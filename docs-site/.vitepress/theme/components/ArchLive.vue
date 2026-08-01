@@ -37,13 +37,14 @@ onMounted(() => {
 
 const result = computed(() => compile(source.value, { noCache: true }));
 const svg = computed(() => (result.value.errors.length ? "" : result.value.svg));
-const errorMsg = computed(() =>
-  result.value.errors.length ? result.value.errors[0].message : "",
-);
+const errorMsg = computed(() => result.value.errors[0]?.message ?? "");
 const facts = computed(() => {
   if (result.value.errors.length) return null;
   try {
-    const t = describe(source.value, { noCache: true }).totals;
+    // No `noCache`: `describe()` takes `DescribeOptions` (plugins/world/tolerance) and
+    // has no result cache to bypass — it re-derives from `parse()`, whose memo is keyed
+    // on the source text. The option was an ignored excess property (caught by vue-tsc).
+    const t = describe(source.value).totals;
     return t ? `${t.rooms} rooms · ${t.doors} doors · ${t.windows} windows · ${t.floor_area_m2} m²` : null;
   } catch {
     return null;
@@ -52,6 +53,14 @@ const facts = computed(() => {
 
 // base64url(deflate-raw(utf8)) — the playground's `#z=` share scheme (duplicated
 // here so docs stay self-contained; ~byte-identical to playground/src/share.js).
+//
+// TWO CONSTRAINTS ON EDITS HERE. (1) test/share-codec.test.ts extracts this body by
+// its `async function playgroundUrl` anchor and runs it through `new Function`, so it
+// must stay PLAIN JS — no `as`, no `!`, no type annotations inside. (2) the docs E2E
+// (`docs-site/e2e/archlive.spec.ts`) decodes the button's real href through
+// `playground/src/share.ts`, so the scheme is checked at runtime too. The byte loops
+// are `for…of` rather than indexed precisely because that satisfies
+// `noUncheckedIndexedAccess` without TS-only syntax.
 async function playgroundUrl(): Promise<string> {
   const base = "https://playground.archlang.uk/";
   const utf8 = new TextEncoder().encode(source.value);
@@ -63,7 +72,7 @@ async function playgroundUrl(): Promise<string> {
       writer.close();
       const bytes = new Uint8Array(await new Response(w.readable).arrayBuffer());
       let bin = "";
-      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      for (const b of bytes) bin += String.fromCharCode(b);
       const b64 = btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
       return `${base}#z=${b64}`;
     }
@@ -71,7 +80,7 @@ async function playgroundUrl(): Promise<string> {
     /* fall through */
   }
   let bin = "";
-  for (let i = 0; i < utf8.length; i++) bin += String.fromCharCode(utf8[i]);
+  for (const b of utf8) bin += String.fromCharCode(b);
   return `${base}#src=${btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
 }
 
