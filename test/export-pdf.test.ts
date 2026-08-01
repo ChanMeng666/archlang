@@ -30,6 +30,27 @@ describe.skipIf(!available)("PDF export", () => {
     expect(tail).toContain("EOF");
   });
 
+  it("neutralises control characters and unpaired surrogates in labels", async () => {
+    // The lexer admits any raw character except newline inside "…", so NUL, ESC
+    // and a lone surrogate can reach the backend. plainText() must blank them
+    // before pdfkit's string encoder sees them (identity on well-formed text).
+    // Built via fromCharCode so this test file stays pure ASCII.
+    const hostileLabel = [
+      "a",
+      String.fromCharCode(0),
+      "b",
+      String.fromCharCode(27),
+      "c",
+      String.fromCharCode(0xd800),
+      "d",
+    ].join("");
+    const hostile = sceneOf(`plan "P" { room id=r at (0,0) size 4000x3000 label "${hostileLabel}" }`);
+    const pdf = await toPdf(hostile);
+    const head = new TextDecoder().decode(pdf.slice(0, 5));
+    expect(head).toBe("%PDF-");
+    expect(pdf.length).toBeGreaterThan(100);
+  });
+
   it("emits vector content with selectable text (no rasterized image)", async () => {
     const pdf = await toPdf(scene);
     const bytes = new TextDecoder("latin1").decode(pdf);
