@@ -1,0 +1,254 @@
+name: Nightly
+
+# Slow / redundant / external-facing checks that don't belong on the PR path.
+#
+# CI (ci.yml) gates every push and must stay fast. These are the checks that either
+# talk to the outside world (production smoke, advisory feeds), take too long to run
+# per-PR (the full OS × Node matrix), or would be pure noise as a merge gate
+# (dependency advisories nobody can fix in the PR that tripped them).
+#
+# Reporting: dependency advisories are REPORT-ONLY — they never turn this workflow red,
+# they land in a single pinned issue (marker `<!-- archlang-nightly -->`, the same
+# create-or-update mechanic as the bench PR comment in ci.yml). A genuinely broken job
+# (`npm ci` failing, a test failing, production down, a leaked secret) DOES fail the
+# workflow, and the same issue records which jobs failed.
+
+on:
+  schedule:
+    # 03:00 UTC — off the deploy path and after any same-day release settles.
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Is production actually serving what it promises — right now, not at deploy time?
+  # A deploy can go green and the site rot later (a domain/DNS change, an expired
+  # cert, a Vercel project setting). Same script the deploy uses.
+  # ---------------------------------------------------------------------------
+  prod-smoke:
+    name: Production smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+
+      # No `npm ci`: scripts/smoke.mjs is deliberately zero-dependency plain Node.
+      - name: Docs site
+        run: node scripts/smoke.mjs --site docs --base https://archlang.uk
+
+      - name: Playground
+        run: node scripts/smoke.mjs --site playground --base https://playground.archlang.uk
+
+  # ---------------------------------------------------------------------------
+  # Dependency advisories + registry signatures. Report-only by design: an advisory
+  # published overnight is not a regression in this repo, and a red X nobody can
+  # clear teaches people to ignore red X's. `npm ci` breaking IS a real failure.
+  # ---------------------------------------------------------------------------
+  audit:
+    name: Dependency audit (report-only)
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.audit.outputs.status }}
+      report: ${{ steps.audit.outputs.report }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      # NOT swallowed — a lockfile that no longer installs is a real, actionable break.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit
+        id: audit
+        shell: bash
+        run: |
+          set +e
+          npm audit --omit=dev --audit-level=high > audit-deps.txt 2>&1
+          deps=$?
+          npm audit signatures > audit-signatures.txt 2>&1
+          sigs=$?
+          status=clean
+          if [ "$deps" -ne 0 ] || [ "$sigs" -ne 0 ]; then status=advisories; fi
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          {
+            echo "report<<NIGHTLY_REPORT_EOF"
+            echo "\`npm audit --omit=dev --audit-level=high\` — exit $deps"
+            echo ""
+            echo '```'
+            head -c 3000 audit-deps.txt
+            echo ""
+            echo '```'
+            echo ""
+            echo "\`npm audit signatures\` — exit $sigs"
+            echo ""
+            echo '```'
+            head -c 2000 audit-signatures.txt
+            echo ""
+            echo '```'
+            echo "NIGHTLY_REPORT_EOF"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "## Dependency audit — $status"
+            echo '```'
+            cat audit-deps.txt audit-signatures.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+  # ---------------------------------------------------------------------------
+  # Secret scanning over the WHOLE history (fetch-depth: 0) — a credential committed
+  # and later removed is still leaked, and only a full-history scan sees it.
+  # ---------------------------------------------------------------------------
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Free for individual accounts and public repos; a GITLEAKS_LICENSE is only
+          # required for repos owned by a GitHub *organization*. Left unset on purpose.
+
+  # ---------------------------------------------------------------------------
+  # Deliberately redundant with ci.yml's Node 18/20/22 matrix — this adds the Windows
+  # leg. Path handling and line endings are where an isomorphic, byte-exact compiler
+  # gets bitten, and paying for that on every PR isn't worth it; paying for it nightly is.
+  # ---------------------------------------------------------------------------
+  full-matrix:
+    name: Test ${{ matrix.os }} / Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            node: 18
+          - os: ubuntu-latest
+            node: 20
+          - os: ubuntu-latest
+            node: 22
+          - os: windows-latest
+            node: 22
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+  # ---------------------------------------------------------------------------
+  # PLACEHOLDER — read-only end-to-end checks against production (Playwright).
+  #
+  # DISABLED ON PURPOSE. This repo has no Playwright config or browser install step
+  # yet; those land with workstreams C (playground E2E) and D (docs E2E). Enabling
+  # this job before then would just fail on a missing config, so it stays commented
+  # out rather than guessing at spec paths that do not exist.
+  #
+  # To enable, AFTER C/D have landed their configs: delete the comment markers, point
+  # `--config`/`--project` at whatever those workstreams actually committed (do not
+  # invent paths here), and keep the run READ-ONLY — this drives *production*, so no
+  # form submits, no writes, no state mutation, only navigation and assertions.
+  #
+  # e2e-prod:
+  #   name: E2E against production (read-only)
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+  #     - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+  #       with:
+  #         node-version: 22
+  #         cache: npm
+  #     - run: npm ci
+  #     - run: npx playwright install --with-deps chromium
+  #     - run: <the E2E command workstream C/D committed>
+  #       env:
+  #         PLAYWRIGHT_BASE_URL: https://playground.archlang.uk
+  # ---------------------------------------------------------------------------
+
+  # ---------------------------------------------------------------------------
+  # One writer for the pinned issue. Folding "advisories found" and "a job failed"
+  # into a single always()-job keeps both out of each other's way: two jobs racing to
+  # create-or-update the same issue can create it twice.
+  # ---------------------------------------------------------------------------
+  report:
+    name: Report
+    needs: [prod-smoke, audit, secrets, full-matrix]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Create or update the pinned nightly issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        with:
+          script: |
+            const marker = '<!-- archlang-nightly -->';
+            const title = 'Nightly checks need attention';
+            const needs = JSON.parse(process.env.NEEDS);
+            const { owner, repo } = context.repo;
+
+            const failed = Object.entries(needs)
+              .filter(([, job]) => job.result !== 'success' && job.result !== 'skipped')
+              .map(([name, job]) => `- \`${name}\` — **${job.result}**`);
+            const advisories = needs.audit?.outputs?.status === 'advisories';
+
+            if (failed.length === 0 && !advisories) {
+              core.info('nightly: all jobs green and no advisories — nothing to report');
+              return;
+            }
+
+            const run = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const body = [
+              marker,
+              `_Updated by the [nightly workflow](${run}) — ${new Date().toISOString()}._`,
+              '',
+              failed.length > 0 ? `## Failed jobs\n\n${failed.join('\n')}` : '## Failed jobs\n\nNone — every job passed.',
+              '',
+              advisories
+                ? `## Dependency advisories\n\n${needs.audit.outputs.report}`
+                : '## Dependency advisories\n\nNone at `--audit-level=high` for production dependencies.',
+              '',
+              'Advisories alone never fail the workflow; a failed job does. Close this issue once triaged — the next bad night opens a fresh one.',
+            ].join('\n');
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const existing = issues.find((i) => !i.pull_request && (i.body ?? '').includes(marker));
+
+            if (existing) {
+              await github.rest.issues.update({ owner, repo, issue_number: existing.number, title, body });
+              core.info(`updated #${existing.number}`);
+            } else {
+              const { data } = await github.rest.issues.create({ owner, repo, title, body });
+              core.info(`created #${data.number}`);
+            }
