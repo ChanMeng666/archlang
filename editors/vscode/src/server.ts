@@ -1,206 +1,80 @@
 /**
  * ArchLang language server (LSP). Publishes diagnostics and provides hover,
  * completion, go-to-definition, rename, and signature help for open .arch
- * documents. Runs as a separate Node process spawned by the extension client.
- * The zero-dep core is ESM-only, so it is pulled in via a dynamic import
- * (CJS-safe); all language services live in the core (`src/lsp.ts`) and this
- * file is a thin adapter that converts byte offsets ↔ LSP ranges.
+ * documents. Runs as a separate Node process spawned by the extension client
+ * (node-IPC), and also speaks `--stdio` — `createConnection` picks the transport
+ * off argv, which is what lets an integration test drive the real bundle.
+ *
+ * This file is PLUMBING ONLY: it creates the connection, owns the document
+ * store, and forwards each request to `handlers.ts` — where all the logic lives,
+ * dependency-injected and unit-tested without a transport. The zero-dep core is
+ * ESM-only, so it is pulled in via a dynamic import (CJS-safe).
  */
-import {
-  createConnection,
-  TextDocuments,
-  ProposedFeatures,
-  TextDocumentSyncKind,
-  CompletionItemKind,
-  CodeActionKind,
-  MarkupKind,
-  type InitializeResult,
-  type Diagnostic,
-  type Hover,
-  type CompletionItem,
-  type Definition,
-  type WorkspaceEdit,
-  type SignatureHelp,
-  type CodeAction,
-} from "vscode-languageserver/node";
+import { createConnection, TextDocuments, ProposedFeatures, type InitializeResult } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { lspDiagnostics, positionToOffset, spanToRange, type CompileFn } from "./diagnostics.js";
+import { createHandlers, SERVER_CAPABILITIES, type CoreLsp, type Handlers } from "./handlers.js";
 
-// Type-only reference into the (ESM) core from this CJS module: typing the icon
-// map Record<CompletionKind, …> makes a newly added completion kind a compile
-// error here, not a silent fallback-to-Text icon.
-type CoreCompletionKind = import("@chanmeng666/archlang", { with: { "resolution-mode": "import" }}).CompletionKind;
+/**
+ * The core version esbuild bundled into this file, injected by `esbuild.mjs` as
+ * a `define` read from the resolved `@chanmeng666/archlang` package.json. It is
+ * reported as `serverInfo.version` (so a client — or a test — can ask the running
+ * server which core it carries) and is what proves a rebuilt bundle actually
+ * picked up a new core, instead of shipping a stale one.
+ *
+ * This file only ever runs BUNDLED (it is the extension's LSP entry point), so
+ * the define is always in force; there is deliberately no runtime fallback that
+ * could mask a build which forgot to stamp one.
+ */
+declare const __CORE_VERSION__: string;
+const ARCHLANG_CORE_VERSION: string = __CORE_VERSION__;
 
-// Minimal structural types for the core language-service functions (the core is
-// dynamically imported, so we describe just what we call).
-interface Span {
-  start: number;
-  end: number;
-}
-/** The agent-facing JSON projection of a diagnostic (subset the adapter reads). */
-interface CoreDiagnosticJson {
-  code?: string;
-  severity: "error" | "warning";
-  message: string;
-  span?: [number, number];
-}
-/** A core quickfix code action (see the core `codeActions`). */
-interface CoreCodeAction {
-  title: string;
-  kind: "quickfix";
-  diagnostic: CoreDiagnosticJson;
-  edits: { span: Span; newText: string }[];
-  isPreferred: boolean;
-}
-interface CoreLsp {
-  compile: CompileFn;
-  hover(src: string, off: number): { contents: string; span?: Span } | null;
-  completion(src: string, off: number): { label: string; kind: CoreCompletionKind; detail?: string; doc?: string }[];
-  definition(src: string, off: number): Span | null;
-  rename(src: string, off: number, newName: string): { span: Span; newText: string }[] | null;
-  signatureHelp(src: string, off: number): { label: string; params: string[]; activeParameter: number } | null;
-  codeActions(src: string, range: Span): CoreCodeAction[];
-}
-
-let core: CoreLsp | null = null;
-async function getCore(): Promise<CoreLsp> {
-  if (!core) core = (await import("@chanmeng666/archlang")) as unknown as CoreLsp;
-  return core;
+let handlers: Promise<Handlers> | null = null;
+function getHandlers(): Promise<Handlers> {
+  handlers ??= import("@chanmeng666/archlang").then((core) => createHandlers(core as unknown as CoreLsp));
+  return handlers;
 }
 
 const connection = createConnection(ProposedFeatures.all);
 const documents = new TextDocuments(TextDocument);
 
+// Synchronous on purpose: the capabilities are a static declaration, so the
+// handshake never waits on the core's dynamic import.
 connection.onInitialize(
   (): InitializeResult => ({
-    capabilities: {
-      textDocumentSync: TextDocumentSyncKind.Incremental,
-      hoverProvider: true,
-      definitionProvider: true,
-      renameProvider: true,
-      completionProvider: { resolveProvider: false, triggerCharacters: [" "] },
-      signatureHelpProvider: { triggerCharacters: ["(", ","] },
-      codeActionProvider: { codeActionKinds: [CodeActionKind.QuickFix] },
-    },
+    capabilities: SERVER_CAPABILITIES,
+    serverInfo: { name: "archlang-language-server", version: ARCHLANG_CORE_VERSION },
   }),
 );
 
-async function validate(doc: TextDocument): Promise<void> {
-  const { compile } = await getCore();
-  // lspDiagnostics is structurally a Diagnostic[] (range/severity/message/code/source).
-  const diagnostics = lspDiagnostics(compile, doc.getText()) as unknown as Diagnostic[];
-  connection.sendDiagnostics({ uri: doc.uri, diagnostics });
+documents.onDidChangeContent((e) => {
+  void (async () => {
+    const h = await getHandlers();
+    connection.sendDiagnostics({ uri: e.document.uri, diagnostics: h.diagnostics(e.document.getText()) });
+  })();
+});
+
+/** Run `fn` against the open document's text, or return `fallback` if it is gone. */
+async function withDoc<T>(uri: string, fallback: T, fn: (h: Handlers, text: string) => T): Promise<T> {
+  const doc = documents.get(uri);
+  if (!doc) return fallback;
+  return fn(await getHandlers(), doc.getText());
 }
 
-documents.onDidChangeContent((e) => {
-  void validate(e.document);
-});
+connection.onHover((p) => withDoc(p.textDocument.uri, null, (h, t) => h.hover(t, p.position)));
 
-const COMPLETION_KIND: Record<CoreCompletionKind, CompletionItemKind> = {
-  keyword: CompletionItemKind.Keyword,
-  element: CompletionItemKind.Class,
-  variable: CompletionItemKind.Variable,
-  function: CompletionItemKind.Function,
-  component: CompletionItemKind.Module,
-  enum: CompletionItemKind.EnumMember,
-};
+connection.onCompletion((p) => withDoc(p.textDocument.uri, [], (h, t) => h.completion(t, p.position)));
 
-connection.onHover(async (params): Promise<Hover | null> => {
-  const doc = documents.get(params.textDocument.uri);
-  if (!doc) return null;
-  const { hover } = await getCore();
-  const text = doc.getText();
-  const h = hover(text, positionToOffset(text, params.position));
-  if (!h) return null;
-  return {
-    contents: { kind: MarkupKind.Markdown, value: h.contents },
-    range: h.span ? spanToRange(text, h.span) : undefined,
-  };
-});
+connection.onDefinition((p) =>
+  withDoc(p.textDocument.uri, null, (h, t) => h.definition(t, p.textDocument.uri, p.position)),
+);
 
-connection.onCompletion(async (params): Promise<CompletionItem[]> => {
-  const doc = documents.get(params.textDocument.uri);
-  if (!doc) return [];
-  const { completion } = await getCore();
-  const text = doc.getText();
-  return completion(text, positionToOffset(text, params.position)).map((c) => ({
-    label: c.label,
-    kind: COMPLETION_KIND[c.kind] ?? CompletionItemKind.Text,
-    detail: c.detail,
-    documentation: c.doc,
-  }));
-});
+connection.onRenameRequest((p) =>
+  withDoc(p.textDocument.uri, null, (h, t) => h.rename(t, p.textDocument.uri, p.position, p.newName)),
+);
 
-connection.onDefinition(async (params): Promise<Definition | null> => {
-  const doc = documents.get(params.textDocument.uri);
-  if (!doc) return null;
-  const { definition } = await getCore();
-  const text = doc.getText();
-  const span = definition(text, positionToOffset(text, params.position));
-  return span ? { uri: params.textDocument.uri, range: spanToRange(text, span) } : null;
-});
+connection.onCodeAction((p) => withDoc(p.textDocument.uri, [], (h, t) => h.codeAction(t, p.textDocument.uri, p.range)));
 
-connection.onRenameRequest(async (params): Promise<WorkspaceEdit | null> => {
-  const doc = documents.get(params.textDocument.uri);
-  if (!doc) return null;
-  const { rename } = await getCore();
-  const text = doc.getText();
-  const edits = rename(text, positionToOffset(text, params.position), params.newName);
-  if (!edits) return null;
-  return {
-    changes: {
-      [params.textDocument.uri]: edits.map((e) => ({ range: spanToRange(text, e.span), newText: e.newText })),
-    },
-  };
-});
-
-connection.onCodeAction(async (params): Promise<CodeAction[]> => {
-  const doc = documents.get(params.textDocument.uri);
-  if (!doc) return [];
-  const { codeActions } = await getCore();
-  const text = doc.getText();
-  // The request range → byte span (UTF-16 offset conversion shared with rename).
-  const range: Span = {
-    start: positionToOffset(text, params.range.start),
-    end: positionToOffset(text, params.range.end),
-  };
-  const uri = params.textDocument.uri;
-  return codeActions(text, range).map((a): CodeAction => {
-    const edit: WorkspaceEdit = {
-      changes: { [uri]: a.edits.map((e) => ({ range: spanToRange(text, e.span), newText: e.newText })) },
-    };
-    return {
-      title: a.title,
-      kind: CodeActionKind.QuickFix,
-      isPreferred: a.isPreferred,
-      diagnostics: a.diagnostic.span
-        ? [
-            {
-              range: spanToRange(text, { start: a.diagnostic.span[0], end: a.diagnostic.span[1] }),
-              message: a.diagnostic.message,
-              code: a.diagnostic.code,
-              severity: a.diagnostic.severity === "error" ? 1 : 2,
-            },
-          ]
-        : undefined,
-      edit,
-    };
-  });
-});
-
-connection.onSignatureHelp(async (params): Promise<SignatureHelp | null> => {
-  const doc = documents.get(params.textDocument.uri);
-  if (!doc) return null;
-  const { signatureHelp } = await getCore();
-  const text = doc.getText();
-  const sig = signatureHelp(text, positionToOffset(text, params.position));
-  if (!sig) return null;
-  return {
-    signatures: [{ label: sig.label, parameters: sig.params.map((p) => ({ label: p })) }],
-    activeSignature: 0,
-    activeParameter: sig.activeParameter,
-  };
-});
+connection.onSignatureHelp((p) => withDoc(p.textDocument.uri, null, (h, t) => h.signatureHelp(t, p.position)));
 
 documents.listen(connection);
 connection.listen();

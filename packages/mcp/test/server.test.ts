@@ -1,37 +1,9 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { describe, expect, it } from "vitest";
 import pkg from "../package.json" with { type: "json" };
-import { createServer, SHIM_VERSION } from "../src/server.js";
-
-/** Link a fresh server to a client over the SDK's in-process transport. */
-async function connect(): Promise<Client> {
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-  await createServer().connect(serverTransport);
-  const client = new Client({ name: "archlang-mcp-test", version: "0.0.0" });
-  await client.connect(clientTransport);
-  return client;
-}
-
-/** The first text-content block of a tool result, parsed as JSON. */
-function payload(result: unknown): Record<string, unknown> {
-  const content = (result as { content?: Array<{ type?: string; text?: string }> }).content ?? [];
-  const block = content.find((c) => c.type === "text");
-  return JSON.parse(block?.text ?? "{}");
-}
-
-const TINY = 'plan "Smoke" {\n  room at (0,0) size 4000x3000 label "Room"\n}\n';
-
-/** Two storeys — the shape that used to come back as the ground floor alone. */
-const TWO_STOREY = `plan "Stack" {
-  level 1 "Ground floor" {
-    room at (0,0) size 4000x3000 label "Living"
-  }
-  level 2 "First floor" {
-    room at (0,0) size 4000x3000 label "Bedroom"
-  }
-}
-`;
+import { SHIM_VERSION } from "../src/server.js";
+// The transport harness + the shared `.arch` fixtures live in ./helpers.ts, so the
+// tool-coverage, resource, lockstep and fuzz suites all drive one server the same way.
+import { connect, payload, TINY, TWO_STOREY } from "./helpers.js";
 
 describe("archlang mcp server", () => {
   it("exposes the wrapping tools and resources", async () => {

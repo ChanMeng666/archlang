@@ -17,7 +17,30 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["test/**/*.test.ts", "playground/test/**/*.test.ts", "packages/*/test/**/*.test.ts"],
+    include: [
+      "test/**/*.test.ts",
+      "playground/test/**/*.test.ts",
+      "packages/*/test/**/*.test.ts",
+      "editors/vscode/test/**/*.test.ts",
+    ],
     environment: "node",
+    // Coverage is REPORT-ONLY and deliberately has NO thresholds: it is a map of
+    // what the suite reaches, not a gate. Nothing fails on a coverage number, so
+    // `npm test` stays the single pass/fail signal and nobody games a percentage.
+    // Only opted into via `npm run test:coverage` (CI runs it on one leg), so the
+    // ordinary test legs pay none of the instrumentation cost.
+    coverage: {
+      provider: "v8",
+      // `text` for the console, `json-summary` for the machine-readable totals CI
+      // turns into a step summary + artifact.
+      reporter: ["text", "json-summary"],
+      // Measure the CORE only. The harnesses (test/, eval/, dataset/, scripts/,
+      // bench/) are the things doing the measuring — counting them as covered
+      // code would inflate the number and say nothing about the compiler.
+      include: ["src/**"],
+      // Rolled-up barrels and type-only modules carry no branches worth reporting.
+      exclude: ["src/index.ts", "src/types.ts", "src/**/*.d.ts"],
+      all: true,
+    },
   },
 });

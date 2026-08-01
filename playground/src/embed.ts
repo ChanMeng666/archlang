@@ -8,7 +8,8 @@
  *   editable=1    show a compact editor pane + live re-render on input
  *   theme=<key>   force a named render theme (blueprint | dark | mono | presentation)
  */
-import { compile, THEMES, type CompileOptions } from "archlang";
+import { compile } from "archlang";
+import { embedCompileOptions, hashParam, isEditable, renderDecision } from "./embed-params.js";
 import { createPanZoom } from "./pan-zoom.js";
 import { srcFromHash } from "./share.js";
 import { showSvgInStage } from "./viewer.js";
@@ -27,38 +28,26 @@ const errEl = document.getElementById("embedErr")!;
 
 const pz = createPanZoom(viewport, stage);
 
-/** Read a boolean/string param from the current hash (params live after the codec token). */
-function hashParam(name: string): string | null {
-  const m = location.hash.match(new RegExp(`[#&]${name}=([^&]*)`));
-  return m ? decodeURIComponent(m[1]) : null;
-}
-
-const themeKey = hashParam("theme");
-// `onError: "svg"` makes a failing compile hand back a self-describing error CARD
-// instead of no bytes. An embed is a chrome-less <iframe> with no editor to fall back
-// on, so a plan that is broken on FIRST load would otherwise render as a blank box.
-const opts: CompileOptions =
-  themeKey && THEMES[themeKey]
-    ? { noCache: true, onError: "svg", theme: THEMES[themeKey] }
-    : { noCache: true, onError: "svg" };
+// The hash reader, the options builder and the last-good-render rule are pure and
+// live in embed-params.ts (unit-tested); this module only does the DOM writes.
+const opts = embedCompileOptions(hashParam(location.hash, "theme"));
 
 /** True once a good plan has rendered — after that, a transient error keeps the last
- *  good preview (nicer while typing in an `?editable=1` embed) rather than swapping in
+ *  good preview (nicer while typing in an `editable=1` embed) rather than swapping in
  *  the error card. */
 let hasGoodRender = false;
 
 function render(source: string, refit: boolean): void {
   const { svg, errors } = compile(source, opts);
-  if (errors.length) {
+  const decision = renderDecision(hasGoodRender, errors);
+  hasGoodRender = decision.hasGoodRender;
+  if (decision.error !== null) {
     errEl.hidden = false;
-    errEl.textContent = `${errors.length} error${errors.length > 1 ? "s" : ""}: ${errors[0].message}`;
-    if (hasGoodRender) return; // keep the last good preview
-    showSvgInStage(stage, pz, svg, refit); // nothing to keep — show the error card
-    return;
+    errEl.textContent = decision.error;
+  } else {
+    errEl.hidden = true;
   }
-  errEl.hidden = true;
-  hasGoodRender = true;
-  showSvgInStage(stage, pz, svg, refit);
+  if (decision.showSvg) showSvgInStage(stage, pz, svg, refit);
 }
 
 toolbar?.addEventListener("click", (e) => {
@@ -70,7 +59,7 @@ toolbar?.addEventListener("click", (e) => {
 
 async function init() {
   const source = (await srcFromHash()) ?? `plan "Embed" {\n  room at (0,0) size 4000x3000 label "Room"\n}`;
-  const editable = hashParam("editable") === "1";
+  const editable = isEditable(location.hash);
   if (editable) {
     editorWrap.hidden = false;
     textarea.value = source;

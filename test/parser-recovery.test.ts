@@ -30,7 +30,7 @@ describe("T5.1 — parser recovery keeps the rest of the tree", () => {
     const { ast } = compile(src, { noCache: true });
     const errs = ast?.body.filter((s) => s.kind === "error") ?? [];
     expect(errs.length).toBeGreaterThanOrEqual(1);
-    expect(errs[0].span).toBeDefined();
+    expect(errs[0]!.span).toBeDefined();
   });
 
   it("still reports a diagnostic for the broken line", () => {

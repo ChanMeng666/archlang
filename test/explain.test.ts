@@ -19,7 +19,7 @@ function codesInSource(dir: string): Set<string> {
     if (entry.isDirectory()) for (const c of codesInSource(p)) found.add(c);
     else if (entry.name.endsWith(".ts")) {
       const text = readFileSync(p, "utf8");
-      for (const m of text.matchAll(/code:\s*"((?:E|W)_[A-Z_]+)"/g)) found.add(m[1]);
+      for (const m of text.matchAll(/code:\s*"((?:E|W)_[A-Z_]+)"/g)) found.add(m[1]!);
     }
   }
   return found;
@@ -58,7 +58,7 @@ describe("T5.5 — explain", () => {
 
   it("every catalog entry has non-empty cause/fix/example", () => {
     for (const c of ERROR_CODES) {
-      const e = ERROR_CATALOG[c];
+      const e = ERROR_CATALOG[c]!;
       expect(e.cause.length).toBeGreaterThan(0);
       expect(e.fix.length).toBeGreaterThan(0);
       expect(e.example.length).toBeGreaterThan(0);
@@ -87,7 +87,7 @@ describe("T5.5 — related spans point at the expected wall", () => {
     const d = diagnostics.find((x) => x.code === "W_DOOR_OFF_WALL");
     expect(d).toBeDefined();
     expect(d!.relatedSpans?.length).toBeGreaterThanOrEqual(1);
-    const rel = d!.relatedSpans![0];
+    const rel = d!.relatedSpans![0]!;
     expect(src.slice(rel.span.start, rel.span.end)).toContain("wall exterior");
     // The framed diagnostic renders the related note.
     expect(formatDiagnostic(src, d!)).toContain("note:");

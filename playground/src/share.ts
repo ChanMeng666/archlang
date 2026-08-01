@@ -12,7 +12,7 @@
 /** base64url ⇄ bytes (UTF-8-safe; no `escape`/`unescape`). */
 export function bytesToB64url(bytes: Uint8Array): string {
   let bin = "";
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]!);
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 export function b64urlToBytes(b64: string): Uint8Array {
@@ -36,7 +36,7 @@ export async function srcFromHash(hash: string = location.hash): Promise<string 
   if (z) {
     if (typeof DecompressionStream === "undefined") return null;
     try {
-      const bytes = await pipeStream(new DecompressionStream("deflate-raw"), b64urlToBytes(z[1]));
+      const bytes = await pipeStream(new DecompressionStream("deflate-raw"), b64urlToBytes(z[1]!));
       return new TextDecoder().decode(bytes);
     } catch {
       return null;
@@ -46,7 +46,7 @@ export async function srcFromHash(hash: string = location.hash): Promise<string 
   const m = hash.match(/[#&]src=([^&]*)/);
   if (!m) return null;
   try {
-    return new TextDecoder().decode(b64urlToBytes(m[1]));
+    return new TextDecoder().decode(b64urlToBytes(m[1]!));
   } catch {
     return null;
   }

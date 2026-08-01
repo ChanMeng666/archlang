@@ -79,13 +79,10 @@ jobs:
         working-directory: ${{ matrix.dir }}
         run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
 
-      - name: Smoke check (retry up to ~30s for alias propagation)
-        run: |
-          for i in 1 2 3 4 5 6; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" "${{ matrix.url }}")
-            echo "attempt $i: ${{ matrix.url }} -> $code"
-            if [ "$code" = "200" ]; then exit 0; fi
-            sleep 5
-          done
-          echo "::error::${{ matrix.url }} did not return 200 after deploy"
-          exit 1
+      - name: Smoke check (machine routes + assets; retries ~30s for alias propagation)
+        # A 200 on `/` proved almost nothing — the site's real contract is the machine
+        # routes (/llms-full.txt, the raw /<page>.md copies, the schemas, the GBNF grammar,
+        # the example SVGs) and, on the playground, the hashed JS bundle the shell loads.
+        # scripts/smoke.mjs checks those; it is zero-dep Node and derives the docs route
+        # list from docs-site/sync-docs.mjs, so a new page is covered automatically.
+        run: node scripts/smoke.mjs --site ${{ matrix.name }} --base ${{ matrix.url }}

@@ -50,7 +50,7 @@
   },
   "scripts": {
     "copy-assets": "node copy-assets.mjs",
-    "typecheck": "tsc -p . --noEmit",
+    "typecheck": "tsc -p . --noEmit && tsc -p tsconfig.test.json",
     "build": "node copy-assets.mjs && node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
     "package": "npm run build && vsce package --no-dependencies",
@@ -65,6 +65,7 @@
     "typescript": "^5.7.2",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-protocol": "^3.17.5",
     "vscode-languageserver-textdocument": "^1.0.12"
   }
 }

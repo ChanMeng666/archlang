@@ -38,11 +38,141 @@ jobs:
       - name: Generated artifacts are in sync
         run: npm run check:drift
 
+      # Coverage is instrumented on ONE leg (Node 22) instead of in a job of its
+      # own, so it costs one instrumented run rather than a second `npm ci` + suite,
+      # and the 18/20 legs pay nothing at all. It is REPORT-ONLY: there are no
+      # thresholds and no step below can fail on a coverage number — `npm test`
+      # stays the single pass/fail signal.
       - name: Test
+        if: matrix.node != 22
         run: npm test
+
+      - name: Test (+ coverage, report-only)
+        if: matrix.node == 22
+        run: npm run test:coverage
+
+      - name: Coverage summary
+        if: matrix.node == 22
+        run: |
+          node --input-type=commonjs -e '
+          const t = JSON.parse(require("node:fs").readFileSync("coverage/coverage-summary.json", "utf8")).total;
+          const rows = ["lines", "statements", "functions", "branches"].map(
+            (k) => "| " + k + " | " + t[k].pct + "% | " + t[k].covered + " / " + t[k].total + " |",
+          );
+          console.log(
+            [
+              "## Coverage — `src/` (report-only, never gates)",
+              "",
+              "| Metric | % | Covered / Total |",
+              "| --- | --- | --- |",
+              ...rows,
+            ].join("\n"),
+          );
+          ' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage summary
+        if: matrix.node == 22
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-summary
+          path: coverage/coverage-summary.json
+          if-no-files-found: error
 
       - name: Authorability eval (offline golden regression guard)
         run: npm run eval:ci
+
+  builds:
+    name: Workspace builds
+    runs-on: ubuntu-latest
+    # The core suite never compiles the downstream workspaces, so a change that
+    # breaks the docs site, the playground, the MCP shim or the VS Code extension
+    # used to reach `main` green. This job compiles all four.
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Every workspace consumes the core's `dist/`, and the root
+      # `docs:build`/`playground:build`/`mcp:build` scripts each BEGIN with their
+      # own `npm run build`. Running those four here would rebuild the core four
+      # times, so the core is built once and CI calls the `:only` variants.
+      - name: Build core (once — every workspace below consumes dist/)
+        run: npm run build
+
+      # Fails fast, before the slower site builds. Covers the root dev tsconfig
+      # (src + test + eval + dataset + scripts + bench) plus the playground, the
+      # docs site (vue-tsc over .vitepress + every theme SFC, and tsc over the docs
+      # E2E specs), the MCP shim and the VS Code extension. The playground and docs
+      # legs both resolve the bare `archlang` specifier to ../dist/index.d.ts, hence
+      # after the build above; the docs leg also runs `sync-docs.mjs` first, since
+      # config.ts and CompileSeam.vue import its generated modules.
+      - name: Type-check every workspace
+        run: npm run typecheck:all
+
+      - name: Build docs site
+        run: npm run docs:build:only
+
+      - name: Build playground
+        run: npm run playground:build:only
+
+      - name: Build MCP shim
+        run: npm run mcp:build:only
+
+      - name: Build VS Code extension
+        run: npm run vscode:build:only
+
+      # The MCP shim bakes its context resources into dist/ at pack time — the
+      # 0.2.2 staleness incident shipped a v1.19 grammar against a current core.
+      # This proves every dist/ resource is byte-identical to its repo source.
+      - name: Check MCP dist resources are fresh
+        run: node packages/mcp/scripts/check-dist-resources.mjs
+
+      # The stdio smoke + bundle-freshness tests need the built extension
+      # (dist/server.js); the plain test matrix skips them by design.
+      - name: VS Code extension bundle tests
+        run: npx vitest run editors/vscode
+
+      # (appended by later workstreams)
+
+  windows:
+    name: Windows (tests + drift)
+    runs-on: windows-latest
+    # Determinism is a core invariant, and the whole toolchain is developed on
+    # Windows — but CI only ever proved it on Linux. This leg catches the two
+    # things that actually differ: line endings (a golden/snapshot mismatch) and
+    # path handling in the generators.
+    #
+    # NOTE: git's line-ending settings are deliberately left at the RUNNER
+    # DEFAULTS (no core.autocrlf override). `.gitattributes` pins `* text=auto
+    # eol=lf`, and this job's whole point is to fail if that ever stops holding —
+    # forcing autocrlf here would hide exactly the regression it exists to catch.
+    #
+    # `eval:ci` and the benchmark are Linux-only on purpose: the eval is already
+    # covered by the matrix above and bench timings are runner-dependent.
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Generated artifacts are in sync
+        run: npm run check:drift
 
   bench:
     name: Benchmark (informational)
@@ -81,3 +211,167 @@ jobs:
             } else {
               await github.rest.issues.createComment({ owner, repo, issue_number, body: payload });
             }
+
+  e2e-playground:
+    name: Playground E2E (Playwright)
+    runs-on: ubuntu-latest
+    # The unit suite proves the playground's pure logic and `builds` proves it
+    # COMPILES — neither ever opens the page. This job drives the real built
+    # bundle in a real Chromium: boot, edit, apply a diagnostic fix, download
+    # every format, and the chrome-less embed page.
+    #
+    # It earned its keep on the first run by finding a live bug: click-to-source
+    # never fired with a real mouse, because the pan/zoom controller's
+    # `setPointerCapture` retargets the click away from the drawn element (fixed
+    # in `interact.ts` by hit-testing the POINT instead of reading `e.target`).
+    # That class of fault is invisible to `tsc`, vitest and `vite build` alike,
+    # which is the whole argument for this leg.
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `vite preview` (the config's `webServer`) only SERVES playground/dist/ —
+      # it never builds it. Both builds below are prerequisites, not
+      # conveniences: the core first, since the playground aliases the bare
+      # `archlang` specifier to ../dist/index.js, then the app itself.
+      - name: Build core
+        run: npm run build
+
+      - name: Build playground
+        run: npm run playground:build:only
+
+      # Keyed on the RESOLVED @playwright/test version: a browser build is pinned
+      # to its driver, so a version bump must miss the cache rather than reuse an
+      # incompatible download.
+      - name: Resolve Playwright version
+        id: pw
+        run: |
+          version=$(node -p "require('@playwright/test/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      # On a cache hit the browser binary is already there but the OS packages it
+      # links against are not (they live outside the cached path), so the two
+      # cases install different things.
+      - name: Install Chromium (browser + system deps)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Chromium system deps only (cached browser)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Run E2E specs
+        run: npx playwright test -c playground
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: |
+            playground/playwright-report
+            playground/test-results
+          retention-days: 7
+          if-no-files-found: ignore
+
+  e2e-docs:
+    name: Docs site E2E (Playwright)
+    runs-on: ubuntu-latest
+    # `builds` proves the docs site COMPILES and `scripts/smoke.mjs` proves its routes
+    # exist AFTER a deploy — neither opens the site. This job serves the built output
+    # and checks the two contracts that are invisible to both:
+    #
+    #   1. The MACHINE routes llms.txt advertises — the raw `/<page>.md` copies (byte
+    #      -for-byte the repo's canonical markdown), /llms-full.txt, both JSON schemas,
+    #      /archlang.gbnf and one SVG per gallery example. A `srcExclude` or public/
+    #      mistake turns any of them into an HTML 404 while the site still builds,
+    #      still deploys and still looks perfect to a human.
+    #   2. `<ArchLive>` — the claim that every ```arch fence in the docs is a real
+    #      compiler in the reader's tab: the SSR fallback swapping to a live editor,
+    #      an edit recompiling, a hostile room label reaching the v-html'd SVG as TEXT,
+    #      and "Open in Playground" minting a `#z=` hash that the PLAYGROUND's own
+    #      decoder reads back. That last one is the runtime weld on the third copy of
+    #      the share codec (test/share-codec.test.ts is the static one).
+    #
+    # Route lists are derived from docs-site/sync-docs.mjs, so a new page or example
+    # extends this job the day it lands.
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          # Node 22, not 18/20: archlive.spec.ts decodes the widget's `#z=` hash with
+          # `DecompressionStream("deflate-raw")`, which Node only gained in 21.2.
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `vitepress preview` (the config's `webServer`) only SERVES
+      # docs-site/.vitepress/dist/ — it never builds it. Both builds below are
+      # prerequisites, not conveniences: the core first, since the theme aliases the
+      # bare `archlang` specifier to ../dist/index.js (and sync-docs compiles every
+      # gallery example through it), then the site itself.
+      - name: Build core
+        run: npm run build
+
+      - name: Build docs site
+        run: npm run docs:build:only
+
+      # Keyed on the RESOLVED @playwright/test version: a browser build is pinned
+      # to its driver, so a version bump must miss the cache rather than reuse an
+      # incompatible download.
+      - name: Resolve Playwright version
+        id: pw
+        run: |
+          version=$(node -p "require('@playwright/test/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      # On a cache hit the browser binary is already there but the OS packages it
+      # links against are not (they live outside the cached path), so the two
+      # cases install different things.
+      - name: Install Chromium (browser + system deps)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Chromium system deps only (cached browser)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Run E2E specs
+        run: npx playwright test -c docs-site
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report-docs
+          path: |
+            docs-site/playwright-report
+            docs-site/test-results
+          retention-days: 7
+          if-no-files-found: ignore

@@ -1,0 +1,21 @@
+{
+  // Typecheck config for the Playwright E2E specs.
+  //
+  // They are NOT browser code: Playwright runs them in Node, so they need the
+  // `node` types (`node:fs/promises`, `Buffer`, `process.env.CI`) that the app
+  // config deliberately omits. They still reach into `src/` — the `#z=` hashes in
+  // `init-precedence.spec.ts` are minted by the app's OWN `share.ts` codec, so the
+  // link under test is byte-for-byte the one Copy-link writes — hence the DOM lib
+  // stays on and `src` comes along for the ride.
+  //
+  // Run by the workspace `typecheck` script alongside `tsconfig.json`, so
+  // `npm run typecheck:all` covers the specs too. Playwright itself only
+  // transpiles; without this, a type error here would surface as a runtime crash
+  // in CI instead of a compile error.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "node"]
+  },
+  "include": ["e2e", "src", "playwright.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -22,11 +22,11 @@ import { layoutChrome, type ScaleBarBox, type TitleBlockBox } from "../chrome-la
 import { fmt2 as fmt } from "../num-format.js";
 const pt = (p: Point): string => `${fmt(p.x)},${fmt(p.y)}`;
 
-/** XML-escape a string for safe interpolation into SVG text/attributes. Shared
- *  with the error-card backend so both escape user text the same way. */
-export function xml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
+/** XML-escape a string for safe interpolation into SVG text/attributes — and drop
+ *  the characters XML itself forbids (see `text-safe.ts`). Shared with the
+ *  error-card backend and `sanitizeTheme` so every escaping site behaves alike. */
+export { xmlText as xml } from "../text-safe.js";
+import { xmlText as xml } from "../text-safe.js";
 
 /**
  * Named line-weight ramp → concrete stroke width in mm, scaled from the drawing.

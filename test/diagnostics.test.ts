@@ -21,8 +21,8 @@ describe("lexer — byte-offset spans", () => {
   it("collects every lexical error, not just the first", () => {
     const { errors } = lex("@ $");
     expect(errors).toHaveLength(2);
-    expect(errors[0].span).toEqual({ start: 0, end: 1 });
-    expect(errors[1].span).toEqual({ start: 2, end: 3 });
+    expect(errors[0]!.span).toEqual({ start: 0, end: 1 });
+    expect(errors[1]!.span).toEqual({ start: 2, end: 3 });
   });
 });
 
@@ -106,7 +106,7 @@ describe("parser — error recovery + multi-error collection", () => {
     const { svg, errors } = compile(src, { noCache: true });
     expect(svg).toBe("");
     expect(errors).toHaveLength(3);
-    expect(errors[0].line).toBeTypeOf("number");
+    expect(errors[0]!.line).toBeTypeOf("number");
   });
 });
 

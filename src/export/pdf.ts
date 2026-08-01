@@ -23,6 +23,7 @@ import type { Paint, Scene, SceneNode } from "../scene.js";
 import { RENDER_PASSES } from "../scene.js";
 import type { Theme } from "../theme.js";
 import { layoutChrome, type TitleRow } from "../chrome-layout.js";
+import { plainText } from "../text-safe.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -64,12 +65,15 @@ function applyPaint(doc: any, paint: Paint, theme: Theme): void {
 function drawText(
   doc: any,
   at: Point,
-  value: string,
+  rawValue: string,
   size: number,
   anchor: string,
   rotate: number | undefined,
   color: string,
 ): void {
+  // Same rule as the DXF backend: a control character or unpaired surrogate in a
+  // label must never reach the container's encoder. Identity on well-formed text.
+  const value = plainText(rawValue);
   doc.undash();
   doc.fontSize(size).fillColor(color);
   const w = doc.widthOfString(value);

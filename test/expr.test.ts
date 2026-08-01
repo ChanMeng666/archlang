@@ -10,10 +10,10 @@ import type { Diagnostic } from "../src/diagnostics.js";
 function tokens(src: string): ExprTokens {
   const { tokens: toks } = lex(src);
   let pos = 0;
-  const at = (o = 0) => toks[Math.min(pos + o, toks.length - 1)];
+  const at = (o = 0) => toks[Math.min(pos + o, toks.length - 1)]!;
   return {
     peek: (o = 0) => at(o),
-    next: () => toks[Math.min(pos++, toks.length - 1)],
+    next: () => toks[Math.min(pos++, toks.length - 1)]!,
     fail: (msg) => {
       throw new Error(msg);
     },

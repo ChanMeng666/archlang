@@ -27,8 +27,8 @@ describe("arch repair", () => {
     expect(has(src, "W_FURNITURE_WALL_COLLISION")).toBe(true);
     const r = repair(src);
     expect(r.changed).toBe(true);
-    expect(r.changes[0].kind).toBe("moved");
-    expect(r.changes[0].reason).toContain("wall");
+    expect(r.changes[0]!.kind).toBe("moved");
+    expect(r.changes[0]!.reason).toContain("wall");
     expect(has(r.source, "W_FURNITURE_WALL_COLLISION")).toBe(false);
   });
 
@@ -45,7 +45,7 @@ describe("arch repair", () => {
     expect(has(src, "W_DOORWAY_BLOCKED")).toBe(true);
     const r = repair(src);
     expect(r.changed).toBe(true);
-    expect(r.changes[0].reason).toContain("doorway");
+    expect(r.changes[0]!.reason).toContain("doorway");
     expect(has(r.source, "W_DOORWAY_BLOCKED")).toBe(false);
   });
 
@@ -61,7 +61,7 @@ describe("arch repair", () => {
     expect(has(src, "W_SWING_OBSTRUCTED")).toBe(true);
     const r = repair(src);
     expect(r.changed).toBe(true);
-    expect(r.changes[0].reason).toContain("swing");
+    expect(r.changes[0]!.reason).toContain("swing");
     expect(has(r.source, "W_SWING_OBSTRUCTED")).toBe(false);
   });
 
@@ -76,7 +76,7 @@ describe("arch repair", () => {
     expect(has(src, "W_FIXTURE_FLOATING")).toBe(true);
     const r = repair(src);
     expect(r.changed).toBe(true);
-    expect(r.changes[0].reason).toContain("wall");
+    expect(r.changes[0]!.reason).toContain("wall");
     expect(has(r.source, "W_FIXTURE_FLOATING")).toBe(false);
   });
 
@@ -97,7 +97,7 @@ describe("arch repair", () => {
     expect(has(src, "W_FIXTURE_WRONG_ROOM")).toBe(true);
     const r = repair(src);
     expect(r.changed).toBe(true);
-    expect(r.changes[0].reason).toContain("declared room");
+    expect(r.changes[0]!.reason).toContain("declared room");
     expect(has(r.source, "W_FIXTURE_WRONG_ROOM")).toBe(false);
   });
 
