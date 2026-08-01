@@ -32,6 +32,13 @@ interface CoreDiagnostic {
   message: string;
   code?: string;
   span?: { start: number; end: number };
+  /**
+   * The module `span` is measured in, when that is NOT the compiled source — i.e.
+   * the defect lives inside an `import`ed component. Absent for every diagnostic
+   * about the open document. `handlers.ts` reads it to refuse a quickfix whose
+   * edits address another file (see its `foreignDiagnostics`).
+   */
+  file?: string;
 }
 interface CoreResult {
   diagnostics: CoreDiagnostic[];

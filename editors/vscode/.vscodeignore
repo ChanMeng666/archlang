@@ -3,11 +3,13 @@
 # JSON (copied in by copy-assets.mjs at build) + README.
 .vscode/**
 src/**
+test/**
 node_modules/**
 **/*.ts
 **/*.map
 **/tsconfig.tsbuildinfo
 tsconfig.json
+tsconfig.test.json
 esbuild.mjs
 copy-assets.mjs
 .gitignore

@@ -1,0 +1,4 @@
+{
+  "//": "NOT a package — a module-format marker. The extension itself is CommonJS (esbuild emits CJS bundles for the VS Code host), but these tests are run by the root vitest and import the ESM-only core plus `import.meta`. Under Node16 module resolution TypeScript reads the nearest package.json to decide a file's format, so this one marks test/ as ESM. It has no name and is never installed or published (`.vscodeignore` excludes test/**).",
+  "type": "module"
+}

@@ -1,0 +1,13 @@
+{
+  // Type-check the extension's own tests under the SAME strict options as its
+  // source. The shipped `tsconfig.json` is the build config (rootDir `src`,
+  // outDir `dist`), so it cannot also cover `test/` — hence this second,
+  // emit-nothing project, run as the second half of `npm run typecheck`.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["node"]
+  },
+  "include": ["src", "test"]
+}

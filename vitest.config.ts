@@ -17,7 +17,12 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["test/**/*.test.ts", "playground/test/**/*.test.ts", "packages/*/test/**/*.test.ts"],
+    include: [
+      "test/**/*.test.ts",
+      "playground/test/**/*.test.ts",
+      "packages/*/test/**/*.test.ts",
+      "editors/vscode/test/**/*.test.ts",
+    ],
     environment: "node",
     // Coverage is REPORT-ONLY and deliberately has NO thresholds: it is a map of
     // what the suite reaches, not a gate. Nothing fails on a coverage number, so
