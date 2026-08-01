@@ -17,7 +17,9 @@ import { compile, makeVirtualWorld, renderPng } from "../src/index.js";
  * committed binaries small while still covering the whole drawing.
  *
  * Update goldens intentionally with:  UPDATE_GOLDENS=1 vitest run test/visual.test.ts
- * The suite skips when the optional raster dep (`@resvg/resvg-js`) is absent.
+ *
+ * The optional raster dep (`@resvg/resvg-js`) is resolved ONCE, up front, and its
+ * absence is never silent — see RESVG_REQUIRED below.
  *
  * Goldens are rasterized by resvg (pure-Rust tiny-skia) with a bundled font, so
  * they are reproducible for a given resvg version. The diff is strict (threshold
@@ -64,6 +66,23 @@ async function hasResvg(): Promise<boolean> {
   }
 }
 
+/**
+ * A missing optional dep must never yield a silently-GREEN EMPTY suite. Each case
+ * used to open with `if (!(await hasResvg())) return;`, so on any machine without
+ * the raster dep every test "passed" having asserted nothing — including a CI run
+ * whose install step had quietly stopped pulling `optionalDependencies`, which is
+ * exactly the failure this suite exists to catch.
+ *
+ * So the dep is probed ONCE and its absence is reported, not swallowed:
+ *   - in CI it is REQUIRED (`npm ci` installs optionalDependencies), so a missing
+ *     dep FAILS loudly as the broken-install bug it is;
+ *   - locally it degrades to a VISIBLE skip in the reporter, never silence.
+ *
+ * When the dep IS present the goldens are compared exactly as before.
+ */
+const HAS_RESVG = await hasResvg();
+const RESVG_REQUIRED = !!process.env.CI;
+
 /** Rasterize one Scene and pixel-diff it against `<key>.png` (or write it with UPDATE). */
 async function diffAgainstGolden(key: string, scene: Parameters<typeof renderPng>[0]): Promise<void> {
   const actual = await renderPng(scene, { scale: GOLDEN_SCALE });
@@ -80,9 +99,25 @@ async function diffAgainstGolden(key: string, scene: Parameters<typeof renderPng
 }
 
 describe("visual regression — golden PNG pixel-diff", () => {
+  if (!HAS_RESVG) {
+    const gate = "optional raster dep @resvg/resvg-js is installed";
+    if (RESVG_REQUIRED) {
+      it(gate, () => {
+        throw new Error(
+          "optional dep @resvg/resvg-js missing in CI — install step is broken. " +
+            "The visual-regression goldens were NOT compared. Check that the install " +
+            "step still pulls optionalDependencies (npm ci without --omit=optional).",
+        );
+      });
+    } else {
+      // Visible in the reporter as a skip, with the reason in the name.
+      it.skip(`${gate} (absent locally — visual goldens not compared)`, () => {});
+    }
+    return;
+  }
+
   for (const name of EXAMPLES) {
     it(`${name} matches its golden`, async () => {
-      if (!(await hasResvg())) return; // optional dep absent — skip
       const { scene, errors } = compile(example(name), { noCache: true });
       expect(errors).toEqual([]);
       await diffAgainstGolden(name, scene!);
@@ -94,7 +129,6 @@ describe("visual regression — golden PNG pixel-diff", () => {
   // `place`'s transform, its id namespacing or the zone-grouped schedule ever drifted —
   // the drawing is one wing rendered twice, once mirrored.
   it("museum-wings.arch (two placed instances) matches its golden", async () => {
-    if (!(await hasResvg())) return;
     const world = makeVirtualWorld({ "museum-wing.arch": example("museum-wing.arch") });
     const { scene, errors } = compile(example("museum-wings.arch"), { world, noCache: true });
     expect(errors).toEqual([]);
@@ -104,7 +138,6 @@ describe("visual regression — golden PNG pixel-diff", () => {
   // Multi-storey: one golden per PAGE. A single golden of `scene` would pin only the
   // lowest level, leaving an upper storey's drawing unguarded.
   it("two-storey.arch matches a golden per level", async () => {
-    if (!(await hasResvg())) return;
     const { pages, errors } = compile(example("two-storey.arch"), { noCache: true });
     expect(errors).toEqual([]);
     expect(pages).toHaveLength(2);
