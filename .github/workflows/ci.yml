@@ -125,6 +125,12 @@ jobs:
       - name: Build VS Code extension
         run: npm run vscode:build:only
 
+      # The MCP shim bakes its context resources into dist/ at pack time — the
+      # 0.2.2 staleness incident shipped a v1.19 grammar against a current core.
+      # This proves every dist/ resource is byte-identical to its repo source.
+      - name: Check MCP dist resources are fresh
+        run: node packages/mcp/scripts/check-dist-resources.mjs
+
       # (appended by later workstreams)
 
   windows:
