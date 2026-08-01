@@ -131,6 +131,11 @@ jobs:
       - name: Check MCP dist resources are fresh
         run: node packages/mcp/scripts/check-dist-resources.mjs
 
+      # The stdio smoke + bundle-freshness tests need the built extension
+      # (dist/server.js); the plain test matrix skips them by design.
+      - name: VS Code extension bundle tests
+        run: npx vitest run editors/vscode
+
       # (appended by later workstreams)
 
   windows:
