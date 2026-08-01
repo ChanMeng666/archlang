@@ -10,14 +10,59 @@
  * (the SVG user space), matching the bbox coordinates.
  */
 
-const DRAG_SLOP = 6; // px of pointer travel that reclassifies a click as a pan
+/** px of pointer travel that reclassifies a click as a pan (inclusive: exactly
+ *  DRAG_SLOP px of travel is still a click). */
+export const DRAG_SLOP = 6;
+
+/** An axis-aligned box in SVG user space (= plan mm). */
+export interface HitBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
 /** The subset of a describe() room this module hit-tests and labels. */
 interface PreviewRoom {
   id: string;
   label?: string;
   area_m2: number;
-  bbox: { x: number; y: number; w: number; h: number };
+  bbox: HitBox;
+}
+
+/**
+ * Hit-test `(x,y)` against `items` and return the SMALLEST box containing it, or
+ * null. Rooms can nest (a bathroom inside a suite) or overlap, and the innermost
+ * one is the one the pointer means.
+ *
+ * Ties (two containing boxes of equal area) resolve to the EARLIER item — the
+ * comparison is a strict `<`, so nothing later can displace an equal-area
+ * incumbent. That makes the result a deterministic function of describe()'s room
+ * order, not of floating-point luck.
+ */
+export function pickSmallestContaining<T extends { bbox: HitBox }>(
+  items: readonly T[],
+  x: number,
+  y: number,
+): T | null {
+  let hit: T | null = null;
+  for (const item of items) {
+    const b = item.bbox;
+    if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+      // Prefer the smallest containing room (handles nested/overlapping bboxes).
+      if (!hit || b.w * b.h < hit.bbox.w * hit.bbox.h) hit = item;
+    }
+  }
+  return hit;
+}
+
+/**
+ * Did the pointer travel far enough between `down` and `(x,y)` that the click
+ * should be read as the end of a pan rather than a click-to-source? Travel of
+ * exactly {@link DRAG_SLOP} px is still a click — the threshold is exclusive.
+ */
+export function isDragNotClick(down: { x: number; y: number } | null, x: number, y: number): boolean {
+  return down != null && Math.hypot(x - down.x, y - down.y) > DRAG_SLOP;
 }
 
 interface InteractOpts {
@@ -46,17 +91,7 @@ export function mountInteract({ viewport, stage, getRooms, jumpToOffset }: Inter
     return p.matrixTransform(ctm.inverse());
   }
 
-  function roomAt(u: DOMPoint): PreviewRoom | null {
-    let hit: PreviewRoom | null = null;
-    for (const r of getRooms()) {
-      const b = r.bbox;
-      if (u.x >= b.x && u.x <= b.x + b.w && u.y >= b.y && u.y <= b.y + b.h) {
-        // Prefer the smallest containing room (handles nested/overlapping bboxes).
-        if (!hit || b.w * b.h < hit.bbox.w * hit.bbox.h) hit = r;
-      }
-    }
-    return hit;
-  }
+  const roomAt = (u: DOMPoint): PreviewRoom | null => pickSmallestContaining(getRooms(), u.x, u.y);
 
   const hide = () => {
     tip.hidden = true;
@@ -89,7 +124,7 @@ export function mountInteract({ viewport, stage, getRooms, jumpToOffset }: Inter
     down = { x: e.clientX, y: e.clientY };
   });
   viewport.addEventListener("click", (e) => {
-    if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > DRAG_SLOP) return;
+    if (isDragNotClick(down, e.clientX, e.clientY)) return;
     const el = (e.target as Element | null)?.closest("[data-span]");
     if (!el) return;
     const start = Number(el.getAttribute("data-span")!.split(":")[0]);
