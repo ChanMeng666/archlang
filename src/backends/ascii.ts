@@ -33,6 +33,7 @@
 import type { Point } from "../ast.js";
 import type { Scene, SceneNode, ScenePrim } from "../scene.js";
 import { arcFromPrimitive, arcTessellate } from "../geometry/arc.js";
+import { plainText } from "../text-safe.js";
 
 export interface AsciiOptions {
   /** Target grid width in characters (default 80). Clamped to ≥ 1. */
@@ -290,7 +291,13 @@ export function renderAscii(scene: Scene, opts: AsciiOptions = {}): string {
     const rowMid = Math.round((rowOf(minY) + rowOf(maxY)) / 2);
     const usable = c1 - c0 - 1; // keep a cell clear of each wall
     if (usable <= 0) continue;
-    const text = label.length > usable ? label.slice(0, usable) : label;
+    // One CELL per code point, and never a control character: a label reaches the
+    // grid verbatim from source, where a newline would split a row (breaking the
+    // fixed-width grid) and an ESC would drive the terminal this text is printed
+    // to. `Array.from` also keeps an astral character whole, so truncating can't
+    // leave half a surrogate pair behind.
+    const chars = Array.from(plainText(label, "?"));
+    const text = chars.length > usable ? chars.slice(0, usable) : chars;
     const start = Math.round((c0 + c1) / 2) - Math.floor(text.length / 2);
     for (let i = 0; i < text.length; i++) plotOver(start + i, rowMid, text[i]!);
   }

@@ -21,6 +21,7 @@ import { minorArcDegrees } from "../geometry.js";
 import { dxfPatternName, isSolidFill } from "../hatches.js";
 // Deterministic number formatting (round to 4dp, no -0).
 import { fmt4 as num } from "../num-format.js";
+import { plainText } from "../text-safe.js";
 
 /** Map a Scene line type to a DXF LTYPE name; undefined (or continuous) → BYLAYER. */
 function dxfLineType(t: LineType | undefined): string | undefined {
@@ -81,7 +82,11 @@ class DxfBuilder {
     this.pair(10, num(at.x));
     this.pair(20, num(-at.y));
     this.pair(40, num(height));
-    this.pair(1, value.replace(/\n/g, " "));
+    // DXF is a line-oriented group-code stream, so ANY control character in the
+    // value would desynchronize a reader (LF and CR both end a record) or drive a
+    // terminal (ESC). `plainText` blanks every one of them — for a newline that is
+    // exactly the space this line has always substituted, so output is unchanged.
+    this.pair(1, plainText(value));
   }
 
   /** Closed loop of points as a chain of LINEs (R12-safe; no LWPOLYLINE). */
