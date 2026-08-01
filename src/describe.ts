@@ -95,6 +95,13 @@ export interface RoomSummary {
    * This, not `bbox`, is the room's actual shape; `bbox` is the vertex extent.
    */
   floor_polygon: { x: number; y: number }[];
+  /**
+   * A CIRCULAR room's exact centre + radius (v1.24), present only for `room … circle`.
+   * Such a room reports this INSTEAD of a 48-vertex ring: the tessellation is an
+   * implementation detail of the grid layer, so `floor_polygon` is `[]` here and
+   * `area_m2` is the exact πR². Append-only, like the rest of the summary.
+   */
+  floor_circle?: { cx: number; cy: number; r: number };
   /** Ids of rooms whose edges touch this one (within the adjacency tolerance). */
   adjacent: string[];
   /** The `place`d instance this room was drawn inside (v1.22); absent at plan level. */
