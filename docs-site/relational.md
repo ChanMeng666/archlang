@@ -2,7 +2,7 @@
 
 By default a room is positioned with absolute coordinates:
 
-```arch
+```arch static
 room id=living at (0,0) size 5000x4000 label "Living"
 ```
 

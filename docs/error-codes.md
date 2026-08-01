@@ -122,7 +122,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 
 **Fix.** Move the `accTitle`/`accDescr` line up to the plan body, alongside `units`/`north`.
 
-```arch
+```arch static
 component c() { accDescr "x" }   # error: only allowed at plan level
 ```
 
@@ -134,7 +134,7 @@ component c() { accDescr "x" }   # error: only allowed at plan level
 
 **Fix.** Raise the radius to at least half the chord (the message states the minimum), or move the endpoints closer together. `arch fix` applies the minimum for you.
 
-```arch
+```arch static
 wall exterior thickness 200 { (0,0) arc (10000,0) radius 3000 }   # error: needs R >= 5000
 ```
 
@@ -146,7 +146,7 @@ wall exterior thickness 200 { (0,0) arc (10000,0) radius 3000 }   # error: needs
 
 **Fix.** Pass exactly one argument per declared parameter.
 
-```arch
+```arch static
 component bed(x, y) { … }
 bed(300)        # error: expects 2 arguments
 ```
@@ -159,7 +159,7 @@ bed(300)        # error: expects 2 arguments
 
 **Fix.** Check the function's arity; most built-ins take one argument.
 
-```arch
+```arch static
 let x = abs(1, 2)   # error: abs expects 1 argument
 ```
 
@@ -171,7 +171,7 @@ let x = abs(1, 2)   # error: abs expects 1 argument
 
 **Fix.** Declare it first with `let`, or fix a typo in the name.
 
-```arch
+```arch static
 x = 5           # error: declare with `let x = …` first
 ```
 
@@ -183,7 +183,7 @@ x = 5           # error: declare with `let x = …` first
 
 **Fix.** Use a percentage in 0–100%, a millimetre distance within the wall's run, or `center`.
 
-```arch
+```arch static
 door on w1 at 150% width 900   # error: 150% is past the wall end
 ```
 
@@ -195,7 +195,7 @@ door on w1 at 150% width 900   # error: 150% is past the wall end
 
 **Fix.** Reference an existing, unique wall id (add `id=` to the wall if needed).
 
-```arch
+```arch static
 door on w1 at 40% width 900   # error if no wall id=w1 (or several match)
 ```
 
@@ -207,7 +207,7 @@ door on w1 at 40% width 900   # error if no wall id=w1 (or several match)
 
 **Fix.** Make the recursion terminate, or rewrite it iteratively with a bounded `while`.
 
-```arch
+```arch static
 let f(n) = f(n + 1)   # error: never terminates
 ```
 
@@ -219,7 +219,7 @@ let f(n) = f(n + 1)   # error: never terminates
 
 **Fix.** Give the column a positive `size W x H`.
 
-```arch
+```arch static
 column at (0,0) size 0x300   # error: width is 0
 ```
 
@@ -231,7 +231,7 @@ column at (0,0) size 0x300   # error: width is 0
 
 **Fix.** Name an existing, unique wall id whose edge is an `arc` (adding `segment <n>` when it has several), or an existing `room circle` id for `diameter`.
 
-```arch
+```arch static
 dim radius w1   # error if w1 is straight, unknown, or has two arc edges
 ```
 
@@ -243,7 +243,7 @@ dim radius w1   # error if w1 is straight, unknown, or has two arc edges
 
 **Fix.** Guard the divisor, or use a non-zero value.
 
-```arch
+```arch static
 let x = 10 / 0   # error
 ```
 
@@ -255,7 +255,7 @@ let x = 10 / 0   # error
 
 **Fix.** Pass a value within the function's domain.
 
-```arch
+```arch static
 let x = sqrt(-1)   # error
 ```
 
@@ -267,7 +267,7 @@ let x = sqrt(-1)   # error
 
 **Fix.** Give the door a positive `width`.
 
-```arch
+```arch static
 door at (0,0) width 0   # error
 ```
 
@@ -279,7 +279,7 @@ door at (0,0) width 0   # error
 
 **Fix.** Declare the short name and address it from outside as `<instance>.<name>`.
 
-```arch
+```arch static
 room id=main at (0,0) size 3000x3000   # then, in the plan: furniture bed in west.main centered
 ```
 
@@ -291,7 +291,7 @@ room id=main at (0,0) size 3000x3000   # then, in the plan: furniture bed in wes
 
 **Fix.** Rename one of them, or drop the explicit id to auto-generate a unique one.
 
-```arch
+```arch static
 room id=a at (0,0) size 1x1
 room id=a at (1,0) size 1x1   # error: duplicate id "a"
 ```
@@ -304,7 +304,7 @@ room id=a at (1,0) size 1x1   # error: duplicate id "a"
 
 **Fix.** Give each instance its own name (`as west` / `as east`).
 
-```arch
+```arch static
 place wing() as west at (0,0)
 place wing() as west at (9000,0)   # error: instance "west" already used
 ```
@@ -317,7 +317,7 @@ place wing() as west at (9000,0)   # error: instance "west" already used
 
 **Fix.** Name an existing wall id, add `segment <n>` for multi-segment walls, give `side left|right`, keep the segment axis-aligned, and drop any explicit `rotate`.
 
-```arch
+```arch static
 furniture wc against wall w1 side left size 400x700   # error if w1 is unknown or multi-segment
 ```
 
@@ -329,7 +329,7 @@ furniture wc against wall w1 side left size 400x700   # error if w1 is unknown o
 
 **Fix.** Anchor the piece to the edge you want it flush with (`anchor bottom flush`, `anchor top-left flush`), or drop `flush` and keep it centred.
 
-```arch
+```arch static
 furniture wc in bath centered flush size 400x700   # error: centred, so nothing to be flush with
 ```
 
@@ -341,7 +341,7 @@ furniture wc in bath centered flush size 400x700   # error: centred, so nothing 
 
 **Fix.** Use the id of an existing `room id=…`, or drop the `in` clause.
 
-```arch
+```arch static
 furniture bed at (0,0) size 1500x2000 in bedrm   # error: no room id=bedrm
 ```
 
@@ -353,7 +353,7 @@ furniture bed at (0,0) size 1500x2000 in bedrm   # error: no room id=bedrm
 
 **Fix.** Use a quarter-turn: `rotate 0|90|180|270`.
 
-```arch
+```arch static
 furniture wc at (0,0) size 400x700 rotate 45   # error: not a quarter-turn
 ```
 
@@ -365,7 +365,7 @@ furniture wc at (0,0) size 400x700 rotate 45   # error: not a quarter-turn
 
 **Fix.** Give the item a positive `size W x H`.
 
-```arch
+```arch static
 furniture bed at (0,0) size 0x2000   # error
 ```
 
@@ -377,7 +377,7 @@ furniture bed at (0,0) size 0x2000   # error
 
 **Fix.** Use a relative path ("lib/x.arch") or a namespaced spec ("@scope/name:1.0.0").
 
-```arch
+```arch static
 import "???" : a   # error
 ```
 
@@ -389,7 +389,7 @@ import "???" : a   # error
 
 **Fix.** Rename with `as`, or remove the duplicate.
 
-```arch
+```arch static
 import "lib.arch": bed as lib_bed
 ```
 
@@ -401,7 +401,7 @@ import "lib.arch": bed as lib_bed
 
 **Fix.** Break the cycle so module dependencies form a tree.
 
-```arch
+```arch static
 # a.arch imports b.arch which imports a.arch  → error
 ```
 
@@ -413,7 +413,7 @@ import "lib.arch": bed as lib_bed
 
 **Fix.** Import a name the module actually defines (check its `component`s).
 
-```arch
+```arch static
 import "lib.arch": nope   # error if lib.arch has no `component nope`
 ```
 
@@ -425,7 +425,7 @@ import "lib.arch": nope   # error if lib.arch has no `component nope`
 
 **Fix.** Check the path (relative to the importing file) and that the file exists.
 
-```arch
+```arch static
 import "lib/missing.arch": a   # error
 ```
 
@@ -437,7 +437,7 @@ import "lib/missing.arch": a   # error
 
 **Fix.** Fix the syntax error in the imported module.
 
-```arch
+```arch static
 # error originates in the imported file
 ```
 
@@ -449,7 +449,7 @@ import "lib/missing.arch": a   # error
 
 **Fix.** Clamp or check the index against `len(arr)`.
 
-```arch
+```arch static
 let a = [1, 2]
 let x = a[5]   # error
 ```
@@ -462,7 +462,7 @@ let x = a[5]   # error
 
 **Fix.** Add an exterior entrance `door` on a perimeter wall. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).
 
-```arch
+```arch static
 door on exterior at 50% width 900   # a front door
 ```
 
@@ -474,7 +474,7 @@ door on exterior at 50% width 900   # a front door
 
 **Fix.** Add a `window` on one of that room's walls. Gating tier: this failure DOES fail `validateIntent`'s `ok`.
 
-```arch
+```arch static
 window on north at 40% width 1200   # light the bedroom
 ```
 
@@ -486,7 +486,7 @@ window on north at 40% width 1200   # light the bedroom
 
 **Fix.** Add a `door` (or `opening`) on the wall the two rooms share so they are directly connected. Advisory tier: this is scored and reported by `validateIntent` but does NOT fail `ok` (gate: false) — one-shot topology is what the loop tools address.
 
-```arch
+```arch static
 door on wall_hall_bath width 800   # connect the hall to the bathroom
 ```
 
@@ -498,7 +498,7 @@ door on wall_hall_bath width 800   # connect the hall to the bathroom
 
 **Fix.** Resize the room so its floor area lands in the band. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number — qualitative size words license none.
 
-```arch
+```arch static
 room at (0,0) size 4000x3000 label "Bedroom"   # 12 m²
 ```
 
@@ -510,7 +510,7 @@ room at (0,0) size 4000x3000 label "Bedroom"   # 12 m²
 
 **Fix.** Add or remove rooms to reach the enumerated count. Gating tier: this failure fails `validateIntent`'s `ok`.
 
-```arch
+```arch static
 # brief lists 4 rooms; the plan draws 5 (and the extra is a bedroom, not a hall)
 ```
 
@@ -522,7 +522,7 @@ room at (0,0) size 4000x3000 label "Bedroom"   # 12 m²
 
 **Fix.** Add a `room` whose label, `uses`, or type matches the concept. Gating tier: this failure fails `validateIntent`'s `ok`.
 
-```arch
+```arch static
 room at (0,0) size 2000x2000 label "Bathroom" uses bath   # supply the missing room
 ```
 
@@ -534,7 +534,7 @@ room at (0,0) size 2000x2000 label "Bathroom" uses bath   # supply the missing r
 
 **Fix.** Grow or shrink rooms so the total lands in the band. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number.
 
-```arch
+```arch static
 # brief says "about 42 m²" (band 37.8–46.2); the plan totals 52 m²
 ```
 
@@ -546,7 +546,7 @@ room at (0,0) size 2000x2000 label "Bathroom" uses bath   # supply the missing r
 
 **Fix.** Add interior doors so every room connects back to the entrance. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).
 
-```arch
+```arch static
 door on wall_hall_store width 800   # connect the isolated room
 ```
 
@@ -558,7 +558,7 @@ door on wall_hall_store width 800   # connect the isolated room
 
 **Fix.** Use one of the supported kinds: opening `kind` must be `door` | `window` | `opening`.
 
-```arch
+```arch static
 { "openings": [ { "kind": "portal", "width": 900 } ] }   # error at /openings/0/kind: unknown kind "portal"
 ```
 
@@ -570,7 +570,7 @@ door on wall_hall_store width 800   # connect the isolated room
 
 **Fix.** Fix the value at the reported JSON path (the message names it, e.g. `/rooms/0/width`); express geometry as concrete numbers, and author scripting/imports in `.arch` source instead.
 
-```arch
+```arch static
 { "rooms": [ { "x": 0, "y": 0, "width": "big", "height": 3000 } ] }   # error at /rooms/0/width: expected a number
 ```
 
@@ -582,7 +582,7 @@ door on wall_hall_store width 800   # connect the isolated room
 
 **Fix.** Break the cycle by giving one of the rooms absolute `at (x,y)` coordinates.
 
-```arch
+```arch static
 room id=a right-of b size 100x100
 room id=b left-of a size 100x100   # error: a ↔ b cycle
 ```
@@ -595,7 +595,7 @@ room id=b left-of a size 100x100   # error: a ↔ b cycle
 
 **Fix.** Reference an existing room id, or fix the typo.
 
-```arch
+```arch static
 room id=k right-of ghost size 100x100   # error: no room "ghost"
 ```
 
@@ -607,7 +607,7 @@ room id=k right-of ghost size 100x100   # error: no room "ghost"
 
 **Fix.** Renumber one of them, or merge the two bodies into a single `level` block.
 
-```arch
+```arch static
 level 1 { room at (0,0) size 3000x3000 }
 level 1 { room at (0,0) size 3000x3000 }   # error: level 1 twice
 ```
@@ -620,7 +620,7 @@ level 1 { room at (0,0) size 3000x3000 }   # error: level 1 twice
 
 **Fix.** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.
 
-```arch
+```arch static
 plan "H" {
   room at (0,0) size 3000x3000   # error: move it into a level
   level 1 { wall exterior thickness 200 { (0,0) (3000,0) close } }
@@ -635,7 +635,7 @@ plan "H" {
 
 **Fix.** Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.
 
-```arch
+```arch static
 component c() { level 1 { } }   # error: only allowed at plan level
 ```
 
@@ -647,7 +647,7 @@ component c() { level 1 { } }   # error: only allowed at plan level
 
 **Fix.** Give the opening a positive `width`.
 
-```arch
+```arch static
 opening at (0,0) width 0   # error
 ```
 
@@ -659,7 +659,7 @@ opening at (0,0) width 0   # error
 
 **Fix.** Place the room or the fixture with explicit `at (x,y)` coordinates (a fixture may add `rotate`), or make the referenced room rectangular.
 
-```arch
+```arch static
 room id=L polygon (0,0) (6000,0) (6000,4000) (3000,4000) (3000,6000) (0,6000)
 furniture wc in L anchor bottom-left   # error: L is a polygon room
 ```
@@ -672,7 +672,7 @@ furniture wc in L anchor bottom-left   # error: L is a polygon room
 
 **Fix.** Reference an existing room given absolute `at (x,y)` coordinates.
 
-```arch
+```arch static
 furniture bed in bedrm centered size 1500x2000   # error: no room id=bedrm
 ```
 
@@ -684,7 +684,7 @@ furniture bed in bedrm centered size 1500x2000   # error: no room id=bedrm
 
 **Fix.** Install the optional dependency (`npm install @resvg/resvg-js`), or re-run with `--install` to fetch it automatically, or render to SVG/DXF (zero-dependency).
 
-```arch
+```arch static
 arch preview plan.arch --install   # fetches @resvg/resvg-js, then renders the PNG
 ```
 
@@ -696,7 +696,7 @@ arch preview plan.arch --install   # fetches @resvg/resvg-js, then renders the P
 
 **Fix.** Use a smaller range, or restructure to avoid materializing it.
 
-```arch
+```arch static
 for i in 0..1000000 { … }   # error: range too large
 ```
 
@@ -708,7 +708,7 @@ for i in 0..1000000 { … }   # error: range too large
 
 **Fix.** Add a base case so the recursion terminates.
 
-```arch
+```arch static
 component r(n) { r(n) }   # error: never terminates
 ```
 
@@ -720,7 +720,7 @@ component r(n) { r(n) }   # error: never terminates
 
 **Fix.** Rename one binding, or use `NAME = …` to reassign instead of redeclaring.
 
-```arch
+```arch static
 let x = 1
 let x = 2   # error: redefinition
 ```
@@ -733,7 +733,7 @@ let x = 2   # error: redefinition
 
 **Fix.** Give the room at least three vertices that actually turn a corner.
 
-```arch
+```arch static
 room polygon (0,0) (4000,0) (8000,0)   # error: all three are collinear
 ```
 
@@ -745,7 +745,7 @@ room polygon (0,0) (4000,0) (8000,0)   # error: all three are collinear
 
 **Fix.** Reorder the vertices so the ring is traced once around the room without crossing itself (a bow-tie usually means two vertices are swapped).
 
-```arch
+```arch static
 room polygon (0,0) (4000,4000) (4000,0) (0,4000)   # error: bow-tie
 ```
 
@@ -757,7 +757,7 @@ room polygon (0,0) (4000,4000) (4000,0) (0,4000)   # error: bow-tie
 
 **Fix.** Give the room a positive radius in millimetres.
 
-```arch
+```arch static
 room circle at (5000,5000) radius 0   # error: no floor
 ```
 
@@ -769,7 +769,7 @@ room circle at (5000,5000) radius 0   # error: no floor
 
 **Fix.** Give the room a positive `size W x H`.
 
-```arch
+```arch static
 room at (0,0) size 0x4000   # error: width is 0
 ```
 
@@ -781,7 +781,7 @@ room at (0,0) size 0x4000   # error: width is 0
 
 **Fix.** Drop `width` to fill the footprint, or give a value between 0 and the footprint's short side.
 
-```arch
+```arch static
 stair id=s at (0,0) size 900x2600 dir up width 1200   # error: cross extent is 900
 ```
 
@@ -793,7 +793,7 @@ stair id=s at (0,0) size 900x2600 dir up width 1200   # error: cross extent is 9
 
 **Fix.** Move the `strip` to the plan body, alongside the other elements.
 
-```arch
+```arch static
 component c() { strip right at (0,0) gap 0 { … } }   # error: nested strip
 ```
 
@@ -805,7 +805,7 @@ component c() { strip right at (0,0) gap 0 { … } }   # error: nested strip
 
 **Fix.** Give the room a `size <main>` (main-axis extent) plus either a strip `height`/`width` or its own `size <main>x<cross>`.
 
-```arch
+```arch static
 strip right at (0,0) gap 100 { room size }   # error: no extent
 ```
 
@@ -817,7 +817,7 @@ strip right at (0,0) gap 100 { room size }   # error: no extent
 
 **Fix.** Convert or supply the expected type.
 
-```arch
+```arch static
 room at (0,0) size "big" x 10   # error: size needs numbers
 ```
 
@@ -829,7 +829,7 @@ room at (0,0) size "big" x 10   # error: size needs numbers
 
 **Fix.** Define the component, import it, or fix the name (see the suggestion hint).
 
-```arch
+```arch static
 sofa(0, 0)   # error if no `component sofa` is in scope
 ```
 
@@ -841,7 +841,7 @@ sofa(0, 0)   # error if no `component sofa` is in scope
 
 **Fix.** Define it with `let f(…) = …`, or fix the name.
 
-```arch
+```arch static
 let x = frobnicate(2)   # error
 ```
 
@@ -853,7 +853,7 @@ let x = frobnicate(2)   # error
 
 **Fix.** Declare it with `let`, pass it as a parameter, or fix the typo.
 
-```arch
+```arch static
 let x = y + 1   # error if `y` is undefined
 ```
 
@@ -865,7 +865,7 @@ let x = y + 1   # error if `y` is undefined
 
 **Fix.** Give it a positive `size W x H` — the footprint the run occupies on this storey.
 
-```arch
+```arch static
 stair id=s at (0,0) size 900x0 dir up   # error: zero depth
 ```
 
@@ -877,7 +877,7 @@ stair id=s at (0,0) size 900x0 dir up   # error: zero depth
 
 **Fix.** Give the wall a positive `thickness`.
 
-```arch
+```arch static
 wall exterior thickness 0 { (0,0) (1,0) }   # error
 ```
 
@@ -889,7 +889,7 @@ wall exterior thickness 0 { (0,0) (1,0) }   # error
 
 **Fix.** Ensure the loop body updates a binding so the condition eventually fails.
 
-```arch
+```arch static
 let i = 0
 while i < 1 { column at (0,0) size 1x1 }   # error: i never changes
 ```
@@ -902,7 +902,7 @@ while i < 1 { column at (0,0) size 1x1 }   # error: i never changes
 
 **Fix.** Give the window a positive `width`.
 
-```arch
+```arch static
 window at (0,0) width 0   # error
 ```
 
@@ -914,7 +914,7 @@ window at (0,0) width 0   # error
 
 **Fix.** Add an explicit `uses …` to the room stating the inferred function — the machine-applicable fix inserts it for you. This pins the classification without changing the room's `describe()` type.
 
-```arch
+```arch static
 room at (0,0) size 2000x1500 label "Powder"   # warning: WC inferred from the alias "powder"; add `uses wc`
 ```
 
@@ -926,7 +926,7 @@ room at (0,0) size 2000x1500 label "Powder"   # warning: WC inferred from the al
 
 **Fix.** Add a door connecting the bathroom to a hall/living space, or route circulation so it is not reached only via a bedroom.
 
-```arch
+```arch static
 door id=d_bath at (5200,4000) width 800 wall partition   # lint: bath only off the bedroom
 ```
 
@@ -938,7 +938,7 @@ door id=d_bath at (5200,4000) width 800 wall partition   # lint: bath only off t
 
 **Fix.** Add a `window` on an exterior wall of the room.
 
-```arch
+```arch static
 room at (0,0) size 3000x4000 label "Bedroom"   # lint: no window
 ```
 
@@ -950,7 +950,7 @@ room at (0,0) size 3000x4000 label "Bedroom"   # lint: no window
 
 **Fix.** Add a more direct connection — a door or a hall — so the room is not reached the long way round.
 
-```arch
+```arch static
 room id=bed at (0,0) size 3000x3000 label "Bed"   # only door is on the far side, forcing a long detour
 ```
 
@@ -962,7 +962,7 @@ room id=bed at (0,0) size 3000x3000 label "Bed"   # only door is on the far side
 
 **Fix.** Swap the two endpoints — the machine-applicable fix does it for you — or negate the `offset`.
 
-```arch
+```arch static
 dim (0,6000)->(7000,6000) offset -500 text "7000"   # warning: the -500 offset pulls the line back inside
 ```
 
@@ -974,7 +974,7 @@ dim (0,6000)->(7000,6000) offset -500 text "7000"   # warning: the -500 offset p
 
 **Fix.** Put the endpoint on the centerline of the wall the dimension runs into (the room-rectangle corner coordinate), or drop the `faces`/`clear` keyword and write the face coordinate yourself.
 
-```arch
+```arch static
 wall exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }
 dim faces (0,9000)->(5000,9000) offset 600   # warning: nothing to project onto at y9000
 ```
@@ -987,7 +987,7 @@ dim faces (0,9000)->(5000,9000) offset 600   # warning: nothing to project onto 
 
 **Fix.** Widen the door to at least the minimum clear width.
 
-```arch
+```arch static
 door at (0,0) width 500 wall exterior   # lint: under 700 mm
 ```
 
@@ -999,7 +999,7 @@ door at (0,0) width 500 wall exterior   # lint: under 700 mm
 
 **Fix.** Move the door onto a wall, or name its host with `wall <id|category>`. The diagnostic points at the nearest wall.
 
-```arch
+```arch static
 door at (9999,9999) width 900   # warning: not on a wall
 ```
 
@@ -1011,7 +1011,7 @@ door at (9999,9999) width 900   # warning: not on a wall
 
 **Fix.** Clear the space directly in front of and behind the door, or move the door.
 
-```arch
+```arch static
 door at (6000,3000) width 800
 furniture wc at (5800,3050) size 700x400   # lint: WC blocks the doorway
 ```
@@ -1024,7 +1024,7 @@ furniture wc at (5800,3050) size 700x400   # lint: WC blocks the doorway
 
 **Fix.** Keep a single `accTitle` and a single `accDescr`; delete the extra line(s).
 
-```arch
+```arch static
 accTitle "A"
 accTitle "B"   # warning: "A" is discarded
 ```
@@ -1037,7 +1037,7 @@ accTitle "B"   # warning: "A" is discarded
 
 **Fix.** Add at least one element (wall, room, …).
 
-```arch
+```arch static
 plan "Empty" { units mm }   # warning
 ```
 
@@ -1049,7 +1049,7 @@ plan "Empty" { units mm }   # warning
 
 **Fix.** Add the `rotate` that puts the back on the walled edge — the machine-applicable fix inserts it when exactly one edge is walled. Better still, place the piece with `against wall <id>` or `in <room> anchor <edge>` and let the rotation be derived.
 
-```arch
+```arch static
 furniture wc at (5200,5200) size 400x700   # warning: south wall behind it, cistern facing north
 ```
 
@@ -1061,7 +1061,7 @@ furniture wc at (5200,5200) size 400x700   # warning: south wall behind it, cist
 
 **Fix.** Move the fixture so one edge is against a wall (supply/waste/venting runs in the wall), or remove it.
 
-```arch
+```arch static
 furniture wc at (3000,3000) size 400x700   # lint: no wall behind it
 ```
 
@@ -1073,7 +1073,7 @@ furniture wc at (3000,3000) size 400x700   # lint: no wall behind it
 
 **Fix.** Move the fixture inside the named room, or correct the `in <roomId>`.
 
-```arch
+```arch static
 furniture wc at (100,100) size 400x700 in bath   # lint: centre is not inside "bath"
 ```
 
@@ -1085,7 +1085,7 @@ furniture wc at (100,100) size 400x700 in bath   # lint: centre is not inside "b
 
 **Fix.** Leave the catalogued clearance clear in front of the fixture, or move the obstructing furniture.
 
-```arch
+```arch static
 furniture stove at (0,0) size 600x600
 furniture sofa at (0,650) size 2000x900   # lint: sofa blocks the stove front
 ```
@@ -1098,7 +1098,7 @@ furniture sofa at (0,650) size 2000x900   # lint: sofa blocks the stove front
 
 **Fix.** Move or resize one so they no longer intersect; leave a walkway between them.
 
-```arch
+```arch static
 furniture sofa at (300,300) size 2000x900
 furniture bed  at (1000,500) size 1500x2000   # lint: overlaps the sofa
 ```
@@ -1111,7 +1111,7 @@ furniture bed  at (1000,500) size 1500x2000   # lint: overlaps the sofa
 
 **Fix.** Move or resize the piece so it sits fully inside the room (against the wall face, not through it), or anchor it with `against wall <id>`.
 
-```arch
+```arch static
 furniture sofa at (350,2300) size 2000x900   # lint: crosses the partition at y3000
 ```
 
@@ -1123,7 +1123,7 @@ furniture sofa at (350,2300) size 2000x900   # lint: crosses the partition at y3
 
 **Fix.** Use a positive `scale`.
 
-```arch
+```arch static
 wall exterior thickness 200 material brick scale 0 { (0,0) (1,0) }
 ```
 
@@ -1135,7 +1135,7 @@ wall exterior thickness 200 material brick scale 0 { (0,0) (1,0) }
 
 **Fix.** Draw in the module's plan body, or import one of its named components with `import "<file>": <name>`.
 
-```arch
+```arch static
 import "lib.arch" as lib   # warning when lib.arch only declares components
 ```
 
@@ -1147,7 +1147,7 @@ import "lib.arch" as lib   # warning when lib.arch only declares components
 
 **Fix.** Add a `door` on an `exterior` wall.
 
-```arch
+```arch static
 wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }   # lint: no way in
 ```
 
@@ -1159,7 +1159,7 @@ wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }   # li
 
 **Fix.** Move the opening onto a wall, or name its host with `wall <id|category>`. The diagnostic points at the nearest wall.
 
-```arch
+```arch static
 opening at (9999,9999) width 1000   # warning: not on a wall
 ```
 
@@ -1171,7 +1171,7 @@ opening at (9999,9999) width 1000   # warning: not on a wall
 
 **Fix.** Widen the tightest door/opening on the route, or move the furniture pinching it, so the whole path clears the minimum width.
 
-```arch
+```arch static
 door at (4000,1500) width 600
 furniture cabinet at (3600,300) size 700x1200   # lint: the way through squeezes below 700 mm
 ```
@@ -1184,7 +1184,7 @@ furniture cabinet at (3600,300) size 700x1200   # lint: the way through squeezes
 
 **Fix.** Add a `door` on one of the room's walls.
 
-```arch
+```arch static
 room id=r at (0,0) size 3000x3000   # lint: no door on its perimeter
 ```
 
@@ -1196,7 +1196,7 @@ room id=r at (0,0) size 3000x3000   # lint: no door on its perimeter
 
 **Fix.** Move the anchor inside the room, or drop the `at (…)` and let the centroid decide (which is what a convex room wants anyway).
 
-```arch
+```arch static
 room polygon (0,0) (6000,0) (6000,6000) (0,6000) label "Hall" at (9000,9000)   # warning
 ```
 
@@ -1208,7 +1208,7 @@ room polygon (0,0) (6000,0) (6000,6000) (0,6000) label "Hall" at (9000,9000)   #
 
 **Fix.** Open up the layout: move or shrink the furniture nearest the door so there is a continuous walkable strip from each entrance into the room.
 
-```arch
+```arch static
 furniture shower at (5000,3000) size 2000x2000   # lint: fills the bathroom against its only door
 ```
 
@@ -1220,7 +1220,7 @@ furniture shower at (5000,3000) size 2000x2000   # lint: fills the bathroom agai
 
 **Fix.** Place the expected fixtures — e.g. import `lib/fixtures.arch` and add a `wc`, `basin`, `shower`, or `kitchen_sink`.
 
-```arch
+```arch static
 room at (4000,4000) size 3000x2000 label "Bath"   # lint: no fixtures inside
 ```
 
@@ -1232,7 +1232,7 @@ room at (4000,4000) size 3000x2000 label "Bath"   # lint: no fixtures inside
 
 **Fix.** Extend the partition so the room's perimeter is walled on all sides (a door/window in the wall is fine — only a missing wall counts).
 
-```arch
+```arch static
 wall partition thickness 100 { (4000,0) (4000,4000) }   # lint: stops short, bath left open
 ```
 
@@ -1244,7 +1244,7 @@ wall partition thickness 100 { (4000,0) (4000,4000) }   # lint: stops short, bat
 
 **Fix.** Adjust positions/sizes if the overlap is unintended (it is allowed).
 
-```arch
+```arch static
 room at (0,0) size 2000x2000
 room at (1000,0) size 2000x2000   # warning
 ```
@@ -1257,7 +1257,7 @@ room at (1000,0) size 2000x2000   # warning
 
 **Fix.** Increase its `size`, or merge it into an adjacent space.
 
-```arch
+```arch static
 room at (0,0) size 1000x1000 label "Closet"   # lint: 1 m²
 ```
 
@@ -1269,7 +1269,7 @@ room at (0,0) size 1000x1000 label "Closet"   # lint: 1 m²
 
 **Fix.** Add a door or cased `opening` linking it (directly or through a hall) to a space that reaches the entrance.
 
-```arch
+```arch static
 room at (5000,0) size 3000x3000 label "Store"   # lint: no path from the entrance
 ```
 
@@ -1281,7 +1281,7 @@ room at (5000,0) size 3000x3000 label "Store"   # lint: no path from the entranc
 
 **Fix.** Use a plain colour/string value (no `<`, `>`, or `url(data:…)`).
 
-```arch
+```arch static
 theme { wall: "<script>" }   # warning: stripped
 ```
 
@@ -1293,7 +1293,7 @@ theme { wall: "<script>" }   # warning: stripped
 
 **Fix.** Pick a coarser scale (a larger denominator draws the building smaller), move up a paper size, or drop the `scale` line and let the sheet auto-fit choose the finest scale from 1:50 / 1:100 / 1:200 / 1:500.
 
-```arch
+```arch static
 paper A4 landscape
 scale 1:50   # warning on a 20 m building: 1:100 or `paper A2` fits, or omit `scale` to auto-fit
 ```
@@ -1306,7 +1306,7 @@ scale 1:50   # warning on a 20 m building: 1:100 or `paper A2` fits, or omit `sc
 
 **Fix.** Draw the same run with the SAME `id` on the neighbouring storey (each storey declares its own `dir` — `up` on the lower floor, `down` on the upper one), or fix the id.
 
-```arch
+```arch static
 level 1 "G" { stair id=s at (0,0) size 900x2600 dir up }
 level 2 "1" { }   # warning: "s" is on level 1 only
 ```
@@ -1319,7 +1319,7 @@ level 2 "1" { }   # warning: "s" is on level 1 only
 
 **Fix.** Move the door or the obstruction, flip the `hinge`/`swing`, or use a sliding door so the leaf clears.
 
-```arch
+```arch static
 door at (4000,1500) width 900 swing in   # lint: leaf sweeps onto the bed
 ```
 
@@ -1331,7 +1331,7 @@ door at (4000,1500) width 900 swing in   # lint: leaf sweeps onto the bed
 
 **Fix.** Point `swing into` at a room the door actually opens onto, or use explicit `swing in|out`. The door falls back to its default swing.
 
-```arch
+```arch static
 door on w1 at 50% width 800 swing into faraway   # warning: not on this wall
 ```
 
@@ -1343,7 +1343,7 @@ door on w1 at 50% width 800 swing into faraway   # warning: not on this wall
 
 **Fix.** Use a known material (e.g. brick, concrete, insulation, tile) or omit it.
 
-```arch
+```arch static
 wall exterior thickness 200 material marble { (0,0) (1,0) }   # warning
 ```
 
@@ -1355,7 +1355,7 @@ wall exterior thickness 200 material marble { (0,0) (1,0) }   # warning
 
 **Fix.** Use a valid key (e.g. fill / stroke / label, depending on the kind).
 
-```arch
+```arch static
 style room { nope: "#000" }   # warning
 ```
 
@@ -1367,7 +1367,7 @@ style room { nope: "#000" }   # warning
 
 **Fix.** Use a known theme key (see the language reference / hover).
 
-```arch
+```arch static
 theme { nope: "#000" }   # warning
 ```
 
@@ -1379,6 +1379,6 @@ theme { nope: "#000" }   # warning
 
 **Fix.** Move the window onto a wall, or name its host with `wall <id|category>`. The diagnostic points at the nearest wall.
 
-```arch
+```arch static
 window at (9999,9999) width 1200   # warning: not on a wall
 ```

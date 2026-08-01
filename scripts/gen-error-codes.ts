@@ -48,7 +48,14 @@ export function renderErrorCodes(): string {
       "",
       `**Fix.** ${e.fix}`,
       "",
-      "```arch",
+      // `arch static`, never a bare `arch` fence. The docs site rewrites every plain
+      // ```arch fence into a live-compiling <ArchLive> widget, and a catalog example is
+      // a FRAGMENT that demonstrates a fault — so going live turned 104 of these into
+      // red cards on https://archlang.uk/errors, most of them reporting a generic
+      // `Expected "plan" but found …` that has nothing to do with the code being
+      // documented. `static` keeps the ArchLang syntax highlighting and drops the
+      // compile. `test/docs-fences.test.ts` holds the line.
+      "```arch static",
       e.example,
       "```",
       "",
