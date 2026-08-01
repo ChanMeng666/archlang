@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Control characters and unpaired surrogates in string literals reached every backend.** A label
+  containing a raw control char or a lone surrogate produced SVG that is not well-formed XML, an
+  ASCII plan with control bytes in it, and DXF whose group-code pairing could be broken. New
+  `src/text-safe.ts` (`xmlText` / `plainText`) is wired into the SVG, ASCII, DXF, theme and PDF
+  paths. It is the **identity on well-formed text**, so every existing snapshot and golden is
+  byte-unchanged.
+- **`RoomSummary.floor_circle` was emitted at runtime but missing from the public type** since
+  v1.24.0 — a consumer typing `describe()`'s output could not see a circular room's exact centre
+  and radius. Append-only type fix.
+- **Playground: click-to-source never fired with a real mouse.** The pan/zoom controller's
+  `setPointerCapture` retargets the click away from the drawn element, so reading `e.target` always
+  missed; `interact.ts` now hit-tests the POINT via `elementFromPoint`. Invisible to the type
+  checker, the unit suite and `vite build` alike — found by the first Playwright run.
+- **Docs site: live `arch` fences that could not compile.** A plain ```` ```arch ```` fence becomes
+  a running `<ArchLive>` widget in the reader's browser, so `/relational`'s opening fragment
+  rendered a red error card and `/errors` rendered 104 widgets of which 103 showed a generic
+  parse error instead of the code each section documents. Fixed at the source
+  (`scripts/gen-error-codes.ts` emits `arch static`) and gated by `test/docs-fences.test.ts`.
+
+### Changed (infrastructure — no language or output change)
+
+- **Automated testing buildout.** The verification system is now mapped end to end in the new
+  **`docs/testing.md`**: the three tiers (local, PR, nightly), every guard with the law it enforces
+  and what to do when it goes red, and the house patterns for adding tests.
+  - **PR CI** gained a `builds` job (all four workspaces compile, `typecheck:all`, MCP baked-resource
+    freshness, VS Code bundle tests), a Windows leg (tests + drift at runner-default line endings),
+    two Playwright E2E jobs (playground, docs) and CodeQL; the Node 22 leg now also collects
+    report-only coverage over `src/` (no thresholds — `npm test` stays the single pass/fail signal).
+  - **New `nightly.yml`**: production smoke, a report-only dependency audit into a pinned issue,
+    a full-history secret scan, a wider OS×Node matrix, and the read-only `@prod` Playwright subset
+    against the live sites (also a deploy-staleness probe).
+  - **Three by-hand release probes became gates**: MCP pack-time resource staleness
+    (`packages/mcp/scripts/check-dist-resources.mjs` + the string-equality dep-range pin in
+    `packages/mcp/test/lockstep.test.ts`), the MCP `server.json` ↔ `package.json` version lockstep,
+    and the VS Code "did the rebundle take" symbol count (now the `__CORE_VERSION__` bundle stamp).
+    Post-deploy verification moved from a root-URL `curl` to `scripts/smoke.mjs`, which checks every
+    machine route and asset, parsed from `sync-docs.mjs`'s own tables.
+  - **New suites**: site/brand/share-codec/docs-sync lockstep guards, the GFM `\|`-in-table and
+    live-`arch`-fence docs tripwires, output-escaping fuzz over SVG/ASCII/DXF, full MCP
+    tool/resource/lockstep/fuzz coverage, VS Code LSP handler + stdio + bundle-freshness tests, and
+    Playwright suites for both sites. `test/visual.test.ts`'s missing-`@resvg/resvg-js` case is now
+    a hard failure in CI instead of a silent vacuous pass.
+  - **New scripts**: `typecheck:all`, `test:coverage`, `e2e:playground`, `e2e:docs`,
+    `build:workspaces` and the four `*:only` workspace builds.
+
 ## [1.24.0] - 2026-07-26
 
 ### Added
