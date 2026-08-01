@@ -313,7 +313,7 @@ export function systemPrompt(): string {
  *  Exported so the L2 harness parses model replies identically to the L0 path. */
 export function extractArch(text: string): string {
   const m = text.match(/```(?:arch)?\n([\s\S]*?)```/);
-  return (m ? m[1] : text).trim();
+  return (m ? m[1]! : text).trim();
 }
 
 /** Author a plan via the Anthropic Messages API. */

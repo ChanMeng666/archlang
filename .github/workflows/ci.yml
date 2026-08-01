@@ -38,11 +38,127 @@ jobs:
       - name: Generated artifacts are in sync
         run: npm run check:drift
 
+      # Coverage is instrumented on ONE leg (Node 22) instead of in a job of its
+      # own, so it costs one instrumented run rather than a second `npm ci` + suite,
+      # and the 18/20 legs pay nothing at all. It is REPORT-ONLY: there are no
+      # thresholds and no step below can fail on a coverage number — `npm test`
+      # stays the single pass/fail signal.
       - name: Test
+        if: matrix.node != 22
         run: npm test
+
+      - name: Test (+ coverage, report-only)
+        if: matrix.node == 22
+        run: npm run test:coverage
+
+      - name: Coverage summary
+        if: matrix.node == 22
+        run: |
+          node --input-type=commonjs -e '
+          const t = JSON.parse(require("node:fs").readFileSync("coverage/coverage-summary.json", "utf8")).total;
+          const rows = ["lines", "statements", "functions", "branches"].map(
+            (k) => "| " + k + " | " + t[k].pct + "% | " + t[k].covered + " / " + t[k].total + " |",
+          );
+          console.log(
+            [
+              "## Coverage — `src/` (report-only, never gates)",
+              "",
+              "| Metric | % | Covered / Total |",
+              "| --- | --- | --- |",
+              ...rows,
+            ].join("\n"),
+          );
+          ' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage summary
+        if: matrix.node == 22
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-summary
+          path: coverage/coverage-summary.json
+          if-no-files-found: error
 
       - name: Authorability eval (offline golden regression guard)
         run: npm run eval:ci
+
+  builds:
+    name: Workspace builds
+    runs-on: ubuntu-latest
+    # The core suite never compiles the downstream workspaces, so a change that
+    # breaks the docs site, the playground, the MCP shim or the VS Code extension
+    # used to reach `main` green. This job compiles all four.
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Every workspace consumes the core's `dist/`, and the root
+      # `docs:build`/`playground:build`/`mcp:build` scripts each BEGIN with their
+      # own `npm run build`. Running those four here would rebuild the core four
+      # times, so the core is built once and CI calls the `:only` variants.
+      - name: Build core (once — every workspace below consumes dist/)
+        run: npm run build
+
+      # Fails fast, before the slower site builds. Covers the root dev tsconfig
+      # (src + test + eval + dataset + scripts + bench) plus the playground, the
+      # MCP shim and the VS Code extension. The playground leg resolves the bare
+      # `archlang` specifier to ../dist/index.d.ts, hence after the build above.
+      - name: Type-check every workspace
+        run: npm run typecheck:all
+
+      - name: Build docs site
+        run: npm run docs:build:only
+
+      - name: Build playground
+        run: npm run playground:build:only
+
+      - name: Build MCP shim
+        run: npm run mcp:build:only
+
+      - name: Build VS Code extension
+        run: npm run vscode:build:only
+
+      # (appended by later workstreams)
+
+  windows:
+    name: Windows (tests + drift)
+    runs-on: windows-latest
+    # Determinism is a core invariant, and the whole toolchain is developed on
+    # Windows — but CI only ever proved it on Linux. This leg catches the two
+    # things that actually differ: line endings (a golden/snapshot mismatch) and
+    # path handling in the generators.
+    #
+    # NOTE: git's line-ending settings are deliberately left at the RUNNER
+    # DEFAULTS (no core.autocrlf override). `.gitattributes` pins `* text=auto
+    # eol=lf`, and this job's whole point is to fail if that ever stops holding —
+    # forcing autocrlf here would hide exactly the regression it exists to catch.
+    #
+    # `eval:ci` and the benchmark are Linux-only on purpose: the eval is already
+    # covered by the matrix above and bench timings are runner-dependent.
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Generated artifacts are in sync
+        run: npm run check:drift
 
   bench:
     name: Benchmark (informational)

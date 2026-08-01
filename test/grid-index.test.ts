@@ -61,8 +61,8 @@ describe("room-overlap grid ≡ O(n²) (T3.7)", () => {
         const want: string[] = [];
         for (let a = 0; a < rooms.length; a++) {
           for (let b = a + 1; b < rooms.length; b++) {
-            const r1 = rooms[a];
-            const r2 = rooms[b];
+            const r1 = rooms[a]!;
+            const r2 = rooms[b]!;
             const ox = Math.max(0, Math.min(r1.x + r1.w, r2.x + r2.w) - Math.max(r1.x, r2.x));
             const oy = Math.max(0, Math.min(r1.y + r1.h, r2.y + r2.h) - Math.max(r1.y, r2.y));
             if (ox > 1 && oy > 1) want.push(`Rooms "r${a}" and "r${b}" overlap`);

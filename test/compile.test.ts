@@ -97,7 +97,7 @@ describe("compile — error cases", () => {
     const { errors, svg } = compile(src, { noCache: true });
     expect(svg).toBe("");
     expect(errors.length).toBeGreaterThan(0);
-    expect(errors[0].line).toBeTypeOf("number");
+    expect(errors[0]!.line).toBeTypeOf("number");
   });
 
   it("errors on a non-positive room size", () => {
@@ -116,7 +116,7 @@ describe("compile — error cases", () => {
     const { warnings, errors } = compile(src, { noCache: true });
     expect(errors).toEqual([]);
     expect(warnings.some((w) => /does not lie on any wall/.test(w.message))).toBe(true);
-    expect(warnings[0].line).toBeTypeOf("number");
+    expect(warnings[0]!.line).toBeTypeOf("number");
   });
 
   it("warns on overlapping rooms", () => {
@@ -133,6 +133,6 @@ describe("compile — error cases", () => {
   it("reports a clear message on unknown statements", () => {
     const src = `plan "E" { kitchen at (0,0) }`;
     const { errors } = compile(src, { noCache: true });
-    expect(errors[0].message).toMatch(/Unknown statement "kitchen"/);
+    expect(errors[0]!.message).toMatch(/Unknown statement "kitchen"/);
   });
 });

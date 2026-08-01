@@ -364,7 +364,7 @@ suite("a door on a curve swings off the TANGENT at its own position", () => {
 }`;
 
   it("takes the leaf direction from the tangent, not from the chord", () => {
-    const scene = compile(src, { scene: true }).scene!;
+    const scene = compile(src).scene!;
     const leaf = scene.nodes.find((n) => n.layer === "doors" && n.prim.t === "line")!;
     const p = leaf.prim as { a: { x: number; y: number }; b: { x: number; y: number } };
     // The door sits at the arc's south point (6000,6000); the tangent there is horizontal,
@@ -376,7 +376,7 @@ suite("a door on a curve swings off the TANGENT at its own position", () => {
   });
 
   it("emits the swing as a real arc primitive", () => {
-    const scene = compile(src, { scene: true }).scene!;
+    const scene = compile(src).scene!;
     expect(scene.nodes.filter((n) => n.layer === "doors" && n.prim.t === "arc")).toHaveLength(1);
   });
 });
@@ -397,7 +397,7 @@ suite("rendering — visible faces are TRUE arcs, fills are tessellated", () => 
     // so the SVG's hardcoded large-arc flag of 0 and the DXF's minorArcDegrees stay valid.
     const full = `plan "P" { wall id=w exterior thickness 200 {
       (12000,0) arc (0,0) radius 6000 arc (12000,0) radius 6000 } }`;
-    const scene = compile(full, { scene: true }).scene!;
+    const scene = compile(full).scene!;
     const faces = scene.nodes.filter((n) => n.layer === "wallFace" && n.prim.t === "arc");
     // 2 semicircles × 2 faces × 2 pieces.
     expect(faces).toHaveLength(8);
@@ -405,7 +405,7 @@ suite("rendering — visible faces are TRUE arcs, fills are tessellated", () => 
 
   it("emits native ARC/CIRCLE entities in DXF", async () => {
     const { toDxf } = await import("../src/export/dxf.js");
-    const dxf = toDxf(compile(CURVE, { scene: true }).scene!);
+    const dxf = toDxf(compile(CURVE).scene!);
     expect(dxf).toMatch(/\nARC\n/);
     expect(dxf).toMatch(/\nCIRCLE\n/);
   });
@@ -448,7 +448,7 @@ suite("dimensioning a curve", () => {
     // The arc runs along the bottom of the plan; a chain there would need a tick at the
     // arc's own coordinates. `probeSide` skips curves, so the bottom facade falls back to
     // the measured extent and no chain is anchored on the curve's centreline.
-    const scene = compile(AUTO, { scene: true }).scene!;
+    const scene = compile(AUTO).scene!;
     const dimTexts = scene.nodes
       .filter((n) => n.layer === "dims" && n.prim.t === "text")
       .map((n) => (n.prim as { value: string }).value);
@@ -686,7 +686,7 @@ suite("LAW: a curve compiles identically with and without the clipper2 backend",
   it("keeps the STRAIGHT walls of a mixed plan on the boolean (the split is per wall)", () => {
     // The aquarium's straight partitions still union into multi-loop `region` nodes; only
     // the two arc-bearing walls take the per-segment path.
-    const scene = compile(AQUARIUM, { scene: true }).scene!;
+    const scene = compile(AQUARIUM).scene!;
     expect(scene.nodes.some((n) => n.layer === "wallFace" && n.prim.t === "region")).toBe(true);
     expect(scene.nodes.some((n) => n.layer === "wallFace" && n.prim.t === "arc")).toBe(true);
   });

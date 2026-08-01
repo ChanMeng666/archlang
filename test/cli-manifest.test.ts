@@ -15,7 +15,7 @@ describe("manifest — no drift vs the CLI dispatch", () => {
     const src = readFileSync("src/cli.ts", "utf8");
     const region = src.slice(src.indexOf("switch (cmd)"));
     const dispatched = new Set<string>();
-    for (const m of region.matchAll(/case "([a-z]+)":/g)) dispatched.add(m[1]);
+    for (const m of region.matchAll(/case "([a-z]+)":/g)) dispatched.add(m[1]!);
     expect([...dispatched].sort()).toEqual([...new Set(MANIFEST_COMMAND_NAMES)].sort());
   });
 });
@@ -79,7 +79,7 @@ describe("manifest — fixture categories match the glyph renderer", () => {
     const src = readFileSync("src/elements/fixtures-glyphs.ts", "utf8");
     const region = src.slice(src.indexOf("switch (category)"));
     const cases = new Set<string>();
-    for (const m of region.matchAll(/case "([a-z_]+)":/g)) cases.add(m[1]);
+    for (const m of region.matchAll(/case "([a-z_]+)":/g)) cases.add(m[1]!);
     expect([...new Set(FIXTURE_CATEGORIES)].sort()).toEqual([...cases].sort());
   });
 });

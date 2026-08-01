@@ -78,7 +78,7 @@ describe("furniture `in <room>` ownership", () => {
 
   it("surfaces the owning room in describe() and round-trips through the formatter", () => {
     const src = twoRoom(`furniture wc at (4200,200) size 400x700 in bath`);
-    expect(describePlan(src).furniture[0].room).toBe("bath");
+    expect(describePlan(src).furniture[0]!.room).toBe("bath");
     expect(format(src)).toContain("size 400x700 in bath");
   });
 });

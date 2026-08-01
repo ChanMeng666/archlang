@@ -20,6 +20,8 @@
     "baseUrl": ".",
     "paths": { "archlang": ["../dist/index.d.ts"] }
   },
-  "include": ["src"],
+  // `test` is included so the playground's own vitest suites are typechecked too —
+  // they were previously invisible to every typecheck in the repo.
+  "include": ["src", "test"],
   "exclude": ["node_modules", "dist"]
 }

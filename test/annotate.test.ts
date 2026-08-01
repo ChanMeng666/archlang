@@ -42,7 +42,9 @@ describe("annotate (opt-in data-span)", () => {
 
   it("spans point at the source that produced each primitive", () => {
     const { svg } = compile(SRC, { annotate: true, noCache: true });
-    const spans = [...svg.matchAll(/data-span="(\d+):(\d+)"/g)].map((m) => [Number(m[1]), Number(m[2])]);
+    const spans = [...svg.matchAll(/data-span="(\d+):(\d+)"/g)].map(
+      (m) => [Number(m[1]), Number(m[2])] as [number, number],
+    );
     expect(spans.length).toBeGreaterThan(0);
     // Every span is a valid half-open range within the source.
     for (const [s, e] of spans) {

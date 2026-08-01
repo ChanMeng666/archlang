@@ -1,0 +1,18 @@
+{
+  // Full-repo development typecheck. The shipped `tsconfig.json` deliberately
+  // checks only `src` (it is also the build config, and `dist/` must contain
+  // nothing but the published core), which left `test/`, `eval/`, `dataset/`,
+  // `scripts/` and `bench/` unchecked — a type error there could only ever be
+  // found by running the code. This config checks all of them under the SAME
+  // strict options, emitting nothing.
+  //
+  // No option is relaxed: the whole repo passes with `strict` +
+  // `noUncheckedIndexedAccess` on.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false
+  },
+  "include": ["src", "test", "eval", "dataset", "scripts", "bench"],
+  "exclude": ["node_modules", "dist", "playground", "docs-site", "packages", "editors"]
+}

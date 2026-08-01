@@ -40,6 +40,6 @@ describe("CLI — preview (PNG you can look at)", () => {
     // The CLI maps a resvg/pdfkit load failure to E_PNG_DEPENDENCY (+ fix) in --json.
     const entry = ERROR_CATALOG.E_PNG_DEPENDENCY;
     expect(entry).toBeDefined();
-    expect(entry.fix).toMatch(/@resvg\/resvg-js/);
+    expect(entry!.fix).toMatch(/@resvg\/resvg-js/);
   });
 });

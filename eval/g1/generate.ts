@@ -119,7 +119,7 @@ export function buildUserPrompt(entry: CorpusEntry): string {
  *  else return the trimmed text as-is. */
 export function extractJson(text: string): string {
   const m = text.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
-  return (m ? m[1] : text).trim();
+  return (m ? m[1]! : text).trim();
 }
 
 /** One OpenAI chat-completions call. Dependency-free `fetch`; pinned `seed` and a completion

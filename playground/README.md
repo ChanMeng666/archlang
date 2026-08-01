@@ -27,7 +27,11 @@ consumes the built core (`../dist/index.js`). Deployed at
   Exports strip the `data-span` annotations, so downloaded files stay clean.
 - **Layout:** draggable resizable split, 5 render themes, 2 lint profiles; responsive.
 
-The app is written in **TypeScript** (`src/*.ts`), typechecked as part of the build.
+The app is written in **TypeScript** (`src/*.ts`). Note that `npm run build` does **not**
+typecheck it — Vite strips types with esbuild without checking them. Run `npm run typecheck`
+(in this workspace) or the repo-root `npm run typecheck:all` for that; both are in CI. The
+typecheck resolves the bare `archlang` specifier to `../dist/index.d.ts`, so build the core
+first (`npm run build` at the repo root).
 
 ## Module layout (`src/`)
 

@@ -46,7 +46,11 @@ function timeit(fn: () => void, iters: number, warmup = 5): Stat {
   }
   samples.sort((a, b) => a - b);
   const sum = samples.reduce((a, b) => a + b, 0);
-  return { min: samples[0], mean: sum / samples.length, median: samples[Math.floor(samples.length / 2)] };
+  return {
+    min: samples[0]!,
+    mean: sum / samples.length,
+    median: samples[Math.floor(samples.length / 2)]!,
+  };
 }
 
 const ms = (n: number) => `${n.toFixed(2)} ms`;
