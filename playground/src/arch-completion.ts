@@ -22,34 +22,42 @@ export const KIND_TO_CM: Record<CompletionKind, string> = {
 };
 
 /**
- * A CodeMirror `autocompletion` extension whose single source asks the compiler
- * what identifiers are in scope at the cursor. ArchLang identifiers can contain
- * hyphens (`right-of`, `left-of`, `drawn_by`), so the matched word includes `-`.
+ * The completion source itself, exported so it can be exercised without standing
+ * up a CodeMirror editor: it reads only `matchBefore`, `explicit`, `state.doc` and
+ * `pos` off the context, which is a stubbable surface.
+ *
+ * It asks the compiler what identifiers are in scope at the cursor. ArchLang
+ * identifiers can contain hyphens (`right-of`, `left-of`, `drawn_by`), so the
+ * matched word includes `-`. Returning null means "no popup": there is no word
+ * under an unprompted cursor, the core threw, or it had nothing to offer.
+ * Completion is advisory — it must never break typing.
+ */
+export function archCompletionSource(ctx: CompletionContext): CompletionResult | null {
+  const word = ctx.matchBefore(/[\w-]+/);
+  if (!word && !ctx.explicit) return null;
+  let items: ReturnType<typeof archComplete>;
+  try {
+    items = archComplete(ctx.state.doc.toString(), ctx.pos);
+  } catch {
+    return null; // completion is advisory — never break typing on a parse hiccup
+  }
+  if (!items || items.length === 0) return null;
+  return {
+    from: word ? word.from : ctx.pos,
+    options: items.map((i) => ({
+      label: i.label,
+      type: KIND_TO_CM[i.kind] ?? "text",
+      detail: i.detail,
+      info: i.doc,
+    })),
+    validFor: /^[\w-]*$/,
+  };
+}
+
+/**
+ * A CodeMirror `autocompletion` extension whose single source is
+ * {@link archCompletionSource}.
  */
 export function archCompletion() {
-  return autocompletion({
-    override: [
-      (ctx: CompletionContext): CompletionResult | null => {
-        const word = ctx.matchBefore(/[\w-]+/);
-        if (!word && !ctx.explicit) return null;
-        let items: ReturnType<typeof archComplete>;
-        try {
-          items = archComplete(ctx.state.doc.toString(), ctx.pos);
-        } catch {
-          return null; // completion is advisory — never break typing on a parse hiccup
-        }
-        if (!items || items.length === 0) return null;
-        return {
-          from: word ? word.from : ctx.pos,
-          options: items.map((i) => ({
-            label: i.label,
-            type: KIND_TO_CM[i.kind] ?? "text",
-            detail: i.detail,
-            info: i.doc,
-          })),
-          validFor: /^[\w-]*$/,
-        };
-      },
-    ],
-  });
+  return autocompletion({ override: [archCompletionSource] });
 }

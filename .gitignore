@@ -5,6 +5,10 @@ dist/
 coverage/
 playground/dist/
 playground/node_modules/
+# Playwright E2E artifacts (traces, screenshots, HTML report) — per-run, never committed.
+playground/test-results/
+playground/playwright-report/
+playground/blob-report/
 *.tsbuildinfo
 *.vsix
 # Live eval output is ephemeral (moves with the model/day) — the committed
