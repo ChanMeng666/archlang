@@ -182,7 +182,11 @@ function docsChecks() {
     route(
       "/plan.schema.json",
       json((s) => {
-        if (!String(s.$id).includes("archlang.uk")) throw new Error(`$id is ${JSON.stringify(s.$id)}`);
+        // Parse rather than substring-match: `new URL().hostname` is exact, so a
+        // schema $id pointing anywhere else (or carrying the domain in a path
+        // segment) fails loudly. (Also keeps CodeQL's URL-sanitization check quiet.)
+        const host = new URL(String(s.$id)).hostname;
+        if (host !== "archlang.uk") throw new Error(`$id is ${JSON.stringify(s.$id)} (host ${host})`);
       }),
     ),
     route("/intent.schema.json", json()),

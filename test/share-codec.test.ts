@@ -30,8 +30,9 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { inflateRawSync } from "node:zlib";
 import { afterAll, describe, expect, it } from "vitest";
-import { bytesToB64url, encodeSrc, srcFromHash } from "../playground/src/share.js";
+import { b64urlToBytes, bytesToB64url, encodeSrc, srcFromHash } from "../playground/src/share.js";
 
 const ARCHLIVE = "docs-site/.vitepress/theme/components/ArchLive.vue";
 const GEN_PERMALINK = "scripts/gen-permalink.mjs";
@@ -141,7 +142,12 @@ describe("the #z= share scheme is pinned (playground/src/share.ts is canonical)"
   });
 
   it.each(FIXTURES)("$name round-trips back to the exact source", async (f) => {
-    expect(await srcFromHash(`#z=${f.z}`)).toBe(f.source);
+    // The pinned `#z=` payload is deflate-raw data whatever Node runs the test, so
+    // decode it via node:zlib unconditionally; `srcFromHash` itself can only speak
+    // deflate-raw where the Web stream supports it (Node >= 21.2), so that
+    // cross-check is capability-gated. The legacy `#src=` path works everywhere.
+    expect(new TextDecoder().decode(inflateRawSync(b64urlToBytes(f.z)))).toBe(f.source);
+    if (HAS_DEFLATE_RAW) expect(await srcFromHash(`#z=${f.z}`)).toBe(f.source);
     expect(await srcFromHash(`#src=${f.raw}`)).toBe(f.source);
   });
 
@@ -184,7 +190,10 @@ describe(`${GEN_PERMALINK} mints hashes in the canonical scheme`, () => {
     const source = readFileSync("examples/studio.arch", "utf8");
     const { url } = genPermalink(source, "studio.arch");
     const hash = url.slice(url.indexOf("#"));
-    expect(await srcFromHash(hash)).toBe(source);
+    // The generator always mints `#z=` (node:zlib), so prove decode-compatibility
+    // via zlib on every Node, and through `srcFromHash` where the Web stream can.
+    expect(new TextDecoder().decode(inflateRawSync(b64urlToBytes(hash.slice("#z=".length))))).toBe(source);
+    if (HAS_DEFLATE_RAW) expect(await srcFromHash(hash)).toBe(source);
   });
 });
 
