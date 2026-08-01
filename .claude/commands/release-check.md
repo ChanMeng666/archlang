@@ -62,7 +62,26 @@ you observed. Do NOT push anything — this command only verifies.
      a hard CI gate (`.github/workflows/ci.yml`) and it is separate from `npm run check`, which
      does **not** run it. It is the gate that catches a `src/manifest.ts` edit whose
      `docs/cli-reference.md` was never regenerated — the single most common way a release goes red.
+   - `npm run typecheck:all` — the four workspaces typecheck too (CI's `builds` job).
    - `npm run docs:build` — the docs site still builds (the core suite does not compile it).
+   - **Confirm the PR gates for the release commit are green on GitHub** —
+     `gh run list --branch main --limit 5` / `gh run view <id>`. `ci.yml` alone has five gating
+     jobs and `codeql.yml` a sixth; a green local `npm run check` is a subset of them, not a
+     substitute. What each job catches: `docs/testing.md` §1.
+
+7. **The two artifacts that used to need a by-hand probe are now GATED — confirm the gate, don't
+   redo the recipe.** Both live in CI's `builds` job; run them locally if it has not run yet:
+
+   ```bash
+   npm run build && npm run mcp:build:only
+   node packages/mcp/scripts/check-dist-resources.mjs   # every baked MCP resource == its repo source
+   npm run vscode:build:only && npx vitest run editors/vscode   # incl. the __CORE_VERSION__ bundle stamp
+   npx vitest run packages/mcp/test/lockstep.test.ts    # both server.json versions, mcpName, dep range
+   ```
+
+   A red `check-dist-resources` means rebuild (and `npm run gen:all` first if the repo artifact is
+   itself stale). A red dep-range assertion is **expected on every core release** and is the
+   intended prompt to bump the shim — see item 2.
 
 ## Reminders (do not act on these here — they are context for the push)
 
@@ -74,24 +93,18 @@ you observed. Do NOT push anything — this command only verifies.
   management is human-with-interactive-2FA only.
 - **The VS Code extension bundles the core at build time.** A language-surface change (new
   token/keyword, grammar change, new quick-fix) means a Marketplace republish of
-  `ChanMeng.archlang` — see `CONTRIBUTING.md#releasing`. Verify the `.vsix` by searching the built
-  `editors/vscode/dist/server.js` for a new keyword/code, not by reading the version string.
-  **Verify it by COUNT, with Node — a bare "no match" is not evidence.** Read the bundle and count
-  occurrences of each new symbol, so a present symbol shows a number and an absent one shows `0`:
-
-  ```bash
-  node -e "const s=require('fs').readFileSync('editors/vscode/dist/server.js','utf8'); \
-    for (const k of ['E_LEVEL_MIX','escalator']) console.log(k, s.split(k).length - 1)"
-  ```
-
-  This is immune to two ways a grep-style check lies about a build artifact: the bundle's line
-  shape (esbuild's wrapping is not guaranteed, and a line-oriented matcher on a one-line bundle can
-  read as a false negative), and regex metacharacters in the pattern — several of this language's
-  surface strings contain `|`, `"`, or `-` (`dir up|down`, `"stair"`, `--level`), which a PowerShell
-  `Select-String` will interpret as a regex unless you pass `-SimpleMatch`. A `0` count for a symbol
-  the new core defines is the real failure signal; anything else means the rebundle took.
-  *(2026-07-26, v1.21.0: `server.js` was 24,595 lines / 3,983 max line and `Select-String` did work —
-  but the count is what proved it, and it costs nothing to be shape-independent.)*
+  `ChanMeng.archlang` — see `CONTRIBUTING.md#releasing`. **"Did the rebundle take?" is now a test,
+  not a by-hand probe:** esbuild stamps the resolved core version into `dist/server.js` as
+  `__CORE_VERSION__` and `editors/vscode/test/stdio.test.ts` asserts it equals that version, over a
+  real LSP round-trip against the built bundle. Confirm the gate — `npm run vscode:build:only &&
+  npx vitest run editors/vscode` (CI's `builds` job runs exactly this) — rather than counting
+  symbols in the artifact. The old count-with-Node recipe was replaced because a version stamp
+  cannot be stale-but-plausible the way a hand-picked symbol list can: it fails for *every* core
+  change, not only the ones somebody remembered to grep for.
+  - Still true, and why the test spawns the bundle rather than reading it: never judge a build
+    artifact with a line-oriented or regex matcher. esbuild's wrapping is not guaranteed, and
+    several of this language's surface strings contain `|`, `"` or `-`, which PowerShell's
+    `Select-String` treats as a regex unless you pass `-SimpleMatch`.
 - **The shim's handshake drift is FIXED** (0.2.3, 2026-07-26): `packages/mcp/src/server.ts` derives
   its `McpServer` version from `package.json` via `readShimVersion()`, mirroring the core's
   `readVersion()` in `src/cli/io.ts`, and a test pins the two together. Don't "fix" it again — and
@@ -99,16 +112,18 @@ you observed. Do NOT push anything — this command only verifies.
 - **Ask what the shim SHIPS, not just what its diff says.** Its `archlang://spec` / `context` /
   `grammar` resources are copied into the tarball at **pack time**
   (`packages/mcp/scripts/copy-resources.mjs`), so they freeze at the last publish while the `^1.x`
-  dep range resolves to a current core. Nothing catches that: `check:drift` compares the *repo-root*
-  artifacts, and `git diff <lasttag>..main -- packages/mcp` is empty. Published 0.2.2 handed hosts a
-  **v1.19 GBNF grammar that could not decode** `arc`/`polygon`/`zone`/`level` at all. On any release
-  that changed the language surface, unpack the published shim and **count** symbols:
+  dep range resolves to a current core. `check:drift` does not see it (it compares the *repo-root*
+  artifacts) and `git diff <lasttag>..main -- packages/mcp` is empty. Published 0.2.2 handed hosts a
+  **v1.19 GBNF grammar that could not decode** `arc`/`polygon`/`zone`/`level` at all.
 
-  ```bash
-  npm pack @chanmeng666/archlang-mcp@<published> && tar -xzf chanmeng666-archlang-mcp-*.tgz
-  node -e "const s=require('fs').readFileSync('package/dist/archlang.gbnf','utf8'); \
-    for (const k of ['arc','circle','polygon','zone','level','paper']) console.log(k, s.split(k).length-1)"
-  ```
+  **Two gates now cover this class, and item 7 above is how you confirm them** — the by-hand
+  `npm pack` + symbol-count probe is retired:
+  `packages/mcp/scripts/check-dist-resources.mjs` byte-compares every baked resource against its
+  repo source (CI's `builds` job), and the dep-range assertion in
+  `packages/mcp/test/lockstep.test.ts` is a **string** equality against `^` + the root version, so a
+  core release reddens the shim on purpose until it is consciously re-pinned and rebuilt. Do not
+  relax that to a semver-satisfies check to green a release.
 
-  A `0` for a keyword the current core defines means the shim is lying to hosts, and **only a version
-  bump ships the fix** — that is a legitimate reason to spend one even when the diff is empty.
+  What the gates cannot do is publish for you: **only a version bump ships the refreshed
+  resources** — that is a legitimate reason to spend one even when the diff is empty — and the bump
+  must land in BOTH `packages/mcp/package.json` and BOTH of `server.json`'s version fields.

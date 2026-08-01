@@ -77,7 +77,20 @@ that layer: **a display filter must never change an exit code or `ok`** (they co
 diagnostic set), and **an unrecognized flag or verb must exit 3** with a did-you-mean — never be
 swallowed as a filename. Keep the flagship
 `examples/studio.arch` **lint-clean and import-free**, and update snapshots/goldens
-(`vitest -u`, `UPDATE_GOLDENS=1 vitest run test/visual.test.ts`) only after reviewing the diff.
+(`vitest -u`, `UPDATE_GOLDENS=1 vitest run test/visual.test.ts`, `ASCII_UPDATE=1 vitest run
+test/ascii.test.ts`) only after reviewing the diff — never to green a red suite.
+
+Beyond the CLI, prove the surfaces the core suite does not compile. `npm run check` +
+`npm run check:drift` is the floor; add **`npm run typecheck:all`** when you touch anything outside
+`src/`+`test/` (it is the only thing that compiles the playground, docs-site, MCP shim and VS Code
+extension), **`npm run docs:build`** for any `docs/*.md` edit, and **`npm run e2e:playground` /
+`npm run e2e:docs`** (Playwright, against the BUILT sites — build the core first) when you touch
+those apps. Prose is gated too: `test/docs-table-pipes.test.ts` scans every tracked `.md` for a bare
+`|` inside inline code in a table cell (write `\|`), `test/docs-fences.test.ts` requires every
+```` ```arch ```` fence on a published page to compile or carry `static`, and
+`test/docs-flags.test.ts` checks that every `arch … --flag` you write in a hand-maintained doc is a
+flag that command declares. **The whole verification system — tiers, guards, and the red-run
+response for each — is mapped in [docs/testing.md](docs/testing.md).**
 
 ## Conventions
 
