@@ -21,7 +21,7 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 |-------|---------|-------|
 | **Core package** | `@chanmeng666/archlang@1.24.0` (published, `latest`, with provenance — released tokenlessly via `.github/workflows/release.yml` OIDC trusted publishing) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`, v1.14's `validate --intent`/`--feedback` + `score --brief`, and the v1.17 **self-describing + bounded-output** layer: manifest-rendered per-command `--help` with worked examples, `--version`, exit-3 did-you-mean on an unknown flag/verb, `describe --room/--select`, `lint\|validate --code/--severity`, `context --section`, `fix --dry-run/--backup` + unified diff) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`schemas/intent.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
-| **MCP server** | `@chanmeng666/archlang-mcp@0.2.3` (published, `latest`; registry entry `io.github.ChanMeng666/archlang-mcp` v0.2.3 live on registry.modelcontextprotocol.io; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate (incl. `intent`)/**score**/repair/fix/suggest/complete + spec/context/schema/**intent-schema**/grammar resources; SDK dep quarantined here, core stays zero-dep). **Its context resources are baked in at pack time, so they go stale silently and only a version bump ships fresh ones** — 0.2.2 served the v1.19 spec *and a v1.19 GBNF grammar that could not decode* `paper`/`level`/`place`/`zone`/`polygon`/`arc` while its `^1.14.0` range resolved to a current core; 0.2.3 refreshes all five, pins the range to `^1.24.0`, returns every storey of a multi-storey `compile` in `pages[]` (+ a `level` selector) instead of the ground floor alone, and derives the handshake version from `package.json` (the old hardcoded `"0.2.0"` drift, now test-pinned) | `packages/mcp/`, `server.json` |
+| **MCP server** | `@chanmeng666/archlang-mcp@0.2.3` (published, `latest`; registry entry `io.github.ChanMeng666/archlang-mcp` v0.2.3 live on registry.modelcontextprotocol.io; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate (incl. `intent`)/**score**/repair/fix/suggest/complete + spec/context/schema/**intent-schema**/grammar resources; SDK dep quarantined here, core stays zero-dep). **Its context resources are baked in at pack time and only a version bump ships fresh ones** — the staleness itself is no longer silent: CI's `builds` job runs `packages/mcp/scripts/check-dist-resources.mjs` (byte-compares every baked `dist/` resource against its repo source) and `packages/mcp/test/lockstep.test.ts` pins the core dep range as a **string** equal to `^` + the root version, so every core release turns this package RED on purpose until someone re-pins, rebuilds the resources and bumps the shim in both `package.json` and both of `server.json`'s version fields (don't relax it to a semver-satisfies check). History, one clause: 0.2.2 served the v1.19 spec *and a v1.19 GBNF grammar that could not decode* `paper`/`level`/`place`/`zone`/`polygon`/`arc` while its `^1.14.0` range resolved to a current core; 0.2.3 refreshes all five, pins the range to `^1.24.0`, returns every storey of a multi-storey `compile` in `pages[]` (+ a `level` selector) instead of the ground floor alone, and derives the handshake version from `package.json` (the old hardcoded `"0.2.0"` drift, now test-pinned) | `packages/mcp/`, `server.json` |
 | **VS Code extension** | `ChanMeng.archlang@0.13.0` **live on the Marketplace** — verified 2026-08-01 via the gallery API (`extensionquery`, `filterType: 7` = `ChanMeng.archlang`): **0.13.0 is the only version the gallery returns**, even with `IncludeAllVersions`; its `lastUpdated` is 2026-07-26T11:51:11Z, so the upload landed that day, shortly after the query that still saw 0.10.0. It bundles core 1.24.0 (`arc`/`radius`/`circle`/`cw`/`ccw`/`major`, `E_ARC_RADIUS`/`E_ROOM_RADIUS`/`E_DIM_CURVE_REF`, exact πR² areas and arc-length opening attribution in the bundled analysis) and carried in one upload the three tiers that were packaged but never uploaded: 0.12.0 (core 1.23.0 — `polygon`), 0.11.0 (core 1.22.0 — `zone`/`place`/`mirror`) and 0.9.0 (core 1.20.0 — sheet/datum). Durable mechanics: the extension **bundles the core at build time** (a stale bundle ships a stale language — `editors/vscode/test/` pins bundle freshness), `.vsix` files are gitignored so the artifact is local to whoever ran `npm run package`, and **upload stays a human web step** at marketplace.visualstudio.com/manage/publishers/ChanMeng — there is no CI publish | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** one-light-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://playground.archlang.uk |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** one-light-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang.uk |
@@ -102,8 +102,8 @@ re-propose, re-open, or contradict them anywhere.
 - **The GitHub Release body is sliced from `CHANGELOG.md` by `scripts/changelog-section.mjs`**, which
   scans from `## [<version>]` to the next `## ` heading — so section ORDER doesn't affect extraction: a
   release section placed ABOVE `[Unreleased]` still extracts correctly (v1.16.0 shipped that way).
-  Keep-a-changelog convention still prefers `[Unreleased]` on top, so when 1.17 lands consider lifting
-  it back to the top.
+  `[Unreleased]` is back on top (keep-a-changelog convention) and is where in-flight work — including
+  infrastructure that ships no version of its own — is recorded until a release claims it.
 - **Brand assets are byte-sacred.** `brand/archlang-logo-master.svg` is the one source; every variant
   is a **fill-swap only** (never re-trace/simplify/re-fit path data). The "Compile Boundary" brand
   token block is **duplicated byte-identically** in `docs-site/.vitepress/theme/style.css` and
@@ -130,17 +130,21 @@ re-propose, re-open, or contradict them anywhere.
 ├─ schemas/           GENERATED plan.schema.json (`gen:plan-schema`) + intent.schema.json (`gen:intent-schema`), both drift-tested
 ├─ grammars/          GENERATED archlang.gbnf — GBNF constrained-decoding grammar (`gen:gbnf`)
 ├─ packages/mcp/      @chanmeng666/archlang-mcp — stdio MCP shim over the library (SDK dep quarantined
-│                     here): src/server.ts, server.json (registry manifest), test/ smoke test — see ADR 0012
-├─ editors/vscode     archlang-vscode → published as ChanMeng.archlang (esbuild-bundled extension)
+│                     here): src/server.ts, server.json (registry manifest), scripts/ (copy-resources +
+│                     check-dist-resources staleness gate), test/ (tools · resources · lockstep · fuzz) — see ADR 0012
+├─ editors/vscode     archlang-vscode → published as ChanMeng.archlang (esbuild-bundled extension);
+│                     src/handlers.ts holds the DI'd LSP logic, test/ covers it + the built stdio bundle
 ├─ editors/*.json     generated TextMate grammar + language-configuration (shared by the extension)
 ├─ playground/        Vite + CodeMirror live editor (consumes built core via dist/); styles under
 │                     src/styles/{tokens,chrome,editor,panels,embed}.css (tokens.css = the brand block);
-│                     also ships embed.html — a chrome-less <iframe> viewer read from the #z= hash
+│                     also ships embed.html — a chrome-less <iframe> viewer read from the #z= hash;
+│                     test/ = pure-logic units, e2e/ = Playwright specs against the BUILT app
 ├─ docs-site/         VitePress docs (pages generated from docs/*.md, examples/*.arch); theme CSS as
 │                     .vitepress/theme/{style,home,doc-pages}.css (style.css = the brand block);
-│                     examples are live/editable <ArchLive> widgets
+│                     examples are live/editable <ArchLive> widgets; e2e/ = Playwright route + hydration specs
 ├─ docs/              language-reference.md · analysis.md · intent.md · error-codes.md (GEN) ·
-│                     cli-reference.md (GEN from src/manifest.ts, `gen:cli`) · adr/ (archive/ holds the frozen WORK-LOG)
+│                     cli-reference.md (GEN from src/manifest.ts, `gen:cli`) · testing.md (the verification-system
+│                     map: tiers, guards, what to do when one goes red) · adr/ (archive/ holds the frozen WORK-LOG)
 ├─ brand/             logo kit + brand book (README.md) — archlang-logo-master.svg is byte-sacred (iron law)
 ├─ examples/          studio · two-bed · parametric · themed · relational · attached · accessible ·
 │                     museum (the LARGE-building flagship: paper A1 @ 1:200) · two-storey ·
@@ -157,9 +161,12 @@ re-propose, re-open, or contradict them anywhere.
 │                     generate.ts · templates.ts · faults.ts · trajectory.ts · briefs.ts · rng.ts · diff.ts ·
 │                     dedup.ts · canary.ts · CARD.md (HF README) · out/ (.gitignore'd jsonl); imports ONLY
 │                     the pure core, never eval/; contamination iron law enforced by test/dataset.test.ts — CC0
-├─ scripts/           single-source generators behind the `gen:*` npm scripts (gen-grammars, gen-error-codes, gen-llm-spec, …)
+├─ scripts/           single-source generators behind the `gen:*` npm scripts (gen-grammars, gen-error-codes,
+│                     gen-llm-spec, …) + smoke.mjs (zero-dep post-deploy/nightly route check) + changelog-section.mjs
 ├─ bench/             ~1000-element timing harness (+ --json mode, CI regression comment)
-└─ test/              vitest: snapshot + fast-check + unit + visual-regression + CLI/describe/lint/eval
+└─ test/              vitest: snapshot + fast-check + unit + visual-regression + CLI/describe/lint/eval +
+                      the cross-surface guards (lockstep, docs tripwires, escape fuzz) — map in docs/testing.md.
+                      The root vitest run ALSO includes playground/test, packages/*/test and editors/vscode/test
 ```
 
 Key agent-facing `src/` modules (all pure, exported from `src/index.ts`): `describe.ts` (semantic
@@ -222,7 +229,8 @@ npm install          # bootstraps ALL workspaces (core has ZERO runtime deps)
 npm run build        # build core library + CLI into dist/ (tsup)
 npm run typecheck    # tsc --noEmit
 npm run lint         # biome check . (format + lint; `npm run lint:fix` applies safe fixes)
-npm test             # run the vitest suite (test/**/*.test.ts)
+npm test             # the whole vitest suite — test/, playground/test/, packages/*/test/, editors/vscode/test/
+                     # (the include list is in vitest.config.ts; a test outside it silently never runs)
 npm run cli -- compile examples/studio.arch -o studio.svg   # run the CLI from source via tsx
 npm run bench        # compile a generated ~1000-element plan and report per-stage timings
 npm run gen:grammars # regenerate editor grammars from src/grammar/tokens.ts (CI checks drift)
@@ -249,19 +257,29 @@ npm run e2e:docs         # Playwright E2E against the built docs site (build cor
 npm run playground:dev   # build core, then run the Vite playground dev server
 npm run docs:build       # build core, then build the VitePress docs site
 npm run mcp:build        # build core, then build the MCP shim (packages/mcp → dist/ + copied resources)
+npm run build:workspaces # docs + playground + mcp + vscode, via the `*:only` variants — they SKIP the
+                         # core rebuild, so `npm run build` must have run first (what CI's builds job does)
 ```
 
-CI runs five PR gates in parallel: the Node 18/20/22 test matrix (+ report-only coverage on
-the 22 leg), a **builds** job (all four workspaces compile, `typecheck:all`, MCP dist-resource
-freshness, VS Code bundle tests), a **Windows** leg (tests + drift at runner-default line
-endings), two **Playwright E2E** jobs (playground, docs), and **CodeQL**; `nightly.yml` adds
-production smoke (`scripts/smoke.mjs`), `npm audit` (report-only issue), gitleaks, a full
-OS×Node matrix, and **`e2e-prod`** — the `@prod`-tagged READ-ONLY Playwright subset re-run
-against the live `playground.archlang.uk` / `archlang.uk` via `E2E_BASE_URL` (no build, no
-preview server). Only tag a case `@prod` if it purely navigates, reads and asserts: no
-downloads, no clipboard, no persisted-state or typing flows. Its docs half is also a
-**deploy-staleness probe** — the raw `/<page>.md` cases compare production's bytes against
-the checkout's, so a stale deploy fails the night.
+Full map of the verification system — the three tiers, every guard, and the red-run response for
+each — is **[`docs/testing.md`](docs/testing.md)**.
+
+`ci.yml` runs **five gating PR jobs in parallel** — the Node 18/20/22 test matrix (+ report-only
+coverage on the 22 leg), a **builds** job (all four workspaces compile, `typecheck:all`, MCP
+dist-resource freshness, VS Code bundle tests), a **Windows** leg (tests + drift at
+runner-default line endings), and two **Playwright E2E** jobs (playground, docs) — plus an
+informational `bench` PR comment that never gates; `codeql.yml` adds a sixth check on the same
+events (and a weekly cron). `nightly.yml` adds six jobs: production smoke
+(`scripts/smoke.mjs`), `npm audit` (report-only, into a pinned issue), gitleaks over the full
+history, a full OS×Node matrix, **`e2e-prod`** — the `@prod`-tagged READ-ONLY Playwright subset
+re-run against the live `playground.archlang.uk` / `archlang.uk` via `E2E_BASE_URL` (no build,
+no preview server) — and the single `report` writer. Only tag a case `@prod` if it purely
+navigates, reads and asserts: no downloads, no clipboard, no persisted-state or typing flows.
+`e2e-prod`'s docs half is also a **deploy-staleness probe** — the raw `/<page>.md` cases compare
+production's bytes against the checkout's, so a stale deploy fails the night.
+**The whole verification system — every tier, every guard, and what to do when each one goes
+red — is mapped in [`docs/testing.md`](docs/testing.md); read it before adding a test or
+blessing a snapshot.**
 
 Export to other formats from the CLI: `-f svg|dxf|txt|pdf|png` (`txt` is the
 zero-dep ASCII plan; `pdf` needs optional `pdfkit`; `png` needs optional
@@ -516,6 +534,8 @@ intent. Zero install: `npx @chanmeng666/archlang …`.
 1. `README.md` — what the project is and how to run it
 2. This `AGENTS.md` — how to work in it
 3. `CONTRIBUTING.md` — contribution workflow and quality gates
+4. `docs/testing.md` — the verification system: what runs locally, on a PR and nightly, what each
+   guard enforces, and what to do when one goes red (read before adding a test or updating a pin)
 
 ## Conventions for Changes
 

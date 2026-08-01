@@ -37,21 +37,55 @@ Have an idea? [Open a feature request](https://github.com/chanmeng666/archlang/i
 ## Development Setup
 
 ```bash
-# Install dependencies
+# Install dependencies (one root install bootstraps EVERY workspace)
 npm install
 
-# Start the development server
+# Rebuild the core on change — `dev` is `tsup --watch`, NOT a web server
 npm run dev
 
-# Production build
+# Production build of the core (dist/) — every workspace consumes it
 npm run build
 
-# Run the test suite
+# The whole vitest suite: test/, playground/test/, packages/*/test/, editors/vscode/test/
 npm test
 
 # Pre-push gate: typecheck + lint + test in one shot
 npm run check
 ```
+
+The sites are separate Vite apps: `npm run playground:dev` and `npm run docs:dev` (each builds the
+core first).
+
+## Quality gates
+
+**Before you open a PR**, run these locally — they are the same checks CI enforces:
+
+| Command | Covers | Run it when |
+|---------|--------|-------------|
+| `npm run check` | typecheck + Biome + the full test suite | always |
+| `npm run check:drift` | every generator re-run and byte-compared against its artifact | always — **`npm run check` does NOT include it** |
+| `npm run typecheck:all` | the four workspaces too (playground, docs-site via vue-tsc, MCP shim, VS Code extension) | you touched anything outside `src/` + `test/` |
+| `npm run docs:build` | the VitePress site actually builds | any `docs/*.md` or `docs-site/` edit — **the core suite never compiles the site** |
+| `npm run e2e:playground` / `npm run e2e:docs` | Playwright (chromium) against the BUILT app | you touched `playground/` or `docs-site/` |
+
+The E2E suites serve the built output, so build first — e.g.
+`npm run build && npm run playground:build:only && npm run e2e:playground`. Setting
+`E2E_BASE_URL=<origin>` makes either suite drive that origin instead, with no build and no preview
+server (that is how the nightly workflow re-runs the read-only `@prod` subset against production).
+
+**What PR CI runs.** `ci.yml` has five gating jobs in parallel — the Node 18/20/22 test matrix
+(the 22 leg also collects report-only coverage), a **builds** job (all four workspaces compile,
+`typecheck:all`, the MCP baked-resource freshness check, the VS Code bundle tests), a **Windows**
+leg (tests + drift at the runner's default line endings), and the two **Playwright E2E** jobs —
+plus an informational benchmark comment that never gates. `codeql.yml` adds static security
+analysis on the same events. A separate `nightly.yml` runs production smoke, a report-only
+dependency audit, a full-history secret scan, a wider OS×Node matrix and the read-only E2E subset
+against the live sites.
+
+**Full reference: [docs/testing.md](docs/testing.md)** — the three tiers, every guard (goldens,
+drift generators, lockstep pins, the docs tripwires, the fuzz suites, the MCP pack gates), the
+house patterns for adding tests, and **what to do when each one goes red**. Read it before
+regenerating a golden or updating a pin.
 
 ## Releasing
 
@@ -107,6 +141,11 @@ diagnostics, or error/lint codes — republish the extension so its bundled serv
 > Rule of thumb: **if you changed `src/grammar/tokens.ts`, the language services in
 > `src/lsp.ts`, or the error/lint catalogs, the extension is stale until you republish it.**
 
+> **"Did the rebundle actually take?" is automated.** esbuild stamps the resolved core version
+> into the bundle as `__CORE_VERSION__`, and `editors/vscode/test/stdio.test.ts` asserts it matches
+> — run `npm run vscode:build:only && npx vitest run editors/vscode` (CI's `builds` job does exactly
+> this). That replaced the old by-hand "count new keywords in `dist/server.js`" probe.
+
 A repack can also be **non-language** — the icon, `galleryBanner`, or other marketplace metadata
 (e.g. `0.4.1` was an icon-only repack of `0.4.0`). Same steps 1–4 above (skip step 2 when the core
 did not move); the `.vsix` still needs a manual web upload.
@@ -125,9 +164,15 @@ did not move); the `.vsix` still needs a manual web upload.
 The optional stdio shim in `packages/mcp/` is a **separately versioned** package, published
 **after** the core it wraps — and since 0.2.0 the whole chain rides the same `release.yml`:
 
-1. Bump `version` in `packages/mcp/package.json` **and** `packages/mcp/server.json` (they must
-   match; also the `McpServer` constructor's version string in `src/server.ts`), and bump its
-   `@chanmeng666/archlang` dependency range if the core moved.
+1. Bump `version` in `packages/mcp/package.json` **and** `packages/mcp/server.json` (**both** of
+   `server.json`'s version fields — they must match), and bump its `@chanmeng666/archlang`
+   dependency range to `^<the new core version>`. Do **not** hand-edit a version into
+   `src/server.ts`: since 0.2.3 the handshake version is derived from `package.json`
+   (`readShimVersion()`), and a test pins the two together. `packages/mcp/test/lockstep.test.ts`
+   checks all of the above, and the dep-range assertion is a **string** equality on purpose — a
+   core release turns this package red until someone consciously re-pins, rebuilds the baked
+   resources (`npm run mcp:build`, verified by `scripts/check-dist-resources.mjs` in CI) and bumps
+   the shim.
 2. The tag-triggered `release.yml` run publishes it to npm (OIDC + provenance) right after the
    core, then syncs the MCP registry with `mcp-publisher login github-oidc` → `publish` — also
    tokenless. The registry-sync step is guarded by the registry's own state, so an
