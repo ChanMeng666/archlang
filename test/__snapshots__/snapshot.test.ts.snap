@@ -39,8 +39,8 @@ exports[`golden SVG snapshots > renders attached.arch deterministically 1`] = `
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
 <text x="2000" y="1956.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living</text>
 <text x="2000" y="2194.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">16.0 m²</text>
-<text x="5500" y="1956.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
-<text x="5500" y="2194.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
+<text x="5500" y="3156.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
+<text x="5500" y="3394.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
 </g>
 <g><polygon points="6776,-1097.2 6614,-578.8 6776,-692.2 6938,-578.8" fill="#333333" transform="rotate(0 6776 -773.2)"/><text x="6776" y="-1246.96" font-size="187.2" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
 <g><rect x="-100" y="4460" width="1000" height="100.8" fill="#333333"/><rect x="900" y="4460" width="1000" height="100.8" fill="none" stroke="#333333" stroke-width="11.52"/><text x="-100" y="4704.8" font-size="144" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="1900" y="4704.8" font-size="144" fill="#333333" text-anchor="middle" dominant-baseline="central">2 m</text></g>
@@ -1456,12 +1456,12 @@ exports[`golden SVG snapshots > renders parametric.arch deterministically 1`] = 
 <line x1="9200" y1="0" x2="10800" y2="0" stroke="#3a6ea5" stroke-width="19.52"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-<text x="2000" y="2426.8" font-size="366" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Studio A</text>
-<text x="2000" y="2829.4" font-size="268.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.0 m²</text>
-<text x="6000" y="2426.8" font-size="366" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Studio B</text>
-<text x="6000" y="2829.4" font-size="268.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.0 m²</text>
-<text x="10000" y="2426.8" font-size="366" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Studio C</text>
-<text x="10000" y="2829.4" font-size="268.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.0 m²</text>
+<text x="2000" y="3176.8" font-size="366" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Studio A</text>
+<text x="2000" y="3579.4" font-size="268.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.0 m²</text>
+<text x="6000" y="3176.8" font-size="366" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Studio B</text>
+<text x="6000" y="3579.4" font-size="268.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.0 m²</text>
+<text x="10000" y="3176.8" font-size="366" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Studio C</text>
+<text x="10000" y="3579.4" font-size="268.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.0 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
 <line x1="8000" y1="5100" x2="8000" y2="5700" stroke="#0E5484" stroke-width="13.66"/>
@@ -1610,12 +1610,12 @@ exports[`golden SVG snapshots > renders studio.arch deterministically 1`] = `
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
 <text x="2000" y="2956.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living / Kitchen</text>
 <text x="2000" y="3194.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">24.0 m²</text>
-<text x="5500" y="1456.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
-<text x="5500" y="1694.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">9.0 m²</text>
+<text x="6400" y="556.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
+<text x="6400" y="794.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">9.0 m²</text>
 <text x="5500" y="3656.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Hall</text>
 <text x="5500" y="3894.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">4.2 m²</text>
-<text x="5500" y="5156.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bath</text>
-<text x="5500" y="5394.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">4.8 m²</text>
+<text x="4600" y="5156.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bath</text>
+<text x="4600" y="5394.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">4.8 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
 <line x1="4000" y1="-100" x2="4000" y2="-350" stroke="#0E5484" stroke-width="8.06"/>
@@ -1685,8 +1685,8 @@ exports[`golden SVG snapshots > renders themed.arch deterministically 1`] = `
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
 <text x="1500" y="1962.5" font-size="187.5" fill="#f0f0f0" text-anchor="middle" dominant-baseline="central" font-weight="600">Living</text>
 <text x="1500" y="2168.75" font-size="137.5" fill="#9aa0aa" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
-<text x="4500" y="1962.5" font-size="187.5" fill="#f0f0f0" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
-<text x="4500" y="2168.75" font-size="137.5" fill="#9aa0aa" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
+<text x="4500" y="2562.5" font-size="187.5" fill="#f0f0f0" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
+<text x="4500" y="2768.75" font-size="137.5" fill="#9aa0aa" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
 <line x1="-125" y1="4000" x2="-125" y2="4600" stroke="#6cb6ff" stroke-width="9.1"/>
@@ -1753,14 +1753,14 @@ exports[`golden SVG snapshots > renders two-bed.arch deterministically 1`] = `
 <line x1="10000" y1="2250" x2="10000" y2="3750" stroke="#3a6ea5" stroke-width="16.48"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-<text x="2000" y="2438.2" font-size="309" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Kitchen / Living</text>
-<text x="2000" y="2778.1" font-size="226.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.0 m²</text>
-<text x="7000" y="2438.2" font-size="309" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Master Bedroom</text>
-<text x="7000" y="2778.1" font-size="226.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">30.0 m²</text>
-<text x="2000" y="6438.2" font-size="309" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom 2</text>
-<text x="2000" y="6778.1" font-size="226.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
-<text x="5500" y="6438.2" font-size="309" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bathroom</text>
-<text x="5500" y="6778.1" font-size="226.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">9.0 m²</text>
+<text x="2000" y="3188.2" font-size="309" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Kitchen / Living</text>
+<text x="2000" y="3528.1" font-size="226.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.0 m²</text>
+<text x="7000" y="3188.2" font-size="309" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Master Bedroom</text>
+<text x="7000" y="3528.1" font-size="226.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">30.0 m²</text>
+<text x="2600" y="7338.2" font-size="309" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom 2</text>
+<text x="2600" y="7678.1" font-size="226.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
+<text x="5050" y="6438.2" font-size="309" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bathroom</text>
+<text x="5050" y="6778.1" font-size="226.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">9.0 m²</text>
 <text x="8500" y="6438.2" font-size="309" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Hall</text>
 <text x="8500" y="6778.1" font-size="226.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">9.0 m²</text>
 </g>
@@ -1842,8 +1842,8 @@ exports[`golden SVG snapshots > renders two-storey.arch as one page per level > 
 <line x1="8000" y1="4700" x2="8000" y2="5900" stroke="#3a6ea5" stroke-width="9"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-<text x="1100" y="3465" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Hall</text>
-<text x="1100" y="3657.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">15.4 m²</text>
+<text x="1430" y="3465" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Hall</text>
+<text x="1430" y="3657.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">15.4 m²</text>
 <text x="5100" y="1765" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living</text>
 <text x="5100" y="1957.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.9 m²</text>
 <text x="5100" y="5265" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Kitchen</text>
@@ -2057,14 +2057,14 @@ exports[`golden SVG snapshots > renders two-storey.arch as one page per level > 
 <line x1="0" y1="6100" x2="0" y2="5500" stroke="#3a6ea5" stroke-width="9"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-<text x="1100" y="2265" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Landing</text>
-<text x="1100" y="2457.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">10.1 m²</text>
+<text x="1430" y="2265" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Landing</text>
+<text x="1430" y="2457.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">10.1 m²</text>
 <text x="1100" y="5765" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bath</text>
 <text x="1100" y="5957.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">5.3 m²</text>
 <text x="5100" y="1765" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom 1</text>
 <text x="5100" y="1957.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.9 m²</text>
-<text x="5100" y="5265" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom 2</text>
-<text x="5100" y="5457.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">19.7 m²</text>
+<text x="5100" y="4245" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom 2</text>
+<text x="5100" y="4437.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">19.7 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
 <line x1="0" y1="7100" x2="0" y2="7525" stroke="#0E5484" stroke-width="6.3"/>

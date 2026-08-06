@@ -29,6 +29,29 @@ const REL_DIRS: ReadonlySet<string> = new Set<RelDir>(["right-of", "left-of", "b
 const USE_SET: ReadonlySet<string> = new Set<UseKind>(USE_KINDS);
 
 /**
+ * Where a room's label + area text are anchored, before any obstacle-aware
+ * relocation: the author's `label … at (x,y)` when written (it always wins), else the
+ * room centre for a rectangle, the circle's centre, or the area CENTROID for a polygon
+ * — via {@link polygonLabelPoint}, which returns the centroid itself whenever the
+ * centroid is legal, so a convex ring's bytes are untouched.
+ *
+ * Exported because the label-relocation post-pass (`src/label-placement.ts`) must know
+ * the exact incumbent point in order to measure the translation it applies, and a second
+ * copy of this expression would be a silent divergence: the anchor and the thing that
+ * moves it have to agree about where the label started.
+ */
+export function roomLabelAnchor(r: RRoom): Point {
+  return (
+    r.labelAt ??
+    (r.circle
+      ? r.circle.c
+      : r.poly
+        ? polygonLabelPoint(r.poly)
+        : { x: r.at.x + r.size.w / 2, y: r.at.y + r.size.h / 2 })
+  );
+}
+
+/**
  * The trailing clauses every room form shares: `label "…" [at (x,y)]` then
  * `uses <kind> …`. Factored out so the rect and polygon forms can never drift apart —
  * for a rect room this parses exactly the same tokens, in the same order, as before.
@@ -266,13 +289,7 @@ export const room: ElementDef = {
     // off its own floor, that ring's pole of inaccessibility (`polygonLabelPoint`, which
     // returns the centroid itself whenever the centroid is legal, so a convex ring's bytes
     // are untouched) — or the author's `label … at (x,y)`, which always wins.
-    const centre =
-      r.labelAt ??
-      (r.circle
-        ? r.circle.c
-        : r.poly
-          ? polygonLabelPoint(r.poly)
-          : { x: r.at.x + r.size.w / 2, y: r.at.y + r.size.h / 2 });
+    const centre = roomLabelAnchor(r);
     const cx = centre.x;
     const cy = centre.y;
     // Each shape keeps its OWN expression, written out rather than routed through one
