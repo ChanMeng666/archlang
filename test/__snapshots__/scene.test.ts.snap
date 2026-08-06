@@ -114,8 +114,8 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "prim": {
         "anchor": "middle",
         "at": {
-          "x": 5500,
-          "y": 1456.8,
+          "x": 6400,
+          "y": 556.8,
         },
         "baseline": "central",
         "size": 216,
@@ -132,8 +132,8 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "prim": {
         "anchor": "middle",
         "at": {
-          "x": 5500,
-          "y": 1694.4,
+          "x": 6400,
+          "y": 794.4000000000001,
         },
         "baseline": "central",
         "size": 158.39999999999998,
@@ -238,7 +238,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "prim": {
         "anchor": "middle",
         "at": {
-          "x": 5500,
+          "x": 4600,
           "y": 5156.8,
         },
         "baseline": "central",
@@ -256,7 +256,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "prim": {
         "anchor": "middle",
         "at": {
-          "x": 5500,
+          "x": 4600,
           "y": 5394.4,
         },
         "baseline": "central",

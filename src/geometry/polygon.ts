@@ -310,6 +310,25 @@ export function rectRing(r: BBox): Point[] {
 }
 
 /**
+ * Does the axis-aligned rect `r` lie **wholly inside** the ring? Every corner is
+ * contained AND no ring edge cuts through the rect — the corner test alone would pass a
+ * rect whose middle is crossed by the notch of a U.
+ *
+ * Used by the label-relocation pass to prefer a text box that fits on its own floor.
+ * Closed form, no sampling: four containment tests plus the edge-pair crossings.
+ */
+export function rectInsidePolygon(r: BBox, ring: readonly Point[]): boolean {
+  const corners = rectRing(r);
+  for (const c of corners) if (!pointInPolygon(c.x, c.y, ring)) return false;
+  for (const [a1, a2] of polygonEdges(ring)) {
+    for (const [b1, b2] of polygonEdges(corners)) {
+      if (segmentsProperlyCross(a1, a2, b1, b2)) return false;
+    }
+  }
+  return true;
+}
+
+/**
  * Do two simple polygons overlap in their **interiors** (by more than `eps` mm)?
  * Touching along a shared boundary — the normal case for two rooms either side of a
  * partition — is NOT an overlap, matching {@link import("./rect.js").rectsOverlap},

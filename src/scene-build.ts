@@ -41,6 +41,8 @@ import { anchorChromeToSheet, dimReach, layoutChrome } from "./chrome-layout.js"
 import { axesNodes } from "./axes.js";
 import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, SHEET_MM, sizesFromPaper } from "./sheet.js";
 import { textWidth } from "./text-metrics.js";
+import type { RoomLabelGroup } from "./label-placement.js";
+import { relocateRoomLabels } from "./label-placement.js";
 import { legendEntries, roomSchedule, sheetTableNodes } from "./sheet-tables.js";
 import { circulationOverlayNodes } from "./overlays/circulation.js";
 import { captionForPlan } from "./describe.js";
@@ -911,10 +913,14 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     return st ? { ...baseCtx, theme: st } : baseCtx;
   };
   const nodes: SceneNode[] = [];
+  // Which nodes each ROOM contributed, so the label post-pass at the end can find its
+  // text without matching coordinates back to elements (two rooms can share an anchor).
+  const labelGroups: RoomLabelGroup[] = [];
   for (const el of ir.elements) {
     if (el.kind === "wall") continue;
     const def = registry.byKind.get(el.kind);
     if (!def) continue;
+    const groupStart = nodes.length;
     // Only when `annotate` is requested (ADR 0007): carry the element's source
     // span onto every primitive it renders, so the SVG pass can map a drawn
     // element back to its source. Off by default → the Scene IR is byte-identical
@@ -934,6 +940,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     } else {
       nodes.push(...rendered);
     }
+    if (el.kind === "room") labelGroups.push({ room: el as RRoom, from: groupStart, to: nodes.length });
   }
   const hatches = hatchesUsed(ir.walls);
   nodes.push(...lowerWalls(ir.walls, hatches, ctxFor("wall"), registry, backend));
@@ -958,6 +965,15 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   if (ir.axes && ir.axes.length > 0) {
     nodes.push(...axesNodes(ir.axes, b, sizes, theme, dimReach(b, nodes, ["dims"])));
   }
+
+  // Obstacle-aware room labels (`src/label-placement.ts`). It has to run HERE — after the
+  // walls are lowered and after `dims auto` has emitted its numbers — because a dimension
+  // value is not an element and no element could ever see one. Purely a translation of
+  // already-emitted `labels` text: it adds no node, removes none, and only moves a label
+  // whose box is genuinely buried, so a plan whose labels are already clear keeps its
+  // exact previous bytes. It runs before the sheet tables and the opt-in overlays, so
+  // neither can influence where a label lands.
+  relocateRoomLabels(nodes, labelGroups, ir, sizes);
 
   // Opt-in sheet tables (`schedule rooms` / `legend`) — derived closed-form from the plan
   // (see `sheet-tables.ts`). Computed before chrome layout because the table heights are
