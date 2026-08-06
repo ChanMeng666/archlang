@@ -662,7 +662,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**65 errors** (abort rendering) · **39 warnings** (advisory; `validate --strict` fails on them too).
+**65 errors** (abort rendering) · **40 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -740,6 +740,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `W_CIRCUITOUS_PATH` — A room is reached by a very roundabout path. **Fix:** Add a more direct connection — a door or a hall — so the room is not reached the long way round.
 - `W_DIM_INSIDE` — A hand-written dimension line lands inside the building. **Fix:** Swap the two endpoints — the machine-applicable fix does it for you — or negate the `offset`.
 - `W_DIM_NO_WALL` — A `dim faces`/`dim clear` endpoint has no wall to measure to. **Fix:** Put the endpoint on the centerline of the wall the dimension runs into (the room-rectangle corner coordinate), or drop the `faces`/`clear` keyword and write the face coordinate yourself.
+- `W_DIM_OVERLAP` — Two hand-written dimensions are drawn on top of each other. **Fix:** Move one of them out a tier: raise the magnitude of its `offset` (keeping its sign, which is the side it reads on). The machine-applicable fix computes the smallest whole number of chain tiers that clears the other dimension's line and text.
 - `W_DOOR_CLEARANCE` — Door is narrower than the minimum clear width. **Fix:** Widen the door to at least the minimum clear width.
 - `W_DOOR_OFF_WALL` — Door does not lie on any wall. **Fix:** Move the door onto a wall, or name its host with `wall <id|category>`. The diagnostic points at the nearest wall.
 - `W_DOORWAY_BLOCKED` — A doorway's landing is blocked. **Fix:** Clear the space directly in front of and behind the door, or move the door.

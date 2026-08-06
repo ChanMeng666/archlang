@@ -222,6 +222,38 @@ export function dimSwapFix(dm: { span?: Span; _swapText?: string }): FixSuggesti
 }
 
 /**
+ * The fix for `W_DIM_OVERLAP`: move this dimension out by whole dimension-chain tiers,
+ * so its drawn band clears the one it collides with.
+ *
+ * The author's `offset` **is** the tier control (ArchLang never re-staggers a hand-written
+ * dimension — ADR 0005, "no invisible architect"), so the fix edits exactly that clause and
+ * nothing else: `_offsetSpan` is the authored `offset <expr>` run, REPLACED, or a zero-width
+ * insertion point — always before the optional trailing `text "…"`, which the grammar puts
+ * last — which gets a leading space. Offsets are original-source bytes, so
+ * {@link import("./fix-apply.js").applyFixes} can apply it deterministically.
+ *
+ * `newOffset` is computed by the rule (the smallest whole number of `CHAIN_STEP` tiers that
+ * provably separates the two bands), which is why this is `machine-applicable`: the number
+ * is derived, not guessed. Replacing the clause DOES bake a literal in place of an authored
+ * expression — unavoidable, since the fix's whole content is a new number — but it is scoped
+ * to the one clause, so every other expression in the statement survives verbatim.
+ * Returns `null` without a span to write into (a synthesized `dims auto` chain never has one).
+ */
+export function dimBumpFix(dm: { id: string; _offsetSpan?: Span }, newOffset: number): FixSuggestion[] | null {
+  const span = dm._offsetSpan;
+  if (!span) return null;
+  const insert = span.start === span.end;
+  return [
+    {
+      title: `move dimension "${dm.id}" out to \`offset ${numStr(newOffset)}\` — the next free chain tier`,
+      applicability: "machine-applicable",
+      fixId: "dim-overlap",
+      edits: [{ span, newText: `${insert ? " " : ""}offset ${numStr(newOffset)}` }],
+    },
+  ];
+}
+
+/**
  * The fix for `E_{DOOR,WINDOW,OPENING}_WIDTH` (width ≤ 0): rewrite the element with
  * a `width <positive-number>` placeholder. `has-placeholders`, so it is surfaced
  * in the editor but never auto-applied (the placeholder is not valid source). The

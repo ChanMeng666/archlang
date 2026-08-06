@@ -176,6 +176,120 @@ describe("W_DIM_INSIDE — a hand dim whose line reads inside the building", () 
   });
 });
 
+describe("W_DIM_OVERLAP — two hand dims drawn on top of each other", () => {
+  const over = (src: string) => lint(src).filter((d) => d.code === "W_DIM_OVERLAP");
+
+  it("fires when two parallel dims land in the same tier, and reports the LATER statement", () => {
+    const src = shell(
+      `  dim (0,-100)->(5000,-100) offset -400 text "5000"\n` + `  dim (0,-100)->(3000,-100) offset -400 text "3000"\n`,
+    );
+    const ds = over(src);
+    expect(ds).toHaveLength(1);
+    expect(ds[0]!.severity).toBe("warning");
+    // The span is the SECOND statement's — the first-written dim keeps the inner tier.
+    expect(src.slice(ds[0]!.span!.start, ds[0]!.span!.end)).toContain(`(0,-100)->(3000,-100)`);
+    // …and the first is named as the thing it collides with.
+    expect(src.slice(ds[0]!.relatedSpans![0]!.span.start, ds[0]!.relatedSpans![0]!.span.end)).toContain(
+      `(0,-100)->(5000,-100)`,
+    );
+    expect(ds[0]!.fixes?.[0]?.applicability).toBe("machine-applicable");
+  });
+
+  it("does NOT fire for adjacent members of one chain (they SHARE the station tick)", () => {
+    // The `examples/studio.arch` pattern: two runs meeting end-to-end at one tier.
+    expect(
+      over(
+        shell(
+          `  dim (3000,-100)->(0,-100) offset 300 text "3000"\n` +
+            `  dim (5000,-100)->(3000,-100) offset 300 text "2000"\n`,
+        ),
+      ),
+    ).toEqual([]);
+  });
+
+  it("does NOT fire for two dims crossing at a corner (not parallel — a bump can't help)", () => {
+    expect(
+      over(shell(`  dim (0,-100)->(5000,-100) offset 300\n` + `  dim (5100,0)->(5100,4000) offset -300\n`)),
+    ).toEqual([]);
+  });
+
+  it("does NOT fire between two instances of ONE `for`-generated statement", () => {
+    // Both instances share the `offset` expression, so no bump could separate them —
+    // offering the fix would be offering an edit that does not fix.
+    const src =
+      `plan "P" { units mm ` +
+      `wall id=shell exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close } ` +
+      `room id=r at (0,0) size 5000x4000 ` +
+      `for i in 0..2 { dim (0,-100)->(5000 - i * 100,-100) offset -400 } }`;
+    expect(over(src)).toEqual([]);
+  });
+
+  it("never fires on the synthesized `dims auto` chains (they already tier themselves)", () => {
+    const src =
+      `plan "P" { units mm dims auto all ` +
+      `wall id=shell exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close } ` +
+      `room id=r at (0,0) size 5000x4000 ` +
+      `door id=d at (2500,4000) width 900 wall shell hinge left swing in }`;
+    expect(over(src)).toEqual([]);
+  });
+
+  it("round-trips: the fix rewrites only the `offset` clause, keeps its sign, and clears the warning", () => {
+    const src = shell(
+      `  dim (0,-100)->(5000,-100) offset -400 text "5000"\n` + `  dim (0,-100)->(3000,-100) offset -400 text "3000"\n`,
+    );
+    const fix = over(src)[0]!.fixes![0]!;
+    const { output } = applyFixes(src, [fix]);
+    expect(output).toContain(`dim (0,-100)->(5000,-100) offset -400 text "5000"`);
+    // Moved further out on the SAME side (the sign is which side it reads on), and the
+    // measured endpoints/text are untouched — only the tier moved.
+    const bumped = dimsOf(output)[1]!;
+    expect(bumped.offset).toBeLessThan(-400);
+    expect({ from: bumped.from, to: bumped.to, text: bumped.text }).toEqual({
+      from: { x: 0, y: -100 },
+      to: { x: 3000, y: -100 },
+      text: "3000",
+    });
+    expect(over(output)).toEqual([]);
+    expect(compile(output, { noCache: true }).errors).toEqual([]);
+  });
+
+  it("INSERTS an `offset` clause before the trailing `text` when the dim has none", () => {
+    const src = shell(`  dim (0,-100)->(5000,-100)\n` + `  dim (0,-100)->(3000,-100) text "3000"\n`);
+    const { output } = applyFixes(src, [over(src)[0]!.fixes![0]!]);
+    expect(output).toMatch(/dim \(0,-100\)->\(3000,-100\) offset \d+ text "3000"/);
+    expect(over(output)).toEqual([]);
+    expect(compile(output, { noCache: true }).errors).toEqual([]);
+  });
+
+  it("bumps by as many whole tiers as it takes — one application always clears the pair", () => {
+    // The neighbour already sits a little further out, so a single fixed tier would land
+    // the bumped dim right back inside its band.
+    const src = shell(
+      `  dim (0,-100)->(5000,-100) offset -380 text "5000"\n` + `  dim (0,-100)->(3000,-100) offset -300 text "3000"\n`,
+    );
+    expect(over(src)).toHaveLength(1);
+    const { output } = applyFixes(src, [over(src)[0]!.fixes![0]!]);
+    expect(over(output), "cleared in ONE application, not left for the fixpoint").toEqual([]);
+  });
+
+  it("is not raised for any shipped example", () => {
+    for (const name of [
+      "studio.arch",
+      "two-bed.arch",
+      "themed.arch",
+      "relational.arch",
+      "parametric.arch",
+      "museum.arch",
+      "aquarium.arch",
+      "gallery-l.arch",
+      "accessible.arch",
+      "attached.arch",
+    ]) {
+      expect(over(example(name)), name).toEqual([]);
+    }
+  });
+});
+
 describe("describe().bbox_outer — the building measured on its wall faces", () => {
   it("reports the outer-face extent alongside the (unchanged) centerline bbox", () => {
     const s = describePlan(example("studio.arch"));
