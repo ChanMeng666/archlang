@@ -10,8 +10,17 @@
  * Everything is exact and closed-form — shoelace area, the area centroid, ray-cast
  * containment, pairwise segment tests. No iteration to a tolerance, no trig, no
  * randomness: the same polygon always yields the same numbers, with or without the
- * optional geometry backend. (This is why the pole-of-inaccessibility label point was
- * rejected: it is iterative, so its answer depends on a step budget.)
+ * optional geometry backend.
+ *
+ * The one sampled rule is {@link polygonLabelPoint}'s concave fallback, and it is worth
+ * being precise about why that is allowed where "iterate to a tolerance" is not. A
+ * tolerance loop stops when it is happy, so its answer depends on when you stopped —
+ * that is the thing v1.23 rejected. The fallback here instead spends a **budget pinned in
+ * source** ({@link LABEL_GRID} / {@link LABEL_REFINE_ROUNDS} / {@link LABEL_REFINE_STEPS}),
+ * visits its candidates in one fixed order and keeps the first strict winner, so it is a
+ * total function of the ring: same ring, same point, every run, on every platform. It is
+ * also only ever reached when the exact centroid is NOT on the floor, so no plan that was
+ * labelled at its centroid moves by a byte.
  *
  * A room polygon is **implicitly closed** and stored WITHOUT a repeated last vertex.
  */
@@ -166,6 +175,65 @@ export function pointInPolygon(px: number, py: number, pts: readonly Point[], bo
     }
   }
   return inside;
+}
+
+/** Lattice resolution of the label-point search: `LABEL_GRID + 1` samples per axis. */
+export const LABEL_GRID = 10;
+/** Refinement rounds around the incumbent, each searching half the previous span. */
+export const LABEL_REFINE_ROUNDS = 3;
+/** Samples either side of the incumbent, per axis, in each refinement round. */
+export const LABEL_REFINE_STEPS = 5;
+
+/**
+ * Where a room's label and area text belong: the **area centroid when it is on the
+ * floor**, and otherwise the ring's *pole of inaccessibility* — the interior point
+ * furthest from any edge, i.e. the middle of the widest place the text can sit.
+ *
+ * An L or a U can put its exact centroid in the notch, outside its own floor, where the
+ * label would be drawn over a neighbouring room (or over nothing at all). The centroid is
+ * still the right answer wherever it is legal — it is exact, and it is what every existing
+ * drawing was laid out with — so it is returned unchanged whenever the ring contains it,
+ * and this fallback is unreachable for a rectangle, a circle, any convex ring and most
+ * concave ones.
+ *
+ * The search is a coarse lattice over the bounding box followed by
+ * {@link LABEL_REFINE_ROUNDS} halving rounds around the best point so far. Every
+ * candidate is scored by {@link distToPolygonEdge} and only a **strictly** better score
+ * displaces the incumbent, so the fixed visit order settles every tie: the result is a
+ * pure function of the vertex ring, with no state, no randomness and no stop condition.
+ * A ring so thin that not one candidate lands on it keeps the centroid (nothing better is
+ * available, and the caller's `W_ROOM_*` diagnostics already speak to a degenerate floor).
+ */
+export function polygonLabelPoint(pts: readonly Point[]): Point {
+  const centroid = polygonCentroid(pts);
+  if (pointInPolygon(centroid.x, centroid.y, pts)) return centroid;
+  const b = polygonBounds(pts);
+  let best = centroid;
+  let bestDist = -Infinity;
+  const consider = (x: number, y: number): void => {
+    if (!pointInPolygon(x, y, pts)) return;
+    const d = distToPolygonEdge({ x, y }, pts);
+    if (d > bestDist) {
+      bestDist = d;
+      best = { x, y };
+    }
+  };
+  const cellW = b.w / LABEL_GRID;
+  const cellH = b.h / LABEL_GRID;
+  for (let i = 0; i <= LABEL_GRID; i++) {
+    for (let j = 0; j <= LABEL_GRID; j++) consider(b.x + i * cellW, b.y + j * cellH);
+  }
+  if (bestDist === -Infinity) return centroid;
+  for (let round = 0; round < LABEL_REFINE_ROUNDS; round++) {
+    const step = Math.max(cellW, cellH) / 2 ** round / LABEL_REFINE_STEPS;
+    const centre = best;
+    for (let i = -LABEL_REFINE_STEPS; i <= LABEL_REFINE_STEPS; i++) {
+      for (let j = -LABEL_REFINE_STEPS; j <= LABEL_REFINE_STEPS; j++) {
+        consider(centre.x + i * step, centre.y + j * step);
+      }
+    }
+  }
+  return best;
 }
 
 /** Do the segments p1–p2 and p3–p4 cross *properly* (interiors meet at one point)? */

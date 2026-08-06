@@ -627,7 +627,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "W_ROOM_LABEL_OUTSIDE",
     "A room's explicit label anchor falls outside the room.",
     '`label "…" at (x,y)` pins the label and area text at a point that is not inside the room\'s floor, so the text will be drawn over whatever is there instead.',
-    "Move the anchor inside the room, or drop the `at (…)` and let the centroid decide (which is what a convex room wants anyway).",
+    "Move the anchor inside the room, or drop the `at (…)` — automatic placement uses the area centroid, and where a concave ring puts that centroid off its own floor it falls back to the interior point furthest from any edge, so it lands inside either way.",
     'room polygon (0,0) (6000,0) (6000,6000) (0,6000) label "Hall" at (9000,9000)   # warning',
   ),
   W_ROOM_TOO_SMALL: W(
