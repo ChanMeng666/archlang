@@ -48,7 +48,7 @@ import {
   type RoomBox,
 } from "../analyze.js";
 import { pointInRect } from "../geometry/rect.js";
-import { pointInPolygon, polygonCentroid, polygonEdges } from "../geometry/polygon.js";
+import { pointInPolygon, polygonEdges, polygonLabelPoint } from "../geometry/polygon.js";
 import { matchesLivingDining } from "../vocabulary.js";
 
 /** Radius (mm) of the walking body obstacles are inflated by (clearance erosion). */
@@ -677,19 +677,27 @@ function buildNav(
   const g = buildGrid(rooms, walls, connectors, furniture, verticals, roomIndexById, tol, bodyRadius);
   if (!g) return { kind: "none" };
 
-  // In one pass: each room's anchor (free cell nearest its centroid, row-major so ties
+  // In one pass: each room's anchor (free cell nearest its seed point, row-major so ties
   // resolve deterministically) and its full free-cell list (route bottlenecks seed the
   // whole source room so its internal crowding can't cap the route).
+  //
+  // The seed is where you would stand in the room: its centroid — but a concave (L, U, C)
+  // ring can put its exact centroid in its own notch, OFF the floor, and the nearest free
+  // cell to an off-floor point is pinned to the lip of the notch rather than sitting in
+  // the room's body. `polygonLabelPoint` is the same closed-form centroid whenever the
+  // centroid is legal (so nothing that already measured correctly moves) and the ring's
+  // pole of inaccessibility — the middle of the widest part of the floor — only when it
+  // is not. Same rule the label text uses, so the drawn walk ends where the name is.
   const anchor = new Int32Array(rooms.length).fill(-1);
   const anchorDist = new Float64Array(rooms.length).fill(Infinity);
   const roomCells: number[][] = rooms.map(() => []);
-  const centroid = rects.map((rb) => (rb.poly ? polygonCentroid(rb.poly) : { x: rb.x + rb.w / 2, y: rb.y + rb.h / 2 }));
+  const seed = rects.map((rb) => (rb.poly ? polygonLabelPoint(rb.poly) : { x: rb.x + rb.w / 2, y: rb.y + rb.h / 2 }));
   for (let k = 0; k < g.free.length; k++) {
     const ri = g.roomIdx[k]!;
     if (!g.free[k] || ri < 0) continue;
     roomCells[ri]!.push(k);
     const c = centreOf(g, k);
-    const cen = centroid[ri]!;
+    const cen = seed[ri]!;
     const dsq = (c.x - cen.x) ** 2 + (c.y - cen.y) ** 2;
     if (dsq < anchorDist[ri]!) {
       anchorDist[ri] = dsq;
