@@ -17,7 +17,8 @@ snapshot, and before believing a green run means more than it does.
 | Command | What it runs |
 |---------|--------------|
 | `npm test` | the whole vitest suite: `test/`, `playground/test/`, `packages/*/test/`, `editors/vscode/test/` (the include list lives in `vitest.config.ts`) |
-| `npm run check` | `typecheck` + `lint` (Biome) + `npm test` — the pre-push gate |
+| `npm run check` | `typecheck` + `lint` (Biome) + `check:test-wiring` + `npm test` — the pre-push gate. **Its `typecheck` does not compile `test/`** — only `typecheck:all` does, so a type error in a test file passes `check` |
+| `npm run check:test-wiring` | fails if a tracked `*.test.ts` falls outside `vitest.config.ts`'s `test.include` globs (it would silently never run), or if an include glob matches nothing. Parses the globs out of the config rather than duplicating them |
 | `npm run check:drift` | every `gen:*` generator re-run and byte-compared against its committed artifact. **Separate from `check` — it is its own CI gate** |
 | `npm run typecheck:all` | the full-repo typecheck: root `tsconfig.dev.json` (`src` + `test` + `eval` + `dataset` + `scripts` + `bench`) then playground, docs-site (vue-tsc), `packages/mcp`, `editors/vscode` |
 | `npm run docs:build` | the only thing that compiles the VitePress site. **The core suite never does** — any `docs/*.md` edit needs this |

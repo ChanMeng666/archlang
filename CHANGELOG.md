@@ -7,7 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`W_DIM_OVERLAP`** — an advisory lint warning when two hand-written `dim` statements measuring
+  parallel runs land in the same chain tier and draw over each other, with a machine-applicable fix
+  that moves one out by the smallest whole number of `CHAIN_STEP` tiers that clears the other's line
+  and text. Adjacent members of one chain sharing a station tick, dims crossing at a corner, and
+  repeated instances of a single `for`-generated statement are all deliberately **not** flagged, and
+  nothing in the compiler ever re-stages an author's dimension on its own — the `offset` is the tier
+  control, and this only ever advises.
+- **The eval gains an intent-fidelity slice** (`npm run eval:fidelity`): deliberately infeasible
+  briefs where *declaring infeasibility* is the scored-correct answer, plus a deterministic,
+  **judge-free** measure of a plan and of a presented contract against a brief's *stated* numbers — so
+  a repair loop can never buy points by silently rewriting the requirement it could not meet. It ships
+  as a separately-reported slice in its own corpus file: `eval/corpus.json`, `eval/judge-fixture.json`,
+  `eval/live-baseline.json`, `eval/results.md` and `JUDGE_VERSION` are all **untouched**, so the
+  26-brief authorability rate keeps its ruler and stays comparable to every historical run. The
+  refusal protocol lives only in the new slice's prompt, for the same reason.
+
 ### Fixed
+
+- **Room labels no longer print on top of the drawing.** A post-pass over the lowered Scene
+  (`src/label-placement.ts`, run inside `toScene` after the walls are lowered and after `dims auto` —
+  the only place a dimension number is visible at all) moves a room's name and its area text off
+  furniture, door swings, stair symbols and dimension text, but **only when more than 2% of the
+  label's own box is genuinely buried**, so a plan whose labels are already clear keeps its exact
+  previous bytes. An explicit `label "…" at (x,y)` is never relocated, and `describe()` is untouched —
+  a label is a drawing fact, not a measured one.
+- **`dims auto` extension (witness) lines now terminate on the facade they point at** rather than on
+  the chain's straight baseline. A stepped or angled exterior — such as `examples/gallery-l.arch`'s
+  40° south-west run — used to draw witness lines beginning metres away over blank page, with no
+  diagnostic of any kind. A tick standing over a *curved* facade keeps the previous flat terminus
+  (arcs deferred by name; `examples/aquarium.arch` is byte-identical), and no dimension's measured
+  value, `describe()` output, or rectilinear plan's bytes change.
+- **`dims auto` staggers a crowded chain's numbers.** A run of narrow bays tiered correctly but
+  overprinted its own values (twelve 200 mm bays cannot each hold a ~309 mm-wide "200"). The
+  GB/T 50104 · ISO 129 remedy now alternates every other value across its dimension line, decided per
+  chain from one shared closed-form width estimate (`src/text-metrics.ts`, which the `W_DIM_OVERLAP`
+  rule and the error card now share) and applied **only when the numbers actually collide** — a plan
+  whose dimensions already fit is byte-identical. Because a staggered number flips *inward*, the
+  annotation band `DIM_BAND_FONTS` reserves is unchanged, so no papered plan was re-fit.
+- **Circulation on a concave floor.** A room's routing anchor is now seeded from its label point (the
+  centroid whenever the centroid is on the floor, the ring's pole of inaccessibility only when it is
+  not) instead of the raw centroid. The nearest legal cell to an off-floor point is the **lip of the
+  notch**, so an L/U/C room's walk, detour ratio, route targets and drawn overlay path were measured
+  from the wrong end of the room — on a test U, a 10.9 m walk was reported as 5.6 m. Output is
+  unchanged wherever the centroid was already legal, which is every shipped example.
+- **DXF export declares every layer its entities reference.** `stair`/`elevator`/`escalator` draw on
+  the `A-FLOR-STRS` / `A-FLOR-EVTR` sublayers, which the LAYER table did not declare, so a plan with a
+  shaft shipped entities on layers a CAD reader had to invent. The only output change is two extra
+  LAYER records in the header.
+
+### Changed
+
+- **`W_SWING_OBSTRUCTED`, `W_DOORWAY_BLOCKED`, `W_FURN_CLEARANCE` and `W_PATH_TOO_NARROW` now state
+  the value required, the value measured, and the shortfall**, and carry the closed remedy set in
+  `hints` — with a machine-applicable `hinge` flip on an obstructed swing *when the flipped
+  quarter-disc is proved clear*. Remedies that need a choice of geometry stay hints (no invisible
+  architect), and "narrow the door" **refuses itself** below the minimum passable width rather than
+  relocating the violation into `W_DOOR_CLEARANCE`. The `W_SWING_OBSTRUCTED` hint no longer suggests a
+  sliding door — the language has no way to express one.
 
 - **`describe().windows[].facing` ignored the plan's `north` — it was a PAGE direction wearing
   compass letters.** A plan declaring `north right` still reported a window on the top edge as
@@ -55,6 +114,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`scripts/gen-error-codes.ts` emits `arch static`) and gated by `test/docs-fences.test.ts`.
 
 ### Changed (infrastructure — no language or output change)
+
+- **`npm run check:test-wiring`** — a new zero-dep guard (`scripts/check-test-wiring.mjs`, in
+  `npm run check` and CI's `builds` job) that fails if any tracked `*.test.ts` falls outside
+  `vitest.config.ts`'s `test.include` globs, **or if any include glob matches nothing**. A test file
+  outside that list is never collected, never skipped and never reported, so it reads as coverage
+  while `npm test` stays green; a dead glob is the same fault from the other end. The guard *parses*
+  the globs out of the config rather than carrying a copy that could go stale.
+- **`test/axes.test.ts` spawns the CLI the worktree-safe way** — the house `process.execPath` +
+  `--import tsx` idiom with repo-relative paths, instead of reaching into an absolute
+  `node_modules/tsx/dist/cli.mjs`. The suite no longer fails in a git worktree that has no
+  `node_modules` of its own, which is now the normal way work happens in this repo.
 
 - **Automated testing buildout.** The verification system is now mapped end to end in the new
   **`docs/testing.md`**: the three tiers (local, PR, nightly), every guard with the law it enforces
