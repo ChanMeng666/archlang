@@ -82,6 +82,7 @@
     "lint:ci": "biome ci .",
     "eval": "tsx eval/run.ts",
     "eval:ci": "tsx eval/run.ts",
+    "eval:fidelity": "tsx eval/fidelity-run.ts",
     "eval:live": "tsx eval/run.ts --live",
     "eval:g1": "tsx eval/g1/generate.ts",
     "eval:l2": "tsx eval/l2-run.ts",

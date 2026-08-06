@@ -1,0 +1,31 @@
+# COUNTER-EXAMPLE for the infeasible brief `four-bed-cap`.
+#
+# R1 (exactly 4 bedrooms) x R2 (each at least 12 m²) demands 48 m² of floor, against R3's
+# stated 40 m² ceiling. This plan honours R1 (four bedrooms) and R3 (40.0 m² exactly) and
+# silently moves R2: every bedroom is 10 m², not 12. That is the ArchLang mirror of the
+# ifc-lite sill rewrite (2.0 -> 1.55) — the stated number quietly reduced until the
+# validator was happy. Committed so the detector can be proved to NAME R2.
+plan "Four-bed Cap (laundered)" {
+  units mm
+  grid 50
+  north up
+
+  wall exterior  thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+  wall partition thickness 100 { (4000,0) (4000,5000) }
+  wall partition thickness 100 { (0,2500) (8000,2500) }
+
+  room id=r_b1 at (0,0)       size 4000x2500 label "Bedroom 1" uses bedroom
+  room id=r_b2 at (4000,0)    size 4000x2500 label "Bedroom 2" uses bedroom
+  room id=r_b3 at (0,2500)    size 4000x2500 label "Bedroom 3" uses bedroom
+  room id=r_b4 at (4000,2500) size 4000x2500 label "Bedroom 4" uses bedroom
+
+  door id=d_main at (0,1250)    width 900 wall exterior  hinge left  swing in
+  door id=d_12   at (4000,1250) width 800 wall partition hinge right swing in
+  door id=d_13   at (2000,2500) width 800 wall partition hinge right swing in
+  door id=d_34   at (4000,3750) width 800 wall partition hinge right swing in
+
+  window at (2000,0)    width 1200 wall exterior
+  window at (6000,0)    width 1200 wall exterior
+  window at (2000,5000) width 1200 wall exterior
+  window at (6000,5000) width 1200 wall exterior
+}

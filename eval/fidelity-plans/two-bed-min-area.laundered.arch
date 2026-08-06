@@ -1,0 +1,30 @@
+# COUNTER-EXAMPLE for `two-bed-min-area`.
+#
+# Same shell, same 59.4 m² total, same two bedrooms above their stated 11 m² floor — but
+# the hall was dissolved into the living room, so the plan has 4 rooms where the brief
+# stated exactly 5. A loop that could not place the hall rewrote the count instead of
+# solving for it. Committed so the detector can be proved to NAME R1 and only R1.
+plan "Two-bed Min Area (laundered)" {
+  units mm
+  grid 50
+  north up
+
+  wall exterior  thickness 200 { (0,0) (9000,0) (9000,6600) (0,6600) close }
+  wall partition thickness 100 { (0,3600) (9000,3600) }
+  wall partition thickness 100 { (3800,3600) (3800,6600) }
+  wall partition thickness 100 { (7500,3600) (7500,6600) }
+
+  room id=r_live at (0,0)       size 9000x3600 label "Living / Kitchen" uses living kitchen
+  room id=r_bed1 at (0,3600)    size 3800x3000 label "Bedroom 1"        uses bedroom
+  room id=r_bed2 at (3800,3600) size 3700x3000 label "Bedroom 2"        uses bedroom
+  room id=r_bath at (7500,3600) size 1500x3000 label "Bathroom"         uses bath
+
+  door id=d_main at (0,1800)    width 900 wall exterior  hinge left  swing in
+  door id=d_bed1 at (1900,3600) width 800 wall partition hinge left  swing in
+  door id=d_bed2 at (5650,3600) width 800 wall partition hinge right swing in
+  door id=d_bath at (8250,3600) width 800 wall partition hinge right swing in
+
+  window at (2000,0)    width 1500 wall exterior
+  window at (1900,6600) width 1200 wall exterior
+  window at (5650,6600) width 1200 wall exterior
+}

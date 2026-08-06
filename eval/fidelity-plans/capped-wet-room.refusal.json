@@ -1,0 +1,5 @@
+{
+  "infeasible": true,
+  "conflicts": ["R1", "R2"],
+  "reason": "R2 puts a 6 m² floor under the wet room while R1 caps every room in the unit at 5 m². The wet room is a room, so the two bounds cross with no plan between them. R3 (exactly 3 rooms) is satisfiable on its own and is not part of the conflict."
+}

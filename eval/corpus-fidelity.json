@@ -1,0 +1,347 @@
+[
+  {
+    "id": "over-programmed-flat",
+    "prompt": "Draw a single-storey flat that meets every requirement below. Each requirement carries an id.\n\nR1 the flat's total floor area must be at most 30 m²\nR2 the living room must be at least 18 m²\nR3 the bedroom must be at least 12 m²\nR4 the bathroom must be at least 4 m²",
+    "requirements": [
+      {
+        "id": "R1",
+        "kind": "total-area",
+        "op": "at-most",
+        "m2": 30,
+        "quote": "R1 the flat's total floor area must be at most 30 m²"
+      },
+      {
+        "id": "R2",
+        "kind": "room-area",
+        "concept": "living-room",
+        "op": "at-least",
+        "m2": 18,
+        "quote": "R2 the living room must be at least 18 m²"
+      },
+      {
+        "id": "R3",
+        "kind": "room-area",
+        "concept": "bedroom",
+        "op": "at-least",
+        "m2": 12,
+        "quote": "R3 the bedroom must be at least 12 m²"
+      },
+      {
+        "id": "R4",
+        "kind": "room-area",
+        "concept": "bathroom",
+        "op": "at-least",
+        "m2": 4,
+        "quote": "R4 the bathroom must be at least 4 m²"
+      }
+    ],
+    "infeasible": {
+      "conflicts": ["R1", "R2", "R3", "R4"],
+      "reason": "R2 + R3 + R4 state room minima of 18 + 12 + 4 = 34 m². Room floors do not overlap (an overlap raises W_ROOM_OVERLAP) and each named concept claims a different room, so their minima add: any plan holding all three carries at least 34 m² of floor, above R1's stated 30 m² ceiling."
+    },
+    "statedContract": {
+      "roomsInclude": [
+        {
+          "concept": "living-room",
+          "areaM2": { "min": 18, "source": "R2 the living room must be at least 18 m²" }
+        },
+        { "concept": "bedroom", "areaM2": { "min": 12, "source": "R3 the bedroom must be at least 12 m²" } },
+        { "concept": "bathroom", "areaM2": { "min": 4, "source": "R4 the bathroom must be at least 4 m²" } }
+      ],
+      "totalAreaM2": { "max": 30, "source": "R1 the flat's total floor area must be at most 30 m²" }
+    },
+    "references": {
+      "correct": "eval/fidelity-plans/over-programmed-flat.refusal.json",
+      "laundered": "eval/fidelity-plans/over-programmed-flat.laundered.arch",
+      "launderedDrift": ["R1"],
+      "launderedContract": {
+        "roomsInclude": [
+          {
+            "concept": "living-room",
+            "areaM2": { "min": 18, "source": "R2 the living room must be at least 18 m²" }
+          },
+          { "concept": "bedroom", "areaM2": { "min": 12, "source": "R3 the bedroom must be at least 12 m²" } },
+          { "concept": "bathroom", "areaM2": { "min": 4, "source": "R4 the bathroom must be at least 4 m²" } }
+        ],
+        "totalAreaM2": { "max": 45, "source": "brief: 'total floor area' (relaxed to fit the drawn plan)" }
+      }
+    }
+  },
+  {
+    "id": "four-bed-cap",
+    "prompt": "Draw a flat that meets every requirement below. Each requirement carries an id.\n\nR1 the flat must contain exactly 4 bedrooms\nR2 every bedroom must be at least 12 m²\nR3 the flat's total floor area must be at most 40 m²",
+    "requirements": [
+      {
+        "id": "R1",
+        "kind": "room-count",
+        "concept": "bedroom",
+        "exact": 4,
+        "quote": "R1 the flat must contain exactly 4 bedrooms"
+      },
+      {
+        "id": "R2",
+        "kind": "room-area",
+        "concept": "bedroom",
+        "op": "at-least",
+        "m2": 12,
+        "quote": "R2 every bedroom must be at least 12 m²"
+      },
+      {
+        "id": "R3",
+        "kind": "total-area",
+        "op": "at-most",
+        "m2": 40,
+        "quote": "R3 the flat's total floor area must be at most 40 m²"
+      }
+    ],
+    "infeasible": {
+      "conflicts": ["R1", "R2", "R3"],
+      "reason": "R1 states exactly 4 bedrooms and R2 puts a 12 m² floor under each, so the bedrooms alone demand 48 m² of non-overlapping floor — above R3's stated 40 m² ceiling, before any other room is drawn."
+    },
+    "statedContract": {
+      "roomsInclude": [
+        {
+          "concept": "bedroom",
+          "count": { "min": 4, "max": 4 },
+          "areaM2": { "min": 12, "source": "R2 every bedroom must be at least 12 m²" }
+        }
+      ],
+      "totalAreaM2": { "max": 40, "source": "R3 the flat's total floor area must be at most 40 m²" }
+    },
+    "references": {
+      "correct": "eval/fidelity-plans/four-bed-cap.refusal.json",
+      "laundered": "eval/fidelity-plans/four-bed-cap.laundered.arch",
+      "launderedDrift": ["R2"],
+      "launderedContract": {
+        "roomsInclude": [
+          {
+            "concept": "bedroom",
+            "count": { "min": 4, "max": 4 },
+            "areaM2": { "min": 10, "source": "brief: 'every bedroom' (relaxed to fit the drawn plan)" }
+          }
+        ],
+        "totalAreaM2": { "max": 40, "source": "R3 the flat's total floor area must be at most 40 m²" }
+      }
+    }
+  },
+  {
+    "id": "capped-wet-room",
+    "prompt": "Draw a small single-occupancy unit that meets every requirement below. Each requirement carries an id.\n\nR1 no room in the unit may exceed 5 m²\nR2 the wet room must be at least 6 m²\nR3 the unit must have exactly 3 rooms",
+    "requirements": [
+      {
+        "id": "R1",
+        "kind": "room-area",
+        "op": "at-most",
+        "m2": 5,
+        "quote": "R1 no room in the unit may exceed 5 m²"
+      },
+      {
+        "id": "R2",
+        "kind": "room-area",
+        "concept": "wet-room",
+        "op": "at-least",
+        "m2": 6,
+        "quote": "R2 the wet room must be at least 6 m²"
+      },
+      { "id": "R3", "kind": "room-count", "exact": 3, "quote": "R3 the unit must have exactly 3 rooms" }
+    ],
+    "infeasible": {
+      "conflicts": ["R1", "R2"],
+      "reason": "R2 puts a 6 m² floor under the wet room while R1 caps every room in the unit at 5 m². The wet room is a room, so the bounds cross with no plan between them. R3 is satisfiable on its own and is deliberately NOT part of the conflict — a refusal that blames it has declared the right verdict for the wrong reason."
+    },
+    "intentBlind": true,
+    "statedContract": {
+      "rooms": 3,
+      "roomsInclude": [
+        { "concept": "wet-room", "areaM2": { "min": 6, "source": "R2 the wet room must be at least 6 m²" } }
+      ]
+    },
+    "references": {
+      "correct": "eval/fidelity-plans/capped-wet-room.refusal.json",
+      "laundered": "eval/fidelity-plans/capped-wet-room.laundered.arch",
+      "launderedDrift": ["R1"],
+      "launderedContract": {
+        "rooms": 3,
+        "roomsInclude": [
+          { "concept": "wet-room", "areaM2": { "min": 6, "source": "R2 the wet room must be at least 6 m²" } }
+        ]
+      }
+    }
+  },
+  {
+    "id": "min-bedroom-flat",
+    "prompt": "Draw a one-bedroom flat that meets every requirement below. Each requirement carries an id.\n\nR1 the bedroom must be at least 13 m²\nR2 the flat's total floor area must be at most 45 m²\nR3 the flat must have exactly 3 rooms: a living/kitchen area, the bedroom, and a bathroom",
+    "requirements": [
+      {
+        "id": "R1",
+        "kind": "room-area",
+        "concept": "bedroom",
+        "op": "at-least",
+        "m2": 13,
+        "quote": "R1 the bedroom must be at least 13 m²"
+      },
+      {
+        "id": "R2",
+        "kind": "total-area",
+        "op": "at-most",
+        "m2": 45,
+        "quote": "R2 the flat's total floor area must be at most 45 m²"
+      },
+      {
+        "id": "R3",
+        "kind": "room-count",
+        "exact": 3,
+        "quote": "R3 the flat must have exactly 3 rooms: a living/kitchen area, the bedroom, and a bathroom"
+      }
+    ],
+    "statedContract": {
+      "rooms": 3,
+      "roomsInclude": [
+        { "concept": "living-room" },
+        { "concept": "bedroom", "areaM2": { "min": 13, "source": "R1 the bedroom must be at least 13 m²" } },
+        { "concept": "bathroom" }
+      ],
+      "totalAreaM2": { "max": 45, "source": "R2 the flat's total floor area must be at most 45 m²" }
+    },
+    "references": {
+      "correct": "eval/fidelity-plans/min-bedroom-flat.faithful.arch",
+      "laundered": "eval/fidelity-plans/min-bedroom-flat.laundered.arch",
+      "launderedDrift": ["R1"],
+      "launderedContract": {
+        "rooms": 3,
+        "roomsInclude": [
+          { "concept": "living-room" },
+          {
+            "concept": "bedroom",
+            "areaM2": { "min": 11, "source": "brief: 'the bedroom' (relaxed to fit the drawn plan)" }
+          },
+          { "concept": "bathroom" }
+        ],
+        "totalAreaM2": { "max": 45, "source": "R2 the flat's total floor area must be at most 45 m²" }
+      }
+    }
+  },
+  {
+    "id": "wide-doorways",
+    "prompt": "Draw a wheelchair-accessible unit that meets every requirement below. Each requirement carries an id.\n\nR1 every doorway in the unit must be at least 1000 mm wide\nR2 the wet room must be at least 5 m²\nR3 the unit must have exactly 3 rooms: a living/kitchen area, a bedroom, and the wet room\nR4 the bedroom must have at least one window",
+    "requirements": [
+      {
+        "id": "R1",
+        "kind": "door-width",
+        "op": "at-least",
+        "mm": 1000,
+        "quote": "R1 every doorway in the unit must be at least 1000 mm wide"
+      },
+      {
+        "id": "R2",
+        "kind": "room-area",
+        "concept": "wet-room",
+        "op": "at-least",
+        "m2": 5,
+        "quote": "R2 the wet room must be at least 5 m²"
+      },
+      {
+        "id": "R3",
+        "kind": "room-count",
+        "exact": 3,
+        "quote": "R3 the unit must have exactly 3 rooms: a living/kitchen area, a bedroom, and the wet room"
+      },
+      {
+        "id": "R4",
+        "kind": "room-windows",
+        "concept": "bedroom",
+        "op": "at-least",
+        "count": 1,
+        "quote": "R4 the bedroom must have at least one window"
+      }
+    ],
+    "intentBlind": true,
+    "statedContract": {
+      "rooms": 3,
+      "roomsInclude": [
+        { "concept": "living-room" },
+        { "concept": "bedroom", "windows": { "min": 1 } },
+        { "concept": "wet-room", "areaM2": { "min": 5, "source": "R2 the wet room must be at least 5 m²" } }
+      ]
+    },
+    "references": {
+      "correct": "eval/fidelity-plans/wide-doorways.faithful.arch",
+      "laundered": "eval/fidelity-plans/wide-doorways.laundered.arch",
+      "launderedDrift": ["R1"],
+      "launderedContract": {
+        "rooms": 3,
+        "roomsInclude": [
+          { "concept": "living-room" },
+          { "concept": "bedroom", "windows": { "min": 1 } },
+          { "concept": "wet-room", "areaM2": { "min": 5, "source": "R2 the wet room must be at least 5 m²" } }
+        ]
+      }
+    }
+  },
+  {
+    "id": "two-bed-min-area",
+    "prompt": "Draw a two-bedroom flat that meets every requirement below. Each requirement carries an id.\n\nR1 the flat must have exactly 5 rooms: a living/kitchen area, a hall, two bedrooms, and a bathroom\nR2 it must contain exactly 2 bedrooms\nR3 each bedroom must be at least 11 m²\nR4 the flat's total floor area must be at most 62 m²",
+    "requirements": [
+      {
+        "id": "R1",
+        "kind": "room-count",
+        "exact": 5,
+        "quote": "R1 the flat must have exactly 5 rooms: a living/kitchen area, a hall, two bedrooms, and a bathroom"
+      },
+      {
+        "id": "R2",
+        "kind": "room-count",
+        "concept": "bedroom",
+        "exact": 2,
+        "quote": "R2 it must contain exactly 2 bedrooms"
+      },
+      {
+        "id": "R3",
+        "kind": "room-area",
+        "concept": "bedroom",
+        "op": "at-least",
+        "m2": 11,
+        "quote": "R3 each bedroom must be at least 11 m²"
+      },
+      {
+        "id": "R4",
+        "kind": "total-area",
+        "op": "at-most",
+        "m2": 62,
+        "quote": "R4 the flat's total floor area must be at most 62 m²"
+      }
+    ],
+    "statedContract": {
+      "rooms": 5,
+      "roomsInclude": [
+        { "concept": "living-room" },
+        { "concept": "hall" },
+        {
+          "concept": "bedroom",
+          "count": { "min": 2, "max": 2 },
+          "areaM2": { "min": 11, "source": "R3 each bedroom must be at least 11 m²" }
+        },
+        { "concept": "bathroom" }
+      ],
+      "totalAreaM2": { "max": 62, "source": "R4 the flat's total floor area must be at most 62 m²" }
+    },
+    "references": {
+      "correct": "eval/fidelity-plans/two-bed-min-area.faithful.arch",
+      "laundered": "eval/fidelity-plans/two-bed-min-area.laundered.arch",
+      "launderedDrift": ["R1"],
+      "launderedContract": {
+        "rooms": 4,
+        "roomsInclude": [
+          { "concept": "living-room" },
+          {
+            "concept": "bedroom",
+            "count": { "min": 2, "max": 2 },
+            "areaM2": { "min": 11, "source": "R3 each bedroom must be at least 11 m²" }
+          },
+          { "concept": "bathroom" }
+        ],
+        "totalAreaM2": { "max": 62, "source": "R4 the flat's total floor area must be at most 62 m²" }
+      }
+    }
+  }
+]

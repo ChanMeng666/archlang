@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 import { describe as vdescribe, expect, it } from "vitest";
 import { compile, describe as describePlan, lint, validateIntent } from "../src/index.js";
 import { CANARY, CANARY_COMMENT } from "../dataset/canary.js";
-import { loadHoldout, normalizeText, structReject, textReject } from "../dataset/dedup.js";
+import type { HoldoutIndex } from "../dataset/dedup.js";
+import { fingerprint, loadHoldout, normalizeText, structReject, textReject } from "../dataset/dedup.js";
 import { generateAll } from "../dataset/generate.js";
 import { recordTrajectory } from "../dataset/trajectory.js";
 
@@ -50,11 +51,63 @@ function grams8(text: string): Set<string> {
 const corpus: { id: string; prompt: string; golden: string }[] = JSON.parse(
   readFileSync(resolve(__dirname, "..", "eval", "corpus.json"), "utf8"),
 );
-const holdoutGrams = corpus.map((e) => ({ id: e.id, grams: grams8(e.prompt) }));
-const holdoutGoldenNorm = corpus.map((e) => ({
-  id: e.id,
-  norm: normalizeText(readFileSync(resolve(__dirname, "..", e.golden), "utf8")),
-}));
+
+/**
+ * The FIDELITY holdout (roadmap P0-3) — `eval/corpus-fidelity.json` and its committed
+ * reference plans. These briefs are holdout material on exactly the same terms as the 26:
+ * private forever, never published, and the public dataset must stay disjoint from them
+ * too. Without this they would be an **unguarded leak channel**, because the enforcement
+ * arm (`dataset/dedup.ts`'s `loadHoldout`) reads only `eval/corpus.json`.
+ *
+ * `loadHoldout` is deliberately NOT extended. It decides what the generator *rejects*, so
+ * widening it would change which rows a given seed emits — and the published HF dataset
+ * carries a reproducibility claim against seed `20260712`. The guard therefore lives here,
+ * where it costs that claim nothing and still fails CI the moment a generated row starts
+ * to look like a fidelity brief.
+ */
+const fidelityCorpus: {
+  id: string;
+  prompt: string;
+  references: { correct: string; laundered: string };
+}[] = JSON.parse(readFileSync(resolve(__dirname, "..", "eval", "corpus-fidelity.json"), "utf8"));
+
+/** Every `.arch` reference plan the fidelity corpus commits (a refusal is JSON, not a plan). */
+const fidelityPlans = fidelityCorpus.flatMap((e) =>
+  [e.references.correct, e.references.laundered]
+    .filter((p) => p.endsWith(".arch"))
+    .map((p) => ({ id: `${e.id}:${p.split("/").pop()}`, path: p })),
+);
+
+const holdoutGrams = [
+  ...corpus.map((e) => ({ id: e.id, grams: grams8(e.prompt) })),
+  ...fidelityCorpus.map((e) => ({ id: `fidelity:${e.id}`, grams: grams8(e.prompt) })),
+];
+const holdoutGoldenNorm = [
+  ...corpus.map((e) => ({
+    id: e.id,
+    norm: normalizeText(readFileSync(resolve(__dirname, "..", e.golden), "utf8")),
+  })),
+  ...fidelityPlans.map((p) => ({
+    id: `fidelity:${p.id}`,
+    norm: normalizeText(readFileSync(resolve(__dirname, "..", p.path), "utf8")),
+  })),
+];
+
+/** A `HoldoutIndex` over the fidelity corpus alone, so the same `textReject`/`structReject`
+ *  checks the 26 briefs get are applied to these too — built here rather than inside
+ *  `loadHoldout` for the reproducibility reason above. */
+const fidelityHoldout: HoldoutIndex = {
+  prompts: fidelityCorpus.map((e) => ({
+    id: e.id,
+    tokenSet: new Set(normalizeText(e.prompt).split(" ").filter(Boolean)),
+    grams: grams8(e.prompt),
+  })),
+  fingerprints: fidelityPlans.map((p) => {
+    const abs = resolve(__dirname, "..", p.path);
+    const fp = fingerprint(readFileSync(abs, "utf8"), dirname(abs));
+    return { id: p.id, fp, exact: JSON.stringify(fp) };
+  }),
+};
 
 vdescribe("dataset generator — the corpus is non-empty", () => {
   it("emits the requested rows", () => {
@@ -103,6 +156,34 @@ vdescribe("a. leakage — the private holdout stays private (contamination iron 
       const source = (r.source ?? r.fixed_source) as string;
       expect(structReject(source, holdout).reject, `${r.id} fingerprint matches a holdout golden`).toBe(false);
     }
+  });
+
+  // The same two checks against the FIDELITY holdout (P0-3). Kept as separate cases so a
+  // failure names which holdout was hit — the two corpora have different remedies.
+  it("every authoring brief is below the reject threshold against the fidelity briefs", () => {
+    for (const r of authoringRows) {
+      expect(textReject(r.brief as string, fidelityHoldout).reject, `authoring brief ${r.id} too similar`).toBe(false);
+    }
+  });
+
+  it("no row's structural fingerprint matches any fidelity reference plan", () => {
+    for (const r of [...repairRows, ...authoringRows]) {
+      const source = (r.source ?? r.fixed_source) as string;
+      expect(structReject(source, fidelityHoldout).reject, `${r.id} fingerprint matches a fidelity plan`).toBe(false);
+    }
+  });
+
+  it("the fidelity corpus is actually being scanned (the guard is not a no-op)", () => {
+    // A guard that reads an empty list passes forever. Pin that both halves are non-empty
+    // and that a fidelity brief's own text WOULD be rejected — the detector's positive
+    // control, in the style of `test/docs-table-pipes.test.ts`.
+    expect(fidelityCorpus.length).toBeGreaterThan(0);
+    expect(fidelityPlans.length).toBeGreaterThan(0);
+    expect(textReject(fidelityCorpus[0]!.prompt, fidelityHoldout).reject).toBe(true);
+    const plan = readFileSync(resolve(__dirname, "..", fidelityPlans[0]!.path), "utf8");
+    expect(structReject(plan, fidelityHoldout, dirname(resolve(__dirname, "..", fidelityPlans[0]!.path))).reject).toBe(
+      true,
+    );
   });
 });
 
