@@ -144,10 +144,19 @@ class DxfBuilder {
   }
 }
 
-/** AIA CAD layers and their DXF colour numbers (group code 62). */
+/** AIA CAD layers and their DXF colour numbers (group code 62).
+ *
+ * Every layer any node can land on must be declared here: the pass defaults from
+ * `aiaLayer()` **and** the per-node `layerName` overrides (`A-COLS`, and the two
+ * `A-FLOR-*` shaft sublayers, which draw with the furniture stroke and so take
+ * A-FURN's colour). An entity referencing an undeclared layer is only tolerated
+ * because most readers auto-create it — `test/export-dxf.test.ts` pins the closure
+ * in both directions, so a new override needs a row here. */
 const AIA_LAYERS: { name: string; color: number }[] = [
   { name: "A-WALL", color: 7 },
   { name: "A-FLOR", color: 8 },
+  { name: "A-FLOR-STRS", color: 3 },
+  { name: "A-FLOR-EVTR", color: 3 },
   { name: "A-GRID", color: 4 },
   { name: "A-FURN", color: 3 },
   { name: "A-COLS", color: 1 },
