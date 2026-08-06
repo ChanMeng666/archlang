@@ -139,6 +139,13 @@ jobs:
       - name: VS Code extension bundle tests
         run: npx vitest run editors/vscode
 
+      # A `*.test.ts` outside vitest.config.ts's `test.include` list is not skipped
+      # and not reported — it is never collected, so it reads as coverage in the
+      # diff while `npm test` stays green. This proves every tracked test file is
+      # matched by a glob the suite actually runs (and that no glob has gone dead).
+      - name: Every test file is wired into the suite
+        run: npm run check:test-wiring
+
       # (appended by later workstreams)
 
   windows:
