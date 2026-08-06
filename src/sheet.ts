@@ -114,6 +114,20 @@ export const DIM_BAND_FONTS = CHAIN_BASE + (CHAIN_SLOTS - 1) * CHAIN_STEP + 0.7 
 /** The dimension band reserved on each dimensioned side, in sheet mm. */
 export const DIM_BAND_MM = DIM_BAND_FONTS * SHEET_MM.dimText;
 
+/**
+ * Clear gap a dimension NUMBER must keep from its neighbour in the same chain, in
+ * dimension-font multiples. Below it the chain is crowded and its numbers stagger — see
+ * `staggerChain` in `scene-build.ts`.
+ *
+ * `DIM_BAND_FONTS` above deliberately does NOT move for the stagger: a staggered number is
+ * flipped to the INNER side of its own dimension line (`dimFont * 0.7` back instead of
+ * forward), so a chain's outward reach is unchanged and the band stays exactly as deep as
+ * this file reserves. That inner side is free by construction — `CHAIN_STEP` is 2.2, which
+ * is two 0.7 standoffs plus two half cap-heights plus clearance, i.e. the step was already
+ * sized for text on both sides of the gap between two chains.
+ */
+export const DIM_TEXT_GAP = 0.5;
+
 /** The scale denominators auto-fit may choose from, finest first. */
 export const AUTO_SCALE_DENOMINATORS = [50, 100, 200, 500] as const;
 

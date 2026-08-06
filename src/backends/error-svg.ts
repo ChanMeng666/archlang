@@ -21,6 +21,7 @@ import { diagnosticToJson } from "../diagnostic-json.js";
 import type { Theme } from "../theme.js";
 import { DEFAULT_THEME } from "../theme.js";
 import { fmt2 as fmt } from "../num-format.js";
+import { textWidth } from "../text-metrics.js";
 import { xml } from "./svg.js";
 
 /** Options for {@link renderErrorSvg}. All have deterministic defaults. */
@@ -199,9 +200,9 @@ export function renderErrorSvg(source: string, diagnostics: Diagnostic[], opts: 
     out.push(
       `<text x="${fmt(cx)}" y="${fmt(chipLineY)}" font-size="${fmt(CODE_FS)}" font-weight="700" fill="${r.accent}">${xml(sevLabel)}</text>`,
     );
-    cx += sevLabel.length * (CODE_FS * 0.62) + 12;
+    cx += textWidth(sevLabel, CODE_FS) + 12;
     if (r.code) {
-      const chipW = r.code.length * (CODE_FS * 0.62) + 14;
+      const chipW = textWidth(r.code, CODE_FS) + 14;
       out.push(
         `<rect x="${fmt(cx)}" y="${fmt(chipLineY - CODE_FS)}" width="${fmt(chipW)}" height="${fmt(CODE_FS + 8)}" rx="3" fill="${chipBg}"/>`,
       );

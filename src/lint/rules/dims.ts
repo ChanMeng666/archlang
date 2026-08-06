@@ -27,6 +27,7 @@ import type { RDim } from "../../ir.js";
 import { dimBumpFix, dimSwapFix, fixesFrom } from "../../fix-producers.js";
 import { CHAIN_STEP, SHEET_MM } from "../../sheet.js";
 import { fmt2 } from "../../num-format.js";
+import { textWidth } from "../../text-metrics.js";
 import type { LintContext, LintRule } from "../context.js";
 
 /** Margin (mm) a point must clear the room-extents box by to count as "inside". */
@@ -184,24 +185,28 @@ interface Band {
   half: number;
 }
 
-/**
- * Em-per-character factor for estimating a rendered string's width. The renderer has no
- * text metrics — the only such factor in the tree is the error card's
- * (`backends/error-svg.ts`) — so a width is a closed-form estimate over the exact string
- * `dim.render` draws: the authored `text` when there is one, else the measured length
- * through the same {@link fmt2} the render context passes as its `fmt`.
- */
-const EM_PER_CHAR = 0.62;
-
 function band(dm: RDim, dimFont: number): Band {
   const span = dm.span!;
   const u = unit(sub(dm.to, dm.from));
   const n = normal(u);
   const len = length(sub(dm.to, dm.from));
   const mid = add({ x: (dm.from.x + dm.to.x) / 2, y: (dm.from.y + dm.to.y) / 2 }, mul(n, dm.offset));
+  // The width estimate goes through the ONE shared `textWidth` (there are no text metrics
+  // anywhere in `src/`), over the exact string `dim.render` draws: the authored `text` when
+  // there is one, else the measured length through the same `fmt2` the render context
+  // passes as its `fmt`. The `dims auto` stagger decision reads the same helper, so this
+  // rule and the renderer never disagree about what collides.
   const label = dm.text ?? fmt2(len);
-  const textW = label.length * dimFont * EM_PER_CHAR;
-  return { dm, span, at: span.start, key: `${span.start}:${span.end}`, u, n, mid, half: Math.max(len, textW) / 2 };
+  return {
+    dm,
+    span,
+    at: span.start,
+    key: `${span.start}:${span.end}`,
+    u,
+    n,
+    mid,
+    half: Math.max(len, textWidth(label, dimFont)) / 2,
+  };
 }
 
 /** Are the two measured segments parallel (either direction)? Both vectors are unit, so

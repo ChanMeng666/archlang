@@ -39,7 +39,8 @@ import { patternId } from "./hatches.js";
 import type { HatchSpec } from "./hatches.js";
 import { anchorChromeToSheet, dimReach, layoutChrome } from "./chrome-layout.js";
 import { axesNodes } from "./axes.js";
-import { CHAIN_BASE, CHAIN_STEP, SHEET_MM, sizesFromPaper } from "./sheet.js";
+import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, SHEET_MM, sizesFromPaper } from "./sheet.js";
+import { textWidth } from "./text-metrics.js";
 import { legendEntries, roomSchedule, sheetTableNodes } from "./sheet-tables.js";
 import { circulationOverlayNodes } from "./overlays/circulation.js";
 import { captionForPlan } from "./describe.js";
@@ -648,9 +649,63 @@ function cleanTicks(values: readonly number[], lo: number, hi: number): number[]
   return out;
 }
 
+/**
+ * Does this chain's NUMBERS crowd, and should they therefore stagger?
+ *
+ * Chain TIERING (which slot a chain sits in) and number CROWDING are different problems:
+ * three chains can be correctly tiered into three slots and still be unreadable, because
+ * every number in one of them is wider than the bay it labels. Twelve 200 mm bays cannot
+ * each hold a ~300 mm-wide "200" — the values overprint their neighbours while the lines
+ * themselves are perfectly staged. The GB/T 50104 / ISO 129 answer is to stagger the
+ * values: put every other one on the far side of the dimension line.
+ *
+ * **The rule.** Each value is centred on its own span, so two neighbours' centres are
+ * `(wᵢ + wᵢ₊₁) / 2` apart and their facing half-widths sum to `(Wᵢ + Wᵢ₊₁) / 2`. The pair
+ * is crowded when what is left is less than the clear gap {@link DIM_TEXT_GAP}:
+ *
+ * ```
+ *   Wᵢ + Wᵢ₊₁ + 2·gap  >  wᵢ + wᵢ₊₁
+ * ```
+ *
+ * `W` is the shared closed-form {@link textWidth} estimate over the exact string
+ * `dim.render` will draw — the same helper `W_DIM_OVERLAP` measures with, so the lint rule
+ * and this decision can never disagree about what collides. There are no text metrics in
+ * `src/` and there is no font to measure.
+ *
+ * **Whole chain, or none.** One crowded PAIR staggers the WHOLE chain. Staggering only the
+ * offending pairs would leave an irregular two-row pattern that reads worse than either
+ * row alone, and can re-collide downstream (pushing `i` down leaves `i+1` up against
+ * `i+2`). Alternating from one end is the drafting convention and is what makes the
+ * same-side neighbours two bays apart instead of one.
+ *
+ * **Determinism.** Which numbers move is settled by INDEX PARITY, not by geometry: span 0
+ * keeps the outward side, span 1 flips, span 2 keeps, and so on from the chain's `from`
+ * end. No float comparison chooses a winner; the only float comparison is the crowding
+ * predicate itself, which is strict (`>`) so an exact fit is NOT crowded and a chain that
+ * already fits emits byte-identical geometry.
+ *
+ * A one-span chain (the `overall` chain, always) has no adjacent pair and can never crowd.
+ */
+function staggerChain(ticks: readonly number[], dimFont: number): boolean {
+  if (ticks.length < 3) return false;
+  const gap = DIM_TEXT_GAP * dimFont;
+  // Width of the value each span will be labelled with, in tick order. `dims auto` never
+  // writes a `text` override, so the label is the measured length through the same `fmtMm`
+  // the render context hands `dim.render` as its `fmt`.
+  const w = ticks.slice(1).map((t, i) => Math.abs(t - ticks[i]!));
+  const width = w.map((len) => textWidth(fmtMm(len), dimFont));
+  for (let i = 0; i + 1 < w.length; i++) {
+    if (width[i]! + width[i + 1]! + 2 * gap > w[i]! + w[i + 1]!) return true;
+  }
+  return false;
+}
+
 /** Emit one chain: a dim per span between consecutive ticks, all at one offset. */
-function emitChain(side: SideGeom, ticks: readonly number[], offset: number, dims: RDim[]): void {
+function emitChain(side: SideGeom, ticks: readonly number[], offset: number, dimFont: number, dims: RDim[]): void {
   if (ticks.length < 2) return;
+  // Only a crowded chain staggers, so a plan whose numbers already fit carries no `stagger`
+  // flag at all and renders byte-for-byte as it always did.
+  const stagger = staggerChain(ticks, dimFont);
   for (let i = 0; i + 1 < ticks.length; i++) {
     const a = ticks[i]!;
     const b = ticks[i + 1]!;
@@ -661,6 +716,10 @@ function emitChain(side: SideGeom, ticks: readonly number[], offset: number, dim
       // ticks and its text are untouched); only the witness lines reach back to the
       // wall, which on a stepped or angled facade is not under the baseline at all.
       witness: { from: witnessPt(side, from), to: witnessPt(side, to) },
+      // Alternate spans put their number on the inner side of the line. Parity runs from
+      // the chain's tick order, which `cleanTicks` has already sorted ascending — so the
+      // pattern does not depend on which facade this is or which way `side.sign` points.
+      ...(stagger && i % 2 === 1 ? { stagger: true } : {}),
     });
   }
 }
@@ -717,7 +776,7 @@ function synthGbChains(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void
 
     if (wantOpenings && mine.length > 0) {
       const edges = mine.flatMap((op) => [op.along - op.width / 2, op.along + op.width / 2]);
-      emitChain(g, cleanTicks([g.lo, ...edges, g.hi], g.lo, g.hi), chainOffset(sizes, 0), dims);
+      emitChain(g, cleanTicks([g.lo, ...edges, g.hi], g.lo, g.hi), chainOffset(sizes, 0), sizes.dimFont, dims);
     }
     if (wantAxis) {
       // Declared axes on this direction win: the middle chain becomes the true GB/T
@@ -737,9 +796,9 @@ function synthGbChains(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void
                   ? [r.at.x, r.at.x + r.size.w]
                   : [r.at.y, r.at.y + r.size.h],
             );
-      emitChain(g, cleanTicks(ticks, g.lo, g.hi), chainOffset(sizes, 1), dims);
+      emitChain(g, cleanTicks(ticks, g.lo, g.hi), chainOffset(sizes, 1), sizes.dimFont, dims);
     }
-    if (wantOverall) emitChain(g, [g.lo, g.hi], chainOffset(sizes, 2), dims);
+    if (wantOverall) emitChain(g, [g.lo, g.hi], chainOffset(sizes, 2), sizes.dimFont, dims);
   }
 }
 
