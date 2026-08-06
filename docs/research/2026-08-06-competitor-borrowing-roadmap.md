@@ -419,6 +419,52 @@ respect rather than exploit: **their own published result is a null on the decod
 (+0.008, CI [0.000, 0.025]), and the loop question is one we are permanently barred from claiming in
 either direction. Cite the compiler-is-the-asset finding; never cite it as evidence about loops.
 
+## 9. Findings opened by the Batch-3 implementation pass (2026-08-07)
+
+The P0 residuals, all seven P1 entries and the two P2 design documents shipped on `main` (see
+`CHANGELOG.md`'s `[Unreleased]`). Three things surfaced *during* implementation that are not items in
+this document and have no home elsewhere. Recorded here so they are not lost.
+
+### 9.1 A defect class, not three tickets — **derived-position-from-a-bounding-box**
+
+Three fixes this cycle are the same bug wearing different clothes: a position derived from a shape's
+**centroid or bounding box** rather than from the shape itself, producing output that is visibly wrong
+and that **`arch lint` reports nothing about**.
+
+| Instance | Derived from | Symptom |
+| --- | --- | --- |
+| `5480bb2` room label | polygon centroid | label drawn in the notch, off its own floor |
+| `32916d9` routing anchor | polygon centroid | anchor pinned to the lip of the notch; a 10.9 m walk reported as 5.6 m |
+| `f859a55` witness lines | side bounding box | extension lines beginning metres away over blank page |
+
+All three were silent. The open question worth a sweep: **what else derives a position from a bbox or
+a centroid?** Candidates not yet audited include the axis-bubble placement (`src/axes.ts`), the
+schedule/legend anchors (`src/sheet-tables.ts`), and `dimReach` (`src/chrome-layout.ts:154-190`),
+which approximates a text node as a **square of the font size, ignoring string length entirely**.
+
+### 9.2 Lint-raised fixes carry no `file` provenance — `applyFixes` corrupts the importer
+
+`src/fix-apply.ts:212-215` refuses a `FixSuggestion` carrying a `file`, which is what stops an
+imported component's fix from being spliced into the importer. **That guard can never fire for a lint
+fix.** Resolve-raised fixes get provenance from `stampProvenance` (`src/ir.ts:816-822`); lint runs
+*after* resolve and never passes through it, and `RBase` (`src/ir.ts:59-85`) carries no `file` —
+provenance lives on `ExpandCtx`/`Frame` and is discarded at the element boundary.
+
+Reproduced on **`W_DIM_INSIDE`, unmodified**: a `dim` inside an imported module had its offsets
+written into the middle of the importer's source. This is the v1.22 bug class (already an
+anti-pattern in AGENTS.md) still open for the whole lint layer, and it affects `dimSwapFix`,
+`fixtureRotateFix`, the new `dimBumpFix` and `doorHingeFlipFix`. Fix = thread `file` onto `RBase`
+during expansion, then onto every lint producer. Cross-cutting; changes existing diagnostics.
+**Highest-priority follow-up: it silently corrupts source.**
+
+### 9.3 A rectangular room's `label "…" at (x,y)` is parsed, then dropped
+
+`labelAt` reaches the IR only from `resolveCircle` / `resolvePolygon`; the rectangle resolver never
+records it. So an explicit anchor on a rect room does nothing, and `W_ROOM_LABEL_OUTSIDE` cannot fire
+there either. Present since v1.23. It means the rule *"an explicit `label at` always wins"* is
+currently true only for `polygon` and `circle` rooms — worth stating, because the label-placement
+pass (`src/label-placement.ts`) documents that rule as though it were universal.
+
 ## Files & sources
 
 Session reports (scratchpad, not tracked): `00-phase-c-outcomes.md` (this session's quick wins) ·
