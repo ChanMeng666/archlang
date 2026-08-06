@@ -34,7 +34,8 @@ describe("circulation lint", () => {
 }`;
     const warns = lint(src).filter((d) => d.code === "W_PATH_TOO_NARROW");
     expect(warns.length).toBeGreaterThanOrEqual(1);
-    expect(warns[0]!.message).toMatch(/squeezes to \d+ mm \(below 700 mm\)/);
+    // Measured value, then the measured shortfall against the threshold.
+    expect(warns[0]!.message).toMatch(/squeezes to \d+ mm \(\d+ mm below the 700 mm minimum\)/);
   });
 
   it("flags studio under the accessibility profile (wheelchair passage) that default does not", () => {

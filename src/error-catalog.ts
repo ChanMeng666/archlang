@@ -654,8 +654,8 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   W_SWING_OBSTRUCTED: W(
     "W_SWING_OBSTRUCTED",
     "Door swing is obstructed.",
-    "The quarter-circle a door leaf sweeps overlaps a piece of furniture/fixture or another door's swing, so the door cannot open fully.",
-    "Move the door or the obstruction, flip the `hinge`/`swing`, or use a sliding door so the leaf clears.",
+    "The quarter-circle a door leaf sweeps overlaps a piece of furniture/fixture or another door's swing, so the door cannot open fully. The warning states the clear radius the swing needs, what it actually has, and the shortfall.",
+    "Hang the leaf on the other jamb (`hinge left|right`) — a machine-applicable fix when the flipped swing is proved clear; or open it the other way (`swing in|out`), move the door along its wall, move the obstruction (`arch repair`), narrow the leaf to the width the warning quotes (never below the minimum passable width — that relocates the problem into `W_DOOR_CLEARANCE`), or make it a leafless `opening`.",
     "door at (4000,1500) width 900 swing in   # lint: leaf sweeps onto the bed",
   ),
   W_ROOM_NO_FIXTURE: W(
@@ -689,8 +689,8 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   W_FURN_CLEARANCE: W(
     "W_FURN_CLEARANCE",
     "A fixture's use-space is blocked.",
-    "The activity clearance directly in front of a fixture (WC, basin, sink, counter, stove…) is intruded by a free-standing piece of furniture, so the fixture can't be used comfortably. Other plumbing/kitchen fixtures are ignored, so a compact bathroom/kitchen run does not trip this.",
-    "Leave the catalogued clearance clear in front of the fixture, or move the obstructing furniture.",
+    "The activity clearance directly in front of a fixture (WC, basin, sink, counter, stove…) is intruded by a free-standing piece of furniture, so the fixture can't be used comfortably. Other plumbing/kitchen fixtures are ignored, so a compact bathroom/kitchen run does not trip this. The warning states the catalogued clearance, the depth actually left, and the shortfall.",
+    "Move or shrink the obstructing furniture by the shortfall the warning quotes, turn the fixture so its front faces clear floor (its back must stay on a wall), or move the fixture to a wall run with the clearance free in front of it.",
     "furniture stove at (0,0) size 600x600\nfurniture sofa at (0,650) size 2000x900   # lint: sofa blocks the stove front",
   ),
   W_FIXTURE_WRONG_ROOM: W(
@@ -710,8 +710,8 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   W_DOORWAY_BLOCKED: W(
     "W_DOORWAY_BLOCKED",
     "A doorway's landing is blocked.",
-    "A piece of furniture/fixture sits in the clear landing space immediately on either side of a door opening, so you cannot pass through the doorway even when the leaf is open. This is the approach path, distinct from the leaf's swing arc (`W_SWING_OBSTRUCTED`).",
-    "Clear the space directly in front of and behind the door, or move the door.",
+    "A piece of furniture/fixture sits in the clear landing space immediately on either side of a door opening, so you cannot pass through the doorway even when the leaf is open. This is the approach path, distinct from the leaf's swing arc (`W_SWING_OBSTRUCTED`). The warning states the landing depth required, the depth actually left, and the shortfall.",
+    "Move the obstruction clear of the opening by the shortfall the warning quotes (`arch repair` computes the smallest clearing shift), shrink it by that much on the axis facing the door, or move the door along its wall so its landing misses it.",
     "door at (6000,3000) width 800\nfurniture wc at (5800,3050) size 700x400   # lint: WC blocks the doorway",
   ),
   W_ROOM_NO_CLEAR_PATH: W(
@@ -725,7 +725,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "W_PATH_TOO_NARROW",
     "The walk to a room squeezes below a passable width.",
     "The widest route from the entrance into a room (or between a key pair of rooms, e.g. bedroom→bath) has an unavoidable pinch narrower than the minimum passable clear width — a too-narrow door/opening, or furniture crowding the way. A coarse fact from the circulation nav grid (ADR 0008); the number is grid-quantised.",
-    "Widen the tightest door/opening on the route, or move the furniture pinching it, so the whole path clears the minimum width.",
+    "Widen the tightest door/opening on the route to at least the minimum, move the furniture pinching it, or add a second way in so the pinch is avoidable. There is no machine-applicable fix: the bottleneck is a nav-grid cell, not a named element, so nothing can be rewritten for you.",
     "door at (4000,1500) width 600\nfurniture cabinet at (3600,300) size 700x1200   # lint: the way through squeezes below 700 mm",
   ),
   W_CIRCUITOUS_PATH: W(

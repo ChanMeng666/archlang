@@ -1021,9 +1021,9 @@ door at (9999,9999) width 900   # warning: not on a wall
 
 *warning* — A doorway's landing is blocked.
 
-**Cause.** A piece of furniture/fixture sits in the clear landing space immediately on either side of a door opening, so you cannot pass through the doorway even when the leaf is open. This is the approach path, distinct from the leaf's swing arc (`W_SWING_OBSTRUCTED`).
+**Cause.** A piece of furniture/fixture sits in the clear landing space immediately on either side of a door opening, so you cannot pass through the doorway even when the leaf is open. This is the approach path, distinct from the leaf's swing arc (`W_SWING_OBSTRUCTED`). The warning states the landing depth required, the depth actually left, and the shortfall.
 
-**Fix.** Clear the space directly in front of and behind the door, or move the door.
+**Fix.** Move the obstruction clear of the opening by the shortfall the warning quotes (`arch repair` computes the smallest clearing shift), shrink it by that much on the axis facing the door, or move the door along its wall so its landing misses it.
 
 ```arch static
 door at (6000,3000) width 800
@@ -1095,9 +1095,9 @@ furniture wc at (100,100) size 400x700 in bath   # lint: centre is not inside "b
 
 *warning* — A fixture's use-space is blocked.
 
-**Cause.** The activity clearance directly in front of a fixture (WC, basin, sink, counter, stove…) is intruded by a free-standing piece of furniture, so the fixture can't be used comfortably. Other plumbing/kitchen fixtures are ignored, so a compact bathroom/kitchen run does not trip this.
+**Cause.** The activity clearance directly in front of a fixture (WC, basin, sink, counter, stove…) is intruded by a free-standing piece of furniture, so the fixture can't be used comfortably. Other plumbing/kitchen fixtures are ignored, so a compact bathroom/kitchen run does not trip this. The warning states the catalogued clearance, the depth actually left, and the shortfall.
 
-**Fix.** Leave the catalogued clearance clear in front of the fixture, or move the obstructing furniture.
+**Fix.** Move or shrink the obstructing furniture by the shortfall the warning quotes, turn the fixture so its front faces clear floor (its back must stay on a wall), or move the fixture to a wall run with the clearance free in front of it.
 
 ```arch static
 furniture stove at (0,0) size 600x600
@@ -1183,7 +1183,7 @@ opening at (9999,9999) width 1000   # warning: not on a wall
 
 **Cause.** The widest route from the entrance into a room (or between a key pair of rooms, e.g. bedroom→bath) has an unavoidable pinch narrower than the minimum passable clear width — a too-narrow door/opening, or furniture crowding the way. A coarse fact from the circulation nav grid (ADR 0008); the number is grid-quantised.
 
-**Fix.** Widen the tightest door/opening on the route, or move the furniture pinching it, so the whole path clears the minimum width.
+**Fix.** Widen the tightest door/opening on the route to at least the minimum, move the furniture pinching it, or add a second way in so the pinch is avoidable. There is no machine-applicable fix: the bottleneck is a nav-grid cell, not a named element, so nothing can be rewritten for you.
 
 ```arch static
 door at (4000,1500) width 600
@@ -1329,9 +1329,9 @@ level 2 "1" { }   # warning: "s" is on level 1 only
 
 *warning* — Door swing is obstructed.
 
-**Cause.** The quarter-circle a door leaf sweeps overlaps a piece of furniture/fixture or another door's swing, so the door cannot open fully.
+**Cause.** The quarter-circle a door leaf sweeps overlaps a piece of furniture/fixture or another door's swing, so the door cannot open fully. The warning states the clear radius the swing needs, what it actually has, and the shortfall.
 
-**Fix.** Move the door or the obstruction, flip the `hinge`/`swing`, or use a sliding door so the leaf clears.
+**Fix.** Hang the leaf on the other jamb (`hinge left|right`) — a machine-applicable fix when the flipped swing is proved clear; or open it the other way (`swing in|out`), move the door along its wall, move the obstruction (`arch repair`), narrow the leaf to the width the warning quotes (never below the minimum passable width — that relocates the problem into `W_DOOR_CLEARANCE`), or make it a leafless `opening`.
 
 ```arch static
 door at (4000,1500) width 900 swing in   # lint: leaf sweeps onto the bed
