@@ -60,7 +60,7 @@ matter — run it yourself for the full object):
     { "id": "d_bath", "between": ["r_hall", "r_bath"], "width": 800 }
   ],
   "windows": [
-    { "id": "window_1", "room": "r_living", "width": 1500 }
+    { "id": "window_1", "room": "r_living", "width": 1500, "facing": "N" }
   ],
   "openings": [
     { "id": "o_living", "between": ["r_living", "r_hall"], "width": 900 }
@@ -86,6 +86,8 @@ matter — run it yourself for the full object):
 | `rooms[].adjacent` | ids of rooms whose walls touch this one within tolerance (a shared corner alone doesn't count) |
 | `doors[].between` / `openings[].between` | the two spaces the connector joins — a room id or the literal `"exterior"` |
 | `windows[].room` | the room the window lights |
+| `windows[].facing` | the **true compass** direction the window's wall faces (`N`/`S`/`E`/`W`), read against the plan's [`north`](language-reference.md#plan-settings) setting. Under the default `north up` the top of the drawing is north, so a top-edge window faces `N`; under `north right` compass north points at the page's right edge, so a right-edge window faces `N` and a top-edge one faces `W`. A `north <deg>` bearing snaps to the nearest cardinal (an exact 45° tie rounds clockwise) |
+| `windows[].facingPage` | the same direction **before** `north` is applied — `N` = toward the top of the drawing. **Present only when the declared `north` actually turns the answer**, so a plan on the default `north up` is unchanged |
 | `totals` | room / door / window counts and total floor area |
 | `accTitle` / `accDescr` | the plan's declared [accessible metadata](language-reference.md#accessible-metadata-acctitle-accdescr) — **present only when the source declares them** |
 | `axes` | the plan's declared [positioning axes](language-reference.md#positioning-axes-定位轴线) — **present only when the source declares an `axes` block** |

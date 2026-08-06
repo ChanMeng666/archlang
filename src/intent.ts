@@ -59,8 +59,10 @@ export interface Intent {
     count?: { min?: number; max?: number };
     areaM2?: { min?: number; max?: number; source: string };
     /** Window presence/count the brief requires for this room (gating). `facing`, when
-     *  present, restricts the count to windows whose host wall faces that compass
-     *  direction — assert it only when the brief states an orientation. */
+     *  present, restricts the count to windows whose host wall faces that TRUE COMPASS
+     *  direction — `describe().windows[].facing`, which reads the page direction against
+     *  the plan's `north` setting — so assert it only when the brief states an
+     *  orientation. */
     windows?: { min?: number; max?: number; facing?: "N" | "S" | "E" | "W" };
   }[];
   /** Total floor-area band — only where the brief states a number. At least one bound;
@@ -772,7 +774,7 @@ export const INTENT_JSON_SCHEMA = {
                 type: "string",
                 enum: ["N", "S", "E", "W"],
                 description:
-                  "Compass direction the window's wall faces; +y-down plan → a top-edge window faces N, bottom S, left W, right E. Restricts the count to windows facing this way. Assert ONLY when the brief states an orientation.",
+                  "TRUE COMPASS direction the window's wall faces, read against the plan's `north` setting. Under the default `north up` the page's top is north, so a top-edge window faces N, bottom S, left W, right E; under e.g. `north right` a right-edge window faces N instead. Restricts the count to windows facing this way. Assert ONLY when the brief states an orientation.",
               },
             },
           },

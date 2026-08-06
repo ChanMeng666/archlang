@@ -99,7 +99,7 @@
                   "E",
                   "W"
                 ],
-                "description": "Compass direction the window's wall faces; +y-down plan → a top-edge window faces N, bottom S, left W, right E. Restricts the count to windows facing this way. Assert ONLY when the brief states an orientation."
+                "description": "TRUE COMPASS direction the window's wall faces, read against the plan's `north` setting. Under the default `north up` the page's top is north, so a top-edge window faces N, bottom S, left W, right E; under e.g. `north right` a right-edge window faces N instead. Restricts the count to windows facing this way. Assert ONLY when the brief states an orientation."
               }
             }
           }

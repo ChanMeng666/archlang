@@ -67,7 +67,7 @@ representative, annotated example:
 | `roomsInclude[].concept` | a room concept the plan must contain, matched against produced rooms by label → `room_type` → `uses` |
 | `roomsInclude[].count` | how many rooms of the concept (`{ min, max }`; default at least 1) |
 | `roomsInclude[].areaM2` | a per-room floor-area band, with a `source` quote from the brief that licensed the number |
-| `roomsInclude[].windows` | a required window count for the concept's rooms; optional `facing` (`N`/`S`/`E`/`W`) restricts the count to windows whose host wall faces that way (`describe().windows[].facing`) |
+| `roomsInclude[].windows` | a required window count for the concept's rooms; optional `facing` (`N`/`S`/`E`/`W`) restricts the count to windows whose host wall faces that **true compass** direction (`describe().windows[].facing` — the page direction read against the plan's [`north`](language-reference.md#plan-settings), so `facing: "S"` means compass south, not "toward the bottom of the page") |
 | `totalAreaM2` | a total floor-area band, again with a `source` quote |
 | `adjacency` | interior-door adjacency the brief licenses, `{ conceptA: [conceptB, …] }` — **advisory** |
 | `reachable` | assert every room is reachable from a modeled entrance — **advisory** |

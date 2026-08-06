@@ -183,6 +183,22 @@ describe("validateIntent — window facing", () => {
     expect(feedbackForResult(s).join("\n")).toContain("facing S");
   });
 
+  it("reads the facing against the plan's `north`, not the page", () => {
+    // Same geometry, rotated compass: TWO_ROOM's bedroom window is on the page's LEFT
+    // edge. Under `north right` compass north points at the page's right edge, so that
+    // window faces SOUTH — a `facing: "W"` brief that passed on the default north must
+    // now fail, and `facing: "S"` must pass.
+    const turned = TWO_ROOM.replace("units mm", "units mm\n  north right");
+    expect(
+      validateIntent(turned, { roomsInclude: [{ concept: "bedroom", windows: { min: 1, facing: "S" } }] }).ok,
+    ).toBe(true);
+    const w = validateIntent(turned, {
+      roomsInclude: [{ concept: "bedroom", windows: { min: 1, facing: "W" } }],
+    });
+    expect(w.ok).toBe(false);
+    expect(w.violations.find((x) => x.code === "E_INTENT_NO_WINDOW")?.gate).toBe(true);
+  });
+
   it("the no-facing detail strings are unchanged when facing is absent", () => {
     const r = validateIntent(TWO_ROOM, { roomsInclude: [{ concept: "bedroom", windows: { min: 1 } }] });
     const a = r.assertions.find((x) => x.predicate.kind === "room-windows");

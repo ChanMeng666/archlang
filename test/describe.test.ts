@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { describe as describePlan } from "../src/index.js";
+import { northQuarterTurns } from "../src/describe.js";
 
 /**
  * Semantic summary (`describe`) — the text-only verification channel.
@@ -85,6 +86,107 @@ describe("describe — semantic facts", () => {
 
   it("is deterministic (same source → byte-identical summary)", () => {
     expect(JSON.stringify(describePlan(STUDIO))).toBe(JSON.stringify(describePlan(STUDIO)));
+  });
+});
+
+/**
+ * `facing` is a TRUE COMPASS direction, not "toward the top of the page": the plan's
+ * `north` setting turns it. Before v1.25 a plan declaring `north right` still reported a
+ * top-edge window as `"N"`, which silently mis-answered every intent
+ * `windows: { facing: … }` assertion.
+ */
+describe("describe — window facing is read against the plan's `north`", () => {
+  /** One room with a window on every edge; `north` is spliced in per case. */
+  const fourWin = (north: string): string => `plan "FourWin" {
+      units mm
+      ${north}
+      wall exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+      room id=r at (0,0) size 4000x4000 label "Room"
+      window id=w_top    at (2000,0)    width 1000 wall exterior
+      window id=w_bottom at (2000,4000) width 1000 wall exterior
+      window id=w_left   at (0,2000)    width 1000 wall exterior
+      window id=w_right  at (4000,2000) width 1000 wall exterior
+    }`;
+
+  const facings = (north: string): Record<string, string | undefined> =>
+    Object.fromEntries(describePlan(fourWin(north)).windows.map((w) => [w.id, w.facing]));
+
+  it("rotates the page direction by each keyword north", () => {
+    // `north up` (and no `north` at all) — the page's top IS compass north.
+    const up = { w_top: "N", w_bottom: "S", w_left: "W", w_right: "E" };
+    expect(facings("north up")).toEqual(up);
+    expect(facings("")).toEqual(up);
+
+    // `north right` — compass north points at the page's RIGHT edge, so the right-edge
+    // window faces N and the top-edge one faces W (one quarter-turn anticlockwise).
+    expect(facings("north right")).toEqual({ w_top: "W", w_right: "N", w_bottom: "E", w_left: "S" });
+    // `north down` — the drawing is upside down relative to the compass.
+    expect(facings("north down")).toEqual({ w_top: "S", w_right: "W", w_bottom: "N", w_left: "E" });
+    // `north left`.
+    expect(facings("north left")).toEqual({ w_top: "E", w_right: "S", w_bottom: "W", w_left: "N" });
+  });
+
+  it("snaps a `north <deg>` bearing to the nearest cardinal, ties clockwise", () => {
+    // 80° is nearest `right` (90°).
+    expect(facings("north 80")).toEqual(facings("north right"));
+    // 100° likewise; 170° is nearest `down` (180°).
+    expect(facings("north 100")).toEqual(facings("north right"));
+    expect(facings("north 170")).toEqual(facings("north down"));
+    // Exact 45° ties round CLOCKWISE: 45 → right, 135 → down, 225 → left, 315 → up.
+    expect(facings("north 45")).toEqual(facings("north right"));
+    expect(facings("north 135")).toEqual(facings("north down"));
+    expect(facings("north 225")).toEqual(facings("north left"));
+    expect(facings("north 315")).toEqual(facings("north up"));
+    // Just short of a tie still rounds the near way.
+    expect(facings("north 44")).toEqual(facings("north up"));
+    // A bearing outside [0,360) normalises.
+    expect(facings("north 450")).toEqual(facings("north right"));
+  });
+
+  it("keeps the page-relative answer as `facingPage`, only when north turns it", () => {
+    const turned = describePlan(fourWin("north right")).windows;
+    expect(Object.fromEntries(turned.map((w) => [w.id, w.facingPage]))).toEqual({
+      w_top: "N",
+      w_bottom: "S",
+      w_left: "W",
+      w_right: "E",
+    });
+    // A plan on the default north would only repeat `facing`, so the key is absent —
+    // and a `north <deg>` that snaps back to `up` is the default too.
+    for (const source of [fourWin(""), fourWin("north up"), fourWin("north 20")]) {
+      for (const w of describePlan(source).windows) expect(w.facingPage).toBeUndefined();
+      expect(JSON.stringify(describePlan(source))).not.toContain("facingPage");
+    }
+  });
+
+  it("northQuarterTurns: keywords are exact, bearings snap, ties go clockwise", () => {
+    expect([
+      northQuarterTurns("up"),
+      northQuarterTurns("right"),
+      northQuarterTurns("down"),
+      northQuarterTurns("left"),
+    ]).toEqual([0, 1, 2, 3]);
+    // Nearest cardinal…
+    expect(northQuarterTurns({ deg: 0 })).toBe(0);
+    expect(northQuarterTurns({ deg: 89 })).toBe(1);
+    expect(northQuarterTurns({ deg: 181 })).toBe(2);
+    expect(northQuarterTurns({ deg: 271 })).toBe(3);
+    // …with exact 45° ties rounding CLOCKWISE, in both directions round the circle.
+    expect(northQuarterTurns({ deg: 45 })).toBe(1);
+    expect(northQuarterTurns({ deg: 135 })).toBe(2);
+    expect(northQuarterTurns({ deg: 225 })).toBe(3);
+    expect(northQuarterTurns({ deg: 315 })).toBe(0);
+    // Out-of-range bearings normalise (both signs).
+    expect(northQuarterTurns({ deg: 450 })).toBe(1);
+    expect(northQuarterTurns({ deg: -90 })).toBe(3);
+    expect(northQuarterTurns({ deg: -45 })).toBe(0);
+  });
+
+  it("leaves a plan that declares no `north` byte-identical", () => {
+    // The pin for the fix: declaring the default explicitly changes nothing, and the
+    // historical page-relative answers are still what a default plan reports.
+    expect(JSON.stringify(describePlan(fourWin("")))).toBe(JSON.stringify(describePlan(fourWin("north up"))));
+    expect(describePlan(STUDIO).windows.map((w) => w.facing)).toEqual(["N", "E", "E"]);
   });
 });
 

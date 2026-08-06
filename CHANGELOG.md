@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`describe().windows[].facing` ignored the plan's `north` — it was a PAGE direction wearing
+  compass letters.** A plan declaring `north right` still reported a window on the top edge as
+  `"N"`, so an intent assertion `windows: { facing: "S" }` silently meant "toward the bottom of the
+  drawing", not compass south — the one place the language already knows where north is
+  (`north`, which the SVG/PDF north arrow is drawn from) was never consulted. `facing` is now a
+  **true compass direction**: the page-relative answer turned by the declared north, which under
+  the default `north up` is the same answer as before. A `north <deg>` bearing snaps to the nearest
+  cardinal, with an exact 45° tie rounding **clockwise** (`north 45` reads as `right`); the arrow
+  keeps being drawn at the exact bearing. The page-relative direction is not lost — it comes back as
+  the new append-only `windows[].facingPage`, emitted **only when north actually turns the answer**,
+  so a plan on the default north (which is every plan that declares no `north`) has a
+  byte-identical summary. `examples/two-bed.arch` (`north right`) is the visible case: its
+  top-edge windows now read `facing: "W"`, `facingPage: "N"`. Rendering is untouched.
 - **Control characters and unpaired surrogates in string literals reached every backend.** A label
   containing a raw control char or a lone surrogate produced SVG that is not well-formed XML, an
   ASCII plan with control bytes in it, and DXF whose group-code pairing could be broken. New

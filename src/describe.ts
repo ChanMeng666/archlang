@@ -26,7 +26,7 @@ import type {
   OpeningPlacement,
   FurniturePlacement,
 } from "./ir.js";
-import type { Point, VerticalDir } from "./ast.js";
+import type { NorthDir, Point, VerticalDir } from "./ast.js";
 import type { Diagnostic } from "./diagnostics.js";
 import {
   resolvePlan,
@@ -128,15 +128,36 @@ export interface WindowSummary {
   room: string | null;
   width: number;
   /**
-   * Compass direction the window's wall faces (the outward normal of its host wall
-   * segment). ArchLang geometry is rectilinear and +y is DOWN, so a window on a room's
-   * TOP edge faces `"N"`, its bottom edge `"S"`, its left edge `"W"`, its right edge
-   * `"E"`. When the window has a host {@link WindowSummary.room}, facing is which of
-   * that room's four edges the window sits closest to; for a room-less window it is the
-   * host wall's orientation resolved to the outward side of the plan (see
-   * {@link windowFacing}). Always one of the four; deterministic. (v1.14)
+   * **True compass** direction the window's wall faces (the outward normal of its host
+   * wall segment), read against the plan's declared `north`.
+   *
+   * It is computed in two steps. First the PAGE-relative direction: ArchLang geometry is
+   * rectilinear and +y is DOWN, so a window on a room's TOP edge points at the top of the
+   * page, its bottom edge at the bottom, and so on — when the window has a host
+   * {@link WindowSummary.room} that is whichever of the room's four edges it sits closest
+   * to, and for a room-less window it is the host wall's orientation resolved to the
+   * outward side of the plan (see {@link windowFacing}). Second, that direction is turned
+   * by the plan's `north` setting (see {@link northQuarterTurns}): under the default
+   * `north up` the page's top IS compass north and the two coincide, but under
+   * `north right` compass north points at the page's RIGHT edge, so a right-edge window
+   * faces `"N"` and a top-edge one faces `"W"`.
+   *
+   * Always one of the four; pure and deterministic. This is the direction an intent
+   * `windows.facing` assertion is checked against. When the two differ, the page-relative
+   * answer is still available as {@link WindowSummary.facingPage}. (v1.14; made
+   * north-aware in v1.25)
    */
   facing: "N" | "S" | "E" | "W";
+  /**
+   * The PAGE-relative direction the window's wall faces — `"N"` = toward the top of the
+   * drawing — before the plan's `north` is applied.
+   *
+   * Present **only** when the declared `north` actually turns the compass answer (i.e.
+   * {@link northQuarterTurns} is non-zero), so a plan on the default `north up` — where
+   * this would always equal {@link WindowSummary.facing} — has a byte-identical summary
+   * to before. Append-only. (v1.25)
+   */
+  facingPage?: "N" | "S" | "E" | "W";
 }
 
 export interface OpeningSummary {
@@ -472,9 +493,63 @@ export interface SceneSummary {
 /** Round to 2 decimals, deterministically (avoids float drift in output). */
 const r2 = (n: number): number => Math.round(n * 100) / 100;
 
+/** The four page-relative directions, in CLOCKWISE order from the top of the page. */
+const FACINGS = ["N", "E", "S", "W"] as const;
+
 /**
- * The compass direction a window's wall faces (its outward normal), for
- * {@link WindowSummary.facing}. Pure and deterministic; +y is DOWN.
+ * How many CLOCKWISE quarter-turns separate the top of the page from compass north, for
+ * the plan's declared `north` — `0` for `up` (the default), `1` for `right`, `2` for
+ * `down`, `3` for `left`. This is the same page bearing the north arrow is drawn at
+ * (`src/backends/svg.ts`), quantised to the four cardinals.
+ *
+ * A `{ deg }` bearing is **snapped to the nearest cardinal**, because a facing can only
+ * be one of four letters and ArchLang geometry is rectilinear: `north 80` is reported as
+ * if north were `right`. **An exact 45° tie rounds CLOCKWISE** — `north 45` snaps to
+ * `right` (1), `north -45` to `up` (0), `north 135` to `down` (2). A bearing outside
+ * [0,360) is normalised, so `north 450` == `north 90`. Pure, closed-form, deterministic:
+ * no trigonometry and no floating-point comparisons beyond one `Math.floor`.
+ */
+export function northQuarterTurns(north: NorthDir): 0 | 1 | 2 | 3 {
+  let q: number;
+  switch (north) {
+    case "up":
+      q = 0;
+      break;
+    case "right":
+      q = 1;
+      break;
+    case "down":
+      q = 2;
+      break;
+    case "left":
+      q = 3;
+      break;
+    default:
+      // Nearest cardinal, ties clockwise: floor((deg + 45) / 90).
+      q = Math.floor((north.deg + 45) / 90);
+  }
+  return (((q % 4) + 4) % 4) as 0 | 1 | 2 | 3;
+}
+
+/**
+ * Turn a PAGE-relative facing into a true COMPASS facing, given the plan's north as
+ * clockwise quarter-turns from the page top ({@link northQuarterTurns}).
+ *
+ * Compass north sits `turns` quarter-turns clockwise of the page's top, so a page
+ * direction that is `i` quarter-turns clockwise of the top is `i - turns` quarter-turns
+ * clockwise of NORTH. Hence `north right` (turns = 1) makes a page-EAST window face
+ * compass `"N"`, and a page-NORTH one face `"W"`.
+ */
+function toCompass(pageFacing: "N" | "S" | "E" | "W", turns: 0 | 1 | 2 | 3): "N" | "S" | "E" | "W" {
+  const i = FACINGS.indexOf(pageFacing);
+  return FACINGS[(i - turns + 4) % 4] as "N" | "S" | "E" | "W";
+}
+
+/**
+ * The **page-relative** direction a window's wall faces (its outward normal), the first
+ * half of {@link WindowSummary.facing} — `"N"` means "toward the top of the drawing", not
+ * (yet) compass north; the caller turns it by the plan's `north` via {@link toCompass}.
+ * Pure and deterministic; +y is DOWN.
  *
  * - **With a host room** (the common case): facing is which of the room's four edges the
  *   window point `at` lies closest to — top → `"N"`, bottom → `"S"`, left → `"W"`, right →
@@ -710,6 +785,11 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
   const planCenter: Point =
     pcMinX === Infinity ? { x: 0, y: 0 } : { x: (pcMinX + pcMaxX) / 2, y: (pcMinY + pcMaxY) / 2 };
 
+  // The plan's declared `north`, as clockwise quarter-turns off the page top. Zero for
+  // the default `north up`, in which case the compass answer IS the page answer and no
+  // `facingPage` key is emitted — so a plan that declares no `north` is byte-identical.
+  const northTurns = northQuarterTurns(ir.north);
+
   const windows: WindowSummary[] = windowEls.map((w) => {
     const touching = roomsAtPoint(w.at, roomRects, tol);
     const room = touching[0] ?? null;
@@ -718,7 +798,14 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     // would answer for an edge the window is not on — so it falls through to the
     // host-segment rule, which is exact at any wall angle.
     const roomRect = box && !box.poly ? box : null;
-    return { id: w.id, room, width: w.width, facing: windowFacing(w.at, roomRect, w.host, planCenter) };
+    const facingPage = windowFacing(w.at, roomRect, w.host, planCenter);
+    return {
+      id: w.id,
+      room,
+      width: w.width,
+      facing: toCompass(facingPage, northTurns),
+      ...(northTurns !== 0 ? { facingPage } : {}),
+    };
   });
 
   const openings: OpeningSummary[] = openingEls.map((o) => ({
