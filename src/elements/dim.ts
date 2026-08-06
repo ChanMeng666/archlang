@@ -249,7 +249,12 @@ export const dim: ElementDef = {
       nodes.push({ layer: "dims", prim: { t: "line", a: t1, b: t2 }, paint: thinPaint });
     }
     const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
-    const tp = add(mid, mul(n, sizes.dimFont * 0.7));
+    // The number rides `dimFont * 0.7` off its own line, on the side the offset points
+    // (away from the building, for an auto chain). `stagger` flips it to the other side —
+    // the GB/T remedy for a chain of narrow spans, decided per span in `scene-build.ts` and
+    // never set on a hand-written `dim`. Flipping INWARD (rather than out to a second row)
+    // is what keeps the annotation band exactly as deep as `DIM_BAND_FONTS` reserves.
+    const tp = add(mid, mul(n, (dm.stagger ? -1 : 1) * sizes.dimFont * 0.7));
     let angle = (Math.atan2(dir.y, dir.x) * 180) / Math.PI;
     if (angle > 90) angle -= 180;
     if (angle < -90) angle += 180;

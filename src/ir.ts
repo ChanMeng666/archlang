@@ -282,6 +282,21 @@ export interface RDim extends RBase {
    */
   witness?: { from: Point; to: Point };
   /**
+   * Draw this dimension's NUMBER on the far side of its dimension line — the GB/T 50104 /
+   * ISO 129 remedy for a chain of narrow spans whose values would otherwise overprint each
+   * other (twelve 200 mm bays cannot each hold a 300 mm-wide "200").
+   *
+   * Purely a drawing fact: the measured endpoints, the dimension line, its station ticks
+   * and the text itself are all unchanged — only which side of the line the text rides on.
+   * It therefore never reaches `describe()`, Plan JSON or the measured value.
+   *
+   * Set only by `dims auto` chain synthesis (`emitChain` in `scene-build.ts`), and only for
+   * a chain that is actually crowded; a written `dim` statement never carries it (the
+   * author owns their own annotation — a crowded pair of hand-written dims is reported as
+   * `W_DIM_OVERLAP` instead, never silently re-staged; ADR 0005).
+   */
+  stagger?: boolean;
+  /**
    * The whole `dim` statement re-emitted with its two endpoints SWAPPED — the
    * machine-applicable fix text for `W_DIM_INSIDE`. Computed in `dim.resolve`
    * (where the AST expressions still exist) because lint sees only the IR.

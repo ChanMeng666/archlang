@@ -1,0 +1,19 @@
+# A DENSE dimension chain: twelve 200 mm mullion bays across the west end of a long
+# gallery. The bays are far narrower than the numbers that label them, so the axis chain
+# crowds its VALUES even though the three chains themselves tier correctly into their
+# three slots — the case `staggerChain` (src/scene-build.ts) exists for. No shipped
+# example is anywhere near this dense; this fixture is the only thing that exercises it.
+plan "Dense Bays" {
+  units mm
+  dims auto rooms
+
+  axes {
+    x at 0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400
+  }
+
+  wall id=shell exterior thickness 300 {
+    (0,0) (8000,0) (8000,6000) (0,6000) close
+  }
+
+  room id=gallery at (0,0) size 8000x6000 label "Gallery" uses living
+}
