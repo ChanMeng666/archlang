@@ -47,7 +47,7 @@ interface DimText {
 }
 
 function scene(src: string): Scene {
-  const { scene: s, errors } = compile(src, { scene: true, noCache: true });
+  const { scene: s, errors } = compile(src, { noCache: true });
   expect(errors).toEqual([]);
   expect(s).toBeDefined();
   return s as Scene;
