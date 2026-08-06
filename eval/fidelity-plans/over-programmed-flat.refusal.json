@@ -1,0 +1,5 @@
+{
+  "infeasible": true,
+  "conflicts": ["R1", "R2", "R3", "R4"],
+  "reason": "R2, R3 and R4 state room minima of 18 + 12 + 4 = 34 m². Room floors do not overlap, so any plan holding all three has at least 34 m² of floor — above R1's stated ceiling of 30 m². Satisfying R1 means moving one of the stated minima, which is not mine to move."
+}

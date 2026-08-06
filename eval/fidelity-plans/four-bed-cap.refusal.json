@@ -1,0 +1,5 @@
+{
+  "infeasible": true,
+  "conflicts": ["R1", "R2", "R3"],
+  "reason": "R1 states exactly 4 bedrooms and R2 states a 12 m² floor under each, so the bedrooms alone demand 48 m² of floor — above R3's stated ceiling of 40 m². No plan holds all three; the only way to draw one is to shrink a bedroom below the stated 12 m²."
+}

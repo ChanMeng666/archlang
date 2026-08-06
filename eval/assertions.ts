@@ -28,3 +28,9 @@ export {
   // The eval's callers keep the old name; the core's entry point is `compileIntent`.
   compileIntent as compileExpect,
 } from "../src/intent.js";
+
+// Type-only re-exports so the fidelity slice (`eval/fidelity.ts`) can name the intent
+// contract and its blame codes WITHOUT importing `src/intent.ts` directly — the same
+// shim discipline every other eval module follows. Types carry no behaviour, so this
+// adds nothing to the judge and cannot move JUDGE_VERSION.
+export type { Intent, IntentCode, IntentViolation, IntentCheckResult } from "../src/intent.js";

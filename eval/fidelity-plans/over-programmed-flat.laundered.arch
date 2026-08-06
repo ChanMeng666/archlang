@@ -1,0 +1,27 @@
+# COUNTER-EXAMPLE for the infeasible brief `over-programmed-flat`.
+#
+# R2 + R3 + R4 state room minima of 18 + 12 + 4 = 34 m², which cannot fit inside R1's
+# stated 30 m² ceiling. This plan honours R2, R3 and R4 and silently moves R1: 40.5 m²
+# of floor against a stated "at most 30 m²". It compiles, it draws, and it looks like an
+# answer — which is exactly the failure mode. Committed so the detector can be proved to
+# NAME R1. It is not a good plan and must never be treated as a golden.
+plan "Over-programmed Flat (laundered)" {
+  units mm
+  grid 50
+  north up
+
+  wall exterior  thickness 200 { (0,0) (9000,0) (9000,4500) (0,4500) close }
+  wall partition thickness 100 { (4500,0) (4500,4500) }
+  wall partition thickness 100 { (7500,0) (7500,4500) }
+
+  room id=r_live at (0,0)    size 4500x4500 label "Living / Kitchen" uses living kitchen
+  room id=r_bed  at (4500,0) size 3000x4500 label "Bedroom"          uses bedroom
+  room id=r_bath at (7500,0) size 1500x4500 label "Bathroom"         uses bath
+
+  door id=d_main at (2250,4500) width 900 wall exterior  hinge left  swing in
+  door id=d_bed  at (4500,2250) width 800 wall partition hinge right swing in
+  door id=d_bath at (7500,2250) width 800 wall partition hinge right swing in
+
+  window at (2250,0) width 1500 wall exterior
+  window at (6000,0) width 1200 wall exterior
+}

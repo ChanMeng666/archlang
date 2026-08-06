@@ -1,0 +1,31 @@
+# FAITHFUL reference for `two-bed-min-area` (a SATISFIABLE brief).
+#
+# R1 exactly 5 rooms, R2 exactly 2 bedrooms, R3 each bedroom >= 11 m² (11.4 and 11.1),
+# R4 total <= 62 m² (59.4). The hall is what makes the room count work honestly.
+plan "Two-bed Min Area (faithful)" {
+  units mm
+  grid 50
+  north up
+
+  wall exterior  thickness 200 { (0,0) (9000,0) (9000,6600) (0,6600) close }
+  wall partition thickness 100 { (0,2600) (9000,2600) }
+  wall partition thickness 100 { (0,3600) (9000,3600) }
+  wall partition thickness 100 { (3800,3600) (3800,6600) }
+  wall partition thickness 100 { (7500,3600) (7500,6600) }
+
+  room id=r_live at (0,0)       size 9000x2600 label "Living / Kitchen" uses living kitchen
+  room id=r_hall at (0,2600)    size 9000x1000 label "Hall"             uses hall
+  room id=r_bed1 at (0,3600)    size 3800x3000 label "Bedroom 1"        uses bedroom
+  room id=r_bed2 at (3800,3600) size 3700x3000 label "Bedroom 2"        uses bedroom
+  room id=r_bath at (7500,3600) size 1500x3000 label "Bathroom"         uses bath
+
+  door id=d_main at (0,3100)    width 900 wall exterior  hinge left  swing in
+  door id=d_live at (4500,2600) width 800 wall partition hinge left  swing out
+  door id=d_bed1 at (1900,3600) width 800 wall partition hinge left  swing in
+  door id=d_bed2 at (5650,3600) width 800 wall partition hinge right swing in
+  door id=d_bath at (8250,3600) width 800 wall partition hinge right swing in
+
+  window at (2000,0)    width 1500 wall exterior
+  window at (1900,6600) width 1200 wall exterior
+  window at (5650,6600) width 1200 wall exterior
+}

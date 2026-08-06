@@ -34,6 +34,70 @@ model loop (deep-dive H3).
   permanently (the T4 gating-promotion hook is closed); the L3/L4/L5 tiers stay unbuilt.
   The harness and its 14 offline tests are kept as the protocol's reference implementation.
 
+**Beside the ladder, not on it: the FIDELITY slice** (`fidelity.ts`, `corpus-fidelity.json`,
+`fidelity-plans/`, `fidelity-run.ts` — roadmap P0-3). The tiers all ask *can a model author
+this?*; the fidelity slice asks the question they structurally cannot — *when it could not,
+did it move the user's number instead of saying so?* It is **reported on its own and
+multiplied into nothing**; see "The fidelity slice" below and rubric §7.
+
+## The fidelity slice — constraint-laundering hardening
+
+ifc-lite's adversarial review of their own M5 results found a repair loop that satisfied the
+validator by silently rewriting the user's stated requirement (a sill 2.0 → 1.55) and scored
+it a success. `arch fix`, `repair()` and the intent channel all close loops against an
+**editable contract**, so the exposure is structural here too: a loop that cannot hit "at
+least 13 m²" can always hit "at least 11 m²" instead.
+
+The countermeasure has two halves, and neither one involves a model:
+
+- **Deliberately infeasible briefs.** Requirements that cannot all hold at once. The
+  scored-correct behaviour is *declaring infeasibility* and naming the conflicting ids;
+  producing a plan a validator accepts **is** the laundering and scores 0. Infeasibility is
+  never asserted in prose — `proveInfeasible` derives the conflict set arithmetically from the
+  requirements alone, and a test pins the derived set against the corpus's declared one.
+- **A deterministic, judge-free fidelity measure.** `checkFidelity` measures a plan against the
+  brief's *stated numbers* (pure arithmetic over `describe()` facts), and `checkContract`
+  measures a presented `Intent` against those same numbers, so a rewritten band is caught
+  before any plan is drawn. Requirements are always one-sided hard bounds or exact counts —
+  which is what lets the measure use **no tolerance and invent no band**.
+
+```bash
+npm run eval:fidelity   # offline: score the committed references, write eval/fidelity-results.md
+```
+
+**Why it is a separate slice, and what stays frozen.** `projectSubscores` returns four
+*independent* dimensions that are never combined, so there is no scalar quality score to
+multiply a factor into — creating one would be a rubric policy change and would bump
+`JUDGE_VERSION`. Adding briefs to `corpus.json` would force a `judge-fixture.json`
+regeneration, which the iron law forbids. And the refusal protocol is a **prompt** change, and
+the prompt is the ruler. So: the briefs live in their own file, the scorecard is its own file,
+the protocol ships only in `fidelitySystemPrompt()`, and `corpus.json` / `judge-fixture.json` /
+`live-baseline.json` / `results.md` / `JUDGE_VERSION` / `SYNONYMS_VERSION` are all untouched.
+The slice carries its own `FIDELITY_VERSION`; a fidelity rate is never comparable across a
+change to it, for the same reason a judge rate never is.
+
+**What the offline gate proves — and what it cannot.** The offline path scores committed
+artifacts, so *"does a model launder constraints?"* is not an offline question and this slice
+does not pretend to answer it. What is testable is whether the **detector discriminates**: each
+brief commits a scored-correct reply plus a laundered counter-example that a validator accepts,
+and the gate fails unless the correct one scores 1, the counter-example scores 0, and the moved
+requirement is **named**. That mirrors `faults/` one level up. `test/eval-fidelity.test.ts` is
+where CI actually catches it. The live path a model would drive is deliberately **not built** —
+the prompt and reply parser are exported and tested, but nothing here spends a token.
+
+**The recorded gap.** Two requirement classes are unrepresentable in `Intent` — a **door width**
+(no width vocabulary at all) and a **plan-wide per-room bound** ("no room may exceed 5 m²",
+`Intent` carries per-concept bands only). For those the requirement was never in the contract to
+be weakened; it was absent by construction, so `validateIntent` **passes** the laundered plan and
+only the fidelity check catches it. Two corpus entries are marked `intentBlind` and assert exactly
+that, so the blindness is a test, not a claim.
+
+> **Contamination.** `corpus-fidelity.json` and `fidelity-plans/` are holdout material on the same
+> terms as the 26 briefs — private forever, never published. `test/dataset.test.ts` enforces
+> disjointness for both corpora. `dataset/dedup.ts`'s `loadHoldout` is deliberately *not* extended:
+> it decides what the generator rejects, and widening it would change the bytes a given seed
+> reproduces, breaking the published dataset's seed-`20260712` reproducibility claim.
+
 Calibrated L0 baseline (`gpt-5.5-2026-04-23`, seed `20260711`, 26 briefs, judge v2,
 **re-measured 2026-07-12 under the post-v1.15.0 author prompt**): **valid 23/26 (88%) ·
 intent 14/26 (54%) · sound 3/26 (12%)**. Same run's `--l1` overlay: **intent 18/26 (69%,
@@ -55,6 +119,7 @@ numbers live in `live-baseline.json`; the L1 numbers are recorded there as refer
 ```bash
 npm run eval        # offline: score the committed goldens (writes eval/results.md)
 npm run eval:ci     # same command — the CI regression gate (no API key; exit 1 on regression)
+npm run eval:fidelity   # offline: the constraint-laundering slice (writes eval/fidelity-results.md)
 npm run eval:live -- --yes [--max N] [--budget <n>tok|<n>usd] [--l1]   # live, paid, guarded
 npm run eval:g1 -- --yes [--max N]    # Gate G1: generate intent JSONs from briefs (paid, guarded; or the "Eval (G1 intent generation)" workflow)
 npm run eval:l2 -- --yes …   # T3 harness — DO NOT RUN: the live experiment is permanently declined (owner decision 2026-07-12)
@@ -211,6 +276,10 @@ disagreements). This clears T4 (`src/intent.ts` + `arch validate --intent`). Ful
   *why* behind each policy: room-count policy B (§1), the label-match boundary and one-room-one-concept
   (§2), qualitative-size non-assertion (§3), adjacency required-edge subset semantics (§4), and the
   per-brief review sheet (§5). A frozen rubric predates the grades (SWE-bench Verified discipline).
+  **§7 is an append-only appendix, not an amendment** — it documents the fidelity slice's four
+  policies (F1 hard bounds only, F2 worst-item/empty-scope, F3 the infeasible-brief scoring rule,
+  F4 derived-not-asserted infeasibility) as a *separate instrument*; §1–§6 and the rubric version
+  are untouched.
 - **`docs/research/`** — the round-2 research report and roadmap that motivated rebuilding the judge
   (why the 9% number was ~55–65% measurement artifact, and the T3/T4/T5 open questions).
 - **Standing harness lessons** (in `AGENTS.md` gotchas): reasoning models spend thinking tokens out
