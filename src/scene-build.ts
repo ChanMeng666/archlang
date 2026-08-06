@@ -353,6 +353,10 @@ const SIDE_OUT: Record<Side, 1 | -1> = { bottom: 1, right: 1, top: -1, left: -1 
  */
 interface SideGeom {
   axis: "h" | "v";
+  /** Outward direction along the cross axis (`SIDE_OUT[side]`). */
+  out: 1 | -1;
+  /** This side's axis' facade profile (see {@link facadeAt}). */
+  profile: FacadeProfile;
   /** Cross-axis coordinate of this facade's OUTER face (y for h sides, x for v). */
   outer: number;
   /** Centerline coordinate of the hosting exterior wall, or null when there is none. */
@@ -368,6 +372,132 @@ interface SideGeom {
 
 /** A point on a side's chain baseline, at along-axis coordinate `v`. */
 const sidePt = (s: SideGeom, v: number): Point => (s.axis === "h" ? { x: v, y: s.outer } : { x: s.outer, y: v });
+
+/**
+ * One straight wall segment reduced to what a facade profile reads on one axis: the
+ * centerline as `cross = c0 + m·(along − a0)` over the along-span `[lo,hi]`, plus
+ * `faceOff` — how far the OUTER face sits from that centerline **measured on the cross
+ * axis**. A line of slope `m` offset perpendicularly by `h` moves by `h·√(1+m²)` on the
+ * cross axis, so that factor is exact, not an approximation.
+ */
+interface ProfileSeg {
+  lo: number;
+  hi: number;
+  a0: number;
+  c0: number;
+  faceOff: number;
+  m: number;
+}
+
+/**
+ * One axis' facade profile: the straight segments that can state a cross coordinate,
+ * plus the along-spans the plan's CURVED edges occupy.
+ */
+interface FacadeProfile {
+  segs: ProfileSeg[];
+  /** Along-spans (`[lo,hi]`, full wall band incl. the bulge) covered by an `arc` edge. */
+  curves: { lo: number; hi: number }[];
+}
+
+/**
+ * Reduce the plan's wall segments to one axis' facade profile.
+ *
+ * A straight segment PERPENDICULAR to the axis spans no along range and states no
+ * cross coordinate, so it is dropped.
+ *
+ * An `arc` edge is **not** reduced to a line — a chord would be wrong by the sagitta,
+ * and solving the circle for the face coordinate at `v` needs the arc's angular range
+ * and its inward sense. Its along-span is recorded in `curves` instead, so
+ * {@link facadeAt} can DECLINE there rather than hand back some straight wall further
+ * in. Terminating a witness line on a true arc is deferred, in the same spirit as
+ * `probeSide` / `facadeOpenings` / `synthWallDims`, which already decline curves
+ * rather than approximate them.
+ */
+function facadeProfile(walls: readonly RWall[], axis: "h" | "v"): FacadeProfile {
+  const alongOf = (p: Point): number => (axis === "h" ? p.x : p.y);
+  const crossOf = (p: Point): number => (axis === "h" ? p.y : p.x);
+  const profile: FacadeProfile = { segs: [], curves: [] };
+  for (const w of walls) {
+    for (const s of segmentsOfWall(w)) {
+      if (s.arc) {
+        // Closed-form band extremes (endpoints + any axis extreme inside the sweep),
+        // so the bulge is inside the declined span, not just the chord.
+        const pts = [s.a, s.b, ...segmentFaceExtremes(s, s.thickness)].map(alongOf);
+        profile.curves.push({ lo: Math.min(...pts), hi: Math.max(...pts) });
+        continue;
+      }
+      const a0 = alongOf(s.a);
+      const dAl = alongOf(s.b) - a0;
+      if (dAl === 0) continue; // perpendicular to this axis: no cross value at a given `along`
+      const m = (crossOf(s.b) - crossOf(s.a)) / dAl;
+      profile.segs.push({
+        lo: Math.min(a0, a0 + dAl),
+        hi: Math.max(a0, a0 + dAl),
+        a0,
+        c0: crossOf(s.a),
+        faceOff: (s.thickness / 2) * Math.sqrt(1 + m * m),
+        m,
+      });
+    }
+  }
+  return profile;
+}
+
+/** Distance from `v` to a span; 0 when the span covers it. */
+const spanGap = (s: { lo: number; hi: number }, v: number): number => Math.max(0, s.lo - v, v - s.hi);
+
+/**
+ * The facade's OUTER-face cross coordinate at along coordinate `v` — the point a
+ * witness line for a tick at `v` must terminate on. Null when the profile cannot say
+ * (no walls, or a curve is what stands there), which leaves the caller on the flat
+ * `SideGeom.outer` fallback.
+ *
+ * Closed form, one pass, no iteration:
+ *
+ * - Segments **spanning** `v` describe the facade there; the OUTERMOST of them wins,
+ *   which is what makes an L-shaped or angled building read its own silhouette
+ *   instead of its bounding box.
+ * - When none spans `v` — the overall chain's ticks sit half a wall THROUGH the last
+ *   corner, on the outer-face plane — the nearest segments' lines are EXTENDED to `v`,
+ *   which lands exactly on the mitred outer corner.
+ * - Where two facades meet, their centerlines tie and the drawn outline is the mitre
+ *   between their faces. Taking the INNERMOST face of the tied set puts the terminus
+ *   inside the poché rather than a hair off the wall — the safe side of the join, and
+ *   the one that reproduces an orthogonal plan's existing bytes exactly (both faces
+ *   are `half` away when `m = 0`).
+ * - A curved edge standing at least as close to `v` as the nearest straight one wins
+ *   nothing and blocks everything: returning some partition 20 m inside the building
+ *   would be a different wrong answer, not a smaller one.
+ */
+function facadeAt(profile: FacadeProfile, out: 1 | -1, v: number): number | null {
+  let nearest = Number.POSITIVE_INFINITY;
+  for (const s of profile.segs) nearest = Math.min(nearest, spanGap(s, v));
+  if (!Number.isFinite(nearest)) return null;
+  for (const c of profile.curves) if (spanGap(c, v) <= nearest + TICK_TOL) return null;
+  // Signed so that "outermost" is always "largest", whichever way the side faces.
+  let bestCr = Number.NEGATIVE_INFINITY;
+  let bestFace = 0;
+  for (const s of profile.segs) {
+    if (spanGap(s, v) > nearest + TICK_TOL) continue;
+    const cr = out * (s.c0 + s.m * (v - s.a0));
+    const face = cr + s.faceOff;
+    if (cr > bestCr + TICK_TOL) {
+      bestCr = cr;
+      bestFace = face;
+    } else if (cr > bestCr - TICK_TOL) {
+      bestCr = Math.max(bestCr, cr);
+      bestFace = Math.min(bestFace, face);
+    }
+  }
+  return out * bestFace;
+}
+
+/** Where the extension (witness) line for a tick at `v` STARTS: on the facade itself,
+ *  not on the chain's straight baseline (which is where {@link sidePt} measures). */
+const witnessPt = (s: SideGeom, v: number): Point => {
+  const cross = facadeAt(s.profile, s.out, v) ?? s.outer;
+  return s.axis === "h" ? { x: v, y: cross } : { x: cross, y: v };
+};
 
 /** Chain slots, in multiples of `dimFont` outward from the wall face. Fixed per
  *  chain (not packed), so omitting a chain leaves its slot empty instead of
@@ -447,8 +577,13 @@ function sideGeoms(ir: ResolvedPlan, ext: Bounds): Record<Side, SideGeom> {
     return pr ? pr.line + SIDE_OUT[s] * pr.half : base;
   };
   const o = { bottom: outerOf("bottom"), top: outerOf("top"), left: outerOf("left"), right: outerOf("right") };
+  // One profile per AXIS (not per side) — the two facades facing each other read the
+  // same segments from opposite directions.
+  const profiles = { h: facadeProfile(ir.walls, "h"), v: facadeProfile(ir.walls, "v") };
   const mk = (side: Side, lo: number, hi: number, sign: 1 | -1): SideGeom => ({
     axis: SIDE_AXIS[side],
+    out: SIDE_OUT[side],
+    profile: profiles[SIDE_AXIS[side]],
     outer: o[side],
     line: probes[side]?.line ?? null,
     half: probes[side]?.half ?? 0,
@@ -520,7 +655,13 @@ function emitChain(side: SideGeom, ticks: readonly number[], offset: number, dim
     const a = ticks[i]!;
     const b = ticks[i + 1]!;
     const [from, to] = side.sign > 0 ? [a, b] : [b, a];
-    dims.push(mkDim(sidePt(side, from), sidePt(side, to), offset));
+    dims.push({
+      ...mkDim(sidePt(side, from), sidePt(side, to), offset),
+      // The measured endpoints stay on the chain baseline (so the dimension line, its
+      // ticks and its text are untouched); only the witness lines reach back to the
+      // wall, which on a stepped or angled facade is not under the baseline at all.
+      witness: { from: witnessPt(side, from), to: witnessPt(side, to) },
+    });
   }
 }
 

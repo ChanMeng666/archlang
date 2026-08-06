@@ -106,13 +106,13 @@ exports[`golden SVG snapshots > renders gallery-l.arch deterministically 1`] = `
 <line x1="6084.85" y1="15084.85" x2="5915.15" y2="14915.15" stroke="#0E5484" stroke-width="18"/>
 <text x="3000" y="15175" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 3000 15175)">6000</text>
 <line x1="6000" y1="14150" x2="6000" y2="15000" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="12000" y1="14150" x2="12000" y2="15000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="12000" y1="9195.26" x2="12000" y2="15000" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="6000" y1="15000" x2="12000" y2="15000" stroke="#0E5484" stroke-width="18"/>
 <line x1="6084.85" y1="15084.85" x2="5915.15" y2="14915.15" stroke="#0E5484" stroke-width="18"/>
 <line x1="12084.85" y1="15084.85" x2="11915.15" y2="14915.15" stroke="#0E5484" stroke-width="18"/>
 <text x="9000" y="15175" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 9000 15175)">6000</text>
 <line x1="-150" y1="14150" x2="-150" y2="15550" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="12150" y1="14150" x2="12150" y2="15550" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="12150" y1="9070.26" x2="12150" y2="15550" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="-150" y1="15550" x2="12150" y2="15550" stroke="#0E5484" stroke-width="18"/>
 <line x1="-65.15" y1="15634.85" x2="-234.85" y2="15465.15" stroke="#0E5484" stroke-width="18"/>
 <line x1="12234.85" y1="15634.85" x2="12065.15" y2="15465.15" stroke="#0E5484" stroke-width="18"/>
