@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A concave room's label could be drawn off its own floor.** Since v1.23 a `room … polygon` ring
+  was labelled at its exact area centroid, and a deep C, a U or an L with thin legs puts that
+  centroid in its own notch — outside the floor, on top of whatever is drawn there. The automatic
+  anchor now falls back to the ring's **pole of inaccessibility** (`polygonLabelPoint` in
+  `src/geometry/polygon.ts`): the interior point furthest from any edge, i.e. the middle of the
+  widest place the text can sit. **The centroid is returned unchanged whenever it is legal**, so the
+  fallback is unreachable for a rectangle, a circle, any convex ring and most concave ones, and no
+  existing drawing moves by a byte (`examples/gallery-l.arch` included — pinned by a test). The
+  search is a fixed lattice plus a fixed number of halving rounds, all pinned in source, with ties
+  settled by visit order: a pure, deterministic function of the vertex ring, not a loop with a stop
+  condition. An explicit `label "…" at (x,y)` still wins, and `W_ROOM_LABEL_OUTSIDE` still fires on
+  it — it was always a diagnostic about the *author's* anchor, never about the automatic one — but
+  its catalog fix text no longer tells you the centroid is the only alternative.
 - **Control characters and unpaired surrogates in string literals reached every backend.** A label
   containing a raw control char or a lone surrogate produced SVG that is not well-formed XML, an
   ASCII plan with control bytes in it, and DXF whose group-code pairing could be broken. New

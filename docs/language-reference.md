@@ -632,9 +632,13 @@ drawn label, `describe().rooms[].area_m2`, the `schedule rooms` table and Plan J
 which is also what the resolved room's `at`/`size` are, so a reader written for
 rectangles still sees a truthful box (just not the floor).
 
-**Where the label goes.** At the polygon's **area centroid**, computed closed-form. For a
-concave room whose centroid falls outside the floor — a deep C or U — pin it yourself with
-`label "…" at (x,y)`; a point outside the room is advisory
+**Where the label goes.** At the polygon's **area centroid**, computed closed-form —
+except where a concave ring puts that centroid outside its own floor (a deep C or U, or an
+L with thin legs). There the label falls back to the ring's **pole of inaccessibility**:
+the interior point furthest from any edge, i.e. the middle of the widest place the text can
+sit. The fallback is unreachable whenever the centroid is legal, so a rectangle, a circle
+and every well-behaved ring are labelled exactly as before. You can still pin the anchor
+yourself with `label "…" at (x,y)`, which always wins; a point outside the room is advisory
 [`W_ROOM_LABEL_OUTSIDE`](error-codes.md), never an error.
 
 **The ring must be simple.** Edges that cross (a bow-tie, usually two swapped vertices)

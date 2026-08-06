@@ -21,7 +21,7 @@ import {
   pointInPolygon,
   polygonArea,
   polygonBounds,
-  polygonCentroid,
+  polygonLabelPoint,
   polygonSelfIntersects,
 } from "../geometry/polygon.js";
 
@@ -107,7 +107,7 @@ export const room: ElementDef = {
       name: "label … at",
       type: "point",
       optional: true,
-      doc: "Explicit label/area anchor — for a concave polygon whose centroid falls outside.",
+      doc: "Explicit label/area anchor — overrides the automatic centroid/pole placement.",
     },
   ],
 
@@ -262,13 +262,16 @@ export const room: ElementDef = {
     }
 
     // Label/area anchor: the room centre for a rectangle, the circle's centre, the area
-    // CENTROID for a polygon (closed form), or the author's `label … at (x,y)`.
+    // CENTROID for a polygon (closed form) — or, for the concave ring whose centroid lands
+    // off its own floor, that ring's pole of inaccessibility (`polygonLabelPoint`, which
+    // returns the centroid itself whenever the centroid is legal, so a convex ring's bytes
+    // are untouched) — or the author's `label … at (x,y)`, which always wins.
     const centre =
       r.labelAt ??
       (r.circle
         ? r.circle.c
         : r.poly
-          ? polygonCentroid(r.poly)
+          ? polygonLabelPoint(r.poly)
           : { x: r.at.x + r.size.w / 2, y: r.at.y + r.size.h / 2 });
     const cx = centre.x;
     const cy = centre.y;

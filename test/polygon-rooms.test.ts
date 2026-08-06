@@ -9,14 +9,17 @@ import { parse } from "../src/parser.js";
 import type { RRoom } from "../src/ir.js";
 import {
   collinearOverlapLength,
+  distToPolygonEdge,
   effectiveVertices,
   polygonArea,
   polygonCentroid,
+  polygonLabelPoint,
   polygonSelfIntersects,
   polygonsOverlap,
   pointInPolygon,
 } from "../src/geometry/polygon.js";
 import { computeRoomClearances } from "../src/analyze/occupancy.js";
+import { fmt2 } from "../src/num-format.js";
 
 /**
  * Polygonal rooms (v1.23) — `room polygon (x,y) …`.
@@ -185,6 +188,110 @@ describe("polygon rooms — label placement", () => {
     const r = compile(`plan "P" { ${L_ROOM} label "G" at (9000,12000) }`, { noCache: true });
     expect(r.errors).toEqual([]);
     expect(r.svg).toContain("<svg");
+  });
+});
+
+/**
+ * The concave fallback. A U (or a thin L) can put its exact area centroid in its own
+ * notch — off the floor entirely — and the label would then be drawn over a neighbouring
+ * room. The rule: centroid whenever the centroid is legal (so nothing that already drew
+ * correctly moves), pole of inaccessibility only when it is not.
+ */
+describe("polygon rooms — the label point is always on the floor", () => {
+  /**
+   * A U: 10 × 10 m with a 4 × 8 m bite out of the top, off-centre — so its two legs are
+   * 2 m and 4 m wide and the widest place on the floor is unambiguous (the right leg).
+   */
+  const U = [
+    { x: 0, y: 0 },
+    { x: 2000, y: 0 },
+    { x: 2000, y: 8000 },
+    { x: 6000, y: 8000 },
+    { x: 6000, y: 0 },
+    { x: 10000, y: 0 },
+    { x: 10000, y: 10000 },
+    { x: 0, y: 10000 },
+  ];
+  const U_ROOM = `room id=u polygon ${U.map((p) => `(${p.x},${p.y})`).join(" ")}`;
+  /** A thin L: two 2 m-wide legs, 12 m long — its centroid sits in the open quadrant. */
+  const THIN_L = "room id=t polygon (0,0) (12000,0) (12000,2000) (2000,2000) (2000,12000) (0,12000)";
+
+  it("confirms the premise: these rings really do put their centroid OFF the floor", () => {
+    for (const src of [`plan "P" { ${U_ROOM} }`, `plan "P" { ${THIN_L} }`]) {
+      const ring = rooms(src)[0]!.poly!;
+      const c = polygonCentroid(ring);
+      expect(pointInPolygon(c.x, c.y, ring)).toBe(false);
+    }
+  });
+
+  it("places the label STRICTLY inside the ring instead of at the outside centroid", () => {
+    for (const src of [`plan "P" { ${U_ROOM} }`, `plan "P" { ${THIN_L} }`]) {
+      const ring = rooms(src)[0]!.poly!;
+      const p = polygonLabelPoint(ring);
+      expect(pointInPolygon(p.x, p.y, ring)).toBe(true);
+      // Not merely inside — off the boundary, in the widest part of the floor.
+      expect(distToPolygonEdge(p, ring)).toBeGreaterThan(500);
+    }
+  });
+
+  it("finds the WIDEST part of the floor — the 4 m leg, not the 2 m one or the base", () => {
+    // Right leg: 4 m wide → 2 m of clearance. Left leg and base: 2 m wide → 1 m. The
+    // maximum is exact and the search lands on it, not merely somewhere legal.
+    const p = polygonLabelPoint(U);
+    expect(p.x).toBeGreaterThan(6000);
+    expect(p.x).toBeLessThan(10000);
+    expect(distToPolygonEdge(p, U)).toBe(2000);
+  });
+
+  it("reaches the DRAWING: the label and area text move with it", () => {
+    const svg = compile(`plan "P" { ${U_ROOM} label "Hall" }`, { noCache: true }).svg;
+    const ring = rooms(`plan "P" { ${U_ROOM} }`)[0]!.poly!;
+    const p = polygonLabelPoint(ring);
+    expect(svg).toContain(`x="${fmt2(p.x)}"`);
+    // The old behaviour would have printed the centroid, which is in the bite.
+    const c = polygonCentroid(ring);
+    expect(svg).not.toContain(`x="${fmt2(c.x)}" y="${fmt2(c.y)}"`);
+  });
+
+  it("is deterministic — the same ring yields byte-identical output every time", () => {
+    const src = `plan "P" { ${U_ROOM} label "Hall" }`;
+    expect(compile(src, { noCache: true }).svg).toBe(compile(src, { noCache: true }).svg);
+    expect(polygonLabelPoint(U)).toEqual(polygonLabelPoint([...U]));
+  });
+
+  it("is winding-independent, like every other polygon answer", () => {
+    expect(polygonLabelPoint([...U].reverse())).toEqual(polygonLabelPoint(U));
+  });
+
+  it("an explicit `label … at` still wins, warning and all (the author overrides everything)", () => {
+    const src = `plan "P" { ${U_ROOM} label "Hall" at (5000,4000) }`;
+    expect(compile(src, { noCache: true }).svg).toContain('x="5000"');
+    expect(codes(src)).toContain("W_ROOM_LABEL_OUTSIDE");
+  });
+
+  it("RETURNS THE CENTROID UNCHANGED wherever the centroid is legal (the byte-identity pin)", () => {
+    // A convex ring, a concave-but-well-behaved L, and a rectangle traced as a polygon:
+    // the fallback must be unreachable for all three, object-identical to the closed form.
+    for (const ring of [
+      "(0,0) (6000,0) (5000,3000) (1000,3000)",
+      "(0,0) (12000,0) (12000,8000) (6000,8000) (6000,14000) (0,14000)",
+      "(0,0) (4000,0) (4000,3000) (0,3000)",
+    ]) {
+      const poly = rooms(`plan "P" { room polygon ${ring} }`)[0]!.poly!;
+      expect(polygonLabelPoint(poly)).toEqual(polygonCentroid(poly));
+    }
+  });
+
+  it("leaves the polygon flagship's bytes alone (no golden churn for a legal centroid)", () => {
+    // `gallery` is labelled automatically and `lobby` by an explicit anchor — between
+    // them they cover both paths, and neither one moves.
+    const svg = compile(example("gallery-l.arch"), { noCache: true }).svg;
+    const ring = rooms(example("gallery-l.arch")).find((r) => r.id === "gallery")!.poly!;
+    const c = polygonCentroid(ring);
+    expect(pointInPolygon(c.x, c.y, ring)).toBe(true);
+    expect(polygonLabelPoint(ring)).toEqual(c);
+    expect(svg).toContain(`x="${fmt2(c.x)}"`);
+    expect(svg).toContain('x="8200"');
   });
 });
 
