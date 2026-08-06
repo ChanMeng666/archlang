@@ -129,14 +129,47 @@ error catalogue where noted.
   is asserted in places — expect snapshot churn in the L1 fault-injection and repair-coverage suites, and
   never re-pin `eval/judge-fixture.json` as part of this.
 
-### P1-6 · AIA layer naming for DXF export — **S**
+### P1-6 · AIA layer naming for DXF export — **CLOSED**
 
-- **Reference:** ifc-lite `packages/drawing-2d/.../types.ts:714` + `layer-mapping.ts` — `A-WALL`,
-  `A-DIMS`, `A-ANNO`. It is the naming convention a CAD consumer expects on import.
-- **Lands in:** `src/export/dxf.ts` layer table.
-- **Iron laws:** DXF output is golden-tested, so this is a deliberate byte change with a reviewed
-  re-bless. Consider whether it should be the default or an opt-in — a downstream consumer keyed to the
-  current names is a real breakage, and `CompileResult` / output stability is a promise we keep.
+**Verified already shipped — nothing adopted.** Both premises of the original entry (kept below,
+struck through, for the record) were wrong: AIA naming has been the default since v0.9, and the DXF
+output is not golden-tested.
+
+- **What actually ships.** `aiaLayer()` (`src/scene.ts:190-217`) maps every `RenderPass` to an AIA
+  name and `layerOf()` (`src/scene.ts:242-244`) lets a node override it; `src/export/dxf.ts:155-168`
+  emits the LAYER table with names **and** DXF colour numbers (group code 62). Twelve layers:
+  `A-WALL`, `A-FLOR`, `A-FLOR-STRS`, `A-FLOR-EVTR`, `A-GRID`, `A-FURN`, `A-COLS`, `A-DOOR`,
+  `A-GLAZ`, `A-ANNO-TEXT`, `A-ANNO-DIMS`, `A-ANNO`. The SVG backend groups nodes into Inkscape
+  layers under the same names. Per-node overrides are `src/elements/column.ts:65` (`A-COLS`) and the
+  two shaft sublayers at `src/elements/vertical-glyphs.ts:31-32`.
+- **The reference is coarser than what we have.** ifc-lite's `A-DIMS` is a flat name; ours is the AIA
+  minor-group form `A-ANNO-DIMS` (dimensions under the annotation major group, matching
+  `A-ANNO-TEXT`). Adopting the proposal would have been a regression, not an improvement.
+- **"DXF output is golden-tested" was incorrect.** There are no DXF goldens anywhere in the tree —
+  the only tracked files matching `dxf` are `src/export/dxf.ts` and `test/export-dxf.test.ts`, and
+  that suite asserts structurally (well-formedness, entity kinds, determinism, the Y-flip, HATCH
+  shape, and the purity guard that the backend re-derives no element geometry). There was never a
+  re-bless to plan, and no opt-in question to answer.
+- **One real gap found and closed.** `stair`/`elevator`/`escalator` draw on `A-FLOR-STRS` /
+  `A-FLOR-EVTR`, but the LAYER table declared only the pass defaults — so every plan with a shaft
+  emitted entities referencing two **undeclared** layers. Readers auto-create those, so it was
+  invisible, but it is not conformant. Both are now declared (colour 3, the furniture stroke they
+  draw with). Only byte change: two extra LAYER records in every DXF header.
+- **Pinned so it cannot silently regress.** `test/export-dxf.test.ts` gains an "AIA CAD layers"
+  block driven by one fixture plan that lands a node on all eleven `RENDER_PASSES` and exercises
+  every `layerName` override — with a coverage guard so the fixture cannot quietly stop exercising a
+  pass. It asserts: the pass-to-name map as a snapshot **generated from `aiaLayer`** (derived, never
+  retyped — re-bless it, never `-u` it); LAYER-table closure in both directions (every pass's layer
+  is declared, every layer an entity references is declared, and no declared layer is dead); the AIA
+  name form `A-` + a 4-character major group + an optional 4-character minor; and no duplicate
+  declaration. `test/opening.test.ts:139`'s negative (a plan with no window puts nothing on
+  `A-GLAZ`) is untouched, as is the `dxf.ts` purity guard.
+
+~~**Reference:** ifc-lite `packages/drawing-2d/.../types.ts:714` + `layer-mapping.ts` — `A-WALL`,
+`A-DIMS`, `A-ANNO`. It is the naming convention a CAD consumer expects on import. **Lands in:**
+`src/export/dxf.ts` layer table. **Iron laws:** DXF output is golden-tested, so this is a deliberate
+byte change with a reviewed re-bless. Consider whether it should be the default or an opt-in — a
+downstream consumer keyed to the current names is a real breakage.~~
 
 ### P1-7 · `check:test-wiring` guard — **S**
 
