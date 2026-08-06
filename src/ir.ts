@@ -264,6 +264,12 @@ export interface RDim extends RBase {
    * Internal: never rendered, never part of describe()/Plan JSON.
    */
   _swapText?: string;
+  /**
+   * Byte span of the authored `offset` clause, or the zero-width point where one can be
+   * inserted — copied from {@link import("./ast.js").DimNode.offsetSpan} so the
+   * `W_DIM_OVERLAP` lint fix can re-tier the dimension. Internal; never reaches the Scene.
+   */
+  _offsetSpan?: Span;
 }
 export interface RColumn extends RBase {
   kind: "column";

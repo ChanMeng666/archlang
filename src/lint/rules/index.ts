@@ -7,7 +7,7 @@
 import type { LintRule } from "../context.js";
 import { aliasMatch } from "./alias-match.js";
 import { roomNoClearPath } from "./circulation.js";
-import { dimInside } from "./dims.js";
+import { dimInside, dimOverlap } from "./dims.js";
 import { circuitousPath, pathTooNarrow } from "./circulation-facts.js";
 import { doorClearance, doorwayBlocked, swingObstructed } from "./doors.js";
 import { noEntrance } from "./entrance.js";
@@ -52,6 +52,10 @@ export const LINT_RULES: readonly LintRule[] = [
   // Multi-storey advisory (v1.21): a vertical run whose id matches nothing on any other
   // storey. Appended last so no existing plan's diagnostic ORDER moves.
   stairUnmatched,
+  // Annotation advisory: two hand-written dimensions drawn on top of each other. Appended
+  // LAST — every existing plan's diagnostic ORDER has to stay exactly where it was, and a
+  // rule that fires only on a `dim` pair can be read at the end of the list.
+  dimOverlap,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

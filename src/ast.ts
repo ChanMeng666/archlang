@@ -351,6 +351,16 @@ export interface DimNode extends NodeBase {
   to: ExprPoint;
   /** Perpendicular offset of the dimension line from the measured segment, mm. */
   offset: Expr;
+  /**
+   * Byte span the `offset` clause occupies in the ORIGINAL source — the authored
+   * `offset <expr>` run, or the **zero-width** point where one can be inserted
+   * (`start === end`, always *before* the optional trailing `text "…"`, which the
+   * grammar requires to come last). Recorded by the parser purely so a diagnostic
+   * fix can re-tier the dimension with correct offsets
+   * ({@link import("../fix-producers.js").dimBumpFix}); it carries no semantics and
+   * never affects output.
+   */
+  offsetSpan?: Span;
   /** Override text (string-interpolation template); defaults to measured length. */
   text?: Expr;
 }

@@ -23,6 +23,25 @@ function emitSwapped(n: DimNode): string {
   return `dim ${ref}${pt(n.to)}->${pt(n.from)} offset ${exprToSource(n.offset)}${text}`;
 }
 
+/**
+ * Consume the optional `offset <expr>` clause and record the byte span it occupies —
+ * the authored run, or the **zero-width** point where one can be inserted, which is
+ * HERE (the grammar puts the optional trailing `text "…"` last). Shared by both parse
+ * branches so the curve call-out records it identically. The span exists only so
+ * {@link import("../fix-producers.js").dimBumpFix} can re-tier a colliding dimension
+ * with correct original-source offsets; see {@link DimNode.offsetSpan}.
+ */
+function eatOffset(node: DimNode, ctx: ParseCtx): void {
+  const offsetAt = ctx.peek(-1).end;
+  if (ctx.isKeyword("offset")) {
+    const offKw = ctx.next();
+    node.offset = ctx.parseExpr();
+    node.offsetSpan = { start: offKw.start, end: ctx.peek(-1).end };
+  } else {
+    node.offsetSpan = { start: offsetAt, end: offsetAt };
+  }
+}
+
 export const dim: ElementDef = {
   kind: "dim",
   keyword: "dim",
@@ -91,10 +110,7 @@ export const dim: ElementDef = {
         },
         line: kw.line,
       };
-      if (ctx.isKeyword("offset")) {
-        ctx.next();
-        node.offset = ctx.parseExpr();
-      }
+      eatOffset(node, ctx);
       if (ctx.isKeyword("text")) {
         ctx.next();
         node.text = ctx.parseStringExpr();
@@ -106,10 +122,7 @@ export const dim: ElementDef = {
     const to = ctx.parsePoint();
     const node: DimNode = { kind: "dim", id: "", from, to, offset: { t: "num", value: 300 }, line: kw.line };
     if (ref) node.ref = ref;
-    if (ctx.isKeyword("offset")) {
-      ctx.next();
-      node.offset = ctx.parseExpr();
-    }
+    eatOffset(node, ctx);
     if (ctx.isKeyword("text")) {
       ctx.next();
       node.text = ctx.parseStringExpr();
@@ -184,6 +197,10 @@ export const dim: ElementDef = {
     // warning, if it ever fires, stands on its own rather than offering an edit that
     // would replace `dim radius w1` with a pair of literal points.
     if (n.span && !n.curve) r._swapText = emitSwapped(n);
+    // Carried for the `W_DIM_OVERLAP` lint fix: where to write a re-tiered `offset`.
+    // Unlike the swap this is a sub-span edit, so a CURVE call-out gets it too — the
+    // `offset` clause means the same thing on both forms.
+    if (n.offsetSpan) r._offsetSpan = n.offsetSpan;
     return r;
   },
 
