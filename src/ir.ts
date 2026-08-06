@@ -258,6 +258,23 @@ export interface RDim extends RBase {
   offset: number;
   text?: string;
   /**
+   * Where each extension (witness) line STARTS, when that is not the measured
+   * endpoint itself.
+   *
+   * A dimension CHAIN measures along one straight baseline, so its endpoints are
+   * projections of the building onto that baseline — on a stepped or angled facade
+   * the wall being pointed at is somewhere else entirely, and a witness line drawn
+   * from the endpoint begins over blank page. `dims auto` therefore hands each
+   * synthesized chain the facade point every tick should terminate on (see
+   * `facadeAt` in `scene-build.ts`); `from`/`to` stay on the baseline, so the
+   * dimension line, its ticks and its measured text are untouched.
+   *
+   * Set only by `dims auto` synthesis — a written `dim` statement never carries it
+   * (its endpoints ARE the points it names), and it is never part of describe()
+   * or Plan JSON.
+   */
+  witness?: { from: Point; to: Point };
+  /**
    * The whole `dim` statement re-emitted with its two endpoints SWAPPED — the
    * machine-applicable fix text for `W_DIM_INSIDE`. Computed in `dim.resolve`
    * (where the AST expressions still exist) because lint sees only the IR.

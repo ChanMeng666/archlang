@@ -224,15 +224,21 @@ export const dim: ElementDef = {
     // puts the dimension line ON the measured segment, so both witness lines would be
     // zero-length degenerate strokes — skipped (a wall-thickness call-out is the
     // canonical zero-offset dim and legitimately has no witness lines).
+    //
+    // A witness line must END on the dimension line and START on the wall. For a
+    // written `dim` those are the same point, but a `dims auto` CHAIN measures along
+    // one straight baseline, so on a stepped or angled facade its endpoint is a
+    // projection and the wall is elsewhere; the synthesizer then supplies the true
+    // facade point in `witness` (`RDim.witness`) and only this start moves.
     if (dm.offset !== 0) {
       nodes.push({
         layer: "dims",
-        prim: { t: "line", a: dm.from, b: p1 },
+        prim: { t: "line", a: dm.witness?.from ?? dm.from, b: p1 },
         paint: { stroke: theme.dim, width: sizes.thin * 0.7 },
       });
       nodes.push({
         layer: "dims",
-        prim: { t: "line", a: dm.to, b: p2 },
+        prim: { t: "line", a: dm.witness?.to ?? dm.to, b: p2 },
         paint: { stroke: theme.dim, width: sizes.thin * 0.7 },
       });
     }
