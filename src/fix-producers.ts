@@ -55,6 +55,14 @@ interface EmitOpts {
   /** True when the (overridden) lead is an attachment — suppresses the trailing
    *  `wall <ref>` clause, which the attachment form does not take. */
   attached?: boolean;
+  /**
+   * Replacement hinge side (doors only). Keeps the author's idiom: a node written
+   * with `hinge near start|end` is re-emitted in that form (`start` ≡ `left`,
+   * `end` ≡ `right` — the same mapping `door.resolve` applies), anything else as an
+   * explicit `hinge left|right`, which is also how a door with no hinge clause at
+   * all acquires one.
+   */
+  hinge?: "left" | "right";
 }
 
 /**
@@ -72,7 +80,11 @@ export function emitOpening(kind: OpeningKind, node: OpeningLikeNode, opts: Emit
   let tail = "";
   if (kind === "door") {
     const d = node as DoorNode;
-    tail += d.hinge ? ` hinge ${d.hinge}` : d.hingeNear ? ` hinge near ${d.hingeNear}` : "";
+    if (opts.hinge) {
+      tail += d.hingeNear ? ` hinge near ${opts.hinge === "left" ? "start" : "end"}` : ` hinge ${opts.hinge}`;
+    } else {
+      tail += d.hinge ? ` hinge ${d.hinge}` : d.hingeNear ? ` hinge near ${d.hingeNear}` : "";
+    }
     tail += d.swing ? ` swing ${d.swing}` : d.swingInto ? ` swing into ${d.swingInto}` : "";
   }
   return `${kind} ${id}${lead} width ${width}${wall}${tail}`;
@@ -192,6 +204,39 @@ export function fixtureRotateFix(
       applicability: "machine-applicable",
       fixId: "fixture-back-to-room",
       edits: [{ span, newText: `${insert ? " " : ""}rotate ${rotate}` }],
+    },
+  ];
+}
+
+/**
+ * The fix for `W_SWING_OBSTRUCTED`: hang the leaf on the OTHER jamb.
+ *
+ * Of the rule's remedy set this is the only one that is a bounded, checkable rewrite:
+ * a hinge flip mirrors the quarter-disc across the opening **on the same side of the
+ * same wall**, so it changes no other derived geometry, and there is exactly one
+ * alternative — nothing to guess between (ADR 0005). The caller only asks for it after
+ * recomputing the flipped swing and proving it meets no furniture and no other door's
+ * swing, so it clears the warning by solving it rather than by moving it somewhere the
+ * rule cannot see. The other remedies (move the door, move/shrink the obstruction,
+ * narrow the leaf, drop to a leafless `opening`) each require choosing geometry or
+ * changing the brief, and stay hints.
+ *
+ * The replacement text is the whole statement re-emitted from the AST in
+ * `door.resolve` and carried on the IR as `_flipHingeText` (lint sees only the IR),
+ * which preserves the authored `at`/`on … at`, width expression and swing verbatim.
+ * Returns `null` without a span to write into.
+ */
+export function doorHingeFlipFix(
+  door: { id: string; span?: Span; _flipHingeText?: string },
+  hinge: "left" | "right",
+): FixSuggestion[] | null {
+  if (!door.span || !door._flipHingeText) return null;
+  return [
+    {
+      title: `hang the leaf on the other jamb (\`hinge ${hinge}\`) — the flipped swing is clear`,
+      applicability: "machine-applicable",
+      fixId: "door-swing-obstructed",
+      edits: [{ span: door.span, newText: door._flipHingeText }],
     },
   ];
 }

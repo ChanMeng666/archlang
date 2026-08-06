@@ -212,6 +212,13 @@ export interface RDoor extends RBase {
   /** `attached` (`on <wall> at <pos>`) vs `absolute` (`at (x,y)`). Internal
    *  marker for `describe().freedom`; never rendered. */
   _placement?: OpeningPlacement;
+  /**
+   * The whole `door` statement re-emitted with the hinge on the OTHER jamb — the
+   * machine-applicable fix text for `W_SWING_OBSTRUCTED`. Computed in `door.resolve`
+   * (the only place the AST node is in scope) and read by `doorHingeFlipFix`; absent
+   * for a door with no span. Internal: never reaches the Scene, so it changes no bytes.
+   */
+  _flipHingeText?: string;
 }
 export interface RWindow extends RBase {
   kind: "window";

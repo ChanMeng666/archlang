@@ -9,7 +9,7 @@ import type { Value } from "../expr.js";
 import type { WallSegment } from "../geometry.js";
 import { add, doorSwing, mul, nearestWallNote, normal, segmentDirAt, sub, unit } from "../geometry.js";
 import { parseAttachTarget, resolveAttachment } from "../attach.js";
-import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
+import { emitOpening, fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
 
 /** Read an enum override from the active `set` defaults, if valid. */
 function enumDefault<T extends string>(
@@ -168,7 +168,21 @@ export const door: ElementDef = {
     const hinge = n.hinge ?? hingeNear ?? enumDefault(ctx.defaults, "hinge", ["left", "right"] as const) ?? "left";
     const intoSwing = n.swingInto ? swingInto(n.swingInto, at, host, ctx.rooms, ctx, id, n.span) : undefined;
     const swing = n.swing ?? intoSwing ?? enumDefault(ctx.defaults, "swing", ["in", "out"] as const) ?? "in";
-    return { kind: "door", id, at, width, hinge, swing, host, span: n.span };
+    // Pre-emit the hinge-flipped statement for `W_SWING_OBSTRUCTED`'s fix: lint sees
+    // only the IR, and re-emitting here keeps the authored placement/width expressions
+    // (rather than baking in resolved numbers). Internal field — no Scene, no bytes.
+    const flipText = n.span ? emitOpening("door", n, { hinge: hinge === "left" ? "right" : "left" }) : undefined;
+    return {
+      kind: "door",
+      id,
+      at,
+      width,
+      hinge,
+      swing,
+      host,
+      span: n.span,
+      ...(flipText ? { _flipHingeText: flipText } : {}),
+    };
   },
 
   bounds: () => [],

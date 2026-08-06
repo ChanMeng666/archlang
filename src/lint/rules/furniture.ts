@@ -22,6 +22,7 @@ import { pointInPolygon } from "../../geometry/polygon.js";
 import { fixesFrom, fixtureRotateFix } from "../../fix-producers.js";
 import { defaultFootprint, frontClearanceMm, orientationMatters, requiresWall } from "../../fixtures-catalog.js";
 import type { LintContext, LintRule } from "../context.js";
+import { frontGapMm, mm, shortfall } from "../measure.js";
 
 /**
  * Minimum intrusion (mm) into a wall solid that counts as a collision. Above plausible
@@ -56,10 +57,20 @@ export const furnitureOverlap: LintRule = {
   },
 };
 
-/** A fixture's frontal activity clearance blocked by a *free-standing* piece of
- *  furniture (a sofa parked in front of the stove). Conservative on purpose: it
- *  ignores other plumbing/kitchen fixtures, so a compactly-packed bathroom or
- *  kitchen run never trips it — only a movable object in the use-space does. */
+/**
+ * A fixture's frontal activity clearance blocked by a *free-standing* piece of
+ * furniture (a sofa parked in front of the stove). Conservative on purpose: it
+ * ignores other plumbing/kitchen fixtures, so a compactly-packed bathroom or
+ * kitchen run never trips it — only a movable object in the use-space does.
+ *
+ * The message states the catalogued clearance, the depth actually left, and the
+ * shortfall. Every remedy stays a **hint**: moving or shrinking the obstruction is a
+ * choice of geometry, and turning the fixture is not the bounded rewrite it looks
+ * like — for a fixture whose facing means anything, the back-against-a-wall rule
+ * already pins the front, so a rotation that frees the use-space either lifts its back
+ * off the wall (trading this warning for `W_FIXTURE_BACK_TO_ROOM`) or lands in the
+ * two-walls corner case that {@link fixtureBackToRoom} itself declines to guess at.
+ */
 export const furnClearance: LintRule = {
   name: "furn-clearance",
   check({ furniture, at }: LintContext): Diagnostic[] {
@@ -73,12 +84,19 @@ export const furnClearance: LintRule = {
         if (rectsOverlap(zone, rectOf(g))) {
           const fn = f.label ?? f.category;
           const gn = g.label ?? g.category;
+          const gap = frontGapMm(rectOf(f), zone, rectOf(g), clear);
+          const short = shortfall(clear, gap);
           out.push({
             severity: "warning",
             code: "W_FURN_CLEARANCE",
             ...at(f.span),
-            message: `Fixture "${fn}" has no clearance in front — "${gn}" is in the way.`,
-            hints: [`Leave at least ${clear} mm of clear space in front of it, or move "${gn}".`],
+            message: `Fixture "${fn}" needs ${mm(clear)} mm of clear space in front but "${gn}" leaves ${mm(gap)} mm (${mm(short)} mm short).`,
+            hints: [
+              `Move "${gn}" ${mm(short)} mm further from the front of "${fn}".`,
+              `Or shrink "${gn}" by ${mm(short)} mm on the axis facing "${fn}".`,
+              `Or turn "${fn}" (\`rotate 0|90|180|270\`) so its front faces clear floor — its back must stay on a wall.`,
+              `Or move "${fn}" to a wall run with ${mm(clear)} mm of free floor in front of it.`,
+            ],
           });
           break; // one warning per fixture
         }

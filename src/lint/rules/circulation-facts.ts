@@ -12,6 +12,7 @@ import { buildDoorAccessGraph } from "../../analyze.js";
 import { type CirculationModel, computeCirculation } from "../../analyze/circulation.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import type { LintContext, LintRule } from "../context.js";
+import { mm, shortfall } from "../measure.js";
 
 const modelCache = new WeakMap<LintContext, CirculationModel | null>();
 
@@ -33,7 +34,20 @@ function circulationOf(ctx: LintContext): CirculationModel | null {
   return model;
 }
 
-const NARROW_HINT = "Widen the tightest door/opening on the way, or move the furniture pinching it.";
+/**
+ * The closed remedy set for `W_PATH_TOO_NARROW`, sized against the ruleset minimum.
+ *
+ * None of these is a machine-applicable fix and none can be: the bottleneck is a nav-grid
+ * CELL, not an element — the model knows the route pinches to N mm, not which door or
+ * which piece of furniture to rewrite. `arch repair` is deliberately not named either;
+ * it clears wall intrusions, swings, doorway landings and overlaps, not a route pinch,
+ * and pointing at a tool that would report "nothing to do" is worse than silence.
+ */
+const narrowHints = (min: number): string[] => [
+  `Widen the tightest door/opening on the way to at least ${mm(min)} mm.`,
+  `Or move the furniture pinching the route so ${mm(min)} mm of clear width survives.`,
+  "Or add a second way in (another door or a leafless `opening`) so the pinch is avoidable.",
+];
 
 export const pathTooNarrow: LintRule = {
   name: "path-too-narrow",
@@ -56,8 +70,8 @@ export const pathTooNarrow: LintRule = {
         severity: "warning",
         code: "W_PATH_TOO_NARROW",
         ...at(r.span),
-        message: `The walk from the entrance to "${labelOf(r)}" squeezes to ${rc.bottleneckClearWidthMm} mm (below ${min} mm).`,
-        hints: [NARROW_HINT],
+        message: `The walk from the entrance to "${labelOf(r)}" squeezes to ${mm(rc.bottleneckClearWidthMm)} mm (${mm(shortfall(min, rc.bottleneckClearWidthMm))} mm below the ${mm(min)} mm minimum).`,
+        hints: narrowHints(min),
       });
     }
     for (const rt of circ.routes) {
@@ -70,8 +84,8 @@ export const pathTooNarrow: LintRule = {
         severity: "warning",
         code: "W_PATH_TOO_NARROW",
         ...at(from.span),
-        message: `The route from "${labelOf(from)}" to "${to ? labelOf(to) : rt.toRoomId}" squeezes to ${rt.bottleneckClearWidthMm} mm (below ${min} mm).`,
-        hints: [NARROW_HINT],
+        message: `The route from "${labelOf(from)}" to "${to ? labelOf(to) : rt.toRoomId}" squeezes to ${mm(rt.bottleneckClearWidthMm)} mm (${mm(shortfall(min, rt.bottleneckClearWidthMm))} mm below the ${mm(min)} mm minimum).`,
+        hints: narrowHints(min),
       });
     }
     return out;
