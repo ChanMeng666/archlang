@@ -1,6 +1,7 @@
 /** Pure geometry helpers. All coordinates in millimetres. Deterministic. */
 
 import type { Point } from "./ast.js";
+import type { DoorHinge, DoorSwingDir } from "./grammar/tokens.js";
 import type { Arc } from "./geometry/arc.js";
 import {
   arcBandRing,
@@ -98,8 +99,8 @@ export interface DoorSwing {
 export interface DoorLike {
   at: Point;
   width: number;
-  hinge: "left" | "right";
-  swing: "in" | "out";
+  hinge: DoorHinge;
+  swing: DoorSwingDir;
   host: { a: Point; b: Point; thickness: number; arc?: Arc } | null;
 }
 

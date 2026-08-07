@@ -15,6 +15,7 @@
 
 import type { DoorNode, OpeningAttach, OpeningNode, Point, WindowNode } from "./ast.js";
 import type { FixSuggestion, Span } from "./diagnostics.js";
+import type { DoorHinge } from "./grammar/tokens.js";
 import type { WallLike } from "./geometry.js";
 import { distPointToSegment, length, segmentsOfWall, sub } from "./geometry.js";
 import { exprToSource } from "./expr-source.js";
@@ -62,7 +63,7 @@ interface EmitOpts {
    * explicit `hinge left|right`, which is also how a door with no hinge clause at
    * all acquires one.
    */
-  hinge?: "left" | "right";
+  hinge?: DoorHinge;
 }
 
 /**
@@ -228,7 +229,7 @@ export function fixtureRotateFix(
  */
 export function doorHingeFlipFix(
   door: { id: string; span?: Span; _flipHingeText?: string },
-  hinge: "left" | "right",
+  hinge: DoorHinge,
 ): FixSuggestion[] | null {
   if (!door.span || !door._flipHingeText) return null;
   return [

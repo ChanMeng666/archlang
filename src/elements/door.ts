@@ -1,4 +1,4 @@
-/** `door [id=] at (x,y) width N [wall ref] [hinge l|r] [swing in|out]` — opening + leaf + swing arc. */
+/** `door [id=] at (x,y) width N [wall ref] [hinge <side>] [swing <dir>]` — opening + leaf + swing arc. */
 
 import type { DoorNode, Point } from "../ast.js";
 import type { Span } from "../diagnostics.js";
@@ -8,8 +8,22 @@ import type { RDoor, RRoom } from "../ir.js";
 import type { Value } from "../expr.js";
 import type { WallSegment } from "../geometry.js";
 import { add, doorSwing, mul, nearestWallNote, normal, segmentDirAt, sub, unit } from "../geometry.js";
+import { DOOR_ENUMS, DOOR_HINGE_NEAR, enumList } from "../grammar/tokens.js";
 import { parseAttachTarget, resolveAttachment } from "../attach.js";
 import { emitOpening, fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
+
+/**
+ * Read the next ident and check it against a closed value set from
+ * {@link DOOR_ENUMS} / {@link DOOR_HINGE_NEAR}. The allowed values and the message
+ * that lists them both come from the table, so the check can never allow one thing
+ * and the diagnostic name another. `ctx.fail` returns `never`, which narrows the
+ * result to the member type.
+ */
+function eatEnumValue<T extends string>(ctx: ParseCtx, allowed: readonly T[], what: string): T {
+  const v = ctx.eatIdent().value;
+  if (!(allowed as readonly string[]).includes(v)) ctx.fail(`Expected ${what} ${enumList(allowed)} but found "${v}"`);
+  return v as T;
+}
 
 /** Read an enum override from the active `set` defaults, if valid. */
 function enumDefault<T extends string>(
@@ -72,8 +86,13 @@ export const door: ElementDef = {
     { name: "at", type: "point", doc: "Hinge/center position (x, y) in mm." },
     { name: "width", type: "number", doc: "Door width (leaf length) in mm." },
     { name: "wall", type: "name", optional: true, doc: "Host wall by id or category (else nearest)." },
-    { name: "hinge", type: "left|right", optional: true, doc: "Hinge side relative to wall direction." },
-    { name: "swing", type: "in|out", optional: true, doc: "Swing direction." },
+    {
+      name: "hinge",
+      type: DOOR_ENUMS.hinge.join("|"),
+      optional: true,
+      doc: "Hinge side relative to wall direction.",
+    },
+    { name: "swing", type: DOOR_ENUMS.swing.join("|"), optional: true, doc: "Swing direction." },
   ],
 
   parse(ctx: ParseCtx): DoorNode {
@@ -100,13 +119,9 @@ export const door: ElementDef = {
       // is relative to the wall's traversal direction (the older form).
       if (ctx.isKeyword("near")) {
         ctx.next();
-        const s = ctx.eatIdent().value;
-        if (s !== "start" && s !== "end") ctx.fail(`Expected hinge near "start" or "end" but found "${s}"`);
-        node.hingeNear = s;
+        node.hingeNear = eatEnumValue(ctx, DOOR_HINGE_NEAR, "hinge near");
       } else {
-        const h = ctx.eatIdent().value;
-        if (h !== "left" && h !== "right") ctx.fail(`Expected hinge "left" or "right" but found "${h}"`);
-        node.hinge = h;
+        node.hinge = eatEnumValue(ctx, DOOR_ENUMS.hinge, "hinge");
       }
     }
     if (ctx.isKeyword("swing")) {
@@ -116,9 +131,7 @@ export const door: ElementDef = {
         ctx.next();
         node.swingInto = ctx.eatIdent().value;
       } else {
-        const s = ctx.eatIdent().value;
-        if (s !== "in" && s !== "out") ctx.fail(`Expected swing "in" or "out" but found "${s}"`);
-        node.swing = s;
+        node.swing = eatEnumValue(ctx, DOOR_ENUMS.swing, "swing");
       }
     }
     return node;
@@ -165,9 +178,9 @@ export const door: ElementDef = {
     }
     // Precedence: explicit attribute > derived (`near`/`into`) > `set door(...)` > hard default.
     const hingeNear = n.hingeNear ? (n.hingeNear === "start" ? "left" : "right") : undefined;
-    const hinge = n.hinge ?? hingeNear ?? enumDefault(ctx.defaults, "hinge", ["left", "right"] as const) ?? "left";
+    const hinge = n.hinge ?? hingeNear ?? enumDefault(ctx.defaults, "hinge", DOOR_ENUMS.hinge) ?? "left";
     const intoSwing = n.swingInto ? swingInto(n.swingInto, at, host, ctx.rooms, ctx, id, n.span) : undefined;
-    const swing = n.swing ?? intoSwing ?? enumDefault(ctx.defaults, "swing", ["in", "out"] as const) ?? "in";
+    const swing = n.swing ?? intoSwing ?? enumDefault(ctx.defaults, "swing", DOOR_ENUMS.swing) ?? "in";
     // Pre-emit the hinge-flipped statement for `W_SWING_OBSTRUCTED`'s fix: lint sees
     // only the IR, and re-emitting here keeps the authored placement/width expressions
     // (rather than baking in resolved numbers). Internal field — no Scene, no bytes.

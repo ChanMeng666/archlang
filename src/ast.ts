@@ -4,6 +4,7 @@
  * it and produces a separate IR — nothing here is mutated after parse.
  */
 
+import type { DoorHinge, DoorHingeNear, DoorSwingDir } from "./grammar/tokens.js";
 import type { Span } from "./diagnostics.js";
 import type { Comment } from "./lexer.js";
 import type { Expr } from "./expr.js";
@@ -197,14 +198,14 @@ export interface DoorNode extends NodeBase {
   wall?: string;
   /** Hinge/swing are explicit-only here; the default (and any `set door(...)`
    *  override) is applied at resolve so user-specified values always win. */
-  hinge?: "left" | "right";
-  swing?: "in" | "out";
+  hinge?: DoorHinge;
+  swing?: DoorSwingDir;
   /** `swing into <room>` — resolve chooses in/out so the leaf opens toward that
    *  room's side of the host wall. Exclusive with `swing`. */
   swingInto?: string;
   /** `hinge near start|end` — hinge at the door-segment end nearer the wall's
    *  start/end point, independent of traversal wording. Exclusive with `hinge`. */
-  hingeNear?: "start" | "end";
+  hingeNear?: DoorHingeNear;
 }
 
 export interface WindowNode extends NodeBase {

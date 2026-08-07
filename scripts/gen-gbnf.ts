@@ -31,7 +31,8 @@
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { KEYWORDS, OPERATORS } from "../src/grammar/tokens.js";
+import type { DoorEnumClause } from "../src/grammar/tokens.js";
+import { DOOR_ENUMS, DOOR_HINGE_NEAR, KEYWORDS, OPERATORS } from "../src/grammar/tokens.js";
 import { USE_KINDS, FURNITURE_ANCHORS, SCHEDULE_SUBJECTS } from "../src/ast.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "../src/sheet.js";
 
@@ -81,6 +82,44 @@ const OPS_USED = [
  */
 const CONTROL_COVERED_STRUCTURALLY = ["plan", "else"];
 
+/** The door clauses that take a closed value set, in table order. */
+const DOOR_CLAUSES = Object.keys(DOOR_ENUMS) as DoorEnumClause[];
+
+/**
+ * The door-clause guard. Every clause in `DOOR_ENUMS` must (a) be reachable from
+ * `door-clause`, (b) have a `<clause>-val` production of its own, and (c) have that
+ * production RENDER the table's alternation rather than a retyped copy of it.
+ *
+ * This is the guard the design pass called blocking. `hinge-val` / `swing-val` were
+ * string literals typed into this generator: a value added to the language and not
+ * here ships a constrained-decoding grammar that *cannot emit it*, and `check:drift`
+ * stays green throughout, because the generator reproduces its own stale output
+ * perfectly (the failure that already shipped once, as MCP 0.2.2's v1.19 grammar).
+ * Exported so `test/door-enums.test.ts` can prove it fires on a synthetic table
+ * rather than trusting the comment.
+ */
+export function assertDoorVocab(body: [string, string][], enums: Record<string, readonly string[]>): void {
+  const emitted = body.map(([, prod]) => prod).join(" ");
+  for (const [clause, values] of Object.entries(enums)) {
+    const rule = body.find(([name]) => name === `${clause}-val`);
+    if (!rule) {
+      throw new Error(
+        `gen-gbnf: door clause "${clause}" has no \`${clause}-val\` production — a constrained ` +
+          `decoder could never emit it. Add the rule and reach it from \`door-clause\`.`,
+      );
+    }
+    if (!rule[1].includes(litAlt(values))) {
+      throw new Error(
+        `gen-gbnf: \`${clause}-val\` does not render its value set (${litAlt(values)}) — ` +
+          `it must be injected from the enum table, never retyped.`,
+      );
+    }
+    if (!emitted.includes(`${lit(clause)} rws ${clause}-val`)) {
+      throw new Error(`gen-gbnf: no door clause emits \`${lit(clause)} rws ${clause}-val\`.`);
+    }
+  }
+}
+
 function assertVocab(body: [string, string][]): void {
   const missing = OPS_USED.filter((o) => !(OPERATORS as readonly string[]).includes(o));
   if (missing.length) {
@@ -101,6 +140,7 @@ function assertVocab(body: [string, string][]): void {
         `Add a rule that emits the literal, or list it in CONTROL_COVERED_STRUCTURALLY.`,
     );
   }
+  assertDoorVocab(body, DOOR_ENUMS);
 }
 
 /**
@@ -242,9 +282,14 @@ function rules(): [string, string][] {
     ["room-uses", `"uses" rws use-kind ( rws use-kind )*`],
     ["use-kind", useKind],
     ["door-stmt", `"door" rws id-opt opening-target ws "width" ws expr ( ws door-clause )*`],
-    ["door-clause", `"wall" rws ref | "hinge" rws hinge-val | "swing" rws swing-val`],
-    ["hinge-val", `"near" rws ( "start" | "end" ) | "left" | "right"`],
-    ["swing-val", `"into" rws ref | "in" | "out"`],
+    // One clause per DOOR_ENUMS key, and one `<key>-val` production per clause, both
+    // INJECTED from the table (`assertDoorVocab` above fails the build if a key ever
+    // loses its production or a production stops deriving its alternation). The
+    // non-enum prefixes — `hinge near <vertex>`, `swing into <ref>` — are grammar
+    // structure rather than enum members, so they are stated here beside the injection.
+    ["door-clause", [`"wall" rws ref`, ...DOOR_CLAUSES.map((c) => `${lit(c)} rws ${c}-val`)].join(" | ")],
+    ["hinge-val", `"near" rws ( ${litAlt(DOOR_HINGE_NEAR)} ) | ${litAlt(DOOR_ENUMS.hinge)}`],
+    ["swing-val", `"into" rws ref | ${litAlt(DOOR_ENUMS.swing)}`],
     ["window-stmt", `"window" rws id-opt opening-target ws "width" ws expr ( ws "wall" rws ref )?`],
     ["opening-stmt", `"opening" rws id-opt opening-target ws "width" ws expr ( ws "wall" rws ref )?`],
     ["opening-target", `"at" ws point | "on" rws ref rws "at" ws attach-pos`],

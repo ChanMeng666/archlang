@@ -30,6 +30,7 @@ import type {
   VerticalDir,
   WindowNode,
 } from "./ast.js";
+import type { DoorHinge, DoorSwingDir } from "./grammar/tokens.js";
 import { placeRelational } from "./layout.js";
 import { numberAxes } from "./axes.js";
 import type { Frame } from "./frame.js";
@@ -206,8 +207,8 @@ export interface RDoor extends RBase {
   kind: "door";
   at: Point;
   width: number;
-  hinge: "left" | "right";
-  swing: "in" | "out";
+  hinge: DoorHinge;
+  swing: DoorSwingDir;
   host: WallSegment | null;
   /** `attached` (`on <wall> at <pos>`) vs `absolute` (`at (x,y)`). Internal
    *  marker for `describe().freedom`; never rendered. */
