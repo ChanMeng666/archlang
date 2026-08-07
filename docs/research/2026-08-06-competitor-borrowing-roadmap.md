@@ -521,7 +521,7 @@ diagnostics, `describe()` and `lint()`; no snapshot or visual golden moved. Pinn
   whichever way it bows — so the chord answer is right, and skipping arcs here would raise a false
   warning on a room behind a bowed facade.
 
-#### Still open
+#### The last instance (was "still open") — **CLOSED**, `3f8c82c`
 
 `src/describe.ts:783-786` — `planCenter` is the bounding-box midpoint of the union of room rectangles,
 and `windowFacing` (`:578-582`) uses it to pick the outward side of a window that has **no host room**.
@@ -533,7 +533,8 @@ better plan centre — a design question, not an edit.
 
 ##### The design answer (2026-08-07) — **a local outward-face probe, not a global centre**
 
-Decided, ready to implement; not yet built.
+Decided, then **built exactly as written** (`3f8c82c`) — see the outcome note at the end of this
+sub-section.
 
 **Do not compute the wall union.** `describe()` runs on the resolved IR through `analyze.ts` and never
 builds a Scene; reaching for the boolean union would pull the poché pipeline (and the optional
@@ -555,6 +556,32 @@ there and say so in the doc comment.
 Expected churn: only a plan with a hostless window whose probe disagrees with the bbox heuristic —
 i.e. courtyards and re-entrant plans. Verify with the SHA-256 sweep over the shipped examples before
 claiming zero, and treat any movement as a finding to explain, not a golden to bless.
+
+##### Outcome (2026-08-07) — **CLOSED**, `3f8c82c`
+
+Built as designed, reproduced as a failing test first. Three things the implementation pinned down
+that the design left implicit:
+
+- **The rule reaches further than "no host room".** The third branch also runs when the host room is a
+  `polygon` or `circle`, because such a room has no four sides to pick the nearest of and its bounding
+  box would answer for an edge the window is not on. So a **re-entrant polygon room whose ring IS the
+  courtyard wall** is the second reproduction, alongside the genuinely hostless one — and it is the
+  easier of the two to hit in practice.
+- **The letter comes from the outward normal, not from a separate axis test.** Deriving it from the
+  dominant component of the probed outward vector is *exactly* the old `|Δy| ≤ |Δx|` axis rule on a
+  straight segment (the normal's dominant axis is the segment's minor one), ties included — so nothing
+  had to be re-decided — while generalising correctly on a curve, where the probe uses `segmentDirAt`'s
+  tangent rather than the chord.
+- **The tie-break is the whole of the old function, unchanged.** Rooms on both sides or on neither fall
+  through to the identical `planCenter` arithmetic, so a plan the probe cannot decide is byte-identical
+  to before. Both branches are pinned as tests, not just documented.
+
+Churn was the forecast zero: all 14 shipped examples byte-identical across `describe()`, `lint()` and
+SVG (SHA-256 sweep before/after), no snapshot or visual golden moved, and `npm run eval:ci` byte-
+identical to its pre-change run — verified by re-running it against a stashed `src/describe.ts` rather
+than assumed, because `facing` feeds the intent channel's `windows.facing` assertion. Pinned by
+`test/window-facing-probe.test.ts`. With this, §9.1's bbox-derived-position sweep has **no open
+instance left**.
 
 ### 9.2 Lint-raised fixes carry no `file` provenance — `applyFixes` corrupts the importer
 
