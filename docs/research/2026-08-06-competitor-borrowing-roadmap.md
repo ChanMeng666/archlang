@@ -437,10 +437,84 @@ and that **`arch lint` reports nothing about**.
 | `32916d9` routing anchor | polygon centroid | anchor pinned to the lip of the notch; a 10.9 m walk reported as 5.6 m |
 | `f859a55` witness lines | side bounding box | extension lines beginning metres away over blank page |
 
-All three were silent. The open question worth a sweep: **what else derives a position from a bbox or
-a centroid?** Candidates not yet audited include the axis-bubble placement (`src/axes.ts`), the
-schedule/legend anchors (`src/sheet-tables.ts`), and `dimReach` (`src/chrome-layout.ts:154-190`),
-which approximates a text node as a **square of the font size, ignoring string length entirely**.
+All three were silent. The open question was: **what else derives a position from a bbox or a
+centroid?**
+
+#### The sweep (2026-08-07) — two more instances, both fixed
+
+The search that finds them is narrower than "grep for `bbox`". Every one of the five real instances is
+a **room-shape consumer that reads `r.at`/`r.size` without also reading `r.poly`** — so
+`grep -n 'room\.size\|r\.size\.w' src/` is the whole hunt, and each hit is a candidate exactly when it
+does not branch on `poly`. Run against the tree, that list came back almost entirely clean:
+`analyze.ts` (`roomBox` / `roomRing` / `pointInRoomBox` / `pointOnRoomEdge` / `roomsAdjacent`),
+`layout.ts`, `label-placement.ts`, `analyze/circulation.ts`, `analyze/occupancy.ts` and `ir.ts`'s
+overlap test all generalise; all three lint sites that take a centre
+(`lint/rules/furniture.ts:157,196`, `lint/rules/per-room.ts:102`) take the **fixture's own** rectangle
+centre and test it with `pointInRoomBox`, which is poly-aware. The two that did not were the two
+element resolvers written before v1.23 shipped polygons — and both were silently wrong.
+
+| Instance | Derived from | Symptom |
+| --- | --- | --- |
+| `src/elements/door.ts` `swingInto` | the room's bounding box, twice | `swing into <room>` asked the bbox *both* questions. A door on a wall the room does not touch — the notch of an L — passed the bbox-perimeter test and was silently given a swing "into" it; a door on a genuine ring edge that the bbox does not carry was refused with a **false** `W_SWING_ROOM_NOT_ADJACENT` and fell back to the default. |
+| `src/elements/furniture.ts` `against wall … in <room>` | bbox containment of the side probe | With no explicit `side left\|right` the backing face is inferred by asking which probe point falls inside the room. Testing the **bounding box** made a probe in an L's notch read as "inside", so the piece was backed onto a wall the room does not touch — no diagnostic. |
+
+Both fixes ask the room's **floor**: the ring (`RRoom.poly`, which a `circle` room also carries) for
+the perimeter test, and — for the door — a local probe one wall thickness off each face instead of a
+centre. A local probe is the general answer here: a rectangle's centre is on the inward side of every
+one of its own edges, so it is right by luck; a concave ring's is not, so it is a coin flip. The
+rectangle paths are left byte-identical on purpose (the rectangle answer *is* the historical one), and
+the furniture failure now lands on the existing `E_FURN_AGAINST` "neither/both faces fall inside"
+refusal rather than a new code. Proof: all 14 shipped examples byte-identical across SVG, page box,
+diagnostics, `describe()` and `lint()`; no snapshot or visual golden moved. Pinned by
+`test/bbox-derived-position.test.ts`.
+
+#### Audited and deliberately left alone
+
+- **`dimReach` (`src/chrome-layout.ts:154-184`) — measured, no-op, not fixed.** It bounds a text node
+  by its anchor inflated by its font size in *both* axes, ignoring string length. The blast radius is
+  as wide as it looks: it is the only input to every page margin (`layoutChrome`, shared by the SVG and
+  PDF backends), it decides where the axis bubbles land (`scene-build.ts:966`), and `sheet.ts`'s
+  `DIM_BAND_FONTS` hardcodes that half-box (`+ 1`) as the band a sheet reserves. But the error is
+  one-directional in the way that matters: **across** the baseline — the direction that sets the margin
+  on a dimensioned side — a full em over-reserves a ~0.35 em half cap height by about 3×; only
+  **along** the baseline does it under-reserve, and only for strings of four characters or more. A
+  width-aware, monotone (only-ever-grows) version was implemented and the whole repo run against it:
+  **14/14 examples byte-identical, 2122/2122 tests green**. It is a no-op because a dimension number is
+  anchored at its span's midpoint, interior to the bounds by construction, and the `gap`
+  (`refDim × 0.05`) added on top of every reach dwarfs the discrepancy. Correcting the *real* looseness
+  would mean shrinking the across-baseline estimate — moving every golden and every page size for zero
+  correctness gain — and would make a sheet's reserved band depend on string content where it is a
+  closed form today. Left as it is; the two properties that make that safe are now pinned as tests, so
+  a future change to the annotation geometry that breaks either shows up there rather than as a clipped
+  drawing.
+- **Axis bubbles (`src/axes.ts:126-134`) — not a bug.** The bubble centre is the drawing bound plus
+  `reach`, and `reach` is the *global* maximum over the `dims` pass rather than the local reach at that
+  axis's coordinate. That is bbox-derived, but a global max is ≥ the local reach by construction, so a
+  bubble can only sit further out than a draughtsman would put it — never through a dimension chain. A
+  drawing-taste item on a stepped facade at most.
+- **Schedule / legend anchors (`src/sheet-tables.ts:307-370`), and the scale bar / title block
+  (`src/chrome-layout.ts:200-227`) — not a bug.** All anchor to the drawing's bounding box. Margin
+  furniture is *meant* to line up with the sheet's extent rather than with any shape, so here the
+  bounding box is the correct datum, not an approximation of one. Their internal anchors (`anchorX`,
+  the legend swatch box) are midpoints of their own rectangles.
+- **`largestPerimeterGap` / `largestPerimeterGapRing` (`src/analyze.ts:430-501`) — not a bug, and do
+  not "align" them.** Both measure a wall's coverage from its segment endpoints, so an `arc` segment is
+  measured by its **chord** — and `src/fixture-orientation.ts:171-172` skips arcs for exactly that
+  reason, which makes the pair look inconsistent. They derive different things. `fixture-orientation`
+  derives a *rotation*, an assertion about direction that a chord gets wrong. These derive *coverage
+  length* for `W_ROOM_NOT_ENCLOSED`, and an arc joining the chord's two endpoints encloses that run
+  whichever way it bows — so the chord answer is right, and skipping arcs here would raise a false
+  warning on a room behind a bowed facade.
+
+#### Still open
+
+`src/describe.ts:783-786` — `planCenter` is the bounding-box midpoint of the union of room rectangles,
+and `windowFacing` (`:578-582`) uses it to pick the outward side of a window that has **no host room**.
+A courtyard building puts that midpoint in the courtyard, so a window on a courtyard wall would be
+reported facing the wrong way. Narrow (it is the third fallback — no host room, and the host segment
+fixes only the axis) but real. Deferred rather than patched: it is a `describe()` fact, so any change
+moves a published surface, and the right answer is the outward normal of the wall union rather than a
+better plan centre — a design question, not an edit.
 
 ### 9.2 Lint-raised fixes carry no `file` provenance — `applyFixes` corrupts the importer
 
