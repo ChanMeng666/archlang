@@ -156,6 +156,60 @@ export const KEYWORDS = {
   ],
 } as const;
 
+/**
+ * Door clause value sets — the ONE source for the `hinge` / `swing` allow-lists.
+ *
+ * Six places used to retype these two pairs: the parser's inline check and the
+ * resolver's `set door(…)` allow-list (`src/elements/door.ts`), the Plan JSON
+ * validator and the Plan JSON schema (`src/plan-json.ts`), and — the dangerous two —
+ * `scripts/gen-gbnf.ts`'s door productions and `scripts/gen-llm-spec.ts`'s door
+ * grammar line, where a retyped literal reproduces the same *wrong* text forever
+ * while `check:drift` stays green (the hazard CLAUDE.md names, and the one that
+ * shipped a GBNF grammar which could not decode `polygon`/`arc`). Everything reads
+ * this table now, both generators carry a guard that throws when a clause here has
+ * no rendering, and `test/door-enums.test.ts` fails if a seventh copy appears.
+ *
+ * It **sits beside** {@link KEYWORDS}.enum rather than deriving from it or feeding
+ * it. `KEYWORDS.enum` is the flat *highlighting* bucket — one bag of value words
+ * shared across the language, where `left` is equally a `strip` direction and a
+ * furniture `side` — while this is the *per-clause* semantic grouping, which the
+ * bucket cannot express. The weld between them is a subset law (every value here
+ * must appear in `KEYWORDS.enum`, so a new one can never ship unhighlighted),
+ * enforced by `test/door-enums.test.ts`.
+ *
+ * The keys are the clause keywords themselves (`door … hinge <v>`, `door … swing
+ * <v>`), which is what lets `gen-gbnf.ts` render one `<key>-val` production per key
+ * and fail loudly when a key has none.
+ */
+export const DOOR_ENUMS = {
+  hinge: ["left", "right"],
+  swing: ["in", "out"],
+} as const;
+
+/**
+ * `hinge near start|end` — the same clause addressed by wall VERTEX instead of by
+ * traversal direction. A second spelling of `hinge`, not a third clause, so it lives
+ * beside {@link DOOR_ENUMS} rather than as a key of it (a key means "a clause of its
+ * own", which is what both generators iterate).
+ */
+export const DOOR_HINGE_NEAR = ["start", "end"] as const;
+
+/** A door clause that takes a closed value set — a key of {@link DOOR_ENUMS}. */
+export type DoorEnumClause = keyof typeof DOOR_ENUMS;
+/** `hinge left|right`, relative to the host wall's traversal direction. */
+export type DoorHinge = (typeof DOOR_ENUMS.hinge)[number];
+/** `swing in|out`, relative to the host wall's normal. */
+export type DoorSwingDir = (typeof DOOR_ENUMS.swing)[number];
+/** `hinge near start|end`. */
+export type DoorHingeNear = (typeof DOOR_HINGE_NEAR)[number];
+
+/**
+ * Render a closed value set the way every enum diagnostic in the tree phrases it —
+ * `"left" or "right"`. Kept here so the message text is derived from the same table
+ * as the check that produces it, and cannot drift from it word by word.
+ */
+export const enumList = (values: readonly string[]): string => values.map((v) => `"${v}"`).join(" or ");
+
 /** All operators the lexer recognises (multi-char forms first when generating regex). */
 export const OPERATORS = [
   "->",

@@ -18,7 +18,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { KEYWORDS } from "../src/grammar/tokens.js";
+import { DOOR_ENUMS, DOOR_HINGE_NEAR, KEYWORDS } from "../src/grammar/tokens.js";
 import { buildManifest } from "../src/manifest.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -35,7 +35,11 @@ export const SPEC_EXAMPLES = ["attached.arch", "parametric.arch"] as const;
 const ELEMENT_GRAMMAR: Record<string, string> = {
   wall: "wall <category> thickness <mm> [material <name>] { (x,y) (x,y) … [arc (x,y) radius <mm> [cw|ccw] [major]] … [close] }   # category e.g. exterior/partition; `close` makes a loop. An `arc` clause makes THAT edge a circular arc from the PREVIOUS vertex (default: the minor arc turning `ccw` AS DRAWN, bulging left of travel; `cw`/`major` pick the other circle / the long way round; R < chord/2 = E_ARC_RADIUS + a fix supplying the minimum). A closed curve is two arcs. Faces draw as TRUE arcs. Openings work: `on <wall> at <pos>` walks RUN length (an arc contributes R·θ, not its chord) and a door's leaf/swing take the TANGENT there; `furniture … against wall` on an arc = E_FURN_AGAINST (use at+rotate)",
   room: 'room [id=<name>] at (x,y) size <W>x<H> [label "…" [at (x,y)]] [uses living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry …]   # OR relational: room [id=…] (right-of|left-of|below|above) <roomId> [align top|middle|bottom|left|right] [gap <mm>] size <W>x<H>. OR POLYGONAL: room [id=…] polygon (x,y) (x,y) (x,y) … — an implicitly-closed SIMPLE polygon (>=3 vertices) instead of at+size: exact shoelace area, label at the CENTROID (override: `label "…" at (x,y)`). A crossing or all-collinear ring errors (E_ROOM_POLY_SELF_INTERSECT/E_ROOM_POLY_DEGENERATE); rectangle-only clauses (relational placement, `furniture … in <poly> anchor|centered`) REFUSE it with E_PLACE_POLY — use `at (x,y)` [+ rotate]. OR CIRCULAR: room [id=…] circle at (cx,cy) radius <mm> — area is EXACT πR² (never the tessellation), reported as `floor_circle`; grids/overlap use a 48-gon ring',
-  door: "door [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [hinge left|right|near start|near end] [swing in|out|into <roomId>]   # `at (x,y)` must sit on a wall; `on <wall> at <pos>` pins it BY CONSTRUCTION (<pos> = `40%` | mm from the wall's start | `center`) and can never be reported off-wall — prefer it",
+  // The two value lists are INTERPOLATED from `DOOR_ENUMS` (+ `DOOR_HINGE_NEAR`), never
+  // typed out: this line is prose inside a generator, so a retyped list would document a
+  // language that no longer exists while `check:drift` stayed green. `assertDoorEnumsRendered`
+  // below is the guard that keeps it interpolated.
+  door: `door [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [hinge ${DOOR_ENUMS.hinge.join("|")}|${DOOR_HINGE_NEAR.map((v) => `near ${v}`).join("|")}] [swing ${DOOR_ENUMS.swing.join("|")}|into <roomId>]   # \`at (x,y)\` must sit on a wall; \`on <wall> at <pos>\` pins it BY CONSTRUCTION (<pos> = \`40%\` | mm from the wall's start | \`center\`) and can never be reported off-wall — prefer it`,
   window:
     "window [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # same two placement forms as door",
   opening:
@@ -97,6 +101,35 @@ const SCRIPTING_KEYWORDS = [
 const bullet = (items: readonly string[]): string => items.map((k) => `\`${k}\``).join(", ");
 
 /**
+ * Drift guard for the door clause vocabularies — the softer half of the same hazard
+ * `gen-gbnf.ts` guards. `ELEMENT_GRAMMAR.door` is a prose string, so guard #1 (every
+ * element has *an entry*) cannot tell whether the entry is still CORRECT: that is how a
+ * v1.12 CLI reference survived three releases. This asserts the door line spells each
+ * clause followed by that clause's full alternation, so a value added to the table but
+ * not rendered here throws instead of shipping a spec that documents a language the
+ * compiler no longer speaks. Exported so `test/door-enums.test.ts` can prove it fires.
+ */
+export function assertDoorEnumsRendered(
+  doorLine: string,
+  enums: Record<string, readonly string[]>,
+  hingeNear: readonly string[],
+): void {
+  for (const [clause, values] of Object.entries(enums)) {
+    const rendered = `${clause} ${values.join("|")}`;
+    if (!doorLine.includes(rendered)) {
+      throw new Error(
+        `ELEMENT_GRAMMAR.door does not render the "${clause}" clause as \`${rendered}\` — ` +
+          `interpolate the value set from the enum table instead of typing it out.`,
+      );
+    }
+  }
+  const nearForm = hingeNear.map((v) => `near ${v}`).join("|");
+  if (!doorLine.includes(nearForm)) {
+    throw new Error(`ELEMENT_GRAMMAR.door does not render the \`hinge near\` vertex form as \`${nearForm}\`.`);
+  }
+}
+
+/**
  * Render `spec.llm.md` from the token source + the given example file contents
  * (a map of filename → source). Pure: no fs, no clock — safe for the drift test.
  */
@@ -124,6 +157,9 @@ export function renderLlmSpec(examples: Record<string, string>): string {
         `  Add each new keyword to STATEMENT_GRAMMAR (it draws something) or SCRIPTING_KEYWORDS (prose covers it).`,
     );
   }
+
+  // Drift guard #3: the door line must still RENDER every door enum from the one table.
+  assertDoorEnumsRendered(ELEMENT_GRAMMAR.door ?? "", DOOR_ENUMS, DOOR_HINGE_NEAR);
 
   // A fenced block (not a bullet list) so the `<placeholder>` angle brackets are
   // safe everywhere they render (GitHub, npm, and the Vue-compiled docs site).

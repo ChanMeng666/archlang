@@ -29,6 +29,8 @@
 import type { NorthDir, PlanNode, UseKind } from "./ast.js";
 import type { RRoom, RDoor, RWindow, ROpening, RFurniture, RDim, RColumn, RWall, ResolvedPlan } from "./ir.js";
 import type { Diagnostic } from "./diagnostics.js";
+import type { DoorEnumClause, DoorHinge, DoorSwingDir } from "./grammar/tokens.js";
+import { DOOR_ENUMS, enumList } from "./grammar/tokens.js";
 import { parse } from "./parser.js";
 import {
   resolvePlan,
@@ -216,8 +218,8 @@ export interface OpeningJson {
   width: number;
   /** Host wall by id or category. */
   wall?: string;
-  hinge?: "left" | "right";
-  swing?: "in" | "out";
+  hinge?: DoorHinge;
+  swing?: DoorSwingDir;
 }
 
 export interface FurnitureJson {
@@ -655,10 +657,14 @@ function validateOpening(o: unknown, path: string, val: Validator): void {
   const hasOn =
     isObj(o.on) && isStr((o.on as Record<string, unknown>).wall) && isStr((o.on as Record<string, unknown>).at);
   if (!hasXY && !hasOn) val.err(path, "needs either numeric x and y, or an `on` { wall, at } attachment");
-  if (o.hinge !== undefined && o.hinge !== "left" && o.hinge !== "right")
-    val.err(`${path}/hinge`, 'expected "left" or "right"');
-  if (o.swing !== undefined && o.swing !== "in" && o.swing !== "out")
-    val.err(`${path}/swing`, 'expected "in" or "out"');
+  // Both door value sets come from `DOOR_ENUMS` — the same table the parser, the
+  // schema below and both `gen:*` generators read — so a JSON payload can never be
+  // accepted (or refused) on a different list from the one `.arch` source is held to.
+  for (const clause of Object.keys(DOOR_ENUMS) as DoorEnumClause[]) {
+    const v = o[clause];
+    if (v !== undefined && !(isStr(v) && (DOOR_ENUMS[clause] as readonly string[]).includes(v)))
+      val.err(`${path}/${clause}`, `expected ${enumList(DOOR_ENUMS[clause])}`);
+  }
 }
 
 function validateFurniture(f: unknown, path: string, val: Validator): void {
@@ -1202,8 +1208,8 @@ export const PLAN_JSON_SCHEMA = {
           },
           width: { type: "number", description: "Opening width in millimetres." },
           wall: { type: "string", description: "Host wall by id or category (else nearest)." },
-          hinge: { enum: ["left", "right"], description: "Door hinge side relative to the wall direction." },
-          swing: { enum: ["in", "out"], description: "Door swing direction." },
+          hinge: { enum: [...DOOR_ENUMS.hinge], description: "Door hinge side relative to the wall direction." },
+          swing: { enum: [...DOOR_ENUMS.swing], description: "Door swing direction." },
         },
       },
     },
