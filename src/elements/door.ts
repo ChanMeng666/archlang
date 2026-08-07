@@ -8,6 +8,7 @@ import type { RDoor, RRoom } from "../ir.js";
 import type { Value } from "../expr.js";
 import type { WallSegment } from "../geometry.js";
 import { add, doorSwing, mul, nearestWallNote, normal, segmentDirAt, sub, unit } from "../geometry.js";
+import { pointInPolygon, pointOnPolygonEdge } from "../geometry/polygon.js";
 import { DOOR_ENUMS, DOOR_HINGE_NEAR, enumList } from "../grammar/tokens.js";
 import { parseAttachTarget, resolveAttachment } from "../attach.js";
 import { emitOpening, fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
@@ -38,9 +39,24 @@ function enumDefault<T extends string>(
 /**
  * Choose the internal `in|out` value so a `swing into <room>` door opens toward
  * that room. The leaf sweeps to the wall's `+normal` side when `in` and `-normal`
- * when `out` (see {@link doorSwing}); the room is on whichever side its centroid
- * lies. Returns `undefined` (after a `W_SWING_ROOM_NOT_ADJACENT` warning) when the
- * room does not border the host wall, so the caller falls back to the default.
+ * when `out` (see {@link doorSwing}). Returns `undefined` (after a
+ * `W_SWING_ROOM_NOT_ADJACENT` warning) when the room does not border the host wall,
+ * so the caller falls back to the default.
+ *
+ * Two questions, and both are asked of the room's own FLOOR, not of its bounding box:
+ *
+ * - **Does the room border this wall?** — the door point must lie on the room's
+ *   perimeter. A rectangle's perimeter is its four sides; a `polygon`/`circle` room's
+ *   is its ring ({@link RRoom.poly}, which a circle also carries).
+ * - **Which side is the room on?** — a probe one wall thickness off each face; the
+ *   room is on the side whose probe lands on the floor. For a rectangle that is the
+ *   historical centre-of-the-rectangle answer, byte for byte, because the rectangle's
+ *   centre is always on the inward side of every one of its own edges. For a concave
+ *   ring it is not: an L's bounding-box centre sits in the notch, which is not floor,
+ *   so a bbox-derived side is a coin flip. A probe is local and exact.
+ *
+ * Neither probe landing on the floor (or both) means the door is not on a face of this
+ * room after all — the same "does not border its wall" answer, reported the same way.
  */
 function swingInto(
   roomId: string,
@@ -64,13 +80,26 @@ function swingInto(
   if (!room || !host || room._rel) return notAdjacent();
   // The room borders the wall if the door position sits on the room's perimeter.
   const tol = host.thickness / 2 + Math.max(host.thickness, 1);
+  const n = normal(unit(sub(host.b, host.a)));
+  // —— Ring path: a `polygon` or `circle` room (a circle carries the 48-gon in `poly`). ——
+  if (room.poly) {
+    const ring = room.poly;
+    if (!pointOnPolygonEdge(at, ring, tol)) return notAdjacent();
+    // One wall thickness clears the solid on either face, so a probe that lands on the
+    // floor is genuinely inside the room rather than inside the wall.
+    const d = Math.max(host.thickness, 1);
+    const inPos = pointInPolygon(at.x + n.x * d, at.y + n.y * d, ring);
+    const inNeg = pointInPolygon(at.x - n.x * d, at.y - n.y * d, ring);
+    if (inPos === inNeg) return notAdjacent();
+    return inPos ? "in" : "out";
+  }
+  // —— Rectangle path: UNCHANGED, byte-identical. ——
   const { x, y } = room.at;
   const x1 = x + room.size.w;
   const y1 = y + room.size.h;
   const onVert = (ex: number) => Math.abs(at.x - ex) <= tol && at.y >= y - tol && at.y <= y1 + tol;
   const onHoriz = (ey: number) => Math.abs(at.y - ey) <= tol && at.x >= x - tol && at.x <= x1 + tol;
   if (!(onVert(x) || onVert(x1) || onHoriz(y) || onHoriz(y1))) return notAdjacent();
-  const n = normal(unit(sub(host.b, host.a)));
   const cx = x + room.size.w / 2;
   const cy = y + room.size.h / 2;
   const dot = (cx - at.x) * n.x + (cy - at.y) * n.y;

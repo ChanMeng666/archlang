@@ -7,6 +7,7 @@ import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js
 import type { SceneNode } from "../scene.js";
 import type { RFurniture, RRoom } from "../ir.js";
 import { rectCorners, segmentsOfWall, unit, normal, add, mul, sub, length } from "../geometry.js";
+import { pointInPolygon } from "../geometry/polygon.js";
 import { fixtureGlyph } from "./fixtures-glyphs.js";
 import { defaultFootprint, orientationMatters } from "../fixtures-catalog.js";
 import {
@@ -364,8 +365,16 @@ function placeAgainst(
     if (room._rel)
       return err(`can't infer \`side\` from a relationally-placed room "${roomId}" — give \`side left|right\``);
     const probe = (n: { x: number; y: number }) => add(add(seg.a, mul(d, off)), mul(n, seg.thickness / 2 + depth / 2));
+    // The probe is tested against the room's FLOOR, not its bounding box. For a
+    // rectangle the two are the same and the arithmetic below is the historical one; for
+    // a `polygon`/`circle` room they are not, and a bbox test reads the notch of an L as
+    // "inside the room" — which silently backs the piece onto a wall the room does not
+    // touch. An exact ring test instead lands on the existing "neither/both faces fall
+    // inside" refusal, which is the honest answer (ADR 0005 — decline, never guess).
     const inRoom = (p: Point): boolean =>
-      p.x >= room.at.x && p.x <= room.at.x + room.size.w && p.y >= room.at.y && p.y <= room.at.y + room.size.h;
+      room.poly
+        ? pointInPolygon(p.x, p.y, room.poly)
+        : p.x >= room.at.x && p.x <= room.at.x + room.size.w && p.y >= room.at.y && p.y <= room.at.y + room.size.h;
     const leftIn = inRoom(probe(nL));
     const rightIn = inRoom(probe(mul(nL, -1)));
     if (leftIn === rightIn)
