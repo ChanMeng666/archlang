@@ -430,6 +430,54 @@ Found while verifying it. None changes the recommendation; two change the cost.
    row. **Recommendation: worth building, and worth building small** — stage 1 + stage 2 exactly as
    scoped, stage 3 deferred, nothing that needs a sky.
 
+## 10b. Owner decisions (2026-08-07) — **all three resolved; the doc is unblocked**
+
+### Q1 — `good_sun` is **REJECTED**. The derived names are `equator_side` / `sunrise_side` / `sunset_side`.
+
+The doc proposes `good_sun` with a load-bearing honesty clause, and offers the `_side` spelling as a
+fallback. **Take the fallback.**
+
+The argument that decides it is P0-3, shipped the same week. That item exists because a validator can
+pass while the stated requirement has been quietly rewritten — **constraint laundering**. `good_sun`
+is the same failure one level down, in the vocabulary: a token that claims more than the check
+verifies. And the consumer here is a **model**. An LLM translating "a sunny living room" into this
+schema will reach for `good_sun`, the gate will pass, and the brief's author is told *"this room gets
+good sun"* when what was actually verified is *"this room has an equator-facing window."* In
+Reykjavík those are not the same sentence. With `equator_side` the model must make that translation
+explicitly, in the open, where a reader can disagree with it.
+
+**All three are renamed, not just the guilty one.** `morning_sun` / `afternoon_sun` are defensible in
+isolation — east really does get the morning sun in both hemispheres — but a mixed register
+(`equator_side`, `morning_sun`, `afternoon_sun`) invites the reader to think the `_sun` names are a
+*different kind of fact* from the `_side` one. They are the same kind. One register is what makes §1's
+honesty clause a statement of the design rather than a footnote attached to a single token.
+
+Keep the honesty clause anyway — it now reinforces the naming instead of apologising for it. And note
+the consequence for §1: with no token spending the word "sun", the standing daylight verdict is not
+merely *upheld*, it is **untouched** — there is no longer a claim to weigh against it.
+
+### Q2 — accept the proposal, **plus a pinned test**
+
+Add only `south` / `east` / `west` to `KEYWORDS.enum`; leave `north` in `attribute`. The cost is
+cosmetic and confined (one word, one shade off, in one position); the alternative requires auditing
+every `KEYWORDS` consumer for set-vs-list assumptions and teaching two generators about duplicates.
+
+**But the asymmetry is a trap as written.** A future reader who sees three of four compass words in
+`KEYWORDS.enum` will "fix" it by adding the fourth, silently creating the duplicate this design
+avoided. So the decision ships with a **test pinning that `north` is deliberately absent**, and a
+comment stating why — the same convert-a-trap-into-an-invariant move as the `EM_PER_CHAR` pin
+(`src/text-metrics.ts`), the `DOOR_ENUMS` guards (`c39a25e`) and `check:test-wiring`.
+
+### Q3 — **yes**, `PLAN_JSON_SCHEMA` gains `site`, conditionally
+
+Not really a judgement call. Plan JSON is a **round-trip surface** (`compile --from-json`), so a
+`site` that is not in the schema means a plan round-tripping through JSON **silently loses its
+orientation** and every derived fact changes with it. A silent drop at a public boundary is the
+failure class this project refuses everywhere else.
+
+Emitted **only when present**, so every existing payload stays byte-identical — the `facingPage`
+pattern from `82d4221`.
+
 ## 11. Files & sources
 
 **This repo (verified at the current worktree state).** `src/ast.ts:24-25`, `:450`, `:705-712`,

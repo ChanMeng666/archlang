@@ -430,7 +430,15 @@ this document and have no home elsewhere. Recorded here so they are not lost.
 > §9.3 → `46b8ea1`, §9.1's sweep → `bd8bb73`. The subsections below keep the original
 > statement of each finding and record the outcome inline, because *what the sweep
 > cleared* is as useful to a future reader as what it fixed. **One item is deliberately
-> still open: the `planCenter` fallback in §9.1's outcome.**
+> still open: the `planCenter` fallback in §9.1's outcome — its **design answer is now decided**
+> (a local outward-face probe, see §9.1), but it is not yet implemented.
+>
+> **The P2 design documents are also unblocked as of 2026-08-07**: every owner question in both is
+> answered, in `2026-08-06-p2-1-door-vocabulary-design.md` §13b (A–E) and
+> `2026-08-06-p2-3-site-orientation-design.md` §10b (Q1–Q3). Three of the eight decisions overrule
+> the proposing document — `good_sun` is rejected in favour of `equator_side`/`sunrise_side`/
+> `sunset_side`, `W_POCKET_RUN` takes the two-term threshold rather than the citable ratio, and no
+> new flagship example is added. Neither feature is built.
 
 ### 9.1 A defect class, not three tickets — **derived-position-from-a-bounding-box**
 
@@ -522,6 +530,31 @@ reported facing the wrong way. Narrow (it is the third fallback — no host room
 fixes only the axis) but real. Deferred rather than patched: it is a `describe()` fact, so any change
 moves a published surface, and the right answer is the outward normal of the wall union rather than a
 better plan centre — a design question, not an edit.
+
+##### The design answer (2026-08-07) — **a local outward-face probe, not a global centre**
+
+Decided, ready to implement; not yet built.
+
+**Do not compute the wall union.** `describe()` runs on the resolved IR through `analyze.ts` and never
+builds a Scene; reaching for the boolean union would pull the poché pipeline (and the optional
+`clipper2-wasm` path) into a read that is meant to be cheap and dependency-free.
+
+Use instead the technique `bd8bb73` already proved on the door `swingInto` fix in this same sweep:
+**sample a probe point one wall thickness off each face of the host segment and ask which side has no
+room** (`pointInRoomBox` / `pointInPolygon`, both poly-aware). The outward side is the one no room
+occupies. That is local, closed-form, poly-aware, needs no union and no new dependency — and it is
+correct for a courtyard by construction, because the courtyard side of a courtyard wall genuinely has
+no room in it.
+
+**Keep today's behaviour as the tie-break, and keep it deterministic.** Two cases the probe cannot
+decide: rooms on **both** sides (an interior window, whose compass facing is not a meaningful fact
+anyway) and rooms on **neither** (a free-standing wall). `WindowSummary.facing` is a required field,
+so it cannot be dropped without a breaking type change — fall back to the existing `planCenter` rule
+there and say so in the doc comment.
+
+Expected churn: only a plan with a hostless window whose probe disagrees with the bbox heuristic —
+i.e. courtyards and re-entrant plans. Verify with the SHA-256 sweep over the shipped examples before
+claiming zero, and treat any movement as a finding to explain, not a golden to bless.
 
 ### 9.2 Lint-raised fixes carry no `file` provenance — `applyFixes` corrupts the importer
 

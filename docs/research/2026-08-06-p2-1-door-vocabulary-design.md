@@ -538,6 +538,67 @@ Two arguments against, stated plainly:
   as a P1-class refactor, then decide on the kinds separately.** That is a legitimate outcome of
   this design pass and this document recommends it as the fallback.
 
+## 13b. Owner decisions (2026-08-07) — **all five resolved; the doc is unblocked**
+
+`DOOR_ENUMS` (§2.1) already shipped alone as `c39a25e`, so the parse-side restructure and both
+generator guards are in place. What follows decides the four kinds themselves.
+
+### A — **leading kind word**, as proposed
+
+`door pocket on w1 at 40% width 900 slide left`. A door kind changes what the element *is*, not a
+property of it, which is exactly the `room polygon` / `room circle` / `dim faces` case the proposal
+cites. `kind pocket` would be more uniform with `hinge`/`swing` — but those are attributes of a thing,
+and this is the thing. One token cheaper, and unambiguous by construction after `parseIdOpt()`.
+
+### B — **reuse `swing in|out`**, as proposed, with a documentation obligation
+
+Adding `face in|out` means a second **handed** rule, and handedness under `place … mirror` is where
+this codebase's subtlest bugs live — it is why `frame.ts` carries an iron law at all. `swing` is the
+one handed rule already proven correct under reflection (§6). Reuse buys that proof; a new keyword
+re-opens it for no semantic gain, since "which normal side" is genuinely the same property.
+
+The cost is real and must be paid in prose, not waved off: a barn door does not swing, so
+`door barn … swing out` reads wrong to anyone who has not been told. **Obligation:** the catalog entry,
+`spec.llm.md`'s door line and `docs/language-reference.md` must each state the meaning **per kind** —
+"for `barn`/`bifold`, `swing` selects the face the panel hangs on." §3.2 already refuses `swing` on
+`sliding` and `pocket`, so the overload is confined to the two kinds where a panel genuinely hangs on
+one face of the wall.
+
+### C — **yes, `describe().doors[]` carries `kind`**, conditionally
+
+A door's kind is a semantic fact, not a drawing one: it determines whether a swing arc exists at all,
+which clearance rules apply, and what an agent should reason about. Withholding it means an agent that
+just authored a pocket door cannot verify it did. Emitted **only when not `hinged`**, so every existing
+payload is byte-identical.
+
+### D — **two-term threshold. This OVERRULES the proposal.**
+
+Ship `width + max(pocketRunClearanceMm, width × 0.05)` with `pocketRunClearanceMm: 50`, not the plain
+`1.05` ratio.
+
+The doc proposes the ratio for "reference-comparability" and then calls the two-term form "the honest
+architectural answer" in the same breath. We are not publishing a comparison against planscript-rust,
+so comparability buys nothing — while the ratio is *wrong on narrow doors*: a 700 mm pocket asks for
+35 mm of end clearance, which does not fit a real jamb and pull. This project already chose
+`A-ANNO-DIMS` over the reference's coarser `A-DIMS` on exactly this reasoning: **architectural
+correctness outranks matching someone else's constant.**
+
+Record the divergence and its reason in the catalog entry and the commit body, so a future reader
+finds a deliberate choice rather than an unexplained drift from the cited source.
+
+### E — **no new flagship example**
+
+`gallery-l` and `aquarium` earned flagships because polygon rooms and arcs changed what a building
+*could be*. A door kind is a detail at the scale of an opening, not a building-scale capability.
+
+The demonstration is free without one: the docs site rewrites every plain ```` ```arch ```` fence into
+a live `<ArchLive>` widget, and `test/docs-fences.test.ts` already requires each to compile — so the
+worked examples in `docs/language-reference.md` are executable documentation, gated. That is a better
+teaching surface for a per-opening feature than a twelfth golden PNG, and it adds no artifact to
+maintain. If a visual is wanted later, add a **new small** example rather than churning a flagship —
+`examples/studio.arch` remains ineligible either way (import-free and lint-clean by contract,
+`test/world.test.ts`, and it owns a snapshot, a PNG golden and an ASCII golden).
+
 ## Files & sources
 
 **This tree** (verified at the current commit): `src/elements/door.ts:67-239` ·
