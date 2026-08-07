@@ -35,6 +35,7 @@ import {
   roomBox,
   roomsAdjacent,
   roomsAtPoint,
+  pointInRoomBox,
   doorConnections,
   roomUses,
   buildDoorAccessGraph,
@@ -44,7 +45,7 @@ import {
   type BBox,
   type RoomBox,
 } from "./analyze.js";
-import { outerFaceBounds } from "./geometry.js";
+import { normal, outerFaceBounds, segmentDirAt } from "./geometry.js";
 import type { PaperOrientation, PaperSize } from "./sheet.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
 import { roomTypeForUses, buildInputGraph } from "./plan-json.js";
@@ -133,10 +134,11 @@ export interface WindowSummary {
    *
    * It is computed in two steps. First the PAGE-relative direction: ArchLang geometry is
    * rectilinear and +y is DOWN, so a window on a room's TOP edge points at the top of the
-   * page, its bottom edge at the bottom, and so on — when the window has a host
-   * {@link WindowSummary.room} that is whichever of the room's four edges it sits closest
-   * to, and for a room-less window it is the host wall's orientation resolved to the
-   * outward side of the plan (see {@link windowFacing}). Second, that direction is turned
+   * page, its bottom edge at the bottom, and so on — when the window has a rectangular
+   * host {@link WindowSummary.room} that is whichever of the room's four edges it sits
+   * closest to, and otherwise it is the outward face of the host wall segment, found by
+   * probing one wall thickness off each of its two faces and taking the side with no room
+   * on it (see {@link windowFacing}). Second, that direction is turned
    * by the plan's `north` setting (see {@link northQuarterTurns}): under the default
    * `north up` the page's top IS compass north and the two coincide, but under
    * `north right` compass north points at the page's RIGHT edge, so a right-edge window
@@ -546,6 +548,17 @@ function toCompass(pageFacing: "N" | "S" | "E" | "W", turns: 0 | 1 | 2 | 3): "N"
 }
 
 /**
+ * Does any room's floor cover this point? Poly-aware via {@link pointInRoomBox}, so a
+ * `polygon` room answers for its ring and a `circle` room for its tessellation — the
+ * notch of an L is correctly *not* floor. Bounded iteration over the plan's rooms; no
+ * state, no tolerance, no float-equality test.
+ */
+function anyRoomAt(p: Point, rooms: ReadonlyMap<string, RoomBox>): boolean {
+  for (const b of rooms.values()) if (pointInRoomBox(p, b)) return true;
+  return false;
+}
+
+/**
  * The **page-relative** direction a window's wall faces (its outward normal), the first
  * half of {@link WindowSummary.facing} — `"N"` means "toward the top of the drawing", not
  * (yet) compass north; the caller turns it by the plan's `north` via {@link toCompass}.
@@ -555,17 +568,35 @@ function toCompass(pageFacing: "N" | "S" | "E" | "W", turns: 0 | 1 | 2 | 3): "N"
  *   window point `at` lies closest to — top → `"N"`, bottom → `"S"`, left → `"W"`, right →
  *   `"E"`. Ties (a corner window equidistant from two edges) resolve to the horizontal
  *   edge first (`N`/`S`), then to `N`/`W` — a fixed, documented order so output is stable.
- * - **Without a host room** (`room` is null — the window sits on no room edge): the axis
- *   comes from the host wall segment's orientation (a horizontal segment → `N`/`S`, a
- *   vertical one → `E`/`W`), and the outward side is the half of the plan the window sits
- *   in relative to `planCenter` (above centre → `N`, left of centre → `W`). With no host
- *   segment either, the axis falls back to the window's dominant offset from `planCenter`.
+ * - **Without one** (`room` is null — the window sits on no room edge — or the host room is
+ *   a `polygon`/`circle` with no four sides to pick the nearest of): the outward side is
+ *   **probed locally**. Sample a point one wall thickness off each face of the host
+ *   segment and ask which side has no room ({@link pointInRoomBox}, poly-aware): one wall
+ *   thickness clears the solid, so a probe that lands on a floor is genuinely *inside* a
+ *   room. Outward is the empty side, and the letter is the dominant component of that
+ *   outward normal (|y| ≥ |x| → `N`/`S`, else `E`/`W` — the same axis rule as before, and
+ *   equivalent to it on a straight segment, since the normal's dominant axis is exactly
+ *   the segment's minor one). The direction is the segment's own tangent at `at`, so a
+ *   curved (`arc`) wall is probed along its true normal rather than its chord's.
+ * - **Tie-break — the historical rule.** The probe cannot decide when rooms lie on **both**
+ *   sides (an interior window, whose compass facing is not a meaningful fact anyway) or on
+ *   **neither** (a free-standing wall), and {@link WindowSummary.facing} is a required
+ *   field that cannot be dropped. Both fall back to what this function did before the
+ *   probe existed: the axis from the host segment's orientation (horizontal → `N`/`S`),
+ *   and the side from the half of the plan the window sits in relative to `planCenter`
+ *   (above centre → `N`, left of centre → `W`); with no host segment either, the axis is
+ *   the window's dominant offset from `planCenter`. That fallback is only ever a
+ *   tie-break: `planCenter` is the bounding-box midpoint of the room union, which for a
+ *   **courtyard** plan lies in the courtyard — outside the building — and so answered
+ *   every courtyard-wall window backwards until the probe took over (fixed 2026-08-07;
+ *   `test/window-facing-probe.test.ts`).
  */
 function windowFacing(
   at: Point,
   roomRect: BBox | null,
   host: RWindow["host"],
   planCenter: Point,
+  rooms: ReadonlyMap<string, RoomBox>,
 ): "N" | "S" | "E" | "W" {
   if (roomRect) {
     const dTop = Math.abs(at.y - roomRect.y);
@@ -574,6 +605,21 @@ function windowFacing(
     const dRight = Math.abs(at.x - (roomRect.x + roomRect.w));
     if (Math.min(dTop, dBottom) <= Math.min(dLeft, dRight)) return dTop <= dBottom ? "N" : "S";
     return dLeft <= dRight ? "W" : "E";
+  }
+  if (host) {
+    const n = normal(segmentDirAt(host, at));
+    const d = Math.max(host.thickness, 1);
+    const onPlus = anyRoomAt({ x: at.x + n.x * d, y: at.y + n.y * d }, rooms);
+    const onMinus = anyRoomAt({ x: at.x - n.x * d, y: at.y - n.y * d }, rooms);
+    if (onPlus !== onMinus) {
+      // Outward is the side with no floor on it.
+      const s = onPlus ? -1 : 1;
+      const ox = s * n.x;
+      const oy = s * n.y;
+      // A stated tie (|oy| == |ox|, i.e. a 45° wall) reads as N/S, matching the
+      // horizontal-first convention the host-room and fallback rules already use.
+      return Math.abs(oy) >= Math.abs(ox) ? (oy < 0 ? "N" : "S") : ox < 0 ? "W" : "E";
+    }
   }
   const horizontal = host
     ? Math.abs(host.a.y - host.b.y) <= Math.abs(host.a.x - host.b.x)
@@ -770,8 +816,11 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     width: d.width,
   }));
 
-  // Plan centre (union of room rectangles) — only the outward-side fallback for a
-  // room-less window uses it, but it is cheap and deterministic to compute up front.
+  // Plan centre (bounding-box midpoint of the union of room rectangles). Its ONLY reader
+  // is {@link windowFacing}, and only as the stated tie-break for when the outward-face
+  // probe cannot decide — it is NOT a datum for anything else: a courtyard plan's midpoint
+  // lies in the courtyard, i.e. outside the building. Cheap and deterministic to compute
+  // up front.
   let pcMinX = Infinity,
     pcMinY = Infinity,
     pcMaxX = -Infinity,
@@ -796,9 +845,9 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     const box = room ? (roomRects.get(room) ?? null) : null;
     // A POLYGON room has no four sides to pick the nearest of, and its bounding box
     // would answer for an edge the window is not on — so it falls through to the
-    // host-segment rule, which is exact at any wall angle.
+    // host-segment probe, which is exact at any wall angle and reads the ring, not the box.
     const roomRect = box && !box.poly ? box : null;
-    const facingPage = windowFacing(w.at, roomRect, w.host, planCenter);
+    const facingPage = windowFacing(w.at, roomRect, w.host, planCenter, roomRects);
     return {
       id: w.id,
       room,
