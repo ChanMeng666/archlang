@@ -17,6 +17,7 @@
 
 import type { Point } from "./ast.js";
 import type { Diagnostic } from "./diagnostics.js";
+import { rectLabelOutsideDiag } from "./elements/room.js";
 import type { RelConstraint, RRoom } from "./ir.js";
 
 /** A room that definitely carries a relational constraint. */
@@ -124,6 +125,13 @@ export function placeRelational(rooms: RRoom[], snapPt: (p: Point) => Point, dia
           continue;
         }
         place(r, ref, snapPt);
+        // `label … at (x,y)` is an absolute plan coordinate, so whether it lands on this
+        // room's floor is only answerable once the floor has one — which is HERE, and
+        // nowhere earlier: at resolve the room's `at` was still the (0,0) placeholder,
+        // where the test would have been not merely unhelpful but wrong. Same predicate
+        // the absolute path uses, imported rather than restated.
+        const outside = rectLabelOutsideDiag(r);
+        if (outside) diag(outside);
         unresolved.delete(r.id);
         changed = true;
       }
