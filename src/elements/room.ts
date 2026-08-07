@@ -10,6 +10,7 @@
 
 import type { ExprPoint, Point, RelAlign, RelDir, RoomNode, UseKind } from "../ast.js";
 import { USE_KINDS } from "../ast.js";
+import type { Diagnostic, Span } from "../diagnostics.js";
 import type { Expr } from "../expr.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
@@ -49,6 +50,46 @@ export function roomLabelAnchor(r: RRoom): Point {
         ? polygonLabelPoint(r.poly)
         : { x: r.at.x + r.size.w / 2, y: r.at.y + r.size.h / 2 })
   );
+}
+
+/**
+ * The one wording of `W_ROOM_LABEL_OUTSIDE`, shared by all three room shapes. Only the
+ * containment TEST differs between them (a rectangle's four half-planes, a circle's
+ * radius, a polygon's crossing count); the advisory itself must read identically, since
+ * an agent keys off the code and a human off the sentence.
+ */
+function labelOutsideDiag(id: string, labelAt: Point, span: Span | undefined): Diagnostic {
+  return {
+    severity: "warning",
+    message: `Room "${id}" pins its label at (${labelAt.x}, ${labelAt.y}), which is outside the room`,
+    code: "W_ROOM_LABEL_OUTSIDE",
+    span,
+  };
+}
+
+/**
+ * `W_ROOM_LABEL_OUTSIDE` for a RECTANGULAR room whose author pinned the label off its own
+ * floor — or `undefined` when there is nothing to report.
+ *
+ * Exported because a rectangle is the one room form whose floor is not known when the
+ * element resolves: a relational room (`right-of kitchen`) carries a placeholder `at`
+ * until {@link import("../layout.js").placeRelational} computes the real one, so that
+ * pass is the earliest moment the test can be honest. Both call sites go through this
+ * function rather than each writing the comparison, so the absolute and relational forms
+ * cannot drift into disagreeing about what "outside" means.
+ *
+ * The boundary counts as INSIDE, matching the circle (`> rr`) and the polygon
+ * (`pointInPolygon`, which admits its own edge): a pin on a wall face is a legitimate
+ * drafting choice, not a mistake. A room that already failed `E_ROOM_SIZE` is skipped —
+ * a zero-extent rectangle would report every pin as outside, which is one diagnostic
+ * about a problem the author has already been told about.
+ */
+export function rectLabelOutsideDiag(r: RRoom): Diagnostic | undefined {
+  const at = r.labelAt;
+  if (!at || r.poly || r.circle) return undefined;
+  if (!(r.size.w > 0 && r.size.h > 0)) return undefined;
+  const outside = at.x < r.at.x || at.x > r.at.x + r.size.w || at.y < r.at.y || at.y > r.at.y + r.size.h;
+  return outside ? labelOutsideDiag(r.id, at, r._labelAtSpan ?? r.span) : undefined;
 }
 
 /**
@@ -225,15 +266,26 @@ export const room: ElementDef = {
           span: n.span,
         });
       }
-      return {
+      // An explicit `label … at (x,y)` is recorded here exactly as the `polygon` and
+      // `circle` forms record theirs. Before v1.25 the rectangle parsed the clause and
+      // then dropped it, so the anchor silently did nothing and `W_ROOM_LABEL_OUTSIDE`
+      // could not fire on the commonest room form in the language.
+      const labelAt = n.labelAt ? ctx.snapPt(ctx.evalPt(n.labelAt)) : undefined;
+      const room: RRoom = {
         kind: "room",
         id,
         at,
         size,
+        ...(labelAt ? { labelAt, _labelAtSpan: n.labelAtSpan } : {}),
         label: n.label !== undefined ? ctx.evalStr(n.label) : undefined,
         ...(n.uses ? { uses: n.uses } : {}),
         span: n.span,
       };
+      // The floor is known right here, so the advisory is raised at resolve like the
+      // other two shapes' — and, being a resolve diagnostic, it gets `file` provenance.
+      const outside = rectLabelOutsideDiag(room);
+      if (outside) ctx.diag(outside);
+      return room;
     }
     // —— Relational path: position computed later by placeRelational(), in
     //    dependency order. `at` is a placeholder until then. ——
@@ -248,11 +300,18 @@ export const room: ElementDef = {
         span: n.span,
       });
     }
+    // The anchor is an absolute plan coordinate even here — `label … at` says WHERE the
+    // name is drawn, it is not an offset from a room whose corner is not yet known. So it
+    // is recorded now and CHECKED later: `placeRelational` calls `rectLabelOutsideDiag`
+    // once it has computed this room's real `at`, which is why `_labelAtSpan` travels
+    // with it (a diagnostic raised there must still blame the `at (x,y)` clause).
+    const labelAt = n.labelAt ? ctx.snapPt(ctx.evalPt(n.labelAt)) : undefined;
     return {
       kind: "room",
       id,
       at: { x: 0, y: 0 },
       size,
+      ...(labelAt ? { labelAt, _labelAtSpan: n.labelAtSpan } : {}),
       label: n.label !== undefined ? ctx.evalStr(n.label) : undefined,
       ...(n.uses ? { uses: n.uses } : {}),
       span: n.span,
@@ -364,12 +423,7 @@ function resolveCircle(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
   const rr = Math.max(0, r);
   const labelAt = n.labelAt ? ctx.snapPt(ctx.evalPt(n.labelAt)) : undefined;
   if (labelAt && rr > 0 && Math.hypot(labelAt.x - c.x, labelAt.y - c.y) > rr) {
-    ctx.diag({
-      severity: "warning",
-      message: `Room "${id}" pins its label at (${labelAt.x}, ${labelAt.y}), which is outside the room`,
-      code: "W_ROOM_LABEL_OUTSIDE",
-      span: n.labelAtSpan ?? n.span,
-    });
+    ctx.diag(labelOutsideDiag(id, labelAt, n.labelAtSpan ?? n.span));
   }
   return {
     kind: "room",
@@ -418,12 +472,7 @@ function resolvePolygon(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
   const bbox = polygonBounds(poly);
   const labelAt = n.labelAt ? ctx.snapPt(ctx.evalPt(n.labelAt)) : undefined;
   if (labelAt && effective.length >= 3 && !pointInPolygon(labelAt.x, labelAt.y, effective)) {
-    ctx.diag({
-      severity: "warning",
-      message: `Room "${id}" pins its label at (${labelAt.x}, ${labelAt.y}), which is outside the room`,
-      code: "W_ROOM_LABEL_OUTSIDE",
-      span: n.labelAtSpan ?? n.span,
-    });
+    ctx.diag(labelOutsideDiag(id, labelAt, n.labelAtSpan ?? n.span));
   }
   return {
     kind: "room",

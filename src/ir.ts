@@ -205,8 +205,17 @@ export interface RRoom extends RBase {
    * taken from this in closed form (πR²), never from the tessellation.
    */
   circle?: { c: Point; r: number };
-  /** Explicit label/area anchor (`label "…" at (x,y)`); absent = the derived centre. */
+  /** Explicit label/area anchor (`label "…" at (x,y)`); absent = the derived centre.
+   *  Recorded for EVERY room shape — a rectangle's was parsed and then dropped before
+   *  v1.25, which silently disabled both the anchor and `W_ROOM_LABEL_OUTSIDE` there. */
   labelAt?: Point;
+  /** Byte span of the `at (x,y)` clause behind {@link RRoom.labelAt}, so a diagnostic
+   *  raised about it blames the clause and not the whole `room` statement. Recorded on
+   *  the RECTANGULAR paths only, because they are the ones whose containment check is
+   *  deferred out of the resolver — a relational room does not know its own floor until
+   *  {@link placeRelational} runs, and by then the AST node is gone. Internal; never
+   *  rendered, never in `describe()`. */
+  _labelAtSpan?: Span;
   label?: string;
   /** Declared function(s) from `uses …`; absent when the room is untagged. */
   uses?: UseKind[];

@@ -560,7 +560,7 @@ wall exterior thickness 250 material brick scale 1.5 angle 30 { … }
 
 ```
 room [id=<id>] at (x,y) size <w>x<h> [label "<text>" [at (x,y)]] [uses <kind>…]
-room [id=<id>] <right-of|left-of|below|above> <ref> [align <edge>] [gap <mm>] size <w>x<h> [label "<text>"] [uses <kind>…]
+room [id=<id>] <right-of|left-of|below|above> <ref> [align <edge>] [gap <mm>] size <w>x<h> [label "<text>" [at (x,y)]] [uses <kind>…]
 room [id=<id>] polygon (x,y) (x,y) (x,y) … [label "<text>" [at (x,y)]] [uses <kind>…]
 room [id=<id>] circle at (cx,cy) radius <mm> [label "<text>" [at (x,y)]] [uses <kind>…]
 ```
@@ -568,6 +568,14 @@ room [id=<id>] circle at (cx,cy) radius <mm> [label "<text>" [at (x,y)]] [uses <
 A rectangle — or [any simple polygon](#polygonal-rooms-v1-23), or a
 [circle](#circular-rooms-v1-24). The compiler prints the `label` and the **computed area**
 (m²). Rooms describe space; walls are drawn separately.
+
+**Where the name goes.** By default at the room's own centre — the rectangle's, the
+circle's, or [a polygon's area centroid](#polygonal-rooms-v1-23) — and a name that would
+land on furniture, a door swing or a dimension number is nudged clear of it. Pin it
+yourself with `label "…" at (x,y)` and **that point always wins**, on every room form,
+nudge included; it is a plan coordinate, so it means the same thing under a relational
+clause as under `at`. A pin off the room's own floor is advisory
+[`W_ROOM_LABEL_OUTSIDE`](error-codes.md), never an error.
 
 **Room purpose — `uses` (v1.3).** Tag a room with one or more space kinds so the
 analysis layer knows what it *is* without guessing from the label:
