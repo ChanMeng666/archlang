@@ -29,8 +29,8 @@ import type {
   WhileNode,
   ZoneNode,
 } from "./ast.js";
-import type { ScheduleSubject } from "./ast.js";
-import { LEVEL_SHARED_KINDS, SCHEDULE_SUBJECTS, USE_KINDS } from "./ast.js";
+import type { CompassWord, Hemisphere, ScheduleSubject } from "./ast.js";
+import { COMPASS_DIRECTIONS, HEMISPHERES, LEVEL_SHARED_KINDS, SCHEDULE_SUBJECTS, USE_KINDS } from "./ast.js";
 import type { Expr } from "./expr.js";
 import { closest, parseExpr as parseExprPratt } from "./expr.js";
 import type { Theme } from "./theme.js";
@@ -249,6 +249,9 @@ class Parser {
           case "north":
             this.next();
             plan.north = this.parseNorth();
+            break;
+          case "site":
+            this.parseSiteSetting(plan, t);
             break;
           case "dims":
             this.parseDimsSetting(plan, t);
@@ -525,6 +528,85 @@ class Parser {
       );
     }
     plan.schedule = subject as ScheduleSubject;
+  }
+
+  /**
+   * One value from a closed vocabulary, spanned on the OFFENDING WORD with a `closest()`
+   * did-you-mean — the `schedule` variant of the pattern, factored out because `site` has
+   * two such fields. `what` names the slot in the message ("street direction").
+   */
+  private eatVocab<T extends string>(values: readonly T[], what: string): T {
+    const t = this.eatIdent();
+    if (!(values as readonly string[]).includes(t.value)) {
+      const hint = closest(t.value, [...values]);
+      this.fail(
+        `Unknown ${what} "${t.value}"${hint ? ` — did you mean "${hint}"?` : ""} (available: ${values.join(", ")})`,
+        t,
+      );
+    }
+    return t.value as T;
+  }
+
+  /**
+   * `site { street north|south|east|west [hemisphere north|south] }` — where the building
+   * sits relative to its street. A plan-level setting, like the `north` it composes with;
+   * it draws nothing and moves nothing.
+   *
+   * Two refusals rather than two defaults:
+   *  - **`E_SITE_NO_STREET`** — a `site` with no `street` derives nothing at all, so it is
+   *    an error, not an empty block. (`hemisphere` DOES default, to `north`: it has a
+   *    right answer for most of the world and both values derive the same shape of fact.)
+   *  - **`E_SITE_DUP`** — `axes` merges because two axis lists append; two `street` values
+   *    CONTRADICT. Silently overwriting (what `paper` does) would hide an authoring
+   *    mistake in the one statement whose whole job is to be the single source of
+   *    orientation. The FIRST block wins so the rest of the parse stays deterministic.
+   */
+  private parseSiteSetting(plan: PlanNode, t: Token): void {
+    this.next();
+    this.eat("lcurly");
+    let street: CompassWord | undefined;
+    let hemisphere: Hemisphere = "north";
+    while (!this.isType("rcurly") && !this.isType("eof")) {
+      const f = this.peek();
+      if (f.type !== "ident") this.fail(`Expected a site field ("street" or "hemisphere") but found ${describe(f)}`, f);
+      if (f.value === "street") {
+        this.next();
+        street = this.eatVocab(COMPASS_DIRECTIONS, "street direction");
+      } else if (f.value === "hemisphere") {
+        this.next();
+        hemisphere = this.eatVocab(HEMISPHERES, "hemisphere");
+      } else {
+        const hint = closest(f.value, ["street", "hemisphere"]);
+        this.fail(
+          `Unknown site field "${f.value}"${hint ? ` — did you mean "${hint}"?` : ""} (available: street, hemisphere)`,
+          f,
+        );
+      }
+    }
+    this.eat("rcurly");
+    const span = this.spanFrom(t.start);
+    if (street === undefined) {
+      this.diagnostics.push({
+        severity: "error",
+        code: "E_SITE_NO_STREET",
+        message: "`site` needs a `street` direction — a site with no street derives nothing",
+        span,
+        hints: ["add `street north|south|east|west` inside the block, e.g. `site { street south }`"],
+      });
+      return;
+    }
+    if (plan.site !== undefined) {
+      this.diagnostics.push({
+        severity: "error",
+        code: "E_SITE_DUP",
+        message: "`site` is already declared — one building sits on one site",
+        span,
+        ...(plan.site.span ? { relatedSpans: [{ span: plan.site.span, message: "site first declared here" }] } : {}),
+        hints: ["delete one of the two blocks, or merge their fields into a single `site { … }`"],
+      });
+      return;
+    }
+    plan.site = { street, hemisphere, line: t.line, span };
   }
 
   /** Optional `id=<ident>` prefix; returns "" when absent. */

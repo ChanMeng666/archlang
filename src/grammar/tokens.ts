@@ -38,6 +38,7 @@ export const KEYWORDS = {
     "axes",
     "schedule",
     "legend",
+    "site",
   ],
   /** Built-in element kinds → `storage.type.element`, CM `typeName`. */
   element: [
@@ -153,6 +154,16 @@ export const KEYWORDS = {
     "utility",
     "office",
     "entry",
+    // `site { street … }` / `hemisphere …` values. `north` is the fourth compass word
+    // and is DELIBERATELY ABSENT: it already sits in `attribute` above (because `north
+    // up` is a statement), and no word in this file appears in two categories — the
+    // generators build flat alternations from these lists and would have to learn about
+    // duplicates. The cost is cosmetic (in `street north` the word is coloured as a
+    // setting keyword rather than an enum value, one word in one position); the trap is
+    // that three-of-four invites a "fix". `test/site.test.ts` pins the absence.
+    "south",
+    "east",
+    "west",
   ],
 } as const;
 
@@ -281,4 +292,5 @@ export const STATEMENT_STARTS: readonly string[] = [
   "axes",
   "schedule",
   "legend",
+  "site",
 ];

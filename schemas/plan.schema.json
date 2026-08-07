@@ -59,6 +59,32 @@
         }
       ]
     },
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "street"
+      ],
+      "description": "Where the building sits relative to its street. `street` is the TRUE compass direction the frontage faces; `hemisphere` (default `north`) decides only which way the equator lies. It draws nothing and moves nothing — it names directions, so a brief can say `equator_side` instead of `S`. NOTE: the derived names ArchLang reports from it (`back`, `equator_side`, `sunrise_side`, `sunset_side`) are a drafting convention, NOT a daylight measurement: there is no sun model, latitude or date anywhere in ArchLang.",
+      "properties": {
+        "street": {
+          "enum": [
+            "north",
+            "south",
+            "east",
+            "west"
+          ],
+          "description": "Compass direction the street frontage faces."
+        },
+        "hemisphere": {
+          "enum": [
+            "north",
+            "south"
+          ],
+          "description": "Hemisphere the building sits in. Defaults to north."
+        }
+      }
+    },
     "room_count": {
       "type": "integer",
       "description": "Output-only: number of rooms."

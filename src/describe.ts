@@ -49,6 +49,10 @@ import type { PaperOrientation, PaperSize } from "./sheet.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
 import { roomTypeForUses, buildInputGraph } from "./plan-json.js";
 import { roomSchedule, type ScheduleRow } from "./sheet-tables.js";
+// The page→compass conversion and the `site` derivation live in ONE module: the site
+// layer's lint rule asks the same question of the same windows, and a second place to
+// apply the north rotation is a second place to get it wrong.
+import { deriveSite, planCenterOfRooms, type SiteFacts, toCompass, windowFacingPage } from "./site.js";
 import {
   type RVertical,
   roomOfVertical,
@@ -136,7 +140,7 @@ export interface WindowSummary {
    * page, its bottom edge at the bottom, and so on — when the window has a host
    * {@link WindowSummary.room} that is whichever of the room's four edges it sits closest
    * to, and for a room-less window it is the host wall's orientation resolved to the
-   * outward side of the plan (see {@link windowFacing}). Second, that direction is turned
+   * outward side of the plan (see `windowFacingPage`, `src/site.ts`). Second, that direction is turned
    * by the plan's `north` setting (see {@link northQuarterTurns}): under the default
    * `north up` the page's top IS compass north and the two coincide, but under
    * `north right` compass north points at the page's RIGHT edge, so a right-edge window
@@ -405,6 +409,18 @@ export interface SceneSummary {
    */
   axes?: AxesSummary;
   /**
+   * The direction NAMES the plan's `site` block licenses — `street`/`back` plus the three
+   * `_side` names — every one of them a true compass letter, so they read against the same
+   * `north` as `windows[].facing`. Present only when the plan declares `site`, so an
+   * existing summary is unchanged.
+   *
+   * **`equator_side` / `sunrise_side` / `sunset_side` are a drafting heuristic, not a
+   * measured daylight outcome.** They name an aspect, in closed form, from `street` and
+   * `hemisphere` alone; no sun model, latitude or date is involved anywhere. See
+   * [the site layer](../src/site.ts).
+   */
+  site?: SiteFacts;
+  /**
    * The `place`d component instances this drawing is made of (v1.22), in source order:
    * where each one's local origin landed and the rigid transform it carries. Present only
    * when the plan places at least one, so existing summaries are unchanged.
@@ -493,9 +509,6 @@ export interface SceneSummary {
 /** Round to 2 decimals, deterministically (avoids float drift in output). */
 const r2 = (n: number): number => Math.round(n * 100) / 100;
 
-/** The four page-relative directions, in CLOCKWISE order from the top of the page. */
-const FACINGS = ["N", "E", "S", "W"] as const;
-
 /**
  * How many CLOCKWISE quarter-turns separate the top of the page from compass north, for
  * the plan's declared `north` — `0` for `up` (the default), `1` for `right`, `2` for
@@ -529,57 +542,6 @@ export function northQuarterTurns(north: NorthDir): 0 | 1 | 2 | 3 {
       q = Math.floor((north.deg + 45) / 90);
   }
   return (((q % 4) + 4) % 4) as 0 | 1 | 2 | 3;
-}
-
-/**
- * Turn a PAGE-relative facing into a true COMPASS facing, given the plan's north as
- * clockwise quarter-turns from the page top ({@link northQuarterTurns}).
- *
- * Compass north sits `turns` quarter-turns clockwise of the page's top, so a page
- * direction that is `i` quarter-turns clockwise of the top is `i - turns` quarter-turns
- * clockwise of NORTH. Hence `north right` (turns = 1) makes a page-EAST window face
- * compass `"N"`, and a page-NORTH one face `"W"`.
- */
-function toCompass(pageFacing: "N" | "S" | "E" | "W", turns: 0 | 1 | 2 | 3): "N" | "S" | "E" | "W" {
-  const i = FACINGS.indexOf(pageFacing);
-  return FACINGS[(i - turns + 4) % 4] as "N" | "S" | "E" | "W";
-}
-
-/**
- * The **page-relative** direction a window's wall faces (its outward normal), the first
- * half of {@link WindowSummary.facing} — `"N"` means "toward the top of the drawing", not
- * (yet) compass north; the caller turns it by the plan's `north` via {@link toCompass}.
- * Pure and deterministic; +y is DOWN.
- *
- * - **With a host room** (the common case): facing is which of the room's four edges the
- *   window point `at` lies closest to — top → `"N"`, bottom → `"S"`, left → `"W"`, right →
- *   `"E"`. Ties (a corner window equidistant from two edges) resolve to the horizontal
- *   edge first (`N`/`S`), then to `N`/`W` — a fixed, documented order so output is stable.
- * - **Without a host room** (`room` is null — the window sits on no room edge): the axis
- *   comes from the host wall segment's orientation (a horizontal segment → `N`/`S`, a
- *   vertical one → `E`/`W`), and the outward side is the half of the plan the window sits
- *   in relative to `planCenter` (above centre → `N`, left of centre → `W`). With no host
- *   segment either, the axis falls back to the window's dominant offset from `planCenter`.
- */
-function windowFacing(
-  at: Point,
-  roomRect: BBox | null,
-  host: RWindow["host"],
-  planCenter: Point,
-): "N" | "S" | "E" | "W" {
-  if (roomRect) {
-    const dTop = Math.abs(at.y - roomRect.y);
-    const dBottom = Math.abs(at.y - (roomRect.y + roomRect.h));
-    const dLeft = Math.abs(at.x - roomRect.x);
-    const dRight = Math.abs(at.x - (roomRect.x + roomRect.w));
-    if (Math.min(dTop, dBottom) <= Math.min(dLeft, dRight)) return dTop <= dBottom ? "N" : "S";
-    return dLeft <= dRight ? "W" : "E";
-  }
-  const horizontal = host
-    ? Math.abs(host.a.y - host.b.y) <= Math.abs(host.a.x - host.b.x)
-    : Math.abs(at.y - planCenter.y) >= Math.abs(at.x - planCenter.x);
-  if (horizontal) return at.y <= planCenter.y ? "N" : "S";
-  return at.x <= planCenter.x ? "W" : "E";
 }
 
 /** How many rooms to name in a caption before collapsing the rest to "and N more". */
@@ -772,18 +734,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
 
   // Plan centre (union of room rectangles) — only the outward-side fallback for a
   // room-less window uses it, but it is cheap and deterministic to compute up front.
-  let pcMinX = Infinity,
-    pcMinY = Infinity,
-    pcMaxX = -Infinity,
-    pcMaxY = -Infinity;
-  for (const rect of roomRects.values()) {
-    if (rect.x < pcMinX) pcMinX = rect.x;
-    if (rect.y < pcMinY) pcMinY = rect.y;
-    if (rect.x + rect.w > pcMaxX) pcMaxX = rect.x + rect.w;
-    if (rect.y + rect.h > pcMaxY) pcMaxY = rect.y + rect.h;
-  }
-  const planCenter: Point =
-    pcMinX === Infinity ? { x: 0, y: 0 } : { x: (pcMinX + pcMaxX) / 2, y: (pcMinY + pcMaxY) / 2 };
+  const planCenter: Point = planCenterOfRooms(roomRects);
 
   // The plan's declared `north`, as clockwise quarter-turns off the page top. Zero for
   // the default `north up`, in which case the compass answer IS the page answer and no
@@ -794,11 +745,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     const touching = roomsAtPoint(w.at, roomRects, tol);
     const room = touching[0] ?? null;
     const box = room ? (roomRects.get(room) ?? null) : null;
-    // A POLYGON room has no four sides to pick the nearest of, and its bounding box
-    // would answer for an edge the window is not on — so it falls through to the
-    // host-segment rule, which is exact at any wall angle.
-    const roomRect = box && !box.poly ? box : null;
-    const facingPage = windowFacing(w.at, roomRect, w.host, planCenter);
+    const facingPage = windowFacingPage(w.at, box, w.host, planCenter);
     return {
       id: w.id,
       room,
@@ -922,6 +869,9 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
           },
         }
       : {}),
+    // Append-only: present only for a plan that declares `site`, so every existing summary
+    // is unchanged. Five names, derived in closed form (`src/site.ts`) — nothing measured.
+    ...(ir.site ? { site: deriveSite(ir.site) } : {}),
     // Append-only: present only for a plan that `place`s a component, so every existing
     // summary is unchanged. Copied straight off the IR — the frames the resolver actually
     // applied, never re-derived from the elements.

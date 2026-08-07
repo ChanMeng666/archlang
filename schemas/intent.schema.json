@@ -97,9 +97,14 @@
                   "N",
                   "S",
                   "E",
-                  "W"
+                  "W",
+                  "street",
+                  "back",
+                  "equator_side",
+                  "sunrise_side",
+                  "sunset_side"
                 ],
-                "description": "TRUE COMPASS direction the window's wall faces, read against the plan's `north` setting. Under the default `north up` the page's top is north, so a top-edge window faces N, bottom S, left W, right E; under e.g. `north right` a right-edge window faces N instead. Restricts the count to windows facing this way. Assert ONLY when the brief states an orientation."
+                "description": "TRUE COMPASS direction the window's wall faces, read against the plan's `north` setting. Under the default `north up` the page's top is north, so a top-edge window faces N, bottom S, left W, right E; under e.g. `north right` a right-edge window faces N instead. Restricts the count to windows facing this way. Assert ONLY when the brief states an orientation. The five NAMES (`street`, `back`, `equator_side`, `sunrise_side`, `sunset_side`) are the same assertion written against the plan's `site` block, which resolves each to a letter — asserting one against a plan with no `site` is E_INTENT_NO_SITE, not a silent miss. NOTE: `equator_side`/`sunrise_side`/`sunset_side` are a DRAFTING HEURISTIC for an aspect, NOT a measured daylight outcome — ArchLang has no sun model, latitude or date, so `equator_side` asserts \"a window on the equator-facing facade\" and nothing more. Prefer them only where the brief itself speaks in those terms."
               }
             }
           }

@@ -18,6 +18,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { COMPASS_DIRECTIONS, HEMISPHERES } from "../src/ast.js";
 import { DOOR_ENUMS, DOOR_HINGE_NEAR, KEYWORDS } from "../src/grammar/tokens.js";
 import { buildManifest } from "../src/manifest.js";
 
@@ -72,6 +73,7 @@ const STATEMENT_GRAMMAR: Record<string, string> = {
     "schedule rooms   # draw the ROOM SCHEDULE table below the title block: NO. (01, 02, … source order) · NAME (label, else id) · AREA (m²) + a TOTAL row, all derived from the rooms. `rooms` is the only subject (anything else is a parse error). Same rows as `describe --json`'s `schedule[]`. With `zone` blocks the rows group by zone, each closed by a SUBTOTAL row",
   legend:
     "legend   # draw the LEGEND table beside the schedule: a row per wall hatch material used and per placed fixture category that has a plan symbol, each with a real swatch. Fully derived; nothing to configure. Pure rendering — no `describe()` field",
+  site: `site { street ${COMPASS_DIRECTIONS.join("|")} [hemisphere ${HEMISPHERES.join("|")}] }   # semantics only — draws NOTHING. \`street\` is a TRUE compass direction (read WITH \`north\`, not instead of it) and names five on \`describe --json\`'s \`site\`: \`street\`, \`back\` (opposite), \`equator_side\` (S north of the equator, N south of it), \`sunrise_side\` (E), \`sunset_side\` (W). An intent's \`windows.facing\` may assert those NAMES instead of a letter (no \`site\` = E_INTENT_NO_SITE). They are a DRAFTING HEURISTIC for an aspect, NOT daylight — there is no sun model. \`street\` required (E_SITE_NO_STREET), one block (E_SITE_DUP), plan-level only`,
   place:
     'place <component>(<args>) as <name> at (x,y) [rotate 0|90|180|270] [mirror x|y]   # instantiate a component as an ADDRESSABLE instance, authored in LOCAL coords from (0,0); `as`+`at` required. Ids inside become `<name>.<id>` (auto-ids restart per instance) and the plan addresses them dotted — `door on west.perimeter at 50%`, `furniture bed in west.main centered`, `describe --room west.main`. `mirror x` flips left↔right, `y` top↔bottom: a real reflection, so door swings mirror. `import "wing.arch" as wing` makes a WHOLE FILE a zero-arg component. Bare `<component>(<args>)` stays the old INLINE macro — caller\'s coords and id space, no namespace',
 };

@@ -91,6 +91,7 @@ matter — run it yourself for the full object):
 | `totals` | room / door / window counts and total floor area |
 | `accTitle` / `accDescr` | the plan's declared [accessible metadata](language-reference.md#accessible-metadata-acctitle-accdescr) — **present only when the source declares them** |
 | `axes` | the plan's declared [positioning axes](language-reference.md#positioning-axes-定位轴线) — **present only when the source declares an `axes` block** |
+| `site` | the direction **names** the plan's [`site` block](language-reference.md#site-and-orientation) licenses — `street`, `back`, `equator_side`, `sunrise_side`, `sunset_side` and the `hemisphere` they were read in, every one of them a compass letter on the same `north` as `windows[].facing`. **Present only when the source declares `site`.** The three `_side` names are a *drafting heuristic for an aspect, not a measured daylight outcome* — there is no sun model, latitude or date in ArchLang; see the note in the [language reference](language-reference.md#site-and-orientation) |
 | `scale` | the **effective** drawing scale. Annotation only on its own; with a `sheet` it is operative, and it is the scale auto-fit chose when the plan declared none |
 | `sheet` | the sheet the drawing is issued on — **present only when the plan declares [`paper`](language-reference.md#paper-and-scale-the-sheet)**. See [The sheet](#the-sheet) |
 
@@ -631,7 +632,7 @@ failed to resolve, `freedom` is present with all-zero counts and an empty `eleme
 
 | Family | Example codes |
 |--------|---------------|
-| Room | `W_ROOM_TOO_SMALL`, `W_ROOM_DISCONNECTED`, `W_BEDROOM_NO_WINDOW`, `W_ROOM_OVERLAP` |
+| Room | `W_ROOM_TOO_SMALL`, `W_ROOM_DISCONNECTED`, `W_BEDROOM_NO_WINDOW`, `W_ROOM_OVERLAP`, `W_ROOM_NOT_EQUATOR_FACING` |
 | Placement | `W_DOOR_OFF_WALL`, `W_WINDOW_OFF_WALL`, `W_OPENING_OFF_WALL` |
 | Door / circulation | `W_DOOR_CLEARANCE`, `W_SWING_OBSTRUCTED`, `W_NO_ENTRANCE` |
 | Reachability | `W_ROOM_UNREACHABLE`, `W_BATH_VIA_BEDROOM` |

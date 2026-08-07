@@ -26,7 +26,8 @@
  * plan's compiled interior-door connectivity.
  */
 
-import type { NorthDir, PlanNode, UseKind } from "./ast.js";
+import type { CompassWord, Hemisphere, NorthDir, PlanNode, UseKind } from "./ast.js";
+import { COMPASS_DIRECTIONS, HEMISPHERES } from "./ast.js";
 import type { RRoom, RDoor, RWindow, ROpening, RFurniture, RDim, RColumn, RWall, ResolvedPlan } from "./ir.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { DoorEnumClause, DoorHinge, DoorSwingDir } from "./grammar/tokens.js";
@@ -281,6 +282,13 @@ export interface PlanJson {
   grid?: number;
   scale?: string;
   north?: "up" | "down" | "left" | "right" | { deg: number };
+  /**
+   * `site { street … [hemisphere …] }` — the building's relation to its street. Emitted
+   * only when the plan declares one, so every existing payload is byte-identical, and
+   * accepted on input because Plan JSON is a ROUND-TRIP surface: without it
+   * `compile --from-json` would silently drop the site and every derived fact with it.
+   */
+  site?: { street: CompassWord; hemisphere?: Hemisphere };
   /** Output-only enrichments (ignored on input). */
   room_count?: number;
   total_area?: number;
@@ -460,6 +468,8 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
     ...(ir.grid > 0 ? { grid: ir.grid } : {}),
     ...(ir.scale !== undefined ? { scale: ir.scale } : {}),
     ...(northIsDefault(ir.north) ? {} : { north: ir.north }),
+    // Emitted only when declared, so every payload a pre-site plan produced is unchanged.
+    ...(ir.site ? { site: { street: ir.site.street, hemisphere: ir.site.hemisphere } } : {}),
     room_count: rooms.length,
     total_area: totalArea,
     room_types: roomTypes,
@@ -571,6 +581,8 @@ function validatePlanJson(json: unknown, val: Validator): PlanJson | null {
   if ("units" in json && json.units !== "mm") val.err("/units", 'only "mm" is supported');
   if (!isStr(json.plan) && json.plan !== undefined) val.err("/plan", "expected a string");
 
+  if (json.site !== undefined) validateSite(json.site, "/site", val);
+
   const rooms = json.rooms;
   if (rooms !== undefined && !Array.isArray(rooms)) val.err("/rooms", "expected an array");
   if (Array.isArray(rooms)) rooms.forEach((r, i) => void validateRoom(r, `/rooms/${i}`, val));
@@ -597,6 +609,20 @@ function validatePlanJson(json: unknown, val: Validator): PlanJson | null {
 
   if (val.hasError()) return null;
   return json as unknown as PlanJson;
+}
+
+/** `site` — a required `street` word and an optional `hemisphere`, both from the closed
+ *  vocabularies the parser itself checks against (`src/ast.ts`), never a retyped list. */
+function validateSite(s: unknown, path: string, val: Validator): void {
+  if (!isObj(s)) {
+    val.err(path, "expected an object");
+    return;
+  }
+  for (const k of Object.keys(s)) if (k !== "street" && k !== "hemisphere") val.err(`${path}/${k}`, "unknown key");
+  if (!(isStr(s.street) && (COMPASS_DIRECTIONS as readonly string[]).includes(s.street)))
+    val.err(`${path}/street`, `expected one of ${COMPASS_DIRECTIONS.join(", ")}`);
+  if (s.hemisphere !== undefined && !(isStr(s.hemisphere) && (HEMISPHERES as readonly string[]).includes(s.hemisphere)))
+    val.err(`${path}/hemisphere`, `expected one of ${HEMISPHERES.join(", ")}`);
 }
 
 function validateRoom(r: unknown, path: string, val: Validator): void {
@@ -737,6 +763,11 @@ function emitArch(p: PlanJson): string {
   if (typeof p.scale === "string" && /^\d+:\d+$/.test(p.scale)) L.push(`  scale ${p.scale}`);
   if (p.north !== undefined && !(p.north === "up")) {
     L.push(`  north ${typeof p.north === "string" ? p.north : num(p.north.deg)}`);
+  }
+  // The round-trip half of `site`: without this line a plan that went through Plan JSON
+  // would come back with no orientation and every derived fact changed with it.
+  if (p.site) {
+    L.push(`  site { street ${p.site.street} hemisphere ${p.site.hemisphere ?? "north"} }`);
   }
 
   for (const w of p.walls ?? []) {
@@ -890,6 +921,7 @@ export function astToJson(ast: PlanNode): object {
     ...(ast.paper ? { paper: ast.paper } : {}),
     ...(ast.scale !== undefined ? { scale: ast.scale } : {}),
     north: ast.north,
+    ...(ast.site ? { site: ast.site } : {}),
     ...(ast.autoDims !== undefined ? { autoDims: ast.autoDims } : {}),
     ...(ast.accTitle !== undefined ? { accTitle: ast.accTitle } : {}),
     ...(ast.accDescr !== undefined ? { accDescr: ast.accDescr } : {}),
@@ -1093,6 +1125,17 @@ export const PLAN_JSON_SCHEMA = {
         { enum: ["up", "down", "left", "right"] },
         { type: "object", required: ["deg"], additionalProperties: false, properties: { deg: { type: "number" } } },
       ],
+    },
+    site: {
+      type: "object",
+      additionalProperties: false,
+      required: ["street"],
+      description:
+        "Where the building sits relative to its street. `street` is the TRUE compass direction the frontage faces; `hemisphere` (default `north`) decides only which way the equator lies. It draws nothing and moves nothing — it names directions, so a brief can say `equator_side` instead of `S`. NOTE: the derived names ArchLang reports from it (`back`, `equator_side`, `sunrise_side`, `sunset_side`) are a drafting convention, NOT a daylight measurement: there is no sun model, latitude or date anywhere in ArchLang.",
+      properties: {
+        street: { enum: [...COMPASS_DIRECTIONS], description: "Compass direction the street frontage faces." },
+        hemisphere: { enum: [...HEMISPHERES], description: "Hemisphere the building sits in. Defaults to north." },
+      },
     },
     room_count: { type: "integer", description: "Output-only: number of rooms." },
     total_area: { type: "number", description: "Output-only: total floor area in square metres." },
