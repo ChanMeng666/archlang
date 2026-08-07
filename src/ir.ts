@@ -83,6 +83,20 @@ export interface RBase {
   _instance?: string;
   /** The component {@link RBase._instance} was made from. Internal, as above. */
   _component?: string;
+  /**
+   * The `.arch` file this element's {@link RBase.span} — and every fix edit derived from
+   * it — is measured in, when the statement came in through an `import`. Absent = the
+   * compiled source, which is the overwhelmingly common case.
+   *
+   * This is the resolve-stage {@link import("./ir.js").Entry.file} carried past the element
+   * boundary, where it used to be dropped. It exists because LINT runs after resolve and so
+   * never passes through `stampProvenance`: without it a lint fix on an imported element
+   * carries no `Diagnostic.file`/`FixSuggestion.file`, and `applyFixes` — which skips
+   * exactly on that field — spliced the module's offsets into the middle of the IMPORTER's
+   * source. Internal: set during resolve, never serialized into the Scene/SVG/exports (the
+   * `_` prefix keeps it out), so a plan with no `import` is byte-identical everywhere.
+   */
+  _file?: string;
 }
 
 /**
@@ -1372,6 +1386,12 @@ function resolveImpl(
         // the `place`d instance that expanded it (an instance IS a zone). Set only when
         // there is one, so an unzoned plan's IR carries no new key at all.
         if (e.zone !== undefined) r._zone = e.zone;
+        // Which FILE this element's span is measured in. Resolve-time diagnostics get it
+        // from `stampProvenance` above; carrying it onto the element is what lets the
+        // POST-resolve consumers (lint) stamp it too, instead of minting fixes that
+        // `applyFixes` then splices into the wrong source. Set only when there is one, so
+        // an import-free plan's IR carries no new key at all.
+        if (e.file !== undefined) r._file = e.file;
         if (r.kind === "wall") {
           r._idAuthored = e.idAuthored === true;
           grpWalls.push(r);

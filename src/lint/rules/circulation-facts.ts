@@ -69,7 +69,7 @@ export const pathTooNarrow: LintRule = {
       out.push({
         severity: "warning",
         code: "W_PATH_TOO_NARROW",
-        ...at(r.span),
+        ...at(r),
         message: `The walk from the entrance to "${labelOf(r)}" squeezes to ${mm(rc.bottleneckClearWidthMm)} mm (${mm(shortfall(min, rc.bottleneckClearWidthMm))} mm below the ${mm(min)} mm minimum).`,
         hints: narrowHints(min),
       });
@@ -83,7 +83,7 @@ export const pathTooNarrow: LintRule = {
       out.push({
         severity: "warning",
         code: "W_PATH_TOO_NARROW",
-        ...at(from.span),
+        ...at(from),
         message: `The route from "${labelOf(from)}" to "${to ? labelOf(to) : rt.toRoomId}" squeezes to ${mm(rt.bottleneckClearWidthMm)} mm (${mm(shortfall(min, rt.bottleneckClearWidthMm))} mm below the ${mm(min)} mm minimum).`,
         hints: narrowHints(min),
       });
@@ -108,7 +108,7 @@ export const circuitousPath: LintRule = {
       out.push({
         severity: "warning",
         code: "W_CIRCUITOUS_PATH",
-        ...at(r.span),
+        ...at(r),
         message: `The walk from the entrance to "${labelOf(r)}" is ${rc.detourRatio}× the straight-line distance (over ${max}×).`,
         hints: ["Add a more direct connection — a door or a hall — so the room isn't reached the long way round."],
       });

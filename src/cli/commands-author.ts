@@ -222,6 +222,11 @@ export async function cmdFix(args: Args): Promise<number> {
     if (fixes.length === 0) break;
 
     const report = applyFixes(current, fixes, { maxApplicability });
+    // Record WHY a suggestion was declined before deciding whether the pass made progress.
+    // A pass where every fix is skipped is precisely the case an author most needs the
+    // reason for — "this fix belongs to imported module X, edit that file" — and reporting
+    // it only on a productive pass swallowed it exactly then.
+    for (const s of report.skipped) skipped.push({ code: codeOf.get(s.suggestion), reason: s.reason });
     if (report.applied.length === 0) break; // zero progress (all skipped/placeholders)
 
     const errBefore = diagnostics.filter((d) => d.severity === "error").length;
@@ -237,7 +242,6 @@ export async function cmdFix(args: Args): Promise<number> {
       applied.push({ code: codeOf.get(f), title: f.title, applicability: f.applicability });
       changeLog.push(`applied ${codeOf.get(f) ? `[${codeOf.get(f)}] ` : ""}${f.title}`);
     }
-    for (const s of report.skipped) skipped.push({ code: codeOf.get(s.suggestion), reason: s.reason });
   }
 
   // Residue: distinct codes of remaining problems the loop could not clear (errors,

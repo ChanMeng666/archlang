@@ -32,7 +32,7 @@ export {
   type LintOptions,
   type LintRuleset,
 } from "./lint/ruleset.js";
-export type { BuildingContext, LintContext, LintRule } from "./lint/context.js";
+export type { BuildingContext, DiagnosticSite, LintContext, LintRule } from "./lint/context.js";
 export { LINT_RULES } from "./lint/rules/index.js";
 
 /**
@@ -102,6 +102,23 @@ function lintOne(
 ): Diagnostic[] {
   const ctx = buildLintContext(ir, rules, building);
   const out: Diagnostic[] = [];
-  for (const rule of LINT_RULES) out.push(...rule.check(ctx));
+  for (const rule of LINT_RULES) out.push(...rule.check(ctx).map(withFixProvenance));
   return out;
+}
+
+/**
+ * Carry a lint diagnostic's `file` down onto every one of its fixes — the same weld
+ * `stampProvenance` performs for the resolve stage, applied once at the rule-fold boundary
+ * so no individual rule can forget it.
+ *
+ * This is what makes `applyFixes`'s imported-module guard reachable at all from lint: that
+ * guard keys on the SUGGESTION's `file`, and until this existed every lint fix was minted
+ * without one — so a fix whose edit spans are offsets into an `import`ed module was applied
+ * straight into the importer, corrupting it (reproduced on an unmodified `W_DIM_INSIDE`).
+ * A diagnostic on an element written in the compiled source has no `file`, so it and its
+ * fixes come out of here untouched.
+ */
+function withFixProvenance(d: Diagnostic): Diagnostic {
+  if (d.file === undefined || !d.fixes) return d;
+  return { ...d, fixes: d.fixes.map((f) => ({ ...f, file: d.file })) };
 }

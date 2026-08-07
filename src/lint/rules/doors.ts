@@ -76,7 +76,7 @@ export const swingObstructed: LintRule = {
       out.push({
         severity: "warning",
         code: "W_SWING_OBSTRUCTED",
-        ...at(d.span),
+        ...at(d),
         message: `Door swing is obstructed — ${cause.text}.`,
         hints: [
           `Hang the leaf on the other jamb — \`hinge ${flipped}\`${flipClears ? " (this clears it)" : ""}.`,
@@ -120,7 +120,7 @@ export const doorwayBlocked: LintRule = {
         out.push({
           severity: "warning",
           code: "W_DOORWAY_BLOCKED",
-          ...at(d.span),
+          ...at(d),
           message: `Doorway is blocked — the approach needs ${mm(depth)} mm clear on each side but "${gn}" leaves ${mm(gap)} mm (${mm(short)} mm short).`,
           hints: [
             `Move "${gn}" ${mm(short)} mm clear of the opening — \`arch repair\` computes the smallest clearing shift.`,
@@ -144,7 +144,7 @@ export const doorClearance: LintRule = {
         out.push({
           severity: "warning",
           code: "W_DOOR_CLEARANCE",
-          ...at(d.span),
+          ...at(d),
           message: `Door is ${d.width} mm wide (under the ${rules.minDoorWidthMm} mm minimum nominal width).`,
           hints: [`Widen it to at least ${rules.minDoorWidthMm} mm.`],
         });

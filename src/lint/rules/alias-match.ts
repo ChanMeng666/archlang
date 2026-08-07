@@ -57,7 +57,7 @@ export const aliasMatch: LintRule = {
       out.push({
         severity: "warning",
         code: "W_ALIAS_MATCH",
-        ...at(r.span),
+        ...at(r),
         message: `Room "${label}" reads as ${inferred} only from the indirect term ${aliasWords} — its classification is a guess.`,
         hints: [`Add \`uses ${usesText}\` to state the room's function explicitly.`],
         ...(r.span

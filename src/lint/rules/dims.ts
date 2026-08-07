@@ -57,8 +57,10 @@ export const dimInside: LintRule = {
     for (const dm of dims) {
       if (!dm.span || dm.offset === 0) continue;
       // One warning per SOURCE statement: a dim inside a `for` loop resolves many
-      // times over one span, and the fix would otherwise be offered N times.
-      const key = `${dm.span.start}:${dm.span.end}`;
+      // times over one span, and the fix would otherwise be offered N times. The FILE is
+      // part of that identity — two modules' spans are offsets into different sources, so
+      // an equal `start:end` pair is not the same statement.
+      const key = `${dm._file ?? ""}:${dm.span.start}:${dm.span.end}`;
       if (seen.has(key)) continue;
       // The MIDPOINT of the offset line: a dimension legitimately runs corner to
       // corner, so its endpoints sit ON the box edges — where the line ended up
@@ -70,7 +72,7 @@ export const dimInside: LintRule = {
       out.push({
         severity: "warning",
         code: "W_DIM_INSIDE",
-        span: dm.span,
+        ...ctx.at(dm),
         message: `Dimension "${dm.id}" draws its line inside the building — the \`offset ${dm.offset}\` pushes it into the plan, not out to the margin.`,
         hints: ["Swap the two endpoints (or negate the offset) so the dimension reads outside the building."],
         ...fixesFrom(dimSwapFix(dm)),
@@ -146,10 +148,15 @@ export const dimOverlap: LintRule = {
         out.push({
           severity: "warning",
           code: "W_DIM_OVERLAP",
-          span: later.span,
+          ...ctx.at(later.dm),
           message: `Dimension "${later.dm.id}" is drawn over "${other.dm.id}" — both land in the same chain tier (\`offset ${fmt2(later.dm.offset)}\` and \`offset ${fmt2(other.dm.offset)}\`), so their lines and texts collide.`,
           hints: [`Move one of them out a tier — \`offset ${fmt2(newOffset)}\` clears the other's line and text.`],
-          relatedSpans: [{ span: other.span, message: "overlaps this dimension" }],
+          // A related span is read in the diagnostic's OWN file, so only offer one when the
+          // colliding dim was written in that same source — otherwise it would frame
+          // unrelated bytes. Same rule `stampProvenance` applies to a `place` span.
+          ...(later.dm._file === other.dm._file
+            ? { relatedSpans: [{ span: other.span, message: "overlaps this dimension" }] }
+            : {}),
           ...fixesFrom(dimBumpFix(later.dm, newOffset)),
         });
       }
@@ -173,7 +180,8 @@ interface Band {
   span: Span;
   /** Start offset of that span — the source ORDER key. */
   at: number;
-  /** Identity of the SOURCE STATEMENT (a `for` resolves one statement many times). */
+  /** Identity of the SOURCE STATEMENT — file plus span, since a `for` resolves one
+   *  statement many times and two modules' offsets are not comparable. */
   key: string;
   /** Unit direction of from→to. */
   u: Point;
@@ -201,7 +209,7 @@ function band(dm: RDim, dimFont: number): Band {
     dm,
     span,
     at: span.start,
-    key: `${span.start}:${span.end}`,
+    key: `${dm._file ?? ""}:${span.start}:${span.end}`,
     u,
     n,
     mid,
