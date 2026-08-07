@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (follow-ups opened by the Batch-3 pass)
+
+- **Lint fixes now carry the file their spans belong to.** A lint diagnostic raised on an element
+  written in an `import`ed module — and every machine-applicable fix on it — now carries `file`, so
+  `applyFixes` **refuses** it instead of splicing that module's byte offsets into the middle of the
+  importing source. Reproduced on an unmodified `W_DIM_INSIDE`, which rewrote a `room … size` statement
+  into gibberish. Resolve-raised fixes already had this via `stampProvenance`; lint runs after resolve
+  and `RBase` carried no `file`, so the guard could never fire. `--json` now projects `file` and
+  **drops the `line`/`col` it could only guess at** (they were being computed against the compiled
+  source for a span belonging to another file), and `arch fix` reports the skip reason on a pass where
+  every fix is declined. A plan with no `import` is unchanged, byte for byte.
+- **`swing into <room>` and `furniture … against wall <w> in <room>` now ask the room's floor rather
+  than its bounding box.** On a `polygon` or `circle` room the bbox test silently gave a door a swing
+  into a wall the room does not border (and raised a false `W_SWING_ROOM_NOT_ADJACENT` on an edge it
+  genuinely does), and backed a fixture onto a wall outside the room while `describe()` still reported
+  it as inside. Rectangular rooms are byte-identical.
+- **A rectangular room's `label "…" at (x,y)` is no longer parsed and then silently dropped.** The
+  anchor now reaches the IR from both rect paths, so it is honoured in the drawing (area text
+  included), is exempt from the label-placement post-pass like every other explicit anchor, and can
+  raise `W_ROOM_LABEL_OUTSIDE` — checked at resolve on the absolute path, and deferred to
+  `placeRelational` on the relational one, where a room first knows its own floor. Present since
+  v1.23, so "an explicit `label at` always wins" had been true only for `polygon` and `circle` rooms.
+  A rect room with no `label at` is byte-identical and `describe()` is untouched.
+
 ### Added
 
 - **`W_DIM_OVERLAP`** — an advisory lint warning when two hand-written `dim` statements measuring
@@ -115,6 +139,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (infrastructure — no language or output change)
 
+- **Door enum single-sourcing.** `hinge`/`swing` (and the `hinge near start|end` spelling) now come
+  from one `DOOR_ENUMS` table in `src/grammar/tokens.ts` instead of seven hand-kept copies — parser,
+  resolver, Plan-JSON validator, Plan-JSON schema, the LSP hover type, and the two **generators**.
+  `gen:gbnf` and `gen:spec` now **fail the build** when a door clause has no rendering, closing the
+  class of bug where a literal typed inside a generator ships a stale grammar while `check:drift`
+  stays green (a v1.19 GBNF that could not decode `arc`/`polygon`/`zone` was exactly this). No
+  language change and no output change: every generated artifact regenerates byte-identically.
 - **`npm run check:test-wiring`** — a new zero-dep guard (`scripts/check-test-wiring.mjs`, in
   `npm run check` and CI's `builds` job) that fails if any tracked `*.test.ts` falls outside
   `vitest.config.ts`'s `test.include` globs, **or if any include glob matches nothing**. A test file

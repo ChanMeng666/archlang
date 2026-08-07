@@ -425,6 +425,13 @@ The P0 residuals, all seven P1 entries and the two P2 design documents shipped o
 `CHANGELOG.md`'s `[Unreleased]`). Three things surfaced *during* implementation that are not items in
 this document and have no home elsewhere. Recorded here so they are not lost.
 
+> **Status, 2026-08-07 (same day): all three are now CLOSED**, plus the standalone
+> `DOOR_ENUMS` refactor extracted from the P2-1 design (`c39a25e`). §9.2 → `d45f426`,
+> §9.3 → `46b8ea1`, §9.1's sweep → `bd8bb73`. The subsections below keep the original
+> statement of each finding and record the outcome inline, because *what the sweep
+> cleared* is as useful to a future reader as what it fixed. **One item is deliberately
+> still open: the `planCenter` fallback in §9.1's outcome.**
+
 ### 9.1 A defect class, not three tickets — **derived-position-from-a-bounding-box**
 
 Three fixes this cycle are the same bug wearing different clothes: a position derived from a shape's
@@ -531,6 +538,31 @@ anti-pattern in AGENTS.md) still open for the whole lint layer, and it affects `
 during expansion, then onto every lint producer. Cross-cutting; changes existing diagnostics.
 **Highest-priority follow-up: it silently corrupts source.**
 
+#### Outcome (2026-08-07) — **CLOSED**, `d45f426`
+
+Fixed as described, with the corruption reproduced as a failing test first. The seam is
+`LintContext.at()`, which now takes the **element** rather than `el.span` and returns
+`{ span?, file? }` — so a rule cannot report a location while forgetting which source it addresses —
+and `withFixProvenance` welds the diagnostic's `file` onto its `fixes[]` once at the rule-fold
+boundary, making *"a fix's file always equals its diagnostic's file"* a checkable postcondition
+rather than a convention. `RBase._file` is `_`-prefixed so it never serialises, and
+`transformElement`'s spread carries it through `place`.
+
+Two further gaps fell out of proving it, both fixed in the same commit:
+
+- **`diagnosticToJson` never projected `file` at all** — not for lint diagnostics, and not for resolve
+  ones either. So `--json` printed a `line`/`col` computed against the *compiled* source for a span
+  belonging to a different file, with nothing to signal it. It now emits `file` and **omits
+  `line`/`col` when `file` is present**, because those can only be derived from the text the offsets
+  actually index into.
+- **`arch fix` discarded skip reasons on a zero-progress pass**, breaking on
+  `report.applied.length === 0` before recording `report.skipped` — so the newly-correct refusal would
+  have surfaced as a silent "(no fixes applied)".
+
+Blast radius was smaller than forecast: **zero** snapshot or golden movement, because no existing
+fixture had a lint diagnostic on an imported element. Inertness for import-free plans is pinned three
+ways.
+
 ### 9.3 A rectangular room's `label "…" at (x,y)` is parsed, then dropped
 
 `labelAt` reaches the IR only from `resolveCircle` / `resolvePolygon`; the rectangle resolver never
@@ -538,6 +570,37 @@ records it. So an explicit anchor on a rect room does nothing, and `W_ROOM_LABEL
 there either. Present since v1.23. It means the rule *"an explicit `label at` always wins"* is
 currently true only for `polygon` and `circle` rooms — worth stating, because the label-placement
 pass (`src/label-placement.ts`) documents that rule as though it were universal.
+
+#### Outcome (2026-08-07) — **CLOSED**, `46b8ea1`
+
+The loss was purely in the resolver: `parseTail` is shared by all three room forms, so the rect AST
+node always carried `labelAt` and the formatter even round-tripped the clause. No shipped example or
+eval golden pins a rect room's label, so nothing started warning and `eval:ci` is byte-identical.
+
+The interesting half is the **relational** path. There, `at` is a `{0,0}` placeholder until
+`placeRelational` runs, so an outside-the-floor check at resolve would be actively wrong; it is
+deferred to `src/layout.ts`'s `place()`, immediately after the real corner is known, and both paths
+share one exported `rectLabelOutsideDiag(r)` so they cannot disagree about "outside". A new internal
+`_labelAtSpan` carries the clause span across that deferral so the deferred diagnostic still blames
+`at (x,y)` rather than the whole statement.
+
+`describe()` was deliberately left untouched — a label anchor is a drawing fact, and every room shape
+has carried `labelAt` unexposed since v1.23. Byte-identity verified over **45** artifacts (14 examples
+× svg/txt/dxf, plus `two-storey`'s six per-storey fan-out files, which a stdout sweep cannot reach).
+
+### 9.4 Extracted from the P2-1 design and shipped alone — `DOOR_ENUMS` (`c39a25e`)
+
+Not a finding but a decision worth recording: the P2-1 door-vocabulary design's §2.1 was landed
+**without** any door kinds, because the design's own §13 argues the refactor is the real value
+independent of the feature. Seven hand-kept copies of the `hinge`/`swing` literals (parser, resolver,
+Plan-JSON validator, Plan-JSON schema, the LSP hover type, and both generators) collapsed to one table
+in `src/grammar/tokens.ts`, and both generators now **fail the build** when a door clause has no
+rendering.
+
+`gen:all` produced **zero diff**, which is the load-bearing result: no hardcoded copy had drifted, so
+this was a genuine refactor rather than a latent-bug find. Adding the door kinds themselves still needs
+the owner decisions the design doc leaves open (§A–E), and `sliding`/`barn`/`bifold`/`pocket` remain
+unbuilt.
 
 ## Files & sources
 
