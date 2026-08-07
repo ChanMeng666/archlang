@@ -24,7 +24,7 @@ export const roomNoClearPath: LintRule = {
         out.push({
           severity: "warning",
           code: "W_ROOM_NO_CLEAR_PATH",
-          ...at(r.span),
+          ...at(r),
           message: `Room "${labelOf(r)}" can't be entered — furniture and door swings seal off the floor by its door (only ${rc.reachableClearAreaM2} m² reachable).`,
           hints: ["Move or shrink the pieces nearest the door so there's a continuous walkable path into the room."],
         });

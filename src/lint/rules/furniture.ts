@@ -46,7 +46,7 @@ export const furnitureOverlap: LintRule = {
           out.push({
             severity: "warning",
             code: "W_FURNITURE_OVERLAP",
-            ...at(furniture[j]!.span),
+            ...at(furniture[j]!),
             message: `Furniture "${nameJ}" overlaps "${nameI}".`,
             hints: ["Move or resize one piece so they don't intersect; leave a walkway between them."],
           });
@@ -89,7 +89,7 @@ export const furnClearance: LintRule = {
           out.push({
             severity: "warning",
             code: "W_FURN_CLEARANCE",
-            ...at(f.span),
+            ...at(f),
             message: `Fixture "${fn}" needs ${mm(clear)} mm of clear space in front but "${gn}" leaves ${mm(gap)} mm (${mm(short)} mm short).`,
             hints: [
               `Move "${gn}" ${mm(short)} mm further from the front of "${fn}".`,
@@ -118,7 +118,7 @@ export const fixtureFloating: LintRule = {
         out.push({
           severity: "warning",
           code: "W_FIXTURE_FLOATING",
-          ...at(f.span),
+          ...at(f),
           message: `Fixture "${name}" is not against a wall.`,
           hints: ["Place it so one edge backs onto a wall — plumbing/venting runs in the wall."],
         });
@@ -169,7 +169,7 @@ export const fixtureBackToRoom: LintRule = {
       out.push({
         severity: "warning",
         code: "W_FIXTURE_BACK_TO_ROOM",
-        ...at(f.span),
+        ...at(f),
         message: `Fixture "${name}" has its back to the room — the wall it stands against is on its ${walled.join("/")} side.`,
         hints: [
           unique !== null
@@ -200,7 +200,7 @@ export const fixtureWrongRoom: LintRule = {
         out.push({
           severity: "warning",
           code: "W_FIXTURE_WRONG_ROOM",
-          ...at(f.span),
+          ...at(f),
           message: `Fixture "${name}" sits outside its declared room "${f.room}".`,
           hints: ["Move it inside that room, or correct the `in <roomId>`."],
         });
@@ -226,7 +226,7 @@ export const furnitureWallCollision: LintRule = {
         out.push({
           severity: "warning",
           code: "W_FURNITURE_WALL_COLLISION",
-          ...at(f.span),
+          ...at(f),
           message: `Furniture "${name}" penetrates a wall.`,
           hints: [
             "Move or resize it so it sits against the wall face, not through it — or anchor it with `against wall <id>`.",

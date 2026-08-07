@@ -58,7 +58,7 @@ export const reachability: LintRule = {
           out.push({
             severity: "warning",
             code: "W_BATH_VIA_BEDROOM",
-            ...at(r.span),
+            ...at(r),
             message: `Bathroom "${labelOf(r)}" is reachable only through a bedroom.`,
             hints: [
               "Connect it to a hall or living space — or, if it is an en-suite, add a second bathroom off circulation.",
@@ -74,7 +74,7 @@ export const reachability: LintRule = {
           out.push({
             severity: "warning",
             code: "W_ROOM_UNREACHABLE",
-            ...at(r.span),
+            ...at(r),
             message: `Room "${labelOf(r)}" can't be reached from the entrance.`,
             hints: [
               "Add a door or cased `opening` linking it (directly or through a hall) to a space that reaches the entrance.",

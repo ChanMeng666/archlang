@@ -29,7 +29,7 @@ export const stairUnmatched: LintRule = {
       out.push({
         severity: "warning",
         code: "W_STAIR_UNMATCHED",
-        ...at(v.span),
+        ...at(v),
         message: `${v.kind === "elevator" ? "Elevator" : v.kind === "escalator" ? "Escalator" : "Stair"} "${v.id}" appears on only one storey, so it connects nothing.`,
         hints: [
           `Draw the matching run with the same id \`${v.id}\` on the storey above or below (each storey declares its own \`dir\`).`,

@@ -46,7 +46,7 @@ export const perRoomRules: LintRule = {
         out.push({
           severity: "warning",
           code: "W_ROOM_TOO_SMALL",
-          ...at(r.span),
+          ...at(r),
           message: `Room "${labelOf(r)}" is only ${a} m² (under ${rules.minRoomAreaM2} m²).`,
           hints: ["Increase its `size`, or merge it into an adjacent space."],
         });
@@ -57,7 +57,7 @@ export const perRoomRules: LintRule = {
         out.push({
           severity: "warning",
           code: "W_ROOM_DISCONNECTED",
-          ...at(r.span),
+          ...at(r),
           message: `Room "${labelOf(r)}" has no door or opening — it can't be entered.`,
           hints: ["Add a `door` or a cased `opening` on one of its walls."],
         });
@@ -68,7 +68,7 @@ export const perRoomRules: LintRule = {
         out.push({
           severity: "warning",
           code: "W_BEDROOM_NO_WINDOW",
-          ...at(r.span),
+          ...at(r),
           message: `Bedroom "${labelOf(r)}" has no window.`,
           hints: ["Add a `window` on an exterior wall of this room."],
         });
@@ -85,7 +85,7 @@ export const perRoomRules: LintRule = {
           out.push({
             severity: "warning",
             code: "W_ROOM_NOT_ENCLOSED",
-            ...at(r.span),
+            ...at(r),
             message: `Bathroom "${labelOf(r)}" is not fully enclosed (~${Math.round(gap)} mm of its perimeter has no wall).`,
             hints: ["Extend the partition so the room is walled on all sides — a door or window in the wall is fine."],
           });
@@ -107,7 +107,7 @@ export const perRoomRules: LintRule = {
           out.push({
             severity: "warning",
             code: "W_ROOM_NO_FIXTURE",
-            ...at(r.span),
+            ...at(r),
             message: `${isWet ? "Bathroom" : "Kitchen"} "${labelOf(r)}" has no ${isWet ? "fixtures (WC, basin, shower…)" : "fixtures (sink, counter, stove…)"}.`,
             hints: [
               `Add the expected fixtures — e.g. import \`lib/fixtures.arch\` and place a ${isWet ? "`wc`, `basin`, or `shower`" : "`kitchen_sink` and `counter`"}.`,

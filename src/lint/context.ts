@@ -52,7 +52,23 @@ export interface LintContext {
   wallSegs: WallSegment[];
   wallOpenings: Array<{ at: { x: number; y: number }; width: number }>;
   labelOf(r: RRoom): string;
-  at(span: Diagnostic["span"]): { span?: Diagnostic["span"] };
+  /**
+   * The location half of a diagnostic raised ON an element: its byte `span` **and the
+   * file that span is measured in**.
+   *
+   * It takes the element rather than `el.span` on purpose — it is the ONE seam where a
+   * lint diagnostic learns its provenance, so a rule cannot report a span while silently
+   * forgetting which source it addresses. An element written in the compiled source
+   * carries no `_file`, so the returned object is exactly `{ span }` and every existing
+   * plan's diagnostics are byte-identical.
+   */
+  at(el: DiagnosticSite): { span?: Diagnostic["span"]; file?: string };
+}
+
+/** What {@link LintContext.at} needs off an element: where it is, and in which file. */
+export interface DiagnosticSite {
+  span?: Diagnostic["span"];
+  _file?: string;
 }
 
 /** One architectural-soundness rule (or an order-preserving composite of several). */
@@ -87,6 +103,9 @@ export function buildLintContext(
     wallSegs: ir.walls.flatMap((w) => segmentsOfWall(w).map((s) => ({ ...s }))),
     wallOpenings: ir.walls.flatMap((w) => w.openings),
     labelOf: (r) => r.label ?? r.id,
-    at: (span) => (span ? { span } : {}),
+    at: (el) => ({
+      ...(el.span ? { span: el.span } : {}),
+      ...(el._file !== undefined ? { file: el._file } : {}),
+    }),
   };
 }
