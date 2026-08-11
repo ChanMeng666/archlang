@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.25.0] - 2026-08-11
+
+**Orientation, openings, and the end of a defect class.** Two new language surfaces — a `site`
+block that names the four compass directions a brief actually speaks in, and four door kinds
+beside the default `hinged` — plus the closure of a whole family of silent bugs: a position
+derived from a shape's *bounding box or centroid* rather than from the shape itself. Six
+instances of that class were found and fixed this cycle; the search that locates them is
+recorded in `docs/research/2026-08-06-competitor-borrowing-roadmap.md` §9.1.
+
+Every new form obeys a byte-identity law: a plan that does not use it renders, describes and
+lints exactly as before. `site`, `door hinged …`, and every unchanged plan are byte-identical,
+verified by SHA-256 sweeps over all fourteen shipped examples.
+
 ### Added (the two P2 language features)
 
 - **Site & orientation** — `site { street north|south|east|west [hemisphere north|south] }`, a
