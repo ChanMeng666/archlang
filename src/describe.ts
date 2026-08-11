@@ -27,6 +27,7 @@ import type {
   FurniturePlacement,
 } from "./ir.js";
 import type { NorthDir, Point, VerticalDir } from "./ast.js";
+import type { DoorKind } from "./grammar/tokens.js";
 import type { Diagnostic } from "./diagnostics.js";
 import {
   resolvePlan,
@@ -124,6 +125,17 @@ export interface DoorSummary {
    */
   between: string[];
   width: number;
+  /**
+   * The door's kind (v1.25) — emitted **only when it is not the default `hinged`**,
+   * so every payload written before kinds existed is byte-identical.
+   *
+   * It is here because a kind is a SEMANTIC fact, not a drawing one: it decides
+   * whether a swing arc exists at all (so which clearance rules can fire), and an
+   * agent that has just authored a pocket door has no other way to verify it did.
+   * `slide` and `open` are deliberately NOT here — the first is a drafting handedness
+   * and the second is purely how far the panel is drawn.
+   */
+  kind?: DoorKind;
 }
 
 export interface WindowSummary {
@@ -731,6 +743,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     ...(d._instance !== undefined ? { instance: d._instance } : {}),
     between: doorConnections(d, roomRects, tol),
     width: d.width,
+    ...(d.doorKind !== undefined ? { kind: d.doorKind } : {}),
   }));
 
   // Plan centre (bounding-box midpoint of the union of room rectangles). Its ONLY reader

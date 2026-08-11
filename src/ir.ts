@@ -31,7 +31,7 @@ import type {
   VerticalDir,
   WindowNode,
 } from "./ast.js";
-import type { DoorHinge, DoorSwingDir } from "./grammar/tokens.js";
+import type { DoorHinge, DoorKind, DoorSlideDir, DoorSwingDir } from "./grammar/tokens.js";
 import { placeRelational } from "./layout.js";
 import { numberAxes } from "./axes.js";
 import type { Frame } from "./frame.js";
@@ -234,6 +234,24 @@ export interface RDoor extends RBase {
   hinge: DoorHinge;
   swing: DoorSwingDir;
   host: WallSegment | null;
+  /**
+   * The door's kind, present ONLY when it is not the default `hinged` — so every
+   * door written before v1.25 (and every explicit `door hinged …`) carries no field
+   * at all and every downstream payload is byte-identical. A kind changes what is
+   * drawn in the reveal and whether a swing arc exists; it changes nothing else
+   * (the wall boolean, the opening cover, adjacency and the walk-through landing
+   * are all kind-independent by contract).
+   */
+  doorKind?: DoorKind;
+  /** Which way the panel travels to open, along the host wall's traversal direction.
+   *  Present only on a non-hinged door (defaulted at resolve). */
+  slide?: DoorSlideDir;
+  /** How far the panel is DRAWN open, 0–1. Present only on a non-hinged door. A
+   *  drawing fact: no measured output may read it (see `E_DOOR_OPEN_RANGE`). */
+  open?: number;
+  /** Byte span of the authored `slide` clause, or the zero-width insertion point —
+   *  see {@link import("./ast.js").DoorNode.slideSpan}. Internal: never in the Scene. */
+  _slideSpan?: Span;
   /** `attached` (`on <wall> at <pos>`) vs `absolute` (`at (x,y)`). Internal
    *  marker for `describe().freedom`; never rendered. */
   _placement?: OpeningPlacement;

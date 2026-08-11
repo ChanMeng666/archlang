@@ -30,8 +30,8 @@ import type { CompassWord, Hemisphere, NorthDir, PlanNode, UseKind } from "./ast
 import { COMPASS_DIRECTIONS, HEMISPHERES } from "./ast.js";
 import type { RRoom, RDoor, RWindow, ROpening, RFurniture, RDim, RColumn, RWall, ResolvedPlan } from "./ir.js";
 import type { Diagnostic } from "./diagnostics.js";
-import type { DoorEnumClause, DoorHinge, DoorSwingDir } from "./grammar/tokens.js";
-import { DOOR_ENUMS, enumList } from "./grammar/tokens.js";
+import type { DoorEnumClause, DoorHinge, DoorKind, DoorSlideDir, DoorSwingDir } from "./grammar/tokens.js";
+import { DOOR_ENUMS, DOOR_KIND_CLAUSES, DOOR_KINDS, enumList } from "./grammar/tokens.js";
 import { parse } from "./parser.js";
 import {
   resolvePlan,
@@ -221,6 +221,16 @@ export interface OpeningJson {
   wall?: string;
   hinge?: DoorHinge;
   swing?: DoorSwingDir;
+  /**
+   * The door's kind — `door_kind`, not `kind`, because `kind` already discriminates
+   * door/window/opening here. Emitted only when it is not the default `hinged`, so
+   * every payload a pre-v1.25 plan produces is byte-identical.
+   */
+  door_kind?: DoorKind;
+  /** Which way a sliding-family panel travels to open. */
+  slide?: DoorSlideDir;
+  /** How far the panel is drawn open, 0–1. A drawing fact; nothing measured reads it. */
+  open?: number;
 }
 
 export interface FurnitureJson {
@@ -424,8 +434,19 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
       const base: OpeningJson = { kind: e.kind, id: e.id, x: e.at.x, y: e.at.y, width: e.width };
       if (e.host?.category !== undefined) base.wall = e.host.category;
       if (e.kind === "door") {
-        base.hinge = e.hinge;
-        base.swing = e.swing;
+        // A door's clauses are emitted only when its KIND accepts them, because
+        // `emitOpening` below turns this payload back into source: writing `hinge` on
+        // a pocket door would round-trip into an `E_DOOR_KIND_CLAUSE`. For the default
+        // hinged door the table says yes to both, so every existing payload — where
+        // `doorKind` is absent by construction — is byte-identical.
+        const allowed = DOOR_KIND_CLAUSES[e.doorKind ?? "hinged"];
+        if (allowed.hinge) base.hinge = e.hinge;
+        if (allowed.swing) base.swing = e.swing;
+        if (e.doorKind !== undefined) {
+          base.door_kind = e.doorKind;
+          if (allowed.slide && e.slide !== undefined) base.slide = e.slide;
+          if (allowed.open && e.open !== undefined) base.open = e.open;
+        }
       }
       return base;
     });
@@ -691,6 +712,12 @@ function validateOpening(o: unknown, path: string, val: Validator): void {
     if (v !== undefined && !(isStr(v) && (DOOR_ENUMS[clause] as readonly string[]).includes(v)))
       val.err(`${path}/${clause}`, `expected ${enumList(DOOR_ENUMS[clause])}`);
   }
+  // The kind word — `door_kind` here, because `kind` already discriminates
+  // door/window/opening. Held to `DOOR_KINDS`, the same table the parser reads.
+  if (o.door_kind !== undefined && !(isStr(o.door_kind) && (DOOR_KINDS as readonly string[]).includes(o.door_kind)))
+    val.err(`${path}/door_kind`, `expected ${enumList(DOOR_KINDS)}`);
+  if (o.open !== undefined && !(isNum(o.open) && o.open >= 0 && o.open <= 1))
+    val.err(`${path}/open`, "expected a number in [0,1]");
 }
 
 function validateFurniture(f: unknown, path: string, val: Validator): void {
@@ -837,6 +864,8 @@ function usesForRoom(r: RoomJson): UseKind[] {
 function emitOpening(o: OpeningJson): string {
   const kw = o.kind;
   let line = `  ${kw} ${idAttr(o.id)}`;
+  // The KIND word leads, after any `id=` — `door pocket on w1 at 40% width 900`.
+  if (o.kind === "door" && o.door_kind) line += `${o.door_kind} `;
   if (o.on) line += `on ${o.on.wall} at ${o.on.at}`;
   else line += `at (${num(o.x ?? 0)},${num(o.y ?? 0)})`;
   line += ` width ${num(o.width)}`;
@@ -844,6 +873,8 @@ function emitOpening(o: OpeningJson): string {
   if (o.kind === "door") {
     if (o.hinge) line += ` hinge ${o.hinge}`;
     if (o.swing) line += ` swing ${o.swing}`;
+    if (o.slide) line += ` slide ${o.slide}`;
+    if (o.open !== undefined) line += ` open ${num(o.open)}`;
   }
   return line;
 }
@@ -1252,7 +1283,28 @@ export const PLAN_JSON_SCHEMA = {
           width: { type: "number", description: "Opening width in millimetres." },
           wall: { type: "string", description: "Host wall by id or category (else nearest)." },
           hinge: { enum: [...DOOR_ENUMS.hinge], description: "Door hinge side relative to the wall direction." },
-          swing: { enum: [...DOOR_ENUMS.swing], description: "Door swing direction." },
+          swing: {
+            enum: [...DOOR_ENUMS.swing],
+            description:
+              "Hinged: which side of the wall the leaf sweeps to. Barn/bifold: which face the panel hangs on or folds toward. Not accepted on a sliding or pocket door.",
+          },
+          door_kind: {
+            enum: [...DOOR_KINDS],
+            description:
+              "Door kind (default `hinged`, in which case this is omitted). A non-hinged kind has no swing arc; `hinge` is not accepted on one.",
+          },
+          slide: {
+            enum: [...DOOR_ENUMS.slide],
+            description:
+              "Which way a sliding-family panel travels to open, along the wall's direction (as `hinge` is). Sliding family only.",
+          },
+          open: {
+            type: "number",
+            minimum: 0,
+            maximum: 1,
+            description:
+              "How far the panel is DRAWN open, 0–1 (default 0.5). A drawing fact only — no measured output reads it. Sliding family only.",
+          },
         },
       },
     },

@@ -19,7 +19,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { COMPASS_DIRECTIONS, HEMISPHERES } from "../src/ast.js";
-import { DOOR_ENUMS, DOOR_HINGE_NEAR, KEYWORDS } from "../src/grammar/tokens.js";
+import { DOOR_ENUMS, DOOR_HINGE_NEAR, DOOR_KINDS, KEYWORDS } from "../src/grammar/tokens.js";
 import { buildManifest } from "../src/manifest.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -40,7 +40,7 @@ const ELEMENT_GRAMMAR: Record<string, string> = {
   // typed out: this line is prose inside a generator, so a retyped list would document a
   // language that no longer exists while `check:drift` stayed green. `assertDoorEnumsRendered`
   // below is the guard that keeps it interpolated.
-  door: `door [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [hinge ${DOOR_ENUMS.hinge.join("|")}|${DOOR_HINGE_NEAR.map((v) => `near ${v}`).join("|")}] [swing ${DOOR_ENUMS.swing.join("|")}|into <roomId>]   # \`at (x,y)\` must sit on a wall; \`on <wall> at <pos>\` pins it BY CONSTRUCTION (<pos> = \`40%\` | mm from the wall's start | \`center\`) and can never be reported off-wall — prefer it`,
+  door: `door [id=<name>] [${DOOR_KINDS.join("|")}] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [hinge ${DOOR_ENUMS.hinge.join("|")}|${DOOR_HINGE_NEAR.map((v) => `near ${v}`).join("|")}] [swing ${DOOR_ENUMS.swing.join("|")}|into <roomId>] [slide ${DOOR_ENUMS.slide.join("|")}] [open <0..1>]   # \`at (x,y)\` must sit on a wall; \`on <wall> at <pos>\` pins it BY CONSTRUCTION (<pos> = \`40%\` | mm from the wall's start | \`center\`) and can never be reported off-wall — prefer it. KIND leads; \`hinged\` (default) is identical to omitting it and is the ONLY kind with a swing arc — the rest sweep nothing, so W_SWING_OBSTRUCTED cannot apply to them. \`swing\` DIFFERS BY KIND: hinged = which side the leaf sweeps; barn/bifold = which FACE the panel hangs on / folds toward; sliding/pocket take none. \`hinge\` is hinged-only and \`slide\`/\`open\` sliding-family-only; a wrong pairing REFUSES (E_DOOR_KIND_CLAUSE), as does any non-hinged kind on an \`arc\` wall (E_DOOR_KIND_CURVED). \`slide\` reads along the wall like \`hinge\`; \`open\` is DRAWING-only (nothing measured reads it), [0,1] or E_DOOR_OPEN_RANGE. A \`pocket\` needs its own width + clearance of wall past the slide-side jamb, or W_POCKET_RUN`,
   window:
     "window [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # same two placement forms as door",
   opening:
@@ -115,7 +115,15 @@ export function assertDoorEnumsRendered(
   doorLine: string,
   enums: Record<string, readonly string[]>,
   hingeNear: readonly string[],
+  kinds: readonly string[] = DOOR_KINDS,
 ): void {
+  const kindForm = kinds.join("|");
+  if (!doorLine.includes(kindForm)) {
+    throw new Error(
+      `ELEMENT_GRAMMAR.door does not render the door KIND alternation as \`${kindForm}\` — ` +
+        `interpolate it from DOOR_KINDS instead of typing it out.`,
+    );
+  }
   for (const [clause, values] of Object.entries(enums)) {
     const rendered = `${clause} ${values.join("|")}`;
     if (!doorLine.includes(rendered)) {

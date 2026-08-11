@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**68 errors** · **41 warnings**
+**71 errors** · **42 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -21,6 +21,9 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_DIM_CURVE_REF`](#e_dim_curve_ref) | error | Invalid `dim radius`/`dim diameter` reference. |
 | [`E_DIV_ZERO`](#e_div_zero) | error | Division or modulo by zero. |
 | [`E_DOMAIN`](#e_domain) | error | Math domain error. |
+| [`E_DOOR_KIND_CLAUSE`](#e_door_kind_clause) | error | That clause is not available on this kind of door. |
+| [`E_DOOR_KIND_CURVED`](#e_door_kind_curved) | error | A non-hinged door kind cannot sit on a curved wall. |
+| [`E_DOOR_OPEN_RANGE`](#e_door_open_range) | error | `open` must be between 0 and 1. |
 | [`E_DOOR_WIDTH`](#e_door_width) | error | Door must have a positive width. |
 | [`E_DOTTED_DECL`](#e_dotted_decl) | error | A dotted name cannot be declared. |
 | [`E_DUP_ID`](#e_dup_id) | error | Duplicate element id. |
@@ -100,6 +103,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_NO_ENTRANCE`](#w_no_entrance) | warning | The plan has no exterior door. |
 | [`W_OPENING_OFF_WALL`](#w_opening_off_wall) | warning | Opening does not lie on any wall. |
 | [`W_PATH_TOO_NARROW`](#w_path_too_narrow) | warning | The walk to a room squeezes below a passable width. |
+| [`W_POCKET_RUN`](#w_pocket_run) | warning | A pocket door has no wall to slide into. |
 | [`W_ROOM_DISCONNECTED`](#w_room_disconnected) | warning | Room has no door — it can't be entered. |
 | [`W_ROOM_LABEL_OUTSIDE`](#w_room_label_outside) | warning | A room's explicit label anchor falls outside the room. |
 | [`W_ROOM_NO_CLEAR_PATH`](#w_room_no_clear_path) | warning | A room cannot be entered or crossed. |
@@ -262,6 +266,43 @@ let x = 10 / 0   # error
 
 ```arch static
 let x = sqrt(-1)   # error
+```
+
+## E_DOOR_KIND_CLAUSE
+
+*error* — That clause is not available on this kind of door.
+
+**Cause.** A `door` statement carries a clause its kind has no meaning for: `hinge` on any of the sliding family (`sliding`/`barn`/`bifold`/`pocket` — nothing is hinged to a jamb), `swing` on a `sliding` or `pocket` door (the panel stays in the plane of the wall, or inside it), or `slide`/`open` on a `hinged` door (nothing travels along the wall). ArchLang refuses rather than draws the statement as if the clause were absent — silently ignoring a written clause is the silent-error design this project rules out (the v1.23 precedent: rectangle-only clauses REFUSE a polygon room rather than approximate it).
+
+**Fix.** Delete the clause (the machine-applicable fix does exactly that), or change the door's kind to one the clause belongs to. `swing` on a `barn` or `bifold` door is legal and means which FACE of the wall the panel hangs on or folds toward — it is not a leaf arc.
+
+```arch static
+door pocket on w1 at 50% width 900 hinge left   # error: a pocket door has no hinge
+```
+
+## E_DOOR_KIND_CURVED
+
+*error* — A non-hinged door kind cannot sit on a curved wall.
+
+**Cause.** The panel of a `sliding`, `barn`, `bifold` or `pocket` door is a straight rectangle running along a straight track, and its pocket/track geometry is straight by construction — none of that survives on a wall whose hosting edge is an `arc`. A hinged leaf does survive (its swing is taken from the tangent at the doorway), so only the sliding family is refused. Refusing is deliberate: drawing a straight panel across a curved reveal would be a wrong drawing with no diagnostic.
+
+**Fix.** Use a `hinged` door on the curve (the default — delete the kind word), or move the door onto one of the wall's straight runs.
+
+```arch static
+wall w1 thickness 200 { (0,0) arc (6000,0) radius 4000 }
+door pocket on w1 at 50% width 900   # error: curved host
+```
+
+## E_DOOR_OPEN_RANGE
+
+*error* — `open` must be between 0 and 1.
+
+**Cause.** `open <f>` is the fraction of its travel a sliding-family panel is DRAWN at — 0 is closed, 1 fully open — so a value outside `[0,1]` names a position the panel cannot reach. It is a drawing fact only: nothing measured (`lint`, `describe`, the intent channel) reads it, so a half-open door can never silence a clearance warning.
+
+**Fix.** Give `open` a fraction in `[0,1]`; `arch fix` clamps it to the nearer end for you. Omit it entirely for the default 0.5.
+
+```arch static
+door sliding on w1 at 50% width 1200 open 1.5   # error: outside [0,1]
 ```
 
 ## E_DOOR_WIDTH
@@ -1240,6 +1281,19 @@ door at (4000,1500) width 600
 furniture cabinet at (3600,300) size 700x1200   # lint: the way through squeezes below 700 mm
 ```
 
+## W_POCKET_RUN
+
+*warning* — A pocket door has no wall to slide into.
+
+**Cause.** A `pocket` door's panel disappears into a cavity inside the host wall, so the wall must continue past the slide-side jamb by at least the door's own width plus end clearance. This measures the run from that jamb to the end of the host segment, TRUNCATED at the near edge of any other opening (a window or a second door) that falls inside it — a panel cannot slide through a window either. The warning states what the run has to be, what is actually there, and the shortfall. **The threshold, and a deliberate divergence from the source it is borrowed from:** the required run is `width + max(50 mm, width × 5%)` (`pocketRunClearanceMm` in the lint ruleset). The rule is modelled on planscript-rust's `pocket_door_wall_run`, which requires a flat `width × 1.05` — but a pure ratio is wrong on narrow doors: a 700 mm pocket would ask for 35 mm of end clearance, which does not fit a real jamb and pull. We are not publishing a comparison against that project, so matching its constant buys nothing, and architectural correctness outranks reference-comparability. The two extra things this rule does that the reference does not: it subtracts intervening openings, and it carries its remedies as structured fixes rather than printed prose.
+
+**Fix.** Reverse the slide (`slide left` ↔ `slide right`) — a machine-applicable fix, emitted only after the reverse run is recomputed and proved to satisfy; move the door along its wall so the pocket lands on solid wall; or lengthen the wall. Narrowing the door is deliberately NOT offered as a fix: rewriting the author's stated width to satisfy a checker is the constraint-laundering pattern this project rules out, and it would also walk into `W_DOOR_CLEARANCE`.
+
+```arch static
+wall w1 thickness 200 { (0,0) (3000,0) }
+door pocket on w1 at 80% width 900 slide right   # lint: only ~600 mm of run
+```
+
 ## W_ROOM_DISCONNECTED
 
 *warning* — Room has no door — it can't be entered.
@@ -1395,7 +1449,7 @@ level 2 "1" { }   # warning: "s" is on level 1 only
 
 **Cause.** The quarter-circle a door leaf sweeps overlaps a piece of furniture/fixture or another door's swing, so the door cannot open fully. The warning states the clear radius the swing needs, what it actually has, and the shortfall.
 
-**Fix.** Hang the leaf on the other jamb (`hinge left|right`) — a machine-applicable fix when the flipped swing is proved clear; or open it the other way (`swing in|out`), move the door along its wall, move the obstruction (`arch repair`), narrow the leaf to the width the warning quotes (never below the minimum passable width — that relocates the problem into `W_DOOR_CLEARANCE`), or make it a leafless `opening`.
+**Fix.** Hang the leaf on the other jamb (`hinge left|right`) — a machine-applicable fix when the flipped swing is proved clear; or open it the other way (`swing in|out`), move the door along its wall, move the obstruction (`arch repair`), narrow the leaf to the width the warning quotes (never below the minimum passable width — that relocates the problem into `W_DOOR_CLEARANCE`), hang no swinging leaf at all (a `sliding`, `pocket` or `barn` door sweeps nothing, so this rule cannot apply to it), or make it a leafless `opening`.
 
 ```arch static
 door at (4000,1500) width 900 swing in   # lint: leaf sweeps onto the bed

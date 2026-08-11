@@ -911,8 +911,8 @@ strip down at (4000,0) gap 0 width 3000 {
 ### Door
 
 ```
-door [id=<id>] at (x,y) width <mm> [wall <ref>] [hinge left|right|near start|end] [swing in|out|into <room>]
-door [id=<id>] on <wall> at <pos> width <mm> [hinge …] [swing …]
+door [id=<id>] [<kind>] at (x,y) width <mm> [wall <ref>] [hinge left|right|near start|end] [swing in|out|into <room>] [slide left|right] [open <0..1>]
+door [id=<id>] [<kind>] on <wall> at <pos> width <mm> [hinge …] [swing …] [slide …] [open …]
 ```
 
 Drawn as an opening in the host wall plus a leaf and a quarter-circle swing arc.
@@ -937,6 +937,79 @@ the wall is `E_ATTACH_POS_RANGE`.
 
 ```
 door on w_south at 2000 width 1000 hinge near start swing into r_living
+```
+
+#### Door kinds (v1.25)
+
+A bare **kind** word may lead the statement, after any `id=` — the same shape as
+`room polygon` / `room circle` / `dim faces`:
+
+| kind | what is drawn in the reveal | swing arc? |
+| --- | --- | --- |
+| `hinged` *(default)* | leaf + quarter-circle swing arc | yes |
+| `sliding` | two bypass panels on two tracks | no |
+| `barn` | a surface-hung panel on a track that overruns the far jamb | no |
+| `bifold` | two folding leaves and the fold hinge | no |
+| `pocket` | a panel and the wall cavity it slides into | no |
+
+`hinged` is the default **and writing it is identical to omitting it** — a plan
+that names no kind compiles to exactly the bytes it always did.
+
+**Only a hinged door has a swing arc.** For every other kind the leaf sweeps
+nothing, so [`W_SWING_OBSTRUCTED`](error-codes.md#w_swing_obstructed) cannot apply
+to it — which is why that warning's remedies now name them. The rules that measure
+the *doorway* rather than the leaf are unchanged for every kind: you still walk
+through it, so `W_DOORWAY_BLOCKED` and `W_DOOR_CLEARANCE` still fire, and a door of
+any kind connects the same two rooms in `describe --json`.
+
+**`swing` means something different per kind.** It is deliberately reused rather
+than joined by a second handed keyword, because "which normal side of the wall" is
+genuinely the same property in each case — and it is the one handed rule already
+proved correct under `place … mirror`:
+
+| kind | `swing in\|out` selects |
+| --- | --- |
+| `hinged` | which side of the wall the leaf sweeps to |
+| `barn` | which **face** of the wall the panel hangs on |
+| `bifold` | which **face** the panels fold toward |
+| `sliding`, `pocket` | *not accepted* — the panel stays in the plane of the wall, or inside it |
+
+**`slide left\|right`** is which way the panel travels to open, read along the host
+wall's traversal direction exactly as `hinge` is (so a mirrored `place` carries it
+correctly with no flip). Default `left`. **`open <0..1>`** is how far the panel is
+**drawn** open — 0 closed, 1 fully open, default 0.5. It is a drawing fact and
+nothing else: no measurement, no lint rule and no `describe --json` field reads it,
+so a door cannot be made to satisfy a check by being drawn ajar. Outside `[0,1]` it
+is [`E_DOOR_OPEN_RANGE`](error-codes.md#e_door_open_range) with a clamping fix.
+
+**Clauses are refused, not ignored.** `hinge` is hinged-only and `slide`/`open` are
+sliding-family-only; the wrong pairing is
+[`E_DOOR_KIND_CLAUSE`](error-codes.md#e_door_kind_clause) with a machine-applicable
+fix that deletes the clause. A non-hinged kind on a wall whose hosting edge is an
+`arc` is [`E_DOOR_KIND_CURVED`](error-codes.md#e_door_kind_curved) — a straight panel
+on a straight track has no meaning on a curved reveal, and drawing one anyway would
+be a wrong drawing with no diagnostic. Clause order follows the grammar line above.
+
+A `pocket` door needs its own width plus end clearance of clear wall past the
+slide-side jamb, or [`W_POCKET_RUN`](error-codes.md#w_pocket_run) — measured, and
+truncated at any other opening inside the run, because a panel cannot slide through
+a window either.
+
+```arch
+plan "Door kinds" {
+  units mm
+  wall exterior thickness 200 { (0,0) (14000,0) (14000,5000) (0,5000) close }
+  wall id=p1 partition thickness 100 { (4000,0) (4000,5000) }
+  wall id=p2 partition thickness 100 { (9000,0) (9000,5000) }
+  room id=west   at (0,0)    size 4000x5000 label "West"
+  room id=middle at (4000,0) size 5000x5000 label "Middle"
+  room id=east   at (9000,0) size 5000x5000 label "East"
+  door id=front on exterior at 10% width 1000 swing in
+  door sliding  on p1 at 25% width 1400
+  door pocket   on p1 at 75% width 900  slide left open 0.4
+  door barn     on p2 at 30% width 1100 swing out slide left
+  door bifold   on p2 at 70% width 1500 swing in  slide right
+}
 ```
 
 ### Window

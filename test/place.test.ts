@@ -154,6 +154,76 @@ describe("place — a mirror is physics: the door swing mirrors too", () => {
   });
 });
 
+describe("place — the door VOCABULARY under a mirror: `slide`'s flip is the identity", () => {
+  /**
+   * The iron law is "add a handed rule ⇒ add its flip to `transformElement`". The door
+   * vocabulary adds exactly one — `slide left|right` — and the honest answer is that
+   * its flip is the IDENTITY, for the same reason `hinge`'s is: both are measured along
+   * the host wall's traversal direction, which the frame carries with it, rather than
+   * against a normal. That is a claim worth nothing without a fixture, so here it is,
+   * stated the strongest way available: a mirrored instance must equal a hand-authored
+   * mirror-image twin, BYTE FOR BYTE.
+   *
+   * Read the two sources side by side. Every `slide` word is written UNCHANGED in the
+   * twin and every `swing` word is written FLIPPED — which is precisely the split
+   * `frame.ts` implements (`swing` reverses when `det(f) < 0`, `hinge` does not). If
+   * `slide` ever needed a compensating flip this case would fail, and the reasoning
+   * behind `hinge`'s existing exemption would be wrong too — a much larger finding than
+   * a door kind, and one to report rather than patch around.
+   */
+  const wing = `component wing() {
+    wall id=w partition thickness 200 { (0,0) (6000,0) }
+    door id=sl sliding on w at 1500 width 1200 slide left
+    door id=bn barn    on w at 3000 width 1000 swing in  slide right
+    door id=bf bifold  on w at 4200 width 1400 swing out slide left
+    door id=pk pocket  on w at 5200 width 700  slide right open 0.4
+  }`;
+  const placed = (t: string): string => `plan "t" {\n  grid 100\n  ${wing}\n  place wing() as m at (0,0) ${t}\n}`;
+  /** The same body in world coordinates after `mirror x`: (x,y) → (−x,y). */
+  const twin = (slide: [string, string, string, string], swing: [string, string]): string => `plan "t" {
+  grid 100
+  wall id=w partition thickness 200 { (0,0) (-6000,0) }
+  door id=sl sliding on w at 1500 width 1200 slide ${slide[0]}
+  door id=bn barn    on w at 3000 width 1000 swing ${swing[0]}  slide ${slide[1]}
+  door id=bf bifold  on w at 4200 width 1400 swing ${swing[1]} slide ${slide[2]}
+  door id=pk pocket  on w at 5200 width 700  slide ${slide[3]} open 0.4
+}`;
+
+  it("a mirrored instance equals the twin written with `slide` UNCHANGED and `swing` flipped", () => {
+    const a = compile(placed("mirror x"), { noCache: true });
+    const b = compile(twin(["left", "right", "left", "right"], ["out", "in "]), { noCache: true });
+    expect(a.errors.map((e) => e.message)).toEqual([]);
+    expect(b.errors.map((e) => e.message)).toEqual([]);
+    expect(a.svg).toBe(b.svg);
+  });
+
+  it("is not vacuous: reversing any `slide` in the twin breaks the equality", () => {
+    // If `slide` were ignored by the renderer the case above would pass for free.
+    const a = compile(placed("mirror x"), { noCache: true }).svg;
+    expect(compile(twin(["right", "right", "left", "right"], ["out", "in "]), { noCache: true }).svg).not.toBe(a);
+    expect(compile(twin(["left", "right", "left", "left"], ["out", "in "]), { noCache: true }).svg).not.toBe(a);
+    // …and `swing` genuinely does need its flip: writing it unflipped also breaks.
+    expect(compile(twin(["left", "right", "left", "right"], ["in ", "out"]), { noCache: true }).svg).not.toBe(a);
+  });
+
+  it("holds under `mirror y` as well", () => {
+    const a = compile(placed("mirror y"), { noCache: true });
+    expect(a.errors.map((e) => e.message)).toEqual([]);
+    const b = compile(
+      `plan "t" {
+  grid 100
+  wall id=w partition thickness 200 { (0,0) (6000,0) }
+  door id=sl sliding on w at 1500 width 1200 slide left
+  door id=bn barn    on w at 3000 width 1000 swing out slide right
+  door id=bf bifold  on w at 4200 width 1400 swing in  slide left
+  door id=pk pocket  on w at 5200 width 700  slide right open 0.4
+}`,
+      { noCache: true },
+    );
+    expect(a.svg).toBe(b.svg);
+  });
+});
+
 describe("place — id namespacing", () => {
   it("two instances get order-independent, per-instance auto-ids", () => {
     const anon = `component box() {

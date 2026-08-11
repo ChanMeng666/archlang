@@ -59,6 +59,21 @@ export interface LintRuleset {
    * false-positive on sound plans; this catches only genuinely roundabout access.
    */
   maxDetourRatio: number;
+  /**
+   * End clearance (mm) a `pocket` door needs beyond its own width, for the jamb, the
+   * pull and the panel's stop. `W_POCKET_RUN` requires
+   * `width + max(pocketRunClearanceMm, width × 5%)`. Default 50.
+   *
+   * **A deliberate divergence from the source this rule is borrowed from.**
+   * planscript-rust's `pocket_door_wall_run` requires a flat `width × 1.05`. A pure
+   * ratio is wrong on narrow doors — a 700 mm pocket would ask for 35 mm of end
+   * clearance, which does not fit a real jamb and pull — and we are not publishing a
+   * comparison against that project, so matching its constant buys nothing.
+   * Architectural correctness outranks reference-comparability, the same call that
+   * put GB/T's `A-ANNO-DIMS` ahead of the reference's coarser `A-DIMS`. The ratio
+   * limb is kept so a wide opening still scales.
+   */
+  pocketRunClearanceMm: number;
 }
 
 export const DEFAULT_RULESET: LintRuleset = {
@@ -72,6 +87,7 @@ export const DEFAULT_RULESET: LintRuleset = {
   minClearAreaM2: 1.0,
   minPathClearWidthMm: 700,
   maxDetourRatio: 3.0,
+  pocketRunClearanceMm: 50,
 };
 
 /**

@@ -1,7 +1,7 @@
 /** Pure geometry helpers. All coordinates in millimetres. Deterministic. */
 
 import type { Point } from "./ast.js";
-import type { DoorHinge, DoorSwingDir } from "./grammar/tokens.js";
+import type { DoorHinge, DoorKind, DoorSwingDir } from "./grammar/tokens.js";
 import type { Arc } from "./geometry/arc.js";
 import {
   arcBandRing,
@@ -102,6 +102,12 @@ export interface DoorLike {
   hinge: DoorHinge;
   swing: DoorSwingDir;
   host: { a: Point; b: Point; thickness: number; arc?: Arc } | null;
+  /**
+   * The door's kind, when it is not the default `hinged` (v1.25). OPTIONAL on
+   * purpose: every existing caller and fixture omits it and behaves exactly as
+   * before, and the one new rule below is a two-line early return.
+   */
+  doorKind?: DoorKind;
 }
 
 /**
@@ -115,10 +121,18 @@ export interface DoorLike {
  * quarter-disc swings off the true face. `hinge left|right` keeps its meaning — it is
  * relative to the direction of travel along the wall, which on an arc is the direction
  * the arc turns (`ccw` by default), not the chord.
+ *
+ * Returns `null` for every NON-HINGED kind (v1.25): a bypass, barn, bifold or pocket
+ * leaf sweeps no quarter-disc, so there is no hinge, no leaf radius and no arc to
+ * report. Every caller already handles `null` — the renderer draws no leaf,
+ * `W_SWING_OBSTRUCTED` stops flagging it (correctly: there is nothing to obstruct) and
+ * `repair()` has one fewer obstacle. This is the ONE place the kind reaches the swing
+ * model; nothing else about a door's geometry is kind-dependent.
  */
 export function doorSwing(d: DoorLike): DoorSwing | null {
   const seg = d.host;
   if (!seg) return null;
+  if (d.doorKind !== undefined && d.doorKind !== "hinged") return null;
   const dir = segmentDirAt(seg, d.at);
   const n = normal(dir);
   const hw = d.width / 2;

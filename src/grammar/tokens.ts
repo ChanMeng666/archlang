@@ -77,6 +77,8 @@ export const KEYWORDS = {
     "label",
     "hinge",
     "swing",
+    "slide",
+    "open",
     "offset",
     "text",
     "close",
@@ -135,6 +137,14 @@ export const KEYWORDS = {
     "cw",
     "ccw",
     "major",
+    // Door kinds (v1.25) — the bare word that leads a `door` statement. Values, not
+    // clause introducers, so they live here beside `left`/`in`; the per-kind grouping
+    // is `DOOR_KINDS` below (this bag is flat highlighting only).
+    "hinged",
+    "sliding",
+    "barn",
+    "bifold",
+    "pocket",
     "A4",
     "A3",
     "A2",
@@ -168,7 +178,8 @@ export const KEYWORDS = {
 } as const;
 
 /**
- * Door clause value sets — the ONE source for the `hinge` / `swing` allow-lists.
+ * Door clause value sets — the ONE source for the `hinge` / `swing` / `slide`
+ * allow-lists.
  *
  * Six places used to retype these two pairs: the parser's inline check and the
  * resolver's `set door(…)` allow-list (`src/elements/door.ts`), the Plan JSON
@@ -195,6 +206,7 @@ export const KEYWORDS = {
 export const DOOR_ENUMS = {
   hinge: ["left", "right"],
   swing: ["in", "out"],
+  slide: ["left", "right"],
 } as const;
 
 /**
@@ -205,14 +217,63 @@ export const DOOR_ENUMS = {
  */
 export const DOOR_HINGE_NEAR = ["start", "end"] as const;
 
+/**
+ * The door KINDS — the bare word that may lead a `door` statement
+ * (`door pocket on w1 at 40% width 900 slide left`).
+ *
+ * It sits beside {@link DOOR_ENUMS} for the same reason {@link DOOR_HINGE_NEAR} does:
+ * a key of that table means "a clause of its own", which is what both generators
+ * iterate to emit `<key> rws <key>-val`. A kind is not a clause — it is the leading
+ * shape word, the `room polygon` / `room circle` / `dim faces` precedent — so it gets
+ * its own list, its own generator rendering and its own guard in each generator.
+ *
+ * `hinged` is the default and is EXACTLY equivalent to writing nothing: the resolver
+ * drops it, so `door hinged …` and `door …` produce byte-identical output. Order is
+ * the order both generators render.
+ */
+export const DOOR_KINDS = ["hinged", "sliding", "barn", "bifold", "pocket"] as const;
+
+/** The optional door clauses whose legality depends on the kind. */
+export type DoorClauseName = "hinge" | "swing" | "slide" | "open";
+
+/**
+ * Which clauses each kind accepts. Beside the value sets because it is the same kind
+ * of fact — part of the door vocabulary, read by the resolver (which raises
+ * `E_DOOR_KIND_CLAUSE` from it), by the Plan JSON projection (which must not emit a
+ * clause it would then refuse on the way back in) and by the docs.
+ *
+ * The rule is REFUSE, never approximate: a clause a kind has no meaning for is an
+ * error, not a silently-ignored word — the v1.23 precedent, where rectangle-only
+ * clauses refuse a polygon room rather than approximate it. "A pocket door with a
+ * `hinge left` clause draws as if the clause were absent" is silent-error design.
+ *
+ * `swing` on `barn`/`bifold` is legal and deliberately OVERLOADED: for those two it
+ * selects which FACE of the wall the panel hangs on or folds toward, not a leaf arc.
+ * The overload buys the one handed rule already proved correct under a reflection
+ * (`frame.ts` flips `swing` when `det < 0`); a new `face in|out` keyword would re-open
+ * that proof for no semantic gain. The price is prose, and it is paid in the error
+ * catalog, in `spec.llm.md`'s door line and in `docs/language-reference.md`.
+ */
+export const DOOR_KIND_CLAUSES: Readonly<Record<DoorKind, Readonly<Record<DoorClauseName, boolean>>>> = {
+  hinged: { hinge: true, swing: true, slide: false, open: false },
+  sliding: { hinge: false, swing: false, slide: true, open: true },
+  barn: { hinge: false, swing: true, slide: true, open: true },
+  bifold: { hinge: false, swing: true, slide: true, open: true },
+  pocket: { hinge: false, swing: false, slide: true, open: true },
+};
+
 /** A door clause that takes a closed value set — a key of {@link DOOR_ENUMS}. */
 export type DoorEnumClause = keyof typeof DOOR_ENUMS;
 /** `hinge left|right`, relative to the host wall's traversal direction. */
 export type DoorHinge = (typeof DOOR_ENUMS.hinge)[number];
 /** `swing in|out`, relative to the host wall's normal. */
 export type DoorSwingDir = (typeof DOOR_ENUMS.swing)[number];
+/** `slide left|right`, relative to the host wall's traversal direction (like `hinge`). */
+export type DoorSlideDir = (typeof DOOR_ENUMS.slide)[number];
 /** `hinge near start|end`. */
 export type DoorHingeNear = (typeof DOOR_HINGE_NEAR)[number];
+/** The leading kind word of a `door` statement; `hinged` is the default. */
+export type DoorKind = (typeof DOOR_KINDS)[number];
 
 /**
  * Render a closed value set the way every enum diagnostic in the tree phrases it —

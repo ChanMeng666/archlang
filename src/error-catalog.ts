@@ -101,6 +101,27 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Give the door a positive `width`.",
     "door at (0,0) width 0   # error",
   ),
+  E_DOOR_KIND_CLAUSE: E(
+    "E_DOOR_KIND_CLAUSE",
+    "That clause is not available on this kind of door.",
+    "A `door` statement carries a clause its kind has no meaning for: `hinge` on any of the sliding family (`sliding`/`barn`/`bifold`/`pocket` — nothing is hinged to a jamb), `swing` on a `sliding` or `pocket` door (the panel stays in the plane of the wall, or inside it), or `slide`/`open` on a `hinged` door (nothing travels along the wall). ArchLang refuses rather than draws the statement as if the clause were absent — silently ignoring a written clause is the silent-error design this project rules out (the v1.23 precedent: rectangle-only clauses REFUSE a polygon room rather than approximate it).",
+    "Delete the clause (the machine-applicable fix does exactly that), or change the door's kind to one the clause belongs to. `swing` on a `barn` or `bifold` door is legal and means which FACE of the wall the panel hangs on or folds toward — it is not a leaf arc.",
+    "door pocket on w1 at 50% width 900 hinge left   # error: a pocket door has no hinge",
+  ),
+  E_DOOR_KIND_CURVED: E(
+    "E_DOOR_KIND_CURVED",
+    "A non-hinged door kind cannot sit on a curved wall.",
+    "The panel of a `sliding`, `barn`, `bifold` or `pocket` door is a straight rectangle running along a straight track, and its pocket/track geometry is straight by construction — none of that survives on a wall whose hosting edge is an `arc`. A hinged leaf does survive (its swing is taken from the tangent at the doorway), so only the sliding family is refused. Refusing is deliberate: drawing a straight panel across a curved reveal would be a wrong drawing with no diagnostic.",
+    "Use a `hinged` door on the curve (the default — delete the kind word), or move the door onto one of the wall's straight runs.",
+    "wall w1 thickness 200 { (0,0) arc (6000,0) radius 4000 }\ndoor pocket on w1 at 50% width 900   # error: curved host",
+  ),
+  E_DOOR_OPEN_RANGE: E(
+    "E_DOOR_OPEN_RANGE",
+    "`open` must be between 0 and 1.",
+    "`open <f>` is the fraction of its travel a sliding-family panel is DRAWN at — 0 is closed, 1 fully open — so a value outside `[0,1]` names a position the panel cannot reach. It is a drawing fact only: nothing measured (`lint`, `describe`, the intent channel) reads it, so a half-open door can never silence a clearance warning.",
+    "Give `open` a fraction in `[0,1]`; `arch fix` clamps it to the nearer end for you. Omit it entirely for the default 0.5.",
+    "door sliding on w1 at 50% width 1200 open 1.5   # error: outside [0,1]",
+  ),
   E_DUP_ID: E(
     "E_DUP_ID",
     "Duplicate element id.",
@@ -676,7 +697,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "W_SWING_OBSTRUCTED",
     "Door swing is obstructed.",
     "The quarter-circle a door leaf sweeps overlaps a piece of furniture/fixture or another door's swing, so the door cannot open fully. The warning states the clear radius the swing needs, what it actually has, and the shortfall.",
-    "Hang the leaf on the other jamb (`hinge left|right`) — a machine-applicable fix when the flipped swing is proved clear; or open it the other way (`swing in|out`), move the door along its wall, move the obstruction (`arch repair`), narrow the leaf to the width the warning quotes (never below the minimum passable width — that relocates the problem into `W_DOOR_CLEARANCE`), or make it a leafless `opening`.",
+    "Hang the leaf on the other jamb (`hinge left|right`) — a machine-applicable fix when the flipped swing is proved clear; or open it the other way (`swing in|out`), move the door along its wall, move the obstruction (`arch repair`), narrow the leaf to the width the warning quotes (never below the minimum passable width — that relocates the problem into `W_DOOR_CLEARANCE`), hang no swinging leaf at all (a `sliding`, `pocket` or `barn` door sweeps nothing, so this rule cannot apply to it), or make it a leafless `opening`.",
     "door at (4000,1500) width 900 swing in   # lint: leaf sweeps onto the bed",
   ),
   W_ROOM_NO_FIXTURE: W(
@@ -734,6 +755,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "A piece of furniture/fixture sits in the clear landing space immediately on either side of a door opening, so you cannot pass through the doorway even when the leaf is open. This is the approach path, distinct from the leaf's swing arc (`W_SWING_OBSTRUCTED`). The warning states the landing depth required, the depth actually left, and the shortfall.",
     "Move the obstruction clear of the opening by the shortfall the warning quotes (`arch repair` computes the smallest clearing shift), shrink it by that much on the axis facing the door, or move the door along its wall so its landing misses it.",
     "door at (6000,3000) width 800\nfurniture wc at (5800,3050) size 700x400   # lint: WC blocks the doorway",
+  ),
+  W_POCKET_RUN: W(
+    "W_POCKET_RUN",
+    "A pocket door has no wall to slide into.",
+    "A `pocket` door's panel disappears into a cavity inside the host wall, so the wall must continue past the slide-side jamb by at least the door's own width plus end clearance. This measures the run from that jamb to the end of the host segment, TRUNCATED at the near edge of any other opening (a window or a second door) that falls inside it — a panel cannot slide through a window either. The warning states what the run has to be, what is actually there, and the shortfall. **The threshold, and a deliberate divergence from the source it is borrowed from:** the required run is `width + max(50 mm, width × 5%)` (`pocketRunClearanceMm` in the lint ruleset). The rule is modelled on planscript-rust's `pocket_door_wall_run`, which requires a flat `width × 1.05` — but a pure ratio is wrong on narrow doors: a 700 mm pocket would ask for 35 mm of end clearance, which does not fit a real jamb and pull. We are not publishing a comparison against that project, so matching its constant buys nothing, and architectural correctness outranks reference-comparability. The two extra things this rule does that the reference does not: it subtracts intervening openings, and it carries its remedies as structured fixes rather than printed prose.",
+    "Reverse the slide (`slide left` ↔ `slide right`) — a machine-applicable fix, emitted only after the reverse run is recomputed and proved to satisfy; move the door along its wall so the pocket lands on solid wall; or lengthen the wall. Narrowing the door is deliberately NOT offered as a fix: rewriting the author's stated width to satisfy a checker is the constraint-laundering pattern this project rules out, and it would also walk into `W_DOOR_CLEARANCE`.",
+    "wall w1 thickness 200 { (0,0) (3000,0) }\ndoor pocket on w1 at 80% width 900 slide right   # lint: only ~600 mm of run",
   ),
   W_ROOM_NO_CLEAR_PATH: W(
     "W_ROOM_NO_CLEAR_PATH",
