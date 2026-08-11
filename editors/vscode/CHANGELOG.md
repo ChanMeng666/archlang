@@ -12,6 +12,30 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.14.0] - 2026-08-11
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.25.0`** — the "orientation & openings" release,
+  so the bundled services learn two new language surfaces and stop reporting a window's aspect
+  backwards on a courtyard plan:
+  - **thirteen new tokens** in the regenerated TextMate grammar and in completion — the plan-level
+    **`site { street … hemisphere … }`** block with its `north`/`south`/`east`/`west` and
+    `north`/`south` value words, and the door kinds **`hinged`**, **`sliding`**, **`barn`**,
+    **`bifold`** and **`pocket`** with their **`slide left|right`** and **`open <0..1>`** clauses;
+  - **nine new catalogued codes with their hovers** — `E_SITE_DUP`, `E_SITE_NO_STREET`,
+    `E_INTENT_NO_SITE`, `W_ROOM_NOT_EQUATOR_FACING`, `E_DOOR_KIND_CLAUSE`, `E_DOOR_OPEN_RANGE`,
+    `E_DOOR_KIND_CURVED`, `W_POCKET_RUN` and `W_DIM_OVERLAP`, the last two carrying
+    machine-applicable quick fixes (reverse the slide; bump the dimension out one chain tier);
+  - the analysis behind the language services stops deriving positions from a bounding box where
+    the shape itself is the honest datum: a window's `facing` is now probed off its own wall (a
+    courtyard plan used to report every courtyard-wall window backwards), a concave room's
+    circulation anchor sits in the room rather than on the lip of its notch, and `swing into <room>`
+    and `furniture … against wall` ask a `polygon`/`circle` room's ring instead of its box.
+- Diagnostic messages for obstructed swings, blocked doorways, fixture clearance and narrow walks
+  now state the value required, the value measured and the shortfall, and list the remedies —
+  including, for an obstructed swing, the door kinds that dissolve the problem entirely.
+
 ## [0.13.0] - 2026-07-26
 
 ### Changed
