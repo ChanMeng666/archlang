@@ -108,6 +108,18 @@ jobs:
             echo "::notice::Will sync io.github.ChanMeng666/archlang-mcp@$mcp_version to the MCP registry."
           fi
 
+      # prepublishOnly is `npm run build && npm run test`, and `npm run test` is the WHOLE
+      # monorepo suite — which includes `editors/vscode/test/stdio.test.ts`. That suite hard-fails
+      # under CI when the core is built but `editors/vscode/dist/server.js` is not, on the
+      # (correct) reasoning that a present core plus an absent bundle means nothing about the
+      # shipped bundle was verified. `npm run build` does not build that bundle, so the publish
+      # path has to, or the gate fires on an artifact the CORE publish never had a reason to make.
+      # Building it here keeps the gate at full strength instead of narrowing it: the bundle is
+      # genuinely verified during the release. (v1.25.0 was the first release after the bundle
+      # tests landed, and the first to hit this.)
+      - name: Build the core and the VS Code bundle (prepublishOnly runs the bundle tests)
+        run: npm run build && npm run vscode:build:only
+
       # prepublishOnly (build + full test suite) is the release gate for the core.
       - name: Publish core to npm (@chanmeng666/archlang)
         if: ${{ success() && steps.check.outputs.core_exists != 'true' }}
