@@ -91,6 +91,21 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // thickness" pitfall row was folded into the row above it (the `furniture` entry
     // already states the `flush` rule verbatim), giving ~290 chars back. Net +130.
     // Trim duplication before raising again.
-    expect(spec.length).toBeLessThan(22_200);
+    //
+    // Raised 22.2k → 22.8k for the site & orientation layer. `site` is the sixth
+    // *structural* keyword and, like `zone`, it is invisible in the drawing: an agent
+    // that does not know it exists cannot read a `site`-bearing source, cannot explain
+    // where `describe --json`'s `site` block came from, and — the expensive half — will
+    // write `facing: "S"` where the brief said "facing the sun", because it has no way to
+    // learn that the five NAMES are assertable at all. The entry has to carry four facts
+    // that cannot be inferred: the syntax, that it draws nothing, what the five derived
+    // names resolve to, and that they are a drafting heuristic rather than a daylight
+    // claim (the honesty clause is load-bearing here — dropping it is exactly how this
+    // feature would break the standing daylight refusal in effect while honouring it in
+    // form). It was trimmed from 1,010 chars to 609 before this was raised — the
+    // `site`-vs-`north` composition detail and the per-name hemisphere prose went to the
+    // language reference — and the suite is green at 22,613. Trim duplication before
+    // raising again.
+    expect(spec.length).toBeLessThan(22_800);
   });
 });

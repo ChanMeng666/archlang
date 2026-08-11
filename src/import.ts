@@ -69,8 +69,8 @@ interface Module {
  *
  * Two deliberate rules, both because ONE drawing is issued on ONE sheet at ONE scale:
  *
- *  - the module's plan-level **settings** (`units`/`grid`/`paper`/`scale`/`north`/`dims`/
- *    `title`/`axes`/`schedule`/`legend`) are IGNORED — they are not body statements, so
+ *  - the module's plan-level **settings** (`units`/`grid`/`paper`/`scale`/`north`/`site`/
+ *    `dims`/`title`/`axes`/`schedule`/`legend`) are IGNORED — they are not body statements, so
  *    they simply never reach here; the root plan's settings govern;
  *  - a module's `level` blocks are DROPPED (a storey is a page, and a component is a
  *    piece of one page, so a multi-storey file cannot be a component). Everything else —

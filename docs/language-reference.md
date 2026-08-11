@@ -53,6 +53,7 @@ plan "My Home" {
 | `paper A4\|A3\|A2\|A1\|A0 [landscape\|portrait]` | The sheet the drawing is issued on. Declaring it makes `scale` **operative** — every annotation size becomes a fixed number of millimetres on that sheet (see [Paper and scale](#paper-and-scale-the-sheet)). Orientation defaults to `landscape`. | none |
 | `scale 1:50` | Drawing scale. On its own, annotation only (a title-block row). **With `paper`, it is the operative scale** every size derives from; omit it and the sheet auto-fits one. | none |
 | `north up\|down\|left\|right\|<deg>` | North direction — where compass north points on the page. Draws the north arrow, and orients the **compass facing** [`describe()` reports for every window](analysis.md#describe--the-semantic-summary) (and therefore what an intent `windows.facing` assertion means): with `north right`, a window on the page's right edge faces `N`. A `<deg>` bearing (clockwise from the top of the page) snaps to the nearest cardinal for that facing — an exact 45° tie rounds clockwise — while the arrow is drawn at the exact bearing. | `up` |
+| `site { street north\|south\|east\|west [hemisphere north\|south] }` | Where the building sits relative to its **street**, so a brief can name a direction instead of a letter. Draws nothing and moves nothing: it gives five directions a name (`street`, `back`, `equator_side`, `sunrise_side`, `sunset_side`) that `describe()`, `lint` and an intent's `windows.facing` can all use. See [Site and orientation](#site-and-orientation). | none |
 | `dims auto [overall\|rooms\|walls\|all]` | Auto-draw dimension **chains** without hand-placing each `dim`, in the GB/T 50104 exterior convention — every chain outside the building, measured from the outer wall faces (see [Automatic dimension chains](#automatic-dimension-chains)): `overall` (one outer-face-to-outer-face span per dimensioned facade), `rooms` (the room/partition axis chain), `walls` (one deduped thickness call-out per distinct wall thickness), or `all` (the openings chain + the axis chain + the overall span, and the default when no scope is given). | off |
 | `axes { x at … y at … }` | The plan's **positioning axes** (定位轴线) — declared structural datum lines, drawn dash-dot with a labelled bubble and used as the ticks of the middle dimension chain. See [Positioning axes](#positioning-axes-定位轴线). | none |
 | `schedule rooms` | Draw the **ROOM SCHEDULE** table in the sheet's bottom band — number, name and area per room, closed by a total. Rows are derived from the rooms, never authored. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
@@ -138,6 +139,61 @@ dropping the `scale` line and letting auto-fit choose.
 
 A plan that declares no `paper` renders **byte-for-byte** as it did before this feature
 existed, `scale` included.
+
+### Site and orientation
+
+`north` says which way the *page* points. `site` says which way the *building* points:
+
+```arch static
+site {
+  street south          # the frontage faces compass south — required
+  hemisphere north      # optional; `north` unless you say otherwise
+}
+```
+
+It is a **plan-level setting that draws nothing** and changes no geometry: a plan with a
+`site` block renders byte-for-byte like the same plan without one. What it buys is a
+vocabulary. `street` is a *true compass* direction, so it is read **with** `north`, never
+instead of it, and it gives five directions a name — every one of them a compass letter,
+reported on `arch describe --json` under `site`:
+
+| Name | Value | Reads `hemisphere`? |
+|------|-------|---------------------|
+| `street` | the direction you declared | no |
+| `back` | its opposite — the garden/rear aspect | no |
+| `equator_side` | `S` in the northern hemisphere, `N` in the southern | **yes** — this is the only thing `hemisphere` decides |
+| `sunrise_side` | `E`, in both hemispheres | no |
+| `sunset_side` | `W`, in both hemispheres | no |
+
+```json
+"site": { "street": "S", "back": "N", "equator_side": "S",
+          "sunrise_side": "E", "sunset_side": "W", "hemisphere": "north" }
+```
+
+Two consumers read those names. An [intent](intent.md)'s `windows.facing` may assert one
+of them instead of a letter — `"facing": "equator_side"` is the same assertion as
+`"facing": "S"` once the site is known — and one advisory lint rule,
+[`W_ROOM_NOT_EQUATOR_FACING`](error-codes.md#w_room_not_equator_facing), reports a
+habitable room whose windows all miss the equator-facing aspect.
+
+> **These names are a drafting heuristic, not a daylight measurement.** "Habitable rooms
+> want the equator-facing aspect" is a rule of thumb; a south window in Reykjavík and one
+> in Singapore are not the same daylight, and ArchLang will never say they are. There is
+> **no sun model, no latitude, no date, no solar hours and no daylight factor** anywhere
+> in the language, by decision — computing any of them means simulating a sky, which
+> breaks determinism and the zero-dependency core. `equator_side` asserts *a window on
+> the equator-facing facade*, and nothing more. The names are spelled `_side` rather than
+> `_sun` precisely so that step stays visible.
+
+Rules, all of them refusals rather than defaults:
+
+- `street` is **required** — a site with no street derives nothing
+  ([`E_SITE_NO_STREET`](error-codes.md)). `hemisphere` is the optional half.
+- **One block per plan** ([`E_SITE_DUP`](error-codes.md)). Repeated `axes` blocks merge
+  because two axis lists append; two `street` values contradict.
+- **Plan level only**, and like `north`, an **imported** module's `site` is ignored — one
+  drawing is issued at one orientation, so an imported wing cannot re-orient the building.
+- `arch fmt` prints it immediately after `north`, with both fields.
 
 ### Accessible metadata (`accTitle`, `accDescr`)
 

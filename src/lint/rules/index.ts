@@ -21,6 +21,7 @@ import {
 } from "./furniture.js";
 import { perRoomRules } from "./per-room.js";
 import { reachability } from "./reachability.js";
+import { roomNotEquatorFacing } from "./site.js";
 import { stairUnmatched } from "./vertical.js";
 
 export const LINT_RULES: readonly LintRule[] = [
@@ -56,6 +57,11 @@ export const LINT_RULES: readonly LintRule[] = [
   // LAST — every existing plan's diagnostic ORDER has to stay exactly where it was, and a
   // rule that fires only on a `dim` pair can be read at the end of the list.
   dimOverlap,
+  // Orientation advisory (the site layer): a habitable room whose windows all miss the
+  // equator-facing aspect. Appended LAST, for the same reason as every rule above it —
+  // no existing plan's diagnostic ORDER may move — and it cannot fire at all unless the
+  // plan declares `site`, so no plan written before it existed can see it.
+  roomNotEquatorFacing,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

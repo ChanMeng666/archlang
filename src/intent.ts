@@ -24,6 +24,7 @@ import type { Diagnostic } from "./diagnostics.js";
 import { describe } from "./describe.js";
 import type { DescribeOptions, RoomSummary, SceneSummary, WindowSummary } from "./describe.js";
 import { isCirculationRoom, roomsMatchingConcept } from "./intent-concepts.js";
+import { type CompassLetter, type SiteFacts, SYMBOLIC_FACINGS, type SymbolicFacing } from "./site.js";
 
 /** Bump when predicate kinds or their *corpus judgments* change (pinned by a test).
  *  Re-exported by the eval's `assertions.ts`; the byte-equivalence criterion is that
@@ -33,6 +34,35 @@ export const JUDGE_VERSION = "2";
 
 /** The `∞` upper bound for an open-ended area band. */
 const INF = Number.POSITIVE_INFINITY;
+
+/**
+ * What a `windows.facing` may name: a plain TRUE-COMPASS letter, or one of the derived
+ * direction names a plan's `site` block licenses ({@link SymbolicFacing}), which resolves
+ * to a letter through `describe().site` at check time.
+ *
+ * A symbolic name is the SAME assertion written differently — "a window facing the
+ * equator side" is "a window facing S" once the site is known — so it rides the existing
+ * `room-windows` predicate rather than a new kind, and does not change its gating tier.
+ * Asserting one against a plan with no `site` is `E_INTENT_NO_SITE`: unanswerable, never
+ * a silent pass or a silent miss.
+ *
+ * **The `_side` names are a drafting heuristic, not a measured daylight outcome** — see
+ * `src/site.ts`. `equator_side` asserts an aspect, not sunlight.
+ */
+export type IntentFacing = CompassLetter | SymbolicFacing;
+
+/** Is this facing one of the site-derived names (as opposed to a bare compass letter)? */
+function isSymbolicFacing(f: IntentFacing): f is SymbolicFacing {
+  return (SYMBOLIC_FACINGS as readonly string[]).includes(f);
+}
+
+/** The letter a facing means for a given plan: itself when it is already a letter, else
+ *  the site's value for that name — or `null` when the plan declares no `site`, which is
+ *  the `E_INTENT_NO_SITE` condition. */
+function facingLetter(f: IntentFacing, site: SiteFacts | undefined): CompassLetter | null {
+  if (!isSymbolicFacing(f)) return f;
+  return site ? site[f] : null;
+}
 
 // ---------------------------------------------------------------------------
 // Intent — the brief's checkable expectations (the judge-v2 shape).
@@ -62,8 +92,10 @@ export interface Intent {
      *  present, restricts the count to windows whose host wall faces that TRUE COMPASS
      *  direction — `describe().windows[].facing`, which reads the page direction against
      *  the plan's `north` setting — so assert it only when the brief states an
-     *  orientation. */
-    windows?: { min?: number; max?: number; facing?: "N" | "S" | "E" | "W" };
+     *  orientation. It may be a letter or one of the plan's site-derived names
+     *  ({@link IntentFacing}); a symbolic name against a plan with no `site` is
+     *  `E_INTENT_NO_SITE`. */
+    windows?: { min?: number; max?: number; facing?: IntentFacing };
   }[];
   /** Total floor-area band — only where the brief states a number. At least one bound;
    *  an open top ("at least N m²") sets `min` alone. */
@@ -84,7 +116,7 @@ export type Predicate =
   | { kind: "total-area"; minM2: number; maxM2: number; source: string; gate: true }
   | { kind: "adjacent"; a: string; b: string; source: string; gate: false }
   | { kind: "reachable"; gate: false }
-  | { kind: "room-windows"; concept: string; min: number; max?: number; facing?: "N" | "S" | "E" | "W"; gate: true };
+  | { kind: "room-windows"; concept: string; min: number; max?: number; facing?: IntentFacing; gate: true };
 
 export interface AssertionResult {
   predicate: Predicate;
@@ -105,7 +137,7 @@ export interface Subscores {
   adjacency: number | null;
 }
 
-/** The eight catalogued blame codes {@link validateIntent} emits. */
+/** The nine catalogued blame codes {@link validateIntent} emits. */
 export type IntentCode =
   | "E_INTENT_ROOM_MISSING"
   | "E_INTENT_ROOM_COUNT"
@@ -114,7 +146,8 @@ export type IntentCode =
   | "E_INTENT_NOT_ADJACENT"
   | "E_INTENT_NO_DOOR"
   | "E_INTENT_UNREACHABLE"
-  | "E_INTENT_NO_WINDOW";
+  | "E_INTENT_NO_WINDOW"
+  | "E_INTENT_NO_SITE";
 
 /** A failed intent assertion, blamed to a code, message, and originating predicate.
  *  `gate` is false for advisory (adjacency/reachability) violations — they are reported
@@ -370,7 +403,13 @@ function checkRoomArea(
  *  the count to windows whose wall faces that compass direction. Falls back to a full
  *  concept match if no `room-exists` preceded it (defensive; compileIntent always emits
  *  one). The no-facing detail strings are unchanged (the `facing` clause only appears when
- *  a facing is asserted). */
+ *  a facing is asserted).
+ *
+ *  A SYMBOLIC facing (`equator_side`, `street`, …) is resolved to its letter through the
+ *  plan's own `describe().site` first, and the detail names both spellings so a reader can
+ *  see the resolution. Against a plan with no `site` the assertion cannot be evaluated at
+ *  all: it fails with a detail that says so, and {@link makeViolation} blames it to
+ *  `E_INTENT_NO_SITE` rather than pretending the windows were counted and found wanting. */
 function checkRoomWindows(
   p: Extract<Predicate, { kind: "room-windows" }>,
   summary: SceneSummary,
@@ -378,12 +417,23 @@ function checkRoomWindows(
 ): AssertionResult {
   const assigned = claims.get(p.concept) ?? roomsMatchingConcept(p.concept, summary.rooms);
   const ids = new Set(assigned.map((r) => r.id));
+  const letter = p.facing === undefined ? undefined : facingLetter(p.facing, summary.site);
+  if (letter === null) {
+    return {
+      predicate: p,
+      pass: false,
+      detail: `windows: facing "${p.facing}" needs a \`site\` block — the plan declares none, so the direction has no value`,
+    };
+  }
   const count = summary.windows.filter(
-    (w: WindowSummary) => w.room !== null && ids.has(w.room) && (p.facing === undefined || w.facing === p.facing),
+    (w: WindowSummary) => w.room !== null && ids.has(w.room) && (letter === undefined || w.facing === letter),
   ).length;
   const pass = count >= p.min && (p.max === undefined || count <= p.max);
   const want = p.max !== undefined ? `${p.min}–${p.max}` : `${p.min}`;
-  const facing = p.facing !== undefined ? ` facing ${p.facing}` : "";
+  // The letter is spelled out beside a symbolic name, and the bare-letter form is
+  // byte-identical to what it has always been.
+  const facing =
+    p.facing === undefined ? "" : p.facing === letter ? ` facing ${letter}` : ` facing ${p.facing} (${letter})`;
   const detail = pass
     ? `windows: concept "${p.concept}" ok (found ${count}${facing})`
     : `windows: only ${count} window(s)${facing} in room(s) matching "${p.concept}" (needed ${want})`;
@@ -462,7 +512,12 @@ function makeViolation(a: AssertionResult, path: string, summary: SceneSummary):
     case "adjacent":
       return { code: "E_INTENT_NOT_ADJACENT", message, gate, predicate };
     case "room-windows":
-      return { code: "E_INTENT_NO_WINDOW", message, gate, predicate };
+      // Split by cause, like `reachable` below: a SYMBOLIC facing against a plan with no
+      // `site` is an unanswerable question (`E_INTENT_NO_SITE`), not a window that was
+      // counted and found missing.
+      return predicate.facing !== undefined && facingLetter(predicate.facing, summary.site) === null
+        ? { code: "E_INTENT_NO_SITE", message, gate, predicate }
+        : { code: "E_INTENT_NO_WINDOW", message, gate, predicate };
     case "reachable":
       return summary.access.hasEntrance
         ? { code: "E_INTENT_UNREACHABLE", message, gate, predicate }
@@ -541,6 +596,13 @@ function feedbackForViolation(v: IntentViolation, result: IntentCheckResult): st
       const facing = p.kind === "room-windows" && p.facing !== undefined ? ` facing ${p.facing}` : "";
       return `Add a window${facing} to the "${concept}" room — e.g. \`window on <wall> at <pos>\` (${fact}).`;
     }
+    case "E_INTENT_NO_SITE": {
+      const facing = p.kind === "room-windows" && p.facing !== undefined ? p.facing : "";
+      return (
+        `Declare the plan's site so "${facing}" has a direction — add \`site { street north|south|east|west }\` ` +
+        `(and \`hemisphere south\` below the equator), or assert a plain compass letter instead (${fact}).`
+      );
+    }
   }
 }
 
@@ -604,8 +666,11 @@ function checkBand(
   if (opts.requireOne && !hasMin && !hasMax) errs.push(path, "expected at least one of min/max");
 }
 
-/** The four compass directions a `windows.facing` may take. */
-const FACINGS = new Set(["N", "S", "E", "W"]);
+/** Everything a `windows.facing` may take: the four compass letters, plus the five
+ *  site-derived names that resolve to one. Order fixed so the error message reads the
+ *  same way every time. */
+const FACING_VALUES: readonly string[] = ["N", "S", "E", "W", ...SYMBOLIC_FACINGS];
+const FACINGS = new Set(FACING_VALUES);
 
 const ROOMS_INCLUDE_KEYS = new Set(["concept", "count", "areaM2", "windows"]);
 const INTENT_KEYS = new Set(["rooms", "roomsInclude", "totalAreaM2", "adjacency", "reachable"]);
@@ -654,7 +719,7 @@ export function intentFromJson(value: unknown): { intent: Intent | null; errors:
           });
           if (isObj(inc.windows) && inc.windows.facing !== undefined) {
             if (!isStr(inc.windows.facing) || !FACINGS.has(inc.windows.facing))
-              errs.push(`${path}/windows/facing`, 'expected one of "N", "S", "E", "W"');
+              errs.push(`${path}/windows/facing`, `expected one of ${FACING_VALUES.map((v) => `"${v}"`).join(", ")}`);
           }
         }
       });
@@ -772,9 +837,9 @@ export const INTENT_JSON_SCHEMA = {
               max: { type: "integer", minimum: 0, description: "Maximum windows in the room." },
               facing: {
                 type: "string",
-                enum: ["N", "S", "E", "W"],
+                enum: [...FACING_VALUES],
                 description:
-                  "TRUE COMPASS direction the window's wall faces, read against the plan's `north` setting. Under the default `north up` the page's top is north, so a top-edge window faces N, bottom S, left W, right E; under e.g. `north right` a right-edge window faces N instead. Restricts the count to windows facing this way. Assert ONLY when the brief states an orientation.",
+                  "TRUE COMPASS direction the window's wall faces, read against the plan's `north` setting. Under the default `north up` the page's top is north, so a top-edge window faces N, bottom S, left W, right E; under e.g. `north right` a right-edge window faces N instead. Restricts the count to windows facing this way. Assert ONLY when the brief states an orientation. The five NAMES (`street`, `back`, `equator_side`, `sunrise_side`, `sunset_side`) are the same assertion written against the plan's `site` block, which resolves each to a letter — asserting one against a plan with no `site` is E_INTENT_NO_SITE, not a silent miss. NOTE: `equator_side`/`sunrise_side`/`sunset_side` are a DRAFTING HEURISTIC for an aspect, NOT a measured daylight outcome — ArchLang has no sun model, latitude or date, so `equator_side` asserts \"a window on the equator-facing facade\" and nothing more. Prefer them only where the brief itself speaks in those terms.",
               },
             },
           },

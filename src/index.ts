@@ -156,6 +156,7 @@ export type {
   IntentViolation,
   IntentCode,
   IntentCheckResult,
+  IntentFacing,
 } from "./intent.js";
 export {
   roomsMatchingConcept,
@@ -237,6 +238,23 @@ export { toScene } from "./scene-build.js";
 // Positioning axes (定位轴线): the GB/T numbering rules, exposed so a tool can label an
 // axis grid the same way the drawing does (`ir.axes` already carries the labels).
 export { numberAxes, axisLetter, AXIS_LETTERS } from "./axes.js";
+// Site & orientation: the `site` block's derived direction NAMES and the ONE page→compass
+// conversion `describe()` and the lint rules share. Closed form — no sun model, no
+// latitude, no date; `equator_side`/`sunrise_side`/`sunset_side` are a drafting heuristic
+// for an aspect, never a measured daylight outcome (see the module note in src/site.ts).
+export {
+  compassLetter,
+  deriveSite,
+  equatorSide,
+  FACINGS,
+  oppositeLetter,
+  planCenterOfRooms,
+  resolveSymbolicFacing,
+  SYMBOLIC_FACINGS,
+  toCompass,
+  windowFacingPage,
+} from "./site.js";
+export type { CompassLetter, SiteFacts, SymbolicFacing } from "./site.js";
 export type {
   Scene,
   SceneNode,

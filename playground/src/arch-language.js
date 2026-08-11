@@ -11,10 +11,10 @@ import { linter } from "@codemirror/lint";
 import { tags as t } from "@lezer/highlight";
 import { compile } from "archlang";
 
-const CONTROL = new Set(["plan", "component", "let", "theme", "title", "style", "import", "for", "if", "while", "else", "set", "strip", "level", "zone", "place", "axes", "schedule", "legend"]);
+const CONTROL = new Set(["plan", "component", "let", "theme", "title", "style", "import", "for", "if", "while", "else", "set", "strip", "level", "zone", "place", "axes", "schedule", "legend", "site"]);
 const ELEMENT = new Set(["wall", "room", "door", "window", "opening", "furniture", "dim", "column", "stair", "elevator", "escalator"]);
 const ATTR = new Set(["units", "grid", "paper", "scale", "north", "dims", "accTitle", "accDescr", "material", "angle", "at", "size", "polygon", "circle", "arc", "radius", "width", "thickness", "label", "hinge", "swing", "offset", "text", "close", "id", "project", "drawn_by", "date", "from", "as", "right-of", "left-of", "below", "above", "align", "gap", "uses", "rotate", "against", "segment", "side", "on", "into", "near", "anchor", "inset", "flush", "mirror", "height", "faces", "clear", "dir"]);
-const ENUM = new Set(["up", "down", "left", "right", "in", "out", "mm", "true", "false", "top", "middle", "bottom", "center", "centered", "start", "end", "top-left", "top-right", "bottom-left", "bottom-right", "auto", "cw", "ccw", "major", "A4", "A3", "A2", "A1", "A0", "landscape", "portrait", "living", "kitchen", "dining", "bedroom", "bath", "wc", "hall", "circulation", "storage", "utility", "office", "entry"]);
+const ENUM = new Set(["up", "down", "left", "right", "in", "out", "mm", "true", "false", "top", "middle", "bottom", "center", "centered", "start", "end", "top-left", "top-right", "bottom-left", "bottom-right", "auto", "cw", "ccw", "major", "A4", "A3", "A2", "A1", "A0", "landscape", "portrait", "living", "kitchen", "dining", "bedroom", "bath", "wc", "hall", "circulation", "storage", "utility", "office", "entry", "south", "east", "west"]);
 
 const archStream = StreamLanguage.define({
   name: "arch",

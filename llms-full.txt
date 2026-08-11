@@ -85,6 +85,7 @@ place <component>(<args>) as <name> at (x,y) [rotate 0|90|180|270] [mirror x|y] 
 axes { x at <mm>, <mm>, … y at <mm>, <mm>, … }   # GB/T 50001 positioning axes (定位轴线): dash-dot datum lines with a labelled bubble. `x` are vertical (numbered 1,2,3… left-to-right), `y` horizontal (lettered A,B,C… BOTTOM-to-top, skipping I/O/Z). Positions are expressions; labels are DERIVED from sorted position, never authored. With `dims auto rooms|all` the middle chain measures the AXES instead of room boundaries. Plan-level block only
 schedule rooms   # draw the ROOM SCHEDULE table below the title block: NO. (01, 02, … source order) · NAME (label, else id) · AREA (m²) + a TOTAL row, all derived from the rooms. `rooms` is the only subject (anything else is a parse error). Same rows as `describe --json`'s `schedule[]`. With `zone` blocks the rows group by zone, each closed by a SUBTOTAL row
 legend   # draw the LEGEND table beside the schedule: a row per wall hatch material used and per placed fixture category that has a plan symbol, each with a real swatch. Fully derived; nothing to configure. Pure rendering — no `describe()` field
+site { street north|south|east|west [hemisphere north|south] }   # semantics only — draws NOTHING. `street` is a TRUE compass direction (read WITH `north`, not instead of it) and names five on `describe --json`'s `site`: `street`, `back` (opposite), `equator_side` (S north of the equator, N south of it), `sunrise_side` (E), `sunset_side` (W). An intent's `windows.facing` may assert those NAMES instead of a letter (no `site` = E_INTENT_NO_SITE). They are a DRAFTING HEURISTIC for an aspect, NOT daylight — there is no sun model. `street` required (E_SITE_NO_STREET), one block (E_SITE_DUP), plan-level only
 ```
 
 ## Scripting (all expand-time, deterministic)
@@ -101,9 +102,9 @@ legend   # draw the LEGEND table beside the schedule: a row per wall hatch mater
 
 (Elements are fully specced above; these are the rest.)
 
-- **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`, `strip`, `level`, `zone`, `place`, `axes`, `schedule`, `legend`
+- **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`, `strip`, `level`, `zone`, `place`, `axes`, `schedule`, `legend`, `site`
 - **Attributes:** `units`, `grid`, `paper`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `polygon`, `circle`, `arc`, `radius`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`, `on`, `into`, `near`, `anchor`, `inset`, `flush`, `mirror`, `height`, `faces`, `clear`, `dir`
-- **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `centered`, `start`, `end`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `auto`, `cw`, `ccw`, `major`, `A4`, `A3`, `A2`, `A1`, `A0`, `landscape`, `portrait`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`
+- **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `centered`, `start`, `end`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `auto`, `cw`, `ccw`, `major`, `A4`, `A3`, `A2`, `A1`, `A0`, `landscape`, `portrait`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`, `south`, `east`, `west`
 
 ## CLI loop (how an agent drives it)
 
@@ -662,7 +663,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**65 errors** (abort rendering) · **40 warnings** (advisory; `validate --strict` fails on them too).
+**68 errors** (abort rendering) · **41 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -695,6 +696,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_IMPORT_PARSE` — Imported module has a parse error. **Fix:** Fix the syntax error in the imported module.
 - `E_INDEX` — Array index out of range. **Fix:** Clamp or check the index against `len(arr)`.
 - `E_INTENT_NO_DOOR` — The plan has no modeled entrance, so `reachable` cannot hold. **Fix:** Add an exterior entrance `door` on a perimeter wall. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).
+- `E_INTENT_NO_SITE` — An intent asserts a SYMBOLIC window facing against a plan with no `site`. **Fix:** Declare `site { street … }` in the plan (that is what gives the derived names their letters), or assert a plain compass letter instead. Gating tier: this failure fails `validateIntent`'s `ok` — it is a refusal, never a silent pass and never a silent miss.
 - `E_INTENT_NO_WINDOW` — A room the brief wants a window in has too few. **Fix:** Add a `window` on one of that room's walls. Gating tier: this failure DOES fail `validateIntent`'s `ok`.
 - `E_INTENT_NOT_ADJACENT` — Two rooms the brief wants adjacent share no interior door. **Fix:** Add a `door` (or `opening`) on the wall the two rooms share so they are directly connected. Advisory tier: this is scored and reported by `validateIntent` but does NOT fail `ok` (gate: false) — one-shot topology is what the loop tools address.
 - `E_INTENT_ROOM_AREA` — A named room's floor area is outside the brief's band. **Fix:** Resize the room so its floor area lands in the band. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number — qualitative size words license none.
@@ -707,7 +709,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_LAYOUT_CYCLE` — Relational room placement forms a cycle. **Fix:** Break the cycle by giving one of the rooms absolute `at (x,y)` coordinates.
 - `E_LAYOUT_REF` — Relational placement references an unknown room. **Fix:** Reference an existing room id, or fix the typo.
 - `E_LEVEL_DUP` — Two `level` blocks declare the same storey number. **Fix:** Renumber one of them, or merge the two bodies into a single `level` block.
-- `E_LEVEL_MIX` — A drawable statement sits beside `level` blocks. **Fix:** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.
+- `E_LEVEL_MIX` — A drawable statement sits beside `level` blocks. **Fix:** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.
 - `E_LEVEL_NEST` — `level` used inside a block or component. **Fix:** Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.
 - `E_OPENING_WIDTH` — Opening must have a positive width. **Fix:** Give the opening a positive `width`.
 - `E_PLACE_POLY` — A rectangle-only placement clause aimed at a polygon room. **Fix:** Place the room or the fixture with explicit `at (x,y)` coordinates (a fixture may add `rotate`), or make the referenced room rectangular.
@@ -720,6 +722,8 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_ROOM_POLY_SELF_INTERSECT` — Polygon room intersects itself. **Fix:** Reorder the vertices so the ring is traced once around the room without crossing itself (a bow-tie usually means two vertices are swapped).
 - `E_ROOM_RADIUS` — Circular room needs a positive radius. **Fix:** Give the room a positive radius in millimetres.
 - `E_ROOM_SIZE` — Room must have a positive size. **Fix:** Give the room a positive `size W x H`.
+- `E_SITE_DUP` — Two `site` blocks in one plan. **Fix:** Delete one of the blocks, or merge their fields into a single `site { … }`. The first block is the one that takes effect.
+- `E_SITE_NO_STREET` — A `site` block declares no `street`. **Fix:** Add `street north`, `south`, `east` or `west` inside the block. `hemisphere` is the optional field (it defaults to `north`).
 - `E_STAIR_WIDTH` — Stair flight `width` is outside the footprint. **Fix:** Drop `width` to fill the footprint, or give a value between 0 and the footprint's short side.
 - `E_STRIP_NEST` — Illegal `strip` nesting. **Fix:** Move the `strip` to the plan body, alongside the other elements.
 - `E_STRIP_SIZE` — Room in a `strip` is missing a size. **Fix:** Give the room a `size <main>` (main-axis extent) plus either a strip `height`/`width` or its own `size <main>x<cross>`.
@@ -762,6 +766,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `W_ROOM_NO_CLEAR_PATH` — A room cannot be entered or crossed. **Fix:** Open up the layout: move or shrink the furniture nearest the door so there is a continuous walkable strip from each entrance into the room.
 - `W_ROOM_NO_FIXTURE` — Bathroom or kitchen has no fixtures. **Fix:** Place the expected fixtures — e.g. import `lib/fixtures.arch` and add a `wc`, `basin`, `shower`, or `kitchen_sink`.
 - `W_ROOM_NOT_ENCLOSED` — Bathroom is not fully enclosed. **Fix:** Extend the partition so the room's perimeter is walled on all sides (a door/window in the wall is fine — only a missing wall counts).
+- `W_ROOM_NOT_EQUATOR_FACING` — A habitable room has windows, but none faces the equator side. **Fix:** Move a window onto the room's equator-facing facade, or accept the aspect — an urban plot often has no equator-facing wall to spare. There is deliberately NO machine fix: the remedy is a geometric decision (which facade, which wall, what else it displaces) and the compiler does not make those (ADR 0005).
 - `W_ROOM_OVERLAP` — Rooms overlap. **Fix:** Adjust positions/sizes if the overlap is unintended (it is allowed).
 - `W_ROOM_TOO_SMALL` — Room is implausibly small. **Fix:** Increase its `size`, or merge it into an adjacent space.
 - `W_ROOM_UNREACHABLE` — Room cannot be reached from the entrance. **Fix:** Add a door or cased `opening` linking it (directly or through a hall) to a space that reaches the entrance.

@@ -33,7 +33,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import type { DoorEnumClause } from "../src/grammar/tokens.js";
 import { DOOR_ENUMS, DOOR_HINGE_NEAR, KEYWORDS, OPERATORS } from "../src/grammar/tokens.js";
-import { USE_KINDS, FURNITURE_ANCHORS, SCHEDULE_SUBJECTS } from "../src/ast.js";
+import { USE_KINDS, FURNITURE_ANCHORS, SCHEDULE_SUBJECTS, COMPASS_DIRECTIONS, HEMISPHERES } from "../src/ast.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "../src/sheet.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -180,7 +180,7 @@ function rules(): [string, string][] {
     // ---- plan settings ---------------------------------------------------
     [
       "setting",
-      `units-stmt | grid-stmt | paper-stmt | scale-stmt | north-stmt | dims-stmt | schedule-stmt | legend-stmt`,
+      `units-stmt | grid-stmt | paper-stmt | scale-stmt | north-stmt | site-stmt | dims-stmt | schedule-stmt | legend-stmt`,
     ],
     ["units-stmt", `"units" rws "mm"`],
     ["grid-stmt", `"grid" rws number`],
@@ -190,6 +190,15 @@ function rules(): [string, string][] {
     ["scale-stmt", `"scale" rws number ws ":" ws number`],
     ["north-stmt", `"north" rws north-dir`],
     ["north-dir", `"up" | "down" | "left" | "right" | number`],
+    // `site { street … [hemisphere …] }` — both value sets INJECTED from the closed
+    // vocabularies the parser itself checks against (`src/ast.ts`), never retyped: a
+    // direction added there and typed out here would ship a decoder that cannot emit it
+    // while `check:drift` stayed green. Fields may appear in either order and either may
+    // repeat, which is what the parser accepts.
+    ["site-stmt", `"site" ws "{" ws ( site-field ws )* "}"`],
+    ["site-field", `"street" rws compass-dir | "hemisphere" rws hemisphere`],
+    ["compass-dir", litAlt(COMPASS_DIRECTIONS)],
+    ["hemisphere", litAlt(HEMISPHERES)],
     ["dims-stmt", `"dims" rws "auto" ( rws dims-mode )?`],
     ["dims-mode", `"overall" | "rooms" | "walls" | "all"`],
     // Sheet tables: `schedule <subject>` (subjects injected from SCHEDULE_SUBJECTS, the

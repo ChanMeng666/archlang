@@ -97,7 +97,7 @@
     "keywords": {
       "patterns": [
         {
-          "match": "\\b(plan|component|let|theme|title|style|import|for|if|while|else|set|strip|level|zone|place|axes|schedule|legend)\\b",
+          "match": "\\b(plan|component|let|theme|title|style|import|for|if|while|else|set|strip|level|zone|place|axes|schedule|legend|site)\\b",
           "name": "keyword.control.arch"
         },
         {
@@ -111,7 +111,7 @@
       ]
     },
     "constants": {
-      "match": "\\b(up|down|left|right|in|out|mm|true|false|top|middle|bottom|center|centered|start|end|top-left|top-right|bottom-left|bottom-right|auto|cw|ccw|major|A4|A3|A2|A1|A0|landscape|portrait|living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry)\\b",
+      "match": "\\b(up|down|left|right|in|out|mm|true|false|top|middle|bottom|center|centered|start|end|top-left|top-right|bottom-left|bottom-right|auto|cw|ccw|major|A4|A3|A2|A1|A0|landscape|portrait|living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry|south|east|west)\\b",
       "name": "constant.language.arch"
     },
     "operators": {

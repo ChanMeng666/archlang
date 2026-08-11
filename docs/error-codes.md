@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**65 errors** · **40 warnings**
+**68 errors** · **41 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -38,6 +38,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_IMPORT_PARSE`](#e_import_parse) | error | Imported module has a parse error. |
 | [`E_INDEX`](#e_index) | error | Array index out of range. |
 | [`E_INTENT_NO_DOOR`](#e_intent_no_door) | error | The plan has no modeled entrance, so `reachable` cannot hold. |
+| [`E_INTENT_NO_SITE`](#e_intent_no_site) | error | An intent asserts a SYMBOLIC window facing against a plan with no `site`. |
 | [`E_INTENT_NO_WINDOW`](#e_intent_no_window) | error | A room the brief wants a window in has too few. |
 | [`E_INTENT_NOT_ADJACENT`](#e_intent_not_adjacent) | error | Two rooms the brief wants adjacent share no interior door. |
 | [`E_INTENT_ROOM_AREA`](#e_intent_room_area) | error | A named room's floor area is outside the brief's band. |
@@ -63,6 +64,8 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_ROOM_POLY_SELF_INTERSECT`](#e_room_poly_self_intersect) | error | Polygon room intersects itself. |
 | [`E_ROOM_RADIUS`](#e_room_radius) | error | Circular room needs a positive radius. |
 | [`E_ROOM_SIZE`](#e_room_size) | error | Room must have a positive size. |
+| [`E_SITE_DUP`](#e_site_dup) | error | Two `site` blocks in one plan. |
+| [`E_SITE_NO_STREET`](#e_site_no_street) | error | A `site` block declares no `street`. |
 | [`E_STAIR_WIDTH`](#e_stair_width) | error | Stair flight `width` is outside the footprint. |
 | [`E_STRIP_NEST`](#e_strip_nest) | error | Illegal `strip` nesting. |
 | [`E_STRIP_SIZE`](#e_strip_size) | error | Room in a `strip` is missing a size. |
@@ -102,6 +105,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_ROOM_NO_CLEAR_PATH`](#w_room_no_clear_path) | warning | A room cannot be entered or crossed. |
 | [`W_ROOM_NO_FIXTURE`](#w_room_no_fixture) | warning | Bathroom or kitchen has no fixtures. |
 | [`W_ROOM_NOT_ENCLOSED`](#w_room_not_enclosed) | warning | Bathroom is not fully enclosed. |
+| [`W_ROOM_NOT_EQUATOR_FACING`](#w_room_not_equator_facing) | warning | A habitable room has windows, but none faces the equator side. |
 | [`W_ROOM_OVERLAP`](#w_room_overlap) | warning | Rooms overlap. |
 | [`W_ROOM_TOO_SMALL`](#w_room_too_small) | warning | Room is implausibly small. |
 | [`W_ROOM_UNREACHABLE`](#w_room_unreachable) | warning | Room cannot be reached from the entrance. |
@@ -467,6 +471,21 @@ let x = a[5]   # error
 door on exterior at 50% width 900   # a front door
 ```
 
+## E_INTENT_NO_SITE
+
+*error* — An intent asserts a SYMBOLIC window facing against a plan with no `site`.
+
+**Cause.** An intent `roomsInclude[].windows.facing` names one of the derived directions (`street`, `back`, `equator_side`, `sunrise_side`, `sunset_side`) but the plan declares no `site` block, so there is nothing to resolve the name against. The question is unanswerable, not answered no.
+
+**Fix.** Declare `site { street … }` in the plan (that is what gives the derived names their letters), or assert a plain compass letter instead. Gating tier: this failure fails `validateIntent`'s `ok` — it is a refusal, never a silent pass and never a silent miss.
+
+```arch static
+plan "H" {
+  units mm
+  site { street south }   # now `facing: "equator_side"` resolves to "S"
+}
+```
+
 ## E_INTENT_NO_WINDOW
 
 *error* — A room the brief wants a window in has too few.
@@ -619,7 +638,7 @@ level 1 { room at (0,0) size 3000x3000 }   # error: level 1 twice
 
 **Cause.** A plan is either single-storey (no `level` block) or entirely made of them: anything that draws belongs to exactly one storey, so a room/wall/door/`for`/`strip`/component call at plan level next to a `level` block has no storey to belong to.
 
-**Fix.** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.
+**Fix.** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.
 
 ```arch static
 plan "H" {
@@ -772,6 +791,37 @@ room circle at (5000,5000) radius 0   # error: no floor
 
 ```arch static
 room at (0,0) size 0x4000   # error: width is 0
+```
+
+## E_SITE_DUP
+
+*error* — Two `site` blocks in one plan.
+
+**Cause.** A plan declares `site` more than once. `axes` merges when repeated because two axis lists *append*; two `street` values **contradict**, and silently keeping the last one would hide an authoring mistake in the very statement whose job is to be the single source of orientation.
+
+**Fix.** Delete one of the blocks, or merge their fields into a single `site { … }`. The first block is the one that takes effect.
+
+```arch static
+plan "H" {
+  units mm
+  site { street south }
+  site { street north }   # error: site already declared
+}
+```
+
+## E_SITE_NO_STREET
+
+*error* — A `site` block declares no `street`.
+
+**Cause.** `street` is the only required field of `site`: every derived name (`back`, and the three `_side` names) is a function of it, so a site without one derives nothing at all. Refusing beats defaulting — there is no direction a building's frontage faces by default.
+
+**Fix.** Add `street north`, `south`, `east` or `west` inside the block. `hemisphere` is the optional field (it defaults to `north`).
+
+```arch static
+plan "H" {
+  units mm
+  site { hemisphere south }   # error: no street
+}
 ```
 
 ## E_STAIR_WIDTH
@@ -1248,6 +1298,20 @@ room at (4000,4000) size 3000x2000 label "Bath"   # lint: no fixtures inside
 
 ```arch static
 wall partition thickness 100 { (4000,0) (4000,4000) }   # lint: stops short, bath left open
+```
+
+## W_ROOM_NOT_EQUATOR_FACING
+
+*warning* — A habitable room has windows, but none faces the equator side.
+
+**Cause.** The plan declares `site`, so the equator-facing side is known (`S` in the northern hemisphere, `N` in the southern), and a habitable room — a bedroom, living or dining space — has at least one window with none of them on that aspect. **This is a drafting heuristic, not a measured daylight outcome:** it says the room's windows do not face the equator, and nothing more. A south window in Reykjavík and one in Singapore are not the same daylight, and this rule does not distinguish them (there is no sun model, latitude or date anywhere in ArchLang). The rule cannot fire at all in a plan with no `site`, and a room with NO window is `W_BEDROOM_NO_WINDOW`'s report, not this one.
+
+**Fix.** Move a window onto the room's equator-facing facade, or accept the aspect — an urban plot often has no equator-facing wall to spare. There is deliberately NO machine fix: the remedy is a geometric decision (which facade, which wall, what else it displaces) and the compiler does not make those (ADR 0005).
+
+```arch static
+site { street north }   # equator side is S
+room id=liv at (0,0) size 4000x3000 label "Living"
+window on north_wall at 50% width 1200   # warning: the only window faces N
 ```
 
 ## W_ROOM_OVERLAP

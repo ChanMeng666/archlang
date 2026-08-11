@@ -23,6 +23,7 @@ import type {
   RelDir,
   RoomNode,
   ScheduleSubject,
+  SiteNode,
   Statement,
   StripNode,
   TitleNode,
@@ -413,6 +414,14 @@ export interface ResolvedPlan {
    */
   sheet?: ResolvedSheet;
   north: NorthDir;
+  /**
+   * `site { street … [hemisphere …] }` — carried through untouched from the AST, absent
+   * when the plan declares none (so an existing IR, its Scene and its bytes are
+   * unchanged). Semantics only: nothing in scene-build reads it. `describe()` derives the
+   * direction names from it (`src/site.ts`) and one lint rule reads it; it is a plan-level
+   * setting, so a multi-storey plan carries the same site on every storey.
+   */
+  site?: SiteNode;
   /** `dims auto …` — synthesize dimension strings at scene-build (presentation only). */
   autoDims?: "overall" | "rooms" | "walls" | "all";
   /**
@@ -1484,6 +1493,8 @@ function resolveImpl(
     scale: sheet ? `1:${fmtDenom(sheet.denom)}` : ast.scale,
     ...(sheet ? { sheet } : {}),
     north: ast.north,
+    // Absent unless declared, so the IR of a plan with no `site` is byte-identical.
+    ...(ast.site ? { site: ast.site } : {}),
     autoDims: ast.autoDims,
     ...(axes ? { axes } : {}),
     // Sheet-table opt-ins: presentation flags carried through untouched. Spread so an

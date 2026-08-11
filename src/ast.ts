@@ -458,7 +458,7 @@ export interface StripNode extends NodeBase {
  *
  * A plan is either single-storey (no `level` block anywhere, the historical shape) or
  * entirely made of level blocks: a drawable statement sitting beside a level block is
- * `E_LEVEL_MIX`. Plan-level *settings* (`units`/`grid`/`paper`/`scale`/`north`/`dims`/
+ * `E_LEVEL_MIX`. Plan-level *settings* (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/
  * `title`/`axes`/`schedule`/`legend`) and the plan-global scope (`let`/`set`/`component`/
  * `import`) stay OUTSIDE the levels and apply to every one of them — one building, one
  * sheet spec, one set of components.
@@ -713,7 +713,7 @@ export interface ImportNode {
    * `import "wing.arch" as wing` (no `:` item list) — **whole-file instantiation**: the
    * module's own top-level DRAWABLE statements become one implicit zero-parameter
    * component bound to this name, so a file that draws a room IS a component. The
-   * module's plan-level settings (`units`/`grid`/`paper`/`scale`/`north`/`title`/…) are
+   * module's plan-level settings (`units`/`grid`/`paper`/`scale`/`north`/`site`/`title`/…) are
    * deliberately IGNORED — settings come from the root plan, because one drawing is
    * issued on one sheet at one scale.
    */
@@ -764,6 +764,47 @@ export interface AxesNode {
 export const SCHEDULE_SUBJECTS = ["rooms"] as const;
 export type ScheduleSubject = (typeof SCHEDULE_SUBJECTS)[number];
 
+/**
+ * The four compass words a `site { street … }` may name. Source spells WORDS; every
+ * machine surface keeps the LETTERS the tree already uses (`describe().windows[].facing`
+ * is `"N"|"S"|"E"|"W"`), so one concept never gets two JSON spellings — the single
+ * word→letter mapping is `compassLetter` in `src/site.ts`.
+ *
+ * Pinned against `KEYWORDS` by `test/site.test.ts`, which also pins that `north` is
+ * deliberately NOT in `KEYWORDS.enum` (it already lives in `KEYWORDS.attribute`, because
+ * `north up` is a statement — see that test for why the asymmetry is on purpose).
+ */
+export const COMPASS_DIRECTIONS = ["north", "south", "east", "west"] as const;
+export type CompassWord = (typeof COMPASS_DIRECTIONS)[number];
+
+/** Which hemisphere the building sits in — the ONE input that decides which way the
+ *  equator lies (`south` in the north, `north` in the south). Not a latitude: no number
+ *  here, and nothing downstream computes a sun path from it (see `src/site.ts`). */
+export const HEMISPHERES = ["north", "south"] as const;
+export type Hemisphere = (typeof HEMISPHERES)[number];
+
+/**
+ * `site { street north|south|east|west [hemisphere north|south] }` — where the building
+ * sits relative to its street, so a brief can name a direction instead of a letter.
+ *
+ * A plan-level setting, like `north`, which it composes with: `street` is a TRUE compass
+ * direction, and every name derived from it (`back`, `equator_side`, `sunrise_side`,
+ * `sunset_side` — see `src/site.ts`) is a compass letter too. Declaring it draws NOTHING
+ * and changes no geometry; a plan with no `site` is byte-identical everywhere.
+ *
+ * `hemisphere` defaults to `north` and is stored resolved, so nothing downstream carries
+ * the default a second time.
+ */
+export interface SiteNode {
+  /** The compass direction the building's street frontage faces. Required. */
+  street: CompassWord;
+  /** Which hemisphere the building sits in; `north` unless the source says otherwise. */
+  hemisphere: Hemisphere;
+  line: number;
+  /** Byte span of the whole `site { … }` block, for the site diagnostics. */
+  span?: Span;
+}
+
 export interface PlanNode {
   name: string;
   /** Only "mm" is supported. */
@@ -787,6 +828,12 @@ export interface PlanNode {
   /** Byte span of the `scale` statement, for the sheet diagnostics. */
   scaleSpan?: Span;
   north: NorthDir;
+  /**
+   * `site { street … [hemisphere …] }` — the building's relation to its street, and the
+   * hemisphere the derived direction names are read in. Absent unless the plan declares
+   * it, so an existing plan is byte-identical (nothing here draws or moves anything).
+   */
+  site?: SiteNode;
   /** `dims auto [overall|rooms|walls|all]` — synthesize dimension strings at render. */
   autoDims?: "overall" | "rooms" | "walls" | "all";
   /** `axes { x at … y at … }` — author-declared positioning axes (定位轴线). */

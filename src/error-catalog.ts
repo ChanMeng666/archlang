@@ -220,6 +220,20 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Reorder the vertices so the ring is traced once around the room without crossing itself (a bow-tie usually means two vertices are swapped).",
     "room polygon (0,0) (4000,4000) (4000,0) (0,4000)   # error: bow-tie",
   ),
+  E_SITE_DUP: E(
+    "E_SITE_DUP",
+    "Two `site` blocks in one plan.",
+    "A plan declares `site` more than once. `axes` merges when repeated because two axis lists *append*; two `street` values **contradict**, and silently keeping the last one would hide an authoring mistake in the very statement whose job is to be the single source of orientation.",
+    "Delete one of the blocks, or merge their fields into a single `site { … }`. The first block is the one that takes effect.",
+    'plan "H" {\n  units mm\n  site { street south }\n  site { street north }   # error: site already declared\n}',
+  ),
+  E_SITE_NO_STREET: E(
+    "E_SITE_NO_STREET",
+    "A `site` block declares no `street`.",
+    "`street` is the only required field of `site`: every derived name (`back`, and the three `_side` names) is a function of it, so a site without one derives nothing at all. Refusing beats defaulting — there is no direction a building's frontage faces by default.",
+    "Add `street north`, `south`, `east` or `west` inside the block. `hemisphere` is the optional field (it defaults to `north`).",
+    'plan "H" {\n  units mm\n  site { hemisphere south }   # error: no street\n}',
+  ),
   E_STRIP_SIZE: E(
     "E_STRIP_SIZE",
     "Room in a `strip` is missing a size.",
@@ -311,6 +325,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Add an exterior entrance `door` on a perimeter wall. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).",
     "door on exterior at 50% width 900   # a front door",
   ),
+  E_INTENT_NO_SITE: E(
+    "E_INTENT_NO_SITE",
+    "An intent asserts a SYMBOLIC window facing against a plan with no `site`.",
+    "An intent `roomsInclude[].windows.facing` names one of the derived directions (`street`, `back`, `equator_side`, `sunrise_side`, `sunset_side`) but the plan declares no `site` block, so there is nothing to resolve the name against. The question is unanswerable, not answered no.",
+    "Declare `site { street … }` in the plan (that is what gives the derived names their letters), or assert a plain compass letter instead. Gating tier: this failure fails `validateIntent`'s `ok` — it is a refusal, never a silent pass and never a silent miss.",
+    'plan "H" {\n  units mm\n  site { street south }   # now `facing: "equator_side"` resolves to "S"\n}',
+  ),
   E_INTENT_NO_WINDOW: E(
     "E_INTENT_NO_WINDOW",
     "A room the brief wants a window in has too few.",
@@ -392,7 +413,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "E_LEVEL_MIX",
     "A drawable statement sits beside `level` blocks.",
     "A plan is either single-storey (no `level` block) or entirely made of them: anything that draws belongs to exactly one storey, so a room/wall/door/`for`/`strip`/component call at plan level next to a `level` block has no storey to belong to.",
-    "Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.",
+    "Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.",
     'plan "H" {\n  room at (0,0) size 3000x3000   # error: move it into a level\n  level 1 { wall exterior thickness 200 { (0,0) (3000,0) close } }\n}',
   ),
   E_LEVEL_NEST: E(
@@ -776,6 +797,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "In a multi-storey plan the ONLY thing that joins two floors is identity: a `stair`/`elevator`/`escalator` with the same `id` in two `level` blocks is one shaft. This id appears on exactly one storey, so it connects nothing — usually a typo in the id, or the matching run was never drawn on the floor above or below. **Known limitation:** a top-floor stair that genuinely goes only to a roof hatch, and a lift that stops short of a storey it passes, both trip this rule; it is advisory, so leave it.",
     "Draw the same run with the SAME `id` on the neighbouring storey (each storey declares its own `dir` — `up` on the lower floor, `down` on the upper one), or fix the id.",
     'level 1 "G" { stair id=s at (0,0) size 900x2600 dir up }\nlevel 2 "1" { }   # warning: "s" is on level 1 only',
+  ),
+  W_ROOM_NOT_EQUATOR_FACING: W(
+    "W_ROOM_NOT_EQUATOR_FACING",
+    "A habitable room has windows, but none faces the equator side.",
+    "The plan declares `site`, so the equator-facing side is known (`S` in the northern hemisphere, `N` in the southern), and a habitable room — a bedroom, living or dining space — has at least one window with none of them on that aspect. **This is a drafting heuristic, not a measured daylight outcome:** it says the room's windows do not face the equator, and nothing more. A south window in Reykjavík and one in Singapore are not the same daylight, and this rule does not distinguish them (there is no sun model, latitude or date anywhere in ArchLang). The rule cannot fire at all in a plan with no `site`, and a room with NO window is `W_BEDROOM_NO_WINDOW`'s report, not this one.",
+    "Move a window onto the room's equator-facing facade, or accept the aspect — an urban plot often has no equator-facing wall to spare. There is deliberately NO machine fix: the remedy is a geometric decision (which facade, which wall, what else it displaces) and the compiler does not make those (ADR 0005).",
+    'site { street north }   # equator side is S\nroom id=liv at (0,0) size 4000x3000 label "Living"\nwindow on north_wall at 50% width 1200   # warning: the only window faces N',
   ),
 });
 

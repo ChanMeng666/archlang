@@ -20,6 +20,7 @@ import type {
   OpeningAttach,
   PlanNode,
   RoomRel,
+  SiteNode,
   Statement,
   StripRoomChild,
   TitleNode,
@@ -288,6 +289,12 @@ function axesDoc(axes: AxesNode): Doc {
   return concat(["axes {", indent(concat([hardline, join(hardline, rows)])), hardline, "}"]);
 }
 
+/** `site { street … hemisphere … }` — both fields always, on their own lines. */
+function siteDoc(site: SiteNode): Doc {
+  const rows: Doc[] = [`street ${site.street}`, `hemisphere ${site.hemisphere}`];
+  return concat(["site {", indent(concat([hardline, join(hardline, rows)])), hardline, "}"]);
+}
+
 function themeDoc(plan: PlanNode): Doc | undefined {
   if (plan.themeFrom !== undefined) return `theme from ${JSON.stringify(plan.themeFrom)}`;
   const entries = Object.entries(plan.theme ?? {});
@@ -383,6 +390,11 @@ export function formatPlan(plan: PlanNode, source: string): string {
   if (plan.paper) settings.push(`paper ${plan.paper.size} ${plan.paper.orientation}`);
   if (plan.scale) settings.push(`scale ${plan.scale}`);
   settings.push(`north ${northStr(plan.north)}`);
+  // `site` reads as a rider on the north declaration — it is the other half of "which way
+  // does this building point" — so it sits immediately after it. `hemisphere` is always
+  // emitted, like `paper`'s orientation: the default is a real choice a reader should not
+  // have to remember.
+  if (plan.site) settings.push(siteDoc(plan.site));
   if (plan.autoDims) settings.push(`dims auto ${plan.autoDims}`);
   if (plan.schedule) settings.push(`schedule ${plan.schedule}`);
   if (plan.legend) settings.push("legend");

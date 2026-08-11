@@ -67,7 +67,7 @@ representative, annotated example:
 | `roomsInclude[].concept` | a room concept the plan must contain, matched against produced rooms by label → `room_type` → `uses` |
 | `roomsInclude[].count` | how many rooms of the concept (`{ min, max }`; default at least 1) |
 | `roomsInclude[].areaM2` | a per-room floor-area band, with a `source` quote from the brief that licensed the number |
-| `roomsInclude[].windows` | a required window count for the concept's rooms; optional `facing` (`N`/`S`/`E`/`W`) restricts the count to windows whose host wall faces that **true compass** direction (`describe().windows[].facing` — the page direction read against the plan's [`north`](language-reference.md#plan-settings), so `facing: "S"` means compass south, not "toward the bottom of the page") |
+| `roomsInclude[].windows` | a required window count for the concept's rooms; optional `facing` (`N`/`S`/`E`/`W`) restricts the count to windows whose host wall faces that **true compass** direction (`describe().windows[].facing` — the page direction read against the plan's [`north`](language-reference.md#plan-settings), so `facing: "S"` means compass south, not "toward the bottom of the page"). `facing` also accepts the five **names** a plan's [`site` block](language-reference.md#site-and-orientation) derives — `street`, `back`, `equator_side`, `sunrise_side`, `sunset_side` — each of which resolves to one of those letters through that plan's own site; see [Symbolic facings](#symbolic-facings-naming-a-direction-instead-of-a-letter) |
 | `totalAreaM2` | a total floor-area band, again with a `source` quote |
 | `adjacency` | interior-door adjacency the brief licenses, `{ conceptA: [conceptB, …] }` — **advisory** |
 | `reachable` | assert every room is reachable from a modeled entrance — **advisory** |
@@ -75,6 +75,36 @@ representative, annotated example:
 Every quantitative band carries a `source`: the brief phrase that justified the number.
 When a band fails, the failure message cites it back, so a reader sees both the measured
 value and the words that set the target.
+
+### Symbolic facings: naming a direction instead of a letter
+
+Briefs rarely say "a west-facing window". They say "the living room should get the
+afternoon light", or "bedrooms at the back, away from the road". When the plan declares a
+[`site` block](language-reference.md#site-and-orientation), `windows.facing` can assert
+those directions **by name**:
+
+```json
+{ "concept": "living-room", "windows": { "min": 1, "facing": "sunset_side" } }
+```
+
+`street`, `back`, `equator_side`, `sunrise_side` and `sunset_side` each resolve to a
+compass letter through the plan's own site, and then the check runs exactly as it does for
+a letter. It is the same assertion, written the way the brief was: `"facing":
+"equator_side"` against a plan with `site { street north }` *is* `"facing": "S"`. Nothing
+about the tier changes — `windows` gates either way.
+
+Two things worth stating plainly:
+
+- **A symbolic facing against a plan with no `site` is a refusal, not a failure.** It
+  reports [`E_INTENT_NO_SITE`](error-codes.md#e_intent_no_site) and gates. The question
+  "does this window face the equator?" has no answer for a plan that never said where it
+  is, and answering "no" would be a wrong answer rather than an unanswerable one.
+- **`equator_side` / `sunrise_side` / `sunset_side` assert an *aspect*, not daylight.**
+  They are a drafting heuristic — see the note in the
+  [language reference](language-reference.md#site-and-orientation). If the brief says "a
+  sunny living room", `equator_side` is a *translation* of that sentence into something
+  checkable, and translating it is your judgement to state, not a measurement the compiler
+  made. ArchLang has no sun model, latitude or date and will not acquire one.
 
 ## Two normative disciplines
 
@@ -134,6 +164,7 @@ resolve on their own.
 | `E_INTENT_ROOM_AREA` | a concept's rooms fall outside their area band |
 | `E_INTENT_TOTAL_AREA` | total floor area is outside its band |
 | `E_INTENT_NO_WINDOW` | a room the brief said needs a window (optionally facing a direction) doesn't have one |
+| `E_INTENT_NO_SITE` | a `facing` names a [site-derived direction](#symbolic-facings-naming-a-direction-instead-of-a-letter) but the plan declares no `site` block. A **refusal**, not a miss: the assertion could not be evaluated at all, and reporting it as an absent window would answer a question that was never askable. Declare `site`, or assert a compass letter |
 
 **Advisory** (`gate: false` — listed and scored as subscores, but they **never** drive the
 exit code):

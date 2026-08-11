@@ -62,6 +62,7 @@ place <component>(<args>) as <name> at (x,y) [rotate 0|90|180|270] [mirror x|y] 
 axes { x at <mm>, <mm>, … y at <mm>, <mm>, … }   # GB/T 50001 positioning axes (定位轴线): dash-dot datum lines with a labelled bubble. `x` are vertical (numbered 1,2,3… left-to-right), `y` horizontal (lettered A,B,C… BOTTOM-to-top, skipping I/O/Z). Positions are expressions; labels are DERIVED from sorted position, never authored. With `dims auto rooms|all` the middle chain measures the AXES instead of room boundaries. Plan-level block only
 schedule rooms   # draw the ROOM SCHEDULE table below the title block: NO. (01, 02, … source order) · NAME (label, else id) · AREA (m²) + a TOTAL row, all derived from the rooms. `rooms` is the only subject (anything else is a parse error). Same rows as `describe --json`'s `schedule[]`. With `zone` blocks the rows group by zone, each closed by a SUBTOTAL row
 legend   # draw the LEGEND table beside the schedule: a row per wall hatch material used and per placed fixture category that has a plan symbol, each with a real swatch. Fully derived; nothing to configure. Pure rendering — no `describe()` field
+site { street north|south|east|west [hemisphere north|south] }   # semantics only — draws NOTHING. `street` is a TRUE compass direction (read WITH `north`, not instead of it) and names five on `describe --json`'s `site`: `street`, `back` (opposite), `equator_side` (S north of the equator, N south of it), `sunrise_side` (E), `sunset_side` (W). An intent's `windows.facing` may assert those NAMES instead of a letter (no `site` = E_INTENT_NO_SITE). They are a DRAFTING HEURISTIC for an aspect, NOT daylight — there is no sun model. `street` required (E_SITE_NO_STREET), one block (E_SITE_DUP), plan-level only
 ```
 
 ## Scripting (all expand-time, deterministic)
@@ -78,9 +79,9 @@ legend   # draw the LEGEND table beside the schedule: a row per wall hatch mater
 
 (Elements are fully specced above; these are the rest.)
 
-- **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`, `strip`, `level`, `zone`, `place`, `axes`, `schedule`, `legend`
+- **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`, `strip`, `level`, `zone`, `place`, `axes`, `schedule`, `legend`, `site`
 - **Attributes:** `units`, `grid`, `paper`, `scale`, `north`, `dims`, `accTitle`, `accDescr`, `material`, `angle`, `at`, `size`, `polygon`, `circle`, `arc`, `radius`, `width`, `thickness`, `label`, `hinge`, `swing`, `offset`, `text`, `close`, `id`, `project`, `drawn_by`, `date`, `from`, `as`, `right-of`, `left-of`, `below`, `above`, `align`, `gap`, `uses`, `rotate`, `against`, `segment`, `side`, `on`, `into`, `near`, `anchor`, `inset`, `flush`, `mirror`, `height`, `faces`, `clear`, `dir`
-- **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `centered`, `start`, `end`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `auto`, `cw`, `ccw`, `major`, `A4`, `A3`, `A2`, `A1`, `A0`, `landscape`, `portrait`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`
+- **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `centered`, `start`, `end`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `auto`, `cw`, `ccw`, `major`, `A4`, `A3`, `A2`, `A1`, `A0`, `landscape`, `portrait`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`, `south`, `east`, `west`
 
 ## CLI loop (how an agent drives it)
 
