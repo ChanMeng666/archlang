@@ -384,7 +384,30 @@
               "in",
               "out"
             ],
-            "description": "Door swing direction."
+            "description": "Hinged: which side of the wall the leaf sweeps to. Barn/bifold: which face the panel hangs on or folds toward. Not accepted on a sliding or pocket door."
+          },
+          "door_kind": {
+            "enum": [
+              "hinged",
+              "sliding",
+              "barn",
+              "bifold",
+              "pocket"
+            ],
+            "description": "Door kind (default `hinged`, in which case this is omitted). A non-hinged kind has no swing arc; `hinge` is not accepted on one."
+          },
+          "slide": {
+            "enum": [
+              "left",
+              "right"
+            ],
+            "description": "Which way a sliding-family panel travels to open, along the wall's direction (as `hinge` is). Sliding family only."
+          },
+          "open": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "How far the panel is DRAWN open, 0–1 (default 0.5). A drawing fact only — no measured output reads it. Sliding family only."
           }
         }
       }

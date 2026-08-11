@@ -9,7 +9,7 @@ import { aliasMatch } from "./alias-match.js";
 import { roomNoClearPath } from "./circulation.js";
 import { dimInside, dimOverlap } from "./dims.js";
 import { circuitousPath, pathTooNarrow } from "./circulation-facts.js";
-import { doorClearance, doorwayBlocked, swingObstructed } from "./doors.js";
+import { doorClearance, doorwayBlocked, pocketRun, swingObstructed } from "./doors.js";
 import { noEntrance } from "./entrance.js";
 import {
   fixtureBackToRoom,
@@ -62,6 +62,11 @@ export const LINT_RULES: readonly LintRule[] = [
   // no existing plan's diagnostic ORDER may move — and it cannot fire at all unless the
   // plan declares `site`, so no plan written before it existed can see it.
   roomNotEquatorFacing,
+  // Door-vocabulary soundness (v1.25): a `pocket` door with no wall to slide into.
+  // Appended LAST, for the same reason as every rule above it — no existing plan's
+  // diagnostic ORDER may move — and it cannot fire at all unless a door names the
+  // `pocket` kind, so no plan written before it existed can see it.
+  pocketRun,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

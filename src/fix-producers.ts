@@ -64,6 +64,12 @@ interface EmitOpts {
    * all acquires one.
    */
   hinge?: DoorHinge;
+  /** Door clauses to LEAVE OUT of the rebuild (`E_DOOR_KIND_CLAUSE`'s fix deletes
+   *  exactly the clause its kind has no meaning for, and nothing else). */
+  drop?: readonly ("hinge" | "swing" | "slide" | "open")[];
+  /** Replacement `open` text (doors only) — e.g. the clamped value `E_DOOR_OPEN_RANGE`
+   *  quotes. Ignored when `open` is dropped or the node writes none. */
+  open?: string;
 }
 
 /**
@@ -71,6 +77,10 @@ interface EmitOpts {
  * Every attribute the node can carry is enumerated here (these three elements are
  * simple), so a rebuild never silently drops one. Used to rewrite the placement
  * clause without hand-editing non-contiguous sub-spans.
+ *
+ * The enumeration is load-bearing and grows with the grammar: a door's kind word and
+ * its `slide`/`open` clauses are emitted here too, or every rebuild — the off-wall
+ * attach fix, the hinge flip — would silently turn a pocket door back into a hinged one.
  */
 export function emitOpening(kind: OpeningKind, node: OpeningLikeNode, opts: EmitOpts = {}): string {
   const id = node.id ? `id=${node.id} ` : "";
@@ -78,17 +88,26 @@ export function emitOpening(kind: OpeningKind, node: OpeningLikeNode, opts: Emit
   const width = opts.width ?? exprToSource(node.width);
   const attached = opts.attached ?? !!node.attach;
   const wall = attached ? "" : node.wall ? ` wall ${node.wall}` : "";
+  const dropped = (c: "hinge" | "swing" | "slide" | "open"): boolean => opts.drop?.includes(c) === true;
+  let head = "";
   let tail = "";
   if (kind === "door") {
     const d = node as DoorNode;
-    if (opts.hinge) {
-      tail += d.hingeNear ? ` hinge near ${opts.hinge === "left" ? "start" : "end"}` : ` hinge ${opts.hinge}`;
-    } else {
-      tail += d.hinge ? ` hinge ${d.hinge}` : d.hingeNear ? ` hinge near ${d.hingeNear}` : "";
+    head = d.doorKind ? `${d.doorKind} ` : "";
+    if (!dropped("hinge")) {
+      if (opts.hinge) {
+        tail += d.hingeNear ? ` hinge near ${opts.hinge === "left" ? "start" : "end"}` : ` hinge ${opts.hinge}`;
+      } else {
+        tail += d.hinge ? ` hinge ${d.hinge}` : d.hingeNear ? ` hinge near ${d.hingeNear}` : "";
+      }
     }
-    tail += d.swing ? ` swing ${d.swing}` : d.swingInto ? ` swing into ${d.swingInto}` : "";
+    if (!dropped("swing")) {
+      tail += d.swing ? ` swing ${d.swing}` : d.swingInto ? ` swing into ${d.swingInto}` : "";
+    }
+    if (!dropped("slide") && d.slide) tail += ` slide ${d.slide}`;
+    if (!dropped("open") && d.open !== undefined) tail += ` open ${opts.open ?? exprToSource(d.open)}`;
   }
-  return `${kind} ${id}${lead} width ${width}${wall}${tail}`;
+  return `${kind} ${id}${head}${lead} width ${width}${wall}${tail}`;
 }
 
 /** Clamp `v` into `[lo, hi]`. */
@@ -238,6 +257,89 @@ export function doorHingeFlipFix(
       applicability: "machine-applicable",
       fixId: "door-swing-obstructed",
       edits: [{ span: door.span, newText: door._flipHingeText }],
+    },
+  ];
+}
+
+/**
+ * The fix for `E_DOOR_KIND_CLAUSE`: delete the one clause this door's kind has no
+ * meaning for, and change nothing else.
+ *
+ * The whole statement is re-emitted over the node's own span (the clauses are not
+ * contiguous — `wall <ref>` can sit between them), with exactly the offending clause
+ * omitted. `machine-applicable`: deletion is the unique answer that keeps the author's
+ * stated kind, and it is what the diagnostic already says to do. The OTHER remedy —
+ * change the kind — is a hint, because which kind was meant is a design decision the
+ * compiler has no basis to guess (ADR 0005).
+ *
+ * Returns `null` without a span to write into.
+ */
+export function doorKindClauseFix(
+  node: DoorNode,
+  clause: "hinge" | "swing" | "slide" | "open",
+): FixSuggestion[] | null {
+  if (!node.span) return null;
+  return [
+    {
+      title: `delete the \`${clause}\` clause — a "${node.doorKind ?? "hinged"}" door has none`,
+      applicability: "machine-applicable",
+      fixId: "door-kind-clause",
+      edits: [{ span: node.span, newText: emitOpening("door", node, { drop: [clause] }) }],
+    },
+  ];
+}
+
+/**
+ * The fix for `E_DOOR_OPEN_RANGE`: rewrite `open` to the nearest legal fraction.
+ *
+ * The same shape as `E_ARC_RADIUS`'s minimum-radius fix — an impossible number
+ * replaced by the closest possible one, quoted in the diagnostic. `machine-applicable`
+ * because the clamp is arithmetic with one answer, and because `open` is a DRAWING
+ * fact: nothing measured reads it, so no check can be satisfied by applying this.
+ */
+export function doorOpenRangeFix(node: DoorNode, clamped: number): FixSuggestion[] | null {
+  if (!node.span || node.open === undefined) return null;
+  return [
+    {
+      title: `clamp it to \`open ${numStr(clamped)}\``,
+      applicability: "machine-applicable",
+      fixId: "door-open-range",
+      edits: [{ span: node.span, newText: emitOpening("door", node, { open: numStr(clamped) }) }],
+    },
+  ];
+}
+
+/**
+ * The fix for `W_POCKET_RUN`: reverse the slide, so the panel disappears into the
+ * length of wall that is actually there.
+ *
+ * Of that rule's four remedies this is the only bounded, checkable rewrite, and the
+ * caller emits it **only after recomputing the reversed run and proving it satisfies**
+ * — never as a guess. The other three are hints on principle, not on effort: "move the
+ * door" picks geometry the author did not state, "lengthen the wall" edits a different
+ * statement, and "narrow it" rewrites the author's stated requirement to satisfy the
+ * checker — the constraint-laundering pattern, which this project does not ship as an
+ * applicable fix under any flag.
+ *
+ * The edit is driven by `_slideSpan` (recorded by the parser, carried onto the IR) so
+ * it rewrites exactly the `slide` clause: a non-empty span is the authored run and is
+ * REPLACED, a zero-width span is the insertion point — always before the trailing
+ * `open`, which the grammar puts last — and gets a leading space. The
+ * `fixtureRotateFix` precedent, byte for byte.
+ */
+export function pocketRunFix(
+  door: { id: string; _slideSpan?: Span },
+  reversed: "left" | "right",
+): FixSuggestion[] | null {
+  const span = door._slideSpan;
+  if (!span) return null;
+  const insert = span.start === span.end;
+  return [
+    {
+      title: `slide it the other way — \`slide ${reversed}\` (that run is long enough)`,
+      applicability: "machine-applicable",
+      fixId: "pocket-run",
+      edits: [{ span, newText: `${insert ? " " : ""}slide ${reversed}` }],
     },
   ];
 }

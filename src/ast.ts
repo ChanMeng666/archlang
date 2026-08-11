@@ -4,7 +4,7 @@
  * it and produces a separate IR — nothing here is mutated after parse.
  */
 
-import type { DoorHinge, DoorHingeNear, DoorSwingDir } from "./grammar/tokens.js";
+import type { DoorHinge, DoorHingeNear, DoorKind, DoorSlideDir, DoorSwingDir } from "./grammar/tokens.js";
 import type { Span } from "./diagnostics.js";
 import type { Comment } from "./lexer.js";
 import type { Expr } from "./expr.js";
@@ -189,6 +189,12 @@ export interface OpeningAttach {
 
 export interface DoorNode extends NodeBase {
   kind: "door";
+  /**
+   * The leading kind word (`door pocket on w1 …`), when one was written. `hinged`
+   * is the default and the resolver drops it, so an omitted word and an explicit
+   * `hinged` are indistinguishable downstream — the byte-identity law.
+   */
+  doorKind?: DoorKind;
   /** Absolute hinge/center position. Absent when {@link DoorNode.attach} is used. */
   at?: ExprPoint;
   /** Wall-attached placement (`on <wall> at <pos>`). Exclusive with `at`. */
@@ -206,6 +212,19 @@ export interface DoorNode extends NodeBase {
   /** `hinge near start|end` — hinge at the door-segment end nearer the wall's
    *  start/end point, independent of traversal wording. Exclusive with `hinge`. */
   hingeNear?: DoorHingeNear;
+  /** `slide left|right` — which way the panel travels to open, measured along the
+   *  host wall's traversal direction exactly as `hinge` is. Sliding family only. */
+  slide?: DoorSlideDir;
+  /**
+   * Byte span of the authored `slide` clause, or the zero-width point where one can
+   * be inserted (always before the trailing `open`, which the grammar puts last) —
+   * the `fixtureRotateFix` precedent, so `W_POCKET_RUN`'s reverse-slide fix can
+   * rewrite exactly that clause instead of the whole statement.
+   */
+  slideSpan?: Span;
+  /** `open <0..1>` — how far the panel is DRAWN open. A drawing fact only: nothing
+   *  measured (lint, `describe()`, the intent channel) may ever read it. */
+  open?: Expr;
 }
 
 export interface WindowNode extends NodeBase {

@@ -32,7 +32,7 @@ import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import type { DoorEnumClause } from "../src/grammar/tokens.js";
-import { DOOR_ENUMS, DOOR_HINGE_NEAR, KEYWORDS, OPERATORS } from "../src/grammar/tokens.js";
+import { DOOR_ENUMS, DOOR_HINGE_NEAR, DOOR_KINDS, KEYWORDS, OPERATORS } from "../src/grammar/tokens.js";
 import { USE_KINDS, FURNITURE_ANCHORS, SCHEDULE_SUBJECTS, COMPASS_DIRECTIONS, HEMISPHERES } from "../src/ast.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "../src/sheet.js";
 
@@ -98,8 +98,31 @@ const DOOR_CLAUSES = Object.keys(DOOR_ENUMS) as DoorEnumClause[];
  * Exported so `test/door-enums.test.ts` can prove it fires on a synthetic table
  * rather than trusting the comment.
  */
-export function assertDoorVocab(body: [string, string][], enums: Record<string, readonly string[]>): void {
+export function assertDoorVocab(
+  body: [string, string][],
+  enums: Record<string, readonly string[]>,
+  kinds: readonly string[] = DOOR_KINDS,
+): void {
   const emitted = body.map(([, prod]) => prod).join(" ");
+  // The KIND word is not a clause (it leads the statement, the `room polygon` shape),
+  // so it gets its own production and its own arm of this guard: `door-kind` must
+  // render the whole table and `door-stmt` must reach it. Without this a kind added
+  // to `DOOR_KINDS` would ship a decoding grammar that cannot emit it while
+  // `check:drift` stayed green — the MCP 0.2.2 failure, one level down.
+  const kindRule = body.find(([name]) => name === "door-kind");
+  if (!kindRule) {
+    throw new Error(
+      "gen-gbnf: no `door-kind` production — a constrained decoder could never emit a door kind. " +
+        "Add the rule and reach it from `door-stmt`.",
+    );
+  }
+  if (!kindRule[1].includes(litAlt(kinds))) {
+    throw new Error(
+      `gen-gbnf: \`door-kind\` does not render its value set (${litAlt(kinds)}) — ` +
+        `it must be injected from DOOR_KINDS, never retyped.`,
+    );
+  }
+  if (!emitted.includes("door-kind")) throw new Error("gen-gbnf: `door-kind` is unreachable from `door-stmt`.");
   for (const [clause, values] of Object.entries(enums)) {
     const rule = body.find(([name]) => name === `${clause}-val`);
     if (!rule) {
@@ -290,15 +313,23 @@ function rules(): [string, string][] {
     ["room-label", `"label" ws string ( ws "at" ws point )?`],
     ["room-uses", `"uses" rws use-kind ( rws use-kind )*`],
     ["use-kind", useKind],
-    ["door-stmt", `"door" rws id-opt opening-target ws "width" ws expr ( ws door-clause )*`],
+    // The KIND word leads, after any `id=` — the shipped `room polygon` / `room circle`
+    // / `dim faces` shape. Its alternation is INJECTED from `DOOR_KINDS`, guarded above.
+    ["door-stmt", `"door" rws id-opt ( door-kind rws )? opening-target ws "width" ws expr ( ws door-clause )*`],
+    ["door-kind", litAlt(DOOR_KINDS)],
     // One clause per DOOR_ENUMS key, and one `<key>-val` production per clause, both
     // INJECTED from the table (`assertDoorVocab` above fails the build if a key ever
     // loses its production or a production stops deriving its alternation). The
     // non-enum prefixes — `hinge near <vertex>`, `swing into <ref>` — are grammar
     // structure rather than enum members, so they are stated here beside the injection.
-    ["door-clause", [`"wall" rws ref`, ...DOOR_CLAUSES.map((c) => `${lit(c)} rws ${c}-val`)].join(" | ")],
+    // `open <0..1>` is a number, not a closed value set, so it is structure too.
+    [
+      "door-clause",
+      [`"wall" rws ref`, ...DOOR_CLAUSES.map((c) => `${lit(c)} rws ${c}-val`), `"open" ws expr`].join(" | "),
+    ],
     ["hinge-val", `"near" rws ( ${litAlt(DOOR_HINGE_NEAR)} ) | ${litAlt(DOOR_ENUMS.hinge)}`],
     ["swing-val", `"into" rws ref | ${litAlt(DOOR_ENUMS.swing)}`],
+    ["slide-val", litAlt(DOOR_ENUMS.slide)],
     ["window-stmt", `"window" rws id-opt opening-target ws "width" ws expr ( ws "wall" rws ref )?`],
     ["opening-stmt", `"opening" rws id-opt opening-target ws "width" ws expr ( ws "wall" rws ref )?`],
     ["opening-target", `"at" ws point | "on" rws ref rws "at" ws attach-pos`],

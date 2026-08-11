@@ -106,6 +106,21 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // `site`-vs-`north` composition detail and the per-name hemisphere prose went to the
     // language reference — and the suite is green at 22,613. Trim duplication before
     // raising again.
-    expect(spec.length).toBeLessThan(22_800);
+    //
+    // Raised 22.8k → 23.5k for the door vocabulary (four kinds + `slide`/`open`). The
+    // door entry is the only place four facts can live, and none is inferable: (1) a
+    // kind is a bare LEADING word, so an agent that does not know the list cannot even
+    // read `door pocket on w1 …`; (2) `hinged` is the default AND writing it is
+    // identical to omitting it; (3) only a hinged door has a swing arc, which is what
+    // tells an agent that `W_SWING_OBSTRUCTED` has a real remedy in the language now
+    // rather than a rewrite of the brief; and (4) — the expensive one — `swing` MEANS
+    // SOMETHING DIFFERENT PER KIND (leaf side vs. mounting face), an overload that is
+    // silently mis-authorable if it is not stated. The clause-legality codes are named
+    // because the design REFUSES rather than ignores a wrong pairing, so an agent that
+    // does not know will produce an error, not a slightly-wrong drawing. It was
+    // trimmed from 1,298 chars to 1,106 before this was raised (the per-code prose and
+    // the pocket-run threshold went to the language reference and the error catalog)
+    // and the suite is green at 23,456. Trim duplication before raising again.
+    expect(spec.length).toBeLessThan(23_500);
   });
 });
