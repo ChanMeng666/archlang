@@ -50,6 +50,18 @@ than memory.
   unit suffixes. **Derive from the source of truth (`KEYWORDS`/`RULES`/`buildManifest()`), never
   retype it**, and give each generator a guard that fails when a source-of-truth entry has no
   rendering (as `gen-llm-spec.ts` now does for every `KEYWORDS.control` entry, not just `element`).
+- **A derived POSITION comes from the shape, never from its bounding box or centroid.** Six silent
+  bugs shipped this way and were fixed in v1.25.0 — a label drawn off its own floor, a walk reported
+  at half its true length, witness lines hanging metres off a sloped facade, a door swung into a wall
+  its room does not touch, a fixture backed onto a wall outside its room, and every courtyard-wall
+  window facing backwards. **`arch lint` reported none of them.** The grep that finds the next one is
+  `room.size`/`r.size.w` with no nearby `r.poly` branch. Fix locally and in closed form — probe one
+  wall thickness off each face and ask which side has floor — and never reach for the wall boolean
+  union to answer a `describe()` question. Inventory: `docs/research/2026-08-06-competitor-borrowing-roadmap.md` §9.1.
+- **Every new language form ships with a byte-identity law, pinned by test:** a plan that does not
+  use it renders, describes and lints exactly as before. `site`, the door kinds, `zone`, `paper`,
+  `polygon`, `arc` all have one. Prove it with a SHA-256 sweep over the shipped examples, not by
+  eyeballing — and if a golden moves, that is a finding to explain before it is a diff to bless.
 - **Errors are returned, never thrown** for user-source problems: push a `Diagnostic` with a byte
   `span` and a catalogued `E_*`/`W_*` code (`src/error-catalog.ts` — a test enforces every raised
   code has an entry and vice-versa).
@@ -75,7 +87,12 @@ context --section <spec|workflow|cli|errors>`, and `arch fix --dry-run` (which n
 unified diff it would write) / `--backup`. Two invariants to prove, not assume, whenever you touch
 that layer: **a display filter must never change an exit code or `ok`** (they come from the unfiltered
 diagnostic set), and **an unrecognized flag or verb must exit 3** with a did-you-mean — never be
-swallowed as a filename. Keep the flagship
+swallowed as a filename. For the v1.25 surface, drive `arch describe --json --select site` (the five
+derived direction names — `street`/`back`/`equator_side`/`sunrise_side`/`sunset_side`; they are a
+**drafting heuristic for an aspect, not a daylight measurement**, and there is deliberately no sun
+model, latitude or date), the door kinds (`door pocket … slide left`, and note `describe().doors[].kind`
+appears only when it is not the default `hinged`), and `arch lint --code W_POCKET_RUN|W_DIM_OVERLAP`
+with `arch fix --dry-run` for their machine fixes. Keep the flagship
 `examples/studio.arch` **lint-clean and import-free**, and update snapshots/goldens
 (`vitest -u`, `UPDATE_GOLDENS=1 vitest run test/visual.test.ts`, `ASCII_UPDATE=1 vitest run
 test/ascii.test.ts`) only after reviewing the diff — never to green a red suite.

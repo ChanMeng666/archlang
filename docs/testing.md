@@ -26,6 +26,7 @@ snapshot, and before believing a green run means more than it does.
 | `npm run e2e:playground` | Playwright (chromium) against the **built** playground. Needs `npm run build && npm run playground:build:only` first — `vite preview` only serves `playground/dist/` |
 | `npm run e2e:docs` | Playwright against the **built** docs site. Needs `npm run build && npm run docs:build:only` first |
 | `npm run eval:ci` | the offline 26-brief authorability golden gate (no API key). The live harnesses are owner-only and paid |
+| `npm run eval:fidelity` | the **intent-fidelity slice** (v1.25): deliberately infeasible briefs where *declaring infeasibility* is the scored-correct answer, plus a **judge-free, deterministic** laundering detector. Its own corpus (`eval/corpus-fidelity.json`) and its own scorecard; **it shares no ruler with `eval:ci` and the two numbers must never be compared** |
 
 `npm run check` + `npm run check:drift` is the honest local minimum. Add `typecheck:all` when you
 touched anything outside `src/`+`test/`, and the matching E2E when you touched `playground/` or
@@ -116,6 +117,21 @@ Each of these is a place two copies must agree because they *cannot* share an im
 | `test/docs-fences.test.ts` | every ```` ```arch ```` fence on a **published** page compiles with zero errors, or carries the `static` opt-out. The site rewrites plain fences into live `<ArchLive>` widgets, so an illustrative fragment renders a red error card to readers | fix the example, or mark it ```` ```arch static ````. Its scan set is the hand-written `docs-site/*.md`, the repo sources in `sync-docs.mjs`'s `PAGES`, and `docs/adr/*.md`. `npm run docs:build` cannot catch this — the compile happens at runtime in the reader's browser |
 | `test/docs-flags.test.ts` | every `arch <cmd> … --flag` written in a hand-maintained doc is a flag that command actually declares in `src/manifest.ts` (the `docs-site/agents.md` page once told agents to run a flag `fix` never accepted) | fix the prose or add the flag properly. Its scanned list is the `DOCS` array at the top of the file — it includes `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `README.md`, `SKILL.md`, `llms.txt` and the `.claude/` command files |
 | `test/readme-permalink.test.ts` | every playground `#z=` permalink in README / `SKILL.md` / `llms.txt` / hand-written docs-site pages decodes to an example's exact bytes AND compiles clean | regenerate the link with `scripts/gen-permalink.mjs`; never hand-edit a hash |
+
+### Byte-identity laws — the shape every language feature ships with
+
+Every feature added since v1.20 carries the same law: **a plan that does not use the new form is
+byte-identical**, and a test pins it. That is what makes a new keyword safe to add to a published
+language, and it is why the golden files above almost never move.
+
+| Guard | Law | When it goes red |
+|-------|-----|------------------|
+| `test/site.test.ts` | a plan with no `site` block renders, describes and lints exactly as before; and `north` is **deliberately absent** from `KEYWORDS.enum` | The absence pin is the interesting one: three of four compass words sit in `enum`, which looks like an oversight and invites a "fix" that would make `north` the first word in two categories and force both generators to learn about duplicates. **Do not delete this test to add the word** |
+| `test/doors.test.ts` | a plan naming no door kind is byte-identical, and `door hinged …` is identical to omitting the word | A diff here means a kind leaked into the default path |
+| `test/window-facing-probe.test.ts` | a window's outward side comes from probing its own wall, not the plan's bbox centre — with both courtyard reproductions and both tie-break branches | See the bbox-derived-position iron law in AGENTS.md |
+| `test/bbox-derived-position.test.ts` | `swing into <room>` and `furniture … against wall` ask the room's ring, not its box; rectangles stay byte-identical | Also pins the two `dimReach` properties that make leaving it alone safe — it was measured as a provable no-op and deliberately NOT "fixed" |
+| `test/dim-stagger.test.ts` | `EM_PER_CHAR` lives in exactly ONE file (`src/text-metrics.ts`) | A fifth copy of the em-per-char factor appeared. The lint rule, the stagger and the renderer must agree about what collides |
+| `test/lint-file-provenance.test.ts` | a lint fix on an element written in an imported module carries `file`, so `applyFixes` refuses it | Red means `applyFixes` can once again splice a module's byte offsets into the importer — reproduced on an unmodified `W_DIM_INSIDE` before the fix |
 
 ### Property and fuzz suites
 

@@ -22,7 +22,7 @@ not a work-in-progress. Treat the live artifacts below as the source of truth
 | **Core package** | `@chanmeng666/archlang@1.25.0` (published, `latest`, with provenance — released tokenlessly via `.github/workflows/release.yml` OIDC trusted publishing) | npmjs.com/package/@chanmeng666/archlang |
 | **Agent interface** | the `arch` **CLI** (`--json`, exit codes, stdin — incl. `ast`/`complete`/`fix`/`suggest`, `compile --from-json`/`-f txt`, `validate --graph`, v1.14's `validate --intent`/`--feedback` + `score --brief`, and the v1.17 **self-describing + bounded-output** layer: manifest-rendered per-command `--help` with worked examples, `--version`, exit-3 did-you-mean on an unknown flag/verb, `describe --room/--select`, `lint\|validate --code/--severity`, `context --section`, `fix --dry-run/--backup` + unified diff) + `SKILL.md` + `spec.llm.md` + **`llms-full.txt` / `arch context`** + **`schemas/plan.schema.json`** + **`schemas/intent.schema.json`** + **`grammars/archlang.gbnf`**. Primary interface stays the CLI; an **optional MCP shim** (`packages/mcp`) is a discoverability channel, not a replacement | `src/cli.ts`, `SKILL.md`, `spec.llm.md`, `llms-full.txt`, `packages/mcp` |
 | **MCP server** | `@chanmeng666/archlang-mcp@0.2.4` (published, `latest`; registry entry `io.github.ChanMeng666/archlang-mcp` v0.2.4 live on registry.modelcontextprotocol.io; `packages/mcp/`; stdio shim over the library; tools compile/describe/lint/validate (incl. `intent`)/**score**/repair/fix/suggest/complete + spec/context/schema/**intent-schema**/grammar resources; SDK dep quarantined here, core stays zero-dep). **Its context resources are baked in at pack time and only a version bump ships fresh ones** — the staleness itself is no longer silent: CI's `builds` job runs `packages/mcp/scripts/check-dist-resources.mjs` (byte-compares every baked `dist/` resource against its repo source) and `packages/mcp/test/lockstep.test.ts` pins the core dep range as a **string** equal to `^` + the root version, so every core release turns this package RED on purpose until someone re-pins, rebuilds the resources and bumps the shim in both `package.json` and both of `server.json`'s version fields (don't relax it to a semver-satisfies check). History, one clause: 0.2.2 served the v1.19 spec *and a v1.19 GBNF grammar that could not decode* `paper`/`level`/`place`/`zone`/`polygon`/`arc` while its `^1.14.0` range resolved to a current core; 0.2.3 refreshes all five, pins the range to `^1.24.0`, returns every storey of a multi-storey `compile` in `pages[]` (+ a `level` selector) instead of the ground floor alone, and derives the handshake version from `package.json` (the old hardcoded `"0.2.0"` drift, now test-pinned); **0.2.4** re-pins to `^1.25.0` and rebakes all five resources for the `site` layer and the door kinds — the shipped sources did not change at all, and the bump exists purely to ship those refreshed resources, which is exactly the case the pack-time law describes | `packages/mcp/`, `server.json` |
-| **VS Code extension** | **`0.14.0` is PACKAGED, NOT UPLOADED** (built 2026-08-11 against core 1.25.0 — `site`/`street`/`hemisphere`, the five door kinds with `slide`/`open`, the nine new codes, and the bbox-derived-position fixes; `.vsix` verified to carry `1.25.0` as its only core version literal). **`ChanMeng.archlang@0.13.0` is what is live on the Marketplace** until someone performs the human web upload — so the shipped extension currently highlights and completes a v1.24 language against a v1.25 core. History: `ChanMeng.archlang@0.13.0` **live** — verified 2026-08-01 via the gallery API (`extensionquery`, `filterType: 7` = `ChanMeng.archlang`): **0.13.0 is the only version the gallery returns**, even with `IncludeAllVersions`; its `lastUpdated` is 2026-07-26T11:51:11Z, so the upload landed that day, shortly after the query that still saw 0.10.0. It bundles core 1.24.0 (`arc`/`radius`/`circle`/`cw`/`ccw`/`major`, `E_ARC_RADIUS`/`E_ROOM_RADIUS`/`E_DIM_CURVE_REF`, exact πR² areas and arc-length opening attribution in the bundled analysis) and carried in one upload the three tiers that were packaged but never uploaded: 0.12.0 (core 1.23.0 — `polygon`), 0.11.0 (core 1.22.0 — `zone`/`place`/`mirror`) and 0.9.0 (core 1.20.0 — sheet/datum). Durable mechanics: the extension **bundles the core at build time** (a stale bundle ships a stale language — `editors/vscode/test/` pins bundle freshness), `.vsix` files are gitignored so the artifact is local to whoever ran `npm run package`, and **upload stays a human web step** at marketplace.visualstudio.com/manage/publishers/ChanMeng — there is no CI publish | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
+| **VS Code extension** | **`0.14.0` — built and uploaded 2026-08-11** against core 1.25.0 (`site`/`street`/`hemisphere`, the five door kinds with `slide`/`open`, the nine new codes, and the bbox-derived-position fixes; the `.vsix` was verified from INSIDE the archive — manifest `0.14.0`, `1.25.0` its only core version literal, and `equator_side`/`W_POCKET_RUN`/`E_SITE_DUP` present in `dist/server.js`). **Owner performed the web upload; the gallery API still returned `0.13.0` on five probes over ~5 minutes afterwards, so it was NOT independently confirmed live at the time of writing** — Marketplace validation lags (this same lag is recorded below: a 2026-08-01 probe saw 0.10.0 when 0.13.0 was already up). **Re-probe before trusting this row**, with the `extensionquery` recipe in the history clause. History: `ChanMeng.archlang@0.13.0` **live** — verified 2026-08-01 via the gallery API (`extensionquery`, `filterType: 7` = `ChanMeng.archlang`): **0.13.0 is the only version the gallery returns**, even with `IncludeAllVersions`; its `lastUpdated` is 2026-07-26T11:51:11Z, so the upload landed that day, shortly after the query that still saw 0.10.0. It bundles core 1.24.0 (`arc`/`radius`/`circle`/`cw`/`ccw`/`major`, `E_ARC_RADIUS`/`E_ROOM_RADIUS`/`E_DIM_CURVE_REF`, exact πR² areas and arc-length opening attribution in the bundled analysis) and carried in one upload the three tiers that were packaged but never uploaded: 0.12.0 (core 1.23.0 — `polygon`), 0.11.0 (core 1.22.0 — `zone`/`place`/`mirror`) and 0.9.0 (core 1.20.0 — sheet/datum). Durable mechanics: the extension **bundles the core at build time** (a stale bundle ships a stale language — `editors/vscode/test/` pins bundle freshness), `.vsix` files are gitignored so the artifact is local to whoever ran `npm run package`, and **upload stays a human web step** at marketplace.visualstudio.com/manage/publishers/ChanMeng — there is no CI publish | marketplace.visualstudio.com/items?itemName=ChanMeng.archlang |
 | **Playground** | deployed, redesigned (**"The Compile Boundary"** one-light-world UI — see below · TypeScript app · pan/zoom · autocomplete · history · click-to-source · format · repair · error-explain · embeddable `embed.html` · circulation Paths toggle · **Copy-for-LLM** · inline diagnostic fixes) | https://playground.archlang.uk |
 | **Docs site** | deployed, redesigned (**"The Compile Boundary"** one-light-world UI · compiler-as-hero · VitePress · live editable `<ArchLive>` examples · plain ```` ```arch ```` fences auto-live · serves `/llms.txt` + `/llms-full.txt` + **raw `/<page>.md`** + **`/plan.schema.json`** + **`/archlang.gbnf`**) | https://archlang.uk |
 | **Git** | `main`, tags `v1.0.0` → `v1.25.0` (latest; a `v*` tag push triggers the tokenless OIDC release workflow) | github.com/ChanMeng666/archlang |
@@ -146,6 +146,28 @@ re-propose, re-open, or contradict them anywhere.
   proxied** — proxying breaks Vercel's SSL. The old `*.vercel.app` hosts are kept and **301**-redirect to
   the new ones. Full recipe (DNS records, TLS = Full strict, redirects, and how to change a public URL in
   code without the escaped-dot grep trap): `docs/hosting-and-domains.md`.
+- **A derived POSITION must come from the shape, never from its bounding box or centroid — this is a
+  defect CLASS, not a bug.** Six instances shipped and were fixed in v1.25.0, every one of them SILENT
+  (`arch lint` reported none): the room label point, the circulation routing anchor (a 10.9 m walk
+  reported as 5.6 m), `dims auto` witness lines floating metres off a sloped facade, `swing into
+  <room>`, `furniture … against wall`, and `windows[].facing` on a courtyard plan. **The grep that
+  finds a new one is `room\.size`/`r\.size\.w` WITHOUT a nearby `r.poly` branch** — a room-shape
+  consumer reading the box when the ring is the honest datum. The fix is always local and closed
+  form: probe one wall thickness off each face and ask which side has floor (`pointInRoomBox` /
+  `pointInPolygon`, both poly-aware), or use `polygonLabelPoint`. Never reach for the wall boolean
+  union to answer a `describe()` question — `describe()` never builds a Scene, and doing so drags the
+  poché pipeline and the optional `clipper2-wasm` dep into a read meant to be cheap. Full inventory,
+  including what the sweep CLEARED and why, in
+  [`docs/research/2026-08-06-competitor-borrowing-roadmap.md`](docs/research/2026-08-06-competitor-borrowing-roadmap.md) §9.1.
+- **`prepublishOnly` runs the WHOLE monorepo suite, so the release job must build what that suite
+  asserts.** `npm publish` → `prepublishOnly` = `npm run build && npm run test`, and `npm run test`
+  includes `editors/vscode/test/stdio.test.ts`, which hard-fails under CI when the core is built but
+  `editors/vscode/dist/server.js` is not. `npm run build` does not build that bundle, so
+  `release.yml` builds it explicitly before publishing. **Do not "fix" a future occurrence by
+  narrowing the gate** — building the artifact keeps it verified, narrowing it means nothing about
+  the shipped bundle was checked. This cost v1.25.0 its first publish attempt (the tag was moved to
+  the fixed commit; nothing had reached npm, so re-tagging was clean). It had never fired because
+  that test post-dates v1.24.0, and CI's `builds` job runs `vscode:build:only` before the suite.
 
 **Monorepo layout (npm workspaces, one root lockfile):**
 
@@ -184,12 +206,20 @@ re-propose, re-open, or contradict them anywhere.
 │                     assertions.ts + synonyms.ts (re-export SHIMS over src/intent*.ts since T4) ·
 │                     judge-fixture.json (byte-equivalence) · rubric.md (frozen) · faults/ + l1.ts (L1 gate) ·
 │                     g1/ (Gate G1, PASSED) · l2.ts + l2-run.ts (T3 harness, live run never dispatched);
-│                     offline gate `npm run eval:ci` in CI; guarded live `npm run eval:live` (see iron laws)
+│                     offline gate `npm run eval:ci` in CI; guarded live `npm run eval:live` (see iron laws);
+│                     PLUS the v1.25 intent-FIDELITY slice — corpus-fidelity.json · fidelity.ts ·
+│                     fidelity-run.ts · fidelity-plans/ (faithful + laundered twins) ·
+│                     fidelity-results.md, run by `npm run eval:fidelity`. Own corpus, own
+│                     scorecard, JUDGE-FREE: it never touches corpus.json/judge-fixture.json and
+│                     shares NO ruler with the 26-brief rate
 ├─ dataset/           repair + authoring dataset generator (`npm run dataset:gen`, tsx, no new dep):
 │                     generate.ts · templates.ts · faults.ts · trajectory.ts · briefs.ts · rng.ts · diff.ts ·
 │                     dedup.ts · canary.ts · CARD.md (HF README) · out/ (.gitignore'd jsonl); imports ONLY
 │                     the pure core, never eval/; contamination iron law enforced by test/dataset.test.ts — CC0
-├─ scripts/           single-source generators behind the `gen:*` npm scripts (gen-grammars, gen-error-codes,
+├─ scripts/           check-test-wiring.mjs (fails if a tracked *.test.ts sits outside vitest.config.ts's
+│                     include globs, or an include glob matches nothing — it PARSES the globs out of the
+│                     config rather than duplicating them) + the
+│                     single-source generators behind the `gen:*` npm scripts (gen-grammars, gen-error-codes,
 │                     gen-llm-spec, …) + smoke.mjs (zero-dep post-deploy/nightly route check) + changelog-section.mjs
 ├─ bench/             ~1000-element timing harness (+ --json mode, CI regression comment)
 └─ test/              vitest: snapshot + fast-check + unit + visual-regression + CLI/describe/lint/eval +
@@ -212,7 +242,7 @@ from one place), and `vertical.ts` (the shared `stair`/`elevator`/`escalator` se
 run is entered from — a closed-form drafting convention, `dir`-dependent, used by BOTH the symbol and
 the nav grid — what its footprint does to circulation, and `verticalConnections`/`verticalReach`, the
 same-id-on-two-levels shaft graph that `describe().vertical`, `lint`'s per-storey reachability and
-`checkGraph` all read), and `frame.ts` (the `place` transform: a frame is a 2×2 signed-permutation
+`checkGraph` all read), `site.ts` (the v1.25 orientation layer, and the ONE place a page direction becomes a compass one: `windowFacingPage` — which probes one wall thickness off each face of a window's own host segment and takes the side no room occupies, exact at any wall angle and the only rule that is right for a COURTYARD — plus `northQuarterTurns`/`toCompass` and `deriveSite`. `describe()` AND the site lint rule both call it, because a second place to apply the north rotation is a second place to get it wrong), `label-placement.ts` (the post-pass inside `toScene` that moves a room's name and area text off furniture, swings, stair symbols and dimension text — it must run AFTER `lowerWalls` and after `dims auto`, because that is the only point at which a dimension number exists to avoid; it relocates only when >2% of the label box is buried, so a clear plan keeps its exact bytes), `text-metrics.ts` (`EM_PER_CHAR`/`textWidth` — the renderer has NO text metrics, so this closed-form estimate is the single source the label pass, the dimension stagger, `W_DIM_OVERLAP` and the error card all share; a test pins the literal to this one file so a fifth copy cannot appear), `lint/measure.ts` (the measured-deficit arithmetic behind the value/shortfall/remedy diagnostics), `elements/door-panels.ts` (the sliding/barn/bifold/pocket panel geometry, emitted as the SAME Scene primitives every backend already serializes — no per-backend door code exists), and `frame.ts` (the `place` transform: a frame is a 2×2 signed-permutation
 matrix + translation — exact, composable, no trig — and `transformElement` is the ONE place a
 resolved element crosses from an instance's local frame into plan coordinates, including the handed
 flips a reflection forces; see [ADR 0016](docs/adr/0016-component-instances-and-frames.md)). The CLI lives in `src/cli.ts` (dispatch) +
@@ -279,6 +309,11 @@ npm run check:drift  # run every generator and fail if any generated artifact dr
 npm run lint:ci      # biome ci . — the non-writing lint entry CI uses
 npm run typecheck:all    # full-repo typecheck: root tsconfig.dev.json (src+test+eval+dataset+scripts+bench)
                          # + playground + docs-site (vue-tsc) + packages/mcp + editors/vscode (CI: builds job)
+npm run eval:ci          # the offline 26-brief authorability golden gate (no API key; runs in CI)
+npm run eval:fidelity    # the intent-FIDELITY slice: infeasible briefs (declaring infeasibility is the
+                         # correct answer) + a deterministic, JUDGE-FREE laundering detector. Separate
+                         # corpus, separate scorecard — it shares no ruler with eval:ci and must never
+                         # be compared against it
 npm run test:coverage    # vitest run --coverage — report-only v8 coverage over src/ (CI: Node 22 leg)
 npm run e2e:playground   # Playwright E2E against the built playground (build core + playground:build:only first)
 npm run e2e:docs         # Playwright E2E against the built docs site (build core + docs:build:only first)
@@ -554,6 +589,23 @@ source (.arch)
   `$id`s in `src/plan-json.ts`/`src/intent.ts` → `gen:*-schema`; agent-context URLs in `SKILL.md` →
   `gen:llms`); never hand-edit `schemas/*.json` or `llms-full.txt`. The README `#z=` permalinks are
   base-independent, so only the host prefix swaps. Full playbook: `docs/hosting-and-domains.md`.
+- **(Parallel worktrees) A clean auto-merge is NOT evidence of correctness when one branch MOVED a
+  function another MODIFIED.** v1.25.0's closest call: one agent fixed `windowFacing` in
+  `describe.ts` while a second, branched earlier, *extracted that function into a new
+  `src/site.ts`* — carrying the pre-fix body. Git conflicted only on the doc comment; taking
+  "theirs" would have **silently reverted the fix with a fully green suite**, because the moving
+  branch had no courtyard fixture to fail. The typechecker then caught the second half — the new
+  lint rule still called the old 4-arg signature, which would have let `arch lint` and `arch
+  describe` disagree about a window's facing (invisible on a rectangular plan, wrong on a
+  courtyard). **When merging parallel agent branches: diff the MOVED body against the newer
+  version, and run both branches' fixtures TOGETHER** — that pairing is the only real proof, and
+  neither branch can produce it alone.
+- **(Docs vs npm) Pushing to `main` deploys the docs site; only a `v*` tag moves npm.** So a
+  language feature merged and not released puts `archlang.uk` in the position of documenting syntax
+  `npx @chanmeng666/archlang` cannot parse. This actually happened between the v1.25.0 merges and
+  the release (the live reference served `site { … }` and `door pocket … slide left` while npm was
+  still 1.24.0). If you land a language surface and are not releasing it the same day, say so
+  explicitly — the mismatch is invisible from inside the repo, where everything is consistent.
 
 ## Reading Order
 
