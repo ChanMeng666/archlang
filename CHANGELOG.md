@@ -7,7 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (the two P2 language features)
+
+- **Site & orientation** — `site { street north|south|east|west [hemisphere north|south] }`, a
+  plan-level setting that **draws nothing** and names five directions on `describe --json`'s new
+  `site` key: `street`, `back`, `equator_side`, `sunrise_side`, `sunset_side`. Those names are
+  assertable by name in an intent's `windows.facing` (with `E_INTENT_NO_SITE` when the plan declares
+  no site — never a silent pass), and read by one advisory rule, `W_ROOM_NOT_EQUATOR_FACING`.
+  **The `_side` names are a drafting heuristic for an aspect, not a daylight measurement** —
+  ArchLang still has no sun model, no latitude and no date, and every surface that emits them says
+  so. A plan with no `site` is byte-identical everywhere.
+- **Door vocabulary** — a bare kind word may lead a `door` statement
+  (`door pocket on w1 at 40% width 900 slide left`): `sliding`, `barn`, `bifold` and `pocket` beside
+  the default `hinged`, plus `slide left|right` and a drawing-only `open <0..1>`. A non-hinged leaf
+  sweeps nothing, so `doorSwing()` returns `null` for it and `W_SWING_OBSTRUCTED` stops applying —
+  its remedy set now names the kinds that solve it — while every doorway rule (adjacency, landing,
+  clear width) is unchanged. New codes `E_DOOR_KIND_CLAUSE`, `E_DOOR_OPEN_RANGE` and
+  `E_DOOR_KIND_CURVED` **refuse** a wrong pairing rather than draw it as if the clause were absent,
+  and the new `W_POCKET_RUN` measures the wall a pocket panel must slide into — truncated at any
+  intervening opening — against `width + max(50 mm, width × 5%)`, carrying the reverse-slide rewrite
+  as its only applicable fix. A plan naming no kind is byte-identical, and `door hinged …` is
+  identical to omitting the word.
+
 ### Fixed (follow-ups opened by the Batch-3 pass)
+
+- **`describe().windows[].facing` found a window's outward side by comparing it to the bounding-box
+  midpoint of the room union.** A **courtyard** plan puts that midpoint *inside the courtyard*, so
+  every window on a courtyard wall was silently reported facing backwards — as was every window on a
+  `polygon` or `circle` host room's wall, which takes the same branch because such a room has no four
+  sides to pick the nearest of. The outward side is now found by **probing one wall thickness off
+  each face of the window's own host segment and taking the side with no room on it**, which is exact
+  at any wall angle (an `arc` wall is probed along its true normal, not its chord's). The old rule
+  remains as the stated tie-break for the two cases a probe cannot decide — rooms on both sides, or
+  on neither. Every shipped example is byte-identical.
 
 - **Lint fixes now carry the file their spans belong to.** A lint diagnostic raised on an element
   written in an `import`ed module — and every machine-applicable fix on it — now carries `file`, so
