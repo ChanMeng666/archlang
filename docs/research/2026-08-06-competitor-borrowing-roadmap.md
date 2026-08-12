@@ -2,6 +2,28 @@
 
 **Date:** 2026-08-06 · **Status:** candidate list, nothing approved · **Scope:** ArchLang engineering only
 
+> **Status update, 2026-08-12 — four claims below were overtaken by the v1.25.0 release
+> (2026-08-11) and are corrected in place.** The document is otherwise preserved as the 2026-08-06
+> audit plus its 2026-08-07 implementation notes; the corrections carry a dated marker so the
+> original reading stays legible as what it was at the time.
+>
+> - **§2 — "Both commits sit on unmerged worktree branches."** Both landed: `82d4221` and
+>   `5480bb2` are ancestors of `main` and of the `v1.25.0` tag.
+> - **§5 / §9 — "Neither feature is built" (P2-1 and P2-3).** Both shipped in v1.25.0: the
+>   site/orientation layer as `a305c82`, the four door kinds as `e38b1da`.
+> - **§9.4 — "`sliding`/`barn`/`bifold`/`pocket` remain unbuilt."** All four ship, and the owner
+>   decisions §A–E it waits on were answered the same day in
+>   [`2026-08-06-p2-1-door-vocabulary-design.md`](./2026-08-06-p2-1-door-vocabulary-design.md) §13b.
+> - **§9 — "One item is deliberately still open" (the `planCenter` fallback).** Closed the same day
+>   as `3f8c82c`; §9.1's own outcome note and `CHANGELOG.md`'s v1.25.0 entry both already record it.
+>   The bbox-derived-position sweep has **no open instance left**.
+>
+> One naming trap worth stating up front, because a top-down reader hits the proposal before the
+> decision: **P2-3's derived directions shipped as `equator_side` / `sunrise_side` / `sunset_side`,
+> not the `good_sun` / `morning_sun` / `afternoon_sun` the §5 row proposes** — `good_sun` was
+> rejected (`2026-08-06-p2-3-site-orientation-design.md` §10b) because a token must not claim more
+> than the check verifies. There is still no sun model, no latitude and no date.
+
 This is the ArchLang-side output of a source-level competitor audit. It says what we could take from
 what other people built, where it lands in this repo, what it costs, and what it must not break. It
 does **not** decide a release. Nothing here is committed to a version until a batch is opened and each
@@ -34,8 +56,9 @@ is copyleft and its code must never enter this tree.
 
 ## 2. Already done (2026-08-06 quick wins)
 
-Three fixes ran as worktree agents this session. **Both commits sit on unmerged worktree branches** —
-they are done, not landed.
+Three fixes ran as worktree agents this session. ~~**Both commits sit on unmerged worktree
+branches** — they are done, not landed.~~ *(Corrected 2026-08-12: both landed. `82d4221` and
+`5480bb2` are ancestors of `main` and shipped in v1.25.0.)*
 
 | Item | Outcome | Commit / branch |
 | --- | --- | --- |
@@ -190,6 +213,14 @@ gen:grammars` + `gen:spec` + `gen:llms` + `gen:gbnf` (and `gen:errors` where it 
 byte-identity law ("a plan that does not use the new form renders exactly as before") pinned by test,
 and — per the generator gotcha — a rendering derived from `KEYWORDS`/`RULES`, never retyped into the
 generator.
+
+> **Two of these ten are no longer candidates (2026-08-12).** **P2-1** (door vocabulary) and
+> **P2-3** (site / orientation) each took their own design pass and **shipped in v1.25.0** —
+> `e38b1da` and `a305c82`. Where the design passes overruled these rows, **the shipped surface is
+> the design doc's, not this table's**: P2-3's derived directions are `equator_side` /
+> `sunrise_side` / `sunset_side` (`good_sun` was rejected), and `W_POCKET_RUN` uses the two-term
+> `width + max(50 mm, width × 5%)` threshold rather than the cited `1.05` ratio. The other eight
+> rows are still candidates, nothing approved.
 
 | # | Feature | Evidence | Lands in |
 | --- | --- | --- | --- |
@@ -429,16 +460,21 @@ this document and have no home elsewhere. Recorded here so they are not lost.
 > `DOOR_ENUMS` refactor extracted from the P2-1 design (`c39a25e`). §9.2 → `d45f426`,
 > §9.3 → `46b8ea1`, §9.1's sweep → `bd8bb73`. The subsections below keep the original
 > statement of each finding and record the outcome inline, because *what the sweep
-> cleared* is as useful to a future reader as what it fixed. **One item is deliberately
-> still open: the `planCenter` fallback in §9.1's outcome — its **design answer is now decided**
-> (a local outward-face probe, see §9.1), but it is not yet implemented.
+> cleared* is as useful to a future reader as what it fixed. ~~**One item is deliberately
+> still open:** the `planCenter` fallback in §9.1's outcome — its **design answer is now decided**
+> (a local outward-face probe, see §9.1), but it is not yet implemented.~~ *(Corrected 2026-08-12:
+> that last item closed the same day, as `3f8c82c` — §9.1's own outcome note below records it, as
+> does `CHANGELOG.md`'s v1.25.0 entry. The bbox-derived-position sweep has **no open instance
+> left**.)*
 >
 > **The P2 design documents are also unblocked as of 2026-08-07**: every owner question in both is
 > answered, in `2026-08-06-p2-1-door-vocabulary-design.md` §13b (A–E) and
 > `2026-08-06-p2-3-site-orientation-design.md` §10b (Q1–Q3). Three of the eight decisions overrule
 > the proposing document — `good_sun` is rejected in favour of `equator_side`/`sunrise_side`/
 > `sunset_side`, `W_POCKET_RUN` takes the two-term threshold rather than the citable ratio, and no
-> new flagship example is added. Neither feature is built.
+> new flagship example is added. ~~Neither feature is built.~~ *(Corrected 2026-08-12: both were
+> built and **shipped in v1.25.0** — the site/orientation layer as `a305c82`, the four door kinds
+> as `e38b1da` — each following the §10b/§13b decisions above rather than its proposing body.)*
 
 ### 9.1 A defect class, not three tickets — **derived-position-from-a-bounding-box**
 
@@ -658,9 +694,17 @@ in `src/grammar/tokens.ts`, and both generators now **fail the build** when a do
 rendering.
 
 `gen:all` produced **zero diff**, which is the load-bearing result: no hardcoded copy had drifted, so
-this was a genuine refactor rather than a latent-bug find. Adding the door kinds themselves still needs
-the owner decisions the design doc leaves open (§A–E), and `sliding`/`barn`/`bifold`/`pocket` remain
-unbuilt.
+this was a genuine refactor rather than a latent-bug find. ~~Adding the door kinds themselves still
+needs the owner decisions the design doc leaves open (§A–E), and `sliding`/`barn`/`bifold`/`pocket`
+remain unbuilt.~~
+
+> *Corrected 2026-08-12.* §A–E were all answered the same day, in
+> [`2026-08-06-p2-1-door-vocabulary-design.md`](./2026-08-06-p2-1-door-vocabulary-design.md) §13b,
+> and all four kinds **shipped in v1.25.0** (`e38b1da`) on top of this refactor: a bare kind word
+> leads the statement (§A), `swing in|out` is reused rather than a new `face` keyword (§B),
+> `describe().doors[].kind` appears only when it is not `hinged` (§C), `W_POCKET_RUN` takes the
+> two-term `width + max(50 mm, width × 5%)` threshold instead of the cited `1.05` ratio — §D, which
+> overruled the proposal — and no new flagship example was added (§E).
 
 ## Files & sources
 
