@@ -28,7 +28,16 @@
  * in `src/` gets its environment via the `World` seam.
  */
 
-import { EXIT, VERSION, allowedFlags, parseArgs, usageError, usageErrorFor } from "./cli/io.js";
+import {
+  type CommandResult,
+  EXIT,
+  RESIDENT,
+  VERSION,
+  allowedFlags,
+  parseArgs,
+  usageError,
+  usageErrorFor,
+} from "./cli/io.js";
 import { findCommand, renderCommandHelp, renderTopHelp } from "./cli/help.js";
 import { buildManifest, MANIFEST_COMMAND_NAMES } from "./manifest.js";
 import { closest } from "./expr.js";
@@ -43,6 +52,27 @@ import { cmdContext, cmdExplain, cmdManifest, cmdNew, cmdSpec } from "./cli/comm
  * --json` serves — so `arch <cmd> --help` cannot list a flag the command doesn't take.
  */
 const MANIFEST = buildManifest(VERSION);
+
+/**
+ * The single exit point for every dispatch arm below.
+ *
+ * A command hands back either an exit code — in which case the process ends with it,
+ * as it always has — or {@link RESIDENT}, meaning it installed a handle and now owns
+ * the process (only `watch` does today). Routing EVERY arm through this, rather than
+ * special-casing `watch` in its own arm, is the point: the hazard was never specific
+ * to watching a file, it was `process.exit(await cmdX(args))` being unable to express
+ * "this one does not return". Written this way, the next long-running command is
+ * correct by returning `RESIDENT`, and cannot be broken by a dispatcher that has
+ * forgotten it exists.
+ *
+ * Note what this does NOT do: it never falls off the end without exiting. A one-shot
+ * command that returns a code still exits with it explicitly, so nothing depends on
+ * the event loop happening to be empty.
+ */
+function finish(result: CommandResult): void {
+  if (result === RESIDENT) return; // the command owns the process now; let it live.
+  process.exit(result);
+}
 
 async function main(): Promise<void> {
   const [cmd, ...rest] = process.argv.slice(2);
@@ -94,50 +124,52 @@ async function main(): Promise<void> {
 
   switch (cmd) {
     case "compile":
-      return process.exit(await cmdCompile(args));
+      return finish(await cmdCompile(args));
     case "preview":
-      return process.exit(await cmdPreview(args));
+      return finish(await cmdPreview(args));
     case "batch":
-      return process.exit(await cmdBatch(args));
+      return finish(await cmdBatch(args));
     case "md":
     case "markdown":
-      return process.exit(await cmdMd(args));
+      return finish(await cmdMd(args));
     case "manifest":
     case "capabilities":
-      return process.exit(cmdManifest(args));
+      return finish(cmdManifest(args));
+    // The one resident command: on success it returns RESIDENT and `finish` leaves the
+    // process alive on the watcher's handle; a usage error still comes back as a code.
     case "watch":
-      return process.exit(await cmdWatch(args));
+      return finish(await cmdWatch(args));
     case "validate":
-      return process.exit(cmdValidate(args));
+      return finish(cmdValidate(args));
     case "describe":
-      return process.exit(cmdDescribe(args));
+      return finish(cmdDescribe(args));
     case "score":
-      return process.exit(cmdScore(args));
+      return finish(cmdScore(args));
     case "lint":
-      return process.exit(cmdLint(args));
+      return finish(cmdLint(args));
     case "ast":
-      return process.exit(cmdAst(args));
+      return finish(cmdAst(args));
     case "complete":
-      return process.exit(cmdComplete(args));
+      return finish(cmdComplete(args));
     case "fmt":
-      return process.exit(cmdFmt(args));
+      return finish(cmdFmt(args));
     case "repair":
-      return process.exit(cmdRepair(args));
+      return finish(cmdRepair(args));
     case "fix":
-      return process.exit(await cmdFix(args));
+      return finish(await cmdFix(args));
     case "suggest":
-      return process.exit(cmdSuggest(args));
+      return finish(cmdSuggest(args));
     case "spec":
-      return process.exit(cmdSpec(args));
+      return finish(cmdSpec(args));
     case "context":
-      return process.exit(cmdContext(args));
+      return finish(cmdContext(args));
     case "new":
     case "init":
-      return process.exit(cmdNew(args));
+      return finish(cmdNew(args));
     case "explain":
-      return process.exit(cmdExplain(args));
+      return finish(cmdExplain(args));
     default:
-      return process.exit(usageError(`unknown command "${cmd}" (try \`arch help\`)`));
+      return finish(usageError(`unknown command "${cmd}" (try \`arch help\`)`));
   }
 }
 

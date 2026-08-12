@@ -30,6 +30,31 @@ export const FORMAT_LIST = `${EXPORT_FORMATS.slice(0, -1)
 /** Deterministic exit codes (documented in `--help`). */
 export const EXIT = { OK: 0, INTERNAL: 1, USER: 2, USAGE: 3 } as const;
 
+/**
+ * The one non-exit-code a command may return: "I have installed a handle and the
+ * process is now MINE — do not exit."
+ *
+ * Every dispatch arm in `src/cli.ts` ends in `process.exit(...)`, which is right for
+ * a one-shot command and fatal for a resident one: `watch` announced itself and was
+ * then killed by its own dispatcher for twenty-five releases (v1.1.0 → v1.26.0),
+ * because "returned `EXIT.OK`" and "finished" had been silently identified.
+ *
+ * This sentinel separates them at the only moment the distinction is known — inside
+ * the command, right after the handle is installed — instead of leaving the caller to
+ * infer it from a zero. That matters for the NEXT resident command: `finish()` in
+ * `src/cli.ts` handles it for every arm at once, so a new resident command is correct
+ * by returning this, and a command that forgets is *not* silently long-running — it
+ * still exits, exactly as every one-shot arm does today.
+ *
+ * A resident command may still FAIL before it becomes resident: `watch` returns
+ * `EXIT.USAGE` for a missing path. So the return type is a union, not a flag on the
+ * command — the same invocation can end either way, and only the run knows which.
+ */
+export const RESIDENT = Symbol("resident");
+
+/** What a command hands back: an exit code, or {@link RESIDENT} to keep the process alive. */
+export type CommandResult = number | typeof RESIDENT;
+
 export const HERE = dirname(fileURLToPath(import.meta.url));
 
 export interface Args {

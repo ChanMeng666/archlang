@@ -11,9 +11,11 @@ import { describe, diagnosticToJson, ERROR_CATALOG, extractArchBlocks, rewriteMa
 import type { Diagnostic } from "../index.js";
 import {
   type Args,
+  type CommandResult,
   type Format,
   EXIT,
   FORMAT_LIST,
+  RESIDENT,
   baseDirOf,
   defaultOut,
   emitDiagnosticsHuman,
@@ -259,13 +261,46 @@ function writePages(
   return EXIT.OK;
 }
 
-export async function cmdWatch(args: Args): Promise<number> {
+/**
+ * `watch` — the one RESIDENT command: it installs a handle and then owns the process
+ * until a signal ends it. Everything else in this CLI is one-shot.
+ *
+ * It returns {@link RESIDENT} rather than `EXIT.OK` because the dispatcher cannot tell
+ * those apart from a number — and for twenty-five releases it did not: `process.exit(await
+ * cmdWatch(args))` killed the watcher the instant it was installed (v1.1.0's switch
+ * refactor; the pre-refactor `if/else` chain simply fell off the end of `main`).
+ *
+ * Two behaviours here are deliberate, not incidental:
+ *
+ * - **A failing first compile does not stop the watch.** `cmdCompile`'s exit code is
+ *   discarded on purpose: fixing the file and re-saving is the entire point of `watch`,
+ *   so a syntax error must leave you watching, not at a shell prompt. The diagnostics
+ *   are already on stderr by the time it returns.
+ * - **A failing RE-compile does not stop it either.** The listener's promise is caught
+ *   here, because an unhandled rejection is a hard process exit in Node ≥ 15 — one
+ *   unwritable output (an editor holding the file, a `-o` on a full disk) would
+ *   otherwise take down a watcher that is supposed to survive exactly that and let you
+ *   save again.
+ *
+ * Termination is Node's default signal handling, unmodified: SIGINT (the advertised
+ * Ctrl+C) and SIGTERM both end the process promptly, and no handler is installed that
+ * could swallow either.
+ */
+export async function cmdWatch(args: Args): Promise<CommandResult> {
   const input = args._[0];
+  // Still a usage error, and still exits 3 — `-` cannot be re-read on every save, and
+  // becoming resident over a path that does not exist would watch nothing forever.
   if (!input || input === "-") return usageError("watch needs a file path");
   await cmdCompile(args);
   process.stderr.write(`watching ${input} … (Ctrl+C to stop)\n`);
-  watchFile(resolvePath(input), { interval: 300 }, () => void cmdCompile(args));
-  return EXIT.OK;
+  watchFile(resolvePath(input), { interval: 300 }, () => {
+    // Nothing reads a re-compile's exit code — the process's own code is decided by the
+    // signal that ends it — so the failure is reported and the watch continues.
+    void cmdCompile(args).catch((e: unknown) => {
+      process.stderr.write(`✗ recompile failed: ${e instanceof Error ? e.message : String(e)}\n`);
+    });
+  });
+  return RESIDENT;
 }
 
 // ---------------------------------------------------------------------------
