@@ -28,16 +28,7 @@ together before merging; `npm run typecheck:all` after **every** merge.
 
 ## Wave 2 — coverage where a wrong sign ships silently
 
-### 2.5 · CLI commands that no test invokes — `todo`
-
-`arch watch`, `arch fmt` and `arch manifest` have zero end-to-end execution (`format.test.ts` tests
-the library `format()`; `cli-manifest.test.ts` tests `buildManifest()`, not the command). Worse,
-`src/cli/serialize.ts`'s `runPool`, `aggregateExit` and `perFileJson` — the concurrency and
-exit-code aggregation behind `arch batch` — have **zero references anywhere in the test suite**.
-Exit codes are the agent contract, so a wrong one would ship silently.
-
-- **Gate:** each command invoked end-to-end; batch aggregation asserted against the documented
-  `0` ok / `1` IO-internal / `2` user-source / `3` bad-usage.
+_All items landed._
 
 ---
 
@@ -60,51 +51,28 @@ Oldest is 2026-07-20. Batch the safe ones (`actions/checkout`, `actions/setup-no
 **zod 3→4** (#27), **vite 6→8** (#26), and `@types/node` 22→26 (#28) — the last interacts with
 `noUncheckedIndexedAccess` across every leg of `typecheck:all`.
 
-### 3.8 · Poché is dropped from every PDF — `todo`
+### 3.14 · A worktree build silently bundles the WRONG core — `todo`
 
-**A shipped bug in a published output format.** `drawNode`'s switch in `src/export/pdf.ts` handles
-polygon/line/region/arc/circle/text and has **no `hatch` case and no `default`**, while the
-`wallFill` layer is exactly one `hatch` primitive. Every wall prints as a hollow outline in every
-PDF ArchLang has ever exported.
+**A release hazard that defeats a guard added the same day.** Running `npm run vscode:build:only`
+from inside a `.claude/worktrees/*` checkout resolves `@chanmeng666/archlang` by walking **up** the
+directory chain to the **shared** repo's `node_modules`, because a worktree has no `node_modules` of
+its own. So esbuild bundles the shared checkout's core, not the worktree's.
 
-Two corroborations: the module's own header promises the opposite ("poché regions fill with the
-solid poché base colour in PDF"), and `fillColor`'s `url(…) → theme.pocheBase` branch is therefore
-**dead code** — no non-hatch primitive ever carries a pattern fill. Pinned today as a `KNOWN GAP`
-characterisation test in `test/export-pdf.test.ts`, made non-vacuous by showing the same colour
-formatter *does* find a colour that is drawn.
+Observed live: an agent's `dist/server.js` carried the pre-fix 1-argument `dimSwapFix` while its own
+`dist/chunk-*.js` had the 2-argument one.
 
-- **Gate:** invert the KNOWN GAP test; the poché base colour appears as an `scn` op in the inflated
-  content stream. This **changes shipped bytes** for a published format, so it wants a release note.
+**The `__CORE_VERSION__` freshness test cannot catch it** — both cores stamp the same version, so it
+passes. That test asserts the bundle is not stale *in version*; nothing asserts it came from *this
+checkout*. An agent running `npm run package` from a worktree would ship a stale language with an
+entirely green bundle-freshness check, which is precisely the shape of failure the stamp was added
+to prevent.
 
-### 3.9 · `toPdf` is not byte-deterministic — `todo`
-
-pdfkit stamps `Info /CreationDate` from `new Date()` and derives the trailer `/ID` as an MD5 over
-it. Measured across a forced second boundary those are the **only** two differing fields — every
-content-stream byte, the whole xref and `startxref` are identical, and both are fixed-width so
-nothing shifts. Determinism is this project's flagship law, and a published format not having it is
-a real gap even though nothing visible moves.
-
-Currently pinned honestly rather than masked: one test asserts the drawn page is byte-identical, a
-second asserts every differing byte in the whole file lies inside one of two recognised spans, with
-the span shapes themselves pinned so a pdfkit change cannot turn the mask into a silent no-op.
-
-- **Decide first:** the fix is passing a fixed `info.CreationDate` into `PDFDocument`, which changes
-  shipped bytes. Whether a PDF should carry a real creation date at all is a product call.
-
-### 3.10 · `W_DIM_INSIDE`'s fix 2-cycles — `todo`
-
-"Swap the dimension's endpoints so the line reads outside" is re-offered on the next pass and swaps
-back, forever. `arch fix` therefore burns its whole pass budget on such a plan and the result
-depends on the **parity** of the budget — a machine-applicable fix that never converges.
-
-Excluded by name from the convergence property in `test/fuzz.test.ts` via
-`NON_CONVERGENT_FIX_CODES`, with a companion test proving the cycle still reproduces so the
-exclusion goes red the day it is fixed. With it excluded, 400/400 generated plans converge in ≤2
-passes.
-
-- **Design call inside it:** the producer should evaluate its own predicate on the *swapped*
-  geometry and offer nothing when the swap does not help — but "offer nothing" versus "offer an
-  offset change instead" is a decision, not a mechanical fix.
+- **Cheap mitigation, do this first:** state in `.claude/commands/release-check.md` and AGENTS.md
+  that packaging happens in the **primary checkout only**, never a worktree.
+- **Real fix:** have the bundle stamp something checkout-identifying (the resolved core's absolute
+  path, or a content hash of `dist/index.js`) and assert it matches the building tree.
+- **Gate:** prove it by building from a worktree with a deliberately divergent core and watching the
+  new assertion fail where the version stamp passes.
 
 ### 3.11 · `repair(repair(s)) !== repair(s)` — `todo`
 

@@ -83,6 +83,15 @@ you observed. Do NOT push anything — this command only verifies.
    itself stale). A red dep-range assertion is **expected on every core release** and is the
    intended prompt to bump the shim — see item 2.
 
+   **Run every build and package step in the PRIMARY checkout, never in a `.claude/worktrees/*`
+   one.** A worktree has no `node_modules` of its own, so esbuild resolves
+   `@chanmeng666/archlang` by walking **up** to the shared repo and bundles **that** core — not the
+   one you are releasing. Observed live on 2026-08-13: a worktree's `dist/server.js` carried a
+   pre-fix function body while its own `dist/chunk-*.js` had the fixed one. **The
+   `__CORE_VERSION__` stamp cannot catch this** — both cores stamp the same version, so the
+   freshness test passes while the bundle is wrong. The stamp proves the bundle is not stale *in
+   version*; nothing yet proves it came from *this* checkout (`docs/backlog.md` item 3.14).
+
 ## Reminders (do not act on these here — they are context for the push)
 
 - **Release is tokenless OIDC.** Pushing a `v*` tag triggers `.github/workflows/release.yml`,
