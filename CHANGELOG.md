@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Seven public type exports that were missing from `src/index.ts`** (issue #61 item 3). Types
+  reachable from `describe()`'s `SceneSummary` were readable but **unnameable** by a TypeScript
+  consumer — you could read `summary.access.rooms[0].reachable` and never annotate, wrap or narrow
+  it in a signature. Now exported: `OpeningSummary`, `InstanceSummary`, `AccessGraph`,
+  `AccessRoomNode`, `AccessEdge` (the three the agent self-correction loop tells models to read),
+  plus `DoorKind` and `RelatedSpan`, which the new guard found on its first run. The `Access*` trio
+  is declared in `analyze.ts` but leaves through `describe.ts`, because `describe()` is the only
+  public value that surfaces them — the export path matches the consumption path. Exports only:
+  no behaviour, no output byte, and `CompileResult` stays append-only.
+- **`test/public-surface.test.ts`** — the guard that makes the above non-recurring. It runs the
+  TypeScript compiler over `src/index.ts`, walks `SceneSummary`'s declaration **transitively**
+  through every type reference into whatever `src/` module declares it, and asserts each name is in
+  the index's export set. The requirement list is **derived, never retyped**: add a field whose type
+  lives in an unexported module and it goes red with no edit to the test. Documented in
+  `docs/testing.md`.
+
+### Fixed
+
+- **A runtime error message promised a release that shipped without the feature.** `room polygon`
+  with an `arc` edge said "planned for v1.25" — so a user running 1.25.0 was told to wait for the
+  release they were already on. The message (and the matching prose in
+  `docs/language-reference.md`) now points at the roadmap and promises no release; the test that
+  pinned the version string now pins its **absence** alongside the guidance that must survive.
+- **`column`'s `at` was documented as a centre and implemented as a top-left corner.** `resolve`,
+  `bounds` and `render` all lay it out with `rectCorners(at.x, at.y, w, h)`, whose first corner *is*
+  `at` — consistent with a room's `at` and with every other rectangle in the language (the opening
+  elements are the ones that centre on `at`, because they sit on a wall). The **doc** was wrong, not
+  the code: the param doc — which surfaces in LSP hover — and the language reference now say
+  top-left. No behaviour change.
+
 ## [1.25.0] - 2026-08-11
 
 **Orientation, openings, and the end of a defect class.** Two new language surfaces — a `site`

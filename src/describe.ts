@@ -73,6 +73,16 @@ export type { CirculationModel, RoomCirculation, CirculationRoute } from "./anal
 
 export type { BBox } from "./analyze.js";
 
+// The access graph and its two node/edge shapes are DECLARED in `analyze.js`, but
+// `describe()` is the only public value that surfaces them ({@link SceneSummary.access}),
+// so they leave through the same door they arrive by. Without this a consumer could read
+// `summary.access.rooms[0].reachable` but never *name* the type of the thing it holds.
+export type { AccessEdge, AccessGraph, AccessRoomNode } from "./analyze.js";
+
+// Likewise for the door kind: it is a grammar token type, but {@link DoorSummary.kind} is
+// where a consumer of the facts channel meets it.
+export type { DoorKind } from "./grammar/tokens.js";
+
 /** Options for {@link describe}; the shared analysis options plus an adjacency tolerance. */
 export interface DescribeOptions extends AnalyzeOptions {
   /**

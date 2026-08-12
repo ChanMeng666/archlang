@@ -189,9 +189,13 @@ export const room: ElementDef = {
       // ring's whole analysis layer (effective-vertex count, self-intersection,
       // centroid, adjacency) is written on literal vertices, and splicing a
       // tessellation in would make every one of those answers about a 48-gon. Say so.
+      // The message names the ROADMAP, never a release: it shipped saying "planned for
+      // v1.25" and v1.25 came and went without it, so the one thing a user running that
+      // version was told was to wait for the release they were already on.
       if (ctx.isKeyword("arc")) {
         ctx.fail(
-          "An `arc` edge is not supported inside a `room polygon` ring yet (planned for v1.25) — " +
+          "An `arc` edge is not supported inside a `room polygon` ring — no release is promised; " +
+            "it is tracked in docs/research/2026-08-06-competitor-borrowing-roadmap.md — " +
             "use `room circle at (cx,cy) radius R` for a round floor, or a curved `wall … { … arc (x,y) radius R … }` " +
             "with a straight-edged room behind it",
           ctx.peek(),

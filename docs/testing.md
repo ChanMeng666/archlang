@@ -118,6 +118,22 @@ Each of these is a place two copies must agree because they *cannot* share an im
 | `test/docs-flags.test.ts` | every `arch <cmd> … --flag` written in a hand-maintained doc is a flag that command actually declares in `src/manifest.ts` (the `docs-site/agents.md` page once told agents to run a flag `fix` never accepted) | fix the prose or add the flag properly. Its scanned list is the `DOCS` array at the top of the file — it includes `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `README.md`, `SKILL.md`, `llms.txt` and the `.claude/` command files |
 | `test/readme-permalink.test.ts` | every playground `#z=` permalink in README / `SKILL.md` / `llms.txt` / hand-written docs-site pages decodes to an example's exact bytes AND compiles clean | regenerate the link with `scripts/gen-permalink.mjs`; never hand-edit a hash |
 
+### Public-surface closure — `test/public-surface.test.ts`
+
+`src/index.ts` is the only public surface, and it can be *incomplete* without anything inside the
+repo noticing: every module here imports its neighbour by real path, so a type that never leaves
+`index.ts` still resolves everywhere except in a downstream consumer's editor. That is how five
+types reachable from `describe()`'s result — including the `Access*` trio the self-correction loop
+tells models to read — shipped readable but **unnameable**.
+
+The guard runs the TypeScript compiler over `src/index.ts`, walks `SceneSummary`'s declaration
+transitively through every type reference into whatever `src/` module declares it, and asserts each
+name is in `index.ts`'s export set. **The requirement list is derived, never retyped** — add a
+field whose type lives in an unexported module and this goes red with no edit to the test. **Red ⇒
+re-export the named type, routed through the module that surfaces it** (the `Access*` types are
+declared in `analyze.ts` but leave through `describe.ts`, because `describe()` is the only public
+value that hands them to you).
+
 ### Byte-identity laws — the shape every language feature ships with
 
 Every feature added since v1.20 carries the same law: **a plan that does not use the new form is
