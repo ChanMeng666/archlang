@@ -92,8 +92,30 @@ Exit codes are the agent contract, so a wrong one would ship silently.
 check on a *published* output format, and no coverage of multi-page/`level`, the sheet frame, the
 title block, themes or hatches.
 
+**Two pdfkit gates, not one** (found while doing 2.1): `test/export-pdf.test.ts` and
+`test/sheet.test.ts:439` both use `describe.skipIf(!pdfAvailable)` / `suite.skipIf(...)`. Neither is
+*vacuous* — vitest reports them as skips, so they never go green having claimed to assert — but
+neither **hard-fails in CI** either, so an install that quietly stopped pulling
+`optionalDependencies` would silently stop testing a published output format. 2.1's one-line pattern
+does not transplant: `skipIf` has nowhere to hang the CI throw, so both need the
+`if (!HAS) { … return; }` restructure `test/png.test.ts` now uses.
+
 - **Gate:** byte-identity across two renders; multi-page fan-out; the optional-dep skip must be
-  visible and must fail in CI (same rule as 2.1).
+  visible and must fail in CI (same rule as 2.1), in **both** suites above.
+
+### 2.8 · A capability gate that skips silently — `todo`
+
+`test/readme-permalink.test.ts:115` does `if (!HAS_DEFLATE_RAW) return;`, which **is** a silent
+vacuous pass on Node < 21.2 — the same defect 2.1 just removed from the PNG suite.
+
+The remedy is *not* the same, and getting that wrong would break CI. This is a **Node capability**
+gate, not an optional dep: the Node 18 and 20 matrix legs legitimately lack `deflate-raw`, so a CI
+hard-fail would be wrong, and `docs/testing.md` §4 documents the capability-gating convention
+deliberately. The honest fix is `it.skipIf(...)` so it skips **visibly** in the reporter rather than
+returning green.
+
+- **Gate:** the case reports as a named skip on a runtime without `deflate-raw`, and still runs on
+  Node 22. Do not add a CI throw.
 
 ### 2.7 · Advisory 0%-coverage reporter — `todo`
 
