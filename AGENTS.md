@@ -309,6 +309,14 @@ npm run check:drift  # run every generator and fail if any generated artifact dr
 npm run lint:ci      # biome ci . — the non-writing lint entry CI uses
 npm run typecheck:all    # full-repo typecheck: root tsconfig.dev.json (src+test+eval+dataset+scripts+bench)
                          # + playground + docs-site (vue-tsc) + packages/mcp + editors/vscode (CI: builds job)
+                         # RUN `npm run build` FIRST — like build:workspaces below, this one reads dist/.
+                         # playground/tsconfig.json maps the bare `archlang` specifier to
+                         # ../dist/index.d.ts; with no dist/ that path misses and TS falls back to the
+                         # repo-root node_modules/archlang symlink, which points at editors/vscode, NOT
+                         # the core. A fresh worktree therefore fails with ~67 SPURIOUS errors (46
+                         # TS2305 "Module 'archlang' has no exported member …" + 21 knock-on implicit-any
+                         # TS7006) that read exactly like a broken public surface. Build and re-run
+                         # before believing a single one of them.
 npm run eval:ci          # the offline 26-brief authorability golden gate (no API key; runs in CI)
 npm run eval:fidelity    # the intent-FIDELITY slice: infeasible briefs (declaring infeasibility is the
                          # correct answer) + a deterministic, JUDGE-FREE laundering detector. Separate

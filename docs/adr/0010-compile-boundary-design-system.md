@@ -8,8 +8,11 @@
 > there is no dark mode or dark surface anywhere. That retires **§1**'s dark/light framing, **§2**'s
 > palette, **§6**'s dark editor pane, and **§7** (docs dark mode) outright. **§3** (fonts), **§4** (the
 > token-lockstep law), **§5** (the live compiler hero), **§8** (ArchCanvas keeps its own identity) and
-> **§9** (the accessibility floor) still bind — read them here, and read everything about carbon,
-> mylar, and the dark source world as history.
+> **§9** (the accessibility floor) still bind — **with one carve-out inside §9**: its
+> `<meta name="color-scheme" content="light dark">` clause is superseded by [ADR 0014
+> §6](0014-one-light-world.md) and is dangerous to follow (see the correction under §9). Read the
+> rest of those sections here, and read everything about carbon, mylar, the dark source world and
+> `light dark` as history.
 
 ## Context
 
@@ -100,9 +103,23 @@ and each product's site is free to express its own side of it.
 
 **9. Accessibility is a floor, not a polish pass.** Both sites ship **AA** contrast on both
 worlds and both modes, real heading hierarchy and `role=main`, `prefers-reduced-motion` honored,
-`<meta name="color-scheme" content="light dark">` + `robots.txt`, and **Lighthouse 100** on
+~~`<meta name="color-scheme" content="light dark">`~~ + `robots.txt`, and **Lighthouse 100** on
 accessibility / best-practices / SEO. This is a hard gate the two-world palette was tuned to meet
 (hence `--plum-bright` for body text on carbon, and the fixed-hex CTA in point 2).
+
+> **Corrected 2026-08-12 — the struck clause above is superseded; the rest of §9 still binds.**
+> [ADR 0014 §6](0014-one-light-world.md) retired the two-value meta tag when the sites became
+> light-only: a site with no dark surfaces cannot honestly claim `light dark`, and declaring `light`
+> *alone in the meta tag* re-arms Chromium's Auto Dark Mode rather than opting out of it. What ships
+> is the CSS **`color-scheme: only light`** in the shared `:root` block — that is the real opt-out —
+> with `<meta name="color-scheme" content="light">` stating the same intent for UAs that read the
+> head first. Both declarations are duplicated across the two sites under the §4 lockstep law
+> (`docs-site/.vitepress/theme/style.css` + `docs-site/.vitepress/config.ts`,
+> `playground/src/styles/tokens.css` + `playground/index.html` + `playground/embed.html`).
+> **Do not "restore" the two-value form**: there is no dark mode to fall back to, and force-dark
+> would invert a site whose whole palette was tuned on light ground. Everything else in §9 — the AA
+> contrast floor, the heading hierarchy, `role=main`, `prefers-reduced-motion`, `robots.txt` and the
+> Lighthouse 100 gate — is unchanged and still binds (read "both modes" as "the one light mode").
 
 ## Consequences
 
