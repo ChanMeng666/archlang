@@ -1,17 +1,39 @@
 # P2-3 site & orientation — ship the NAMED-DIRECTION layer in closed form; the 2026-07 daylight refusal STANDS
 
-**Date:** 2026-08-06 · **Status:** DESIGN PROPOSAL — nothing approved, nothing implemented, no
-source file touched · **Roadmap item:**
+**Date:** 2026-08-06 · **Status:** **SHIPPED in v1.25.0** (`a305c82`, 2026-08-11) — written as a
+design proposal, decided in §10b on 2026-08-07 · **Roadmap item:**
 [`2026-08-06-competitor-borrowing-roadmap.md`](./2026-08-06-competitor-borrowing-roadmap.md) §5 P2-3
 (+ its "P2-3 axis warning") · **Prior verdict engaged:**
 [`2026-07-ai-first-deep-dive.md:171`](./2026-07-ai-first-deep-dive.md) (Track D) · **Reference
 codebases:** PlanScript TS (MIT, `D:\github_repository\planscript`) and PlanScript-Rust (MIT,
 `D:\github_repository\planscript-rust\planscript-rust`), read at their working-tree state ·
-**Requires:** the `windowFacing` true-north fix (`82d4221`, currently on an unmerged worktree
-branch) to be on `main` first.
+**Required (and satisfied 2026-08-07):** the `windowFacing` true-north fix (`82d4221`), now on
+`main`.
 
-Everything below marked **PROPOSED** is a design choice offered for approval, not an established
-fact. Facts about the current tree carry a `file:line`.
+> **Status update, 2026-08-12 — the naming this document proposes is NOT the naming that shipped.**
+> The three owner questions were answered on 2026-08-07 (**§10b**) and the feature shipped in
+> v1.25.0. §10b's Q1 **rejected `good_sun`**, so the derived names are **`equator_side` /
+> `sunrise_side` / `sunset_side`** and the advisory rule is **`W_ROOM_NOT_EQUATOR_FACING`**. The
+> body below has been reconciled to the shipped spelling, so that reading it top-down teaches a
+> token that exists; §10b deliberately keeps the old spelling, because rejecting it is what that
+> section is about, and §10's Q1 keeps it because it *is* the question §10b answers.
+>
+> **The rename changed nothing about §1's position.** There is still no sun model, no sky model, no
+> latitude, no date and no daylight quantity anywhere in ArchLang; the `_side` names are a
+> **drafting heuristic for an aspect, not a daylight measurement**; and the 2026-07 daylight refusal
+> ([`2026-07-ai-first-deep-dive.md:171`](./2026-07-ai-first-deep-dive.md)) stands. With no token
+> spending the word "sun", it is not merely upheld — there is no longer a claim to weigh against it.
+>
+> **Read every `file:line` here as of 2026-08-06, not of today** — this update reconciled the naming
+> only. In particular §2's and §9's rows describe `windowFacing` as living in `src/describe.ts` and
+> classifying against the **host room's own rect**; v1.25.0 moved it to `src/site.ts` as
+> `windowFacingPage` **and replaced that algorithm** with the outward-face probe (the courtyard fix,
+> `3f8c82c`), so those two rows describe a superseded implementation. `northQuarterTurns`,
+> `toCompass` and `compassLetter` are likewise in `src/site.ts`, not `src/describe.ts`.
+
+Everything below marked **PROPOSED** was, on 2026-08-06, a design choice offered for approval rather
+than an established fact; §10b records which of them the owner took and which were overruled. Facts
+about the tree as it stood then carry a `file:line`.
 
 ## 1. Position on the standing daylight verdict — **(a) confine to closed form. The verdict is upheld, not superseded.**
 
@@ -29,24 +51,30 @@ already reports**, produced by a total function of two closed vocabularies:
 | Derived name | Definition | Inputs |
 | --- | --- | --- |
 | `back` | the opposite letter of `street` | `street` |
-| `morning_sun` | `"E"`, always, in both hemispheres | — |
-| `afternoon_sun` | `"W"`, always, in both hemispheres | — |
-| `good_sun` | the **equator-facing** side: `"S"` in the northern hemisphere, `"N"` in the southern | `hemisphere` |
+| `sunrise_side` | `"E"`, always, in both hemispheres | — |
+| `sunset_side` | `"W"`, always, in both hemispheres | — |
+| `equator_side` | the **equator-facing** side: `"S"` in the northern hemisphere, `"N"` in the southern | `hemisphere` |
+
+*(The three names above were proposed as `morning_sun` / `afternoon_sun` / `good_sun`; the `_side`
+spelling is the one the owner took and the one that shipped — §10b, Q1.)*
 
 That is four table lookups and one negation. It is exactly as much of a "sun model" as the north
 arrow is a compass — a labelling convention, not a measurement. `compile()` stays pure,
 synchronous, deterministic and zero-dependency, and no number leaves the mm/`fmt()` world.
 
-**The honesty clause is load-bearing, and it is where this proposal earns the right to use the
-word "sun" at all.** `good_sun` names a *drafting heuristic* ("habitable rooms want the
-equator-facing aspect"), not a measured daylight outcome. A south window in Reykjavík and one in
-Singapore are not the same daylight and this layer will never say they are. **PROPOSED:** every
-surface that emits `good_sun` — the `describe()` fact, the lint message, the intent schema
-description, `docs/analysis.md` — carries that sentence, and a test pins the schema description so
-it cannot be quietly dropped. If the owner would rather not spend the word "sun" on a convention,
-the fallback spelling is `equator_side` / `sunrise_side` / `sunset_side`; it is strictly more
-honest and strictly less familiar to a model that has read PlanScript's docs. **OPEN — owner's
-call** (§10, Q1).
+**The honesty clause is load-bearing.** `equator_side` names a *drafting heuristic* ("habitable
+rooms want the equator-facing aspect"), not a measured daylight outcome. A south window in
+Reykjavík and one in Singapore are not the same daylight and this layer will never say they are.
+**PROPOSED:** every surface that emits the name — the `describe()` fact, the lint message, the
+intent schema description, `docs/analysis.md` — carries that sentence, and a test pins the schema
+description so it cannot be quietly dropped.
+
+*The proposal originally spent the word "sun" — `good_sun`, with the clause above as the thing that
+earned it — and offered `equator_side` / `sunrise_side` / `sunset_side` merely as a fallback
+"strictly more honest and strictly less familiar to a model that has read PlanScript's docs".*
+**The owner took the fallback (§10b, Q1): a token must not claim more than the check verifies**,
+least of all to a model that will map "a sunny living room" onto whatever token exists. The honesty
+clause survives the rename and now reinforces the naming instead of apologising for it.
 
 **The refusal list is part of the design, not an omission.** These are declined *by name* so a
 later session does not read the silence as an invitation: `latitude`, `longitude`, any date or
@@ -174,9 +202,9 @@ reads.
 "site": {
   "street": "S",
   "back": "N",
-  "morning_sun": "E",
-  "afternoon_sun": "W",
-  "good_sun": "S",
+  "equator_side": "S",
+  "sunrise_side": "E",
+  "sunset_side": "W",
   "hemisphere": "north"
 }
 ```
@@ -199,9 +227,11 @@ than shipping — which is the guard working, not an obstacle.
 
 ### 4.2 Lint — **one** advisory rule, no machine fix
 
-**PROPOSED: `W_ROOM_NO_GOOD_SUN`** — a habitable room (living / bedroom, classified through the
+**PROPOSED: `W_ROOM_NOT_EQUATOR_FACING`** (proposed as `W_ROOM_NO_GOOD_SUN`; renamed with the
+directions themselves — §10b, Q1) — a habitable room (living / bedroom, classified through the
 existing `USE_VOCABULARY` + `matchVocabulary` path in `src/vocabulary.ts`, the same route
-`W_BEDROOM_NO_WINDOW` takes) has **at least one** window and **none** of them faces `good_sun`.
+`W_BEDROOM_NO_WINDOW` takes) has **at least one** window and **none** of them faces
+`equator_side`.
 
 Four conditions, each carrying its reason:
 
@@ -209,12 +239,12 @@ Four conditions, each carrying its reason:
   plan lints byte-identically, and the byte-identity law of §5 extends to lint output.
 - **Requires ≥ 1 window.** A zero-window bedroom is already `W_BEDROOM_NO_WINDOW`'s report;
   double-reporting one defect under two codes makes a `--code`-filtered read misleading.
-- **Exact test, no fuzz.** "None faces `good_sun`" — not "none faces `good_sun` or an adjacent
-  quarter". A quarter-tolerance is a threshold with no derivation, and this language has spent two
-  releases removing those.
+- **Exact test, no fuzz.** "None faces `equator_side`" — not "none faces `equator_side` or an
+  adjacent quarter". A quarter-tolerance is a threshold with no derivation, and this language has
+  spent two releases removing those.
 - **No `FixSuggestion`.** The remedy is "move a window to the other facade", which is geometry the
   compiler must not choose — [ADR 0005](../adr/0005-no-invisible-architect.md), facts and advice,
-  never an invisible architect. A `hints` line naming the `good_sun` letter is the whole
+  never an invisible architect. A `hints` line naming the `equator_side` letter is the whole
   affordance.
 
 Mechanics: a new module under `src/lint/rules/`, **appended last** in `LINT_RULES`
@@ -226,7 +256,8 @@ in it (`src/lint/ruleset.ts`). It joins the **Room** family in `docs/analysis.md
 ### 4.3 Intent — widen one enum, add one refusal code. **No new predicate kind.**
 
 **PROPOSED:** `roomsInclude[].windows.facing` accepts, in addition to `"N"|"S"|"E"|"W"`, the
-five **symbolic targets** `"good_sun"`, `"morning_sun"`, `"afternoon_sun"`, `"street"`, `"back"`.
+five **symbolic targets** `"street"`, `"back"`, `"equator_side"`, `"sunrise_side"`,
+`"sunset_side"`.
 A symbolic target resolves to a letter through the plan's `describe().site` at check time, then
 the existing `checkRoomWindows` (`src/intent.ts:374-391`) runs unchanged.
 
@@ -243,7 +274,7 @@ Why widen rather than add a `room-orientation` kind:
 - It is strictly less surface: one enum in `intentFromJson`'s `FACINGS` set (`src/intent.ts:608`),
   one enum in `INTENT_JSON_SCHEMA` (`src/intent.ts:773-778`), one resolution step.
 
-**The refusal that must not be forgotten.** An intent asserting `facing: "good_sun"` against a plan
+**The refusal that must not be forgotten.** An intent asserting `facing: "equator_side"` against a plan
 with **no** `site` block must be a hard error, never a silent pass and never a silent fail:
 **PROPOSED `E_INTENT_NO_SITE`**, catalogued alongside the other eight `E_INTENT_*` codes
 (`src/error-catalog.ts:300-334`), added to the `IntentCode` union (`src/intent.ts:109-117`) and to
@@ -257,7 +288,7 @@ question and a wrong answer.
 
 > **Gating tier.** A symbolic `facing` rides `room-windows`, which is **already** `gate: true`
 > (`src/intent.ts:87`), because a brief-stated window is a deliverable. This is **not** a tier
-> change: `facing: "S"` gates today, and `facing: "good_sun"` is the same assertion with the letter
+> change: `facing: "S"` gates today, and `facing: "equator_side"` is the same assertion with the letter
 > written differently. The permanently-advisory set — adjacency and reachability
 > (`src/intent.ts:85-86`, AGENTS.md standing decisions) — is untouched, and nothing here generates
 > anything: the channel still only measures and gates.
@@ -297,7 +328,7 @@ Concretely, the assertions:
 2. **`describe()`.** No `site` ⇒ the key is **absent**, not `null` — the same discipline `sheet`
    and `axes` keep (`src/describe.ts:379-384`, `:400-406`). Asserted by deep-equality against the
    summary of the same source parsed by the pre-change build, and by a key-set assertion.
-3. **Lint.** No `site` ⇒ `W_ROOM_NO_GOOD_SUN` cannot fire, and because it is appended last
+3. **Lint.** No `site` ⇒ `W_ROOM_NOT_EQUATOR_FACING` cannot fire, and because it is appended last
    (`src/lint/rules/index.ts:54`) the diagnostic **order** of every existing plan is unchanged —
    the property every rule added since v1.21 has had to satisfy.
 4. **Intent.** An `Intent` with no symbolic facing lowers to a byte-identical `Predicate[]`
@@ -331,7 +362,7 @@ it):
 | --- | --- |
 | `npm run gen:grammars` | new `control` + `enum` entries → TextMate grammar + `playground/src/arch-language.js` |
 | `npm run gen:gbnf` | new production (hard-fails first — above) |
-| `npm run gen:errors` | new codes `E_SITE_DUP`, `E_SITE_NO_STREET`, `W_ROOM_NO_GOOD_SUN`, `E_INTENT_NO_SITE` → `docs/error-codes.md`. Every raised code needs a catalogue entry and vice-versa (a test enforces both directions); each example fence must be emitted `arch static`, which `scripts/gen-error-codes.ts` already does |
+| `npm run gen:errors` | new codes `E_SITE_DUP`, `E_SITE_NO_STREET`, `W_ROOM_NOT_EQUATOR_FACING`, `E_INTENT_NO_SITE` → `docs/error-codes.md`. Every raised code needs a catalogue entry and vice-versa (a test enforces both directions); each example fence must be emitted `arch static`, which `scripts/gen-error-codes.ts` already does |
 | `npm run gen:spec` | new statement line (hard-fails first — above) |
 | `npm run gen:llms` | consumes the regenerated spec + error catalog |
 | `npm run gen:intent-schema` | the widened `facing` enum + its descriptions → `schemas/intent.schema.json` |
@@ -355,7 +386,7 @@ that cannot decode it — the exact 0.2.2 failure recorded in AGENTS.md.
 | --- | --- |
 | `docs/language-reference.md:47-…` | A `site { … }` row in the **plan-level settings** table (beside `north`, whose row at `:47` already explains that `north` orients the compass facing `describe()` reports), plus a short section on the derived names carrying the §1 honesty clause. **GFM trap:** any `\|` inside inline code in a table cell must be escaped (`test/docs-table-pipes.test.ts`) |
 | `docs/analysis.md:25-…` | The `describe` contract gains the `site` block in its worked JSON |
-| `docs/analysis.md:632-640` | `W_ROOM_NO_GOOD_SUN` into the **Room** family row of the lint table |
+| `docs/analysis.md:632-640` | `W_ROOM_NOT_EQUATOR_FACING` into the **Room** family row of the lint table |
 | `docs/intent.md:34-78` | The `facing` field's symbolic targets, in "The shape" |
 | `docs/intent.md:123-137` | `E_INTENT_NO_SITE` into the **Gating** table, with one sentence on why it is a refusal rather than a failure |
 | `docs/error-codes.md` | **GENERATED** — never hand-edited; falls out of `gen:errors` |
@@ -374,7 +405,7 @@ browser** — every new fence either compiles clean or carries `static` (`test/d
 | --- | --- | --- |
 | **0 — prerequisite** | `82d4221` (`windowFacing` true north) merged to `main` | Without it every derived direction is page-relative and silently wrong on `examples/two-bed.arch`. **Do not start stage 1 before this lands** |
 | **1 — the language + the facts** | `site` grammar (§3), `PlanNode.site` + `siteSpan`, IR passthrough, formatter slot, `describe().site` (§4.1), `E_SITE_DUP` / `E_SITE_NO_STREET`, `DESCRIBE_KEYS`, the three prose lists, all generators (§6), the byte-identity suite (§5) | `check` + `check:drift` + `typecheck:all` green; goldens **untouched** |
-| **2 — the two consumers** | `W_ROOM_NO_GOOD_SUN` (§4.2) and the symbolic-facing widening + `E_INTENT_NO_SITE` (§4.3) | `eval/judge-fixture.json` byte-identical; `eval:ci` identical to baseline; diagnostic order unchanged on every example |
+| **2 — the two consumers** | `W_ROOM_NOT_EQUATOR_FACING` (§4.2) and the symbolic-facing widening + `E_INTENT_NO_SITE` (§4.3) | `eval/judge-fixture.json` byte-identical; `eval:ci` identical to baseline; diagnostic order unchanged on every example |
 | **3 — deferred, by name** | `near street` / `away_from street` (§4.4) — if built, defined **exactly**: "the room's `bbox` (`src/describe.ts:91`) touches the plan's `bbox` on that compass side within the analysis tolerance `tolMm` (`src/lint/ruleset.ts`)", never a fresh magic epsilon. And a `site`-bearing flagship example | Its own design pass, or a written close like the dims-collision item in the roadmap's §2 |
 
 **Deferred by name, so the silence is not read as an invitation:** latitude/longitude and every
@@ -403,6 +434,8 @@ Found while verifying it. None changes the recommendation; two change the cost.
    project's credibility. Mitigations: the honesty clause on every surface (§1), the schema-
    description pin, and the `equator_side` fallback spelling. **This is the single question that
    most needs an owner answer, and it is a naming decision, not an engineering one.**
+   → **Answered in §10b: `good_sun` REJECTED**, the fallback spelling taken. This is the one risk
+   on the list that was closed by *not shipping the thing that carried it*.
 2. **Q2 — the `north` category collision (§3.4).** If the owner rejects the "leave `north` in
    `attribute`" compromise, the alternatives are auditing every `KEYWORDS` consumer for duplicate
    tolerance, or spelling the source `street S|N|E|W`. Both are viable; neither should be

@@ -121,6 +121,106 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // trimmed from 1,298 chars to 1,106 before this was raised (the per-code prose and
     // the pocket-run threshold went to the language reference and the error catalog)
     // and the suite is green at 23,456. Trim duplication before raising again.
-    expect(spec.length).toBeLessThan(23_500);
+    //
+    // Raised 23.5k → 24.1k for CORRECTNESS, not surface — the first raise in this
+    // file's history that buys no new language at all. Every earlier entry above
+    // paid for a feature the spec did not yet describe; this one pays to make lines
+    // that were ALREADY here true. The grammar lines are hand-typed in the generator,
+    // so `check:drift` reproduced the same wrong text every run and stayed green
+    // (the standing "a generator's TEMPLATE can go stale" law): `wall` omitted
+    // `[id=<name>]` entirely while four other lines require a wall id, so an agent
+    // could not write a valid `door on <wall>` from the reference alone; `furniture`
+    // printed `<category> [id=…]` in the order the parser REFUSES (it is
+    // `eatKeyword` → `parseIdOpt` → `eatIdent`, so `id=` must lead); the trailing
+    // `wall` clause on door/window/opening read as if it paired with either
+    // placement form when it is accepted only when NOT attached; `dim`'s `offset`
+    // was printed as required and is optional; `align` omitted `center`; and the
+    // most-copied section on the page, the common-mistakes table, taught
+    // `label "{aream2(W,H)} m²"` as though `aream2` were a built-in — it is a `let`
+    // in examples/parametric.arch, so copying that row raises E_UNKNOWN_FN. The
+    // single highest-leverage byte here is rule 6, which now states that `id=` leads
+    // every element: that one sentence corrects the teaching for all ten id-bearing
+    // grammar lines at once. ~430 chars of genuine duplication were cut first — two
+    // common-mistakes rows DELETED (the `paper` row, whose "Fix" is a verbatim third
+    // statement of the sheet paragraph directly above the Elements section, and the
+    // "Reusing an `id`" row, now word-for-word inside the expanded rule 6) and three
+    // more TIGHTENED to drop only the half their grammar line already states, plus
+    // the third statement of the `against wall` advice in the furniture prose,
+    // `--strict` "fails on warnings too" said twice ten lines apart, `level`'s
+    // restatement of the `stair` shaft rule, and the intro's `arch spec` pointer
+    // that the CLI verb list below already carries. Green at 24,044. NOTE the two
+    // trims this comment does NOT claim: the `stair` multi-storey sentence and
+    // `place`'s `import … as` clause were both examined and KEPT — the first states
+    // the SEMANTICS of a shaft where `level` states only its legality, and the
+    // second documents `import "f.arch" as name` (a whole file as a component),
+    // which is a different form from the scripting bullet's `import "f.arch": sym`.
+    // NOT raised for the value-set interpolation pass (`assertVocabRendered`, and
+    // `test/spec-forms.test.ts` beside it). Recorded here because a future reader will
+    // otherwise wonder why a change that ADDED text left the number alone. Every
+    // retyped closed set — the room `uses` kinds, the furniture anchors, the paper
+    // sizes/orientations, the scale ladder, the built-ins, the relational
+    // directions/alignments, the `dims auto` modes, the `north` words, the strip and
+    // vertical directions, the dim endpoint references and the arc directions — now
+    // INTERPOLATES from its source array, which is byte-neutral (they all matched).
+    // Three edits were not: the wall line stopped printing `material <name>` and now
+    // prints the closed list plus the W_UNKNOWN_MATERIAL fallback (an agent could not
+    // otherwise guess a legal material, and a wrong guess degrades the drawing
+    // SILENTLY); the `dims auto` modes are printed in full for the first time (the page
+    // taught `all` and `rooms` and never said the set was closed at four); and the
+    // paper line names which orientation is the default. Paid for by ONE genuine
+    // duplication: the CLI section stated exit code `2`'s meaning twice fifteen lines
+    // apart, and the FIRST statement is rendered from the manifest — so the
+    // hand-written restatement in the self-correction paragraph went, exactly as
+    // `--strict`'s did last time. Green at 24,088 — **12 chars of headroom**, so the
+    // next edit here almost certainly trips this. That is the cap working: trim
+    // duplication, and raise it only with a reason of the kind written above.
+    //
+    // Raised 24.1k → 25k to WIDEN THE WORKING MARGIN, not because the spec grew past
+    // the old number. Every raise above was reactive — a feature or a correction had
+    // already made the file too big, and the number moved to admit it. This one is not:
+    // the file is 24,088 and the old cap 24,100, so the margin had shrunk to **12
+    // characters**, and a 12-char margin is not a budget, it is a tripwire on unrelated
+    // work. The spec embeds `examples/attached.arch` and `examples/parametric.arch`
+    // VERBATIM, so a one-character edit to either example — a change with nothing to do
+    // with the spec — fails this test and hands the person who made it a choice between
+    // reverting their example and deleting real agent guidance to fit. That is the cap
+    // pointed at the wrong target: it is here to price the spec's own prose, not to
+    // veto edits to the examples it quotes.
+    //
+    // What the cap is FOR, restated because it is easy to read as an arbitrary ceiling:
+    // `spec.llm.md` is injected VERBATIM into agent system prompts (`arch spec`, `arch
+    // context --section spec`, the MCP shim's baked resource, archlang.uk), so its size
+    // is a RECURRING PER-REQUEST TOKEN COST paid by every downstream agent on every
+    // call, not a one-off repo weight. At ~4 chars/token, 25,000 chars is ~6.25k tokens
+    // of every prompt that carries it. That is what makes each addition worth arguing
+    // about, and why the standing instruction stays: TRIM DUPLICATION BEFORE RAISING.
+    //
+    // Headroom bought at the moment of raising: **912 chars** over the then-current
+    // 24,088 (~228 tokens), against 12 before.
+    //
+    // Where 693 of that went, in the same commit — recorded here so the next reader does
+    // not mistake a thin margin for a cap that was never widened. Two structural holes in
+    // `gen-llm-spec.ts` were closed and both cost text:
+    //   - a THIRD table, `SETTING_GRAMMAR`, for the `KEYWORDS.attribute` entries that are
+    //     plan STATEMENTS. They fell between the element guard and the control guard, so
+    //     `dims`, `accTitle` and `accDescr` had no syntax on the page at all — only bare
+    //     words in the keyword bullet. Three new Structure lines.
+    //   - `SCRIPTING_KEYWORDS`'s "the prose covers these" claim became a CHECK, which
+    //     failed immediately for `theme` and `style` (documented nowhere), so the missing
+    //     Scripting bullet had to be written.
+    // Paid for in part by one real duplication: the `dims auto` MODE SET was printed on
+    // the `dim` element line because that was the only line that could hold it; now that
+    // `dims` has a line of its own, the set has one owner and `dim` points at it.
+    //
+    // Green at 24,781 — **219 chars of headroom**, ~18× the 12 this replaced. Enough that
+    // a character-level edit to `examples/attached.arch` or `examples/parametric.arch`
+    // (both embedded VERBATIM) is no longer a spec-budget negotiation, which was the whole
+    // point; not enough to be generous. Trim duplication before raising again — and the
+    // largest single lever left is the `**Attributes:**` keyword bullet (~690 chars),
+    // which the new partition guard has made *categorically* redundant but not yet
+    // *provably* so: the guard asserts every attribute is classified, not that every
+    // clause attribute is actually RENDERED in some element line. Make it assert the
+    // rendering and the bullet can go.
+    expect(spec.length).toBeLessThan(25_000);
   });
 });

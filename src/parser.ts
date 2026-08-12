@@ -29,8 +29,17 @@ import type {
   WhileNode,
   ZoneNode,
 } from "./ast.js";
-import type { CompassWord, Hemisphere, ScheduleSubject } from "./ast.js";
-import { COMPASS_DIRECTIONS, HEMISPHERES, LEVEL_SHARED_KINDS, SCHEDULE_SUBJECTS, USE_KINDS } from "./ast.js";
+import type { AutoDimsMode, CompassWord, Hemisphere, NorthCardinal, ScheduleSubject, StripDir } from "./ast.js";
+import {
+  AUTO_DIMS_MODES,
+  COMPASS_DIRECTIONS,
+  HEMISPHERES,
+  LEVEL_SHARED_KINDS,
+  NORTH_DIRS,
+  SCHEDULE_SUBJECTS,
+  STRIP_DIRS,
+  USE_KINDS,
+} from "./ast.js";
 import type { Expr } from "./expr.js";
 import { closest, parseExpr as parseExprPratt } from "./expr.js";
 import type { Theme } from "./theme.js";
@@ -501,9 +510,9 @@ class Parser {
     this.next();
     const a = this.eatIdent().value;
     if (a !== "auto") this.fail(`Expected "auto" after "dims" but found "${a}"`, t);
-    let mode: "overall" | "rooms" | "walls" | "all" = "all";
-    if (this.isType("ident") && ["overall", "rooms", "walls", "all"].includes(this.peek().value)) {
-      mode = this.eatIdent().value as "overall" | "rooms" | "walls" | "all";
+    let mode: AutoDimsMode = "all";
+    if (this.isType("ident") && (AUTO_DIMS_MODES as readonly string[]).includes(this.peek().value)) {
+      mode = this.eatIdent().value as AutoDimsMode;
     }
     plan.autoDims = mode;
   }
@@ -646,11 +655,11 @@ class Parser {
       this.next();
       return { deg: t.num! };
     }
-    if (t.type === "ident" && ["up", "down", "left", "right"].includes(t.value)) {
+    if (t.type === "ident" && (NORTH_DIRS as readonly string[]).includes(t.value)) {
       this.next();
-      return t.value as NorthDir;
+      return t.value as NorthCardinal;
     }
-    this.fail(`Expected a north direction (up|down|left|right|<degrees>) but found ${describe(t)}`);
+    this.fail(`Expected a north direction (${NORTH_DIRS.join("|")}|<degrees>) but found ${describe(t)}`);
   }
 
   private parsePoint(): ExprPoint {
@@ -1166,9 +1175,9 @@ class Parser {
   private parseStrip(): StripNode {
     const kw = this.eatKeyword("strip");
     const dirTok = this.eatIdent();
-    const dir = dirTok.value;
-    if (dir !== "right" && dir !== "left" && dir !== "down" && dir !== "up") {
-      this.fail(`Expected a strip direction (right|left|down|up) but found "${dir}"`, dirTok);
+    const dir = dirTok.value as StripDir;
+    if (!(STRIP_DIRS as readonly string[]).includes(dir)) {
+      this.fail(`Expected a strip direction (${STRIP_DIRS.join("|")}) but found "${dirTok.value}"`, dirTok);
     }
     this.eatKeyword("at");
     const at = this.parsePoint();

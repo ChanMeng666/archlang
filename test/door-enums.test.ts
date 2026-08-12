@@ -107,11 +107,14 @@ suite("door enums — one source, six call sites", () => {
 
 suite("door enums — the generators fail loudly, not silently", () => {
   const body = (): [string, string][] => [
-    ["door-stmt", `"door" rws id-opt ( door-kind rws )? opening-target ws "width" ws expr ( ws door-clause )*`],
+    ["door-stmt", `"door" rws id-opt ( door-kind rws )? opening-placement door-clauses`],
     ["door-kind", `"hinged" | "sliding" | "barn" | "bifold" | "pocket"`],
+    // A SEQUENCE of optionals in the parser's own clause order, not a `( clause )*`
+    // set: `door … swing in hinge left` is a parse error, so a grammar that offered
+    // the clauses as an unordered repeat would emit forms the language has never had.
     [
-      "door-clause",
-      `"wall" rws ref | "hinge" rws hinge-val | "swing" rws swing-val | "slide" rws slide-val | "open" ws expr`,
+      "door-clauses",
+      `( ws "hinge" rws hinge-val )? ( ws "swing" rws swing-val )? ( ws "slide" rws slide-val )? ( ws "open" ws expr )?`,
     ],
     ["hinge-val", `"near" rws ( "start" | "end" ) | "left" | "right"`],
     ["swing-val", `"into" rws ref | "in" | "out"`],
@@ -128,11 +131,11 @@ suite("door enums — the generators fail loudly, not silently", () => {
     expect(g).toContain(`slide-val ::= "left" | "right"`);
     expect(g).toContain(`door-kind ::= "hinged" | "sliding" | "barn" | "bifold" | "pocket"`);
     expect(g).toContain(
-      `door-clause ::= "wall" rws ref | "hinge" rws hinge-val | "swing" rws swing-val | "slide" rws slide-val | "open" ws expr`,
+      `door-clauses ::= ( ws "hinge" rws hinge-val )? ( ws "swing" rws swing-val )? ( ws "slide" rws slide-val )? ( ws "open" ws expr )?`,
     );
     // The kind word LEADS the statement (it is not a clause), which is what makes the
     // separate `door-kind` arm of the guard necessary at all.
-    expect(g).toContain(`door-stmt ::= "door" rws id-opt ( door-kind rws )? opening-target`);
+    expect(g).toContain(`door-stmt ::= "door" rws id-opt ( door-kind rws )? opening-placement door-clauses`);
   });
 
   it("gen-gbnf throws when a door clause has no production", () => {
@@ -148,12 +151,23 @@ suite("door enums — the generators fail loudly, not silently", () => {
     );
   });
 
-  it("gen-gbnf throws when a clause is unreachable from `door-clause`", () => {
-    const orphaned = body().map(([n, p]) => (n === "door-clause" ? [n, `"wall" rws ref`] : [n, p])) as [
+  it("gen-gbnf throws when a clause is unreachable from `door-clauses`", () => {
+    const orphaned = body().map(([n, p]) => (n === "door-clauses" ? [n, `( ws "hinge" rws hinge-val )?`] : [n, p])) as [
       string,
       string,
     ][];
     expect(() => assertDoorVocab(orphaned, DOOR_ENUMS, DOOR_KINDS)).toThrow(/no door clause emits/);
+  });
+
+  it("gen-gbnf throws when the clause table is reordered out of the parser's order", () => {
+    // `door-clauses` renders one optional per key IN TABLE ORDER, which makes that
+    // order load-bearing: the parser reads `hinge`, then `swing`, then `slide`, once
+    // each, so a table shuffled for some unrelated reason would silently ship a
+    // grammar whose every two-clause door is a parse error. Nothing about the
+    // per-clause checks above would notice — every production is still present and
+    // still derives its value set.
+    const reordered = { swing: DOOR_ENUMS.swing, hinge: DOOR_ENUMS.hinge, slide: DOOR_ENUMS.slide };
+    expect(() => assertDoorVocab(body(), reordered, DOOR_KINDS)).toThrow(/no longer matches the order/);
   });
 
   it("gen-gbnf throws when a door KIND stops being rendered", () => {

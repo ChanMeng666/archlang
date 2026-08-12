@@ -18,9 +18,31 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { COMPASS_DIRECTIONS, HEMISPHERES } from "../src/ast.js";
+import {
+  ARC_DIRS,
+  AUTO_DIMS_MODES,
+  COMPASS_DIRECTIONS,
+  DIM_REFS,
+  FURNITURE_ANCHORS,
+  HEMISPHERES,
+  AXIS_ALIGNS,
+  NORTH_DIRS,
+  REL_DIRS,
+  REL_DIR_AXIS,
+  SCHEDULE_SUBJECTS,
+  STRIP_DIRS,
+  USE_KINDS,
+  VERTICAL_DIRS,
+} from "../src/ast.js";
+import { BUILTIN_NAMES } from "../src/builtins.js";
 import { DOOR_ENUMS, DOOR_HINGE_NEAR, DOOR_KINDS, KEYWORDS } from "../src/grammar/tokens.js";
+import { KNOWN_MATERIALS } from "../src/hatches.js";
 import { buildManifest } from "../src/manifest.js";
+import { STYLE_KINDS, THEMES } from "../src/theme.js";
+import { AUTO_SCALE_DENOMINATORS, PAPER_ORIENTATIONS, PAPER_SIZES } from "../src/sheet.js";
+
+/** The auto-fit scale ladder as the spec prints it (`1:50 / 1:100 / …`). */
+const SCALE_LADDER = AUTO_SCALE_DENOMINATORS.map((d) => `1:${d}`);
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
@@ -28,33 +50,36 @@ const ROOT = resolve(HERE, "..");
 /** The example files embedded verbatim, in order (attachment-first flagship leads). */
 export const SPEC_EXAMPLES = ["attached.arch", "parametric.arch"] as const;
 
+/** The relational directions that align on each cross axis, derived from
+ *  {@link REL_DIR_AXIS} so the spec's axis rule and the compiler's cannot diverge.
+ *  Rendering the pairing (rather than the flat six-word list) is what teaches an agent
+ *  that `right-of … align left` is `E_ROOM_ALIGN_AXIS` and not a placement. */
+const dirsOn = (axis: "v" | "h"): string => REL_DIRS.filter((d) => REL_DIR_AXIS[d] === axis).join("|");
+
 /**
  * One-line grammar for each built-in element, keyed by element keyword. Keys MUST
  * match `KEYWORDS.element` exactly — {@link renderLlmSpec} throws otherwise, so a
  * new element can't ship without a spec line (the drift guard).
  */
-const ELEMENT_GRAMMAR: Record<string, string> = {
-  wall: "wall <category> thickness <mm> [material <name>] { (x,y) (x,y) … [arc (x,y) radius <mm> [cw|ccw] [major]] … [close] }   # category e.g. exterior/partition; `close` makes a loop. An `arc` clause makes THAT edge a circular arc from the PREVIOUS vertex (default: the minor arc turning `ccw` AS DRAWN, bulging left of travel; `cw`/`major` pick the other circle / the long way round; R < chord/2 = E_ARC_RADIUS + a fix supplying the minimum). A closed curve is two arcs. Faces draw as TRUE arcs. Openings work: `on <wall> at <pos>` walks RUN length (an arc contributes R·θ, not its chord) and a door's leaf/swing take the TANGENT there; `furniture … against wall` on an arc = E_FURN_AGAINST (use at+rotate)",
-  room: 'room [id=<name>] at (x,y) size <W>x<H> [label "…" [at (x,y)]] [uses living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry …]   # OR relational: room [id=…] (right-of|left-of|below|above) <roomId> [align top|middle|bottom|left|right] [gap <mm>] size <W>x<H>. OR POLYGONAL: room [id=…] polygon (x,y) (x,y) (x,y) … — an implicitly-closed SIMPLE polygon (>=3 vertices) instead of at+size: exact shoelace area, label at the CENTROID (override: `label "…" at (x,y)`). A crossing or all-collinear ring errors (E_ROOM_POLY_SELF_INTERSECT/E_ROOM_POLY_DEGENERATE); rectangle-only clauses (relational placement, `furniture … in <poly> anchor|centered`) REFUSE it with E_PLACE_POLY — use `at (x,y)` [+ rotate]. OR CIRCULAR: room [id=…] circle at (cx,cy) radius <mm> — area is EXACT πR² (never the tessellation), reported as `floor_circle`; grids/overlap use a 48-gon ring',
+export const ELEMENT_GRAMMAR: Record<string, string> = {
+  wall: `wall [id=<name>] <category> thickness <mm> [material ${KNOWN_MATERIALS.join("|")} [scale <n>] [angle <deg>]] { (x,y) (x,y) … [arc (x,y) radius <mm> [${ARC_DIRS.join("|")}] [major]] … [close] }   # category e.g. exterior/partition. NAME IT (\`id=\`) if any \`door on\`/\`window on\`/\`furniture against wall\`/\`dim radius\` will reference it. An unlisted material is W_UNKNOWN_MATERIAL + the default hatch; \`scale\`/\`angle\`: either order, each once. \`close\` makes a loop. An \`arc\` clause makes THAT edge a circular arc from the PREVIOUS vertex (default: the minor arc turning \`ccw\` AS DRAWN, bulging left of travel; \`cw\`/\`major\` pick the other circle / the long way round; R < chord/2 = E_ARC_RADIUS + a fix supplying the minimum). A closed curve is two arcs. Faces draw as TRUE arcs. Openings work: \`on <wall> at <pos>\` walks RUN length (an arc contributes R·θ, not its chord) and a door's leaf/swing take the TANGENT there; \`furniture … against wall\` on an arc = E_FURN_AGAINST (use at+rotate)`,
+  room: `room [id=<name>] at (x,y) size <W>x<H> [label "…" [at (x,y)]] [uses ${USE_KINDS.join("|")} …]   # OR relational: room [id=…] (${REL_DIRS.join("|")}) <roomId> [align <edge>] [gap <mm>] size <W>x<H> — align is CROSS-axis: ${AXIS_ALIGNS.v.join("|")} after ${dirsOn("v")}, ${AXIS_ALIGNS.h.join("|")} after ${dirsOn("h")} (middle=center, both OK); wrong axis = E_ROOM_ALIGN_AXIS +fix, non-edge = E_ROOM_ALIGN. OR POLYGONAL: room [id=…] polygon (x,y) (x,y) (x,y) … — an implicitly-closed SIMPLE polygon (>=3 vertices) instead of at+size: exact shoelace area, label at the CENTROID (override: \`label "…" at (x,y)\`). A crossing or all-collinear ring errors (E_ROOM_POLY_SELF_INTERSECT/E_ROOM_POLY_DEGENERATE); rectangle-only clauses (relational placement, \`furniture … in <poly> anchor|centered\`) REFUSE it with E_PLACE_POLY — use \`at (x,y)\` [+ rotate]. OR CIRCULAR: room [id=…] circle at (cx,cy) radius <mm> — area is EXACT πR² (never the tessellation), reported as \`floor_circle\`; grids/overlap use a 48-gon ring`,
   // The two value lists are INTERPOLATED from `DOOR_ENUMS` (+ `DOOR_HINGE_NEAR`), never
   // typed out: this line is prose inside a generator, so a retyped list would document a
   // language that no longer exists while `check:drift` stayed green. `assertDoorEnumsRendered`
   // below is the guard that keeps it interpolated.
-  door: `door [id=<name>] [${DOOR_KINDS.join("|")}] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [hinge ${DOOR_ENUMS.hinge.join("|")}|${DOOR_HINGE_NEAR.map((v) => `near ${v}`).join("|")}] [swing ${DOOR_ENUMS.swing.join("|")}|into <roomId>] [slide ${DOOR_ENUMS.slide.join("|")}] [open <0..1>]   # \`at (x,y)\` must sit on a wall; \`on <wall> at <pos>\` pins it BY CONSTRUCTION (<pos> = \`40%\` | mm from the wall's start | \`center\`) and can never be reported off-wall — prefer it. KIND leads; \`hinged\` (default) is identical to omitting it and is the ONLY kind with a swing arc — the rest sweep nothing, so W_SWING_OBSTRUCTED cannot apply to them. \`swing\` DIFFERS BY KIND: hinged = which side the leaf sweeps; barn/bifold = which FACE the panel hangs on / folds toward; sliding/pocket take none. \`hinge\` is hinged-only and \`slide\`/\`open\` sliding-family-only; a wrong pairing REFUSES (E_DOOR_KIND_CLAUSE), as does any non-hinged kind on an \`arc\` wall (E_DOOR_KIND_CURVED). \`slide\` reads along the wall like \`hinge\`; \`open\` is DRAWING-only (nothing measured reads it), [0,1] or E_DOOR_OPEN_RANGE. A \`pocket\` needs its own width + clearance of wall past the slide-side jamb, or W_POCKET_RUN`,
+  door: `door [id=<name>] [${DOOR_KINDS.join("|")}] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [hinge ${DOOR_ENUMS.hinge.join("|")}|${DOOR_HINGE_NEAR.map((v) => `near ${v}`).join("|")}] [swing ${DOOR_ENUMS.swing.join("|")}|into <roomId>] [slide ${DOOR_ENUMS.slide.join("|")}] [open <0..1>]   # \`at (x,y)\` must sit on a wall; \`on <wall> at <pos>\` pins it BY CONSTRUCTION (<pos> = \`40%\` | mm from the wall's start | \`center\`) and can never be reported off-wall — prefer it. The trailing \`wall <id|category>\` pairs with the \`at\` form ONLY — after \`on <wall>\` the host is already named, so writing it is a PARSE ERROR. KIND leads; \`hinged\` (default) is identical to omitting it and is the ONLY kind with a swing arc — the rest sweep nothing, so W_SWING_OBSTRUCTED cannot apply to them. \`swing\` DIFFERS BY KIND: hinged = which side the leaf sweeps; barn/bifold = which FACE the panel hangs on / folds toward; sliding/pocket take none. \`hinge\` is hinged-only and \`slide\`/\`open\` sliding-family-only; a wrong pairing REFUSES (E_DOOR_KIND_CLAUSE), as does any non-hinged kind on an \`arc\` wall (E_DOOR_KIND_CURVED). \`slide\` reads along the wall like \`hinge\`; \`open\` is DRAWING-only (nothing measured reads it), [0,1] or E_DOOR_OPEN_RANGE. A \`pocket\` needs its own width + clearance of wall past the slide-side jamb, or W_POCKET_RUN`,
   window:
-    "window [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # same two placement forms as door",
+    "window [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # same two placement forms as door; `wall` pairs with the `at` form ONLY",
   opening:
-    "opening [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # a leaf-less cased opening that still connects the two spaces in the access graph",
-  furniture:
-    'furniture <category> [id=<name>] (at (x,y) | against wall <id> [segment <n>] [offset <mm>] [side left|right] | in <roomId> centered | in <roomId> anchor <a> [flush] [inset <mm>]) [size <W>x<H>] [label "…"] [rotate 0|90|180|270] [in <roomId>]   # `at` size is plan W×H; `against` size is wall-relative along×depth and derives position+rotation, with `side` inferred from `in <roomId>` when omitted; a known fixture (wc/basin/shower/bathtub/kitchen_sink/counter/stove/fridge…) `against wall` may omit `size` to use its catalogued footprint. `anchor <a>` is top-left|top|top-right|left|center|right|bottom-left|bottom|bottom-right; `inset` (default 0) pulls it in from that edge, measured from the room rectangle (a wall CENTERLINE) — add `flush` to measure from the backing wall\'s inner FACE instead, so `anchor bottom flush` sits on the plaster (`flush` needs an anchored edge: it is E_FURN_FLUSH on `centered`/`anchor center`)',
-  dim: 'dim [faces|clear] (x,y)->(x,y) offset <mm> [text "…"]   # a dimension line. Endpoint ORDER + the offset sign choose which side it lands on (the offset runs along the LEFT normal of from→to), so a reversed pair draws it INSIDE the building — `W_DIM_INSIDE`. `faces` pushes each endpoint out onto the wall it runs into (outside-to-outside); `clear` pulls both in to the inner faces (a clear width). Or skip hand dims entirely: `dims auto all` draws the GB/T openings + axis + overall chains outside every dimensioned facade. CURVES: `dim radius <wallId> [segment <n>]` (an R leader) and `dim diameter <roomId>` (a φ call-out) DERIVE both geometry and text from the named element; `dims auto` adds one R per distinct arc + one φ per circular room; chains stay off curved facades',
+    "opening [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # a leaf-less cased opening that still connects the two spaces in the access graph; placement + `wall` clause exactly as door",
+  furniture: `furniture [id=<name>] <category> (at (x,y) | against wall <id|category> [segment <n>] [offset <mm>] [side left|right] | in <roomId> centered | in <roomId> anchor <a> [flush] [inset <mm>]) [size <W>x<H>] [label "…"] [rotate 0|90|180|270] [in <roomId>]   # \`at\` size is plan W×H; \`against\` size is wall-relative along×depth and derives position+rotation, with \`side\` inferred from \`in <roomId>\` when omitted; \`rotate\` is \`at\`/\`in\`-only — an \`against\` piece takes rotation FROM the wall, so writing one is E_FURN_AGAINST (multi-segment wall ⇒ \`segment <n>\`); a known fixture (wc/basin/shower/bathtub/kitchen_sink/counter/stove/fridge…) \`against wall\` may omit \`size\` to use its catalogued footprint. \`anchor <a>\` is ${FURNITURE_ANCHORS.join("|")}; \`inset\` (default 0) pulls it in from that edge, measured from the room rectangle (a wall CENTERLINE) — add \`flush\` to measure from the backing wall's inner FACE instead, so \`anchor bottom flush\` sits on the plaster (\`flush\` needs an anchored edge: it is E_FURN_FLUSH on \`centered\`/\`anchor center\`)`,
+  dim: `dim [${DIM_REFS.join("|")}] (x,y)->(x,y) [offset <mm>] [text "…"]   # a dimension line; \`offset\` is OPTIONAL (default 300; 0 on the curve forms). Endpoint ORDER + the offset sign choose which side it lands on (the offset runs along the LEFT normal of from→to), so a reversed pair draws it INSIDE the building — \`W_DIM_INSIDE\`. \`faces\` pushes each endpoint out onto the wall it runs into (outside-to-outside); \`clear\` pulls both in to the inner faces (a clear width). Or skip hand dims entirely with the plan-level \`dims auto\` setting — its \`all\` mode draws the GB/T openings + axis + overall chains outside every dimensioned facade. CURVES: \`dim radius <wallId> [segment <n>]\` (an R leader) and \`dim diameter <roomId>\` (a φ call-out) DERIVE both geometry and text from the named element and also take \`[offset <mm>] [text "…"]\`; \`dims auto\` adds one R per distinct arc + one φ per circular room; chains stay off curved facades`,
   column: "column [id=<name>] at (x,y) size <W>x<H>",
-  stair:
-    "stair [id=<name>] at (x,y) size <W>x<H> dir up|down [width <mm>]   # a flight: treads, a mid-flight break line, an UP/DN arrow. `at` = footprint TOP-LEFT; the flight runs along the LONG axis; `dir up` is entered at that axis's larger-coordinate end (arrow points N/W), `dir down` at the opposite end (arrow reversed). `dir` is declared per storey. MULTI-STOREY: the SAME id on two `level` blocks is ONE SHAFT — it becomes a `describe().vertical` connection and makes the upper storey reachable with no front door of its own (an id on one storey only = `W_STAIR_UNMATCHED`)",
+  stair: `stair [id=<name>] at (x,y) size <W>x<H> dir ${VERTICAL_DIRS.join("|")} [width <mm>]   # a flight: treads, a mid-flight break line, an UP/DN arrow. \`at\` = footprint TOP-LEFT; the flight runs along the LONG axis; \`dir up\` is entered at that axis's larger-coordinate end (arrow points N/W), \`dir down\` at the opposite end (arrow reversed). \`dir\` is declared per storey. MULTI-STOREY: the SAME id on two \`level\` blocks is ONE SHAFT — it becomes a \`describe().vertical\` connection and makes the upper storey reachable with no front door of its own (an id on one storey only = \`W_STAIR_UNMATCHED\`)`,
   elevator:
     "elevator [id=<name>] at (x,y) size <W>x<H>   # a lift shaft: car rectangle + crossed diagonals. No `dir`. Same same-id-on-two-levels shaft identity as `stair`",
-  escalator:
-    "escalator [id=<name>] at (x,y) size <W>x<H> dir up|down   # a moving stair: chevrons along the run + an UP/DN arrow; both narrow ends are entries. Same shaft identity as `stair`",
+  escalator: `escalator [id=<name>] at (x,y) size <W>x<H> dir ${VERTICAL_DIRS.join("|")}   # a moving stair: chevrons along the run + an UP/DN arrow; both narrow ends are entries. Same shaft identity as \`stair\``,
 };
 
 /**
@@ -62,15 +87,13 @@ const ELEMENT_GRAMMAR: Record<string, string> = {
  * need their own grammar line next to the elements (as opposed to the scripting /
  * structural keywords, which the Structure + Scripting sections cover).
  */
-const STATEMENT_GRAMMAR: Record<string, string> = {
+export const STATEMENT_GRAMMAR: Record<string, string> = {
   axes: "axes { x at <mm>, <mm>, … y at <mm>, <mm>, … }   # GB/T 50001 positioning axes (定位轴线): dash-dot datum lines with a labelled bubble. `x` are vertical (numbered 1,2,3… left-to-right), `y` horizontal (lettered A,B,C… BOTTOM-to-top, skipping I/O/Z). Positions are expressions; labels are DERIVED from sorted position, never authored. With `dims auto rooms|all` the middle chain measures the AXES instead of room boundaries. Plan-level block only",
   level:
-    'level <int> ["Name"] { … }   # ONE STOREY = one whole drawing. A plan is single-storey or ALL levels (a drawable statement beside them = E_LEVEL_MIX); settings/`component`/`import`/plan-global `let`/`set` stay OUTSIDE, applying to every level. Integers, unique, 0/negative legal, ASCENDING — lowest = page 1. Ids unique WITHIN a level, so one id on two floors is legal (a stair). `arch compile` writes plan.L1.svg, plan.L2.svg … (`--level <n>` = one); `describe --json` adds `levels[]`. Plan-level only',
-  strip:
-    "strip <right|left|down|up> at (x,y) gap <mm> [height|width <mm>] { room [id=<id>] size <main>[x<cross>] [label \"…\"] [uses …] … }   # a row/column of rooms laid end to end: each room's offset is the running sum of the previous extents + gap, and the shared cross dimension is the strip's height (right/left) or width (down/up). Pure sugar — expands to absolute rooms. Plan-level block only",
+    'level <int> ["Name"] { … }   # ONE STOREY = one whole drawing. A plan is single-storey or ALL levels (a drawable statement beside them = E_LEVEL_MIX); settings/`component`/`import`/plan-global `let`/`set` stay OUTSIDE, applying to every level. Integers, unique, 0/negative legal, ASCENDING — lowest = page 1. Ids unique WITHIN a level (see `stair`). `arch compile` writes plan.L1.svg, plan.L2.svg … (`--level <n>` = one); `describe --json` adds `levels[]`. Plan-level only',
+  strip: `strip <${STRIP_DIRS.join("|")}> at (x,y) gap <mm> [height|width <mm>] { room [id=<id>] size <main>[x<cross>] [label "…"] [uses …] … }   # a row/column of rooms laid end to end: each room's offset is the running sum of the previous extents + gap, and the shared cross dimension is the strip's height (right/left) or width (down/up). Pure sugar — expands to absolute rooms. Plan-level block only`,
   zone: 'zone <id> ["Label"] { … }   # a WING/DEPARTMENT grouping: pure metadata, ZERO geometry — every statement inside resolves as if the wrapper were deleted (same coordinates, same ids; a zone is NOT a scope), so the SVG is byte-identical. Membership is DECLARED, never inferred from position. Nests (`zone west { zone galleries { … } }` → path `west.galleries`, innermost wins) and is legal wherever a statement is, incl. inside `level`. `describe --json` adds `zones[]` (path/rooms/floor_area_m2; nested rooms roll UP, so summing zones double-counts) + `describe --zone <path>` to read one wing',
-  schedule:
-    "schedule rooms   # draw the ROOM SCHEDULE table below the title block: NO. (01, 02, … source order) · NAME (label, else id) · AREA (m²) + a TOTAL row, all derived from the rooms. `rooms` is the only subject (anything else is a parse error). Same rows as `describe --json`'s `schedule[]`. With `zone` blocks the rows group by zone, each closed by a SUBTOTAL row",
+  schedule: `schedule ${SCHEDULE_SUBJECTS.join("|")}   # draw the ROOM SCHEDULE table below the title block: NO. (01, 02, … source order) · NAME (label, else id) · AREA (m²) + a TOTAL row, all derived from the rooms. \`rooms\` is the only subject (anything else is a parse error). Same rows as \`describe --json\`'s \`schedule[]\`. With \`zone\` blocks the rows group by zone, each closed by a SUBTOTAL row`,
   legend:
     "legend   # draw the LEGEND table beside the schedule: a row per wall hatch material used and per placed fixture category that has a plan symbol, each with a real swatch. Fully derived; nothing to configure. Pure rendering — no `describe()` field",
   site: `site { street ${COMPASS_DIRECTIONS.join("|")} [hemisphere ${HEMISPHERES.join("|")}] }   # semantics only — draws NOTHING. \`street\` is a TRUE compass direction (read WITH \`north\`, not instead of it) and names five on \`describe --json\`'s \`site\`: \`street\`, \`back\` (opposite), \`equator_side\` (S north of the equator, N south of it), \`sunrise_side\` (E), \`sunset_side\` (W). An intent's \`windows.facing\` may assert those NAMES instead of a letter (no \`site\` = E_INTENT_NO_SITE). They are a DRAFTING HEURISTIC for an aspect, NOT daylight — there is no sun model. \`street\` required (E_SITE_NO_STREET), one block (E_SITE_DUP), plan-level only`,
@@ -79,13 +102,118 @@ const STATEMENT_GRAMMAR: Record<string, string> = {
 };
 
 /**
+ * Plan-level SETTINGS — the `KEYWORDS.attribute` entries that lead a STATEMENT rather
+ * than sitting as a clause of an element line. One line each, printed in the Structure
+ * block.
+ *
+ * ## Why a third table exists (the D12 hole)
+ *
+ * The two guards above check `ELEMENT_GRAMMAR` against `KEYWORDS.element` and
+ * `STATEMENT_GRAMMAR` against `KEYWORDS.control`. `dims` is neither: it is a
+ * `KEYWORDS.attribute` entry that the parser dispatches as a plan statement
+ * (`case "dims": this.parseDimsSetting(…)`), so it fell BETWEEN the two set-equality
+ * guards and neither could notice that the spec never gave it a line of its own — the
+ * same structural hole that let `strip` ship unspecced for three releases. Auditing the
+ * parser's statement switch found `accTitle`/`accDescr` in exactly the same position:
+ * both appeared in the spec only as bare words in the `**Attributes:**` bullet, with
+ * their syntax written down nowhere.
+ *
+ * The membership test is the parser's plan-statement `switch`, not a judgement call: an
+ * attribute keyword belongs here iff a `case` for it leads a statement. Everything else
+ * in `KEYWORDS.attribute` is a CLAUSE of an element line ({@link CLAUSE_ATTRIBUTES}),
+ * already documented by that element's grammar line — and {@link renderLlmSpec} asserts
+ * the two exactly PARTITION `KEYWORDS.attribute`, so a keyword that changes category, or
+ * a new one that appears at all, cannot slip between the tables again.
+ *
+ * Each entry is `<concrete form>   # <note>`, the same `\s{3,}#` convention the other two
+ * tables use (so `clauseAtoms` reads them identically). The form is CONCRETE and
+ * compilable rather than a placeholder grammar, because this block is rendered into an
+ * ```arch fence that the docs site compiles live in the reader's browser; alternations
+ * therefore live in the note, exactly as `north up   # up|down|…` already did.
+ */
+export const SETTING_GRAMMAR: Record<string, string> = {
+  units: "units mm   # required-ish settings come first",
+  grid: "grid 50   # snap grid in mm",
+  paper: `paper A3 landscape   # OPTIONAL sheet: ${PAPER_SIZES.join("|")}, ${PAPER_ORIENTATIONS.join("|")} (${PAPER_ORIENTATIONS[0]} default)`,
+  scale: "scale 1:50   # drawing scale — OPERATIVE with `paper`, annotation-only without it",
+  north: `north up   # ${NORTH_DIRS.join("|")}`,
+  dims: `dims auto all   # OPTIONAL auto-dimensioning instead of hand \`dim\` lines: ${AUTO_DIMS_MODES.join("|")}`,
+  accTitle: `accTitle "…"   # OPTIONAL a11y name → SVG <title> under \`compile --accessible\``,
+  accDescr: `accDescr "…"   # …and description → <desc>, replacing the derived caption. Both plan-level only (E_ACC_PLACEMENT)`,
+};
+
+/**
+ * The other half of the {@link SETTING_GRAMMAR} partition: `KEYWORDS.attribute` entries
+ * that are CLAUSES of an element line, not statements. Each is already taught by the
+ * grammar line of the element that takes it, so it needs no line of its own — but it
+ * must be named here, because a partition asserted against a list is only as good as the
+ * list being exhaustive. Derived as "everything the parser's statement switch does not
+ * lead with"; {@link renderLlmSpec} throws if it and `SETTING_GRAMMAR` do not exactly
+ * cover `KEYWORDS.attribute`.
+ */
+export const CLAUSE_ATTRIBUTES: readonly string[] = [
+  "material",
+  "angle",
+  "at",
+  "size",
+  "polygon",
+  "circle",
+  "arc",
+  "radius",
+  "width",
+  "thickness",
+  "label",
+  "hinge",
+  "swing",
+  "slide",
+  "open",
+  "offset",
+  "text",
+  "close",
+  "id",
+  "project",
+  "drawn_by",
+  "date",
+  "from",
+  "as",
+  "right-of",
+  "left-of",
+  "below",
+  "above",
+  "align",
+  "gap",
+  "uses",
+  "rotate",
+  "against",
+  "segment",
+  "side",
+  "on",
+  "into",
+  "near",
+  "anchor",
+  "inset",
+  "flush",
+  "mirror",
+  "height",
+  "faces",
+  "clear",
+  "dir",
+];
+
+/**
  * `KEYWORDS.control` entries the Structure / Scripting sections document in prose, so
  * they need no grammar line. Every control keyword must appear either here or in
  * {@link STATEMENT_GRAMMAR} — {@link renderLlmSpec} throws otherwise. This is the guard
  * that `strip` slipped past when it only checked `KEYWORDS.element`: a new statement
  * keyword now cannot ship unspecced.
+ *
+ * The membership claim used to stop there, and "the prose sections cover these" is not a
+ * claim a reader can check — it is a comment. It was also FALSE: `theme` and `style`
+ * appeared nowhere in the document except as bare words in the `**Keyword reference**`
+ * bullet, which is generated from `KEYWORDS.control` itself and so can never disagree
+ * with this list. {@link assertScriptingKeywordsTaught} turns the claim into a check.
  */
-const SCRIPTING_KEYWORDS = [
+export const SCRIPTING_KEYWORDS = [
   "plan",
   "component",
   "let",
@@ -140,6 +268,113 @@ export function assertDoorEnumsRendered(
 }
 
 /**
+ * The generalised form of {@link assertDoorEnumsRendered}, for every OTHER closed value
+ * set the spec spells out.
+ *
+ * Same hazard, same shape: a set retyped into a grammar string is prose inside a
+ * generator, so `check:drift` reproduces it — right or wrong — forever. The fix is to
+ * interpolate it from its source array; this is what keeps it interpolated. Given the
+ * text that is supposed to teach a set, it asserts the text still contains that set
+ * rendered from the array, joined the way the spec prints it (`|` for an alternation,
+ * a space for the built-in list, ` / ` for the scale ladder).
+ *
+ * So: add a value to `USE_KINDS` / `PAPER_SIZES` / `KNOWN_MATERIALS` / … and either the
+ * spec grows the value (because the line interpolates) or `npm run gen:spec` THROWS
+ * (because someone typed the list out again). It is the exact inverse of
+ * `test/spec-forms.test.ts`'s `clauseAtoms` coverage: this asserts a table entry has a
+ * rendering, that asserts a rendering has an exercise.
+ */
+export function assertVocabRendered(line: string, label: string, values: readonly string[], sep = "|"): void {
+  const form = values.join(sep);
+  if (!line.includes(form)) {
+    throw new Error(
+      `The ${label} value set is not rendered as \`${form}\` in the text that documents it — ` +
+        `interpolate it from its source array instead of typing it out. Text was:\n  ${line.slice(0, 200)}…`,
+    );
+  }
+}
+
+/**
+ * Turn {@link SCRIPTING_KEYWORDS}'s membership claim into a CHECK.
+ *
+ * The list's meaning is "this keyword needs no grammar line because the prose sections
+ * teach it". Nothing verified that, and it was quietly false: `theme` and `style` had no
+ * syntax anywhere in the document. An agent reading the page learned only that two words
+ * called `theme` and `style` exist — which is worse than silence, because it invites a
+ * guess.
+ *
+ * The check: every listed keyword must appear inside a CODE context — an inline
+ * `` `…` `` span or a fenced block — somewhere in the rendered body. Two scoping
+ * decisions carry the weight:
+ *
+ *  - **The `## Keyword reference` section is CUT FIRST.** It is generated by
+ *    `bullet(KEYWORDS.control)` from the very list this is checking, so leaving it in
+ *    would make every keyword pass by construction — the check would test itself.
+ *  - **A fenced block counts, not only an inline span.** `plan "Title" {` and
+ *    `title { project "…" … }` teach their syntax perfectly well inside the Structure
+ *    fence, and demanding a second, inline restatement of each would buy nothing but
+ *    characters in a document with a hard size budget.
+ *
+ * Word boundaries are hyphen-aware, so `set` never matches inside `offset` and `if`
+ * never inside `if`-containing identifiers. Exported so `test/spec-forms.test.ts` can
+ * prove it fires.
+ */
+export function assertScriptingKeywordsTaught(doc: string, keywords: readonly string[]): void {
+  // Cut the generated keyword-reference bullets: they are rendered FROM the list being
+  // checked, so they are not evidence of anything.
+  const body = doc.replace(/\n## Keyword reference\n[\s\S]*?(?=\n## )/, "\n");
+  const code = [
+    ...[...body.matchAll(/`([^`\n]+)`/g)].map((m) => m[1] ?? ""),
+    ...[...body.matchAll(/```[^\n]*\n([\s\S]*?)```/g)].map((m) => m[1] ?? ""),
+  ].join("\n");
+  const missing = keywords.filter((k) => !new RegExp(`(?<![\\w-])${k}(?![\\w-])`).test(code));
+  if (missing.length > 0) {
+    throw new Error(
+      `SCRIPTING_KEYWORDS claims the prose sections teach ${missing.join(", ")}, but ` +
+        `${missing.length === 1 ? "it appears" : "they appear"} in no code span or fence outside the ` +
+        `generated keyword-reference bullet — which is rendered from this very list and so proves ` +
+        `nothing. Either write the syntax into the Scripting section, or give the keyword a ` +
+        `STATEMENT_GRAMMAR line.`,
+    );
+  }
+}
+
+/**
+ * The clause vocabulary one grammar line TEACHES — the literal words a reader is
+ * expected to type after the leading keyword.
+ *
+ * Pure and exported so `test/spec-forms.test.ts` can hold every rendered clause to an
+ * exercised one. Reads ONLY the syntax half (the generator separates syntax from prose
+ * with three spaces and a `#`), then drops everything that is not a literal:
+ * `<placeholders>`, quoted strings, `(x,y)` coordinate templates, `->`, brackets/braces
+ * /parens, ellipses, bare digits, and a three-word allowlist — the leading `keyword`
+ * itself, `id` (from `[id=<name>]`, universal and already ruled by rule 6) and the `x`
+ * of `WxH`.
+ *
+ * An alternation survives as ONE atom carrying its arms (`left|right`, `up|down`), so
+ * the caller may treat it as satisfied when ANY arm is exercised — the spec teaches the
+ * clause, not a duty to demonstrate every value (`DOOR_ENUMS` and friends already have
+ * their own per-value tests). Order is first appearance; duplicates collapse.
+ */
+export function clauseAtoms(line: string, keyword: string): string[] {
+  const syntax = line.split(/\s{3,}#/)[0] ?? line;
+  const stripped = syntax
+    .replace(/"[^"]*"/g, " ") // quoted string literals (`label "…"`)
+    .replace(/<[^>]*>/g, " ") // <placeholders>, incl. <id|category> and <0..1>
+    .replace(/\(\s*c?x\s*,\s*c?y\s*\)/g, " ") // (x,y) / (cx,cy) coordinate templates
+    .replace(/->/g, " ")
+    .replace(/[{}[\]()…]/g, " ");
+  const allow = new Set([keyword, "id", "x"]);
+  const atoms: string[] = [];
+  for (const raw of stripped.split(/\s+/)) {
+    const atom = raw.replace(/^[,.;=]+/, "").replace(/[,.;=]+$/, "");
+    if (!atom || !/^[A-Za-z]/.test(atom) || allow.has(atom)) continue;
+    if (!atoms.includes(atom)) atoms.push(atom);
+  }
+  return atoms;
+}
+
+/**
  * Render `spec.llm.md` from the token source + the given example file contents
  * (a map of filename → source). Pure: no fs, no clock — safe for the drift test.
  */
@@ -168,14 +403,96 @@ export function renderLlmSpec(examples: Record<string, string>): string {
     );
   }
 
+  // Drift guard #2b: the same shape for `KEYWORDS.attribute`, which the two guards above
+  // cannot see between them. An attribute keyword is either a plan-level STATEMENT (it
+  // gets a `SETTING_GRAMMAR` line) or a CLAUSE of an element line (it is taught by that
+  // element's line, and is named in `CLAUSE_ATTRIBUTES`) — never neither. `dims` was
+  // exactly "neither" and had no syntax on the page at all; so were `accTitle`/`accDescr`.
+  const attributeKeys = [...KEYWORDS.attribute].sort();
+  const coveredAttributes = [...Object.keys(SETTING_GRAMMAR), ...CLAUSE_ATTRIBUTES].sort();
+  if (JSON.stringify(attributeKeys) !== JSON.stringify(coveredAttributes)) {
+    throw new Error(
+      `KEYWORDS.attribute is not exactly partitioned by the spec.\n` +
+        `  attributes: ${attributeKeys.join(", ")}\n  covered:    ${coveredAttributes.join(", ")}\n` +
+        `  Add each new keyword to SETTING_GRAMMAR (the parser's statement switch leads with it) ` +
+        `or CLAUSE_ATTRIBUTES (it is a clause of an element line, taught by that line).`,
+    );
+  }
+
   // Drift guard #3: the door line must still RENDER every door enum from the one table.
   assertDoorEnumsRendered(ELEMENT_GRAMMAR.door ?? "", DOOR_ENUMS, DOOR_HINGE_NEAR);
+
+  // Drift guard #4: every OTHER closed value set the spec spells out must still come
+  // from its source array, on the very line that teaches it. One call per set — a value
+  // added to any of these tables with no rendering throws here rather than shipping a
+  // spec that documents a language the compiler no longer speaks.
+  const el = (k: string): string => ELEMENT_GRAMMAR[k] ?? "";
+  const st = (k: string): string => STATEMENT_GRAMMAR[k] ?? "";
+  const sg = (k: string): string => SETTING_GRAMMAR[k] ?? "";
+  assertVocabRendered(el("wall"), "wall material", KNOWN_MATERIALS);
+  assertVocabRendered(el("wall"), "arc direction", ARC_DIRS);
+  assertVocabRendered(el("room"), "room `uses`", USE_KINDS);
+  assertVocabRendered(el("room"), "relational direction", REL_DIRS);
+  // Asserted PER AXIS, not as the flat `REL_ALIGNS`. The flat list is what the line used
+  // to render, and rendering it was the reason the spec could not say the one thing an
+  // agent most needs about `align`: which three of the six a given direction takes. Since
+  // `REL_ALIGNS` is concatenated from `AXIS_ALIGNS`, these two calls still cover all six —
+  // they are strictly stronger, because a new edge must now be rendered on a NAMED axis.
+  assertVocabRendered(el("room"), "relational alignment (vertical cross axis)", AXIS_ALIGNS.v);
+  assertVocabRendered(el("room"), "relational alignment (horizontal cross axis)", AXIS_ALIGNS.h);
+  // …and the direction↔axis pairing itself, so the two halves cannot be rendered beside
+  // directions that do not take them.
+  assertVocabRendered(el("room"), "directions aligning on the vertical axis", [dirsOn("v")], "");
+  assertVocabRendered(el("room"), "directions aligning on the horizontal axis", [dirsOn("h")], "");
+  assertVocabRendered(el("furniture"), "furniture anchor", FURNITURE_ANCHORS);
+  assertVocabRendered(el("dim"), "dim endpoint reference", DIM_REFS);
+  // NB: the `dims auto` mode set is asserted against `SETTING_GRAMMAR.dims` below, not
+  // here. `dims` is a plan SETTING, and until it had a line of its own the `dim` element
+  // line was the only place the set could live — so it carried it, and then said it
+  // twice. One owner: the setting line prints the modes, the `dim` line points at it.
+  assertVocabRendered(el("stair"), "vertical direction", VERTICAL_DIRS);
+  assertVocabRendered(el("escalator"), "vertical direction", VERTICAL_DIRS);
+  assertVocabRendered(st("strip"), "strip direction", STRIP_DIRS);
+  assertVocabRendered(st("schedule"), "schedule subject", SCHEDULE_SUBJECTS);
+  // The setting lines' own closed sets. `paper`/`north` were previously asserted against
+  // the whole document, which was true but imprecise — the assertion should name the line
+  // that must carry the set, so a future edit that moves the words elsewhere still fails.
+  assertVocabRendered(sg("paper"), "paper size", PAPER_SIZES);
+  assertVocabRendered(sg("paper"), "paper orientation", PAPER_ORIENTATIONS);
+  assertVocabRendered(sg("north"), "north direction", NORTH_DIRS);
+  assertVocabRendered(sg("dims"), "`dims auto` mode (setting line)", AUTO_DIMS_MODES);
 
   // A fenced block (not a bullet list) so the `<placeholder>` angle brackets are
   // safe everywhere they render (GitHub, npm, and the Vue-compiled docs site).
   const statementLines = KEYWORDS.control.filter((k) => k in STATEMENT_GRAMMAR).map((k) => STATEMENT_GRAMMAR[k]);
   const elementLines =
     "```text\n" + [...KEYWORDS.element.map((k) => ELEMENT_GRAMMAR[k]), ...statementLines].join("\n") + "\n```";
+
+  // The Structure block's settings, rendered FROM `SETTING_GRAMMAR` in `KEYWORDS.attribute`
+  // order and re-padded so the `#` notes line up. Splitting on the table's own `\s{3,}#`
+  // convention is what lets `clauseAtoms` read these lines exactly like the other two
+  // tables'. The comment column is one past the longest form, floored at the width the
+  // page has always used, so adding a short setting cannot re-indent every other line.
+  const settingKeys = KEYWORDS.attribute.filter((k) => k in SETTING_GRAMMAR);
+  const settingParts = settingKeys.map((k) => {
+    const [form = "", note = ""] = (SETTING_GRAMMAR[k] ?? "").split(/\s{3,}#\s*/);
+    return { form, note };
+  });
+  const settingCol = Math.max(20, ...settingParts.map((p) => p.form.length + 2));
+  const settingLines = settingParts.map((p) => `  ${p.form.padEnd(settingCol)}# ${p.note}`).join("\n");
+
+  // `style <kind>` takes every element kind but one. Printing the RULE rather than the
+  // ten-item list is both shorter (this page has a hard budget) and more useful — and it
+  // is still derived: the exception is computed, and asserted to be exactly one word, so
+  // giving `opening` a palette (or taking another element's away) throws here.
+  const styleless = KEYWORDS.element.filter((k) => !STYLE_KINDS.includes(k));
+  if (styleless.length !== 1) {
+    throw new Error(
+      `The Scripting section says \`style\` takes any element kind but ONE, and ${styleless.length} ` +
+        `element(s) now have no STYLE_KEYS entry (${styleless.join(", ") || "none"}). Rewrite the ` +
+        `bullet to state the real rule — do not let the page keep asserting a shape the table lost.`,
+    );
+  }
 
   // The CLI verb list is rendered from the manifest — the same source `arch manifest
   // --json` serves — so a new command cannot be missing from the spec.
@@ -200,14 +517,14 @@ export function renderLlmSpec(examples: Record<string, string>): string {
     return `### \`examples/${name}\`\n\n\`\`\`arch\n${src.replace(/\r\n/g, "\n").replace(/\n+$/, "")}\n\`\`\``;
   }).join("\n\n");
 
-  return `<!-- GENERATED by scripts/gen-llm-spec.ts — do not edit by hand. Run \`npm run gen:spec\`. -->
+  const doc = `<!-- GENERATED by scripts/gen-llm-spec.ts — do not edit by hand. Run \`npm run gen:spec\`. -->
 
 # ArchLang in one prompt
 
 ArchLang is a tiny declarative language that compiles a \`.arch\` source file into a professional
 floor-plan drawing (SVG/PNG/PDF/DXF). It is built for AI agents: deterministic (same source →
 identical output), pure (no runtime/IO), and self-correcting (every error carries a machine code and
-a \`fix\`). This page is everything you need to author it. Print it any time with \`arch spec\`.
+a \`fix\`). This page is everything you need to author it.
 
 ## The 7 rules that matter
 
@@ -217,18 +534,14 @@ a \`fix\`). This page is everything you need to author it. Print it any time wit
 4. **Doors and windows must lie ON a wall segment** (on its centerline), or you get a
    \`W_DOOR_OFF_WALL\` / \`W_WINDOW_OFF_WALL\` warning.
 5. **String interpolation is \`"{expr}"\`** inside double quotes (e.g. \`label "Unit {i}"\`).
-6. **Ids must be unique.** Omit \`id=\` to auto-generate one; give an \`id\` only when you reference it.
+6. **\`id=\` comes FIRST — right after the element keyword, before any category word** (\`wall id=w1 exterior …\`, \`furniture id=b1 bed …\`, never \`wall exterior id=w1\`). Ids are unique; omit \`id=\` to auto-generate one, and name a thing only when you reference it.
 7. **Everything is expand-time and pure** — \`let\`/\`for\`/\`if\`/functions all evaluate during compile.
 
 ## Structure
 
 \`\`\`arch
 plan "Title" {
-  units mm            # required-ish settings come first
-  grid 50             # snap grid in mm
-  paper A3 landscape  # OPTIONAL sheet: A4|A3|A2|A1|A0, landscape (default) | portrait
-  scale 1:50          # drawing scale — OPERATIVE with \`paper\`, annotation-only without it
-  north up            # up | down | left | right
+${settingLines}
   # … elements and scripting …
   title { project "…" drawn_by "…" date "…" }
 }
@@ -239,7 +552,7 @@ stroke, margin) is a fraction of the drawing's own size, so a 100 m building get
 \`scale\` is then just a title-block row. With \`paper\`, every annotation is a fixed number of
 millimetres ON THE SHEET (3.5 mm room labels, 0.5 mm wall lines, 15 mm margins) × the scale
 denominator — the same ink at any building size. Write \`paper\` and omit \`scale\` to auto-fit the
-finest of 1:50 / 1:100 / 1:200 / 1:500 that fits; declare both and a plan too big for the sheet
+finest of ${SCALE_LADDER.join(" / ")} that fits; declare both and a plan too big for the sheet
 warns \`W_SCALE_OVERFLOW\` (your scale is never silently overridden). \`arch describe --json\`
 reports the result as \`sheet\`. Big plan? \`paper A1\` + \`dims auto all\` is the professional default.
 
@@ -250,12 +563,13 @@ ${elementLines}
 ## Scripting (all expand-time, deterministic)
 
 - \`let NAME = expr\` — bind a constant. \`NAME = expr\` — reassign an existing binding.
-- \`let f(a, b) = expr\` — a pure value-function. Built-ins: \`min max abs sqrt floor ceil round len str\`.
+- \`let f(a, b) = expr\` — a pure value-function. Built-ins: \`${BUILTIN_NAMES.join(" ")}\`.
 - \`for i in lo..hi { … }\` — loop over a half-open integer range (\`0..3\` → 0,1,2).
 - \`if cond { … } else { … }\` · \`while cond { … }\`.
 - \`set <element>(attr: value)\` — scoped default for following elements (e.g. \`set door(swing: out)\`).
 - Arrays: \`[a, b, c]\`, indexed \`arr[i]\`. Operators: \`+ - * / %\`, \`== != < > <= >=\`, \`&& ||\`. Comments: \`# …\`.
 - \`import "lib/x.arch": name\` and \`component name(args) { … }\` for reuse.
+- \`theme ${Object.keys(THEMES).join("|")}\` — a named palette base. \`theme [<name>] { key: value }\` overrides single keys, \`theme from "#rrggbb"\` derives the whole palette from one colour, and \`style <kind> { key: value }\` does the same per element kind (any but \`${styleless}\`). An unknown key WARNS and is dropped (\`W_UNKNOWN_THEME_KEY\`/\`W_UNKNOWN_STYLE_KEY\`), never fails.
 
 ## Keyword reference
 
@@ -284,17 +598,16 @@ arch score plan.arch --brief brief.json --json                  # satisfied/tota
 \`\`\`
 
 **Self-correction loop:** compile/validate → if \`ok\` is false, read each \`diagnostics[].fix\` (and
-\`line\`/\`col\`/\`span\`), edit the source, recompile. Exit code \`2\` means a deterministic
-user-source error (fix it; don't blindly retry). Then \`describe --json\` to confirm the plan matches
+\`line\`/\`col\`/\`span\`), edit the source, recompile. Then \`describe --json\` to confirm the plan matches
 intent (right room count, areas, adjacency) without rendering an image. **Before shipping, gate with
-\`arch validate --strict --json\`** — it fails on advisory warnings too, so a plan that lint flags
+\`arch validate --strict --json\`** — a plan that lint flags
 (furniture through a wall, a fixture blocking a doorway, a room you can't step into, an unreachable
 room, a walk that squeezes too narrow — \`W_PATH_TOO_NARROW\` — or wanders the long way round —
 \`W_CIRCUITOUS_PATH\`) cannot pass silently.
 
 **Place furniture so it's physically sound:** keep every piece inside its room and off the walls
-(don't cross a wall centerline); back plumbing/kitchen fixtures onto a wall with \`against wall <id>\`
-(+ \`in <roomId>\`) rather than guessing an \`at\`; give every room a \`door\`/\`opening\`; and leave
+(don't cross a wall centerline); back plumbing/kitchen fixtures onto a wall rather than guessing an
+\`at\`; give every room a \`door\`/\`opening\`; and leave
 the doorway approach and the door's swing clear.
 
 **Fix topology from facts, not guesses.** \`arch repair\` corrects furniture but never adds a door or
@@ -314,18 +627,30 @@ SKILL.md for the full recipe.
 | --- | --- |
 | Using metres (\`size 4x3\`) | Use millimetres (\`size 4000x3000\`). |
 | Expecting +y to go up | +y goes **down**; a room below another has a larger y. |
-| Door/window floating off its wall | Attach it: \`door on <wall> at <pos>\` — hosted by construction, it can never be off-wall. |
-| Hand-summing room offsets | Lay the row with \`strip\` — each room's \`at\` is computed for you. |
-| Furniture floated at a guessed \`at\`, or an \`inset\` hand-computed from a wall thickness | Place it \`in <room> anchor <9-point> [flush] [inset]\` or \`against wall <id>\` — closed-form, never floats, penetrates, or names a thickness. |
+| Door/window floating off its wall | Attach it: \`door on <wall> at <pos>\` — hosted by construction. |
+| Hand-summing room offsets | Lay the row with \`strip\`. |
+| Furniture floated at a guessed \`at\`, or an \`inset\` hand-computed from a wall thickness | Place it \`in <room> anchor <9-point> [flush] [inset]\` or \`against wall <id>\` — closed-form, never names a thickness. |
 | \`size 4000\` (no height) | Sizes are \`WxH\`: \`size 4000x3000\` (or \`W x H\` with spaces). |
-| A big building drawn with metre-tall room labels and fat walls | Declare a sheet: \`paper A1\` (+ \`scale 1:200\`, or omit \`scale\` to auto-fit) — annotation sizes then stay fixed in sheet mm. |
-| Reusing an \`id\` | Ids are unique; omit \`id=\` to auto-generate. |
-| String math without interpolation | Use \`"{expr}"\`, e.g. \`label "{aream2(W,H)} m²"\`. |
+| \`wall exterior id=w1 …\`, \`furniture bed id=b1 …\` | \`id=\` leads: \`wall id=w1 exterior …\`, \`furniture id=b1 bed …\`. After the category it is a parse error. |
+| String math without interpolation | Use \`"{expr}"\`, e.g. \`label "{round(W / 1000)} m"\`. Only the built-ins above and your own \`let f(…)\` are callable — \`aream2\` is NOT built in. |
 
 ## Worked examples
 
 ${exampleBlocks}
 `;
+
+  // The sets the PROSE sections teach rather than a grammar line — same guard, scoped to
+  // the whole document because no single line owns them. (`paper`/`orientation`/`north`
+  // moved up to their own SETTING_GRAMMAR lines, which is strictly tighter.)
+  assertVocabRendered(doc, "auto-fit scale ladder", SCALE_LADDER, " / ");
+  assertVocabRendered(doc, "expression built-in", BUILTIN_NAMES, " ");
+  assertVocabRendered(doc, "named theme base", Object.keys(THEMES));
+
+  // Drift guard #5: `SCRIPTING_KEYWORDS` is a CLAIM about this document ("the prose
+  // covers these"), so it is checked against the document it claims about — last, once
+  // the text exists. It was false for `theme` and `style` until the bullet above.
+  assertScriptingKeywordsTaught(doc, SCRIPTING_KEYWORDS);
+  return doc;
 }
 
 /** Read the embedded example files from disk (CLI/main path only). */

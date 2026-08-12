@@ -7,6 +7,212 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.26.0] - 2026-08-12
+
+**The language's descriptions of itself, made honest.** No new syntax — instead, the four artifacts
+that *tell a model what ArchLang is* were checked against the parser for the first time, and every
+one of them was wrong. `spec.llm.md` taught seven incorrect grammar lines, four of which do not
+compile. `grammars/archlang.gbnf` — a constrained-decoding grammar whose entire job is to make
+invalid output impossible — derived eleven forms the parser rejects. `src/index.ts` withheld seven
+types that `describe()` hands you at runtime, leaving them readable but unnameable. And `room …
+align <word>` accepted any word at all, silently drawing the plan as if the clause were absent.
+
+The root cause is one shape repeated: **a fact about the language, retyped by hand into something
+that describes the language.** `check:drift` cannot see it — it proves a generator reproduces its
+own output, never that the output is true, and the proof is that the two hand-typed generators had
+the *same* forms right and wrong in different places while both stayed green. So the fix is
+structural rather than textual: the value sets now live once in `src/ast.ts` and interpolate into
+every description of them, and `test/spec-forms.test.ts` **executes** the reference — 44 documented
+forms must compile, 19 documented illegalities must be refused with their catalogued code. A
+grammar line that is wrong no longer merely reads wrong; it fails.
+
+Measured downstream in ArchCanvas before the fix: **11 of 18 generations failed to compile**,
+dominated by the furniture forms the reference taught.
+
+### Added
+
+- **`E_ROOM_ALIGN` and `E_ROOM_ALIGN_AXIS`** — two catalogued codes for a relational room's `align`
+  clause, both replacing a silent wrong position. They are deliberately separate codes, not one
+  with two messages: "unknown edge" is literally false when the word *is* a known edge, and
+  `arch lint --code` can now separate "I typo'd" from "I used the wrong axis". Both carry a
+  machine-applicable fix that rewrites the offending word alone, so labels, `gap` and expressions
+  survive and two bad rooms fix in one pass.
+- **`test/spec-forms.test.ts` — the agent reference is now executable.** 44 positive snippets assert
+  every documented form compiles with zero errors; 19 negative snippets assert every illegality the
+  page names is refused *with its catalogued code*, distinguishing a code-less parse error from a
+  resolve-time `E_*` and routing the soundness codes through `lint()` rather than `compile()`. What
+  makes it permanent is the binding: keyword set-equality catches a new keyword, a new pure
+  `clauseAtoms()` catches a new clause, and the positive corpus catches a wrong *order* — a snippet
+  written by copying a grammar line will not compile if the line is wrong. `clauseAtoms` is the exact
+  inverse of `assertDoorEnumsRendered`: that asserts a table entry has a rendering, this asserts a
+  rendering has an exercise. Non-vacuity is proven rather than asserted — a planted clause with no
+  snippet is shown to be caught while the unplanted line is shown clean, so the miss is the plant.
+  The eight whole-plan spatial codes it cannot reproduce live in a `NOT_REPRODUCED_HERE` map, each
+  naming its owning suite, with a second assertion that deletes stale entries.
+- **An agreement corpus in `test/gbnf-drift.test.ts`** — 71 plans run through both the bundled GBNF
+  recognizer and the real `compile()`, asserting the two verdicts match. The expected verdict is
+  taken from the compiler on every run, so there is no column to edit: it can only be greened by
+  fixing the grammar or changing the language. Against the previous grammar it fails 24 agreement
+  cases; against this one, 113/113.
+- **Seven public type exports that were missing from `src/index.ts`** (issue #61 item 3). Types
+  reachable from `describe()`'s `SceneSummary` were readable but **unnameable** by a TypeScript
+  consumer — you could read `summary.access.rooms[0].reachable` and never annotate, wrap or narrow
+  it in a signature. Now exported: `OpeningSummary`, `InstanceSummary`, `AccessGraph`,
+  `AccessRoomNode`, `AccessEdge` (the three the agent self-correction loop tells models to read),
+  plus `DoorKind` and `RelatedSpan`, which the new guard found on its first run. The `Access*` trio
+  is declared in `analyze.ts` but leaves through `describe.ts`, because `describe()` is the only
+  public value that surfaces them — the export path matches the consumption path. Exports only:
+  no behaviour, no output byte, and `CompileResult` stays append-only.
+- **`test/public-surface.test.ts`** — the guard that makes the above non-recurring. It runs the
+  TypeScript compiler over `src/index.ts`, walks `SceneSummary`'s declaration **transitively**
+  through every type reference into whatever `src/` module declares it, and asserts each name is in
+  the index's export set. The requirement list is **derived, never retyped**: add a field whose type
+  lives in an unexported module and it goes red with no edit to the test. Documented in
+  `docs/testing.md`.
+
+### Fixed
+
+- **`room … align <word>` accepted any identifier and silently drew the leading edge.** `align
+  sideways` compiled clean and laid out exactly as `align top` — a typo produced a wrong plan and
+  reported nothing, while every other closed value set in that statement refuses. This is the
+  project's own silent-wrong-position family, one level up from geometry. Parse now checks membership
+  against `REL_ALIGNS` and records the offending word and its span; resolve raises **`E_ROOM_ALIGN`**,
+  which is what buys a catalogued code, a fix and `file` provenance. `botom` and `centre` get
+  did-you-mean fixes; `sideways` gets hints but no fix, because it is beyond `closest()`'s two-edit
+  limit and guessing would be worse than declining. `arch fmt` re-emits an invalid word verbatim
+  rather than silently deleting it. Nothing was relying on the fallback: a sweep of the examples,
+  fixtures, eval corpus and dataset templates found only axis-correct words, and no snapshot, golden
+  or example moved.
+- **An in-set `align` word on the wrong axis still fell through.** `right-of a align left` drew
+  exactly as `align top`, with zero diagnostics, because `alignOffset` falls back to the leading edge
+  on any axis mismatch — the same class as the word check, one level down. It now raises
+  **`E_ROOM_ALIGN_AXIS`**. The mapping is *not* the clean 3/3 split it looks like: `alignOffset` tests
+  for centring before anything axis-specific, so `middle` and `center` are honoured on **both** axes.
+  The per-direction accept sets are therefore 4/4 with 8 mismatches, not 12 — refusing all three
+  off-axis words would have broken `right-of a align center` and `below a align middle`, which draw
+  correctly today. That also makes the fix a translation rather than a guess: every mismatched word is
+  the other axis's leading or trailing edge, so `relAlignCounterpart()` names the counterpart directly
+  and never declines (`closest()` is the wrong tool here — it would rank the refused word nearest to
+  itself). `AXIS_ALIGNS` owns the two per-axis tables and `REL_ALIGNS` is concatenated from it,
+  preserving the six-word union byte-for-byte. The sweep found no shipped drawing relying on the
+  fallback, but it did find the repo's one cross-axis specimen **inside the fixture added by the
+  previous fix**: it pinned all six edges to `right-of`, so two rows were cross-axis and passed only
+  *because* the fallback was silent — a test written to prove the accept-set was asserting that the
+  silence was fine.
+- **`grammars/archlang.gbnf` derived eleven forms the parser rejects.** It is a constrained-decoding
+  grammar shipped in the repo, served at archlang.uk and baked into the MCP shim; accepting token
+  sequences the parser refuses defeats the one job it exists to do. The dominant defect is a **class,
+  not an instance**: every element's optional clauses were rendered `( clause )*`, but the parser
+  reads them as a fixed sequence of `if` tests, so both re-ordering and repetition are parse errors —
+  `door … swing in hinge left` and `furniture … label "b" size 1000x2000` both derived and both fail
+  to compile. Runs of optionals now render in the parser's own order, with `DOOR_ENUMS` key order
+  injected rather than retyped and a build-time guard that the order still matches. Also fixed: the
+  trailing `wall` clause on `door`/`window`/`opening` (it is `at`-form-only; after `on <wall>` it is a
+  parse error — the same defect found while correcting `spec.llm.md`, now consistent between the two
+  generators), an empty or single-point wall body, an `arc` as a wall body's first vertex, a two-point
+  `room polygon`, `strip`'s cross keyword (which is chosen *by* the direction), `at` inside a strip
+  room, and a non-string `style` value. Three **under**-permissive defects — valid forms a decoder
+  simply could not express — are fixed too: `paper a4` (the parser upper-cases the size but compares
+  the orientation exactly; the asymmetry is now derived from `PAPER_SIZES`), a bare `theme`, and a
+  leading-dot number. `ref ::=` was also defined twice, which some GBNF loaders reject outright.
+  Three known divergences are **pinned rather than fixed**, each with its recipe: `theme { wall 5 }`
+  needs `theme.ts`'s private alias map exported; `place … rotate 45` needs a `PLACE_ROTATIONS` table
+  (typing the set into the generator would be the third-copy sin these guards exist to prevent); and
+  `level 1.5` is not expressible, because integrality is a property of the value after unit folding.
+- **Two structural holes in the spec generator's own guards.** `dims` was a `KEYWORDS.attribute`
+  entry that is a *statement*, so it fell between the element-table and control-table set-equality
+  guards and was documented nowhere — the same hole that once let `strip` ship unspecced. It was
+  wider than diagnosed: `accTitle` and `accDescr` sat in exactly that position too, appearing only as
+  bare words in a keyword bullet. A third table now partitions `KEYWORDS.attribute` between statements
+  and element clauses, and the five pre-existing setting lines render byte-identically from it.
+  Separately, `SCRIPTING_KEYWORDS` carried an unfalsifiable claim — "the prose covers these" — that
+  was false for `theme` and `style`; it is now a check that each keyword appears in a code context in
+  the *rendered* body, with the generated keyword reference cut first so the check cannot test its own
+  input. It failed on exactly those two, which is what forced the missing bullet to be written.
+- **Eight closed value sets that existed only as a TypeScript union plus a literal conditional** now
+  live in `src/ast.ts` with two real consumers each (a parser accept-list *and* a diagnostic, or an
+  element parse *and* its params doc): the relational directions and alignments, the `dims auto`
+  modes, the north cardinals, the `strip` directions, the vertical directions, the dim refs and the
+  arc directions. Fifteen sets now interpolate into the grammar strings instead of being retyped,
+  every one rendering byte-identically — they matched today, and `assertVocabRendered` is what keeps
+  them matching: add a value with no rendering and `gen:spec` throws. Two silent documentation gaps
+  close alongside them — the wall material list (a wrong guess degrades the drawing with only a
+  warning) and the fact that `dims auto`'s mode set is closed at four.
+- **Seven of the nineteen grammar lines in `spec.llm.md` were factually wrong, and four taught forms
+  that do not compile** (issue #61). The spec is injected verbatim into agent system prompts, shipped
+  in the npm tarball, baked into the MCP shim and served at archlang.uk, so a wrong line is a wrong
+  model. Measured downstream in ArchCanvas: **11 of 18 generations failed to compile**, dominated by
+  the furniture forms the reference taught.
+  - `furniture` printed `<category> [id=…]`; the parser takes `id=` **first**, so every id-bearing
+    furniture form on the page raised `Expected "at" but found "id"`.
+  - The `wall` line **omitted `[id=<name>]` entirely** — the reference never taught how to name a
+    wall, while four other lines (`door on`, `window on`, `furniture against wall`, `dim radius`)
+    require a wall id. Arguably worse than the reported bug: an agent could not write a valid door
+    from the reference alone.
+  - `door`/`window`/`opening` read as if the trailing `wall <id|category>` clause pairs with either
+    placement form. It is `at`-form-only; after `on <wall>` it is a parse error.
+  - `furniture` showed `rotate` on all four position forms, but an `against` piece takes its rotation
+    from the wall (`E_FURN_AGAINST`).
+  - The **Common-mistakes** table — the most-copied section on the page — taught
+    `label "{aream2(W,H)}"` as though `aream2` were a builtin. It is a `let` in
+    `examples/parametric.arch`, so the row raised `E_UNKNOWN_FN`.
+  - Also: `dim`'s `offset` printed as required (it is optional, default 300), the curve call-outs'
+    `[offset]`/`[text]`, `wall`'s `[material … scale/angle]` sub-clauses, and `align center`.
+
+  Rule 6 now leads with **"`id=` comes FIRST"**, correcting the teaching for all ten id-bearing lines
+  at once. Root cause: the lines are hand-typed in `scripts/gen-llm-spec.ts`, so `check:drift` — which
+  proves *reproducibility*, never correctness — stayed green while the generator reproduced the same
+  wrong text every run. The proof that no text-level guard can close this: `grammars/archlang.gbnf`,
+  produced by a *different* hand-typed generator, had `wall` and `furniture` **right** the whole
+  time. Two generators, the same shapes, disagreeing, both passing drift.
+- **A runtime error message promised a release that shipped without the feature.** `room polygon`
+  with an `arc` edge said "planned for v1.25" — so a user running 1.25.0 was told to wait for the
+  release they were already on. The message (and the matching prose in
+  `docs/language-reference.md`) now points at the roadmap and promises no release; the test that
+  pinned the version string now pins its **absence** alongside the guidance that must survive.
+- **`column`'s `at` was documented as a centre and implemented as a top-left corner.** `resolve`,
+  `bounds` and `render` all lay it out with `rectCorners(at.x, at.y, w, h)`, whose first corner *is*
+  `at` — consistent with a room's `at` and with every other rectangle in the language (the opening
+  elements are the ones that centre on `at`, because they sit on a wall). The **doc** was wrong, not
+  the code: the param doc — which surfaces in LSP hover — and the language reference now say
+  top-left. No behaviour change.
+- **`package-lock.json` recorded the pre-release versions from before v1.25.0 shipped** — root
+  1.24.0, vscode 0.13.0, mcp 0.2.3 with range `^1.24.0` — while every `package.json` carried the
+  released ones. A plain `npm install` therefore dirtied any clean tree, and CI's `npm ci` installed
+  against version metadata that disagreed with the packages.
+- **ADR 0010 showed markup two other documents forbid.** Its §9 cited `<meta name="color-scheme"
+  content="light dark">` while what ships is `content="light"`, and both ADR 0014 and `CLAUDE.md`
+  forbid restoring the two-value form (it re-arms Chromium's Auto Dark Mode, which has inverted this
+  site before). The header's binding/superseded split now carves out that clause by name and the line
+  is struck with a dated note.
+- **`npm run typecheck:all` fails in a fresh worktree with ~67 spurious errors**, and `AGENTS.md` now
+  says so. `playground/tsconfig.json` maps the bare `archlang` specifier to `../dist/index.d.ts`; with
+  no `dist/` that path misses and TS falls back to the repo-root `node_modules/archlang` symlink,
+  which points at `editors/vscode` rather than the core. The 46 `TS2305 "has no exported member"`
+  plus 21 knock-on implicit-anys read exactly like a broken public surface, which is maximally
+  misleading for anyone working on one. Build first.
+
+### Added — docs
+
+- **`docs/backlog.md`**, the forward-looking work queue: what is deliberately not being done yet, in
+  waves, with the trigger that would promote each item.
+
+### MCP shim (`@chanmeng666/archlang-mcp` 0.2.5)
+
+- **Version-bump-only, and the bump is the point.** The shipped sources did not change; `spec.llm.md`,
+  `llms-full.txt` **and** `grammars/archlang.gbnf` all did, and all three are copied into the tarball
+  at **pack time**, so published 0.2.4 hands hosts the wrong furniture syntax *and* a grammar that
+  lets a constrained decoder emit uncompilable output. Only a version bump ships the refreshed
+  resources. The core dependency range is re-pinned to `^1.26.0`.
+
+### VS Code extension (`ChanMeng.archlang` 0.15.0)
+
+- Rebundled against core 1.26.0, so the bundled language services learn `E_ROOM_ALIGN` and
+  `E_ROOM_ALIGN_AXIS` with their quick fixes. Its `@chanmeng666/archlang` devDependency was pinned at
+  `^1.24.0` — **two releases stale**, because unlike the shim's, that range has no lockstep test; it
+  is re-pinned to `^1.26.0`. Marketplace upload remains a human web step. Details in
+  [`editors/vscode/CHANGELOG.md`](editors/vscode/CHANGELOG.md).
+
 ## [1.25.0] - 2026-08-11
 
 **Orientation, openings, and the end of a defect class.** Two new language surfaces — a `site`

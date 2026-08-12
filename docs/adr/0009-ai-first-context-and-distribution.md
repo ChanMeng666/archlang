@@ -6,6 +6,18 @@
   remains the primary interface.
 - **Date:** 2026-07 (v1.12 planning)
 
+> **Amended in part (2026-07, v1.13) — the MCP deferral no longer holds.**
+> [ADR 0012](0012-mcp-shim-discoverability.md) reverses decision 4 on that one point: an optional
+> stdio MCP shim now ships. `@chanmeng666/archlang-mcp` is **published** (`0.2.4`), listed on
+> registry.modelcontextprotocol.io as `io.github.ChanMeng666/archlang-mcp`, and lives in
+> `packages/mcp/`. Read **decision 4's "MCP remains deferred"** and the **Consequences' "the agent
+> surface stays CLI-first, no MCP"** as history. What still binds is the *reason* those clauses
+> gave, and 0012 restates it: a CLI costs nothing in an agent's context window until it is called,
+> so the **CLI stays the primary interface** and the shim is a *discoverability* channel for
+> MCP-native hosts — the class of user 0009 did not separate out — never a replacement. Decisions
+> **1** (the generated `llms-full.txt` bundle), **2** (opt-in error rendering) and **3** (derived
+> accessibility) are untouched, as is every Consequence other than that one bullet.
+
 ## Context
 
 ArchLang is authored more and more by AI agents, not only by hand. That reframes the

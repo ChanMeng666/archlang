@@ -465,6 +465,20 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Rename one binding, or use `NAME = …` to reassign instead of redeclaring.",
     "let x = 1\nlet x = 2   # error: redefinition",
   ),
+  E_ROOM_ALIGN: E(
+    "E_ROOM_ALIGN",
+    "Unknown relational alignment edge.",
+    "A relationally-placed room's `align <word>` names something that is not an alignment edge. The set is closed (`top`, `middle`, `bottom` for `right-of`/`left-of`; `left`, `center`, `right` for `below`/`above`), and an unrecognised word used to fall through to the leading edge silently — drawing the plan as if `align` had never been written.",
+    "Use one of the six edges; the diagnostic suggests the nearest one and carries a fix that rewrites just that word.",
+    "room id=b right-of a align sideways size 3000x3000   # error: not an edge (did you mean `bottom`?)",
+  ),
+  E_ROOM_ALIGN_AXIS: E(
+    "E_ROOM_ALIGN_AXIS",
+    "Relational alignment edge belongs to the other axis.",
+    "A relationally-placed room's `align <edge>` names a real edge, but not one of the axis that direction aligns on. A horizontal relation (`right-of`/`left-of`) offsets its room vertically, so it takes `top|middle|bottom`; a vertical relation (`below`/`above`) offsets horizontally, so it takes `left|center|right`. (`middle` and `center` are honoured on both — they are the same instruction spelled twice.) A cross-axis edge used to be ignored in silence, drawing the room against the leading edge exactly as if `align` had never been written — distinct from `E_ROOM_ALIGN`, where the word is not an edge at all.",
+    "Use the edge of the correct axis; the diagnostic names its exact counterpart (leading stays leading, trailing stays trailing) and carries a fix that rewrites just that word.",
+    "room id=b right-of a align right size 3000x3000   # error: `right` is horizontal (did you mean `bottom`?)",
+  ),
   E_ROOM_SIZE: E(
     "E_ROOM_SIZE",
     "Room must have a positive size.",

@@ -10,6 +10,7 @@
  */
 
 import type { Point, StairNode, VerticalDir } from "../ast.js";
+import { VERTICAL_DIRS } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RStair } from "../ir.js";
@@ -21,8 +22,11 @@ import { stairGlyph } from "./vertical-glyphs.js";
 export function parseVerticalDir(ctx: ParseCtx, keyword: string): VerticalDir {
   ctx.eatKeyword("dir");
   const t = ctx.eatIdent();
-  if (t.value !== "up" && t.value !== "down")
-    ctx.fail(`Expected \`dir up\` or \`dir down\` after \`${keyword}\` but found "${t.value}"`, t);
+  if (!(VERTICAL_DIRS as readonly string[]).includes(t.value))
+    ctx.fail(
+      `Expected ${VERTICAL_DIRS.map((d) => `\`dir ${d}\``).join(" or ")} after \`${keyword}\` but found "${t.value}"`,
+      t,
+    );
   return t.value as VerticalDir;
 }
 

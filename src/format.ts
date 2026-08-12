@@ -106,10 +106,14 @@ function stripRoomStr(r: StripRoomChild): string {
   return `room ${id}size ${size}${label}${uses}`;
 }
 
-/** A room's relational placement clause: `DIR ref [align E] [gap n]`. */
+/** A room's relational placement clause: `DIR ref [align E] [gap n]`.
+ *  An out-of-set alignment word (`alignBad`, the `E_ROOM_ALIGN` case) is re-emitted
+ *  VERBATIM: `arch fmt` reformats source, it does not silently delete the token whose
+ *  wrongness is the whole subject of the diagnostic the author still has to read. */
 function relStr(rel: RoomRel): string {
   let out = `${rel.dir} ${rel.ref}`;
   if (rel.align) out += ` align ${rel.align}`;
+  else if (rel.alignBad) out += ` align ${rel.alignBad.word}`;
   if (rel.gap !== undefined) out += ` gap ${exprStr(rel.gap)}`;
   return out;
 }

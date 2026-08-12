@@ -5,7 +5,7 @@
  * {@link CompileResult.errors}. Exceptions only escape on internal bugs.
  */
 
-export type { Span, Severity, Diagnostic } from "./diagnostics.js";
+export type { Span, Severity, Diagnostic, RelatedSpan } from "./diagnostics.js";
 export type { Theme } from "./theme.js";
 
 export interface CompileError {

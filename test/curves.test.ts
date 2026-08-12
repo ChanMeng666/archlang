@@ -519,12 +519,19 @@ suite("guards on a curve (crisp diagnostics, no silent degradation)", () => {
     expect(d.message).toContain("rotate");
   });
 
-  it("declines an `arc` inside a `room polygon` ring, naming the release it is planned for", () => {
+  it("declines an `arc` inside a `room polygon` ring, pointing at the roadmap and NOT at a release", () => {
     const r = compile('plan "P" { room id=r polygon (0,0) (1000,0) arc (1000,1000) radius 800 }');
     const msg = r.errors.map((e) => e.message).join("\n");
     expect(msg).toContain("room polygon");
-    expect(msg).toContain("v1.25");
+    // It must still say WHERE the deferral is tracked and WHAT to do instead — a bare
+    // "not supported" would pass a version-free check while telling the author nothing.
+    expect(msg).toContain("docs/research/2026-08-06-competitor-borrowing-roadmap.md");
     expect(msg).toContain("room circle");
+    expect(msg).toContain("arc (x,y) radius R");
+    // The original message promised "planned for v1.25" and v1.25 shipped without it, so
+    // a user on 1.25.0 was told to wait for the release they were already running. A
+    // deferral may name a tracker; it may never name a release.
+    expect(msg).not.toMatch(/v\d+\.\d+/);
   });
 
   it("never lets an arc back a fixture edge (a chord can be collinear with a room side)", () => {

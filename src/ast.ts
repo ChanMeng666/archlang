@@ -22,8 +22,28 @@ export interface ExprPoint {
   y: Expr;
 }
 
+/**
+ * The four page directions `north <dir>` accepts as a word (the other form is a bare
+ * bearing in degrees). Canonical order — parser, diagnostic message and `spec.llm.md`
+ * all render THIS array rather than retyping it, because a set typed a second time
+ * inside a generator reproduces the same wrong text forever while `check:drift` stays
+ * green (the standing "a generator's TEMPLATE can go stale" law).
+ */
+export const NORTH_DIRS = ["up", "down", "left", "right"] as const;
+/** A `north <word>` page direction — the non-numeric half of {@link NorthDir}. */
+export type NorthCardinal = (typeof NORTH_DIRS)[number];
+
 /** North orientation: a cardinal keyword or an explicit bearing in degrees. */
-export type NorthDir = "up" | "down" | "left" | "right" | { deg: number };
+export type NorthDir = NorthCardinal | { deg: number };
+
+/**
+ * `dims auto [<mode>]` — which chains the automatic dimensioning pass draws. Canonical
+ * order; `all` is the default when the mode word is omitted. One source for the
+ * parser's accept-list and the spec's grammar line.
+ */
+export const AUTO_DIMS_MODES = ["overall", "rooms", "walls", "all"] as const;
+/** A `dims auto <mode>` selector. */
+export type AutoDimsMode = (typeof AUTO_DIMS_MODES)[number];
 
 /** Discriminant identifying an element's type (also its registry keyword). */
 export type ElementKind =
@@ -72,6 +92,13 @@ export interface WallNode extends NodeBase {
   closed: boolean;
 }
 
+/** The two rotational directions an `arc` clause may name, as the reader sees them on
+ *  the sheet. Canonical order — the wall parser, `geometry/arc.ts`'s `ArcDir` and the
+ *  spec's `wall` grammar line all derive from this one array. */
+export const ARC_DIRS = ["cw", "ccw"] as const;
+/** Which way round the plan an `arc` edge travels. */
+export type ArcDirWord = (typeof ARC_DIRS)[number];
+
 /**
  * One `arc … radius R [cw|ccw] [major]` clause, attached to the vertex it arrives at.
  * `dir` is the turn as the reader sees it on the sheet (default `ccw`), and `major`
@@ -80,19 +107,94 @@ export interface WallNode extends NodeBase {
  */
 export interface WallArcNode {
   radius: Expr;
-  dir?: "cw" | "ccw";
+  dir?: ArcDirWord;
   major?: boolean;
   /** Byte span of the `arc …` clause, for `E_ARC_RADIUS`. */
   span?: Span;
 }
 
+/** Relational-placement direction: the side of the reference room to sit on.
+ *  Canonical order — the parser's accept-set, the element's own parameter doc and the
+ *  spec's `room` grammar line all read this array. */
+export const REL_DIRS = ["right-of", "left-of", "below", "above"] as const;
 /** Relational-placement direction: the side of the reference room to sit on. */
-export type RelDir = "right-of" | "left-of" | "below" | "above";
+export type RelDir = (typeof REL_DIRS)[number];
+
+/**
+ * The three alignment edges of each cross AXIS, in **leading → centre → trailing**
+ * order. This table is the owner: {@link REL_ALIGNS} is concatenated from it, so the
+ * six-word set and its per-axis partition cannot drift apart.
+ *
+ * The positional ordering is load-bearing, not cosmetic. Index `i` of one axis is the
+ * exact counterpart of index `i` of the other — `left`(h,leading) ↔ `top`(v,leading),
+ * `right`(h,trailing) ↔ `bottom`(v,trailing) — which is what lets
+ * {@link relAlignCounterpart} answer an axis mismatch with a TRANSLATION rather than a
+ * guess. Reorder a row and that correspondence silently breaks.
+ */
+export const AXIS_ALIGNS = Object.freeze({
+  /** Vertical cross axis — used by the HORIZONTAL relations `right-of`/`left-of`. */
+  v: ["top", "middle", "bottom"],
+  /** Horizontal cross axis — used by the VERTICAL relations `below`/`above`. */
+  h: ["left", "center", "right"],
+} as const);
+
+/** The cross axis each relational direction aligns ON. A horizontal relation
+ *  (`right-of`/`left-of`) offsets its room vertically, so its alignment edge is a
+ *  vertical one, and vice versa. Read by `elements/room.ts`'s `E_ROOM_ALIGN_AXIS`
+ *  check; it mirrors the `"v"`/`"h"` argument `layout.ts`'s `place()` passes to
+ *  `alignOffset`, and the two are pinned equal by test. */
+export const REL_DIR_AXIS = Object.freeze({
+  "right-of": "v",
+  "left-of": "v",
+  below: "h",
+  above: "h",
+} as const);
+
+/**
+ * The centring edge of each axis. `layout.ts`'s `alignOffset` honours **both spellings
+ * on both axes** (`if (align === "middle" || align === "center")`), so a centring word
+ * is never an axis mismatch — it is the one place the two rows of {@link AXIS_ALIGNS}
+ * deliberately overlap, and the reason the per-direction accept-sets are 4/4 rather
+ * than a clean 3/3 split.
+ */
+export const REL_ALIGN_CENTERS: readonly string[] = [AXIS_ALIGNS.v[1], AXIS_ALIGNS.h[1]];
+
+/** Every {@link RelAlign}, canonical order — one source for the element's parameter
+ *  doc, the spec's grammar line, and the parser's ACCEPT-SET (`E_ROOM_ALIGN`).
+ *  Concatenated from {@link AXIS_ALIGNS} so the set has exactly one owner. */
+export const REL_ALIGNS = [...AXIS_ALIGNS.v, ...AXIS_ALIGNS.h] as const;
 
 /** Edge to align with the reference room. Horizontal placement
  *  (`right-of`/`left-of`) uses `top|middle|bottom`; vertical placement
- *  (`below`/`above`) uses `left|center|right` (`center`≡`middle`). */
-export type RelAlign = "top" | "middle" | "bottom" | "left" | "center" | "right";
+ *  (`below`/`above`) uses `left|center|right` (`center`≡`middle`, honoured on both). */
+export type RelAlign = (typeof REL_ALIGNS)[number];
+
+/**
+ * The edge `dir` should have been given instead of `word`, or `null` when `word` is
+ * already legal for `dir`.
+ *
+ * This is the predicate behind `E_ROOM_ALIGN_AXIS`. An **in-set word on the wrong
+ * axis** — `right-of a align left`, `below a align top` — passed the membership check
+ * `1213e08` added and then matched no branch of `alignOffset`, falling through to the
+ * leading edge: the same silent-wrong-position defect one level down, and a likelier
+ * one, because the offending words are VALID SPELLINGS rather than typos.
+ *
+ * The answer is a translation, not a suggestion. A mismatched word is always the
+ * leading or trailing edge of the *other* axis (the centring words are legal on both),
+ * so its counterpart is the same index on this axis, and the author's evident intent —
+ * leading, or trailing — is carried across exactly. That is what earns the fix
+ * `machine-applicable` without the edit-distance hedging `roomAlignFix` needs.
+ */
+export function relAlignCounterpart(dir: RelDir, word: RelAlign): RelAlign | null {
+  const axis = REL_DIR_AXIS[dir];
+  const own: readonly RelAlign[] = AXIS_ALIGNS[axis];
+  if (own.includes(word)) return null;
+  if (REL_ALIGN_CENTERS.includes(word)) return null;
+  const other: readonly RelAlign[] = AXIS_ALIGNS[axis === "v" ? "h" : "v"];
+  // `word` is one of the six, is not on this axis and is not a centring word, so it is
+  // the other axis's leading or trailing edge — index 0 or 2, never absent.
+  return own[other.indexOf(word)] ?? null;
+}
 
 /**
  * A room's declared function(s). Explicit `uses` make the analysis layer's room
@@ -137,6 +239,29 @@ export interface RoomRel {
   /** Id of the reference room this one is placed against. */
   ref: string;
   align?: RelAlign;
+  /**
+   * Byte span of the alignment WORD itself (not the `align` keyword, not the clause),
+   * recorded whenever {@link align} is set so resolve can raise `E_ROOM_ALIGN_AXIS`
+   * against the offending word and its fix can rewrite exactly those bytes.
+   *
+   * Separate from {@link alignBad} because an axis mismatch is a LEGAL word: `align`
+   * stays a real {@link RelAlign}, so `format.ts` and `layout.ts` need no branch for it.
+   */
+  alignSpan?: Span;
+  /**
+   * An `align <word>` whose word is NOT in {@link REL_ALIGNS}, recorded verbatim with
+   * its own byte span so resolve can raise `E_ROOM_ALIGN` against the OFFENDING WORD
+   * (and `format.ts` can re-emit the source it was given rather than deleting it).
+   *
+   * Until v1.26 the parser did `ctx.eatIdent().value as RelAlign` — an unchecked cast —
+   * so `align sideways` produced a `RelAlign` that matched no branch of
+   * `layout.ts`'s `alignOffset` and fell through to the leading edge. The plan drew
+   * itself as `align top` with **zero diagnostics**: the project's own "silent wrong
+   * position" family, and the one member of it the author can see in their own source.
+   * Mutually exclusive with {@link align} — a legal word sets that and leaves this
+   * undefined.
+   */
+  alignBad?: { word: string; span: Span };
   /** Spacing (mm) between the two rooms along the placement axis; default 0. */
   gap?: Expr;
   span?: Span;
@@ -334,9 +459,13 @@ export interface FurnitureNode extends NodeBase {
   room?: string;
 }
 
+/** The two endpoint-reference words a `dim` may lead with, canonical order — one source
+ *  for the `dim` parser and the spec's grammar line. */
+export const DIM_REFS = ["faces", "clear"] as const;
+
 /** How a `dim`'s endpoints are referenced to the walls they touch.
  *  Absent = the written points are used verbatim (the historical behaviour). */
-export type DimRef = "faces" | "clear";
+export type DimRef = (typeof DIM_REFS)[number];
 
 /**
  * A `dim radius <wallId> [segment <n>]` / `dim diameter <roomId>` call-out (v1.24) — the
@@ -398,7 +527,9 @@ export interface ColumnNode extends NodeBase {
  * the only cross-level inference ArchLang makes is identity (same id ⇒ same shaft), see
  * ADR 0005.
  */
-export type VerticalDir = "up" | "down";
+export const VERTICAL_DIRS = ["up", "down"] as const;
+/** See {@link VERTICAL_DIRS}. */
+export type VerticalDir = (typeof VERTICAL_DIRS)[number];
 
 /**
  * `stair [id=] at (x,y) size WxH dir up|down [width <expr>]` — a straight flight of
@@ -452,6 +583,12 @@ export interface StripRoomChild {
   span?: Span;
 }
 
+/** The four fill axes a `strip` may run along, canonical order — one source for the
+ *  parser's accept-list, its diagnostic and the spec's grammar line. */
+export const STRIP_DIRS = ["right", "left", "down", "up"] as const;
+/** A `strip <dir>` fill axis. */
+export type StripDir = (typeof STRIP_DIRS)[number];
+
 /**
  * `strip <dir> at (x,y) gap G (height|width) H { room … }` — a row/column of rooms
  * laid out end to end. `dir` is the fill axis (`right`/`left`/`down`/`up`); each
@@ -462,7 +599,7 @@ export interface StripRoomChild {
  */
 export interface StripNode extends NodeBase {
   kind: "strip";
-  dir: "right" | "left" | "down" | "up";
+  dir: StripDir;
   /** Origin corner (top-left of the first room). */
   at: ExprPoint;
   /** Spacing (mm) between consecutive rooms along the fill axis. */
@@ -854,7 +991,7 @@ export interface PlanNode {
    */
   site?: SiteNode;
   /** `dims auto [overall|rooms|walls|all]` — synthesize dimension strings at render. */
-  autoDims?: "overall" | "rooms" | "walls" | "all";
+  autoDims?: AutoDimsMode;
   /** `axes { x at … y at … }` — author-declared positioning axes (定位轴线). */
   axes?: AxesNode;
   /**

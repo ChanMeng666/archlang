@@ -17,7 +17,11 @@ export const column: ElementDef = {
   keyword: "column",
   doc: "A structural column: a small filled rectangle.",
   params: [
-    { name: "at", type: "point", doc: "Center position (x, y) in mm." },
+    // TOP-LEFT, not centre: `resolve`/`bounds`/`render` all lay the column out with
+    // `rectCorners(at.x, at.y, w, h)`, whose first corner IS `at`. This matches a room's
+    // `at` and every other rectangle in the language; the opening elements (`door`,
+    // `window`, `opening`) are the ones that centre on `at`, because they sit on a wall.
+    { name: "at", type: "point", doc: "Top-left corner (x, y) in mm." },
     { name: "size", type: "WxH", doc: "Width × height in mm." },
   ],
 

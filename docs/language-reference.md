@@ -819,9 +819,10 @@ of it.
 **What declines rather than guesses.** `furniture … against wall <id>` on an arc segment
 raises [`E_FURN_AGAINST`](error-codes.md): a curve has no single back direction, so place
 the piece with `at (x,y)` and an explicit `rotate`. An arc edge inside a `room polygon`
-ring is not supported yet and says so at parse time (planned for v1.25); use a
-[circular room](#circular-rooms-v1-24), or a curved wall with a straight-edged room behind
-it.
+ring is not supported and says so at parse time — no release is promised for it; it is
+tracked on the roadmap (`docs/research/2026-08-06-competitor-borrowing-roadmap.md` in the
+repository). Use a [circular room](#circular-rooms-v1-24), or a curved wall with a
+straight-edged room behind it.
 
 ### Circular rooms (v1.24)
 
@@ -1193,7 +1194,9 @@ column [id=<id>] at (x,y) size <w>x<h>
 ```
 
 A solid structural column (filled square). Useful for grids of columns in
-larger plans.
+larger plans. `at` is the **top-left corner**, like a room's — the opening elements
+(`door`, `window`, `opening`) are the ones whose `at` is a centre, because they sit on a
+wall.
 
 ### Vertical circulation — `stair`, `elevator`, `escalator` (v1.21)
 
