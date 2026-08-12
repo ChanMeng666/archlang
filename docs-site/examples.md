@@ -125,6 +125,31 @@ the doorway.
 
 <ArchLive :src="EXAMPLES['aquarium']" :rows="30" />
 
+## Suburban Bungalow (orientation, and doors that are not hinged)
+
+A single-storey house on a plot that fronts the street on the **south**, in the southern
+hemisphere — and the whole layout follows from that one declared fact. `site { street south
+hemisphere south }` ([site and orientation](/reference#site-and-orientation)) draws nothing;
+it names five directions on `arch describe --json --select site` — `street` (S), `back` (N),
+`equator_side` (N), `sunrise_side` (E), `sunset_side` (W). Here `back` and `equator_side` are
+the *same* side, which is why the house turns away from the road: the living room and both
+bedrooms take the north facade, and the service band — entry, hall, bath, laundry, kitchen —
+is stacked along the street. Delete Bedroom 2's north window and `arch lint` says so, through
+the one advisory rule that reads a site, `W_ROOM_NOT_EQUATOR_FACING`. These are **drafting
+heuristics for an aspect, not a daylight measurement**: there is no sun model, no latitude
+and no date anywhere in ArchLang.
+
+The other half is the [door kinds](/reference#door-kinds-v1-25). Three of the six doors are
+not hinged, each where a builder would actually put one: a **sliding** garden door onto the
+deck, a **pocket** door to the bath so no leaf lands in a 1500 mm corridor, and a **bifold**
+to the laundry. `slide right` on the pocket is load-bearing, not cosmetic — it aims the panel
+at the 2200 mm of solid wall between its jamb and the laundry door, where `slide left` would
+give it 500 mm against the 850 mm it needs and raise `W_POCKET_RUN`. A non-hinged leaf sweeps
+nothing, so only the two bedroom doors carry a swing arc, and `describe().doors[].kind`
+appears on exactly the three that are not the default.
+
+<ArchLive :src="EXAMPLES['bungalow']" :rows="30" />
+
 ## Accessible metadata
 
 `accTitle` and `accDescr` supply the SVG `<title>`/`<desc>` emitted by

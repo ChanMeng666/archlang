@@ -29,6 +29,7 @@ import {
   applyFixes,
   compile,
   describe as describePlan,
+  format,
   getGeometryBackend,
   lint,
   loadClipperBackend,
@@ -459,5 +460,61 @@ suite("doors — determinism, with the geometry backend registered and cleared",
     expect(getGeometryBackend()).not.toBeNull();
     const with_ = sources.map((s) => compile(s, { noCache: true }).svg);
     expect(with_).toEqual(without);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 9 — the formatter must print what the parser read
+// ---------------------------------------------------------------------------
+
+/**
+ * `format()` printed the door statement WITHOUT its kind, `slide` or `open` for three
+ * releases: `door id=d pocket on mid at 50% width 900 slide right` came back as
+ * `door id=d on mid at 50% width 900`. That is not a formatting difference but a
+ * semantic one — the re-formatted plan is a HINGED door with a swing arc, so
+ * `arch fmt --write` and `arch repair`'s emitted source both silently rebuilt the
+ * building. It survived because `test/format.test.ts` compares `compile(src)` against
+ * `compile(format(src))` over `examples/`, and until `examples/bungalow.arch` not one
+ * shipped example used a door kind: the gate was real and the corpus was empty.
+ *
+ * So this asserts the property directly rather than trusting the corpus — over EVERY
+ * kind, and over `slide`/`open` too, checking both that the clause survives the round
+ * trip and that the drawing does.
+ */
+suite("doors — format() round-trips the kind, `slide` and `open`", () => {
+  for (const kind of DOOR_KINDS) {
+    it(`\`${kind}\` survives format() as source and as bytes`, () => {
+      const src = plan(`door id=d ${kind} on mid at 50% width 900`);
+      const out = format(src);
+      expect(out).toContain(`door id=d ${kind} on mid`);
+      expect(compile(out, { noCache: true }).svg).toBe(clean(src));
+    });
+  }
+
+  it("`slide` and `open` survive too — both are sliding-family only", () => {
+    const src = plan("door id=d pocket on mid at 50% width 900 slide right open 0.25");
+    const out = format(src);
+    expect(out).toContain("door id=d pocket on mid at 50% width 900 slide right open 0.25");
+    expect(compile(out, { noCache: true }).svg).toBe(clean(src));
+  });
+
+  it("`open 0` survives — the printer tests for PRESENCE, not truthiness", () => {
+    // `open` is a [0,1] fraction, so 0 is a legal value and a falsy one. A
+    // `s.open ? …` guard prints every other value and silently drops this one, which
+    // re-formats a shut panel into one drawn at the default opening.
+    const src = plan("door id=d sliding on mid at 50% width 900 open 0");
+    const out = format(src);
+    expect(out).toContain("width 900 open 0");
+    expect(compile(out, { noCache: true }).svg).toBe(clean(src));
+  });
+
+  it("a hinged door still prints exactly as it did — no kind word appears from nowhere", () => {
+    const src = plan("door id=d on mid at 50% width 900 hinge left swing in");
+    const out = format(src);
+    expect(out).toContain("door id=d on mid at 50% width 900 hinge left swing in");
+    // An explicit `hinged` is preserved as written; it is the ONE kind the resolver
+    // drops, so the printer must not invent it for a door that never said it.
+    expect(out).not.toMatch(/door id=d hinged/);
+    expect(format(out)).toBe(out);
   });
 });

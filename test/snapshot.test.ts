@@ -24,6 +24,10 @@ describe("golden SVG snapshots", () => {
     // v1.23: the polygon-room flagship — an L and a trapezoid, an angled facade, and
     // `dims auto` measured off vertex coordinates rather than room rectangles.
     "gallery-l.arch",
+    // v1.25: the orientation-and-openings example. `site` draws nothing, so this
+    // snapshot pins the half that DOES reach the SVG — the sliding/pocket/bifold panel
+    // geometry, and the absence of a swing arc on all three.
+    "bungalow.arch",
   ]) {
     it(`renders ${name} deterministically`, () => {
       const { svg, errors } = compile(example(name), { noCache: true });

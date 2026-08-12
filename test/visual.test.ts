@@ -55,6 +55,10 @@ const EXAMPLES = [
   // service wings, it also pins the per-wall split that keeps the straight walls on the
   // rectilinear boolean.
   "aquarium.arch",
+  // v1.25: the orientation-and-openings example. Its golden is the only one that would
+  // move if a NON-HINGED leaf's drawing drifted — the sliding, pocket and bifold panels
+  // are Scene primitives with no swing arc, and nothing else under examples/ draws one.
+  "bungalow.arch",
 ];
 
 async function hasResvg(): Promise<boolean> {
