@@ -28,53 +28,6 @@ together before merging; `npm run typecheck:all` after **every** merge.
 
 ## Wave 2 — coverage where a wrong sign ships silently
 
-### 2.1 · Kill the PNG vacuous pass — `todo`
-
-All three `src/backends/png.ts` tests open with `if (!(await hasResvg())) return;`, so when resvg is
-absent they report **passing having asserted nothing**. `docs/testing.md` states the rule this
-breaks, and `test/visual.test.ts` already implements it correctly with
-`const RESVG_REQUIRED = !!process.env.CI`.
-
-- **Files:** `test/png.test.ts`, pattern from `test/visual.test.ts`
-- **Gate:** hard-fails in CI when resvg is missing; skips *visibly* locally. Prove the guard is not
-  vacuous by forcing the missing-dep path.
-
-### 2.2 · `test/lint-measure.test.ts` — `todo`
-
-`src/lint/measure.ts`'s five pure numeric functions (`distPointToRect`, `approachGapMm`,
-`frontGapMm`, `shortfall`, `mm`) have zero direct coverage — no test imports the module. They are
-consumed by `src/lint/rules/{doors,furniture,circulation-facts}.ts` and are exactly the
-sign/boundary/rounding code that decides whether a plan reports "clean". Highest value per line in
-the repo, and trivially property-testable because the inputs are pure numbers.
-
-- **Gate:** unit + `fast-check` property coverage of boundaries, signs and rounding.
-
-### 2.3 · `test/frame.test.ts` — `todo`
-
-`src/frame.ts` (367 LOC — the exact-isometry layer behind `level` and `place`) is imported only by
-`src/ir.ts` and is never called directly by any test. A wrong sign here produces a plausible-looking
-but wrong drawing that no golden pins.
-
-- **Cover:** `composeFrame`, `inverse`, `det`, `isIdentity`, `tp`, `transformRect`, `transformDeg`,
-  `nsId`, `transformElement`
-- **Gate:** `compose ∘ inverse = identity` round-trip property; `nsId` collision test; the `det < 0`
-  handedness flip asserted directly rather than through a snapshot.
-
-### 2.4 · A grammar-aware `fast-check` arbitrary — `todo`
-
-The flagship determinism property in `test/fuzz.test.ts` feeds `fc.string()` into a plan body, so
-almost every generated case is a parse error with `svg === ""` — it is near-vacuous for the
-*rendering* path. One arbitrary that emits **valid** plans makes it real and unlocks property
-versions of laws currently pinned only by hand-written fixture pairs.
-
-- **New:** `test/arbitrary-plan.ts`
-- **Then upgrade:** determinism over rendering plans; the byte-identity laws (generate a
-  feature-free plan, assert invariance under adding an unrelated block); cache transparency
-  (`compile(s) === compile(s, {noCache:true})`); round-trips (`format∘parse` idempotence,
-  `repair∘repair`, `applyFixes` convergence)
-- **Gate:** existing example tests unchanged; the new properties fail when a determinism bug is
-  planted.
-
 ### 2.5 · CLI commands that no test invokes — `todo`
 
 `arch watch`, `arch fmt` and `arch manifest` have zero end-to-end execution (`format.test.ts` tests
@@ -85,44 +38,6 @@ Exit codes are the agent contract, so a wrong one would ship silently.
 
 - **Gate:** each command invoked end-to-end; batch aggregation asserted against the documented
   `0` ok / `1` IO-internal / `2` user-source / `3` bad-usage.
-
-### 2.6 · PDF backend — `todo`
-
-`src/export/pdf.ts` is 294 LOC behind 4 assertions, 3 of them optional-dep-gated. No determinism
-check on a *published* output format, and no coverage of multi-page/`level`, the sheet frame, the
-title block, themes or hatches.
-
-**Two pdfkit gates, not one** (found while doing 2.1): `test/export-pdf.test.ts` and
-`test/sheet.test.ts:439` both use `describe.skipIf(!pdfAvailable)` / `suite.skipIf(...)`. Neither is
-*vacuous* — vitest reports them as skips, so they never go green having claimed to assert — but
-neither **hard-fails in CI** either, so an install that quietly stopped pulling
-`optionalDependencies` would silently stop testing a published output format. 2.1's one-line pattern
-does not transplant: `skipIf` has nowhere to hang the CI throw, so both need the
-`if (!HAS) { … return; }` restructure `test/png.test.ts` now uses.
-
-- **Gate:** byte-identity across two renders; multi-page fan-out; the optional-dep skip must be
-  visible and must fail in CI (same rule as 2.1), in **both** suites above.
-
-### 2.8 · A capability gate that skips silently — `todo`
-
-`test/readme-permalink.test.ts:115` does `if (!HAS_DEFLATE_RAW) return;`, which **is** a silent
-vacuous pass on Node < 21.2 — the same defect 2.1 just removed from the PNG suite.
-
-The remedy is *not* the same, and getting that wrong would break CI. This is a **Node capability**
-gate, not an optional dep: the Node 18 and 20 matrix legs legitimately lack `deflate-raw`, so a CI
-hard-fail would be wrong, and `docs/testing.md` §4 documents the capability-gating convention
-deliberately. The honest fix is `it.skipIf(...)` so it skips **visibly** in the reporter rather than
-returning green.
-
-- **Gate:** the case reports as a named skip on a runtime without `deflate-raw`, and still runs on
-  Node 22. Do not add a CI throw.
-
-### 2.7 · Advisory 0%-coverage reporter — `todo`
-
-`vitest.config.ts` sets `all: true` with **no thresholds** (deliberate — "nobody games a
-percentage"), so a module falling to zero coverage is invisible. Flag `src/` files at 0% in the
-Node-22 CI step summary. **Advisory only, never gating** — that keeps the deliberate choice intact
-while making the silence visible.
 
 ---
 
@@ -145,60 +60,80 @@ Oldest is 2026-07-20. Batch the safe ones (`actions/checkout`, `actions/setup-no
 **zod 3→4** (#27), **vite 6→8** (#26), and `@types/node` 22→26 (#28) — the last interacts with
 `noUncheckedIndexedAccess` across every leg of `typecheck:all`.
 
-### 3.4 · A `site`-bearing flagship example — `todo`
+### 3.8 · Poché is dropped from every PDF — `todo`
 
-**Zero** of the 18 shipped `.arch` examples use `site`, `pocket`, `slide`, `hemisphere` or `street`.
-The gallery ships inside the npm tarball and drives the docs site, so the newest language surface is
-invisible to readers *and* to models — which learn far more from worked examples than from grammar
-lines. Also closes a deferral named in the P2-3 design doc.
+**A shipped bug in a published output format.** `drawNode`'s switch in `src/export/pdf.ts` handles
+polygon/line/region/arc/circle/text and has **no `hatch` case and no `default`**, while the
+`wallFill` layer is exactly one `hatch` primitive. Every wall prints as a hollow outline in every
+PDF ArchLang has ever exported.
 
-- **Gate:** lint-clean; adds a golden and a visual snapshot; a corpus entry in the executable-spec
-  gate; `docs:build` and `e2e:docs`.
+Two corroborations: the module's own header promises the opposite ("poché regions fill with the
+solid poché base colour in PDF"), and `fillColor`'s `url(…) → theme.pocheBase` branch is therefore
+**dead code** — no non-hatch primitive ever carries a pattern fill. Pinned today as a `KNOWN GAP`
+characterisation test in `test/export-pdf.test.ts`, made non-vacuous by showing the same colour
+formatter *does* find a colour that is drawn.
 
-### 3.6 · A lockstep test for the VS Code extension's core dep range — `todo`
+- **Gate:** invert the KNOWN GAP test; the poché base colour appears as an `scn` op in the inflated
+  content stream. This **changes shipped bytes** for a published format, so it wants a release note.
 
-The MCP shim's `@chanmeng666/archlang` range is pinned by a **string** equality against `^` + the
-root version (`packages/mcp/test/lockstep.test.ts`), so every core release turns that package red on
-purpose until someone consciously re-pins it. The extension has no equivalent, and the consequence is
-already on the record: at v1.26.0 prep its range still read **`^1.24.0`** — two full releases stale,
-with nothing anywhere going red for it.
+### 3.9 · `toPdf` is not byte-deterministic — `todo`
 
-The near miss is the argument. The `__CORE_VERSION__` stamp test (`editors/vscode/test/stdio.test.ts`)
-proves the *bundle* is current, which is the more important of the two — but it is precisely why the
-stale *range* survived: the bundle was right, so nothing looked wrong. The two assertions cover
-different failures. The stamp answers "did the rebundle take?"; a range pin answers "does the manifest
-still describe the core it bundles?" — which is what a reader, a `npm ls`, and any future non-bundled
-consumption path would believe.
+pdfkit stamps `Info /CreationDate` from `new Date()` and derives the trailer `/ID` as an MD5 over
+it. Measured across a forced second boundary those are the **only** two differing fields — every
+content-stream byte, the whole xref and `startxref` are identical, and both are fixed-width so
+nothing shifts. Determinism is this project's flagship law, and a published format not having it is
+a real gap even though nothing visible moves.
 
-- **Proposed:** mirror the shim's assertion in `editors/vscode/test/` — read the root
-  `package.json` `version` and assert `editors/vscode/package.json`'s
-  `devDependencies["@chanmeng666/archlang"]` is byte-equal to `"^" + rootVersion`. Same iron law
-  applies: **string equality, never a semver-satisfies check** — satisfies is exactly what let
-  `^1.24.0` look fine against a 1.25.0 core.
-- **Decide first, before building:** whether it should also assert the extension's own `version`
-  bumped in the same commit (the shim's does not, and coupling them may be over-tight — the
-  extension is versioned independently on purpose).
-- **Gate:** the new test is red at the current pin and green after re-pinning; prove non-vacuity by
-  reverting the range to `^1.24.0` and watching it fail.
+Currently pinned honestly rather than masked: one test asserts the drawn page is byte-identical, a
+second asserts every differing byte in the whole file lies inside one of two recognised spans, with
+the span shapes themselves pinned so a pdfkit change cannot turn the mask into a silent no-op.
 
-### 3.7 · A flaky playground E2E spec — `todo`
+- **Decide first:** the fix is passing a fixed `info.CreationDate` into `PDFDocument`, which changes
+  shipped bytes. Whether a PDF should carry a real creation date at all is a product call.
 
-`playground/e2e/actions.spec.ts:26` — *"Format rewrites the source to canonical style"* — failed
-once under full-suite load on 2026-08-12, then passed both in isolation and on a clean re-run of
-all 50 specs. Not a regression: it was observed on a tree whose only playground-visible change was
-a core rebuild, and nothing in its fixture touches the changed surfaces.
+### 3.10 · `W_DIM_INSIDE`'s fix 2-cycles — `todo`
 
-It is timing-sensitive **by construction** — its own comment describes waiting out a 250 ms debounce
-that a second `render()` would otherwise overwrite, and it uses the autosave key as the witness that
-the pass landed. Under parallel load that witness can arrive late.
+"Swap the dimension's endpoints so the line reads outside" is re-offered on the next pass and swaps
+back, forever. `arch fix` therefore burns its whole pass budget on such a plan and the result
+depends on the **parity** of the budget — a machine-applicable fix that never converges.
 
-This matters because `e2e-playground` is a **gating** PR job: a flake here reddens an unrelated PR
-and trains people to re-run rather than read a failure. Fix the wait, not the timeout — poll a
-condition the app actually asserts (a status transition or a render counter) rather than lengthening
-the window.
+Excluded by name from the convergence property in `test/fuzz.test.ts` via
+`NON_CONVERGENT_FIX_CODES`, with a companion test proving the cycle still reproduces so the
+exclusion goes red the day it is fixed. With it excluded, 400/400 generated plans converge in ≤2
+passes.
 
-- **Gate:** the spec passes 20 consecutive full-suite runs (`--repeat-each`), and the fix does not
-  simply raise a timeout.
+- **Design call inside it:** the producer should evaluate its own predicate on the *swapped*
+  geometry and offer nothing when the swap does not help — but "offer nothing" versus "offer an
+  offset change instead" is a decision, not a mechanical fix.
+
+### 3.11 · `repair(repair(s)) !== repair(s)` — `todo`
+
+Over 400 generated plans: 138 already at a fixpoint, 194 need one more call, and **47 never reach
+one** — a fixture ping-pongs between two positions with period 2. So which arrangement you ship
+depends on how many times you happened to run `arch repair`.
+
+`repair`'s header documents a *bounded* internal fixpoint that "keeps the pass's own advice" when it
+runs out, so a second call continuing is arguable — but a stable 2-cycle across calls is not.
+Deliberately **not** asserted either way: pinning `.not.toBe` would cement the defect.
+
+### 3.12 · `flush` and `grid` fight — `todo`
+
+A fixture placed `flush` against a 100 mm partition lands on a `…50` coordinate; `grid 100` then
+snaps it back **into** the wall and raises `W_FURNITURE_WALL_COLLISION` on a plan that is correct.
+`flush` exists precisely so nobody has to write the half-thickness, and the grid undoes it.
+
+`examples/bungalow.arch` works around it with `grid 50` and says why. The real fix is either a
+snap-aware `flush` or a diagnostic that names the grid as the cause rather than blaming the
+fixture.
+
+### 3.13 · `SKILL.md` never mentions `site` or the door kinds — `todo`
+
+The agent Skill — the loop a cold-start model follows — documents neither the v1.25 orientation
+layer nor the four non-default door kinds. `examples/bungalow.arch` now demonstrates both, but
+there is nowhere in `SKILL.md` to reference it from.
+
+Note the constraint before starting: `SKILL.md` feeds `gen:llms`, and `spec.llm.md` sits at
+**24,940 of 25,000 characters** — 60 to spare. Any addition needs its budget worked out first.
 
 ---
 
