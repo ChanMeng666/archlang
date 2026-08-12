@@ -31,5 +31,12 @@ extension point a fixed generated grammar could not offer as cleanly.
 **Cons.** We hand-maintain the parser rather than a declarative grammar, and the
 editor grammars are generated from a separate token table (kept honest by the
 drift test) rather than sharing the parser's own grammar. For a language this size
-(~7 element kinds + a small expression grammar) the maintenance cost is low and
-the control is worth it.
+(a handful of element kinds + a small expression grammar) the maintenance cost is low
+and the control is worth it.
+
+> *Amended 2026-08-13.* This read "~7 element kinds", the count at the time of the decision;
+> `BUILTIN_DEFS` (`src/elements/defs.ts`) now registers 11. The exact number is deliberately not
+> restated here — it is a registry that grows, and the argument turns on the order of magnitude,
+> not the figure. If anything the growth is evidence **for** the decision: each of those kinds
+> arrived as one `ElementDef` module through the registry, which is the extension point the Pros
+> above claim a fixed generated grammar could not offer as cleanly.

@@ -1,6 +1,7 @@
 # P2-1 door vocabulary — **buildable as designed, and the shape is smaller than it looks**: four kinds cost one enum table, one `doorSwing` early return, four `render()` branches and zero backend code
 
-**Date:** 2026-08-06 · **Status:** DESIGN PROPOSAL — nothing implemented, nothing approved ·
+**Date:** 2026-08-06 · **Status:** **SHIPPED in v1.25.0** (`e38b1da`, 2026-08-11) — written as a
+design proposal, decided in §13b on 2026-08-07 ·
 **Brief:** [`2026-08-06-competitor-borrowing-roadmap.md`](./2026-08-06-competitor-borrowing-roadmap.md)
 §5 (the P2-1 row and the "conventions worth having written down" block) ·
 **Scope:** `src/elements/door.ts`, `src/geometry.ts`, `src/grammar/tokens.ts`, `src/lint/`,
@@ -8,6 +9,41 @@
 **Sources read at head:** `D:\github_repository\arch-plotter` (MIT) and
 `D:\github_repository\planscript-rust` (MIT). CeTZ was **not opened for this item** — it is
 LGPL-3.0-or-later and contributes nothing here.
+
+> **Status update, 2026-08-13 — this shipped, and in three places the shipped answer is not the
+> one proposed below.** All five owner questions were answered on 2026-08-07 (**§13b**, A–E) and
+> all four kinds landed in v1.25.0. Where §13b overruled the body, **§13b is what exists.** The
+> body is preserved as the 2026-08-06 proposal; the four corrections below carry a dated marker at
+> the point of use as well.
+>
+> - **§1's "the hint already advertises a sliding door" is no longer a live observation, and both
+>   its spans are dead.** The `W_SWING_OBSTRUCTED` remedy *"…or use a sliding door"* was **deleted**
+>   by P1-5 before this feature was built, precisely because it named a door the language could not
+>   write; `src/lint/rules/doors.ts:40` and `src/error-catalog.ts:658` no longer hold it, and the
+>   deletion plus its reasoning are recorded at `src/lint/rules/doors.ts:88`. v1.25.0 then put a
+>   remedy back in that hint set — but rewritten to name the *property* that resolves this warning
+>   ("a `sliding`, `pocket` or `barn` door sweeps nothing") and to hand over a pasteable statement.
+>   The argument survives; the quotation does not.
+> - **`pocketRunRatio: 1.05` was overruled (§13b, D) and no such ruleset key exists.** The shipped
+>   threshold is the two-term form this document flagged as "the honest architectural answer":
+>   `width + max(50 mm, width × 5%)` — `pocketRunClearanceMm: 50` in the ruleset
+>   (`src/lint/ruleset.ts:76`, `:90`) against `POCKET_RUN_RATIO = 0.05`
+>   (`src/lint/rules/doors.ts:203`, applied at `:177`). A pure ratio is wrong on narrow doors, and
+>   reference-comparability lost to architectural correctness.
+> - **The "move the door" machine fix never shipped.** `pocketRunFix`
+>   (`src/fix-producers.ts:330`) emits the **reverse-slide rewrite only**, and only after computing
+>   the reverse run and confirming it satisfies (`src/lint/rules/doors.ts:183`, `:195`). Moving the
+>   door, lengthening the wall and narrowing it are all hints, never fixes — the narrowing refusal
+>   for the laundering reason this document gives, the other two because they were simply not
+>   built.
+> - **`doorSwing` is `src/geometry.ts:132`,** not `:118-136`. It does return `null` for every
+>   non-hinged kind, exactly as proposed, and the four `null`-safe callers were the reason the
+>   change stayed small.
+>
+> Everything else the body proposes — the leading bare kind word, reusing `swing in|out` rather
+> than a new `face` keyword, `describe().doors[].kind` appearing only when it is not `hinged`, no
+> new flagship example, `open` as a permanently drawing-only fact, and `slide`'s flip under a
+> mirrored `place` being the identity — shipped as written.
 
 Everything below marked **Proposal** is a design choice this document is asking the owner to
 approve or reject; everything marked **Verified** is a fact about the tree at this commit, cited
@@ -33,10 +69,20 @@ A sliding door has no swing arc. **Proposal: `doorSwing` returns `null` for ever
 — a two-line early return — and all four call sites do the right thing with no edit. The lint rule
 stops flagging it (correct: a bypass leaf sweeps nothing), the renderer stops emitting the leaf
 line and arc (correct), `repair()` has one fewer obstacle (correct). The behaviour is not merely
-tolerable, it is the behaviour the existing hint already advertises: *"Move the door or the
+tolerable, it is the behaviour the existing hint already advertises: ~~*"Move the door or the
 obstruction, flip its `hinge`/`swing`, or use a sliding door"* (`src/lint/rules/doors.ts:40`,
 repeated in the catalog at `src/error-catalog.ts:658`). Today that hint names a door the language
-cannot express. This item makes the hint honest.
+cannot express. This item makes the hint honest.~~
+
+> *Corrected 2026-08-13.* Neither span holds that clause any more, and neither did by the time this
+> shipped: **P1-5 deleted "or use a sliding door" from the hint set** for the reason stated here —
+> it named a door the language could not write — and the deletion and its reasoning are recorded at
+> `src/lint/rules/doors.ts:88`. So the hint was made honest by *removal* first. v1.25.0 then put a
+> remedy back, rewritten to name the property that actually resolves the warning rather than a door
+> kind: *"Or hang no swinging leaf at all — a `sliding`, `pocket` or `barn` door sweeps nothing, so
+> this warning cannot apply to it (`door pocket on <wall> at <pos> width <mm>`)"* — a pasteable
+> statement, not a suggestion. The structural argument below (one `doorSwing`, four `null`-safe
+> callers) is unaffected and was correct; `doorSwing` now lives at `src/geometry.ts:132`.
 
 ## 2. Grammar proposal
 
@@ -299,7 +345,7 @@ not need it: our slide direction is defined along traversal (§6), not against a
 
 | Decision | Proposal |
 | --- | --- |
-| Threshold | `pocketRunRatio: 1.05` in `LintRuleset` (`src/lint/ruleset.ts:13-62`) and `DEFAULT_RULESET` (`:63-74`), matching the reference exactly so the number is citable |
+| Threshold | ~~`pocketRunRatio: 1.05` in `LintRuleset` (`src/lint/ruleset.ts:13-62`) and `DEFAULT_RULESET` (`:63-74`), matching the reference exactly so the number is citable~~ **Overruled (§13b, D) — no such key exists.** The shipped key is `pocketRunClearanceMm: 50` (`src/lint/ruleset.ts:76`, `:90`) and the threshold is the two-term form proposed just below: `width + max(50 mm, width × 5%)` |
 | Rule module | a new `pocketRun` in `src/lint/rules/doors.ts`, exported beside `swingObstructed`/`doorwayBlocked`/`doorClearance` |
 | Rule order | **appended LAST** in `LINT_RULES` (`src/lint/rules/index.ts:26-55`) — the file's own header says "ORDER IS CONTRACT", and every rule since `pathTooNarrow` carries the same append-last comment. No existing plan's diagnostic order moves. |
 | Catalog | `W_POCKET_RUN` in `src/error-catalog.ts` in the shipped 5-field `W(...)` shape (code, one-line summary, explanation, remedy, ` arch static ` example) — see `W_SWING_OBSTRUCTED` at `:654-660` for the exact form |
@@ -309,6 +355,13 @@ not need it: our slide direction is defined along traversal (§6), not against a
 `width + max(pocketRunClearanceMm, width × 0.05)` with `pocketRunClearanceMm: 50`. This document
 proposes the plain ratio for reference-comparability and flags the two-term form as the honest
 architectural answer.
+
+> *Answered 2026-08-07 (§13b, D) and shipped.* **The two-term form won** — reference-comparability
+> lost to architectural correctness, and the reason is recorded in the catalog entry itself
+> (`src/error-catalog.ts`, `W_POCKET_RUN`). `pocketRunClearanceMm: 50` is the ruleset key
+> (`src/lint/ruleset.ts:76`, `:90`); the ratio limb is the module-local
+> `POCKET_RUN_RATIO = 0.05` (`src/lint/rules/doors.ts:203`), applied at `:177`. **There is no
+> `pocketRunRatio` key anywhere in the tree.**
 
 ### 7.3 The message, and the machine fix
 
@@ -322,7 +375,7 @@ this.** Not all four are legitimate:
 | Remedy | Ship as | Reasoning |
 | --- | --- | --- |
 | **Reverse the slide** | `machine-applicable` fix, ranked first | A single-token rewrite `slide left` ↔ `slide right`. Emitted **only after computing the reverse run and confirming it satisfies** — never as a guess. |
-| **Move the door** | `machine-applicable`, **attached form only** (`on <wall> at <pos>`) | Rewrites `<pos>` to the nearest position where the run fits. Position is a drawing decision, not a stated requirement. On the `at (x,y)` form, decline — that is `repair()`'s territory (ADR 0006). |
+| **Move the door** | ~~`machine-applicable`, **attached form only** (`on <wall> at <pos>`)~~ **hint only — never shipped as a fix** | Rewrites `<pos>` to the nearest position where the run fits. Position is a drawing decision, not a stated requirement. On the `at (x,y)` form, decline — that is `repair()`'s territory (ADR 0006). *(Corrected 2026-08-13: `pocketRunFix` (`src/fix-producers.ts:330`) emits the reverse-slide rewrite and nothing else, so "move the door" ships as the second hint at `src/lint/rules/doors.ts:191`. It was not refused on principle the way narrowing was — it was simply not built.)* |
 | **Narrow it** | **hint only, not a fix** | It rewrites the author's stated requirement to satisfy the checker. That is precisely the laundering pattern P0-3 documents from ifc-lite's own red-team (a sill silently rewritten 2.0 → 1.55 and scored a success). It would also cross `minDoorWidthMm` and trip `W_DOOR_CLEARANCE`. **Proposal: never emit it as an applicable fix, not even under `--unsafe`.** |
 | **Lengthen the wall** | hint only | Edits a *different statement* than the one diagnosed. |
 
@@ -497,7 +550,9 @@ Each of these should **stop the item**, not be worked around.
    with no standard behind it. If a fixture sweep over the flagship examples plus adversarial
    cases shows it firing on plans a drafter would accept, the rule is wrong and stage 2 stops until
    the threshold is re-derived — the same discipline that set `maxDetourRatio: 3.0` deliberately
-   generous (`src/lint/ruleset.ts:54-59`).
+   generous (`src/lint/ruleset.ts:54-59`). *(Resolved 2026-08-07 before it could fire: §13b, D
+   rejected the ×1.05 ratio outright — the shipped threshold is `width + max(50 mm, width × 5%)`,
+   and all fourteen shipped examples are byte-identical under `lint()`.)*
 6. **`slide` turns out to need a flip after all.** §6 argues the flip is the identity. If the
    mirrored-component fixture disagrees, the reasoning behind `hinge`'s exemption
    (`src/frame.ts:287-288`) is also wrong and a *shipped* rule is broken — a much larger finding
@@ -512,10 +567,13 @@ Each of these should **stop the item**, not be worked around.
 
 Three arguments for:
 
-- **It closes a hole the tree already admits.** `W_SWING_OBSTRUCTED`'s remedy has told authors to
+- **It closes a hole the tree already admits.** ~~`W_SWING_OBSTRUCTED`'s remedy has told authors to
   "use a sliding door" since it shipped (`src/lint/rules/doors.ts:40`,
-  `src/error-catalog.ts:658`), for a door the language cannot write. Every other remedy in the
-  catalog names something expressible.
+  `src/error-catalog.ts:658`), for a door the language cannot write.~~ Every other remedy in the
+  catalog names something expressible. *(Corrected 2026-08-13: both spans are dead — P1-5 had
+  already deleted that clause, for exactly the reason given, and recorded the deletion at
+  `src/lint/rules/doors.ts:88`. The hole was real; by the time this shipped it had been closed
+  from the other end, and v1.25.0 restored a remedy in the expressible form.)*
 - **The cost is genuinely small and the blast radius is genuinely bounded.** One enum table, one
   early return, four render branches, zero backends, zero `analyze/`, zero circulation, zero
   intent. The verification above found no hidden coupling — the swing arc was the coupling, and it

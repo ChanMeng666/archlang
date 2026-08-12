@@ -25,11 +25,12 @@ codebases:** PlanScript TS (MIT, `D:\github_repository\planscript`) and PlanScri
 > spending the word "sun", it is not merely upheld — there is no longer a claim to weigh against it.
 >
 > **Read every `file:line` here as of 2026-08-06, not of today** — this update reconciled the naming
-> only. In particular §2's and §9's rows describe `windowFacing` as living in `src/describe.ts` and
-> classifying against the **host room's own rect**; v1.25.0 moved it to `src/site.ts` as
-> `windowFacingPage` **and replaced that algorithm** with the outward-face probe (the courtyard fix,
-> `3f8c82c`), so those two rows describe a superseded implementation. `northQuarterTurns`,
-> `toCompass` and `compassLetter` are likewise in `src/site.ts`, not `src/describe.ts`.
+> only. `windowFacing` is now `windowFacingPage` in `src/site.ts` (`a305c82`), and its rule for a
+> window with no rectangular host room was **replaced** by the outward-face probe (the courtyard
+> fix, `3f8c82c`); §2's and §9's rows have been rewritten accordingly, on 2026-08-13, and each says
+> what it used to claim. `toCompass` (`src/site.ts:137`) and `compassLetter` (`:42`) moved with it;
+> `northQuarterTurns` did **not** — it stayed at `src/describe.ts:548`, its historical home, and is
+> passed into `src/site.ts` as `turns`.
 
 Everything below marked **PROPOSED** was, on 2026-08-06, a design choice offered for approval rather
 than an established fact; §10b records which of them the owner took and which were overruled. Facts
@@ -98,9 +99,9 @@ three already contain the hard part. Verified in the tree:
 | Already shipped | Where | What it means for P2-3 |
 | --- | --- | --- |
 | `north up\|down\|left\|right\|<deg>` as a plan-level setting | type `src/ast.ts:24-25`, field `src/ast.ts:778`, dispatch `src/parser.ts:249-252`, parse `src/parser.ts:561-572`, IR `src/ir.ts:346` + `:1411`, Scene `src/scene.ts:262` + `src/scene-build.ts:844`, formatter `src/format.ts:370-385` | The page→compass anchor is **already authored and already plumbed end to end.** `site` never touches it |
-| page facing of every window | `windowFacing`, `src/describe.ts:564-583` | Classifies against the **host room's own rect** (`:571-576`), falling through to the host wall segment for a polygon room (`:798-800`) |
-| declared north → clockwise quarter-turns | `northQuarterTurns`, `src/describe.ts:512-532` | `{deg}` snaps to the nearest cardinal, exact 45° ties clockwise; no trig, one `Math.floor` |
-| page facing → **true compass** facing | `toCompass`, `src/describe.ts:543-546`; assembled `:791-809` | `describe().windows[].facing` is **already a compass letter**. `facingPage` is emitted only when `northTurns !== 0` (`:807`), so a plan with no `north` is byte-identical |
+| page facing of every window | `windowFacing`, `src/describe.ts:564-583` — **since v1.25.0: `windowFacingPage`, `src/site.ts:164`** | *As of 2026-08-06:* classifies against the **host room's own rect** (`:571-576`), falling through to the host wall segment for a polygon room (`:798-800`). **The second half of that is no longer true** — see the rewritten row below the table |
+| declared north → clockwise quarter-turns | `northQuarterTurns`, `src/describe.ts:512-532` (still there, now `:548`) | `{deg}` snaps to the nearest cardinal, exact 45° ties clockwise; no trig, one `Math.floor` |
+| page facing → **true compass** facing | `toCompass`, `src/describe.ts:543-546` — **since v1.25.0 `src/site.ts:137`**; assembled `:791-809` | `describe().windows[].facing` is **already a compass letter**. `facingPage` is emitted only when `northTurns !== 0` (`:807`), so a plan with no `north` is byte-identical |
 | a gating window predicate that already understands `facing` | `Predicate` `room-windows` `src/intent.ts:87`, checker `src/intent.ts:374-391`, schema enum `src/intent.ts:773-778` | An intent can **already** assert `windows: { facing: "S" }`. P2-3 does not invent orientation assertions; it adds *symbolic targets* to one that exists |
 | lint reaching `north` with no interface change | `LintContext.ir` `src/lint/context.ts:36`, `ir.north` `src/ir.ts:346` | An orientation rule needs **zero** context plumbing |
 
@@ -109,6 +110,39 @@ planscript-rust's `wall_direction` classifying against the room's own bbox
 (`planscript-rust/src/validation.rs:681-703`) so interior rooms classify correctly — **is already
 implemented here**, and has been since before the fix (`src/describe.ts:571-576` uses the host
 room's rect, not the plan envelope). See §9 for that and the other roadmap corrections.
+
+> **Rewritten 2026-08-13 — what the page-facing rule actually is now, and what this row used to
+> claim.** The function is `windowFacingPage` (`src/site.ts:164`), moved out of `describe.ts` by
+> `a305c82`. It has three branches, and only the first is the rule described above:
+>
+> 1. **A rectangular host room** — unchanged, and still the common case: facing is the room edge
+>    the window point is nearest, ties resolving horizontal-first (`N`/`S`, then `N`/`W`).
+> 2. **No host room, or a `polygon`/`circle` host room** — **replaced.** It used to take the axis
+>    from the host wall segment and the *side* from `planCenter`, the bbox midpoint of the union of
+>    room rectangles. That is the bug: on a **courtyard** building the midpoint sits in the
+>    courtyard, i.e. **outside** the building, so every window on a courtyard wall was reported
+>    facing backwards — silently, in a published `describe()` fact, the one an intent
+>    `windows.facing` assertion is checked against. The rule now **probes the window's own wall**:
+>    sample one wall thickness off each face of the host segment and take the side no room occupies
+>    (`pointInRoomBox`, poly-aware). One wall thickness clears the solid, so a probe that lands on
+>    floor is genuinely inside a room and outward is the empty side. It is exact at any wall angle —
+>    the probe walks the segment's own tangent, so an `arc` wall is probed along its true normal
+>    rather than its chord's — and correct for a courtyard **by construction**. On a straight
+>    segment it reproduces the old axis test exactly, ties included, which is why no golden moved.
+> 3. **Tie-break, when the probe cannot decide** — rooms on **both** sides (an interior window,
+>    whose compass facing is not a meaningful fact anyway) or on **neither** (a free-standing wall):
+>    fall back to the historical `planCenter` rule, byte-identically. `WindowSummary.facing` is a
+>    required field and cannot be dropped without a breaking type change. **This is the only thing
+>    `planCenter` is still for.**
+>
+> The fix is `3f8c82c` (2026-08-07), shipped in v1.25.0, reproduced as a failing test on two
+> courtyards built so the bbox answer and the true answer are opposite before `src/` was touched
+> (`test/window-facing-probe.test.ts`). It is one of the six instances of the standing
+> **derived-position-from-a-bounding-box** defect class; `arch lint` reported none of them.
+>
+> **This does not change §2's conclusion, and it strengthens it.** The composition argument holds:
+> the page→compass machinery was already there, `site` still adds only names, and the cost of the
+> P2-3 row is still the grammar and the doc surface rather than the semantics.
 
 So P2-3 is **not** "teach ArchLang about compass directions". It is: *give three or four of those
 directions a brief-level name, and let an assertion and a lint rule use the name.* That is a much
@@ -420,11 +454,32 @@ Found while verifying it. None changes the recommendation; two change the cost.
 
 | Roadmap claim | Finding |
 | --- | --- |
-| planscript-rust's `wall_direction` (`:681-703`) "classifying against the **room's own bbox** so interior rooms classify correctly — that detail is worth keeping" | **True, and we already have it.** `windowFacing` classifies against the host room's own rect (`src/describe.ts:571-576`) and falls through to the host wall segment for a polygon room (`:798-800`), which is *more* correct than theirs. Also: the detail is not rust-specific — the TS original is the same function (`planscript/src/validation/index.ts:469-497`), transliterated. **Nothing to port; the cost of this line item is zero** |
+| planscript-rust's `wall_direction` (`:681-703`) "classifying against the **room's own bbox** so interior rooms classify correctly — that detail is worth keeping" | ~~**True, and we already have it.** `windowFacing` classifies against the host room's own rect (`src/describe.ts:571-576`) and falls through to the host wall segment for a polygon room (`:798-800`), which is *more* correct than theirs.~~ **Half true, and the half that was wrong is the half that mattered — see the rewrite below the table.** Also: the detail is not rust-specific — the TS original is the same function (`planscript/src/validation/index.ts:469-497`), transliterated. **Nothing to port; the cost of this line item is still zero** |
 | "PlanScript's model is **y-up** (`DESIGN.md:4`)" | True but mis-cited: the declaration is `axis x:right y:up` at **`DESIGN.md:76`** (§4 of that document, which is presumably what `:4` meant). The inversion warning stands and is real — their `wall_direction` maps `max_y → North` (`validation.rs:687-688`), which under our y-down convention is the **top** of the page. **In practice it costs nothing here**, because this design never ports their geometry: our page→compass conversion is `toCompass` (`src/describe.ts:543-546`) and it is already correct for y-down |
 | "their compass is always screen-up … they never solved true north" | **Confirmed, in both.** `generateCompassSVG` draws a fixed up-arrow with the comment *"pointing up in SVG = north in plan"* (`planscript/src/exporters/svg.ts:1143`, `:1163-1164`); the rust twin is `exporters.rs:3023`. So `site` there is a *semantic* layer over an unrotatable page. Ours composes with a real `north`, which is why §2's composition rule is not optional |
 | "orientation assertions + lint" as a single unit of work | The **assertion** half is an enum widening on an existing gating predicate, not a new predicate kind (§4.3) — materially cheaper than the row implies. The **lint** half is one rule with no threshold and no fix. The real cost of P2-3 is the grammar + generator + doc surface (§6, §7), not the semantics |
 | Not in the roadmap, and it is the main risk | The **`north` keyword-category collision** (§3.4) — the first word that would sit in two `KEYWORDS` categories. Not a parser problem, but it needs an owner decision before implementation, not during |
+
+> **Rewritten 2026-08-13 — the first row's "we already have it … more correct than theirs" was an
+> over-claim, and it is worth recording exactly which part.** It was checking the *rectangular*
+> branch, where it was right: a window in a rectangular room really did classify against that
+> room's own rect, not the plan envelope, and that really is what the roadmap wanted ported.
+>
+> But the row then read the fall-through — the branch for a hostless window or a `polygon`/`circle`
+> host room — as merely "falls through to the host wall segment", and it did not. It took the
+> **axis** from the segment and the **side** from `planCenter`, the bbox midpoint of the union of
+> room rectangles. On a courtyard plan that midpoint lies outside the building, so those windows
+> were reported facing **backwards**. The praised implementation therefore contained an instance of
+> the very defect class the same session was sweeping for, in the one branch the roadmap's own
+> "interior rooms classify correctly" argument was about.
+>
+> That implementation no longer exists. `windowFacingPage` (`src/site.ts:164`) replaced the
+> fall-through with the outward-face probe (`3f8c82c`, v1.25.0) — see the §2 rewrite for the three
+> branches in full. The row's *conclusion* survives intact: there is still nothing to port from
+> planscript-rust, and the cost of this line item is still zero. What does not survive is the
+> comparative — "more correct than theirs" was true of one branch and false of the other, and the
+> honest version is that ArchLang is more correct than theirs **now**, because of a fix that
+> post-dates this document by a day.
 
 ## 10. What would sink this
 

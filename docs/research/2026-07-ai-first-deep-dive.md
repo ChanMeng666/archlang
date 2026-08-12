@@ -3,6 +3,39 @@
 **Date:** 2026-07-11 · **Status:** research only, no code changed · **Companion:**
 [`2026-07-roadmap-proposal.md`](./2026-07-roadmap-proposal.md) (the executable plan derived from this report)
 
+> **Status update, 2026-08-13 — this report is written entirely in the present tense, and three
+> classes of its "as things currently stand" statements were overtaken by the v1.14 work it
+> proposed.** The analysis is preserved as the 2026-07-11 document it is; the corrections below
+> apply wherever the body says otherwise, and the two most misleading spots also carry a dated
+> marker at the point of use.
+>
+> - **The two live harness bugs §2 reports are FIXED** — by T1, the very tranche this report
+>   proposed. The Anthropic path is `max_tokens: 16384` (`eval/run.ts:336`) and pins
+>   `temperature: 0` (`:339`); the OpenAI path carries the same cap (`:381`) plus
+>   `seed: OPENAI_SEED` (`:384`, the constant at `:367`). **"No number the harness produces is
+>   currently reproducible" has not been true since 2026-07-11** — do not read §2 or §3's Track C
+>   as a live defect report.
+> - **Every `intent` and `sound` rate in this document is a JUDGE-V1 rate, and the one thing you
+>   must not do with it is compare it to a judge-v2 rate.** That comparison is barred by name:
+>   *never compare eval rates across a `JUDGE_VERSION` / `SYNONYMS_VERSION` change — it measures
+>   the ruler, not the model* (AGENTS.md § "Standing decisions & iron laws"; mechanics in
+>   `eval/README.md`). So the "intent 9%, sound 9%" of §1 and §2 is **not** the measured state of
+>   ArchLang; it is what judge v1 reported about a 22-brief corpus on 2026-07-11. What the current
+>   ruler reports, stated here as a separate fact and **not** as a delta against it: judge v2 on
+>   the 26-brief corpus gives **L0 intent 14/26 (54%)** and **L1 intent 18/26 (69%)**
+>   (`eval/live-baseline.json`). The subtraction is meaningless in both directions, and this
+>   document's own H2 is why — it predicted that most of the gap was the ruler's.
+> - **The corpus was 22 briefs and is now 26**, so read every "22" here (`:197`, `:207`, `:243`,
+>   and the refuter's `N=22` at `:312`) as the corpus size on 2026-07-11, not as a current count.
+>   The contamination iron law at `:207` still binds, unchanged, over all 26.
+>
+> Nothing above weakens a verdict. H2's artifact thesis was **confirmed** by the calibrated
+> re-measurement, and the H1–H5 decisions this report reached are still the live ones — with the
+> single exception that **T3's live loop-vs-resampling run is now PERMANENTLY DECLINED** (owner,
+> 2026-07-12), so the "decisive experiment of the release" in H3's verdict is an experiment that
+> will never be run and whose question stays permanently unanswered. Never claim a net model-loop
+> gain **or its absence** on the strength of §4's H3.
+
 > **Method.** Five parallel research tracks (academic sweep, open-source benchmarking against
 > live AI-first languages, closed-loop eval methodology, intent formalization, training-data
 > opportunity), followed by an adversarial design debate: five hypotheses, each argued by an
@@ -18,7 +51,9 @@
 
 This round was driven by one measured fact: on the live eval harness
 (`gpt-5.5-2026-04-23`, one-shot, cold-start), ArchLang scores **valid 95% but intent 9% and
-sound 9%** (v1.13, 22 briefs; pre-v1.13: 94% / 6% / 17% on 18 briefs). The research question was
+sound 9%** (v1.13, 22 briefs; pre-v1.13: 94% / 6% / 17% on 18 briefs). *(Read as of 2026-07-11:
+these are **judge-v1** rates on a 22-brief corpus, and the iron law bars comparing them with any
+judge-v2 rate — see the status update above.)* The research question was
 how to raise intent within the determinism red lines (ADR 0005/0011). The answer, after
 adversarial verification, restructures the problem:
 
@@ -60,7 +95,9 @@ gate everything else on what the fixed ruler shows.
 - Live A/B, same harness, `gpt-5.5-2026-04-23`, one-shot: pre-v1.13 **valid 17/18 (94%),
   intent 1/18 (6%), sound 3/18 (17%)**; v1.13 **valid 21/22 (95%), intent 2/22 (9%),
   sound 2/22 (9%)** on a harder 22-brief corpus (`eval/live-baseline.json`,
-  `eval/results.live.md`).
+  `eval/results.live.md`). *(All four rates are **judge v1**; `eval/live-baseline.json` now holds
+  the judge-v2, 26-brief calibrated baseline instead. The two are not comparable — see the status
+  update above.)*
 - Judge structure (`eval/run.ts:77-116`): `semanticPass` = valid ∧ zero physical warnings ∧
   exact room count ∧ every label substring-matched ∧ total floor area inside a hard band —
   a one-vote-kills conjunction.
@@ -68,9 +105,12 @@ gate everything else on what the fixed ruler shows.
   ×13, label miss ×10, physical violation ×7, room count ×3, compile failure ×1** (failures
   overlap; a brief can carry several).
 - Known harness lessons: reasoning models spend thinking tokens from `max_completion_tokens`
-  (the 4096 cap produced a bogus baseline; OpenAI path fixed to 16384). **Two live harness bugs
+  (the 4096 cap produced a bogus baseline; OpenAI path fixed to 16384). ~~**Two live harness bugs
   found this round:** the Anthropic path still has `max_tokens: 2048` (`eval/run.ts:183`), and
-  no temperature/seed is pinned, so no number the harness produces is currently reproducible.
+  no temperature/seed is pinned, so no number the harness produces is currently reproducible.~~
+  *(Corrected 2026-08-13: both were fixed by T1 on 2026-07-11. `eval/run.ts:336` is
+  `max_tokens: 16384`, `:339` pins `temperature: 0`, and the OpenAI path carries the cap at
+  `:381` plus `seed: OPENAI_SEED` at `:384`. The finding was real; it is no longer live.)*
 - Red lines all conclusions respect: `compile()` pure/synchronous/deterministic, zero runtime
   dependencies, errors returned not thrown, ADR 0005 (facts + advisory lint, the core never
   chooses among valid alternatives), ADR 0011 (fix = textual span edits / repair = geometric

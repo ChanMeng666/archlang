@@ -11,7 +11,10 @@
 The round-2 research (`docs/research/2026-07-roadmap-proposal.md`, deep-dive H4) asked whether
 ArchLang should invest in fine-tuning or RLVR to lift what was then believed to be a single-digit
 one-shot **intent** number (later shown to be mostly a judge-v1 measurement artifact — the
-calibrated judge-v2 rate is 54%; see `AGENTS.md`'s honest-eval read).
+calibrated judge-v2 rate is 54%; the honest-eval read that recorded this has since been archived
+out of `AGENTS.md` to `docs/archive/agents-status-history-2026-07.md`, and the live number is
+`eval/live-baseline.json`. The two rates are **not comparable** — the judge changed between them;
+see AGENTS.md § "Standing decisions & iron laws").
 The verdict was **no training now**: a deployment mismatch (the shipped value is a zero-dependency
 compiler and its deterministic tools, not a hosted model) plus real cost, against evidence that is
 subject-mismatched (SFT corpora lift *validity*; RLVR targets *intent/geometry/topology* — neither

@@ -853,7 +853,7 @@ attribution work on a 48-sided inscribed ring, exactly the machinery polygon roo
 That is a deliberate split, described in [Analysis](analysis.md#curves-what-is-exact-and-what-is-chordal-v1-24).
 
 **Annulus is not a form.** A ring-shaped gallery around a tank is two rooms and two walls,
-not one room with a hole; there is no doughnut syntax and none is planned for v1.24.
+not one room with a hole; there is no doughnut syntax and none is planned.
 
 ### Dimensioning a curve (v1.24)
 

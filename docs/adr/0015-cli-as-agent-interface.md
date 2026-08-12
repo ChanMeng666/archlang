@@ -84,8 +84,15 @@ and `--backup` saves the original bytes to `<file>.bak`. `--backup` is **opt-in*
 leaves no `.bak` litter: the same rule as [ADR 0007](0007-opt-in-source-annotation.md) —
 *new behavior is opt-in; the default artifact is unchanged*. And reads are sliceable: `describe
 --select/--room`, `lint --code/--severity`, and `arch context --section <spec|workflow|cli|errors>`
-(which drops the bundle from 60,187 to 13,161 bytes) so one large plan cannot blow an agent's
-context window.
+(which serves one seam of a bundle that runs to tens of kilobytes, rather than the whole thing) so
+one large plan cannot blow an agent's context window.
+
+> *Amended 2026-08-13.* This clause originally cited the saving as an exact byte pair — "drops the
+> bundle from 60,187 to 13,161 bytes". `llms-full.txt` is **generated**, and it grows with every
+> release that adds a language surface or a CLI flag: it is now past 83,000 bytes, so the pair was
+> wrong, and retyping today's numbers would only make it wrong again at the next release. The
+> figure is deliberately gone rather than refreshed. The decision never depended on a specific
+> number — only on the bundle being large enough that a slice is worth having.
 
 `--section` is a **partial cold start**, and it amends [ADR 0009](0009-ai-first-context-and-distribution.md)
 decision 1's implicit "one bundle, all or nothing": the bundle stays *the* cold-start channel and

@@ -31,8 +31,22 @@ by a fresh implementation session with no other context beyond `AGENTS.md`.
 > ~55–65% "measurement artifact" thesis (H2) held: the same model that scored 9% intent under
 > judge v1 scores 50% under judge v2. **Gate G1 and Tranche 3 (the decisive L2-loop-vs-resampling
 > experiment) remain the open next steps.** *(Since superseded — G1 passed and the T3 harness
-> landed 2026-07-12, its live run deferred; see the Status header above.)* The tranche bodies
-> below are the historical spec-as-written and are left unedited.
+> landed 2026-07-12, ~~its live run deferred~~ **its live run PERMANENTLY DECLINED by owner
+> decision**; see the Status header above, which has said so since the day it happened.)* The
+> tranche bodies below are the historical spec-as-written and are left unedited.
+
+> *Corrected 2026-08-13 — one word and two numbers.* **The word:** "deferred" reads as a pending
+> decision, and there is none. The loop-vs-equal-budget-resampling question is **permanently
+> unanswered by choice**; `eval-l2.yml` is never to be triggered, T3 is never to be re-proposed,
+> and no claim of a net model-loop gain **or of its absence** may be made anywhere on the strength
+> of this document. **The numbers:** the "intent 13/26 (50%) L0" above was the 2026-07-11
+> calibrated baseline and was superseded the next day by a re-measurement under the post-v1.15.0
+> author prompt — `eval/live-baseline.json` now records **14/26 (54%) L0** and **18/26 (69%) L1**,
+> movement within run noise at n=26 and still inside this proposal's predicted 45–60% band, so H2's
+> thesis held either way. Read that file, never a rate retyped into prose; and note that both are
+> judge-v2 rates, which the iron law forbids comparing against the judge-v1 "9%" in the same
+> sentence — the sentence above does exactly that, and is preserved only as the historical
+> statement it is.
 
 ## The one-paragraph thesis
 
@@ -166,8 +180,12 @@ n=3 × ≤3 calls ≈ 400 calls — budgeted, cached, seed-pinned.
 `src/intent-concepts.ts` + `schemas/intent.schema.json` + `arch validate --intent`/`--feedback` +
 `arch score --brief` + `describe()` window `facing`; the eval rewired onto the same implementation
 with `JUDGE_VERSION` kept at "2" via the pinned byte-equivalence fixture; G1's two design notes
-made normative in the schema's field docs). Adjacency/reachability stay advisory — their gating
-promotion remains parked on T3's still-open loop-vs-resampling question.
+made normative in the schema's field docs). Adjacency/reachability stay advisory — ~~their gating
+promotion remains parked on T3's still-open loop-vs-resampling question.~~ *(Corrected 2026-08-13:
+**permanently**, not parked. T3's live run is permanently declined, so the question it would have
+settled will never be settled, and the promotion is closed for good rather than waiting on
+anything. `gate: false` on adjacency and reachability is a standing decision — AGENTS.md
+§ "Standing decisions & iron laws".)*
 
 **Motivation:** H1 verdict (conditionally adopted); Track B/D convergence (BAML `@check` /
 DSPy reward / Nickel contract / Peña space program all point at the same artifact); H4 verdict
@@ -267,7 +285,18 @@ fixes (~20–40 LOC, egg's extraction concept without e-graphs); optional unit s
 | General bidirectional editing | Rejected (SNS evidence: ambiguity, solver dependency, ADR 0005) | Numeric-drag span-edit subset is allowed any time |
 | RLVR / fine-tuning execution | Not now (deployment mismatch, cost; H4) | (1) frontier managed fine-tuning API at acceptable cost — T5's verified pairs become ammunition; (2) post-T1 intent still single-digit; (3) L2 shows large net loop gains worth amplifying |
 | Mass synthetic corpora | Not now (distribution narrowing; wrong metric) | Only alongside an RLVR reversal |
-| L3/L4/L5 eval tiers | Not built | L2 net win + corpus ≫ 22 |
+| L3/L4/L5 eval tiers | Not built, **and now permanently so** | ~~L2 net win + corpus ≫ 22~~ **Dead trigger — it can never fire** (see the note below the table) |
+
+> *Corrected 2026-08-13 — two of these triggers are conditioned on an experiment that will never
+> run.* T3's live L2 run was **permanently declined** by the owner on 2026-07-12, so "L2 shows a
+> net win" is not a condition awaiting a measurement; it is a condition that has been withdrawn.
+> Concretely: the **L3/L4/L5** row's trigger is dead, and those tiers are closed for good rather
+> than evidence-gated — as is the intent channel's adjacency/reachability gating promotion, for
+> the same reason. The **RLVR** row's third trigger ("L2 shows large net loop gains worth
+> amplifying") is dead on the same grounds; that row's triggers **(1)** and **(2)** are untouched
+> and still live. Everything else in this table stands exactly as written. Note also that
+> trigger (2) reads "post-T1 intent still single-digit" — T1 shipped and it is not, so that trigger
+> resolved rather than expired.
 
 ## Cut order (if time compresses)
 

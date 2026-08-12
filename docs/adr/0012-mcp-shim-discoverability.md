@@ -41,6 +41,14 @@ server whose tools each wrap **one pure exported function** of `@chanmeng666/arc
 artifacts (`archlang://spec`, `archlang://context`, `archlang://schema`,
 `archlang://grammar`). It calls the **library**, never a CLI subprocess.
 
+> *Counts updated 2026-08-13 — the shape is unchanged, the shim just grew.* Nine tools ship, not
+> eight: `score` (the continuous intent-satisfaction meter) joined in 0.2.0 alongside `validate`'s
+> intent mode. Five resources ship, not four: `archlang://intent-schema` joined with it. Both still
+> obey the rule this decision states — one tool per pure exported function, resources serving
+> artifacts that already exist. The authoritative list is `packages/mcp/src/server.ts`, which a
+> resource test and `packages/mcp/scripts/check-dist-resources.mjs` hold to the repo's own copies;
+> do not re-enumerate them here, because a hand-typed list is what went stale.
+
 **3. Zero core impact — the SDK dependency is quarantined.** The
 `@modelcontextprotocol/sdk` dependency lives **only** in `packages/mcp`. The core stays
 **zero runtime dependencies** and byte-identical: the shim adds a package, not a
