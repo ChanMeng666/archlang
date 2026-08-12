@@ -25,9 +25,10 @@ import {
   DIM_REFS,
   FURNITURE_ANCHORS,
   HEMISPHERES,
+  AXIS_ALIGNS,
   NORTH_DIRS,
-  REL_ALIGNS,
   REL_DIRS,
+  REL_DIR_AXIS,
   SCHEDULE_SUBJECTS,
   STRIP_DIRS,
   USE_KINDS,
@@ -49,6 +50,12 @@ const ROOT = resolve(HERE, "..");
 /** The example files embedded verbatim, in order (attachment-first flagship leads). */
 export const SPEC_EXAMPLES = ["attached.arch", "parametric.arch"] as const;
 
+/** The relational directions that align on each cross axis, derived from
+ *  {@link REL_DIR_AXIS} so the spec's axis rule and the compiler's cannot diverge.
+ *  Rendering the pairing (rather than the flat six-word list) is what teaches an agent
+ *  that `right-of … align left` is `E_ROOM_ALIGN_AXIS` and not a placement. */
+const dirsOn = (axis: "v" | "h"): string => REL_DIRS.filter((d) => REL_DIR_AXIS[d] === axis).join("|");
+
 /**
  * One-line grammar for each built-in element, keyed by element keyword. Keys MUST
  * match `KEYWORDS.element` exactly — {@link renderLlmSpec} throws otherwise, so a
@@ -56,7 +63,7 @@ export const SPEC_EXAMPLES = ["attached.arch", "parametric.arch"] as const;
  */
 export const ELEMENT_GRAMMAR: Record<string, string> = {
   wall: `wall [id=<name>] <category> thickness <mm> [material ${KNOWN_MATERIALS.join("|")} [scale <n>] [angle <deg>]] { (x,y) (x,y) … [arc (x,y) radius <mm> [${ARC_DIRS.join("|")}] [major]] … [close] }   # category e.g. exterior/partition. NAME IT (\`id=\`) if any \`door on\`/\`window on\`/\`furniture against wall\`/\`dim radius\` will reference it. An unlisted material is W_UNKNOWN_MATERIAL + the default hatch; \`scale\`/\`angle\`: either order, each once. \`close\` makes a loop. An \`arc\` clause makes THAT edge a circular arc from the PREVIOUS vertex (default: the minor arc turning \`ccw\` AS DRAWN, bulging left of travel; \`cw\`/\`major\` pick the other circle / the long way round; R < chord/2 = E_ARC_RADIUS + a fix supplying the minimum). A closed curve is two arcs. Faces draw as TRUE arcs. Openings work: \`on <wall> at <pos>\` walks RUN length (an arc contributes R·θ, not its chord) and a door's leaf/swing take the TANGENT there; \`furniture … against wall\` on an arc = E_FURN_AGAINST (use at+rotate)`,
-  room: `room [id=<name>] at (x,y) size <W>x<H> [label "…" [at (x,y)]] [uses ${USE_KINDS.join("|")} …]   # OR relational: room [id=…] (${REL_DIRS.join("|")}) <roomId> [align ${REL_ALIGNS.join("|")}] [gap <mm>] size <W>x<H>. OR POLYGONAL: room [id=…] polygon (x,y) (x,y) (x,y) … — an implicitly-closed SIMPLE polygon (>=3 vertices) instead of at+size: exact shoelace area, label at the CENTROID (override: \`label "…" at (x,y)\`). A crossing or all-collinear ring errors (E_ROOM_POLY_SELF_INTERSECT/E_ROOM_POLY_DEGENERATE); rectangle-only clauses (relational placement, \`furniture … in <poly> anchor|centered\`) REFUSE it with E_PLACE_POLY — use \`at (x,y)\` [+ rotate]. OR CIRCULAR: room [id=…] circle at (cx,cy) radius <mm> — area is EXACT πR² (never the tessellation), reported as \`floor_circle\`; grids/overlap use a 48-gon ring`,
+  room: `room [id=<name>] at (x,y) size <W>x<H> [label "…" [at (x,y)]] [uses ${USE_KINDS.join("|")} …]   # OR relational: room [id=…] (${REL_DIRS.join("|")}) <roomId> [align <edge>] [gap <mm>] size <W>x<H> — align is CROSS-axis: ${AXIS_ALIGNS.v.join("|")} after ${dirsOn("v")}, ${AXIS_ALIGNS.h.join("|")} after ${dirsOn("h")} (middle=center, both OK); wrong axis = E_ROOM_ALIGN_AXIS +fix, non-edge = E_ROOM_ALIGN. OR POLYGONAL: room [id=…] polygon (x,y) (x,y) (x,y) … — an implicitly-closed SIMPLE polygon (>=3 vertices) instead of at+size: exact shoelace area, label at the CENTROID (override: \`label "…" at (x,y)\`). A crossing or all-collinear ring errors (E_ROOM_POLY_SELF_INTERSECT/E_ROOM_POLY_DEGENERATE); rectangle-only clauses (relational placement, \`furniture … in <poly> anchor|centered\`) REFUSE it with E_PLACE_POLY — use \`at (x,y)\` [+ rotate]. OR CIRCULAR: room [id=…] circle at (cx,cy) radius <mm> — area is EXACT πR² (never the tessellation), reported as \`floor_circle\`; grids/overlap use a 48-gon ring`,
   // The two value lists are INTERPOLATED from `DOOR_ENUMS` (+ `DOOR_HINGE_NEAR`), never
   // typed out: this line is prose inside a generator, so a retyped list would document a
   // language that no longer exists while `check:drift` stayed green. `assertDoorEnumsRendered`
@@ -426,7 +433,17 @@ export function renderLlmSpec(examples: Record<string, string>): string {
   assertVocabRendered(el("wall"), "arc direction", ARC_DIRS);
   assertVocabRendered(el("room"), "room `uses`", USE_KINDS);
   assertVocabRendered(el("room"), "relational direction", REL_DIRS);
-  assertVocabRendered(el("room"), "relational alignment", REL_ALIGNS);
+  // Asserted PER AXIS, not as the flat `REL_ALIGNS`. The flat list is what the line used
+  // to render, and rendering it was the reason the spec could not say the one thing an
+  // agent most needs about `align`: which three of the six a given direction takes. Since
+  // `REL_ALIGNS` is concatenated from `AXIS_ALIGNS`, these two calls still cover all six —
+  // they are strictly stronger, because a new edge must now be rendered on a NAMED axis.
+  assertVocabRendered(el("room"), "relational alignment (vertical cross axis)", AXIS_ALIGNS.v);
+  assertVocabRendered(el("room"), "relational alignment (horizontal cross axis)", AXIS_ALIGNS.h);
+  // …and the direction↔axis pairing itself, so the two halves cannot be rendered beside
+  // directions that do not take them.
+  assertVocabRendered(el("room"), "directions aligning on the vertical axis", [dirsOn("v")], "");
+  assertVocabRendered(el("room"), "directions aligning on the horizontal axis", [dirsOn("h")], "");
   assertVocabRendered(el("furniture"), "furniture anchor", FURNITURE_ANCHORS);
   assertVocabRendered(el("dim"), "dim endpoint reference", DIM_REFS);
   // NB: the `dims auto` mode set is asserted against `SETTING_GRAMMAR.dims` below, not

@@ -449,3 +449,37 @@ export function roomAlignFix(bad: { word: string; span: Span }, suggestion: stri
     },
   ];
 }
+
+/**
+ * The fix for `E_ROOM_ALIGN_AXIS`: replace an in-set alignment word that belongs to the
+ * OTHER axis with its counterpart on this one.
+ *
+ * Shaped exactly like {@link roomAlignFix} — the edit is the alignment word alone, so
+ * labels, `gap` and expressions on that line survive verbatim and two bad rooms fix in
+ * one pass without overlapping edits — but it is a strictly stronger claim, and takes
+ * no `null` branch.
+ *
+ * {@link roomAlignFix} guesses: `closest()` answers within an edit distance and declines
+ * outside it, because the author's misspelling could have meant more than one thing.
+ * Here nothing is guessed. The word is spelled correctly, so `closest()` is the wrong
+ * tool entirely — it would rank `left` nearest to `left`, the very word being refused.
+ * What is wrong is the AXIS, and
+ * {@link import("./ast.js").relAlignCounterpart} translates across it positionally:
+ * leading stays leading, trailing stays trailing. So the caller always has an answer,
+ * and `machine-applicable` needs no hedge.
+ *
+ * Worth knowing when reading a diff: for a LEADING mismatch (`right-of … align left`)
+ * the rewrite is output-neutral, because the silent fallback this diagnostic abolishes
+ * happened to land on the leading edge anyway. It is the TRAILING mismatches
+ * (`right-of … align right`) that were being drawn wrong.
+ */
+export function roomAlignAxisFix(span: Span, counterpart: string): FixSuggestion[] {
+  return [
+    {
+      title: `use \`align ${counterpart}\``,
+      applicability: "machine-applicable",
+      fixId: "room-align-axis",
+      edits: [{ span, newText: counterpart }],
+    },
+  ];
+}

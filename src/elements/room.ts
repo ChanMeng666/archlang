@@ -9,7 +9,14 @@
  *  layer, and that same derived bounding box. */
 
 import type { ExprPoint, Point, RelAlign, RelDir, RoomNode, UseKind } from "../ast.js";
-import { REL_ALIGNS, REL_DIRS as REL_DIR_LIST, USE_KINDS } from "../ast.js";
+import {
+  AXIS_ALIGNS,
+  REL_ALIGNS,
+  REL_DIR_AXIS,
+  REL_DIRS as REL_DIR_LIST,
+  USE_KINDS,
+  relAlignCounterpart,
+} from "../ast.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
 import type { Expr } from "../expr.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
@@ -17,7 +24,7 @@ import type { SceneNode } from "../scene.js";
 import type { RRoom } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 import { closest } from "../expr.js";
-import { fixesFrom, roomAlignFix } from "../fix-producers.js";
+import { fixesFrom, roomAlignAxisFix, roomAlignFix } from "../fix-producers.js";
 import { arcTessellate, fullCircleArc } from "../geometry/arc.js";
 import {
   effectiveVertices,
@@ -31,6 +38,15 @@ import {
 const REL_DIRS: ReadonlySet<string> = new Set<RelDir>(REL_DIR_LIST);
 const REL_ALIGN_SET: ReadonlySet<string> = new Set<RelAlign>(REL_ALIGNS);
 const USE_SET: ReadonlySet<string> = new Set<UseKind>(USE_KINDS);
+
+/** The axis sentence both `align` diagnostics end on, rendered from {@link AXIS_ALIGNS}
+ *  rather than retyped per branch — the rule and its two prose spellings have one owner,
+ *  so adding an edge or an axis cannot leave a hint quietly out of date. */
+const axisHint = (dir: RelDir): string => {
+  const axis = REL_DIR_AXIS[dir];
+  const [places, cross] = axis === "v" ? ["horizontal", "vertical"] : ["vertical", "horizontal"];
+  return `\`${dir}\` places on the ${places} axis, so the cross axis is ${cross}: \`${AXIS_ALIGNS[axis].join("|")}\`.`;
+};
 
 /**
  * Where a room's label + area text are anchored, before any obstacle-aware
@@ -236,6 +252,7 @@ export const room: ElementDef = {
       }
       const ref = ctx.eatIdent().value;
       let align: RelAlign | undefined;
+      let alignSpan: Span | undefined;
       let alignBad: { word: string; span: Span } | undefined;
       let gap: Expr | undefined;
       if (ctx.isKeyword("align")) {
@@ -247,14 +264,21 @@ export const room: ElementDef = {
         // as a parse error, because that is what buys the offending word a catalogued
         // code, a `fix`, and `file` provenance — the same shape as `E_DOOR_KIND_CLAUSE`.
         const t = ctx.eatIdent();
-        if (REL_ALIGN_SET.has(t.value)) align = t.value as RelAlign;
-        else alignBad = { word: t.value, span: { start: t.start, end: t.end } };
+        // Membership is only HALF the check. A legal word can still belong to the other
+        // axis (`right-of … align left`), which `alignOffset` also drops on the floor —
+        // so the word's span is kept even when it passes, because that second, direction-
+        // dependent judgement can only be made at resolve, and `E_ROOM_ALIGN_AXIS` needs
+        // these bytes to underline and to rewrite.
+        if (REL_ALIGN_SET.has(t.value)) {
+          align = t.value as RelAlign;
+          alignSpan = { start: t.start, end: t.end };
+        } else alignBad = { word: t.value, span: { start: t.start, end: t.end } };
       }
       if (ctx.isKeyword("gap")) {
         ctx.next();
         gap = ctx.parseExpr();
       }
-      rel = { dir: dirTok.value as RelDir, ref, align, alignBad, gap };
+      rel = { dir: dirTok.value as RelDir, ref, align, alignSpan, alignBad, gap };
     }
     ctx.eatKeyword("size");
     const size = ctx.parseDimensions();
@@ -321,11 +345,35 @@ export const room: ElementDef = {
           `${hint ? ` — did you mean "${hint}"?` : ""}`,
         code: "E_ROOM_ALIGN",
         span: rel.alignBad.span,
-        hints: [
-          `Available: ${REL_ALIGNS.join(", ")}.`,
-          `\`${rel.dir}\` places on the ${rel.dir === "right-of" || rel.dir === "left-of" ? "horizontal axis, so the cross axis is vertical: `top|middle|bottom`" : "vertical axis, so the cross axis is horizontal: `left|center|right`"}.`,
-        ],
+        hints: [`Available: ${REL_ALIGNS.join(", ")}.`, axisHint(rel.dir)],
         ...fixesFrom(roomAlignFix(rel.alignBad, hint)),
+      });
+    }
+    // The OTHER half of the same defect: a word that IS in `REL_ALIGNS` but belongs to
+    // the other axis. `1213e08` closed the typo case and left this one, and this one is
+    // the likelier of the two — the offending words are valid spellings, so nothing about
+    // the source looks wrong. `alignOffset` matches no branch for them and returns the
+    // leading edge, which is why `right-of a align left` and `right-of a align top` drew
+    // byte-identical plans with zero diagnostics.
+    //
+    // `relAlignCounterpart` both decides and answers, so the two can never disagree: it
+    // returns null for a legal word (including a centring word, legal on BOTH axes) and
+    // the positional counterpart otherwise. Unlike the typo case there is no guess and so
+    // no declining branch — the fix is always offered.
+    const counterpart = rel.align !== undefined ? relAlignCounterpart(rel.dir, rel.align) : null;
+    if (counterpart !== null && rel.alignSpan) {
+      ctx.diag({
+        severity: "error",
+        message:
+          `Room "${id}" has \`${rel.dir} … align ${rel.align}\`, but \`${rel.align}\` is an edge of the other axis` +
+          ` — did you mean "${counterpart}"?`,
+        code: "E_ROOM_ALIGN_AXIS",
+        span: rel.alignSpan,
+        hints: [
+          axisHint(rel.dir),
+          `\`${rel.align}\` was silently ignored before v1.26, drawing the room against \`${AXIS_ALIGNS[REL_DIR_AXIS[rel.dir]][0]}\`.`,
+        ],
+        ...fixesFrom(roomAlignAxisFix(rel.alignSpan, counterpart)),
       });
     }
     const gap = rel.gap !== undefined ? ctx.eval(rel.gap) : 0;

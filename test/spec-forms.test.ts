@@ -58,7 +58,7 @@ import {
   SPEC_EXAMPLES,
   STATEMENT_GRAMMAR,
 } from "../scripts/gen-llm-spec.js";
-import { AUTO_DIMS_MODES, FURNITURE_ANCHORS, REL_ALIGNS } from "../src/ast.js";
+import { AUTO_DIMS_MODES, AXIS_ALIGNS, FURNITURE_ANCHORS, REL_ALIGNS } from "../src/ast.js";
 import { KEYWORDS } from "../src/grammar/tokens.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -79,6 +79,13 @@ const plan = (body: string): string => `plan "Spec" {\n  units mm\n${body}\n}\n`
 const BOX = `  wall id=w1 exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }`;
 /** …plus the room that fills it, for `swing into` / `in <room>` clauses. */
 const ROOM = `  room id=r1 at (0,0) size 8000x5000 uses living`;
+
+/** A relational direction that actually aligns on `edge`'s own cross axis — `right-of`
+ *  for a vertical edge, `below` for a horizontal one. Derived from `AXIS_ALIGNS`, so a
+ *  seventh edge added there is paired with a direction that takes it without anyone
+ *  editing this file, and a REORDERED table cannot quietly re-pair the existing six. */
+const dirForAlign = (edge: string): string =>
+  (AXIS_ALIGNS.v as readonly string[]).includes(edge) ? "right-of" : "below";
 
 interface Snippet {
   /** The documented keyword this snippet exercises. */
@@ -151,11 +158,34 @@ const POSITIVE: Snippet[] = [
     // it — and if the parser's accept-set (`E_ROOM_ALIGN`) was not extended with it, this
     // goes red. The counterpart negative is the `E_ROOM_ALIGN` entry below: together they
     // pin the set from both sides, which is the whole reason the cast was a bug.
+    //
+    // The DIRECTION is generated too, and was not always. This snippet used to pin all six
+    // edges to `right-of`, which made two of its own rows — `align left` and `align right`
+    // on a HORIZONTAL relation — cross-axis. They passed, and could only have passed,
+    // because `alignOffset` dropped a cross-axis edge on the floor in silence: the fixture
+    // written to prove the accept-set was itself the repo's only specimen of the defect
+    // `E_ROOM_ALIGN_AXIS` closes, and it asserted the silence was fine. Pairing each edge
+    // with a direction of ITS OWN axis is what makes "accepted" mean accepted rather than
+    // ignored; the two negatives below now own the mismatches this no longer covers.
     keyword: "room",
-    note: "every alignment in REL_ALIGNS is accepted (the E_ROOM_ALIGN accept-set, positively)",
+    note: "every alignment in REL_ALIGNS is accepted, each on a direction of its own cross axis",
     src: plan(
       `  room id=a at (20000,20000) size 3000x3000\n` +
-        REL_ALIGNS.map((e, i) => `  room id=r${i} right-of a align ${e} size 1000x1000`).join("\n"),
+        REL_ALIGNS.map((e, i) => `  room id=r${i} ${dirForAlign(e)} a align ${e} size 1000x1000`).join("\n"),
+    ),
+  },
+  {
+    // The 4/4 overlap, pinned positively. `alignOffset` tests `align === "middle" ||
+    // align === "center"` before it tests anything axis-specific, so the centring edge is
+    // honoured under BOTH spellings on BOTH axes — the per-direction accept-sets are four
+    // words each, not a clean 3/3 split. That asymmetry is the one thing an axis check can
+    // most easily get wrong (refusing `right-of … align center` would break working plans
+    // that draw correctly today), so it is asserted here rather than left to inference.
+    keyword: "room",
+    note: "`middle`/`center` are the same instruction spelled twice — both legal on both axes",
+    src: plan(
+      `  room id=a at (0,0) size 3000x3000\n  room id=b right-of a align center size 1000x1000\n` +
+        `  room id=c below a align middle size 1000x1000`,
     ),
   },
   { keyword: "room", note: "circular floor", src: plan(`  room id=c circle at (5000,5000) radius 3000`) },
@@ -411,6 +441,26 @@ const NEGATIVE: Negative[] = [
     channel: "compile",
     note: "the `align` value set is closed — an out-of-set word USED to draw as `align top` in silence",
     src: plan(`  room id=a at (0,0) size 3000x3000\n  room id=b right-of a align sideways size 2000x2000`),
+  },
+  {
+    // The other half of the same defect, and the likelier half: `right` is spelled
+    // correctly and is a real edge, so membership passes and nothing about the source
+    // looks wrong — but a HORIZONTAL relation aligns on the VERTICAL axis, so it matched
+    // no branch of `alignOffset` and the room was drawn against `top`. Chosen as the
+    // TRAILING mismatch on purpose: it is the one where the silent fallback was actually
+    // drawing the wrong plan (a leading mismatch like `align left` fell through to `top`,
+    // which is what it should have meant anyway).
+    code: "E_ROOM_ALIGN_AXIS",
+    channel: "compile",
+    note: "`right` is a real edge, but of the other axis — a horizontal relation takes top|middle|bottom",
+    src: plan(`  room id=a at (0,0) size 3000x3000\n  room id=b right-of a align right size 2000x2000`),
+  },
+  {
+    // …and the mirror, so the check cannot be one direction's special case.
+    code: "E_ROOM_ALIGN_AXIS",
+    channel: "compile",
+    note: "…and symmetrically, a vertical relation refuses `bottom`",
+    src: plan(`  room id=a at (0,0) size 3000x3000\n  room id=b below a align bottom size 2000x2000`),
   },
   {
     code: "E_ACC_PLACEMENT",

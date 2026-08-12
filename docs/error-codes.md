@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**72 errors** · **42 warnings**
+**73 errors** · **42 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -64,6 +64,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_RECURSION`](#e_recursion) | error | Component recursion too deep. |
 | [`E_REDEF`](#e_redef) | error | Name already defined in this scope. |
 | [`E_ROOM_ALIGN`](#e_room_align) | error | Unknown relational alignment edge. |
+| [`E_ROOM_ALIGN_AXIS`](#e_room_align_axis) | error | Relational alignment edge belongs to the other axis. |
 | [`E_ROOM_POLY_DEGENERATE`](#e_room_poly_degenerate) | error | Polygon room has fewer than three effective vertices. |
 | [`E_ROOM_POLY_SELF_INTERSECT`](#e_room_poly_self_intersect) | error | Polygon room intersects itself. |
 | [`E_ROOM_RADIUS`](#e_room_radius) | error | Circular room needs a positive radius. |
@@ -797,6 +798,18 @@ let x = 2   # error: redefinition
 
 ```arch static
 room id=b right-of a align sideways size 3000x3000   # error: not an edge (did you mean `bottom`?)
+```
+
+## E_ROOM_ALIGN_AXIS
+
+*error* — Relational alignment edge belongs to the other axis.
+
+**Cause.** A relationally-placed room's `align <edge>` names a real edge, but not one of the axis that direction aligns on. A horizontal relation (`right-of`/`left-of`) offsets its room vertically, so it takes `top|middle|bottom`; a vertical relation (`below`/`above`) offsets horizontally, so it takes `left|center|right`. (`middle` and `center` are honoured on both — they are the same instruction spelled twice.) A cross-axis edge used to be ignored in silence, drawing the room against the leading edge exactly as if `align` had never been written — distinct from `E_ROOM_ALIGN`, where the word is not an edge at all.
+
+**Fix.** Use the edge of the correct axis; the diagnostic names its exact counterpart (leading stays leading, trailing stays trailing) and carries a fix that rewrites just that word.
+
+```arch static
+room id=b right-of a align right size 3000x3000   # error: `right` is horizontal (did you mean `bottom`?)
 ```
 
 ## E_ROOM_POLY_DEGENERATE
