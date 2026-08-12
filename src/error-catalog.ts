@@ -465,6 +465,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Rename one binding, or use `NAME = …` to reassign instead of redeclaring.",
     "let x = 1\nlet x = 2   # error: redefinition",
   ),
+  E_ROOM_ALIGN: E(
+    "E_ROOM_ALIGN",
+    "Unknown relational alignment edge.",
+    "A relationally-placed room's `align <word>` names something that is not an alignment edge. The set is closed (`top`, `middle`, `bottom` for `right-of`/`left-of`; `left`, `center`, `right` for `below`/`above`), and an unrecognised word used to fall through to the leading edge silently — drawing the plan as if `align` had never been written.",
+    "Use one of the six edges; the diagnostic suggests the nearest one and carries a fix that rewrites just that word.",
+    "room id=b right-of a align sideways size 3000x3000   # error: not an edge (did you mean `bottom`?)",
+  ),
   E_ROOM_SIZE: E(
     "E_ROOM_SIZE",
     "Room must have a positive size.",

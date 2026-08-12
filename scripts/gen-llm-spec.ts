@@ -37,6 +37,7 @@ import { BUILTIN_NAMES } from "../src/builtins.js";
 import { DOOR_ENUMS, DOOR_HINGE_NEAR, DOOR_KINDS, KEYWORDS } from "../src/grammar/tokens.js";
 import { KNOWN_MATERIALS } from "../src/hatches.js";
 import { buildManifest } from "../src/manifest.js";
+import { STYLE_KINDS, THEMES } from "../src/theme.js";
 import { AUTO_SCALE_DENOMINATORS, PAPER_ORIENTATIONS, PAPER_SIZES } from "../src/sheet.js";
 
 /** The auto-fit scale ladder as the spec prints it (`1:50 / 1:100 / …`). */
@@ -66,7 +67,7 @@ export const ELEMENT_GRAMMAR: Record<string, string> = {
   opening:
     "opening [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # a leaf-less cased opening that still connects the two spaces in the access graph; placement + `wall` clause exactly as door",
   furniture: `furniture [id=<name>] <category> (at (x,y) | against wall <id|category> [segment <n>] [offset <mm>] [side left|right] | in <roomId> centered | in <roomId> anchor <a> [flush] [inset <mm>]) [size <W>x<H>] [label "…"] [rotate 0|90|180|270] [in <roomId>]   # \`at\` size is plan W×H; \`against\` size is wall-relative along×depth and derives position+rotation, with \`side\` inferred from \`in <roomId>\` when omitted; \`rotate\` is \`at\`/\`in\`-only — an \`against\` piece takes rotation FROM the wall, so writing one is E_FURN_AGAINST (multi-segment wall ⇒ \`segment <n>\`); a known fixture (wc/basin/shower/bathtub/kitchen_sink/counter/stove/fridge…) \`against wall\` may omit \`size\` to use its catalogued footprint. \`anchor <a>\` is ${FURNITURE_ANCHORS.join("|")}; \`inset\` (default 0) pulls it in from that edge, measured from the room rectangle (a wall CENTERLINE) — add \`flush\` to measure from the backing wall's inner FACE instead, so \`anchor bottom flush\` sits on the plaster (\`flush\` needs an anchored edge: it is E_FURN_FLUSH on \`centered\`/\`anchor center\`)`,
-  dim: `dim [${DIM_REFS.join("|")}] (x,y)->(x,y) [offset <mm>] [text "…"]   # a dimension line; \`offset\` is OPTIONAL (default 300; 0 on the curve forms). Endpoint ORDER + the offset sign choose which side it lands on (the offset runs along the LEFT normal of from→to), so a reversed pair draws it INSIDE the building — \`W_DIM_INSIDE\`. \`faces\` pushes each endpoint out onto the wall it runs into (outside-to-outside); \`clear\` pulls both in to the inner faces (a clear width). Or skip hand dims entirely: \`dims auto ${AUTO_DIMS_MODES.join("|")}\` — \`all\` draws the GB/T openings + axis + overall chains outside every dimensioned facade. CURVES: \`dim radius <wallId> [segment <n>]\` (an R leader) and \`dim diameter <roomId>\` (a φ call-out) DERIVE both geometry and text from the named element and also take \`[offset <mm>] [text "…"]\`; \`dims auto\` adds one R per distinct arc + one φ per circular room; chains stay off curved facades`,
+  dim: `dim [${DIM_REFS.join("|")}] (x,y)->(x,y) [offset <mm>] [text "…"]   # a dimension line; \`offset\` is OPTIONAL (default 300; 0 on the curve forms). Endpoint ORDER + the offset sign choose which side it lands on (the offset runs along the LEFT normal of from→to), so a reversed pair draws it INSIDE the building — \`W_DIM_INSIDE\`. \`faces\` pushes each endpoint out onto the wall it runs into (outside-to-outside); \`clear\` pulls both in to the inner faces (a clear width). Or skip hand dims entirely with the plan-level \`dims auto\` setting — its \`all\` mode draws the GB/T openings + axis + overall chains outside every dimensioned facade. CURVES: \`dim radius <wallId> [segment <n>]\` (an R leader) and \`dim diameter <roomId>\` (a φ call-out) DERIVE both geometry and text from the named element and also take \`[offset <mm>] [text "…"]\`; \`dims auto\` adds one R per distinct arc + one φ per circular room; chains stay off curved facades`,
   column: "column [id=<name>] at (x,y) size <W>x<H>",
   stair: `stair [id=<name>] at (x,y) size <W>x<H> dir ${VERTICAL_DIRS.join("|")} [width <mm>]   # a flight: treads, a mid-flight break line, an UP/DN arrow. \`at\` = footprint TOP-LEFT; the flight runs along the LONG axis; \`dir up\` is entered at that axis's larger-coordinate end (arrow points N/W), \`dir down\` at the opposite end (arrow reversed). \`dir\` is declared per storey. MULTI-STOREY: the SAME id on two \`level\` blocks is ONE SHAFT — it becomes a \`describe().vertical\` connection and makes the upper storey reachable with no front door of its own (an id on one storey only = \`W_STAIR_UNMATCHED\`)`,
   elevator:
@@ -94,11 +95,116 @@ export const STATEMENT_GRAMMAR: Record<string, string> = {
 };
 
 /**
+ * Plan-level SETTINGS — the `KEYWORDS.attribute` entries that lead a STATEMENT rather
+ * than sitting as a clause of an element line. One line each, printed in the Structure
+ * block.
+ *
+ * ## Why a third table exists (the D12 hole)
+ *
+ * The two guards above check `ELEMENT_GRAMMAR` against `KEYWORDS.element` and
+ * `STATEMENT_GRAMMAR` against `KEYWORDS.control`. `dims` is neither: it is a
+ * `KEYWORDS.attribute` entry that the parser dispatches as a plan statement
+ * (`case "dims": this.parseDimsSetting(…)`), so it fell BETWEEN the two set-equality
+ * guards and neither could notice that the spec never gave it a line of its own — the
+ * same structural hole that let `strip` ship unspecced for three releases. Auditing the
+ * parser's statement switch found `accTitle`/`accDescr` in exactly the same position:
+ * both appeared in the spec only as bare words in the `**Attributes:**` bullet, with
+ * their syntax written down nowhere.
+ *
+ * The membership test is the parser's plan-statement `switch`, not a judgement call: an
+ * attribute keyword belongs here iff a `case` for it leads a statement. Everything else
+ * in `KEYWORDS.attribute` is a CLAUSE of an element line ({@link CLAUSE_ATTRIBUTES}),
+ * already documented by that element's grammar line — and {@link renderLlmSpec} asserts
+ * the two exactly PARTITION `KEYWORDS.attribute`, so a keyword that changes category, or
+ * a new one that appears at all, cannot slip between the tables again.
+ *
+ * Each entry is `<concrete form>   # <note>`, the same `\s{3,}#` convention the other two
+ * tables use (so `clauseAtoms` reads them identically). The form is CONCRETE and
+ * compilable rather than a placeholder grammar, because this block is rendered into an
+ * ```arch fence that the docs site compiles live in the reader's browser; alternations
+ * therefore live in the note, exactly as `north up   # up|down|…` already did.
+ */
+export const SETTING_GRAMMAR: Record<string, string> = {
+  units: "units mm   # required-ish settings come first",
+  grid: "grid 50   # snap grid in mm",
+  paper: `paper A3 landscape   # OPTIONAL sheet: ${PAPER_SIZES.join("|")}, ${PAPER_ORIENTATIONS.join("|")} (${PAPER_ORIENTATIONS[0]} default)`,
+  scale: "scale 1:50   # drawing scale — OPERATIVE with `paper`, annotation-only without it",
+  north: `north up   # ${NORTH_DIRS.join("|")}`,
+  dims: `dims auto all   # OPTIONAL auto-dimensioning instead of hand \`dim\` lines: ${AUTO_DIMS_MODES.join("|")}`,
+  accTitle: `accTitle "…"   # OPTIONAL a11y name → SVG <title> under \`compile --accessible\``,
+  accDescr: `accDescr "…"   # …and description → <desc>, replacing the derived caption. Both plan-level only (E_ACC_PLACEMENT)`,
+};
+
+/**
+ * The other half of the {@link SETTING_GRAMMAR} partition: `KEYWORDS.attribute` entries
+ * that are CLAUSES of an element line, not statements. Each is already taught by the
+ * grammar line of the element that takes it, so it needs no line of its own — but it
+ * must be named here, because a partition asserted against a list is only as good as the
+ * list being exhaustive. Derived as "everything the parser's statement switch does not
+ * lead with"; {@link renderLlmSpec} throws if it and `SETTING_GRAMMAR` do not exactly
+ * cover `KEYWORDS.attribute`.
+ */
+export const CLAUSE_ATTRIBUTES: readonly string[] = [
+  "material",
+  "angle",
+  "at",
+  "size",
+  "polygon",
+  "circle",
+  "arc",
+  "radius",
+  "width",
+  "thickness",
+  "label",
+  "hinge",
+  "swing",
+  "slide",
+  "open",
+  "offset",
+  "text",
+  "close",
+  "id",
+  "project",
+  "drawn_by",
+  "date",
+  "from",
+  "as",
+  "right-of",
+  "left-of",
+  "below",
+  "above",
+  "align",
+  "gap",
+  "uses",
+  "rotate",
+  "against",
+  "segment",
+  "side",
+  "on",
+  "into",
+  "near",
+  "anchor",
+  "inset",
+  "flush",
+  "mirror",
+  "height",
+  "faces",
+  "clear",
+  "dir",
+];
+
+/**
  * `KEYWORDS.control` entries the Structure / Scripting sections document in prose, so
  * they need no grammar line. Every control keyword must appear either here or in
  * {@link STATEMENT_GRAMMAR} — {@link renderLlmSpec} throws otherwise. This is the guard
  * that `strip` slipped past when it only checked `KEYWORDS.element`: a new statement
  * keyword now cannot ship unspecced.
+ *
+ * The membership claim used to stop there, and "the prose sections cover these" is not a
+ * claim a reader can check — it is a comment. It was also FALSE: `theme` and `style`
+ * appeared nowhere in the document except as bare words in the `**Keyword reference**`
+ * bullet, which is generated from `KEYWORDS.control` itself and so can never disagree
+ * with this list. {@link assertScriptingKeywordsTaught} turns the claim into a check.
  */
 export const SCRIPTING_KEYWORDS = [
   "plan",
@@ -182,6 +288,51 @@ export function assertVocabRendered(line: string, label: string, values: readonl
 }
 
 /**
+ * Turn {@link SCRIPTING_KEYWORDS}'s membership claim into a CHECK.
+ *
+ * The list's meaning is "this keyword needs no grammar line because the prose sections
+ * teach it". Nothing verified that, and it was quietly false: `theme` and `style` had no
+ * syntax anywhere in the document. An agent reading the page learned only that two words
+ * called `theme` and `style` exist — which is worse than silence, because it invites a
+ * guess.
+ *
+ * The check: every listed keyword must appear inside a CODE context — an inline
+ * `` `…` `` span or a fenced block — somewhere in the rendered body. Two scoping
+ * decisions carry the weight:
+ *
+ *  - **The `## Keyword reference` section is CUT FIRST.** It is generated by
+ *    `bullet(KEYWORDS.control)` from the very list this is checking, so leaving it in
+ *    would make every keyword pass by construction — the check would test itself.
+ *  - **A fenced block counts, not only an inline span.** `plan "Title" {` and
+ *    `title { project "…" … }` teach their syntax perfectly well inside the Structure
+ *    fence, and demanding a second, inline restatement of each would buy nothing but
+ *    characters in a document with a hard size budget.
+ *
+ * Word boundaries are hyphen-aware, so `set` never matches inside `offset` and `if`
+ * never inside `if`-containing identifiers. Exported so `test/spec-forms.test.ts` can
+ * prove it fires.
+ */
+export function assertScriptingKeywordsTaught(doc: string, keywords: readonly string[]): void {
+  // Cut the generated keyword-reference bullets: they are rendered FROM the list being
+  // checked, so they are not evidence of anything.
+  const body = doc.replace(/\n## Keyword reference\n[\s\S]*?(?=\n## )/, "\n");
+  const code = [
+    ...[...body.matchAll(/`([^`\n]+)`/g)].map((m) => m[1] ?? ""),
+    ...[...body.matchAll(/```[^\n]*\n([\s\S]*?)```/g)].map((m) => m[1] ?? ""),
+  ].join("\n");
+  const missing = keywords.filter((k) => !new RegExp(`(?<![\\w-])${k}(?![\\w-])`).test(code));
+  if (missing.length > 0) {
+    throw new Error(
+      `SCRIPTING_KEYWORDS claims the prose sections teach ${missing.join(", ")}, but ` +
+        `${missing.length === 1 ? "it appears" : "they appear"} in no code span or fence outside the ` +
+        `generated keyword-reference bullet — which is rendered from this very list and so proves ` +
+        `nothing. Either write the syntax into the Scripting section, or give the keyword a ` +
+        `STATEMENT_GRAMMAR line.`,
+    );
+  }
+}
+
+/**
  * The clause vocabulary one grammar line TEACHES — the literal words a reader is
  * expected to type after the leading keyword.
  *
@@ -245,6 +396,22 @@ export function renderLlmSpec(examples: Record<string, string>): string {
     );
   }
 
+  // Drift guard #2b: the same shape for `KEYWORDS.attribute`, which the two guards above
+  // cannot see between them. An attribute keyword is either a plan-level STATEMENT (it
+  // gets a `SETTING_GRAMMAR` line) or a CLAUSE of an element line (it is taught by that
+  // element's line, and is named in `CLAUSE_ATTRIBUTES`) — never neither. `dims` was
+  // exactly "neither" and had no syntax on the page at all; so were `accTitle`/`accDescr`.
+  const attributeKeys = [...KEYWORDS.attribute].sort();
+  const coveredAttributes = [...Object.keys(SETTING_GRAMMAR), ...CLAUSE_ATTRIBUTES].sort();
+  if (JSON.stringify(attributeKeys) !== JSON.stringify(coveredAttributes)) {
+    throw new Error(
+      `KEYWORDS.attribute is not exactly partitioned by the spec.\n` +
+        `  attributes: ${attributeKeys.join(", ")}\n  covered:    ${coveredAttributes.join(", ")}\n` +
+        `  Add each new keyword to SETTING_GRAMMAR (the parser's statement switch leads with it) ` +
+        `or CLAUSE_ATTRIBUTES (it is a clause of an element line, taught by that line).`,
+    );
+  }
+
   // Drift guard #3: the door line must still RENDER every door enum from the one table.
   assertDoorEnumsRendered(ELEMENT_GRAMMAR.door ?? "", DOOR_ENUMS, DOOR_HINGE_NEAR);
 
@@ -254,6 +421,7 @@ export function renderLlmSpec(examples: Record<string, string>): string {
   // spec that documents a language the compiler no longer speaks.
   const el = (k: string): string => ELEMENT_GRAMMAR[k] ?? "";
   const st = (k: string): string => STATEMENT_GRAMMAR[k] ?? "";
+  const sg = (k: string): string => SETTING_GRAMMAR[k] ?? "";
   assertVocabRendered(el("wall"), "wall material", KNOWN_MATERIALS);
   assertVocabRendered(el("wall"), "arc direction", ARC_DIRS);
   assertVocabRendered(el("room"), "room `uses`", USE_KINDS);
@@ -261,17 +429,53 @@ export function renderLlmSpec(examples: Record<string, string>): string {
   assertVocabRendered(el("room"), "relational alignment", REL_ALIGNS);
   assertVocabRendered(el("furniture"), "furniture anchor", FURNITURE_ANCHORS);
   assertVocabRendered(el("dim"), "dim endpoint reference", DIM_REFS);
-  assertVocabRendered(el("dim"), "`dims auto` mode", AUTO_DIMS_MODES);
+  // NB: the `dims auto` mode set is asserted against `SETTING_GRAMMAR.dims` below, not
+  // here. `dims` is a plan SETTING, and until it had a line of its own the `dim` element
+  // line was the only place the set could live — so it carried it, and then said it
+  // twice. One owner: the setting line prints the modes, the `dim` line points at it.
   assertVocabRendered(el("stair"), "vertical direction", VERTICAL_DIRS);
   assertVocabRendered(el("escalator"), "vertical direction", VERTICAL_DIRS);
   assertVocabRendered(st("strip"), "strip direction", STRIP_DIRS);
   assertVocabRendered(st("schedule"), "schedule subject", SCHEDULE_SUBJECTS);
+  // The setting lines' own closed sets. `paper`/`north` were previously asserted against
+  // the whole document, which was true but imprecise — the assertion should name the line
+  // that must carry the set, so a future edit that moves the words elsewhere still fails.
+  assertVocabRendered(sg("paper"), "paper size", PAPER_SIZES);
+  assertVocabRendered(sg("paper"), "paper orientation", PAPER_ORIENTATIONS);
+  assertVocabRendered(sg("north"), "north direction", NORTH_DIRS);
+  assertVocabRendered(sg("dims"), "`dims auto` mode (setting line)", AUTO_DIMS_MODES);
 
   // A fenced block (not a bullet list) so the `<placeholder>` angle brackets are
   // safe everywhere they render (GitHub, npm, and the Vue-compiled docs site).
   const statementLines = KEYWORDS.control.filter((k) => k in STATEMENT_GRAMMAR).map((k) => STATEMENT_GRAMMAR[k]);
   const elementLines =
     "```text\n" + [...KEYWORDS.element.map((k) => ELEMENT_GRAMMAR[k]), ...statementLines].join("\n") + "\n```";
+
+  // The Structure block's settings, rendered FROM `SETTING_GRAMMAR` in `KEYWORDS.attribute`
+  // order and re-padded so the `#` notes line up. Splitting on the table's own `\s{3,}#`
+  // convention is what lets `clauseAtoms` read these lines exactly like the other two
+  // tables'. The comment column is one past the longest form, floored at the width the
+  // page has always used, so adding a short setting cannot re-indent every other line.
+  const settingKeys = KEYWORDS.attribute.filter((k) => k in SETTING_GRAMMAR);
+  const settingParts = settingKeys.map((k) => {
+    const [form = "", note = ""] = (SETTING_GRAMMAR[k] ?? "").split(/\s{3,}#\s*/);
+    return { form, note };
+  });
+  const settingCol = Math.max(20, ...settingParts.map((p) => p.form.length + 2));
+  const settingLines = settingParts.map((p) => `  ${p.form.padEnd(settingCol)}# ${p.note}`).join("\n");
+
+  // `style <kind>` takes every element kind but one. Printing the RULE rather than the
+  // ten-item list is both shorter (this page has a hard budget) and more useful — and it
+  // is still derived: the exception is computed, and asserted to be exactly one word, so
+  // giving `opening` a palette (or taking another element's away) throws here.
+  const styleless = KEYWORDS.element.filter((k) => !STYLE_KINDS.includes(k));
+  if (styleless.length !== 1) {
+    throw new Error(
+      `The Scripting section says \`style\` takes any element kind but ONE, and ${styleless.length} ` +
+        `element(s) now have no STYLE_KEYS entry (${styleless.join(", ") || "none"}). Rewrite the ` +
+        `bullet to state the real rule — do not let the page keep asserting a shape the table lost.`,
+    );
+  }
 
   // The CLI verb list is rendered from the manifest — the same source `arch manifest
   // --json` serves — so a new command cannot be missing from the spec.
@@ -320,11 +524,7 @@ a \`fix\`). This page is everything you need to author it.
 
 \`\`\`arch
 plan "Title" {
-  units mm            # required-ish settings come first
-  grid 50             # snap grid in mm
-  paper A3 landscape  # OPTIONAL sheet: ${PAPER_SIZES.join("|")}, ${PAPER_ORIENTATIONS.join("|")} (${PAPER_ORIENTATIONS[0]} default)
-  scale 1:50          # drawing scale — OPERATIVE with \`paper\`, annotation-only without it
-  north up            # ${NORTH_DIRS.join("|")}
+${settingLines}
   # … elements and scripting …
   title { project "…" drawn_by "…" date "…" }
 }
@@ -352,6 +552,7 @@ ${elementLines}
 - \`set <element>(attr: value)\` — scoped default for following elements (e.g. \`set door(swing: out)\`).
 - Arrays: \`[a, b, c]\`, indexed \`arr[i]\`. Operators: \`+ - * / %\`, \`== != < > <= >=\`, \`&& ||\`. Comments: \`# …\`.
 - \`import "lib/x.arch": name\` and \`component name(args) { … }\` for reuse.
+- \`theme ${Object.keys(THEMES).join("|")}\` — a named palette base. \`theme [<name>] { key: value }\` overrides single keys, \`theme from "#rrggbb"\` derives the whole palette from one colour, and \`style <kind> { key: value }\` does the same per element kind (any but \`${styleless}\`). An unknown key WARNS and is dropped (\`W_UNKNOWN_THEME_KEY\`/\`W_UNKNOWN_STYLE_KEY\`), never fails.
 
 ## Keyword reference
 
@@ -421,13 +622,17 @@ SKILL.md for the full recipe.
 ${exampleBlocks}
 `;
 
-  // The four sets the PROSE sections teach rather than a grammar line — same guard,
-  // scoped to the whole document because no single line owns them.
-  assertVocabRendered(doc, "paper size", PAPER_SIZES);
-  assertVocabRendered(doc, "paper orientation", PAPER_ORIENTATIONS);
-  assertVocabRendered(doc, "north direction", NORTH_DIRS);
+  // The sets the PROSE sections teach rather than a grammar line — same guard, scoped to
+  // the whole document because no single line owns them. (`paper`/`orientation`/`north`
+  // moved up to their own SETTING_GRAMMAR lines, which is strictly tighter.)
   assertVocabRendered(doc, "auto-fit scale ladder", SCALE_LADDER, " / ");
   assertVocabRendered(doc, "expression built-in", BUILTIN_NAMES, " ");
+  assertVocabRendered(doc, "named theme base", Object.keys(THEMES));
+
+  // Drift guard #5: `SCRIPTING_KEYWORDS` is a CLAIM about this document ("the prose
+  // covers these"), so it is checked against the document it claims about — last, once
+  // the text exists. It was false for `theme` and `style` until the bullet above.
+  assertScriptingKeywordsTaught(doc, SCRIPTING_KEYWORDS);
   return doc;
 }
 

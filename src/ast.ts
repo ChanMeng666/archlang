@@ -121,7 +121,7 @@ export const REL_DIRS = ["right-of", "left-of", "below", "above"] as const;
 export type RelDir = (typeof REL_DIRS)[number];
 
 /** Every {@link RelAlign}, canonical order — one source for the element's parameter
- *  doc and the spec's grammar line. */
+ *  doc, the spec's grammar line, and the parser's ACCEPT-SET (`E_ROOM_ALIGN`). */
 export const REL_ALIGNS = ["top", "middle", "bottom", "left", "center", "right"] as const;
 
 /** Edge to align with the reference room. Horizontal placement
@@ -172,6 +172,20 @@ export interface RoomRel {
   /** Id of the reference room this one is placed against. */
   ref: string;
   align?: RelAlign;
+  /**
+   * An `align <word>` whose word is NOT in {@link REL_ALIGNS}, recorded verbatim with
+   * its own byte span so resolve can raise `E_ROOM_ALIGN` against the OFFENDING WORD
+   * (and `format.ts` can re-emit the source it was given rather than deleting it).
+   *
+   * Until v1.26 the parser did `ctx.eatIdent().value as RelAlign` — an unchecked cast —
+   * so `align sideways` produced a `RelAlign` that matched no branch of
+   * `layout.ts`'s `alignOffset` and fell through to the leading edge. The plan drew
+   * itself as `align top` with **zero diagnostics**: the project's own "silent wrong
+   * position" family, and the one member of it the author can see in their own source.
+   * Mutually exclusive with {@link align} — a legal word sets that and leaves this
+   * undefined.
+   */
+  alignBad?: { word: string; span: Span };
   /** Spacing (mm) between the two rooms along the placement axis; default 0. */
   gap?: Expr;
   span?: Span;

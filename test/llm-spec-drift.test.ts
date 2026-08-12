@@ -174,6 +174,53 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // `--strict`'s did last time. Green at 24,088 — **12 chars of headroom**, so the
     // next edit here almost certainly trips this. That is the cap working: trim
     // duplication, and raise it only with a reason of the kind written above.
-    expect(spec.length).toBeLessThan(24_100);
+    //
+    // Raised 24.1k → 25k to WIDEN THE WORKING MARGIN, not because the spec grew past
+    // the old number. Every raise above was reactive — a feature or a correction had
+    // already made the file too big, and the number moved to admit it. This one is not:
+    // the file is 24,088 and the old cap 24,100, so the margin had shrunk to **12
+    // characters**, and a 12-char margin is not a budget, it is a tripwire on unrelated
+    // work. The spec embeds `examples/attached.arch` and `examples/parametric.arch`
+    // VERBATIM, so a one-character edit to either example — a change with nothing to do
+    // with the spec — fails this test and hands the person who made it a choice between
+    // reverting their example and deleting real agent guidance to fit. That is the cap
+    // pointed at the wrong target: it is here to price the spec's own prose, not to
+    // veto edits to the examples it quotes.
+    //
+    // What the cap is FOR, restated because it is easy to read as an arbitrary ceiling:
+    // `spec.llm.md` is injected VERBATIM into agent system prompts (`arch spec`, `arch
+    // context --section spec`, the MCP shim's baked resource, archlang.uk), so its size
+    // is a RECURRING PER-REQUEST TOKEN COST paid by every downstream agent on every
+    // call, not a one-off repo weight. At ~4 chars/token, 25,000 chars is ~6.25k tokens
+    // of every prompt that carries it. That is what makes each addition worth arguing
+    // about, and why the standing instruction stays: TRIM DUPLICATION BEFORE RAISING.
+    //
+    // Headroom bought at the moment of raising: **912 chars** over the then-current
+    // 24,088 (~228 tokens), against 12 before.
+    //
+    // Where 693 of that went, in the same commit — recorded here so the next reader does
+    // not mistake a thin margin for a cap that was never widened. Two structural holes in
+    // `gen-llm-spec.ts` were closed and both cost text:
+    //   - a THIRD table, `SETTING_GRAMMAR`, for the `KEYWORDS.attribute` entries that are
+    //     plan STATEMENTS. They fell between the element guard and the control guard, so
+    //     `dims`, `accTitle` and `accDescr` had no syntax on the page at all — only bare
+    //     words in the keyword bullet. Three new Structure lines.
+    //   - `SCRIPTING_KEYWORDS`'s "the prose covers these" claim became a CHECK, which
+    //     failed immediately for `theme` and `style` (documented nowhere), so the missing
+    //     Scripting bullet had to be written.
+    // Paid for in part by one real duplication: the `dims auto` MODE SET was printed on
+    // the `dim` element line because that was the only line that could hold it; now that
+    // `dims` has a line of its own, the set has one owner and `dim` points at it.
+    //
+    // Green at 24,781 — **219 chars of headroom**, ~18× the 12 this replaced. Enough that
+    // a character-level edit to `examples/attached.arch` or `examples/parametric.arch`
+    // (both embedded VERBATIM) is no longer a spec-budget negotiation, which was the whole
+    // point; not enough to be generous. Trim duplication before raising again — and the
+    // largest single lever left is the `**Attributes:**` keyword bullet (~690 chars),
+    // which the new partition guard has made *categorically* redundant but not yet
+    // *provably* so: the guard asserts every attribute is classified, not that every
+    // clause attribute is actually RENDERED in some element line. Make it assert the
+    // rendering and the bullet can go.
+    expect(spec.length).toBeLessThan(25_000);
   });
 });

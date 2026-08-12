@@ -16,6 +16,8 @@ import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js
 import type { SceneNode } from "../scene.js";
 import type { RRoom } from "../ir.js";
 import { rectCorners } from "../geometry.js";
+import { closest } from "../expr.js";
+import { fixesFrom, roomAlignFix } from "../fix-producers.js";
 import { arcTessellate, fullCircleArc } from "../geometry/arc.js";
 import {
   effectiveVertices,
@@ -27,6 +29,7 @@ import {
 } from "../geometry/polygon.js";
 
 const REL_DIRS: ReadonlySet<string> = new Set<RelDir>(REL_DIR_LIST);
+const REL_ALIGN_SET: ReadonlySet<string> = new Set<RelAlign>(REL_ALIGNS);
 const USE_SET: ReadonlySet<string> = new Set<UseKind>(USE_KINDS);
 
 /**
@@ -233,16 +236,25 @@ export const room: ElementDef = {
       }
       const ref = ctx.eatIdent().value;
       let align: RelAlign | undefined;
+      let alignBad: { word: string; span: Span } | undefined;
       let gap: Expr | undefined;
       if (ctx.isKeyword("align")) {
         ctx.next();
-        align = ctx.eatIdent().value as RelAlign;
+        // CHECKED, not cast. Every other closed value set on this statement already
+        // refuses an unknown word (`REL_DIRS` just above, `USE_KINDS` in `parseTail`);
+        // `align` was the one that did not, and an out-of-set word silently drew the
+        // plan as `align top`. Refusal is DEFERRED to resolve rather than raised here
+        // as a parse error, because that is what buys the offending word a catalogued
+        // code, a `fix`, and `file` provenance — the same shape as `E_DOOR_KIND_CLAUSE`.
+        const t = ctx.eatIdent();
+        if (REL_ALIGN_SET.has(t.value)) align = t.value as RelAlign;
+        else alignBad = { word: t.value, span: { start: t.start, end: t.end } };
       }
       if (ctx.isKeyword("gap")) {
         ctx.next();
         gap = ctx.parseExpr();
       }
-      rel = { dir: dirTok.value as RelDir, ref, align, gap };
+      rel = { dir: dirTok.value as RelDir, ref, align, alignBad, gap };
     }
     ctx.eatKeyword("size");
     const size = ctx.parseDimensions();
@@ -294,6 +306,28 @@ export const room: ElementDef = {
     // —— Relational path: position computed later by placeRelational(), in
     //    dependency order. `at` is a placeholder until then. ——
     const rel = n.rel!;
+    // An out-of-set `align <word>`. Raised HERE rather than at parse so it carries a
+    // catalogued code, a `fix` and `file` provenance — and spanned on the OFFENDING
+    // WORD, which is both what the reader needs to see underlined and the exact bytes
+    // the fix rewrites. `closest()` is the CLI's own did-you-mean helper, reused rather
+    // than reimplemented; it declines beyond a small edit distance, and the fix declines
+    // with it (see `roomAlignFix`).
+    if (rel.alignBad) {
+      const hint = closest(rel.alignBad.word, [...REL_ALIGNS]);
+      ctx.diag({
+        severity: "error",
+        message:
+          `Room "${id}" has \`align ${rel.alignBad.word}\`, which is not an alignment edge` +
+          `${hint ? ` — did you mean "${hint}"?` : ""}`,
+        code: "E_ROOM_ALIGN",
+        span: rel.alignBad.span,
+        hints: [
+          `Available: ${REL_ALIGNS.join(", ")}.`,
+          `\`${rel.dir}\` places on the ${rel.dir === "right-of" || rel.dir === "left-of" ? "horizontal axis, so the cross axis is vertical: `top|middle|bottom`" : "vertical axis, so the cross axis is horizontal: `left|center|right`"}.`,
+        ],
+        ...fixesFrom(roomAlignFix(rel.alignBad, hint)),
+      });
+    }
     const gap = rel.gap !== undefined ? ctx.eval(rel.gap) : 0;
     const size = { w: ctx.snap(ctx.eval(n.size!.w)), h: ctx.snap(ctx.eval(n.size!.h)) };
     if (size.w <= 0 || size.h <= 0) {

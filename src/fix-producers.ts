@@ -419,3 +419,33 @@ export function openingWidthFix(kind: OpeningKind, node: OpeningLikeNode): FixSu
     },
   ];
 }
+
+/**
+ * The fix for `E_ROOM_ALIGN`: replace an out-of-set alignment word with the nearest
+ * legal one.
+ *
+ * The edit is the **offending word alone** — `bad.span`, not the whole `room`
+ * statement — so every expression, label and `gap` on that line survives verbatim, and
+ * two bad rooms on adjacent lines are fixed in one pass without their edits overlapping.
+ *
+ * `machine-applicable` needs an argument, because unlike the clamp fixes above this one
+ * replaces a value with a GUESS, and a wrong guess moves a room. Three things make it
+ * safe here. The alternative is not the author's intent but the silent leading-edge
+ * fallback this diagnostic exists to abolish, so applying it cannot be worse than
+ * leaving it. The source is an ERROR, so nothing downstream is measuring the plan yet.
+ * And {@link import("./expr.js").closest} answers only within a small edit distance —
+ * the caller passes `null` when there is no near miss, and this returns `null` with it,
+ * leaving a diagnostic that carries hints and no fix. So a fix is offered only for a
+ * near-miss of a real word, which is a typo, not a design decision.
+ */
+export function roomAlignFix(bad: { word: string; span: Span }, suggestion: string | null): FixSuggestion[] | null {
+  if (suggestion === null) return null;
+  return [
+    {
+      title: `use \`align ${suggestion}\``,
+      applicability: "machine-applicable",
+      fixId: "room-align",
+      edits: [{ span: bad.span, newText: suggestion }],
+    },
+  ];
+}

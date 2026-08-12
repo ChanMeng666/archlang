@@ -48,14 +48,17 @@
 import { describe, expect, it } from "vitest";
 import { compile, lint, ERROR_CATALOG } from "../src/index.js";
 import {
+  assertScriptingKeywordsTaught,
   clauseAtoms,
+  CLAUSE_ATTRIBUTES,
   ELEMENT_GRAMMAR,
   renderLlmSpec,
   SCRIPTING_KEYWORDS,
+  SETTING_GRAMMAR,
   SPEC_EXAMPLES,
   STATEMENT_GRAMMAR,
 } from "../scripts/gen-llm-spec.js";
-import { AUTO_DIMS_MODES, FURNITURE_ANCHORS } from "../src/ast.js";
+import { AUTO_DIMS_MODES, FURNITURE_ANCHORS, REL_ALIGNS } from "../src/ast.js";
 import { KEYWORDS } from "../src/grammar/tokens.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -141,6 +144,18 @@ const POSITIVE: Snippet[] = [
       `  room id=a at (4000,4000) size 3000x3000\n  room id=b left-of a align bottom size 2000x2000\n` +
         `  room id=c above a align right size 2000x2000\n  room id=d below a align left size 2000x2000\n` +
         `  room id=e right-of a align middle size 2000x2000`,
+    ),
+  },
+  {
+    // Generated from `REL_ALIGNS`, so the day a seventh edge is added this snippet types
+    // it — and if the parser's accept-set (`E_ROOM_ALIGN`) was not extended with it, this
+    // goes red. The counterpart negative is the `E_ROOM_ALIGN` entry below: together they
+    // pin the set from both sides, which is the whole reason the cast was a bug.
+    keyword: "room",
+    note: "every alignment in REL_ALIGNS is accepted (the E_ROOM_ALIGN accept-set, positively)",
+    src: plan(
+      `  room id=a at (20000,20000) size 3000x3000\n` +
+        REL_ALIGNS.map((e, i) => `  room id=r${i} right-of a align ${e} size 1000x1000`).join("\n"),
     ),
   },
   { keyword: "room", note: "circular floor", src: plan(`  room id=c circle at (5000,5000) radius 3000`) },
@@ -246,9 +261,39 @@ const POSITIVE: Snippet[] = [
     ),
   },
 
+  // --- plan-level SETTINGS (the `SETTING_GRAMMAR` table) -----------------------
+  // The attribute keywords the parser's statement switch leads with. Until the third
+  // table existed, three of these (`dims`, `accTitle`, `accDescr`) had no syntax on the
+  // page and so no way to appear here either — the D12 hole, from the corpus side.
+  { keyword: "units", note: "the only unit", src: plan(`  room id=r1 at (0,0) size 4000x3000`) },
+  { keyword: "grid", note: "snap grid in mm", src: plan(`  grid 50\n  room id=r1 at (0,0) size 4000x3000`) },
+  {
+    keyword: "paper",
+    note: "size + orientation, the form the Structure block prints",
+    src: plan(`  paper A3 landscape\n  room id=r1 at (0,0) size 4000x3000`),
+  },
+  {
+    keyword: "scale",
+    note: "`1:<n>` — operative because `paper` is present",
+    src: plan(`  paper A3\n  scale 1:50\n  room id=r1 at (0,0) size 4000x3000`),
+  },
+  { keyword: "north", note: "one of the four page directions", src: plan(`  north up`) },
+  {
+    keyword: "accTitle",
+    note: "plan-level accessible name",
+    src: plan(`  accTitle "Studio"\n  room id=r1 at (0,0) size 4000x3000`),
+  },
+  {
+    keyword: "accDescr",
+    note: "plan-level accessible description",
+    src: plan(`  accDescr "A one-room studio."\n  room id=r1 at (0,0) size 4000x3000`),
+  },
+
   ...AUTO_DIMS_MODES.map((m) => ({
-    keyword: "dim",
-    note: `\`dims auto ${m}\` — one of the four modes the line now prints`,
+    // Keyed `dims`, not `dim`: the mode set is the plan SETTING's, and printing it on the
+    // element line as well is the duplication the third table let us delete.
+    keyword: "dims",
+    note: `\`dims auto ${m}\` — one of the four modes the setting line prints`,
     src: plan(
       `  dims auto ${m}\n  wall id=w1 exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }\n  room id=r1 at (0,0) size 6000x4000`,
     ),
@@ -360,6 +405,30 @@ const NEGATIVE: Negative[] = [
     channel: "compile",
     note: "an all-collinear ring",
     src: plan(`  room id=p polygon (0,0) (2000,0) (4000,0)`),
+  },
+  {
+    code: "E_ROOM_ALIGN",
+    channel: "compile",
+    note: "the `align` value set is closed — an out-of-set word USED to draw as `align top` in silence",
+    src: plan(`  room id=a at (0,0) size 3000x3000\n  room id=b right-of a align sideways size 2000x2000`),
+  },
+  {
+    code: "E_ACC_PLACEMENT",
+    channel: "compile",
+    note: "`accTitle`/`accDescr` describe the whole plan, so they are plan-level only",
+    src: plan(`  component c() { accDescr "x" }\n  room id=r1 at (0,0) size 3000x3000`),
+  },
+  {
+    code: "W_UNKNOWN_THEME_KEY",
+    channel: "compile",
+    note: "an unknown theme key warns and is dropped — colour is never a hard error",
+    src: plan(`  theme { nosuchkey "#fff" }\n  room id=r1 at (0,0) size 3000x3000`),
+  },
+  {
+    code: "W_UNKNOWN_STYLE_KEY",
+    channel: "compile",
+    note: "…and the same per element kind",
+    src: plan(`  style room { nosuchkey "#fff" }\n  room id=r1 at (0,0) size 3000x3000`),
   },
   {
     code: "E_PLACE_POLY",
@@ -524,7 +593,7 @@ const NOT_REPRODUCED_HERE = new Map<string, string>([
 // The suites
 // ---------------------------------------------------------------------------
 
-const DOCUMENTED: Record<string, string> = { ...ELEMENT_GRAMMAR, ...STATEMENT_GRAMMAR };
+const DOCUMENTED: Record<string, string> = { ...ELEMENT_GRAMMAR, ...STATEMENT_GRAMMAR, ...SETTING_GRAMMAR };
 
 function specText(): string {
   const examples: Record<string, string> = {};
@@ -535,7 +604,9 @@ function specText(): string {
 describe("spec.llm.md — every documented form compiles", () => {
   it("the corpus is real (so a green run cannot be vacuous)", () => {
     expect(POSITIVE.length).toBeGreaterThan(25);
-    expect(Object.keys(DOCUMENTED).length).toBe(KEYWORDS.element.length + Object.keys(STATEMENT_GRAMMAR).length);
+    expect(Object.keys(DOCUMENTED).length).toBe(
+      KEYWORDS.element.length + Object.keys(STATEMENT_GRAMMAR).length + Object.keys(SETTING_GRAMMAR).length,
+    );
     expect(NEGATIVE.length).toBeGreaterThan(15);
     expect(PARSE_ERRORS.length).toBeGreaterThan(3);
   });
@@ -634,13 +705,46 @@ describe("spec.llm.md — the binding between what is documented and what is exe
     expect([...Object.keys(STATEMENT_GRAMMAR), ...SCRIPTING_KEYWORDS].sort()).toEqual([...KEYWORDS.control].sort());
     const scripting = plan(
       `  grid 50\n  paper A3 landscape\n  scale 1:100\n  north up\n  dims auto all\n` +
-        `  theme { }\n  style room { }\n  let W = 4000\n  let f(a, b) = min(a, b) + abs(-1)\n` +
+        `  theme blueprint { bg "#101820" }\n  style room { fill "#182430" }\n  let W = 4000\n` +
+        `  let f(a, b) = min(a, b) + abs(-1)\n` +
         `  let xs = [1, 2, 3]\n  let n = 0\n  component unit(w) {\n    room at (0,0) size w x 2000\n  }\n` +
         `  set door(swing: out)\n  for i in 0..2 {\n    room at (0, i * 2500) size W x 2000 label "Unit {i}"\n  }\n` +
         `  if len(xs) > 2 { room id=big at (5000,0) size W x 2000 } else { room id=small at (5000,0) size 1000x1000 }\n` +
         `  while n < 1 { n = n + 1 }\n  unit(3000)\n  title { project "P" drawn_by "D" date "2026-01-01" }`,
     );
     expect(errorsOf(scripting)).toEqual([]);
+    // The other two `theme` forms the new Scripting bullet teaches — a bare named base
+    // with no block, and the derive-a-palette-from-one-colour form.
+    expect(errorsOf(plan(`  theme mono\n  room id=r1 at (0,0) size 3000x3000`))).toEqual([]);
+    expect(errorsOf(plan(`  theme from "#3355aa"\n  room id=r1 at (0,0) size 3000x3000`))).toEqual([]);
+  });
+
+  it("the plan SETTINGS and the element CLAUSES exactly partition KEYWORDS.attribute", () => {
+    // The third guard, from the test side — the one `dims` fell through. `renderLlmSpec`
+    // throws on a mismatch, so this is belt-and-braces; what it adds is DISJOINTNESS,
+    // which set-equality of the concatenation would also catch only because a duplicate
+    // would make the lengths differ. Stated explicitly so the intent survives an edit.
+    const settings = Object.keys(SETTING_GRAMMAR);
+    expect([...settings, ...CLAUSE_ATTRIBUTES].sort()).toEqual([...KEYWORDS.attribute].sort());
+    expect(settings.filter((k) => CLAUSE_ATTRIBUTES.includes(k))).toEqual([]);
+  });
+
+  it("the scripting-keyword claim is a CHECK, and it is not vacuous", () => {
+    // `assertScriptingKeywordsTaught` exists because "the prose covers these" was an
+    // unfalsifiable comment that happened to be false. Prove the check bites: a keyword
+    // the document genuinely never shows must be reported…
+    expect(() => assertScriptingKeywordsTaught(specText(), ["flange"])).toThrow(/flange/);
+    // …and — the load-bearing half — a real keyword must NOT be rescued by the generated
+    // `## Keyword reference` bullet, which is rendered from `KEYWORDS.control` itself. If
+    // the excision ever broke, every keyword would pass by construction and the check
+    // would be testing its own input. `zone` is a control keyword that appears in that
+    // bullet and (as a STATEMENT_GRAMMAR line) elsewhere too, so it is not the probe;
+    // a made-up word planted into the bullet's own text is.
+    const planted = specText().replace(/(- \*\*Settings \/ control:\*\*)/, "$1 `flange`,");
+    expect(planted).toContain("`flange`");
+    expect(() => assertScriptingKeywordsTaught(planted, ["flange"])).toThrow(/flange/);
+    // And the real list passes, which is the postcondition the generator relies on.
+    expect(() => assertScriptingKeywordsTaught(specText(), SCRIPTING_KEYWORDS)).not.toThrow();
   });
 
   it("every clause a grammar line TEACHES is exercised by a snippet for that keyword", () => {
