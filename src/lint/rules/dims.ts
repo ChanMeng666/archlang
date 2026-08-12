@@ -16,12 +16,30 @@
  * inside the room-extents bounding box, and only for dims that came from source — the
  * `dims auto` chains are synthesized at scene-build and never enter the IR, so a
  * wall-thickness call-out can never trip it. A hand-written zero-offset dim is skipped
- * too: it sits ON its measured segment by definition. Advisory, with a
- * machine-applicable fix that swaps the endpoints.
+ * too: it sits ON its measured segment by definition.
+ *
+ * Advisory, with a machine-applicable fix that swaps the endpoints **when the swap
+ * actually moves the line out**. The predicate is `dimReadsInside` in `geometry.ts`,
+ * and the fix producer re-asks it of the mirrored geometry rather than keeping a
+ * second copy — see {@link import("../../fix-producers.js").dimSwapFix}. A dimension
+ * that runs THROUGH the building reads inside either way: it keeps the warning and
+ * gets no edit (offering one made `arch fix` oscillate forever), so the hint says what
+ * is actually wrong instead of advising a swap that would not help.
  */
 
 import type { Diagnostic, Span } from "../../diagnostics.js";
-import { add, length, mul, normal, sub, unit } from "../../geometry.js";
+import type { Bounds } from "../../geometry.js";
+import {
+  dimLineMid,
+  dimReadsInside,
+  dimSwapped,
+  emptyBounds,
+  extendBounds,
+  length,
+  normal,
+  sub,
+  unit,
+} from "../../geometry.js";
 import type { Point } from "../../ast.js";
 import type { RDim } from "../../ir.js";
 import { dimBumpFix, dimSwapFix, fixesFrom } from "../../fix-producers.js";
@@ -30,9 +48,6 @@ import { fmt2 } from "../../num-format.js";
 import { textWidth } from "../../text-metrics.js";
 import type { LintContext, LintRule } from "../context.js";
 
-/** Margin (mm) a point must clear the room-extents box by to count as "inside". */
-const EPS = 1;
-
 export const dimInside: LintRule = {
   name: "dim-inside",
   check(ctx: LintContext): Diagnostic[] {
@@ -40,17 +55,11 @@ export const dimInside: LintRule = {
     if (dims.length === 0 || ctx.roomRects.size === 0) return [];
 
     // Room extents (the building box a dimension should read outside of).
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
+    const box: Bounds = emptyBounds();
     for (const r of ctx.roomRects.values()) {
-      minX = Math.min(minX, r.x);
-      minY = Math.min(minY, r.y);
-      maxX = Math.max(maxX, r.x + r.w);
-      maxY = Math.max(maxY, r.y + r.h);
+      extendBounds(box, r.x, r.y);
+      extendBounds(box, r.x + r.w, r.y + r.h);
     }
-    const inside = (p: Point): boolean => p.x > minX + EPS && p.x < maxX - EPS && p.y > minY + EPS && p.y < maxY - EPS;
 
     const out: Diagnostic[] = [];
     const seen = new Set<string>();
@@ -62,20 +71,28 @@ export const dimInside: LintRule = {
       // an equal `start:end` pair is not the same statement.
       const key = `${dm._file ?? ""}:${dm.span.start}:${dm.span.end}`;
       if (seen.has(key)) continue;
-      // The MIDPOINT of the offset line: a dimension legitimately runs corner to
-      // corner, so its endpoints sit ON the box edges — where the line ended up
-      // (which side the offset threw it) is what the midpoint answers.
-      const off = mul(normal(unit(sub(dm.to, dm.from))), dm.offset);
-      const mid = add({ x: (dm.from.x + dm.to.x) / 2, y: (dm.from.y + dm.to.y) / 2 }, off);
-      if (!inside(mid)) continue;
+      // Asked of the MIDPOINT of the offset line, not the endpoints: a dimension
+      // legitimately runs corner to corner, so its endpoints sit ON the box edges —
+      // where the line ended up is what the midpoint answers. (`dimReadsInside`.)
+      if (!dimReadsInside(dm, box)) continue;
       seen.add(key);
+      // The swap mirrors the line ACROSS the measured segment, so it only reaches the
+      // outside when the segment is at the building's edge. A dimension running through
+      // the plan is inside either way — the same predicate, asked of the swapped
+      // geometry, is what `dimSwapFix` withholds the edit on, and it is what the hint
+      // must agree with: advising a swap that cannot help would be false either way.
+      const swapHelps = !dimReadsInside(dimSwapped(dm), box);
       out.push({
         severity: "warning",
         code: "W_DIM_INSIDE",
         ...ctx.at(dm),
         message: `Dimension "${dm.id}" draws its line inside the building — the \`offset ${dm.offset}\` pushes it into the plan, not out to the margin.`,
-        hints: ["Swap the two endpoints (or negate the offset) so the dimension reads outside the building."],
-        ...fixesFrom(dimSwapFix(dm)),
+        hints: [
+          swapHelps
+            ? "Swap the two endpoints (or negate the offset) so the dimension reads outside the building."
+            : "This dimension runs THROUGH the building, so neither endpoint order puts its line outside — swapping or negating the offset only mirrors it to the other interior side. Measure along a facade instead, or raise the `offset` until the line clears the plan; leave the warning if the interior dimension is deliberate.",
+        ],
+        ...fixesFrom(dimSwapFix(dm, box)),
       });
     }
     return out;
@@ -198,7 +215,8 @@ function band(dm: RDim, dimFont: number): Band {
   const u = unit(sub(dm.to, dm.from));
   const n = normal(u);
   const len = length(sub(dm.to, dm.from));
-  const mid = add({ x: (dm.from.x + dm.to.x) / 2, y: (dm.from.y + dm.to.y) / 2 }, mul(n, dm.offset));
+  // The same drawn-line midpoint `dimInside` tests — one formula, both rules.
+  const mid = dimLineMid(dm);
   // The width estimate goes through the ONE shared `textWidth` (there are no text metrics
   // anywhere in `src/`), over the exact string `dim.render` draws: the authored `text` when
   // there is one, else the measured length through the same `fmt2` the render context

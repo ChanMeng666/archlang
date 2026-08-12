@@ -1133,7 +1133,10 @@ normal* of from→to, so `dim (0,6000)->(7000,6000) offset 500` reads below the
 plan while the same pair reversed reads above it. Getting this backwards pushes
 the line into the building, across labels and poché — the advisory
 [`W_DIM_INSIDE`](error-codes.md), whose machine-applicable fix swaps the two
-endpoints for you.
+endpoints for you. The swap mirrors the line *across the segment being measured*,
+so it is offered only when that actually reaches the outside: a dimension whose
+run cuts through the plan reads inside either way, and keeps the warning with no
+automatic edit.
 
 #### `faces` / `clear` — let the walls place the endpoints
 

@@ -52,6 +52,59 @@ export function extendBounds(b: Bounds, x: number, y: number): void {
   if (y > b.maxY) b.maxY = y;
 }
 
+/* ---------------------------------------------------------------------------
+ * Where a dimension's LINE lands — the one predicate behind `W_DIM_INSIDE`.
+ *
+ * Two consumers share it, and they must never disagree: the lint rule
+ * (`lint/rules/dims.ts`), which asks it of the dimension as written, and the fix
+ * producer (`fix-producers.ts`), which asks it of the SWAPPED dimension to decide
+ * whether the swap is worth offering. A second copy of this arithmetic is how the
+ * fix came to 2-cycle in the first place — the producer offered a swap it had
+ * never evaluated, so on a dim running THROUGH the building it swapped back and
+ * forth forever. Keep it here, the way `doorSwing` is shared by the renderer and
+ * `W_SWING_OBSTRUCTED`.
+ * ------------------------------------------------------------------------- */
+
+/** The measured segment of a dimension plus the perpendicular offset its drawn
+ *  line sits at — everything the inside/outside question needs. */
+export interface DimLike {
+  from: Point;
+  to: Point;
+  offset: number;
+}
+
+/**
+ * Midpoint of the line a `dim` actually DRAWS: the midpoint of what it measures,
+ * pushed `offset` along the LEFT normal of from→to. The endpoints themselves are
+ * no use for this — a dimension legitimately runs corner to corner and so sits ON
+ * the building's edges; the midpoint is what answers which side the offset threw it.
+ */
+export function dimLineMid(dm: DimLike): Point {
+  const off = mul(normal(unit(sub(dm.to, dm.from))), dm.offset);
+  return add({ x: (dm.from.x + dm.to.x) / 2, y: (dm.from.y + dm.to.y) / 2 }, off);
+}
+
+/** The same dimension with its two endpoints exchanged — exactly what the
+ *  `W_DIM_INSIDE` fix writes, expressed as geometry so it can be evaluated
+ *  BEFORE the fix is offered. Reversing from→to negates the left normal, so the
+ *  drawn line mirrors across the measured segment. */
+export const dimSwapped = (dm: DimLike): DimLike => ({ from: dm.to, to: dm.from, offset: dm.offset });
+
+/** Margin (mm) the drawn line must clear the room-extents box by to count as outside. */
+const DIM_INSIDE_EPS = 1;
+
+/** Does this dimension's drawn LINE (not its witness lines) read inside `box`,
+ *  the room extents of the building it annotates? */
+export function dimReadsInside(dm: DimLike, box: Bounds): boolean {
+  const p = dimLineMid(dm);
+  return (
+    p.x > box.minX + DIM_INSIDE_EPS &&
+    p.x < box.maxX - DIM_INSIDE_EPS &&
+    p.y > box.minY + DIM_INSIDE_EPS &&
+    p.y < box.maxY - DIM_INSIDE_EPS
+  );
+}
+
 /** Distance from point p to segment ab. */
 export function distPointToSegment(p: Point, a: Point, b: Point): number {
   const abx = b.x - a.x;

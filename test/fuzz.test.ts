@@ -45,8 +45,8 @@ import {
  *
  * ## Three findings this file records rather than asserts
  *
- * Writing the round-trip laws turned up three defects. One is fixed; two are stated here
- * as measured facts with named reproducers, because closing them is a design decision
+ * Writing the round-trip laws turned up three defects. Two are fixed; one is stated here
+ * as a measured fact with a named reproducer, because closing it is a design decision
  * and not a test change:
  *
  *  1. **FIXED — `format()` silently dropped a door's kind word and its `slide`/`open`
@@ -55,8 +55,14 @@ import {
  *     gone. Invisible until now because every fixture that formats a door uses the
  *     `hinged` default — the one word the resolver drops anyway. Pinned below by
  *     "format preserves the drawing" plus a per-kind example.
- *  2. **OPEN — `W_DIM_INSIDE`'s fix does not converge; it 2-CYCLES.** See
- *     {@link NON_CONVERGENT_FIX_CODES}.
+ *  2. **FIXED — `W_DIM_INSIDE`'s fix 2-CYCLED** (backlog 3.10). The producer offered an
+ *     endpoint swap it had never evaluated, so on a dimension running THROUGH the
+ *     building — inside whichever way round it reads — `arch fix` swapped it back and
+ *     forth until the pass budget ran out, leaving the result dependent on the PARITY of
+ *     that budget. `dimSwapFix` now re-asks the rule's own predicate (`dimReadsInside` in
+ *     `src/geometry.ts`) of the swapped geometry and offers nothing when the answer is
+ *     still "inside": the warning stands, the edit does not. The exclusion list this file
+ *     used to carry is gone, and its reproducer is inverted below into a fixpoint pin.
  *  3. **OPEN — `repair(repair(s)) !== repair(s)`.** See the repair block.
  */
 
@@ -367,32 +373,11 @@ describe("repair — round-trip", () => {
   });
 });
 
-/**
- * Diagnostic codes whose machine-applicable fix is known **not to reduce its own
- * diagnostic**, so the `arch fix` loop cannot reach a fixpoint on a plan that raises
- * one. Excluded from the convergence property below — with the reproducer proved live,
- * so this cannot rot into a dumping ground (the `NOT_REPRODUCED_HERE` idiom from
- * `test/spec-forms.test.ts`).
- *
- * `W_DIM_INSIDE` (the only member) offers "swap the dimension's endpoints so the line
- * reads outside the building". On a dimension that runs THROUGH the plan — neither
- * endpoint order puts it outside — the swap is offered again on the next pass and swaps
- * it back: a clean 2-cycle that burns every one of `arch fix`'s passes and leaves the
- * result depending on the parity of the pass budget. The likely remedy is for the fix
- * producer to evaluate its own predicate on the SWAPPED geometry and offer nothing when
- * the swap does not help — but "offer nothing" versus "offer an offset change" is a
- * design call, so this file measures the defect rather than guessing at it.
- */
-const NON_CONVERGENT_FIX_CODES = new Map<string, string>([
-  ["W_DIM_INSIDE", "the endpoint swap 2-cycles on a dimension that is inside either way"],
-]);
-
 /** One `arch fix` pass: top-ranked fix per diagnostic, applied together. Mirrors
  *  `src/cli/commands-author.ts`'s loop body, minus the CLI reporting. */
-function fixPass(src: string, skip: ReadonlySet<string>): string | null {
+function fixPass(src: string): string | null {
   const fixes: FixSuggestion[] = [];
   for (const d of [...compile(src, { noCache: true }).diagnostics, ...lint(src)]) {
-    if (d.code !== undefined && skip.has(d.code)) continue;
     const [top] = rankFixes(d.fixes ?? []);
     if (top) fixes.push(top);
   }
@@ -404,17 +389,25 @@ function fixPass(src: string, skip: ReadonlySet<string>): string | null {
 
 describe("applyFixes — convergence", () => {
   const MAX_PASSES = 8;
-  const skip = new Set(NON_CONVERGENT_FIX_CODES.keys());
 
   it("reaches a fixpoint, and never introduces an error on the way", () => {
     // Measured over 400 generated plans: 265 need zero passes, 130 need one, 5 need two.
     // MAX_PASSES 8 is therefore slack, not a threshold tuned to pass.
+    //
+    // There is NO exclusion list. There used to be one — `NON_CONVERGENT_FIX_CODES`,
+    // whose single member was `W_DIM_INSIDE` — and it is gone because the defect it
+    // named is fixed (backlog 3.10), not because it was inconvenient. If this property
+    // ever goes red on a new code, that is a finding about that fix producer: a
+    // machine-applicable fix that does not reduce its own diagnostic is worse than no
+    // fix at all, since `arch fix` is a fixpoint loop (ADR 0011). Fix the producer —
+    // usually by evaluating its own predicate on the geometry the edit WOULD produce —
+    // and do not re-introduce a blanket skip.
     fc.assert(
       fc.property(archPlan, (src) => {
         let cur = src;
         let passes = 0;
         for (; passes < MAX_PASSES; passes++) {
-          const next = fixPass(cur, skip);
+          const next = fixPass(cur);
           if (next === null) break;
           cur = next;
         }
@@ -430,9 +423,13 @@ describe("applyFixes — convergence", () => {
     );
   });
 
-  it("the non-convergence exclusions are real and still needed", () => {
-    // Staleness guard. Each excluded code must STILL fail to converge — otherwise it was
-    // fixed and the exclusion is a lie that hides the next oscillating fix.
+  it("settles on the plan whose W_DIM_INSIDE fix used to 2-cycle", () => {
+    // The regression pin for backlog 3.10, kept on the EXACT plan that failed. Its
+    // `dim clear` measures a line at y4000 through a 7700 × 5000 room, so the drawn line
+    // lands at y4500 — inside — and swapping the endpoints only mirrors it to y3500,
+    // inside as well. The producer used to offer the swap anyway: `arch fix` then spent
+    // all four of its passes swapping the statement back and forth, and which of the two
+    // orders you shipped depended on the parity of the pass budget.
     const reproducer = `plan "P" {
   units mm
   wall id=w1 exterior thickness 200 { (0,0) (7700,0) (7700,5000) (0,5000) close }
@@ -441,20 +438,40 @@ describe("applyFixes — convergence", () => {
 }
 `;
     expect(errorsOf(reproducer)).toEqual([]);
-    expect(lint(reproducer).map((d) => d.code)).toContain("W_DIM_INSIDE");
 
-    // Unskipped, the loop cycles: state N+2 equals state N, forever.
-    const states: string[] = [reproducer];
-    for (let i = 0; i < 4; i++) {
-      const next = fixPass(states[states.length - 1]!, new Set<string>());
-      expect(next, "the reproducer stopped producing fixes — W_DIM_INSIDE may be fixed").not.toBeNull();
-      states.push(next!);
-    }
-    expect(states[3], "W_DIM_INSIDE no longer 2-cycles — delete it from NON_CONVERGENT_FIX_CODES").toBe(states[1]);
-    expect(states[4]).toBe(states[2]);
-    expect(states[1]).not.toBe(states[2]);
+    // The warning still REPORTS — the rule describes a real problem and withholding the
+    // edit must not have silenced it — but it carries no machine-applicable edit, so the
+    // very first pass is already a fixpoint.
+    const d = lint(reproducer).find((x) => x.code === "W_DIM_INSIDE");
+    expect(d, "the reproducer no longer raises W_DIM_INSIDE — it stopped testing anything").toBeDefined();
+    expect(d!.fixes ?? [], "a swap that cannot move the line outside must not be offered").toEqual([]);
+    expect(fixPass(reproducer), "the loop has nothing to do, so it settles immediately").toBeNull();
 
-    // …and the exclusion list carries a reason for every member, so it stays reviewable.
-    for (const [code, why] of NON_CONVERGENT_FIX_CODES) expect(why.length, `${code} has no reason`).toBeGreaterThan(20);
+    // …and the same holds from the other side of the old cycle: the plan pass 1 used to
+    // produce is equally a fixpoint, so there is no parity left to depend on.
+    const swapped = reproducer.replace("(0,4000)->(7700,4000)", "(7700,4000)->(0,4000)");
+    expect(lint(swapped).map((x) => x.code)).toContain("W_DIM_INSIDE");
+    expect(fixPass(swapped)).toBeNull();
+  });
+
+  it("still offers — and converges on — the swap it exists for", () => {
+    // The other half of the guard: withholding the fix must not have withheld it
+    // everywhere. Here the measured segment IS the building's south edge, so the mirror
+    // genuinely reaches the outside, and one pass clears the warning for good.
+    const reversed = `plan "P" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }
+  room id=r at (0,0) size 5000x4000 uses living
+  dim (5000,4000)->(0,4000) offset 500 text "5000"
+}
+`;
+    const before = lint(reversed).find((x) => x.code === "W_DIM_INSIDE");
+    expect(before?.fixes?.[0]?.applicability).toBe("machine-applicable");
+
+    const once = fixPass(reversed);
+    expect(once).not.toBeNull();
+    expect(once).toContain(`dim (0, 4000)->(5000, 4000) offset 500 text "5000"`);
+    expect(lint(once!).map((x) => x.code)).not.toContain("W_DIM_INSIDE");
+    expect(fixPass(once!), "one pass, then a fixpoint").toBeNull();
   });
 });

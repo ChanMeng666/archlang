@@ -16,8 +16,8 @@
 import type { DoorNode, OpeningAttach, OpeningNode, Point, WindowNode } from "./ast.js";
 import type { FixSuggestion, Span } from "./diagnostics.js";
 import type { DoorHinge } from "./grammar/tokens.js";
-import type { WallLike } from "./geometry.js";
-import { distPointToSegment, length, segmentsOfWall, sub } from "./geometry.js";
+import type { Bounds, DimLike, WallLike } from "./geometry.js";
+import { dimReadsInside, dimSwapped, distPointToSegment, length, segmentsOfWall, sub } from "./geometry.js";
 import { exprToSource } from "./expr-source.js";
 import { fmt3 as numStr } from "./num-format.js";
 
@@ -347,18 +347,33 @@ export function pocketRunFix(
 /**
  * The fix for `W_DIM_INSIDE`: swap the dimension's two endpoints, which flips the
  * side its line lands on (the offset runs along the LEFT normal of from→to, so
- * reversing the order mirrors it to the outside) without changing the measured
- * length or any other clause.
+ * reversing the order mirrors it across the measured segment) without changing the
+ * measured length or any other clause.
  *
  * The replacement text is the whole statement re-emitted from the AST in
  * `dim.resolve` and carried on the IR as `_swapText` — lint sees only the IR, and
  * re-emitting there keeps the authored expressions (`H + WALL / 2`, an interpolated
- * `text`) intact rather than baking in resolved numbers. `machine-applicable`: the
- * swap is the unique answer, not a guess. Returns `null` without a span to write
- * into (a synthesized `dims auto` dim never has one).
+ * `text`) intact rather than baking in resolved numbers.
+ *
+ * **The swap is offered only when it is evaluated to help.** Mirroring across the
+ * measured segment moves the line to the other side of it — which is the outside
+ * only when the segment is at the building's edge. A dimension that runs THROUGH
+ * the plan reads inside either way, and offering the swap there was a defect, not a
+ * fix: `arch fix` is a fixpoint loop, so the warning came back on the next pass, the
+ * same edit was offered again, and the plan swapped back and forth until the pass
+ * budget ran out — leaving the shipped result dependent on the PARITY of that budget.
+ * So the producer re-asks the rule's own predicate ({@link dimReadsInside}) of the
+ * {@link dimSwapped} geometry and returns `null` when the answer is still "inside".
+ * The diagnostic still reports; it simply carries no mechanical edit, which ADR 0011
+ * allows and ADR 0005 prefers to inventing an offset the author never stated.
+ *
+ * `machine-applicable` once offered: the swap is then the unique answer, not a guess.
+ * Returns `null` without a span to write into (a synthesized `dims auto` dim never
+ * has one, and a `dim radius`/`diameter` call-out has no written endpoints to swap).
  */
-export function dimSwapFix(dm: { span?: Span; _swapText?: string }): FixSuggestion[] | null {
+export function dimSwapFix(dm: DimLike & { span?: Span; _swapText?: string }, extents: Bounds): FixSuggestion[] | null {
   if (!dm.span || !dm._swapText) return null;
+  if (dimReadsInside(dimSwapped(dm), extents)) return null;
   return [
     {
       title: "swap the dimension's endpoints so the line reads outside the building",

@@ -816,7 +816,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "W_DIM_INSIDE",
     "A hand-written dimension line lands inside the building.",
     "A `dim`'s line is drawn at `offset` along the LEFT normal of from→to, so the ENDPOINT ORDER chooses which side it lands on. This dimension's line (not its witness lines) falls inside the room-extents bounding box, where it crosses room labels, furniture and poché instead of reading in the page margin. Almost always the endpoints are simply the wrong way round. Advisory: an interior dimension you actually want (a clear width inside a room) is legitimate — reverse it or leave the warning.",
-    "Swap the two endpoints — the machine-applicable fix does it for you — or negate the `offset`.",
+    "Swap the two endpoints — the machine-applicable fix does it for you, but only when the swap actually moves the line out. Swapping mirrors the line across the segment being measured (negating the `offset` does the same thing), so it reaches the outside only when that segment is at the building's edge. A dimension whose measured run cuts THROUGH the plan reads inside either way and carries no automatic fix: measure along a facade instead, or raise the `offset` until the line clears the building.",
     'dim (0,6000)->(7000,6000) offset -500 text "7000"   # warning: the -500 offset pulls the line back inside',
   ),
   W_DIM_OVERLAP: W(
