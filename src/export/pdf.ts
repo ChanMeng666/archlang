@@ -15,7 +15,26 @@
  * helpers to keep parity with the SVG output. This duplicates the chrome geometry
  * (also in `backends/svg.ts`) — a deliberate, bounded cost until chrome itself
  * moves into the Scene in a later phase. Hatch patterns are SVG-specific, so
- * poché regions fill with the solid poché base colour in PDF.
+ * poché regions fill with the solid poché base colour in PDF: a `hatch` is the same
+ * multi-loop nonzero path a `region` is, so both share one `case` in {@link drawNode}
+ * and `fillColor` collapses the `url(#…)` pattern ref to {@link Theme.pocheBase}.
+ * That claim was false in every release through v1.26.0 — the switch simply had no
+ * `hatch` case and no `default`, the `wallFill` layer is exactly one `hatch`
+ * primitive, and so every PDF this project ever exported drew hollow walls. The
+ * `default` below is now an exhaustiveness guard so a new `ScenePrim` cannot be
+ * dropped the same silent way.
+ *
+ * **Output is byte-reproducible.** pdfkit defaults `info.CreationDate` to
+ * `new Date()` and derives the trailer `/ID` as an MD5 over the whole info dict, so
+ * a stock document differs between two renders of the same Scene — which contradicts
+ * this project's central determinism guarantee and made PDF the one shipped format
+ * without it. A PDF derived entirely from source text carries no information in a
+ * wall-clock stamp that the source does not already carry, so {@link toPdf} passes a
+ * fixed {@link PDF_EPOCH_MS} instead and both fields become constant. `Producer` and
+ * `Creator` are pdfkit's own literal `PDFKit` strings and there is no `ModDate`, so
+ * `CreationDate` was the only variable input. Note this is a CONSTANT, not a clock
+ * read: `src/` outside the CLI may not read the time (the `World` seam exists for
+ * that), which is also why `SOURCE_DATE_EPOCH` is deliberately not honoured here.
  */
 
 import type { NorthDir, Point } from "../ast.js";
@@ -29,6 +48,19 @@ import { plainText } from "../text-safe.js";
 
 /** PostScript points per millimetre (72 dpi ÷ 25.4 mm/in) — the true-page-size factor. */
 const PT_PER_MM = 72 / 25.4;
+
+/**
+ * The fixed `Info /CreationDate` every ArchLang PDF carries, in epoch milliseconds —
+ * the Unix epoch, written as `(D:19700101000000Z)`.
+ *
+ * Deliberately a SENTINEL rather than a plausible-looking date. The output is a pure
+ * function of the source, so there is no honest creation instant to report; a reader
+ * who opens the document properties and sees 1970-01-01 — two decades before the PDF
+ * format existed — reads it correctly as "this field is not a timestamp". A date that
+ * merely looked real (a release date, say) would be worse than useless: it would be
+ * believed. It is also the epoch the reproducible-builds convention converges on.
+ */
+const PDF_EPOCH_MS = 0;
 
 /** Resolve a Paint fill to a concrete PDF colour, or null for no fill. */
 function fillColor(paint: Paint, theme: Theme): string | null {
@@ -103,8 +135,13 @@ function drawNode(doc: any, node: SceneNode, theme: Theme): void {
       doc.moveTo(prim.a.x, prim.a.y).lineTo(prim.b.x, prim.b.y);
       applyPaint(doc, paint, theme);
       break;
+    // A hatch IS a region — the same closed loops under the same nonzero fill rule.
+    // The only difference is its `paint.fill`, an SVG `url(#pattern)` ref that PDF has
+    // no equivalent of, and `fillColor` already collapses that to the solid poché base.
+    // So they share one path rather than growing a second copy of `regionPath`.
     case "region":
-      doc.path(regionPath(prim.loops));
+    case "hatch":
+      doc.path(regionPath(prim.t === "region" ? prim.loops : prim.region));
       applyPaint(doc, paint, theme);
       break;
     case "arc":
@@ -118,6 +155,13 @@ function drawNode(doc: any, node: SceneNode, theme: Theme): void {
     case "text":
       drawText(doc, prim.at, prim.value, prim.size, prim.anchor, prim.rotate, fillColor(paint, theme) ?? "#000000");
       break;
+    default: {
+      // Exhaustiveness guard. A `ScenePrim` with no case here used to be dropped in
+      // silence — which is exactly how poché went missing from every PDF ever exported.
+      // Adding a variant to the union now fails the typecheck at this line instead.
+      const unhandled: never = prim;
+      throw new Error(`PDF export: unhandled scene primitive ${JSON.stringify(unhandled)}`);
+    }
   }
 }
 
@@ -159,7 +203,15 @@ export async function toPdf(scene: Scene): Promise<Uint8Array> {
   //    declared scale — a 1:200 A1 sheet measures 841 × 594 mm in the PDF. Stroke
   //    widths and font sizes ride the CTM, so they land at their sheet-mm values.
   const k = page && scene.sheet ? PT_PER_MM / scene.sheet.denom : 1;
-  const doc = new PDFDocument({ size: [W * k, H * k], margin: 0 });
+  // `info.CreationDate` is the ONLY variable input pdfkit has (see the header): it
+  // defaults to `new Date()` and the trailer `/ID` is an MD5 over the info dict, so
+  // pinning it to the sentinel epoch makes the whole file a pure function of the Scene.
+  // A fresh Date per call, so the module never shares a mutable object across renders.
+  const doc = new PDFDocument({
+    size: [W * k, H * k],
+    margin: 0,
+    info: { CreationDate: new Date(PDF_EPOCH_MS) },
+  });
   const chunks: Uint8Array[] = [];
   const done = new Promise<void>((resolve, reject) => {
     doc.on("data", (c: Uint8Array) => chunks.push(c));

@@ -19,27 +19,31 @@
  * rows, its primitive mix) rather than retyped, so a fixture that stops exercising a path
  * fails instead of quietly passing.
  *
- * ## Two findings recorded here, not papered over
+ * ## Two shipped defects, now fixed and pinned the other way up
  *
- * **(a) `toPdf` is NOT byte-deterministic**, and cannot be from inside this repo: pdfkit
- * stamps `Info /CreationDate` from `new Date()` (second granularity) and derives the trailer
- * `/ID` as an MD5 over that timestamp in MILLISECONDS, so two renders of the same Scene
- * differ. Measured: those are the ONLY two differing fields — every content-stream byte, the
- * whole xref table and `startxref` are identical, and both fields are fixed-width so nothing
- * shifts. Rather than mask and move on, {@link volatileSpans} pins the masking itself: one
- * test asserts the drawn page is byte-identical, and the next asserts every differing byte in
- * the whole FILE lies inside one of exactly two recognised spans — so a real nondeterminism
- * anywhere else cannot hide behind the mask. Making the output truly reproducible means
- * passing a fixed `info.CreationDate` into `PDFDocument`, which changes shipped bytes for a
- * published format; that is a product decision, not a test fix.
+ * **(a) `toPdf` is byte-deterministic** — as of the fix, and it was not before. pdfkit
+ * defaults `Info /CreationDate` to `new Date()` (second granularity) and derives the trailer
+ * `/ID` as an MD5 over the info dict including that timestamp in MILLISECONDS, so two renders
+ * of the same Scene differed. Measured at the time: those were the ONLY two differing fields
+ * — every content-stream byte, the whole xref table and `startxref` were already identical.
+ * `toPdf` now passes a fixed `info.CreationDate` (the Unix epoch, `(D:19700101000000Z)` — an
+ * obvious sentinel, not a plausible-looking date), which makes both fields constant. The two
+ * tests below used to be "the drawn page is identical" plus "every differing byte lies inside
+ * one of two recognised spans"; **there is no mask any more**, so the honest assertion is
+ * whole-file byte identity across two renders separated by a forced wall-clock second — which
+ * is precisely what used to fail, and which by construction also catches a NEW variable field
+ * (a `ModDate`, a random `/ID`) rather than tolerating it. A second test pins the sentinel
+ * literal so a pdfkit upgrade that stopped honouring `info.CreationDate` names itself.
  *
- * **(b) Poché is DROPPED from every PDF.** `drawNode`'s switch has no `hatch` case, and the
- * `wallFill` layer is a single `hatch` primitive — so walls print as hollow outlines. The
- * module header of `src/export/pdf.ts` promises the opposite ("poché regions fill with the
- * solid poché base colour in PDF"), and `fillColor`'s `url(…) → theme.pocheBase` branch is
- * consequently dead: no non-hatch primitive ever carries a pattern fill. The gap is pinned
- * below as a characterisation test, non-vacuously (the same colour formatter is shown to find
- * a colour that IS drawn), so it cannot be lost again. **Fixing it means flipping that test.**
+ * **(b) Poché reaches the PDF** — also as of the fix, and it did not before. `drawNode`'s
+ * switch handled polygon/line/region/arc/circle/text with no `hatch` case and no `default`,
+ * and the `wallFill` layer is exactly one `hatch` primitive, so every PDF this project had
+ * ever exported drew hollow walls while the module header of `src/export/pdf.ts` promised the
+ * opposite. A `hatch` is the same multi-loop nonzero path a `region` is, so the two now share
+ * one `case`, and `fillColor`'s `url(…) → theme.pocheBase` branch — dead code for as long as
+ * the gap existed — is what gives it its colour. The characterisation test below is inverted,
+ * keeping its shape: the same colour formatter is still shown to find a colour that is drawn,
+ * so a passing assertion cannot be a mis-formatted needle that happens to match.
  *
  * **(c) The `layoutChrome` fallback is wrong for a sheet.** `toPdf` and `drawChrome` both fall
  * back to recomputing the chrome when a Scene carries none. On the historical (no-`paper`)
@@ -153,27 +157,19 @@ function mediaBox(pdf: Uint8Array): [number, number] {
 }
 
 /**
- * The byte ranges of the two wall-clock fields pdfkit stamps into every file — see
- * finding (a) in the header. Both are FIXED WIDTH, so masking them cannot shift any
- * other offset. Callers assert there are exactly two, which is what stops a pdfkit
- * change to either format from turning the mask into a silent no-op.
+ * The whole file as comparable text. There is deliberately no masking helper here any
+ * more — see finding (a): the two wall-clock fields this suite used to mask are now
+ * constant, so every byte is compared and a NEW variable field cannot hide.
  */
-const VOLATILE = [
-  /\(D:\d{14}Z\)/g, // Info /CreationDate — `new Date()`, second granularity
-  /\/ID \[<[0-9a-f]{32}> <[0-9a-f]{32}>\]/g, // trailer /ID — MD5 over CreationDate in ms
-];
+const pdfBytes = (pdf: Uint8Array) => new TextDecoder("latin1").decode(pdf);
 
-function volatileSpans(pdf: Uint8Array): [number, number][] {
-  const text = new TextDecoder("latin1").decode(pdf);
-  const spans: [number, number][] = [];
-  for (const re of VOLATILE) for (const m of text.matchAll(re)) spans.push([m.index, m.index + m[0].length]);
-  return spans.sort((a, b) => a[0] - b[0]);
-}
-
-function maskVolatile(pdf: Uint8Array): string {
-  let text = new TextDecoder("latin1").decode(pdf);
-  for (const re of VOLATILE) text = text.replace(re, (m) => "\u0000".repeat(m.length));
-  return text;
+/** Busy-wait until the wall clock crosses into the next second (bounded by 1s). */
+function crossSecondBoundary(): void {
+  const start = Math.floor(Date.now() / 1000);
+  while (Math.floor(Date.now() / 1000) === start) {
+    /* spin — pdfkit's default CreationDate has second granularity, so this is the
+       separation that used to make two renders differ in the Info dict as well as /ID */
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -286,47 +282,49 @@ describe("PDF export", () => {
   // Determinism — finding (a) in the header.
 
   describe("determinism", () => {
-    it("the DRAWN page is byte-identical across two renders", async () => {
+    it("the WHOLE FILE is byte-identical across two renders, over a wall-clock second", async () => {
       const a = await toPdf(scene);
+      // The separation that used to break this: pdfkit's default `Info /CreationDate`
+      // has second granularity, so two renders inside one second differed only in the
+      // ms-derived trailer `/ID`. Crossing the boundary moves BOTH fields.
+      crossSecondBoundary();
       const b = await toPdf(scene);
-      expect(pageOps(a)).toBe(pageOps(b));
-      // Non-vacuity: the stream really carries the drawing, not an empty page.
+
+      expect(a.length).toBe(b.length);
+      const differing: number[] = [];
+      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) differing.push(i);
+      expect(
+        differing.slice(0, 16).map((i) => [i, pdfBytes(a).slice(Math.max(0, i - 24), i + 24)]),
+        "toPdf() is not byte-reproducible. Every byte — the vector ops, the Info dict, the xref " +
+          "table, startxref — must be a pure function of the Scene; `info.CreationDate` is pinned " +
+          "to a fixed epoch precisely so no wall-clock value can reach the file. A difference here " +
+          "is a real nondeterminism to fix at the source, never a field to start masking.",
+      ).toEqual([]);
+      expect(pdfBytes(a)).toBe(pdfBytes(b));
+
+      // Non-vacuity: this really is a drawn page, not two identical empty ones.
       expect(pageOps(a)).toContain(" re\n");
       expect(pageOps(a).length).toBeGreaterThan(200);
     });
 
-    it("the file differs ONLY inside the two wall-clock container fields", async () => {
-      const a = await toPdf(scene);
-      const b = await toPdf(scene);
-      // Both volatile fields are fixed-width, so the files stay the same size.
-      expect(a.length).toBe(b.length);
-
-      const spans = volatileSpans(a);
-      expect(
-        spans.map(([s, e]) => new TextDecoder("latin1").decode(a.subarray(s, e)).slice(0, 4)),
-        "pdfkit no longer writes one `(D:…Z)` CreationDate and one trailer `/ID [<…> <…>]` in the " +
-          "shape this suite masks. The mask must be re-derived from the real output before it is " +
-          "trusted again — an unmatched pattern would silently stop hiding a real nondeterminism.",
-      ).toEqual(["(D:2", "/ID "]);
-      expect(volatileSpans(b)).toEqual(spans);
-
-      const differing: number[] = [];
-      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) differing.push(i);
-      const outside = differing.filter((i) => !spans.some(([s, e]) => i >= s && i < e));
-      expect(
-        outside.slice(0, 16),
-        "toPdf() drifted OUTSIDE the two known wall-clock fields. Everything else — every vector " +
-          "op, the xref table and startxref — is required to be byte-stable, so this is a real " +
-          "nondeterminism in the PDF backend, not a container artefact to mask away.",
-      ).toEqual([]);
-
-      expect(maskVolatile(a)).toBe(maskVolatile(b));
+    it("stamps the fixed sentinel CreationDate, not a wall-clock one", async () => {
+      // The identity test above would also pass if pdfkit stopped writing a date at all,
+      // so pin the actual value: an obviously-unreal epoch that no reader mistakes for a
+      // creation time. This is the assertion that names a pdfkit upgrade which quietly
+      // stopped honouring `info.CreationDate`.
+      const text = pdfBytes(await toPdf(scene));
+      const dates = [...text.matchAll(/\(D:\d{14}Z\)/g)].map((m) => m[0]);
+      expect(dates).toEqual(["(D:19700101000000Z)"]);
+      // …and nothing else in the container carries a date-shaped field.
+      expect(text).not.toContain("/ModDate");
+      // Producer/Creator are pdfkit's own constant strings — not a version we vary.
+      expect(text).toContain("/Producer");
     });
 
-    it("the same source re-resolved from scratch renders the same drawing", async () => {
+    it("the same source re-resolved from scratch renders the same FILE", async () => {
       // A stronger statement than re-rendering one Scene object: the whole
-      // parse → resolve → toScene → toPdf pipeline is reproducible.
-      expect(pageOps(await toPdf(sceneOf(RICH)))).toBe(pageOps(await toPdf(sceneOf(RICH))));
+      // parse → resolve → toScene → toPdf pipeline is reproducible, bytes included.
+      expect(pdfBytes(await toPdf(sceneOf(RICH)))).toBe(pdfBytes(await toPdf(sceneOf(RICH))));
     });
   });
 
@@ -401,7 +399,7 @@ describe("PDF export", () => {
       // that fallback lands in exactly the same place as the stored layout.
       const s = planOf(RICH);
       expect(s.sheet).toBeUndefined();
-      expect(maskVolatile(await toPdf({ ...s, chrome: undefined }))).toBe(maskVolatile(await toPdf(s)));
+      expect(pdfBytes(await toPdf({ ...s, chrome: undefined }))).toBe(pdfBytes(await toPdf(s)));
     });
 
     /**
@@ -490,20 +488,19 @@ describe("PDF export", () => {
     });
 
     /**
-     * KNOWN GAP — finding (b) in the header, pinned so it cannot be lost again.
+     * Finding (b) in the header, inverted now that it is fixed.
      *
-     * `drawNode`'s switch handles polygon/line/region/arc/circle/text but NOT `hatch`,
-     * and the `wallFill` layer is a single `hatch` primitive — so every PDF ArchLang has
-     * ever exported has hollow walls. `src/export/pdf.ts`'s header promises the opposite
-     * ("poché regions fill with the solid poché base colour in PDF"), which also makes
-     * `fillColor`'s `url(…) → theme.pocheBase` branch unreachable.
+     * `drawNode`'s switch handled polygon/line/region/arc/circle/text with no `hatch`
+     * case and no `default`, and the `wallFill` layer is a single `hatch` primitive — so
+     * every PDF ArchLang exported through v1.26.0 had hollow walls, contradicting its own
+     * module header, and `fillColor`'s `url(…) → theme.pocheBase` branch was dead code.
+     * `hatch` now shares the `region` case and that branch is what colours it.
      *
-     * **When that is fixed, this test flips**: the poché colour becomes present and the
-     * final assertion inverts. It is deliberately non-vacuous — the same formatter is
-     * shown to find a colour that IS drawn, so the absence below is real and not a
-     * mis-formatted needle.
+     * The shape of the old characterisation test is kept deliberately: the same colour
+     * formatter is still shown to find a colour that IS drawn, so this cannot pass (or
+     * fail) on a mis-formatted needle.
      */
-    it("KNOWN GAP: a poche (hatch) region is DROPPED, not filled with the poche base", async () => {
+    it("fills a poche (hatch) region with the solid poche base colour", async () => {
       const s = planOf(SHEET);
       const hatches = s.nodes.filter((n) => n.prim.t === "hatch");
       expect(hatches.length, "the fixture must contain poche for this to say anything").toBeGreaterThan(0);
@@ -514,10 +511,32 @@ describe("PDF export", () => {
       expect(ops).toContain(`${rgbOp(s.theme.roomFill)} scn`);
       expect(
         ops.includes(`${rgbOp(s.theme.pocheBase)} scn`),
-        "The poche base colour now DOES reach the PDF, which means the hatch gap was fixed. " +
-          "Good — invert this assertion (and drop the KNOWN GAP framing plus the finding in this " +
-          "file's header and in `src/export/pdf.ts`'s).",
-      ).toBe(false);
+        "The poche base colour is missing from the PDF again — `drawNode` is dropping the " +
+          "`hatch` primitive, so every wall prints as a hollow outline. This is the shipped bug " +
+          "fixed in backlog 3.8; do not re-pin it as a known gap.",
+      ).toBe(true);
+    });
+
+    it("draws the poche region as the same multi-loop nonzero path a `region` gets", async () => {
+      // The wall poche and the wall FACE outline are the same loops (`emitRegion` emits a
+      // `hatch` on wallFill and a `region` on wallFace from one `loops` array), so the fix
+      // must not have invented a second geometry: the fill path and the outline path have
+      // the same number of subpaths.
+      const s = planOf(SHEET);
+      const hatch = s.nodes.find((n) => n.prim.t === "hatch")!;
+      const region = s.nodes.find((n) => n.prim.t === "region")!;
+      const loops = (hatch.prim as { t: "hatch"; region: unknown[] }).region.length;
+      expect(loops).toBe((region.prim as { t: "region"; loops: unknown[] }).loops.length);
+
+      const ops = pageOps(await toPdf(s));
+      const poche = `${rgbOp(s.theme.pocheBase)} scn`;
+      const at = ops.indexOf(poche);
+      // pdfkit builds the path first, then selects the colour and fills — so the poche
+      // path is everything between the previous fill op and this colour op.
+      const path = ops.slice(ops.lastIndexOf("\nf\n", at) + 3, at);
+      expect((path.match(/ m\n/g) ?? []).length, "one moveto per poche loop").toBe(loops);
+      // `f`, the NONZERO fill — an even-odd `f*` would punch the wall's own outline out.
+      expect(ops.slice(at + poche.length)).toMatch(/^\nf\n/);
     });
   });
 });
