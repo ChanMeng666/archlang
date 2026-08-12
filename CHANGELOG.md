@@ -27,6 +27,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Seven of the nineteen grammar lines in `spec.llm.md` were factually wrong, and four taught forms
+  that do not compile** (issue #61). The spec is injected verbatim into agent system prompts, shipped
+  in the npm tarball, baked into the MCP shim and served at archlang.uk, so a wrong line is a wrong
+  model. Measured downstream in ArchCanvas: **11 of 18 generations failed to compile**, dominated by
+  the furniture forms the reference taught.
+  - `furniture` printed `<category> [id=…]`; the parser takes `id=` **first**, so every id-bearing
+    furniture form on the page raised `Expected "at" but found "id"`.
+  - The `wall` line **omitted `[id=<name>]` entirely** — the reference never taught how to name a
+    wall, while four other lines (`door on`, `window on`, `furniture against wall`, `dim radius`)
+    require a wall id. Arguably worse than the reported bug: an agent could not write a valid door
+    from the reference alone.
+  - `door`/`window`/`opening` read as if the trailing `wall <id|category>` clause pairs with either
+    placement form. It is `at`-form-only; after `on <wall>` it is a parse error.
+  - `furniture` showed `rotate` on all four position forms, but an `against` piece takes its rotation
+    from the wall (`E_FURN_AGAINST`).
+  - The **Common-mistakes** table — the most-copied section on the page — taught
+    `label "{aream2(W,H)}"` as though `aream2` were a builtin. It is a `let` in
+    `examples/parametric.arch`, so the row raised `E_UNKNOWN_FN`.
+  - Also: `dim`'s `offset` printed as required (it is optional, default 300), the curve call-outs'
+    `[offset]`/`[text]`, `wall`'s `[material … scale/angle]` sub-clauses, and `align center`.
+
+  Rule 6 now leads with **"`id=` comes FIRST"**, correcting the teaching for all ten id-bearing lines
+  at once. Root cause: the lines are hand-typed in `scripts/gen-llm-spec.ts`, so `check:drift` — which
+  proves *reproducibility*, never correctness — stayed green while the generator reproduced the same
+  wrong text every run. The proof that no text-level guard can close this: `grammars/archlang.gbnf`,
+  produced by a *different* hand-typed generator, had `wall` and `furniture` **right** the whole
+  time. Two generators, the same shapes, disagreeing, both passing drift.
 - **A runtime error message promised a release that shipped without the feature.** `room polygon`
   with an `arc` edge said "planned for v1.25" — so a user running 1.25.0 was told to wait for the
   release they were already on. The message (and the matching prose in
