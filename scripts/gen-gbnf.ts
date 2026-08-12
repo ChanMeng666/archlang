@@ -21,11 +21,28 @@
  * test (`test/gbnf-drift.test.ts`) can regenerate it in-memory and assert equality.
  * Run `npx tsx scripts/gen-gbnf.ts` after editing; CI asserts no drift.
  *
- * PRACTICAL, NOT PARSER-EQUIVALENT. The grammar is deliberately a *superset* of the
- * hand-written parser: it may accept token spacings the lexer would merge, or
- * attribute orders the parser fixes, but it must NEVER reject a valid `.arch`
- * (acceptance of the whole `examples/` corpus is the hard test). The parser and its
- * catalogued diagnostics remain the source of truth for what is actually valid.
+ * PRACTICAL, NOT PARSER-EQUIVALENT — but the slack is WHITESPACE, never SHAPE. The
+ * grammar may accept token spacings the lexer would merge (`ws` sits between two
+ * word-like tokens that the lexer would glue into one ident), and it deliberately
+ * accepts forms the RESOLVER refuses with a catalogued `E_*`/`W_*` code — a
+ * constrained decoder should be able to emit an off-wall door and be told about it.
+ * What it must NOT do is accept a token sequence the PARSER rejects: that is the one
+ * job it exists to do, and every such case is a defect. It must equally never reject
+ * a valid `.arch` (acceptance of the whole `examples/` corpus is the hard test).
+ *
+ * The invariant is executable: `test/gbnf-drift.test.ts`'s "agrees with the parser"
+ * suite runs a corpus through BOTH this grammar's recognizer and the real `compile()`
+ * and fails when they disagree about whether a snippet parses. The expected verdict
+ * is taken from the compiler, never written down beside the case, so the corpus
+ * cannot be greened by editing a column. Add a case there for any clause order,
+ * arity floor or either/or pairing you encode below.
+ *
+ * ATTRIBUTE ORDER IS PART OF THE SHAPE. Every element's optional clauses are read by
+ * the parser as a FIXED SEQUENCE of `if (isKeyword(...))` tests, not as a set: after
+ * `door … swing in`, a `hinge left` is not a mis-ordered clause, it is the start of an
+ * unknown statement. So each element renders its clauses as a run of `( … )?`
+ * optionals in the parser's own order — never `( clause )*`, which also invites the
+ * decoder to repeat one.
  */
 
 import { writeFileSync } from "node:fs";
@@ -86,6 +103,21 @@ const CONTROL_COVERED_STRUCTURALLY = ["plan", "else"];
 const DOOR_CLAUSES = Object.keys(DOOR_ENUMS) as DoorEnumClause[];
 
 /**
+ * The order `door.parse()` (`src/elements/door.ts`) reads its optional clauses in:
+ * `wall`, then these, then `open`. A FIXED sequence, not a set — `door … swing in
+ * hinge left` is a parse error, not a re-ordering — so `door-clauses` below renders
+ * one `( … )?` per entry **in `DOOR_ENUMS`'s own key order**, which happens to be
+ * exactly this order.
+ *
+ * This constant is a PIN, not the rendering: the productions are still injected from
+ * the table (iron rule — derive, never retype), and this exists only so that
+ * reordering `DOOR_ENUMS` for some unrelated reason fails the build here instead of
+ * silently emitting a grammar whose clause order the parser rejects. Keep it equal to
+ * the sequence of `if (ctx.isKeyword(…))` tests in `door.parse()`.
+ */
+const DOOR_CLAUSE_PARSE_ORDER: readonly string[] = ["hinge", "swing", "slide"];
+
+/**
  * The door-clause guard. Every clause in `DOOR_ENUMS` must (a) be reachable from
  * `door-clause`, (b) have a `<clause>-val` production of its own, and (c) have that
  * production RENDER the table's alternation rather than a retyped copy of it.
@@ -141,6 +173,20 @@ export function assertDoorVocab(
       throw new Error(`gen-gbnf: no door clause emits \`${lit(clause)} rws ${clause}-val\`.`);
     }
   }
+  // Last, so a missing/stale production above reports itself first: the clause
+  // SEQUENCE is rendered from the table's key order, which makes that order
+  // load-bearing — reorder `DOOR_ENUMS` and the emitted grammar's only output would
+  // be a parse error. See {@link DOOR_CLAUSE_PARSE_ORDER}.
+  const order = Object.keys(enums);
+  if (order.join(" ") !== DOOR_CLAUSE_PARSE_ORDER.join(" ")) {
+    throw new Error(
+      `gen-gbnf: DOOR_ENUMS key order (${order.join(", ")}) no longer matches the order ` +
+        `\`door.parse()\` reads its clauses in (${DOOR_CLAUSE_PARSE_ORDER.join(", ")}). ` +
+        `The grammar renders them as a FIXED sequence, so a mismatch would ship a grammar ` +
+        `whose every multi-clause door is a parse error. Re-read src/elements/door.ts, then ` +
+        `update DOOR_CLAUSE_PARSE_ORDER (and the table) together.`,
+    );
+  }
 }
 
 function assertVocab(body: [string, string][]): void {
@@ -179,7 +225,13 @@ function rules(): [string, string][] {
   const elementKw = litAlt(KEYWORDS.element);
   const useKind = litAlt(USE_KINDS);
   const anchor = litAlt(FURNITURE_ANCHORS);
-  const paperSize = litAlt(PAPER_SIZES);
+  // `parsePaperSetting` upper-cases the size word before checking it but compares the
+  // ORIENTATION exactly — so `paper a4 landscape` is legal and `paper A4 Landscape` is
+  // a parse error. Both alternations are derived (never retyped), and the asymmetry is
+  // rendered rather than tidied away: a grammar that only offered `A4` would refuse a
+  // spelling the parser accepts. A size is two characters, so folding the whole word is
+  // the complete set of accepted spellings, not a sample.
+  const paperSize = litAlt(PAPER_SIZES.flatMap((s) => [s, s.toLowerCase()]));
   const paperOrientation = litAlt(PAPER_ORIENTATIONS);
 
   return [
@@ -238,11 +290,24 @@ function rules(): [string, string][] {
     // expression list. Rows may repeat and appear in either order (the parser appends).
     ["axes-stmt", `"axes" ws "{" ws ( axes-row ws )* "}"`],
     ["axes-row", `( "x" | "y" ) rws "at" ws expr ( ws "," ws expr )*`],
-    ["theme-stmt", `"theme" ( rws "from" rws string | rws ident ( ws theme-block )? | ws theme-block )`],
+    // Base name and block are INDEPENDENTLY optional — `parseTheme` takes a leading
+    // ident if there is one and a block if there is one, so a bare `theme` (a legal
+    // no-op) parses. Only `from` is exclusive.
+    ["theme-stmt", `"theme" ( rws "from" rws string | ( rws ident )? ( ws theme-block )? )`],
     ["theme-block", `"{" ws ( theme-entry ws )* "}"`],
+    // KNOWN OVER-PERMISSIVE, pinned rather than hidden. `config-value` is right for
+    // `theme` only by accident of key: every theme key but `lineWeight` takes a string,
+    // so `theme { wall 5 }` is a parse error (`Expected string but found "5"`).
+    // Splitting the rule by value type needs the theme key table AND its friendly
+    // aliases (`wall` → `wallStroke`) injected from `src/theme.ts`, where the alias map
+    // is module-private. See the `DIVERGENT` pin in `test/gbnf-drift.test.ts`, which
+    // fails the day this is fixed.
     ["theme-entry", `ident ws ":"? ws config-value`],
     ["style-stmt", `"style" rws ident ws "{" ws ( style-entry ws )* "}"`],
-    ["style-entry", `ident ws ":"? ws config-value`],
+    // A style value is ALWAYS a string — every entry in `STYLE_KEYS` maps to a colour
+    // Theme key, and `parseStyle` reads it with `eatString`, so `style room { fill 5 }`
+    // is a parse error. No key table needed: the rule is uniform.
+    ["style-entry", `ident ws ":"? ws string`],
     ["config-value", `string | number`],
 
     // ---- decls / control -------------------------------------------------
@@ -274,13 +339,19 @@ function rules(): [string, string][] {
     ["block", `"{" ws ( block-stmt ws )* "}"`],
 
     // ---- strip -----------------------------------------------------------
-    [
-      "strip-stmt",
-      `"strip" rws strip-dir rws "at" ws point rws "gap" ws expr ( rws strip-cross )? ws "{" ws ( strip-room ws )* "}"`,
-    ],
-    ["strip-dir", `"right" | "left" | "down" | "up"`],
-    ["strip-cross", `( "height" | "width" ) ws expr`],
-    ["strip-room", `"room" rws id-opt "size" ws strip-size ( ws room-label )? ( ws room-uses )?`],
+    // The cross-axis keyword is chosen BY THE DIRECTION, not offered as a pair: a
+    // horizontal strip (`right`/`left`) shares a `height`, a vertical one (`down`/`up`)
+    // shares a `width`, and `parseStrip` only ever looks for the one its direction
+    // implies — so `strip right … width 3000` is a parse error, not a synonym.
+    ["strip-stmt", `"strip" rws ( strip-h | strip-v ) ws "{" ws ( strip-room ws )* "}"`],
+    ["strip-h", `( "right" | "left" ) rws "at" ws point rws "gap" ws expr ( rws "height" ws expr )?`],
+    ["strip-v", `( "down" | "up" ) rws "at" ws point rws "gap" ws expr ( rws "width" ws expr )?`],
+    // A strip child is NOT a `room` statement: it takes a main-axis extent instead of
+    // `at`+`size`, and its `label` takes no `at (x,y)` anchor (`parseStripRoom` reads
+    // the string and stops), so it gets its own label rule rather than sharing
+    // `room-label`.
+    ["strip-room", `"room" rws id-opt "size" ws strip-size ( ws strip-label )? ( ws room-uses )?`],
+    ["strip-label", `"label" ws string`],
     ["strip-size", `expr ( ws "x" ws expr )?`],
 
     // ---- level (one storey; a plan-level block, body = ordinary statements) ----
@@ -292,13 +363,16 @@ function rules(): [string, string][] {
     // ---- elements --------------------------------------------------------
     [
       "wall-stmt",
-      `"wall" rws id-opt ident rws "thickness" ws expr ( ws wall-material )? ws "{" ws ( wall-vertex ws )* ( "close" ws )? "}"`,
+      `"wall" rws id-opt ident rws "thickness" ws expr ( ws wall-material )? ws "{" ws point ws ( wall-vertex ws )+ ( "close" ws )? "}"`,
     ],
     ["wall-material", `"material" rws ident ( rws ( "scale" | "angle" ) ws expr ){0,2}`],
-    // A wall vertex is a plain point or a CURVED edge arriving at one (v1.24). `arc`
-    // cannot lead the list (there would be nothing to curve from), but that is a
-    // resolve-time diagnostic, not a grammar rule — a constrained decoder should be able
-    // to emit the form and be told, the same way it can emit an off-wall door.
+    // A wall vertex is a plain point or a CURVED edge arriving at one (v1.24).
+    //
+    // Two arity facts are encoded in `wall-stmt` above rather than left to the
+    // resolver, because BOTH are `ctx.fail` — parse errors with no catalogued code:
+    // the body opens with a plain `point` (an `arc` cannot lead the list; there would
+    // be nothing to curve away from) and then takes one or more further vertices,
+    // since "a wall needs at least two points" counts arc endpoints too.
     ["wall-vertex", `point | wall-arc`],
     ["wall-arc", `"arc" ws point ws "radius" ws expr ( rws arc-dir )? ( rws "major" )?`],
     ["arc-dir", `"cw" | "ccw"`],
@@ -306,7 +380,10 @@ function rules(): [string, string][] {
     // (`polygon` + >=3 points, no `size`). Both take the same trailing clauses.
     ["room-stmt", `"room" rws id-opt ( room-rect | room-poly | room-circle ) ( ws room-label )? ( ws room-uses )?`],
     ["room-rect", `room-pos ws "size" ws dims`],
-    ["room-poly", `"polygon" ws point ws point ( ws point )*`],
+    // THREE vertices minimum, not two — `parseRoom` fails outright below three
+    // ("A polygon room needs at least three vertices"), and a two-point ring is
+    // exactly the degenerate thing a decoder would otherwise be free to emit.
+    ["room-poly", `"polygon" ws point ws point ws point ( ws point )*`],
     ["room-circle", `"circle" rws "at" ws point ws "radius" ws expr`],
     ["room-pos", `"at" ws point | rel-dir rws ref ( rws "align" rws ident )? ( rws "gap" ws expr )?`],
     ["rel-dir", `"right-of" | "left-of" | "below" | "above"`],
@@ -315,31 +392,64 @@ function rules(): [string, string][] {
     ["use-kind", useKind],
     // The KIND word leads, after any `id=` — the shipped `room polygon` / `room circle`
     // / `dim faces` shape. Its alternation is INJECTED from `DOOR_KINDS`, guarded above.
-    ["door-stmt", `"door" rws id-opt ( door-kind rws )? opening-target ws "width" ws expr ( ws door-clause )*`],
+    ["door-stmt", `"door" rws id-opt ( door-kind rws )? opening-placement door-clauses`],
     ["door-kind", litAlt(DOOR_KINDS)],
-    // One clause per DOOR_ENUMS key, and one `<key>-val` production per clause, both
-    // INJECTED from the table (`assertDoorVocab` above fails the build if a key ever
-    // loses its production or a production stops deriving its alternation). The
-    // non-enum prefixes — `hinge near <vertex>`, `swing into <ref>` — are grammar
+    // One `( … )?` per DOOR_ENUMS key, in the table's key order, plus the trailing
+    // `open` — and one `<key>-val` production per clause, all INJECTED from the table
+    // (`assertDoorVocab` above fails the build if a key loses its production, a
+    // production stops deriving its alternation, or the key order stops matching the
+    // parser's). A SEQUENCE of optionals, not `( clause )*`: `door.parse()` tests each
+    // keyword once, in this order, so both a re-ordering and a repeat are parse errors.
+    // The non-enum prefixes — `hinge near <vertex>`, `swing into <ref>` — are grammar
     // structure rather than enum members, so they are stated here beside the injection.
     // `open <0..1>` is a number, not a closed value set, so it is structure too.
     [
-      "door-clause",
-      [`"wall" rws ref`, ...DOOR_CLAUSES.map((c) => `${lit(c)} rws ${c}-val`), `"open" ws expr`].join(" | "),
+      "door-clauses",
+      [...DOOR_CLAUSES.map((c) => `( ws ${lit(c)} rws ${c}-val )?`), `( ws "open" ws expr )?`].join(" "),
     ],
     ["hinge-val", `"near" rws ( ${litAlt(DOOR_HINGE_NEAR)} ) | ${litAlt(DOOR_ENUMS.hinge)}`],
     ["swing-val", `"into" rws ref | ${litAlt(DOOR_ENUMS.swing)}`],
     ["slide-val", litAlt(DOOR_ENUMS.slide)],
-    ["window-stmt", `"window" rws id-opt opening-target ws "width" ws expr ( ws "wall" rws ref )?`],
-    ["opening-stmt", `"opening" rws id-opt opening-target ws "width" ws expr ( ws "wall" rws ref )?`],
-    ["opening-target", `"at" ws point | "on" rws ref rws "at" ws attach-pos`],
+    ["window-stmt", `"window" rws id-opt opening-placement`],
+    ["opening-stmt", `"opening" rws id-opt opening-placement`],
+    /*
+     * The shared placement of `door`/`window`/`opening`, and the ONE place the
+     * either/or between the two forms is stated.
+     *
+     * The trailing `wall <id|category>` clause pairs with the FREE form only. After
+     * `on <wall> at <pos>` the host is already named by construction, and the parsers
+     * guard the clause on exactly that (`if (!attach && ctx.isKeyword("wall"))` in
+     * src/elements/{door,window,opening}.ts), so `door on w1 at 50% width 900 wall w1`
+     * is a PARSE error — no `E_*` code, no recovery, the statement is simply not in the
+     * language. A grammar that offers the clause after `on` hands a constrained decoder
+     * the one output it exists to make impossible, which is why this is a split
+     * production rather than a shared target plus an optional tail.
+     */
+    ["opening-placement", `opening-free | opening-hosted`],
+    ["opening-free", `"at" ws point ws "width" ws expr ( ws "wall" rws ref )?`],
+    ["opening-hosted", `"on" rws ref rws "at" ws attach-pos ws "width" ws expr`],
     ["attach-pos", `"center" | number ws "%" | number`],
-    ["furniture-stmt", `"furniture" rws id-opt ident rws furn-pos ( ws furn-clause )*`],
-    ["furn-pos", `"against" rws "wall" rws ref ( ws against-opt )* | "in" rws ref rws in-place | "at" ws point`],
-    ["against-opt", `"segment" ws expr | "offset" ws expr | "side" rws ident`],
+    /*
+     * Two shapes, because the trailing `in <roomId>` is available to only one of them.
+     * `at`/`against` do not name a room, so the piece may declare its owner at the end;
+     * the `in <room> centered|anchor …` form ALREADY named it, and `furniture.parse()`
+     * reads the trailing clause under `if (node.room === undefined && …)` — so a second
+     * `in` is a parse error, not a redundant repeat.
+     */
+    ["furniture-stmt", `"furniture" rws id-opt ident rws ( furn-placed | furn-roomed )`],
+    ["furn-placed", `( furn-at | furn-against ) furn-tail ( ws "in" rws ref )?`],
+    ["furn-roomed", `"in" rws ref rws in-place furn-tail`],
+    ["furn-at", `"at" ws point`],
+    // `segment`, `offset`, `side` — read once each, in this order (a fixed run of
+    // `if`s, like every other element's clause list).
+    [
+      "furn-against",
+      `"against" rws "wall" rws ref ( ws "segment" ws expr )? ( ws "offset" ws expr )? ( ws "side" rws ident )?`,
+    ],
     ["in-place", `"centered" | "anchor" rws anchor ( ws "flush" )? ( ws "inset" ws expr )?`],
     ["anchor", anchor],
-    ["furn-clause", `"size" ws dims | "label" ws string | "rotate" ws expr | "in" rws ref`],
+    // `size`, `label`, `rotate` — the shared tail, in the parser's order.
+    ["furn-tail", `( ws "size" ws dims )? ( ws "label" ws string )? ( ws "rotate" ws expr )?`],
     [
       "dim-stmt",
       `"dim" ( ( rws dim-ref )? ws point ws "->" ws point | rws dim-curve ) ( ws "offset" ws expr )? ( ws "text" ws string )?`,
@@ -373,17 +483,22 @@ function rules(): [string, string][] {
     ["unary-expr", `unary-op ws unary-expr | postfix-expr`],
     ["unary-op", `"-" | "+" | "!"`],
     ["postfix-expr", `atom ( ws "[" ws expr ws "]" )*`],
+    // `ref` is defined ONCE, down in the lexical section (it is the dotted form). It
+    // used to be defined a second time here as a bare `ident`, which is a duplicate
+    // rule name in the emitted file: one of the two lines is dead in any GBNF engine,
+    // and some reject the grammar outright.
     ["atom", `number | string | array | if-expr | call | ref | "(" ws expr ws ")"`],
     ["call", `ident ws "(" ws ( expr ( ws "," ws expr )* )? ws ")"`],
-    ["ref", `ident`],
     ["array", `"[" ws ( expr ( ws "," ws expr )* )? ws "]"`],
     ["if-expr", `"if" ws expr ws "{" ws expr ws "}" ws "else" ws "{" ws expr ws "}"`],
 
     // ---- lexical ---------------------------------------------------------
     // A numeric literal may carry an optional metric unit suffix (mm|cm|m),
     // folded to millimetres by the lexer; the value is scaled, the token shape
-    // is otherwise a number.
-    ["number", `digits frac? unit?`],
+    // is otherwise a number. The integer part is optional (`.5` lexes as a number —
+    // `c === "." && isDigit(peek(1))` in `lexImpl`) but the fraction's digits are not,
+    // so `5.` is a lex error in both.
+    ["number", `( digits frac? | frac ) unit?`],
     ["digits", `[0-9]+`],
     ["frac", `"." digits`],
     ["unit", `"mm" | "cm" | "m"`],

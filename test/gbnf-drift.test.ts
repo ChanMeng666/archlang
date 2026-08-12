@@ -2,7 +2,7 @@
  * Drift + acceptance/rejection gate for the generated GBNF grammar
  * (`grammars/archlang.gbnf`, produced by `scripts/gen-gbnf.ts`).
  *
- * Three things are asserted:
+ * Four things are asserted:
  *   1. DRIFT — regenerating in-memory equals the committed file, byte-for-byte
  *      (so a keyword/enum change in the single source must be regenerated).
  *   2. ACCEPTANCE — every top-level plan file under `examples/` is fully derivable
@@ -10,6 +10,11 @@
  *      valid .arch" test, including the v1.13 placement sugar (strip / `on … at %` /
  *      `swing into` / `anchor … inset`).
  *   3. REJECTION — a set of malformed snippets have no valid derivation.
+ *   4. PARSER AGREEMENT — a corpus is run through BOTH this grammar and the real
+ *      `compile()`, and the two must agree about whether each snippet PARSES. See
+ *      "The agreement corpus" below; this is the guard that would have caught the
+ *      v1.25 defect where the grammar offered `door on <wall> at <pos> … wall <ref>`,
+ *      a form the parser has never accepted.
  *
  * ## Why a bundled recognizer instead of the `gbnf` npm package
  *
@@ -33,6 +38,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, join } from "node:path";
 import { renderGbnf } from "../scripts/gen-gbnf.js";
+import { compile } from "../src/index.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
@@ -310,6 +316,227 @@ function accepts(rules: Map<string, Expr>, input: string): boolean {
 // Tests
 // ===========================================================================
 
+// ===========================================================================
+// The agreement corpus
+// ===========================================================================
+//
+// The grammar exists to make invalid output impossible for a constrained decoder,
+// so the property that matters is not "it looks right" but "it and the parser
+// agree". Nothing checked that until v1.25, and the gap shipped: `check:drift`
+// only proves the generator reproduces its own output, so a hand-typed production
+// can encode a form the language has never had and stay green forever.
+//
+// Every verdict below is TAKEN FROM `compile()`, never written beside the case, so
+// the corpus cannot be greened by editing a column — only by changing the grammar or
+// the compiler. What counts as "parses" is: no error diagnostic that lacks a `code`.
+// A catalogued `E_*` is a RESOLVE-time refusal and is deliberately still derivable —
+// a decoder should be able to emit an off-wall door and be told about it.
+//
+// Three lists, because "equivalent" is not quite the contract:
+//
+//   AGREEMENT   — the biconditional. `accepts(grammar) === parses(compiler)`. Any
+//                 form whose shape the grammar takes a position on belongs here.
+//   NARROWER    — forms the grammar deliberately refuses although they parse. The
+//                 admission rule, and the reason this list cannot become a dumping
+//                 ground: the compiler must itself flag the form with a CATALOGUED
+//                 code (error or warning) every time. A form that compiles clean can
+//                 never be parked here.
+//   DIVERGENT   — known over-permissiveness, PINNED so it stays visible instead of
+//                 being forgotten. Each entry says why it is not fixed. Fixing one
+//                 fails its pin, which is the prompt to move the case up to AGREEMENT.
+//
+// Out of scope by construction (the grammar approximates layout, not shape): inter-
+// token whitespace — `ws` sits between two word-like tokens the lexer would glue —
+// and the `sp ::= [ \t\r]{0,80}` bound on a single run of inline space.
+
+/** Does the real compiler PARSE this source? (Catalogued codes don't count.) */
+function parses(src: string): boolean {
+  const { diagnostics } = compile(src, { noCache: true });
+  return !diagnostics.some((d) => d.severity === "error" && !d.code);
+}
+
+/** The catalogued codes the compiler answers this source with. */
+function codes(src: string): string[] {
+  return compile(src, { noCache: true })
+    .diagnostics.map((d) => d.code)
+    .filter((c): c is string => c !== undefined);
+}
+
+/** A plan wrapping `body`, with a wall `w1` and a room `r1` in scope. */
+const P = (body: string): string =>
+  `plan "p" {\n` +
+  `  wall id=w1 exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }\n` +
+  `  room id=r1 at (0,0) size 5000x4000\n` +
+  `${body}\n}\n`;
+
+/**
+ * Both directions must hold. Roughly half of these parse and half do not; the
+ * balance is asserted below so the suite cannot pass by being all-positive.
+ */
+const AGREEMENT: [string, string][] = [
+  // —— openings: the `wall` clause is `at`-form-only (the v1.25 defect) ————
+  ["door at + wall clause", P(`  door at (2500,0) width 900 wall w1`)],
+  ["door on + wall clause", P(`  door on w1 at 50% width 900 wall w1`)],
+  ["door on, no wall clause", P(`  door on w1 at 50% width 900`)],
+  ["window at + wall clause", P(`  window at (2500,0) width 900 wall w1`)],
+  ["window on + wall clause", P(`  window on w1 at 50% width 900 wall w1`)],
+  ["opening at + wall clause", P(`  opening at (2500,0) width 900 wall w1`)],
+  ["opening on + wall clause", P(`  opening on w1 at 50% width 900 wall w1`)],
+  ["door kind + on + wall clause", P(`  door pocket on w1 at 50% width 900 wall w1`)],
+  ["door on center", P(`  door on w1 at center width 900`)],
+  // —— door clauses are a fixed SEQUENCE, not a set ————————————————————
+  ["door clauses in order", P(`  door at (2500,0) width 900 wall w1 hinge left swing in`)],
+  ["door swing before hinge", P(`  door at (2500,0) width 900 swing in hinge left`)],
+  ["door hinge twice", P(`  door at (2500,0) width 900 hinge left hinge right`)],
+  ["door wall after hinge", P(`  door at (2500,0) width 900 hinge left wall w1`)],
+  ["door open before slide", P(`  door sliding on w1 at 50% width 900 open 0.5 slide left`)],
+  ["door slide then open", P(`  door sliding on w1 at 50% width 900 slide left open 0.5`)],
+  ["door hinge near / swing into", P(`  door at (2500,0) width 900 hinge near start swing into r1`)],
+  ["door pocket + hinge (E_ not parse)", P(`  door pocket on w1 at 50% width 900 hinge left`)],
+  // —— furniture: fixed clause order, and one `in` only ————————————————
+  ["furn size,label,rotate,in", P(`  furniture id=f bed at (1000,1000) size 1000x2000 label "b" rotate 90 in r1`)],
+  ["furn label before size", P(`  furniture id=f bed at (1000,1000) label "b" size 1000x2000`)],
+  ["furn in before rotate", P(`  furniture id=f bed at (1000,1000) size 1000x2000 in r1 rotate 90`)],
+  ["furn size twice", P(`  furniture id=f bed at (1000,1000) size 1000x2000 size 900x900`)],
+  ["furn in-form + trailing in", P(`  furniture id=f bed in r1 centered size 1000x2000 in r1`)],
+  ["furn in-form, no trailing in", P(`  furniture id=f bed in r1 centered size 1000x2000`)],
+  [
+    "furn against seg,offset,side",
+    P(`  furniture id=f bed against wall w1 segment 0 offset 100 side left size 1000x600`),
+  ],
+  ["furn against side before offset", P(`  furniture id=f bed against wall w1 side left offset 100 size 1000x600`)],
+  ["furn against offset twice", P(`  furniture id=f bed against wall w1 offset 100 offset 200 size 1000x600`)],
+  ["furn anchor flush inset", P(`  furniture id=f bed in r1 anchor bottom flush inset 100 size 1000x600`)],
+  ["furn anchor inset before flush", P(`  furniture id=f bed in r1 anchor bottom inset 100 flush size 1000x600`)],
+  // —— room shapes ————————————————————————————————————————————
+  ["room polygon 3 vertices", P(`  room id=r2 polygon (6000,0) (7000,0) (7000,1000)`)],
+  ["room polygon 2 vertices", P(`  room id=r2 polygon (6000,0) (7000,0)`)],
+  ["room polygon label at", P(`  room id=r2 polygon (6000,0) (7000,0) (7000,1000) label "x" at (6500,500)`)],
+  ["room circle + uses", P(`  room id=r2 circle at (9000,0) radius 1000 uses living`)],
+  ["room uses before label", P(`  room id=r2 at (6000,0) size 1000x1000 uses living label "x"`)],
+  ["room relational align/gap", P(`  room id=r2 right-of r1 align top gap 100 size 1000x1000`)],
+  ["room relational gap before align", P(`  room id=r2 right-of r1 gap 100 align top size 1000x1000`)],
+  // —— wall body arity + `arc` cannot lead ————————————————————————
+  ["wall two points", P(`  wall id=w2 partition thickness 100 { (0,5000) (1000,5000) }`)],
+  ["wall one point", P(`  wall id=w2 partition thickness 100 { (0,5000) }`)],
+  ["wall arc as first vertex", P(`  wall id=w2 partition thickness 100 { arc (1000,5000) radius 800 }`)],
+  ["wall arc as second vertex", P(`  wall id=w2 partition thickness 100 { (0,5000) arc (1000,5000) radius 800 }`)],
+  [
+    "wall material scale+angle",
+    P(`  wall id=w2 partition thickness 100 material brick scale 2 angle 30 { (0,5000) (1,5000) }`),
+  ],
+  [
+    "wall material three subclauses",
+    P(`  wall id=w2 p thickness 100 material brick scale 2 scale 3 angle 5 { (0,5000) (1,5000) }`),
+  ],
+  ["wall close before a point", P(`  wall id=w2 partition thickness 100 { close (0,5000) (1000,5000) }`)],
+  // —— strip: the cross keyword is chosen by the direction ————————————
+  ["strip right + height", P(`  strip right at (0,6000) gap 100 height 3000 { room id=s1 size 2000 }`)],
+  ["strip right + width", P(`  strip right at (0,6000) gap 100 width 3000 { room id=s1 size 2000 }`)],
+  ["strip down + width", P(`  strip down at (0,6000) gap 100 width 3000 { room id=s1 size 2000 }`)],
+  ["strip down + height", P(`  strip down at (0,6000) gap 100 height 3000 { room id=s1 size 2000 }`)],
+  ["strip cross before gap", P(`  strip right at (0,6000) height 3000 gap 100 { room id=s1 size 2000 }`)],
+  [
+    "strip room label + uses",
+    P(`  strip right at (0,6000) gap 100 height 3000 { room id=s1 size 2000 label "a" uses living }`),
+  ],
+  [
+    "strip room label at",
+    P(`  strip right at (0,6000) gap 100 height 3000 { room id=s1 size 2000 label "a" at (1,1) }`),
+  ],
+  // —— dim ————————————————————————————————————————————————
+  ["dim without offset", P(`  dim (0,0)->(1000,0)`)],
+  ["dim offset then text", P(`  dim (0,0)->(1000,0) offset 300 text "a"`)],
+  ["dim text before offset", P(`  dim (0,0)->(1000,0) text "a" offset 300`)],
+  ["dim faces + radius", P(`  dim faces radius w1`)],
+  ["dim diameter + segment", P(`  dim diameter r1 segment 0`)],
+  // —— vertical / column clause order ————————————————————————————
+  ["stair dir then width", P(`  stair at (0,7000) size 1000x3000 dir up width 900`)],
+  ["stair width before dir", P(`  stair at (0,7000) size 1000x3000 width 900 dir up`)],
+  // —— settings, theme/style, numbers ————————————————————————————
+  ["paper A4 landscape", P(`  paper A4 landscape`)],
+  ["paper a4 lowercase", P(`  paper a4`)],
+  ["paper A4 Landscape (cap)", P(`  paper A4 Landscape`)],
+  ["theme bare", `plan "p" { theme }\n`],
+  ["theme named + block", P(`  theme blueprint { wall "#333" }`)],
+  ["theme unknown key, number", P(`  theme { bogus 5 }`)],
+  ["style known key, string", P(`  style room { fill "#333" }`)],
+  ["style known key, number", P(`  style room { fill 5 }`)],
+  ["number with leading dot", P(`  room id=r2 at (.5,6000) size 1x1`)],
+  ["number with trailing dot", P(`  room id=r2 at (5.,6000) size 1x1`)],
+  ["site block, either order", P(`  site { hemisphere south street north }`)],
+  ["north negative", P(`  north -45`)],
+  ["units cm", P(`  units cm`)],
+  // —— place / level ————————————————————————————————————————
+  [
+    "place rotate then mirror",
+    `plan "p" {\n  component c() { room at (0,0) size 100x100 }\n  place c() as a at (0,0) rotate 90 mirror x\n}\n`,
+  ],
+  [
+    "place mirror before rotate",
+    `plan "p" {\n  component c() { room at (0,0) size 100x100 }\n  place c() as a at (0,0) mirror x rotate 90\n}\n`,
+  ],
+  ["place without as", `plan "p" {\n  component c() { room at (0,0) size 100x100 }\n  place c() at (0,0)\n}\n`],
+  [
+    "level blocks",
+    `plan "p" {\n  level 1 { room at (0,0) size 100x100 }\n  level 2 { room at (0,0) size 100x100 }\n}\n`,
+  ],
+];
+
+/**
+ * The grammar refuses these although they parse. Admissible ONLY because the
+ * compiler answers each with a catalogued code every time — refusing a form the
+ * compiler itself flags is the grammar doing its job, not a hole in it.
+ */
+const NARROWER: [string, string, string][] = [
+  // `flush` needs an anchored edge; on a centred piece it is always E_FURN_FLUSH.
+  ["furn centered + flush", P(`  furniture id=f bed in r1 centered flush size 1000x2000`), "E_FURN_FLUSH"],
+  // Every recognised style key is a colour, so a numeric value is a parse error and
+  // `style-entry` takes a string. That also puts an unknown key's numeric value out
+  // of reach — a form the parser accepts, but never silently.
+  ["style unknown key, number", P(`  style room { bogus 5 }`), "W_UNKNOWN_STYLE_KEY"],
+  // Plan-level-only blocks. The parser consumes them for clean recovery and reports.
+  [
+    "strip inside a block",
+    P(`  if 1 == 1 { strip right at (0,6000) gap 0 height 100 { room size 100 } }`),
+    "E_STRIP_NEST",
+  ],
+  ["level inside a block", P(`  if 1 == 1 { level 1 { room at (0,0) size 1x1 } }`), "E_LEVEL_NEST"],
+  ["accTitle inside a block", P(`  if 1 == 1 { accTitle "x" }`), "E_ACC_PLACEMENT"],
+];
+
+/**
+ * Known over-permissiveness, pinned so it stays visible. Each parses-check FAILS
+ * while the grammar accepts; the pin asserts exactly that, so a future fix breaks it
+ * and the case moves up into AGREEMENT.
+ */
+const DIVERGENT: [string, string, string][] = [
+  [
+    "theme colour key, numeric value",
+    P(`  theme { wall 5 }`),
+    "Every theme key but `lineWeight` takes a string, so this is a parse error. Splitting " +
+      "`theme-entry` by key needs the theme key table AND its friendly aliases (`wall` → " +
+      "`wallStroke`) injected from src/theme.ts, where the alias map is module-private. " +
+      "Fix = export it and render two key alternations, one per value type.",
+  ],
+  [
+    "place … rotate 45",
+    `plan "p" {\n  component c() { room at (0,0) size 100x100 }\n  place c() as a at (0,0) rotate 45\n}\n`,
+    "`place … rotate` is a closed set (0|90|180|270) rejected at PARSE time, but the set " +
+      "exists nowhere at runtime — it is a TS union in ast.ts plus a conditional in " +
+      "parser.ts. Emitting it here would be a third retyped copy, the exact thing this " +
+      "generator's guards exist to prevent. Fix = add a PLACE_ROTATIONS table both read.",
+  ],
+  [
+    "level 1.5",
+    `plan "p" {\n  level 1 { room at (0,0) size 1x1 }\n  level 1.5 { room at (0,0) size 1x1 }\n}\n`,
+    "NOT EXPRESSIBLE, and deliberately left alone. The parser requires an INTEGER storey, " +
+      "but integrality is a property of the value AFTER the lexer folds a unit suffix: " +
+      "`level 1.5` is an error and `level 0.5cm` (= 5) is not. No context-free rule can " +
+      "separate them; a `digits`-only rule would reject `level 1.0`, which is valid.",
+  ],
+];
+
 /** Every top-level `.arch` under examples/ (incl. lib/) — all are plan files. */
 function allExamples(): { name: string; src: string }[] {
   const out: { name: string; src: string }[] = [];
@@ -427,6 +654,50 @@ plan "Sugar" {
     for (const [label, src] of bad) {
       it(label, () => {
         expect(accepts(rules, src)).toBe(false);
+      });
+    }
+  });
+
+  describe("agrees with the parser", () => {
+    for (const [label, src] of AGREEMENT) {
+      it(label, () => {
+        // The expected value comes from the compiler, every run. There is no column
+        // to edit: making this pass means changing the grammar or the language.
+        expect(accepts(rules, src)).toBe(parses(src));
+      });
+    }
+
+    it("the corpus cannot pass vacuously", () => {
+      const parseable = AGREEMENT.filter(([, s]) => parses(s));
+      const rejected = AGREEMENT.length - parseable.length;
+      // Both verdicts must be well represented, or "agreement" would be satisfied by
+      // a grammar that accepted everything (or nothing).
+      expect(parseable.length).toBeGreaterThanOrEqual(20);
+      expect(rejected).toBeGreaterThanOrEqual(20);
+      // And no duplicate labels quietly counting twice.
+      expect(new Set(AGREEMENT.map(([l]) => l)).size).toBe(AGREEMENT.length);
+    });
+  });
+
+  describe("is narrower than the parser only where the compiler itself objects", () => {
+    for (const [label, src, code] of NARROWER) {
+      it(label, () => {
+        expect(parses(src)).toBe(true); // it really is a parse-level narrowing
+        expect(accepts(rules, src)).toBe(false); // the grammar really does refuse it
+        // The admission rule: a form may be unreachable from the grammar only if the
+        // compiler flags it with a catalogued code. A clean-compiling form parked here
+        // fails this line rather than hiding.
+        expect(codes(src)).toContain(code);
+      });
+    }
+  });
+
+  describe("known divergences stay pinned (fixing one should fail its pin)", () => {
+    for (const [label, src, why] of DIVERGENT) {
+      it(label, () => {
+        expect(why.length).toBeGreaterThan(80); // a pin must carry its reasoning
+        expect(parses(src)).toBe(false);
+        expect(accepts(rules, src)).toBe(true);
       });
     }
   });
