@@ -70,6 +70,15 @@ jobs:
           );
           ' >> "$GITHUB_STEP_SUMMARY"
 
+      # The totals above cannot show a module that fell to ZERO — it is one row among 111
+      # in the `text` reporter and invisible in a four-line total. This names them. It is
+      # ADVISORY in the strongest sense: the script always exits 0 (it catches its own
+      # errors, including a missing coverage file), so this step can never turn a green run
+      # red. No thresholds are added — see `docs/testing.md` §2, "a map, not a gate".
+      - name: Zero-coverage modules (advisory)
+        if: matrix.node == 22
+        run: node scripts/coverage-zero-report.mjs >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload coverage summary
         if: matrix.node == 22
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

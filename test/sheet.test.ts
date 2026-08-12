@@ -427,7 +427,16 @@ suite("sheet — the SVG root carries the true paper size", () => {
   });
 });
 
-const pdfAvailable = await (async () => {
+/**
+ * `pdfkit` is an `optionalDependency`. This block used to be `suite.skipIf(!pdfAvailable)`,
+ * which is not vacuous — vitest reports a skip — but does not FAIL in CI either, so an
+ * install that quietly stopped pulling `optionalDependencies` would silently stop checking
+ * that a `paper` plan prints at its true ISO size, in a PUBLISHED output format, with
+ * nothing going red. `skipIf` has nowhere to hang the CI throw, so the gate takes the
+ * `if (!HAS) { … return; }` shape `test/png.test.ts` and `test/export-pdf.test.ts` use, and
+ * `docs/testing.md` §3 states: REQUIRED in CI, a VISIBLE named skip locally.
+ */
+const HAS_PDFKIT = await (async () => {
   try {
     await import("pdfkit" as string);
     return true;
@@ -435,8 +444,28 @@ const pdfAvailable = await (async () => {
     return false;
   }
 })();
+const PDFKIT_REQUIRED = !!process.env.CI;
 
-suite.skipIf(!pdfAvailable)("sheet — the PDF page is the true ISO size", () => {
+suite("sheet — the PDF page is the true ISO size", () => {
+  if (!HAS_PDFKIT) {
+    const gate = "optional dep pdfkit is installed";
+    if (PDFKIT_REQUIRED) {
+      it(gate, () => {
+        throw new Error(
+          "optional dep pdfkit missing in CI — install step is broken. The sheet layer's PDF " +
+            "page-size contract was NOT exercised: nothing checked that `paper A1` prints a true " +
+            "841x594 mm MediaBox, or that a plan with no `paper` keeps the historical 1 mm = 1 pt " +
+            "page. Check that the install step still pulls optionalDependencies (npm ci without " +
+            "--omit=optional).",
+        );
+      });
+    } else {
+      // Visible in the reporter as a skip, with the reason in the name.
+      it.skip(`${gate} (absent locally — the PDF page size is not exercised)`, () => {});
+    }
+    return;
+  }
+
   const PT_PER_MM = 72 / 25.4;
   /** `/MediaBox [0 0 w h]` of the first page. */
   function mediaBox(pdf: Uint8Array): [number, number] {

@@ -20,7 +20,8 @@
  * browser can read it. The base64url half is imported directly; the inflate half falls back
  * to `node:zlib` because `DecompressionStream("deflate-raw")` only exists from Node 21.2 and
  * CI runs the suite on 18/20/22 — where the capability IS present, `srcFromHash` is asserted
- * to agree, so the imported codec is exercised end to end.
+ * to agree, so the imported codec is exercised end to end. That last case is `it.skipIf`-gated
+ * so it reports as a NAMED SKIP on 18/20 instead of an early `return` that read as a pass.
  */
 
 import { readFileSync, readdirSync } from "node:fs";
@@ -111,8 +112,12 @@ describe("playground permalinks stay in sync with examples/", () => {
     }
   });
 
-  it("the playground's own decoder reads every permalink", async () => {
-    if (!HAS_DEFLATE_RAW) return; // Node < 21.2 has no DecompressionStream("deflate-raw")
+  // `skipIf`, not an early `return`: the early return made this case report as a PASS on
+  // Node 18/20 having asserted nothing at all. This is a CAPABILITY gate, not an optional
+  // dependency, so — unlike the pdfkit/resvg gates — it deliberately carries NO CI throw:
+  // two of the three matrix legs legitimately lack `deflate-raw`, and failing there would
+  // be wrong. Skipping by name is the whole fix. It still runs on Node 22.
+  it.skipIf(!HAS_DEFLATE_RAW)("the playground's own decoder reads every permalink", async () => {
     for (const { file, line, hash } of links) {
       expect(
         await srcFromHash(`#z=${hash}`),

@@ -216,6 +216,18 @@ about the compiler. **There are no thresholds and nothing can fail on a coverage
 design: `npm test` stays the single pass/fail signal and nobody games a percentage. Read it as a
 map of what the suite reaches.
 
+The one thing a total cannot show is a module that fell to **zero** — it is one row among 111 and
+invisible in a four-line summary. `scripts/coverage-zero-report.mjs` names them in the Node-22 step
+summary. It is advisory in the strongest sense: it catches its own errors and forces exit 0, so it
+can never turn a green run red, and it adds no thresholds.
+
+Read its output with one caveat it states itself: a module lands on that list either because it is
+genuinely unexercised **or because it only ever runs in a child process**. The four current entries
+are all the second case — `test/cli*.test.ts` `spawnSync`s the real `arch`, so v8's in-process
+counters never see `src/cli.ts` or `src/cli/` however well they are tested. There is deliberately no
+allowlist: suppressing the known entries would recreate, one level up, exactly the "nobody notices
+the zero" failure the report exists to fix.
+
 ---
 
 ## 3. Adding tests for new code — the house patterns
