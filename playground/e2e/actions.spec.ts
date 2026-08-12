@@ -1,5 +1,5 @@
 import { expect, type Download, type Page, test } from "@playwright/test";
-import { AUTOSAVE_KEY, SIMPLE_PLAN, setEditorSource, waitForPlan } from "./fixtures.js";
+import { AUTOSAVE_KEY, SIMPLE_PLAN, setEditorSource, waitForPlan, watchStatus } from "./fixtures.js";
 
 /** Sloppy but valid — `format()` must rewrite it, which is what makes the test honest. */
 const UNFORMATTED = `plan "E2E" {
@@ -27,33 +27,39 @@ test.describe("header actions", () => {
     await page.goto("/");
     await waitForPlan(page);
     await setEditorSource(page, UNFORMATTED);
+    // Record the status transitions BEFORE pressing: "Formatted" is painted over by
+    // the reformat's own 250 ms debounced `render()`, so it cannot be polled for
+    // live without racing it. See `watchStatus`.
+    const status = await watchStatus(page);
 
     await page.locator("#formatSrc").click();
-    await expect(page.locator("#statusText")).toHaveText("Formatted");
+    await status.expectFlash("Formatted");
     // Canonical style is two-space body indentation under `plan { … }`.
     await expect(page.locator(".cm-content")).toContainText("units mm");
     const text = await page.locator(".cm-content").innerText();
     expect(text).not.toContain("      door");
 
-    // Formatting rewrites the document, which starts ANOTHER 250 ms debounce whose
-    // `render()` would overwrite the next flash. Wait for that pass to land (the
-    // autosave is its witness) before pressing again.
+    // The rewrite reaches the autosaved draft too, so a reload restores the
+    // formatted source. This is its own assertion now — it used to double as the
+    // "wait out the debounce before pressing again" settle, which `expectFlash` no
+    // longer needs (a paint it already recorded cannot be overwritten).
     await expect
       .poll(() => page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY), { timeout: 10_000 })
       .not.toContain("      door");
 
     // Idempotent: a second press has nothing to do and says so.
     await page.locator("#formatSrc").click();
-    await expect(page.locator("#statusText")).toHaveText("Already formatted");
+    await status.expectFlash("Already formatted");
   });
 
   test("Copy link puts a #z= permalink in the URL and on the clipboard", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
     await setEditorSource(page, SIMPLE_PLAN);
+    const status = await watchStatus(page);
 
     await page.locator("#copyLink").click();
-    await expect(page.locator("#statusText")).toHaveText("Link copied");
+    await status.expectFlash("Link copied");
     await expect.poll(() => page.evaluate(() => window.location.hash)).toMatch(/^#z=/);
 
     const copied = await page.evaluate(() => navigator.clipboard.readText());
@@ -65,9 +71,10 @@ test.describe("header actions", () => {
     await page.goto("/");
     await waitForPlan(page);
     await setEditorSource(page, SIMPLE_PLAN);
+    const status = await watchStatus(page);
 
     await page.locator("#copyLlm").click();
-    await expect(page.locator("#statusText")).toHaveText("LLM prompt copied");
+    await status.expectFlash("LLM prompt copied");
 
     const prompt = await page.evaluate(() => navigator.clipboard.readText());
     expect(prompt).toContain("This is an ArchLang floor plan");
@@ -159,8 +166,9 @@ test.describe("preview toolbar", () => {
   test("Copy SVG puts the export-clean markup on the clipboard", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
+    const status = await watchStatus(page);
     await page.locator("button[data-pz='copysvg']").click();
-    await expect(page.locator("#statusText")).toHaveText("SVG copied");
+    await status.expectFlash("SVG copied");
     const copied = await page.evaluate(() => navigator.clipboard.readText());
     expect(copied.startsWith("<svg")).toBe(true);
     expect(copied).not.toContain("data-span");
@@ -169,8 +177,13 @@ test.describe("preview toolbar", () => {
   test("the Paths overlay changes the on-screen plan but leaves the export byte-identical", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
+    const status = await watchStatus(page);
 
     await page.locator("button[data-pz='copysvg']").click();
+    // Consume this copy's flash as well as asserting it: both presses paint the same
+    // message, and without advancing the cursor the second assertion would be
+    // satisfied by the first press — green whatever the second one did.
+    await status.expectFlash("SVG copied");
     const exportBefore = await page.evaluate(() => navigator.clipboard.readText());
     const displayedBefore = await page.locator(".pz-stage svg").innerHTML();
 
@@ -183,7 +196,7 @@ test.describe("preview toolbar", () => {
     // …but the export re-compiles WITHOUT it, so a downloaded/copied file never
     // carries a diagnostic aid. Byte-identical, not merely "similar".
     await page.locator("button[data-pz='copysvg']").click();
-    await expect(page.locator("#statusText")).toHaveText("SVG copied");
+    await status.expectFlash("SVG copied");
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(exportBefore);
   });
 });

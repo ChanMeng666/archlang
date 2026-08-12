@@ -75,6 +75,80 @@ export async function setEditorSource(page: Page, src: string): Promise<void> {
   await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY), { timeout: 10_000 }).toBe(src);
 }
 
+/** The page-side globals `watchStatus` installs. */
+interface StatusLogWindow extends Window {
+  __archlangStatusLog?: string[];
+  __archlangStatusObserver?: MutationObserver;
+}
+
+/** A cursor over everything the app has painted into `#statusText` since installation. */
+export interface StatusWatch {
+  /**
+   * Wait until the app has painted `message` into `#statusText` at some point
+   * AFTER the previous `expectFlash` (or after `watchStatus`, for the first call),
+   * then advance past it.
+   */
+  expectFlash(message: string): Promise<void>;
+}
+
+/**
+ * Record every value the app paints into `#statusText`, so a TRANSIENT message can
+ * be asserted without racing it.
+ *
+ * WHY THIS EXISTS. `flash()` (main.ts) shows a message and restores the resting
+ * status 1200 ms later — and a message shown by an action that also rewrites the
+ * document lives far less than that: the rewrite restarts the 250 ms `onDocChanged`
+ * debounce, whose `render()` paints "ready"/"N warnings" straight over the flash.
+ * So `await expect(page.locator("#statusText")).toHaveText("Formatted")` was
+ * polling for a value with a ~250 ms lifetime, and under full-suite parallel load
+ * a poll can step right over it. That is the 2026-08-12 flake in
+ * `actions.spec.ts` — timing-sensitive by construction, and not fixable by a longer
+ * timeout, which only widens the window it is already inside.
+ *
+ * A MutationObserver installed BEFORE the action cannot miss the paint no matter
+ * how briefly it survives, and the log only grows — so polling it is monotonic and
+ * has no window at all. The witness is the app's own status transition (causal),
+ * not the autosave landing near it (incidental).
+ *
+ * Install after `page.goto` and before the action under test; the observer does not
+ * survive a navigation.
+ */
+export async function watchStatus(page: Page): Promise<StatusWatch> {
+  await page.evaluate(() => {
+    const w = window as StatusLogWindow;
+    w.__archlangStatusObserver?.disconnect();
+    const el = document.getElementById("statusText");
+    if (!el) throw new Error("#statusText not found — has the header markup changed?");
+    const log: string[] = [el.textContent ?? ""];
+    const observer = new MutationObserver(() => log.push(el.textContent ?? ""));
+    // `textContent = msg` replaces the child text node (childList); the other two
+    // cover an in-place edit of that node, whichever way the app writes it.
+    observer.observe(el, { childList: true, characterData: true, subtree: true });
+    w.__archlangStatusLog = log;
+    w.__archlangStatusObserver = observer;
+  });
+
+  const painted = (): Promise<string[]> => page.evaluate(() => (window as StatusLogWindow).__archlangStatusLog ?? []);
+
+  // Entry 0 is the resting text at install time, not something the action painted —
+  // start past it so an assertion can never be satisfied by the status quo.
+  let cursor = 1;
+
+  return {
+    async expectFlash(message: string): Promise<void> {
+      await expect
+        .poll(async () => (await painted()).slice(cursor), {
+          timeout: 10_000,
+          message: `#statusText never showed "${message}"; painted since the last assertion:`,
+        })
+        .toContain(message);
+      // Advance, so a repeat of the same message later in the test needs its OWN
+      // paint rather than matching this one again.
+      cursor = (await painted()).indexOf(message, cursor) + 1;
+    },
+  };
+}
+
 /** Collector for console errors + failed/4xx-5xx responses over a page's lifetime. */
 export interface PageProblems {
   consoleErrors: string[];

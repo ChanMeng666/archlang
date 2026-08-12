@@ -181,6 +181,13 @@ describe("LSP server bundle — stdio round trip", () => {
 describe("LSP server bundle — freshness (F3)", () => {
   if (gated()) return;
 
+  // NOT the same assertion as `lockstep.test.ts`'s dep-range pin, and neither is
+  // redundant: this reads the version esbuild INLINED into the artifact ("did the
+  // rebundle take?"), that one reads the version the manifest DECLARES ("does the
+  // manifest still describe the core it bundles?"). esbuild resolves the workspace
+  // symlink whatever the range says, which is exactly why this file stayed green
+  // through two releases of a stale `^1.24.0`. See lockstep.test.ts's header.
+
   it("embeds the core version npm resolved for this workspace", () => {
     // The bundle inlines the core at BUILD time, so "which core does the .vsix
     // carry?" has to be read off the artifact — this replaces counting per-release

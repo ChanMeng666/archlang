@@ -127,11 +127,24 @@ let lastLintRows: Diagnostic[] = [];
 const cleanSvg = () => lastSvg.replace(/ data-span="\d+:\d+"/g, "");
 
 /** Briefly show a message in the status text, then restore it. */
+// A transient status message that restores the resting status after 1200 ms.
+// Two subtleties, both of which were real bugs:
+//   1. The restore timer MUST be cancelled when a second flash lands inside the
+//      window. Without that, the first flash's timer fires mid-second-flash and
+//      wipes it — so pressing two buttons in quick succession showed the second
+//      message for a fraction of its intended life.
+//   2. `prev` is only captured when no flash is already pending. Capturing it on
+//      every call meant a second flash recorded the FIRST FLASH'S TEXT as the
+//      resting status and restored to that, leaving a stale message on screen.
+let flashTimer: ReturnType<typeof setTimeout> | undefined;
+let flashResting: string | null = null;
 function flash(msg: string) {
-  const prev = statusText.textContent;
+  if (flashTimer !== undefined) clearTimeout(flashTimer);
+  else flashResting = statusText.textContent;
   statusText.textContent = msg;
-  setTimeout(() => {
-    statusText.textContent = prev;
+  flashTimer = setTimeout(() => {
+    flashTimer = undefined;
+    statusText.textContent = flashResting;
   }, 1200);
 }
 
