@@ -12,6 +12,29 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.15.0] - 2026-08-12
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.26.0`** — the release that made the language's
+  descriptions of itself agree with its parser. No new syntax reaches the editor, but two new
+  catalogued codes do:
+  - **`E_ROOM_ALIGN`** and **`E_ROOM_ALIGN_AXIS`** with their hovers and **quick fixes**. A
+    relationally-placed room's `align <word>` used to accept any word at all and silently lay the
+    room out against the leading edge — `align sideways`, and `align left` after `right-of`, both
+    compiled clean and drew the wrong plan. Both are now refused, and both fixes rewrite the
+    offending word alone, so a typo'd alignment is a one-keystroke repair in the editor rather than
+    a drawing nobody questions.
+  - Completion and hover now derive their relational direction and alignment value sets from the
+    core's single tables rather than a second hand-typed copy.
+
+### Fixed
+
+- The extension's `@chanmeng666/archlang` dependency range was `^1.24.0` — **two releases behind** —
+  so the range no longer described the core it bundles. It is re-pinned to `^1.26.0`. (The bundle
+  itself was current; the `__CORE_VERSION__` stamp test proves what actually shipped, which is why
+  the stale *range* went unnoticed.)
+
 ## [0.14.0] - 2026-08-11
 
 ### Changed

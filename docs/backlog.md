@@ -199,6 +199,51 @@ re-audit the set.
   `test/docs-fences.test.ts`, `test/docs-flags.test.ts`). No source change, so no golden moves —
   if one does, that is a finding, not a diff to bless.
 
+### 3.6 · A lockstep test for the VS Code extension's core dep range — `todo`
+
+The MCP shim's `@chanmeng666/archlang` range is pinned by a **string** equality against `^` + the
+root version (`packages/mcp/test/lockstep.test.ts`), so every core release turns that package red on
+purpose until someone consciously re-pins it. The extension has no equivalent, and the consequence is
+already on the record: at v1.26.0 prep its range still read **`^1.24.0`** — two full releases stale,
+with nothing anywhere going red for it.
+
+The near miss is the argument. The `__CORE_VERSION__` stamp test (`editors/vscode/test/stdio.test.ts`)
+proves the *bundle* is current, which is the more important of the two — but it is precisely why the
+stale *range* survived: the bundle was right, so nothing looked wrong. The two assertions cover
+different failures. The stamp answers "did the rebundle take?"; a range pin answers "does the manifest
+still describe the core it bundles?" — which is what a reader, a `npm ls`, and any future non-bundled
+consumption path would believe.
+
+- **Proposed:** mirror the shim's assertion in `editors/vscode/test/` — read the root
+  `package.json` `version` and assert `editors/vscode/package.json`'s
+  `devDependencies["@chanmeng666/archlang"]` is byte-equal to `"^" + rootVersion`. Same iron law
+  applies: **string equality, never a semver-satisfies check** — satisfies is exactly what let
+  `^1.24.0` look fine against a 1.25.0 core.
+- **Decide first, before building:** whether it should also assert the extension's own `version`
+  bumped in the same commit (the shim's does not, and coupling them may be over-tight — the
+  extension is versioned independently on purpose).
+- **Gate:** the new test is red at the current pin and green after re-pinning; prove non-vacuity by
+  reverting the range to `^1.24.0` and watching it fail.
+
+### 3.7 · A flaky playground E2E spec — `todo`
+
+`playground/e2e/actions.spec.ts:26` — *"Format rewrites the source to canonical style"* — failed
+once under full-suite load on 2026-08-12, then passed both in isolation and on a clean re-run of
+all 50 specs. Not a regression: it was observed on a tree whose only playground-visible change was
+a core rebuild, and nothing in its fixture touches the changed surfaces.
+
+It is timing-sensitive **by construction** — its own comment describes waiting out a 250 ms debounce
+that a second `render()` would otherwise overwrite, and it uses the autosave key as the witness that
+the pass landed. Under parallel load that witness can arrive late.
+
+This matters because `e2e-playground` is a **gating** PR job: a flake here reddens an unrelated PR
+and trains people to re-run rather than read a failure. Fix the wait, not the timeout — poll a
+condition the app actually asserts (a status transition or a render counter) rather than lengthening
+the window.
+
+- **Gate:** the spec passes 20 consecutive full-suite runs (`--repeat-each`), and the fix does not
+  simply raise a timeout.
+
 ---
 
 ## Wave 4 — P2 language features
