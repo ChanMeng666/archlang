@@ -121,6 +121,40 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // trimmed from 1,298 chars to 1,106 before this was raised (the per-code prose and
     // the pocket-run threshold went to the language reference and the error catalog)
     // and the suite is green at 23,456. Trim duplication before raising again.
-    expect(spec.length).toBeLessThan(23_500);
+    //
+    // Raised 23.5k → 24.1k for CORRECTNESS, not surface — the first raise in this
+    // file's history that buys no new language at all. Every earlier entry above
+    // paid for a feature the spec did not yet describe; this one pays to make lines
+    // that were ALREADY here true. The grammar lines are hand-typed in the generator,
+    // so `check:drift` reproduced the same wrong text every run and stayed green
+    // (the standing "a generator's TEMPLATE can go stale" law): `wall` omitted
+    // `[id=<name>]` entirely while four other lines require a wall id, so an agent
+    // could not write a valid `door on <wall>` from the reference alone; `furniture`
+    // printed `<category> [id=…]` in the order the parser REFUSES (it is
+    // `eatKeyword` → `parseIdOpt` → `eatIdent`, so `id=` must lead); the trailing
+    // `wall` clause on door/window/opening read as if it paired with either
+    // placement form when it is accepted only when NOT attached; `dim`'s `offset`
+    // was printed as required and is optional; `align` omitted `center`; and the
+    // most-copied section on the page, the common-mistakes table, taught
+    // `label "{aream2(W,H)} m²"` as though `aream2` were a built-in — it is a `let`
+    // in examples/parametric.arch, so copying that row raises E_UNKNOWN_FN. The
+    // single highest-leverage byte here is rule 6, which now states that `id=` leads
+    // every element: that one sentence corrects the teaching for all ten id-bearing
+    // grammar lines at once. ~430 chars of genuine duplication were cut first — two
+    // common-mistakes rows DELETED (the `paper` row, whose "Fix" is a verbatim third
+    // statement of the sheet paragraph directly above the Elements section, and the
+    // "Reusing an `id`" row, now word-for-word inside the expanded rule 6) and three
+    // more TIGHTENED to drop only the half their grammar line already states, plus
+    // the third statement of the `against wall` advice in the furniture prose,
+    // `--strict` "fails on warnings too" said twice ten lines apart, `level`'s
+    // restatement of the `stair` shaft rule, and the intro's `arch spec` pointer
+    // that the CLI verb list below already carries. Green at 24,044. NOTE the two
+    // trims this comment does NOT claim: the `stair` multi-storey sentence and
+    // `place`'s `import … as` clause were both examined and KEPT — the first states
+    // the SEMANTICS of a shaft where `level` states only its legality, and the
+    // second documents `import "f.arch" as name` (a whole file as a component),
+    // which is a different form from the scripting bullet's `import "f.arch": sym`.
+    // Trim duplication before raising again.
+    expect(spec.length).toBeLessThan(24_100);
   });
 });
