@@ -176,9 +176,16 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       return `room ${id}${shape}${label}${s.uses?.length ? ` uses ${s.uses.join(" ")}` : ""}`;
     }
     case "door": {
+      // The KIND word leads the placement (`door id=d pocket on w1 …`) and the
+      // sliding-family clauses trail the swing, in the grammar's own order. All three
+      // must be printed: dropping one is not a formatting change but a semantic one —
+      // an unprinted `pocket` re-formats into a hinged door with a swing arc.
+      const doorKind = s.doorKind ? `${s.doorKind} ` : "";
       const hinge = s.hinge ? ` hinge ${s.hinge}` : s.hingeNear ? ` hinge near ${s.hingeNear}` : "";
       const swing = s.swing ? ` swing ${s.swing}` : s.swingInto ? ` swing into ${s.swingInto}` : "";
-      return `door ${id}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${hinge}${swing}`;
+      const slide = s.slide ? ` slide ${s.slide}` : "";
+      const open = s.open !== undefined ? ` open ${exprStr(s.open)}` : "";
+      return `door ${id}${doorKind}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${hinge}${swing}${slide}${open}`;
     }
     case "window":
       return `window ${id}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}`;
