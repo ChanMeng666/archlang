@@ -154,7 +154,26 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // the SEMANTICS of a shaft where `level` states only its legality, and the
     // second documents `import "f.arch" as name` (a whole file as a component),
     // which is a different form from the scripting bullet's `import "f.arch": sym`.
-    // Trim duplication before raising again.
+    // NOT raised for the value-set interpolation pass (`assertVocabRendered`, and
+    // `test/spec-forms.test.ts` beside it). Recorded here because a future reader will
+    // otherwise wonder why a change that ADDED text left the number alone. Every
+    // retyped closed set — the room `uses` kinds, the furniture anchors, the paper
+    // sizes/orientations, the scale ladder, the built-ins, the relational
+    // directions/alignments, the `dims auto` modes, the `north` words, the strip and
+    // vertical directions, the dim endpoint references and the arc directions — now
+    // INTERPOLATES from its source array, which is byte-neutral (they all matched).
+    // Three edits were not: the wall line stopped printing `material <name>` and now
+    // prints the closed list plus the W_UNKNOWN_MATERIAL fallback (an agent could not
+    // otherwise guess a legal material, and a wrong guess degrades the drawing
+    // SILENTLY); the `dims auto` modes are printed in full for the first time (the page
+    // taught `all` and `rooms` and never said the set was closed at four); and the
+    // paper line names which orientation is the default. Paid for by ONE genuine
+    // duplication: the CLI section stated exit code `2`'s meaning twice fifteen lines
+    // apart, and the FIRST statement is rendered from the manifest — so the
+    // hand-written restatement in the self-correction paragraph went, exactly as
+    // `--strict`'s did last time. Green at 24,088 — **12 chars of headroom**, so the
+    // next edit here almost certainly trips this. That is the cap working: trim
+    // duplication, and raise it only with a reason of the kind written above.
     expect(spec.length).toBeLessThan(24_100);
   });
 });

@@ -9,7 +9,7 @@
  *  layer, and that same derived bounding box. */
 
 import type { ExprPoint, Point, RelAlign, RelDir, RoomNode, UseKind } from "../ast.js";
-import { USE_KINDS } from "../ast.js";
+import { REL_ALIGNS, REL_DIRS as REL_DIR_LIST, USE_KINDS } from "../ast.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
 import type { Expr } from "../expr.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
@@ -26,7 +26,7 @@ import {
   polygonSelfIntersects,
 } from "../geometry/polygon.js";
 
-const REL_DIRS: ReadonlySet<string> = new Set<RelDir>(["right-of", "left-of", "below", "above"]);
+const REL_DIRS: ReadonlySet<string> = new Set<RelDir>(REL_DIR_LIST);
 const USE_SET: ReadonlySet<string> = new Set<UseKind>(USE_KINDS);
 
 /**
@@ -135,14 +135,14 @@ export const room: ElementDef = {
   params: [
     { name: "at", type: "point", optional: true, doc: "Absolute top-left corner (x, y) in mm." },
     {
-      name: "right-of|left-of|below|above",
+      name: REL_DIR_LIST.join("|"),
       type: "ref",
       optional: true,
       doc: "Place relative to another room by id (instead of `at`).",
     },
     {
       name: "align",
-      type: "top|middle|bottom|left|center|right",
+      type: REL_ALIGNS.join("|"),
       optional: true,
       doc: "Edge to align with the reference room.",
     },
@@ -227,7 +227,7 @@ export const room: ElementDef = {
       const dirTok = ctx.next();
       if (!REL_DIRS.has(dirTok.value)) {
         ctx.fail(
-          `Expected "at" or a relational direction (right-of|left-of|below|above) but found "${dirTok.value}"`,
+          `Expected "at" or a relational direction (${REL_DIR_LIST.join("|")}) but found "${dirTok.value}"`,
           dirTok,
         );
       }

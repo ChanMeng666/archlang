@@ -1,6 +1,7 @@
 /** `wall <category> thickness N { (x,y)… [close] }` — poché fill + crisp faces. */
 
-import type { ExprPoint, Point, WallArcNode, WallNode } from "../ast.js";
+import type { ArcDirWord, ExprPoint, Point, WallArcNode, WallNode } from "../ast.js";
+import { ARC_DIRS } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RWall } from "../ir.js";
@@ -81,11 +82,11 @@ export const wall: ElementDef = {
         const to = ctx.parsePoint();
         ctx.eatKeyword("radius");
         const radius = ctx.parseExpr();
-        let dir: "cw" | "ccw" | undefined;
+        let dir: ArcDirWord | undefined;
         let major: boolean | undefined;
         // `cw|ccw` then `major`, each at most once, in the canonical order the
         // formatter re-emits.
-        if (ctx.isKeyword("cw") || ctx.isKeyword("ccw")) dir = ctx.next().value as "cw" | "ccw";
+        if (ARC_DIRS.some((d) => ctx.isKeyword(d))) dir = ctx.next().value as ArcDirWord;
         if (ctx.isKeyword("major")) {
           ctx.next();
           major = true;

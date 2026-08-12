@@ -36,10 +36,12 @@
  * with and without the optional `clipper2-wasm` dependency.
  */
 
-import type { Point } from "../ast.js";
+import type { ArcDirWord, Point } from "../ast.js";
 
-/** Which way round the plan an arc edge travels, as the reader sees it. */
-export type ArcDir = "cw" | "ccw";
+/** Which way round the plan an arc edge travels, as the reader sees it. The word set
+ *  itself is `ARC_DIRS` in `../ast.js` — one source, so the parser, this module and
+ *  the generated spec can never disagree about what an `arc` clause accepts. */
+export type ArcDir = ArcDirWord;
 
 /**
  * A circular arc edge, fully determined. `a`/`b` are the exact authored endpoints

@@ -3,6 +3,7 @@
  *  whose geometry and text are DERIVED from the referenced element (v1.24). */
 
 import type { DimNode, DimRef, ExprPoint, Point } from "../ast.js";
+import { DIM_REFS } from "../ast.js";
 import type { Expr } from "../expr.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
@@ -81,7 +82,7 @@ export const dim: ElementDef = {
     const kw = ctx.eatKeyword("dim");
     // Optional wall-face reference, before the points (`dim faces (…)->(…)`).
     let ref: DimRef | undefined;
-    if (ctx.isKeyword("faces") || ctx.isKeyword("clear")) {
+    if (DIM_REFS.some((r) => ctx.isKeyword(r))) {
       ref = ctx.next().value as DimRef;
     }
     // `dim radius <wall> [segment <n>]` / `dim diameter <room>` — no written points; the

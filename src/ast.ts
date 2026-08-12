@@ -22,8 +22,28 @@ export interface ExprPoint {
   y: Expr;
 }
 
+/**
+ * The four page directions `north <dir>` accepts as a word (the other form is a bare
+ * bearing in degrees). Canonical order — parser, diagnostic message and `spec.llm.md`
+ * all render THIS array rather than retyping it, because a set typed a second time
+ * inside a generator reproduces the same wrong text forever while `check:drift` stays
+ * green (the standing "a generator's TEMPLATE can go stale" law).
+ */
+export const NORTH_DIRS = ["up", "down", "left", "right"] as const;
+/** A `north <word>` page direction — the non-numeric half of {@link NorthDir}. */
+export type NorthCardinal = (typeof NORTH_DIRS)[number];
+
 /** North orientation: a cardinal keyword or an explicit bearing in degrees. */
-export type NorthDir = "up" | "down" | "left" | "right" | { deg: number };
+export type NorthDir = NorthCardinal | { deg: number };
+
+/**
+ * `dims auto [<mode>]` — which chains the automatic dimensioning pass draws. Canonical
+ * order; `all` is the default when the mode word is omitted. One source for the
+ * parser's accept-list and the spec's grammar line.
+ */
+export const AUTO_DIMS_MODES = ["overall", "rooms", "walls", "all"] as const;
+/** A `dims auto <mode>` selector. */
+export type AutoDimsMode = (typeof AUTO_DIMS_MODES)[number];
 
 /** Discriminant identifying an element's type (also its registry keyword). */
 export type ElementKind =
@@ -72,6 +92,13 @@ export interface WallNode extends NodeBase {
   closed: boolean;
 }
 
+/** The two rotational directions an `arc` clause may name, as the reader sees them on
+ *  the sheet. Canonical order — the wall parser, `geometry/arc.ts`'s `ArcDir` and the
+ *  spec's `wall` grammar line all derive from this one array. */
+export const ARC_DIRS = ["cw", "ccw"] as const;
+/** Which way round the plan an `arc` edge travels. */
+export type ArcDirWord = (typeof ARC_DIRS)[number];
+
 /**
  * One `arc … radius R [cw|ccw] [major]` clause, attached to the vertex it arrives at.
  * `dir` is the turn as the reader sees it on the sheet (default `ccw`), and `major`
@@ -80,19 +107,27 @@ export interface WallNode extends NodeBase {
  */
 export interface WallArcNode {
   radius: Expr;
-  dir?: "cw" | "ccw";
+  dir?: ArcDirWord;
   major?: boolean;
   /** Byte span of the `arc …` clause, for `E_ARC_RADIUS`. */
   span?: Span;
 }
 
+/** Relational-placement direction: the side of the reference room to sit on.
+ *  Canonical order — the parser's accept-set, the element's own parameter doc and the
+ *  spec's `room` grammar line all read this array. */
+export const REL_DIRS = ["right-of", "left-of", "below", "above"] as const;
 /** Relational-placement direction: the side of the reference room to sit on. */
-export type RelDir = "right-of" | "left-of" | "below" | "above";
+export type RelDir = (typeof REL_DIRS)[number];
+
+/** Every {@link RelAlign}, canonical order — one source for the element's parameter
+ *  doc and the spec's grammar line. */
+export const REL_ALIGNS = ["top", "middle", "bottom", "left", "center", "right"] as const;
 
 /** Edge to align with the reference room. Horizontal placement
  *  (`right-of`/`left-of`) uses `top|middle|bottom`; vertical placement
  *  (`below`/`above`) uses `left|center|right` (`center`≡`middle`). */
-export type RelAlign = "top" | "middle" | "bottom" | "left" | "center" | "right";
+export type RelAlign = (typeof REL_ALIGNS)[number];
 
 /**
  * A room's declared function(s). Explicit `uses` make the analysis layer's room
@@ -334,9 +369,13 @@ export interface FurnitureNode extends NodeBase {
   room?: string;
 }
 
+/** The two endpoint-reference words a `dim` may lead with, canonical order — one source
+ *  for the `dim` parser and the spec's grammar line. */
+export const DIM_REFS = ["faces", "clear"] as const;
+
 /** How a `dim`'s endpoints are referenced to the walls they touch.
  *  Absent = the written points are used verbatim (the historical behaviour). */
-export type DimRef = "faces" | "clear";
+export type DimRef = (typeof DIM_REFS)[number];
 
 /**
  * A `dim radius <wallId> [segment <n>]` / `dim diameter <roomId>` call-out (v1.24) — the
@@ -398,7 +437,9 @@ export interface ColumnNode extends NodeBase {
  * the only cross-level inference ArchLang makes is identity (same id ⇒ same shaft), see
  * ADR 0005.
  */
-export type VerticalDir = "up" | "down";
+export const VERTICAL_DIRS = ["up", "down"] as const;
+/** See {@link VERTICAL_DIRS}. */
+export type VerticalDir = (typeof VERTICAL_DIRS)[number];
 
 /**
  * `stair [id=] at (x,y) size WxH dir up|down [width <expr>]` — a straight flight of
@@ -452,6 +493,12 @@ export interface StripRoomChild {
   span?: Span;
 }
 
+/** The four fill axes a `strip` may run along, canonical order — one source for the
+ *  parser's accept-list, its diagnostic and the spec's grammar line. */
+export const STRIP_DIRS = ["right", "left", "down", "up"] as const;
+/** A `strip <dir>` fill axis. */
+export type StripDir = (typeof STRIP_DIRS)[number];
+
 /**
  * `strip <dir> at (x,y) gap G (height|width) H { room … }` — a row/column of rooms
  * laid out end to end. `dir` is the fill axis (`right`/`left`/`down`/`up`); each
@@ -462,7 +509,7 @@ export interface StripRoomChild {
  */
 export interface StripNode extends NodeBase {
   kind: "strip";
-  dir: "right" | "left" | "down" | "up";
+  dir: StripDir;
   /** Origin corner (top-left of the first room). */
   at: ExprPoint;
   /** Spacing (mm) between consecutive rooms along the fill axis. */
@@ -854,7 +901,7 @@ export interface PlanNode {
    */
   site?: SiteNode;
   /** `dims auto [overall|rooms|walls|all]` — synthesize dimension strings at render. */
-  autoDims?: "overall" | "rooms" | "walls" | "all";
+  autoDims?: AutoDimsMode;
   /** `axes { x at … y at … }` — author-declared positioning axes (定位轴线). */
   axes?: AxesNode;
   /**
