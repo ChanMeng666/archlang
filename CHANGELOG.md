@@ -7,6 +7,200 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.26.1] - 2026-08-13
+
+**Five shipped surfaces that no test ever executed.** v1.26.0 made the language's *descriptions* of
+itself agree with the parser. This release does the same thing one layer out, for the language's
+*behaviour*: every fix below is a documented promise that the code had quietly stopped keeping, and
+every one was found by **running** the surface rather than reading it. `arch watch` had not watched
+since v1.1.0 — twenty-five minor releases — while the manifest and `docs/cli-reference.md` both
+advertised "recompile on save". Poché was dropped from **every PDF ArchLang has ever exported**.
+`arch fmt`, the one operation a user is entitled to assume is safe, silently turned a pocket door
+into a hinged one. `W_DIM_INSIDE` offered a machine-applicable fix that 2-cycled forever. And
+`toPdf` was the single shipped output format without the byte-determinism this project treats as an
+iron law.
+
+None of these are subtle once executed, and that is the finding: the gap was never analysis, it was
+**invocation**. `arch watch`, `arch fmt` and `arch manifest` had zero end-to-end execution in the
+suite; `src/lint/measure.ts` and `src/frame.ts` had no direct caller in any test; the flagship
+determinism property fed `fc.string()` into a plan body and produced **zero** walls, rooms, openings
+or fixtures across 5000 samples; and three separate gates opened with an `if (…) return;` that
+reported a pass having asserted nothing. Those are all closed here too, which is why a patch release
+carries +4900 lines.
+
+Everything here is a bug fix restoring documented behaviour: **no new keyword, no new `E_*`/`W_*`
+code, no new public export** (the new `dimLineMid`/`dimSwapped`/`dimReadsInside` in `src/geometry.ts`
+and `RESIDENT`/`CommandResult` in `src/cli/io.ts` are internal — `src/index.ts` is unchanged).
+
+> **Three of these fixes change observable output or behaviour, on purpose.** A PDF exported by
+> 1.26.1 differs from one exported by 1.26.0 — it gains one filled path per hatch primitive
+> (+31 B on `studio.arch`) and its `/CreationDate` and trailer `/ID` become constants. `arch fmt`
+> now emits door-kind clauses it previously dropped, so a formatted file can differ. And `arch
+> watch` no longer exits after its first compile, so a script that relied on it terminating will
+> now block. Each restores what the docs already promised, which is why these are patches and not
+> breaking changes — but if you diff PDF bytes across the upgrade, you will see a change.
+
+### Fixed
+
+- **`arch watch` did not watch, and had not since v1.1.0.** `src/cli.ts` dispatched
+  `process.exit(await cmdWatch(args))` while `cmdWatch` returned `EXIT.OK` immediately after
+  installing `watchFile` — so the exit killed the process the watcher had just armed. It compiled
+  exactly once, printed `watching <file> … (Ctrl+C to stop)`, and died at ~622 ms. It regressed in
+  `3a368eb`, the refactor that turned an if/else chain into `switch` + `process.exit(await
+  cmdX())`; the pre-refactor branch had no exit and stayed alive on the handle.
+
+  The real defect is that `number` cannot express *"this command does not return"*, so `EXIT.OK`
+  and "finished" had been silently identified. Fixed with a `RESIDENT` sentinel
+  (`CommandResult = number | typeof RESIDENT`) that `cmdWatch` returns after installing the
+  watcher, and one `finish()` helper in `cli.ts` that every dispatch arm routes through — chosen
+  over a local `if (code !== EXIT.OK) exit(code)`, which reproduces the exact conflation that caused
+  this, and over a `resident: true` manifest flag, because a resident command can still fail before
+  becoming resident (`watch -` exits 3), making residency a property of the *run*, not the verb.
+  A second latent bug fixed inside `cmdWatch`: the recompile promise was not caught, and an
+  unhandled rejection is a hard process exit in Node ≥ 15 — so a single unwritable output would
+  have killed the watcher that exists to survive exactly that. A failing *initial* compile still
+  deliberately does not stop the watch.
+- **Poché was dropped from every PDF ArchLang has ever exported.** `drawNode`'s switch had no
+  `hatch` case and no `default`, and the `wallFill` layer is exactly one hatch primitive — so every
+  wall printed as a hollow outline. Poché is how a floor plan distinguishes structure from space,
+  so this was an incomplete drawing rather than a variant rendering. Nobody chose it: the module
+  header already documented the intended behaviour and `fillColor`'s `url(…) → theme.pocheBase`
+  branch already existed, dead purely because the primitive never reached the switch. A hatch *is*
+  the same multi-loop nonzero path a region is, so the two now share one case. The absent `default`
+  was half the finding, so there is now an exhaustiveness guard (`const unhandled: never = prim`):
+  a new `ScenePrim` fails the typecheck at that line instead of being dropped the same silent way.
+- **`toPdf` was not byte-deterministic.** pdfkit defaults `info.CreationDate` to `new Date()` and
+  derives the trailer `/ID` as an MD5 over the info dict, so two renders of the same Scene differed
+  — leaving PDF the one shipped format without the guarantee this project treats as an iron law.
+  Fixed by passing the Unix epoch, `(D:19700101000000Z)`: a sentinel two decades older than the PDF
+  format reads correctly as "this is not a timestamp", where a plausible date would be worse than
+  useless because it would be believed. `SOURCE_DATE_EPOCH` is deliberately **not** honoured —
+  reading `process.env` in `src/` outside the CLI would violate the purity law, and the `World` seam
+  exists for that. Both fields are fixed-width, so no offset, xref entry or `startxref` shifts.
+- **`arch fmt` silently turned a pocket door into a hinged one.** `format()` printed neither a
+  door's leading kind word nor its `slide`/`open` clauses, so
+  `door id=d1 pocket on w1 at 50% width 900 slide left` came back as
+  `door id=d1 on w1 at 50% width 900` — a swing arc that should not exist, a different SVG,
+  `describe().doors[].kind` gone, and `W_POCKET_RUN` no longer applying to a panel that still has
+  nowhere to slide. Shipped in v1.25.0 alongside the door kinds and live through v1.26.0, in the
+  CLI, in `arch fix`'s write path, and behind the playground's Format button. The suite could not
+  see it because every hand-written fixture that formats a door uses `hinged`, which the resolver
+  drops anyway, so it round-tripped by accident. Note that `open 0` is legal *and falsy*: the
+  printer tests for **presence**, so a shut panel is not re-formatted to the default.
+- **`W_DIM_INSIDE` offered a machine-applicable fix that never converged.** The fix swapped a
+  dimension's endpoints, which flips which side the offset falls on — but on a dimension running
+  *through* the building the line reads inside either way, so the warning fired again next pass, the
+  same fix was offered again, and it swapped back. Forever. `arch fix` therefore burned its whole
+  bounded pass budget on such a plan and the output depended on the **parity** of the budget, which
+  is worse than offering no fix at all (ADR 0011's premise is that a machine-applicable fix moves
+  the plan toward correctness). Root cause was structural: the detection logic lived inline in the
+  lint rule, so the fix producer had no way to ask it anything and offered a swap it had never
+  evaluated. Extracted to `src/geometry.ts` as `dimLineMid` / `dimSwapped` / `dimReadsInside`,
+  beside `doorSwing` for the same reason — derived geometry shared by a rule and a producer.
+  `dimSwapFix` now re-asks that predicate of the *swapped* dimension and returns `null` when the
+  answer is still "inside". **No offset is invented in its place** — guessing one would be the
+  invisible architect ADR 0005 rejects. The hint and the catalog's fix prose follow the same
+  predicate, so neither promises an automatic fix that does not exist.
+- **The playground's status flash could be wiped by its own predecessor.** `flash()` never cleared
+  the previous restore timer, so two flashes inside 1200 ms let the first one's timer erase the
+  second; and it captured `prev` on every call, so that timer restored a stale flash message as if
+  it were the resting status.
+
+### Added
+
+- **`examples/bungalow.arch` — the orientation-and-openings flagship.** Zero of the 18 shipped
+  examples used `site`, `street`, `hemisphere`, `pocket`, `sliding`, `barn`, `bifold` or `slide` —
+  the entire v1.25 language surface was invisible to readers and to models, which learn far more
+  from a worked plan than from a grammar line. A single-storey suburban house, 102 m², 8 rooms,
+  whose plot fronts the street on the **south in the southern hemisphere**; that one declared fact
+  drives the layout, because `back` and `equator_side` are then the same side, so the house turns
+  away from the road — living room and both bedrooms on the north facade, service band along the
+  street. The three non-default door kinds are each where a builder would put one (a garden slider,
+  a pocket off a 1500 mm corridor, a bifold into the laundry). Both orientation claims were verified
+  by **counterfactual**: reversing the pocket's `slide right` produces *"needs 850 mm, only 500 mm
+  available, 350 mm short"*, and deleting Bedroom 2's north window produces
+  `W_ROOM_NOT_EQUATOR_FACING`. It immediately earned its keep — `test/format.test.ts` already
+  compared `compile(src)` to `compile(format(src))` across `examples/`, so the gate was real and its
+  corpus was empty of every form that could fail it; adding this file turned it red against the
+  unfixed formatter. A SHA-256 sweep over all 14 pre-existing examples on four artifacts (SVG
+  including `pages[]`, ASCII, `describe()`, `lint()`) shows every hash identical.
+- **`test/arbitrary-plan.ts` — a generator that emits valid plans by construction.** The flagship
+  determinism property fed `fc.string()` into a plan body: of 5000 samples, 523 compiled clean —
+  every one an empty or whitespace body — and **zero** produced a single wall, room, opening or
+  fixture, so the property that reads as "compile is deterministic" was asserting almost nothing
+  about the rendering path. The new generator builds a small grid inside one closed shell with
+  everything the grid cannot express (polygon and circular rooms, arc walls, relational placement)
+  in an annex clear of it; all 3000 samples render, ~158 geometry elements each. Every closed value
+  set is imported from its owner, so a new door kind or anchor joins the corpus with no edit.
+  Proof it was worth doing, via a planted iteration-order bug in `lowerWalls`: the old property
+  passed 300 runs, the new one failed after 5 tests and shrank to 6 readable lines. Both
+  `fc.string()` properties are **kept** — hostile input is the right corpus for "never throws". New
+  properties cover determinism over `svg` *and* diagnostics, cache transparency, byte-identity under
+  adding `site` and under wrapping in `zone` (the law every feature currently pins with a
+  hand-written fixture pair, now generalised), format idempotence, format-preserves-the-drawing,
+  `repair` determinism / never-breaks / moves-no-room, and `applyFixes` convergence.
+- **End-to-end coverage for the three commands no test had ever invoked** — `arch watch`, `arch fmt`
+  and `arch manifest`, plus `serialize.ts`'s `runPool` / `aggregateExit` / `perFileJson`, the
+  concurrency and exit-code aggregation behind `arch batch`, which had zero references anywhere in
+  the suite. Exit codes are the agent contract, so a wrong one ships silently — the batch tests pin
+  the documented contract against real mixed inputs including the precedence rule (a missing file
+  alongside a bad plan must report `2`, user-source outranking IO), and `runPool`'s bounded
+  concurrency is proven with hand-controlled deferreds rather than timers.
+- **Direct coverage for `src/lint/measure.ts` and `src/frame.ts`,** neither of which any test
+  imported. 36 tests for the measurement arithmetic that decides both the numbers a reader is told
+  and, through `shortfall()`, whether a deficit is reported at all — the strongest being
+  cross-module and unreadable from either side alone: `frontGapMm` agrees with `frontClearanceRect`
+  about which way a fixture faces for all four quarter-turns. 43 tests for the exact-isometry layer
+  behind `level` and `place`, with no epsilon anywhere: `compose ∘ inverse` exact both ways,
+  `det` negative *exactly* for reflections, and the handed rules asserted on the fields — `swing`
+  flips for all eight reflecting frames and none of the four rotations, `hinge` deliberately does
+  not. 27 of 28 planted faults were killed; the survivor is provably an equivalent mutant.
+- **`editors/vscode/test/lockstep.test.ts`** — the extension's core dep range must now be a
+  **string** equal to `^` + the root version, mirroring the MCP shim's guard, so every core release
+  reddens it on purpose until someone consciously re-pins. The range had sat two releases stale at
+  `^1.24.0` precisely because nothing checked it. It is not redundant with `stdio.test.ts`: the
+  `__CORE_VERSION__` stamp asserts the *bundle* is fresh and stayed green the whole time, because
+  esbuild resolves the workspace symlink regardless of what the manifest declares. Only the manifest
+  had rotted.
+- **`scripts/coverage-zero-report.mjs`** — names modules sitting at zero coverage in the Node-22 CI
+  step summary, which a four-line total cannot show. Advisory in the strongest sense: it catches its
+  own errors and forces exit 0, so it cannot turn a green run red, and it adds no thresholds and no
+  allowlist.
+
+### Changed
+
+- **Three gates that could not fail now fail visibly.** `test/png.test.ts` opened each case with
+  `if (!(await hasResvg())) return;`, so on any machine without the raster dep all three reported
+  **passing** having asserted nothing about the PNG backend — including a CI run whose install had
+  quietly stopped pulling `optionalDependencies`, which is the one situation where the silence
+  matters. Both pdfkit gates (`test/export-pdf.test.ts`, `test/sheet.test.ts`) used `skipIf`, honest
+  in the reporter but never hard-failing, so the same broken install would silently stop testing a
+  **published** output format. All are now required in CI and skip visibly by name locally, proven
+  against copies with the specifier mangled. `test/readme-permalink.test.ts`'s `deflate-raw` gate
+  becomes `it.skipIf` — deliberately **not** a CI throw, since the Node 18/20 matrix legs
+  legitimately lack the capability and a hard fail would redden two thirds of the matrix for a
+  supported runtime. PDF backend coverage went 4 → 16 tests, `src/export/pdf.ts` 83.79% → 95.83%
+  lines.
+- **A flaky playground E2E spec was reproduced rather than guessed at** — 6 failures in 20
+  full-suite runs, all `Received: "ready"`, i.e. the poll never saw the flash at all.
+  `loadSource()` restarts the 250 ms debounce whose `render()` paints over the status, so the
+  assertion was polling a value with a ~250 ms lifetime and a longer timeout only widens the window
+  it is already inside. Replaced with a causal witness: a `MutationObserver` installed before the
+  action records every value painted, so a paint that survived 5 ms is as assertable as one that
+  survived 5 s. Six assertions had the defect, not one. Result: 0 failures across the reproduction
+  command and 500 consecutive passes.
+- **`W_DIM_INSIDE`'s catalog remedy prose** no longer promises a machine-applicable fix
+  unconditionally; it states when there is one and what to do when there is not.
+  `docs/error-codes.md` and `llms-full.txt` regenerated.
+- **MCP shim 0.2.6** and **VS Code extension 0.15.1**, both re-pinned to `^1.26.1`. The shim's bump
+  is mandatory and version-bump-only for the familiar reason: `llms-full.txt` is one of its five
+  **pack-time-baked** resources and it changed, so under the pack-time law only a version bump ships
+  the refreshed text — published 0.2.5 would keep handing hosts the old `W_DIM_INSIDE` prose. (It is
+  the only one of the five that moved this release.) The extension bundles the core at build time,
+  and nine core `src/` files changed including `format.ts`, `fix-producers.ts`,
+  `lint/rules/dims.ts` and `geometry.ts`, all of which reach the bundled LSP server — so its
+  diagnostics and quick fixes differ.
+
 ## [1.26.0] - 2026-08-12
 
 **The language's descriptions of itself, made honest.** No new syntax — instead, the four artifacts

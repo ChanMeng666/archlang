@@ -12,6 +12,33 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.15.1] - 2026-08-13
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.26.1`** — the release that ran five shipped
+  surfaces nobody's test had ever executed. No new syntax and no new catalogued code reaches the
+  editor, but its **diagnostics and quick fixes differ**, because nine core `src/` files changed and
+  four of them are on the bundled language server's path:
+  - **`W_DIM_INSIDE` no longer offers a quick fix that undoes itself.** "Swap the endpoints" is only
+    offered when the swap actually moves the dimension line out of the building. On a dimension whose
+    measured run cuts *through* the plan the line reads inside either way, so the old fix was
+    re-offered every pass and swapped back forever — applying it from the lightbulb walked the file
+    in a 2-cycle. The warning still reports; it now honestly carries no automatic fix, and its
+    hover text says so and names the alternatives (measure along a facade, or raise the `offset`).
+    The predicate behind it moved to the core's `src/geometry.ts` so the rule and the fix producer
+    share one source.
+  - **The formatter no longer drops door kinds.** `Format Document` on a file containing
+    `door … pocket … slide left` (or any `sliding` / `barn` / `bifold`, or an `open <0..1>` clause)
+    used to return it as a plain hinged door — a silent semantic rewrite of the drawing by the one
+    command a user is entitled to assume is safe. Shipped since v1.25.0; fixed here.
+- **The extension's core dependency range is now guarded.** `editors/vscode/test/lockstep.test.ts`
+  requires it to be a string equal to `^` + the core's version, so a core release reddens the
+  extension on purpose until someone consciously re-pins. It had sat two releases stale at `^1.24.0`
+  because nothing checked it — the `__CORE_VERSION__` bundle-freshness stamp stayed green the whole
+  time, since esbuild resolves the workspace symlink regardless of what the manifest declares. Only
+  the manifest had rotted.
+
 ## [0.15.0] - 2026-08-12
 
 ### Changed
