@@ -114,7 +114,7 @@ test.describe("the raw /<page>.md copies serve the canonical markdown", { tag: "
 test.describe("the example gallery", { tag: "@prod" }, () => {
   test("the derived gallery is non-trivial and holds the flagships", () => {
     expect(GALLERY_EXAMPLES.length).toBeGreaterThan(5);
-    for (const flagship of ["studio", "museum", "aquarium", "gallery-l"]) {
+    for (const flagship of ["studio", "museum", "aquarium", "gallery-l", "laneway-house", "library"]) {
       expect(GALLERY_EXAMPLES).toContain(flagship);
     }
   });

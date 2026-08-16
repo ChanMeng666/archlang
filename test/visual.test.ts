@@ -59,6 +59,37 @@ const EXAMPLES = [
   // move if a NON-HINGED leaf's drawing drifted — the sliding, pocket and bifold panels
   // are Scene primitives with no swing arc, and nothing else under examples/ draws one.
   "bungalow.arch",
+  // v1.27 showcase: the twelve examples added when the gallery was redrawn. They exist
+  // here for the same reason the older entries do — each is the only shipped plan that
+  // exercises some part of the drawing pipeline, so its golden is where that part's
+  // drift would first become visible.
+  //
+  // The signature plan: nothing is positioned by hand, so this golden moves if the
+  // `on <wall> at <pos>` walk, the `against wall` / `anchor … flush` resolvers, `strip`
+  // or the pocket/sliding panels drift.
+  "laneway-house.arch",
+  // The smallest plan that renders anything at all — one room, one door, one window. A
+  // diff here means something in the common path moved, with nothing else to blame.
+  "one-room.arch",
+  "tiny-house.arch",
+  "garden-loft.arch",
+  // A ring of rooms round a void: the only shipped plan where the outward face of a
+  // window is NOT the side its bounding box suggests (the v1.25 courtyard case).
+  "courtyard-house.arch",
+  // Non-rectilinear rooms that are not the polygon flagship — six-sided rooms packed
+  // round a hexagonal core, so the mitres are all oblique.
+  "hexagon-pavilion.arch",
+  // The wide-format sheets: A2 drawings with `schedule` / `legend` margin tables, so
+  // these two goldens are where the sheet layer's table drawing would drift.
+  "library.arch",
+  "transit-hall.arch",
+  "clinic.arch",
+  // The only shipped example that uses `style <kind> { … }`, so it is the only golden
+  // that pins a per-element style override reaching the SVG.
+  "materials.arch",
+  // A `for`-generated run of four identical units — the golden that would move if the
+  // scripting expansion or its auto-id numbering drifted.
+  "terrace-row.arch",
 ];
 
 async function hasResvg(): Promise<boolean> {
@@ -146,5 +177,15 @@ describe("visual regression — golden PNG pixel-diff", () => {
     expect(errors).toEqual([]);
     expect(pages).toHaveLength(2);
     for (const p of pages!) await diffAgainstGolden(`two-storey.arch.L${p.level}`, p.scene);
+  });
+
+  // The second multi-storey example, and the first with THREE levels — so it is the only
+  // golden that would catch a fault appearing on a level that is neither the first nor
+  // the last (a stair shaft's middle landing, a per-storey title-block row).
+  it("townhouse.arch matches a golden per level", async () => {
+    const { pages, errors } = compile(example("townhouse.arch"), { noCache: true });
+    expect(errors).toEqual([]);
+    expect(pages).toHaveLength(3);
+    for (const p of pages!) await diffAgainstGolden(`townhouse.arch.L${p.level}`, p.scene);
   });
 });

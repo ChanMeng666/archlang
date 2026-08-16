@@ -1,0 +1,189 @@
+# A 90 x 40 m metro concourse split by its gate line — the BIG-PUBLIC-BUILDING example.
+#
+# One fact organises the whole plan: a transit hall is two buildings that share a roof. The
+# UNPAID side is street, and anyone may stand in it — shops, WCs, ticket machines. The PAID
+# side is platform, and the only way across is the gate line. So the drawing is a single
+# 300 mm partition, `w_gate`, running the full 90 m width, with nine `opening`s punched in
+# it by a `for` loop: eight 800 mm gates and one 1200 mm wide aisle. Nothing else joins the
+# two halves — the retail strip and the service wing both stop dead at that wall.
+#
+# Three things this example is the showcase for:
+#
+#   `zone`      the paid / unpaid / service split is DECLARED, never inferred from
+#               position. It draws nothing (the SVG is byte-identical without it), but the
+#               room schedule groups by it with a subtotal per zone, and `describe --json`
+#               reports `zones[]` — so "how much unpaid floor is there" is a read, not a sum.
+#   `strip`     the four retail units are one block, not four hand-placed rooms. Each unit's
+#               offset is the running sum of the ones before it, so changing a shop's depth
+#               moves every unit below it and nothing else.
+#   escalators  `escalator … dir up|down` and `elevator` are one shaft each, drawn with the
+#               chevrons and the UP/DN arrow. On a single-storey plan they still draw and
+#               still obstruct circulation; `W_STAIR_UNMATCHED` is a multi-storey question
+#               and never fires here. Both narrow ends of an escalator are entries.
+#
+# The columns are on the 12 m structural grid the `axes` bubbles name, laid by `for` — one
+# statement per row, not eighteen coordinates.
+plan "Transit Hall" {
+  units mm
+  # `grid 50`: partitions are 200 thick and the shell 400, so a fixture placed against a
+  # face lands on a ...50 coordinate a 100 grid could not express.
+  grid 50
+  paper A2 landscape
+  scale 1:200
+  north up
+  dims auto all
+  schedule rooms
+
+  let BAY = 12000     # structural bay, and the axis grid
+  let GATE = 14000    # y of the gate line
+
+  # ---- shell and the gate line ----------------------------------------------
+  wall id=shell exterior thickness 400 material concrete { (0,0) (90000,0) (90000,40000) (0,40000) close }
+  wall id=w_gate partition thickness 300 { (0,GATE) (90000,GATE) }
+
+  # ---- unpaid side: retail strip (west) and the service wing (east) ---------
+  wall id=w_retail_e partition thickness 200 { (12000,GATE) (12000,40000) }
+  wall id=w_r1 partition thickness 200 { (0,20500) (12000,20500) }
+  wall id=w_r2 partition thickness 200 { (0,27000) (12000,27000) }
+  wall id=w_r3 partition thickness 200 { (0,33500) (12000,33500) }
+
+  wall id=w_wing_w partition thickness 200 { (76000,GATE) (76000,40000) }
+  wall id=w_wing_e partition thickness 200 { (80000,GATE) (80000,40000) }
+  wall id=w_wcw_s  partition thickness 200 { (80000,21000) (90000,21000) }
+  wall id=w_wcm_s  partition thickness 200 { (80000,28000) (90000,28000) }
+  wall id=w_wca_s  partition thickness 200 { (80000,32000) (90000,32000) }
+  wall id=w_staff_s partition thickness 200 { (80000,36000) (90000,36000) }
+
+  axes {
+    x at 0, 12000, 24000, 36000, 48000, 60000, 72000, 90000
+    y at 0, 14000, 27000, 40000
+  }
+
+  # ---- rooms ----------------------------------------------------------------
+  # Four retail units laid end to end down the west edge: only each unit's DEPTH is
+  # written, so changing one shop moves every unit below it and nothing else. `strip` is a
+  # PLAN-LEVEL block — it cannot nest inside a `zone` (E_STRIP_NEST) — so the kiosks are the
+  # one group the schedule lists on its own, after the three zoned departments.
+  strip down at (0,GATE) gap 0 width 12000 {
+    room id=r_shop1 size 6500 label "Kiosk 1" uses office
+    room id=r_shop2 size 6500 label "Kiosk 2" uses office
+    room id=r_shop3 size 6500 label "Kiosk 3" uses office
+    room id=r_shop4 size 6500 label "Kiosk 4" uses office
+  }
+
+  zone paid "Paid" {
+    room id=r_paid at (0,0) size 90000x14000 label "Paid Concourse" uses hall circulation
+  }
+
+  zone unpaid "Unpaid" {
+    room id=r_unpaid at (12000,GATE) size 64000x26000 label "Unpaid Concourse" uses hall circulation
+
+    room id=r_lobby at (76000,GATE) size 4000x26000 label "Lobby"         uses circulation
+    room id=r_wc_w  at (80000,GATE) size 10000x7000 label "WC Women"      uses wc
+    room id=r_wc_m  at (80000,21000) size 10000x7000 label "WC Men"       uses wc
+    room id=r_wc_a  at (80000,28000) size 10000x4000 label "Accessible WC" uses wc
+  }
+
+  zone service "Back of house" {
+    room id=r_staff   at (80000,32000) size 10000x4000 label "Staff Room"   uses office
+    room id=r_control at (80000,36000) size 10000x4000 label "Control Room" uses office
+  }
+
+  # ---- the gate line --------------------------------------------------------
+  # `on <wall> at <pos>` takes a LITERAL position, so a generated run of gates uses the
+  # absolute form instead: the point is on the gate wall's centreline by construction
+  # (y = GATE), and `wall w_gate` names the host. Eight standard gates, then the wide aisle.
+  for i in 0..8 {
+    opening at (30000 + i * 2400, GATE) width 800 wall w_gate
+  }
+  opening id=o_gate_wide on w_gate at 49200 width 1200
+
+  # ---- the rest of the route ------------------------------------------------
+  door id=d_main at (45000,40000) width 4000 wall shell swing into r_unpaid
+
+  opening id=o_shop1 on w_retail_e at 3250  width 2400
+  opening id=o_shop2 on w_retail_e at 9750  width 2400
+  opening id=o_shop3 on w_retail_e at 16250 width 2400
+  opening id=o_shop4 on w_retail_e at 22750 width 2400
+
+  opening id=o_lobby_n on w_wing_w at 4000  width 3000
+  opening id=o_lobby_s on w_wing_w at 22000 width 2400
+
+  door id=d_wc_w on w_wing_e at 3500  width 1000 swing into r_wc_w
+  door id=d_wc_m on w_wing_e at 10500 width 1000 swing into r_wc_m
+  door id=d_wc_a on w_wing_e at 16000 width 1100 swing into r_wc_a
+
+  # Back of house takes pocket doors: a 4 m lobby is a queue, and neither leaf may sweep
+  # into it. `slide` runs along the wall's traversal (north to south here), so each panel
+  # drives into the solid run between the two doors rather than at a corner.
+  door id=d_staff   pocket on w_wing_e at 20000 width 900 slide right
+  door id=d_control pocket on w_wing_e at 24000 width 900 slide left
+  door id=d_staff_entry at (90000,38500) width 1200 wall shell swing out
+
+  # ---- glazing --------------------------------------------------------------
+  # Curtain-wall bays on the three street facades, written as three runs rather than
+  # seventeen statements. Every centre is on the shell's centreline by construction.
+  for i in 0..4 {
+    window at (15000 + i * 20000, 0) width 6000 wall shell      # paid-side north facade
+    window at (0, 17000 + i * 6500) width 3000 wall shell       # one per kiosk, west facade
+  }
+  for i in 0..3 {
+    window at (18000 + i * 9000, 40000) width 6000 wall shell   # south facade, west of the entrance
+    window at (54000 + i * 9000, 40000) width 6000 wall shell   # south facade, east of the entrance
+  }
+  window at (0,7000) width 3000 wall shell
+  window at (90000,7000) width 3000 wall shell
+  window at (90000,17500) width 1200 wall shell
+  window at (90000,24500) width 1200 wall shell
+  window at (90000,34000) width 1500 wall shell
+
+  # ---- vertical circulation down to the platforms ---------------------------
+  escalator id=esc_down at (41000,3000) size 1400x9000 dir down
+  escalator id=esc_up   at (44000,3000) size 1400x9000 dir up
+  elevator  id=lift_plat at (50500,3000) size 2400x2400
+
+  # ---- structure: one statement per column row ------------------------------
+  for i in 0..6 {
+    column at (BAY + i * BAY, 7000) size 800x800
+  }
+  for i in 0..5 {
+    column at (2 * BAY + i * BAY, 27000) size 800x800
+  }
+
+  # ---- sanitary fixtures ----------------------------------------------------
+  # `against wall <id> offset <mm>` puts the piece's CENTRE at that distance along the
+  # wall; the depth off the face, the quarter-turn and (for a catalogued fixture) the
+  # footprint are all derived, so no coordinate and no half-thickness is written here.
+  for i in 0..4 {
+    furniture wc against wall w_wcw_s offset 1500 + i * 1500 in r_wc_w
+    furniture wc against wall w_wcm_s offset 1500 + i * 1500 in r_wc_m
+  }
+  furniture basin against wall w_gate  offset 87000 in r_wc_w
+  furniture basin against wall w_gate  offset 88500 in r_wc_w
+  furniture basin against wall w_wcw_s offset 7000 in r_wc_m
+  furniture basin against wall w_wcw_s offset 8500 in r_wc_m
+  furniture wc    against wall w_wca_s offset 1500 in r_wc_a
+  furniture basin against wall w_wca_s offset 3500 in r_wc_a
+
+  # ---- concourse fit-out ----------------------------------------------------
+  # Ticket machines back onto the gate wall on the unpaid side — `offset` is the distance
+  # along the wall to the piece's CENTRE, and `size` on an `against` piece reads
+  # along x depth, so the 6 m bank spans 17-23 m and stands 900 off the face.
+  furniture counter against wall w_gate offset 20000 size 6000x900 label "Ticket machines" in r_unpaid
+  furniture counter against wall w_gate offset 60000 size 6000x900 label "Ticket machines" in r_unpaid
+  # The assistance desk sits just east of the wide gate, clear of every gate approach.
+  furniture desk    at (52000,16500) size 4000x1200 label "Assistance"
+  # Benches stop short of the escalator/lift block (x >= 41000 on the paid side).
+  for i in 0..4 {
+    furniture bench at (30000 + i * 6000, 34000) size 2400x700 label "Bench"
+    furniture bench at (18000 + i * 6000, 5000)  size 2400x700 label "Bench"
+  }
+  furniture desk at (82000,34000) size 3000x900 label "Desk" in r_staff
+  furniture desk at (82000,38000) size 3000x900 label "Desk" in r_control
+
+  title {
+    project "Metro Interchange — concourse level"
+    drawn_by "ArchLang"
+    date "2026-08-16"
+  }
+}

@@ -24,9 +24,15 @@ import type { Point } from "../src/ast.js";
  * verbatim whenever the centroid is legal, the ring's pole of inaccessibility only when
  * it is not — the same rule commit `5480bb2` gave the LABEL one layer up.
  *
- * Nothing in the corpus exercises this (`examples/gallery-l.arch` is the only shipped
- * `room polygon` and its centroid is on its floor), so the fixture below is purpose-built
- * and proves its own premise before asserting anything.
+ * `examples/gallery-l.arch` is no longer the only shipped `room polygon`:
+ * `hexagon-pavilion.arch` (seven rings, all convex, all centroids on their own floor) and
+ * `courtyard-house.arch` join it — and `courtyard-house`'s `r_gallery`, a U wrapped round
+ * the courtyard, is the FIRST shipped plan whose centroid lands off its own floor
+ * (8000,6656 is in the open air of the court), so the corpus does now reach the fallback
+ * this file was written for. It is still not a substitute for the fixture below: the
+ * example authors its label point by hand to dodge `W_ROOM_LABEL_OUTSIDE`, and a golden
+ * would only tell you the drawing changed, never which of the three consumers moved. The
+ * fixture is purpose-built and proves its own premise before asserting anything.
  */
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

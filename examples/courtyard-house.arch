@@ -1,0 +1,210 @@
+# A 16.3 x 11.8 m single-storey house whose rooms ring an open courtyard.
+#
+# The courtyard is the whole point of the plan, and the first thing to understand about
+# it is that IT IS NOT A ROOM. Nothing is declared at (5000,3500)-(11000,7000): it is
+# the hole the building is wrapped around, open to the sky, and calling it a `room` with
+# a `uses` would put 21 m2 of weather into the floor schedule. What encloses it is a
+# single three-segment partition, `w_court`, and everything that reads the plan — the
+# schedule, `describe().totals`, the circulation flood-fill — simply sees no floor there.
+#
+# THE FACING RULE. A courtyard is the shape that breaks the naive way of answering
+# "which way does this window look?". Take `w_court_w`, the window on the courtyard's
+# WEST wall. That wall is west of the courtyard, so a rule that compared the window with
+# the middle of the building would call it west-facing. It is not: the gallery's floor is
+# on the west side of that wall and the open air is on the east, so the window looks
+# EAST. ArchLang answers it by probing one wall thickness off each face of the window's
+# own host segment and taking the side no room occupies, which is exact on a courtyard
+# and on a sloped facade alike. Read it back with:
+#
+#   arch describe examples/courtyard-house.arch --json --select windows
+#
+# and `w_court_w` reports `"facing": "east"`, `w_court_e` reports `"facing": "west"` —
+# each looking ACROSS the courtyard, which is what someone standing at them sees.
+#
+# ZONES. `zone living { … }`, `zone private { … }` and `zone service { … }` group the
+# room statements into wings. A zone has ZERO geometry: every statement inside resolves
+# exactly as if the wrapper were deleted, same coordinates, same ids, byte-identical
+# drawing. Membership is DECLARED, never inferred from where a room happens to sit —
+# which is why the schedule below can carry a subtotal per wing that no amount of
+# looking at the drawing could have derived. `arch describe --json --select zones` rolls
+# the areas up; `--zone private` reads one wing on its own.
+#
+# The gallery is one POLYGON room, not three rectangles: a U wrapping the courtyard on
+# west, south and east. Written as three rooms it would need three openings between
+# pieces of the same corridor, and the schedule would list a corridor three times. Its
+# centroid falls in the courtyard — a U is the shape whose average point is outside it —
+# so the label is placed by hand in the south arm.
+#
+# Also here: `left-of` and `above`, the two relational directions no other example uses;
+# `sliding` doors where a room opens onto the courtyard (a leaf that swings 900 mm into
+# a 1500 mm gallery is a leaf in the way); and one `pocket` door for the same reason.
+plan "Courtyard House" {
+  units mm
+  # `grid 50`: partitions are 100 thick, so a `flush` fixture lands on a ...50 face.
+  grid 50
+  paper A3 landscape
+  scale 1:100
+  north up
+  dims auto all
+  schedule rooms
+  legend
+
+  # The plot fronts the street on the WEST. `site` draws nothing; it names five
+  # directions on `describe --json --select site` — street (W), back (E), equator_side
+  # (S, north of the equator), sunrise_side (E), sunset_side (W). They are a DRAFTING
+  # HEURISTIC for an aspect: ArchLang has no sun model, no latitude and no date.
+  site { street west hemisphere north }
+
+  # ---- shell, bands and the courtyard wall ----------------------------------
+  wall id=shell exterior thickness 300 { (0,0) (16000,0) (16000,11500) (0,11500) close }
+
+  # Two full-width partitions do most of the work: one behind the north band of rooms,
+  # one in front of the south band of bedrooms. Each is a single wall because the line
+  # is continuous even though what it separates changes along it.
+  wall id=w_band_n partition thickness 200 { (0,3500) (16000,3500) }
+  wall id=w_band_s partition thickness 200 { (0,8500) (16000,8500) }
+
+  # The courtyard itself: one wall, three segments, mitred at both corners.
+  wall id=w_court partition thickness 200 { (5000,3500) (5000,7000) (11000,7000) (11000,3500) }
+
+  # 150, not 100: a pocket door needs a partition thick enough to swallow its panel.
+  wall id=w_gal_w  partition thickness 150 { (3500,3500) (3500,8500) }
+  wall id=w_gal_e  partition thickness 100 { (12500,3500) (12500,8500) }
+  wall id=w_entry  partition thickness 100 { (3500,0) (3500,3500) }
+  wall id=w_dining partition thickness 100 { (9000,0) (9000,3500) }
+  wall id=w_kitch  partition thickness 100 { (12500,0) (12500,3500) }
+  wall id=w_bath   partition thickness 100 { (12500,6000) (16000,6000) }
+  wall id=w_bed1   partition thickness 100 { (5500,8500) (5500,11500) }
+  wall id=w_bed2   partition thickness 100 { (11000,8500) (11000,11500) }
+
+  # ---- rooms, grouped into wings by `zone` ----------------------------------
+  zone living "Living wing" {
+    room id=r_living at (3500,0) size 5500x3500 label "Living"  uses living
+    # `left-of` places the entry against the living room's west face and `align top`
+    # lines their north edges up — no second coordinate is written, and moving the
+    # living room moves the entry with it.
+    room id=r_entry  left-of r_living align top size 3500x3500 label "Entry" uses entry hall
+    room id=r_dining at (9000,0) size 3500x3500 label "Dining" uses dining
+
+    # The gallery: a U around the courtyard. Its centroid is in the open air, so the
+    # label point is given explicitly (otherwise `W_ROOM_LABEL_OUTSIDE`).
+    room id=r_gallery polygon
+      (3500,3500) (5000,3500) (5000,7000) (11000,7000) (11000,3500)
+      (12500,3500) (12500,8500) (3500,8500)
+      label "Gallery" at (8000,7750) uses circulation hall
+  }
+
+  zone private "Private wing" {
+    room id=r_bed1 at (0,8500)     size 5500x3000 label "Bedroom 1" uses bedroom
+    room id=r_bed2 at (5500,8500)  size 5500x3000 label "Bedroom 2" uses bedroom
+    room id=r_bed3 at (11000,8500) size 5000x3000 label "Bedroom 3" uses bedroom
+    # `above` is the other new direction: the study sits directly on top of bedroom 1,
+    # its own depth up from that room's north edge, west edges aligned.
+    room id=r_study above r_bed1 align left size 3500x5000 label "Study" uses office
+  }
+
+  zone service "Service wing" {
+    room id=r_kitchen at (12500,0)    size 3500x3500 label "Kitchen"   uses kitchen
+    room id=r_bath    at (12500,3500) size 3500x2500 label "Bathroom"  uses bath
+    room id=r_util    at (12500,6000) size 3500x2500 label "Utility"   uses utility
+  }
+
+  # ---- doors ----------------------------------------------------------------
+  # `swing in` and not `swing into r_entry`: a relationally-placed room is deliberately
+  # NOT a `swing into` target, because its rectangle is DERIVED — the compiler will not
+  # resolve an authored clause against a position it computed for you. On an exterior
+  # wall the explicit word is the plain one anyway: `in` is the shell's inward face.
+  door id=d_front at (0,1750) width 1000 wall shell hinge left swing in
+
+  # Onto the courtyard. A slider is what a full-height garden opening actually is, and
+  # a hinged leaf here would sweep either the gallery or the courtyard threshold.
+  door id=d_court_l sliding on w_band_n at 6000 width 1800 slide left
+  door id=d_court_g sliding on w_court  at 6500 width 2000 slide right
+
+  # The study, off a gallery only 1350 mm wide between faces. A pocket keeps both sides
+  # clear; `slide right` drives the panel south into 2100 mm of blank wall (it needs
+  # 850 — its own 800 plus a jamb), where `slide left` would aim it at the corner.
+  door id=d_study pocket on w_gal_w at 2500 width 800 slide right
+
+  door id=d_bath  on w_gal_e  at 750   width 800 swing into r_bath
+  door id=d_util  on w_gal_e  at 4000  width 800 swing into r_util
+  door id=d_kitch on w_kitch  at 1750  width 900 swing into r_kitchen
+  door id=d_bed1  on w_band_s at 4500  width 900 swing into r_bed1
+  door id=d_bed2  on w_band_s at 8000  width 900 swing into r_bed2
+  door id=d_bed3  on w_band_s at 11750 width 900 swing into r_bed3
+
+  # Cased openings: the public rooms read into one another with no leaf at all.
+  opening id=o_entry  at (3500,1750)  width 1500 wall w_entry
+  opening id=o_dining at (9000,1750)  width 1600 wall w_dining
+  opening id=o_gal_w  at (4250,3500)  width 1200 wall w_band_n
+  opening id=o_gal_e  at (11750,3500) width 1200 wall w_band_n
+
+  # ---- windows: outer facades first -----------------------------------------
+  window id=n_living  at (6000,0)      width 2000 wall shell
+  window id=n_dining  at (10750,0)     width 1600 wall shell
+  window id=n_kitchen at (14250,0)     width 1400 wall shell
+  window id=e_kitchen at (16000,1750)  width 900  wall shell
+  window id=e_bath    at (16000,4750)  width 600  wall shell
+  window id=e_util    at (16000,7250)  width 600  wall shell
+  window id=s_bed1    at (2750,11500)  width 1600 wall shell
+  window id=s_bed2    at (8250,11500)  width 1600 wall shell
+  window id=s_bed3    at (13500,11500) width 1600 wall shell
+  window id=w_study   at (0,6000)      width 1400 wall shell
+  window id=w_entry_l at (0,2950)      width 800  wall shell
+
+  # ---- ...then the courtyard walls ------------------------------------------
+  # These three are the facing demonstration. `w_court_w` is hosted on the courtyard's
+  # WEST wall and faces EAST; `w_court_e` is on its east wall and faces WEST; the dining
+  # room's and the living room's courtyard windows are on the band wall and face SOUTH,
+  # which is the same equator side the bedrooms take from the outer facade.
+  window id=w_court_l at (8000,3500)  width 1200 wall w_band_n
+  window id=w_court_w at (5000,5250)  width 1200 wall w_court
+  window id=w_court_e at (11000,5250) width 1200 wall w_court
+  window id=w_court_d at (10000,3500) width 1600 wall w_band_n
+
+  # ---- furniture ------------------------------------------------------------
+  furniture sofa  in r_living anchor top flush size 2400x900 label "Sofa"
+  furniture table in r_living centered size 1600x900 label "Table"
+
+  furniture table in r_dining centered size 1600x900 label "Dining table"
+
+  # The kitchen run rides the shell's north segment; `offset` is the distance of each
+  # piece's CENTRE along it from (0,0), and the footprints come from the catalogue.
+  furniture kitchen_sink against wall shell segment 0 offset 13100 in r_kitchen
+  furniture stove        against wall shell segment 0 offset 13800 in r_kitchen
+  furniture counter      against wall shell segment 0 offset 14400 in r_kitchen
+  furniture fridge       against wall shell segment 0 offset 15000 in r_kitchen
+
+  furniture bathtub in r_bath anchor top-right    flush size 1700x700
+  furniture wc      in r_bath anchor bottom-left  flush size 400x700
+  furniture basin   in r_bath anchor bottom-right flush size 600x450
+
+  furniture counter in r_util anchor top flush size 1800x600
+  # 900 x 600 of plumbed appliance bay, flush to the east wall. It is drawn 900 wide
+  # because a label is drawn INSIDE its own footprint and the renderer has no metrics
+  # to shrink one with: at 1:100 the word "Washer" is 825 mm long on the plan.
+  furniture washer  at (14950,7300) size 900x600 label "Washer"
+
+  # The study is placed relationally, so its pieces take absolute points rather than
+  # anchors — the room's own rectangle is derived, and hanging furniture off a derived
+  # edge would hide which of the two the author actually meant.
+  furniture desk  at (300,3700) size 1600x700 label "Desk"
+  furniture bookcase at (1500,8000) size 1800x400 label "Bookcase"
+  furniture bench    at (150,3000)  size 1200x400 label "Bench"
+
+  furniture bed      in r_bed1 anchor bottom-left  flush size 1500x2000 label "Double"
+  furniture wardrobe at (4000,11000) size 1400x350 label "Wardrobe"
+  furniture bed      in r_bed2 anchor bottom-right flush size 1500x2000 label "Double"
+  furniture bed      in r_bed3 anchor bottom-right flush size 1500x2000 label "Double"
+
+  # The one piece with no `in <room>` at all — because there is no room to name. A
+  # planter standing in the courtyard is furniture in the open air, and every rule that
+  # would ask which room it belongs to simply does not apply to it.
+  furniture planter at (7250,4750) size 1500x1500 label "Planter"
+
+  title {
+    project "Courtyard House"
+    drawn_by "ArchLang"
+    date "2026-08-16"
+  }
+}

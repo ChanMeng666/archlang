@@ -19,14 +19,20 @@ import {
   type IntentCheckResult,
 } from "archlang";
 
-/** A starter brief for the default Studio example — valid, and mostly satisfied. */
+/**
+ * A starter brief for the default Laneway House example — valid, and mostly
+ * satisfied, so the first thing a visitor sees is a working contract rather than a
+ * wall of red. Cut from that plan's own `describe()`: 3 rooms, 48.75 m² of floor
+ * (the band is roughly ±10 %), a bath and a windowed bedroom among them. Edit the
+ * numbers, or load another example, to watch the verdict move.
+ */
 export const STARTER_INTENT = `{
-  "rooms": 4,
+  "rooms": 3,
   "roomsInclude": [
     { "concept": "bathroom", "count": { "min": 1 } },
     { "concept": "bedroom", "count": { "min": 1 }, "windows": { "min": 1 } }
   ],
-  "totalAreaM2": { "min": 38, "max": 46, "source": "around 42 m² total" },
+  "totalAreaM2": { "min": 44, "max": 54, "source": "around 49 m² total" },
   "reachable": true
 }`;
 

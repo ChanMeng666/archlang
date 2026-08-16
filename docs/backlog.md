@@ -105,6 +105,96 @@ Note the constraint before starting: `SKILL.md` feeds `gen:llms`, and `spec.llm.
 
 ---
 
+## Found while redrawing the showcase
+
+Five things the twelve new examples ran into. None is a regression and none blocked an example from
+shipping — each was worked around in the source, and the workaround is what makes it worth
+recording: an author had to give something up. Every claim below was **reproduced**, and the
+reproduction is quoted.
+
+### S.1 · `schedule rooms` and `place` are effectively unusable together — `todo`
+
+`schedule rooms` groups by a room's **innermost** zone, and every `place`d instance **is** an
+implicit zone, so a plan that places N components prints N one-row groups with N subtotals. Adding
+`schedule rooms` to `examples/clinic.arch` (six placed consult rooms) produces exactly that — seven
+rooms in two real zones, then six groups of one:
+
+```
+07  r_wc      Accessible WC   13.5   zone=clinical
+08  c1.main   Consult 1       16.2   zone=clinical.c1
+09  c2.main   Consult 2       16.2   zone=clinical.c2
+…  (c3…c6, one group and one subtotal each)
+```
+
+That is why the shipped `clinic.arch` carries a `legend` and no `schedule` — the legend has no
+grouping structure, so it is unaffected. A fix has to decide what an instance zone *means* to a
+table: roll instances up into their enclosing named zone (probably right — a reader wants
+"Clinical", not "Clinical / c4"), or let a `schedule` name the grouping depth. Neither is obviously
+free; both are a design pass.
+
+### S.2 · `on <wall> at <pos>` takes a literal, so a generated run of openings can't use it — `todo`
+
+The `at` in an on-wall opening is parsed as a bare number — not an expression, not a `let` name — so
+a `for`-generated run of doors or windows cannot place itself along a wall and must fall back to the
+absolute form `at (x,y) … wall <id>`, hand-computing the coordinate the `on` form exists to avoid.
+Reproduced on a two-room shell:
+
+```
+window on w1 at p width 800          →  Expected number but found "p"
+window on w1 at 1000 + 500 width 800 →  Expected "width" but found "+"
+```
+
+`examples/transit-hall.arch` is the shipped instance: its generated gate line uses `at (x,y) … wall`
+for exactly this reason. Note in passing that both diagnostics come back with **no `E_*` code** —
+they are raw parser expectations, so `--code` cannot select them and the error catalog does not
+document them.
+
+### S.3 · `strip` cannot nest inside `zone`, so strip rooms fall out of the schedule — `todo`
+
+```
+E_STRIP_NEST: "strip" is only allowed at plan level, not inside a block, component, or another strip
+```
+
+A `strip` is the cheapest way to lay out a run of rooms and a `zone` is the only way to group them
+for `schedule rooms`, and the two cannot be combined — so strip-laid rooms land in the schedule's
+`(no zone)` group. `examples/transit-hall.arch` hits both halves of this. The restriction is
+deliberate (a strip resolves positions and a zone must not), but the two are orthogonal in principle:
+a zone has **zero geometric semantics**, so there is no resolution-order reason a strip cannot sit
+inside one.
+
+### S.4 · `dims auto all` prints wall-thickness readings inside the poché — `todo`
+
+Where a partition meets the shell, the rotated chain emits the wall's own thickness as a dimension
+(`100`, `200`) drawn **inside the wall's hatch**, where it is nearly unreadable and measures nothing
+a reader wants. Cosmetic, but it is on the signature drawing. Counts from the shipped sources:
+`bungalow` 4, `laneway-house` 2, `garden-loft` 2 (`studio`, `two-bed`, `tiny-house` and `one-room`:
+none). Worth a look at the stagger rule (`src/scene-build.ts` ~`:655`, which decides whether a
+chain's numbers crowd, plus the shared `src/text-metrics.ts` estimate it measures with) — a reading
+whose extent is shorter than the poché it sits in probably wants suppressing, or pulling out on a
+leader rather than staggering.
+
+### S.5 · The margin tables can push a page past its own declared paper, silently — `todo`
+
+`schedule rooms` / `legend` are laid out **below** the drawing and are not measured by the fit rule,
+so a plan can emit a page taller than the paper it declares while `validate --strict` reports no
+`W_SCALE_OVERFLOW` and `describe().sheet.fits` is `true` — both measure the drawing only. Reproduced
+by moving `examples/library.arch` (as authored, before it was moved up to A2) back to A3:
+
+| `examples/library.arch` on | emitted page | A3 landscape is | `sheet.fits` | `W_SCALE_OVERFLOW` |
+|---|---|---|---|---|
+| A3 landscape @ 1:200, with its tables | **420 × 322.6 mm** (viewBox 84000 × 64520) | 420 × 297 mm | `true` | 0 |
+| A3 landscape @ 1:200, tables removed | 420 × 297 mm (viewBox 84000 × 59400) | 420 × 297 mm | `true` | 0 |
+
+25.6 mm too tall, reported as fitting. The second row is the proof that the tables are the whole
+difference. **No shipped example currently exhibits it** — `library.arch` ships on A2 precisely
+because its author hit this — which is exactly why it needs recording: the next person to put a
+schedule on a tight sheet gets an SVG whose `height` contradicts its own `paper` and no diagnostic
+anywhere. Same "a promise quietly not kept" class as v1.26.1. The fix is to include
+`chrome.tables`' measured height in the fit rule that raises `W_SCALE_OVERFLOW` and sets
+`sheet.fits`, so the two agree with the bytes.
+
+---
+
 ## Wave 4 — P2 language features
 
 Designed and evidenced in `docs/research/2026-08-06-competitor-borrowing-roadmap.md` §5. Each one

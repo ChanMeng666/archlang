@@ -6,21 +6,14 @@
 // verify intent without ever looking at a picture. Compiled at setup (compile is
 // isomorphic) so the drawing and the schedule are in the SSR HTML.
 import { compile, describe } from "archlang";
+import { EXAMPLES } from "./examples-data.js";
 
-const SRC = `plan "Garden Loft" {
-  units mm
-  grid 50
-  scale 1:50
-  north up
-  wall exterior  thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
-  wall partition thickness 100 { (3600,0) (3600,4000) }
-  room id=r_live at (0,0)    size 3600x4000 label "Living / Kitchen" uses living kitchen
-  room id=r_bed  at (3600,0) size 2400x4000 label "Bedroom"         uses bedroom
-  door id=d_main at (1800,0)    width 900 wall exterior  hinge left  swing in
-  door id=d_bed  at (3600,1200) width 800 wall partition hinge right swing in
-  window at (0,1500)    width 1200 wall exterior
-  window at (6000,2600) width 1000 wall exterior
-}`;
+// The plan this band reads its own facts from — the canonical examples/garden-loft.arch,
+// synced into examples-data.js by sync-docs.mjs, so the drawing and the schedule beside
+// it can never drift from the file the CLI and the docs gallery ship. It exists to be
+// exactly this: the smallest plan still worth DESCRIBING (three rooms, so the derived
+// table fits in a band beside the drawing) with a real fit-out behind every room.
+const SRC: string = EXAMPLES["garden-loft"];
 
 const svg = compile(SRC, { noCache: true }).svg;
 // NB no `noCache` here: `describe()` takes `DescribeOptions` (plugins/world/tolerance)
@@ -49,7 +42,7 @@ const totals = facts.totals;
     <div class="facts__split">
       <!-- The drawing -->
       <figure class="facts__plan">
-        <figcaption class="facts__plan-cap">GARDEN LOFT · A-201 · SCALE 1:50</figcaption>
+        <figcaption class="facts__plan-cap">{{ facts.plan.toUpperCase() }} · A-201 · SCALE {{ facts.scale ?? "—" }}</figcaption>
         <!-- eslint-disable-next-line vue/no-v-html -->
         <div class="facts__plan-svg" v-html="svg"></div>
       </figure>

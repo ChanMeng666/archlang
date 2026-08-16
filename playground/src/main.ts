@@ -25,7 +25,7 @@ import { renderIntent, STARTER_INTENT } from "./intent-panel.js";
 import { renderSuggest } from "./suggest-panel.js";
 import { srcFromHash, updateHash } from "./share.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
-import { EXAMPLES } from "./examples.js";
+import { DEFAULT_EXAMPLE, EXAMPLE_GROUPS, EXAMPLES } from "./examples.js";
 // Self-hosted brand fonts (no CDN) — shared with the docs site.
 import "@fontsource-variable/archivo/wdth.css";
 import "@fontsource-variable/public-sans/wght.css";
@@ -87,11 +87,18 @@ for (const tab of tabs) {
   });
 }
 
-for (const name of Object.keys(EXAMPLES)) {
-  const o = document.createElement("option");
-  o.value = name;
-  o.textContent = name;
-  select.appendChild(o);
+// One <optgroup> per example group — two dozen flat options is a wall, and the
+// grouping is the same one the docs' example tour uses.
+for (const { group, items } of EXAMPLE_GROUPS) {
+  const g = document.createElement("optgroup");
+  g.label = group;
+  for (const { label } of items) {
+    const o = document.createElement("option");
+    o.value = label;
+    o.textContent = label;
+    g.appendChild(o);
+  }
+  select.appendChild(g);
 }
 
 // ---- lint-profile selector (advisory rule sets) ----
@@ -285,8 +292,8 @@ async function init() {
   // First-load source precedence: shared URL hash → autosaved draft → default example.
   const sharedSrc = await srcFromHash();
   const savedSrc = sharedSrc ? null : readStr(KEYS.source);
-  const initialDoc = sharedSrc ?? savedSrc ?? EXAMPLES["Studio (1BR)"];
-  if (!sharedSrc && !savedSrc) select.value = "Studio (1BR)";
+  const initialDoc = sharedSrc ?? savedSrc ?? EXAMPLES[DEFAULT_EXAMPLE];
+  if (!sharedSrc && !savedSrc) select.value = DEFAULT_EXAMPLE;
 
   // Restore persisted UI prefs (advisory — never block on storage).
   const savedTheme = readStr(KEYS.theme);

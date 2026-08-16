@@ -813,6 +813,154 @@
       "room_type": "Entrance"
     }
   ],
+  "examples/clinic.arch": [
+    {
+      "id": "r_wait",
+      "label": "Waiting",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_recept",
+      "label": "Reception",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_entry",
+      "label": "Entrance",
+      "uses": ["entry"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_corr",
+      "label": "Corridor",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_treat",
+      "label": "Treatment",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_staff",
+      "label": "Staff Room",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_wc",
+      "label": "Accessible WC",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "c1.main",
+      "label": "Consult 1",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "c2.main",
+      "label": "Consult 2",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "c3.main",
+      "label": "Consult 3",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "c4.main",
+      "label": "Consult 4",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "c5.main",
+      "label": "Consult 5",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "c6.main",
+      "label": "Consult 6",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    }
+  ],
+  "examples/courtyard-house.arch": [
+    {
+      "id": "r_living",
+      "label": "Living",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_entry",
+      "label": "Entry",
+      "uses": ["entry", "hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_dining",
+      "label": "Dining",
+      "uses": ["dining"],
+      "room_type": "DiningRoom"
+    },
+    {
+      "id": "r_gallery",
+      "label": "Gallery",
+      "uses": ["circulation", "hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_bed1",
+      "label": "Bedroom 1",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bed2",
+      "label": "Bedroom 2",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bed3",
+      "label": "Bedroom 3",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_study",
+      "label": "Study",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_kitchen",
+      "label": "Kitchen",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_util",
+      "label": "Utility",
+      "uses": ["utility"],
+      "room_type": "Storage"
+    }
+  ],
   "examples/gallery-l.arch": [
     {
       "id": "gallery",
@@ -827,12 +975,208 @@
       "room_type": "Entrance"
     }
   ],
+  "examples/garden-loft.arch": [
+    {
+      "id": "r_live",
+      "label": "Living / Kitchen",
+      "uses": ["living", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bath",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "examples/hexagon-pavilion.arch": [
+    {
+      "id": "rotunda",
+      "label": "Rotunda",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "g_ne",
+      "label": "Reading",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "g_n",
+      "label": "Studio",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "g_nw",
+      "label": "Tea Room",
+      "uses": ["dining"],
+      "room_type": "DiningRoom"
+    },
+    {
+      "id": "g_sw",
+      "label": "Store",
+      "uses": ["storage"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "g_s",
+      "label": "Entrance",
+      "uses": ["entry"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "g_se",
+      "label": "Gallery",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    }
+  ],
   "examples/imports.arch": [
     {
       "id": "r_main",
       "label": "Studio",
       "uses": [],
       "room_type": "Room"
+    }
+  ],
+  "examples/laneway-house.arch": [
+    {
+      "id": "r_live",
+      "label": "Living / Kitchen",
+      "uses": ["living", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bath",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    }
+  ],
+  "examples/library.arch": [
+    {
+      "id": "r_hall",
+      "label": "Entrance Hall",
+      "uses": ["entry", "hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_reading",
+      "label": "Reading Room",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_children",
+      "label": "Children's Library",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_waisle",
+      "label": "West Aisle",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_cafe",
+      "label": "Cafe",
+      "uses": ["dining"],
+      "room_type": "DiningRoom"
+    },
+    {
+      "id": "r_eaisle",
+      "label": "East Aisle",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_lobby",
+      "label": "WC Lobby",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_wc_w",
+      "label": "WC Women",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_wc_m",
+      "label": "WC Men",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_stacks",
+      "label": "Open Stacks",
+      "uses": ["storage"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "r_ref",
+      "label": "Reference Stacks",
+      "uses": ["storage"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "r_staff",
+      "label": "Staff Workroom",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_kitchen",
+      "label": "Cafe Kitchen",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_plant",
+      "label": "Plant Room",
+      "uses": ["utility"],
+      "room_type": "Storage"
+    }
+  ],
+  "examples/materials.arch": [
+    {
+      "id": "r_shop",
+      "label": "Workshop",
+      "uses": ["utility"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "r_office",
+      "label": "Office",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_store",
+      "label": "Store",
+      "uses": ["storage"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "r_wc",
+      "label": "WC",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
     }
   ],
   "examples/museum-wing.arch": [
@@ -1003,6 +1347,14 @@
       "room_type": "DiningRoom"
     }
   ],
+  "examples/one-room.arch": [
+    {
+      "id": "r_main",
+      "label": "Room",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    }
+  ],
   "examples/parametric.arch": [
     {
       "id": "room_1",
@@ -1075,6 +1427,104 @@
       "room_type": "Bathroom"
     }
   ],
+  "examples/terrace-row.arch": [
+    {
+      "id": "u1.bed",
+      "label": "Bed",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "u1.bath",
+      "label": "Bath",
+      "uses": ["bath", "utility"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "u1.hall",
+      "label": "Hall",
+      "uses": ["hall", "circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "u1.living",
+      "label": "Living",
+      "uses": ["living", "dining", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "u2.bed",
+      "label": "Bed",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "u2.bath",
+      "label": "Bath",
+      "uses": ["bath", "utility"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "u2.hall",
+      "label": "Hall",
+      "uses": ["hall", "circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "u2.living",
+      "label": "Living",
+      "uses": ["living", "dining", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "u3.bed",
+      "label": "Bed",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "u3.bath",
+      "label": "Bath",
+      "uses": ["bath", "utility"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "u3.hall",
+      "label": "Hall",
+      "uses": ["hall", "circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "u3.living",
+      "label": "Living",
+      "uses": ["living", "dining", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "u4.bed",
+      "label": "Bed",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "u4.bath",
+      "label": "Bath",
+      "uses": ["bath", "utility"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "u4.hall",
+      "label": "Hall",
+      "uses": ["hall", "circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "u4.living",
+      "label": "Living",
+      "uses": ["living", "dining", "kitchen"],
+      "room_type": "LivingRoom"
+    }
+  ],
   "examples/themed.arch": [
     {
       "id": "a",
@@ -1087,6 +1537,168 @@
       "label": "Bedroom",
       "uses": ["bedroom"],
       "room_type": "MasterRoom"
+    }
+  ],
+  "examples/tiny-house.arch": [
+    {
+      "id": "r_main",
+      "label": "Living / Sleep",
+      "uses": ["living", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_wet",
+      "label": "Wet room",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
+  "examples/townhouse.arch": [
+    {
+      "id": "r_hall",
+      "label": "Hall",
+      "uses": ["hall", "entry", "circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_living",
+      "label": "Living",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_wc",
+      "label": "Cloakroom",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_kitchen",
+      "label": "Kitchen/Dining",
+      "uses": ["kitchen", "dining"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_landing",
+      "label": "Landing",
+      "uses": ["circulation", "hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_bed1",
+      "label": "Bedroom 1",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_bed2",
+      "label": "Bedroom 2",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_landing",
+      "label": "Landing",
+      "uses": ["circulation", "hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_study",
+      "label": "Study",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Shower room",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_master",
+      "label": "Main bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    }
+  ],
+  "examples/transit-hall.arch": [
+    {
+      "id": "r_shop1",
+      "label": "Kiosk 1",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_shop2",
+      "label": "Kiosk 2",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_shop3",
+      "label": "Kiosk 3",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_shop4",
+      "label": "Kiosk 4",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_paid",
+      "label": "Paid Concourse",
+      "uses": ["hall", "circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_unpaid",
+      "label": "Unpaid Concourse",
+      "uses": ["hall", "circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_lobby",
+      "label": "Lobby",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_wc_w",
+      "label": "WC Women",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_wc_m",
+      "label": "WC Men",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_wc_a",
+      "label": "Accessible WC",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_staff",
+      "label": "Staff Room",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_control",
+      "label": "Control Room",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
     }
   ],
   "examples/two-bed.arch": [

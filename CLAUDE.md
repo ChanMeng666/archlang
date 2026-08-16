@@ -38,11 +38,15 @@ than memory.
   made output history-dependent; fixed in `51a47ee`).
 - **Don't hand-edit generated files.** `dist/`, `editors/*.tmLanguage.json`,
   `playground/src/arch-language.js`, `docs/error-codes.md`, `docs/cli-reference.md`, `spec.llm.md`,
-  `llms-full.txt`, `schemas/plan.schema.json`, `schemas/intent.schema.json`, and
-  `grammars/archlang.gbnf` are generated — edit the source (`src/grammar/tokens.ts`,
-  `src/error-catalog.ts`, `src/manifest.ts`, `PLAN_JSON_SCHEMA`, `INTENT_JSON_SCHEMA`,
-  `examples/`, `SKILL.md`) and run the matching `npm run gen:grammars` / `gen:errors` / `gen:cli` /
-  `gen:spec` / `gen:llms` / `gen:plan-schema` / `gen:intent-schema` / `gen:gbnf`. CI fails on drift.
+  `llms-full.txt`, `schemas/plan.schema.json`, `schemas/intent.schema.json`,
+  `grammars/archlang.gbnf`, and the twelve committed `examples/*.svg` the README embeds (the
+  `README_SVGS` list in `scripts/gen-example-svgs.ts`) are generated — edit the source
+  (`src/grammar/tokens.ts`, `src/error-catalog.ts`, `src/manifest.ts`, `PLAN_JSON_SCHEMA`,
+  `INTENT_JSON_SCHEMA`, `examples/`, `SKILL.md`) and run the matching `npm run gen:grammars` /
+  `gen:errors` / `gen:cli` / `gen:spec` / `gen:llms` / `gen:plan-schema` / `gen:intent-schema` /
+  `gen:gbnf` / `gen:example-svgs`. CI fails on drift. The SVGs joined this list late and are the
+  clearest case for it: hand-committed and never re-rendered, three of them showed the README a
+  building compiled before four separate rendering fixes, and nothing was watching.
 - **A generator's TEMPLATE can go stale even when `check:drift` is green.** The gate compares
   generator *output* to the committed file — it proves reproducibility, not correctness. A generator
   that hardcodes a language fact reproduces the same *wrong* text forever: `gen-llm-spec.ts` shipped a

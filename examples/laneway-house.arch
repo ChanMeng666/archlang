@@ -1,0 +1,52 @@
+# A one-bedroom laneway cottage — 49 m² that reads as one program.
+#
+# Nothing here is positioned by hand. Every opening is pinned to a run distance along a
+# named wall (`on <wall> at <pos>`), every fixture resolves against a room or a wall
+# (`in <room> anchor …`, `against wall …`), and the bath/bedroom pair is laid out by
+# `strip`. `site { street north }` names the two facades the plan turns on: the door
+# faces the lane, the glass faces the garden.
+plan "Laneway House" {
+  units mm
+  grid 50            # partitions are 100 thick, so a `flush` fixture lands on a …50
+  north up
+  dims auto all
+  site { street north }
+
+  wall id=w_lane   exterior  thickness 200 { (0,0) (7500,0) }
+  wall id=w_east   exterior  thickness 200 { (7500,0) (7500,6500) }
+  wall id=w_garden exterior  thickness 200 { (0,6500) (7500,6500) }
+  wall id=w_west   exterior  thickness 200 { (0,0) (0,6500) }
+  wall id=w_hall   partition thickness 100 { (4200,0) (4200,6500) }
+  wall id=w_bath   partition thickness 100 { (4200,2500) (7500,2500) }
+
+  room id=r_live at (0,0) size 4200x6500 label "Living / Kitchen" uses living kitchen
+  strip down at (4200,0) gap 0 width 3300 {
+    room id=r_bath size 2500 label "Bath"    uses bath
+    room id=r_bed  size 4000 label "Bedroom" uses bedroom
+  }
+
+  door id=d_front  on w_lane at 2100 width 900 hinge near start swing into r_live
+  door id=d_garden sliding on w_garden at 2700 width 1800 slide left
+  door id=d_bed    on w_hall at 5600 width 800 hinge left swing into r_bed
+  # `w_hall` is walked lane→garden, so `slide right` sends the panel down the solid wall
+  # below the jamb; `slide left` would aim it at 500 mm and trip `W_POCKET_RUN`.
+  door id=d_bath   pocket on w_hall at 900 width 800 slide right
+
+  window on w_west   at 2400 width 1200
+  window on w_garden at 700  width 1000
+  window on w_garden at 5850 width 1600
+  window on w_east   at 1500 width 600
+
+  furniture fridge       against wall w_west offset 400  in r_live
+  furniture stove        against wall w_west offset 1200 in r_live
+  furniture kitchen_sink against wall w_west offset 2000 in r_live
+  furniture table  in r_live centered size 1300x900 label "Table"
+  furniture sofa   in r_live anchor bottom-left flush inset 250 size 900x2000  label "Sofa"
+  furniture bed    in r_bed  anchor bottom-right flush inset 250 size 1500x2000 label "Bed"
+  furniture robe   in r_bed  anchor top-left     flush inset 200 size 1800x600  label "Wardrobe"
+  furniture shower in r_bath anchor top-right    flush size 900x900
+  furniture wc     in r_bath anchor bottom-left  flush size 400x700
+  furniture basin  in r_bath anchor bottom-right flush size 600x450
+
+  title { project "Laneway House" drawn_by "ArchLang" date "2026-08-16" }
+}

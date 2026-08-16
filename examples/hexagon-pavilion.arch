@@ -1,0 +1,168 @@
+# A hexagonal garden pavilion: six trapezoidal galleries ringing a circular rotunda.
+#
+# Every other example in examples/ is built from rectangles, because that is what a
+# floor plan usually is. This one is not rectangular ANYWHERE, and it exists to show
+# that the two non-rectilinear room forms compose with a curved wall:
+#
+#   room … polygon (x,y) …            an explicit ring — exact shoelace area, label at
+#                                     the centroid, no bounding box anywhere in the answer
+#   room … circle at (cx,cy) radius   a round floor, area measured as exactly piR^2
+#   arc (x,y) radius R                a curved WALL EDGE, drawn as a true SVG/DXF arc
+#
+# THE HEXAGON IS NOT REGULAR, AND THAT IS THE POINT. A regular hexagon of circumradius R
+# carries four of its vertices at y = +/- R*sqrt(3)/2 — an irrational number no grid can
+# express — so its sloped facades never measure a round anything: set one out at R = 7500
+# on a 50 mm grid and each nominal 7500 edge comes back 7504. A drawing that calls that
+# 7500 is lying, and one that calls it 7504 looks like a mistake. So this shell is built
+# on a 3-4-5 triangle instead. Every sloped facade steps 4500 across and 6000 down, which
+# is exactly 7500, and every vertex lands on the grid:
+#
+#     (16000,7000) (11500,1000) (5500,1000) (1000,7000) (5500,13000) (11500,13000)
+#
+# Four facades of 7500, two of 6000, 15000 x 12000 overall — and every number on the sheet
+# is a whole millimetre a builder can set out with a tape.
+#
+# A second hexagon at exactly half scale sits inside it. The six galleries are the
+# trapezoids BETWEEN the two: four points each, two outer vertices and the two inner ones
+# behind them — 7500 or 6000 on the facade, half that on the inside, 3000 deep. Six radial
+# spokes run along the joins, and a masonry drum fills the middle.
+#
+# The drum is the part worth reading twice. It is written as ONE wall of two semicircular
+# `arc` edges (there is no close-an-arc form: a closed curve is the two halves it is), on
+# a centreline of radius 3000 and 1200 thick. 3000 is not a free choice: it is the inner
+# hexagon's INRADIUS, so the drum's centreline is the circle inscribed in that hexagon,
+# touching all six of the galleries' inner edges. That is what lets the rotunda be
+# `room circle … radius 3000` — the same centreline, which is the ordinary ArchLang
+# convention that a room's boundary is its wall's centreline, and the reason each gallery
+# counts as ADJACENT to the rotunda rather than 300 mm short of it. The outer face lands
+# at 3600, past the inner hexagon's corners at 3354, so the drum swallows the galleries'
+# inner edge instead of leaving a crescent of unwalled floor behind it, and
+# `dim diameter rotunda` calls out a round phi 6000. The six cased openings are positioned
+# `on drum at <pct>`, which walks the wall by ARC LENGTH — so 8.333% is 30 degrees, square
+# onto the middle of a gallery.
+#
+# Three things a hexagon teaches about ANNOTATION.
+#
+#   1. `dims auto overall` is the only auto mode worth having here: it gives the building
+#      one bounding chain, one R leader per distinct arc and one phi per circular room.
+#      The room and wall chains have no axis to lie along on a 53-degree facade, so the
+#      two north facades are dimensioned BY HAND. Endpoint ORDER is what puts each line
+#      outside, because the offset runs along the LEFT normal of from->to — write either
+#      pair backwards and the line is drawn through the building (`W_DIM_INSIDE`, with a
+#      machine-applicable swap). And the OFFSET has to be bigger than it looks: the rule
+#      measures the drawn line's midpoint against the building's room-extents BOX, so on
+#      a splayed facade clearing the wall is not enough — 1800 is still inside the
+#      rectangle, 3000 is out in the margin where a dimension belongs.
+#   2. Neither hand dim carries a `text` override, and neither needs one: the facade
+#      really is 7500, so that is what the drawing says.
+#   3. A polygon room labels itself at its CENTROID, and here the centroid is the worst
+#      place available — a 3000-deep trapezoid whose middle is where the drum bulges past
+#      it — while the phi call-out is drawn ON the diameter, exactly where the rotunda's
+#      own name would go. So every room pins its name by hand with `label "…" at (x,y)`,
+#      out on the radius that bisects its own wedge, midway between the drum face and the
+#      facade. That is the one place in this file where the author knows something the
+#      centroid does not.
+#
+# The palette is derived from a single colour with `theme from "#2f6f4e"` — one hex value
+# becomes the whole set of wall, poche, floor and annotation inks.
+plan "Hexagon Pavilion" {
+  units mm
+  grid 50
+  scale 1:50
+  north up
+  dims auto overall
+
+  theme from "#2f6f4e"
+
+  # ---- shell: the outer hexagon ---------------------------------------------
+  # Walked from the east vertex clockwise on the page, so the six facades run
+  # 0-7500 north-east, 7500-13500 north, 13500-21000 north-west, 21000-28500 south-west,
+  # 28500-34500 south, 34500-42000 south-east. The openings below are positioned in those
+  # millimetres rather than percentages, because a hexagon of two edge lengths has no
+  # single percentage that means "the middle of a facade".
+  wall id=shell exterior thickness 300 {
+    (16000,7000)
+    (11500,1000)
+    (5500,1000)
+    (1000,7000)
+    (5500,13000)
+    (11500,13000)
+    close
+  }
+
+  # ---- the drum: one full circle, written as its two halves -----------------
+  wall id=drum partition thickness 1200 {
+    (11500,7000)
+    arc (5500,7000) radius 3000
+    arc (11500,7000) radius 3000
+  }
+
+  # ---- the six spokes -------------------------------------------------------
+  # Each runs from an inner hexagon vertex out to the outer vertex beyond it, so the
+  # galleries' side edges and these walls are the same six lines.
+  wall id=spoke_e  partition thickness 200 { (12250,7000) (16000,7000) }
+  wall id=spoke_ne partition thickness 200 { (10000,4000) (11500,1000) }
+  wall id=spoke_nw partition thickness 200 { (7000,4000)  (5500,1000) }
+  wall id=spoke_w  partition thickness 200 { (4750,7000)  (1000,7000) }
+  wall id=spoke_sw partition thickness 200 { (7000,10000) (5500,13000) }
+  wall id=spoke_se partition thickness 200 { (10000,10000) (11500,13000) }
+
+  # ---- rooms ----------------------------------------------------------------
+  room id=rotunda circle at (8500,7000) radius 3000 label "Rotunda" at (8500,8300) uses hall
+
+  room id=g_ne polygon (16000,7000) (11500,1000) (10000,4000) (12250,7000)
+    label "Reading" at (12250,4200) uses living
+  room id=g_n  polygon (11500,1000) (5500,1000) (7000,4000) (10000,4000)
+    label "Studio" at (8500,2300) uses office
+  room id=g_nw polygon (5500,1000) (1000,7000) (4750,7000) (7000,4000)
+    label "Tea Room" at (4750,4200) uses dining
+  room id=g_sw polygon (1000,7000) (5500,13000) (7000,10000) (4750,7000)
+    label "Store" at (4750,9800) uses storage
+  room id=g_s  polygon (5500,13000) (11500,13000) (10000,10000) (7000,10000)
+    label "Entrance" at (7600,11700) uses entry
+  room id=g_se polygon (11500,13000) (16000,7000) (12250,7000) (10000,10000)
+    label "Gallery" at (12250,9800) uses living
+
+  # ---- portals: six cased openings on the curve -----------------------------
+  opening id=p_ne on drum at 8.333%  width 1400
+  opening id=p_n  on drum at 25%     width 1400
+  opening id=p_nw on drum at 41.667% width 1400
+  opening id=p_sw on drum at 58.333% width 1400
+  opening id=p_s  on drum at 75%     width 1400
+  opening id=p_se on drum at 91.667% width 1400
+
+  # ---- entrance and glazing -------------------------------------------------
+  # The entrance slides. A leaf on hinges would sweep a 1.4 m quarter-disc across the
+  # middle of the one room that has to stay clear; a `sliding` leaf sweeps nothing at all,
+  # so no swing rule applies to it and the entrance keeps its own floor.
+  door id=d_main sliding on shell at 31500 width 1400 slide left
+
+  window id=win_ne on shell at 3750  width 2400
+  window id=win_n  on shell at 10500 width 2400
+  window id=win_nw on shell at 17250 width 2400
+  window id=win_sw on shell at 24750 width 2400
+  window id=win_se on shell at 38250 width 2400
+
+  # ---- dimensions -----------------------------------------------------------
+  dim diameter rotunda
+  dim (16000,7000)->(11500,1000) offset 3000
+  dim (5500,1000)->(1000,7000)   offset 3000
+
+  # ---- loose furniture ------------------------------------------------------
+  # Polygon rooms refuse the anchor forms (E_PLACE_POLY — a nine-point anchor needs a
+  # rectangle), so every free-standing piece here is an absolute `at`. The two that back
+  # onto something use `against wall`, which stays legal on a polygon room because it
+  # measures from the WALL and not from the room.
+  furniture id=f_desk  counter against wall shell segment 1 offset 3000 size 3000x500 label "Work bench" in g_n
+  furniture id=f_shelf counter against wall spoke_w offset 1400 size 1200x600 label "Shelves" in g_sw
+  furniture id=f_read  table at (13150,5550)  size 900x900  label "Table" in g_ne
+  furniture id=f_tea   table at (3850,5550)   size 900x900  label "Tea"   in g_nw
+  furniture id=f_bench bench at (13150,8450)  size 1400x450 label "Bench" in g_se
+  furniture id=f_seat  bench at (9600,12000)  size 1400x450 label "Bench" in g_s
+
+  title {
+    project "Hexagon Pavilion"
+    drawn_by "ArchLang"
+    date "2026-08-16"
+  }
+}

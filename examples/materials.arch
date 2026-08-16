@@ -1,0 +1,117 @@
+# A 16 x 8 m maker-space whose walls are the whole wall-material palette, one per side.
+#
+# Poche is not decoration. On a real drawing the hatch inside a wall IS the specification:
+# it says concrete here, brickwork there, an insulated leaf in that facade, tiling round
+# the wet room, and a frameless glazed screen where there is no wall at all. ArchLang
+# spells that as one optional clause on `wall`:
+#
+#   material poche|concrete|brick|insulation|tile|none [scale <n>] [angle <deg>]
+#
+# All six appear below, each on the element a builder would actually detail that way, and
+# each on a wall long enough to read — a hatch you cannot see is a specification you have
+# not written:
+#
+#   concrete   300   the two long facades — the structural shell, and the thickest thing
+#                    in the building because that is what carries the roof
+#   brick      230   the east gable, `scale 1.5 angle 90`: one brick-and-a-bit on plan,
+#                    with the courses turned to run ALONG the wall instead of across it
+#   insulation 200   the west facade's insulated leaf, drawn as its own wall so that the
+#                    leaf — not the assembly it belongs to — is what carries the hatch
+#   tile       100   the two WC partitions, the only walls in the building that get tiled
+#   none       100   the office screen: glazed, so it stops sound and not sight, and its
+#                    poche is deliberately EMPTY rather than defaulted
+#   (omitted)  150   the two service partitions, which take the default poche hatch
+#
+# THE SHEET IS WHAT MAKES THIS READABLE, and it is the second thing this file is for.
+# `paper A3 landscape` + `scale 1:50` is an operative pair: every annotation becomes a
+# fixed number of millimetres ON THE PAPER (3.5 mm labels, 0.5 mm lines) times the scale
+# denominator, and — the point here — a 100 mm partition is drawn 2 mm wide and a 300 mm
+# facade 6 mm. Halve that to 1:100 — the auto-fit's answer on a smaller sheet — and they
+# become 1 mm and 3 mm: the walls still look right, and the hatch inside them is gone.
+# A material sampler is a drawing that has to be issued at a scale where the poche
+# survives, so the scale is written down rather than left to the auto-fit.
+#
+# `legend` is what makes the sampler legible from the sheet alone: one swatch per material
+# actually used and one per fixture category actually placed, all derived — there is
+# nothing to configure and nothing to keep in step by hand. Add a wall in a seventh
+# material and the table grows a row on its own. `schedule rooms` beside it is derived the
+# same way: its NO./NAME/AREA rows and its total are the rooms below, and they are the
+# same numbers `arch describe --json` reports under `schedule[]`.
+plan "Workshop" {
+  units mm
+  # 10, not 50: a 230 brick wall has a 115 half-thickness, and the WC fixtures are placed
+  # `flush` against wall FACES — so the grid has to be able to express a half-thickness of
+  # every wall a fixture backs onto, or the snap pushes the piece into the wall it is
+  # supposed to sit against.
+  grid 10
+  paper A3 landscape
+  scale 1:50
+  north up
+  dims auto all
+  schedule rooms
+  legend
+
+  style wall { stroke: "#1f2a24" }
+  style room { fill: "#f6f4ef" }
+
+  # ---- shell: four walls, four specifications ------------------------------
+  wall id=w_north exterior thickness 300 material concrete { (0,0) (16000,0) }
+  wall id=w_south exterior thickness 300 material concrete { (0,8000) (16000,8000) }
+  wall id=w_east  exterior thickness 230 material brick scale 1.5 angle 90 { (16000,0) (16000,8000) }
+  wall id=w_west  exterior thickness 200 material insulation { (0,0) (0,8000) }
+
+  # ---- the service strip ----------------------------------------------------
+  # Five partitions, three specifications: a glazed screen to the office, ordinary
+  # blockwork to the store, tiling to the WC.
+  wall id=p_screen partition thickness 100 material none { (12000,0)    (12000,3000) }
+  wall id=p_spine  partition thickness 150               { (12000,3000)  (12000,5800) }
+  wall id=p_wc_w   partition thickness 100 material tile { (12000,5800) (12000,8000) }
+  wall id=p_off_s  partition thickness 150               { (12000,3000)  (16000,3000) }
+  wall id=p_wc_n   partition thickness 100 material tile { (12000,5800) (16000,5800) }
+
+  # ---- rooms ----------------------------------------------------------------
+  room id=r_shop   at (0,0)        size 12000x8000 label "Workshop" uses utility
+  room id=r_office at (12000,0)    size 4000x3000  label "Office"   uses office
+  room id=r_store  at (12000,3000) size 4000x2800  label "Store"    uses storage
+  room id=r_wc     at (12000,5800) size 4000x2200  label "WC"       uses wc
+
+  # ---- openings -------------------------------------------------------------
+  # The shop door slides: a 2.4 m leaf on hinges would sweep a quarter of the aisle, and a
+  # sliding leaf sweeps nothing at all, so no swing rule applies to it.
+  door id=d_shop sliding on w_south at 3000 width 2400 slide left
+  door id=d_ped    on w_south at 6600 width 1000 swing into r_shop
+  door id=d_office on p_screen at 1500 width 900 swing into r_office
+  door id=d_store  on p_spine  at 1400 width 900 swing into r_store
+  door id=d_wc     on p_wc_w   at 1100 width 800 swing into r_wc
+
+  window id=win_n1 on w_north at 2000 width 2400
+  window id=win_n2 on w_north at 6000 width 2400
+  window id=win_n3 on w_north at 10000 width 2400
+  window id=win_w  on w_west  at 4000 width 1800
+  window id=win_o  on w_east  at 1500 width 1600
+  window id=win_wc on w_east  at 6900 width 600
+
+  # ---- fit-out --------------------------------------------------------------
+  # Every catalogued fixture backs onto a wall by construction: the offset runs ALONG the
+  # named wall, the depth comes off its face, and the quarter-turn is derived from the
+  # side `in <room>` picks. Nothing here writes a coordinate or a rotation.
+  furniture id=f_sink   sink    against wall w_north offset 5000 in r_shop
+  furniture id=f_bench1 counter against wall w_west  offset 2000 size 3000x700 label "Bench" in r_shop
+  furniture id=f_bench2 counter against wall w_west  offset 6200 size 2500x700 label "Bench" in r_shop
+  furniture id=f_bench3 counter against wall w_north offset 9500 size 3000x700 label "Bench" in r_shop
+  furniture id=f_bench4 counter against wall w_south offset 9500 size 3000x700 label "Bench" in r_shop
+  furniture id=f_rack1  racking at (1600,5600) size 2600x600 label "Racking"       in r_shop
+  furniture id=f_table  table at (3400,3300) size 2600x1300 label "Assembly table" in r_shop
+  furniture id=f_saw    table at (7600,5400) size 2000x1000 label "Bench saw"      in r_shop
+  furniture id=f_desk   desk  at (13800,700) size 1600x800  label "Desk"           in r_office
+  furniture id=f_racks  racking at (12300,3300) size 3400x600 label "Racking"      in r_store
+
+  furniture id=f_wc    wc    in r_wc anchor bottom-right flush size 400x700
+  furniture id=f_basin basin in r_wc anchor top-right    flush size 600x450
+
+  title {
+    project "Maker-space workshop"
+    drawn_by "ArchLang"
+    date "2026-08-16"
+  }
+}

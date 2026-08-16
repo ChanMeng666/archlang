@@ -1,0 +1,235 @@
+# A ~50 x 32 m public library around a circular reading room — the SHEET-AND-TABLES example.
+#
+# 1. CURVED GEOMETRY. The reading room is a drum: a `room circle` for the floor and a
+#    `wall` of `arc` edges for the enclosure, the pair `examples/aquarium.arch` introduces.
+#    The drum is INSCRIBED in the 16 x 16 m central bay, so it is tangent to all four bay
+#    walls and every tangent point is a threshold; the four corner spandrels it leaves
+#    (~14 m2 each) belong to no room and carry no schedule row. The circle is written as
+#    EIGHT arcs rather than the two semicircles the shape needs, deliberately: the analysis
+#    grid behind `describe --json`'s `circulation` rasterises a wall between its VERTICES,
+#    so two semicircles lay a phantom chord straight across the room and report the walk to
+#    it at 5x its true length. Eight keeps every chord inside the face it stands for, and
+#    the DRAWING is identical either way — every face is a true arc, at any zoom.
+#
+# 2. THE SHEET. `paper A2 landscape` + `scale 1:200` fixes every annotation at a size ON
+#    THE SHEET instead of a fraction of a 50 m building, and `schedule rooms` + `legend`
+#    fill the margin. Both tables are fully derived, nothing to configure: the legend lists
+#    one row per wall hatch MATERIAL used (`concrete` for the shell, the default poche for
+#    the partitions) and one per placed fixture CATEGORY that has a plan symbol — wc, basin,
+#    kitchen_sink, counter, fridge, stove. Use neither and the table comes out empty.
+#
+# 3. THE EXPLICIT CURVE CALL-OUTS at the foot of the file. `dim radius <wallId> segment <n>`
+#    and `dim diameter <roomId>` take BOTH geometry and text from the element they name, so
+#    R8000 and the centre are never retyped. `dims auto` already synthesizes one R per
+#    DISTINCT arc (deduplicated by centre+radius, so this eight-arc circle still gets one)
+#    and one phi per circular room, in every mode but `walls` — so these two statements are
+#    what the sheet would still carry with `dims auto` switched off, and they cost nothing
+#    while it is on. Both are zero-offset by contract, which is exactly why neither can trip
+#    `W_DIM_INSIDE` or `W_DIM_OVERLAP`: a zero-offset dim sits ON what it measures.
+#
+# Departments are `zone`s — declared, never inferred from position, and carrying zero
+# geometric semantics: the SVG is byte-identical without them. All they add is `zones[]` on
+# `describe --json` and the subtotal grouping in the room schedule.
+plan "Reading Room Library" {
+  units mm
+  # `grid 50`, not 100: the partitions are 200 thick and the shell 300, so a fixture
+  # placed `flush` against the shell lands on a ...50 coordinate (32000 - 150). A grid of
+  # 100 could not express that face and would snap the fixture back into the wall.
+  grid 50
+  paper A2 landscape
+  scale 1:200
+  north up
+  dims auto all
+  schedule rooms
+  legend
+
+  # ---- structure: shell in `material concrete`, partitions in the default poche ------
+  wall id=shell exterior thickness 300 material concrete { (0,0) (50000,0) (50000,32000) (0,32000) close }
+
+  # The two spine walls: west wing | central bay | east wing.
+  wall id=w_west partition thickness 200 { (17000,0) (17000,32000) }
+  wall id=w_east partition thickness 200 { (33000,0) (33000,32000) }
+
+  # The bay's cross walls, and the drum inscribed between all four.
+  wall id=w_ref_s  partition thickness 200 { (17000,8000) (33000,8000) }
+  wall id=w_hall_n partition thickness 200 { (17000,24000) (33000,24000) }
+
+  # Every vertex below is an exact grid-50 point at R8000 from (25000,16000) — 4800/6400 is
+  # a 3-4-5 triple scaled — so the eight arcs close a true circle. Walked from the EAST
+  # point the default `ccw` runs east -> north -> west -> south, which puts the thresholds
+  # at 25% (north), 50% (west) and 75% (south) of the wall's RUN; an arc contributes its
+  # arc length R*theta to that run, never its chord.
+  wall id=w_drum partition thickness 200 {
+    (33000,16000)
+    arc (29800,9600)  radius 8000
+    arc (25000,8000)  radius 8000
+    arc (20200,9600)  radius 8000
+    arc (17000,16000) radius 8000
+    arc (20200,22400) radius 8000
+    arc (25000,24000) radius 8000
+    arc (29800,22400) radius 8000
+    arc (33000,16000) radius 8000
+  }
+
+  # Both wings carry a 3 m aisle on the drum's centre line, so each meets it at a tangent.
+  wall id=w_waisle_n partition thickness 200 { (0,14500) (17000,14500) }
+  wall id=w_waisle_s partition thickness 200 { (0,17500) (17000,17500) }
+
+  wall id=w_cafe_e   partition thickness 200 { (44000,0) (44000,14500) }
+  wall id=w_eaisle_n partition thickness 200 { (33000,14500) (50000,14500) }
+  wall id=w_eaisle_s partition thickness 200 { (33000,17500) (50000,17500) }
+  wall id=w_staff_s  partition thickness 200 { (33000,24000) (50000,24000) }
+  wall id=w_lobby_s  partition thickness 200 { (33000,27000) (50000,27000) }
+  wall id=w_wcw_e    partition thickness 200 { (39000,27000) (39000,32000) }
+  wall id=w_wcm_e    partition thickness 200 { (45000,27000) (45000,32000) }
+
+  # ---- axes: the STRAIGHT structural grid only; a curve's radius is its dimension ----
+  axes {
+    x at 0, 17000, 33000, 44000, 50000
+    y at 0, 14500, 17500, 24000, 27000, 32000
+  }
+
+  # ---- rooms, grouped by department -----------------------------------------
+  zone public "Public" {
+    room id=r_hall     at (17000,24000) size 16000x8000  label "Entrance Hall"      uses entry hall
+    room id=r_reading  circle at (25000,16000) radius 8000 label "Reading Room" at (25000,17200) uses hall
+    room id=r_children at (0,17500)     size 17000x14500 label "Children's Library" uses living
+    room id=r_waisle   at (0,14500)     size 17000x3000  label "West Aisle"         uses circulation
+    room id=r_cafe     at (33000,0)     size 11000x14500 label "Cafe"               uses dining
+    room id=r_eaisle   at (33000,14500) size 17000x3000  label "East Aisle"         uses circulation
+    room id=r_lobby    at (33000,24000) size 17000x3000  label "WC Lobby"           uses circulation
+    room id=r_wc_w     at (33000,27000) size 6000x5000   label "WC Women"           uses wc
+    room id=r_wc_m     at (39000,27000) size 6000x5000   label "WC Men"             uses wc
+  }
+
+  zone stacks "Stacks" {
+    room id=r_stacks at (0,0)     size 17000x14500 label "Open Stacks" at (8500,12400) uses storage
+    room id=r_ref    at (17000,0) size 16000x8000  label "Reference Stacks" uses storage
+  }
+
+  zone staff "Staff" {
+    room id=r_staff   at (33000,17500) size 17000x6500  label "Staff Workroom" uses office
+    room id=r_kitchen at (44000,0)     size 6000x14500  label "Cafe Kitchen"   uses kitchen
+    room id=r_plant   at (45000,27000) size 5000x5000   label "Plant Room"     uses utility
+  }
+
+  # ---- thresholds -----------------------------------------------------------
+  # The drum is tangent to each bay wall at one point, so a threshold there has to be cut
+  # through BOTH faces — the arc and the straight wall it touches — or the poche of the
+  # second one still stands in the doorway. Each pair below is one physical opening.
+  opening id=o_drum_s  on w_drum   at 75%   width 3000
+  opening id=o_hall_n  on w_hall_n at 50%   width 3000
+  opening id=o_drum_n  on w_drum   at 25%   width 3000
+  opening id=o_ref_s   on w_ref_s  at 50%   width 3000
+  opening id=o_drum_w  on w_drum   at 50%   width 2400
+  opening id=o_west_16 on w_west   at 16000 width 2400
+
+  # The rest of the public route.
+  door id=d_main at (25000,32000) width 2400 wall shell swing into r_hall
+  opening id=o_hall_children on w_west at 28000 width 3000
+  opening id=o_hall_lobby    on w_east at 25500 width 3000
+  opening id=o_ref_stacks    on w_west at 4000  width 2400
+  opening id=o_stacks_aisle  on w_waisle_n at 50% width 3000
+  opening id=o_children_aisle on w_waisle_s at 50% width 3000
+  opening id=o_cafe_aisle    on w_eaisle_n at 5500 width 3000
+  opening id=o_staff_aisle   on w_eaisle_s at 8500 width 2400
+
+  # Staff and service doors. The cafe kitchen keeps a pocket door off the aisle so no leaf
+  # swings into a 3 m corridor, and its own service door onto the east yard.
+  door id=d_kitchen pocket on w_eaisle_n at 14000 width 1000 slide right
+  door id=d_cafe_kitchen on w_cafe_e at 50% width 1000 swing into r_kitchen
+  door id=d_service at (50000,13000) width 1200 wall shell swing out
+  door id=d_staff_lobby on w_staff_s at 2500 width 1000 swing into r_lobby
+  door id=d_wc_w  on w_lobby_s at 1500  width 1000 swing into r_wc_w
+  door id=d_wc_m  on w_lobby_s at 7500  width 1000 swing into r_wc_m
+  door id=d_plant on w_lobby_s at 13000 width 900  swing into r_plant
+
+  # ---- glazing --------------------------------------------------------------
+  window at (6000,0)      width 4000 wall shell
+  window at (12000,0)     width 4000 wall shell
+  window at (21000,0)     width 3000 wall shell
+  window at (29000,0)     width 3000 wall shell
+  window at (38500,0)     width 4000 wall shell
+  window at (0,6000)      width 3000 wall shell
+  window at (0,16000)     width 2000 wall shell
+  window at (0,24000)     width 4000 wall shell
+  window at (50000,10500) width 1600 wall shell
+  window at (50000,20500) width 3000 wall shell
+  window at (6000,32000)  width 4000 wall shell
+  window at (12000,32000) width 4000 wall shell
+  window at (20000,32000) width 3000 wall shell
+  window at (30000,32000) width 3000 wall shell
+  window at (36000,32000) width 1200 wall shell
+  window at (42000,32000) width 1200 wall shell
+
+  # ---- vertical circulation, side by side in the hall -----------------------
+  # A single-storey plan still draws both symbols; `W_STAIR_UNMATCHED` is a multi-storey
+  # question and never fires here.
+  stair id=st_main at (28500,26500) size 1400x4500 dir up
+  elevator id=lift_main at (30500,28000) size 2200x2200
+
+  # ---- fit-out --------------------------------------------------------------
+  # Reading tables ride the drum's chord lines, leaving the centre band clear for the phi
+  # call-out and the west threshold.
+  furniture table at (21500,9800)  size 7000x1400 label "Reading table"
+  furniture table at (20500,12200) size 9000x1400 label "Reading table"
+  furniture table at (20500,18400) size 9000x1400 label "Reading table"
+  furniture table at (21500,20800) size 7000x1400 label "Reading table"
+
+  for i in 0..5 {
+    furniture shelf at (2000, 1500 + i * 2200) size 13000x600 label "Stacks"
+  }
+  for i in 0..4 {
+    furniture shelf at (18500 + i * 3200, 1200) size 600x5000 label "Reference"
+  }
+  for i in 0..3 {
+    furniture table at (2500 + i * 4500, 19500) size 2000x2000 label "Table"
+    furniture table at (2500 + i * 4500, 23500) size 2000x2000 label "Table"
+    furniture shelf at (2000 + i * 4500, 28500) size 3000x500 label "Picture books"
+  }
+  for i in 0..5 {
+    furniture desk at (34500 + i * 3000, 18500) size 1600x800 label "Desk"
+    furniture desk at (34500 + i * 3000, 22000) size 1600x800 label "Desk"
+  }
+  for i in 0..3 {
+    furniture table at (34500 + i * 3000, 2500) size 1600x1600 label "Table"
+    furniture table at (34500 + i * 3000, 6500) size 1600x1600 label "Table"
+  }
+
+  furniture sofa    at (2000,27500)  size 2400x900 label "Story bench"
+  furniture sofa    at (18000,30000) size 2400x900 label "Seating"
+  furniture sofa    at (21000,30000) size 2400x900 label "Seating"
+  furniture counter against wall w_hall_n offset 4000 size 4000x700 label "Enquiries" in r_hall
+  furniture counter against wall w_cafe_e offset 3000 size 4000x700 label "Servery" in r_cafe
+
+  # Catalogued fixtures need no `size`: the footprint, the depth off the wall face and the
+  # quarter-turn all come from the wall and the catalogue.
+  furniture table at (45000,2500) size 3600x900 label "Prep"
+  furniture table at (45000,4600) size 3600x900 label "Prep"
+  furniture kitchen_sink against wall shell segment 1 offset 2000 in r_kitchen
+  furniture counter      against wall shell segment 1 offset 3600 in r_kitchen
+  furniture fridge       against wall shell segment 1 offset 5200 in r_kitchen
+  furniture stove        against wall shell segment 1 offset 6800 in r_kitchen
+
+  furniture wc    against wall shell segment 2 offset 11500 in r_wc_w
+  furniture wc    against wall shell segment 2 offset 13000 in r_wc_w
+  furniture wc    against wall shell segment 2 offset 14500 in r_wc_w
+  furniture basin against wall w_east offset 28000 in r_wc_w
+  furniture basin against wall w_east offset 29500 in r_wc_w
+
+  furniture wc    against wall shell segment 2 offset 5500 in r_wc_m
+  furniture wc    against wall shell segment 2 offset 7000 in r_wc_m
+  furniture wc    against wall shell segment 2 offset 8500 in r_wc_m
+  furniture basin against wall w_wcw_e offset 1000 in r_wc_m
+  furniture basin against wall w_wcw_e offset 2500 in r_wc_m
+
+  # ---- the explicit curve call-outs (see the head of the file) --------------
+  dim radius w_drum segment 0
+  dim diameter r_reading
+
+  title {
+    project "Reading Room Library"
+    drawn_by "ArchLang"
+    date "2026-08-16"
+  }
+}

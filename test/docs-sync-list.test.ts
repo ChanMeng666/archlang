@@ -127,7 +127,8 @@ describe("the docs example gallery is derived, and every exclusion is deliberate
   it("the derived gallery is non-trivial and carries the flagships", () => {
     const gallery = galleryExamples();
     expect(gallery.length).toBeGreaterThan(5);
-    for (const flagship of ["studio", "museum", "aquarium", "gallery-l"]) expect(gallery).toContain(flagship);
+    for (const flagship of ["studio", "museum", "aquarium", "gallery-l", "laneway-house", "library"])
+      expect(gallery).toContain(flagship);
   });
 
   it("the examples PAGE shows every gallery example (the one surviving hand-list)", () => {

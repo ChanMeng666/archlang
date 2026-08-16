@@ -28,6 +28,25 @@ describe("golden SVG snapshots", () => {
     // snapshot pins the half that DOES reach the SVG — the sliding/pocket/bifold panel
     // geometry, and the absence of a swing arc on all three.
     "bungalow.arch",
+    // v1.27 showcase — the twelve examples added when the gallery was redrawn. Each is
+    // here because it is the only shipped plan that exercises some part of the pipeline:
+    // laneway-house resolves EVERY position (no `at (x,y)` on an opening or a fixture),
+    // one-room is the minimum that renders, courtyard-house is the outward-face case a
+    // bounding box answers backwards, hexagon-pavilion is oblique mitres that are not the
+    // polygon flagship, library/transit-hall/clinic are sheet drawings with margin
+    // tables, materials is the only user of `style <kind> { … }`, and terrace-row is a
+    // `for`-generated run of four units.
+    "laneway-house.arch",
+    "one-room.arch",
+    "tiny-house.arch",
+    "garden-loft.arch",
+    "courtyard-house.arch",
+    "hexagon-pavilion.arch",
+    "library.arch",
+    "transit-hall.arch",
+    "clinic.arch",
+    "materials.arch",
+    "terrace-row.arch",
   ]) {
     it(`renders ${name} deterministically`, () => {
       const { svg, errors } = compile(example(name), { noCache: true });
@@ -58,5 +77,16 @@ describe("golden SVG snapshots", () => {
     // `svg` is page 1 (the lowest level) — the level-unaware view of the same drawing.
     expect(svg).toBe(pages![0]!.svg);
     for (const p of pages!) expect(p.svg).toMatchSnapshot(`two-storey.arch L${p.level}`);
+  });
+
+  // The second multi-storey plan, and the first with three levels — so it is the only
+  // snapshot that pins a MIDDLE storey, where a per-level fault has a page above and
+  // below it to hide between.
+  it("renders townhouse.arch as one page per level", () => {
+    const { svg, pages, errors } = compile(example("townhouse.arch"), { noCache: true });
+    expect(errors).toEqual([]);
+    expect(pages?.map((p) => p.level)).toEqual([1, 2, 3]);
+    expect(svg).toBe(pages![0]!.svg);
+    for (const p of pages!) expect(p.svg).toMatchSnapshot(`townhouse.arch L${p.level}`);
   });
 });

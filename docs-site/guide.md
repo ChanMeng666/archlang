@@ -1,17 +1,8 @@
 <script setup>
-const hero = `plan "Studio 1BR" {
-  units mm
-  grid 50
-  scale 1:50
-  north up
-
-  wall exterior thickness 200 { (0,0) (7000,0) (7000,6000) (0,6000) close }
-  room id=living at (0,0) size 7000x6000 label "Living / Kitchen" uses living kitchen
-  door at (1000,6000) width 1000 wall exterior hinge left swing in
-  window at (2500,0) width 1800 wall exterior
-  furniture bed at (4300,300) size 1500x2000 label "Bed"
-  dim (0,6000)->(7000,6000) offset 600 text "7000"
-}`;
+import { EXAMPLES } from "./.vitepress/theme/examples-data.js";
+// The hero is examples/one-room.arch verbatim — the smallest complete plan in the
+// repository, and the same file the playground opens under "One room".
+const hero = EXAMPLES["one-room"];
 </script>
 
 # What is ArchLang?
@@ -21,9 +12,13 @@ plan — think Typst/LaTeX, but for architecture. You describe a plan in plain t
 the compiler produces a clean, deterministic drawing.
 
 **Edit the source below** and watch it recompile live — this runs the real compiler
-in your browser:
+in your browser. It is the whole of
+[`examples/one-room.arch`](https://github.com/chanmeng666/archlang/tree/main/examples/one-room.arch):
+a shell, one room that says what it is for, a door and a window pinned to the wall by
+position rather than coordinate, and one dimension chain. Change `5000x4000` and watch
+the dimension follow.
 
-<ArchLive :src="hero" :rows="14" />
+<ArchLive :src="hero" :rows="18" />
 
 ## Core ideas
 

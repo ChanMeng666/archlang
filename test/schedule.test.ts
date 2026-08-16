@@ -16,8 +16,10 @@ import { DESCRIBE_KEYS } from "../src/cli/commands-analyze.js";
  * `legend`. Three things carry the weight here:
  *
  * 1. **Byte-identity.** A plan that opts into neither must be untouched: no node, no
- *    margin, no `chrome.tables` key. Nothing under `examples/` opts in, so every golden
- *    and snapshot stays valid — that is asserted, not assumed.
+ *    margin, no `chrome.tables` key — asserted, not assumed. Six shipped examples DO opt
+ *    in now (they did not when this was written), so the guard below no longer claims the
+ *    corpus is table-free; it derives which examples opt in and requires each one to carry
+ *    a golden that was rendered WITH its tables.
  * 2. **The table is DERIVED, not authored** — its numbers are the same numbers
  *    `describe()` reports, and the legend lists exactly what the drawing paints.
  * 3. **It composes with the annotation stack** — the tables sit below the deepest
@@ -54,22 +56,47 @@ const roomsOf = (src: string): RRoom[] =>
 // ---------------------------------------------------------------------------
 
 describe("sheet tables — a plan that opts out is byte-identical", () => {
-  // Examples that deliberately DO opt in. An example's golden is only evidence about the
-  // opt-out path if it was rendered without the tables, so a plan may join this list only
-  // together with a golden rendered WITH them — never by adding `schedule`/`legend` to an
-  // example whose golden already exists.
-  const TABLE_EXAMPLES = new Set(["museum-wings.arch", "aquarium.arch"]);
-
-  it("no shipped example silently opts into `schedule`/`legend`, so every golden stays valid", () => {
-    const dir = join(__dirname, "..", "examples");
+  const exampleFiles = (): string[] => {
     const walk = (d: string): string[] =>
       readdirSync(d, { withFileTypes: true }).flatMap((e) =>
         e.isDirectory() ? walk(join(d, e.name)) : e.name.endsWith(".arch") ? [join(d, e.name)] : [],
       );
-    const files = walk(dir);
-    expect(files.length).toBeGreaterThan(5);
-    for (const f of files) {
-      if (TABLE_EXAMPLES.has(basename(f))) continue;
+    return walk(join(__dirname, "..", "examples"));
+  };
+
+  /**
+   * The examples that opt in, DERIVED from their own source. This used to be a
+   * hand-written two-name allow-list, which was fine only while the answer was two names;
+   * six examples opt in now and a hand list is exactly the pin that rots — it can go stale
+   * in the silent direction (a new table-bearing example that nobody adds simply fails a
+   * confusingly-worded assertion) and in the useless one (a name left behind after the
+   * `schedule` line is deleted asserts nothing and nobody notices).
+   */
+  const tableExamples = (): string[] =>
+    exampleFiles().filter((f) => /^\s*(schedule|legend)\b/m.test(readFileSync(f, "utf8")));
+
+  it("the opt-in set is exactly what the sources say, and every member has a golden", () => {
+    const opted = tableExamples();
+    // Non-vacuity in both directions: some examples opt in, and not all of them do.
+    expect(opted.length).toBeGreaterThan(0);
+    expect(exampleFiles().length).toBeGreaterThan(opted.length);
+
+    // The rule the old hand-list comment stated but could not enforce: an example may opt
+    // in only WITH a golden rendered from it, so its tables are actually pinned by a
+    // picture rather than merely permitted. A multi-storey plan pages, so accept either
+    // the flat golden or the per-level ones.
+    const goldens = new Set(readdirSync(join(__dirname, "__goldens__")));
+    for (const f of opted) {
+      const stem = basename(f);
+      const covered = goldens.has(`${stem}.png`) || [...goldens].some((g) => g.startsWith(`${stem}.L`));
+      expect(covered, `${stem} opts into schedule/legend but has no visual golden`).toBe(true);
+    }
+  });
+
+  it("an example that does not opt in parses with no `schedule`/`legend` node at all", () => {
+    const opted = new Set(tableExamples());
+    for (const f of exampleFiles()) {
+      if (opted.has(f)) continue;
       const { plan } = parse(readFileSync(f, "utf8"));
       expect(plan!.schedule, f).toBeUndefined();
       expect(plan!.legend, f).toBeUndefined();

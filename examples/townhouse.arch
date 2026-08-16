@@ -1,0 +1,186 @@
+# A 5.5 x 11 m three-storey terrace house — one drawing per storey, from `level` blocks.
+#
+# A terrace house is the building type that only makes sense in section, and `level` is
+# how a plan says so. Each block is an ordinary plan body and becomes its own page:
+# `arch compile` writes townhouse.L1.svg, townhouse.L2.svg, townhouse.L3.svg, and
+# `describe --json` grows a `levels[]`. Everything outside the blocks — `units`, `grid`,
+# `paper`, `scale`, `dims auto` — is stated once and applies to every storey, because one
+# building is issued on one sheet at one scale.
+#
+# THE STAIR IS ONE OBJECT WRITTEN THREE TIMES. Ids are unique WITHIN a level, so the same
+# `id=st` on all three storeys is not a clash — it is the declaration that these are one
+# shaft. That single fact is what makes the upper floors legal: they have no front door
+# of their own, and `lint` still reads the first-floor landing as reached from outside,
+# because `describe().vertical` connects it to the storey below. Change one storey's id
+# and you get `W_STAIR_UNMATCHED` rather than a silently disconnected floor.
+#
+# `dir` is declared per storey and is not decoration: the flight runs along its footprint's
+# LONG axis, and `dir up` is entered at that axis's larger-coordinate end. Here the long
+# axis is y, so the ground-floor flight is entered from the back of the hall and climbs
+# toward the street; the same footprint on the top floor carries `dir down`, entered at
+# the opposite end. That is also what the nav grid reads — a stair obstructs circulation
+# everywhere except its entry edge, which is why the flight stops 1.15 m short of the back
+# wall. That strip is the only route from the front door to the kitchen, and one flight
+# length further south it measured 350 mm of built depth — 300 on the nav grid, against a
+# 700 minimum, so `lint` refused the plan with `W_PATH_TOO_NARROW`. Moving the flight is
+# the fix, not widening a door: nothing on the route is a named element to widen.
+#
+# WHY THE PARTITIONS DON'T MOVE. The spine wall at x=3200, the wet-room wall at y=4600 and
+# the cross wall at y=7000 stand on all three storeys in the same place, so the WC, the
+# bathroom and the shower room sit one above the other on a single stack. That is not
+# copy-paste: in a terrace the spine carries the floors and the drain fixes the wet rooms,
+# so what a storey is free to change is only what its rooms are called and what is in them.
+#
+# Two door kinds earn their place rather than illustrate themselves. The ground-floor WC
+# opens off a hall 1.75 m wide with a stair in it, so its leaf is a `pocket`: it takes no
+# corridor and none of the 7.7 m2 cloakroom, and `slide left` drives the panel north into
+# 2.65 m of blank spine wall (it needs 850 — its own 800 plus a jamb). The garden door is
+# a `sliding` leaf, which is what a patio door actually is. A hinged one swinging in would
+# cross the dining table; swung out it would sweep the paving — and the dimension chain a
+# builder reads the back elevation from. No non-hinged leaf sweeps anything: `doorSwing()`
+# returns null for every kind but `hinged`, so `W_SWING_OBSTRUCTED` cannot even apply to
+# it. A `sliding` door is drawn as a BYPASS pair — two leaves on two tracks inside the
+# reveal, so it needs no blank wall to park on at all — and `slide` only says which of the
+# two is the fixed one: `right` is measured along the host wall's traversal, and the shell's
+# south run is walked east to west, so the western leaf is fixed and the eastern one travels.
+plan "Townhouse" {
+  units mm
+  # `grid 50`: the spine partition is 200 and the cross walls 100, so every `flush`
+  # fixture lands on a ...50 or ...00 face — coordinates this grid can express exactly.
+  grid 50
+  paper A3 portrait
+  scale 1:50
+  north up
+  dims auto all
+
+  # Outer faces 5500 x 11000; 4900 clear between the party walls. A terrace is blind on
+  # both flanks, so every window in the house is on the front or the back — which is the
+  # single fact that shapes the plan: the deep middle of each floor takes the stair and the
+  # wet room, and the two ends take the rooms people sit in.
+  let W = 5200        # shell centerlines
+  let D = 10700
+  let T = 300         # exterior thickness
+  let SPINE = 3200    # the loadbearing spine, front to mid-plan
+  let WET   = 4600    # the wet-room wall — the same line on all three storeys
+  let BACK  = 7000    # the cross wall in front of the back room
+
+  level 1 "Ground floor" {
+    wall id=shell   exterior  thickness T   { (0,0) (W,0) (W,D) (0,D) close }
+    wall id=spine   partition thickness 200 { (SPINE,0) (SPINE,BACK) }
+    wall id=w_wet   partition thickness 100 { (0,WET) (SPINE,WET) }
+    wall id=w_back  partition thickness 100 { (0,BACK) (W,BACK) }
+
+    room id=r_hall    at (SPINE,0)  size 2000x7000 label "Hall"           uses hall entry circulation
+    room id=r_living  at (0,0)      size 3200x4600 label "Living"         uses living
+    room id=r_wc      at (0,WET)    size 3200x2400 label "Cloakroom"      uses wc
+    room id=r_kitchen at (0,BACK)   size 5200x3700 label "Kitchen/Dining" uses kitchen dining
+
+    door id=d_front  at (4200,0) width 1000 wall shell hinge left swing into r_hall
+    door id=d_living on spine at 2300 width 900 swing into r_living
+    # The pocket. `slide left` runs the panel back toward the spine's first point,
+    # (3200,0) — north, into solid wall — not south toward the corner 800 mm away.
+    door id=d_wc pocket on spine at 5800 width 800 slide left
+    # The patio slider: two bypass leaves in one 1.2 m reveal, nothing swept, nothing
+    # parked on the wall. `slide right` is west here, so the western leaf is the fixed one.
+    door id=d_back sliding at (4200,D) width 1200 wall shell slide right
+
+    opening id=o_kitchen at (4200,BACK) width 1200 wall w_back
+
+    window id=n_living  at (1600,0) width 1600 wall shell
+    window id=s_kitchen at (1400,D)  width 1600 wall shell
+
+    furniture media in r_living anchor top-left flush size 1200x400 label "Media"
+    furniture sofa  in r_living anchor bottom    flush size 2000x850 label "Sofa"
+
+    furniture wc    in r_wc anchor bottom-left  flush size 400x700
+    furniture basin in r_wc anchor bottom-right flush size 600x450
+
+    # The kitchen run rides the shell's WEST segment (index 3, walked from (0,10700)
+    # northward), so `offset` is a distance along that segment and both the position and
+    # the quarter-turn come from the wall; the footprints come from the catalogue.
+    furniture kitchen_sink against wall shell segment 3 offset 1200 in r_kitchen
+    furniture stove        against wall shell segment 3 offset 2100 in r_kitchen
+    furniture fridge       against wall shell segment 3 offset 2900 in r_kitchen
+    furniture table in r_kitchen centered size 1400x900 label "Table"
+
+    stair id=st at (4150,2600) size 900x3200 dir up
+  }
+
+  level 2 "First floor" {
+    wall id=shell  exterior  thickness T   { (0,0) (W,0) (W,D) (0,D) close }
+    wall id=spine  partition thickness 200 { (SPINE,0) (SPINE,BACK) }
+    wall id=w_wet  partition thickness 100 { (0,WET) (SPINE,WET) }
+    wall id=w_back partition thickness 100 { (0,BACK) (W,BACK) }
+
+    room id=r_landing at (SPINE,0)  size 2000x7000 label "Landing"   uses circulation hall
+    room id=r_bed1    at (0,0)      size 3200x4600 label "Bedroom 1" uses bedroom
+    room id=r_bath    at (0,WET)    size 3200x2400 label "Bathroom"  uses bath
+    room id=r_bed2    at (0,BACK)   size 5200x3700 label "Bedroom 2" uses bedroom
+
+    # No exterior door on this floor. The stair below carries the same id, so the access
+    # graph reaches this landing through the shaft.
+    door id=d_bed1 on spine  at 1800 width 800 swing into r_bed1
+    door id=d_bath on spine  at 5200 width 800 swing into r_bath
+    door id=d_bed2 on w_back at 4200 width 800 swing into r_bed2
+
+    window id=n_bed1    at (1600,0) width 1600 wall shell
+    window id=n_landing at (4200,0) width 1200 wall shell
+    window id=s_bed2    at (2600,D)  width 1800 wall shell
+
+    furniture bed      in r_bed1 anchor bottom-left  flush size 1400x2000 label "Double"
+    furniture wardrobe in r_bed1 anchor bottom-right flush size 1200x600  label "Wardrobe"
+
+    # The three pieces go round the three walls the door is not on, so the leaf opens onto
+    # bare floor: bath under the back wall, WC beside it on the spine, basin by the window.
+    furniture bathtub in r_bath anchor bottom-left  flush size 1700x700
+    furniture wc      in r_bath anchor bottom-right flush size 400x700
+    furniture basin   in r_bath anchor top-left     flush size 600x450
+
+    furniture bed      in r_bed2 anchor bottom-left flush size 1500x2000 label "Double"
+    furniture wardrobe in r_bed2 anchor top-left    flush size 1400x600  label "Wardrobe"
+    furniture chest    at (4550,9200) size 500x1000 label "Chest" in r_bed2
+
+    stair id=st at (4150,2600) size 900x3200 dir up
+  }
+
+  level 3 "Second floor" {
+    wall id=shell  exterior  thickness T   { (0,0) (W,0) (W,D) (0,D) close }
+    wall id=spine  partition thickness 200 { (SPINE,0) (SPINE,BACK) }
+    wall id=w_wet  partition thickness 100 { (0,WET) (SPINE,WET) }
+    wall id=w_back partition thickness 100 { (0,BACK) (W,BACK) }
+
+    room id=r_landing at (SPINE,0)  size 2000x7000 label "Landing"      uses circulation hall
+    room id=r_study   at (0,0)      size 3200x4600 label "Study"        uses office
+    room id=r_bath    at (0,WET)    size 3200x2400 label "Shower room"  uses bath
+    room id=r_master  at (0,BACK)   size 5200x3700 label "Main bedroom" uses bedroom
+
+    door id=d_study  on spine  at 1800 width 800 swing into r_study
+    door id=d_bath   on spine  at 5200 width 800 swing into r_bath
+    door id=d_master on w_back at 4200 width 900 swing into r_master
+
+    window id=n_study   at (1600,0) width 1600 wall shell
+    window id=n_landing at (4200,0) width 1200 wall shell
+    window id=s_master  at (2600,D)  width 1800 wall shell
+
+    furniture desk     in r_study anchor top-left    flush size 1600x700 label "Desk"
+    furniture bookcase in r_study anchor bottom-left flush size 1800x400 label "Bookcase"
+
+    # The same three walls as the bathroom below, and a shower where the bath is — the
+    # drain, the vent and the door all stay where the storey under them put them.
+    furniture shower in r_bath anchor bottom-left  flush size 900x900
+    furniture wc     in r_bath anchor bottom-right flush size 400x700
+    furniture basin  in r_bath anchor top-left     flush size 600x450
+
+    furniture bed      in r_master anchor bottom-left flush size 1600x2100 label "Double"
+    furniture wardrobe in r_master anchor top-left    flush size 1800x600  label "Wardrobe"
+    furniture chest    at (4550,8500) size 500x1000   label "Chest" in r_master
+
+    stair id=st at (4150,2600) size 900x3200 dir down
+  }
+
+  title {
+    project "Three-storey Terrace"
+    drawn_by "ArchLang"
+    date "2026-08-16"
+  }
+}

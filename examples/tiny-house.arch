@@ -1,0 +1,130 @@
+# A 7.2 x 3.0 m micro-home on one level — the DOOR-KINDS-AND-CLEARANCE example.
+#
+# A tiny house is the building where every millimetre is argued over, so it is the right
+# plan to show the three language forms that are about *fit* rather than shape:
+#
+#   door barn   … open 0.6   a leaf that hangs on the FACE of the wall instead of in it
+#   door bifold … width 1600 two leaves that fold into their own opening
+#   dim clear   (a)->(b)     a dimension pulled in to the two INNER wall faces
+#
+# Why a barn door and not a hinged one? The wet room is 1.55 m wide. A hinged leaf
+# swinging in fouls the WC; swinging out it sweeps the only walkway in the house. A barn
+# leaf sweeps nothing at all — `doorSwing()` returns null for every non-hinged kind, so
+# `W_SWING_OBSTRUCTED` cannot even apply to it — and parks on the wall it came from.
+# `slide right` sends it toward the wall's far end (the same left/right convention
+# `hinge` uses, read along the wall's own traversal direction), which here is the blank
+# south-east corner of the living room rather than back over the loft ladder.
+#
+# `open 0.6` is DRAWING-ONLY. Nothing measured reads it: it changes how far along the
+# wall the panel is drawn and nothing else. It is written here because a barn door drawn
+# shut is indistinguishable from a hinged one on paper, and the point of the drawing is
+# to show where the leaf goes when it is open.
+#
+# The wardrobe is a built-in recess, not a room — at 1.9 x 0.65 m it is far under the
+# 4 m2 floor `lint` expects of a room, and calling it one would be a fiction. It is
+# simply two partitions and a `bifold` door: two leaves, each half the 1600 opening,
+# folding out of the way instead of swinging 800 mm into a galley that is 1.85 m wide.
+#
+# That 1.85 m is what `dim clear` reports. An ordinary `dim` measures between the two
+# points you wrote; `clear` pulls each endpoint in onto the inner FACE of the wall the
+# measurement runs into — here the galley face of the wardrobe front and the inner face
+# of the north shell — so the number is the built clear width, derived, never typed.
+# Take 600 mm of worktop out of it and 1250 mm of walkway is left, which is why the
+# fridge door and the wardrobe leaves can both be open at once.
+plan "Tiny House" {
+  units mm
+  # `grid 50`, not 100: every partition here is 100 thick, so a fixture placed `flush`
+  # against one lands on a half-thickness (...50) coordinate, and a 100 grid would snap
+  # it back INTO the wall.
+  grid 50
+  north up
+
+  # ---- shell + the two pieces of joinery that act as structure ---------------
+  # 7200 x 3000 over the outer faces; 6800 x 2600 inside. The shell is one closed
+  # outline so its corners mitre, and openings on it are written `at (x,y) wall shell`
+  # — an exact centreline point, which can no more be off-wall than `on … at <pos>` can.
+  wall id=shell exterior thickness 200 { (0,0) (7000,0) (7000,2800) (0,2800) close }
+
+  # The wet room's only partition. Named, because the barn door is hung on it by run
+  # distance from its first point, (5300,0).
+  wall id=w_wet partition thickness 100 { (5300,0) (5300,2800) }
+
+  # The wardrobe: a front and a return. Everything they enclose is still living-room
+  # floor as far as the plan is concerned — a recess, not a space.
+  wall id=w_ward   partition thickness 100 { (0,2000) (2000,2000) }
+  wall id=w_ward_e partition thickness 100 { (2000,2000) (2000,2800) }
+
+  # ---- rooms ----------------------------------------------------------------
+  # One room does living, sleeping and cooking, which is what `uses living kitchen`
+  # says: it is a kitchen for the fixture rules and a living room for everything else.
+  room id=r_main at (0,0)    size 5300x2800 label "Living / Sleep" uses living kitchen
+  room id=r_wet  at (5300,0) size 1700x2800 label "Wet room"       uses bath
+
+  # ---- doors ----------------------------------------------------------------
+  # The front door is the only hinged leaf in the house, and the only one with a swing
+  # arc to keep clear: 900 mm of quarter-disc between the wardrobe return and the bench.
+  door id=d_front at (2700,2800) width 900 wall shell hinge left swing in
+
+  # The wet room. `swing` on a barn door does not mean a sweep — there is none — it
+  # names the FACE the leaf hangs on, and `in` is the wall's +normal side: the living
+  # room, where there is 1600 mm of blank wall for the panel to park on.
+  # `open 0.6` draws the panel 60% of the way along that travel.
+  door id=d_wet barn on w_wet at 1500 width 800 swing in slide right open 0.6
+
+  # The wardrobe. A bifold's two leaves fold toward the `swing` face — out into the
+  # galley, because there is nothing behind them to fold into.
+  door id=d_ward bifold on w_ward at 1000 width 1600 swing out
+
+  # ---- windows --------------------------------------------------------------
+  window id=n_galley at (700,0)     width 900  wall shell   # over the sink
+  window id=n_bed    at (3700,0)    width 1200 wall shell   # over the bed
+  window id=w_gable  at (0,1400)    width 900  wall shell
+  window id=s_bench  at (4300,2800) width 1200 wall shell
+  window id=e_wet    at (7000,1500) width 600  wall shell
+
+  # ---- galley: three catalogued fixtures, no coordinates --------------------
+  # `offset` is the distance of the piece's CENTRE along shell segment 0 — the north
+  # run, walked from (0,0) — and the footprints come from the catalogue, so no width,
+  # depth or wall face is written down twice.
+  furniture kitchen_sink against wall shell segment 0 offset 500  in r_main
+  furniture stove        against wall shell segment 0 offset 1200 in r_main
+  furniture fridge       against wall shell segment 0 offset 1800 in r_main
+
+  # ---- wet room -------------------------------------------------------------
+  # Anchored to the room and `flush`, so each piece measures from the backing wall's
+  # inner face rather than from a half-thickness someone worked out by hand.
+  furniture shower in r_wet anchor top-left    flush size 900x900
+  furniture wc     in r_wet anchor bottom-left flush size 400x700
+
+  # The basin is the one fixture placed by coordinate, and therefore the one that has to
+  # state its own quarter-turn. `rotate 0` means "back to the north", so `rotate 90` puts
+  # this basin's back on its EAST edge — against the shell, in the south-east corner the
+  # shower does not take. Note the declared `size` is always the plan-axis footprint:
+  # the symbol turns inside it, the rectangle does not.
+  furniture basin at (6450,2100) size 450x600 rotate 90 in r_wet
+
+  # ---- living / sleeping ----------------------------------------------------
+  furniture bed      at (2600,100)  size 2000x1400 label "Bed"      in r_main
+  furniture bench    at (3400,2100) size 1500x600  label "Bench"    in r_main
+  furniture wardrobe at (100,2350)  size 1800x350  label "Wardrobe" in r_main
+  # The loft ladder's hatch, flush to the wet-room partition. 600 wide because a label
+  # is drawn INSIDE its own footprint: "Ladder" does not fit a 350 mm box, and the
+  # renderer has no metrics to shrink it with — it would simply run out over the wall.
+  furniture ladder   at (4650,100)  size 600x700   label "Ladder"   in r_main
+
+  # ---- dimensions -----------------------------------------------------------
+  # Hand chains rather than `dims auto`: on a plan this small the automatic GB/T set
+  # would out-draw the building. Endpoint ORDER picks the side — the line is offset
+  # along the LEFT normal of from->to — so each of these is written in the direction
+  # that throws it out into the margin. The clear dim carries no `text`: the whole point
+  # is that 1850 is measured off the two wall faces, not typed in by the author.
+  dim clear (200,0)->(200,2000) offset 600
+  dim faces (0,2800)->(7000,2800) offset 500
+  dim faces (7000,2800)->(7000,0) offset 500
+
+  title {
+    project "Tiny House"
+    drawn_by "ArchLang"
+    date "2026-08-16"
+  }
+}

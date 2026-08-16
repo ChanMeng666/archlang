@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // The landing hero — "The Compile Boundary" made literal. A full-bleed stage
 // split by a visible compile SEAM: a dark SOURCE world on the left where the
-// canonical example (examples/studio.arch) types itself, and a warm SHEET world
+// canonical example (examples/laneway-house.arch) types itself, and a warm SHEET world
 // on the right where the compiled floor plan draws itself. The whole thing IS the
 // thesis: source on one side, a professional drawing on the other, the compiler
 // the rule between them.
@@ -11,12 +11,15 @@
 // an IntersectionObserver rewinds to empty and replays the typing on a rAF loop,
 // exactly once, and only when the hero is on-screen and motion is allowed.
 import { ref, shallowRef, computed, onMounted, onBeforeUnmount, watch } from "vue";
-import { compile } from "archlang";
+import { compile, describe } from "archlang";
 import { EXAMPLES } from "./examples-data.js";
 
-// The canonical example, already synced into examples-data.js by sync-docs.mjs
-// (no `?raw` / fs.allow dependency). This is the source that types itself.
-const raw: string = EXAMPLES.studio;
+// The hero example, already synced into examples-data.js by sync-docs.mjs (no
+// `?raw` / fs.allow dependency). This is the source that types itself; the name is
+// bound ONCE so the source, the file-name chip and the aspect fallback below can
+// never name three different plans.
+const HERO = "laneway-house";
+const raw: string = EXAMPLES[HERO];
 
 const ARCHCANVAS = "https://archcanvas.chanmeng.org";
 const PLAYGROUND = "https://playground.archlang.uk";
@@ -36,9 +39,15 @@ function aspectFromSvg(svg: string): string {
     const h = Number(m[4]);
     if (w > 0 && h > 0) return `${w} / ${h}`;
   }
-  return "9648 / 10213.6"; // studio.arch fallback
+  return "10718.4 / 11166"; // laneway-house.arch fallback (its compiled viewBox)
 }
 const paperAspect = aspectFromSvg(finalSvg);
+
+// The sheet's title block, DERIVED — it used to hard-code a plan name and a scale,
+// which is the one thing a page about compiling from source must not do. `scale` is
+// optional (this plan declares none, so the chip is simply absent rather than
+// claiming a ratio the drawing was never issued at).
+const heroFacts = describe(raw);
 
 // ── Reactive display state — starts at the FINAL state for a hydration-safe
 //    first render; the client rewinds it after mount. ────────────────────────
@@ -50,14 +59,22 @@ const mounted = ref(false);
 // ── Minimal ArchLang syntax tint (source world → the shared --syn-* palette). A tiny
 //    regex tokenizer, not a real parser: it re-highlights the visible prefix each
 //    frame, which is cheap and looks alive mid-token. Deterministic → SSR-safe. */
+// Keep this in step with src/grammar/tokens.ts KEYWORDS: an unlisted word the hero
+// source uses renders as a plain identifier, which reads as a typo rather than a
+// keyword. Everything laneway-house.arch uses is here (site/street, the door kinds
+// and slide, strip/anchor/flush/inset, on/into/near, dims auto all).
 const KEYWORDS = new Set(
-  ("plan component let theme title style import for if while else set wall room " +
-    "door window opening furniture dim column units grid scale north dims material " +
-    "angle at size width thickness label hinge swing offset text close id project " +
+  ("plan component let theme title style import for if while else set strip level " +
+    "zone place axes schedule legend site wall room door window opening furniture " +
+    "dim column stair elevator escalator units grid paper scale north dims all " +
+    "overall accTitle accDescr material angle at size polygon circle arc radius " +
+    "width thickness label hinge swing slide open offset text close id project " +
     "drawn_by date from as below above align gap uses rotate against segment side " +
-    "up down left right in out mm true false top middle bottom center auto " +
-    "exterior partition living kitchen dining bedroom bath wc hall circulation " +
-    "storage utility office entry").split(" "),
+    "on into near anchor inset flush mirror height faces clear dir street " +
+    "hemisphere up down left right in out mm true false top middle bottom center " +
+    "centered start end auto cw ccw major hinged sliding barn bifold pocket " +
+    "landscape portrait exterior partition living kitchen dining bedroom bath wc " +
+    "hall circulation storage utility office entry south east west").split(" "),
 );
 function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -214,7 +231,7 @@ onBeforeUnmount(() => {
 
           <div class="code-stage" :data-phase="phase">
             <div class="code-chrome">
-              <span class="code-chrome__file">studio.arch</span>
+              <span class="code-chrome__file">{{ HERO }}.arch</span>
               <span class="code-chrome__status">{{ phase === "typing" ? "compiling" : "compiled" }}</span>
             </div>
             <!-- eslint-disable-next-line vue/no-v-html -->
@@ -230,7 +247,8 @@ onBeforeUnmount(() => {
       <div class="pane pane--sheet">
         <div class="sheet">
           <div class="sheet__title">
-            <span>STUDIO 1BR</span><span>SHEET A-101</span><span>SCALE 1:50</span>
+            <span>{{ heroFacts.plan }}</span><span>Sheet A-101</span
+            ><span v-if="heroFacts.scale">Scale {{ heroFacts.scale }}</span>
           </div>
           <div class="sheet__body" :style="{ aspectRatio: paperAspect }">
             <!-- eslint-disable-next-line vue/no-v-html -->

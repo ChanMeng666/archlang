@@ -84,7 +84,7 @@ source.
 
 ### Drift generators — `npm run check:drift`
 
-Eight generators, nine artifacts; the authoritative list is the `GENERATORS` table in
+Nine generators, twenty-one artifacts; the authoritative list is the `GENERATORS` table in
 `scripts/check-drift.ts` and it is mirrored in [CONTRIBUTING.md](../CONTRIBUTING.md#ci-drift-gates-regenerate-before-you-push).
 
 **Red ⇒ regenerate, never hand-edit.** Run the matching `npm run gen:*` (or `npm run gen:all`,
@@ -95,6 +95,23 @@ the committed file, so it proves **reproducibility, not correctness**. A generat
 a language fact reproduces the same wrong text forever (`gen-llm-spec.ts` shipped a v1.12 CLI for
 three releases while drift stayed green). Derive from the source of truth; give each generator a
 guard that fails when a source-of-truth entry has no rendering.
+
+**`gen:example-svgs` — the twelve drawings the README embeds.** The newest generator, and the one
+that shows what an *un*-gated derived artifact costs. `examples/studio.svg`, `two-bed.svg` and
+`attached.svg` were hand-committed and never re-rendered, so for months the README's hero and
+gallery showed a building compiled before the opening-void fix, the fixture-orientation fix, the
+miter-limit cap and the label-placement pass — four separate rendering changes, invisible because
+the only way to notice was to look at the picture. `scripts/gen-example-svgs.ts` renders them from
+their `.arch` sources; `test/example-svgs-drift.test.ts` is the gate and does two jobs:
+
+| Law | Red ⇒ |
+|-----|-------|
+| every `README_SVGS` file on disk equals an in-memory `compile()` of its source | `npm run gen:example-svgs`, then **look at the drawing** before committing — a moved golden here is a rendering change, and the picture is the review |
+| the curated list and the README's `<img>` tags agree **in both directions** | a `./examples/<n>.svg` in the README with no `README_SVGS` entry is an ungated drawing that will rot; a listed name the README never embeds is dead weight. Add or remove the `<img>`, or edit the list |
+
+The list is curated on purpose — committing an SVG per `.arch` would put ~27 large blobs in every
+diff for no reader — which is exactly why the second law exists: a curated list is only honest
+while something pins it to what the page actually shows.
 
 ### Lockstep pins — duplications that exist on purpose
 
@@ -149,6 +166,7 @@ language, and it is why the golden files above almost never move.
 | `test/bbox-derived-position.test.ts` | `swing into <room>` and `furniture … against wall` ask the room's ring, not its box; rectangles stay byte-identical | Also pins the two `dimReach` properties that make leaving it alone safe — it was measured as a provable no-op and deliberately NOT "fixed" |
 | `test/dim-stagger.test.ts` | `EM_PER_CHAR` lives in exactly ONE file (`src/text-metrics.ts`) | A fifth copy of the em-per-char factor appeared. The lint rule, the stagger and the renderer must agree about what collides |
 | `test/lint-file-provenance.test.ts` | a lint fix on an element written in an imported module carries `file`, so `applyFixes` refuses it | Red means `applyFixes` can once again splice a module's byte offsets into the importer — reproduced on an unmodified `W_DIM_INSIDE` before the fix |
+| `test/levels.test.ts` (corpus sweep) | a plan with no `level` block has no `pages`, no `LEVEL` title-block row and no `level` on any diagnostic; a plan WITH one compiles to more than one page | **The split is derived, not listed.** It used to exclude `two-storey.arch` *by filename*, which meant a second multi-storey example could silently join the level-free sweep (failing for the right reason under the wrong name) or silently dodge the paging check. `HAS_LEVEL = /^\s*level\s+-?\d+/m` reads the source instead, both sides are asserted non-empty, and `townhouse.arch` joined with no edit to the test |
 
 ### Property and fuzz suites
 

@@ -296,8 +296,20 @@ suite("v1.21 levels — repair recurses into storeys", () => {
   });
 });
 
+/**
+ * Which examples are multi-storey is DERIVED from their source, not from a filename
+ * list. The sweep below used to exclude `two-storey.arch` by name, which meant a second
+ * multi-storey example could neither silently join the level-free sweep (and fail it for
+ * the right reason but the wrong test) nor silently dodge it — both are the same hazard,
+ * a hand-maintained list of what the corpus contains. `townhouse.arch` is that second
+ * example; the predicate is why nothing had to be edited for it.
+ */
+const HAS_LEVEL = /^\s*level\s+-?\d+/m;
+
+const ALL_EXAMPLES = readdirSync("examples").filter((f) => f.endsWith(".arch"));
+
 suite("v1.21 levels — the level-free corpus is byte-identical", () => {
-  const EXAMPLES = readdirSync("examples").filter((f) => f.endsWith(".arch") && f !== "two-storey.arch");
+  const EXAMPLES = ALL_EXAMPLES.filter((f) => !HAS_LEVEL.test(readFileSync(`examples/${f}`, "utf8")));
   const world = {
     read: (p: string): string | null => {
       try {
@@ -313,6 +325,31 @@ suite("v1.21 levels — the level-free corpus is byte-identical", () => {
       expect(r.pages).toBeUndefined();
       expect(r.scene?.chrome?.titleBlock?.rows.some((x) => x.k === "LEVEL") ?? false).toBe(false);
       expect(r.diagnostics.every((d) => d.level === undefined)).toBe(true);
+    });
+  }
+
+  it("the split is non-vacuous — both sides of the predicate have members", () => {
+    expect(EXAMPLES.length).toBeGreaterThan(0);
+    expect(ALL_EXAMPLES.length).toBeGreaterThan(EXAMPLES.length);
+  });
+});
+
+suite("v1.21 levels — every multi-storey example really does page", () => {
+  const LEVELLED = ALL_EXAMPLES.filter((f) => HAS_LEVEL.test(readFileSync(`examples/${f}`, "utf8")));
+  const world = {
+    read: (p: string): string | null => {
+      try {
+        return readFileSync(`examples/${p}`, "utf8");
+      } catch {
+        return null;
+      }
+    },
+  };
+  for (const name of LEVELLED) {
+    it(`${name} compiles to more than one page`, () => {
+      const r = compile(readFileSync(`examples/${name}`, "utf8"), { noCache: true, world });
+      expect(r.errors).toEqual([]);
+      expect(r.pages?.length ?? 1).toBeGreaterThan(1);
     });
   }
 });

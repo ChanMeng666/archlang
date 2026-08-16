@@ -25,8 +25,8 @@ layout: home
       loop it follows. No pixels required to verify intent.
     </p>
     <div class="agents__term" aria-hidden="true">
-      <span class="agents__prompt">$</span> npx @chanmeng666/archlang describe plan.arch <span class="agents__flag">--json</span>
-      <br />{ <span class="agents__key">"rooms"</span>: 4, <span class="agents__key">"doors"</span>: 3, <span class="agents__key">"windows"</span>: 3, <span class="agents__key">"floor_area_m2"</span>: 42 }
+      <span class="agents__prompt">$</span> npx @chanmeng666/archlang describe laneway-house.arch <span class="agents__flag">--json</span>
+      <br />{ <span class="agents__key">"rooms"</span>: 3, <span class="agents__key">"doors"</span>: 4, <span class="agents__key">"windows"</span>: 4, <span class="agents__key">"floor_area_m2"</span>: 48.75 }
     </div>
     <div class="agents__actions">
       <a class="agents__btn agents__btn--solid" href="/agents">Use it from an agent →</a>

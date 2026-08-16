@@ -122,15 +122,25 @@ header {
   padding-right: 8px;
 }
 /* Keep the closed examples select compact so a long option label (e.g.
-   "Relational (right-of / below)") can't blow the header row wider than the
-   viewport; the open dropdown still shows every option in full. */
+   "Bungalow (site + doors)") can't blow the header row wider than the
+   viewport; the open dropdown still shows every option in full. 190px is the
+   width the longest label needs without the closed control eating the row. */
 #examples {
-  max-width: 168px;
+  max-width: 190px;
   text-overflow: ellipsis;
 }
 .tb-controls select option {
   color: var(--src-fg);
   background: var(--src-surface);
+}
+/* Group headings in the examples dropdown. The UA default is italic, which reads
+   as an option that is somehow disabled; a non-italic semibold label in the muted
+   source ink reads as a heading instead. */
+.tb-controls select optgroup {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--src-muted);
+  background: var(--src-bg);
 }
 .tb-controls select:hover,
 .tb-controls button:hover {

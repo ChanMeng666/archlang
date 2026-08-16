@@ -7,6 +7,103 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### The showcase, redrawn
+
+Twenty-seven examples where there were fifteen, every drawing in the README generated rather than
+hand-committed, and a gate so the pictures cannot drift from the compiler again. No language change:
+**no new keyword, no new `E_*`/`W_*` code, no `src/index.ts` change**, and every existing example is
+byte-unchanged.
+
+The finding that made this more than an authoring exercise: **the three example SVGs the README had
+always shown were hand-committed and never re-rendered.** Nothing regenerated them, nothing compared
+them to the compiler, and the only way to notice was to look at the picture — so for months the
+project's front page showed `studio`, `two-bed` and `attached` as they compiled *before* the
+opening-void fix, the fixture-orientation fix, the miter-limit cap and the label-placement pass. Four
+separate rendering changes, invisible. Every other artifact in this repo derived from `src/` has a
+generator and a drift gate; these did not, purely because nobody thought of an SVG as generated.
+
+#### Added
+
+- **Twelve new examples**, each the flagship of exactly one thing:
+  - `laneway-house` — the SIGNATURE plan, and the new README hero. 49 m² in which **nothing is
+    positioned by hand**: every opening is pinned to a run distance along a named wall, every fixture
+    resolves against a room or a wall, the bath/bedroom pair is laid out by `strip`, and `site`
+    names the two facades the plan turns on.
+  - `one-room` — the smallest plan that draws anything at all. One room, one door, one window; the
+    plan you read first, and the golden that has nothing else to blame when the common path moves.
+  - `tiny-house` — a dwelling on a trailer footprint: one wet room, one everything-else.
+  - `garden-loft` — a studio over a garage: `strip`, an on-wall run, and a single stair.
+  - `courtyard-house` — a ring of rooms round an open court, and the first shipped plan whose room
+    centroid lands **off its own floor**. The case where a window's outward face is not the side its
+    bounding box suggests.
+  - `townhouse` — three storeys in one file (A3 portrait at 1:50), one stair shaft, one drawing per
+    page. The first example with a *middle* storey, where a per-level fault has a page above and
+    below it to hide between.
+  - `terrace-row` — one inline `component`, `place`d four times with alternating `mirror x`, unit widths from a `let` array, `theme blueprint`; the whole row is written once.
+  - `hexagon-pavilion` — six wedge-shaped `room … polygon` galleries round a hexagonal core: oblique
+    mitres, and every room labelled by hand because a wedge's centroid is the worst place available.
+  - `library` — a public building on a real sheet (A2 at 1:200) with axes, a room schedule and a
+    legend, wrapped round a circular reading room.
+  - `transit-hall` — a station concourse: paid and unpaid sides, a generated run of gates, kiosks
+    and WCs (A2 at 1:200).
+  - `clinic` — six consult rooms as `place`d instances off one corridor, grouped by `zone`.
+  - `materials` — the first and only shipped example to use `style <kind> { … }` and wall
+    `material`, which is how the formatter bug below was found.
+- **`npm run gen:example-svgs`** (`scripts/gen-example-svgs.ts`) — the ninth drift generator. It
+  renders the twelve `examples/*.svg` the README embeds from their `.arch` sources, and its curated
+  `README_SVGS` list is **imported** by `scripts/check-drift.ts` rather than retyped, so a name added
+  in one place is gated in the other with no second edit. Added to `gen:all` and to CI's
+  `check:drift`; the artifact count goes from nine to twenty-one.
+- **`test/example-svgs-drift.test.ts`** — the gate, with two laws. Every `README_SVGS` file on disk
+  must equal an in-memory `compile()` of its source; and the curated list and the README's `<img>`
+  tags must agree **in both directions** — a drawing the README embeds with no generator entry is
+  one that will rot, and a listed name the page never shows is dead weight. The second law is what
+  keeps a *curated* list honest, which is the only reason a curated list is acceptable here (an SVG
+  per `.arch` would put ~27 large blobs in every diff for no reader).
+- Nine new visual goldens plus three per-page `townhouse` goldens, and fourteen new SVG snapshots.
+  No existing golden or snapshot moved.
+
+#### Changed
+
+- **README hero and gallery, rewritten around the new corpus.** The hero fence is
+  `examples/laneway-house.arch` verbatim, its prose re-cut to what that plan actually demonstrates,
+  and both of its permalinks re-minted with `scripts/gen-permalink.mjs`. The gallery is a nine-cell
+  table chosen for what reads at 270 px, plus a two-cell row for the A3 sheet drawings, and the
+  "Also in `examples/`" paragraph is now the whole corpus grouped by what each plan is there to show.
+  Every drawing on the page is now generated, so the README and the compiler cannot disagree.
+- **`examples/studio.svg`, `two-bed.svg` and `attached.svg` re-rendered** — the first time since they
+  were committed. They now show what the current compiler produces: opening voids that cut the wall
+  instead of painting over it, correctly oriented fixtures, mitre-capped wall joints, and room labels
+  relocated off the furniture and dimension text they used to sit under.
+- **`test/levels.test.ts`'s corpus sweep is now derived, not listed.** It excluded `two-storey.arch`
+  **by filename**, which meant a second multi-storey example could silently join the level-free sweep
+  or silently dodge it. The predicate is now `HAS_LEVEL = /^\s*level\s+-?\d+/m` read from the source,
+  both sides are asserted non-empty, and a companion case requires every multi-storey example to
+  compile to more than one page. `townhouse.arch` joined both with no edit to the test.
+- **`test/schedule.test.ts`'s `TABLE_EXAMPLES` allow-list is now derived too**, for the same reason:
+  a hand-written two-name list was fine while the answer was two names, and six examples opt into
+  `schedule`/`legend` now. The replacement asserts something the old comment could only *state* —
+  that an example may opt in only together with a golden rendered from it.
+- **Docs site and playground rewired** to the new corpus (docs home hero, cards, facts band and
+  guide; playground grouped presets, a new default plan, and the embed fallback).
+- `test/fixtures/vocabulary-equivalence.json` gains a pinned row set per new example (additions
+  only — no existing row changed).
+
+#### Fixed
+
+- **`arch fmt` silently rewrote every `style <kind> { … }` block into one the parser rejects.** The parser resolves a friendly attribute (`stroke`, `fill`, `label`, `hatch`, `leaf`, `pane`, `opening`, `area`) to a canonical `Theme` key and stores *that*; the formatter printed the canonical key straight back out (`style wall { wallStroke: "#…" }`), which the next parse refuses with `W_UNKNOWN_STYLE_KEY` — so `format(format(src))` emitted an **empty** style block and a formatted file rendered in different colours than the file it came from. `src/theme.ts` now exports `styleKeyFor()`, the inverse of `resolveStyleKey()` derived from `STYLE_KEYS` itself, and the formatter prints the friendly key (falling back to the raw key if a kind exposes none, so nothing is dropped unseen). Same defect class as v1.26.1's door-kind fix: *the one operation a user assumes is safe, quietly changing the drawing.* Pinned by a round-trip law over every `(kind, attribute)` pair in `STYLE_KEYS`, so a new kind or attribute joins it with no edit to the test. `theme { … }` was audited for the same shape and is **not** affected — `resolveThemeKey` accepts the canonical key the formatter prints — and that is now pinned rather than assumed. Found by `examples/materials.arch`, the first shipped example to use `style`.
+
+#### Documented, not fixed
+
+Five findings the new examples ran into are recorded in `docs/backlog.md` → "Found while redrawing
+the showcase", each with its reproduction: `schedule rooms` and `place` are effectively unusable
+together (every instance is an implicit zone, so N components print N one-row groups); `on <wall> at
+<pos>` takes a literal, so a generated run of openings must fall back to absolute coordinates;
+`strip` cannot nest inside `zone`, so strip rooms fall into the schedule's `(no zone)` group;
+`dims auto all` prints wall-thickness readings inside the poché; and the margin tables can push a
+page **past its own declared paper** while `describe().sheet.fits` stays `true` and no
+`W_SCALE_OVERFLOW` is raised — the same "a promise quietly not kept" class v1.26.1 closed.
+
 ## [1.26.1] - 2026-08-13
 
 **Five shipped surfaces that no test ever executed.** v1.26.0 made the language's *descriptions* of

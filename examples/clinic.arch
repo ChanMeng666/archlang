@@ -1,0 +1,171 @@
+# An outpatient clinic wing whose six consulting rooms are ONE component placed six times.
+#
+# Every consulting room in a clinic is the same room. Drawn the usual way that is six
+# copies of four walls, a door, a desk and a basin — twenty-four statements that must be
+# kept in step by hand, and a plan where widening the rooms means editing every one. So
+# this plan writes the room ONCE, as a component, and instantiates it:
+#
+#   component consult(depth, no) { … }        # authored in LOCAL coords from (0,0)
+#   place consult(4500, 1) as c1 at (9000,0)  # an addressable INSTANCE
+#
+# Three things follow from that, and they are what this example is the showcase for:
+#
+#   NAMESPACING   ids inside the component become `<instance>.<id>`, so the six rooms are
+#                 `c1.main` … `c6.main` and the plan can address exactly one of them —
+#                 `furniture … in c2.main` below puts an ECG trolley in the second room
+#                 and nowhere else. `arch describe --room c2.main` reads it back.
+#   MIRRORING     the north row is placed as drawn; the south row is placed with
+#                 `mirror y`, a REAL reflection about the instance's own origin. So the
+#                 corridor wall — local `y = depth` — lands on the corridor for both rows
+#                 and all six doors face the same way. Because a reflection moves the
+#                 origin to the far edge, a mirrored 4500-deep unit is placed at the FAR
+#                 y (11400), not at 6900.
+#   ONE SIDE WALL each instance carries its LEFT wall and its CORRIDOR wall only — an L,
+#                 not a box. Laid at 3600 centres, each unit's left wall closes the one
+#                 before it, so no two partitions ever coincide; the plan supplies the
+#                 single wall that closes the last unit of each row.
+#
+# The rest of the wing is written the ordinary way: a 2400 corridor down the middle with
+# a `dim clear` proving 2300 of it is actually clear floor, the public rooms (entrance,
+# reception, waiting) at the west end and the clinical support rooms (treatment, staff,
+# accessible WC) at the east, declared as two `zone`s. Door kinds carry the same argument
+# a builder would: the consulting rooms take `pocket` doors so no leaf ever sweeps into a
+# corridor patients queue in, and the treatment room a `sliding` one wide enough for a
+# trolley. This plan is clean under `arch lint --profile accessibility-advisory` as well
+# as the default ruleset.
+plan "Clinic Wing" {
+  units mm
+  # `grid 50`: every partition here is 100 thick, so a fixture backed onto one lands on a
+  # half-thickness (…50) coordinate that a 100 grid could not express without snapping it
+  # back into the wall.
+  grid 50
+  paper A3 landscape
+  scale 1:100
+  north up
+  dims auto all
+  # A `legend` and no `schedule`: the schedule groups rooms by their INNERMOST zone, and
+  # every `place` makes its instance one (`clinical.c1` …), so a scheduled version of this
+  # plan would print six one-row groups. The legend has no such structure — it lists the
+  # wall hatches and the fixture symbols actually drawn, which is what a reader needs here.
+  legend
+
+  # ---- the consulting room, written once -------------------------------------
+  # `depth` is the room's depth; `no` only feeds the label. The corridor is at local
+  # `y = depth`, which is the edge `mirror y` turns over.
+  component consult(depth, no) {
+    wall id=w_side partition thickness 100 { (0,0) (0,depth) }
+    wall id=w_corr partition thickness 100 { (0,depth) (3600,depth) }
+
+    room id=main at (0,0) size 3600 x depth label "Consult {no}" uses office
+
+    # A pocket door: the panel slides into the 1300 mm of wall past its jamb (the run
+    # `W_POCKET_RUN` measures), so nothing swings into the corridor. 1000 wide, not the
+    # residential 900: at 900 every one of these routes reads 840 mm of clear width and
+    # `arch lint --profile accessibility-advisory` says so, room by room.
+    door id=d pocket on w_corr at 50% width 1000 slide right
+
+    furniture id=f_desk  desk  in main anchor top   inset 900 size 1600x800  label "Desk"
+    furniture id=f_couch couch in main anchor right inset 200 size 700x1900  label "Couch"
+    furniture id=f_basin basin against wall w_side offset depth - 800 in main
+  }
+
+  # ---- shell and the walls the plan itself owns -------------------------------
+  wall id=shell   exterior  thickness 200 { (0,0) (25800,0) (25800,11400) (0,11400) close }
+  wall id=w_wb    partition thickness 100 { (0,6900) (9000,6900) }
+  wall id=w_wb_d  partition thickness 100 { (4500,6900) (4500,11400) }
+  wall id=w_corr_w partition thickness 100 { (9000,4500) (9000,6900) }
+  wall id=w_mid_n partition thickness 100 { (19800,0) (19800,4500) }
+  wall id=w_mid_s partition thickness 100 { (19800,6900) (19800,11400) }
+  wall id=w_tr_s  partition thickness 100 { (19800,4500) (25800,4500) }
+  wall id=w_ea_n  partition thickness 100 { (19800,6900) (25800,6900) }
+  wall id=w_ea_d  partition thickness 100 { (22800,6900) (22800,11400) }
+
+  # ---- the two departments ----------------------------------------------------
+  zone public "Public" {
+    room id=r_wait    at (0,0)        size 9000x6900 label "Waiting"   uses hall
+    room id=r_recept  at (0,6900)     size 4500x4500 label "Reception" uses office
+    room id=r_entry   at (4500,6900)  size 4500x4500 label "Entrance"  uses entry
+  }
+
+  zone clinical "Clinical" {
+    room id=r_corr  at (9000,4500)   size 16800x2400 label "Corridor"      uses circulation
+    room id=r_treat at (19800,0)     size 6000x4500  label "Treatment"     uses office
+    room id=r_staff at (19800,6900)  size 3000x4500  label "Staff Room"    uses office
+    room id=r_wc    at (22800,6900)  size 3000x4500  label "Accessible WC" uses wc
+
+    # Three north, three south. The south row is `mirror y`, so its doors face the
+    # corridor; each instance also becomes a nested zone (`clinical.c4`), which is what
+    # lets `arch describe --json --select zones` report one consulting room on its own.
+    place consult(4500, 1) as c1 at (9000,0)
+    place consult(4500, 2) as c2 at (12600,0)
+    place consult(4500, 3) as c3 at (16200,0)
+    place consult(4500, 4) as c4 at (9000,11400)  mirror y
+    place consult(4500, 5) as c5 at (12600,11400) mirror y
+    place consult(4500, 6) as c6 at (16200,11400) mirror y
+  }
+
+  # ---- the route through the building ------------------------------------------
+  # An automatic slider at the front door, then a cased opening into the waiting hall and
+  # a full-width opening into the corridor — no leaf anywhere on the patient's route.
+  door    id=d_main   sliding at (6750,11400) width 1800 wall shell slide right
+  opening id=o_entry  on w_wb at 6750 width 2400
+  opening id=o_recept on w_wb at 900  width 1200
+  door    id=d_recept on w_wb_d  at 2250 width 900
+  opening id=o_corr   on w_corr_w at 50% width 1800
+
+  # The treatment room takes a 1200 slider a trolley fits through; the accessible WC's
+  # leaf swings OUT into the corridor, which is why the corridor is dimensioned below.
+  door id=d_treat sliding on w_tr_s at 3000 width 1200 slide left
+  # `hinge near end`: the leaf swings toward the party wall, not back over the sink.
+  door id=d_staff on w_ea_n at 1500 width 1000 hinge near end
+  door id=d_wc    on w_ea_n at 4500 width 1000 swing into r_corr
+
+  # ---- glazing -------------------------------------------------------------------
+  # One window per consulting room on each long facade, on the room's centre by
+  # construction: the units are on 3600 centres from x = 9000.
+  for i in 0..3 {
+    window at (10800 + i * 3600, 0)     width 1200 wall shell
+    window at (10800 + i * 3600, 11400) width 1200 wall shell
+  }
+  window at (4500,0)      width 3000 wall shell
+  window at (0,3000)      width 2400 wall shell
+  window at (22800,0)     width 1800 wall shell
+  window at (25800,2250)  width 1200 wall shell
+  window at (2250,11400)  width 1500 wall shell
+  window at (21300,11400) width 1200 wall shell
+  window at (24300,11400) width 900  wall shell
+
+  # ---- fit-out ---------------------------------------------------------------------
+  for i in 0..3 {
+    furniture seating at (1200, 1200 + i * 1800) size 2400x600 label "Seating"
+    furniture seating at (5400, 1200 + i * 1800) size 2400x600 label "Seating"
+  }
+  furniture id=f_recept counter against wall w_wb offset 3100 size 2400x600 in r_recept
+
+  furniture id=f_tr_counter counter against wall w_tr_s offset 1000 size 1800x600 in r_treat
+  furniture id=f_tr_basin   basin   against wall w_tr_s offset 5200 in r_treat
+  furniture id=f_tr_couch   couch   at (21000,1000) size 2000x800 label "Exam couch"
+
+  furniture id=f_st_sink kitchen_sink against wall w_mid_s offset 1200 in r_staff
+  furniture id=f_st_table table at (20400,9600) size 1600x900 label "Table"
+
+  furniture id=f_wc_pan   wc    against wall w_ea_d offset 3500 in r_wc
+  furniture id=f_wc_basin basin against wall w_ea_d offset 1200 in r_wc
+
+  # The dotted id is what makes ONE instance addressable: this trolley belongs to the
+  # second consulting room and to no other.
+  furniture id=f_ecg trolley in c2.main anchor bottom-right inset 300 size 700x500 label "ECG"
+
+  # ---- the dimension that matters --------------------------------------------------
+  # `dim clear` pulls both endpoints in to the inner FACES, so this reads the corridor's
+  # clear width (2400 centre-to-centre less two half-partitions = 2300), not its nominal
+  # one. `offset 0` keeps the line on the measured axis: a clear width is measured where
+  # it is, so there is no outward side to push it to.
+  dim clear (11000,4500)->(11000,6900) offset 0 text "2300 clear"
+
+  title {
+    project "Outpatient clinic wing"
+    drawn_by "ArchLang"
+    date "2026-08-16"
+  }
+}

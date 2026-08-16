@@ -19,43 +19,43 @@ const row1: Sheet[] = [
     tag: "Principle",
     title: "Deterministic by design",
     body:
-      "The same source always compiles to byte-identical output — no clocks, no randomness, no I/O. Every loop, conditional and function is evaluated as the drawing is built.",
-    art: "/examples/studio.svg",
+      "The same source always compiles to byte-identical output — no clocks, no randomness, no I/O. Every loop, conditional and function is evaluated as the drawing is built. This 49 m² laneway house has no hand-placed opening in it: each one is pinned to a run along a named wall, so the numbers are the drawing.",
+    art: "/examples/laneway-house.svg",
   },
   {
     no: "A-102",
     tag: "Principle",
     title: "Zero-dependency core",
     body:
-      "The default SVG path pulls no runtime dependencies. Optional power — PNG raster, vector PDF, angled-wall geometry — loads lazily and is never required.",
-    art: "/examples/themed.svg",
+      "The default SVG path pulls no runtime dependencies. Optional power — PNG raster, vector PDF, angled-wall geometry — loads lazily and is never required. An 11-room courtyard house, 163 m² around an open middle, compiles with nothing installed.",
+    art: "/examples/courtyard-house.svg",
   },
   {
     no: "A-103",
     tag: "Output",
     title: "Professional CAD output",
     body:
-      "Layers, line weights, wall poché, openings that void walls, real fixture symbols, dimensions, a north arrow, scale bar and a title block. Export to SVG, DXF, PDF or PNG.",
-    art: "/examples/two-bed.svg",
+      "Layers, line weights, wall poché, openings that void walls, real fixture symbols, dimensions, a north arrow, scale bar and a title block — plus a room schedule and a legend, both derived. Here: a 50 × 32 m library on A2 at 1:200, its column grid and shelf runs written as for loops rather than coordinates. Export to SVG, DXF, PDF or PNG.",
+    art: "/examples/library.svg",
   },
 ];
 
 const row2: Sheet[] = [
   {
     no: "A-104",
-    tag: "Scripting",
-    title: "Parametric & scriptable",
+    tag: "Geometry",
+    title: "Not only rectangles",
     body:
-      "Values, arithmetic, arrays, for / if / while and pure functions — plus relational placement (right-of / below / …) resolved by deterministic topological arithmetic.",
-    art: "/examples/parametric.svg",
+      "Polygonal rooms measured by exact shoelace area, circular rooms measured as πR², and true arc wall edges — SVG A commands and native DXF arcs, never faceted at any zoom. This pavilion is rectangular nowhere: six trapezoid galleries ring a 28 m² drum.",
+    art: "/examples/hexagon-pavilion.svg",
   },
   {
     no: "A-105",
     tag: "Read-back",
     title: "Reads its own plans",
     body:
-      "describe() returns rooms, areas, adjacency, an access graph and circulation facts; lint() flags habitability problems — image-free, so an agent can verify intent without an image.",
-    art: "/examples/relational.svg",
+      "describe() returns rooms, areas, adjacency, an access graph and circulation facts; lint() flags habitability problems — image-free, so an agent can verify intent without an image. The legend and hatches below are derived the same way: one row per material actually used.",
+    art: "/examples/materials.svg",
   },
 ];
 </script>

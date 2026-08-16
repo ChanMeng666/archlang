@@ -12,6 +12,9 @@ import { compile } from "archlang";
 import { embedCompileOptions, hashParam, isEditable, renderDecision } from "./embed-params.js";
 import { createPanZoom } from "./pan-zoom.js";
 import { srcFromHash } from "./share.js";
+// The fallback plan for a hash-less embed: the canonical smallest complete plan,
+// imported verbatim (`?raw`) so it can never drift from examples/one-room.arch.
+import fallbackPlan from "../../examples/one-room.arch?raw";
 import { showSvgInStage } from "./viewer.js";
 import "@fontsource-variable/public-sans/wght.css";
 import "@fontsource/ibm-plex-mono/400.css";
@@ -58,7 +61,7 @@ toolbar?.addEventListener("click", (e) => {
 });
 
 async function init() {
-  const source = (await srcFromHash()) ?? `plan "Embed" {\n  room at (0,0) size 4000x3000 label "Room"\n}`;
+  const source = (await srcFromHash()) ?? fallbackPlan;
   const editable = isEditable(location.hash);
   if (editable) {
     editorWrap.hidden = false;
