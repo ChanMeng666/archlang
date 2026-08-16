@@ -9,6 +9,8 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compile, format } from "../src/index.js";
+import type { Theme } from "../src/theme.js";
+import { DEFAULT_THEME, resolveStyleKey, STYLE_KEYS, STYLE_KINDS, styleKeyFor } from "../src/theme.js";
 
 const EXAMPLES = readdirSync("examples").filter((f) => f.endsWith(".arch"));
 const LIBS = readdirSync("examples/lib")
@@ -108,6 +110,116 @@ describe("T5.2 — formatter never corrupts broken input", () => {
       const out = format(src);
       expect(out).toContain(`dims auto ${mode}`);
       expect(format(out)).toBe(out); // idempotent
+    }
+  });
+});
+
+describe("`style <kind> { … }` round-trips through the formatter", () => {
+  // `plan.styles` stores CANONICAL Theme keys; the grammar only accepts the FRIENDLY
+  // attribute. The formatter therefore has to invert the mapping, and until v1.26.x it did
+  // not — it printed `wallStroke:` where the author wrote `stroke:`, so the SECOND format
+  // emitted an empty block and the plan lost its colours. Both directions of the law are
+  // asserted below, over STYLE_KEYS itself rather than a retyped copy, so a new kind or
+  // attribute is covered the moment it is added to the table.
+
+  /** A minimal plan carrying one `style <kind> { <attr>: <colour> }` block. */
+  const planWith = (kind: string, attr: string, colour: string): string =>
+    `plan "S" {\n  style ${kind} { ${attr}: "${colour}" }\n` +
+    "  wall id=w exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }\n" +
+    '  room id=r at (0,0) size 4000x3000 label "R"\n' +
+    "  door id=d on w at 50% width 900\n" +
+    "  window id=n on w at 20% width 1200\n" +
+    "  column id=c at (2000,1500) size 300x300\n" +
+    "  furniture id=f sink at (1000,1000) size 600x600\n" +
+    "  stair id=s at (2500,200) size 1000x2400 dir up\n" +
+    "  elevator id=e at (300,2000) size 900x900\n" +
+    "  escalator id=x at (3000,200) size 900x2000 dir up\n" +
+    "  dim (0,0)->(4000,0) offset 600\n" +
+    "}\n";
+
+  for (const kind of STYLE_KINDS) {
+    for (const attr of Object.keys(STYLE_KEYS[kind]!)) {
+      it(`style ${kind} { ${attr} } survives format and re-format`, () => {
+        const src = planWith(kind, attr, "#123456");
+
+        // 1. The source itself is clean — no W_UNKNOWN_STYLE_KEY, so the block is real.
+        expect(compile(src, { noCache: true }).diagnostics.map((d) => d.code)).not.toContain("W_UNKNOWN_STYLE_KEY");
+
+        const once = format(src);
+        // 2. The printed key is a FRIENDLY one the parser accepts — never the canonical
+        //    Theme key, and never an empty block.
+        expect(once).toMatch(new RegExp(`style ${kind} {`));
+        const printed = /^\s*(\w+): "#123456"$/m.exec(once)?.[1];
+        expect(printed).toBeTruthy();
+        expect(resolveStyleKey(kind, printed!)).toBe(STYLE_KEYS[kind]![attr]);
+
+        // 3. Re-formatting is a fixpoint (the failure mode was a SECOND format emptying it).
+        expect(format(once)).toBe(once);
+        // 4. …and the round-tripped source still parses clean and renders identically.
+        const after = compile(once, { noCache: true });
+        expect(after.diagnostics.map((d) => d.code)).not.toContain("W_UNKNOWN_STYLE_KEY");
+        expect(after.svg).toBe(compile(src, { noCache: true }).svg);
+      });
+    }
+  }
+
+  it("a style block's colour actually reaches the SVG after two formats", () => {
+    // The strongest form of the bug: it was SILENT. Both the styled and unstyled plans
+    // compiled clean, and only the pixels differed — so pin the ink, not just the text.
+    const src = planWith("wall", "stroke", "#ff00ff");
+    expect(compile(src, { noCache: true }).svg).toContain("#ff00ff");
+    expect(compile(format(format(src)), { noCache: true }).svg).toContain("#ff00ff");
+  });
+
+  it("styleKeyFor is total over STYLE_KEYS and inverts resolveStyleKey", () => {
+    for (const kind of STYLE_KINDS) {
+      for (const [attr, themeKey] of Object.entries(STYLE_KEYS[kind]!)) {
+        const back = styleKeyFor(kind, themeKey);
+        // Total: every reachable Theme key has a friendly spelling for its kind…
+        expect(back, `${kind}.${themeKey} has no friendly key`).not.toBeNull();
+        // …and that spelling resolves to the SAME Theme key. `dim` maps two attributes
+        // onto one key, so this is inversion up to equivalence, not identity of `attr`.
+        expect(resolveStyleKey(kind, back!)).toBe(themeKey);
+        expect(resolveStyleKey(kind, attr)).toBe(themeKey);
+      }
+    }
+  });
+
+  it("styleKeyFor refuses an unknown kind or an unreachable Theme key", () => {
+    expect(styleKeyFor("nope", "wallStroke")).toBeNull();
+    expect(styleKeyFor("constructor", "wallStroke")).toBeNull(); // prototype key
+    expect(styleKeyFor("room", "wallStroke")).toBeNull(); // real key, wrong kind
+    // A FRIENDLY key is not a Theme key. The cast is the assertion, not a workaround: the
+    // parameter is `keyof Theme`, so this call is exactly the one TypeScript forbids — and
+    // the runtime guard still has to refuse it, because `styleKeyFor`'s real callers hand it
+    // keys read out of a `Partial<Theme>` at runtime, where the type is a claim rather than a
+    // check. Removing the cast by widening the parameter would delete the type-level
+    // protection every other caller relies on; removing the case would leave the guard
+    // untested. Keep both.
+    expect(styleKeyFor("dim", "stroke" as keyof Theme)).toBeNull();
+  });
+
+  it("theme { … } round-trips through every friendly alias", () => {
+    // The sibling surface. It is SAFE — `resolveThemeKey` accepts the canonical key the
+    // formatter prints — but that is a property to pin, not to assume, since it is the only
+    // thing keeping `theme` out of the `style` failure above.
+    for (const key of [
+      ...Object.keys(DEFAULT_THEME),
+      "background",
+      "wall",
+      "wallFill",
+      "wallHatch",
+      "room",
+      "furniture",
+      "door",
+      "window",
+    ]) {
+      const v = key === "lineWeight" ? "1.5" : key === "font" ? '"Georgia, serif"' : '"#123456"';
+      const src = `plan "T" {\n  theme { ${key}: ${v} }\n  wall exterior thickness 200 { (0,0) (3000,0) }\n}\n`;
+      const once = format(src);
+      expect(format(once), `theme { ${key} } is not a fixpoint`).toBe(once);
+      expect(compile(once, { noCache: true }).diagnostics.map((d) => d.code)).not.toContain("W_UNKNOWN_THEME_KEY");
+      expect(compile(once, { noCache: true }).svg).toBe(compile(src, { noCache: true }).svg);
     }
   });
 });

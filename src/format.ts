@@ -28,7 +28,7 @@ import type {
 import type { Comment } from "./lexer.js";
 import type { Expr } from "./expr.js";
 import { parse } from "./parser.js";
-import { isNumericThemeKey } from "./theme.js";
+import { isNumericThemeKey, styleKeyFor, type Theme } from "./theme.js";
 import { concat, type Doc, group, hardline, indent, join, line, printDoc } from "./doc.js";
 
 const PRINT_WIDTH = 80;
@@ -317,10 +317,21 @@ function themeDoc(plan: PlanNode): Doc | undefined {
   return concat([`theme${base} {`, indent(concat([hardline, join(hardline, lines)])), hardline, "}"]);
 }
 
+/** `style <kind> { … }`.
+ *
+ *  The keys stored on `plan.styles` are CANONICAL Theme keys (`wallStroke`), but the
+ *  grammar only accepts the FRIENDLY attribute the author wrote (`stroke`) — so every key
+ *  is mapped back through `styleKeyFor` before printing. Printing the canonical key made
+ *  `fmt` non-idempotent in the loudest possible way: the re-parse rejected each key with
+ *  `W_UNKNOWN_STYLE_KEY` and `format(format(src))` emitted an EMPTY block, so a formatted
+ *  file rendered with different colours than the file it was formatted from. A key with no
+ *  friendly spelling for this kind falls back to the raw key — a wrong-looking key a reader
+ *  can still see beats a silently deleted line. */
 function styleDoc(kind: string, st: Record<string, unknown>): Doc {
-  const lines = Object.entries(st).map(
-    ([k, v]) => `${k}: ${isNumericThemeKey(k as never) ? numStr(v as number) : JSON.stringify(v)}`,
-  );
+  const lines = Object.entries(st).map(([k, v]) => {
+    const friendly = styleKeyFor(kind, k as keyof Theme) ?? k;
+    return `${friendly}: ${isNumericThemeKey(k as never) ? numStr(v as number) : JSON.stringify(v)}`;
+  });
   return concat([`style ${kind} {`, indent(concat([hardline, join(hardline, lines)])), hardline, "}"]);
 }
 

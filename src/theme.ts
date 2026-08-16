@@ -171,8 +171,12 @@ export const THEMES: Record<string, Partial<Theme>> = {
  * Per-element style override keys: a friendly attribute (`fill`/`stroke`/`label`)
  * maps, per element kind, to a concrete {@link Theme} key. Drives
  * `style <kind> { fill … }` (T4.4); resolution is element → theme → default.
+ *
+ * Exported (read-only) so the two directions of the mapping — {@link resolveStyleKey} and
+ * {@link styleKeyFor} — can be tested against the table itself rather than against a
+ * retyped copy of it: a new kind or attribute joins the round-trip law for free.
  */
-const STYLE_KEYS: Record<string, Record<string, keyof Theme>> = {
+export const STYLE_KEYS: Readonly<Record<string, Readonly<Record<string, keyof Theme>>>> = {
   room: { fill: "roomFill", label: "roomLabel", area: "areaLabel" },
   furniture: { fill: "furnitureFill", stroke: "furnitureStroke", label: "furnitureLabel" },
   wall: { stroke: "wallStroke", fill: "pocheBase", hatch: "pocheHatch" },
@@ -199,6 +203,40 @@ export function resolveStyleKey(kind: string, key: string): keyof Theme | null {
   if (!owns(STYLE_KEYS, kind)) return null;
   const m = STYLE_KEYS[kind]!;
   return owns(m, key) ? m[key]! : null;
+}
+
+/**
+ * The INVERSE of {@link resolveStyleKey}, derived from {@link STYLE_KEYS} so it cannot
+ * drift from it: Theme key → the friendly attribute a reader (and the parser) knows.
+ *
+ * It exists because `plan.styles` stores the *canonical* Theme key, while the grammar only
+ * accepts the friendly one — so anything re-emitting a `style` block (`arch fmt`) must map
+ * back or it prints source the next parse rejects with `W_UNKNOWN_STYLE_KEY`, silently
+ * dropping the whole block.
+ *
+ * Not injective: `dim: { stroke: "dim", label: "dim" }` sends two attributes to one Theme
+ * key, so the mapping back is many-to-one and **first-declared wins** (`stroke`). That is
+ * lossless in effect — both spellings set the same ink — and `Object.keys` order makes the
+ * choice deterministic.
+ */
+const STYLE_KEYS_INVERSE: Record<string, Partial<Record<keyof Theme, string>>> = (() => {
+  const out: Record<string, Partial<Record<keyof Theme, string>>> = {};
+  for (const [kind, attrs] of Object.entries(STYLE_KEYS)) {
+    const inv: Partial<Record<keyof Theme, string>> = {};
+    for (const [attr, themeKey] of Object.entries(attrs)) {
+      if (inv[themeKey] === undefined) inv[themeKey] = attr; // first declared wins
+    }
+    out[kind] = inv;
+  }
+  return out;
+})();
+
+/** The friendly `style <kind> { … }` attribute for a resolved Theme key, or null if this
+ *  kind exposes no attribute for it. Inverse of {@link resolveStyleKey}; see
+ *  {@link STYLE_KEYS_INVERSE} for the many-to-one tie-break. */
+export function styleKeyFor(kind: string, themeKey: keyof Theme): string | null {
+  if (!Object.hasOwn(STYLE_KEYS_INVERSE, kind)) return null;
+  return STYLE_KEYS_INVERSE[kind]![themeKey] ?? null;
 }
 
 /** Per-element style overrides, by element kind, as resolved Theme partials. */
