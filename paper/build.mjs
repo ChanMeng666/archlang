@@ -144,7 +144,11 @@ function undefinedCiteKeys(dir, tex) {
   // guard written to catch the fourth.
   const log = join(dir, "main.log");
   const logged = existsSync(log)
-    ? [...new Set([...readFileSync(log, "latin1").matchAll(/Citation `([^']+)' (?:on page \d+ )?undefined/g)].map((m) => m[1]))]
+    ? [
+        ...new Set(
+          [...readFileSync(log, "latin1").matchAll(/Citation `([^']+)' (?:on page \d+ )?undefined/g)].map((m) => m[1]),
+        ),
+      ]
     : [];
   if (logged.length > 0) return logged.map((k) => `${k} (LaTeX: undefined)`);
 
