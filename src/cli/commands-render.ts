@@ -292,7 +292,16 @@ export async function cmdWatch(args: Args): Promise<CommandResult> {
   // becoming resident over a path that does not exist would watch nothing forever.
   if (!input || input === "-") return usageError("watch needs a file path");
   await cmdCompile(args);
-  process.stderr.write(`watching ${input} … (Ctrl+C to stop)\n`);
+  // ARM THE WATCHER BEFORE ANNOUNCING IT. `watchFile` takes its baseline `stat` when it
+  // is called, so any save landing between the banner and this line is folded into that
+  // baseline and never produces a change event — silently, and only for the first save.
+  // The banner is what a human (and this project's own end-to-end test) treats as "ready",
+  // so printing it first makes the readiness signal true a moment before it is: edit fast
+  // enough after starting `arch watch` and your first save is ignored.
+  //
+  // Reproduced deterministically by widening the window: a 1.5 s delay inserted here makes
+  // `test/cli-commands.test.ts`'s watch case fail every time, and `test/watch-arming.test.ts`
+  // now pins the ordering so the window cannot be reopened.
   watchFile(resolvePath(input), { interval: 300 }, () => {
     // Nothing reads a re-compile's exit code — the process's own code is decided by the
     // signal that ends it — so the failure is reported and the watch continues.
@@ -300,6 +309,7 @@ export async function cmdWatch(args: Args): Promise<CommandResult> {
       process.stderr.write(`✗ recompile failed: ${e instanceof Error ? e.message : String(e)}\n`);
     });
   });
+  process.stderr.write(`watching ${input} … (Ctrl+C to stop)\n`);
   return RESIDENT;
 }
 

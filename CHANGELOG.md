@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### `arch watch` announced itself before it was watching
+
+v1.26.1 found that `arch watch` had not watched for twenty-five minor releases. It fixed the
+command and left a window in it.
+
+`watchFile` takes its baseline `stat` at the moment it is called, and the readiness banner —
+`watching … (Ctrl+C to stop)` — was written on the line **above** that call. Any save landing in
+between is folded into the baseline and never produces a change event. Silently, and only for the
+very first save: start `arch watch`, save immediately, watch nothing happen once, and then have it
+work forever after. **The readiness signal was true a moment before the thing it announced was.**
+
+Fixed by arming the watcher first and announcing second — one reordering, no behaviour change for
+anyone who does not hit the window.
+
+**How it surfaced is the part worth keeping.** The end-to-end case in `test/cli-commands.test.ts`
+uses that banner as its "ready" signal, so it was *probabilistically* sensitive to the race: it
+went red on one CI leg of one run and green on a re-run, which reads as flakiness. It is not.
+Inserting a 1.5 s delay between the two lines makes it fail every time; moving the delay to the
+other side of the reordered pair makes it pass. That pair of runs is the proof, and neither the
+red run nor the green one was.
+
+`test/watch-arming.test.ts` pins the ordering, and pins that nothing `await`s between the two —
+correct order alone is not enough, since a suspension point reopens the same window. It is a
+structural test and says so: a timing test for a race is a test that reports the race as
+flakiness.
+
 ### The docs site can read the language it documents
 
 ArchLang source rendered in **one flat colour** everywhere the documentation site showed it —
