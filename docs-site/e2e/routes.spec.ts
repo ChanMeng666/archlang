@@ -131,3 +131,113 @@ test.describe("the example gallery", { tag: "@prod" }, () => {
     });
   }
 });
+
+/**
+ * The title-block footer is injected at the `.Layout` root through the `#layout-bottom`
+ * slot, which makes it a SIBLING of `.VPContent` rather than a child — so it inherits
+ * none of VitePress's sidebar compensation and rendered from viewport left:0, underneath
+ * the opaque `position: fixed` sidebar. On /guide that covered the brand mark, the blurb
+ * and the first title-block cells ("DRAWN BY" read as "N BY"). doc-pages.css §12 re-applies
+ * the offset via `.VPContent.has-sidebar ~ .tblock`.
+ *
+ * UNTAGGED: it sets a viewport and measures layout, which is not the "load and look"
+ * shape the @prod nightly subset is for.
+ */
+test.describe("the title-block footer clears the sidebar", () => {
+  for (const width of [1280, 1600]) {
+    test(`at ${width}px no footer content sits under the fixed sidebar`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto("/guide");
+      const sidebar = await page.locator(".VPSidebar").boundingBox();
+      const inner = await page.locator(".tblock__inner").boundingBox();
+      expect(sidebar, "a doc page must have a sidebar at ≥960px").not.toBeNull();
+      expect(inner, "the title block must render on doc pages").not.toBeNull();
+      expect(
+        (inner as { x: number }).x,
+        "the title block starts left of the sidebar's right edge — it is being clipped again",
+      ).toBeGreaterThanOrEqual((sidebar as { x: number; width: number }).x + (sidebar as { width: number }).width);
+    });
+  }
+
+  test("the home page footer stays full-bleed (there is no sidebar to clear)", async ({ page }) => {
+    // The load-bearing half: this is what stops a future "just make it global" edit
+    // from indenting the landing page's title block by a sidebar that is not there.
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/");
+    await expect(page.locator(".VPContent.has-sidebar")).toHaveCount(0);
+    const pad = await page.locator(".tblock").evaluate((el) => getComputedStyle(el).paddingLeft);
+    expect(pad).toBe("24px");
+  });
+
+  test("below 960px the sidebar is a drawer, so the footer keeps its own gutter", async ({ page }) => {
+    await page.setViewportSize({ width: 760, height: 800 });
+    await page.goto("/guide");
+    const pad = await page.locator(".tblock").evaluate((el) => getComputedStyle(el).paddingLeft);
+    expect(pad).toBe("24px");
+  });
+});
+
+/**
+ * The landing page must not scroll sideways.
+ *
+ * Its three bands are pulled full-bleed with `calc(50% - 50vw)` (home.css), which mixes a
+ * container-relative `50%` — scrollbar excluded — with a viewport-relative `50vw` —
+ * scrollbar included. They come out exactly `100vw`, about a scrollbar wider than the
+ * client area, so the page grew a horizontal scrollbar for a strip of pure background.
+ * `.VPContent.is-home { overflow-x: clip }` swallows it.
+ *
+ * ## Why the CONTRACT is asserted and the symptom is only a bonus
+ *
+ * The obvious test — "scrollWidth must not exceed clientWidth" — PASSES WITHOUT THE FIX in
+ * headless Chromium, which uses overlay scrollbars: with no scrollbar there is nothing to
+ * overflow by, `100vw` equals the client width, and the bug is invisible. A gate that
+ * cannot fail is worse than no gate, because the row still reads green. So the real
+ * assertions are the two environment-independent halves of the contract — the wrapper
+ * clips, and the bands are still full-bleed — and the measurement SKIPS LOUDLY when the
+ * browser has no classic scrollbar to reproduce the bug with.
+ *
+ * `clip`, not `hidden`, is the load-bearing half: `overflow-x: hidden` with a visible
+ * y-axis computes `overflow-y` to `auto`, turning the home page into a nested scroll
+ * container — a second scrollbar and a broken `scrollIntoView` for every in-page anchor.
+ *
+ * UNTAGGED: it measures layout at a fixed viewport, not the load-and-look shape @prod is for.
+ */
+test.describe("the landing page does not scroll sideways", () => {
+  test("the home wrapper clips the overhang, and clips rather than hides it", async ({ page }) => {
+    await page.goto("/");
+    const s = await page.locator(".VPContent.is-home").evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { x: cs.overflowX, y: cs.overflowY, scrolls: el.scrollHeight > el.clientHeight + 2 };
+    });
+    expect(s.x, "the full-bleed bands are ~a scrollbar wider than the client area; this clips them").toBe("clip");
+    expect(s.y, "`overflow-x: hidden` would compute this to `auto` — it must stay `clip`").toBe("visible");
+    expect(s.scrolls, "the home wrapper must not be its own scroll container").toBe(false);
+  });
+
+  test("the bands still read as full bleed", async ({ page }) => {
+    // The other half: clipping the overhang must not shrink the bands into the text column.
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/");
+    const client = await page.evaluate(() => document.documentElement.clientWidth);
+    for (const sel of [".sheets", ".facts", ".agents"]) {
+      const box = await page.locator(sel).boundingBox();
+      expect(box, `${sel} must render on the home page`).not.toBeNull();
+      expect((box as { width: number }).width, `${sel} is no longer full-bleed`).toBeGreaterThanOrEqual(client);
+    }
+  });
+
+  for (const width of [1280, 1600]) {
+    test(`no horizontal overflow at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/");
+      const m = await page.evaluate(() => {
+        const de = document.documentElement;
+        return { over: de.scrollWidth - de.clientWidth, bar: window.innerWidth - de.clientWidth };
+      });
+      // Overlay scrollbars (headless Chromium's default) cannot reproduce the bug — say so
+      // instead of passing, so this row never reads as coverage it did not provide.
+      test.skip(m.bar === 0, "this browser uses overlay scrollbars, so 100vw == the client width");
+      expect(m.over, `the home page overflows its client width by ${m.over}px`).toBeLessThanOrEqual(0);
+    });
+  }
+});

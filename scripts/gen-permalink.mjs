@@ -16,6 +16,7 @@
  */
 
 import { readFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import { deflateRawSync, inflateRawSync } from "node:zlib";
 
 const PLAYGROUND = "https://playground.archlang.uk";
@@ -34,9 +35,16 @@ export function decodePlanHash(hash) {
   return inflateRawSync(Buffer.from(hash.replace(/-/g, "+").replace(/_/g, "/"), "base64")).toString("utf8");
 }
 
-const file = process.argv[2];
-if (!file) {
-  process.stderr.write("usage: node scripts/gen-permalink.mjs <example.arch>\n");
-  process.exit(2);
+// The CLI half runs ONLY when this file is the entry point. `docs-site/sync-docs.mjs`
+// IMPORTS `encodePlanHash` to mint the home page's per-example playground links, and
+// without this guard that import would hit the arg check and `process.exit(2)` in the
+// middle of the docs build. `test/share-codec.test.ts` still spawns this script directly
+// — including with no args, asserting the exit-2 usage line — so both paths stay covered.
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  const file = process.argv[2];
+  if (!file) {
+    process.stderr.write("usage: node scripts/gen-permalink.mjs <example.arch>\n");
+    process.exit(2);
+  }
+  process.stdout.write(`${PLAYGROUND}/#z=${encodePlanHash(readFileSync(file, "utf8"))}\n`);
 }
-process.stdout.write(`${PLAYGROUND}/#z=${encodePlanHash(readFileSync(file, "utf8"))}\n`);

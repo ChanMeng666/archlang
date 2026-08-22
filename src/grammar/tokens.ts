@@ -110,6 +110,14 @@ export const KEYWORDS = {
     "faces",
     "clear",
     "dir",
+    // `site { street <compass> [hemisphere <h>] }` — the two clause introducers inside
+    // the v1.25 site block. They belong here, beside `north`, for the same reason: a word
+    // that LEADS a clause is a setting keyword, not one of its values (the values —
+    // `south`/`east`/`west` — are in `enum` below). They shipped in v1.25 documented in
+    // the spec's `site` grammar line but absent from this table, so every renderer drew
+    // them as bare identifiers.
+    "street",
+    "hemisphere",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
   enum: [
@@ -134,6 +142,17 @@ export const KEYWORDS = {
     "bottom-left",
     "bottom-right",
     "auto",
+    // `dims auto <mode>` selectors (AUTO_DIMS_MODES) and the `schedule <subject>` subject
+    // (SCHEDULE_SUBJECTS, whose one value `rooms` is the same word). Values following a
+    // keyword, so they sit here beside `auto` itself rather than in `attribute`. They are
+    // the reason `test/closed-vocabularies.test.ts` exists: both sets have lived in
+    // `src/ast.ts` since v1.20/v1.26 as the parser's accept-list AND the spec's grammar
+    // line, but nothing checked that the highlighting bucket had heard of them — so
+    // `dims auto overall` drew its own mode word as an identifier in every renderer.
+    "overall",
+    "rooms",
+    "walls",
+    "all",
     "cw",
     "ccw",
     "major",

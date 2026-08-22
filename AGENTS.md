@@ -328,10 +328,20 @@ read 0010's carbon/mylar prose as history) and `brand/README.md`.
   One shared attention accent, **REDLINE**, for CTAs and errors only. Body-size plum is `--plum-deep`;
   bare `--plum` (4.1:1) is graphics/≥24px only. A control's only border must be `--src-rule` (3.2:1),
   never the decorative `--src-border` (1.3:1).
-- **One syntax palette, three renderers.** The eight `--syn-*` tokens live in the shared block and feed
-  the playground's CodeMirror (via `scripts/gen-grammars.ts`'s fallbacks), the docs hero's typing pane,
-  and the docs fences (via the custom `archlangLight` Shiki theme in `docs-site/.vitepress/config.ts`).
-  Change a syntax colour in ALL FOUR places, then `npm run gen:grammars`.
+- **One syntax palette, FOUR renderers.** The eight `--syn-*` tokens live in the shared block and
+  feed the playground's CodeMirror (via `scripts/gen-grammars.ts`'s fallbacks), the docs fences (via
+  the custom `archlangLight` Shiki theme in `docs-site/.vitepress/config.ts`), and — through
+  `docs-site/.vitepress/theme/arch-highlight.js` — both the docs hero's typing pane and the
+  `<ArchLive>` editor. Change a syntax colour in ALL FOUR places, then `npm run gen:grammars`.
+  `arch-highlight.js` is **GENERATED** by `gen-grammars.ts` from the same `KEYWORDS`/`RULES`
+  tables as the other two grammars, and deliberately adds no fifth copy of the palette: it emits
+  `ahl-<name>` classes whose suffix IS a token name, coloured once by the `.ahl-*` rules at the
+  foot of `style.css`. It is why ArchLang source is readable anywhere it appears — the ArchLive
+  editor (a coloured `<pre>` under a transparent-text `<textarea>`, both sharing every metric that
+  can move a glyph) is where nearly all of it lives, since every plain `arch` fence becomes one, and
+  it used to render in ONE FLAT COLOUR while `CompileSeam.vue` carried a hand-typed keyword Set that
+  had already drifted behind `src/grammar/tokens.ts`. `test/arch-highlight.test.ts` welds the
+  generator's vocabulary to `KEYWORDS` and its class list to those CSS rules.
 - **Fonts** (self-hosted `@fontsource`, zero CDN): **Archivo Variable** (display) + **Public Sans
   Variable** (body) + **IBM Plex Mono** (code).
 - **Token-lockstep law.** The brand token block is **duplicated byte-identically** in
@@ -357,7 +367,9 @@ npm test             # the whole vitest suite — test/, playground/test/, packa
                      # (the include list is in vitest.config.ts; a test outside it silently never runs)
 npm run cli -- compile examples/studio.arch -o studio.svg   # run the CLI from source via tsx
 npm run bench        # compile a generated ~1000-element plan and report per-stage timings
-npm run gen:grammars # regenerate editor grammars from src/grammar/tokens.ts (CI checks drift)
+npm run gen:grammars # regenerate the THREE grammars from src/grammar/tokens.ts — the TextMate
+                     # grammar, the playground's CodeMirror mode, and the docs site's
+                     # arch-highlight.js tokenizer (CI checks drift)
 npm run gen:errors   # regenerate docs/error-codes.md from the catalog (CI checks drift)
 npm run gen:cli      # regenerate docs/cli-reference.md from src/manifest.ts (CI checks drift)
 npm run gen:spec     # regenerate spec.llm.md from tokens.ts + examples/ (CI checks drift)
@@ -547,7 +559,8 @@ source (.arch)
   and fix it IN the shared module (guard or a provably-safe assertion), never by relaxing the root
   option or adding an exclude.
 - **Don't edit `dist/` or generated files.** `dist/` is a build output. The generated artifacts —
-  editor grammars (`editors/archlang.tmLanguage.json`, `playground/src/arch-language.js`),
+  editor grammars (`editors/archlang.tmLanguage.json`, `playground/src/arch-language.js`,
+  `docs-site/.vitepress/theme/arch-highlight.js`),
   `docs/error-codes.md`, `spec.llm.md`, `llms-full.txt`, `grammars/archlang.gbnf`, the two
   `schemas/*.schema.json`, and **the twelve committed `examples/*.svg`** — each come from a single
   source (`src/grammar/tokens.ts` / `src/error-catalog.ts` / `examples/` / `SKILL.md` + manifest /

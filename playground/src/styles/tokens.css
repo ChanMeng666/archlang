@@ -19,11 +19,14 @@
   --plum: #8052ff; /* brand plum — GRAPHICS & ≥24px text ONLY (4.1:1 on --src-bg) */
   --plum-deep: #6b3ae0; /* plum as body text — 5.5:1 on --src-bg, 5.7:1 on --paper */
 
-  /* SYNTAX — ONE palette for all three code surfaces (playground CodeMirror,
-     docs Shiki fences, the docs hero's typing pane). All ≥4.5:1 on BOTH
-     --src-bg and --src-surface. The same hexes are duplicated as literal
-     fallbacks in scripts/gen-grammars.ts and as the Shiki theme in
-     docs-site/.vitepress/config.ts — keep all four in sync. */
+  /* SYNTAX — ONE palette for every code surface: playground CodeMirror, docs
+     Shiki fences, and the docs site's generated highlighter (the hero's typing
+     pane + the ArchLive editor). All ≥4.5:1 on BOTH --src-bg and --src-surface.
+     The same hexes are duplicated as literal fallbacks in scripts/gen-grammars.ts
+     and as the Shiki theme in docs-site/.vitepress/config.ts — keep all four in
+     sync. The generated highlighter deliberately adds NO fifth copy: it emits
+     `ahl-<name>` classes whose suffix is a token name here, coloured once by the
+     .ahl-* rules at the foot of style.css. */
   --syn-keyword: #6b3ae0; /* = --plum-deep · 5.5:1 / 6.1:1 · bold */
   --syn-typename: #9a4a06; /* 5.4:1 / 6.1:1 · bold */
   --syn-propertyname: #14602a; /* 6.6:1 / 7.4:1 */

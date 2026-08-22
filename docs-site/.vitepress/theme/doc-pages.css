@@ -376,18 +376,24 @@
    (0,2,0) and, once /agents has been visited, repaints the solid CTA's text
    --redline-ink on its own --redline-ink ground: invisible until hovered.
    Excluding beats out-specifying — a `.vp-doc a.agents__btn--solid` rule would
-   only TIE :visited and then depend on home.css loading after this file. */
-.vp-doc a:not(.agents__btn) {
+   only TIE :visited and then depend on home.css loading after this file.
+
+   `.plan-open` is the same argument for the home page's "Open in Playground"
+   controls (the sheet cards' bottom strip, the facts band): they are title-block
+   chrome carrying their own hover, and a prose underline on a full-width control
+   strip reads as a broken rule. One marker class for all of them, excluded once
+   here, rather than a specificity race per component. */
+.vp-doc a:not(.agents__btn):not(.plan-open) {
   color: var(--redline-ink);
   text-decoration: none;
   text-underline-offset: 3px;
   transition: text-decoration-color 0.2s;
 }
-.vp-doc a:not(.agents__btn):hover {
+.vp-doc a:not(.agents__btn):not(.plan-open):hover {
   text-decoration: underline;
   text-decoration-color: var(--redline);
 }
-.vp-doc a:not(.agents__btn):visited {
+.vp-doc a:not(.agents__btn):not(.plan-open):visited {
   color: var(--redline-ink);
 }
 
@@ -524,4 +530,39 @@
    (Badges, custom containers' nested code groups, etc.) */
 .vp-doc .VPBadge {
   border-radius: 3px;
+}
+
+/* ============================================================================
+   12 · THE TITLE-BLOCK FOOTER, CLEAR OF THE SIDEBAR
+   ========================================================================== */
+
+/* TitleBlockFooter.vue is injected at the .Layout ROOT through the
+   `#layout-bottom` slot, so it is a SIBLING of .VPContent rather than a child —
+   and therefore inherits none of VitePress's sidebar compensation. It rendered
+   from viewport left:0, underneath the opaque `position: fixed` sidebar, which
+   covered the brand mark, the blurb and the first title-block cells ("DRAWN BY"
+   read as "N BY").
+
+   The fix is the sibling combinator: .VPContent carries `has-sidebar` exactly
+   when a sidebar is present, so this reaches every doc page and NOTHING on the
+   home page, with no JS and no hydration hazard. The two expressions below are
+   copied from VitePress's own `.VPContent.has-sidebar` rules — matching them
+   (rather than approximating) is what puts the title block's inner column on the
+   same axis as the doc column above it. The trailing `+ 24px` is .tblock's OWN
+   gutter, preserved so the block keeps the same inset from its column that it has
+   from the viewport edge on the home page.
+
+   These are longhands on a 0,3,0 selector, so they beat the `padding` shorthand
+   in TitleBlockFooter.vue's scoped block (0,2,0). Don't "tidy" that shorthand
+   into longhands without re-checking here. */
+@media (min-width: 960px) {
+  .VPContent.has-sidebar ~ .tblock {
+    padding-left: calc(var(--vp-sidebar-width) + 24px);
+  }
+}
+@media (min-width: 1440px) {
+  .VPContent.has-sidebar ~ .tblock {
+    padding-right: calc((100vw - var(--vp-layout-max-width)) / 2 + 24px);
+    padding-left: calc((100vw - var(--vp-layout-max-width)) / 2 + var(--vp-sidebar-width) + 24px);
+  }
 }

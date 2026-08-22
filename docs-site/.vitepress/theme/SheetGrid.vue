@@ -5,12 +5,29 @@
 // dimension line — the drawing detail that says "this is a measured document".
 // (The card__art--poche 45° hatch fallback stays for any future art-less sheet;
 // today every card carries a compiled drawing.)
+//
+// Each drawing is also a DOOR into the playground. `example` names the examples/*.arch
+// the art was compiled from, and EXAMPLE_LINKS (minted at build time by sync-docs.mjs)
+// turns it into a `#z=` permalink opening that exact source with its plan already drawn.
+// One name drives both, so a card cannot show one plan and open another.
+import { EXAMPLE_LINKS } from "./examples-data.js";
+
+/** An example the gallery ships — the keys sync-docs.mjs derives from examples/*.arch.
+ *  Typed as the literal union rather than `string` so a card naming a plan that is not
+ *  in the gallery is a BUILD error, not a card whose link silently reads `undefined`.
+ *  (It is also what makes `EXAMPLE_LINKS[s.example]` legal under the generated module's
+ *  index-signature-free type.) */
+type ExampleName = keyof typeof EXAMPLE_LINKS;
+
 interface Sheet {
   no: string;
   tag: string;
   title: string;
   body: string;
-  art?: string; // /examples/<name>.svg — a real compiled drawing
+  /** The plan this sheet SHOWS. Both the drawing (/examples/<name>.svg) and the
+   *  playground link are derived from it, so a card cannot picture one plan and
+   *  open another. Absent = an art-less sheet, which falls back to wall poché. */
+  example?: ExampleName;
 }
 
 const row1: Sheet[] = [
@@ -20,7 +37,7 @@ const row1: Sheet[] = [
     title: "Deterministic by design",
     body:
       "The same source always compiles to byte-identical output — no clocks, no randomness, no I/O. Every loop, conditional and function is evaluated as the drawing is built. This 49 m² laneway house has no hand-placed opening in it: each one is pinned to a run along a named wall, so the numbers are the drawing.",
-    art: "/examples/laneway-house.svg",
+    example: "laneway-house",
   },
   {
     no: "A-102",
@@ -28,7 +45,7 @@ const row1: Sheet[] = [
     title: "Zero-dependency core",
     body:
       "The default SVG path pulls no runtime dependencies. Optional power — PNG raster, vector PDF, angled-wall geometry — loads lazily and is never required. An 11-room courtyard house, 163 m² around an open middle, compiles with nothing installed.",
-    art: "/examples/courtyard-house.svg",
+    example: "courtyard-house",
   },
   {
     no: "A-103",
@@ -36,7 +53,7 @@ const row1: Sheet[] = [
     title: "Professional CAD output",
     body:
       "Layers, line weights, wall poché, openings that void walls, real fixture symbols, dimensions, a north arrow, scale bar and a title block — plus a room schedule and a legend, both derived. Here: a 50 × 32 m library on A2 at 1:200, its column grid and shelf runs written as for loops rather than coordinates. Export to SVG, DXF, PDF or PNG.",
-    art: "/examples/library.svg",
+    example: "library",
   },
 ];
 
@@ -47,7 +64,7 @@ const row2: Sheet[] = [
     title: "Not only rectangles",
     body:
       "Polygonal rooms measured by exact shoelace area, circular rooms measured as πR², and true arc wall edges — SVG A commands and native DXF arcs, never faceted at any zoom. This pavilion is rectangular nowhere: six trapezoid galleries ring a 28 m² drum.",
-    art: "/examples/hexagon-pavilion.svg",
+    example: "hexagon-pavilion",
   },
   {
     no: "A-105",
@@ -55,7 +72,7 @@ const row2: Sheet[] = [
     title: "Reads its own plans",
     body:
       "describe() returns rooms, areas, adjacency, an access graph and circulation facts; lint() flags habitability problems — image-free, so an agent can verify intent without an image. The legend and hatches below are derived the same way: one row per material actually used.",
-    art: "/examples/materials.svg",
+    example: "materials",
   },
 ];
 </script>
@@ -74,8 +91,13 @@ const row2: Sheet[] = [
 
     <div class="sheets__row sheets__row--3">
       <article v-for="s in row1" :key="s.no" class="card">
-        <div class="card__art" :class="{ 'card__art--poche': !s.art }">
-          <img v-if="s.art" :src="s.art" :alt="`${s.title} — a compiled ArchLang floor plan`" loading="lazy" />
+        <div class="card__art" :class="{ 'card__art--poche': !s.example }">
+          <img
+            v-if="s.example"
+            :src="`/examples/${s.example}.svg`"
+            :alt="`${s.title} — a compiled ArchLang floor plan`"
+            loading="lazy"
+          />
         </div>
         <div class="card__meta">
           <span class="card__no">{{ s.no }}</span>
@@ -83,6 +105,19 @@ const row2: Sheet[] = [
         </div>
         <h3 class="card__title">{{ s.title }}</h3>
         <p class="card__body">{{ s.body }}</p>
+        <!-- The file name is VISIBLE, not just an aria-label: five links reading only
+             "Open in Playground" on one page collide as accessible names, and naming the
+             source is the more useful half anyway. Reads as a title-block row. -->
+        <a
+          v-if="s.example"
+          class="card__open plan-open"
+          :href="EXAMPLE_LINKS[s.example]"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="card__open-file">{{ s.example }}.arch</span>
+          <span class="card__open-cta">Open in Playground&nbsp;↗</span>
+        </a>
       </article>
     </div>
 
@@ -94,8 +129,13 @@ const row2: Sheet[] = [
 
     <div class="sheets__row sheets__row--2">
       <article v-for="s in row2" :key="s.no" class="card">
-        <div class="card__art" :class="{ 'card__art--poche': !s.art }">
-          <img v-if="s.art" :src="s.art" :alt="`${s.title} — a compiled ArchLang floor plan`" loading="lazy" />
+        <div class="card__art" :class="{ 'card__art--poche': !s.example }">
+          <img
+            v-if="s.example"
+            :src="`/examples/${s.example}.svg`"
+            :alt="`${s.title} — a compiled ArchLang floor plan`"
+            loading="lazy"
+          />
         </div>
         <div class="card__meta">
           <span class="card__no">{{ s.no }}</span>
@@ -103,6 +143,19 @@ const row2: Sheet[] = [
         </div>
         <h3 class="card__title">{{ s.title }}</h3>
         <p class="card__body">{{ s.body }}</p>
+        <!-- The file name is VISIBLE, not just an aria-label: five links reading only
+             "Open in Playground" on one page collide as accessible names, and naming the
+             source is the more useful half anyway. Reads as a title-block row. -->
+        <a
+          v-if="s.example"
+          class="card__open plan-open"
+          :href="EXAMPLE_LINKS[s.example]"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="card__open-file">{{ s.example }}.arch</span>
+          <span class="card__open-cta">Open in Playground&nbsp;↗</span>
+        </a>
       </article>
     </div>
    </div>
@@ -254,5 +307,57 @@ const row2: Sheet[] = [
   font-size: 0.92rem;
   line-height: 1.6;
   color: var(--ink-muted);
+}
+
+/* The way into the playground, drawn as the sheet's bottom rule — same shape as the
+   hero sheet's Replay row, so a card reads as a drawing with a control strip rather
+   than a marketing tile. `margin-top: auto` pins it to the bottom of the flex column
+   so a short card and a long one line their strips up across the row. */
+.card__open {
+  margin-top: auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 16px;
+  border-top: 1px solid var(--hairline);
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 88;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  text-decoration: none;
+  transition: color 0.2s, background 0.2s;
+}
+/* The source file, spelled as a file: mono, mixed case, no tracking — the one
+   place on the card that names the thing the drawing was compiled from. */
+.card__open-file {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card__open-cta {
+  flex: none;
+  color: var(--redline-ink);
+  white-space: nowrap;
+}
+.card__open:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--redline) 7%, transparent);
+}
+.card__open:focus-visible {
+  outline: 2px solid var(--redline);
+  outline-offset: -2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card__open {
+    transition: none;
+  }
 }
 </style>

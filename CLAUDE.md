@@ -37,7 +37,8 @@ than memory.
   is shared and must never be mutated downstream — clone before mutating (a `repair()` in-place edit
   made output history-dependent; fixed in `51a47ee`).
 - **Don't hand-edit generated files.** `dist/`, `editors/*.tmLanguage.json`,
-  `playground/src/arch-language.js`, `docs/error-codes.md`, `docs/cli-reference.md`, `spec.llm.md`,
+  `playground/src/arch-language.js`, `docs-site/.vitepress/theme/arch-highlight.js`,
+  `docs/error-codes.md`, `docs/cli-reference.md`, `spec.llm.md`,
   `llms-full.txt`, `schemas/plan.schema.json`, `schemas/intent.schema.json`,
   `grammars/archlang.gbnf`, and the twelve committed `examples/*.svg` the README embeds (the
   `README_SVGS` list in `scripts/gen-example-svgs.ts`) are generated — edit the source

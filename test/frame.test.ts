@@ -15,6 +15,8 @@ import {
   type Frame,
 } from "../src/frame.js";
 import { compile } from "../src/index.js";
+import { arcFromChord, arcPointAt } from "../src/geometry/arc.js";
+import type { Arc } from "../src/geometry/arc.js";
 import type { Point } from "../src/ast.js";
 import type { WallSegment } from "../src/geometry.js";
 import type { RColumn, RDim, RDoor, RFurniture, RRoom, RWall, ResolvedElement } from "../src/ir.js";
@@ -32,12 +34,17 @@ import type { RColumn, RDim, RDoor, RFurniture, RRoom, RWall, ResolvedElement } 
  * (a mirrored wing is still a wing). Three of its exports — `inverse`, `isIdentity` and
  * `tp` — have no caller in `src/` at all, so they had literally nothing checking them.
  *
- * **There is no epsilon anywhere in this file, deliberately.** A frame is a 2×2 signed-
- * permutation matrix (entries in `{-1,0,1}`, `|det| = 1`) plus a translation: no trig, no
- * float introduced, so every round trip below is asserted bit-exact. The single
- * concession is `nz()`, which folds `-0` to `0` before comparing — `0 * -1` and `-0 / 1`
- * are how IEEE writes zero after a reflection, and `-0 === 0` is already true; that is a
- * sign convention, not a tolerance.
+ * **There is no epsilon in this file, deliberately — with one bounded exception, named
+ * below.** A frame is a 2×2 signed-permutation matrix (entries in `{-1,0,1}`, `|det| = 1`)
+ * plus a translation: no trig, no float introduced, so every round trip below is asserted
+ * bit-exact. The single standing concession is `nz()`, which folds `-0` to `0` before
+ * comparing — `0 * -1` and `-0 / 1` are how IEEE writes zero after a reflection, and
+ * `-0 === 0` is already true; that is a sign convention, not a tolerance. The exception is
+ * the `transformArc` section at the foot: an `Arc` carries `start` as an ANGLE, so
+ * sampling a point along a curve goes through `cos`/`sin` no matter how exact the frame
+ * is. Everything a frame's integer arithmetic actually touches — the centre, the radius,
+ * both endpoints, and the sign and magnitude of the sweep — is still asserted exactly
+ * there; `NEAR` appears only on the two laws that walk the curve.
  */
 
 /** Fold `-0` to `0`. NOT a tolerance — `-0 === 0` in IEEE; this only fixes the printed diff. */
@@ -679,5 +686,138 @@ describe("transformElement — an instance's resolved element crossing into plan
       }),
       { numRuns: 400 },
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// transformArc — the same crossing, for a CURVED edge
+// ---------------------------------------------------------------------------
+
+/**
+ * Millimetres of slack on the two laws below that walk the curve through `cos`/`sin` —
+ * see the epsilon note in the file header. The geometry here is at the 10³ mm scale, so
+ * this is ~1e-12 relative, twelve orders below `fmt()`'s 0.005 mm output quantum. It is
+ * not a fudge factor: the mutations these tests exist to catch miss by hundreds of mm.
+ */
+const NEAR = 1e-9;
+
+/** All twelve frames a `place` can spell, each labelled with the words that spell it. */
+const PLACEMENTS: Array<{ label: string; f: Frame }> = ROTATIONS.flatMap((rotate) =>
+  MIRRORS.map((mirror) => ({
+    label: `rotate ${rotate}${mirror ? ` mirror ${mirror}` : ""}`,
+    f: F({ rotate, ...(mirror ? { mirror } : {}) }),
+  })),
+);
+
+/**
+ * A deliberately LOPSIDED arc: neither endpoint sits on an axis through the centre, and
+ * `|dx| !== |dy|` at both ends. A symmetric fixture would let a swapped `atan2` pass by
+ * accident on the very quantity this section exists to check.
+ */
+const ARC: Arc = arcFromChord({ x: 0, y: 0 }, { x: 3000, y: 1000 }, 2500, "ccw", false)!;
+
+const curvedWall = (): RWall => ({ ...wall(), points: [ARC.a, ARC.b], arcs: [ARC], openings: [] });
+const arcOf = (f: Frame): Arc => (transformElement(f, curvedWall()) as RWall).arcs![0]!;
+
+describe("transformArc — a placed component's curved edge", () => {
+  it("keeps the circle: same radius, and centre and endpoints ride the frame exactly", () => {
+    for (const { label, f } of PLACEMENTS) {
+      const out = arcOf(f);
+      // Exact, not near: all three are a plain `tp()` of a point, so the frame's integer
+      // arithmetic is the only thing that has touched them.
+      expect(out.r, label).toBe(ARC.r);
+      expect(pt(out.center), label).toEqual(pt(tp(f, ARC.center)));
+      expect(pt(out.a), label).toEqual(pt(tp(f, ARC.a)));
+      expect(pt(out.b), label).toEqual(pt(tp(f, ARC.b)));
+    }
+  });
+
+  it("reverses the rotational sense under a reflection and preserves it under a turn", () => {
+    for (const { label, f } of PLACEMENTS) {
+      // A rotation preserves orientation and a reflection reverses it, so a mirrored
+      // clockwise curve reads counter-clockwise. Negation is exact, hence `toBe`.
+      expect(arcOf(f).sweep, label).toBe(det(f) < 0 ? -ARC.sweep : ARC.sweep);
+      expect(Math.abs(arcOf(f).sweep), label).toBe(Math.abs(ARC.sweep));
+    }
+  });
+
+  it("re-derives `start` as the angle of the TRANSFORMED endpoint about the TRANSFORMED centre", () => {
+    for (const { label, f } of PLACEMENTS) {
+      const out = arcOf(f);
+      // The non-tautological form of the claim: whatever `start` is, walking `r` out of
+      // the centre along it has to arrive at `a`. Reading `start` back with the same
+      // `atan2` the implementation used would assert nothing at all.
+      expect(out.center.x + out.r * Math.cos(out.start), label).toBeCloseTo(out.a.x, 9);
+      expect(out.center.y + out.r * Math.sin(out.start), label).toBeCloseTo(out.a.y, 9);
+    }
+  });
+
+  it("carries the curve POINTWISE: every point of the image arc is the image of that point", () => {
+    // The whole law in one line: `arcPointAt(t) ∘ transform === transform ∘ arcPointAt(t)`,
+    // which is what "a frame is an isometry" MEANS for a curve. Endpoints alone cannot say
+    // it — the two arcs of a circle through the same pair of points differ only in which
+    // way round they go, which is exactly what a reflection changes and exactly what a
+    // wrong `start` destroys.
+    for (const { label, f } of PLACEMENTS) {
+      const out = arcOf(f);
+      for (let i = 0; i <= 10; i++) {
+        const t = i / 10;
+        const want = tp(f, arcPointAt(ARC, t));
+        const got = arcPointAt(out, t);
+        expect(Math.hypot(got.x - want.x, got.y - want.y), `${label} @ t=${t}`).toBeLessThan(NEAR);
+      }
+    }
+  });
+});
+
+/**
+ * Two placements of one semicircular bay, the second mirrored about the x axis. Round
+ * numbers on purpose: the component's curve bulges 2000 mm to the LEFT of its own origin,
+ * so the copy placed at x = 10000 and mirrored must bulge 2000 mm to the RIGHT of that,
+ * and the two drawn faces of the 200 mm wall sit at r ∓ 100, i.e. 1900 and 2100.
+ */
+const TWIN_BAY = `plan "P" {
+  units mm
+  component bay() {
+    wall id=face exterior thickness 200 { (0,0) arc (0,4000) radius 2000 }
+  }
+  place bay() as plain at (0,0)
+  place bay() as flip at (10000,0) mirror x
+}`;
+
+describe("a mirrored bay is DRAWN as the mirror image, not as a curve that merely shares its ends", () => {
+  const faces = compile(TWIN_BAY, { noCache: true })
+    .scene!.nodes.filter((n) => n.layer === "wallFace" && n.prim.t === "arc")
+    .map((n) => n.prim as Extract<typeof n.prim, { t: "arc" }>);
+  const of = (cx: number) => faces.filter((p) => p.center.x === cx);
+  /** Every x a drawn face passes through: the piece ends, which include the apex. */
+  const xs = (cx: number) => of(cx).flatMap((p) => [p.start.x, p.end.x]);
+
+  it("emits each 180° face as two ≤120° pieces, per instance and per wall face", () => {
+    expect(faces).toHaveLength(8); // 2 instances × 2 faces (r ± 100) × 2 pieces
+    expect(of(0)).toHaveLength(4);
+    expect(of(10_000)).toHaveLength(4);
+  });
+
+  it("bulges the mirrored bay AWAY from the plan, exactly as far as the original bulges towards it", () => {
+    // The original spans x ∈ [−2100, 0], so its mirror image about x = 10000 must span
+    // [10000, 12100]. Keep the sweep and it spans [7900, 10000] instead — the same two
+    // endpoints, the same radius, and a bay curving into the building.
+    expect(Math.min(...xs(0))).toBe(-2100);
+    expect(Math.max(...xs(0))).toBe(0);
+    expect(Math.min(...xs(10_000))).toBe(10_000);
+    expect(Math.max(...xs(10_000))).toBe(12_100);
+    // The inner face lands 200 mm inside the outer one on both copies.
+    expect(xs(0)).toContain(-1900);
+    expect(xs(10_000)).toContain(11_900);
+  });
+
+  it("flips the SVG sweep flag on the mirrored copy — the flag every backend serializes", () => {
+    // `sweep: 1` is clockwise as drawn (see the `src/geometry/arc.ts` header). The bay is
+    // authored counter-clockwise, so the plain copy is 0 throughout and the mirrored copy
+    // 1 throughout; a curve reversed in the IR but not in the primitive would render as
+    // the other arc of its own chord.
+    expect(of(0).map((p) => p.sweep)).toEqual([0, 0, 0, 0]);
+    expect(of(10_000).map((p) => p.sweep)).toEqual([1, 1, 1, 1]);
   });
 });

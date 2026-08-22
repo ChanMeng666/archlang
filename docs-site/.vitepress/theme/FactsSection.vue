@@ -6,14 +6,19 @@
 // verify intent without ever looking at a picture. Compiled at setup (compile is
 // isomorphic) so the drawing and the schedule are in the SSR HTML.
 import { compile, describe } from "archlang";
-import { EXAMPLES } from "./examples-data.js";
+import { EXAMPLES, EXAMPLE_LINKS } from "./examples-data.js";
 
 // The plan this band reads its own facts from — the canonical examples/garden-loft.arch,
 // synced into examples-data.js by sync-docs.mjs, so the drawing and the schedule beside
 // it can never drift from the file the CLI and the docs gallery ship. It exists to be
 // exactly this: the smallest plan still worth DESCRIBING (three rooms, so the derived
 // table fits in a band beside the drawing) with a real fit-out behind every room.
-const SRC: string = EXAMPLES["garden-loft"];
+const PLAN = "garden-loft";
+const SRC: string = EXAMPLES[PLAN];
+// The same plan, as a playground permalink minted at build time by sync-docs.mjs —
+// so a reader who has just seen what describe() says about this drawing can open the
+// source that produced BOTH. One name (PLAN) drives the drawing, the facts and the link.
+const PLAN_LINK: string = EXAMPLE_LINKS[PLAN];
 
 const svg = compile(SRC, { noCache: true }).svg;
 // NB no `noCache` here: `describe()` takes `DescribeOptions` (plugins/world/tolerance)
@@ -45,6 +50,10 @@ const totals = facts.totals;
         <figcaption class="facts__plan-cap">{{ facts.plan.toUpperCase() }} · A-201 · SCALE {{ facts.scale ?? "—" }}</figcaption>
         <!-- eslint-disable-next-line vue/no-v-html -->
         <div class="facts__plan-svg" v-html="svg"></div>
+        <a class="facts__open plan-open" :href="PLAN_LINK" target="_blank" rel="noopener">
+          <span class="facts__open-file">{{ PLAN }}.arch</span>
+          <span class="facts__open-cta">Open in Playground&nbsp;&#8599;</span>
+        </a>
       </figure>
 
       <!-- The schedule it derives from the same source -->
@@ -172,6 +181,52 @@ const totals = facts.totals;
   text-transform: uppercase;
   color: var(--ink-muted);
 }
+/* The figure's bottom rule, matching the caption above it — the drawing sits between
+   two title-block strips, and the lower one is the way into the source. Same shape as
+   SheetGrid's .card__open; both carry `.plan-open`, which doc-pages.css §7 excludes
+   from the prose-link colour/underline rules. */
+.facts__open {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 14px;
+  border-top: 1px solid var(--hairline);
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 88;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  text-decoration: none;
+  transition: color 0.2s, background 0.2s;
+}
+.facts__open-file {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.facts__open-cta {
+  flex: none;
+  color: var(--redline-ink);
+  white-space: nowrap;
+}
+.facts__open:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--redline) 7%, transparent);
+}
+.facts__open:focus-visible {
+  outline: 2px solid var(--redline);
+  outline-offset: -2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .facts__open {
+    transition: none;
+  }
+}
+
 .facts__plan-svg {
   display: flex;
   align-items: center;

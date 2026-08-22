@@ -21,7 +21,14 @@ const ROOT = resolve(HERE, "..");
  * `scripts/gen-*.ts` `writeFileSync`). Order is load-bearing: spec before llms.
  */
 const GENERATORS: readonly { script: string; artifacts: readonly string[] }[] = [
-  { script: "gen:grammars", artifacts: ["editors/archlang.tmLanguage.json", "playground/src/arch-language.js"] },
+  {
+    script: "gen:grammars",
+    artifacts: [
+      "editors/archlang.tmLanguage.json",
+      "playground/src/arch-language.js",
+      "docs-site/.vitepress/theme/arch-highlight.js",
+    ],
+  },
   { script: "gen:errors", artifacts: ["docs/error-codes.md"] },
   { script: "gen:cli", artifacts: ["docs/cli-reference.md"] },
   { script: "gen:spec", artifacts: ["spec.llm.md"] },

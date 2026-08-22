@@ -3,6 +3,14 @@
 // cells (PROJECT / DRAWN BY / LICENSE / ISSUED / SHEET) plus an ECOSYSTEM cell of
 // family links. Rendered via the layout-bottom slot. Lives in the SHEET world, so
 // it reads on paper through the shared tokens.
+//
+// LAYOUT NB: the layout-bottom slot puts this at the .Layout ROOT, a SIBLING of
+// .VPContent — so it gets none of VitePress's sidebar compensation and would
+// render under the opaque fixed sidebar on every doc page. Its left/right padding
+// on a sidebar page is therefore owned by doc-pages.css §12
+// (`.VPContent.has-sidebar ~ .tblock`), NOT by the `padding` shorthand below.
+// Changing that shorthand to longhands would out-specify nothing, but changing
+// the 24px here without changing the calc there breaks the alignment.
 const ECOSYSTEM = [
   { href: "https://playground.archlang.uk", label: "Playground ↗" },
   { href: "https://archcanvas.chanmeng.org", label: "ArchCanvas ↗" },

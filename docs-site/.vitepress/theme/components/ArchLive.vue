@@ -2,9 +2,16 @@
 // A compact, live-editable ArchLang example: an editor bound to the zero-dep core
 // `compile()` → inline SVG. SSR-safe (compile is isomorphic) so no-JS visitors still
 // get the rendered plan in static HTML; hydration makes it editable. Kept
-// dependency-light on purpose — a styled <textarea>, no CodeMirror.
+// dependency-light on purpose — a styled <textarea> over a generated highlighter, no
+// CodeMirror. The source pane is TWO layers in register: a coloured <pre> underneath and
+// a transparent-text <textarea> on top, sharing every metric that can move a glyph. That
+// is what makes the code readable AND editable without shipping an editor.
 import { ref, computed, onMounted, useSlots } from "vue";
 import { compile, describe } from "archlang";
+// The tokenizer is GENERATED from src/grammar/tokens.ts by scripts/gen-grammars.ts, from
+// the same tables as the VS Code grammar and the playground's CodeMirror mode — so this
+// widget can never colour a keyword the parser doesn't have, or miss one it does.
+import { highlightArch } from "../arch-highlight.js";
 
 // `src` — plain-text source (explicit `<ArchLive src="…"/>` usage).
 // `b64` — base64(UTF-8) source, injected by the ```arch fence rule in
@@ -50,6 +57,25 @@ const facts = computed(() => {
     return null;
   }
 });
+
+// ── The colour layer ─────────────────────────────────────────────────────────
+// The <pre> under the textarea. The trailing newline keeps its last line box in step
+// with the textarea's, which always reserves a line after a final break.
+const highlighted = computed(() => `${highlightArch(source.value)}
+`);
+
+const preEl = ref<HTMLElement | null>(null);
+const taEl = ref<HTMLTextAreaElement | null>(null);
+
+/** The <pre> has `overflow: hidden` and is scrolled from the textarea it sits under. */
+function syncScroll(): void {
+  const pre = preEl.value;
+  const ta = taEl.value;
+  if (pre && ta) {
+    pre.scrollTop = ta.scrollTop;
+    pre.scrollLeft = ta.scrollLeft;
+  }
+}
 
 // base64url(deflate-raw(utf8)) — the playground's `#z=` share scheme (duplicated
 // here so docs stay self-contained; ~byte-identical to playground/src/share.js).
@@ -97,12 +123,22 @@ async function openInPlayground() {
   <div v-else class="archlive">
     <div class="archlive-editor">
       <span class="archlive-tab">SOURCE / .ARCH</span>
-      <textarea
-        v-model="source"
-        :rows="rows ?? 12"
-        spellcheck="false"
-        aria-label="ArchLang source (editable)"
-      ></textarea>
+      <div class="archlive-code">
+        <!-- The colour layer. aria-hidden because the textarea beside it exposes the
+             same text — a screen reader must not read the source twice. The v-html
+             goes on <code>, not <pre>, so no HTML-parsing rule can eat a leading
+             newline. Everything highlightArch emits is escaped. -->
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <pre ref="preEl" class="archlive-hl" aria-hidden="true"><code v-html="highlighted"></code></pre>
+        <textarea
+          ref="taEl"
+          v-model="source"
+          :rows="rows ?? 12"
+          spellcheck="false"
+          aria-label="ArchLang source (editable)"
+          @scroll="syncScroll"
+        ></textarea>
+      </div>
     </div>
     <div class="archlive-preview">
       <!-- eslint-disable-next-line vue/no-v-html -->
@@ -150,7 +186,7 @@ async function openInPlayground() {
   position: absolute;
   top: 0;
   left: 0;
-  z-index: 1;
+  z-index: 2; /* above BOTH layers of .archlive-code (the textarea is z-index 1) */
   padding: 3px 10px 4px;
   font-family: var(--font-display);
   font-variation-settings: "wdth" 85;
@@ -165,23 +201,76 @@ async function openInPlayground() {
   border-radius: 0 0 3px 0;
   pointer-events: none;
 }
-.archlive-editor textarea {
-  width: 100%;
-  height: 100%;
-  min-height: 220px;
-  border: 0;
+/* ── The two-layer source pane ──────────────────────────────────────────────
+   A coloured <pre> underneath, a transparent-text <textarea> on top. The
+   TEXTAREA stays in flow so `:rows` still sizes the pane (examples.md asks for
+   up to 30); the <pre> is absolutely positioned behind it. The inverse — the
+   arrangement most "highlighted textarea" recipes use — would collapse every
+   :rows to min-height, because an absolutely-positioned box contributes no
+   intrinsic height.
+
+   EVERY metric below that can move a glyph is declared on BOTH boxes. A one-
+   pixel divergence in padding, size, leading or wrap behaviour shows up as
+   coloured text sliding out from under the caret. */
+.archlive-code {
+  position: relative;
+  /* The grabber moves off the textarea onto the WRAPPER, so a drag can never
+     leave the two layers at different heights. `resize` needs a non-visible
+     overflow to apply. */
   resize: vertical;
-  padding: 30px 14px 12px;
+  overflow: hidden;
+}
+.archlive-code > pre,
+.archlive-code > textarea {
+  display: block;
+  width: 100%;
+  margin: 0;
+  border: 0;
+  padding: 30px 14px 12px; /* 30px top clears the absolutely-placed SOURCE/.ARCH chip */
   font-family: var(--font-mono);
   font-size: 12.5px;
   line-height: 1.6;
-  color: var(--src-fg);
+  letter-spacing: normal;
+  font-variant-ligatures: none;
+  tab-size: 2;
+  /* Identical wrapping, or a soft break lands on a different word in each layer.
+     These are the textarea's UA defaults, restated on both so no engine disagrees. */
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
   background: transparent;
+}
+.archlive-code > pre {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden; /* scrolled from the textarea's @scroll */
+  pointer-events: none;
+  color: var(--src-fg); /* the ground colour for anything the tokenizer leaves plain */
+}
+.archlive-code > textarea {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  min-height: 220px;
+  resize: none;
+  color: transparent;
+  -webkit-text-fill-color: transparent; /* Safari honours this over `color` */
   caret-color: var(--plum-deep);
   outline: none;
+  /* No visible scrollbar: one would narrow the textarea's CONTENT box and re-wrap
+     its text under a <pre> that has none — the classic overlay misregistration.
+     CompileSeam's .code-pre hides its scrollbar for the same reason. The pane is a
+     focusable textarea, so wheel and keyboard still scroll it. */
+  overflow: auto;
+  scrollbar-width: none;
 }
-.archlive-editor textarea::selection { background: color-mix(in srgb, var(--plum) 22%, transparent); }
-.archlive-editor textarea:focus-visible { box-shadow: inset 0 0 0 1px var(--plum); }
+.archlive-code > textarea::-webkit-scrollbar { display: none; }
+.archlive-code > textarea::selection {
+  background: color-mix(in srgb, var(--plum) 22%, transparent);
+  -webkit-text-fill-color: transparent; /* stay invisible while selected, so the <pre> shows through */
+}
+.archlive-code > textarea:focus-visible { box-shadow: inset 0 0 0 1px var(--plum); }
 
 /* ── SHEET world: paper preview pane on a fine drafting grid ────────────── */
 .archlive-preview { min-width: 0; display: flex; flex-direction: column; background: var(--paper); }

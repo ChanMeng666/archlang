@@ -10,7 +10,7 @@
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { renderPlayground, renderTmLanguage } from "../scripts/gen-grammars.js";
+import { renderHighlighter, renderPlayground, renderTmLanguage } from "../scripts/gen-grammars.js";
 import { KEYWORDS, STATEMENT_STARTS } from "../src/grammar/tokens.js";
 
 describe("T5.4 — editor grammars are in sync with the token source", () => {
@@ -22,6 +22,11 @@ describe("T5.4 — editor grammars are in sync with the token source", () => {
   it("playground/src/arch-language.js has no drift", () => {
     const committed = readFileSync("playground/src/arch-language.js", "utf8").replace(/\r\n/g, "\n");
     expect(renderPlayground()).toBe(committed);
+  });
+
+  it("docs-site/.vitepress/theme/arch-highlight.js has no drift", () => {
+    const committed = readFileSync("docs-site/.vitepress/theme/arch-highlight.js", "utf8").replace(/\r\n/g, "\n");
+    expect(renderHighlighter()).toBe(committed);
   });
 });
 

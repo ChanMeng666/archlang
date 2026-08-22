@@ -48,12 +48,36 @@
    The section components render inside `.vp-doc.container` (max-width + padding).
    Pull them out to the full viewport width with VitePress's own `--vp-offset`
    (the same var it exposes for full-bleed home blocks); each section keeps its
-   own inner max-width + gutters. */
+   own inner max-width + gutters.
+
+   NB `--vp-offset` is never actually SET, so the fallback is the live value. That
+   fallback mixes two different widths: `50%` resolves against the container, which
+   excludes the vertical scrollbar, while `50vw` includes it. The bands therefore
+   come out exactly `100vw` wide — about a scrollbar wider than the client area —
+   and the landing page grew a horizontal scrollbar for a strip of BACKGROUND (the
+   inner content is `max-width`-capped and centred, so nothing readable is out
+   there). Clipped on the home wrapper below rather than "fixed" here, because
+   there is no unit for "50% of the client width", and every JS-free approximation
+   of one is worse than clipping a band of paper. */
 .vp-doc .sheets,
 .vp-doc .facts,
 .vp-doc .agents {
   margin-left: var(--vp-offset, calc(50% - 50vw));
   margin-right: var(--vp-offset, calc(50% - 50vw));
+}
+
+/* The other half of the rule above: swallow the sub-scrollbar overhang so the
+   landing page never scrolls sideways.
+
+   `clip`, NOT `hidden`, and the difference is load-bearing: `overflow-x: hidden`
+   with a visible y-axis computes `overflow-y` to `auto`, which would make this a
+   nested scroll container — a second scrollbar, a broken `scroll-into-view` for
+   every in-page anchor, and sticky positioning inside it pinned to the wrong box.
+   `overflow-x: clip` leaves the y-axis alone and creates no scroll container.
+   Browsers without `clip` (pre-Safari 16) simply keep today's behaviour, which is
+   the right way for this to degrade. */
+.VPContent.is-home {
+  overflow-x: clip;
 }
 
 /* ═══ "Built for agents" band — mode-aware ════════════════════════════════

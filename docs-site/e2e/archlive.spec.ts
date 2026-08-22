@@ -185,3 +185,76 @@ test.describe("the v-html preview cannot be turned into an injection vector", ()
     expect(problems.pageErrors).toEqual([]);
   });
 });
+
+/**
+ * The editor paints ArchLang.
+ *
+ * The source pane is two layers: a coloured <pre> (from the GENERATED tokenizer,
+ * .vitepress/theme/arch-highlight.js) and a transparent-text <textarea> over it. Before
+ * this, ArchLive rendered a bare textarea in one flat colour — which is where nearly all
+ * the ArchLang on the site lives, since every plain ```arch fence becomes one of these.
+ * It was even handed the Shiki-highlighted <pre> as an SSR fallback and threw it away.
+ *
+ * The register assertions are the ones that matter: if the two layers disagree by even a
+ * pixel on padding, size, leading or wrapping, coloured text slides out from under the
+ * caret and the pane becomes unusable. UNTAGGED — it types, and the @prod subset stays
+ * read-only.
+ */
+test.describe("the editor paints ArchLang, in register with the caret", () => {
+  test("the coloured layer carries real tokens and shares the textarea's content box", async ({ page }) => {
+    await page.goto(EXPLICIT_PAGE);
+    const code = page.locator(".archlive-code").first();
+    await expect(code.locator(".ahl-keyword").first()).toBeVisible(); // `plan`
+    await expect(code.locator(".ahl-typename").first()).toBeVisible(); // `wall` / `room`
+    await expect(code.locator(".ahl-string").first()).toBeVisible();
+    await expect(code.locator(".ahl-comment").first()).toBeVisible();
+
+    const d = await code.evaluate((el) => {
+      const pre = el.querySelector("pre") as HTMLElement;
+      const ta = el.querySelector("textarea") as HTMLTextAreaElement;
+      const a = pre.getBoundingClientRect();
+      const b = ta.getBoundingClientRect();
+      const cs = (n: Element, p: string) => getComputedStyle(n).getPropertyValue(p);
+      return {
+        dx: a.left - b.left,
+        dy: a.top - b.top,
+        dw: a.width - b.width,
+        dsh: pre.scrollHeight - ta.scrollHeight,
+        // The text itself must be invisible, or it doubles the coloured layer.
+        taFill: cs(ta, "-webkit-text-fill-color"),
+        mismatched: [
+          "font-family",
+          "font-size",
+          "line-height",
+          "padding",
+          "white-space",
+          "overflow-wrap",
+          "word-break",
+          "tab-size",
+          "letter-spacing",
+        ].filter((p) => cs(pre, p) !== cs(ta, p)),
+      };
+    });
+    expect(d.mismatched, "these properties differ between the two layers — glyphs will drift apart").toEqual([]);
+    expect(Math.abs(d.dx)).toBeLessThan(0.5);
+    expect(Math.abs(d.dy)).toBeLessThan(0.5);
+    expect(Math.abs(d.dw)).toBeLessThan(0.5);
+    expect(Math.abs(d.dsh), "the layers wrap to different heights").toBeLessThanOrEqual(24);
+    expect(d.taFill).toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
+  });
+
+  test("colour tracks an edit, and hostile source stays text", async ({ page }) => {
+    const problems = watchForProblems(page);
+    await page.goto(EXPLICIT_PAGE);
+    await setArchLiveSource(page, 0, 'plan "Recolour" {\n  units mm\n  # a fresh comment\n}');
+    await expect(page.locator(".archlive-code .ahl-comment").first()).toHaveText("# a fresh comment");
+
+    // The <pre> is rendered with v-html, so the tokenizer's escaping is load-bearing.
+    await setArchLiveSource(page, 0, 'plan "X" {\n  units mm\n  # <img src=x onerror="window.__hl=1">\n}');
+    const pre = page.locator(".archlive-code pre").first();
+    await expect(pre.locator("img")).toHaveCount(0);
+    expect(await page.evaluate(() => (window as unknown as { __hl?: number }).__hl)).toBeUndefined();
+    await expect(pre).toContainText("<img src=x");
+    expect(problems.pageErrors).toEqual([]);
+  });
+});

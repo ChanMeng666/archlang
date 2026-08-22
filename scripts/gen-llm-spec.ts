@@ -151,6 +151,20 @@ export const SETTING_GRAMMAR: Record<string, string> = {
  * lead with"; {@link renderLlmSpec} throws if it and `SETTING_GRAMMAR` do not exactly
  * cover `KEYWORDS.attribute`.
  */
+/*
+ * Also what the `## Keyword reference` section's **Element clauses** bullet prints.
+ *
+ * That bullet used to print `KEYWORDS.attribute` whole, which re-listed the nine
+ * `SETTING_GRAMMAR` keys — `units`, `grid`, `paper`, `scale`, `north`, `dims`,
+ * `accTitle`, `accDescr` — as bare words a few lines below their own CONCRETE,
+ * compilable grammar line. That is the same redundancy the section header already
+ * excludes elements for, and it is PROVABLE rather than a judgement call: the partition
+ * guard in `renderLlmSpec` asserts `SETTING_GRAMMAR ⊎ CLAUSE_ATTRIBUTES` is exactly
+ * `KEYWORDS.attribute`, so every attribute is still on the page — the settings with
+ * their syntax, the clauses in this bullet. Nothing became undocumented; ~100 chars of
+ * a hard, per-request token budget came back (see test/llm-spec-drift.test.ts's cap,
+ * whose standing instruction is TRIM DUPLICATION BEFORE RAISING).
+ */
 export const CLAUSE_ATTRIBUTES: readonly string[] = [
   "material",
   "angle",
@@ -198,6 +212,12 @@ export const CLAUSE_ATTRIBUTES: readonly string[] = [
   "faces",
   "clear",
   "dir",
+  // Clauses of the `site { … }` block rather than of an element line, but the same
+  // argument applies: both are already taught, concretely, by `STATEMENT_GRAMMAR.site`,
+  // so neither needs a line of its own — it only has to be named here so the partition
+  // against `KEYWORDS.attribute` stays exhaustive.
+  "street",
+  "hemisphere",
 ];
 
 /**
@@ -573,10 +593,10 @@ ${elementLines}
 
 ## Keyword reference
 
-(Elements are fully specced above; these are the rest.)
+(Elements and plan settings are fully specced above; these are the rest.)
 
 - **Settings / control:** ${bullet(KEYWORDS.control)}
-- **Attributes:** ${bullet(KEYWORDS.attribute)}
+- **Element clauses:** ${bullet(CLAUSE_ATTRIBUTES)}
 - **Enums / values:** ${bullet(KEYWORDS.enum)}
 
 ## CLI loop (how an agent drives it)

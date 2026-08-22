@@ -10,6 +10,7 @@
       "!editors/archlang.tmLanguage.json",
       "!editors/archlang.language-configuration.json",
       "!playground/src/arch-language.js",
+      "!docs-site/.vitepress/theme/arch-highlight.js",
       "!spec.llm.md",
       "!docs/error-codes.md",
       "!schemas/plan.schema.json",
