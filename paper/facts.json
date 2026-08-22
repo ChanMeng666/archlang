@@ -8,11 +8,11 @@
   "errorCodesWarning": 42,
   "exportFormats": 5,
   "exportFormatsZeroDep": 3,
-  "keywordsAttribute": 56,
+  "keywordsAttribute": 54,
   "keywordsControl": 20,
   "keywordsElement": 11,
-  "keywordsEnum": 55,
-  "keywordsTotal": 142,
+  "keywordsEnum": 51,
+  "keywordsTotal": 136,
   "lintRules": 21,
   "operators": 21
 }
