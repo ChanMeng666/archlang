@@ -29,6 +29,11 @@ const GENERATORS: readonly { script: string; artifacts: readonly string[] }[] = 
   { script: "gen:gbnf", artifacts: ["grammars/archlang.gbnf"] },
   { script: "gen:plan-schema", artifacts: ["schemas/plan.schema.json"] },
   { script: "gen:intent-schema", artifacts: ["schemas/intent.schema.json"] },
+  // The papers cite ONLY these numbers, and they are interpolated from the compiler's own
+  // tables rather than retyped into LaTeX — which is the remedy those papers argue for,
+  // applied to themselves. Scale facts (LOC, commits, test counts) are deliberately NOT
+  // here: they move on every commit, so gating them would train blind regeneration.
+  { script: "gen:paper-facts", artifacts: ["paper/facts.json", "paper/facts.tex"] },
   // Imported, never retyped: the curated README drawing list lives in the generator, so a
   // name added there is drift-gated here with no second edit (and cannot be forgotten).
   { script: "gen:example-svgs", artifacts: README_SVGS.map(svgPath) },
