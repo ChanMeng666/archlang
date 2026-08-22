@@ -778,9 +778,35 @@ of Beer et al.~\cite{beer1997vacuity} --- perturb the subject and require the gu
 notice --- applied to a property test, and it is the only evidence we accept for a guard in this
 paper.
 
-\%% Tail sections of the flagship, drafted separately to avoid editing main.tex
-%% concurrently with the evidence-sections agent. Merge into main.tex replacing the
-%% matching TODO stubs.
+\subsection{A fifth self-description, found while writing this}\label{sec:fifth}
+
+The four artifacts above were checked in one pass and are a closed set. A fifth surfaced during
+the writing of this paper, in the same repository, and is reported because it was not selected
+retrospectively --- and because it inverts the expected direction.
+
+A documentation site rendered the language's own source in one flat colour, which is nearly
+everywhere it appears: every unmarked code fence on that site becomes a live editor. The cause was
+a hand-typed keyword set of \factHandTypedWords{} words inside a component, carrying a comment
+asking the next person to keep it in step with the compiler's table. This is the retyped generator
+of Section~\ref{sec:mechanism} without even a gate over it, and its failure mode is the one that
+makes this class hard: a highlighter that omits a word does not fail --- it draws that word as an
+identifier, which reads as a typo rather than as a defect.
+
+The expected repair is to derive it, and that is what was done. **What was not expected is that the
+hand-typed copy was more correct than the source it was supposed to track.** Two words, \texttt{street}
+and \texttt{hemisphere}, were present in the hand copy and absent from the compiler's keyword
+table, where they had been missing since \factUntabledSince{} --- accepted by the parser and
+documented in the specification's own grammar line for that construct, and therefore drawn as bare
+identifiers by every renderer for \factUntabledReleases{} releases. Deriving the artifact would
+have \emph{regressed} those two words. What found them was the guard shipped alongside the
+derivation: an assertion that every member of every closed value set also appears in the keyword
+table. The table went from \factKeywordsBefore{} entries to \factKeywordsAfter{}.
+
+The lesson refines Section~\ref{sec:remedy}'s remedy rather than confirming it. Deriving a
+description does not make it correct; it makes its correctness \emph{equal to the source's}. That
+is a gain only because the act of deriving forces the source's incompleteness into view --- here,
+a hand copy scoped by its own comment to ``everything one example file uses'' had been quietly
+carrying two facts the source of truth did not.
 
 \section{Remedy: Provable Non-Vacuity}\label{sec:remedy}
 
@@ -799,6 +825,14 @@ sets and an \texttt{assertVocabRendered} guard that throws when a member of a se
 rendering in the artifact being generated. This converts the generator from retyped to
 derived for exactly the facts most likely to grow, and it fails loudly when a new value
 is added without a home.
+
+Its second effect is the one we did not anticipate, and it is why this mechanism is listed
+first. Deriving a description does not make it correct --- it makes its correctness equal to
+the source's, which is an improvement only if the source is complete. What the guard actually
+buys is that incompleteness stops being invisible: in Section~\ref{sec:fifth} it is what
+revealed that a hand-typed copy had been carrying two values the source of truth lacked, so
+that deriving the copy would have lost them. A single-source rule with no completeness check
+moves the defect rather than removing it.
 
 \textbf{Compute the expected value rather than write it down.} The GBNF agreement corpus
 of Section~\ref{sec:depth} pairs each of \factGbnfCorpus{} plans with a verdict taken

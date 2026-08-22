@@ -77,6 +77,24 @@ derived-artifact ecosystem already relies on**. We arrived at it after violating
 the finding, not an embarrassment: *the invariant is universal in practice, stated nowhere,
 and unenforced by the very gate meant to protect it.*
 
+### The refinement, found 2026-08-22 while writing (§V-C, and it changes the remedy)
+
+A fifth self-description surfaced in the same repository during the writing, and it **inverts the
+expected direction**: a hand-typed keyword set of 131 words in a documentation-site component was
+**more correct than the compiler's own table**. Two words, `street` and `hemisphere`, were in the
+hand copy and missing from the source, where they had been absent since v1.25.0 while the parser
+accepted them and the spec documented them — so **deriving the artifact would have lost them**.
+They were found by the completeness assertion shipped alongside the derivation.
+
+The consequence for §VI: *deriving a description does not make it correct; it makes its
+correctness equal to the source's.* The gain is that the source's incompleteness stops being
+invisible. **A single-source rule with no completeness check moves the defect rather than removing
+it** — which is a sharper statement of the remedy than "derive, don't retype", and it is ours
+because DRY does not say it.
+
+Report it as *not retrospectively selected*: the four instances in §V were a closed set checked in
+one pass; this one arrived afterwards, in work that had nothing to do with the paper.
+
 ### The second line, which replaces "generated vs hand-written"
 
 Do not make authorship load-bearing — Pact's contract is *generated*, and Rust can pull a

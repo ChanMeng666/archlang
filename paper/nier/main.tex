@@ -243,6 +243,20 @@ requirement rather than a practice: every guard must be provably non-vacuous, by
 fault, by an expected value computed rather than written down, or by an anti-vacuity
 assertion that a fixture is really faulty before it is healed.
 
+One result from that third strand refines the remedy rather than confirming it, and it arrived
+while this paper was being written. A documentation site rendered the language in one flat
+colour because a component carried a hand-typed keyword set of \factHandTypedWords{} words with
+a comment asking the next person to keep it in step with the compiler's table --- a retyped
+generator with no gate over it at all, whose failure mode is that a missing word is drawn as an
+identifier rather than reported. The repair is to derive it. **What was not expected is that the
+hand copy was more correct than its source**: two words present in the copy were absent from the
+compiler's table, where they had been missing since \factUntabledSince{} while the parser
+accepted them and the specification documented them, so deriving the artifact would have
+\emph{lost} them. They were found by the completeness assertion shipped alongside the
+derivation. Deriving a description does not make it correct; it makes its correctness equal to
+the source's, and the value of the exercise is that it forces the source's incompleteness into
+view. A single-source rule with no completeness check moves the defect rather than removing it.
+
 The open question is a detector. The reflexive gate cannot check its own precondition, but
 the precondition is concrete --- \emph{does this generator's output depend on a fact a
 human typed into it?} --- and for closed value sets it is mechanisable. For prose that
