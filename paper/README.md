@@ -56,8 +56,20 @@ count from the compiler's own tables: `src/error-catalog.ts`, `src/grammar/token
 `src/lint/rules/index.ts`, `src/manifest.ts`. `npm run check:drift` fails if one moves without
 regeneration. **Papers cite these only through their `\fact*` macros — never by retyping a
 digit into a `.tex` file.** That is not fastidiousness; it is the remedy the flagship paper
-argues for, applied to the paper. It earned itself immediately: the audit that preceded this
-directory reported "136 keywords" while its own component counts sum to **142**.
+argues for, applied to the paper.
+
+It earned itself twice, and the second time is the better story. The audit that preceded this
+directory reported "136 keywords" alongside component counts of 20 control, 11 element, 56
+attribute and 55 enum — which sum to **142**. Neither number was a miscount. A change adding
+`street` and `hemisphere` to the keyword table was in flight at the time, and the audit sampled
+the file twice: the total is true of the committed source, the components are true of the
+working tree, and the description as a whole is true of neither. Then the generator built here
+made the same mistake in the other direction — it was run against that same uncommitted working
+tree, so the committed `facts.json` claimed 142 while the committed source said 136, and the
+drift gate this directory added failed CI on the first push. A hand-written description of a
+system can be wrong about which *version* of the system it describes, and that is not a
+carelessness problem; it is what happens whenever a description is taken by hand from a moving
+subject.
 
 **`scale-snapshot.json` — scale, generated, dated, NOT drift-gated.**
 Written on purpose before a submission:
