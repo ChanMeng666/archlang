@@ -1,0 +1,991 @@
+{
+  "experiment": "npm download counts for the ArchLang packages",
+  "fetchedAt": "2026-08-21T15:07:50.864Z",
+  "source": "https://api.npmjs.org/downloads (public npm registry download-counts API)",
+  "rangeRequested": {
+    "from": "2026-05-23",
+    "to": "2026-08-20",
+    "days": 90
+  },
+  "caveat": "npm download counts include CI installs, mirrors and bots and are NOT unique users. For a package that publishes often, a large share of the total follows each release. Cite the monthly total only together with the daily shape below (zero-days and top-5 share).",
+  "packages": {
+    "@chanmeng666/archlang": {
+      "lastMonthPoint": {
+        "downloads": 2357,
+        "start": "2026-07-21",
+        "end": "2026-08-19"
+      },
+      "range": {
+        "start": "2026-05-23",
+        "end": "2026-08-20",
+        "downloads": [
+          {
+            "downloads": 0,
+            "day": "2026-05-23"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-24"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-25"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-26"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-27"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-28"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-29"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-30"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-31"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-01"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-02"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-03"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-04"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-05"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-06"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-07"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-08"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-09"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-10"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-11"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-12"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-13"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-14"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-15"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-16"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-17"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-18"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-19"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-20"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-21"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-22"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-23"
+          },
+          {
+            "downloads": 71,
+            "day": "2026-06-24"
+          },
+          {
+            "downloads": 926,
+            "day": "2026-06-25"
+          },
+          {
+            "downloads": 690,
+            "day": "2026-06-26"
+          },
+          {
+            "downloads": 406,
+            "day": "2026-06-27"
+          },
+          {
+            "downloads": 460,
+            "day": "2026-06-28"
+          },
+          {
+            "downloads": 38,
+            "day": "2026-06-29"
+          },
+          {
+            "downloads": 980,
+            "day": "2026-06-30"
+          },
+          {
+            "downloads": 391,
+            "day": "2026-07-01"
+          },
+          {
+            "downloads": 224,
+            "day": "2026-07-02"
+          },
+          {
+            "downloads": 210,
+            "day": "2026-07-03"
+          },
+          {
+            "downloads": 33,
+            "day": "2026-07-04"
+          },
+          {
+            "downloads": 55,
+            "day": "2026-07-05"
+          },
+          {
+            "downloads": 296,
+            "day": "2026-07-06"
+          },
+          {
+            "downloads": 32,
+            "day": "2026-07-07"
+          },
+          {
+            "downloads": 53,
+            "day": "2026-07-08"
+          },
+          {
+            "downloads": 50,
+            "day": "2026-07-09"
+          },
+          {
+            "downloads": 162,
+            "day": "2026-07-10"
+          },
+          {
+            "downloads": 31,
+            "day": "2026-07-11"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-07-12"
+          },
+          {
+            "downloads": 178,
+            "day": "2026-07-13"
+          },
+          {
+            "downloads": 347,
+            "day": "2026-07-14"
+          },
+          {
+            "downloads": 58,
+            "day": "2026-07-15"
+          },
+          {
+            "downloads": 15,
+            "day": "2026-07-16"
+          },
+          {
+            "downloads": 48,
+            "day": "2026-07-17"
+          },
+          {
+            "downloads": 13,
+            "day": "2026-07-18"
+          },
+          {
+            "downloads": 16,
+            "day": "2026-07-19"
+          },
+          {
+            "downloads": 13,
+            "day": "2026-07-20"
+          },
+          {
+            "downloads": 13,
+            "day": "2026-07-21"
+          },
+          {
+            "downloads": 31,
+            "day": "2026-07-22"
+          },
+          {
+            "downloads": 65,
+            "day": "2026-07-23"
+          },
+          {
+            "downloads": 26,
+            "day": "2026-07-24"
+          },
+          {
+            "downloads": 492,
+            "day": "2026-07-25"
+          },
+          {
+            "downloads": 499,
+            "day": "2026-07-26"
+          },
+          {
+            "downloads": 45,
+            "day": "2026-07-27"
+          },
+          {
+            "downloads": 68,
+            "day": "2026-07-28"
+          },
+          {
+            "downloads": 23,
+            "day": "2026-07-29"
+          },
+          {
+            "downloads": 7,
+            "day": "2026-07-30"
+          },
+          {
+            "downloads": 28,
+            "day": "2026-07-31"
+          },
+          {
+            "downloads": 38,
+            "day": "2026-08-01"
+          },
+          {
+            "downloads": 24,
+            "day": "2026-08-02"
+          },
+          {
+            "downloads": 17,
+            "day": "2026-08-03"
+          },
+          {
+            "downloads": 16,
+            "day": "2026-08-04"
+          },
+          {
+            "downloads": 10,
+            "day": "2026-08-05"
+          },
+          {
+            "downloads": 10,
+            "day": "2026-08-06"
+          },
+          {
+            "downloads": 50,
+            "day": "2026-08-07"
+          },
+          {
+            "downloads": 21,
+            "day": "2026-08-08"
+          },
+          {
+            "downloads": 24,
+            "day": "2026-08-09"
+          },
+          {
+            "downloads": 85,
+            "day": "2026-08-10"
+          },
+          {
+            "downloads": 228,
+            "day": "2026-08-11"
+          },
+          {
+            "downloads": 287,
+            "day": "2026-08-12"
+          },
+          {
+            "downloads": 63,
+            "day": "2026-08-13"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-08-14"
+          },
+          {
+            "downloads": 29,
+            "day": "2026-08-15"
+          },
+          {
+            "downloads": 27,
+            "day": "2026-08-16"
+          },
+          {
+            "downloads": 27,
+            "day": "2026-08-17"
+          },
+          {
+            "downloads": 40,
+            "day": "2026-08-18"
+          },
+          {
+            "downloads": 64,
+            "day": "2026-08-19"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-08-20"
+          }
+        ]
+      },
+      "shape": {
+        "days": 90,
+        "total": 8153,
+        "zeroDays": 35,
+        "max": 980,
+        "median": 19,
+        "mean": 90.58888888888889,
+        "top5Total": 3587,
+        "top5Share": 0.43996075064393475,
+        "topDays": [
+          {
+            "day": "2026-06-30",
+            "downloads": 980,
+            "releaseTags": [
+              "v1.4.0",
+              "v1.5.0",
+              "v1.6.0",
+              "v1.7.0",
+              "v1.7.1"
+            ]
+          },
+          {
+            "day": "2026-06-25",
+            "downloads": 926,
+            "releaseTags": [
+              "v0.2.0",
+              "v0.3.0",
+              "v0.4.0",
+              "v0.5.0",
+              "v0.6.0",
+              "v0.7.0"
+            ]
+          },
+          {
+            "day": "2026-06-26",
+            "downloads": 690,
+            "releaseTags": [
+              "v0.10.0",
+              "v0.11.0",
+              "v0.8.0",
+              "v0.9.0",
+              "v1.0.0",
+              "v1.0.1"
+            ]
+          },
+          {
+            "day": "2026-07-26",
+            "downloads": 499,
+            "releaseTags": [
+              "v1.20.0",
+              "v1.21.0",
+              "v1.22.0",
+              "v1.23.0",
+              "v1.24.0"
+            ]
+          },
+          {
+            "day": "2026-07-25",
+            "downloads": 492,
+            "releaseTags": [
+              "v1.19.0"
+            ]
+          }
+        ]
+      },
+      "sinceFirstDownload": {
+        "firstDay": "2026-06-24",
+        "daysBeforeFirstDownload": 32,
+        "shape": {
+          "days": 58,
+          "total": 8153,
+          "zeroDays": 3,
+          "max": 980,
+          "median": 42.5,
+          "mean": 140.56896551724137,
+          "top5Total": 3587,
+          "top5Share": 0.43996075064393475,
+          "topDays": [
+            {
+              "day": "2026-06-30",
+              "downloads": 980,
+              "releaseTags": [
+                "v1.4.0",
+                "v1.5.0",
+                "v1.6.0",
+                "v1.7.0",
+                "v1.7.1"
+              ]
+            },
+            {
+              "day": "2026-06-25",
+              "downloads": 926,
+              "releaseTags": [
+                "v0.2.0",
+                "v0.3.0",
+                "v0.4.0",
+                "v0.5.0",
+                "v0.6.0",
+                "v0.7.0"
+              ]
+            },
+            {
+              "day": "2026-06-26",
+              "downloads": 690,
+              "releaseTags": [
+                "v0.10.0",
+                "v0.11.0",
+                "v0.8.0",
+                "v0.9.0",
+                "v1.0.0",
+                "v1.0.1"
+              ]
+            },
+            {
+              "day": "2026-07-26",
+              "downloads": 499,
+              "releaseTags": [
+                "v1.20.0",
+                "v1.21.0",
+                "v1.22.0",
+                "v1.23.0",
+                "v1.24.0"
+              ]
+            },
+            {
+              "day": "2026-07-25",
+              "downloads": 492,
+              "releaseTags": [
+                "v1.19.0"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "@chanmeng666/archlang-mcp": {
+      "lastMonthPoint": {
+        "downloads": 1181,
+        "start": "2026-07-21",
+        "end": "2026-08-19"
+      },
+      "range": {
+        "start": "2026-05-23",
+        "end": "2026-08-20",
+        "downloads": [
+          {
+            "downloads": 0,
+            "day": "2026-05-23"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-24"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-25"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-26"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-27"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-28"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-29"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-30"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-05-31"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-01"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-02"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-03"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-04"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-05"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-06"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-07"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-08"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-09"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-10"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-11"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-12"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-13"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-14"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-15"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-16"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-17"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-18"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-19"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-20"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-21"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-22"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-23"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-24"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-25"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-26"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-27"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-28"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-29"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-06-30"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-07-01"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-07-02"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-07-03"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-07-04"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-07-05"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-07-06"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-07-07"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-07-08"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-07-09"
+          },
+          {
+            "downloads": 217,
+            "day": "2026-07-10"
+          },
+          {
+            "downloads": 34,
+            "day": "2026-07-11"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-07-12"
+          },
+          {
+            "downloads": 133,
+            "day": "2026-07-13"
+          },
+          {
+            "downloads": 42,
+            "day": "2026-07-14"
+          },
+          {
+            "downloads": 11,
+            "day": "2026-07-15"
+          },
+          {
+            "downloads": 11,
+            "day": "2026-07-16"
+          },
+          {
+            "downloads": 15,
+            "day": "2026-07-17"
+          },
+          {
+            "downloads": 12,
+            "day": "2026-07-18"
+          },
+          {
+            "downloads": 7,
+            "day": "2026-07-19"
+          },
+          {
+            "downloads": 11,
+            "day": "2026-07-20"
+          },
+          {
+            "downloads": 5,
+            "day": "2026-07-21"
+          },
+          {
+            "downloads": 11,
+            "day": "2026-07-22"
+          },
+          {
+            "downloads": 10,
+            "day": "2026-07-23"
+          },
+          {
+            "downloads": 6,
+            "day": "2026-07-24"
+          },
+          {
+            "downloads": 164,
+            "day": "2026-07-25"
+          },
+          {
+            "downloads": 170,
+            "day": "2026-07-26"
+          },
+          {
+            "downloads": 20,
+            "day": "2026-07-27"
+          },
+          {
+            "downloads": 20,
+            "day": "2026-07-28"
+          },
+          {
+            "downloads": 37,
+            "day": "2026-07-29"
+          },
+          {
+            "downloads": 12,
+            "day": "2026-07-30"
+          },
+          {
+            "downloads": 16,
+            "day": "2026-07-31"
+          },
+          {
+            "downloads": 16,
+            "day": "2026-08-01"
+          },
+          {
+            "downloads": 17,
+            "day": "2026-08-02"
+          },
+          {
+            "downloads": 13,
+            "day": "2026-08-03"
+          },
+          {
+            "downloads": 14,
+            "day": "2026-08-04"
+          },
+          {
+            "downloads": 11,
+            "day": "2026-08-05"
+          },
+          {
+            "downloads": 11,
+            "day": "2026-08-06"
+          },
+          {
+            "downloads": 27,
+            "day": "2026-08-07"
+          },
+          {
+            "downloads": 22,
+            "day": "2026-08-08"
+          },
+          {
+            "downloads": 33,
+            "day": "2026-08-09"
+          },
+          {
+            "downloads": 50,
+            "day": "2026-08-10"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-08-11"
+          },
+          {
+            "downloads": 281,
+            "day": "2026-08-12"
+          },
+          {
+            "downloads": 83,
+            "day": "2026-08-13"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-08-14"
+          },
+          {
+            "downloads": 20,
+            "day": "2026-08-15"
+          },
+          {
+            "downloads": 25,
+            "day": "2026-08-16"
+          },
+          {
+            "downloads": 27,
+            "day": "2026-08-17"
+          },
+          {
+            "downloads": 29,
+            "day": "2026-08-18"
+          },
+          {
+            "downloads": 31,
+            "day": "2026-08-19"
+          },
+          {
+            "downloads": 0,
+            "day": "2026-08-20"
+          }
+        ]
+      },
+      "shape": {
+        "days": 90,
+        "total": 1674,
+        "zeroDays": 52,
+        "max": 281,
+        "median": 0,
+        "mean": 18.6,
+        "top5Total": 965,
+        "top5Share": 0.5764635603345281,
+        "topDays": [
+          {
+            "day": "2026-08-12",
+            "downloads": 281,
+            "releaseTags": [
+              "v1.26.0"
+            ]
+          },
+          {
+            "day": "2026-07-10",
+            "downloads": 217,
+            "releaseTags": []
+          },
+          {
+            "day": "2026-07-26",
+            "downloads": 170,
+            "releaseTags": [
+              "v1.20.0",
+              "v1.21.0",
+              "v1.22.0",
+              "v1.23.0",
+              "v1.24.0"
+            ]
+          },
+          {
+            "day": "2026-07-25",
+            "downloads": 164,
+            "releaseTags": [
+              "v1.19.0"
+            ]
+          },
+          {
+            "day": "2026-07-13",
+            "downloads": 133,
+            "releaseTags": []
+          }
+        ]
+      },
+      "sinceFirstDownload": {
+        "firstDay": "2026-07-10",
+        "daysBeforeFirstDownload": 48,
+        "shape": {
+          "days": 42,
+          "total": 1674,
+          "zeroDays": 4,
+          "max": 281,
+          "median": 16.5,
+          "mean": 39.857142857142854,
+          "top5Total": 965,
+          "top5Share": 0.5764635603345281,
+          "topDays": [
+            {
+              "day": "2026-08-12",
+              "downloads": 281,
+              "releaseTags": [
+                "v1.26.0"
+              ]
+            },
+            {
+              "day": "2026-07-10",
+              "downloads": 217,
+              "releaseTags": []
+            },
+            {
+              "day": "2026-07-26",
+              "downloads": 170,
+              "releaseTags": [
+                "v1.20.0",
+                "v1.21.0",
+                "v1.22.0",
+                "v1.23.0",
+                "v1.24.0"
+              ]
+            },
+            {
+              "day": "2026-07-25",
+              "downloads": 164,
+              "releaseTags": [
+                "v1.19.0"
+              ]
+            },
+            {
+              "day": "2026-07-13",
+              "downloads": 133,
+              "releaseTags": []
+            }
+          ]
+        }
+      }
+    }
+  }
+}

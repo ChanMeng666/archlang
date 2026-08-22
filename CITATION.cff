@@ -1,0 +1,53 @@
+# Citation metadata for ArchLang.
+#
+# Read by three things, which is why it is worth keeping accurate: GitHub renders a
+# "Cite this repository" panel from it, the Zenodo/GitHub integration takes a release's
+# archive metadata from it, and Zotero imports it directly.
+#
+# NOT drift-gated, unlike everything under `paper/` — the `version` and `date-released`
+# fields below are release facts, and they move when a release moves. Update them in the
+# release checklist (CONTRIBUTING.md), not by regeneration.
+cff-version: 1.2.0
+message: "If you use ArchLang in academic work, please cite it as below."
+title: ArchLang
+abstract: >-
+  A declarative language that compiles floor-plan source to professional SVG, DXF, PDF, PNG
+  and ASCII drawings. The compiler is pure, synchronous, deterministic and has no runtime
+  dependencies, and its diagnostic surface is designed as a protocol for language-model
+  authors: catalogued codes carrying byte spans, machine-applicable fixes with declared
+  applicability tiers, and a semantic description channel that lets a text-only agent verify
+  what it drew without rasterising anything.
+type: software
+authors:
+  - family-names: Meng
+    given-names: Chan
+    email: chanmeng.dev@gmail.com
+    # TODO before the Zenodo deposit: add `orcid: "https://orcid.org/0000-...."`.
+    # Zenodo validates creators against ORCID, and it is the cheapest thing an
+    # unaffiliated author can do for attribution. See paper/ZENODO.md.
+version: 1.26.1
+date-released: "2026-08-13"
+license: MIT
+repository-code: "https://github.com/ChanMeng666/archlang"
+url: "https://archlang.uk"
+repository-artifact: "https://www.npmjs.com/package/@chanmeng666/archlang"
+keywords:
+  - domain-specific language
+  - compiler
+  - floor plan
+  - architecture
+  - determinism
+  - LLM code generation
+  - program repair
+  - SVG
+# TODO after the first Zenodo deposit: record both DOIs here. The concept DOI resolves to
+# the latest version and is the one to cite; the version DOI names one archived release.
+# See paper/ZENODO.md for the deposit sequence.
+#
+# identifiers:
+#   - description: The concept DOI for all archived versions of ArchLang
+#     type: doi
+#     value: "10.5281/zenodo.XXXXXXX"
+#   - description: The archived snapshot of ArchLang v1.26.1
+#     type: doi
+#     value: "10.5281/zenodo.YYYYYYY"

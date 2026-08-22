@@ -1,0 +1,469 @@
+{
+  "$comment": "Enumerated, hand-authored source mutations for paper/experiments/mutation/run.mjs. Each `find` MUST occur exactly once in `file` (run.mjs asserts this). `kind` is the classic mutation-operator family; `note` says what the mutant breaks.",
+  "suites": {
+    "src/lint/measure.ts": {
+      "primary": ["test/lint-measure.test.ts"],
+      "secondary": [
+        "test/lint.test.ts",
+        "test/lint-deficits.test.ts",
+        "test/circulation-lint.test.ts",
+        "test/furniture-lint.test.ts"
+      ]
+    },
+    "src/frame.ts": {
+      "primary": ["test/frame.test.ts"],
+      "secondary": ["test/place.test.ts", "test/levels.test.ts"]
+    }
+  },
+  "mutants": [
+    {
+      "id": "measure-01",
+      "file": "src/lint/measure.ts",
+      "kind": "call-replacement",
+      "note": "mm() truncates instead of rounding",
+      "find": "export const mm = (n: number): string => fmt2(Math.round(n));",
+      "replace": "export const mm = (n: number): string => fmt2(Math.floor(n));"
+    },
+    {
+      "id": "measure-02",
+      "file": "src/lint/measure.ts",
+      "kind": "call-removal",
+      "note": "mm() drops the whole-millimetre rounding entirely",
+      "find": "export const mm = (n: number): string => fmt2(Math.round(n));",
+      "replace": "export const mm = (n: number): string => fmt2(n);"
+    },
+    {
+      "id": "measure-03",
+      "file": "src/lint/measure.ts",
+      "kind": "clamp-removal",
+      "note": "shortfall() can go negative",
+      "find": "export const shortfall = (required: number, available: number): number => Math.max(0, required - available);",
+      "replace": "export const shortfall = (required: number, available: number): number => required - available;"
+    },
+    {
+      "id": "measure-04",
+      "file": "src/lint/measure.ts",
+      "kind": "operand-swap",
+      "note": "shortfall() subtracts the wrong way round",
+      "find": "Math.max(0, required - available)",
+      "replace": "Math.max(0, available - required)"
+    },
+    {
+      "id": "measure-05",
+      "file": "src/lint/measure.ts",
+      "kind": "field-swap",
+      "note": "distPointToRect clamps x against the rect's HEIGHT",
+      "find": "const nx = Math.min(Math.max(p.x, r.x), r.x + r.w);",
+      "replace": "const nx = Math.min(Math.max(p.x, r.x), r.x + r.h);"
+    },
+    {
+      "id": "measure-06",
+      "file": "src/lint/measure.ts",
+      "kind": "field-swap",
+      "note": "distPointToRect clamps y against the rect's WIDTH",
+      "find": "const ny = Math.min(Math.max(p.y, r.y), r.y + r.h);",
+      "replace": "const ny = Math.min(Math.max(p.y, r.y), r.y + r.w);"
+    },
+    {
+      "id": "measure-07",
+      "file": "src/lint/measure.ts",
+      "kind": "metric-replacement",
+      "note": "distPointToRect returns Manhattan distance instead of Euclidean",
+      "find": "return Math.hypot(p.x - nx, p.y - ny);",
+      "replace": "return Math.abs(p.x - nx) + Math.abs(p.y - ny);"
+    },
+    {
+      "id": "measure-08",
+      "file": "src/lint/measure.ts",
+      "kind": "boundary",
+      "note": "approachGapMm: a blocker ending exactly ON the door line now takes the far branch",
+      "find": "  if (hi <= line) return Math.min(line - hi, depth);",
+      "replace": "  if (hi < line) return Math.min(line - hi, depth);"
+    },
+    {
+      "id": "measure-09",
+      "file": "src/lint/measure.ts",
+      "kind": "cap-removal",
+      "note": "approachGapMm: the near-side gap is no longer capped at the required landing depth",
+      "find": "  if (hi <= line) return Math.min(line - hi, depth);",
+      "replace": "  if (hi <= line) return line - hi;"
+    },
+    {
+      "id": "measure-10",
+      "file": "src/lint/measure.ts",
+      "kind": "sign-flip",
+      "note": "approachGapMm: near-side distance computed with the operands swapped",
+      "find": "  if (hi <= line) return Math.min(line - hi, depth);",
+      "replace": "  if (hi <= line) return Math.min(hi - line, depth);"
+    },
+    {
+      "id": "measure-11",
+      "file": "src/lint/measure.ts",
+      "kind": "sign-flip",
+      "note": "approachGapMm: far-side distance computed with the operands swapped",
+      "find": "  if (lo >= line) return Math.min(lo - line, depth);",
+      "replace": "  if (lo >= line) return Math.min(line - lo, depth);"
+    },
+    {
+      "id": "measure-12",
+      "file": "src/lint/measure.ts",
+      "kind": "constant-replacement",
+      "note": "approachGapMm: a blocker straddling the opening reports FULL clearance",
+      "find": "  if (lo >= line) return Math.min(lo - line, depth);\n  return 0;",
+      "replace": "  if (lo >= line) return Math.min(lo - line, depth);\n  return depth;"
+    },
+    {
+      "id": "measure-13",
+      "file": "src/lint/measure.ts",
+      "kind": "boundary",
+      "note": "frontGapMm: the uy tie-break now falls to the y branch instead of the x branch",
+      "find": "  if (uy > 0) gap = blocker.y - zone.y;",
+      "replace": "  if (uy >= 0) gap = blocker.y - zone.y;"
+    },
+    {
+      "id": "measure-14",
+      "file": "src/lint/measure.ts",
+      "kind": "sign-flip",
+      "note": "frontGapMm: the +y facing gap is measured backwards",
+      "find": "  if (uy > 0) gap = blocker.y - zone.y;",
+      "replace": "  if (uy > 0) gap = zone.y - blocker.y;"
+    },
+    {
+      "id": "measure-15",
+      "file": "src/lint/measure.ts",
+      "kind": "extent-drop",
+      "note": "frontGapMm: the -y facing gap ignores the blocker's own depth",
+      "find": "  else if (uy < 0) gap = zone.y + zone.h - (blocker.y + blocker.h);",
+      "replace": "  else if (uy < 0) gap = zone.y + zone.h - blocker.y;"
+    },
+    {
+      "id": "measure-16",
+      "file": "src/lint/measure.ts",
+      "kind": "extent-drop",
+      "note": "frontGapMm: the -x facing gap ignores the blocker's own width",
+      "find": "  else gap = zone.x + zone.w - (blocker.x + blocker.w);",
+      "replace": "  else gap = zone.x + zone.w - blocker.x;"
+    },
+    {
+      "id": "measure-17",
+      "file": "src/lint/measure.ts",
+      "kind": "cap-removal",
+      "note": "frontGapMm no longer caps the gap at the required depth",
+      "find": "  return Math.min(Math.max(gap, 0), depth);",
+      "replace": "  return Math.max(gap, 0);"
+    },
+    {
+      "id": "measure-18",
+      "file": "src/lint/measure.ts",
+      "kind": "floor-removal",
+      "note": "frontGapMm can report a negative clearance (blocker overlapping the fixture)",
+      "find": "  return Math.min(Math.max(gap, 0), depth);",
+      "replace": "  return Math.min(gap, depth);"
+    },
+    {
+      "id": "measure-19",
+      "file": "src/lint/measure.ts",
+      "kind": "centroid-drop",
+      "note": "frontGapMm reads the facing direction from corners, not centres",
+      "find": "  const ux = Math.sign(zone.x + zone.w / 2 - (fixture.x + fixture.w / 2));",
+      "replace": "  const ux = Math.sign(zone.x - fixture.x);"
+    },
+    {
+      "id": "measure-20",
+      "file": "src/lint/measure.ts",
+      "kind": "centroid-drop",
+      "note": "frontGapMm reads the vertical facing direction from corners, not centres",
+      "find": "  const uy = Math.sign(zone.y + zone.h / 2 - (fixture.y + fixture.h / 2));",
+      "replace": "  const uy = Math.sign(zone.y - fixture.y);"
+    },
+
+    {
+      "id": "frame-01",
+      "file": "src/frame.ts",
+      "kind": "sign-flip",
+      "note": "the 90 quarter-turn matrix turns counter-clockwise",
+      "find": "    case 90:\n      return [0, -1, 1, 0]; // (x,y) → (−y, x)",
+      "replace": "    case 90:\n      return [0, 1, -1, 0]; // (x,y) → (−y, x)"
+    },
+    {
+      "id": "frame-02",
+      "file": "src/frame.ts",
+      "kind": "sign-flip",
+      "note": "the 180 matrix negates only x (a reflection, not a half-turn)",
+      "find": "      return [-1, 0, 0, -1];",
+      "replace": "      return [-1, 0, 0, 1];"
+    },
+    {
+      "id": "frame-03",
+      "file": "src/frame.ts",
+      "kind": "sign-flip",
+      "note": "the 270 quarter-turn matrix turns the wrong way",
+      "find": "    case 270:\n      return [0, 1, -1, 0]; // (x,y) → (y, −x)",
+      "replace": "    case 270:\n      return [0, -1, 1, 0]; // (x,y) → (y, −x)"
+    },
+    {
+      "id": "frame-04",
+      "file": "src/frame.ts",
+      "kind": "condition-inversion",
+      "note": "makeFrame: `mirror x` becomes the identity and every other frame gets flipped",
+      "find": "  const mx = opts.mirror === \"x\" ? -1 : 1;",
+      "replace": "  const mx = opts.mirror === \"x\" ? 1 : -1;"
+    },
+    {
+      "id": "frame-05",
+      "file": "src/frame.ts",
+      "kind": "condition-replacement",
+      "note": "makeFrame: `mirror y` is read off the wrong axis token",
+      "find": "  const my = opts.mirror === \"y\" ? -1 : 1;",
+      "replace": "  const my = opts.mirror === \"x\" ? -1 : 1;"
+    },
+    {
+      "id": "frame-06",
+      "file": "src/frame.ts",
+      "kind": "operand-swap",
+      "note": "makeFrame: column b scaled by the x mirror instead of the y mirror",
+      "find": "    b: rb * my,",
+      "replace": "    b: rb * mx,"
+    },
+    {
+      "id": "frame-07",
+      "file": "src/frame.ts",
+      "kind": "operand-swap",
+      "note": "composeFrame: the b entry multiplies the wrong parent row",
+      "find": "  const b = parent.a * child.b + parent.b * child.d;",
+      "replace": "  const b = parent.b * child.b + parent.a * child.d;"
+    },
+    {
+      "id": "frame-08",
+      "file": "src/frame.ts",
+      "kind": "term-removal",
+      "note": "composeFrame drops the parent's own translation from tx",
+      "find": "  const tx = parent.a * child.tx + parent.b * child.ty + parent.tx;",
+      "replace": "  const tx = parent.a * child.tx + parent.b * child.ty;"
+    },
+    {
+      "id": "frame-09",
+      "file": "src/frame.ts",
+      "kind": "term-removal",
+      "note": "composeFrame ignores the parent's linear part when carrying the child's origin",
+      "find": "  const ty = parent.c * child.tx + parent.d * child.ty + parent.ty;",
+      "replace": "  const ty = child.ty + parent.ty;"
+    },
+    {
+      "id": "frame-10",
+      "file": "src/frame.ts",
+      "kind": "relational-flip",
+      "note": "composeFrame decides `reflected` from a positive determinant",
+      "find": "  const flipped = det(composed) < 0;",
+      "replace": "  const flipped = det(composed) > 0;"
+    },
+    {
+      "id": "frame-11",
+      "file": "src/frame.ts",
+      "kind": "constant-swap",
+      "note": "composeFrame re-derives 90 and 270 the wrong way round",
+      "find": "  composed.rotate = rb === -1 ? 90 : ra === -1 ? 180 : rb === 1 ? 270 : 0;",
+      "replace": "  composed.rotate = rb === -1 ? 270 : ra === -1 ? 180 : rb === 1 ? 90 : 0;"
+    },
+    {
+      "id": "frame-12",
+      "file": "src/frame.ts",
+      "kind": "arithmetic-operator",
+      "note": "det() adds the anti-diagonal instead of subtracting it",
+      "find": "  return f.a * f.d - f.b * f.c;",
+      "replace": "  return f.a * f.d + f.b * f.c;"
+    },
+    {
+      "id": "frame-13",
+      "file": "src/frame.ts",
+      "kind": "condition-removal",
+      "note": "isIdentity ignores the translation",
+      "find": "  return f.a === 1 && f.b === 0 && f.c === 0 && f.d === 1 && f.tx === 0 && f.ty === 0;",
+      "replace": "  return f.a === 1 && f.b === 0 && f.c === 0 && f.d === 1;"
+    },
+    {
+      "id": "frame-14",
+      "file": "src/frame.ts",
+      "kind": "operand-swap",
+      "note": "tp() transposes the linear part when mapping y",
+      "find": "  return { x: f.a * p.x + f.b * p.y + f.tx, y: f.c * p.x + f.d * p.y + f.ty };",
+      "replace": "  return { x: f.a * p.x + f.b * p.y + f.tx, y: f.d * p.x + f.c * p.y + f.ty };"
+    },
+    {
+      "id": "frame-15",
+      "file": "src/frame.ts",
+      "kind": "sign-flip",
+      "note": "inverse() drops the adjugate's sign on b",
+      "find": "  const b = -f.b / dt;",
+      "replace": "  const b = f.b / dt;"
+    },
+    {
+      "id": "frame-16",
+      "file": "src/frame.ts",
+      "kind": "sign-flip",
+      "note": "inverse() does not negate the back-mapped translation",
+      "find": "    tx: -(a * f.tx + b * f.ty),",
+      "replace": "    tx: a * f.tx + b * f.ty,"
+    },
+    {
+      "id": "frame-17",
+      "file": "src/frame.ts",
+      "kind": "field-swap",
+      "note": "swapsAxes reads c instead of b (EXPECTED EQUIVALENT for signed permutations)",
+      "find": "  return f.b !== 0;",
+      "replace": "  return f.c !== 0;"
+    },
+    {
+      "id": "frame-18",
+      "file": "src/frame.ts",
+      "kind": "extremum-flip",
+      "note": "transformRect takes the max corner, so a turned rect shifts by its own extent",
+      "find": "    at: { x: Math.min(c1.x, c2.x), y: Math.min(c1.y, c2.y) },",
+      "replace": "    at: { x: Math.max(c1.x, c2.x), y: Math.max(c1.y, c2.y) },"
+    },
+    {
+      "id": "frame-19",
+      "file": "src/frame.ts",
+      "kind": "branch-removal",
+      "note": "transformRect never swaps w/h on a quarter-turn",
+      "find": "    size: swapsAxes(f) ? { w: size.h, h: size.w } : { w: size.w, h: size.h },",
+      "replace": "    size: { w: size.w, h: size.h },"
+    },
+    {
+      "id": "frame-20",
+      "file": "src/frame.ts",
+      "kind": "sign-flip",
+      "note": "backVector points the 90 case the wrong way",
+      "find": "    case 90:\n      return { x: 1, y: 0 };",
+      "replace": "    case 90:\n      return { x: -1, y: 0 };"
+    },
+    {
+      "id": "frame-21",
+      "file": "src/frame.ts",
+      "kind": "constant-swap",
+      "note": "degFromBack maps +x back to 270 instead of 90",
+      "find": "  if (v.x === 1) return 90;",
+      "replace": "  if (v.x === 1) return 270;"
+    },
+    {
+      "id": "frame-22",
+      "file": "src/frame.ts",
+      "kind": "sign-flip",
+      "note": "transformDeg applies a transposed linear part to the back vector",
+      "find": "  return degFromBack({ x: f.a * v.x + f.b * v.y, y: f.c * v.x + f.d * v.y });",
+      "replace": "  return degFromBack({ x: f.a * v.x - f.b * v.y, y: f.c * v.x + f.d * v.y });"
+    },
+    {
+      "id": "frame-23",
+      "file": "src/frame.ts",
+      "kind": "order-swap",
+      "note": "nsId namespaces the id backwards",
+      "find": "  return f.prefix ? `${f.prefix}.${id}` : id;",
+      "replace": "  return f.prefix ? `${id}.${f.prefix}` : id;"
+    },
+    {
+      "id": "frame-24",
+      "file": "src/frame.ts",
+      "kind": "branch-removal",
+      "note": "transformArc keeps the rotational sense through a reflection",
+      "find": "    sweep: det(f) < 0 ? -arc.sweep : arc.sweep,",
+      "replace": "    sweep: arc.sweep,"
+    },
+    {
+      "id": "frame-25",
+      "file": "src/frame.ts",
+      "kind": "operand-swap",
+      "note": "transformArc derives the start angle with atan2's arguments swapped",
+      "find": "    start: Math.atan2(a.y - center.y, a.x - center.x),",
+      "replace": "    start: Math.atan2(a.x - center.x, a.y - center.y),"
+    },
+    {
+      "id": "frame-26",
+      "file": "src/frame.ts",
+      "kind": "call-removal",
+      "note": "transformSegment leaves the host wall id un-namespaced",
+      "find": "  const out: WallSegment = { ...s, a: tp(f, s.a), b: tp(f, s.b), wallId: nsId(f, s.wallId) };",
+      "replace": "  const out: WallSegment = { ...s, a: tp(f, s.a), b: tp(f, s.b), wallId: s.wallId };"
+    },
+    {
+      "id": "frame-27",
+      "file": "src/frame.ts",
+      "kind": "relational-widen",
+      "note": "transformElement treats det == 0 as reflected too (EXPECTED EQUIVALENT: det is +/-1)",
+      "find": "  const reflected = det(f) < 0;\n  const id = nsId(f, el.id);",
+      "replace": "  const reflected = det(f) <= 0;\n  const id = nsId(f, el.id);"
+    },
+    {
+      "id": "frame-28",
+      "file": "src/frame.ts",
+      "kind": "branch-removal",
+      "note": "a door's swing no longer flips in a mirrored instance",
+      "find": "        swing: reflected ? (el.swing === \"in\" ? \"out\" : \"in\") : el.swing,",
+      "replace": "        swing: el.swing,"
+    },
+    {
+      "id": "frame-29",
+      "file": "src/frame.ts",
+      "kind": "branch-removal",
+      "note": "a dim's offset no longer flips in a mirrored instance",
+      "find": "offset: reflected ? -el.offset : el.offset };",
+      "replace": "offset: el.offset };"
+    },
+    {
+      "id": "frame-30",
+      "file": "src/frame.ts",
+      "kind": "statement-removal",
+      "note": "a placed room keeps its relational constraint, so the plan pass re-places it",
+      "find": "      delete out._rel;",
+      "replace": "      /* mutant: delete removed */"
+    },
+    {
+      "id": "frame-31",
+      "file": "src/frame.ts",
+      "kind": "call-removal",
+      "note": "a placed fixture's owning-room reference is left un-namespaced",
+      "find": "      if (el.room !== undefined) out.room = nsId(f, el.room);",
+      "replace": "      if (el.room !== undefined) out.room = el.room;"
+    },
+    {
+      "id": "frame-32",
+      "file": "src/frame.ts",
+      "kind": "branch-removal",
+      "note": "a column's cross-axis extents never swap on a quarter-turn",
+      "find": "      const size = swapsAxes(f) ? { w: el.size.h, h: el.size.w } : el.size;",
+      "replace": "      const size = el.size;"
+    },
+    {
+      "id": "frame-33",
+      "file": "src/frame.ts",
+      "kind": "branch-removal",
+      "note": "a placed fixture's quarter-turn is not carried through the frame",
+      "find": "      const deg = transformDeg(f, el.rotate);",
+      "replace": "      const deg = el.rotate ?? 0;"
+    },
+    {
+      "id": "frame-34",
+      "file": "src/frame.ts",
+      "kind": "call-removal",
+      "note": "a wall's opening positions are not carried through the frame",
+      "find": "        openings: el.openings.map((o) => ({ at: tp(f, o.at), width: o.width })),",
+      "replace": "        openings: el.openings.map((o) => ({ at: o.at, width: o.width })),"
+    },
+    {
+      "id": "frame-35",
+      "file": "src/frame.ts",
+      "kind": "call-removal",
+      "note": "a polygon room's ring is left in local coordinates",
+      "find": "      if (el.poly) out.poly = el.poly.map((p) => tp(f, p));",
+      "replace": "      if (el.poly) out.poly = el.poly;"
+    },
+    {
+      "id": "frame-36",
+      "file": "src/frame.ts",
+      "kind": "call-removal",
+      "note": "a circular room's centre is left in local coordinates",
+      "find": "      if (el.circle) out.circle = { c: tp(f, el.circle.c), r: el.circle.r };",
+      "replace": "      if (el.circle) out.circle = { c: el.circle.c, r: el.circle.r };"
+    }
+  ]
+}

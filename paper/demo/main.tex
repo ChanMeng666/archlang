@@ -1,0 +1,381 @@
+%% ICSE 2027 Tool Demonstrations and Data Showcase
+%% Single-anonymous: author names ARE included.
+%% HARD LIMIT: four pages for the main text, INCLUSIVE of all references, figures,
+%% tables and appendices. Enforced mechanically by `node paper/build.mjs demo`.
+%% Template is mandated: IEEEtran [10pt,conference], no compsoc/compsocconf options.
+\documentclass[10pt,conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{xspace}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+
+%% Every structural number in this paper is INTERPOLATED from the compiler's own
+%% tables by `npm run gen:paper-facts`, and `npm run check:drift` fails when one
+%% moves. Retyping a count into this file is the defect the companion paper is
+%% about, so it is mechanically prevented rather than merely discouraged.
+\input{../facts.tex}
+%% Hand-written, but every entry carries a source and a measurement date; see
+%% paper/README.md, "Where the numbers come from".
+\input{../facts-manual.tex}
+
+\lstdefinelanguage{archlang}{
+  morekeywords={plan,wall,room,door,window,opening,furniture,dim,level,zone,place,site,paper,axes,schedule,legend},
+  morecomment=[l]{\#},
+  morestring=[b]",
+}
+\lstset{
+  language=archlang,
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\color{blue!60!black},
+  commentstyle=\color{black!45},
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  aboveskip=2pt, belowskip=2pt,
+  breaklines=true, breakatwhitespace=true,
+  postbreak={\mbox{\ \ }},
+}
+
+\begin{document}
+
+\title{ArchLang: A Deterministic Floor-Plan Compiler\\with an Agent-Facing Diagnostic Protocol}
+
+\author{\IEEEauthorblockN{Chan Meng}
+\IEEEauthorblockA{\textit{Independent Researcher}\\
+ai@gavigo.com}}
+
+\maketitle
+
+\begin{abstract}
+ArchLang is a declarative language that compiles floor-plan source to SVG, DXF, PDF,
+PNG and ASCII. Its subject is not the drawing --- to-scale plan generation from a
+building model has shipped since 2015 --- but the \emph{verdict}: what a language
+model that has just authored a plan can be told about it, and in what form. The
+compiler is pure, synchronous, deterministic and has no runtime dependencies, and its
+diagnostic surface is designed as a protocol rather than as console output.
+\factErrorCodesTotal{} catalogued codes each carry a byte span; structured fixes carry
+rustc's four applicability tiers and are applied by a rustfix-style atomic replacer
+under a bounded fixpoint that rolls back any pass raising the error count; display
+filters narrow what is shown and never the verdict, so an agent cannot filter its way
+to a green build; and \texttt{describe()} returns exact areas, an access graph and
+reachability, letting a text-only agent check what it drew without rasterising
+anything. We report a fixpoint property whose absence cost us a shipped
+non-terminating fix and which we found no prior work naming as a requirement, and a
+determinism contract under which an optional dependency may add capability but may
+never change output bytes. ArchLang is published on npm at v\factVersion{}, with a
+browser playground, a documentation site, a VS~Code extension and an MCP server.
+\end{abstract}
+
+\begin{IEEEkeywords}
+domain-specific languages, compilers, LLM code generation, determinism, program repair
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+A language model can write a floor plan. Nothing in the usual output tells it whether
+the plan holds up. Image-space generators
+\cite{nauata2020housegan,galanos2023architext} and building-model generators
+\cite{du2026text2bim} both produce artifacts whose soundness a
+producing agent cannot interrogate: to ask ``can you reach the bathroom without
+walking through the bedroom,'' or ``is that door leaf sweeping onto the bed,'' the
+agent would have to re-derive the geometry it just emitted.
+
+ArchLang is a compiler built around the opposite priority. The drawing is table
+stakes; the deliverable is a machine-readable answer to \emph{is this sound, where
+exactly is it wrong, and what edit repairs it}. Four ideas carry that, and they are
+what this demonstration shows:
+
+\begin{itemize}
+\item a hard split between \textbf{span-level fixes} (the text is known) and
+      \textbf{geometric repair} (a position must be searched for), each honest about
+      what it can guarantee;
+\item a \textbf{fixpoint postcondition} on the fix loop, which a shipped fix violated;
+\item \textbf{display filters that never gate} --- narrowing the view can never move
+      the verdict;
+\item \textbf{determinism as an enforced contract}, extending to the rule that an
+      optional dependency may not change output bytes.
+\end{itemize}
+
+\emph{What is not ours.} The applicability tiers, the conservatism rule that promotes
+a fix only on proof of uniqueness, and the atomic piece-table replacer are rustc's,
+Biome's and rustfix's respectively \cite{rustc_applicability,biome_linter,rustfix}; we
+implement them, we do not claim them. The remedy we use throughout --- perturb the
+thing under test and require the guard to notice --- is Beer et al.'s vacuity
+detection procedure from 1997 \cite{beer1997vacuity}, carried into testing by Ball and
+Kupferman \cite{ball2008vacuitytesting}. Deriving a fact once rather than retyping it
+is DRY \cite{hunt1999pragmatic}. And the drawing-generation leg is conceded outright:
+IfcOpenShell has emitted to-scale SVG floor plans with door swings, room names and
+computed areas since July 2015 \cite{ifcopenshell}. What we offer is the protocol
+around the compiler, and a working system an audience can drive.
+
+\section{The Language and the Compiler}
+
+An ArchLang source file is a \texttt{plan} block of statements in millimetres
+(Fig.~\ref{fig:oneroom}). \factKeywordsElement{} element kinds --- walls, rooms,
+doors, windows, openings, fixtures, dimensions, columns, and the stair, elevator and
+escalator shafts --- are drawn from \factKeywordsTotal{} keywords. Openings may be pinned to a wall by
+position along its run rather than by coordinate, so an agent that widens a room does
+not have to recompute where its door went; rooms may be placed relative to one another
+rather than absolutely.
+
+\lstinputlisting[caption={\texttt{examples/one-room.arch}, verbatim (header comment
+  omitted, long lines wrapped).},
+  label={lst:src},firstline=4,lastline=13]{../../examples/one-room.arch}
+
+\begin{figure}[t]
+\centering
+%% Regenerate with:
+%%   node dist/cli.js compile examples/one-room.arch -f pdf -o paper/demo/fig-oneroom.pdf
+%% i.e. the figure is the compiler's own output for Listing~\ref{lst:src}, not a redraw.
+\includegraphics[width=0.92\columnwidth]{fig-oneroom.pdf}
+\caption{Listing~\ref{lst:src} compiled. The same source also emits DXF, PDF, PNG and
+a zero-dependency ASCII plan; \factExportFormats{} formats in total, of which
+\factExportFormatsZeroDep{} need no dependency at all.}
+\label{fig:oneroom}
+\end{figure}
+
+The pipeline is lexer $\rightarrow$ recursive-descent parser $\rightarrow$ resolver
+$\rightarrow$ a backend-neutral scene $\rightarrow$ pure serialisers.
+\texttt{compile()} performs no I/O and reads no clock; the environment reaches it only
+through an injected seam, so the identical build runs in Node and in the browser. The
+parser recovers rather than throwing: a user-source problem is \emph{returned} as a
+diagnostic carrying a byte span and a catalogued code, and a plan with errors still
+reports every other fact it can compute.
+
+\section{The Agent Protocol}
+
+The running example is Listing~\ref{lst:src} with one line changed: its door written
+at an absolute point that misses the wall, \texttt{at (3200,5000)}. Every diagnostic
+below comes from that one mistake, so a reader can reproduce all of it from this page.
+Transcripts are real output, abridged only where the abridgement is stated.
+
+\subsection{Diagnostics are data, and the catalogue is closed}
+There are \factErrorCodesTotal{} codes --- \factErrorCodesError{} errors and
+\factErrorCodesWarning{} advisory warnings from \factLintRules{} lint rules. Each
+carries a span, prose, and optionally a set of structured fixes
+(Listing~\ref{lst:loop}). A test enforces the
+catalogue in both directions: a raised code with no entry fails, and a catalogued code
+the compiler cannot emit fails. Requiring that is not ours either --- rustc's
+\texttt{tidy} check demands every error code be documented, triggered by a test and
+found in the compiler source \cite{rustc_tidy_errorcodes} --- but below that tier it
+is routinely absent: we found declared-but-unreachable codes in third-party floor-plan
+tools that lack it \cite{planscript_ts,planscript_rust}.
+
+\subsection{Fix and repair are different verbs}
+A fix is a set of span edits whose replacement text is known exactly. Every suggestion
+declares one of rustc's four applicability tiers
+\cite{rustc_applicability}. \texttt{arch fix} applies only
+\texttt{machine-applicable} by default and never applies the placeholder or
+unspecified tiers whatever the flag. Following Biome's safe/unsafe split
+\cite{biome_linter}, a producer emits \texttt{machine-applicable} only when it can
+\emph{prove} uniqueness --- an off-wall door with a single nearest wall is promoted;
+the moment there are two candidates it is demoted to \texttt{maybe-incorrect}, because
+which one the author meant is a choice the tool may not make silently. Application is
+rustfix's piece table \cite{rustfix}: a suggestion is atomic, and any suggestion
+overlapping an already-applied edit is rejected whole and reported, never
+half-applied, so the result does not depend on suggestion order.
+
+\texttt{arch repair} is the other verb. It moves furniture out of walls, doorways and
+swing arcs by iterating positions --- a search over a space no span edit can express.
+The two compose and never merge: ``rewrite this text'' and ``search this geometry''
+can promise different things, and one verb would have to promise the weaker.
+
+\begin{lstlisting}[language={},basicstyle=\ttfamily\tiny,captionpos=b,
+  caption={The loop, abridged: \texttt{\ldots} marks elided JSON and several fields sit
+  per line where the CLI prints one. Names, values and the diff are unaltered.},
+  label={lst:loop}]
+$ arch compile offwall.arch --json
+{ ..., "diagnostics": [ {
+  "code": "W_DOOR_OFF_WALL", "severity": "warning",
+  "message": "Door \"d_in\" does not lie on any wall",
+  "line": 11, "col": 3, "span": [499, 547], "fix": "...",
+  "fixes": [ { "title": "attach the door to wall \"shell\" at 60%",
+    "applicability": "machine-applicable",
+    "edits": [ { "span": [499, 547], "newText":
+      "door id=d_in on shell at 60% width 900 swing in" } ],
+    "fixId": "door-off-wall" } ] } ], ... }
+
+$ arch fix offwall.arch --dry-run          # diff header elided
+-  door   id=d_in at (3200,5000) width 900 swing in
++  door id=d_in on shell at 60% width 900 swing in
+ applied [W_DOOR_OFF_WALL] attach the door to wall "shell" at 60%
+ (dry run — nothing written)
+\end{lstlisting}
+
+The fix is a byte range and its replacement, not prose to be parsed back into an edit;
+here it restores Listing~\ref{lst:src}'s own attachment form exactly.
+
+\subsection{A fixpoint postcondition}
+Because one fix can expose the next, \texttt{arch fix} loops --- compile, collect,
+apply, recompile --- under a pass budget pinned in source, and rolls back any pass that
+\emph{raises} the error count. rustc/rustfix, Biome and ESLint all apply fixes
+iteratively under a budget. We found no prior work, and no documentation in those
+projects, stating termination or confluence as a required property of a fix; the
+search behind that statement had real holes, which we record rather than paper over
+(DBLP was unreachable throughout, and unauthenticated GitHub code search was unusable,
+so a venue or a project indexed only there was not covered).
+
+The cost of not stating it is concrete. ArchLang shipped a fix for
+\texttt{W\_DIM\_INSIDE} --- a dimension line whose text reads inside the building ---
+that swapped the dimension's endpoints to flip which side the offset falls on. On a
+dimension running \emph{through} the building it reads inside either way, so the
+warning fired again, the same fix was offered again, and it swapped back. Forever. The
+loop burned its whole budget and the emitted file depended on the \textbf{parity} of
+the pass budget. The root cause was structural: the detection logic lived inline in
+the lint rule, so the fix producer had no way to ask it anything and offered a swap it
+had never evaluated. The remedy was to extract the predicate and require the producer
+to re-ask it of the \emph{post-fix} state, returning no fix when the answer is
+unchanged --- and, pointedly, not to invent an offset instead, which would be the
+compiler designing.
+
+\subsection{A display filter never gates}
+\texttt{describe} takes \texttt{-{}-select} and \texttt{-{}-room};
+\texttt{lint} and \texttt{validate} take \texttt{-{}-code} and \texttt{-{}-severity}.
+All four narrow what is \emph{shown}. \texttt{ok} and the exit code are always
+computed from the unfiltered diagnostic set. The same off-wall plan fails
+\texttt{validate -{}-strict} on two warnings; asking it to show only an unrelated code
+returns them all the same, reflowed here onto two lines from output the CLI
+pretty-prints one field per line:
+
+\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
+$ arch validate offwall.arch --strict --code W_SWING_OBSTRUCTED --json
+{ "ok": false, "strict": true, "filtered": true,
+  "total_diagnostics": 2, "diagnostics": [] }
+\end{lstlisting}
+
+\noindent and exit status 2. An empty diagnostic list is not permission to proceed:
+the result is marked \texttt{filtered} and carries the true total. An agent must not
+be able to filter its way to a green build, and this is the shape that rule takes at
+a command-line boundary.
+
+The surrounding contract is deliberately blunt for the same reason. Exit codes are
+\texttt{0} ok, \texttt{2} user-source error, \texttt{1} I/O or internal, \texttt{3}
+misuse; an unrecognised flag or verb is a usage error with a did-you-mean, never a
+silently swallowed filename, because a flag that is ignored is a wrong answer wearing
+a green exit code. All \factCliCommands{} commands, their \factCliFlags{} flags and
+\factCliExamples{} worked invocations are rendered from one manifest, so help cannot
+advertise a flag the parser does not take.
+
+\subsection{\texttt{describe()} as a semantic oracle}
+\texttt{arch describe -{}-json} returns what the plan \emph{means}: per-room areas,
+adjacency, the door and opening access graph, per-room reachability from an entrance,
+and which coordinates were authored versus derived. A text-only agent verifies its own
+output by reading this, with no raster and no vision model in the loop.
+
+What that permits is bounded on purpose. The compiler computes facts and emits
+advisory warnings; it never arranges. Reachability, exact polygon areas, and
+byte-identical determinism are measurements. Estimated clear widths, walk distances
+and furniture clearances are \emph{advisory} --- a clear width, for instance, is a
+constant subtraction from a nominal width, not a measurement of a leaf --- and no
+output of ArchLang asserts compliance with any code or standard.
+
+\section{Determinism as an Enforced Contract}
+
+\texttt{compile()} is byte-for-byte reproducible, and the suite asserts
+\texttt{compile(s) == compile(s)} rather than trusting it. Number formatting is routed
+through one function so floats cannot drift; the shared parse-stage memo must never be
+mutated downstream, an in-place edit having once made output depend on compilation
+history; and optional native dependencies are firewalled: a geometry backend may add capability, but for input that did not require
+it the bytes must be identical whether it is registered or not --- pinned by a test
+that renders absent, present, and absent again. Curved walls are lowered per segment
+rather than through the boolean union precisely so that this holds for them too.
+
+Every new language form additionally ships a byte-identity law: a plan that does not
+use the form renders, describes and lints exactly as before, proven by a SHA-256 sweep
+over the \factExamples{} shipped examples rather than by inspection. The drawings the
+README embeds are themselves re-rendered and byte-compared in CI, after several of them
+spent months showing a building compiled before a series of rendering fixes.
+
+
+\section{Implementation and Availability}
+
+ArchLang is TypeScript: \factSrcLines{} source lines against \factTestLines{} test
+lines in \factTestFiles{} files, \factExamples{} worked examples and \factAdrs{}
+architecture decision records, over \factCommits{} commits and \factTags{} releases
+since \factFirstCommit{} (snapshot \factSnapshotCommit{}, \factSnapshotDate{}). The
+core has no runtime dependencies; PDF, PNG and the geometry backend are optional and
+lazily imported.
+
+The demonstration drives four surfaces, all live. \texttt{npx @chanmeng666/archlang}
+runs the CLI with no install; the package saw \factNpmThirty{} npm downloads in the 30
+days to \factNpmFetched{}, a figure whose five busiest days are all release days
+carrying \factNpmTopFiveShare{} of the 90-day total, and which we therefore report as
+availability rather than as users, installs or adoption.
+\url{https://playground.archlang.uk} is a browser editor with click-to-source and
+inline fixes; \url{https://archlang.uk} serves the documentation with live editable
+examples plus machine-readable \texttt{/llms.txt}, JSON Schema and GBNF routes; a
+VS~Code extension surfaces the same diagnostics and quick fixes as LSP; and an MCP
+server \cite{mcp2026spec} exposes the same pure functions to
+MCP-native hosts. The CLI remains the primary interface --- it costs an agent nothing
+in context until it is called --- and the MCP server is a discovery channel over the
+same library, not a second implementation.
+
+The accompanying video follows Listing~\ref{lst:loop} end to end, then repeats it in
+the playground, in VS~Code, and over MCP.
+
+\section{Related Tools}
+
+Two systems converged on ArchLang's shape independently and earlier, and both are
+cited here because a reviewer finds them in one search. \textbf{PlanScript}
+\cite{planscript_ts}, first published 2026-01-05, is a deterministic textual DSL for
+2D floor plans with a numbered error catalogue and a documented agent workflow: a
+structural mirror of ArchLang's agent surface, 5.5 months earlier, with an independent
+Rust reimplementation \cite{planscript_rust}. \textbf{arch-plotter}
+\cite{archplotter}, released 2026-03-19 --- three months before ArchLang started ---
+is architectural drafting as a Typst package, occupying the ``Typst for
+architecture'' framing directly. We read the convergence as evidence that
+the gap is real rather than as a threat to be managed; what differs is the protocol
+this paper is about, not the idea of a floor-plan DSL.
+
+The drawing-generation leg belongs to the IFC ecosystem. IfcOpenShell
+\cite{ifcopenshell} has produced to-scale SVG plans with door swings, room names and
+computed areas for over a decade; \textbf{ifc-lite} \cite{ifclite} pairs IFC drawing
+generation with IDS validation and its own MCP server, and its declared error codes,
+unlike some we examined, are all reachable. \textbf{FloorPlan-DSL}
+\cite{parra2023floorplandsl} specifies indoor environments for robot
+navigation testing --- a textual floor-plan language with a different consumer.
+Textual building description is old: GLIDE \cite{eastman1977glide} was a design
+information language in 1977. On the generation side, plan synthesis from graphs
+\cite{nauata2020housegan}, from prompts \cite{galanos2023architext}, and via
+LLM-driven BIM authoring \cite{du2026text2bim} all target the artifact
+rather than its interrogation; work on constrained decoding \cite{park2024gad} assumes
+a grammar and studies decoding given it. Self-repair from compiler feedback is
+studied directly
+\cite{olausson2024selfrepair}; we make no claim, positive
+or negative, about whether a diagnostic loop beats equal-budget resampling. We do have
+an offline authorability harness over \factEvalBriefs{} briefs, but it is one model,
+one seed and a judge with demonstrated authority over its own number, so it is
+reported in the repository as a regression fixture and is not a benchmark or a model
+score.
+
+\section{On AI Co-Authorship}
+
+ArchLang was co-authored with Claude Code agents under human direction, and we state
+that plainly rather than in a footnote, per the ACM Policy on Authorship. The human
+author directed the design, made every architectural decision recorded in the
+\factAdrs{} ADRs, and is responsible for the content of this paper. The condition is
+also part of the subject matter: a model writes \emph{plausible} artifacts, and
+plausibility is exactly what a gate that compares a generator to its own output cannot
+distinguish from truth --- which is why the properties above are pinned by planted
+faults and by expected values computed from the implementation rather than typed.
+
+\section{Conclusion}
+
+ArchLang treats the diagnostic surface, not the drawing, as the deliverable: fixes
+with proven applicability, a fix loop with a stated postcondition, filters that cannot
+move a verdict, determinism as a contract, and a semantic summary an agent can read
+instead of looking. All of it is running, published, and drivable in five minutes.
+
+%% The page-limit checker locates the reference section by this label. Keep it
+%% immediately before the bibliography in every paper in this directory.
+\label{refsstart}
+\bibliographystyle{IEEEtran}
+\bibliography{../refs}
+
+\end{document}

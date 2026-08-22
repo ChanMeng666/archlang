@@ -1,0 +1,1098 @@
+%% Flagship, full-length. Target: arXiv (cs.SE, cross-list cs.PL), NAMED.
+%% `nier/main.tex` is a 4+1 page anonymised cut of this; `demo/main.tex` is the
+%% separate tool paper. No venue page limit here — build.mjs reports, never fails.
+%%
+%% ARGUMENT: paper/flagship/OUTLINE.md is the authority. Read it before editing.
+%% CLAIM SAFETY: paper/README.md lists what may not be said. Read that too.
+\documentclass[10pt,journal,compsoc]{IEEEtran}
+
+\usepackage{cite}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xspace}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+
+%% Structural counts are INTERPOLATED from the compiler's own tables by
+%% `npm run gen:paper-facts` and gated by `npm run check:drift`. Never retype a
+%% number into this file: doing so is the defect this paper is about, and the
+%% project's own prose made that mistake three times before this file existed.
+\input{../facts.tex}
+\input{../facts-manual.tex}
+
+\lstdefinelanguage{archlang}{
+  morekeywords={plan,wall,room,door,window,opening,furniture,dim,level,zone,place,site,paper,axes,schedule,legend,component,import},
+  morecomment=[l]{//},
+  morestring=[b]",
+}
+\lstset{
+  language=archlang, basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{blue!60!black}, commentstyle=\color{black!45},
+  columns=fullflexible, keepspaces=true, showstringspaces=false,
+  aboveskip=4pt, belowskip=4pt,
+}
+
+\begin{document}
+
+\title{Reproducible Is Not Correct: Reflexive Gates and the\\Self-Descriptions We Ship to Language Models}
+
+\author{Chan~Meng%
+\IEEEcompsocitemizethanks{\IEEEcompsocthanksitem C. Meng is an independent researcher.
+E-mail: ai@gavigo.com}}
+
+\markboth{Preprint}{Meng: Reproducible Is Not Correct}
+\IEEEtitleabstractindextext{%
+\begin{abstract}
+Software increasingly ships descriptions of itself intended for a language model
+rather than a person: specifications, constrained-decoding grammars, JSON schemas,
+vendored context files, and the identity a server states to its host at handshake
+time. These artifacts are neither compiled nor executed against the thing they
+describe. The gate deployed over them, almost universally, is \emph{reflexive}:
+regenerate the artifact and fail on a difference from the committed copy. We observe
+that such a gate establishes determinism and cannot, even in principle, establish
+truth --- and that it is nonetheless sound wherever it is deployed, because the
+artifacts it guards are \emph{mechanically derived} from their subject, and a derived
+artifact can be stale but never wrong. That precondition is never stated and never
+checked. When a generator \emph{retypes} a fact instead of deriving it, the same gate
+is vacuous, and it looks identical in continuous integration.
+We measure what this costs. A census of all \factEcoServers{} servers listed on the
+Model Context Protocol registry, covering the \factEcoPackages{} unique npm packages
+among them, finds that of the \factEcoApplicable{} packages whose self-reported
+identity can be resolved statically, \factEcoRetypedPct{} retype it rather than derive
+it, and \factEcoDriftConfirmedPct{} state a version that once tracked the package and
+has since been left behind --- corroborated against each package's own release
+history, with independently versioned cases excluded. We add six instances across
+four independent third-party compilers, four of them verified by execution, and a
+depth study of one production language whose four self-descriptions were all wrong on
+first check. We claim none of the underlying concepts, all of which are established;
+we report the precondition, the artifact class, and the measurement. The subject
+system was substantially co-authored with language models, and we discuss what that
+implies for which guards matter.
+\end{abstract}
+\begin{IEEEkeywords}
+Software verification, test adequacy, documentation consistency, build systems,
+domain-specific languages, LLM code generation.
+\end{IEEEkeywords}}
+\maketitle
+\IEEEdisplaynontitleabstractindextext
+\IEEEpeerreviewmaketitle
+
+\section{Introduction}\label{sec:intro}
+
+\IEEEPARstart{A}{} growing share of what software projects ship is a description of
+themselves addressed to a machine. A package that wants to be usable by a language
+model publishes a specification for the model to read, a grammar for a constrained
+decoder to sample under, JSON schemas for its inputs, context files bundled at pack
+time, and --- if it speaks a protocol --- an identity it states at handshake time.
+None of this is read by a person in the ordinary course of events. None of it is
+executed. Nothing runs it against the system it purports to describe.
+
+What guards it, when anything does, is a \emph{drift gate}: regenerate the artifact
+from its generator and fail the build on any difference from the committed copy.
+This pattern is close to universal wherever code generation happens. Microsoft's API
+Extractor regenerates a public-API report and fails a production build on any
+difference from the checked-in file~\cite{api_extractor}; Bazel's Gazelle offers
+\texttt{-mode=diff} for exactly this~\cite{bazel_gazelle}; Kubernetes projects
+regenerate CRD manifests and diff them; \texttt{terraform fmt -check} and
+\texttt{cargo readme -{}-check} are the same shape. The .NET source-generator
+documentation recommends snapshot testing against a committed snapshot and justifies
+it explicitly on the grounds that generator output is deterministic for a given
+input.
+
+That justification is the whole subject of this paper. A reflexive gate --- one that
+compares a generator to its own output --- establishes that the generator is
+deterministic. It cannot establish that what the generator emits is \emph{true}. Both
+halves of this are already in the literature, stated separately and never joined:
+build-system theory places the correctness of generated content outside what a build
+system guarantees~\cite{mokhov2020buildsystems}, and the reproducible-builds programme
+adopts byte-reproducibility explicitly as an \emph{integrity} property rather than a
+correctness one~\cite{lamb2022reproducible}.
+
+The reason the gap has not needed naming is that, until recently, it did not matter.
+Every reflexive gate in the list above guards an artifact that is \emph{mechanically
+derived} from its subject: API Extractor reads the TypeScript compiler's own symbol
+table, Gazelle reads real Go imports, \texttt{protoc} reads the \texttt{.proto},
+\texttt{cargo-semver-checks} reads rustdoc JSON. \textbf{A derived artifact cannot be
+wrong about its subject --- only stale.} For derived artifacts the reflexive gate is
+therefore sufficient, and its limitation is invisible because it has no consequences.
+
+Our observation is that this soundness rests on a precondition that is never stated
+and never checked, and that the LLM-facing artifact class routinely violates it. A
+generator that \emph{retypes} a language fact into a specification, or hand-writes a
+grammar's productions beside the parser rather than deriving them from it, produces an
+artifact that can be confidently, stably, reproducibly wrong. It wears the same gate.
+It looks identical in CI. And unlike a stale comment, which misleads a reader who can
+notice, a wrong machine-consumed description makes invalid output possible \emph{by
+construction}: a constrained-decoding grammar exists for the single purpose of making
+syntactically invalid output impossible, and one that over-derives has inverted its own
+function while continuing to appear to perform it.
+
+\subsection{What we do not claim}\label{sec:concede}
+
+Almost every component of what follows is someone else's, and we concede it here
+rather than have it supplied.
+
+A guard that passes without its passing depending on what it appears to check is
+\emph{vacuous satisfaction}, carried from model checking into testing by Ball and
+Kupferman~\cite{ball2008vacuitytesting}; the remedy we use --- perturb the thing under
+test and require the guard to notice --- is Beer et al.'s vacuity detection procedure,
+published in 1997~\cite{beer1997vacuity}. Executing documentation against the
+implementation it describes is older than it looks: \texttt{@tComment} turned Javadoc
+into runnable assertions in 2012~\cite{tan2012tcomment}, CASCADE now generates tests
+directly from documentation~\cite{kiecker2026cascade}, and Rust, Go and Python all run
+their doc examples by default~\cite{rust_doctests,go_testable_examples,python_doctest}.
+Requiring that a tool's declared diagnostics can actually fire is shipped and
+CI-enforced: rustc's \texttt{tidy} check demands that every error code be documented,
+triggered by a test, and emitted by the compiler~\cite{rustc_tidy_errorcodes}.
+Validating a machine-consumed \emph{description} against the system it describes is a
+decade-old industry practice --- Pact generates a contract during consumer tests and
+verifies it by executing it against the real provider~\cite{pact_contract_testing}, and
+Schemathesis runs a schema against a live server and reports divergence without
+deciding which side is wrong~\cite{schemathesis}. Even the remedy we converge on has a
+name: deriving a fact once instead of retyping it is DRY~\cite{hunt1999pragmatic}.
+
+What is left is a precondition and a measurement. DRY says what you should do; nobody
+appears to have stated the failure mode of the gate when DRY is violated --- that
+regenerate-and-diff is vacuous for a retyped generator, that it cannot detect the
+violation, and that it looks identical in CI. DRY is a design rule with no enforcement
+story; the reflexive gate is an enforcement mechanism whose soundness silently depends
+on that rule and never checks it. We report what the junction costs, in the one
+artifact class with no executable counterpart to fall back on, and we report it as
+measurement, not as definition.
+
+\subsection{Contributions}
+
+\begin{itemize}
+\item The \emph{derived-versus-retyped} precondition of the reflexive gate, with an
+  empirical demonstration that the gate cannot see the difference
+  (Section~\ref{sec:mechanism}).
+\item An ecosystem census of \factEcoPackages{} packages measuring how often a
+  machine-consumed self-description is false, with a corroboration step that separates
+  drift from deliberate independent versioning (Section~\ref{sec:census}).
+\item Six instances across four independent third-party compilers, four verified by
+  execution rather than by reading, together with four refutations
+  (Section~\ref{sec:corroboration}).
+\item A depth study of one production language, including two measurements that were
+  themselves corrupted and what that cost (Section~\ref{sec:depth}).
+\item A remedy stated as a requirement --- every guard must be provably non-vacuous ---
+  and applied to this paper's own toolchain, which produced six vacuous guards while
+  the paper was being written (Sections~\ref{sec:remedy} and~\ref{sec:self}).
+\end{itemize}
+
+\section{The Mechanism}\label{sec:mechanism}
+
+\subsection{Two kinds of generator}
+
+Let $S$ be a system, $G$ a generator, and $A = G(S)$ a committed artifact describing
+$S$. A reflexive gate recomputes $G(S)$ at build time and fails if it differs from the
+committed $A$. Write $A^{\ast}$ for the artifact that would be true of $S$.
+
+Call $G$ \emph{derived} when its output is a function of $S$ alone --- when it reads
+the subject and reports what it finds. For a derived generator, $G(S) = A^{\ast}$ holds
+by construction: the artifact cannot disagree with the subject, because the subject is
+the only thing it consulted. The single failure available to it is \emph{staleness} ---
+$A$ was correct for an older $S$ and has not been recomputed --- and that is exactly
+what a reflexive gate detects, because recomputing $G$ against the current $S$ produces
+a different result.
+
+Call $G$ \emph{retyped} when its output depends on facts a human transcribed into the
+generator. Now $G(S)$ and $A^{\ast}$ are independent: the generator emits what its
+author believed, deterministically, forever. Regenerating produces the same bytes.
+The gate passes. The artifact is wrong.
+
+The distinction is not exotic. It is the difference between a generator that walks the
+compiler's own keyword table and one whose template contains a hand-written list of
+keywords that a maintainer keeps up to date. Both are generators, both are covered by
+the same \texttt{npm run gen \&\& git diff -{}-exit-code} step, both are green.
+
+\subsection{Why the gate cannot check its own precondition}
+
+A reflexive gate observes exactly one thing: whether $G(S)$ equals the committed $A$.
+That comparison is blind to how $G$ computed its answer. Two generators over the same
+subject, one derived and one retyped, produce identical CI output --- a passing step
+with no diff --- and no signal distinguishes them. The gate has no access to the
+property on which its own soundness depends.
+
+Nor is the precondition usually apparent to a reader. The generators in the subject
+system of Section~\ref{sec:depth} are several hundred lines each and mix both styles:
+they derive the keyword vocabulary from a shared table \emph{and} carry hand-written
+prose that states grammar rules in English. A single generator can be derived in one
+paragraph and retyped in the next.
+
+\subsection{The demonstration}\label{sec:twogenerators}
+
+The cleanest evidence that the gate is blind is a case where two generators disagreed
+with the parser \emph{and with each other}, in different places, while both gates
+stayed green for three releases.
+
+The subject system generates two artifacts that describe its language: a one-page
+specification for a model to read, and a GBNF grammar for a constrained decoder to
+sample under. Both are produced by generators; both are covered by the drift gate; both
+had been green since they were written. When the two artifacts were first checked
+against the parser rather than against themselves, the specification taught
+\factSpecBadLines{} incorrect grammar lines of which \factSpecUncompilable{} do not
+compile, and the grammar derived \factGbnfIllegalForms{} forms the parser rejects. The
+sets did not coincide. Each generator was right where the other was wrong.
+
+Two observations follow. First, no amount of re-running either gate could have found
+this: both generators reproduced their own output perfectly, which is all the gate ever
+asked. Second, the failure was not detectable by comparing the artifacts to each other
+either --- they disagreed, but with no oracle there is no way to say which was right,
+and in fact both were wrong in different places. The only thing that settles it is
+executing them against the parser.
+
+The downstream cost was measurable. A separate consumer generating floor plans from the
+specification failed \factDownstreamFailed{} of \factDownstreamTotal{} generations,
+because four of the seven bad lines were forms the parser rejects. The grammar's cost
+is harder to bound and worse in kind: a constrained decoder sampling under an
+over-permissive grammar produces output that is guaranteed well-formed by the grammar
+and rejected by the parser, which is the precise inversion of the artifact's purpose.
+
+\subsection{The dividing line is an executable counterpart}
+
+Non-reflexive validation of a machine-consumed description is neither rare nor new. It
+is mature wherever the description has something to be run against: Pact executes a
+generated contract against a live provider~\cite{pact_contract_testing}, Schemathesis
+executes a schema against a running server~\cite{schemathesis}, protobuf has a
+conformance suite~\cite{protobuf_conformance}, and Kubernetes fuzzes real values through
+its generated conversion code so that a conversion which drops data
+fails~\cite{k8s_roundtrip}. Doctests are the limiting case: a doctest is
+executable \emph{by construction}, because it is code.
+
+What these share is not authorship --- Pact's contract is generated, not hand-written
+--- but the availability of an executable counterpart. Table~\ref{tab:counterpart}
+splits the field on that line.
+
+\begin{table}[t]
+\caption{Whether a machine-consumed description has something to run against}
+\label{tab:counterpart}
+\centering\footnotesize
+\begin{tabular}{@{}p{0.44\columnwidth}p{0.44\columnwidth}@{}}
+\toprule
+\textbf{Has an executable counterpart} & \textbf{Has none} \\
+\midrule
+OpenAPI schema + a live server; a Pact contract + a real provider; a doctest; a
+protobuf conformance suite; generated conversion code + a fuzzer &
+a constrained-decoding grammar; a specification page; a bundled context file; a
+protocol handshake identity; a vendored documentation resource \\
+\addlinespace
+\emph{validation: mature, mainstream} & \emph{validation: absent} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The right-hand column is the LLM-facing artifact class, and it is where we measure.
+Kubernetes' round-trip fuzzer is worth dwelling on: we found it while trying to refute
+this dividing line, and it supports it. Generated \emph{code} gets fuzzed because it can
+be run. A grammar, a specification page and a handshake string cannot be run, and get
+nothing.
+
+\section{An Ecosystem Census}\label{sec:census}
+
+Of the \factEcoApplicable{} npm packages on the Model Context Protocol
+registry~\cite{mcp2026spec} whose self-reported identity can be settled by reading their
+shipped code, \factEcoDriftConfirmed{} --- \factEcoDriftConfirmedPct{} --- state at handshake
+time a version that once tracked the package and has since been left behind. Each of those is
+corroborated case by case against the package's own release history by the procedure in
+Section~\ref{sec:corrobstep}. Counting instead every literal that merely disagrees with the
+package version, whether or not it could be corroborated, gives \factEcoDriftRaw{} ---
+\factEcoDriftRawPct{}. We report that second figure as an upper bound and not as the result.
+
+\subsection{The frame, and why this artifact}
+
+An MCP server is a package whose purpose includes describing itself to a language
+model~\cite{anthropic2024mcp}. It states a name and a version to its host at handshake time,
+and ships tool descriptions, schemas and documentation that a model reads in order to use it.
+The handshake version is the smallest member of the artifact class of
+Table~\ref{tab:counterpart}: one string, consumed by a machine, with nothing to be executed
+against. It is also the member of that class we found most tractable to measure at ecosystem
+scale, because a registry enumerates the population and every candidate ships its answer in
+its own tarball.
+
+The frame is every server listed on the official registry that distributes an npm package.
+Metric~1 below is a \emph{census} of all \factEcoPackages{} unique packages in that frame
+rather than a sample of it, so it carries no sampling error; Metric~2 is a sample and is
+reported separately in Section~\ref{sec:metrictwo}, never merged into Metric~1's rate. The
+harness has no dependencies, the per-package dataset is retained, and a separate script
+recomputes every figure quoted here from that dataset and asserts eight internal identities.
+
+\subsection{Denominators}
+
+Table~\ref{tab:ecofunnel} gives the population at each stage. Three attritions between the
+enumerated registry and the applicable set are worth naming, because all three bias the result
+downward. Some registry entries are remote endpoints or packages published elsewhere and
+declare no npm package at all. Of the tarballs that were read, a small number ship no
+JavaScript or TypeScript to scan, and a much larger group ships code in which no handshake site
+could be located --- overwhelmingly minified bundles where the SDK constructor has been renamed
+and the argument object restructured past recognition. Finally, packages whose version
+expression could not be settled statically, because it is supplied by a caller or a
+configuration object, are excluded rather than guessed in either direction.
+
+\begin{table}[t]
+\caption{Metric 1: each row is the population the next row filters}
+\label{tab:ecofunnel}
+\centering\footnotesize
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Stage} & \textbf{Count} \\
+\midrule
+Server entries enumerated (latest of each) & \factEcoServers{} \\
+Unique npm packages declared among them & \factEcoPackages{} \\
+\quad version \emph{derived} at runtime --- cannot drift & \factEcoDerived{} \\
+\quad version a hardcoded \emph{literal} --- can drift & \factEcoRetyped{} \\
+\textbf{Applicable} (derived $+$ literal) & \textbf{\factEcoApplicable{}} \\
+\midrule
+Disagrees with the package version (upper bound) & \factEcoDriftRaw{} \\
+\textbf{Corroborated as left behind} (headline) & \textbf{\factEcoDriftConfirmed{}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Derived versus retyped, measured}
+
+The split between those two middle rows is the field measurement of
+Section~\ref{sec:mechanism}'s precondition, and it is the single most important number in this
+paper. \textbf{Of the packages whose self-reported identity can be resolved statically,
+\factEcoDerivedPct{} derive it and \factEcoRetypedPct{} retype it.} A derived version is read
+from the package's own manifest at load time and cannot be wrong about the package; a retyped
+one is a literal a person wrote next to a constructor, and it is wrong as soon as the next
+release ships. The reflexive-gate ecosystem of Section~\ref{sec:intro} is built for the first
+case, its soundness depends on being in the first case, and in this population the first case
+is the minority by an order of magnitude.
+
+We note what the split does \emph{not} say. It is not a claim that
+\factEcoRetypedPct{} of these packages are wrong today --- most of the retyped ones are, but
+that is the separate measurement above. It is a claim about which failure is available: for
+\factEcoDerived{} packages the only reachable defect is staleness of the manifest itself, and
+for \factEcoRetyped{} the description and the subject are free to disagree indefinitely.
+
+\subsection{Corroboration}\label{sec:corrobstep}
+
+Observing that a literal happens to be some earlier version of its package is not sufficient
+evidence of drift. In a package with hundreds of releases any short version string appears
+somewhere in its history by coincidence, and some projects deliberately version an embedded MCP
+surface independently of the package that carries it.
+
+So for each candidate the harness downloads the release the literal \emph{names} and asks the
+decisive question: at that version, did the handshake say exactly this? If it did, the literal
+once tracked the package version and has since been frozen, and the drift is real rather than
+an independent scheme. If it did not --- if that release's handshake said something else, or
+had no handshake, or no literal --- the case is excluded.
+
+\factEcoIndependentVersioning{} cases were excluded on precisely those grounds: at the version
+their literal names, the handshake said something different, so the literal is evidence of a
+separate versioning scheme rather than of neglect. Those exclusions are the check working. They
+are also the reason a hardcoded handshake version cannot be assumed wrong on sight, and the
+reason we lead with the corroborated figure: the difference between \factEcoDriftRawPct{} and
+\factEcoDriftConfirmedPct{} is not noise but the cost of insisting on per-case evidence.
+
+\subsection{A category that cannot be corroborated}
+
+\factEcoNeverPublished{} packages state a well-formed version that has never been any published
+version of that package. \factEcoNeverPublishedScaffoldPct{} of these values are a common
+scaffold default, which is consistent with a placeholder that was never revisited --- though we
+did not inspect commit histories and so cannot say when any of them was written. These are not
+values that were once true and went stale; they were never true. There is no
+earlier tarball to check them against, so they are \emph{not corroborable by construction} and
+are excluded from the headline, even though a value that was never correct is arguably the
+worse failure. The headline therefore understates.
+
+Two smaller categories are worth recording because they are not staleness either. A handful of
+literals are not versions at all, including one package that ships its own uninterpolated build
+template as its identity: a substitution that never ran, published to the registry and served
+to every host that installs it. In a further handful the literal names a version \emph{newer}
+than the package --- a bump applied to the description and not to the release.
+
+Separately, \factEcoInternalDisagreement{} packages contain two or more different hardcoded
+version literals in their own shipped code, so their files disagree with each other about what
+version they are, independently of whether any of them matches the manifest. Which answer a
+host receives depends on which entry point it launched.
+
+\subsection{Distribution, not just the median}
+
+The median corroborated case is \factEcoMedianReleases{} releases and one day behind. On its
+own that is unremarkable: a maintainer bumped the manifest, published the same day, and left
+the literal. Quoting only the median would understate the phenomenon and quoting only the tail
+would overstate it, so both: \factEcoGeFive{} packages are five or more releases behind their
+own stated identity, \factEcoGeTen{} are ten or more, and the confirmed extreme is
+\factEcoMaxReleases{} releases spanning \factEcoMaxDays{} days. Roughly half the corroborated
+population is a same-day slip and roughly half is a package genuinely out of date about itself.
+
+\subsection{False positives}
+
+An automated count of \factEcoDriftConfirmed{} cases that nobody has read is the kind of number
+this paper argues against, so the count was checked in two ways.
+
+First, over the whole confirmed population: every positive must carry its own evidence, meaning
+the recorded source excerpt contains the claimed version verbatim or the record names the
+constant it resolved from. All of them do, and the verification script fails if that ever stops
+holding. This is a completeness property of the record rather than of the judgement, but it
+establishes that no confirmed positive rests on an unrecorded inference.
+
+Second, a deterministic sample of \factEcoFpSample{} confirmed positives was read as source by
+a reviewer working independently of the harness, yielding \factEcoFpFound{} false positives.
+The rule of three at that sample size with no observed events gives
+\factEcoFpUpperBound{} as an upper bound at the conventional confidence level. That bound is loose, and we state it as the honest limit of a hand
+review at this size rather than as a precise rate. Errors of the detector concentrate in the
+never-published stratum and in the minified-bundle fallback, neither of which contributes to
+the headline.
+
+\subsection{One package that is the whole argument}
+
+\texttt{@shiplightai/mcp} ships a single bundle that contains both of its self-descriptions. One
+literal is the version reported by its \texttt{-{}-version} flag, and it is correct. The other
+is the version passed to the MCP handshake, and it is wrong. The two sit in one file, written at
+the same time, describing the same artifact at the same instant.
+
+\textbf{The human-facing self-description is right and the model-facing one is wrong, and
+nothing distinguishes them except who reads them.} Nobody filed a bug about the handshake
+because no person sees it; the flag is correct because people run it and would notice. That is
+the thesis of this paper in one package, and it was not constructed for the purpose --- it is
+the current published release.
+
+\subsection{Metric 2: vendored resources}\label{sec:metrictwo}
+
+The second metric asks a different question of a different population, with its own
+denominators, and its rate must never be combined with Metric~1's. An MCP server may vendor
+documentation, schemas or grammars into its tarball at pack time; those copies are then frozen
+while the project's own sources move. To compare them, a package must declare a public
+repository, that repository must be reachable, and it must carry a tag matching the published
+version.
+
+That last requirement is the binding one. The sample was drawn from packages declaring a
+parseable repository, and fewer than half of the drawn packages could be compared at all:
+repositories are private or deleted, and many projects publish releases without tagging them.
+\factEcoMTwoCompared{} packages survived to a comparison. Of those,
+\factEcoMTwoDiffer{} --- \factEcoMTwoDifferPct{} --- ship at least one vendored text file that
+differs from the same file in the project's own repository at the matching tag.
+
+We report \factEcoMTwoDifferPct{} as a raw upper bound. It counts any textual difference,
+including formatting and build-time rewriting, and hand verification of the differing cases
+reduces it substantially. The attrition and that ambiguity together are why Metric~2 is
+supporting evidence for the same mechanism in a second artifact and not a headline.
+
+\subsection{What the census cannot see}
+
+Every bias we can identify points downward. Packages with no locatable handshake are dropped
+rather than assumed to drift, and they are disproportionately minified bundles, which is
+neither a random nor an obviously cleaner subpopulation. Unresolvable version expressions are
+dropped. A package counts as a positive only if none of its literals matches its own version.
+The never-published category, which is the more serious failure, is excluded from the headline
+entirely. And a package whose handshake version happens to be correct today may be retyped and
+one release from being wrong; the census records it as clean.
+
+\section{Four Independent Codebases}\label{sec:corroboration}
+
+The census measures one artifact at scale. It does not show what the same failure looks like
+inside a compiler, so we examined four third-party floor-plan compilers written by other
+people: two independent implementations of one language (a TypeScript original and a Rust
+port by a different author), an IFC toolkit, and a Typst drawing library. Each was cloned at a
+pinned commit, and every finding is reproduced by a committed script that names the specific
+evidence it depends on. Table~\ref{tab:corrob} lists the six instances.
+
+We sort them into three sub-classes. \textbf{A}: a system's description of itself disagrees
+with its implementation. \textbf{B}: a declared diagnostic that can never fire, or a check that
+computes a value and discards it. \textbf{C}: a guard or a shipped surface that is never
+executed, so nothing about it is verified. Only the first is drift in the sense of
+Section~\ref{sec:mechanism}; we keep the other two separate rather than folding them into one
+headline count.
+
+\begin{table*}[t]
+\caption{Six instances across four third-party compilers, each at a pinned commit}
+\label{tab:corrob}
+\centering\footnotesize
+\begin{tabular}{@{}llp{0.42\textwidth}ll@{}}
+\toprule
+\textbf{Project} & \textbf{Sub-class} & \textbf{Finding} & \textbf{Verdict} & \textbf{Evidence} \\
+\midrule
+PlanScript (TS) & B &
+\texttt{isPolygonClosed} computes a first point, a last point and a tolerance, then returns
+true unconditionally; it is never called, and the error code it exists to raise has no raise
+site anywhere & confirmed, stronger than seeded & reading \\
+\addlinespace
+PlanScript (Rust) & B &
+three declared error-code variants are never constructed anywhere in the crate or its tests,
+while a design document advertises two of them as typical compiler errors & confirmed, broader
+than seeded & execution \\
+\addlinespace
+PlanScript (Rust) & A, C &
+placement order is taken from a hash map, so the solver is non-deterministic; determinism is
+promised in four documents and tested in none & confirmed & execution \\
+\addlinespace
+PlanScript (both) & C &
+the connectivity check counts a shared wall as a connection, and the one test written to prove
+that doors establish connectivity passes with the door branch deleted & partially confirmed;
+drift framing refuted & execution \\
+\addlinespace
+ifc-lite & C &
+the wall clock is written into every exported drawing's title block, while the file's only
+byte-identity assertion runs on the path that excludes the title block & confirmed & execution \\
+\addlinespace
+arch-plotter & C &
+a mistyped anchor becomes a zero-length move and the wall silently disappears; the library
+raises no diagnostic of any kind, and its two test files have never been executed & confirmed
+& execution \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+Four of the six are backed by a run rather than by reading the source. That was deliberate.
+This paper argues that reading a surface is not verifying it, so evidence gathered by reading
+would be gathered by the method the paper criticises. Reading tells you that a hash map decides
+placement order; running the solver thirty times on one input and getting thirty distinct
+buildings tells you it matters. Reading tells you a date is formatted from the system clock;
+exporting the same model under two stubbed clocks and diffing the bytes tells you the drawing
+is not reproducible, and that a locale-dependent format makes it vary between two colleagues
+exporting at the same instant. In two of the four cases the executed result is strictly
+stronger than what the source supported, and in one it corrected the claim we started with.
+
+Each script was also negative-controlled: a scratch copy of the clone was patched to remove the
+evidence, and the script re-run to confirm it then fails with a message naming what went
+missing. All six pass on the real clone and fail on the patched copy. A reproduction script
+that has never been run is the defect class this paper documents, and a script that cannot fail
+is that defect one level up.
+
+\subsection{A defect that survived a reimplementation}
+
+The strongest single result is the pair of PlanScript ports. \texttt{E101} --- the code for an
+unclosed polygon --- is dead in both. In the TypeScript original the function that would raise
+it returns true unconditionally and is never called; in the Rust port, written later by a
+different author, the enum variant exists and is never constructed. The port re-typed the error
+catalogue faithfully, including the entries with nothing behind them. \textbf{The defect
+survived a cross-language reimplementation by a different person}, which makes it a property of
+maintaining a catalogue by hand rather than of one author's carelessness.
+
+The two catalogues then diverge in a way that is more informative than the agreement. The
+TypeScript version has four dead codes and the Rust port has three: the port revived one code
+that is dead upstream, and inherited the other three. Overlapping-but-different sets are what
+one would predict if each catalogue were hand-maintained rather than derived from raise sites,
+because two people transcribing the same list make different omissions. A derived catalogue
+cannot produce that pattern at all, so the divergence discriminates between the two
+explanations rather than merely illustrating one of them. None of the four
+dead codes is named by any test in either repository, which is consistent with codes that cannot
+fire and is the reason no gate reported them.
+
+\subsection{Refutations}
+
+Four things we looked for were not there, and a section that reports only confirmations is not
+evidence.
+
+\emph{The drift framing of the connectivity check is wrong.} We expected a description-versus-%
+implementation disagreement in \texttt{rooms\_connected} and did not find one: the language
+reference documents the shared-edge rule accurately, and both implementations match their own
+documentation. What is actually wrong is narrower --- the assertion's name and its error code
+promise circulation connectivity while the check measures geometric adjacency --- and it belongs
+in sub-class C rather than A. The instance stays in the table with its framing corrected rather
+than being dropped. The vacuous test underneath it is a genuine finding and was found only
+because the original claim was checked instead of accepted.
+
+\emph{The dead-code pattern is not universal.} A sweep of ifc-lite's MCP error catalogue found
+all eleven declared codes in active use, between one and forty-six call sites each. A project
+can evidently keep a small catalogue honest, and the claim is therefore falsifiable and was not
+rubber-stamped.
+
+\emph{Not every generated artifact can drift.} PlanScript's parser is generated by a parser
+generator from a committed grammar file, and regenerated on every test run and every build; the
+generated parser is not committed at all. There is nothing to go stale. This is the derived case
+of Section~\ref{sec:mechanism} implemented properly, in one of the same repositories that
+carries three dead error codes.
+
+\emph{A shell pattern we expected was absent.} The example-building scripts in both PlanScript
+repositories use \texttt{set -e} correctly, so the ``script that cannot fail'' pattern is not
+present there. What we found instead in the Rust port is different in kind: two of its five
+shipped example inputs no longer solve, so the script that regenerates the examples cannot
+complete, and the committed outputs for those two are artifacts of a build that no longer runs.
+That project's non-determinism also forecloses the reflexive gate entirely --- a
+regenerate-and-compare step is impossible where regeneration produces a different building each
+time --- which is worth stating because it is the one case where the gate's absence is not an
+omission the project could simply correct.
+
+\subsection{What is conceded on this axis}
+
+Requiring that a tool's declared diagnostics can actually fire is not our idea and is already
+shipped and CI-enforced at the top of the field: rustc's \texttt{tidy} check demands that every
+error code be documented, be triggered by a test, and be emitted by the
+compiler~\cite{rustc_tidy_errorcodes}. The mechanism these instances need already exists in a
+production compiler.
+
+Our contribution on this axis is therefore the \emph{distribution}, not the idea. The practice
+exists where somebody paid for it and is absent below that tier: four dead codes in one
+compiler, three in its port, a design document advertising two of them to readers, and no test
+in either repository naming any of them. What separates rustc from these projects is not
+knowledge of the technique but whether anyone made the catalogue answer to the code.
+
+\section{One System in Depth}\label{sec:depth}
+
+The census counts one string per package and the third-party instances are one defect each.
+Neither shows what an entire self-describing surface looks like when it is checked for the
+first time. The subject system is a production floor-plan compiler with a command-line
+interface aimed at language models: it ships a specification page, a constrained-decoding
+grammar, JSON schemas, a bundled context file, and a protocol shim that vendors copies of all
+of them. Every one of those artifacts had a reflexive drift gate. Section~\ref{sec:twogenerators}
+reports what happened when two of them were first executed against the parser instead of
+against themselves; this section reports the measurements that followed, including two that
+were themselves defective.
+
+\subsection{An agreement corpus for the grammar}
+
+The grammar is checked against the parser by a corpus of complete plan sources, each run through
+both. The corpus is \factGbnfCorpus{} sources chosen to sit on clause-ordering and arity
+boundaries, of which \factGbnfParseable{} are accepted by the parser and \factGbnfRejected{} are
+rejected. That split is itself asserted, so the corpus cannot be satisfied by a grammar that
+accepts everything or one that rejects everything.
+
+For each source the property is a biconditional: the grammar derives it if and only if the
+compiler parses it. Against the last grammar that was ever published, agreement is
+\factGbnfAgreeBefore{} of \factGbnfCorpus{}. Against the current grammar it is
+\factGbnfAgreeNow{} of \factGbnfCorpus{}. The \factGbnfDisagree{} disagreements are not
+symmetric: \factGbnfOverDerive{} are over-derivations, where the grammar admits a form the
+parser rejects, and \factGbnfUnderDerive{} are under-derivations, where the parser accepts a
+form the grammar cannot produce. The over-derivations are the serious direction, because a
+constrained decoder sampling under that grammar emits them as well-formed by construction and
+the parser then refuses them.
+
+The methodological point is not the ratio but where the expected value comes from.
+\textbf{The expected verdict for each source is computed by calling the compiler, on every run,
+so there is no expected column to edit.} A conventional table of source-and-expected-result
+pairs can be made green by changing the expectation, and a maintainer under time pressure
+usually can; here the only two ways to make a red case green are to fix the grammar or to
+change the language. This is the difference between a test that records a belief about the
+system and one that asks the system.
+
+\subsection{Executing the specification}
+
+The same treatment applied to the prose specification is a suite that extracts every form the
+document teaches and every illegality it declares, then runs them. As shipped,
+\factSpecFormsCompile{} documented forms must compile and \factSpecFormsRefused{} documented
+illegalities must be refused \emph{with the catalogued code the document names for them} ---
+refusal alone is not enough, because a form can be rejected for the wrong reason and still look
+correct from outside. The suite is bound to the compiler's keyword set, so a keyword with no
+documented form fails it rather than being silently undocumented.
+
+Executable documentation is not new and we make no claim on it: Rust, Go and Python all run
+their documentation examples by default~\cite{rust_doctests,go_testable_examples,python_doctest},
+\texttt{@tComment} turned Javadoc into runnable assertions in
+2012~\cite{tan2012tcomment}, and CASCADE generates tests directly from
+documentation~\cite{kiecker2026cascade}. What is worth reporting is where it was absent. The
+document these forms come from is read by no human in the normal course of events, so it had
+none of the pressures that produce doctests --- no reader to be confused, no example to be
+copied into a tutorial --- and it carried its errors for three releases behind a green gate.
+
+\subsection{A mutation score for two modules}
+
+Two modules of the subject system had no direct caller in the test suite: the arithmetic behind
+the measured-deficit diagnostics, and the exact-isometry layer that carries a placed component's
+geometry into plan coordinates. Both were reached only incidentally, through whole-plan tests.
+To measure what those tests were actually checking we ran a mutation experiment in the standard
+sense~\cite{demillo1978hints,jia2011mutationsurvey}: \factMutants{} hand-authored mutants,
+\factMutantsMeasure{} in the first module and \factMutantsFrame{} in the second, each a
+find-and-replace pair whose target must match exactly once in its file, asserted before anything
+is written.
+
+Each mutant is applied, the module's dedicated test file is run, and if that file still passes,
+a fixed set of whole-plan suites that reach the module is run as well. \factMutantsKilled{} of
+\factMutants{} mutants are killed, a mutation score of \factMutantScore{}. The
+\factMutantsSurvived{} survivors are all judged equivalent, with the argument stated per
+survivor: two unconditionally, because the mutated comparison cannot be reached with a
+distinguishing value, and three under an invariant that their only caller establishes. Equivalent
+mutants are a known and undecidable-in-general obstacle to interpreting a mutation
+score~\cite{papadakis2019mutationadvances}, so we state the reasoning rather than assert the
+classification, and we note the weaker form it takes: a survivor is equivalent \emph{under its
+caller's invariant}, which is a property of the current program and not of the function.
+
+Two facts about the run are worth more than the score. The whole-plan suites killed no survivor
+that the dedicated file did not already kill, so widening the suite set does not move the number
+--- the incidental coverage that made these modules look tested compensates for nothing. And an
+earlier version of this experiment surfaced two survivors that were \emph{not} equivalent: both
+in the reflection path of the transform layer, each demonstrated by a plan whose rendered bytes
+the mutation changes while the suite stays green. Those are now killed, which is why the
+survivors reported here are all equivalent.
+
+\subsection{A worked example: the run that measured nothing}
+
+An earlier run of this same harness over the same subject reported \factMutantsVoidKilled{} of
+\factMutants{} --- \factMutantScoreVoid{} --- and it is void.
+
+The harness works by writing a wrong version of a source file into the tree, running the tests,
+and putting the file back. While it runs, the repository contains a compiler that is wrong on
+purpose, and a mutated file is indistinguishable on disk from an ordinary uncommitted edit.
+Partway through that run, a third party noticed a source file that looked corrupted and restored
+it from the last commit. The interference was the session lead directing this work --- the person
+who commissioned the measurement, acting reasonably on what the file system showed. Naming that
+is the point: no rule about who may touch the tree would have prevented it, because the
+information needed to distinguish a live measurement from a leftover was not available to the
+person who had to decide.
+
+Two mutants were then counted as survivors purely because their mutation had been removed from
+underneath them. The resulting score is plausible: it sits slightly below the true one, in the
+direction and by the sort of margin a reader would expect a real result to sit, and there is
+nothing in the number to suggest anything went wrong.
+
+The artifact of that run records \texttt{treeCleanAfterRun: true}. The check was honest and it
+was not lying: the tree was clean when the run ended, because the interference had restored the
+file. It answered the question it was asked. It was not asked whether the file had been clean
+\emph{throughout}, which is the question that mattered, and no reader of the artifact could tell
+the difference. \textbf{A measurement corrupted by concurrent interference produced a
+plausible-but-wrong number and self-certified as clean.} We report this as a worked example
+rather than as a result, and the earlier score appears nowhere in this paper as a measurement of
+anything.
+
+The remedy is the same shape as the rest of the paper. The harness now records a marker before
+it does anything at all, carrying which phase it is in, and answers ``is a run executing?''
+rather than ``is the tree mutated?'' --- two questions that look identical on disk. The
+instruction is to ask the tool, not to inspect the file system. An earlier version of that
+instruction told readers to check for the marker file's existence, and there was a window in
+which a live run had not yet written it; a reader following the instruction during that window
+would have concluded that a live measurement was a leftover.
+
+\subsection{Surfaces that shipped without ever being executed}
+
+The last group is not about descriptions but about the same blindness applied to behaviour, and
+it is what the depth study turned up once the executable-check habit was established.
+
+The subject system's file-watch command had not watched for \factWatchBrokenReleases{} releases,
+across which the machine-readable command manifest continued to advertise that it recompiles on
+save. A refactor had wrapped the command so that the process exited immediately after arming the
+watcher. Nothing was wrong with the manifest's generator, the manifest was regenerated and
+compared on every build, and the command had no end-to-end test of any kind: the gate guarding
+the description of the feature was green throughout, because the description was never the thing
+that was broken.
+
+The system's flagship determinism property is a second instance, and it is a generator-coverage
+failure of the kind the property-testing literature already
+names~\cite{groce2012swarm,goldstein2021judgecover}. The property fed a general string generator
+into the body of a plan and asserted that compiling twice produced identical bytes. Across
+\factOldPropSamples{} samples it produced \factOldPropGeometry{} walls, rooms, openings or
+fixtures: essentially every sample was a parse error, and the property was asserting that two
+compilations of an invalid plan agree. It passed continuously and its subject was empty.
+
+The replacement generates plans by construction, drawing every closed value set from the module
+that owns it, and renders geometry in every one of its \factNewPropSamples{} samples. The
+difference is measurable rather than asserted: an iteration-order bug planted in the wall-lowering
+pass is killed by the new property within \factPlantKilledRuns{} runs, and survived
+\factPlantSurvivedRuns{} runs of the old one. That comparison is the vacuity-detection procedure
+of Beer et al.~\cite{beer1997vacuity} --- perturb the subject and require the guard to
+notice --- applied to a property test, and it is the only evidence we accept for a guard in this
+paper.
+
+\%% Tail sections of the flagship, drafted separately to avoid editing main.tex
+%% concurrently with the evidence-sections agent. Merge into main.tex replacing the
+%% matching TODO stubs.
+
+\section{Remedy: Provable Non-Vacuity}\label{sec:remedy}
+
+The remedy for a retyped generator is to derive instead --- which is
+DRY~\cite{hunt1999pragmatic}, and ours only in the sense that we arrived at it after
+violating it. What we can offer is narrower and, we think, more useful: the reflexive
+gate's precondition can be made checkable, and the guards that replace it can be
+required to prove they are not vacuous.
+
+\subsection{Four mechanisms}
+
+\textbf{Single-source the closed vocabularies.} Every finite set of values the language
+admits --- element kinds, enum words, door kinds, paper sizes --- lives once, and every
+description of the language interpolates from it. The subject system carries eight such
+sets and an \texttt{assertVocabRendered} guard that throws when a member of a set has no
+rendering in the artifact being generated. This converts the generator from retyped to
+derived for exactly the facts most likely to grow, and it fails loudly when a new value
+is added without a home.
+
+\textbf{Compute the expected value rather than write it down.} The GBNF agreement corpus
+of Section~\ref{sec:depth} pairs each of \factGbnfCorpus{} plans with a verdict taken
+from the compiler \emph{on every run}. There is no expected column in the fixture, so
+there is nothing a maintainer can edit to make a red suite green; the corpus can only be
+satisfied by fixing the grammar or by changing the language. This is the structural
+difference between a test and a snapshot, and it matters most exactly where a snapshot
+is most tempting.
+
+\textbf{Execute the documentation.} The reference is a test corpus:
+\factSpecFormsCompile{} documented forms must compile and \factSpecFormsRefused{}
+documented illegalities must be refused \emph{with their catalogued code}. This is
+\texttt{@tComment}'s idea~\cite{tan2012tcomment} applied to a generated artifact, and
+rustc's \texttt{tidy} check~\cite{rustc_tidy_errorcodes} is the strongest existing
+instance of it; we claim the application, not the technique.
+
+\textbf{Require every guard to prove it is not vacuous.} A guard that has never been
+observed to fail is a guard nobody has reason to believe. The available proofs are a
+planted fault the guard must reject, an anti-vacuity assertion that a fixture really is
+faulty before it is healed, and --- for a corpus --- a non-vacuity case asserting that
+the corpus contains both accepted and rejected members, so it cannot be satisfied by a
+recogniser that says yes to everything.
+
+\subsection{The invariant we converged on was already universal}
+
+The single-source rule is not an invention. It is the property the derived-artifact
+ecosystem relies on everywhere: API Extractor reads a symbol table, Gazelle reads real
+imports, \texttt{protoc} reads the schema. The finding is not that the rule is good ---
+it is 27 years old --- but that it is \emph{universal in practice, stated nowhere, and
+unenforced by the very gate meant to protect the artifacts that depend on it}. A project
+can violate it and keep a green build indefinitely, which is what the subject system did
+for three releases and what \factEcoRetypedPct{} of the packages in
+Section~\ref{sec:census} are doing now.
+
+\subsection{What the precondition check would look like}
+
+We do not have a general detector, and we do not claim one. But the question a reflexive
+gate should be able to answer about itself is small and concrete: \emph{does this
+generator's output depend on any fact that a human typed into the generator?} For the
+narrow case of closed value sets the answer is mechanisable, and the
+\texttt{assertVocabRendered} guard above is one implementation. For prose that states a
+grammar rule in English, it is not; there, executing the documentation is the only
+remedy we know.
+
+\section{This Paper's Own Toolchain}\label{sec:self}
+
+The strongest evidence we can offer that this failure mode is ordinary rather than a
+story about one careless project is that the tooling built to support \emph{this paper}
+produced seven vacuous guards in the course of writing it. They are listed in the order
+they occurred, with who or what caught each.
+
+\begin{enumerate}
+\item A bibliography set-comparison whose pattern collapsed and matched nothing,
+  reporting every entry as missing. Caught only because a different check contradicted
+  it. Its author's own note is the sharpest sentence any of us wrote: \emph{``I ignored
+  it because grep contradicted it --- but had it reported success I would have believed
+  it.''}
+\item A page-limit checker that scraped the PDF for a marker absent from compressed
+  object streams, fell through to a fallback that matched an unrelated number, and
+  reported a one-page paper as 47 pages. It would have passed any limit. Caught because
+  the number was absurd, not because anything failed.
+\item A fault injector whose planted citation lost a backslash in transit, so the
+  non-vacuity proof it was performing proved nothing while reporting success. Caught by
+  checking the bytes on disk rather than the tool's own report.
+\item A stale \texttt{.tex} silently recompiled against a bibliography that had grown
+  beneath it. \textbf{Caught by a guard} --- the only one of the seven that was.
+\item A superseded paragraph left standing directly above its own correction in the
+  planning document, with nothing marking which was which. Caught by a reader.
+\item A mutation harness that left a planted fault in the source tree while its result
+  file recorded \texttt{treeCleanAfterRun: true}. Caught by routine inspection. Its
+  replacement's safety marker was then documented in a \texttt{SAFETY.md} that would
+  have caused the corruption it was written to prevent, because the marker was written
+  after the first mutation rather than before the run; following that document would
+  have destroyed a live measurement for the second time.
+\item A citation checker that short-circuited on \texttt{\textbackslash nocite\{*\}} ---
+  correct in principle, since that macro defines every key, and wrong in practice,
+  because a \emph{misspelled} key is undefined even then. It waved one through while the
+  build reported success. This was the guard written to catch \#4.
+\item A banned-claim checker, written to enforce the retractions of
+  Section~\ref{sec:concede}, that matched multi-word phrases against unwrapped source.
+  \LaTeX{} wraps at the margin, so a banned phrase split across a newline evaded it. Three
+  phrases were planted; it caught the two that happened to sit on one line and missed the
+  third. \textbf{It was real and partial, which is worse than absent, because partial
+  coverage reads as coverage.}
+\end{enumerate}
+
+Two of eight were caught by a gate; the rest were caught by a number looking wrong, by
+checking bytes instead of a report, by a reader, and by routine inspection. Every one of
+the eight was found because a fault was deliberately introduced and the guard was asked to
+notice --- which is Section~\ref{sec:remedy}'s requirement, applied to the guards written
+for this paper, and the only reason the list is eight long rather than shorter and wrong.
+
+One contrasting case is worth reporting because it is the design working. The page-limit
+checker could not parse the label reference emitted by a different document class, whose
+counter is wrapped in a macro the checker's pattern could not span. It did not pass. It
+reported that it could not verify what it claimed to check, and exited non-zero. A guard
+that cannot see its subject and says so is not a member of this list; it is the behaviour
+the other eight lacked.
+
+There is also an observer effect worth a sentence. Committing the input behind one of this
+project's transcripts required a note recording its provenance; adding that note to the
+input file moved the byte offsets the transcript reported, silently invalidating it. The
+note explaining an artifact changed the artifact it described, and the provenance now lives
+beside the file rather than inside it.
+
+We report all of this not as self-deprecation but as the paper's most direct evidence.
+These guards were written by people actively arguing that this failure is ordinary, while
+they were arguing it, in a repository whose continuous integration was green throughout.
+
+\section{Threats to Validity}\label{sec:threats}
+
+\textbf{Construct.} We measure whether a machine-consumed self-description is
+\emph{true}, not whether being false caused harm in any particular deployment. For the
+handshake version the harm is plausible but unquantified: a host that logs or gates on a
+server's reported version is misled, and we did not measure how many do. For the grammar
+and specification the downstream cost was measured once, in one consumer
+(Section~\ref{sec:twogenerators}), and one measurement is not a rate.
+
+\textbf{Internal.} The census depends on statically resolving a value out of published
+JavaScript. Packages where that resolution fails are excluded rather than guessed, and
+the exclusion is not random: reading a version from \texttt{package.json} is itself
+dynamic, so if dynamic resolution correlates with better engineering, the true retyping
+rate across \emph{all} packages is lower than the rate among applicable ones. We
+therefore quote the rate among applicable packages and say so.
+
+\textbf{External.} Metric~1 is a census of registry-listed servers with an npm package,
+so it carries no sampling error --- but that frame is not ``all MCP servers'': servers
+distributed via PyPI, Go, OCI or as remote endpoints are absent, as are unregistered
+ones. Metric~2 \emph{is} a sample and its rate carries sampling error accordingly. The
+four corroborating codebases are all floor-plan tooling, chosen because the subject
+system is; whether the same rates hold in other domains is untested. One counterexample
+(ifc-lite's error catalogue, entirely live) shows the pattern is not universal.
+
+\textbf{Conclusion.} The mutation score is over a hand-authored mutant set, which
+encodes its author's idea of what can go wrong; it is a measurement of that suite
+against those mutants and is not comparable to any other project's score, nor to an
+earlier unreproducible figure from this project which we deliberately do not cite. The
+subject system is single-maintainer and young, and its eval rates are single runs at
+$n = \factEvalBriefs{}$ which we report only for orientation and never as a benchmark.
+
+\textbf{Search.} Our negative claims are of the form ``we found no prior work naming
+this''. Two holes are worth stating: a major bibliographic database was unreachable
+throughout the search, and unauthenticated code search over public repositories was not
+usable at scale, so the engineering-practice sweep rests on documentation and a bounded
+set of repositories rather than on a corpus study. That sweep already retracted two of
+our claims once, which is evidence about the method's yield in both directions.
+
+\section{On Language-Model Co-Authorship}\label{sec:ai}
+
+The subject system was substantially co-authored with language-model agents, and so was
+this paper's tooling. We disclose this in accordance with the ACM Policy on Authorship,
+and we think it is more than a disclosure.
+
+The hypothesis, stated as a hypothesis: \textbf{a model writes plausible meta-layer
+artifacts, and plausibility is precisely what a reflexive gate cannot distinguish from
+truth.} A specification paragraph that reads correctly, a grammar production that looks
+like the others, a safety document describing a marker that is never written --- each is
+locally well-formed, consistent in tone with its neighbours, and wrong. The properties
+that make model-written prose good also make it good at passing a check that never
+executes it.
+
+What is consistent with the hypothesis: all four of the subject system's
+self-descriptions were wrong on first check; the failures were in artifacts nothing
+executes rather than in code, which is comparatively well covered; and the seven guards
+in Section~\ref{sec:self} were themselves model-written and each looked right.
+
+What would falsify it: a comparable measurement over human-authored projects of similar
+age showing the same rates. We have not run it, and the census in
+Section~\ref{sec:census} cannot separate the two --- we do not know which of those
+\factEcoPackages{} packages were model-assisted. We therefore state the hypothesis and
+decline to claim it. The measurement stands without it.
+
+\section{Related Work}\label{sec:related}
+
+Section~\ref{sec:concede} conceded the components; this section places them, and says in each
+case what remains.
+
+\textbf{Vacuity.} That a check can pass without its passing depending on what it appears to
+check is vacuous satisfaction, formalised for model checking by Beer et
+al.~\cite{beer1997vacuity,beer2001vacuity} and Kupferman and
+Vardi~\cite{kupferman2003vacuity}, and carried into testing by Ball and
+Kupferman~\cite{ball2008vacuitytesting}. Beer et al.\ detect it by mutating a subformula and
+requiring the check to notice, which is the planted-fault remedy of
+Section~\ref{sec:remedy}, twenty-nine years earlier. We take the concept and the remedy from
+this line entirely. What that literature does not supply is which \emph{engineering structures}
+reliably produce a vacuous pass; the derived-versus-retyped precondition is an answer to that
+question for one widely deployed structure, and it is the only part we claim.
+
+\textbf{Documentation--code inconsistency.} iComment~\cite{tan2007icomment},
+\texttt{@tComment}~\cite{tan2012tcomment}, DocRef~\cite{zhong2013docerrors} and Zhou et
+al.~\cite{zhou2017directivedefects} detect disagreement between prose and implementation, and
+CASCADE~\cite{kiecker2026cascade} now generates tests directly from documentation. The
+phenomenon in our Section~\ref{sec:depth} is a member of this family. Two things differ. The
+artifacts there are \emph{hand-written} and the remedy proposed is always a detector; ours are
+\emph{generated}, a gate already exists over them, and the gate is green. And their consumer is
+a reader who can notice; ours is a decoder that cannot.
+
+\textbf{Diagnostic-catalogue completeness.} This is shipped practice rather than literature, and
+finding it required looking at build tooling rather than at papers. rustc's \texttt{tidy} check
+requires every error code to be documented, triggered by a test, and emitted by the
+compiler~\cite{rustc_tidy_errorcodes}; clang ships a script that lists diagnostics defined and
+never referenced~\cite{clang_unused_diagnostics}; Roslyn forces every declared analyzer
+diagnostic into a release-tracking file~\cite{roslyn_release_tracking}. The nearest research
+neighbour is CERTest~\cite{tang2025certest}, a mutation-based approach to compiler diagnostic
+testing that explicitly targets missing diagnostics --- but its \emph{missing} is a diagnostic
+that should fire for a given program and does not, whereas the instances in
+Section~\ref{sec:corroboration} cannot fire for any program at all. The compiler-testing
+survey~\cite{chen2020compilertesting} does not carry catalogue coverage as a category. Our
+contribution here is a distribution, not an idea: the practice exists where a project could
+afford it and is absent below that tier.
+
+\textbf{The same shape in another artifact.} Message catalogues have the problem we describe
+and solved it long ago without naming it: the internationalisation ecosystem routinely runs
+bidirectional unused-and-missing key detection over translation
+files~\cite{i18n_tasks,i18n_unused}. A translation key declared and never referenced is a
+declared-but-unreachable entry; a reference with no key is its dual. That this is ordinary
+tooling for locale files and absent for diagnostic catalogues is a fact about which artifacts
+have been thought worth checking, not about which are checkable. We found no work treating the
+two as instances of one problem.
+
+\textbf{Validating a description against its subject.} Pact verifies a generated contract by
+executing it against a real provider~\cite{pact_contract_testing}; Schemathesis executes a
+schema against a live server and reports divergence without deciding which side is
+wrong~\cite{schemathesis}; protobuf ships a conformance suite~\cite{protobuf_conformance};
+Kubernetes fuzzes values through its generated conversion code~\cite{k8s_roundtrip}; and Rust,
+Go and Python execute documentation by
+default~\cite{rust_doctests,go_testable_examples,python_doctest}. This is a mature practice and
+we claim none of it. Table~\ref{tab:counterpart} is the observation we do make: it exists
+wherever the description has an executable counterpart, and the LLM-facing class has none.
+
+\textbf{Test adequacy.} That a suite can be green and weak is the subject of a long empirical
+literature~\cite{inozemtseva2014coverage,zhang2015assertions}, with mutation testing as the
+standard adequacy measure~\cite{demillo1978hints,jia2011mutationsurvey,papadakis2019mutationadvances}
+and industrial deployment at scale~\cite{petrovic2018googlemutation}. We report our mutation
+result in that vocabulary deliberately. The related finding that a property test can be vacuous
+because its \emph{generator} never reaches the interesting inputs is generator coverage, studied
+under that name~\cite{groce2012swarm,goldstein2021judgecover}. The test-smell
+literature~\cite{vandeursen2001refactoringtest,bavota2012testsmells} is sometimes offered as
+covering this; it does not. Assertion Roulette concerns many undocumented assertions rather
+than none, and that catalogue's concern is maintainability. A test that passes having asserted
+nothing is not one of its smells.
+
+\textbf{Measurement validity.} That changing a metric can move a number with no change in the
+subject is stated canonically for machine learning by Schaeffer et
+al.~\cite{schaeffer2023mirage}, and the construct-validity framing is Jacobs and
+Wallach's~\cite{jacobs2021measurement}. The judge recalibration we report in
+Section~\ref{sec:depth} is a small instance of their thesis and is offered as corroboration of
+it. What survives as ours is procedural rather than conceptual: non-comparability across a
+ruler change was pre-committed and enforced mechanically rather than discovered afterwards.
+
+\textbf{Build systems and reproducibility.} Mokhov et al.~\cite{mokhov2020buildsystems} place
+the correctness of generated content outside what a build system guarantees, and the
+reproducible-builds programme adopts byte-reproducibility as an integrity
+property~\cite{lamb2022reproducible}. Both halves of our observation are therefore already
+written down. We join them and report what the junction costs.
+
+\textbf{Language models and domain-specific languages.} Anka~\cite{almazrouei2025anka} argues
+that a DSL designed for model generation outperforms a general-purpose language, and a survey
+covers generation for low-resource and domain-specific
+languages~\cite{joel2024dslsurvey}. Constrained decoding is studied given a
+grammar~\cite{park2024gad,wang2023grammarprompting,geng2025jsonschemabench}; the correctness of
+the grammar artifact itself is assumed throughout, which is the assumption
+Section~\ref{sec:twogenerators} violates.
+
+\textbf{The artifact class is new enough to be under-studied.} Publishing documentation
+addressed to models rather than people is recent and growing: \texttt{llms.txt} has been
+adopted by more than \factLlmsTxtSites{} sites, and agent-tool servers ship bundled context
+files as a matter of course. Treude and Baltes~\cite{treude2026contextrot} are the nearest
+existing treatment, repurposing documentation-consistency research for AI configuration
+artifacts. Their subject is hand-written and has no generator and no gate over it, which is
+precisely the configuration our Section~\ref{sec:mechanism} is about; we read their work as
+opening the same territory from the other side.
+
+\section{Conclusion}\label{sec:conclusion}
+
+A gate that regenerates an artifact and fails on a difference proves that a generator is
+deterministic. Where the artifact is mechanically derived from its subject, that is
+enough, and the industry's near-universal use of such gates is not a mistake. Where the
+generator retypes a fact instead of deriving it, the same gate is vacuous --- and it
+does not check which case it is in, and it looks the same either way.
+
+The artifact class where this now matters most is the one with no executable counterpart
+to fall back on: the specifications, grammars, schemas and identities that systems ship
+for language models to read. Across a census of \factEcoPackages{} packages,
+\factEcoRetypedPct{} retype the identity they could derive, and
+\factEcoDriftConfirmedPct{} state a version they are not. The concepts here are old. The
+place they have moved to is new, and it is not being watched.
+
+\label{refsstart}
+%% `\nocite{*}` was removed once the body carried real citations. It existed only so
+%% a skeleton would compile and prove the bibliography builds; leaving it in would
+%% ship a reference list of works the paper never cites. Its removal also re-arms
+%% build.mjs's cited-vs-defined check, which that macro short-circuits.
+\bibliographystyle{IEEEtran}
+\bibliography{../refs}
+
+\end{document}

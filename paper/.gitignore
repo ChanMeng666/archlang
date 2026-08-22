@@ -1,0 +1,18 @@
+# LaTeX build artifacts. `main.aux` is a build output too, but the page-limit
+# checker reads it, so it is regenerated on every build and never committed.
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*.synctex.gz
+*.pdf
+
+# Compiler output from offwall.arch, produced while checking the listing.
+# Not referenced by the paper; regenerate with `node dist/cli.js compile offwall.arch -o out.svg`.
+*.svg
+
+# ...but fig-*.pdf are FIGURES the papers include, not build output. Without this
+# negation a fresh clone gitignores them and `\includegraphics` fails — the build
+# passes here and breaks for everyone else, which is the whole subject of the papers.
+!**/fig-*.pdf

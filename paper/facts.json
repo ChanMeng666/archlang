@@ -1,0 +1,18 @@
+{
+  "cliCommands": 20,
+  "cliExamples": 46,
+  "cliFlags": 115,
+  "doorKinds": 5,
+  "errorCodesError": 73,
+  "errorCodesTotal": 115,
+  "errorCodesWarning": 42,
+  "exportFormats": 5,
+  "exportFormatsZeroDep": 3,
+  "keywordsAttribute": 56,
+  "keywordsControl": 20,
+  "keywordsElement": 11,
+  "keywordsEnum": 55,
+  "keywordsTotal": 142,
+  "lintRules": 21,
+  "operators": 21
+}

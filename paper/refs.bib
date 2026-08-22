@@ -1,0 +1,1477 @@
+% =====================================================================
+% refs.bib --- shared bibliography for the ArchLang papers
+%
+% Style: compiles with \bibliographystyle{IEEEtran}.
+%
+% Every entry below was verified on 2026-08-22 against a primary
+% metadata source (arXiv API, Crossref API, publisher page, standards
+% body, or the project's own live URL). Works that could NOT be
+% verified are recorded in refs-notes.md under "UNVERIFIED --- do not
+% cite" and are deliberately absent from this file.
+%
+% Sections
+%   1. Prior art: architectural DSLs & building description
+%   2. LLM code generation & DSLs
+%   3. Constrained decoding
+%   4. Program repair & machine-applicable fixes
+%   5. Evaluation methodology
+%   6. Verification, vacuity & mutation testing
+%   7. Documentation-code consistency, determinism & build systems
+%   8. Tools & specifications
+% =====================================================================
+
+
+% =====================================================================
+% 1. PRIOR ART: ARCHITECTURAL DSLs & BUILDING DESCRIPTION
+% =====================================================================
+
+@techreport{eastman1974bds,
+  author      = {Eastman, Charles and Fisher, David and Lafue, Gilles and
+                 Lividini, Joseph and Stoker, Douglas and Yessios, Christos},
+  title       = {An Outline of the Building Description System},
+  institution = {Institute of Physical Planning, Carnegie-Mellon University},
+  number      = {Research Report No. 50},
+  address     = {Pittsburgh, PA},
+  month       = sep,
+  year        = {1974},
+  note        = {ERIC document ED113833}
+}
+
+@article{eastman1975computers,
+  author  = {Eastman, Charles M.},
+  title   = {The Use of Computers Instead of Drawings in Building Design},
+  journal = {AIA Journal},
+  volume  = {63},
+  pages   = {46--50},
+  year    = {1975}
+}
+
+@inproceedings{eastman1977glide,
+  author    = {Eastman, Charles and Henrion, Max},
+  title     = {{GLIDE}: A Language for Design Information Systems},
+  booktitle = {Proc. 4th Annual Conf. on Computer Graphics and Interactive
+               Techniques (SIGGRAPH '77)},
+  pages     = {24--33},
+  year      = {1977},
+  doi       = {10.1145/563858.563863}
+}
+
+@article{stiny1978palladian,
+  author  = {Stiny, George and Mitchell, William J.},
+  title   = {The {Palladian} Grammar},
+  journal = {Environment and Planning B: Planning and Design},
+  volume  = {5},
+  number  = {1},
+  pages   = {5--18},
+  year    = {1978},
+  doi     = {10.1068/b050005}
+}
+
+@inproceedings{paoluzzi1989plasm,
+  author    = {Paoluzzi, Alberto and Sansoni, Claudio},
+  title     = {A Programming Language for Architectural Symbolic Modeling},
+  booktitle = {Proc. eCAADe 1989: CAAD Education --- Research and Practice},
+  pages     = {8.4.1--8.4.16},
+  year      = {1989},
+  doi       = {10.52842/conf.ecaade.1989.x.r3e}
+}
+
+@article{paoluzzi1995geometric,
+  author  = {Paoluzzi, Alberto and Pascucci, Valerio and Vicentino, Michele},
+  title   = {Geometric Programming: A Programming Approach to Geometric Design},
+  journal = {ACM Trans. Graphics},
+  volume  = {14},
+  number  = {3},
+  pages   = {266--306},
+  year    = {1995},
+  doi     = {10.1145/212332.212349}
+}
+
+@article{muller2006procedural,
+  author  = {M\"{u}ller, Pascal and Wonka, Peter and Haegler, Simon and
+             Ulmer, Andreas and Van Gool, Luc},
+  title   = {Procedural Modeling of Buildings},
+  journal = {ACM Trans. Graphics},
+  volume  = {25},
+  number  = {3},
+  pages   = {614--623},
+  year    = {2006},
+  doi     = {10.1145/1141911.1141931}
+}
+
+@inproceedings{aish2016designscript,
+  author    = {Aish, Robert and Mendoza, Emmanuel},
+  title     = {{DesignScript}: A Domain Specific Language for Architectural
+               Computing},
+  booktitle = {Proc. Int. Workshop on Domain-Specific Modeling (DSM@SPLASH)},
+  pages     = {15--21},
+  year      = {2016},
+  doi       = {10.1145/3023147.3023150}
+}
+
+@incollection{aish2011designscript,
+  author    = {Aish, Robert},
+  title     = {{DesignScript}: Origins, Explanation, Illustration},
+  booktitle = {Computational Design Modelling},
+  publisher = {Springer},
+  pages     = {1--8},
+  year      = {2011},
+  doi       = {10.1007/978-3-642-23435-4_1}
+}
+
+@inproceedings{parra2023floorplandsl,
+  author    = {Parra, Samuel and Ortega, Argentina and Schneider, Sven and
+               Hochgeschwender, Nico},
+  title     = {A Thousand Worlds: Scenery Specification and Generation for
+               Simulation-Based Testing of Mobile Robot Navigation Stacks},
+  booktitle = {Proc. IEEE/RSJ Int. Conf. Intelligent Robots and Systems (IROS)},
+  pages     = {5537--5544},
+  year      = {2023},
+  doi       = {10.1109/IROS55552.2023.10342315}
+}
+
+@misc{floorplandsl_repo,
+  author       = {{secorolab}},
+  title        = {{FloorPlan-DSL}: A Domain-Specific Language for Specifying
+                  Indoor Environments},
+  howpublished = {\url{https://github.com/secorolab/FloorPlan-DSL}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}
+
+@article{galanos2023architext,
+  author  = {Galanos, Theodoros and Liapis, Antonios and
+             Yannakakis, Georgios N.},
+  title   = {{Architext}: Language-Driven Generative Architecture Design},
+  journal = {arXiv preprint arXiv:2303.07519},
+  year    = {2023}
+}
+
+@misc{planscript_ts,
+  author       = {Romaniello, Jos\'{e} F.},
+  title        = {{PlanScript}: A Deterministic, Textual {DSL} for Defining
+                  {2D} Architectural Floor Plans},
+  howpublished = {\url{https://github.com/jfromaniello/planscript}},
+  year         = {2026},
+  note         = {v2.1.0; first published 2026-01-05. Accessed 2026-08-22}
+}
+
+@misc{planscript_rust,
+  author       = {{gravhl}},
+  title        = {{planscript}: A {Rust} Implementation of the {PlanScript}
+                  Floor-Plan {DSL}},
+  howpublished = {\url{https://github.com/gravhl/planscript}},
+  year         = {2026},
+  note         = {Last push 2026-06-01; never published to crates.io.
+                  Accessed 2026-08-22}
+}
+
+@misc{archplotter,
+  author       = {Singh, Amit},
+  title        = {{arch-plotter}: A Parametric {2D} {CAD} and Land Surveying
+                  Engine for Architectural Drafting},
+  howpublished = {\url{https://typst.app/universe/package/arch-plotter}},
+  year         = {2026},
+  note         = {v0.2.0; first release 2026-03-19. Accessed 2026-08-22}
+}
+
+@misc{ifclite,
+  author       = {{LTplus-AG}},
+  title        = {{ifc-lite}: A {TypeScript} {IFC} Toolkit with {2D} Drawing
+                  Generation, {IDS} Validation and an {MCP} Server},
+  howpublished = {\url{https://github.com/LTplus-AG/ifc-lite}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{stein2009floorplandsl,
+  author       = {Stein, Patrick},
+  title        = {A {DSL} for Drawing Floor Plans},
+  howpublished = {\url{https://nklein.com/2009/10/dsl-for-drawing-floor-plans/}},
+  year         = {2009},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{cityengine_cga,
+  author       = {{Esri}},
+  title        = {{CityEngine} {CGA} Shape Grammar Reference},
+  howpublished = {\url{https://doc.arcgis.com/en/cityengine/latest/cga/cityengine-cga-introduction.htm}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{iso16739,
+  author       = {{International Organization for Standardization}},
+  title        = {{ISO} 16739-1:2024 --- Industry Foundation Classes ({IFC})
+                  for Data Sharing in the Construction and Facility Management
+                  Industries --- Part 1: Data Schema},
+  howpublished = {\url{https://www.iso.org/standard/84123.html}},
+  year         = {2024},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{iso10303p21,
+  author       = {{International Organization for Standardization}},
+  title        = {{ISO} 10303-21:2016 --- Industrial Automation Systems and
+                  Integration --- Product Data Representation and Exchange ---
+                  Part 21: Implementation Methods: Clear Text Encoding of the
+                  Exchange Structure},
+  howpublished = {\url{https://www.iso.org/standard/63141.html}},
+  year         = {2016},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{bsi_ids,
+  author       = {{buildingSMART International}},
+  title        = {Information Delivery Specification ({IDS}), Version 1.0},
+  howpublished = {\url{https://github.com/buildingSMART/IDS}},
+  year         = {2024},
+  note         = {v1.0 final buildingSMART standard, released 2024-06-03.
+                  Accessed 2026-08-22}
+}
+
+@misc{ifcopenshell,
+  author       = {{IfcOpenShell contributors}},
+  title        = {{IfcConvert} Usage: Generating {2D} Floor Plans from {IFC}},
+  howpublished = {\url{https://docs.ifcopenshell.org/ifcconvert/usage.html}},
+  year         = {2026},
+  note         = {Floor-plan SVG generation has shipped since July 2015.
+                  Accessed 2026-08-22}
+}
+
+@article{du2026text2bim,
+  author  = {Du, Changyu and Esser, Sebastian and Nousias, Stavros and
+             Borrmann, Andr\'{e}},
+  title   = {{Text2BIM}: Generating Building Models Using a Large Language
+             Model-Based Multiagent Framework},
+  journal = {J. Computing in Civil Engineering},
+  volume  = {40},
+  year    = {2026},
+  doi     = {10.1061/JCCEE5.CPENG-6386},
+  note    = {arXiv:2408.08054}
+}
+
+@article{deng2025bimgent,
+  author  = {Deng, Zihan and Du, Changyu and Nousias, Stavros and
+             Borrmann, Andr\'{e}},
+  title   = {{BIMgent}: Towards Autonomous Building Modeling via
+             Computer-Use Agents},
+  journal = {arXiv preprint arXiv:2506.07217},
+  year    = {2025},
+  note    = {Presented at the ICML 2025 Workshop on Computer Use Agents;
+             no archival proceedings record}
+}
+
+@article{nithyanantham2026bimedit,
+  author  = {Nithyanantham, Bharathi Kannan and Kujat, Clemens and
+             Sesterhenn, Tobias and Telgmann, Stefan and Nedungadi, Ashwin and
+             Pl\"{o}nnigs, J\"{o}rn and Bartelt, Christian and
+             L\"{u}dtke, Stefan},
+  title   = {{BIM-Edit}: Benchmarking Large Language Models for {IFC}-Based
+             Building Information Modeling},
+  journal = {arXiv preprint arXiv:2606.20146},
+  year    = {2026}
+}
+
+@article{mao2025spatiallm,
+  author  = {Mao, Yongsen and Zhong, Junhao and Fang, Chuan and Zheng, Jia and
+             Tang, Rui and Zhu, Hao and Tan, Ping and Zhou, Zihan},
+  title   = {{SpatialLM}: Training Large Language Models for Structured
+             Indoor Modeling},
+  journal = {arXiv preprint arXiv:2506.07491},
+  year    = {2025}
+}
+
+@article{gautam2026plancompliance,
+  author  = {Gautam, Subash and Acharya, Debaditya and Kleeman, Alexandra and
+             Foster, Sarah},
+  title   = {Towards an Automated {AI}-Based Framework for Floor Plan
+             Compliance Checks for Residential Buildings},
+  journal = {arXiv preprint arXiv:2607.00015},
+  year    = {2026}
+}
+
+@book{pena2012problemseeking,
+  author    = {Pe\~{n}a, William M. and Parshall, Steven A.},
+  title     = {Problem Seeking: An Architectural Programming Primer},
+  edition   = {5th},
+  publisher = {Wiley},
+  year      = {2012},
+  note      = {ISBN 978-1-118-08414-4}
+}
+
+@misc{shapediver_forbidden,
+  author       = {{ShapeDiver}},
+  title        = {Forbidden {Grasshopper} Functionalities},
+  howpublished = {\url{https://help.shapediver.com/doc/forbidden-grasshopper-functionalities}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{mermaid_floorplan_issue,
+  author       = {{Mermaid contributors}},
+  title        = {Add Floorplan Syntax (Issue \#6134)},
+  howpublished = {\url{https://github.com/mermaid-js/mermaid/issues/6134}},
+  year         = {2024},
+  note         = {Opened 2024-12-15; still open at time of access.
+                  Accessed 2026-08-22}
+}
+
+
+% =====================================================================
+% 2. LLM CODE GENERATION & DSLs
+% =====================================================================
+
+@article{almazrouei2025anka,
+  author  = {Al Mazrouei, Saif Khalfan Saif},
+  title   = {{Anka}: A Domain-Specific Language for Reliable {LLM} Code
+             Generation},
+  journal = {arXiv preprint arXiv:2512.23214},
+  year    = {2025}
+}
+
+@article{joel2024dslsurvey,
+  author  = {Joel, Sathvik and Wu, Jie JW and Fard, Fatemeh H.},
+  title   = {A Survey on {LLM}-Based Code Generation for Low-Resource and
+             Domain-Specific Programming Languages},
+  journal = {ACM Trans. Software Engineering and Methodology},
+  year    = {2025},
+  doi     = {10.1145/3770084},
+  note    = {arXiv:2410.03981}
+}
+
+@article{rodionov2026floorplanqa,
+  author  = {Rodionov, Fedor and Eldesokey, Abdelrahman and Birsak, Michael and
+             Femiani, John and Ghanem, Bernard and Wonka, Peter},
+  title   = {{FloorplanQA}: A Benchmark for Spatial Reasoning in {LLMs} Using
+             Structured Representations},
+  journal = {arXiv preprint arXiv:2507.07644},
+  year    = {2026},
+  note    = {Reported by the authors as ICML 2026; no proceedings record
+             located as of 2026-08-22}
+}
+
+@inproceedings{lara2026rlvrfloorplan,
+  author    = {Lara, Luis and Milios, Aristides and Luo, Zhi Hao and
+               Sharma, Aditya and Luo, Ge Ya and Beckham, Christopher and
+               Golemo, Florian and Pal, Christopher},
+  title     = {Generative Floor Plan Design with {LLMs} via Reinforcement
+               Learning with Verifiable Rewards},
+  booktitle = {Findings of the Association for Computational Linguistics
+               (ACL)},
+  pages     = {26612--26627},
+  year      = {2026},
+  doi       = {10.18653/v1/2026.findings-acl.1326},
+  note      = {arXiv:2605.14117}
+}
+
+@article{luo2024dstruct2design,
+  author  = {Luo, Zhi Hao and Lara, Luis and Luo, Ge Ya and Golemo, Florian and
+             Beckham, Christopher and Pal, Christopher},
+  title   = {{DStruct2Design}: Data and Benchmarks for Data Structure Driven
+             Generative Floor Plan Design},
+  journal = {arXiv preprint arXiv:2407.15723},
+  year    = {2024}
+}
+
+@inproceedings{nauata2020housegan,
+  author    = {Nauata, Nelson and Chang, Kai-Hung and Cheng, Chin-Yi and
+               Mori, Greg and Furukawa, Yasutaka},
+  title     = {{House-GAN}: Relational Generative Adversarial Networks for
+               Graph-Constrained House Layout Generation},
+  booktitle = {Proc. European Conf. Computer Vision (ECCV)},
+  series    = {LNCS},
+  pages     = {162--177},
+  year      = {2020},
+  doi       = {10.1007/978-3-030-58452-8_10},
+  note      = {arXiv:2003.06988}
+}
+
+@inproceedings{nauata2021houseganpp,
+  author    = {Nauata, Nelson and Hosseini, Sepidehsadat and Chang, Kai-Hung and
+               Chu, Hang and Cheng, Chin-Yi and Furukawa, Yasutaka},
+  title     = {{House-GAN++}: Generative Adversarial Layout Refinement Network
+               towards Intelligent Computational Agent for Professional
+               Architects},
+  booktitle = {Proc. IEEE/CVF Conf. Computer Vision and Pattern Recognition
+               (CVPR)},
+  pages     = {13627--13636},
+  year      = {2021},
+  doi       = {10.1109/CVPR46437.2021.01342},
+  note      = {arXiv:2103.02574}
+}
+
+@article{hu2020graph2plan,
+  author  = {Hu, Ruizhen and Huang, Zeyu and Tang, Yuhan and
+             Van Kaick, Oliver and Zhang, Hao and Huang, Hui},
+  title   = {{Graph2Plan}: Learning Floorplan Generation from Layout Graphs},
+  journal = {ACM Trans. Graphics},
+  volume  = {39},
+  number  = {4},
+  year    = {2020},
+  doi     = {10.1145/3386569.3392391}
+}
+
+@inproceedings{leng2023tell2design,
+  author    = {Leng, Sicong and Zhou, Yang and Dupty, Mohammed Haroon and
+               Lee, Wee Sun and Joyce, Sam Conrad and Lu, Wei},
+  title     = {{Tell2Design}: A Dataset for Language-Guided Floor Plan
+               Generation},
+  booktitle = {Proc. 61st Annual Meeting of the Association for Computational
+               Linguistics (ACL)},
+  pages     = {14680--14697},
+  year      = {2023},
+  doi       = {10.18653/v1/2023.acl-long.820},
+  note      = {Area Chair Award; arXiv:2311.15941}
+}
+
+@article{zong2024housetune,
+  author  = {Zong, Ziyang and Chen, Guanying and Zhan, Zhaohuan and
+             Yu, Fengcheng and Tan, Guang},
+  title   = {{HouseTune}: Two-Stage Floorplan Generation with {LLM} Assistance},
+  journal = {arXiv preprint arXiv:2411.12279},
+  year    = {2024}
+}
+
+@article{abouagour2025resplan,
+  author  = {Abouagour, Mohamed and Garyfallidis, Eleftherios},
+  title   = {{ResPlan}: A Large-Scale Vector-Graph Dataset of 17,000 Residential
+             Floor Plans},
+  journal = {arXiv preprint arXiv:2508.14006},
+  year    = {2025}
+}
+
+@article{liu2024craftrtl,
+  author  = {Liu, Mingjie and Tsai, Yun-Da and Zhou, Wenfei and Ren, Haoxing},
+  title   = {{CraftRTL}: High-Quality Synthetic Data Generation for {Verilog}
+             Code Models with Correct-by-Construction Non-Textual
+             Representations and Targeted Code Repair},
+  journal = {arXiv preprint arXiv:2409.12993},
+  year    = {2024}
+}
+
+@article{weng2025autoformalization,
+  author  = {Weng, Ke and Du, Lun and Li, Sirui and Lu, Wangyue and
+             Sun, Haozhe and Liu, Hengyu and Zhang, Tiancheng},
+  title   = {Autoformalization in the Era of Large Language Models: A Survey},
+  journal = {arXiv preprint arXiv:2505.23486},
+  year    = {2025}
+}
+
+@inproceedings{khattab2024dspy,
+  author    = {Khattab, Omar and Singhvi, Arnav and Maheshwari, Paridhi and
+               Zhang, Zhiyuan and Santhanam, Keshav and Vardhamanan, Sri and
+               Haq, Saiful and Sharma, Ashutosh and Joshi, Thomas T. and
+               Moazam, Hanna and Miller, Heather and Zaharia, Matei and
+               Potts, Christopher},
+  title     = {{DSPy}: Compiling Declarative Language Model Calls into
+               State-of-the-Art Pipelines},
+  booktitle = {Proc. Int. Conf. Learning Representations (ICLR)},
+  year      = {2024},
+  note      = {Spotlight. Circulated on arXiv under the title ``Compiling
+               Declarative Language Model Calls into Self-Improving
+               Pipelines'', arXiv:2310.03714}
+}
+
+@article{beurerkellner2023lmql,
+  author  = {Beurer-Kellner, Luca and Fischer, Marc and Vechev, Martin},
+  title   = {Prompting Is Programming: A Query Language for Large Language
+             Models},
+  journal = {Proc. ACM Programming Languages},
+  volume  = {7},
+  number  = {PLDI},
+  year    = {2023},
+  doi     = {10.1145/3591300}
+}
+
+@inproceedings{chugh2016sketchnsketch,
+  author    = {Chugh, Ravi and Hempel, Brian and Spradlin, Mitchell and
+               Albers, Jacob},
+  title     = {Programmatic and Direct Manipulation, Together at Last},
+  booktitle = {Proc. 37th ACM SIGPLAN Conf. Programming Language Design and
+               Implementation (PLDI)},
+  pages     = {341--354},
+  year      = {2016},
+  doi       = {10.1145/2908080.2908103}
+}
+
+@article{ye2020penrose,
+  author  = {Ye, Katherine and Ni, Wode and Krieger, Max and Ma'ayan, Dor and
+             Wise, Jenna and Aldrich, Jonathan and Sunshine, Joshua and
+             Crane, Keenan},
+  title   = {{Penrose}: From Mathematical Notation to Beautiful Diagrams},
+  journal = {ACM Trans. Graphics},
+  volume  = {39},
+  number  = {4},
+  year    = {2020},
+  doi     = {10.1145/3386569.3392375}
+}
+
+
+% =====================================================================
+% 3. CONSTRAINED DECODING
+% =====================================================================
+
+@inproceedings{park2024gad,
+  author    = {Park, Kanghee and Wang, Jiayu and Berg-Kirkpatrick, Taylor and
+               Polikarpova, Nadia and D'Antoni, Loris},
+  title     = {Grammar-Aligned Decoding},
+  booktitle = {Advances in Neural Information Processing Systems 37
+               (NeurIPS)},
+  pages     = {24547--24568},
+  year      = {2024},
+  doi       = {10.52202/079017-0774},
+  note      = {arXiv:2405.21047}
+}
+
+@inproceedings{wang2023grammarprompting,
+  author    = {Wang, Bailin and Wang, Zi and Wang, Xuezhi and Cao, Yuan and
+               Saurous, Rif A. and Kim, Yoon},
+  title     = {Grammar Prompting for Domain-Specific Language Generation with
+               Large Language Models},
+  booktitle = {Advances in Neural Information Processing Systems 36
+               (NeurIPS)},
+  pages     = {65030--65055},
+  year      = {2023},
+  doi       = {10.52202/075280-2837},
+  note      = {arXiv:2305.19234}
+}
+
+@article{geng2025jsonschemabench,
+  author  = {Geng, Saibo and Cooper, Hudson and Moskal, Micha\l{} and
+             Jenkins, Samuel and Berman, Julian and Ranchin, Nathan and
+             West, Robert and Horvitz, Eric and Nori, Harsha},
+  title   = {{JSONSchemaBench}: A Rigorous Benchmark of Structured Outputs for
+             Language Models},
+  journal = {arXiv preprint arXiv:2501.10868},
+  year    = {2025}
+}
+
+
+% =====================================================================
+% 4. PROGRAM REPAIR & MACHINE-APPLICABLE FIXES
+% =====================================================================
+
+@inproceedings{olausson2024selfrepair,
+  author    = {Olausson, Theo X. and Inala, Jeevana Priya and Wang, Chenglong
+               and Gao, Jianfeng and Solar-Lezama, Armando},
+  title     = {Is Self-Repair a Silver Bullet for Code Generation?},
+  booktitle = {Proc. Int. Conf. Learning Representations (ICLR)},
+  year      = {2024},
+  note      = {Poster; arXiv:2306.09896}
+}
+
+@inproceedings{deligiannis2025rustassistant,
+  author    = {Deligiannis, Pantazis and Lal, Akash and Mehrotra, Nikita and
+               Poddar, Rishi and Rastogi, Aseem},
+  title     = {{RustAssistant}: Using {LLMs} to Fix Compilation Errors in
+               {Rust} Code},
+  booktitle = {Proc. IEEE/ACM 47th Int. Conf. Software Engineering (ICSE)},
+  pages     = {3097--3109},
+  year      = {2025},
+  doi       = {10.1109/ICSE55347.2025.00022}
+}
+
+@article{kiecker2026repairloops,
+  author  = {Kiecker, Tobias and Reichmann, Eik and Kang, Hosung and
+             An, Gabin and Grunske, Lars},
+  title   = {Is Three the Magic Number? An Empirical Evaluation of {LLM}-Based
+             Repair Loops},
+  journal = {arXiv preprint arXiv:2607.05197},
+  year    = {2026},
+  note    = {New Ideas and Emerging Results paper}
+}
+
+@article{arimbur2026howmanytries,
+  author  = {Arimbur, Johin Johny},
+  title   = {How Many Tries Does It Take? Iterative Self-Repair in {LLM} Code
+             Generation Across Model Scales and Benchmarks},
+  journal = {arXiv preprint arXiv:2604.10508},
+  year    = {2026}
+}
+
+@article{yang2025aprsurvey,
+  author  = {Yang, Boyang and Cai, Zijian and Liu, Fengling and Le, Bach and
+             Zhang, Lingming and Bissyand\'{e}, Tegawend\'{e} F. and Liu, Yang
+             and Tian, Haoye},
+  title   = {A Survey of {LLM}-Based Automated Program Repair: Taxonomies,
+             Design Paradigms, and Applications},
+  journal = {arXiv preprint arXiv:2506.23749},
+  year    = {2025}
+}
+
+@article{willsey2021egg,
+  author  = {Willsey, Max and Nandi, Chandrakana and Wang, Yisu Remy and
+             Flatt, Oliver and Tatlock, Zachary and Panchekha, Pavel},
+  title   = {{egg}: Fast and Extensible Equality Saturation},
+  journal = {Proc. ACM Programming Languages},
+  volume  = {5},
+  number  = {POPL},
+  pages   = {1--29},
+  year    = {2021},
+  doi     = {10.1145/3434304}
+}
+
+@misc{rustc_applicability,
+  author       = {{The Rust Project}},
+  title        = {Errors and Lints: Structured Suggestions and
+                  {Applicability} Levels},
+  howpublished = {Rust Compiler Development Guide,
+                  \url{https://rustc-dev-guide.rust-lang.org/diagnostics.html}},
+  year         = {2026},
+  note         = {Levels: {\tt MachineApplicable}, {\tt HasPlaceholders},
+                  {\tt MaybeIncorrect}, {\tt Unspecified}.
+                  Accessed 2026-08-22}
+}
+
+@misc{rustfix,
+  author       = {{The Rust Project}},
+  title        = {{rustfix}: Automatically Apply the Suggestions Made by
+                  {rustc}},
+  howpublished = {\url{https://github.com/rust-lang/rustfix}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{biome_linter,
+  author       = {{Biome contributors}},
+  title        = {{Biome} Linter: Safe and Unsafe Fixes},
+  howpublished = {\url{https://biomejs.dev/linter/}},
+  year         = {2026},
+  note         = {Safe fixes are applied by {\tt --write}; unsafe fixes require
+                  {\tt --write --unsafe}. Accessed 2026-08-22}
+}
+
+
+% --- Diagnostic catalogues: completeness, coverage, testing practice ---
+% Prior art for the "declared but unreachable diagnostic" claim. rustc and clang
+% ship this gate; see refs-notes.md section 4, gap 2, which was REWRITTEN after
+% these were found.
+
+@misc{rustc_tidy_errorcodes,
+  author       = {{The Rust Project}},
+  title        = {Tidy Check: Error Codes Are Properly Documented, Tested and
+                  Emitted},
+  howpublished = {\url{https://github.com/rust-lang/rust/blob/master/src/tools/tidy/src/error_codes.rs}},
+  year         = {2026},
+  note         = {Four stages: extract the catalogue; require a long-form
+                  explanation with a failing doctest; require a UI test in
+                  {\tt tests/ui/error-codes/} that triggers the code; and check
+                  the code is actually emitted by the compiler. Hard-fails in
+                  both directions, with named opt-out lists. Accessed 2026-08-22}
+}
+
+@misc{clang_unused_diagnostics,
+  author       = {{The LLVM Project}},
+  title        = {{\tt find-unused-diagnostics.sh}: Diagnostics Defined in
+                  {\tt Diagnostic*.td} but Not Used in Sources},
+  howpublished = {\url{https://github.com/llvm/llvm-project/blob/main/clang/utils/find-unused-diagnostics.sh}},
+  year         = {2026},
+  note         = {An advisory script, not a build gate. Accessed 2026-08-22}
+}
+
+@misc{msvc_diagnostic_testing,
+  author       = {{Microsoft C++ Team}},
+  title        = {Testing Compiler Diagnostics\ldots and a Cool {IDE} Tip!},
+  howpublished = {\url{https://devblogs.microsoft.com/cppblog/testing-compiler-diagnostics-and-a-cool-ide-tip/}},
+  note         = {States that each of the compiler's roughly 1{,}000 warnings
+                  and errors has one or more test cases verifying the expected
+                  diagnostic is actually emitted. Accessed 2026-08-22}
+}
+
+@misc{roslyn_release_tracking,
+  author       = {{The .NET Foundation}},
+  title        = {Analyzer Release Tracking ({RS2000}--{RS2100})},
+  howpublished = {\url{https://github.com/dotnet/roslyn/blob/main/src/RoslynAnalyzers/Microsoft.CodeAnalysis.Analyzers/ReleaseTrackingAnalyzers.Help.md}},
+  year         = {2026},
+  note         = {Enforces that every declared analyzer diagnostic ID appears in
+                  a release-tracking file. Tracks the catalogue; does not check
+                  that a rule can fire. Accessed 2026-08-22}
+}
+
+@misc{i18n_tasks,
+  author       = {Mekhanikov, Gleb and {i18n-tasks contributors}},
+  title        = {{i18n-tasks}: Manage Translation and Localization with Static
+                  Analysis},
+  howpublished = {\url{https://glebm.github.io/i18n-tasks/}},
+  year         = {2026},
+  note         = {Reports missing and unused message-catalogue keys in both
+                  directions. Accessed 2026-08-22}
+}
+
+@misc{i18n_unused,
+  author       = {{i18n-unused contributors}},
+  title        = {{i18n-unused}: Static Analysis for Finding, Marking and
+                  Removing Unused and Missing {i18n} Translations},
+  howpublished = {\url{https://github.com/mxmvshnvsk/i18n-unused}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}
+
+@article{chen2020compilertesting,
+  author  = {Chen, Junjie and Patra, Jibesh and Pradel, Michael and
+             Xiong, Yingfei and Zhang, Hongyu and Hao, Dan and Zhang, Lu},
+  title   = {A Survey of Compiler Testing},
+  journal = {ACM Computing Surveys},
+  volume  = {53},
+  number  = {1},
+  pages   = {1--36},
+  year    = {2020},
+  doi     = {10.1145/3363562}
+}
+
+@article{tang2025certest,
+  author  = {Tang, Yixuan and Zhang, Jingxuan and Li, Xiaochen and
+             Huang, Zhiqiu and Jiang, He},
+  title   = {Detecting Compiler Error Recovery Defects via Program Mutation
+             Exploration},
+  journal = {IEEE Trans. Software Engineering},
+  volume  = {51},
+  number  = {2},
+  pages   = {389--412},
+  year    = {2025},
+  doi     = {10.1109/TSE.2024.3510912}
+}
+
+@inproceedings{schumi2021spectest,
+  author    = {Schumi, Richard and Sun, Jun},
+  title     = {{SpecTest}: Specification-Based Compiler Testing},
+  booktitle = {Proc. 24th Int. Conf. Fundamental Approaches to Software
+               Engineering (FASE)},
+  series    = {LNCS},
+  pages     = {269--291},
+  year      = {2021},
+  doi       = {10.1007/978-3-030-71500-7_14}
+}
+
+@inproceedings{zhang2019compilererrors,
+  author    = {Zhang, Chen and Chen, Bihuan and Chen, Linlin and Peng, Xin and
+               Zhao, Wenyun},
+  title     = {A Large-Scale Empirical Study of Compiler Errors in Continuous
+               Integration},
+  booktitle = {Proc. 27th ACM Joint European Software Engineering Conf. and
+               Symp. on the Foundations of Software Engineering (ESEC/FSE)},
+  pages     = {176--187},
+  year      = {2019},
+  doi       = {10.1145/3338906.3338917}
+}
+
+% --- Validating a machine-consumed description against its subject -----
+% Prior art for the REFLEXIVE-GATE claim (gap 1). Two groups, and the
+% distinction between them is the paper's surviving contribution:
+%   (a) NON-reflexive: the description is executed against the running
+%       implementation (Pact, Schemathesis, doctests, conformance suites).
+%   (b) REFLEXIVE: the regenerated artifact is diffed against its committed
+%       self (go generate + git diff, gazelle -mode=diff, API Extractor).
+% See refs-notes.md section 6, which RETRACTS the strong form of gap 1.
+
+@misc{pact_contract_testing,
+  author       = {{Pact Foundation}},
+  title        = {{Pact}: Consumer-Driven Contract Testing},
+  howpublished = {\url{https://docs.pact.io/}},
+  year         = {2026},
+  note         = {The contract is generated during execution of the consumer
+                  tests, then verified by executing it against the real
+                  provider --- a generated description checked against the
+                  system it describes. Accessed 2026-08-22}
+}
+
+@misc{schemathesis,
+  author       = {{Schemathesis contributors}},
+  title        = {{Schemathesis}: Property-Based {API} Testing for {OpenAPI}
+                  and {GraphQL} Schemas},
+  howpublished = {\url{https://schemathesis.readthedocs.io/}},
+  year         = {2026},
+  note         = {Generates tests from the schema and runs them against a live
+                  server. Its {\tt response\_schema\_conformance} check flags a
+                  schema/implementation mismatch \emph{without attributing
+                  blame}, and the documented remedy explicitly includes
+                  updating the schema. Accessed 2026-08-22}
+}
+
+@misc{api_extractor,
+  author       = {{Microsoft}},
+  title        = {{API Extractor}: The {API} Report},
+  howpublished = {\url{https://api-extractor.com/pages/overview/demo_api_report/}},
+  year         = {2026},
+  note         = {A canonical reflexive gate: a production build regenerates
+                  the {\tt .api.md} report and fails if it differs from the
+                  committed copy. Sound only because the report is derived by
+                  the compiler, never hand-typed. Accessed 2026-08-22}
+}
+
+@misc{bazel_gazelle,
+  author       = {{Bazel contributors}},
+  title        = {{Gazelle}: A {Bazel} Build File Generator
+                  ({\tt -mode=diff})},
+  howpublished = {\url{https://github.com/bazel-contrib/bazel-gazelle}},
+  year         = {2026},
+  note         = {Reflexive gate: regenerate the {\tt BUILD} files and fail on
+                  a diff against the committed ones. Accessed 2026-08-22}
+}
+
+@misc{rust_doctests,
+  author       = {{The Rust Project}},
+  title        = {Documentation Tests},
+  howpublished = {The rustdoc Book,
+                  \url{https://doc.rust-lang.org/stable/rustdoc/write-documentation/documentation-tests.html}},
+  year         = {2026},
+  note         = {{\tt cargo test} compiles and runs every code example in a
+                  doc comment, so documentation is executed against the
+                  implementation. Accessed 2026-08-22}
+}
+
+@misc{go_testable_examples,
+  author       = {Gerrand, Andrew},
+  title        = {Testable Examples in {Go}},
+  howpublished = {The Go Blog, \url{https://go.dev/blog/examples}},
+  year         = {2015},
+  note         = {An {\tt Example} function's captured standard output is
+                  compared against its {\tt // Output:} comment, so the
+                  published documentation is a test. Accessed 2026-08-22}
+}
+
+@misc{python_doctest,
+  author       = {{Python Software Foundation}},
+  title        = {{\tt doctest} --- Test Interactive {Python} Examples},
+  howpublished = {\url{https://docs.python.org/3/library/doctest.html}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{protobuf_conformance,
+  author       = {{Protocol Buffers contributors}},
+  title        = {Protocol Buffers Conformance Tests},
+  howpublished = {\url{https://github.com/protocolbuffers/protobuf/blob/main/conformance/README.md}},
+  year         = {2026},
+  note         = {A shared executable suite testing an implementation's
+                  completeness and correctness against the specification.
+                  Compare {\tt protoc-gen-validate}, which generates test cases
+                  and executes them against each language's harness to verify
+                  generated validation semantics. Accessed 2026-08-22}
+}
+
+@misc{cargo_semver_checks,
+  author       = {{cargo-semver-checks contributors}},
+  title        = {{\tt cargo-semver-checks}: Scan a {Rust} Crate for Semver
+                  Violations},
+  howpublished = {\url{https://github.com/obi1kenobi/cargo-semver-checks}},
+  year         = {2026},
+  note         = {Derives the API surface from rustdoc {JSON} and compares it
+                  against the previously published version --- a diff against a
+                  past self, with both sides derived. Accessed 2026-08-22}
+}
+
+@misc{buf_breaking,
+  author       = {{Buf Technologies}},
+  title        = {Detecting Breaking Changes ({\tt buf breaking})},
+  howpublished = {\url{https://buf.build/docs/breaking/}},
+  year         = {2026},
+  note         = {Compares a Protobuf schema against a past version; does not
+                  check generated stubs against the schema's semantics.
+                  Accessed 2026-08-22}
+}
+
+% --- The derived/retyped precondition, and the four ecosystems swept ---
+% hunt1999pragmatic states the REMEDY (derive, never retype) and must be cited
+% as such. The rest are the second sweep: three confirmations that a generated
+% DESCRIPTION gets a reflexive gate, and one real counterexample for generated
+% CODE (k8s_roundtrip). See refs-notes.md section 7.
+
+@book{hunt1999pragmatic,
+  author    = {Hunt, Andrew and Thomas, David},
+  title     = {The Pragmatic Programmer: From Journeyman to Master},
+  publisher = {Addison-Wesley},
+  year      = {1999},
+  note      = {Source of the DRY principle: ``Every piece of knowledge must
+               have a single, unambiguous, authoritative representation within
+               a system.'' This is the derive-never-retype rule, named}
+}
+
+@misc{k8s_roundtrip,
+  author       = {{The Kubernetes Authors}},
+  title        = {{\tt apitesting/roundtrip}: Round-Trip Fuzz Testing for
+                  Generated Conversion and DeepCopy Functions},
+  howpublished = {\url{https://github.com/kubernetes/apimachinery/blob/master/pkg/api/apitesting/roundtrip/roundtrip.go}},
+  year         = {2026},
+  note         = {Fuzzes values and round-trips them through generated code, so
+                  a conversion that dropped or corrupted data fails. Semantic,
+                  NON-reflexive validation of a generated artifact --- possible
+                  because the artifact is code and can be run. Accessed
+                  2026-08-22}
+}
+
+@misc{kubebuilder_crd,
+  author       = {{The Kubebuilder Authors}},
+  title        = {Generating {CRDs} with {\tt controller-gen}},
+  howpublished = {The Kubebuilder Book,
+                  \url{https://book.kubebuilder.io/reference/generating-crd.html}},
+  year         = {2026},
+  note         = {CRD YAML is derived from marker comments on Go types; CI
+                  regenerates and diffs. Derived artifact, reflexive gate.
+                  Accessed 2026-08-22}
+}
+
+@misc{kotlin_bcv,
+  author       = {{JetBrains}},
+  title        = {{\tt binary-compatibility-validator}: Public {API} Management
+                  Tool},
+  howpublished = {\url{https://github.com/Kotlin/binary-compatibility-validator}},
+  year         = {2026},
+  note         = {{\tt apiDump} writes a {\tt .api} dump that is committed;
+                  {\tt apiCheck} fails the build when the current public API no
+                  longer matches it. Derived artifact, reflexive gate --- the
+                  same shape as {API} Extractor. Accessed 2026-08-22}
+}
+
+@misc{roslyn_sourcegen_testing,
+  author       = {{The .NET Foundation}},
+  title        = {Source Generators Cookbook},
+  howpublished = {\url{https://github.com/dotnet/roslyn/blob/main/docs/features/source-generators.cookbook.md}},
+  year         = {2026},
+  note         = {Generator output is checked by snapshot testing against a
+                  committed snapshot, justified by the generator being
+                  deterministic for a given input --- the reflexive gate with
+                  its rationale stated outright. Accessed 2026-08-22}
+}
+
+@misc{nixos_reproducible,
+  author       = {{The NixOS Project}},
+  title        = {{NixOS} Reproducible Builds},
+  howpublished = {\url{https://reproducible.nixos.org/}},
+  year         = {2026},
+  note         = {{\tt nix build --rebuild} checks that a rebuild is
+                  byte-identical. Reproducibility, explicitly not correctness;
+                  the project is clear that a reproducible build environment
+                  does not by itself imply a reproducible build output.
+                  Accessed 2026-08-22}
+}
+
+@misc{crate2nix,
+  author       = {{nix-community}},
+  title        = {{crate2nix}: Nix Build Files Generated from {\tt Cargo.toml}
+                  and {\tt Cargo.lock}},
+  howpublished = {\url{https://github.com/nix-community/crate2nix}},
+  year         = {2026},
+  note         = {Derives {\tt Cargo.nix} from {\tt cargo metadata}; the
+                  generated expression is regenerated and diffed, never
+                  validated against the crate. Accessed 2026-08-22}
+}
+
+% =====================================================================
+% 5. EVALUATION METHODOLOGY
+% =====================================================================
+
+@inproceedings{jimenez2024swebench,
+  author    = {Jimenez, Carlos E. and Yang, John and Wettig, Alexander and
+               Yao, Shunyu and Pei, Kexin and Press, Ofir and
+               Narasimhan, Karthik},
+  title     = {{SWE-bench}: Can Language Models Resolve Real-World {GitHub}
+               Issues?},
+  booktitle = {Proc. Int. Conf. Learning Representations (ICLR)},
+  year      = {2024},
+  note      = {Oral; arXiv:2310.06770}
+}
+
+@misc{openai2024swebenchverified,
+  author       = {{OpenAI}},
+  title        = {Introducing {SWE-bench} {Verified}},
+  howpublished = {\url{https://openai.com/index/introducing-swe-bench-verified/}},
+  year         = {2024},
+  note         = {Released 2024-08-13; a 500-problem human-validated subset.
+                  Accessed 2026-08-22}
+}
+
+@article{yao2024taubench,
+  author  = {Yao, Shunyu and Shinn, Noah and Razavi, Pedram and
+             Narasimhan, Karthik},
+  title   = {{$\tau$-bench}: A Benchmark for Tool-Agent-User Interaction in
+             Real-World Domains},
+  journal = {arXiv preprint arXiv:2406.12045},
+  year    = {2024}
+}
+
+@article{sahoo2026agentlens,
+  author  = {Sahoo, Priyam and Mittal, Gaurav and Li, Xiaomin and Ma, Shengjie
+             and Steenhoek, Benjamin and Lin, Pingping and Hu, Yu},
+  title   = {{AgentLens}: Revealing the Lucky Pass Problem in {SWE}-Agent
+             Evaluation},
+  journal = {arXiv preprint arXiv:2605.12925},
+  year    = {2026}
+}
+
+@article{khanal2026reliability,
+  author  = {Khanal, Aaditya and Tao, Yangyang and Zhou, Junxiu},
+  title   = {Beyond {pass@1}: A Reliability Science Framework for Long-Horizon
+             {LLM} Agents},
+  journal = {arXiv preprint arXiv:2603.29231},
+  year    = {2026}
+}
+
+
+% --- Measurement validity: when the ruler moves the number -------------
+
+@inproceedings{schaeffer2023mirage,
+  author    = {Schaeffer, Rylan and Miranda, Brando and Koyejo, Sanmi},
+  title     = {Are Emergent Abilities of Large Language Models a Mirage?},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2023},
+  note      = {Oral; arXiv:2304.15004}
+}
+
+@inproceedings{zheng2023llmjudge,
+  author    = {Zheng, Lianmin and Chiang, Wei-Lin and Sheng, Ying and
+               Zhuang, Siyuan and Wu, Zhanghao and Zhuang, Yonghao and
+               Lin, Zi and Li, Zhuohan and Li, Dacheng and Xing, Eric P. and
+               Zhang, Hao and Gonzalez, Joseph E. and Stoica, Ion},
+  title     = {Judging {LLM}-as-a-Judge with {MT-Bench} and {Chatbot Arena}},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS),
+               Datasets and Benchmarks Track},
+  year      = {2023},
+  note      = {arXiv:2306.05685}
+}
+
+@inproceedings{raji2021everything,
+  author    = {Raji, Inioluwa Deborah and Bender, Emily M. and
+               Paullada, Amandalynne and Denton, Emily and Hanna, Alex},
+  title     = {{AI} and the Everything in the Whole Wide World Benchmark},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS),
+               Datasets and Benchmarks Track},
+  year      = {2021},
+  note      = {arXiv:2111.15366}
+}
+
+@inproceedings{jacobs2021measurement,
+  author    = {Jacobs, Abigail Z. and Wallach, Hanna},
+  title     = {Measurement and Fairness},
+  booktitle = {Proc. ACM Conf. Fairness, Accountability, and Transparency
+               (FAccT)},
+  year      = {2021},
+  doi       = {10.1145/3442188.3445901},
+  note      = {arXiv:1912.05511}
+}
+
+@article{dehghani2021benchmarklottery,
+  author  = {Dehghani, Mostafa and Tay, Yi and Gritsenko, Alexey A. and
+             Zhao, Zhe and Houlsby, Neil and Diaz, Fernando and
+             Metzler, Donald and Vinyals, Oriol},
+  title   = {The Benchmark Lottery},
+  journal = {arXiv preprint arXiv:2107.07002},
+  year    = {2021}
+}
+
+% =====================================================================
+% 6. VERIFICATION, VACUITY & MUTATION TESTING
+% =====================================================================
+
+@inproceedings{beer1997vacuity,
+  author    = {Beer, Ilan and Ben-David, Shoham and Eisner, Cindy and
+               Rodeh, Yoav},
+  title     = {Efficient Detection of Vacuity in {ACTL} Formulas},
+  booktitle = {Proc. 9th Int. Conf. Computer Aided Verification (CAV)},
+  series    = {LNCS},
+  pages     = {279--290},
+  year      = {1997},
+  doi       = {10.1007/3-540-63166-6_28}
+}
+
+@article{beer2001vacuity,
+  author  = {Beer, Ilan and Ben-David, Shoham and Eisner, Cindy and
+             Rodeh, Yoav},
+  title   = {Efficient Detection of Vacuity in Temporal Model Checking},
+  journal = {Formal Methods in System Design},
+  volume  = {18},
+  number  = {2},
+  pages   = {141--163},
+  year    = {2001},
+  doi     = {10.1023/A:1008779610539}
+}
+
+@article{kupferman2003vacuity,
+  author  = {Kupferman, Orna and Vardi, Moshe Y.},
+  title   = {Vacuity Detection in Temporal Model Checking},
+  journal = {Int. J. Software Tools for Technology Transfer},
+  volume  = {4},
+  number  = {2},
+  pages   = {224--233},
+  year    = {2003},
+  doi     = {10.1007/s100090100062}
+}
+
+@inproceedings{ball2008vacuitytesting,
+  author    = {Ball, Thomas and Kupferman, Orna},
+  title     = {Vacuity in Testing},
+  booktitle = {Proc. 2nd Int. Conf. Tests and Proofs (TAP)},
+  series    = {LNCS},
+  pages     = {4--17},
+  year      = {2008},
+  doi       = {10.1007/978-3-540-79124-9_2}
+}
+
+@article{chockler2006coverage,
+  author  = {Chockler, Hana and Kupferman, Orna and Vardi, Moshe Y.},
+  title   = {Coverage Metrics for Temporal Logic Model Checking},
+  journal = {Formal Methods in System Design},
+  volume  = {28},
+  number  = {3},
+  pages   = {189--212},
+  year    = {2006},
+  doi     = {10.1007/s10703-006-0001-6}
+}
+
+@inproceedings{beatty1994coverage,
+  author    = {Beatty, Derek L. and Bryant, Randal E.},
+  title     = {Formally Verifying a Microprocessor Using a Simulation
+               Methodology},
+  booktitle = {Proc. 31st Annual Design Automation Conf. (DAC)},
+  pages     = {596--602},
+  year      = {1994},
+  doi       = {10.1145/196244.196575}
+}
+
+@article{demillo1978hints,
+  author  = {DeMillo, Richard A. and Lipton, Richard J. and
+             Sayward, Frederick G.},
+  title   = {Hints on Test Data Selection: Help for the Practicing Programmer},
+  journal = {Computer},
+  volume  = {11},
+  number  = {4},
+  pages   = {34--41},
+  year    = {1978},
+  doi     = {10.1109/C-M.1978.218136}
+}
+
+@article{jia2011mutationsurvey,
+  author  = {Jia, Yue and Harman, Mark},
+  title   = {An Analysis and Survey of the Development of Mutation Testing},
+  journal = {IEEE Trans. Software Engineering},
+  volume  = {37},
+  number  = {5},
+  pages   = {649--678},
+  year    = {2011},
+  doi     = {10.1109/TSE.2010.62}
+}
+
+@incollection{papadakis2019mutationadvances,
+  author    = {Papadakis, Mike and Kintis, Marinos and Zhang, Jie and Jia, Yue
+               and Le Traon, Yves and Harman, Mark},
+  title     = {Mutation Testing Advances: An Analysis and Survey},
+  booktitle = {Advances in Computers},
+  volume    = {112},
+  pages     = {275--378},
+  publisher = {Elsevier},
+  year      = {2019},
+  doi       = {10.1016/bs.adcom.2018.03.015}
+}
+
+@inproceedings{petrovic2018googlemutation,
+  author    = {Petrovi\'{c}, Goran and Ivankovi\'{c}, Marko},
+  title     = {State of Mutation Testing at {Google}},
+  booktitle = {Proc. 40th Int. Conf. Software Engineering: Software Engineering
+               in Practice (ICSE-SEIP)},
+  pages     = {163--171},
+  year      = {2018},
+  doi       = {10.1145/3183519.3183521}
+}
+
+@inproceedings{inozemtseva2014coverage,
+  author    = {Inozemtseva, Laura and Holmes, Reid},
+  title     = {Coverage Is Not Strongly Correlated with Test Suite
+               Effectiveness},
+  booktitle = {Proc. 36th Int. Conf. Software Engineering (ICSE)},
+  pages     = {435--445},
+  year      = {2014},
+  doi       = {10.1145/2568225.2568271}
+}
+
+@inproceedings{zhang2015assertions,
+  author    = {Zhang, Yucheng and Mesbah, Ali},
+  title     = {Assertions Are Strongly Correlated with Test Suite
+               Effectiveness},
+  booktitle = {Proc. 10th Joint Meeting on Foundations of Software Engineering
+               (ESEC/FSE)},
+  pages     = {214--224},
+  year      = {2015},
+  doi       = {10.1145/2786805.2786858}
+}
+
+@article{barr2015oracle,
+  author  = {Barr, Earl T. and Harman, Mark and McMinn, Phil and
+             Shahbaz, Muzammil and Yoo, Shin},
+  title   = {The Oracle Problem in Software Testing: A Survey},
+  journal = {IEEE Trans. Software Engineering},
+  volume  = {41},
+  number  = {5},
+  pages   = {507--525},
+  year    = {2015},
+  doi     = {10.1109/TSE.2014.2372785}
+}
+
+@techreport{vandeursen2001refactoringtest,
+  author      = {van Deursen, Arie and Moonen, Leon and van den Bergh, Alex and
+                 Kok, Gerard},
+  title       = {Refactoring Test Code},
+  institution = {CWI (Centrum Wiskunde \& Informatica)},
+  number      = {SEN-R0119},
+  year        = {2001},
+  note        = {Also published in Proc. 2nd Int. Conf. Extreme Programming and
+                 Flexible Processes in Software Engineering (XP 2001)}
+}
+
+@inproceedings{bavota2012testsmells,
+  author    = {Bavota, Gabriele and Qusef, Abdallah and Oliveto, Rocco and
+               De Lucia, Andrea and Binkley, David},
+  title     = {An Empirical Analysis of the Distribution of Unit Test Smells
+               and Their Impact on Software Maintenance},
+  booktitle = {Proc. 28th IEEE Int. Conf. Software Maintenance (ICSM)},
+  pages     = {56--65},
+  year      = {2012},
+  doi       = {10.1109/ICSM.2012.6405253}
+}
+
+@inproceedings{claessen2000quickcheck,
+  author    = {Claessen, Koen and Hughes, John},
+  title     = {{QuickCheck}: A Lightweight Tool for Random Testing of {Haskell}
+               Programs},
+  booktitle = {Proc. 5th ACM SIGPLAN Int. Conf. Functional Programming (ICFP)},
+  pages     = {268--279},
+  year      = {2000},
+  doi       = {10.1145/351240.351266}
+}
+
+@inproceedings{groce2012swarm,
+  author    = {Groce, Alex and Zhang, Chaoqiang and Eide, Eric and Chen, Yang
+               and Regehr, John},
+  title     = {Swarm Testing},
+  booktitle = {Proc. Int. Symp. Software Testing and Analysis (ISSTA)},
+  pages     = {78--88},
+  year      = {2012},
+  doi       = {10.1145/2338965.2336763}
+}
+
+@inproceedings{goldstein2021judgecover,
+  author    = {Goldstein, Harrison and Hughes, John and
+               Lampropoulos, Leonidas and Pierce, Benjamin C.},
+  title     = {Do Judge a Test by Its Cover: Combining Combinatorial and
+               Property-Based Testing},
+  booktitle = {Proc. 30th European Symp. Programming (ESOP)},
+  series    = {LNCS},
+  pages     = {264--291},
+  year      = {2021},
+  doi       = {10.1007/978-3-030-72019-3_10}
+}
+
+@misc{railsatscale2024assertionless,
+  author       = {{Rails at Scale}},
+  title        = {Catching Assertionless Tests},
+  howpublished = {\url{https://railsatscale.com/2024-01-25-catching-assertionless-tests/}},
+  year         = {2024},
+  note         = {Accessed 2026-08-22}
+}
+
+
+% =====================================================================
+% 7. DOCUMENTATION-CODE CONSISTENCY, DETERMINISM & BUILD SYSTEMS
+% =====================================================================
+
+@inproceedings{tan2007icomment,
+  author    = {Tan, Lin and Yuan, Ding and Krishna, Gopal and Zhou, Yuanyuan},
+  title     = {{/*iComment}: Bugs or Bad Comments? {*/}},
+  booktitle = {Proc. 21st ACM SIGOPS Symp. Operating Systems Principles (SOSP)},
+  pages     = {145--158},
+  year      = {2007},
+  doi       = {10.1145/1294261.1294276}
+}
+
+@inproceedings{tan2011acomment,
+  author    = {Tan, Lin and Zhou, Yuanyuan and Padioleau, Yoann},
+  title     = {{aComment}: Mining Annotations from Comments and Code to Detect
+               Interrupt-Related Concurrency Bugs},
+  booktitle = {Proc. 33rd Int. Conf. Software Engineering (ICSE)},
+  pages     = {11--20},
+  year      = {2011},
+  doi       = {10.1145/1985793.1985796}
+}
+
+@inproceedings{tan2012tcomment,
+  author    = {Tan, Shin Hwei and Marinov, Darko and Tan, Lin and
+               Leavens, Gary T.},
+  title     = {{@tComment}: Testing {Javadoc} Comments to Detect Comment-Code
+               Inconsistencies},
+  booktitle = {Proc. 5th IEEE Int. Conf. Software Testing, Verification and
+               Validation (ICST)},
+  pages     = {260--269},
+  year      = {2012},
+  doi       = {10.1109/ICST.2012.106}
+}
+
+@inproceedings{zhong2013docerrors,
+  author    = {Zhong, Hao and Su, Zhendong},
+  title     = {Detecting {API} Documentation Errors},
+  booktitle = {Proc. ACM SIGPLAN Int. Conf. Object Oriented Programming Systems
+               Languages and Applications (OOPSLA)},
+  pages     = {803--816},
+  year      = {2013},
+  doi       = {10.1145/2509136.2509523}
+}
+
+@inproceedings{zhou2017directivedefects,
+  author    = {Zhou, Yu and Gu, Ruihang and Chen, Taolue and Huang, Zhiqiu and
+               Panichella, Sebastiano and Gall, Harald},
+  title     = {Analyzing {APIs} Documentation and Code to Detect Directive
+               Defects},
+  booktitle = {Proc. IEEE/ACM 39th Int. Conf. Software Engineering (ICSE)},
+  pages     = {27--37},
+  year      = {2017},
+  doi       = {10.1109/ICSE.2017.11}
+}
+
+@inproceedings{kiecker2026cascade,
+  author    = {Kiecker, Tobias and Sparka, Jan Arne and Reuter, Martin and
+               Ziegler, Albert and Grunske, Lars},
+  title     = {{CASCADE}: Detecting Inconsistencies between Code and
+               Documentation with Automatic Test Generation},
+  booktitle = {Proc. ACM Int. Conf. Foundations of Software Engineering (FSE)},
+  year      = {2026},
+  doi       = {10.1145/3808175},
+  note      = {arXiv:2604.19400}
+}
+
+@article{treude2026contextrot,
+  author  = {Treude, Christoph and Baltes, Sebastian},
+  title   = {Context Rot in {AI}-Assisted Software Development: Repurposing
+             Documentation Consistency for {AI} Configuration Artifacts},
+  journal = {arXiv preprint arXiv:2606.09090},
+  year    = {2026}
+}
+
+@article{knuth1984literate,
+  author  = {Knuth, Donald E.},
+  title   = {Literate Programming},
+  journal = {The Computer Journal},
+  volume  = {27},
+  number  = {2},
+  pages   = {97--111},
+  year    = {1984},
+  doi     = {10.1093/comjnl/27.2.97}
+}
+
+@article{lamb2022reproducible,
+  author  = {Lamb, Chris and Zacchiroli, Stefano},
+  title   = {Reproducible Builds: Increasing the Integrity of Software Supply
+             Chains},
+  journal = {IEEE Software},
+  volume  = {39},
+  number  = {2},
+  pages   = {62--70},
+  year    = {2022},
+  doi     = {10.1109/MS.2021.3073045}
+}
+
+@article{mokhov2020buildsystems,
+  author  = {Mokhov, Andrey and Mitchell, Neil and Peyton Jones, Simon},
+  title   = {Build Systems \`{a} la Carte: Theory and Practice},
+  journal = {J. Functional Programming},
+  volume  = {30},
+  year    = {2020},
+  doi     = {10.1017/S0956796820000088}
+}
+
+
+% =====================================================================
+% 8. TOOLS & SPECIFICATIONS
+% =====================================================================
+
+@misc{howard2024llmstxt,
+  author       = {Howard, Jeremy},
+  title        = {The {/llms.txt} File},
+  howpublished = {\url{https://llmstxt.org/}},
+  year         = {2024},
+  note         = {Proposed 2024-09-03; page (v2) last modified 2026-08-10.
+                  Specification repository
+                  \url{https://github.com/AnswerDotAI/llms-txt}.
+                  Accessed 2026-08-22}
+}
+
+@misc{mcp2026spec,
+  author       = {{Model Context Protocol contributors}},
+  title        = {Model Context Protocol Specification, Revision 2026-07-28},
+  howpublished = {\url{https://modelcontextprotocol.io/specification/2026-07-28}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{anthropic2024mcp,
+  author       = {{Anthropic}},
+  title        = {Introducing the {Model Context Protocol}},
+  howpublished = {\url{https://www.anthropic.com/news/model-context-protocol}},
+  year         = {2024},
+  note         = {Announced 2024-11-25. Accessed 2026-08-22}
+}
+
+@misc{typst,
+  author       = {{Typst contributors}},
+  title        = {{Typst}: A Markup-Based Typesetting System},
+  howpublished = {\url{https://typst.app/}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{d2lang,
+  author       = {{Terrastruct}},
+  title        = {{D2}: A Modern Diagram Scripting Language},
+  howpublished = {\url{https://d2lang.com/}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{treesitter,
+  author       = {Brunsfeld, Max and {tree-sitter contributors}},
+  title        = {{tree-sitter}: An Incremental Parsing System for Programming
+                  Tools},
+  howpublished = {\url{https://tree-sitter.github.io/tree-sitter/}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{cuelang,
+  author       = {{The CUE Authors}},
+  title        = {{CUE}: Configure, Unify, Execute},
+  howpublished = {\url{https://cuelang.org/}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{nickel,
+  author       = {{Tweag}},
+  title        = {{Nickel}: Better Configuration for Less},
+  howpublished = {\url{https://github.com/tweag/nickel}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{baml,
+  author       = {{BoundaryML}},
+  title        = {{BAML}: A Domain-Specific Language for Structured Text
+                  Generation with {LLMs}},
+  howpublished = {\url{https://github.com/BoundaryML/baml}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{kcl_zoo,
+  author       = {{Zoo}},
+  title        = {{KCL}: The {KittyCAD} Language},
+  howpublished = {\url{https://zoo.dev/docs/kcl}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}
+
+@misc{sketchnsketch_repo,
+  author       = {Chugh, Ravi and {Sketch-n-Sketch contributors}},
+  title        = {{Sketch-n-Sketch}: Direct Manipulation Programming for
+                  {HTML}/{SVG}},
+  howpublished = {\url{https://github.com/ravichugh/sketch-n-sketch}},
+  year         = {2026},
+  note         = {Accessed 2026-08-22}
+}

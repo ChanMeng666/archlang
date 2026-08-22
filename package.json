@@ -77,7 +77,7 @@
     "gen:plan-schema": "tsx scripts/gen-plan-schema.ts",
     "gen:intent-schema": "tsx scripts/gen-intent-schema.ts",
     "gen:example-svgs": "tsx scripts/gen-example-svgs.ts",
-    "gen:all": "npm run gen:grammars && npm run gen:errors && npm run gen:cli && npm run gen:spec && npm run gen:llms && npm run gen:gbnf && npm run gen:plan-schema && npm run gen:intent-schema && npm run gen:example-svgs",
+    "gen:all": "npm run gen:grammars && npm run gen:errors && npm run gen:cli && npm run gen:spec && npm run gen:llms && npm run gen:gbnf && npm run gen:plan-schema && npm run gen:intent-schema && npm run gen:paper-facts && npm run gen:example-svgs",
     "check": "npm run typecheck && npm run lint && npm run check:test-wiring && npm test",
     "check:drift": "tsx scripts/check-drift.ts",
     "check:test-wiring": "node scripts/check-test-wiring.mjs",
@@ -101,7 +101,11 @@
     "playground:build:only": "npm -w playground run build",
     "vscode:build:only": "npm -w editors/vscode run build",
     "build:workspaces": "npm run docs:build:only && npm run playground:build:only && npm run mcp:build:only && npm run vscode:build:only",
-    "prepublishOnly": "npm run build && npm run test"
+    "prepublishOnly": "npm run build && npm run test",
+    "gen:paper-facts": "tsx scripts/gen-paper-facts.ts",
+    "paper:build": "node paper/build.mjs",
+    "paper:snapshot": "tsx scripts/snapshot-paper-scale.ts",
+    "paper:check": "node paper/check-claims.mjs && node paper/check-anon.mjs && node paper/build.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.2",
