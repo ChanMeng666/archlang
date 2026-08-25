@@ -99,15 +99,53 @@ to prevent.
 
 </details>
 
-### 3.11 · `repair(repair(s)) !== repair(s)` — `todo`
+### 3.11 · `repair(repair(s)) !== repair(s)` — `FIXED` (unreleased)
 
-Over 400 generated plans: 138 already at a fixpoint, 194 need one more call, and **47 never reach
-one** — a fixture ping-pongs between two positions with period 2. So which arrangement you ship
-depends on how many times you happened to run `arch repair`.
+**`repair` is now idempotent, and it is asserted** — `test/fuzz.test.ts`'s "is idempotent — a second
+call changes nothing", a property over 300 generated plans, plus two named regression specimens in
+`test/repair.test.ts`. The hedge this entry used to carry ("deliberately not asserted either way:
+pinning `.not.toBe` would cement the defect") is retired.
 
-`repair`'s header documents a *bounded* internal fixpoint that "keeps the pass's own advice" when it
-runs out, so a second call continuing is arguable — but a stable 2-cycle across calls is not.
-Deliberately **not** asserted either way: pinning `.not.toBe` would cement the defect.
+Measured on the entry's own corpus, re-run against current `main` before anything was designed:
+**60 of 400 generated plans never reached a fixpoint** (the entry recorded 47; three fix commits had
+landed since, one of which widened repair's reach to angled walls). Orbits ran to period 2, 3 and 4
+with tails up to 3. After: **0 of 400**, and 0 of 2000 across four seeds.
+
+**Two causes, and only one of them is a cycle.**
+
+1. **A written position the plan did not resolve back to.** A `in <room> …` placement is
+   resolver-derived and therefore *not* grid-snapped (see 3.12, which drew that line); an absolute
+   `at` **is**. So when a move could not be expressed as an `inset` and the placement became an
+   absolute `at`, the coordinate repair had computed was snapped somewhere it had never evaluated —
+   the change log promised a `to` the output did not contain (**37 of 400 plans**), and the next call
+   started from a piece nobody had looked at. `planWrite` now plans the rewrite *before* anything
+   downstream reads a position and adopts the point the write will land on, mirroring the forward
+   check `insetForTarget` had always done for the `inset` branch. This is the half that changes
+   output for plans that were *already* idempotent: 17 of 400, every one of them re-rendering
+   **byte-identically** (the SVG was always drawn from the resolved position; only the written number
+   became honest).
+
+2. **A cycle with no closed-form cause fix.** The rest is two remedies that are each individually
+   right and jointly unsatisfiable. The cleanest specimen: a 300 mm shell leaves an interior exactly
+   1800 mm wide holding an 1800 mm piece, so the only position clearing both walls is x = 150 — a
+   coordinate `grid 100` does not have. Push off the left wall and it snaps 50 mm into the right;
+   push off the right and it snaps 50 mm into the left. Nothing is miscomputed and there is no
+   objective to make consistent; the arbitrariness is *where the pass banked*, which was wherever it
+   happened to be standing. So both levels park on the **canonical member of the cycle they are
+   walking**, keyed only by the members and never by the order they were reached in: a piece that
+   returns to a position it has held is parked on the lowest `(x,y)` of its cycle, and the pass is
+   then iterated until the emitted source repeats, keeping the lexicographically smallest source of
+   that cycle. Every member of a cycle has that same cycle as its orbit, so re-running from the
+   canonical member returns it unchanged — which is the law.
+
+Doing the per-piece half matters for more than tidiness: without it, independent per-piece cycles
+multiply into one long orbit (a plan with pieces cycling at 4, 2 and 6 took **thirty** rounds to
+close and overran the round cap). With it, 95% of plans settle in one or two rounds and the longest
+orbit over 2000 plans is five.
+
+Honesty holds throughout: a piece parked mid-cycle gets an `unresolved` entry naming every position
+it alternates between, and a change entry whose net effect is nothing is dropped rather than
+reported. All 27 shipped examples repair byte-identically to before (they are already at a fixpoint).
 
 ### 3.12 · `flush` and `grid` fight — `FIXED` (unreleased)
 

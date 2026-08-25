@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { repair, lint } from "../src/index.js";
+import { format, repair, lint } from "../src/index.js";
 
 /**
  * `arch repair` — the explicit source-to-source corrector (ADR 0006). It emits new
@@ -125,6 +125,91 @@ describe("arch repair", () => {
   it("does not touch wall-anchored (`against wall`) furniture", () => {
     const r = repair(split(`furniture wc against wall partition side left in a size 400x700`));
     expect(r.changed).toBe(false);
+  });
+
+  // -------------------------------------------------------------------------
+  // Idempotence: the two ping-pongs that used to make `arch repair`'s output
+  // depend on how many times you had run it (docs/backlog.md 3.11).
+  // -------------------------------------------------------------------------
+
+  /**
+   * **Two walls, one piece, no seat on the grid.** The shell is 300 mm thick, so its
+   * inner faces are at x = 150 and x = 1950 — an interior exactly 1800 mm wide, holding
+   * a piece exactly 1800 mm wide. The one position that clears both walls is x = 150,
+   * which `grid 100` does not have. So the wall push off the left wall snapped to 200
+   * (50 mm into the right wall), the push off the right wall snapped to 100 (50 mm into
+   * the left), and the pass banked whichever it had reached: `repair` returned 200,
+   * `repair(repair(…))` returned 100, and it alternated for ever.
+   */
+  const SQUEEZE = `plan "Squeeze" {
+    units mm
+    grid 100
+    wall id=w exterior thickness 300 { (0,0) (2100,0) (2100,3300) (0,3300) close }
+    room id=r0 at (0,0) size 2100x3300
+    furniture id=f0 widget at (90,1300) size 1800x1400 in r0
+  }`;
+
+  /**
+   * **A wall push and an overlap separation with opposite objectives.** `b` overlaps
+   * `a` by 100 mm along y, so the separation pushes it UP to y = 100 — which buries it
+   * 50 mm in the top wall, so the (higher-priority) wall push sends it back DOWN to
+   * y = 200, back onto `a`. Two remedies, each correct on its own, that undo each other.
+   */
+  const SANDWICH = `plan "Sandwich" {
+    units mm
+    grid 100
+    wall id=w exterior thickness 300 { (0,0) (3000,0) (3000,3000) (0,3000) close }
+    room id=r0 at (0,0) size 3000x3000
+    furniture id=a widget at (600,700) size 900x600 in r0
+    furniture id=b widget at (400,200) size 1100x600 in r0
+  }`;
+
+  it.each([
+    ["a piece with no on-grid seat between two walls", SQUEEZE, "f0"],
+    ["a wall push and an overlap separation that undo each other", SANDWICH, "b"],
+  ])("settles %s instead of ping-ponging", (_what, src, id) => {
+    const r1 = repair(src);
+    expect(repair(r1.source).source).toBe(r1.source);
+    // …and it says so: a piece it could not seat is never left looking settled.
+    const note = r1.unresolved.find((u) => u.id === id);
+    expect(note?.reason).toContain("cycles between 2 positions");
+    // The change log describes the source the caller got back — never a move that
+    // source does not contain.
+    for (const c of r1.changes) expect(c.from).not.toEqual(c.to);
+  });
+
+  it("keeps the canonical seat of a cycle, whichever end it is handed", () => {
+    // Both ends of the SQUEEZE cycle repair to the same arrangement. Before, each
+    // repaired to the OTHER — which is what made the shipped plan a function of the
+    // number of times the command had been run. Compared through the formatter because
+    // repair leaves a plan it does not change byte-untouched, so the end that is already
+    // canonical comes back in the author's own layout.
+    const at = (x: number) => SQUEEZE.replace("at (90,1300)", `at (${x},1300)`);
+    expect(format(repair(at(100)).source)).toBe(format(repair(at(200)).source));
+  });
+
+  it("writes a position the plan resolves back to", () => {
+    // A `in <room> centered` piece is resolver-derived and NOT grid-snapped, so it can
+    // sit off the grid; an absolute `at` IS snapped. Re-pointing one as the other used
+    // to report a `to` the output did not contain — 37 of 400 generated plans shipped a
+    // change log that disagreed with their own source.
+    const src = `plan "Off" {
+      units mm
+      grid 100
+      wall id=w exterior thickness 200 { (0,0) (2500,0) (2500,2500) (0,2500) close }
+      room id=r0 at (0,0) size 2500x2500
+      furniture id=a widget at (100,100) size 900x900 in r0
+      furniture id=b widget in r0 centered size 900x900
+    }`;
+    const r = repair(src);
+    const moved = r.changes.filter((c) => c.kind === "moved");
+    expect(moved.length).toBeGreaterThan(0);
+    // Every reported destination is on the grid the resolver will snap to.
+    for (const c of moved) {
+      expect(c.to.x % 100).toBe(0);
+      expect(c.to.y % 100).toBe(0);
+    }
+    expect(repair(r.source).source).toBe(r.source);
   });
 
   it("is pure across repeated calls on the same source (parse memo untouched)", () => {

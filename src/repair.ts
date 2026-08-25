@@ -22,9 +22,14 @@
  * (a `rotate` rewrite, not a move — the `W_FIXTURE_BACK_TO_ROOM` correction).
  *
  * A global fixpoint iterates every piece (in source order, so overlap separation has a
- * deterministic mover) until nothing moves. A piece that would cycle, sits with no
- * majority side, or floats too far is left at its best position and **reported** —
- * repair never guesses among equal options.
+ * deterministic mover) until nothing moves. A piece that sits with no majority side or
+ * floats too far is left where it stands and **reported**, and one that cycles is parked
+ * on that cycle's canonical member and reported — repair never guesses among equal
+ * options, and never lets which of them it ships depend on where it started.
+ *
+ * That pass is run to a **cycle** and the cycle's canonical member is what ships, so
+ * `repair(repair(s))` equals `repair(s)` byte for byte. See {@link repair} for why one
+ * pass does not have that property and why the remedy cannot be closed-form.
  *
  * **Every flagged piece is accounted for — a silent no-op is a bug.** The statement
  * scan walks *into* `for`/`while`/`if`/component bodies, and reads the resolved
@@ -789,7 +794,10 @@ interface Piece {
   room?: BBox;
   /** Present for a `in <room> …` piece — how to re-express a move as an `inset`. */
   place?: PlaceModel;
-  visited: Set<string>;
+  /** Every position this piece has held in this pass, oldest first — the `"x,y"` keys.
+   *  Ordered, not a set, because a repeat has to yield the CYCLE (the stretch from the
+   *  first sighting on) and not merely the fact that one exists. */
+  trail: string[];
   reasons: string[];
   stuck: boolean;
   /** Set by the orientation pass: the quarter-turn before/after, and why. */
@@ -846,14 +854,221 @@ function firstNewPinch(before: CirculationModel | null, after: CirculationModel 
 }
 
 /**
- * Correct a plan and return new source + a change log. Furniture is moved to a stable
- * arrangement by a global fixpoint: each pass applies the highest-priority fix to each
- * piece (in resolved source order, so overlap separation has a deterministic mover); a
- * piece that would cycle, or that has no unambiguous move, is left at its best position
- * and reported. Anything left unfixable goes in `unresolved` — including a piece repair
- * may not rewrite at all, which is reported rather than silently skipped.
+ * How many times {@link repair} may re-run its own pass while looking for the cycle it
+ * settles in.
+ *
+ * The orbit is short because a pass already parks each cycling PIECE on its own cycle's
+ * canonical member, so what is left for this loop is the interaction between pieces
+ * rather than the pieces themselves: over 2000 generated plans the longest orbit is five
+ * rounds and 95% are one or two. (Without the per-piece rule the two lengths multiply —
+ * the same corpus then reached thirty, three pieces cycling with periods 4, 2 and 6.)
+ * The cap only bounds a pathological plan, and reaching it is reported rather than hidden.
+ */
+const MAX_ROUNDS = 24;
+
+/**
+ * Byte spans of the **original** source's furniture statements, keyed `${level}|${id}`.
+ *
+ * The first round fills it and every later round reads it: a later round parses a
+ * re-*printed* source, so its own offsets index that intermediate text, not the source
+ * the caller passed in — and `RepairChange.span` / `RepairNote.span` promise the
+ * caller's. Ids survive the re-print (an author's `id=`, or the walk-order counter), so
+ * they are what ties a later round's statement back to the one the caller wrote.
+ */
+type SpanBook = Map<string, Span>;
+
+/**
+ * Correct a plan and return new source + a change log.
+ *
+ * **`repair` is idempotent: `repair(repair(s)).source === repair(s).source`, byte for
+ * byte.** That is a law, pinned by `test/fuzz.test.ts`, and it is not free — a single
+ * pass does not have it. A pass moves each piece by the highest-priority closed-form fix
+ * until nothing moves, and stops a piece that would revisit a position it has already
+ * held. Where two rules disagree, *where* it stops is then an accident of where it
+ * started: a piece 1800 mm wide in an 1800 mm gap whose only exact position is off the
+ * grid is pushed off the left wall onto the right one and back for ever, and the pass
+ * banks whichever of the two it happened to reach. Run the pass again from there and it
+ * banks the other. So which arrangement `arch repair` shipped depended on how many times
+ * you had run it (`docs/backlog.md` 3.11).
+ *
+ * There is no closed-form cause fix for that, because nothing is miscomputed: on a
+ * gridded plan the two constraints are jointly **unsatisfiable**, and each remedy is
+ * individually right. What can be fixed is the arbitrariness, and the same trick works
+ * twice. Iterating anything deterministic walks a trajectory that must eventually
+ * repeat, and the repeated stretch is a *cycle* — a property of the plan, not of where
+ * the walk began. So both levels park on the cycle's **canonical member**, chosen by a
+ * key that reads only the members and never the order they were reached in:
+ *
+ *   * a **piece** that returns to a position it has held is parked on the lowest `(x,y)`
+ *     of the cycle it is walking, rather than wherever the pass happened to catch it;
+ *   * the **pass** is then run until the emitted source repeats, and the
+ *     lexicographically smallest source of that cycle is what ships.
+ *
+ * Every member of a cycle has that same cycle as its orbit, so re-running from the
+ * canonical member returns it unchanged — which is the law. A plan whose pass already
+ * reaches a fixpoint has a cycle of one and comes back byte-identical to before any of
+ * this existed; only the plans that never settled move.
+ *
+ * The pieces that keep moving inside the cycle are named in `unresolved` — repair never
+ * pretends a plan it could not settle is clean. Anything else left unfixable goes there
+ * too, including a piece repair may not rewrite at all.
  */
 export function repair(source: string): RepairResult {
+  const book: SpanBook = new Map();
+  const rounds: RepairResult[] = [];
+  // Source text → the round that produced it. The caller's own source is round −1, so a
+  // pass that hands it straight back is a cycle of one and returns untouched.
+  const seen = new Map<string, number>([[source, -1]]);
+  let cur = source;
+  let start = 0;
+  let end = -1;
+  for (let i = 0; i < MAX_ROUNDS; i++) {
+    const r = repairPass(cur, book, i === 0);
+    rounds.push(r);
+    const prev = seen.get(r.source);
+    if (prev !== undefined) {
+      start = prev + 1; // the cycle runs from the first sighting to this repeat
+      end = i;
+      break;
+    }
+    seen.set(r.source, i);
+    cur = r.source;
+  }
+  const bounded = end < 0;
+  if (bounded) {
+    start = 0;
+    end = rounds.length - 1;
+  }
+  let canon = rounds[start]!.source;
+  for (let i = start + 1; i <= end; i++) if (rounds[i]!.source < canon) canon = rounds[i]!.source;
+  // The EARLIEST round that produced it: the change log is composed along the chain up to
+  // there, and a shorter chain is a shorter composition.
+  const c = rounds.findIndex((r) => r.source === canon);
+  const unresolved = [...rounds[c]!.unresolved];
+  const noted = new Set(unresolved.map((u) => `${u.level ?? ""}|${u.id}|${u.reason}`));
+  const push = (n: RepairNote): void => {
+    const k = `${n.level ?? ""}|${n.id}|${n.reason}`;
+    if (noted.has(k)) return;
+    noted.add(k);
+    unresolved.push(n);
+  };
+  if (end > start)
+    for (const n of cycleNotes(
+      rounds.slice(start, end + 1).map((r) => r.source),
+      book,
+    ))
+      push(n);
+  if (bounded)
+    push({
+      id: "plan",
+      reason: `repair's passes did not settle within ${MAX_ROUNDS} rounds — the plan keeps the canonical arrangement of the ones they reached; place the pieces reported above by hand`,
+    });
+  return {
+    source: canon,
+    changes: composeChanges(rounds.slice(0, c + 1)),
+    unresolved,
+    changed: canon !== source,
+  };
+}
+
+/**
+ * The change log of the whole run: one entry per piece per kind, from where it started
+ * to where it ended, however many rounds it took to get there.
+ *
+ * A piece that a later round moved back to where it began gets **no entry** — the change
+ * log describes the source the caller receives, and reporting a move that source does not
+ * contain would be a lie of exactly the kind {@link planWrite} exists to prevent.
+ */
+function composeChanges(rounds: RepairResult[]): RepairChange[] {
+  const byPiece = new Map<string, RepairChange>();
+  for (const r of rounds)
+    for (const c of r.changes) {
+      const key = `${c.level ?? ""}|${c.id}|${c.kind}`;
+      const prior = byPiece.get(key);
+      if (!prior) {
+        byPiece.set(key, { ...c });
+        continue;
+      }
+      prior.to = c.to;
+      // A `rotated` entry's from/to are the piece's position, and both name where it
+      // ended up — the turn moved nothing, and the field says so.
+      if (c.kind === "rotated") prior.from = c.to;
+      if (c.toRotate !== undefined) prior.toRotate = c.toRotate;
+      // `placement` is not undone by a later `at`: the placement clause is gone for good,
+      // so that is what the net edit did to the statement.
+      prior.via = prior.via === "placement" || c.via === "placement" ? "placement" : c.via;
+      const said = new Set(prior.reason.split("; "));
+      for (const part of c.reason.split("; ")) if (part && !said.has(part)) said.add(part);
+      prior.reason = [...said].join("; ");
+    }
+  return [...byPiece.values()].filter((c) =>
+    c.kind === "rotated" ? c.fromRotate !== c.toRotate : c.from.x !== c.to.x || c.from.y !== c.to.y,
+  );
+}
+
+/**
+ * One `unresolved` entry per piece that keeps moving inside the settled cycle — the
+ * pieces `repair` could not place, named with every arrangement it saw them in.
+ *
+ * The comparison is over the RESOLVED positions of each cycle member rather than its
+ * text, because the text also carries the clause form (`in <room> anchor …` becoming an
+ * absolute `at`), and a piece that is standing still is standing still however its
+ * position is spelled.
+ */
+function cycleNotes(members: string[], book: SpanBook): RepairNote[] {
+  interface Seen {
+    level?: number;
+    id: string;
+    where: string[];
+  }
+  const byPiece = new Map<string, Seen>();
+  for (const src of members) {
+    const { ir, levels } = resolvePlan(src);
+    const add = (lvl: number | undefined, p: ResolvedPlan | null): void => {
+      for (const e of p?.elements ?? []) {
+        if (e.kind !== "furniture") continue;
+        const f = e as RFurniture;
+        const key = `${lvl ?? ""}|${f.id}`;
+        const where = `(${f.at.x},${f.at.y})${f.rotate ? ` rotate ${f.rotate}` : ""}`;
+        let rec = byPiece.get(key);
+        if (!rec) {
+          rec = { ...(lvl !== undefined ? { level: lvl } : {}), id: f.id, where: [] };
+          byPiece.set(key, rec);
+        }
+        if (!rec.where.includes(where)) rec.where.push(where);
+      }
+    };
+    if (levels.length > 0) for (const l of levels) add(l.level, l.ir);
+    else add(undefined, ir);
+  }
+  const out: RepairNote[] = [];
+  for (const [key, rec] of byPiece) {
+    if (rec.where.length < 2) continue;
+    const span = book.get(key);
+    out.push({
+      id: rec.id,
+      reason:
+        `could not be settled — repair's own passes cycle between ${rec.where.length} positions for it ` +
+        `(${rec.where.join(" ↔ ")}), so no arrangement satisfies every rule here; the plan keeps the ` +
+        `canonical one. Move it, resize it, or move what it conflicts with.`,
+      ...(span ? { span } : {}),
+      ...(rec.level !== undefined ? { level: rec.level } : {}),
+    });
+  }
+  return out;
+}
+
+/**
+ * ONE corrective pass: parse, resolve, move every piece by the highest-priority
+ * closed-form fix until nothing moves, and re-emit. A pure function of `source` — which
+ * is what lets {@link repair} iterate it and canonicalise the cycle it lands in.
+ *
+ * Each pass applies fixes in resolved source order, so overlap separation has a
+ * deterministic mover. A piece with no unambiguous move is left where it stands and
+ * reported; a piece that returns to a position it has already held is parked on the
+ * canonical member of the cycle it is walking, and reported.
+ */
+function repairPass(source: string, book: SpanBook, record: boolean): RepairResult {
   const unresolved: RepairNote[] = [];
   const noted = new Set<string>();
   /**
@@ -899,7 +1114,15 @@ export function repair(source: string): RepairResult {
   for (const st of storeys) {
     const seenIds = new Set<string>();
     changes.push(
-      ...repairStorey(st.ir, plan, st.level, (id, reason, span) => note(id, reason, span, st.level, seenIds), seenIds),
+      ...repairStorey(
+        st.ir,
+        plan,
+        st.level,
+        (id, reason, span) => note(id, reason, span, st.level, seenIds),
+        seenIds,
+        book,
+        record,
+      ),
     );
   }
 
@@ -914,7 +1137,8 @@ export function repair(source: string): RepairResult {
  * whose resolved instances appear in `ir`, so a storey only ever edits its own floor
  * (statements belonging to another level resolve to nothing here and are left untouched).
  * `note` is already bound to this storey, and `notedIds` tracks the ids it reported so the
- * postcondition sweep below does not double-report them.
+ * postcondition sweep below does not double-report them. `book`/`record` carry the
+ * caller's own byte spans across rounds — see {@link SpanBook}.
  */
 function repairStorey(
   ir: ResolvedPlan,
@@ -922,7 +1146,15 @@ function repairStorey(
   level: number | undefined,
   note: (id: string, reason: string, span?: Span) => void,
   notedIds: Set<string>,
+  book: SpanBook,
+  record: boolean,
 ): RepairChange[] {
+  const spanKeyFor = (id: string): string => `${level ?? ""}|${id}`;
+  /** The span to report for `id`. The first round records each statement's ORIGINAL
+   *  span; a later round is parsing a re-printed source, so it reads the book rather
+   *  than its own offsets ({@link SpanBook}). */
+  const spanOf = (id: string, own: Span | undefined): Span | undefined =>
+    record ? own : (book.get(spanKeyFor(id)) ?? own);
   const walls = ir.walls;
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const landings = doors
@@ -981,6 +1213,12 @@ function repairStorey(
       rotate: rf.rotate ?? 0,
       ...(room ? { room } : {}),
     };
+    // Every statement's ORIGINAL span, under both names a report can use for it: the
+    // resolved id (a piece repair may not rewrite) and the statement id (one it can).
+    if (record && rf.span) {
+      book.set(spanKeyFor(rf.id), rf.span);
+      if (site) book.set(spanKeyFor(site.id), rf.span);
+    }
     const blocked = ((): Blocked => {
       if (rf.room !== undefined && polyRoomIds.has(rf.room))
         return `its declared room "${rf.room}" is a polygon (\`room polygon …\`), whose floor is not a rectangle — repair has no containing push for that shape; move the piece by hand`;
@@ -1034,7 +1272,7 @@ function repairStorey(
             ),
           }
         : {}),
-      visited: new Set([`${rf.at.x},${rf.at.y}`]),
+      trail: [`${rf.at.x},${rf.at.y}`],
       reasons: [],
       stuck: false,
     };
@@ -1107,14 +1345,39 @@ function repairStorey(
       });
       if (fix === null) continue;
       if ("ambiguous" in fix) {
-        note(p.id, fix.ambiguous, p.f.span);
+        note(p.id, fix.ambiguous, spanOf(p.id, p.f.span));
         p.stuck = true;
         continue;
       }
       const next = { x: p.cur.x + fix.dx, y: p.cur.y + fix.dy };
       const key = `${next.x},${next.y}`;
-      if (p.visited.has(key)) {
-        note(p.id, "can't be placed without conflict — adjust manually", p.f.span);
+      const back = p.trail.indexOf(key);
+      if (back >= 0) {
+        // The piece is chasing its own tail: the positions from `back` on are a cycle
+        // this pass will walk for ever. Which of them it happens to be standing on right
+        // now is an accident of where it started, so it is parked on the cycle's
+        // CANONICAL member instead — the lowest `(x, y)`, a key that reads only the
+        // cycle. Leaving it at the arrival point is what made `arch repair` ship a
+        // different arrangement depending on how many times it had been run
+        // (`docs/backlog.md` 3.11); parking it here keeps the pass its own fixpoint for
+        // this piece, so a plan's cycles cannot multiply into one long orbit.
+        const cycle = p.trail.slice(back).map((k) => {
+          const [x, y] = k.split(",");
+          return { x: Number(x), y: Number(y) };
+        });
+        let canon = cycle[0]!;
+        for (const c of cycle) if (c.x < canon.x || (c.x === canon.x && c.y < canon.y)) canon = c;
+        if (canon.x !== p.cur.x || canon.y !== p.cur.y) {
+          p.cur = canon;
+          moved = true;
+        }
+        note(
+          p.id,
+          `can't be placed without conflict — it cycles between ${cycle.length} positions (${cycle
+            .map((c) => `(${c.x},${c.y})`)
+            .join(" ↔ ")}); parked on the lowest of them, adjust manually`,
+          spanOf(p.id, p.f.span),
+        );
         p.stuck = true;
         continue;
       }
@@ -1128,7 +1391,7 @@ function repairStorey(
           note(
             p.id,
             `would pinch the walk to "${label}" below ${minPathClear} mm — left in place; adjust manually`,
-            p.f.span,
+            spanOf(p.id, p.f.span),
           );
           p.stuck = true;
           continue;
@@ -1136,12 +1399,29 @@ function repairStorey(
         beforeCirc = after; // accepted → this arrangement is the new baseline
       }
       p.cur = next;
-      p.visited.add(key);
+      p.trail.push(key);
       if (!p.reasons.includes(fix.reason)) p.reasons.push(fix.reason);
       moved = true;
     }
     if (!moved) break;
   }
+
+  // ---- realise every move -----------------------------------------------------
+  // A move is only real if the source repair is about to WRITE resolves back to it. The
+  // write is therefore planned here, before anything downstream reads a position: an
+  // absolute `at` is grid-snapped by `resolve`, so a target off the grid comes back
+  // somewhere repair never evaluated — the change log would promise a position the
+  // output does not contain, and the next call would start from a piece nobody had
+  // looked at. Planning it now also means the orientation pass below asks "which wall is
+  // this piece standing on?" of the piece's FINAL position rather than a proposed one.
+  // Only a piece that actually moved is planned: re-pointing an untouched `in <room>`
+  // placement at its own snapped coordinate would be a gratuitous rewrite.
+  const snap = (v: number): number => (grid > 0 ? Math.round(v / grid) * grid : v);
+  const writes = pieces.map((p) => (p.cur.x === p.orig.x && p.cur.y === p.orig.y ? null : planWrite(p, snap)));
+  pieces.forEach((p, i) => {
+    const w = writes[i];
+    if (w) p.cur = w.target;
+  });
 
   // ---- orientation pass -------------------------------------------------------
   // Positions are final, so "which wall is this piece standing on?" now has a stable
@@ -1156,7 +1436,7 @@ function repairStorey(
     const verdict = orientationVerdict(rectOfPiece(p), p.f.category, p.rotate, walls);
     if (verdict === null) continue;
     if ("ambiguous" in verdict) {
-      note(p.id, verdict.ambiguous, p.f.span);
+      note(p.id, verdict.ambiguous, spanOf(p.id, p.f.span));
       continue;
     }
     p.turn = { from: p.rotate, to: verdict.to, reason: verdict.reason };
@@ -1165,19 +1445,21 @@ function repairStorey(
   // ---- emit -------------------------------------------------------------------
   const changes: RepairChange[] = [];
   const changedIds = new Set<string>();
-  for (const p of pieces) {
-    const shifted = p.cur.x !== p.orig.x || p.cur.y !== p.orig.y;
-    if (shifted) {
-      const { via, extra } = writePosition(p);
+  for (let i = 0; i < pieces.length; i++) {
+    const p = pieces[i]!;
+    const w = writes[i];
+    const sp = spanOf(p.id, p.f.span);
+    if (w && (p.cur.x !== p.orig.x || p.cur.y !== p.orig.y)) {
+      applyWrite(p, w);
       changes.push({
         id: p.id,
         category: p.f.category,
         kind: "moved",
         from: p.orig,
         to: p.cur,
-        via,
-        ...(p.f.span ? { span: p.f.span } : {}),
-        reason: [...p.reasons, ...extra].join("; "),
+        via: w.via,
+        ...(sp ? { span: sp } : {}),
+        reason: [...p.reasons, ...w.extra].join("; "),
         ...(level !== undefined ? { level } : {}),
       });
       changedIds.add(p.id);
@@ -1193,7 +1475,7 @@ function repairStorey(
         fromRotate: p.turn.from,
         toRotate: p.turn.to,
         via: "rotate",
-        ...(p.f.span ? { span: p.f.span } : {}),
+        ...(sp ? { span: sp } : {}),
         reason: p.turn.reason,
         ...(level !== undefined ? { level } : {}),
       });
@@ -1227,20 +1509,36 @@ function repairStorey(
       grid,
     });
     if (fix !== null) {
-      note(o.id, say(fix), o.span);
+      note(o.id, say(fix), spanOf(o.id, o.span));
       continue;
     }
     const verdict = orientationVerdict(fr, o.category, o.rotate, walls);
     if (verdict === null) continue;
-    note(o.id, say(verdict), o.span);
+    note(o.id, say(verdict), spanOf(o.id, o.span));
   }
 
   return changes;
 }
 
+/** A rewrite repair intends to make to one statement, and the position that rewrite
+ *  will actually resolve back to. Planned before it is applied, because whether a move
+ *  is real at all depends on where the written clause lands. */
+interface PlannedWrite {
+  /**
+   * The position the emitted source **resolves to** — not the position the movers asked
+   * for. They differ whenever the write is an absolute `at` on a gridded plan, and that
+   * difference is what the change log has to report: `to` is a promise about the output.
+   */
+  target: { x: number; y: number };
+  via: NonNullable<RepairChange["via"]>;
+  extra: string[];
+  /** The `inset` value, when the placement can express the move as one. */
+  inset?: number;
+}
+
 /**
- * Write a piece's repaired position back into its own statement, in the form the author
- * used — and say which clause changed.
+ * Decide how a piece's repaired position gets written back into its own statement, in
+ * the form the author used — and, crucially, **where that write will land**.
  *
  * An absolute `at` is simply re-pointed. A room-anchored placement is first tried as a
  * minimal `inset` edit ({@link insetForTarget}), which keeps the placement declarative
@@ -1248,36 +1546,57 @@ function repairStorey(
  * reaches the repaired position does the placement become an absolute `at` — and then
  * the rotation the anchor had *derived* is written out explicitly, because an absolute
  * piece derives nothing and dropping it would silently spin the fixture.
+ *
+ * The `at` branch **grid-snaps**, because `resolve` does (`elements/furniture.ts`: the
+ * absolute path is the one place the grid still applies). Without that, repair reported
+ * a `to` the output did not contain — a `in <room> centered` piece resolves off-grid,
+ * so re-pointing it at `(550,900)` on `grid 100` came back at `(600,900)`, and 37 of
+ * 400 generated plans shipped a change log that disagreed with their own source. The
+ * `inset` branch needs no snap for the mirror-image reason: a room-anchored coordinate
+ * is resolver-derived and is *not* snapped, and {@link insetForTarget} already proves
+ * its own forward reproduction.
  */
-function writePosition(p: Piece): { via: RepairChange["via"]; extra: string[] } {
-  if (!p.place || !p.f.place) {
-    p.f.at = { x: numExpr(p.cur.x), y: numExpr(p.cur.y) };
-    return { via: "at", extra: [] };
+function planWrite(p: Piece, snap: (v: number) => number): PlannedWrite {
+  if (p.place && p.f.place && p.f.place.mode === "anchor") {
+    const i = insetForTarget(p.place, p.cur, (v) => v);
+    if (i !== null)
+      return {
+        target: { x: p.cur.x, y: p.cur.y },
+        via: "inset",
+        inset: i,
+        extra: [`re-expressed as \`inset ${i}\`${p.place.flush ? " from the wall face" : ""} (was ${p.place.inset})`],
+      };
   }
+  const target = { x: snap(p.cur.x), y: snap(p.cur.y) };
+  if (!p.place || !p.f.place) return { target, via: "at", extra: [] };
   const place = p.f.place;
-  // The forward check runs the placement through the resolver's own arithmetic — which,
-  // for a room-anchored piece, includes NO grid snap: a coordinate the resolver derives
-  // from wall geometry is not snapped (see `elements/furniture.ts`). Snapping here would
-  // reject an `inset` that reproduces the position exactly.
-  const i = insetForTarget(p.place, p.cur, (v) => v);
-  if (i !== null && place.mode === "anchor") {
-    const was = p.place.inset;
-    place.inset = numExpr(i);
-    return {
-      via: "inset",
-      extra: [`re-expressed as \`inset ${i}\`${p.place.flush ? " from the wall face" : ""} (was ${was})`],
-    };
-  }
   const clause = place.mode === "centered" ? "centered" : `anchor ${place.anchor}`;
-  const extra = [
-    `\`in ${p.place.roomId} ${clause}\` could not express the move as an \`inset\`, so it became an absolute \`at\``,
-  ];
-  p.f.place = undefined;
-  p.f.at = { x: numExpr(p.cur.x), y: numExpr(p.cur.y) };
-  p.f.room = p.place.roomId; // keep the ownership the `in <room>` carried
-  if (p.rotateDerived && p.f.rotate === undefined) {
-    p.f.rotate = numExpr(p.rotate);
-    extra.push(`the anchor-derived \`rotate ${p.rotate}\` is now written out`);
+  return {
+    target,
+    via: "placement",
+    extra: [
+      `\`in ${p.place.roomId} ${clause}\` could not express the move as an \`inset\`, so it became an absolute \`at\``,
+    ],
+  };
+}
+
+/** Apply a {@link planWrite} decision to the AST clone. `p.cur` is already the plan's
+ *  {@link PlannedWrite.target}, so what is written and what is reported are one number. */
+function applyWrite(p: Piece, w: PlannedWrite): void {
+  const place = p.f.place;
+  if (w.via === "inset") {
+    // `planWrite` only chooses this branch for an `anchor` placement (`centered` anchors
+    // no edge, so no `inset` can move it) — the narrowing follows that, not a guess.
+    if (place?.mode === "anchor") place.inset = numExpr(w.inset!);
+    return;
   }
-  return { via: "placement", extra };
+  if (w.via === "placement") {
+    p.f.place = undefined;
+    p.f.room = p.place!.roomId; // keep the ownership the `in <room>` carried
+    if (p.rotateDerived && p.f.rotate === undefined) {
+      p.f.rotate = numExpr(p.rotate);
+      w.extra.push(`the anchor-derived \`rotate ${p.rotate}\` is now written out`);
+    }
+  }
+  p.f.at = { x: numExpr(p.cur.x), y: numExpr(p.cur.y) };
 }

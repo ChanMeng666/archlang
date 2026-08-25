@@ -10,7 +10,9 @@ import {
   type Diagnostic,
   type FixSuggestion,
 } from "../src/index.js";
+import { resolvePlan } from "../src/analyze.js";
 import { FURNITURE_ANCHORS } from "../src/ast.js";
+import type { RFurniture } from "../src/ir.js";
 import { DOOR_KINDS } from "../src/grammar/tokens.js";
 import {
   anchorTouchesEdge,
@@ -63,7 +65,11 @@ import {
  *     `src/geometry.ts`) of the swapped geometry and offers nothing when the answer is
  *     still "inside": the warning stands, the edit does not. The exclusion list this file
  *     used to carry is gone, and its reproducer is inverted below into a fixpoint pin.
- *  3. **OPEN — `repair(repair(s)) !== repair(s)`.** See the repair block.
+ *  3. **FIXED — `repair(repair(s)) !== repair(s)`** (backlog 3.11). Two rules whose
+ *     grid-snapped remedies undid each other left a piece ping-ponging, and the pass
+ *     banked whichever end it happened to reach; a second call banked the other. Both
+ *     levels now park on the CANONICAL member of the cycle they are walking, and the
+ *     law is asserted in the repair block below rather than described here.
  */
 
 // ---------------------------------------------------------------------------
@@ -330,19 +336,56 @@ describe("format — round-trip", () => {
 });
 
 describe("repair — round-trip", () => {
-  // NOT asserted: `repair(repair(s)) === repair(s)`.
+  // THE LAW: `repair(repair(s)).source === repair(s).source`, byte for byte.
   //
-  // It is FALSE, and measurably so — over 400 generated plans, 262 needed more than one
-  // call to reach a fixpoint and **47 never reach one at all**: a fixture ping-pongs
-  // between two positions, so iterating `repair` cycles with period 2. `repair`'s own
-  // header documents a bounded internal fixpoint that "keeps the pass's own advice" when
-  // it runs out of passes, so a second call legitimately continuing the work is arguable
-  // design; a stable 2-cycle across calls is harder to defend, since which of the two
-  // arrangements you ship then depends on how many times you happened to run `arch
-  // repair`. Recorded here as a measured fact for the owner rather than asserted either
-  // way — writing `expect(...).not.toBe(...)` would pin the defect in place.
-  //
-  // What IS asserted is the part of the contract that must hold on every call.
+  // It used to be false, and measurably so: over 400 generated plans **60 never reached
+  // a fixpoint at all** — a fixture ping-ponged between two arrangements with period 2
+  // (and up to 4), so which arrangement `arch repair` shipped depended on how many times
+  // you happened to have run it. It was recorded rather than asserted for a while, on
+  // the grounds that `expect(...).not.toBe(...)` would only pin the defect in place
+  // (docs/backlog.md 3.11). Both halves of the cause are now closed — see `repair`'s
+  // header for the cycle canonicalisation, and `planWrite` for the second half, a
+  // written `at` the resolver snapped somewhere repair had never evaluated — so the
+  // property below is what stands in that comment's place.
+
+  it("is idempotent — a second call changes nothing", () => {
+    fc.assert(
+      fc.property(archPlan, (src) => {
+        const once = repair(src).source;
+        expect(repair(once).source, `repair is not idempotent on:\n\n${src}\n\nfirst pass gave:\n\n${once}`).toBe(once);
+      }),
+      { numRuns: 300 },
+    );
+  });
+
+  it("never reports a move its own output does not contain", () => {
+    // `to` is a promise about the source the caller gets back, so it is checked against
+    // that source rather than against repair's own arithmetic. It was a promise repair
+    // could not keep: a `in <room> centered` piece resolves off-grid (resolver-derived
+    // coordinates are not snapped) and an absolute `at` IS snapped, so re-pointing one
+    // as the other landed it up to half a grid square from where the log said — 37 of
+    // 400 generated plans shipped a change log that disagreed with their own source.
+    fc.assert(
+      fc.property(archPlan, (src) => {
+        const r = repair(src);
+        const { ir } = resolvePlan(r.source);
+        const where = new Map(
+          (ir?.elements ?? []).filter((e) => e.kind === "furniture").map((e) => [e.id, (e as RFurniture).at]),
+        );
+        for (const c of r.changes) {
+          if (c.kind === "rotated") {
+            expect(c.fromRotate).not.toBe(c.toRotate);
+            continue;
+          }
+          expect(c.from, "a change log entry reports a move to where the piece started").not.toEqual(c.to);
+          const at = where.get(c.id);
+          if (at)
+            expect({ x: at.x, y: at.y }, `repair reported "${c.id}" at a place its own output does not`).toEqual(c.to);
+        }
+      }),
+      { numRuns: 200 },
+    );
+  });
 
   it("never breaks a plan it corrects", () => {
     fc.assert(

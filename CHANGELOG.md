@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### `arch repair` is idempotent
+
+`repair(repair(s))` now equals `repair(s)`, byte for byte, and that is a **pinned law**
+(`test/fuzz.test.ts`, a property over 300 generated plans, plus two named regression specimens).
+Until now it was false and known to be false (`docs/backlog.md` 3.11): **60 of 400 generated plans
+never reached a fixpoint**, ping-ponging with period 2, 3 or 4, so which arrangement `arch repair`
+shipped depended on how many times you happened to have run it. Now: 0 of 400, and 0 of 2000 across
+four seeds.
+
+**Two causes, and only one of them is a cycle.**
+
+The first is not: a `in <room> …` placement is resolver-derived and so is *not* grid-snapped, while
+an absolute `at` **is**. When a move could not be expressed as an `inset` and the placement became an
+absolute `at`, the coordinate repair had computed was snapped somewhere it had never evaluated — so
+the change log reported a `to` the output did not contain (**37 of 400 plans**), and the next call
+began from a piece nobody had looked at. The rewrite is now planned *before* anything downstream
+reads a position, and repair adopts the point that write will land on — the forward check
+`insetForTarget` had always performed for the `inset` branch, finally applied to the `at` one.
+
+The second has no closed-form cause fix, because nothing is miscomputed: the two remedies are each
+individually right and jointly unsatisfiable. A 300 mm shell leaves an interior exactly 1800 mm wide
+holding an 1800 mm piece, so the only position that clears both walls is x = 150 — a coordinate
+`grid 100` does not have. Push off the left wall and it snaps 50 mm into the right; push off the
+right and it snaps 50 mm into the left. What *can* be fixed is the arbitrariness of where the pass
+banked, and the same trick works at both levels: park on the **canonical member of the cycle**, by a
+key that reads only the members and never the order they were reached in. A piece that returns to a
+position it has held is parked on the lowest `(x,y)` of its cycle; the pass is then run until the
+emitted source repeats, and the lexicographically smallest source of *that* cycle is what ships.
+Every member of a cycle has that same cycle as its orbit, so re-running from the canonical member
+returns it unchanged.
+
+**Output changes for 17 of 400 generated plans, and for none of the 27 shipped examples.** Every one
+of the 17 is the first cause: the written coordinate becomes the one the resolver was already using,
+and all 17 re-render **byte-identically** — the drawing never moved, only the number in the source
+became honest. Plans that already reached a fixpoint are byte-identical by construction (their cycle
+has one member).
+
+Repair stays as honest as before about what it could not do: a piece parked mid-cycle gets an
+`unresolved` entry naming every position it alternates between, and a change entry whose net effect
+is nothing is dropped rather than reported.
+
 ### An opening's position along a wall is an expression — and every refusal in the language is now coded
 
 Two recorded defects (`docs/backlog.md` S.2 and 3.14) that share nothing except being invisible from
