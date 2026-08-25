@@ -84,8 +84,8 @@
 <line x1="2200" y1="10700" x2="600" y2="10700" stroke="#3a6ea5" stroke-width="9"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-<text x="3600" y="2415" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Hall</text>
-<text x="3600" y="2607.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">14.0 m²</text>
+<text x="3600" y="3465" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Hall</text>
+<text x="3600" y="3657.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">14.0 m²</text>
 <text x="1600" y="2265" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living</text>
 <text x="1600" y="2457.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">14.7 m²</text>
 <text x="1600" y="5765" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Cloakroom</text>
@@ -214,18 +214,18 @@
 <line x1="5307.57" y1="-892.43" x2="5392.43" y2="-807.57" stroke="#0E5484" stroke-width="9"/>
 <line x1="-192.43" y1="-892.43" x2="-107.57" y2="-807.57" stroke="#0E5484" stroke-width="9"/>
 <text x="2600" y="-937.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 2600 -937.5)">5500</text>
-<line x1="2600" y1="7050" x2="2600" y2="6950" stroke="#0E5484" stroke-width="9"/>
-<line x1="2642.43" y1="7007.57" x2="2557.57" y2="7092.43" stroke="#0E5484" stroke-width="9"/>
-<line x1="2642.43" y1="6907.57" x2="2557.57" y2="6992.43" stroke="#0E5484" stroke-width="9"/>
-<text x="2687.5" y="7000" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 2687.5 7000)">100</text>
-<line x1="3100" y1="3500" x2="3300" y2="3500" stroke="#0E5484" stroke-width="9"/>
-<line x1="3142.43" y1="3542.43" x2="3057.57" y2="3457.57" stroke="#0E5484" stroke-width="9"/>
-<line x1="3342.43" y1="3542.43" x2="3257.57" y2="3457.57" stroke="#0E5484" stroke-width="9"/>
-<text x="3200" y="3587.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 3200 3587.5)">200</text>
-<line x1="5050" y1="5350" x2="5350" y2="5350" stroke="#0E5484" stroke-width="9"/>
-<line x1="5092.43" y1="5392.43" x2="5007.57" y2="5307.57" stroke="#0E5484" stroke-width="9"/>
-<line x1="5392.43" y1="5392.43" x2="5307.57" y2="5307.57" stroke="#0E5484" stroke-width="9"/>
-<text x="5200" y="5437.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 5200 5437.5)">300</text>
+<line x1="1625" y1="7050" x2="1625" y2="6950" stroke="#0E5484" stroke-width="9"/>
+<line x1="1667.43" y1="7007.57" x2="1582.57" y2="7092.43" stroke="#0E5484" stroke-width="9"/>
+<line x1="1667.43" y1="6907.57" x2="1582.57" y2="6992.43" stroke="#0E5484" stroke-width="9"/>
+<text x="1625" y="6771.25" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 1625 6771.25)">100</text>
+<line x1="3100" y1="2350" x2="3300" y2="2350" stroke="#0E5484" stroke-width="9"/>
+<line x1="3142.43" y1="2392.43" x2="3057.57" y2="2307.57" stroke="#0E5484" stroke-width="9"/>
+<line x1="3342.43" y1="2392.43" x2="3257.57" y2="2307.57" stroke="#0E5484" stroke-width="9"/>
+<text x="3478.75" y="2350" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 3478.75 2350)">200</text>
+<line x1="5050" y1="3550" x2="5350" y2="3550" stroke="#0E5484" stroke-width="9"/>
+<line x1="5092.43" y1="3592.43" x2="5007.57" y2="3507.57" stroke="#0E5484" stroke-width="9"/>
+<line x1="5392.43" y1="3592.43" x2="5307.57" y2="3507.57" stroke="#0E5484" stroke-width="9"/>
+<text x="4871.25" y="3550" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 4871.25 3550)">300</text>
 </g>
 <g><polygon points="5125,-787.5 5012.5,-427.5 5125,-506.25 5237.5,-427.5" fill="#333333" transform="rotate(0 5125 -562.5)"/><text x="5125" y="-891.5" font-size="130" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
 <g><rect x="-4281.25" y="14650" width="500" height="70" fill="#333333"/><rect x="-3781.25" y="14650" width="500" height="70" fill="none" stroke="#333333" stroke-width="9"/><text x="-4281.25" y="14820" font-size="100" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="-3281.25" y="14820" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">1 m</text></g>

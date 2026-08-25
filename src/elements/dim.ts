@@ -12,6 +12,48 @@ import { add, length, mul, normal, projectToWallFace, segmentsOfWall, sub, unit 
 import { arcPointAt, diameterText, radiusText } from "../geometry/arc.js";
 import { exprToSource } from "../expr-source.js";
 import { fmt2 } from "../num-format.js";
+import { DIM_TEXT_GAP, textWidth } from "../text-metrics.js";
+
+/**
+ * How far PAST the far station the number must be pushed, along the dimension line's own
+ * direction — `0` when it fits between the two stations and stays where it always was.
+ *
+ * A measurement can be smaller than the number that names it. A 100 mm partition lettered
+ * at a 2.5 mm dimension font needs ~4.6 mm of paper for "100" and has 0.5 mm of wall to put
+ * it in, so the digits are drawn straight through the poché they are measuring — legible
+ * nowhere, and the reason `dims auto walls` looked broken on every plan that used it.
+ * ISO 129-1 and GB/T 50001 both answer this the same way: **where the space between the
+ * stations cannot hold the value, the value is written outside them**, beyond an extension
+ * line, still aligned with its own dimension line.
+ *
+ * Three deliberate restrictions keep this from moving anything that was already right:
+ *
+ *  - **Zero-offset dims only.** A dim drawn ON the feature it measures — the canonical
+ *    wall-thickness call-out — is the one whose number lands in fabric; it is also exactly
+ *    the dim `W_DIM_INSIDE` and `W_DIM_OVERLAP` both decline to model (`hasDrawnBand`
+ *    requires `offset !== 0`), so moving its text can never put the renderer and the lint
+ *    rules into disagreement about what collides.
+ *  - **Never a chain span.** A `dims auto` chain runs at a non-zero slot offset, so it is
+ *    already excluded: the space outside one span's stations belongs to its NEIGHBOUR, and
+ *    a crowded chain's remedy is the stagger (`staggerChain` in `scene-build.ts`) instead.
+ *  - **Strictly too small.** The predicate is the same shape the stagger rule uses — the
+ *    number's estimated width plus a clear {@link DIM_TEXT_GAP} at each end, against the
+ *    measured length — read through the ONE shared {@link textWidth} estimate, so the two
+ *    crowding decisions in the tree can never diverge. Strict `>`, so an exact fit stays
+ *    put and every dimension that already had room emits byte-identical geometry.
+ */
+function outsideStations(dm: RDim, label: string, dimFont: number): number {
+  if (dm.offset !== 0) return 0;
+  const span = length(sub(dm.to, dm.from));
+  // A zero-length dim has no direction to push along (a failed `dim radius` reference
+  // collapses to one); it keeps the placement it always had.
+  if (!(span > 0)) return 0;
+  const w = textWidth(label, dimFont);
+  const gap = DIM_TEXT_GAP * dimFont;
+  if (!(w + 2 * gap > span)) return 0;
+  // Centre of the number, measured from the station: a clear gap, then half the number.
+  return gap + w / 2;
+}
 
 /** Re-emit a dim statement with its two endpoints SWAPPED — the machine-applicable
  *  fix for `W_DIM_INSIDE` (endpoint order is what chooses the offset side, so
@@ -250,18 +292,33 @@ export const dim: ElementDef = {
       nodes.push({ layer: "dims", prim: { t: "line", a: t1, b: t2 }, paint: thinPaint });
     }
     const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
-    // The number rides `dimFont * 0.7` off its own line, on the side the offset points
-    // (away from the building, for an auto chain). `stagger` flips it to the other side —
-    // the GB/T remedy for a chain of narrow spans, decided per span in `scene-build.ts` and
-    // never set on a hand-written `dim`. Flipping INWARD (rather than out to a second row)
-    // is what keeps the annotation band exactly as deep as `DIM_BAND_FONTS` reserves.
-    const tp = add(mid, mul(n, (dm.stagger ? -1 : 1) * sizes.dimFont * 0.7));
     let angle = (Math.atan2(dir.y, dir.x) * 180) / Math.PI;
     if (angle > 90) angle -= 180;
     if (angle < -90) angle += 180;
     // No explicit text → the measured length |to−from|, formatted once via the
     // shared mm formatter so SVG and DXF show the same value (T3.6).
     const label = dm.text ?? fmt(length(sub(dm.to, dm.from)));
+    // The number rides `dimFont * 0.7` off its own line, on the side the offset points
+    // (away from the building, for an auto chain). `stagger` flips it to the other side —
+    // the GB/T remedy for a chain of narrow spans, decided per span in `scene-build.ts` and
+    // never set on a hand-written `dim`. Flipping INWARD (rather than out to a second row)
+    // is what keeps the annotation band exactly as deep as `DIM_BAND_FONTS` reserves.
+    //
+    // …unless the number cannot fit BETWEEN the stations at all, in which case it goes
+    // past them ({@link outsideStations}) — the ISO 129-1 / GB/T 50001 remedy for a
+    // measurement too small to letter, and the one that keeps a wall-thickness call-out
+    // out of its own poché.
+    // Pushed out, the number sits ON the dimension line's own extension rather than
+    // standing off it: past the station nothing is drawn, so there is no line to clear, and
+    // aligning it with the line is what makes `|↔| 100` read as one call-out. WHICH station
+    // is `calloutFrom`'s job — chosen by the caller, never by swapping the endpoints, whose
+    // order also decides the text's reading direction (a vertical number reads bottom-to-top
+    // in one order and top-to-bottom in the other).
+    const push = outsideStations(dm, label, sizes.dimFont);
+    const tp =
+      push === 0
+        ? add(mid, mul(n, (dm.stagger ? -1 : 1) * sizes.dimFont * 0.7))
+        : add(dm.calloutFrom ? p1 : p2, mul(dir, dm.calloutFrom ? -push : push));
     nodes.push({
       layer: "dims",
       prim: {

@@ -43,10 +43,14 @@ plan "Clinic Wing" {
   scale 1:100
   north up
   dims auto all
-  # A `legend` and no `schedule`: the schedule groups rooms by their INNERMOST zone, and
-  # every `place` makes its instance one (`clinical.c1` …), so a scheduled version of this
-  # plan would print six one-row groups. The legend has no such structure — it lists the
-  # wall hatches and the fixture symbols actually drawn, which is what a reader needs here.
+  # A `schedule` AND a `legend`. The schedule groups rooms by the innermost zone the
+  # author DECLARED — `public` and `clinical` — and a `place`d instance's implicit zone
+  # (`clinical.c1` …) is transparent to that grouping, so the six consult rooms sit under
+  # "Clinical" instead of printing six one-row groups with six subtotals. (They did print
+  # six, before v1.26.2; this file shipped with a legend and no schedule because of it.)
+  # `describe --zone clinical.c4` still addresses one instance — a `place` is a namespace,
+  # not a table heading.
+  schedule rooms
   legend
 
   # ---- the consulting room, written once -------------------------------------

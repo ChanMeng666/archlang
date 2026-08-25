@@ -180,8 +180,8 @@
 <line x1="9200" y1="3500" x2="10800" y2="3500" stroke="#3a6ea5" stroke-width="18"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-<text x="6250" y="2730" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living</text>
-<text x="6250" y="3115" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">19.3 m²</text>
+<text x="5425" y="2730" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living</text>
+<text x="5425" y="3115" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">19.3 m²</text>
 <text x="1750" y="1680" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Entry</text>
 <text x="1750" y="2065" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.3 m²</text>
 <text x="10750" y="630" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Dining</text>
@@ -540,22 +540,22 @@
 <line x1="17634.85" y1="11565.15" x2="17465.15" y2="11734.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="17634.85" y1="-234.85" x2="17465.15" y2="-65.15" stroke="#0E5484" stroke-width="18"/>
 <text x="17725" y="5750" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 17725 5750)">11800</text>
-<line x1="12450" y1="6000" x2="12550" y2="6000" stroke="#0E5484" stroke-width="18"/>
-<line x1="12534.85" y1="6084.85" x2="12365.15" y2="5915.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="12634.85" y1="6084.85" x2="12465.15" y2="5915.15" stroke="#0E5484" stroke-width="18"/>
-<text x="12500" y="6175" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 12500 6175)">100</text>
+<line x1="12450" y1="4775" x2="12550" y2="4775" stroke="#0E5484" stroke-width="18"/>
+<line x1="12534.85" y1="4859.85" x2="12365.15" y2="4690.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="12634.85" y1="4859.85" x2="12465.15" y2="4690.15" stroke="#0E5484" stroke-width="18"/>
+<text x="12907.5" y="4775" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 12907.5 4775)">100</text>
 <line x1="3425" y1="6000" x2="3575" y2="6000" stroke="#0E5484" stroke-width="18"/>
 <line x1="3509.85" y1="6084.85" x2="3340.15" y2="5915.15" stroke="#0E5484" stroke-width="18"/>
 <line x1="3659.85" y1="6084.85" x2="3490.15" y2="5915.15" stroke="#0E5484" stroke-width="18"/>
-<text x="3500" y="6175" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 3500 6175)">150</text>
-<line x1="8000" y1="3600" x2="8000" y2="3400" stroke="#0E5484" stroke-width="18"/>
-<line x1="8084.85" y1="3515.15" x2="7915.15" y2="3684.85" stroke="#0E5484" stroke-width="18"/>
-<line x1="8084.85" y1="3315.15" x2="7915.15" y2="3484.85" stroke="#0E5484" stroke-width="18"/>
-<text x="8175" y="3500" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 8175 3500)">200</text>
-<line x1="8000" y1="150" x2="8000" y2="-150" stroke="#0E5484" stroke-width="18"/>
-<line x1="8084.85" y1="65.15" x2="7915.15" y2="234.85" stroke="#0E5484" stroke-width="18"/>
-<line x1="8084.85" y1="-234.85" x2="7915.15" y2="-65.15" stroke="#0E5484" stroke-width="18"/>
-<text x="8175" y="0" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 8175 0)">300</text>
+<text x="3932.5" y="6000" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 3932.5 6000)">150</text>
+<line x1="7025" y1="3600" x2="7025" y2="3400" stroke="#0E5484" stroke-width="18"/>
+<line x1="7109.85" y1="3515.15" x2="6940.15" y2="3684.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="7109.85" y1="3315.15" x2="6940.15" y2="3484.85" stroke="#0E5484" stroke-width="18"/>
+<text x="7025" y="3042.5" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 7025 3042.5)">200</text>
+<line x1="6250" y1="150" x2="6250" y2="-150" stroke="#0E5484" stroke-width="18"/>
+<line x1="6334.85" y1="65.15" x2="6165.15" y2="234.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="6334.85" y1="-234.85" x2="6165.15" y2="-65.15" stroke="#0E5484" stroke-width="18"/>
+<text x="6250" y="507.5" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 6250 507.5)">300</text>
 </g>
 <g id="A-ANNO" inkscape:groupmode="layer" inkscape:label="A-ANNO">
 <polygon points="-150,16315 3450,16315 3450,23115 -150,23115" fill="none" stroke="#333333" stroke-width="18"/>

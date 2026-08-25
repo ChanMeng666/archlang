@@ -15,7 +15,7 @@ import type { Point, TitleNode } from "./ast.js";
 import type { Bounds } from "./geometry.js";
 import type { SceneNode } from "./scene.js";
 import type { LegendEntry, RoomSchedule, SheetTables } from "./sheet-tables.js";
-import { layoutSheetTables, translateSheetTables } from "./sheet-tables.js";
+import { layoutSheetTables, tableRowsHeight, translateSheetTables } from "./sheet-tables.js";
 
 /**
  * Chrome geometry as fractions of the drawing's reference dimension. Named (rather
@@ -260,6 +260,25 @@ export function chromeBandDepth(refDim: number, titleRowCount: number): number {
   const scaleBar = refDim * SCALEBAR_HGT_F + refDim * SCALEBAR_FS_F * SCALEBAR_LABEL_F;
   const titleBlock = refDim * TITLE_ROW_F * titleRowCount;
   return gap + Math.max(scaleBar, titleBlock) + gap;
+}
+
+/**
+ * How deep the MARGIN-TABLE row is — the second band, below the scale bar / title block:
+ * a gap, then the taller of the schedule and the legend.
+ *
+ * The counterpart of {@link chromeBandDepth}, and it exists for the same reason: the sheet
+ * fit rule must reserve exactly what {@link layoutChrome} lays out. It did not, and the
+ * consequence was a page issued 25 mm taller than the A3 it declared while
+ * `describe().sheet.fits` said `true` and no `W_SCALE_OVERFLOW` fired — the drawing fitted,
+ * and the drawing was never what overflowed. Row heights come from `sheet-tables.ts`
+ * (`tableRowsHeight`), never retyped here.
+ *
+ * `0` for a plan that opted into neither table, which is what keeps its arithmetic — and
+ * its bytes — exactly as before.
+ */
+export function tableBandDepth(refDim: number, tableRowCount: number): number {
+  if (tableRowCount <= 0) return 0;
+  return refDim * GAP_F + tableRowsHeight(refDim, tableRowCount);
 }
 
 /**

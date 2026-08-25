@@ -137,7 +137,23 @@ shipping — each was worked around in the source, and the workaround is what ma
 recording: an author had to give something up. Every claim below was **reproduced**, and the
 reproduction is quoted.
 
-### S.1 · `schedule rooms` and `place` are effectively unusable together — `todo`
+### S.1 · `schedule rooms` and `place` are effectively unusable together — `done` (v1.26.2)
+
+**Fixed.** A `place`d instance's implicit zone is now **transparent to schedule grouping**:
+rows group by the innermost zone the author *wrote*, an instance inside one inherits it, and
+an instance with no written zone falls to the un-zoned tail. `describe().zones` and `--zone`
+are untouched — an instance is still a zone, still rolls up, still addressable; it is just
+not a table heading. `RZone.instance` carries the distinction (absent on a written `zone`, so
+an unplaced plan's IR is byte-identical) and `groupRoomsByZone` in `src/sheet-tables.ts`
+walks out through it. `examples/clinic.arch` now ships the `schedule rooms` it could not
+have: seven rooms under **Public** and **Clinical**, the six placed consult rooms among them.
+`examples/museum-wings.arch` had relied on the old behaviour to group by wing and now says so
+in source — `zone west "West wing" { place wing() as west … }`, which changes nothing else
+(a zone has no geometric semantics, and ids namespace by the INSTANCE path, so `west.shell`
+is still `west.shell`). Pinned by `test/zones.test.ts` → "a placed INSTANCE is transparent to
+schedule grouping". The original report follows.
+
+
 
 `schedule rooms` groups by a room's **innermost** zone, and every `place`d instance **is** an
 implicit zone, so a plan that places N components prints N one-row groups with N subtotals. Adding
@@ -187,7 +203,25 @@ deliberate (a strip resolves positions and a zone must not), but the two are ort
 a zone has **zero geometric semantics**, so there is no resolution-order reason a strip cannot sit
 inside one.
 
-### S.4 · `dims auto all` prints wall-thickness readings inside the poché — `todo`
+### S.4 · `dims auto all` prints wall-thickness readings inside the poché — `done` (v1.26.2)
+
+**Fixed, and it was bigger than recorded here.** The counts below were taken by eye; a
+region-level probe over all 27 shipped examples found **29 readings in poché across 13 of
+them** — every wall-thickness call-out in every plan that asks for `dims auto walls|all`,
+because the call-out is drawn *on* the wall at zero offset and the number is far wider than
+the thing it measures. The remedy is ISO 129-1 / GB/T 50001's: **where the value does not fit
+between the stations, it is written outside them.** Three pieces, each derived from the shape
+rather than a box — `outsideStations` (`src/elements/dim.ts`) pushes the number past a
+station, but only for a zero-offset dim (a chain span's remedy stays the stagger) and only
+when it genuinely does not fit; `thicknessStation` picks WHERE along the wall (the middle of
+the widest run no other wall crosses — the reported "where a partition meets the shell"
+case); `thicknessSideFlipped` picks WHICH SIDE by probing for floor, so a shell call-out
+lands in the room rather than on top of the exterior dimension chains. The side is carried as
+`RDim.calloutFrom`, never by swapping the endpoints, whose order also decides whether a
+vertical number reads bottom-to-top. Gated by `test/dim-thickness-callout.test.ts`, whose
+top assertion is the property over every shipped example. The original report follows.
+
+
 
 Where a partition meets the shell, the rotated chain emits the wall's own thickness as a dimension
 (`100`, `200`) drawn **inside the wall's hatch**, where it is nearly unreadable and measures nothing
@@ -198,7 +232,23 @@ chain's numbers crowd, plus the shared `src/text-metrics.ts` estimate it measure
 whose extent is shorter than the poché it sits in probably wants suppressing, or pulling out on a
 leader rather than staggering.
 
-### S.5 · The margin tables can push a page past its own declared paper, silently — `todo`
+### S.5 · The margin tables can push a page past its own declared paper, silently — `done` (v1.26.2)
+
+**Fixed.** `usablePlanMm` now reserves the margin-table row: `SheetFitInput` carries a
+**required** `tableRows`, `tableBandDepth` (`src/chrome-layout.ts`) turns it into a depth, and
+the row COUNT comes from `scheduleRowCount` / `legendRowCount` in `src/sheet-tables.ts` — the
+same two expressions `layoutSheetTables` sizes the drawn boxes with, so the reservation and
+the layout cannot drift apart. `resolve()` derives the count through `planTableRows` before
+any Scene exists (a multi-storey plan reserves the DEEPEST storey's, as it already does for
+the extent). One shipped example changes verdict: **`materials.arch`** (A3 landscape @ 1:50,
+schedule + legend) now reports `fits: false` and raises `W_SCALE_OVERFLOW`. Its page does not
+grow — the bytes are unchanged — but its legend reaches to **14.3 mm** of the trimmed edge
+against the 15 mm sheet margin the fit rule reserves, so the warning is a true positive about
+the margin, not about the page. Every other paper example keeps ≥23 mm and is unaffected.
+Reproduced as a property in `test/sheet.test.ts` → "the margin tables are inside the fit
+rule". The original report follows.
+
+
 
 `schedule rooms` / `legend` are laid out **below** the drawing and are not measured by the fit rule,
 so a plan can emit a page taller than the paper it declares while `validate --strict` reports no

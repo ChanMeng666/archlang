@@ -55,6 +55,36 @@ export function patternId(material: string, scale = 1, angle = 0): string {
   return `${base}-s${tag(scale)}-a${tag(angle)}`;
 }
 
+/** The hatch spec a wall fills with (material + scale + angle). */
+export function hatchOf(w: { material: string; hatchScale: number; hatchAngle: number }): HatchSpec {
+  return { material: w.material, scale: w.hatchScale, angle: w.hatchAngle };
+}
+
+/** Stable grouping key for a hatch spec (walls sharing it union together). */
+export function hatchKey(h: HatchSpec): string {
+  return `${h.material}|${h.scale}|${h.angle}`;
+}
+
+/**
+ * Distinct hatch specs present, in a stable (key-sorted) order.
+ *
+ * Lives here rather than in `scene-build.ts` because two very different callers need the
+ * same list: the wall lowering groups by it, and the LEGEND draws one row per entry — and
+ * the sheet fit rule (`resolve()`, before any Scene exists) has to know how many rows that
+ * will be. One derivation, three readers.
+ */
+export function hatchesUsed(
+  walls: readonly { material: string; hatchScale: number; hatchAngle: number }[],
+): HatchSpec[] {
+  const seen = new Map<string, HatchSpec>();
+  for (const w of walls) {
+    const h = hatchOf(w);
+    const k = hatchKey(h);
+    if (!seen.has(k)) seen.set(k, h);
+  }
+  return [...seen.values()].sort((a, b) => (hatchKey(a) < hatchKey(b) ? -1 : 1));
+}
+
 /** Pattern metadata per material: natural rotation, DXF pattern name, SVG builder. */
 interface HatchMeta {
   /** Natural rotation (deg) baked into the SVG pattern before the user `angle`. */

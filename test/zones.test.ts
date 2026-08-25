@@ -381,6 +381,105 @@ suite("zone — the grouped ROOM SCHEDULE", () => {
   });
 });
 
+/**
+ * **A `place`d instance is a NAMESPACE, not a table heading.**
+ *
+ * An instance is implicitly a zone — that is how `describe --zone c4` reaches its contents
+ * with no second bookkeeping path, and it stays true. But the room schedule groups by the
+ * innermost zone, so a plan that placed one component six times printed **six one-row
+ * groups with six subtotals**: a table with more structure than content.
+ * `examples/clinic.arch` shipped a `legend` and no `schedule` for exactly that reason, and
+ * said so in a comment.
+ *
+ * The rule now: an instance segment is TRANSPARENT to schedule grouping. Rows group by the
+ * innermost zone the author WROTE — an instance inside one inherits it, an instance with
+ * none falls to the un-zoned tail. Grouping is something a drawing says out loud.
+ *
+ * What must NOT move: `describe().zones` (instances are still zones, still roll up),
+ * `--zone` filtering, and the subtotals-partition-the-total law.
+ */
+suite("zone — a placed INSTANCE is transparent to schedule grouping", () => {
+  /** One component placed `n` times inside one declared zone. */
+  const placed = (n: number, inZone: boolean): string => {
+    const places = Array.from({ length: n }, (_, i) => `  place cell() as c${i + 1} at (${i * 4000},0)`).join("\n");
+    const body = inZone ? `  zone clinical "Clinical" {\n${places}\n  }` : places;
+    return `plan "P" {
+  units mm
+  schedule rooms
+  component cell() {
+    room id=main at (0,0) size 4000x3000 label "Consult"
+  }
+${body}
+}`;
+  };
+
+  it("shows ONE group with three rows, not three groups", () => {
+    const s = compile(placed(3, true), { noCache: true });
+    expect(s.errors).toEqual([]);
+    const svg = s.svg;
+    // One heading, one subtotal — the whole point.
+    expect(svg.match(/SUBTOTAL/g)).toHaveLength(1);
+    expect(svg).toContain("Clinical");
+    // …and each instance's own name is NOT a heading.
+    for (const id of ["c1", "c2", "c3"]) expect(svg).not.toContain(`>${id}<`);
+    // Three rows, all of them the placed room.
+    const rows = describe(placed(3, true)).schedule!;
+    expect(rows.map((r) => r.id)).toEqual(["c1.main", "c2.main", "c3.main"]);
+  });
+
+  it("drops instances with NO declared zone into the un-zoned tail, ungrouped", () => {
+    // A plan whose only zones are instances has nothing an author asked to group by, so it
+    // draws the flat table — the same one it would draw with no `place` at all.
+    const svg = compile(placed(3, false), { noCache: true }).svg;
+    expect(svg).toContain("ROOM SCHEDULE");
+    expect(svg).not.toContain("SUBTOTAL");
+    expect(svg).not.toContain("(no zone)");
+  });
+
+  it("still reports every instance zone in `describe().zones` — only the TABLE changed", () => {
+    const d = describe(placed(3, true));
+    expect(d.zones!.map((z) => z.path)).toEqual(["clinical", "clinical.c1", "clinical.c2", "clinical.c3"]);
+    // The rollup is unchanged: the outer zone owns all three, each instance owns its own.
+    expect(d.zones!.find((z) => z.path === "clinical")!.room_count).toBe(3);
+    for (const i of [1, 2, 3]) expect(d.zones!.find((z) => z.path === `clinical.c${i}`)!.room_count).toBe(1);
+    // And the row still records the innermost zone it is IN, which is the instance.
+    expect(d.schedule!.map((r) => r.zone)).toEqual(["clinical.c1", "clinical.c2", "clinical.c3"]);
+  });
+
+  it("keeps the subtotals partitioning the TOTAL when instances roll up", () => {
+    const src = `plan "P" {
+  units mm
+  schedule rooms
+  component cell() { room id=main at (0,0) size 4000x3000 label "Consult" }
+  zone clinical "Clinical" {
+    place cell() as c1 at (0,0)
+    place cell() as c2 at (4000,0)
+    room id=corr at (8000,0) size 2000x3000 label "Corridor"
+  }
+  zone public "Public" { room id=wait at (10000,0) size 4000x3000 label "Waiting" }
+  room id=plant at (14000,0) size 2000x3000 label "Plant"
+}`;
+    const d = describe(src);
+    const rows = d.schedule!;
+    // Grouped order: the two declared zones, then the room in neither.
+    expect(rows.map((r) => r.id)).toEqual(["c1.main", "c2.main", "corr", "wait", "plant"]);
+    expect(rows.reduce((n, r) => n + r.area_m2, 0)).toBe(d.totals.floor_area_m2);
+    const svg = compile(src, { noCache: true }).svg;
+    expect(svg.match(/SUBTOTAL/g)).toHaveLength(3); // Clinical, Public, (no zone)
+    expect(svg).toContain("(no zone)");
+  });
+
+  it("marks an instance zone in the IR and a written `zone` not at all", () => {
+    // The flag is what the table reads. A written `zone` carries no key, so the IR of every
+    // plan that places nothing is byte-identical.
+    const { ir } = resolve(parse(placed(2, true)).plan!);
+    const byPath = new Map(ir.zones!.map((z) => [z.path, z]));
+    expect(byPath.get("clinical")!.instance).toBeUndefined();
+    expect(byPath.get("clinical.c1")!.instance).toBe(true);
+    expect(JSON.stringify(byPath.get("clinical"))).not.toContain("instance");
+  });
+});
+
 // ---------------------------------------------------------------------------
 // `describe --zone` — a DISPLAY filter
 // ---------------------------------------------------------------------------

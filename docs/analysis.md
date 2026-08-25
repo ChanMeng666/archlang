@@ -201,7 +201,14 @@ on a real sheet at a real scale, and `describe()` reports which:
 | `paper` / `orientation` | the declared sheet (`A4`…`A0`, `landscape` or `portrait`) |
 | `scale_denominator` | the **operative** denominator — the `200` of `1:200`. Every annotation size is a fixed sheet-millimetre value times this |
 | `scale_auto` | `true` when the plan declared no `scale` and the sheet auto-fitted one (the finest of 1:50 / 1:100 / 1:200 / 1:500 that fits) |
-| `fits` | does the building's `bbox_outer` fit the sheet at this scale, after the margins, the `dims auto` bands and the bottom chrome band? `false` is the [`W_SCALE_OVERFLOW`](errors.md#w-scale-overflow) condition — the drawing is still produced, on a page grown past the sheet |
+| `fits` | does the building's `bbox_outer` fit the sheet at this scale, after the margins, the `dims auto` bands, the bottom chrome band **and the margin-table row `schedule rooms` / `legend` add below it**? `false` is the [`W_SCALE_OVERFLOW`](errors.md#w-scale-overflow) condition — the drawing is still produced, and the page grows past the sheet rather than clip it |
+
+`fits` is a question about the **sheet**, not only about the building: a plan whose walls
+fit comfortably can still answer `false` because the schedule and legend it asked for take
+the band below the drawing. Adding `schedule rooms` to a tight sheet can therefore flip
+`fits` and raise `W_SCALE_OVERFLOW` with no change to the plan's geometry at all — which is
+the honest answer, and was not reported before v1.26.2 (the tables were laid out but never
+measured, so a page could be emitted taller than its own `paper` with `fits: true` on it).
 
 The whole `sheet` key is **absent** for a plan with no `paper`, so an existing summary is
 unchanged. `scale` and `sheet` always agree: the operative scale is resolved once, before

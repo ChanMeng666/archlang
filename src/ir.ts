@@ -50,8 +50,9 @@ import type { Arc } from "./geometry/arc.js";
 import { outerFaceBounds, segmentsOfWall, WallGrid } from "./geometry.js";
 import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
-import type { ResolvedSheet } from "./sheet.js";
-import { resolveSheetSpec } from "./sheet.js";
+import type { ResolvedSheet, SheetFitInput } from "./sheet.js";
+import { resolveSheetSpec, usablePlanMm } from "./sheet.js";
+import { planTableRows } from "./sheet-tables.js";
 import type { GridBox } from "./geometry/grid-index.js";
 import { GridIndex } from "./geometry/grid-index.js";
 import { rectsOverlap } from "./geometry/rect.js";
@@ -112,6 +113,19 @@ export interface RZone {
   path: string;
   /** Printed name from `zone west "West wing"`, when the source gave one. */
   label?: string;
+  /**
+   * True when this zone is a `place`d instance's IMPLICIT namespace rather than an
+   * author-written `zone` block.
+   *
+   * An instance is a zone so that `describe().zones` and `describe --zone <name>` can
+   * address its contents without a second bookkeeping path — and that stays exactly as it
+   * was. What it must NOT be is a **grouping level in a table**: a plan that places one
+   * consult room six times printed six one-row groups with six subtotals, which is why
+   * `examples/clinic.arch` shipped a `legend` and no `schedule`. The room schedule reads
+   * this flag and groups by the innermost zone the AUTHOR declared instead (see
+   * `groupRoomsByZone` in `sheet-tables.ts`).
+   */
+  instance?: boolean;
 }
 
 /**
@@ -339,6 +353,20 @@ export interface RDim extends RBase {
    * `W_DIM_OVERLAP` instead, never silently re-staged; ADR 0005).
    */
   stagger?: boolean;
+  /**
+   * When the number cannot fit BETWEEN the two stations and is written past one of them
+   * instead (`outsideStations` in `elements/dim.ts` — the ISO 129-1 remedy for a
+   * measurement too small to letter), write it past the `from` end rather than the `to`
+   * end. Absent means the `to` end, which is what every dim did before this existed.
+   *
+   * A separate flag rather than "swap the endpoints", because the endpoint ORDER also
+   * decides the text's reading direction: a vertical dimension's number reads bottom-to-top
+   * in one order and top-to-bottom in the other, and only the first is the drafting
+   * convention. Set only by the wall-thickness call-out, which picks the side of the wall
+   * that has floor under it. Purely a drawing fact — never reaches `describe()` or the
+   * measured value.
+   */
+  calloutFrom?: boolean;
   /**
    * The whole `dim` statement re-emitted with its two endpoints SWAPPED — the
    * machine-applicable fix text for `W_DIM_INSIDE`. Computed in `dim.resolve`
@@ -574,13 +602,19 @@ const zoneOf = (z: ZoneFrame): { zone?: string } => (z.path.length > 0 ? { zone:
  * second declaration and no duplicated bookkeeping. `label` is what the grouped schedule
  * and `describe().zones` print.
  */
-function declareZone(frame: ZoneFrame, id: string, label?: string): ZoneFrame {
+function declareZone(frame: ZoneFrame, id: string, label?: string, instance = false): ZoneFrame {
   const path = [...frame.path, id];
   const key = path.join(".");
   // First declaration wins — a zone re-opened (by a loop, or written twice) merges its
   // members rather than declaring a second, identically-named group.
   if (!frame.declared.has(key)) {
-    frame.declared.set(key, { id, path: key, ...(label !== undefined ? { label } : {}) });
+    frame.declared.set(key, {
+      id,
+      path: key,
+      ...(label !== undefined ? { label } : {}),
+      // Spread, so a written `zone` carries no key at all and its IR is byte-identical.
+      ...(instance ? { instance: true } : {}),
+    });
   }
   return { path, declared: frame.declared };
 }
@@ -787,7 +821,8 @@ function expandScope(
             // No label: the instance NAME is already the heading a reader wants, and
             // inventing one ("wing instance") would print the same text for every
             // instance of a component. `describe().instances` says which component.
-            declareZone(zone, stmt.alias),
+            // Marked `instance` so a TABLE does not group by it (see `RZone.instance`).
+            declareZone(zone, stmt.alias, undefined, true),
           ),
         );
         break;
@@ -1217,6 +1252,19 @@ function levelPlanFor(ast: PlanNode, block: LevelNode, dropPaper: boolean): Plan
   return plan;
 }
 
+/** The margin-table row count one resolved storey will draw — the second thing (after the
+ *  extent) a shared sheet has to be the maximum of. */
+function tableRowsOf(ir: ResolvedPlan): number {
+  return planTableRows({
+    schedule: ir.schedule,
+    legend: ir.legend,
+    rooms: ir.elements.filter((e): e is RRoom => e.kind === "room"),
+    zones: ir.zones,
+    walls: ir.walls,
+    furniture: ir.elements.filter((e): e is RFurniture => e.kind === "furniture"),
+  });
+}
+
 /** The outer-wall-face extent of a resolved plan (what a sheet fit is measured on). */
 function outerExtent(ir: ResolvedPlan): { w: number; h: number } {
   const rects = ir.elements
@@ -1244,20 +1292,32 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
   if (ast.paper) {
     let w = 0;
     let h = 0;
+    // The tables are per-STOREY (each page draws its own rooms), but the sheet is shared —
+    // so the band reserved is the DEEPEST any page will draw, exactly as the extent is the
+    // largest any page occupies. Reserving the ground floor's would let a taller schedule
+    // upstairs run off the paper the fit rule just approved.
+    let tableRows = 0;
     for (const b of blocks) {
       const probe = resolveCached(levelPlanFor(ast, b, true), registry, world, { level: stampOf(b) });
       const e = outerExtent(probe.ir);
       w = Math.max(w, e.w);
       h = Math.max(h, e.h);
+      tableRows = Math.max(tableRows, tableRowsOf(probe.ir));
     }
-    sheet = resolveSheetSpec(ast.paper, ast.scale, {
+    const fit: SheetFitInput = {
       extent: { w, h },
       autoDims: ast.autoDims !== undefined,
       // Every page carries the same rows (the LEVEL row included), so the band the fit
       // reserves is level-independent; a placeholder scale keeps it denominator-independent.
       titleRows: titleRows(ast.title, "1:1", stampOf(blocks[0]!)).length,
-    });
-    if (!sheet.fits) shared.push(scaleOverflowDiagnostic(ast, sheet, { w, h }));
+      tableRows,
+    };
+    sheet = resolveSheetSpec(ast.paper, ast.scale, fit);
+    if (!sheet.fits) {
+      shared.push(
+        scaleOverflowDiagnostic(ast, sheet, { w, h }, usablePlanMm(sheet.widthMm, sheet.heightMm, sheet.denom, fit)),
+      );
+    }
   }
 
   const levels: ResolvedLevel[] = blocks.map((b) => {
@@ -1499,7 +1559,15 @@ function resolveImpl(
   //    A multi-storey plan hands one shared sheet in instead (`extras.sheet`), measured
   //    on the whole BUILDING, so every page is issued at the same scale and the overflow
   //    warning is raised once by the caller rather than once per storey.
-  const sheet = extras.sheet ?? resolveSheet(ast, elements, walls, diagnostics);
+  const sheet =
+    extras.sheet ??
+    resolveSheet(
+      ast,
+      elements,
+      walls,
+      diagnostics,
+      zoneFrame.declared.size > 0 ? [...zoneFrame.declared.values()] : undefined,
+    );
 
   const ir: ResolvedPlan = {
     name: ast.name,
@@ -1554,46 +1622,82 @@ function fmtDenom(d: number): string {
  *
  * The fit is measured on the building's OUTER wall faces (what a builder and a GB/T
  * overall dimension see), against the sheet minus its margins, the `dims auto` chain
- * bands and the bottom chrome band — the one rule in `src/sheet.ts`.
+ * bands, the bottom chrome band and the margin-table row `schedule rooms` / `legend`
+ * occupy below it — the one rule in `src/sheet.ts`.
  *
- * An authored `scale` is never overridden: an overflow is reported and the page grows
- * to contain the drawing (scene-build), because silently re-scaling a drawing out from
- * under the scale in its own title block would be a lie.
+ * An authored `scale` is never overridden: an overflow is reported and the drawing is
+ * never clipped (the page grows to contain it — scene-build), because silently re-scaling
+ * a drawing out from under the scale in its own title block would be a lie.
  */
 function resolveSheet(
   ast: PlanNode,
   elements: ResolvedElement[],
   walls: RWall[],
   diagnostics: Diagnostic[],
+  zones: readonly RZone[] | undefined,
 ): ResolvedSheet | undefined {
   if (!ast.paper) return undefined;
-  const rects = elements
-    .filter((e): e is RRoom => e.kind === "room")
-    .map((r) => ({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h }));
+  const rooms = elements.filter((e): e is RRoom => e.kind === "room");
+  const rects = rooms.map((r) => ({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h }));
   const ob = outerFaceBounds(walls, rects);
   const extent = Number.isFinite(ob.minX) ? { w: ob.maxX - ob.minX, h: ob.maxY - ob.minY } : { w: 0, h: 0 };
   // A sheet always carries a SCALE row (the effective scale is stamped in below), so the
   // row count is scale-independent — pass a placeholder so the band reserved for the
   // title block does not depend on which denominator we are testing.
-  const sheet = resolveSheetSpec(ast.paper, ast.scale, {
+  const fit: SheetFitInput = {
     extent,
     autoDims: ast.autoDims !== undefined,
     titleRows: titleRows(ast.title, "1:1").length,
-  });
-  if (!sheet.fits) diagnostics.push(scaleOverflowDiagnostic(ast, sheet, extent));
+    // The margin tables occupy a second band below the chrome, and it has to be reserved
+    // here or the page can be issued taller than the paper it declares. Counted from the
+    // same derivation `toScene()` draws them with (`planTableRows`), never re-derived.
+    tableRows: planTableRows({
+      schedule: ast.schedule,
+      legend: ast.legend,
+      rooms,
+      zones,
+      walls,
+      furniture: elements.filter((e): e is RFurniture => e.kind === "furniture"),
+    }),
+  };
+  const sheet = resolveSheetSpec(ast.paper, ast.scale, fit);
+  if (!sheet.fits) {
+    diagnostics.push(
+      scaleOverflowDiagnostic(ast, sheet, extent, usablePlanMm(sheet.widthMm, sheet.heightMm, sheet.denom, fit)),
+    );
+  }
   return sheet;
 }
 
-/** The advisory `W_SCALE_OVERFLOW`, built in one place so the single-storey path and the
- *  multi-storey shared-sheet pass word it identically. */
-function scaleOverflowDiagnostic(ast: PlanNode, sheet: ResolvedSheet, extent: { w: number; h: number }): Diagnostic {
+/**
+ * The advisory `W_SCALE_OVERFLOW`, built in one place so the single-storey path and the
+ * multi-storey shared-sheet pass word it identically.
+ *
+ * It quotes BOTH numbers — the building and the drawing area it is measured against — so
+ * the verdict is checkable rather than asserted, and so a reader can see when the sheet
+ * FURNITURE is what consumed the room (a schedule and a legend take a real band, and
+ * adding one can raise this with no change to the plan's geometry at all).
+ *
+ * It deliberately does not promise that the page grows. That is the usual consequence, but
+ * a marginal overflow eats the sheet margin instead and comes out exactly paper-sized — so
+ * what is stated is the invariant that actually holds: nothing is clipped.
+ */
+function scaleOverflowDiagnostic(
+  ast: PlanNode,
+  sheet: ResolvedSheet,
+  extent: { w: number; h: number },
+  usable: { w: number; h: number },
+): Diagnostic {
   return {
     severity: "warning",
     code: "W_SCALE_OVERFLOW",
     message:
       `The drawing does not fit ${sheet.size} ${sheet.orientation} at 1:${fmtDenom(sheet.denom)} — ` +
-      `the building measures ${Math.round(extent.w)}×${Math.round(extent.h)} mm on its outer faces. ` +
-      `The page grows to contain it; use a larger sheet or a coarser scale.`,
+      `the building measures ${Math.round(extent.w)}×${Math.round(extent.h)} mm on its outer faces, ` +
+      `against ${Math.round(usable.w)}×${Math.round(usable.h)} mm of drawing area once the margins, ` +
+      `dimension bands, title block and margin tables are taken out. ` +
+      `Nothing is clipped — the sheet margin gives way first, and the page grows past the paper if ` +
+      `that is not enough; use a larger sheet, a coarser scale, or one fewer margin table.`,
     span: ast.scaleSpan ?? ast.paperSpan,
   };
 }

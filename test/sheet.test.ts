@@ -22,7 +22,15 @@ import { resolve } from "../src/ir.js";
 import { format } from "../src/format.js";
 import { toPdf } from "../src/export/pdf.js";
 import { KEYWORDS } from "../src/grammar/tokens.js";
-import { chromeBandDepth } from "../src/chrome-layout.js";
+import { chromeBandDepth, tableBandDepth } from "../src/chrome-layout.js";
+import {
+  legendRowCount,
+  planTableRows,
+  scheduleRowCount,
+  tableBandRows,
+  tableRowsHeight,
+} from "../src/sheet-tables.js";
+import type { RFurniture, RRoom } from "../src/ir.js";
 import {
   AUTO_SCALE_DENOMINATORS,
   chooseScaleDenominator,
@@ -141,6 +149,7 @@ suite("sheet — sizesFromPaper is <sheet mm> × <denominator>", () => {
         extent: { w: 1000, h: 1000 },
         autoDims: false,
         titleRows: 0,
+        tableRows: 0,
       });
       const s = sizesFromPaper(sheet, 1);
       expect(s.roomFont).toBe(SHEET_MM.roomLabel * denom);
@@ -161,6 +170,7 @@ suite("sheet — sizesFromPaper is <sheet mm> × <denominator>", () => {
       extent: { w: 1000, h: 1000 },
       autoDims: false,
       titleRows: 0,
+      tableRows: 0,
     });
     const a = sizesFromPaper(sheet, 1);
     const b = sizesFromPaper(sheet, 2);
@@ -179,30 +189,30 @@ suite("sheet — sizesFromPaper is <sheet mm> × <denominator>", () => {
 });
 
 suite("sheet — the fit rule", () => {
-  const input = { extent: { w: 0, h: 0 }, autoDims: false, titleRows: 0 };
+  const input = { extent: { w: 0, h: 0 }, autoDims: false, titleRows: 0, tableRows: 0 };
 
   it("is the paper minus margins (and the dim band, when `dims auto` is on)", () => {
-    const bare = usablePlanMm(841, 594, 100, { autoDims: false, titleRows: 0 });
+    const bare = usablePlanMm(841, 594, 100, { autoDims: false, titleRows: 0, tableRows: 0 });
     expect(bare.w).toBe((841 - 2 * SHEET_MM.margin) * 100);
-    const dimmed = usablePlanMm(841, 594, 100, { autoDims: true, titleRows: 0 });
+    const dimmed = usablePlanMm(841, 594, 100, { autoDims: true, titleRows: 0, tableRows: 0 });
     expect(dimmed.w).toBe((841 - 2 * (SHEET_MM.margin + DIM_BAND_MM)) * 100);
     expect(dimmed.w).toBeLessThan(bare.w);
   });
 
   it("reserves the bottom chrome band from the height only", () => {
-    const u = usablePlanMm(841, 594, 1, { autoDims: false, titleRows: 4 });
+    const u = usablePlanMm(841, 594, 1, { autoDims: false, titleRows: 4, tableRows: 0 });
     expect(u.w).toBe(841 - 2 * SHEET_MM.margin);
     expect(u.h).toBe(594 - 2 * SHEET_MM.margin - chromeBandDepth(SHEET_MM.ref, 4));
   });
 
   it("more title rows shrink the usable height", () => {
-    const few = usablePlanMm(841, 594, 1, { autoDims: false, titleRows: 1 });
-    const many = usablePlanMm(841, 594, 1, { autoDims: false, titleRows: 6 });
+    const few = usablePlanMm(841, 594, 1, { autoDims: false, titleRows: 1, tableRows: 0 });
+    const many = usablePlanMm(841, 594, 1, { autoDims: false, titleRows: 6, tableRows: 0 });
     expect(many.h).toBeLessThan(few.h);
   });
 
   it("accepts a building exactly at the limit and rejects one past it", () => {
-    const u = usablePlanMm(841, 594, 200, { autoDims: true, titleRows: 4 });
+    const u = usablePlanMm(841, 594, 200, { autoDims: true, titleRows: 4, tableRows: 0 });
     expect(fitsOnSheet(841, 594, 200, { ...input, extent: u, autoDims: true, titleRows: 4 })).toBe(true);
     expect(fitsOnSheet(841, 594, 200, { ...input, extent: { w: u.w + 1, h: u.h }, autoDims: true, titleRows: 4 })).toBe(
       false,
@@ -213,7 +223,7 @@ suite("sheet — the fit rule", () => {
   });
 
   it("never returns a negative usable area for a sheet smaller than its own bands", () => {
-    const u = usablePlanMm(10, 10, 100, { autoDims: true, titleRows: 4 });
+    const u = usablePlanMm(10, 10, 100, { autoDims: true, titleRows: 4, tableRows: 0 });
     expect(u.w).toBe(0);
     expect(u.h).toBe(0);
   });
@@ -222,7 +232,7 @@ suite("sheet — the fit rule", () => {
 suite("sheet — auto-fit picks the finest scale that fits", () => {
   const at = (extent: { w: number; h: number }, size = "A1" as const) => {
     const p = paperMm(size, "landscape");
-    return chooseScaleDenominator(p.w, p.h, { extent, autoDims: true, titleRows: 4 });
+    return chooseScaleDenominator(p.w, p.h, { extent, autoDims: true, titleRows: 4, tableRows: 0 });
   };
 
   it("candidates are the four nice denominators, finest first", () => {
@@ -235,14 +245,14 @@ suite("sheet — auto-fit picks the finest scale that fits", () => {
 
   it("picks 1:100 — not 1:200 — for a building that fits at 100", () => {
     // Just past the 1:50 usable width, comfortably inside the 1:100 one.
-    const u50 = usablePlanMm(841, 594, 50, { autoDims: true, titleRows: 4 });
+    const u50 = usablePlanMm(841, 594, 50, { autoDims: true, titleRows: 4, tableRows: 0 });
     expect(at({ w: u50.w + 1000, h: 6000 })).toEqual({ denom: 100, fits: true });
   });
 
   it("steps out to 1:200 and 1:500 as the building grows", () => {
-    const u100 = usablePlanMm(841, 594, 100, { autoDims: true, titleRows: 4 });
+    const u100 = usablePlanMm(841, 594, 100, { autoDims: true, titleRows: 4, tableRows: 0 });
     expect(at({ w: u100.w + 1000, h: 6000 }).denom).toBe(200);
-    const u200 = usablePlanMm(841, 594, 200, { autoDims: true, titleRows: 4 });
+    const u200 = usablePlanMm(841, 594, 200, { autoDims: true, titleRows: 4, tableRows: 0 });
     expect(at({ w: u200.w + 1000, h: 6000 }).denom).toBe(500);
   });
 
@@ -357,6 +367,130 @@ suite("sheet — W_SCALE_OVERFLOW", () => {
     expect(scene.bounds.maxX).toBeLessThanOrEqual(p.x + p.w);
     expect(scene.bounds.minY).toBeGreaterThanOrEqual(p.y);
     expect(scene.bounds.maxY).toBeLessThanOrEqual(p.y + p.h);
+  });
+});
+
+/**
+ * **The margin tables are part of the sheet, so the fit rule has to see them.**
+ *
+ * `schedule rooms` / `legend` lay out in a band BELOW the bottom chrome, and for three
+ * releases `usablePlanMm` did not reserve a millimetre of it. The consequence was not a
+ * cosmetic one: `library.arch` on A3 emitted a 420 × 322.6 mm page onto a 420 × 297 mm
+ * sheet, `describe().sheet.fits` said `true`, and `validate --strict` was silent — the fit
+ * rule measured the drawing, and the drawing was never what overflowed.
+ *
+ * Two halves, both below: the band is now reserved from the same row arithmetic the layout
+ * draws with (one source, so they cannot drift apart again), and a plan that asks for
+ * neither table reserves exactly nothing, which is what keeps every existing sheet where
+ * it was.
+ */
+suite("sheet — the margin tables are inside the fit rule", () => {
+  /** A plan with `n` rooms, so the schedule's row count is a knob the test can turn. */
+  function roomsPlan(settings: string, n: number): string {
+    const rooms = Array.from(
+      { length: n },
+      (_, i) => `  room id=r${i} at (0,${i * 3000}) size 8000x3000 label "R${i}" uses hall`,
+    ).join("\n");
+    return `plan "P" {
+  units mm
+  ${settings}
+  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,${n * 3000}) (0,${n * 3000}) close }
+${rooms}
+  door on shell at 5% width 900
+}`;
+  }
+
+  it("reserves the table band from the usable HEIGHT, and nothing from the width", () => {
+    const none = usablePlanMm(841, 594, 1, { autoDims: false, titleRows: 4, tableRows: 0 });
+    const some = usablePlanMm(841, 594, 1, { autoDims: false, titleRows: 4, tableRows: 12 });
+    expect(some.w).toBe(none.w);
+    expect(none.h - some.h).toBeCloseTo(tableBandDepth(SHEET_MM.ref, 12), 9);
+    expect(some.h).toBeLessThan(none.h);
+  });
+
+  it("reserves NOTHING for a plan that asks for neither table", () => {
+    // The compatibility half: `tableBandDepth(_, 0)` is exactly 0, so every sheet that
+    // shipped before this change keeps the fit verdict — and the bytes — it had.
+    expect(tableBandDepth(SHEET_MM.ref, 0)).toBe(0);
+    const a = usablePlanMm(841, 594, 100, { autoDims: true, titleRows: 4, tableRows: 0 });
+    const b = usablePlanMm(841, 594, 100, { autoDims: true, titleRows: 4, tableRows: 0 });
+    expect(a).toEqual(b);
+    expect(compile(plan("paper A2\n  scale 1:100"), { noCache: true }).svg).toBe(
+      compile(plan("paper A2\n  scale 1:100"), { noCache: true }).svg,
+    );
+  });
+
+  it("counts the rows the LAYOUT draws — one arithmetic, not two", () => {
+    // The bug was two answers to one question. `layoutSheetTables` sizes each table as
+    // `rowH × <count>`; the fit rule reserves `tableRowsHeight(refDim, <count>)` for the
+    // same count. Both come from `scheduleRowCount` / `legendRowCount` here, so a row added
+    // to either table moves the drawn box and the reservation together.
+    const src = roomsPlan("paper A1 landscape\n  scale 1:100\n  schedule rooms\n  legend", 5);
+    const ir = resolve(parse(src).plan!).ir;
+    const scene = toScene(ir);
+    const t = scene.chrome!.tables!;
+    const sched = t.schedule!;
+    const legend = t.legend!;
+    // 5 rooms: caption + headings + 5 + TOTAL = 8. The legend: caption + its entries.
+    expect(sched.rows).toHaveLength(5);
+    const schedRows = scheduleRowCount({ rows: sched.rows, total_m2: sched.total_m2, groups: sched.groups });
+    expect(schedRows).toBe(8);
+    expect(sched.h).toBeCloseTo(tableRowsHeight(scene.sizes.refDim, schedRows), 6);
+    expect(legend.h).toBeCloseTo(tableRowsHeight(scene.sizes.refDim, legendRowCount(legend.entries.length)), 6);
+    // …and the count the FIT rule was handed is the same one, from the same IR.
+    expect(
+      planTableRows({
+        schedule: ir.schedule,
+        legend: ir.legend,
+        rooms: ir.elements.filter((e): e is RRoom => e.kind === "room"),
+        zones: ir.zones,
+        walls: ir.walls,
+        furniture: ir.elements.filter((e): e is RFurniture => e.kind === "furniture"),
+      }),
+    ).toBe(Math.max(schedRows, legendRowCount(legend.entries.length)));
+  });
+
+  it("the deeper of the two tables is what the band reserves", () => {
+    const schedule = { rows: [{ no: "01", id: "a", name: "A", area_m2: 1 }], total_m2: 1, groups: [] };
+    // Schedule: 3 + 1 = 4 rows. Legend: 1 + 9 = 10.
+    const legend = Array.from({ length: 9 }, (_, i) => ({ kind: "fixture" as const, key: `k${i}`, name: `k${i}` }));
+    expect(tableBandRows(schedule, null)).toBe(4);
+    expect(tableBandRows(null, legend)).toBe(10);
+    expect(tableBandRows(schedule, legend)).toBe(10);
+    expect(tableBandRows(null, null)).toBe(0);
+  });
+
+  it("REPRODUCES the backlog case: a schedule can push a page past its own paper", () => {
+    // The recorded symptom, stated as a property rather than as `library.arch`'s numbers:
+    // take a plan that fits its sheet with room to spare, add enough schedule rows to eat
+    // the remaining band, and the page must NOT come back reporting `fits: true`.
+    const bareSrc = roomsPlan("paper A3 landscape\n  scale 1:100", 8);
+    const bare = compile(bareSrc, { noCache: true });
+    expect(bare.diagnostics.filter((d) => d.code === "W_SCALE_OVERFLOW")).toEqual([]);
+    expect(describePlan(bareSrc).sheet!.fits).toBe(true);
+    expect(bare.scene!.sheet!.grown).toBe(false);
+    expect(bare.scene!.height / 100).toBe(297);
+
+    const tabled = roomsPlan("paper A3 landscape\n  scale 1:100\n  schedule rooms\n  legend", 8);
+    const r = compile(tabled, { noCache: true });
+    // The bytes are the proof: the page really is taller than the A3 it declares. That was
+    // true before this change too — `fits` and the diagnostic were what lied about it.
+    expect(r.scene!.sheet!.grown).toBe(true);
+    expect(r.scene!.height / 100).toBeGreaterThan(297);
+    expect(describePlan(tabled).sheet!.fits).toBe(false);
+    expect(r.diagnostics.filter((x) => x.code === "W_SCALE_OVERFLOW")).toHaveLength(1);
+    // Nothing about the BUILDING changed — only the sheet furniture the plan asked for.
+    expect(describePlan(tabled).bbox).toEqual(describePlan(bareSrc).bbox);
+  });
+
+  it("auto-fit sees the tables too — it can pick a coarser scale because of them", () => {
+    // The other consequence: with the band reserved, the finest scale that still fits may
+    // be coarser than it was. A silent overflow becomes a smaller, correct drawing.
+    const withTables = describePlan(roomsPlan("paper A3 landscape\n  schedule rooms\n  legend", 7));
+    const without = describePlan(roomsPlan("paper A3 landscape", 7));
+    expect(without.sheet!.scale_auto).toBe(true);
+    expect(withTables.sheet!.scale_auto).toBe(true);
+    expect(withTables.sheet!.scale_denominator).toBeGreaterThanOrEqual(without.sheet!.scale_denominator);
   });
 });
 
@@ -541,7 +675,7 @@ suite("examples/museum.arch — the large-building flagship", () => {
 
   it("auto-fit would pick the same 1:200 — and 1:100 on the next sheet up", () => {
     const ext = { w: 100300, h: 60300 };
-    const input = { extent: ext, autoDims: true, titleRows: 4 };
+    const input = { extent: ext, autoDims: true, titleRows: 4, tableRows: 0 };
     const a1 = paperMm("A1", "landscape");
     expect(chooseScaleDenominator(a1.w, a1.h, input)).toEqual({ denom: 200, fits: true });
     const a0 = paperMm("A0", "landscape");

@@ -35,7 +35,7 @@ import { rectBooleanOutline } from "./geometry/union.js";
 import { getGeometryBackend } from "./geometry/backend.js";
 import type { GeometryBackend } from "./geometry/backend.js";
 import type { Point } from "./ast.js";
-import { patternId } from "./hatches.js";
+import { hatchKey, hatchOf, hatchesUsed, patternId } from "./hatches.js";
 import type { HatchSpec } from "./hatches.js";
 import { anchorChromeToSheet, dimReach, layoutChrome } from "./chrome-layout.js";
 import { axesNodes } from "./axes.js";
@@ -46,6 +46,8 @@ import { relocateRoomLabels } from "./label-placement.js";
 import { legendEntries, roomSchedule, sheetTableNodes } from "./sheet-tables.js";
 import { circulationOverlayNodes } from "./overlays/circulation.js";
 import { captionForPlan } from "./describe.js";
+import type { RoomBox } from "./analyze.js";
+import { pointInRoomBox, roomBox } from "./analyze.js";
 import { DEFAULT_THEME, THEMES, mergeTheme, sanitizeTheme, derivePoche } from "./theme.js";
 import type { Theme } from "./theme.js";
 
@@ -72,27 +74,6 @@ function planBounds(ir: ResolvedPlan, registry: Registry): Bounds {
  *  is what decides, not the endpoints. */
 function allOrthogonal(walls: RWall[]): boolean {
   return walls.every((w) => segmentsOfWall(w).every((s) => !s.arc && (s.a.x === s.b.x || s.a.y === s.b.y)));
-}
-
-/** The hatch spec a wall fills with (material + scale + angle). */
-function hatchOf(w: RWall): HatchSpec {
-  return { material: w.material, scale: w.hatchScale, angle: w.hatchAngle };
-}
-
-/** Stable grouping key for a hatch spec (walls sharing it union together). */
-function hatchKey(h: HatchSpec): string {
-  return `${h.material}|${h.scale}|${h.angle}`;
-}
-
-/** Distinct hatch specs present, in a stable (key-sorted) order. */
-function hatchesUsed(walls: RWall[]): HatchSpec[] {
-  const seen = new Map<string, HatchSpec>();
-  for (const w of walls) {
-    const h = hatchOf(w);
-    const k = hatchKey(h);
-    if (!seen.has(k)) seen.set(k, h);
-  }
-  return [...seen.values()].sort((a, b) => (hatchKey(a) < hatchKey(b) ? -1 : 1));
 }
 
 /**
@@ -295,7 +276,7 @@ function synthDims(ir: ResolvedPlan, sizes: RenderSizes): RDim[] {
     synthGbChains(ir, sizes, dims);
     synthCurveDims(ir, dims);
   }
-  if (ir.autoDims === "walls" || ir.autoDims === "all") synthWallDims(ir, dims);
+  if (ir.autoDims === "walls" || ir.autoDims === "all") synthWallDims(ir, sizes, dims);
   return dims;
 }
 
@@ -804,16 +785,128 @@ function synthGbChains(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void
   }
 }
 
+/**
+ * Which side of a wall segment a thickness call-out's NUMBER should be written on: the
+ * side that has floor under it.
+ *
+ * The number cannot fit between the two faces of a 100 mm partition, so `dim.render`
+ * writes it past the far station instead — which makes the endpoint ORDER decide which
+ * side of the wall it lands on. On an exterior wall one of those sides is the annotation
+ * band where the `dims auto` chains live, and dropping a call-out into it would overprint
+ * a chain's numbers; the other is the room the wall encloses, which is clear paper.
+ *
+ * So the side is derived from the SHAPE, not from a bounding box or a winding order (a
+ * plan is free to wind its shell either way, and a partition's `n` is whatever its two
+ * written points imply). Probe one wall thickness clear of each face at three fixed
+ * stations along the segment and count the rooms found: more floor wins, a tie keeps the
+ * historical order. Closed form — three samples, no search — and it reads the room's own
+ * ring through {@link pointInRoomBox}, never the wall boolean union.
+ *
+ * Returns `true` when `+n` is the floor side — the side the number belongs on.
+ */
+function thicknessSideFlipped(a: Point, b: Point, n: Vec, t: number, rooms: readonly RoomBox[]): boolean {
+  if (rooms.length === 0) return false;
+  const reach = mul(n, t * 1.5); // half the wall, then one whole thickness clear of the face
+  let plus = 0;
+  let minus = 0;
+  for (const f of [0.25, 0.5, 0.75]) {
+    const p = { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f };
+    if (rooms.some((r) => pointInRoomBox(add(p, reach), r))) plus++;
+    if (rooms.some((r) => pointInRoomBox(sub(p, reach), r))) minus++;
+  }
+  return plus > minus;
+}
+
+/** An axis-aligned wall segment reduced to its drawn BAND: the rectangle the poché fills. */
+function segmentBand(s: WallSegment): Bounds {
+  const h = s.thickness / 2;
+  const horiz = s.a.y === s.b.y;
+  return {
+    minX: Math.min(s.a.x, s.b.x) - (horiz ? 0 : h),
+    maxX: Math.max(s.a.x, s.b.x) + (horiz ? 0 : h),
+    minY: Math.min(s.a.y, s.b.y) - (horiz ? h : 0),
+    maxY: Math.max(s.a.y, s.b.y) + (horiz ? h : 0),
+  };
+}
+
+/**
+ * WHERE along its wall a thickness call-out is taken: the middle of the segment's widest
+ * run clear of every other wall.
+ *
+ * The segment midpoint is the obvious station and the wrong one — on a shell it is very
+ * often exactly where a partition tees in, which is the case the backlog reported. The
+ * number is written past the wall face, so a wall crossing there puts the digits straight
+ * back into poché, this time somebody else's.
+ *
+ * Every wall band that comes within the number's reach of this segment's centreline blocks
+ * the run it covers, widened by a cap height at each end so the digits clear it rather than
+ * touch it. What is left is a set of free runs; the widest one's midpoint is the station.
+ * Closed form — merge the intervals once, take the maximum — and it falls back to the
+ * segment midpoint when a wall is crossed end to end (a call-out has to go somewhere).
+ */
+function thicknessStation(rep: { a: Point; b: Point; t: number }, ir: ResolvedPlan, reach: number, pad: number): Point {
+  const horiz = rep.a.y === rep.b.y;
+  const lo = horiz ? Math.min(rep.a.x, rep.b.x) : Math.min(rep.a.y, rep.b.y);
+  const hi = horiz ? Math.max(rep.a.x, rep.b.x) : Math.max(rep.a.y, rep.b.y);
+  const c = horiz ? rep.a.y : rep.a.x;
+  const mid = { x: (rep.a.x + rep.b.x) / 2, y: (rep.a.y + rep.b.y) / 2 };
+
+  const blocked: { lo: number; hi: number }[] = [];
+  for (const w of ir.walls) {
+    for (const s of segmentsOfWall(w)) {
+      if (s.arc) continue;
+      // Only a PERPENDICULAR wall can be escaped by moving along this one. A parallel
+      // band (this segment's own, or a wall running beside it) covers the same run
+      // wherever the station goes, so blocking on it would say nothing and could veto
+      // every station on the wall.
+      const sHoriz = s.a.y === s.b.y && s.a.x !== s.b.x;
+      const sVert = s.a.x === s.b.x && s.a.y !== s.b.y;
+      if (!(horiz ? sVert : sHoriz)) continue;
+      const band = segmentBand(s);
+      const crossLo = horiz ? band.minY : band.minX;
+      const crossHi = horiz ? band.maxY : band.maxX;
+      // Only a band the number could actually reach into counts.
+      if (crossHi < c - reach || crossLo > c + reach) continue;
+      const aLo = (horiz ? band.minX : band.minY) - pad;
+      const aHi = (horiz ? band.maxX : band.maxY) + pad;
+      if (aHi <= lo || aLo >= hi) continue;
+      blocked.push({ lo: Math.max(lo, aLo), hi: Math.min(hi, aHi) });
+    }
+  }
+  blocked.sort((p, q) => p.lo - q.lo || p.hi - q.hi);
+
+  let bestLen = 0;
+  let bestAt = 0;
+  let cursor = lo;
+  const consider = (from: number, to: number): void => {
+    if (to - from > bestLen) {
+      bestLen = to - from;
+      bestAt = (from + to) / 2;
+    }
+  };
+  for (const b of blocked) {
+    consider(cursor, b.lo);
+    cursor = Math.max(cursor, b.hi);
+  }
+  consider(cursor, hi);
+  if (bestLen <= 0) return mid;
+  return horiz ? { x: bestAt, y: c } : { x: c, y: bestAt };
+}
+
 /** One thickness call-out per distinct wall thickness (deduped so eight identical
  *  partitions show "100" once, not eight times). For each thickness, the longest
  *  axis-aligned segment carrying it is the representative — most room for a clean
  *  annotation, chosen deterministically (max length, then source order). The dim
- *  runs face-to-face across the wall at the segment midpoint with the measured
- *  thickness as its text; its zero offset keeps it on the wall, the dim element
- *  pushes the number just to one side. Presentation only — never expands bounds
+ *  runs face-to-face across the wall with the measured thickness as its text; its zero
+ *  offset keeps it on the wall, and because the number is far wider than the wall the
+ *  dim element writes it past the far station (`outsideStations` in `elements/dim.ts`).
+ *  That makes two derived positions, and both come from the shape rather than a box:
+ *  {@link thicknessStation} picks WHERE along the wall (a run no other wall crosses) and
+ *  {@link thicknessSideFlipped} picks WHICH SIDE (the one with floor under it, not the
+ *  annotation band outside the building). Presentation only — never expands bounds
  *  meaningfully (faces sit ½-thickness off a centerline already inside the plan). */
-function synthWallDims(ir: ResolvedPlan, dims: RDim[]): void {
-  const repByThickness = new Map<number, { mid: Point; n: Vec; t: number; len: number }>();
+function synthWallDims(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void {
+  const repByThickness = new Map<number, { a: Point; b: Point; n: Vec; t: number; len: number }>();
   for (const w of ir.walls) {
     for (const s of segmentsOfWall(w)) {
       if (s.arc) continue; // a curve's thickness call-out would sit on its chord, not on it
@@ -825,17 +918,32 @@ function synthWallDims(ir: ResolvedPlan, dims: RDim[]): void {
       if (prev && prev.len >= len) continue;
       const dir = unit(d);
       repByThickness.set(s.thickness, {
-        mid: { x: (s.a.x + s.b.x) / 2, y: (s.a.y + s.b.y) / 2 },
+        a: s.a,
+        b: s.b,
         n: normal(dir),
         t: s.thickness,
         len,
       });
     }
   }
+  const rooms = ir.elements.filter((el): el is RRoom => el.kind === "room").map(roomBox);
   for (const t of [...repByThickness.keys()].sort((a, c) => a - c)) {
     const rep = repByThickness.get(t)!;
+    // How far off the centreline the number reaches, and how tall it is — the same two
+    // numbers `outsideStations` places it with, so the clear run asked for is the clear
+    // run actually used.
+    const text = fmtMm(rep.t);
+    const reach = rep.t / 2 + DIM_TEXT_GAP * sizes.dimFont + textWidth(text, sizes.dimFont);
+    const at = thicknessStation(rep, ir, reach, sizes.dimFont);
     const half = mul(rep.n, rep.t / 2);
-    dims.push(mkDim(add(rep.mid, half), add(rep.mid, mul(half, -1)), 0, fmtMm(rep.t)));
+    // The endpoints keep their historical order (which is what fixes the number's reading
+    // direction); the SIDE the number is written on is `calloutFrom`, so a flip moves the
+    // text and nothing else.
+    const onPlusSide = thicknessSideFlipped(rep.a, rep.b, rep.n, rep.t, rooms);
+    dims.push({
+      ...mkDim(add(at, half), add(at, mul(half, -1)), 0, text),
+      ...(onPlusSide ? { calloutFrom: true } : {}),
+    });
   }
 }
 

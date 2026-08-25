@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Three sheet-layer promises the drawing was not keeping
+
+Three recorded defects (`docs/backlog.md` S.4, S.5, S.1), each one a place where the *sheet* — the
+drawing's furniture, as opposed to its geometry — did something other than what it said. All three
+change output on purpose, and every changed example is named below.
+
+**A wall-thickness reading was drawn inside the poché it measures.** `dims auto walls` (and so
+`dims auto all`) emits one call-out per distinct wall thickness: a dimension line running face to
+face across the wall, at zero offset, with the thickness as its text. The number is far wider than
+the thing it measures — "100" needs about 4.6 mm of paper at a 2.5 mm dimension font and has 0.5 mm
+of wall to sit in — so it was drawn straight through the hatch, rotated, illegible. Not on some
+plans: on **every** plan that asked for wall dimensions. A region-level probe over the 27 shipped
+examples found **29 readings in poché across 13 of them**; the backlog entry, written by eye, had
+recorded eight across three. `arch lint` says nothing about any of it, because where a number is
+printed is a drawing fact and not a measured one.
+
+The remedy is ISO 129-1's and GB/T 50001's: **where the value cannot fit between the stations, it is
+written outside them.** Three closed-form pieces, each deriving its position from the shape rather
+than from a box:
+
+- `outsideStations` (`src/elements/dim.ts`) pushes the number past a station — but only for a
+  **zero-offset** dim (a chain span's remedy is the stagger, and the space outside its stations
+  belongs to its neighbour), and only when the number plus a clear `DIM_TEXT_GAP` at each end really
+  does exceed the measured length. Strict `>`, so a dimension that already fitted is byte-identical.
+- `thicknessStation` (`src/scene-build.ts`) picks **where along the wall** the call-out is taken: the
+  middle of the widest run no other wall crosses. This is the case the report named — "where a
+  partition meets the shell" — and the segment midpoint is very often exactly there.
+- `thicknessSideFlipped` picks **which side**, by probing one wall thickness clear of each face at
+  three stations and asking which has floor. On an exterior wall the other side is the band the
+  `dims auto` chains occupy, and a call-out dropped into it lands on a chain's numbers.
+
+The side is carried as `RDim.calloutFrom`, **never** by swapping the dim's endpoints: endpoint order
+also decides whether a vertical number reads bottom-to-top or top-to-bottom, and only the first is
+the convention. `DIM_TEXT_GAP` moves from `sheet.ts` to `text-metrics.ts` (re-exported, so no
+importer changes) because an element module cannot reach the sheet layer without closing a load-time
+cycle through the element registry — a cycle that left `BUILTIN_DEFS` undefined for whichever test
+file entered the graph first. `test/dim-thickness-callout.test.ts` states the invariant over every
+shipped example and guards the cycle at source level.
+
+**The margin tables were invisible to the sheet fit rule.** `schedule rooms` and `legend` lay out in
+a band below the bottom chrome, and `usablePlanMm` reserved not a millimetre of it — so a plan could
+be issued on a page **taller than the paper it declares** while `describe().sheet.fits` said `true`
+and `validate --strict` was silent. The fit rule measured the drawing, and the drawing was never
+what overflowed. `SheetFitInput` now carries a **required** `tableRows`, `tableBandDepth`
+(`src/chrome-layout.ts`) turns it into a depth, and the row count comes from `scheduleRowCount` /
+`legendRowCount` — the same two expressions `layoutSheetTables` sizes the drawn boxes with, so the
+reservation and the layout cannot drift apart again. `resolve()` derives it through `planTableRows`
+before any Scene exists; a multi-storey plan reserves the deepest storey's, as it already does for
+the extent. **`SheetFitInput` gaining a required field is a type-level breaking change** on an
+advanced export (`resolveSheetSpec` / `fitsOnSheet` / `chooseScaleDenominator` / `usablePlanMm`);
+required rather than optional on purpose, since a caller that can forget the field is how the band
+went unreserved for three releases. One shipped example changes verdict: **`materials.arch`** (A3
+landscape at 1:50, schedule + legend) now reports `fits: false` and raises `W_SCALE_OVERFLOW`. Its
+bytes do not move — the page is still exactly A3 — but its legend reaches to **14.3 mm** of the
+trimmed edge against the 15 mm sheet margin the rule reserves, so the warning is a true statement
+about the margin rather than about the page. Every other paper example keeps 23 mm or more.
+
+**Every `place`d instance was a schedule group.** An instance is implicitly a zone, which is how
+`describe --zone c4` addresses its contents — and `schedule rooms` groups by the innermost zone, so
+a plan that placed one component six times printed **six one-row groups with six subtotals**.
+`examples/clinic.arch` shipped a `legend` and no `schedule` for exactly that reason, and said so in
+a comment. An instance's zone is now **transparent to schedule grouping**: rows group by the
+innermost zone the author *wrote*, an instance inside one inherits it, and an instance inside none
+falls to the un-zoned tail. `describe().zones` and `--zone` are untouched — an instance is still a
+zone, still rolls up, still addressable; it is simply not a heading. `RZone.instance` carries the
+distinction and is absent on a written `zone`, so an unplaced plan's IR is byte-identical. Grouped
+subtotals still partition the total.
+
+**Two examples change source, both to say what they mean.** `examples/clinic.arch` gains the
+`schedule rooms` it could not have — seven rooms under **Public** and **Clinical**, the six placed
+consult rooms among them — and its comment now records the limitation as history. `examples/museum-
+wings.arch` had relied on instance zones to group its schedule by wing, so it now declares them:
+`zone west "West wing" { place wing() as west … }`. That changes nothing else — a zone has no
+geometric semantics, and ids namespace by the *instance* path, so `west.shell` is still
+`west.shell` — and the headings improve from `west`/`east` to the labels.
+
+**Fifteen of the 27 shipped examples change bytes, and they are exactly the fifteen that declare
+`dims auto all`** (aquarium, bungalow, clinic, courtyard-house, gallery-l, garden-loft,
+laneway-house, library, materials, museum, museum-wing, museum-wings, townhouse, transit-hall,
+two-storey). Every `dims auto overall` / `dims auto rooms` / undimensioned example is byte-identical,
+which is the compatibility half of the first fix. Inside the changed fifteen the diff is confined to
+the thickness call-outs' text, line and ticks — plus, in five of them, one room label that
+`relocateRoomLabels` moves because the call-out is now where the label was, and plus the two source
+edits above. No wall, opening, fixture, chrome, page or margin geometry moves. Snapshots, visual
+goldens and the twelve committed `examples/*.svg` are regenerated after review.
+
 ### Four lint blind spots, and the one thing they had in common
 
 Every rule below was **shipped, documented and tested**, and every one of them answered a narrower

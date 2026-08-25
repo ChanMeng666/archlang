@@ -1447,9 +1447,9 @@ theme { wall: "<script>" }   # warning: stripped
 
 *warning* — The drawing does not fit the declared paper at the declared scale.
 
-**Cause.** The plan declares a `paper` size, so `scale` is operative: the building's outer-face extent has to fit the sheet minus its margins, the `dims auto` dimension bands and the bottom chrome band (scale bar + title block). At the scale in force it does not. Your scale is NEVER silently overridden — a drawing is issued at the scale printed in its own title block — so the page simply grows past the sheet to contain the whole drawing. Advisory: an oversize sheet you intend to trim or tile is legitimate.
+**Cause.** The plan declares a `paper` size, so `scale` is operative: the building's outer-face extent has to fit the sheet minus its margins, the `dims auto` dimension bands, the bottom chrome band (scale bar + title block) and the margin-table row that `schedule rooms` / `legend` occupy below it. At the scale in force it does not. Your scale is NEVER silently overridden — a drawing is issued at the scale printed in its own title block — so nothing is clipped: the drawing keeps its sheet margin where it can, and the page grows past the sheet when it cannot. Note that the SHEET FURNITURE counts, not just the building: adding a schedule to a tight sheet can raise this with no change to the plan's geometry. Advisory: an oversize sheet you intend to trim or tile is legitimate.
 
-**Fix.** Pick a coarser scale (a larger denominator draws the building smaller), move up a paper size, or drop the `scale` line and let the sheet auto-fit choose the finest scale from 1:50 / 1:100 / 1:200 / 1:500.
+**Fix.** Pick a coarser scale (a larger denominator draws the building smaller), move up a paper size, drop a margin table you can do without, or drop the `scale` line and let the sheet auto-fit choose the finest scale from 1:50 / 1:100 / 1:200 / 1:500.
 
 ```arch static
 paper A4 landscape

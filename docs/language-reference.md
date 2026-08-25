@@ -116,7 +116,10 @@ plan "House" {
 
 The fit test is closed-form: the building's **outer-face** extent has to fit the sheet
 minus the page margins, minus a dimension band on each side when `dims auto` is on, minus
-the bottom chrome band (scale bar and title block).
+the bottom chrome band (scale bar and title block), and minus the **margin-table row** that
+`schedule rooms` / `legend` occupy below that band. The tables are part of the sheet, so
+asking for a schedule can legitimately be what makes a scale stop fitting — auto-fit then
+steps out to the next coarser one instead of quietly running the table off the paper.
 
 #### When it does not fit
 

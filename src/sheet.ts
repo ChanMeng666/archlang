@@ -30,7 +30,7 @@
  * operative.
  */
 
-import { chromeBandDepth } from "./chrome-layout.js";
+import { chromeBandDepth, tableBandDepth } from "./chrome-layout.js";
 import type { RenderSizes } from "./scene.js";
 
 /** The paper sizes ArchLang can draw on. */
@@ -119,6 +119,11 @@ export const DIM_BAND_MM = DIM_BAND_FONTS * SHEET_MM.dimText;
  * dimension-font multiples. Below it the chain is crowded and its numbers stagger — see
  * `staggerChain` in `scene-build.ts`.
  *
+ * Defined in `text-metrics.ts` (with the width estimate it is always compared against) and
+ * re-exported here, where it is read alongside the chain-slot geometry: an ELEMENT module
+ * needs it too, and `sheet.ts` reaches the element registry through `chrome-layout.ts`, so
+ * importing it from here would close a load-time cycle.
+ *
  * `DIM_BAND_FONTS` above deliberately does NOT move for the stagger: a staggered number is
  * flipped to the INNER side of its own dimension line (`dimFont * 0.7` back instead of
  * forward), so a chain's outward reach is unchanged and the band stays exactly as deep as
@@ -126,7 +131,7 @@ export const DIM_BAND_MM = DIM_BAND_FONTS * SHEET_MM.dimText;
  * is two 0.7 standoffs plus two half cap-heights plus clearance, i.e. the step was already
  * sized for text on both sides of the gap between two chains.
  */
-export const DIM_TEXT_GAP = 0.5;
+export { DIM_TEXT_GAP } from "./text-metrics.js";
 
 /** The scale denominators auto-fit may choose from, finest first. */
 export const AUTO_SCALE_DENOMINATORS = [50, 100, 200, 500] as const;
@@ -163,27 +168,43 @@ export interface SheetFitInput {
   autoDims: boolean;
   /** How many rows the title block will carry (0 = none drawn). */
   titleRows: number;
+  /**
+   * How many rows the MARGIN-TABLE band will carry — the taller of the `schedule rooms`
+   * and `legend` tables, `0` when the plan opted into neither. Counted by
+   * {@link import("./sheet-tables.js").tableBandRows}.
+   *
+   * Required, not optional, on purpose: the tables were invisible to this rule for three
+   * releases and a plan could be issued taller than its own declared paper with
+   * `sheet.fits === true`. A caller that cannot forget the field cannot reintroduce that.
+   */
+  tableRows: number;
 }
 
 /**
  * The drawable area of the sheet in **plan millimetres** at `denom`: the paper minus
  * the page margins, minus a dimension band on each side when `dims auto` is on, minus
- * the bottom chrome band (scale bar / title block).
+ * the bottom chrome band (scale bar / title block) **and the margin-table row below it**.
  *
  * This is the ONE fit rule. It is a closed-form function of the IR (no rendered
  * geometry), so `resolve()` can decide the scale, raise `W_SCALE_OVERFLOW` and stamp
  * `describe().sheet.fits` without building a Scene — and `toScene()` never re-derives
  * a second, subtly different answer.
+ *
+ * The table row was missing from it until v1.26.2, and the failure mode is worth stating
+ * because it is the reason the whole module exists: everything here is a promise about the
+ * bytes, so a band the layout draws and the rule does not reserve is a page taller than its
+ * own `paper` with `fits === true` on it. `library.arch` on A3 emitted 420 × 322.6 mm onto
+ * a 420 × 297 mm sheet and no diagnostic anywhere said so.
  */
 export function usablePlanMm(
   widthMm: number,
   heightMm: number,
   denom: number,
-  input: Pick<SheetFitInput, "autoDims" | "titleRows">,
+  input: Pick<SheetFitInput, "autoDims" | "titleRows" | "tableRows">,
 ): { w: number; h: number } {
   const band = input.autoDims ? DIM_BAND_MM : 0;
   const side = SHEET_MM.margin + band;
-  const chrome = chromeBandDepth(SHEET_MM.ref, input.titleRows);
+  const chrome = chromeBandDepth(SHEET_MM.ref, input.titleRows) + tableBandDepth(SHEET_MM.ref, input.tableRows);
   return {
     w: Math.max(0, (widthMm - 2 * side) * denom),
     h: Math.max(0, (heightMm - 2 * side - chrome) * denom),

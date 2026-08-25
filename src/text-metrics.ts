@@ -29,3 +29,21 @@ export const EM_PER_CHAR = 0.62;
 export function textWidth(text: string, fontSize: number): number {
   return text.length * fontSize * EM_PER_CHAR;
 }
+
+/**
+ * Clear gap a dimension NUMBER must keep from whatever it sits beside, in dimension-font
+ * multiples. Two decisions read it, and both must read the same value:
+ *
+ * - **Crowding within a chain** (`staggerChain`, `scene-build.ts`): below this gap the
+ *   numbers overprint their neighbours and the whole chain staggers.
+ * - **A number too big for its own measurement** (`outsideStations`, `elements/dim.ts`):
+ *   below this gap the value cannot sit between its stations and is written past one.
+ *
+ * It lives HERE, with the width estimate it is always compared against, rather than in
+ * `sheet.ts` (which re-exports it, so every existing importer is unchanged): `sheet.ts`
+ * reaches the element registry through `chrome-layout.ts`, so an element module importing
+ * it closes a load-time cycle. The sheet's own chain-slot geometry deliberately does NOT
+ * move for either remedy — a staggered number flips to the INNER side of its line and a
+ * pushed-out one runs ALONG it, so `DIM_BAND_FONTS` reserves exactly the same depth.
+ */
+export const DIM_TEXT_GAP = 0.5;

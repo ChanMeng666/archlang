@@ -31,7 +31,7 @@
 import type { Point } from "./ast.js";
 import type { Bounds } from "./geometry.js";
 import type { HatchSpec } from "./hatches.js";
-import { patternId } from "./hatches.js";
+import { hatchesUsed, patternId } from "./hatches.js";
 import type { RFurniture, RRoom } from "./ir.js";
 import type { RenderSizes, SceneNode } from "./scene.js";
 import type { Theme } from "./theme.js";
@@ -149,28 +149,59 @@ export function roomSchedule(rooms: readonly RRoom[], zones?: readonly ZoneRef[]
 interface ZoneRef {
   path: string;
   label?: string;
+  /** A `place`d instance's implicit namespace, not an author-written `zone` block. */
+  instance?: boolean;
 }
 
 /**
- * Partition the rooms by their INNERMOST declared zone, in the plan's zone-declaration
- * order, with un-zoned rooms in a final block. Returns null when there is nothing to
- * group (no zones declared, or no room inside one) — the signal that keeps the ungrouped
- * table byte-identical. Rooms stay in source order within their block.
+ * The zone a room is GROUPED under: the innermost one its author actually declared.
+ *
+ * A `place`d instance is a zone (that is how `describe --zone c4` addresses its contents),
+ * but it is not a heading anybody wants in a table. Six placed consult rooms produced six
+ * one-row groups with six subtotals, and `examples/clinic.arch` shipped a `legend` instead
+ * of a `schedule` because of it. So an instance segment is TRANSPARENT here: walk out
+ * through them to the nearest written `zone`, and return undefined when there is none —
+ * which drops the instance's rooms into the un-zoned tail, where a reader expects rooms
+ * nobody grouped.
+ *
+ * Only the TABLE is affected. `describe().zones` still reports every instance zone with its
+ * rolled-up rooms and areas, and `--zone` still filters by them.
+ */
+function groupingZone(zone: string | undefined, declared: ReadonlyMap<string, ZoneRef>): string | undefined {
+  let path = zone;
+  while (path !== undefined) {
+    if (declared.get(path)?.instance !== true) return path;
+    const cut = path.lastIndexOf(".");
+    path = cut < 0 ? undefined : path.slice(0, cut);
+  }
+  return undefined;
+}
+
+/**
+ * Partition the rooms by their innermost AUTHOR-DECLARED zone (see {@link groupingZone}),
+ * in the plan's zone-declaration order, with un-zoned rooms in a final block. Returns null
+ * when there is nothing to group (no zones declared, no room inside one, or every zone a
+ * `place` instance) — the signal that keeps the ungrouped table byte-identical. Rooms stay
+ * in source order within their block.
  */
 function groupRoomsByZone(
   rooms: readonly RRoom[],
   zones: readonly ZoneRef[] | undefined,
 ): { path?: string; name: string; rooms: RRoom[] }[] | null {
   if (!zones || zones.length === 0) return null;
-  if (!rooms.some((r) => r._zone !== undefined)) return null;
+  const declared = new Map(zones.map((z) => [z.path, z]));
+  const groupOf = new Map(rooms.map((r) => [r, groupingZone(r._zone, declared)]));
+  if (![...groupOf.values()].some((g) => g !== undefined)) return null;
   const out: { path?: string; name: string; rooms: RRoom[] }[] = [];
   for (const z of zones) {
-    const members = rooms.filter((r) => r._zone === z.path);
+    if (z.instance === true) continue; // never its own heading — its rooms sit in an ancestor
+    const members = rooms.filter((r) => groupOf.get(r) === z.path);
     if (members.length > 0) out.push({ path: z.path, name: z.label ?? z.path, rooms: members });
   }
   // A room whose declared zone is not in `zones` cannot exist (the ledger is filled by the
-  // very expansion that stamps membership), so the remainder is exactly the un-zoned rooms.
-  const loose = rooms.filter((r) => r._zone === undefined);
+  // very expansion that stamps membership), so the remainder is exactly the rooms no
+  // written `zone` encloses — un-zoned, or inside nothing but instances.
+  const loose = rooms.filter((r) => groupOf.get(r) === undefined);
   if (loose.length > 0) out.push({ name: "(no zone)", rooms: loose });
   return out;
 }
@@ -300,6 +331,54 @@ const LEGEND_NAME = 0.22;
 const TABLE_GAP = 0.03;
 
 /**
+ * How many ROWS each table draws — the schedule's caption, its column headings, one per
+ * room and the TOTAL that closes it (plus a heading and a subtotal per zone group); the
+ * legend's caption and one per entry.
+ *
+ * These are the two numbers {@link layoutSheetTables} multiplies by the row height to get
+ * a table's drawn height, and the two the **sheet fit rule** must reserve — see
+ * {@link tableRowsHeight} and `usablePlanMm` in `src/sheet.ts`. They live here, once,
+ * because the fit rule reserving a different number of rows than the layout draws is
+ * exactly the bug: a page can otherwise be issued taller than the paper it declares while
+ * `sheet.fits` says `true`.
+ */
+export const scheduleRowCount = (s: RoomSchedule): number => 3 + s.rows.length + 2 * s.groups.length;
+export const legendRowCount = (entries: number): number => 1 + entries;
+
+/**
+ * How deep the table ROW is, for the tables a plan actually opted into: the taller of the
+ * two, or `0` when it opted into neither (which is what keeps an opted-out plan's margins,
+ * and therefore its bytes, unchanged).
+ */
+export function tableBandRows(schedule: RoomSchedule | null, legend: readonly LegendEntry[] | null): number {
+  return Math.max(schedule ? scheduleRowCount(schedule) : 0, legend ? legendRowCount(legend.length) : 0);
+}
+
+/** That row count as a height, in the same units as `refDim`. */
+export const tableRowsHeight = (refDim: number, rows: number): number => refDim * ROW_H * rows;
+
+/**
+ * The margin-table row count a resolved plan will draw, derived from the IR alone.
+ *
+ * `toScene()` builds the tables it draws from exactly these four inputs; the **sheet fit
+ * rule runs in `resolve()`, before any Scene exists**, and needs the same answer. Deriving
+ * it once here is what keeps the two from disagreeing — the disagreement being the bug this
+ * function was written for, a page taller than its declared paper with `sheet.fits === true`.
+ */
+export function planTableRows(input: {
+  schedule?: "rooms" | undefined;
+  legend?: boolean | undefined;
+  rooms: readonly RRoom[];
+  zones?: readonly ZoneRef[] | undefined;
+  walls: readonly { material: string; hatchScale: number; hatchAngle: number }[];
+  furniture: readonly RFurniture[];
+}): number {
+  const schedule = input.schedule === "rooms" ? roomSchedule(input.rooms, input.zones) : null;
+  const legend = input.legend ? legendEntries(hatchesUsed(input.walls), input.furniture) : null;
+  return tableBandRows(schedule, legend);
+}
+
+/**
  * Lay the tables out side by side in a row starting at `top`: the schedule at the sheet's
  * left edge, the legend to its right. Returns null when neither is requested, which is
  * what keeps an opted-out plan's margins (and therefore its bytes) unchanged.
@@ -325,8 +404,9 @@ export function layoutSheetTables(input: SheetTablesInput): SheetTables | null {
     const w = cols.reduce((s, c) => s + c.w, 0);
     // Rows: caption + column headings + one per room + the TOTAL that closes the table.
     // Each zone group adds two more: its heading and its subtotal (none when unzoned, so
-    // the height — and therefore the whole sheet's layout — is unchanged).
-    const h = rowH * (3 + sched.rows.length + 2 * sched.groups.length);
+    // the height — and therefore the whole sheet's layout — is unchanged). Counted by
+    // `scheduleRowCount`, which the sheet fit rule reserves with.
+    const h = tableRowsHeight(refDim, scheduleRowCount(sched));
     schedule = {
       x0: x,
       y0: top,
@@ -349,7 +429,7 @@ export function layoutSheetTables(input: SheetTablesInput): SheetTables | null {
   if (legendRows) {
     const swatchW = refDim * LEGEND_SWATCH;
     const w = swatchW + refDim * LEGEND_NAME;
-    const h = rowH * (1 + legendRows.length);
+    const h = tableRowsHeight(refDim, legendRowCount(legendRows.length));
     legend = {
       x0: x,
       y0: top,

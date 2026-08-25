@@ -41,10 +41,22 @@ plan "Museum — two wings" {
 
   # The two wings. Each `place` is one addressable instance: every id inside it becomes
   # `west.<id>` / `east.<id>`, with auto-id counters restarting per instance, so the two
-  # are order-independent. Each is also implicitly a ZONE, which is why the room schedule
-  # below groups by wing without a single `zone` declaration.
-  place wing() as west at (0,0)
-  place wing() as east at (42000,0) mirror x
+  # are order-independent.
+  #
+  # Each instance is also implicitly a zone, which is how `describe --zone west` reaches
+  # its rooms — but an instance is a NAMESPACE, not a heading, so the room schedule does
+  # not group by one (six placed consult rooms would otherwise print six one-row groups
+  # with six subtotals; `examples/clinic.arch` records that case). Grouping is something
+  # a drawing says out loud, so the `zone` around each `place` is what puts "West wing"
+  # and "East wing" on the schedule. It costs nothing else: a zone has zero geometric
+  # semantics, and the instance ids are unchanged — `west.shell` is still `west.shell`,
+  # because id namespacing follows the INSTANCE path, not the zone path.
+  zone west "West wing" {
+    place wing() as west at (0,0)
+  }
+  zone east "East wing" {
+    place wing() as east at (42000,0) mirror x
+  }
 
   # The entrance hall between them. It borrows the wings' own shells for its east and west
   # sides — the only walls it declares are the two it does not share.
