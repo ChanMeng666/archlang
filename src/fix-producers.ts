@@ -34,11 +34,13 @@ export function fixesFrom(fixes: FixSuggestion[] | null): { fixes?: FixSuggestio
 type OpeningKind = "door" | "window" | "opening";
 type OpeningLikeNode = DoorNode | WindowNode | OpeningNode;
 
-/** An attached opening position rendered to source (`40%` | `1200` | `center`). */
+/** An attached opening position rendered to source (`40%` | `1200` | `bay * i` |
+ *  `center`) — the position is an expression, and re-emitting the AUTHORED expression
+ *  is what keeps a fix from baking a resolved number into a generated run. */
 function attachPosText(pos: OpeningAttach["pos"]): string {
   if (pos.kind === "center") return "center";
-  if (pos.kind === "percent") return `${numStr(pos.value ?? 0)}%`;
-  return numStr(pos.value ?? 0);
+  const v = pos.value ? exprToSource(pos.value) : numStr(0);
+  return pos.kind === "percent" ? `${v}%` : v;
 }
 
 /** The leading placement clause of an opening node, re-emitted from the AST. */

@@ -272,6 +272,9 @@ Lowest-to-highest precedence (use parentheses to override):
   arrays compare deeply); the ordering operators require numbers.
 - **Numbers are non-negative literals**; write `-x` for negation. Division /
   modulo by zero is a compile error.
+- `%` is modulo **everywhere except an opening's `on <wall> at <pos>`**, where it
+  is the percent suffix and always ends the expression — parenthesise a remainder
+  there (`at (5000 % 3000)`). See [Door](#door).
 - **Sizes** accept either the `WxH` literal (`4000x3000`) or `<expr> x <expr>`
   (`(2000+W) x H`). The bare `x` separates width and height.
 
@@ -931,6 +934,30 @@ named wall at a position along it: `<pos>` is a percentage of the wall's length
 pinned to that wall by construction (it can never be reported "off wall"). An
 unknown/ambiguous wall is [`E_ATTACH_WALL_REF`](error-codes.md); a position past
 the wall is `E_ATTACH_POS_RANGE`.
+
+**`<pos>` is an expression (v1.26.2).** It takes the same arithmetic every other
+numeric slot does — literals, `let` bindings, unit suffixes, calls — so a
+generated run of openings can place itself along the wall instead of falling back
+to `at (x,y)` and hand-computing each coordinate:
+
+```arch
+plan "Bays" {
+  units mm
+  let bay = 900
+  wall id=w1 exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  room id=r1 at (0,0) size 6000x4000 uses living
+  for i in 0..4 {
+    window on w1 at bay * i + 600 width 700
+  }
+}
+```
+
+One thing to know about `%` here: inside `<pos>` it is the **percent suffix**, so
+it always *ends* the expression rather than meaning modulo. `on w1 at 5000 % 3000`
+is a parse error; write `on w1 at (5000 % 3000)` if you want the remainder.
+Anywhere else in the language `%` is still the modulo operator. A position that
+evaluates to a value outside the wall run — or to something that is not a finite
+number at all — is `E_ATTACH_POS_RANGE`.
 
 **Room-directed swing & vertex hinge (v1.13).**
 - `swing into <room>` picks `in`/`out` so the leaf opens toward that room's side

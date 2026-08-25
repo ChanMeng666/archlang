@@ -58,7 +58,7 @@ export const opening: ElementDef = {
     }
     // Attached: the point + host come from walking the named wall (no off-wall check).
     if (n.attach) {
-      const a = resolveAttachment(n.attach, ctx.walls, ctx.snapPt, ctx.diag, `Opening "${id}"`);
+      const a = resolveAttachment(n.attach, ctx.walls, ctx.snapPt, ctx.diag, `Opening "${id}"`, (e) => ctx.eval(e));
       const at = a ? a.at : { x: 0, y: 0 };
       return { kind: "opening", id, at, width, host: a ? a.host : null, span: n.span };
     }

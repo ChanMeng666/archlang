@@ -51,7 +51,30 @@ Oldest is 2026-07-20. Batch the safe ones (`actions/checkout`, `actions/setup-no
 **zod 3→4** (#27), **vite 6→8** (#26), and `@types/node` 22→26 (#28) — the last interacts with
 `noUncheckedIndexedAccess` across every leg of `typecheck:all`.
 
-### 3.14 · A worktree build silently bundles the WRONG core — `todo`
+### 3.14 · A worktree build silently bundles the WRONG core — `done` (v1.26.2)
+
+**Fixed, and the "cheap mitigation / real fix" split below turned out to be a false
+choice — the real fix was small.** The resolution walk already lived in
+`editors/vscode/esbuild.mjs`; it is now `editors/vscode/resolve-core.mjs`, which returns
+*where* the core resolved as well as its version, and `assertCoreIsOurs` refuses to build
+unless that real path lies inside the repo root of the tree being built (derived by
+walking up to the manifest whose `name` is the core's, not assumed to be `../..`). The
+message names both paths, because the whole difficulty of this bug was that every visible
+signal agreed.
+
+One thing the notes below got wrong, and it matters: **junctioning a worktree's
+`node_modules` does not make the build safe**, so the guard refuses that case too. npm
+installs a workspace package as a symlink with an ABSOLUTE target, so
+`node_modules/@chanmeng666/archlang` points at the MAIN checkout's root however you reach
+it — a junction moves the walk one step and changes nothing about which core is bundled.
+
+Gated by `editors/vscode/test/wrong-core.test.ts`, which builds two throwaway checkouts on
+disk **at the same version** — so the `__CORE_VERSION__` stamp is green, exactly as it was
+live — resolves from the worktree, and asserts the guard fires where the stamp cannot. Its
+non-vacuity is the other direction: the real checkout, resolved the way `esbuild.mjs` does
+it, must pass.
+
+<details><summary>Original entry</summary>
 
 **A release hazard that defeats a guard added the same day.** Running `npm run vscode:build:only`
 from inside a `.claude/worktrees/*` checkout resolves `@chanmeng666/archlang` by walking **up** the
@@ -73,6 +96,8 @@ to prevent.
   path, or a content hash of `dist/index.js`) and assert it matches the building tree.
 - **Gate:** prove it by building from a worktree with a deliberately divergent core and watching the
   new assertion fail where the version stamp passes.
+
+</details>
 
 ### 3.11 · `repair(repair(s)) !== repair(s)` — `todo`
 
@@ -173,22 +198,43 @@ table: roll instances up into their enclosing named zone (probably right — a r
 "Clinical", not "Clinical / c4"), or let a `schedule` name the grouping depth. Neither is obviously
 free; both are a design pass.
 
-### S.2 · `on <wall> at <pos>` takes a literal, so a generated run of openings can't use it — `todo`
+### S.2 · `on <wall> at <pos>` takes a literal, so a generated run of openings can't use it — `done` (v1.26.2)
 
-The `at` in an on-wall opening is parsed as a bare number — not an expression, not a `let` name — so
-a `for`-generated run of doors or windows cannot place itself along a wall and must fall back to the
-absolute form `at (x,y) … wall <id>`, hand-computing the coordinate the `on` form exists to avoid.
-Reproduced on a two-room shell:
+**Both halves fixed, and the parting note turned out to be the bigger of the two.**
 
-```
-window on w1 at p width 800          →  Expected number but found "p"
-window on w1 at 1000 + 500 width 800 →  Expected "width" but found "+"
-```
+`<pos>` is now a full expression, parsed by the same `ctx.parseExpr` every other numeric slot uses
+(no second expression grammar), so `for i in 0..4 { door on w1 at bay * i + 600 width 800 }` places a
+generated run along the wall. The byte-identity law holds: a literal `1200` parses to
+`{ t: "num", value: 1200 }` and evaluates to the number it always did — a SHA sweep over all 27
+shipped examples (SVG, `describe()`, `lint()` and `fmt`) shows zero changes, and a
+literal-versus-expression twin pins it directly (`test/attach.test.ts`).
 
-`examples/transit-hall.arch` is the shipped instance: its generated gate line uses `at (x,y) … wall`
-for exactly this reason. Note in passing that both diagnostics come back with **no `E_*` code** —
-they are raw parser expectations, so `--code` cannot select them and the error catalog does not
-document them.
+One grammar consequence, taken deliberately rather than left to fall out: inside `<pos>` a `%` is the
+percent SUFFIX, so it always ends the expression and never means modulo (`at 5000 % 3000` is refused;
+`at (5000 % 3000)` is fine — a parenthesised sub-expression re-enters the full grammar). The GBNF
+mirrors it exactly with an `attach-expr` cascade rather than pinning the divergence, so a constrained
+decoder cannot emit the one shape the parser rejects.
+
+**The uncoded-diagnostic note became a structural fix.** Auditing the slot's refusals showed the
+only uncoded one left was the parser itself — and that was true of *every* parse and lex error in the
+language, not just here. They now carry `E_PARSE`, a catalogued code whose entry says what makes it
+different from every other code (resolution never ran, so there is never a `fix` to apply). That also
+replaced a heuristic: `test/gbnf-drift.test.ts` defined "parses" as *no diagnostic lacking a code*,
+which worked only because parse errors happened to be the one uncoded kind — any new uncoded
+`diag()` call would have silently turned a refusal into a "parses". `test/explain.test.ts` now
+asserts the invariant generically, over a corpus chosen to fail in each layer: every diagnostic the
+compiler emits has a catalogued code and a byte span, with a pruned allowlist for the whole-plan
+verdicts that legitimately have no span.
+
+Two things the audit found that were not in this entry: `E_DIV_ZERO`/`E_TYPE` raised from a binary
+expression whose left operand was a literal had **no span at all** (`spanOf(left)`, and a `num` atom
+carries none) — anywhere in the language, not just in this slot; and an expression position can be
+non-finite, which the range check `mm < 0 || mm > total` waves through on both sides, so `NaN` would
+have reached the drawing. Both closed.
+
+`examples/transit-hall.arch` still uses the absolute form for its generated gate line; converting it
+is a separate, purely cosmetic change and is deliberately not bundled here, since it would move a
+committed drawing.
 
 ### S.3 · `strip` cannot nest inside `zone`, so strip rooms fall out of the schedule — `todo`
 

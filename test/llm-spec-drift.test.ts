@@ -221,6 +221,18 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // *provably* so: the guard asserts every attribute is classified, not that every
     // clause attribute is actually RENDERED in some element line. Make it assert the
     // rendering and the bullet can go.
+    //
+    // v1.26.2 spent 27 of the 219: the `on <wall> at <pos>` position became an
+    // EXPRESSION, and the `door` line has to say so (an agent that does not know cannot
+    // place a `for`-generated run, which is the whole reason the slot was widened) plus
+    // the one grammar quirk it introduces — a `%` there ENDS the expression rather than
+    // meaning modulo. The cap was NOT raised: 53 of the 80 chars were paid for on the
+    // spot by de-duplicating the `window` line, whose "same two placement forms as door;
+    // `wall` pairs with the `at` form ONLY" restated the door line's own sentence — it
+    // now reads "placement + `wall` clause exactly as door", which is verbatim the
+    // phrasing the `opening` line already used for the identical fact. Green at 24,970,
+    // **30 chars of headroom**. That is back inside tripwire range, so the Attributes
+    // bullet above is now the next edit here, not a someday one.
     expect(spec.length).toBeLessThan(25_000);
   });
 });

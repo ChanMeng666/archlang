@@ -428,7 +428,21 @@ function rules(): [string, string][] {
     ["opening-placement", `opening-free | opening-hosted`],
     ["opening-free", `"at" ws point ws "width" ws expr ( ws "wall" rws ref )?`],
     ["opening-hosted", `"on" rws ref rws "at" ws attach-pos ws "width" ws expr`],
-    ["attach-pos", `"center" | number ws "%" | number`],
+    /*
+     * The attachment position is a full EXPRESSION (v1.26.2), not a bare number — a
+     * `for`-generated run of openings places itself with `on w1 at bay * i + 600`.
+     *
+     * It is `attach-expr`, not `expr`, for one reason: in this slot `%` is the percent
+     * SUFFIX, so `src/attach.ts` parses it with `noModulo` and a trailing `%` always
+     * ENDS the expression (`on w1 at 1000 % 3 width 900` is a parse error, not a
+     * modulo). `attach-expr` mirrors the precedence cascade with `%` removed from the
+     * multiplicative operators, and stops there: a parenthesised sub-expression, an
+     * index and a call argument all reach the FULL `expr` again through the shared
+     * `atom`/`postfix-expr`, exactly as the parser does when it recurses into
+     * `parseExpr` with no options. Writing `expr` here instead would hand a constrained
+     * decoder `at 1000 % 3` — the one output shape this file exists to make impossible.
+     */
+    ["attach-pos", `"center" | attach-expr ws "%" | attach-expr`],
     /*
      * Two shapes, because the trailing `in <roomId>` is available to only one of them.
      * `at`/`against` do not name a room, so the piece may declare its owner at the end;
@@ -480,6 +494,18 @@ function rules(): [string, string][] {
     ["add-op", `"+" | "-"`],
     ["mul-expr", `unary-expr ( ws mul-op ws unary-expr )*`],
     ["mul-op", `"*" | "/" | "%"`],
+    // The same cascade with `%` taken out of the multiplicative operators, for the one
+    // slot where `%` is a suffix rather than an operator (see `attach-pos`). It rejoins
+    // the shared cascade at `unary-expr`, below which `%` cannot appear anyway.
+    ["attach-expr", `nm-or-expr`],
+    ["nm-or-expr", `nm-and-expr ( ws "||" ws nm-and-expr )*`],
+    ["nm-and-expr", `nm-eq-expr ( ws "&&" ws nm-eq-expr )*`],
+    ["nm-eq-expr", `nm-cmp-expr ( ws eq-op ws nm-cmp-expr )*`],
+    ["nm-cmp-expr", `nm-range-expr ( ws cmp-op ws nm-range-expr )*`],
+    ["nm-range-expr", `nm-add-expr ( ws ".." ws nm-add-expr )*`],
+    ["nm-add-expr", `nm-mul-expr ( ws add-op ws nm-mul-expr )*`],
+    ["nm-mul-expr", `unary-expr ( ws nm-mul-op ws unary-expr )*`],
+    ["nm-mul-op", `"*" | "/"`],
     ["unary-expr", `unary-op ws unary-expr | postfix-expr`],
     ["unary-op", `"-" | "+" | "!"`],
     ["postfix-expr", `atom ( ws "[" ws expr ws "]" )*`],

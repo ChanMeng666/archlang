@@ -228,6 +228,14 @@ const POSITIVE: Snippet[] = [
     note: "mm and `center` positions along a wall",
     src: plan(`${BOX}\n  door on w1 at center width 900\n  door on w1 at 1200 width 800`),
   },
+  {
+    keyword: "door",
+    note: "<pos> is an EXPRESSION — a `for`-generated run places itself along the wall",
+    src: plan(
+      `${BOX}\n  let bay = 1200\n  for i in 0..4 { door on w1 at bay * i + 600 width 800 }\n` +
+        `  window on w1 at 10 + 15% width 900\n  opening on w1 at (bay % 500) + 4000 width 800`,
+    ),
+  },
 
   // --- window / opening ------------------------------------------------------
   {
@@ -545,6 +553,18 @@ const NEGATIVE: Negative[] = [
     src: plan(`  wall id=w1 exterior thickness 200 material marble { (0,0) (4000,0) close }`),
   },
   {
+    code: "E_ATTACH_POS_RANGE",
+    channel: "compile",
+    note: "an attachment position past the end of the wall run it walks",
+    src: plan(`${BOX}\n  door on w1 at 150% width 900`),
+  },
+  {
+    code: "E_PARSE",
+    channel: "compile",
+    note: "a SHAPE refusal — resolution never ran, so no semantic code can apply",
+    src: plan(`${BOX}\n  door on w1 at 40% width 900 wall w1`),
+  },
+  {
     code: "W_DOOR_OFF_WALL",
     channel: "compile",
     note: "rule 4 — an `at` door must sit on a wall centerline",
@@ -703,18 +723,21 @@ describe("spec.llm.md — every illegality it names is refused", () => {
     ).toEqual([]);
   });
 
-  it("keeps parse errors parse errors — a bare diagnostic, not a catalogued code", () => {
-    // The distinction is load-bearing for an agent: a coded `E_*` carries a `fix` and a
-    // catalog entry to look up; a parse error means the SHAPE is wrong and no amount of
-    // reading the catalog helps. A form that silently swaps one for the other has changed
-    // what the spec's advice is worth.
+  it("keeps parse errors parse errors — E_PARSE, not a semantic code", () => {
+    // The distinction is load-bearing for an agent: a semantic `E_*` carries a `fix` and
+    // a catalog entry describing what the plan MEANS; `E_PARSE` means the SHAPE is wrong,
+    // resolution never ran, and there is nothing to correct because the compiler has no
+    // reading of the text. A form that silently swaps one for the other has changed what
+    // the spec's advice is worth. Before v1.26.2 the marker was the ABSENCE of a code,
+    // which made the distinction real but unnameable — `--code` could not select it and
+    // the catalog did not document it.
     const wrong = PARSE_ERRORS.map((p) => ({ p, errors: errorsOf(p.src) })).filter(
-      (r) => r.errors.length === 0 || r.errors.every((e) => e.code !== undefined),
+      (r) => r.errors.length === 0 || !r.errors.some((e) => e.code === "E_PARSE"),
     );
     expect(
-      wrong.map((r) => `${r.p.note} — got [${r.errors.map((e) => e.code ?? "<parse>").join(", ") || "nothing"}]`),
+      wrong.map((r) => `${r.p.note} — got [${r.errors.map((e) => e.code ?? "<uncoded>").join(", ") || "nothing"}]`),
       `The spec says each of these is a PARSE ERROR. A run that produced no error at all means ` +
-        `the spec forbids something the parser accepts; a run that produced only coded errors ` +
+        `the spec forbids something the parser accepts; a run that produced no E_PARSE ` +
         `means the refusal moved to resolve, and the spec's wording is now wrong.`,
     ).toEqual([]);
   });

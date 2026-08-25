@@ -67,11 +67,13 @@ function againstStr(ag: NonNullable<FurnitureNode["against"]>): string {
   return out;
 }
 
-/** An attached opening's position: `40%` | `1200` (mm) | `center`. */
+/** An attached opening's position: `40%` | `1200` (mm) | `bay * i + 600` | `center`.
+ *  The value is an expression, so it round-trips through `exprToSource` like every
+ *  other numeric slot — a literal renders exactly the digits it always did. */
 function attachPosStr(pos: OpeningAttach["pos"]): string {
   if (pos.kind === "center") return "center";
-  if (pos.kind === "percent") return `${numStr(pos.value ?? 0)}%`;
-  return numStr(pos.value ?? 0);
+  const v = pos.value ? exprStr(pos.value) : numStr(0);
+  return pos.kind === "percent" ? `${v}%` : v;
 }
 
 /** An opening's leading position: `on <wall> at <pos>` (attached) or `at (x,y)`. */

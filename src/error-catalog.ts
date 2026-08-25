@@ -188,8 +188,8 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_ATTACH_POS_RANGE: E(
     "E_ATTACH_POS_RANGE",
     "Opening attachment position is out of range.",
-    "The `at <pos>` of an attached opening is outside the host wall: a percentage outside 0–100%, or a millimetre distance outside `0 … wall length`.",
-    "Use a percentage in 0–100%, a millimetre distance within the wall's run, or `center`.",
+    "The `at <pos>` of an attached opening is outside the host wall: a percentage outside 0–100%, a millimetre distance outside `0 … wall length`, or — since the position may be an expression — a value that is not a finite number at all.",
+    "Use a percentage in 0–100%, a millimetre distance within the wall's run, or `center`. The non-finite case carries no fix: there is no nearest legal value to clamp to, so check the expression that produced it.",
     "door on w1 at 150% width 900   # error: 150% is past the wall end",
   ),
   E_PLACE_REF: E(
@@ -443,6 +443,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "A `level` block is a plan-level statement: it partitions the whole plan into storeys, so it cannot be nested inside another `level`, a `for`/`if`/`while` body, a `strip`, or a component definition.",
     "Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.",
     "component c() { level 1 { } }   # error: only allowed at plan level",
+  ),
+  E_PARSE: E(
+    "E_PARSE",
+    "The source could not be read: its SHAPE is wrong.",
+    "The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, clauses written in the wrong order. It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.",
+    "Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `arch spec`'s one line for that keyword — clause ORDER is part of the grammar, not a suggestion. Unlike every other code in this catalog, there is no machine-applicable fix to apply, because the compiler has no reading of the text to correct.",
+    "door on w1 at 40% width 900 wall w1   # error: `wall` pairs with the `at (x,y)` form only",
   ),
   E_RANGE_LIMIT: E(
     "E_RANGE_LIMIT",

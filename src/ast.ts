@@ -308,7 +308,11 @@ export interface RoomNode extends NodeBase {
 export interface OpeningAttach {
   /** Host wall id (or category) whose polyline is walked. */
   wall: string;
-  pos: { kind: "percent" | "mm" | "center"; value?: number };
+  /** The position along the wall. `value` is a full {@link Expr}, not a literal, so a
+   *  `for`-generated run of openings can place itself (`door on w1 at bay * i + 600`);
+   *  `center` carries none. A literal evaluates to the number it always did, which is
+   *  what keeps every pre-existing plan byte-identical. */
+  pos: { kind: "percent" | "mm" | "center"; value?: Expr };
   span?: Span;
 }
 

@@ -14,6 +14,7 @@
 
 import type { ExprPoint, OpeningAttach, Point } from "./ast.js";
 import type { Diagnostic, FixSuggestion } from "./diagnostics.js";
+import type { Expr, ParseExprOpts } from "./expr.js";
 import type { ParseCtx } from "./registry.js";
 import type { WallLike, WallSegment } from "./geometry.js";
 import { segmentLength, segmentPointAlong, segmentsOfWall } from "./geometry.js";
@@ -37,19 +38,31 @@ function attachClampFix(attach: OpeningAttach, valueText: string): FixSuggestion
   ];
 }
 
-/** Parse the attachment position after `at`: `40%` | `1200` (mm) | `center`. */
+/**
+ * Parse the attachment position after `at`: `<expr>%` | `<expr>` (mm) | `center`.
+ *
+ * The value is a full expression — the same one every other numeric slot takes, parsed
+ * by the same {@link ParseCtx.parseExpr} entry point — so `for i in 0..4 { door on w1 at
+ * bay * i + 600 width 900 }` places a generated run along the wall. Before v1.26.2 this
+ * read a single `number` token, which is why a generated run had to fall back to the
+ * absolute `at (x,y) … wall <id>` form and hand-compute the coordinate the `on` form
+ * exists to avoid (`examples/transit-hall.arch` is the shipped instance).
+ *
+ * `noModulo` is what makes the trailing `%` readable: see {@link ParseExprOpts}.
+ * `center` is still matched first, as a keyword, so it can never be read as a
+ * bare reference.
+ */
 function parseAttachPos(ctx: ParseCtx): { pos: OpeningAttach["pos"]; end: number } {
   if (ctx.isKeyword("center")) {
     const c = ctx.next();
     return { pos: { kind: "center" }, end: c.end };
   }
-  const numTok = ctx.eat("number");
-  const n = numTok.num!;
+  const value = ctx.parseExpr({ noModulo: true });
   if (ctx.isType("percent")) {
     const pct = ctx.next();
-    return { pos: { kind: "percent", value: n }, end: pct.end };
+    return { pos: { kind: "percent", value }, end: pct.end };
   }
-  return { pos: { kind: "mm", value: n }, end: numTok.end };
+  return { pos: { kind: "mm", value }, end: ctx.peek(-1).end };
 }
 
 /**
@@ -75,6 +88,20 @@ export function parseAttachTarget(ctx: ParseCtx): { at?: ExprPoint; attach?: Ope
  * catalogued diagnostic:
  *   - unknown / ambiguous wall ref → `E_ATTACH_WALL_REF`
  *   - percent outside 0–100, or mm outside `[0, wall length]` → `E_ATTACH_POS_RANGE`
+ *   - a position that is not a finite number → `E_ATTACH_POS_RANGE`
+ *
+ * That third case is what an EXPRESSION position costs: `0/0` and `1/0` are values a
+ * literal could never be, and `NaN < 0 || NaN > total` is false on both sides — so
+ * without the finiteness check a non-finite position would walk straight past the range
+ * test and into `segmentPointAlong`, putting `NaN` in the drawing. It is refused with the
+ * same code as any other out-of-range position, but carries no fix: there is no nearest
+ * legal value to clamp `NaN` to. (`E_DIV_ZERO` already covers the common cause; this is
+ * the backstop for every other route to a non-finite number.)
+ *
+ * `evalNum` evaluates the position expression against the caller's binding environment
+ * (`ResolveCtx.eval`), so `let`/`for` bindings are in scope exactly as they are for a
+ * `width` or an `at (x,y)`. Its diagnostics (`E_UNKNOWN_REF`, `E_TYPE`, `E_DIV_ZERO`, …)
+ * are catalogued by the evaluator itself.
  *
  * The host segment is taken from `segmentsOfWall(wall)` so `registerOpenings`
  * (which matches by endpoint coordinates) attributes the opening to this wall.
@@ -85,6 +112,7 @@ export function resolveAttachment(
   snapPt: (p: Point) => Point,
   diag: (d: Diagnostic) => void,
   what: string,
+  evalNum: (e: Expr) => number,
 ): { at: Point; host: WallSegment } | null {
   const matches = walls.filter((w) => w.id === attach.wall || w.category === attach.wall);
   if (matches.length === 0) {
@@ -115,10 +143,21 @@ export function resolveAttachment(
   // Distance from the wall's start to the attachment point, along the polyline.
   let dist: number;
   const p = attach.pos;
+  // One evaluation, shared by both value kinds. `center` carries no expression.
+  const raw = p.kind === "center" || p.value === undefined ? 0 : evalNum(p.value);
+  if (p.kind !== "center" && !Number.isFinite(raw)) {
+    diag({
+      severity: "error",
+      message: `${what} attachment position is not a finite number (got ${raw})`,
+      code: "E_ATTACH_POS_RANGE",
+      span: attach.span,
+    });
+    return null;
+  }
   if (p.kind === "center") {
     dist = total / 2;
   } else if (p.kind === "percent") {
-    const pct = p.value ?? 0;
+    const pct = raw;
     if (pct < 0 || pct > 100) {
       const clamped = Math.min(Math.max(pct, 0), 100);
       const fixes = attachClampFix(attach, `${numStr(clamped)}%`);
@@ -133,7 +172,7 @@ export function resolveAttachment(
     }
     dist = (pct / 100) * total;
   } else {
-    const mm = p.value ?? 0;
+    const mm = raw;
     if (mm < 0 || mm > total) {
       const clamped = Math.min(Math.max(mm, 0), total);
       const fixes = attachClampFix(attach, numStr(clamped));

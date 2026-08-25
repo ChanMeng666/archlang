@@ -90,7 +90,15 @@ you observed. Do NOT push anything — this command only verifies.
    pre-fix function body while its own `dist/chunk-*.js` had the fixed one. **The
    `__CORE_VERSION__` stamp cannot catch this** — both cores stamp the same version, so the
    freshness test passes while the bundle is wrong. The stamp proves the bundle is not stale *in
-   version*; nothing yet proves it came from *this* checkout (`docs/backlog.md` item 3.14).
+   version*; it says nothing about which checkout the bundle came from (`docs/backlog.md` 3.14).
+
+   Since v1.26.2 the build **refuses** rather than relying on you remembering: the guard in
+   `editors/vscode/resolve-core.mjs` compares the resolved core's real path against the repo root
+   of the tree being built and throws, naming both paths, when they differ
+   (`editors/vscode/test/wrong-core.test.ts`). Note it fires for a **junctioned** worktree too, and
+   correctly: npm links a workspace package by ABSOLUTE path to the main tree's root, so a junction
+   moves the walk one step and changes nothing about which core gets bundled. The instruction is
+   unchanged — package in the primary checkout — but a mistake is now loud instead of silent.
 
 ## Reminders (do not act on these here — they are context for the push)
 

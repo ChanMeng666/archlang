@@ -56,7 +56,7 @@ export const windowEl: ElementDef = {
       });
     }
     if (n.attach) {
-      const a = resolveAttachment(n.attach, ctx.walls, ctx.snapPt, ctx.diag, `Window "${id}"`);
+      const a = resolveAttachment(n.attach, ctx.walls, ctx.snapPt, ctx.diag, `Window "${id}"`, (e) => ctx.eval(e));
       const at = a ? a.at : { x: 0, y: 0 };
       return { kind: "window", id, at, width, host: a ? a.host : null, span: n.span };
     }

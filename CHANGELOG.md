@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### An opening's position along a wall is an expression — and every refusal in the language is now coded
+
+Two recorded defects (`docs/backlog.md` S.2 and 3.14) that share nothing except being invisible from
+inside the repo.
+
+**`door|window|opening … on <wall> at <pos>` now takes a full expression.** `<pos>` used to be a
+single `number` token, so neither a `let` binding nor any arithmetic was legal there. That is not a
+cosmetic gap: it made the attachment form **unreachable from a `for` loop**, which is the case it
+exists to serve — a generated run of openings had to fall back to the absolute
+`at (x,y) … wall <id>` form and hand-compute the very coordinate `on … at` removes.
+`examples/transit-hall.arch` is the shipped instance. It is parsed by the same
+`ctx.parseExpr` every other numeric slot uses, so there is no second expression grammar, and `let`
+bindings are in scope exactly as they are for `width`:
+
+```arch
+let bay = 900
+for i in 0..4 {
+  window on w1 at bay * i + 600 width 700
+}
+```
+
+**The byte-identity law holds:** a plan that does not use an expression there compiles, describes,
+lints and formats exactly as before, because a literal `1200` parses to `{ t: "num", value: 1200 }`
+and evaluates to the number it always did. A SHA-256 sweep over all 27 shipped examples across all
+four surfaces shows zero changes, and a literal-versus-expression twin pins it directly. `arch fmt`
+re-emits the **authored** expression rather than the resolved number — printing `1500` would silently
+constant-fold a plan's source, and inside a `for` would collapse the whole run onto one coordinate.
+
+One grammar consequence, decided rather than left to fall out: inside `<pos>` a `%` is the percent
+**suffix**, so it always ends the expression and never means modulo. `at 5000 % 3000` is refused;
+`at (5000 % 3000)` is fine, because a parenthesised sub-expression re-enters the full grammar — which
+is exactly what the parser does when it recurses with no options. `grammars/archlang.gbnf` mirrors it
+with an `attach-expr` cascade instead of pinning the divergence, so a constrained decoder cannot emit
+the one shape the parser rejects, and fourteen agreement-corpus rows hold the two to it.
+
+**Every parse and lex refusal now carries `E_PARSE`.** The backlog entry noted in passing that the
+two failures above came back with no `E_*` code. That was true of *every* parse and lex error in the
+language, not just these — so `arch lint --code`/`--severity` could not select the most common
+failure a generating model hits, and `arch explain` had nothing to say about it. `E_PARSE` is
+catalogued, and its entry says what makes it unlike every other code: resolution never ran, so there
+is never a `fix` to apply and nothing about what the plan *means* has been judged. The distinction
+the project cares about is parse-versus-resolve, and this names it rather than erasing it —
+`test/spec-forms.test.ts` still holds the spec's documented illegalities to being shape refusals,
+now by code instead of by absence of one.
+
+That also retired a heuristic. `test/gbnf-drift.test.ts` defined "the compiler parses this" as *no
+error diagnostic lacking a code* — which worked only because parse errors happened to be the one
+uncoded kind, a property nothing asserted and any new uncoded `diag()` call would have quietly
+broken, turning a refusal into a "parses". `test/explain.test.ts` now asserts the invariant
+generically over a corpus chosen to fail in each layer (lexer, header, statement, block, evaluator,
+resolve, analysis): every diagnostic the compiler emits carries a catalogued code and a byte span,
+with a pruned allowlist for the whole-plan verdicts that legitimately have no span.
+
+Two things the audit turned up that the entry did not mention:
+
+- **`E_DIV_ZERO` and `E_TYPE` from a binary expression were unlocatable.** `parseBin` took the node's
+  span from `spanOf(left)`, and a `num` (or `bool`) atom carries no span — so every `bin`/`range`
+  built over a literal had `span: undefined`, and the evaluator's diagnostics came back with a real
+  code, a real message and nothing for an editor or `arch fix` to point at. `1200 / 0` in a `width`
+  had the same hole. The span is now taken from the token stream, first token to last, which also
+  makes it the whole expression rather than its left half. **Observable change:** these diagnostics
+  gain a span, and `arch ast --json` reports spans on `bin`/`range` nodes that previously had none.
+- **A non-finite position would have reached the drawing.** `mm < 0 || mm > total` is false on *both*
+  sides for `NaN`, so it walks past the range check into `segmentPointAlong`. Only an expression can
+  produce one — a literal never could — so the finiteness guard arrives with the feature, reported as
+  `E_ATTACH_POS_RANGE` with no fix, since there is no nearest legal value to clamp `NaN` to.
+
+**Also observable:** `arch ast --json` reports an attached opening's position as an expression node
+(`{"t":"num","value":40}`) rather than a bare number, which is how `width` and `at (x,y)` have always
+appeared there.
+
+**The VS Code build now refuses to bundle another checkout's core.** Running `vscode:build:only` or
+`npm run package` from a `.claude/worktrees/*` checkout resolved `@chanmeng666/archlang` by walking
+**up** to the shared repo's `node_modules` and inlined *that* checkout's language — and the
+`__CORE_VERSION__` freshness stamp passed throughout, correctly by its own contract, because both
+checkouts stamp the same version. Every visible signal agreed while the artifact was wrong. The walk
+moved to `editors/vscode/resolve-core.mjs`, which now reports *where* the core resolved as well as
+its version; `assertCoreIsOurs` throws unless that real path lies inside the repo root of the tree
+being built (derived by walking up to the manifest whose `name` is the core's, not assumed to be
+`../..`), naming both paths. It fires for a **junctioned** worktree too, and that is right rather
+than over-strict: npm links a workspace package by absolute path to the main tree's root, so a
+junction moves the walk one step and changes nothing about which core is bundled.
+`editors/vscode/test/wrong-core.test.ts` builds two throwaway checkouts on disk **at the same
+version** — reproducing the exact configuration the stamp cannot discriminate — and asserts the guard
+does; its non-vacuity is the other direction, that the real checkout still passes.
+
 ### Three sheet-layer promises the drawing was not keeping
 
 Three recorded defects (`docs/backlog.md` S.4, S.5, S.1), each one a place where the *sheet* — the

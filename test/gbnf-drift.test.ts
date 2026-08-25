@@ -328,9 +328,9 @@ function accepts(rules: Map<string, Expr>, input: string): boolean {
 //
 // Every verdict below is TAKEN FROM `compile()`, never written beside the case, so
 // the corpus cannot be greened by editing a column — only by changing the grammar or
-// the compiler. What counts as "parses" is: no error diagnostic that lacks a `code`.
-// A catalogued `E_*` is a RESOLVE-time refusal and is deliberately still derivable —
-// a decoder should be able to emit an off-wall door and be told about it.
+// the compiler. What counts as "parses" is: no `E_PARSE` error. Any OTHER catalogued
+// `E_*` is a RESOLVE-time refusal and is deliberately still derivable — a decoder
+// should be able to emit an off-wall door and be told about it.
 //
 // Three lists, because "equivalent" is not quite the contract:
 //
@@ -349,10 +349,18 @@ function accepts(rules: Map<string, Expr>, input: string): boolean {
 // token whitespace — `ws` sits between two word-like tokens the lexer would glue —
 // and the `sp ::= [ \t\r]{0,80}` bound on a single run of inline space.
 
-/** Does the real compiler PARSE this source? (Catalogued codes don't count.) */
+/**
+ * Does the real compiler PARSE this source? (Resolve-time codes don't count.)
+ *
+ * The marker is `E_PARSE`, the code every lexer/parser refusal carries. Until v1.26.2
+ * it was the ABSENCE of a code, which worked only because parse errors were the one
+ * uncoded diagnostic in the system — a property nothing asserted and any new uncoded
+ * `diag()` call would have quietly broken, turning a refusal into a "parses". Naming
+ * the marker also makes it selectable: `arch lint --code E_PARSE`.
+ */
 function parses(src: string): boolean {
   const { diagnostics } = compile(src, { noCache: true });
-  return !diagnostics.some((d) => d.severity === "error" && !d.code);
+  return !diagnostics.some((d) => d.severity === "error" && d.code === "E_PARSE");
 }
 
 /** The catalogued codes the compiler answers this source with. */
@@ -384,6 +392,20 @@ const AGREEMENT: [string, string][] = [
   ["opening on + wall clause", P(`  opening on w1 at 50% width 900 wall w1`)],
   ["door kind + on + wall clause", P(`  door pocket on w1 at 50% width 900 wall w1`)],
   ["door on center", P(`  door on w1 at center width 900`)],
+  // —— the attachment position is an EXPRESSION, and `%` ends it ——————————
+  ["on at ref", P(`  let bay = 1200\n  door on w1 at bay width 900`)],
+  ["on at arithmetic", P(`  let bay = 1200\n  door on w1 at bay * 2 + 600 width 900`)],
+  ["on at arithmetic percent", P(`  door on w1 at 10 + 15% width 900`)],
+  ["on at unary minus", P(`  door on w1 at 0 - 500 width 900`)],
+  ["on at call", P(`  door on w1 at min(1200, 3000) width 900`)],
+  ["on at parenthesised modulo", P(`  door on w1 at (5000 % 3000) width 900`)],
+  ["on at bare modulo (the % ends it)", P(`  door on w1 at 5000 % 3000 width 900`)],
+  ["on at bare modulo, percent-suffixed", P(`  door on w1 at 50 % 3% width 900`)],
+  ["on at nothing", P(`  door on w1 at width 900`)],
+  ["on at trailing operator", P(`  door on w1 at 1200 + width 900`)],
+  ["window on at arithmetic", P(`  let bay = 1200\n  window on w1 at bay + 300 width 900`)],
+  ["opening on at arithmetic", P(`  let bay = 1200\n  opening on w1 at bay + 300 width 900`)],
+  ["for-generated run of openings", P(`  for i in 0..3 { door on w1 at 900 * i + 600 width 800 }`)],
   // —— door clauses are a fixed SEQUENCE, not a set ————————————————————
   ["door clauses in order", P(`  door at (2500,0) width 900 wall w1 hinge left swing in`)],
   ["door swing before hinge", P(`  door at (2500,0) width 900 swing in hinge left`)],

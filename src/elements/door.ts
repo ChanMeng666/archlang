@@ -244,7 +244,7 @@ export const door: ElementDef = {
     let at: Point;
     let host: WallSegment | null;
     if (n.attach) {
-      const a = resolveAttachment(n.attach, ctx.walls, ctx.snapPt, ctx.diag, `Door "${id}"`);
+      const a = resolveAttachment(n.attach, ctx.walls, ctx.snapPt, ctx.diag, `Door "${id}"`, (e) => ctx.eval(e));
       at = a ? a.at : { x: 0, y: 0 };
       host = a ? a.host : null;
     } else {

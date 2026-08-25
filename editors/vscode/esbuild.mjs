@@ -4,40 +4,33 @@
 // OPTIONAL backends (resvg/pdfkit/clipper2) are marked external so esbuild leaves
 // their lazy `import()`s untouched — the language server never invokes them
 // (it only parses/resolves/diagnoses), so they are never loaded at runtime.
-import { existsSync, readFileSync, rmSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { rmSync } from "node:fs";
+import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as esbuild from "esbuild";
+import { assertCoreIsOurs, ownRepoRoot, resolveCore } from "./resolve-core.mjs";
 
 const watch = process.argv.includes("--watch");
 
 /**
- * The version of the core this build is about to INLINE.
+ * The version of the core this build is about to INLINE — and a hard check that the
+ * core it is about to inline belongs to THIS checkout.
  *
  * The extension bundles `@chanmeng666/archlang` at build time, so the only honest
- * answer is whatever npm resolved for THIS workspace — not the range in
- * package.json and not the repo root's version. The core's `exports` map has no
- * `./package.json` entry (and no `require` condition), so `require.resolve` cannot
- * reach it; walk the `node_modules` chain the way node itself would instead.
+ * answer is whatever npm resolved for THIS workspace — not the range in package.json
+ * and not the repo root's version. Both the resolution and the ownership check live in
+ * `resolve-core.mjs` (with the full rationale) so a test can exercise them with
+ * injected paths without triggering a build.
  *
- * It is injected as `__CORE_VERSION__` and lands in dist/server.js as the
+ * The version is injected as `__CORE_VERSION__` and lands in dist/server.js as the
  * `ARCHLANG_CORE_VERSION` literal the server reports as `serverInfo.version` —
  * which is how a test can prove a rebuilt bundle really picked the new core up,
- * rather than counting symbols in the bundle text and hoping.
+ * rather than counting symbols in the bundle text and hoping. That stamp answers
+ * "is the bundle stale in VERSION?"; `assertCoreIsOurs` answers the question it
+ * cannot — "did the bundle come from this tree at all?".
  */
-function resolveCoreVersion() {
-  const pkg = "@chanmeng666/archlang";
-  let dir = dirname(fileURLToPath(import.meta.url));
-  for (;;) {
-    const candidate = join(dir, "node_modules", pkg, "package.json");
-    if (existsSync(candidate)) return JSON.parse(readFileSync(candidate, "utf8")).version;
-    const parent = dirname(dir);
-    if (parent === dir) throw new Error(`cannot resolve ${pkg}/package.json — run \`npm install\` at the repo root`);
-    dir = parent;
-  }
-}
-
-const coreVersion = resolveCoreVersion();
+const HERE = dirname(fileURLToPath(import.meta.url));
+const coreVersion = assertCoreIsOurs(resolveCore(HERE), ownRepoRoot(HERE));
 
 // Clean stale output (e.g. a previous tsc build) so the .vsix ships only the
 // current esbuild bundles.

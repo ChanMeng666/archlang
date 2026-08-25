@@ -155,27 +155,57 @@ const BIN_OP: Partial<Record<TokenType, BinOp>> = {
 };
 const RANGE_PREC = 5;
 
-/** Parse an expression (Pratt / precedence-climbing). */
-export function parseExpr(ts: ExprTokens): Expr {
-  return parseBin(ts, 1);
+/**
+ * How an expression is parsed in one particular slot.
+ *
+ * `noModulo` exists for the one slot where `%` is a SUFFIX rather than an operator:
+ * an opening's `on <wall> at <pos>`, where `40%` means "40 per cent of the wall run".
+ * The lexer emits `40%` as `number` + `percent`, so without this the shared Pratt
+ * parser would read the suffix as a modulo and go looking for a right operand (in
+ * `door on w1 at 40% width 900`, it finds the keyword `width` and takes it as a bare
+ * reference). The rule the flag states is one line: **inside an attachment position,
+ * `%` always terminates the expression.** Modulo is still reachable there inside
+ * parentheses — a parenthesised sub-expression is parsed by a fresh {@link parseExpr}
+ * with no options, and a `%` inside brackets cannot be the terminator anyway.
+ */
+export interface ParseExprOpts {
+  /** Treat `%` as a terminator rather than the modulo operator (see above). */
+  noModulo?: boolean;
 }
 
-function parseBin(ts: ExprTokens, minPrec: number): Expr {
+/** Parse an expression (Pratt / precedence-climbing). */
+export function parseExpr(ts: ExprTokens, opts?: ParseExprOpts): Expr {
+  return parseBin(ts, 1, opts);
+}
+
+function parseBin(ts: ExprTokens, minPrec: number, opts?: ParseExprOpts): Expr {
+  // Where this whole sub-expression begins, taken from the TOKEN stream rather than
+  // from the parsed left operand. It used to be `spanOf(left)`, and a `num` (or `bool`)
+  // atom carries no span at all — so every `bin`/`range` node whose left operand is a
+  // literal was built with `span: undefined`, and every diagnostic the evaluator raises
+  // from one (`E_DIV_ZERO`, `E_TYPE`, `E_INDEX`) came back UNLOCATABLE: a real code, a
+  // real message, and nothing for an editor or `arch fix` to point at. `1200 / 0` in a
+  // width had the same hole as one in an attachment position. Spanning from the first
+  // token to the last also makes the span the WHOLE expression rather than just its
+  // left half, which is what a reader expects a "Division by zero" to underline.
+  const startTok = ts.peek();
+  const spanTo = (): Span => ({ start: startTok.start, end: ts.peek(-1).end });
   let left = parseUnary(ts);
   for (;;) {
     const t = ts.peek();
     if (t.type === "dotdot") {
       if (RANGE_PREC < minPrec) break;
       ts.next();
-      const right = parseBin(ts, RANGE_PREC + 1);
-      left = { t: "range", lo: left, hi: right, span: spanOf(left) };
+      const right = parseBin(ts, RANGE_PREC + 1, opts);
+      left = { t: "range", lo: left, hi: right, span: spanTo() };
       continue;
     }
+    if (t.type === "percent" && opts?.noModulo) break;
     const prec = BIN_PREC[t.type];
     if (prec === undefined || prec < minPrec) break;
     ts.next();
-    const right = parseBin(ts, prec + 1);
-    left = { t: "bin", op: BIN_OP[t.type]!, l: left, r: right, span: spanOf(left) };
+    const right = parseBin(ts, prec + 1, opts);
+    left = { t: "bin", op: BIN_OP[t.type]!, l: left, r: right, span: spanTo() };
   }
   return left;
 }
@@ -294,10 +324,6 @@ function parseIfExpr(ts: ExprTokens): Expr {
   const els = parseExpr(ts);
   const close = eatType(ts, "rcurly");
   return { t: "if", cond, then, else: els, span: { start: kw.start, end: close.end } };
-}
-
-function spanOf(e: Expr): Span | undefined {
-  return "span" in e ? e.span : undefined;
 }
 
 /** Parse a string's raw inner source into a template: literal segments split on

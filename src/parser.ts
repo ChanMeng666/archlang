@@ -103,6 +103,7 @@ function parseImpl(src: string, registry: Registry): ParseOutcome {
   const lexDiags: Diagnostic[] = lexErrors.map((e) => ({
     severity: "error" as const,
     message: e.message,
+    code: "E_PARSE",
     span: e.span,
   }));
 
@@ -141,7 +142,7 @@ class Parser {
       isType: (type) => this.isType(type),
       isStatementStart: (v) => this.statementStarts.has(v),
       parsePoint: () => this.parsePoint(),
-      parseExpr: () => parseExprPratt(this.ctx),
+      parseExpr: (opts) => parseExprPratt(this.ctx, opts),
       parseDimensions: () => this.parseDimensions(),
       parseStringExpr: () => this.parseStringExpr(),
       parseIdOpt: () => this.parseIdOpt(),
@@ -227,7 +228,7 @@ class Parser {
       plan.bodyStart = this.eat("lcurly").end;
     } catch (e) {
       if (!(e instanceof ParseError)) throw e;
-      this.diagnostics.push({ severity: "error", message: e.message, span: e.span });
+      this.diagnostics.push({ severity: "error", message: e.message, code: "E_PARSE", span: e.span });
       while (!this.isType("eof") && !this.isType("lcurly")) {
         const t = this.peek();
         if (t.type === "ident" && this.statementStarts.has(t.value)) break;
@@ -345,7 +346,7 @@ class Parser {
         }
       } catch (e) {
         if (e instanceof ParseError) {
-          this.diagnostics.push({ severity: "error", message: e.message, span: e.span });
+          this.diagnostics.push({ severity: "error", message: e.message, code: "E_PARSE", span: e.span });
           this.synchronize(start);
           plan.body.push({ kind: "error", id: "", line: t.line, message: e.message, span: this.spanFrom(start) });
         } else {
@@ -358,7 +359,7 @@ class Parser {
       this.eat("rcurly");
     } catch (e) {
       if (e instanceof ParseError) {
-        this.diagnostics.push({ severity: "error", message: e.message, span: e.span });
+        this.diagnostics.push({ severity: "error", message: e.message, code: "E_PARSE", span: e.span });
       } else {
         throw e;
       }
@@ -1013,7 +1014,7 @@ class Parser {
         body.push(this.parseOneBodyStatement(components, selfName));
       } catch (e) {
         if (e instanceof ParseError) {
-          this.diagnostics.push({ severity: "error", message: e.message, span: e.span });
+          this.diagnostics.push({ severity: "error", message: e.message, code: "E_PARSE", span: e.span });
           this.synchronize(stmtTok.start);
           body.push({
             kind: "error",

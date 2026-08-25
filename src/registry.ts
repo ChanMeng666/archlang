@@ -7,7 +7,7 @@
 
 import type { Token } from "./lexer.js";
 import type { AstElement, ElementKind, ExprPoint, Point } from "./ast.js";
-import type { Expr, Value } from "./expr.js";
+import type { Expr, ParseExprOpts, Value } from "./expr.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { ResolvedElement, RWall, RRoom } from "./ir.js";
 import type { Bounds, WallSegment } from "./geometry.js";
@@ -37,8 +37,10 @@ export interface ParseCtx {
   isStatementStart(value: string): boolean;
   /** Parse a `(expr, expr)` point. */
   parsePoint(): ExprPoint;
-  /** Parse an arithmetic expression. */
-  parseExpr(): Expr;
+  /** Parse an arithmetic expression. `opts` tunes the shared Pratt parser for one
+   *  slot — see {@link import("./expr.js").ParseExprOpts}; there is deliberately no
+   *  second expression grammar. */
+  parseExpr(opts?: ParseExprOpts): Expr;
   /** Parse a size: either a `WxH` dimension literal or `<expr> x <expr>`. */
   parseDimensions(): { w: Expr; h: Expr };
   /** Parse a string literal as an expression (a string-interpolation template),

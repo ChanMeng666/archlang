@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**73 errors** · **42 warnings**
+**74 errors** · **42 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -57,6 +57,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_LEVEL_MIX`](#e_level_mix) | error | A drawable statement sits beside `level` blocks. |
 | [`E_LEVEL_NEST`](#e_level_nest) | error | `level` used inside a block or component. |
 | [`E_OPENING_WIDTH`](#e_opening_width) | error | Opening must have a positive width. |
+| [`E_PARSE`](#e_parse) | error | The source could not be read: its SHAPE is wrong. |
 | [`E_PLACE_POLY`](#e_place_poly) | error | A rectangle-only placement clause aimed at a polygon room. |
 | [`E_PLACE_REF`](#e_place_ref) | error | Furniture placed in an unknown or non-absolute room. |
 | [`E_PNG_DEPENDENCY`](#e_png_dependency) | error | PNG/PDF export needs an optional dependency that is not installed. |
@@ -190,9 +191,9 @@ x = 5           # error: declare with `let x = …` first
 
 *error* — Opening attachment position is out of range.
 
-**Cause.** The `at <pos>` of an attached opening is outside the host wall: a percentage outside 0–100%, or a millimetre distance outside `0 … wall length`.
+**Cause.** The `at <pos>` of an attached opening is outside the host wall: a percentage outside 0–100%, a millimetre distance outside `0 … wall length`, or — since the position may be an expression — a value that is not a finite number at all.
 
-**Fix.** Use a percentage in 0–100%, a millimetre distance within the wall's run, or `center`.
+**Fix.** Use a percentage in 0–100%, a millimetre distance within the wall's run, or `center`. The non-finite case carries no fix: there is no nearest legal value to clamp to, so check the expression that produced it.
 
 ```arch static
 door on w1 at 150% width 900   # error: 150% is past the wall end
@@ -712,6 +713,18 @@ component c() { level 1 { } }   # error: only allowed at plan level
 
 ```arch static
 opening at (0,0) width 0   # error
+```
+
+## E_PARSE
+
+*error* — The source could not be read: its SHAPE is wrong.
+
+**Cause.** The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, clauses written in the wrong order. It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.
+
+**Fix.** Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `arch spec`'s one line for that keyword — clause ORDER is part of the grammar, not a suggestion. Unlike every other code in this catalog, there is no machine-applicable fix to apply, because the compiler has no reading of the text to correct.
+
+```arch static
+door on w1 at 40% width 900 wall w1   # error: `wall` pairs with the `at (x,y)` form only
 ```
 
 ## E_PLACE_POLY
