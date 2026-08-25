@@ -12,6 +12,45 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.16.0] - 2026-08-25
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.27.0`.** One new language form reaches the
+  editor and three lint rules widen, so this is a minor rather than a patch.
+  - **An opening's position along a wall is now an expression.**
+    `door|window|opening … on <wall> at <pos>` used to accept a single `number` token, which made
+    the attachment form unusable from inside a `for` loop — the one place it is most worth having.
+    `on w1 at bay * i + 600 width 700` now parses, `let` bindings are in scope there exactly as
+    they are for `width`, and completion/diagnostics follow the same expression grammar every other
+    numeric slot uses. One deliberate wrinkle the hover and the error text both state: inside
+    `<pos>` a `%` is the percent **suffix**, so it always ends the expression and never means
+    modulo — write `(5000 % 3000)` if you meant the operator.
+  - **Every parse and lex error now carries a code: `E_PARSE`.** Until now the single most common
+    failure in the editor — a syntax error — arrived with no `E_*` code at all, so it could not be
+    selected, filtered or explained the way every other diagnostic can. It is catalogued, and its
+    entry says what makes it unlike the others: resolution never ran, so there is never a quick fix
+    to offer and nothing about what the plan *means* has been judged.
+  - **`E_DIV_ZERO` and `E_TYPE` from an expression now point somewhere.** A `bin`/`range` node built
+    over a literal carried no span, so those diagnostics reached the editor with a real message and
+    nothing to underline. The span is now taken from the token stream — first token to last, so it
+    covers the whole expression rather than its left half.
+- **Three lint rules widened, so the editor may flag files it used to pass.** Every one of these is
+  a defect the rule already claimed to catch:
+  - `W_FURNITURE_WALL_COLLISION` can see a wall that is not axis-aligned (it opened with a
+    `return 0` for anything diagonal, so a sofa drawn straight through a 45° wall linted clean). A
+    curved segment is now declined outright rather than measured against its chord.
+  - `W_FIXTURE_WRONG_ROOM` measures the fixture's **footprint** against the room's own floor instead
+    of asking only where its centre is — at a corner, a piece can be 72% inside three other rooms
+    with its centre comfortably in.
+  - `W_NO_ENTRANCE` no longer stands down when a shell is drawn entirely from `partition` walls; it
+    reads the same access graph `describe()` reads.
+
+### Note
+
+- No change to the extension's own source. Its version moves because the language it bundles does —
+  the `.vsix` inlines the core at build time, so users see none of the above until this upload lands.
+
 ## [0.15.1] - 2026-08-13
 
 ### Changed

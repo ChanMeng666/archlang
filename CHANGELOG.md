@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.27.0] - 2026-08-25
+
+**One new language form, four lint rules that had been answering a narrower question than the
+sentence describing them, and three sheet promises the drawing was not keeping.**
+`door|window|opening … on <wall> at <pos>` now takes a full expression, which is what makes the
+attachment form reachable from a `for` loop at all; and every lexer and parser refusal in the
+language finally carries a code (`E_PARSE`), so the most common failure a generating model hits is
+selectable by `--code` and explainable by `arch explain`. `arch repair` is idempotent by a pinned
+law rather than by hope — 60 of 400 generated plans used to ping-pong forever, so which arrangement
+it shipped depended on how many times you had run it. The sheet layer stopped writing
+wall-thickness readings inside the poché they measure and started reserving the band its own margin
+tables occupy. And the docs site can finally read the language it documents.
+
+**Behaviour change: `arch lint` may warn on plans it previously passed.** Three of the four rule
+fixes are widenings — an angled wall is now measured instead of skipped, a fixture is judged by its
+footprint instead of its centre, and `W_NO_ENTRANCE` no longer stands down when a shell is drawn
+without `exterior` walls. Every such warning is a real defect the rule already claimed to catch, and
+one of them was hiding in a shipped example. No new `E_*`/`W_*` code for any of it.
+
+**Type-level breaking change (advanced export, no runtime break).** `SheetFitInput.tableRows` is now
+**required**, not optional. It is consumed by `resolveSheetSpec` / `fitsOnSheet` /
+`chooseScaleDenominator` / `usablePlanMm`, so a TypeScript caller that constructs that object by hand
+will fail to compile until it supplies the field. Nothing changes at runtime, and nothing changes for
+`compile()`, the CLI, or any other public entry point. Required rather than optional is deliberate: a
+caller that *can* forget the field is exactly how the margin band went unreserved for three releases.
+
+**Output moves, on purpose, and every changed drawing is named below.** Fifteen of the 27 shipped
+examples change bytes — precisely the fifteen that declare `dims auto all` — plus
+`hexagon-pavilion`, `materials` and `terrace-row` from the lint and `flush`/`grid` fixes.
+`examples/materials.arch` changes verdict to `fits: false` with `W_SCALE_OVERFLOW` (a true statement
+about its margin, not about its page), and `clinic.arch` and `museum-wings.arch` change source.
+
 ### `arch repair` is idempotent
 
 `repair(repair(s))` now equals `repair(s)`, byte for byte, and that is a **pinned law**
