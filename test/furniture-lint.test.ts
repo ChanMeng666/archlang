@@ -83,6 +83,59 @@ describe("furniture `in <room>` ownership", () => {
   });
 });
 
+/**
+ * `W_FIXTURE_WRONG_ROOM` used to ask only where the fixture's CENTRE was, so a piece
+ * could have three quarters of its footprint in three other rooms and still pass by
+ * putting its centre 50 mm inside the one it declares. The rule now measures the
+ * footprint. A corner is what makes the centre test so weak: crossing both the x and
+ * the y edge leaves at most `0.5 × 0.5` of the area inside while the centre stays in.
+ */
+describe("furniture `in <room>` ownership is measured by FOOTPRINT, not centre", () => {
+  const quad = (furn: string) =>
+    `plan "P" {
+      units mm
+      wall exterior  thickness 200 { (0,0) (8000,0) (8000,8000) (0,8000) close }
+      wall partition thickness 100 { (4000,0) (4000,8000) }
+      wall partition thickness 100 { (0,4000) (8000,4000) }
+      room id=nw at (0,0)       size 4000x4000 label "NW"
+      room id=ne at (4000,0)    size 4000x4000 label "NE"
+      room id=sw at (0,4000)    size 4000x4000 label "SW"
+      room id=se at (4000,4000) size 4000x4000 label "SE"
+      ${furn}
+    }`;
+
+  it("flags a bed with 72% of its footprint in three OTHER rooms", () => {
+    // 1500×2000 at (3300,3050): centre (4050,4050) is 50 mm inside `se` on both axes,
+    // which is exactly what the old centre test rewarded. 800/1500 of its width and
+    // 1050/2000 of its height are inside — 28% of the area, so 72% is elsewhere.
+    const src = quad(`furniture bed at (3300,3050) size 1500x2000 in se`);
+    expect(lint(src).map((d) => d.code)).toContain("W_FIXTURE_WRONG_ROOM");
+    // Non-vacuity: the fixture's CENTRE is what the old rule looked at, and it has not
+    // moved. A 100×100 piece sharing that exact centre is wholly inside `se` and stays
+    // quiet — so the verdict above comes from the footprint and nothing else.
+    const sameCentre = quad(`furniture stool at (4000,4000) size 100x100 in se`);
+    expect(lint(sameCentre).map((d) => d.code)).not.toContain("W_FIXTURE_WRONG_ROOM");
+  });
+
+  it("leaves a bed wholly inside its declared room alone", () => {
+    const c = lint(quad(`furniture bed at (4200,4200) size 1500x2000 in se`)).map((d) => d.code);
+    expect(c).not.toContain("W_FIXTURE_WRONG_ROOM");
+  });
+
+  it("leaves a fixture sitting ON the room boundary alone (the slack)", () => {
+    // Corner-anchored at the room rectangle's own edge: the footprint touches the
+    // boundary line, which is a wall CENTRELINE, so a piece drawn flush to the room
+    // rect legitimately shares it.
+    const c = lint(quad(`furniture wc at (4000,4000) size 400x700 in se`)).map((d) => d.code);
+    expect(c).not.toContain("W_FIXTURE_WRONG_ROOM");
+  });
+
+  it("leaves a `flush` room-anchored fixture alone (the resolver's own placement)", () => {
+    const c = lint(quad(`furniture counter in se anchor top-left flush size 600x1200`)).map((d) => d.code);
+    expect(c).not.toContain("W_FIXTURE_WRONG_ROOM");
+  });
+});
+
 describe("furniture-vs-wall collision lint", () => {
   // Two rooms split by a partition at x=4000.
   const split = (furn: string) =>
@@ -105,6 +158,116 @@ describe("furniture-vs-wall collision lint", () => {
     // Counter backs onto the partition's left face (x ends at 3950, the wall face).
     const c = codes(split(`furniture sofa at (2950,1000) size 1000x900`));
     expect(c).not.toContain("W_FURNITURE_WALL_COLLISION");
+  });
+});
+
+/**
+ * The same rule on a wall that is not axis-aligned. `wallIntrusionDepth` used to open
+ * with `if (horiz === vert) return 0` — a silent skip that made the whole rule blind to
+ * every diagonal wall in the language, so a sofa drawn straight through one linted
+ * clean. The measurement is now taken in the WALL's own frame (its direction and its
+ * normal), which is exactly the orthogonal arithmetic when the wall happens to be
+ * orthogonal.
+ */
+describe("furniture-vs-wall collision on an ANGLED wall", () => {
+  // One 300 mm wall on the 45° diagonal. Its centreline is y = x; its faces are
+  // 150 mm either side of it, i.e. 212.13 mm apart measured on a coordinate axis.
+  const diagonal = (furn: string) =>
+    `plan "P" {
+      units mm
+      wall exterior thickness 300 { (0,0) (10000,10000) }
+      room id=r at (0,0) size 10000x10000 label "R"
+      ${furn}
+    }`;
+
+  it("flags a piece drawn straight through the wall", () => {
+    // 1000×900 centred on (5000,5000) — a point ON the wall's own centreline.
+    const c = codes(diagonal(`furniture sofa at (4500,4550) size 1000x900`));
+    expect(c).toContain("W_FURNITURE_WALL_COLLISION");
+  });
+
+  it("does not flag a piece sitting against the wall's face", () => {
+    // Nearest corner is (1000,1215) — 152 mm off the centreline on the wall's normal,
+    // i.e. just clear of the 150 mm face. Nothing of the footprint is in the solid.
+    const c = codes(diagonal(`furniture sofa at (0,1215) size 1000x900`));
+    expect(c).not.toContain("W_FURNITURE_WALL_COLLISION");
+  });
+
+  it("does not flag a piece the wall's RUN never reaches", () => {
+    // On the line y = x extended, but past the segment's end — the along-wall overlap
+    // is what keeps a wall from colliding with furniture it does not run past.
+    const c = codes(
+      `plan "P" {
+        units mm
+        wall exterior thickness 300 { (0,0) (3000,3000) }
+        room id=r at (0,0) size 10000x10000 label "R"
+        furniture sofa at (7500,7550) size 1000x900
+      }`,
+    );
+    expect(c).not.toContain("W_FURNITURE_WALL_COLLISION");
+  });
+
+  it("subtracts an opening on the angled wall, so a piece in the doorway is not a collision", () => {
+    // Same straddling piece as the first case, but the wall is voided by a 2000 mm
+    // door centred exactly where it sits: there is no solid there to penetrate.
+    const c = codes(
+      `plan "P" {
+        units mm
+        wall exterior thickness 300 { (0,0) (10000,10000) }
+        room id=r at (0,0) size 10000x10000 label "R"
+        door at (5000,5000) width 2000 wall exterior hinge left swing in
+        furniture sofa at (4500,4550) size 1000x900
+      }`,
+    );
+    expect(c).not.toContain("W_FURNITURE_WALL_COLLISION");
+  });
+
+  it("still measures an orthogonal wall exactly as before (the frame is the identity there)", () => {
+    // The horizontal/vertical cases above and below this block are the real pin; this
+    // one guards the reverse-direction segment, whose frame flips both axes.
+    const backwards = `plan "P" {
+      units mm
+      wall exterior thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+      wall partition thickness 100 { (4000,4000) (4000,0) }
+      room id=a at (0,0)    size 4000x4000 label "A"
+      room id=b at (4000,0) size 4000x4000 label "B"
+      furniture sofa at (3500,1000) size 1000x900
+    }`;
+    expect(codes(backwards)).toContain("W_FURNITURE_WALL_COLLISION");
+  });
+});
+
+/**
+ * ARCS ARE DELIBERATELY CONSERVATIVE — pinned so the choice cannot become an accident.
+ *
+ * A curved segment carries its chord in `a`/`b`, so the rule this replaced measured the
+ * chord: it flagged furniture near a straight line the wall is not on, and missed the
+ * wall itself. Measuring the chord is worse than measuring nothing, so a curved segment
+ * is now skipped outright. See `wallIntrusionDepth` and docs/backlog.md item 3.14.
+ */
+describe("furniture-vs-wall collision declines to measure an ARC", () => {
+  const drum = (furn: string) =>
+    `plan "P" {
+      units mm
+      wall exterior thickness 300 {
+        (2000,5000)
+        arc (8000,5000) radius 3000
+        arc (2000,5000) radius 3000
+        close
+      }
+      room id=r circle at (5000,5000) radius 2850 label "Drum"
+      ${furn}
+    }`;
+
+  it("does not flag a piece straddling the curved wall's true band (the known blind spot)", () => {
+    // Centred on (5000,2000) — the top of the circle, dead on the arc's centreline.
+    expect(codes(drum(`furniture sofa at (4500,1550) size 1000x900`))).not.toContain("W_FURNITURE_WALL_COLLISION");
+  });
+
+  it("does not flag a piece on the arc's CHORD either (the old false positive)", () => {
+    // The chord runs (2000,5000)→(8000,5000); this piece straddles that line and is
+    // nowhere near the wall. Measuring the chord would have called it a collision.
+    expect(codes(drum(`furniture sofa at (4500,4550) size 1000x900`))).not.toContain("W_FURNITURE_WALL_COLLISION");
   });
 });
 

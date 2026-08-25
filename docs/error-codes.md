@@ -96,7 +96,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_EMPTY_PLAN`](#w_empty_plan) | warning | Empty plan. |
 | [`W_FIXTURE_BACK_TO_ROOM`](#w_fixture_back_to_room) | warning | A fixture stands against a wall but faces the wrong way. |
 | [`W_FIXTURE_FLOATING`](#w_fixture_floating) | warning | A plumbing/kitchen fixture is not against a wall. |
-| [`W_FIXTURE_WRONG_ROOM`](#w_fixture_wrong_room) | warning | Fixture sits outside its declared room. |
+| [`W_FIXTURE_WRONG_ROOM`](#w_fixture_wrong_room) | warning | Fixture is not inside its declared room. |
 | [`W_FURN_CLEARANCE`](#w_furn_clearance) | warning | A fixture's use-space is blocked. |
 | [`W_FURNITURE_OVERLAP`](#w_furniture_overlap) | warning | Two pieces of furniture overlap. |
 | [`W_FURNITURE_WALL_COLLISION`](#w_furniture_wall_collision) | warning | Furniture penetrates a wall. |
@@ -1198,14 +1198,14 @@ furniture wc at (3000,3000) size 400x700   # lint: no wall behind it
 
 ## W_FIXTURE_WRONG_ROOM
 
-*warning* — Fixture sits outside its declared room.
+*warning* — Fixture is not inside its declared room.
 
-**Cause.** A furniture item declared `in <roomId>` has its centre outside that room's rectangle, so it is drawn in the wrong space.
+**Cause.** A furniture item declared `in <roomId>` has part of its FOOTPRINT off that room's floor, so it is drawn partly (or mostly) in the wrong space. A 100 mm overhang is allowed on every side, because a room's outline runs down wall centrelines and a piece pushed against a room edge legitimately shares that band. Measured against the room's true floor, so a `polygon` or `circle` room is judged by its own shape and not by a bounding box.
 
 **Fix.** Move the fixture inside the named room, or correct the `in <roomId>`.
 
 ```arch static
-furniture wc at (100,100) size 400x700 in bath   # lint: centre is not inside "bath"
+furniture wc at (100,100) size 400x700 in bath   # lint: not inside "bath"
 ```
 
 ## W_FURN_CLEARANCE
@@ -1238,7 +1238,7 @@ furniture bed  at (1000,500) size 1500x2000   # lint: overlaps the sofa
 
 *warning* — Furniture penetrates a wall.
 
-**Cause.** A furniture/fixture rectangle intrudes into a wall's solid (it crosses the wall's thickness band rather than sitting flush against its face), so it would physically pass through the wall — a coordinate or size mistake. A piece merely touching the wall face is fine.
+**Cause.** A furniture/fixture rectangle intrudes into a wall's solid (it crosses the wall's thickness band rather than sitting flush against its face), so it would physically pass through the wall — a coordinate or size mistake. A piece merely touching the wall face is fine. Measured in the wall's own frame, so a wall at any angle is checked; a CURVED wall edge (`arc`) is not checked at all.
 
 **Fix.** Move or resize the piece so it sits fully inside the room (against the wall face, not through it), or anchor it with `against wall <id>`.
 

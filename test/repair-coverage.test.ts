@@ -418,6 +418,30 @@ describe("repair — the postcondition: nothing flagged is left silent", () => {
     expect(reportedSpans(src).has(src.indexOf("furniture id=bed"))).toBe(true);
   });
 
+  it("reports a piece through an ANGLED wall instead of inventing a diagonal push", () => {
+    // Widening `W_FURNITURE_WALL_COLLISION` to angled walls put a new fault in
+    // front of the mover, and repair pushes only along x/y: clearing this one is a move
+    // along the wall's normal, which is neither plan axis and lands off-grid. The
+    // postcondition still binds — a change entry OR an unresolved entry, never nothing.
+    const src = `plan "Wedge" {
+  units mm
+  grid 50
+  wall id=spoke exterior thickness 300 { (0,0) (10000,10000) }
+  room id=r at (0,0) size 10000x10000 label "Hall" uses hall
+  door id=entry at (0,5000) width 900 wall exterior hinge left swing in
+  furniture sofa at (4500,4550) size 1000x900
+}`;
+    const flagged = lint(src).filter((d) => d.code === "W_FURNITURE_WALL_COLLISION");
+    expect(flagged).toHaveLength(1);
+
+    const r = repair(src);
+    expect(r.changes).toEqual([]); // nothing was shoved somewhere plausible-looking
+    expect(r.source).toBe(src);
+    expect(r.unresolved.map((u) => u.reason).join(" ")).toContain('angled wall "spoke"');
+    // …and it is accounted for by the statement span lint flagged, not just by id.
+    expect(reportedSpans(src).has(flagged[0]!.span!.start)).toBe(true);
+  });
+
   it("says so instead of returning a clean no-op when the plan does not resolve", () => {
     const broken = `plan "P" {
   units mm

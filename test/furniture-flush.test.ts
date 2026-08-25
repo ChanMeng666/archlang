@@ -198,6 +198,64 @@ describe("flush round-trips and stays deterministic", () => {
   });
 });
 
+/**
+ * `flush` and `grid` used to fight (docs/backlog.md 3.12). `flush` against a 100 mm
+ * partition lands the piece on a `…50` coordinate; the resolver then grid-snapped that
+ * DERIVED coordinate like a hand-authored one, and a `grid 100` plan pulled the fixture
+ * straight back into the wall — raising `W_FURNITURE_WALL_COLLISION` on a correct plan.
+ * A coordinate the resolver derives from wall geometry is not something the author
+ * wrote, so it is no longer snapped; `at (x,y)` still is.
+ */
+describe("a resolver-DERIVED placement is not grid-snapped", () => {
+  const gridded = (grid: number, furn: string) =>
+    `plan "P" {
+      units mm
+      grid ${grid}
+      wall exterior  thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+      wall partition thickness 100 { (4000,0) (4000,4000) }
+      room id=a at (0,0)    size 4000x4000 label "A"
+      room id=b at (4000,0) size 4000x4000 label "B"
+      ${furn}
+    }`;
+
+  const COUNTER = `furniture counter in a anchor right flush size 600x1200`;
+
+  it("`flush` against a 100 mm partition survives `grid 100`", () => {
+    // The partition's inner face is x = 3950. `anchor right flush` puts the piece's
+    // right edge exactly there, so its corner is 3350 — a `…50` coordinate the grid
+    // used to round up to 3400, burying 50 mm of the piece in the wall solid.
+    const f = furnOf(gridded(100, COUNTER));
+    expect(f.at.x).toBe(3350);
+    expect(f.at.x + 600).toBe(3950); // flush ON the face, not through it
+    expect(codes(gridded(100, COUNTER))).not.toContain("W_FURNITURE_WALL_COLLISION");
+  });
+
+  it("gives the same answer at every grid — the derivation no longer depends on it", () => {
+    // Grids up to 100 only: the grid still governs the numbers the AUTHOR wrote, and a
+    // `grid 200` plan rounds this partition's own `thickness 100` up to 200, which moves
+    // the wall face the fixture is derived from. That is the grid doing its job on an
+    // authored number, not the derivation drifting.
+    for (const g of [1, 25, 50, 100]) {
+      expect(furnOf(gridded(g, COUNTER)).at).toEqual({ x: 3350, y: 1400 });
+    }
+  });
+
+  it("still snaps a HAND-AUTHORED `at (x,y)` (only derived coordinates are exempt)", () => {
+    expect(furnOf(gridded(100, `furniture counter at (3330,1410) size 600x1200 in a`)).at).toEqual({
+      x: 3300,
+      y: 1400,
+    });
+  });
+
+  it("leaves an on-grid derived placement byte-identical (the `grid 50` workaround)", () => {
+    // `examples/bungalow.arch` works around 3.12 with `grid 50`; 3350 already sits on
+    // that grid, so the fix must not move a single byte of such a plan.
+    expect(compile(gridded(50, COUNTER), { noCache: true }).svg).toBe(
+      compile(gridded(1, COUNTER), { noCache: true }).svg,
+    );
+  });
+});
+
 describe("the flagship example's WC", () => {
   const studio = readFileSync("examples/studio.arch", "utf8");
   const byHand = studio.replace("anchor bottom flush", "anchor bottom inset 100");

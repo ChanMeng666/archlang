@@ -8,7 +8,6 @@
  * memoised on the (per-run) LintContext identity.
  */
 
-import { buildDoorAccessGraph } from "../../analyze.js";
 import { type CirculationModel, computeCirculation } from "../../analyze/circulation.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import type { LintContext, LintRule } from "../context.js";
@@ -18,14 +17,13 @@ const modelCache = new WeakMap<LintContext, CirculationModel | null>();
 
 function circulationOf(ctx: LintContext): CirculationModel | null {
   if (modelCache.has(ctx)) return modelCache.get(ctx) ?? null;
-  const access = buildDoorAccessGraph(ctx.rooms, ctx.doors, ctx.rules.tolMm, undefined, ctx.openings);
   const model = computeCirculation(
     ctx.rooms,
     ctx.ir.walls,
     ctx.doors,
     ctx.openings,
     ctx.furniture,
-    access,
+    ctx.access(),
     ctx.rules.tolMm,
     undefined,
     ctx.verticals,

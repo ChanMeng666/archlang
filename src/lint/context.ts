@@ -4,8 +4,8 @@
  * once per `lint()` run, so no rule re-derives them.
  */
 
-import type { RoomBox } from "../analyze.js";
-import { roomBox } from "../analyze.js";
+import type { AccessGraph, RoomBox } from "../analyze.js";
+import { buildDoorAccessGraph, roomBox } from "../analyze.js";
 import type { Diagnostic } from "../diagnostics.js";
 import { segmentsOfWall, type WallSegment } from "../geometry.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RWindow, ResolvedPlan } from "../ir.js";
@@ -51,6 +51,18 @@ export interface LintContext {
   /** Every wall segment, hoisted once (several rules scan them per room/fixture). */
   wallSegs: WallSegment[];
   wallOpenings: Array<{ at: { x: number; y: number }; width: number }>;
+  /**
+   * The modeled door/opening access graph for this storey — rooms joined to each other
+   * and to the synthetic `exterior` node — built at most once per `lint()` run.
+   *
+   * It is a function rather than a field because most plans never ask: only the rules
+   * that need reachability pay for it. Sharing ONE graph is the point, though — this is
+   * the same `buildDoorAccessGraph` call `describe()` makes, so "is there a way into this
+   * building?" has a single answer across the whole tool. `W_NO_ENTRANCE` used to ask its
+   * own, weaker question (does any WALL carry `category exterior`?) and so stood down on
+   * a plan `describe().access.hasEntrance` called shut.
+   */
+  access(): AccessGraph;
   labelOf(r: RRoom): string;
   /**
    * The location half of a diagnostic raised ON an element: its byte `span` **and the
@@ -88,6 +100,7 @@ export function buildLintContext(
   const windows = ir.elements.filter((e): e is RWindow => e.kind === "window");
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const furniture = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
+  let accessMemo: AccessGraph | null = null;
   return {
     ir,
     rules,
@@ -102,6 +115,7 @@ export function buildLintContext(
     roomRects: new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)])),
     wallSegs: ir.walls.flatMap((w) => segmentsOfWall(w).map((s) => ({ ...s }))),
     wallOpenings: ir.walls.flatMap((w) => w.openings),
+    access: () => (accessMemo ??= buildDoorAccessGraph(rooms, doors, rules.tolMm, undefined, openings)),
     labelOf: (r) => r.label ?? r.id,
     at: (el) => ({
       ...(el.span ? { span: el.span } : {}),

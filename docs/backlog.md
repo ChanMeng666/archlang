@@ -84,15 +84,23 @@ depends on how many times you happened to run `arch repair`.
 runs out, so a second call continuing is arguable — but a stable 2-cycle across calls is not.
 Deliberately **not** asserted either way: pinning `.not.toBe` would cement the defect.
 
-### 3.12 · `flush` and `grid` fight — `todo`
+### 3.12 · `flush` and `grid` fight — `FIXED` (unreleased)
 
 A fixture placed `flush` against a 100 mm partition lands on a `…50` coordinate; `grid 100` then
-snaps it back **into** the wall and raises `W_FURNITURE_WALL_COLLISION` on a plan that is correct.
-`flush` exists precisely so nobody has to write the half-thickness, and the grid undoes it.
+snapped it back **into** the wall and raised `W_FURNITURE_WALL_COLLISION` on a plan that is correct.
+`flush` exists precisely so nobody has to write the half-thickness, and the grid undid it.
 
-`examples/bungalow.arch` works around it with `grid 50` and says why. The real fix is either a
-snap-aware `flush` or a diagnostic that names the grid as the cause rather than blaming the
-fixture.
+Neither remedy sketched here was the right one. The cause was not `flush` and not the diagnostic: it
+was that `resolve` grid-snapped a coordinate **it had derived itself** from wall geometry. The grid
+is a drafting aid for the numbers an author writes, and a `flush` / `against wall` position is not
+one of them — `describe().freedom` already draws that exact line between authored-absolute and
+resolver-derived placement. So `elements/furniture.ts` no longer snaps the `against` and `place`
+branches; the absolute `at (x,y)` branch still does.
+
+Two shipped examples moved, both toward correctness: `materials.arch` (`grid 10`) had two `flush`
+fixtures sitting 5 mm *inside* the wall face, and `terrace-row.arch` (`grid 50`) had every `flush`
+fixture 25 mm *off* it. `bungalow.arch` keeps `grid 50` — its numbers were already on that grid, so
+it is byte-identical — and its comment now records the workaround as history.
 
 ### 3.13 · `SKILL.md` never mentions `site` or the door kinds — `todo`
 
@@ -102,6 +110,23 @@ there is nowhere in `SKILL.md` to reference it from.
 
 Note the constraint before starting: `SKILL.md` feeds `gen:llms`, and `spec.llm.md` sits at
 **24,940 of 25,000 characters** — 60 to spare. Any addition needs its budget worked out first.
+
+### 3.15 · `W_FURNITURE_WALL_COLLISION` does not check a CURVED wall — `todo`
+
+The furniture-vs-wall rule measures in the wall segment's own frame, which is exact for a straight
+run at any angle but has no meaning on an arc: the across-wall direction turns along the run, so
+there is no single normal to project onto. `wallIntrusionDepth` therefore declines a segment
+carrying an `arc` outright, and a piece drawn straight through a curved wall lints clean.
+
+That is a **deliberate and strictly better** position than before, and worth stating plainly. An arc
+carries its CHORD in `a`/`b`, so the rule this replaced measured the chord whenever it happened
+to be axis-aligned — flagging furniture near a straight line the wall is not on, and missing the wall
+itself. Both branches are pinned in `test/furniture-lint.test.ts`.
+
+The honest fix is radial: intersect the piece's radial extent, restricted to the arc's angular
+sweep, with the band `[R − t/2, R + t/2]`. Closed form, no tessellation — the arc's own tessellated
+band is a drawing artifact and must not become the measurement (see the exact-vs-chordal note in
+`docs/analysis.md`). `examples/aquarium.arch` is the fixture to prove it on.
 
 ---
 

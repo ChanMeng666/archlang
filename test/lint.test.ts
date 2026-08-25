@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -180,8 +180,72 @@ describe("lint — configurable ruleset", () => {
   });
 });
 
+/**
+ * `W_NO_ENTRANCE` used to stand down unless some wall was categorised `exterior`, so a
+ * shell drawn entirely out of `partition` walls — or a plan with rooms and no walls at
+ * all — was never asked whether you could get in, while `describe().access.hasEntrance`
+ * said plainly that you could not. The rule now asks the SAME geometric question
+ * `describe()` asks (`buildDoorAccessGraph(...).hasEntrance`), so the two agree.
+ */
+describe("lint — W_NO_ENTRANCE asks the geometric question, not the wall's category", () => {
+  const SEALED = `plan "Sealed" {
+    units mm
+    wall partition thickness 100 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+    room id=r at (0,0) size 4000x3000 label "Studio"
+  }`;
+
+  it("fires on a closed shell built entirely from `partition` walls", () => {
+    // Non-vacuity: the shell really is closed and really has no wall categorised
+    // `exterior` — which is exactly the condition the old guard stood down on.
+    expect(SEALED).not.toContain("exterior");
+    expect(codes(SEALED)).toContain("W_NO_ENTRANCE");
+  });
+
+  it("fires on rooms with no walls at all", () => {
+    expect(codes(`plan "Open" { units mm  room id=r at (0,0) size 4000x3000 label "Studio" }`)).toContain(
+      "W_NO_ENTRANCE",
+    );
+  });
+
+  it("stays silent on a plan with a real way in", () => {
+    expect(codes(SOUND)).not.toContain("W_NO_ENTRANCE");
+  });
+
+  it("stays silent when there are no rooms at all (a component library)", () => {
+    const lib = `plan "Lib" {
+      units mm
+      wall partition thickness 100 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+    }`;
+    expect(codes(lib)).not.toContain("W_NO_ENTRANCE");
+  });
+});
+
 describe("lint — shipped examples", () => {
   it("the canonical studio is architecturally sound (no warnings)", () => {
     expect(lint(example("studio.arch"))).toEqual([]);
+  });
+
+  /**
+   * The corpus-wide pin for the widened `W_NO_ENTRANCE` guard. Two examples warn on
+   * purpose (they are fragments that draw no way in) and the other 25 must not — a rule
+   * that starts shouting at the shipped corpus is a rule that will be silenced, so this
+   * names the exact set rather than counting it.
+   */
+  it("only `themed` and `two-bed` report W_NO_ENTRANCE across the whole corpus", () => {
+    const dir = join(__dirname, "..", "examples");
+    const world = {
+      read: (p: string): string | null => {
+        try {
+          return readFileSync(join(dir, p), "utf8");
+        } catch {
+          return null;
+        }
+      },
+    };
+    const warned = readdirSync(dir)
+      .filter((f) => f.endsWith(".arch"))
+      .sort()
+      .filter((f) => lint(readFileSync(join(dir, f), "utf8"), { world }).some((d) => d.code === "W_NO_ENTRANCE"));
+    expect(warned).toEqual(["themed.arch", "two-bed.arch"]);
   });
 });

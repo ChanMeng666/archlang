@@ -9,7 +9,10 @@
  * the test suite.
  */
 
-import type { WallSegment } from "../geometry.js";
+import type { Point } from "../ast.js";
+import type { Arc } from "./arc.js";
+import type { Vec, WallSegment } from "../geometry.js";
+import { normal, sub, unit } from "../geometry.js";
 
 /** A millimetre bounding box (origin top-left, +x right, +y down). */
 export interface BBox {
@@ -64,51 +67,129 @@ export function pointInRect(px: number, py: number, r: BBox): boolean {
   return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
 }
 
+/* ---------------------------------------------------------------------------
+ * The wall's own frame — what makes the intrusion measurement angle-exact.
+ *
+ * Every "how far into this wall is that piece?" question used to be asked twice, once
+ * for a horizontal wall and once for a vertical one, opening with
+ * `if (horiz === vert) return 0`. That guard was a SILENT SKIP: it made
+ * `W_FURNITURE_WALL_COLLISION` blind to every wall in the language that is not axis-
+ * aligned, so a sofa drawn straight through a 45° wall linted clean. Worse, an ARC
+ * carries its CHORD in `a`/`b`, so a curved wall whose chord happened to be axis-aligned
+ * was measured against a line the wall is not on — flagging furniture near the chord and
+ * missing the wall itself.
+ *
+ * So the question is asked once, in the segment's own coordinates: `d` along the run,
+ * `n` across it. On an axis-aligned segment `d`/`n` are ±1 unit vectors, so every
+ * projection below reduces to the exact expression the two hand-written branches used
+ * (up to an exact negation) — which is why widening this moved no shipped byte.
+ * ------------------------------------------------------------------------- */
+
+/** A straight wall segment resolved into its own frame. */
+interface SegFrame {
+  /** Unit direction of travel, a→b. */
+  d: Vec;
+  /** Left normal of `d` — the across-wall axis. */
+  n: Vec;
+  /** The segment's centerline, as a coordinate on `n`. */
+  c: number;
+  /** The segment's run on `d` (its endpoints, ordered). */
+  lo: number;
+  hi: number;
+}
+
 /**
- * How deep (mm) a furniture rectangle `fr` intrudes into an orthogonal wall
- * segment's solid band, counting only the run that is *not* an opening (a door or
- * window voids the wall there). A piece flush against the wall face intrudes ~0;
- * one straddling the centerline intrudes by up to the wall thickness. Returns 0 for
- * non-orthogonal segments (handled conservatively — angled walls don't trip this).
+ * The frame of a STRAIGHT wall segment, or `null` when there is none to speak of.
+ *
+ * `null` for a degenerate (zero-length) segment and — deliberately — for a CURVED one:
+ * an arc's across-wall direction turns along the run, so a single `n` would be a
+ * fiction. The honest consequence is that a curved wall does not participate in the
+ * furniture-collision rule at all (the pre-existing behaviour was to measure its chord,
+ * which is worse than measuring nothing). Recorded as a known gap in docs/backlog.md
+ * item 3.15 and pinned by `test/furniture-lint.test.ts`.
+ */
+function segmentFrame(s: { a: Point; b: Point; arc?: Arc }): SegFrame | null {
+  if (s.arc) return null;
+  const v = sub(s.b, s.a);
+  if (v.x === 0 && v.y === 0) return null;
+  const d = unit(v);
+  const n = normal(d);
+  const pa = s.a.x * d.x + s.a.y * d.y;
+  const pb = s.b.x * d.x + s.b.y * d.y;
+  return { d, n, c: s.a.x * n.x + s.a.y * n.y, lo: Math.min(pa, pb), hi: Math.max(pa, pb) };
+}
+
+/** The interval a rect's four corners project onto the unit axis `u` — closed form:
+ *  the extremes are the two corners the signs of `u` pick out. */
+function rectSpan(r: BBox, u: Vec): [number, number] {
+  const [x0, x1] = u.x >= 0 ? [r.x, r.x + r.w] : [r.x + r.w, r.x];
+  const [y0, y1] = u.y >= 0 ? [r.y, r.y + r.h] : [r.y + r.h, r.y];
+  return [x0 * u.x + y0 * u.y, x1 * u.x + y1 * u.y];
+}
+
+/**
+ * How deep (mm) a furniture rectangle `fr` intrudes into a straight wall segment's
+ * solid band **at any angle**, counting only the run that is *not* an opening (a door or
+ * window voids the wall there). A piece flush against the wall face intrudes ~0; one
+ * straddling the centerline intrudes by up to the wall thickness. Returns 0 for a
+ * curved or degenerate segment (see {@link segmentFrame}).
  *
  * "Intrusion" is the across-wall overlap; it is only meaningful when the along-wall
  * overlap survives opening subtraction, so a counter under a window or a piece in a
  * doorway isn't read as passing through solid wall.
+ *
+ * Furniture is an AABB and its rotation is a quarter-turn (`E_FURN_ROTATE`), so `fr` is
+ * both its bounding box and its true footprint. The wall solid is an oriented box, so
+ * the two shapes genuinely overlap exactly when their projections meet on all FOUR
+ * separating axes: the wall's `d` and `n`, and the plan's own x and y. The last two are
+ * implied by the first two whenever the wall is axis-aligned (`d`/`n` *are* the plan
+ * axes there), which is what keeps every orthogonal plan's verdict unchanged; on an
+ * angled wall they are what stops a piece that crosses the wall's LINE somewhere and its
+ * RUN somewhere else from reading as a collision.
  */
 export function wallIntrusionDepth(
   fr: BBox,
   s: WallSegment,
   openings: Array<{ at: { x: number; y: number }; width: number }>,
 ): number {
-  const horiz = s.a.y === s.b.y;
-  const vert = s.a.x === s.b.x;
-  if (horiz === vert) return 0; // diagonal or degenerate — skip
+  const f = segmentFrame(s);
+  if (!f) return 0;
   const half = s.thickness / 2;
-  if (horiz) {
-    const band = overlap1d(fr.y, fr.y + fr.h, s.a.y - half, s.a.y + half); // across-wall (depth)
-    if (band <= 0) return 0;
-    const segLo = Math.min(s.a.x, s.b.x);
-    const segHi = Math.max(s.a.x, s.b.x);
-    const lo = Math.max(fr.x, segLo);
-    const hi = Math.min(fr.x + fr.w, segHi);
-    if (hi - lo <= 1) return 0;
-    // Subtract opening spans that lie on this segment's line.
-    const voids = openings
-      .filter((o) => Math.abs(o.at.y - s.a.y) <= half + 1)
-      .map((o) => [o.at.x - o.width / 2, o.at.x + o.width / 2] as [number, number]);
-    return solidRemains(lo, hi, voids) ? band : 0;
-  }
-  const band = overlap1d(fr.x, fr.x + fr.w, s.a.x - half, s.a.x + half);
+  const [fnLo, fnHi] = rectSpan(fr, f.n);
+  const band = overlap1d(fnLo, fnHi, f.c - half, f.c + half); // across-wall (depth)
   if (band <= 0) return 0;
-  const segLo = Math.min(s.a.y, s.b.y);
-  const segHi = Math.max(s.a.y, s.b.y);
-  const lo = Math.max(fr.y, segLo);
-  const hi = Math.min(fr.y + fr.h, segHi);
+  const [fdLo, fdHi] = rectSpan(fr, f.d);
+  const lo = Math.max(fdLo, f.lo);
+  const hi = Math.min(fdHi, f.hi);
   if (hi - lo <= 1) return 0;
-  const voids = openings
-    .filter((o) => Math.abs(o.at.x - s.a.x) <= half + 1)
-    .map((o) => [o.at.y - o.width / 2, o.at.y + o.width / 2] as [number, number]);
+  if (!bandMeetsRectOnPlanAxes(fr, s, f, half)) return 0;
+  // Subtract opening spans that lie on this segment's line, measured along the run.
+  const voids: Array<[number, number]> = [];
+  for (const o of openings) {
+    if (Math.abs(o.at.x * f.n.x + o.at.y * f.n.y - f.c) > half + 1) continue;
+    const along = o.at.x * f.d.x + o.at.y * f.d.y;
+    voids.push([along - o.width / 2, along + o.width / 2]);
+  }
   return solidRemains(lo, hi, voids) ? band : 0;
+}
+
+/**
+ * The plan-axis half of the separating-axis test: do `fr` and the segment's solid band
+ * (its four `a`/`b` ± `n`·half corners — the run UN-extended, exactly the region the
+ * `d`/`n` tests describe) overlap on x and on y?
+ *
+ * A no-op for an axis-aligned wall, where these two intervals are the very ones the
+ * caller has already tested.
+ */
+function bandMeetsRectOnPlanAxes(fr: BBox, s: { a: Point; b: Point }, f: SegFrame, half: number): boolean {
+  const ox = f.n.x * half;
+  const oy = f.n.y * half;
+  const xs = [s.a.x + ox, s.a.x - ox, s.b.x + ox, s.b.x - ox];
+  const ys = [s.a.y + oy, s.a.y - oy, s.b.y + oy, s.b.y - oy];
+  return (
+    overlap1d(fr.x, fr.x + fr.w, Math.min(...xs), Math.max(...xs)) > 0 &&
+    overlap1d(fr.y, fr.y + fr.h, Math.min(...ys), Math.max(...ys)) > 0
+  );
 }
 
 /** Is any > 1 mm of the interval [lo,hi] left uncovered by the `voids` intervals? */
@@ -129,33 +210,35 @@ function solidRemains(lo: number, hi: number, voids: Array<[number, number]>): b
 }
 
 /**
- * Signed across-wall intrusion of `fr` into one orthogonal wall segment (null if
- * none or non-orthogonal), with the axis and wall centerline so callers can compute
- * the push that clears it. Deliberately DISTINCT semantics from
+ * The across-wall intrusion of `fr` into one straight wall segment (null if there is
+ * none), at any angle. Deliberately DISTINCT semantics from
  * {@link wallIntrusionDepth}: this one **ignores openings** (the repair corrector
  * moves a piece out of the wall band whether or not a door voids part of it) —
  * do not merge the two.
+ *
+ * An ORTHOGONAL wall reports the plan `axis` the push runs along plus the wall's
+ * centerline on it, which is everything `repair` needs to compute a closed-form move.
+ * An ANGLED one reports `axis: null`: clearing it means moving along the wall's normal,
+ * which is neither plan axis and lands off-grid, so `repair` declines and REPORTS the
+ * piece instead of inventing a diagonal push (`test/repair-coverage.test.ts` pins that
+ * every piece lint flags gets a change entry or an `unresolved` entry — never nothing).
  */
-export function wallIntrusion(
-  fr: BBox,
-  s: { a: { x: number; y: number }; b: { x: number; y: number }; thickness: number },
-): { depth: number; axis: "x" | "y"; center: number } | null {
-  const horiz = s.a.y === s.b.y;
-  const vert = s.a.x === s.b.x;
-  if (horiz === vert) return null;
+export type WallIntrusion = { depth: number } & ({ axis: "x" | "y"; center: number } | { axis: null });
+
+export function wallIntrusion(fr: BBox, s: { a: Point; b: Point; thickness: number; arc?: Arc }): WallIntrusion | null {
+  const f = segmentFrame(s);
+  if (!f) return null;
   const h2 = s.thickness / 2;
-  if (horiz) {
-    const band = overlap1d(fr.y, fr.y + fr.h, s.a.y - h2, s.a.y + h2);
-    const lo = Math.max(fr.x, Math.min(s.a.x, s.b.x));
-    const hi = Math.min(fr.x + fr.w, Math.max(s.a.x, s.b.x));
-    if (band <= 0 || hi - lo <= 1) return null;
-    return { depth: band, axis: "y", center: s.a.y };
-  }
-  const band = overlap1d(fr.x, fr.x + fr.w, s.a.x - h2, s.a.x + h2);
-  const lo = Math.max(fr.y, Math.min(s.a.y, s.b.y));
-  const hi = Math.min(fr.y + fr.h, Math.max(s.a.y, s.b.y));
+  const [fnLo, fnHi] = rectSpan(fr, f.n);
+  const band = overlap1d(fnLo, fnHi, f.c - h2, f.c + h2);
+  const [fdLo, fdHi] = rectSpan(fr, f.d);
+  const lo = Math.max(fdLo, f.lo);
+  const hi = Math.min(fdHi, f.hi);
   if (band <= 0 || hi - lo <= 1) return null;
-  return { depth: band, axis: "x", center: s.a.x };
+  if (!bandMeetsRectOnPlanAxes(fr, s, f, h2)) return null;
+  if (s.a.y === s.b.y) return { depth: band, axis: "y", center: s.a.y };
+  if (s.a.x === s.b.x) return { depth: band, axis: "x", center: s.a.x };
+  return { depth: band, axis: null };
 }
 
 /**

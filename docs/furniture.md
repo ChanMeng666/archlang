@@ -132,7 +132,7 @@ furniture and fixture rules (each documented in the [error catalog](error-codes.
 |------|-------|
 | `W_FIXTURE_FLOATING` | a wall-requiring fixture (WC, basin, sink, counter, stove, fridge) placed away from any wall |
 | `W_FIXTURE_BACK_TO_ROOM` | a fixture that *is* against a wall but faces the wrong way — its back (cistern, tap, nosing) turned to the room. Carries a `rotate` fix when one edge is unambiguously the back |
-| `W_FIXTURE_WRONG_ROOM` | a piece declared `in <room>` whose centre lies outside that room |
+| `W_FIXTURE_WRONG_ROOM` | a piece declared `in <room>` whose **footprint** does not sit on that room's floor (100 mm of overhang is allowed — a room edge is a wall centreline) |
 | `W_FURNITURE_OVERLAP` | two pieces overlapping by more than 1 mm on both axes |
 | `W_FURN_CLEARANCE` | a fixture's frontal use-space blocked by free-standing furniture |
 | `W_ROOM_NO_FIXTURE` | a bath / WC / kitchen room with none of the relevant fixtures |

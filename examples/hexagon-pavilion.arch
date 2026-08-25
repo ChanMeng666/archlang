@@ -153,12 +153,18 @@ plan "Hexagon Pavilion" {
   # rectangle), so every free-standing piece here is an absolute `at`. The two that back
   # onto something use `against wall`, which stays legal on a polygon room because it
   # measures from the WALL and not from the room.
+  #
+  # An axis-aligned piece in a wedge gallery has to be set out against a SLOPED wall, and
+  # its far corner is what reaches that wall first — not its edge. Both benches below sat
+  # 100-130 mm inside a wall solid until `W_FURNITURE_WALL_COLLISION` learned to measure a
+  # wall that is not axis-aligned; nothing had ever checked. Keep them west of where they
+  # were: f_bench clears the sloped south-east facade, f_seat clears spoke_se.
   furniture id=f_desk  counter against wall shell segment 1 offset 3000 size 3000x500 label "Work bench" in g_n
   furniture id=f_shelf counter against wall spoke_w offset 1400 size 1200x600 label "Shelves" in g_sw
   furniture id=f_read  table at (13150,5550)  size 900x900  label "Table" in g_ne
   furniture id=f_tea   table at (3850,5550)   size 900x900  label "Tea"   in g_nw
-  furniture id=f_bench bench at (13150,8450)  size 1400x450 label "Bench" in g_se
-  furniture id=f_seat  bench at (9600,12000)  size 1400x450 label "Bench" in g_s
+  furniture id=f_bench bench at (12950,8450)  size 1400x450 label "Bench" in g_se
+  furniture id=f_seat  bench at (9450,12000)  size 1400x450 label "Bench" in g_s
 
   title {
     project "Hexagon Pavilion"

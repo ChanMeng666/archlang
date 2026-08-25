@@ -19,10 +19,10 @@
 <text x="13600" y="6000" font-size="262.14" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Table</text>
 <polygon points="3850,5550 4750,5550 4750,6450 3850,6450" fill="#f4f2ee" stroke="#a8a29a" stroke-width="24.67"/>
 <text x="4300" y="6000" font-size="262.14" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Tea</text>
-<polygon points="13150,8450 14550,8450 14550,8900 13150,8900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="24.67"/>
-<text x="13850" y="8675" font-size="262.14" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bench</text>
-<polygon points="9600,12000 11000,12000 11000,12450 9600,12450" fill="#f4f2ee" stroke="#a8a29a" stroke-width="24.67"/>
-<text x="10300" y="12225" font-size="262.14" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bench</text>
+<polygon points="12950,8450 14350,8450 14350,8900 12950,8900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="24.67"/>
+<text x="13650" y="8675" font-size="262.14" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bench</text>
+<polygon points="9450,12000 10850,12000 10850,12450 9450,12450" fill="#f4f2ee" stroke="#a8a29a" stroke-width="24.67"/>
+<text x="10150" y="12225" font-size="262.14" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bench</text>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M 16210,7030 L 11530,790 L 11290,970 L 15970,7210 Z" fill="url(#poche)" fill-rule="nonzero"/>

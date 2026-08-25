@@ -11,7 +11,7 @@ import {
   backEdgeForRotate,
   frontClearanceRect,
   isAgainstWall,
-  pointInRoomBox,
+  rectInRoomBox,
   rectOf,
   rotateForBackEdge,
   wallBackedEdges,
@@ -183,8 +183,15 @@ export const fixtureBackToRoom: LintRule = {
   },
 };
 
-/** A fixture declared `in <room>` whose centre falls outside that room's rectangle
- *  (an unknown room id is the harder E_FURN_ROOM error, handled at resolve). */
+/**
+ * A fixture declared `in <room>` whose FOOTPRINT does not sit on that room's floor
+ * (an unknown room id is the harder E_FURN_ROOM error, handled at resolve).
+ *
+ * It used to ask only where the piece's centre was, which is a much weaker question than
+ * it looks: a corner placement can leave three quarters of the footprint in other rooms
+ * with the centre still 50 mm inside the declared one. {@link rectInRoomBox} asks about
+ * the whole rectangle, with a named slack for the wall band a room edge runs down.
+ */
 export const fixtureWrongRoom: LintRule = {
   name: "fixture-wrong-room",
   check({ furniture, roomRects, at }: LintContext): Diagnostic[] {
@@ -193,15 +200,13 @@ export const fixtureWrongRoom: LintRule = {
       if (f.room === undefined) continue;
       const rect = roomRects.get(f.room);
       if (!rect) continue;
-      const cx = f.at.x + f.size.w / 2;
-      const cy = f.at.y + f.size.h / 2;
-      if (!pointInRoomBox({ x: cx, y: cy }, rect)) {
+      if (!rectInRoomBox(rectOf(f), rect)) {
         const name = f.label ?? f.category;
         out.push({
           severity: "warning",
           code: "W_FIXTURE_WRONG_ROOM",
           ...at(f),
-          message: `Fixture "${name}" sits outside its declared room "${f.room}".`,
+          message: `Fixture "${name}" is not inside its declared room "${f.room}".`,
           hints: ["Move it inside that room, or correct the `in <roomId>`."],
         });
       }

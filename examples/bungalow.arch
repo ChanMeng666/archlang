@@ -30,10 +30,13 @@
 # default `hinged` by writing no kind at all, carry a swing arc.
 plan "Bungalow" {
   units mm
-  # `grid 50`, not 100: every partition here is 100 thick, so a fixture placed `flush`
-  # against one lands on a half-thickness (…50) coordinate. On a 100 grid the snap would
-  # round it back INTO the wall and raise `W_FURNITURE_WALL_COLLISION` on a plan that is
-  # actually correct — the grid has to be able to express the faces you place against.
+  # `grid 50` because every partition here is 100 thick and the plan is set out in
+  # half-metres. It used to be a WORKAROUND as well: a fixture placed `flush` against a
+  # 100 partition lands on a half-thickness (…50) coordinate, and the resolver used to
+  # grid-snap that DERIVED coordinate like an authored one, so `grid 100` rounded it back
+  # INTO the wall and raised `W_FURNITURE_WALL_COLLISION` on a correct plan. A derived
+  # coordinate is no longer snapped, so the grid is free again — these numbers are
+  # unchanged, and so is every byte this file draws.
   grid 50
   scale 1:100
   north up

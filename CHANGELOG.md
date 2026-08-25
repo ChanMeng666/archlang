@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Four lint blind spots, and the one thing they had in common
+
+Every rule below was **shipped, documented and tested**, and every one of them answered a narrower
+question than the sentence describing it. None was found by a failing test, because a test written
+against a narrower question passes. They were found by asking each rule what it would say about a
+plan slightly unlike the fixtures it was born with.
+
+**Behaviour change: `arch lint` may now warn on plans it silently passed.** Three of the four are
+widenings, so a plan that lint called clean can now carry a `W_FURNITURE_WALL_COLLISION`,
+`W_FIXTURE_WRONG_ROOM` or `W_NO_ENTRANCE`. Every such warning is a real defect the rule was already
+supposed to catch — one of them was hiding in a shipped example (below). No new `E_*`/`W_*` code, no
+new syntax, no change to `src/index.ts`'s surface.
+
+**`W_FURNITURE_WALL_COLLISION` could not see a wall that was not axis-aligned.** The measurement
+opened with `if (horiz === vert) return 0; // diagonal or degenerate — skip`, so a sofa drawn
+straight through a 45° wall linted clean. The across-wall depth is now taken in the **wall segment's
+own frame** — its direction and its normal — with the plan's x/y axes completing a four-axis
+separating-axis test, so an angled wall is measured exactly and an axis-aligned one reduces to the
+identical arithmetic (which is why no orthogonal plan moved a byte). A **curved** segment is now
+declined outright rather than measured, which is a correction and not just a gap: an arc carries its
+CHORD in `a`/`b`, so a curve whose chord happened to be axis-aligned was being measured against a
+straight line the wall is not on. Both branches are pinned; the radial fix an arc actually wants is
+`docs/backlog.md` 3.15.
+
+This found a real error in `examples/hexagon-pavilion.arch`, where nothing had ever checked: two
+benches in the wedge galleries sat **100 mm and 130 mm inside a wall solid** — an axis-aligned piece
+in a wedge reaches a sloped wall by its far corner, not its edge. Both are moved west, and the
+example's drawing is regenerated.
+
+`repair` is widened in step, because `test/repair-coverage.test.ts` requires that every piece lint
+flags gets a change entry or an `unresolved` entry and never nothing. It pushes only along x and y,
+and clearing an angled wall is a move along that wall's normal — off-axis and, on any real grid, off
+grid — so it **reports** the piece by name and leaves it alone (ADR 0005: never guess).
+
+**`W_FIXTURE_WRONG_ROOM` asked only where the fixture's centre was.** That is a far weaker question
+than it looks at a corner: crossing both the x and the y edge of a room leaves as little as a
+quarter of the footprint inside while the centre stays comfortably in. A bed with **72% of itself in
+three other rooms** passed. The rule now measures the footprint against the room's own floor
+(`rectInRoomBox`, poly-aware, so a `polygon` or `circle` room is judged by its shape and not a
+bounding box), allowing a named 100 mm of overhang — half the 200 mm shell every shipped example
+draws, because a room's outline runs down wall centrelines and a piece pushed against a room edge
+legitimately shares that band. `repair` uses the same predicate, so what it clears is exactly what
+lint flags.
+
+**`W_NO_ENTRANCE` stood down whenever no wall was categorised `exterior`.** A closed shell drawn
+entirely from `partition` walls — or a plan with rooms and no walls at all — was never asked whether
+you could get in, while `describe().access.hasEntrance` reported plainly that you could not. The
+rule now reads the **same access graph `describe()` reads**, shared once per run on the lint context
+(`LintContext.access`, which `circulation-facts.ts` now consumes too, so there is one graph and one
+answer). Component libraries — the case the wall test was standing in for — are covered by
+`rooms.length > 0` on its own: a library file declares no rooms. Pinned corpus-wide: across all 27
+shipped examples exactly `themed` and `two-bed` report it, the same two as before.
+
+### `flush` and `grid` no longer fight (backlog 3.12)
+
+A fixture placed `flush` against a 100 mm partition lands on a `…50` coordinate, and `grid 100`
+rounded it straight back **into** the wall — raising `W_FURNITURE_WALL_COLLISION` on a correct plan,
+and making the one clause that exists so nobody writes a half-thickness by hand useless at the most
+ordinary grid there is.
+
+The cause was neither `flush` nor the diagnostic. `resolve` was grid-snapping a coordinate **it had
+derived itself** from wall geometry. The grid is a drafting aid for the numbers an author writes,
+and a `flush` / `against wall` position is not one of them — `describe().freedom` already draws that
+exact line between authored-absolute and resolver-derived placement. The `against` and `place`
+branches of `elements/furniture.ts` no longer snap; the absolute `at (x,y)` branch still does, and
+so does everything else the grid governs (including a wall's own `thickness`).
+
+**Two shipped examples move, both toward correctness**, and both are regenerated:
+`examples/materials.arch` (`grid 10`) had two `flush` fixtures sitting 5 mm *inside* the wall face,
+and `examples/terrace-row.arch` (`grid 50`) had every `flush` fixture 25 mm *off* it.
+`examples/bungalow.arch` keeps its `grid 50` and is byte-identical — its numbers were already on
+that grid — and its comment now records the workaround as history.
+
 ### `arch watch` announced itself before it was watching
 
 v1.26.1 found that `arch watch` had not watched for twenty-five minor releases. It fixed the

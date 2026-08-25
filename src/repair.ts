@@ -56,6 +56,7 @@ import {
   FIXTURE_WALL_TOL_MM,
   innerFaceOfRoomEdge,
   isAgainstWall,
+  rectInRoomBox,
   type RectEdge,
   resolvePlan,
   rotateForBackEdge,
@@ -64,7 +65,7 @@ import {
 } from "./analyze.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
 import { verticalsOf } from "./vertical.js";
-import { doorLandingRect, pointInRect, rectOverlapAmounts, wallIntrusion } from "./geometry/rect.js";
+import { doorLandingRect, rectOverlapAmounts, wallIntrusion } from "./geometry/rect.js";
 import { segmentsOfWall, doorSwing, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
 import { DEFAULT_RULESET } from "./lint.js";
 import { defaultFootprint, orientationMatters, requiresWall } from "./fixtures-catalog.js";
@@ -160,14 +161,17 @@ function hitsWall(fr: BBox, walls: RWall[]): boolean {
 }
 
 /** The push that clears `fr` from the wall it most penetrates, "ambiguous" when it
- *  straddles a centreline with no majority side, or null when it hits nothing. */
+ *  straddles a centreline with no majority side, `{ angled }` when the wall it hits is
+ *  not axis-aligned (there is no on-grid axis push that clears it), or null when it hits
+ *  nothing. */
 function computeWallPush(
   fr: BBox,
   walls: RWall[],
   grid: number,
-): { dx: number; dy: number; wallId: string } | "ambiguous" | null {
+): { dx: number; dy: number; wallId: string } | { angled: string } | "ambiguous" | null {
   let best: { depth: number; dx: number; dy: number; wallId: string } | null = null;
   let ambiguous = false;
+  let angled: string | null = null;
   const cx = fr.x + fr.w / 2;
   const cy = fr.y + fr.h / 2;
   for (const w of walls) {
@@ -175,6 +179,13 @@ function computeWallPush(
       const hit = wallIntrusion(fr, s);
       if (!hit || hit.depth <= SLACK_MM) continue;
       const h2 = s.thickness / 2;
+      // An ANGLED wall: clearing it is a move along the wall normal — off-axis and, on
+      // any real grid, off-grid. repair does not guess (ADR 0005), so the piece is
+      // reported rather than shoved somewhere plausible-looking.
+      if (hit.axis === null) {
+        if (angled === null) angled = w.id;
+        continue;
+      }
       if (hit.axis === "y") {
         if (cy === hit.center) {
           ambiguous = true;
@@ -193,6 +204,7 @@ function computeWallPush(
     }
   }
   if (best) return { dx: best.dx, dy: best.dy, wallId: best.wallId };
+  if (angled !== null) return { angled };
   return ambiguous ? "ambiguous" : null;
 }
 
@@ -330,11 +342,10 @@ function computeSwingPush(
 
 /** Move a fixture declared `in <room>` whose footprint has drifted out of that room
  *  back inside it — fully inside when it fits, else centred. Closed-form; null when it
- *  already sits in the room. */
+ *  already sits in the room, measured by the same {@link rectInRoomBox} predicate the
+ *  `W_FIXTURE_WRONG_ROOM` lint uses, so what repair clears is exactly what lint flags. */
 function computeWrongRoomPush(fr: BBox, room: BBox, grid: number): { dx: number; dy: number } | null {
-  const cx = fr.x + fr.w / 2;
-  const cy = fr.y + fr.h / 2;
-  if (pointInRect(cx, cy, room)) return null; // centre inside
+  if (rectInRoomBox(fr, room)) return null;
   const fitX = fr.w <= room.w ? Math.min(Math.max(fr.x, room.x), room.x + room.w - fr.w) : room.x + (room.w - fr.w) / 2;
   const fitY = fr.h <= room.h ? Math.min(Math.max(fr.y, room.y), room.y + room.h - fr.h) : room.y + (room.h - fr.h) / 2;
   const snap = (v: number, lo: number, hi: number): number => {
@@ -424,6 +435,11 @@ function nextFix(fr: BBox, ctx: FixCtx): NextFix {
   const wall = computeWallPush(fr, ctx.walls, ctx.grid);
   if (wall === "ambiguous")
     return { ambiguous: "is centred on a wall — move it onto one side, then re-run", problem: "straddles a wall" };
+  if (wall && "angled" in wall)
+    return {
+      ambiguous: `penetrates the angled wall "${wall.angled}" — clearing it is a move along that wall's normal, which is neither plan axis; move it by hand`,
+      problem: `penetrates wall "${wall.angled}"`,
+    };
   if (wall)
     return {
       dx: wall.dx,
@@ -439,6 +455,14 @@ function nextFix(fr: BBox, ctx: FixCtx): NextFix {
         dx: wr.dx,
         dy: wr.dy,
         reason: "moved into its declared room",
+        problem: "sits outside its declared room",
+      };
+    // Not inside, and no move puts it inside — the piece is bigger than the room, or the
+    // only fit is the position it already has. Report it: the mover returning `null` here
+    // is exactly how a flagged piece would go silent (`test/repair-coverage.test.ts`).
+    if (!rectInRoomBox(fr, ctx.room))
+      return {
+        ambiguous: "is too big for its declared room — resize it, or correct the `in <roomId>`",
         problem: "sits outside its declared room",
       };
   }
@@ -918,7 +942,6 @@ function repairStorey(
     ir.elements.filter((e): e is RRoom => e.kind === "room" && e.poly !== undefined).map((r) => r.id),
   );
   const grid = plan.grid;
-  const snap = (v: number): number => (grid > 0 ? Math.round(v / grid) * grid : v);
 
   // ---- statements ⇄ resolved instances ----
   // One furniture statement can resolve to zero pieces (an untaken `if` branch), one, or
@@ -1145,7 +1168,7 @@ function repairStorey(
   for (const p of pieces) {
     const shifted = p.cur.x !== p.orig.x || p.cur.y !== p.orig.y;
     if (shifted) {
-      const { via, extra } = writePosition(p, snap);
+      const { via, extra } = writePosition(p);
       changes.push({
         id: p.id,
         category: p.f.category,
@@ -1226,13 +1249,17 @@ function repairStorey(
  * the rotation the anchor had *derived* is written out explicitly, because an absolute
  * piece derives nothing and dropping it would silently spin the fixture.
  */
-function writePosition(p: Piece, snap: (v: number) => number): { via: RepairChange["via"]; extra: string[] } {
+function writePosition(p: Piece): { via: RepairChange["via"]; extra: string[] } {
   if (!p.place || !p.f.place) {
     p.f.at = { x: numExpr(p.cur.x), y: numExpr(p.cur.y) };
     return { via: "at", extra: [] };
   }
   const place = p.f.place;
-  const i = insetForTarget(p.place, p.cur, snap);
+  // The forward check runs the placement through the resolver's own arithmetic — which,
+  // for a room-anchored piece, includes NO grid snap: a coordinate the resolver derives
+  // from wall geometry is not snapped (see `elements/furniture.ts`). Snapping here would
+  // reject an `inset` that reproduces the position exactly.
+  const i = insetForTarget(p.place, p.cur, (v) => v);
   if (i !== null && place.mode === "anchor") {
     const was = p.place.inset;
     place.inset = numExpr(i);

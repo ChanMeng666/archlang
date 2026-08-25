@@ -26,6 +26,7 @@ import {
   polygonArea,
   pointOnPolygonEdge,
   polygonEdges,
+  rectInsidePolygon,
   rectRing,
   ringsAdjacent,
 } from "./geometry/polygon.js";
@@ -151,6 +152,37 @@ export function roomAreaMm2(r: {
 /** Is the point inside the room's floor (closed bounds — the boundary counts)? */
 export function pointInRoomBox(p: Point, b: RoomBox): boolean {
   return b.poly ? pointInPolygon(p.x, p.y, b.poly) : pointInRect(p.x, p.y, b);
+}
+
+/**
+ * How far (mm) a fixture's footprint may hang outside the room it declares before the
+ * `in <room>` reads as wrong.
+ *
+ * A room's outline is drawn on wall CENTRELINES, so a piece pushed against a room edge
+ * legitimately shares the wall band with whatever is on the other side: 100 mm is half
+ * the 200 mm shell every shipped example draws, which is the deepest such overlap an
+ * honest placement produces. Well above grid-snap noise, and far below "this piece is
+ * standing in the next room".
+ */
+export const ROOM_CONTAINMENT_SLACK_MM = 100;
+
+/**
+ * Is the footprint `fr` on the room's floor, allowing {@link ROOM_CONTAINMENT_SLACK_MM}
+ * of overhang on every side? The footprint question behind `W_FIXTURE_WRONG_ROOM` — and
+ * the same predicate `repair` uses to decide it has moved a piece home, so what repair
+ * clears is exactly what lint flags.
+ *
+ * Asking about the footprint rather than the centre matters most at a CORNER: crossing
+ * both the x and the y edge leaves as little as a quarter of the area inside while the
+ * centre stays comfortably in, which is how a bed with three quarters of itself in three
+ * other rooms used to lint clean. Furniture rotation is a quarter-turn
+ * (`E_FURN_ROTATE`), so the AABB is the true footprint and no oriented-box machinery is
+ * needed. A piece smaller than twice the slack shrinks to its own centre, degrading
+ * gracefully to the historical point test rather than becoming impossible to place.
+ */
+export function rectInRoomBox(fr: BBox, b: RoomBox, slack: number = ROOM_CONTAINMENT_SLACK_MM): boolean {
+  const m = Math.min(slack, fr.w / 2, fr.h / 2);
+  return rectInsidePolygon({ x: fr.x + m, y: fr.y + m, w: fr.w - 2 * m, h: fr.h - 2 * m }, roomRing(b));
 }
 
 /**

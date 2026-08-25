@@ -212,8 +212,9 @@ export const furniture: ElementDef = {
           span: n.span,
         });
       }
+      // NOT grid-snapped — see the note on the `place` branch below.
       const placed = placeAgainst(id, n.against, dw, dh, n.room, ctx, n.span);
-      at = placed ? ctx.snapPt(placed.at) : { x: 0, y: 0 };
+      at = placed ? placed.at : { x: 0, y: 0 };
       if (placed) {
         size = placed.size;
         rotate = placed.rotate;
@@ -235,7 +236,16 @@ export const furniture: ElementDef = {
         n.span,
         rotate === undefined && orientationMatters(n.category),
       );
-      at = placed ? ctx.snapPt(placed.at) : { x: 0, y: 0 };
+      // NOT grid-snapped. A coordinate the RESOLVER derived from wall geometry is not a
+      // number the author wrote, and the grid is a drafting aid for the numbers they do
+      // write. Snapping it undid the derivation: `flush` against a 100 mm partition lands
+      // the piece on a `…50` coordinate, which `grid 100` rounded straight back INTO the
+      // wall — raising `W_FURNITURE_WALL_COLLISION` on a correct plan, and making the one
+      // clause that exists so nobody writes a half-thickness by hand useless at the most
+      // ordinary grid there is (docs/backlog.md 3.12). The absolute `at (x,y)` path below
+      // still snaps, which is where the grid belongs. `describe().freedom` already draws
+      // this same line between authored-absolute and resolver-derived placement.
+      at = placed ? placed.at : { x: 0, y: 0 };
       if (placed?.rotate !== undefined) rotate = placed.rotate;
       if (!placed) roomOut = undefined; // room ref invalid — don't double-report via E_FURN_ROOM
     } else {
