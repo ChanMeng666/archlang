@@ -190,7 +190,7 @@ export interface SheetFitInput {
  * `describe().sheet.fits` without building a Scene — and `toScene()` never re-derives
  * a second, subtly different answer.
  *
- * The table row was missing from it until v1.26.2, and the failure mode is worth stating
+ * The table row was missing from it until v1.27.0, and the failure mode is worth stating
  * because it is the reason the whole module exists: everything here is a promise about the
  * bytes, so a band the layout draws and the rule does not reserve is a page taller than its
  * own `paper` with `fits === true` on it. `library.arch` on A3 emitted 420 × 322.6 mm onto

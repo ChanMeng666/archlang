@@ -47,7 +47,7 @@ describe("T5.5 — the catalog covers every raised code", () => {
  * whether the catalog documents them. It is structurally blind to the opposite failure —
  * a diagnostic the compiler actually emits with NO code at all, which the grep cannot see
  * because there is no literal to find. That was not hypothetical: every lexer and parser
- * refusal was uncoded until v1.26.2, so `arch lint --code`/`--severity` could not select
+ * refusal was uncoded until v1.27.0, so `arch lint --code`/`--severity` could not select
  * a shape error and `arch explain` had nothing to say about the most common failure a
  * generating model hits. This suite closes it by RUNNING the compiler over sources chosen
  * to fail in different layers and asserting the invariant directly.

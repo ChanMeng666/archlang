@@ -352,7 +352,7 @@ function accepts(rules: Map<string, Expr>, input: string): boolean {
 /**
  * Does the real compiler PARSE this source? (Resolve-time codes don't count.)
  *
- * The marker is `E_PARSE`, the code every lexer/parser refusal carries. Until v1.26.2
+ * The marker is `E_PARSE`, the code every lexer/parser refusal carries. Until v1.27.0
  * it was the ABSENCE of a code, which worked only because parse errors were the one
  * uncoded diagnostic in the system — a property nothing asserted and any new uncoded
  * `diag()` call would have quietly broken, turning a refusal into a "parses". Naming

@@ -429,7 +429,7 @@ function rules(): [string, string][] {
     ["opening-free", `"at" ws point ws "width" ws expr ( ws "wall" rws ref )?`],
     ["opening-hosted", `"on" rws ref rws "at" ws attach-pos ws "width" ws expr`],
     /*
-     * The attachment position is a full EXPRESSION (v1.26.2), not a bare number — a
+     * The attachment position is a full EXPRESSION (v1.27.0), not a bare number — a
      * `for`-generated run of openings places itself with `on w1 at bay * i + 600`.
      *
      * It is `attach-expr`, not `expr`, for one reason: in this slot `%` is the percent

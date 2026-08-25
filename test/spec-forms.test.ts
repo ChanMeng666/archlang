@@ -728,7 +728,7 @@ describe("spec.llm.md — every illegality it names is refused", () => {
     // a catalog entry describing what the plan MEANS; `E_PARSE` means the SHAPE is wrong,
     // resolution never ran, and there is nothing to correct because the compiler has no
     // reading of the text. A form that silently swaps one for the other has changed what
-    // the spec's advice is worth. Before v1.26.2 the marker was the ABSENCE of a code,
+    // the spec's advice is worth. Before v1.27.0 the marker was the ABSENCE of a code,
     // which made the distinction real but unnameable — `--code` could not select it and
     // the catalog did not document it.
     const wrong = PARSE_ERRORS.map((p) => ({ p, errors: errorsOf(p.src) })).filter(

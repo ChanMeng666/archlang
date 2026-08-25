@@ -207,7 +207,7 @@ on a real sheet at a real scale, and `describe()` reports which:
 fit comfortably can still answer `false` because the schedule and legend it asked for take
 the band below the drawing. Adding `schedule rooms` to a tight sheet can therefore flip
 `fits` and raise `W_SCALE_OVERFLOW` with no change to the plan's geometry at all — which is
-the honest answer, and was not reported before v1.26.2 (the tables were laid out but never
+the honest answer, and was not reported before v1.27.0 (the tables were laid out but never
 measured, so a page could be emitted taller than its own `paper` with `fits: true` on it).
 
 The whole `sheet` key is **absent** for a plan with no `paper`, so an existing summary is

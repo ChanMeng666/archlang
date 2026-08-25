@@ -51,7 +51,7 @@ Oldest is 2026-07-20. Batch the safe ones (`actions/checkout`, `actions/setup-no
 **zod 3→4** (#27), **vite 6→8** (#26), and `@types/node` 22→26 (#28) — the last interacts with
 `noUncheckedIndexedAccess` across every leg of `typecheck:all`.
 
-### 3.14 · A worktree build silently bundles the WRONG core — `done` (v1.26.2)
+### 3.14 · A worktree build silently bundles the WRONG core — `done` (v1.27.0)
 
 **Fixed, and the "cheap mitigation / real fix" split below turned out to be a false
 choice — the real fix was small.** The resolution walk already lived in
@@ -200,7 +200,7 @@ shipping — each was worked around in the source, and the workaround is what ma
 recording: an author had to give something up. Every claim below was **reproduced**, and the
 reproduction is quoted.
 
-### S.1 · `schedule rooms` and `place` are effectively unusable together — `done` (v1.26.2)
+### S.1 · `schedule rooms` and `place` are effectively unusable together — `done` (v1.27.0)
 
 **Fixed.** A `place`d instance's implicit zone is now **transparent to schedule grouping**:
 rows group by the innermost zone the author *wrote*, an instance inside one inherits it, and
@@ -236,7 +236,7 @@ table: roll instances up into their enclosing named zone (probably right — a r
 "Clinical", not "Clinical / c4"), or let a `schedule` name the grouping depth. Neither is obviously
 free; both are a design pass.
 
-### S.2 · `on <wall> at <pos>` takes a literal, so a generated run of openings can't use it — `done` (v1.26.2)
+### S.2 · `on <wall> at <pos>` takes a literal, so a generated run of openings can't use it — `done` (v1.27.0)
 
 **Both halves fixed, and the parting note turned out to be the bigger of the two.**
 
@@ -287,7 +287,7 @@ deliberate (a strip resolves positions and a zone must not), but the two are ort
 a zone has **zero geometric semantics**, so there is no resolution-order reason a strip cannot sit
 inside one.
 
-### S.4 · `dims auto all` prints wall-thickness readings inside the poché — `done` (v1.26.2)
+### S.4 · `dims auto all` prints wall-thickness readings inside the poché — `done` (v1.27.0)
 
 **Fixed, and it was bigger than recorded here.** The counts below were taken by eye; a
 region-level probe over all 27 shipped examples found **29 readings in poché across 13 of
@@ -316,7 +316,7 @@ chain's numbers crowd, plus the shared `src/text-metrics.ts` estimate it measure
 whose extent is shorter than the poché it sits in probably wants suppressing, or pulling out on a
 leader rather than staggering.
 
-### S.5 · The margin tables can push a page past its own declared paper, silently — `done` (v1.26.2)
+### S.5 · The margin tables can push a page past its own declared paper, silently — `done` (v1.27.0)
 
 **Fixed.** `usablePlanMm` now reserves the margin-table row: `SheetFitInput` carries a
 **required** `tableRows`, `tableBandDepth` (`src/chrome-layout.ts`) turns it into a depth, and

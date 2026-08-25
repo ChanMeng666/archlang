@@ -935,7 +935,7 @@ pinned to that wall by construction (it can never be reported "off wall"). An
 unknown/ambiguous wall is [`E_ATTACH_WALL_REF`](error-codes.md); a position past
 the wall is `E_ATTACH_POS_RANGE`.
 
-**`<pos>` is an expression (v1.26.2).** It takes the same arithmetic every other
+**`<pos>` is an expression (v1.27.0).** It takes the same arithmetic every other
 numeric slot does — literals, `let` bindings, unit suffixes, calls — so a
 generated run of openings can place itself along the wall instead of falling back
 to `at (x,y)` and hand-computing each coordinate:

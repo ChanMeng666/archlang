@@ -132,7 +132,7 @@ describe("T1b — swing into / hinge near", () => {
 });
 
 /**
- * S.2 — the attachment position is an EXPRESSION (v1.26.2).
+ * S.2 — the attachment position is an EXPRESSION (v1.27.0).
  *
  * Before this, `at` in the `on <wall> at <pos>` form read a single `number` token, so
  * neither a `let` binding nor any arithmetic was legal there. That is not a cosmetic gap:

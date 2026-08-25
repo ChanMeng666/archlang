@@ -43,7 +43,7 @@ function attachClampFix(attach: OpeningAttach, valueText: string): FixSuggestion
  *
  * The value is a full expression — the same one every other numeric slot takes, parsed
  * by the same {@link ParseCtx.parseExpr} entry point — so `for i in 0..4 { door on w1 at
- * bay * i + 600 width 900 }` places a generated run along the wall. Before v1.26.2 this
+ * bay * i + 600 width 900 }` places a generated run along the wall. Before v1.27.0 this
  * read a single `number` token, which is why a generated run had to fall back to the
  * absolute `at (x,y) … wall <id>` form and hand-compute the coordinate the `on` form
  * exists to avoid (`examples/transit-hall.arch` is the shipped instance).

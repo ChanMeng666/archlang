@@ -222,7 +222,7 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // clause attribute is actually RENDERED in some element line. Make it assert the
     // rendering and the bullet can go.
     //
-    // v1.26.2 spent 27 of the 219: the `on <wall> at <pos>` position became an
+    // v1.27.0 spent 27 of the 219: the `on <wall> at <pos>` position became an
     // EXPRESSION, and the `door` line has to say so (an agent that does not know cannot
     // place a `for`-generated run, which is the whole reason the slot was widened) plus
     // the one grammar quirk it introduces — a `%` there ENDS the expression rather than

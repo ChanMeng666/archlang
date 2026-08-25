@@ -92,7 +92,7 @@ you observed. Do NOT push anything — this command only verifies.
    freshness test passes while the bundle is wrong. The stamp proves the bundle is not stale *in
    version*; it says nothing about which checkout the bundle came from (`docs/backlog.md` 3.14).
 
-   Since v1.26.2 the build **refuses** rather than relying on you remembering: the guard in
+   Since v1.27.0 the build **refuses** rather than relying on you remembering: the guard in
    `editors/vscode/resolve-core.mjs` compares the resolved core's real path against the repo root
    of the tree being built and throws, naming both paths, when they differ
    (`editors/vscode/test/wrong-core.test.ts`). Note it fires for a **junctioned** worktree too, and
