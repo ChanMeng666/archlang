@@ -484,6 +484,37 @@ titled A3 border rather than sized to its own drawing:
 The [docs gallery](https://archlang.uk/examples) renders all of them **live and
 editable** in the browser.
 
+## 🎬 Showcase
+
+The examples above teach the language. The **[Showcase](https://archlang.uk/showcase)** is what
+happens when you point it at real buildings and famous fictional ones — the West Wing (whose Oval
+Office is a true `arc`, not a faceted polygon), Palladio's Villa La Rotonda (one quarter, `place`d
+four times), Bag End, de_dust2, The Skeld, 742 Evergreen Terrace, the Dunder Mifflin annex. Every one
+is a few dozen lines of source you can open in the playground and recompile.
+
+They are worth a look for what the compiler *says* about them as much as for the drawings:
+`arch lint` reports a real `W_NO_ENTRANCE` on de_dust2 — a quarter century of continuous occupancy,
+achieved entirely by spawning — and it reviews a $2,950-a-month railroad apartment in twelve
+warnings across nine codes.
+
+<table>
+<tr>
+<td width="33%" align="center" valign="top">
+<img src="https://raw.githubusercontent.com/ChanMeng666/archlang-showcase/main/plans/west-wing/plan.png" width="270" alt="The West Wing, first floor" />
+</td>
+<td width="33%" align="center" valign="top">
+<img src="https://raw.githubusercontent.com/ChanMeng666/archlang-showcase/main/plans/villa-rotonda/plan.png" width="270" alt="Villa La Rotonda, piano nobile" />
+</td>
+<td width="33%" align="center" valign="top">
+<img src="https://raw.githubusercontent.com/ChanMeng666/archlang-showcase/main/plans/dust2/plan.png" width="270" alt="de_dust2 drawn as a building" />
+</td>
+</tr>
+</table>
+
+**[archlang.uk/showcase](https://archlang.uk/showcase)** for the curated set ·
+**[ChanMeng666/archlang-showcase](https://github.com/ChanMeng666/archlang-showcase)** for every
+plan's source and the story behind it.
+
 ## 🏗️ How it works
 
 ArchLang is a compiler pipeline. Source text becomes a backend-neutral **Scene IR**, and every

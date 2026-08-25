@@ -95,6 +95,24 @@
   color: var(--redline-ink);
 }
 
+/* Showcase plates (/showcase). Those pages carry rendered PNGs of whole plans
+   rather than live <ArchLive> widgets — the sources are 12-17 KB and live in a
+   separate repository, so the drawing is a picture and the permalink beside it is
+   the live experience. Present each one as an issued SHEET: paper ground, hairline
+   border, the same squared 3px drafting corner the code fences use.
+
+   Keyed on the src prefix rather than a wrapper class so the page stays plain
+   Markdown (`![alt](/showcase/<slug>.png)`) — which is also what the raw copy
+   served at /showcase.md hands a machine. */
+.vp-doc img[src^="/showcase/"] {
+  display: block;
+  width: 100%;
+  margin: 0 auto;
+  background: var(--paper-panel);
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+}
+
 /* ============================================================================
    2 · SIDEBAR → SHEET INDEX
    ========================================================================== */

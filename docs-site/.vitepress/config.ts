@@ -186,6 +186,7 @@ export default defineConfig({
         ],
       },
       { text: "Examples", link: "/examples" },
+      { text: "Showcase", link: "/showcase" },
       {
         text: "AI Agents",
         items: [
@@ -214,6 +215,7 @@ export default defineConfig({
         items: [
           { text: "What is ArchLang?", link: "/guide" },
           { text: "Examples gallery", link: "/examples" },
+          { text: "Showcase", link: "/showcase" },
         ],
       },
       {

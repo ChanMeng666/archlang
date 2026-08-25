@@ -37,6 +37,7 @@ const PLAYGROUND = "https://playground.archlang.uk";
  */
 const PAGES = [
   ["docs/language-reference.md", "reference.md"],
+  ["docs/showcase.md", "showcase.md"],
   ["docs/cli-reference.md", "cli.md"],
   ["docs/furniture.md", "furniture.md"],
   ["docs/analysis.md", "analysis.md"],

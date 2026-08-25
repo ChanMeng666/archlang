@@ -36,6 +36,7 @@ const DOCS = [
   "docs-site/index.md",
   "docs/analysis.md",
   "docs/language-reference.md",
+  "docs/showcase.md",
   "docs/intent.md",
   "docs/furniture.md",
   "packages/mcp/README.md",

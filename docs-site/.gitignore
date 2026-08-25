@@ -5,6 +5,7 @@
 # Pages generated from canonical repo docs by sync-docs.mjs (do not edit/commit;
 # the source of truth is docs/*.md and docs/adr/*.md).
 reference.md
+showcase.md
 cli.md
 furniture.md
 analysis.md
@@ -34,6 +35,7 @@ public/plan.schema.json
 public/intent.schema.json
 public/archlang.gbnf
 public/reference.md
+public/showcase.md
 public/cli.md
 public/furniture.md
 public/analysis.md

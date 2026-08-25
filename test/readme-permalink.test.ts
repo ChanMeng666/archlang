@@ -35,6 +35,11 @@ import { b64urlToBytes, srcFromHash } from "../playground/src/share.js";
  * Hand-written docs that may carry a permalink. Generated pages are excluded: the docs-site
  * files listed here are the hand-authored ones (the rest of `docs-site/*.md` is written by
  * `sync-docs.mjs` from `docs/*.md`, whose sources are covered by scanning them there).
+ *
+ * `docs/showcase.md` is deliberately NOT here, and must not be added. Its permalinks carry
+ * plans from the separate `archlang-showcase` repository, not copies of `examples/*.arch`,
+ * so the "decodes to an example that still exists" case below would fail by construction.
+ * A permalink in any doc that DOES quote an example belongs in this list.
  */
 const DOCS = [
   "README.md",
