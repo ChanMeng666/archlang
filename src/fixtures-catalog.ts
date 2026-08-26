@@ -43,6 +43,24 @@ export interface FixtureSpec {
    * basin's tap, a counter's nosing), so its facing is a real architectural fact.
    */
   symmetric?: boolean;
+  /**
+   * The drawn symbol has a **back worth turning toward a wall**, even though the piece needs
+   * no services.
+   *
+   * {@link requiresWall} answers "can this work without a wall?" — plumbing, venting, or
+   * hanging off one. This answers a different question: "does the drawing say which way it
+   * faces?" A bed's headboard, a wardrobe's door line and a bookshelf's open front are
+   * unmistakable in plan and belong against something, but none of them needs a pipe. Before
+   * the symbols were drawn the two questions had the same answer for every catalogued
+   * category, so one flag served both; a bed that draws as a labelled rectangle has no back to
+   * find, and deriving a rotation for it would have been an invisible, unverifiable claim.
+   *
+   * Set only where the SYMBOL earns it. A sofa is deliberately absent: seating is arranged
+   * rather than installed, and its back to the room is a legitimate room-divider layout, not a
+   * defect to warn about. So is anything {@link symmetric} — a round stool has no back at any
+   * angle.
+   */
+  directional?: boolean;
 }
 
 /** A room zone a fixture can satisfy (see {@link FixtureSpec.zones}). */
@@ -101,25 +119,28 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   // without one is (the plumbed and vented white goods below, and the wall cabinet, which
   // hangs off the wall by definition).
   //
-  // The consequence to know: a bed anchored to a room edge does NOT yet get a derived
-  // quarter-turn, because `orientationMatters` needs `requiresWall`. That is the right
-  // answer while the symbol is a stub — a bed draws as a plain labelled rectangle, which has
-  // no back to face, so a derived rotation would be invisible and
-  // `W_FIXTURE_BACK_TO_ROOM`'s advice unverifiable from the drawing. The phase that draws
-  // the bed is the phase that can honestly say which way it faces; it will add the "this
-  // symbol has a back" fact then. `against wall` is unaffected — `placeAgainst` derives its
-  // rotation from the wall directly, for every category.
+  // That separation left one thing unfinished, and this is the phase that finishes it. While
+  // room furniture drew as a plain labelled rectangle, an anchored bed got no derived
+  // quarter-turn — correctly, because a rectangle has no back to face, so a derived rotation
+  // would have been invisible and `W_FIXTURE_BACK_TO_ROOM`'s advice unverifiable from the
+  // drawing. The symbols are drawn now: a bed has a headboard, a wardrobe a door line, a
+  // bookshelf an open front. So `directional` carries the "this symbol has a back" fact the
+  // comment above promised, and `orientationMatters` reads `(requiresWall || directional)`.
+  // `requiresWall` keeps its single meaning — services — and `W_FIXTURE_FLOATING`, whose
+  // remedy line is about supply and waste runs, stays keyed on it alone.
   //
-  // `symmetric` on a free-standing piece changes nothing today (`orientationMatters` needs
-  // `requiresWall` first); it records the fact for the symbol that will be drawn — a round
-  // stool and a square coffee table have no back to find.
+  // `against wall` was never affected either way: `placeAgainst` derives its rotation from the
+  // wall directly, for every category.
+  //
+  // `symmetric` still wins over both flags — a round stool and a square coffee table have no
+  // back to find at any angle.
 
   // Bedroom. Footprints are the conventional single/double mattress, laid head-to-wall:
   // `along` runs with the wall (the bed's width), `depth` into the room (its length).
-  bed: { requiresWall: false, footprint: { along: 1500, depth: 2000 } },
-  double_bed: { requiresWall: false, footprint: { along: 1800, depth: 2000 } },
-  nightstand: { requiresWall: false, footprint: { along: 450, depth: 400 } },
-  bedside_table: { requiresWall: false, footprint: { along: 450, depth: 400 } },
+  bed: { requiresWall: false, directional: true, footprint: { along: 1500, depth: 2000 } },
+  double_bed: { requiresWall: false, directional: true, footprint: { along: 1800, depth: 2000 } },
+  nightstand: { requiresWall: false, directional: true, footprint: { along: 450, depth: 400 } },
+  bedside_table: { requiresWall: false, directional: true, footprint: { along: 450, depth: 400 } },
   // NO `clearanceMm`, deliberately, and it was measured rather than assumed. A 550 mm
   // frontal clearance here warned on `examples/garden-loft.arch`, whose 3200 mm bedroom
   // puts a 600 mm robe on one wall and a 2000 mm bed on the other — and that plan cannot be
@@ -128,9 +149,9 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   // small bedroom IS the normal layout, and a wardrobe is commonly approached from the side
   // or hung with sliding doors. The plumbed white goods below keep their 550, which no
   // shipped plan trips.
-  wardrobe: { requiresWall: false, footprint: { along: 1800, depth: 600 } },
-  robe: { requiresWall: false, footprint: { along: 1800, depth: 600 } },
-  closet: { requiresWall: false, footprint: { along: 1800, depth: 600 } },
+  wardrobe: { requiresWall: false, directional: true, footprint: { along: 1800, depth: 600 } },
+  robe: { requiresWall: false, directional: true, footprint: { along: 1800, depth: 600 } },
+  closet: { requiresWall: false, directional: true, footprint: { along: 1800, depth: 600 } },
 
   // Living. Free-standing: seating is arranged, not installed.
   sofa: { requiresWall: false },
@@ -141,7 +162,7 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   // by the rule above, and a media wall floated as a room divider raises nothing. No
   // frontal clearance either: nobody stands in front of a TV unit to use it, and a coffee
   // table half a metre away is the arrangement, not a defect.
-  tv_unit: { requiresWall: false, footprint: { along: 1500, depth: 450 } },
+  tv_unit: { requiresWall: false, directional: true, footprint: { along: 1500, depth: 450 } },
 
   // Dining & seating.
   table: { requiresWall: false, symmetric: true },
@@ -156,9 +177,9 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   office_chair: { requiresWall: false },
   // NOT wall-requiring: a library's stacks are free-standing runs mid-floor
   // (`examples/library.arch` has twelve of them), which is what stacks are.
-  bookshelf: { requiresWall: false, footprint: { along: 900, depth: 300 } },
-  bookcase: { requiresWall: false, footprint: { along: 900, depth: 300 } },
-  shelf: { requiresWall: false, footprint: { along: 900, depth: 300 } },
+  bookshelf: { requiresWall: false, directional: true, footprint: { along: 900, depth: 300 } },
+  bookcase: { requiresWall: false, directional: true, footprint: { along: 900, depth: 300 } },
+  shelf: { requiresWall: false, directional: true, footprint: { along: 900, depth: 300 } },
 
   // Kitchen appliances & utility — the plumbed and vented pieces, and the only ones in this
   // block that are `requiresWall`. They share the 600 mm module the counter run above
@@ -202,15 +223,21 @@ export function requiresWall(category: string): boolean {
 }
 
 /**
- * Does which way this fixture faces mean anything? True for a wall-requiring
- * fixture whose symbol has a distinguishable back (a WC's cistern, a basin's tap,
- * a counter's nosing) — the categories whose orientation can be derived, flagged
- * (`W_FIXTURE_BACK_TO_ROOM`) and corrected. False for free-standing furniture and
- * for a rotation-symmetric symbol (see {@link FixtureSpec.symmetric}).
+ * Does which way this fixture faces mean anything? True for any symbol with a distinguishable
+ * back — either because the piece needs a wall for services ({@link FixtureSpec.requiresWall}:
+ * a WC's cistern, a basin's tap, a counter's nosing) or because the drawn symbol simply has a
+ * front and a back worth aiming ({@link FixtureSpec.directional}: a bed's headboard, a
+ * wardrobe's door line). These are the categories whose orientation can be derived, flagged
+ * (`W_FIXTURE_BACK_TO_ROOM`) and corrected.
+ *
+ * False for a rotation-symmetric symbol whichever flag it carries (see
+ * {@link FixtureSpec.symmetric}), and for arranged furniture that has neither — a sofa's back
+ * to the room is a layout, not an error.
  */
 export function orientationMatters(category: string): boolean {
   const spec = CATALOG[category];
-  return spec?.requiresWall === true && spec.symmetric !== true;
+  if (!spec || spec.symmetric === true) return false;
+  return spec.requiresWall === true || spec.directional === true;
 }
 
 /** The frontal activity clearance (mm) for a fixture category, or 0 if none. */

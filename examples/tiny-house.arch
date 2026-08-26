@@ -106,7 +106,7 @@ plan "Tiny House" {
   # ---- living / sleeping ----------------------------------------------------
   furniture bed      at (2600,100)  size 2000x1400 label "Bed"      in r_main
   furniture bench    at (3400,2100) size 1500x600  label "Bench"    in r_main
-  furniture wardrobe at (100,2350)  size 1800x350  label "Wardrobe" in r_main
+  furniture wardrobe at (100,2350)  size 1800x350  label "Wardrobe" rotate 180 in r_main
   # The loft ladder's hatch, flush to the wet-room partition. 600 wide because a label
   # is drawn INSIDE its own footprint: "Ladder" does not fit a 350 mm box, and the
   # renderer has no metrics to shrink it with — it would simply run out over the wall.

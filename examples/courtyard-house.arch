@@ -194,11 +194,11 @@ plan "Courtyard House" {
   # anchors — the room's own rectangle is derived, and hanging furniture off a derived
   # edge would hide which of the two the author actually meant.
   furniture desk  at (300,3700) size 1600x700 label "Desk"
-  furniture bookcase at (1500,8000) size 1800x400 label "Bookcase"
+  furniture bookcase at (1500,8000) size 1800x400 label "Bookcase" rotate 180
   furniture bench    at (150,3000)  size 1200x400 label "Bench"
 
   furniture bed      in r_bed1 anchor bottom-left  flush size 1500x2000 label "Double"
-  furniture wardrobe at (4000,11000) size 1400x350 label "Wardrobe"
+  furniture wardrobe at (4000,11000) size 1400x350 label "Wardrobe" rotate 180
   furniture bed      in r_bed2 anchor bottom-right flush size 1500x2000 label "Double"
   furniture bed      in r_bed3 anchor bottom-right flush size 1500x2000 label "Double"
 

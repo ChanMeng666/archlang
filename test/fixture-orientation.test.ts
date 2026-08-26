@@ -189,25 +189,50 @@ describe("derived orientation for room-anchored placement", () => {
     expect(furnOf(boxed(`furniture wc in r centered size 400x700`)).rotate).toBeUndefined();
   });
 
-  it("free-standing furniture is never turned", () => {
-    // `bed` used to be the example here, on the strength of being uncatalogued. It is a
-    // catalogued, wall-requiring bed now (its back is its HEAD), so the free-standing case
-    // needs a piece that is free-standing on purpose — a sofa is arranged, not installed —
-    // and a word the catalog does not know at all.
+  it("arranged furniture is never turned", () => {
+    // `bed` used to be the example here, on the strength of being uncatalogued, and then on
+    // the strength of having no drawn back. Both are gone, so the case needs pieces that are
+    // free of orientation on purpose: a sofa is ARRANGED rather than installed (its back to
+    // the room is a room-divider layout, not a defect), and `widget` is a word the catalog
+    // does not know at all.
     expect(furnOf(boxed(`furniture sofa in r anchor bottom size 2000x900`)).rotate).toBeUndefined();
     expect(furnOf(boxed(`furniture widget in r anchor bottom size 1500x2000`)).rotate).toBeUndefined();
   });
 
-  it("a catalogued bed is NOT turned by a room anchor — its symbol has no back yet", () => {
-    // `bed` is catalogued (footprint, aliases, lint vocabulary) but NOT `requiresWall`: it
-    // carries no services, and `W_FIXTURE_FLOATING`'s remedy line ("supply/waste/venting
-    // runs in the wall") is false about a bed. `orientationMatters` therefore says no, and
-    // that is the honest answer while the bed draws as a plain labelled rectangle — a box
-    // has no back to turn toward a wall, so a derived rotation would be invisible and
-    // `W_FIXTURE_BACK_TO_ROOM`'s advice unverifiable from the drawing. The phase that draws
-    // the bed is the phase that can say which way it faces. Flip this test then.
-    expect(furnOf(boxed(`furniture bed in r anchor bottom size 1500x2000`)).rotate).toBeUndefined();
+  it("a catalogued bed IS turned by a room anchor — its symbol has a headboard", () => {
+    // The flip this test's previous version asked for. `bed` is still NOT `requiresWall` — it
+    // carries no services, and `W_FIXTURE_FLOATING`'s remedy line ("supply/waste/venting runs
+    // in the wall") is still false about it, which the second assertion pins. What changed is
+    // that the symbol now draws a headboard band, so which way it faces is a fact the drawing
+    // states and a reader can check. `directional: true` records exactly that, and
+    // `orientationMatters` reads `requiresWall || directional`.
+    //
+    // Anchored to the BOTTOM edge, the head belongs on the bottom wall: rotate 180.
+    expect(rotOf(boxed(`furniture bed in r anchor bottom size 1500x2000`))).toBe(180);
     expect(codes(boxed(`furniture bed in r anchor bottom size 1500x2000`))).not.toContain("W_FIXTURE_FLOATING");
+  });
+
+  it("a directional non-bed derives too — wardrobe and tv_unit", () => {
+    // Two pieces from different domains, to prove the flag and not the bedroom module is what
+    // drives this. Both back onto the wall their anchor names, and neither needs plumbing, so
+    // both must also stay clear of `W_FIXTURE_FLOATING`.
+    expect(rotOf(boxed(`furniture wardrobe in r anchor top size 1800x600`))).toBe(0);
+    expect(rotOf(boxed(`furniture wardrobe in r anchor left size 600x1800`))).toBe(270);
+    expect(rotOf(boxed(`furniture tv_unit in r anchor right size 450x1500`))).toBe(90);
+    for (const src of [
+      boxed(`furniture wardrobe in r anchor top size 1800x600`),
+      boxed(`furniture tv_unit in r anchor right size 450x1500`),
+    ]) {
+      expect(codes(src)).not.toContain("W_FIXTURE_FLOATING");
+    }
+  });
+
+  it("`symmetric` still outranks `directional`", () => {
+    // A coffee table is free-standing AND symmetric; an island is symmetric with a zone. If
+    // `directional` ever leaked onto a symmetric piece, these would start deriving a turn that
+    // the drawing cannot express.
+    expect(furnOf(boxed(`furniture coffee_table in r anchor bottom size 1200x600`)).rotate).toBeUndefined();
+    expect(furnOf(boxed(`furniture island in r anchor bottom size 1800x900`)).rotate).toBeUndefined();
   });
 
   it("`against wall` still derives a bed's rotation, catalogued or not", () => {
@@ -232,8 +257,11 @@ describe("derived orientation for room-anchored placement", () => {
   });
 
   it("does not move the piece: position is byte-identical to the un-derived form", () => {
+    // The un-derived comparand was `bed`, which now derives. `sofa` is the arranged piece that
+    // still does not — same footprint, same anchor, no rotation.
     const derived = furnOf(boxed(`furniture wc in r anchor bottom size 400x700`));
-    const plain = furnOf(boxed(`furniture bed in r anchor bottom size 400x700`));
+    const plain = furnOf(boxed(`furniture sofa in r anchor bottom size 400x700`));
+    expect(plain.rotate).toBeUndefined();
     expect(derived.at).toEqual(plain.at);
   });
 

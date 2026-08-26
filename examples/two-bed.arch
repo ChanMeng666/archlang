@@ -25,8 +25,10 @@ plan "Two-Bedroom Flat" {
   window at (0,3000)     width 1500 wall exterior
   window at (10000,3000) width 1500 wall exterior
 
+  # The master bed's head is already on the north wall (rotate 0). Bedroom 2's shares no
+  # wall with the corridor, so its head goes to the south wall instead.
   furniture bed at (5000,300) size 1800x2100 label "Bed"
-  furniture bed at (300,5300) size 1400x2000 label "Bed"
+  furniture bed at (300,5800) size 1400x2000 label "Bed" rotate 180
 
   # Overall extents, outside face to outside face: `faces` pushes each endpoint out
   # onto the wall it runs into, so the printed span is the true 10300 × 8300 the

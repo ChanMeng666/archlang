@@ -20,7 +20,9 @@ plan "Relational 1BR" {
   door   at (1000,0) width 1000 wall exterior hinge left swing in
   window at (6500,0) width 1800 wall exterior
 
-  furniture bed at (300,4300) size 1500x2000 label "Bed"
+  # Head against the south wall — the only edge of this room the bed's 1500 mm head can
+  # back onto, since the boundary it shares with the living room carries no wall.
+  furniture bed at (300,5400) size 1500x2000 label "Bed" rotate 180
 
   # Overall width, outside face to outside face (`faces` projects each endpoint onto
   # the wall it runs into, so it prints the true 8200 rather than the 8000 room grid).
