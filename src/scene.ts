@@ -64,6 +64,32 @@ export type RenderPass = (typeof RENDER_PASSES)[number];
 export const LINE_WEIGHTS = ["heavy", "medium", "thin", "extraThin"] as const;
 export type LineWeight = (typeof LINE_WEIGHTS)[number];
 
+/**
+ * Named line-weight ramp → concrete stroke width in mm, scaled from the drawing.
+ * `heavy` matches the wall stroke; the rest step down. The whole hierarchy keys off the
+ * same sizes (which already include the theme `lineWeight` multiplier), so weights stay
+ * proportional at any drawing size.
+ *
+ * It lives HERE, beside the ramp it resolves, rather than inside the SVG backend where it
+ * was written — because it is not an SVG fact. Only the SVG serializer consults
+ * `node.lineWeight`; the PDF backend reads `paint.width` and nothing else. A node that
+ * carries a weight must therefore also carry the width that weight resolves to, or the two
+ * exports disagree about how thick a line is. `elements/glyph-lib.ts` is the caller that
+ * needs it: it sets both, from this one function.
+ */
+export function weightWidth(w: LineWeight, sizes: RenderSizes): number {
+  switch (w) {
+    case "heavy":
+      return sizes.wallStroke;
+    case "medium":
+      return sizes.wallStroke * 0.6;
+    case "thin":
+      return sizes.thin;
+    case "extraThin":
+      return sizes.thin * 0.55;
+  }
+}
+
 /** Named line types (dash conventions). `continuous` is the default solid line. */
 export const LINE_TYPES = ["continuous", "dashed", "center", "hidden"] as const;
 export type LineType = (typeof LINE_TYPES)[number];

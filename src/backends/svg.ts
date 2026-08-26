@@ -11,8 +11,8 @@
 
 import type { NorthDir, Point } from "../ast.js";
 import type { CompileOptions } from "../types.js";
-import type { LineType, LineWeight, Paint, RenderSizes, Scene, SceneNode } from "../scene.js";
-import { RENDER_PASSES, layerOf } from "../scene.js";
+import type { LineType, Paint, RenderSizes, Scene, SceneNode } from "../scene.js";
+import { RENDER_PASSES, layerOf, weightWidth } from "../scene.js";
 import type { Bounds } from "../geometry.js";
 import { hatchPattern } from "../hatches.js";
 import type { Theme } from "../theme.js";
@@ -27,25 +27,6 @@ const pt = (p: Point): string => `${fmt(p.x)},${fmt(p.y)}`;
  *  error-card backend and `sanitizeTheme` so every escaping site behaves alike. */
 export { xmlText as xml } from "../text-safe.js";
 import { xmlText as xml } from "../text-safe.js";
-
-/**
- * Named line-weight ramp → concrete stroke width in mm, scaled from the drawing.
- * `heavy` matches the wall stroke; the rest step down. The whole hierarchy keys
- * off the same sizes (which already include the theme `lineWeight` multiplier),
- * so weights stay proportional at any drawing size.
- */
-function weightWidth(w: LineWeight, sizes: RenderSizes): number {
-  switch (w) {
-    case "heavy":
-      return sizes.wallStroke;
-    case "medium":
-      return sizes.wallStroke * 0.6;
-    case "thin":
-      return sizes.thin;
-    case "extraThin":
-      return sizes.thin * 0.55;
-  }
-}
 
 /** Named line type → dash pattern in mm (undefined = solid). */
 function dashPattern(t: LineType, sizes: RenderSizes): number[] | undefined {
