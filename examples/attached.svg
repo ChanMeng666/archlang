@@ -6,10 +6,20 @@
 <polygon points="4000,0 7000,0 7000,4000 4000,4000" fill="#fbfaf7"/>
 </g>
 <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
-<polygon points="300,300 2300,300 2300,1200 300,1200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
-<text x="1300" y="750" font-size="122.4" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Sofa</text>
-<polygon points="5200,1000 6700,1000 6700,3000 5200,3000" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
-<text x="5950" y="2000" font-size="122.4" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bed</text>
+<polygon points="2210,300 2244.44,306.85 2273.64,326.36 2293.15,355.56 2300,390 2300,1110 2293.15,1144.44 2273.64,1173.64 2244.44,1193.15 2210,1200 390,1200 355.56,1193.15 326.36,1173.64 306.85,1144.44 300,1110 300,390 306.85,355.56 326.36,326.36 355.56,306.85 390,300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon points="300,390 540,390 540,1200 300,1200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon points="2060,390 2300,390 2300,1200 2060,1200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<line x1="300" y1="462" x2="2300" y2="462" stroke="#a8a29a" stroke-width="6.34"/>
+<line x1="1046.67" y1="462" x2="1046.67" y2="1110" stroke="#a8a29a" stroke-width="6.34"/>
+<line x1="1553.33" y1="462" x2="1553.33" y2="1110" stroke="#a8a29a" stroke-width="6.34"/>
+<line x1="540" y1="1110" x2="2060" y2="1110" stroke="#a8a29a" stroke-width="6.34"/>
+<polygon points="5200,300 6700,300 6700,2300 5200,2300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon points="5200,300 6700,300 6700,420 5200,420" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon points="5807,480 5844.5,487.46 5876.3,508.7 5897.54,540.5 5905,578 5905,662 5897.54,699.5 5876.3,731.3 5844.5,752.54 5807,760 5433,760 5395.5,752.54 5363.7,731.3 5342.46,699.5 5335,662 5335,578 5342.46,540.5 5363.7,508.7 5395.5,487.46 5433,480" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon points="6467,480 6504.5,487.46 6536.3,508.7 6557.54,540.5 6565,578 6565,662 6557.54,699.5 6536.3,731.3 6504.5,752.54 6467,760 6093,760 6055.5,752.54 6023.7,731.3 6002.46,699.5 5995,662 5995,578 6002.46,540.5 6023.7,508.7 6055.5,487.46 6093,480" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
+<line x1="5200" y1="940" x2="6700" y2="940" stroke="#a8a29a" stroke-width="6.34"/>
+<line x1="5200" y1="1020" x2="6700" y2="1020" stroke="#a8a29a" stroke-width="6.34"/>
+<line x1="6700" y1="940" x2="6370" y2="1020" stroke="#a8a29a" stroke-width="6.34"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -100,-100 L -100,1300 L 100,1300 L 100,100 L 3950,100 L 3950,1550 L 4050,1550 L 4050,100 L 6900,100 L 6900,1400 L 7100,1400 L 7100,-100 Z M 100,2700 L -100,2700 L -100,4100 L 1500,4100 L 1500,3900 L 100,3900 Z M 3950,3900 L 2500,3900 L 2500,4100 L 7100,4100 L 7100,2600 L 6900,2600 L 6900,3900 L 4050,3900 L 4050,2450 L 3950,2450 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -36,8 +46,8 @@
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
 <text x="2000" y="1956.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living</text>
 <text x="2000" y="2194.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">16.0 m²</text>
-<text x="5500" y="3156.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
-<text x="5500" y="3394.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
+<text x="5500" y="2556.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
+<text x="5500" y="2794.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
 </g>
 <g><polygon points="6776,-1097.2 6614,-578.8 6776,-692.2 6938,-578.8" fill="#333333" transform="rotate(0 6776 -773.2)"/><text x="6776" y="-1246.96" font-size="187.2" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
 <g><rect x="-100" y="4460" width="1000" height="100.8" fill="#333333"/><rect x="900" y="4460" width="1000" height="100.8" fill="none" stroke="#333333" stroke-width="11.52"/><text x="-100" y="4704.8" font-size="144" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="1900" y="4704.8" font-size="144" fill="#333333" text-anchor="middle" dominant-baseline="central">2 m</text></g>

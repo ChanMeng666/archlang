@@ -22,9 +22,9 @@
 │ │                                                    │                     │ │
 │ │                                                    │                     │ │
 │ │                                                    ·                     │ │
-│ │     B                                              ·                     │ │
-│ │          Bedroom 2                  Bathroom       ·         Hall        │ │
 │ │                                                    ·                     │ │
+│ │          Bedroom 2                  Bathroom       ·         Hall        │ │
+│ │     B                                              ·                     │ │
 │ │                                                    ·                     │ │
 │ │                                                    │                     │ │
 │ │                                                    │                     │ │

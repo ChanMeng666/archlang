@@ -228,7 +228,7 @@ plan "Attached 1BR" {
 
   # Furniture placed by anchor inside each room (never off a coordinate).
   furniture sofa in r_living anchor top-left inset 300 size 2000x900  label "Sofa"
-  furniture bed  in r_bed    anchor right    inset 300 size 1500x2000 label "Bed"
+  furniture bed  in r_bed    anchor top-right inset 300 size 1500x2000 label "Bed"
 }
 ```
 

@@ -12,17 +12,24 @@
 </g>
 <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
 <polygon points="7000,1150 10000,1150 10000,1650 7000,1650" fill="#f4f2ee" stroke="#a8a29a" stroke-width="24.67"/>
-<line x1="7000" y1="1560" x2="10000" y2="1560" stroke="#a8a29a" stroke-width="24.67"/>
+<line x1="7000" y1="1560" x2="10000" y2="1560" stroke="#a8a29a" stroke-width="13.57"/>
+<line x1="7600" y1="1150" x2="7600" y2="1560" stroke="#a8a29a" stroke-width="13.57"/>
+<line x1="8200" y1="1150" x2="8200" y2="1560" stroke="#a8a29a" stroke-width="13.57"/>
+<line x1="8800" y1="1150" x2="8800" y2="1560" stroke="#a8a29a" stroke-width="13.57"/>
+<line x1="9400" y1="1150" x2="9400" y2="1560" stroke="#a8a29a" stroke-width="13.57"/>
 <polygon points="2750,7100 3950,7100 3950,7700 2750,7700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="24.67"/>
-<line x1="2750" y1="7592" x2="3950" y2="7592" stroke="#a8a29a" stroke-width="24.67"/>
+<line x1="2750" y1="7592" x2="3950" y2="7592" stroke="#a8a29a" stroke-width="13.57"/>
+<line x1="3350" y1="7100" x2="3350" y2="7592" stroke="#a8a29a" stroke-width="13.57"/>
 <polygon points="13150,5550 14050,5550 14050,6450 13150,6450" fill="#f4f2ee" stroke="#a8a29a" stroke-width="24.67"/>
-<text x="13600" y="6000" font-size="262.14" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Table</text>
+<polygon points="13222,5622 13978,5622 13978,6378 13222,6378" fill="none" stroke="#a8a29a" stroke-width="13.57"/>
 <polygon points="3850,5550 4750,5550 4750,6450 3850,6450" fill="#f4f2ee" stroke="#a8a29a" stroke-width="24.67"/>
-<text x="4300" y="6000" font-size="262.14" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Tea</text>
+<polygon points="3922,5622 4678,5622 4678,6378 3922,6378" fill="none" stroke="#a8a29a" stroke-width="13.57"/>
 <polygon points="12950,8450 14350,8450 14350,8900 12950,8900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="24.67"/>
-<text x="13650" y="8675" font-size="262.14" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bench</text>
+<line x1="12950" y1="8600" x2="14350" y2="8600" stroke="#a8a29a" stroke-width="13.57"/>
+<line x1="12950" y1="8750" x2="14350" y2="8750" stroke="#a8a29a" stroke-width="13.57"/>
 <polygon points="9450,12000 10850,12000 10850,12450 9450,12450" fill="#f4f2ee" stroke="#a8a29a" stroke-width="24.67"/>
-<text x="10150" y="12225" font-size="262.14" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bench</text>
+<line x1="9450" y1="12150" x2="10850" y2="12150" stroke="#a8a29a" stroke-width="13.57"/>
+<line x1="9450" y1="12300" x2="10850" y2="12300" stroke="#a8a29a" stroke-width="13.57"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M 16210,7030 L 11530,790 L 11290,970 L 15970,7210 Z" fill="url(#poche)" fill-rule="nonzero"/>

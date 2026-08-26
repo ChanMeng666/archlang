@@ -95,7 +95,10 @@ describe("fixture symbols — the eight shipped families (re-blessed when redraw
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
       <polygon points="300,300 700,300 700,454 300,454" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.8"/>
+      <line x1="324" y1="346.2" x2="676" y2="346.2" stroke="#a8a29a" stroke-width="2.64"/>
       <polygon points="660,737.92 654.55,802.92 638.56,863.5 613.14,915.52 580,955.43 541.41,980.52 500,989.08 458.59,980.52 420,955.43 386.86,915.52 361.44,863.5 345.45,802.92 340,737.92 345.45,672.92 361.44,612.34 386.86,560.32 420,520.41 458.59,495.32 500,486.76 541.41,495.32 580,520.41 613.14,560.32 638.56,612.34 654.55,672.92" fill="#ffffff" stroke="#a8a29a" stroke-width="4.8"/>
+      <polygon points="624.8,737.92 620.55,788.62 608.08,835.87 588.25,876.45 562.4,907.58 532.3,927.15 500,933.82 467.7,927.15 437.6,907.58 411.75,876.45 391.92,835.87 379.45,788.62 375.2,737.92 379.45,687.22 391.92,639.97 411.75,599.39 437.6,568.26 467.7,548.69 500,542.02 532.3,548.69 562.4,568.26 588.25,599.39 608.08,639.97 620.55,687.22" fill="#ffffff" stroke="#a8a29a" stroke-width="2.64"/>
+      <circle cx="500" cy="377" r="20" fill="#a8a29a" stroke="#a8a29a" stroke-width="4.8"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
@@ -118,7 +121,9 @@ describe("fixture symbols — the eight shipped families (re-blessed when redraw
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
       <polygon points="300,300 900,300 900,750 300,750" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.8"/>
       <polygon points="804,552 797.05,589.27 776.67,624 744.25,653.82 702,676.71 652.8,691.09 600,696 547.2,691.09 498,676.71 455.75,653.82 423.33,624 402.95,589.27 396,552 402.95,514.73 423.33,480 455.75,450.18 498,427.29 547.2,412.91 600,408 652.8,412.91 702,427.29 744.25,450.18 776.67,480 797.05,514.73" fill="#ffffff" stroke="#a8a29a" stroke-width="4.8"/>
-      <line x1="600" y1="345" x2="600" y2="408" stroke="#a8a29a" stroke-width="4.8"/>
+      <polygon points="763.2,552 757.64,581.82 741.34,609.6 715.4,633.46 681.6,651.77 642.24,663.27 600,667.2 557.76,663.27 518.4,651.77 484.6,633.46 458.66,609.6 442.36,581.82 436.8,552 442.36,522.18 458.66,494.4 484.6,470.54 518.4,452.23 557.76,440.73 600,436.8 642.24,440.73 681.6,452.23 715.4,470.54 741.34,494.4 757.64,522.18" fill="#ffffff" stroke="#a8a29a" stroke-width="2.64"/>
+      <polygon points="570,313.5 630,313.5 630,358.5 570,358.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.8"/>
+      <line x1="600" y1="358.5" x2="600" y2="494.4" stroke="#a8a29a" stroke-width="2.64"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
@@ -140,9 +145,11 @@ describe("fixture symbols — the eight shipped families (re-blessed when redraw
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
       <polygon points="300,300 1200,300 1200,1200 300,1200" fill="#ffffff" stroke="#a8a29a" stroke-width="4.8"/>
-      <line x1="300" y1="300" x2="1200" y2="1200" stroke="#a8a29a" stroke-width="4.8"/>
-      <line x1="1200" y1="300" x2="300" y2="1200" stroke="#a8a29a" stroke-width="4.8"/>
-      <polygon points="822,750 819.55,768.63 812.35,786 800.91,800.91 786,812.35 768.63,819.55 750,822 731.37,819.55 714,812.35 699.09,800.91 687.65,786 680.45,768.63 678,750 680.45,731.37 687.65,714 699.09,699.09 714,687.65 731.37,680.45 750,678 768.63,680.45 786,687.65 800.91,699.09 812.35,714 819.55,731.37" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.8"/>
+      <polygon points="372,372 1128,372 1128,1128 372,1128" fill="#ffffff" stroke="#a8a29a" stroke-width="2.64"/>
+      <line x1="372" y1="372" x2="1128" y2="1128" stroke="#a8a29a" stroke-width="2.64"/>
+      <line x1="1128" y1="372" x2="372" y2="1128" stroke="#a8a29a" stroke-width="2.64"/>
+      <circle cx="750" cy="750" r="45" fill="none" stroke="#a8a29a" stroke-width="4.8"/>
+      <circle cx="750" cy="750" r="16.2" fill="#a8a29a" stroke="#a8a29a" stroke-width="2.64"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
@@ -164,8 +171,9 @@ describe("fixture symbols — the eight shipped families (re-blessed when redraw
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
       <polygon points="1874,300 1922.22,309.59 1963.1,336.9 1990.41,377.78 2000,426 2000,874 1990.41,922.22 1963.1,963.1 1922.22,990.41 1874,1000 426,1000 377.78,990.41 336.9,963.1 309.59,922.22 300,874 300,426 309.59,377.78 336.9,336.9 377.78,309.59 426,300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.8"/>
-      <polygon points="1818,398 1850.15,404.39 1877.4,422.6 1895.61,449.85 1902,482 1902,818 1895.61,850.15 1877.4,877.4 1850.15,895.61 1818,902 482,902 449.85,895.61 422.6,877.4 404.39,850.15 398,818 398,482 404.39,449.85 422.6,422.6 449.85,404.39 482,398" fill="#ffffff" stroke="#a8a29a" stroke-width="4.8"/>
-      <polygon points="454,650 452.81,659.06 449.31,667.5 443.75,674.75 436.5,680.31 428.06,683.81 419,685 409.94,683.81 401.5,680.31 394.25,674.75 388.69,667.5 385.19,659.06 384,650 385.19,640.94 388.69,632.5 394.25,625.25 401.5,619.69 409.94,616.19 419,615 428.06,616.19 436.5,619.69 443.75,625.25 449.31,632.5 452.81,640.94" fill="#a8a29a" stroke="#a8a29a" stroke-width="4.8"/>
+      <polygon points="1766.16,384 1790.59,388.86 1811.3,402.7 1825.14,423.41 1830,447.84 1830,852.16 1825.14,876.59 1811.3,897.3 1790.59,911.14 1766.16,916 669.84,916 645.41,911.14 624.7,897.3 610.86,876.59 606,852.16 606,447.84 610.86,423.41 624.7,402.7 645.41,388.86 669.84,384" fill="#ffffff" stroke="#a8a29a" stroke-width="4.8"/>
+      <circle cx="419" cy="650" r="35" fill="#a8a29a" stroke="#a8a29a" stroke-width="4.8"/>
+      <circle cx="1354" cy="650" r="28" fill="none" stroke="#a8a29a" stroke-width="2.64"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
@@ -187,9 +195,12 @@ describe("fixture symbols — the eight shipped families (re-blessed when redraw
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
       <polygon points="300,300 1100,300 1100,900 300,900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.8"/>
-      <polygon points="384,456 658,456 658,816 384,816" fill="#ffffff" stroke="#a8a29a" stroke-width="4.8"/>
-      <polygon points="742,456 1016,456 1016,816 742,816" fill="#ffffff" stroke="#a8a29a" stroke-width="4.8"/>
-      <line x1="700" y1="348" x2="700" y2="420" stroke="#a8a29a" stroke-width="4.8"/>
+      <polygon points="636.08,456 644.47,457.67 651.58,462.42 656.33,469.53 658,477.92 658,794.08 656.33,802.47 651.58,809.58 644.47,814.33 636.08,816 405.92,816 397.53,814.33 390.42,809.58 385.67,802.47 384,794.08 384,477.92 385.67,469.53 390.42,462.42 397.53,457.67 405.92,456" fill="#ffffff" stroke="#a8a29a" stroke-width="4.8"/>
+      <circle cx="521" cy="636" r="32.88" fill="#f4f2ee" stroke="#a8a29a" stroke-width="2.64"/>
+      <polygon points="994.08,456 1002.47,457.67 1009.58,462.42 1014.33,469.53 1016,477.92 1016,794.08 1014.33,802.47 1009.58,809.58 1002.47,814.33 994.08,816 763.92,816 755.53,814.33 748.42,809.58 743.67,802.47 742,794.08 742,477.92 743.67,469.53 748.42,462.42 755.53,457.67 763.92,456" fill="#ffffff" stroke="#a8a29a" stroke-width="4.8"/>
+      <circle cx="879" cy="636" r="32.88" fill="#f4f2ee" stroke="#a8a29a" stroke-width="2.64"/>
+      <circle cx="700" cy="336" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="4.8"/>
+      <line x1="700" y1="336" x2="700" y2="468" stroke="#a8a29a" stroke-width="2.64"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
@@ -211,7 +222,7 @@ describe("fixture symbols — the eight shipped families (re-blessed when redraw
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
       <polygon points="300,300 900,300 900,900 300,900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.8"/>
-      <line x1="300" y1="792" x2="900" y2="792" stroke="#a8a29a" stroke-width="4.8"/>
+      <line x1="300" y1="792" x2="900" y2="792" stroke="#a8a29a" stroke-width="2.64"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
@@ -233,10 +244,15 @@ describe("fixture symbols — the eight shipped families (re-blessed when redraw
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
       <polygon points="300,300 900,300 900,900 300,900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.8"/>
-      <polygon points="576,480 572.73,504.85 563.14,528 547.88,547.88 528,563.14 504.85,572.73 480,576 455.15,572.73 432,563.14 412.12,547.88 396.86,528 387.27,504.85 384,480 387.27,455.15 396.86,432 412.12,412.12 432,396.86 455.15,387.27 480,384 504.85,387.27 528,396.86 547.88,412.12 563.14,432 572.73,455.15" fill="#ffffff" stroke="#a8a29a" stroke-width="4.8"/>
-      <polygon points="576,720 572.73,744.85 563.14,768 547.88,787.88 528,803.14 504.85,812.73 480,816 455.15,812.73 432,803.14 412.12,787.88 396.86,768 387.27,744.85 384,720 387.27,695.15 396.86,672 412.12,652.12 432,636.86 455.15,627.27 480,624 504.85,627.27 528,636.86 547.88,652.12 563.14,672 572.73,695.15" fill="#ffffff" stroke="#a8a29a" stroke-width="4.8"/>
-      <polygon points="816,480 812.73,504.85 803.14,528 787.88,547.88 768,563.14 744.85,572.73 720,576 695.15,572.73 672,563.14 652.12,547.88 636.86,528 627.27,504.85 624,480 627.27,455.15 636.86,432 652.12,412.12 672,396.86 695.15,387.27 720,384 744.85,387.27 768,396.86 787.88,412.12 803.14,432 812.73,455.15" fill="#ffffff" stroke="#a8a29a" stroke-width="4.8"/>
-      <polygon points="816,720 812.73,744.85 803.14,768 787.88,787.88 768,803.14 744.85,812.73 720,816 695.15,812.73 672,803.14 652.12,787.88 636.86,768 627.27,744.85 624,720 627.27,695.15 636.86,672 652.12,652.12 672,636.86 695.15,627.27 720,624 744.85,627.27 768,636.86 787.88,652.12 803.14,672 812.73,695.15" fill="#ffffff" stroke="#a8a29a" stroke-width="4.8"/>
+      <circle cx="480" cy="480" r="96" fill="none" stroke="#a8a29a" stroke-width="4.8"/>
+      <circle cx="480" cy="480" r="57.6" fill="none" stroke="#a8a29a" stroke-width="2.64"/>
+      <circle cx="480" cy="720" r="96" fill="none" stroke="#a8a29a" stroke-width="4.8"/>
+      <circle cx="480" cy="720" r="57.6" fill="none" stroke="#a8a29a" stroke-width="2.64"/>
+      <circle cx="720" cy="480" r="96" fill="none" stroke="#a8a29a" stroke-width="4.8"/>
+      <circle cx="720" cy="480" r="57.6" fill="none" stroke="#a8a29a" stroke-width="2.64"/>
+      <circle cx="720" cy="720" r="96" fill="none" stroke="#a8a29a" stroke-width="4.8"/>
+      <circle cx="720" cy="720" r="57.6" fill="none" stroke="#a8a29a" stroke-width="2.64"/>
+      <line x1="300" y1="852" x2="900" y2="852" stroke="#a8a29a" stroke-width="2.64"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
@@ -258,6 +274,7 @@ describe("fixture symbols — the eight shipped families (re-blessed when redraw
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
       <polygon points="300,300 900,300 900,950 300,950" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.8"/>
+      <polygon points="330,330 870,330 870,920 330,920" fill="none" stroke="#a8a29a" stroke-width="2.64"/>
       <line x1="300" y1="534" x2="900" y2="534" stroke="#a8a29a" stroke-width="4.8"/>
       <line x1="816" y1="378" x2="816" y2="482" stroke="#a8a29a" stroke-width="4.8"/>
       </g>

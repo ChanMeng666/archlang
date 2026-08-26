@@ -10,9 +10,19 @@
 </g>
 <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
 <polygon points="5000,300 6800,300 6800,2400 5000,2400" fill="#f4f2ee" stroke="#a8a29a" stroke-width="16.48"/>
-<text x="5900" y="1350" font-size="175.1" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bed</text>
-<polygon points="300,5300 1700,5300 1700,7300 300,7300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="16.48"/>
-<text x="1000" y="6300" font-size="175.1" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Bed</text>
+<polygon points="5000,300 6800,300 6800,426 5000,426" fill="#f4f2ee" stroke="#a8a29a" stroke-width="16.48"/>
+<polygon points="5743.1,489 5782.48,496.83 5815.86,519.14 5838.17,552.52 5846,591.9 5846,680.1 5838.17,719.48 5815.86,752.86 5782.48,775.17 5743.1,783 5264.9,783 5225.52,775.17 5192.14,752.86 5169.83,719.48 5162,680.1 5162,591.9 5169.83,552.52 5192.14,519.14 5225.52,496.83 5264.9,489" fill="#ffffff" stroke="#a8a29a" stroke-width="16.48"/>
+<polygon points="6535.1,489 6574.48,496.83 6607.86,519.14 6630.17,552.52 6638,591.9 6638,680.1 6630.17,719.48 6607.86,752.86 6574.48,775.17 6535.1,783 6056.9,783 6017.52,775.17 5984.14,752.86 5961.83,719.48 5954,680.1 5954,591.9 5961.83,552.52 5984.14,519.14 6017.52,496.83 6056.9,489" fill="#ffffff" stroke="#a8a29a" stroke-width="16.48"/>
+<line x1="5000" y1="972" x2="6800" y2="972" stroke="#a8a29a" stroke-width="9.06"/>
+<line x1="5000" y1="1056" x2="6800" y2="1056" stroke="#a8a29a" stroke-width="9.06"/>
+<line x1="6800" y1="972" x2="6404" y2="1056" stroke="#a8a29a" stroke-width="9.06"/>
+<polygon points="1700,7800 300,7800 300,5800 1700,5800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="16.48"/>
+<polygon points="1700,7800 300,7800 300,7680 1700,7680" fill="#f4f2ee" stroke="#a8a29a" stroke-width="16.48"/>
+<polygon points="1140,7620 1102.5,7612.54 1070.7,7591.3 1049.46,7559.5 1042,7522 1042,7438 1049.46,7400.5 1070.7,7368.7 1102.5,7347.46 1140,7340 1476,7340 1513.5,7347.46 1545.3,7368.7 1566.54,7400.5 1574,7438 1574,7522 1566.54,7559.5 1545.3,7591.3 1513.5,7612.54 1476,7620" fill="#ffffff" stroke="#a8a29a" stroke-width="16.48"/>
+<polygon points="524,7620 486.5,7612.54 454.7,7591.3 433.46,7559.5 426,7522 426,7438 433.46,7400.5 454.7,7368.7 486.5,7347.46 524,7340 860,7340 897.5,7347.46 929.3,7368.7 950.54,7400.5 958,7438 958,7522 950.54,7559.5 929.3,7591.3 897.5,7612.54 860,7620" fill="#ffffff" stroke="#a8a29a" stroke-width="16.48"/>
+<line x1="1700" y1="7160" x2="300" y2="7160" stroke="#a8a29a" stroke-width="9.06"/>
+<line x1="1700" y1="7080" x2="300" y2="7080" stroke="#a8a29a" stroke-width="9.06"/>
+<line x1="300" y1="7160" x2="608" y2="7080" stroke="#a8a29a" stroke-width="9.06"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -150,-150 L -150,2250 L 150,2250 L 150,150 L 1000,150 L 1000,-150 Z M 150,3750 L -150,3750 L -150,8150 L 10150,8150 L 10150,3750 L 9850,3750 L 9850,4950 L 5900,4950 L 5900,5050 L 6950,5050 L 6950,6050 L 7050,6050 L 7050,5050 L 9850,5050 L 9850,7850 L 7050,7850 L 7050,6950 L 6950,6950 L 6950,7850 L 150,7850 Z M 3000,-150 L 3000,150 L 3950,150 L 3950,2050 L 4050,2050 L 4050,150 L 6800,150 L 6800,-150 Z M 4050,2950 L 3950,2950 L 3950,5050 L 5100,5050 L 5100,4950 L 4050,4950 Z M 9200,-150 L 9200,150 L 9850,150 L 9850,2250 L 10150,2250 L 10150,-150 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -52,8 +62,8 @@
 <text x="2000" y="3528.1" font-size="226.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.0 m²</text>
 <text x="7000" y="3188.2" font-size="309" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Master Bedroom</text>
 <text x="7000" y="3528.1" font-size="226.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">30.0 m²</text>
-<text x="2600" y="7338.2" font-size="309" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom 2</text>
-<text x="2600" y="7678.1" font-size="226.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
+<text x="2000" y="5238.2" font-size="309" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom 2</text>
+<text x="2000" y="5578.1" font-size="226.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
 <text x="5050" y="6438.2" font-size="309" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bathroom</text>
 <text x="5050" y="6778.1" font-size="226.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">9.0 m²</text>
 <text x="8500" y="6438.2" font-size="309" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Hall</text>

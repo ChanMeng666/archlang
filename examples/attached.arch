@@ -35,9 +35,5 @@ plan "Attached 1BR" {
 
   # Furniture placed by anchor inside each room (never off a coordinate).
   furniture sofa in r_living anchor top-left inset 300 size 2000x900  label "Sofa"
-  # Head to the north wall, not the east one: a 1500x2000 bed is 1500 mm wide across its
-  # HEAD, so the east edge is the one side it cannot back onto. The corner anchor is what
-  # keeps it out of the bedroom door's swing — and it still derives a unique rotation,
-  # because only one of the corner's two edges can take a head that wide.
   furniture bed  in r_bed    anchor top-right inset 300 size 1500x2000 label "Bed"
 }
