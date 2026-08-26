@@ -7,16 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.28.0] - 2026-08-26
+
+**"the furniture vocabulary the examples were already using, and the symbols it now draws"**, a
+MINOR. `arch manifest` advertises **51 fixture categories across 32 families** where it advertised
+18 across 9, and — the half that matters — **every one of the 51 has a plan symbol**. The words the
+shipped examples had been writing for months (`bed`, `sofa`, `desk`, `wardrobe`, `dining_table`,
+`car`…) used to fall through to "unknown category": no footprint, no wall semantics, and a labelled
+rectangle where a drawing should be. They are now catalogued and drawn, across five domain modules
+built on one shared drawing vocabulary (`src/elements/glyph-lib.ts`).
+
+**Three behaviour changes to state plainly.** (1) **A drawn symbol ignores its `label`** — long-
+standing for `wc` and `basin`, and now true of twenty shipped examples whose fixture labels stop
+appearing in the drawing; the words remain in the source and in `describe()`. (2) **`requiresWall`
+now means services, and only services** — flagging the new room furniture raised 23 spurious
+floating-fixture warnings across nine shipped plans, so the flag stayed with the plumbed and vented
+goods, and the derived quarter-turn moved to a **new `directional` flag** carried by the eleven
+categories whose symbol has a back worth turning to a wall. Net lint change across every shipped
+example, eval golden and fault fixture: **zero**, swept before and after. (3) **Every one of the 27
+shipped examples that places a fixture renders different bytes** — 25 golden SVG snapshots, 21 PNG
+visual goldens and eleven of the twelve committed `examples/*.svg` re-blessed in one reviewed pass
+(`aquarium`, the one that places no fixture, is byte-identical), with the diff accounted for layer
+by layer below. No new keyword, no new `E_*`/`W_*` code, no
+`src/index.ts` removal. Also in the release: `examples/furnished-flat.arch` and
+`examples/lib/furniture.arch`, a new `/showcase` docs page, and the extraction of `paper/` to a
+private repository.
+
 ### Added — the room-furniture vocabulary, and the glyph layer it will be drawn on
 
-**Thirty-four new fixture categories in twenty-four families** (`arch manifest` now advertises 51
-across 32) — `bed`, `double_bed`, `nightstand`,
-`wardrobe` (`robe`/`closet`), `sofa` (`couch`), `armchair`, `coffee_table`, `tv_unit`, `table`,
-`dining_table`, `chair`, `stool` (`barstool`), `bench`, `desk`, `office_chair`, `bookshelf`
-(`bookcase`/`shelf`), `oven`, `dishwasher`, `island`, `upper_cabinet` (`wall_cabinet`), `washer`
+**Thirty-three new fixture categories in twenty-three families** — `arch manifest` now advertises
+**51 categories across 32 families**, up from 18 across 9 — `bed`, `double_bed`, `nightstand`
+(`bedside_table`), `wardrobe` (`robe`/`closet`), `sofa` (`couch`), `armchair`, `coffee_table`,
+`tv_unit`, `table`, `dining_table`, `chair`, `stool` (`barstool`), `bench`, `desk`, `office_chair`,
+`bookshelf` (`bookcase`/`shelf`), `dishwasher`, `island`, `upper_cabinet` (`wall_cabinet`), `washer`
 (`washing_machine`), `dryer`, `plant` (`planter`), `car`. These are words the shipped examples
 already use and that fell through to "unknown category" until now: no footprint, no wall
-requirement, no lint semantics.
+requirement, no lint semantics. **`oven` is the one category that is not new** — it was catalogued
+as a zone-only entry (it counted as a kitchen fixture and nothing else), and it gains a footprint
+and a symbol here like the rest.
 
 **All of them are now DRAWN**, across five domain modules. Every catalogued category has a plan
 symbol — `hasFixtureGlyph` is true for all 51, and `test/fixture-classifier-drift.test.ts` asserts
@@ -161,8 +189,10 @@ module that uses trigonometry at all).
 ### Changed — every drawing with furniture in it
 
 **All 27 shipped examples that place a fixture render different bytes**, on purpose: 25 golden SVG
-snapshots, 21 PNG visual goldens and all twelve committed `examples/*.svg` the README embeds were
-re-blessed in one pass. The snapshot diff was reviewed per SVG layer, per example, and only three
+snapshots, 21 PNG visual goldens and **eleven of the twelve** committed `examples/*.svg` the README
+embeds were re-blessed in one pass — the twelfth, `aquarium`, places no fixture at all and is
+byte-identical to v1.27.0, which is the byte-identity law doing its job on the README's own
+drawings. `furnished-flat` joins `README_SVGS` as the thirteenth. The snapshot diff was reviewed per SVG layer, per example, and only three
 kinds of thing moved:
 
 - **`A-FURN` in all 25** — the release itself.
@@ -246,6 +276,25 @@ it), **`rug`**, **`sofa_l`** (an L-shaped sectional needs a footprint the rectan
 **`piano`**, **`sun_lounger`**, and a **syntax for overhead dashes** (`upper_cabinet` is dashed
 because of what it is, and there is no way for an author to say "draw this piece above the cut
 plane" about anything else).
+
+### Added — the showcase gallery
+
+**A new `/showcase` page on the docs site** carrying eleven compiled plans: the West Wing, Villa La
+Rotonda, Bag End, de_dust2, The Skeld, Tweet House, the Friends apartments, 742 Evergreen Terrace,
+Dunder Mifflin Scranton, a railroad walk-up and the McCallister house. Each plate gets its rendered
+drawing, a short account of what the plan exercises, an "Open in playground" `#z=` permalink that
+loads the real source, and a link to that plan's directory on GitHub. The sources live in the
+separate [archlang-showcase](https://github.com/ChanMeng666/archlang-showcase) repository, not in
+`examples/` — which is why the drawings are self-hosted PNGs under `docs-site/public/showcase/`
+rather than live `<ArchLive>` widgets (the sources run 7–18 KB apiece), and why the page is
+deliberately **absent** from `test/readme-permalink.test.ts`'s list: that guard asserts a permalink
+decodes to an example that still exists, which would fail here by construction. All eleven were
+verified by hand instead — each decodes to its `plan.arch` byte-for-byte and compiles with zero
+errors. The page joins `test/docs-flags.test.ts`'s `DOCS` list, so the `arch` flags it names must
+stay flags those commands declare. The README gains a compact Showcase section after the examples
+gallery, hotlinking three images from the showcase repo; it adds no `<img>` pointing at
+`examples/*.svg` and no `#z=` permalink, so the `README_SVGS` pinning and the permalink drift guard
+are untouched.
 
 ### Changed — repository contents only; no `src/`, no language, no published artifact
 
