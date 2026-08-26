@@ -34,11 +34,9 @@
  * 1×1 rect, and the fuzz asks with 10000×10) without throwing or producing a NaN.
  */
 
-import type { Point } from "../ast.js";
 import type { SceneNode } from "../scene.js";
-import { weightWidth } from "../scene.js";
-import type { GlyphCtx, GlyphWeight, Rect } from "./glyph-lib.js";
-import { dashedPattern, insetRect, rectPoly, roundedRectPoly } from "./glyph-lib.js";
+import type { GlyphCtx, Rect } from "./glyph-lib.js";
+import { centerOf, dashedPoly, insetRect, rectPoly, roundedRectPoly, shortSide } from "./glyph-lib.js";
 
 /**
  * The base-cabinet module, in millimetres — the one sanctioned absolute in this file.
@@ -59,46 +57,19 @@ export const CABINET_PITCH_MM = 600;
  */
 const MAX_DIVISIONS = 64;
 
-// ---------------------------------------------------------------------------
-// Local helpers — WP-B additions, candidates for Phase-2 consolidation into `glyph-lib.ts`.
-// Neither is kitchen-specific; both are written here only because this work package may not
-// edit that module.
-
-/**
- * A closed polygon drawn with a DASHED outline.
- *
- * `GlyphCtx` has a dashed `seg` but no dashed `poly`, and {@link drawUpperCabinet} needs one:
- * an overhead cabinet is above the cut plane, so its whole outline is dashed by convention.
- * Sets `lineType` AND `paint.dash` to the same pattern for the reason `glyph-lib`'s header
- * gives — the SVG backend follows the name, the PDF backend follows the number, and a node
- * that disagrees with itself draws two different dashes from one primitive.
- */
-function dashedPoly(g: GlyphCtx, pts: Point[], fill: string, weight: GlyphWeight = "thin"): void {
-  g.nodes.push({
-    layer: "furniture",
-    prim: { t: "polygon", pts },
-    paint: { fill, stroke: g.stroke, width: weightWidth(weight, g.sizes), dash: dashedPattern(g.sizes) },
-    lineWeight: weight,
-    lineType: "dashed",
-  });
-}
-
 /**
  * An unfilled `extraThin` rectangle inset from `r` by `frac` of its short side — the carcass
  * line that makes an appliance read as a box with a door rather than a blank slab.
  *
  * Unfilled on purpose: it is drawn OVER the body polygon, so a fill would repaint it and
  * hide anything already drawn underneath.
+ *
+ * Kitchen-local on purpose: unlike the geometry helpers this module used to carry, it is not a
+ * shape but an appliance-drawing convention, and it has one domain.
  */
 function insetOutline(g: GlyphCtx, r: Rect, frac: number): void {
   g.poly(rectPoly(insetRect(r, frac)), "none", "extraThin");
 }
-
-/** The centre of a rect. */
-const centerOf = (r: Rect): Point => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
-
-/** The short side of a rect — what every radius and inset is keyed to, so nothing escapes a thin footprint. */
-const shortSide = (r: Rect): number => Math.min(r.w, r.h);
 
 // ---------------------------------------------------------------------------
 // Kitchen

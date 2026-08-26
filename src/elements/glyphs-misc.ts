@@ -24,18 +24,14 @@
 import type { Point } from "../ast.js";
 import type { SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
-import { insetRect, insetRectXY, rectPoly, roundedRectPoly } from "./glyph-lib.js";
+import { clamp, insetRect, insetRectXY, rectPoly, roundedRectPoly } from "./glyph-lib.js";
 
-// ---------------------------------------------------------------------------
-// Local helpers. Neither exists in `glyph-lib.ts` yet; both are candidates for the Phase-2
-// consolidation pass, which is the point at which more than one domain module wants them.
-
-/** `v` held inside `[lo, hi]`. */
-function clamp(v: number, lo: number, hi: number): number {
-  return Math.min(hi, Math.max(lo, v));
-}
-
-/** The point at `deg` (screen degrees: 0 = +x, 90 = +y, i.e. DOWN) and radius `rad` about `c`. */
+/**
+ * The point at `deg` (screen degrees: 0 = +x, 90 = +y, i.e. DOWN) and radius `rad` about `c`.
+ *
+ * Local on purpose: this is the only domain module that reaches for trigonometry at all, so
+ * there is no second caller to consolidate it with.
+ */
 function polar(c: Point, rad: number, deg: number): Point {
   const a = (deg * Math.PI) / 180;
   return { x: c.x + rad * Math.cos(a), y: c.y + rad * Math.sin(a) };

@@ -38,21 +38,7 @@
 
 import type { SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
-import { insetRect, rectPoly, roundedRectPoly } from "./glyph-lib.js";
-
-/**
- * `v` held inside `[lo, hi]`.
- *
- * Written as two `>` comparisons rather than `Math.min`/`Math.max` so that a `NaN` — which a
- * degenerate footprint can produce upstream — resolves to `lo` instead of propagating. A glyph
- * must survive any rect the fuzzer hands it without emitting a `NaN` coordinate.
- *
- * Local to this module on purpose: it is the first of its kind here. If a second domain module
- * needs it, it belongs in `glyph-lib.ts` (a Phase-2 consolidation note, not a Phase-1 edit).
- */
-function clamp(v: number, lo: number, hi: number): number {
-  return v > hi ? hi : v > lo ? v : lo;
-}
+import { clamp, insetRect, rectPoly, roundedRectPoly } from "./glyph-lib.js";
 
 /** Mattress aspect (`w / h`) at or above which the bed gets two pillows. See the header. */
 const PILLOW_TWO_ASPECT = 0.6;

@@ -226,3 +226,68 @@ export function insetRect(r: Rect, frac: number): Rect {
 export function insetRectXY(r: Rect, dx: number, dy: number): Rect {
   return { x: r.x + dx, y: r.y + dy, w: r.w - 2 * dx, h: r.h - 2 * dy };
 }
+
+/**
+ * `r` shrunk by an independent FRACTION on each of the four sides.
+ *
+ * {@link insetRect} takes one fraction of the short side, which is right for a rim of even width
+ * and wrong for a fixture whose border is uneven — a tub whose head rim carries the taps and is
+ * nearly twice the foot. The four fractions are of the axis they shrink (`left`/`right` of `r.w`,
+ * `top`/`bottom` of `r.h`); each pair must sum to under 1 for the result to have non-negative
+ * extents.
+ *
+ * Note the units: this is the FRACTIONAL sibling of {@link insetRectXY}, which takes millimetres.
+ * The arithmetic is kept exactly as the bath module first wrote it — `r.w * (1 - left - right)`
+ * rather than `r.w - r.w*left - r.w*right`, which is a different float and would move bytes.
+ */
+export function insetRectSides(r: Rect, left: number, right: number, top: number, bottom: number): Rect {
+  return {
+    x: r.x + r.w * left,
+    y: r.y + r.h * top,
+    w: r.w * (1 - left - right),
+    h: r.h * (1 - top - bottom),
+  };
+}
+
+/**
+ * The short side of a footprint.
+ *
+ * Every corner radius, band width and inset in the glyph modules is keyed to this rather than to
+ * each axis independently, so a long thin piece gets an even band instead of a wedge — the same
+ * rule {@link insetRect} follows. All five domain modules had derived it, three of them inline.
+ */
+export const shortSide = (r: Rect): number => Math.min(r.w, r.h);
+
+/** The centre of a rect. */
+export const centerOf = (r: Rect): Point => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
+
+/**
+ * `v` held inside `[lo, hi]`, with `NaN` resolving to `lo`.
+ *
+ * Written as two `>` comparisons rather than `Math.min`/`Math.max` so a `NaN` — which a
+ * degenerate footprint can produce upstream — lands on `lo` instead of propagating into a loop
+ * bound or a coordinate. For every non-`NaN` input the two spellings agree exactly, which is why
+ * folding the domain modules' three private copies onto this one moves no bytes.
+ */
+export function clamp(v: number, lo: number, hi: number): number {
+  return v > hi ? hi : v > lo ? v : lo;
+}
+
+/**
+ * A closed polygon drawn with a DASHED outline.
+ *
+ * {@link GlyphCtx} has a dashed `seg` but no dashed `poly`, and an overhead piece — a wall
+ * cabinet above the cut plane — is dashed all the way round by convention. Sets `lineType` AND
+ * `paint.dash` to the same pattern for the reason this module's header gives: the SVG backend
+ * follows the name and the PDF backend follows the number, so a node that disagrees with itself
+ * draws two different dashes from one primitive.
+ */
+export function dashedPoly(g: GlyphCtx, pts: Point[], fill: string, weight: GlyphWeight = "thin"): void {
+  g.nodes.push({
+    layer: "furniture",
+    prim: { t: "polygon", pts },
+    paint: { fill, stroke: g.stroke, width: weightWidth(weight, g.sizes), dash: dashedPattern(g.sizes) },
+    lineWeight: weight,
+    lineType: "dashed",
+  });
+}

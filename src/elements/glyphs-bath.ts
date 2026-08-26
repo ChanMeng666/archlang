@@ -27,28 +27,7 @@
 
 import type { SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
-import { ellipsePoly, insetRect, rectPoly, roundedRectPoly } from "./glyph-lib.js";
-
-/**
- * `r` shrunk by an independent fraction on each of the four sides.
- *
- * `glyph-lib`'s {@link insetRect} takes ONE fraction of the short side, which is right for a
- * rim of even width and wrong for the tub below, whose head rim carries the taps and is
- * nearly twice the foot. The four fractions are of the axis they shrink (`left`/`right` of
- * `r.w`, `top`/`bottom` of `r.h`), and each pair sums to well under 1, so the result always
- * has non-negative extents.
- *
- * **Phase-2 candidate:** this belongs beside `insetRect`/`insetRectXY` in `glyph-lib.ts` if a
- * second domain module wants an uneven rim.
- */
-function insetRectSides(r: Rect, left: number, right: number, top: number, bottom: number): Rect {
-  return {
-    x: r.x + r.w * left,
-    y: r.y + r.h * top,
-    w: r.w * (1 - left - right),
-    h: r.h * (1 - top - bottom),
-  };
-}
+import { ellipsePoly, insetRect, insetRectSides, rectPoly, roundedRectPoly } from "./glyph-lib.js";
 
 /** A concentric copy of an ellipse, scaled by `k` about its own centre. */
 function innerEllipse(cx: number, cy: number, rx: number, ry: number, k: number) {

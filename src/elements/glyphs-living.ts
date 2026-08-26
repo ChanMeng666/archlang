@@ -34,27 +34,27 @@
 
 import type { SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
-import { insetRect, rectPoly, roundedRectPoly } from "./glyph-lib.js";
+import { clamp, insetRect, rectPoly, roundedRectPoly, shortSide } from "./glyph-lib.js";
 
 /**
  * The short side of a footprint. Every corner radius and band width below is keyed to it, so
  * a long thin piece gets an even band instead of a wedge — the rule `insetRect` already
  * follows.
  */
-const short = (r: Rect): number => Math.min(r.w, r.h);
+const short = shortSide;
 
 /**
  * A repeat count derived from an aspect ratio, rounded and clamped to `[lo, hi]`.
  *
- * The NaN guard is the whole reason this is a function. A zero-area footprint makes the
- * aspect `0/0`, and every clamp written with `Math.min`/`Math.max` alone passes NaN straight
- * through to a loop bound. `Infinity` (a zero-HEIGHT footprint) needs no special case:
- * `Math.round(Infinity)` is `Infinity` and the `Math.min` pins it to `hi`, which is the right
- * answer — an infinitely wide sofa gets the maximum number of cushions.
+ * The NaN guard is the whole reason this is a function, and it now comes from `glyph-lib`'s
+ * {@link clamp}: a zero-area footprint makes the aspect `0/0`, `Math.round(NaN)` is `NaN`, and
+ * that clamp lands `NaN` on `lo` instead of passing it through to a loop bound. `Infinity` (a
+ * zero-HEIGHT footprint) needs no special case — `Math.round(Infinity)` is `Infinity` and the
+ * clamp pins it to `hi`, which is the right answer: an infinitely wide sofa gets the maximum
+ * number of cushions.
  */
 function clampCount(v: number, lo: number, hi: number): number {
-  if (Number.isNaN(v)) return lo;
-  return Math.min(hi, Math.max(lo, Math.round(v)));
+  return clamp(Math.round(v), lo, hi);
 }
 
 /**
