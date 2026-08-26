@@ -27,11 +27,13 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /**
- * Nothing is excluded any more. `docs/archive/` used to be, because it held a real,
- * uncorrected instance of this fault (`|to−from|` in the frozen work log) that served as the
- * gate's real-data positive control. That row was escaped on 2026-08-01 and the archive
- * joined the scanned set; the unit-level pin at the bottom of this file is what keeps the
- * detector's fire proven. Re-adding an exclusion here means a Markdown file stops being
+ * Nothing is excluded. `docs/archive/` used to be, because it held a real, uncorrected
+ * instance of this fault (`|to−from|` in the frozen work log) that served as the gate's
+ * real-data positive control. That row was escaped on 2026-08-01 and the archive joined the
+ * scanned set; the archive itself left this repository on 2026-08-26 (it is in the private
+ * growth repo now). The unit-level pin at the bottom of this file is what keeps the
+ * detector's fire proven, and always was — which is the only reason losing that real-data
+ * control costs nothing. Re-adding an exclusion here means a Markdown file stops being
  * checked — don't, unless it genuinely cannot reach any build.
  */
 const EXCLUDED_PREFIXES: string[] = [];

@@ -57,7 +57,13 @@ change bytes on purpose, each named in `CHANGELOG.md`. Also in the release, with
 change: the docs site's ArchLang highlighter is now **generated** from `KEYWORDS`/`RULES` rather than a
 hand-typed keyword `Set` (which had already drifted — `street` and `hemisphere` shipped in v1.25.0 and
 every renderer had been drawing them as bare identifiers since), and the `paper/` working set landed
-with its facts interpolated from the compiler's own tables and drift-gated. Shipped alongside **MCP
+with its facts interpolated from the compiler's own tables and drift-gated. (**That working set has
+since MOVED, on 2026-08-26, to the private repository `ChanMeng666/archlang-paper`** — one target is a
+double-anonymous ICSE submission and a public repo under the author's own name de-anonymises it
+however clean the LaTeX is. Its facts generator and drift gate went with it and read this repo as a
+sibling checkout, so the numbers are still derived, never retyped. Nothing here builds a paper any
+more: there is no `paper:*` script, no `gen:paper-facts`, and no paper entry in `check:drift`.)
+Shipped alongside **MCP
 shim 0.2.7** (version-bump-only, the pack-time law a fourth consecutive time — three of five baked
 resources moved) and **VS Code 0.16.0** (packaged and verified from inside the `.vsix`; the
 Marketplace upload is a human web step and had NOT been performed when this line was written).
@@ -172,12 +178,13 @@ reachability, and area-scaled circulation grids; **v1.20.0 "sheet & datum"** —
 `paper`/`axes`/`schedule`/`legend` and the operative drawing scale.) The table above is what is live. Canonical release notes
 live in `CHANGELOG.md`; per-tranche research verdicts in `docs/research/`. The full per-release
 narrative (v1.3.0 → v1.16.0, honest eval read, sites redesign, every tranche summary) is archived
-verbatim at
-**[`docs/archive/agents-status-history-2026-07.md`](docs/archive/agents-status-history-2026-07.md)** —
-its permanent conclusions are distilled into "Standing decisions & iron laws" just below, so read
-*that*, not the archive, for what still binds you. Older docs predating the launch (build plans in
-`docs/archive/`, the now-frozen work log `docs/archive/WORK-LOG-v0.7-v1.15.md`) are historical — the
-table above and `CHANGELOG.md` reflect what shipped.
+verbatim in the private growth repository, at
+`archcanvas-growth/archive/archlang/docs-archive/agents-status-history-2026-07.md` — **its permanent
+conclusions are distilled into "Standing decisions & iron laws" just below, so read *that*, not the
+archive, for what still binds you.** Older docs predating the launch (the build plans, and the
+now-frozen work log `WORK-LOG-v0.7-v1.15.md`) moved to that same directory on 2026-08-26; they are
+historical, and nothing in this repository reads them. The table above and `CHANGELOG.md` reflect what
+shipped.
 
 ## Standing decisions & iron laws (never re-litigate)
 
@@ -763,7 +770,9 @@ intent. Zero install: `npx @chanmeng666/archlang …`.
 - Run the project's lint/test commands before proposing changes.
 - Keep this file up to date when you change build steps, structure, or conventions.
 - Ongoing release narrative goes in `CHANGELOG.md` only — do not re-grow per-release prose here (the
-  historical narrative is archived at `docs/archive/agents-status-history-2026-07.md`).
+  historical narrative is archived outside this repo, at
+  `archcanvas-growth/archive/archlang/docs-archive/agents-status-history-2026-07.md`).
 - Release and work history is recorded in `CHANGELOG.md` **only** — do not create or append
-  per-session work logs under `docs/` (the old top-level `WORK-LOG.md` is frozen in `docs/archive/`).
+  per-session work logs under `docs/` (the old top-level `WORK-LOG.md` is frozen in that same
+  archive, as `WORK-LOG-v0.7-v1.15.md`).
 </content>

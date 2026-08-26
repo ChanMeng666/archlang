@@ -135,22 +135,30 @@ All files live in `brand/`. The **two mirrors** — `docs-site/public/brand/` an
 `playground/public/brand/` — **must stay in sync** with the corresponding files
 here (the sites serve their own copies; there is no build step that syncs them, so
 update all three by hand). The mirrors carry the SVGs + `favicon-32` + `apple-touch`
-+ `og.png`; they do **not** carry the master source or the icon PNGs.
++ `og.png`; they do **not** carry the master source.
 
 | File | What | In mirrors? |
 |---|---|---|
 | `archlang-logo-master.svg` | **canonical source** (byte-sacred; recolor target) | no — repo-only |
-| `archlang-icon.svg` / `.png` | full mark, white, transparent (1024²) | svg only |
-| `archlang-icon-black.svg` / `.png` | full mark, `#111111`, transparent | svg only |
-| `archlang-icon-plum.svg` / `.png` | full mark, `#8052ff`, transparent | svg only |
-| `archlang-icon-app.svg` / `.png` | `#0f1115` rounded tile (rx 56/256) + white mark ~72% | svg only |
-| `archlang-icon-app-plum.svg` / `.png` | same tile + `#8052ff` mark | svg only |
+| `archlang-icon.svg` | full mark, white, transparent (1024²) | yes |
+| `archlang-icon-black.svg` | full mark, `#111111`, transparent | yes |
+| `archlang-icon-plum.svg` | full mark, `#8052ff`, transparent | yes |
+| `archlang-icon-app.svg` | `#0f1115` rounded tile (rx 56/256) + white mark ~72% | yes |
+| `archlang-icon-app-plum.svg` | same tile + `#8052ff` mark | yes |
 | `archlang-favicon-32.png` | 32² fallback favicon (full plum mark, transparent) | yes |
 | `archlang-apple-touch.png` | 180² apple-touch (full plum mark on void tile) | yes |
 | `archlang-wordmark.svg` | mark + "ArchLang", white (dark bg) | yes |
 | `archlang-wordmark-black.svg` | mark + "ArchLang", `#111111` (light bg) | yes |
-| `archlang-wordmark-dark.png` / `-light.png` | 2840×396 rasters of the two lockups | no — repo-only |
 | `archlang-og.png` | 1200×630 social card | yes |
+
+**Seven raster variants left this repository on 2026-08-26** and now live in the private
+growth repo at `archcanvas-growth/archive/archlang/brand-rasters/`: the five icon PNGs
+(`archlang-icon.png`, `-black.png`, `-plum.png`, `-app.png`, `-app-plum.png`) and the two
+2840×396 wordmark lockups (`archlang-wordmark-dark.png`, `-light.png`). Nothing referenced
+them — not the sites, not the README, not `test/brand-assets.test.ts` — so they were 399 KB
+of art no surface could serve. **They are not deleted knowledge:** every one is a fill-swap
+render of `archlang-logo-master.svg`, so if a raster is ever needed again, re-export it from
+the master rather than restoring an archived PNG. The master is the source; a raster never was.
 
 ### Where each asset is referenced
 
