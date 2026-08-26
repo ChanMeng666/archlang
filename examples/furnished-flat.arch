@@ -1,10 +1,10 @@
 # The FURNITURE flagship — a two-bedroom flat, furnished with the whole symbol catalogue.
 #
 # Every other example draws a fixture or two in passing. This one is here for the drawn
-# symbols themselves: twenty-six of the thirty-two catalogued kinds, across all five
+# symbols themselves: twenty-nine of the thirty-six catalogued kinds, across all five
 # domains (bath, kitchen/utility, bedroom, living/dining, office/misc).
 #
-# Two things to read off the source rather than the picture:
+# Three things to read off the source rather than the picture:
 #
 #   1. NO LABELS. A drawn symbol ignores `label` — the word reaches `describe()` and
 #      nothing else — so the only text in this drawing comes from the rooms.
@@ -14,9 +14,13 @@
 #      headboard on the right wall are written without a single hand-computed number.
 #      `offset` is where the piece's CENTRE lands along the wall run, so a kitchen run
 #      is written as a sequence of centres, not as corners.
-#      Only the free-standing pieces — sofa, armchair, coffee table, dining table,
-#      island, desk, office chair, plant — declare a `size`, because with no wall there
-#      is nothing to tell `along` from `depth`.
+#      Only the free-standing pieces — the L-sofa, armchair, coffee table, dining table,
+#      island, desk, office chair, plant, rug, piano and lounger — declare a `size`,
+#      because with no wall there is nothing to tell `along` from `depth`.
+#   3. THE RUG IS AN UNDERLAY. It is walked on rather than round, so the pieces standing
+#      on it raise no overlap warning and the circulation flood-fill crosses it. Rugs,
+#      alone among the symbols, are drawn unfilled — nothing they are written after can
+#      be hidden by them.
 plan "Furnished Flat" {
   units mm
   grid 50
@@ -59,12 +63,22 @@ plan "Furnished Flat" {
   window on w_south at 4400 width 1400
 
   # --- Living / Dining --------------------------------------------------------
+  # The rug is an UNDERLAY: the coffee table and the L-sofa stand on it, so that overlap
+  # is the arrangement rather than a collision, and the flood-fill walks straight over it.
+  # It is also the only symbol here drawn with no fill, which is why it cannot hide the
+  # sofa it is written after.
+  furniture rug          at (200,600)   size 2700x2400 in r_live
   furniture tv_unit      against wall w_north offset 1000 in r_live
-  furniture sofa         at (700,2100)  size 1900x900 rotate 180 in r_live
-  furniture coffee_table at (1150,1200) size 1000x600 in r_live
-  furniture armchair     at (2900,1500) size 900x850 rotate 270 in r_live
-  furniture dining_table at (2300,3500) size 2400x1800 in r_live
-  furniture plant        at (4200,300)  size 600x600 in r_live
+  furniture sofa_l       at (300,1300)  size 2400x1500 rotate 180 in r_live
+  furniture coffee_table at (900,700)   size 1000x500 in r_live
+  furniture armchair     at (3300,1100) size 900x850 rotate 90 in r_live
+  furniture sun_lounger  at (1950,150)  size 1400x700 rotate 90 in r_live
+  furniture plant        at (4300,300)  size 600x600 in r_live
+  # A piano carries NO catalogued footprint on purpose, so it cannot be written
+  # `against wall` — that form would derive a rotation from the wall and face the
+  # keyboard into it. Placed by hand, like it is on a real drawing.
+  furniture piano        at (250,3200)  size 1400x1400 in r_live
+  furniture dining_table at (2700,3300) size 2100x2000 in r_live
 
   # --- Kitchen: a fitted run of centres along the north wall -------------------
   furniture counter       against wall w_north offset 5650 size 1200x600 in r_kitchen

@@ -61,6 +61,32 @@ export interface FixtureSpec {
    * angle.
    */
   directional?: boolean;
+  /**
+   * The piece lies flat on the floor and is **walked on rather than walked round** — a rug, a
+   * carpet. Other furniture stands ON it, which is the whole reason it is there.
+   *
+   * Three consumers read this flag, and every one of them DECLINES an existing check rather
+   * than adding a new one:
+   *
+   *   - `W_FURNITURE_OVERLAP` skips an underlay⇄non-underlay pair. A sofa on a rug is the
+   *     arrangement, not a collision. Two rugs overlapping each other still warn — that pair
+   *     is not the exempt case, and one rug half over another is a drawing mistake.
+   *   - `W_FURN_CLEARANCE` never counts an underlay as the thing blocking a fixture's frontal
+   *     use-space; you can stand on it.
+   *   - Both walkability grids (`analyze/circulation.ts`'s nav grid and
+   *     `analyze/occupancy.ts`'s per-room flood fill) drop it from their obstacle list, so a
+   *     rug across the only route into a room does not seal that room off.
+   *
+   * `W_FURNITURE_WALL_COLLISION` deliberately still applies: a rug drawn through a wall solid
+   * is a drawing error whatever you can walk on. And the glyph draws it with **no fill at
+   * all**, so paint order cannot matter — a rug listed after the sofa that stands on it still
+   * cannot hide it.
+   *
+   * Not the same question as {@link symmetric}, though a rug is both: that one asks whether a
+   * quarter-turn changes the drawing, this one asks whether the piece is an obstacle. A
+   * runner with a border pattern would carry this flag and not that one.
+   */
+  underlay?: boolean;
 }
 
 /** A room zone a fixture can satisfy (see {@link FixtureSpec.zones}). */
@@ -201,6 +227,44 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   plant: { requiresWall: false, symmetric: true },
   planter: { requiresWall: false, symmetric: true },
   car: { requiresWall: false },
+
+  // -------------------------------------------------------------------------
+  // The second furniture tranche. Four kinds a furnished plan reaches for that the first
+  // one had no word for, and one new piece of catalog semantics — {@link
+  // FixtureSpec.underlay} — that the rug is the whole reason for.
+  //
+  // Three of the four deliberately carry NO footprint, and each refusal is its own
+  // argument rather than an oversight:
+  //
+  //   - `rug` has no conventional size at all. Rugs are sold from 600 x 900 runners to
+  //     4 x 3 m room-size, chosen against the furniture group they sit under, so any
+  //     number here would be invented. It is also the one kind you would never write
+  //     `against wall` about.
+  //   - `piano` is the interesting one: a grand piano DOES have conventional sizes (a
+  //     baby grand is about 1500 x 1500), and giving it a footprint would make
+  //     `furniture piano against wall <id>` legal. That form derives the rotation from
+  //     the wall under the back-on-top convention, which would face the KEYBOARD into
+  //     the wall — the one orientation a piano is never in. So the footprint is withheld
+  //     to keep the form unreachable, and a piano is placed with `at (x,y)` + `rotate`,
+  //     which is how it is placed on a real drawing too.
+  //   - `sun_lounger` is placed by where the sun is, not by a wall; its length varies
+  //     with the model and it is as often at an angle as square to anything.
+  //
+  // `sofa_l` DOES carry one, at the common three-seat-plus-chaise size, and it is
+  // measured as the whole L's bounding rectangle — see `glyphs-living.ts`'s
+  // `drawSofaL` for why the empty quadrant is still inside the footprint every lint
+  // rule measures.
+  rug: { requiresWall: false, symmetric: true, underlay: true },
+  carpet: { requiresWall: false, symmetric: true, underlay: true },
+  // NOT `directional`, for the same reason `sofa` is not: seating is arranged rather than
+  // installed, and an L-sofa floated as a room divider is a normal plan. Its footprint is
+  // the bounding rectangle of the L, chairs-included in the same spirit as `dining_table`.
+  sofa_l: { requiresWall: false, footprint: { along: 2600, depth: 1600 } },
+  corner_sofa: { requiresWall: false, footprint: { along: 2600, depth: 1600 } },
+  piano: { requiresWall: false },
+  grand_piano: { requiresWall: false },
+  sun_lounger: { requiresWall: false },
+  lounger: { requiresWall: false },
 });
 
 /** All catalogued categories (aliases included), in declaration order. */
@@ -243,6 +307,30 @@ export function orientationMatters(category: string): boolean {
 /** The frontal activity clearance (mm) for a fixture category, or 0 if none. */
 export function frontClearanceMm(category: string): number {
   return CATALOG[category]?.clearanceMm ?? 0;
+}
+
+/**
+ * Is this category an **underlay** — a piece lying flat on the floor that other furniture
+ * stands on and people walk over (see {@link FixtureSpec.underlay})?
+ *
+ * The one predicate all four consumers share, so the overlap rule, the clearance rule and
+ * the two walkability grids can never disagree about what a rug is.
+ */
+export function isUnderlay(category: string): boolean {
+  return CATALOG[category]?.underlay === true;
+}
+
+/**
+ * The pieces a walkability grid must treat as obstacles — everything that is not an
+ * {@link isUnderlay}.
+ *
+ * Lives here, beside the flag, rather than in either grid: `analyze/circulation.ts`'s
+ * whole-plan nav grid and `analyze/occupancy.ts`'s per-room flood fill both need it, and two
+ * copies of "is a rug an obstacle?" is exactly the shape of drift this repository keeps
+ * finding. Generic over the element type so this module keeps importing nothing.
+ */
+export function solidFurniture<T extends { category: string }>(furniture: readonly T[]): T[] {
+  return furniture.filter((f) => !isUnderlay(f.category));
 }
 
 /** A fixture category's conventional wall-relative footprint (along × depth), or null. */

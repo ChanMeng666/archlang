@@ -1,6 +1,6 @@
 /**
- * The remaining plan symbols: the workspace pieces, and the two that belong to no room at
- * all (a plant, a parked car).
+ * The remaining plan symbols: the workspace pieces, the two that belong to no room at
+ * all (a plant, a parked car), and the one that belongs outdoors (a sun lounger).
  *
  * `car` earns its place for the same reason a `bench` does: it is drawn on real plans (a
  * carport, a driveway, a garage) and a model asked for one will write the word whether or
@@ -155,6 +155,43 @@ export function drawCar(r: Rect, g: GlyphCtx): SceneNode[] {
     [0.86, 0.98],
   ] as const) {
     g.seg({ x: r.x + r.w * x0, y: my }, { x: r.x + r.w * x1, y: my }, "extraThin");
+  }
+  return g.nodes;
+}
+
+/**
+ * The sun lounger: an eased body, the raised backrest at the head, and the slats across the
+ * seat and leg rest.
+ *
+ * The head is the TOP edge, which is this module's back-on-top convention doing its usual
+ * work — `rotate 90` lays the lounger along an east wall with its head to the east, and
+ * `in <room> anchor …` never derives a turn for it, because the catalog leaves it neither
+ * `requiresWall` nor `directional`: a lounger is aimed at the sun, and ArchLang has no sun
+ * model (the v1.25 `site` layer names an aspect, not a daylight measurement). So which way it
+ * faces is the author's to state and nothing here will second-guess it.
+ *
+ * The slats run TRANSVERSE — across the short axis of the drawn rectangle — and their count
+ * comes from the footprint's own aspect, clamped to four..six. A real lounger has a dozen or
+ * more, and drawing them would turn the symbol into a hatch at plan scale; four to six reads
+ * as slatted without competing with the poché.
+ *
+ * Prim count: `2 + slats`, i.e. 8 on a typical 700x1900 lounger.
+ */
+export function drawSunLounger(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = Math.min(r.w, r.h);
+  g.poly(roundedRectPoly(r, s * 0.2), g.body);
+  g.poly(
+    roundedRectPoly({ x: r.x + r.w * 0.08, y: r.y + r.h * 0.05, w: r.w * 0.84, h: r.h * 0.26 }, s * 0.12),
+    g.body,
+    "extraThin",
+  );
+  // `clamp` lands a NaN (the `0/0` of a zero-area footprint) on the floor of 4, and pins an
+  // `Infinity` (a zero-WIDTH one) to 6 — so the loop bound below is always an integer in
+  // [4, 6] and `n - 1` is never zero.
+  const n = clamp(Math.round((r.h / r.w) * 6), 4, 6);
+  for (let i = 0; i < n; i++) {
+    const y = r.y + r.h * (0.4 + (0.52 * i) / (n - 1));
+    g.seg({ x: r.x + r.w * 0.1, y }, { x: r.x + r.w * 0.9, y }, "extraThin");
   }
   return g.nodes;
 }

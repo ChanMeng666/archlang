@@ -18,6 +18,8 @@
  *   - CLEARANCE EROSION. A cell is walkable only if its centre is farther than a body
  *     radius (default 300 mm) from every furniture footprint — obstacles are inflated
  *     by the space a person occupies, so a path is one a body actually fits through.
+ *     An **underlay** (a rug) is not one of those footprints: you walk on it, so
+ *     `solidFurniture` drops it before anything is inflated.
  *   - CLEARANCE IS DISTANCE TO FURNITURE, NOT WALLS. Inside a room you walk freely, so
  *     a cell's clear width comes from a distance transform seeded on the furniture-
  *     eroded cells; a doorway cell instead reads its connector's modeled clear width.
@@ -50,6 +52,7 @@ import {
 import { pointInRect } from "../geometry/rect.js";
 import { pointInPolygon, polygonEdges, polygonLabelPoint } from "../geometry/polygon.js";
 import { matchesLivingDining } from "../vocabulary.js";
+import { solidFurniture } from "../fixtures-catalog.js";
 
 /** Radius (mm) of the walking body obstacles are inflated by (clearance erosion). */
 export const DEFAULT_BODY_RADIUS_MM = 300;
@@ -472,7 +475,7 @@ function buildGrid(
   // footprint, whose halo is suppressed outside its entry edge(s) — you have to be able
   // to stand at the foot of a flight to use it (see `src/vertical.ts`).
   const obstacles: VerticalObstacle[] = [
-    ...furniture.map((f) => ({ rect: rectOf(f), open: [] as VerticalObstacle["open"] })),
+    ...solidFurniture(furniture).map((f) => ({ rect: rectOf(f), open: [] as VerticalObstacle["open"] })),
     ...verticalObstacles(verticals),
     // A floor void blocks the cells inside it — you cannot walk across a hole — with the
     // body-radius halo suppressed on EVERY edge: you can stand at the railing. Same

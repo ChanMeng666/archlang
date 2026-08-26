@@ -88,7 +88,7 @@ furniture wc in r_bath anchor bottom flush size 400x700
 
 ## The symbol catalogue
 
-Thirty-two families, fifty-one names with the aliases, and **every one of them draws**.
+Thirty-six families, fifty-nine names with the aliases, and **every one of them draws**.
 The tables below are grouped by the room the pieces belong to.
 
 Three columns need a word of explanation:
@@ -178,11 +178,34 @@ no gap and no overlap at any size.
 | `chair` | seat, back band along the rear edge, and the cushion | — | free | |
 | `stool` · `barstool` | a round seat with no back — both prims true circles about the footprint centre | — | symmetric | |
 | `bench` | slab with two slat lines running **lengthwise**, along whichever axis is longer | — | free | |
+| `sofa_l` · `corner_sofa` | an L: the back run along the rear edge, the return down the **left**, cushions along both, and the fourth quadrant left as open floor | 2600 × 1600 | free | |
+| `rug` · `carpet` | outer and inner borders with a fringe at each short end — the **only unfilled symbol** | — | symmetric | |
+| `piano` · `grand_piano` | the keyboard across the back, the straight spine down the left, and the bent side sweeping round to the tail | — | free | |
 
-`sofa`, `armchair`, `chair` and `bench` are deliberately **free**: seating is arranged,
-not installed, so ArchLang neither derives a rotation for them nor warns when one faces
-the room. `tv_unit` is the exception in this group — it is directional (a media wall has
+`sofa`, `armchair`, `chair`, `bench` and `sofa_l` are deliberately **free**: seating is
+arranged, not installed, so ArchLang neither derives a rotation for them nor warns when one
+faces the room. `tv_unit` is the exception in this group — it is directional (a media wall has
 a front) but still carries no services, so floating one as a room divider raises nothing.
+
+**`sofa_l`'s return is always on the LEFT, and there is no right-handed twin.** Turn it with
+`rotate` where that reads right. `place … mirror` will *not* do it: a reflection transforms a
+resolved element's position, not the symbol drawn inside it, so a mirrored instance still
+draws a left-hand sofa. A `sofa_l_r` category was rejected rather than forgotten — it would
+put the fix in the vocabulary, where every future handed symbol would need its own twin; the
+real fix is glyph-aware mirroring in the `place` transform.
+
+**Its footprint is the whole bounding rectangle, empty quadrant included**, which is what
+every furniture rule measures — so a coffee table tucked inside the L raises
+[`W_FURNITURE_OVERLAP`](error-codes.md) even though nothing touches. That is a known cost of
+having one shape seam rather than five: teaching the overlap rule about the L and leaving the
+clearance rule, the wall-collision rule and the two walkability grids on the box would make
+the drawing and the lint disagree in a way nothing tests.
+
+**A `piano` carries no footprint on purpose, so `furniture piano against wall <id>` is
+[`E_FURN_SIZE`](error-codes.md).** That form derives the rotation from the wall under the
+back-on-top rule, and a piano's back-on-top *is* its keyboard — so the one thing it could
+derive is the one orientation a piano is never in. Place it with `at (x,y)` and a `rotate`,
+which is how it goes on a drawing anyway.
 
 ### Office & misc
 
@@ -193,6 +216,11 @@ a front) but still carries no services, so floating one as a room divider raises
 | `bookshelf` · `bookcase` · `shelf` | carcass with its shelf bays ticked off along the run, read from the footprint's own long axis | 900 × 300 | derived | |
 | `plant` · `planter` | pot as a true circle, foliage as a ring of eight radials at a 45° pitch | — | symmetric | |
 | `car` | body, cabin, the two screens, and a wing mirror each side | — | free | |
+| `sun_lounger` · `lounger` | eased body, the raised backrest at the head end, and four to six transverse slats | — | free | |
+
+A `sun_lounger` is aimed at the sun, and ArchLang has no sun model — the `site` layer names an
+aspect, not a daylight measurement — so nothing here derives which way it points and nothing
+warns about it. Say so with `rotate`.
 
 `car` earns its place for the same reason `bench` does: it is drawn on real plans (a
 carport, a driveway, a garage) and a model asked for one will write the word whether or
@@ -211,9 +239,32 @@ do it for you.
 labelled-rectangle fallback — that is, only for a kind the catalogue does **not** know.
 Writing `furniture bed … label "Bed"` is harmless but inert: the word stays in the source
 and in `arch describe --json`, and no text appears in the SVG. The fallback is the escape
-hatch, and it is deliberate: an uncatalogued word (`furniture piano at … label "Piano"`)
+hatch, and it is deliberate: an uncatalogued word (`furniture hammock at … label "Hammock"`)
 still draws a rectangle with its name in it, which is how you annotate something ArchLang
 has no symbol for.
+
+**A `rug` is an UNDERLAY, and it is the only kind that is.** An underlay lies flat on the
+floor: furniture stands on it and people walk over it. Four rules read that one fact, and
+every one of them declines a check rather than adding one.
+
+- **It is drawn with no fill at all** — the only symbol in the catalogue that is. That is not
+  a style choice: if it filled, a `rug` written *after* the sofa standing on it would paint
+  over the sofa, and the same plan with the two lines swapped would look right. With nothing
+  to paint over, there is no source order to get wrong.
+- **A piece standing on it is not an overlap.** `W_FURNITURE_OVERLAP` skips an
+  underlay-and-not-an-underlay pair. Two rugs overlapping *each other* still warn — one rug
+  half over another is a drawing mistake, and nothing about walking on them says otherwise.
+- **It never blocks a fixture's use-space.** A rug reaching under the basin is not what
+  `W_FURN_CLEARANCE` is about; you stand on it.
+- **It never blocks a route.** Both walkability models — the whole-plan circulation grid
+  behind `arch describe --json`'s `circulation` block and the per-room flood fill behind
+  `W_ROOM_NO_CLEAR_PATH` — drop it before they inflate anything by a body radius, so a rug
+  across the only way into a room does not seal that room off.
+
+[`W_FURNITURE_WALL_COLLISION`](error-codes.md) deliberately still applies: what you can walk
+on has no bearing on whether it is drawn inside the plaster. The **door** rules
+(`W_SWING_OBSTRUCTED`, `W_DOORWAY_BLOCKED`) do not yet know about underlays either, so a rug
+in a doorway is still reported today.
 
 **Two symbols read their own footprint and change what they draw.** Neither branch looks
 at the category word, because the shape is the honest datum:
@@ -277,13 +328,13 @@ shower(6000, 5000)
 | Library | Components |
 |---------|------------|
 | `lib/fixtures.arch` | `wc` 400 × 700 · `basin` 600 × 450 · `shower` 900 × 900 · `bathtub` 1700 × 700 · `kitchen_sink` 800 × 600 · `counter` 600 × 600 · `fridge` 600 × 650 |
-| `lib/furniture.arch` | `bed` 1500 × 2000 · `double_bed` 1800 × 2000 · `nightstand` 450 × 400 · `wardrobe` 1800 × 600 · `sofa` 2000 × 900 · `armchair` 900 × 850 · `coffee_table` 1100 × 600 · `tv_unit` 1500 × 450 · `dining_table` 2400 × 2000 · `desk` 1400 × 700 · `bookshelf` 900 × 300 · `stove` 600 × 600 · `washer` 600 × 600 |
+| `lib/furniture.arch` | `bed` 1500 × 2000 · `double_bed` 1800 × 2000 · `nightstand` 450 × 400 · `wardrobe` 1800 × 600 · `sofa` 2000 × 900 · `sofa_l` 2600 × 1600 · `rug` 2000 × 1400 · `armchair` 900 × 850 · `coffee_table` 1100 × 600 · `tv_unit` 1500 × 450 · `dining_table` 2400 × 2000 · `desk` 1400 × 700 · `bookshelf` 900 × 300 · `piano` 1500 × 1500 · `sun_lounger` 700 × 1900 · `stove` 600 × 600 · `washer` 600 × 600 |
 
 Imports need a filesystem, so they work from the CLI and the library but not in the
 browser playground — the flagship `examples/studio.arch` uses inline `furniture` for
 exactly this reason. `examples/furnished-flat.arch` is the worked example: a two-bedroom
-flat furnished with eighteen kinds across all five domains, `arch validate --strict`
-clean.
+flat furnished with twenty-nine of the thirty-six kinds across all five domains,
+`arch validate --strict` clean.
 
 ## Furniture-aware lint rules
 
@@ -295,8 +346,8 @@ furniture and fixture rules (each documented in the [error catalog](error-codes.
 | `W_FIXTURE_FLOATING` | a **services** fixture — plumbed, vented, or hung off the wall (WC, basin, shower, bath, sink, counter, stove, fridge, dishwasher, washer, dryer, upper cabinet) — placed away from any wall |
 | `W_FIXTURE_BACK_TO_ROOM` | a piece that *is* against a wall but faces the wrong way — its back (cistern, tap, nosing, headboard, wardrobe door line, bookshelf's open face) turned to the room. Carries a `rotate` fix when one edge is unambiguously the back. Arranged seating never trips it |
 | `W_FIXTURE_WRONG_ROOM` | a piece declared `in <room>` whose **footprint** does not sit on that room's floor (100 mm of overhang is allowed — a room edge is a wall centreline) |
-| `W_FURNITURE_OVERLAP` | two pieces overlapping by more than 1 mm on both axes |
-| `W_FURN_CLEARANCE` | a fixture's frontal use-space blocked by free-standing furniture |
+| `W_FURNITURE_OVERLAP` | two pieces overlapping by more than 1 mm on both axes — **except** an underlay and a piece standing on it (a sofa on a rug), which is the arrangement |
+| `W_FURN_CLEARANCE` | a fixture's frontal use-space blocked by free-standing furniture (an underlay never counts as the blocker) |
 | `W_ROOM_NO_FIXTURE` | a bath / WC / kitchen room with none of the relevant fixtures |
 | `W_SWING_OBSTRUCTED` | a door leaf or swing arc sweeping onto a fixture |
 

@@ -29,9 +29,28 @@
  * middle of a room is a normal plan, and making it wall-requiring would raise a placement
  * warning on drawings that are correct.
  *
+ * ## The second tranche: a rug, an L-sofa and a piano
+ *
+ * Three later arrivals sit at the foot of this file, and each of them is here because it
+ * breaks one of the assumptions above rather than because it is another chair.
+ *
+ * **The rug is the only UNFILLED symbol.** It is an
+ * {@link import("../fixtures-catalog.js").FixtureSpec.underlay}: furniture stands on it and
+ * people walk over it, so it must not occlude and must not obstruct. Drawing it with no fill
+ * at all is what makes the first of those true independently of source order.
+ *
+ * **The L-sofa is the only symbol whose drawn shape is not its footprint.** Every furniture
+ * rule measures an axis-aligned box, so its empty quadrant is checked as though it were
+ * solid; {@link drawSofaL} says why that is the honest choice today and what the real fix
+ * would be.
+ *
+ * **The piano is the only symbol whose footprint was withheld on purpose.** Giving it one
+ * would make `against wall` legal, and that form would face the keyboard into the wall.
+ *
  * Pure and deterministic: every function is a total function of (rect, ctx).
  */
 
+import type { Point } from "../ast.js";
 import type { SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
 import { clamp, insetRect, rectPoly, roundedRectPoly, shortSide } from "./glyph-lib.js";
@@ -297,5 +316,227 @@ export function drawTvUnit(r: Rect, g: GlyphCtx): SceneNode[] {
   const tvH = r.h * 0.15;
   g.poly(rectPoly({ x: r.x + (r.w - tvW) / 2, y: r.y, w: tvW, h: tvH }), g.basin, "extraThin");
   g.seg({ x: r.x, y: r.y + r.h / 2 }, { x: r.x + r.w, y: r.y + r.h / 2 }, "extraThin");
+  return g.nodes;
+}
+
+/**
+ * The rug: an outer border, an inner border, and a fringe at each short end.
+ *
+ * **Every primitive is unfilled, and that is the load-bearing part of the drawing.** A rug
+ * is an {@link import("../fixtures-catalog.js").FixtureSpec.underlay} — the sofa and the
+ * coffee table stand ON it — so it is the one fixture whose symbol must not occlude another.
+ * Filling it would make the drawing depend on the order the two pieces were written in: a
+ * `rug` after the `sofa` in source order would paint over the sofa, and the same plan with
+ * the two lines swapped would look right. With no fill there is no paint order to get wrong,
+ * which is a stronger guarantee than a z-index would be and costs nothing.
+ *
+ * The fringe hangs off the two SHORT ends — the ends of the rug's own long axis, whichever
+ * that is on the page, so a runner authored 2400x800 and one authored 800x2400 are the same
+ * drawing turned. It is drawn INSIDE the footprint, in the band between the two borders: a
+ * fringe that overhung would put linework outside the rectangle every lint rule measures.
+ *
+ * Prim count: `2 + 2 x ticks`, i.e. 16 at a typical 2000x1400 and 8 at the clamp.
+ */
+export function drawRug(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = short(r);
+  g.poly(roundedRectPoly(r, s * 0.06), "none");
+  const inner = insetRect(r, 0.07);
+  g.poly(roundedRectPoly(inner, short(inner) * 0.06), "none", "extraThin");
+
+  const horizontal = r.w >= r.h;
+  const long = horizontal ? r.w : r.h;
+  // Ticks are spread along the END edge, so their count comes from how much end there is
+  // relative to the run — a near-square rug gets a full fringe, a long runner gets a short
+  // one at each end. `0/0` and `x/0` both land on a clamp rather than in a loop bound.
+  const ticks = clampCount((s / long) * 10, 3, 9);
+  const d = s * 0.05;
+  for (let i = 0; i < ticks; i++) {
+    const t = (i + 0.5) / ticks;
+    if (horizontal) {
+      const y = r.y + r.h * t;
+      g.seg({ x: r.x, y }, { x: r.x + d, y }, "extraThin");
+      g.seg({ x: r.x + r.w - d, y }, { x: r.x + r.w, y }, "extraThin");
+    } else {
+      const x = r.x + r.w * t;
+      g.seg({ x, y: r.y }, { x, y: r.y + d }, "extraThin");
+      g.seg({ x, y: r.y + r.h - d }, { x, y: r.y + r.h }, "extraThin");
+    }
+  }
+  return g.nodes;
+}
+
+/**
+ * A closed ring through `pts`, with a circular fillet of radius `rad` at each vertex flagged
+ * in `ease`; a vertex flagged `false` passes through sharp.
+ *
+ * {@link roundedRectPoly} eases all four corners of a RECTANGLE, and an L has one corner that
+ * must stay sharp — the reflex corner where the two runs meet, which is a seam in the real
+ * piece rather than a radius. Local to this module: nothing else draws a non-rectangular ring,
+ * and a shared helper would have to answer questions (non-right corners, self-intersection)
+ * that the one caller does not ask.
+ *
+ * **Right-angle corners only.** The fillet centre is `v + (u_prev + u_next) x rad`, which puts
+ * it `rad` from both incident edges exactly when they meet square; at any other angle it lands
+ * somewhere plausible and wrong. Every corner of an axis-aligned L is square.
+ *
+ * Degenerate-safe by construction: a zero-length incident edge gives a `(0,0)` unit vector and
+ * `rad` clamps to 0, so the fillet collapses onto the vertex and emits `K + 1` copies of a
+ * finite point instead of propagating a `NaN` into a coordinate.
+ */
+function easedRing(pts: readonly Point[], ease: readonly boolean[], rad: number): Point[] {
+  const n = pts.length;
+  const K = 4;
+  const out: Point[] = [];
+  for (let i = 0; i < n; i++) {
+    const v = pts[i]!;
+    if (!ease[i]) {
+      out.push(v);
+      continue;
+    }
+    const p = pts[(i + n - 1) % n]!;
+    const q = pts[(i + 1) % n]!;
+    const lp = Math.hypot(p.x - v.x, p.y - v.y);
+    const lq = Math.hypot(q.x - v.x, q.y - v.y);
+    const rr = Math.min(rad, lp / 2, lq / 2);
+    const up = lp > 0 ? { x: (p.x - v.x) / lp, y: (p.y - v.y) / lp } : { x: 0, y: 0 };
+    const uq = lq > 0 ? { x: (q.x - v.x) / lq, y: (q.y - v.y) / lq } : { x: 0, y: 0 };
+    const c = { x: v.x + (up.x + uq.x) * rr, y: v.y + (up.y + uq.y) * rr };
+    const a0 = Math.atan2(v.y + up.y * rr - c.y, v.x + up.x * rr - c.x);
+    let sweep = Math.atan2(v.y + uq.y * rr - c.y, v.x + uq.x * rr - c.x) - a0;
+    // Take the SHORT way round: a right-angle fillet turns a quarter, never three quarters.
+    if (sweep > Math.PI) sweep -= 2 * Math.PI;
+    if (sweep < -Math.PI) sweep += 2 * Math.PI;
+    for (let k = 0; k <= K; k++) {
+      const a = a0 + (sweep * k) / K;
+      out.push({ x: c.x + rr * Math.cos(a), y: c.y + rr * Math.sin(a) });
+    }
+  }
+  return out;
+}
+
+/**
+ * The L-shaped sofa: one run along the back edge, a second down the left, and the seat
+ * cushions along both.
+ *
+ * The corner is at the BACK-LEFT, which follows from the one convention every symbol here
+ * obeys — the back goes along the top — plus the choice of a left-hand return. The
+ * bottom-right quadrant of the footprint is simply not painted: that is open floor, and it is
+ * what makes the piece read as an L rather than as a large rectangle.
+ *
+ * **The footprint stays the bounding RECTANGLE, deliberately.** Every furniture rule —
+ * `W_FURNITURE_OVERLAP`, `W_FURN_CLEARANCE`, `W_FURNITURE_WALL_COLLISION`, both walkability
+ * grids — measures `RFurniture.size`, an axis-aligned box, and there is no per-category shape
+ * hook for any of them. So an L-sofa is checked as though its empty quadrant were solid: a
+ * coffee table tucked into the L raises `W_FURNITURE_OVERLAP` even though nothing touches.
+ * Teaching one rule about the L and not the other four would be worse than this — the drawing
+ * and the lint would disagree in a way nothing tests — so the honest fix is a shape seam
+ * shared by all five, which is not this change.
+ *
+ * **Chirality is a known limitation.** The return is always on the LEFT, and `place … mirror`
+ * reflects a resolved element's *position* without reflecting the glyph, so a mirrored
+ * instance draws a left-hand sofa where a right-hand one belongs. There is deliberately no
+ * `sofa_l_r` twin: a second category would make the vocabulary carry the fix, and the real fix
+ * is glyph-aware mirroring in `frame.ts`. Turn the piece with `rotate` where that reads right,
+ * or draw the mirrored one by hand.
+ *
+ * Prim count: `3 + top cushions + arm cushions`, i.e. 6 at the catalogued 2600x1600.
+ */
+export function drawSofaL(r: Rect, g: GlyphCtx): SceneNode[] {
+  const x0 = r.x;
+  const y0 = r.y;
+  const x1 = r.x + r.w;
+  const y1 = r.y + r.h;
+  const runY = y0 + r.h * 0.56; // front edge of the back run
+  const armX = x0 + r.w * 0.35; // inner edge of the left-hand return
+  g.poly(
+    easedRing(
+      [
+        { x: x0, y: y0 },
+        { x: x1, y: y0 },
+        { x: x1, y: runY },
+        { x: armX, y: runY }, // the reflex corner: a seam, not a radius
+        { x: armX, y: y1 },
+        { x: x0, y: y1 },
+      ],
+      [true, true, true, false, true, true],
+      short(r) * 0.1,
+    ),
+    g.body,
+  );
+
+  // The two backrests, drawn across their full runs so they meet at the corner the way the
+  // real piece's back does.
+  const backY = y0 + r.h * 0.15;
+  const bandX = x0 + r.w * 0.13;
+  g.seg({ x: x0, y: backY }, { x: x1, y: backY }, "extraThin");
+  g.seg({ x: bandX, y: y0 }, { x: bandX, y: y1 }, "extraThin");
+
+  // Cushion divisions along each run, counted from that run's own aspect and clamped for the
+  // reason the plain sofa's are: an aspect is unbounded and the fuzz feeds 10000 x 10.
+  const nTop = clampCount(((x1 - armX) / (runY - y0)) * 0.9, 1, 5);
+  for (let i = 0; i < nTop; i++) {
+    const x = armX + ((x1 - armX) * (i + 1)) / (nTop + 1);
+    g.seg({ x, y: backY }, { x, y: runY }, "extraThin");
+  }
+  const nArm = clampCount(((y1 - runY) / (armX - x0)) * 0.9, 1, 4);
+  for (let i = 0; i < nArm; i++) {
+    const y = runY + ((y1 - runY) * (i + 1)) / (nArm + 1);
+    g.seg({ x: bandX, y }, { x: armX, y }, "extraThin");
+  }
+  return g.nodes;
+}
+
+/**
+ * The grand piano: the keyboard edge across the back, the straight spine down the left, and
+ * the bent side sweeping round to the tail.
+ *
+ * The outline is one **superellipse quarter**, tessellated at a FIXED sixteen steps. Two
+ * things follow from "fixed", and both are the point: the symbol is the same drawing at every
+ * size and every aspect (no step count derived from a footprint, so nothing to clamp), and it
+ * is exactly reproducible — `Math.cos`/`Math.sin` at sixteen rational angles, no accumulation.
+ * The exponent `0.77` is what gives the belly: `1` would draw an ellipse (too round, no
+ * shoulder at the keyboard) and a smaller exponent squares it off toward a rectangle.
+ *
+ * The quarter runs from the keyboard's right-hand corner round to the foot of the spine, so
+ * the piano is widest AT the keyboard and tapers to the tail — which is the way round a grand
+ * actually is, and the reason the shape survives being drawn at 40 mm on an A3 sheet.
+ *
+ * **A piano is deliberately un-`against wall`-able** — see `fixtures-catalog.ts`: it carries
+ * no footprint, so the form that would derive a rotation from a wall is simply not reachable,
+ * and cannot silently face the keyboard into the plaster.
+ *
+ * Prim count: `3 + key ticks`, i.e. 7 at a baby-grand 1500x1400.
+ */
+export function drawPiano(r: Rect, g: GlyphCtx): SceneNode[] {
+  const x0 = r.x;
+  const y0 = r.y;
+  const N = 16;
+  const E = 0.77;
+  // Start at the top-LEFT (the head of the spine); the quarter below closes the ring by
+  // running from the top-right corner round to the spine's foot.
+  const ring: Point[] = [{ x: x0, y: y0 }];
+  for (let i = 0; i <= N; i++) {
+    const a = ((i / N) * Math.PI) / 2;
+    ring.push({ x: x0 + r.w * Math.cos(a) ** E, y: y0 + r.h * Math.sin(a) ** E });
+  }
+  g.poly(ring, g.body);
+
+  // The keyboard: a white band inside the back edge, ticked off into key groups. Its right
+  // end stops at 0.88 of the width, well inside the outline, which at that depth is still at
+  // 0.998 — so the band cannot escape the body at any aspect.
+  const keyY = y0 + r.h * 0.02;
+  const keyH = r.h * 0.1;
+  const keyX = x0 + r.w * 0.04;
+  const keyW = r.w * 0.84;
+  g.poly(rectPoly({ x: keyX, y: keyY, w: keyW, h: keyH }), g.basin, "extraThin");
+  const keys = clampCount((r.w / r.h) * 4, 3, 5);
+  for (let i = 1; i <= keys; i++) {
+    const x = keyX + (keyW * i) / (keys + 1);
+    g.seg({ x, y: keyY }, { x, y: keyY + keyH }, "extraThin");
+  }
+
+  // The lid's fold line, run from under the keyboard down toward the tail. It stops at 0.40
+  // of the width at 0.86 of the depth, where the outline is still at 0.65.
+  g.seg({ x: x0 + r.w * 0.06, y: y0 + r.h * 0.18 }, { x: x0 + r.w * 0.4, y: y0 + r.h * 0.86 }, "extraThin");
   return g.nodes;
 }

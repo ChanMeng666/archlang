@@ -45,12 +45,15 @@ import {
   drawChair,
   drawCoffeeTable,
   drawDiningTable,
+  drawPiano,
+  drawRug,
   drawSofa,
+  drawSofaL,
   drawStool,
   drawTable,
   drawTvUnit,
 } from "./glyphs-living.js";
-import { drawBookshelf, drawCar, drawDesk, drawOfficeChair, drawPlant } from "./glyphs-misc.js";
+import { drawBookshelf, drawCar, drawDesk, drawOfficeChair, drawPlant, drawSunLounger } from "./glyphs-misc.js";
 
 export type { Rect } from "./glyph-lib.js";
 
@@ -105,6 +108,14 @@ const FIXTURE_FAMILIES: readonly (readonly [string, ...string[]])[] = [
   // ---- misc (glyphs-misc.ts) ----
   ["plant", "planter"],
   ["car"],
+  // ---- the second furniture tranche (glyphs-living.ts, glyphs-misc.ts) ----
+  // Appended, not slotted in beside their domain neighbours, because this table's order is
+  // the LEGEND's order: inserting `rug` up beside `sofa` would re-order the legend of every
+  // shipped plan that draws a sofa, for nothing.
+  ["rug", "carpet"],
+  ["sofa_l", "corner_sofa"],
+  ["piano", "grand_piano"],
+  ["sun_lounger", "lounger"],
 ];
 
 /**
@@ -227,6 +238,19 @@ export function fixtureGlyph(category: string, r: Rect, theme: Theme, sizes: Ren
       return drawPlant(r, g);
     case "car":
       return drawCar(r, g);
+    // ---- the second furniture tranche ----
+    case "rug":
+    case "carpet":
+      return drawRug(r, g);
+    case "sofa_l":
+    case "corner_sofa":
+      return drawSofaL(r, g);
+    case "piano":
+    case "grand_piano":
+      return drawPiano(r, g);
+    case "sun_lounger":
+    case "lounger":
+      return drawSunLounger(r, g);
     default:
       return null;
   }

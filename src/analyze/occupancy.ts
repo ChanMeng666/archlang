@@ -18,6 +18,7 @@
 
 import type { RRoom, RDoor, ROpening, RFurniture, RWall } from "../ir.js";
 import { rectOf, roomBox, pointOnRoomEdge } from "../analyze.js";
+import { solidFurniture } from "../fixtures-catalog.js";
 import { pointInRect } from "../geometry/rect.js";
 import { pointInPolygon } from "../geometry/polygon.js";
 
@@ -67,7 +68,10 @@ export function computeRoomClearances(
   _walls: RWall[],
   tolMm: number,
 ): RoomClearance[] {
-  const furnRects = furniture.map((f) => rectOf(f));
+  // An underlay (a rug) is walked ON, not round, so it is not an obstacle here either — the
+  // predicate is `fixtures-catalog.ts`'s, shared with the whole-plan nav grid so the two
+  // cannot disagree about what a rug is.
+  const furnRects = solidFurniture(furniture).map((f) => rectOf(f));
   const connectors: Array<{ at: { x: number; y: number } }> = [
     ...doors.map((d) => ({ at: d.at })),
     ...openings.map((o) => ({ at: o.at })),

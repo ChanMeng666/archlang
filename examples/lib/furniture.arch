@@ -50,6 +50,19 @@ plan "furniture" {
     furniture tv_unit at (x, y) size 1500x450
   }
 
+  # The whole bounding rectangle of the L, at the common three-seat-plus-chaise size.
+  # The return is always on the LEFT — turn it with `rotate`, since a mirrored `place`
+  # reflects the position and not the symbol.
+  component sofa_l(x, y) {
+    furniture sofa_l at (x, y) size 2600x1600
+  }
+
+  # An underlay: other pieces stand on it and it obstructs nothing. 2000x1400 is the
+  # ordinary size for the one that goes under a coffee table.
+  component rug(x, y) {
+    furniture rug at (x, y) size 2000x1400
+  }
+
   # The declared footprint of a `dining_table` is the whole EATING ZONE — the chairs
   # are drawn inside it — so this is a ~1400x1000 table you can pull a chair out of.
   component dining_table(x, y) {
@@ -63,6 +76,18 @@ plan "furniture" {
 
   component bookshelf(x, y) {
     furniture bookshelf at (x, y) size 900x300
+  }
+
+  # --- Elsewhere in the house -------------------------------------------------
+  # A baby grand: about as wide at the keyboard as it is long. It carries no catalogued
+  # footprint (that would make `against wall` legal, which would face the keyboard into
+  # the wall), so a size is always written by hand — here, once.
+  component piano(x, y) {
+    furniture piano at (x, y) size 1500x1500
+  }
+
+  component sun_lounger(x, y) {
+    furniture sun_lounger at (x, y) size 700x1900
   }
 
   # --- Appliances -------------------------------------------------------------
