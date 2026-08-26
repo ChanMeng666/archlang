@@ -55,6 +55,7 @@ export const README_SVGS = [
   "townhouse",
   "aquarium",
   "bungalow",
+  "furnished-flat",
 ] as const;
 
 export type ReadmeSvgName = (typeof README_SVGS)[number];

@@ -128,6 +128,27 @@ door that opens toward a named room (`swing into`), and furniture anchored insid
 
 <ArchLive :src="EXAMPLES['attached']" :rows="13" />
 
+### Furnished Flat (the drawn symbol catalogue)
+
+**7 rooms, 90.7 m², 6 doors, 6 windows** on an 8.4 × 10.8 m footprint — and
+**twenty-six of the thirty-two catalogued furniture kinds**, which is what it is here for.
+Every other example draws a fixture or two in passing; this one exercises all five symbol
+domains at once: a fitted kitchen run with an island and a dashed
+[overhead cabinet](/furniture#how-a-symbol-is-drawn), a plumbed bathroom, two furnished
+bedrooms, a lounge and dining zone, and a utility room with a washer beside a dryer (the
+same box, told apart by the chords across its drum).
+
+Two things to read in the source rather than the drawing. **Not one piece carries a
+`label`** — a drawn symbol ignores it, so the only text here comes from the rooms. And
+**most carry no `size`** either: `against wall <id> … in <room>` takes the
+[catalogued footprint](/furniture#the-symbol-catalogue) and derives the rotation from the
+wall, so the whole kitchen, bathroom and both beds are written without a hand-computed
+number. `offset` is where a piece's **centre** lands along the wall run, which is why a
+fitted run reads as a sequence of centres rather than corners. `arch validate --strict`
+is clean.
+
+<ArchLive :src="EXAMPLES['furnished-flat']" :rows="30" />
+
 ### Suburban Bungalow (orientation, and doors that are not hinged)
 
 A single-storey house — **8 rooms, 102 m², 6 doors, 7 windows** at `scale 1:100` — on a

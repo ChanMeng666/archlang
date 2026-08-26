@@ -437,6 +437,20 @@ name for the source.
 </tr>
 </table>
 
+**And one that is here for its furniture** — the drawn symbol catalogue in a single plan,
+from the WC's seat ring to the wardrobe's hanger scallops. Twenty-six kinds; not one of them
+carries a `label`, and most carry no `size` either:
+
+<div align="center">
+
+<a href="https://playground.archlang.uk/#z=rZjbjhs3EkDf9RUFzcOOAUluta5jJAEc7xhrxGsH4_HD7otENavVXLVILckeSTEM5CP2G_Jh-ZJFkeyLRrfc9KTpYR3Wvap1A48ZwtvPDx_ePX5-uIc0Z0uTiQ38-vP_gIHdqu4CuVZqTf-yHUgLLYXJkMNW2AxshrDNVI5g9uuFyiFhluVqWWCvddO6gfsn1HtQNkMNuGPrTY7ANdsaYJCKnS00gtJ0DwgJG2aMkMsePGbCgJIIwkCGGiGlQ5mXla2bcJuhZ2uD-ROaV2C3KO2-a8QOVOpO20xou-8SvdKLw0pIbjrAEq2MAZbnkIonbN0AV2smpIHbBbNZB1bCJhnKl4UVubD7DgRPdCAXT0IuX3IhhVx2QKWpSPDlWpjkhTf7cavocrk0YBVoZJwOOZ2MKnSCoJnzic2YdI83IiFnvHLiAP0efPgI719_f__-Uw9ee7tLH4ulVBoNzHO2wHzuYuUCoTSny5KM_snRJFos8PbFHJjkDgsAUjnFAHODTtIoJ6xkvgeLO0uBsOR_upNOJmqNBlKt1u4gucD0HC7uwT8_fnqEH9_dv7n_BG9ePzz8i_T-9O7f9z2YsyW508KWfPyN4N_Brz__QvhviPHdHCxboYthIzylnqlSdqOFtHDLINWCL102jKMIWK7k0ltM5MUexqMIOOLmBVkKHLV4CmCtLLNCyQpbmkGiHTKeEtFalxcu3h1gsMmL9QI5UCK45CcsowTwaS-sKYEZMr5QTHNQPpJaLLNgM9MIW0106eRUYYEBpXiOkDHJu4labwq6XNKFuldS5ypNDdo5mbx1FeCTBBP8m4E39x8eH-4hZ5Kb597QhQxmBXvoSYklWtCHUQka_G-BMkEqmASl1Wg6lCH030RpidpUKn10CZIhpBqxayyTnLLD6WRCJqWsA0yvk4wJ3YFEpSkiWLbIsQO-WsJftUJkRAc4mlVZSBDENzmT1oE5Jjn5ksHciJ9wTqWYsMKgj4ZU3nSqKGyYWqa6VWAxz2HuXDX3OTDnuLHZvNeia6D9tuprb3Nm2_ClBVBIYQ2s1y2ApRYcRlGL6kfbDIpNC4CLtQFWWAXqCTXL81YLvCaCf7ud-ZOAO4taKA1UVclKojEQRxF8gduoE72A2-kwcl--HkgjMxYuSpdy_ks_mkZHEKOKqyoEwQuULV5TxevRED-QXwkShw3TVlAtNuT7Xn4UBVPcl9H4WAdqwr-BMWjYMjhhSsbyfCYvYcrrPeOUKo5hLjPGDT3GJ_SgTnLZnMG4EvXfT4aGGtRlzrhWwX9vxsj1NsG_1bNcPCFpxGyIpv9QuQF5dkeeADdwoP3ezT94CX93Nd2GwqAJU_GAWrYgopYxLqmDYRTtKEYl9Qd_uA3lx1ED4gAbkqHG-lDX2H4D-9mP7_YBgWJYm-ujXCo2dYS4JvyD5XmtVakYIQ6YC-T9muldXhk7jqLdMKqZ34etqt9uMsOG8Rwbl9hGUjhsPD2Dja9jfeY4bCNHPDZ6jmU2O_YAISiLuFKaoHyWaiUtDcKqfzELY3LlVnCbwV0UAbVkBIlMg7FMWzBuyxCSNqVZ8GqN9InpkKF4mXWc34wkwgHSp88z5GhSaTm9iiTCAdLHvkYaQk5qLa8jifAcGR8hR8PfoSURDpEu5sda_g4khRxAbdAN8_LjkKHNMwv9cYWkOnLTQEiutv6gH4zMwmBQnxtG0bljY1rvGrjDY3460a3TS7Tq2HAQXaD5icksxONLtOrYcHh4rAVwA91uF571SHr2hz4t8O9c7lXJPs1oKfFOP1ivS3f5vZGaf0SbdpX9NYO2tCpwVP2TKOrEfdetXPX376JoR2Xldmckv55B-QVv5lY6h-r3R1GHvBoaCamxG59VpVwVK1XiOxpQo0qeNJmOKk3iyTmSXy4bmsQDGgs1Ka7GwmmAXzYbXhnGBKi9Mj6ypAp1GFyv6lcJXcjGSt1Y0X2QXMSuxTpRhbSo4XqwR1Qf3t9xU8t6dNbU8GxmhFxdprqqO8sxVvmF4ap2k8ElDhcm2zKTeUMvcu4uccIb4ml9_Cw6Ko1TnGKzQT1L2EJItJc500sc_2LTTKjRlOosqmtjHMrsgFElVVhb_nDfOJlTwdOnzApWuX7mNAozrhEqvacoXRAeRQfClS3VsgN_oS1cFYsc3Sb9TKXwvhKUuqNF2GsVZmzNkPSu7l5lLzMmd_HozzL6UTwZnWFsmeZaLfA4dcOcDgw3lBqMIw_Hf6WHw0vKyZJyq0SpFVVmpVV8GCU0q7MM4jersu5hkzKRjoD-N4KZnxuuUQ9HUWdaz5yDRn0kvlBqZTLM0yv6DKqu5RC1o8nu7p__HDbTTG1PlFZY14KDaoX8DtawiRkhr3S9SdWtjsS3yfWmeRdH52-3mS0Wz8X9hlTePjxQvgVghc0RvsBGq_9gYo9_gHG_eM4We2i_1kn2ntFrJqcloB1H8bgbTbvxuA1fW19b_wc">
+<img src="./examples/furnished-flat.svg" alt="A furnished two-bedroom flat — twenty-six drawn furniture symbols across five room domains" width="440" />
+</a>
+
+<b><a href="examples/furnished-flat.arch">furnished-flat</a></b>
+
+</div>
+
 **Two more, drawn on a smaller sheet** — the same language, laid out to a fixed scale inside a
 titled A3 border rather than sized to its own drawing:
 
@@ -463,6 +477,7 @@ titled A3 border rather than sized to its own drawing:
 - **Homes** — [`laneway-house`](examples/laneway-house.arch),
   [`tiny-house`](examples/tiny-house.arch), [`garden-loft`](examples/garden-loft.arch),
   [`two-bed`](examples/two-bed.arch), [`bungalow`](examples/bungalow.arch),
+  [`furnished-flat`](examples/furnished-flat.arch) (the furniture flagship),
   [`courtyard-house`](examples/courtyard-house.arch),
   [`townhouse`](examples/townhouse.arch) (three storeys),
   [`terrace-row`](examples/terrace-row.arch) (one component, placed four times),

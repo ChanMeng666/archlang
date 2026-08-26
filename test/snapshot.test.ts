@@ -47,6 +47,11 @@ describe("golden SVG snapshots", () => {
     "clinic.arch",
     "materials.arch",
     "terrace-row.arch",
+    // v1.28: the furniture flagship — twenty-six of the thirty-two catalogued kinds in
+    // one plan, so this is the golden where a drawn symbol's geometry, its derived
+    // quarter-turn or the `against wall` footprint default would show up as a string
+    // diff. No other shipped example draws more than a handful.
+    "furnished-flat.arch",
   ]) {
     it(`renders ${name} deterministically`, () => {
       const { svg, errors } = compile(example(name), { noCache: true });

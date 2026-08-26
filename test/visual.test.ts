@@ -90,6 +90,11 @@ const EXAMPLES = [
   // A `for`-generated run of four identical units — the golden that would move if the
   // scripting expansion or its auto-id numbering drifted.
   "terrace-row.arch",
+  // v1.28: the furniture flagship. Twenty-six drawn symbols on one sheet, which is what
+  // makes it the visual golden for the glyph layer — a scallop that stopped tiling, a
+  // burner ring that faceted, a pillow branch that flipped, all draw the same STRING
+  // length and would slip past a snapshot while moving pixels here.
+  "furnished-flat.arch",
 ];
 
 async function hasResvg(): Promise<boolean> {

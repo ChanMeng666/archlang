@@ -1,0 +1,101 @@
+# The FURNITURE flagship — a two-bedroom flat, furnished with the whole symbol catalogue.
+#
+# Every other example draws a fixture or two in passing. This one is here for the drawn
+# symbols themselves: twenty-six of the thirty-two catalogued kinds, across all five
+# domains (bath, kitchen/utility, bedroom, living/dining, office/misc).
+#
+# Two things to read off the source rather than the picture:
+#
+#   1. NO LABELS. A drawn symbol ignores `label` — the word reaches `describe()` and
+#      nothing else — so the only text in this drawing comes from the rooms.
+#   2. MOST PIECES CARRY NO SIZE. `against wall <id> … in <room>` takes the catalogued
+#      footprint (a fridge is 600 along the wall by 650 deep) and derives the rotation
+#      from the wall, so a fitted kitchen, a plumbed bathroom and a bed with its
+#      headboard on the right wall are written without a single hand-computed number.
+#      `offset` is where the piece's CENTRE lands along the wall run, so a kitchen run
+#      is written as a sequence of centres, not as corners.
+#      Only the free-standing pieces — sofa, armchair, coffee table, dining table,
+#      island, desk, office chair, plant — declare a `size`, because with no wall there
+#      is nothing to tell `along` from `depth`.
+plan "Furnished Flat" {
+  units mm
+  grid 50
+  north up
+  dims auto overall
+
+  wall id=w_north  exterior  thickness 200 { (0,0) (8400,0) }
+  wall id=w_east   exterior  thickness 200 { (8400,0) (8400,10800) }
+  wall id=w_south  exterior  thickness 200 { (0,10800) (8400,10800) }
+  wall id=w_west   exterior  thickness 200 { (0,0) (0,10800) }
+
+  wall id=w_kit    partition thickness 100 { (5000,0) (5000,5600) }
+  wall id=w_util   partition thickness 100 { (5000,3800) (8400,3800) }
+  wall id=w_hall_n partition thickness 100 { (0,5600) (8400,5600) }
+  wall id=w_hall_s partition thickness 100 { (0,6800) (8400,6800) }
+  wall id=w_bed    partition thickness 100 { (3600,6800) (3600,10800) }
+  wall id=w_bath   partition thickness 100 { (6400,6800) (6400,10800) }
+
+  room id=r_live    at (0,0)       size 5000x5600 label "Living / Dining" uses living
+  room id=r_kitchen at (5000,0)    size 3400x3800 label "Kitchen"         uses kitchen
+  room id=r_util    at (5000,3800) size 3400x1800 label "Utility"
+  room id=r_hall    at (0,5600)    size 8400x1200 label "Hall"            uses hall
+  room id=r_bed1    at (0,6800)    size 3600x4000 label "Bedroom 1"       uses bedroom
+  room id=r_bed2    at (3600,6800) size 2800x4000 label "Bedroom 2"       uses bedroom
+  room id=r_bath    at (6400,6800) size 2000x4000 label "Bath"            uses bath
+
+  door id=d_front on w_east   at 6200 width 900 hinge near start swing into r_hall
+  door id=d_live  on w_hall_n at 900  width 900 hinge near start swing into r_live
+  door id=d_util  on w_hall_n at 5700 width 800 hinge near start swing into r_util
+  door id=d_bed1  on w_hall_s at 700  width 800 hinge near start swing into r_bed1
+  door id=d_bed2  on w_hall_s at 5400 width 800 hinge near start swing into r_bed2
+  door id=d_bath  on w_hall_s at 7000 width 800 hinge near start swing into r_bath
+  opening         on w_kit    at 1600 width 1200
+
+  window on w_north at 3300 width 1400
+  window on w_north at 6650 width 1200
+  window on w_west  at 1800 width 1400
+  window on w_west  at 4300 width 1200
+  window on w_south at 2600 width 1400
+  window on w_south at 4400 width 1400
+
+  # --- Living / Dining --------------------------------------------------------
+  furniture tv_unit      against wall w_north offset 1000 in r_live
+  furniture sofa         at (700,2100)  size 1900x900 rotate 180 in r_live
+  furniture coffee_table at (1150,1200) size 1000x600 in r_live
+  furniture armchair     at (2900,1500) size 900x850 rotate 270 in r_live
+  furniture dining_table at (2300,3500) size 2400x1800 in r_live
+  furniture plant        at (4200,300)  size 600x600 in r_live
+
+  # --- Kitchen: a fitted run of centres along the north wall -------------------
+  furniture counter       against wall w_north offset 5650 size 1200x600 in r_kitchen
+  furniture kitchen_sink  against wall w_north offset 6650 in r_kitchen
+  furniture stove         against wall w_north offset 7350 in r_kitchen
+  furniture dishwasher    against wall w_north offset 7950 in r_kitchen
+  furniture fridge        against wall w_east  offset 1000 in r_kitchen
+  furniture upper_cabinet against wall w_east  offset 1800 in r_kitchen
+  furniture island        at (5800,2000) size 1600x900 in r_kitchen
+
+  # --- Utility ----------------------------------------------------------------
+  furniture washer against wall w_east offset 4400 in r_util
+  furniture dryer  against wall w_east offset 5000 in r_util
+
+  # --- Bedroom 1 --------------------------------------------------------------
+  furniture double_bed against wall w_west   offset 9100  in r_bed1
+  furniture nightstand against wall w_west   offset 7925  in r_bed1
+  furniture nightstand against wall w_west   offset 10275 in r_bed1
+  furniture wardrobe   against wall w_hall_s offset 2600  in r_bed1
+
+  # --- Bedroom 2 --------------------------------------------------------------
+  furniture bed          against wall w_bath offset 2950  in r_bed2
+  furniture desk         against wall w_bed  offset 1000 size 1200x700 in r_bed2
+  furniture office_chair at (4450,8200) size 600x600 in r_bed2
+  furniture bookshelf    against wall w_bed  offset 3350 in r_bed2
+
+  # --- Bath -------------------------------------------------------------------
+  furniture shower  against wall w_bath  offset 1350 in r_bath
+  furniture basin   against wall w_east  offset 7800 in r_bath
+  furniture wc      against wall w_east  offset 9200 in r_bath
+  furniture bathtub against wall w_south offset 7450 in r_bath
+
+  title { project "Furnished Flat" drawn_by "ArchLang" date "2026-08-26" }
+}
