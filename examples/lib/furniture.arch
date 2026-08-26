@@ -5,27 +5,72 @@
 #
 # Each component is self-contained (no cross-component calls), so a named import
 # brings in exactly what you ask for.
+#
+# Sizes are typical residential footprints in mm (origin = top-left corner), and the
+# pieces that have a catalogued footprint use it, so a component and the equivalent
+# `furniture <kind> against wall …` with no `size` draw the same rectangle. Every kind
+# here draws a real plan symbol, placed with its back along the TOP edge — orient by
+# choosing the room wall it sits against. A drawn symbol IGNORES `label`, so there are
+# none: a `label "Bed"` on a bed reaches nothing but `describe()`.
 plan "furniture" {
   units mm
   grid 50
 
+  # --- Bedroom ----------------------------------------------------------------
   component bed(x, y) {
-    furniture bed at (x, y) size 1500x2000 label "Bed"
+    furniture bed at (x, y) size 1500x2000
   }
 
   component double_bed(x, y) {
-    furniture bed at (x, y) size 1800x2100 label "Bed"
+    furniture double_bed at (x, y) size 1800x2000
   }
 
+  component nightstand(x, y) {
+    furniture nightstand at (x, y) size 450x400
+  }
+
+  component wardrobe(x, y) {
+    furniture wardrobe at (x, y) size 1800x600
+  }
+
+  # --- Living & dining --------------------------------------------------------
   component sofa(x, y) {
-    furniture sofa at (x, y) size 2000x900 label "Sofa"
+    furniture sofa at (x, y) size 2000x900
   }
 
+  component armchair(x, y) {
+    furniture armchair at (x, y) size 900x850
+  }
+
+  component coffee_table(x, y) {
+    furniture coffee_table at (x, y) size 1100x600
+  }
+
+  component tv_unit(x, y) {
+    furniture tv_unit at (x, y) size 1500x450
+  }
+
+  # The declared footprint of a `dining_table` is the whole EATING ZONE — the chairs
+  # are drawn inside it — so this is a ~1400x1000 table you can pull a chair out of.
+  component dining_table(x, y) {
+    furniture dining_table at (x, y) size 2400x2000
+  }
+
+  # --- Office -----------------------------------------------------------------
   component desk(x, y) {
-    furniture desk at (x, y) size 1400x700 label "Desk"
+    furniture desk at (x, y) size 1400x700
   }
 
+  component bookshelf(x, y) {
+    furniture bookshelf at (x, y) size 900x300
+  }
+
+  # --- Appliances -------------------------------------------------------------
   component stove(x, y) {
-    furniture stove at (x, y) size 600x600 label "Stove"
+    furniture stove at (x, y) size 600x600
+  }
+
+  component washer(x, y) {
+    furniture washer at (x, y) size 600x600
   }
 }
