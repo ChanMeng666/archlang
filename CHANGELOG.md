@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — repository contents only; no `src/`, no language, no published artifact
+
+**The papers moved out, to the private repository `ChanMeng666/archlang-paper`.** `paper/` (56
+tracked files) plus `scripts/gen-paper-facts.ts` and `scripts/snapshot-paper-scale.ts` were
+extracted on 2026-08-26 and removed here. The reason is not tidiness: one of the three targets is a
+**double-anonymous** ICSE 2027 NIER submission, and its source was sitting in a public repository
+named after its author. `paper/check-anon.mjs` reads the LaTeX and cannot see where the LaTeX is
+hosted, so it reported a clean bill on a paper anyone could attribute in one click — a guard that is
+sound about what it inspects and blind to the thing that actually mattered, which is the subject of
+those very papers.
+
+What that removes from this repository: the `paper:build` / `paper:check` / `paper:snapshot`
+scripts, `gen:paper-facts` (also dropped from `gen:all`), the `paper/facts.{json,tex}` entry in
+`scripts/check-drift.ts` — so `check:drift` now gates 22 artifacts across 9 generators, not 24
+across 10 — and three `paper/`
+exemptions in `biome.jsonc`. **The drift gate was not dropped, it MOVED**: it is
+`scripts/check-drift.mjs` in the new repository, run first by that repo's `paper:check`, still
+deriving every count from this repo's own `ERROR_CATALOG` / `KEYWORDS` / `LINT_RULES` /
+`buildManifest()` through a sibling checkout. Regenerated there, `facts.json` and `facts.tex` come
+out byte-identical to the copies committed here. `CITATION.cff` stays — it cites the software, not
+the papers — with its `ZENODO.md` pointers re-aimed.
+
+**Historical narrative moved to the private growth repository**, under
+`archcanvas-growth/archive/archlang/`: `docs/archive/` (5 files, including
+`agents-status-history-2026-07.md` and the frozen `WORK-LOG-v0.7-v1.15.md`), `docs/superpowers/` (3
+design/plan documents), and the untracked `.superpowers/` agent logs. `AGENTS.md` and
+`docs/adr/0013` now cite that path as inline code rather than as links — a relative link out of
+`docs/adr/` breaks `docs:build`, since ADRs are copied flat onto the site.
+
+**Seven unreferenced brand rasters removed** (`brand/archlang-icon.png`, `-black.png`, `-plum.png`,
+`-app.png`, `-app-plum.png`, `archlang-wordmark-dark.png`, `-light.png`; 399 KB), archived to
+`archcanvas-growth/archive/archlang/brand-rasters/`. Neither site mirrored them and
+`test/brand-assets.test.ts` never named them. Each is a fill-swap render of the byte-sacred
+`archlang-logo-master.svg`, so the master remains the way to produce one — restoring an archived PNG
+never is.
+
+Also deleted from the working tree, all untracked and regenerable: the 3.21 GB ecosystem-scan
+package cache under `paper/experiments/ecosystem/cache/`, and 17 superseded `.vsix` builds under
+`editors/vscode/` (`archlang-0.16.0.vsix` is **kept** — it is packaged and not yet uploaded to the
+Marketplace).
+
 ## [1.27.0] - 2026-08-25
 
 **One new language form, four lint rules that had been answering a narrower question than the
