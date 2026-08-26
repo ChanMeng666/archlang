@@ -67,6 +67,16 @@ plan "Two-storey house" {
     furniture wc in bath anchor bottom-left flush size 400x700
     furniture basin in bath anchor bottom-right flush size 600x450
     stair id=stair at (100,1500) size 900x2600 dir down
+
+    # The landing looks down into the hall below over a balustrade: there is no floor
+    # here, so the plan says so. A `void` is drawn (dashed rectangle + both diagonals)
+    # and it OBSTRUCTS circulation — you cannot walk across a hole — with the walkable
+    # halo suppressed on every edge, because you can stand at the railing. It does NOT
+    # come off the landing's area: that number is the room's floor area and it is what
+    # the schedule and `describe --json` both report, so subtracting the well here would
+    # leave the drawing and the table disagreeing. `describe --json` lists it under
+    # `voids[]` with the room it falls in, which is where a net figure comes from.
+    void id=gallery at (100,200) size 900x1100
   }
 
   title {
