@@ -83,9 +83,10 @@ from an indirect label alias (`W_ALIAS_MATCH`, with a fix that pins the explicit
 checks — a walk that squeezes below a passable width (`W_PATH_TOO_NARROW`) or wanders far from a
 straight line (`W_CIRCUITOUS_PATH`), measured on a clearance-eroded nav grid and also readable as
 facts from `describe().circulation` (per-room walk distance / bottleneck width / detour) or drawn with
-`compile --overlay circulation`. Draw real fixtures with
-`furniture wc|basin|shower|bathtub|kitchen_sink|counter|fridge|stove …` (or the `lib/fixtures.arch`
-library), and let `dims auto` place dimension strings for you.
+`compile --overlay circulation`. Every catalogued `furniture <kind>` draws a real plan symbol and
+ignores its `label` (the catalogue is `arch manifest --json` → `fixtureCategories`; the escape hatch
+for anything else is the labelled rectangle), most take their footprint from `against wall <id> in
+<room>` with no `size`, and `dims auto` places dimension strings for you.
 
 ## To CONTRIBUTE (work on the repo)
 

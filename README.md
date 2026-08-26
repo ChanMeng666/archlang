@@ -249,9 +249,12 @@ fence in your Markdown to images in one step.
 <br/>
 
 Poché-hatched walls (by material), door **swing arcs**, window glazing, computed room areas,
-dimension lines, layers, line weights, a north arrow, a scale bar and a title block. Real **fixture
-symbols** for WC, basin, shower, bathtub, sink, counter, fridge and stove — plus `dims auto` to
-synthesize dimension strings for you.
+dimension lines, layers, line weights, a north arrow, a scale bar and a title block. **Real drawn
+symbols for every catalogued furniture kind** — the bathroom and kitchen fixtures, and the room
+furniture beside them, each with the detail that makes it readable at plan scale (see
+[Furniture & Fixtures](docs/furniture.md), or the
+[`furnished-flat`](examples/furnished-flat.arch) example) — plus `dims auto` to synthesize
+dimension strings for you.
 
 </details>
 

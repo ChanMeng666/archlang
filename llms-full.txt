@@ -534,8 +534,11 @@ MCP-native hosts — prefer the CLI when you have a shell; it costs nothing in c
   `20mm` = `20` — so you can write `4m` instead of hand-multiplying; bare numbers are unchanged.
 - **Attach openings to walls** (`on <wall> at <pos>`) so they always sit on a segment; a raw `at`
   that lands off any wall warns (and `arch fix` rewrites it).
-- **Fixtures draw real symbols:** `furniture wc|basin|shower|bathtub|kitchen_sink|counter|fridge|stove …`
-  renders a plan symbol; put fixtures in every bath and kitchen so lint stays quiet.
+- **Furniture draws real symbols, not boxes.** Every catalogued kind (`arch manifest --json` →
+  `fixtureCategories`) renders a plan symbol and **ignores `label`**; an uncatalogued word falls
+  back to a labelled rectangle. Most kinds also carry a footprint, so `furniture <kind> against
+  wall <id> in <room>` needs no `size` — `offset` is the piece's CENTRE along the wall run. Put
+  fixtures in every bath and kitchen so lint stays quiet.
 - **`dims auto`** draws dimension strings for you (`overall`, `rooms`, `walls`, or `all`).
 - Edit is cheap: "make the bedroom 1 m wider" is a one-number change, then recompile.
 

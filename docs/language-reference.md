@@ -1087,18 +1087,21 @@ furniture <kind> [id=<id>] in <room> centered [size <w>x<h>] [label …] [rotate
 furniture <kind> [id=<id>] in <room> anchor <a> [flush] [inset <mm>] [size <w>x<h>] [label …] [rotate …]
 ```
 
-A schematic labelled rectangle (bed, sofa, desk…). Known plumbing & kitchen
-**fixture** kinds draw a real plan symbol instead of an empty box and ignore any
-`label`: `wc`/`toilet`, `basin`, `shower`, `bathtub`, `kitchen_sink`/`sink`,
-`counter`, `fridge`, and `stove`/`hob`/`cooktop`. Any other kind falls back to the
-labelled rectangle.
+A piece of furniture or a built-in fixture. Every **catalogued** kind draws a real
+plan symbol — a WC with a cistern, a bed with a headboard, a wardrobe with hanging
+scallops — and ignores any `label`. Any other kind falls back to a schematic
+**labelled rectangle**, which is the escape hatch for something ArchLang has no
+symbol for. The catalogue is `arch manifest --json`'s `fixtureCategories`, and every
+kind is documented with its symbol, footprint and facing in
+[Furniture & Fixtures](furniture.md).
 
 A piece can be placed three ways: absolutely with `at (x,y)` (optionally turned with
 `rotate`), snapped **`against wall <ref>`** so its back sits on the wall and its
-rotation is derived for you, or **relative to a room** (v1.13). A known fixture
-placed `against wall` may **omit `size`** to take its catalogued footprint (e.g.
-`furniture wc against wall w1 in bath`); `at` and room-relative placement and
-uncatalogued kinds still need an explicit `size`. `in <room>` records which room
+rotation is derived for you, or **relative to a room** (v1.13). A kind with a
+catalogued footprint placed `against wall` may **omit `size`** and take it (e.g.
+`furniture wc against wall w1 in bath`) — `offset` is where the piece's **centre**
+lands along the wall run; `at` and room-relative placement, and any kind with no
+catalogued footprint, still need an explicit `size`. `in <room>` records which room
 owns the piece (used by the lint rules).
 
 **Room-relative placement (v1.13).** `in <room> centered` centres the fixture in
