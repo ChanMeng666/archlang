@@ -181,6 +181,63 @@ kinds of thing moved:
 pins — a plan with no furniture, and the unknown-`widget` fallback — are byte-identical to the day
 they were written, checked line-for-line rather than eyeballed.
 
+### Added — the flagship, the library, and four documents that named the wrong things
+
+**New `examples/furnished-flat.arch` — the FURNITURE flagship.** Twenty-six of the thirty-two
+catalogued kinds in one 90.7 m² two-bedroom flat, across all five symbol domains: a fitted kitchen
+run with an island and a dashed overhead cabinet, a plumbed bathroom, two furnished bedrooms, a
+lounge and dining zone, and a utility room where a washer stands beside a dryer — the same box at
+the same size, told apart only by the chords across its drum. Every other shipped example draws a
+fixture or two in passing; none of them exercises the glyph layer, so nothing in `examples/` would
+have shown a reader what this release actually did. It is also the worked example for the two
+things the layer changed about AUTHORING, both readable in the source rather than the drawing: not
+one piece carries a `label`, because a drawn symbol ignores it, and most carry no `size` either —
+`against wall <id> … in <room>` takes the catalogued footprint and derives the rotation from the
+wall, so the whole kitchen, the whole bathroom and both beds are written without a hand-computed
+number. `arch validate --strict` is clean, 0 diagnostics, none waived. Wired in the way every other
+example is (snapshot, PNG visual golden, `README_SVGS` + a README embed, the docs gallery, and the
+vocabulary corpus pin); `UPDATE_GOLDENS=1` wrote exactly one file and `vitest -u` added lines
+without removing any, so no existing drawing moved.
+
+**`examples/lib/furniture.arch` rebuilt** — thirteen components instead of five, no `label` on any
+of them (each named a kind that now draws, so each word was reaching `describe()` and nothing
+else), and the pieces with a catalogued footprint use it, so a component and the equivalent
+`against wall` with no `size` draw the same rectangle. `double_bed` places the `double_bed`
+category rather than a `bed` widened to 1800 — identical drawing, since the second pillow is a
+property of the footprint, but it says what it means. `examples/imports.arch`, the one plan that
+imports the file, compiles to a byte-identical SVG.
+
+### Fixed — documentation that named the wrong symbol
+
+**`docs/furniture.md` carried two rows that were wrong rather than merely stale**, in a way a
+reader would act on. It listed "`basin` · `sink` — bathroom basin": `sink` is an alias of
+`kitchen_sink`, not of `basin`, and it draws the KITCHEN sink — a counter slab with two bowls,
+drains and a tap — so anyone reaching for `sink` in a bathroom on the strength of that row got a
+two-bowl kitchen run. And it listed `oven` as an alias of `stove` drawing the cooktop symbol:
+`oven` has its own glyph, no catalogued footprint and no wall requirement. A third error sat in the
+placement section — "`offset <mm>` slides the piece along that segment from its start", when
+`placeAgainst` puts the piece's CENTRE at `offset`, which is a metre out on a two-metre run.
+
+The page is rewritten as five tables grouped by room domain, every canonical name with its aliases,
+what its symbol draws, its footprint and its facing — transcribed from `fixtureSpec` /
+`defaultFootprint` / `orientationMatters` by script rather than retyped, which is how the two alias
+divergences worth documenting were found (`lavatory` satisfies no wet-fixture check, `sink`
+satisfies both zones). It also writes down, for the first time anywhere, the label-free contract
+and why the labelled rectangle is a deliberate escape hatch; the two aspect-driven branches and why
+both read the footprint instead of the category word; `upper_cabinet`'s above-the-cut-plane dashes;
+that a `dining_table`'s declared footprint is the whole eating zone, chairs included; and what
+`-f txt` does with a drawn piece.
+
+**Four more documents retyped the same eight-name fixture list** — `docs/language-reference.md`,
+`SKILL.md`, `llms.txt` and the README — and all four were false by twenty-four families. One of
+them, `SKILL.md`, feeds `llms-full.txt`, so the stale list was being served to cold-start agents as
+bundled context. Each now states the rule and NAMES the machine-readable source
+(`arch manifest --json` → `fixtureCategories`) instead of spelling out members a release can add
+to; `docs/furniture.md` is the one place the catalogue is written out, and it earns that by putting
+a footprint and a facing beside each name. `spec.llm.md` already interpolates its own list from
+`CANONICAL_FIXTURES` and needed no change. `src/elements/furniture.ts`'s dispatch comment carried
+the same stale claim and is corrected in the same pass (comment only, no behaviour change).
+
 ### Deferred, by name
 
 Named rather than silently omitted, so nobody assumes they were overlooked: **angled furniture** (a
