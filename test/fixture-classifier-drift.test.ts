@@ -112,7 +112,9 @@ describe("size-optional `against wall` placement matches the catalog", () => {
     furniture ${category} against wall w segment 0 offset 3000 in r
   }`;
   const errorCodes = (src: string): string[] =>
-    compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error").map((d) => d.code ?? "");
+    compile(src, { noCache: true })
+      .diagnostics.filter((d) => d.severity === "error")
+      .map((d) => d.code ?? "");
 
   it("a catalogued footprint lets `size` be omitted", () => {
     const sized = CANONICAL_FIXTURES.filter((c) => defaultFootprint(c) !== null);

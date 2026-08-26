@@ -113,7 +113,7 @@ describe("glyph-lib — the dash convention", () => {
     // The SVG rounds through `fmt2`, so compare to the printed precision, not to float bits.
     const drawnPattern = m![1]!.split(" ").map(Number);
     expect(drawnPattern).toHaveLength(2);
-    drawnPattern.forEach((v, i) => expect(v).toBeCloseTo(dashedPattern(sizes)[i]!, 2));
+    for (const [i, v] of drawnPattern.entries()) expect(v).toBeCloseTo(dashedPattern(sizes)[i]!, 2);
   });
 
   it("an undashed segment names no line type and carries no dash", () => {

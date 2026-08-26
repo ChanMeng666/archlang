@@ -233,6 +233,24 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // phrasing the `opening` line already used for the identical fact. Green at 24,970,
     // **30 chars of headroom**. That is back inside tripwire range, so the Attributes
     // bullet above is now the next edit here, not a someday one.
+    //
+    // v1.28.0 spent net 15 of the 30, and the gross number is the interesting one. The
+    // furniture line's size-optional fixture list stopped being a hand-typed eight names
+    // plus an ellipsis and became an INTERPOLATION of every catalogued footprint — which
+    // the same release grew from 8 families to 18. That is +115 characters against 30 of
+    // headroom, so 100 were paid for on the spot, all of them inside the furniture line:
+    //   - `in <roomId>` was written TWICE in the grammar form, once before `centered` and
+    //     once before `anchor`; factored to `in <roomId> (centered | anchor …)`.
+    //   - "an `against` piece takes rotation FROM the wall, so writing one is
+    //     E_FURN_AGAINST" restated "derives position+rotation" from earlier in the same
+    //     note; it now reads "an `against` piece's comes FROM the wall (E_FURN_AGAINST…)".
+    //   - "`side` inferred from `in <roomId>` when omitted" lost "when omitted", which the
+    //     word "inferred" already carries.
+    //   - the `flush` sentence said "`flush`" three times in two clauses.
+    // Green at 24,985. The cap was NOT raised, and the list is now the kind of text that
+    // GROWS on its own: every new catalogued footprint adds its name here. That makes the
+    // Attributes bullet (~690 chars, above) not the next edit but an overdue one — the
+    // next fixture family to ship a footprint will not find 15 characters waiting for it.
     expect(spec.length).toBeLessThan(25_000);
   });
 });
