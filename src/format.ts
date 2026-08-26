@@ -223,6 +223,15 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       return `elevator ${id}at ${ptStr(s.at)} size ${sizeStr(s.size)}`;
     case "escalator":
       return `escalator ${id}at ${ptStr(s.at)} size ${sizeStr(s.size)} dir ${s.dir}`;
+    case "roof":
+      // Both spellings must round-trip. Printing the `overhang` form's derived ring
+      // instead would freeze a plan's outline against later edits to the wall it follows,
+      // and dropping the `wall` clause would silently re-point the roof at whichever ring
+      // the inference picks — the v1.26.1 pocket-door lesson, where `fmt` returned a
+      // pocket door as a hinged one.
+      return s.polygon
+        ? `roof polygon ${s.polygon.map(ptStr).join(" ")}`
+        : `roof overhang ${exprStr(s.overhang!)}${s.wall ? ` wall ${s.wall}` : ""}`;
     case "let":
       return s.value.t === "fnlit"
         ? `let ${s.name}(${s.value.params.join(", ")}) = ${exprStr(s.value.body)}`

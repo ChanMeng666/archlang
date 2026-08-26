@@ -61,6 +61,12 @@ export function statementExprs(s: Statement): Expr[] {
       pt(s.at);
       out.push(s.size.w, s.size.h);
       break;
+    case "roof":
+      // Exactly one of the two spellings is present; the `wall` clause is an id, not an
+      // expression, so it contributes nothing here.
+      if (s.overhang) out.push(s.overhang);
+      for (const p of s.polygon ?? []) pt(p);
+      break;
     case "stair":
       pt(s.at);
       out.push(s.size.w, s.size.h);

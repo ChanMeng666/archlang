@@ -53,6 +53,7 @@ export const KEYWORDS = {
     "stair",
     "elevator",
     "escalator",
+    "roof",
   ],
   /** Setting / attribute keywords → `keyword.other`, CM `propertyName`. */
   attribute: [
@@ -118,6 +119,10 @@ export const KEYWORDS = {
     // them as bare identifiers.
     "street",
     "hemisphere",
+    // `roof overhang <len>` — the clause that introduces the projection distance. A word
+    // that LEADS a clause is a setting keyword, so it sits here beside `thickness` and
+    // `width` rather than in `enum` (which holds the VALUES a clause takes).
+    "overhang",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
   enum: [

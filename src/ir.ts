@@ -413,6 +413,17 @@ export interface REscalator extends RBase {
   dir: VerticalDir;
 }
 
+/**
+ * A resolved roof projection. The ring is ALWAYS concrete — the `overhang` sugar is
+ * discharged at resolve into the same explicit vertex list the `polygon` form writes —
+ * so nothing downstream re-derives an offset or needs to know which spelling was used.
+ * Implicitly closed, no repeated last vertex (the `RRoom.poly` convention).
+ */
+export interface RRoof extends RBase {
+  kind: "roof";
+  ring: Point[];
+}
+
 export type ResolvedElement =
   | RWall
   | RRoom
@@ -424,7 +435,8 @@ export type ResolvedElement =
   | RColumn
   | RStair
   | RElevator
-  | REscalator;
+  | REscalator
+  | RRoof;
 
 /**
  * One resolved **positioning axis** (定位轴线): an author-declared datum line at `pos`
@@ -1818,7 +1830,8 @@ function checkPlanDrawable(elements: ResolvedElement[], diagnostics: Diagnostic[
       e.kind === "column" ||
       e.kind === "stair" ||
       e.kind === "elevator" ||
-      e.kind === "escalator",
+      e.kind === "escalator" ||
+      e.kind === "roof",
   );
   if (!drawable) {
     diagnostics.push({

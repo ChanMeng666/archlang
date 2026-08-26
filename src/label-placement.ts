@@ -53,6 +53,7 @@ import type { BBox } from "./geometry/rect.js";
 import { overlap1d } from "./geometry/rect.js";
 import { pointInPolygon, polygonBounds, rectInsidePolygon, rectRing } from "./geometry/polygon.js";
 import { roomLabelAnchor } from "./elements/room.js";
+import { ROOF_LAYER } from "./elements/roof.js";
 import type { ResolvedPlan, RRoom } from "./ir.js";
 import type { RenderSizes, SceneNode, ScenePrim } from "./scene.js";
 import { textWidth } from "./text-metrics.js";
@@ -272,6 +273,12 @@ export function relocateRoomLabels(
     if (own.has(i)) continue;
     const n = nodes[i]!;
     if (n.layer === "floor" || n.layer === "wallFill" || n.layer === "wallFace") continue;
+    // A roof outline is the same trap as the unioned wall region above: its bounding box
+    // is the whole building plus the eaves, so treating it as an obstacle would bury every
+    // label in the plan at once and set the relocation pass loose on all of them. It is
+    // also nothing a label collides WITH — an overhang is drawn above the plane the names
+    // are written on.
+    if (n.layerName === ROOF_LAYER) continue;
     const b = primBBox(n.prim);
     if (b) obstacles.push(inflate(b, clear));
   }
