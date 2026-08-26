@@ -111,8 +111,7 @@ describe("void — describe().voids", () => {
   it("attributes by the FLOOR, not the bounding box, on a concave room", () => {
     // A U: the notch between the two legs is inside the bbox and outside the floor.
     // A void placed in the notch belongs to no room.
-    const u =
-      `  room id=u polygon (0,0) (9000,0) (9000,7000) (6000,7000) (6000,2500) (3000,2500) (3000,7000) (0,7000)`;
+    const u = `  room id=u polygon (0,0) (9000,0) (9000,7000) (6000,7000) (6000,2500) (3000,2500) (3000,7000) (0,7000)`;
     const inNotch = describePlan(plan(`${u}\n  void id=v at (4000,4000) size 1000x1000`));
     expect(inNotch.voids![0]!.room).toBeNull();
     // …and one in a leg belongs to the room.
@@ -173,11 +172,12 @@ describe("void — the nav grid", () => {
   it("adding a void changes nothing for the rooms it is not in", () => {
     // The obstacle list is append-only, so a hole at one end of the plan must not move
     // the walk into a room reached before it.
-    const bare = describePlan(CORRIDOR(""));
-    const far = describePlan(CORRIDOR(`  room id=spare at (0,4000) size 2000x2000\n  void at (200,4200) size 400x400`));
-    expect(far.circulation?.rooms.find((r) => r.roomId === "hall")!.walkDistanceMm).toBe(
-      bare.circulation?.rooms.find((r) => r.roomId === "hall")!.walkDistanceMm,
-    );
+    const hallWalk = (src: string): number | undefined =>
+      describePlan(src).circulation?.rooms.find((r) => r.roomId === "hall")?.walkDistanceMm;
+    const bare = hallWalk(CORRIDOR(""));
+    const far = hallWalk(CORRIDOR(`  room id=spare at (0,4000) size 2000x2000\n  void at (200,4200) size 400x400`));
+    expect(bare).toBeDefined();
+    expect(far).toBe(bare);
   });
 });
 
@@ -203,9 +203,7 @@ describe("void — inside a placed component", () => {
   });
 
   it("mirrors, and the mirrored copy is the reflection of the original", () => {
-    const s = describePlan(
-      plan(`${COMPONENT}  place unit() as a at (0,0)\n  place unit() as b at (10000,0) mirror x`),
-    );
+    const s = describePlan(plan(`${COMPONENT}  place unit() as a at (0,0)\n  place unit() as b at (10000,0) mirror x`));
     const a = s.voids!.find((x) => x.id === "a.well")!;
     const b = s.voids!.find((x) => x.id === "b.well")!;
     expect(b.size).toEqual(a.size);

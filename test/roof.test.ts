@@ -141,7 +141,11 @@ describe("roof — refuses rather than approximating", () => {
   const CASES: [string, string, string][] = [
     ["E_ROOF_OVERHANG", "zero projection", plan(`${BOX}\n  roof overhang 0`)],
     ["E_ROOF_OVERHANG", "negative projection", plan(`${BOX}\n  roof overhang 0 - 600`)],
-    ["E_ROOF_AMBIGUOUS", "no closed exterior ring at all", plan(`  room id=r1 at (0,0) size 4000x3000\n  roof overhang 600`)],
+    [
+      "E_ROOF_AMBIGUOUS",
+      "no closed exterior ring at all",
+      plan(`  room id=r1 at (0,0) size 4000x3000\n  roof overhang 600`),
+    ],
     [
       "E_ROOF_AMBIGUOUS",
       "two closed exterior rings",
