@@ -16,9 +16,50 @@ across 32) — `bed`, `double_bed`, `nightstand`,
 (`bookcase`/`shelf`), `oven`, `dishwasher`, `island`, `upper_cabinet` (`wall_cabinet`), `washer`
 (`washing_machine`), `dryer`, `plant` (`planter`), `car`. These are words the shipped examples
 already use and that fell through to "unknown category" until now: no footprint, no wall
-requirement, no lint semantics. **Nothing new is DRAWN yet** — every new family renders as the
-labelled rectangle it already did, pinned by `test/fixture-byte-identity.test.ts` as an equality
-against an unknown word.
+requirement, no lint semantics.
+
+**All of them are now DRAWN**, across five domain modules. Every catalogued category has a plan
+symbol — `hasFixtureGlyph` is true for all 51, and `test/fixture-classifier-drift.test.ts` asserts
+that as an equality with the category list rather than a name literal, so a category added without a
+symbol goes red. What each family draws:
+
+- **Bath** (`glyphs-bath.ts`) — `wc` with cistern, lid lip, flush button and the seat ring inside
+  its bowl; `basin` with tap block, spout and drain, plus a **double-bowl** branch above an
+  integer-guarded aspect of 2.2; `shower` as the symmetric tray (outline, both diagonals, centre
+  drain); `bathtub` with an uneven rim, thicker at the tap end.
+- **Kitchen / utility** (`glyphs-kitchen.ts`) — `kitchen_sink`, `counter` with its 600 mm module
+  ticks (capped at 64 runs), `stove` as four burner rings, `fridge` with door split and handle, and
+  the new `oven`, `dishwasher`, `island`, `washer`, `dryer`, plus `upper_cabinet` drawn **entirely
+  dashed**, the convention for a carcass above the cut plane.
+- **Bedroom** (`glyphs-bedroom.ts`) — `bed` / `double_bed` with headboard band, turned-down sheet
+  and one or two pillows (a property of the footprint, not the category name); `nightstand`;
+  `wardrobe` with true-arc hanger scallops.
+- **Living / dining** (`glyphs-living.ts`) — `sofa` with back band, an arm at each end and derived
+  cushion divisions; `armchair`, `coffee_table`, `table`, `dining_table` with chairs, `chair`,
+  `stool`, `bench`, `tv_unit`.
+- **Office / misc** (`glyphs-misc.ts`) — `desk` with modesty panel, `office_chair`, `bookshelf`,
+  `plant`, `car`.
+
+**A drawn symbol ignores its `label`** — long-standing behaviour for `wc` and `basin`, and the one
+consequence of this release an author will notice first. Twenty shipped examples carry a `label` on
+a category that now draws, and those words stop appearing in the drawing; `examples/library.arch`
+loses the most meaning, where `"Stacks"`, `"Reference"`, `"Picture books"`, `"Reading table"` and
+`"Story bench"` were doing real annotation work. The labels remain in the source and in
+`describe()`; only the rendered text goes. An uncatalogued word still takes the labelled-rectangle
+fallback, which is now the ONLY path that renders a furniture label —
+`test/fixture-byte-identity.test.ts` pins both halves.
+
+**Not visible in the ASCII plan.** `arch compile -f txt` marks each fixture with the first letter of
+its category at the piece's centre, and always has, so none of this detail reaches the text backend
+and no ASCII golden moved for it. (`test/__ascii__/two-bed.arch.txt` did move, but because that
+plan's bed was repositioned — see below — not because it is drawn.)
+
+**Known limitation: a mirrored `place` does not mirror a symbol's handedness.** A glyph is generated
+from its element's already-transformed rect at render time, so a reflection cannot reach inside the
+symbol. Placing a component twice, once `mirror x`, leaves a fridge's handle 84 mm from its own right
+edge in **both** instances where a true mirror would move it to the left. This predates the release —
+`fridge` and `basin` were handed already — but it now applies to far more pieces. The footprint,
+position and door swings mirror correctly; only detail inside a symbol does not.
 
 **`requiresWall` now means SERVICES, and only services.** Every category that carried the flag
 before was a plumbing or kitchen fixture, so its two jobs — "this needs a wall behind it"
@@ -35,10 +76,23 @@ the 3100 mm of clear depth), and the field's own calibration rule is "tight enou
 layout never trips it". **Net lint change across every shipped example, eval golden and fault
 fixture: zero**, swept before and after.
 
-The consequence to know: a bed anchored to a room edge gets **no derived quarter-turn yet**. That is
-the honest answer while its symbol is a stub — a plain rectangle has no back, so the rotation would
-be invisible and `W_FIXTURE_BACK_TO_ROOM`'s advice unverifiable from the drawing. `against wall` is
-unaffected; `placeAgainst` takes its rotation from the wall for every category.
+**New `directional` fixture flag — "this symbol has a back worth turning toward a wall, though it
+needs no services."** Splitting `requiresWall` down to services alone left the derived quarter-turn
+with no owner: `orientationMatters` read that flag, so an anchored bed stopped deriving a rotation.
+That was correct while a bed drew as a labelled rectangle — a box has no back, so the rotation would
+have been an invisible, unverifiable claim — and it is wrong now that the symbol has a headboard. So
+`orientationMatters` becomes `(requiresWall || directional) && !symmetric`, and eleven categories
+carry the new flag: `bed`, `double_bed`, `nightstand`, `bedside_table`, `wardrobe`, `robe`, `closet`,
+`tv_unit`, `bookshelf`, `bookcase`, `shelf`. **`sofa`, `chair`, `bench` and `desk` deliberately do
+not** — seating is arranged rather than installed, and a sofa's back to the room is a room-divider
+layout, not a defect. Nor does anything `symmetric`, which still outranks both flags.
+`W_FIXTURE_FLOATING` stays keyed on `requiresWall` alone, since its remedy prose is about supply and
+waste runs. `against wall` was never affected either way; `placeAgainst` takes its rotation from the
+wall for every category.
+
+`W_FIXTURE_BACK_TO_ROOM`'s catalogue entry described only plumbing (a cistern, a tap, a nosing); it
+now also names a headboard, a wardrobe's door line and a bookshelf's open face, and says plainly
+that arranged seating does not trip it.
 
 **`src/elements/glyph-lib.ts`** — the drawing vocabulary the symbols are built from: `poly`, `seg`,
 `dot`, `ring`, `arcSeg`, the `ellipsePoly`/`roundedRectPoly` helpers moved up verbatim, and
@@ -46,11 +100,19 @@ unaffected; `placeAgainst` takes its rotation from the wall for every category.
 because the backends disagree about which they read — the SVG serializer prefers the name, the PDF
 backend reads `paint.width` and nothing else, so setting one alone drops a glyph's stroke width from
 one export. `weightWidth` moved out of `backends/svg.ts` into `scene.ts` beside `LINE_WEIGHTS` so
-both callers resolve one ramp. The eight shipped families moved verbatim onto it, into
-`glyphs-bath.ts` and `glyphs-kitchen.ts`; `glyphs-bedroom.ts`, `glyphs-living.ts` and
-`glyphs-misc.ts` land as stubs. `fixtures-glyphs.ts` keeps the vocabulary table and the dispatch
+both callers resolve one ramp. The eight shipped families moved verbatim onto it.
+`fixtures-glyphs.ts` keeps the vocabulary table and the dispatch
 switch, and `FIXTURE_CATEGORIES` + the new `CANONICAL_FIXTURES` are now **derived** from one
 `FIXTURE_FAMILIES` table rather than a hand-flattened list.
+
+The five domain modules were written in parallel, each touching only its own file, then consolidated:
+four helpers that all of them had derived independently — the short side of a footprint (all five,
+three of them inline), a rect's centre, a NaN-safe clamp and an uneven four-sided inset — moved into
+`glyph-lib.ts`, along with a dashed-polygon factory that had been rebuilding a furniture node by
+hand. The lift is **render-byte-neutral**, proven by compiling six fixture-heavy plans to
+SHA-256-identical SVGs before and after rather than asserted. Two helpers stayed local on purpose:
+kitchen's `insetOutline` (an appliance-drawing convention, not a shape) and misc's `polar` (the only
+module that uses trigonometry at all).
 
 ### Fixed
 
@@ -69,9 +131,64 @@ switch, and `FIXTURE_CATEGORIES` + the new `CANONICAL_FIXTURES` are now **derive
   catalogued and drawn are the same set. They no longer are, so it filters on `hasFixtureGlyph` —
   which asks the glyph rather than reading a flag beside it, so filling a stub brings its legend row
   with it.
+- **The escape fuzzer's furniture-label injection site had stopped testing anything.** It drew a
+  `desk`, and once `desk` drew a symbol the hostile payload no longer reached the SVG at all. The
+  property FAILED rather than passing vacuously — which is the property working — and the site now
+  uses an uncatalogued word, the one path that renders a furniture label. Six other assertions
+  across `import`, `schedule` and `windows-furniture` used a label the same way, as a proxy for "the
+  component rendered"; each now asserts on what the furniture layer actually emits.
 - `examples/courtyard-house.arch`'s washer now carries `rotate 90`, putting the machine's back —
   where its supply and waste run — on the east wall it stands against. Nothing in the drawing moves
   (it is a plain rectangle); the SVG's vertex order does.
+- **Six real defects the drawing could not previously show**, surfaced by `directional` across five
+  plans and every one a piece standing against a wall with its back to the room. Three took the
+  machine-applicable fix (`arch fix`): `examples/tiny-house.arch`'s wardrobe and
+  `examples/courtyard-house.arch`'s bookcase and wardrobe each gained `rotate 180`. The three beds
+  could not, and that is the rule working rather than failing — a 1500 mm-wide head cannot back onto
+  the side wall each was standing against, so no unique target existed to offer:
+  - `examples/attached.arch` — `anchor right` → `anchor top-right`. The east wall is the one edge
+    that bed cannot back onto and it carries the window; the corner keeps the bed clear of the
+    bedroom door's swing while still deriving a unique rotation.
+  - `examples/relational.arch` — moved to the south wall with `rotate 180`; the room's boundary with
+    the living room carries no wall, so it was the only candidate.
+  - `examples/two-bed.arch` — bedroom 2's bed moved to the south wall with `rotate 180`, matching
+    what the master bed already does against the north.
+
+  After these five edits the whole example set lints **exactly** as it did before the flag: 15
+  diagnostics, none gained, none lost, `examples/studio.arch` still clean and every plan's
+  `validate --strict` verdict unchanged.
+
+### Changed — every drawing with furniture in it
+
+**All 27 shipped examples that place a fixture render different bytes**, on purpose: 25 golden SVG
+snapshots, 21 PNG visual goldens and all twelve committed `examples/*.svg` the README embeds were
+re-blessed in one pass. The snapshot diff was reviewed per SVG layer, per example, and only three
+kinds of thing moved:
+
+- **`A-FURN` in all 25** — the release itself.
+- **`A-ANNO` in exactly the four legend-bearing plans** — `clinic`, `courtyard-house`, `library`,
+  `materials`. The legend lists one row per DRAWN symbol, so newly-drawing categories earn rows:
+  `courtyard-house` gains nine (`bed`, `wardrobe`, `sofa`, `table`, `bench`, `desk`, `bookcase`,
+  `washer`, `planter`), `library` three (`sofa`, `table`, `desk`), `clinic` and `materials` two each
+  (`table`, `desk`). Each legend frame grew to fit, and `materials`' sheet re-centred by 170 mm on an
+  unchanged A3 page as v1.27's `usablePlanMm` band reservation absorbed the taller table. **No plan
+  raises `W_SCALE_OVERFLOW`** and none overflows its sheet.
+- **`A-ANNO-TEXT` in three** — room labels the placement post-pass moved off newly-drawn furniture:
+  `attached` and `two-bed` because their beds moved, `library` because its sofas, tables and desks
+  now paint something to avoid.
+
+`A-WALL`, `A-DIM` and `A-DOOR` did not move in a single snapshot. The two permanent byte-identity
+pins — a plan with no furniture, and the unknown-`widget` fallback — are byte-identical to the day
+they were written, checked line-for-line rather than eyeballed.
+
+### Deferred, by name
+
+Named rather than silently omitted, so nobody assumes they were overlooked: **angled furniture** (a
+fixture still draws on an axis-aligned footprint, so a piece against a sloped wall is not turned to
+it), **`rug`**, **`sofa_l`** (an L-shaped sectional needs a footprint the rectangle cannot express),
+**`piano`**, **`sun_lounger`**, and a **syntax for overhead dashes** (`upper_cabinet` is dashed
+because of what it is, and there is no way for an author to say "draw this piece above the cut
+plane" about anything else).
 
 ### Changed — repository contents only; no `src/`, no language, no published artifact
 
