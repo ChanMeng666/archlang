@@ -7,10 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Two independent tracks, integrated on `feat/v129`: **two new drawing-only elements** (`roof` and
-`void`) and **four new furniture families** carrying one new piece of catalog semantics
-(`underlay`). Nothing here removes or renames anything, and no existing plan changes bytes unless
-its own source gained one of the new statements.
+## [1.29.0] - 2026-08-26
+
+**"two drawing-only elements, four furniture families, and one word for a thing you stand on"**, a
+MINOR. Two independent tracks: `roof` and `void` — elements that draw and do nothing else — and four
+new fixture families carrying one new piece of catalog semantics, `underlay`. Nothing is removed or
+renamed, no `Theme` key is added, and **no existing plan changes bytes unless its own source gained
+one of the new statements** — three of the 28 shipped examples take up the new syntax, and the other
+25 render byte-identically to what `@chanmeng666/archlang@1.28.0` renders. The diagnostic catalog
+grows from 74 errors to 82; the 42 warnings are unchanged.
 
 ### Added — `roof`, the eaves projection line
 
