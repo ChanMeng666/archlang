@@ -183,7 +183,12 @@ plan "Courtyard House" {
   # 900 x 600 of plumbed appliance bay, flush to the east wall. It is drawn 900 wide
   # because a label is drawn INSIDE its own footprint and the renderer has no metrics
   # to shrink one with: at 1:100 the word "Washer" is 825 mm long on the plan.
-  furniture washer  at (14950,7300) size 900x600 label "Washer"
+  # `rotate 90` puts the machine's BACK — where its supply and waste run — on the east
+  # wall it stands against. `washer` is catalogued as a wall-requiring fixture as of
+  # v1.28, so leaving it at rotate 0 reads as an appliance plumbed into open floor
+  # (W_FIXTURE_BACK_TO_ROOM). The footprint is square-ish and the piece is a plain
+  # rectangle, so nothing in the drawing moves.
+  furniture washer  at (14950,7300) size 900x600 label "Washer" rotate 90
 
   # The study is placed relationally, so its pieces take absolute points rather than
   # anchors — the room's own rectangle is derived, and hanging furniture off a derived

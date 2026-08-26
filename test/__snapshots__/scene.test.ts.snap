@@ -803,6 +803,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#f4f2ee",
         "stroke": "#a8a29a",
@@ -832,6 +833,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#ffffff",
         "stroke": "#a8a29a",
@@ -861,6 +863,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#ffffff",
         "stroke": "#a8a29a",
@@ -890,6 +893,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "stroke": "#a8a29a",
         "width": 11.520000000000001,
@@ -908,6 +912,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#f4f2ee",
         "stroke": "#a8a29a",
@@ -937,6 +942,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "stroke": "#a8a29a",
         "width": 11.520000000000001,
@@ -955,6 +961,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#f4f2ee",
         "stroke": "#a8a29a",
@@ -984,6 +991,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#ffffff",
         "stroke": "#a8a29a",
@@ -1093,6 +1101,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#ffffff",
         "stroke": "#a8a29a",
@@ -1202,6 +1211,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#ffffff",
         "stroke": "#a8a29a",
@@ -1311,6 +1321,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#ffffff",
         "stroke": "#a8a29a",
@@ -1420,6 +1431,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#f4f2ee",
         "stroke": "#a8a29a",
@@ -1449,6 +1461,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "stroke": "#a8a29a",
         "width": 11.520000000000001,
@@ -1467,6 +1480,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "stroke": "#a8a29a",
         "width": 11.520000000000001,
@@ -1577,6 +1591,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#ffffff",
         "stroke": "#a8a29a",
@@ -1606,6 +1621,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "stroke": "#a8a29a",
         "width": 11.520000000000001,
@@ -1624,6 +1640,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "stroke": "#a8a29a",
         "width": 11.520000000000001,
@@ -1642,6 +1659,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#f4f2ee",
         "stroke": "#a8a29a",
@@ -1751,6 +1769,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#f4f2ee",
         "stroke": "#a8a29a",
@@ -1780,6 +1799,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#ffffff",
         "stroke": "#a8a29a",
@@ -1889,6 +1909,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "stroke": "#a8a29a",
         "width": 11.520000000000001,
@@ -1907,6 +1928,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#f4f2ee",
         "stroke": "#a8a29a",
@@ -1936,6 +1958,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
+      "lineWeight": "thin",
       "paint": {
         "fill": "#ffffff",
         "stroke": "#a8a29a",

@@ -33,6 +33,11 @@ describe("fixture classifier — single source", () => {
         "worktop",
         "fridge",
         "refrigerator",
+        // Added with the room-furniture vocabulary. Both are kitchen fixtures by any
+        // reading, and both are a deliberate MEMBERSHIP change: a kitchen whose only
+        // appliance is a dishwasher or an island no longer raises `W_ROOM_NO_FIXTURE`.
+        "dishwasher",
+        "island",
       ].sort(),
     );
     expect(KITCHEN_FIX).toEqual(zoneFixtureCategories("kitchen"));

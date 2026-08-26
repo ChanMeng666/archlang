@@ -35,7 +35,7 @@ import { hatchesUsed, patternId } from "./hatches.js";
 import type { RFurniture, RRoom } from "./ir.js";
 import type { RenderSizes, SceneNode } from "./scene.js";
 import type { Theme } from "./theme.js";
-import { FIXTURE_CATEGORIES, fixtureGlyph } from "./elements/fixtures-glyphs.js";
+import { FIXTURE_CATEGORIES, fixtureGlyph, hasFixtureGlyph } from "./elements/fixtures-glyphs.js";
 import { fmt2 } from "./num-format.js";
 import { roomAreaMm2 } from "./analyze.js";
 
@@ -243,6 +243,13 @@ function hatchName(h: HatchSpec): string {
  *    while the schedule reads as the plan. A category with no symbol draws a plain
  *    labelled rectangle in the plan, which needs no legend row, so it gets none; a plan
  *    with no fixtures at all yields no fixture rows.
+ *
+ * That last rule is why the filter is `hasFixtureGlyph` and not membership of
+ * `FIXTURE_CATEGORIES`. The two used to be the same set — every catalogued category drew a
+ * symbol — and they no longer are: a category can be catalogued (a footprint, a wall
+ * requirement, lint semantics) with its symbol not written yet. Keying the legend off
+ * membership would print a row with an empty swatch beside a piece the drawing renders as a
+ * labelled box, which is exactly the "needs no legend row" case this rule already excluded.
  */
 export function legendEntries(hatches: readonly HatchSpec[], furniture: readonly RFurniture[]): LegendEntry[] {
   const out: LegendEntry[] = [];
@@ -251,7 +258,7 @@ export function legendEntries(hatches: readonly HatchSpec[], furniture: readonly
   }
   const present = new Set(furniture.map((f) => f.category));
   for (const cat of FIXTURE_CATEGORIES) {
-    if (present.has(cat)) out.push({ kind: "fixture", key: cat, name: cat, category: cat });
+    if (present.has(cat) && hasFixtureGlyph(cat)) out.push({ kind: "fixture", key: cat, name: cat, category: cat });
   }
   return out;
 }

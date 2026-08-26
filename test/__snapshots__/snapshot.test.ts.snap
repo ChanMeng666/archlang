@@ -1204,7 +1204,7 @@ exports[`golden SVG snapshots > renders courtyard-house.arch deterministically 1
 <line x1="15550" y1="5905" x2="15550" y2="5842" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="13350,6050 15150,6050 15150,6650 13350,6650" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <line x1="13350" y1="6542" x2="15150" y2="6542" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="14950,7300 15850,7300 15850,7900 14950,7900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<polygon points="15850,7300 15850,7900 14950,7900 14950,7300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <text x="15400" y="7600" font-size="200" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Washer</text>
 <polygon points="300,3700 1900,3700 1900,4400 300,4400" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <text x="1100" y="4050" font-size="200" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Desk</text>

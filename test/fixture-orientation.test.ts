@@ -133,7 +133,19 @@ describe("backCandidateEdges — the footprint's aspect constrains the back", ()
       "left",
       "right",
     ]);
-    expect(backCandidateEdges({ w: 400, h: 700 }, defaultFootprint("bed"))).toEqual(["top", "bottom", "left", "right"]);
+    // `bed` used to stand in for "uncatalogued" here; it is a catalogued bed now, so the
+    // uncatalogued case needs a word the catalog genuinely does not know.
+    expect(backCandidateEdges({ w: 400, h: 700 }, defaultFootprint("widget"))).toEqual([
+      "top",
+      "bottom",
+      "left",
+      "right",
+    ]);
+  });
+
+  it("keeps a bed's back on its HEAD edge (1500 along the wall, 2000 into the room)", () => {
+    expect(backCandidateEdges({ w: 1500, h: 2000 }, defaultFootprint("bed"))).toEqual(["top", "bottom"]);
+    expect(backCandidateEdges({ w: 2000, h: 1500 }, defaultFootprint("bed"))).toEqual(["left", "right"]);
   });
 });
 
@@ -178,7 +190,35 @@ describe("derived orientation for room-anchored placement", () => {
   });
 
   it("free-standing furniture is never turned", () => {
+    // `bed` used to be the example here, on the strength of being uncatalogued. It is a
+    // catalogued, wall-requiring bed now (its back is its HEAD), so the free-standing case
+    // needs a piece that is free-standing on purpose — a sofa is arranged, not installed —
+    // and a word the catalog does not know at all.
+    expect(furnOf(boxed(`furniture sofa in r anchor bottom size 2000x900`)).rotate).toBeUndefined();
+    expect(furnOf(boxed(`furniture widget in r anchor bottom size 1500x2000`)).rotate).toBeUndefined();
+  });
+
+  it("a catalogued bed is NOT turned by a room anchor — its symbol has no back yet", () => {
+    // `bed` is catalogued (footprint, aliases, lint vocabulary) but NOT `requiresWall`: it
+    // carries no services, and `W_FIXTURE_FLOATING`'s remedy line ("supply/waste/venting
+    // runs in the wall") is false about a bed. `orientationMatters` therefore says no, and
+    // that is the honest answer while the bed draws as a plain labelled rectangle — a box
+    // has no back to turn toward a wall, so a derived rotation would be invisible and
+    // `W_FIXTURE_BACK_TO_ROOM`'s advice unverifiable from the drawing. The phase that draws
+    // the bed is the phase that can say which way it faces. Flip this test then.
     expect(furnOf(boxed(`furniture bed in r anchor bottom size 1500x2000`)).rotate).toBeUndefined();
+    expect(codes(boxed(`furniture bed in r anchor bottom size 1500x2000`))).not.toContain("W_FIXTURE_FLOATING");
+  });
+
+  it("`against wall` still derives a bed's rotation, catalogued or not", () => {
+    // `placeAgainst` takes its quarter-turn from the wall itself, for EVERY category — so
+    // the clause that exists to say "this backs onto that wall" keeps working regardless of
+    // what the catalog thinks about the piece's services.
+    const src = `plan "P" { units mm
+      wall id=w exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+      room id=r at (0,0) size 4000x4000 label "R"
+      furniture bed against wall w segment 2 offset 2000 in r }`;
+    expect(furnOf(src).rotate).toBe(180);
   });
 
   it("a rotation-symmetric fixture (shower tray) is never turned", () => {

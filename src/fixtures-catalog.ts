@@ -77,6 +77,109 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   // clearance or footprint semantics — identical to having no catalog entry for
   // the other rules).
   oven: { requiresWall: false, zones: ["kitchen"] },
+
+  // -------------------------------------------------------------------------
+  // The room-furniture vocabulary. Everything below is a word plans in this repo (and
+  // models writing for it) already use — `bed`, `wardrobe`, `sofa`, `desk`, `washer` — and
+  // that until now fell through to "unknown category": no footprint, no wall requirement,
+  // no orientation. Catalogued, each one gains the semantics its name implies, which for
+  // most of them means exactly one thing: a `footprint`, so `against wall` can omit `size`.
+  //
+  // ## `requiresWall` means SERVICES, and this vocabulary is where that starts to matter
+  //
+  // Every category that carried this flag before was a plumbing or kitchen fixture, so the
+  // flag's two jobs never had to be told apart: it drives `W_FIXTURE_FLOATING` ("this needs
+  // a wall behind it") AND, through `orientationMatters`, the derived quarter-turn and
+  // `W_FIXTURE_BACK_TO_ROOM`. Room furniture separates them, and the separation is not a
+  // judgement call — it is measurable. Flagging `bed`, `bookshelf` and `wardrobe` as
+  // wall-requiring raised 23 new warnings across nine shipped plans, and the largest group
+  // was `examples/library.arch`: **twelve** floating-stack warnings on a library whose
+  // stacks are free-standing runs in the middle of the floor, which is what stacks ARE.
+  // `W_FIXTURE_FLOATING`'s own remedy line reads "supply/waste/venting runs in the wall" — a
+  // sentence that is simply false about a bookcase. So a piece of furniture that merely
+  // *tends* to stand against a wall is NOT `requiresWall`; only a piece that cannot work
+  // without one is (the plumbed and vented white goods below, and the wall cabinet, which
+  // hangs off the wall by definition).
+  //
+  // The consequence to know: a bed anchored to a room edge does NOT yet get a derived
+  // quarter-turn, because `orientationMatters` needs `requiresWall`. That is the right
+  // answer while the symbol is a stub — a bed draws as a plain labelled rectangle, which has
+  // no back to face, so a derived rotation would be invisible and
+  // `W_FIXTURE_BACK_TO_ROOM`'s advice unverifiable from the drawing. The phase that draws
+  // the bed is the phase that can honestly say which way it faces; it will add the "this
+  // symbol has a back" fact then. `against wall` is unaffected — `placeAgainst` derives its
+  // rotation from the wall directly, for every category.
+  //
+  // `symmetric` on a free-standing piece changes nothing today (`orientationMatters` needs
+  // `requiresWall` first); it records the fact for the symbol that will be drawn — a round
+  // stool and a square coffee table have no back to find.
+
+  // Bedroom. Footprints are the conventional single/double mattress, laid head-to-wall:
+  // `along` runs with the wall (the bed's width), `depth` into the room (its length).
+  bed: { requiresWall: false, footprint: { along: 1500, depth: 2000 } },
+  double_bed: { requiresWall: false, footprint: { along: 1800, depth: 2000 } },
+  nightstand: { requiresWall: false, footprint: { along: 450, depth: 400 } },
+  bedside_table: { requiresWall: false, footprint: { along: 450, depth: 400 } },
+  // NO `clearanceMm`, deliberately, and it was measured rather than assumed. A 550 mm
+  // frontal clearance here warned on `examples/garden-loft.arch`, whose 3200 mm bedroom
+  // puts a 600 mm robe on one wall and a 2000 mm bed on the other — and that plan cannot be
+  // fixed, because 600 + 550 + 2000 exceeds the 3100 mm of clear depth the room has. This
+  // field's own calibration rule is "tight enough that a normal layout never trips it"; a
+  // small bedroom IS the normal layout, and a wardrobe is commonly approached from the side
+  // or hung with sliding doors. The plumbed white goods below keep their 550, which no
+  // shipped plan trips.
+  wardrobe: { requiresWall: false, footprint: { along: 1800, depth: 600 } },
+  robe: { requiresWall: false, footprint: { along: 1800, depth: 600 } },
+  closet: { requiresWall: false, footprint: { along: 1800, depth: 600 } },
+
+  // Living. Free-standing: seating is arranged, not installed.
+  sofa: { requiresWall: false },
+  couch: { requiresWall: false },
+  armchair: { requiresWall: false },
+  coffee_table: { requiresWall: false, symmetric: true },
+  // Installed against a wall in practice, but it carries no services — so it is furniture
+  // by the rule above, and a media wall floated as a room divider raises nothing. No
+  // frontal clearance either: nobody stands in front of a TV unit to use it, and a coffee
+  // table half a metre away is the arrangement, not a defect.
+  tv_unit: { requiresWall: false, footprint: { along: 1500, depth: 450 } },
+
+  // Dining & seating.
+  table: { requiresWall: false, symmetric: true },
+  dining_table: { requiresWall: false, symmetric: true },
+  chair: { requiresWall: false },
+  stool: { requiresWall: false, symmetric: true },
+  barstool: { requiresWall: false, symmetric: true },
+  bench: { requiresWall: false },
+
+  // Office.
+  desk: { requiresWall: false },
+  office_chair: { requiresWall: false },
+  // NOT wall-requiring: a library's stacks are free-standing runs mid-floor
+  // (`examples/library.arch` has twelve of them), which is what stacks are.
+  bookshelf: { requiresWall: false, footprint: { along: 900, depth: 300 } },
+  bookcase: { requiresWall: false, footprint: { along: 900, depth: 300 } },
+  shelf: { requiresWall: false, footprint: { along: 900, depth: 300 } },
+
+  // Kitchen appliances & utility — the plumbed and vented pieces, and the only ones in this
+  // block that are `requiresWall`. They share the 600 mm module the counter run above
+  // already uses, and the same 550 mm standing room in front.
+  dishwasher: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 }, zones: ["kitchen"] },
+  // An island is free-standing BY DEFINITION — that is what makes it an island — and it is
+  // approached from every side, so it has no back and no single frontal clearance.
+  island: { requiresWall: false, symmetric: true, zones: ["kitchen"] },
+  // Hangs OFF the wall, so it is the one non-plumbed piece here that genuinely cannot exist
+  // without one. Above the cut plane, so it is shallower than a base unit and needs no
+  // floor clearance.
+  upper_cabinet: { requiresWall: true, footprint: { along: 600, depth: 350 } },
+  wall_cabinet: { requiresWall: true, footprint: { along: 600, depth: 350 } },
+  washer: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
+  washing_machine: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
+  dryer: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
+
+  // Misc.
+  plant: { requiresWall: false, symmetric: true },
+  planter: { requiresWall: false, symmetric: true },
+  car: { requiresWall: false },
 });
 
 /** All catalogued categories (aliases included), in declaration order. */
