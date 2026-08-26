@@ -249,7 +249,7 @@ function rules(): [string, string][] {
     ],
     [
       "element",
-      `wall-stmt | room-stmt | door-stmt | window-stmt | opening-stmt | furniture-stmt | dim-stmt | column-stmt | stair-stmt | elevator-stmt | escalator-stmt`,
+      `wall-stmt | room-stmt | door-stmt | window-stmt | opening-stmt | furniture-stmt | dim-stmt | column-stmt | stair-stmt | elevator-stmt | escalator-stmt | roof-stmt | void-stmt`,
     ],
 
     // ---- plan settings ---------------------------------------------------
@@ -475,6 +475,19 @@ function rules(): [string, string][] {
     ["elevator-stmt", `"elevator" rws id-opt "at" ws point ws "size" ws dims`],
     ["escalator-stmt", `"escalator" rws id-opt "at" ws point ws "size" ws dims ws "dir" rws vert-dir`],
     ["vert-dir", `"up" | "down"`],
+    /*
+     * `roof` takes NO `id=`: the shape word leads directly, the way `room polygon` /
+     * `room circle` and a door KIND do. The two spellings are alternatives, never a
+     * sequence — `roof overhang 600 polygon (0,0) …` is not in the language — so this is
+     * a split production and not a pair of optional tails, for exactly the reason
+     * `opening-placement` is: a decoder offered both would emit the one output shape this
+     * file exists to make impossible. The ring is `point point point ( ws point )*`
+     * rather than `( ws point ){3,}`, because three is a MINIMUM the parser enforces.
+     */
+    ["roof-stmt", `"roof" rws ( roof-overhang | roof-polygon )`],
+    ["roof-overhang", `"overhang" ws expr ( rws "wall" rws ref )?`],
+    ["roof-polygon", `"polygon" ws point ws point ws point ( ws point )*`],
+    ["void-stmt", `"void" rws id-opt "at" ws point ws "size" ws dims`],
 
     // ---- shared clause pieces -------------------------------------------
     ["id-opt", `( "id" ws "=" ws ident rws )?`],

@@ -407,6 +407,28 @@ const POSITIVE: Snippet[] = [
         `  place wing() as west at (0,0) rotate 90 mirror x\n  place wing() as east at (6000,0) mirror y`,
     ),
   },
+  // --- roof ------------------------------------------------------------------
+  {
+    keyword: "roof",
+    note: "the `overhang` sugar, inferring the plan's one closed exterior ring",
+    src: plan(`${BOX}\n  roof overhang 600`),
+  },
+  {
+    keyword: "roof",
+    note: "…and naming the ring explicitly",
+    src: plan(`${BOX}\n  roof overhang 600 wall w1`),
+  },
+  {
+    keyword: "roof",
+    note: "the explicit ring — no wall needed at all",
+    src: plan(`  roof polygon (0,0) (9000,0) (9000,6000) (0,6000)`),
+  },
+  // --- void ------------------------------------------------------------------
+  {
+    keyword: "void",
+    note: "at + size, top-left",
+    src: plan(`${ROOM}\n  void id=well at (2000,1500) size 2000x2000`),
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -595,6 +617,58 @@ const NEGATIVE: Negative[] = [
     src: plan(
       `  wall id=w1 partition thickness 100 { (0,0) (2000,0) }\n  door pocket on w1 at 80% width 900 slide right`,
     ),
+  },
+  // --- roof + void: every refusal the two new lines name ---------------------
+  {
+    code: "E_ROOF_OVERHANG",
+    channel: "compile",
+    note: "an overhang is a projection PAST the wall face, so it must be positive",
+    src: plan(`${BOX}\n  roof overhang 0`),
+  },
+  {
+    code: "E_ROOF_AMBIGUOUS",
+    channel: "compile",
+    note: "no closed `exterior` wall to infer the ring from",
+    src: plan(`${ROOM}\n  roof overhang 600`),
+  },
+  {
+    code: "E_ROOF_WALL",
+    channel: "compile",
+    note: "an open polyline is not a ring — an overhang is offset from a loop",
+    src: plan(`  wall id=w1 exterior thickness 200 { (0,0) (8000,0) }\n  roof overhang 600 wall w1`),
+  },
+  {
+    code: "E_ROOF_CURVED",
+    channel: "compile",
+    note: "an `arc` edge refuses rather than being faceted",
+    src: plan(
+      `  wall id=drum exterior thickness 200 { (0,0) arc (6000,0) radius 4000 (6000,4000) (0,4000) close }\n` +
+        `  roof overhang 600 wall drum`,
+    ),
+  },
+  {
+    code: "E_ROOF_SELF_INTERSECT",
+    channel: "compile",
+    note: "a bow-tie ring encloses no single area",
+    src: plan(`  roof polygon (0,0) (4000,4000) (4000,0) (0,4000)`),
+  },
+  {
+    code: "E_ROOF_POLY_DEGENERATE",
+    channel: "compile",
+    note: "three collinear points are a line, not an outline",
+    src: plan(`  roof polygon (0,0) (4000,0) (8000,0)`),
+  },
+  {
+    code: "E_ROOF_PLACEMENT",
+    channel: "compile",
+    note: "a component has no building-scale wall ring to offset from",
+    src: plan(`  component wing() { roof overhang 600 }\n  wing()`),
+  },
+  {
+    code: "E_VOID_SIZE",
+    channel: "compile",
+    note: "a hole with no extent is not a hole",
+    src: plan(`${ROOM}\n  void at (2000,1500) size 0x2000`),
   },
   {
     code: "W_STAIR_UNMATCHED",

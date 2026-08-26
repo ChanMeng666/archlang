@@ -251,6 +251,31 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // GROWS on its own: every new catalogued footprint adds its name here. That makes the
     // Attributes bullet (~690 chars, above) not the next edit but an overdue one — the
     // next fixture family to ship a footprint will not find 15 characters waiting for it.
-    expect(spec.length).toBeLessThan(25_000);
+    //
+    // v1.29.0 did that overdue edit, and then raised the cap. In order:
+    //
+    //   1. **The Attributes bullet is GONE.** It measured 475 chars, not the ~690
+    //      estimated above (the estimate predated the `SETTING_GRAMMAR` split, which had
+    //      already taken nine words out of it). It could go because the redundancy became
+    //      PROVABLE, which is the condition the note above set: `gen-llm-spec.ts` now runs
+    //      `assertScriptingKeywordsTaught` over `CLAUSE_ATTRIBUTES` as well, so every one
+    //      of the 48 clause words is checked to appear in a code span or fence elsewhere
+    //      in the document. All 48 already did. The partition guard alone never proved
+    //      that — it proved each attribute was CLASSIFIED as a clause, not that the
+    //      classification was true — and that gap is exactly why the bullet had to stay.
+    //
+    //   2. **Two new elements cost 1,119 chars gross.** `roof` (two spellings, seven
+    //      catalogued refusals an authoring agent has to be able to avoid) and `void`
+    //      (three behavioural facts that are invisible from the syntax: it obstructs
+    //      circulation, it does not reduce the room's area, and `describe()` reports it).
+    //      There is no duplication inside either line to trim — both were already written
+    //      down twice and cut back before this measurement.
+    //
+    // Net 25,629, so the cap moves to 26,000: **371 chars of headroom**, comparable to
+    // the 219 the last real raise bought. The instruction is unchanged and now has one
+    // fewer lever behind it: TRIM DUPLICATION BEFORE RAISING. What is left to trim is no
+    // longer a redundant bullet but real content, so the next raise should be argued as
+    // "this language grew", not "this page repeats itself".
+    expect(spec.length).toBeLessThan(26_000);
   });
 });
