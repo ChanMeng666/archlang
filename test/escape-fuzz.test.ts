@@ -274,8 +274,13 @@ const WALL = `wall w thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
 const INJECTION_SITES: Record<string, (p: string) => string> = {
   planName: (p) => `plan "${lit(p)}" { ${WALL} }`,
   roomLabel: (p) => `plan "P" { ${WALL} room id=r at (0,0) size 6000x4000 label "${lit(p)}" }`,
+  // `widget`, not `desk`: a category with a drawn SYMBOL ignores its label, so the payload
+  // would never reach the SVG and this site would silently stop testing anything. (It read
+  // `desk` until the domain glyph modules landed and desk started drawing — the property
+  // caught it, which is the property working.) The labelled-rectangle fallback that an
+  // uncatalogued word takes is the one path that renders a furniture label at all.
   furnitureLabel: (p) =>
-    `plan "P" { ${WALL} room id=r at (0,0) size 6000x4000 label "Room"\n furniture desk at (1000,1000) size 1200x600 label "${lit(p)}" }`,
+    `plan "P" { ${WALL} room id=r at (0,0) size 6000x4000 label "Room"\n furniture widget at (1000,1000) size 1200x600 label "${lit(p)}" }`,
   dimText: (p) => `plan "P" { ${WALL} dim (0,-100)->(6000,-100) offset 600 text "${lit(p)}" }`,
   titleBlock: (p) => `plan "P" { title { project "${lit(p)}" drawn_by "${lit(p)}" date "${lit(p)}" } ${WALL} }`,
   accMetadata: (p) => `plan "P" { accTitle "${lit(p)}" accDescr "${lit(p)}" ${WALL} }`,

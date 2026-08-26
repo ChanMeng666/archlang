@@ -405,8 +405,14 @@ describe("repair — the postcondition: nothing flagged is left silent", () => {
 }`;
     const before = lint(src).filter((d) => FURNITURE_CODES.has(d.code!));
     // BOTH instances are flagged — lint sees one plan — and both point at the one
-    // statement that drew them.
-    expect(before.length).toBe(2);
+    // statement that drew them. Asserted per CODE rather than as a total, because the total
+    // is not this test's subject and moves whenever a rule starts applying to a bed: it went
+    // from 2 to 4 when `bed` became `directional` and picked up W_FIXTURE_BACK_TO_ROOM
+    // alongside the wall collision. What must hold is the doubling and the single span.
+    expect(before.length).toBeGreaterThan(0);
+    const perCode = new Map<string, number>();
+    for (const d of before) perCode.set(d.code!, (perCode.get(d.code!) ?? 0) + 1);
+    expect([...perCode.values()].every((n) => n === 2)).toBe(true);
     expect(new Set(before.map((d) => d.span!.start)).size).toBe(1);
 
     const r = repair(src);

@@ -70,26 +70,16 @@ describe("the canonical fixture names", () => {
 
   it("only categories with a drawn symbol pass hasFixtureGlyph", () => {
     const drawn = FIXTURE_CATEGORIES.filter(hasFixtureGlyph);
-    // The eight shipped families, aliases included — everything newer is still a stub.
-    expect(drawn).toEqual([
-      "wc",
-      "toilet",
-      "basin",
-      "lavatory",
-      "shower",
-      "bathtub",
-      "tub",
-      "bath",
-      "kitchen_sink",
-      "sink",
-      "counter",
-      "worktop",
-      "stove",
-      "hob",
-      "cooktop",
-      "fridge",
-      "refrigerator",
-    ]);
+    // Every catalogued category draws now — the five domain modules closed the last stub, so
+    // the list that used to name the eight shipped families is the whole vocabulary.
+    //
+    // DERIVED, not retyped, and not vacuous: `hasFixtureGlyph` answers by CALLING the glyph
+    // dispatch on a probe rect (see its doc comment), so it knows nothing about
+    // `FIXTURE_CATEGORIES`. The day someone adds a category without writing its symbol, this
+    // goes red naming that category — which a 51-name literal would do only if whoever added
+    // it also remembered to extend the literal. `widget` is the standing negative: an
+    // uncatalogued word must still take the labelled-rectangle fallback.
+    expect(drawn).toEqual([...FIXTURE_CATEGORIES]);
     expect(hasFixtureGlyph("widget")).toBe(false);
   });
 });

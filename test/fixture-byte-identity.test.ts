@@ -273,20 +273,34 @@ describe("fixture symbols — the eight shipped families (re-blessed when redraw
 });
 
 /**
- * The stubbed families draw the SAME fallback as an unknown word. That is the contract this
- * phase shipped under — a catalogued category with no symbol costs nothing — and it is what
- * makes Group 1's `widget` pin meaningful for all of them at once. It is asserted as an
- * EQUALITY rather than a snapshot so that the phase which draws one of these breaks exactly
- * the family it drew, and no other.
+ * The inverse of the pin this block used to carry.
+ *
+ * Until the domain modules landed, these nine categories were catalogued but UNDRAWN, and this
+ * block asserted they rendered byte-identically to an unknown word — an equality rather than a
+ * snapshot, chosen so that "the phase which draws one of these breaks exactly the family it
+ * drew, and no other". Every one of them draws now, so that equality has done its job and is
+ * gone; leaving it would assert the opposite of the feature.
+ *
+ * What replaces it is the guard that still has work to do: each of these must DIFFER from the
+ * fallback, which is what fails if a category is ever dropped from the registry or its glyph
+ * silently stops emitting. The `widget` fallback itself stays pinned byte-for-byte in Group 1,
+ * so this comparison keeps a fixed reference.
+ *
+ * The second assertion pins the consequence authors actually see: a drawn symbol IGNORES its
+ * `label`, so the word never reaches the SVG. That is long-standing behaviour for `wc` and
+ * `basin` — it is new only in that nine more categories now reach it.
  */
-describe("catalogued but undrawn categories are byte-identical to an unknown word", () => {
-  const undrawn = ["bed", "wardrobe", "sofa", "desk", "bookshelf", "washer", "dishwasher", "plant", "car"];
+describe("catalogued categories that now draw a symbol are NOT the labelled rectangle", () => {
+  const drawn = ["bed", "wardrobe", "sofa", "desk", "bookshelf", "washer", "dishwasher", "plant", "car"];
 
-  for (const cat of undrawn) {
-    it(`${cat} draws the labelled rectangle`, () => {
+  for (const cat of drawn) {
+    it(`${cat} draws its own symbol, not the fallback`, () => {
       const asFixture = svg(`furniture ${cat} at (300,300) size 800x600 label "X"`);
       const asUnknown = svg('furniture widget at (300,300) size 800x600 label "X"');
-      expect(asFixture).toBe(asUnknown);
+      expect(asFixture).not.toBe(asUnknown);
+      // The fallback is the only path that renders the label.
+      expect(asUnknown).toContain(">X</text>");
+      expect(asFixture).not.toContain(">X</text>");
     });
   }
 });

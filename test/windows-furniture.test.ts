@@ -34,20 +34,31 @@ describe("window — placement & hosting", () => {
   });
 });
 
-describe("furniture — rect + label", () => {
+// The labelled rectangle is what an UNCATALOGUED word draws, and since the domain glyph
+// modules landed that is the only thing it is: `sofa` draws a symbol and ignores its label.
+// These two cases are about the fallback path, so they name a word the catalog does not know.
+describe("furniture — rect + label (the uncatalogued fallback)", () => {
   it("draws an outlined polygon and a centered label", () => {
-    const src = 'plan "F" { furniture sofa at (1000,2000) size 2000x900 label "Sofa" }';
+    const src = 'plan "F" { furniture widget at (1000,2000) size 2000x900 label "Widget" }';
     const { svg, errors } = compile(src, { noCache: true });
     expect(errors).toEqual([]);
     expect(svg).toContain("<polygon"); // furniture body
-    expect(svg).toContain(">Sofa</text>"); // label text
+    expect(svg).toContain(">Widget</text>"); // label text
     // Label is centered on the rect: cx = 1000 + 2000/2 = 2000 (user mm units,
     // then transformed to SVG space — assert the label exists with a y/x text node).
-    expect(svg).toMatch(/<text x="[\d.]+" y="[\d.]+"[^>]*>Sofa<\/text>/);
+    expect(svg).toMatch(/<text x="[\d.]+" y="[\d.]+"[^>]*>Widget<\/text>/);
+  });
+
+  it("a category WITH a symbol draws the symbol and drops the label", () => {
+    const src = 'plan "F" { furniture sofa at (1000,2000) size 2000x900 label "Sofa" }';
+    const { svg, errors } = compile(src, { noCache: true });
+    expect(errors).toEqual([]);
+    expect(svg).toContain("<polygon");
+    expect(svg).not.toContain(">Sofa</text>");
   });
 
   it("XML-escapes furniture labels", () => {
-    const src = 'plan "F" { furniture sofa at (0,0) size 1000x1000 label "A & <B>" }';
+    const src = 'plan "F" { furniture widget at (0,0) size 1000x1000 label "A & <B>" }';
     const { svg, errors } = compile(src, { noCache: true });
     expect(errors).toEqual([]);
     expect(svg).toContain("A &amp; &lt;B&gt;");

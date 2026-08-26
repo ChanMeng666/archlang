@@ -245,13 +245,29 @@ describe("legend — derived closed-form from what the drawing paints", () => {
   });
 
   it("omits a category that has no plan symbol (a labelled rectangle needs no legend row)", () => {
-    const src = shell(`  legend\n  furniture bed at (2000,1500) size 1400x2000 label "Bed"\n`);
+    // `bed` was the example here until the bedroom glyph module drew it, at which point it
+    // earned a legend row — correctly, since the legend lists what the drawing paints. The
+    // rule under test is unchanged, so it needs a category that still takes the labelled-
+    // rectangle fallback: an uncatalogued word, which is the only thing that does.
+    const src = shell(`  legend\n  furniture widget at (2000,1500) size 1400x2000 label "Widget"\n`);
     const entries = legendEntries(
       [],
       resolve(parse(src).plan!).ir.elements.flatMap((e) => (e.kind === "furniture" ? [e] : [])),
     );
     expect(entries).toEqual([]);
-    expect(tableText(src)).not.toContain("bed");
+    expect(tableText(src)).not.toContain("widget");
+  });
+
+  it("a category that DOES draw earns its legend row", () => {
+    // The other half of the same rule, which nothing pinned while every room-furniture
+    // category fell through to the fallback.
+    const src = shell(`  legend\n  furniture bed at (2000,1500) size 1400x2000 label "Bed"\n`);
+    const entries = legendEntries(
+      [],
+      resolve(parse(src).plan!).ir.elements.flatMap((e) => (e.kind === "furniture" ? [e] : [])),
+    );
+    expect(entries.map((e) => `${e.kind}:${e.name}`)).toEqual(["fixture:bed"]);
+    expect(tableText(src)).toContain("bed");
   });
 
   it("emits no fixture rows at all when the plan places no fixtures", () => {

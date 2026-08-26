@@ -24,13 +24,27 @@ const PLAN = `plan "P" {
   sofa(500, 2000)
 }`;
 
+/**
+ * How many primitives the furniture layer drew.
+ *
+ * These tests used to look for the imported piece's `label` text in the SVG. That worked only
+ * while `bed`, `sofa` and `chair` fell through to the labelled-rectangle fallback: a category
+ * with a drawn SYMBOL ignores its label, so the word is not in the output at all and the proxy
+ * silently stopped standing for "the component rendered". Counting what the A-FURN layer
+ * actually contains tests the same thing and does not depend on which categories draw.
+ */
+function furnPrimCount(svg: string): number {
+  const layer = /<g id="A-FURN"[^>]*>([\s\S]*?)<\/g>/.exec(svg);
+  return layer ? (layer[1]!.match(/<(polygon|line|circle|path)\b/g) ?? []).length : 0;
+}
+
 describe("T4.3 — import in a virtual-FS (browser-like) World", () => {
   it("brings in the named components and renders them", () => {
     const world = makeVirtualWorld({ "furniture.arch": FURNITURE_LIB });
     const { svg, errors } = compile(PLAN, { world, noCache: true });
     expect(errors).toEqual([]);
-    expect(svg).toContain("Bed");
-    expect(svg).toContain("Sofa");
+    // Both components drew: a bed and a sofa each emit several primitives.
+    expect(furnPrimCount(svg)).toBeGreaterThan(4);
   });
 
   it("supports `as` aliasing", () => {
@@ -38,7 +52,7 @@ describe("T4.3 — import in a virtual-FS (browser-like) World", () => {
     const src = `plan "P" { units mm grid 50 import "furniture.arch": bed as cot  cot(500,500) }`;
     const { svg, errors } = compile(src, { world, noCache: true });
     expect(errors).toEqual([]);
-    expect(svg).toContain("Bed");
+    expect(furnPrimCount(svg)).toBeGreaterThan(0);
   });
 
   it("supports `*` (import all components)", () => {
@@ -72,7 +86,7 @@ describe("T4.3 — import in a Node (real-fs) World", () => {
     }`;
     const { svg, errors } = compile(src, { world, noCache: true });
     expect(errors).toEqual([]);
-    expect(svg).toContain("Bed");
+    expect(furnPrimCount(svg)).toBeGreaterThan(0);
   });
 
   it("imports plumbing/kitchen fixtures from examples/lib/fixtures.arch", () => {
@@ -136,7 +150,7 @@ describe("T4.3 — diagnostics", () => {
     const src = `plan "P" { units mm grid 50 import "@local/office-kit:1.0.0": chair  chair(0,0) }`;
     const { svg, errors } = compile(src, { world, noCache: true });
     expect(errors).toEqual([]);
-    expect(svg).toContain("Chair");
+    expect(furnPrimCount(svg)).toBeGreaterThan(0);
   });
 
   it("an unknown namespace yields a bad-spec diagnostic", () => {
