@@ -544,9 +544,30 @@ function rotatePoint(p: Point, c: Point, deg: number): Point {
   }
 }
 
-/** Rotate a scene node's geometry about `c`. Fixture glyphs use polygon/line/text;
- *  text at the centre is rotation-invariant so labels stay put and upright. */
-function rotateNode(n: SceneNode, c: Point, deg: number): SceneNode {
+/**
+ * Rotate a scene node's geometry about `c`. Fixture glyphs draw with
+ * polygon/line/text/circle/arc; text at the centre is rotation-invariant so labels stay
+ * put and upright, and a circle only moves its centre.
+ *
+ * An **`arc` moves all three of its defining points** — centre, start and end. It used to
+ * fall through the `default` arm unrotated, which is the silent kind of wrong: the glyph
+ * would draw its straight linework turned and its curve still facing north, and nothing
+ * would fail. No shipped glyph emitted an arc when that arm was written, so it was
+ * unreachable rather than broken — but `elements/glyph-lib.ts` hands every future glyph an
+ * `arcSeg` factory, so it is reachable now. `r` and `sweep` are invariant under a rotation:
+ * the radius is a length, and a rotation preserves orientation so the sense of travel from
+ * start to end is unchanged.
+ *
+ * The switch is **exhaustive with no `default`** on purpose — the same guard `pdf.ts`'s
+ * `drawNode` grew after poché fell through its missing one. A new `ScenePrim` variant now
+ * fails the typecheck here instead of being silently passed through unrotated.
+ *
+ * Exported for `test/furniture-rotate.test.ts` only — it is NOT on `src/index.ts`, so this
+ * is not a public-surface change. The test needs it directly because no shipped glyph emits
+ * an arc yet, and asserting the arc rule through a glyph that does not draw one is how the
+ * gap survived in the first place.
+ */
+export function rotateNode(n: SceneNode, c: Point, deg: number): SceneNode {
   const rp = (p: Point): Point => rotatePoint(p, c, deg);
   const prim = n.prim;
   switch (prim.t) {
@@ -558,7 +579,16 @@ function rotateNode(n: SceneNode, c: Point, deg: number): SceneNode {
       return { ...n, prim: { ...prim, at: rp(prim.at) } };
     case "circle":
       return { ...n, prim: { ...prim, center: rp(prim.center) } };
-    default:
+    case "arc":
+      return { ...n, prim: { ...prim, center: rp(prim.center), start: rp(prim.start), end: rp(prim.end) } };
+    case "region":
+      return { ...n, prim: { ...prim, loops: prim.loops.map((lp) => lp.map(rp)) } };
+    // A hatch's `angle` is measured in PATTERN space, so turning its loops without turning
+    // the pattern with them would shear the poché off its own boundary. No fixture glyph
+    // emits one (the furniture pass draws linework, never a material fill), so this is a
+    // declared non-case rather than an omission: give a glyph a hatch and this needs the
+    // angle rule written first.
+    case "hatch":
       return n;
   }
 }
