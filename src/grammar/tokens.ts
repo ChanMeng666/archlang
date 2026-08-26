@@ -54,6 +54,7 @@ export const KEYWORDS = {
     "elevator",
     "escalator",
     "roof",
+    "void",
   ],
   /** Setting / attribute keywords → `keyword.other`, CM `propertyName`. */
   attribute: [

@@ -332,6 +332,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Drop `width` to fill the footprint, or give a value between 0 and the footprint's short side.",
     "stair id=s at (0,0) size 900x2600 dir up width 1200   # error: cross extent is 900",
   ),
+  E_VOID_SIZE: E(
+    "E_VOID_SIZE",
+    "A floor void must have a positive size.",
+    "A `void`'s width or height evaluated to zero or a negative number, so there is no opening in the floor plate to draw or to route circulation around.",
+    "Give it a positive `size W x H` — the hole's extent in plan.",
+    "void id=well at (2000,1000) size 0x3000   # error: zero width",
+  ),
   E_IMPORT_BAD_SPEC: E(
     "E_IMPORT_BAD_SPEC",
     "Malformed import spec.",

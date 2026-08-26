@@ -32,7 +32,7 @@
  * Pure, synchronous, zero-dependency.
  */
 
-import type { RRoom, RDoor, ROpening, RFurniture, RWall } from "../ir.js";
+import type { RRoom, RDoor, ROpening, RFurniture, RVoid, RWall } from "../ir.js";
 import type { Point } from "../ast.js";
 import { outsideOpenEdge, type RVertical, type VerticalObstacle, verticalObstacles } from "../vertical.js";
 import {
@@ -443,6 +443,7 @@ function buildGrid(
   connectors: Array<{ at: Point; between: [string, string]; clear: number }>,
   furniture: RFurniture[],
   verticals: RVertical[],
+  voids: RVoid[],
   roomIndexById: Map<string, number>,
   tol: number,
   bodyRadius: number,
@@ -473,6 +474,10 @@ function buildGrid(
   const obstacles: VerticalObstacle[] = [
     ...furniture.map((f) => ({ rect: rectOf(f), open: [] as VerticalObstacle["open"] })),
     ...verticalObstacles(verticals),
+    // A floor void blocks the cells inside it — you cannot walk across a hole — with the
+    // body-radius halo suppressed on EVERY edge: you can stand at the railing. Same
+    // mechanism a stair's entry edge uses, with the whole rectangle "open".
+    ...voids.map((v) => ({ rect: rectOf(v), open: ["top", "bottom", "left", "right"] as VerticalObstacle["open"] })),
   ];
   const free = new Uint8Array(nx * ny);
   const roomIdx = new Int32Array(nx * ny).fill(-1);
@@ -655,6 +660,7 @@ function buildNav(
   openings: ROpening[],
   furniture: RFurniture[],
   verticals: RVertical[],
+  voids: RVoid[],
   access: AccessGraph,
   tol: number,
   bodyRadius: number,
@@ -674,7 +680,7 @@ function buildNav(
     .map((e) => ({ at: atById.get(e.doorId)!, between: e.between, clear: e.estimatedClearWidth }))
     .filter((c) => c.at !== undefined);
 
-  const g = buildGrid(rooms, walls, connectors, furniture, verticals, roomIndexById, tol, bodyRadius);
+  const g = buildGrid(rooms, walls, connectors, furniture, verticals, voids, roomIndexById, tol, bodyRadius);
   if (!g) return { kind: "none" };
 
   // In one pass: each room's anchor (free cell nearest its seed point, row-major so ties
@@ -745,8 +751,11 @@ export function computeCirculation(
   /** Vertical runs on this storey — obstacles with a walkable entry side. Append-only:
    *  omitting it is exactly the pre-v1.21 behaviour. */
   verticals: RVertical[] = [],
+  /** Floor voids on this storey — blocked cells with a walkable edge on all four sides.
+   *  Append-only: omitting it is exactly the pre-v1.29 behaviour. */
+  voids: RVoid[] = [],
 ): CirculationModel | null {
-  const nav = buildNav(rooms, walls, doors, openings, furniture, verticals, access, tol, bodyRadiusMm);
+  const nav = buildNav(rooms, walls, doors, openings, furniture, verticals, voids, access, tol, bodyRadiusMm);
   if (nav.kind === "none") return null;
   if (nav.kind === "empty") {
     return { entranceId: nav.entranceId, cellSizeMm: nav.cellSizeMm, bodyRadiusMm, rooms: [], routes: [] };
@@ -891,8 +900,10 @@ export function computeCirculationOverlay(
   bodyRadiusMm: number = DEFAULT_BODY_RADIUS_MM,
   /** Vertical runs on this storey — see {@link computeCirculation}. */
   verticals: RVertical[] = [],
+  /** Floor voids on this storey — see {@link computeCirculation}. */
+  voids: RVoid[] = [],
 ): CirculationOverlay | null {
-  const nav = buildNav(rooms, walls, doors, openings, furniture, verticals, access, tol, bodyRadiusMm);
+  const nav = buildNav(rooms, walls, doors, openings, furniture, verticals, voids, access, tol, bodyRadiusMm);
   if (nav.kind !== "ok") return null;
   const { g, anchor, source, entrancePoint } = nav;
 

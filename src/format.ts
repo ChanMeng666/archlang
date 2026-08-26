@@ -232,6 +232,8 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       return s.polygon
         ? `roof polygon ${s.polygon.map(ptStr).join(" ")}`
         : `roof overhang ${exprStr(s.overhang!)}${s.wall ? ` wall ${s.wall}` : ""}`;
+    case "void":
+      return `void ${id}at ${ptStr(s.at)} size ${sizeStr(s.size)}`;
     case "let":
       return s.value.t === "fnlit"
         ? `let ${s.name}(${s.value.params.join(", ")}) = ${exprStr(s.value.body)}`

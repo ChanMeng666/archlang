@@ -8,7 +8,7 @@ import type { AccessGraph, RoomBox } from "../analyze.js";
 import { buildDoorAccessGraph, roomBox } from "../analyze.js";
 import type { Diagnostic } from "../diagnostics.js";
 import { segmentsOfWall, type WallSegment } from "../geometry.js";
-import type { RDoor, RFurniture, ROpening, RRoom, RWindow, ResolvedPlan } from "../ir.js";
+import type { RDoor, RFurniture, ROpening, RRoom, RVoid, RWindow, ResolvedPlan } from "../ir.js";
 import { type RVertical, verticalsOf } from "../vertical.js";
 import type { LintRuleset } from "./ruleset.js";
 
@@ -42,6 +42,9 @@ export interface LintContext {
   furniture: RFurniture[];
   /** Vertical-circulation runs on this storey, in source order. */
   verticals: RVertical[];
+  /** Floor voids on this storey (v1.29) — circulation obstacles, in source order. No rule
+   *  keys off them directly; they reach the nav grid through `circulation-facts.ts`. */
+  voids: RVoid[];
   /** The multi-storey facts this storey's rules read; inert for a single-storey plan. */
   building: BuildingContext;
   /** Both doors and cased openings connect a room to its neighbours. */
@@ -110,6 +113,7 @@ export function buildLintContext(
     openings,
     furniture,
     verticals: verticalsOf(ir),
+    voids: ir.elements.filter((e): e is RVoid => e.kind === "void"),
     building,
     connectors: [...doors, ...openings],
     roomRects: new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)])),

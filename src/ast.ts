@@ -58,7 +58,8 @@ export type ElementKind =
   | "stair"
   | "elevator"
   | "escalator"
-  | "roof";
+  | "roof"
+  | "void";
 
 /** Fields every element AST node carries. */
 export interface NodeBase {
@@ -596,6 +597,22 @@ export interface RoofNode extends NodeBase {
   polygon?: ExprPoint[];
 }
 
+/**
+ * `void [id=] at (x,y) size WxH` — a hole in THIS storey's floor plate: a stair well, a
+ * double-height living room, an atrium.
+ *
+ * Drawn as the conventional dashed rectangle with both diagonals, and it OBSTRUCTS
+ * circulation (you cannot walk across a hole) while leaving the room's area alone — the
+ * area a schedule reports is the floor area of the *room*, and subtracting the well would
+ * make the drawing and the table disagree about a number neither of them measured. v1 is
+ * rectangle-only; a polygonal void is deferred by name, not silently.
+ */
+export interface VoidNode extends NodeBase {
+  kind: "void";
+  at: ExprPoint;
+  size: { w: Expr; h: Expr };
+}
+
 /** One room child of a `strip` block. It carries its main-axis extent and an
  *  optional cross-axis override; the strip supplies the shared cross dimension
  *  when the child omits it. Expanded into an ordinary absolute {@link RoomNode}
@@ -707,7 +724,8 @@ export type AstElement =
   | StairNode
   | ElevatorNode
   | EscalatorNode
-  | RoofNode;
+  | RoofNode
+  | VoidNode;
 
 /** `let NAME = <expr>` — a binding statement. */
 export interface LetNode extends NodeBase {

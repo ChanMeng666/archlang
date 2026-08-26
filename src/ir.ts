@@ -424,6 +424,14 @@ export interface RRoof extends RBase {
   ring: Point[];
 }
 
+/** A resolved floor void. `at` is the TOP-LEFT of the opening (the `room`/`column`
+ *  convention), never its centre. */
+export interface RVoid extends RBase {
+  kind: "void";
+  at: Point;
+  size: { w: number; h: number };
+}
+
 export type ResolvedElement =
   | RWall
   | RRoom
@@ -436,7 +444,8 @@ export type ResolvedElement =
   | RStair
   | RElevator
   | REscalator
-  | RRoof;
+  | RRoof
+  | RVoid;
 
 /**
  * One resolved **positioning axis** (定位轴线): an author-declared datum line at `pos`
@@ -1831,7 +1840,8 @@ function checkPlanDrawable(elements: ResolvedElement[], diagnostics: Diagnostic[
       e.kind === "stair" ||
       e.kind === "elevator" ||
       e.kind === "escalator" ||
-      e.kind === "roof",
+      e.kind === "roof" ||
+      e.kind === "void",
   );
   if (!drawable) {
     diagnostics.push({

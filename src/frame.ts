@@ -359,7 +359,10 @@ function transformGeometry(f: Frame, el: ResolvedElement, id: string, reflected:
     }
     case "stair":
     case "elevator":
-    case "escalator": {
+    case "escalator":
+    // A void is an axis-aligned rectangle given as TOP-LEFT + size, exactly like the
+    // vertical runs — so a quarter-turn swaps its extents and re-derives the corner.
+    case "void": {
       const r = transformRect(f, el.at, el.size);
       return { ...el, id, at: r.at, size: r.size };
     }

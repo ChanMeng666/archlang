@@ -22,6 +22,7 @@ import { stair } from "./stair.js";
 import { elevator } from "./elevator.js";
 import { escalator } from "./escalator.js";
 import { roof } from "./roof.js";
+import { voidEl } from "./void.js";
 
 /** Built-in element defs, in canonical (registration) order. */
 export const BUILTIN_DEFS: readonly ElementDef[] = [
@@ -40,4 +41,5 @@ export const BUILTIN_DEFS: readonly ElementDef[] = [
   // offsets a wall ring, and registry order is what guarantees every wall is already
   // resolved when it runs (the same contract openings host against).
   roof,
+  voidEl,
 ];

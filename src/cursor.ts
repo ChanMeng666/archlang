@@ -58,6 +58,7 @@ export function statementExprs(s: Statement): Expr[] {
     case "column":
     case "elevator":
     case "escalator":
+    case "void":
       pt(s.at);
       out.push(s.size.w, s.size.h);
       break;
