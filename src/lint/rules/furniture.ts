@@ -20,7 +20,13 @@ import type { Diagnostic } from "../../diagnostics.js";
 import { rectsOverlap, wallIntrusionDepth } from "../../geometry/rect.js";
 import { pointInPolygon } from "../../geometry/polygon.js";
 import { fixesFrom, fixtureRotateFix } from "../../fix-producers.js";
-import { defaultFootprint, frontClearanceMm, orientationMatters, requiresWall } from "../../fixtures-catalog.js";
+import {
+  defaultFootprint,
+  frontClearanceMm,
+  isUnderlay,
+  orientationMatters,
+  requiresWall,
+} from "../../fixtures-catalog.js";
 import type { LintContext, LintRule } from "../context.js";
 import { frontGapMm, mm, shortfall } from "../measure.js";
 
@@ -33,13 +39,19 @@ import { frontGapMm, mm, shortfall } from "../measure.js";
 const WALL_COLLISION_SLACK_MM = 30;
 
 /** Furniture that overlaps another piece — a physical collision (each unordered
- *  pair reported once, in source order, against the second piece's span). */
+ *  pair reported once, in source order, against the second piece's span).
+ *
+ *  An **underlay** (a rug) and a piece standing on it are exempt: that overlap is the
+ *  arrangement, not a collision. The test is on the pair, not on either piece — two rugs
+ *  overlapping each other still warn, because one rug half over another is a drawing
+ *  mistake and nothing about `underlay` says otherwise. */
 export const furnitureOverlap: LintRule = {
   name: "furniture-overlap",
   check({ furniture, at }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
     for (let i = 0; i < furniture.length; i++) {
       for (let j = i + 1; j < furniture.length; j++) {
+        if (isUnderlay(furniture[i]!.category) !== isUnderlay(furniture[j]!.category)) continue;
         if (rectsOverlap(rectOf(furniture[i]!), rectOf(furniture[j]!))) {
           const nameI = furniture[i]!.label ?? furniture[i]!.category;
           const nameJ = furniture[j]!.label ?? furniture[j]!.category;
@@ -80,7 +92,9 @@ export const furnClearance: LintRule = {
       if (clear <= 0) continue;
       const zone = frontClearanceRect(f, clear);
       for (const g of furniture) {
-        if (g === f || requiresWall(g.category)) continue; // ignore other fixtures
+        // Ignore other services fixtures — and an underlay, which you stand on rather than
+        // step round, so a rug reaching under the basin blocks nothing.
+        if (g === f || requiresWall(g.category) || isUnderlay(g.category)) continue;
         if (rectsOverlap(zone, rectOf(g))) {
           const fn = f.label ?? f.category;
           const gn = g.label ?? g.category;

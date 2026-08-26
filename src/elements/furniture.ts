@@ -287,7 +287,7 @@ export const furniture: ElementDef = {
 
     // Every CATALOGUED kind draws a real plan symbol — the plumbing and kitchen fixtures
     // and the room furniture alike, since the glyph layer landed. An uncatalogued word
-    // (`furniture piano …`) falls back to the labelled rectangle below, which is now the
+    // (`furniture hammock …`) falls back to the labelled rectangle below, which is now the
     // ONLY path that renders a furniture `label` at all.
     let nodes = fixtureGlyph(f.category, rect, theme, sizes);
     if (!nodes) {
