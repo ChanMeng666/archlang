@@ -8,9 +8,11 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { FIXTURE_CATEGORIES } from "../src/elements/fixtures-glyphs.js";
-import { CATALOG_CATEGORIES, zoneFixtureCategories } from "../src/fixtures-catalog.js";
+import { compile } from "../src/index.js";
+import { CANONICAL_FIXTURES, FIXTURE_CATEGORIES, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
+import { CATALOG_CATEGORIES, defaultFootprint, zoneFixtureCategories } from "../src/fixtures-catalog.js";
 import { KITCHEN_FIX, WET_FIX } from "../src/lint/rules/per-room.js";
+import { ELEMENT_GRAMMAR, assertVocabRendered } from "../scripts/gen-llm-spec.js";
 
 describe("fixture classifier — single source", () => {
   it("wet-zone membership equals lint's historical WET_FIX exactly", () => {
@@ -46,5 +48,93 @@ describe("fixture classifier — single source", () => {
   it("every glyph category has a catalog entry (aliases included)", () => {
     const catalog = new Set(CATALOG_CATEGORIES);
     for (const c of FIXTURE_CATEGORIES) expect(catalog.has(c), `glyph category "${c}" missing from catalog`).toBe(true);
+  });
+});
+
+/**
+ * `CANONICAL_FIXTURES` — one name per family, and the list `spec.llm.md`'s furniture line
+ * interpolates instead of the eight-name-plus-ellipsis it used to spell by hand.
+ */
+describe("the canonical fixture names", () => {
+  it("is a non-empty, duplicate-free subset of the full vocabulary", () => {
+    expect(CANONICAL_FIXTURES.length).toBeGreaterThan(0);
+    expect([...new Set(CANONICAL_FIXTURES)]).toEqual([...CANONICAL_FIXTURES]);
+    const all = new Set(FIXTURE_CATEGORIES);
+    for (const c of CANONICAL_FIXTURES) expect(all.has(c), `canonical "${c}" is not a known category`).toBe(true);
+  });
+
+  it("names a family for every category — no category belongs to none", () => {
+    // Aliases outnumber canonicals, so this is a real inequality, not a tautology.
+    expect(FIXTURE_CATEGORIES.length).toBeGreaterThan(CANONICAL_FIXTURES.length);
+  });
+
+  it("only categories with a drawn symbol pass hasFixtureGlyph", () => {
+    const drawn = FIXTURE_CATEGORIES.filter(hasFixtureGlyph);
+    // The eight shipped families, aliases included — everything newer is still a stub.
+    expect(drawn).toEqual([
+      "wc",
+      "toilet",
+      "basin",
+      "lavatory",
+      "shower",
+      "bathtub",
+      "tub",
+      "bath",
+      "kitchen_sink",
+      "sink",
+      "counter",
+      "worktop",
+      "stove",
+      "hob",
+      "cooktop",
+      "fridge",
+      "refrigerator",
+    ]);
+    expect(hasFixtureGlyph("widget")).toBe(false);
+  });
+});
+
+/**
+ * The spec's `against wall` claim, EXECUTED.
+ *
+ * `spec.llm.md` names the categories that may omit `size`. That sentence is now interpolated
+ * from `defaultFootprint`, so it cannot go stale against the catalog — but nothing yet proved
+ * the catalog itself matches the resolver. These two cases compile both halves of the claim:
+ * every named category really does resolve without a `size`, and every category NOT named
+ * really is refused. A footprint that the resolver would not accept fails here, not in a
+ * model's output.
+ */
+describe("size-optional `against wall` placement matches the catalog", () => {
+  const plan = (category: string) => `plan "P" {
+    units mm
+    wall id=w exterior thickness 200 { (0,0) (10000,0) (10000,10000) (0,10000) close }
+    room id=r at (0,0) size 10000x10000 label "R"
+    furniture ${category} against wall w segment 0 offset 3000 in r
+  }`;
+  const errorCodes = (src: string): string[] =>
+    compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error").map((d) => d.code ?? "");
+
+  it("a catalogued footprint lets `size` be omitted", () => {
+    const sized = CANONICAL_FIXTURES.filter((c) => defaultFootprint(c) !== null);
+    expect(sized.length).toBeGreaterThan(8); // the eight originals plus the new vocabulary
+    for (const c of sized) expect(errorCodes(plan(c)), `"${c}" should resolve without a size`).toEqual([]);
+  });
+
+  it("the spec generator throws if the furniture line stops rendering the list", () => {
+    // Non-vacuity for the guard added beside `assertVocabRendered`'s other callers: the
+    // eight-name-plus-ellipsis this replaced could go stale forever with `check:drift`
+    // green, because that gate compares a generator to its OWN output.
+    const line = ELEMENT_GRAMMAR.furniture ?? "";
+    const sized = CANONICAL_FIXTURES.filter((c) => defaultFootprint(c) !== null);
+    expect(() => assertVocabRendered(line, "size-optional fixture", sized, "/")).not.toThrow();
+    expect(() => assertVocabRendered(line, "size-optional fixture", [...sized, "hammock"], "/")).toThrow(
+      /size-optional fixture/,
+    );
+  });
+
+  it("no catalogued footprint means `size` is still required", () => {
+    const unsized = [...CANONICAL_FIXTURES.filter((c) => defaultFootprint(c) === null), "widget"];
+    expect(unsized.length).toBeGreaterThan(1);
+    for (const c of unsized) expect(errorCodes(plan(c)), `"${c}" should demand a size`).toContain("E_FURN_SIZE");
   });
 });

@@ -35,6 +35,8 @@ import {
   VERTICAL_DIRS,
 } from "../src/ast.js";
 import { BUILTIN_NAMES } from "../src/builtins.js";
+import { CANONICAL_FIXTURES } from "../src/elements/fixtures-glyphs.js";
+import { defaultFootprint } from "../src/fixtures-catalog.js";
 import { DOOR_ENUMS, DOOR_HINGE_NEAR, DOOR_KINDS, KEYWORDS } from "../src/grammar/tokens.js";
 import { KNOWN_MATERIALS } from "../src/hatches.js";
 import { buildManifest } from "../src/manifest.js";
@@ -57,6 +59,19 @@ export const SPEC_EXAMPLES = ["attached.arch", "parametric.arch"] as const;
 const dirsOn = (axis: "v" | "h"): string => REL_DIRS.filter((d) => REL_DIR_AXIS[d] === axis).join("|");
 
 /**
+ * The fixture categories a `furniture … against wall` may omit `size` for — one name per
+ * family, and only the families that actually have a catalogued footprint.
+ *
+ * The furniture line used to spell eight of these out by hand, ending in an ellipsis. That
+ * is a fact about the language retyped into a generator, which `check:drift` is structurally
+ * blind to: it proves the generator reproduces its own output, never that the output is
+ * true (the v1.26.0 defect class). Derived from the two owning tables, the sentence is true
+ * by construction — the predicate is exactly the one `furniture.resolve()` applies, so a
+ * footprint added or removed moves this list with it.
+ */
+const SIZE_OPTIONAL_FIXTURES: readonly string[] = CANONICAL_FIXTURES.filter((c) => defaultFootprint(c) !== null);
+
+/**
  * One-line grammar for each built-in element, keyed by element keyword. Keys MUST
  * match `KEYWORDS.element` exactly — {@link renderLlmSpec} throws otherwise, so a
  * new element can't ship without a spec line (the drift guard).
@@ -73,7 +88,7 @@ export const ELEMENT_GRAMMAR: Record<string, string> = {
     "window [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # placement + `wall` clause exactly as door",
   opening:
     "opening [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>]   # a leaf-less cased opening that still connects the two spaces in the access graph; placement + `wall` clause exactly as door",
-  furniture: `furniture [id=<name>] <category> (at (x,y) | against wall <id|category> [segment <n>] [offset <mm>] [side left|right] | in <roomId> centered | in <roomId> anchor <a> [flush] [inset <mm>]) [size <W>x<H>] [label "…"] [rotate 0|90|180|270] [in <roomId>]   # \`at\` size is plan W×H; \`against\` size is wall-relative along×depth and derives position+rotation, with \`side\` inferred from \`in <roomId>\` when omitted; \`rotate\` is \`at\`/\`in\`-only — an \`against\` piece takes rotation FROM the wall, so writing one is E_FURN_AGAINST (multi-segment wall ⇒ \`segment <n>\`); a known fixture (wc/basin/shower/bathtub/kitchen_sink/counter/stove/fridge…) \`against wall\` may omit \`size\` to use its catalogued footprint. \`anchor <a>\` is ${FURNITURE_ANCHORS.join("|")}; \`inset\` (default 0) pulls it in from that edge, measured from the room rectangle (a wall CENTERLINE) — add \`flush\` to measure from the backing wall's inner FACE instead, so \`anchor bottom flush\` sits on the plaster (\`flush\` needs an anchored edge: it is E_FURN_FLUSH on \`centered\`/\`anchor center\`)`,
+  furniture: `furniture [id=<name>] <category> (at (x,y) | against wall <id|category> [segment <n>] [offset <mm>] [side left|right] | in <roomId> centered | in <roomId> anchor <a> [flush] [inset <mm>]) [size <W>x<H>] [label "…"] [rotate 0|90|180|270] [in <roomId>]   # \`at\` size is plan W×H; \`against\` size is wall-relative along×depth and derives position+rotation, with \`side\` inferred from \`in <roomId>\` when omitted; \`rotate\` is \`at\`/\`in\`-only — an \`against\` piece takes rotation FROM the wall, so writing one is E_FURN_AGAINST (multi-segment wall ⇒ \`segment <n>\`); a catalogued fixture (${SIZE_OPTIONAL_FIXTURES.join("/")}, plus their aliases) \`against wall\` may omit \`size\` to use its catalogued footprint. \`anchor <a>\` is ${FURNITURE_ANCHORS.join("|")}; \`inset\` (default 0) pulls it in from that edge, measured from the room rectangle (a wall CENTERLINE) — add \`flush\` to measure from the backing wall's inner FACE instead, so \`anchor bottom flush\` sits on the plaster (\`flush\` needs an anchored edge: it is E_FURN_FLUSH on \`centered\`/\`anchor center\`)`,
   dim: `dim [${DIM_REFS.join("|")}] (x,y)->(x,y) [offset <mm>] [text "…"]   # a dimension line; \`offset\` is OPTIONAL (default 300; 0 on the curve forms). Endpoint ORDER + the offset sign choose which side it lands on (the offset runs along the LEFT normal of from→to), so a reversed pair draws it INSIDE the building — \`W_DIM_INSIDE\`. \`faces\` pushes each endpoint out onto the wall it runs into (outside-to-outside); \`clear\` pulls both in to the inner faces (a clear width). Or skip hand dims entirely with the plan-level \`dims auto\` setting — its \`all\` mode draws the GB/T openings + axis + overall chains outside every dimensioned facade. CURVES: \`dim radius <wallId> [segment <n>]\` (an R leader) and \`dim diameter <roomId>\` (a φ call-out) DERIVE both geometry and text from the named element and also take \`[offset <mm>] [text "…"]\`; \`dims auto\` adds one R per distinct arc + one φ per circular room; chains stay off curved facades`,
   column: "column [id=<name>] at (x,y) size <W>x<H>",
   stair: `stair [id=<name>] at (x,y) size <W>x<H> dir ${VERTICAL_DIRS.join("|")} [width <mm>]   # a flight: treads, a mid-flight break line, an UP/DN arrow. \`at\` = footprint TOP-LEFT; the flight runs along the LONG axis; \`dir up\` is entered at that axis's larger-coordinate end (arrow points N/W), \`dir down\` at the opposite end (arrow reversed). \`dir\` is declared per storey. MULTI-STOREY: the SAME id on two \`level\` blocks is ONE SHAFT — it becomes a \`describe().vertical\` connection and makes the upper storey reachable with no front door of its own (an id on one storey only = \`W_STAIR_UNMATCHED\`)`,
@@ -465,6 +480,9 @@ export function renderLlmSpec(examples: Record<string, string>): string {
   assertVocabRendered(el("room"), "directions aligning on the vertical axis", [dirsOn("v")], "");
   assertVocabRendered(el("room"), "directions aligning on the horizontal axis", [dirsOn("h")], "");
   assertVocabRendered(el("furniture"), "furniture anchor", FURNITURE_ANCHORS);
+  // The size-optional fixture list, joined with `/` the way the line prints it. Guarding it
+  // is the whole point: this is the list that was retyped, went stale, and shipped that way.
+  assertVocabRendered(el("furniture"), "size-optional fixture", SIZE_OPTIONAL_FIXTURES, "/");
   assertVocabRendered(el("dim"), "dim endpoint reference", DIM_REFS);
   // NB: the `dims auto` mode set is asserted against `SETTING_GRAMMAR.dims` below, not
   // here. `dims` is a plan SETTING, and until it had a line of its own the `dim` element
