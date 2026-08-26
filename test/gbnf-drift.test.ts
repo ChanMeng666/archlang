@@ -503,6 +503,23 @@ const AGREEMENT: [string, string][] = [
     "level blocks",
     `plan "p" {\n  level 1 { room at (0,0) size 100x100 }\n  level 2 { room at (0,0) size 100x100 }\n}\n`,
   ],
+  // —— roof: two spellings that are ALTERNATIVES, never a sequence ————————
+  ["roof overhang", P(`  roof overhang 600`)],
+  ["roof overhang + wall", P(`  roof overhang 600 wall w1`)],
+  ["roof overhang expression", P(`  let eave = 300\n  roof overhang eave * 2`)],
+  ["roof polygon", P(`  roof polygon (0,0) (9000,0) (9000,6000) (0,6000)`)],
+  // …and the four shapes neither the parser nor a decoder may produce. `roof` takes no
+  // `id=` (the shape word leads, as after `room`), the ring needs three points, and the
+  // two spellings do not concatenate.
+  ["roof with id=", P(`  roof id=r overhang 600`)],
+  ["roof polygon, two points", P(`  roof polygon (0,0) (9000,0)`)],
+  ["roof overhang then polygon", P(`  roof overhang 600 polygon (0,0) (1,0) (0,1)`)],
+  ["roof bare", P(`  roof`)],
+  // —— void ————————————————————————————————————————————————
+  ["void", P(`  void at (1000,1000) size 2000x2000`)],
+  ["void with id=", P(`  void id=well at (1000,1000) size 2000x2000`)],
+  ["void without size", P(`  void at (1000,1000)`)],
+  ["void size before at", P(`  void size 2000x2000 at (1000,1000)`)],
 ];
 
 /**

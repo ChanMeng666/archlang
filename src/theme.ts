@@ -189,6 +189,12 @@ export const STYLE_KEYS: Readonly<Record<string, Readonly<Record<string, keyof T
   stair: { fill: "furnitureFill", stroke: "furnitureStroke", label: "annotation" },
   elevator: { fill: "furnitureFill", stroke: "furnitureStroke" },
   escalator: { fill: "furnitureFill", stroke: "furnitureStroke", label: "annotation" },
+  // Both draw an unfilled dashed outline and nothing else, so `stroke` is the whole
+  // palette either has. They are still listed: `STYLE_KINDS` is `KEYWORDS.element` minus
+  // `opening` (which is a hole and has no ink), and `gen-llm-spec.ts` throws when that
+  // exception stops being exactly one word.
+  roof: { stroke: "annotationMuted" },
+  void: { stroke: "annotation" },
 };
 
 /** Every element kind `style <kind> { … }` accepts, derived from {@link STYLE_KEYS} so

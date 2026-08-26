@@ -88,6 +88,7 @@ matter — run it yourself for the full object):
 | `windows[].room` | the room the window lights |
 | `windows[].facing` | the **true compass** direction the window's wall faces (`N`/`S`/`E`/`W`), read against the plan's [`north`](language-reference.md#plan-settings) setting. Under the default `north up` the top of the drawing is north, so a top-edge window faces `N`; under `north right` compass north points at the page's right edge, so a right-edge window faces `N` and a top-edge one faces `W`. A `north <deg>` bearing snaps to the nearest cardinal (an exact 45° tie rounds clockwise) |
 | `windows[].facingPage` | the same direction **before** `north` is applied — `N` = toward the top of the drawing. **Present only when the declared `north` actually turns the answer**, so a plan on the default `north up` is unchanged |
+| `voids` | the holes in this storey's floor plate — one `{ id, at, size, room }` per [`void`](language-reference.md#void--a-hole-in-the-floor-v1-29). **Present only when the storey declares one.** `room` is the room whose FLOOR contains the opening's centre (`null` when none does — a void in the notch of a U-shaped room belongs to no room, even though it is inside that room's `bbox`). The room's `area_m2` is **not** reduced by it: subtract `size.w × size.h` yourself if you need the net |
 | `totals` | room / door / window counts and total floor area |
 | `accTitle` / `accDescr` | the plan's declared [accessible metadata](language-reference.md#accessible-metadata-acctitle-accdescr) — **present only when the source declares them** |
 | `axes` | the plan's declared [positioning axes](language-reference.md#positioning-axes-定位轴线) — **present only when the source declares an `axes` block** |
@@ -288,6 +289,13 @@ entrance. For the studio:
 | `rooms[].bottleneckClearWidthMm` | the narrowest unavoidable clear width on the way in (a door width, or a furniture pinch) |
 | `rooms[].detourRatio` | `walkDistance ÷ straight-line` — how far the route wanders from a beeline (`≥ ~1`) |
 | `routes[]` | key functional routes (kitchen → nearest living/dining, bedroom → nearest bath), same three metrics |
+
+A room the grid cannot reach at all is simply **absent** from `rooms[]`. Three things
+obstruct it: furniture (halo on every side), a
+[vertical run](#vertical-circulation--the-building-graph-v121) (halo lifted outside its entry
+edges) and a [`void`](language-reference.md#void--a-hole-in-the-floor-v1-29) (halo lifted on
+**all four** — you cannot walk across a hole, but you can stand at the railing). Walls block
+and doors carve, as always.
 
 Two advisory lint rules read this model, and the same model backs the opt-in
 `arch compile --overlay circulation` render overlay (see

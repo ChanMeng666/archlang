@@ -359,9 +359,24 @@ function transformGeometry(f: Frame, el: ResolvedElement, id: string, reflected:
     }
     case "stair":
     case "elevator":
-    case "escalator": {
+    case "escalator":
+    // A void is an axis-aligned rectangle given as TOP-LEFT + size, exactly like the
+    // vertical runs — so a quarter-turn swaps its extents and re-derives the corner.
+    case "void": {
       const r = transformRect(f, el.at, el.size);
       return { ...el, id, at: r.at, size: r.size };
     }
+    // A roof's ring rides through vertex by vertex, like a polygon room's: a frame is an
+    // exact integer isometry, so the turned/mirrored outline is the same outline. Its
+    // OFFSET was already discharged in the instance's own frame, which is the point — an
+    // overhang is measured off the wall face, and a face is a face after a rotation.
+    //
+    // A `roof` inside a `component` body is refused at parse (`E_ROOF_PLACEMENT`), so the
+    // only way to reach this arm is a whole-FILE `import "x.arch" as w` + `place w()`,
+    // where the roof was written as a plan statement in the imported module. That case is
+    // carried correctly rather than refused a second time, deeper, where the diagnostic
+    // would have nowhere useful to point.
+    case "roof":
+      return { ...el, id, ring: el.ring.map((p) => tp(f, p)) };
   }
 }

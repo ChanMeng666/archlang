@@ -975,6 +975,21 @@ class Parser {
       this.diagnostics.push({ severity: "error", message: msg, code: "E_STRIP_NEST", span: this.spanFrom(start) });
       return { kind: "error", id: "", line: t.line, message: msg };
     }
+    // A `roof` belongs to a BUILDING, not to a reusable part of one. Its `overhang` sugar
+    // asks "which closed exterior ring does this plan have?", and a component is authored
+    // in its own local frame with no answer to that — two `place`d copies would each
+    // derive their own outline and the plan would draw two roofs. `selfName` is set only
+    // inside a `component` body (control-flow and `zone` bodies inherit it, which is
+    // right: a `roof` in a loop inside a component is still inside the component), so it
+    // is the precise test. Consumed for clean recovery, exactly as `E_ACC_PLACEMENT` does.
+    if (t.value === "roof" && selfName !== undefined) {
+      this.registry.byKeyword.get("roof")?.parse(this.ctx);
+      const msg =
+        `"roof" is only allowed at plan level (or inside a \`level\` block), not inside a component — ` +
+        `an overhang is offset from the BUILDING's wall ring, which a component does not have`;
+      this.diagnostics.push({ severity: "error", message: msg, code: "E_ROOF_PLACEMENT", span: this.spanFrom(start) });
+      return { kind: "error", id: "", line: t.line, message: msg };
+    }
     let node: Statement;
     // `zone` is legal wherever a statement is — plan level, inside a `level` block, inside
     // a control-flow body or a component — because it is a pure metadata wrapper with no

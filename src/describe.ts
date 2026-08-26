@@ -22,6 +22,7 @@ import type {
   RWindow,
   ROpening,
   RFurniture,
+  RVoid,
   RoomPlacement,
   OpeningPlacement,
   FurniturePlacement,
@@ -32,6 +33,7 @@ import type { Diagnostic } from "./diagnostics.js";
 import {
   resolvePlan,
   rectOf,
+  pointInRoomBox,
   roomAreaMm2,
   roomBox,
   roomsAdjacent,
@@ -227,6 +229,27 @@ export interface VerticalSummary {
   bbox: BBox;
   /** Flight width across the run (mm) — `stair` only. */
   flight_width?: number;
+}
+
+/**
+ * One hole in this storey's floor plate (`void`, v1.29). Present in the summary only when
+ * the storey declares at least one, so every existing summary is unchanged.
+ *
+ * The room's own `area_m2` is NOT reduced by the void — see `src/elements/void.ts` for
+ * why — so a consumer that needs the net floor of a double-height space subtracts
+ * `size.w × size.h` here from the room named by {@link VoidSummary.room}.
+ */
+export interface VoidSummary {
+  id: string;
+  /** Top-left of the opening, in mm. */
+  at: Point;
+  size: { w: number; h: number };
+  /**
+   * The room whose FLOOR contains the opening's centre — the poly-aware containment test,
+   * never the room's bounding box, so a void inside a courtyard plan's notch is reported
+   * as belonging to no room rather than to the U-shaped room whose box surrounds it.
+   */
+  room: string | null;
 }
 
 /**
@@ -464,6 +487,12 @@ export interface SceneSummary {
    * `escalator`. Absent when the storey draws none, so existing summaries are unchanged.
    */
   verticals?: VerticalSummary[];
+  /**
+   * The holes in this storey's floor plate (v1.29) — `void`. Absent when the storey
+   * declares none, so existing summaries are unchanged. A void obstructs circulation and
+   * does NOT reduce the containing room's reported area.
+   */
+  voids?: VoidSummary[];
   /**
    * The modeled access graph: entrances, room reachability/depth from the exterior,
    * and connector edges (doors and cased openings) with estimated clear widths.
@@ -706,6 +735,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
   const openingEls = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const furnEls = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
   const verticalEls: RVertical[] = verticalsOf(ir);
+  const voidEls = ir.elements.filter((e): e is RVoid => e.kind === "void");
 
   const roomRects = new Map<string, RoomBox>(roomEls.map((r) => [r.id, roomBox(r)]));
 
@@ -810,6 +840,16 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     ...(v.kind === "stair" ? { flight_width: v.width } : {}),
   }));
 
+  // A void's owning room is the room whose FLOOR holds the opening's CENTRE — through the
+  // poly-aware `pointInRoomBox`, never the bounding box. The box is the wrong datum for a
+  // concave room (its notch is inside the box and outside the floor), which is the
+  // defect class v1.25.0 closed six instances of.
+  const voids: VoidSummary[] = voidEls.map((v) => {
+    const centre = { x: v.at.x + v.size.w / 2, y: v.at.y + v.size.h / 2 };
+    const owner = roomEls.find((r) => pointInRoomBox(centre, roomRects.get(r.id)!));
+    return { id: v.id, at: { ...v.at }, size: { ...v.size }, room: owner ? owner.id : null };
+  });
+
   const access = buildDoorAccessGraph(roomEls, doorEls, tol, undefined, openingEls);
   const circulation = computeCirculation(
     roomEls,
@@ -821,6 +861,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     tol,
     undefined,
     verticalEls,
+    voidEls,
   );
 
   // Drawing extent: union of wall points and sized-element rectangles.
@@ -913,6 +954,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     openings,
     furniture,
     ...(verticals.length > 0 ? { verticals } : {}),
+    ...(voids.length > 0 ? { voids } : {}),
     access,
     circulation,
     totals,

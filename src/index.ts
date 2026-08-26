@@ -77,6 +77,7 @@ export type {
   VerticalConnection,
   VerticalKind,
   VerticalStop,
+  VoidSummary,
   RoomSummary,
   DoorSummary,
   DoorKind,

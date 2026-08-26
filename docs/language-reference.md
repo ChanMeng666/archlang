@@ -1320,6 +1320,122 @@ plan "Two-storey" {
 }
 ```
 
+### Roof — the eaves projection line (v1.29)
+
+```
+roof overhang <mm> [wall <id>]
+roof polygon (x,y) (x,y) (x,y) …
+```
+
+One dashed outline of what oversails the plan, on the `A-ROOF` CAD layer. Two spellings of
+the same element, exactly as `room` has `at`+`size` / `polygon` / `circle` — the word after
+`roof` picks which, and there is no form that takes both.
+
+**`roof overhang` derives the outline from a closed wall ring.** Each face is pushed out
+`thickness / 2 + <mm>` along **its own outward normal**, and the corners are re-cut by exact
+line–line intersection (a mitre). Two consequences worth stating:
+
+- It is closed form at **any angle**. Orientation comes from the ring's shoelace sign, not
+  from a bounding box or a "topmost vertex" guess, so an oblique or hexagonal plan gets a
+  true parallel outline rather than a fitted approximation. A rectilinear plan's corners
+  come out exact.
+- It **moves when the walls move**. There is no second set of coordinates to keep in step,
+  which is the whole reason the sugar exists.
+
+Which ring? The one named by `wall <id>`, or — with no clause — the plan's single closed
+wall of category `exterior`. If the plan has none, or more than one, that is
+[`E_ROOF_AMBIGUOUS`](error-codes.md#e_roof_ambiguous) rather than a guess: name the wall, or
+state the outline yourself.
+
+**`roof polygon` takes the ring verbatim**, implicitly closed (no repeated last vertex), for
+the roof whose edge is not the building's — a hip cut back over a terrace, a porch canopy, a
+monopitch that oversails one facade only.
+
+**It refuses rather than approximating.** An `arc` edge on the ring is
+[`E_ROOF_CURVED`](error-codes.md#e_roof_curved): offsetting a curve is a different
+construction, and faceting it would put a tessellation in the one place a reader is entitled
+to read a true parallel. An outline that crosses itself — a bow-tie ring, or an overhang wide
+enough to swallow a notch in the wall it follows — is
+[`E_ROOF_SELF_INTERSECT`](error-codes.md#e_roof_self_intersect). Use `roof polygon` for
+either.
+
+| refusal | when |
+| --- | --- |
+| [`E_ROOF_OVERHANG`](error-codes.md#e_roof_overhang) | the projection is zero or negative |
+| [`E_ROOF_AMBIGUOUS`](error-codes.md#e_roof_ambiguous) | no closed `exterior` wall to infer from, or several |
+| [`E_ROOF_WALL`](error-codes.md#e_roof_wall) | `wall <id>` is unknown, or is not a closed ring |
+| [`E_ROOF_CURVED`](error-codes.md#e_roof_curved) | the ring has an `arc` edge |
+| [`E_ROOF_SELF_INTERSECT`](error-codes.md#e_roof_self_intersect) | the outline crosses itself |
+| [`E_ROOF_POLY_DEGENERATE`](error-codes.md#e_roof_poly_degenerate) | fewer than 3 effective vertices after duplicates and collinear points are dropped |
+| [`E_ROOF_PLACEMENT`](error-codes.md#e_roof_placement) | written inside a `component` body |
+
+**It is drawing-only, by decision.** There is no `describe()` key, no lint rule, no Plan JSON
+projection and no schedule row — a plan view of an overhang carries no pitch, no ridge and no
+fall, so none of those could be honest about it, and a `roof` in `describe()` would invite a
+reader to compute a roof area from a horizontal projection. The one thing it *does* join is
+the drawing **bounds**: the page (and, on a `paper` plan, the auto-fit scale) has to contain
+the eaves. In a multi-storey plan it draws on the storey it is declared in.
+
+`roof` is a plan-level (or `level`-level) statement. Inside a `component` it is
+[`E_ROOF_PLACEMENT`](error-codes.md#e_roof_placement): a roof belongs to a building, not to a
+reusable part of one, and two `place`d copies would each derive an outline and draw two roofs.
+
+```arch
+plan "Bungalow" {
+  units mm
+  north up
+
+  wall id=shell exterior thickness 200 { (0,0) (9000,0) (9000,6000) (0,6000) close }
+  room id=r1 at (0,0) size 9000x6000 label "House" uses living
+  door id=front on shell at 4500 width 900
+
+  roof overhang 600
+}
+```
+
+### Void — a hole in the floor (v1.29)
+
+```
+void [id=<id>] at (x,y) size <w>x<h>
+```
+
+A stair well, a double-height living room, an atrium: the part of this storey's floor plate
+where there is no floor. Drawn as the conventional dashed rectangle crossed by both
+diagonals, on the `A-FLOR-OVHD` CAD layer. `at` is the **top-left corner**, like a room's.
+
+Three behaviours that are invisible from the syntax:
+
+- **It obstructs circulation.** You cannot walk across a hole, so the
+  [navigation grid](analysis.md#circulation--how-a-person-walks-the-plan) blocks the cells
+  inside it — but the body-radius halo is lifted on **every** edge, because you can stand at
+  the railing. (A `stair` lifts its halo only outside its entry edges; a void lifts all four.)
+- **It does not reduce the room's area.** That number is the floor area of the *room*, and it
+  is what `describe()`, `schedule rooms` and the drawn area label all report; deducting a well
+  from it would leave the drawing and the table disagreeing about a figure neither measures.
+  `describe --json` lists every void under `voids[]` with `id`, `at`, `size` and the room it
+  falls in, which is where a net figure comes from.
+- **The room it belongs to is found from the room's FLOOR, not its bounding box.** A void in
+  the notch of a U-shaped `room polygon` is inside that room's box and outside its floor, and
+  is reported as belonging to no room (`"room": null`).
+
+Rectangle-only in v1; a non-positive extent is
+[`E_VOID_SIZE`](error-codes.md#e_void_size). A polygonal void is deferred by name — every
+consumer here (the nav grid, the room attribution, the `place` transform) is written on a
+rectangle. Inside a `component` it is allowed and transforms exactly, like a `column`.
+
+```arch
+plan "Landing" {
+  units mm
+  north up
+
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }
+  room id=landing at (0,0) size 6000x5000 label "Landing" uses circulation
+  door id=d on shell at 3000 width 900
+
+  void id=gallery at (600,600) size 1800x2400
+}
+```
+
 ### Title block
 
 ```

@@ -74,7 +74,7 @@ import { doorLandingRect, rectOverlapAmounts, wallIntrusion } from "./geometry/r
 import { segmentsOfWall, doorSwing, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
 import { DEFAULT_RULESET } from "./lint.js";
 import { defaultFootprint, orientationMatters, requiresWall } from "./fixtures-catalog.js";
-import type { ResolvedPlan, RWall, RDoor, RRoom, ROpening, RFurniture } from "./ir.js";
+import type { ResolvedPlan, RWall, RDoor, RRoom, ROpening, RFurniture, RVoid } from "./ir.js";
 import type { ComponentDef, FurnitureAnchor, FurnitureNode, FurniturePlace, PlanNode, Statement } from "./ast.js";
 import type { Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
@@ -1317,6 +1317,7 @@ function repairStorey(
       DEFAULT_TOL,
       undefined,
       verticalsOf(ir),
+      ir.elements.filter((e): e is RVoid => e.kind === "void"),
     );
   };
   // Baseline circulation of the starting arrangement; updated in place as pieces move so

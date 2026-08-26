@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**74 errors** · **42 warnings**
+**82 errors** · **42 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -64,6 +64,13 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_RANGE_LIMIT`](#e_range_limit) | error | Range too large. |
 | [`E_RECURSION`](#e_recursion) | error | Component recursion too deep. |
 | [`E_REDEF`](#e_redef) | error | Name already defined in this scope. |
+| [`E_ROOF_AMBIGUOUS`](#e_roof_ambiguous) | error | `roof overhang` cannot tell which wall ring to follow. |
+| [`E_ROOF_CURVED`](#e_roof_curved) | error | `roof overhang` on a wall with a curved edge. |
+| [`E_ROOF_OVERHANG`](#e_roof_overhang) | error | `roof overhang` is zero or negative. |
+| [`E_ROOF_PLACEMENT`](#e_roof_placement) | error | `roof` used inside a component body. |
+| [`E_ROOF_POLY_DEGENERATE`](#e_roof_poly_degenerate) | error | `roof polygon` outline has fewer than 3 effective vertices. |
+| [`E_ROOF_SELF_INTERSECT`](#e_roof_self_intersect) | error | The roof outline crosses itself. |
+| [`E_ROOF_WALL`](#e_roof_wall) | error | `roof overhang … wall <id>` names a wall that cannot carry a roof. |
 | [`E_ROOM_ALIGN`](#e_room_align) | error | Unknown relational alignment edge. |
 | [`E_ROOM_ALIGN_AXIS`](#e_room_align_axis) | error | Relational alignment edge belongs to the other axis. |
 | [`E_ROOM_POLY_DEGENERATE`](#e_room_poly_degenerate) | error | Polygon room has fewer than three effective vertices. |
@@ -80,6 +87,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_UNKNOWN_FN`](#e_unknown_fn) | error | Unknown function. |
 | [`E_UNKNOWN_REF`](#e_unknown_ref) | error | Unknown reference. |
 | [`E_VERT_SIZE`](#e_vert_size) | error | Vertical circulation must have a positive size. |
+| [`E_VOID_SIZE`](#e_void_size) | error | A floor void must have a positive size. |
 | [`E_WALL_THICKNESS`](#e_wall_thickness) | error | Wall must have a positive thickness. |
 | [`E_WHILE_LIMIT`](#e_while_limit) | error | `while` exceeded its iteration cap. |
 | [`E_WINDOW_WIDTH`](#e_window_width) | error | Window must have a positive width. |
@@ -801,6 +809,96 @@ let x = 1
 let x = 2   # error: redefinition
 ```
 
+## E_ROOF_AMBIGUOUS
+
+*error* — `roof overhang` cannot tell which wall ring to follow.
+
+**Cause.** The `overhang` sugar offsets ONE closed wall ring, and with no `wall <id>` clause it infers that ring as the plan's single closed `exterior` wall. The plan has none, or has more than one, so there is nothing to infer — and picking the first would silently draw a roof over part of the building.
+
+**Fix.** Name the ring (`roof overhang 600 wall <id>`), or state the outline yourself with `roof polygon (x,y) (x,y) (x,y) …`.
+
+```arch static
+plan "H" {
+  units mm
+  room id=r1 at (0,0) size 4000x3000
+  roof overhang 600   # error: no closed exterior wall to follow
+}
+```
+
+## E_ROOF_CURVED
+
+*error* — `roof overhang` on a wall with a curved edge.
+
+**Cause.** The named ring has an `arc` edge. Offsetting a curve is a different construction from mitring two straight faces (concentric radii, plus the cases where the offset radius passes through zero), and faceting it would put a tessellation in the one place a reader is entitled to read a true parallel.
+
+**Fix.** State the outline explicitly with `roof polygon …`, or follow a straight-edged wall ring instead.
+
+```arch static
+wall id=drum exterior thickness 200 { (0,0) arc (6000,0) radius 4000 (6000,4000) (0,4000) close }
+roof overhang 600 wall drum   # error: arc edge
+```
+
+## E_ROOF_OVERHANG
+
+*error* — `roof overhang` is zero or negative.
+
+**Cause.** An overhang is a distance the roof projects PAST the wall's outer face, so it must be positive. Zero would draw the outline on the wall face (say nothing instead), and a negative value would draw it inside the building.
+
+**Fix.** Give a positive projection in mm, e.g. `roof overhang 600`.
+
+```arch static
+roof overhang 0   # error: must be positive
+```
+
+## E_ROOF_PLACEMENT
+
+*error* — `roof` used inside a component body.
+
+**Cause.** A roof belongs to a building, not to a reusable part of one: `roof overhang` is offset from the plan's closed exterior wall ring, and a component is authored in its own local frame with no such ring. Two `place`d copies would each derive an outline and the plan would draw two roofs.
+
+**Fix.** Move the `roof` line out to the plan body (or into the `level` block it belongs to).
+
+```arch static
+component wing() { roof overhang 600 }   # error: only allowed at plan level
+```
+
+## E_ROOF_POLY_DEGENERATE
+
+*error* — `roof polygon` outline has fewer than 3 effective vertices.
+
+**Cause.** After removing duplicate and straight-through (collinear) points the ring encloses no area, so it is a line or a point rather than a roof outline.
+
+**Fix.** Give at least three vertices that actually turn a corner.
+
+```arch static
+roof polygon (0,0) (4000,0) (8000,0)   # error: all three are collinear
+```
+
+## E_ROOF_SELF_INTERSECT
+
+*error* — The roof outline crosses itself.
+
+**Cause.** Either the `roof polygon` ring was written as a bow-tie, or the derived `overhang` offset is wide enough to swallow a notch in the wall it follows (a 900 mm eave across a 600 mm light well) and the pushed-out faces cross. Neither encloses a single area.
+
+**Fix.** Reorder the vertices, or reduce the overhang — or state the outline explicitly with `roof polygon …`.
+
+```arch static
+roof polygon (0,0) (4000,4000) (4000,0) (0,4000)   # error: bow-tie
+```
+
+## E_ROOF_WALL
+
+*error* — `roof overhang … wall <id>` names a wall that cannot carry a roof.
+
+**Cause.** The named wall is not declared in this plan, or it is not a closed ring. An overhang is offset from a loop; an open polyline has no inside to be outside of.
+
+**Fix.** Check the id, and give the wall a `close` so its points form a ring.
+
+```arch static
+wall id=w1 exterior thickness 200 { (0,0) (8000,0) }
+roof overhang 600 wall w1   # error: not a closed ring
+```
+
 ## E_ROOM_ALIGN
 
 *error* — Unknown relational alignment edge.
@@ -998,6 +1096,18 @@ let x = y + 1   # error if `y` is undefined
 
 ```arch static
 stair id=s at (0,0) size 900x0 dir up   # error: zero depth
+```
+
+## E_VOID_SIZE
+
+*error* — A floor void must have a positive size.
+
+**Cause.** A `void`'s width or height evaluated to zero or a negative number, so there is no opening in the floor plate to draw or to route circulation around.
+
+**Fix.** Give it a positive `size W x H` — the hole's extent in plan.
+
+```arch static
+void id=well at (2000,1000) size 0x3000   # error: zero width
 ```
 
 ## E_WALL_THICKNESS

@@ -107,6 +107,7 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "openings",
   "furniture",
   "verticals",
+  "voids",
   "access",
   "circulation",
   "totals",
@@ -117,6 +118,16 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "levels",
   "vertical",
 ];
+
+/**
+ * Top-level `describe()` keys that are OPTIONAL and vary from storey to storey.
+ *
+ * `describe --level N` spreads that storey's facts over the whole-plan ones, so a key
+ * this storey does not have must be DELETED rather than left standing from the previous
+ * spread — otherwise the narrowed read reports another floor's facts under its own name.
+ * Exported so `test/cli-levels.test.ts` can hold each one to that rule.
+ */
+export const PER_STOREY_OPTIONAL_KEYS = ["verticals", "voids"] as const satisfies readonly (keyof SceneSummary)[];
 
 /** Tally a {@link FreedomReport} bucket without fighting the placement unions. */
 const bump = (bucket: object, key: string): void => {
@@ -245,8 +256,12 @@ function narrowToLevel(s: SceneSummary, level: number): SceneSummary {
   // Optional per-storey keys are absent from `facts` when THIS storey has none, so the
   // spread would leave the previous top-level value (page 1's) standing and the narrowed
   // read would lie. Whole-BUILDING keys (`vertical`) legitimately survive; per-storey
-  // ones must not. `verticals` is the only key that genuinely varies per storey today.
-  if (facts.verticals === undefined) delete out.verticals;
+  // ones must not. A LIST rather than one `if`, because there are two of these now
+  // (`voids` joined in v1.29) and the failure mode of forgetting the next one is silent:
+  // the narrowed read reports the wrong storey's facts and says nothing.
+  for (const k of PER_STOREY_OPTIONAL_KEYS) {
+    if (facts[k] === undefined) delete out[k];
+  }
   return out;
 }
 

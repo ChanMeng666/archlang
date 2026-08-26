@@ -95,6 +95,8 @@ export const ELEMENT_GRAMMAR: Record<string, string> = {
   elevator:
     "elevator [id=<name>] at (x,y) size <W>x<H>   # a lift shaft: car rectangle + crossed diagonals. No `dir`. Same same-id-on-two-levels shaft identity as `stair`",
   escalator: `escalator [id=<name>] at (x,y) size <W>x<H> dir ${VERTICAL_DIRS.join("|")}   # a moving stair: chevrons along the run + an UP/DN arrow; both narrow ends are entries. Same shaft identity as \`stair\``,
+  roof: `roof (overhang <mm> [wall <id>] | polygon (x,y) (x,y) (x,y) …)   # the eaves line: ONE dashed outline of what oversails. DRAWING-ONLY — no \`describe()\` key, no lint rule — though it does grow the page. \`overhang\` offsets a CLOSED wall ring outward by thickness/2 + <mm>, mitred: the named \`wall\`, else the plan's one closed \`exterior\` wall (none/several = E_ROOF_AMBIGUOUS, unknown/unclosed = E_ROOF_WALL, <= 0 = E_ROOF_OVERHANG). REFUSES rather than approximating — an \`arc\` edge is E_ROOF_CURVED, an offset that crosses itself E_ROOF_SELF_INTERSECT — so write \`polygon\` instead: the ring verbatim, implicitly closed, >= 3 effective vertices (E_ROOF_POLY_DEGENERATE). Not inside a \`component\` (E_ROOF_PLACEMENT)`,
+  void: `void [id=<name>] at (x,y) size <W>x<H>   # a hole in THIS storey's floor (stair well, atrium, double-height room): dashed rectangle + both diagonals, \`at\` = TOP-LEFT. It OBSTRUCTS circulation — you cannot walk across it, though you may stand at its edge — and does NOT reduce the containing room's area; \`describe --json\`'s \`voids[]\` gives the extent to subtract. Rectangle-only (E_VOID_SIZE)`,
 };
 
 /**
@@ -167,18 +169,19 @@ export const SETTING_GRAMMAR: Record<string, string> = {
  * cover `KEYWORDS.attribute`.
  */
 /*
- * Also what the `## Keyword reference` section's **Element clauses** bullet prints.
+ * It used to ALSO be printed, whole, as the `## Keyword reference` section's **Element
+ * clauses** bullet — 48 bare words a few lines below the element lines that already
+ * spell each one out. That bullet is gone (v1.29), and the reason it could go is
+ * structural rather than editorial: `assertScriptingKeywordsTaught` is now run over this
+ * list too, so every entry is PROVED to appear in a code span or fence elsewhere in the
+ * document. Before that guard, the partition check only established that each attribute
+ * was CLASSIFIED as a clause — never that the classification was true — so the bullet was
+ * the only thing keeping an unrendered clause on the page at all.
  *
- * That bullet used to print `KEYWORDS.attribute` whole, which re-listed the nine
- * `SETTING_GRAMMAR` keys — `units`, `grid`, `paper`, `scale`, `north`, `dims`,
- * `accTitle`, `accDescr` — as bare words a few lines below their own CONCRETE,
- * compilable grammar line. That is the same redundancy the section header already
- * excludes elements for, and it is PROVABLE rather than a judgement call: the partition
- * guard in `renderLlmSpec` asserts `SETTING_GRAMMAR ⊎ CLAUSE_ATTRIBUTES` is exactly
- * `KEYWORDS.attribute`, so every attribute is still on the page — the settings with
- * their syntax, the clauses in this bullet. Nothing became undocumented; ~100 chars of
- * a hard, per-request token budget came back (see test/llm-spec-drift.test.ts's cap,
- * whose standing instruction is TRIM DUPLICATION BEFORE RAISING).
+ * ~475 characters of a hard, per-request token budget came back with it (see
+ * test/llm-spec-drift.test.ts's cap, whose standing instruction is TRIM DUPLICATION
+ * BEFORE RAISING). If the new guard goes red, render the clause in its element's grammar
+ * line — do not bring the bullet back.
  */
 export const CLAUSE_ATTRIBUTES: readonly string[] = [
   "material",
@@ -233,6 +236,9 @@ export const CLAUSE_ATTRIBUTES: readonly string[] = [
   // against `KEYWORDS.attribute` stays exhaustive.
   "street",
   "hemisphere",
+  // The `roof overhang <mm>` clause introducer — taught by `ELEMENT_GRAMMAR.roof`, which
+  // is where both of its spellings live, so it needs no line of its own.
+  "overhang",
 ];
 
 /**
@@ -353,8 +359,21 @@ export function assertVocabRendered(line: string, label: string, values: readonl
  * Word boundaries are hyphen-aware, so `set` never matches inside `offset` and `if`
  * never inside `if`-containing identifiers. Exported so `test/spec-forms.test.ts` can
  * prove it fires.
+ *
+ * `what`/`remedy` parameterise the failure message, because {@link CLAUSE_ATTRIBUTES} is
+ * now held to this same check — which is what let the `## Keyword reference` section's
+ * **Element clauses** bullet be deleted. That bullet re-listed 48 attribute words as bare
+ * names a few lines below the element line that already spells each one out, and the
+ * partition guard in {@link renderLlmSpec} only proved every attribute was CLASSIFIED,
+ * never that it was RENDERED — so the bullet was categorically redundant and not provably
+ * so. It is provably so now, and the ~475 characters went back into the size budget.
  */
-export function assertScriptingKeywordsTaught(doc: string, keywords: readonly string[]): void {
+export function assertScriptingKeywordsTaught(
+  doc: string,
+  keywords: readonly string[],
+  what = "SCRIPTING_KEYWORDS",
+  remedy = "Either write the syntax into the Scripting section, or give the keyword a STATEMENT_GRAMMAR line.",
+): void {
   // Cut the generated keyword-reference bullets: they are rendered FROM the list being
   // checked, so they are not evidence of anything.
   const body = doc.replace(/\n## Keyword reference\n[\s\S]*?(?=\n## )/, "\n");
@@ -365,11 +384,10 @@ export function assertScriptingKeywordsTaught(doc: string, keywords: readonly st
   const missing = keywords.filter((k) => !new RegExp(`(?<![\\w-])${k}(?![\\w-])`).test(code));
   if (missing.length > 0) {
     throw new Error(
-      `SCRIPTING_KEYWORDS claims the prose sections teach ${missing.join(", ")}, but ` +
+      `${what} claims the document teaches ${missing.join(", ")}, but ` +
         `${missing.length === 1 ? "it appears" : "they appear"} in no code span or fence outside the ` +
         `generated keyword-reference bullet — which is rendered from this very list and so proves ` +
-        `nothing. Either write the syntax into the Scripting section, or give the keyword a ` +
-        `STATEMENT_GRAMMAR line.`,
+        `nothing. ${remedy}`,
     );
   }
 }
@@ -614,7 +632,6 @@ ${elementLines}
 (Elements and plan settings are fully specced above; these are the rest.)
 
 - **Settings / control:** ${bullet(KEYWORDS.control)}
-- **Element clauses:** ${bullet(CLAUSE_ATTRIBUTES)}
 - **Enums / values:** ${bullet(KEYWORDS.enum)}
 
 ## CLI loop (how an agent drives it)
@@ -688,6 +705,21 @@ ${exampleBlocks}
   // covers these"), so it is checked against the document it claims about — last, once
   // the text exists. It was false for `theme` and `style` until the bullet above.
   assertScriptingKeywordsTaught(doc, SCRIPTING_KEYWORDS);
+
+  // Drift guard #6: the same check for `CLAUSE_ATTRIBUTES`, whose claim is "this is a
+  // clause of an element line, so that line already teaches it". The partition guard
+  // above only proves each attribute is CLASSIFIED; this proves the classification is
+  // TRUE. It is what makes the `## Keyword reference` **Element clauses** bullet
+  // redundant rather than merely repetitive, and that bullet is now gone — so if this
+  // ever goes red the answer is to render the clause in its element's grammar line, not
+  // to bring the bullet back.
+  assertScriptingKeywordsTaught(
+    doc,
+    CLAUSE_ATTRIBUTES,
+    "CLAUSE_ATTRIBUTES",
+    "Render the clause in the grammar line of the element that takes it — or, if it now leads a " +
+      "statement, move it to SETTING_GRAMMAR.",
+  );
   return doc;
 }
 

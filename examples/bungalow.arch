@@ -136,6 +136,20 @@ plan "Bungalow" {
   furniture bed   at (6200,200)  size 1500x2000 label "Bed"
   furniture bed   at (9200,200)  size 1500x2000 label "Bed"
 
+  # ---- the eaves ------------------------------------------------------------
+  # A bungalow is mostly roof, and on a hot plot it is the eave that shades the north
+  # glazing rather than any glass. One line draws it: the outline is DERIVED by pushing
+  # `shell`'s ring out by half its thickness plus 600, mitred at each corner, so it moves
+  # if the walls do and there is no second set of coordinates to keep in step. `shell` is
+  # the only closed `exterior` wall here, so it needs no naming — write
+  # `roof overhang 600 wall shell` if a second one is ever added, or the plan gets
+  # `E_ROOF_AMBIGUOUS` rather than a guess.
+  #
+  # It draws and nothing more: no `describe()` key, no lint rule, no schedule row. What
+  # it does change is the PAGE — the drawing extent now includes the eaves, so the sheet
+  # grows to hold them.
+  roof overhang 600
+
   title {
     project "Suburban Bungalow"
     drawn_by "ArchCanvas"

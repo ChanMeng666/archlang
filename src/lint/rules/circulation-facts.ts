@@ -27,6 +27,7 @@ function circulationOf(ctx: LintContext): CirculationModel | null {
     ctx.rules.tolMm,
     undefined,
     ctx.verticals,
+    ctx.voids,
   );
   modelCache.set(ctx, model);
   return model;

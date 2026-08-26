@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe as suite, expect, it } from "vitest";
+import { PER_STOREY_OPTIONAL_KEYS } from "../src/cli/commands-analyze.js";
 
 /**
  * The multi-storey CLI surface (v1.21).
@@ -173,6 +174,44 @@ suite("v1.21 CLI — describe --level is a display filter", () => {
     expect(both.selected_rooms).toEqual(["bath"]);
     // A room that exists only on the OTHER storey is a usage error, not an empty result.
     expect(run(["describe", plan, "--level", "2", "--room", "kitchen"]).status).toBe(3);
+  });
+
+  /**
+   * The narrowing SPREADS one storey's facts over the whole-plan ones, so an optional key
+   * that storey does not have must be DELETED — otherwise the previous spread's value
+   * stands and the narrowed read reports another floor's facts under its own name. The
+   * list is `PER_STOREY_OPTIONAL_KEYS`, and this drives it rather than naming keys, so a
+   * third one added there is checked here for free.
+   */
+  it("a per-storey key absent from the selected storey is DROPPED, not inherited", () => {
+    const dir = mkdtempSync(join(tmpdir(), "archlang-levels-"));
+    const plan = join(dir, "perstorey.arch");
+    // Level 1 has both optional per-storey keys; level 2 has neither.
+    writeFileSync(
+      plan,
+      `plan "P" {
+  units mm
+  level 1 {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    room id=r1 at (0,0) size 8000x6000 label "Hall" uses hall
+    door id=front on shell at 4000 width 900
+    stair id=s at (500,500) size 900x2600 dir up
+    void id=well at (5000,1000) size 1200x1200
+  }
+  level 2 {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    room id=r2 at (0,0) size 8000x6000 label "Loft" uses storage
+    door id=hatch on shell at 4000 width 900
+  }
+}`,
+      "utf8",
+    );
+    const one = JSON.parse(run(["describe", plan, "--level", "1", "--json"]).stdout);
+    const two = JSON.parse(run(["describe", plan, "--level", "2", "--json"]).stdout);
+    for (const k of PER_STOREY_OPTIONAL_KEYS) {
+      expect(one[k], `level 1 declares a ${k} and the narrowed read lost it`).toBeDefined();
+      expect(two[k], `level 2 declares no ${k}, so the narrowed read must not report one`).toBeUndefined();
+    }
   });
 });
 
