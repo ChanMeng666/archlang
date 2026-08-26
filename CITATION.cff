@@ -4,9 +4,14 @@
 # "Cite this repository" panel from it, the Zenodo/GitHub integration takes a release's
 # archive metadata from it, and Zotero imports it directly.
 #
-# NOT drift-gated, unlike everything under `paper/` — the `version` and `date-released`
-# fields below are release facts, and they move when a release moves. Update them in the
-# release checklist (CONTRIBUTING.md), not by regeneration.
+# NOT drift-gated — the `version` and `date-released` fields below are release facts, and
+# they move when a release moves. Update them in the release checklist (CONTRIBUTING.md),
+# not by regeneration.
+#
+# The papers that cite this software live in the PRIVATE repository
+# `ChanMeng666/archlang-paper` (extracted from this repo's `paper/` on 2026-08-26; it must
+# stay private until acceptance, since one target is a double-anonymous submission). The
+# deposit sequence referenced below is `ZENODO.md` at that repository's root.
 cff-version: 1.2.0
 message: "If you use ArchLang in academic work, please cite it as below."
 title: ArchLang
@@ -24,7 +29,7 @@ authors:
     email: chanmeng.dev@gmail.com
     # TODO before the Zenodo deposit: add `orcid: "https://orcid.org/0000-...."`.
     # Zenodo validates creators against ORCID, and it is the cheapest thing an
-    # unaffiliated author can do for attribution. See paper/ZENODO.md.
+    # unaffiliated author can do for attribution. See ZENODO.md in archlang-paper.
 version: 1.26.1
 date-released: "2026-08-13"
 license: MIT
@@ -42,7 +47,7 @@ keywords:
   - SVG
 # TODO after the first Zenodo deposit: record both DOIs here. The concept DOI resolves to
 # the latest version and is the one to cite; the version DOI names one archived release.
-# See paper/ZENODO.md for the deposit sequence.
+# See ZENODO.md in the archlang-paper repository for the deposit sequence.
 #
 # identifiers:
 #   - description: The concept DOI for all archived versions of ArchLang
