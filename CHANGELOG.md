@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the room-furniture vocabulary, and the glyph layer it will be drawn on
+
+**Thirty-four new fixture categories in twenty-four families** (`arch manifest` now advertises 51
+across 32) — `bed`, `double_bed`, `nightstand`,
+`wardrobe` (`robe`/`closet`), `sofa` (`couch`), `armchair`, `coffee_table`, `tv_unit`, `table`,
+`dining_table`, `chair`, `stool` (`barstool`), `bench`, `desk`, `office_chair`, `bookshelf`
+(`bookcase`/`shelf`), `oven`, `dishwasher`, `island`, `upper_cabinet` (`wall_cabinet`), `washer`
+(`washing_machine`), `dryer`, `plant` (`planter`), `car`. These are words the shipped examples
+already use and that fell through to "unknown category" until now: no footprint, no wall
+requirement, no lint semantics. **Nothing new is DRAWN yet** — every new family renders as the
+labelled rectangle it already did, pinned by `test/fixture-byte-identity.test.ts` as an equality
+against an unknown word.
+
+**`requiresWall` now means SERVICES, and only services.** Every category that carried the flag
+before was a plumbing or kitchen fixture, so its two jobs — "this needs a wall behind it"
+(`W_FIXTURE_FLOATING`) and, through `orientationMatters`, the derived quarter-turn and
+`W_FIXTURE_BACK_TO_ROOM` — never had to be told apart. Room furniture separates them, and the
+separation was measured rather than decided: flagging the furniture pieces raised **23 new warnings
+across nine shipped plans**, the largest group being **twelve** floating-stack warnings on
+`examples/library.arch`, whose stacks are free-standing runs mid-floor. `W_FIXTURE_FLOATING`'s own
+remedy line reads "supply/waste/venting runs in the wall", which is simply false about a bookcase.
+So only the plumbed and vented white goods carry the flag, plus `upper_cabinet`, which hangs off a
+wall by definition. A 550 mm wardrobe clearance was dropped for the same reason: it warned on
+`examples/garden-loft.arch`, whose 3200 mm bedroom **cannot** satisfy it (600 + 550 + 2000 exceeds
+the 3100 mm of clear depth), and the field's own calibration rule is "tight enough that a normal
+layout never trips it". **Net lint change across every shipped example, eval golden and fault
+fixture: zero**, swept before and after.
+
+The consequence to know: a bed anchored to a room edge gets **no derived quarter-turn yet**. That is
+the honest answer while its symbol is a stub — a plain rectangle has no back, so the rotation would
+be invisible and `W_FIXTURE_BACK_TO_ROOM`'s advice unverifiable from the drawing. `against wall` is
+unaffected; `placeAgainst` takes its rotation from the wall for every category.
+
+**`src/elements/glyph-lib.ts`** — the drawing vocabulary the symbols are built from: `poly`, `seg`,
+`dot`, `ring`, `arcSeg`, the `ellipsePoly`/`roundedRectPoly` helpers moved up verbatim, and
+`insetRect`/`insetRectXY`. Every factory sets **both** `paint.width` and a semantic `lineWeight`,
+because the backends disagree about which they read — the SVG serializer prefers the name, the PDF
+backend reads `paint.width` and nothing else, so setting one alone drops a glyph's stroke width from
+one export. `weightWidth` moved out of `backends/svg.ts` into `scene.ts` beside `LINE_WEIGHTS` so
+both callers resolve one ramp. The eight shipped families moved verbatim onto it, into
+`glyphs-bath.ts` and `glyphs-kitchen.ts`; `glyphs-bedroom.ts`, `glyphs-living.ts` and
+`glyphs-misc.ts` land as stubs. `fixtures-glyphs.ts` keeps the vocabulary table and the dispatch
+switch, and `FIXTURE_CATEGORIES` + the new `CANONICAL_FIXTURES` are now **derived** from one
+`FIXTURE_FAMILIES` table rather than a hand-flattened list.
+
+### Fixed
+
+- **`rotateNode` passed an `arc` through unrotated.** A glyph's straight linework would turn and its
+  curve stay facing north, with nothing to fail. Unreachable until `glyph-lib` handed every glyph an
+  `arcSeg`; the switch is now exhaustive with no `default`, the guard `pdf.ts`'s `drawNode` grew
+  after poché fell through its missing one. `test/furniture-curves-backends.test.ts` proves, by
+  invocation rather than by reading, that a furniture-pass `arc` and `circle` reach all four
+  backends.
+- **`spec.llm.md`'s size-optional fixture list was retyped into the generator**, eight names and an
+  ellipsis, and had already lost `lavatory` and `oven`. It is now interpolated from
+  `CANONICAL_FIXTURES` filtered by `defaultFootprint` — exactly the predicate
+  `furniture.resolve()` applies — guarded by `assertVocabRendered`, and **executed**: every named
+  category must resolve `against wall` with no `size`, every unnamed one must raise `E_FURN_SIZE`.
+- **`legendEntries` listed a row per catalogued category present**, on the assumption that
+  catalogued and drawn are the same set. They no longer are, so it filters on `hasFixtureGlyph` —
+  which asks the glyph rather than reading a flag beside it, so filling a stub brings its legend row
+  with it.
+- `examples/courtyard-house.arch`'s washer now carries `rotate 90`, putting the machine's back —
+  where its supply and waste run — on the east wall it stands against. Nothing in the drawing moves
+  (it is a plain rectangle); the SVG's vertex order does.
+
 ### Changed — repository contents only; no `src/`, no language, no published artifact
 
 **The papers moved out, to the private repository `ChanMeng666/archlang-paper`.** `paper/` (56
