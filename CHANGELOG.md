@@ -7,6 +7,149 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Two independent tracks, integrated on `feat/v129`: **two new drawing-only elements** (`roof` and
+`void`) and **four new furniture families** carrying one new piece of catalog semantics
+(`underlay`). Nothing here removes or renames anything, and no existing plan changes bytes unless
+its own source gained one of the new statements.
+
+### Added — `roof`, the eaves projection line
+
+```
+roof overhang <mm> [wall <id>]
+roof polygon (x,y) (x,y) (x,y) …
+```
+
+One dashed outline of what oversails, on the `A-ROOF` CAD layer. **Drawing-only**: it adds no
+`describe()` key, no lint rule and no schedule row, and `planToJson` is byte-unchanged by it — but
+it *does* contribute to the drawing extent (see the bounds note below).
+
+`overhang` offsets a **closed** wall ring outward by `thickness/2 + <mm>`, mitred in closed form
+(line–line intersection, orientation from the shoelace sign), so it is exact at any angle and on
+either winding. The ring is the named `wall`, else the plan's single closed `exterior` wall. It
+**refuses rather than approximates**, with seven catalogued codes:
+
+| Code | Raised when |
+|---|---|
+| `E_ROOF_AMBIGUOUS` | no closed `exterior` wall, or several — name one, or use `roof polygon` |
+| `E_ROOF_WALL` | `wall <id>` names a wall that is unknown or not `close`d |
+| `E_ROOF_OVERHANG` | the projection is zero or negative |
+| `E_ROOF_CURVED` | the ring has an `arc` edge — the offset of a curve is deferred, so state the outline instead |
+| `E_ROOF_SELF_INTERSECT` | the offset ring crosses itself (an overhang wider than a re-entrant notch) |
+| `E_ROOF_POLY_DEGENERATE` | `roof polygon` has fewer than 3 effective vertices |
+| `E_ROOF_PLACEMENT` | `roof` written inside a `component` body |
+
+### Added — `void`, a hole in this storey's floor plate
+
+```
+void [id=<name>] at (x,y) size <W>x<H>
+```
+
+A stair well, an atrium, the gallery over a double-height room. Drawn as the conventional dashed
+rectangle crossed by both diagonals, on its own `A-FLOR-OVHD` layer (AIA's overhead/open floor
+layer), so a CAD user can freeze the voids without freezing the furniture. `E_VOID_SIZE` on a
+non-positive size; rectangle-only in v1 — a polygonal void is deferred by name, not silently.
+
+Three semantics worth stating, because each could have gone the other way:
+
+- **It obstructs circulation, with its walkable halo suppressed on every edge.** You cannot walk
+  across a hole, so its cells are blocked — but you can stand at the railing, so the body-radius
+  halo is lifted on all four sides. That is the same `VerticalObstacle.open` mechanism a stair's
+  entry edge already uses; blocking the approach too would report a landing beside an atrium as
+  unreachable.
+- **It does NOT subtract from the containing room's area.** A room's area is its floor area, and it
+  is the one number `describe()`, `schedule rooms` and the drawn area label all report. `describe
+  --json` gains a `voids[]` key (`id`, `at`, `size`, and the `room` whose floor holds the opening's
+  **centre** — through the poly-aware containment test, never a bounding box) so a consumer needing
+  the net figure can subtract it. **Area subtraction under a void is deferred by name.**
+- **It rides the `furniture` render pass**, so the label-relocation post-pass already treats it as
+  something a room name must not sit under — no new rule needed for that.
+
+### Added — four furniture families, and the `underlay` mechanic
+
+`rug` (`carpet`), `sofa_l` (`corner_sofa`), `piano` (`grand_piano`) and `sun_lounger` (`lounger`).
+`sofa_l` is the only one with a catalogued footprint (2600 × 1600, the whole bounding rectangle of
+the L); the other three carry none on purpose — a rug has no conventional size, and deriving a
+`piano`'s rotation from a wall would face its keyboard into the wall.
+
+**`underlay` is the new catalog flag**, and the rug is the whole reason for it: a piece that lies
+flat on the floor, that other furniture stands on and people walk over. **One predicate,
+`solidFurniture()`, is shared by all four consumers**, so the overlap rule, the clearance rule and
+the two walkability grids can never disagree about what a rug is:
+
+- `W_FURNITURE_OVERLAP` skips an underlay ⇄ non-underlay pair (a sofa on a rug is the arrangement,
+  not a collision). **Two rugs overlapping each other still warn.**
+- `W_FURN_CLEARANCE` never counts an underlay as blocking a fixture's frontal use-space.
+- The nav grid (`analyze/circulation.ts`) and the per-room flood fill (`analyze/occupancy.ts`) both
+  drop it from their obstacle list, so a rug across the only route into a room does not seal it off.
+- `W_FURNITURE_WALL_COLLISION` deliberately **still** applies — a rug drawn through a wall solid is a
+  drawing error whatever you can walk on.
+
+The rug is also the only symbol drawn with **no fill at all**, so paint order cannot matter: a rug
+written after the sofa standing on it still cannot hide it.
+
+### Changed — examples whose bytes moved
+
+Exactly three, each attributed to its own source edit before its snapshot and golden were re-blessed:
+
+- **`examples/bungalow.arch`** gains `roof overhang 600`. Its one new element is an `A-ROOF` polygon
+  at `-700,-700 12700,-700 12700,9200 -700,9200`; every other layer's element count and every
+  geometry coordinate are unchanged, and the source with that single line removed renders
+  **byte-identical** to the previous release.
+- **`examples/two-storey.arch`** gains `void id=gallery` on level 2. **L1 is byte-identical**; L2
+  gains exactly three elements on `A-FLOR-OVHD` and its A3 sheet does not re-fit.
+- **`examples/furnished-flat.arch`** takes up the four new families (and `examples/lib/furniture.arch`
+  grows to match): +32 elements on `A-FURN`, viewBox unchanged. Its lint goes from three
+  `W_FURNITURE_OVERLAP` warnings to none — that is the `underlay` exemption working, since the three
+  pieces now standing on the rug used to have no word for what they were standing on.
+
+**Net lint change across all 25 untouched examples: zero** — swept before and after against a build
+of the previous release, over `lint()`, `describe()` and the rendered SVG alike.
+
+### Bounds growth — the one thing a `roof` can change about a plan that is not the roof
+
+A `roof` contributes to the drawing extent, and **on a plan with no `paper` that rescales the whole
+drawing's chrome**. This is the pre-existing unpapered-plan rule, not a roof behaviour: with no
+sheet, `refDim = max(drawW, drawH)` and every stroke width, font size and margin is a fixed fraction
+of it (`src/scene-build.ts`). `bungalow` declares `scale 1:100` and no `paper`, so its eaves grew
+`refDim` from the 12200 mm wall span to the 13400 mm eaves span and every line weight scaled by that
+ratio. Geometry did not move, no scale was re-fitted, and there is no `W_SCALE_OVERFLOW` — a plan
+that declares `paper` sizes from the sheet instead, and a roof adds a layer there without touching
+one other byte.
+
+### Deferred by name, not silently
+
+- The **offset of an `arc` edge** under `roof overhang` (`E_ROOF_CURVED` refuses; write `roof polygon`).
+- A **polygonal `void`** — it needs the ring machinery `room polygon` has, and every consumer here
+  (the nav grid, the room attribution, `frame.ts`) is written on a rectangle.
+- **Area subtraction under a void** — `describe --json`'s `voids[]` gives the extent to subtract.
+- **`sofa_l` chirality.** Its return is always on the LEFT and there is no right-handed twin;
+  `place … mirror` will not produce one, because a reflection transforms a resolved element's
+  position and not the symbol drawn inside it. A `sofa_l_r` category was rejected rather than
+  forgotten — it would put the fix in the vocabulary, where every future handed symbol needs its own
+  twin. The real fix is **glyph-aware mirroring in the `place` transform**.
+
+### Notes
+
+- **Neither new element adds a `Theme` key.** `roof` paints from the existing `annotationMuted` and
+  `void` from `annotation`, reached through `STYLE_KEYS`, so `style roof { stroke … }` and `style
+  void { stroke … }` work with no new palette entry. Both draw an unfilled dashed outline and
+  nothing else, so `stroke` is the entire palette either one could have; `STYLE_KINDS` is derived
+  from `STYLE_KEYS` rather than retyped; and `gen-llm-spec.ts` throws if the `opening` exception
+  stops being exactly one word, so a silently unstyled element cannot appear.
+- **`spec.llm.md`'s `## Keyword reference` loses its "Element clauses" bullet** (~475 characters of a
+  hard per-request budget). It listed 48 attribute words as bare names a few lines below the element
+  lines that already spell each one out. The partition guard only proved every attribute was
+  *classified* as a clause, never that the classification was true; a new guard now proves each one
+  is **rendered** in a code span or fence elsewhere in the document, which is what makes the bullet
+  redundant rather than merely repetitive. If it goes red, render the clause in its element's
+  grammar line — do not bring the bullet back.
+- The diagnostic catalog grows from **74 errors to 82** (seven `E_ROOF_*` plus `E_VOID_SIZE`); the
+  warning count is unchanged at 42.
+- `arch describe --select voids` works, and `--level` correctly drops a storey's `voids` key. Both
+  were holes found by driving the CLI: `DESCRIBE_KEYS` is now pinned by **set equality** over
+  fixtures chosen to emit every conditional key, and the per-storey key list is a named list that a
+  third such key joins for free.
+
 ## [1.28.0] - 2026-08-26
 
 **"the furniture vocabulary the examples were already using, and the symbols it now draws"**, a
