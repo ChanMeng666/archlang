@@ -69,6 +69,75 @@ suite("DESCRIBE_KEYS — no drift vs the real describe() result", () => {
       expect(DESCRIBE_KEYS, `describe() emits "${k}" but --select would reject it`).toContain(k);
     }
   });
+
+  /**
+   * …and the same claim as SET EQUALITY, over fixtures chosen to emit every conditional
+   * key between them.
+   *
+   * The check above is one-directional and only walks the keys one minimal plan happens
+   * to produce, so more than half of `DESCRIBE_KEYS` was never reached by it. That gap is
+   * not hypothetical: `voids` shipped absent from the list and this suite stayed green,
+   * because a plan with no `void` emits no `voids` key — and `arch describe --select
+   * voids` was therefore a usage error, which is exactly the failure `DESCRIBE_KEYS`' own
+   * doc comment promises cannot happen ("a new summary field cannot silently become
+   * unselectable").
+   *
+   * Equality bites in BOTH directions, which is the point: a new summary key with no
+   * fixture goes red (it would be unselectable), and a `DESCRIBE_KEYS` entry no plan can
+   * produce goes red too (it is a key `--select` accepts and `describe()` never emits).
+   * A single-storey plan and a multi-storey one are both needed — `levels`/`vertical`
+   * exist only on the latter, and `axes`/`site`/`schedule`/`zones`/`instances` are
+   * plan-level settings the multi-storey shape puts elsewhere.
+   */
+  it("DESCRIBE_KEYS is EXACTLY the set of keys describe() can emit", () => {
+    const single = describe(`plan "S" {
+      units mm
+      paper A3 landscape
+      accTitle "T"
+      accDescr "D"
+      site { street north }
+      axes { x at 0 y at 0 }
+      schedule rooms
+      component unit() { room id=main at (0,0) size 3000x3000 }
+      place unit() as west at (12000,0)
+      zone core "Core" {
+        wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+        room id=r1 at (0,0) size 8000x6000 label "Hall" uses hall
+        door id=front on shell at 4000 width 900
+        stair id=s at (500,500) size 900x2600 dir up
+        void id=well at (5000,1000) size 1200x1200
+      }
+    }`);
+    const multi = describe(`plan "M" {
+      units mm
+      level 1 "Ground" {
+        wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+        room id=r1 at (0,0) size 8000x6000 label "Hall" uses hall
+        door id=front on shell at 4000 width 900
+        stair id=s at (500,500) size 900x2600 dir up
+        void id=well at (5000,1000) size 1200x1200
+      }
+      level 2 "First" {
+        wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+        room id=r2 at (0,0) size 8000x6000 label "Landing" uses circulation
+        stair id=s at (500,500) size 900x2600 dir down
+      }
+    }`);
+    // The fixtures are only evidence if they really produced the conditional keys.
+    for (const k of ["sheet", "site", "axes", "schedule", "zones", "instances", "verticals", "voids"]) {
+      expect(Object.keys(single), `the single-storey fixture stopped emitting "${k}"`).toContain(k);
+    }
+    for (const k of ["levels", "vertical"]) {
+      expect(Object.keys(multi), `the multi-storey fixture stopped emitting "${k}"`).toContain(k);
+    }
+    const emitted = new Set([...Object.keys(single), ...Object.keys(multi)]);
+    expect(
+      [...emitted].sort(),
+      "DESCRIBE_KEYS and the keys describe() can actually emit have diverged. A key on the " +
+        "left only is UNSELECTABLE (`--select <it>` is a usage error); a key on the right " +
+        "only is one `--select` accepts and describe() never produces.",
+    ).toEqual([...DESCRIBE_KEYS].sort());
+  });
 });
 
 suite("describe --select", () => {
