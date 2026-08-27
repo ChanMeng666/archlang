@@ -122,6 +122,12 @@ plan "Tiny House" {
   dim faces (0,2800)->(7000,2800) offset 500
   dim faces (7000,2800)->(7000,0) offset 500
 
+  # ---- the eaves --------------------------------------------------------------
+  # `shell` is the plan's one closed exterior ring, so no `wall` clause is needed to
+  # disambiguate it. A micro-home wears its roof close: 400 mm, not the 600 a suburban
+  # bungalow shades its glazing with.
+  roof overhang 400
+
   title {
     project "Tiny House"
     drawn_by "ArchLang"
