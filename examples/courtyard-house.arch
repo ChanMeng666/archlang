@@ -207,6 +207,13 @@ plan "Courtyard House" {
   # would ask which room it belongs to simply does not apply to it.
   furniture planter at (7250,4750) size 1500x1500 label "Planter"
 
+  # ---- the eaves --------------------------------------------------------------
+  # `shell` is the plan's one closed exterior wall — a plain rectangle. The courtyard
+  # is cut by an INTERIOR partition, `w_court`, so it never enters this offset at all;
+  # the concave gallery that wraps it is a room polygon, not a wall, and `roof` only
+  # ever reads the wall ring.
+  roof overhang 600
+
   title {
     project "Courtyard House"
     drawn_by "ArchLang"
