@@ -104,6 +104,8 @@ plan "Workshop" {
   furniture id=f_table  table at (3400,3300) size 2600x1300 label "Assembly table" in r_shop
   furniture id=f_saw    table at (7600,5400) size 2000x1000 label "Bench saw"      in r_shop
   furniture id=f_desk   desk  at (13800,700) size 1600x800  label "Desk"           in r_office
+  furniture id=f_ochair office_chair at (14600,1700) size 500x500 in r_office
+  furniture id=f_rug    rug   at (13000,300) size 2900x2400 in r_office
   furniture id=f_racks  racking at (12300,3300) size 3400x600 label "Racking"      in r_store
 
   furniture id=f_wc    wc    in r_wc anchor bottom-right flush size 400x700
