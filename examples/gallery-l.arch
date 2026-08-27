@@ -16,6 +16,7 @@ plan "Gallery L" {
   grid 100
   paper A3 landscape
   north up
+  theme presentation
   dims auto all
   title { project "Polygon rooms" drawn_by "ArchLang" }
 
@@ -35,4 +36,16 @@ plan "Gallery L" {
   door id=entry on exterior at 51% width 1500 swing in
   door id=inner on spine at 50% width 1200 hinge left swing in
   window id=north_light on exterior at 20% width 3000
+
+  # ---- fit-out ----------------------------------------------------------------
+  # Polygon rooms refuse the anchor forms (E_PLACE_POLY — a nine-point anchor
+  # needs a rectangle), so every piece here is an absolute `at`, kept clear of the
+  # L's missing quadrant (x 6000-12000, y 8000-14000 is the lobby's, not the
+  # gallery's) and of the two doors' swing quarter-discs.
+  furniture bench at (2000,2000)   size 1800x500 in gallery
+  furniture bench at (8000,2000)   size 1800x500 in gallery
+  furniture plant at (10500,6500)  size 700x700  in gallery
+  furniture plant at (1000,12800)  size 700x700  in gallery
+  furniture desk  at (2000,11000)  size 1800x800 label "Reception desk" in gallery
+  furniture chair at (4200,11500)  size 500x500  in gallery
 }
