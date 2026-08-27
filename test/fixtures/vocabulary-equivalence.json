@@ -1083,6 +1083,128 @@
       "room_type": "LivingRoom"
     }
   ],
+  "examples/hillside-villa.arch": [
+    {
+      "id": "r_garage",
+      "label": "Garage",
+      "uses": ["storage"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "r_utility",
+      "label": "Utility",
+      "uses": ["utility"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "r_powder",
+      "label": "Powder",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_pantry",
+      "label": "Pantry",
+      "uses": ["storage"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "r_office",
+      "label": "Study",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_entry",
+      "label": "Entry",
+      "uses": ["entry", "hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_living",
+      "label": "Living",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_dining",
+      "label": "Dining",
+      "uses": ["dining"],
+      "room_type": "DiningRoom"
+    },
+    {
+      "id": "r_kitchen",
+      "label": "Kitchen",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_terrace",
+      "label": "Terrace",
+      "uses": [],
+      "room_type": "Room"
+    },
+    {
+      "id": "r_service",
+      "label": "Service Hall",
+      "uses": ["hall", "circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_bed2",
+      "label": "Bedroom 2",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_linen",
+      "label": "Linen",
+      "uses": ["storage"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "r_bed3",
+      "label": "Bedroom 3",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "en2.room",
+      "label": "Ensuite",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "en3.room",
+      "label": "Ensuite",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_master",
+      "label": "Master Suite",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "en_m.room",
+      "label": "Ensuite",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_landing",
+      "label": "Landing",
+      "uses": ["hall", "circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_gallery",
+      "label": "Gallery",
+      "uses": ["hall", "circulation"],
+      "room_type": "Entrance"
+    }
+  ],
   "examples/imports.arch": [
     {
       "id": "r_main",

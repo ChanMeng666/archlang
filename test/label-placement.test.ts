@@ -84,13 +84,22 @@ describe("label placement — a clear label never moves", () => {
     // These four cover the shapes the pass could most easily disturb: the large-building
     // flagship on a sheet with `dims auto` + axes, the polygon flagship (whose label
     // point is pinned to the exact centroid by test/polygon-rooms.test.ts), the curved
-    // flagship, and a relationally-placed plan. None of them has furniture or a swing
-    // under a room name, so none of them may move a byte.
+    // flagship, and a relationally-placed plan. Almost none of them has furniture or a
+    // swing under a room name, so almost none of them may move a byte.
+    //
+    // Two exceptions, both from the 2026-08 gallery refresh's furnishing pass, both a
+    // real obstruction and not a regression: `museum.arch`'s cafe got two tables that now
+    // sit under "Cafe", and `relational.arch`'s kitchen got a dining table and two chairs
+    // that now sit under "Kitchen". Both labels are CORRECTLY relocated by this same pass
+    // — the premise this loop tests (no obstacle, so no move) no longer holds for those
+    // two rooms specifically, so they are excluded here rather than asserted false.
+    const NOW_FURNISHED = new Set(["museum.arch:cafe", "relational.arch:kitchen"]);
     for (const file of ["museum.arch", "gallery-l.arch", "aquarium.arch", "relational.arch"]) {
       const src = example(file);
       const scene = sceneOf(src);
       for (const room of roomsOf(src)) {
         if (!room.label) continue;
+        if (NOW_FURNISHED.has(`${file}:${room.id}`)) continue;
         const a = roomLabelAnchor(room);
         expect({ file, id: room.id, ...nameAt(scene, room.label) }).toEqual({
           file,
@@ -150,6 +159,17 @@ describe("label placement — a buried label moves", () => {
     const ring = rectRing({ x: room.at.x, y: room.at.y, w: room.size.w, h: room.size.h });
     const at = nameAt(sceneOf(BLOCKED), "Hall");
     expect(pointInPolygon(at.x, at.y, ring)).toBe(true);
+  });
+
+  it("moves off REAL SHIPPED furniture — museum's cafe and relational's kitchen", () => {
+    // The companion half of the exclusion in the "obstacle-free" corpus test above: these
+    // two rooms are excluded from "must not move" specifically because the 2026-08
+    // gallery refresh gave each one furniture that now sits under its name, so this
+    // asserts what actually happens to them instead of merely skipping them.
+    const { dx: mdx, dy: mdy } = drift(example("museum.arch"), "cafe", "Cafe");
+    expect(mdx !== 0 || mdy !== 0).toBe(true);
+    const { dx: rdx, dy: rdy } = drift(example("relational.arch"), "kitchen", "Kitchen");
+    expect(rdx !== 0 || rdy !== 0).toBe(true);
   });
 
   it("moves off a DOOR SWING — the quarter disc is an obstacle, not just the leaf", () => {

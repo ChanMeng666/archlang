@@ -226,12 +226,16 @@ describe("lint — shipped examples", () => {
   });
 
   /**
-   * The corpus-wide pin for the widened `W_NO_ENTRANCE` guard. Two examples warn on
-   * purpose (they are fragments that draw no way in) and the other 25 must not — a rule
-   * that starts shouting at the shipped corpus is a rule that will be silenced, so this
-   * names the exact set rather than counting it.
+   * The corpus-wide pin for the widened `W_NO_ENTRANCE` guard. One example warns on
+   * purpose (it is a fragment that draws no way in) and every other shipped plan must
+   * not — a rule that starts shouting at the shipped corpus is a rule that will be
+   * silenced, so this names the exact set rather than counting it.
+   *
+   * `two-bed` used to be on this list — it shipped `ok:false` with six warnings,
+   * including this one, until the 2026-08 gallery refresh repaired its topology and gave
+   * it a real front door. It is off the list on purpose, not because the rule loosened.
    */
-  it("only `themed` and `two-bed` report W_NO_ENTRANCE across the whole corpus", () => {
+  it("only `themed` reports W_NO_ENTRANCE across the whole corpus", () => {
     const dir = join(__dirname, "..", "examples");
     const world = {
       read: (p: string): string | null => {
@@ -246,6 +250,6 @@ describe("lint — shipped examples", () => {
       .filter((f) => f.endsWith(".arch"))
       .sort()
       .filter((f) => lint(readFileSync(join(dir, f), "utf8"), { world }).some((d) => d.code === "W_NO_ENTRANCE"));
-    expect(warned).toEqual(["themed.arch", "two-bed.arch"]);
+    expect(warned).toEqual(["themed.arch"]);
   });
 });

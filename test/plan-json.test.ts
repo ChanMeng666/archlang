@@ -76,8 +76,18 @@ describe("plan-json — round-trip byte-identity (SVG)", () => {
     roundTrips(readFileSync("examples/studio.arch", "utf8"));
   });
 
-  it("round-trips examples/two-bed.arch to identical SVG", () => {
-    roundTrips(readFileSync("examples/two-bed.arch", "utf8"));
+  // `two-bed.arch` used to be the third round-trip case, but the 2026-08 gallery refresh
+  // gave it a `roof overhang` — and `roof`/`void` are deliberately absent from the Plan
+  // JSON projection (see `test/roof-void-byte-identity.test.ts`'s "absent from the Plan
+  // JSON projection" suite), so a plan using either can never round-trip byte-identically
+  // by design. `attached.arch` takes its slot: a real shipped one-bedroom flat with a
+  // `strip`, on-wall openings and anchored furniture, untouched by the refresh, free of
+  // both keywords, and confirmed to round-trip (unlike a couple of other untouched
+  // candidates tried here — `garden-loft.arch` and `one-room.arch` do NOT round-trip
+  // byte-identically today; that looks like a pre-existing gap in the JSON projection
+  // unrelated to this branch, not something to paper over by picking around it silently).
+  it("round-trips examples/attached.arch to identical SVG", () => {
+    roundTrips(readFileSync("examples/attached.arch", "utf8"));
   });
 });
 

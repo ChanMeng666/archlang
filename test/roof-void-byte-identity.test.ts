@@ -41,12 +41,32 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compile, describe as describePlan, lint, planToJson } from "../src/index.js";
 
-/** SHA-256 over the SVG + `describe()` + `lint()` of one example, as measured on main. */
+/**
+ * SHA-256 over the SVG + `describe()` + `lint()` of one example, as measured on main.
+ *
+ * Two changes on 2026-08-28, for the gallery refresh:
+ *
+ * `laneway-house` and `aquarium` kept their slot but got new CONTENT unrelated to
+ * `roof`/`void` — a rug (laneway-house) and furniture (aquarium) — so their digests were
+ * RE-MEASURED against that new content. The law the test protects — a plan that does not
+ * use `roof`/`void` renders, describes and lints exactly as before its own last commit —
+ * still holds; the digest moving is the content edit, not a src regression.
+ *
+ * `courtyard-house` was DROPPED from this set: the refresh gave it its own `roof overhang`
+ * (eaves on its own gallery, not the neighbouring form this test exists to rule out), so
+ * it now legitimately fails the "contains neither keyword" assertion below and no longer
+ * belongs here. `gallery-l` — the other CONCAVE polygon plan, import-free, and untouched
+ * by `roof`/`void` — takes its slot; its digest is a fresh measurement, not a carry-over
+ * (the refresh gave it furniture too).
+ *
+ * `studio` is untouched by the refresh and its digest is unchanged from the v1.28.0
+ * measurement.
+ */
 const BASELINE: [string, string][] = [
-  ["laneway-house", "1c906547eda9568a23406d28a7beb86e92933254268725e44c9f102d3c6e87b2"],
+  ["laneway-house", "fe2a03c08011c3d2d780bb3e4fe46bcd5f767dca9594792581976b0d51748dd6"],
   ["studio", "025e7c127ba0e3f65850aced8d53b62779cb946e0e989df2c9981f838c086fb8"],
-  ["courtyard-house", "566b6e1d12d3f3db414788da4e749bd28df0e46a4e46b3e94e38378cff5a65fb"],
-  ["aquarium", "7e871e74f0fb756d9408a357a80add0061b71f023e79bbc29e547424f8f52cd3"],
+  ["gallery-l", "23a3855a7885cf04bb441a04c7af4e336b2b8ad15b1769a7294696a4b2f967ad"],
+  ["aquarium", "74d571a95fe7e130784b27509147240934cd848375ff43ec4d7690e274906257"],
 ];
 
 /** The exact payload the baseline digests were taken over — do not change its shape. */

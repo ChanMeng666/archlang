@@ -16,11 +16,21 @@ import { compile, describe as describePlan, lint } from "../src/index.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const example = (name: string) => readFileSync(join(__dirname, "..", "examples", name), "utf8");
 const STUDIO = example("studio.arch"); // entrance + rooms → a drawable overlay
-const TWO_BED = example("two-bed.arch"); // no exterior entrance → overlay is empty
+// A door-free room, inline rather than a shipped example: `two-bed.arch` used to have no
+// exterior entrance and served this fixture, but the 2026-08 gallery refresh repaired its
+// topology and gave it a real front door — so it now HAS a drawable overlay and can no
+// longer stand in for "no modeled entrance". A minimal inline plan makes the fixture's
+// own claim self-evident and immune to any future example edit.
+const NO_ENTRANCE = `plan "No Entrance" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+  room id=r1 at (0,0) size 4000x3000 label "Room" uses living
+}
+`;
 
 describe("circulation overlay (opt-in render)", () => {
   it("leaves default output byte-identical (off, empty, and no cross-contamination)", () => {
-    for (const src of [STUDIO, TWO_BED]) {
+    for (const src of [STUDIO, NO_ENTRANCE]) {
       const plain = compile(src, { noCache: true }).svg;
       // Compiling WITH the overlay must not perturb a later default compile.
       compile(src, { noCache: true, overlays: ["circulation"] });
@@ -46,9 +56,9 @@ describe("circulation overlay (opt-in render)", () => {
   });
 
   it("does nothing when the plan has no modeled entrance", () => {
-    // two-bed has no exterior entrance → circulation is null → the overlay is empty.
-    expect(compile(TWO_BED, { noCache: true, overlays: ["circulation"] }).svg).toBe(
-      compile(TWO_BED, { noCache: true }).svg,
+    // no door at all → no exterior entrance → circulation is null → the overlay is empty.
+    expect(compile(NO_ENTRANCE, { noCache: true, overlays: ["circulation"] }).svg).toBe(
+      compile(NO_ENTRANCE, { noCache: true }).svg,
     );
   });
 
