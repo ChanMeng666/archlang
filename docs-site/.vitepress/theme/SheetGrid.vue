@@ -33,6 +33,14 @@ interface Sheet {
 const row1: Sheet[] = [
   {
     no: "A-101",
+    tag: "Showpiece",
+    title: "The whole language on one sheet",
+    body:
+      "Site orientation, a polygon reading nook and an L-shaped suite, a bowed arc bay, all five door kinds, a shared stair shaft, a void over a double-height living room, a roof overhang, and a mirrored pair of bathrooms composed from one component — a two-storey villa with an attached garage, on one A2 sheet at 1:50. Every room is reachable, every doorway clears.",
+    example: "hillside-villa",
+  },
+  {
+    no: "A-102",
     tag: "Principle",
     title: "Deterministic by design",
     body:
@@ -40,26 +48,26 @@ const row1: Sheet[] = [
     example: "laneway-house",
   },
   {
-    no: "A-102",
+    no: "A-103",
     tag: "Principle",
     title: "Zero-dependency core",
     body:
       "The default SVG path pulls no runtime dependencies. Optional power — PNG raster, vector PDF, angled-wall geometry — loads lazily and is never required. An 11-room courtyard house, 163 m² around an open middle, compiles with nothing installed.",
     example: "courtyard-house",
   },
+];
+
+const row2: Sheet[] = [
   {
-    no: "A-103",
+    no: "A-104",
     tag: "Output",
     title: "Professional CAD output",
     body:
       "Layers, line weights, wall poché, openings that void walls, real fixture symbols, dimensions, a north arrow, scale bar and a title block — plus a room schedule and a legend, both derived. Here: a 50 × 32 m library on A2 at 1:200, its column grid and shelf runs written as for loops rather than coordinates. Export to SVG, DXF, PDF or PNG.",
     example: "library",
   },
-];
-
-const row2: Sheet[] = [
   {
-    no: "A-104",
+    no: "A-105",
     tag: "Geometry",
     title: "Not only rectangles",
     body:
@@ -67,7 +75,7 @@ const row2: Sheet[] = [
     example: "hexagon-pavilion",
   },
   {
-    no: "A-105",
+    no: "A-106",
     tag: "Read-back",
     title: "Reads its own plans",
     body:
@@ -84,7 +92,7 @@ const row2: Sheet[] = [
     <div class="dimdiv" role="presentation">
       <span class="dimdiv__tick" />
       <span class="dimdiv__line" />
-      <h2 class="dimdiv__label">Features · Sheets A-101 — A-105</h2>
+      <h2 class="dimdiv__label">Features · Sheets A-101 — A-106</h2>
       <span class="dimdiv__line" />
       <span class="dimdiv__tick" />
     </div>
@@ -127,7 +135,7 @@ const row2: Sheet[] = [
       <span class="dimdiv__tick" />
     </div>
 
-    <div class="sheets__row sheets__row--2">
+    <div class="sheets__row sheets__row--3">
       <article v-for="s in row2" :key="s.no" class="card">
         <div class="card__art" :class="{ 'card__art--poche': !s.example }">
           <img

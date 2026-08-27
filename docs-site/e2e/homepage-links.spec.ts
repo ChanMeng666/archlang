@@ -1,7 +1,7 @@
 /**
  * The home page's drawings are DOORS into the playground.
  *
- * Every plan pictured on the landing page — the hero that types itself, the five sheet
+ * Every plan pictured on the landing page — the hero that types itself, the six sheet
  * cards, and the "Reads its own plans" band — carries an "Open in Playground" link whose
  * `#z=` payload is minted at BUILD time by `docs-site/sync-docs.mjs` (reusing
  * `scripts/gen-permalink.mjs`'s `encodePlanHash`), not encoded on click. That is what
@@ -27,11 +27,12 @@ import { ROOT } from "./fixtures.js";
 
 /** Every plan the landing page pictures, in the order the page presents them. */
 const PICTURED = [
-  "laneway-house", // the hero, and card A-101
-  "courtyard-house", // A-102
-  "library", // A-103
-  "hexagon-pavilion", // A-104
-  "materials", // A-105
+  "hillside-villa", // card A-101, the showpiece
+  "laneway-house", // the hero, and card A-102
+  "courtyard-house", // A-103
+  "library", // A-104
+  "hexagon-pavilion", // A-105
+  "materials", // A-106
   "garden-loft", // the "Reads its own plans" band
 ] as const;
 
@@ -45,8 +46,8 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
     await page.goto("/");
     const links = page.locator('a[href*="playground.archlang.uk/#z="]');
     const n = await links.count();
-    // hero CTA + hero sheet control + 5 cards + the facts band.
-    expect(n, "the home page must offer a per-plan playground link on every drawing").toBe(8);
+    // hero CTA + hero sheet control + 6 cards + the facts band.
+    expect(n, "the home page must offer a per-plan playground link on every drawing").toBe(9);
 
     const onDisk = new Map(PICTURED.map((name) => [exampleSource(name), name]));
     for (let i = 0; i < n; i++) {

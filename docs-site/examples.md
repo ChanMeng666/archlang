@@ -24,6 +24,33 @@ what `compile().svg` returns; the whole set is in `compile().pages`, and
 selector restyles any plan** — blueprint, dark, mono, presentation — without touching a
 line of its source, because a theme changes inks and hatches, never geometry.
 
+## The whole language on one sheet
+
+### Hillside Villa
+
+The showpiece: a two-storey villa with an attached garage, drawn on one A2 sheet at
+1:50. The widget below shows **page 1 — the ground floor**, **11 rooms, 196.54 m²**
+(`arch describe --json`); the upper floor adds nine more rooms over 140.76 m²
+(`arch describe --level 2 --json`).
+
+It is the plan to read when you want to see how the surfaces above fit together rather
+than in isolation: `site { street north }` names the facades a plot orientation lint
+rule can reason about; a `room … polygon` chamfers a reading nook off the study and an
+L-shaped master suite wraps its own ensuite; an `arc` wall edge bows a bay window off the
+living room; every door kind ships somewhere a builder would actually put it — hinged,
+sliding, pocket, bifold, barn; a `stair` carries the same id on both `level` blocks, so
+it is one shaft, not two symbols that happen to line up; a `void` opens a double-height
+gap over the living room; `roof overhang` draws the eaves on the upper storey; and a
+`component` authored once — `ensuite() { … }` — is `place`d twice with `mirror x`, so a
+pair of bathrooms share one definition and face opposite ways.
+
+`arch lint` still raises three warnings on it, on purpose: a bathroom reachable only
+through a bedroom, and two bedrooms whose windows don't face the equator side. Every
+room is reachable and every doorway clears — the warnings are left in and named in the
+source as the honest cost of a real site, not something the plan was tuned to hide.
+
+<ArchLive :src="EXAMPLES['hillside-villa']" :rows="20" />
+
 ## Start here
 
 ### One room
