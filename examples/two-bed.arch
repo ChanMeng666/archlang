@@ -5,10 +5,12 @@ plan "Two-Bedroom Flat" {
   scale 1:100
   north right
 
-  wall exterior thickness 250 { (0,0) (10000,0) (10000,8000) (0,8000) close }
-  wall partition thickness 100 { (4000,0) (4000,5000) }
-  wall partition thickness 100 { (4000,5000) (10000,5000) }
-  wall partition thickness 100 { (7000,5000) (7000,8000) }
+  wall id=w_shell   exterior  thickness 250 { (0,0) (10000,0) (10000,8000) (0,8000) close }
+  wall id=w_kb      partition thickness 100 { (4000,0) (4000,5000) }
+  wall id=w_bh      partition thickness 100 { (4000,5000) (10000,5000) }
+  wall id=w_kb2     partition thickness 100 { (0,5000) (4000,5000) }
+  wall id=w_bath_w  partition thickness 100 { (4000,5000) (4000,8000) }
+  wall id=w_hall    partition thickness 100 { (7000,5000) (7000,8000) }
 
   room id=r_kitchen at (0,0)        size 4000x5000 label "Kitchen / Living"
   room id=r_bed1    at (4000,0)     size 6000x5000 label "Master Bedroom"
@@ -16,7 +18,9 @@ plan "Two-Bedroom Flat" {
   room id=r_bath    at (4000,5000)  size 3000x3000 label "Bathroom"
   room id=r_hall    at (7000,5000)  size 3000x3000 label "Hall"
 
+  door id=d_front at (8500,8000) width 1000 wall w_shell hinge left swing into r_hall
   door at (4000,2500)  width 900  wall partition hinge left swing in
+  door id=d_bed2 on w_kb2 at 2000 width 900 hinge right swing into r_bed2
   door at (5500,5000)  width 800  wall partition hinge left swing in
   door at (7000,6500)  width 900  wall partition hinge right swing in
 
@@ -24,11 +28,30 @@ plan "Two-Bedroom Flat" {
   window at (8000,0)     width 2400 wall exterior
   window at (0,3000)     width 1500 wall exterior
   window at (10000,3000) width 1500 wall exterior
+  window id=w_bed2 at (2000,8000) width 1400 wall w_shell
 
   # The master bed's head is already on the north wall (rotate 0). Bedroom 2's shares no
   # wall with the corridor, so its head goes to the south wall instead.
   furniture bed at (5000,300) size 1800x2100 label "Bed"
   furniture bed at (300,5800) size 1400x2000 label "Bed" rotate 180
+  furniture wardrobe in r_bed1 anchor top-right flush size 1200x600
+  furniture wardrobe against wall w_bath_w offset 1500 in r_bed2
+
+  # Kitchen run along the west wall, clear of the window at (0,3000); the living half of
+  # the room takes a sofa and a small table.
+  furniture fridge       against wall w_shell segment 3 offset 7500 in r_kitchen
+  furniture stove        against wall w_shell segment 3 offset 6800 in r_kitchen
+  furniture kitchen_sink against wall w_shell segment 3 offset 6100 in r_kitchen
+  furniture sofa  at (2850,600) size 850x600 label "Sofa"  in r_kitchen
+  furniture table at (200,3200) size 700x500 label "Table" in r_kitchen
+
+  furniture shower against wall w_bath_w offset 2000 in r_bath
+  furniture wc     against wall w_shell segment 2 offset 4500 in r_bath
+  furniture basin  against wall w_shell segment 2 offset 3400 in r_bath
+
+  # The eaves: `w_shell` is the plan's one closed exterior ring, so no `wall` clause is
+  # needed to disambiguate it.
+  roof overhang 500
 
   # Overall extents, outside face to outside face: `faces` pushes each endpoint out
   # onto the wall it runs into, so the printed span is the true 10300 × 8300 the
