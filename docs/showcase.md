@@ -84,15 +84,17 @@ added and one real edge dropped, and it exits 2 having found all three.
 
 ## Tweet House
 
-![Floor plan of a two-room house compiled from 280 bytes of ArchLang source](/showcase/tweet-house.png)
+![Floor plan of a two-room house compiled from 290 bytes of ArchLang source](/showcase/tweet-house.png)
 
-A whole house in **280 bytes** — one wall polyline, two rooms, two doors, a window and a bed —
-that compiles, lints and passes `arch validate --strict` with nothing to say. The tweet *is* the
-program. A companion file gets a warning-free house down to **145 bytes** (a 9 m² cabin, one door,
-one window), and the piece ends with an open challenge: beat 145, one file, no imports, `ok: true`
-and an empty diagnostic list.
+A whole house in **290 bytes** — one wall polyline, two rooms, two doors, a window and a bed —
+that compiles, lints and passes `arch validate --strict` with nothing to say. (It was 280 bytes
+until core 1.28.0 taught the compiler that a bed has a back — `rotate 90` is the ten bytes that
+turn the headboard to face the wall it stands against, once the tool could tell the difference.)
+The tweet *is* the program. A companion file gets a warning-free house down to **145 bytes** (a
+9 m² cabin, one door, one window), and the piece ends with an open challenge: beat 145, one file,
+no imports, `ok: true` and an empty diagnostic list.
 
-[Open in playground](https://playground.archlang.uk/#z=VY3LCsIwEEX3_YohqxZE0hDEjRtXLvyJ1Iw6mEkkTU1R_HchtT42c2HOudyrM17sAqN4ZOMckN1kwDFhpBAhnelw8dj3oKR81JoXsqnldDQ39YrnkM2b6vJ6VjEEBpOK3dMdQfOoGZzp0Ik93cifxEcq1WKpH2uLVlQ2hAjBQwaToJUMmWw6Q8v_RKmZrKWsMnkb8re2-qkdh-gpDRGhQ1vGl5oXLU_77VLzqPj5Ag) · [Source](https://github.com/ChanMeng666/archlang-showcase/tree/main/plans/tweet-house)
+[Open in playground](https://playground.archlang.uk/#z=VY1BagMxDEX3cwrh1QyEoDEmpItusuqil3BqpRGxrODx1END7l5wmibd6IPe-_xz9Mm8qZC5VB8jcHitQEuhzJqhHPnjlGiawCJeeicrHHq8HSdDv5F74PBLXXtdu6wq4EuzJ_4mcLI4gej3FM07f3H6NH9SqzbLPlk7CqYLqhk0QQVfYESByqEcYZT_xNo72SJ2lVPQ-qhtnmqHOScucybYU2jjayerUW7749rJYgWyFl8IXvD6Aw) · [Source](https://github.com/ChanMeng666/archlang-showcase/tree/main/plans/tweet-house)
 
 ## The Friends Apartments
 
@@ -138,10 +140,11 @@ noticed until v1.27.0's fit rule raised `W_SCALE_OVERFLOW` and the sheet moved u
 ![Floor plan of a narrow railroad-style apartment, seven rooms strung along a single hallway](/showcase/railroad-apartment.png)
 
 `arch lint` reviews a $2,950-a-month listing. **Seven rooms, 61.2 m²** on a 3.7 × 18.3 m
-footprint, marketed as a two-bed — and **12 warnings across 9 distinct codes**. The hallway is
+footprint, marketed as a two-bed — and **14 warnings across 10 distinct codes**. The hallway is
 19.8 m², 32 % of the floor area, so you are renting a hallway for $954 a month; the only toilet is
-reachable only through Bedroom 2; and of the twelve warnings, `arch fix --dry-run` finds exactly
-one it can apply by machine.
+reachable only through Bedroom 2; the bedroom's bed and wardrobe are both drawn with their backs
+turned to the room instead of to the wall (`W_FIXTURE_BACK_TO_ROOM`, new in core 1.28.0); and of
+the fourteen warnings, `arch fix --dry-run` finds exactly two it can apply by machine.
 
 [Open in playground](https://playground.archlang.uk/#z=rVldchs3En6fU3RRWxU7RXFnKFE_TvlBTrwb1Tp2ylE2lScFnOnhIMQALADUkHG5ag-xJ9kj7FH2JFvdwPxRsvQQ8YHkDAcfGt3f190Aj2Ayf_Pxa_jfv_4Nf5lPLxfpX2vDV7n5Yz-FcqsUmBLySliRe7ST5Cg5giv42_W3N9cf3l-9g28__PDjh5-ub97ScwJWqC2-Al8hvMcGfjV2DVZIZY0ooBFqfbzdgK-Eh5VBlxzBnbRCgdE5goDaaF_N4L3xIMCiUKCk81KvpqD7e6IoLDo3vJccwXIrVSH1agZv79DuQTTlVoGvpF6B1CA9SAci3mALpAOFK6GmYFF7LKYgdJEcwaYy3qys2FRYQCN9BQIaWeCx0CuFoFA7cKbGpkKLhO0r6SCXfj9j99xUCK4SG6QZyBNNZRTCxpqlwnrGv2-19FCjcFuLDk5m57CD7GJ2AjWYO7QgvQOz9WiTIyhFjo6jcjLL6IEScoXCklG-Cr6jaXxj4CRNoa5hI6zfk7-VA2ERvFijJsB2jZfhOVPCzfdXN2RobqyVhbEzeGN8BcroFThZYABwlbCtN2iu1tsONO58cgSFMXYKztCvFnkM7kTu1R5ufvlAaxCExY7PhYbKqAJWSjgX2OK8RfTwQhvrq5fJEdnJP1haqZDWVaL08MKZra9exiB30V2ibxA1LI21pnHsvkLslVxVvg-KILfUqDn0hRUNmaHRebV_FahVyBq1k0a7abhRyp2nEMVLWqWbJUdE0TC3o2WuVmiFxwJKY9no380aQ6DpGz31m5Laz_zO_zZLNkpomHxsZfELyeLnDUf4Z-LFyccJfEqASeKgrhOAlZUFLNIEYCM2aOFqDhtjvRXSJwAuFwohe8UPsAdhu0mAluNAbL1hUgml6FnpET61_g4PV1hLt-HAhRufGbTCYqsQrDG1S4DEgrpIEgCR5zfSKxwsotV25-Np4PjJx0kY8B263MLkism-3Ee2o7fDuBgNouXa1i6FBmX8NPCeHnUsRJCamDmDq5bHLXnBbnXQHKeuAje-gtKaesgxCiJ407OLdPINOLkLS4VK6BWYsmQaNeg8C4F4JkBJjRwpJe84MS2xoFFTWEufV6intALMjS76n1gxwld0xcQWsBT5mqebwQet9kP76IHOLterpZG6MI37phP7gUaHoj_Uq0a5qpZma4m0nXhnE4rmERz_-Re4CplfR4P80SeggW2v2iRlytbMWjij7T6YS6nVaGQoVA6_cmOCcHSFhUCBX82WPESlIN96ztTkJZDaG0BJ2QiMxlkCPDvI4nVzyzEFwJ1HK1myMl9rdI5N-wQv0mn6kt6zizRNX7Ic-tEonhh9cpoGAP7yIEYM9VMWtEjjwcydx82Pkx5YwD6lrNTphUCJgSFC0kujp5BdQM0BnJKedCiYCKi9tBhFZUoG86O0SrpArr7MdBmCxXnAbKhskqi4WhqNLKVxXCr61hkyWFcW1jU_iY7lL-NlfWuNc_1gNyXda09CJ3_N4K3IK8rEWtSDTE06CqqXHgp5R2oaGrW5DUK_XWKRATxmXTo9PSODonnh4vMIi0BuY6J4Auv8dIAVLsZYEYYw509gZdk87d0WLu4ZNr-lFAXw1CKz-eUALFwcgAlf3ZqylDk-CbZIB2CLYUCfIym1peuA9dwJthTlVqvRYKlZ4P4oNotEj3dXH__-9qebIZ8Zbsz57HJ2AfV__0MpjTjciH2oFmcZ3yYFTEGshNTOQ5bOFt3jgV2hEiQQ5yle26AF4XvSO_kHQpal6Y6JD0osUcHke6HUBLYOqQW1-VYJ9jUNT0aAcSbGZEB6MSjNsCO6tpjv-NEJdC-GDwAjzCiKiBnp32POL3rMN6EYQjYZYsYSOQJt9RFAow560JMB6D_Co5OxoRHg0NJ5b2nUQA-and-3dP715AlLW8FE0KCFwfKzAajw1cChLajw1QixVU1EDIIYrH0Q-DdGbx18NKaOdjJiAHg-BXHH2ylo2EGFjM511g_ENYWmkiHTxuaMWjbiNo-SxeviNmRmo6ErhMLD_GKRxi0NDXRN6O29gSCGZATRsplBWq2c0MCIcXGI0dG3B2npOwI5S3sQYgX1-dRAUcvhhfVjVIIYYbbsHWFezB8xrKfryLL5Pcuyedq56PwQhUaMIFoqjSHOFmn6JUOG3LkZtqyVcPD-Qwz7YcBncE0ZlJrYMHko852KKEMyZNgcHjTHnItV_KnNnXEGxvRGKvTDXmLGaNeco896ig2I19AusxG0vy89733G_GPdGg3DukfOyTr3nt1zLyn1eVTVNvLBz42ZwbUGoSG7OOZNznGBONhIcTcSm9ridSN1y_0D_Qysp7xxb1TkA4-KHeR41GWaPssKu1DeK7xfOVDUPJPRPoRqQ9c0gH_oThFCBQ4nLLx7kvk-V6H2KnmHjnfXlrfW2oTnaLNA1Fmz-9ohM_hR2DUWYccVxngwS-ftNvchCNq0x0LclXq0vOuK5zMDYnWsXBlTgMbGhR1JPE-g46cEoNxaLenYgFxf3i7lmhawxljOF-k0Oz9dtIn9korvIK3LNU6I7n3W-7MRieuK6e_AOmdKAfzGc0ZuCZ1Xxgb9lGrrqmDrxSLdzQc16CdTisl9TH8HAPxGK84uF-n0rCtkXG4HlfHmn5Ph1M-w4C63tNvIKz4OOObpl1jELXgjbGHNMh7UtFd8MDlgXne_lN5NGa6jwxIrGY-piLkPxZ4rDM0Z1sjXX3BudkqeuRw1Ig84l4zJgE1i756Rd3s6naXpboDxSzR_0s__HB6mJfd1izy8EkrhHgRv_OnnfssfmmpqlAMR-Ug3HLN-5ehcdFvQhrw2bUMdWuwQtLDdvKrRStKkxdJKPm7jWhRDRMfUm42hs60HgpCbbdB0_ORX243z4HgkYMrSIVXrRRo7zozcScWAvdev-FBEUlM-bV0Srh-Z4fKUZngC05s72j-1n09ZnaWUyh_HLK0sVgjQfj6Eya1C64nzzhPnkVePT7D2YqkQIHwQPy9pY5eepMN0N2i2b-jByRj1GTOAbwyj9U39hISbzc6hBqqzQfwkUNa9yPkYQcaNYNP9T1C2W0KGs3Q237YpbZv0sPznIeOQUhe88eiUStu4XZaO9A4vfCP1y16t8-dr5eNm48DEJmcSxI_H-HWyaMP_MNJSOKkB4sdjSKfZ40iuMg1aiB-P8DM7pcrZ8epyBPsclbM7pmWwH6iToHN-QQcIlakx7rcCi4b779oUqPp_eGKaWhNnpOcj6e78LOyGuDulhux8dgl1ny2NXpHrqJUzlMLqmqjHpwtG43Ek-gPcK9CtAcI7OyU2gF-oPpToskEf8h269QPVJ6-EtBDeidQXJO-zXt6ni3R32uahfkPh-e8C-lMDKOH_jrmHSfyzY_z344Sf4X9nbpd7mFzZvHon9CreFx5hMk_nZ8fpxfF8QXc_J5-T_wM) · [Source](https://github.com/ChanMeng666/archlang-showcase/tree/main/plans/railroad-apartment)
 
