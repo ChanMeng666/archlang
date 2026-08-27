@@ -359,6 +359,72 @@ anywhere. Same "a promise quietly not kept" class as v1.26.1. The fix is to incl
 
 ---
 
+## Found while refreshing the gallery (2026-08-28)
+
+Two things the villa and homes authors ran into while furnishing and re-sheeting the corpus, plus
+one found integrating their work. None blocked anything from shipping; each was worked around.
+
+### G.1 · `anchor <corner> flush` reads the wrong wall face when a thicker exterior wall shares a
+partition's centreline — `todo`
+
+Reported by the villa/homes authors. `furniture … anchor <corner> flush` measures its offset off
+the NEAREST wall face by distance, but when a room's partition is thin (say 100 mm) and shares a
+centreline with a thicker exterior wall (say 250 mm) on the room's far side, `flush` can resolve
+against the thinner face while the furniture-vs-wall collision check (`wallIntrusionDepth`) measures
+against the thicker one — the two rules read different walls off the same coordinate. Repro: a
+1800 × 2600 room, a 100 mm partition coincident with a 250 mm exterior shell, `furniture … anchor
+top-left flush` — the piece is drawn flush to the partition's inner face but the collision check
+still measures the extra 75 mm the thicker wall's centreline shift accounts for, and can flag an
+intrusion on a piece that reads as correctly placed in the drawing.
+
+Not yet reproduced as a minimal standalone fixture or filed against a specific line in
+`src/elements/furniture.ts` — the report is from real authoring, not yet isolated. First step:
+build the repro plan above and confirm which of the two consumers (the `flush` resolver or
+`wallIntrusionDepth`) is reading the wrong wall, per the iron law that a derived position must come
+from the shape (here: the correct wall face), never an assumption that the nearest centreline is
+the nearest FACE.
+
+### G.2 · `arch compile <file> --json` with no `-o` silently writes sibling `.svg`/`.L<n>.svg` files
+— `todo`
+
+Reported by the villa/homes authors, and independently reproduced during this integration: running
+`arch compile examples/hillside-villa.arch --json` (no `-o`) — a perfectly reasonable "just check it
+compiles" invocation, and exactly the shape a scripted loop over many files would use — writes
+`examples/hillside-villa.svg` **and** `examples/hillside-villa.L1.svg` / `.L2.svg` alongside the
+source, even though `--json` asks for structured output on stdout and names no output file. This
+integration hit it firsthand: a stray pair of per-level SVGs appeared in `examples/` from an
+earlier diagnostic `compile --json` call and had to be deleted by hand before the real
+`gen:example-svgs` output could be reviewed cleanly.
+
+The footgun is `--json` implying "give me data, not files" while the CLI still defaults to writing
+`<stem>.svg` (and `<stem>.L<n>.svg` for a multi-storey plan) whenever `-o` is absent, `--json` or
+not. Proposal: `compile --json` with no `-o` should not write any file (the SVG already rides in the
+JSON payload's `output`/`outputs[]`), or at minimum should warn on stderr that it wrote files a
+script did not ask for. Whichever direction is chosen, `test/cli.test.ts`'s existing `--json`
+coverage is the place to pin the new contract — it does not currently assert anything about
+file-writing side effects one way or the other.
+
+### G.3 · `examples/garden-loft.arch` and `examples/one-room.arch` do not round-trip byte-identically
+through `planToJson`/`planFromJson` — `todo`
+
+Found while fixing `test/plan-json.test.ts`'s third round-trip case after `two-bed.arch` picked up a
+`roof overhang` (see the Unreleased changelog entry — that part is by design, `roof`/`void` are
+deliberately absent from the JSON projection). Looking for another untouched, import-free shipped
+example to take `two-bed`'s slot, `garden-loft.arch` and `one-room.arch` were tried and BOTH failed
+`compile(planFromJson(planToJson(src)).source).svg === compile(src).svg` — not with a diagnostic, but
+with a shifted drawing extent (the whole title-block/scale-bar band moves by roughly a thousand
+units in the garden-loft case). `attached.arch` was used instead, confirmed clean.
+
+Not yet isolated to a cause. `garden-loft.arch`'s shell is four independent two-point `wall`
+segments (`w_north`/`w_east`/`w_south`/`w_west`) rather than one closed ring, and it has no `paper`
+(auto-sized extent) — either property, or something else about its `dims auto all` chain count, is
+a plausible suspect, but `attached.arch` ALSO uses four independent wall segments and DOES round-trip
+clean, which rules out "multi-segment shell" as the sole cause. First step: bisect `garden-loft.arch`
+statement-by-statement against a round-tripping copy to find the one clause the JSON projection loses
+or reorders.
+
+---
+
 ## Wave 5 — deferred by name in v1.28.0 / v1.29.0
 
 Each of these was **named in `CHANGELOG.md` at the time it was skipped**, not quietly omitted, so

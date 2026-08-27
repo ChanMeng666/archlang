@@ -7,7 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.29.0] - 2026-08-26
+### Examples & galleries
+
+A source-only refresh — no `src/` change, no new keyword, no new `E_*`/`W_*` code. Four parallel
+tracks landed together (`feat/example-villa`, `feat/examples-homes`, `feat/examples-public`,
+`feat/showcase-129`) and merged clean onto disjoint files.
+
+- **New flagship `examples/hillside-villa.arch`** — the SHOWPIECE: a two-storey villa with an
+  attached garage on one A2 sheet at 1:50, putting the whole language in one plan — `site`
+  orientation, a polygon reading nook and an L-shaped master suite, a bowed `arc` bay, all five door
+  kinds, a two-level `stair` shaft, a `void` over the double-height living room, a `roof overhang`,
+  and a mirrored pair of ensuite bathrooms composed from one `component` (`place … mirror x`). Every
+  room is reachable and every doorway clears; three `arch lint` warnings — `W_BATH_VIA_BEDROOM` ×1,
+  `W_ROOM_NOT_EQUATOR_FACING` ×2 — are left in on purpose and explained in the source, so it is NOT
+  strict-clean by design. 29 shipped examples, up from 28.
+- **`examples/two-bed.arch` repaired** — it shipped `arch validate` `ok:false` with six warnings
+  including `W_NO_ENTRANCE` (no real front door) since it entered the README front page; it now
+  compiles clean, has a proper entrance, `roof overhang 500`, and is furnished throughout.
+- **Furnishing sweep across the corpus**: `laneway-house` (a `rug` under the living group),
+  `furnished-flat` (now on a sheet — A3 portrait, `schedule`), `bungalow` (now on a sheet — A3
+  landscape, `schedule`), and light-to-full furniture passes on `museum`, `aquarium`, `gallery-l`
+  (also tried against `theme presentation`), `library`, `transit-hall`, `clinic`, `accessible`,
+  `relational`, `themed`, `materials`.
+- **Eaves (`roof overhang`) added** to `tiny-house`, `courtyard-house`, `townhouse` (top storey) and
+  `two-storey` (L2).
+- **Showcase re-rendered under v1.29.0**: all ten `docs-site/public/showcase/*.png` and
+  `docs/showcase.md`'s numbers refreshed against the current compiler (e.g. `tweet-house` now 290
+  bytes, `railroad-apartment` now 14 warnings) — the drawings had rotted behind the roof/void and
+  furniture-glyph releases.
+- **README gallery restructured**: `hillside-villa` leads as the hero drawing; `two-storey`,
+  `tiny-house`, `gallery-l`, `museum` and `materials` join the picture gallery (none had an image
+  before); `README_SVGS` grows from 13 to 19 entries, all pinned bidirectionally against the README's
+  own `<img>` tags by `test/example-svgs-drift.test.ts`. Every changed example's playground `#z=`
+  permalink was regenerated across the docs.
+- **Playground**: a new leading "Showpiece" preset group (Hillside Villa) and the previously-missing
+  "Furnished Flat" preset (Homes group); `DEFAULT_EXAMPLE` is now Hillside Villa, was Laneway House.
+- **Docs site**: `docs-site/examples.md` opens with a new "The whole language on one sheet" section
+  for the villa, ahead of "Start here"; the homepage's `SheetGrid.vue` grows a sixth sheet card
+  (A-101, "The whole language on one sheet") and its "Reads its own plans" card renumbers to A-106.
+- **Test-suite consequences worth reading, not just re-blessing**: `two-bed.arch` moving off
+  `W_NO_ENTRANCE` and gaining a `roof` broke three pins that had quietly assumed it would never
+  change — the corpus-wide `W_NO_ENTRANCE` list (`test/lint.test.ts`), the "no modeled entrance"
+  fixture for the circulation-overlay suite (`test/overlay.test.ts`, now an inline door-free plan
+  instead of a real example), and the Plan-JSON round-trip suite (`test/plan-json.test.ts`, moved to
+  `attached.arch` — `roof`/`void` are deliberately absent from the JSON projection by design, so a
+  plan using either can never round-trip byte-identically). `courtyard-house.arch` gaining its own
+  `roof overhang` retired it from `test/roof-void-byte-identity.test.ts`'s baseline set (it no longer
+  qualifies as "uses neither"); `gallery-l.arch` takes its slot as the CONCAVE-polygon representative.
+  Furniture landing under two room names — `museum`'s cafe, `relational`'s kitchen — is a correct,
+  asserted relocation in `test/label-placement.test.ts`, not a regression. `test/vocabulary-equivalence.test.ts`'s
+  corpus pin gained `hillside-villa.arch`'s 20 rows (11 on the ground floor, 9 upstairs). While
+  investigating the Plan-JSON round-trip fixture, found that `examples/garden-loft.arch` and
+  `examples/one-room.arch` do **not** round-trip byte-identically through `planToJson`/`planFromJson`
+  today — filed as a backlog item rather than silently worked around.
+
+
 
 **"two drawing-only elements, four furniture families, and one word for a thing you stand on"**, a
 MINOR. Two independent tracks: `roof` and `void` — elements that draw and do nothing else — and four
