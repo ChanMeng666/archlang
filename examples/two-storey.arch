@@ -77,6 +77,10 @@ plan "Two-storey house" {
     # leave the drawing and the table disagreeing. `describe --json` lists it under
     # `voids[]` with the room it falls in, which is where a net figure comes from.
     void id=gallery at (100,200) size 900x1100
+
+    # The eaves, on the top storey only — this level's `shell` is the plan's one
+    # closed exterior ring on THIS page, so no `wall` clause is needed.
+    roof overhang 400
   }
 
   title {
