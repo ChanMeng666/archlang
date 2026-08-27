@@ -22,4 +22,18 @@ plan "Flat 2B" {
   opening id=o_int  at (3500,2000) width 900  wall partition
 
   window at (5000,4000) width 1200 wall exterior
+
+  # ---- fit-out ----------------------------------------------------------------
+  # Kept clear of the entrance door's swing quarter-disc (radius 1000, hinge left
+  # at x=1000) and of the interior opening.
+  furniture sofa         at (300,3100)  size 1600x700 in r_living
+  furniture coffee_table at (400,2300)  size 600x400  in r_living
+  furniture plant        at (2900,3200) size 500x500  in r_living
+
+  # The bed sits clear of the interior opening (x 3550-4300 stays a 750 mm-wide
+  # entry corridor into the room), so the accessible route through it keeps its
+  # 700 mm minimum.
+  furniture bed        at (4300,100)  size 1500x2000 in r_bed
+  furniture nightstand at (4300,2150) size 450x400   in r_bed
+  furniture table      at (4300,3100) size 900x700   label "Table" in r_bed
 }
