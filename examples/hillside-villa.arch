@@ -21,7 +21,7 @@ plan "Hillside Villa" {
   units mm
   grid 100
   paper A2 landscape
-  scale 1:100
+  scale 1:50
   north up
   dims auto all
   schedule rooms
@@ -116,7 +116,7 @@ plan "Hillside Villa" {
     # ---- doors: one kind per situation -------------------------------------------------
     door id=d_front         at (6000,0) width 1200 wall shell hinge left swing into r_entry
     door id=d_office        at (4000,2000) width 900 wall w_office_e hinge left swing into r_office
-    door id=d_garage        at (-2750,0) width 3000 wall w_wing_n hinge left swing out
+    door id=d_garage        sliding at (-2750,0) width 3000 wall w_wing_n slide left
     door id=d_garage_int    at (0,2000) width 900 wall shell hinge right swing into r_office
     door id=d_garage_util   bifold on w_util at 2750 width 1500 swing in
     door id=d_utility_ext   at (-2750,10200) width 900 wall w_wing_s hinge right swing out
@@ -261,11 +261,15 @@ plan "Hillside Villa" {
     furniture nightstand at (12600,150) size 450x400  in r_bed3
     furniture wardrobe   at (13100,300) size 450x1800  in r_bed3
 
+    furniture rug        at (6300,7400) size 3400x2400 in r_master
     furniture double_bed at (7100,7600) size 1800x2000 in r_master
     furniture nightstand at (6500,7600) size 450x400   in r_master
     furniture nightstand at (9050,7600) size 450x400   in r_master
     furniture wardrobe   at (5000,4400) size 1800x600  in r_master
     furniture armchair   at (5100,9000) size 900x850   in r_master
+    # A reading nook in the otherwise-bare east corner of the L, south of the ensuite.
+    furniture desk         at (10200,7100) size 1200x700 in r_master
+    furniture office_chair at (10500,7900) size 600x600  in r_master
 
     # The gallery railing looks down into the double-height living room below — a `void`
     # does not reduce this room's own area (`describe --json` reports it under `voids[]`).
