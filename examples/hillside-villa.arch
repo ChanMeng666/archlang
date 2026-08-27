@@ -1,0 +1,291 @@
+# The SHOWPIECE flagship — a two-storey hillside villa with an attached garage, the plan a
+# first-time visitor to the language should see. Everything else in examples/ is one
+# thing done well; this one is the whole language on one sheet. Surfaces it exercises:
+# `site` (five derived compass names) · `paper`+`scale`+`axes`+`schedule`+`legend` (a real
+# sheet with a title block) · `zone` (living/service/sleeping wings, rolled up in the
+# schedule subtotals) · `room polygon` (a chamfered nook off the study, and the L-shaped
+# master suite) · `arc` wall edge (a bowed bay off the living room) · every door kind —
+# hinged/sliding/pocket/bifold/barn, each where a builder would actually put it · `window
+# on <wall> at <pos>` plus a `for` loop (a street-facing ribbon of study windows) ·
+# `level 1`/`level 2` · `stair` (same id both levels, one shaft) · `void` (a double-height
+# gap over the living room) · `roof overhang` (the eaves, drawn on the upper storey) ·
+# `component` + `place … mirror x` (a mirrored pair of ensuite bathrooms) · ~30 furniture
+# families across kitchen/living/bedroom/study/garage/terrace · `dims auto all` plus one
+# manual dim.
+#
+# The plot fronts the street on the NORTH, in the northern hemisphere — so `back` and
+# `equator_side` are the SAME side (south), which is why the living room, the arc bay and
+# every bedroom on the garden band take the south facade, and the garage/service band
+# stacks along the street. `site` draws nothing; it only names directions.
+plan "Hillside Villa" {
+  units mm
+  grid 100
+  paper A2 landscape
+  scale 1:100
+  north up
+  dims auto all
+  schedule rooms
+  legend
+
+  site { street north hemisphere north }
+
+  # A mirrored PAIR of ensuite bathrooms, authored once. `place ensuite() as <name> at
+  # (x,y) [mirror x]` instantiates it as an addressable box (its own wall + room + three
+  # wet fixtures); the parent cuts each suite's own door by a dotted reference into the
+  # instance's wall (`en2.wall`, `en3.wall`) — the same composition contract as
+  # `examples/museum-wings.arch`. No door is drawn INSIDE the component on purpose: which
+  # bedroom it opens into is the parent's decision, exactly like the wing's hall door.
+  component ensuite() {
+    wall id=wall partition thickness 100 { (0,0) (1800,0) (1800,2600) (0,2600) close }
+    room id=room at (0,0) size 1800x2600 label "Ensuite" uses bath
+    # `inset 150`, not `flush`, on the two NORTH fixtures: every placement backs that edge
+    # onto a THICKER host wall (`shell` 250 mm for en2/en3, `w_l2_band` 200 mm for en_m)
+    # running along the same line as this component's own 100 mm wall — `flush` reads the
+    # nearer face and collides with the far one. The shower goes top-RIGHT: every
+    # instance's bedroom door lands on the LEFT edge (`at 7500` below), and a shower there
+    # would leave it no swing room.
+    furniture shower in room anchor top-right   inset 150 size 900x900
+    furniture basin  in room anchor top-left    inset 150 size 600x450
+    furniture wc     in room anchor bottom-left flush     size 400x700
+  }
+
+  # =====================================================================================
+  # LEVEL 1 — entry level: garage, study, living/dining/kitchen, terrace
+  # =====================================================================================
+  level 1 "Ground floor" {
+    # ---- shell ------------------------------------------------------------------------
+    # One closed ring for the main volume, with a bowed bay let into the south (garden)
+    # wall behind the living room — a curved arc EDGE, not a separate `room circle`,
+    # walked from (4400,10200) to (1600,10200) with `cw` so it bulges OUTWARD.
+    wall id=shell exterior thickness 250 {
+      (0,0) (13800,0)
+      (13800,10200)
+      (4400,10200)
+      arc (1600,10200) radius 2000 cw
+      (0,10200)
+      close
+    }
+
+    # The garage/utility wing: three sides only (its fourth side is the main shell's own
+    # west face, so nothing is drawn twice).
+    wall id=w_wing_n exterior  thickness 250 { (-5500,0) (0,0) }
+    wall id=w_wing_w exterior  thickness 250 { (-5500,0) (-5500,10200) }
+    wall id=w_wing_s exterior  thickness 250 { (-5500,10200) (0,10200) }
+    wall id=w_util   partition thickness 150 { (-5500,6200) (0,6200) }
+
+    # Front-band partitions (street side).
+    wall id=w_office_e   partition thickness 100 { (4000,0) (4000,4200) }
+    wall id=w_powder_w   partition thickness 100 { (8000,0) (8000,2200) }
+    wall id=w_powder_e   partition thickness 100 { (10000,0) (10000,2200) }
+    wall id=w_frontsvc_s partition thickness 100 { (8000,2200) (13800,2200) }
+    wall id=w_entry_svc  partition thickness 100 { (8000,2200) (8000,4200) }
+
+    # Front/back band spine, and the garden-band partitions.
+    wall id=w_l1_band_w partition thickness 200 { (0,4200) (8000,4200) }
+    wall id=w_l1_band_e partition thickness 200 { (8000,4200) (13800,4200) }
+    wall id=w_liv_din   partition thickness 150 { (4800,4200) (4800,10200) }
+    wall id=w_din_kit   partition thickness 100 { (8000,4200) (8000,8200) }
+    wall id=w_din_terr  partition thickness 150 { (8000,8200) (8000,10200) }
+    wall id=w_kit_terr  exterior  thickness 200 { (8000,8200) (13800,8200) }
+
+    # ---- rooms, grouped into wings by `zone` -------------------------------------------
+    zone service "Service wing" {
+      room id=r_garage  at (-5500,0)    size 5500x6200 label "Garage"  uses storage
+      room id=r_utility at (-5500,6200) size 5500x4000 label "Utility" uses utility
+      room id=r_powder  at (8000,0)     size 2000x2200 label "Powder"  uses wc
+      room id=r_pantry  at (10000,0)    size 3800x2200 label "Pantry"  uses storage
+    }
+
+    zone living "Living wing" {
+      # The study: a rectangle with its SE corner chamfered into a reading nook, an
+      # ANGLED room via `room polygon` — an exact shoelace area, label at the centroid.
+      room id=r_office polygon
+        (0,0) (4000,0) (4000,3400) (3200,4200) (0,4200)
+        label "Study" uses office
+      room id=r_entry   at (4000,0)    size 4000x4200 label "Entry"          uses entry hall
+      room id=r_living  at (0,4200)    size 4800x6000 label "Living"         uses living
+      room id=r_dining  at (4800,4200) size 3200x6000 label "Dining"         uses dining
+      room id=r_kitchen at (8000,4200) size 5800x4000 label "Kitchen"        uses kitchen
+      room id=r_terrace at (8000,8200) size 5800x2000 label "Terrace"
+      # Behind Powder/Pantry, reached from Entry via `o_entry_svc` — gives their doors a
+      # real room on the other side (a door onto bare, room-less floor never registers in
+      # the access graph, even though it looks walkable on the sheet).
+      room id=r_service at (8000,2200) size 5800x2000 label "Service Hall" uses hall circulation
+    }
+
+    # ---- doors: one kind per situation -------------------------------------------------
+    door id=d_front         at (6000,0) width 1200 wall shell hinge left swing into r_entry
+    door id=d_office        at (4000,2000) width 900 wall w_office_e hinge left swing into r_office
+    door id=d_garage        at (-2750,0) width 3000 wall w_wing_n hinge left swing out
+    door id=d_garage_int    at (0,2000) width 900 wall shell hinge right swing into r_office
+    door id=d_garage_util   bifold on w_util at 2750 width 1500 swing in
+    door id=d_utility_ext   at (-2750,10200) width 900 wall w_wing_s hinge right swing out
+    door id=d_powder        pocket on w_frontsvc_s at 1000 width 800 slide right
+    door id=d_pantry        barn on w_frontsvc_s at 3900 width 900 swing in
+    door id=d_kit_corr      on w_l1_band_e at 2900 width 1200 hinge right swing into r_kitchen
+    door id=d_din_kit       on w_din_kit at 2000 width 1000 swing into r_kitchen
+    door id=d_din_terrace   at (8000,9200) width 900 wall w_din_terr hinge left swing into r_terrace
+    door id=d_kit_terrace   sliding on w_kit_terr at 3000 width 2400 slide left
+    door id=d_living_garden at (800,10200) width 1000 wall shell hinge left swing out
+
+    opening id=o_liv_din on w_liv_din at 2000 width 3000
+    opening id=o_entry_svc on w_entry_svc at 1000 width 1800
+    opening id=o_entry_dining on w_l1_band_w at 5500 width 2400
+
+    # ---- windows: the ribbon of study windows is a `for` loop --------------------------
+    for i in 0..3 {
+      window on shell at (500 + i * 1100) width 700
+    }
+    window on shell at 11800 width 900                # pantry
+    window on shell at 19000 width 1200                # kitchen (east wall)
+    window on shell at 21000 width 1200                # kitchen (east wall)
+    window on shell at 23000 width 1400                # terrace (east wall)
+    window on shell at 17000 width 900                 # corridor (east wall)
+    window at (6000,10200) width 1800 wall shell        # dining, south wall
+
+    # ---- furniture ----------------------------------------------------------------------
+    furniture desk         at (600,2700)  size 1600x700 in r_office
+    furniture office_chair at (2300,2900) size 600x600  in r_office
+    furniture bookshelf    at (200,3700)  size 1600x300 in r_office
+
+    furniture rug          at (600,5000)  size 3000x2400 in r_living
+    furniture sofa_l        at (700,5600)  size 2400x1500 in r_living
+    furniture coffee_table  at (1300,7200) size 1000x500  in r_living
+    furniture armchair      at (3200,5750) size 900x850  rotate 270 in r_living
+    furniture plant         at (300,4400)  size 600x600  in r_living
+    furniture piano          at (3200,4400) size 1300x1300 in r_living
+    furniture tv_unit against wall w_liv_din offset 3000 in r_living
+
+    furniture dining_table at (5600,6800) size 2000x1000 in r_dining
+
+    furniture counter        against wall shell segment 1 offset 4900 size 1000x600 in r_kitchen
+    furniture kitchen_sink   against wall shell segment 1 offset 5800 in r_kitchen
+    furniture stove          against wall shell segment 1 offset 6500 in r_kitchen
+    furniture dishwasher     against wall shell segment 1 offset 7100 in r_kitchen
+    furniture fridge         against wall shell segment 1 offset 7700 in r_kitchen
+    furniture upper_cabinet  against wall w_l1_band_e offset 4500 in r_kitchen
+    furniture island         at (9200,5400) size 1800x900 in r_kitchen
+    furniture barstool       at (8900,6500) size 400x400  in r_kitchen
+    furniture barstool       at (9500,6500) size 400x400  in r_kitchen
+    furniture barstool       at (10100,6500) size 400x400 in r_kitchen
+
+    furniture washer against wall w_wing_w offset 6800 in r_utility
+    furniture dryer  against wall w_wing_w offset 7400 in r_utility
+
+    furniture wc    in r_powder anchor bottom-left flush size 400x700
+    furniture basin in r_powder anchor top-right   flush size 600x450
+
+    furniture car at (-4800,700) size 1800x4600 in r_garage
+    furniture car at (-2300,700) size 1800x4600 in r_garage
+
+    furniture sun_lounger at (9000,8700)  size 1900x700 in r_terrace
+    furniture sun_lounger at (11200,8700) size 1900x700 in r_terrace
+
+    dim (8000,10500)->(13800,10500) offset 600 text "Terrace 5.8 x 2.0 m"
+
+    stair id=stair at (4900,2700) size 2200x1000 dir up
+  }
+
+  # =====================================================================================
+  # LEVEL 2 — sleeping level: two secondary suites, the master suite, and a gallery
+  # over the double-height living room
+  # =====================================================================================
+  level 2 "Upper floor" {
+    # ---- shell --------------------------------------------------------------------------
+    # No garage below this footprint and no bay above it: a plain closed rectangle, so its
+    # `roof overhang` below is a simple mitred offset with nothing curved to refuse.
+    wall id=shell exterior thickness 250 { (0,0) (13800,0) (13800,10200) (0,10200) close }
+
+    # ---- partitions -----------------------------------------------------------------------
+    wall id=w_bed2_s  partition thickness 100 { (0,2600) (4000,2600) }
+    wall id=w_linen_s partition thickness 100 { (5800,2600) (8000,2600) }
+    wall id=w_bed3_s  partition thickness 100 { (9800,2600) (13800,2600) }
+    wall id=w_l2_band partition thickness 200 { (0,4200) (13800,4200) }
+    wall id=w_gallery_e partition thickness 200 { (4800,4200) (4800,10200) }
+
+    zone sleeping "Sleeping wing" {
+      room id=r_bed2   at (0,0)      size 4000x2600 label "Bedroom 2" uses bedroom
+      room id=r_linen  at (5800,0)   size 2200x2600 label "Linen"     uses storage
+      room id=r_bed3   at (9800,0)   size 4000x2600 label "Bedroom 3" uses bedroom
+      place ensuite() as en2 at (4000,0)
+      place ensuite() as en3 at (9800,0) mirror x
+
+      # The master suite: an L-SHAPED `room polygon` wrapping its own ensuite, which sits
+      # in the notch (the third, unmirrored placement of the same component) rather than
+      # being carved from a plain rectangle.
+      room id=r_master polygon
+        (4800,4200) (12000,4200) (12000,6800) (13800,6800) (13800,10200) (4800,10200)
+        label "Master Suite" at (7000,7500) uses bedroom
+      place ensuite() as en_m at (12000,4200)
+    }
+
+    room id=r_landing at (0,2600) size 13800x1600 label "Landing" uses hall circulation
+
+    # The gallery: it contains the void over the living room below, so it keeps its own
+    # full floor area even though a 3.0 x 4.2 m hole obstructs the middle of it.
+    room id=r_gallery at (0,4200) size 4800x6000 label "Gallery" uses hall circulation
+
+    # ---- doors ----------------------------------------------------------------------------
+    door id=d_bed2  on w_bed2_s  at 2000  width 900 swing in
+    door id=d_bed3  on w_bed3_s  at 2000  width 900 swing in
+    door id=d_linen on w_linen_s at 1100  width 700 swing out
+    # Pocket, not hinged: each ensuite is 1800 mm wide with a bed, wardrobe and this
+    # doorway all competing for the same wall — a swinging leaf has nowhere to clear.
+    door id=d_en2   pocket on en2.wall  at 7500  width 700 slide right
+    door id=d_en3   pocket on en3.wall  at 7500  width 700 slide right
+    door id=d_enm   on en_m.wall at 7500  width 700 swing out
+    door id=d_master_corr on w_l2_band at 10500 width 1000 swing into r_master
+    opening id=o_gallery on w_l2_band at 1500 width 1800
+
+    # en2 and en3 also open directly onto the landing (their own SOUTH wall, local
+    # run-length 5300), so each reads as a shared/guest bath as well as an ensuite. `en_m`
+    # deliberately keeps its ONE door, into the master bedroom only: it sits in the
+    # building's far corner with no wall on circulation, and a master ensuite reached only
+    # through its own bedroom is the conventional case, not a defect — `arch lint` flags it
+    # (`W_BATH_VIA_BEDROOM`) and this is the one warning this plan leaves in, on purpose.
+    door id=d_en2_corr on en2.wall at 5300 width 700 swing out
+    door id=d_en3_corr on en3.wall at 5300 width 700 swing out
+
+    # ---- windows ----------------------------------------------------------------------------
+    window on shell at 1200  width 1400   # bedroom 2, north wall
+    window on shell at 11600 width 1400   # bedroom 3, north wall
+    window at (6800,10200)  width 2400 wall shell   # master suite, south wall
+    window at (0,7000)      width 1400 wall shell   # gallery, west wall
+
+    # ---- furniture --------------------------------------------------------------------------
+    furniture bed       at (1250,150)  size 1500x2000 in r_bed2
+    furniture nightstand at (700,150)  size 450x400   in r_bed2
+    furniture wardrobe   at (2900,300) size 550x1800  in r_bed2
+
+    furniture bed       at (11050,150) size 1500x2000 in r_bed3
+    furniture nightstand at (12600,150) size 450x400  in r_bed3
+    furniture wardrobe   at (13100,300) size 450x1800  in r_bed3
+
+    furniture double_bed at (7100,7600) size 1800x2000 in r_master
+    furniture nightstand at (6500,7600) size 450x400   in r_master
+    furniture nightstand at (9050,7600) size 450x400   in r_master
+    furniture wardrobe   at (5000,4400) size 1800x600  in r_master
+    furniture armchair   at (5100,9000) size 900x850   in r_master
+
+    # The gallery railing looks down into the double-height living room below — a `void`
+    # does not reduce this room's own area (`describe --json` reports it under `voids[]`).
+    void id=v_gallery at (900,5100) size 3000x4200
+
+    # The eaves: derived from THIS storey's own closed shell, mitred outward — it draws
+    # and nothing else, but it does grow the page.
+    roof overhang 700 wall shell
+
+    stair id=stair at (4900,2700) size 2200x1000 dir down
+  }
+
+  axes {
+    x at 0, 4000, 8000, 10000, 13800
+    y at 0, 2600, 4200, 10200
+  }
+
+  title {
+    project "Hillside Villa"
+    drawn_by "ArchLang"
+    date "2026-08-27"
+  }
+}
