@@ -181,6 +181,19 @@ plan "Transit Hall" {
   furniture desk at (82000,34000) size 3000x900 label "Desk" in r_staff
   furniture desk at (82000,38000) size 3000x900 label "Desk" in r_control
 
+  # ---- light touch: the four kiosks and the WC lobby were otherwise bare -----
+  furniture shelf at (1000,16400) size 900x300 label "Shelving" in r_shop1
+  furniture plant at (10200,16700) size 600x600 in r_shop1
+  furniture shelf at (1000,22900) size 900x300 label "Shelving" in r_shop2
+  furniture plant at (10200,23200) size 600x600 in r_shop2
+  furniture shelf at (1000,29400) size 900x300 label "Shelving" in r_shop3
+  furniture plant at (10200,29700) size 600x600 in r_shop3
+  furniture shelf at (1000,35900) size 900x300 label "Shelving" in r_shop4
+  furniture plant at (10200,36200) size 600x600 in r_shop4
+
+  furniture bench at (77800,24500) size 450x1200 in r_lobby
+  furniture plant at (78800,20500) size 500x500  in r_lobby
+
   title {
     project "Metro Interchange — concourse level"
     drawn_by "ArchLang"

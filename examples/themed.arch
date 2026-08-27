@@ -31,6 +31,9 @@ plan "Themed Duplex" {
   room id=b at (3000,0) size 3000x4000 label "Bedroom"
 
   furniture bed at (3300,300) size 1500x2000 label "Bed"
+  furniture nightstand at (4850,700) size 300x350 in b
+  furniture desk        at (300,300)  size 1200x600 in a
+  furniture office_chair at (900,1000) size 450x450 in a
 
   door   at (3000,2000) width 900  wall partition hinge left swing in
   window at (1500,0)    width 1600 wall exterior

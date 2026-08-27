@@ -137,6 +137,28 @@ plan "City Museum" {
 
   # ---- cafe fit-out ---------------------------------------------------------
   furniture counter against wall spine_s offset 90000 size 6000x800 label "Servery" in cafe
+  furniture table at (89000,45000) size 1600x1600 label "Table" in cafe
+  furniture table at (93000,45000) size 1600x1600 label "Table" in cafe
+
+  # ---- reception ------------------------------------------------------------
+  furniture desk  at (33000,38000) size 1800x800 label "Reception desk" in hall
+  furniture chair at (35200,39200) size 500x500 in hall
+  furniture chair at (33000,40500) size 500x500 in hall
+  furniture plant at (44000,55000) size 700x700 in hall
+
+  # ---- gallery seating & planting --------------------------------------------
+  # One bench and one plant per gallery — sparse-elegant, not empty — kept clear of
+  # the bay columns above.
+  furniture bench at (19000,20000) size 1800x500 in g1
+  furniture plant at (23000,2000)  size 700x700  in g1
+  furniture bench at (45000,20000) size 1800x500 in g2
+  furniture plant at (49000,2000)  size 700x700  in g2
+  furniture bench at (71000,20000) size 1800x500 in g3
+  furniture plant at (75000,2000)  size 700x700  in g3
+  furniture bench at (24000,50000) size 1800x500 in g4
+  furniture plant at (26000,35000) size 700x700  in g4
+  furniture bench at (60000,55000) size 1800x500 in g5
+  furniture plant at (49000,35000) size 700x700  in g5
 
   title { project "City Museum" drawn_by "ArchLang" date "2026-07-26" }
 }

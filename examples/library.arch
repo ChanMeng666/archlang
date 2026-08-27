@@ -200,6 +200,7 @@ plan "Reading Room Library" {
   furniture sofa    at (18000,30000) size 2400x900 label "Seating"
   furniture sofa    at (21000,30000) size 2400x900 label "Seating"
   furniture counter against wall w_hall_n offset 4000 size 4000x700 label "Enquiries" in r_hall
+  furniture plant   at (18500,29000) size 700x700 in r_hall
   furniture counter against wall w_cafe_e offset 3000 size 4000x700 label "Servery" in r_cafe
 
   # Catalogued fixtures need no `size`: the footprint, the depth off the wall face and the

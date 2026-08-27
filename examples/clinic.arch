@@ -160,6 +160,9 @@ plan "Clinic Wing" {
   # second consulting room and to no other.
   furniture id=f_ecg trolley in c2.main anchor bottom-right inset 300 size 700x500 label "ECG"
 
+  # The Entrance is otherwise a bare pass-through between the slider and the waiting hall.
+  furniture id=f_entry_plant plant at (8000,7200) size 600x600 in r_entry
+
   # ---- the dimension that matters --------------------------------------------------
   # `dim clear` pulls both endpoints in to the inner FACES, so this reads the corridor's
   # clear width (2400 centre-to-centre less two half-partitions = 2300), not its nominal
