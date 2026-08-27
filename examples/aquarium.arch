@@ -113,6 +113,25 @@ plan "Harbour Aquarium" {
   opening id=o_reef at (10500,22000) width 3000 wall concourse_n
   opening id=o_kelp at (49500,22000) width 3000 wall concourse_n2
 
+  # ---- fit-out ----------------------------------------------------------------
+  # Benches ring the rotunda at the four quadrants clear of the cardinal doors
+  # (25%/75% north/south on the drum). A ticket desk sits in the foyer, and the
+  # cafe gets a few tables — kept west of the curved south-east facade, where the
+  # shell's mitred `arc` corner does not intrude on the room's rectangle.
+  furniture bench at (34450,9550)  size 1200x450 in rotunda_r
+  furniture bench at (25550,9550)  size 1200x450 in rotunda_r
+  furniture bench at (25550,18450) size 1200x450 in rotunda_r
+  furniture bench at (34450,18450) size 1200x450 in rotunda_r
+
+  furniture desk   at (22000,33000) size 1800x800 label "Ticket desk" in foyer
+  furniture chair  at (24200,33200) size 500x500  in foyer
+  furniture plant  at (37000,32000) size 700x700  in foyer
+
+  furniture table at (43000,32000) size 1400x1400 label "Table" in cafe
+  furniture table at (47000,32000) size 1400x1400 label "Table" in cafe
+  furniture table at (43000,35500) size 1400x1400 label "Table" in cafe
+  furniture plant at (41000,38500) size 600x600   in cafe
+
   # ---- positioning axes: the STRAIGHT structural grid only ------------------
   # A curve has no datum line, so it carries none; its radius is its dimension.
   axes {
