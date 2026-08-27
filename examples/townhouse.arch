@@ -176,6 +176,11 @@ plan "Townhouse" {
     furniture chest    at (4550,8500) size 500x1000   label "Chest" in r_master
 
     stair id=st at (4150,2600) size 900x3200 dir down
+
+    # The eaves, on the top storey only — `roof` is per-level like everything else
+    # here, and this level's `shell` is the plan's one closed exterior ring on THIS
+    # page, so no `wall` clause is needed.
+    roof overhang 400
   }
 
   title {

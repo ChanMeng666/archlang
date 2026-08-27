@@ -24,8 +24,11 @@
 plan "Furnished Flat" {
   units mm
   grid 50
+  paper A3 portrait
+  scale 1:50
   north up
   dims auto overall
+  schedule rooms
 
   wall id=w_north  exterior  thickness 200 { (0,0) (8400,0) }
   wall id=w_east   exterior  thickness 200 { (8400,0) (8400,10800) }
