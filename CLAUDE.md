@@ -40,7 +40,7 @@ than memory.
   `playground/src/arch-language.js`, `docs-site/.vitepress/theme/arch-highlight.js`,
   `docs/error-codes.md`, `docs/cli-reference.md`, `spec.llm.md`,
   `llms-full.txt`, `schemas/plan.schema.json`, `schemas/intent.schema.json`,
-  `grammars/archlang.gbnf`, and the thirteen committed `examples/*.svg` the README embeds (the
+  `grammars/archlang.gbnf`, and the nineteen committed `examples/*.svg` the README embeds (the
   `README_SVGS` list in `scripts/gen-example-svgs.ts`) are generated — edit the source
   (`src/grammar/tokens.ts`, `src/error-catalog.ts`, `src/manifest.ts`, `PLAN_JSON_SCHEMA`,
   `INTENT_JSON_SCHEMA`, `examples/`, `SKILL.md`) and run the matching `npm run gen:grammars` /
