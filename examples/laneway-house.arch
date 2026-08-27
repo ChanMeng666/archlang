@@ -40,6 +40,10 @@ plan "Laneway House" {
   furniture fridge       against wall w_west offset 400  in r_live
   furniture stove        against wall w_west offset 1200 in r_live
   furniture kitchen_sink against wall w_west offset 2000 in r_live
+  # The rug is an UNDERLAY, drawn before the pieces that stand on it so the sofa and
+  # table sit visibly on top rather than hiding it — anchored to the room, like
+  # everything else here, never a coordinate.
+  furniture rug   in r_live anchor bottom-left inset 400 size 2800x3400
   furniture table  in r_live centered size 1300x900 label "Table"
   furniture sofa   in r_live anchor bottom-left flush inset 250 size 900x2000  label "Sofa"
   furniture bed    in r_bed  anchor bottom-right flush inset 250 size 1500x2000 label "Bed"
