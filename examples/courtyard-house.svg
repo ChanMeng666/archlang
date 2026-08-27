@@ -616,200 +616,203 @@
 <line x1="6334.85" y1="-234.85" x2="6165.15" y2="-65.15" stroke="#0E5484" stroke-width="18"/>
 <text x="6250" y="507.5" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 6250 507.5)">300</text>
 </g>
-<g id="A-ANNO" inkscape:groupmode="layer" inkscape:label="A-ANNO">
-<polygon points="-150,16315 3450,16315 3450,23115 -150,23115" fill="none" stroke="#333333" stroke-width="18"/>
-<text x="-78" y="16485" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">ROOM SCHEDULE</text>
-<line x1="-150" y1="16655" x2="3450" y2="16655" stroke="#333333" stroke-width="18"/>
-<text x="125" y="16825" font-size="152" fill="#888888" text-anchor="middle" dominant-baseline="central" font-weight="600">NO.</text>
-<text x="472" y="16825" font-size="152" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">NAME</text>
-<text x="3378" y="16825" font-size="152" fill="#888888" text-anchor="end" dominant-baseline="central" font-weight="600">AREA (m²)</text>
-<line x1="-150" y1="16995" x2="3450" y2="16995" stroke="#333333" stroke-width="18"/>
-<text x="-78" y="17165" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">Living wing</text>
-<text x="125" y="17505" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">01</text>
-<text x="472" y="17505" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Living</text>
-<text x="3378" y="17505" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">19.25</text>
-<line x1="-150" y1="17675" x2="3450" y2="17675" stroke="#333333" stroke-width="9.9"/>
-<text x="125" y="17845" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">02</text>
-<text x="472" y="17845" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Entry</text>
-<text x="3378" y="17845" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">12.25</text>
-<line x1="-150" y1="18015" x2="3450" y2="18015" stroke="#333333" stroke-width="9.9"/>
-<text x="125" y="18185" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">03</text>
-<text x="472" y="18185" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Dining</text>
-<text x="3378" y="18185" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">12.25</text>
-<line x1="-150" y1="18355" x2="3450" y2="18355" stroke="#333333" stroke-width="9.9"/>
-<text x="125" y="18525" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">04</text>
-<text x="472" y="18525" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Gallery</text>
-<text x="3378" y="18525" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">24.00</text>
-<line x1="400" y1="17335" x2="400" y2="18695" stroke="#333333" stroke-width="9.9"/>
-<line x1="2400" y1="17335" x2="2400" y2="18695" stroke="#333333" stroke-width="9.9"/>
-<line x1="-150" y1="18695" x2="3450" y2="18695" stroke="#333333" stroke-width="9.9"/>
-<text x="-78" y="18865" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">SUBTOTAL</text>
-<text x="3378" y="18865" font-size="190" fill="#888888" text-anchor="end" dominant-baseline="central" font-weight="600">67.75</text>
-<line x1="-150" y1="19035" x2="3450" y2="19035" stroke="#333333" stroke-width="18"/>
-<text x="-78" y="19205" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">Private wing</text>
-<text x="125" y="19545" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">05</text>
-<text x="472" y="19545" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Bedroom 1</text>
-<text x="3378" y="19545" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">16.50</text>
-<line x1="-150" y1="19715" x2="3450" y2="19715" stroke="#333333" stroke-width="9.9"/>
-<text x="125" y="19885" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">06</text>
-<text x="472" y="19885" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Bedroom 2</text>
-<text x="3378" y="19885" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">16.50</text>
-<line x1="-150" y1="20055" x2="3450" y2="20055" stroke="#333333" stroke-width="9.9"/>
-<text x="125" y="20225" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">07</text>
-<text x="472" y="20225" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Bedroom 3</text>
-<text x="3378" y="20225" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">15.00</text>
-<line x1="-150" y1="20395" x2="3450" y2="20395" stroke="#333333" stroke-width="9.9"/>
-<text x="125" y="20565" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">08</text>
-<text x="472" y="20565" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Study</text>
-<text x="3378" y="20565" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">17.50</text>
-<line x1="400" y1="19375" x2="400" y2="20735" stroke="#333333" stroke-width="9.9"/>
-<line x1="2400" y1="19375" x2="2400" y2="20735" stroke="#333333" stroke-width="9.9"/>
-<line x1="-150" y1="20735" x2="3450" y2="20735" stroke="#333333" stroke-width="9.9"/>
-<text x="-78" y="20905" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">SUBTOTAL</text>
-<text x="3378" y="20905" font-size="190" fill="#888888" text-anchor="end" dominant-baseline="central" font-weight="600">65.50</text>
-<line x1="-150" y1="21075" x2="3450" y2="21075" stroke="#333333" stroke-width="18"/>
-<text x="-78" y="21245" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">Service wing</text>
-<text x="125" y="21585" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">09</text>
-<text x="472" y="21585" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Kitchen</text>
-<text x="3378" y="21585" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">12.25</text>
-<line x1="-150" y1="21755" x2="3450" y2="21755" stroke="#333333" stroke-width="9.9"/>
-<text x="125" y="21925" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">10</text>
-<text x="472" y="21925" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Bathroom</text>
-<text x="3378" y="21925" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">8.75</text>
-<line x1="-150" y1="22095" x2="3450" y2="22095" stroke="#333333" stroke-width="9.9"/>
-<text x="125" y="22265" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">11</text>
-<text x="472" y="22265" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Utility</text>
-<text x="3378" y="22265" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">8.75</text>
-<line x1="400" y1="21415" x2="400" y2="22435" stroke="#333333" stroke-width="9.9"/>
-<line x1="2400" y1="21415" x2="2400" y2="22435" stroke="#333333" stroke-width="9.9"/>
-<line x1="-150" y1="22435" x2="3450" y2="22435" stroke="#333333" stroke-width="9.9"/>
-<text x="-78" y="22605" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">SUBTOTAL</text>
-<text x="3378" y="22605" font-size="190" fill="#888888" text-anchor="end" dominant-baseline="central" font-weight="600">29.75</text>
-<line x1="-150" y1="22775" x2="3450" y2="22775" stroke="#333333" stroke-width="18"/>
-<text x="-78" y="22945" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">TOTAL</text>
-<text x="3378" y="22945" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central" font-weight="600">163.00</text>
-<polygon points="3750,16315 6450,16315 6450,22435 3750,22435" fill="none" stroke="#333333" stroke-width="18"/>
-<text x="3804" y="16485" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">LEGEND</text>
-<line x1="3750" y1="16655" x2="6450" y2="16655" stroke="#333333" stroke-width="18"/>
-<path d="M 3804,16723 L 4196,16723 L 4196,16927 L 3804,16927 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<polygon points="3804,16723 4196,16723 4196,16927 3804,16927" fill="none" stroke="#333333" stroke-width="18"/>
-<text x="4304" y="16825" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">poche</text>
-<line x1="3750" y1="16995" x2="6450" y2="16995" stroke="#333333" stroke-width="9.9"/>
-<polygon points="3804,17063 4196,17063 4196,17107.88 3804,17107.88" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<line x1="3827.52" y1="17076.46" x2="4172.48" y2="17076.46" stroke="#a8a29a" stroke-width="9.9"/>
-<polygon points="4156.8,17190.62 4151.46,17209.57 4135.79,17227.22 4110.87,17242.38 4078.4,17254.01 4040.58,17261.32 4000,17263.82 3959.42,17261.32 3921.6,17254.01 3889.13,17242.38 3864.21,17227.22 3848.54,17209.57 3843.2,17190.62 3848.54,17171.68 3864.21,17154.02 3889.13,17138.87 3921.6,17127.23 3959.42,17119.92 4000,17117.43 4040.58,17119.92 4078.4,17127.23 4110.87,17138.87 4135.79,17154.02 4151.46,17171.68" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="4122.3,17190.62 4118.14,17205.4 4105.92,17219.17 4086.48,17230.99 4061.15,17240.07 4031.65,17245.77 4000,17247.71 3968.35,17245.77 3938.85,17240.07 3913.52,17230.99 3894.08,17219.17 3881.86,17205.4 3877.7,17190.62 3881.86,17175.85 3894.08,17162.08 3913.52,17150.25 3938.85,17141.18 3968.35,17135.48 4000,17133.53 4031.65,17135.48 4061.15,17141.18 4086.48,17150.25 4105.92,17162.08 4118.14,17175.85" fill="#ffffff" stroke="#a8a29a" stroke-width="9.9"/>
-<circle cx="4000" cy="17085.44" r="10.2" fill="#a8a29a" stroke="#a8a29a" stroke-width="18"/>
-<text x="4304" y="17165" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">wc</text>
-<line x1="3750" y1="17335" x2="6450" y2="17335" stroke="#333333" stroke-width="9.9"/>
-<polygon points="3804,17403 4196,17403 4196,17607 3804,17607" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="4133.28,17517.24 4128.74,17534.14 4115.42,17549.88 4094.24,17563.4 4066.64,17573.77 4034.5,17580.3 4000,17582.52 3965.5,17580.3 3933.36,17573.77 3905.76,17563.4 3884.58,17549.88 3871.26,17534.14 3866.72,17517.24 3871.26,17500.34 3884.58,17484.6 3905.76,17471.08 3933.36,17460.71 3965.5,17454.18 4000,17451.96 4034.5,17454.18 4066.64,17460.71 4094.24,17471.08 4115.42,17484.6 4128.74,17500.34" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="4106.62,17517.24 4102.99,17530.76 4092.34,17543.35 4075.39,17554.17 4053.31,17562.47 4027.6,17567.68 4000,17569.46 3972.4,17567.68 3946.69,17562.47 3924.61,17554.17 3907.66,17543.35 3897.01,17530.76 3893.38,17517.24 3897.01,17503.72 3907.66,17491.13 3924.61,17480.31 3946.69,17472.01 3972.4,17466.8 4000,17465.02 4027.6,17466.8 4053.31,17472.01 4075.39,17480.31 4092.34,17491.13 4102.99,17503.72" fill="#ffffff" stroke="#a8a29a" stroke-width="9.9"/>
-<polygon points="3980.4,17409.12 4019.6,17409.12 4019.6,17429.52 3980.4,17429.52" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<line x1="4000" y1="17429.52" x2="4000" y2="17491.13" stroke="#a8a29a" stroke-width="9.9"/>
-<text x="4304" y="17505" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">basin</text>
-<line x1="3750" y1="17675" x2="6450" y2="17675" stroke="#333333" stroke-width="9.9"/>
-<polygon points="4159.28,17743 4173.33,17745.8 4185.24,17753.76 4193.2,17765.67 4196,17779.72 4196,17910.28 4193.2,17924.33 4185.24,17936.24 4173.33,17944.2 4159.28,17947 3840.72,17947 3826.67,17944.2 3814.76,17936.24 3806.8,17924.33 3804,17910.28 3804,17779.72 3806.8,17765.67 3814.76,17753.76 3826.67,17745.8 3840.72,17743" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="4138.2,17767.48 4145.31,17768.9 4151.35,17772.93 4155.38,17778.97 4156.8,17786.08 4156.8,17903.92 4155.38,17911.03 4151.35,17917.07 4145.31,17921.1 4138.2,17922.52 3893.16,17922.52 3886.05,17921.1 3880.01,17917.07 3875.98,17911.03 3874.56,17903.92 3874.56,17786.08 3875.98,17778.97 3880.01,17772.93 3886.05,17768.9 3893.16,17767.48" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
-<circle cx="3831.44" cy="17845" r="10.2" fill="#a8a29a" stroke="#a8a29a" stroke-width="18"/>
-<circle cx="4047.04" cy="17845" r="8.16" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
-<text x="4304" y="17845" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">bathtub</text>
-<line x1="3750" y1="18015" x2="6450" y2="18015" stroke="#333333" stroke-width="9.9"/>
-<polygon points="3804,18083 4196,18083 4196,18287 3804,18287" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="3975.93,18136.04 3979.68,18136.79 3982.85,18138.91 3984.97,18142.08 3985.72,18145.83 3985.72,18248.65 3984.97,18252.4 3982.85,18255.57 3979.68,18257.69 3975.93,18258.44 3842.35,18258.44 3838.6,18257.69 3835.43,18255.57 3833.31,18252.4 3832.56,18248.65 3832.56,18145.83 3833.31,18142.08 3835.43,18138.91 3838.6,18136.79 3842.35,18136.04" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
-<circle cx="3909.14" cy="18197.24" r="14.69" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
-<polygon points="4157.65,18136.04 4161.4,18136.79 4164.57,18138.91 4166.69,18142.08 4167.44,18145.83 4167.44,18248.65 4166.69,18252.4 4164.57,18255.57 4161.4,18257.69 4157.65,18258.44 4024.07,18258.44 4020.32,18257.69 4017.15,18255.57 4015.03,18252.4 4014.28,18248.65 4014.28,18145.83 4015.03,18142.08 4017.15,18138.91 4020.32,18136.79 4024.07,18136.04" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
-<circle cx="4090.86" cy="18197.24" r="14.69" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
-<circle cx="4000" cy="18095.24" r="6.12" fill="#a8a29a" stroke="#a8a29a" stroke-width="18"/>
-<line x1="4000" y1="18095.24" x2="4000" y2="18140.12" stroke="#a8a29a" stroke-width="9.9"/>
-<text x="4304" y="18185" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">kitchen_sink</text>
-<line x1="3750" y1="18355" x2="6450" y2="18355" stroke="#333333" stroke-width="9.9"/>
-<polygon points="3804,18423 4196,18423 4196,18627 3804,18627" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<line x1="3804" y1="18590.28" x2="4196" y2="18590.28" stroke="#a8a29a" stroke-width="9.9"/>
-<text x="4304" y="18525" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">counter</text>
-<line x1="3750" y1="18695" x2="6450" y2="18695" stroke="#333333" stroke-width="9.9"/>
-<polygon points="3804,18763 4196,18763 4196,18967 3804,18967" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<circle cx="3921.6" cy="18824.2" r="32.64" fill="none" stroke="#a8a29a" stroke-width="18"/>
-<circle cx="3921.6" cy="18824.2" r="19.58" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
-<circle cx="3921.6" cy="18905.8" r="32.64" fill="none" stroke="#a8a29a" stroke-width="18"/>
-<circle cx="3921.6" cy="18905.8" r="19.58" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
-<circle cx="4078.4" cy="18824.2" r="32.64" fill="none" stroke="#a8a29a" stroke-width="18"/>
-<circle cx="4078.4" cy="18824.2" r="19.58" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
-<circle cx="4078.4" cy="18905.8" r="32.64" fill="none" stroke="#a8a29a" stroke-width="18"/>
-<circle cx="4078.4" cy="18905.8" r="19.58" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="3804" y1="18950.68" x2="4196" y2="18950.68" stroke="#a8a29a" stroke-width="9.9"/>
-<text x="4304" y="18865" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">stove</text>
-<line x1="3750" y1="19035" x2="6450" y2="19035" stroke="#333333" stroke-width="9.9"/>
-<polygon points="3804,19103 4196,19103 4196,19307 3804,19307" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="3814.2,19113.2 4185.8,19113.2 4185.8,19296.8 3814.2,19296.8" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="3804" y1="19176.44" x2="4196" y2="19176.44" stroke="#a8a29a" stroke-width="18"/>
-<line x1="4141.12" y1="19127.48" x2="4141.12" y2="19160.12" stroke="#a8a29a" stroke-width="18"/>
-<text x="4304" y="19205" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">fridge</text>
-<line x1="3750" y1="19375" x2="6450" y2="19375" stroke="#333333" stroke-width="9.9"/>
-<polygon points="3804,19443 4196,19443 4196,19647 3804,19647" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="3804,19443 4196,19443 4196,19455.24 3804,19455.24" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="3978.24,19461.36 3982.07,19462.12 3985.31,19464.29 3987.48,19467.53 3988.24,19471.36 3988.24,19479.92 3987.48,19483.75 3985.31,19486.99 3982.07,19489.16 3978.24,19489.92 3849.28,19489.92 3845.45,19489.16 3842.21,19486.99 3840.04,19483.75 3839.28,19479.92 3839.28,19471.36 3840.04,19467.53 3842.21,19464.29 3845.45,19462.12 3849.28,19461.36" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="4150.72,19461.36 4154.55,19462.12 4157.79,19464.29 4159.96,19467.53 4160.72,19471.36 4160.72,19479.92 4159.96,19483.75 4157.79,19486.99 4154.55,19489.16 4150.72,19489.92 4021.76,19489.92 4017.93,19489.16 4014.69,19486.99 4012.52,19483.75 4011.76,19479.92 4011.76,19471.36 4012.52,19467.53 4014.69,19464.29 4017.93,19462.12 4021.76,19461.36" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
-<line x1="3804" y1="19508.28" x2="4196" y2="19508.28" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="3804" y1="19516.44" x2="4196" y2="19516.44" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="4196" y1="19508.28" x2="4109.76" y2="19516.44" stroke="#a8a29a" stroke-width="9.9"/>
-<text x="4304" y="19545" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">bed</text>
-<line x1="3750" y1="19715" x2="6450" y2="19715" stroke="#333333" stroke-width="9.9"/>
-<polygon points="3804,19783 4196,19783 4196,19987 3804,19987" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<line x1="3823.6" y1="19885" x2="4176.4" y2="19885" stroke="#a8a29a" stroke-width="9.9"/>
-<path d="M 3823.6,19885 A 58.8 58.8 0 0 0 3941.2,19885" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
-<path d="M 3941.2,19885 A 58.8 58.8 0 0 0 4058.8,19885" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
-<path d="M 4058.8,19885 A 58.8 58.8 0 0 0 4176.4,19885" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="4000" y1="19783" x2="4000" y2="19987" stroke="#a8a29a" stroke-width="9.9"/>
-<text x="4304" y="19885" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">wardrobe</text>
-<line x1="3750" y1="20055" x2="6450" y2="20055" stroke="#333333" stroke-width="9.9"/>
-<polygon points="4175.6,20123 4183.41,20124.55 4190.02,20128.98 4194.45,20135.59 4196,20143.4 4196,20306.6 4194.45,20314.41 4190.02,20321.02 4183.41,20325.45 4175.6,20327 3824.4,20327 3816.59,20325.45 3809.98,20321.02 3805.55,20314.41 3804,20306.6 3804,20143.4 3805.55,20135.59 3809.98,20128.98 3816.59,20124.55 3824.4,20123" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="3804,20143.4 3851.04,20143.4 3851.04,20327 3804,20327" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="4148.96,20143.4 4196,20143.4 4196,20327 4148.96,20327" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<line x1="3804" y1="20159.72" x2="4196" y2="20159.72" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="3950.35" y1="20159.72" x2="3950.35" y2="20306.6" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="4049.65" y1="20159.72" x2="4049.65" y2="20306.6" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="3851.04" y1="20306.6" x2="4148.96" y2="20306.6" stroke="#a8a29a" stroke-width="9.9"/>
-<text x="4304" y="20225" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">sofa</text>
-<line x1="3750" y1="20395" x2="6450" y2="20395" stroke="#333333" stroke-width="9.9"/>
-<polygon points="3804,20463 4196,20463 4196,20667 3804,20667" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="3820.32,20479.32 4179.68,20479.32 4179.68,20650.68 3820.32,20650.68" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
-<text x="4304" y="20565" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">table</text>
-<line x1="3750" y1="20735" x2="6450" y2="20735" stroke="#333333" stroke-width="9.9"/>
-<polygon points="3804,20803 4196,20803 4196,21007 3804,21007" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<line x1="3804" y1="20871" x2="4196" y2="20871" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="3804" y1="20939" x2="4196" y2="20939" stroke="#a8a29a" stroke-width="9.9"/>
-<text x="4304" y="20905" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">bench</text>
-<line x1="3750" y1="21075" x2="6450" y2="21075" stroke="#333333" stroke-width="9.9"/>
-<polygon points="3804,21143 4196,21143 4196,21347 3804,21347" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<line x1="3804" y1="21167.48" x2="4196" y2="21167.48" stroke="#a8a29a" stroke-width="9.9"/>
-<polygon points="3816.24,21155.24 4183.76,21155.24 4183.76,21334.76 3816.24,21334.76" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
-<text x="4304" y="21245" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">desk</text>
-<line x1="3750" y1="21415" x2="6450" y2="21415" stroke="#333333" stroke-width="9.9"/>
-<polygon points="3804,21483 4196,21483 4196,21687 3804,21687" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<line x1="3804" y1="21585" x2="4196" y2="21585" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="4000" y1="21483" x2="4000" y2="21687" stroke="#a8a29a" stroke-width="9.9"/>
-<text x="4304" y="21585" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">bookcase</text>
-<line x1="3750" y1="21755" x2="6450" y2="21755" stroke="#333333" stroke-width="9.9"/>
-<polygon points="3804,21823 4196,21823 4196,22027 3804,22027" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="3820.32,21839.32 4179.68,21839.32 4179.68,22010.68 3820.32,22010.68" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
-<circle cx="4000" cy="21925" r="61.2" fill="none" stroke="#a8a29a" stroke-width="18"/>
-<circle cx="4000" cy="21925" r="36.72" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
-<text x="4304" y="21925" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">washer</text>
-<line x1="3750" y1="22095" x2="6450" y2="22095" stroke="#333333" stroke-width="9.9"/>
-<circle cx="4000" cy="22265" r="97.92" fill="none" stroke="#a8a29a" stroke-width="18"/>
-<circle cx="4000" cy="22265" r="58.75" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="4058.75" y1="22265" x2="4097.92" y2="22265" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="4041.54" y1="22306.54" x2="4069.24" y2="22334.24" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="4000" y1="22323.75" x2="4000" y2="22362.92" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="3958.46" y1="22306.54" x2="3930.76" y2="22334.24" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="3941.25" y1="22265" x2="3902.08" y2="22265" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="3958.46" y1="22223.46" x2="3930.76" y2="22195.76" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="4000" y1="22206.25" x2="4000" y2="22167.08" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="4041.54" y1="22223.46" x2="4069.24" y2="22195.76" stroke="#a8a29a" stroke-width="9.9"/>
-<text x="4304" y="22265" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">planter</text>
+<g id="A-ROOF" inkscape:groupmode="layer" inkscape:label="A-ROOF">
+<polygon points="-750,-750 16750,-750 16750,12250 -750,12250" fill="none" stroke="#888888" stroke-width="18" stroke-dasharray="108 72"/>
 </g>
-<g><polygon points="15700,-1425 15475,-705 15700,-862.5 15925,-705" fill="#333333" transform="rotate(0 15700 -975)"/><text x="15700" y="-1633" font-size="260" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
-<g><rect x="-150" y="13975" width="1000" height="140" fill="#333333"/><rect x="850" y="13975" width="1000" height="140" fill="none" stroke="#333333" stroke-width="18"/><text x="-150" y="14315" font-size="200" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="1850" y="14315" font-size="200" fill="#333333" text-anchor="middle" dominant-baseline="central">2 m</text></g>
-<g><rect x="12750" y="13975" width="3400" height="1840" fill="none" stroke="#333333" stroke-width="18"/><text x="12920" y="14205" font-size="152" fill="#888888" dominant-baseline="central">PROJECT</text><text x="15980" y="14205" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">Courtyard House</text><text x="12920" y="14665" font-size="152" fill="#888888" dominant-baseline="central">DRAWN BY</text><text x="15980" y="14665" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">ArchLang</text><line x1="12750" y1="14435" x2="16150" y2="14435" stroke="#333333" stroke-width="9"/><text x="12920" y="15125" font-size="152" fill="#888888" dominant-baseline="central">DATE</text><text x="15980" y="15125" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2026-08-16</text><line x1="12750" y1="14895" x2="16150" y2="14895" stroke="#333333" stroke-width="9"/><text x="12920" y="15585" font-size="152" fill="#888888" dominant-baseline="central">SCALE</text><text x="15980" y="15585" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1:100</text><line x1="12750" y1="15355" x2="16150" y2="15355" stroke="#333333" stroke-width="9"/></g>
+<g id="A-ANNO" inkscape:groupmode="layer" inkscape:label="A-ANNO">
+<polygon points="-750,16315 2850,16315 2850,23115 -750,23115" fill="none" stroke="#333333" stroke-width="18"/>
+<text x="-678" y="16485" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">ROOM SCHEDULE</text>
+<line x1="-750" y1="16655" x2="2850" y2="16655" stroke="#333333" stroke-width="18"/>
+<text x="-475" y="16825" font-size="152" fill="#888888" text-anchor="middle" dominant-baseline="central" font-weight="600">NO.</text>
+<text x="-128" y="16825" font-size="152" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">NAME</text>
+<text x="2778" y="16825" font-size="152" fill="#888888" text-anchor="end" dominant-baseline="central" font-weight="600">AREA (m²)</text>
+<line x1="-750" y1="16995" x2="2850" y2="16995" stroke="#333333" stroke-width="18"/>
+<text x="-678" y="17165" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">Living wing</text>
+<text x="-475" y="17505" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">01</text>
+<text x="-128" y="17505" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Living</text>
+<text x="2778" y="17505" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">19.25</text>
+<line x1="-750" y1="17675" x2="2850" y2="17675" stroke="#333333" stroke-width="9.9"/>
+<text x="-475" y="17845" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">02</text>
+<text x="-128" y="17845" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Entry</text>
+<text x="2778" y="17845" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">12.25</text>
+<line x1="-750" y1="18015" x2="2850" y2="18015" stroke="#333333" stroke-width="9.9"/>
+<text x="-475" y="18185" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">03</text>
+<text x="-128" y="18185" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Dining</text>
+<text x="2778" y="18185" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">12.25</text>
+<line x1="-750" y1="18355" x2="2850" y2="18355" stroke="#333333" stroke-width="9.9"/>
+<text x="-475" y="18525" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">04</text>
+<text x="-128" y="18525" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Gallery</text>
+<text x="2778" y="18525" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">24.00</text>
+<line x1="-200" y1="17335" x2="-200" y2="18695" stroke="#333333" stroke-width="9.9"/>
+<line x1="1800" y1="17335" x2="1800" y2="18695" stroke="#333333" stroke-width="9.9"/>
+<line x1="-750" y1="18695" x2="2850" y2="18695" stroke="#333333" stroke-width="9.9"/>
+<text x="-678" y="18865" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">SUBTOTAL</text>
+<text x="2778" y="18865" font-size="190" fill="#888888" text-anchor="end" dominant-baseline="central" font-weight="600">67.75</text>
+<line x1="-750" y1="19035" x2="2850" y2="19035" stroke="#333333" stroke-width="18"/>
+<text x="-678" y="19205" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">Private wing</text>
+<text x="-475" y="19545" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">05</text>
+<text x="-128" y="19545" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Bedroom 1</text>
+<text x="2778" y="19545" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">16.50</text>
+<line x1="-750" y1="19715" x2="2850" y2="19715" stroke="#333333" stroke-width="9.9"/>
+<text x="-475" y="19885" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">06</text>
+<text x="-128" y="19885" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Bedroom 2</text>
+<text x="2778" y="19885" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">16.50</text>
+<line x1="-750" y1="20055" x2="2850" y2="20055" stroke="#333333" stroke-width="9.9"/>
+<text x="-475" y="20225" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">07</text>
+<text x="-128" y="20225" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Bedroom 3</text>
+<text x="2778" y="20225" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">15.00</text>
+<line x1="-750" y1="20395" x2="2850" y2="20395" stroke="#333333" stroke-width="9.9"/>
+<text x="-475" y="20565" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">08</text>
+<text x="-128" y="20565" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Study</text>
+<text x="2778" y="20565" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">17.50</text>
+<line x1="-200" y1="19375" x2="-200" y2="20735" stroke="#333333" stroke-width="9.9"/>
+<line x1="1800" y1="19375" x2="1800" y2="20735" stroke="#333333" stroke-width="9.9"/>
+<line x1="-750" y1="20735" x2="2850" y2="20735" stroke="#333333" stroke-width="9.9"/>
+<text x="-678" y="20905" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">SUBTOTAL</text>
+<text x="2778" y="20905" font-size="190" fill="#888888" text-anchor="end" dominant-baseline="central" font-weight="600">65.50</text>
+<line x1="-750" y1="21075" x2="2850" y2="21075" stroke="#333333" stroke-width="18"/>
+<text x="-678" y="21245" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">Service wing</text>
+<text x="-475" y="21585" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">09</text>
+<text x="-128" y="21585" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Kitchen</text>
+<text x="2778" y="21585" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">12.25</text>
+<line x1="-750" y1="21755" x2="2850" y2="21755" stroke="#333333" stroke-width="9.9"/>
+<text x="-475" y="21925" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">10</text>
+<text x="-128" y="21925" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Bathroom</text>
+<text x="2778" y="21925" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">8.75</text>
+<line x1="-750" y1="22095" x2="2850" y2="22095" stroke="#333333" stroke-width="9.9"/>
+<text x="-475" y="22265" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">11</text>
+<text x="-128" y="22265" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Utility</text>
+<text x="2778" y="22265" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">8.75</text>
+<line x1="-200" y1="21415" x2="-200" y2="22435" stroke="#333333" stroke-width="9.9"/>
+<line x1="1800" y1="21415" x2="1800" y2="22435" stroke="#333333" stroke-width="9.9"/>
+<line x1="-750" y1="22435" x2="2850" y2="22435" stroke="#333333" stroke-width="9.9"/>
+<text x="-678" y="22605" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">SUBTOTAL</text>
+<text x="2778" y="22605" font-size="190" fill="#888888" text-anchor="end" dominant-baseline="central" font-weight="600">29.75</text>
+<line x1="-750" y1="22775" x2="2850" y2="22775" stroke="#333333" stroke-width="18"/>
+<text x="-678" y="22945" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">TOTAL</text>
+<text x="2778" y="22945" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central" font-weight="600">163.00</text>
+<polygon points="3150,16315 5850,16315 5850,22435 3150,22435" fill="none" stroke="#333333" stroke-width="18"/>
+<text x="3204" y="16485" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">LEGEND</text>
+<line x1="3150" y1="16655" x2="5850" y2="16655" stroke="#333333" stroke-width="18"/>
+<path d="M 3204,16723 L 3596,16723 L 3596,16927 L 3204,16927 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<polygon points="3204,16723 3596,16723 3596,16927 3204,16927" fill="none" stroke="#333333" stroke-width="18"/>
+<text x="3704" y="16825" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">poche</text>
+<line x1="3150" y1="16995" x2="5850" y2="16995" stroke="#333333" stroke-width="9.9"/>
+<polygon points="3204,17063 3596,17063 3596,17107.88 3204,17107.88" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<line x1="3227.52" y1="17076.46" x2="3572.48" y2="17076.46" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="3556.8,17190.62 3551.46,17209.57 3535.79,17227.22 3510.87,17242.38 3478.4,17254.01 3440.58,17261.32 3400,17263.82 3359.42,17261.32 3321.6,17254.01 3289.13,17242.38 3264.21,17227.22 3248.54,17209.57 3243.2,17190.62 3248.54,17171.68 3264.21,17154.02 3289.13,17138.87 3321.6,17127.23 3359.42,17119.92 3400,17117.43 3440.58,17119.92 3478.4,17127.23 3510.87,17138.87 3535.79,17154.02 3551.46,17171.68" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
+<polygon points="3522.3,17190.62 3518.14,17205.4 3505.92,17219.17 3486.48,17230.99 3461.15,17240.07 3431.65,17245.77 3400,17247.71 3368.35,17245.77 3338.85,17240.07 3313.52,17230.99 3294.08,17219.17 3281.86,17205.4 3277.7,17190.62 3281.86,17175.85 3294.08,17162.08 3313.52,17150.25 3338.85,17141.18 3368.35,17135.48 3400,17133.53 3431.65,17135.48 3461.15,17141.18 3486.48,17150.25 3505.92,17162.08 3518.14,17175.85" fill="#ffffff" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3400" cy="17085.44" r="10.2" fill="#a8a29a" stroke="#a8a29a" stroke-width="18"/>
+<text x="3704" y="17165" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">wc</text>
+<line x1="3150" y1="17335" x2="5850" y2="17335" stroke="#333333" stroke-width="9.9"/>
+<polygon points="3204,17403 3596,17403 3596,17607 3204,17607" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<polygon points="3533.28,17517.24 3528.74,17534.14 3515.42,17549.88 3494.24,17563.4 3466.64,17573.77 3434.5,17580.3 3400,17582.52 3365.5,17580.3 3333.36,17573.77 3305.76,17563.4 3284.58,17549.88 3271.26,17534.14 3266.72,17517.24 3271.26,17500.34 3284.58,17484.6 3305.76,17471.08 3333.36,17460.71 3365.5,17454.18 3400,17451.96 3434.5,17454.18 3466.64,17460.71 3494.24,17471.08 3515.42,17484.6 3528.74,17500.34" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
+<polygon points="3506.62,17517.24 3502.99,17530.76 3492.34,17543.35 3475.39,17554.17 3453.31,17562.47 3427.6,17567.68 3400,17569.46 3372.4,17567.68 3346.69,17562.47 3324.61,17554.17 3307.66,17543.35 3297.01,17530.76 3293.38,17517.24 3297.01,17503.72 3307.66,17491.13 3324.61,17480.31 3346.69,17472.01 3372.4,17466.8 3400,17465.02 3427.6,17466.8 3453.31,17472.01 3475.39,17480.31 3492.34,17491.13 3502.99,17503.72" fill="#ffffff" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="3380.4,17409.12 3419.6,17409.12 3419.6,17429.52 3380.4,17429.52" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<line x1="3400" y1="17429.52" x2="3400" y2="17491.13" stroke="#a8a29a" stroke-width="9.9"/>
+<text x="3704" y="17505" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">basin</text>
+<line x1="3150" y1="17675" x2="5850" y2="17675" stroke="#333333" stroke-width="9.9"/>
+<polygon points="3559.28,17743 3573.33,17745.8 3585.24,17753.76 3593.2,17765.67 3596,17779.72 3596,17910.28 3593.2,17924.33 3585.24,17936.24 3573.33,17944.2 3559.28,17947 3240.72,17947 3226.67,17944.2 3214.76,17936.24 3206.8,17924.33 3204,17910.28 3204,17779.72 3206.8,17765.67 3214.76,17753.76 3226.67,17745.8 3240.72,17743" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<polygon points="3538.2,17767.48 3545.31,17768.9 3551.35,17772.93 3555.38,17778.97 3556.8,17786.08 3556.8,17903.92 3555.38,17911.03 3551.35,17917.07 3545.31,17921.1 3538.2,17922.52 3293.16,17922.52 3286.05,17921.1 3280.01,17917.07 3275.98,17911.03 3274.56,17903.92 3274.56,17786.08 3275.98,17778.97 3280.01,17772.93 3286.05,17768.9 3293.16,17767.48" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
+<circle cx="3231.44" cy="17845" r="10.2" fill="#a8a29a" stroke="#a8a29a" stroke-width="18"/>
+<circle cx="3447.04" cy="17845" r="8.16" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<text x="3704" y="17845" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">bathtub</text>
+<line x1="3150" y1="18015" x2="5850" y2="18015" stroke="#333333" stroke-width="9.9"/>
+<polygon points="3204,18083 3596,18083 3596,18287 3204,18287" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<polygon points="3375.93,18136.04 3379.68,18136.79 3382.85,18138.91 3384.97,18142.08 3385.72,18145.83 3385.72,18248.65 3384.97,18252.4 3382.85,18255.57 3379.68,18257.69 3375.93,18258.44 3242.35,18258.44 3238.6,18257.69 3235.43,18255.57 3233.31,18252.4 3232.56,18248.65 3232.56,18145.83 3233.31,18142.08 3235.43,18138.91 3238.6,18136.79 3242.35,18136.04" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
+<circle cx="3309.14" cy="18197.24" r="14.69" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="3557.65,18136.04 3561.4,18136.79 3564.57,18138.91 3566.69,18142.08 3567.44,18145.83 3567.44,18248.65 3566.69,18252.4 3564.57,18255.57 3561.4,18257.69 3557.65,18258.44 3424.07,18258.44 3420.32,18257.69 3417.15,18255.57 3415.03,18252.4 3414.28,18248.65 3414.28,18145.83 3415.03,18142.08 3417.15,18138.91 3420.32,18136.79 3424.07,18136.04" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
+<circle cx="3490.86" cy="18197.24" r="14.69" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3400" cy="18095.24" r="6.12" fill="#a8a29a" stroke="#a8a29a" stroke-width="18"/>
+<line x1="3400" y1="18095.24" x2="3400" y2="18140.12" stroke="#a8a29a" stroke-width="9.9"/>
+<text x="3704" y="18185" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">kitchen_sink</text>
+<line x1="3150" y1="18355" x2="5850" y2="18355" stroke="#333333" stroke-width="9.9"/>
+<polygon points="3204,18423 3596,18423 3596,18627 3204,18627" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<line x1="3204" y1="18590.28" x2="3596" y2="18590.28" stroke="#a8a29a" stroke-width="9.9"/>
+<text x="3704" y="18525" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">counter</text>
+<line x1="3150" y1="18695" x2="5850" y2="18695" stroke="#333333" stroke-width="9.9"/>
+<polygon points="3204,18763 3596,18763 3596,18967 3204,18967" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<circle cx="3321.6" cy="18824.2" r="32.64" fill="none" stroke="#a8a29a" stroke-width="18"/>
+<circle cx="3321.6" cy="18824.2" r="19.58" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3321.6" cy="18905.8" r="32.64" fill="none" stroke="#a8a29a" stroke-width="18"/>
+<circle cx="3321.6" cy="18905.8" r="19.58" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3478.4" cy="18824.2" r="32.64" fill="none" stroke="#a8a29a" stroke-width="18"/>
+<circle cx="3478.4" cy="18824.2" r="19.58" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3478.4" cy="18905.8" r="32.64" fill="none" stroke="#a8a29a" stroke-width="18"/>
+<circle cx="3478.4" cy="18905.8" r="19.58" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3204" y1="18950.68" x2="3596" y2="18950.68" stroke="#a8a29a" stroke-width="9.9"/>
+<text x="3704" y="18865" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">stove</text>
+<line x1="3150" y1="19035" x2="5850" y2="19035" stroke="#333333" stroke-width="9.9"/>
+<polygon points="3204,19103 3596,19103 3596,19307 3204,19307" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<polygon points="3214.2,19113.2 3585.8,19113.2 3585.8,19296.8 3214.2,19296.8" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3204" y1="19176.44" x2="3596" y2="19176.44" stroke="#a8a29a" stroke-width="18"/>
+<line x1="3541.12" y1="19127.48" x2="3541.12" y2="19160.12" stroke="#a8a29a" stroke-width="18"/>
+<text x="3704" y="19205" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">fridge</text>
+<line x1="3150" y1="19375" x2="5850" y2="19375" stroke="#333333" stroke-width="9.9"/>
+<polygon points="3204,19443 3596,19443 3596,19647 3204,19647" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<polygon points="3204,19443 3596,19443 3596,19455.24 3204,19455.24" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<polygon points="3378.24,19461.36 3382.07,19462.12 3385.31,19464.29 3387.48,19467.53 3388.24,19471.36 3388.24,19479.92 3387.48,19483.75 3385.31,19486.99 3382.07,19489.16 3378.24,19489.92 3249.28,19489.92 3245.45,19489.16 3242.21,19486.99 3240.04,19483.75 3239.28,19479.92 3239.28,19471.36 3240.04,19467.53 3242.21,19464.29 3245.45,19462.12 3249.28,19461.36" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
+<polygon points="3550.72,19461.36 3554.55,19462.12 3557.79,19464.29 3559.96,19467.53 3560.72,19471.36 3560.72,19479.92 3559.96,19483.75 3557.79,19486.99 3554.55,19489.16 3550.72,19489.92 3421.76,19489.92 3417.93,19489.16 3414.69,19486.99 3412.52,19483.75 3411.76,19479.92 3411.76,19471.36 3412.52,19467.53 3414.69,19464.29 3417.93,19462.12 3421.76,19461.36" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
+<line x1="3204" y1="19508.28" x2="3596" y2="19508.28" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3204" y1="19516.44" x2="3596" y2="19516.44" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3596" y1="19508.28" x2="3509.76" y2="19516.44" stroke="#a8a29a" stroke-width="9.9"/>
+<text x="3704" y="19545" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">bed</text>
+<line x1="3150" y1="19715" x2="5850" y2="19715" stroke="#333333" stroke-width="9.9"/>
+<polygon points="3204,19783 3596,19783 3596,19987 3204,19987" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<line x1="3223.6" y1="19885" x2="3576.4" y2="19885" stroke="#a8a29a" stroke-width="9.9"/>
+<path d="M 3223.6,19885 A 58.8 58.8 0 0 0 3341.2,19885" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<path d="M 3341.2,19885 A 58.8 58.8 0 0 0 3458.8,19885" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<path d="M 3458.8,19885 A 58.8 58.8 0 0 0 3576.4,19885" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3400" y1="19783" x2="3400" y2="19987" stroke="#a8a29a" stroke-width="9.9"/>
+<text x="3704" y="19885" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">wardrobe</text>
+<line x1="3150" y1="20055" x2="5850" y2="20055" stroke="#333333" stroke-width="9.9"/>
+<polygon points="3575.6,20123 3583.41,20124.55 3590.02,20128.98 3594.45,20135.59 3596,20143.4 3596,20306.6 3594.45,20314.41 3590.02,20321.02 3583.41,20325.45 3575.6,20327 3224.4,20327 3216.59,20325.45 3209.98,20321.02 3205.55,20314.41 3204,20306.6 3204,20143.4 3205.55,20135.59 3209.98,20128.98 3216.59,20124.55 3224.4,20123" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<polygon points="3204,20143.4 3251.04,20143.4 3251.04,20327 3204,20327" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<polygon points="3548.96,20143.4 3596,20143.4 3596,20327 3548.96,20327" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<line x1="3204" y1="20159.72" x2="3596" y2="20159.72" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3350.35" y1="20159.72" x2="3350.35" y2="20306.6" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3449.65" y1="20159.72" x2="3449.65" y2="20306.6" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3251.04" y1="20306.6" x2="3548.96" y2="20306.6" stroke="#a8a29a" stroke-width="9.9"/>
+<text x="3704" y="20225" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">sofa</text>
+<line x1="3150" y1="20395" x2="5850" y2="20395" stroke="#333333" stroke-width="9.9"/>
+<polygon points="3204,20463 3596,20463 3596,20667 3204,20667" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<polygon points="3220.32,20479.32 3579.68,20479.32 3579.68,20650.68 3220.32,20650.68" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<text x="3704" y="20565" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">table</text>
+<line x1="3150" y1="20735" x2="5850" y2="20735" stroke="#333333" stroke-width="9.9"/>
+<polygon points="3204,20803 3596,20803 3596,21007 3204,21007" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<line x1="3204" y1="20871" x2="3596" y2="20871" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3204" y1="20939" x2="3596" y2="20939" stroke="#a8a29a" stroke-width="9.9"/>
+<text x="3704" y="20905" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">bench</text>
+<line x1="3150" y1="21075" x2="5850" y2="21075" stroke="#333333" stroke-width="9.9"/>
+<polygon points="3204,21143 3596,21143 3596,21347 3204,21347" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<line x1="3204" y1="21167.48" x2="3596" y2="21167.48" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="3216.24,21155.24 3583.76,21155.24 3583.76,21334.76 3216.24,21334.76" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<text x="3704" y="21245" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">desk</text>
+<line x1="3150" y1="21415" x2="5850" y2="21415" stroke="#333333" stroke-width="9.9"/>
+<polygon points="3204,21483 3596,21483 3596,21687 3204,21687" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<line x1="3204" y1="21585" x2="3596" y2="21585" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3400" y1="21483" x2="3400" y2="21687" stroke="#a8a29a" stroke-width="9.9"/>
+<text x="3704" y="21585" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">bookcase</text>
+<line x1="3150" y1="21755" x2="5850" y2="21755" stroke="#333333" stroke-width="9.9"/>
+<polygon points="3204,21823 3596,21823 3596,22027 3204,22027" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<polygon points="3220.32,21839.32 3579.68,21839.32 3579.68,22010.68 3220.32,22010.68" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3400" cy="21925" r="61.2" fill="none" stroke="#a8a29a" stroke-width="18"/>
+<circle cx="3400" cy="21925" r="36.72" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<text x="3704" y="21925" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">washer</text>
+<line x1="3150" y1="22095" x2="5850" y2="22095" stroke="#333333" stroke-width="9.9"/>
+<circle cx="3400" cy="22265" r="97.92" fill="none" stroke="#a8a29a" stroke-width="18"/>
+<circle cx="3400" cy="22265" r="58.75" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3458.75" y1="22265" x2="3497.92" y2="22265" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3441.54" y1="22306.54" x2="3469.24" y2="22334.24" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3400" y1="22323.75" x2="3400" y2="22362.92" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3358.46" y1="22306.54" x2="3330.76" y2="22334.24" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3341.25" y1="22265" x2="3302.08" y2="22265" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3358.46" y1="22223.46" x2="3330.76" y2="22195.76" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3400" y1="22206.25" x2="3400" y2="22167.08" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3441.54" y1="22223.46" x2="3469.24" y2="22195.76" stroke="#a8a29a" stroke-width="9.9"/>
+<text x="3704" y="22265" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">planter</text>
+</g>
+<g><polygon points="16300,-2025 16075,-1305 16300,-1462.5 16525,-1305" fill="#333333" transform="rotate(0 16300 -1575)"/><text x="16300" y="-2233" font-size="260" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
+<g><rect x="-750" y="13975" width="1000" height="140" fill="#333333"/><rect x="250" y="13975" width="1000" height="140" fill="none" stroke="#333333" stroke-width="18"/><text x="-750" y="14315" font-size="200" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="1250" y="14315" font-size="200" fill="#333333" text-anchor="middle" dominant-baseline="central">2 m</text></g>
+<g><rect x="13350" y="13975" width="3400" height="1840" fill="none" stroke="#333333" stroke-width="18"/><text x="13520" y="14205" font-size="152" fill="#888888" dominant-baseline="central">PROJECT</text><text x="16580" y="14205" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">Courtyard House</text><text x="13520" y="14665" font-size="152" fill="#888888" dominant-baseline="central">DRAWN BY</text><text x="16580" y="14665" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">ArchLang</text><line x1="13350" y1="14435" x2="16750" y2="14435" stroke="#333333" stroke-width="9"/><text x="13520" y="15125" font-size="152" fill="#888888" dominant-baseline="central">DATE</text><text x="16580" y="15125" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2026-08-16</text><line x1="13350" y1="14895" x2="16750" y2="14895" stroke="#333333" stroke-width="9"/><text x="13520" y="15585" font-size="152" fill="#888888" dominant-baseline="central">SCALE</text><text x="16580" y="15585" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1:100</text><line x1="13350" y1="15355" x2="16750" y2="15355" stroke="#333333" stroke-width="9"/></g>
 </svg>

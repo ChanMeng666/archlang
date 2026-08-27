@@ -94,4 +94,19 @@ describe("golden SVG snapshots", () => {
     expect(svg).toBe(pages![0]!.svg);
     for (const p of pages!) expect(p.svg).toMatchSnapshot(`townhouse.arch L${p.level}`);
   });
+
+  // v1.29 gallery refresh: the SHOWPIECE flagship — every surface of the language on one
+  // A2 sheet, across two levels. This is where a roof/void/arc/mirrored-component
+  // interaction would show up as a string diff; the other multi-level goldens above don't
+  // combine those with `site`, curves or `place … mirror`.
+  it("renders hillside-villa.arch as one page per level", () => {
+    const { svg, pages, errors } = compile(example("hillside-villa.arch"), { noCache: true });
+    expect(errors).toEqual([]);
+    expect(pages?.map((p) => [p.level, p.name])).toEqual([
+      [1, "Ground floor"],
+      [2, "Upper floor"],
+    ]);
+    expect(svg).toBe(pages![0]!.svg);
+    for (const p of pages!) expect(p.svg).toMatchSnapshot(`hillside-villa.arch L${p.level}`);
+  });
 });

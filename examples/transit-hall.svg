@@ -333,6 +333,75 @@
 <polygon points="82000,38000 85000,38000 85000,38900 82000,38900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="82000" y1="38108" x2="85000" y2="38108" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="82054,38054 84946,38054 84946,38846 82054,38846" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="1000,16400 1900,16400 1900,16700 1000,16700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
+<line x1="1000" y1="16550" x2="1900" y2="16550" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="1300" y1="16400" x2="1300" y2="16700" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="1600" y1="16400" x2="1600" y2="16700" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="10500" cy="17000" r="288" fill="none" stroke="#a8a29a" stroke-width="36"/>
+<circle cx="10500" cy="17000" r="172.8" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10672.8" y1="17000" x2="10788" y2="17000" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10622.19" y1="17122.19" x2="10703.65" y2="17203.65" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10500" y1="17172.8" x2="10500" y2="17288" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10377.81" y1="17122.19" x2="10296.35" y2="17203.65" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10327.2" y1="17000" x2="10212" y2="17000" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10377.81" y1="16877.81" x2="10296.35" y2="16796.35" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10500" y1="16827.2" x2="10500" y2="16712" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10622.19" y1="16877.81" x2="10703.65" y2="16796.35" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="1000,22900 1900,22900 1900,23200 1000,23200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
+<line x1="1000" y1="23050" x2="1900" y2="23050" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="1300" y1="22900" x2="1300" y2="23200" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="1600" y1="22900" x2="1600" y2="23200" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="10500" cy="23500" r="288" fill="none" stroke="#a8a29a" stroke-width="36"/>
+<circle cx="10500" cy="23500" r="172.8" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10672.8" y1="23500" x2="10788" y2="23500" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10622.19" y1="23622.19" x2="10703.65" y2="23703.65" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10500" y1="23672.8" x2="10500" y2="23788" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10377.81" y1="23622.19" x2="10296.35" y2="23703.65" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10327.2" y1="23500" x2="10212" y2="23500" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10377.81" y1="23377.81" x2="10296.35" y2="23296.35" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10500" y1="23327.2" x2="10500" y2="23212" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10622.19" y1="23377.81" x2="10703.65" y2="23296.35" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="1000,29400 1900,29400 1900,29700 1000,29700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
+<line x1="1000" y1="29550" x2="1900" y2="29550" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="1300" y1="29400" x2="1300" y2="29700" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="1600" y1="29400" x2="1600" y2="29700" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="10500" cy="30000" r="288" fill="none" stroke="#a8a29a" stroke-width="36"/>
+<circle cx="10500" cy="30000" r="172.8" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10672.8" y1="30000" x2="10788" y2="30000" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10622.19" y1="30122.19" x2="10703.65" y2="30203.65" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10500" y1="30172.8" x2="10500" y2="30288" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10377.81" y1="30122.19" x2="10296.35" y2="30203.65" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10327.2" y1="30000" x2="10212" y2="30000" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10377.81" y1="29877.81" x2="10296.35" y2="29796.35" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10500" y1="29827.2" x2="10500" y2="29712" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10622.19" y1="29877.81" x2="10703.65" y2="29796.35" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="1000,35900 1900,35900 1900,36200 1000,36200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
+<line x1="1000" y1="36050" x2="1900" y2="36050" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="1300" y1="35900" x2="1300" y2="36200" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="1600" y1="35900" x2="1600" y2="36200" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="10500" cy="36500" r="288" fill="none" stroke="#a8a29a" stroke-width="36"/>
+<circle cx="10500" cy="36500" r="172.8" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10672.8" y1="36500" x2="10788" y2="36500" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10622.19" y1="36622.19" x2="10703.65" y2="36703.65" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10500" y1="36672.8" x2="10500" y2="36788" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10377.81" y1="36622.19" x2="10296.35" y2="36703.65" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10327.2" y1="36500" x2="10212" y2="36500" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10377.81" y1="36377.81" x2="10296.35" y2="36296.35" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10500" y1="36327.2" x2="10500" y2="36212" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="10622.19" y1="36377.81" x2="10703.65" y2="36296.35" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="77800,24500 78250,24500 78250,25700 77800,25700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
+<line x1="77950" y1="24500" x2="77950" y2="25700" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="78100" y1="24500" x2="78100" y2="25700" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="79050" cy="20750" r="240" fill="none" stroke="#a8a29a" stroke-width="36"/>
+<circle cx="79050" cy="20750" r="144" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="79194" y1="20750" x2="79290" y2="20750" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="79151.82" y1="20851.82" x2="79219.71" y2="20919.71" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="79050" y1="20894" x2="79050" y2="20990" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="78948.18" y1="20851.82" x2="78880.29" y2="20919.71" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="78906" y1="20750" x2="78810" y2="20750" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="78948.18" y1="20648.18" x2="78880.29" y2="20580.29" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="79050" y1="20606" x2="79050" y2="20510" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="79151.82" y1="20648.18" x2="79219.71" y2="20580.29" stroke="#a8a29a" stroke-width="19.8"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -200,-200 L -200,5500 L 200,5500 L 200,200 L 12000,200 L 12000,-200 Z M 200,8500 L -200,8500 L -200,15500 L 200,15500 Z M 200,18500 L -200,18500 L -200,22000 L 200,22000 Z M 200,25000 L -200,25000 L -200,28500 L 200,28500 Z M 200,31500 L -200,31500 L -200,35000 L 200,35000 Z M 200,38000 L -200,38000 L -200,40200 L 15000,40200 L 15000,39800 L 200,39800 Z M 18000,-200 L 18000,200 L 32000,200 L 32000,-200 Z M 24000,39800 L 21000,39800 L 21000,40200 L 24000,40200 Z M 30000,39800 L 30000,40200 L 33000,40200 L 33000,39800 Z M 38000,-200 L 38000,200 L 52000,200 L 52000,-200 Z M 43000,39800 L 39000,39800 L 39000,40200 L 43000,40200 Z M 51000,39800 L 47000,39800 L 47000,40200 L 51000,40200 Z M 57000,39800 L 57000,40200 L 60000,40200 L 60000,39800 Z M 58000,-200 L 58000,200 L 72000,200 L 72000,-200 Z M 69000,39800 L 66000,39800 L 66000,40200 L 69000,40200 Z M 75000,39800 L 75000,40200 L 90200,40200 L 90200,39100 L 89800,39100 L 89800,39800 Z M 78000,-200 L 78000,200 L 89800,200 L 89800,5500 L 90200,5500 L 90200,-200 Z M 90200,8500 L 89800,8500 L 89800,16900 L 90200,16900 Z M 90200,18100 L 89800,18100 L 89800,23900 L 90200,23900 Z M 90200,25100 L 89800,25100 L 89800,33250 L 90200,33250 Z M 90200,34750 L 89800,34750 L 89800,37900 L 90200,37900 Z" fill="url(#hatch-concrete)" fill-rule="nonzero"/>

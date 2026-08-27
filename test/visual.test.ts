@@ -193,4 +193,15 @@ describe("visual regression — golden PNG pixel-diff", () => {
     expect(pages).toHaveLength(3);
     for (const p of pages!) await diffAgainstGolden(`townhouse.arch.L${p.level}`, p.scene);
   });
+
+  // v1.29 gallery refresh: the SHOWPIECE flagship, two levels. Unlike the multi-storey
+  // goldens above, this one combines `site`, an `arc` bay, a `void`, a `roof` and a
+  // mirrored `place` component on the SAME sheet — the pixel-diff catches an interaction
+  // between them that a byte-identity or geometry unit test would not.
+  it("hillside-villa.arch matches a golden per level", async () => {
+    const { pages, errors } = compile(example("hillside-villa.arch"), { noCache: true });
+    expect(errors).toEqual([]);
+    expect(pages).toHaveLength(2);
+    for (const p of pages!) await diffAgainstGolden(`hillside-villa.arch.L${p.level}`, p.scene);
+  });
 });

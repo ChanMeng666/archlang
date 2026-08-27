@@ -286,6 +286,16 @@
 <line x1="21400" y1="24100" x2="21400" y2="24674" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="22000" y1="24100" x2="22000" y2="24674" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="22600" y1="24100" x2="22600" y2="24674" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="18850" cy="29350" r="336" fill="none" stroke="#a8a29a" stroke-width="36"/>
+<circle cx="18850" cy="29350" r="201.6" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="19051.6" y1="29350" x2="19186" y2="29350" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="18992.55" y1="29492.55" x2="19087.59" y2="29587.59" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="18850" y1="29551.6" x2="18850" y2="29686" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="18707.45" y1="29492.55" x2="18612.41" y2="29587.59" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="18648.4" y1="29350" x2="18514" y2="29350" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="18707.45" y1="29207.45" x2="18612.41" y2="29112.41" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="18850" y1="29148.4" x2="18850" y2="29014" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="18992.55" y1="29207.45" x2="19087.59" y2="29112.41" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="43900,1000 43900,5000 43200,5000 43200,1000" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="43326" y1="1000" x2="43326" y2="5000" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="43900" y1="1600" x2="43326" y2="1600" stroke="#a8a29a" stroke-width="19.8"/>
@@ -1046,7 +1056,7 @@
 <line x1="-150" y1="58040" x2="7050" y2="58040" stroke="#333333" stroke-width="36"/>
 <text x="-6" y="58380" font-size="380" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">TOTAL</text>
 <text x="6906" y="58380" font-size="380" fill="#333333" text-anchor="end" dominant-baseline="central" font-weight="600">1545.06</text>
-<polygon points="7650,43080 13050,43080 13050,51920 7650,51920" fill="none" stroke="#333333" stroke-width="36"/>
+<polygon points="7650,43080 13050,43080 13050,52600 7650,52600" fill="none" stroke="#333333" stroke-width="36"/>
 <text x="7758" y="43420" font-size="380" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">LEGEND</text>
 <line x1="7650" y1="43760" x2="13050" y2="43760" stroke="#333333" stroke-width="36"/>
 <path d="M 7758,43896 L 8542,43896 L 8542,44304 L 7758,44304 Z" fill="url(#hatch-concrete)" fill-rule="nonzero"/>
@@ -1124,6 +1134,18 @@
 <line x1="7758" y1="51580" x2="8542" y2="51580" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="8150" y1="51376" x2="8150" y2="51784" stroke="#a8a29a" stroke-width="19.8"/>
 <text x="8758" y="51580" font-size="380" fill="#333333" text-anchor="start" dominant-baseline="central">shelf</text>
+<line x1="7650" y1="51920" x2="13050" y2="51920" stroke="#333333" stroke-width="19.8"/>
+<circle cx="8150" cy="52260" r="195.84" fill="none" stroke="#a8a29a" stroke-width="36"/>
+<circle cx="8150" cy="52260" r="117.5" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="8267.5" y1="52260" x2="8345.84" y2="52260" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="8233.09" y1="52343.09" x2="8288.48" y2="52398.48" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="8150" y1="52377.5" x2="8150" y2="52455.84" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="8066.91" y1="52343.09" x2="8011.52" y2="52398.48" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="8032.5" y1="52260" x2="7954.16" y2="52260" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="8066.91" y1="52176.91" x2="8011.52" y2="52121.52" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="8150" y1="52142.5" x2="8150" y2="52064.16" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="8233.09" y1="52176.91" x2="8288.48" y2="52121.52" stroke="#a8a29a" stroke-width="19.8"/>
+<text x="8758" y="52260" font-size="380" fill="#333333" text-anchor="start" dominant-baseline="central">plant</text>
 </g>
 <g><polygon points="49250,-2700 48800,-1260 49250,-1575 49700,-1260" fill="#333333" transform="rotate(0 49250 -1800)"/><text x="49250" y="-3116" font-size="520" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
 <g><rect x="-150" y="38400" width="2500" height="280" fill="#333333"/><rect x="2350" y="38400" width="2500" height="280" fill="none" stroke="#333333" stroke-width="36"/><text x="-150" y="39080" font-size="400" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="4850" y="39080" font-size="400" fill="#333333" text-anchor="middle" dominant-baseline="central">5 m</text></g>
