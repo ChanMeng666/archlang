@@ -11,6 +11,7 @@
 // there are now two dozen of them and a flat list of that length is a wall. Group
 // order is a learning progression (a plan you can read in one screen first, the
 // large public buildings last), and so is the order inside each group.
+import hillsideVilla from "../../examples/hillside-villa.arch?raw";
 import oneRoom from "../../examples/one-room.arch?raw";
 import lanewayHouse from "../../examples/laneway-house.arch?raw";
 import gardenLoft from "../../examples/garden-loft.arch?raw";
@@ -22,6 +23,7 @@ import bungalow from "../../examples/bungalow.arch?raw";
 import courtyardHouse from "../../examples/courtyard-house.arch?raw";
 import townhouse from "../../examples/townhouse.arch?raw";
 import twoStorey from "../../examples/two-storey.arch?raw";
+import furnishedFlat from "../../examples/furnished-flat.arch?raw";
 import museum from "../../examples/museum.arch?raw";
 import aquarium from "../../examples/aquarium.arch?raw";
 import library from "../../examples/library.arch?raw";
@@ -49,6 +51,10 @@ export interface ExampleGroup {
  */
 export const EXAMPLE_GROUPS: readonly ExampleGroup[] = [
   {
+    group: "Showpiece",
+    items: [{ label: "Hillside Villa", source: hillsideVilla }],
+  },
+  {
     group: "Start here",
     items: [
       { label: "One room", source: oneRoom },
@@ -67,6 +73,7 @@ export const EXAMPLE_GROUPS: readonly ExampleGroup[] = [
       { label: "Courtyard House", source: courtyardHouse },
       { label: "Townhouse (3 levels)", source: townhouse },
       { label: "Two-storey (2 levels)", source: twoStorey },
+      { label: "Furnished Flat", source: furnishedFlat },
     ],
   },
   {
@@ -110,7 +117,7 @@ export const EXAMPLES: Record<string, string> = Object.fromEntries(
 );
 
 /** The preset a first, unshared, unsaved visit loads. */
-export const DEFAULT_EXAMPLE = "Laneway House";
+export const DEFAULT_EXAMPLE = "Hillside Villa";
 
 // Dev-time integrity checks. A duplicate label would silently shadow a preset in
 // EXAMPLES (and make the <select>'s value ambiguous), and a DEFAULT_EXAMPLE that

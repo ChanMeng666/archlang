@@ -43,13 +43,13 @@ test.describe("first-load source precedence", () => {
     await waitForPlan(page);
     // The <select> is set to the default only on the fall-through path, so it is
     // the honest witness that neither a hash nor an autosave was used.
-    await expect(page.locator("#examples")).toHaveValue("Laneway House");
+    await expect(page.locator("#examples")).toHaveValue("Hillside Villa");
   });
 
   test("an undecodable #z= payload falls back rather than showing an empty editor", async ({ page }) => {
     await page.goto("/#z=!!!not-a-valid-payload!!!");
     await waitForPlan(page);
-    await expect(page.locator("#examples")).toHaveValue("Laneway House");
+    await expect(page.locator("#examples")).toHaveValue("Hillside Villa");
     await expect(page.locator(".cm-content")).not.toBeEmpty();
   });
 
