@@ -24,6 +24,15 @@ plan "Relational 1BR" {
   # back onto, since the boundary it shares with the living room carries no wall.
   furniture bed at (300,5400) size 1500x2000 label "Bed" rotate 180
 
+  # A handful of freestanding pieces in the two upper rooms — this file's only wall is
+  # the exterior shell (relational placement is rooms-only, so there are no partitions
+  # to write `against wall` on), so everything below is a plain `at`.
+  furniture sofa         at (200,2900) size 1800x800 label "Sofa" in living
+  furniture coffee_table at (200,2000) size 900x500               in living
+  furniture dining_table at (5300,300)  size 2400x1200 label "Table" in kitchen
+  furniture chair        at (5600,1700) size 450x450               in kitchen
+  furniture chair        at (6800,1700) size 450x450               in kitchen
+
   # Overall width, outside face to outside face (`faces` projects each endpoint onto
   # the wall it runs into, so it prints the true 8200 rather than the 8000 room grid).
   dim faces (0,7500)->(8000,7500) offset 600
