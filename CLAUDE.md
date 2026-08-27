@@ -65,8 +65,24 @@ than memory.
   union to answer a `describe()` question. Inventory: `docs/research/2026-08-06-competitor-borrowing-roadmap.md` §9.1.
 - **Every new language form ships with a byte-identity law, pinned by test:** a plan that does not
   use it renders, describes and lints exactly as before. `site`, the door kinds, `zone`, `paper`,
-  `polygon`, `arc` all have one. Prove it with a SHA-256 sweep over the shipped examples, not by
-  eyeballing — and if a golden moves, that is a finding to explain before it is a diff to bless.
+  `polygon`, `arc`, `roof` and `void` all have one. Prove it with a SHA-256 sweep over the shipped
+  examples, not by eyeballing — and if a golden moves, that is a finding to explain before it is a
+  diff to bless. Take the baseline with the **same digest body the test will run**, not a lookalike
+  in a throwaway script: `test/roof-void-byte-identity.test.ts`'s first attempt used a scratch script
+  whose payload separator differed by one character and produced four "failures" over artifacts that
+  were in fact byte-identical. And the sweep's payload is the whole agent-facing surface — SVG,
+  `describe()` **and** `lint()` — because a form that quietly appends an empty key to every summary
+  leaves the drawing untouched and is still a behaviour change for every `arch describe --json`
+  consumer.
+- **A drawn fixture symbol ignores its `label`, and fixture categories are DATA, not keywords.** The
+  59 catalogued words across 36 families live in one `FIXTURE_FAMILIES` table
+  (`src/elements/fixtures-glyphs.ts`) with their semantics in `src/fixtures-catalog.ts`; an
+  uncatalogued word falls back to the labelled rectangle on purpose. Adding a family is a table row
+  and a catalog entry — never a new element, never a `switch` arm. Keep the three catalog flags
+  distinct: `requiresWall` means **services only**, `directional` means the symbol has a back worth
+  turning to a wall, and `underlay` (a piece that lies flat and is stood on) is read **only** through
+  the shared `solidFurniture()` predicate, so the overlap rule, the clearance rule, the nav grid and
+  the per-room flood fill cannot disagree about what a rug is.
 - **Errors are returned, never thrown** for user-source problems: push a `Diagnostic` with a byte
   `span` and a catalogued `E_*`/`W_*` code (`src/error-catalog.ts` — a test enforces every raised
   code has an entry and vice-versa).
@@ -97,7 +113,15 @@ derived direction names — `street`/`back`/`equator_side`/`sunrise_side`/`sunse
 **drafting heuristic for an aspect, not a daylight measurement**, and there is deliberately no sun
 model, latitude or date), the door kinds (`door pocket … slide left`, and note `describe().doors[].kind`
 appears only when it is not the default `hinged`), and `arch lint --code W_POCKET_RUN|W_DIM_OVERLAP`
-with `arch fix --dry-run` for their machine fixes. Keep the flagship
+with `arch fix --dry-run` for their machine fixes. For the v1.28–v1.29 surfaces, drive the three
+things a reading cannot settle: **`arch describe --json --select voids`** (a `void` is reported with
+its extent and its room but is deliberately NOT subtracted from that room's area — a consumer
+needing the net figure subtracts, so never "fix" the area); the **roof refusals**, which are the
+whole design (`arch lint --code E_ROOF_CURVED` / `arch explain E_ROOF_CURVED` — an `arc` edge is
+refused rather than approximated, and `roof polygon` is the answer); and the **underlay walkability
+check**, which is the one furniture claim a drawing cannot show — put a `rug` and then a `sofa` on
+the same rectangle across a plan's only route and confirm `arch describe --json`'s circulation walks
+THROUGH the first and `arch lint` raises `W_ROOM_NO_CLEAR_PATH` on the second. Keep the flagship
 `examples/studio.arch` **lint-clean and import-free**, and update snapshots/goldens
 (`vitest -u`, `UPDATE_GOLDENS=1 vitest run test/visual.test.ts`, `ASCII_UPDATE=1 vitest run
 test/ascii.test.ts`) only after reviewing the diff — never to green a red suite.
