@@ -84,7 +84,9 @@ source.
 
 ### Drift generators — `npm run check:drift`
 
-Nine generators, twenty-one artifacts; the authoritative list is the `GENERATORS` table in
+Nine generators, twenty-three artifacts (the gate prints the total on every run — `✓ all 23
+generated artifacts are in sync with their sources`, so read it there rather than counting); the
+authoritative list is the `GENERATORS` table in
 `scripts/check-drift.ts` and it is mirrored in [CONTRIBUTING.md](../CONTRIBUTING.md#ci-drift-gates-regenerate-before-you-push).
 
 **Red ⇒ regenerate, never hand-edit.** Run the matching `npm run gen:*` (or `npm run gen:all`,
@@ -96,7 +98,7 @@ a language fact reproduces the same wrong text forever (`gen-llm-spec.ts` shippe
 three releases while drift stayed green). Derive from the source of truth; give each generator a
 guard that fails when a source-of-truth entry has no rendering.
 
-**`gen:example-svgs` — the twelve drawings the README embeds.** The newest generator, and the one
+**`gen:example-svgs` — the thirteen drawings the README embeds.** The newest generator, and the one
 that shows what an *un*-gated derived artifact costs. `examples/studio.svg`, `two-bed.svg` and
 `attached.svg` were hand-committed and never re-rendered, so for months the README's hero and
 gallery showed a building compiled before the opening-void fix, the fixture-orientation fix, the
@@ -109,7 +111,7 @@ their `.arch` sources; `test/example-svgs-drift.test.ts` is the gate and does tw
 | every `README_SVGS` file on disk equals an in-memory `compile()` of its source | `npm run gen:example-svgs`, then **look at the drawing** before committing — a moved golden here is a rendering change, and the picture is the review |
 | the curated list and the README's `<img>` tags agree **in both directions** | a `./examples/<n>.svg` in the README with no `README_SVGS` entry is an ungated drawing that will rot; a listed name the README never embeds is dead weight. Add or remove the `<img>`, or edit the list |
 
-The list is curated on purpose — committing an SVG per `.arch` would put ~27 large blobs in every
+The list is curated on purpose — committing an SVG per `.arch` would put 28 large blobs in every
 diff for no reader — which is exactly why the second law exists: a curated list is only honest
 while something pins it to what the page actually shows.
 
@@ -167,6 +169,64 @@ language, and it is why the golden files above almost never move.
 | `test/dim-stagger.test.ts` | `EM_PER_CHAR` lives in exactly ONE file (`src/text-metrics.ts`) | A fifth copy of the em-per-char factor appeared. The lint rule, the stagger and the renderer must agree about what collides |
 | `test/lint-file-provenance.test.ts` | a lint fix on an element written in an imported module carries `file`, so `applyFixes` refuses it | Red means `applyFixes` can once again splice a module's byte offsets into the importer — reproduced on an unmodified `W_DIM_INSIDE` before the fix |
 | `test/levels.test.ts` (corpus sweep) | a plan with no `level` block has no `pages`, no `LEVEL` title-block row and no `level` on any diagnostic; a plan WITH one compiles to more than one page | **The split is derived, not listed.** It used to exclude `two-storey.arch` *by filename*, which meant a second multi-storey example could silently join the level-free sweep (failing for the right reason under the wrong name) or silently dodge the paging check. `HAS_LEVEL = /^\s*level\s+-?\d+/m` reads the source instead, both sides are asserted non-empty, and `townhouse.arch` joined with no edit to the test |
+| `test/roof-void-byte-identity.test.ts` | a plan using neither `roof` nor `void` renders, describes and lints exactly as before | The digests are **hardcoded**, measured against v1.28.0's `src/` by checking that tree into the worktree — a test that compiled twice and compared would prove determinism and stay green through a change that moved every byte. Two things to carry when you measure the next one: take the baseline with the **same `digest()` body the test will run** (a scratch script whose payload separator differed by one character produced four false failures here), and keep the payload the whole agent-facing surface — SVG, `describe()` **and** `lint()` — since an element that quietly appends an empty summary key leaves the drawing untouched and still changes behaviour for every `arch describe --json` consumer. The four fixtures are chosen, not arbitrary: the two the track edits (`bungalow`, `two-storey`) are excluded on purpose, and the rest span an all-rectangle dwelling, the flagship, a CONCAVE polygon plan (whose ring code the roof's offset shares a module with) and a CURVED plan on `paper` (whose auto-fit reads the same `planBounds` a roof now grows) |
+
+### The fixture-symbol layer — one snapshot file, three different promises
+
+`test/fixture-byte-identity.test.ts` pins WHOLE SVG documents rather than scene objects or primitive
+counts, because what matters is whether the bytes a user's `arch compile` writes moved. Its three
+groups look alike and **must not be blessed alike** — read the group header before you reach for
+`-u`:
+
+| Group | What it holds | When it goes red |
+|-------|---------------|------------------|
+| 1 — **PERMANENT** | a plan with no furniture, and a plan whose category the language does not know | **A bug, never a re-blessing.** Neither has any business changing when a glyph is drawn: the first never reaches the glyph layer, the second is the labelled-rectangle fallback. If a phase that draws a bed moves one of these it did something to the shared path — a changed factory default, a stray node, a re-tagged paint. Find out why |
+| 2 — the eight shipped families | one minimal plan each, at the family's catalogued footprint | Deliberately re-blessable. A phase that redraws these WILL move them, and each diff is to be read and explained rather than accepted |
+| 3 — the four v1.29 families | `rug`, `sofa_l`, `piano`, `sun_lounger` | Same terms as group 2. Three of the four have no catalogued footprint on purpose, so their sizes are stated where the group is written rather than looked up |
+
+Around it sit three more guards, each answering a question the snapshots cannot:
+
+- **`test/glyph-lib.test.ts`** — the two laws that let the eight shipped families be re-tagged with
+  semantic line weights without moving a byte. A factory's named `lineWeight` and its raw
+  `paint.width` must agree (**the SVG serializer follows the name, the PDF serializer follows the
+  number**, so setting one and not the other makes the two exports draw different thicknesses from
+  the same node), and a dashed segment's two dash fields must agree — read back OUT of the rendered
+  SVG, never by comparing the module's constant to itself. It isolates a node by **difference**:
+  same plan rendered with and without it, on a furniture-free base, so "the first `<polygon>`" can
+  never silently be the room floor.
+- **`test/furniture-curves-backends.test.ts`** — the v1.26.1 lesson applied *before* the fact. The
+  furniture pass had only ever carried polygons, lines and text; `glyph-lib` was about to put the
+  first `circle` and `arc` on it, so all four serializers are proven to actually DRAW one. It
+  hand-builds the Scene rather than waiting for a glyph to exist (no test-only `ElementDef`, no
+  registry mutation, nothing in `src/` that ships), every assertion is **differential** against the
+  same Scene without the two nodes, and the plan is deliberately door-free so the base drawing
+  contains no curve of its own — a backend that silently dropped the primitives would otherwise
+  produce identical output and pass. Its pdfkit half follows the optional-dep rule below: required
+  in CI, a visible named skip locally.
+- **`test/glyphs-batch2.test.ts`** — `underlay` proved by its **consequences, in both directions**,
+  because the exemption must not degrade into "overlap checking is off". A rug under a sofa raises
+  nothing; two ordinary pieces overlapping still raise `W_FURNITURE_OVERLAP`; and two *rugs*
+  overlapping each other still raise it too. The walkability half runs the same plan, same
+  footprint, same position with one word different — through a `rug` the far room is reachable,
+  through a `piano` it is cut off and `W_ROOM_NO_CLEAR_PATH` fires — and drives **both** the
+  whole-plan nav grid and the per-room flood fill, since they are separate code paths that must not
+  disagree about what a rug is.
+
+### Cross-feature gates — what neither branch can prove alone
+
+`test/v129-cross.test.ts` exists because of the merge law in AGENTS.md: **a clean auto-merge is not
+evidence.** The v1.29 tracks were authored on parallel branches and touched one file in common, the
+nav grid's obstacle list in `src/analyze/circulation.ts` — one branch appended the void obstacles to
+that literal, the other wrapped the furniture entry in `solidFurniture()`. Git merged both cleanly,
+and neither branch's suite can fail if the other half of the literal is dropped, because neither has
+a fixture using both. The discriminating case puts a rug and a void on the **same rectangle**,
+spanning the only route between two rooms, with a `sofa` control on that identical rectangle to
+prove the geometry really does seal: drop `solidFurniture` and the rug seals the plan, drop the void
+obstacle entry and the void does not.
+
+**Write one of these whenever two branches edit a shared literal or a shared predicate**, and put
+the control case on the identical geometry — a fixture that only shows the new behaviour cannot tell
+"it works" from "the check never ran".
 
 ### Property and fuzz suites
 
@@ -234,8 +294,8 @@ about the compiler. **There are no thresholds and nothing can fail on a coverage
 design: `npm test` stays the single pass/fail signal and nobody games a percentage. Read it as a
 map of what the suite reaches.
 
-The one thing a total cannot show is a module that fell to **zero** — it is one row among 111 and
-invisible in a four-line summary. `scripts/coverage-zero-report.mjs` names them in the Node-22 step
+The one thing a total cannot show is a module that fell to **zero** — it is one row among the ~120
+under `src/` and invisible in a four-line summary. `scripts/coverage-zero-report.mjs` names them in the Node-22 step
 summary. It is advisory in the strongest sense: it catches its own errors and forces exit 0, so it
 can never turn a green run red, and it adds no thresholds.
 

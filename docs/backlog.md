@@ -99,7 +99,7 @@ to prevent.
 
 </details>
 
-### 3.11 · `repair(repair(s)) !== repair(s)` — `FIXED` (unreleased)
+### 3.11 · `repair(repair(s)) !== repair(s)` — `done` (v1.27.0)
 
 **`repair` is now idempotent, and it is asserted** — `test/fuzz.test.ts`'s "is idempotent — a second
 call changes nothing", a property over 300 generated plans, plus two named regression specimens in
@@ -147,7 +147,7 @@ Honesty holds throughout: a piece parked mid-cycle gets an `unresolved` entry na
 it alternates between, and a change entry whose net effect is nothing is dropped rather than
 reported. All 27 shipped examples repair byte-identically to before (they are already at a fixpoint).
 
-### 3.12 · `flush` and `grid` fight — `FIXED` (unreleased)
+### 3.12 · `flush` and `grid` fight — `done` (v1.27.0)
 
 A fixture placed `flush` against a 100 mm partition lands on a `…50` coordinate; `grid 100` then
 snapped it back **into** the wall and raised `W_FURNITURE_WALL_COLLISION` on a plan that is correct.
@@ -171,8 +171,13 @@ The agent Skill — the loop a cold-start model follows — documents neither th
 layer nor the four non-default door kinds. `examples/bungalow.arch` now demonstrates both, but
 there is nowhere in `SKILL.md` to reference it from.
 
-Note the constraint before starting: `SKILL.md` feeds `gen:llms`, and `spec.llm.md` sits at
-**24,940 of 25,000 characters** — 60 to spare. Any addition needs its budget worked out first.
+Note the constraint before starting: `SKILL.md` feeds `gen:llms`, and `spec.llm.md` is under a hard
+character cap asserted by `test/llm-spec-drift.test.ts`. **Re-measure both numbers rather than
+trusting this line** — they have moved twice since it was written (the cap was 25,000; v1.29.0
+raised it to **26,000** after trimming a redundant keyword bullet, and the file is **25,636** as of
+2026-08-27, leaving 364). The standing instruction is unchanged and is the point of the cap:
+`spec.llm.md` is injected verbatim into agent prompts, so its size is a recurring per-request token
+cost — **trim duplication before raising.**
 
 ### 3.15 · `W_FURNITURE_WALL_COLLISION` does not check a CURVED wall — `todo`
 
@@ -354,6 +359,69 @@ anywhere. Same "a promise quietly not kept" class as v1.26.1. The fix is to incl
 
 ---
 
+## Wave 5 — deferred by name in v1.28.0 / v1.29.0
+
+Each of these was **named in `CHANGELOG.md` at the time it was skipped**, not quietly omitted, so
+nobody has to guess whether it was overlooked. Two v1.28 entries are already gone from this list:
+`rug`, `sofa_l`, `piano` and `sun_lounger` were deferred there and **shipped in v1.29.0**.
+
+### 5.1 · An `arc` edge under `roof overhang` — `todo`
+
+`roof overhang <mm>` mitres a closed wall ring outward in closed form (line–line intersection,
+orientation from the shoelace sign). A curved edge has no such offset in the same arithmetic, so
+`E_ROOF_CURVED` **refuses** rather than approximating, and the author writes `roof polygon …`
+instead. Same shape as the `arc`-inside-a-`room polygon` deferral below, and probably the same
+design pass: an offset ring that carries arcs is an offset ring whose whole consumer set has to
+learn arcs.
+
+**Gate:** the refusal's own test in `test/roof.test.ts` inverts — an arc-bearing ring must produce
+a drawn eaves line at `R ± overhang` on the curved run, and the exact-coordinate assertions on the
+straight runs must not move.
+
+### 5.2 · A polygonal `void` — `todo`
+
+`void … size WxH` is rectangle-only in v1. A ring form needs the machinery `room polygon` already
+has, and **every consumer here is written on a rectangle**: the nav-grid obstacle, the poly-aware
+room attribution, and `frame.ts`'s `transformElement`. Cheap to add to the grammar, not cheap to
+add to those three.
+
+### 5.3 · Area subtraction under a `void` — `todo`
+
+A void deliberately does **not** reduce its room's area today; `describe --json`'s `voids[]` gives
+the extent so a consumer can subtract. That decision is *pinned* by `test/void.test.ts`, so
+changing it is an argument with a test rather than an oversight — which is the point. Before
+reopening it, decide what a subtracted area means to `schedule rooms`, to the room label's `m²`
+text, and to an intent's area assertion, because those three are what would silently disagree.
+
+### 5.4 · Glyph-aware mirroring in the `place` transform — `todo`
+
+**`sofa_l`'s return is always on the LEFT and there is no right-handed twin.** `place … mirror`
+will not produce one, because a reflection transforms a resolved element's *position* and not the
+symbol drawn inside it — so a mirrored wing draws a left-hand sofa. A `sofa_l_r` category was
+**rejected rather than forgotten**: it would put the fix in the vocabulary, where every future
+handed symbol then needs its own twin. The real fix is for `frame.ts` to hand the glyph its own
+chirality when `det < 0`, which is the same place the handed door/furniture rules already flip.
+
+Note the standing rule it must obey: add a handed rule ⇒ add its flip to `transformElement`, never
+a frame parameter to the element ([ADR 0016](adr/0016-component-instances-and-frames.md)).
+
+### 5.5 · A syntax for overhead dashes — `todo`
+
+`upper_cabinet` is drawn dashed because of *what it is*, and there is no way for an author to say
+"draw this piece above the cut plane" about anything else. Any design has to decide whether it is a
+clause on `furniture`, a property of a category, or a plan-level convention — and a dashed overhead
+line is also what `roof` and `void` now draw, so the three should agree about what dashed *means*
+before a fourth spelling appears.
+
+### 5.6 · Angled furniture — `todo`
+
+A fixture still draws on an **axis-aligned footprint**, so a piece against a sloped wall is not
+turned to it. Deferred by name in v1.28.0. Related but not the same as 3.15 above (which is about
+*measuring* against a curved wall, not drawing at an angle); both are instances of the fixture
+layer knowing only rectangles.
+
+---
+
 ## Wave 4 — P2 language features
 
 Designed and evidenced in `docs/research/2026-08-06-competitor-borrowing-roadmap.md` §5. Each one
@@ -364,7 +432,7 @@ proven by a SHA-256 sweep over the shipped examples), and a corpus entry in the 
 
 | # | Feature | Status | Note |
 |---|---|---|---|
-| P2-7 | Four-sided authorable clearances + embedded-insert exemption | `todo` | Most contained — widens `clearanceMm` (`src/fixtures-catalog.ts:21`) to `{front,back,left,right}` plus a per-statement override |
+| P2-7 | Four-sided authorable clearances + embedded-insert exemption | `todo` | Most contained — widens `clearanceMm` (`src/fixtures-catalog.ts:21`) to `{front,back,left,right}` plus a per-statement override. **Re-scope before starting:** v1.28.0 took that catalog from 18 categories to **59 across 36 families** and gave `FixtureSpec` two more flags (`directional`, then v1.29's `underlay`), so "one default per category" is now a far larger table to be right about — and an underlay already has a stated exemption (it never blocks a fixture's use-space) that a four-sided rule must not re-litigate |
 | P2-10 | Feet-and-inches display formatting (`dimension_units standard`) | `todo` | **Display only** — millimetres stay the internal unit and the measured truth. Route through `fmt()` |
 | P2-9 | `outdoor <kind>` + floor-material hatches + auto legend | `todo` | Hatches must be **scale-aware**; do not copy `patternUnits="userSpaceOnUse"` with fixed pixel sizes, which does not scale with drawing scale |
 | P2-8 | Targeted dimension selection (dimensions on named walls/fixtures) | `todo` | Composes with the sheet layer |

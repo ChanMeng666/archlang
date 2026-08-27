@@ -146,6 +146,20 @@ diagnostics, or error/lint codes — republish the extension so its bundled serv
 > — run `npm run vscode:build:only && npx vitest run editors/vscode` (CI's `builds` job does exactly
 > this). That replaced the old by-hand "count new keywords in `dist/server.js`" probe.
 
+> **Build and package in the PRIMARY checkout only — the build now refuses otherwise.** A
+> `git worktree` checkout has no `node_modules`, so esbuild resolves the core by walking **up** and
+> bundles the *shared* repo's, and the `__CORE_VERSION__` stamp cannot catch it because both stamp
+> the same version. `editors/vscode/resolve-core.mjs` compares the resolved core's real path against
+> the repo root of the tree being built and throws naming both paths. Junctioning the worktree's
+> `node_modules` does **not** make it safe (npm links a workspace package by absolute path to the
+> main tree), and the guard fires there too — correctly.
+
+> **Its `@chanmeng666/archlang` range is pinned by a test, and every core release turns that test
+> red on purpose.** `editors/vscode/test/lockstep.test.ts` asserts the range is a *string* equal to
+> `^` + the root version; re-pin it as step 2, never relax the check. It is distinct from the
+> freshness stamp above — that one says the BUNDLE is current, this one says the MANIFEST is honest,
+> and the range once sat two releases stale while the stamp stayed green throughout.
+
 A repack can also be **non-language** — the icon, `galleryBanner`, or other marketplace metadata
 (e.g. `0.4.1` was an icon-only repack of `0.4.0`). Same steps 1–4 above (skip step 2 when the core
 did not move); the `.vsix` still needs a manual web upload.
@@ -245,13 +259,14 @@ low.
 
 ### CI drift gates (regenerate before you push)
 
-**Nine generators** produce **twenty-one artifacts**, and CI drift-checks all of them in a single
-`npm run check:drift` step. The authoritative list is the `GENERATORS` table in
-`scripts/check-drift.ts` — this table mirrors it:
+**Nine generators** produce **twenty-three artifacts**, and CI drift-checks all of them in a single
+`npm run check:drift` step. The run prints its own total (`✓ all 23 generated artifacts are in sync
+with their sources`), so read the count there rather than from this page. The authoritative list is
+the `GENERATORS` table in `scripts/check-drift.ts` — this table mirrors it:
 
 | Generated artifact | Generator | Source of truth |
 |--------------------|-----------|-----------------|
-| `editors/archlang.tmLanguage.json`, `playground/src/arch-language.js` | `gen:grammars` | `src/grammar/tokens.ts` |
+| `editors/archlang.tmLanguage.json`, `playground/src/arch-language.js`, `docs-site/.vitepress/theme/arch-highlight.js` | `gen:grammars` | `src/grammar/tokens.ts` |
 | `docs/error-codes.md` | `gen:errors` | `src/error-catalog.ts` |
 | `docs/cli-reference.md` | `gen:cli` | `src/manifest.ts` |
 | `spec.llm.md` | `gen:spec` | `src/grammar/tokens.ts` + `examples/` |
@@ -259,7 +274,7 @@ low.
 | `grammars/archlang.gbnf` | `gen:gbnf` | `src/grammar/tokens.ts` |
 | `schemas/plan.schema.json` | `gen:plan-schema` | `PLAN_JSON_SCHEMA` |
 | `schemas/intent.schema.json` | `gen:intent-schema` | `INTENT_JSON_SCHEMA` |
-| the twelve `examples/*.svg` the README embeds | `gen:example-svgs` | the matching `examples/*.arch` (list: `README_SVGS`) |
+| the thirteen `examples/*.svg` the README embeds | `gen:example-svgs` | the matching `examples/*.arch` (list: `README_SVGS`) |
 
 Whenever a generator's source changes, run `npm run gen:all` to regenerate every artifact in
 dependency order (`gen:spec` before `gen:llms`, which consumes it) and commit the output;
