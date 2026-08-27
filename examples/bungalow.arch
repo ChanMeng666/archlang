@@ -38,9 +38,11 @@ plan "Bungalow" {
   # coordinate is no longer snapped, so the grid is free again — these numbers are
   # unchanged, and so is every byte this file draws.
   grid 50
+  paper A3 landscape
   scale 1:100
   north up
   dims auto all
+  schedule rooms
 
   site { street south hemisphere south }
 
