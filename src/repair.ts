@@ -51,6 +51,7 @@
 
 import { parse } from "./parser.js";
 import { formatPlan } from "./format.js";
+import { fmt3 as numStr } from "./num-format.js";
 import {
   ANCHOR_BACK_EDGES,
   backCandidateEdges,
@@ -150,6 +151,20 @@ function litNum(e: Expr | undefined): number | null {
 }
 
 const numExpr = (value: number): Expr => ({ t: "num", value });
+
+/**
+ * A number as the SOURCE will carry it. `formatPlan` prints every number through
+ * `fmt3`, so a coordinate repair computed but never rounded is not the coordinate the
+ * caller gets back: `1117.9999999999982` is written as `1118` and resolves as `1118`.
+ * Reading the printer's own output back is what keeps the two one number — there is
+ * deliberately no second rounding rule here to drift from `fmt3`.
+ *
+ * Found by `test/fuzz.test.ts`'s round-trip property, which failed roughly one run in
+ * five; pre-existing since at least v1.30.0. See `test/repair.test.ts` → "records a
+ * moved position as the printer will write it".
+ */
+const printed = (v: number): number => Number(numStr(v));
+
 const snapOut = (v: number, dir: number, grid: number): number =>
   grid > 0 ? (dir > 0 ? Math.ceil(v / grid) : Math.floor(v / grid)) * grid : v;
 
@@ -1560,15 +1575,24 @@ interface PlannedWrite {
 function planWrite(p: Piece, snap: (v: number) => number): PlannedWrite {
   if (p.place && p.f.place && p.f.place.mode === "anchor") {
     const i = insetForTarget(p.place, p.cur, (v) => v);
-    if (i !== null)
+    if (i !== null) {
+      // The `inset` is what the source carries, so round IT and read the position back
+      // out of the placement's own linear model (`coord = base + coef * inset`, the
+      // arithmetic `insetForTarget` just inverted). Reporting the pre-rounding target
+      // would promise a position the rewritten statement does not resolve to.
+      const ri = printed(i);
+      const axis = (ax: InsetAxis): number => (ax.coef === 0 ? ax.base : ax.base + ax.coef * ri);
       return {
-        target: { x: p.cur.x, y: p.cur.y },
+        target: { x: axis(p.place.x), y: axis(p.place.y) },
         via: "inset",
-        inset: i,
-        extra: [`re-expressed as \`inset ${i}\`${p.place.flush ? " from the wall face" : ""} (was ${p.place.inset})`],
+        inset: ri,
+        extra: [
+          `re-expressed as \`inset ${numStr(ri)}\`${p.place.flush ? " from the wall face" : ""} (was ${p.place.inset})`,
+        ],
       };
+    }
   }
-  const target = { x: snap(p.cur.x), y: snap(p.cur.y) };
+  const target = { x: printed(snap(p.cur.x)), y: printed(snap(p.cur.y)) };
   if (!p.place || !p.f.place) return { target, via: "at", extra: [] };
   const place = p.f.place;
   const clause = place.mode === "centered" ? "centered" : `anchor ${place.anchor}`;

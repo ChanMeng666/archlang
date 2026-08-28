@@ -223,22 +223,28 @@ describe("CLI — watch", () => {
    * wait a bounded poll.
    */
   it("stays alive and recompiles on save, then ends only when signalled", async () => {
+    // 90 s per wait, not the shared 30 s default: this case spawns a child and waits on
+    // a filesystem watcher, and under full-suite parallel load on Windows that latency
+    // exceeded 30 s (observed 2026-08-28; the case passes 5/5 in isolation, and neither
+    // it nor `src/cli/` had changed). Load-sensitive and pre-existing, so the budget
+    // moves and not one assertion — a watcher that never fires still fails, just later.
+    const budget = 90000;
     const dir = tmpDir();
     const file = tmp("w.arch", labelled("Alpha"), dir);
     const out = join(dir, "w.svg");
     const w = start(["watch", file, "-o", out]);
     try {
-      await until("the first compile to write the output with Alpha", () => peek(out).includes("Alpha"));
-      await until("the watching banner on stderr", () => w.stderr().includes("Ctrl+C to stop"));
+      await until("the first compile to write the output with Alpha", () => peek(out).includes("Alpha"), budget);
+      await until("the watching banner on stderr", () => w.stderr().includes("Ctrl+C to stop"), budget);
       expect(w.stderr()).toContain("watching");
 
       // The whole point of the command: edit, save, and the artifact follows.
       writeFileSync(file, labelled("Bravissimo"), "utf8");
-      await until("a recompile carrying Bravissimo", () => peek(out).includes("Bravissimo"));
+      await until("a recompile carrying Bravissimo", () => peek(out).includes("Bravissimo"), budget);
 
       // Twice, because a watcher that fires once and dies is a different bug.
       writeFileSync(file, labelled("Cha"), "utf8");
-      await until("a second recompile carrying Cha", () => peek(out).includes("Cha"));
+      await until("a second recompile carrying Cha", () => peek(out).includes("Cha"), budget);
 
       // It got that far without ever exiting on its own.
       expect(w.exit()).toBe(null);
@@ -254,7 +260,10 @@ describe("CLI — watch", () => {
       // Never leave a child behind, on any path — a stray watcher hangs the CI run.
       if (w.exit() === null) w.kill("SIGKILL");
     }
-  }, 90000);
+    // Above any single `budget` wait plus the rest of the case: `until` throws naming
+    // what it was waiting for, and a vitest timeout underneath it would replace that
+    // with a bare "test timed out".
+  }, 240000);
 
   /**
    * A broken plan must leave you WATCHING, not at a shell prompt: being able to fix the
