@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**82 errors** · **43 warnings**
+**89 errors** · **45 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -28,6 +28,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_DOTTED_DECL`](#e_dotted_decl) | error | A dotted name cannot be declared. |
 | [`E_DUP_ID`](#e_dup_id) | error | Duplicate element id. |
 | [`E_DUP_INSTANCE`](#e_dup_instance) | error | Duplicate `place … as <name>` instance name. |
+| [`E_FENCE_CURVED`](#e_fence_curved) | error | A fence cannot have a curved (`arc`) edge. |
 | [`E_FURN_AGAINST`](#e_furn_against) | error | Invalid `against wall` fixture placement. |
 | [`E_FURN_FLUSH`](#e_furn_flush) | error | `flush` on a placement that touches no edge. |
 | [`E_FURN_ROOM`](#e_furn_room) | error | Furniture placed `in` an unknown room. |
@@ -57,6 +58,10 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_LEVEL_MIX`](#e_level_mix) | error | A drawable statement sits beside `level` blocks. |
 | [`E_LEVEL_NEST`](#e_level_nest) | error | `level` used inside a block or component. |
 | [`E_OPENING_WIDTH`](#e_opening_width) | error | Opening must have a positive width. |
+| [`E_OUTDOOR_POLY_DEGENERATE`](#e_outdoor_poly_degenerate) | error | An outdoor ring is degenerate, or a balcony was given one. |
+| [`E_OUTDOOR_POLY_SELF_INTERSECT`](#e_outdoor_poly_self_intersect) | error | An outdoor ring crosses itself. |
+| [`E_OUTDOOR_RAIL`](#e_outdoor_rail) | error | A `rail` clause on something that is not a balcony, or an unknown edge word. |
+| [`E_OUTDOOR_SIZE`](#e_outdoor_size) | error | An outdoor surface must have a positive size. |
 | [`E_PARSE`](#e_parse) | error | The source could not be read: its SHAPE is wrong. |
 | [`E_PLACE_POLY`](#e_place_poly) | error | A rectangle-only placement clause aimed at a polygon room. |
 | [`E_PLACE_REF`](#e_place_ref) | error | Furniture placed in an unknown or non-absolute room. |
@@ -77,6 +82,8 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_ROOM_POLY_SELF_INTERSECT`](#e_room_poly_self_intersect) | error | Polygon room intersects itself. |
 | [`E_ROOM_RADIUS`](#e_room_radius) | error | Circular room needs a positive radius. |
 | [`E_ROOM_SIZE`](#e_room_size) | error | Room must have a positive size. |
+| [`E_SITE_BOUNDARY_DEGENERATE`](#e_site_boundary_degenerate) | error | The site `boundary` encloses no lot. |
+| [`E_SITE_BOUNDARY_SELF_INTERSECT`](#e_site_boundary_self_intersect) | error | The site `boundary` crosses itself. |
 | [`E_SITE_DUP`](#e_site_dup) | error | Two `site` blocks in one plan. |
 | [`E_SITE_NO_STREET`](#e_site_no_street) | error | A `site` block declares no `street`. |
 | [`E_STAIR_WIDTH`](#e_stair_width) | error | Stair flight `width` is outside the footprint. |
@@ -92,6 +99,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_WHILE_LIMIT`](#e_while_limit) | error | `while` exceeded its iteration cap. |
 | [`E_WINDOW_WIDTH`](#e_window_width) | error | Window must have a positive width. |
 | [`W_ALIAS_MATCH`](#w_alias_match) | warning | A room's use was inferred from an indirect alias, not stated. |
+| [`W_BALCONY_NO_DOOR`](#w_balcony_no_door) | warning | A balcony with no way onto it. |
 | [`W_BATH_VIA_BEDROOM`](#w_bath_via_bedroom) | warning | Bathroom is reachable only through a bedroom. |
 | [`W_BEDROOM_NO_WINDOW`](#w_bedroom_no_window) | warning | Bedroom has no window. |
 | [`W_CIRCUITOUS_PATH`](#w_circuitous_path) | warning | A room is reached by a very roundabout path. |
@@ -114,6 +122,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_IMPORT_EMPTY_FILE`](#w_import_empty_file) | warning | Whole-file import binds an empty component. |
 | [`W_NO_ENTRANCE`](#w_no_entrance) | warning | The plan has no exterior door. |
 | [`W_OPENING_OFF_WALL`](#w_opening_off_wall) | warning | Opening does not lie on any wall. |
+| [`W_OUTDOOR_OVERLAPS_ROOM`](#w_outdoor_overlaps_room) | warning | A ground surface is laid over a room's floor. |
 | [`W_PATH_TOO_NARROW`](#w_path_too_narrow) | warning | The walk to a room squeezes below a passable width. |
 | [`W_POCKET_RUN`](#w_pocket_run) | warning | A pocket door has no wall to slide into. |
 | [`W_ROOM_DISCONNECTED`](#w_room_disconnected) | warning | Room has no door — it can't be entered. |
@@ -365,6 +374,18 @@ room id=a at (1,0) size 1x1   # error: duplicate id "a"
 ```arch static
 place wing() as west at (0,0)
 place wing() as west at (9000,0)   # error: instance "west" already used
+```
+
+## E_FENCE_CURVED
+
+*error* — A fence cannot have a curved (`arc`) edge.
+
+**Cause.** An `arc … radius …` clause appeared inside a `fence { … }` body. The post pitch, the panel offset and the reported `length_mm` are all measured along a STRAIGHT run, so a faceted curve would silently measure the facets rather than the arc — this release refuses rather than approximating (the same decision `roof` makes with `E_ROOF_CURVED`).
+
+**Fix.** Approximate the curve with short straight runs, which is what a fence built on a curve actually is.
+
+```arch static
+fence picket { (0,0) arc (3000,3000) radius 3000 }   # error: curved edge
 ```
 
 ## E_FURN_AGAINST
@@ -724,6 +745,54 @@ component c() { level 1 { } }   # error: only allowed at plan level
 opening at (0,0) width 0   # error
 ```
 
+## E_OUTDOOR_POLY_DEGENERATE
+
+*error* — An outdoor ring is degenerate, or a balcony was given one.
+
+**Cause.** Either an `outdoor … polygon …` ring has fewer than 3 effective vertices once duplicate and collinear points are removed (so it encloses no area), or the ring was written on a `balcony`, which is rectangle-only: a balcony's railing is derived per EDGE — top, bottom, left, right — and a ring has no such edges.
+
+**Fix.** Give the ring at least 3 corners that are not all on one line. For a balcony, use `at (x,y) size WxH`; a polygonal balcony is deferred by name, not supported.
+
+```arch static
+outdoor paving polygon (0,0) (1000,0) (2000,0)   # error: all three are collinear
+```
+
+## E_OUTDOOR_POLY_SELF_INTERSECT
+
+*error* — An outdoor ring crosses itself.
+
+**Cause.** The vertices of an `outdoor … polygon …` describe a ring whose edges intersect (a bow-tie), so it encloses no single area — there is no unambiguous surface to hatch or to measure. Usually two vertices in the wrong order.
+
+**Fix.** Reorder the vertices so the ring is a simple polygon, walking the outline once without crossing back over itself.
+
+```arch static
+outdoor deck polygon (0,0) (4000,4000) (4000,0) (0,4000)   # error: a bow-tie
+```
+
+## E_OUTDOOR_RAIL
+
+*error* — A `rail` clause on something that is not a balcony, or an unknown edge word.
+
+**Cause.** `rail` names which edges carry a railing, and only a `balcony` has one. Written on any other ground surface it has no meaning — and a clause with no meaning is refused rather than silently dropped, so a plan never draws differently from what it says. The same code covers an edge word outside `top|bottom|left|right|all|none`.
+
+**Fix.** Delete the clause, or make the surface an `outdoor balcony`. For an unknown word, use one of the six edge words.
+
+```arch static
+outdoor deck at (0,0) size 3000x2000 rail all   # error: a deck has no railing
+```
+
+## E_OUTDOOR_SIZE
+
+*error* — An outdoor surface must have a positive size.
+
+**Cause.** An `outdoor … at (x,y) size WxH` statement's width or height evaluated to zero or a negative number, so there is no ground to draw, hatch or measure.
+
+**Fix.** Give it a positive `size W x H` — the surface's extent in plan. For a shape that is not a rectangle, use the `polygon` spelling instead.
+
+```arch static
+outdoor lawn at (0,0) size 0x4000   # error: zero width
+```
+
 ## E_PARSE
 
 *error* — The source could not be read: its SHAPE is wrong.
@@ -972,6 +1041,32 @@ room circle at (5000,5000) radius 0   # error: no floor
 room at (0,0) size 0x4000   # error: width is 0
 ```
 
+## E_SITE_BOUNDARY_DEGENERATE
+
+*error* — The site `boundary` encloses no lot.
+
+**Cause.** A `site { boundary … }` ring has fewer than 3 effective vertices once duplicate and collinear points are removed, so there is no lot to draw a property line round or to report an area for.
+
+**Fix.** Give the boundary at least 3 corners that are not all on one line.
+
+```arch static
+site { street north
+  boundary (0,0) (10000,0) }   # error: two points is not a lot
+```
+
+## E_SITE_BOUNDARY_SELF_INTERSECT
+
+*error* — The site `boundary` crosses itself.
+
+**Cause.** The vertices of a `site { boundary … }` describe a ring whose edges intersect, so it encloses no single lot and `describe --json`'s `site.lot_area_m2` would have no honest value. Usually two vertices in the wrong order.
+
+**Fix.** Reorder the vertices so the boundary walks the lot line once without crossing back over itself.
+
+```arch static
+site { street north
+  boundary (0,0) (10000,10000) (10000,0) (0,10000) }   # error: a bow-tie
+```
+
 ## E_SITE_DUP
 
 *error* — Two `site` blocks in one plan.
@@ -1158,6 +1253,18 @@ window at (0,0) width 0   # error
 
 ```arch static
 room at (0,0) size 2000x1500 label "Powder"   # warning: WC inferred from the alias "powder"; add `uses wc`
+```
+
+## W_BALCONY_NO_DOOR
+
+*warning* — A balcony with no way onto it.
+
+**Cause.** An `outdoor balcony` has no `door` and no `window` within one wall thickness of any of its edges, so the drawing shows a slab that cannot be reached. A window counts as well as a door, because a full-height window is a normal way onto a balcony.
+
+**Fix.** Add a door (or a full-height window) on the wall the balcony hangs off — the usual fix — or move the balcony to the facade that already has one.
+
+```arch static
+outdoor balcony at (2000,7200) size 4000x1600   # warning: no opening within reach
 ```
 
 ## W_BATH_VIA_BEDROOM
@@ -1429,6 +1536,19 @@ wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }   # li
 
 ```arch static
 opening at (9999,9999) width 1000   # warning: not on a wall
+```
+
+## W_OUTDOOR_OVERLAPS_ROOM
+
+*warning* — A ground surface is laid over a room's floor.
+
+**Cause.** An `outdoor` surface's extent overlaps the floor of a room by more than a shared edge. Almost always a coordinate slip — a terrace written from the wrong corner, or a lawn given the building's own extent. It matters because ground and floor are reported in SEPARATE totals (`totals.outdoor_area_m2` and `totals.floor_area_m2`), so the overlapping piece is counted twice by anything that adds them for a plot figure. A surface that merely touches a room along its edge — a patio flush against the house — does NOT trip this.
+
+**Fix.** Move or resize the surface so it sits outside the building's rooms. If the overlap is deliberate (a covered terrace drawn under a room), the two are genuinely different things and one of them is the wrong element.
+
+```arch static
+room id=liv at (0,0) size 5000x4000 label "Living"
+outdoor paving at (1000,1000) size 3000x2000   # warning: on the living-room floor
 ```
 
 ## W_PATH_TOO_NARROW

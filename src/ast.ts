@@ -59,7 +59,9 @@ export type ElementKind =
   | "elevator"
   | "escalator"
   | "roof"
-  | "void";
+  | "void"
+  | "outdoor"
+  | "fence";
 
 /** Fields every element AST node carries. */
 export interface NodeBase {
@@ -618,6 +620,132 @@ export interface VoidNode extends NodeBase {
   size: { w: Expr; h: Expr };
 }
 
+/**
+ * The ground surfaces `outdoor <kind>` draws, in canonical order.
+ *
+ * A closed value set, so it lives here once and INTERPOLATES into every description of
+ * itself (the spec line, the GBNF production, the parser's accept-list, the diagnostic
+ * that refuses an unknown word). `test/closed-vocabularies.test.ts` discovers it by
+ * walking this module's exports, so every value must also appear in `KEYWORDS.enum` or
+ * that test goes red — which is the point: a word the parser accepts and no renderer
+ * highlights is the `dims auto overall` defect.
+ *
+ * `balcony` is deliberately IN this list rather than an element of its own. It is a
+ * ground surface like the rest — it takes the same `at`/`size`, the same label, the same
+ * `describe()` row — and differs only in carrying a railing and a plain tint instead of a
+ * material hatch. A separate keyword would have duplicated the whole statement grammar to
+ * express one extra clause.
+ */
+export const OUTDOOR_KINDS = [
+  "lawn",
+  "planting",
+  "paving",
+  "deck",
+  "gravel",
+  "water",
+  "driveway",
+  "patio",
+  "balcony",
+] as const;
+/** One `outdoor <kind>` ground surface. */
+export type OutdoorKind = (typeof OUTDOOR_KINDS)[number];
+
+/**
+ * The edges a `rail <edges>` clause may name, canonical order.
+ *
+ * `all` and `none` are the two whole-rectangle answers and are mutually exclusive with a
+ * per-edge list; the other four are the rectangle's sides in page terms (`top` is the
+ * smaller-y edge), which is what every other rectangle clause in the language means by
+ * them. Under a `place … rotate`/`mirror` they are remapped by the frame — see
+ * `src/frame.ts` — because an edge name is a page fact and a frame turns the page.
+ */
+export const RAIL_EDGES = ["top", "bottom", "left", "right", "all", "none"] as const;
+/** One `rail` edge word. */
+export type RailEdge = (typeof RAIL_EDGES)[number];
+
+/** The four sides of a balcony rectangle, the subset {@link RAIL_EDGES} that names an
+ *  actual edge (`all`/`none` are quantifiers over these four, not members of them). */
+export const RAIL_SIDES = ["top", "bottom", "left", "right"] as const;
+/** One side of a balcony rectangle. */
+export type RailSide = (typeof RAIL_SIDES)[number];
+
+/**
+ * `outdoor [id=] <kind> (at (x,y) size WxH | polygon (x,y) …) [label "…"] [rail <edges>]`
+ * — a ground surface OUTSIDE the building: lawn, paving, a deck, a pool, a balcony.
+ *
+ * Two spellings of one element, exactly as `room` has `at`+`size` / `polygon`: `at`+`size`
+ * for the rectangle that most terraces are, `polygon` for the ring that a garden edge
+ * usually is. Never both — the parser takes whichever word follows the kind.
+ *
+ * `rail` is `balcony`-only and rectangle-only; every other kind refuses it
+ * (`E_OUTDOOR_RAIL`) rather than ignoring it, the `E_DOOR_KIND_CLAUSE` precedent.
+ */
+export interface OutdoorNode extends NodeBase {
+  kind: "outdoor";
+  /** Which ground surface this is — decides the hatch, the tint and the CAD layer. */
+  surface: OutdoorKind;
+  /** Top-left corner; absent exactly when {@link OutdoorNode.polygon} is present. */
+  at?: ExprPoint;
+  /** Width × height; absent exactly when {@link OutdoorNode.polygon} is present. */
+  size?: { w: Expr; h: Expr };
+  /** An explicit, implicitly-closed ring — mutually exclusive with `at`+`size`. */
+  polygon?: ExprPoint[];
+  /** Label as a string-interpolation template, evaluated at resolve. */
+  label?: Expr;
+  /** `rail <edges>` — which edges of a balcony carry a railing. Absent = derived (every
+   *  edge with no wall behind it). An empty-meaning `none` is stored as the literal word
+   *  so `arch fmt` can re-emit what the author wrote. */
+  rail?: RailEdge[];
+  /** Byte span of the `rail` clause itself, for `E_OUTDOOR_RAIL`. */
+  railSpan?: Span;
+}
+
+/**
+ * The three fence styles, canonical order. Default `picket`.
+ *
+ * They are NOT called `rail`: `rail` is the balcony clause introducer above and lives in
+ * `KEYWORDS.attribute`, and no word in `src/grammar/tokens.ts` may appear in two
+ * categories (the generators build flat alternations and would have to learn about
+ * duplicates). `post` names what the style draws — posts at a derived pitch carrying one
+ * line — so the drawing and the word agree.
+ */
+export const FENCE_STYLES = ["picket", "panel", "post"] as const;
+/** One `fence <style>` word. */
+export type FenceStyle = (typeof FENCE_STYLES)[number];
+
+/**
+ * `fence [id=] [<style>] { (x,y) (x,y) … [close] }` — a boundary line on the ground.
+ *
+ * The style word LEADS, like a door kind and like `room polygon`, rather than trailing as
+ * `… style picket`: a trailing `style` word is ambiguous with the `style <kind> { … }`
+ * plan statement, and a fence parser that consumed it greedily would eat the next
+ * statement.
+ *
+ * A fence is emphatically NOT a thin wall: it hosts no opening, has no poché, never
+ * appears in `describe().walls`, and takes no part in the access graph or the room
+ * boolean. It draws and it measures, and that is all.
+ */
+export interface FenceNode extends NodeBase {
+  kind: "fence";
+  /** How it draws; `picket` when the word is omitted (stored resolved). */
+  style: FenceStyle;
+  /** Polyline vertices in order (at least two). */
+  points: ExprPoint[];
+  /** Whether the run closes back to its first vertex. */
+  closed: boolean;
+  /**
+   * Byte span of the FIRST `arc … radius …` clause written in the body, when one was.
+   *
+   * The clause is fully CONSUMED at parse (a point, a radius and up to two modifier
+   * words) and refused at resolve with `E_FENCE_CURVED`, rather than failed at parse.
+   * Two reasons, and both matter: a parse failure would carry `E_PARSE` and so could not
+   * be selected with `arch lint --code` or explained with `arch explain`; and skipping
+   * the clause without consuming it would leave the radius to be read as the next
+   * vertex, which turns one clear refusal into a cascade of shapeless ones.
+   */
+  arcSpan?: Span;
+}
+
 /** One room child of a `strip` block. It carries its main-axis extent and an
  *  optional cross-axis override; the strip supplies the shared cross dimension
  *  when the child omits it. Expanded into an ordinary absolute {@link RoomNode}
@@ -730,7 +858,9 @@ export type AstElement =
   | ElevatorNode
   | EscalatorNode
   | RoofNode
-  | VoidNode;
+  | VoidNode
+  | OutdoorNode
+  | FenceNode;
 
 /** `let NAME = <expr>` — a binding statement. */
 export interface LetNode extends NodeBase {
@@ -1009,6 +1139,17 @@ export interface SiteNode {
   street: CompassWord;
   /** Which hemisphere the building sits in; `north` unless the source says otherwise. */
   hemisphere: Hemisphere;
+  /**
+   * `boundary (x,y) (x,y) …` — the LOT LINE: an implicitly-closed ring naming the piece
+   * of ground the building sits on. The one part of `site` that DRAWS anything (a
+   * dash-dot property line on `C-PROP`) and the one part that joins the page bounds.
+   *
+   * Absent unless written, which is what keeps the v1.25 byte-identity law intact: a
+   * `site` block with only `street`/`hemisphere` still draws nothing at all.
+   */
+  boundary?: ExprPoint[];
+  /** Byte span of the `boundary` clause, for its two refusals. */
+  boundarySpan?: Span;
   line: number;
   /** Byte span of the whole `site { … }` block, for the site diagnostics. */
   span?: Span;

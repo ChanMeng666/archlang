@@ -50,7 +50,16 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import type { DoorEnumClause } from "../src/grammar/tokens.js";
 import { DOOR_ENUMS, DOOR_HINGE_NEAR, DOOR_KINDS, KEYWORDS, OPERATORS } from "../src/grammar/tokens.js";
-import { USE_KINDS, FURNITURE_ANCHORS, SCHEDULE_SUBJECTS, COMPASS_DIRECTIONS, HEMISPHERES } from "../src/ast.js";
+import {
+  USE_KINDS,
+  FURNITURE_ANCHORS,
+  SCHEDULE_SUBJECTS,
+  COMPASS_DIRECTIONS,
+  FENCE_STYLES,
+  HEMISPHERES,
+  OUTDOOR_KINDS,
+  RAIL_EDGES,
+} from "../src/ast.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "../src/sheet.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -249,7 +258,7 @@ function rules(): [string, string][] {
     ],
     [
       "element",
-      `wall-stmt | room-stmt | door-stmt | window-stmt | opening-stmt | furniture-stmt | dim-stmt | column-stmt | stair-stmt | elevator-stmt | escalator-stmt | roof-stmt | void-stmt`,
+      `wall-stmt | room-stmt | door-stmt | window-stmt | opening-stmt | furniture-stmt | dim-stmt | column-stmt | stair-stmt | elevator-stmt | escalator-stmt | roof-stmt | void-stmt | outdoor-stmt | fence-stmt`,
     ],
 
     // ---- plan settings ---------------------------------------------------
@@ -271,7 +280,12 @@ function rules(): [string, string][] {
     // while `check:drift` stayed green. Fields may appear in either order and either may
     // repeat, which is what the parser accepts.
     ["site-stmt", `"site" ws "{" ws ( site-field ws )* "}"`],
-    ["site-field", `"street" rws compass-dir | "hemisphere" rws hemisphere`],
+    // `boundary` (v1.31) is a third field of the same block, in the same either-order
+    // shape. Three vertices minimum, the parser's own floor.
+    [
+      "site-field",
+      `"street" rws compass-dir | "hemisphere" rws hemisphere | "boundary" ws point ws point ws point ( ws point )*`,
+    ],
     ["compass-dir", litAlt(COMPASS_DIRECTIONS)],
     ["hemisphere", litAlt(HEMISPHERES)],
     ["dims-stmt", `"dims" rws "auto" ( rws dims-mode )?`],
@@ -488,6 +502,39 @@ function rules(): [string, string][] {
     ["roof-overhang", `"overhang" ws expr ( rws "wall" rws ref )?`],
     ["roof-polygon", `"polygon" ws point ws point ws point ( ws point )*`],
     ["void-stmt", `"void" rws id-opt "at" ws point ws "size" ws dims`],
+    /*
+     * `outdoor` mirrors `room`'s shape exactly — the KIND word after any `id=`, then one
+     * of two mutually-exclusive spellings, then the trailing clauses in the parser's own
+     * fixed order (`label` before `rail`). Split, not a pair of optional tails, for the
+     * same reason `room-rect | room-poly` is: a decoder offered both would emit the one
+     * shape this file exists to make impossible. Three vertices minimum on the ring, the
+     * parser's own floor.
+     *
+     * `rail` renders as `rail-edge ( rws rail-edge )*` because the clause really is
+     * repeatable, and the comma spelling is a separate arm rather than an optional comma
+     * inside the repeat — `rail top,` with nothing after it is not in the language.
+     */
+    [
+      "outdoor-stmt",
+      `"outdoor" rws id-opt outdoor-kind rws ( outdoor-rect | outdoor-poly ) ( ws outdoor-label )? ( ws outdoor-rail )?`,
+    ],
+    ["outdoor-kind", litAlt(OUTDOOR_KINDS)],
+    ["outdoor-rect", `"at" ws point ws "size" ws dims`],
+    ["outdoor-poly", `"polygon" ws point ws point ws point ( ws point )*`],
+    ["outdoor-label", `"label" ws string`],
+    ["outdoor-rail", `"rail" rws rail-edge ( ( ws "," ws | rws ) rail-edge )*`],
+    ["rail-edge", litAlt(RAIL_EDGES)],
+    // The style word LEADS and is optional (the `door-kind` shape). A fence body is a
+    // point list with an optional `close`, exactly like a wall's — minus `arc`, which is
+    // refused by the compiler (`E_FENCE_CURVED`) and so must not be derivable here.
+    // TWO vertices minimum, not one — `fence.parse` fails outright below two ("A fence
+    // needs at least two points"), exactly as `wall` does, and a one-point run is
+    // precisely the degenerate thing a decoder would otherwise be free to emit. The first
+    // draft wrote `( point ws )*` here and the agreement corpus caught it on the first
+    // run: the grammar DERIVED a form the parser refuses, which is the one defect this
+    // whole file exists to prevent.
+    ["fence-stmt", `"fence" rws id-opt ( fence-style rws )? "{" ws point ws ( point ws )+ ( "close" ws )? "}"`],
+    ["fence-style", litAlt(FENCE_STYLES)],
 
     // ---- shared clause pieces -------------------------------------------
     ["id-opt", `( "id" ws "=" ws ident rws )?`],

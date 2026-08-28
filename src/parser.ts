@@ -576,19 +576,37 @@ class Parser {
     this.eat("lcurly");
     let street: CompassWord | undefined;
     let hemisphere: Hemisphere = "north";
+    // `boundary (x,y) (x,y) …` — the LOT LINE (v1.31). The one field of `site` that draws
+    // anything and the one that joins the page bounds; absent unless written, which is
+    // what preserves v1.25's law that a `site` block moves nothing.
+    let boundary: ExprPoint[] | undefined;
+    let boundarySpan: Span | undefined;
+    const FIELDS = ["street", "hemisphere", "boundary"];
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const f = this.peek();
-      if (f.type !== "ident") this.fail(`Expected a site field ("street" or "hemisphere") but found ${describe(f)}`, f);
+      if (f.type !== "ident") {
+        this.fail(`Expected a site field (${FIELDS.map((x) => `"${x}"`).join(", ")}) but found ${describe(f)}`, f);
+      }
       if (f.value === "street") {
         this.next();
         street = this.eatVocab(COMPASS_DIRECTIONS, "street direction");
       } else if (f.value === "hemisphere") {
         this.next();
         hemisphere = this.eatVocab(HEMISPHERES, "hemisphere");
+      } else if (f.value === "boundary") {
+        const kw = this.next();
+        const ring: ExprPoint[] = [];
+        while (this.isType("lparen")) ring.push(this.parsePoint());
+        if (ring.length < 3) {
+          this.fail("A `boundary` needs at least 3 points — `boundary (x,y) (x,y) (x,y) …`", this.peek());
+        }
+        boundary = ring;
+        boundarySpan = { start: kw.start, end: this.peek(-1).end };
       } else {
-        const hint = closest(f.value, ["street", "hemisphere"]);
+        const hint = closest(f.value, FIELDS);
         this.fail(
-          `Unknown site field "${f.value}"${hint ? ` — did you mean "${hint}"?` : ""} (available: street, hemisphere)`,
+          `Unknown site field "${f.value}"${hint ? ` — did you mean "${hint}"?` : ""} ` +
+            `(available: ${FIELDS.join(", ")})`,
           f,
         );
       }
@@ -616,7 +634,14 @@ class Parser {
       });
       return;
     }
-    plan.site = { street, hemisphere, line: t.line, span };
+    plan.site = {
+      street,
+      hemisphere,
+      ...(boundary ? { boundary } : {}),
+      ...(boundarySpan ? { boundarySpan } : {}),
+      line: t.line,
+      span,
+    };
   }
 
   /** Optional `id=<ident>` prefix; returns "" when absent. */

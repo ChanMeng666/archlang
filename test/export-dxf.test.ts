@@ -155,14 +155,32 @@ function entityLayers(dxf: string): Set<string> {
 
 /**
  * One plan that puts a node on **every** `RenderPass` and exercises every per-node
- * `layerName` override (`column` → A-COLS, `stair`/`elevator` → the A-FLOR-* shafts).
- * The first test below is its own guard: if a grammar change makes this stop covering
- * a pass, the layer assertions fail loudly instead of silently narrowing.
+ * `layerName` override. The first test below is its own guard: if a grammar change makes
+ * this stop covering a pass, the layer assertions fail loudly instead of silently
+ * narrowing.
+ *
+ * ## Why it now carries a roof, a void, ground and a fence
+ *
+ * Because a closure test is only as strong as its fixture, and this one proved it. The
+ * assertions below have said "declares every layer an entity actually references" since
+ * v1.21 — and `A-ROOF` shipped in v1.29 without a row in `AIA_LAYERS`, so
+ * `examples/bungalow.arch` exported a DXF referencing an undeclared layer for two
+ * releases while this suite stayed green. Nothing was wrong with the assertion; the
+ * fixture simply had no `roof` in it, so there was no entity to catch.
+ *
+ * The rule that follows, and the reason this comment exists: **an element that sets a
+ * `layerName` must appear HERE, in this plan, on the same commit that introduces it.**
+ * The pass-coverage guard cannot notice — `roof` rides `annotations`, which was already
+ * covered — so nothing else will.
  */
 const allPasses = `plan "Layers" {
   paper A3
   axes { x at 0, 4000, 8000 y at 0, 6000 }
-  wall exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+  site {
+    street south
+    boundary (-4000,-4000) (14000,-4000) (14000,11000) (-4000,11000)
+  }
+  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
   wall part thickness 100 { (4000,0) (4000,6000) }
   room id=r1 at (0,0) size 4000x6000 label "Hall"
   room id=r2 at (4000,0) size 4000x6000 label "Office"
@@ -173,6 +191,12 @@ const allPasses = `plan "Layers" {
   furniture desk at (1000,1000) size 600x600 label "Desk"
   stair id=s at (6500,4000) size 1200x2400 dir up
   elevator id=e at (500,4000) size 1600x1600
+  roof overhang 600 wall shell
+  void id=well at (2000,2000) size 1000x1000
+  outdoor lawn at (-3000,-3000) size 5000x5000
+  outdoor paving at (9000,0) size 3000x3000
+  outdoor balcony at (0,6000) size 3000x1500
+  fence post { (-4000,-4000) (14000,-4000) }
   dims auto
   schedule rooms
   legend
@@ -225,9 +249,15 @@ describe("AIA CAD layers", () => {
     expect(declaredLayers(dxf).filter((l) => !reachable.has(l))).toEqual([]);
   });
 
-  it("names every layer in the AIA form: A- + a 4-char major group [+ a 4-char minor]", () => {
+  it("names every layer in the NCS form: a discipline letter + a 4-char major group [+ a 4-char minor]", () => {
+    // The discipline prefix was hardcoded `A-` while architectural was the only one. The
+    // v1.31 ground layers use the other two standard disciplines and earn them: `L-` is
+    // LANDSCAPE (a lawn, a planting bed, hard landscape) and `C-` is CIVIL (the property
+    // line). A CAD user freezes by discipline, so forcing a lawn onto an `A-` layer to
+    // satisfy a regex would have hidden it behind the wrong switch — the rule is widened
+    // to the three disciplines this tree uses, not to "any letter".
     const names = [...new Set([...declaredLayers(dxf), ...RENDER_PASSES.map(aiaLayer)])];
-    expect(names.filter((n) => !/^A-[A-Z]{4}(-[A-Z]{4})?$/.test(n))).toEqual([]);
+    expect(names.filter((n) => !/^[ACL]-[A-Z]{4}(-[A-Z]{4})?$/.test(n))).toEqual([]);
   });
 
   it("declares each layer exactly once", () => {

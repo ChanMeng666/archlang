@@ -55,6 +55,11 @@ export const KEYWORDS = {
     "escalator",
     "roof",
     "void",
+    // v1.31, appended at the END: `KEYWORDS.element` must equal `BUILTIN_DEFS`'s keyword
+    // list ELEMENT FOR ELEMENT AND IN ORDER (`test/element-keyword-drift.test.ts`), so a
+    // new element goes on the end of both lists or neither.
+    "outdoor",
+    "fence",
   ],
   /** Setting / attribute keywords → `keyword.other`, CM `propertyName`. */
   attribute: [
@@ -124,6 +129,11 @@ export const KEYWORDS = {
     // that LEADS a clause is a setting keyword, so it sits here beside `thickness` and
     // `width` rather than in `enum` (which holds the VALUES a clause takes).
     "overhang",
+    // v1.31. `rail <edges>` leads a clause of the `outdoor balcony` line and `boundary
+    // (x,y) …` leads one of the `site` block, so both are settings, not values — the same
+    // rule that put `street`/`hemisphere`/`overhang` here and their VALUES in `enum`.
+    "rail",
+    "boundary",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
   enum: [
@@ -199,6 +209,26 @@ export const KEYWORDS = {
     "south",
     "east",
     "west",
+    // v1.31 — the `outdoor` ground surfaces (`OUTDOOR_KINDS`) and the `fence` styles
+    // (`FENCE_STYLES`). Values that follow a keyword, so they sit here. The `rail` edge
+    // words (`RAIL_EDGES`) are deliberately NOT repeated: all six — `top`, `bottom`,
+    // `left`, `right`, `all`, `none` — are already in this bucket for other clauses, and
+    // this file's standing rule is that a word appears in exactly one category once.
+    // `none` is the only one that had to be ADDED, and it earns its place twice over: it
+    // is also the `wall … material none` value, which has been unhighlighted since v0.9.
+    "none",
+    "lawn",
+    "planting",
+    "paving",
+    "deck",
+    "gravel",
+    "water",
+    "driveway",
+    "patio",
+    "balcony",
+    "picket",
+    "panel",
+    "post",
     // `uses garage` (a USE_KINDS value) and `door garage …` (a DOOR_KINDS one) are the SAME
     // word in the highlighting bucket, and one entry is what serves both — the bucket is flat
     // and per-word, while the two semantic groupings live in `USE_KINDS` and `DOOR_KINDS`.

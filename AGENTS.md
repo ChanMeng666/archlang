@@ -479,7 +479,17 @@ exact at any angle and on either winding, refusing an `arc` edge rather than app
 `VerticalObstacle` while lifting its walkable halo on all four edges, does **not** reduce the
 containing room's area — `describe().voids[]` gives the extent so a consumer can subtract — and finds
 its room through the poly-aware containment test, never a bounding box). Both are drawing-only and
-neither adds a `Theme` key: they reach existing paint through `STYLE_KEYS`. `diagnostic-json.ts` (`diagnosticToJson` line/col/`fix` projection), `backends/error-svg.ts`
+neither adds a `Theme` key: they reach existing paint through `STYLE_KEYS`. **The v1.31 GROUND layer
+— `elements/outdoor.ts` and `elements/fence.ts`** (nine ground kinds and three fence styles, drawn on
+`L-PLNT`/`L-SITE`/`A-FLOR-BALC`; the seven ground hatches live in `hatches.ts`'s one shared `META`
+table beside the wall materials, each **scale-aware** off `c.gap * k * c.scale` and each painting no
+background so the element's tint shows through — and a `hatch` node carries its `url(#…)` in the
+PAINT, so a node that names a material and leaves `fill: "none"` draws nothing at all. Neither element
+is a room or a wall: ground is absent from `rooms[]`, `totals.floor_area_m2`, the access graph and
+Plan JSON, reporting itself in `describe().outdoor[]` + `totals.outdoor_area_m2`, and a fence hosts no
+opening. `OUTDOOR_LAYERS` is exported because `label-placement.ts` and the ASCII backend must both
+skip it — the ASCII room pass identifies a room as "a polygon on the `floor` pass" and read a lawn as
+one). `diagnostic-json.ts` (`diagnosticToJson` line/col/`fix` projection), `backends/error-svg.ts`
 (`renderErrorSvg`), `intent.ts` + `intent-concepts.ts` (intent channel, shared with the eval via
 shims), `vocabulary.ts` (`matchVocabulary` label matcher), `sheet.ts` (the sheet layer: the ISO 216 table, the
 sheet-millimetre drafting constants, `sizesFromPaper` — the second `RenderSizes` constructor — and the

@@ -34,6 +34,7 @@ import type { Point } from "../ast.js";
 import type { Scene, SceneNode, ScenePrim } from "../scene.js";
 import { arcFromPrimitive, arcTessellate } from "../geometry/arc.js";
 import { plainText } from "../text-safe.js";
+import { OUTDOOR_LAYERS } from "../elements/outdoor.js";
 
 export interface AsciiOptions {
   /** Target grid width in characters (default 80). Clamped to ≥ 1. */
@@ -257,8 +258,24 @@ export function renderAscii(scene: Scene, opts: AsciiOptions = {}): string {
   }
   const furn = new Map<string, FurnGroup>();
   let anon = 0;
+  /**
+   * Is this node part of the v1.31 GROUND layer — an `outdoor` surface, a balcony rail or
+   * a `fence`?
+   *
+   * Read by two passes below, which is why it is one predicate rather than two copies of
+   * a layer-name test: pass 3 must not read a fence as furniture, and pass 4 must not
+   * read a lawn as a room or borrow its name for one.
+   */
+  const isGround = (n: SceneNode): boolean => n.layerName !== undefined && OUTDOOR_LAYERS.includes(n.layerName);
   for (const node of scene.nodes) {
     if (node.layer !== "furniture") continue;
+    // A `fence` and a balcony RAIL ride this pass for z-order (above the ground fills,
+    // below the wall poché) and are not furniture. Without this they were reduced to a
+    // single letter at the centre of the run — an `F` floating in the middle of a garden,
+    // which reads as a piece of furniture that is not there. The ground has no ASCII
+    // representation at all, by the same rule that omits fixture glyphs: this backend
+    // draws walls, openings, room names and labelled furniture, and nothing else.
+    if (isGround(node)) continue;
     // Group a fixture's several glyph primitives into one item via the annotate id;
     // without annotate, only a labelled item's text node identifies an item.
     const key = node.elementId ?? (node.prim.t === "text" ? `#${anon++}` : null);
@@ -286,16 +303,29 @@ export function renderAscii(scene: Scene, opts: AsciiOptions = {}): string {
   }
 
   // ---- Pass 4: room labels (drawn LAST so they stay readable) ----
-  // Room name = a weighted `labels` text (the area label carries no weight).
+  //
+  // This pass identifies a room STRUCTURALLY — "a polygon on the `floor` pass" — and
+  // names it with the first weighted `labels` text whose anchor falls inside its box.
+  // That was exact while rooms were the only thing on that pass. Since v1.31 they are
+  // not: an `outdoor` ground surface puts a tint, a hatch and an edge there too, and a
+  // ground surface is emphatically not a room.
+  //
+  // Left alone, the damage was not subtle and not confined to the ground. A lawn drawn
+  // round a house is ONE polygon whose box contains the whole building, so it printed its
+  // own name three times (once per node) — and, worse, every ROOM's box contained the
+  // lawn's label anchor, so `Living` and `Kitchen` were both overwritten with `Garden`.
+  // An unlabelled surface fell through to its element id and stamped `gravel_7` on the
+  // drawing. So the ground is excluded from BOTH halves: it is not a room to be named,
+  // and its label is not a name a room may borrow.
   const nameTexts = scene.nodes.filter(
     (n): n is SceneNode & { prim: Extract<ScenePrim, { t: "text" }> } =>
-      n.layer === "labels" && n.prim.t === "text" && n.prim.weight !== undefined,
+      n.layer === "labels" && n.prim.t === "text" && n.prim.weight !== undefined && !isGround(n),
   );
   for (const node of scene.nodes) {
     // A room floor is a polygon (rect / polygon room) or — since v1.24 — a true `circle`
-    // (a circular room). Both reduce to the box the label is centred in. No other floor
-    // primitive exists, so nothing else is skipped here.
+    // (a circular room). Both reduce to the box the label is centred in.
     if (node.layer !== "floor" || (node.prim.t !== "polygon" && node.prim.t !== "circle")) continue;
+    if (isGround(node)) continue;
     const pts = pointsOf(node.prim);
     let minX = Infinity;
     let minY = Infinity;

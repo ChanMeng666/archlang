@@ -58,7 +58,7 @@ import {
   SPEC_EXAMPLES,
   STATEMENT_GRAMMAR,
 } from "../scripts/gen-llm-spec.js";
-import { AUTO_DIMS_MODES, AXIS_ALIGNS, FURNITURE_ANCHORS, REL_ALIGNS } from "../src/ast.js";
+import { AUTO_DIMS_MODES, AXIS_ALIGNS, FURNITURE_ANCHORS, OUTDOOR_KINDS, REL_ALIGNS } from "../src/ast.js";
 import { KEYWORDS } from "../src/grammar/tokens.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -429,6 +429,61 @@ const POSITIVE: Snippet[] = [
     note: "at + size, top-left",
     src: plan(`${ROOM}\n  void id=well at (2000,1500) size 2000x2000`),
   },
+  // --- outdoor ---------------------------------------------------------------
+  {
+    keyword: "outdoor",
+    note: "the rectangle spelling, with a label",
+    src: plan(`  outdoor id=g lawn at (-4000,-4000) size 16000x13000 label "Garden"`),
+  },
+  {
+    keyword: "outdoor",
+    note: "the ring spelling — every kind that is not a balcony may take one",
+    src: plan(`  outdoor paving polygon (0,0) (6000,0) (6000,3000) (2000,3000)`),
+  },
+  {
+    keyword: "outdoor",
+    note: "an authored rail, naming edges; `all`/`none` are the whole-rectangle answers",
+    src: plan(`${BOX}\n  outdoor balcony at (0,5200) size 4000x1600 rail bottom left right`),
+  },
+  {
+    keyword: "outdoor",
+    note: "…and the derived rail — no clause at all is the common case",
+    src: plan(`${BOX}\n  outdoor balcony at (0,5200) size 4000x1600 label "Terrace"`),
+  },
+  // Every remaining kind, so the accept-set is EXERCISED and not merely rendered. The
+  // four above cover `lawn`/`paving`/`balcony`; these are the other six, one statement
+  // each, in one plan.
+  {
+    keyword: "outdoor",
+    note: "the rest of the closed kind set compiles",
+    src: plan(
+      OUTDOOR_KINDS.filter((k) => k !== "lawn" && k !== "paving" && k !== "balcony")
+        .map((k, i) => `  outdoor ${k} at (${i * 5000},0) size 4000x4000`)
+        .join("\n"),
+    ),
+  },
+  // --- fence -----------------------------------------------------------------
+  {
+    keyword: "fence",
+    note: "the style word leads and is optional; the body is a point list",
+    src: plan(`  fence id=f picket { (0,0) (12000,0) (12000,9000) close }`),
+  },
+  {
+    keyword: "fence",
+    note: "…omitted, it defaults, and an open run needs no `close`",
+    src: plan(`  fence { (0,0) (12000,0) }`),
+  },
+  {
+    keyword: "fence",
+    note: "the other two styles",
+    src: plan(`  fence panel { (0,0) (9000,0) }\n  fence post { (0,3000) (9000,3000) }`),
+  },
+  // --- site boundary ---------------------------------------------------------
+  {
+    keyword: "site",
+    note: "the lot line — the one part of `site` that draws anything",
+    src: plan(`  site {\n    street south\n    boundary (0,0) (20000,0) (20000,16000) (0,16000)\n  }`),
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -677,6 +732,61 @@ const NEGATIVE: Negative[] = [
     channel: "compile",
     note: "a hole with no extent is not a hole",
     src: plan(`${ROOM}\n  void at (2000,1500) size 0x2000`),
+  },
+  // --- outdoor / fence / the lot line: every refusal the three lines name -----
+  {
+    code: "E_OUTDOOR_SIZE",
+    channel: "compile",
+    note: "ground with no extent is not ground",
+    src: plan(`  outdoor lawn at (0,0) size 0x4000`),
+  },
+  {
+    code: "E_OUTDOOR_POLY_SELF_INTERSECT",
+    channel: "compile",
+    note: "a crossing (bow-tie) ring encloses no single surface",
+    src: plan(`  outdoor deck polygon (0,0) (4000,4000) (4000,0) (0,4000)`),
+  },
+  {
+    code: "E_OUTDOOR_POLY_DEGENERATE",
+    channel: "compile",
+    note: "three collinear points are a line, not a surface",
+    src: plan(`  outdoor paving polygon (0,0) (2000,0) (4000,0)`),
+  },
+  {
+    code: "E_OUTDOOR_RAIL",
+    channel: "compile",
+    note: "`rail` on a kind that has no railing is refused, never ignored",
+    src: plan(`  outdoor deck at (0,0) size 3000x2000 rail all`),
+  },
+  {
+    code: "E_FENCE_CURVED",
+    channel: "compile",
+    note: "the post pitch and the reported length are measured along a straight run",
+    src: plan(`  fence picket { (0,0) arc (3000,3000) radius 3000 }`),
+  },
+  {
+    code: "E_SITE_BOUNDARY_DEGENERATE",
+    channel: "compile",
+    note: "an all-collinear lot line encloses no lot",
+    src: plan(`  site {\n    street north\n    boundary (0,0) (5000,0) (10000,0)\n  }`),
+  },
+  {
+    code: "E_SITE_BOUNDARY_SELF_INTERSECT",
+    channel: "compile",
+    note: "a bow-tie lot line has no single area to report",
+    src: plan(`  site {\n    street north\n    boundary (0,0) (10000,10000) (10000,0) (0,10000)\n  }`),
+  },
+  {
+    code: "W_OUTDOOR_OVERLAPS_ROOM",
+    channel: "lint",
+    note: "ground over a room's floor is double-counted by anything adding the two totals",
+    src: plan(`${BOX}\n${ROOM}\n  outdoor paving at (1000,1000) size 3000x2000`),
+  },
+  {
+    code: "W_BALCONY_NO_DOOR",
+    channel: "lint",
+    note: "a slab with no opening within a wall thickness cannot be reached",
+    src: plan(`${BOX}\n${ROOM}\n  outdoor balcony at (0,9000) size 4000x1600`),
   },
   {
     code: "W_STAIR_UNMATCHED",

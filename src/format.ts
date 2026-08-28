@@ -234,6 +234,25 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
         : `roof overhang ${exprStr(s.overhang!)}${s.wall ? ` wall ${s.wall}` : ""}`;
     case "void":
       return `void ${id}at ${ptStr(s.at)} size ${sizeStr(s.size)}`;
+    case "outdoor": {
+      // Every clause the author wrote must come back, in the grammar's own order. The
+      // `rail` clause in particular: dropping it would turn an authored `rail none` into
+      // a DERIVED railing on three edges, which is the v1.26.1 pocket-door failure
+      // exactly — `fmt` silently returning a different drawing.
+      const shape = s.polygon
+        ? `polygon ${s.polygon.map(ptStr).join(" ")}`
+        : `at ${ptStr(s.at!)} size ${sizeStr(s.size!)}`;
+      const label = s.label ? ` label ${exprStr(s.label)}` : "";
+      const rail = s.rail?.length ? ` rail ${s.rail.join(" ")}` : "";
+      return `outdoor ${id}${s.surface} ${shape}${label}${rail}`;
+    }
+    case "fence": {
+      // The style word leads, and it is printed ALWAYS — including the default. `picket`
+      // and an omitted word are semantically identical, so printing it is lossless, and
+      // printing it unconditionally keeps `fmt` a fixed point with one less branch.
+      const pts = s.points.map(ptStr).join(" ");
+      return `fence ${id}${s.style} { ${pts}${s.closed ? " close" : ""} }`;
+    }
     case "let":
       return s.value.t === "fnlit"
         ? `let ${s.name}(${s.value.params.join(", ")}) = ${exprStr(s.value.body)}`
@@ -316,6 +335,9 @@ function axesDoc(axes: AxesNode): Doc {
 /** `site { street … hemisphere … }` — both fields always, on their own lines. */
 function siteDoc(site: SiteNode): Doc {
   const rows: Doc[] = [`street ${site.street}`, `hemisphere ${site.hemisphere}`];
+  // The lot line, when one was written, on its own row after the two orientation fields —
+  // the order the parser reads them in, so `fmt` is a fixed point.
+  if (site.boundary) rows.push(`boundary ${site.boundary.map(ptStr).join(" ")}`);
   return concat(["site {", indent(concat([hardline, join(hardline, rows)])), hardline, "}"]);
 }
 

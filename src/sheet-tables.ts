@@ -32,7 +32,8 @@ import type { Point } from "./ast.js";
 import type { Bounds } from "./geometry.js";
 import type { HatchSpec } from "./hatches.js";
 import { hatchesUsed, patternId } from "./hatches.js";
-import type { RFurniture, RRoom } from "./ir.js";
+import type { ROutdoor, RFurniture, RRoom } from "./ir.js";
+import { groundMaterialsUsed } from "./elements/outdoor.js";
 import type { RenderSizes, SceneNode } from "./scene.js";
 import type { Theme } from "./theme.js";
 import { FIXTURE_CATEGORIES, fixtureGlyph, hasFixtureGlyph } from "./elements/fixtures-glyphs.js";
@@ -379,9 +380,21 @@ export function planTableRows(input: {
   zones?: readonly ZoneRef[] | undefined;
   walls: readonly { material: string; hatchScale: number; hatchAngle: number }[];
   furniture: readonly RFurniture[];
+  /**
+   * The ground surfaces (v1.31), whose materials add legend rows exactly as a wall's do.
+   *
+   * Optional and defaulting to none, because that is what keeps every pre-v1.31 caller —
+   * and every plan with no `outdoor` — reserving the identical number of rows. It is NOT
+   * optional in effect: the fit rule reserving fewer rows than the layout draws is the
+   * precise bug this whole function exists to prevent (a page issued taller than its
+   * declared paper while `sheet.fits` says `true`), and a lawn adds a row.
+   */
+  outdoor?: readonly ROutdoor[];
 }): number {
   const schedule = input.schedule === "rooms" ? roomSchedule(input.rooms, input.zones) : null;
-  const legend = input.legend ? legendEntries(hatchesUsed(input.walls), input.furniture) : null;
+  const legend = input.legend
+    ? legendEntries(hatchesUsed(input.walls, groundMaterialsUsed(input.outdoor ?? [])), input.furniture)
+    : null;
   return tableBandRows(schedule, legend);
 }
 

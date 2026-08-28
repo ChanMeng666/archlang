@@ -279,18 +279,45 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     //
     // v1.31.0 spent all 371 and then some, and the whole of it is "this language grew" —
     // which is the argument the note above says the next raise has to make, since what is
-    // left to trim is real content rather than a redundant bullet. Measured in three parts,
-    // against 25,911 at the v1.30.0 release commit:
+    // left to trim is real content rather than a redundant bullet. The release landed on
+    // two parallel tracks and each was measured on its own against 25,911 at the v1.30.0
+    // release commit, so both sets of numbers are recorded here and the net below is
+    // their sum, not either one's.
     //
-    //   1. **+38 for six new catalogued footprints.** The outdoor fixture tranche adds 21
+    // Track A — the outdoor GROUND elements, ~+1,964:
+    //
+    //   1. **`outdoor` costs ~1,100 chars.** One element, but it carries more than most:
+    //      nine kinds, two spellings, four catalogued refusals and two warnings an
+    //      authoring agent has to be able to avoid, and — the part that cannot be cut —
+    //      three behavioural facts that are INVISIBLE from the syntax and wrong if
+    //      guessed. It is not a room (so its area lands in a different total and it joins
+    //      no access graph); it obstructs nothing, water included; and it grows the page.
+    //      A model that assumes any of the three the other way produces a plan whose own
+    //      `describe()` it will then misread.
+    //
+    //   2. **`fence` costs ~470.** Deliberately the cheap one: most of its line is the
+    //      single fact that it is NOT a thin wall, which is the only thing a reader could
+    //      reasonably get wrong. The three styles are named by what they draw rather than
+    //      described, and the `arc` refusal is one clause.
+    //
+    //   3. **`site` gained ~150** for the `boundary` clause and its two refusals.
+    //
+    // Both element lines were written, measured and cut back BEFORE this raise — ~150
+    // chars of restatement came out of them (the label-point derivation, which an author
+    // cannot act on, and a "picket = / panel = / post =" gloss that re-listed the three
+    // words already standing in the syntax half).
+    //
+    // Track B — the outdoor FIXTURES and the garage, +360:
+    //
+    //   4. **+38 for six new catalogued footprints.** The outdoor fixture tranche adds 21
     //      families, and six of them (`hedge`, `bbq`, `bin`, `mailbox`, `ev_charger`,
     //      `shed`) carry a footprint — so their names join the furniture line's
     //      size-optional list, which is exactly the text v1.28.0's note predicted would
     //      "GROW on its own". The other fifteen cost nothing: an uncatalogued-footprint
     //      family is not named anywhere in this document.
-    //   2. **+17 for `uses garage`.** Seven characters in the `uses` alternation, ten in
+    //   5. **+17 for `uses garage`.** Seven characters in the `uses` alternation, ten in
     //      the reference the rest of the room line already carried.
-    //   3. **+305 for the sixth door kind.** Seven of those are the word in the kind
+    //   6. **+305 for the sixth door kind.** Seven of those are the word in the kind
     //      alternation; the other 298 are the three facts about `garage` an authoring model
     //      cannot guess and cannot recover from a refusal: it takes NO clause (so a model
     //      that reaches for `open` or `slide` gets E_DOOR_KIND_CLAUSE and needs to know
@@ -299,13 +326,20 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     //      the cut plane. The kind is the first one whose clause row is entirely `false`,
     //      so "which clauses does it take" has an answer no other kind's prose supplies.
     //
-    // Net 26,271, so the cap moves to 26,600: **329 chars of headroom**, comparable to the
-    // 371 the last raise bought. The instruction is unchanged — TRIM DUPLICATION BEFORE
-    // RAISING — and it was honoured here in the sense that there was none left to trim: the
-    // furniture line's three redundancies went in v1.28.0 and the Attributes bullet in
-    // v1.29.0. The next lever is a real one: the `door` line is now the longest in the
-    // document at over 1,600 characters, and its per-kind clause prose is the part a
-    // machine-readable table would carry better than a sentence.
-    expect(spec.length).toBeLessThan(26_600);
+    // The two deltas do NOT simply add. 25,911 + 1,964 + 360 predicts 28,235; the merged
+    // spec MEASURES 27,940, 295 short — because both tracks widened the same interpolated
+    // alternations and each measured its own widening against a document that did not yet
+    // carry the other's. The number below is the measured one, and that is the rule: a
+    // budget note records what the generator emitted, never what two branches' arithmetic
+    // implies it should have.
+    //
+    // Net 27,940, so the cap moves to 28,300: **360 chars of headroom**, comparable to
+    // the 371 the last raise bought. The instruction is unchanged and there is now no
+    // known duplication left to spend: TRIM DUPLICATION BEFORE RAISING — and when there
+    // is none left, say what grew and by how much. The next lever is a real one: the
+    // `door` line is now the longest in the document at over 1,600 characters, and its
+    // per-kind clause prose is the part a machine-readable table would carry better than
+    // a sentence.
+    expect(spec.length).toBeLessThan(28_300);
   });
 });

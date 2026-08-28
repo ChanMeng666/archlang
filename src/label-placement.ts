@@ -54,6 +54,7 @@ import { overlap1d } from "./geometry/rect.js";
 import { pointInPolygon, polygonBounds, rectInsidePolygon, rectRing } from "./geometry/polygon.js";
 import { roomLabelAnchor } from "./elements/room.js";
 import { ROOF_LAYER } from "./elements/roof.js";
+import { OUTDOOR_LAYERS } from "./elements/outdoor.js";
 import type { ResolvedPlan, RRoom } from "./ir.js";
 import type { RenderSizes, SceneNode, ScenePrim } from "./scene.js";
 import { textWidth } from "./text-metrics.js";
@@ -300,6 +301,17 @@ export function relocateRoomLabels(
     // also nothing a label collides WITH — an overhang is drawn above the plane the names
     // are written on.
     if (n.layerName === ROOF_LAYER) continue;
+    // The same argument, for the same reason, for the ground (v1.31). A `fence` node's
+    // bounding box is its whole run — often the entire site — and a balcony's rail ticks
+    // sit outside the building; neither is something a room name can collide with, and
+    // treating either as an obstacle would set the relocation pass loose on every label
+    // in the plan. The surfaces themselves ride the `floor` pass and are already skipped
+    // above; this catches the rails and the fences, which ride `furniture`.
+    //
+    // Note what is NOT skipped: an `outdoor` LABEL, which rides `labels` like a room's.
+    // Two names printed on top of each other is exactly the collision this pass exists
+    // for, so a room label does move off a terrace's name.
+    if (n.layer !== "labels" && n.layerName !== undefined && OUTDOOR_LAYERS.includes(n.layerName)) continue;
     const b = primBBox(n.prim);
     if (b) obstacles.push(inflate(b, clear));
   }

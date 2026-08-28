@@ -10,7 +10,7 @@
  */
 
 import type { CompileOptions } from "./types.js";
-import type { ResolvedPlan, RWall, RRoom, RDim, RFurniture } from "./ir.js";
+import type { ResolvedPlan, ROutdoor, RWall, RRoom, RDim, RFurniture } from "./ir.js";
 import type { RenderCtx, Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode, SceneSheet } from "./scene.js";
@@ -33,6 +33,8 @@ import { hatchesUsed } from "./hatches.js";
 import { lowerWallSet } from "./wall-lowering.js";
 import { anchorChromeToSheet, dimReach, layoutChrome } from "./chrome-layout.js";
 import { axesNodes } from "./axes.js";
+import { siteBoundaryNodes } from "./site.js";
+import { groundMaterialsUsed } from "./elements/outdoor.js";
 import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, SHEET_MM, sizesFromPaper } from "./sheet.js";
 import { textWidth } from "./text-metrics.js";
 import type { RoomLabelGroup } from "./label-placement.js";
@@ -56,6 +58,11 @@ function planBounds(ir: ResolvedPlan, registry: Registry): Bounds {
     if (!def) continue;
     for (const p of def.bounds(el)) extendBounds(b, p.x, p.y);
   }
+  // The lot line is a plan-level DATUM, not an element, so it has no `ElementDef.bounds`
+  // to contribute through — but it is drawn, and a drawn thing outside the page is a
+  // clipped drawing. Absent on every plan that declares no `boundary`, so the extent
+  // (and therefore every derived size) is unchanged for them.
+  for (const p of ir.siteBoundary ?? []) extendBounds(b, p.x, p.y);
   if (!Number.isFinite(b.minX)) {
     // Nothing to draw; provide a default frame.
     return { minX: 0, minY: 0, maxX: 1000, maxY: 1000 };
@@ -830,6 +837,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     return st ? { ...baseCtx, theme: st } : baseCtx;
   };
   const nodes: SceneNode[] = [];
+  const outdoorEls = ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
   // Which nodes each ROOM contributed, so the label post-pass at the end can find its
   // text without matching coordinates back to elements (two rooms can share an anchor).
   const labelGroups: RoomLabelGroup[] = [];
@@ -859,8 +867,20 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     }
     if (el.kind === "room") labelGroups.push({ room: el as RRoom, from: groupStart, to: nodes.length });
   }
-  const hatches = hatchesUsed(ir.walls);
-  nodes.push(...lowerWallSet(ir.walls, hatches, ctxFor("wall")));
+  // TWO hatch lists, deliberately.
+  //
+  // `wallHatches` is what the wall lowering groups and orders its fills by, and it must
+  // stay exactly `hatchesUsed(walls)` — feeding it ground materials no wall uses would
+  // add empty groups to a pass whose node order is pinned by every visual golden.
+  //
+  // `hatches` is what the SCENE carries: the list the SVG backend emits one `<pattern>`
+  // per, and the list the legend draws one row per. Ground materials must be in it, or
+  // every ground fill is a DANGLING `url(#…)` — the reference present, the pattern never
+  // emitted, the surface invisible in every viewer. That is the specific trap this
+  // feature was warned about, and it is why the two lists are separate rather than one.
+  const wallHatches = hatchesUsed(ir.walls);
+  const hatches = hatchesUsed(ir.walls, groundMaterialsUsed(outdoorEls));
+  nodes.push(...lowerWallSet(ir.walls, wallHatches, ctxFor("wall")));
 
   // `dims auto …` — synthesize dimension strings (presentation only; never touches
   // the IR, bounds, describe() or lint()). Every chain sits OUTSIDE the building,
@@ -882,6 +902,12 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   if (ir.axes && ir.axes.length > 0) {
     nodes.push(...axesNodes(ir.axes, b, sizes, theme, dimReach(b, nodes, ["dims"])));
   }
+
+  // The lot line (v1.31), after the axes so the two datum conventions read in a stable
+  // order and before the label pass so a boundary can never move a room name (the pass
+  // skips `C-PROP` outright — see `label-placement.ts`). Nothing is emitted for a plan
+  // with no `boundary`, so every existing drawing is byte-identical.
+  if (ir.siteBoundary) nodes.push(...siteBoundaryNodes(ir.siteBoundary, theme, sizes));
 
   // Obstacle-aware room labels (`src/label-placement.ts`). It has to run HERE — after the
   // walls are lowered and after `dims auto` has emitted its numbers — because a dimension

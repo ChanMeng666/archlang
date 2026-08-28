@@ -23,11 +23,14 @@ import type {
   ROpening,
   RFurniture,
   RVoid,
+  ROutdoor,
+  RFence,
   RoomPlacement,
   OpeningPlacement,
   FurniturePlacement,
 } from "./ir.js";
-import type { NorthDir, Point, VerticalDir } from "./ast.js";
+import type { FenceStyle, NorthDir, OutdoorKind, Point, RailSide, VerticalDir } from "./ast.js";
+import { polygonArea, polygonBounds } from "./geometry/polygon.js";
 import type { DoorKind } from "./grammar/tokens.js";
 import type { Diagnostic } from "./diagnostics.js";
 import {
@@ -250,6 +253,45 @@ export interface VoidSummary {
    * as belonging to no room rather than to the U-shaped room whose box surrounds it.
    */
   room: string | null;
+}
+
+/**
+ * One ground surface (`outdoor`, v1.31). Present in the summary only when the storey
+ * declares at least one, so every existing summary is unchanged.
+ *
+ * **Its area is NOT part of `totals.floor_area_m2`, and must never become so.** A terrace
+ * is not floor area; a lawn certainly is not. The whole-plan floor figure is the number
+ * every downstream consumer — the schedule, the intent channel, a brief's assertions —
+ * trusts, and quietly adding the garden to it would be wrong in the one place a summary
+ * cannot afford to be. The separate {@link SceneSummary.totals}`.outdoor_area_m2` is where
+ * the ground is totalled, and a consumer that wants "plot coverage" adds the two itself,
+ * having decided that is what it means.
+ */
+export interface OutdoorSummary {
+  id: string;
+  /** Which ground surface (`lawn`, `paving`, `balcony`, …). */
+  kind: OutdoorKind;
+  label?: string;
+  /**
+   * Area in m², 2 dp — the EXACT shoelace for the `polygon` spelling and w x h for the
+   * rectangle, never the bounding box in either case.
+   */
+  area_m2: number;
+  /** The extent, as top-left + size. On a polygon surface this is the ring's bounding
+   *  box: a convenience for indexing, never the datum any measurement comes from. */
+  bbox: { x: number; y: number; w: number; h: number };
+  /** Which edges carry a railing — `balcony` only, and absent on every other kind. An
+   *  empty array is a real answer (`rail none`), distinct from the key being absent. */
+  rail?: RailSide[];
+}
+
+/** One fence run (v1.31). Present only when the storey declares at least one. */
+export interface FenceSummary {
+  id: string;
+  style: FenceStyle;
+  /** Total run length in mm, summed along the segments (plus the closing one). */
+  length_mm: number;
+  closed: boolean;
 }
 
 /**
@@ -494,6 +536,18 @@ export interface SceneSummary {
    */
   voids?: VoidSummary[];
   /**
+   * The ground surfaces outside the building (`outdoor`, v1.31). Absent when the storey
+   * declares none, so existing summaries are unchanged.
+   *
+   * Ground is reported here and NOWHERE else: it is not in {@link rooms}, not in
+   * {@link input_graph}, not in {@link access}, not in {@link circulation}, and its area
+   * is not in `totals.floor_area_m2`.
+   */
+  outdoor?: OutdoorSummary[];
+  /** The fence runs (v1.31). Absent when the storey declares none. A fence is not a
+   *  wall: it hosts nothing and joins no graph. */
+  fences?: FenceSummary[];
+  /**
    * The modeled access graph: entrances, room reachability/depth from the exterior,
    * and connector edges (doors and cased openings) with estimated clear widths.
    */
@@ -505,7 +559,21 @@ export interface SceneSummary {
    * facts, never a generated layout (ADR 0008).
    */
   circulation: CirculationModel | null;
-  totals: { rooms: number; doors: number; windows: number; floor_area_m2: number };
+  totals: {
+    rooms: number;
+    doors: number;
+    windows: number;
+    floor_area_m2: number;
+    /**
+     * Total `outdoor` area in m², 2 dp (v1.31) — present ONLY when the storey declares a
+     * ground surface, so every existing `totals` object is byte-identical.
+     *
+     * Deliberately a sibling of `floor_area_m2` rather than a component of it. See
+     * {@link OutdoorSummary}: floor area is floor area, and a consumer that wants a plot
+     * figure adds the two having decided that is what it means.
+     */
+    outdoor_area_m2?: number;
+  };
   /**
    * Interior-door adjacency dict (v1.13): every room id → the ids of rooms it shares
    * a door / cased opening with (exterior entrances excluded). Keys in room source
@@ -556,6 +624,22 @@ export interface SceneSummary {
   vertical?: VerticalReport;
   /** All problems from parse/link/resolve, with byte spans and codes. */
   diagnostics: Diagnostic[];
+}
+
+/**
+ * The lot's measured facts, or nothing when the plan declares no `boundary`.
+ *
+ * Area is the EXACT shoelace of the ring. The bbox is reported too, but it is a framing
+ * convenience only — an L-shaped or splayed lot's box is not its lot, and no number here
+ * is derived from it.
+ */
+function lotFacts(ring: readonly Point[] | undefined): Pick<SiteFacts, "lot_area_m2" | "lot_bbox"> {
+  if (!ring || ring.length < 3) return {};
+  const b = polygonBounds(ring);
+  return {
+    lot_area_m2: r2(polygonArea(ring) / 1_000_000),
+    lot_bbox: { x: b.x, y: b.y, w: b.w, h: b.h },
+  };
 }
 
 /** Round to 2 decimals, deterministically (avoids float drift in output). */
@@ -736,6 +820,8 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
   const furnEls = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
   const verticalEls: RVertical[] = verticalsOf(ir);
   const voidEls = ir.elements.filter((e): e is RVoid => e.kind === "void");
+  const outdoorEls = ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
+  const fenceEls = ir.elements.filter((e): e is RFence => e.kind === "fence");
 
   const roomRects = new Map<string, RoomBox>(roomEls.map((r) => [r.id, roomBox(r)]));
 
@@ -850,6 +936,34 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     return { id: v.id, at: { ...v.at }, size: { ...v.size }, room: owner ? owner.id : null };
   });
 
+  // Ground surfaces (v1.31). The area is the EXACT shoelace for a ring and w x h for a
+  // rectangle — never the bounding box, which for a garden edge would be wildly wrong and
+  // is exactly the derived-position defect class the project closed six instances of.
+  const outdoor: OutdoorSummary[] = outdoorEls.map((o) => ({
+    id: o.id,
+    kind: o.surface,
+    ...(o.label !== undefined ? { label: o.label } : {}),
+    area_m2: r2((o.poly ? polygonArea(o.poly) : o.size.w * o.size.h) / 1_000_000),
+    bbox: { x: o.at.x, y: o.at.y, w: o.size.w, h: o.size.h },
+    // Present on a balcony and absent on every other kind, INCLUDING when the list is
+    // empty: `rail: []` on a balcony means "no railing", which is a different fact from
+    // "railings do not apply to this thing".
+    ...(o.rail ? { rail: [...o.rail] } : {}),
+  }));
+
+  const fences: FenceSummary[] = fenceEls.map((f) => {
+    let len = 0;
+    for (let i = 0; i + 1 < f.points.length; i++) {
+      len += Math.hypot(f.points[i + 1]!.x - f.points[i]!.x, f.points[i + 1]!.y - f.points[i]!.y);
+    }
+    if (f.closed && f.points.length > 2) {
+      const a = f.points[f.points.length - 1]!;
+      const b = f.points[0]!;
+      len += Math.hypot(b.x - a.x, b.y - a.y);
+    }
+    return { id: f.id, style: f.style, length_mm: r2(len), closed: f.closed };
+  });
+
   const access = buildDoorAccessGraph(roomEls, doorEls, tol, undefined, openingEls);
   const circulation = computeCirculation(
     roomEls,
@@ -888,7 +1002,16 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
   const bbox_outer = Number.isFinite(ob.minX) ? { w: ob.maxX - ob.minX, h: ob.maxY - ob.minY } : { w: 0, h: 0 };
 
   const floorArea = r2(rooms.reduce((s, r) => s + r.area_m2, 0));
-  const totals = { rooms: rooms.length, doors: doors.length, windows: windows.length, floor_area_m2: floorArea };
+  const totals = {
+    rooms: rooms.length,
+    doors: doors.length,
+    windows: windows.length,
+    floor_area_m2: floorArea,
+    // Summed from the same already-rounded per-surface numbers the rows report, the way
+    // `floor_area_m2` is summed from the rooms — so the total and the list can never
+    // disagree by a rounding step. Spread, so a plan with no ground has no key at all.
+    ...(outdoor.length > 0 ? { outdoor_area_m2: r2(outdoor.reduce((s, o) => s + o.area_m2, 0)) } : {}),
+  };
 
   // Declared zones. Membership ROLLS UP through nesting (`west` contains everything in
   // `west.galleries`), and each area is summed from the same rounded per-room number
@@ -943,7 +1066,12 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
       : {}),
     // Append-only: present only for a plan that declares `site`, so every existing summary
     // is unchanged. Five names, derived in closed form (`src/site.ts`) — nothing measured.
-    ...(ir.site ? { site: deriveSite(ir.site) } : {}),
+    // The two LOT facts (v1.31) are appended to the five direction names rather than
+    // living beside them, because they come from a different half of the block: the
+    // directions are a closed-form table lookup on two words, the lot is measured
+    // geometry. Both absent unless the plan declares a `boundary`, so v1.25's law — a
+    // `site` with only `street`/`hemisphere` describes exactly as before — still holds.
+    ...(ir.site ? { site: { ...deriveSite(ir.site), ...lotFacts(ir.siteBoundary) } } : {}),
     // Append-only: present only for a plan that `place`s a component, so every existing
     // summary is unchanged. Copied straight off the IR — the frames the resolver actually
     // applied, never re-derived from the elements.
@@ -955,6 +1083,8 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     furniture,
     ...(verticals.length > 0 ? { verticals } : {}),
     ...(voids.length > 0 ? { voids } : {}),
+    ...(outdoor.length > 0 ? { outdoor } : {}),
+    ...(fences.length > 0 ? { fences } : {}),
     access,
     circulation,
     totals,

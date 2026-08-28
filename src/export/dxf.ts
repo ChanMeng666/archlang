@@ -144,27 +144,49 @@ class DxfBuilder {
   }
 }
 
-/** AIA CAD layers and their DXF colour numbers (group code 62).
+/** CAD layers and their DXF colour numbers (group code 62).
  *
  * Every layer any node can land on must be declared here: the pass defaults from
- * `aiaLayer()` **and** the per-node `layerName` overrides (`A-COLS`, and the two
- * `A-FLOR-*` shaft sublayers, which draw with the furniture stroke and so take
- * A-FURN's colour). An entity referencing an undeclared layer is only tolerated
- * because most readers auto-create it — `test/export-dxf.test.ts` pins the closure
- * in both directions, so a new override needs a row here. */
+ * `aiaLayer()` **and** the per-node `layerName` overrides (`A-COLS`, the two
+ * `A-FLOR-*` shaft sublayers, `A-ROOF`, and the v1.31 ground layers). An entity
+ * referencing an undeclared layer is only tolerated because most readers auto-create it.
+ *
+ * **`test/export-dxf.test.ts` pins the closure in both directions — but a closure test is
+ * only as strong as the fixture it runs on.** That is not a caveat, it is the recorded
+ * history of this table: `A-ROOF` and `A-FLOR-OVHD` shipped in v1.29 and were never added
+ * here, and `examples/bungalow.arch` has been exporting a DXF with an undeclared `A-ROOF`
+ * ever since — while the closure test stayed green throughout, because its `allPasses`
+ * fixture had no `roof` in it. The fixture now carries one of every element that sets a
+ * `layerName`, which is the only version of this gate that can catch the next one.
+ *
+ * ## Discipline prefixes
+ *
+ * `A-` is architectural, and it was the only prefix until v1.31. The ground layers use
+ * the other two standard NCS disciplines, and they earn them: `L-` is LANDSCAPE (planting
+ * and hard landscape) and `C-` is CIVIL (the property line). A CAD user freezes by
+ * discipline, so putting a lawn on an `A-` layer would hide it behind the wrong switch. */
 const AIA_LAYERS: { name: string; color: number }[] = [
   { name: "A-WALL", color: 7 },
   { name: "A-FLOR", color: 8 },
   { name: "A-FLOR-STRS", color: 3 },
   { name: "A-FLOR-EVTR", color: 3 },
+  // A floor VOID (v1.29) and a BALCONY slab (v1.31) — both floor-plate sublayers.
+  { name: "A-FLOR-OVHD", color: 8 },
+  { name: "A-FLOR-BALC", color: 8 },
   { name: "A-GRID", color: 4 },
   { name: "A-FURN", color: 3 },
   { name: "A-COLS", color: 1 },
   { name: "A-DOOR", color: 4 },
   { name: "A-GLAZ", color: 5 },
+  { name: "A-ROOF", color: 8 },
   { name: "A-ANNO-TEXT", color: 6 },
   { name: "A-ANNO-DIMS", color: 2 },
   { name: "A-ANNO", color: 8 },
+  // Landscape (v1.31): planting green, hard landscape grey.
+  { name: "L-PLNT", color: 3 },
+  { name: "L-SITE", color: 8 },
+  // Civil (v1.31): the property line, in the magenta a lot line conventionally takes.
+  { name: "C-PROP", color: 6 },
 ];
 
 /** Dash definitions (drawing units = mm): name, descriptive text, and pattern.

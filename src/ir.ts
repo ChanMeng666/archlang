@@ -12,7 +12,10 @@ import type {
   DoorNode,
   ElementKind,
   ExprPoint,
+  FenceStyle,
   FurnitureNode,
+  OutdoorKind,
+  RailSide,
   LevelNode,
   NorthDir,
   OpeningNode,
@@ -56,7 +59,7 @@ import { planTableRows } from "./sheet-tables.js";
 import type { GridBox } from "./geometry/grid-index.js";
 import { GridIndex } from "./geometry/grid-index.js";
 import { rectsOverlap } from "./geometry/rect.js";
-import { polygonsOverlap, rectRing } from "./geometry/polygon.js";
+import { effectiveVertices, polygonSelfIntersects, polygonsOverlap, rectRing } from "./geometry/polygon.js";
 import { BUILTIN_NAMES } from "./builtins.js";
 
 export interface RBase {
@@ -432,6 +435,48 @@ export interface RVoid extends RBase {
   size: { w: number; h: number };
 }
 
+/**
+ * A resolved ground surface. Like {@link RRoom}, it carries BOTH a rectangle and — for
+ * the `polygon` spelling — the ring that is the honest datum.
+ *
+ * `at`/`size` are always populated, because a great deal of downstream code (the frame
+ * transform, the balcony rail derivation, the grid index the lint rules use) is written
+ * on a box; but they are the polygon's BOUNDING box when `poly` is set, and **no derived
+ * position may be taken from them in that case**. That is the v1.25 defect class stated
+ * for this element: area comes from the shoelace, the label point from
+ * `polygonLabelPoint`, containment from `pointInPolygon`. The bbox is for indexing only.
+ */
+export interface ROutdoor extends RBase {
+  kind: "outdoor";
+  /** Which ground surface — the hatch, the tint and the CAD layer all follow from it. */
+  surface: OutdoorKind;
+  /** Top-left of the extent (the polygon's bbox corner on the `polygon` spelling). */
+  at: Point;
+  size: { w: number; h: number };
+  /** The floor ring, present only for the `polygon` spelling. Implicitly closed, no
+   *  repeated last vertex (the {@link RRoom.poly} convention). */
+  poly?: Point[];
+  label?: string;
+  /** Which edges carry a railing — `balcony` only, and always CONCRETE by resolve: the
+   *  authored `all`/`none`/edge list is discharged here, and an omitted clause is
+   *  replaced by the derived set (every edge with no wall behind it). */
+  rail?: RailSide[];
+  /** True when the rail set above was DERIVED rather than written. `describe()` does not
+   *  report this — it is what `arch fmt` reads to decide whether to re-emit the clause. */
+  railDerived?: boolean;
+}
+
+/**
+ * A resolved fence run. Deliberately NOT an {@link RWall}: no thickness, no material, no
+ * openings, no place in the access graph or the wall joinery.
+ */
+export interface RFence extends RBase {
+  kind: "fence";
+  style: FenceStyle;
+  points: Point[];
+  closed: boolean;
+}
+
 export type ResolvedElement =
   | RWall
   | RRoom
@@ -445,7 +490,9 @@ export type ResolvedElement =
   | RElevator
   | REscalator
   | RRoof
-  | RVoid;
+  | RVoid
+  | ROutdoor
+  | RFence;
 
 /**
  * One resolved **positioning axis** (定位轴线): an author-declared datum line at `pos`
@@ -489,6 +536,16 @@ export interface ResolvedPlan {
    * setting, so a multi-storey plan carries the same site on every storey.
    */
   site?: SiteNode;
+  /**
+   * The `site { boundary … }` LOT LINE, resolved (v1.31): expressions evaluated,
+   * grid-snapped, implicitly closed, no repeated last vertex.
+   *
+   * Separate from {@link site} — which stays the verbatim AST node — because this is the
+   * one part of `site` that has GEOMETRY, and scene-build must not evaluate expressions.
+   * Absent when the plan declares no boundary (or when the ring was refused), which is
+   * what keeps a plan with only `street`/`hemisphere` drawing exactly nothing.
+   */
+  siteBoundary?: Point[];
   /** `dims auto …` — synthesize dimension strings at scene-build (presentation only). */
   autoDims?: "overall" | "rooms" | "walls" | "all";
   /**
@@ -1283,6 +1340,7 @@ function tableRowsOf(ir: ResolvedPlan): number {
     zones: ir.zones,
     walls: ir.walls,
     furniture: ir.elements.filter((e): e is RFurniture => e.kind === "furniture"),
+    outdoor: ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor"),
   });
 }
 
@@ -1574,6 +1632,39 @@ function resolveImpl(
     if (labelled.length > 0) axes = labelled;
   }
 
+  // 5b. The lot line (v1.31). Same shape as the axes above and for the same reasons: a
+  //     plan-level datum whose coordinates are expressions, evaluated against the plan's
+  //     GLOBAL bindings and snapped like every other authored coordinate. It REFUSES
+  //     rather than approximating — a degenerate or self-crossing ring encloses no single
+  //     area, so there is no lot to report an area for and no outline to draw — which is
+  //     the `room polygon` precedent applied one layer up.
+  let siteBoundary: Point[] | undefined;
+  if (ast.site?.boundary) {
+    activeEnv = globalScope.flatten();
+    const ring = ast.site.boundary.map((p) => snapPt({ x: evalNum(p.x), y: evalNum(p.y) }));
+    const effective = effectiveVertices(ring);
+    const span = ast.site.boundarySpan ?? ast.site.span;
+    if (effective.length < 3) {
+      diagnostics.push({
+        severity: "error",
+        message:
+          `The site \`boundary\` is degenerate — ${effective.length} effective vertices after removing ` +
+          `duplicate and collinear points (3 are needed to enclose a lot)`,
+        code: "E_SITE_BOUNDARY_DEGENERATE",
+        ...(span ? { span } : {}),
+      });
+    } else if (polygonSelfIntersects(effective)) {
+      diagnostics.push({
+        severity: "error",
+        message: "The site `boundary` self-intersects — its edges cross, so it encloses no single lot",
+        code: "E_SITE_BOUNDARY_SELF_INTERSECT",
+        ...(span ? { span } : {}),
+      });
+    } else {
+      siteBoundary = ring;
+    }
+  }
+
   // 6. The sheet: resolve `paper` (+ the authored `scale`) into an operative scale
   //    denominator, and report an overflow. Purely arithmetic over the extent already
   //    computed above — no rendering, so `describe()` and `toScene()` both just read it.
@@ -1602,6 +1693,7 @@ function resolveImpl(
     north: ast.north,
     // Absent unless declared, so the IR of a plan with no `site` is byte-identical.
     ...(ast.site ? { site: ast.site } : {}),
+    ...(siteBoundary ? { siteBoundary } : {}),
     autoDims: ast.autoDims,
     ...(axes ? { axes } : {}),
     // Sheet-table opt-ins: presentation flags carried through untouched. Spread so an
@@ -1679,6 +1771,7 @@ function resolveSheet(
       zones,
       walls,
       furniture: elements.filter((e): e is RFurniture => e.kind === "furniture"),
+      outdoor: elements.filter((e): e is ROutdoor => e.kind === "outdoor"),
     }),
   };
   const sheet = resolveSheetSpec(ast.paper, ast.scale, fit);
@@ -1841,7 +1934,12 @@ function checkPlanDrawable(elements: ResolvedElement[], diagnostics: Diagnostic[
       e.kind === "elevator" ||
       e.kind === "escalator" ||
       e.kind === "roof" ||
-      e.kind === "void",
+      e.kind === "void" ||
+      // A SITE PLAN — a lot line, a lawn, a driveway and a fence, with the building
+      // drawn on another sheet — is a real drawing with no wall and no room in it. It
+      // would be wrong to tell its author there is "nothing to draw".
+      e.kind === "outdoor" ||
+      e.kind === "fence",
   );
   if (!drawable) {
     diagnostics.push({

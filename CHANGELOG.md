@@ -7,6 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+<!-- ── v1.31 track A — the outdoor ground elements ─────────────────────────── -->
+
+### Added — ground surfaces, fences and a site lot line
+
+Three new drawing surfaces. None of them is a room, none of them obstructs anything, and
+all three are additive: a plan that uses none renders, describes and lints exactly as
+before, pinned by SHA-256 over the whole agent-facing surface in
+`test/outdoor-byte-identity.test.ts`.
+
+- **`outdoor [id=] <kind> (at (x,y) size WxH | polygon (x,y) …) [label "…"] [rail <edges>]`**
+  — the ground a building sits on, in nine kinds: `lawn`, `planting`, `paving`, `deck`,
+  `gravel`, `water`, `driveway`, `patio`, `balcony`. Each draws a **scale-aware material
+  hatch over a flat tint**, on `L-PLNT` (planting), `L-SITE` (hard landscape) or
+  `A-FLOR-BALC` (a balcony slab) — three CAD layers rather than one, because a CAD user
+  freezes by trade. Seven new hatch patterns join the existing wall library in one shared
+  table; every dimension steps off the drawing's reference dimension, so a pattern is the
+  same size **on the sheet** at 1:50 and at 1:200 (`gravel`'s scatter comes from a frozen
+  table, never `Math.random()` — `compile()` is deterministic).
+
+  **A ground surface is not a room.** It is absent from `describe().rooms`, from
+  `totals.floor_area_m2`, from the drawn `schedule rooms` table, from the access graph,
+  from `input_graph`, from the circulation model and from Plan JSON. Its own facts are
+  `describe().outdoor[]` and `totals.outdoor_area_m2`, both appended only when a plan
+  declares a surface. Area is the exact shoelace on the ring spelling, and the drawn label
+  sits at the ring's pole of inaccessibility — the shape, never the bounding box.
+
+  **It obstructs nothing**, water included; that is a stated v1 simplification, deferred by
+  name in `docs/backlog.md` rather than half-answered per kind. It does join the page
+  bounds, which on a plan with **no** `paper` rescales every line weight exactly as a
+  far-flung `column` or a `roof overhang` already does — so a site plan wants a `paper`.
+
+  A `balcony` rails every edge with no wall along it, derived at each edge's own midpoint;
+  `rail top|bottom|left|right|all|none` overrides. Under `place … rotate`/`mirror` the edge
+  names are carried by their outward normals through the frame, so a mirrored wing's
+  railing lands on the mirrored edges. With `legend`, each ground material used adds a row.
+
+- **`fence [id=] [picket|panel|post] { (x,y) … [close] }`** — a posted boundary line on
+  `L-SITE`, drawn above the ground fills and below the building. The style word **leads**
+  (a trailing `style` word would be ambiguous with the `style <kind> { … }` statement).
+  **Not a thin wall:** no thickness, no poché, it hosts no opening, it is absent from
+  `describe().walls` and it joins no graph. A gate is deferred by name rather than
+  approximated by letting a door host onto a fence. `describe().fences[]` reports
+  `length_mm` and `closed`.
+
+- **`site { … boundary (x,y) … }`** — the lot line, drawn as a dash-dot property line on
+  `C-PROP` and the one part of `site` that draws anything or joins the page bounds.
+  `describe().site` gains `lot_area_m2` (exact shoelace) and `lot_bbox`. A `site` with only
+  `street`/`hemisphere` is byte-identical to before, and that law is pinned.
+
+Nine new codes, every one a refusal rather than an approximation: `E_OUTDOOR_SIZE`,
+`E_OUTDOOR_POLY_DEGENERATE`, `E_OUTDOOR_POLY_SELF_INTERSECT`, `E_OUTDOOR_RAIL`,
+`E_FENCE_CURVED`, `E_SITE_BOUNDARY_DEGENERATE`, `E_SITE_BOUNDARY_SELF_INTERSECT`, plus the
+advisory `W_OUTDOOR_OVERLAPS_ROOM` and `W_BALCONY_NO_DOOR`. New Theme keys `lawn`, `water`,
+`paving` and `outdoorStroke` across all four palettes, with `STYLE_KEYS` rows for both
+elements. Closes backlog item **P2-9**.
+
+### Fixed
+
+- **`A-ROOF` has been missing from the DXF LAYER table since v1.29**, so
+  `examples/bungalow.arch` exported a DXF referencing an undeclared layer for two releases.
+  The closure test that was supposed to catch it stayed green throughout, because its
+  fixture plan had no `roof` in it and `roof` rides a pass that was already covered — a
+  gate is only as strong as its corpus. `A-ROOF` and `A-FLOR-OVHD` now have rows, the
+  fixture carries one of every element that sets a `layerName`, and the layer-name rule is
+  widened from a hardcoded `A-` prefix to the three NCS disciplines the tree now uses.
+- **The ASCII backend read ground surfaces as rooms.** It identifies a room structurally —
+  a polygon on the `floor` pass — so a lawn drawn round a house printed its own name three
+  times and overwrote every room's name with it. Found by looking at `-f txt` output rather
+  than by reading the code; the ground is now excluded from the room and furniture passes
+  alike.
+
+<!-- ── end v1.31 track A ───────────────────────────────────────────────────── -->
 <!-- BEGIN: outdoor fixtures + garage (track B) -->
 
 ### Added — twenty-one outdoor fixture families
