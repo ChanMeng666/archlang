@@ -158,7 +158,7 @@ tracks landed together (`feat/example-villa`, `feat/examples-homes`, `feat/examp
   `examples/one-room.arch` do **not** round-trip byte-identically through `planToJson`/`planFromJson`
   today — filed as a backlog item rather than silently worked around.
 
-
+## [1.29.0] - 2026-08-26
 
 **"two drawing-only elements, four furniture families, and one word for a thing you stand on"**, a
 MINOR. Two independent tracks: `roof` and `void` — elements that draw and do nothing else — and four
