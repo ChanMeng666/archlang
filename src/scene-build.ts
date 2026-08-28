@@ -2,18 +2,18 @@
  * Lowers a resolved plan (IR) to the backend-neutral {@link Scene}.
  *
  * This is the single place geometry is assembled: each element contributes
- * positioned primitives via its registry `render`, walls are unioned/offset here
- * (the only element needing cross-segment treatment), and the page-level sizing
+ * positioned primitives via its registry `render`, the whole wall set is joined into one
+ * boundary by `wall-lowering.ts` (walls are the only element needing cross-STATEMENT
+ * treatment, not merely cross-segment), and the page-level sizing
  * (reference dimension, derived font/stroke sizes, bounds) is computed once and
  * carried on the Scene for the backends. Pure & deterministic — no I/O, no time.
  */
 
 import type { CompileOptions } from "./types.js";
-import type { Opening, ResolvedPlan, RWall, RRoom, RDim, RFurniture } from "./ir.js";
+import type { ResolvedPlan, RWall, RRoom, RDim, RFurniture } from "./ir.js";
 import type { RenderCtx, Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode, SceneSheet } from "./scene.js";
-import { MITER_LIMIT } from "./scene.js";
 import type { Bounds, Vec, WallSegment } from "./geometry.js";
 import {
   add,
@@ -23,20 +23,14 @@ import {
   mul,
   normal,
   segmentFaceExtremes,
-  segmentRectangle,
   segmentsOfWall,
   sub,
   unit,
-  wallHasArc,
 } from "./geometry.js";
 import { arcPointAt, diameterText, radiusText } from "./geometry/arc.js";
-import type { Rect } from "./geometry/union.js";
-import { rectBooleanOutline } from "./geometry/union.js";
-import { getGeometryBackend } from "./geometry/backend.js";
-import type { GeometryBackend } from "./geometry/backend.js";
 import type { Point } from "./ast.js";
-import { hatchKey, hatchOf, hatchesUsed, patternId } from "./hatches.js";
-import type { HatchSpec } from "./hatches.js";
+import { hatchesUsed } from "./hatches.js";
+import { lowerWallSet } from "./wall-lowering.js";
 import { anchorChromeToSheet, dimReach, layoutChrome } from "./chrome-layout.js";
 import { axesNodes } from "./axes.js";
 import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, SHEET_MM, sizesFromPaper } from "./sheet.js";
@@ -67,187 +61,6 @@ function planBounds(ir: ResolvedPlan, registry: Registry): Bounds {
     return { minX: 0, minY: 0, maxX: 1000, maxY: 1000 };
   }
   return b;
-}
-
-/** Is every segment of every wall axis-aligned (horizontal or vertical)? A CURVED edge
- *  never is — its chord may well be axis-aligned (a semicircle's is), so the arc marker
- *  is what decides, not the endpoints. */
-function allOrthogonal(walls: RWall[]): boolean {
-  return walls.every((w) => segmentsOfWall(w).every((s) => !s.arc && (s.a.x === s.b.x || s.a.y === s.b.y)));
-}
-
-/**
- * Axis-aligned rectangle to subtract for one opening: the opening spans its
- * `width` along the hosting wall segment and the full wall thickness across it.
- * Returns null for a non-orthogonal host (handled by the angled fallback).
- */
-function openingRect(w: RWall, op: Opening): Rect | null {
-  let seg = null as null | { a: { x: number; y: number }; b: { x: number; y: number } };
-  let best = Infinity;
-  for (const s of segmentsOfWall(w)) {
-    if (s.arc) continue; // a curve never reaches the axis-aligned boolean (see lowerWalls)
-    const d = distPointToWallSegment(op.at, s);
-    if (d < best) {
-      best = d;
-      seg = s;
-    }
-  }
-  if (!seg) return null;
-  const halfW = op.width / 2;
-  const halfT = w.thickness / 2;
-  if (seg.a.y === seg.b.y) {
-    return { x0: op.at.x - halfW, x1: op.at.x + halfW, y0: op.at.y - halfT, y1: op.at.y + halfT };
-  }
-  if (seg.a.x === seg.b.x) {
-    return { x0: op.at.x - halfT, x1: op.at.x + halfT, y0: op.at.y - halfW, y1: op.at.y + halfW };
-  }
-  return null; // angled host
-}
-
-/**
- * Opening rectangle as a rotated polygon, oriented along the hosting wall
- * segment: it spans the opening `width` along the segment direction and the full
- * wall thickness across it. Used by the angled (polygon-backend) path, where the
- * host may be at any angle (unlike {@link openingRect}, which is axis-aligned).
- */
-function openingPoly(w: RWall, op: Opening): Point[] | null {
-  let seg = null as null | { a: Point; b: Point };
-  let best = Infinity;
-  for (const s of segmentsOfWall(w)) {
-    if (s.arc) continue; // a curve never reaches the polygon boolean (see lowerWalls)
-    const d = distPointToWallSegment(op.at, s);
-    if (d < best) {
-      best = d;
-      seg = s;
-    }
-  }
-  if (!seg) return null;
-  const dir: Vec = unit(sub(seg.b, seg.a));
-  const nrm = normal(dir);
-  const hw = op.width / 2;
-  const ht = w.thickness / 2;
-  return [
-    add(add(op.at, mul(dir, -hw)), mul(nrm, -ht)),
-    add(add(op.at, mul(dir, hw)), mul(nrm, -ht)),
-    add(add(op.at, mul(dir, hw)), mul(nrm, ht)),
-    add(add(op.at, mul(dir, -hw)), mul(nrm, ht)),
-  ];
-}
-
-/** The fill (data-driven hatch) + outline nodes for one hatch group's unioned region. */
-function emitRegion(loops: Point[][], h: HatchSpec, ctx: RenderCtx): SceneNode[] {
-  return [
-    {
-      layer: "wallFill",
-      prim: { t: "hatch", region: loops, material: h.material, scale: h.scale, angle: h.angle },
-      paint: { fill: `url(#${patternId(h.material, h.scale, h.angle)})`, fillRule: "nonzero" },
-    },
-    {
-      layer: "wallFace",
-      prim: { t: "region", loops },
-      paint: {
-        fill: "none",
-        stroke: ctx.theme.wallStroke,
-        width: ctx.sizes.wallStroke,
-        linejoin: "miter",
-        miterLimit: MITER_LIMIT,
-      },
-    },
-  ];
-}
-
-/** Axis-aligned union (+ opening holes) for an all-orthogonal hatch group. */
-function lowerOrthogonalGroup(group: RWall[], h: HatchSpec, ctx: RenderCtx): SceneNode[] {
-  const rects: Rect[] = [];
-  const holes: Rect[] = [];
-  for (const w of group) {
-    for (const s of segmentsOfWall(w)) {
-      const corners = segmentRectangle(s.a, s.b, s.thickness);
-      const xsv = corners.map((c) => c.x);
-      const ysv = corners.map((c) => c.y);
-      rects.push({ x0: Math.min(...xsv), y0: Math.min(...ysv), x1: Math.max(...xsv), y1: Math.max(...ysv) });
-    }
-    // Doors/windows void the wall solid (IFC-style opening subtraction).
-    for (const op of w.openings) {
-      const hr = openingRect(w, op);
-      if (hr) holes.push(hr);
-    }
-  }
-  const loops = rectBooleanOutline(rects, holes);
-  return loops.length === 0 ? [] : emitRegion(loops, h, ctx);
-}
-
-/**
- * Polygon union (+ opening holes) for a hatch group containing angled walls, via
- * the optional {@link GeometryBackend}. Each segment becomes a (possibly rotated)
- * rectangle; the backend merges them into one seamless outline and subtracts the
- * opening polygons. Returns `null` if the backend yields nothing (degenerate
- * input), so the caller can fall back.
- */
-function lowerAngledGroup(group: RWall[], h: HatchSpec, ctx: RenderCtx, backend: GeometryBackend): SceneNode[] | null {
-  const rects: Point[][] = [];
-  const holes: Point[][] = [];
-  for (const w of group) {
-    for (const s of segmentsOfWall(w)) rects.push(segmentRectangle(s.a, s.b, s.thickness));
-    for (const op of w.openings) {
-      const hp = openingPoly(w, op);
-      if (hp) holes.push(hp);
-    }
-  }
-  const loops = holes.length ? backend.difference(rects, holes) : backend.union(rects);
-  return loops.length === 0 ? null : emitRegion(loops, h, ctx);
-}
-
-/**
- * Wall fill + outline, grouped by hatch spec (material + scale + angle) so each
- * distinct poché unions independently. Orthogonal groups become a single
- * multi-loop region via the zero-dependency rectilinear boolean (byte-identical
- * regardless of any registered backend). A group with angled walls uses the
- * optional {@link GeometryBackend} when one is registered (seamless joinery),
- * else falls back to the wall element's per-segment primitives.
- */
-function lowerWalls(
-  walls: RWall[],
-  hatches: HatchSpec[],
-  ctx: RenderCtx,
-  registry: Registry,
-  backend: GeometryBackend | null,
-): SceneNode[] {
-  if (walls.length === 0) return [];
-  const nodes: SceneNode[] = [];
-  const wallDef = registry.byKind.get("wall")!;
-  for (const h of hatches) {
-    const k = hatchKey(h);
-    const inGroup = walls.filter((w) => hatchKey(hatchOf(w)) === k);
-    // CURVED walls are lowered by the wall element itself, ALWAYS — never through a
-    // boolean. Two reasons, both load-bearing:
-    //
-    //  1. The unioned `region` primitive is a straight-segment path, so routing a curve
-    //     through it would draw a faceted 48-gon face. The element path emits TRUE `arc`
-    //     primitives (SVG `A`, DXF `ARC`) at r ± t/2, so a curve is never faceted.
-    //  2. `lowerAngledGroup` runs only when the optional clipper2 backend is registered.
-    //     Sending a curve down it would make an arc plan's bytes DEPEND ON AN OPTIONAL
-    //     DEPENDENCY — exactly what the determinism suite (which compiles with the
-    //     backend both present and absent) forbids.
-    //
-    // The split is PER WALL, not per group, so a plan mixing a curved facade with
-    // straight service wings keeps the straight walls' existing union — and therefore
-    // their bytes — untouched. A plan with no arc has an empty `curved` list and takes
-    // exactly the code it always did.
-    const curved = inGroup.filter(wallHasArc);
-    const group = curved.length === 0 ? inGroup : inGroup.filter((w) => !wallHasArc(w));
-    if (group.length > 0) {
-      if (allOrthogonal(group)) {
-        nodes.push(...lowerOrthogonalGroup(group, h, ctx));
-      } else {
-        const viaBackend = backend ? lowerAngledGroup(group, h, ctx, backend) : null;
-        if (viaBackend) nodes.push(...viaBackend);
-        else nodes.push(...group.flatMap((w) => wallDef.render(w, ctx)));
-      }
-    }
-    for (const w of curved) nodes.push(...wallDef.render(w, ctx));
-  }
-  return nodes;
 }
 
 /**
@@ -949,7 +762,6 @@ function synthWallDims(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void
 
 export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): Scene {
   const registry = runtime.registry;
-  const backend = runtime.backend ?? getGeometryBackend();
 
   // Theme cascade (later wins): default → named base → plan `theme{}` overrides →
   // opt-in `theme from` poché → [per-element `style`] → CompileOptions.theme. The
@@ -1005,17 +817,14 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // Collect non-wall elements (source order), then lower walls — exactly the v0.1
   // op order, so layer-bucketing in a backend reproduces the original draw order.
   // Each kind gets its styled theme when `style <kind>` applies, else the base ctx.
-  // Will the wall lowering below actually void the wall solid at every opening? The
-  // rectilinear boolean does (it subtracts `openingRect` per opening), so an
-  // all-orthogonal wall set is voided for sure; a set containing an angled wall may
-  // fall through to the per-segment wall primitives, which subtract nothing. Derived
-  // from wall geometry only — never from backend presence — so output stays
-  // byte-identical with and without a registered geometry backend.
-  // Curved walls are lowered per-segment and subtract nothing, so they are excluded from
-  // the question — a door on a straight orthogonal host in a plan that ALSO has a curved
-  // facade keeps its real hole (and its bytes) instead of regressing to an opaque cover.
-  const openingsVoided = allOrthogonal(ir.walls.filter((w) => !wallHasArc(w)));
-  const baseCtx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm, openingsVoided };
+  // Will the wall lowering below actually void the wall solid at every opening? Since
+  // v1.30, ALWAYS: `lowerWallSet` cuts every opening on every host — straight, angled
+  // and curved alike — so the floor runs continuously through each passage and only the
+  // capped jambs are drawn. It used to depend on the plan's shape (only the rectilinear
+  // boolean subtracted), which is why `RenderCtx.openingsVoided` exists at all; the
+  // field stays, and stays true, because the interface is append-only and a hand-built
+  // `RenderCtx` must keep its safe opaque default.
+  const baseCtx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm, openingsVoided: true };
   const ctxFor = (kind: string): RenderCtx => {
     const st = styledByKind.get(kind);
     return st ? { ...baseCtx, theme: st } : baseCtx;
@@ -1051,7 +860,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     if (el.kind === "room") labelGroups.push({ room: el as RRoom, from: groupStart, to: nodes.length });
   }
   const hatches = hatchesUsed(ir.walls);
-  nodes.push(...lowerWalls(ir.walls, hatches, ctxFor("wall"), registry, backend));
+  nodes.push(...lowerWallSet(ir.walls, hatches, ctxFor("wall")));
 
   // `dims auto …` — synthesize dimension strings (presentation only; never touches
   // the IR, bounds, describe() or lint()). Every chain sits OUTSIDE the building,

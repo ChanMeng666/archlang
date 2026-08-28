@@ -379,17 +379,16 @@ export const door: ElementDef = {
     // (computed from the same tangent inside `doorSwing`) can never disagree with it.
     const d = segmentDirAt(seg, dr.at);
     const n = normal(d);
-    // Only paint the cover when the wall lowering has NOT already voided the wall at
-    // this doorway (see `RenderCtx.openingsVoided`): `theme.opening` is the page
-    // background, so covering a real hole laid a white band across the floor either
-    // side of the door. When the hole is real the polygon stays — invisible — because
-    // the ASCII/DXF backends locate the doorway by the cover polygon on this pass.
-    // A wall carrying ANY `arc` edge is lowered per-segment and subtracts nothing, so no
-    // doorway on it is a real hole — not on the curve, and not on its straight runs
-    // either. `seg.arcWall` is that per-wall fact (`seg.arc` alone would miss the
-    // straight segments, and a semicircle's chord is axis-aligned anyway).
-    const voided = ctx.openingsVoided === true && !seg.arcWall && (seg.a.x === seg.b.x || seg.a.y === seg.b.y);
-    const h = seg.thickness / 2 + (voided ? 0 : sizes.wallStroke);
+    // The wall solid is ALWAYS severed at a doorway: since v1.30 the joinery pass
+    // (`wall-lowering.ts`) cuts every opening on every host — straight, angled or curved
+    // — so the floor runs continuously through the reveal and only the capped jambs are
+    // drawn. The cover is therefore never painted: `theme.opening` is the page
+    // background, so painting it over a real hole laid a white band across the floor
+    // either side of the door.
+    //
+    // The polygon is still EMITTED, at the wall's own half-extent, because the ASCII and
+    // DXF backends locate the doorway by it on this pass.
+    const h = seg.thickness / 2;
     const hw = dr.width / 2;
     const cover: Point[] = [
       add(add(dr.at, mul(d, -hw)), mul(n, h)),
@@ -401,7 +400,7 @@ export const door: ElementDef = {
     nodes.push({
       layer: "doors",
       prim: { t: "polygon", pts: cover },
-      paint: voided ? { fill: "none" } : { fill: theme.opening },
+      paint: { fill: "none" },
     });
     // A NON-HINGED kind draws panels/tracks/cavity in the reveal instead of a leaf and
     // arc, and `doorSwing` returns null for it — so the hinged branch below is the

@@ -2,7 +2,7 @@
  *  the host wall (no door leaf, no glazing) that still connects the two spaces. */
 
 import type { Point, OpeningNode } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, ResolveCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { ROpening } from "../ir.js";
 import { add, mul, nearestWallNote, normal, segmentDirAt } from "../geometry.js";
@@ -79,55 +79,43 @@ export const opening: ElementDef = {
 
   bounds: () => [],
 
-  render(resolved, ctx: RenderCtx): SceneNode[] {
+  render(resolved): SceneNode[] {
     const op = resolved as ROpening;
     const seg = op.host;
     if (!seg) return [];
-    const { theme, sizes } = ctx;
     // Tangent at the passage on a curved host (cover along it, jambs radial).
     const d = segmentDirAt(seg, op.at);
     const n = normal(d);
     const h = seg.thickness / 2;
     const hw = op.width / 2;
-    // Has the wall solid already been voided here? The boolean union in
-    // `scene-build.ts` severs the wall at every registered opening — jamb end-caps
-    // and all — with the floor running continuously through the gap. Repainting that
-    // gap with an opaque `theme.opening` (which is the page background in every
-    // theme) is what used to lay a white band across the floor, overhanging a whole
-    // `wallStroke` past each wall face. So: only paint the cover when nothing else
-    // opened the hole (an angled host on the no-geometry-backend fallback, where this
-    // polygon is the ONLY void mechanism).
-    // …and a CURVED host never voids (it is lowered per-segment), whatever its chord's
-    // orientation suggests.
-    const voided = ctx.openingsVoided === true && !seg.arcWall && (seg.a.x === seg.b.x || seg.a.y === seg.b.y);
-    const he = voided ? h : h + sizes.wallStroke;
+    // The wall solid is ALWAYS severed here: since v1.30 the joinery pass
+    // (`wall-lowering.ts`) cuts every opening on every host — straight, angled or
+    // curved — with the floor running continuously through the gap and the capped jambs
+    // the only lines left. So the cover is never painted: `theme.opening` is the page
+    // background in every theme, and repainting a real hole with it laid a white band
+    // across the floor, overhanging a whole `wallStroke` past each wall face.
+    //
+    // The polygon is still EMITTED, at the wall's own half-extent, because it is how the
+    // ASCII and DXF backends *locate* the passage (they read the polygon on the
+    // `openings` pass). Half-extent, not `h + wallStroke`: a stroke-width overhang was
+    // slack for a cover that had to hide a face line, and there is no face line here.
     const cover: Point[] = [
-      add(add(op.at, mul(d, -hw)), mul(n, he)),
-      add(add(op.at, mul(d, hw)), mul(n, he)),
-      add(add(op.at, mul(d, hw)), mul(n, -he)),
-      add(add(op.at, mul(d, -hw)), mul(n, -he)),
+      add(add(op.at, mul(d, -hw)), mul(n, h)),
+      add(add(op.at, mul(d, hw)), mul(n, h)),
+      add(add(op.at, mul(d, hw)), mul(n, -h)),
+      add(add(op.at, mul(d, -hw)), mul(n, -h)),
     ];
     const nodes: SceneNode[] = [];
-    // The cover polygon is emitted even when invisible: it is how the ASCII and DXF
-    // backends *locate* the passage (they read the polygon on the `openings` pass).
     nodes.push({
       layer: "openings",
       prim: { t: "polygon", pts: cover },
-      paint: voided ? { fill: "none" } : { fill: theme.opening },
+      paint: { fill: "none" },
     });
-    // Head/lintel above the passage, drawn **dashed** at each wall face — the
-    // cased-opening convention. It must not be the solid full-length line a glazed
-    // window draws: on a voided wall that re-bridges the gap the union just opened.
-    const jA = add(op.at, mul(d, -hw));
-    const jB = add(op.at, mul(d, hw));
-    const dash: [number, number] = [sizes.thin * 4, sizes.thin * 3];
-    for (const off of [h, -h]) {
-      nodes.push({
-        layer: "openings",
-        prim: { t: "line", a: add(jA, mul(n, off)), b: add(jB, mul(n, off)) },
-        paint: { stroke: theme.wallStroke, width: sizes.thin, dash },
-      });
-    }
+    // No head/lintel line. A cased opening used to draw one dashed line at each wall
+    // face, a convention borrowed from a drawing where the wall was NOT severed. With a
+    // real hole in the poché those two lines re-bridge the gap the joinery just opened,
+    // which is the opposite of what the passage means — so they are gone, with no
+    // opt-in.
     return nodes;
   },
 };

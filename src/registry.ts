@@ -102,17 +102,20 @@ export interface RenderCtx {
   fmt(n: number): string;
   /**
    * `true` when the wall lowering will **subtract every opening from the wall
-   * solid** — i.e. the boolean union in `scene-build.ts` has already opened a real
-   * hole at each door/opening, jamb end-caps included, with the floor continuous
-   * through it. `toScene` sets it for an all-orthogonal wall set (the zero-dep
-   * rectilinear boolean always subtracts); a plan mixing in an angled wall may fall
-   * back to per-segment wall rectangles with **no** subtraction, so it stays unset.
+   * solid** — i.e. the wall lowering has already opened a real hole at each
+   * door/opening, jamb end-caps included, with the floor continuous through it.
    *
-   * An element that draws an opening cover must only paint it opaque when this is
-   * NOT true: painting `theme.opening` (= the page background) over an
-   * already-voided wall bleeds a white band into the floor either side of the
-   * passage. Optional, and absent means "assume nothing was voided", so a hand-built
-   * `RenderCtx` (a plugin, a unit test) keeps the safe opaque behaviour.
+   * **Since v1.30 `toScene` always sets it.** The joinery pass (`wall-lowering.ts`)
+   * cuts every opening on every host — straight, angled and curved alike — so there is
+   * no longer a shape of plan whose passages are unvoided. It used to be conditional:
+   * only the rectilinear rectangle boolean subtracted, so an angled or curved plan fell
+   * back to per-segment wall rectangles with **no** subtraction and the cover had to be
+   * painted opaque.
+   *
+   * The field stays because {@link RenderCtx} is append-only, and it stays OPTIONAL
+   * because absent must keep meaning "assume nothing was voided" — a hand-built
+   * `RenderCtx` (a plugin, a unit test) then keeps the safe opaque behaviour rather
+   * than silently drawing a passage over solid wall.
    */
   openingsVoided?: boolean;
 }

@@ -5,10 +5,12 @@ import { ARC_DIRS } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RWall } from "../ir.js";
-import { add, mul, normal, segmentFaceExtremes, segmentSolid, segmentsOfWall, sub, unit } from "../geometry.js";
+import { segmentFaceExtremes, segmentsOfWall } from "../geometry.js";
 import type { Arc } from "../geometry/arc.js";
-import { arcFromChord, arcOffset, arcPieces, minArcRadius } from "../geometry/arc.js";
-import { DEFAULT_MATERIAL, isKnownMaterial, KNOWN_MATERIALS, patternId } from "../hatches.js";
+import { arcExtremes, arcFromChord, minArcRadius } from "../geometry/arc.js";
+import { PointInterner, wallBand } from "../geometry/band.js";
+import { DEFAULT_MATERIAL, hatchesUsed, isKnownMaterial, KNOWN_MATERIALS } from "../hatches.js";
+import { lowerWallSet } from "../wall-lowering.js";
 import { fmt3 } from "../num-format.js";
 
 export const wall: ElementDef = {
@@ -179,69 +181,50 @@ export const wall: ElementDef = {
     };
   },
 
+  /**
+   * The page must contain what is actually DRAWN, which is the wall's band — its two
+   * offset faces, its end caps and its MITRED corners. A mitre at an oblique corner
+   * reaches further out than either segment's own capped rectangle does (as far as
+   * `MITER_LIMIT · h` from the vertex, past which `wallBand` bevels), so taking the
+   * per-segment extremes left the outermost point of an acute facade outside the frame.
+   * At a right angle the two agree exactly — which is why no rectilinear plan's extent
+   * moves.
+   *
+   * A curve contributes the closed-form extremes of its offset arcs, never the
+   * tessellation: the page must contain the BULGE, which the chord does not reach.
+   */
   bounds(resolved): Point[] {
     const w = resolved as RWall;
-    // The page must contain a curve's BULGE, which its chord does not reach — so the
-    // extent comes from the closed-form arc extremes, never the tessellation.
-    return segmentsOfWall(w).flatMap((s) => segmentFaceExtremes(s, s.thickness));
+    const loops = wallBand(w, new PointInterner());
+    // A wall of non-positive thickness, or with no non-degenerate segment, has no band.
+    // It still occupies its centreline, so fall back rather than contributing nothing.
+    if (loops.length === 0) return segmentsOfWall(w).flatMap((s) => segmentFaceExtremes(s, s.thickness));
+    const pts: Point[] = [];
+    for (const loop of loops) {
+      for (const e of loop) {
+        if (e.t === "line") pts.push(e.a, e.b);
+        else pts.push(...arcExtremes(e.arc));
+      }
+    }
+    return pts;
   },
 
   /**
-   * Per-segment wall fill (hatch) + two crisp face lines. This is the angled-wall
-   * fallback (no geometry backend registered) and — always — the path a wall carrying
-   * an `arc` edge takes; orthogonal walls with no curve are unioned into clean loops in
-   * `scene-build.ts`. The fill is a data-driven `hatch` primitive carrying the wall's
-   * material/scale/angle.
+   * One wall, drawn through the same joinery every wall set goes through.
    *
-   * A curved edge fills with its tessellated concentric BAND (a fill has to be a
-   * polygon for every backend) but its two visible faces are emitted as TRUE `arc`
-   * primitives at `r ± t/2` — so an SVG gets `A` commands and a DXF gets native `ARC`
-   * entities, and a curve is never drawn faceted at any zoom.
+   * `scene-build.ts` lowers the plan's whole wall list in ONE call, so this is not on the
+   * compile path at all — nothing in `src/` reaches it. It exists because the registry is
+   * a public seam: a plugin or a test holding this `ElementDef` must get the drawing the
+   * compiler would make, not the retired per-segment one. Delegating is what keeps those
+   * two answers the same.
+   *
+   * What it retires: per-segment poché rectangles plus two untrimmed face lines per
+   * segment. Those drew a face straight through the wall's own corners, and through any
+   * neighbouring wall's solid, and subtracted no opening. See ADR 0018.
    */
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const w = resolved as RWall;
-    const { theme, sizes } = ctx;
-    const segs = segmentsOfWall(w);
-    const nodes: SceneNode[] = [];
-    for (const s of segs) {
-      const poly = segmentSolid(s, s.thickness);
-      nodes.push({
-        layer: "wallFill",
-        prim: { t: "hatch", region: [poly], material: w.material, scale: w.hatchScale, angle: w.hatchAngle },
-        paint: { fill: `url(#${patternId(w.material, w.hatchScale, w.hatchAngle)})`, fillRule: "nonzero" },
-      });
-    }
-    for (const s of segs) {
-      const h = s.thickness / 2;
-      const face = { stroke: theme.wallStroke, width: sizes.wallStroke, linecap: "square" as const };
-      if (s.arc) {
-        // Two concentric TRUE arcs, each cut into unambiguously-minor pieces so the
-        // Scene's existing `arc` primitive (no large-arc flag) carries them exactly.
-        for (const side of [h, -h]) {
-          for (const piece of arcPieces(arcOffset(s.arc, side))) {
-            nodes.push({
-              layer: "wallFace",
-              prim: { t: "arc", ...piece },
-              paint: { fill: "none", ...face },
-            });
-          }
-        }
-        continue;
-      }
-      const d = unit(sub(s.b, s.a));
-      const n = normal(d);
-      nodes.push({
-        layer: "wallFace",
-        prim: { t: "line", a: add(s.a, mul(n, h)), b: add(s.b, mul(n, h)) },
-        paint: face,
-      });
-      nodes.push({
-        layer: "wallFace",
-        prim: { t: "line", a: add(s.a, mul(n, -h)), b: add(s.b, mul(n, -h)) },
-        paint: face,
-      });
-    }
-    return nodes;
+    return lowerWallSet([w], hatchesUsed([w]), ctx);
   },
 };
 

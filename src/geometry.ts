@@ -333,11 +333,14 @@ export interface WallSegment {
   arc?: Arc;
   /**
    * True on EVERY segment of a wall that carries at least one `arc` edge — including its
-   * straight ones. Such a wall is lowered per-segment and never through the boolean (see
-   * `lowerWalls`), so NONE of its openings is a real hole: an opening on its straight run
-   * still needs its opaque cover. Without this the cover was skipped whenever
-   * `RenderCtx.openingsVoided` was true for the plan's *other* walls, and the doorway
-   * drew as solid wall with a leaf floating over it.
+   * straight ones.
+   *
+   * **Informational; no renderer reads it since v1.30.** It existed because a curved wall
+   * was lowered per-segment and voided none of its openings, so an opening on such a
+   * wall's straight run still needed an opaque cover. The joinery pass now cuts every
+   * opening on every host, so there is nothing to branch on. Kept as a truthful fact
+   * about the segment (and pinned by `test/curves.test.ts`) rather than removed from a
+   * shape other code reads.
    */
   arcWall?: boolean;
 }
