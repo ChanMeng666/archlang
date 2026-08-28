@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.30.0] - 2026-08-28
+
+**"one boundary for a set of walls, and the optional dependency a drawing no longer needs"**, a
+MINOR. No language change — no new keyword, no new `E_*`/`W_*` code, nothing removed from the public
+surface. What changed is how a wall becomes a drawing. The three lowering paths a plan used to be
+routed between — an axis-aligned rectangle boolean for orthogonal walls, a `clipper2-wasm` polygon
+boolean for angled ones *when that optional dependency happened to be installed*, and per-segment
+rectangles with untrimmed face lines for anything curved — are replaced by **one closed-form pass
+with no dependency**, so junctions are trimmed, corners are mitred exactly at any angle, and every
+opening is cut on every host: straight, angled and curved alike. See
+[ADR 0018](docs/adr/0018-zero-dep-wall-joinery.md).
+
+**Every shipped example renders different bytes**, and `describe()` and `lint()` do not move — held
+SHA-256 identical across all 29 examples and every storey, measured example by example before and
+after. This is a rendering change and nothing else. One new Scene primitive, `path`, carries a wall
+outline with a curve in it; `ScenePrim` stays append-only and all five backends handle it.
+`clipper2-wasm` moves from `optionalDependencies` to `devDependencies`, where it remains the angled
+oracle for the test suite, and the `GeometryBackend` API is kept, documented deprecated, and a no-op
+for rendering. `toScene` gets about 3× slower; the cost is measured, stated plainly below, and
+accepted as backlog item 4.1.
+
+Also in the tag, with no `src/` change: the examples-and-gallery refresh — a new showpiece flagship
+`examples/hillside-villa.arch` (29 shipped examples, up from 28), a repaired `two-bed.arch`, a
+furnishing and eaves sweep across the corpus, a re-rendered showcase, and a 19-picture README
+gallery.
+
 ### Wall joinery — one zero-dependency pass for every wall
 
 Until now a plan's poché and wall faces came from **one of three** lowering paths chosen by the
@@ -157,6 +183,18 @@ tracks landed together (`feat/example-villa`, `feat/examples-homes`, `feat/examp
   investigating the Plan-JSON round-trip fixture, found that `examples/garden-loft.arch` and
   `examples/one-room.arch` do **not** round-trip byte-identically through `planToJson`/`planFromJson`
   today — filed as a backlog item rather than silently worked around.
+
+### Shipped alongside
+
+- **MCP shim `@chanmeng666/archlang-mcp` 0.2.10** — version-bump-only (`git diff v1.29.0..HEAD --
+  packages/mcp` is empty), re-pinned to `^1.30.0`. Of its five pack-time-baked resources **none
+  moved**: `spec.llm.md`, `llms-full.txt`, `grammars/archlang.gbnf` and both schemas are
+  byte-identical to v1.29.0's, correctly so, because this release changes no language surface. The
+  bump exists to keep the shim's declared core range and its published version in lockstep with a
+  core whose *rendering* moved, which is what a host gets when it resolves `^1.30.0`.
+- **VS Code extension `ChanMeng.archlang` 0.19.0** — dep range `^1.30.0`, rebundled against the
+  1.30.0 core (the extension bundles the core at build time, so a stale bundle would ship the old
+  three-path lowering to every hover and diagnostic).
 
 ## [1.29.0] - 2026-08-26
 
