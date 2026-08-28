@@ -114,6 +114,14 @@ describe("the joinery on the compile path — every shipped example", () => {
     // wall is RADIAL by construction, and so is a spoke's face where it dies into the drum.
     // A square cap on a curved end is TANGENTIAL by construction. So: every straight edge
     // that touches a drum face must run along the radius at the point it touches.
+    //
+    // **That is a fact about THIS plan, not a law of the layer, and the difference matters
+    // if you are tempted to reuse the rule.** It holds here because every wall meeting this
+    // drum points at its centre. `examples/aquarium.arch` has a legitimately TANGENTIAL
+    // edge on its own drum — the Filtration room's outer face runs along y = 5900, which
+    // grazes that drum's outer circle at its topmost point — so the same assertion there
+    // would fail on correct geometry. Its drum is checked instead by reach: no vertex is
+    // further than r + h from the centre, and a cap would sit √((r+h)² + h²) out.
     const face = compile(files["hexagon-pavilion.arch"]!, { world, noCache: true }).scene!.nodes.filter(
       (n) => n.layer === "wallFace",
     );
@@ -143,6 +151,33 @@ describe("the joinery on the compile path — every shipped example", () => {
     >[];
     expect(jambs).toHaveLength(12);
     for (const j of jambs) expect(Math.hypot(j.b.x - j.a.x, j.b.y - j.a.y)).toBeCloseTo(1200, 6);
+  });
+
+  it("aquarium's drum: nothing reaches past its outer face, so its seam is not capped", () => {
+    // The same defect, in the plan where it was INVISIBLE. This drum's seam is at
+    // (38000, 14000) — 3 o'clock — and its doorways are at 12 and 6, so the seam was not
+    // hidden under one: the two caps were simply 100 mm on an 8 m radius, well under a
+    // pixel in any render anyone would look at, and real in the bytes. `aquarium` and
+    // `hexagon-pavilion` are the only two shipped examples whose SVG the closure fix moved.
+    //
+    // The orientation test used for the hexagon would be WRONG here (see above), so the
+    // claim is made by reach instead: a cap is a tail of length h along the end tangent,
+    // which lands √((r+h)² + h²) from the centre — outside the outer face, where nothing
+    // legitimate goes.
+    const face = compile(files["aquarium.arch"]!, { world, noCache: true }).scene!.nodes.filter(
+      (n) => n.layer === "wallFace",
+    );
+    const C = { x: 30_000, y: 14_000 }; // the drum's centre; faces at r ± h = 7900 and 8100
+    const radii = primToLoops(face[0]!.prim)
+      .flat()
+      .flatMap((e) => (e.t === "line" ? [e.a, e.b] : [e.arc.a, e.arc.b]))
+      .map((p) => Math.hypot(p.x - C.x, p.y - C.y))
+      .filter((r) => r < 9000); // the drum's own neighbourhood, not the whole building
+    expect(radii.length).toBeGreaterThan(0);
+    expect(Math.max(...radii)).toBeCloseTo(8100, 6);
+    // Non-vacuity: a cap would have cleared that by ~0.6 mm, which `toBeCloseTo(…, 6)`
+    // separates — and it is the only thing in reach that could.
+    expect(Math.hypot(8100, 100)).toBeGreaterThan(8100);
   });
 
   it("emits SVG arc commands for every example whose walls carry a curve", () => {
