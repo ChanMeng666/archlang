@@ -74,6 +74,21 @@ each PNG pixel-diffed against its predecessor to confirm the changed pixels land
 changed. `test/fixture-byte-identity.test.ts` and every rectilinear `test/__ascii__/*` golden did
 **not** move, and that is asserted rather than assumed.
 
+#### Performance — a measured regression, stated plainly
+
+`toScene` gets slower. Across all 29 shipped examples and every storey, measured
+back-to-back against `main`: **57.5 ms → 162.0 ms, +182%** (mean per storey 1.98 → 5.59 ms;
+slowest single plan `library`, 6.75 → 16.0 ms). On the `bench` harness: OPENING_HEAVY (400
+disjoint walls, 600 openings) **5.96 → 116.3 ms**, BALANCED +53%, ROOM_HEAVY +23%.
+
+OPENING_HEAVY is the honest worst case: it is exactly what the retired axis-aligned
+rectangle sweep was fastest at, and exactly what an exact split-classify-chain algorithm
+cannot match. The gap is algorithmic, not constant-factor — halving the largest single
+phase would recover about 11% of `toScene` — so it is a deliberate trade: correctness at
+every junction on every shape of wall, with no optional native dependency, for roughly 3×
+a pass that costs single-digit milliseconds on a real building. Numbers, phase profile and
+the option if it ever becomes unacceptable are in ADR 0018.
+
 #### Deferred, by name
 
 - The **window's** cover still paints opaque at `h + wallStroke`; it has never consulted

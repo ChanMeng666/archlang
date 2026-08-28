@@ -143,9 +143,42 @@ not whether the author wrote `close` — that keyword is what makes `segmentsOfW
 closing segment, not a declaration about the result. It has to be this way for a curve:
 there is no close-an-arc form, so a closed curve is written as the two halves it is.
 
-**Performance.** The joinery does strictly more work than an axis-aligned sweep, and the
-gate agreed for this change was NET, on `toScene`, against a `main` bench measured
-back-to-back.
+**Performance — a real regression, measured, and NOT closed.** `toScene` gets slower, by a
+lot. Measured back-to-back against `main` in the same session:
+
+| corpus | main | branch | delta |
+|---|---|---|---|
+| all 29 shipped examples, every storey (total) | 57.5 ms | 162.0 ms | **+182%** |
+| … mean per storey | 1.98 ms | 5.59 ms | +182% |
+| … slowest single plan (`library`) | 6.75 ms | 16.0 ms | +137% |
+| `bench` OPENING_HEAVY (400 walls, 600 openings) | 5.96 ms | 116.3 ms | **+1852%** |
+| `bench` BALANCED | 120.7 ms | 184.7 ms | +53% |
+| `bench` ROOM_HEAVY | 190.8 ms | 235.4 ms | +23% |
+
+The `OPENING_HEAVY` figure is the honest worst case and the reason to state this plainly
+rather than average it away: 400 disjoint wall segments with 600 openings is precisely
+what the retired axis-aligned rectangle boolean was fastest at — a sweep over
+axis-aligned rectangles — and precisely what an exact split-classify-chain algorithm
+cannot match. `joinWalls` phase profile on that plan: split 61.5 ms, classify 29.1,
+index 17, chain 16.7, keys 9.6. On a real plan (`library`) the same profile reads split
+5.4, classify 3.2, index 1.6, chain 1.1, keys 0.9.
+
+**Neither optimisation the Stage-A notes proposed applies here.** "Classify per hatch
+group" does not: the ownership rule is cross-group by design (that is what makes the
+fills tile), so the groups cannot be separated without breaking the decision the fills
+depend on — and `OPENING_HEAVY` is one material anyway. "Stop rebuilding the indices per
+call" does not: there is exactly one call per plan. Halving the split phase — the largest
+single one — would recover about 11% of `toScene`, against a 182% regression. The gap is
+algorithmic, not constant-factor.
+
+**So this is a deliberate trade, not an oversight**: correctness at every junction, on
+every shape of wall, without an optional native dependency, bought with roughly 3× the
+lowering time on a pass that costs single-digit milliseconds for a real building. If that
+becomes unacceptable, the option on the table is a fast path for purely-rectilinear
+single-material plans — the joinery's outline for those is *vertex-identical* to the
+rectangle boolean's (reversed and rotated, which no renderer can see), so one could be
+substituted for the other. That would reintroduce exactly the two-path structure this ADR
+removed, and it is a decision to take deliberately rather than a tuning knob.
 
 ## Deferred, by name
 
