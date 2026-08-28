@@ -549,6 +549,10 @@ rather than an omission:
   ground, pinned in `test/outdoor-byte-identity.test.ts`. Adding it is a schema change and should be
   argued as one, with a consumer that wants it.
 
+A fifth was found while reviewing the flagship for release and is filed on its own, since it is a
+defect in an existing rule rather than a scope decision: **4.8**, a `dims auto` chain running across
+an `outdoor` surface attached to the facade it measures.
+
 ### 4.6 · A balcony door GROUNDS its storey, and that costs a lint false positive — `done` (v1.31)
 
 Found while authoring `examples/garden-house.arch` (v1.31): `verticalReach` (`src/vertical.ts`)
@@ -597,6 +601,30 @@ succeeded with **no change**, which is the signature of a race rather than of a 
 
 That step now retries up to **6 times, 20 s apart**, and only that step. A genuinely bad manifest
 (a case-wrong owner segment, an over-long `description`) still fails loudly, two minutes later.
+
+### 4.8 · A `dims auto` chain runs across an `outdoor` surface attached to the facade — `todo`
+
+Found while reviewing `examples/garden-house.arch` for the v1.31 release, and named in that
+release's **Deferred by name** list rather than fixed on release eve.
+
+`dims auto` places its exterior chains at an offset computed from the **building's** extent, which
+is right in every plan drawn before this release, because nothing existed outside the wall line to
+collide with. It is no longer sufficient: on `garden-house` the level-1 chain crosses the paving
+that abuts the front and rear facades, and the level-2 chain crosses the `balcony` slab attached to
+the bedroom wall. Nothing is illegible — a dimension line is a thin dark stroke and ground is a
+tint under a hatch — but it is not what a drafter would issue: a dimension chain belongs in clear
+paper outside everything the drawing shows, not on top of the terrace.
+
+**Why it is not a one-line offset.** The chain offset feeds every plan that asks for `dims auto`, so
+widening it unconditionally moves dimension geometry in all 30 shipped examples and every golden.
+The honest fix is per-facade: for each chain, take the outdoor extent of the surfaces whose own
+extent touches the facade being measured, and push that chain past it — which needs a
+facade-to-ground adjacency the dimension pass does not currently compute. Note the same iron law
+applies to how "touches the facade" is decided: probe the facade, do not compare bounding boxes.
+
+Related, and worth settling in the same pass: an `outdoor` surface already grows the drawing extent
+(that is why a site plan wants a `paper`), so the chain's own paper offset and the ground's extent
+are computed from two different notions of "the drawing".
 
 ### 4.1 · Joinery pass performance — `todo`
 

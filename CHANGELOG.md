@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.31.0] - 2026-08-28
+
 **Outside the wall line.** Every previous release drew what is inside a building; this one draws
 the ground it sits on, the things that stand on that ground, and the door between the two. Two
 parallel tracks: `outdoor`/`fence`/`site … boundary` as drawn, measured, non-room GROUND, and 21
@@ -184,18 +186,14 @@ the pool and a `picket` one along the street, a garage with `uses garage` and a 
 `describe --json` reports `outdoor_area_m2` 220.7 beside `floor_area_m2` 136.5 — the two numbers
 this release exists to keep apart.
 
-`arch validate` is clean. `--strict` reports **two** warnings, both named in the file header as
-deliberate:
+`arch validate` is clean. `--strict` reports exactly **one** warning, named in the file header as
+deliberate: `W_ROOM_NOT_EQUATOR_FACING` on Bedroom 2 — on a two-band plan one bedroom takes the
+street aspect, and the rule is an advisory drafting heuristic, not a daylight measurement.
 
-- `W_ROOM_NOT_EQUATOR_FACING` on Bedroom 2 — on a two-band plan one bedroom takes the street
-  aspect, and the rule is an advisory drafting heuristic, not a daylight measurement.
-- `W_BATH_VIA_BEDROOM`, which is a **finding rather than a layout mistake**. The bathroom opens
-  straight off the landing and `describe --json`'s own `doors[].between` says so; the warning comes
-  from `verticalReach` treating any exterior door as GROUNDING its storey, which suppresses the
-  stair's `arrivalRooms` entry and starts the reachability BFS at the only exterior door on level 2
-  — the balcony slider, inside a bedroom. A balcony door is an exterior opening but not an arrival
-  point. Recorded as `docs/backlog.md` item **4.6** rather than fixed here: the remedy moves lint
-  output for other plans and wants its own pass.
+Authoring it also produced a second warning that turned out to be a **finding rather than a layout
+mistake**, and it is fixed in this release rather than shipped: `W_BATH_VIA_BEDROOM` on a bathroom
+that opens straight off the landing, which `describe --json`'s own `doors[].between` said all along.
+See the balcony-door entry under **Fixed** below and `docs/backlog.md` item **4.6**.
 
 Also `test/v131-cross.test.ts`, the cross-feature gate neither track could produce alone (the v1.29
 precedent). A `garage` door derives which side its panel parks on by probing which face has floor,
@@ -288,7 +286,7 @@ not yet carry the other's, so 25,911 + 1,964 + 360 predicts 28,235 while the mer
 ### Deferred by name
 
 Recorded so the next reader finds a decision rather than an omission; the full text is in
-`docs/backlog.md` §4.5 and §4.6.
+`docs/backlog.md` §4.5 and §4.8.
 
 - **Ground in the circulation model.** An `outdoor` surface obstructs nothing — you can walk on the
   lawn, and on the `water`. A pond, a gate in a fence and a stepping-stone path all want the same
@@ -299,8 +297,28 @@ Recorded so the next reader finds a decision rather than an omission; the full t
   named EDGE, and a ring has no such names.
 - **`outdoor` in Plan JSON** — deliberately absent, and pinned so: `planToJson` is byte-identical
   with and without ground. Adding it is a schema change and should be argued as one.
-- **A balcony door grounding its storey** (`docs/backlog.md` 4.6) — the `W_BATH_VIA_BEDROOM` false
-  positive described above.
+- **`dims auto` chains cross an `outdoor` surface attached to a facade.** On `garden-house` both
+  storeys' exterior chains run over the paving and the balcony that abut the walls they measure —
+  legible, because a dimension line is thin and the ground is a tint, but not what a drafter would
+  issue. The chain offset is computed from the BUILDING's extent, and ground is not part of it; the
+  fix offsets the chain past the outdoor extent of the facade it is measuring, which is a change to
+  a rule every plan uses and wants its own pass rather than a release-eve edit
+  (`docs/backlog.md` **4.8**).
+
+### Shipped alongside
+
+- **MCP shim `@chanmeng666/archlang-mcp` 0.2.11** — version-bump-only again (`git diff
+  v1.30.0..HEAD -- packages/mcp` is empty), re-pinned to `^1.31.0`. Unlike 0.2.10, this one exists
+  for the reason the pack-time law describes: **four of its five baked resources moved**, because
+  this release does change the language surface. `spec.llm.md`, `llms-full.txt` and
+  `grammars/archlang.gbnf` all carry `outdoor`, `fence`, `site … boundary`, `door garage` and
+  `uses garage`, and `schemas/plan.schema.json`'s `uses` enum gains `garage` — so published 0.2.10's
+  GBNF cannot DERIVE any of the new statements, and a constrained decoder pointed at it is unable to
+  emit them at all. `schemas/intent.schema.json` is byte-unchanged, correctly: none of the new
+  surface enters an intent contract.
+- **VS Code extension `ChanMeng.archlang` 0.20.0** — dep range `^1.31.0`, rebundled against the
+  1.31.0 core, so completion, hover and the lint rules know the new keywords, the nine ground kinds,
+  the twenty-one outdoor fixture families and the nine new diagnostic codes.
 
 ## [1.30.0] - 2026-08-28
 
