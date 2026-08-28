@@ -169,30 +169,39 @@ function edgeMidpoint(at: Point, size: { w: number; h: number }, side: RailSide)
 }
 
 /**
- * Which edges of a balcony carry a railing, DERIVED: every edge with no wall behind it.
+ * Which edges of a balcony carry a railing, DERIVED: every edge with no wall along it.
  *
- * The probe is one wall thickness outward from the edge's own midpoint, asking whether
- * any wall band covers that point. A balcony hung off a facade has one edge against the
- * building and three in the air; a free-standing deck-balcony has four in the air.
+ * The question is asked at the edge's own MIDPOINT — the shape, never the bounding box —
+ * and it is asked as *proximity*, not as an outward probe: an edge is against a wall when
+ * its midpoint lies within half that wall's thickness of the wall's centreline, i.e. when
+ * the edge is inside the wall band. A balcony hung off a facade has one such edge and
+ * three in the air; a free-standing one has four in the air.
  *
- * The probe distance is the plan's THICKEST wall (250 mm when the plan has none), because
- * the point has to clear the band of whichever wall it might be against, and a
- * per-segment distance would need the segment before it had found one. It is a
- * conservative single number rather than a search, and it is stated rather than tuned.
+ * ## Why proximity and not an outward probe
+ *
+ * The first implementation pushed the midpoint one full wall thickness along the edge's
+ * outward normal and asked whether the probe point was covered. That is wrong twice over,
+ * and the test caught it immediately: a wall band reaches only HALF a thickness either
+ * side of its centreline, so a full-thickness probe always lands past the far face and
+ * every edge reads as free — and the answer also depended on whether the author had
+ * written the balcony against the wall's centreline or against its outer face, two
+ * spellings of the same building.
+ *
+ * Proximity has neither problem. It is orientation-free (no normal, so no sign to get
+ * wrong), it accepts both authoring conventions — a balcony drawn to the centreline is at
+ * distance 0, one drawn to the outer face is at exactly `t/2` — and it says the thing the
+ * rule actually means: *is there a wall along this edge?*
+ *
+ * The `+ 1` is a millimetre of slack so the outer-face convention, which lands exactly on
+ * the boundary, is not decided by a floating-point comparison.
  */
 function deriveRail(at: Point, size: { w: number; h: number }, walls: readonly RWall[]): RailSide[] {
-  const probe = walls.length > 0 ? Math.max(...walls.map((w) => w.thickness)) : 250;
   const segs = walls.flatMap((w) => segmentsOfWall(w).map((s) => ({ s, t: w.thickness })));
   const out: RailSide[] = [];
   for (const side of RAIL_SIDES) {
     const m = edgeMidpoint(at, size, side);
-    const n = EDGE_NORMAL[side];
-    const p = { x: m.x + n.x * probe, y: m.y + n.y * probe };
-    // "Behind a wall" = the probe point lies inside some wall's band (half its thickness
-    // either side of the centreline), plus a hair so a probe landing exactly on the far
-    // face still counts as covered.
-    const behind = segs.some(({ s, t }) => distPointToWallSegment(p, s) <= t / 2 + 1);
-    if (!behind) out.push(side);
+    const against = segs.some(({ s, t }) => distPointToWallSegment(m, s) <= t / 2 + 1);
+    if (!against) out.push(side);
   }
   return out;
 }
