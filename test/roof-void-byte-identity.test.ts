@@ -78,14 +78,32 @@ import { compile, describe as describePlan, lint, planToJson } from "../src/inde
  * that separation is the first thing to re-measure — a drawing change is explicable, a
  * `describe()`/`lint()` change on a plan that mentions neither keyword is not.
  *
+ *
+ * ## The v1.32 re-measurement — six furniture symbols were REDRAWN
+ *
+ * Three of the four moved again, and `studio` did NOT — which is the whole shape of the
+ * finding and the reason to read it before touching a number. v1.32's F2 track redraws six
+ * living-room symbols (`coffee_table`, `table`, `stool`, `bench`, `chair`, `tv_unit`) plus
+ * `nightstand` and `desk`, so any plan that draws one of those eight renders different bytes
+ * and every plan that does not is untouched. `studio` places only bath and kitchen fixtures,
+ * so its digest is UNCHANGED from the v1.30 measurement — the same number, not a re-blessing —
+ * which is the control that says the redraw stayed inside the glyph layer.
+ *
+ * **`describe()` and `lint()` were held SHA-256 identical across the whole change**, measured
+ * example by example against `8fc432a`'s `src/` (extracted with `git archive`) for all 28
+ * import-free examples: 22 SVGs moved, 0 summaries and 0 diagnostic sets. So the bytes that
+ * moved here are SVG bytes, and net lint change across the shipped examples is zero. A future
+ * digest move on a plan that draws none of the redrawn families would be a different finding
+ * and is not covered by this note.
+ *
  * Do not read this entry as permission. The rule is unchanged: find out WHICH shared path
  * moved before touching a number here, and write down what it was.
  */
 const BASELINE: [string, string][] = [
-  ["laneway-house", "5824194c7987e5f2e1902805357a5e1a533fea59bd17404c0ae288cb93dd7cc4"],
+  ["laneway-house", "32294849cbf4b911bd48ef68e8012013623c0762122b7052d7a9c3abd99879cb"],
   ["studio", "cfe9b264e5ce123412b8d04f47dfa5bc917b4ef9404a502a74ff4578c708e240"],
-  ["gallery-l", "32666c41627873f63030c0621edf31bae42a4e1f7fa0fc3ff1ddc83674b89878"],
-  ["aquarium", "b55a84953b7fa18a892cf324e0d9fc72eb06342aeb90dd498231a61f6ec07ddf"],
+  ["gallery-l", "753b39b0dc5ed5a38aa7243d4b7738257e771f95d0590f0595a2512550fcbc5f"],
+  ["aquarium", "af532f0ff575b10c355bda8f7d54b2c5ee272f88cd1e1427a5c6ca756099a57b"],
 ];
 
 /** The exact payload the baseline digests were taken over — do not change its shape. */

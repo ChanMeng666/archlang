@@ -80,13 +80,33 @@
 </g>
 <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
 <polygon points="21500,9800 28500,9800 28500,11200 21500,11200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="21612,9912 28388,9912 28388,11088 21612,11088" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="21640,9940 28360,9940 28360,11060 21640,11060" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="21696" cy="9996" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="28304" cy="9996" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="28304" cy="11004" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="21696" cy="11004" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="21640" y1="10500" x2="28360" y2="10500" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="20500,12200 29500,12200 29500,13600 20500,13600" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="20612,12312 29388,12312 29388,13488 20612,13488" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="20640,12340 29360,12340 29360,13460 20640,13460" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="20696" cy="12396" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="29304" cy="12396" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="29304" cy="13404" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="20696" cy="13404" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="20640" y1="12900" x2="29360" y2="12900" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="20500,18400 29500,18400 29500,19800 20500,19800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="20612,18512 29388,18512 29388,19688 20612,19688" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="20640,18540 29360,18540 29360,19660 20640,19660" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="20696" cy="18596" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="29304" cy="18596" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="29304" cy="19604" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="20696" cy="19604" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="20640" y1="19100" x2="29360" y2="19100" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="21500,20800 28500,20800 28500,22200 21500,22200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="21612,20912 28388,20912 28388,22088 21612,22088" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="21640,20940 28360,20940 28360,22060 21640,22060" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="21696" cy="20996" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="28304" cy="20996" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="28304" cy="22004" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="21696" cy="22004" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="21640" y1="21500" x2="28360" y2="21500" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="2000,1500 15000,1500 15000,2100 2000,2100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="2000" y1="1800" x2="15000" y2="1800" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="3000" y1="1500" x2="3000" y2="2100" stroke="#a8a29a" stroke-width="19.8"/>
@@ -186,9 +206,17 @@
 <line x1="28100" y1="4533.33" x2="28700" y2="4533.33" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="28100" y1="5366.67" x2="28700" y2="5366.67" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="2500,19500 4500,19500 4500,21500 2500,21500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="2660,19660 4340,19660 4340,21340 2660,21340" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="2700,19700 4300,19700 4300,21300 2700,21300" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="2780" cy="19780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="4220" cy="19780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="4220" cy="21220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="2780" cy="21220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="2500,23500 4500,23500 4500,25500 2500,25500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="2660,23660 4340,23660 4340,25340 2660,25340" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="2700,23700 4300,23700 4300,25300 2700,25300" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="2780" cy="23780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="4220" cy="23780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="4220" cy="25220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="2780" cy="25220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="2000,28500 5000,28500 5000,29000 2000,29000" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="2000" y1="28750" x2="5000" y2="28750" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="2600" y1="28500" x2="2600" y2="29000" stroke="#a8a29a" stroke-width="19.8"/>
@@ -196,9 +224,17 @@
 <line x1="3800" y1="28500" x2="3800" y2="29000" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="4400" y1="28500" x2="4400" y2="29000" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="7000,19500 9000,19500 9000,21500 7000,21500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="7160,19660 8840,19660 8840,21340 7160,21340" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="7200,19700 8800,19700 8800,21300 7200,21300" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="7280" cy="19780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="8720" cy="19780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="8720" cy="21220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="7280" cy="21220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="7000,23500 9000,23500 9000,25500 7000,25500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="7160,23660 8840,23660 8840,25340 7160,25340" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="7200,23700 8800,23700 8800,25300 7200,25300" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="7280" cy="23780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="8720" cy="23780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="8720" cy="25220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="7280" cy="25220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="6500,28500 9500,28500 9500,29000 6500,29000" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="6500" y1="28750" x2="9500" y2="28750" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="7100" y1="28500" x2="7100" y2="29000" stroke="#a8a29a" stroke-width="19.8"/>
@@ -206,9 +242,17 @@
 <line x1="8300" y1="28500" x2="8300" y2="29000" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="8900" y1="28500" x2="8900" y2="29000" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="11500,19500 13500,19500 13500,21500 11500,21500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="11660,19660 13340,19660 13340,21340 11660,21340" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="11700,19700 13300,19700 13300,21300 11700,21300" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="11780" cy="19780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="13220" cy="19780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="13220" cy="21220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="11780" cy="21220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="11500,23500 13500,23500 13500,25500 11500,25500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="11660,23660 13340,23660 13340,25340 11660,25340" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="11700,23700 13300,23700 13300,25300 11700,25300" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="11780" cy="23780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="13220" cy="23780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="13220" cy="25220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="11780" cy="25220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="11000,28500 14000,28500 14000,29000 11000,29000" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="11000" y1="28750" x2="14000" y2="28750" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="11600" y1="28500" x2="11600" y2="29000" stroke="#a8a29a" stroke-width="19.8"/>
@@ -218,45 +262,109 @@
 <polygon points="34500,18500 36100,18500 36100,19300 34500,19300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="34500" y1="18596" x2="36100" y2="18596" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="34548,18548 36052,18548 36052,19252 34548,19252" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="35588,18692 36004,18692 36004,19236 35588,19236" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="35588" y1="18873.33" x2="36004" y2="18873.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="35588" y1="19054.67" x2="36004" y2="19054.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="34884" cy="18692" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="34500,22000 36100,22000 36100,22800 34500,22800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="34500" y1="22096" x2="36100" y2="22096" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="34548,22048 36052,22048 36052,22752 34548,22752" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="35588,22192 36004,22192 36004,22736 35588,22736" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="35588" y1="22373.33" x2="36004" y2="22373.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="35588" y1="22554.67" x2="36004" y2="22554.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="34884" cy="22192" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="37500,18500 39100,18500 39100,19300 37500,19300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="37500" y1="18596" x2="39100" y2="18596" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="37548,18548 39052,18548 39052,19252 37548,19252" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="38588,18692 39004,18692 39004,19236 38588,19236" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="38588" y1="18873.33" x2="39004" y2="18873.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="38588" y1="19054.67" x2="39004" y2="19054.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="37884" cy="18692" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="37500,22000 39100,22000 39100,22800 37500,22800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="37500" y1="22096" x2="39100" y2="22096" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="37548,22048 39052,22048 39052,22752 37548,22752" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="38588,22192 39004,22192 39004,22736 38588,22736" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="38588" y1="22373.33" x2="39004" y2="22373.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="38588" y1="22554.67" x2="39004" y2="22554.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="37884" cy="22192" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="40500,18500 42100,18500 42100,19300 40500,19300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="40500" y1="18596" x2="42100" y2="18596" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="40548,18548 42052,18548 42052,19252 40548,19252" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="41588,18692 42004,18692 42004,19236 41588,19236" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="41588" y1="18873.33" x2="42004" y2="18873.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="41588" y1="19054.67" x2="42004" y2="19054.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="40884" cy="18692" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="40500,22000 42100,22000 42100,22800 40500,22800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="40500" y1="22096" x2="42100" y2="22096" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="40548,22048 42052,22048 42052,22752 40548,22752" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="41588,22192 42004,22192 42004,22736 41588,22736" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="41588" y1="22373.33" x2="42004" y2="22373.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="41588" y1="22554.67" x2="42004" y2="22554.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="40884" cy="22192" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="43500,18500 45100,18500 45100,19300 43500,19300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="43500" y1="18596" x2="45100" y2="18596" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="43548,18548 45052,18548 45052,19252 43548,19252" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="44588,18692 45004,18692 45004,19236 44588,19236" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="44588" y1="18873.33" x2="45004" y2="18873.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="44588" y1="19054.67" x2="45004" y2="19054.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="43884" cy="18692" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="43500,22000 45100,22000 45100,22800 43500,22800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="43500" y1="22096" x2="45100" y2="22096" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="43548,22048 45052,22048 45052,22752 43548,22752" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="44588,22192 45004,22192 45004,22736 44588,22736" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="44588" y1="22373.33" x2="45004" y2="22373.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="44588" y1="22554.67" x2="45004" y2="22554.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="43884" cy="22192" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="46500,18500 48100,18500 48100,19300 46500,19300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="46500" y1="18596" x2="48100" y2="18596" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="46548,18548 48052,18548 48052,19252 46548,19252" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="47588,18692 48004,18692 48004,19236 47588,19236" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="47588" y1="18873.33" x2="48004" y2="18873.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="47588" y1="19054.67" x2="48004" y2="19054.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="46884" cy="18692" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="46500,22000 48100,22000 48100,22800 46500,22800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="46500" y1="22096" x2="48100" y2="22096" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="46548,22048 48052,22048 48052,22752 46548,22752" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="47588,22192 48004,22192 48004,22736 47588,22736" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="47588" y1="22373.33" x2="48004" y2="22373.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="47588" y1="22554.67" x2="48004" y2="22554.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="46884" cy="22192" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="34500,2500 36100,2500 36100,4100 34500,4100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="34628,2628 35972,2628 35972,3972 34628,3972" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="34660,2660 35940,2660 35940,3940 34660,3940" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="34724" cy="2724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="35876" cy="2724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="35876" cy="3876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="34724" cy="3876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="34500,6500 36100,6500 36100,8100 34500,8100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="34628,6628 35972,6628 35972,7972 34628,7972" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="34660,6660 35940,6660 35940,7940 34660,7940" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="34724" cy="6724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="35876" cy="6724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="35876" cy="7876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="34724" cy="7876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="37500,2500 39100,2500 39100,4100 37500,4100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="37628,2628 38972,2628 38972,3972 37628,3972" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="37660,2660 38940,2660 38940,3940 37660,3940" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="37724" cy="2724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="38876" cy="2724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="38876" cy="3876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="37724" cy="3876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="37500,6500 39100,6500 39100,8100 37500,8100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="37628,6628 38972,6628 38972,7972 37628,7972" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="37660,6660 38940,6660 38940,7940 37660,7940" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="37724" cy="6724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="38876" cy="6724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="38876" cy="7876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="37724" cy="7876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="40500,2500 42100,2500 42100,4100 40500,4100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="40628,2628 41972,2628 41972,3972 40628,3972" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="40660,2660 41940,2660 41940,3940 40660,3940" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="40724" cy="2724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="41876" cy="2724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="41876" cy="3876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="40724" cy="3876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="40500,6500 42100,6500 42100,8100 40500,8100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="40628,6628 41972,6628 41972,7972 40628,7972" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="40660,6660 41940,6660 41940,7940 40660,7940" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="40724" cy="6724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="41876" cy="6724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="41876" cy="7876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="40724" cy="7876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="4310,27500 4344.44,27506.85 4373.64,27526.36 4393.15,27555.56 4400,27590 4400,28310 4393.15,28344.44 4373.64,28373.64 4344.44,28393.15 4310,28400 2090,28400 2055.56,28393.15 2026.36,28373.64 2006.85,28344.44 2000,28310 2000,27590 2006.85,27555.56 2026.36,27526.36 2055.56,27506.85 2090,27500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <polygon points="2000,27590 2288,27590 2288,28400 2000,28400" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <polygon points="4112,27590 4400,27590 4400,28400 4112,28400" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
@@ -305,9 +413,19 @@
 <line x1="43900" y1="4000" x2="43326" y2="4000" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="43900" y1="4600" x2="43326" y2="4600" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="45000,2500 48600,2500 48600,3400 45000,3400" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="45072,2572 48528,2572 48528,3328 45072,3328" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="45090,2590 48510,2590 48510,3310 45090,3310" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="45126" cy="2626" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="48474" cy="2626" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="48474" cy="3274" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="45126" cy="3274" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="45090" y1="2950" x2="48510" y2="2950" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="45000,4600 48600,4600 48600,5500 45000,5500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="45072,4672 48528,4672 48528,5428 45072,5428" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="45090,4690 48510,4690 48510,5410 45090,5410" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="45126" cy="4726" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="48474" cy="4726" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="48474" cy="5374" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="45126" cy="5374" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="45090" y1="5050" x2="48510" y2="5050" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="49850,1600 49850,2400 49250,2400 49250,1600" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <polygon points="49694,1936.08 49692.33,1944.47 49687.58,1951.58 49680.47,1956.33 49672.08,1958 49355.92,1958 49347.53,1956.33 49340.42,1951.58 49335.67,1944.47 49334,1936.08 49334,1705.92 49335.67,1697.53 49340.42,1690.42 49347.53,1685.67 49355.92,1684 49672.08,1684 49680.47,1685.67 49687.58,1690.42 49692.33,1697.53 49694,1705.92" fill="#ffffff" stroke="#a8a29a" stroke-width="36"/>
 <circle cx="49514" cy="1821" r="32.88" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
@@ -1071,12 +1189,21 @@
 <text x="8758" y="49540" font-size="380" fill="#333333" text-anchor="start" dominant-baseline="central">sofa</text>
 <line x1="7650" y1="49880" x2="13050" y2="49880" stroke="#333333" stroke-width="19.8"/>
 <polygon points="7758,50016 8542,50016 8542,50424 7758,50424" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="7790.64,50048.64 8509.36,50048.64 8509.36,50391.36 7790.64,50391.36" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="7798.8,50056.8 8501.2,50056.8 8501.2,50383.2 7798.8,50383.2" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="7815.12" cy="50073.12" r="19.42" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="8484.88" cy="50073.12" r="19.42" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="8484.88" cy="50366.88" r="19.42" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="7815.12" cy="50366.88" r="19.42" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="7798.8" y1="50220" x2="8501.2" y2="50220" stroke="#a8a29a" stroke-width="19.8"/>
 <text x="8758" y="50220" font-size="380" fill="#333333" text-anchor="start" dominant-baseline="central">table</text>
 <line x1="7650" y1="50560" x2="13050" y2="50560" stroke="#333333" stroke-width="19.8"/>
 <polygon points="7758,50696 8542,50696 8542,51104 7758,51104" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="7758" y1="50744.96" x2="8542" y2="50744.96" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="7782.48,50720.48 8517.52,50720.48 8517.52,51079.52 7782.48,51079.52" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="8291.12,50793.92 8494.96,50793.92 8494.96,51071.36 8291.12,51071.36" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="8291.12" y1="50886.4" x2="8494.96" y2="50886.4" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="8291.12" y1="50978.88" x2="8494.96" y2="50978.88" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="7946.16" cy="50793.92" r="20.4" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <text x="8758" y="50900" font-size="380" fill="#333333" text-anchor="start" dominant-baseline="central">desk</text>
 <line x1="7650" y1="51240" x2="13050" y2="51240" stroke="#333333" stroke-width="19.8"/>
 <polygon points="7758,51376 8542,51376 8542,51784 7758,51784" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>

@@ -340,6 +340,28 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // `door` line is now the longest in the document at over 1,600 characters, and its
     // per-kind clause prose is the part a machine-readable table would carry better than
     // a sentence.
-    expect(spec.length).toBeLessThan(28_300);
+    //
+    // ## v1.32 — the furniture catalogue, +172 and the cap to 28,800
+    //
+    // The v1.31 raise left 65 chars of headroom against a measured 28,235, and v1.32's F2
+    // track spends all of it. **Every character of the growth is fixture NAMES**, and it is
+    // exactly the growth v1.28.0's note predicted this line would take "on its own": the
+    // eighteen new families all carry a catalogued footprint, so all eighteen join the
+    // furniture line's size-optional list, which the generator INTERPOLATES from
+    // `CANONICAL_FIXTURES` filtered by `defaultFootprint`. 154 characters of names plus 18
+    // separators = 172, and the measured document is 28,407.
+    //
+    // Nothing was trimmed, and the reason is worth stating rather than leaving as an
+    // omission: the previous entry recorded that there is no known duplication left, and a
+    // re-read for this raise found none either. The one lever named above — turning the
+    // `door` line's per-kind clause prose into a table — is still the next real saving, and
+    // is still not this change.
+    //
+    // The cap moves to 28,800: 393 chars of headroom against the measured 28,407, in line
+    // with the 360 and 371 the last two raises bought. **A fixture family with a footprint
+    // now costs this document about 10 characters**, so the next tranche of that size will
+    // need another raise — which is the honest signal, not a defect: the list is derived, so
+    // it cannot silently disagree with the catalogue, and its length is the price of that.
+    expect(spec.length).toBeLessThan(28_800);
   });
 });

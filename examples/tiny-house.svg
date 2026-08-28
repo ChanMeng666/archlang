@@ -51,8 +51,13 @@
 <line x1="2600" y1="604" x2="4600" y2="604" stroke="#a8a29a" stroke-width="7.04"/>
 <line x1="4600" y1="548" x2="4160" y2="604" stroke="#a8a29a" stroke-width="7.04"/>
 <polygon points="3400,2100 4900,2100 4900,2700 3400,2700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="12.8"/>
+<line x1="3400" y1="2200" x2="4900" y2="2200" stroke="#a8a29a" stroke-width="7.04"/>
 <line x1="3400" y1="2300" x2="4900" y2="2300" stroke="#a8a29a" stroke-width="7.04"/>
+<line x1="3400" y1="2400" x2="4900" y2="2400" stroke="#a8a29a" stroke-width="7.04"/>
 <line x1="3400" y1="2500" x2="4900" y2="2500" stroke="#a8a29a" stroke-width="7.04"/>
+<line x1="3400" y1="2600" x2="4900" y2="2600" stroke="#a8a29a" stroke-width="7.04"/>
+<line x1="3550" y1="2100" x2="3550" y2="2700" stroke="#a8a29a" stroke-width="7.04"/>
+<line x1="4750" y1="2100" x2="4750" y2="2700" stroke="#a8a29a" stroke-width="7.04"/>
 <polygon points="1900,2700 100,2700 100,2350 1900,2350" fill="#f4f2ee" stroke="#a8a29a" stroke-width="12.8"/>
 <line x1="1810" y1="2525" x2="190" y2="2525" stroke="#a8a29a" stroke-width="7.04"/>
 <path d="M 1810,2525 A 115.71 115.71 0 0 0 1578.57,2525" fill="none" stroke="#a8a29a" stroke-width="7.04"/>

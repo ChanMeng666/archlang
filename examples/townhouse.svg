@@ -49,7 +49,11 @@
 <line x1="384" y1="8100" x2="384" y2="7500" stroke="#a8a29a" stroke-width="9"/>
 <line x1="228" y1="7584" x2="332" y2="7584" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="1900,8400 3300,8400 3300,9300 1900,9300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="1972,8472 3228,8472 3228,9228 1972,9228" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="1990,8490 3210,8490 3210,9210 1990,9210" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="2026" cy="8526" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="3174" cy="8526" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="3174" cy="9174" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="2026" cy="9174" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
 </g>
 <g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
 <polygon points="4150,2600 5050,2600 5050,5800 4150,5800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>

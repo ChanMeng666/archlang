@@ -63,13 +63,23 @@ const ROOT = join(HERE, "..");
  *     appending 21 families to `FIXTURE_FAMILIES` touched the dispatch, the legend order or
  *     the catalog lookups, it shows up here.
  *   - `two-bed` — a plain house with none of the above, as the control.
+ *
+ * ## The v1.32 re-measurement — six furniture symbols were REDRAWN
+ *
+ * Four of the five moved, and `studio` did NOT. v1.32's F2 track redraws eight fixture
+ * symbols (`coffee_table`, `table`, `stool`, `bench`, `chair`, `tv_unit`, `nightstand`,
+ * `desk`); `studio` places only bath and kitchen fixtures, so its pin is UNCHANGED — the same
+ * number, not a re-blessing — and is the control saying the redraw stayed inside the glyph
+ * layer. **`describe()` and `lint()` were held SHA-256 identical across the whole change**,
+ * measured example by example against `8fc432a`'s `src/` (extracted with `git archive`) for
+ * all 28 import-free examples: 22 SVGs moved, 0 summaries and 0 diagnostic sets.
  */
 const BASELINE: Readonly<Record<string, string>> = {
   "studio.arch": "4f006efaca9e50001d0fdd1452d346be56fe72fd3915228d5f17e0e624383566",
-  "laneway-house.arch": "fe14d8d386a28951c546461f2e9456ab7263a26d5401a9d07a01b0d3f2f4e397",
-  "bungalow.arch": "568f9d94588c60426bbe0d5fe321f7f151058fb01f8b1d90cdbc3e6374fbab64",
-  "furnished-flat.arch": "a96b1eae75899ad1d4d08235d2d80ea700484caff94fa856e12c9a2e33a90c04",
-  "two-bed.arch": "c2f2145a281f096800761671268074e328dbe0dee21ed6c8403b352f136b929e",
+  "laneway-house.arch": "24a4d33acb851f8e8cef1b07c3080dd8565b4e648b9ef94ef5b234eb71f32d1c",
+  "bungalow.arch": "970ac5bf07e0f362c014b31e3f258044196d466206e3e3c2e76c3bbe8bd51436",
+  "furnished-flat.arch": "d6e4213190fd0af03d14f2ec5ec535155db434070d5ac86ac97cdcf13383697b",
+  "two-bed.arch": "f6e0de0f67c645420c1f4246cf6ce742c8f7d8f1a0de60975bfee92a3bf02bcb",
 };
 
 suite("the outdoor tranche — the byte-identity law", () => {

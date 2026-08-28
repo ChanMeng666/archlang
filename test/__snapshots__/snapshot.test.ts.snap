@@ -121,7 +121,11 @@ exports[`golden SVG snapshots > renders bungalow.arch deterministically 1`] = `
 <line x1="1978.67" y1="2762" x2="1978.67" y2="3410" stroke="#a8a29a" stroke-width="9.9"/>
 <line x1="864" y1="3410" x2="2536" y2="3410" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="3600,1800 5000,1800 5000,2700 3600,2700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="3672,1872 4928,1872 4928,2628 3672,2628" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="3690,1890 4910,1890 4910,2610 3690,2610" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3726" cy="1926" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="4874" cy="1926" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="4874" cy="2574" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3726" cy="2574" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="6200,200 7700,200 7700,2200 6200,2200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="6200,200 7700,200 7700,320 6200,320" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="6807,380 6844.5,387.46 6876.3,408.7 6897.54,440.5 6905,478 6905,562 6897.54,599.5 6876.3,631.3 6844.5,652.54 6807,660 6433,660 6395.5,652.54 6363.7,631.3 6342.46,599.5 6335,562 6335,478 6342.46,440.5 6363.7,408.7 6395.5,387.46 6433,380" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
@@ -569,6 +573,10 @@ exports[`golden SVG snapshots > renders clinic.arch deterministically 1`] = `
 <polygon points="10000,900 11600,900 11600,1700 10000,1700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <line x1="10000" y1="996" x2="11600" y2="996" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="10048,948 11552,948 11552,1652 10048,1652" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="11088,1092 11504,1092 11504,1636 11088,1636" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="11088" y1="1273.33" x2="11504" y2="1273.33" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="11088" y1="1454.67" x2="11504" y2="1454.67" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="10384" cy="1092" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="12330,1300 12356.79,1305.33 12379.5,1320.5 12394.67,1343.21 12400,1370 12400,3130 12394.67,3156.79 12379.5,3179.5 12356.79,3194.67 12330,3200 11770,3200 11743.21,3194.67 11720.5,3179.5 11705.33,3156.79 11700,3130 11700,1370 11705.33,1343.21 11720.5,1320.5 11743.21,1305.33 11770,1300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="11700,1490 11784,1490 11784,3200 11700,3200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="12316,1490 12400,1490 12400,3200 12316,3200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
@@ -584,6 +592,10 @@ exports[`golden SVG snapshots > renders clinic.arch deterministically 1`] = `
 <polygon points="13600,900 15200,900 15200,1700 13600,1700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <line x1="13600" y1="996" x2="15200" y2="996" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="13648,948 15152,948 15152,1652 13648,1652" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="14688,1092 15104,1092 15104,1636 14688,1636" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="14688" y1="1273.33" x2="15104" y2="1273.33" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="14688" y1="1454.67" x2="15104" y2="1454.67" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="13984" cy="1092" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="15930,1300 15956.79,1305.33 15979.5,1320.5 15994.67,1343.21 16000,1370 16000,3130 15994.67,3156.79 15979.5,3179.5 15956.79,3194.67 15930,3200 15370,3200 15343.21,3194.67 15320.5,3179.5 15305.33,3156.79 15300,3130 15300,1370 15305.33,1343.21 15320.5,1320.5 15343.21,1305.33 15370,1300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="15300,1490 15384,1490 15384,3200 15300,3200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="15916,1490 16000,1490 16000,3200 15916,3200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
@@ -599,6 +611,10 @@ exports[`golden SVG snapshots > renders clinic.arch deterministically 1`] = `
 <polygon points="17200,900 18800,900 18800,1700 17200,1700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <line x1="17200" y1="996" x2="18800" y2="996" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="17248,948 18752,948 18752,1652 17248,1652" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="18288,1092 18704,1092 18704,1636 18288,1636" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="18288" y1="1273.33" x2="18704" y2="1273.33" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="18288" y1="1454.67" x2="18704" y2="1454.67" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="17584" cy="1092" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="19530,1300 19556.79,1305.33 19579.5,1320.5 19594.67,1343.21 19600,1370 19600,3130 19594.67,3156.79 19579.5,3179.5 19556.79,3194.67 19530,3200 18970,3200 18943.21,3194.67 18920.5,3179.5 18905.33,3156.79 18900,3130 18900,1370 18905.33,1343.21 18920.5,1320.5 18943.21,1305.33 18970,1300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="18900,1490 18984,1490 18984,3200 18900,3200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="19516,1490 19600,1490 19600,3200 19516,3200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
@@ -614,6 +630,10 @@ exports[`golden SVG snapshots > renders clinic.arch deterministically 1`] = `
 <polygon points="11600,10500 10000,10500 10000,9700 11600,9700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <line x1="11600" y1="10404" x2="10000" y2="10404" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="11552,10452 10048,10452 10048,9748 11552,9748" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="10512,10308 10096,10308 10096,9764 10512,9764" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="10512" y1="10126.67" x2="10096" y2="10126.67" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="10512" y1="9945.33" x2="10096" y2="9945.33" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="11216" cy="10308" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="11770,10100 11743.21,10094.67 11720.5,10079.5 11705.33,10056.79 11700,10030 11700,8270 11705.33,8243.21 11720.5,8220.5 11743.21,8205.33 11770,8200 12330,8200 12356.79,8205.33 12379.5,8220.5 12394.67,8243.21 12400,8270 12400,10030 12394.67,10056.79 12379.5,10079.5 12356.79,10094.67 12330,10100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="12400,9910 12316,9910 12316,8200 12400,8200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="11784,9910 11700,9910 11700,8200 11784,8200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
@@ -629,6 +649,10 @@ exports[`golden SVG snapshots > renders clinic.arch deterministically 1`] = `
 <polygon points="15200,10500 13600,10500 13600,9700 15200,9700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <line x1="15200" y1="10404" x2="13600" y2="10404" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="15152,10452 13648,10452 13648,9748 15152,9748" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="14112,10308 13696,10308 13696,9764 14112,9764" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="14112" y1="10126.67" x2="13696" y2="10126.67" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="14112" y1="9945.33" x2="13696" y2="9945.33" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="14816" cy="10308" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="15370,10100 15343.21,10094.67 15320.5,10079.5 15305.33,10056.79 15300,10030 15300,8270 15305.33,8243.21 15320.5,8220.5 15343.21,8205.33 15370,8200 15930,8200 15956.79,8205.33 15979.5,8220.5 15994.67,8243.21 16000,8270 16000,10030 15994.67,10056.79 15979.5,10079.5 15956.79,10094.67 15930,10100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="16000,9910 15916,9910 15916,8200 16000,8200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="15384,9910 15300,9910 15300,8200 15384,8200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
@@ -644,6 +668,10 @@ exports[`golden SVG snapshots > renders clinic.arch deterministically 1`] = `
 <polygon points="18800,10500 17200,10500 17200,9700 18800,9700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <line x1="18800" y1="10404" x2="17200" y2="10404" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="18752,10452 17248,10452 17248,9748 18752,9748" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="17712,10308 17296,10308 17296,9764 17712,9764" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="17712" y1="10126.67" x2="17296" y2="10126.67" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="17712" y1="9945.33" x2="17296" y2="9945.33" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="18416" cy="10308" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="18970,10100 18943.21,10094.67 18920.5,10079.5 18905.33,10056.79 18900,10030 18900,8270 18905.33,8243.21 18920.5,8220.5 18943.21,8205.33 18970,8200 19530,8200 19556.79,8205.33 19579.5,8220.5 19594.67,8243.21 19600,8270 19600,10030 19594.67,10056.79 19579.5,10079.5 19556.79,10094.67 19530,10100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="19600,9910 19516,9910 19516,8200 19600,8200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="18984,9910 18900,9910 18900,8200 18984,8200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
@@ -697,7 +725,12 @@ exports[`golden SVG snapshots > renders clinic.arch deterministically 1`] = `
 <circle cx="19886" cy="8100" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="18"/>
 <line x1="19886" y1="8100" x2="20018" y2="8100" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="20400,9600 22000,9600 22000,10500 20400,10500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="20472,9672 21928,9672 21928,10428 20472,10428" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="20490,9690 21910,9690 21910,10410 20490,10410" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="20526" cy="9726" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="21874" cy="9726" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="21874" cy="10374" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="20526" cy="10374" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="20490" y1="10050" x2="21910" y2="10050" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="22850,10600 22850,10200 23004,10200 23004,10600" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <line x1="22896.2" y1="10576" x2="22896.2" y2="10224" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="23287.92,10240 23352.92,10245.45 23413.5,10261.44 23465.52,10286.86 23505.43,10320 23530.52,10358.59 23539.08,10400 23530.52,10441.41 23505.43,10480 23465.52,10513.14 23413.5,10538.56 23352.92,10554.55 23287.92,10560 23222.92,10554.55 23162.34,10538.56 23110.32,10513.14 23070.41,10480 23045.32,10441.41 23036.76,10400 23045.32,10358.59 23070.41,10320 23110.32,10286.86 23162.34,10261.44 23222.92,10245.45" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
@@ -1323,12 +1356,21 @@ exports[`golden SVG snapshots > renders clinic.arch deterministically 1`] = `
 <text x="4354" y="18375" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">couch</text>
 <line x1="3800" y1="18545" x2="6500" y2="18545" stroke="#333333" stroke-width="9.9"/>
 <polygon points="3854,18613 4246,18613 4246,18817 3854,18817" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="3870.32,18629.32 4229.68,18629.32 4229.68,18800.68 3870.32,18800.68" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="3874.4,18633.4 4225.6,18633.4 4225.6,18796.6 3874.4,18796.6" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3882.56" cy="18641.56" r="9.71" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="4217.44" cy="18641.56" r="9.71" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="4217.44" cy="18788.44" r="9.71" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3882.56" cy="18788.44" r="9.71" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3874.4" y1="18715" x2="4225.6" y2="18715" stroke="#a8a29a" stroke-width="9.9"/>
 <text x="4354" y="18715" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">table</text>
 <line x1="3800" y1="18885" x2="6500" y2="18885" stroke="#333333" stroke-width="9.9"/>
 <polygon points="3854,18953 4246,18953 4246,19157 3854,19157" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <line x1="3854" y1="18977.48" x2="4246" y2="18977.48" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="3866.24,18965.24 4233.76,18965.24 4233.76,19144.76 3866.24,19144.76" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="4120.56,19001.96 4222.48,19001.96 4222.48,19140.68 4120.56,19140.68" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="4120.56" y1="19048.2" x2="4222.48" y2="19048.2" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="4120.56" y1="19094.44" x2="4222.48" y2="19094.44" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3948.08" cy="19001.96" r="10.2" fill="#ffffff" stroke="#a8a29a" stroke-width="9.9"/>
 <text x="4354" y="19055" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">desk</text>
 <line x1="3800" y1="19225" x2="6500" y2="19225" stroke="#333333" stroke-width="9.9"/>
 <circle cx="4050" cy="19395" r="97.92" fill="none" stroke="#a8a29a" stroke-width="18"/>
@@ -1375,9 +1417,19 @@ exports[`golden SVG snapshots > renders courtyard-house.arch deterministically 1
 <line x1="6554" y1="312" x2="6554" y2="960" stroke="#a8a29a" stroke-width="9.9"/>
 <line x1="5338" y1="960" x2="7162" y2="960" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="5450,1300 7050,1300 7050,2200 5450,2200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="5522,1372 6978,1372 6978,2128 5522,2128" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="5540,1390 6960,1390 6960,2110 5540,2110" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="5576" cy="1426" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="6924" cy="1426" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="6924" cy="2074" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="5576" cy="2074" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="5540" y1="1750" x2="6960" y2="1750" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="9950,1300 11550,1300 11550,2200 9950,2200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="10022,1372 11478,1372 11478,2128 10022,2128" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="10040,1390 11460,1390 11460,2110 10040,2110" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="10076" cy="1426" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="11424" cy="1426" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="11424" cy="2074" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="10076" cy="2074" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="10040" y1="1750" x2="11460" y2="1750" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="12700,150 13500,150 13500,750 12700,750" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="13036.08,306 13044.47,307.67 13051.58,312.42 13056.33,319.53 13058,327.92 13058,644.08 13056.33,652.47 13051.58,659.58 13044.47,664.33 13036.08,666 12805.92,666 12797.53,664.33 12790.42,659.58 12785.67,652.47 12784,644.08 12784,327.92 12785.67,319.53 12790.42,312.42 12797.53,307.67 12805.92,306" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
 <circle cx="12921" cy="486" r="32.88" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
@@ -1426,14 +1478,22 @@ exports[`golden SVG snapshots > renders courtyard-house.arch deterministically 1
 <polygon points="300,3700 1900,3700 1900,4400 300,4400" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <line x1="300" y1="3784" x2="1900" y2="3784" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="342,3742 1858,3742 1858,4358 342,4358" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="1388,3868 1804,3868 1804,4344 1388,4344" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="1388" y1="4026.67" x2="1804" y2="4026.67" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="1388" y1="4185.33" x2="1804" y2="4185.33" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="684" cy="3868" r="35" fill="#ffffff" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="3300,8400 1500,8400 1500,8000 3300,8000" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <line x1="3300" y1="8200" x2="1500" y2="8200" stroke="#a8a29a" stroke-width="9.9"/>
 <line x1="2850" y1="8400" x2="2850" y2="8000" stroke="#a8a29a" stroke-width="9.9"/>
 <line x1="2400" y1="8400" x2="2400" y2="8000" stroke="#a8a29a" stroke-width="9.9"/>
 <line x1="1950" y1="8400" x2="1950" y2="8000" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="150,3000 1350,3000 1350,3400 150,3400" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<line x1="150" y1="3133.33" x2="1350" y2="3133.33" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="150" y1="3266.67" x2="1350" y2="3266.67" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="150" y1="3080" x2="1350" y2="3080" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="150" y1="3160" x2="1350" y2="3160" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="150" y1="3240" x2="1350" y2="3240" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="150" y1="3320" x2="1350" y2="3320" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="270" y1="3000" x2="270" y2="3400" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="1230" y1="3000" x2="1230" y2="3400" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="1650,11350 150,11350 150,9350 1650,9350" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="1650,11350 150,11350 150,11230 1650,11230" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <polygon points="1043,11170 1005.5,11162.54 973.7,11141.3 952.46,11109.5 945,11072 945,10988 952.46,10950.5 973.7,10918.7 1005.5,10897.46 1043,10890 1417,10890 1454.5,10897.46 1486.3,10918.7 1507.54,10950.5 1515,10988 1515,11072 1507.54,11109.5 1486.3,11141.3 1454.5,11162.54 1417,11170" fill="#ffffff" stroke="#a8a29a" stroke-width="18"/>
@@ -2120,17 +2180,31 @@ exports[`golden SVG snapshots > renders courtyard-house.arch deterministically 1
 <text x="3704" y="20225" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">sofa</text>
 <line x1="3150" y1="20395" x2="5850" y2="20395" stroke="#333333" stroke-width="9.9"/>
 <polygon points="3204,20463 3596,20463 3596,20667 3204,20667" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<polygon points="3220.32,20479.32 3579.68,20479.32 3579.68,20650.68 3220.32,20650.68" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="3224.4,20483.4 3575.6,20483.4 3575.6,20646.6 3224.4,20646.6" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3232.56" cy="20491.56" r="9.71" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3567.44" cy="20491.56" r="9.71" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3567.44" cy="20638.44" r="9.71" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3232.56" cy="20638.44" r="9.71" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3224.4" y1="20565" x2="3575.6" y2="20565" stroke="#a8a29a" stroke-width="9.9"/>
 <text x="3704" y="20565" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">table</text>
 <line x1="3150" y1="20735" x2="5850" y2="20735" stroke="#333333" stroke-width="9.9"/>
 <polygon points="3204,20803 3596,20803 3596,21007 3204,21007" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
+<line x1="3204" y1="20837" x2="3596" y2="20837" stroke="#a8a29a" stroke-width="9.9"/>
 <line x1="3204" y1="20871" x2="3596" y2="20871" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3204" y1="20905" x2="3596" y2="20905" stroke="#a8a29a" stroke-width="9.9"/>
 <line x1="3204" y1="20939" x2="3596" y2="20939" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3204" y1="20973" x2="3596" y2="20973" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3243.2" y1="20803" x2="3243.2" y2="21007" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3556.8" y1="20803" x2="3556.8" y2="21007" stroke="#a8a29a" stroke-width="9.9"/>
 <text x="3704" y="20905" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">bench</text>
 <line x1="3150" y1="21075" x2="5850" y2="21075" stroke="#333333" stroke-width="9.9"/>
 <polygon points="3204,21143 3596,21143 3596,21347 3204,21347" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
 <line x1="3204" y1="21167.48" x2="3596" y2="21167.48" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="3216.24,21155.24 3583.76,21155.24 3583.76,21334.76 3216.24,21334.76" fill="none" stroke="#a8a29a" stroke-width="9.9"/>
+<polygon points="3470.56,21191.96 3572.48,21191.96 3572.48,21330.68 3470.56,21330.68" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3470.56" y1="21238.2" x2="3572.48" y2="21238.2" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="3470.56" y1="21284.44" x2="3572.48" y2="21284.44" stroke="#a8a29a" stroke-width="9.9"/>
+<circle cx="3298.08" cy="21191.96" r="10.2" fill="#ffffff" stroke="#a8a29a" stroke-width="9.9"/>
 <text x="3704" y="21245" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">desk</text>
 <line x1="3150" y1="21415" x2="5850" y2="21415" stroke="#333333" stroke-width="9.9"/>
 <polygon points="3204,21483 3596,21483 3596,21687 3204,21687" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
@@ -2198,15 +2272,23 @@ exports[`golden SVG snapshots > renders furnished-flat.arch deterministically 1`
 <line x1="2780" y1="2866.67" x2="2900" y2="2866.67" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="250,100 1750,100 1750,550 250,550" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="475,100 1525,100 1525,167.5 475,167.5" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
-<line x1="250" y1="325" x2="1750" y2="325" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="250" y1="334" x2="1750" y2="334" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="750" y1="334" x2="750" y2="550" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="1250" y1="334" x2="1250" y2="550" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="910" y1="487" x2="1090" y2="487" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="2700,2650 2688.58,2707.4 2656.07,2756.07 2607.4,2788.58 2550,2800 450,2800 392.6,2788.58 343.93,2756.07 311.42,2707.4 300,2650 300,2110 311.42,2052.6 343.93,2003.93 392.6,1971.42 450,1960 1860,1960 1860,1450 1871.42,1392.6 1903.93,1343.93 1952.6,1311.42 2010,1300 2550,1300 2607.4,1311.42 2656.07,1343.93 2688.58,1392.6 2700,1450" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <line x1="2700" y1="2575" x2="300" y2="2575" stroke="#a8a29a" stroke-width="4.95"/>
 <line x1="2388" y1="2800" x2="2388" y2="1300" stroke="#a8a29a" stroke-width="4.95"/>
 <line x1="1340" y1="2575" x2="1340" y2="1960" stroke="#a8a29a" stroke-width="4.95"/>
 <line x1="820" y1="2575" x2="820" y2="1960" stroke="#a8a29a" stroke-width="4.95"/>
 <line x1="2388" y1="1630" x2="1860" y2="1630" stroke="#a8a29a" stroke-width="4.95"/>
-<polygon points="1840,700 1862.96,704.57 1882.43,717.57 1895.43,737.04 1900,760 1900,1140 1895.43,1162.96 1882.43,1182.43 1862.96,1195.43 1840,1200 960,1200 937.04,1195.43 917.57,1182.43 904.57,1162.96 900,1140 900,760 904.57,737.04 917.57,717.57 937.04,704.57 960,700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="1805,750 1822.22,753.43 1836.82,763.18 1846.57,777.78 1850,795 1850,1105 1846.57,1122.22 1836.82,1136.82 1822.22,1146.57 1805,1150 995,1150 977.78,1146.57 963.18,1136.82 953.43,1122.22 950,1105 950,795 953.43,777.78 963.18,763.18 977.78,753.43 995,750" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="1790,700 1832.1,708.37 1867.78,732.22 1891.63,767.9 1900,810 1900,1090 1891.63,1132.1 1867.78,1167.78 1832.1,1191.63 1790,1200 1010,1200 967.9,1191.63 932.22,1167.78 908.37,1132.1 900,1090 900,810 908.37,767.9 932.22,732.22 967.9,708.37 1010,700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
+<polygon points="1764,760 1793.08,765.79 1817.74,782.26 1834.21,806.92 1840,836 1840,1064 1834.21,1093.08 1817.74,1117.74 1793.08,1134.21 1764,1140 1036,1140 1006.92,1134.21 982.26,1117.74 965.79,1093.08 960,1064 960,836 965.79,806.92 982.26,782.26 1006.92,765.79 1036,760" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="980" cy="780" r="27.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="1820" cy="780" r="27.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="1820" cy="1120" r="27.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="980" cy="1120" r="27.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="1400" y1="760" x2="1400" y2="1140" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="4200,1797 4188.35,1855.55 4155.19,1905.19 4105.55,1938.35 4047,1950 3453,1950 3394.45,1938.35 3344.81,1905.19 3311.65,1855.55 3300,1797 3300,1253 3311.65,1194.45 3344.81,1144.81 3394.45,1111.65 3453,1100 4047,1100 4105.55,1111.65 4155.19,1144.81 4188.35,1194.45 4200,1253" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <path d="M 3930,1185 A 390.92 390.92 0 0 1 3930,1865" fill="none" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="3858,1746 3850.24,1785.03 3828.12,1818.12 3795.03,1840.24 3756,1848 3510,1848 3470.97,1840.24 3437.88,1818.12 3415.76,1785.03 3408,1746 3408,1304 3415.76,1264.97 3437.88,1231.88 3470.97,1209.76 3510,1202 3756,1202 3795.03,1209.76 3828.12,1231.88 3850.24,1264.97 3858,1304" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
@@ -2290,11 +2372,17 @@ exports[`golden SVG snapshots > renders furnished-flat.arch deterministically 1`
 <line x1="820" y1="10000" x2="820" y2="8200" stroke="#a8a29a" stroke-width="4.95"/>
 <line x1="740" y1="8200" x2="820" y2="8596" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="100,8150 100,7700 500,7700 500,8150" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="148,8102 148,7748 452,7748 452,8102" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
-<circle cx="300" cy="7925" r="72" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="140,8110 140,7740 460,7740 460,8110" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="220" cy="7925" r="80" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="220" cy="7925" r="24" fill="#a8a29a" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="364" y1="8150" x2="364" y2="7700" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="440" y1="7997" x2="440" y2="7853" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="100,10500 100,10050 500,10050 500,10500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="148,10452 148,10098 452,10098 452,10452" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
-<circle cx="300" cy="10275" r="72" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="140,10460 140,10090 460,10090 460,10460" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="220" cy="10275" r="80" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="220" cy="10275" r="24" fill="#a8a29a" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="364" y1="10500" x2="364" y2="10050" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="440" y1="10347" x2="440" y2="10203" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="1700,6850 3500,6850 3500,7450 1700,7450" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <line x1="1790" y1="7150" x2="3410" y2="7150" stroke="#a8a29a" stroke-width="4.95"/>
 <path d="M 1790,7150 A 202.5 202.5 0 0 0 2195,7150" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
@@ -2312,6 +2400,10 @@ exports[`golden SVG snapshots > renders furnished-flat.arch deterministically 1`
 <polygon points="3650,8400 3650,7200 4350,7200 4350,8400" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <line x1="3734" y1="8400" x2="3734" y2="7200" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="3692,8358 3692,7242 4308,7242 4308,8358" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="3818,7584 3818,7272 4294,7272 4294,7584" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="3976.67" y1="7584" x2="3976.67" y2="7272" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="4135.33" y1="7584" x2="4135.33" y2="7272" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="3818" cy="8112" r="35" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
 <circle cx="4750" cy="8500" r="192" fill="none" stroke="#a8a29a" stroke-width="9"/>
 <path d="M 4506.43,8411.35 A 259.2 259.2 0 0 1 4993.57,8411.35" fill="none" stroke="#a8a29a" stroke-width="9"/>
 <line x1="4480" y1="8440" x2="4480" y2="8680" stroke="#a8a29a" stroke-width="4.95"/>
@@ -2479,11 +2571,17 @@ exports[`golden SVG snapshots > renders gallery-l.arch deterministically 1`] = `
 </g>
 <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
 <polygon points="2000,2000 3800,2000 3800,2500 2000,2500" fill="#f3ece0" stroke="#b7a98f" stroke-width="19.8"/>
-<line x1="2000" y1="2166.67" x2="3800" y2="2166.67" stroke="#b7a98f" stroke-width="10.89"/>
-<line x1="2000" y1="2333.33" x2="3800" y2="2333.33" stroke="#b7a98f" stroke-width="10.89"/>
+<line x1="2000" y1="2125" x2="3800" y2="2125" stroke="#b7a98f" stroke-width="10.89"/>
+<line x1="2000" y1="2250" x2="3800" y2="2250" stroke="#b7a98f" stroke-width="10.89"/>
+<line x1="2000" y1="2375" x2="3800" y2="2375" stroke="#b7a98f" stroke-width="10.89"/>
+<line x1="2180" y1="2000" x2="2180" y2="2500" stroke="#b7a98f" stroke-width="10.89"/>
+<line x1="3620" y1="2000" x2="3620" y2="2500" stroke="#b7a98f" stroke-width="10.89"/>
 <polygon points="8000,2000 9800,2000 9800,2500 8000,2500" fill="#f3ece0" stroke="#b7a98f" stroke-width="19.8"/>
-<line x1="8000" y1="2166.67" x2="9800" y2="2166.67" stroke="#b7a98f" stroke-width="10.89"/>
-<line x1="8000" y1="2333.33" x2="9800" y2="2333.33" stroke="#b7a98f" stroke-width="10.89"/>
+<line x1="8000" y1="2125" x2="9800" y2="2125" stroke="#b7a98f" stroke-width="10.89"/>
+<line x1="8000" y1="2250" x2="9800" y2="2250" stroke="#b7a98f" stroke-width="10.89"/>
+<line x1="8000" y1="2375" x2="9800" y2="2375" stroke="#b7a98f" stroke-width="10.89"/>
+<line x1="8180" y1="2000" x2="8180" y2="2500" stroke="#b7a98f" stroke-width="10.89"/>
+<line x1="9620" y1="2000" x2="9620" y2="2500" stroke="#b7a98f" stroke-width="10.89"/>
 <circle cx="10850" cy="6850" r="336" fill="none" stroke="#b7a98f" stroke-width="19.8"/>
 <circle cx="10850" cy="6850" r="201.6" fill="none" stroke="#b7a98f" stroke-width="10.89"/>
 <line x1="11051.6" y1="6850" x2="11186" y2="6850" stroke="#b7a98f" stroke-width="10.89"/>
@@ -2507,9 +2605,15 @@ exports[`golden SVG snapshots > renders gallery-l.arch deterministically 1`] = `
 <polygon points="2000,11000 3800,11000 3800,11800 2000,11800" fill="#f3ece0" stroke="#b7a98f" stroke-width="19.8"/>
 <line x1="2000" y1="11096" x2="3800" y2="11096" stroke="#b7a98f" stroke-width="10.89"/>
 <polygon points="2048,11048 3752,11048 3752,11752 2048,11752" fill="none" stroke="#b7a98f" stroke-width="10.89"/>
+<polygon points="3224,11192 3692,11192 3692,11736 3224,11736" fill="#f3ece0" stroke="#b7a98f" stroke-width="10.89"/>
+<line x1="3224" y1="11373.33" x2="3692" y2="11373.33" stroke="#b7a98f" stroke-width="10.89"/>
+<line x1="3224" y1="11554.67" x2="3692" y2="11554.67" stroke="#b7a98f" stroke-width="10.89"/>
+<circle cx="2432" cy="11192" r="40" fill="#faf7f2" stroke="#b7a98f" stroke-width="10.89"/>
 <polygon points="4625,11500 4653.7,11505.71 4678.03,11521.97 4694.29,11546.3 4700,11575 4700,11925 4694.29,11953.7 4678.03,11978.03 4653.7,11994.29 4625,12000 4275,12000 4246.3,11994.29 4221.97,11978.03 4205.71,11953.7 4200,11925 4200,11575 4205.71,11546.3 4221.97,11521.97 4246.3,11505.71 4275,11500" fill="#f3ece0" stroke="#b7a98f" stroke-width="19.8"/>
 <polygon points="4660,11500 4675.31,11503.04 4688.28,11511.72 4696.96,11524.69 4700,11540 4700,11550 4696.96,11565.31 4688.28,11578.28 4675.31,11586.96 4660,11590 4240,11590 4224.69,11586.96 4211.72,11578.28 4203.04,11565.31 4200,11550 4200,11540 4203.04,11524.69 4211.72,11511.72 4224.69,11503.04 4240,11500" fill="#f3ece0" stroke="#b7a98f" stroke-width="19.8"/>
-<polygon points="4590,11650 4609.13,11653.81 4625.36,11664.64 4636.19,11680.87 4640,11700 4640,11890 4636.19,11909.13 4625.36,11925.36 4609.13,11936.19 4590,11940 4310,11940 4290.87,11936.19 4274.64,11925.36 4263.81,11909.13 4260,11890 4260,11700 4263.81,11680.87 4274.64,11664.64 4290.87,11653.81 4310,11650" fill="#f3ece0" stroke="#b7a98f" stroke-width="10.89"/>
+<polygon points="4540,11670 4559.13,11673.81 4575.36,11684.64 4586.19,11700.87 4590,11720 4590,11870 4586.19,11889.13 4575.36,11905.36 4559.13,11916.19 4540,11920 4360,11920 4340.87,11916.19 4324.64,11905.36 4313.81,11889.13 4310,11870 4310,11720 4313.81,11700.87 4324.64,11684.64 4340.87,11673.81 4360,11670" fill="#f3ece0" stroke="#b7a98f" stroke-width="10.89"/>
+<line x1="4260" y1="11640" x2="4260" y2="11930" stroke="#b7a98f" stroke-width="10.89"/>
+<line x1="4640" y1="11640" x2="4640" y2="11930" stroke="#b7a98f" stroke-width="10.89"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -150,-150 L 8300,-150 L 8300,150 L 150,150 L 150,13850 L 5900,13850 L 5900,11600 L 6100,11600 L 6100,13721.41 L 8327.81,11864.91 L 8519.86,12095.37 L 6054.31,14150 L -150,14150 Z M 11300,-150 L 12150,-150 L 12150,9070.26 L 9672.19,11135.09 L 9480.14,10904.63 L 11850,8929.74 L 11850,8100 L 6100,8100 L 6100,10400 L 5900,10400 L 5900,7900 L 11850,7900 L 11850,150 L 11300,150 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -2661,7 +2765,11 @@ exports[`golden SVG snapshots > renders garden-loft.arch deterministically 1`] =
 <circle cx="136" cy="1900" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="11.52"/>
 <line x1="136" y1="1900" x2="268" y2="1900" stroke="#a8a29a" stroke-width="6.34"/>
 <polygon points="1450,2050 2750,2050 2750,2950 1450,2950" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
-<polygon points="1522,2122 2678,2122 2678,2878 1522,2878" fill="none" stroke="#a8a29a" stroke-width="6.34"/>
+<polygon points="1540,2140 2660,2140 2660,2860 1540,2860" fill="none" stroke="#a8a29a" stroke-width="6.34"/>
+<circle cx="1576" cy="2176" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.34"/>
+<circle cx="2624" cy="2176" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.34"/>
+<circle cx="2624" cy="2824" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.34"/>
+<circle cx="1576" cy="2824" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.34"/>
 <polygon points="2215,3750 2247.53,3756.47 2275.1,3774.9 2293.53,3802.47 2300,3835 2300,4515 2293.53,4547.53 2275.1,4575.1 2247.53,4593.53 2215,4600 485,4600 452.47,4593.53 424.9,4575.1 406.47,4547.53 400,4515 400,3835 406.47,3802.47 424.9,3774.9 452.47,3756.47 485,3750" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
 <polygon points="400,3835 628,3835 628,4600 400,4600" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
 <polygon points="2072,3835 2300,3835 2300,4600 2072,4600" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
@@ -2912,15 +3020,31 @@ exports[`golden SVG snapshots > renders hexagon-pavilion.arch deterministically 
 <line x1="2750" y1="7592" x2="3950" y2="7592" stroke="#a8a29a" stroke-width="13.53"/>
 <line x1="3350" y1="7100" x2="3350" y2="7592" stroke="#a8a29a" stroke-width="13.53"/>
 <polygon points="13150,5550 14050,5550 14050,6450 13150,6450" fill="#f4f2ee" stroke="#a8a29a" stroke-width="24.6"/>
-<polygon points="13222,5622 13978,5622 13978,6378 13222,6378" fill="none" stroke="#a8a29a" stroke-width="13.53"/>
+<polygon points="13240,5640 13960,5640 13960,6360 13240,6360" fill="none" stroke="#a8a29a" stroke-width="13.53"/>
+<circle cx="13276" cy="5676" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.53"/>
+<circle cx="13924" cy="5676" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.53"/>
+<circle cx="13924" cy="6324" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.53"/>
+<circle cx="13276" cy="6324" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.53"/>
 <polygon points="3850,5550 4750,5550 4750,6450 3850,6450" fill="#f4f2ee" stroke="#a8a29a" stroke-width="24.6"/>
-<polygon points="3922,5622 4678,5622 4678,6378 3922,6378" fill="none" stroke="#a8a29a" stroke-width="13.53"/>
+<polygon points="3940,5640 4660,5640 4660,6360 3940,6360" fill="none" stroke="#a8a29a" stroke-width="13.53"/>
+<circle cx="3976" cy="5676" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.53"/>
+<circle cx="4624" cy="5676" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.53"/>
+<circle cx="4624" cy="6324" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.53"/>
+<circle cx="3976" cy="6324" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.53"/>
 <polygon points="12950,8450 14350,8450 14350,8900 12950,8900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="24.6"/>
-<line x1="12950" y1="8600" x2="14350" y2="8600" stroke="#a8a29a" stroke-width="13.53"/>
-<line x1="12950" y1="8750" x2="14350" y2="8750" stroke="#a8a29a" stroke-width="13.53"/>
+<line x1="12950" y1="8540" x2="14350" y2="8540" stroke="#a8a29a" stroke-width="13.53"/>
+<line x1="12950" y1="8630" x2="14350" y2="8630" stroke="#a8a29a" stroke-width="13.53"/>
+<line x1="12950" y1="8720" x2="14350" y2="8720" stroke="#a8a29a" stroke-width="13.53"/>
+<line x1="12950" y1="8810" x2="14350" y2="8810" stroke="#a8a29a" stroke-width="13.53"/>
+<line x1="13090" y1="8450" x2="13090" y2="8900" stroke="#a8a29a" stroke-width="13.53"/>
+<line x1="14210" y1="8450" x2="14210" y2="8900" stroke="#a8a29a" stroke-width="13.53"/>
 <polygon points="9450,12000 10850,12000 10850,12450 9450,12450" fill="#f4f2ee" stroke="#a8a29a" stroke-width="24.6"/>
-<line x1="9450" y1="12150" x2="10850" y2="12150" stroke="#a8a29a" stroke-width="13.53"/>
-<line x1="9450" y1="12300" x2="10850" y2="12300" stroke="#a8a29a" stroke-width="13.53"/>
+<line x1="9450" y1="12090" x2="10850" y2="12090" stroke="#a8a29a" stroke-width="13.53"/>
+<line x1="9450" y1="12180" x2="10850" y2="12180" stroke="#a8a29a" stroke-width="13.53"/>
+<line x1="9450" y1="12270" x2="10850" y2="12270" stroke="#a8a29a" stroke-width="13.53"/>
+<line x1="9450" y1="12360" x2="10850" y2="12360" stroke="#a8a29a" stroke-width="13.53"/>
+<line x1="9590" y1="12000" x2="9590" y2="12450" stroke="#a8a29a" stroke-width="13.53"/>
+<line x1="10710" y1="12000" x2="10710" y2="12450" stroke="#a8a29a" stroke-width="13.53"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M 10019.9,10263.42 L 9936.81,10300.85 L 9852.79,10336.16 L 9767.91,10369.33 L 9682.21,10400.35 L 9595.75,10429.19 L 9508.6,10455.83 L 9420.79,10480.25 L 9332.4,10502.44 L 9054.93,9334.96 L 9222.85,9288.55 L 9386.97,9230.09 L 9546.41,9159.87 L 9700.33,9078.27 L 9847.93,8985.72 L 9988.43,8882.7 L 10121.09,8769.77 L 10245.2,8647.51 L 11117.8,9471.26 L 11015.99,9574.84 L 10910.09,9674.22 L 10800.27,9769.25 L 10686.71,9859.78 L 10569.58,9945.65 L 10449.09,10026.72 L 10325.43,10102.87 L 10198.79,10173.97 L 11492.08,12760.56 L 12910,10870 L 13150,11050 L 11575,13150 L 9200,13150 L 9200,12850 L 11313.2,12850 Z M 10019.9,3736.58 L 11313.2,1150 L 9700,1150 L 9700,850 L 11575,850 L 13150,2950 L 12910,3130 L 11492.08,1239.44 L 10198.79,3826.03 L 10325.43,3897.13 L 10449.09,3973.28 L 10569.58,4054.35 L 10686.71,4140.22 L 10800.27,4230.75 L 10910.09,4325.78 L 11015.99,4425.16 L 11117.8,4528.74 L 10245.2,5352.49 L 10121.09,5230.23 L 9988.43,5117.3 L 9847.93,5014.28 L 9700.33,4921.73 L 9546.41,4840.13 L 9386.97,4769.91 L 9222.85,4711.45 L 9054.93,4665.04 L 9332.4,3497.56 L 9420.79,3519.75 L 9508.6,3544.17 L 9595.75,3570.81 L 9682.21,3599.65 L 9767.91,3630.67 L 9852.79,3663.84 L 9936.81,3699.15 Z M 10799.82,6313.84 L 11949.73,5970.76 L 12015.22,6223.3 L 12062.24,6479.93 L 12090.55,6739.28 L 12100,7000 L 12090.55,7260.72 L 12062.24,7520.07 L 12015.22,7776.7 L 11949.73,8029.24 L 10799.82,7686.16 L 10843.48,7517.8 L 10874.82,7346.72 L 10893.7,7173.81 L 10900,7000 L 10893.7,6826.19 L 10874.82,6653.28 L 10843.48,6482.2 Z M 12150,6900 L 15737.5,6900 L 14350,5050 L 14590,4870 L 16187.5,7000 L 14590,9130 L 14350,8950 L 15737.5,7100 L 12150,7100 Z M 1262.5,6900 L 4850,6900 L 4850,7100 L 1262.5,7100 L 2650,8950 L 2410,9130 L 812.5,7000 L 2410,4870 L 2650,5050 Z M 3850,11050 L 4090,10870 L 5507.92,12760.56 L 6801.21,10173.97 L 6674.57,10102.87 L 6550.91,10026.72 L 6430.42,9945.65 L 6313.29,9859.78 L 6199.73,9769.25 L 6089.91,9674.22 L 5984.01,9574.84 L 5882.2,9471.26 L 6754.8,8647.51 L 6878.91,8769.77 L 7011.57,8882.7 L 7152.07,8985.72 L 7299.67,9078.27 L 7453.59,9159.87 L 7613.03,9230.09 L 7777.15,9288.55 L 7945.07,9334.96 L 7667.6,10502.44 L 7579.21,10480.25 L 7491.4,10455.83 L 7404.25,10429.19 L 7317.79,10400.35 L 7232.09,10369.33 L 7147.21,10336.16 L 7063.19,10300.85 L 6980.1,10263.42 L 5686.8,12850 L 7800,12850 L 7800,13150 L 5425,13150 Z M 3850,2950 L 5425,850 L 7300,850 L 7300,1150 L 5686.8,1150 L 6980.1,3736.58 L 7063.19,3699.15 L 7147.21,3663.84 L 7232.09,3630.67 L 7317.79,3599.65 L 7404.25,3570.81 L 7491.4,3544.17 L 7579.21,3519.75 L 7667.6,3497.56 L 7945.07,4665.04 L 7777.15,4711.45 L 7613.03,4769.91 L 7453.59,4840.13 L 7299.67,4921.73 L 7152.07,5014.28 L 7011.57,5117.3 L 6878.91,5230.23 L 6754.8,5352.49 L 5882.2,4528.74 L 5984.01,4425.16 L 6089.91,4325.78 L 6199.73,4230.75 L 6313.29,4140.22 L 6430.42,4054.35 L 6550.91,3973.28 L 6674.57,3897.13 L 6801.21,3826.03 L 5507.92,1239.44 L 4090,3130 Z M 5050.27,5970.76 L 6200.18,6313.84 L 6156.52,6482.2 L 6125.18,6653.28 L 6106.3,6826.19 L 6100,7000 L 6106.3,7173.81 L 6125.18,7346.72 L 6156.52,7517.8 L 6200.18,7686.16 L 5050.27,8029.24 L 4984.78,7776.7 L 4937.76,7520.07 L 4909.45,7260.72 L 4900,7000 L 4909.45,6739.28 L 4937.76,6479.93 L 4984.78,6223.3 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -3071,6 +3195,10 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <polygon points="600,2700 2200,2700 2200,3400 600,3400" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <line x1="600" y1="2784" x2="2200" y2="2784" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="642,2742 2158,2742 2158,3358 642,3358" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="1688,2868 2104,2868 2104,3344 1688,3344" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="1688" y1="3026.67" x2="2104" y2="3026.67" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="1688" y1="3185.33" x2="2104" y2="3185.33" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="984" cy="2868" r="35" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
 <circle cx="2600" cy="3200" r="192" fill="none" stroke="#a8a29a" stroke-width="9"/>
 <path d="M 2356.43,3111.35 A 259.2 259.2 0 0 1 2843.57,3111.35" fill="none" stroke="#a8a29a" stroke-width="9"/>
 <line x1="2330" y1="3140" x2="2330" y2="3380" stroke="#a8a29a" stroke-width="4.95"/>
@@ -3104,8 +3232,13 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <line x1="2060" y1="5825" x2="2060" y2="6440" stroke="#a8a29a" stroke-width="4.95"/>
 <line x1="2580" y1="5825" x2="2580" y2="6440" stroke="#a8a29a" stroke-width="4.95"/>
 <line x1="1012" y1="6770" x2="1540" y2="6770" stroke="#a8a29a" stroke-width="4.95"/>
-<polygon points="2240,7200 2262.96,7204.57 2282.43,7217.57 2295.43,7237.04 2300,7260 2300,7640 2295.43,7662.96 2282.43,7682.43 2262.96,7695.43 2240,7700 1360,7700 1337.04,7695.43 1317.57,7682.43 1304.57,7662.96 1300,7640 1300,7260 1304.57,7237.04 1317.57,7217.57 1337.04,7204.57 1360,7200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="2205,7250 2222.22,7253.43 2236.82,7263.18 2246.57,7277.78 2250,7295 2250,7605 2246.57,7622.22 2236.82,7636.82 2222.22,7646.57 2205,7650 1395,7650 1377.78,7646.57 1363.18,7636.82 1353.43,7622.22 1350,7605 1350,7295 1353.43,7277.78 1363.18,7263.18 1377.78,7253.43 1395,7250" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="2190,7200 2232.1,7208.37 2267.78,7232.22 2291.63,7267.9 2300,7310 2300,7590 2291.63,7632.1 2267.78,7667.78 2232.1,7691.63 2190,7700 1410,7700 1367.9,7691.63 1332.22,7667.78 1308.37,7632.1 1300,7590 1300,7310 1308.37,7267.9 1332.22,7232.22 1367.9,7208.37 1410,7200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
+<polygon points="2164,7260 2193.08,7265.79 2217.74,7282.26 2234.21,7306.92 2240,7336 2240,7564 2234.21,7593.08 2217.74,7617.74 2193.08,7634.21 2164,7640 1436,7640 1406.92,7634.21 1382.26,7617.74 1365.79,7593.08 1360,7564 1360,7336 1365.79,7306.92 1382.26,7282.26 1406.92,7265.79 1436,7260" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="1380" cy="7280" r="27.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="2220" cy="7280" r="27.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="2220" cy="7620" r="27.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="1380" cy="7620" r="27.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="1800" y1="7260" x2="1800" y2="7640" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="3200,5962 3212.33,5900.01 3247.45,5847.45 3300.01,5812.33 3362,5800 3938,5800 3999.99,5812.33 4052.55,5847.45 4087.67,5900.01 4100,5962 4100,6538 4087.67,6599.99 4052.55,6652.55 3999.99,6687.67 3938,6700 3362,6700 3300.01,6687.67 3247.45,6652.55 3212.33,6599.99 3200,6538" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <path d="M 3470,6610 A 426.27 426.27 0 0 1 3470,5890" fill="none" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="3542,6016 3550.22,5974.67 3573.63,5939.63 3608.67,5916.22 3650,5908 3884,5908 3925.33,5916.22 3960.37,5939.63 3983.78,5974.67 3992,6016 3992,6484 3983.78,6525.33 3960.37,6560.37 3925.33,6583.78 3884,6592 3650,6592 3608.67,6583.78 3573.63,6560.37 3550.22,6525.33 3542,6484" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
@@ -3128,7 +3261,10 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <line x1="3278" y1="4634" x2="3720" y2="5518" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="4700,6450 4700,7950 4200,7950 4200,6450" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="4700,6675 4700,7725 4625,7725 4625,6675" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
-<line x1="4450" y1="6450" x2="4450" y2="7950" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="4440" y1="6450" x2="4440" y2="7950" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="4440" y1="6950" x2="4200" y2="6950" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="4440" y1="7450" x2="4200" y2="7450" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="4270" y1="7110" x2="4270" y2="7290" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="5820,7020 7380,7020 7380,7580 5820,7580" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="5864.8,7064.8 7335.2,7064.8 7335.2,7535.2 5864.8,7535.2" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="6229.8,6860.5 6241.17,6862.76 6250.8,6869.2 6257.24,6878.83 6259.5,6890.2 6259.5,6929.8 6257.24,6941.17 6250.8,6950.8 6241.17,6957.24 6229.8,6959.5 6190.2,6959.5 6178.83,6957.24 6169.2,6950.8 6162.76,6941.17 6160.5,6929.8 6160.5,6890.2 6162.76,6878.83 6169.2,6869.2 6178.83,6862.76 6190.2,6860.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
@@ -3166,11 +3302,14 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <polygon points="9200,5400 11000,5400 11000,6300 9200,6300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="9254,5454 10946,5454 10946,6246 9254,6246" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
 <circle cx="9100" cy="6700" r="200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<circle cx="9100" cy="6700" r="120" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="9100" cy="6700" r="124" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="9100" cy="6700" r="48" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
 <circle cx="9700" cy="6700" r="200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<circle cx="9700" cy="6700" r="120" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="9700" cy="6700" r="124" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="9700" cy="6700" r="48" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
 <circle cx="10300" cy="6700" r="200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<circle cx="10300" cy="6700" r="120" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="10300" cy="6700" r="124" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="10300" cy="6700" r="48" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="-5350,7100 -5350,6500 -4750,6500 -4750,7100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="-5302,7052 -5302,6548 -4798,6548 -4798,7052" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
 <circle cx="-5050" cy="6800" r="180" fill="none" stroke="#a8a29a" stroke-width="9"/>
@@ -3777,13 +3916,21 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <polygon points="-3512.76,14795.26 -3508.08,14796.19 -3504.11,14798.85 -3501.45,14802.82 -3500.52,14807.5 -3500.52,14834.02 -3501.45,14838.7 -3504.11,14842.67 -3508.08,14845.33 -3512.76,14846.26 -3637.24,14846.26 -3641.92,14845.33 -3645.89,14842.67 -3648.55,14838.7 -3649.48,14834.02 -3649.48,14807.5 -3648.55,14802.82 -3645.89,14798.85 -3641.92,14796.19 -3637.24,14795.26" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
 <text x="-3423" y="14807.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">armchair</text>
 <line x1="-3700" y1="14892.5" x2="-2350" y2="14892.5" stroke="#333333" stroke-width="4.95"/>
-<polygon points="-3489.24,14926.5 -3484.56,14927.43 -3480.59,14930.09 -3477.93,14934.06 -3477,14938.74 -3477,15016.26 -3477.93,15020.94 -3480.59,15024.91 -3484.56,15027.57 -3489.24,15028.5 -3660.76,15028.5 -3665.44,15027.57 -3669.41,15024.91 -3672.07,15020.94 -3673,15016.26 -3673,14938.74 -3672.07,14934.06 -3669.41,14930.09 -3665.44,14927.43 -3660.76,14926.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="-3496.38,14936.7 -3492.87,14937.4 -3489.89,14939.39 -3487.9,14942.37 -3487.2,14945.88 -3487.2,15009.12 -3487.9,15012.63 -3489.89,15015.61 -3492.87,15017.6 -3496.38,15018.3 -3653.62,15018.3 -3657.13,15017.6 -3660.11,15015.61 -3662.1,15012.63 -3662.8,15009.12 -3662.8,14945.88 -3662.1,14942.37 -3660.11,14939.39 -3657.13,14937.4 -3653.62,14936.7" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="-3499.44,14926.5 -3490.85,14928.21 -3483.57,14933.07 -3478.71,14940.35 -3477,14948.94 -3477,15006.06 -3478.71,15014.65 -3483.57,15021.93 -3490.85,15026.79 -3499.44,15028.5 -3650.56,15028.5 -3659.15,15026.79 -3666.43,15021.93 -3671.29,15014.65 -3673,15006.06 -3673,14948.94 -3671.29,14940.35 -3666.43,14933.07 -3659.15,14928.21 -3650.56,14926.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
+<polygon points="-3504.74,14938.74 -3498.81,14939.92 -3493.78,14943.28 -3490.42,14948.31 -3489.24,14954.24 -3489.24,15000.76 -3490.42,15006.69 -3493.78,15011.72 -3498.81,15015.08 -3504.74,15016.26 -3645.26,15016.26 -3651.19,15015.08 -3656.22,15011.72 -3659.58,15006.69 -3660.76,15000.76 -3660.76,14954.24 -3659.58,14948.31 -3656.22,14943.28 -3651.19,14939.92 -3645.26,14938.74" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="-3656.68" cy="14942.82" r="5.55" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="-3493.32" cy="14942.82" r="5.55" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="-3493.32" cy="15012.18" r="5.55" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="-3656.68" cy="15012.18" r="5.55" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="-3575" y1="14938.74" x2="-3575" y2="15016.26" stroke="#a8a29a" stroke-width="4.95"/>
 <text x="-3423" y="14977.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">coffee_table</text>
 <line x1="-3700" y1="15062.5" x2="-2350" y2="15062.5" stroke="#333333" stroke-width="4.95"/>
 <polygon points="-3673,15096.5 -3477,15096.5 -3477,15198.5 -3673,15198.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="-3643.6,15096.5 -3506.4,15096.5 -3506.4,15111.8 -3643.6,15111.8" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
-<line x1="-3673" y1="15147.5" x2="-3477" y2="15147.5" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="-3673" y1="15149.54" x2="-3477" y2="15149.54" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="-3607.67" y1="15149.54" x2="-3607.67" y2="15198.5" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="-3542.33" y1="15149.54" x2="-3542.33" y2="15198.5" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="-3586.76" y1="15184.22" x2="-3563.24" y2="15184.22" stroke="#a8a29a" stroke-width="4.95"/>
 <text x="-3423" y="15147.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">tv_unit</text>
 <line x1="-3700" y1="15232.5" x2="-2350" y2="15232.5" stroke="#333333" stroke-width="4.95"/>
 <polygon points="-3650.56,15288.94 -3499.44,15288.94 -3499.44,15346.06 -3650.56,15346.06" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
@@ -3797,12 +3944,17 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <text x="-3423" y="15317.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">dining_table</text>
 <line x1="-3700" y1="15402.5" x2="-2350" y2="15402.5" stroke="#333333" stroke-width="4.95"/>
 <circle cx="-3575" cy="15487.5" r="51" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<circle cx="-3575" cy="15487.5" r="30.6" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="-3575" cy="15487.5" r="31.62" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="-3575" cy="15487.5" r="12.24" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
 <text x="-3423" y="15487.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">barstool</text>
 <line x1="-3700" y1="15572.5" x2="-2350" y2="15572.5" stroke="#333333" stroke-width="4.95"/>
 <polygon points="-3673,15606.5 -3477,15606.5 -3477,15708.5 -3673,15708.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <line x1="-3673" y1="15618.74" x2="-3477" y2="15618.74" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="-3666.88,15612.62 -3483.12,15612.62 -3483.12,15702.38 -3666.88,15702.38" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="-3539.72,15630.98 -3488.76,15630.98 -3488.76,15700.34 -3539.72,15700.34" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="-3539.72" y1="15654.1" x2="-3488.76" y2="15654.1" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="-3539.72" y1="15677.22" x2="-3488.76" y2="15677.22" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="-3625.96" cy="15630.98" r="5.1" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
 <text x="-3423" y="15657.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">desk</text>
 <line x1="-3700" y1="15742.5" x2="-2350" y2="15742.5" stroke="#333333" stroke-width="4.95"/>
 <circle cx="-3575" cy="15827.5" r="32.64" fill="none" stroke="#a8a29a" stroke-width="9"/>
@@ -4010,8 +4162,11 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <line x1="1300" y1="920" x2="2800" y2="920" stroke="#a8a29a" stroke-width="4.95"/>
 <line x1="2800" y1="840" x2="2470" y2="920" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="700,200 1200,200 1200,600 700,600" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="748,248 1152,248 1152,552 748,552" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
-<circle cx="950" cy="400" r="72" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="740,240 1160,240 1160,560 740,560" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="950" cy="320" r="80" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="950" cy="320" r="24" fill="#a8a29a" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="700" y1="464" x2="1200" y2="464" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="870" y1="540" x2="1030" y2="540" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="2900,300 3500,300 3500,2100 2900,2100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <line x1="2930" y1="1200" x2="3470" y2="1200" stroke="#a8a29a" stroke-width="4.95"/>
 <path d="M 2930,1200 A 90 90 0 0 0 3110,1200" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
@@ -4026,8 +4181,11 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <line x1="11100" y1="920" x2="12600" y2="920" stroke="#a8a29a" stroke-width="4.95"/>
 <line x1="12600" y1="840" x2="12270" y2="920" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="12600,200 13100,200 13100,600 12600,600" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="12648,248 13052,248 13052,552 12648,552" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
-<circle cx="12850" cy="400" r="72" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="12640,240 13060,240 13060,560 12640,560" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="12850" cy="320" r="80" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="12850" cy="320" r="24" fill="#a8a29a" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="12600" y1="464" x2="13100" y2="464" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="12770" y1="540" x2="12930" y2="540" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="13100,300 13600,300 13600,2100 13100,2100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <line x1="13125" y1="1200" x2="13575" y2="1200" stroke="#a8a29a" stroke-width="4.95"/>
 <path d="M 13125,1200 A 75 75 0 0 0 13275,1200" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
@@ -4058,11 +4216,17 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <line x1="7100" y1="8320" x2="8900" y2="8320" stroke="#a8a29a" stroke-width="4.95"/>
 <line x1="8900" y1="8240" x2="8504" y2="8320" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="6500,7600 7000,7600 7000,8000 6500,8000" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="6548,7648 6952,7648 6952,7952 6548,7952" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
-<circle cx="6750" cy="7800" r="72" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="6540,7640 6960,7640 6960,7960 6540,7960" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="6750" cy="7720" r="80" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="6750" cy="7720" r="24" fill="#a8a29a" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="6500" y1="7864" x2="7000" y2="7864" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="6670" y1="7940" x2="6830" y2="7940" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="9100,7600 9600,7600 9600,8000 9100,8000" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="9148,7648 9552,7648 9552,7952 9148,7952" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
-<circle cx="9350" cy="7800" r="72" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="9140,7640 9560,7640 9560,7960 9140,7960" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="9350" cy="7720" r="80" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="9350" cy="7720" r="24" fill="#a8a29a" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="9100" y1="7864" x2="9600" y2="7864" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="9270" y1="7940" x2="9430" y2="7940" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="5000,4400 6800,4400 6800,5000 5000,5000" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <line x1="5090" y1="4700" x2="6710" y2="4700" stroke="#a8a29a" stroke-width="4.95"/>
 <path d="M 5090,4700 A 202.5 202.5 0 0 0 5495,4700" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
@@ -4076,6 +4240,10 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <polygon points="10200,7100 11400,7100 11400,7800 10200,7800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <line x1="10200" y1="7184" x2="11400" y2="7184" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="10242,7142 11358,7142 11358,7758 10242,7758" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="11016,7268 11328,7268 11328,7744 11016,7744" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="11016" y1="7426.67" x2="11328" y2="7426.67" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="11016" y1="7585.33" x2="11328" y2="7585.33" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="10488" cy="7268" r="35" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
 <circle cx="10800" cy="8200" r="192" fill="none" stroke="#a8a29a" stroke-width="9"/>
 <path d="M 10556.43,8111.35 A 259.2 259.2 0 0 1 11043.57,8111.35" fill="none" stroke="#a8a29a" stroke-width="9"/>
 <line x1="10530" y1="8140" x2="10530" y2="8380" stroke="#a8a29a" stroke-width="4.95"/>
@@ -4446,8 +4614,11 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <text x="1377" y="14417.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">double_bed</text>
 <line x1="1100" y1="14502.5" x2="2450" y2="14502.5" stroke="#333333" stroke-width="4.95"/>
 <polygon points="1127,14536.5 1323,14536.5 1323,14638.5 1127,14638.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="1139.24,14548.74 1310.76,14548.74 1310.76,14626.26 1139.24,14626.26" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
-<circle cx="1225" cy="14587.5" r="18.36" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="1137.2,14546.7 1312.8,14546.7 1312.8,14628.3 1137.2,14628.3" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="1225" cy="14567.1" r="20.4" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="1225" cy="14567.1" r="6.12" fill="#a8a29a" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="1127" y1="14603.82" x2="1323" y2="14603.82" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="1193.64" y1="14623.2" x2="1256.36" y2="14623.2" stroke="#a8a29a" stroke-width="4.95"/>
 <text x="1377" y="14587.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">nightstand</text>
 <line x1="1100" y1="14672.5" x2="2450" y2="14672.5" stroke="#333333" stroke-width="4.95"/>
 <polygon points="1127,14706.5 1323,14706.5 1323,14808.5 1127,14808.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
@@ -4466,6 +4637,10 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <polygon points="1127,15046.5 1323,15046.5 1323,15148.5 1127,15148.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <line x1="1127" y1="15058.74" x2="1323" y2="15058.74" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="1133.12,15052.62 1316.88,15052.62 1316.88,15142.38 1133.12,15142.38" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="1260.28,15070.98 1311.24,15070.98 1311.24,15140.34 1260.28,15140.34" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="1260.28" y1="15094.1" x2="1311.24" y2="15094.1" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="1260.28" y1="15117.22" x2="1311.24" y2="15117.22" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="1174.04" cy="15070.98" r="5.1" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
 <text x="1377" y="15097.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">desk</text>
 <line x1="1100" y1="15182.5" x2="2450" y2="15182.5" stroke="#333333" stroke-width="4.95"/>
 <circle cx="1225" cy="15267.5" r="32.64" fill="none" stroke="#a8a29a" stroke-width="9"/>
@@ -4544,7 +4719,11 @@ exports[`golden SVG snapshots > renders laneway-house.arch deterministically 1`]
 <line x1="3025" y1="2700" x2="3025" y2="2840" stroke="#a8a29a" stroke-width="6.78"/>
 <line x1="3025" y1="5960" x2="3025" y2="6100" stroke="#a8a29a" stroke-width="6.78"/>
 <polygon points="1450,2800 2750,2800 2750,3700 1450,3700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="12.32"/>
-<polygon points="1522,2872 2678,2872 2678,3628 1522,3628" fill="none" stroke="#a8a29a" stroke-width="6.78"/>
+<polygon points="1540,2890 2660,2890 2660,3610 1540,3610" fill="none" stroke="#a8a29a" stroke-width="6.78"/>
+<circle cx="1576" cy="2926" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.78"/>
+<circle cx="2624" cy="2926" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.78"/>
+<circle cx="2624" cy="3574" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.78"/>
+<circle cx="1576" cy="3574" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.78"/>
 <polygon points="1160,4150 1194.44,4156.85 1223.64,4176.36 1243.15,4205.56 1250,4240 1250,6060 1243.15,6094.44 1223.64,6123.64 1194.44,6143.15 1160,6150 440,6150 405.56,6143.15 376.36,6123.64 356.85,6094.44 350,6060 350,4240 356.85,4205.56 376.36,4176.36 405.56,4156.85 440,4150" fill="#f4f2ee" stroke="#a8a29a" stroke-width="12.32"/>
 <polygon points="350,4350 458,4350 458,6150 350,6150" fill="#f4f2ee" stroke="#a8a29a" stroke-width="12.32"/>
 <polygon points="1142,4350 1250,4350 1250,6150 1142,6150" fill="#f4f2ee" stroke="#a8a29a" stroke-width="12.32"/>
@@ -4897,13 +5076,33 @@ exports[`golden SVG snapshots > renders library.arch deterministically 1`] = `
 </g>
 <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
 <polygon points="21500,9800 28500,9800 28500,11200 21500,11200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="21612,9912 28388,9912 28388,11088 21612,11088" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="21640,9940 28360,9940 28360,11060 21640,11060" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="21696" cy="9996" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="28304" cy="9996" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="28304" cy="11004" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="21696" cy="11004" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="21640" y1="10500" x2="28360" y2="10500" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="20500,12200 29500,12200 29500,13600 20500,13600" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="20612,12312 29388,12312 29388,13488 20612,13488" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="20640,12340 29360,12340 29360,13460 20640,13460" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="20696" cy="12396" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="29304" cy="12396" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="29304" cy="13404" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="20696" cy="13404" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="20640" y1="12900" x2="29360" y2="12900" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="20500,18400 29500,18400 29500,19800 20500,19800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="20612,18512 29388,18512 29388,19688 20612,19688" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="20640,18540 29360,18540 29360,19660 20640,19660" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="20696" cy="18596" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="29304" cy="18596" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="29304" cy="19604" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="20696" cy="19604" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="20640" y1="19100" x2="29360" y2="19100" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="21500,20800 28500,20800 28500,22200 21500,22200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="21612,20912 28388,20912 28388,22088 21612,22088" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="21640,20940 28360,20940 28360,22060 21640,22060" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="21696" cy="20996" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="28304" cy="20996" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="28304" cy="22004" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="21696" cy="22004" r="66.64" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="21640" y1="21500" x2="28360" y2="21500" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="2000,1500 15000,1500 15000,2100 2000,2100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="2000" y1="1800" x2="15000" y2="1800" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="3000" y1="1500" x2="3000" y2="2100" stroke="#a8a29a" stroke-width="19.8"/>
@@ -5003,9 +5202,17 @@ exports[`golden SVG snapshots > renders library.arch deterministically 1`] = `
 <line x1="28100" y1="4533.33" x2="28700" y2="4533.33" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="28100" y1="5366.67" x2="28700" y2="5366.67" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="2500,19500 4500,19500 4500,21500 2500,21500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="2660,19660 4340,19660 4340,21340 2660,21340" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="2700,19700 4300,19700 4300,21300 2700,21300" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="2780" cy="19780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="4220" cy="19780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="4220" cy="21220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="2780" cy="21220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="2500,23500 4500,23500 4500,25500 2500,25500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="2660,23660 4340,23660 4340,25340 2660,25340" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="2700,23700 4300,23700 4300,25300 2700,25300" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="2780" cy="23780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="4220" cy="23780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="4220" cy="25220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="2780" cy="25220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="2000,28500 5000,28500 5000,29000 2000,29000" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="2000" y1="28750" x2="5000" y2="28750" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="2600" y1="28500" x2="2600" y2="29000" stroke="#a8a29a" stroke-width="19.8"/>
@@ -5013,9 +5220,17 @@ exports[`golden SVG snapshots > renders library.arch deterministically 1`] = `
 <line x1="3800" y1="28500" x2="3800" y2="29000" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="4400" y1="28500" x2="4400" y2="29000" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="7000,19500 9000,19500 9000,21500 7000,21500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="7160,19660 8840,19660 8840,21340 7160,21340" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="7200,19700 8800,19700 8800,21300 7200,21300" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="7280" cy="19780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="8720" cy="19780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="8720" cy="21220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="7280" cy="21220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="7000,23500 9000,23500 9000,25500 7000,25500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="7160,23660 8840,23660 8840,25340 7160,25340" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="7200,23700 8800,23700 8800,25300 7200,25300" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="7280" cy="23780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="8720" cy="23780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="8720" cy="25220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="7280" cy="25220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="6500,28500 9500,28500 9500,29000 6500,29000" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="6500" y1="28750" x2="9500" y2="28750" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="7100" y1="28500" x2="7100" y2="29000" stroke="#a8a29a" stroke-width="19.8"/>
@@ -5023,9 +5238,17 @@ exports[`golden SVG snapshots > renders library.arch deterministically 1`] = `
 <line x1="8300" y1="28500" x2="8300" y2="29000" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="8900" y1="28500" x2="8900" y2="29000" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="11500,19500 13500,19500 13500,21500 11500,21500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="11660,19660 13340,19660 13340,21340 11660,21340" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="11700,19700 13300,19700 13300,21300 11700,21300" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="11780" cy="19780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="13220" cy="19780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="13220" cy="21220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="11780" cy="21220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="11500,23500 13500,23500 13500,25500 11500,25500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="11660,23660 13340,23660 13340,25340 11660,25340" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="11700,23700 13300,23700 13300,25300 11700,25300" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="11780" cy="23780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="13220" cy="23780" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="13220" cy="25220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="11780" cy="25220" r="95.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="11000,28500 14000,28500 14000,29000 11000,29000" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="11000" y1="28750" x2="14000" y2="28750" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="11600" y1="28500" x2="11600" y2="29000" stroke="#a8a29a" stroke-width="19.8"/>
@@ -5035,45 +5258,109 @@ exports[`golden SVG snapshots > renders library.arch deterministically 1`] = `
 <polygon points="34500,18500 36100,18500 36100,19300 34500,19300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="34500" y1="18596" x2="36100" y2="18596" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="34548,18548 36052,18548 36052,19252 34548,19252" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="35588,18692 36004,18692 36004,19236 35588,19236" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="35588" y1="18873.33" x2="36004" y2="18873.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="35588" y1="19054.67" x2="36004" y2="19054.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="34884" cy="18692" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="34500,22000 36100,22000 36100,22800 34500,22800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="34500" y1="22096" x2="36100" y2="22096" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="34548,22048 36052,22048 36052,22752 34548,22752" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="35588,22192 36004,22192 36004,22736 35588,22736" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="35588" y1="22373.33" x2="36004" y2="22373.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="35588" y1="22554.67" x2="36004" y2="22554.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="34884" cy="22192" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="37500,18500 39100,18500 39100,19300 37500,19300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="37500" y1="18596" x2="39100" y2="18596" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="37548,18548 39052,18548 39052,19252 37548,19252" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="38588,18692 39004,18692 39004,19236 38588,19236" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="38588" y1="18873.33" x2="39004" y2="18873.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="38588" y1="19054.67" x2="39004" y2="19054.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="37884" cy="18692" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="37500,22000 39100,22000 39100,22800 37500,22800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="37500" y1="22096" x2="39100" y2="22096" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="37548,22048 39052,22048 39052,22752 37548,22752" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="38588,22192 39004,22192 39004,22736 38588,22736" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="38588" y1="22373.33" x2="39004" y2="22373.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="38588" y1="22554.67" x2="39004" y2="22554.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="37884" cy="22192" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="40500,18500 42100,18500 42100,19300 40500,19300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="40500" y1="18596" x2="42100" y2="18596" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="40548,18548 42052,18548 42052,19252 40548,19252" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="41588,18692 42004,18692 42004,19236 41588,19236" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="41588" y1="18873.33" x2="42004" y2="18873.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="41588" y1="19054.67" x2="42004" y2="19054.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="40884" cy="18692" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="40500,22000 42100,22000 42100,22800 40500,22800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="40500" y1="22096" x2="42100" y2="22096" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="40548,22048 42052,22048 42052,22752 40548,22752" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="41588,22192 42004,22192 42004,22736 41588,22736" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="41588" y1="22373.33" x2="42004" y2="22373.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="41588" y1="22554.67" x2="42004" y2="22554.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="40884" cy="22192" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="43500,18500 45100,18500 45100,19300 43500,19300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="43500" y1="18596" x2="45100" y2="18596" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="43548,18548 45052,18548 45052,19252 43548,19252" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="44588,18692 45004,18692 45004,19236 44588,19236" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="44588" y1="18873.33" x2="45004" y2="18873.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="44588" y1="19054.67" x2="45004" y2="19054.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="43884" cy="18692" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="43500,22000 45100,22000 45100,22800 43500,22800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="43500" y1="22096" x2="45100" y2="22096" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="43548,22048 45052,22048 45052,22752 43548,22752" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="44588,22192 45004,22192 45004,22736 44588,22736" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="44588" y1="22373.33" x2="45004" y2="22373.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="44588" y1="22554.67" x2="45004" y2="22554.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="43884" cy="22192" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="46500,18500 48100,18500 48100,19300 46500,19300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="46500" y1="18596" x2="48100" y2="18596" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="46548,18548 48052,18548 48052,19252 46548,19252" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="47588,18692 48004,18692 48004,19236 47588,19236" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="47588" y1="18873.33" x2="48004" y2="18873.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="47588" y1="19054.67" x2="48004" y2="19054.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="46884" cy="18692" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="46500,22000 48100,22000 48100,22800 46500,22800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="46500" y1="22096" x2="48100" y2="22096" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="46548,22048 48052,22048 48052,22752 46548,22752" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="47588,22192 48004,22192 48004,22736 47588,22736" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="47588" y1="22373.33" x2="48004" y2="22373.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="47588" y1="22554.67" x2="48004" y2="22554.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="46884" cy="22192" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="34500,2500 36100,2500 36100,4100 34500,4100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="34628,2628 35972,2628 35972,3972 34628,3972" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="34660,2660 35940,2660 35940,3940 34660,3940" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="34724" cy="2724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="35876" cy="2724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="35876" cy="3876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="34724" cy="3876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="34500,6500 36100,6500 36100,8100 34500,8100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="34628,6628 35972,6628 35972,7972 34628,7972" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="34660,6660 35940,6660 35940,7940 34660,7940" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="34724" cy="6724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="35876" cy="6724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="35876" cy="7876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="34724" cy="7876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="37500,2500 39100,2500 39100,4100 37500,4100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="37628,2628 38972,2628 38972,3972 37628,3972" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="37660,2660 38940,2660 38940,3940 37660,3940" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="37724" cy="2724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="38876" cy="2724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="38876" cy="3876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="37724" cy="3876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="37500,6500 39100,6500 39100,8100 37500,8100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="37628,6628 38972,6628 38972,7972 37628,7972" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="37660,6660 38940,6660 38940,7940 37660,7940" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="37724" cy="6724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="38876" cy="6724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="38876" cy="7876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="37724" cy="7876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="40500,2500 42100,2500 42100,4100 40500,4100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="40628,2628 41972,2628 41972,3972 40628,3972" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="40660,2660 41940,2660 41940,3940 40660,3940" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="40724" cy="2724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="41876" cy="2724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="41876" cy="3876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="40724" cy="3876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="40500,6500 42100,6500 42100,8100 40500,8100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="40628,6628 41972,6628 41972,7972 40628,7972" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="40660,6660 41940,6660 41940,7940 40660,7940" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="40724" cy="6724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="41876" cy="6724" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="41876" cy="7876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="40724" cy="7876" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="4310,27500 4344.44,27506.85 4373.64,27526.36 4393.15,27555.56 4400,27590 4400,28310 4393.15,28344.44 4373.64,28373.64 4344.44,28393.15 4310,28400 2090,28400 2055.56,28393.15 2026.36,28373.64 2006.85,28344.44 2000,28310 2000,27590 2006.85,27555.56 2026.36,27526.36 2055.56,27506.85 2090,27500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <polygon points="2000,27590 2288,27590 2288,28400 2000,28400" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <polygon points="4112,27590 4400,27590 4400,28400 4112,28400" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
@@ -5122,9 +5409,19 @@ exports[`golden SVG snapshots > renders library.arch deterministically 1`] = `
 <line x1="43900" y1="4000" x2="43326" y2="4000" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="43900" y1="4600" x2="43326" y2="4600" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="45000,2500 48600,2500 48600,3400 45000,3400" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="45072,2572 48528,2572 48528,3328 45072,3328" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="45090,2590 48510,2590 48510,3310 45090,3310" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="45126" cy="2626" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="48474" cy="2626" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="48474" cy="3274" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="45126" cy="3274" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="45090" y1="2950" x2="48510" y2="2950" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="45000,4600 48600,4600 48600,5500 45000,5500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="45072,4672 48528,4672 48528,5428 45072,5428" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="45090,4690 48510,4690 48510,5410 45090,5410" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="45126" cy="4726" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="48474" cy="4726" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="48474" cy="5374" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="45126" cy="5374" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="45090" y1="5050" x2="48510" y2="5050" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="49850,1600 49850,2400 49250,2400 49250,1600" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <polygon points="49694,1936.08 49692.33,1944.47 49687.58,1951.58 49680.47,1956.33 49672.08,1958 49355.92,1958 49347.53,1956.33 49340.42,1951.58 49335.67,1944.47 49334,1936.08 49334,1705.92 49335.67,1697.53 49340.42,1690.42 49347.53,1685.67 49355.92,1684 49672.08,1684 49680.47,1685.67 49687.58,1690.42 49692.33,1697.53 49694,1705.92" fill="#ffffff" stroke="#a8a29a" stroke-width="36"/>
 <circle cx="49514" cy="1821" r="32.88" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
@@ -5888,12 +6185,21 @@ exports[`golden SVG snapshots > renders library.arch deterministically 1`] = `
 <text x="8758" y="49540" font-size="380" fill="#333333" text-anchor="start" dominant-baseline="central">sofa</text>
 <line x1="7650" y1="49880" x2="13050" y2="49880" stroke="#333333" stroke-width="19.8"/>
 <polygon points="7758,50016 8542,50016 8542,50424 7758,50424" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="7790.64,50048.64 8509.36,50048.64 8509.36,50391.36 7790.64,50391.36" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="7798.8,50056.8 8501.2,50056.8 8501.2,50383.2 7798.8,50383.2" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="7815.12" cy="50073.12" r="19.42" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="8484.88" cy="50073.12" r="19.42" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="8484.88" cy="50366.88" r="19.42" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="7815.12" cy="50366.88" r="19.42" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="7798.8" y1="50220" x2="8501.2" y2="50220" stroke="#a8a29a" stroke-width="19.8"/>
 <text x="8758" y="50220" font-size="380" fill="#333333" text-anchor="start" dominant-baseline="central">table</text>
 <line x1="7650" y1="50560" x2="13050" y2="50560" stroke="#333333" stroke-width="19.8"/>
 <polygon points="7758,50696 8542,50696 8542,51104 7758,51104" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="7758" y1="50744.96" x2="8542" y2="50744.96" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="7782.48,50720.48 8517.52,50720.48 8517.52,51079.52 7782.48,51079.52" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="8291.12,50793.92 8494.96,50793.92 8494.96,51071.36 8291.12,51071.36" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="8291.12" y1="50886.4" x2="8494.96" y2="50886.4" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="8291.12" y1="50978.88" x2="8494.96" y2="50978.88" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="7946.16" cy="50793.92" r="20.4" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <text x="8758" y="50900" font-size="380" fill="#333333" text-anchor="start" dominant-baseline="central">desk</text>
 <line x1="7650" y1="51240" x2="13050" y2="51240" stroke="#333333" stroke-width="19.8"/>
 <polygon points="7758,51376 8542,51376 8542,51784 7758,51784" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
@@ -5964,12 +6270,26 @@ exports[`golden SVG snapshots > renders materials.arch deterministically 1`] = `
 <polygon points="1600,5600 4200,5600 4200,6200 1600,6200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <text x="2900" y="5900" font-size="100" fill="#9a948c" text-anchor="middle" dominant-baseline="central">Racking</text>
 <polygon points="3400,3300 6000,3300 6000,4600 3400,4600" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="3504,3404 5896,3404 5896,4496 3504,4496" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="3530,3430 5870,3430 5870,4470 3530,4470" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="3582" cy="3482" r="61.88" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="5818" cy="3482" r="61.88" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="5818" cy="4418" r="61.88" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="3582" cy="4418" r="61.88" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="3530" y1="3950" x2="5870" y2="3950" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="7600,5400 9600,5400 9600,6400 7600,6400" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="7680,5480 9520,5480 9520,6320 7680,6320" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="7700,5500 9500,5500 9500,6300 7700,6300" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="7740" cy="5540" r="47.6" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="9460" cy="5540" r="47.6" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="9460" cy="6260" r="47.6" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="7740" cy="6260" r="47.6" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="7700" y1="5900" x2="9500" y2="5900" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="13800,700 15400,700 15400,1500 13800,1500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <line x1="13800" y1="796" x2="15400" y2="796" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="13848,748 15352,748 15352,1452 13848,1452" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="14888,892 15304,892 15304,1436 14888,1436" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="14888" y1="1073.33" x2="15304" y2="1073.33" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="14888" y1="1254.67" x2="15304" y2="1254.67" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="14184" cy="892" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
 <circle cx="14850" cy="1950" r="160" fill="none" stroke="#a8a29a" stroke-width="9"/>
 <path d="M 14647.03,1876.12 A 216 216 0 0 1 15052.97,1876.12" fill="none" stroke="#a8a29a" stroke-width="9"/>
 <line x1="14625" y1="1900" x2="14625" y2="2100" stroke="#a8a29a" stroke-width="4.95"/>
@@ -6378,12 +6698,21 @@ exports[`golden SVG snapshots > renders materials.arch deterministically 1`] = `
 <text x="2077" y="12267.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">counter</text>
 <line x1="1800" y1="12352.5" x2="3150" y2="12352.5" stroke="#333333" stroke-width="4.95"/>
 <polygon points="1827,12386.5 2023,12386.5 2023,12488.5 1827,12488.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="1835.16,12394.66 2014.84,12394.66 2014.84,12480.34 1835.16,12480.34" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="1837.2,12396.7 2012.8,12396.7 2012.8,12478.3 1837.2,12478.3" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="1841.28" cy="12400.78" r="4.86" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="2008.72" cy="12400.78" r="4.86" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="2008.72" cy="12474.22" r="4.86" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="1841.28" cy="12474.22" r="4.86" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="1837.2" y1="12437.5" x2="2012.8" y2="12437.5" stroke="#a8a29a" stroke-width="4.95"/>
 <text x="2077" y="12437.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">table</text>
 <line x1="1800" y1="12522.5" x2="3150" y2="12522.5" stroke="#333333" stroke-width="4.95"/>
 <polygon points="1827,12556.5 2023,12556.5 2023,12658.5 1827,12658.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <line x1="1827" y1="12568.74" x2="2023" y2="12568.74" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="1833.12,12562.62 2016.88,12562.62 2016.88,12652.38 1833.12,12652.38" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="1960.28,12580.98 2011.24,12580.98 2011.24,12650.34 1960.28,12650.34" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="1960.28" y1="12604.1" x2="2011.24" y2="12604.1" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="1960.28" y1="12627.22" x2="2011.24" y2="12627.22" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="1874.04" cy="12580.98" r="5.1" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
 <text x="2077" y="12607.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">desk</text>
 <line x1="1800" y1="12692.5" x2="3150" y2="12692.5" stroke="#333333" stroke-width="4.95"/>
 <circle cx="1925" cy="12777.5" r="32.64" fill="none" stroke="#a8a29a" stroke-width="9"/>
@@ -6517,18 +6846,34 @@ exports[`golden SVG snapshots > renders museum.arch deterministically 1`] = `
 <line x1="91800" y1="32100" x2="91800" y2="32756" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="92400" y1="32100" x2="92400" y2="32756" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="89000,45000 90600,45000 90600,46600 89000,46600" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="89128,45128 90472,45128 90472,46472 89128,46472" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="89160,45160 90440,45160 90440,46440 89160,46440" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="89224" cy="45224" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="90376" cy="45224" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="90376" cy="46376" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="89224" cy="46376" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="93000,45000 94600,45000 94600,46600 93000,46600" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="93128,45128 94472,45128 94472,46472 93128,46472" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="93160,45160 94440,45160 94440,46440 93160,46440" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="93224" cy="45224" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="94376" cy="45224" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="94376" cy="46376" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="93224" cy="46376" r="76.16" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="33000,38000 34800,38000 34800,38800 33000,38800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="33000" y1="38096" x2="34800" y2="38096" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="33048,38048 34752,38048 34752,38752 33048,38752" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="34224,38192 34692,38192 34692,38736 34224,38736" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="34224" y1="38373.33" x2="34692" y2="38373.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="34224" y1="38554.67" x2="34692" y2="38554.67" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="33432" cy="38192" r="40" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="35625,39200 35653.7,39205.71 35678.03,39221.97 35694.29,39246.3 35700,39275 35700,39625 35694.29,39653.7 35678.03,39678.03 35653.7,39694.29 35625,39700 35275,39700 35246.3,39694.29 35221.97,39678.03 35205.71,39653.7 35200,39625 35200,39275 35205.71,39246.3 35221.97,39221.97 35246.3,39205.71 35275,39200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <polygon points="35660,39200 35675.31,39203.04 35688.28,39211.72 35696.96,39224.69 35700,39240 35700,39250 35696.96,39265.31 35688.28,39278.28 35675.31,39286.96 35660,39290 35240,39290 35224.69,39286.96 35211.72,39278.28 35203.04,39265.31 35200,39250 35200,39240 35203.04,39224.69 35211.72,39211.72 35224.69,39203.04 35240,39200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="35590,39350 35609.13,39353.81 35625.36,39364.64 35636.19,39380.87 35640,39400 35640,39590 35636.19,39609.13 35625.36,39625.36 35609.13,39636.19 35590,39640 35310,39640 35290.87,39636.19 35274.64,39625.36 35263.81,39609.13 35260,39590 35260,39400 35263.81,39380.87 35274.64,39364.64 35290.87,39353.81 35310,39350" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="35540,39370 35559.13,39373.81 35575.36,39384.64 35586.19,39400.87 35590,39420 35590,39570 35586.19,39589.13 35575.36,39605.36 35559.13,39616.19 35540,39620 35360,39620 35340.87,39616.19 35324.64,39605.36 35313.81,39589.13 35310,39570 35310,39420 35313.81,39400.87 35324.64,39384.64 35340.87,39373.81 35360,39370" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="35260" y1="39340" x2="35260" y2="39630" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="35640" y1="39340" x2="35640" y2="39630" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="33425,40500 33453.7,40505.71 33478.03,40521.97 33494.29,40546.3 33500,40575 33500,40925 33494.29,40953.7 33478.03,40978.03 33453.7,40994.29 33425,41000 33075,41000 33046.3,40994.29 33021.97,40978.03 33005.71,40953.7 33000,40925 33000,40575 33005.71,40546.3 33021.97,40521.97 33046.3,40505.71 33075,40500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <polygon points="33460,40500 33475.31,40503.04 33488.28,40511.72 33496.96,40524.69 33500,40540 33500,40550 33496.96,40565.31 33488.28,40578.28 33475.31,40586.96 33460,40590 33040,40590 33024.69,40586.96 33011.72,40578.28 33003.04,40565.31 33000,40550 33000,40540 33003.04,40524.69 33011.72,40511.72 33024.69,40503.04 33040,40500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<polygon points="33390,40650 33409.13,40653.81 33425.36,40664.64 33436.19,40680.87 33440,40700 33440,40890 33436.19,40909.13 33425.36,40925.36 33409.13,40936.19 33390,40940 33110,40940 33090.87,40936.19 33074.64,40925.36 33063.81,40909.13 33060,40890 33060,40700 33063.81,40680.87 33074.64,40664.64 33090.87,40653.81 33110,40650" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="33340,40670 33359.13,40673.81 33375.36,40684.64 33386.19,40700.87 33390,40720 33390,40870 33386.19,40889.13 33375.36,40905.36 33359.13,40916.19 33340,40920 33160,40920 33140.87,40916.19 33124.64,40905.36 33113.81,40889.13 33110,40870 33110,40720 33113.81,40700.87 33124.64,40684.64 33140.87,40673.81 33160,40670" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="33060" y1="40640" x2="33060" y2="40930" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="33440" y1="40640" x2="33440" y2="40930" stroke="#a8a29a" stroke-width="19.8"/>
 <circle cx="44350" cy="55350" r="336" fill="none" stroke="#a8a29a" stroke-width="36"/>
 <circle cx="44350" cy="55350" r="201.6" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="44551.6" y1="55350" x2="44686" y2="55350" stroke="#a8a29a" stroke-width="19.8"/>
@@ -6540,8 +6885,11 @@ exports[`golden SVG snapshots > renders museum.arch deterministically 1`] = `
 <line x1="44350" y1="55148.4" x2="44350" y2="55014" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="44492.55" y1="55207.45" x2="44587.59" y2="55112.41" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="19000,20000 20800,20000 20800,20500 19000,20500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<line x1="19000" y1="20166.67" x2="20800" y2="20166.67" stroke="#a8a29a" stroke-width="19.8"/>
-<line x1="19000" y1="20333.33" x2="20800" y2="20333.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="19000" y1="20125" x2="20800" y2="20125" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="19000" y1="20250" x2="20800" y2="20250" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="19000" y1="20375" x2="20800" y2="20375" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="19180" y1="20000" x2="19180" y2="20500" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="20620" y1="20000" x2="20620" y2="20500" stroke="#a8a29a" stroke-width="19.8"/>
 <circle cx="23350" cy="2350" r="336" fill="none" stroke="#a8a29a" stroke-width="36"/>
 <circle cx="23350" cy="2350" r="201.6" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="23551.6" y1="2350" x2="23686" y2="2350" stroke="#a8a29a" stroke-width="19.8"/>
@@ -6553,8 +6901,11 @@ exports[`golden SVG snapshots > renders museum.arch deterministically 1`] = `
 <line x1="23350" y1="2148.4" x2="23350" y2="2014" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="23492.55" y1="2207.45" x2="23587.59" y2="2112.41" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="45000,20000 46800,20000 46800,20500 45000,20500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<line x1="45000" y1="20166.67" x2="46800" y2="20166.67" stroke="#a8a29a" stroke-width="19.8"/>
-<line x1="45000" y1="20333.33" x2="46800" y2="20333.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="45000" y1="20125" x2="46800" y2="20125" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="45000" y1="20250" x2="46800" y2="20250" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="45000" y1="20375" x2="46800" y2="20375" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="45180" y1="20000" x2="45180" y2="20500" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="46620" y1="20000" x2="46620" y2="20500" stroke="#a8a29a" stroke-width="19.8"/>
 <circle cx="49350" cy="2350" r="336" fill="none" stroke="#a8a29a" stroke-width="36"/>
 <circle cx="49350" cy="2350" r="201.6" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="49551.6" y1="2350" x2="49686" y2="2350" stroke="#a8a29a" stroke-width="19.8"/>
@@ -6566,8 +6917,11 @@ exports[`golden SVG snapshots > renders museum.arch deterministically 1`] = `
 <line x1="49350" y1="2148.4" x2="49350" y2="2014" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="49492.55" y1="2207.45" x2="49587.59" y2="2112.41" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="71000,20000 72800,20000 72800,20500 71000,20500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<line x1="71000" y1="20166.67" x2="72800" y2="20166.67" stroke="#a8a29a" stroke-width="19.8"/>
-<line x1="71000" y1="20333.33" x2="72800" y2="20333.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="71000" y1="20125" x2="72800" y2="20125" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="71000" y1="20250" x2="72800" y2="20250" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="71000" y1="20375" x2="72800" y2="20375" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="71180" y1="20000" x2="71180" y2="20500" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="72620" y1="20000" x2="72620" y2="20500" stroke="#a8a29a" stroke-width="19.8"/>
 <circle cx="75350" cy="2350" r="336" fill="none" stroke="#a8a29a" stroke-width="36"/>
 <circle cx="75350" cy="2350" r="201.6" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="75551.6" y1="2350" x2="75686" y2="2350" stroke="#a8a29a" stroke-width="19.8"/>
@@ -6579,8 +6933,11 @@ exports[`golden SVG snapshots > renders museum.arch deterministically 1`] = `
 <line x1="75350" y1="2148.4" x2="75350" y2="2014" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="75492.55" y1="2207.45" x2="75587.59" y2="2112.41" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="24000,50000 25800,50000 25800,50500 24000,50500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<line x1="24000" y1="50166.67" x2="25800" y2="50166.67" stroke="#a8a29a" stroke-width="19.8"/>
-<line x1="24000" y1="50333.33" x2="25800" y2="50333.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="24000" y1="50125" x2="25800" y2="50125" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="24000" y1="50250" x2="25800" y2="50250" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="24000" y1="50375" x2="25800" y2="50375" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="24180" y1="50000" x2="24180" y2="50500" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="25620" y1="50000" x2="25620" y2="50500" stroke="#a8a29a" stroke-width="19.8"/>
 <circle cx="26350" cy="35350" r="336" fill="none" stroke="#a8a29a" stroke-width="36"/>
 <circle cx="26350" cy="35350" r="201.6" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="26551.6" y1="35350" x2="26686" y2="35350" stroke="#a8a29a" stroke-width="19.8"/>
@@ -6592,8 +6949,11 @@ exports[`golden SVG snapshots > renders museum.arch deterministically 1`] = `
 <line x1="26350" y1="35148.4" x2="26350" y2="35014" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="26492.55" y1="35207.45" x2="26587.59" y2="35112.41" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="60000,55000 61800,55000 61800,55500 60000,55500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<line x1="60000" y1="55166.67" x2="61800" y2="55166.67" stroke="#a8a29a" stroke-width="19.8"/>
-<line x1="60000" y1="55333.33" x2="61800" y2="55333.33" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="60000" y1="55125" x2="61800" y2="55125" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="60000" y1="55250" x2="61800" y2="55250" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="60000" y1="55375" x2="61800" y2="55375" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="60180" y1="55000" x2="60180" y2="55500" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="61620" y1="55000" x2="61620" y2="55500" stroke="#a8a29a" stroke-width="19.8"/>
 <circle cx="49350" cy="35350" r="336" fill="none" stroke="#a8a29a" stroke-width="36"/>
 <circle cx="49350" cy="35350" r="201.6" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="49551.6" y1="35350" x2="49686" y2="35350" stroke="#a8a29a" stroke-width="19.8"/>
@@ -7096,11 +7456,19 @@ exports[`golden SVG snapshots > renders museum-wing.arch deterministically 1`] =
 </g>
 <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
 <polygon points="4200,10200 6000,10200 6000,10800 4200,10800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<line x1="4200" y1="10400" x2="6000" y2="10400" stroke="#a8a29a" stroke-width="4.95"/>
-<line x1="4200" y1="10600" x2="6000" y2="10600" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="4200" y1="10320" x2="6000" y2="10320" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="4200" y1="10440" x2="6000" y2="10440" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="4200" y1="10560" x2="6000" y2="10560" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="4200" y1="10680" x2="6000" y2="10680" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="4380" y1="10200" x2="4380" y2="10800" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="5820" y1="10200" x2="5820" y2="10800" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="12000,10200 13800,10200 13800,10800 12000,10800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<line x1="12000" y1="10400" x2="13800" y2="10400" stroke="#a8a29a" stroke-width="4.95"/>
-<line x1="12000" y1="10600" x2="13800" y2="10600" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="12000" y1="10320" x2="13800" y2="10320" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="12000" y1="10440" x2="13800" y2="10440" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="12000" y1="10560" x2="13800" y2="10560" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="12000" y1="10680" x2="13800" y2="10680" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="12180" y1="10200" x2="12180" y2="10800" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="13620" y1="10200" x2="13620" y2="10800" stroke="#a8a29a" stroke-width="4.95"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -150,-150 L 1800,-150 L 1800,150 L 150,150 L 150,8900 L 1800,8900 L 1800,9100 L 150,9100 L 150,9900 L -150,9900 Z M -150,11100 L 150,11100 L 150,11850 L 17850,11850 L 17850,9100 L 16200,9100 L 16200,8900 L 17850,8900 L 17850,150 L 16200,150 L 16200,-150 L 18150,-150 L 18150,12150 L -150,12150 Z M 10200,-150 L 13800,-150 L 13800,150 L 12100,150 L 12100,8900 L 13800,8900 L 13800,9100 L 10200,9100 L 10200,8900 L 11900,8900 L 11900,150 L 10200,150 Z M 4200,-150 L 7800,-150 L 7800,150 L 6100,150 L 6100,8900 L 7800,8900 L 7800,9100 L 4200,9100 L 4200,8900 L 5900,8900 L 5900,150 L 4200,150 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -7320,17 +7688,33 @@ exports[`golden SVG snapshots > renders museum-wings.arch (two placed instances)
 </g>
 <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
 <polygon points="4200,10200 6000,10200 6000,10800 4200,10800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<line x1="4200" y1="10400" x2="6000" y2="10400" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="4200" y1="10600" x2="6000" y2="10600" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="4200" y1="10320" x2="6000" y2="10320" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="4200" y1="10440" x2="6000" y2="10440" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="4200" y1="10560" x2="6000" y2="10560" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="4200" y1="10680" x2="6000" y2="10680" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="4380" y1="10200" x2="4380" y2="10800" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="5820" y1="10200" x2="5820" y2="10800" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="12000,10200 13800,10200 13800,10800 12000,10800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<line x1="12000" y1="10400" x2="13800" y2="10400" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="12000" y1="10600" x2="13800" y2="10600" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="12000" y1="10320" x2="13800" y2="10320" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="12000" y1="10440" x2="13800" y2="10440" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="12000" y1="10560" x2="13800" y2="10560" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="12000" y1="10680" x2="13800" y2="10680" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="12180" y1="10200" x2="12180" y2="10800" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="13620" y1="10200" x2="13620" y2="10800" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="36000,10200 37800,10200 37800,10800 36000,10800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<line x1="36000" y1="10400" x2="37800" y2="10400" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="36000" y1="10600" x2="37800" y2="10600" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="36000" y1="10320" x2="37800" y2="10320" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="36000" y1="10440" x2="37800" y2="10440" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="36000" y1="10560" x2="37800" y2="10560" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="36000" y1="10680" x2="37800" y2="10680" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="36180" y1="10200" x2="36180" y2="10800" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="37620" y1="10200" x2="37620" y2="10800" stroke="#a8a29a" stroke-width="9.9"/>
 <polygon points="28200,10200 30000,10200 30000,10800 28200,10800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18"/>
-<line x1="28200" y1="10400" x2="30000" y2="10400" stroke="#a8a29a" stroke-width="9.9"/>
-<line x1="28200" y1="10600" x2="30000" y2="10600" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="28200" y1="10320" x2="30000" y2="10320" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="28200" y1="10440" x2="30000" y2="10440" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="28200" y1="10560" x2="30000" y2="10560" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="28200" y1="10680" x2="30000" y2="10680" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="28380" y1="10200" x2="28380" y2="10800" stroke="#a8a29a" stroke-width="9.9"/>
+<line x1="29820" y1="10200" x2="29820" y2="10800" stroke="#a8a29a" stroke-width="9.9"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -150,-150 L 1800,-150 L 1800,150 L 150,150 L 150,8900 L 1800,8900 L 1800,9100 L 150,9100 L 150,9900 L -150,9900 Z M -150,11100 L 150,11100 L 150,11850 L 17850,11850 L 17850,11400 L 18150,11400 L 18150,11850 L 20100,11850 L 20100,12150 L -150,12150 Z M 10200,-150 L 13800,-150 L 13800,150 L 12100,150 L 12100,8900 L 13800,8900 L 13800,9100 L 10200,9100 L 10200,8900 L 11900,8900 L 11900,150 L 10200,150 Z M 16200,-150 L 19500,-150 L 19500,150 L 18150,150 L 18150,9600 L 17850,9600 L 17850,9100 L 16200,9100 L 16200,8900 L 17850,8900 L 17850,150 L 16200,150 Z M 21900,11850 L 23850,11850 L 23850,11400 L 24150,11400 L 24150,11850 L 41850,11850 L 41850,11100 L 42150,11100 L 42150,12150 L 21900,12150 Z M 22500,-150 L 25800,-150 L 25800,150 L 24150,150 L 24150,8900 L 25800,8900 L 25800,9100 L 24150,9100 L 24150,9600 L 23850,9600 L 23850,150 L 22500,150 Z M 28200,-150 L 31800,-150 L 31800,150 L 30100,150 L 30100,8900 L 31800,8900 L 31800,9100 L 28200,9100 L 28200,8900 L 29900,8900 L 29900,150 L 28200,150 Z M 34200,-150 L 37800,-150 L 37800,150 L 36100,150 L 36100,8900 L 37800,8900 L 37800,9100 L 34200,9100 L 34200,8900 L 35900,8900 L 35900,150 L 34200,150 Z M 40200,-150 L 42150,-150 L 42150,9900 L 41850,9900 L 41850,9100 L 40200,9100 L 40200,8900 L 41850,8900 L 41850,150 L 40200,150 Z M 4200,-150 L 7800,-150 L 7800,150 L 6100,150 L 6100,8900 L 7800,8900 L 7800,9100 L 4200,9100 L 4200,8900 L 5900,8900 L 5900,150 L 4200,150 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -7884,8 +8268,13 @@ exports[`golden SVG snapshots > renders relational.arch deterministically 1`] = 
 <line x1="872" y1="3044" x2="872" y2="3620" stroke="#a8a29a" stroke-width="7.22"/>
 <line x1="1328" y1="3044" x2="1328" y2="3620" stroke="#a8a29a" stroke-width="7.22"/>
 <line x1="416" y1="3620" x2="1784" y2="3620" stroke="#a8a29a" stroke-width="7.22"/>
-<polygon points="1040,2000 1062.96,2004.57 1082.43,2017.57 1095.43,2037.04 1100,2060 1100,2440 1095.43,2462.96 1082.43,2482.43 1062.96,2495.43 1040,2500 260,2500 237.04,2495.43 217.57,2482.43 204.57,2462.96 200,2440 200,2060 204.57,2037.04 217.57,2017.57 237.04,2004.57 260,2000" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.12"/>
-<polygon points="1005,2050 1022.22,2053.43 1036.82,2063.18 1046.57,2077.78 1050,2095 1050,2405 1046.57,2422.22 1036.82,2436.82 1022.22,2446.57 1005,2450 295,2450 277.78,2446.57 263.18,2436.82 253.43,2422.22 250,2405 250,2095 253.43,2077.78 263.18,2063.18 277.78,2053.43 295,2050" fill="none" stroke="#a8a29a" stroke-width="7.22"/>
+<polygon points="990,2000 1032.1,2008.37 1067.78,2032.22 1091.63,2067.9 1100,2110 1100,2390 1091.63,2432.1 1067.78,2467.78 1032.1,2491.63 990,2500 310,2500 267.9,2491.63 232.22,2467.78 208.37,2432.1 200,2390 200,2110 208.37,2067.9 232.22,2032.22 267.9,2008.37 310,2000" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.12"/>
+<polygon points="964,2060 993.08,2065.79 1017.74,2082.26 1034.21,2106.92 1040,2136 1040,2364 1034.21,2393.08 1017.74,2417.74 993.08,2434.21 964,2440 336,2440 306.92,2434.21 282.26,2417.74 265.79,2393.08 260,2364 260,2136 265.79,2106.92 282.26,2082.26 306.92,2065.79 336,2060" fill="none" stroke="#a8a29a" stroke-width="7.22"/>
+<circle cx="280" cy="2080" r="27.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="7.22"/>
+<circle cx="1020" cy="2080" r="27.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="7.22"/>
+<circle cx="1020" cy="2420" r="27.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="7.22"/>
+<circle cx="280" cy="2420" r="27.2" fill="#f4f2ee" stroke="#a8a29a" stroke-width="7.22"/>
+<line x1="650" y1="2060" x2="650" y2="2440" stroke="#a8a29a" stroke-width="7.22"/>
 <polygon points="5564,564 7436,564 7436,1236 5564,1236" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.12"/>
 <polygon points="5617.76,617.76 7382.24,617.76 7382.24,1182.24 5617.76,1182.24" fill="none" stroke="#a8a29a" stroke-width="7.22"/>
 <polygon points="6055.76,372.6 6069.4,375.31 6080.96,383.04 6088.69,394.6 6091.4,408.24 6091.4,455.76 6088.69,469.4 6080.96,480.96 6069.4,488.69 6055.76,491.4 6008.24,491.4 5994.6,488.69 5983.04,480.96 5975.31,469.4 5972.6,455.76 5972.6,408.24 5975.31,394.6 5983.04,383.04 5994.6,375.31 6008.24,372.6" fill="#f4f2ee" stroke="#a8a29a" stroke-width="7.22"/>
@@ -7894,10 +8283,14 @@ exports[`golden SVG snapshots > renders relational.arch deterministically 1`] = 
 <polygon points="6991.76,1308.6 7005.4,1311.31 7016.96,1319.04 7024.69,1330.6 7027.4,1344.24 7027.4,1391.76 7024.69,1405.4 7016.96,1416.96 7005.4,1424.69 6991.76,1427.4 6944.24,1427.4 6930.6,1424.69 6919.04,1416.96 6911.31,1405.4 6908.6,1391.76 6908.6,1344.24 6911.31,1330.6 6919.04,1319.04 6930.6,1311.31 6944.24,1308.6" fill="#f4f2ee" stroke="#a8a29a" stroke-width="7.22"/>
 <polygon points="5982.5,1700 6008.33,1705.14 6030.23,1719.77 6044.86,1741.67 6050,1767.5 6050,2082.5 6044.86,2108.33 6030.23,2130.23 6008.33,2144.86 5982.5,2150 5667.5,2150 5641.67,2144.86 5619.77,2130.23 5605.14,2108.33 5600,2082.5 5600,1767.5 5605.14,1741.67 5619.77,1719.77 5641.67,1705.14 5667.5,1700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.12"/>
 <polygon points="6014,1700 6027.78,1702.74 6039.46,1710.54 6047.26,1722.22 6050,1736 6050,1745 6047.26,1758.78 6039.46,1770.46 6027.78,1778.26 6014,1781 5636,1781 5622.22,1778.26 5610.54,1770.46 5602.74,1758.78 5600,1745 5600,1736 5602.74,1722.22 5610.54,1710.54 5622.22,1702.74 5636,1700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.12"/>
-<polygon points="5951,1835 5968.22,1838.43 5982.82,1848.18 5992.57,1862.78 5996,1880 5996,2051 5992.57,2068.22 5982.82,2082.82 5968.22,2092.57 5951,2096 5699,2096 5681.78,2092.57 5667.18,2082.82 5657.43,2068.22 5654,2051 5654,1880 5657.43,1862.78 5667.18,1848.18 5681.78,1838.43 5699,1835" fill="#f4f2ee" stroke="#a8a29a" stroke-width="7.22"/>
+<polygon points="5906,1853 5923.22,1856.43 5937.82,1866.18 5947.57,1880.78 5951,1898 5951,2033 5947.57,2050.22 5937.82,2064.82 5923.22,2074.57 5906,2078 5744,2078 5726.78,2074.57 5712.18,2064.82 5702.43,2050.22 5699,2033 5699,1898 5702.43,1880.78 5712.18,1866.18 5726.78,1856.43 5744,1853" fill="#f4f2ee" stroke="#a8a29a" stroke-width="7.22"/>
+<line x1="5654" y1="1826" x2="5654" y2="2087" stroke="#a8a29a" stroke-width="7.22"/>
+<line x1="5996" y1="1826" x2="5996" y2="2087" stroke="#a8a29a" stroke-width="7.22"/>
 <polygon points="7182.5,1700 7208.33,1705.14 7230.23,1719.77 7244.86,1741.67 7250,1767.5 7250,2082.5 7244.86,2108.33 7230.23,2130.23 7208.33,2144.86 7182.5,2150 6867.5,2150 6841.67,2144.86 6819.77,2130.23 6805.14,2108.33 6800,2082.5 6800,1767.5 6805.14,1741.67 6819.77,1719.77 6841.67,1705.14 6867.5,1700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.12"/>
 <polygon points="7214,1700 7227.78,1702.74 7239.46,1710.54 7247.26,1722.22 7250,1736 7250,1745 7247.26,1758.78 7239.46,1770.46 7227.78,1778.26 7214,1781 6836,1781 6822.22,1778.26 6810.54,1770.46 6802.74,1758.78 6800,1745 6800,1736 6802.74,1722.22 6810.54,1710.54 6822.22,1702.74 6836,1700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.12"/>
-<polygon points="7151,1835 7168.22,1838.43 7182.82,1848.18 7192.57,1862.78 7196,1880 7196,2051 7192.57,2068.22 7182.82,2082.82 7168.22,2092.57 7151,2096 6899,2096 6881.78,2092.57 6867.18,2082.82 6857.43,2068.22 6854,2051 6854,1880 6857.43,1862.78 6867.18,1848.18 6881.78,1838.43 6899,1835" fill="#f4f2ee" stroke="#a8a29a" stroke-width="7.22"/>
+<polygon points="7106,1853 7123.22,1856.43 7137.82,1866.18 7147.57,1880.78 7151,1898 7151,2033 7147.57,2050.22 7137.82,2064.82 7123.22,2074.57 7106,2078 6944,2078 6926.78,2074.57 6912.18,2064.82 6902.43,2050.22 6899,2033 6899,1898 6902.43,1880.78 6912.18,1866.18 6926.78,1856.43 6944,1853" fill="#f4f2ee" stroke="#a8a29a" stroke-width="7.22"/>
+<line x1="6854" y1="1826" x2="6854" y2="2087" stroke="#a8a29a" stroke-width="7.22"/>
+<line x1="7196" y1="1826" x2="7196" y2="2087" stroke="#a8a29a" stroke-width="7.22"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -100,-100 L 500,-100 L 500,100 L 100,100 L 100,7400 L 7900,7400 L 7900,100 L 7400,100 L 7400,-100 L 8100,-100 L 8100,7600 L -100,7600 Z M 1500,-100 L 5600,-100 L 5600,100 L 1500,100 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -8538,11 +8931,18 @@ exports[`golden SVG snapshots > renders themed.arch deterministically 1`] = `
 <line x1="3300" y1="1020" x2="4800" y2="1020" stroke="#a8a29a" stroke-width="7.15"/>
 <line x1="4800" y1="940" x2="4470" y2="1020" stroke="#a8a29a" stroke-width="7.15"/>
 <polygon points="4850,700 5150,700 5150,1050 4850,1050" fill="#2f343d" stroke="#a8a29a" stroke-width="13"/>
-<polygon points="4886,736 5114,736 5114,1014 4886,1014" fill="#2f343d" stroke="#a8a29a" stroke-width="7.15"/>
-<circle cx="5000" cy="875" r="54" fill="none" stroke="#a8a29a" stroke-width="7.15"/>
+<polygon points="4880,730 5120,730 5120,1020 4880,1020" fill="none" stroke="#a8a29a" stroke-width="7.15"/>
+<circle cx="5000" cy="805" r="60" fill="none" stroke="#a8a29a" stroke-width="7.15"/>
+<circle cx="5000" cy="805" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="7.15"/>
+<line x1="4850" y1="931" x2="5150" y2="931" stroke="#a8a29a" stroke-width="7.15"/>
+<line x1="4952" y1="997.5" x2="5048" y2="997.5" stroke="#a8a29a" stroke-width="7.15"/>
 <polygon points="300,300 1500,300 1500,900 300,900" fill="#2f343d" stroke="#a8a29a" stroke-width="13"/>
 <line x1="300" y1="372" x2="1500" y2="372" stroke="#a8a29a" stroke-width="7.15"/>
 <polygon points="336,336 1464,336 1464,864 336,864" fill="none" stroke="#a8a29a" stroke-width="7.15"/>
+<polygon points="1116,444 1428,444 1428,852 1116,852" fill="#2f343d" stroke="#a8a29a" stroke-width="7.15"/>
+<line x1="1116" y1="580" x2="1428" y2="580" stroke="#a8a29a" stroke-width="7.15"/>
+<line x1="1116" y1="716" x2="1428" y2="716" stroke="#a8a29a" stroke-width="7.15"/>
+<circle cx="588" cy="444" r="30" fill="#ffffff" stroke="#a8a29a" stroke-width="7.15"/>
 <circle cx="1125" cy="1225" r="144" fill="none" stroke="#a8a29a" stroke-width="13"/>
 <path d="M 942.32,1158.51 A 194.4 194.4 0 0 1 1307.68,1158.51" fill="none" stroke="#a8a29a" stroke-width="13"/>
 <line x1="922.5" y1="1180" x2="922.5" y2="1360" stroke="#a8a29a" stroke-width="7.15"/>
@@ -8642,8 +9042,13 @@ exports[`golden SVG snapshots > renders tiny-house.arch deterministically 1`] = 
 <line x1="2600" y1="604" x2="4600" y2="604" stroke="#a8a29a" stroke-width="7.04"/>
 <line x1="4600" y1="548" x2="4160" y2="604" stroke="#a8a29a" stroke-width="7.04"/>
 <polygon points="3400,2100 4900,2100 4900,2700 3400,2700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="12.8"/>
+<line x1="3400" y1="2200" x2="4900" y2="2200" stroke="#a8a29a" stroke-width="7.04"/>
 <line x1="3400" y1="2300" x2="4900" y2="2300" stroke="#a8a29a" stroke-width="7.04"/>
+<line x1="3400" y1="2400" x2="4900" y2="2400" stroke="#a8a29a" stroke-width="7.04"/>
 <line x1="3400" y1="2500" x2="4900" y2="2500" stroke="#a8a29a" stroke-width="7.04"/>
+<line x1="3400" y1="2600" x2="4900" y2="2600" stroke="#a8a29a" stroke-width="7.04"/>
+<line x1="3550" y1="2100" x2="3550" y2="2700" stroke="#a8a29a" stroke-width="7.04"/>
+<line x1="4750" y1="2100" x2="4750" y2="2700" stroke="#a8a29a" stroke-width="7.04"/>
 <polygon points="1900,2700 100,2700 100,2350 1900,2350" fill="#f4f2ee" stroke="#a8a29a" stroke-width="12.8"/>
 <line x1="1810" y1="2525" x2="190" y2="2525" stroke="#a8a29a" stroke-width="7.04"/>
 <path d="M 1810,2525 A 115.71 115.71 0 0 0 1578.57,2525" fill="none" stroke="#a8a29a" stroke-width="7.04"/>
@@ -8785,7 +9190,11 @@ exports[`golden SVG snapshots > renders townhouse.arch as one page per level > t
 <line x1="384" y1="8100" x2="384" y2="7500" stroke="#a8a29a" stroke-width="9"/>
 <line x1="228" y1="7584" x2="332" y2="7584" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="1900,8400 3300,8400 3300,9300 1900,9300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="1972,8472 3228,8472 3228,9228 1972,9228" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="1990,8490 3210,8490 3210,9210 1990,9210" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="2026" cy="8526" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="3174" cy="8526" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="3174" cy="9174" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="2026" cy="9174" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
 </g>
 <g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
 <polygon points="4150,2600 5050,2600 5050,5800 4150,5800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
@@ -9238,6 +9647,10 @@ exports[`golden SVG snapshots > renders townhouse.arch as one page per level > t
 <polygon points="150,150 1750,150 1750,850 150,850" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <line x1="150" y1="234" x2="1750" y2="234" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="192,192 1708,192 1708,808 192,808" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="1238,318 1654,318 1654,794 1238,794" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="1238" y1="476.67" x2="1654" y2="476.67" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="1238" y1="635.33" x2="1654" y2="635.33" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="534" cy="318" r="35" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="1950,4550 150,4550 150,4150 1950,4150" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <line x1="1950" y1="4350" x2="150" y2="4350" stroke="#a8a29a" stroke-width="4.95"/>
 <line x1="1500" y1="4550" x2="1500" y2="4150" stroke="#a8a29a" stroke-width="4.95"/>
@@ -9769,36 +10182,80 @@ exports[`golden SVG snapshots > renders transit-hall.arch deterministically 1`] 
 <polygon points="52000,16500 56000,16500 56000,17700 52000,17700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="52000" y1="16644" x2="56000" y2="16644" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="52072,16572 55928,16572 55928,17628 52072,17628" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="54720,16788 55760,16788 55760,17604 54720,17604" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="54720" y1="17060" x2="55760" y2="17060" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="54720" y1="17332" x2="55760" y2="17332" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="52960" cy="16788" r="60" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="30000,34000 32400,34000 32400,34700 30000,34700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<line x1="30000" y1="34233.33" x2="32400" y2="34233.33" stroke="#a8a29a" stroke-width="19.8"/>
-<line x1="30000" y1="34466.67" x2="32400" y2="34466.67" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="30000" y1="34140" x2="32400" y2="34140" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="30000" y1="34280" x2="32400" y2="34280" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="30000" y1="34420" x2="32400" y2="34420" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="30000" y1="34560" x2="32400" y2="34560" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="30240" y1="34000" x2="30240" y2="34700" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="32160" y1="34000" x2="32160" y2="34700" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="18000,5000 20400,5000 20400,5700 18000,5700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<line x1="18000" y1="5233.33" x2="20400" y2="5233.33" stroke="#a8a29a" stroke-width="19.8"/>
-<line x1="18000" y1="5466.67" x2="20400" y2="5466.67" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="18000" y1="5140" x2="20400" y2="5140" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="18000" y1="5280" x2="20400" y2="5280" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="18000" y1="5420" x2="20400" y2="5420" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="18000" y1="5560" x2="20400" y2="5560" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="18240" y1="5000" x2="18240" y2="5700" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="20160" y1="5000" x2="20160" y2="5700" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="36000,34000 38400,34000 38400,34700 36000,34700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<line x1="36000" y1="34233.33" x2="38400" y2="34233.33" stroke="#a8a29a" stroke-width="19.8"/>
-<line x1="36000" y1="34466.67" x2="38400" y2="34466.67" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="36000" y1="34140" x2="38400" y2="34140" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="36000" y1="34280" x2="38400" y2="34280" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="36000" y1="34420" x2="38400" y2="34420" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="36000" y1="34560" x2="38400" y2="34560" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="36240" y1="34000" x2="36240" y2="34700" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="38160" y1="34000" x2="38160" y2="34700" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="24000,5000 26400,5000 26400,5700 24000,5700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<line x1="24000" y1="5233.33" x2="26400" y2="5233.33" stroke="#a8a29a" stroke-width="19.8"/>
-<line x1="24000" y1="5466.67" x2="26400" y2="5466.67" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="24000" y1="5140" x2="26400" y2="5140" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="24000" y1="5280" x2="26400" y2="5280" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="24000" y1="5420" x2="26400" y2="5420" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="24000" y1="5560" x2="26400" y2="5560" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="24240" y1="5000" x2="24240" y2="5700" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="26160" y1="5000" x2="26160" y2="5700" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="42000,34000 44400,34000 44400,34700 42000,34700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<line x1="42000" y1="34233.33" x2="44400" y2="34233.33" stroke="#a8a29a" stroke-width="19.8"/>
-<line x1="42000" y1="34466.67" x2="44400" y2="34466.67" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="42000" y1="34140" x2="44400" y2="34140" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="42000" y1="34280" x2="44400" y2="34280" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="42000" y1="34420" x2="44400" y2="34420" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="42000" y1="34560" x2="44400" y2="34560" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="42240" y1="34000" x2="42240" y2="34700" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="44160" y1="34000" x2="44160" y2="34700" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="30000,5000 32400,5000 32400,5700 30000,5700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<line x1="30000" y1="5233.33" x2="32400" y2="5233.33" stroke="#a8a29a" stroke-width="19.8"/>
-<line x1="30000" y1="5466.67" x2="32400" y2="5466.67" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="30000" y1="5140" x2="32400" y2="5140" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="30000" y1="5280" x2="32400" y2="5280" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="30000" y1="5420" x2="32400" y2="5420" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="30000" y1="5560" x2="32400" y2="5560" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="30240" y1="5000" x2="30240" y2="5700" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="32160" y1="5000" x2="32160" y2="5700" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="48000,34000 50400,34000 50400,34700 48000,34700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<line x1="48000" y1="34233.33" x2="50400" y2="34233.33" stroke="#a8a29a" stroke-width="19.8"/>
-<line x1="48000" y1="34466.67" x2="50400" y2="34466.67" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="48000" y1="34140" x2="50400" y2="34140" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="48000" y1="34280" x2="50400" y2="34280" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="48000" y1="34420" x2="50400" y2="34420" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="48000" y1="34560" x2="50400" y2="34560" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="48240" y1="34000" x2="48240" y2="34700" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="50160" y1="34000" x2="50160" y2="34700" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="36000,5000 38400,5000 38400,5700 36000,5700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
-<line x1="36000" y1="5233.33" x2="38400" y2="5233.33" stroke="#a8a29a" stroke-width="19.8"/>
-<line x1="36000" y1="5466.67" x2="38400" y2="5466.67" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="36000" y1="5140" x2="38400" y2="5140" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="36000" y1="5280" x2="38400" y2="5280" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="36000" y1="5420" x2="38400" y2="5420" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="36000" y1="5560" x2="38400" y2="5560" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="36240" y1="5000" x2="36240" y2="5700" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="38160" y1="5000" x2="38160" y2="5700" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="82000,34000 85000,34000 85000,34900 82000,34900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="82000" y1="34108" x2="85000" y2="34108" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="82054,34054 84946,34054 84946,34846 82054,34846" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="84040,34216 84820,34216 84820,34828 84040,34828" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="84040" y1="34420" x2="84820" y2="34420" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="84040" y1="34624" x2="84820" y2="34624" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="82720" cy="34216" r="45" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="82000,38000 85000,38000 85000,38900 82000,38900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="82000" y1="38108" x2="85000" y2="38108" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="82054,38054 84946,38054 84946,38846 82054,38846" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
+<polygon points="84040,38216 84820,38216 84820,38828 84040,38828" fill="#f4f2ee" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="84040" y1="38420" x2="84820" y2="38420" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="84040" y1="38624" x2="84820" y2="38624" stroke="#a8a29a" stroke-width="19.8"/>
+<circle cx="82720" cy="38216" r="45" fill="#ffffff" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="1000,16400 1900,16400 1900,16700 1000,16700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <line x1="1000" y1="16550" x2="1900" y2="16550" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="1300" y1="16400" x2="1300" y2="16700" stroke="#a8a29a" stroke-width="19.8"/>
@@ -9856,8 +10313,13 @@ exports[`golden SVG snapshots > renders transit-hall.arch deterministically 1`] 
 <line x1="10500" y1="36327.2" x2="10500" y2="36212" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="10622.19" y1="36377.81" x2="10703.65" y2="36296.35" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="77800,24500 78250,24500 78250,25700 77800,25700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
+<line x1="77875" y1="24500" x2="77875" y2="25700" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="77950" y1="24500" x2="77950" y2="25700" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="78025" y1="24500" x2="78025" y2="25700" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="78100" y1="24500" x2="78100" y2="25700" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="78175" y1="24500" x2="78175" y2="25700" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="77800" y1="24620" x2="78250" y2="24620" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="77800" y1="25580" x2="78250" y2="25580" stroke="#a8a29a" stroke-width="19.8"/>
 <circle cx="79050" cy="20750" r="240" fill="none" stroke="#a8a29a" stroke-width="36"/>
 <circle cx="79050" cy="20750" r="144" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
 <line x1="79194" y1="20750" x2="79290" y2="20750" stroke="#a8a29a" stroke-width="19.8"/>
@@ -10609,7 +11071,11 @@ exports[`golden SVG snapshots > renders two-bed.arch deterministically 1`] = `
 <line x1="3464" y1="708" x2="3464" y2="1140" stroke="#a8a29a" stroke-width="9.94"/>
 <line x1="3008" y1="1140" x2="3692" y2="1140" stroke="#a8a29a" stroke-width="9.94"/>
 <polygon points="200,3200 900,3200 900,3700 200,3700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18.08"/>
-<polygon points="240,3240 860,3240 860,3660 240,3660" fill="none" stroke="#a8a29a" stroke-width="9.94"/>
+<polygon points="250,3250 850,3250 850,3650 250,3650" fill="none" stroke="#a8a29a" stroke-width="9.94"/>
+<circle cx="270" cy="3270" r="23.8" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.94"/>
+<circle cx="830" cy="3270" r="23.8" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.94"/>
+<circle cx="830" cy="3630" r="23.8" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.94"/>
+<circle cx="270" cy="3630" r="23.8" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.94"/>
 <polygon points="4050,7450 4050,6550 4950,6550 4950,7450" fill="#ffffff" stroke="#a8a29a" stroke-width="18.08"/>
 <polygon points="4122,7378 4122,6622 4878,6622 4878,7378" fill="#ffffff" stroke="#a8a29a" stroke-width="9.94"/>
 <line x1="4122" y1="7378" x2="4878" y2="6622" stroke="#a8a29a" stroke-width="9.94"/>

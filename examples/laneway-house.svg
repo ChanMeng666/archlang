@@ -47,7 +47,11 @@
 <line x1="3025" y1="2700" x2="3025" y2="2840" stroke="#a8a29a" stroke-width="6.78"/>
 <line x1="3025" y1="5960" x2="3025" y2="6100" stroke="#a8a29a" stroke-width="6.78"/>
 <polygon points="1450,2800 2750,2800 2750,3700 1450,3700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="12.32"/>
-<polygon points="1522,2872 2678,2872 2678,3628 1522,3628" fill="none" stroke="#a8a29a" stroke-width="6.78"/>
+<polygon points="1540,2890 2660,2890 2660,3610 1540,3610" fill="none" stroke="#a8a29a" stroke-width="6.78"/>
+<circle cx="1576" cy="2926" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.78"/>
+<circle cx="2624" cy="2926" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.78"/>
+<circle cx="2624" cy="3574" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.78"/>
+<circle cx="1576" cy="3574" r="42.84" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.78"/>
 <polygon points="1160,4150 1194.44,4156.85 1223.64,4176.36 1243.15,4205.56 1250,4240 1250,6060 1243.15,6094.44 1223.64,6123.64 1194.44,6143.15 1160,6150 440,6150 405.56,6143.15 376.36,6123.64 356.85,6094.44 350,6060 350,4240 356.85,4205.56 376.36,4176.36 405.56,4156.85 440,4150" fill="#f4f2ee" stroke="#a8a29a" stroke-width="12.32"/>
 <polygon points="350,4350 458,4350 458,6150 350,6150" fill="#f4f2ee" stroke="#a8a29a" stroke-width="12.32"/>
 <polygon points="1142,4350 1250,4350 1250,6150 1142,6150" fill="#f4f2ee" stroke="#a8a29a" stroke-width="12.32"/>
