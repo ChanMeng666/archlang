@@ -8,15 +8,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve as resolvePath, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  formatDiagnostic,
-  setGeometryBackend,
-  loadClipperBackend,
-  EXPORT_FORMATS,
-  planFromJson,
-  buildManifest,
-  ERROR_CATALOG,
-} from "../index.js";
+import { formatDiagnostic, EXPORT_FORMATS, planFromJson, buildManifest, ERROR_CATALOG } from "../index.js";
 import type { Diagnostic, World, ExportFormat, ManifestCommand, ManifestFlag } from "../index.js";
 import { findCommand, usageLine } from "./help.js";
 
@@ -273,14 +265,6 @@ export function makeNodeWorld(baseDir: string): World {
 
 /** Base dir for import resolution given the input path (cwd for stdin). */
 export const baseDirOf = (input: string): string => (input === "-" ? process.cwd() : dirname(resolvePath(input)));
-
-export async function tryLoadGeometryBackend(): Promise<void> {
-  try {
-    setGeometryBackend(await loadClipperBackend());
-  } catch {
-    // clipper2-wasm not installed — angled walls fall back to per-segment.
-  }
-}
 
 export function emitJson(obj: unknown): void {
   process.stdout.write(JSON.stringify(obj, null, 2) + "\n");

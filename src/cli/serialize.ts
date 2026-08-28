@@ -20,17 +20,7 @@ import {
   ERROR_CATALOG,
 } from "../index.js";
 import type { Diagnostic, Scene } from "../index.js";
-import {
-  type Args,
-  type Format,
-  EXIT,
-  asciiCharset,
-  baseDirOf,
-  hasErrors,
-  makeNodeWorld,
-  readInput,
-  tryLoadGeometryBackend,
-} from "./io.js";
+import { type Args, type Format, EXIT, asciiCharset, baseDirOf, hasErrors, makeNodeWorld, readInput } from "./io.js";
 
 /** Does this error mean a lazy optional render dependency (resvg/pdfkit) is absent? */
 function isOptionalDepError(e: unknown): boolean {
@@ -139,7 +129,6 @@ export async function renderArtifact(
   baseDir: string,
   page: PageSelect = "first",
 ): Promise<Rendered> {
-  await tryLoadGeometryBackend();
   const { svg, diagnostics, scene, pages } = compile(source, {
     width: args.width,
     noCache: true,

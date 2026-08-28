@@ -1,6 +1,24 @@
 /**
  * Optional polygon-geometry backend seam.
  *
+ * ---------------------------------------------------------------------------
+ * **DEPRECATED: not consulted by the renderer since v1.30.** Retained for API
+ * compatibility only.
+ *
+ * `src/wall-lowering.ts` joins every wall — orthogonal, angled and curved alike —
+ * in one closed-form, zero-dependency pass (`geometry/joinery.ts`). Nothing in the
+ * rendering path calls a `GeometryBackend` any more, so registering one changes no
+ * byte of any output; `test/union.test.ts` and `test/miter-limit.test.ts` assert
+ * exactly that, in both directions. `clipper2-wasm` has moved from
+ * `optionalDependencies` to `devDependencies`, where it survives as the ANGLED
+ * ORACLE in `test/joinery-oracle.test.ts` — nothing zero-dependency can answer an
+ * oblique or curved boolean, so the property suite still needs it.
+ *
+ * These exports are kept because `src/index.ts` is append-only and a plugin may hold
+ * them. **Removing them is a MAJOR**, deferred by name in ADR 0018. See that ADR for
+ * why the seam existed and what replaced it.
+ * ---------------------------------------------------------------------------
+ *
  * The zero-dependency core handles the common case — axis-aligned wall
  * rectangles unioned (and openings subtracted) by `geometry/union.ts`'s
  * rectilinear boolean — entirely without this seam. For *angled* (non
@@ -8,10 +26,10 @@
  * rectangles into one seamless outline; that is what a `GeometryBackend`
  * provides.
  *
- * A backend is **opt-in**: nothing is loaded unless a caller registers one via
- * {@link setGeometryBackend} (the CLI does this by lazily loading the optional
- * `clipper2-wasm` adapter — see `geometry/clipper.ts`). When no backend is
- * registered, angled walls fall back to per-segment rendering exactly as before.
+ * A backend was **opt-in**: nothing loaded unless a caller registered one via
+ * {@link setGeometryBackend}, and the CLI did that by lazily loading the
+ * `clipper2-wasm` adapter. It no longer does — `src/cli/serialize.ts` stopped calling
+ * `tryLoadGeometryBackend`, and that helper is gone.
  *
  * The registry is a synchronous module-level slot so the pure, synchronous
  * `toScene()`/`compile()` pipeline can consult it without becoming async: the

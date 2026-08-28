@@ -321,9 +321,11 @@ export type { ErrorSvgOptions } from "./backends/error-svg.js";
 // `arch preview --ascii`. Furniture markers use opt-in `annotate` metadata.
 export { renderAscii } from "./backends/ascii.js";
 export type { AsciiOptions } from "./backends/ascii.js";
-// Optional polygon-geometry backend seam. The default path is zero-dependency
-// (rectilinear boolean); registering a backend (e.g. the lazily-loaded
-// `clipper2-wasm` adapter) unlocks seamless angled-wall joinery.
+// DEPRECATED: not consulted by the renderer since v1.30; retained for API
+// compatibility. Every wall — orthogonal, angled and curved — is now joined in one
+// closed-form zero-dependency pass (`geometry/joinery.ts`), so registering a backend
+// changes no byte of any output. Kept because `src/index.ts` is append-only and a
+// plugin may hold these; removing them is a MAJOR (ADR 0018).
 export { setGeometryBackend, getGeometryBackend } from "./geometry/backend.js";
 export type { GeometryBackend, JoinKind } from "./geometry/backend.js";
 export { loadClipperBackend } from "./geometry/clipper.js";

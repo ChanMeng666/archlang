@@ -1,8 +1,26 @@
 /**
  * Optional {@link GeometryBackend} adapter over `clipper2-wasm`.
  *
- * `clipper2-wasm` is an **optional** dependency (declared in
- * `optionalDependencies`, pinned for determinism). This module is the only place
+ * ---------------------------------------------------------------------------
+ * **DEPRECATED: not consulted by the renderer since v1.30.** Retained for API
+ * compatibility only.
+ *
+ * `src/wall-lowering.ts` joins every wall — orthogonal, angled and curved alike —
+ * in one closed-form, zero-dependency pass (`geometry/joinery.ts`). Nothing in the
+ * rendering path calls a `GeometryBackend` any more, so registering one changes no
+ * byte of any output; `test/union.test.ts` and `test/miter-limit.test.ts` assert
+ * exactly that, in both directions. `clipper2-wasm` has moved from
+ * `optionalDependencies` to `devDependencies`, where it survives as the ANGLED
+ * ORACLE in `test/joinery-oracle.test.ts` — nothing zero-dependency can answer an
+ * oblique or curved boolean, so the property suite still needs it.
+ *
+ * These exports are kept because `src/index.ts` is append-only and a plugin may hold
+ * them. **Removing them is a MAJOR**, deferred by name in ADR 0018. See that ADR for
+ * why the seam existed and what replaced it.
+ * ---------------------------------------------------------------------------
+ *
+ * `clipper2-wasm` is a **devDependency** since v1.30 (it was an `optionalDependency`
+ * while the renderer used it; it is pinned for determinism either way). This module is the only place
  * that references it, and it does so via a lazy `import()` so the core bundle
  * never hard-requires it — exactly how `export/pdf.ts` loads `pdfkit`. When the
  * package is absent, {@link loadClipperBackend} rejects with an actionable error
@@ -65,7 +83,9 @@ async function loadModule(): Promise<Clipper2Module> {
       factory = (mod.default ?? mod) as () => Promise<Clipper2Module>;
     } catch {
       throw new Error(
-        "Angled-wall geometry needs the optional dependency 'clipper2-wasm'. Install it: npm install clipper2-wasm",
+        // No longer "angled-wall geometry needs…": the renderer does not need it at
+        // all. The only caller left is the test oracle.
+        "clipper2-wasm is not installed. It is a devDependency, used only as the angled oracle in test/joinery-oracle.test.ts; the renderer has not consulted a GeometryBackend since v1.30. Install it: npm install clipper2-wasm",
       );
     }
     return factory();

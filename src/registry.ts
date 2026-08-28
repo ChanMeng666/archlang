@@ -209,7 +209,13 @@ export const BUILTIN_REGISTRY: Registry = createRegistry();
  */
 export interface Runtime {
   registry: Registry;
-  /** Per-call geometry backend; overrides the module-global `getGeometryBackend()`. */
+  /**
+   * Per-call geometry backend; overrides the module-global `getGeometryBackend()`.
+   *
+   * **DEPRECATED: nothing reads it since v1.30.** `toScene` no longer looks a backend up,
+   * because `wall-lowering.ts` joins every wall in closed form. Setting it is a no-op for
+   * rendering; the field stays because {@link Runtime} is append-only. See ADR 0018.
+   */
   backend?: GeometryBackend | null;
   /** Per-call named themes, selectable via `theme <name>` (override built-in THEMES). */
   themes?: ThemePlugin[];
