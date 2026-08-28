@@ -78,6 +78,8 @@ export type {
   VerticalKind,
   VerticalStop,
   VoidSummary,
+  OutdoorSummary,
+  FenceSummary,
   RoomSummary,
   DoorSummary,
   DoorKind,

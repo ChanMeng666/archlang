@@ -389,9 +389,22 @@ suite("doors — W_POCKET_RUN", () => {
     for (const f of d.fixes ?? []) expect(f.fixId).not.toMatch(/narrow|width/);
   });
 
-  it("is the LAST rule — no existing plan's diagnostic order moves", async () => {
+  it("is followed only by rules appended after it — no existing plan's diagnostic order moves", async () => {
     const { LINT_RULES } = await import("../src/lint/rules/index.js");
-    expect(LINT_RULES[LINT_RULES.length - 1]!.name).toBe("pocket-run");
+    const names = LINT_RULES.map((r) => r.name);
+    const i = names.indexOf("pocket-run");
+    expect(i).toBeGreaterThanOrEqual(0);
+    // The claim this pin was written for is ORDER STABILITY, not the literal last slot:
+    // every rule that existed when `pocket-run` shipped must still run BEFORE it, so no
+    // plan written before v1.25 sees its diagnostics move. Until v1.31 those two
+    // statements were the same sentence, because `pocket-run` was genuinely last.
+    //
+    // They are not the same sentence any more, and asserting the weaker one would have
+    // been the wrong repair: a rule appended after `pocket-run` is only harmless because
+    // it CANNOT FIRE on a plan that predates it (the two below need an `outdoor`
+    // statement, which did not exist), so the list of what may follow is exactly that
+    // set — named here, one line per rule, rather than left open.
+    expect(names.slice(i + 1)).toEqual(["outdoor-overlaps-room", "balcony-no-door"]);
   });
 
   it("cannot fire on any kind but `pocket`", () => {

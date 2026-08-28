@@ -32,7 +32,8 @@ import type { Point } from "./ast.js";
 import type { Span } from "./diagnostics.js";
 import type { WallSegment } from "./geometry.js";
 import type { Arc } from "./geometry/arc.js";
-import type { ResolvedElement, RFurniture, RRoom, RWall } from "./ir.js";
+import type { RailSide } from "./ast.js";
+import type { ResolvedElement, RFurniture, ROutdoor, RRoom, RWall } from "./ir.js";
 
 /**
  * A placed instance's coordinate frame: `p_global = M · p_local + t`.
@@ -378,5 +379,55 @@ function transformGeometry(f: Frame, el: ResolvedElement, id: string, reflected:
     // would have nowhere useful to point.
     case "roof":
       return { ...el, id, ring: el.ring.map((p) => tp(f, p)) };
+    // A ground surface is a rectangle-plus-optional-ring, exactly like a polygon `room`:
+    // the box re-corners and swaps extents, the ring rides through vertex by vertex, and
+    // an integer isometry preserves the area exactly. `outdoor` and `fence` ARE allowed
+    // inside a component — a placed wing may legitimately carry its own terrace and its
+    // own boundary — which is why these two arms exist rather than a parse refusal.
+    case "outdoor": {
+      const r = transformRect(f, el.at, el.size);
+      const out: ROutdoor = { ...el, id, at: r.at, size: r.size };
+      if (el.poly) out.poly = el.poly.map((p) => tp(f, p));
+      // A rail EDGE is a handed rule: `top` names the smaller-y side of the PAGE, and a
+      // frame turns the page. So the four names are carried across by their outward
+      // NORMALS through the frame's linear part — the same treatment a fixture's
+      // quarter-turn and a door's swing get, and the reason `transformElement` exists at
+      // all rather than pre-rotating the resolver's inputs. A reflection is covered for
+      // free: the matrix already carries it, so no `det < 0` branch is needed here.
+      if (el.rail) out.rail = el.rail.map((s) => transformRailSide(f, s));
+      return out;
+    }
+    case "fence":
+      return { ...el, id, points: el.points.map((p) => tp(f, p)) };
   }
+}
+
+/** The outward unit normal of each rectangle side, in page terms (+x right, +y down). */
+const SIDE_NORMAL: Readonly<Record<RailSide, readonly [number, number]>> = {
+  top: [0, -1],
+  bottom: [0, 1],
+  left: [-1, 0],
+  right: [1, 0],
+};
+
+/**
+ * Which side a rail edge becomes under a frame: push its outward normal through the
+ * matrix's LINEAR part (no translation — a direction has no position) and read back the
+ * side that normal names.
+ *
+ * Exact by construction: the frame is a signed permutation, so a unit axis vector maps to
+ * a unit axis vector and the lookup below always hits. There is no rounding, no
+ * tolerance, and `transformRailSide(inverse(f), transformRailSide(f, s)) === s`.
+ */
+function transformRailSide(f: Frame, side: RailSide): RailSide {
+  const [nx, ny] = SIDE_NORMAL[side];
+  const x = f.a * nx + f.b * ny;
+  const y = f.c * nx + f.d * ny;
+  for (const s of Object.keys(SIDE_NORMAL) as RailSide[]) {
+    const [ux, uy] = SIDE_NORMAL[s];
+    if (ux === x && uy === y) return s;
+  }
+  // Unreachable for a signed-permutation matrix; returning the input keeps the function
+  // total rather than throwing inside a pure transform.
+  return side;
 }

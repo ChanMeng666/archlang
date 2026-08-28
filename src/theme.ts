@@ -26,6 +26,20 @@ export interface Theme {
   annotation: string;
   annotationMuted: string;
   column: string;
+  /**
+   * The ground tints (v1.31) — the flat colour an `outdoor` surface is filled with,
+   * UNDER its hatch. Three, not nine: the nine `OUTDOOR_KINDS` map onto them
+   * (`src/elements/outdoor.ts`'s `GROUND` table) because a palette entry per kind would
+   * be nine numbers to keep consistent across four themes for a distinction the eye
+   * reads from the hatch anyway. `lawn` covers the planted surfaces, `water` open water,
+   * `paving` every hard and timber surface (and a balcony, which takes no hatch).
+   */
+  lawn: string;
+  water: string;
+  paving: string;
+  /** Outline + label ink for an `outdoor` surface and a `fence`. Muted on purpose: a
+   *  ground edge is site information and must not compete with the building's fabric. */
+  outdoorStroke: string;
   /** Multiplier on all stroke widths (1 = default). */
   lineWeight: number;
   /** SVG `font-family`. */
@@ -50,6 +64,10 @@ export const DEFAULT_THEME: Theme = {
   annotation: "#333333",
   annotationMuted: "#888888",
   column: "#4a4a4a",
+  lawn: "#eef3e7",
+  water: "#e6eff5",
+  paving: "#f1efeb",
+  outdoorStroke: "#9a9488",
   lineWeight: 1,
   font: "Helvetica, Arial, sans-serif",
 };
@@ -102,6 +120,13 @@ export const THEMES: Record<string, Partial<Theme>> = {
     annotation: "#eaf2fb",
     annotationMuted: "#9fc0e6",
     column: "#ffffff",
+    // Ground tints on a cyanotype are shifts of the blueprint blue, not the paper tints
+    // above: on this theme the ground must sit BETWEEN the page and the room fill, so a
+    // lawn does not read as a hole in the drawing.
+    lawn: "#0d4270",
+    water: "#0f4f88",
+    paving: "#0c4074",
+    outdoorStroke: "#7fa8d4",
   },
   // Pure black & white, for crisp print / line drawings.
   mono: {
@@ -122,6 +147,13 @@ export const THEMES: Record<string, Partial<Theme>> = {
     annotation: "#000000",
     annotationMuted: "#555555",
     column: "#000000",
+    // `mono` is pure black on white by definition, so the ground carries NO tint at all
+    // and reads entirely from its hatch — which is exactly how a monochrome print sheet
+    // distinguishes surfaces. A grey here would be the one thing this theme forbids.
+    lawn: "#ffffff",
+    water: "#ffffff",
+    paving: "#ffffff",
+    outdoorStroke: "#000000",
   },
   // Dark UI / screen presentation.
   dark: {
@@ -142,6 +174,10 @@ export const THEMES: Record<string, Partial<Theme>> = {
     annotation: "#cfd3da",
     annotationMuted: "#888f99",
     column: "#cbd1db",
+    lawn: "#232a26",
+    water: "#1f2833",
+    paving: "#24272d",
+    outdoorStroke: "#6b7280",
   },
   // Warm, soft, finished-looking — for slides and client decks.
   presentation: {
@@ -162,6 +198,10 @@ export const THEMES: Record<string, Partial<Theme>> = {
     annotation: "#3a3a3a",
     annotationMuted: "#9a8d78",
     column: "#5a5044",
+    lawn: "#eef1e4",
+    water: "#e4edf3",
+    paving: "#f2ece2",
+    outdoorStroke: "#a2947c",
     font: "Georgia, 'Times New Roman', serif",
     lineWeight: 1.1,
   },
@@ -195,6 +235,15 @@ export const STYLE_KEYS: Readonly<Record<string, Readonly<Record<string, keyof T
   // exception stops being exactly one word.
   roof: { stroke: "annotationMuted" },
   void: { stroke: "annotation" },
+  // v1.31. `fill` names the TINT under the hatch; the hatch's own ink rides `pocheHatch`
+  // (the SVG backend builds every pattern from one base/line pair — see `src/hatches.ts`),
+  // so it is deliberately not offered here: a per-kind hatch colour would need a second
+  // pattern set per style block, and `style wall { hatch … }` already moves that ink for
+  // the whole drawing. `outdoor.fill` points at `paving` because that is the tint the
+  // majority of the kinds take; overriding it recolours all of them, which is the honest
+  // granularity a single `style outdoor { … }` block can offer.
+  outdoor: { fill: "paving", stroke: "outdoorStroke", label: "outdoorStroke" },
+  fence: { stroke: "outdoorStroke" },
 };
 
 /** Every element kind `style <kind> { … }` accepts, derived from {@link STYLE_KEYS} so

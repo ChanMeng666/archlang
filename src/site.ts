@@ -30,6 +30,9 @@ import type { BBox, RoomBox } from "./analyze.js";
 import { pointInRoomBox } from "./analyze.js";
 import { normal, segmentDirAt } from "./geometry.js";
 import type { RWindow } from "./ir.js";
+import type { RenderSizes, SceneNode } from "./scene.js";
+import { weightWidth } from "./scene.js";
+import type { Theme } from "./theme.js";
 
 /** A TRUE compass facing, the spelling every machine surface uses. */
 export type CompassLetter = "N" | "S" | "E" | "W";
@@ -94,6 +97,15 @@ export interface SiteFacts {
   sunset_side: CompassLetter;
   /** The declared (or defaulted) hemisphere, echoed so a reader can check the derivation. */
   hemisphere: Hemisphere;
+  /**
+   * The LOT's area in m², 2 dp — the EXACT shoelace of the declared `boundary` ring,
+   * never its bounding box. Present only when the plan declares a boundary, so a `site`
+   * with only `street`/`hemisphere` describes byte-identically to before (v1.31).
+   */
+  lot_area_m2?: number;
+  /** The lot's extent, as top-left + size. A convenience for framing a viewport; every
+   *  measurement above comes from the ring itself. */
+  lot_bbox?: { x: number; y: number; w: number; h: number };
 }
 
 /** The five names, derived in closed form from `street` + `hemisphere`. Total: every
@@ -224,4 +236,52 @@ export function planCenterOfRooms(roomRects: Map<string, RoomBox>): Point {
     if (rect.y + rect.h > maxY) maxY = rect.y + rect.h;
   }
   return minX === Number.POSITIVE_INFINITY ? { x: 0, y: 0 } : { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+}
+
+// ---- the lot line (v1.31) ----------------------------------------------------
+
+/**
+ * The CAD layer a `site { boundary … }` property line lands on — the AIA/NCS civil layer
+ * for a property boundary.
+ *
+ * Exported because `src/label-placement.ts` must skip it, for exactly the reason it skips
+ * `A-ROOF`: a lot line ENCLOSES the whole site, so its bounding box buries every label in
+ * the plan and the relocation pass would shove all of them at once. It is also nothing a
+ * name can collide with — a property line is a legal datum, not drawn fabric.
+ */
+export const PROPERTY_LAYER = "C-PROP";
+
+/**
+ * The lot line as Scene nodes: one closed dash-dot polygon on {@link PROPERTY_LAYER}.
+ *
+ * `center` is the drafting line type for a datum — the same convention the positioning
+ * axes use — and it is the reason a property line reads as a property line rather than
+ * as an oddly-placed wall. The `paint.dash` pair beside it is not redundant: the SVG
+ * backend follows `lineType` and resolves the full four-number dash-dot pattern, while
+ * the PDF backend follows `paint.dash`, whose primitive is a single on/off PAIR. So the
+ * PDF gets the closest two-number rendering of the same intent, and the two exports agree
+ * about what kind of line this is even though one of them cannot draw a dot.
+ *
+ * Lives here, beside the rest of the site layer, for the same reason `axesNodes` lives in
+ * `axes.ts`: a plan-level datum is not an element, so it has no `ElementDef` to render it,
+ * and `scene-build.ts` should not be where a second drawing convention is written down.
+ */
+export function siteBoundaryNodes(ring: readonly Point[], theme: Theme, sizes: RenderSizes): SceneNode[] {
+  if (ring.length < 3) return [];
+  const u = sizes.thin;
+  return [
+    {
+      layer: "annotations",
+      layerName: PROPERTY_LAYER,
+      prim: { t: "polygon", pts: ring.map((p) => ({ ...p })) },
+      lineType: "center",
+      lineWeight: "thin",
+      paint: {
+        fill: "none",
+        stroke: theme.annotationMuted,
+        width: weightWidth("thin", sizes),
+        dash: [u * 12, u * 3],
+      },
+    },
+  ];
 }

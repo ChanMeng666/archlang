@@ -21,6 +21,7 @@ import {
 } from "./furniture.js";
 import { perRoomRules } from "./per-room.js";
 import { reachability } from "./reachability.js";
+import { balconyNoDoor, outdoorOverlapsRoom } from "./outdoor.js";
 import { roomNotEquatorFacing } from "./site.js";
 import { stairUnmatched } from "./vertical.js";
 
@@ -67,6 +68,13 @@ export const LINT_RULES: readonly LintRule[] = [
   // diagnostic ORDER may move — and it cannot fire at all unless a door names the
   // `pocket` kind, so no plan written before it existed can see it.
   pocketRun,
+  // Ground-surface advisories (v1.31): a terrace laid over a room's floor, and a balcony
+  // with no way onto it. Appended LAST, for the same reason as every rule above them —
+  // no existing plan's diagnostic ORDER may move — and neither can fire at all unless the
+  // plan declares an `outdoor` surface, so no plan written before they existed can see
+  // one.
+  outdoorOverlapsRoom,
+  balconyNoDoor,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

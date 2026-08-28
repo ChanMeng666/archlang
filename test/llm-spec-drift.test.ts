@@ -276,6 +276,36 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // fewer lever behind it: TRIM DUPLICATION BEFORE RAISING. What is left to trim is no
     // longer a redundant bullet but real content, so the next raise should be argued as
     // "this language grew", not "this page repeats itself".
-    expect(spec.length).toBeLessThan(26_000);
+    //
+    // v1.31.0 is that raise, argued that way. What grew, measured:
+    //
+    //   1. **`outdoor` costs ~1,100 chars.** One element, but it carries more than most:
+    //      nine kinds, two spellings, four catalogued refusals and two warnings an
+    //      authoring agent has to be able to avoid, and — the part that cannot be cut —
+    //      three behavioural facts that are INVISIBLE from the syntax and wrong if
+    //      guessed. It is not a room (so its area lands in a different total and it joins
+    //      no access graph); it obstructs nothing, water included; and it grows the page.
+    //      A model that assumes any of the three the other way produces a plan whose own
+    //      `describe()` it will then misread.
+    //
+    //   2. **`fence` costs ~470.** Deliberately the cheap one: most of its line is the
+    //      single fact that it is NOT a thin wall, which is the only thing a reader could
+    //      reasonably get wrong. The three styles are named by what they draw rather than
+    //      described, and the `arc` refusal is one clause.
+    //
+    //   3. **`site` gained ~150** for the `boundary` clause and its two refusals.
+    //
+    // Both element lines were written, measured and cut back BEFORE this raise — ~150
+    // chars of restatement came out of them (the label-point derivation, which an author
+    // cannot act on, and a "picket = / panel = / post =" gloss that re-listed the three
+    // words already standing in the syntax half). What is left is content, and the same
+    // is true of the rest of the page, so this is the "the language grew" raise the note
+    // above anticipated rather than another duplication cut.
+    //
+    // Net 27,875, so the cap moves to 28,500: **625 chars of headroom**, a little more
+    // than the 371 the last raise bought. The instruction is unchanged and there is now
+    // no known duplication left to spend: TRIM DUPLICATION BEFORE RAISING — and when
+    // there is none left, say what grew and by how much.
+    expect(spec.length).toBeLessThan(28_500);
   });
 });

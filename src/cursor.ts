@@ -68,6 +68,17 @@ export function statementExprs(s: Statement): Expr[] {
       if (s.overhang) out.push(s.overhang);
       for (const p of s.polygon ?? []) pt(p);
       break;
+    case "outdoor":
+      // Exactly one of the two spellings is present. `surface` and the `rail` edges are
+      // closed-vocabulary WORDS, not expressions, so neither contributes here.
+      pt(s.at);
+      if (s.size) out.push(s.size.w, s.size.h);
+      for (const p of s.polygon ?? []) pt(p);
+      if (s.label) out.push(s.label);
+      break;
+    case "fence":
+      for (const p of s.points) pt(p);
+      break;
     case "stair":
       pt(s.at);
       out.push(s.size.w, s.size.h);

@@ -26,7 +26,10 @@ import {
   FURNITURE_ANCHORS,
   HEMISPHERES,
   AXIS_ALIGNS,
+  FENCE_STYLES,
   NORTH_DIRS,
+  OUTDOOR_KINDS,
+  RAIL_EDGES,
   REL_DIRS,
   REL_DIR_AXIS,
   SCHEDULE_SUBJECTS,
@@ -97,6 +100,8 @@ export const ELEMENT_GRAMMAR: Record<string, string> = {
   escalator: `escalator [id=<name>] at (x,y) size <W>x<H> dir ${VERTICAL_DIRS.join("|")}   # a moving stair: chevrons along the run + an UP/DN arrow; both narrow ends are entries. Same shaft identity as \`stair\``,
   roof: `roof (overhang <mm> [wall <id>] | polygon (x,y) (x,y) (x,y) …)   # the eaves line: ONE dashed outline of what oversails. DRAWING-ONLY — no \`describe()\` key, no lint rule — though it does grow the page. \`overhang\` offsets a CLOSED wall ring outward by thickness/2 + <mm>, mitred: the named \`wall\`, else the plan's one closed \`exterior\` wall (none/several = E_ROOF_AMBIGUOUS, unknown/unclosed = E_ROOF_WALL, <= 0 = E_ROOF_OVERHANG). REFUSES rather than approximating — an \`arc\` edge is E_ROOF_CURVED, an offset that crosses itself E_ROOF_SELF_INTERSECT — so write \`polygon\` instead: the ring verbatim, implicitly closed, >= 3 effective vertices (E_ROOF_POLY_DEGENERATE). Not inside a \`component\` (E_ROOF_PLACEMENT)`,
   void: `void [id=<name>] at (x,y) size <W>x<H>   # a hole in THIS storey's floor (stair well, atrium, double-height room): dashed rectangle + both diagonals, \`at\` = TOP-LEFT. It OBSTRUCTS circulation — you cannot walk across it, though you may stand at its edge — and does NOT reduce the containing room's area; \`describe --json\`'s \`voids[]\` gives the extent to subtract. Rectangle-only (E_VOID_SIZE)`,
+  outdoor: `outdoor [id=<name>] ${OUTDOOR_KINDS.join("|")} (at (x,y) size <W>x<H> | polygon (x,y) (x,y) (x,y) …) [label "…"] [rail ${RAIL_EDGES.join("|")} …]   # GROUND outside the building: a scale-aware material hatch over a tint (L-PLNT/L-SITE/A-FLOR-BALC). NOT a room — absent from \`rooms[]\`, \`totals.floor_area_m2\`, \`schedule rooms\`, the access graph and Plan JSON — and it obstructs NOTHING (you may walk on any of it, water included). Its facts are \`describe --json\`'s \`outdoor[]\` + \`totals.outdoor_area_m2\`, area by exact shoelace on the ring form. \`label\` draws the name AND the m²; unlabelled ground draws neither. \`rail\` is \`balcony\`-only (E_OUTDOOR_RAIL) and rectangle-only (E_OUTDOOR_POLY_DEGENERATE); omitted, it is DERIVED — every edge with no wall one thickness behind it. W_OUTDOOR_OVERLAPS_ROOM covers a surface over a room's floor, W_BALCONY_NO_DOOR a balcony with no opening within a wall thickness. It grows the page, so a site plan wants \`paper\` (E_OUTDOOR_SIZE, E_OUTDOOR_POLY_SELF_INTERSECT)`,
+  fence: `fence [id=<name>] [${FENCE_STYLES.join("|")}] { (x,y) (x,y) … [close] }   # a posted boundary line on L-SITE — dense ticks / a double line / sparse ticks; the style word LEADS and defaults to the first. NOT a thin wall: no thickness, no poché, hosts NO opening, absent from \`describe().walls\` and the access graph (a gate is deferred by name). It draws, it measures (\`fences[]\`: \`length_mm\` + \`closed\`) and it grows the page. An \`arc\` edge is E_FENCE_CURVED — write short straight runs`,
 };
 
 /**
@@ -113,7 +118,7 @@ export const STATEMENT_GRAMMAR: Record<string, string> = {
   schedule: `schedule ${SCHEDULE_SUBJECTS.join("|")}   # draw the ROOM SCHEDULE table below the title block: NO. (01, 02, … source order) · NAME (label, else id) · AREA (m²) + a TOTAL row, all derived from the rooms. \`rooms\` is the only subject (anything else is a parse error). Same rows as \`describe --json\`'s \`schedule[]\`. With \`zone\` blocks the rows group by zone, each closed by a SUBTOTAL row`,
   legend:
     "legend   # draw the LEGEND table beside the schedule: a row per wall hatch material used and per placed fixture category that has a plan symbol, each with a real swatch. Fully derived; nothing to configure. Pure rendering — no `describe()` field",
-  site: `site { street ${COMPASS_DIRECTIONS.join("|")} [hemisphere ${HEMISPHERES.join("|")}] }   # semantics only — draws NOTHING. \`street\` is a TRUE compass direction (read WITH \`north\`, not instead of it) and names five on \`describe --json\`'s \`site\`: \`street\`, \`back\` (opposite), \`equator_side\` (S north of the equator, N south of it), \`sunrise_side\` (E), \`sunset_side\` (W). An intent's \`windows.facing\` may assert those NAMES instead of a letter (no \`site\` = E_INTENT_NO_SITE). They are a DRAFTING HEURISTIC for an aspect, NOT daylight — there is no sun model. \`street\` required (E_SITE_NO_STREET), one block (E_SITE_DUP), plan-level only`,
+  site: `site { street ${COMPASS_DIRECTIONS.join("|")} [hemisphere ${HEMISPHERES.join("|")}] [boundary (x,y) (x,y) (x,y) …] }   # \`street\`/\`hemisphere\` are semantics only and draw NOTHING; \`boundary\` is the LOT LINE and is the one part that draws (a dash-dot property line on C-PROP) and grows the page, adding \`site.lot_area_m2\` (exact shoelace) + \`site.lot_bbox\` (E_SITE_BOUNDARY_DEGENERATE, E_SITE_BOUNDARY_SELF_INTERSECT). \`street\` is a TRUE compass direction (read WITH \`north\`, not instead of it) and names five on \`describe --json\`'s \`site\`: \`street\`, \`back\` (opposite), \`equator_side\` (S north of the equator, N south of it), \`sunrise_side\` (E), \`sunset_side\` (W). An intent's \`windows.facing\` may assert those NAMES instead of a letter (no \`site\` = E_INTENT_NO_SITE). They are a DRAFTING HEURISTIC for an aspect, NOT daylight — there is no sun model. \`street\` required (E_SITE_NO_STREET), one block (E_SITE_DUP), plan-level only`,
   place:
     'place <component>(<args>) as <name> at (x,y) [rotate 0|90|180|270] [mirror x|y]   # instantiate a component as an ADDRESSABLE instance, authored in LOCAL coords from (0,0); `as`+`at` required. Ids inside become `<name>.<id>` (auto-ids restart per instance) and the plan addresses them dotted — `door on west.perimeter at 50%`, `furniture bed in west.main centered`, `describe --room west.main`. `mirror x` flips left↔right, `y` top↔bottom: a real reflection, so door swings mirror. `import "wing.arch" as wing` makes a WHOLE FILE a zero-arg component. Bare `<component>(<args>)` stays the old INLINE macro — caller\'s coords and id space, no namespace',
 };
@@ -239,6 +244,13 @@ export const CLAUSE_ATTRIBUTES: readonly string[] = [
   // The `roof overhang <mm>` clause introducer — taught by `ELEMENT_GRAMMAR.roof`, which
   // is where both of its spellings live, so it needs no line of its own.
   "overhang",
+  // v1.31. `rail` is a clause of `ELEMENT_GRAMMAR.outdoor`; `boundary` is a clause of the
+  // `site` BLOCK rather than of an element line, exactly as `street`/`hemisphere` above
+  // are — same argument, same table: `STATEMENT_GRAMMAR.site` teaches it concretely, so
+  // it needs no line of its own and only has to be named here for the partition against
+  // `KEYWORDS.attribute` to stay exhaustive.
+  "rail",
+  "boundary",
 ];
 
 /**
@@ -508,6 +520,9 @@ export function renderLlmSpec(examples: Record<string, string>): string {
   // twice. One owner: the setting line prints the modes, the `dim` line points at it.
   assertVocabRendered(el("stair"), "vertical direction", VERTICAL_DIRS);
   assertVocabRendered(el("escalator"), "vertical direction", VERTICAL_DIRS);
+  assertVocabRendered(el("outdoor"), "outdoor kind", OUTDOOR_KINDS);
+  assertVocabRendered(el("outdoor"), "balcony rail edge", RAIL_EDGES);
+  assertVocabRendered(el("fence"), "fence style", FENCE_STYLES);
   assertVocabRendered(st("strip"), "strip direction", STRIP_DIRS);
   assertVocabRendered(st("schedule"), "schedule subject", SCHEDULE_SUBJECTS);
   // The setting lines' own closed sets. `paper`/`north` were previously asserted against

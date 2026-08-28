@@ -520,6 +520,35 @@ const AGREEMENT: [string, string][] = [
   ["void with id=", P(`  void id=well at (1000,1000) size 2000x2000`)],
   ["void without size", P(`  void at (1000,1000)`)],
   ["void size before at", P(`  void size 2000x2000 at (1000,1000)`)],
+  // —— outdoor: the same two-spelling shape `room` has ————————————————
+  ["outdoor rect", P(`  outdoor lawn at (0,0) size 8000x6000`)],
+  ["outdoor rect + id + label", P(`  outdoor id=g lawn at (0,0) size 8000x6000 label "Garden"`)],
+  ["outdoor polygon", P(`  outdoor paving polygon (0,0) (4000,0) (4000,3000) (1000,3000)`)],
+  ["outdoor balcony + rail list", P(`  outdoor balcony at (0,0) size 4000x1600 rail top left`)],
+  ["outdoor balcony + rail commas", P(`  outdoor balcony at (0,0) size 4000x1600 rail top, left`)],
+  ["outdoor balcony + rail all", P(`  outdoor balcony at (0,0) size 4000x1600 rail all`)],
+  ["outdoor label + rail, in order", P(`  outdoor balcony at (0,0) size 4000x1600 label "B" rail none`)],
+  // …and the shapes neither the parser nor a decoder may produce.
+  ["outdoor no kind", P(`  outdoor at (0,0) size 8000x6000`)],
+  ["outdoor rail before label", P(`  outdoor balcony at (0,0) size 4000x1600 rail all label "B"`)],
+  ["outdoor rect + polygon", P(`  outdoor lawn at (0,0) size 8000x6000 polygon (0,0) (1,0) (0,1)`)],
+  ["outdoor polygon, two points", P(`  outdoor lawn polygon (0,0) (9000,0)`)],
+  ["outdoor rail, no edge", P(`  outdoor balcony at (0,0) size 4000x1600 rail`)],
+  // —— fence: the style word LEADS, and the body takes no `arc` ——————————
+  ["fence bare", P(`  fence { (0,0) (9000,0) }`)],
+  ["fence styled", P(`  fence picket { (0,0) (9000,0) (9000,6000) close }`)],
+  ["fence id + style", P(`  fence id=f panel { (0,0) (9000,0) }`)],
+  ["fence style post", P(`  fence post { (0,0) (9000,0) }`)],
+  ["fence style after body", P(`  fence { (0,0) (9000,0) } picket`)],
+  ["fence one point", P(`  fence { (0,0) }`)],
+  ["fence unknown style", P(`  fence chainlink { (0,0) (9000,0) }`)],
+  // —— site boundary ————————————————————————————————————————
+  ["site boundary", `plan "P" {\n  units mm\n  site {\n    street north\n    boundary (0,0) (9,0) (9,9)\n  }\n}\n`],
+  [
+    "site boundary before street",
+    `plan "P" {\n  units mm\n  site {\n    boundary (0,0) (9,0) (9,9)\n    street north\n  }\n}\n`,
+  ],
+  ["site boundary, two points", `plan "P" {\n  units mm\n  site {\n    street north\n    boundary (0,0) (9,0)\n  }\n}\n`],
 ];
 
 /**
