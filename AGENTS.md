@@ -398,10 +398,13 @@ re-propose, re-open, or contradict them anywhere.
 │                     on a 22 x 22 m lot, A2 @ 1:100: `site … boundary`, twelve `outdoor`
 │                     surfaces across eight of the nine kinds, a `panel` fence round the pool
 │                     and a `picket` one at the street, `uses garage` + `door garage`, and 15 of
-│                     the 21 outdoor fixture families; TWO deliberate lint warnings, named in
-│                     the source — W_ROOM_NOT_EQUATOR_FACING x1 and a W_BATH_VIA_BEDROOM that is
-│                     a FINDING, not a layout mistake: a balcony door grounds its storey and
-│                     suppresses the stair's arrival edge, `docs/backlog.md` 4.6).
+│                     the 21 outdoor fixture families; ONE deliberate lint warning, named in
+│                     the source — W_ROOM_NOT_EQUATOR_FACING x1. It used to carry a SECOND,
+│                     W_BATH_VIA_BEDROOM, that was a FINDING rather than a layout mistake: the
+│                     balcony door on L2 grounded its storey and suppressed the stair's arrival
+│                     edge, so the BFS entered through the bedroom instead of the landing. Fixed
+│                     — `levelIsGrounded` (`src/vertical.ts`) now discounts an exterior door
+│                     whose outward probe lands inside an `outdoor balcony`; backlog 4.6 closed).
 │                     Start here: one-room (the
 │                     smallest plan that draws anything) · studio (the lint-clean, IMPORT-FREE
 │                     flagship) · attached (nothing positioned by hand).

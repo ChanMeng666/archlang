@@ -489,3 +489,63 @@ suite("vertical circulation — byte identity and determinism", () => {
     expect(format(once)).toBe(once); // idempotent
   });
 });
+
+// ---------------------------------------------------------------------------
+// a balcony door is not an arrival point (backlog 4.6)
+// ---------------------------------------------------------------------------
+
+/**
+ * A two-storey house whose upper storey has a landing (holding the shaft's arrival end),
+ * a bedroom with an exterior door, and a bathroom reachable ONLY through that bedroom's
+ * interior door. `outdoorClause` is either an `outdoor balcony` covering the bedroom
+ * door's outward face, or `` — the counterexample pair `levelIsGrounded` is pinned by.
+ */
+const balconyHouse = (outdoorClause: string): string => `plan "House" {
+  units mm
+  grid 50
+  level 1 "Ground" {
+    ${SHELL}
+    room id=hall at (0,0) size 6000x6000 label "Hall" uses hall entry
+    door id=front on shell at 15000 width 1000 swing into hall
+    window id=w1 on shell at 3000 width 1200
+    stair id=stair at (500,300) size 900x1400 dir up
+  }
+  level 2 "First" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+    wall id=p_h partition thickness 100 { (0,2000) (6000,2000) }
+    wall id=p_v partition thickness 100 { (3000,2000) (3000,6000) }
+    room id=landing at (0,0)       size 6000x2000 label "Landing"  uses circulation
+    room id=bed1    at (0,2000)    size 3000x4000 label "Bedroom"  uses bedroom
+    room id=bath    at (3000,2000) size 3000x4000 label "Bath"     uses bath
+    door id=d_bed1 on p_h at 1500  width 900 swing into bed1
+    door id=d_bath on p_h at 4500  width 800 swing into bath
+    door id=d_balc sliding on shell at 16500 width 1800 slide right
+    stair id=stair at (500,300) size 900x1400 dir down
+    ${outdoorClause}
+  }
+}`;
+
+const WITH_BALCONY = `outdoor id=g_bal balcony at (500,6100) size 2000x1200`;
+
+suite("vertical circulation — a balcony door is not an arrival point (backlog 4.6)", () => {
+  it("a bedroom's balcony door does NOT ground the upper storey — no false W_BATH_VIA_BEDROOM", () => {
+    const src = balconyHouse(WITH_BALCONY);
+    const codes = lint(src).map((d) => d.code);
+    expect(codes).not.toContain("W_BATH_VIA_BEDROOM");
+    // The stair's arrival room is the landing, not suppressed by a false grounding.
+    const s = describePlan(src);
+    expect(s.vertical!.reachable_levels).toEqual([1, 2]);
+    // The per-storey `access.hasEntrance` fact stays HONEST — that floor really does
+    // have an exterior door — even though it no longer grounds the shaft's reach.
+    expect(s.levels![1]!.access.hasEntrance).toBe(true);
+  });
+
+  it("… and the counterexample: remove the balcony, and the SAME door genuinely grounds the storey, so the bathroom really is reached only via the bedroom", () => {
+    const src = balconyHouse(``);
+    const codes = lint(src).map((d) => d.code);
+    expect(codes).toContain("W_BATH_VIA_BEDROOM");
+    const s = describePlan(src);
+    expect(s.vertical!.reachable_levels).toEqual([1, 2]);
+    expect(s.levels![1]!.access.hasEntrance).toBe(true);
+  });
+});

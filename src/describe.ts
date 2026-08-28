@@ -45,6 +45,7 @@ import {
   roomUses,
   buildDoorAccessGraph,
   DEFAULT_TOL,
+  levelIsGrounded,
   type AnalyzeOptions,
   type AccessGraph,
   type BBox,
@@ -1109,8 +1110,12 @@ function inZone(member: string | undefined, path: string): boolean {
 
 /**
  * The building-level vertical report for a multi-storey plan, or `undefined` when no run
- * spans two storeys. A storey is *grounded* when it has its own exterior entrance (the
- * same access-graph fact `lint` reads); reachability then spreads along the shafts.
+ * spans two storeys. A storey is *grounded* when it has its own exterior entrance that is
+ * a real arrival point — {@link levelIsGrounded}, the same predicate `lint` builds its
+ * `grounded()` callback from, discounting a door that opens onto an `outdoor balcony`
+ * (backlog 4.6). Reachability then spreads along the shafts. This is deliberately NOT the
+ * same thing as this storey's own `access.hasEntrance` below, which stays the honest,
+ * undiscounted fact that the floor has an exterior door.
  */
 function buildVerticalReport(levels: readonly ResolvedLevel[], tol: number): VerticalReport | undefined {
   const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
@@ -1122,7 +1127,9 @@ function buildVerticalReport(levels: readonly ResolvedLevel[], tol: number): Ver
     const rooms = l.ir.elements.filter((e): e is RRoom => e.kind === "room");
     const doors = l.ir.elements.filter((e): e is RDoor => e.kind === "door");
     const openings = l.ir.elements.filter((e): e is ROpening => e.kind === "opening");
-    return buildDoorAccessGraph(rooms, doors, tol, undefined, openings).hasEntrance;
+    const outdoors = l.ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
+    const graph = buildDoorAccessGraph(rooms, doors, tol, undefined, openings);
+    return levelIsGrounded(graph, rooms, doors, outdoors);
   };
   const reach = verticalReach(inputs, grounded);
   return { connections, reachable_levels: [...reach.reachable].sort((a, b) => a - b) };

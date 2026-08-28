@@ -16,9 +16,9 @@
  * `lint/ruleset.ts` (re-exported here, so the public surface is unchanged).
  */
 
-import { buildDoorAccessGraph, DEFAULT_TOL, resolvePlan } from "./analyze.js";
+import { buildDoorAccessGraph, DEFAULT_TOL, levelIsGrounded, resolvePlan } from "./analyze.js";
 import type { ResolvedLevel } from "./ir.js";
-import type { RDoor, ROpening, RRoom } from "./ir.js";
+import type { RDoor, ROpening, ROutdoor, RRoom } from "./ir.js";
 import type { Diagnostic } from "./diagnostics.js";
 import { type BuildingContext, buildLintContext } from "./lint/context.js";
 import { LINT_RULES } from "./lint/rules/index.js";
@@ -80,7 +80,9 @@ function buildingContexts(levels: readonly ResolvedLevel[], tolMm: number): Map<
     const rooms = l.ir.elements.filter((e): e is RRoom => e.kind === "room");
     const doors = l.ir.elements.filter((e): e is RDoor => e.kind === "door");
     const openings = l.ir.elements.filter((e): e is ROpening => e.kind === "opening");
-    return buildDoorAccessGraph(rooms, doors, tolMm ?? DEFAULT_TOL, undefined, openings).hasEntrance;
+    const outdoors = l.ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
+    const graph = buildDoorAccessGraph(rooms, doors, tolMm ?? DEFAULT_TOL, undefined, openings);
+    return levelIsGrounded(graph, rooms, doors, outdoors);
   };
   const reach = verticalReach(inputs, grounded);
   const out = new Map<number, BuildingContext>();

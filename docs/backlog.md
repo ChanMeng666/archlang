@@ -549,36 +549,44 @@ rather than an omission:
   ground, pinned in `test/outdoor-byte-identity.test.ts`. Adding it is a schema change and should be
   argued as one, with a consumer that wants it.
 
-### 4.6 · A balcony door GROUNDS its storey, and that costs a lint false positive — `todo`
+### 4.6 · A balcony door GROUNDS its storey, and that costs a lint false positive — `done` (v1.31)
 
-Found while authoring `examples/garden-house.arch` (v1.31), which is why it is written down here
-rather than fixed there: the remedy moves `arch lint` output for other plans and wants its own
-pass.
+Found while authoring `examples/garden-house.arch` (v1.31): `verticalReach` (`src/vertical.ts`)
+marked a storey **grounded** when it had an exterior door of its own, and a grounded storey got
+**no `arrivalRooms` entry** from its stair — the shaft's arrival edge exists precisely to rescue an
+upper floor that has no door. `lint`'s reachability rule then ran its BFS from `"exterior"`, which
+on such a storey meant *from that door*. Put an `outdoor balcony` on an upper floor with the `door`
+that [`W_BALCONY_NO_DOOR`](error-codes.md#w_balcony_no_door) requires, and the storey was grounded
+by a door that leads onto a 7 m² slab. In `garden-house` the BFS entered level 2 through the main
+bedroom and reported `W_BATH_VIA_BEDROOM` for a bathroom that opens straight off the landing —
+`describe --json`'s own `doors[].between` said `["r_landing","r_bath"]`. The plan was right and the
+rule was wrong.
 
-`verticalReach` (`src/vertical.ts`) marks a storey **grounded** when it has an exterior door of its
-own, and a grounded storey gets **no `arrivalRooms` entry** from its stair — the shaft's arrival
-edge exists precisely to rescue an upper floor that has no door. `lint`'s reachability rule then
-runs its BFS from `"exterior"`, which on such a storey means *from that door*.
+**Fixed**, narrowly, as this entry proposed: `levelIsGrounded` (`src/vertical.ts`) discounts an
+entrance door whose OUTWARD probe — one host-wall thickness off the door's own centre, on the side
+with no room, the same poly-aware pattern `site.ts`'s `windowFacingPage` uses to find a window's
+outward side — lands inside an `outdoor balcony` polygon. Every other exterior door keeps its
+historical behaviour unchanged, including a genuine hillside entrance with no balcony in sight.
+`lint.ts`'s `buildingContexts` and `describe.ts`'s `buildVerticalReport` both call it to build their
+`grounded()` callback, so `vertical.reachable_levels` and the reachability lint rules can never
+disagree with each other about which door grounds a storey — the second caution below, resolved by
+sharing one function rather than by hand-syncing two copies.
 
-Put an `outdoor balcony` on an upper floor with the `door` that
-[`W_BALCONY_NO_DOOR`](error-codes.md#w_balcony_no_door) requires, and the storey is now grounded by
-a door that leads onto a 7 m² slab. In `garden-house` the BFS therefore enters level 2 through the
-main bedroom and reports `W_BATH_VIA_BEDROOM` for a bathroom that opens straight off the landing —
-`describe --json`'s own `doors[].between` says `["r_landing","r_bath"]`. The plan is right and the
-rule is wrong.
+Two things this fix deliberately did NOT touch:
 
-**A balcony door is an exterior opening but not an ARRIVAL point**, and since v1.31 the compiler can
-tell the difference: `W_BALCONY_NO_DOOR` already computes which openings sit within a wall thickness
-of a balcony. The narrow fix is for `grounded()` to discount exactly those. Two things to be careful
-of before writing it:
+- `describe()`'s per-storey `access.hasEntrance` stays the **honest**, undiscounted fact that a
+  floor has an exterior door — a reader asking "does this floor have its own door" should not have
+  the answer laundered by what that door opens onto. Only the internal `grounded()` predicate feeding
+  `verticalReach` changed.
+- A **lint sweep over all 30 shipped examples**, before and after, moved exactly one: `garden-house`
+  lost its `W_BATH_VIA_BEDROOM`. Nothing else in the corpus has a balcony door on an upper storey, so
+  nothing else could have been reachable via one.
 
-- It **changes lint output** for any existing plan with a balcony door on an upper storey, so it
-  wants the usual sweep over the shipped examples and a note in `CHANGELOG.md`, not a silent fix.
-- `access.entrances` reports the same door as an entrance on that storey, and the two answers
-  should move together or the CLI and the lint rule will disagree about what an entrance is.
-
-`examples/garden-house.arch` names the warning in its header as deliberate and points here, so the
-example is honest in the meantime rather than quietly carrying an unexplained warning.
+`examples/garden-house.arch`'s header now names only the one warning that remains,
+`W_ROOM_NOT_EQUATOR_FACING` on Bedroom 2 — `arch validate --strict` confirms it is the only one.
+Tests: `test/vertical.test.ts` — "a balcony door is not an arrival point (backlog 4.6)", pinned by a
+counterexample PAIR (the plan with the balcony grounds via the stair's landing; the identical plan
+with the balcony removed grounds via the door again, and `W_BATH_VIA_BEDROOM` returns).
 
 ### 4.7 · The MCP registry publish races npm — `done` (v1.31, in `release.yml`)
 

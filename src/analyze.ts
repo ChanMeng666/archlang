@@ -11,14 +11,14 @@
 import { parse } from "./parser.js";
 import { link } from "./import.js";
 import { resolveAll } from "./ir.js";
-import type { ResolvedLevel, ResolvedPlan, RDoor, RRoom, ROpening } from "./ir.js";
+import type { ResolvedLevel, ResolvedPlan, RDoor, ROutdoor, RRoom, ROpening } from "./ir.js";
 import type { UseKind } from "./ast.js";
 import { BUILTIN_REGISTRY, createRegistry } from "./registry.js";
 import { NULL_WORLD } from "./world.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { Point } from "./ast.js";
 import type { CompileOptions } from "./types.js";
-import { segmentsOfWall, type WallLike, type WallSegment } from "./geometry.js";
+import { normal, segmentDirAt, segmentsOfWall, type WallLike, type WallSegment } from "./geometry.js";
 import { mergedLength, overlap1d, pointInRect, type BBox } from "./geometry/rect.js";
 import {
   collinearOverlapLength,
@@ -448,6 +448,84 @@ export function buildDoorAccessGraph(
   });
 
   return { entrances, hasEntrance: entrances.length > 0, edges, rooms: roomNodes };
+}
+
+/**
+ * Does door `d` open onto a balcony rather than genuinely onto the ground/street? Probes ONE
+ * host-wall thickness off the door's own centre, on the side with no room — the exact
+ * pattern `site.ts`'s `windowFacingPage` uses to find a window's outward side, reused
+ * here because the question is the same shape: which side of this opening is "outside",
+ * and what is actually out there. The SHAPE, never a bounding box — a poly balcony or a
+ * poly room is tested with `pointInRoomBox`/`pointInPolygon`, exactly as those probes are
+ * everywhere else in this codebase.
+ *
+ * A door whose probe cannot tell which side is outward (a room on BOTH sides, or on
+ * NEITHER — a free-standing wall) is never called a balcony door: the ambiguous case
+ * keeps the historical "this door is an entrance" answer rather than guessing.
+ */
+function doorFacesBalcony(d: RDoor, rooms: readonly RRoom[], balconies: readonly ROutdoor[]): boolean {
+  if (!d.host || balconies.length === 0) return false;
+  const n = normal(segmentDirAt(d.host, d.at));
+  const dist = Math.max(d.host.thickness, 1);
+  const plus: Point = { x: d.at.x + n.x * dist, y: d.at.y + n.y * dist };
+  const minus: Point = { x: d.at.x - n.x * dist, y: d.at.y - n.y * dist };
+  const onPlus = rooms.some((r) => pointInRoomBox(plus, roomBox(r)));
+  const onMinus = rooms.some((r) => pointInRoomBox(minus, roomBox(r)));
+  if (onPlus === onMinus) return false;
+  const outward = onPlus ? minus : plus;
+  return balconies.some((b) =>
+    pointInPolygon(outward.x, outward.y, b.poly ?? rectRing({ x: b.at.x, y: b.at.y, w: b.size.w, h: b.size.h })),
+  );
+}
+
+/**
+ * Is a storey GROUNDED for {@link import("./vertical.js").verticalReach} purposes — does
+ * it have an exterior entrance that is a real arrival point?
+ *
+ * A storey with an `outdoor balcony` and the door
+ * [`W_BALCONY_NO_DOOR`](./error-catalog.js) requires is grounded by that door under the
+ * plain "has an exterior door" reading, which is wrong: the door leads onto a slab, not
+ * onto the ground, and treating it as an arrival point suppresses the stair's own
+ * `arrivalRooms` entry — on `examples/garden-house.arch` the reachability BFS then enters
+ * the upper storey through the main bedroom instead of the landing, and
+ * `W_BATH_VIA_BEDROOM` fires on a bathroom that in fact opens straight off the landing
+ * (backlog 4.6).
+ *
+ * The fix is narrow, on purpose: an entrance door whose {@link doorFacesBalcony} probe
+ * lands inside an `outdoor balcony` is discounted from grounding; every other exterior
+ * door — including one onto an upper-storey deck that is NOT a `balcony` surface, and a
+ * hillside entrance with no balcony in sight — keeps today's behaviour exactly. A storey
+ * grounds as soon as ONE of its entrance doors survives the discount, so a balcony door
+ * beside a real front door changes nothing.
+ *
+ * This governs the internal `grounded()` predicate `verticalReach` is built on — never
+ * `describe()`'s per-storey `access.hasEntrance`, which stays the HONEST, undiscounted
+ * fact that this floor has an exterior door (a reader asking "does this floor have its
+ * own door" should not have the answer laundered by what that door opens onto). The two
+ * are read together deliberately: `lint.ts` and `describe.ts` both call this function to
+ * build their `grounded()` callback, so the cross-storey answer (`vertical.reachable_levels`,
+ * and the reachability lint rules that key off it) can never disagree with itself between
+ * the CLI and the lint pass — see backlog 4.6's second caution.
+ *
+ * Lives here, next to {@link buildDoorAccessGraph}, rather than in `vertical.ts`: this
+ * needs `pointInRoomBox`/`roomBox` (this module) and the door-normal probe geometry, and
+ * `vertical.ts` is imported by the `stair` element, so `vertical.ts → analyze.ts →
+ * registry.ts → elements/defs.ts → elements/stair.ts` would be a real import cycle.
+ */
+export function levelIsGrounded(
+  graph: AccessGraph,
+  rooms: readonly RRoom[],
+  doors: readonly RDoor[],
+  outdoors: readonly ROutdoor[],
+): boolean {
+  if (!graph.hasEntrance) return false;
+  const balconies = outdoors.filter((o) => o.surface === "balcony");
+  if (balconies.length === 0) return true;
+  const byId = new Map(doors.map((d) => [d.id, d]));
+  return graph.entrances.some((id) => {
+    const d = byId.get(id);
+    return !d || !doorFacesBalcony(d, rooms, balconies);
+  });
 }
 
 /**

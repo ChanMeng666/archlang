@@ -243,6 +243,19 @@ not yet carry the other's, so 25,911 + 1,964 + 360 predicts 28,235 while the mer
   collision hiding behind the same missing pass) both read clean now; the pass is a no-op
   on every plan with no `outdoor` label, and `test/outdoor-byte-identity.test.ts` stays
   green. `src/label-placement.ts`, `src/elements/outdoor.ts`, `src/scene-build.ts`.
+- **A balcony door no longer GROUNDS its storey.** `verticalReach`'s `grounded()` predicate
+  treated any exterior door as an arrival point, so an upper storey with only a balcony
+  door was "grounded" by a door that leads onto a 7 m² slab — suppressing the stair's own
+  `arrivalRooms` entry and routing `garden-house`'s reachability BFS through the main
+  bedroom instead of the landing, which raised a spurious `W_BATH_VIA_BEDROOM` on a
+  bathroom that in fact opens straight off the landing (`docs/backlog.md` 4.6). Fixed
+  narrowly: an entrance door whose outward probe — one host-wall thickness off the door's
+  own centre, on the side with no room — lands inside an `outdoor balcony` is now
+  discounted from grounding; every other exterior door is unaffected. A lint sweep over
+  all 30 shipped examples moved exactly one — `garden-house` loses its
+  `W_BATH_VIA_BEDROOM` — and `describe()`'s per-storey `access.hasEntrance` stays the
+  honest, undiscounted fact that a floor has a door. `src/analyze.ts` (`levelIsGrounded`),
+  `src/lint.ts`, `src/describe.ts`.
 - **`A-ROOF` has been missing from the DXF LAYER table since v1.29**, so
   `examples/bungalow.arch` exported a DXF referencing an undeclared layer for two releases.
   The closure test that was supposed to catch it stayed green throughout, because its
