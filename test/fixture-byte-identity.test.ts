@@ -526,11 +526,17 @@ describe("fixture symbols — the outdoor tranche (re-blessed when redrawn)", ()
       <polygon points="0,0 3000,0 3000,2400 0,2400" fill="#fbfaf7"/>
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
-      <polygon points="1415.76,432 1448,438.41 1475.33,456.67 1493.59,484 1500,516.24 1500,815.76 1493.59,848 1475.33,875.33 1448,893.59 1415.76,900 384.24,900 352,893.59 324.67,875.33 306.41,848 300,815.76 300,516.24 306.41,484 324.67,456.67 352,438.41 384.24,432" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.8"/>
-      <polygon points="300,300 1500,300 1500,432 300,432" fill="#ffffff" stroke="#a8a29a" stroke-width="2.64"/>
-      <line x1="396" y1="549" x2="1404" y2="549" stroke="#a8a29a" stroke-width="2.64"/>
-      <line x1="396" y1="666" x2="1404" y2="666" stroke="#a8a29a" stroke-width="2.64"/>
-      <line x1="396" y1="783" x2="1404" y2="783" stroke="#a8a29a" stroke-width="2.64"/>
+      <polygon points="1416,300 1448.15,306.39 1475.4,324.6 1493.61,351.85 1500,384 1500,816 1493.61,848.15 1475.4,875.4 1448.15,893.61 1416,900 384,900 351.85,893.61 324.6,875.4 306.39,848.15 300,816 300,384 306.39,351.85 324.6,324.6 351.85,306.39 384,300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.8"/>
+      <polygon points="1260,348 1452,348 1452,852 1260,852" fill="#ffffff" stroke="#a8a29a" stroke-width="2.64"/>
+      <line x1="1260" y1="600" x2="1452" y2="600" stroke="#a8a29a" stroke-width="2.64"/>
+      <line x1="588" y1="384" x2="588" y2="780" stroke="#a8a29a" stroke-width="2.64"/>
+      <line x1="780" y1="384" x2="780" y2="780" stroke="#a8a29a" stroke-width="2.64"/>
+      <line x1="972" y1="384" x2="972" y2="780" stroke="#a8a29a" stroke-width="2.64"/>
+      <line x1="396" y1="483" x2="1164" y2="483" stroke="#a8a29a" stroke-width="2.64"/>
+      <line x1="396" y1="582" x2="1164" y2="582" stroke="#a8a29a" stroke-width="2.64"/>
+      <line x1="396" y1="681" x2="1164" y2="681" stroke="#a8a29a" stroke-width="2.64"/>
+      <circle cx="492" cy="840" r="36" fill="#a8a29a" stroke="#a8a29a" stroke-width="2.64"/>
+      <circle cx="1044" cy="840" r="36" fill="#a8a29a" stroke="#a8a29a" stroke-width="2.64"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>

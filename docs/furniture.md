@@ -238,13 +238,13 @@ terrace, a parking bay — that has to keep reading through it.
 |---|---|---|---|---|
 | `tree` · `deciduous_tree` | softly scalloped canopy over the crown ring and the trunk, **unfilled** | — | symmetric | |
 | `conifer` · `pine` | the same canopy with the notches cut deeper, so it reads as needled | — | symmetric | |
-| `shrub` · `bush` | four overlapping lobes round a centre — the massed outline of a bush | — | symmetric | |
-| `hedge` | the run's outline with its clipped face scalloped along the length | 2000 × 600 | free | |
-| `bbq` · `grill` · `barbecue` | the cooking body with its bars, and the side shelf across the back | 1200 × 600 | derived | |
+| `shrub` · `bush` | a lumpy cloud of eight overlapping lobes, **unfilled**, with three short interior arcs for foliage | — | symmetric | |
+| `hedge` | a scalloped band — a chain of overlapping arcs down **both** faces, a half-scallop closing each end, one dashed centreline, and **no box** | 2000 × 600 | free | |
+| `bbq` · `grill` · `barbecue` | the body with a **cross** grid of grill bars, the side shelf down the right, and two wheels on the front edge | 1200 × 600 | derived | |
 | `outdoor_table` · `patio_table` | round or eased-rectangular top with four chairs hugging the footprint edges | — | symmetric | |
-| `outdoor_chair` · `patio_chair` | the seat with its slatted back along the top edge | — | free | |
+| `outdoor_chair` · `patio_chair` | the `chair` construction — seat, back band, inset cushion — with **slats** across the back and an armrest each side | — | free | |
 | `umbrella` · `parasol` | an eight-segment canopy with the pole at the centre | — | symmetric | |
-| `bicycle` · `bike` | two wheels, the frame triangle between them, the bars and the saddle | — | free | |
+| `bicycle` · `bike` | two wheels at a quarter and three quarters of the run, the four-tube **diamond frame** between them, the saddle and the bars | — | free | |
 | `motorcycle` | the two wheels with the body slung between them | — | free | |
 | `hot_tub` · `spa` | the shell, the water inside it, and the four seats round the rim | — | symmetric | |
 | `swing` · `swing_set` | the beam down the long axis, a leg at each end, and two seats | — | free | |
@@ -268,7 +268,14 @@ as on a wall. Outdoors the wall is the exception.
 
 **`bbq` is the only outdoor kind with a frontal clearance** (900 mm — the standing room a cook
 needs at an open grill). The hot tub deliberately has none: it is symmetric, so it has no front
-to measure one from.
+to measure one from. The barbecue's back is the **top** edge, this module's convention — the
+shelf is on the right and the wheels are on the bottom, so the top is the edge clear of both
+and the one that goes against a wall or fence.
+
+Three of the outdoor symbols are drawn from **arcs alone**, with no closed shape to fill:
+`shrub` and `hedge` (planting reads through, and a box around a hedge makes it read as a tray),
+and the outer half of every lobe only — a face scallop draws 120° of its circle, not the whole
+thing, or the run reads as a chain of overlapping rings.
 
 Three of them are drawn **dashed**, and it is the same convention every time — *above the cut
 plane*, the rule `upper_cabinet` follows indoors and the one `roof` and `void` ship: the whole

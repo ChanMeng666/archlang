@@ -109,6 +109,21 @@ function alongPt(r: Rect, u: number, v: number): Point {
   return horizontal ? { x: r.x + r.w * u, y: r.y + r.h * (0.5 + v) } : { x: r.x + r.w * (0.5 + v), y: r.y + r.h * u };
 }
 
+/**
+ * The PAGE bearing, in screen degrees, of a direction given in a footprint's own
+ * (along, across) axes — the angular twin of {@link alongPt}.
+ *
+ * A symbol that reads off its own long axis and then names an angle in page degrees is right
+ * on one orientation and wrong on the other: the hedge's scallops would bulge off the ends of
+ * a run stood on end instead of off its faces. Routing every bearing through this keeps the
+ * two consistent by construction.
+ */
+function dirDeg(r: Rect, du: number, dv: number): number {
+  const { horizontal } = axes(r);
+  const rad = horizontal ? Math.atan2(dv, du) : Math.atan2(du, dv);
+  return (rad * 180) / Math.PI;
+}
+
 // ---------------------------------------------------------------------------
 // Planting
 
@@ -149,40 +164,148 @@ export function drawConifer(r: Rect, g: GlyphCtx): SceneNode[] {
 }
 
 /**
- * A shrub: four overlapping lobes round a centre — the massed, cloud-like outline a bush
- * takes in plan, as against the single canopy of a tree.
+ * The eight lobes of a {@link drawShrub}, as `[bearing°, centre distance, lobe radius]` —
+ * the last two as fractions of the enclosing radius.
  *
- * The lobes sit at a 90-degree pitch and their radius is chosen so `d + rl` is exactly the
- * half-extent, which both fills the footprint and keeps every lobe inside it. Four of them
- * is what makes the symbol quarter-turn invariant; five would read no better and would put
- * the catalog's `symmetric` claim at odds with the drawing.
+ * **Every row sums `distance + radius` to exactly 1.** That is the containment proof: a point
+ * on lobe `i` is within `radius_i` of a centre `distance_i` from the glyph centre, so it is
+ * within `1 · R` of that centre, and `R` is half the footprint's short side. No row may be
+ * added or edited without preserving the sum.
+ *
+ * The bearings are deliberately IRREGULAR — 12°, 58°, 104°, … rather than a 45° pitch — and
+ * the radii vary with them, because a bush that reads as a bush is lumpy. The first draft of
+ * this symbol was four equal circles at a 90° pitch, which is exactly rotation-invariant and
+ * reads as a flower. The catalog still calls the category `symmetric`, and that claim is
+ * unchanged and still true: it means the piece has no distinguishable BACK, which is a fact
+ * about bushes, not a claim that the drawing maps onto itself vertex for vertex. See
+ * `test/glyphs-outdoor.test.ts`, which proves the weaker, honest property instead — no side
+ * of the outline is favoured.
+ */
+const SHRUB_LOBES: readonly (readonly [number, number, number])[] = [
+  [12, 0.5, 0.5],
+  [58, 0.55, 0.45],
+  [104, 0.48, 0.52],
+  [147, 0.57, 0.43],
+  [193, 0.52, 0.48],
+  [236, 0.58, 0.42],
+  [284, 0.46, 0.54],
+  [327, 0.54, 0.46],
+];
+
+/**
+ * A shrub: a lumpy cloud of eight overlapping lobes, with a scribble of foliage inside it.
+ *
+ * Only the OUTWARD half of each lobe is drawn — a 160° arc centred on the lobe's own bearing
+ * — so the outline is a scalloped cloud rather than eight visible circles. 160° keeps every
+ * arc comfortably minor, which is the only kind the Scene's `arc` primitive carries (the
+ * large-arc flag is pinned to `0` in every backend, so a wider sweep would be drawn as its
+ * complement in some exports and not others).
+ *
+ * Unfilled, like the tree and the hedge: planting overhangs ground — a path, a bed, a bay —
+ * that has to keep reading underneath it.
+ *
+ * Prim count: 11 (eight lobes, three interior scribbles).
  */
 export function drawShrub(r: Rect, g: GlyphCtx): SceneNode[] {
   const c = centerOf(r);
-  const rad = shortSide(r) * 0.5;
-  const d = rad * 0.55;
-  const lobe = rad * 0.45;
-  for (let i = 0; i < 4; i++) g.ring(polar(c, d, i * 90), lobe);
-  g.dot(c, rad * 0.1, g.stroke, "extraThin");
+  const rad = shortSide(r) * 0.48;
+  for (const [deg, dist, lobe] of SHRUB_LOBES) {
+    const lc = polar(c, rad * dist, deg);
+    g.arcSeg(lc, rad * lobe, polar(lc, rad * lobe, deg - 80), polar(lc, rad * lobe, deg + 80), 1);
+  }
+  // Three short interior arcs: the mass of foliage inside the outline. Concentric about the
+  // centre at three radii and three bearings, so they read as texture rather than as a
+  // second, smaller shrub.
+  for (const [deg, ring] of [
+    [40, 0.2],
+    [165, 0.34],
+    [275, 0.26],
+  ] as const) {
+    const rr = rad * ring;
+    g.arcSeg(c, rr, polar(c, rr, deg - 50), polar(c, rr, deg + 50), 1, "extraThin");
+  }
   return g.nodes;
 }
 
 /**
- * A hedge: the run's outline with its clipped face scalloped along the length.
+ * A hedge: a clipped RUN, drawn as a scalloped cloud band with no box around it.
  *
- * Unlike a tree this one is a RUN, so the scallop count comes from the footprint's own
- * aspect — one lobe per depth — and is clamped to twelve, because a 10000x10 fuzz rect would
- * otherwise ask for a thousand. The lobe radius is the smaller of HALF THE DEPTH and half the
- * pitch: the first limb is what makes a lobe fill the run's full width, so the symbol reads as
- * clipped foliage rather than as balls in a box, and the second is what keeps a nearly square
- * hedge (two lobes over a short run) from pushing its first lobe out through the end.
+ * The first draft outlined the run as a rectangle and put circles inside it, which read as
+ * plates on a tray — the rectangle is what makes it read as a container. There is no
+ * rectangle here: the outline IS the scallops, a chain of outward-bulging arcs down each long
+ * side closed by a half-scallop at each end, and the only interior mark is one dashed
+ * centreline.
+ *
+ * Four constants earn their place:
+ *
+ *  - **The count** is `clamp(round(aspect × 2), 3, 16)` — a lobe every half-depth of run,
+ *    which is what makes a long hedge read as clipped foliage rather than as a lozenge. The
+ *    clamp is what bounds the primitive count: a 10000×10 fuzz rect asks for two thousand
+ *    lobes and gets sixteen.
+ *  - **The radius** is `long / (n + 1.5)`, held to the half-depth and alternating −15% on
+ *    every other lobe so consecutive bumps differ. Each arc spans `1.97 × radius` along the
+ *    run against a step of about `0.6 × radius`, so neighbours OVERLAP heavily — which is
+ *    what fuses them into one outline instead of a row of separate bumps.
+ *  - **The sweep** is 120° on a face — only the OUTER BULGE of each lobe, not most of its
+ *    circle. At 160° the drawn arcs crossed deep inside one another and the run read as a
+ *    chain of overlapping rings rather than as a clipped edge; 120° leaves a shallow scallop
+ *    half a radius deep, which is what a hedge face actually looks like. The end caps keep
+ *    160°, because a cap's job IS to close the end. Both are comfortably minor, which is the
+ *    only kind the Scene's `arc` carries. Each arc's apex is exactly on the run's own face, so
+ *    the outline touches the footprint edge and never crosses it.
+ *  - **The end-cap radius** is `min(half-depth, quarter-length)`. The first limb is the
+ *    natural one; the second is what keeps a nearly-square hedge's two caps from reaching
+ *    past each other and out through the opposite end.
+ *
+ * Every bearing goes through {@link dirDeg}, so a run stood on end draws the same object
+ * rather than a hedge with its scallops on the wrong faces.
+ *
+ * Unfilled, like the tree and the shrub: a hedge is planting, and the ground it overhangs has
+ * to read through it.
+ *
+ * Prim count: `2n + 3` — n lobes a side, two end caps, one dashed centreline. That is 13 on a
+ * 1600×700 footprint and 35 at the clamp ceiling, which makes it the one glyph in this module
+ * outside the ~2–15 budget the others keep: a run's outline is inherently as long as the run.
+ * `test/glyphs-outdoor.test.ts` carves the budget for this family by name.
  */
+/** Half the sweep of one FACE scallop, in degrees (the end caps keep the wider 80). */
+const FACE_SWEEP = 60;
+
 export function drawHedge(r: Rect, g: GlyphCtx): SceneNode[] {
   const { long, short } = axes(r);
-  g.poly(rectPoly(r), "none");
-  const n = clamp(Math.round(long / short), 2, 12);
-  const lobe = Math.min(short * 0.5, (long / n) * 0.49);
-  for (let i = 0; i < n; i++) g.ring(alongPt(r, (i + 0.5) / n, 0), lobe, "extraThin");
+  const half = short / 2;
+  const n = clamp(Math.round((long / short) * 2), 3, 16);
+  // The lobe radius comes from the RUN LENGTH, not from the pitch, and is then held to the
+  // half-depth. Both limbs are containment: an arc spans `2 sin80 = 1.97` radii along the run,
+  // so a radius keyed to the pitch alone puts the first and last lobe out through the ends
+  // (it did, by 35 mm on a 1600x700 footprint), and a radius over the half-depth puts the
+  // lobe's own centre across the centreline and its far side out through the opposite face.
+  const lobe = Math.min(long / (n + 1.5), half);
+  const halfSpan = lobe * Math.sin((FACE_SWEEP * Math.PI) / 180);
+  // Centres run from one half-span in to one half-span from the far end, so the chain
+  // touches both ends exactly. `n` is at least 3, so the divisor is never zero.
+  const step = (long - 2 * halfSpan) / (n - 1);
+  for (const side of [-1, 1] as const) {
+    for (let i = 0; i < n; i++) {
+      // Alternate DOWNWARD only: a bigger odd lobe would move the extremes the two clamps
+      // above were chosen to hold.
+      const rad = lobe * (i % 2 === 0 ? 1 : 0.85);
+      const c = alongPt(r, (halfSpan + i * step) / long, (side * (half - rad)) / short);
+      const apex = dirDeg(r, 0, side);
+      g.arcSeg(c, rad, polar(c, rad, apex - FACE_SWEEP), polar(c, rad, apex + FACE_SWEEP), 1);
+    }
+  }
+  // The two ends, each a half-scallop closing the band.
+  const cap = Math.min(half, long * 0.25);
+  for (const dir of [-1, 1] as const) {
+    const u = dir < 0 ? cap / long : 1 - cap / long;
+    const c = alongPt(r, u, 0);
+    const apex = dirDeg(r, dir, 0);
+    g.arcSeg(c, cap, polar(c, cap, apex - 80), polar(c, cap, apex + 80), 1);
+  }
+  // One dashed centreline: enough interior to say "clipped run" without competing with the
+  // outline. Inset to the end caps' centres so it stays inside them.
+  g.seg(alongPt(r, cap / long, 0), alongPt(r, 1 - cap / long, 0), "extraThin", true);
   return g.nodes;
 }
 
@@ -190,21 +313,41 @@ export function drawHedge(r: Rect, g: GlyphCtx): SceneNode[] {
 // Garden furniture
 
 /**
- * A barbecue: the cooking body with its bars, and the side shelf across the back.
+ * A barbecue: the kettle body with its grill bars crossed over it, the side shelf, and the
+ * two wheels it is rolled on.
  *
- * The shelf is what makes this `directional` — it is the side that goes against the wall or
- * the fence, so `anchor top` can derive the quarter-turn that puts the cook on the open
- * side. It is drawn in the basin colour rather than the body colour so the two read apart at
- * plan scale, which is the same trick the kitchen sink's bowls use.
+ * The first draft was a plain rectangle with four horizontal lines and read as a radiator.
+ * What tells a barbecue from a slab is the CROSS grid — bars in both directions — the shelf
+ * hanging off one end, and the wheels; all three are here.
+ *
+ * **`directional`, and the back is the TOP edge**, which is this module's convention and is
+ * the right answer for this piece: the shelf is on the RIGHT and the wheels are at the
+ * BOTTOM (the front, where the cook stands), so the top edge is the one clear of both and is
+ * the side that goes against the wall or the fence. `anchor top` therefore derives the
+ * quarter-turn that puts the cook on the open side, with the shelf to their hand.
+ *
+ * Prim count: 11 (body, shelf, shelf line, 3 + 3 grill bars, two wheels).
  */
 export function drawBbq(r: Rect, g: GlyphCtx): SceneNode[] {
-  const shelf: Rect = { x: r.x, y: r.y, w: r.w, h: r.h * 0.22 };
-  const body: Rect = { x: r.x, y: r.y + r.h * 0.22, w: r.w, h: r.h * 0.78 };
-  g.poly(roundedRectPoly(body, shortSide(body) * 0.18), g.body);
+  const s = shortSide(r);
+  g.poly(roundedRectPoly(r, s * 0.14), g.body);
+  // The side shelf: a band down the right-hand fifth, in the basin colour so it reads apart
+  // from the body at plan scale — the same trick the kitchen sink's bowls use.
+  const shelf: Rect = { x: r.x + r.w * 0.8, y: r.y + r.h * 0.08, w: r.w * 0.16, h: r.h * 0.84 };
   g.poly(rectPoly(shelf), g.basin, "extraThin");
-  for (const f of [0.25, 0.5, 0.75]) {
-    const y = body.y + body.h * f;
-    g.seg({ x: body.x + body.w * 0.08, y }, { x: body.x + body.w * 0.92, y }, "extraThin");
+  g.seg({ x: shelf.x, y: shelf.y + shelf.h / 2 }, { x: shelf.x + shelf.w, y: shelf.y + shelf.h / 2 }, "extraThin");
+  // The grill: a 3x3 cross grid over the cooking area, which is everything left of the shelf.
+  const grill: Rect = { x: r.x + r.w * 0.08, y: r.y + r.h * 0.14, w: r.w * 0.64, h: r.h * 0.66 };
+  for (let i = 1; i <= 3; i++) {
+    const x = grill.x + (grill.w * i) / 4;
+    g.seg({ x, y: grill.y }, { x, y: grill.y + grill.h }, "extraThin");
+  }
+  for (let i = 1; i <= 3; i++) {
+    const y = grill.y + (grill.h * i) / 4;
+    g.seg({ x: grill.x, y }, { x: grill.x + grill.w, y }, "extraThin");
+  }
+  for (const f of [0.16, 0.62]) {
+    g.dot({ x: r.x + r.w * f, y: r.y + r.h * 0.9 }, s * 0.06, g.stroke, "extraThin");
   }
   return g.nodes;
 }
@@ -244,20 +387,36 @@ export function drawOutdoorTable(r: Rect, g: GlyphCtx): SceneNode[] {
 }
 
 /**
- * A patio chair: the seat with its slatted back along the top edge.
+ * A patio chair: the seat, the back band along the top edge with its SLATS, and an armrest
+ * each side.
+ *
+ * Built on `glyphs-living.ts`'s `drawChair` — seat, back band on the top edge, inset cushion
+ * — so the two read as the same kind of object, and separated from it by the SLATS, which is
+ * what an outdoor chair actually has. The armrests are what separate it from a `bin`, whose
+ * silhouette (a small rounded rect with a line across it) it would otherwise share; they run
+ * from a quarter to three quarters of the depth, clear of the eased corners, because the
+ * first draft tucked them into the rounding and they vanished.
  *
  * Deliberately NOT `directional`, for the reason every other seat in the catalog is not:
  * seating is arranged rather than installed, and a chair with its back to the room — or to
  * the fence — is a layout, not a defect. The symbol still has a front, which is what the
  * slats say; nothing derives a rotation from it.
+ *
+ * Prim count: 9 (seat, back band, seat cushion, four slats, two armrests).
  */
 export function drawOutdoorChair(r: Rect, g: GlyphCtx): SceneNode[] {
-  g.poly(roundedRectPoly(r, shortSide(r) * 0.15), g.body);
-  const backY = r.y + r.h * 0.26;
-  g.seg({ x: r.x, y: backY }, { x: r.x + r.w, y: backY }, "extraThin");
-  for (const f of [0.3, 0.5, 0.7]) {
+  const s = shortSide(r);
+  g.poly(roundedRectPoly(r, s * 0.15), g.body);
+  const back: Rect = { x: r.x, y: r.y, w: r.w, h: r.h * 0.2 };
+  g.poly(roundedRectPoly(back, s * 0.08), g.body);
+  g.poly(roundedRectPoly(insetRectSides(r, 0.22, 0.22, 0.3, 0.1), s * 0.1), g.body, "extraThin");
+  for (const f of [0.28, 0.43, 0.57, 0.72]) {
     const x = r.x + r.w * f;
-    g.seg({ x, y: r.y + r.h * 0.06 }, { x, y: backY }, "extraThin");
+    g.seg({ x, y: r.y + r.h * 0.03 }, { x, y: r.y + r.h * 0.17 }, "extraThin");
+  }
+  for (const f of [0.11, 0.89]) {
+    const x = r.x + r.w * f;
+    g.seg({ x, y: r.y + r.h * 0.26 }, { x, y: r.y + r.h * 0.74 }, "extraThin");
   }
   return g.nodes;
 }
@@ -285,28 +444,42 @@ export function drawUmbrella(r: Rect, g: GlyphCtx): SceneNode[] {
 // Parked things
 
 /**
- * A bicycle: two wheels, the frame between them, the bars and the saddle.
+ * A bicycle: two wheels, the diamond frame between them, the saddle and the bars.
+ *
+ * The first draft was two rings and a stick, which reads as a trolley. A bicycle is legible
+ * in plan only from its FRAME — the four tubes of the diamond, seat stay and seat tube behind
+ * the bottom bracket, top tube and down tube in front of it — so all four are drawn, at
+ * `extraThin` so they sit under the wheels rather than competing with them.
  *
  * Read off the footprint's own LONG axis (see {@link alongPt}), so a rack turned across a
  * path draws a bicycle rather than a different object. The wheel radius is the smaller of a
- * fraction of the length and a fraction of the width, which is what keeps both wheels inside
- * a footprint of any aspect — including the 10000x10 the fuzz asks about.
+ * fraction of the width and a QUARTER of the length, which is what keeps both wheels inside
+ * a footprint of any aspect: a hub at 25% of the run with a radius of at most 25% of it
+ * cannot reach past the end. At 1x1 the frame collapses into the wheels and the symbol
+ * degenerates to two rings, which is the honest drawing at that size.
  *
- * The frame is drawn as two segments through an offset apex rather than one straight bar:
- * two rings and a line read as a trolley, and the triangle is what says bicycle.
+ * Prim count: 8 (two wheels, four frame tubes, saddle, handlebar).
  */
 export function drawBicycle(r: Rect, g: GlyphCtx): SceneNode[] {
   const { long, short } = axes(r);
-  const wheel = Math.min(long * 0.16, short * 0.45);
-  const rear = alongPt(r, 0.18, 0);
-  const front = alongPt(r, 0.82, 0);
+  const wheel = Math.min(short * 0.42, long * 0.24);
+  const rear = alongPt(r, 0.25, 0);
+  const front = alongPt(r, 0.75, 0);
   g.ring(rear, wheel);
   g.ring(front, wheel);
-  const apex = alongPt(r, 0.5, -0.25);
-  g.seg(rear, apex, "extraThin");
-  g.seg(apex, front, "extraThin");
-  g.seg(alongPt(r, 0.8, -0.45), alongPt(r, 0.8, 0.45), "extraThin");
-  g.seg(alongPt(r, 0.42, -0.12), alongPt(r, 0.42, 0.12), "extraThin");
+  // The diamond: bottom bracket on the centreline, seat and head tops above it.
+  const bb = alongPt(r, 0.45, 0);
+  const seat = alongPt(r, 0.34, -0.32);
+  const head = alongPt(r, 0.7, -0.26);
+  g.seg(rear, seat, "extraThin"); // seat stay
+  g.seg(seat, bb, "extraThin"); // seat tube
+  g.seg(seat, head, "extraThin"); // top tube
+  g.seg(head, bb, "extraThin"); // down tube
+  // The saddle runs ALONG the bike above the rear hub; the bars run ACROSS it at the head,
+  // and are deliberately SHORTER than the wheel they sit over — drawn full width they read as
+  // a diameter through the front wheel rather than as handlebars above it.
+  g.seg(alongPt(r, 0.28, -0.36), alongPt(r, 0.4, -0.36));
+  g.seg(alongPt(r, 0.74, -0.32), alongPt(r, 0.74, 0.32));
   return g.nodes;
 }
 
