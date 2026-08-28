@@ -55,7 +55,7 @@ const verts = (loop: EdgeLoop): Point[] => loop.map(edgeStart);
 const near = (a: Point, b: Point, tol = 1e-9): boolean => Math.hypot(a.x - b.x, a.y - b.y) <= tol;
 
 describe("PointInterner", () => {
-  it("fuses points within a micron and hands back the FIRST object registered", () => {
+  it("fuses points within a tenth of a micron and hands back the FIRST object registered", () => {
     const i = new PointInterner();
     const a = i.get(P(10, 20));
     const b = i.get(P(10 + 1e-9, 20 - 1e-9));

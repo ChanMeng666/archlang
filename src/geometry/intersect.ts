@@ -251,6 +251,25 @@ function anglesInSweep(arc: Arc, angles: readonly number[]): number[] {
  * abscissa `c.x ± √(r² − dy²)` has an unambiguous root.
  */
 export function splitArcYMonotone(arc: Arc): Arc[] {
+  const hit = Y_MONOTONE_MEMO.get(arc);
+  if (hit) return hit;
+  const out = computeYMonotone(arc);
+  Y_MONOTONE_MEMO.set(arc, out);
+  return out;
+}
+
+/**
+ * Memo for {@link splitArcYMonotone}, keyed by the `Arc` OBJECT.
+ *
+ * A winding test walks every arc of every loop it is asked about, and the joinery layer
+ * asks thousands of times per plan; re-deriving the same two cuts each time was the
+ * dominant cost on a curved drawing. A `WeakMap` keeps this a pure memo rather than
+ * state: the result is a total function of the arc, entries die with the arcs, and
+ * nothing observable depends on whether a lookup hit.
+ */
+const Y_MONOTONE_MEMO = new WeakMap<Arc, Arc[]>();
+
+function computeYMonotone(arc: Arc): Arc[] {
   if (arc.r <= 0 || arc.sweep === 0) return [arc];
   const ts: number[] = [];
   for (const t of anglesInSweep(arc, [Math.PI / 2, -Math.PI / 2])) {

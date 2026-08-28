@@ -16,8 +16,9 @@
  * merely equal coordinates. That identity is the whole point: the joinery layer chains
  * sub-edges by vertex key, and a corner that arrives from two directions as two
  * near-equal-but-distinct points is a corner the chainer cannot close. {@link PointInterner}
- * is the single place a positional tolerance is applied (one micron, via a quantised
- * key); nothing downstream compares coordinates with an epsilon of its own.
+ * is the single place a positional tolerance is applied ({@link SNAP_MM}, via a
+ * quantised key — see its comment for why that number and not a finer one); nothing
+ * downstream compares coordinates with an epsilon of its own.
  *
  * ## The offset-sign convention, and how it is pinned
  *
@@ -130,10 +131,39 @@ export const reverseLoop = (loop: EdgeLoop): EdgeLoop => loop.map(reverseEdge).r
  * Point interning
  * ------------------------------------------------------------------------- */
 
-/** Quantisation of the interner's key: one micron. */
-const KEY_SCALE = 1e6;
+/**
+ * Quantisation of the interner's key: **a hundredth of a millimetre** — exactly `fmt2`'s
+ * own output resolution, so *two points that print identically are one point*.
+ *
+ * This number is a robustness decision, not a rounding preference, and it was MEASURED
+ * rather than guessed. Coordinates run to `1e4` mm at building scale, so plain double
+ * arithmetic is good to about `1e-8` mm, which would suggest a far finer key. But a
+ * near-tangent or very oblique crossing amplifies that error by a SQUARE ROOT - the
+ * intersection's discriminant is near zero, so its two roots separate by the square root
+ * of it. Three configurations measured while building this layer produced, where geometry
+ * has exactly ONE crossing, two points **1e-5 mm** apart (an arc whose radius barely
+ * exceeded half its chord), **7e-4 mm** apart (a 240 mm run capping into a 120 mm curved
+ * one) and **1e-3 mm** apart (a curved band grazing a straight one's corner). At any
+ * finer key each of those is two vertices, and the split phase then emits a spurious edge
+ * a fraction of a micron long between them - which leaves the boundary graph with an odd
+ * vertex and the chainer with a chain that cannot close.
+ *
+ * `0.01` mm is the resolution the DRAWING itself has: every coordinate that reaches a
+ * backend goes through `fmt2`, which rounds to two decimals. So nothing this fuses could
+ * ever have been drawn as two distinct points. It is also four orders below the thinnest
+ * feature architecture contains, and exact on integers (`Math.round(n * 100)` is exact
+ * for every coordinate a plan can hold), so a rectilinear plan's vertices are untouched.
+ */
+const KEY_SCALE = 1e2;
 
-/** Positional key of a point, at micron resolution, with `−0` normalised to `0`. */
+/**
+ * The distance below which two points are the SAME vertex, in millimetres - the single
+ * positional tolerance of the whole joinery layer. Exported so a consumer or a test
+ * DERIVES it rather than retyping a number that must agree with `KEY_SCALE`.
+ */
+export const SNAP_MM = 1 / KEY_SCALE;
+
+/** Positional key of a point, at {@link SNAP_MM}, with `−0` normalised to `0`. */
 export function pointKey(p: Point): string {
   const x = Math.round(p.x * KEY_SCALE);
   const y = Math.round(p.y * KEY_SCALE);
@@ -143,8 +173,8 @@ export function pointKey(p: Point): string {
 /**
  * The single place a positional tolerance lives.
  *
- * Two points within a micron are the SAME vertex, and the first one registered is the
- * object every later caller gets back — so registration order is the canonical order,
+ * Two points within {@link SNAP_MM} are the SAME vertex, and the first one registered
+ * is the object every later caller gets back — so registration order is the canonical order,
  * and it is deterministic because the joinery layer registers in a fixed tag order.
  * Downstream code compares vertices by object identity or by {@link pointKey}, never by
  * subtracting coordinates and picking an epsilon.
