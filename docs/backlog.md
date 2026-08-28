@@ -503,6 +503,67 @@ turned to it. Deferred by name in v1.28.0. Related but not the same as 3.15 abov
 *measuring* against a curved wall, not drawing at an angle); both are instances of the fixture
 layer knowing only rectangles.
 
+### 5.7 · An `overhead` exemption in the furniture rules — `todo` (found in v1.32)
+
+`W_FURNITURE_OVERLAP` has no notion of a piece that hangs ABOVE the cut plane, so the two
+correct drawings of the v1.32 kitchen and bath additions both raise it: a `range_hood` over
+the hob, and a `mirror` over the basin. Neither is in `examples/furnished-flat.arch` for
+that reason — they were placed, they warned, and they were removed rather than nudged
+somewhere false.
+
+**The symmetric case is already solved and is the model to copy.** `underlay` marks a piece
+that lies flat and is stood on, and it is read through exactly one shared predicate,
+`solidFurniture()` (`src/fixtures-catalog.ts`), so the overlap rule, the clearance rule, the
+nav grid and the per-room flood fill cannot disagree about what a rug is. An `overhead` flag
+wants the same discipline and a DIFFERENT consumer set: a wall cabinet must still be excluded
+from the overlap rule, but unlike a rug it is not walked under in any sense the nav grid
+models, so the four consumers do not all want the same answer and the flag must not simply be
+`underlay` spelled backwards. Work out which of the four each flag feeds, and write the test
+as `glyphs-batch2.test.ts` wrote `underlay`'s — by its CONSEQUENCES in both directions, not by
+asserting the flag is set.
+
+Three families would carry it today: `upper_cabinet`, `range_hood`, `mirror`. The drawing
+convention is already settled and shared (`dashedPattern()` — item 5.5 is about giving that a
+SYNTAX, which this does not need); what is missing is the semantics. It has not bitten before
+only because no shipped plan drew an overhead piece over anything.
+
+### 5.8 · `W_PATH_TOO_NARROW`'s width is non-monotonic in the obstacle — `todo` (found in v1.32)
+
+Sweeping ONLY the depth of one cabinet against the hall's north wall in
+`examples/furnished-flat.arch`, with nothing else changed:
+
+| cabinet depth | reported clear width |
+|---|---|
+| 200 mm | squeezes to 300 mm |
+| 300 mm | squeezes to 100 mm |
+| 400 mm | squeezes to 100 mm |
+| 500 mm | **clean** |
+| 600 mm | **clean** |
+
+A deeper obstruction cannot leave more room, and it must not turn a warning into a pass. Two
+distinct defects are visible here: the reported NUMBER is not monotonic (and 100 mm is not a
+width anything in that corridor actually has), and 500/600 mm is a **false clean**, which is
+the direction that matters — a plan going green as its obstruction grows is the failure mode
+a reader will never catch by eye.
+
+It does **not** reproduce in a small hand-written corridor of the same clear width
+(a 6000 x 1200 hall is clean at every depth from 200 to 700 mm), which points at the
+**area-scaled nav-grid resolution** (`src/analyze/circulation.ts`, and the formulas
+`test/nav-grid-scale.test.ts` pins) rather than at the rule's arithmetic: the flat is
+8.4 x 10.8 m and the repro is 6 x 2.6 m, so they land on different grid pitches. Suspect the
+quantisation of an obstacle's footprint onto grid cells — an obstacle that half-covers a cell
+and one that fully covers it are not being treated consistently.
+
+**Reproduce it** by adding one statement to `examples/furnished-flat.arch` and sweeping `<D>`:
+
+```
+furniture shoe_cabinet against wall w_hall_n offset 3400 size 800x<D> in r_hall
+```
+
+The verdict at 300-400 mm is right on the merits, which is why no hall furniture is in that
+example — an 1100 mm corridor should not take a cabinet. It is the number and the false clean
+that are wrong.
+
 ---
 
 ## Wave 4 — P2 language features

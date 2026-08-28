@@ -181,6 +181,18 @@ raises bought.
 - **A per-category `style`.** `style <kind> { … }` reaches the fixture layer as one kind; there
   is no way to give `tree` a different pen from `sofa`. The symbols are drawn with named line
   weights already, so the seam exists — the syntax does not.
+- **An `overhead` exemption in the furniture rules** — `docs/backlog.md` 5.7.
+  `W_FURNITURE_OVERLAP` has no notion of a piece that hangs above the cut plane, so the two
+  correct drawings of this release's own additions raise it: a `range_hood` over the hob and a
+  `mirror` over the basin. Both were therefore left out of `examples/furnished-flat.arch` rather
+  than nudged somewhere false. `underlay` already solves the symmetric case from below through one
+  shared predicate; the flag from above wants the same discipline and a different consumer set,
+  which is a semantics change and not this release's.
+- **`W_PATH_TOO_NARROW`'s reported width is non-monotonic in the obstacle's depth** —
+  `docs/backlog.md` 5.8. Found while placing hall furniture in the flagship: deepening one cabinet
+  from 200 mm to 600 mm takes the plan from "squeezes to 300 mm" through "squeezes to 100 mm" to
+  **clean**. The false clean is the half that matters. It does not reproduce at a small plan's grid
+  pitch, which points at the area-scaled nav grid rather than the rule's arithmetic.
 - **Angled furniture** — `docs/backlog.md` 5.6. Every symbol is still drawn upright in its
   footprint and quarter-turned; a piece at 30° needs the footprint, the overlap rule and the
   clearance rectangle to learn about rotation together, and doing one of the three is worse than
