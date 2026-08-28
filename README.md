@@ -250,10 +250,11 @@ fence in your Markdown to images in one step.
 
 Poché-hatched walls (by material), door **swing arcs**, window glazing, computed room areas,
 dimension lines, layers, line weights, a north arrow, a scale bar and a title block. **Real drawn
-symbols for every catalogued furniture kind** — 59 words across 36 families, the bathroom and
-kitchen fixtures and the room furniture beside them, each with the detail that makes it readable at
-plan scale (see [Furniture & Fixtures](docs/furniture.md), or the
-[`furnished-flat`](examples/furnished-flat.arch) example) — plus the two **drawing-only**
+symbols for every catalogued furniture kind** — 96 words across 57 families, the bathroom and
+kitchen fixtures, the room furniture and the garden beside them, each with the detail that makes it
+readable at plan scale (see [Furniture & Fixtures](docs/furniture.md), or the
+[`furnished-flat`](examples/furnished-flat.arch) and
+[`garden-house`](examples/garden-house.arch) examples) — plus the two **drawing-only**
 annotations a plan needs above and below the cut: `roof overhang 600` puts a dashed eaves line
 around the building (an exact mitred offset of the wall ring, at any angle), and `void` puts a stair
 well or an atrium on the floor plate. And `dims auto` synthesizes the dimension strings for you.
