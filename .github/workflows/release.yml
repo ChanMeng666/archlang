@@ -155,10 +155,30 @@ jobs:
         working-directory: packages/mcp
         run: ./mcp-publisher login github-oidc
 
+      # Bounded retry, and the reason is a RACE we have actually seen. The registry validates
+      # `server.json` against the npm package it names — and on the v1.30.0 release that
+      # validation 404'd on a version this same job had published moments earlier, because
+      # the npm registry had not yet made it visible to a third party. `gh run rerun --failed`
+      # then succeeded with no change, which is the signature of a race and not of a broken
+      # manifest. Six attempts, 20 s apart, is ~2 minutes of patience against a lookup that
+      # normally settles in seconds; a genuinely bad manifest still fails, just two minutes
+      # later, and the last attempt's output is what the log shows.
       - name: Publish server to MCP Registry
         if: ${{ success() && steps.check.outputs.registry_synced != 'true' }}
         working-directory: packages/mcp
-        run: ./mcp-publisher publish
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if ./mcp-publisher publish; then
+              echo "::notice::MCP registry publish succeeded on attempt $attempt."
+              exit 0
+            fi
+            if [ "$attempt" -lt 6 ]; then
+              echo "::warning::MCP registry publish failed (attempt $attempt/6) — retrying in 20s."
+              sleep 20
+            fi
+          done
+          echo "::error::MCP registry publish failed after 6 attempts."
+          exit 1
 
       # The GitHub Release. This step used to not exist: releases were created by hand, so
       # they drifted — 23 tags shipped with NO Release at all, including the two newest, and

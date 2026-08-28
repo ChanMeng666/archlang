@@ -1542,7 +1542,10 @@ Both halves matter, and both are invisible from the syntax:
   A terrace is not floor area, and quietly adding the garden to a dwelling's floor figure
   would be wrong in the one number every consumer trusts. Its own area is reported
   separately (below), and a reader who wants plot coverage adds the two having decided
-  that is what it means.
+  that is what it means. It is also what makes a [`door garage`](#door-kinds-v1-25) come
+  out right: that kind derives which side its panel parks on by probing which face has
+  *floor*, and the face outside a garage door is usually an `outdoor driveway` — which is
+  ground, so the answer is still the garage.
 - **Not an obstacle.** It contributes nothing to the navigation grid and nothing to any
   clearance rule. You can walk on a lawn — and on the water, which is a deliberate v1
   simplification rather than an oversight: a pond with a bridge over it would need the
@@ -1618,6 +1621,9 @@ With `legend`, each ground material used adds a row with a real swatch, beside t
 materials. Inside a `component` both spellings are allowed and transform exactly — a placed
 wing may carry its own terrace, and under `mirror` the rail edges move with it.
 
+`examples/garden-house.arch` is the worked example: twelve surfaces across eight of the nine
+kinds, on a sheet, with the fixtures and the fence below.
+
 ```arch
 plan "Cottage and garden" {
   units mm
@@ -1691,6 +1697,11 @@ reported length are all measured along a **straight** run, so faceting a curve w
 silently measure the facets. Write short straight runs instead. (The clause is parsed and
 then refused rather than failed at the keyword, so the refusal is one diagnostic and not a
 cascade — the radius would otherwise be read as the next vertex.)
+
+`examples/garden-house.arch` uses both of the styles that read at a domestic scale: a `panel`
+enclosure round the pool — which is the drawing saying what the model does not, since ground
+obstructs nothing, water included — and a `picket` street frontage that stops either side of
+the path and the drive.
 
 ### Title block
 

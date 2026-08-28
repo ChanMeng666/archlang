@@ -1019,6 +1019,74 @@
       "room_type": "Entrance"
     }
   ],
+  "examples/garden-house.arch": [
+    {
+      "id": "r_hall",
+      "label": "Hall",
+      "uses": ["hall", "entry", "circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_study",
+      "label": "Study",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_living",
+      "label": "Living",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_util",
+      "label": "Utility",
+      "uses": ["utility", "wc"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_kitchen",
+      "label": "Kitchen/Dining",
+      "uses": ["kitchen", "dining"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_garage",
+      "label": "Garage",
+      "uses": ["garage"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "r_landing",
+      "label": "Landing",
+      "uses": ["circulation", "hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_bed2",
+      "label": "Bedroom 2",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bed3",
+      "label": "Bedroom 3",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_bed1",
+      "label": "Bedroom 1",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    }
+  ],
   "examples/garden-loft.arch": [
     {
       "id": "r_live",

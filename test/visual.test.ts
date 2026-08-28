@@ -204,4 +204,18 @@ describe("visual regression — golden PNG pixel-diff", () => {
     expect(pages).toHaveLength(2);
     for (const p of pages!) await diffAgainstGolden(`hillside-villa.arch.L${p.level}`, p.scene);
   });
+
+  // v1.31: the OUTDOOR flagship, two levels. It is the only shipped plan that draws
+  // GROUND — eight of the nine `outdoor` materials, two `fence` styles and a `site`
+  // boundary — so a drift in a ground hatch's scale-aware tile, in the fence post pitch,
+  // in the derived balcony railing or in the dash-dot property line has nowhere else to
+  // become visible. Level 1 additionally carries the `garage` door's overhead projection
+  // over a driveway, which is the one place the two v1.31 tracks draw on top of each
+  // other.
+  it("garden-house.arch matches a golden per level", async () => {
+    const { pages, errors } = compile(example("garden-house.arch"), { noCache: true });
+    expect(errors).toEqual([]);
+    expect(pages).toHaveLength(2);
+    for (const p of pages!) await diffAgainstGolden(`garden-house.arch.L${p.level}`, p.scene);
+  });
 });

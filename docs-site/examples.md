@@ -51,6 +51,46 @@ source as the honest cost of a real site, not something the plan was tuned to hi
 
 <ArchLive :src="EXAMPLES['hillside-villa']" :rows="20" />
 
+### Garden House
+
+The other half of the language, and the one every plan above leaves out: **everything
+outside the wall line**. A two-storey family house on a 22 × 22 m suburban lot, A2 at
+1:100 — **6 rooms and 136.5 m² of floor**, beside **220.7 m² of ground**
+(`arch describe --json`'s `totals.outdoor_area_m2`) and a **484 m² lot**
+(`site.lot_area_m2`). Those are three different numbers and the release exists to keep
+them apart: a terrace is not floor area, so a ground surface appears in no `rooms[]`, no
+`schedule rooms` row and no access graph.
+
+Twelve [`outdoor`](/reference#outdoor-ground-outside-the-building-v1-31) surfaces cover
+eight of the nine kinds — the driveway that runs to the garage door, paving to the front
+door, a patio behind the living room and a deck off the kitchen, a `water` pool, lawns
+front and back, gravel for the bin and shed yard, planting on three boundaries, and a
+`balcony` off the main bedroom whose railing is derived on the three edges with no wall
+behind them. Each draws a **scale-aware** material hatch, so the pattern is the same size
+on the sheet here as it would be at 1:50. Two
+[`fence`](/reference#fence-a-boundary-line-on-the-ground-v1-31) runs post the lot: a
+`panel` enclosure round the pool — which is the drawing saying what the model does not,
+since ground obstructs nothing, water included — and a `picket` street frontage that
+stops either side of the path and the drive.
+
+The garage is the other track meeting the first. `room … uses garage` classifies it and
+`W_GARAGE_TOO_NARROW` measures it (5.5 m across, against the 2.7 m one parked `car`
+needs), and its door is [`door garage`](/reference#door-kinds-v1-25) — the sixth kind,
+which takes no clause at all and puts a **dashed** overhead projection inside the garage.
+Which side that is is derived rather than written: the resolver asks which face has
+*floor*, and the driveway on the other face is ground, not floor. Fifteen of the
+twenty-one outdoor fixture families furnish the garden, all at their catalogued
+footprints and none of them labelled.
+
+`arch lint` raises two warnings, both left in and named in the source. One is an aspect
+heuristic (the one bedroom with no equator-facing window). The other is a **finding**: the
+bathroom opens straight off the landing, and `describe --json`'s own `doors[].between`
+says so, but a balcony door counts as an exterior door, which grounds level 2 and stops
+the stair from being its arrival point — so the reachability walk starts inside a bedroom.
+The plan is right and the rule is not yet.
+
+<ArchLive :src="EXAMPLES['garden-house']" :rows="20" />
+
 ## Start here
 
 ### One room

@@ -45,10 +45,20 @@ const example = (name: string): string => readFileSync(join(examplesDir, name), 
 /** Every poché region the drawing paints. A region is a RING SET — an outer boundary plus
  *  the room-shaped holes punched out of it — so a point is in the poché when it is inside
  *  an ODD number of its rings, exactly as the backends' fill rule paints it. Testing rings
- *  one at a time would call every room interior "poché". */
+ *  one at a time would call every room interior "poché".
+ *
+ *  **The `wallFill` filter is load-bearing, and it was not needed until v1.31.** A `hatch`
+ *  node used to mean exactly one thing — wall solid. It now means three: the wall poché on
+ *  `wallFill`, an `outdoor` ground material on `floor`, and a legend swatch on
+ *  `annotations`. Without the filter this sweep reads a dimension number drawn over a lawn
+ *  as a call-out buried in the wall it measures, which is a different claim and a false
+ *  one — `examples/garden-house.arch`'s overall chain crosses its own deck, exactly as a
+ *  site plan's chain should. The invariant is about the POCHÉ, so name the layer. */
 function pocheRegions(s: Scene): readonly (readonly { x: number; y: number }[])[][] {
   const out: (readonly { x: number; y: number }[])[][] = [];
-  for (const n of s.nodes) if (n.prim.t === "hatch") out.push(n.prim.region.map((r) => [...r]));
+  for (const n of s.nodes) {
+    if (n.prim.t === "hatch" && n.layer === "wallFill") out.push(n.prim.region.map((r) => [...r]));
+  }
   return out;
 }
 

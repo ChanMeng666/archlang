@@ -7,7 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-<!-- ── v1.31 track A — the outdoor ground elements ─────────────────────────── -->
+**Outside the wall line.** Every previous release drew what is inside a building; this one draws
+the ground it sits on, the things that stand on that ground, and the door between the two. Two
+parallel tracks: `outdoor`/`fence`/`site … boundary` as drawn, measured, non-room GROUND, and 21
+outdoor fixture families plus `uses garage` and the sixth door kind, `door garage`. New flagship
+`examples/garden-house.arch`.
+
+**Three behaviour changes to state plainly.** (1) **A yard is not a room.** Ground area is real and
+reported — `describe --json` gains `outdoor[]`, `fences[]`, `totals.outdoor_area_m2` and
+`site.lot_area_m2` — but it never enters `totals.floor_area_m2`, `rooms[]`, `schedule rooms`, the
+access graph or Plan JSON, and a consumer that wants plot coverage adds the two having decided that
+is what it means. (2) **The dashed-overhead convention is now settled**, by `door garage` being the
+fourth thing to want it: a dashed outline means a thing above the horizontal cut a floor plan is
+taken at, and every such outline now comes from one `dashedPattern()` helper. (3)
+**`examples/hillside-villa.arch` changes bytes** — its garage door is the `garage` kind and its
+garage room is `uses garage`; its three deliberate lint warnings are unchanged.
 
 ### Added — ground surfaces, fences and a site lot line
 
@@ -62,24 +76,6 @@ Nine new codes, every one a refusal rather than an approximation: `E_OUTDOOR_SIZ
 advisory `W_OUTDOOR_OVERLAPS_ROOM` and `W_BALCONY_NO_DOOR`. New Theme keys `lawn`, `water`,
 `paving` and `outdoorStroke` across all four palettes, with `STYLE_KEYS` rows for both
 elements. Closes backlog item **P2-9**.
-
-### Fixed
-
-- **`A-ROOF` has been missing from the DXF LAYER table since v1.29**, so
-  `examples/bungalow.arch` exported a DXF referencing an undeclared layer for two releases.
-  The closure test that was supposed to catch it stayed green throughout, because its
-  fixture plan had no `roof` in it and `roof` rides a pass that was already covered — a
-  gate is only as strong as its corpus. `A-ROOF` and `A-FLOR-OVHD` now have rows, the
-  fixture carries one of every element that sets a `layerName`, and the layer-name rule is
-  widened from a hardcoded `A-` prefix to the three NCS disciplines the tree now uses.
-- **The ASCII backend read ground surfaces as rooms.** It identifies a room structurally —
-  a polygon on the `floor` pass — so a lawn drawn round a house printed its own name three
-  times and overwrote every room's name with it. Found by looking at `-f txt` output rather
-  than by reading the code; the ground is now excluded from the room and furniture passes
-  alike.
-
-<!-- ── end v1.31 track A ───────────────────────────────────────────────────── -->
-<!-- BEGIN: outdoor fixtures + garage (track B) -->
 
 ### Added — twenty-one outdoor fixture families
 
@@ -137,22 +133,6 @@ has, and the shortfall. Three calibration decisions worth stating:
 In Plan JSON, `garage` maps to the RPLAN `Storage` room_type (where `utility` already goes; RPLAN
 has no garage category) and an explicit `uses` tag round-trips unchanged.
 
-### Fixed — two hand-typed copies of the `uses` value set in Plan JSON
-
-`src/plan-json.ts` kept its validator's allow-list **and** `PLAN_JSON_SCHEMA`'s `uses` enum as
-hand-typed twelve-name literals. Both are interpolated from `USE_KINDS` now. This was not
-theoretical: adding a thirteenth use kind left `planToJson` emitting a document its own
-`planFromJson` rejected with `E_JSON_SCHEMA` — a round trip failing on a plan the compiler accepts,
-with `check:drift` green throughout, which is precisely the v1.26.0 defect class.
-
-### Changed — `examples/hillside-villa.arch`
-
-`r_garage` is tagged `uses garage` instead of `uses storage`. `describe --json` reports
-`uses: ["garage"]` for that one room; **nothing else moves** — both storeys' SVG are byte-identical
-and `arch lint` reports the same three warnings the showpiece has always carried
-(`W_BATH_VIA_BEDROOM` ×1, `W_ROOM_NOT_EQUATOR_FACING` ×2). The 5500 mm double garage clears
-`W_GARAGE_TOO_NARROW`'s 5400 mm by 100 mm, which is the calibration above doing its job.
-
 ### Added — `door garage …`, the sixth door kind
 
 A sectional/roller door: `door [id=] garage (at (x,y) | on <wall> at <pos>) width <mm> [wall <id>]`.
@@ -190,7 +170,49 @@ Everything that draws one now derives its pattern from the single `dashedPattern
 different reason — redrawing an edge a leaf covers — and keep their own raw pattern with no named
 type.) The `todo` half of 5.5, a *syntax* for saying "draw this piece overhead", is unchanged.
 
-### Changed — `examples/hillside-villa.arch`'s garage door
+### Added — `examples/garden-house.arch`, the outdoor flagship
+
+Thirty shipped examples, up from 29. A two-storey family house on a 22 × 22 m suburban lot, drawn
+the way a house is actually issued: as a **site plan**, where the building is half of it and the
+other half is ground. A2 landscape at 1:100, with `site … boundary`, `dims auto overall`,
+`schedule rooms`, `legend` and a title block.
+
+Twelve ground surfaces across eight of the nine kinds (driveway, front and back paving, patio,
+deck, pool, two lawns, gravel, three planting beds, and a level-2 balcony), a `panel` fence round
+the pool and a `picket` one along the street, a garage with `uses garage` and a `door garage`, and
+15 of the 21 outdoor fixture families at their catalogued footprints with no `label` on any of them.
+`describe --json` reports `outdoor_area_m2` 220.7 beside `floor_area_m2` 136.5 — the two numbers
+this release exists to keep apart.
+
+`arch validate` is clean. `--strict` reports **two** warnings, both named in the file header as
+deliberate:
+
+- `W_ROOM_NOT_EQUATOR_FACING` on Bedroom 2 — on a two-band plan one bedroom takes the street
+  aspect, and the rule is an advisory drafting heuristic, not a daylight measurement.
+- `W_BATH_VIA_BEDROOM`, which is a **finding rather than a layout mistake**. The bathroom opens
+  straight off the landing and `describe --json`'s own `doors[].between` says so; the warning comes
+  from `verticalReach` treating any exterior door as GROUNDING its storey, which suppresses the
+  stair's `arrivalRooms` entry and starts the reachability BFS at the only exterior door on level 2
+  — the balcony slider, inside a bedroom. A balcony door is an exterior opening but not an arrival
+  point. Recorded as `docs/backlog.md` item **4.6** rather than fixed here: the remedy moves lint
+  output for other plans and wants its own pass.
+
+Also `test/v131-cross.test.ts`, the cross-feature gate neither track could produce alone (the v1.29
+precedent). A `garage` door derives which side its panel parks on by probing which face has floor,
+and the other track introduced a `driveway` on exactly that face — so the same door is asserted
+**geometry-identical** with and without it, with a fourth case pinning the paint difference (ground
+joins the page bounds, which on a plan with no `paper` rescales every line weight) so the geometry
+comparison cannot be misread as a byte-identity law. And the ASCII backend's ground skip is by
+LAYER NAME, so a `tree` standing on a lawn must still print while the lawn does not — asserted as a
+differential in both directions.
+
+### Changed — `examples/hillside-villa.arch`
+
+`r_garage` is tagged `uses garage` instead of `uses storage`. `describe --json` reports
+`uses: ["garage"]` for that one room; **nothing else moves** — both storeys' SVG are byte-identical
+and `arch lint` reports the same three warnings the showpiece has always carried
+(`W_BATH_VIA_BEDROOM` ×1, `W_ROOM_NOT_EQUATOR_FACING` ×2). The 5500 mm double garage clears
+`W_GARAGE_TOO_NARROW`'s 5400 mm by 100 mm, which is the calibration above doing its job.
 
 `d_garage` is the `garage` kind instead of `sliding … slide left` (same 3000 mm width). Measured
 before and after: `describe --json` differs in exactly two places (`doors[2].kind`, on the plan and
@@ -198,7 +220,68 @@ on level 1), `arch lint` reports the same three warnings, and the drawing change
 panel with its overhead projection where two bypass panels on two tracks used to be. The committed
 `examples/hillside-villa.svg` is re-rendered accordingly.
 
-<!-- END: outdoor fixtures + garage (track B) -->
+### Changed — the agent spec's size cap, 26,000 → 28,300
+
+`spec.llm.md` grew from 25,911 characters to **27,940**, and `test/llm-spec-drift.test.ts`'s cap
+moves to 28,300 — 360 characters of headroom, comparable to the 371 the v1.29.0 raise bought. The
+whole of the growth is "this language grew", which is the argument that note requires: ~1,100 for
+`outdoor` (nine kinds, four refusals, two warnings, and three behavioural facts that are invisible
+from the syntax and wrong if guessed), ~470 for `fence`, ~150 for `site … boundary`, +305 for the
+sixth door kind, +38 for six new catalogued footprints joining the furniture line's size-optional
+list, and +17 for `uses garage`.
+
+Both element lines were written, measured and cut back **before** the raise. The note also records
+something the merge itself taught: each track measured its own growth against a document that did
+not yet carry the other's, so 25,911 + 1,964 + 360 predicts 28,235 while the merged generator emits
+27,940. The number in the cap is the measured one.
+
+### Fixed
+
+- **`A-ROOF` has been missing from the DXF LAYER table since v1.29**, so
+  `examples/bungalow.arch` exported a DXF referencing an undeclared layer for two releases.
+  The closure test that was supposed to catch it stayed green throughout, because its
+  fixture plan had no `roof` in it and `roof` rides a pass that was already covered — a
+  gate is only as strong as its corpus. `A-ROOF` and `A-FLOR-OVHD` now have rows, the
+  fixture carries one of every element that sets a `layerName`, and the layer-name rule is
+  widened from a hardcoded `A-` prefix to the three NCS disciplines the tree now uses.
+- **The ASCII backend read ground surfaces as rooms.** It identifies a room structurally —
+  a polygon on the `floor` pass — so a lawn drawn round a house printed its own name three
+  times and overwrote every room's name with it. Found by looking at `-f txt` output rather
+  than by reading the code; the ground is now excluded from the room and furniture passes
+  alike.
+- **Two hand-typed copies of the `uses` value set in Plan JSON.** `src/plan-json.ts` kept its
+  validator's allow-list **and** `PLAN_JSON_SCHEMA`'s `uses` enum as hand-typed twelve-name
+  literals. Both are interpolated from `USE_KINDS` now. This was not theoretical: adding a
+  thirteenth use kind left `planToJson` emitting a document its own `planFromJson` rejected with
+  `E_JSON_SCHEMA` — a round trip failing on a plan the compiler accepts, with `check:drift` green
+  throughout, which is precisely the v1.26.0 defect class.
+
+### Infrastructure
+
+- **`release.yml` retries the MCP registry publish**, up to 6 times 20 s apart, and only that step.
+  The v1.30.0 release failed there because the registry's validation of `server.json` against the
+  just-published npm package 404'd on a version the same job had published moments earlier;
+  `gh run rerun --failed` then succeeded with no change, which is the signature of a race. A
+  genuinely bad manifest still fails loudly, two minutes later. (`docs/backlog.md` 4.7.)
+- **`README_SVGS` is 20**, up from 19, and the README gallery leads with `hillside-villa` and then
+  `garden-house`.
+
+### Deferred by name
+
+Recorded so the next reader finds a decision rather than an omission; the full text is in
+`docs/backlog.md` §4.5 and §4.6.
+
+- **Ground in the circulation model.** An `outdoor` surface obstructs nothing — you can walk on the
+  lawn, and on the `water`. A pond, a gate in a fence and a stepping-stone path all want the same
+  answer, so the question is one piece of work rather than a per-kind special case.
+- **A curved fence** (`E_FENCE_CURVED`) — the post pitch, the panel offset and `length_mm` are all
+  measured along a straight run.
+- **A polygonal balcony** (covered by `E_OUTDOOR_POLY_DEGENERATE`) — the railing is derived per
+  named EDGE, and a ring has no such names.
+- **`outdoor` in Plan JSON** — deliberately absent, and pinned so: `planToJson` is byte-identical
+  with and without ground. Adding it is a schema change and should be argued as one.
+- **A balcony door grounding its storey** (`docs/backlog.md` 4.6) — the `W_BATH_VIA_BEDROOM` false
+  positive described above.
 
 ## [1.30.0] - 2026-08-28
 

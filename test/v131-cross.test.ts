@@ -107,8 +107,7 @@ describe("v1.31 cross — the ground is not floor, and a garage door knows it", 
     // `refDim` is the drawing span, so every line weight in the building rescales. Pinning it
     // here keeps the geometry assertion above honest — it is comparing coordinates precisely
     // because the two documents are NOT byte-identical, and this says why.
-    const w = (src: string): string =>
-      doorPass(src).match(/stroke-width="([\d.]+)"/)?.[1] ?? "(none)";
+    const w = (src: string): string => doorPass(src).match(/stroke-width="([\d.]+)"/)?.[1] ?? "(none)";
     expect(w(garagePlan(true))).not.toEqual(w(garagePlan(false)));
   });
 });

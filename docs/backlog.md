@@ -549,6 +549,47 @@ rather than an omission:
   ground, pinned in `test/outdoor-byte-identity.test.ts`. Adding it is a schema change and should be
   argued as one, with a consumer that wants it.
 
+### 4.6 · A balcony door GROUNDS its storey, and that costs a lint false positive — `todo`
+
+Found while authoring `examples/garden-house.arch` (v1.31), which is why it is written down here
+rather than fixed there: the remedy moves `arch lint` output for other plans and wants its own
+pass.
+
+`verticalReach` (`src/vertical.ts`) marks a storey **grounded** when it has an exterior door of its
+own, and a grounded storey gets **no `arrivalRooms` entry** from its stair — the shaft's arrival
+edge exists precisely to rescue an upper floor that has no door. `lint`'s reachability rule then
+runs its BFS from `"exterior"`, which on such a storey means *from that door*.
+
+Put an `outdoor balcony` on an upper floor with the `door` that
+[`W_BALCONY_NO_DOOR`](error-codes.md#w_balcony_no_door) requires, and the storey is now grounded by
+a door that leads onto a 7 m² slab. In `garden-house` the BFS therefore enters level 2 through the
+main bedroom and reports `W_BATH_VIA_BEDROOM` for a bathroom that opens straight off the landing —
+`describe --json`'s own `doors[].between` says `["r_landing","r_bath"]`. The plan is right and the
+rule is wrong.
+
+**A balcony door is an exterior opening but not an ARRIVAL point**, and since v1.31 the compiler can
+tell the difference: `W_BALCONY_NO_DOOR` already computes which openings sit within a wall thickness
+of a balcony. The narrow fix is for `grounded()` to discount exactly those. Two things to be careful
+of before writing it:
+
+- It **changes lint output** for any existing plan with a balcony door on an upper storey, so it
+  wants the usual sweep over the shipped examples and a note in `CHANGELOG.md`, not a silent fix.
+- `access.entrances` reports the same door as an entrance on that storey, and the two answers
+  should move together or the CLI and the lint rule will disagree about what an entrance is.
+
+`examples/garden-house.arch` names the warning in its header as deliberate and points here, so the
+example is honest in the meantime rather than quietly carrying an unexplained warning.
+
+### 4.7 · The MCP registry publish races npm — `done` (v1.31, in `release.yml`)
+
+The v1.30.0 release failed at `mcp-publisher publish` because the registry's validation of
+`server.json` against the just-published npm package 404'd — the npm registry had not yet made a
+version this same job had published visible to a third party. `gh run rerun --failed` then
+succeeded with **no change**, which is the signature of a race rather than of a bad manifest.
+
+That step now retries up to **6 times, 20 s apart**, and only that step. A genuinely bad manifest
+(a case-wrong owner segment, an over-long `description`) still fails loudly, two minutes later.
+
 ### 4.1 · Joinery pass performance — `todo`
 
 `toScene` got roughly **3× slower** when v1.30 replaced the three wall-lowering paths with one
