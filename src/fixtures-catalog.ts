@@ -211,9 +211,19 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   // block that are `requiresWall`. They share the 600 mm module the counter run above
   // already uses, and the same 550 mm standing room in front.
   dishwasher: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 }, zones: ["kitchen"] },
-  // An island is free-standing BY DEFINITION — that is what makes it an island — and it is
-  // approached from every side, so it has no back and no single frontal clearance.
-  island: { requiresWall: false, symmetric: true, zones: ["kitchen"] },
+  // An island is free-standing BY DEFINITION — that is what makes it an island — so it needs
+  // no wall and carries no single frontal clearance.
+  //
+  // It is NO LONGER `symmetric`, and that is a data correction rather than a behaviour
+  // change. The flag's own doc says the DRAWN SYMBOL is rotation-symmetric; the symbol used
+  // to be a slab nosed on all four sides, and since v1.32 it has a seating overhang along one
+  // side, cabinet ticks under that side, and a hob or a bowl at one end (`glyphs-kitchen.ts`
+  // `drawIsland`). None of that maps onto itself under a quarter-turn, so the claim was about
+  // to become false. Nothing observable moves with it: `orientationMatters` is
+  // `(requiresWall || directional) && !symmetric`, and an island is neither — so it still
+  // derives no rotation and still never trips `W_FIXTURE_BACK_TO_ROOM`, which
+  // `test/fixture-orientation.test.ts` pins directly.
+  island: { requiresWall: false, zones: ["kitchen"] },
   // Hangs OFF the wall, so it is the one non-plumbed piece here that genuinely cannot exist
   // without one. Above the cut plane, so it is shallower than a base unit and needs no
   // floor clearance.
@@ -362,6 +372,56 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   garden_shed: { requiresWall: false, directional: true, footprint: { along: 2400, depth: 1800 } },
   clothesline: { requiresWall: false },
   washing_line: { requiresWall: false },
+
+  // -------------------------------------------------------------------------
+  // ── v1.32 F1: kitchen & bath ──
+  //
+  // Eight families that finish the two WET domains. Where the outdoor tranche above had to
+  // argue its way OUT of `requiresWall` — outdoors the wall is the exception — this one is
+  // the flag's home ground, and six of the eight carry it. Each for the reason the flag
+  // actually means, which is "cannot work without a wall", not "usually stands near one":
+  //
+  //   - `bidet`, `urinal` and `laundry_sink` are plumbed. Supply in, waste out, both in the
+  //     wall behind them; `W_FIXTURE_FLOATING`'s remedy line ("supply/waste/venting runs in
+  //     the wall") is literally true of all three.
+  //   - `water_heater` is the service the other three are fed from. It is the one piece here
+  //     whose OUTLINE would map onto itself under a quarter-turn — it is a cylinder — and it
+  //     is deliberately not `symmetric`, because its two pipe ticks run to the back edge and
+  //     a turned vessel would put them into the room. The drawing has a back even though the
+  //     vessel does not.
+  //   - `mirror` and `range_hood` are the `upper_cabinet` case, not the plumbing one: they
+  //     hang off the fabric by definition. A mirror standing free in a room is a
+  //     `wardrobe`-shaped object, and an extract hood that is not over a hob venting through
+  //     something is not an extract hood.
+  //
+  // The two that are NOT wall-requiring are `directional` instead, which is the distinction
+  // the room-furniture tranche above drew and this one keeps: a microwave and a bar counter
+  // both have an unmistakable front, and neither needs a pipe. A `bar_counter` floated in the
+  // middle of an open-plan room is the normal arrangement, which is exactly why flagging it
+  // would be a false positive.
+  //
+  // `clearanceMm` goes to the three fixtures a person STANDS AT to use — 450 for the two
+  // sanitary pieces (matching `wc` and `basin`, which they sit beside), 600 for the laundry
+  // sink, which is deeper than a basin and is worked at with both hands and a basket. The
+  // wall-hung pair get none: nobody is blocked from using a mirror by a chair, and a hood is
+  // used from under it. `microwave` and `bar_counter` get none either, for the reason
+  // `tv_unit` gets none — the piece in front of a bar is a stool, and that is the layout.
+  //
+  // Zones follow what a room NEEDS to be that room: the three sanitary/laundry pieces are
+  // `wet`, the three kitchen pieces are `kitchen`. `water_heater` and `mirror` carry no zone
+  // on purpose — a cupboard with a boiler in it is not a bathroom, and a mirror over a
+  // console table is not one either. Adding either would silently green a
+  // `W_ROOM_NO_FIXTURE` a plan deserves.
+  bidet: { requiresWall: true, clearanceMm: 450, footprint: { along: 400, depth: 700 }, zones: ["wet"] },
+  urinal: { requiresWall: true, clearanceMm: 450, footprint: { along: 400, depth: 350 }, zones: ["wet"] },
+  laundry_sink: { requiresWall: true, clearanceMm: 600, footprint: { along: 600, depth: 500 }, zones: ["wet"] },
+  laundry_tub: { requiresWall: true, clearanceMm: 600, footprint: { along: 600, depth: 500 }, zones: ["wet"] },
+  water_heater: { requiresWall: true, footprint: { along: 600, depth: 600 } },
+  boiler: { requiresWall: true, footprint: { along: 600, depth: 600 } },
+  mirror: { requiresWall: true, footprint: { along: 900, depth: 50 } },
+  range_hood: { requiresWall: true, footprint: { along: 900, depth: 500 }, zones: ["kitchen"] },
+  microwave: { requiresWall: false, directional: true, footprint: { along: 500, depth: 400 }, zones: ["kitchen"] },
+  bar_counter: { requiresWall: false, directional: true, footprint: { along: 1800, depth: 600 }, zones: ["kitchen"] },
 });
 
 /** All catalogued categories (aliases included), in declaration order. */

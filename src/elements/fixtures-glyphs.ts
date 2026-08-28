@@ -25,18 +25,23 @@ import type { Theme } from "../theme.js";
 import { DEFAULT_THEME } from "../theme.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
 import { glyphCtx } from "./glyph-lib.js";
-import { drawBasin, drawBathtub, drawShower, drawWc } from "./glyphs-bath.js";
+import { drawBasin, drawBathtub, drawBidet, drawMirror, drawShower, drawUrinal, drawWc } from "./glyphs-bath.js";
 import {
+  drawBarCounter,
   drawCounter,
   drawDishwasher,
   drawDryer,
   drawFridge,
   drawIsland,
   drawKitchenSink,
+  drawLaundrySink,
+  drawMicrowave,
   drawOven,
+  drawRangeHood,
   drawStove,
   drawUpperCabinet,
   drawWasher,
+  drawWaterHeater,
 } from "./glyphs-kitchen.js";
 import { drawBed, drawDoubleBed, drawNightstand, drawWardrobe } from "./glyphs-bedroom.js";
 import {
@@ -165,6 +170,20 @@ const FIXTURE_FAMILIES: readonly (readonly [string, ...string[]])[] = [
   ["fire_pit"],
   ["shed", "garden_shed"],
   ["clothesline", "washing_line"],
+  // ── v1.32 F1: kitchen & bath ──
+  // Eight families that finish the two wet domains: the three sanitary fixtures a bathroom
+  // or a WC block needs beside the four that shipped, the two services a utility room is
+  // built around, and the three worktop pieces a kitchen has and the language had no word
+  // for. Appended at the END, never slotted in beside their domain neighbours, because this
+  // table's order IS the legend's order.
+  ["bidet"],
+  ["urinal"],
+  ["laundry_sink", "laundry_tub"],
+  ["water_heater", "boiler"],
+  ["mirror"],
+  ["range_hood"],
+  ["microwave"],
+  ["bar_counter"],
 ];
 
 /**
@@ -359,6 +378,25 @@ export function fixtureGlyph(category: string, r: Rect, theme: Theme, sizes: Ren
     case "clothesline":
     case "washing_line":
       return drawClothesline(r, g);
+    // ── v1.32 F1: kitchen & bath ──
+    case "bidet":
+      return drawBidet(r, g);
+    case "urinal":
+      return drawUrinal(r, g);
+    case "laundry_sink":
+    case "laundry_tub":
+      return drawLaundrySink(r, g);
+    case "water_heater":
+    case "boiler":
+      return drawWaterHeater(r, g);
+    case "mirror":
+      return drawMirror(r, g);
+    case "range_hood":
+      return drawRangeHood(r, g);
+    case "microwave":
+      return drawMicrowave(r, g);
+    case "bar_counter":
+      return drawBarCounter(r, g);
     default:
       return null;
   }

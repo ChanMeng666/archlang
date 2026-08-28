@@ -25,6 +25,7 @@
  * Pure and deterministic: no clock, no randomness, no state.
  */
 
+import type { Point } from "../ast.js";
 import type { SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
 import { ellipsePoly, insetRect, insetRectSides, rectPoly, roundedRectPoly } from "./glyph-lib.js";
@@ -32,6 +33,30 @@ import { ellipsePoly, insetRect, insetRectSides, rectPoly, roundedRectPoly } fro
 /** A concentric copy of an ellipse, scaled by `k` about its own centre. */
 function innerEllipse(cx: number, cy: number, rx: number, ry: number, k: number) {
   return ellipsePoly(cx, cy, rx * k, ry * k);
+}
+
+/**
+ * The LOWER half of an ellipse, closed by the chord across its top — the bowl of a piece that
+ * hangs off a wall and is cut away by it.
+ *
+ * A `g.arcSeg` would be the obvious spelling and is the wrong one: every backend lowers an
+ * arc with the SVG large-arc flag pinned to `0`, so a sweep of exactly 180 degrees sits on the
+ * boundary of what that flag can express, and the shape has to be FILLED anyway — which a
+ * stroked arc cannot be. So it is a polygon, tessellated at the same fixed step
+ * {@link ellipsePoly} uses, and the closing chord is the rim against the wall rather than a
+ * seam that needs hiding.
+ *
+ * Screen axes: `y` grows DOWN, so angles 0..π sweep the half BELOW `cy`, which is the half
+ * that projects into the room from a back edge along the top.
+ */
+function halfEllipseDown(cx: number, cy: number, rx: number, ry: number): Point[] {
+  const n = 12;
+  const pts: Point[] = [];
+  for (let i = 0; i <= n; i++) {
+    const a = (Math.PI * i) / n;
+    pts.push({ x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) });
+  }
+  return pts;
 }
 
 /**
@@ -153,5 +178,101 @@ export function drawBathtub(r: Rect, g: GlyphCtx): SceneNode[] {
   g.poly(roundedRectPoly(well, Math.min(well.w, well.h) * 0.12), g.basin);
   g.dot({ x: r.x + r.w * 0.07, y: cy }, unit * 0.05);
   g.ring({ x: r.x + r.w * 0.62, y: cy }, unit * 0.04, "extraThin");
+  return g.nodes;
+}
+
+// ── v1.32 F1: kitchen & bath ──
+//
+// Three more bathroom symbols, appended at the END for the reason `FIXTURE_FAMILIES` appends:
+// this file's reading order follows that table's, and that table's order is the legend's.
+
+/**
+ * A bidet: the bowl with its rim, the tap block at the back, its spout, and the waste.
+ *
+ * Read it against {@link drawWc}, because that is the only symbol it can be confused with and
+ * the drawing has to settle it at a glance. A WC's back is a CISTERN — a band across the full
+ * width, a fifth of the depth deep, with a flush button on it. A bidet has no cistern at all;
+ * its back carries a small tap block a third of the width, and its bowl reaches nearly to the
+ * back edge because there is nothing behind it. The other tell is the waste: a bidet's is on
+ * the bowl centre, where a WC has none drawn.
+ *
+ * The bowl is an ellipse with its rim at 0.76 rather than the WC seat's 0.78 — not a
+ * decorative difference but a consequence: a bidet's rim is proportionally wider because the
+ * bowl is shallower, and drawing the two identically would leave the rim as the one place the
+ * symbols agreed.
+ */
+export function drawBidet(r: Rect, g: GlyphCtx): SceneNode[] {
+  const cx = r.x + r.w / 2;
+  const unit = Math.min(r.w, r.h);
+  const tapW = Math.min(r.w * 0.3, r.h * 0.3);
+  const tapH = r.h * 0.1;
+  g.poly(rectPoly({ x: cx - tapW / 2, y: r.y + r.h * 0.04, w: tapW, h: tapH }), g.body);
+
+  const bowlCy = r.y + r.h * 0.58;
+  const bowlRx = r.w * 0.42;
+  const bowlRy = r.h * 0.38;
+  g.poly(ellipsePoly(cx, bowlCy, bowlRx, bowlRy), g.basin);
+  g.poly(innerEllipse(cx, bowlCy, bowlRx, bowlRy, 0.76), g.basin, "extraThin");
+  g.seg({ x: cx, y: r.y + r.h * 0.14 }, { x: cx, y: bowlCy - bowlRy * 0.5 }, "extraThin");
+  g.dot({ x: cx, y: bowlCy }, unit * 0.05);
+  return g.nodes;
+}
+
+/**
+ * A urinal: the back plate on the wall, the half-bowl hanging off it, its rim, and the waste.
+ *
+ * This is the only fixture in the catalogue that is drawn as HALF a shape, and that is the
+ * honest plan of it: a wall-hung urinal has no back at all — the wall is its back — so a
+ * closed ellipse would draw a rim that does not exist and would read as a small basin. The
+ * chord across the top of {@link halfEllipseDown} IS the wall face, which is why the symbol
+ * runs to the very top edge of its footprint while every other bath fixture leaves a margin.
+ *
+ * The back plate over it is the flush pipe and bracket in one band. It is what tells the
+ * symbol from a `basin` at legend size, where a half-bowl and a shallow oval converge.
+ */
+export function drawUrinal(r: Rect, g: GlyphCtx): SceneNode[] {
+  const cx = r.x + r.w / 2;
+  const unit = Math.min(r.w, r.h);
+  g.poly(rectPoly({ x: r.x + r.w * 0.14, y: r.y, w: r.w * 0.72, h: r.h * 0.16 }), g.body);
+
+  // The bowl's chord is the plate's own bottom edge, so the two are one object. A chord set
+  // below it leaves a sliver of floor between them and the plate reads as a shelf.
+  const cy = r.y + r.h * 0.16;
+  const rx = r.w * 0.44;
+  const ry = r.h * 0.8;
+  g.poly(halfEllipseDown(cx, cy, rx, ry), g.basin);
+  g.poly(halfEllipseDown(cx, cy, rx * 0.74, ry * 0.74), g.basin, "extraThin");
+  g.dot({ x: cx, y: cy + ry * 0.62 }, unit * 0.05);
+  return g.nodes;
+}
+
+/**
+ * A wall-hung mirror: the glass, and three short reflection ticks across it.
+ *
+ * The catalogued footprint is 900 x 50 — a mirror has essentially no depth, which is the
+ * whole drawing problem. A 50 mm band is a line at any real plan scale, and a line on a wall
+ * is already what a wall looks like, so the symbol needs a mark that survives being 18 times
+ * longer than it is deep. The ticks are that mark: five strokes at 45 degrees, the
+ * convention for a reflective surface on a section or elevation, borrowed here because
+ * nothing else fits in the band. Five rather than three, and each nearly filling the band's
+ * depth, because the first draft's three short marks disappeared entirely when the sheet was
+ * looked at — a symbol nobody can see is the labelled rectangle with extra steps.
+ *
+ * The glass is filled `g.basin` (white) rather than `g.body`, so the mirror reads as a void in
+ * the wall run instead of as another cabinet stuck to it.
+ *
+ * The tick half-length is capped at `0.09 * r.w` as well as at the short side, and that cap is
+ * what makes containment hold rather than nearly hold: the outer ticks sit at 0.1 and 0.9 of
+ * the width, so a half-length keyed to `min(w, h)` alone escapes the ends the moment the
+ * footprint is TALLER than it is wide — which the fuzz corpus's 1 x 10000 rect is.
+ */
+export function drawMirror(r: Rect, g: GlyphCtx): SceneNode[] {
+  g.poly(rectPoly(r), g.basin);
+  const d = Math.min(Math.min(r.w, r.h) * 0.45, r.w * 0.09, r.h * 0.45);
+  const cy = r.y + r.h / 2;
+  for (const f of [0.1, 0.3, 0.5, 0.7, 0.9]) {
+    const x = r.x + r.w * f;
+    g.seg({ x: x - d, y: cy + d }, { x: x + d, y: cy - d }, "extraThin");
+  }
   return g.nodes;
 }
