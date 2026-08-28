@@ -34,7 +34,9 @@ import {
   type EdgeLoop,
   PointInterner,
   edgeEnd,
+  edgeMid,
   edgeStart,
+  edgeTangentAt,
   loopArea,
   loopBBox,
   loopWinding,
@@ -82,22 +84,24 @@ describe("PointInterner", () => {
 describe("wallBand — a single straight segment", () => {
   const w = wall({ points: [P(0, 0), P(4000, 0)], thickness: 200 });
 
-  it("is ONE loop whose four vertices are segmentRectangle's, in order", () => {
+  it("is ONE loop whose four vertices are segmentRectangle's — the same CYCLE", () => {
     const loops = wallBand(w, new PointInterner());
     expect(loops).toHaveLength(1);
     const loop = loops[0]!;
     expect(loop.every((e) => e.t === "line")).toBe(true);
-    expect(verts(loop)).toEqual(segmentRectangle(P(0, 0), P(4000, 0), 200));
+    // `segmentRectangle`'s own order runs counter-clockwise on screen; `wallBand`
+    // normalises every loop POSITIVE (see the orientation law), so the four points come
+    // back as that CYCLE traversed the other way. Reversing a closed loop keeps its first
+    // vertex where it is and reverses the rest, so [A,B,C,D] becomes [A,D,C,B] — the same
+    // four points, the same shape, the opposite direction of travel.
+    const [a, b, c, d] = segmentRectangle(P(0, 0), P(4000, 0), 200);
+    expect(verts(loop)).toEqual([a, d, c, b]);
   });
 
-  it("its area is the rectangle's — NEGATIVE, because it keeps segmentRectangle's order", () => {
+  it("its area is the rectangle's, POSITIVE — every band loop obeys the orientation law", () => {
     const loop = wallBand(w, new PointInterner())[0]!;
-    // 4200 long (200 of square cap) x 200 wide. `segmentRectangle` runs counter-clockwise
-    // on screen, so under this module's sign convention an open run's loop is negative.
-    // That is deliberate and documented: an open band's orientation is NOT normalised,
-    // because reproducing the historical vertex order matters more (the joinery layer
-    // re-orients every edge it keeps, and `loopWinding` is sign-agnostic).
-    expect(loopArea(loop)).toBeCloseTo(-(4200 * 200), 6);
+    // 4200 long (200 of square cap) x 200 wide.
+    expect(loopArea(loop)).toBeCloseTo(4200 * 200, 6);
   });
 
   it("contains its own middle and excludes a point outside the cap", () => {
@@ -538,5 +542,74 @@ describe("loop utilities", () => {
     const arc: Arc = fullCircleArc(P(100, 200), 50);
     const box = loopBBox([{ t: "arc", arc } as Edge]);
     expect(box).toEqual({ minX: 50, minY: 150, maxX: 150, maxY: 250 });
+  });
+});
+
+describe("the ORIENTATION LAW — a band's material is on +perp of every loop edge", () => {
+  /**
+   * This is the law `joinery.ts` classifies sides by, with no epsilon: if it does not
+   * hold for every loop of every band, the exact classification silently reads the wrong
+   * side. It is asserted here by CONSTRUCTION rather than by inspecting a sign — step a
+   * hundredth of a millimetre off each edge's midpoint both ways and check which side the
+   * band's own winding says is solid.
+   */
+  const lawHolds = (loops: EdgeLoop[]): boolean => {
+    const inside = (p: Point): boolean => loops.reduce((n, l) => n + loopWinding(l, p), 0) !== 0;
+    const eps = 0.01;
+    for (const l of loops) {
+      for (const e of l) {
+        const m = edgeMid(e);
+        const n = perp(edgeTangentAt(e, m));
+        if (!inside({ x: m.x + n.x * eps, y: m.y + n.y * eps })) return false;
+        if (inside({ x: m.x - n.x * eps, y: m.y - n.y * eps })) return false;
+      }
+    }
+    return true;
+  };
+
+  it("holds for an open straight run", () => {
+    expect(lawHolds(wallBand(wall({ points: [P(0, 0), P(4000, 0)], thickness: 200 }), new PointInterner()))).toBe(true);
+  });
+
+  it("holds for an L, and for an oblique two-segment run", () => {
+    expect(
+      lawHolds(wallBand(wall({ points: [P(0, 0), P(4000, 0), P(4000, 3000)], thickness: 200 }), new PointInterner())),
+    ).toBe(true);
+    expect(
+      lawHolds(wallBand(wall({ points: [P(0, 0), P(3000, 900), P(5000, 4000)], thickness: 240 }), new PointInterner())),
+    ).toBe(true);
+  });
+
+  it("holds for a closed ring — outer AND hole — however the author wound it", () => {
+    const cw = wall({ points: [P(0, 0), P(6000, 0), P(6000, 4000), P(0, 4000)], closed: true, thickness: 250 });
+    const ccw = wall({ points: [P(0, 4000), P(6000, 4000), P(6000, 0), P(0, 0)], closed: true, thickness: 250 });
+    expect(lawHolds(wallBand(cw, new PointInterner()))).toBe(true);
+    expect(lawHolds(wallBand(ccw, new PointInterner()))).toBe(true);
+  });
+
+  it("holds for a curved run and for the aquarium drum", () => {
+    const arc = arcFromChord(P(2000, 0), P(0, 2000), 2000, "ccw", false)!;
+    expect(
+      lawHolds(wallBand(wall({ points: [P(2000, 0), P(0, 2000)], arcs: [arc], thickness: 200 }), new PointInterner())),
+    ).toBe(true);
+    const a1 = arcFromChord(P(38000, 14000), P(22000, 14000), 8000, "ccw", false)!;
+    const a2 = arcFromChord(P(22000, 14000), P(38000, 14000), 8000, "ccw", false)!;
+    const drum = wall({
+      points: [P(38000, 14000), P(22000, 14000), P(38000, 14000)],
+      arcs: [a1, a2],
+      closed: true,
+      thickness: 200,
+    });
+    expect(lawHolds(wallBand(drum, new PointInterner()))).toBe(true);
+  });
+
+  it("holds for an opening cut too — its interior is on +perp", () => {
+    const w = wall({ points: [P(0, 0), P(6000, 0)], thickness: 200 });
+    const straight = openingCut(w, { at: P(3000, 0), width: 900 }, new PointInterner())!;
+    expect(lawHolds([straight])).toBe(true);
+    const arc = arcFromChord(P(2000, 0), P(-2000, 0), 2000, "cw", false)!;
+    const curved = wall({ points: [P(2000, 0), P(-2000, 0)], arcs: [arc], thickness: 200 });
+    const sector = openingCut(curved, { at: P(0, 2000), width: 900 }, new PointInterner())!;
+    expect(lawHolds([sector])).toBe(true);
   });
 });

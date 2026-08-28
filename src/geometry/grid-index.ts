@@ -20,7 +20,16 @@ export interface GridBox {
 
 export class GridIndex<T> {
   readonly cellSize: number;
-  private readonly buckets = new Map<string, T[]>();
+  /**
+   * Buckets nested by column then row, rather than keyed by a `"cx:cy"` string.
+   *
+   * Purely an allocation decision, and a measured one: a long thin box (a 4 m wall face)
+   * lands in dozens of cells, so a string key means dozens of string allocations per
+   * insert. Building the wall-joinery layer's indices cost 55 ms of a 214 ms budget on
+   * that alone. Iteration order is unchanged - it comes from the `cx`/`cy` loops, never
+   * from the Map's own ordering.
+   */
+  private readonly buckets = new Map<number, Map<number, T[]>>();
 
   constructor(cellSize: number) {
     this.cellSize = cellSize > 0 ? cellSize : 1;
@@ -37,11 +46,42 @@ export class GridIndex<T> {
     const y0 = this.idx(box.minY);
     const y1 = this.idx(box.maxY);
     for (let cx = x0; cx <= x1; cx++) {
+      let col = this.buckets.get(cx);
+      if (!col) {
+        col = new Map();
+        this.buckets.set(cx, col);
+      }
       for (let cy = y0; cy <= y1; cy++) {
-        const k = `${cx}:${cy}`;
-        const b = this.buckets.get(k);
+        const b = col.get(cy);
         if (b) b.push(item);
-        else this.buckets.set(k, [item]);
+        else col.set(cy, [item]);
+      }
+    }
+  }
+
+  /**
+   * Every item in every cell `box` touches, in deterministic order and **without
+   * allocating** - cells in `(cx, cy)` order, items in insertion order. An item in
+   * several touched cells is visited once PER CELL, so the callback must tolerate
+   * repeats; `queryBox` is the de-duplicating wrapper.
+   *
+   * This exists because the de-duplication is the expensive part. A pair scan asks this
+   * once per edge and rejects almost every candidate on a bounding box, so building a
+   * `Set` and an array of the candidates first costs more than the scan does - measured
+   * as the dominant cost of the wall-joinery split phase.
+   */
+  forEach(box: GridBox, visit: (item: T) => void): void {
+    const x0 = this.idx(box.minX);
+    const x1 = this.idx(box.maxX);
+    const y0 = this.idx(box.minY);
+    const y1 = this.idx(box.maxY);
+    for (let cx = x0; cx <= x1; cx++) {
+      const col = this.buckets.get(cx);
+      if (!col) continue;
+      for (let cy = y0; cy <= y1; cy++) {
+        const b = col.get(cy);
+        if (!b) continue;
+        for (const item of b) visit(item);
       }
     }
   }
@@ -59,8 +99,10 @@ export class GridIndex<T> {
     const seen = new Set<T>();
     const out: T[] = [];
     for (let cx = x0; cx <= x1; cx++) {
+      const col = this.buckets.get(cx);
+      if (!col) continue;
       for (let cy = y0; cy <= y1; cy++) {
-        const b = this.buckets.get(`${cx}:${cy}`);
+        const b = col.get(cy);
         if (!b) continue;
         for (const item of b) {
           if (!seen.has(item)) {

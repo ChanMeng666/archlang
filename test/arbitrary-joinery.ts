@@ -24,7 +24,7 @@
 
 import fc from "fast-check";
 import type { Point } from "../src/ast.js";
-import { arcFromChord } from "../src/geometry/arc.js";
+import { arcFromChord, arcLength, arcPointAt } from "../src/geometry/arc.js";
 import type { Arc } from "../src/geometry/arc.js";
 import { type BandWall, PointInterner, openingCut, wallBand } from "../src/geometry/band.js";
 import { type JoineryCut, type JoineryWall, bandBBox } from "../src/geometry/joinery.js";
@@ -51,6 +51,9 @@ export interface JoineryInput {
 
 const lerp = (a: Point, b: Point, t: number): Point => ({ x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) });
 
+/** Clearance an opening's jamb must keep from its host's ends, in mm. */
+const MARGIN_MM = 50;
+
 /** Materialise a spec set into `joinWalls`'s inputs. Pure. */
 export function renderWalls(specs: readonly WallSpec[]): JoineryInput {
   const intern = new PointInterner();
@@ -59,9 +62,13 @@ export function renderWalls(specs: readonly WallSpec[]): JoineryInput {
   let cutIndex = 0;
   specs.forEach((spec, index) => {
     let arcs: Array<Arc | undefined> | undefined;
+    let arc0: Arc | undefined;
     if (spec.arc && spec.points.length >= 2) {
       const a = arcFromChord(spec.points[0]!, spec.points[1]!, spec.arc.radius, spec.arc.dir, false);
-      if (a) arcs = [a];
+      if (a) {
+        arcs = [a];
+        arc0 = a;
+      }
     }
     const w: BandWall = {
       thickness: spec.thickness,
@@ -80,7 +87,20 @@ export function renderWalls(specs: readonly WallSpec[]): JoineryInput {
     });
     for (const op of spec.openings) {
       if (spec.points.length < 2) continue;
-      const at = lerp(spec.points[0]!, spec.points[1]!, op.t);
+      // An opening is placed by RUN LENGTH along its host and must fit strictly inside
+      // it, which for a curve is arc length and NOT the chord. Getting that wrong is not
+      // a cosmetic difference: a cut is built as an angular sector about the host's
+      // centre, so an opening the chord says fits by 3 mm can overhang the arc's own end
+      // by 6 and leave a 7 mm fragment of cut boundary lying a hundredth of a millimetre
+      // from the band's tangent cap. That is an authoring error a real plan would be
+      // linted for, not a junction these properties exist to check.
+      const run = arc0
+        ? arcLength(arc0)
+        : Math.hypot(spec.points[1]!.x - spec.points[0]!.x, spec.points[1]!.y - spec.points[0]!.y);
+      const half = op.width / 2;
+      const along = op.t * run;
+      if (along - half < MARGIN_MM || along + half > run - MARGIN_MM) continue;
+      const at = arc0 ? arcPointAt(arc0, op.t) : lerp(spec.points[0]!, spec.points[1]!, op.t);
       const loop = openingCut(w, { at, width: op.width }, intern);
       if (loop) cuts.push({ index: cutIndex++, loop, bbox: bandBBox([loop]) });
     }
@@ -140,12 +160,10 @@ const rectilinearWall: fc.Arbitrary<WallSpec> = fc
     if (r.turn !== undefined) {
       points.push(r.horizontal ? { x: b.x, y: b.y + r.turn } : { x: b.x + r.turn, y: b.y });
     }
-    // Keep every jamb strictly inside the first segment.
-    const openings = r.openings.filter((o) => {
-      const half = o.width / 2;
-      return o.t * r.len - half > 1 && o.t * r.len + half < r.len - 1;
-    });
-    return { points, thickness: r.thickness, closed: false, group: r.group, openings };
+    // `renderWalls` is the one place an opening is checked against its host's RUN LENGTH
+    // (arc length on a curve), so nothing is filtered here — a spec that does not fit is
+    // dropped at materialisation rather than pre-judged against the chord.
+    return { points, thickness: r.thickness, closed: false, group: r.group, openings: r.openings };
   });
 
 /** 1–5 axis-aligned walls on a shared grid. */
@@ -226,16 +244,12 @@ const angledWall: fc.Arbitrary<WallSpec> = fc
       const th = r.angle + r.bend;
       points.push({ x: b.x + Math.cos(th) * r.bendLen, y: b.y + Math.sin(th) * r.bendLen });
     }
-    const openings = r.openings.filter((o) => {
-      const half = o.width / 2;
-      return o.t * r.len - half > 1 && o.t * r.len + half < r.len - 1;
-    });
     const spec: WallSpec = {
       points,
       thickness: r.thickness,
       closed: false,
       group: r.group,
-      openings,
+      openings: r.openings,
     };
     if (r.curve) {
       // The radius must exceed half the chord for a circle to exist at all, and exceed

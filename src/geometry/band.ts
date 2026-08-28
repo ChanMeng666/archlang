@@ -55,7 +55,8 @@
  * construction is expressed exactly: a straight cap TAIL of length `h` along the tangent,
  * then the full offset arc. The cap points are identical; the curve between them is a
  * real arc rather than a polyline whose first chord has been dragged. A lone STRAIGHT
- * segment, by contrast, reproduces `segmentRectangle`'s four points exactly, in order.
+ * segment, by contrast, reproduces `segmentRectangle`'s four points exactly — as a
+ * cycle; see the orientation law on {@link wallBand} for why the direction is normalised.
  */
 
 import type { Point } from "../ast.js";
@@ -158,10 +159,19 @@ const KEY_SCALE = 1e2;
 
 /**
  * The distance below which two points are the SAME vertex, in millimetres - the single
- * positional tolerance of the whole joinery layer. Exported so a consumer or a test
- * DERIVES it rather than retyping a number that must agree with `KEY_SCALE`.
+ * positional tolerance of the whole joinery layer.
+ *
+ * It is the cell size times **root 2, rounded up**, and that relation is load-bearing
+ * rather than decorative: two points that share a key can be up to a cell DIAGONAL
+ * apart, so a fuse radius smaller than the diagonal lets `pointKey` say "same" about two
+ * points the interner kept distinct. Downstream that is not a rounding difference - the
+ * chainer keys vertices by `pointKey`, so it read a 0.014 mm edge as a self-loop and
+ * emitted it as a one-edge "loop" of its own. With this relation, **same key implies
+ * same object**, and the two notions of identity cannot disagree.
+ *
+ * Exported so a consumer or a test DERIVES it rather than retyping it.
  */
-export const SNAP_MM = 1 / KEY_SCALE;
+export const SNAP_MM = 1.5 / KEY_SCALE;
 
 /** Positional key of a point, at {@link SNAP_MM}, with `−0` normalised to `0`. */
 export function pointKey(p: Point): string {
@@ -180,22 +190,49 @@ export function pointKey(p: Point): string {
  * subtracting coordinates and picking an epsilon.
  */
 export class PointInterner {
-  private readonly map = new Map<string, Point>();
+  /** Registered points by CELL, each list in registration order. */
+  private readonly cells = new Map<string, Array<{ p: Point; ord: number }>>();
+  private next = 0;
 
-  /** The canonical object for this position, registering it if it is new. */
+  /**
+   * The canonical object for this position, registering it if it is new.
+   *
+   * The lookup scans the point's own cell **and its eight neighbours**, not just its own.
+   * That is the difference between "rounds to the same cell" and "is within `SNAP_MM`",
+   * and it is not a refinement — a cell-only lookup leaves two points 0.0099 mm apart
+   * distinct whenever they straddle a cell boundary, which measured out as a 0.01 mm
+   * sliver edge between two adjacent keys and a chain that could not close. Among the
+   * candidates within `SNAP_MM` the EARLIEST-registered wins, so the answer depends on
+   * the caller's registration order and not on which neighbour the scan reached first.
+   */
   get(p: Point): Point {
-    const k = pointKey(p);
-    const hit = this.map.get(k);
-    if (hit) return hit;
+    const cx = Math.round(p.x * KEY_SCALE);
+    const cy = Math.round(p.y * KEY_SCALE);
+    let best: { p: Point; ord: number } | null = null;
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const list = this.cells.get(`${cx + dx}|${cy + dy}`);
+        if (!list) continue;
+        for (const c of list) {
+          if (Math.hypot(c.p.x - p.x, c.p.y - p.y) > SNAP_MM) continue;
+          if (!best || c.ord < best.ord) best = c;
+        }
+      }
+    }
+    if (best) return best.p;
     // Normalise -0 on the way in so a stored point never carries one.
     const canon: Point = { x: p.x === 0 ? 0 : p.x, y: p.y === 0 ? 0 : p.y };
-    this.map.set(k, canon);
+    const key = `${cx === 0 ? 0 : cx}|${cy === 0 ? 0 : cy}`;
+    const list = this.cells.get(key);
+    const entry = { p: canon, ord: this.next++ };
+    if (list) list.push(entry);
+    else this.cells.set(key, [entry]);
     return canon;
   }
 
   /** How many distinct vertices have been registered (diagnostics and tests). */
   get size(): number {
-    return this.map.size;
+    return this.next;
   }
 }
 
@@ -433,18 +470,20 @@ const along = (p: Point, t: Vec2, d: number): Point => ({ x: p.x + t.x * d, y: p
  * The band of one wall as closed edge loops.
  *
  * An OPEN wall gives exactly one loop: the `σ = +1` faces out, an end cap, the `σ = −1`
- * faces back, a start cap. Its orientation is deliberately NOT normalised — it keeps
- * `segmentRectangle`'s historical vertex order, which is counter-clockwise on screen and
- * therefore NEGATIVE under this module's sign convention. That order is what a lone
- * straight segment has drawn since v0.1 and what `test/band.test.ts` pins; the joinery
- * layer re-orients every edge it keeps from its own inside/outside probe, and
- * {@link loopWinding} is sign-agnostic, so nothing downstream depends on it.
+ * faces back, a start cap. A CLOSED ring gives two — an outer loop and a hole.
  *
- * A CLOSED ring gives two loops, and there the orientation IS normalised: an outer loop
- * with positive signed area and a hole with negative, so the pair fills correctly under
- * the nonzero rule whichever way round the author wrote the ring. Which SIDE is the outer
- * one is decided by exact signed area, never by a fixed `σ`: a ring written clockwise
- * puts `σ = +1` inside, and one written counter-clockwise puts it outside.
+ * **Every returned loop obeys the ORIENTATION LAW: the wall's material lies on the
+ * `+perp` side of travel** (outer loops positive, holes negative). That is not
+ * cosmetic — it is what lets `./joinery.ts` decide which side of an edge is solid
+ * ANALYTICALLY, with no epsilon probe at all, so a near-tangent neighbouring band can
+ * never flip the answer on one sub-edge and not on the one beside it. Which SIDE of a
+ * closed ring is the outer one is decided by exact signed area, never by a fixed `σ`:
+ * a ring written clockwise puts `σ = +1` inside, and one written counter-clockwise puts
+ * it outside.
+ *
+ * The one visible cost: `segmentRectangle`'s own four-point order runs counter-clockwise
+ * on screen, so a lone straight segment's loop is that same four-point CYCLE traversed
+ * the other way round rather than that exact array.
  *
  * A wall of non-positive thickness, or with fewer than one non-degenerate segment,
  * produces no loops rather than an empty or inverted one.
@@ -515,7 +554,12 @@ export function wallBand(w: BandWall, intern: PointInterner): EdgeLoop[] {
   const endCap: Edge = { t: "line", a: edgeEnd(plusEdges[plusEdges.length - 1]!), b: edgeStart(back[0]!) };
   const startCap: Edge = { t: "line", a: edgeEnd(back[back.length - 1]!), b: edgeStart(plusEdges[0]!) };
   const loop = finish([...plusEdges, endCap, ...back, startCap]);
-  return loop.length > 0 ? [loop] : [];
+  if (loop.length === 0) return [];
+  // Normalised POSITIVE, like the closed ring's outer loop - see the header's
+  // orientation law. `segmentRectangle`'s own vertex order is counter-clockwise on
+  // screen, so a lone straight segment's loop is that same four-point cycle traversed
+  // the other way round.
+  return [loopArea(loop) > 0 ? loop : reverseLoop(loop)];
 }
 
 /**
@@ -606,6 +650,12 @@ export interface CutOpening {
  * uses, so an opening cannot be attributed to one segment by the renderer and another by
  * `describe()`.
  *
+ * The loop obeys the same ORIENTATION LAW as a band's: the cut's interior is on the
+ * `+perp` side of travel. Its two long edges lie EXACTLY on the host wall's faces (both
+ * span the full `± thickness/2`), so the joinery layer sees them as coincident with
+ * those faces and reads which side is void from this orientation — which is why the law
+ * has to hold here too, not only for bands.
+ *
  * On a STRAIGHT host it is the rotated rectangle spanning `width` along the segment and
  * the full wall thickness across it — the arithmetic `scene-build.ts`'s `openingPoly`
  * has always used, moved here so there is one copy. On a CURVED host it is the annular
@@ -637,9 +687,11 @@ export function openingCut(w: BandWall, op: CutOpening, intern: PointInterner): 
       y: op.at.y + dir.y * u + n.y * v,
     });
     const pts = [corner(-hw, -h), corner(hw, -h), corner(hw, h), corner(-hw, h)];
-    return internLoop(
-      pts.map((p, i) => ({ t: "line", a: p, b: pts[(i + 1) % pts.length]! }) as Edge),
-      intern,
+    return positive(
+      internLoop(
+        pts.map((p, i) => ({ t: "line", a: p, b: pts[(i + 1) % pts.length]! }) as Edge),
+        intern,
+      ),
     );
   }
 
@@ -672,13 +724,22 @@ export function openingCut(w: BandWall, op: CutOpening, intern: PointInterner): 
     sweep: -dir * 2 * half,
     start: th1,
   };
-  return internLoop(
-    [
-      { t: "arc", arc: outer },
-      { t: "line", a: outer.b, b: inner.a },
-      { t: "arc", arc: inner },
-      { t: "line", a: inner.b, b: outer.a },
-    ],
-    intern,
+  return positive(
+    internLoop(
+      [
+        { t: "arc", arc: outer },
+        { t: "line", a: outer.b, b: inner.a },
+        { t: "arc", arc: inner },
+        { t: "line", a: inner.b, b: outer.a },
+      ],
+      intern,
+    ),
   );
 }
+
+/**
+ * The loop oriented so its interior is on the `+perp` side of travel — the same
+ * orientation law {@link wallBand} normalises its band loops to, so a cut and a band
+ * can be asked the same question in the same way.
+ */
+const positive = (loop: EdgeLoop): EdgeLoop => (loopArea(loop) >= 0 ? loop : reverseLoop(loop));

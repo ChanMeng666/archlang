@@ -16,7 +16,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import type { Point } from "../src/ast.js";
-import { arcFromChord, distPointToArc } from "../src/geometry/arc.js";
+import { arcFromChord, arcPointAt, distPointToArc } from "../src/geometry/arc.js";
 import type { Arc } from "../src/geometry/arc.js";
 import { distPointToSegment } from "../src/geometry.js";
 import {
@@ -498,5 +498,84 @@ describe("emitLoops / loopsToPolygons", () => {
       expect(poly.length).toBeGreaterThan(3);
       expect(pointKey(poly[0]!)).not.toBe(pointKey(poly[poly.length - 1]!));
     }
+  });
+});
+
+/* ------------------------------------------------- regressions from failing seeds */
+
+describe("regressions — cases a property run found, pinned as examples", () => {
+  /** Every loop closes: each edge ends where the next begins, cyclically. */
+  const allClosed = (loops: EdgeLoop[]): boolean =>
+    loops.every((l) => l.every((e, k) => pointKey(edgeEnd(e)) === pointKey(edgeStart(l[(k + 1) % l.length]!))));
+
+  it("a lone curved wall yields ONE closed loop — not a stray one-edge loop beside it", () => {
+    // `joinWalls` used to build its own `PointInterner` and leave the caller's alone, so
+    // a band vertex and a split point at the SAME position were different objects. Every
+    // identity test in the layer then answered "different", `addSplit` registered a split
+    // AT an endpoint, and the 0.014 mm sub-edge that produced came back as a loop of its
+    // own with an area of 0.012 mm². One interner per call, seeded from the input, is the
+    // fix; this is the smallest input that showed it.
+    const arc = arcFromChord(P(0, 0), P(1500, 0), 1401.6082102156001, "ccw", false)!;
+    const r = join([{ points: [P(0, 0), P(1500, 0)], arcs: [arc], thickness: 120 }]);
+    expect(r.outline).toHaveLength(1);
+    expect(r.outline[0]).toHaveLength(8);
+    expect(allClosed(r.outline)).toBe(true);
+    expect(Math.abs(loopArea(r.outline[0]!))).toBeGreaterThan(200000);
+  });
+
+  it("a bulging arc into an acute straight run closes, though the band overlaps ITSELF", () => {
+    // The case that rules out the purely analytic side rule. A 120° arc meeting a nearly
+    // reversed straight run buries part of its own boundary inside its own solid — the
+    // true windings there are 2 and 1, not 1 and 0 — so "the own band's material is on
+    // the side its coincident edge says" keeps an edge that must be dropped.
+    const arc = arcFromChord(P(0, 0), P(1500, 0), 862.4999999999999, "cw", false)!;
+    const r = join([
+      {
+        points: [P(0, 0), P(1500, 0), P(1284.8304283909251, -1484.4871354961508)],
+        arcs: [arc, undefined],
+        thickness: 120,
+      },
+    ]);
+    expect(allClosed(r.outline)).toBe(true);
+    expect(r.outline.every((l) => l.length >= 3 || l.some((e) => e.t === "arc"))).toBe(true);
+  });
+
+  it("an opening centred on a deep arc leaves two closed halves, no 0.01 mm sliver", () => {
+    // Two points 0.01 mm apart could round to different interner cells and stay distinct
+    // while `pointKey` called them equal; the chainer, which keys vertices by `pointKey`,
+    // then read the sliver between them as a self-loop. The fuse radius is now the cell
+    // DIAGONAL, so same key implies same object.
+    const arc = arcFromChord(P(-500, 0), P(3445.3873829037966, 0), 2280.882896778086, "cw", false)!;
+    const r = join([
+      {
+        points: [P(-500, 0), P(3445.3873829037966, 0)],
+        arcs: [arc],
+        thickness: 310,
+        openings: [{ at: arcPointAt(arc, 0.5), width: 700 }],
+      },
+    ]);
+    expect(r.outline).toHaveLength(2);
+    expect(allClosed(r.outline)).toBe(true);
+    // The doorway splits the wall into two equal halves.
+    const [a, b] = r.outline.map((l) => Math.abs(loopArea(l)));
+    expect(a).toBeCloseTo(b!, 3);
+  });
+
+  it("the caller need NOT share an interner with joinWalls", () => {
+    // The same plan built with one interner per wall must join identically to one built
+    // with a single shared interner — the API must not depend on the caller's bookkeeping.
+    const specs: WallSpec[] = [
+      { points: [P(0, 0), P(4000, 0)], thickness: 200 },
+      { points: [P(4000, 0), P(4000, 3000)], thickness: 200 },
+    ];
+    const shared = join(specs);
+    const perWall = specs.map((spec, index) => {
+      const own = new PointInterner();
+      const loops = wallBand({ thickness: spec.thickness, points: spec.points, closed: false }, own);
+      return { index, id: `w${index}`, thickness: spec.thickness, group: "brick", loops, bbox: bandBBox(loops) };
+    });
+    const split = joinWalls(perWall, [], ["brick"]);
+    expect(vertKeys(split.outline)).toEqual(vertKeys(shared.outline));
+    expect(split.outline.map((l) => l.length)).toEqual(shared.outline.map((l) => l.length));
   });
 });

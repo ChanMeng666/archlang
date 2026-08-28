@@ -57,7 +57,9 @@
 
 import type { Point } from "../ast.js";
 import type { Arc } from "./arc.js";
-import { arcPieces, arcPointAt } from "./arc.js";
+import { arcPieces, arcPointAt, distPointToArc } from "./arc.js";
+import { distPointToSegment } from "../geometry.js";
+import { MITER_LIMIT } from "../scene.js";
 import type { PathEdge, PathLoop, ScenePrim } from "../scene.js";
 import type { GridBox } from "./grid-index.js";
 import { GridIndex } from "./grid-index.js";
@@ -75,6 +77,7 @@ import {
   loopWinding,
   pointKey,
   reverseEdge,
+  SNAP_MM,
   tessellateLoops,
   unionBBox,
 } from "./band.js";
@@ -130,18 +133,16 @@ export interface JoineryResult {
  * ------------------------------------------------------------------------- */
 
 /**
- * How far either side of a sub-edge the inside/outside probes sit, in millimetres.
+ * A conservative reach for the per-wall spatial prefilter, as a multiple of the wall's
+ * half-thickness.
  *
- * It has to be far enough that floating point cannot land the probe back on the edge,
- * and near enough that it cannot cross the NEXT boundary. A tenth of a millimetre is ten
- * times the interner's own `SNAP_MM` — so a probe can never land on a pair of points the
- * interner would have merged into one vertex — and still hundreds of times finer than the
- * thinnest feature architecture contains (a 50 mm stud partition), so there is no real
- * boundary for it to jump over.
- *
- * It is a CEILING, not a fixed distance: see {@link probes}.
+ * Every point of a band lies within `MITER_LIMIT · h` of the band's own boundary: a face
+ * is `h` from the centreline, a square cap `√2 · h` from the end vertex, and a mitred
+ * corner at most `MITER_LIMIT · h` from the vertex it turns about (past which `band.ts`
+ * bevels). `1 + MITER_LIMIT` is that bound with slack, so a wall rejected by the filter
+ * PROVABLY does not contain the point and never needs a winding test.
  */
-const PROBE_MM = 1e-1;
+const REACH_FACTOR = 1 + MITER_LIMIT;
 
 /**
  * Loops smaller than this (mm²) are numerical dust and are dropped. A hundredth of a
@@ -185,6 +186,10 @@ const byTag = (a: Tagged, b: Tagged): number =>
 
 /** A single edge's bounding box (arc bulges included, closed form). */
 const edgeBBox = (e: Edge): GridBox => loopBBox([e]);
+
+/** Is `p` inside a box grown by the interner's own fusing distance? */
+const inGrownBox = (p: Point, b: GridBox): boolean =>
+  p.x >= b.minX - SNAP_MM && p.x <= b.maxX + SNAP_MM && p.y >= b.minY - SNAP_MM && p.y <= b.maxY + SNAP_MM;
 
 /** Do two boxes overlap at all? */
 const boxesOverlap = (a: GridBox, b: GridBox): boolean =>
@@ -244,11 +249,14 @@ function lineArcPoints(line: { a: Point; b: Point }, arc: Arc): Point[] {
  * about how many vertices a junction has.
  */
 function addSplit(t: Tagged, p: Point): void {
-  const k = pointKey(p);
-  if (k === pointKey(edgeStart(t.edge)) || k === pointKey(edgeEnd(t.edge))) return;
+  // Compared by OBJECT IDENTITY, not by key. `p` is already interned and so are the
+  // edge's own endpoints, so two points at the same position ARE the same object - and
+  // building a key string here instead costs three string allocations on the hottest
+  // path in the layer (the pair scan calls this twice per candidate crossing).
+  if (p === edgeStart(t.edge) || p === edgeEnd(t.edge)) return;
   const param = paramOf(t.edge, p);
   if (!(param > 0 && param < 1)) return;
-  for (const s of t.splits) if (pointKey(s.p) === k) return;
+  for (const s of t.splits) if (s.p === p) return;
   t.splits.push({ t: param, p });
 }
 
@@ -257,16 +265,31 @@ function splitAll(universe: Tagged[], intern: PointInterner): Tagged[] {
   const index = new GridIndex<number>(spanCell(universe.map((t) => t.bbox)));
   for (let i = 0; i < universe.length; i++) index.insert(universe[i]!.bbox, i);
 
+  // One reused candidate buffer and a stamp array, so the pair scan allocates NOTHING per
+  // edge. `forEach` visits an item once per shared cell; the stamp collapses those
+  // repeats without a `Set`, and the sort restores the canonical (index) order the
+  // interner's first-registration-wins rule depends on.
+  const stamp = new Int32Array(universe.length).fill(-1);
+  const candidates: number[] = [];
   for (let i = 0; i < universe.length; i++) {
     const a = universe[i]!;
-    const near = index
-      .queryBox(a.bbox)
-      .filter((j) => j > i)
-      .sort((x, y) => x - y);
-    for (const j of near) {
+    candidates.length = 0;
+    index.forEach(a.bbox, (j) => {
+      if (j <= i || stamp[j] === i) return;
+      stamp[j] = i;
+      candidates.push(j);
+    });
+    candidates.sort((x, y) => x - y);
+    for (const j of candidates) {
       const b = universe[j]!;
       if (!boxesOverlap(a.bbox, b.bbox)) continue;
       for (const raw of crossPoints(a.edge, b.edge)) {
+        // Reject before INTERNING. `crossPoints` answers for the infinite line and the
+        // whole circle, so most candidates lie off both edges - and interning is the
+        // expensive step (it fuses against a neighbourhood, not a single cell). A box
+        // test grown by `SNAP_MM` is conservative: a candidate the interner could still
+        // fuse onto an endpoint is inside it.
+        if (!inGrownBox(raw, a.bbox) || !inGrownBox(raw, b.bbox)) continue;
         const p = intern.get(raw);
         addSplit(a, p);
         addSplit(b, p);
@@ -285,7 +308,7 @@ function splitAll(universe: Tagged[], intern: PointInterner): Tagged[] {
     for (let k = 0; k < stops.length - 1; k++) {
       const from = stops[k]!;
       const to = stops[k + 1]!;
-      if (pointKey(from.p) === pointKey(to.p)) continue;
+      if (from.p === to.p) continue;
       const sub: Edge =
         t.edge.t === "line"
           ? { t: "line", a: from.p, b: to.p }
@@ -299,9 +322,44 @@ function splitAll(universe: Tagged[], intern: PointInterner): Tagged[] {
 
 /* ---------------------------------------------------------------------------
  * Phase 2 — who owns each side
+ *
+ * The question is: for a sub-edge, which wall's material lies just off it on each side?
+ *
+ * **The offset is DERIVED from the geometry, never a constant.** An earlier version
+ * stepped a fixed tenth of a millimetre; that is unsound wherever another boundary runs
+ * closer than the step, because the step then lands past it and reports that band's
+ * answer instead. It showed as an ODD vertex in the boundary graph — one sub-edge kept,
+ * the one beside it dropped — and therefore as a chain that could not close. The offset
+ * used here is
+ *
+ *     δ = min( nearest OTHER boundary / 2 , this edge's own span / 4 )
+ *
+ * so by construction nothing can be crossed on the way out, and the reading is the exact
+ * limit value. The split phase is what makes the first term meaningful: after it, no
+ * other boundary crosses this sub-edge's interior, so the distance from the midpoint to
+ * every non-coincident edge is strictly positive.
+ *
+ * **Why not a purely analytic rule.** It is tempting to skip the offset entirely: the
+ * split guarantees that every other band is either disjoint from the sub-edge (one
+ * winding test at the midpoint answers both sides) or COINCIDENT with it (its material
+ * side is then read off that edge's own direction, since `band.ts` orients every loop
+ * material-on-`+perp`). That is sound for other bands and it is exactly how the
+ * `coincident` set below is used. It is NOT sound for the sub-edge's OWN band, because a
+ * band may overlap itself — an acute corner between a bulging arc and a straight run
+ * buries part of its own boundary inside its own solid, and there the true windings are
+ * 2 and 1 rather than 1 and 0, so the edge must be dropped and the analytic rule keeps
+ * it. (Nor can the winding be decomposed into "everything else, plus one for the
+ * material side": ray casting is not local. Square loop, midpoint on the top edge — the
+ * other three edges already contribute 1, so the decomposition reports 2 and 1 where the
+ * truth is 1 and 0.) The offset asks the whole question at once and cannot disagree with
+ * itself.
+ *
+ * The COINCIDENCE grouping is still what the phase is built on, for two other reasons:
+ * it deduplicates a face two walls share into one emitted edge, and it collapses N
+ * coincident sub-edges into one pair of readings instead of N.
  * ------------------------------------------------------------------------- */
 
-/** A point's owner: the thickest wall whose band covers it, or `null`. */
+/** A sub-edge's owner on one side: the thickest wall whose material is there, or `null`. */
 type Owner = JoineryWall | null;
 
 /** Nonzero winding over a wall's whole band (its outer loop and any hole). */
@@ -312,57 +370,75 @@ function bandContains(w: JoineryWall, p: Point): boolean {
 }
 
 /**
+ * Owner priority: **thickest wins**, ties broken by the lower `index` - applied by
+ * scanning a {@link byOwnership}-sorted candidate list and taking the first hit.
+ *
+ * That single rule is what makes a 100 mm partition drawn along the same centreline as a
+ * 250 mm shell vanish into the shell instead of drawing two faces inside its poche - and
+ * it is a rule about the WALLS, not about draw order, so it cannot be changed by
+ * reordering statements.
+ */
+/** Thickest first, ties by index — the order a candidate list is scanned in. */
+const byOwnership = (a: JoineryWall, b: JoineryWall): number => b.thickness - a.thickness || a.index - b.index;
+
+/**
  * The wall a point belongs to, or `null` when it is in open air or inside an opening.
+ * `wallsNear` arrives thickest-first, so the FIRST band that covers the point is the
+ * answer and the rest need no winding test — which matters, because the winding walk is
+ * this layer's hottest loop.
  *
- * **Thickest wins**, ties broken by the lower `index`. That single rule is what makes a
- * 100 mm partition drawn along the same centreline as a 250 mm shell vanish into the
- * shell instead of drawing two faces inside its poché — and it is a rule about the
- * WALLS, not about draw order, so it cannot be changed by reordering statements.
- *
- * An opening cut wins over every wall: a doorway is a hole, and a hole is not owned.
+ * A cut wins over every wall: a doorway is a hole, and a hole is not owned.
  */
 function ownerAt(p: Point, wallsNear: readonly JoineryWall[], cutsNear: readonly JoineryCut[]): Owner {
-  for (const c of cutsNear) {
-    if (loopWinding(c.loop, p) !== 0) return null;
-  }
-  // `wallsNear` arrives sorted thickest-first, ties by lower index, so the FIRST wall
-  // whose band covers the point is the answer and the rest need no winding test at all.
-  // The winding walk is the layer's hottest loop (thousands of probes x every nearby
-  // wall's every edge), so short-circuiting it rather than scanning for a maximum is
-  // worth the sort.
-  for (const w of wallsNear) {
-    if (bandContains(w, p)) return w;
-  }
+  for (const c of cutsNear) if (loopWinding(c.loop, p) !== 0) return null;
+  for (const w of wallsNear) if (bandContains(w, p)) return w;
   return null;
 }
-
-/** Thickest first, ties by the caller's index — the priority `ownerAt` short-circuits on. */
-const byOwnership = (a: JoineryWall, b: JoineryWall): number => b.thickness - a.thickness || a.index - b.index;
 
 /** Run length of an edge — arc length for a curve, never its chord. */
 const edgeLength = (e: Edge): number =>
   e.t === "arc" ? Math.abs(e.arc.r * e.arc.sweep) : Math.hypot(e.b.x - e.a.x, e.b.y - e.a.y);
 
+/** Distance from a point to an edge — exact for both kinds, never sampled. */
+const edgeDist = (p: Point, e: Edge): number =>
+  e.t === "arc" ? distPointToArc(p, e.arc) : distPointToSegment(p, edgeStart(e), edgeEnd(e));
+
 /**
- * The two probe points either side of a sub-edge's midpoint, `+perp` first.
- *
- * The distance is {@link PROBE_MM} **or a quarter of the edge's own length, whichever is
- * smaller**, and the second term is what makes a SHALLOW crossing work. Where two
- * boundaries meet at a few degrees, the four regions around the crossing are slivers
- * narrower than they are long; a fixed-distance probe steps clean out of the sliver it
- * was meant to sample and reports the wrong owner, which leaves the boundary graph with
- * an odd vertex and the chainer with a chain that cannot close. Scaling with the edge
- * keeps the probe inside the region the edge actually borders, because a sub-edge is
- * only short where the geometry around it is fine.
+ * One band or cut whose boundary is COINCIDENT with a group of sub-edges, and the side of
+ * the group's representative its material lies on.
  */
-function probes(e: Edge): { plus: Point; minus: Point } {
-  const m = edgeMid(e);
-  const n = perp(edgeTangentAt(e, m));
-  const d = Math.min(PROBE_MM, edgeLength(e) / 4);
-  return {
-    plus: { x: m.x + n.x * d, y: m.y + n.y * d },
-    minus: { x: m.x - n.x * d, y: m.y - n.y * d },
-  };
+interface Coincident {
+  /** `0` = a wall band, `1` = an opening cut. */
+  kind: 0 | 1;
+  /** The wall's or cut's `index`. */
+  owner: number;
+  /** `true` when this owner's material is on `+perp` of the REPRESENTATIVE's direction. */
+  plusSide: boolean;
+}
+
+/**
+ * A set of sub-edges that are geometrically the same curve — the unit everything after
+ * the split works on.
+ *
+ * Grouping by {@link undirectedKey} does the deduplication (a face two walls share is one
+ * group, emitted once) AND yields the coincidence set the exact classification needs, in
+ * one pass. The representative is the member with the smallest tag, so the group's
+ * direction is a function of the caller's own indices.
+ */
+interface EdgeGroup {
+  key: string;
+  rep: Edge;
+  mid: Point;
+  coincident: Coincident[];
+}
+
+/**
+ * Does `e` run the same way round as `rep`? For two arcs the SWEEP SIGN decides — a full
+ * circle has `a === b`, so comparing start points would be meaningless there.
+ */
+function sameDirection(rep: Edge, e: Edge): boolean {
+  if (rep.t === "arc" && e.t === "arc") return Math.sign(rep.arc.sweep) === Math.sign(e.arc.sweep);
+  return pointKey(edgeStart(e)) === pointKey(edgeStart(rep));
 }
 
 /**
@@ -608,6 +684,23 @@ export function joinWalls(
 
   const intern = new PointInterner();
 
+  /**
+   * Re-intern an incoming edge's endpoints through THIS call's interner.
+   *
+   * The caller built its bands and cuts with an interner of its own, and `joinWalls`
+   * cannot assume it was the same one. Without this the two are separate authorities: a
+   * band vertex and a split point at the identical position are different OBJECTS, so
+   * every identity test in the layer silently answers "different" - `addSplit` then
+   * registers a split AT an endpoint and emits a sub-edge a hundredth of a millimetre
+   * long, which surfaces as a one-edge "loop" of its own in the output. One interner per
+   * call, seeded from the input, is the whole fix; it also frees the caller from having
+   * to share one.
+   */
+  const renorm = (e: Edge): Edge =>
+    e.t === "line"
+      ? { t: "line", a: intern.get(e.a), b: intern.get(e.b) }
+      : { t: "arc", arc: { ...e.arc, a: intern.get(e.arc.a), b: intern.get(e.arc.b) } };
+
   // Canonical universe: wall band edges first (by wall index, then loop, then edge),
   // then opening cuts. The tuple is the caller's, so a permuted input is a no-op.
   const universe: Tagged[] = [];
@@ -619,13 +712,14 @@ export function joinWalls(
       for (let ei = 0; ei < loop.length; ei++) {
         const e = loop[ei]!;
         if (edgeIsNull(e)) continue;
+        const edge = renorm(e);
         universe.push({
           kind: 0,
           owner: w.index,
           loopIndex: li,
           edgeIndex: ei,
-          edge: e,
-          bbox: edgeBBox(e),
+          edge,
+          bbox: edgeBBox(edge),
           splits: [],
         });
       }
@@ -635,7 +729,8 @@ export function joinWalls(
     for (let ei = 0; ei < c.loop.length; ei++) {
       const e = c.loop[ei]!;
       if (edgeIsNull(e)) continue;
-      universe.push({ kind: 1, owner: c.index, loopIndex: 0, edgeIndex: ei, edge: e, bbox: edgeBBox(e), splits: [] });
+      const edge = renorm(e);
+      universe.push({ kind: 1, owner: c.index, loopIndex: 0, edgeIndex: ei, edge, bbox: edgeBBox(edge), splits: [] });
     }
   }
   universe.sort(byTag);
@@ -643,58 +738,134 @@ export function joinWalls(
 
   const pieces = splitAll(universe, intern);
 
-  // Spatial index over WALLS and CUTS, so a probe asks only the few near it rather than
-  // winding every band in the building.
-  const wallIndex = new GridIndex<JoineryWall>(pointCell(wallsSorted.map((w) => w.bbox)));
-  for (const w of wallsSorted) wallIndex.insert(w.bbox, w);
+  // GROUP the sub-edges by canonical key. This is the deduplication (a face two walls
+  // share is emitted once) AND the coincidence detection the exact classification needs,
+  // in one pass — which is why it happens BEFORE classification and not after it.
+  const edgeGroups: EdgeGroup[] = [];
+  const byKey = new Map<string, EdgeGroup>();
+  // Every sub-edge's canonical key, computed ONCE. Building one is not cheap for an arc
+  // (six quantised fields, one of them a midpoint that costs a trig evaluation).
+  const pieceKeys = pieces.map((t) => undirectedKey(t.edge));
+  for (let pi = 0; pi < pieces.length; pi++) {
+    const t = pieces[pi]!;
+    const key = pieceKeys[pi]!;
+    let g = byKey.get(key);
+    if (!g) {
+      g = { key, rep: t.edge, mid: edgeMid(t.edge), coincident: [] };
+      byKey.set(key, g);
+      edgeGroups.push(g);
+    }
+    const plusSide = sameDirection(g.rep, t.edge);
+    if (!g.coincident.some((c) => c.kind === t.kind && c.owner === t.owner && c.plusSide === plusSide)) {
+      g.coincident.push({ kind: t.kind, owner: t.owner, plusSide });
+    }
+  }
+
+  // Spatial index over each wall's BAND EDGES, so the containment question reaches only
+  // the walls actually near the point. Indexing the wall's whole bbox instead is what
+  // made this the hot loop: a closed ring's band bbox is the WHOLE BUILDING, so every
+  // midpoint wound every wall in the plan.
+  const reachOf = (w: JoineryWall): number => (w.thickness / 2) * REACH_FACTOR;
+  const edgeBoxes: GridBox[] = [];
+  const entries: Array<{ wall: JoineryWall; edge: Edge; reach: number }> = [];
+  for (const w of wallsSorted) {
+    const reach = reachOf(w);
+    for (const l of w.loops) {
+      for (const e of l) {
+        const b = edgeBBox(e);
+        // Grown by the offset ceiling too: a wall that covers the PROBE must be a
+        // candidate, and the probe sits up to `SNAP_MM * 4` off the midpoint queried.
+        const g = reach + SNAP_MM * 4;
+        const box = { minX: b.minX - g, minY: b.minY - g, maxX: b.maxX + g, maxY: b.maxY + g };
+        edgeBoxes.push(box);
+        entries.push({ wall: w, edge: e, reach: g });
+      }
+    }
+  }
+  // Sized by `pointCell`, because the queries here are single POINTS: a fine cell keeps
+  // the candidate list per probe short, and the distance test that follows is what stops
+  // a winding walk. Coarsening it to `spanCell` was measured and is 50% slower overall.
+  const wallIndex = new GridIndex<number>(pointCell(edgeBoxes));
+  for (let i = 0; i < entries.length; i++) wallIndex.insert(edgeBoxes[i]!, i);
   const cutIndex = new GridIndex<JoineryCut>(pointCell(cutsSorted.map((c) => c.bbox)));
   for (const c of cutsSorted) cutIndex.insert(c.bbox, c);
 
-  const near = (p: Point): { w: JoineryWall[]; c: JoineryCut[] } => {
-    const box: GridBox = { minX: p.x, minY: p.y, maxX: p.x, maxY: p.y };
-    return {
-      w: wallIndex
-        .queryBox(box)
-        .filter((x) => inBox(p, x.bbox))
-        .sort(byOwnership),
-      c: cutIndex.queryBox(box).filter((x) => inBox(p, x.bbox)),
-    };
+  const pointBox = (p: Point): GridBox => ({ minX: p.x, minY: p.y, maxX: p.x, maxY: p.y });
+
+  /**
+   * Everything a group needs, from ONE index query.
+   *
+   * The candidate walls and the safe offset come out of the same scan because they read
+   * the same thing: the band edges near the midpoint, with their exact distances. Asking
+   * separately cost five queries per group (one for the offset, two per side for walls
+   * and cuts) where one does.
+   *
+   * `dmin` counts only boundaries at least `SNAP_MM` away. Anything nearer is, by this
+   * layer's own resolution, the same curve as the one being classified - which is exactly
+   * what the group's coincident members are - so including it would collapse the offset
+   * to nothing on every ordinary edge.
+   */
+  const contextAt = (mid: Point, cap: number): { walls: JoineryWall[]; dmin: number } => {
+    const seen = new Set<number>();
+    const walls: JoineryWall[] = [];
+    let dmin = Number.POSITIVE_INFINITY;
+    wallIndex.forEach(pointBox(mid), (i) => {
+      const en = entries[i]!;
+      const d = edgeDist(mid, en.edge);
+      if (d >= SNAP_MM && d < dmin) dmin = d;
+      if (d > en.reach || seen.has(en.wall.index)) return;
+      seen.add(en.wall.index);
+      walls.push(en.wall);
+    });
+    cutIndex.forEach(pointBox(mid), (c) => {
+      for (const e of c.loop) {
+        const d = edgeDist(mid, e);
+        if (d >= SNAP_MM && d < dmin) dmin = d;
+      }
+    });
+    walls.sort(byOwnership);
+    return { walls, dmin: Math.min(cap, dmin / 2) };
   };
 
-  const classified = pieces.map((t) => {
-    const { plus, minus } = probes(t.edge);
-    const np = near(plus);
-    const nm = near(minus);
-    return { edge: t.edge, plus: ownerAt(plus, np.w, np.c), minus: ownerAt(minus, nm.w, nm.c) };
+  const classified = edgeGroups.map((g) => {
+    const span = edgeLength(g.rep);
+    // The ceiling is deliberately SMALL - four times the interner's own fusing distance,
+    // or a quarter of the edge if that is smaller. It does not need to be the largest
+    // safe step, only a safe one, and a large ceiling makes the search box large too.
+    let cap = Math.min(span / 4, SNAP_MM * 4);
+    if (g.rep.t === "arc") cap = Math.min(cap, g.rep.arc.r / 4);
+    const ctx = contextAt(g.mid, cap);
+    // A floor keeps a pathologically close neighbour from collapsing the step to zero.
+    const d = Math.max(ctx.dmin, 1e-9);
+    const n = perp(edgeTangentAt(g.rep, g.mid));
+    const read = (sign: 1 | -1): Owner => {
+      const p = { x: g.mid.x + sign * n.x * d, y: g.mid.y + sign * n.y * d };
+      return ownerAt(p, ctx.walls, cutIndex.queryBox(pointBox(p)));
+    };
+    return { edge: g.rep, plus: read(1), minus: read(-1) };
   });
 
-  // OUTLINE: exactly one side owned. Directed so the solid is on the +perp side, which
-  // is the clockwise-positive orientation this codebase uses for "material inside".
+  // OUTLINE: exactly one side owned. Directed so the solid is on the +perp side, which is
+  // the clockwise-positive orientation this codebase uses for "material inside". No
+  // dedupe pass is needed — the groups ARE the deduplication.
   const outlineEdges: Edge[] = [];
-  const seenOutline = new Set<string>();
   for (const c of classified) {
     const inPlus = c.plus !== null;
     const inMinus = c.minus !== null;
     if (inPlus === inMinus) continue;
-    const e = inPlus ? c.edge : reverseEdge(c.edge);
-    const k = undirectedKey(e);
-    if (seenOutline.has(k)) continue;
-    seenOutline.add(k);
-    outlineEdges.push(e);
+    outlineEdges.push(inPlus ? c.edge : reverseEdge(c.edge));
   }
 
+  // FILL of group g: exactly one side owned BY THAT GROUP. A thinner wall's cap buried in
+  // a thicker wall of another material therefore belongs to the thicker one, and two
+  // groups' fills tile without overlapping.
   const fills = groups.map((group) => {
     const kept: Edge[] = [];
-    const seen = new Set<string>();
     for (const c of classified) {
       const inPlus = c.plus?.group === group;
       const inMinus = c.minus?.group === group;
       if (inPlus === inMinus) continue;
-      const e = inPlus ? c.edge : reverseEdge(c.edge);
-      const k = undirectedKey(e);
-      if (seen.has(k)) continue;
-      seen.add(k);
-      kept.push(e);
+      kept.push(inPlus ? c.edge : reverseEdge(c.edge));
     }
     return { group, loops: finishLoops(chainLoops(kept)) };
   });
@@ -742,9 +913,6 @@ function pointCell(boxes: readonly GridBox[]): number {
   const m = ext[Math.floor(ext.length / 2)]!;
   return m > 0 ? m : 1;
 }
-
-/** Is `p` inside (or on) a box? */
-const inBox = (p: Point, b: GridBox): boolean => p.x >= b.minX && p.x <= b.maxX && p.y >= b.minY && p.y <= b.maxY;
 
 /** The union box of a wall's band loops — the caller's `bbox`, computed here for it. */
 export const bandBBox = (loops: readonly EdgeLoop[]): GridBox => unionBBox(loops.map(loopBBox));
