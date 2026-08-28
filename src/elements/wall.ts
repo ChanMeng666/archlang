@@ -183,12 +183,24 @@ export const wall: ElementDef = {
 
   /**
    * The page must contain what is actually DRAWN, which is the wall's band — its two
-   * offset faces, its end caps and its MITRED corners. A mitre at an oblique corner
-   * reaches further out than either segment's own capped rectangle does (as far as
-   * `MITER_LIMIT · h` from the vertex, past which `wallBand` bevels), so taking the
-   * per-segment extremes left the outermost point of an acute facade outside the frame.
-   * At a right angle the two agree exactly — which is why no rectilinear plan's extent
-   * moves.
+   * offset faces, its end caps and its MITRED corners — not a box per segment.
+   *
+   * The per-segment rule this replaces took `segmentRectangle`, which SQUARE-CAPS both
+   * ends of every segment. At a corner those caps are phantom: the segment is mitred into
+   * its neighbour there, not capped. Which way the extent moves therefore depends on the
+   * angle, and it moves in BOTH directions:
+   *
+   *  - **Obtuse corner (θ > 90°): the extent SHRINKS.** A cap corner sits `√2 · h` from
+   *    the vertex; the real mitre sits `h / sin(θ/2)`, which is less. `gallery-l` (a 45°
+   *    facade) loses 61 mm each way and `hexagon-pavilion` (120° corners) 45 × 120 mm.
+   *  - **Acute corner (θ < 90°): the extent GROWS**, up to the `MITER_LIMIT · h` at which
+   *    `wallBand` bevels — so the outermost point of an acute facade used to fall outside
+   *    the frame.
+   *  - **Right angle: exactly equal** (both `√2 · h`), which is why no rectilinear plan's
+   *    extent moves, and why only those two shipped examples are affected.
+   *
+   * On a plan with no `paper` that changes `refDim`, and so every derived line weight and
+   * font size — a real behaviour change, small and in the honest direction.
    *
    * A curve contributes the closed-form extremes of its offset arcs, never the
    * tessellation: the page must contain the BULGE, which the chord does not reach.

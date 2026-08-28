@@ -61,12 +61,31 @@ import { compile, describe as describePlan, lint, planToJson } from "../src/inde
  *
  * `studio` is untouched by the refresh and its digest is unchanged from the v1.28.0
  * measurement.
+ *
+ * ## The v1.30 re-measurement — wall joinery, and the ONLY sanctioned cause so far
+ *
+ * All four moved again on 2026-08-28, and this time for a reason that is neither a content
+ * edit nor a regression: **the wall-lowering pipeline was replaced.** One `joinWalls` pass
+ * now produces a plan's poché and its single outline, every opening is cut on every host
+ * (so the cased opening's two dashed lintel lines are gone and no cover is painted), and
+ * `wall.bounds` measures the band rather than each segment's square-capped box. Every
+ * shipped drawing moves; see ADR 0018.
+ *
+ * That is what makes this the right place to say what the law still guarantees, because
+ * the digests alone no longer say it: **`describe()` and `lint()` were held SHA-256
+ * identical for all 29 examples across the whole change**, measured example by example
+ * before and after. The bytes that moved here are SVG bytes. If a future digest moves,
+ * that separation is the first thing to re-measure — a drawing change is explicable, a
+ * `describe()`/`lint()` change on a plan that mentions neither keyword is not.
+ *
+ * Do not read this entry as permission. The rule is unchanged: find out WHICH shared path
+ * moved before touching a number here, and write down what it was.
  */
 const BASELINE: [string, string][] = [
-  ["laneway-house", "fe2a03c08011c3d2d780bb3e4fe46bcd5f767dca9594792581976b0d51748dd6"],
-  ["studio", "025e7c127ba0e3f65850aced8d53b62779cb946e0e989df2c9981f838c086fb8"],
-  ["gallery-l", "23a3855a7885cf04bb441a04c7af4e336b2b8ad15b1769a7294696a4b2f967ad"],
-  ["aquarium", "74d571a95fe7e130784b27509147240934cd848375ff43ec4d7690e274906257"],
+  ["laneway-house", "5824194c7987e5f2e1902805357a5e1a533fea59bd17404c0ae288cb93dd7cc4"],
+  ["studio", "cfe9b264e5ce123412b8d04f47dfa5bc917b4ef9404a502a74ff4578c708e240"],
+  ["gallery-l", "32666c41627873f63030c0621edf31bae42a4e1f7fa0fc3ff1ddc83674b89878"],
+  ["aquarium", "b55a84953b7fa18a892cf324e0d9fc72eb06342aeb90dd498231a61f6ec07ddf"],
 ];
 
 /** The exact payload the baseline digests were taken over — do not change its shape. */

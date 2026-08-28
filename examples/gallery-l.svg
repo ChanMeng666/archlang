@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="420mm" height="297mm" viewBox="-15381.87 -6910 42000 29700" font-family="Georgia, 'Times New Roman', serif">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="420mm" height="297mm" viewBox="-15412.5 -6910 42000 29700" font-family="Georgia, 'Times New Roman', serif">
 <defs><pattern id="poche" patternUnits="userSpaceOnUse" width="120" height="120" patternTransform="rotate(45)"><rect width="120" height="120" fill="#e7ded0"/><line x1="0" y1="0" x2="0" y2="120" stroke="#b9a98f" stroke-width="13.86"/></pattern></defs>
-<rect x="-15381.87" y="-6910" width="42000" height="29700" fill="#faf7f2"/>
+<rect x="-15412.5" y="-6910" width="42000" height="29700" fill="#faf7f2"/>
 <g id="A-FLOR" inkscape:groupmode="layer" inkscape:label="A-FLOR">
 <polygon points="0,0 12000,0 12000,8000 6000,8000 6000,14000 0,14000" fill="#fffdf9"/>
 <polygon points="6000,8000 12000,8000 12000,9000 6000,14000" fill="#fffdf9"/>
@@ -40,33 +40,14 @@
 <polygon points="4590,11650 4609.13,11653.81 4625.36,11664.64 4636.19,11680.87 4640,11700 4640,11890 4636.19,11909.13 4625.36,11925.36 4609.13,11936.19 4590,11940 4310,11940 4290.87,11936.19 4274.64,11925.36 4263.81,11909.13 4260,11890 4260,11700 4263.81,11680.87 4274.64,11664.64 4290.87,11653.81 4310,11650" fill="#f3ece0" stroke="#b7a98f" stroke-width="10.89"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
-<path d="M -150,150 L 12150,150 L 12150,-150 L -150,-150 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M 11850,-150 L 11850,9150 L 12150,9150 L 12150,-150 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M 12019.21,8788.74 L 5788.74,13980.79 L 5980.79,14211.26 L 12211.26,9019.21 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M 6150,13850 L -150,13850 L -150,14150 L 6150,14150 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M 150,14150 L 150,-150 L -150,-150 L -150,14150 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M 5900,7900 L 5900,14100 L 6100,14100 L 6100,7900 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M 5900,8100 L 12100,8100 L 12100,7900 L 5900,7900 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<line x1="0" y1="150" x2="12000" y2="150" stroke="#2b2b2b" stroke-width="55" stroke-linecap="square"/>
-<line x1="0" y1="-150" x2="12000" y2="-150" stroke="#2b2b2b" stroke-width="55" stroke-linecap="square"/>
-<line x1="11850" y1="0" x2="11850" y2="9000" stroke="#2b2b2b" stroke-width="55" stroke-linecap="square"/>
-<line x1="12150" y1="0" x2="12150" y2="9000" stroke="#2b2b2b" stroke-width="55" stroke-linecap="square"/>
-<line x1="11903.97" y1="8884.77" x2="5903.97" y2="13884.77" stroke="#2b2b2b" stroke-width="55" stroke-linecap="square"/>
-<line x1="12096.03" y1="9115.23" x2="6096.03" y2="14115.23" stroke="#2b2b2b" stroke-width="55" stroke-linecap="square"/>
-<line x1="6000" y1="13850" x2="0" y2="13850" stroke="#2b2b2b" stroke-width="55" stroke-linecap="square"/>
-<line x1="6000" y1="14150" x2="0" y2="14150" stroke="#2b2b2b" stroke-width="55" stroke-linecap="square"/>
-<line x1="150" y1="14000" x2="150" y2="0" stroke="#2b2b2b" stroke-width="55" stroke-linecap="square"/>
-<line x1="-150" y1="14000" x2="-150" y2="0" stroke="#2b2b2b" stroke-width="55" stroke-linecap="square"/>
-<line x1="5900" y1="8000" x2="5900" y2="14000" stroke="#2b2b2b" stroke-width="55" stroke-linecap="square"/>
-<line x1="6100" y1="8000" x2="6100" y2="14000" stroke="#2b2b2b" stroke-width="55" stroke-linecap="square"/>
-<line x1="6000" y1="8100" x2="12000" y2="8100" stroke="#2b2b2b" stroke-width="55" stroke-linecap="square"/>
-<line x1="6000" y1="7900" x2="12000" y2="7900" stroke="#2b2b2b" stroke-width="55" stroke-linecap="square"/>
+<path d="M -150,-150 L 8300,-150 L 8300,150 L 150,150 L 150,13850 L 5900,13850 L 5900,11600 L 6100,11600 L 6100,13721.41 L 8327.81,11864.91 L 8519.86,12095.37 L 6054.31,14150 L -150,14150 Z M 11300,-150 L 12150,-150 L 12150,9070.26 L 9672.19,11135.09 L 9480.14,10904.63 L 11850,8929.74 L 11850,8100 L 6100,8100 L 6100,10400 L 5900,10400 L 5900,7900 L 11850,7900 L 11850,150 L 11300,150 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -150,-150 L 8300,-150 L 8300,150 L 150,150 L 150,13850 L 5900,13850 L 5900,11600 L 6100,11600 L 6100,13721.41 L 8327.81,11864.91 L 8519.86,12095.37 L 6054.31,14150 L -150,14150 Z M 11300,-150 L 12150,-150 L 12150,9070.26 L 9672.19,11135.09 L 9480.14,10904.63 L 11850,8929.74 L 11850,8100 L 6100,8100 L 6100,10400 L 5900,10400 L 5900,7900 L 11850,7900 L 11850,150 L 11300,150 Z" fill="none" stroke="#2b2b2b" stroke-width="55" stroke-linejoin="miter" stroke-miterlimit="4"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
-<polygon points="9444.93,10862.38 8292.6,11822.65 8555.07,12137.62 9707.4,11177.35" fill="#faf7f2"/>
+<polygon points="9480.14,10904.63 8327.81,11864.91 8519.86,12095.37 9672.19,11135.09" fill="none"/>
 <line x1="9576.17" y1="11019.86" x2="8615.89" y2="9867.53" stroke="#6b5d49" stroke-width="25.74"/>
 <path d="M 8615.89,9867.53 A 1500 1500 0 0 0 8423.83,11980.14" fill="none" stroke="#6b5d49" stroke-width="19.8" stroke-dasharray="79.2 59.4"/>
-<polygon points="5845,10400 5845,11600 6155,11600 6155,10400" fill="#faf7f2"/>
+<polygon points="5900,10400 5900,11600 6100,11600 6100,10400" fill="none"/>
 <line x1="6000" y1="10400" x2="4800" y2="10400" stroke="#6b5d49" stroke-width="25.74"/>
 <path d="M 4800,10400 A 1200 1200 0 0 0 6000,11600" fill="none" stroke="#6b5d49" stroke-width="19.8" stroke-dasharray="79.2 59.4"/>
 </g>
@@ -170,7 +151,7 @@
 <line x1="-234.85" y1="6915.15" x2="-65.15" y2="7084.85" stroke="#3c6b8a" stroke-width="19.8"/>
 <text x="507.5" y="7000" font-size="250" fill="#3c6b8a" text-anchor="middle" dominant-baseline="central" transform="rotate(0 507.5 7000)">300</text>
 </g>
-<g><polygon points="11761.26,-1425 11536.26,-705 11761.26,-862.5 11986.26,-705" fill="#3a3a3a" transform="rotate(0 11761.26 -975)"/><text x="11761.26" y="-1633" font-size="260" fill="#3a3a3a" text-anchor="middle" dominant-baseline="central">N</text></g>
-<g><rect x="-13881.87" y="19910" width="1000" height="140" fill="#3a3a3a"/><rect x="-12881.87" y="19910" width="1000" height="140" fill="none" stroke="#3a3a3a" stroke-width="19.8"/><text x="-13881.87" y="20250" font-size="200" fill="#3a3a3a" text-anchor="start" dominant-baseline="central">0</text><text x="-11881.87" y="20250" font-size="200" fill="#3a3a3a" text-anchor="middle" dominant-baseline="central">2 m</text></g>
-<g><rect x="21718.13" y="19910" width="3400" height="1380" fill="none" stroke="#3a3a3a" stroke-width="19.8"/><text x="21888.13" y="20140" font-size="152" fill="#9a8d78" dominant-baseline="central">PROJECT</text><text x="24948.13" y="20140" font-size="190" fill="#3a3a3a" text-anchor="end" dominant-baseline="central">Polygon rooms</text><text x="21888.13" y="20600" font-size="152" fill="#9a8d78" dominant-baseline="central">DRAWN BY</text><text x="24948.13" y="20600" font-size="190" fill="#3a3a3a" text-anchor="end" dominant-baseline="central">ArchLang</text><line x1="21718.13" y1="20370" x2="25118.13" y2="20370" stroke="#3a3a3a" stroke-width="9.9"/><text x="21888.13" y="21060" font-size="152" fill="#9a8d78" dominant-baseline="central">SCALE</text><text x="24948.13" y="21060" font-size="190" fill="#3a3a3a" text-anchor="end" dominant-baseline="central">1:100</text><line x1="21718.13" y1="20830" x2="25118.13" y2="20830" stroke="#3a3a3a" stroke-width="9.9"/></g>
+<g><polygon points="11700,-1425 11475,-705 11700,-862.5 11925,-705" fill="#3a3a3a" transform="rotate(0 11700 -975)"/><text x="11700" y="-1633" font-size="260" fill="#3a3a3a" text-anchor="middle" dominant-baseline="central">N</text></g>
+<g><rect x="-13912.5" y="19910" width="1000" height="140" fill="#3a3a3a"/><rect x="-12912.5" y="19910" width="1000" height="140" fill="none" stroke="#3a3a3a" stroke-width="19.8"/><text x="-13912.5" y="20250" font-size="200" fill="#3a3a3a" text-anchor="start" dominant-baseline="central">0</text><text x="-11912.5" y="20250" font-size="200" fill="#3a3a3a" text-anchor="middle" dominant-baseline="central">2 m</text></g>
+<g><rect x="21687.5" y="19910" width="3400" height="1380" fill="none" stroke="#3a3a3a" stroke-width="19.8"/><text x="21857.5" y="20140" font-size="152" fill="#9a8d78" dominant-baseline="central">PROJECT</text><text x="24917.5" y="20140" font-size="190" fill="#3a3a3a" text-anchor="end" dominant-baseline="central">Polygon rooms</text><text x="21857.5" y="20600" font-size="152" fill="#9a8d78" dominant-baseline="central">DRAWN BY</text><text x="24917.5" y="20600" font-size="190" fill="#3a3a3a" text-anchor="end" dominant-baseline="central">ArchLang</text><line x1="21687.5" y1="20370" x2="25087.5" y2="20370" stroke="#3a3a3a" stroke-width="9.9"/><text x="21857.5" y="21060" font-size="152" fill="#9a8d78" dominant-baseline="central">SCALE</text><text x="24917.5" y="21060" font-size="190" fill="#3a3a3a" text-anchor="end" dominant-baseline="central">1:100</text><line x1="21687.5" y1="20830" x2="25087.5" y2="20830" stroke="#3a3a3a" stroke-width="9.9"/></g>
 </svg>
