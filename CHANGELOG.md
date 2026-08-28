@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.32.0] - 2026-08-28
 
 **The furniture catalogue.** v1.28.0 gave every fixture word a symbol; this release makes every
 one of those symbols a drawing. Twenty-six new families take the catalogue from 57 families and
@@ -197,6 +198,24 @@ raises bought.
   footprint and quarter-turned; a piece at 30° needs the footprint, the overlap rule and the
   clearance rectangle to learn about rotation together, and doing one of the three is worse than
   doing none.
+
+### Shipped alongside
+
+- **MCP shim `@chanmeng666/archlang-mcp` 0.2.12** — version-bump-only an eighth consecutive time
+  (`git diff v1.31.0..HEAD -- packages/mcp` is empty), re-pinned to `^1.32.0`. **Two of its five
+  baked resources moved**, and which two is the whole point: `spec.llm.md` and `llms-full.txt`
+  carry the widened `furniture` footprint list, because the generator **interpolates** it from
+  `CANONICAL_FIXTURES`, while `grammars/archlang.gbnf` and both `schemas/*.json` are SHA-256
+  byte-identical to 0.2.11's. That is correct, and it is the 0.2.8 shape rather than the 0.2.11
+  one: a fixture category is a catalogue entry, not a grammar token, so a constrained decoder
+  pointed at the published GBNF can already emit every one of the twenty-six new words. The bump
+  exists because the two documents that TEACH a model which words have a symbol did move, and
+  because the dep range must be re-pinned — an unbumped manifest edit silently never publishes.
+- **VS Code extension `ChanMeng.archlang` 0.21.0** — dep range `^1.32.0`, rebundled against the
+  1.32.0 core, so hover and the fixture lint rules know all 129 category words and the twenty-six
+  new families' footprints, clearances and flags. Completion still does **not** offer fixture
+  words — that is this release's first deferred item, and it is now the largest closed vocabulary
+  a plan author has to remember.
 
 ## [1.31.0] - 2026-08-28
 
