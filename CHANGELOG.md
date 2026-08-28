@@ -84,10 +84,13 @@ disjoint walls, 600 openings) **5.96 → 116.3 ms**, BALANCED +53%, ROOM_HEAVY +
 OPENING_HEAVY is the honest worst case: it is exactly what the retired axis-aligned
 rectangle sweep was fastest at, and exactly what an exact split-classify-chain algorithm
 cannot match. The gap is algorithmic, not constant-factor — halving the largest single
-phase would recover about 11% of `toScene` — so it is a deliberate trade: correctness at
-every junction on every shape of wall, with no optional native dependency, for roughly 3×
-a pass that costs single-digit milliseconds on a real building. Numbers, phase profile and
-the option if it ever becomes unacceptable are in ADR 0018.
+phase would recover about 11% of `toScene`.
+
+**Accepted 2026-08-28; tracked as backlog item 4.1.** Correctness at every junction on
+every shape of wall, with no optional native dependency, is worth roughly 3× a pass that
+costs 5.6 ms per storey on average and 16 ms on the slowest real plan. A rectilinear fast
+path was considered and rejected — one algorithm is the point of ADR 0018. The phase
+profile and the directions that stay inside the one algorithm are in backlog 4.1.
 
 #### Deferred, by name
 

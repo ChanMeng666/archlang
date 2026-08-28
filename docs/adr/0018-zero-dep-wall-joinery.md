@@ -171,14 +171,15 @@ call" does not: there is exactly one call per plan. Halving the split phase — 
 single one — would recover about 11% of `toScene`, against a 182% regression. The gap is
 algorithmic, not constant-factor.
 
-**So this is a deliberate trade, not an oversight**: correctness at every junction, on
-every shape of wall, without an optional native dependency, bought with roughly 3× the
-lowering time on a pass that costs single-digit milliseconds for a real building. If that
-becomes unacceptable, the option on the table is a fast path for purely-rectilinear
-single-material plans — the joinery's outline for those is *vertex-identical* to the
-rectangle boolean's (reversed and rotated, which no renderer can see), so one could be
-substituted for the other. That would reintroduce exactly the two-path structure this ADR
-removed, and it is a decision to take deliberately rather than a tuning knob.
+**The cost is ACCEPTED (2026-08-28), and tracked as backlog item 4.1.** Correctness at
+every junction on every shape of wall, without an optional native dependency, is worth
+roughly 3× a lowering pass that costs 5.6 ms per storey on average and 16 ms on the
+slowest real plan — not a duration a user can perceive. The `bench` PR comment is
+informational and has never gated; what the joinery changed is its baseline, and the
+numbers above are that new baseline. A rectilinear fast path was considered and
+**rejected**: one algorithm is the point of this ADR, and a second pipeline would bring
+back the three-paths structure and the four defects with it. Backlog 4.1 records the phase
+profile and the directions that stay inside the one algorithm.
 
 ## Deferred, by name
 

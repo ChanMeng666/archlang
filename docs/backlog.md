@@ -504,6 +504,78 @@ proven by a SHA-256 sweep over the shipped examples), and a corpus entry in the 
 | P2-8 | Targeted dimension selection (dimensions on named walls/fixtures) | `todo` | Composes with the sheet layer |
 | P2-2 | Room-relative door hand | `todo` | **Behaviour change for every plan with a reversed wall — must be staged.** (a) an advisory `W_*` naming the doors whose hand would move, zero geometry change; (b) the flip behind a release boundary, goldens re-blessed after review. Check the `place … mirror` goldens specifically: `frame.ts`'s `det < 0` handedness flip must compose with the new rule, not fight it |
 
+### 4.1 · Joinery pass performance — `todo`
+
+`toScene` got roughly **3× slower** when v1.30 replaced the three wall-lowering paths with one
+joinery pass (ADR 0018). The cost was measured, accepted on 2026-08-28 and tracked here; it was
+**not** an oversight and the `bench` PR comment is informational and has never gated.
+
+**Measured back-to-back against `main`'s `src/` in one session** (`git checkout main -- src/`,
+bench, restore):
+
+| corpus | main | v1.30 | delta |
+|---|---|---|---|
+| all 29 examples, every storey, total | 57.5 ms | 162.0 ms | +182% |
+| mean per storey | 1.98 ms | 5.59 ms | +182% |
+| slowest real plan (`library`) | 6.75 ms | 16.0 ms | +137% |
+| `bench` OPENING_HEAVY (400 walls, 600 openings) | 5.96 ms | 116.3 ms | +1852% |
+| `bench` BALANCED | 120.7 ms | 184.7 ms | +53% |
+| `bench` ROOM_HEAVY | 190.8 ms | 235.4 ms | +23% |
+
+`OPENING_HEAVY` is the worst case *because* 400 disjoint axis-aligned segments is exactly what the
+retired rectangle sweep was fastest at.
+
+**Phase profile of `joinWalls`** (measured with temporary instrumentation, since reverted):
+
+| plan | split | classify | index | chain | keys |
+|---|---|---|---|---|---|
+| OPENING_HEAVY | 61.5 ms | 29.1 | 17.0 | 16.7 | 9.6 |
+| `library` | 5.4 ms | 3.2 | 1.6 | 1.1 | 0.9 |
+
+Split is the largest phase at ~45% of the pass, so halving it recovers about 11% of `toScene`.
+There is no single hot spot to delete.
+
+**The constraint, and it is the whole point of the item.** Any fix must stay **INSIDE the one
+algorithm**. Legitimate directions: an exact axis-aligned shortcut within the split phase (a
+horizontal/vertical pair needs no general line–line solve), a sweep line instead of the
+grid-bucketed pair scan, fewer allocations per group, a cheaper `undirectedKey`. **Never a second
+pipeline** — a rectilinear fast path would reintroduce exactly the three-paths structure ADR 0018
+removed, and the four defects that came with it. That the joinery's rectilinear outline is
+vertex-identical to the old rectangle boolean's (reversed and rotated) makes the shortcut *look*
+free; it is not, because the fills and the opening cuts would have to agree too, and then there are
+two implementations of the ownership rule to keep in step.
+
+**Two approaches already shown NOT to apply** — do not re-try them without new evidence:
+
+- *Classify per HATCH GROUP so each call sees a fraction of the plan* (proposed in the Stage-A
+  notes). The ownership rule is **cross-group by design**: "an edge is on group `g`'s fill iff
+  exactly one side is owned by `g`" is what makes two materials tile without a doubled boundary.
+  Splitting the call breaks the decision the fills depend on — and `OPENING_HEAVY` is single-material
+  anyway, so it would not have helped the worst case.
+- *Stop rebuilding the spatial indices per call.* There is exactly **one `joinWalls` call per plan**;
+  there is nothing to reuse across.
+
+**Gate for any attempt:** the output must not move by one byte. `test/joinery-oracle.test.ts`,
+`test/joinery-pipeline.test.ts` and the whole golden set are the proof, and a re-bless is a red
+flag, not a step.
+
+### 4.2 · A door within its own wall thickness of a corner is unflagged — `todo`
+
+Nothing warns when a door's jamb leaves less wall between it and a wall's corner than the wall is
+thick. The drawing is *correct* — the nib is drawn, mitred into the neighbouring run — but at page
+scale it reads as a chamfer rather than as wall, which is what made it look like a rendering defect
+during the v1.30 review before it was measured and turned out to be the plan.
+
+Found on a probe plan whose door centre sat 675 mm from an arc/straight junction with a half-width
+plus half-thickness of 575: it *cleared*, by 100 mm, and still left only a 227 mm nib on a 250 mm
+wall. Deferred by name in `CHANGELOG.md`'s v1.30 entry and in ADR 0018.
+
+The nearest existing rules ask different questions and must not be widened into this one:
+`W_DOOR_CLEARANCE` measures swing space, and `W_POCKET_RUN` measures the run a pocket panel needs
+(kind-specific). A new rule has to state its threshold in the same measured-deficit style the v1.25
+rules use, and be right on a CURVE — where the remaining wall is an arc length, not a chord, and
+the jambs are radial.
+
 ### Not scheduled — recorded so they are not lost
 
 - **`arc` edge inside a `room polygon` ring.** Was promised in a shipped error message "for v1.25";
