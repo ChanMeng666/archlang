@@ -3241,10 +3241,10 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <line x1="4000" y1="1550" x2="3100" y2="1550" stroke="#555555" stroke-width="11.7"/>
 <path d="M 3100,1550 A 900 900 0 0 0 4000,2450" fill="none" stroke="#555555" stroke-width="9" stroke-dasharray="36 27"/>
 <polygon points="-4200,150 -1200,150 -1200,-150 -4200,-150" fill="none"/>
-<line x1="-4200" y1="45" x2="-1200" y2="45" stroke="#555555" stroke-width="9"/>
-<line x1="-4200" y1="-45" x2="-1200" y2="-45" stroke="#555555" stroke-width="9"/>
-<polygon points="-4200,-75 -2550,-75 -2550,-15 -4200,-15" fill="#ffffff" stroke="#555555" stroke-width="9"/>
-<polygon points="-3525,15 -1875,15 -1875,75 -3525,75" fill="#ffffff" stroke="#555555" stroke-width="9"/>
+<polygon points="-4200,-37.5 -1200,-37.5 -1200,37.5 -4200,37.5" fill="#ffffff" stroke="#555555" stroke-width="9"/>
+<line x1="-4200" y1="-75" x2="-4200" y2="75" stroke="#555555" stroke-width="9"/>
+<line x1="-1200" y1="-75" x2="-1200" y2="75" stroke="#555555" stroke-width="9"/>
+<polygon points="-4200,150 -1200,150 -1200,1350 -4200,1350" fill="none" stroke="#555555" stroke-width="9" stroke-dasharray="54 36"/>
 <polygon points="150,2450 150,1550 -150,1550 -150,2450" fill="none"/>
 <line x1="0" y1="1550" x2="900" y2="1550" stroke="#555555" stroke-width="11.7"/>
 <path d="M 900,1550 A 900 900 0 0 1 0,2450" fill="none" stroke="#555555" stroke-width="9" stroke-dasharray="36 27"/>

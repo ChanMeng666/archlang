@@ -120,6 +120,42 @@ function swingInto(
   return dot > 0 ? "in" : "out";
 }
 
+/**
+ * Which face of the host wall the floor is on: `"in"` for the wall's `+normal` side, `"out"`
+ * for the other, `undefined` when neither side (or both) is a room.
+ *
+ * The same probe {@link swingInto} makes, asked of EVERY room instead of one named one, and
+ * asked for a different purpose: a `garage` door's panel parks overhead INSIDE the building,
+ * and which side that is is a fact about the plan rather than a choice — which is exactly why
+ * `DOOR_KIND_CLAUSES` gives that kind no `swing` clause to contradict it with.
+ *
+ * Poly-aware for the reason every derived position in this compiler is: a room's shape is its
+ * ring when it has one, and a bounding box's answer is a coin flip on a concave floor (an L's
+ * box centre sits in the notch, which is not floor). The probe is one wall thickness off each
+ * face, which clears the solid on either side, so a hit is genuinely floor and not wall.
+ *
+ * `undefined` is a real answer and the caller must handle it: an opening in a garden wall has
+ * rooms on neither side, and one in a party wall has them on both.
+ */
+function roomSideOf(at: Point, host: WallSegment | null, rooms: readonly RRoom[]): "in" | "out" | undefined {
+  if (!host) return undefined;
+  const n = normal(unit(sub(host.b, host.a)));
+  const d = Math.max(host.thickness, 1);
+  const onFloor = (sign: 1 | -1): boolean => {
+    const px = at.x + sign * n.x * d;
+    const py = at.y + sign * n.y * d;
+    return rooms.some((r) => {
+      if (r._rel) return false;
+      if (r.poly) return pointInPolygon(px, py, r.poly);
+      return px >= r.at.x && px <= r.at.x + r.size.w && py >= r.at.y && py <= r.at.y + r.size.h;
+    });
+  };
+  const pos = onFloor(1);
+  const neg = onFloor(-1);
+  if (pos === neg) return undefined;
+  return pos ? "in" : "out";
+}
+
 /** `open` when the author writes none — the drawn rest position of a sliding-family panel. */
 const DEFAULT_OPEN = 0.5;
 
@@ -332,7 +368,15 @@ export const door: ElementDef = {
     const hingeNear = n.hingeNear ? (n.hingeNear === "start" ? "left" : "right") : undefined;
     const hinge = n.hinge ?? hingeNear ?? enumDefault(ctx.defaults, "hinge", DOOR_ENUMS.hinge) ?? "left";
     const intoSwing = n.swingInto ? swingInto(n.swingInto, at, host, ctx.rooms, ctx, id, n.span) : undefined;
-    const swing = n.swing ?? intoSwing ?? enumDefault(ctx.defaults, "swing", DOOR_ENUMS.swing) ?? "in";
+    // A `garage` panel projects overhead into the BUILDING, so its face is derived from the
+    // plan rather than written: the author has no `swing` clause for this kind (it would be a
+    // choice about a fact), and the probe is the same one `swing into <room>` makes. It sits
+    // at the DERIVED tier of the precedence chain below, beside `swing into`, so a plan-wide
+    // `set door(swing …)` cannot override a measurement of where the floor is. When neither
+    // side is a room — a garage door in a garden wall — the chain falls through as it always
+    // did and the panel projects to the wall's `+normal` side.
+    const garageSide = named === "garage" ? roomSideOf(at, host, ctx.rooms) : undefined;
+    const swing = n.swing ?? intoSwing ?? garageSide ?? enumDefault(ctx.defaults, "swing", DOOR_ENUMS.swing) ?? "in";
     // Pre-emit the hinge-flipped statement for `W_SWING_OBSTRUCTED`'s fix: lint sees
     // only the IR, and re-emitting here keeps the authored placement/width expressions
     // (rather than baking in resolved numbers). Internal field — no Scene, no bytes.

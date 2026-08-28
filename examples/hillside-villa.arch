@@ -116,7 +116,7 @@ plan "Hillside Villa" {
     # ---- doors: one kind per situation -------------------------------------------------
     door id=d_front         at (6000,0) width 1200 wall shell hinge left swing into r_entry
     door id=d_office        at (4000,2000) width 900 wall w_office_e hinge left swing into r_office
-    door id=d_garage        sliding at (-2750,0) width 3000 wall w_wing_n slide left
+    door id=d_garage        garage at (-2750,0) width 3000 wall w_wing_n
     door id=d_garage_int    at (0,2000) width 900 wall shell hinge right swing into r_office
     door id=d_garage_util   bifold on w_util at 2750 width 1500 swing in
     door id=d_utility_ext   at (-2750,10200) width 900 wall w_wing_s hinge right swing out

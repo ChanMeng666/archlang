@@ -220,7 +220,7 @@ const POSITIVE: Snippet[] = [
     keyword: "door",
     note: "every kind, with the clauses each one accepts",
     src: plan(
-      `${BOX}\n  door hinged on w1 at 5% width 900 hinge right\n  door sliding on w1 at 15% width 900 slide left open 0.5\n  door barn on w1 at 25% width 900 swing out slide right\n  door bifold on w1 at 35% width 900 swing in\n  door pocket on w1 at 45% width 900 slide left`,
+      `${BOX}\n  door hinged on w1 at 5% width 900 hinge right\n  door sliding on w1 at 15% width 900 slide left open 0.5\n  door barn on w1 at 25% width 900 swing out slide right\n  door bifold on w1 at 35% width 900 swing in\n  door pocket on w1 at 45% width 900 slide left\n  door garage on w1 at 60% width 2400`,
     ),
   },
   {
@@ -523,6 +523,14 @@ const NEGATIVE: Negative[] = [
     channel: "compile",
     note: "`hinge` is hinged-only",
     src: plan(`${BOX}\n  door pocket on w1 at 50% width 900 hinge left`),
+  },
+  {
+    code: "E_DOOR_KIND_CLAUSE",
+    channel: "compile",
+    // The only kind whose clause row is entirely `false`: a sectional door parks overhead,
+    // so `open` has no intermediate position to name and the projection side is derived.
+    note: "`garage` takes no clause at all — not even `open`",
+    src: plan(`${BOX}\n  door garage on w1 at 50% width 2400 open 0.5`),
   },
   {
     code: "E_DOOR_KIND_CURVED",

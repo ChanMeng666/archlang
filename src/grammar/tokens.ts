@@ -264,7 +264,7 @@ export const DOOR_HINGE_NEAR = ["start", "end"] as const;
  * drops it, so `door hinged …` and `door …` produce byte-identical output. Order is
  * the order both generators render.
  */
-export const DOOR_KINDS = ["hinged", "sliding", "barn", "bifold", "pocket"] as const;
+export const DOOR_KINDS = ["hinged", "sliding", "barn", "bifold", "pocket", "garage"] as const;
 
 /** The optional door clauses whose legality depends on the kind. */
 export type DoorClauseName = "hinge" | "swing" | "slide" | "open";
@@ -293,6 +293,24 @@ export const DOOR_KIND_CLAUSES: Readonly<Record<DoorKind, Readonly<Record<DoorCl
   barn: { hinge: false, swing: true, slide: true, open: true },
   bifold: { hinge: false, swing: true, slide: true, open: true },
   pocket: { hinge: false, swing: false, slide: true, open: true },
+  // A sectional or roller garage door takes NO clause at all, and each refusal is its own
+  // argument rather than a blanket one.
+  //
+  // `hinge` and `slide`: the leaf travels UP, not around a jamb and not along the wall.
+  //
+  // `swing`: for `barn`/`bifold` this word selects which FACE the panel sits on, and that is
+  // the one clause a garage door could plausibly borrow — but its panel goes overhead into
+  // the room, and which side is the room is a fact about the plan, not a choice. The resolver
+  // derives it by probing one wall thickness off each face and asking which side has floor
+  // (the poly-aware `swingInto` rule, over every room instead of one named one), so an
+  // author-supplied value could only ever contradict the building.
+  //
+  // `open`: a sectional door retracts VERTICALLY, out of the plan's cut plane entirely, so
+  // there is no intermediate position a plan can draw — at any fraction between 0 and 1 the
+  // leaf is neither in the reveal nor visible. The dashed overhead projection already says
+  // where it goes, and it says the same thing at every position. Accepting a clause that
+  // changed nothing would be silent-error design, which is what this table exists to refuse.
+  garage: { hinge: false, swing: false, slide: false, open: false },
 };
 
 /** A door clause that takes a closed value set — a key of {@link DOOR_ENUMS}. */

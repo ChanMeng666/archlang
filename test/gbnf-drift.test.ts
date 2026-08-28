@@ -391,6 +391,8 @@ const AGREEMENT: [string, string][] = [
   ["opening at + wall clause", P(`  opening at (2500,0) width 900 wall w1`)],
   ["opening on + wall clause", P(`  opening on w1 at 50% width 900 wall w1`)],
   ["door kind + on + wall clause", P(`  door pocket on w1 at 50% width 900 wall w1`)],
+  ["door garage (the clause-free kind)", P(`  door garage on w1 at 60% width 2400`)],
+  ["door garage + open (E_ not parse)", P(`  door garage on w1 at 60% width 2400 open 0.5`)],
   ["door on center", P(`  door on w1 at center width 900`)],
   // —— the attachment position is an EXPRESSION, and `%` ends it ——————————
   ["on at ref", P(`  let bay = 1200\n  door on w1 at bay width 900`)],
@@ -436,6 +438,7 @@ const AGREEMENT: [string, string][] = [
   ["room polygon label at", P(`  room id=r2 polygon (6000,0) (7000,0) (7000,1000) label "x" at (6500,500)`)],
   ["room circle + uses", P(`  room id=r2 circle at (9000,0) radius 1000 uses living`)],
   ["room uses before label", P(`  room id=r2 at (6000,0) size 1000x1000 uses living label "x"`)],
+  ["room uses garage", P(`  room id=r2 at (6000,0) size 1000x1000 uses garage`)],
   ["room relational align/gap", P(`  room id=r2 right-of r1 align top gap 100 size 1000x1000`)],
   ["room relational gap before align", P(`  room id=r2 right-of r1 gap 100 align top size 1000x1000`)],
   // —— wall body arity + `arc` cannot lead ————————————————————————

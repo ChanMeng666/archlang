@@ -471,13 +471,30 @@ chirality when `det < 0`, which is the same place the handed door/furniture rule
 Note the standing rule it must obey: add a handed rule ⇒ add its flip to `transformElement`, never
 a frame parameter to the element ([ADR 0016](adr/0016-component-instances-and-frames.md)).
 
-### 5.5 · A syntax for overhead dashes — `todo`
+### 5.5 · A syntax for overhead dashes — `todo` (the CONVENTION is settled; the syntax is not)
 
 `upper_cabinet` is drawn dashed because of *what it is*, and there is no way for an author to say
 "draw this piece above the cut plane" about anything else. Any design has to decide whether it is a
-clause on `furniture`, a property of a category, or a plan-level convention — and a dashed overhead
-line is also what `roof` and `void` now draw, so the three should agree about what dashed *means*
-before a fourth spelling appears.
+clause on `furniture`, a property of a category, or a plan-level convention.
+
+**The half of this item that was open is now closed.** It asked that `upper_cabinet`, `roof` and
+`void` "agree about what dashed *means* before a fourth spelling appears" — and v1.31 supplied the
+fourth (a `garage` door's overhead projection) and the agreement with it. The convention, stated
+once and written into `src/elements/door-panels.ts`'s header, `docs/furniture.md` and the door-kinds
+section of `docs/language-reference.md`:
+
+> **A dashed outline means a thing above the horizontal cut a floor plan is taken at.**
+
+Everything that draws one now derives its pattern from the single `dashedPattern(sizes)` helper in
+`src/elements/glyph-lib.ts` and sets `lineType: "dashed"` beside it — `upper_cabinet`, `roof`,
+`void`, the v1.31 `pergola` and the `shed`'s ridge, and the garage projection. (The three older
+dashed rules in `door-panels.ts` — a `barn`'s two wall faces and a `bifold`'s opening line — dash
+for a *different* reason, redrawing an edge the leaf covers, and deliberately keep their own raw
+pattern with no named line type.)
+
+What is still `todo` is the SYNTAX: an author still cannot say "draw this piece above the cut
+plane" about an arbitrary `furniture` statement. The convention above is now the constraint any
+such design has to satisfy rather than a question it has to answer.
 
 ### 5.6 · Angled furniture — `todo`
 

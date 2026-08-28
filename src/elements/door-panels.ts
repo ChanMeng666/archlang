@@ -27,8 +27,25 @@
  * Handedness: `slide` is measured along the host wall's TRAVERSAL direction, exactly
  * as `hinge` is, so a mirrored `place` carries it correctly with no flip (`frame.ts`
  * transforms the segment, and the direction rides along). `swing` — which face a
- * `barn` panel hangs on or a `bifold` folds toward — is measured off the wall normal
- * and DOES flip under a reflection, which `transformElement` already does.
+ * `barn` panel hangs on, a `bifold` folds toward, or a `garage` panel projects INTO —
+ * is measured off the wall normal and DOES flip under a reflection, which
+ * `transformElement` already does.
+ *
+ * ## The dash convention: DASHED MEANS ABOVE THE CUT PLANE
+ *
+ * This module's three older dashed rules (`barn`'s two wall faces, `bifold`'s opening
+ * line) dash for a different reason — they redraw an edge the leaf covers — and they
+ * carry a raw `paint.dash` with no named line type, which is safe only because nothing
+ * there names one.
+ *
+ * `garage`'s overhead projection is the other kind, and it settles the convention the
+ * rest of the drawing already follows: **a dashed outline means a thing that is above
+ * the horizontal cut a floor plan is taken at.** `upper_cabinet` dashes for that reason,
+ * `roof` and `void` ship with it, and a garage panel parked overhead is exactly the same
+ * statement. Those all draw with {@link dashedPattern} and set `lineType: "dashed"` AND a
+ * matching `paint.dash`, because the SVG serializer follows the name and the PDF
+ * serializer follows the number; the garage projection does the same, and is therefore
+ * the one node in this file that carries a named line type.
  */
 
 import type { Point } from "../ast.js";
@@ -37,6 +54,7 @@ import type { Theme } from "../theme.js";
 import type { RenderSizes } from "../scene.js";
 import type { RDoor } from "../ir.js";
 import { add, mul, normal, sub } from "../geometry.js";
+import { dashedPattern } from "./glyph-lib.js";
 
 /** What {@link renderDoorPanels} needs from the render context and the host geometry. */
 export interface PanelCtx {
@@ -47,6 +65,19 @@ export interface PanelCtx {
   /** Host wall thickness, mm — every offset below is a fraction of it. */
   thickness: number;
 }
+
+/**
+ * How deep a `garage` door's overhead projection is drawn, as a fraction of the opening
+ * width, and the millimetre ceiling that fraction is clamped to.
+ *
+ * A sectional panel really does park across roughly half its own height, so the fraction is
+ * the honest shape of the thing. The ceiling is a DRAWING decision and is stated as one:
+ * the projection exists to say "the door goes up here", and past about a metre it stops
+ * adding information and starts covering the cars. A 5000 mm double door clamps to 1200
+ * instead of reaching 2500.
+ */
+const PANEL_PROJECTION_DEPTH = 0.5;
+const PANEL_PROJECTION_MAX_MM = 1200;
 
 /** An oriented rectangle as a closed polygon: centre, unit long axis, half-extents. */
 function orientedRect(c: Point, along: Point, halfLen: number, halfThick: number): Point[] {
@@ -175,6 +206,32 @@ export function renderDoorPanels(dr: RDoor, ctx: PanelCtx): SceneNode[] {
         rule(add(jamb, mul(n, -pt / 2)), add(far, mul(n, -pt / 2))),
         leaf(orientedRect(panelC, d, hw - inset, pt / 2)),
       ];
+    }
+    // A sectional/roller door. Two statements, and they are different in kind: the panel
+    // is IN the reveal (a thin closed leaf across the wall centreline, ticked at each
+    // jamb — it fills the opening, it does not slide within it), and where it goes when
+    // it opens is UP, which a plan can only say with the dashed overhead projection.
+    //
+    // The projection reaches `PANEL_PROJECTION_MAX_MM` at most, because it is drawn to be
+    // read and not measured: a 5-metre double door would otherwise throw a 2.5-metre dashed
+    // band across the middle of the garage and bury the cars parked under it.
+    case "garage": {
+      const pt = 0.25 * t;
+      const depth = Math.min(w * PANEL_PROJECTION_DEPTH, PANEL_PROJECTION_MAX_MM);
+      const near = t / 2;
+      const projC = add(dr.at, mul(face, near + depth / 2));
+      const nodes: SceneNode[] = [
+        leaf(orientedRect(dr.at, d, hw, pt / 2)),
+        rule(add(add(dr.at, mul(d, -hw)), mul(n, -pt)), add(add(dr.at, mul(d, -hw)), mul(n, pt))),
+        rule(add(add(dr.at, mul(d, hw)), mul(n, -pt)), add(add(dr.at, mul(d, hw)), mul(n, pt))),
+      ];
+      nodes.push({
+        layer: "doors",
+        prim: { t: "polygon", pts: orientedRect(projC, d, hw, depth / 2) },
+        paint: { fill: "none", stroke: theme.doorLeaf, width: sizes.thin, dash: dashedPattern(sizes) },
+        lineType: "dashed",
+      });
+      return nodes;
     }
     // `hinged` never reaches here (the caller returns early), but the switch stays
     // exhaustive so a kind added to the table without a rendering fails to compile.

@@ -88,7 +88,7 @@ suite("door enums — one source, six call sites", () => {
     expect(copyLines('  hinge?: "left" | "right";')).toHaveLength(1);
     expect(copyLines('          swing: { enum: ["in", "out"] },')).toHaveLength(1);
     expect(copyLines("  door … [hinge left|right] …")).toHaveLength(1);
-    expect(copyLines('  doorKind?: "hinged" | "sliding" | "barn" | "bifold" | "pocket";')).toHaveLength(1);
+    expect(copyLines('  doorKind?: "hinged" | "sliding" | "barn" | "bifold" | "pocket" | "garage";')).toHaveLength(1);
     expect(copyLines('  slide?: "left" | "right";')).toHaveLength(1);
     // …and stays quiet on the other enums that happen to share members.
     expect(copyLines('  side?: "left" | "right";')).toHaveLength(0);
@@ -108,7 +108,7 @@ suite("door enums — one source, six call sites", () => {
 suite("door enums — the generators fail loudly, not silently", () => {
   const body = (): [string, string][] => [
     ["door-stmt", `"door" rws id-opt ( door-kind rws )? opening-placement door-clauses`],
-    ["door-kind", `"hinged" | "sliding" | "barn" | "bifold" | "pocket"`],
+    ["door-kind", `"hinged" | "sliding" | "barn" | "bifold" | "pocket" | "garage"`],
     // A SEQUENCE of optionals in the parser's own clause order, not a `( clause )*`
     // set: `door … swing in hinge left` is a parse error, so a grammar that offered
     // the clauses as an unordered repeat would emit forms the language has never had.
@@ -129,7 +129,7 @@ suite("door enums — the generators fail loudly, not silently", () => {
     expect(g).toContain(`hinge-val ::= "near" rws ( "start" | "end" ) | "left" | "right"`);
     expect(g).toContain(`swing-val ::= "into" rws ref | "in" | "out"`);
     expect(g).toContain(`slide-val ::= "left" | "right"`);
-    expect(g).toContain(`door-kind ::= "hinged" | "sliding" | "barn" | "bifold" | "pocket"`);
+    expect(g).toContain(`door-kind ::= "hinged" | "sliding" | "barn" | "bifold" | "pocket" | "garage"`);
     expect(g).toContain(
       `door-clauses ::= ( ws "hinge" rws hinge-val )? ( ws "swing" rws swing-val )? ( ws "slide" rws slide-val )? ( ws "open" ws expr )?`,
     );
@@ -187,7 +187,7 @@ suite("door enums — the generators fail loudly, not silently", () => {
 
   it("gen-llm-spec throws when the door line stops rendering a clause", () => {
     const line =
-      "door … [hinged|sliding|barn|bifold|pocket] [hinge left|right|near start|near end] [swing in|out|into <roomId>] [slide left|right]";
+      "door … [hinged|sliding|barn|bifold|pocket|garage] [hinge left|right|near start|near end] [swing in|out|into <roomId>] [slide left|right]";
     expect(() => assertDoorEnumsRendered(line, DOOR_ENUMS, DOOR_HINGE_NEAR, DOOR_KINDS)).not.toThrow();
     expect(() =>
       assertDoorEnumsRendered(line, { ...DOOR_ENUMS, latch: ["left", "right"] }, DOOR_HINGE_NEAR, DOOR_KINDS),

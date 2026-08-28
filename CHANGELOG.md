@@ -81,6 +81,51 @@ and `arch lint` reports the same three warnings the showpiece has always carried
 (`W_BATH_VIA_BEDROOM` ×1, `W_ROOM_NOT_EQUATOR_FACING` ×2). The 5500 mm double garage clears
 `W_GARAGE_TOO_NARROW`'s 5400 mm by 100 mm, which is the calibration above doing its job.
 
+### Added — `door garage …`, the sixth door kind
+
+A sectional/roller door: `door [id=] garage (at (x,y) | on <wall> at <pos>) width <mm> [wall <id>]`.
+It draws a panel in the reveal, a tick at each jamb, and a **dashed overhead projection** — a
+rectangle the opening's width and half that deep, capped at 1200 mm — into the room.
+
+**It takes no clause at all**, the first kind whose `DOOR_KIND_CLAUSES` row is entirely `false`,
+and each refusal is its own argument rather than a blanket one:
+
+- `hinge` and `slide` — the leaf travels **up**, not around a jamb and not along the wall.
+- `swing` — the panel parks overhead *inside the building*, and which side that is is a fact about
+  the plan rather than a choice. The resolver derives it by probing one wall thickness off each
+  face and asking which side has floor (the same poly-aware rule `swing into <room>` uses, so it is
+  right on a courtyard and on a concave room); when neither side is a room — a garage door in a
+  garden wall — it falls back to the wall's own `+normal` side, exactly as before.
+- `open` — a sectional door retracts **vertically, out of the plan's cut plane**, so there is no
+  intermediate position a plan can draw. A clause that changed nothing would be silent-error
+  design.
+
+`doorSwing()` returns `null` for it (so `W_SWING_OBSTRUCTED` cannot apply, as for every non-hinged
+kind), `describe().doors[].kind` reports `"garage"`, `arch fmt` round-trips it, and every rule that
+measures the *doorway* rather than the leaf is unchanged: it connects the same two spaces, counts
+as an entrance, and its clearances measure the same opening. Under a mirrored `place` the
+projection stays inside the mirrored building, because it reads `swing`, which `frame.ts` already
+flips when the frame reflects.
+
+**This settles the dash convention — half of `docs/backlog.md` item 5.5.** That item asked that
+`upper_cabinet`, `roof` and `void` "agree about what dashed means before a fourth spelling
+appears"; this is the fourth, and the agreement:
+
+> **A dashed outline means a thing above the horizontal cut a floor plan is taken at.**
+
+Everything that draws one now derives its pattern from the single `dashedPattern()` helper and sets
+`lineType: "dashed"` beside it. (The three older dashed rules in `door-panels.ts` dash for a
+different reason — redrawing an edge a leaf covers — and keep their own raw pattern with no named
+type.) The `todo` half of 5.5, a *syntax* for saying "draw this piece overhead", is unchanged.
+
+### Changed — `examples/hillside-villa.arch`'s garage door
+
+`d_garage` is the `garage` kind instead of `sliding … slide left` (same 3000 mm width). Measured
+before and after: `describe --json` differs in exactly two places (`doors[2].kind`, on the plan and
+on level 1), `arch lint` reports the same three warnings, and the drawing changes — a sectional
+panel with its overhead projection where two bypass panels on two tracks used to be. The committed
+`examples/hillside-villa.svg` is re-rendered accordingly.
+
 <!-- END: outdoor fixtures + garage (track B) -->
 
 ## [1.30.0] - 2026-08-28

@@ -989,6 +989,7 @@ A bare **kind** word may lead the statement, after any `id=` — the same shape 
 | `barn` | a surface-hung panel on a track that overruns the far jamb | no |
 | `bifold` | two folding leaves and the fold hinge | no |
 | `pocket` | a panel and the wall cavity it slides into | no |
+| `garage` *(v1.31)* | a sectional panel in the reveal, plus its **dashed** overhead projection | no |
 
 `hinged` is the default **and writing it is identical to omitting it** — a plan
 that names no kind compiles to exactly the bytes it always did.
@@ -1011,6 +1012,7 @@ proved correct under `place … mirror`:
 | `barn` | which **face** of the wall the panel hangs on |
 | `bifold` | which **face** the panels fold toward |
 | `sliding`, `pocket` | *not accepted* — the panel stays in the plane of the wall, or inside it |
+| `garage` | *not accepted* — the panel parks overhead **inside**, and which side that is is derived from which face has floor |
 
 **`slide left\|right`** is which way the panel travels to open, read along the host
 wall's traversal direction exactly as `hinge` is (so a mirrored `place` carries it
@@ -1020,7 +1022,24 @@ nothing else: no measurement, no lint rule and no `describe --json` field reads 
 so a door cannot be made to satisfy a check by being drawn ajar. Outside `[0,1]` it
 is [`E_DOOR_OPEN_RANGE`](error-codes.md#e_door_open_range) with a clamping fix.
 
-**Clauses are refused, not ignored.** `hinge` is hinged-only and `slide`/`open` are
+**A `garage` door takes no clause at all**, and each refusal is its own argument. `hinge`
+and `slide` because the leaf travels **up**, not around a jamb and not along the wall.
+`swing` because the panel parks overhead *inside the building*, and which side that is is a
+fact about the plan rather than a choice: the resolver probes one wall thickness off each
+face and asks which side has floor — the same poly-aware rule `swing into <room>` uses, so it
+is right on a courtyard and on a concave room. (When neither side is a room — a garage door in
+a garden wall — the projection falls back to the wall's own `+normal` side.) And `open`
+because a sectional door retracts **vertically, out of the plan's cut plane**: there is no
+intermediate position a plan can draw, so a clause that changed nothing would be silent-error
+design.
+
+The overhead projection is a rectangle the width of the opening and half that deep, capped at
+1200 mm so a wide double door does not throw a two-metre dashed band across the cars. It is
+**dashed**, which is the drawing's standing convention for anything above the cut plane —
+the same statement an `upper_cabinet`, a [`roof`](#roof) eaves line and a [`void`](#void)
+make.
+
+**Other clauses are refused, not ignored.** `hinge` is hinged-only and `slide`/`open` are
 sliding-family-only; the wrong pairing is
 [`E_DOOR_KIND_CLAUSE`](error-codes.md#e_door_kind_clause) with a machine-applicable
 fix that deletes the clause. A non-hinged kind on a wall whose hosting edge is an
@@ -1047,6 +1066,7 @@ plan "Door kinds" {
   door pocket   on p1 at 75% width 900  slide left open 0.4
   door barn     on p2 at 30% width 1100 swing out slide left
   door bifold   on p2 at 70% width 1500 swing in  slide right
+  door garage   on exterior at 60% width 2400
 }
 ```
 

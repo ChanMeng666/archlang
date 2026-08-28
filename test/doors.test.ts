@@ -39,7 +39,8 @@ import {
   toDxf,
 } from "../src/index.js";
 import { doorSwing } from "../src/geometry.js";
-import { DOOR_KINDS } from "../src/grammar/tokens.js";
+import { dashedPattern } from "../src/elements/glyph-lib.js";
+import { DOOR_KINDS, DOOR_KIND_CLAUSES } from "../src/grammar/tokens.js";
 import type { RDoor } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { resolve } from "../src/ir.js";
@@ -412,9 +413,17 @@ suite("doors — W_POCKET_RUN", () => {
 suite("doors — every kind draws, within the shipped primitive budget", () => {
   it("emits only primitives all four backends already serialize", () => {
     for (const k of DOOR_KINDS) {
-      const scene = compile(plan(`door id=d ${k} on mid at 50% width 1200 ${k === "hinged" ? "" : "slide right"}`), {
-        noCache: true,
-      }).scene!;
+      // The clause is taken from the legality table rather than from "is it hinged?": the
+      // sliding family takes `slide`, `hinged` takes none, and `garage` takes none either —
+      // a hardcoded "every non-hinged kind slides" was true of four kinds and is now false,
+      // which is exactly the retyped-fact drift this file's own suites exist to catch.
+      const clause = DOOR_KIND_CLAUSES[k].slide ? "slide right" : "";
+      const out = compile(plan(`door id=d ${k} on mid at 50% width 1200 ${clause}`), { noCache: true });
+      expect(
+        out.errors.map((e) => e.message),
+        k,
+      ).toEqual([]);
+      const scene = out.scene!;
       const kinds = new Set(scene.nodes.filter((n) => n.layer === "doors").map((n) => n.prim.t));
       for (const t of kinds) expect(["polygon", "line", "arc", "circle"], `${k}/${t}`).toContain(t);
       // A non-hinged kind draws something beyond the bare cover.
@@ -516,5 +525,205 @@ suite("doors — format() round-trips the kind, `slide` and `open`", () => {
     // drops, so the printer must not invent it for a door that never said it.
     expect(out).not.toMatch(/door id=d hinged/);
     expect(format(out)).toBe(out);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 10 — `garage`, the sixth kind: the clause-free one
+// ---------------------------------------------------------------------------
+
+/**
+ * A sectional/roller door differs from the other four in every way a kind can:
+ *
+ *  - It accepts **no clause at all** — the first kind whose `DOOR_KIND_CLAUSES` row is
+ *    entirely `false`. `hinge` and `slide` are refused because the leaf travels UP;
+ *    `open` because it retracts out of the plan's cut plane, so there is no intermediate
+ *    position to draw; `swing` because which side the panel parks over is a fact about
+ *    the building, not a choice.
+ *  - That side is therefore **derived**, by the same probe `swing into <room>` makes: one
+ *    wall thickness off each face, asking which side has floor. It is poly-aware, and it
+ *    returns nothing when neither side (or both) is a room.
+ *  - Its overhead projection is the first DASHED node in `door-panels.ts` that carries a
+ *    named `lineType`, and it settles the drawing's convention: **dashed means above the
+ *    cut plane**, the same statement `upper_cabinet`, `roof` and `void` make.
+ *
+ * Everything a doorway means is unchanged: it connects the same two spaces, counts as an
+ * entrance, and its clearances measure the same opening.
+ */
+suite("doors — `garage`, the clause-free kind", () => {
+  /** A garage with a shell and the door under test on the shell's top run. */
+  const garagePlan = (door: string, w = 6000, h = 6000, reversed = false): string =>
+    [
+      'plan "Garage" {',
+      "  units mm",
+      reversed
+        ? `  wall id=shell exterior thickness 200 { (0,0) (0,${h}) (${w},${h}) (${w},0) close }`
+        : `  wall id=shell exterior thickness 200 { (0,0) (${w},0) (${w},${h}) (0,${h}) close }`,
+      `  room id=g at (0,0) size ${w}x${h} label "Garage" uses garage`,
+      `  ${door}`,
+      "}",
+    ].join("\n");
+
+  const doorNodes = (src: string) => {
+    const r = compile(src, { noCache: true });
+    expect(r.errors.map((e) => e.message)).toEqual([]);
+    return { scene: r.scene!, nodes: r.scene!.nodes.filter((n) => n.layer === "doors") };
+  };
+
+  /** The one dashed node a garage door emits: its overhead projection. */
+  const projection = (src: string) => {
+    const { scene, nodes } = doorNodes(src);
+    const dashed = nodes.filter((n) => n.lineType === "dashed");
+    expect(dashed).toHaveLength(1);
+    const prim = dashed[0]!.prim as { t: "polygon"; pts: { x: number; y: number }[] };
+    const xs = prim.pts.map((p) => p.x);
+    const ys = prim.pts.map((p) => p.y);
+    return {
+      node: dashed[0]!,
+      scene,
+      pts: prim.pts,
+      x0: Math.min(...xs),
+      x1: Math.max(...xs),
+      y0: Math.min(...ys),
+      y1: Math.max(...ys),
+    };
+  };
+
+  it("compiles, reports its kind, and sweeps nothing", () => {
+    const src = garagePlan("door id=d garage at (3000,0) width 2400 wall shell");
+    expect(compile(src, { noCache: true }).errors).toEqual([]);
+    expect(describePlan(src).doors.find((x) => x.id === "d")?.kind).toBe("garage");
+    const d = doorsOf(src).find((x) => x.id === "d")!;
+    expect(d.doorKind).toBe("garage");
+    // No leaf sweeps a quarter-disc, so no swing geometry exists and the rule that reads
+    // it cannot apply — the same early return every non-hinged kind takes.
+    expect(doorSwing(d)).toBeNull();
+    expect(codes(src)).not.toContain("W_SWING_OBSTRUCTED");
+  });
+
+  it("refuses every clause, and each one is accepted by some other kind", () => {
+    // Both directions, which is what makes this a statement about the TABLE rather than
+    // about four hand-picked strings.
+    for (const clause of ["hinge left", "swing in", "slide right", "open 0.5"] as const) {
+      const src = garagePlan(`door id=d garage at (3000,0) width 2400 wall shell ${clause}`);
+      const diags = compile(src, { noCache: true }).diagnostics;
+      expect(
+        diags.map((d) => d.code ?? ""),
+        clause,
+      ).toContain("E_DOOR_KIND_CLAUSE");
+      expect(diags.find((d) => d.code === "E_DOOR_KIND_CLAUSE")?.message, clause).toContain('is a "garage" door');
+    }
+    expect(Object.values(DOOR_KIND_CLAUSES.garage)).toEqual([false, false, false, false]);
+    // …and every one of those four words is legal on at least one other kind, so the
+    // refusals above are about `garage` and not about the clauses being unreachable.
+    for (const clause of ["hinge", "swing", "slide", "open"] as const) {
+      expect(
+        DOOR_KINDS.some((k) => DOOR_KIND_CLAUSES[k][clause]),
+        clause,
+      ).toBe(true);
+    }
+  });
+
+  it("draws a panel in the reveal, a tick at each jamb, and one dashed projection", () => {
+    const { nodes } = doorNodes(garagePlan("door id=d garage at (3000,0) width 2400 wall shell"));
+    // The cover (kind-independent, emitted for every door), the leaf, two jamb ticks, the
+    // projection. Only the last is dashed.
+    expect(nodes.map((n) => n.prim.t)).toEqual(["polygon", "polygon", "line", "line", "polygon"]);
+    expect(nodes.filter((n) => n.lineType === "dashed")).toHaveLength(1);
+  });
+
+  it("names its dash AND hands over the same pattern — SVG follows one, PDF the other", () => {
+    const { node, scene } = projection(garagePlan("door id=d garage at (3000,0) width 2400 wall shell"));
+    expect(node.lineType).toBe("dashed");
+    expect(node.paint.dash).toEqual(dashedPattern(scene.sizes));
+    expect(node.paint.fill).toBe("none");
+  });
+
+  it("projects into the ROOM, at the panel's width and half its width deep", () => {
+    const p = projection(garagePlan("door id=d garage at (3000,0) width 2400 wall shell"));
+    // The door is at (3000,0) on the top run, so the room is BELOW it (+y).
+    expect(p.x0).toBeCloseTo(3000 - 1200, 6);
+    expect(p.x1).toBeCloseTo(3000 + 1200, 6);
+    // Near edge one half-thickness off the centreline, far edge `width / 2` beyond it.
+    expect(p.y0).toBeCloseTo(100, 6);
+    expect(p.y1).toBeCloseTo(100 + 1200, 6);
+  });
+
+  it("finds the room side by PROBING, not by the wall's point order", () => {
+    // The same building with its shell wound the other way reverses every segment's
+    // traversal direction and therefore its normal. A projection keyed to the normal
+    // alone would flip to the outside; the probe asks which side has floor.
+    const forward = projection(garagePlan("door id=d garage at (3000,0) width 2400 wall shell"));
+    const reversed = projection(garagePlan("door id=d garage at (3000,0) width 2400 wall shell", 6000, 6000, true));
+    expect(reversed.y0).toBeCloseTo(forward.y0, 6);
+    expect(reversed.y1).toBeCloseTo(forward.y1, 6);
+    // …and it really is inside the room, not merely on the same side as last time.
+    expect(reversed.y0).toBeGreaterThan(0);
+  });
+
+  it("clamps the projection depth on a wide door", () => {
+    // Half of 5000 is 2500, which would throw a two-and-a-half-metre dashed band across
+    // the garage and bury the cars under it. The ceiling is a drawing decision.
+    const p = projection(garagePlan("door id=d garage at (4000,0) width 5000 wall shell", 8000, 8000));
+    expect(p.x1 - p.x0).toBeCloseTo(5000, 6);
+    expect(p.y1 - p.y0).toBeCloseTo(1200, 6);
+  });
+
+  it("falls back to the wall's own side when neither face is a room", () => {
+    // A garage door in a garden wall: the probe finds no floor either side and returns
+    // nothing, so the chain falls through exactly as it did before this kind existed.
+    const src = [
+      'plan "Wall" {',
+      "  units mm",
+      "  wall id=w exterior thickness 200 { (0,0) (6000,0) }",
+      "  door id=d garage on w at 50% width 2400",
+      "}",
+    ].join("\n");
+    expect(compile(src, { noCache: true }).errors).toEqual([]);
+    const { nodes } = doorNodes(src);
+    expect(nodes.filter((n) => n.lineType === "dashed")).toHaveLength(1);
+  });
+
+  it("is still an ordinary doorway to every rule that measures one", () => {
+    const src = garagePlan("door id=d garage at (3000,0) width 2400 wall shell");
+    // It connects the same two spaces …
+    const d = describePlan(src).doors.find((x) => x.id === "d")!;
+    expect(d.between).toEqual(["exterior", "g"]);
+    // … and it is an entrance, so a plan whose only door is a garage door is not
+    // entranceless.
+    expect(codes(src)).not.toContain("W_NO_ENTRANCE");
+    expect(codes(src)).not.toContain("W_ROOM_DISCONNECTED");
+  });
+
+  it("keeps its projection inside the room under a mirrored `place`", () => {
+    // `swing` is the field the projection reads, and `frame.ts` flips it when the frame
+    // reflects — which is what has to happen for the panel to stay INSIDE a mirrored
+    // building rather than parking on its lawn. The derivation runs in the instance's own
+    // frame, so this is the pairing that proves both halves at once.
+    const wing = `component wing() {
+    wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+    room id=g at (0,0) size 6000x6000 label "Garage" uses garage
+    door id=d garage on w at 3000 width 2400
+  }`;
+    const mk = (t: string): string => `plan "t" {\n  grid 100\n  ${wing}\n  place wing() as m at (0,0) ${t}\n}`;
+    for (const t of ["", "mirror x", "mirror y", "rotate 90"]) {
+      const out = compile(mk(t), { noCache: true });
+      expect(
+        out.errors.map((e) => e.message),
+        t,
+      ).toEqual([]);
+      const dashed = out.scene!.nodes.filter((n) => n.layer === "doors" && n.lineType === "dashed");
+      expect(dashed, t).toHaveLength(1);
+      const pts = (dashed[0]!.prim as { t: "polygon"; pts: { x: number; y: number }[] }).pts;
+      const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+      const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+      // The instance's room, read off `describe()` rather than recomputed, so the test
+      // cannot disagree with the frame about where the building went.
+      const box = describePlan(mk(t)).rooms.find((r) => r.id === "m.g")!.bbox;
+      expect(cx, `${t} x`).toBeGreaterThanOrEqual(box.x - 1);
+      expect(cx, `${t} x`).toBeLessThanOrEqual(box.x + box.w + 1);
+      expect(cy, `${t} y`).toBeGreaterThanOrEqual(box.y - 1);
+      expect(cy, `${t} y`).toBeLessThanOrEqual(box.y + box.h + 1);
+    }
   });
 });
