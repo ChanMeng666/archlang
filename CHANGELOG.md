@@ -7,138 +7,115 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-<!-- v1.32 F1 -->
-### Added — eight kitchen and bath fixture families
 
-Eight families, ten words with their aliases, appended to the end of `FIXTURE_FAMILIES`
-and `CATALOG` in one block. No new keyword, no new `E_*`/`W_*` code: a fixture category is
-DATA, and this is the catalogue growing, not the grammar.
+**The furniture catalogue.** v1.28.0 gave every fixture word a symbol; this release makes every
+one of those symbols a drawing. Twenty-six new families take the catalogue from 57 families and
+96 words to **83 and 129**, and **fourteen symbols that already existed were redrawn** — the ones
+that still read as a rectangle with a line in it, several of which were not distinguishable from
+each other. No new keyword, no new `E_*`/`W_*` code, nothing removed from the public surface: a
+fixture category is DATA, and this is the catalogue growing, not the grammar.
 
-- **Bath** — `bidet` (400 × 700, wet, 450 mm clearance), `urinal` (400 × 350, wet, 450 mm)
-  and `mirror` (900 × 50). A bidet is a WC with no cistern: a small tap block at the back
-  where a WC has a full-width tank, and a waste on the bowl centre. A urinal is the only
-  symbol in the catalogue drawn as **half** a shape — a wall-hung urinal has no back, so
-  the chord across the top of its bowl is the wall face and the symbol runs to the very
-  edge of its footprint. A mirror is the glass with five 45° reflection ticks, which is
-  the one mark that survives being eighteen times longer than it is deep.
-- **Kitchen & utility** — `laundry_sink` (alias `laundry_tub`; 600 × 500, wet, 600 mm
-  clearance), `water_heater` (alias `boiler`; 600 × 600), `range_hood` (900 × 500,
-  kitchen), `microwave` (500 × 400, kitchen) and `bar_counter` (1800 × 600, kitchen). A
-  laundry tub is one deep double-rimmed bowl against the kitchen sink's pair. A water
-  heater is the cylinder in plan with two pipe ticks to the wall — the pipes are what make
-  it a service rather than a `fire_pit`, and they are why it is not `symmetric` though its
-  outline would be. A range hood is drawn **entirely dashed**, which makes it the second
-  overhead symbol in the kitchen module. A bar counter derives **one stool per ~1.2
-  counter-depths of run**, capped at eight, so an 1800 mm bar draws four and a 4 m bar
-  draws eight.
+**Three behaviour statements to make plainly.** (1) **`describe()` and `lint()` do not move.**
+Held SHA-256 identical, example by example, across all **30** shipped plans against the v1.31.0
+release commit — 24 drawings changed, **0 summaries and 0 diagnostic sets** — so the net lint
+change across the shipped examples is zero and no `arch describe --json` consumer sees a
+different byte. (2) **Only the furniture layer moved.** The diff over the twenty committed
+example SVGs is 825 changed lines across 18 drawings, every one attributed to a CAD layer:
+**692 on `A-FURN`** and **133 on `A-ANNO`**, the latter being the legend swatches, which are
+drawn from the same symbols. No `<text>` element moved, position included, so no room label,
+area, dimension, schedule row or legend row shifted. (3) **`island` is no longer `symmetric`**
+— a data correction, not a behaviour change, since `orientationMatters` is
+`(requiresWall || directional) && !symmetric` and an island is neither, so it still derives no
+rotation and still never trips `W_FIXTURE_BACK_TO_ROOM`.
 
-Six of the eight are `requiresWall`, which is the flag's home ground after the outdoor
-tranche had to argue its way out of it: `bidet`/`urinal`/`laundry_sink`/`water_heater`
-are plumbed, and `mirror`/`range_hood` hang off the fabric by definition — the
-`upper_cabinet` case. `microwave` and `bar_counter` are `directional` instead: both have
-an unmistakable front and neither needs a pipe, so a bar floated in an open-plan room
-raises nothing.
+### Added — twenty-six fixture families across five domains
 
-### Changed — six kitchen and bath symbols redrawn, and every plan that places one moves bytes
+Each is one `FIXTURE_FAMILIES` row plus one `CATALOG` entry plus a draw function — never a new
+element, never a `switch` arm. All twenty-six are appended in one block at the **end** of the
+table, never slotted in beside their domain neighbours, for the one reason that table has: its
+order **is** the legend's order, so slotting `dresser` in beside `wardrobe` would re-order the
+legend of every shipped plan that draws a robe.
 
-`island`, `upper_cabinet`, `dishwasher`, `oven`, `fridge` and `washer` were the six that
-still read as a rectangle with a line in it. What each gained:
-
-- **`island`** (2 → 7 prims, or 9 on a long run) — an eased worktop, a seating overhang
-  along the front with cabinet ticks under it, and **by aspect** either a hob (four
-  burners, at 1.8 or over) or a sink bowl at one end. It was a slab nosed on all four
-  sides, which is a box inside a box.
-- **`upper_cabinet`** (2 → 3) — still dashed all the way round, now with a door split per
-  600 mm module (guarded exactly as the counter's division ticks are, so a legend swatch
-  degrades to the plain outline) and a hinge tick at each end of the back edge. A dashed
-  empty rectangle on a plan is a `void`; this one is now unmistakably cabinetry.
-- **`dishwasher`** (3 → 7) — two basket lines across the tub and a door leaf on the front
-  with its control strip and handle, replacing a dial in the middle of a box, which is a
-  washing machine's drawing.
-- **`oven`** (4 → 8, or 12 wide) — three control knobs on the back edge, a door seam, a
-  window and a handle bar; **a footprint of aspect 1.6 or over is a range** and gains four
-  burners.
-- **`fridge`** (4 → 5) — a door face line, a handle **bar** rather than a stub, and a
-  compartment split placed **by aspect**: down the width of a side-by-side, across the
-  depth of an upright.
-- **`washer`** (4 → 7) — a control panel across the back with two knobs, and a **white
-  porthole** at the drum's centre. `dryer` is unchanged and keeps its three chords: the
-  two are the same box at the same size, and they now differ by more than a circle count.
-
-`island` is **no longer `symmetric`** in `src/fixtures-catalog.ts`. That is a data
-correction, not a behaviour change — the flag's own doc says the drawn symbol is
-rotation-symmetric, and a seating overhang is a distinguishable front. Nothing observable
-moves: `orientationMatters` is `(requiresWall || directional) && !symmetric`, and an
-island is neither, so it still derives no rotation and still never trips
-`W_FIXTURE_BACK_TO_ROOM`.
-
-**Twelve of the twenty committed README SVGs, sixteen inline snapshots and thirteen PNG
-goldens were re-blessed after reading the diff.** Every one of the 202 changed SVG lines
-is a `<polygon>`/`<line>`/`<circle>` on the furniture layer: no wall, room, text,
-dimension or layer moved. **`describe()` and `lint()` did not change by a byte on any
-plan**, and that is proved rather than asserted — feeding each *committed* base drawing
-into the byte-identity digests, with the summary and diagnostics taken from the new code,
-reproduces every previous hex exactly. The three byte-identity law suites now carry a
-second pin over the summary half alone (`semanticDigestWith`), which a drawing change can
-never move, so the next redraw does not have to make the argument again.
-
-<!-- v1.32 F2 -->
-
-### Added — eighteen furniture families for the living room, the bedroom and the office
-
-Every one is a table row and a catalog entry, never a new element and never a `switch` arm.
-All eighteen carry a catalogued `footprint`, so `furniture <kind> against wall <id>` needs no
-`size`; none carries `requiresWall`, which means services and nothing else.
-
+- **Bath** — `bidet` (400 × 700, wet, 450 mm clearance), `urinal` (400 × 350, wet, 450 mm) and
+  `mirror` (900 × 50). A bidet is a WC with no cistern: a small tap block at the back where a WC
+  has a full-width tank, and a waste on the bowl centre. A urinal is the only symbol in the
+  catalogue drawn as **half** a shape — a wall-hung urinal has no back, so the chord across the
+  top of its bowl is the wall face and the symbol runs to the very edge of its footprint. A
+  mirror is the glass with five 45° reflection ticks, the one mark that survives being eighteen
+  times longer than it is deep.
+- **Kitchen & utility** — `laundry_sink` · `laundry_tub` (600 × 500, wet, 600 mm clearance),
+  `water_heater` · `boiler` (600 × 600), `range_hood` (900 × 500), `microwave` (500 × 400) and
+  `bar_counter` (1800 × 600). A laundry tub is one deep double-rimmed bowl against the kitchen
+  sink's pair. A water heater is the cylinder in plan with two pipe ticks to the wall — the pipes
+  are what make it a service rather than a `fire_pit`, and are why it is not `symmetric` though
+  its outline would be. A range hood is drawn **entirely dashed**. A bar counter derives **one
+  stool per ~1.2 counter-depths of run**, capped at eight, so an 1800 mm bar draws four and a 4 m
+  bar draws eight.
 - **Bedroom** — `bunk_bed` (the lower mattress with its pillow at the head, the upper deck
   **dashed** over it, and the ladder rungs at the foot), `crib` · `cot` (carcass, mattress and
   the rail bars down both long faces, read off the footprint's own long axis), `dresser` ·
   `chest_of_drawers` (the drawer band, its splits and three handles, all on the room side) and
-  `vanity` · `dressing_table` (the mirror band **dashed** at the wall side with the stool in
-  front of it).
-- **Living** — `fireplace` (the chimney breast with the firebox cut into its *room* face),
-  `radiator` (fins ticked across the depth at a clamped pitch), `sideboard` · `buffet`,
+  `vanity` · `dressing_table` (the mirror band **dashed** at the wall side, stool in front).
+- **Living & dining** — `fireplace` (the chimney breast with the firebox cut into its *room*
+  face), `radiator` (fins ticked across the depth at a clamped pitch), `sideboard` · `buffet`,
   `loveseat` · `sofa_2`, `chaise` (a back down one long side and a raised head — the asymmetry
-  is the symbol), `tv` (wall-mounted: a bracket and a panel, and a **different kind** from
-  `tv_unit`), `coat_rack` and `shoe_cabinet` (a tilt line per door, leaning toward the room).
-- **Office & commercial** — `meeting_table` (the `dining_table` rule — the footprint includes
-  its chairs — drawn with an eased top and **ring** seats), `reception_desk` (an L counter with
-  the chair inside the L), `filing_cabinet`, `locker`, `pool_table` (six pockets, the two middle
-  ones found off the footprint's own long axis) and `treadmill`.
+  is the symbol), `tv` (wall-mounted: a bracket and a panel), `coat_rack` and `shoe_cabinet` (a
+  tilt line per door, leaning toward the room).
+- **Office & misc** — `meeting_table` (the `dining_table` rule — the footprint includes its
+  chairs — with an eased top and **ring** seats), `reception_desk` (an L counter with the chair
+  inside the L), `filing_cabinet`, `locker`, `pool_table` (six pockets, the two middle ones found
+  off the footprint's own long axis) and `treadmill`.
 
-Three decisions worth stating rather than reading off the rows:
+Five decisions worth stating rather than reading off the rows:
 
-- **`fireplace` and `radiator` are `directional`, not `requiresWall`.** Both are genuinely
-  serviced and neither can be flagged without warning on a normal drawing — a radiator is as
+- **Six of the eight kitchen-and-bath families are `requiresWall`**, which is that flag's home
+  ground after the outdoor tranche had to argue its way out of it:
+  `bidet`/`urinal`/`laundry_sink`/`water_heater` are plumbed, and `mirror`/`range_hood` hang off
+  the fabric by definition — the `upper_cabinet` case, not the plumbing one. `microwave` and
+  `bar_counter` are `directional` instead: both have an unmistakable front, neither needs a pipe,
+  so a bar floated in an open-plan room raises nothing.
+- **`fireplace` and `radiator` are `directional`, not `requiresWall`**, even though both are
+  plainly serviced. Neither can be flagged without warning on a normal drawing — a radiator is as
   often fed from the floor as from the wall and lives under a window, and a free-standing stove
-  mid-room is a plan someone drew on purpose. `requiresWall` keeps its single meaning.
+  mid-room is a plan someone drew on purpose. `requiresWall` keeps its single meaning: **services
+  and nothing else**. None of the eighteen living/bedroom/office families carries it.
 - **`loveseat` and `chaise` are NOT `directional`**, for the reason `sofa`, `chair`, `bench` and
   `outdoor_chair` are not: seating is arranged, not installed.
 - **`tv` is a separate kind from `tv_unit` rather than an alias.** 80 mm of panel and 450 mm of
   console are different amounts of floor, and a plan that draws the first where the second
   belongs has taken 370 mm of walkway away.
+- **The dashed outline is now the drawing's convention, not one glyph's.** It means *above the
+  cut plane*, and four fixture symbols use it — the wall cabinet, the range hood, a bunk bed's
+  upper deck and a vanity's mirror band — alongside `roof`, `void` and the outdoor `pergola` and
+  `shed` ridge, all through one `dashedPattern()` helper.
 
-`clearanceMm` is set for exactly four — `dresser`, `vanity` and `filing_cabinet` at 600 mm (a
-drawer or a chair) and `treadmill` at 900, the largest figure in the catalogue and the one thing
-a gym plan can be wrong about in a way that matters.
+`clearanceMm` is set for exactly four of the new families: `dresser`, `vanity` and
+`filing_cabinet` at 600 mm (a drawer or a chair) and `treadmill` at 900, the largest figure in
+the catalogue and the one thing a gym plan can be wrong about in a way that matters.
 
-`glyph-lib.ts` gains `easedRing`, moved **verbatim** out of `glyphs-living.ts` now that the
-reception counter is its second caller; the L-sofa's bytes are unchanged, which is what verbatim
-buys.
+`src/elements/glyph-lib.ts` gains `easedRing`, moved **verbatim** out of `glyphs-living.ts` now
+that the reception counter is its second caller, and `drawSofa`'s body becomes a
+`sofaBody(r, g, divisions)` in that module that `drawLoveseat` shares — also verbatim. Every
+shipped sofa and the L-sofa keep their exact bytes, which is what verbatim buys.
 
-### Changed — eight fixture symbols redrawn, and the twenty-two examples that move with them
+### Changed — fourteen fixture symbols redrawn
 
-`coffee_table`, `table`, `stool`, `bench`, `chair` and `tv_unit` were two or three primitives
-each, and `nightstand` and `desk` three; at plan scale every one of them read as a rectangle
-with a line in it, and several were not distinguishable from each other. Each now carries
-*structural* detail rather than decoration, so it survives being drawn at 40 mm on an A3 sheet:
+Primitive counts are measured at three footprints (900 × 900, 2400 × 700, 1800 × 600), because
+several symbols read their own aspect and draw a different piece of equipment either side of a
+threshold rather than inventing one answer that is wrong for half the plans.
 
 | Kind | Was | Now | What it gained |
 |---|---|---|---|
-| `coffee_table` | 2 | 6–7 | a generous corner radius, four legs, and a tray line across it past 1.6 : 1 |
-| `table` | 2 | 6–7 | square corners, four legs, and a board line **along** its length past 1.6 : 1 |
+| `island` | 2 | 7 / 9 | an eased worktop, a seating overhang with cabinet ticks under it, and **by aspect** a hob (four burners, at 1.8 or over) or a sink bowl at one end. It was a slab nosed on all four sides, which is a box inside a box |
+| `upper_cabinet` | 2 | 3 / 5 / 6 | a door split per 600 mm module — guarded exactly as the counter's division ticks are, so a legend swatch degrades to the plain outline — and a hinge tick at each end of the back edge. A dashed empty rectangle on a plan is a `void`; this is now cabinetry |
+| `dishwasher` | 3 | 7 | two basket lines across the tub and a door leaf with its control strip and handle, replacing a dial in the middle of a box, which is a washing machine's drawing |
+| `oven` | 4 | 8 / 12 | three knobs on the back edge, a door seam, a window and a handle bar; **a footprint of aspect 1.6 or over is a range** and gains four burners |
+| `fridge` | 4 | 5 | a door face line, a handle **bar** rather than a stub, and a compartment split placed by aspect — down the width of a side-by-side, across the depth of an upright |
+| `washer` | 4 | 7 | a control panel across the back with two knobs and a white **porthole** at the drum's centre. `dryer` is untouched and keeps its three chords: the two are the same box at the same size and now differ by more than a circle count |
+| `coffee_table` | 2 | 6 / 7 | a generous corner radius, four legs, and a tray line across it past 1.6 : 1 |
+| `table` | 2 | 6 / 7 | square corners, four legs, and a board line **along** its length past 1.6 : 1 |
 | `stool` | 2 | 3 | the pedestal foot, as a third **concentric** circle |
-| `bench` | 3 | 6 | a clamped run of slats and a support across each end |
+| `bench` | 3 | 7 / 8 | a clamped run of slats and a support across each end |
 | `chair` | 3 | 5 | an armrest each side, and a cushion that no longer crowds its own outline |
 | `tv_unit` | 3 | 6 | two drawer splits and a handle, below the shelf line, facing the room |
 | `nightstand` | 3 | 6 | the lamp moved into the back third, plus a drawer front and handle at the room side |
@@ -146,7 +123,8 @@ with a line in it, and several were not distinguishable from each other. Each no
 
 `coffee_table` and `table` used to differ only by a corner radius of 0.12 against 0.08 on the
 same two primitives, which is not a difference a reader can see; `chair` was a box with a line
-across it. Both pairs are now told apart by construction.
+across it; `desk` was a `table` with a rule; `washer` and `dryer` were the same box at the same
+size. Each pair is now told apart by construction rather than by decoration.
 
 **The stool's third circle is concentric on purpose, and the obvious alternative is wrong.** A
 ring of three or four foot dots maps onto itself as a *set* under a quarter-turn while each node
@@ -154,32 +132,59 @@ lands where its neighbour was — so the SVG bytes would move for a drawing nobo
 and `test/glyphs-living.test.ts`'s byte-identical-rotation law would fail. A circle centred on
 the pivot maps onto *itself*.
 
-**Twenty-two of the shipped examples render different bytes, and `describe()` and `lint()` do
-not.** Held SHA-256 identical example by example against `8fc432a`'s `src/` for all 28
-import-free examples: 22 SVGs moved, **0 summaries and 0 diagnostic sets**, so the net lint
-change across the shipped examples is zero. The re-bless was reviewed rather than blessed — the
-diff was classified by CAD layer, and only two layers move: `A-FURN` on all 22, and `A-ANNO` on
-the six plans that declare a `legend`, whose miniature swatches are drawn from the same symbols.
-**Every `<text>` element in every example is byte-identical, position included**, so no room
-label, area, dimension, schedule row or legend row moved. `studio` — which places only bath and
-kitchen fixtures — is byte-identical throughout and is the control that says the redraw stayed
-inside the glyph layer; its three byte-identity pins did not move, while `laneway-house`,
-`gallery-l`, `aquarium`, `bungalow`, `furnished-flat` and `two-bed` were re-measured with a note
-in each suite.
+**The re-bless was reviewed rather than blessed.** Eighteen of the twenty committed README SVGs,
+the inline snapshots, and eleven PNG goldens moved; the diff was classified by CAD layer before
+it was accepted (see the behaviour statements above). That `describe()` and `lint()` did not move
+is proved rather than asserted: the committed `examples/<name>.svg` files are the compiler's own
+drift-gated output, so feeding each *pre-release* drawing into the byte-identity digest bodies —
+with the summary and diagnostics taken from the **new** code — reproduces all thirteen previous
+hexes exactly. Only the drawing moved.
+
+The three byte-identity law suites therefore now carry a **second pin over the summary half
+alone** (`semanticDigestWith`: the same payload with the SVG removed). It is blind to the
+drawing, so it survives a release like this one untouched — its values are the original v1.30.0
+measurement, unchanged — and the next redraw does not have to make the argument again. If one of
+*those* numbers moves, the finding is real.
+
+### Changed — the agent spec's size cap, 28,300 → 28,600
+
+Measured, not estimated, from the quantity the test asserts on: 27,940 → **28,191**. All 251
+characters are the `furniture` line's catalogued-footprint list growing by the twenty-six new
+families, every one of which has a footprint and therefore joins a list the generator
+**interpolates** from `CANONICAL_FIXTURES`. The arithmetic closes exactly — 8 kitchen-and-bath
+names are 71 characters plus 8 separators = 79, and 18 living/bedroom/office names are 154 plus
+18 = 172. Nothing else in the document moved, which is the expected shape for a release that adds
+no keyword, no clause and no error code. There is still no duplication left to trim, so this is a
+raise with the growth named; 28,600 buys 409 characters of headroom, in the band the last two
+raises bought.
 
 ### Fixed
 
 - **`test/cli-manifest.test.ts`'s fixture scrape skipped any category name containing a digit.**
   Its `case "([a-z_]+)"` class has no `0-9`, so `sofa_2` — the loveseat's alias, and the first
   catalogued name with a digit — was invisible to the guard, which then reported a category
-  advertised by `arch manifest` and "not drawn" while it was drawn three lines away. A
+  advertised by `arch manifest` and *not drawn* while it was drawn three lines away. A
   set-equality gate that under-matches fails in the direction that looks exactly like a real
   defect, which is the worst way for one to fail.
 - **`test/glyphs-outdoor.test.ts` pinned the outdoor families as the TAIL of the canonical
   vocabulary.** That was true only while outdoor was the newest tranche, and the table's own
   comment asks every later tranche to append after it — so the assertion was pinning a property
   the suite does not own. It now asserts the block is **contiguous and in order**, which is the
-  property that actually protects the legend.
+  property that actually protects the legend. (Both furniture tracks found this independently and
+  wrote the same fix.)
+
+### Deferred by name
+
+- **Fixture-word completion in the VS Code extension.** The LSP completes keywords and ids but
+  not the 129 category words, which is now the largest closed vocabulary a plan author has to
+  remember and the one most worth offering.
+- **A per-category `style`.** `style <kind> { … }` reaches the fixture layer as one kind; there
+  is no way to give `tree` a different pen from `sofa`. The symbols are drawn with named line
+  weights already, so the seam exists — the syntax does not.
+- **Angled furniture** — `docs/backlog.md` 5.6. Every symbol is still drawn upright in its
+  footprint and quarter-turned; a piece at 30° needs the footprint, the overlap rule and the
+  clearance rectangle to learn about rotation together, and doing one of the three is worse than
+  doing none.
 
 ## [1.31.0] - 2026-08-28
 

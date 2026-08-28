@@ -75,7 +75,7 @@ than memory.
   leaves the drawing untouched and is still a behaviour change for every `arch describe --json`
   consumer.
 - **A drawn fixture symbol ignores its `label`, and fixture categories are DATA, not keywords.** The
-  96 catalogued words across 57 families live in one `FIXTURE_FAMILIES` table
+  129 catalogued words across 83 families live in one `FIXTURE_FAMILIES` table
   (`src/elements/fixtures-glyphs.ts`) with their semantics in `src/fixtures-catalog.ts`; an
   uncatalogued word falls back to the labelled rectangle on purpose. Adding a family is a table row
   and a catalog entry — never a new element, never a `switch` arm. Keep the three catalog flags

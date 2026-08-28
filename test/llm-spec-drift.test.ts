@@ -341,24 +341,40 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // per-kind clause prose is the part a machine-readable table would carry better than
     // a sentence.
     //
-    // ## v1.32 F1 (kitchen & bath): +79, and the cap moves to 28,700
+    // ## v1.32 (the furniture catalogue): +251, and the cap moves to 28,600
     //
-    // Measured, not estimated: 28,235 -> 28,314. Every one of the 79 characters is the
-    // `furniture` line's catalogued-footprint list growing by the eight new families that
-    // HAVE a footprint — `/bidet/urinal/laundry_sink/water_heater/mirror/range_hood/`
-    // `microwave/bar_counter`. Nothing else in the document moved, which is the expected
-    // shape: this tranche adds no keyword, no clause and no error code, and the fixture
-    // vocabulary is a catalogue that the spec interpolates rather than a grammar it
-    // describes.
+    // Measured after BOTH furniture tracks merged, from the quantity this test actually
+    // asserts on: 27,940 -> **28,191**. Every one of the 251 characters is the `furniture`
+    // line's catalogued-footprint list growing by the twenty-six new families, all of which
+    // have a footprint and therefore all of which join a list the generator INTERPOLATES from
+    // `CANONICAL_FIXTURES`. The arithmetic closes exactly: 8 kitchen-and-bath names are 71
+    // characters plus 8 separators = 79, and 18 living/bedroom/office names are 154 plus 18
+    // separators = 172. Nothing else in the document moved, which is the expected shape --
+    // this release adds no keyword, no clause and no error code, and the fixture vocabulary is
+    // a catalogue the spec interpolates rather than a grammar it describes.
     //
-    // There is still no duplication left to trim — the `door`-line lever above is
-    // untouched and remains the honest next move — so this is a raise with the growth
-    // named, as the instruction requires. 28,700 buys 386 chars of headroom on this
-    // branch's 28,314, in the same band as the 360 and 371 the last two raises bought.
-    // NOTE FOR THE MERGE: the parallel furniture track appends families to the same
-    // interpolated list, so the merged figure is neither branch's. Re-measure it once
-    // after the merge and set this number from that reading, exactly as the two-track
-    // note above had to.
-    expect(spec.length).toBeLessThan(28_700);
+    // TWO THINGS THE MERGE HAD TO SETTLE, both of them worth leaving written down.
+    //
+    // The two branches' CAP RAISES do not add. Each measured the same base and added only its
+    // own families, so one read 28,700 and the other 28,800; taking either would have been
+    // arbitrary and taking their sum absurd. Their GROWTHS do add -- 79 + 172 = 251 -- because
+    // the two sets of names are disjoint entries in one list. Cap re-measured from the merged
+    // document, growth carried through from both.
+    //
+    // And both branches' notes quoted their base as 28,235, which is 295 too high: that is
+    // `readFileSync("spec.llm.md")` on a Windows checkout, where 295 CRLF line endings each
+    // cost a character the in-memory `renderLlmSpec()` string this test measures does not
+    // have. The conclusions were unaffected (a delta is blind to a constant offset) but the
+    // absolute figures were not this test's, so they are restated here from its own quantity.
+    // MEASURE WHAT THE ASSERTION MEASURES.
+    //
+    // There is still no duplication left to trim -- the `door`-line lever above is untouched
+    // and remains the honest next move -- so this is a raise with the growth named, as the
+    // instruction requires. 28,600 buys **409 chars of headroom** on the measured 28,191, in
+    // the same band as the 360 and 371 the last two raises bought. A fixture family with a
+    // footprint costs this document about 10 characters, so a tranche this size will need
+    // another raise; that is the honest signal rather than a defect, since the list is derived
+    // and so cannot silently disagree with the catalogue.
+    expect(spec.length).toBeLessThan(28_600);
   });
 });

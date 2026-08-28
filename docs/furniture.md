@@ -88,7 +88,8 @@ furniture wc in r_bath anchor bottom flush size 400x700
 
 ## The symbol catalogue
 
-Fifty-seven families, ninety-six names with the aliases, and **every one of them draws**.
+Eighty-three families, a hundred and twenty-nine names with the aliases, and **every one of
+them draws**.
 The tables below are grouped by the room the pieces belong to.
 
 Three columns need a word of explanation:
@@ -369,6 +370,43 @@ The five `directional` kinds (`bbq`, `bin`, `mailbox`, `ev_charger`, `shed`) are
 would write `against wall` or `anchor` about, and they are also the five that carry a footprint —
 so `furniture shed against wall fence` needs no `size`. `outdoor_chair` is deliberately **free**,
 for the reason every other seat in the catalogue is: seating is arranged, not installed.
+
+### What changed in v1.32
+
+Twenty-six families were added — eight in Bath and Kitchen & utility, eighteen across Bedroom,
+Living & dining and Office & misc — and **fourteen symbols that already existed were redrawn**.
+Each of the fourteen still read as a rectangle with a line in it, which at plan scale is not a
+drawing of anything; several were not even distinguishable from each other (`coffee_table` and
+`table` differed only by a corner radius of 0.12 against 0.08 on the same two primitives, and
+`washer` and `dryer` were the same box at the same size).
+
+The primitive counts below are measured, not estimated, at three footprints — 900 × 900,
+2400 × 700 and 1800 × 600 — because several symbols read their own aspect and draw a different
+piece of equipment either side of a threshold rather than inventing one answer that is wrong for
+half the plans.
+
+| Kind | Primitives (main → v1.32) | What it gained |
+|---|---|---|
+| `island` | 2 → 7 / 9 | an eased worktop, a seating overhang with cabinet ticks under it, and **by aspect** either a hob or a sink bowl |
+| `upper_cabinet` | 2 → 3 / 5 / 6 | a door split per 600 mm module and a hinge tick at each end of the back edge — a dashed empty rectangle is a `void`, this is cabinetry |
+| `dishwasher` | 3 → 7 | two basket lines across the tub, and a door leaf with its control strip and handle |
+| `oven` | 4 → 8 / 12 | three knobs, a door seam, a window and a handle bar; **at aspect 1.6 or over it is a range** and gains four burners |
+| `fridge` | 4 → 5 | a door face line, a handle bar, and a compartment split placed by aspect — down the width of a side-by-side, across the depth of an upright |
+| `washer` | 4 → 7 | a control panel with two knobs and a white porthole at the drum's centre, so it is no longer `dryer`'s box |
+| `coffee_table` | 2 → 6 / 7 | legs and a lower shelf |
+| `table` | 2 → 6 / 7 | legs and supports, and a leaf seam on a long enough top |
+| `stool` | 2 → 3 | a **concentric** third circle — a ring of foot dots would map onto itself under a quarter-turn and move the bytes for a drawing nobody can tell apart |
+| `bench` | 3 → 7 / 8 | slats and legs |
+| `chair` | 3 → 5 | a seat, a back and armrests |
+| `tv_unit` | 3 → 6 | drawer splits and a plinth |
+| `nightstand` | 3 → 6 | a drawer split and a pull |
+| `desk` | 3 → 7 | a pedestal with drawer splits, and a modesty panel |
+
+Every one of them is **structural detail rather than decoration** — what the piece is made of and
+how it is used, not a texture — which is the only kind of line that survives being printed at
+1:50. The redraw moves bytes on eighteen of the shipped example drawings and moves nothing else:
+`describe()` and `lint()` are SHA-256 identical on all thirty, and the changed lines all sit on
+`A-FURN` or on the `A-ANNO` legend swatches that are drawn from the same symbols.
 
 ## How a symbol is drawn
 

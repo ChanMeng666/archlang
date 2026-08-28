@@ -250,7 +250,7 @@ fence in your Markdown to images in one step.
 
 Poché-hatched walls (by material), door **swing arcs**, window glazing, computed room areas,
 dimension lines, layers, line weights, a north arrow, a scale bar and a title block. **Real drawn
-symbols for every catalogued furniture kind** — 96 words across 57 families, the bathroom and
+symbols for every catalogued furniture kind** — 129 words across 83 families, the bathroom and
 kitchen fixtures, the room furniture and the garden beside them, each with the detail that makes it
 readable at plan scale (see [Furniture & Fixtures](docs/furniture.md), or the
 [`furnished-flat`](examples/furnished-flat.arch) and
