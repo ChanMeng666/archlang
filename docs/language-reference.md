@@ -198,6 +198,42 @@ Rules, all of them refusals rather than defaults:
   drawing is issued at one orientation, so an imported wing cannot re-orient the building.
 - `arch fmt` prints it immediately after `north`, with both fields.
 
+#### The lot line — `boundary` (v1.31)
+
+`site` gained a third field, and it is the only one that **draws**:
+
+```arch static
+site {
+  street south
+  boundary (-4000,-4000) (14000,-4000) (14000,11000) (-4000,11000)
+}
+```
+
+An implicitly-closed ring naming the piece of ground the building sits on. It is drawn as
+a dash-dot **property line** on the `C-PROP` CAD layer — the drafting convention for a
+legal datum, the same line type the [positioning axes](#positioning-axes-定位轴线) use —
+and it **joins the page bounds**, so the sheet contains the lot.
+
+Everything else about `site` is unchanged, and that is a pinned law: a `site` block with
+only `street`/`hemisphere` still renders byte-for-byte like a plan with no `site` at all.
+
+`describe --json`'s `site` object gains two keys when a boundary exists, and neither is
+present without one:
+
+| Key | Meaning |
+|-----|---------|
+| `lot_area_m2` | the **exact shoelace** area of the ring, in m² to 2 dp — never its bounding box |
+| `lot_bbox` | the ring's extent as `{x, y, w, h}`, for framing a viewport |
+
+A splayed or L-shaped lot is measured by its ring; the `lot_bbox` is reported beside it so
+a consumer can tell the two apart, and no number is derived from it.
+
+Two refusals, both the `room polygon` precedent: a ring with fewer than three effective
+vertices is [`E_SITE_BOUNDARY_DEGENERATE`](error-codes.md#e_site_boundary_degenerate) and
+one whose edges cross is
+[`E_SITE_BOUNDARY_SELF_INTERSECT`](error-codes.md#e_site_boundary_self_intersect). A
+refused ring draws nothing at all — no half-valid property line reaches the sheet.
+
 ### Accessible metadata (`accTitle`, `accDescr`)
 
 Two optional plan-level keywords supply explicit accessible metadata:
@@ -1436,6 +1472,199 @@ plan "Landing" {
   void id=gallery at (600,600) size 1800x2400
 }
 ```
+
+### Outdoor — ground outside the building (v1.31)
+
+```
+outdoor [id=<id>] <kind> at (x,y) size <w>x<h> [label "…"] [rail <edges>]
+outdoor [id=<id>] <kind> polygon (x,y) (x,y) (x,y) … [label "…"]
+```
+
+The ground a building sits on: a lawn, a planting bed, paving, a deck, gravel, water, a
+driveway, a patio, or a balcony. Nine kinds, each drawn as a **scale-aware material hatch
+over a flat tint**.
+
+| Kind | Hatch | CAD layer |
+|------|-------|-----------|
+| `lawn` | angled turf tufts | `L-PLNT` |
+| `planting` | dots on a staggered grid | `L-PLNT` |
+| `paving` | running-bond slabs | `L-SITE` |
+| `patio` | running-bond slabs (a patio *is* paved — one material, one legend row) | `L-SITE` |
+| `deck` | parallel boards | `L-SITE` |
+| `gravel` | scattered stones | `L-SITE` |
+| `water` | wave lines | `L-SITE` |
+| `driveway` | fine bitumen speckle | `L-SITE` |
+| `balcony` | no hatch — a plain tint and a railing | `A-FLOR-BALC` |
+
+Three CAD layers, not one, because a CAD user freezes by trade: planting is the landscape
+architect's, hard landscape is the site's, and a balcony is part of the building's floor
+plate rather than of the site at all.
+
+**The hatches are scale-aware.** Every pattern dimension steps off the drawing's reference
+dimension, so a pattern is the same size *on the sheet* at 1:50 and at 1:200 — which is
+what a drafting hatch is for. (Fixed pixel sizes, the obvious shortcut, dissolve or clot
+as the scale changes.) `gravel`'s scatter comes from a frozen table, never a random
+number: `compile()` is deterministic.
+
+#### It is not a room, and it obstructs nothing
+
+Both halves matter, and both are invisible from the syntax:
+
+- **Not a room.** A ground surface never appears in `describe().rooms`, in
+  `totals.floor_area_m2`, in the drawn `schedule rooms` table, in the access graph, in
+  `input_graph`, in the circulation model or in [Plan JSON](../schemas/plan.schema.json).
+  A terrace is not floor area, and quietly adding the garden to a dwelling's floor figure
+  would be wrong in the one number every consumer trusts. Its own area is reported
+  separately (below), and a reader who wants plot coverage adds the two having decided
+  that is what it means.
+- **Not an obstacle.** It contributes nothing to the navigation grid and nothing to any
+  clearance rule. You can walk on a lawn — and on the water, which is a deliberate v1
+  simplification rather than an oversight: a pond with a bridge over it would need the
+  same answer, so the whole question is deferred by name in `docs/backlog.md` (§4.5).
+
+What it *is* part of is the drawing: it joins the page bounds. On a plan with **no**
+`paper`, every stroke and font is sized from the drawing's own extent, so putting a garden
+round a house rescales the line weights — exactly as a far-flung `column` or a
+`roof overhang` already does. **A site plan wants a `paper` declaration.**
+
+#### Two spellings
+
+`at (x,y) size <w>x<h>` for the rectangle most terraces are; `polygon (x,y) …` for the ring
+most garden edges are, taken verbatim and implicitly closed. Never both — the parser takes
+whichever word follows the kind, exactly as `room` does.
+
+Everything measured comes from the **shape**, never the bounding box: the area is the exact
+shoelace, and the drawn label sits at the ring's pole of inaccessibility, so a concave
+terrace's name lands on the terrace.
+
+#### The label
+
+`label "…"` draws the name **and the area beneath it**, the way a room's does. An
+unlabelled surface draws neither — background ground is background, and stamping a figure
+on every patch of it would bury a site plan in numbers nobody asked for.
+
+#### Balconies and the railing
+
+A `balcony` is rectangle-only, and it rails **every edge with no wall along it** — derived,
+so the common case needs no clause at all. The question is asked at each edge's own
+midpoint: an edge is against a wall when it lies within half that wall's thickness of the
+wall's centreline, which accepts both authoring conventions (drawing the balcony to the
+centreline, or to the outer face).
+
+`rail <edges>` overrides the derivation outright. The words are `top`, `bottom`, `left`,
+`right` — repeatable, or comma-separated — plus `all` and `none`, the two whole-rectangle
+answers. `rail none` is a real instruction (a Juliet slab drawn without its balustrade),
+not the same as omitting the clause.
+
+On any other kind, `rail` is [`E_OUTDOOR_RAIL`](error-codes.md#e_outdoor_rail) — refused,
+never silently ignored.
+
+#### Facts and rules
+
+`describe --json` gains `outdoor[]` and `totals.outdoor_area_m2`, both only when the plan
+declares a surface:
+
+```json
+"outdoor": [
+  { "id": "g", "kind": "lawn", "label": "Garden", "area_m2": 396,
+    "bbox": { "x": -6000, "y": -6000, "w": 22000, "h": 18000 } },
+  { "id": "b", "kind": "balcony", "area_m2": 4.5,
+    "bbox": { "x": 2000, "y": 5000, "w": 3000, "h": 1500 },
+    "rail": ["bottom", "left", "right"] }
+],
+"totals": { "rooms": 2, "doors": 2, "windows": 1,
+            "floor_area_m2": 84, "outdoor_area_m2": 400.5 }
+```
+
+Two advisory rules:
+[`W_OUTDOOR_OVERLAPS_ROOM`](error-codes.md#w_outdoor_overlaps_room) (ground laid over a
+room's floor — double-counted by anything adding the two totals; a surface merely *abutting*
+the house does not trip it) and
+[`W_BALCONY_NO_DOOR`](error-codes.md#w_balcony_no_door) (a balcony with no door **or
+window** within a wall thickness of any edge).
+
+Refusals: [`E_OUTDOOR_SIZE`](error-codes.md#e_outdoor_size),
+[`E_OUTDOOR_POLY_DEGENERATE`](error-codes.md#e_outdoor_poly_degenerate) (which also covers
+a `balcony` given a ring — a railing is derived per named edge, and a ring has none) and
+[`E_OUTDOOR_POLY_SELF_INTERSECT`](error-codes.md#e_outdoor_poly_self_intersect).
+
+With `legend`, each ground material used adds a row with a real swatch, beside the wall
+materials. Inside a `component` both spellings are allowed and transform exactly — a placed
+wing may carry its own terrace, and under `mirror` the rail edges move with it.
+
+```arch
+plan "Cottage and garden" {
+  units mm
+  north up
+  paper A3 landscape
+  scale 1:100
+
+  site {
+    street south
+    boundary (-6000,-6000) (18000,-6000) (18000,14000) (-6000,14000)
+  }
+
+  outdoor lawn at (-5000,-5000) size 22000x18000 label "Garden"
+  outdoor driveway at (-5000,7000) size 6000x4000 label "Drive"
+  outdoor paving polygon (0,-3000) (9000,-3000) (9000,0) (0,0) label "Forecourt"
+  outdoor water at (11000,8000) size 5000x3000 label "Pond"
+
+  wall id=shell exterior thickness 250 { (0,0) (9000,0) (9000,6000) (0,6000) close }
+  room id=liv at (0,0) size 5000x6000 label "Living" uses living
+  room id=kit right-of liv gap 0 size 4000x6000 label "Kitchen" uses kitchen
+  door id=front on shell at 15% width 1000
+  door id=back on shell at 65% width 900
+
+  outdoor balcony at (0,6000) size 3000x1500 label "Terrace"
+
+  fence post { (-6000,-6000) (18000,-6000) }
+}
+```
+
+### Fence — a boundary line on the ground (v1.31)
+
+```
+fence [id=<id>] [picket|panel|post] { (x,y) (x,y) … [close] }
+```
+
+A posted boundary line, drawn on `L-SITE` above the ground fills and below the building.
+The style word **leads** — the `door pocket` / `room polygon` shape — and defaults to
+`picket`; a trailing `… style picket` would be ambiguous with the `style <kind> { … }`
+plan statement.
+
+| Style | Draws |
+|-------|-------|
+| `picket` | one line, densely posted |
+| `panel` | a double line with cross ticks |
+| `post` | one line, sparsely posted |
+
+The post pitch is derived per segment from that segment's own length and clamped, so two
+identical fences draw identically wherever they sit on the sheet.
+
+**A fence is not a thin wall.** It has no thickness and no poché, it **hosts no opening**
+(`door on <fence>` finds no such wall, because a fence is not in the wall list at all), it
+never appears in `describe().walls`, and it takes no part in the access graph, the
+navigation grid or any clearance rule. A gate is a real thing and it is deferred by name
+rather than approximated by letting a door host onto a fence — which would drag a garden
+into the room-connectivity graph and make it a room's neighbour.
+
+What it does is draw and measure. `describe --json` gains `fences[]` when the plan
+declares one:
+
+```json
+"fences": [ { "id": "f", "style": "picket", "length_mm": 42000, "closed": true } ]
+```
+
+`length_mm` is summed along the segments, plus the closing one when the run is `close`d —
+a diagonal run is measured exactly, not by its bounding box. It joins the page bounds, so
+a fence at the edge of the lot is not clipped away.
+
+An `arc` edge inside a fence body is
+[`E_FENCE_CURVED`](error-codes.md#e_fence_curved): the post pitch, the panel offset and the
+reported length are all measured along a **straight** run, so faceting a curve would
+silently measure the facets. Write short straight runs instead. (The clause is parsed and
+then refused rather than failed at the keyword, so the refusal is one diagnostic and not a
+cascade — the radius would otherwise be read as the next vertex.)
 
 ### Title block
 

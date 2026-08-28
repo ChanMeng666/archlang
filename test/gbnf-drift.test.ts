@@ -548,7 +548,10 @@ const AGREEMENT: [string, string][] = [
     "site boundary before street",
     `plan "P" {\n  units mm\n  site {\n    boundary (0,0) (9,0) (9,9)\n    street north\n  }\n}\n`,
   ],
-  ["site boundary, two points", `plan "P" {\n  units mm\n  site {\n    street north\n    boundary (0,0) (9,0)\n  }\n}\n`],
+  [
+    "site boundary, two points",
+    `plan "P" {\n  units mm\n  site {\n    street north\n    boundary (0,0) (9,0)\n  }\n}\n`,
+  ],
 ];
 
 /**

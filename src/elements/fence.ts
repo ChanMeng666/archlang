@@ -127,7 +127,9 @@ export const fence: ElementDef = {
         points.push(ctx.parsePoint());
         continue;
       }
-      ctx.fail(`Expected a point "(x,y)", "arc (x,y) radius R" or "close" in a fence body but found ${describeTok(ctx)}`);
+      ctx.fail(
+        `Expected a point "(x,y)", "arc (x,y) radius R" or "close" in a fence body but found ${describeTok(ctx)}`,
+      );
     }
     ctx.eat("rcurly");
     if (points.length < 2) ctx.fail("A fence needs at least two points", kw);
@@ -221,11 +223,7 @@ export const fence: ElementDef = {
         const t = (len * i) / n;
         const p = { x: a.x + ux * t, y: a.y + uy * t };
         nodes.push(
-          line(
-            { x: p.x - nx * depth, y: p.y - ny * depth },
-            { x: p.x + nx * depth, y: p.y + ny * depth },
-            "extraThin",
-          ),
+          line({ x: p.x - nx * depth, y: p.y - ny * depth }, { x: p.x + nx * depth, y: p.y + ny * depth }, "extraThin"),
         );
       }
     }

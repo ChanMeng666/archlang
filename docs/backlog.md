@@ -500,9 +500,37 @@ proven by a SHA-256 sweep over the shipped examples), and a corpus entry in the 
 |---|---|---|---|
 | P2-7 | Four-sided authorable clearances + embedded-insert exemption | `todo` | Most contained — widens `clearanceMm` (`src/fixtures-catalog.ts:21`) to `{front,back,left,right}` plus a per-statement override. **Re-scope before starting:** v1.28.0 took that catalog from 18 categories to **59 across 36 families** and gave `FixtureSpec` two more flags (`directional`, then v1.29's `underlay`), so "one default per category" is now a far larger table to be right about — and an underlay already has a stated exemption (it never blocks a fixture's use-space) that a four-sided rule must not re-litigate |
 | P2-10 | Feet-and-inches display formatting (`dimension_units standard`) | `todo` | **Display only** — millimetres stay the internal unit and the measured truth. Route through `fmt()` |
-| P2-9 | `outdoor <kind>` + floor-material hatches + auto legend | `todo` | Hatches must be **scale-aware**; do not copy `patternUnits="userSpaceOnUse"` with fixed pixel sizes, which does not scale with drawing scale |
 | P2-8 | Targeted dimension selection (dimensions on named walls/fixtures) | `todo` | Composes with the sheet layer |
 | P2-2 | Room-relative door hand | `todo` | **Behaviour change for every plan with a reversed wall — must be staged.** (a) an advisory `W_*` naming the doors whose hand would move, zero geometry change; (b) the flip behind a release boundary, goldens re-blessed after review. Check the `place … mirror` goldens specifically: `frame.ts`'s `det < 0` handedness flip must compose with the new rule, not fight it |
+
+**P2-9 is CLOSED** (`outdoor <kind>` + floor-material hatches + auto legend), by the v1.31
+ground-elements track — the `outdoor` element with nine kinds, seven scale-aware ground hatches
+sharing the wall library's one `META` table, a legend row per material used, plus the `fence`
+element and the `site { boundary }` lot line the same track carried. The scale-awareness caveat
+its row carried was honoured: every pattern dimension is `c.gap * k * c.scale`, so a hatch is the
+same size **on the sheet** at 1:50 and 1:200, and `test/outdoor.test.ts` pins that as an equality
+between the tile widths at two denominators rather than by eye.
+
+### 4.5 · Deferred by name in v1.31.0 — `todo`
+
+Four things the ground track decided NOT to do, recorded so the next person finds a decision
+rather than an omission:
+
+- **Ground in the circulation model.** An `outdoor` surface obstructs nothing today: you can walk
+  on the lawn, and you can walk on the `water`. Fixing the pond without fixing the pond-with-a-
+  bridge is the trap — a gate in a fence, a stepping-stone path and a `water` feature all want the
+  same answer — so the whole question is one piece of work rather than a per-kind special case.
+  Note the nav grid presently models the INSIDE of the building only, so "walk the garden" is a
+  larger change than it looks.
+- **A curved fence** (`E_FENCE_CURVED`). The post pitch, the panel offset and `length_mm` are all
+  measured along a straight run. Wants the per-segment arc lowering `wall` already has, plus an
+  arc-length pitch — not a facet.
+- **A polygonal balcony** (`E_OUTDOOR_POLY_DEGENERATE` covers it). The railing is derived per named
+  EDGE (`top`/`bottom`/`left`/`right`) and carried through a `place` frame by those edges' outward
+  normals; a ring has no such names. Wants a per-EDGE rail model first, which is the real work.
+- **`outdoor` in Plan JSON.** Deliberately absent — `planToJson` is byte-identical with and without
+  ground, pinned in `test/outdoor-byte-identity.test.ts`. Adding it is a schema change and should be
+  argued as one, with a consumer that wants it.
 
 ### 4.1 · Joinery pass performance — `todo`
 

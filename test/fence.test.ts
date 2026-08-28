@@ -144,7 +144,7 @@ describe("fence — the drawing", () => {
   it("lands on the L-SITE CAD layer in SVG and DXF", () => {
     const src = plan(`  fence picket { (0,0) (9000,0) }`);
     expect(compile(src, { noCache: true }).svg).toContain('<g id="L-SITE"');
-    const { scene } = compile(src, { noCache: true, scene: true });
+    const { scene } = compile(src, { noCache: true });
     expect(toDxf(scene!)).toContain("L-SITE");
   });
 
@@ -189,10 +189,7 @@ describe("fence — the drawing", () => {
   });
 
   it("the ASCII backend renders a fenced plan without throwing", () => {
-    const { scene } = compile(plan(`${BOX}\n${ROOM}\n  fence post { (-2000,-2000) (12000,-2000) }`), {
-      noCache: true,
-      scene: true,
-    });
+    const { scene } = compile(plan(`${BOX}\n${ROOM}\n  fence post { (-2000,-2000) (12000,-2000) }`), { noCache: true });
     expect(() => renderAscii(scene!)).not.toThrow();
   });
 

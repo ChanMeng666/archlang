@@ -100,9 +100,7 @@ export const balconyNoDoor: LintRule = {
     for (const b of balconies) {
       const ring = ringOf(b);
       if (!ring) continue;
-      const served = openings.some(
-        (p) => pointInPolygon(p.x, p.y, ring) || distToPolygonEdge(p, ring) <= reach,
-      );
+      const served = openings.some((p) => pointInPolygon(p.x, p.y, ring) || distToPolygonEdge(p, ring) <= reach);
       if (served) continue;
       out.push({
         severity: "warning",

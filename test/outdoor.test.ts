@@ -103,7 +103,7 @@ describe("outdoor — every kind parses, resolves and renders", () => {
 
   it("the DXF export carries the same layer names and a real HATCH entity", () => {
     const src = plan(`  outdoor lawn at (0,0) size 4000x4000`);
-    const { scene } = compile(src, { noCache: true, scene: true });
+    const { scene } = compile(src, { noCache: true });
     const dxf = toDxf(scene!);
     expect(dxf).toContain("L-PLNT");
     expect(dxf).toContain("HATCH");
@@ -114,7 +114,6 @@ describe("outdoor — every kind parses, resolves and renders", () => {
   it("the ASCII backend renders a ground plan without throwing", () => {
     const { scene } = compile(plan(`${BOX}\n${ROOM}\n  outdoor lawn at (-2000,-2000) size 12000x9000`), {
       noCache: true,
-      scene: true,
     });
     expect(() => renderAscii(scene!)).not.toThrow();
     expect(renderAscii(scene!).length).toBeGreaterThan(0);
@@ -144,7 +143,7 @@ describe("outdoor — every kind parses, resolves and renders", () => {
         `  outdoor gravel at (-5000,-5000) size 3000x3000\n` +
         `  fence post { (-6000,-6000) (14000,-6000) }`,
     );
-    const { scene } = compile(src, { noCache: true, scene: true, annotate: true });
+    const { scene } = compile(src, { noCache: true, annotate: true });
     const txt = renderAscii(scene!);
     expect(txt).toContain("Living");
     expect(txt).toContain("Kitchen");
@@ -168,9 +167,7 @@ describe("outdoor — area and the label point come from the SHAPE", () => {
 
   it("a ring's area is the EXACT shoelace, not its bounding box", () => {
     // An L: an 8x6 box with a 4x3 bite out of the bottom-right. Box = 48 m², true = 36.
-    const src = plan(
-      `  outdoor id=g paving polygon (0,0) (8000,0) (8000,3000) (4000,3000) (4000,6000) (0,6000)`,
-    );
+    const src = plan(`  outdoor id=g paving polygon (0,0) (8000,0) (8000,3000) (4000,3000) (4000,6000) (0,6000)`);
     const o = describePlan(src).outdoor![0]!;
     expect(o.area_m2).toBe(36);
     // …and the bbox is reported, correctly, as the box — so a consumer can tell the two
@@ -361,9 +358,7 @@ describe("outdoor — refuses rather than approximating", () => {
   });
 
   it("E_OUTDOOR_POLY_DEGENERATE on a collinear ring", () => {
-    expect(errorsOf(plan(`  outdoor paving polygon (0,0) (2000,0) (4000,0)`))).toContain(
-      "E_OUTDOOR_POLY_DEGENERATE",
-    );
+    expect(errorsOf(plan(`  outdoor paving polygon (0,0) (2000,0) (4000,0)`))).toContain("E_OUTDOOR_POLY_DEGENERATE");
   });
 
   it("E_OUTDOOR_POLY_SELF_INTERSECT on a bow-tie", () => {
@@ -425,9 +420,7 @@ describe("outdoor — W_OUTDOOR_OVERLAPS_ROOM", () => {
       "W_OUTDOOR_OVERLAPS_ROOM",
     );
     // …and it still fires on the same plan when the surface is moved onto a real limb.
-    expect(codesOf(plan(`${u}\n  outdoor paving at (500,1000) size 2000x4000`))).toContain(
-      "W_OUTDOOR_OVERLAPS_ROOM",
-    );
+    expect(codesOf(plan(`${u}\n  outdoor paving at (500,1000) size 2000x4000`))).toContain("W_OUTDOOR_OVERLAPS_ROOM");
   });
 
   it("reports a surface over many rooms ONCE", () => {
@@ -449,7 +442,9 @@ describe("outdoor — W_BALCONY_NO_DOOR", () => {
   it("does NOT fire when a door serves it", () => {
     // The door sits at 30% along the ring of the 8x5 box — on the bottom facade — and the
     // balcony hangs off exactly that facade.
-    const src = plan(`${BOX}\n${ROOM}\n  door id=d on w1 at 75% width 900\n  outdoor balcony at (0,5000) size 4000x1600`);
+    const src = plan(
+      `${BOX}\n${ROOM}\n  door id=d on w1 at 75% width 900\n  outdoor balcony at (0,5000) size 4000x1600`,
+    );
     expect(codesOf(src)).not.toContain("W_BALCONY_NO_DOOR");
   });
 
@@ -488,8 +483,7 @@ describe("outdoor — `arch fmt` returns the same plan", () => {
 
   it("the rectangle spelling, with a label", () => roundTrips(`  outdoor id=g lawn at (0,0) size 6000x4000 label "G"`));
   it("the ring spelling", () => roundTrips(`  outdoor paving polygon (0,0) (6000,0) (6000,3000) (2000,3000)`));
-  it("an authored rail list", () =>
-    roundTrips(`${BOX}\n  outdoor balcony at (0,5200) size 4000x1600 rail top left`));
+  it("an authored rail list", () => roundTrips(`${BOX}\n  outdoor balcony at (0,5200) size 4000x1600 rail top left`));
   it("`rail none` — the clause that must NOT be dropped", () =>
     roundTrips(`${BOX}\n  outdoor balcony at (0,5200) size 4000x1600 rail none`));
   it("a DERIVED rail is not printed as if it were authored", async () => {
