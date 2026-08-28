@@ -70,6 +70,7 @@ import {
   polygonBounds,
   polygonLabelPoint,
   polygonSelfIntersects,
+  rectRing,
 } from "../geometry/polygon.js";
 import { closest } from "../expr.js";
 import { patternId } from "../hatches.js";
@@ -92,6 +93,26 @@ export const BALCONY_LAYER = "A-FLOR-BALC";
 
 /** Every layer an `outdoor` surface may land on — the set `label-placement.ts` skips. */
 export const OUTDOOR_LAYERS: readonly string[] = [PLANTING_LAYER, SITE_LAYER, BALCONY_LAYER];
+
+/**
+ * Where a surface's name and area are drawn: the pole of inaccessibility for a ring, the
+ * centre for a rectangle — the SHAPE, never the bounding box, so a concave terrace's name
+ * lands on the terrace.
+ *
+ * It has one caller inside {@link outdoor}`.render` and one in `scene-build.ts`, which
+ * hands it to the label-relocation post-pass as that group's incumbent anchor. Those two
+ * MUST agree: the pass shifts the text by `best − anchor`, so an anchor computed a second
+ * way — even one that is merely equal today — is a second place for the two to drift
+ * apart and move a label by the difference.
+ */
+export function outdoorLabelAnchor(o: ROutdoor): Point {
+  return o.poly ? polygonLabelPoint(o.poly) : { x: o.at.x + o.size.w / 2, y: o.at.y + o.size.h / 2 };
+}
+
+/** The ring an `outdoor` label must stay inside — its own polygon, or its rectangle. */
+export function outdoorRing(o: ROutdoor): Point[] {
+  return o.poly ?? rectRing({ x: o.at.x, y: o.at.y, w: o.size.w, h: o.size.h });
+}
 
 /**
  * Per-kind rendering data: which hatch material fills it, which theme tint sits under
@@ -463,11 +484,12 @@ export const outdoor: ElementDef = {
     // 4. The railing, on the derived or authored edges.
     for (const side of o.rail ?? []) nodes.push(...railNodes(o, side, ctx, spec.layer));
 
-    // 5. Label + area, at the pole of inaccessibility for a ring and the centre for a
-    //    rectangle — the SHAPE, never the bounding box. Both on the `labels` pass, which
-    //    is what lets the label-placement post-pass move them off a fixture if one is
-    //    drawn over the ground.
-    const c = o.poly ? polygonLabelPoint(o.poly) : { x: o.at.x + o.size.w / 2, y: o.at.y + o.size.h / 2 };
+    // 5. Label + area, at {@link outdoorLabelAnchor} — the SHAPE, never the bounding box.
+    //    Both on the `labels` pass, and since v1.31 `scene-build.ts` registers a label
+    //    GROUP for a labelled surface, so this pair really is moved off a fixture, a door
+    //    swing or a `dims auto` number drawn over the ground, exactly as a room's is. The
+    //    anchor above is the group's candidate zero, which is why it has one owner.
+    const c = outdoorLabelAnchor(o);
     // The rectangle keeps its own `(w/1000)*(h/1000)` and the ring its own shoelace, for
     // exactly the reason `room` does: an `area/1e6` rewrite differs by an ulp, and an ulp
     // at a `.x5` boundary flips `toFixed(1)`.

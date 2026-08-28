@@ -152,7 +152,7 @@ plan "Garden House" {
 
     outdoor id=g_patio  patio    at (2600,13700)  size 4300x3300  label "Patio"
     outdoor id=g_link   paving   at (6900,13700)  size 2300x3300
-    outdoor id=g_deck   deck     at (9200,13700)  size 4800x2900
+    outdoor id=g_deck   deck     at (9200,13700)  size 4800x2900  label "Deck"
     outdoor id=g_pool   water    at (15200,13900) size 4000x3000  label "Pool"
     outdoor id=g_lawn   lawn     at (5800,17400)  size 13600x3600 label "Lawn"
     outdoor id=g_yard   gravel   at (2600,17400)  size 3000x3600

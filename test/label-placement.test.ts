@@ -8,9 +8,11 @@ import { parse } from "../src/parser.js";
 import type { RRoom } from "../src/ir.js";
 import type { Scene, SceneNode } from "../src/scene.js";
 import { roomLabelAnchor } from "../src/elements/room.js";
+import { outdoorLabelAnchor, outdoorRing } from "../src/elements/outdoor.js";
 import { COLLIDE_MIN, FRACTIONS } from "../src/label-placement.js";
 import { pointInPolygon, rectRing } from "../src/geometry/polygon.js";
 import { textWidth } from "../src/text-metrics.js";
+import type { ROutdoor } from "../src/ir.js";
 
 /**
  * Obstacle-aware room-label placement (`src/label-placement.ts`).
@@ -37,6 +39,9 @@ const sceneOf = (src: string): Scene => {
 const roomsOf = (src: string): RRoom[] =>
   resolve(parse(src).plan!).ir.elements.filter((e): e is RRoom => e.kind === "room");
 
+const outdoorsOf = (src: string): ROutdoor[] =>
+  resolve(parse(src).plan!).ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
+
 /** Every `labels`-pass text node, in draw order. */
 const labelTexts = (scene: Scene): Array<{ value: string; x: number; y: number; size: number }> =>
   scene.nodes
@@ -60,6 +65,15 @@ const drift = (src: string, id: string, label: string): { dx: number; dy: number
   const scene = sceneOf(src);
   const at = nameAt(scene, label);
   return { dx: at.x - a.x, dy: at.y - (a.y - scene.sizes.roomFont * 0.2) };
+};
+
+/** How far the drawn name of an `outdoor` surface sits from its own computed anchor. */
+const outdoorDrift = (src: string, id: string, label: string): { dx: number; dy: number } => {
+  const o = outdoorsOf(src).find((x) => x.id === id)!;
+  const a = outdoorLabelAnchor(o);
+  const scene = sceneOf(src);
+  const at = nameAt(scene, label);
+  return { dx: at.x - a.x, dy: at.y - (a.y - scene.sizes.furnFont * 0.2) };
 };
 
 /** A 5 × 4 m room with a wall round it, and whatever else the caller adds. */
@@ -269,5 +283,70 @@ describe("label placement — what it is not allowed to touch", () => {
     );
     expect(COLLIDE_MIN).toBeGreaterThan(0);
     expect(drift(big, "r", "Hall")).toEqual({ dx: 0, dy: 0 });
+  });
+});
+
+describe("label placement — an `outdoor` label joins the same pass (v1.31)", () => {
+  // A deck beside a small building, `outdoorLabelAnchor` puts its label + area text
+  // dead centre on the surface. A manual `dim` chain stands in for `dims auto overall`'s
+  // exterior chain text — same collision `garden-house.arch`'s "Deck" had with the
+  // "17300" overall dimension on L1, reproduced minimally.
+  const withoutChain = plan(`room id=r at (0,0) size 5000x4000 label "Hall"
+  outdoor id=d deck at (0,4200) size 5000x3000 label "Deck"`);
+  const withChain = plan(`room id=r at (0,0) size 5000x4000 label "Hall"
+  outdoor id=d deck at (0,4200) size 5000x3000 label "Deck"
+  dim (500,5700)->(4500,5700) offset 0`);
+
+  it("a clear deck label sits exactly on its own anchor — the pass is a no-op", () => {
+    // This is the byte-identity property stated positively: nothing here differs from a
+    // drawing produced by a pass that never ran, because the label never moved.
+    expect(outdoorDrift(withoutChain, "d", "Deck")).toEqual({ dx: 0, dy: 0 });
+  });
+
+  it("moves off a DIMENSION CHAIN laid across it — the same obstacle a room label dodges", () => {
+    const { dx, dy } = outdoorDrift(withChain, "d", "Deck");
+    expect(dx !== 0 || dy !== 0).toBe(true);
+  });
+
+  it("the relocated label lands INSIDE its own ground surface, never off it", () => {
+    const o = outdoorsOf(withChain).find((x) => x.id === "d")!;
+    const ring = outdoorRing(o);
+    const at = nameAt(sceneOf(withChain), "Deck");
+    expect(pointInPolygon(at.x, at.y, ring)).toBe(true);
+  });
+
+  it("the AREA text travels with the deck's name — the pair never separates", () => {
+    // Two labelled elements are drawn (Hall, then Deck), each as a consecutive
+    // name/area pair on the `labels` layer, in that ELEMENT order — the relocation pass
+    // replaces text nodes in place and never reorders them. So Deck's own area is the
+    // entry immediately after its name, not merely the first " m²" text in the scene
+    // (which would be Hall's).
+    const pair = (s: Scene) => {
+      const texts = labelTexts(s);
+      const i = texts.findIndex((t) => t.value === "Deck");
+      const name = texts[i]!;
+      const area = texts[i + 1]!;
+      expect(area.value.endsWith(" m²")).toBe(true);
+      return { dx: area.x - name.x, dy: area.y - name.y };
+    };
+    const before = pair(sceneOf(withoutChain));
+    const after = pair(sceneOf(withChain));
+    expect(after.dx).toBeCloseTo(before.dx, 6);
+    expect(after.dy).toBeCloseTo(before.dy, 6);
+  });
+
+  it("a plan with NO `outdoor` label is untouched — the room's own labels still behave exactly as before", () => {
+    // The group list is built in ELEMENT order and an unlabelled/absent outdoor
+    // contributes no group at all, so a room-only plan takes the identical path it took
+    // before v1.31 — pinned here as the same anchor-equality property, and by the whole
+    // `outdoor-byte-identity.test.ts` suite elsewhere.
+    expect(drift(CLEAR, "r", "Hall")).toEqual({ dx: 0, dy: 0 });
+    const unlabelled = plan(`room id=r at (0,0) size 5000x4000 label "Hall"
+  outdoor id=d deck at (0,4200) size 5000x3000
+  dim (500,5700)->(4500,5700) offset 0`);
+    // The unlabelled deck draws no text at all, so it contributes no label group and the
+    // dim chain — which sits entirely off the room — leaves "Hall" exactly on its anchor.
+    expect(drift(unlabelled, "r", "Hall")).toEqual({ dx: 0, dy: 0 });
+    expect(labelTexts(sceneOf(unlabelled)).map((t) => t.value)).not.toContain("Deck");
   });
 });

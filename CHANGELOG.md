@@ -237,6 +237,12 @@ not yet carry the other's, so 25,911 + 1,964 + 360 predicts 28,235 while the mer
 
 ### Fixed
 
+- **An `outdoor` surface's name and area now join the same obstacle-aware label pass a
+  room's do**, so a `dims auto` chain run across a terrace no longer sits on top of its
+  label. `garden-house`'s deck (and, it turns out, its patio, which had the identical
+  collision hiding behind the same missing pass) both read clean now; the pass is a no-op
+  on every plan with no `outdoor` label, and `test/outdoor-byte-identity.test.ts` stays
+  green. `src/label-placement.ts`, `src/elements/outdoor.ts`, `src/scene-build.ts`.
 - **`A-ROOF` has been missing from the DXF LAYER table since v1.29**, so
   `examples/bungalow.arch` exported a DXF referencing an undeclared layer for two releases.
   The closure test that was supposed to catch it stayed green throughout, because its

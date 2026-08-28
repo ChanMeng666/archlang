@@ -68,8 +68,10 @@
 <line x1="7100" y1="274" x2="7100" y2="526" stroke="#9a9488" stroke-width="9.9"/>
 <text x="17000" y="2210" font-size="200" fill="#9a9488" text-anchor="middle" dominant-baseline="central" font-weight="600">Driveway</text>
 <text x="17000" y="2430" font-size="170" fill="#9a9488" text-anchor="middle" dominant-baseline="central">22.5 m²</text>
-<text x="4750" y="15310" font-size="200" fill="#9a9488" text-anchor="middle" dominant-baseline="central" font-weight="600">Patio</text>
-<text x="4750" y="15530" font-size="170" fill="#9a9488" text-anchor="middle" dominant-baseline="central">14.2 m²</text>
+<text x="4750" y="15805" font-size="200" fill="#9a9488" text-anchor="middle" dominant-baseline="central" font-weight="600">Patio</text>
+<text x="4750" y="16025" font-size="170" fill="#9a9488" text-anchor="middle" dominant-baseline="central">14.2 m²</text>
+<text x="12320" y="15110" font-size="200" fill="#9a9488" text-anchor="middle" dominant-baseline="central" font-weight="600">Deck</text>
+<text x="12320" y="15330" font-size="170" fill="#9a9488" text-anchor="middle" dominant-baseline="central">13.9 m²</text>
 <text x="17200" y="15360" font-size="200" fill="#9a9488" text-anchor="middle" dominant-baseline="central" font-weight="600">Pool</text>
 <text x="17200" y="15580" font-size="170" fill="#9a9488" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
 </g>

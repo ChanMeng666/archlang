@@ -51,22 +51,33 @@ import { segmentRectangle, segmentsOfWall } from "./geometry.js";
 import { arcTessellate } from "./geometry/arc.js";
 import type { BBox } from "./geometry/rect.js";
 import { overlap1d } from "./geometry/rect.js";
-import { pointInPolygon, polygonBounds, rectInsidePolygon, rectRing } from "./geometry/polygon.js";
-import { roomLabelAnchor } from "./elements/room.js";
+import { pointInPolygon, polygonBounds, rectInsidePolygon } from "./geometry/polygon.js";
 import { ROOF_LAYER } from "./elements/roof.js";
 import { OUTDOOR_LAYERS } from "./elements/outdoor.js";
-import type { ResolvedPlan, RRoom } from "./ir.js";
+import type { ResolvedPlan } from "./ir.js";
 import type { RenderSizes, SceneNode, ScenePrim } from "./scene.js";
 import { textWidth } from "./text-metrics.js";
 
 /**
- * The node range one room element contributed to the Scene. `toScene` records it while
- * it lowers the elements — the exact, order-independent alternative to matching text
- * nodes back to rooms by coordinate (two rooms can share an anchor).
+ * One labelled area and the node range it contributed to the Scene. `toScene` records it
+ * while it lowers the elements — the exact, order-independent alternative to matching
+ * text nodes back to their owner by coordinate (two areas can share an anchor).
+ *
+ * **It carries geometry, not an element.** It used to hold an `RRoom` and reach into it
+ * for the ring, the anchor and the authored-label flag. Since v1.31 an `outdoor` surface
+ * has a name and an area drawn the same way and wants the same treatment, and the pass
+ * has no business knowing which of the two it is looking at: a label sits inside a ring,
+ * at an anchor, and is sometimes the author's decision. Three fields, both element kinds,
+ * no `switch`.
  */
-export interface RoomLabelGroup {
-  room: RRoom;
-  /** Index of the room's first node in the Scene's node list. */
+export interface LabelGroup {
+  /** The ring the label must stay wholly inside — a floor, or a piece of ground. */
+  ring: Point[];
+  /** Where the text was drawn, which is also candidate zero and wins every tie. */
+  anchor: Point;
+  /** An authored `label "…" at (x,y)` — the author's decision, never overruled. */
+  fixed: boolean;
+  /** Index of the element's first node in the Scene's node list. */
   from: number;
   /** Index one past its last. */
   to: number;
@@ -243,22 +254,19 @@ function crowding(rect: BBox, obstacles: readonly BBox[], placed: readonly BBox[
   return W_OBSTACLE * buried(rect, obstacles) + W_PLACED * buried(rect, placed);
 }
 
-/** The ring a room's label must sit on: its own polygon, or its rectangle's corners. */
-function roomRing(r: RRoom): Point[] {
-  return r.poly ?? rectRing({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h });
-}
-
 /**
- * Move each room's label + area text off whatever is drawn under it.
+ * Move each labelled area's name + area text off whatever is drawn under it.
  *
  * Mutates `nodes` in place (replacing, never editing, the text nodes it moves), which is
- * safe: every node in the list was freshly built by this `toScene` call. Rooms are
- * visited in element order and each placed label becomes an obstacle for the next, so
- * two labels can never be relocated onto each other.
+ * safe: every node in the list was freshly built by this `toScene` call. Groups are
+ * visited in ELEMENT order and each placed label becomes an obstacle for the next, so two
+ * labels can never be relocated onto each other — and an `outdoor` surface takes its turn
+ * among the rooms rather than after them, which is what keeps a plan with no ground on
+ * exactly the group list, and therefore exactly the bytes, it had before v1.31.
  */
-export function relocateRoomLabels(
+export function relocateLabels(
   nodes: SceneNode[],
-  groups: readonly RoomLabelGroup[],
+  groups: readonly LabelGroup[],
   ir: ResolvedPlan,
   sizes: RenderSizes,
 ): void {
@@ -333,8 +341,9 @@ export function relocateRoomLabels(
 
     // An explicit `label "…" at (x,y)` is the author's decision and is never overruled —
     // it is also the anchor `W_ROOM_LABEL_OUTSIDE` reports on, so moving it would make
-    // that diagnostic describe a position nothing is drawn at.
-    if (g.room.labelAt) {
+    // that diagnostic describe a position nothing is drawn at. (`outdoor` has no such
+    // clause, so its groups are never `fixed`; the field is the room's.)
+    if (g.fixed) {
       placed.push(rect0);
       continue;
     }
@@ -344,8 +353,7 @@ export function relocateRoomLabels(
       continue;
     }
 
-    const ring = roomRing(g.room);
-    const anchor = roomLabelAnchor(g.room);
+    const { ring, anchor } = g;
     const bb = polygonBounds(ring);
     const diag = Math.max(1, Math.hypot(bb.w, bb.h));
     const score = (p: Point, preference: number): number => {

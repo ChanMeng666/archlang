@@ -34,11 +34,13 @@ import { lowerWallSet } from "./wall-lowering.js";
 import { anchorChromeToSheet, dimReach, layoutChrome } from "./chrome-layout.js";
 import { axesNodes } from "./axes.js";
 import { siteBoundaryNodes } from "./site.js";
-import { groundMaterialsUsed } from "./elements/outdoor.js";
+import { groundMaterialsUsed, outdoorLabelAnchor, outdoorRing } from "./elements/outdoor.js";
+import { roomLabelAnchor } from "./elements/room.js";
+import { rectRing } from "./geometry/polygon.js";
 import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, SHEET_MM, sizesFromPaper } from "./sheet.js";
 import { textWidth } from "./text-metrics.js";
-import type { RoomLabelGroup } from "./label-placement.js";
-import { relocateRoomLabels } from "./label-placement.js";
+import type { LabelGroup } from "./label-placement.js";
+import { relocateLabels } from "./label-placement.js";
 import { legendEntries, roomSchedule, sheetTableNodes } from "./sheet-tables.js";
 import { circulationOverlayNodes } from "./overlays/circulation.js";
 import { captionForPlan } from "./describe.js";
@@ -838,9 +840,12 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   };
   const nodes: SceneNode[] = [];
   const outdoorEls = ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
-  // Which nodes each ROOM contributed, so the label post-pass at the end can find its
-  // text without matching coordinates back to elements (two rooms can share an anchor).
-  const labelGroups: RoomLabelGroup[] = [];
+  // Which nodes each LABELLED AREA contributed, so the label post-pass at the end can
+  // find its text without matching coordinates back to elements (two areas can share an
+  // anchor). Rooms and, since v1.31, `outdoor` surfaces: a terrace's name and area are
+  // drawn exactly like a room's and want the same treatment, and the pass is written
+  // against a ring + an anchor rather than against either element type.
+  const labelGroups: LabelGroup[] = [];
   for (const el of ir.elements) {
     if (el.kind === "wall") continue;
     const def = registry.byKind.get(el.kind);
@@ -865,7 +870,30 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     } else {
       nodes.push(...rendered);
     }
-    if (el.kind === "room") labelGroups.push({ room: el as RRoom, from: groupStart, to: nodes.length });
+    // Pushed in ELEMENT order, so a plan with no ground produces exactly the group list
+    // it produced before v1.31 and therefore exactly the same bytes.
+    if (el.kind === "room") {
+      const r = el as RRoom;
+      labelGroups.push({
+        ring: r.poly ?? rectRing({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h }),
+        anchor: roomLabelAnchor(r),
+        fixed: r.labelAt !== undefined,
+        from: groupStart,
+        to: nodes.length,
+      });
+    } else if (el.kind === "outdoor" && (el as ROutdoor).label !== undefined) {
+      // Only a LABELLED surface: an unlabelled one draws no text, so it has nothing to
+      // relocate and an empty group would only cost a scan. `outdoor` has no
+      // `label … at (x,y)` clause, so it is never `fixed`.
+      const o = el as ROutdoor;
+      labelGroups.push({
+        ring: outdoorRing(o),
+        anchor: outdoorLabelAnchor(o),
+        fixed: false,
+        from: groupStart,
+        to: nodes.length,
+      });
+    }
   }
   // TWO hatch lists, deliberately.
   //
@@ -909,14 +937,14 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // with no `boundary`, so every existing drawing is byte-identical.
   if (ir.siteBoundary) nodes.push(...siteBoundaryNodes(ir.siteBoundary, theme, sizes));
 
-  // Obstacle-aware room labels (`src/label-placement.ts`). It has to run HERE — after the
+  // Obstacle-aware area labels (`src/label-placement.ts`). It has to run HERE — after the
   // walls are lowered and after `dims auto` has emitted its numbers — because a dimension
   // value is not an element and no element could ever see one. Purely a translation of
   // already-emitted `labels` text: it adds no node, removes none, and only moves a label
   // whose box is genuinely buried, so a plan whose labels are already clear keeps its
   // exact previous bytes. It runs before the sheet tables and the opt-in overlays, so
   // neither can influence where a label lands.
-  relocateRoomLabels(nodes, labelGroups, ir, sizes);
+  relocateLabels(nodes, labelGroups, ir, sizes);
 
   // Opt-in sheet tables (`schedule rooms` / `legend`) — derived closed-form from the plan
   // (see `sheet-tables.ts`). Computed before chrome layout because the table heights are
