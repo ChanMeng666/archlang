@@ -613,3 +613,75 @@ describe("the ORIENTATION LAW — a band's material is on +perp of every loop ed
     expect(lawHolds([sector])).toBe(true);
   });
 });
+
+/**
+ * A ring that returns to its own first point is CLOSED, whether or not `close` is written.
+ *
+ * `close` is what makes `segmentsOfWall` ADD a final segment back to the start; it is not
+ * a declaration that the result is a ring, and reading it as one is what this pins. For a
+ * CURVE it is the only spelling available — there is no close-an-arc form, so a closed
+ * curve is written as the two halves it is, which is exactly what
+ * `examples/hexagon-pavilion.arch`'s 1200 mm drum does and what its own header says to do.
+ *
+ * Getting this wrong is not subtle in the geometry and was nearly invisible in the
+ * drawing: the drum came back capped twice at its seam, each cap standing `h` proud of
+ * the curving face along the end tangent. On a 1200 mm wall that is a 100 mm step, 1200 mm
+ * tall, at 3 o'clock — and nothing marks the seam at 9 o'clock, so the ring was
+ * asymmetric in a way only a side-by-side comparison catches.
+ */
+describe("a run that ends where it began is a CYCLE, `close` keyword or not", () => {
+  /** A full circle written the only way a curve can be: two semicircular arcs. */
+  const twoHalves = (last: Point) => {
+    const a1 = arcFromChord(P(11500, 7000), P(5500, 7000), 3000, "ccw", false)!;
+    const a2 = arcFromChord(P(5500, 7000), P(11500, 7000), 3000, "ccw", false)!;
+    return wall({ points: [P(11500, 7000), P(5500, 7000), last], arcs: [a1, a2], closed: false, thickness: 1200 });
+  };
+
+  it("gives the two-semicircle drum exactly two full circles and NO line edge", () => {
+    const loops = wallBand(twoHalves(P(11500, 7000)), new PointInterner());
+    expect(loops).toHaveLength(2);
+    for (const l of loops) {
+      // Two arc edges, because a full circle is written as the two halves it is; a cap
+      // would be a straight tail along the end tangent, and there is none.
+      expect(l.every((e) => e.t === "arc")).toBe(true);
+      expect(l).toHaveLength(2);
+    }
+    const radii = loops.map((l) => (l[0]!.t === "arc" ? l[0]!.arc.r : Number.NaN)).sort((a, b) => a - b);
+    expect(radii).toEqual([2400, 3600]); // r − h and r + h, exactly
+  });
+
+  it("PLANTED: move the closing point 1 mm and it becomes an open run, with caps", () => {
+    // Non-vacuity. The assertion above is about the CLOSURE test, not about arcs in
+    // general: the same drum whose last point no longer interns to its first must cap,
+    // and capping is what puts line edges on a curved end.
+    const loops = wallBand(twoHalves(P(11501, 7000)), new PointInterner());
+    const lines = loops.flat().filter((e) => e.t === "line");
+    expect(lines.length).toBeGreaterThan(0);
+    // …and the cap really does stand proud of the outer face: a tail of length h along
+    // the end tangent reaches √((r+h)² + h²) from the centre, ~50 mm past r + h.
+    const C = P(8500, 7000);
+    const reach = Math.max(
+      ...loops
+        .flat()
+        .flatMap((e) => [edgeStart(e), edgeEnd(e)])
+        .map((p) => Math.hypot(p.x - C.x, p.y - C.y)),
+    );
+    expect(reach).toBeGreaterThan(3600 + 40);
+    expect(reach).toBeCloseTo(Math.hypot(3600, 600), 0);
+  });
+
+  it("applies to a STRAIGHT polyline written back to its own first point", () => {
+    // Nothing here is arc-specific. A rectangle written with five points and no `close`
+    // is the same ring as one written with four and `close`.
+    const spelled = wallBand(
+      wall({ points: [P(0, 0), P(4000, 0), P(4000, 3000), P(0, 3000), P(0, 0)], closed: false, thickness: 200 }),
+      new PointInterner(),
+    );
+    const declared = wallBand(
+      wall({ points: [P(0, 0), P(4000, 0), P(4000, 3000), P(0, 3000)], closed: true, thickness: 200 }),
+      new PointInterner(),
+    );
+    expect(spelled).toHaveLength(2); // outer + hole, not one capped run
+    expect(spelled.map(verts)).toEqual(declared.map(verts));
+  });
+});

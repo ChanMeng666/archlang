@@ -499,14 +499,26 @@ export function wallBand(w: BandWall, intern: PointInterner): EdgeLoop[] {
   const all = segmentsOfWall(asWallLike(w));
   const segs = all.filter((s) => (s.arc ? s.arc.sweep !== 0 && s.arc.r > 0 : s.a.x !== s.b.x || s.a.y !== s.b.y));
   if (segs.length === 0) return [];
-  // Is the run actually a CYCLE? Not "did the author write `close`" and not a segment
-  // count: `examples/aquarium.arch`'s drum is two semicircular arcs plus a zero-length
-  // closing segment, so a `points.length > 2` or `segs.length >= 3` rule would call a
-  // closed circle an open run and cap it. The honest test is whether what SURVIVED
-  // filtering ends where it began.
+  // Is the run actually a CYCLE? **Not "did the author write `close`"**, and not a
+  // segment count: `examples/aquarium.arch`'s drum is two semicircular arcs plus a
+  // zero-length closing segment, so a `points.length > 2` or `segs.length >= 3` rule
+  // would call a closed circle an open run and cap it. The honest test is whether what
+  // SURVIVED filtering ends where it began.
+  //
+  // The `close` keyword is what makes `segmentsOfWall` ADD a final segment back to the
+  // first point; it is not, and must not be, the test for whether the result is a ring.
+  // A polyline whose last point IS its first needs no such segment and is already a
+  // cycle — and for a curve that is the ONLY spelling there is, because there is no
+  // close-an-arc form: a closed curve is written as the two halves it is
+  // (`examples/hexagon-pavilion.arch`'s 1200 mm drum, whose own header says so). Reading
+  // `w.closed` here capped that drum twice at its seam, each cap standing `h` proud of
+  // the curving face along the end tangent — a 100 mm step, 1200 mm tall, on ONE side of
+  // an otherwise symmetric ring, because the seam is at 3 o'clock and nothing marks it
+  // at 9 o'clock. Nothing about that is specific to arcs: a straight polyline written
+  // back to its own first point was mitred at every vertex except that one.
   const first = segs[0]!;
   const last = segs[segs.length - 1]!;
-  const cyclic = w.closed && segs.length >= 2 && pointKey(last.b) === pointKey(first.a);
+  const cyclic = segs.length >= 2 && pointKey(last.b) === pointKey(first.a);
 
   const build = (sigma: 1 | -1): { faces: Face[]; bevels: Map<number, boolean> } => {
     const faces = segs.map((s) => offsetFace(s, sigma, h));

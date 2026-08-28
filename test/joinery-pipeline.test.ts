@@ -102,6 +102,49 @@ describe("the joinery on the compile path — every shipped example", () => {
     });
   }
 
+  it("hexagon-pavilion's drum: every line touching a face is RADIAL, never a cap", () => {
+    // The 1200 mm drum is a closed curve written as the two semicircles it is — the only
+    // spelling there is, since no `close`-an-arc form exists. Read `close` as the test for
+    // "is this a ring" and the band caps it twice at its seam, each cap a straight tail of
+    // length h ALONG THE END TANGENT: a 100 mm step, 1200 mm tall, at 3 o'clock only,
+    // because nothing marks the seam at 9 o'clock. `test/band.test.ts` pins the cause; this
+    // pins the consequence in the drawing the compiler actually emits.
+    //
+    // The discriminator is orientation, not position. A jamb where a doorway cuts a curved
+    // wall is RADIAL by construction, and so is a spoke's face where it dies into the drum.
+    // A square cap on a curved end is TANGENTIAL by construction. So: every straight edge
+    // that touches a drum face must run along the radius at the point it touches.
+    const face = compile(files["hexagon-pavilion.arch"]!, { world, noCache: true }).scene!.nodes.filter(
+      (n) => n.layer === "wallFace",
+    );
+    const loops = primToLoops(face[0]!.prim);
+    const C = { x: 8500, y: 7000 }; // the drum's centre; faces at r ± h = 2400 and 3600
+    const onFace = (p: { x: number; y: number }) => {
+      const r = Math.hypot(p.x - C.x, p.y - C.y);
+      return Math.abs(r - 3600) < 1 || Math.abs(r - 2400) < 1;
+    };
+    let touching = 0;
+    for (const e of loops.flat()) {
+      if (e.t !== "line") continue;
+      const p = onFace(e.a) ? e.a : onFace(e.b) ? e.b : null;
+      if (!p) continue;
+      touching++;
+      const rl = Math.hypot(p.x - C.x, p.y - C.y);
+      const dl = Math.hypot(e.b.x - e.a.x, e.b.y - e.a.y);
+      const cos = Math.abs(((p.x - C.x) * (e.b.x - e.a.x) + (p.y - C.y) * (e.b.y - e.a.y)) / (rl * dl));
+      expect(cos, `a line touching the drum face at (${p.x}, ${p.y}) is not radial`).toBeGreaterThan(0.999);
+    }
+    // Non-vacuity: there ARE such edges — twelve doorway jambs plus eight spoke faces.
+    expect(touching).toBe(20);
+    // And the twelve jambs really do span the full thickness, r − h to r + h.
+    const jambs = loops.flat().filter((e) => e.t === "line" && onFace(e.a) && onFace(e.b)) as Extract<
+      (typeof loops)[number][number],
+      { t: "line" }
+    >[];
+    expect(jambs).toHaveLength(12);
+    for (const j of jambs) expect(Math.hypot(j.b.x - j.a.x, j.b.y - j.a.y)).toBeCloseTo(1200, 6);
+  });
+
   it("emits SVG arc commands for every example whose walls carry a curve", () => {
     // The `path` primitive is only worth having if it reaches the file as a real `A`
     // command rather than a polyline. These are the shipped plans with an `arc` edge.
