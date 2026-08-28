@@ -1087,7 +1087,7 @@
     {
       "id": "r_garage",
       "label": "Garage",
-      "uses": ["storage"],
+      "uses": ["garage"],
       "room_type": "Storage"
     },
     {

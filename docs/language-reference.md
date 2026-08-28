@@ -651,12 +651,18 @@ room id=r_bath   at (4000,4400) size 3000x1600 label "Bath"         uses bath
 ```
 
 The kinds are `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`,
-`circulation`, `storage`, `utility`, `office`, and `entry`. This is **authored
+`circulation`, `storage`, `utility`, `office`, `entry`, and `garage` (v1.31). This is **authored
 intent**: it overrides the conservative label/id regex that `describe` and `lint`
 fall back to when `uses` is absent (so a room labelled "Master Suite" can still be
 tagged `uses bedroom`). The tags drive lint rules like *bedrooms need a window* and
 *wet rooms need fixtures*, and appear in `describe().rooms[].uses` — see
 [Analysis](analysis.md).
+
+`garage` is the one kind whose own rule measures the room:
+[`W_GARAGE_TOO_NARROW`](error-codes.md) warns when the short side is under 2700 mm per
+parked `car` (an empty garage is measured against one bay). A room labelled "Garage"
+classifies as one from its label alone; "Carport" and "Parking" classify through an alias,
+which is advisory [`W_ALIAS_MATCH`](error-codes.md) asking you to pin the tag.
 
 **Relational placement (v1.0).** Instead of an absolute `at (x,y)`, a room may be
 positioned **relative to another room** with `right-of` / `left-of` / `below` /

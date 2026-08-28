@@ -120,6 +120,12 @@ export const USE_VOCABULARY = Object.freeze({
   entry: { canonical: ["entry", "entrance"], aliases: ["foyer", "vestibule", "mudroom"] },
   hall: { canonical: ["hall", "hallway", "corridor"], aliases: ["landing"] },
   living: { canonical: ["living", "lounge", "dining"], aliases: ["sitting", "family"] },
+  // NEW in v1.31, and the first entry here that is not a re-expression of a former regex —
+  // there was no `garage` use kind before, so no label ever classified as one. The aliases are
+  // aliases and not canonical words on purpose: a carport is not enclosed and a "Parking" room
+  // in a large building is a floor, not a garage, so both are reasonable inferences that an
+  // author should be advised (W_ALIAS_MATCH) to pin with an explicit `uses garage`.
+  garage: { canonical: ["garage"], aliases: ["carport", "car port", "parking"] },
 }) satisfies Record<string, VocabEntry>;
 
 /** One alias-sourced classification: a use kind inferred from a non-canonical (indirect)
@@ -178,6 +184,12 @@ export function classifyLabelUses(text: string): LabelClassification {
     const hall = matchVocabulary(text, USE_VOCABULARY.hall);
     if (hall) add("hall", hall);
   }
+
+  // Last, so every classification that existed before this kind did keeps its emission
+  // position in the `uses` array — that array reaches `describe --json`, and re-ordering it
+  // would be a behaviour change for every consumer for no gain.
+  const garage = matchVocabulary(text, USE_VOCABULARY.garage);
+  if (garage) add("garage", garage);
 
   return { uses, aliases };
 }

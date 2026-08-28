@@ -111,7 +111,7 @@
       ]
     },
     "constants": {
-      "match": "\\b(up|down|left|right|in|out|mm|true|false|top|middle|bottom|center|centered|start|end|top-left|top-right|bottom-left|bottom-right|auto|overall|rooms|walls|all|cw|ccw|major|hinged|sliding|barn|bifold|pocket|A4|A3|A2|A1|A0|landscape|portrait|living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry|south|east|west)\\b",
+      "match": "\\b(up|down|left|right|in|out|mm|true|false|top|middle|bottom|center|centered|start|end|top-left|top-right|bottom-left|bottom-right|auto|overall|rooms|walls|all|cw|ccw|major|hinged|sliding|barn|bifold|pocket|A4|A3|A2|A1|A0|landscape|portrait|living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry|south|east|west|garage)\\b",
       "name": "constant.language.arch"
     },
     "operators": {

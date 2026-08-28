@@ -199,6 +199,14 @@ export const KEYWORDS = {
     "south",
     "east",
     "west",
+    // `uses garage` (a USE_KINDS value) and `door garage …` (a DOOR_KINDS one) are the SAME
+    // word in the highlighting bucket, and one entry is what serves both — the bucket is flat
+    // and per-word, while the two semantic groupings live in `USE_KINDS` and `DOOR_KINDS`.
+    // That is the ordinary case, not a special one: `left` is already a hinge side, a slide
+    // direction, a furniture side and a strip direction from this one entry. What must NOT
+    // happen is a second `"garage"` here — the generators build flat alternations from these
+    // lists and would emit the word twice.
+    "garage",
   ],
 } as const;
 

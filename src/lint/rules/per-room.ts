@@ -1,12 +1,14 @@
 /**
  * The per-room checks, run as one order-preserving composite: for each room (in
- * source order) TOO_SMALL → DISCONNECTED → NO_WINDOW → NOT_ENCLOSED → NO_FIXTURE,
- * exactly the interleaving `lint()` has always emitted (the output array is pinned
- * by tests and by agents diffing `--json` output).
+ * source order) TOO_SMALL → DISCONNECTED → NO_WINDOW → NOT_ENCLOSED → NO_FIXTURE →
+ * GARAGE_TOO_NARROW, exactly the interleaving `lint()` has always emitted (the output
+ * array is pinned by tests and by agents diffing `--json` output). A new check is
+ * APPENDED to that sequence, never inserted into it.
  */
 
 import {
   isBedroom,
+  isGarage,
   isKitchen,
   isWetRoom,
   largestPerimeterGap,
@@ -18,6 +20,7 @@ import {
 } from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { zoneFixtureCategories } from "../../fixtures-catalog.js";
+import { mm, shortfall } from "../measure.js";
 import type { RRoom } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
 
@@ -29,6 +32,22 @@ export const KITCHEN_FIX = zoneFixtureCategories("kitchen");
 
 /** Square metres of a room (exact for a polygon too), rounded to 2 decimals. */
 const areaM2 = (r: RRoom): number => Math.round((roomAreaMm2(r) / 1_000_000) * 100) / 100;
+
+/**
+ * Clear width one parked car needs, in millimetres.
+ *
+ * 2700 mm is the conventional minimum single-bay clear width — body plus the room to open a
+ * door on each side — and 5400 for a double, which is what the residential codes and the
+ * trade both land on. It is deliberately NOT the rounder 3000: this field obeys the same
+ * calibration rule the fixture catalog's clearances do ("tight enough that a normal layout
+ * never trips it"), and a 5500 mm double garage is a normal, buildable layout that 3000 would
+ * warn about — `examples/hillside-villa.arch`'s is exactly one. A garage that trips this is
+ * genuinely too narrow to park in, not merely snug.
+ */
+const CAR_BAY_WIDTH_MM = 2700;
+
+/** Categories that occupy a parking bay. A bicycle or a motorcycle does not. */
+const PARKED_CATEGORIES: ReadonlySet<string> = new Set(["car"]);
 
 export const perRoomRules: LintRule = {
   name: "per-room",
@@ -111,6 +130,40 @@ export const perRoomRules: LintRule = {
             message: `${isWet ? "Bathroom" : "Kitchen"} "${labelOf(r)}" has no ${isWet ? "fixtures (WC, basin, shower…)" : "fixtures (sink, counter, stove…)"}.`,
             hints: [
               `Add the expected fixtures — e.g. import \`lib/fixtures.arch\` and place a ${isWet ? "`wc`, `basin`, or `shower`" : "`kitchen_sink` and `counter`"}.`,
+            ],
+          });
+        }
+      }
+
+      // A garage too narrow to park in. Appended to the per-room sequence, never inserted.
+      //
+      // The measure is the ROOM's short side, and the rule DECLINES a polygon room rather
+      // than approximating one: a bounding box's short side is not a concave floor's clear
+      // width, and a derived measurement taken from a shape's box instead of the shape is
+      // the defect class this repository has already shipped six of. A garage is a rectangle
+      // in practice; an L-shaped one gets no warning rather than a wrong one.
+      if (isGarage(r) && !r.poly) {
+        const cars = furniture.filter((f) => {
+          const fr = rectOf(f);
+          return PARKED_CATEGORIES.has(f.category) && pointInRoomBox({ x: fr.x + fr.w / 2, y: fr.y + fr.h / 2 }, rect);
+        }).length;
+        // An empty garage is still a garage, so it is measured against one bay: a room you
+        // could not park in does not become sound by having no car drawn in it.
+        const bays = Math.max(1, cars);
+        const need = bays * CAR_BAY_WIDTH_MM;
+        const have = Math.min(rect.w, rect.h);
+        if (have < need) {
+          const drawn = cars === 0 ? "no car drawn, so one bay is assumed" : `${cars} car${cars === 1 ? "" : "s"}`;
+          out.push({
+            severity: "warning",
+            code: "W_GARAGE_TOO_NARROW",
+            ...at(r),
+            message: `Garage "${labelOf(r)}" is ${mm(have)} mm across its short side, under the ${mm(need)} mm ${bays} bay${bays === 1 ? "" : "s"} need (${drawn}) — ${mm(shortfall(need, have))} mm short.`,
+            hints: [
+              `A parking bay wants ${CAR_BAY_WIDTH_MM} mm of clear width — body plus a door opening each side.`,
+              cars > 1
+                ? "Widen the room, or park fewer cars in it."
+                : "Widen the room, or drop the `uses garage` tag if it is not one.",
             ],
           });
         }

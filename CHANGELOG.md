@@ -7,6 +7,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+<!-- BEGIN: outdoor fixtures + garage (track B) -->
+
+### Added — twenty-one outdoor fixture families
+
+`furniture` gains a site vocabulary: **21 families / 37 names**, taking the catalogue from 36
+families and 59 names to **57 and 96**, all drawn by a sixth domain module
+(`src/elements/glyphs-outdoor.ts`). `tree` (`deciduous_tree`) · `conifer` (`pine`) · `shrub`
+(`bush`) · `hedge` · `bbq` (`grill`, `barbecue`) · `outdoor_table` (`patio_table`) ·
+`outdoor_chair` (`patio_chair`) · `umbrella` (`parasol`) · `bicycle` (`bike`) · `motorcycle` ·
+`hot_tub` (`spa`) · `swing` (`swing_set`) · `trampoline` · `bin` (`wheelie_bin`) · `mailbox`
+(`letterbox`) · `ev_charger` · `pergola` · `sandpit` (`sandbox`) · `fire_pit` · `shed`
+(`garden_shed`) · `clothesline` (`washing_line`).
+
+No new keyword and no new element: a fixture family is a row in `FIXTURE_FAMILIES`, a `CATALOG`
+entry and a draw function, which is exactly what this is. Two conventions are specific to outdoors
+and both are decisions, not defaults:
+
+- **Nothing here is `requiresWall`.** That flag means SERVICES, and `W_FIXTURE_FLOATING`'s own
+  remedy line says so ("supply/waste/venting runs in the wall"). A `hot_tub` is plumbed and is
+  still set *down* on a deck, so a tub mid-terrace is the normal arrangement; an `ev_charger` is
+  wired and is as often on a bollard as on a wall. Outdoors the wall is the exception.
+- **Planting draws unfilled.** A canopy overhangs ground that has to keep reading through it, so
+  `tree`/`conifer`/`hedge`/`pergola` carry no fill, and the pergola outline and the shed's roof
+  ridge are dashed for the `upper_cabinet` reason: above the cut plane.
+
+Five are `directional` (`bbq`, `bin`, `mailbox`, `ev_charger`, `shed`) and those same five carry a
+footprint, so `against wall` needs no `size`. `outdoor_chair` deliberately is not — seating is
+arranged, not installed. Ten are `symmetric`, and that claim is proved against the real
+`rotateNode` rather than asserted. `bbq` is the only one with a frontal clearance (900 mm at an
+open grill); the hot tub has none, because a symmetric piece has no front to measure one from.
+
+Existing plans are unaffected: no shipped example uses any of the new words, so every committed
+SVG, snapshot and golden is byte-identical.
+
+### Added — `uses garage` and `W_GARAGE_TOO_NARROW`
+
+A thirteenth room use. `room … uses garage` classifies a room as a garage, and a room labelled
+"Garage" classifies as one from its label alone; "Carport", "Car Port" and "Parking" classify
+through an *alias*, which raises the existing advisory `W_ALIAS_MATCH` asking you to pin the tag.
+`garage` is appended to `USE_KINDS` and to the label classifier's emission order, so no existing
+plan's `describe().rooms[].uses` array changes.
+
+One new warning, **`W_GARAGE_TOO_NARROW`** (advisory, no machine fix — widening a room is a
+geometric decision the compiler does not make): a garage whose short side is under **2700 mm per
+parked `car`** is too narrow to park in. The warning quotes the width required, the width the room
+has, and the shortfall. Three calibration decisions worth stating:
+
+- **2700 mm per bay, not 3000.** A 5500 mm double garage is a normal, buildable layout —
+  `examples/hillside-villa.arch` has one — and a rule that warns about it is a false positive.
+- **An empty garage is measured against one bay.** A room you could not park in does not become
+  sound by having no car drawn in it. `bicycle` and `motorcycle` do not occupy a bay.
+- **The rule declines a POLYGON room** rather than measuring its bounding box. A box's short side
+  is not a concave floor's clear width, and a measurement taken from a shape's box instead of the
+  shape is the defect class this compiler has already shipped six instances of.
+
+In Plan JSON, `garage` maps to the RPLAN `Storage` room_type (where `utility` already goes; RPLAN
+has no garage category) and an explicit `uses` tag round-trips unchanged.
+
+### Fixed — two hand-typed copies of the `uses` value set in Plan JSON
+
+`src/plan-json.ts` kept its validator's allow-list **and** `PLAN_JSON_SCHEMA`'s `uses` enum as
+hand-typed twelve-name literals. Both are interpolated from `USE_KINDS` now. This was not
+theoretical: adding a thirteenth use kind left `planToJson` emitting a document its own
+`planFromJson` rejected with `E_JSON_SCHEMA` — a round trip failing on a plan the compiler accepts,
+with `check:drift` green throughout, which is precisely the v1.26.0 defect class.
+
+### Changed — `examples/hillside-villa.arch`
+
+`r_garage` is tagged `uses garage` instead of `uses storage`. `describe --json` reports
+`uses: ["garage"]` for that one room; **nothing else moves** — both storeys' SVG are byte-identical
+and `arch lint` reports the same three warnings the showpiece has always carried
+(`W_BATH_VIA_BEDROOM` ×1, `W_ROOM_NOT_EQUATOR_FACING` ×2). The 5500 mm double garage clears
+`W_GARAGE_TOO_NARROW`'s 5400 mm by 100 mm, which is the calibration above doing its job.
+
+<!-- END: outdoor fixtures + garage (track B) -->
+
 ## [1.30.0] - 2026-08-28
 
 **"one boundary for a set of walls, and the optional dependency a drawing no longer needs"**, a

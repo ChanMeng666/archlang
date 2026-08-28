@@ -33,6 +33,7 @@ const USE_PHRASE: Record<UseKind, string> = {
   utility: "a utility room",
   office: "an office",
   entry: "an entry",
+  garage: "a garage",
 };
 
 export const aliasMatch: LintRule = {

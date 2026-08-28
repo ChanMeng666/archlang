@@ -216,7 +216,8 @@ export type UseKind =
   | "storage"
   | "utility"
   | "office"
-  | "entry";
+  | "entry"
+  | "garage";
 
 /** Every {@link UseKind}, in canonical order — the parser/formatter/grammar source. */
 export const USE_KINDS: readonly UseKind[] = [
@@ -231,7 +232,11 @@ export const USE_KINDS: readonly UseKind[] = [
   "storage",
   "utility",
   "office",
+  // Appended, not slotted in beside `storage`: this list is the parser's accept order, the
+  // formatter's print order and the alternation both generators render, so inserting in the
+  // middle re-orders a published grammar for nothing.
   "entry",
+  "garage",
 ];
 
 /** `DIR REF [align EDGE] [gap EXPR]` — a room's position relative to another room.

@@ -910,6 +910,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Move a window onto the room's equator-facing facade, or accept the aspect — an urban plot often has no equator-facing wall to spare. There is deliberately NO machine fix: the remedy is a geometric decision (which facade, which wall, what else it displaces) and the compiler does not make those (ADR 0005).",
     'site { street north }   # equator side is S\nroom id=liv at (0,0) size 4000x3000 label "Living"\nwindow on north_wall at 50% width 1200   # warning: the only window faces N',
   ),
+  W_GARAGE_TOO_NARROW: W(
+    "W_GARAGE_TOO_NARROW",
+    "A garage is too narrow to park in.",
+    'A room classified as a garage (an authored `uses garage`, or a label the use vocabulary reads as one — "Garage", or the aliases "carport" / "parking") measures less across its short side than the cars in it need: 2700 mm of clear width per bay, which is a body plus the room to open a door on each side. A garage with no `car` fixture drawn is measured against ONE bay — a room you could not park in does not become sound by having no car in it — and `bicycle`/`motorcycle` do not count toward the bay total. The warning states the width required, the width the room actually has, and the shortfall. **The rule declines a POLYGON room** rather than measuring its bounding box: a box\'s short side is not a concave floor\'s clear width, and a measurement taken from a shape\'s box instead of the shape is a defect class this compiler has shipped before. It is advisory and has no machine fix: widening a room moves every wall and opening around it, which is a geometric decision the compiler does not make (ADR 0005).',
+    "Widen the room to the figure the warning quotes, park fewer cars in it, or drop the `uses garage` tag if the room is not one (a store that happens to be called a garage classifies as one from its label alone — an explicit `uses storage` overrides that).",
+    'room id=g at (0,0) size 2500x6000 label "Garage" uses garage\nfurniture car at (300,300) size 1800x4600 in g   # lint: 2500 mm across, one bay wants 2700',
+  ),
 });
 
 /** All catalog codes, sorted (errors then warnings, alphabetically within). */

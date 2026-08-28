@@ -212,6 +212,9 @@ export const isWetRoom = (room: { label?: string; id: string; uses?: UseKind[] }
 /** Does the room read as a kitchen? */
 export const isKitchen = (room: { label?: string; id: string; uses?: UseKind[] }): boolean =>
   roomUses(room).has("kitchen");
+/** Does the room read as a garage (or a carport / parking space)? */
+export const isGarage = (room: { label?: string; id: string; uses?: UseKind[] }): boolean =>
+  roomUses(room).has("garage");
 /** Does the room read as circulation (hall) or an entry/foyer? */
 export const isCirculation = (room: { label?: string; id: string; uses?: UseKind[] }): boolean => {
   const u = roomUses(room);

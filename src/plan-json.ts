@@ -27,7 +27,7 @@
  */
 
 import type { CompassWord, Hemisphere, NorthDir, PlanNode, UseKind } from "./ast.js";
-import { COMPASS_DIRECTIONS, HEMISPHERES } from "./ast.js";
+import { COMPASS_DIRECTIONS, HEMISPHERES, USE_KINDS } from "./ast.js";
 import type { RRoom, RDoor, RWindow, ROpening, RFurniture, RDim, RColumn, RWall, ResolvedPlan } from "./ir.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { DoorEnumClause, DoorHinge, DoorKind, DoorSlideDir, DoorSwingDir } from "./grammar/tokens.js";
@@ -101,6 +101,16 @@ export const USE_TO_ROOM_TYPE: Readonly<Record<UseKind, RoomType>> = Object.free
   utility: "Storage",
   office: "StudyRoom",
   entry: "Entrance",
+  // RPLAN has no garage category, and inventing one would put a value in the wire format
+  // that the schema's own enum (and therefore every consumer validating against it) does
+  // not know. `Storage` is where the many-to-one collapse already sends `utility`, and it
+  // is the honest neighbour: a garage is the unconditioned store attached to the house.
+  // The inverse is lossy in exactly the way `utility`'s already is — `ROOM_TYPE_TO_USE`
+  // maps `Storage` back to `storage`, so a JSON round trip returns `uses storage`. That
+  // costs no geometry (a `uses` tag is classification only, so the SVG is byte-identical)
+  // and the alternative — a new `Garage` room_type — would be a breaking schema change
+  // for a word the format cannot carry back to any other tool.
+  garage: "Storage",
 });
 
 /**
@@ -121,6 +131,10 @@ const USE_PRIORITY: readonly UseKind[] = [
   "circulation",
   "storage",
   "utility",
+  // Last, beside the other unconditioned stores: a room that is a garage AND something
+  // else (`uses garage utility`) reads as the something else on the wire, which is the
+  // more informative of the two.
+  "garage",
 ];
 
 /**
@@ -566,20 +580,20 @@ function reqPoint(v: unknown, path: string, val: Validator): PointJson | null {
   return isNum(v.x) && isNum(v.y) ? { x: v.x, y: v.y } : null;
 }
 
-const USE_SET: ReadonlySet<string> = new Set<UseKind>([
-  "living",
-  "kitchen",
-  "dining",
-  "bedroom",
-  "bath",
-  "wc",
-  "hall",
-  "circulation",
-  "storage",
-  "utility",
-  "office",
-  "entry",
-]);
+/**
+ * The `uses` values this format accepts — DERIVED from {@link USE_KINDS}, never retyped.
+ *
+ * It was a hand-typed twelve-name literal until v1.31, which is the defect class this
+ * repository has already shipped four instances of: a fact about the language, copied into
+ * something that describes the language, where `check:drift` is structurally blind to it (the
+ * gate proves a generator reproduces its own output, never that the output is true). The proof
+ * it was live rather than theoretical: adding a thirteenth use kind to `src/ast.ts` left this
+ * validator rejecting the new word with `E_JSON_SCHEMA`, so `planToJson` emitted a document
+ * its own `planFromJson` refused — a round trip that fails on a plan the compiler accepts.
+ * Deriving it is one line and the drift becomes impossible; the same is now true of the
+ * `uses` enum inside {@link PLAN_JSON_SCHEMA}.
+ */
+const USE_SET: ReadonlySet<string> = new Set<string>(USE_KINDS);
 const ROOM_TYPE_SET: ReadonlySet<string> = new Set<string>(ROOM_TYPES);
 const OPENING_KINDS: ReadonlySet<string> = new Set(["door", "window", "opening"]);
 
@@ -1192,22 +1206,10 @@ export const PLAN_JSON_SCHEMA = {
           uses: {
             type: "array",
             description: "Explicit ArchLang function tags; authoritative over room_type when present.",
-            items: {
-              enum: [
-                "living",
-                "kitchen",
-                "dining",
-                "bedroom",
-                "bath",
-                "wc",
-                "hall",
-                "circulation",
-                "storage",
-                "utility",
-                "office",
-                "entry",
-              ],
-            },
+            // Interpolated from USE_KINDS for the reason USE_SET above is: a retyped copy
+            // of a closed value set inside a document that DESCRIBES the set is the drift
+            // `check:drift` cannot see.
+            items: { enum: [...USE_KINDS] },
           },
           x: { type: "number", description: "Top-left corner X in millimetres." },
           y: { type: "number", description: "Top-left corner Y in millimetres." },

@@ -90,7 +90,7 @@ plan "Hillside Villa" {
 
     # ---- rooms, grouped into wings by `zone` -------------------------------------------
     zone service "Service wing" {
-      room id=r_garage  at (-5500,0)    size 5500x6200 label "Garage"  uses storage
+      room id=r_garage  at (-5500,0)    size 5500x6200 label "Garage"  uses garage
       room id=r_utility at (-5500,6200) size 5500x4000 label "Utility" uses utility
       room id=r_powder  at (8000,0)     size 2000x2200 label "Powder"  uses wc
       room id=r_pantry  at (10000,0)    size 3800x2200 label "Pantry"  uses storage

@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**82 errors** · **42 warnings**
+**82 errors** · **43 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -109,6 +109,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_FURN_CLEARANCE`](#w_furn_clearance) | warning | A fixture's use-space is blocked. |
 | [`W_FURNITURE_OVERLAP`](#w_furniture_overlap) | warning | Two pieces of furniture overlap. |
 | [`W_FURNITURE_WALL_COLLISION`](#w_furniture_wall_collision) | warning | Furniture penetrates a wall. |
+| [`W_GARAGE_TOO_NARROW`](#w_garage_too_narrow) | warning | A garage is too narrow to park in. |
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
 | [`W_IMPORT_EMPTY_FILE`](#w_import_empty_file) | warning | Whole-file import binds an empty component. |
 | [`W_NO_ENTRANCE`](#w_no_entrance) | warning | The plan has no exterior door. |
@@ -1367,6 +1368,19 @@ furniture bed  at (1000,500) size 1500x2000   # lint: overlaps the sofa
 
 ```arch static
 furniture sofa at (350,2300) size 2000x900   # lint: crosses the partition at y3000
+```
+
+## W_GARAGE_TOO_NARROW
+
+*warning* — A garage is too narrow to park in.
+
+**Cause.** A room classified as a garage (an authored `uses garage`, or a label the use vocabulary reads as one — "Garage", or the aliases "carport" / "parking") measures less across its short side than the cars in it need: 2700 mm of clear width per bay, which is a body plus the room to open a door on each side. A garage with no `car` fixture drawn is measured against ONE bay — a room you could not park in does not become sound by having no car in it — and `bicycle`/`motorcycle` do not count toward the bay total. The warning states the width required, the width the room actually has, and the shortfall. **The rule declines a POLYGON room** rather than measuring its bounding box: a box's short side is not a concave floor's clear width, and a measurement taken from a shape's box instead of the shape is a defect class this compiler has shipped before. It is advisory and has no machine fix: widening a room moves every wall and opening around it, which is a geometric decision the compiler does not make (ADR 0005).
+
+**Fix.** Widen the room to the figure the warning quotes, park fewer cars in it, or drop the `uses garage` tag if the room is not one (a store that happens to be called a garage classifies as one from its label alone — an explicit `uses storage` overrides that).
+
+```arch static
+room id=g at (0,0) size 2500x6000 label "Garage" uses garage
+furniture car at (300,300) size 1800x4600 in g   # lint: 2500 mm across, one bay wants 2700
 ```
 
 ## W_HATCH_SCALE
