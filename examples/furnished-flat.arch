@@ -1,8 +1,12 @@
 # The FURNITURE flagship — a two-bedroom flat, furnished with the whole symbol catalogue.
 #
 # Every other example draws a fixture or two in passing. This one is here for the drawn
-# symbols themselves: twenty-nine of the thirty-six catalogued kinds, across all five
-# domains (bath, kitchen/utility, bedroom, living/dining, office/misc).
+# symbols themselves: thirty-six of the eighty-three catalogued kinds, across all five
+# indoor domains (bath, kitchen/utility, bedroom, living/dining, office/misc). It is a
+# two-bedroom flat rather than a showroom, so the ceiling on that number is the FLOOR
+# AREA, not the catalogue: every piece here is somewhere a real one would go, and the
+# linter is what says so -- `arch validate --strict` is clean, which means no piece
+# floats off its wall, blocks a door, eats a clearance or narrows the only walk.
 #
 # Three things to read off the source rather than the picture:
 #
@@ -82,6 +86,7 @@ plan "Furnished Flat" {
   # keyboard into it. Placed by hand, like it is on a real drawing.
   furniture piano        at (250,3200)  size 1400x1400 in r_live
   furniture dining_table at (2700,3300) size 2100x2000 in r_live
+  furniture radiator     against wall w_west offset 4300 in r_live
 
   # --- Kitchen: a fitted run of centres along the north wall -------------------
   furniture counter       against wall w_north offset 5650 size 1200x600 in r_kitchen
@@ -90,17 +95,22 @@ plan "Furnished Flat" {
   furniture dishwasher    against wall w_north offset 7950 in r_kitchen
   furniture fridge        against wall w_east  offset 1000 in r_kitchen
   furniture upper_cabinet against wall w_east  offset 1800 in r_kitchen
+  furniture microwave     against wall w_east  offset 2600 in r_kitchen
   furniture island        at (5800,2000) size 1600x900 in r_kitchen
 
   # --- Utility ----------------------------------------------------------------
-  furniture washer against wall w_east offset 4400 in r_util
-  furniture dryer  against wall w_east offset 5000 in r_util
+  furniture washer       against wall w_east offset 4400 in r_util
+  furniture dryer        against wall w_east offset 5000 in r_util
+  furniture laundry_sink against wall w_util offset 1300 in r_util
+  furniture water_heater against wall w_util offset 500  in r_util
 
   # --- Bedroom 1 --------------------------------------------------------------
   furniture double_bed against wall w_west   offset 9100  in r_bed1
   furniture nightstand against wall w_west   offset 7925  in r_bed1
   furniture nightstand against wall w_west   offset 10275 in r_bed1
   furniture wardrobe   against wall w_hall_s offset 2600  in r_bed1
+  furniture vanity     against wall w_bed     offset 1700  in r_bed1
+  furniture dresser    against wall w_bed     offset 3250  in r_bed1
 
   # --- Bedroom 2 --------------------------------------------------------------
   furniture bed          against wall w_bath offset 2950  in r_bed2
@@ -113,6 +123,7 @@ plan "Furnished Flat" {
   furniture basin   against wall w_east  offset 7800 in r_bath
   furniture wc      against wall w_east  offset 9200 in r_bath
   furniture bathtub against wall w_south offset 7450 in r_bath
+  furniture bidet   against wall w_east  offset 8500 in r_bath
 
   title { project "Furnished Flat" drawn_by "ArchLang" date "2026-08-26" }
 }

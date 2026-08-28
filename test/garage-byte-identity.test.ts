@@ -101,7 +101,7 @@ const BASELINE: Readonly<Record<string, string>> = {
   "studio.arch": "c921a0607bf60aa2c39e27c4467d42f27660e4862a3735e8693726cdabf4e339",
   "laneway-house.arch": "5aac436f2df22db2ff8c7a8995a0420ca7e5d5406795ce1f9882820f1d6b61ff",
   "bungalow.arch": "02de92a6c3b8dbe61aabcf88adfe779433830e0a902b31ab78be295ecb8b64a1",
-  "furnished-flat.arch": "d2b07d613f969252c61e0366ec571348588f650184cb8364815aff6f009ad0a1",
+  "furnished-flat.arch": "b445592561e294dce47ba59a419fb2625be80dd0ffac61b8d37f334181f9d631",
   "two-bed.arch": "913b9073730bb693f803ba0774ca55ab9eeb602d807184987e87b7694cd6c984",
 };
 
@@ -116,7 +116,12 @@ const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
   "studio.arch": "b065cbe49d364414b340639fc06922eb14f472c9f4470134bb6f2b4489ada364",
   "laneway-house.arch": "ac2df20e15d2e4fbcc73e34a15d4e34578aa89a859860561b85361db170040b6",
   "bungalow.arch": "4835ae875c03ea01d8ec44ece1a3ecdcb3b324775c503bed0fad224e81fad93d",
-  "furnished-flat.arch": "fa118ba75482141827ad2d3ec5fa2539e0408f9e849e81e3fb5bf5468b4fe06f",
+  // `furnished-flat.arch` is the ONE value in this table that is not the original v1.30.0
+  // measurement, and the exception proves the rule rather than bending it. Its SOURCE was
+  // edited in v1.32 -- seven of the new families were added to the flat -- so `describe()`
+  // and `lint()` genuinely report a different building, which is exactly the kind of change
+  // this pin exists to make visible. A redrawn SYMBOL still cannot move any number here.
+  "furnished-flat.arch": "a38b6ef53e0de401c6d7e09039a7f1bfcdbb8305686052f84844d4e3fdc23476",
   "two-bed.arch": "a118170f4549ccd89aa1dce2274363e9444c13d1667d679877cb2d460ac2e070",
 };
 
