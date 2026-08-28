@@ -1,0 +1,280 @@
+# The OUTDOOR flagship — a two-storey family house on a 22 x 22 m suburban lot, drawn as a
+# SITE plan: the building is half of it, and the other half is ground.
+#
+# Everything else in examples/ draws what is inside the wall line. This one is the plan a
+# house is actually issued as, which is the whole point of the v1.31 surfaces: `site …
+# boundary` puts the lot line on the sheet, nine `outdoor` ground materials say what every
+# square metre outside the walls IS, `fence` posts the pool enclosure and the street
+# frontage, and 15 of the 21 outdoor fixture families furnish the garden the way the
+# kitchen fixtures furnish a kitchen.
+#
+# READ THESE THREE FACTS BEFORE READING THE DRAWING. A ground surface is NOT a room: it is
+# absent from `describe --json`'s `rooms[]`, from `totals.floor_area_m2` and from the drawn
+# `schedule rooms` table, and its area lands in `totals.outdoor_area_m2` instead. It
+# obstructs NOTHING — the pool included — so circulation walks straight across the water;
+# that is a stated v1 simplification, and the `fence` round the pool is the drawing saying
+# what the model does not. And it GROWS THE PAGE: the lot line is 22 m from the street, so
+# without `paper` every line weight in the house would be scaled to the garden. Hence the
+# sheet.
+#
+# THE GARAGE IS THE OTHER HALF OF THE RELEASE. `room … uses garage` is a use kind, so the
+# schedule reads "Garage" and `W_GARAGE_TOO_NARROW` measures it: 5.5 m across, against the
+# 2.7 m one parked `car` needs. Its door is `door garage`, the sixth kind — a sectional
+# leaf that takes NO clause at all, because it parks OVERHEAD rather than swinging or
+# sliding, and the dashed rectangle inside the garage is that overhead projection. Which
+# side it projects to is DERIVED, not written: the resolver probes one wall thickness off
+# each face and takes the one with floor. The driveway outside is `outdoor driveway`, and
+# it is emphatically not floor, so the answer is the garage.
+#
+# ORIENTATION. The plot fronts the street on the NORTH, in the northern hemisphere, so
+# `equator_side` is south — the garden. That is why the living room, the kitchen/dining
+# and two of the three bedrooms take the south facade and the service band stacks along
+# the street.
+#
+# ONE DELIBERATE WARNING, left in on purpose:
+#
+#   W_ROOM_NOT_EQUATOR_FACING x1 — Bedroom 2 (level 2) is the one habitable room with no
+#   south window. On a two-band plan one bedroom has to take the street aspect, and the
+#   two rooms people sleep in longest get the garden. The rule is an advisory drafting
+#   heuristic, not a daylight measurement, and this is the case where the drafter
+#   overrules it. `arch validate` is clean; `arch validate --strict` reports this one.
+plan "Garden House" {
+  units mm
+  grid 100
+  paper A2 landscape
+  scale 1:100
+  north up
+  dims auto overall
+  schedule rooms
+  legend
+
+  # The lot line. `street`/`hemisphere` draw nothing and only name directions; `boundary`
+  # is the one part of `site` that puts ink on the page (a dash-dot property line on
+  # C-PROP) and adds `site.lot_area_m2` — 484 m² here, by exact shoelace.
+  site {
+    street north
+    hemisphere north
+    boundary (0,0) (22000,0) (22000,22000) (0,22000)
+  }
+
+  # Shell centrelines. The building is an L: a 11.5 x 9 m house with a 5.5 x 6 m garage
+  # on its street-side flank.
+  let T = 300         # exterior thickness
+
+  level 1 "Ground floor" {
+    wall id=shell exterior thickness T {
+      (2500,4500) (19500,4500) (19500,10500) (14000,10500) (14000,13500) (2500,13500) close
+    }
+    wall id=w_h1  partition thickness 100 { (6800,4500) (6800,13500) }
+    wall id=w_h2  partition thickness 100 { (9200,4500) (9200,13500) }
+    wall id=w_w1  partition thickness 100 { (2500,9000) (6800,9000) }
+    wall id=w_e1  partition thickness 100 { (9200,8000) (14000,8000) }
+    wall id=w_gar partition thickness 200 { (14000,4500) (14000,10500) }
+
+    room id=r_hall    at (6800,4500)  size 2400x9000  label "Hall"           uses hall entry circulation
+    room id=r_study   at (2500,4500)  size 4300x4500  label "Study"          uses office
+    room id=r_living  at (2500,9000)  size 4300x4500  label "Living"         uses living
+    room id=r_util    at (9200,4500)  size 4800x3500  label "Utility"        uses utility wc
+    room id=r_kitchen at (9200,8000)  size 4800x5500  label "Kitchen/Dining" uses kitchen dining
+    room id=r_garage  at (14000,4500) size 5500x6000  label "Garage"         uses garage
+
+    # The front door, on the street facade, into the spine.
+    door id=d_front on shell at 5500 width 1000 hinge left swing into r_hall
+
+    # THE GARAGE DOOR. No `hinge`, no `slide`, no `swing`, no `open` — every one of them is
+    # E_DOOR_KIND_CLAUSE, and each refusal is its own argument: the leaf travels UP, so
+    # there is no jamb to hinge on, no wall to slide along and no intermediate position to
+    # draw. The dashed rectangle it puts inside the garage is the panel parked overhead,
+    # and dashed is this language's one convention for anything above the cut plane.
+    door id=d_garage garage on shell at 14250 width 3000
+
+    door id=d_study  on w_h1 at 2000 width 900 swing into r_study
+    door id=d_living on w_h1 at 6500 width 900 swing into r_living
+    # A pocket leaf: the utility takes no corridor, and the panel slides north into 1.3 m
+    # of blank spine wall (it needs 850 — its own 800 plus a jamb allowance).
+    door id=d_util pocket on w_h2 at 1800 width 800 slide left
+    # Kitchen to garage — the mud-room door every attached garage has.
+    door id=d_gar on w_gar at 1800 width 900 swing into r_util
+    # Living and kitchen are one space across the spine.
+    opening id=o_kitchen on w_h2 at 6800 width 1600
+
+    # The two garden doors, each the leaf a builder would put there. A `bifold` opens the
+    # living room onto the patio; a `sliding` pair opens the kitchen onto the deck. Neither
+    # sweeps anything — `doorSwing()` is null for every kind but `hinged` — so nothing on
+    # the terrace has to be kept clear of a leaf.
+    door id=d_patio bifold  on shell at 41500 width 2000
+    door id=d_deck  sliding on shell at 34200 width 1800 slide right
+
+    window id=win_study   on shell at 49700 width 1600
+    window id=win_util    on shell at 9100  width 900
+    window id=win_living  on shell at 39400 width 1000
+    window id=win_kitchen on shell at 32400 width 1200
+
+    stair id=st at (6900,5200) size 900x3200 dir up
+
+    # ---- Inside ----
+    furniture desk      in r_study anchor top-left    flush size 1600x700
+    furniture bookshelf in r_study anchor bottom-left flush size 1800x350
+    furniture chair     at (3300,6000) size 500x500 rotate 180 in r_study
+
+    furniture sofa    against wall shell segment 5 offset 2100 size 2200x900 in r_living
+    furniture rug     at (3200,10400) size 2200x1600 in r_living
+    furniture tv_unit at (5500,9200)  size 1200x400  in r_living
+
+    furniture washer  against wall shell segment 0 offset 7300 in r_util
+    furniture dryer   against wall shell segment 0 offset 8100 in r_util
+    furniture basin   against wall shell segment 0 offset 9900 in r_util
+    furniture wc      against wall shell segment 0 offset 10900 in r_util
+
+    furniture kitchen_sink against wall w_e1 offset 600  in r_kitchen
+    furniture stove        against wall w_e1 offset 1600 in r_kitchen
+    furniture fridge       against wall w_e1 offset 2500 in r_kitchen
+    furniture dining_table at (10200,10800) size 1600x900 in r_kitchen
+    furniture chair at (10300,10100) size 500x500 rotate 180 in r_kitchen
+    furniture chair at (11100,10100) size 500x500 rotate 180 in r_kitchen
+    furniture chair at (10300,11800) size 500x500 in r_kitchen
+    furniture chair at (11100,11800) size 500x500 in r_kitchen
+
+    furniture car at (15400,5900) size 1900x4300 in r_garage
+    furniture bicycle at (18300,6200) size 600x1700 in r_garage
+
+    # ---- The ground ----
+    #
+    # Nine surfaces, six materials. None is a room, none obstructs anything, and each one
+    # draws a scale-aware hatch over a tint: the pattern is the same size ON THE SHEET at
+    # 1:100 as it would be at 1:50, because every dimension in it steps off the drawing's
+    # reference dimension rather than off millimetres of building.
+    outdoor id=g_drive  driveway at (14500,0)     size 5000x4500  label "Driveway"
+    outdoor id=g_path   paving   at (7300,0)      size 1400x4500
+    outdoor id=g_frontl lawn     at (600,600)     size 6300x3400  label "Front lawn"
+    outdoor id=g_frontb planting at (8900,600)    size 5400x3400
+    outdoor id=g_fronte planting at (19700,600)   size 1700x3400
+
+    outdoor id=g_patio  patio    at (2600,13700)  size 4300x3300  label "Patio"
+    outdoor id=g_link   paving   at (6900,13700)  size 2300x3300
+    outdoor id=g_deck   deck     at (9200,13700)  size 4800x2900
+    outdoor id=g_pool   water    at (15200,13900) size 4000x3000  label "Pool"
+    outdoor id=g_lawn   lawn     at (5800,17400)  size 13600x3600 label "Lawn"
+    outdoor id=g_yard   gravel   at (2600,17400)  size 3000x3600
+    outdoor id=g_bed_s  planting at (2600,21100)  size 16800x600
+    outdoor id=g_bed_w  planting at (600,13700)   size 1700x8000
+    outdoor id=g_bed_e  planting at (19800,13700) size 1900x8000
+
+    # The pool enclosure — a `panel` fence, which is what a pool barrier is. A fence is NOT
+    # a thin wall: no thickness, no poche, it hosts no opening and it joins no access
+    # graph, so `describe --json` reports it under `fences[]` and never under `walls[]`. A
+    # gate is deferred by name rather than faked by letting a door host onto it.
+    fence id=f_pool panel { (14800,13500) (19600,13500) (19600,17300) (14800,17300) close }
+    # The street frontage, in the other style. It stops either side of the path and the
+    # drive, which is how a picket fence meets an entrance.
+    fence id=f_street picket { (400,400) (7100,400) }
+
+    # ---- The garden ----
+    #
+    # Fifteen of the twenty-one outdoor families. Nothing here is `requiresWall`: outdoors
+    # the wall is the exception, and a fixture standing in the middle of a lawn is the
+    # normal arrangement rather than a floating one.
+    furniture outdoor_table at (2700,14400) size 1600x900
+    furniture outdoor_chair at (2900,13800) size 500x500 rotate 180
+    furniture outdoor_chair at (3700,13800) size 500x500 rotate 180
+    furniture outdoor_chair at (2900,15400) size 500x500
+    furniture outdoor_chair at (3700,15400) size 500x500
+    furniture umbrella      at (4900,14400) size 900x900
+    furniture bbq           at (6000,13900) size 700x600
+
+    furniture sun_lounger at (9600,14100) size 700x1900
+    furniture sun_lounger at (10600,14100) size 700x1900
+
+    furniture shed        at (2900,19100) size 2400x1700
+    furniture bin         at (2800,17600) size 600x600
+    furniture bin         at (3600,17600) size 600x600
+    furniture clothesline at (2800,18400) size 2500x400
+    furniture ev_charger  at (14000,2000) size 400x300
+    furniture mailbox     at (6600,700)   size 400x300
+
+    furniture trampoline at (9000,17800) size 3000x3000
+    furniture tree       at (6100,18000)  size 2400x2400
+    furniture tree       at (17400,18100) size 2600x2600
+    furniture conifer    at (20000,15000) size 1500x1500
+    furniture hedge      at (2600,21200)  size 16800x500
+    furniture shrub      at (900,15000)   size 900x900
+    furniture shrub      at (900,17200)   size 900x900
+    furniture shrub      at (900,19400)   size 900x900
+    furniture shrub      at (20100,17600) size 900x900
+    furniture shrub      at (20100,19600) size 900x900
+    furniture shrub      at (20100,1300)  size 900x900
+    furniture shrub      at (9400,1300)   size 900x900
+    furniture shrub      at (12600,1300)  size 900x900
+  }
+
+  level 2 "First floor" {
+    wall id=shell exterior thickness T {
+      (2500,4500) (14000,4500) (14000,13500) (2500,13500) close
+    }
+    wall id=w_h1 partition thickness 100 { (6800,4500) (6800,13500) }
+    wall id=w_h2 partition thickness 100 { (9200,4500) (9200,13500) }
+    wall id=w_w1 partition thickness 100 { (2500,9000) (6800,9000) }
+    wall id=w_e1 partition thickness 100 { (9200,8000) (14000,8000) }
+
+    # "Bedroom 1" IS the main bedroom — the one with the balcony. It is named for its
+    # number rather than its rank so the three read as a set, and so the label fits inside
+    # its own floor: the renderer has no font metrics, only the closed-form estimate in
+    # `text-metrics.ts`, and "Main bedroom" is wider than a 4.8 m room at 1:100.
+    room id=r_landing at (6800,4500) size 2400x9000 label "Landing"   uses circulation hall
+    room id=r_bed2    at (2500,4500) size 4300x4500 label "Bedroom 2" uses bedroom
+    room id=r_bed3    at (2500,9000) size 4300x4500 label "Bedroom 3" uses bedroom
+    room id=r_bath    at (9200,4500) size 4800x3500 label "Bathroom"  uses bath
+    room id=r_bed1    at (9200,8000) size 4800x5500 label "Bedroom 1" uses bedroom
+
+    # No exterior door on this storey — see the header note. The stair below carries the
+    # same id, so the shaft is what joins this landing to the ground floor.
+    door id=d_bed2 on w_h1 at 2000 width 800 swing into r_bed2
+    door id=d_bed3 on w_h1 at 6500 width 800 swing into r_bed3
+    door id=d_bath on w_h2 at 1800 width 800 swing into r_bath
+    door id=d_bed1 on w_h2 at 6800 width 800 swing into r_bed1
+
+    # THE BALCONY, and the door that keeps it legal. An `outdoor balcony` rails every edge
+    # with no wall one thickness behind it — here the three free sides, derived at each
+    # edge's own midpoint — and `W_BALCONY_NO_DOOR` fires on a balcony with no opening
+    # within a wall thickness of it. This sliding leaf is that opening. It also sits over
+    # the ground floor's `deck`, which is what a balcony usually is.
+    door id=d_balcony sliding on shell at 23500 width 1800 slide right
+
+    window id=win_bed2  on shell at 1700  width 1600
+    window id=win_bath  on shell at 8500  width 900
+    window id=win_bed3  on shell at 29900 width 1600
+    window id=win_bed1  on shell at 21500 width 1200
+
+    outdoor id=g_balcony balcony at (9300,13700) size 4200x1800 label "Balcony"
+
+    stair id=st at (6900,5200) size 900x3200 dir down
+
+    # Every bed goes `against wall`, not `anchor … flush`: `against` derives the quarter
+    # turn FROM the wall, so the headboard ends up at the wall. An anchored bed keeps
+    # rotation 0 whatever edge it is pushed to, which is `W_FIXTURE_BACK_TO_ROOM`.
+    furniture bed      against wall shell segment 1 offset 6500 size 1600x2100 in r_bed1
+    furniture wardrobe in r_bed1 anchor top flush size 1600x600
+    furniture nightstand at (12600,9500) size 450x400 in r_bed1
+
+    furniture bed      against wall shell segment 3 offset 6700 size 1400x2000 in r_bed2
+    furniture wardrobe in r_bed2 anchor top flush size 1400x600
+
+    furniture bed      against wall shell segment 3 offset 2300 size 1400x2000 in r_bed3
+    furniture desk     in r_bed3 anchor top flush size 1400x600
+
+    furniture bathtub in r_bath anchor top-right    flush size 1700x700
+    furniture basin   in r_bath anchor bottom-left  flush size 600x450
+    furniture wc      in r_bath anchor bottom-right flush size 400x700
+
+    # The eaves, on the top storey only — this level's `shell` is the plan's one closed
+    # exterior ring on THIS page, so no `wall` clause is needed. The garage is single
+    # storey and carries no eaves line of its own.
+    roof overhang 500
+  }
+
+  title {
+    project "Garden House"
+    drawn_by "ArchLang"
+    date "2026-08-28"
+  }
+}

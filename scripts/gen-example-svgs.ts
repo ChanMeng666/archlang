@@ -45,6 +45,7 @@ const ROOT = resolve(HERE, "..");
 export const README_SVGS = [
   "laneway-house",
   "hillside-villa",
+  "garden-house",
   "studio",
   "two-bed",
   "attached",
