@@ -458,10 +458,12 @@ behind both), `geometry.ts` (shared door-swing quarter-disc), **the fixture-symb
 `elements/glyph-lib.ts` (the shared drawing vocabulary every symbol is built from: `dot`/`ring`/
 `arcSeg`/`insetRect`/`ellipsePoly`/`dashedPattern`, each factory setting the named `lineWeight` AND
 the raw `paint.width` from one ramp, because the SVG serializer follows the name and the PDF
-serializer follows the number), the five domain modules `elements/glyphs-bath`/`-kitchen`/`-bedroom`/`-living`/`-misc.ts`
-that draw the art, and `elements/fixtures-glyphs.ts`, which now holds only the dispatch plus the
-single-source `FIXTURE_FAMILIES` table that `FIXTURE_CATEGORIES` (59 words) and `CANONICAL_FIXTURES`
-(36 families) are both DERIVED from — `hasFixtureGlyph` is what the legend filters on, so an
+serializer follows the number), the six domain modules `elements/glyphs-bath`/`-kitchen`/`-bedroom`/`-living`/`-misc`/`-outdoor.ts`
+that draw the art (`-outdoor` is the v1.31 site tranche — planting, garden furniture, parked things
+and the small standing objects; nothing in it is `requiresWall`, because outdoors the wall is the
+exception), and `elements/fixtures-glyphs.ts`, which now holds only the dispatch plus the
+single-source `FIXTURE_FAMILIES` table that `FIXTURE_CATEGORIES` (96 words) and `CANONICAL_FIXTURES`
+(57 families) are both DERIVED from — `hasFixtureGlyph` is what the legend filters on, so an
 uncatalogued word still falls through to the labelled rectangle. Its semantics live next door in
 `fixtures-catalog.ts`, where three flags are deliberately distinct and must stay so: **`requiresWall`
 means SERVICES and only services** (the plumbed and vented goods — flagging room furniture raised 23
@@ -849,8 +851,8 @@ source (.arch)
   `geometry.ts` (`doorSwing`) and shared by `door.render()` and the `W_SWING_OBSTRUCTED` lint rule —
   keep them on that one helper.
 - **Fixtures draw by category, not a new element kind — and a drawn symbol IGNORES its `label`.**
-  `furniture.render()` dispatches the category to `elements/fixtures-glyphs.ts`, which since v1.28
-  covers **59 category words across 36 families** (all five domain modules); anything else falls back
+  `furniture.render()` dispatches the category to `elements/fixtures-glyphs.ts`, which since v1.31
+  covers **96 category words across 57 families** (all six domain modules); anything else falls back
   to the labelled rectangle, and that fallback is the escape hatch, not a defect. The label rule is
   long-standing for `wc`/`basin` and now true of twenty shipped examples whose fixture words vanish
   from the drawing while staying in the source and in `describe()` — so **do not add a `label` to make

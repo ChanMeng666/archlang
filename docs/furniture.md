@@ -88,7 +88,7 @@ furniture wc in r_bath anchor bottom flush size 400x700
 
 ## The symbol catalogue
 
-Thirty-six families, fifty-nine names with the aliases, and **every one of them draws**.
+Fifty-seven families, ninety-six names with the aliases, and **every one of them draws**.
 The tables below are grouped by the room the pieces belong to.
 
 Three columns need a word of explanation:
@@ -226,6 +226,58 @@ warns about it. Say so with `rotate`.
 carport, a driveway, a garage) and a model asked for one will write the word whether or
 not the catalogue knows it. Its long axis is the driving direction, drawn top-to-bottom
 like every other symbol's depth, so `rotate 90` parks it across a garage.
+
+### Outdoor
+
+Twenty-one families for what a site plan draws once the drawing leaves the building. They
+live in their own module (`src/elements/glyphs-outdoor.ts`) and follow one rule the indoor
+tables do not: **planting is drawn unfilled**, because a canopy overhangs ground — a path, a
+terrace, a parking bay — that has to keep reading through it.
+
+| Kind (and aliases) | Symbol | Footprint | Facing | Wall |
+|---|---|---|---|---|
+| `tree` · `deciduous_tree` | softly scalloped canopy over the crown ring and the trunk, **unfilled** | — | symmetric | |
+| `conifer` · `pine` | the same canopy with the notches cut deeper, so it reads as needled | — | symmetric | |
+| `shrub` · `bush` | four overlapping lobes round a centre — the massed outline of a bush | — | symmetric | |
+| `hedge` | the run's outline with its clipped face scalloped along the length | 2000 × 600 | free | |
+| `bbq` · `grill` · `barbecue` | the cooking body with its bars, and the side shelf across the back | 1200 × 600 | derived | |
+| `outdoor_table` · `patio_table` | round or eased-rectangular top with four chairs hugging the footprint edges | — | symmetric | |
+| `outdoor_chair` · `patio_chair` | the seat with its slatted back along the top edge | — | free | |
+| `umbrella` · `parasol` | an eight-segment canopy with the pole at the centre | — | symmetric | |
+| `bicycle` · `bike` | two wheels, the frame triangle between them, the bars and the saddle | — | free | |
+| `motorcycle` | the two wheels with the body slung between them | — | free | |
+| `hot_tub` · `spa` | the shell, the water inside it, and the four seats round the rim | — | symmetric | |
+| `swing` · `swing_set` | the beam down the long axis, a leg at each end, and two seats | — | free | |
+| `trampoline` | the frame, the mat, and twelve springs across the narrow band between them | — | symmetric | |
+| `bin` · `wheelie_bin` | the body, the lid line at the hinged edge, and the two wheels under it | 600 × 700 | derived | |
+| `mailbox` · `letterbox` | the box with its flap, and the flag beside it | 400 × 300 | derived | |
+| `ev_charger` | the pedestal against the back edge with the cable — a **true arc** — hanging off it | 400 × 300 | derived | |
+| `pergola` | the overhead frame on four posts, drawn **entirely dashed** and unfilled | — | symmetric | |
+| `sandpit` · `sandbox` | the eased kerb with five stipple dots for sand | — | symmetric | |
+| `fire_pit` | the rim, the bowl, and a four-lobed flame inside it | — | symmetric | |
+| `shed` · `garden_shed` | the carcass, a **dashed** roof ridge, and the door tick on the front | 2400 × 1800 | derived | |
+| `clothesline` · `washing_line` | a post at each end of the run with three lines strung between | — | free | |
+
+**Nothing out here carries `requiresWall`, and that is a decision.** The flag means services —
+supply, waste, venting, or hanging off a wall by definition — and
+[`W_FIXTURE_FLOATING`](error-codes.md)'s own remedy line says "supply/waste/venting runs in the
+wall". Two kinds tempt you to set it anyway and both are wrong: a `hot_tub` is genuinely plumbed
+and is still set *down* on a deck and fed from below, so a tub in the middle of a terrace is the
+normal arrangement; an `ev_charger` is genuinely wired and is as often on a free-standing bollard
+as on a wall. Outdoors the wall is the exception.
+
+**`bbq` is the only outdoor kind with a frontal clearance** (900 mm — the standing room a cook
+needs at an open grill). The hot tub deliberately has none: it is symmetric, so it has no front
+to measure one from.
+
+Three of them are drawn **dashed**, and it is the same convention every time — *above the cut
+plane*, the rule `upper_cabinet` follows indoors and the one `roof` and `void` ship: the whole
+`pergola` outline, and the `shed`'s roof ridge.
+
+The five `directional` kinds (`bbq`, `bin`, `mailbox`, `ev_charger`, `shed`) are the ones you
+would write `against wall` or `anchor` about, and they are also the five that carry a footprint —
+so `furniture shed against wall fence` needs no `size`. `outdoor_chair` is deliberately **free**,
+for the reason every other seat in the catalogue is: seating is arranged, not installed.
 
 ## How a symbol is drawn
 

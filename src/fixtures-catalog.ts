@@ -265,6 +265,103 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   grand_piano: { requiresWall: false },
   sun_lounger: { requiresWall: false },
   lounger: { requiresWall: false },
+
+  // -------------------------------------------------------------------------
+  // The OUTDOOR tranche. Twenty-one families for what a site plan draws once the drawing
+  // leaves the building: planting, garden furniture, the things parked on a driveway, and
+  // the small standing objects a survey records.
+  //
+  // ## Not one of them is `requiresWall`, and that is a decision, not an omission
+  //
+  // The flag means SERVICES — supply, waste, venting, or hanging off a wall by definition —
+  // and `W_FIXTURE_FLOATING`'s own remedy line says so in as many words: "supply/waste/
+  // venting runs in the wall". Two categories here would tempt a reader to set it and both
+  // are wrong. A `hot_tub` is genuinely plumbed, and is still set DOWN on a deck and fed
+  // from below, so a tub in the middle of a terrace is the normal arrangement and flagging
+  // it would be a false positive on every garden that has one. An `ev_charger` is genuinely
+  // wired, and is as often on a free-standing bollard as on a wall. Outdoors the wall is
+  // the exception; the rule that assumes one does not belong out here.
+  //
+  // ## What each flag is doing instead
+  //
+  // `directional` is set for the five whose SYMBOL has a back worth turning to something —
+  // a shed's door and dashed ridge, a barbecue's shelf, a bin's lid and wheels, a mailbox's
+  // flap, a charger's pedestal. `outdoor_chair` deliberately does NOT carry it, for the same
+  // reason `sofa` and `chair` do not: seating is arranged, not installed.
+  //
+  // `symmetric` is set for the ten whose drawing genuinely maps onto itself under a
+  // quarter-turn, and each of those is proved by construction rather than asserted — the
+  // planting stars have a multiple of four lobes, the trampoline twelve springs, the sandpit
+  // a fixed quincunx (see `elements/glyphs-outdoor.ts`).
+  //
+  // A `footprint` is given only where `furniture <kind> against wall <id>` is a form someone
+  // would actually write: the six pieces that stand against a house wall or a fence. A tree
+  // has no conventional canopy size, a trampoline comes in four, and inventing either would
+  // put a number in the language that nothing measured.
+  //
+  // `clearanceMm` is set for the barbecue ALONE, at 900 mm — the standing room a cook needs
+  // in front of an open grill, and the one frontal use-space out here that a plan can be
+  // wrong about. It is deliberately NOT given to the hot tub, which is `symmetric`: a
+  // symmetric piece has no front, so a "frontal clearance" for it would be measured off an
+  // arbitrary edge and would be a number the drawing cannot justify.
+  //
+  // None is `underlay`: a rug is walked ON, and none of these is.
+
+  // Planting — drawn unfilled, because a canopy overhangs ground that has to read through.
+  tree: { requiresWall: false, symmetric: true },
+  deciduous_tree: { requiresWall: false, symmetric: true },
+  conifer: { requiresWall: false, symmetric: true },
+  pine: { requiresWall: false, symmetric: true },
+  shrub: { requiresWall: false, symmetric: true },
+  bush: { requiresWall: false, symmetric: true },
+  // A run rather than a specimen, so it is the one plant with a footprint: 2 m of hedge
+  // 600 mm deep is the length a `for` loop or an `against wall` clause repeats.
+  hedge: { requiresWall: false, footprint: { along: 2000, depth: 600 } },
+
+  // Garden furniture.
+  bbq: { requiresWall: false, directional: true, clearanceMm: 900, footprint: { along: 1200, depth: 600 } },
+  grill: { requiresWall: false, directional: true, clearanceMm: 900, footprint: { along: 1200, depth: 600 } },
+  barbecue: { requiresWall: false, directional: true, clearanceMm: 900, footprint: { along: 1200, depth: 600 } },
+  // Approached from every side, like the `island` and the `dining_table` it is the outdoor
+  // cousin of — so no back, no frontal clearance, and the chairs are drawn inside its own
+  // footprint rather than being four more pieces to place.
+  outdoor_table: { requiresWall: false, symmetric: true },
+  patio_table: { requiresWall: false, symmetric: true },
+  outdoor_chair: { requiresWall: false },
+  patio_chair: { requiresWall: false },
+  umbrella: { requiresWall: false, symmetric: true },
+  parasol: { requiresWall: false, symmetric: true },
+
+  // Parked things. No footprint: a bicycle's is the rack it is in, a motorcycle's varies by
+  // a factor of two, and neither is ever written `against wall`.
+  bicycle: { requiresWall: false },
+  bike: { requiresWall: false },
+  motorcycle: { requiresWall: false },
+
+  // Terrace & lawn.
+  hot_tub: { requiresWall: false, symmetric: true },
+  spa: { requiresWall: false, symmetric: true },
+  swing: { requiresWall: false },
+  swing_set: { requiresWall: false },
+  trampoline: { requiresWall: false, symmetric: true },
+
+  // The small standing objects. The five that go against a house wall or a fence carry
+  // both `directional` and a footprint; the three that stand in the open carry neither.
+  // (Order follows `FIXTURE_FAMILIES` in `elements/fixtures-glyphs.ts`, which is the
+  // legend's order — keeping the two lists in step is a courtesy to whoever reads both.)
+  bin: { requiresWall: false, directional: true, footprint: { along: 600, depth: 700 } },
+  wheelie_bin: { requiresWall: false, directional: true, footprint: { along: 600, depth: 700 } },
+  mailbox: { requiresWall: false, directional: true, footprint: { along: 400, depth: 300 } },
+  letterbox: { requiresWall: false, directional: true, footprint: { along: 400, depth: 300 } },
+  ev_charger: { requiresWall: false, directional: true, footprint: { along: 400, depth: 300 } },
+  pergola: { requiresWall: false, symmetric: true },
+  sandpit: { requiresWall: false, symmetric: true },
+  sandbox: { requiresWall: false, symmetric: true },
+  fire_pit: { requiresWall: false, symmetric: true },
+  shed: { requiresWall: false, directional: true, footprint: { along: 2400, depth: 1800 } },
+  garden_shed: { requiresWall: false, directional: true, footprint: { along: 2400, depth: 1800 } },
+  clothesline: { requiresWall: false },
+  washing_line: { requiresWall: false },
 });
 
 /** All catalogued categories (aliases included), in declaration order. */

@@ -7,7 +7,7 @@
  * or counts of primitives would not catch what actually matters here, which is whether the
  * bytes a user's `arch compile` writes moved. So each case below pins the WHOLE document.
  *
- * The file has three groups, and they carry different promises.
+ * The file has four groups, and they carry different promises.
  *
  * ## Group 1 — PERMANENT. Later phases must not move these.
  *
@@ -33,6 +33,13 @@
  * `rug`, `sofa_l`, `piano`, `sun_lounger`. Also re-blessable, also expected to be read. Three
  * of the four have no catalogued footprint on purpose, so their sizes are stated where the
  * group is written rather than looked up.
+ *
+ * ## Group 4 — the outdoor tranche, on the same terms again.
+ *
+ * Four of the twenty-one site symbols, chosen because each one pins a DIFFERENT property of that
+ * module rather than a fourth drawing: `tree` is unfilled planting, `pergola` is dashed all the
+ * way round, `shed` mixes a filled carcass with a dashed ridge, and `bbq` is the one outdoor kind
+ * with a catalogued footprint AND a frontal clearance. Re-blessable, and each diff read first.
  */
 
 import { describe, expect, it } from "vitest";
@@ -416,6 +423,114 @@ describe("fixture symbols — the second tranche (re-blessed when redrawn)", () 
       <line x1="370" y1="1652.8" x2="930" y2="1652.8" stroke="#a8a29a" stroke-width="2.64"/>
       <line x1="370" y1="1850.4" x2="930" y2="1850.4" stroke="#a8a29a" stroke-width="2.64"/>
       <line x1="370" y1="2048" x2="930" y2="2048" stroke="#a8a29a" stroke-width="2.64"/>
+      </g>
+      <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
+      <text x="1500" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
+      <text x="1500" y="1281" font-size="66" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">7.2 m²</text>
+      </g>
+      <g><polygon points="2865,-415.5 2797.5,-199.5 2865,-246.75 2932.5,-199.5" fill="#333333" transform="rotate(0 2865 -280.5)"/><text x="2865" y="-477.9" font-size="78" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
+      <g><rect x="0" y="2550" width="250" height="42" fill="#333333"/><rect x="250" y="2550" width="250" height="42" fill="none" stroke="#333333" stroke-width="4.8"/><text x="0" y="2652" font-size="60" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="500" y="2652" font-size="60" fill="#333333" text-anchor="middle" dominant-baseline="central">0.5 m</text></g>
+      </svg>"
+    `);
+  });
+});
+
+/**
+ * The outdoor tranche (Group 4), pinned on the same terms as Groups 2 and 3.
+ *
+ * Four symbols, each pinning a property the other three do not. `tree` is the unfilled-planting
+ * case — the whole canopy is `fill="none"`, which is the thing a later refactor is most likely to
+ * "tidy" into a body fill without noticing it paints out the path underneath. `pergola` is the
+ * all-dashed case (`stroke-dasharray` on the outline, not on the posts). `shed` mixes the two: a
+ * filled carcass with a dashed ridge over it. `bbq` is the only one of the four with a catalogued
+ * footprint, so its size comes from the catalog rather than from this file.
+ */
+describe("fixture symbols — the outdoor tranche (re-blessed when redrawn)", () => {
+  it("tree", () => {
+    expect(svg("furniture tree at (300,300) size 2400x2400")).toMatchInlineSnapshot(`
+      "<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"  viewBox="-510 -510 4020 3720" font-family="Helvetica, Arial, sans-serif">
+      <defs></defs>
+      <rect x="-510" y="-510" width="4020" height="3720" fill="#ffffff"/>
+      <g id="A-FLOR" inkscape:groupmode="layer" inkscape:label="A-FLOR">
+      <polygon points="0,0 3000,0 3000,2400 0,2400" fill="#fbfaf7"/>
+      </g>
+      <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
+      <polygon points="2652,1500 2415.31,1879.13 2314.59,2314.59 1879.13,2415.31 1500,2652 1120.87,2415.31 685.41,2314.59 584.69,1879.13 348,1500 584.69,1120.87 685.41,685.41 1120.87,584.69 1500,348 1879.13,584.69 2314.59,685.41 2415.31,1120.87" fill="none" stroke="#a8a29a" stroke-width="4.8"/>
+      <circle cx="1500" cy="1500" r="391.68" fill="none" stroke="#a8a29a" stroke-width="2.64"/>
+      <circle cx="1500" cy="1500" r="138.24" fill="#a8a29a" stroke="#a8a29a" stroke-width="4.8"/>
+      </g>
+      <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
+      <text x="300" y="222" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
+      <text x="300" y="321" font-size="66" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">7.2 m²</text>
+      </g>
+      <g><polygon points="2865,-415.5 2797.5,-199.5 2865,-246.75 2932.5,-199.5" fill="#333333" transform="rotate(0 2865 -280.5)"/><text x="2865" y="-477.9" font-size="78" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
+      <g><rect x="0" y="2850" width="250" height="42" fill="#333333"/><rect x="250" y="2850" width="250" height="42" fill="none" stroke="#333333" stroke-width="4.8"/><text x="0" y="2952" font-size="60" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="500" y="2952" font-size="60" fill="#333333" text-anchor="middle" dominant-baseline="central">0.5 m</text></g>
+      </svg>"
+    `);
+  });
+
+  it("pergola", () => {
+    expect(svg("furniture pergola at (300,300) size 2000x1400")).toMatchInlineSnapshot(`
+      "<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"  viewBox="-510 -510 4020 3420" font-family="Helvetica, Arial, sans-serif">
+      <defs></defs>
+      <rect x="-510" y="-510" width="4020" height="3420" fill="#ffffff"/>
+      <g id="A-FLOR" inkscape:groupmode="layer" inkscape:label="A-FLOR">
+      <polygon points="0,0 3000,0 3000,2400 0,2400" fill="#fbfaf7"/>
+      </g>
+      <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
+      <polygon points="300,300 2300,300 2300,1700 300,1700" fill="none" stroke="#a8a29a" stroke-width="4.8" stroke-dasharray="28.8 19.2"/>
+      <circle cx="412" cy="412" r="84" fill="#a8a29a" stroke="#a8a29a" stroke-width="2.64"/>
+      <circle cx="2188" cy="412" r="84" fill="#a8a29a" stroke="#a8a29a" stroke-width="2.64"/>
+      <circle cx="2188" cy="1588" r="84" fill="#a8a29a" stroke="#a8a29a" stroke-width="2.64"/>
+      <circle cx="412" cy="1588" r="84" fill="#a8a29a" stroke="#a8a29a" stroke-width="2.64"/>
+      </g>
+      <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
+      <text x="1500" y="1902" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
+      <text x="1500" y="2001" font-size="66" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">7.2 m²</text>
+      </g>
+      <g><polygon points="2865,-415.5 2797.5,-199.5 2865,-246.75 2932.5,-199.5" fill="#333333" transform="rotate(0 2865 -280.5)"/><text x="2865" y="-477.9" font-size="78" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
+      <g><rect x="0" y="2550" width="250" height="42" fill="#333333"/><rect x="250" y="2550" width="250" height="42" fill="none" stroke="#333333" stroke-width="4.8"/><text x="0" y="2652" font-size="60" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="500" y="2652" font-size="60" fill="#333333" text-anchor="middle" dominant-baseline="central">0.5 m</text></g>
+      </svg>"
+    `);
+  });
+
+  it("shed", () => {
+    expect(svg("furniture shed at (300,300) size 2400x1800")).toMatchInlineSnapshot(`
+      "<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"  viewBox="-510 -510 4020 3420" font-family="Helvetica, Arial, sans-serif">
+      <defs></defs>
+      <rect x="-510" y="-510" width="4020" height="3420" fill="#ffffff"/>
+      <g id="A-FLOR" inkscape:groupmode="layer" inkscape:label="A-FLOR">
+      <polygon points="0,0 3000,0 3000,2400 0,2400" fill="#fbfaf7"/>
+      </g>
+      <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
+      <polygon points="300,300 2700,300 2700,2100 300,2100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.8"/>
+      <line x1="444" y1="1200" x2="2556" y2="1200" stroke="#a8a29a" stroke-width="2.64" stroke-dasharray="28.8 19.2"/>
+      <line x1="1140" y1="1992" x2="1860" y2="1992" stroke="#a8a29a" stroke-width="2.64"/>
+      </g>
+      <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
+      <text x="300" y="2142" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
+      <text x="300" y="2241" font-size="66" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">7.2 m²</text>
+      </g>
+      <g><polygon points="2865,-415.5 2797.5,-199.5 2865,-246.75 2932.5,-199.5" fill="#333333" transform="rotate(0 2865 -280.5)"/><text x="2865" y="-477.9" font-size="78" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
+      <g><rect x="0" y="2550" width="250" height="42" fill="#333333"/><rect x="250" y="2550" width="250" height="42" fill="none" stroke="#333333" stroke-width="4.8"/><text x="0" y="2652" font-size="60" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="500" y="2652" font-size="60" fill="#333333" text-anchor="middle" dominant-baseline="central">0.5 m</text></g>
+      </svg>"
+    `);
+  });
+
+  it("bbq", () => {
+    expect(svg("furniture bbq at (300,300) size 1200x600")).toMatchInlineSnapshot(`
+      "<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"  viewBox="-510 -510 4020 3420" font-family="Helvetica, Arial, sans-serif">
+      <defs></defs>
+      <rect x="-510" y="-510" width="4020" height="3420" fill="#ffffff"/>
+      <g id="A-FLOR" inkscape:groupmode="layer" inkscape:label="A-FLOR">
+      <polygon points="0,0 3000,0 3000,2400 0,2400" fill="#fbfaf7"/>
+      </g>
+      <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
+      <polygon points="1415.76,432 1448,438.41 1475.33,456.67 1493.59,484 1500,516.24 1500,815.76 1493.59,848 1475.33,875.33 1448,893.59 1415.76,900 384.24,900 352,893.59 324.67,875.33 306.41,848 300,815.76 300,516.24 306.41,484 324.67,456.67 352,438.41 384.24,432" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.8"/>
+      <polygon points="300,300 1500,300 1500,432 300,432" fill="#ffffff" stroke="#a8a29a" stroke-width="2.64"/>
+      <line x1="396" y1="549" x2="1404" y2="549" stroke="#a8a29a" stroke-width="2.64"/>
+      <line x1="396" y1="666" x2="1404" y2="666" stroke="#a8a29a" stroke-width="2.64"/>
+      <line x1="396" y1="783" x2="1404" y2="783" stroke="#a8a29a" stroke-width="2.64"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>

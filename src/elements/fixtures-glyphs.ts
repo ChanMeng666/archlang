@@ -54,6 +54,29 @@ import {
   drawTvUnit,
 } from "./glyphs-living.js";
 import { drawBookshelf, drawCar, drawDesk, drawOfficeChair, drawPlant, drawSunLounger } from "./glyphs-misc.js";
+import {
+  drawBbq,
+  drawBicycle,
+  drawBin,
+  drawClothesline,
+  drawConifer,
+  drawEvCharger,
+  drawFirePit,
+  drawHedge,
+  drawHotTub,
+  drawMailbox,
+  drawMotorcycle,
+  drawOutdoorChair,
+  drawOutdoorTable,
+  drawPergola,
+  drawSandpit,
+  drawShed,
+  drawShrub,
+  drawSwing,
+  drawTrampoline,
+  drawTree,
+  drawUmbrella,
+} from "./glyphs-outdoor.js";
 
 export type { Rect } from "./glyph-lib.js";
 
@@ -116,6 +139,32 @@ const FIXTURE_FAMILIES: readonly (readonly [string, ...string[]])[] = [
   ["sofa_l", "corner_sofa"],
   ["piano", "grand_piano"],
   ["sun_lounger", "lounger"],
+  // ---- the outdoor tranche (glyphs-outdoor.ts) ----
+  // Appended at the END for the reason stated above: this table's order IS the legend's
+  // order. Twenty-one families that take the drawing off the building and onto the site —
+  // planting, garden furniture, the things parked on a driveway, and the small standing
+  // objects a survey records. None of them is `requiresWall`: that flag means services.
+  ["tree", "deciduous_tree"],
+  ["conifer", "pine"],
+  ["shrub", "bush"],
+  ["hedge"],
+  ["bbq", "grill", "barbecue"],
+  ["outdoor_table", "patio_table"],
+  ["outdoor_chair", "patio_chair"],
+  ["umbrella", "parasol"],
+  ["bicycle", "bike"],
+  ["motorcycle"],
+  ["hot_tub", "spa"],
+  ["swing", "swing_set"],
+  ["trampoline"],
+  ["bin", "wheelie_bin"],
+  ["mailbox", "letterbox"],
+  ["ev_charger"],
+  ["pergola"],
+  ["sandpit", "sandbox"],
+  ["fire_pit"],
+  ["shed", "garden_shed"],
+  ["clothesline", "washing_line"],
 ];
 
 /**
@@ -251,6 +300,65 @@ export function fixtureGlyph(category: string, r: Rect, theme: Theme, sizes: Ren
     case "sun_lounger":
     case "lounger":
       return drawSunLounger(r, g);
+    // ---- the outdoor tranche ----
+    case "tree":
+    case "deciduous_tree":
+      return drawTree(r, g);
+    case "conifer":
+    case "pine":
+      return drawConifer(r, g);
+    case "shrub":
+    case "bush":
+      return drawShrub(r, g);
+    case "hedge":
+      return drawHedge(r, g);
+    case "bbq":
+    case "grill":
+    case "barbecue":
+      return drawBbq(r, g);
+    case "outdoor_table":
+    case "patio_table":
+      return drawOutdoorTable(r, g);
+    case "outdoor_chair":
+    case "patio_chair":
+      return drawOutdoorChair(r, g);
+    case "umbrella":
+    case "parasol":
+      return drawUmbrella(r, g);
+    case "bicycle":
+    case "bike":
+      return drawBicycle(r, g);
+    case "motorcycle":
+      return drawMotorcycle(r, g);
+    case "hot_tub":
+    case "spa":
+      return drawHotTub(r, g);
+    case "swing":
+    case "swing_set":
+      return drawSwing(r, g);
+    case "trampoline":
+      return drawTrampoline(r, g);
+    case "bin":
+    case "wheelie_bin":
+      return drawBin(r, g);
+    case "mailbox":
+    case "letterbox":
+      return drawMailbox(r, g);
+    case "ev_charger":
+      return drawEvCharger(r, g);
+    case "pergola":
+      return drawPergola(r, g);
+    case "sandpit":
+    case "sandbox":
+      return drawSandpit(r, g);
+    case "fire_pit":
+      return drawFirePit(r, g);
+    case "shed":
+    case "garden_shed":
+      return drawShed(r, g);
+    case "clothesline":
+    case "washing_line":
+      return drawClothesline(r, g);
     default:
       return null;
   }
