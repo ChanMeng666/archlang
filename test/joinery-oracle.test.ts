@@ -56,9 +56,24 @@ import {
 } from "../src/geometry/band.js";
 import { type JoineryWall, joinWalls } from "../src/geometry/joinery.js";
 import { circleCircle, lineCircleParams, lineLineParams, perp } from "../src/geometry/intersect.js";
-import { angledWalls, renderWalls, rectilinearWalls } from "./arbitrary-joinery.js";
+import { type WallSpec, angledWalls, renderWalls, rectilinearWalls } from "./arbitrary-joinery.js";
 
-const RUNS = Number(process.env.JOINERY_RUNS ?? 500);
+const P = (x: number, y: number): Point => ({ x, y });
+
+const RUNS = Math.min(2000, Math.max(1, Number(process.env.JOINERY_RUNS ?? 500)));
+
+/**
+ * Per-case deadline, in milliseconds.
+ *
+ * A property that fails hands `fast-check` a counterexample to SHRINK, and shrinking a
+ * wall set is not cheap: one run of this file left a worker spinning on a single core for
+ * over three hours after the suite had moved on, and its cost was invisible except as
+ * every OTHER measurement on the machine drifting by a factor of nearly three. A property
+ * run that never terminates is a finding in its own right, so every case here carries a
+ * deadline and `RUNS` is capped — the file can go red, but it cannot hang the suite or
+ * quietly poison a benchmark.
+ */
+const CASE_TIMEOUT_MS = 120_000;
 
 /**
  * A PINNED seed, so this file is a gate rather than a lottery.
@@ -144,134 +159,154 @@ function crossesInterior(a: Edge, b: Edge): Point | null {
 describe("intrinsic laws — any correct boundary satisfies these, for any wall set", () => {
   const bothFamilies = fc.oneof(rectilinearWalls, angledWalls);
 
-  it("(a) no two emitted outline edges cross at a point interior to both", () => {
-    fc.assert(
-      fc.property(bothFamilies, (specs) => {
-        const { walls, cuts, groups } = renderWalls(specs);
-        const { outline } = joinWalls(walls, cuts, groups);
-        const edges = outline.flat();
-        for (let i = 0; i < edges.length; i++) {
-          for (let j = i + 1; j < edges.length; j++) {
-            const hit = crossesInterior(edges[i]!, edges[j]!);
-            if (hit) return false;
+  it(
+    "(a) no two emitted outline edges cross at a point interior to both",
+    () => {
+      fc.assert(
+        fc.property(bothFamilies, (specs) => {
+          const { walls, cuts, groups } = renderWalls(specs);
+          const { outline } = joinWalls(walls, cuts, groups);
+          const edges = outline.flat();
+          for (let i = 0; i < edges.length; i++) {
+            for (let j = i + 1; j < edges.length; j++) {
+              const hit = crossesInterior(edges[i]!, edges[j]!);
+              if (hit) return false;
+            }
           }
-        }
-        return true;
-      }),
-      { numRuns: RUNS, seed: SEED },
-    );
-  });
+          return true;
+        }),
+        { numRuns: RUNS, seed: SEED },
+      );
+    },
+    CASE_TIMEOUT_MS,
+  );
 
-  it("(b) re-probing every emitted edge finds solid on EXACTLY one side", () => {
-    fc.assert(
-      fc.property(bothFamilies, (specs) => {
-        const { walls, cuts, groups } = renderWalls(specs);
-        const { outline } = joinWalls(walls, cuts, groups);
-        const eps = 1e-3;
-        for (const l of outline) {
-          for (const e of l) {
-            const m = edgeMid(e);
-            const n = perp(edgeTangentAt(e, m));
-            const plus = inside(outline, { x: m.x + n.x * eps, y: m.y + n.y * eps });
-            const minus = inside(outline, { x: m.x - n.x * eps, y: m.y - n.y * eps });
-            if (plus === minus) return false;
-            // … and the SOLID side is on the +perp side, i.e. clockwise-positive.
-            if (!plus) return false;
+  it(
+    "(b) re-probing every emitted edge finds solid on EXACTLY one side",
+    () => {
+      fc.assert(
+        fc.property(bothFamilies, (specs) => {
+          const { walls, cuts, groups } = renderWalls(specs);
+          const { outline } = joinWalls(walls, cuts, groups);
+          const eps = 1e-3;
+          for (const l of outline) {
+            for (const e of l) {
+              const m = edgeMid(e);
+              const n = perp(edgeTangentAt(e, m));
+              const plus = inside(outline, { x: m.x + n.x * eps, y: m.y + n.y * eps });
+              const minus = inside(outline, { x: m.x - n.x * eps, y: m.y - n.y * eps });
+              if (plus === minus) return false;
+              // … and the SOLID side is on the +perp side, i.e. clockwise-positive.
+              if (!plus) return false;
+            }
           }
-        }
-        return true;
-      }),
-      { numRuns: RUNS, seed: SEED },
-    );
-  });
+          return true;
+        }),
+        { numRuns: RUNS, seed: SEED },
+      );
+    },
+    CASE_TIMEOUT_MS,
+  );
 
-  it("(c) every loop is closed, non-degenerate, and encloses a positive area", () => {
-    fc.assert(
-      fc.property(bothFamilies, (specs) => {
-        const { walls, cuts, groups } = renderWalls(specs);
-        const { outline } = joinWalls(walls, cuts, groups);
-        for (const l of outline) {
-          if (l.length === 0) return false;
-          // Closed: each edge ends where the next begins, cyclically.
-          for (let i = 0; i < l.length; i++) {
-            if (pointKey(edgeEnd(l[i]!)) !== pointKey(edgeStart(l[(i + 1) % l.length]!))) return false;
+  it(
+    "(c) every loop is closed, non-degenerate, and encloses a positive area",
+    () => {
+      fc.assert(
+        fc.property(bothFamilies, (specs) => {
+          const { walls, cuts, groups } = renderWalls(specs);
+          const { outline } = joinWalls(walls, cuts, groups);
+          for (const l of outline) {
+            if (l.length === 0) return false;
+            // Closed: each edge ends where the next begins, cyclically.
+            for (let i = 0; i < l.length; i++) {
+              if (pointKey(edgeEnd(l[i]!)) !== pointKey(edgeStart(l[(i + 1) % l.length]!))) return false;
+            }
+            // Three edges — OR fewer, provided at least one is an arc. A curved boundary
+            // legitimately closes with two edges (a chord and an arc bound a crescent, and
+            // a bulged wall meeting a straight one on the same chord produces exactly that)
+            // or with one (a full circle). Only an ALL-STRAIGHT loop of fewer than three
+            // edges is degenerate — it would be two coincident lines enclosing nothing.
+            if (l.length < 3 && !l.some((e) => e.t === "arc")) return false;
+            if (!(Math.abs(loopArea(l)) > 0)) return false;
           }
-          // Three edges — OR fewer, provided at least one is an arc. A curved boundary
-          // legitimately closes with two edges (a chord and an arc bound a crescent, and
-          // a bulged wall meeting a straight one on the same chord produces exactly that)
-          // or with one (a full circle). Only an ALL-STRAIGHT loop of fewer than three
-          // edges is degenerate — it would be two coincident lines enclosing nothing.
-          if (l.length < 3 && !l.some((e) => e.t === "arc")) return false;
-          if (!(Math.abs(loopArea(l)) > 0)) return false;
-        }
-        return true;
-      }),
-      { numRuns: RUNS, seed: SEED },
-    );
-  });
+          return true;
+        }),
+        { numRuns: RUNS, seed: SEED },
+      );
+    },
+    CASE_TIMEOUT_MS,
+  );
 
-  it("(f) is deterministic, and independent of the ORDER the caller passes walls in", () => {
-    fc.assert(
-      fc.property(bothFamilies, fc.integer({ min: 0, max: 1000 }), (specs, seed) => {
-        const { walls, cuts, groups } = renderWalls(specs);
-        const a = joinWalls(walls, cuts, groups);
-        const b = joinWalls(walls, cuts, groups);
-        if (JSON.stringify(a) !== JSON.stringify(b)) return false;
-        // Permute the ARRAYS while leaving every `index` field alone: the tags are the
-        // caller's indices, so a permutation must be a no-op on the output.
-        const rot = seed % Math.max(1, walls.length);
-        const permWalls = [...walls.slice(rot), ...walls.slice(0, rot)];
-        const permCuts = [...cuts].reverse();
-        const c = joinWalls(permWalls, permCuts, groups);
-        return JSON.stringify(a) === JSON.stringify(c);
-      }),
-      { numRuns: RUNS, seed: SEED },
-    );
-  });
+  it(
+    "(f) is deterministic, and independent of the ORDER the caller passes walls in",
+    () => {
+      fc.assert(
+        fc.property(bothFamilies, fc.integer({ min: 0, max: 1000 }), (specs, seed) => {
+          const { walls, cuts, groups } = renderWalls(specs);
+          const a = joinWalls(walls, cuts, groups);
+          const b = joinWalls(walls, cuts, groups);
+          if (JSON.stringify(a) !== JSON.stringify(b)) return false;
+          // Permute the ARRAYS while leaving every `index` field alone: the tags are the
+          // caller's indices, so a permutation must be a no-op on the output.
+          const rot = seed % Math.max(1, walls.length);
+          const permWalls = [...walls.slice(rot), ...walls.slice(0, rot)];
+          const permCuts = [...cuts].reverse();
+          const c = joinWalls(permWalls, permCuts, groups);
+          return JSON.stringify(a) === JSON.stringify(c);
+        }),
+        { numRuns: RUNS, seed: SEED },
+      );
+    },
+    CASE_TIMEOUT_MS,
+  );
 });
 
 /* --------------------------------------------------- (d) the rectilinear oracle */
 
 describe("(d) axis-aligned input agrees EXACTLY with geometry/union.ts", () => {
-  it("outline edge set == rectBooleanOutline's, for every generated wall set", () => {
-    fc.assert(
-      fc.property(rectilinearWalls, (specs) => {
-        const { walls, cuts, groups } = renderWalls(specs);
-        const { outline } = joinWalls(walls, cuts, groups);
+  it(
+    "outline edge set == rectBooleanOutline's, for every generated wall set",
+    () => {
+      fc.assert(
+        fc.property(rectilinearWalls, (specs) => {
+          const { walls, cuts, groups } = renderWalls(specs);
+          const { outline } = joinWalls(walls, cuts, groups);
 
-        // The oracle's input is built exactly the way `lowerOrthogonalGroup` has always
-        // built it: one `segmentRectangle` per wall SEGMENT. Not the band's loop boxes —
-        // a closed ring's band has an outer loop AND a hole, and feeding both as solids
-        // would hand the oracle a filled square where the drawing has a ring.
-        const solids: Rect[] = [];
-        for (const spec of specs) {
-          for (const seg of segmentsOfWall({ id: "", category: "", ...spec })) {
-            const corners = segmentRectangle(seg.a, seg.b, seg.thickness);
-            const xs = corners.map((c) => c.x);
-            const ys = corners.map((c) => c.y);
-            solids.push({
-              x0: Math.min(...xs),
-              y0: Math.min(...ys),
-              x1: Math.max(...xs),
-              y1: Math.max(...ys),
-            });
+          // The oracle's input is built exactly the way `lowerOrthogonalGroup` has always
+          // built it: one `segmentRectangle` per wall SEGMENT. Not the band's loop boxes —
+          // a closed ring's band has an outer loop AND a hole, and feeding both as solids
+          // would hand the oracle a filled square where the drawing has a ring.
+          const solids: Rect[] = [];
+          for (const spec of specs) {
+            for (const seg of segmentsOfWall({ id: "", category: "", ...spec })) {
+              const corners = segmentRectangle(seg.a, seg.b, seg.thickness);
+              const xs = corners.map((c) => c.x);
+              const ys = corners.map((c) => c.y);
+              solids.push({
+                x0: Math.min(...xs),
+                y0: Math.min(...ys),
+                x1: Math.max(...xs),
+                y1: Math.max(...ys),
+              });
+            }
           }
-        }
-        const holes: Rect[] = cuts.map((c) => {
-          const b = loopBBox(c.loop);
-          return { x0: b.minX, y0: b.minY, x1: b.maxX, y1: b.maxY };
-        });
-        const expected = rectBooleanOutline(solids, holes);
+          const holes: Rect[] = cuts.map((c) => {
+            const b = loopBBox(c.loop);
+            return { x0: b.minX, y0: b.minY, x1: b.maxX, y1: b.maxY };
+          });
+          const expected = rectBooleanOutline(solids, holes);
 
-        const mine = edgeKeySet(outline);
-        const theirs = polyEdgeKeySet(expected);
-        if (mine.size !== theirs.size) return false;
-        for (const k of theirs) if (!mine.has(k)) return false;
-        return true;
-      }),
-      { numRuns: RUNS, seed: SEED },
-    );
-  });
+          const mine = edgeKeySet(outline);
+          const theirs = polyEdgeKeySet(expected);
+          if (mine.size !== theirs.size) return false;
+          for (const k of theirs) if (!mine.has(k)) return false;
+          return true;
+        }),
+        { numRuns: RUNS, seed: SEED },
+      );
+    },
+    CASE_TIMEOUT_MS,
+  );
 
   it("the oracle is not vacuous — a planted extra wall changes its answer too", () => {
     // If `rectBooleanOutline` returned the same thing for everything, (d) would prove
@@ -398,6 +433,132 @@ function wellSeparated(walls: readonly JoineryWall[]): boolean {
 const clipper: GeometryBackend | null = await loadClipperBackend().catch(() => null);
 const CLIPPER_REQUIRED = !!process.env.CI;
 
+/** Shoelace area of a plain polygon (the closing edge implied). */
+function shoelace(poly: readonly Point[]): number {
+  let s = 0;
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i]!;
+    const b = poly[(i + 1) % poly.length]!;
+    s += a.x * b.y - b.x * a.y;
+  }
+  return s / 2;
+}
+
+/** Distance from a point to a plain polygon's boundary. */
+const toPolylines = (polys: readonly Point[][], p: Point): number =>
+  Math.min(
+    ...polys.map((poly) => Math.min(...poly.map((q, k) => distPointToSegment(p, q, poly[(k + 1) % poly.length]!)))),
+  );
+
+/**
+ * Does the joinery outline agree with clipper's union of the same bands?
+ *
+ * **Two comparisons, and which SHAPE one applies is a property of the input, not a
+ * tolerance dial.**
+ *
+ * **(i) AREA — always, and relative.** It is the one claim that survives the two engines
+ * disagreeing about CONNECTIVITY: a region counted as one piece or as two has the same
+ * total area either way, so it needs no precondition. Its budget carries two derived
+ * terms beside the `1e-5` relative one, and neither is slack for its own sake.
+ * `snapSlack` is clipper's own micron grid — every vertex it returns has moved by up to
+ * `COMPARE_MM`, which shifts the area by about the boundary's LENGTH times that.
+ * `tessSlack` is the area between a curve and its own chords, `(L·r/2)·(θ − sin θ)/θ`
+ * per arc: both sides are compared as POLYGONS but tessellated from different arcs,
+ * because the join merges and splits curves and the step counts then differ. It is
+ * exactly zero on an all-straight outline, so the strict comparison still applies in
+ * full wherever it can.
+ *
+ * **(ii) SHAPE, curved input — ONE-DIRECTIONAL.** Every joinery vertex, plus the
+ * MIDPOINT of every joinery arc edge (the point of a curve furthest from its own chord,
+ * so the one a faceted oracle is least likely to carry), must lie on clipper's boundary.
+ * The reverse direction is deliberately NOT asserted: clipper unions a TESSELLATED
+ * polygon, so it necessarily owns vertices joinery never had — a 48-gon's worth per
+ * circle — and requiring joinery to account for each of them tests the oracle's faceting,
+ * not the algorithm. The tolerance carries the sagitta `r(1 − cos(step/2))`, which is the
+ * furthest a point of the true curve can sit from the chord standing in for it.
+ *
+ * **(iii) SHAPE, straight input — BOTH directions.** With no curve there is no sagitta
+ * and no faceting, so the two boundaries must be each other's, and the comparison is
+ * tight (`COMPARE_MM`). It is still point-to-BOUNDARY rather than vertex-to-vertex, and
+ * that is not a loosening: clipper unions per-band polygons and KEEPS the collinear
+ * vertex where two of them met, while `joinWalls` merges a straight run into one edge —
+ * measured on two disjoint walls, its loop carried `[3060,60] [1500,60] [-60,60]` where
+ * joinery's carried the two ends alone. A vertex-set equality calls that a mismatch when
+ * the two boundaries are the identical rectangle.
+ *
+ * Both SHAPE comparisons are preconditioned on well-separated bands (see
+ * {@link SEPARATION_MM}); the AREA one is not.
+ */
+function agreesWithClipper(outline: EdgeLoop[], walls: readonly JoineryWall[], theirs: Point[][]): boolean {
+  const mineTess = tessellateLoops(outline);
+  const theirArea = theirs.reduce((s, p) => s + shoelace(p), 0);
+  const mineArea = mineTess.reduce((s, p) => s + shoelace(p), 0);
+  const perimeter = mineTess.reduce(
+    (s, poly) =>
+      s +
+      poly.reduce(
+        (t, p, k) => t + Math.hypot(p.x - poly[(k + 1) % poly.length]!.x, p.y - poly[(k + 1) % poly.length]!.y),
+        0,
+      ),
+    0,
+  );
+
+  // (i) AREA
+  const step = rad(ARC_STEP_DEG);
+  const chordDeficit = (step - Math.sin(step)) / step;
+  const tessSlack = outline
+    .flat()
+    .reduce((m, e) => (e.t === "arc" ? m + ((Math.abs(e.arc.sweep) * e.arc.r * e.arc.r) / 2) * chordDeficit : m), 0);
+  const scale = Math.max(Math.abs(theirArea), Math.abs(mineArea), 1);
+  const snapSlack = perimeter * COMPARE_MM;
+  if (Math.abs(Math.abs(mineArea) - Math.abs(theirArea)) > scale * 1e-5 + snapSlack + tessSlack) return false;
+
+  // (ii)/(iii) SHAPE
+  if (!wellSeparated(walls)) return true;
+  const curved = outline.some((l) => l.some((e) => e.t === "arc"));
+  if (!curved) {
+    const onMine = (p: Point): boolean => outline.flat().some((e) => edgeDist(p, e) <= COMPARE_MM);
+    for (const poly of theirs) for (const p of poly) if (!onMine(p)) return false;
+    for (const poly of mineTess) for (const p of poly) if (toPolylines(theirs, p) > COMPARE_MM) return false;
+    return true;
+  }
+  // The sagitta bound is derived from clipper's OWN OUTPUT - its longest chord - and not
+  // from the tessellation step it was fed.
+  //
+  // The step would be the obvious source and it is wrong: a UNION clips chords. Where two
+  // bands overlap, clipper's boundary runs from one intersection point to the next, and
+  // that span can be longer than any single facet it started with. Measured, that put a
+  // joinery arc midpoint 9.26 mm off clipper's polyline against an 8.04 mm step-derived
+  // bound - a curve neither engine got wrong, judged by a ruler that did not describe the
+  // polygon actually returned. `r - sqrt(r^2 - (L/2)^2)` for the longest chord `L` present
+  // and the largest radius `r` in play is the honest bound, and it adapts to whatever the
+  // oracle happened to emit.
+  const rMax = [...outline.flat(), ...walls.flatMap((w) => w.loops.flat())].reduce(
+    (m, e) => (e.t === "arc" ? Math.max(m, e.arc.r) : m),
+    0,
+  );
+  const maxChord = theirs.reduce(
+    (m, poly) =>
+      Math.max(
+        m,
+        ...poly.map((q, k) => Math.hypot(q.x - poly[(k + 1) % poly.length]!.x, q.y - poly[(k + 1) % poly.length]!.y)),
+      ),
+    0,
+  );
+  const sagitta = rMax - Math.sqrt(Math.max(0, rMax * rMax - (maxChord / 2) ** 2));
+  // Twice COMPARE_MM: a chord has TWO endpoints and clipper has snapped both to its grid,
+  // which tilts the chord as well as moving it.
+  const tol = 2 * COMPARE_MM + sagitta;
+  const probes: Point[] = [];
+  for (const loop of outline) {
+    for (const e of loop) {
+      probes.push(edgeStart(e));
+      if (e.t === "arc") probes.push(edgeMid(e));
+    }
+  }
+  return probes.every((p) => toPolylines(theirs, p) <= tol);
+}
+
 describe("(e) angled and curved input agrees with the clipper2 union", () => {
   if (!clipper) {
     const gate = "optional geometry dep clipper2-wasm is installed";
@@ -414,118 +575,61 @@ describe("(e) angled and curved input agrees with the clipper2 union", () => {
       it.skip(`${gate} (absent locally — the angled oracle did not run)`, () => {});
     }
   } else {
-    it("total area agrees to 1e-6 relative, and every vertex is within 1e-3 mm of theirs", () => {
-      fc.assert(
-        fc.property(angledWalls, (specs) => {
-          const { walls, cuts, groups } = renderWalls(specs);
-          // The oracle cannot subtract an ANNULAR opening sector, so this property is
-          // stated on the union alone — openings have their own example-based coverage.
-          if (cuts.length > 0) return true;
-          const { outline } = joinWalls(walls, cuts, groups);
-          const polys = walls.flatMap((w) => tessellateLoops(w.loops));
-          if (polys.length === 0) return outline.length === 0;
-          const theirs = clipper.union(polys);
+    it(
+      "agrees with clipper2 on AREA always, and on SHAPE by the comparison each input admits",
+      () => {
+        fc.assert(
+          fc.property(angledWalls, (specs) => {
+            const { walls, cuts, groups } = renderWalls(specs);
+            // The oracle cannot subtract an ANNULAR opening sector, so this property is
+            // stated on the union alone - openings have their own example-based coverage.
+            if (cuts.length > 0) return true;
+            const { outline } = joinWalls(walls, cuts, groups);
+            const polys = walls.flatMap((w) => tessellateLoops(w.loops));
+            if (polys.length === 0) return outline.length === 0;
+            const theirs = clipper.union(polys);
+            return agreesWithClipper(outline, walls, theirs);
+          }),
+          { numRuns: RUNS, seed: SEED },
+        );
+      },
+      CASE_TIMEOUT_MS,
+    );
 
-          const shoelace = (poly: Point[]): number => {
-            let s = 0;
-            for (let i = 0; i < poly.length; i++) {
-              const a = poly[i]!;
-              const b = poly[(i + 1) % poly.length]!;
-              s += a.x * b.y - b.x * a.y;
-            }
-            return s / 2;
-          };
-          const theirArea = theirs.reduce((s, p) => s + shoelace(p), 0);
-          // Ours is tessellated for the comparison, so both sides carry the SAME
-          // faceting error and the residue is the boolean's, not the curve's.
-          const mineTess = tessellateLoops(outline);
-          const mineArea = mineTess.reduce((s, p) => s + shoelace(p), 0);
-          // The tolerance is DERIVED from the two engines' quantisations, not picked:
-          // a vertex can sit up to `COMPARE_MM` from where the other engine puts it, so
-          // the area can move by about the boundary's LENGTH times that. A flat
-          // "1e-6 relative" would be asserting the oracle is exact, which it is not -
-          // and it failed on a 1.5 m curved wall by exactly that margin (1.9e-6).
-          const perimeter = mineTess.reduce(
-            (s, poly) =>
-              s +
-              poly.reduce(
-                (t, p, k) => t + Math.hypot(p.x - poly[(k + 1) % poly.length]!.x, p.y - poly[(k + 1) % poly.length]!.y),
-                0,
-              ),
-            0,
-          );
-          // AREA: UNCONDITIONAL. It survives a connectivity disagreement between the two
-          // engines — a region counted as one piece or two has the same total area — so
-          // it needs no precondition. Its budget carries two DERIVED terms beside the
-          // relative one, and neither is slack for its own sake:
-          //
-          //   `snapSlack`  clipper works on a micron integer grid, so every vertex it
-          //                returns has moved by up to `COMPARE_MM`, which shifts the
-          //                area by about the boundary's LENGTH times that.
-          //   `tessSlack`  both sides are compared as POLYGONS, but tessellated from
-          //                different arcs (the join merges and splits curves, so the
-          //                step counts differ). Two tessellations of one curve can
-          //                differ by at most the area between that curve and its own
-          //                chords, `(L·r/2)·(θ − sin θ)/θ` per arc. It is zero on an
-          //                all-straight outline, so the strict comparison still applies
-          //                in full exactly where it can.
-          const step = rad(ARC_STEP_DEG);
-          const chordDeficit = (step - Math.sin(step)) / step;
-          const tessSlack = outline
-            .flat()
-            .reduce(
-              (m, e) => (e.t === "arc" ? m + ((Math.abs(e.arc.sweep) * e.arc.r * e.arc.r) / 2) * chordDeficit : m),
-              0,
-            );
-          const scale = Math.max(Math.abs(theirArea), Math.abs(mineArea), 1);
-          const snapSlack = perimeter * COMPARE_MM;
-          if (Math.abs(Math.abs(mineArea) - Math.abs(theirArea)) > scale * 1e-6 + snapSlack + tessSlack) return false;
-
-          // SHAPE: every vertex of each boundary lies ON the other boundary, both ways.
-          //
-          // Point-to-BOUNDARY, not point-to-vertex, and that is the honest comparison
-          // rather than a loosened one. The two engines legitimately disagree about
-          // which vertices are worth keeping: clipper unions per SEGMENT rectangle and
-          // leaves the collinear vertex where two of them met, while `joinWalls` merges
-          // a straight run into one edge — a reader is entitled to one line, not two. A
-          // vertex-to-vertex test would call that a mismatch when the two boundaries are
-          // the same curve.
-          //
-          // Preconditioned on well-separated bands: see SEPARATION_MM.
-          if (!wellSeparated(walls)) return true;
-          // The tolerance carries one more DERIVED term on curved input: a chord's
-          // SAGITTA. Both sides are compared as polylines, but they were tessellated
-          // from different arcs (the join merges and splits curves, so the step counts
-          // differ), and a vertex of one tessellation sits up to `r(1 − cos(step/2))`
-          // off the other's chord. On a 2 m radius that is 4 mm — three hundred times
-          // the positional tolerance, and nothing to do with either engine's accuracy.
-          // An all-straight outline contributes no sagitta, so the strict comparison
-          // still applies in full exactly where it can.
-          // The sagitta is taken over BOTH boundaries' arcs and from each one's ACTUAL
-          // step (`arcSteps`, which rounds the chord count up and so is finer than the
-          // nominal `ARC_STEP_DEG`), because the vertex being tested may belong to
-          // either tessellation. Bounding it by the outline's arcs alone under-counts
-          // whenever the join left a SHORTER curve than the band it came from, and the
-          // comparison then fails by a hair on a curve neither engine got wrong.
-          const arcs = [...outline.flat(), ...walls.flatMap((w) => w.loops.flat())];
-          const sagitta = arcs.reduce(
-            (m, e) => (e.t === "arc" ? Math.max(m, e.arc.r * (1 - Math.cos(rad(ARC_STEP_DEG) / 2))) : m),
-            0,
-          );
-          // Twice `COMPARE_MM`, because a chord has TWO endpoints and clipper has snapped
-          // both to its own micron grid — which tilts the chord as well as moving it. One
-          // COMPARE_MM leaves the comparison failing by a hair (measured: 5.038 against a
-          // 5.038 bound) on a curve neither engine got wrong.
-          const tol = 2 * COMPARE_MM + sagitta;
-          const onMine = (p: Point): boolean => outline.flat().some((e) => edgeDist(p, e) <= tol);
-          const onTheirs = (p: Point): boolean =>
-            theirs.some((poly) => poly.some((q, k) => distPointToSegment(p, q, poly[(k + 1) % poly.length]!) <= tol));
-          for (const poly of theirs) for (const p of poly) if (!onMine(p)) return false;
-          for (const poly of mineTess) for (const p of poly) if (!onTheirs(p)) return false;
-          return true;
-        }),
-        { numRuns: RUNS, seed: SEED },
-      );
+    it("REGRESSION: a straight run capping into a curved one, from a failing property seed", () => {
+      // The case property (e) died on at run 13, before the shape comparison was split by
+      // input kind. It is a 180 mm straight run whose cap lands beside a 120 mm CURVED
+      // wall, so the two bands overlap and clipper's union CLIPS the chords of the curve -
+      // which is what made a step-derived sagitta bound too small (a joinery arc midpoint
+      // 9.26 mm off clipper's polyline against an 8.04 mm bound). Pinned as an example so
+      // the bound cannot quietly go back to being derived from the tessellation step
+      // rather than from the polygon clipper actually returned.
+      const specs: WallSpec[] = [
+        {
+          points: [P(0, 0), P(1500, 0), P(4040.2155, 0)],
+          thickness: 180,
+          closed: false,
+          group: "brick",
+          openings: [],
+        },
+        {
+          points: [P(4000, 0), P(7976.044906898427, 0), P(9476.044906898427, 0)],
+          thickness: 120,
+          closed: false,
+          group: "brick",
+          openings: [],
+          arc: { radius: 2286.225821466596, dir: "ccw" },
+        },
+      ];
+      const { walls, cuts, groups } = renderWalls(specs);
+      expect(cuts).toHaveLength(0);
+      const { outline } = joinWalls(walls, cuts, groups);
+      // The fixture is honest: the two bands really do overlap (ONE joined region, not
+      // two), and the outline really does carry a curve.
+      expect(outline).toHaveLength(1);
+      expect(outline[0]!.some((e) => e.t === "arc")).toBe(true);
+      const theirs = clipper.union(walls.flatMap((w) => tessellateLoops(w.loops)));
+      expect(agreesWithClipper(outline, walls, theirs)).toBe(true);
     });
 
     it("the oracle really is exercised — a curved wall reaches it and returns a curve", () => {
