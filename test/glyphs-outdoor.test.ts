@@ -284,12 +284,22 @@ describe("glyphs-outdoor — what each symbol draws", () => {
     for (const c of ALL_NAMES) expect(hasFixtureGlyph(c), `${c} draws a symbol`).toBe(true);
   });
 
-  it("the twenty-one families are the tail of the canonical vocabulary", () => {
+  it("the twenty-one families are ONE contiguous run of the canonical vocabulary", () => {
     // Derived, not retyped: the module's own family list must be exactly what
     // `FIXTURE_FAMILIES` appended, in order. Appending elsewhere or re-ordering the table
     // (which is the LEGEND's order) fails here.
+    //
+    // It used to read `slice(-names.length)` — the outdoor tranche was the TAIL, because it
+    // was the last one written. v1.32 appends eight kitchen and bath families after it, so
+    // the tail is no longer this module's and never will be again. The property that
+    // actually matters survives the change and is the one asserted now: the twenty-one sit
+    // together, in order, wherever the table has grown to put them. A family slotted in
+    // beside its domain neighbours instead of appended still fails, which is the whole
+    // point — that ordering is the legend's.
     const names = GLYPHS.map(([n]) => n);
-    expect(CANONICAL_FIXTURES.slice(-names.length)).toEqual(names);
+    const start = CANONICAL_FIXTURES.indexOf(names[0]!);
+    expect(start, "the first outdoor family is in the canonical vocabulary").toBeGreaterThanOrEqual(0);
+    expect(CANONICAL_FIXTURES.slice(start, start + names.length)).toEqual(names);
   });
 
   it("draws the expected number of primitives, all within the budget", () => {
@@ -355,8 +365,9 @@ describe("glyphs-outdoor — the catalog's claims about these symbols are true",
    * NINE of the ten `symmetric: true` families, with the footprint each is proved on. The five
    * radial ones hold at ANY aspect (they are built from the centre and the short side, both of
    * which a quarter-turn preserves); the four rectangle-built ones hold on a square, which is
-   * the honest scope of the claim — `coffee_table` and `island` are symmetric on the same
-   * terms.
+   * the honest scope of the claim — `coffee_table` is symmetric on the same terms. (`island`
+   * used to be named here too. It stopped being `symmetric` in v1.32, when its symbol gained
+   * a seating overhang along one side; see `fixtures-catalog.ts`.)
    *
    * `shrub` is the tenth and is deliberately ABSENT: its outline is an irregular cloud, so it
    * does not map onto itself vertex for vertex. That is a change to what this file proves, not

@@ -34,12 +34,33 @@
  * dwelling, the flagship, a CONCAVE polygon plan (whose ring code the roof's offset shares
  * a module with) and a CURVED sheet plan on `paper` (whose auto-fit reads the same
  * `planBounds` the roof now contributes to).
+ *
+ * ## RE-MEASURED for v1.32 (the furniture pass), and how it was proved
+ *
+ * Two of the four digests below moved, and it is not this law breaking. v1.32 redraws six
+ * kitchen and bath symbols (`island`, `upper_cabinet`, `dishwasher`, `oven`, `fridge`,
+ * `washer`), so every plan that places one draws different bytes ON PURPOSE — which is
+ * `laneway-house` and `studio`. `gallery-l` and `aquarium` place none of the six and did not
+ * move at all, which is itself a useful reading: the redraw is confined to the six.
+ *
+ * That was proved by SUBSTITUTION rather than assumed, and the proof is reproducible. The
+ * committed `examples/<name>.svg` files are the compiler's own output, drift-gated as such,
+ * so the BASE drawing of any of these plans is `git show <the commit before the redraw>:`
+ * `examples/<name>.svg`. Feeding that into this file's digest body — with `describe()` and
+ * `lint()` taken from the NEW code — reproduces the OLD hex exactly, for every plan here.
+ * Only the drawing moved.
+ *
+ * So that the next such release need not repeat the argument, each example now also carries a
+ * pin over the SUMMARY half alone (`semanticDigestWith`: the same payload with the SVG
+ * removed). Those numbers are the original measurement, unchanged, and a drawing change can
+ * never move them. If one of THEM moves, the finding is real.
  */
 
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compile, describe as describePlan, lint, planToJson } from "../src/index.js";
+import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js";
 
 /**
  * SHA-256 over the SVG + `describe()` + `lint()` of one example, as measured on main.
@@ -82,11 +103,22 @@ import { compile, describe as describePlan, lint, planToJson } from "../src/inde
  * moved before touching a number here, and write down what it was.
  */
 const BASELINE: [string, string][] = [
-  ["laneway-house", "5824194c7987e5f2e1902805357a5e1a533fea59bd17404c0ae288cb93dd7cc4"],
-  ["studio", "cfe9b264e5ce123412b8d04f47dfa5bc917b4ef9404a502a74ff4578c708e240"],
+  ["laneway-house", "e306d63d953e0f7740626e188765870024f7479fe61fd482fd209017153128f8"],
+  ["studio", "7816107d209b9ef70b49ee9ee0a2092bf7604224733f2f483ce968197f11d138"],
   ["gallery-l", "32666c41627873f63030c0621edf31bae42a4e1f7fa0fc3ff1ddc83674b89878"],
   ["aquarium", "b55a84953b7fa18a892cf324e0d9fc72eb06342aeb90dd498231a61f6ec07ddf"],
 ];
+
+/** The SUMMARY half of the same law — see the header. Unchanged since the measurement. */
+const SEMANTIC_BASELINE: [string, string][] = [
+  ["laneway-house", "ac2df20e15d2e4fbcc73e34a15d4e34578aa89a859860561b85361db170040b6"],
+  ["studio", "b065cbe49d364414b340639fc06922eb14f472c9f4470134bb6f2b4489ada364"],
+  ["gallery-l", "cef0ee1863a505bb831aa2512ca204547117872a61cf1a1ddd293361f0b688be"],
+  ["aquarium", "2cc0778dbc3b1127e0e478d8e08d12a766de6a73458748ee40bd5f43473f1e1f"],
+];
+
+/** The compiler surface the summary-half pins are taken over. */
+const API: CompilerApi = { compile, describe: describePlan, lint };
 
 /** The exact payload the baseline digests were taken over — do not change its shape. */
 function digest(src: string): string {
@@ -106,6 +138,17 @@ describe("roof/void byte-identity — a plan that uses neither is unchanged", ()
           `moved (the label-placement obstacle set, the nav-grid obstacle list, planBounds, the ` +
           `describe() key order) or an element table grew a field every plan pays for. Find out ` +
           `WHICH before updating this digest — the point of the number is that it does not move.`,
+      ).toBe(sha);
+    });
+  }
+
+  for (const [name, sha] of SEMANTIC_BASELINE) {
+    it(`${name}.arch describes and lints exactly as on main — no drawing in the payload`, () => {
+      expect(
+        semanticDigestWith(API, readFileSync(`examples/${name}.arch`, "utf8")),
+        `${name}.arch's SUMMARY changed. A redrawn symbol cannot do this; a new describe() key, ` +
+          `a moved lint rule or a catalog flag that changed an existing category's semantics can. ` +
+          `This number is not re-measured for a drawing change.`,
       ).toBe(sha);
     });
   }

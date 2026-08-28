@@ -38,3 +38,30 @@ export function digestWith(api: CompilerApi, src: string): string {
   const payload = [out.svg, JSON.stringify(api.describe(src)), JSON.stringify(api.lint(src))].join(" ");
   return createHash("sha256").update(payload, "utf8").digest("hex");
 }
+
+/**
+ * The same digest with the DRAWING left out — `describe()` and `lint()` only.
+ *
+ * ## Why the whole-surface digest was not enough on its own (v1.32)
+ *
+ * {@link digestWith} answers "did anything move", which is the right question and has one
+ * weakness: a release that legitimately redraws a symbol moves every pin taken with it, and
+ * then the only available response is to re-measure every hex — at which point the law has
+ * stopped guarding the two surfaces it was mostly written for. v1.32's furniture pass is
+ * exactly that release: it redraws six kitchen and bath symbols, so the SVG of every plan
+ * that places one is different by design, while `describe()` and `lint()` must not move by so
+ * much as a key.
+ *
+ * So the laws now carry BOTH. The whole-surface pin still catches everything and is
+ * re-measured, with its reason recorded, when a drawing deliberately changes. This one is
+ * blind to the drawing and therefore survives such a release untouched — which is what lets a
+ * reader tell "the picture changed" from "the summary changed" without taking either on
+ * trust.
+ *
+ * The separator and the `JSON.stringify` shape are {@link digestWith}'s, unchanged, so a
+ * baseline for one can be taken in the same pass as a baseline for the other.
+ */
+export function semanticDigestWith(api: CompilerApi, src: string): string {
+  const payload = [JSON.stringify(api.describe(src)), JSON.stringify(api.lint(src))].join(" ");
+  return createHash("sha256").update(payload, "utf8").digest("hex");
+}

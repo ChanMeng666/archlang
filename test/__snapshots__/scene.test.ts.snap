@@ -1341,19 +1341,19 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     },
     {
       "layer": "furniture",
-      "lineWeight": "thin",
+      "lineWeight": "extraThin",
       "paint": {
         "stroke": "#a8a29a",
-        "width": 11.520000000000001,
+        "width": 6.336000000000001,
       },
       "prim": {
         "a": {
           "x": 2700,
-          "y": 484,
+          "y": 770,
         },
         "b": {
           "x": 3300,
-          "y": 484,
+          "y": 770,
         },
         "t": "line",
       },
@@ -1367,12 +1367,31 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "a": {
-          "x": 3216,
-          "y": 328,
+          "x": 2700,
+          "y": 445,
         },
         "b": {
-          "x": 3216,
-          "y": 432,
+          "x": 3300,
+          "y": 445,
+        },
+        "t": "line",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "thin",
+      "paint": {
+        "stroke": "#a8a29a",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "a": {
+          "x": 2904,
+          "y": 841.5,
+        },
+        "b": {
+          "x": 3096,
+          "y": 841.5,
         },
         "t": "line",
       },

@@ -1,5 +1,5 @@
 /**
- * `src/elements/glyphs-bath.ts` — the four bathroom plan symbols.
+ * `src/elements/glyphs-bath.ts` — the bathroom plan symbols.
  *
  * The laws worth pinning are the ones a refinement pass can break silently, and every one of
  * them is checked by CALLING the glyph rather than by reading it:
@@ -30,7 +30,15 @@ import { compile } from "../src/index.js";
 import type { Scene, SceneNode } from "../src/scene.js";
 import type { Rect } from "../src/elements/glyph-lib.js";
 import { glyphCtx } from "../src/elements/glyph-lib.js";
-import { drawBasin, drawBathtub, drawShower, drawWc } from "../src/elements/glyphs-bath.js";
+import {
+  drawBasin,
+  drawBathtub,
+  drawBidet,
+  drawMirror,
+  drawShower,
+  drawUrinal,
+  drawWc,
+} from "../src/elements/glyphs-bath.js";
 
 const SRC = `plan "G" { units mm room id=r at (0,0) size 4000x3000 label "R" }`;
 const sceneOf = (): Scene => toScene(resolve(parse(SRC).plan!).ir);
@@ -43,6 +51,10 @@ const GLYPHS: readonly (readonly [string, Draw])[] = [
   ["basin", drawBasin],
   ["shower", drawShower],
   ["bathtub", drawBathtub],
+  // -- v1.32 F1: kitchen & bath --
+  ["bidet", drawBidet],
+  ["urinal", drawUrinal],
+  ["mirror", drawMirror],
 ];
 
 /** Draw one glyph into a fresh context — the same call `fixtureGlyph` makes. */
@@ -77,6 +89,11 @@ const FOOTPRINTS: Record<string, Rect> = {
   basin: { x: 1000, y: 2000, w: 600, h: 450 },
   shower: { x: 1000, y: 2000, w: 900, h: 900 },
   bathtub: { x: 1000, y: 2000, w: 1700, h: 700 },
+  bidet: { x: 1000, y: 2000, w: 400, h: 700 },
+  urinal: { x: 1000, y: 2000, w: 400, h: 350 },
+  // 900 x 50 is the catalogued footprint, and it is the point: a mirror has no depth, so
+  // this is the one glyph in the file whose ordinary case is an 18:1 sliver.
+  mirror: { x: 1000, y: 2000, w: 900, h: 50 },
 };
 
 describe("glyphs-bath — the drawn content of each symbol", () => {
@@ -86,6 +103,9 @@ describe("glyphs-bath — the drawn content of each symbol", () => {
     basin: 5, // slab · bowl · inner bowl · tap block · spout
     shower: 6, // tray · rim · 2 diagonals · drain ring · waste
     bathtub: 4, // outer rim · well · tap · waste
+    bidet: 5, // tap block · bowl · rim · spout · waste
+    urinal: 4, // back plate · half bowl · rim · waste
+    mirror: 6, // glass · 5 reflection ticks
   };
 
   for (const [name, f] of GLYPHS) {
@@ -98,7 +118,7 @@ describe("glyphs-bath — the drawn content of each symbol", () => {
     expect(draw(drawBasin, { x: 0, y: 0, w: 1600, h: 500 })).toHaveLength(9);
   });
 
-  it("every node names a glyph weight, and both weights are in use across the four", () => {
+  it("every node names a glyph weight, and both weights are in use across the module", () => {
     const weights = new Set<string>();
     for (const [name, f] of GLYPHS) {
       for (const n of draw(f, FOOTPRINTS[name]!)) {
@@ -126,6 +146,9 @@ describe("glyphs-bath — the drawn content of each symbol", () => {
     expect(circles("wc", drawWc)).toBe(1); // the flush button
     expect(circles("shower", drawShower)).toBe(2); // drain ring + waste
     expect(circles("bathtub", drawBathtub)).toBe(2); // tap + waste
+    expect(circles("bidet", drawBidet)).toBe(1); // the waste on the bowl centre
+    expect(circles("urinal", drawUrinal)).toBe(1); // the waste
+    expect(circles("mirror", drawMirror)).toBe(0); // a mirror has no round detail at all
   });
 });
 
@@ -247,6 +270,9 @@ describe("glyphs-bath — through the compiler, at all four rotations", () => {
     basin: "600x450",
     shower: "900x900",
     bathtub: "1700x700",
+    bidet: "400x700",
+    urinal: "400x350",
+    mirror: "900x50",
   };
 
   for (const name of Object.keys(SIZES)) {
@@ -275,6 +301,60 @@ describe("glyphs-bath — through the compiler, at all four rotations", () => {
           expect(p.y).toBeGreaterThanOrEqual(1000 - 1);
           expect(p.y).toBeLessThanOrEqual(1700 + 1);
         }
+      }
+    }
+  });
+});
+
+describe("glyphs-bath — the three symbols added in v1.32", () => {
+  /**
+   * Each of the three is only useful if it cannot be mistaken for the piece it sits beside,
+   * so each is pinned against that piece rather than against itself. A count alone would let
+   * a bidet drift into a WC one primitive at a time and stay green the whole way.
+   */
+
+  it("a bidet is a WC without a cistern — the back band is a third of the width, not all of it", () => {
+    const r: Rect = { x: 0, y: 0, w: 400, h: 700 };
+    const backOf = (nodes: SceneNode[]): number => {
+      // The widest polygon touching the top edge: a WC's cistern spans the footprint, a
+      // bidet's tap block does not.
+      const spans = nodes
+        .filter((n) => n.prim.t === "polygon")
+        .map((n) => (n.prim as { t: "polygon"; pts: { x: number; y: number }[] }).pts)
+        .filter((pts) => Math.min(...pts.map((p) => p.y)) <= r.y + 1)
+        .map((pts) => Math.max(...pts.map((p) => p.x)) - Math.min(...pts.map((p) => p.x)));
+      return Math.max(0, ...spans);
+    };
+    expect(backOf(draw(drawWc, r))).toBe(r.w);
+    expect(backOf(draw(drawBidet, r))).toBeLessThanOrEqual(r.w * 0.35);
+  });
+
+  it("a urinal's bowl is a HALF shape closed on the wall face", () => {
+    // The wall is the piece's back, so the bowl runs to the very top edge of the footprint
+    // and its rim there is a straight chord — which is what a closed ellipse would not be.
+    const r: Rect = { x: 0, y: 0, w: 400, h: 350 };
+    const bowl = draw(drawUrinal, r).filter((n) => n.prim.t === "polygon")[1]!;
+    const pts = (bowl.prim as { t: "polygon"; pts: { x: number; y: number }[] }).pts;
+    const top = Math.min(...pts.map((p) => p.y));
+    // Exactly two vertices sit on the chord; a full ellipse of the same extents has none
+    // sharing a y with only one other.
+    expect(pts.filter((p) => Math.abs(p.y - top) < 1e-9)).toHaveLength(2);
+    expect(Math.max(...pts.map((p) => p.y))).toBeGreaterThan(r.y + r.h * 0.9);
+  });
+
+  it("a mirror keeps its reflection ticks inside an 18:1 sliver, and inside a 1:200 one", () => {
+    // The cap that makes this hold is `0.09 * r.w`, not the short side: the outer ticks sit
+    // at 0.1 and 0.9 of the width, so a half-length keyed to `min(w, h)` walks off the ends
+    // the moment the footprint is taller than it is wide.
+    for (const r of [
+      { x: 0, y: 0, w: 900, h: 50 },
+      { x: 0, y: 0, w: 50, h: 10000 },
+    ]) {
+      for (const p of allPoints(draw(drawMirror, r))) {
+        expect(p.x).toBeGreaterThanOrEqual(r.x);
+        expect(p.x).toBeLessThanOrEqual(r.x + r.w);
+        expect(p.y).toBeGreaterThanOrEqual(r.y);
+        expect(p.y).toBeLessThanOrEqual(r.y + r.h);
       }
     }
   });

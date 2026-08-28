@@ -39,6 +39,25 @@
  * the door kinds are all supposed to be reachable ONLY from their own syntax), a rendering
  * change landed from elsewhere in the release (re-measure against the commit that made it,
  * and say so in the same breath), or the law is genuinely broken.
+ *
+ * ## RE-MEASURED for v1.32 (the furniture pass), and how it was proved
+ *
+ * The whole-surface digests below moved, and the reason is the one this header's "when one of
+ * these moves" list names third: a rendering change landed from elsewhere in the release.
+ * v1.32 redraws six kitchen and bath symbols (`island`, `upper_cabinet`, `dishwasher`, `oven`,
+ * `fridge`, `washer`), so every plan that places one draws different bytes ON PURPOSE.
+ *
+ * That was not assumed. It was proved by SUBSTITUTION, and the proof is reproducible: the
+ * committed `examples/<name>.svg` files are the compiler's own output and are drift-gated as
+ * such, so the BASE drawing of any of these plans is `git show <the commit before the`
+ * `redraw>:examples/<name>.svg`. Feeding that into this file's digest body, with `describe()`
+ * and `lint()` taken from the NEW code, reproduces every old hex exactly. Only the drawing
+ * moved; the summary and the diagnostics did not shift by a byte.
+ *
+ * And so that the next such release does not have to make that argument again, each example
+ * now also carries a {@link semanticDigestWith} pin — the same payload with the SVG removed.
+ * Those numbers are unchanged from the original measurement and are expected to stay that
+ * way through any drawing change whatsoever. If one of THEM moves, the finding is real.
  */
 
 import { readFileSync } from "node:fs";
@@ -46,7 +65,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
-import { type CompilerApi, digestWith } from "./byte-identity-digest.js";
+import { type CompilerApi, digestWith, semanticDigestWith } from "./byte-identity-digest.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -65,19 +84,40 @@ const ROOT = join(HERE, "..");
  *   - `two-bed` — a plain house with none of the above, as the control.
  */
 const BASELINE: Readonly<Record<string, string>> = {
-  "studio.arch": "4f006efaca9e50001d0fdd1452d346be56fe72fd3915228d5f17e0e624383566",
-  "laneway-house.arch": "fe14d8d386a28951c546461f2e9456ab7263a26d5401a9d07a01b0d3f2f4e397",
-  "bungalow.arch": "568f9d94588c60426bbe0d5fe321f7f151058fb01f8b1d90cdbc3e6374fbab64",
-  "furnished-flat.arch": "a96b1eae75899ad1d4d08235d2d80ea700484caff94fa856e12c9a2e33a90c04",
-  "two-bed.arch": "c2f2145a281f096800761671268074e328dbe0dee21ed6c8403b352f136b929e",
+  "studio.arch": "c921a0607bf60aa2c39e27c4467d42f27660e4862a3735e8693726cdabf4e339",
+  "laneway-house.arch": "0c2e933ce347a8458e422bb1acc5e39c7af11793145e1fd91e64b7d5e08588c1",
+  "bungalow.arch": "36d62f8b5b1f005d0b8c59e1587a39c5b11dcfed09156358e0c609db3d9f0608",
+  "furnished-flat.arch": "14fdd323031e6362f10c75e5cc6f4fe27e3ce48c1f49fabbc489c72485bf91d4",
+  "two-bed.arch": "3de3901e69214a52c8ee220b916a050d956133370d5a85fdd577dedcbfac4604",
+};
+
+/**
+ * The SUMMARY half of the same law: `describe()` and `lint()` with the drawing removed.
+ *
+ * These are the original v1.30.0 measurement, carried through the v1.32 furniture pass
+ * UNCHANGED — which is the claim, not an accident of the arithmetic. A drawing change is
+ * allowed to move {@link BASELINE}; nothing in this release is allowed to move these.
+ */
+const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
+  "studio.arch": "b065cbe49d364414b340639fc06922eb14f472c9f4470134bb6f2b4489ada364",
+  "laneway-house.arch": "ac2df20e15d2e4fbcc73e34a15d4e34578aa89a859860561b85361db170040b6",
+  "bungalow.arch": "4835ae875c03ea01d8ec44ece1a3ecdcb3b324775c503bed0fad224e81fad93d",
+  "furnished-flat.arch": "fa118ba75482141827ad2d3ec5fa2539e0408f9e849e81e3fb5bf5468b4fe06f",
+  "two-bed.arch": "a118170f4549ccd89aa1dce2274363e9444c13d1667d679877cb2d460ac2e070",
 };
 
 suite("the outdoor tranche — the byte-identity law", () => {
   const api: CompilerApi = { compile, describe: describePlan, lint };
 
   for (const [file, want] of Object.entries(BASELINE)) {
-    it(`${file} renders, describes and lints exactly as it did at v1.30.0`, () => {
+    it(`${file} renders, describes and lints exactly as it did at v1.30.0 + the v1.32 redraw`, () => {
       expect(digestWith(api, readFileSync(join(ROOT, "examples", file), "utf8"))).toBe(want);
+    });
+  }
+
+  for (const [file, want] of Object.entries(SEMANTIC_BASELINE)) {
+    it(`${file} describes and lints exactly as it did at v1.30.0 — no drawing in the payload`, () => {
+      expect(semanticDigestWith(api, readFileSync(join(ROOT, "examples", file), "utf8"))).toBe(want);
     });
   }
 

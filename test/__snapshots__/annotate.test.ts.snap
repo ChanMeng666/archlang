@@ -32,8 +32,9 @@ exports[`annotate (opt-in data-span) > renders studio.arch annotated determinist
 <line data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" x1="1950" y1="802" x2="2550" y2="802" stroke="#a8a29a" stroke-width="6.34"/>
 <polygon data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" points="2700,250 3300,250 3300,900 2700,900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
 <polygon data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" points="2730,280 3270,280 3270,870 2730,870" fill="none" stroke="#a8a29a" stroke-width="6.34"/>
-<line data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" x1="2700" y1="484" x2="3300" y2="484" stroke="#a8a29a" stroke-width="11.52"/>
-<line data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" x1="3216" y1="328" x2="3216" y2="432" stroke="#a8a29a" stroke-width="11.52"/>
+<line data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" x1="2700" y1="770" x2="3300" y2="770" stroke="#a8a29a" stroke-width="6.34"/>
+<line data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" x1="2700" y1="445" x2="3300" y2="445" stroke="#a8a29a" stroke-width="11.52"/>
+<line data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" x1="2904" y1="841.5" x2="3096" y2="841.5" stroke="#a8a29a" stroke-width="11.52"/>
 <polygon data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" points="2260,4300 2294.44,4306.85 2323.64,4326.36 2343.15,4355.56 2350,4390 2350,5110 2343.15,5144.44 2323.64,5173.64 2294.44,5193.15 2260,5200 440,5200 405.56,5193.15 376.36,5173.64 356.85,5144.44 350,5110 350,4390 356.85,4355.56 376.36,4326.36 405.56,4306.85 440,4300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
 <polygon data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" points="350,4390 590,4390 590,5200 350,5200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
 <polygon data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" points="2110,4390 2350,4390 2350,5200 2110,5200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>

@@ -340,6 +340,25 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // `door` line is now the longest in the document at over 1,600 characters, and its
     // per-kind clause prose is the part a machine-readable table would carry better than
     // a sentence.
-    expect(spec.length).toBeLessThan(28_300);
+    //
+    // ## v1.32 F1 (kitchen & bath): +79, and the cap moves to 28,700
+    //
+    // Measured, not estimated: 28,235 -> 28,314. Every one of the 79 characters is the
+    // `furniture` line's catalogued-footprint list growing by the eight new families that
+    // HAVE a footprint — `/bidet/urinal/laundry_sink/water_heater/mirror/range_hood/`
+    // `microwave/bar_counter`. Nothing else in the document moved, which is the expected
+    // shape: this tranche adds no keyword, no clause and no error code, and the fixture
+    // vocabulary is a catalogue that the spec interpolates rather than a grammar it
+    // describes.
+    //
+    // There is still no duplication left to trim — the `door`-line lever above is
+    // untouched and remains the honest next move — so this is a raise with the growth
+    // named, as the instruction requires. 28,700 buys 386 chars of headroom on this
+    // branch's 28,314, in the same band as the 360 and 371 the last two raises bought.
+    // NOTE FOR THE MERGE: the parallel furniture track appends families to the same
+    // interpolated list, so the merged figure is neither branch's. Re-measure it once
+    // after the merge and set this number from that reading, exactly as the two-track
+    // note above had to.
+    expect(spec.length).toBeLessThan(28_700);
   });
 });

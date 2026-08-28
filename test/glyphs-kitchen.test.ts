@@ -27,16 +27,21 @@ import { glyphCtx } from "../src/elements/glyph-lib.js";
 import type { GlyphCtx, Rect } from "../src/elements/glyph-lib.js";
 import {
   CABINET_PITCH_MM,
+  drawBarCounter,
   drawCounter,
   drawDishwasher,
   drawDryer,
   drawFridge,
   drawIsland,
   drawKitchenSink,
+  drawLaundrySink,
+  drawMicrowave,
   drawOven,
+  drawRangeHood,
   drawStove,
   drawUpperCabinet,
   drawWasher,
+  drawWaterHeater,
 } from "../src/elements/glyphs-kitchen.js";
 
 /** A furniture-free plan, used only as a source of a real theme and real pen sizes. */
@@ -59,13 +64,32 @@ const GLYPHS: readonly (readonly [category: string, draw: Draw, prims: number])[
   ["kitchen_sink", drawKitchenSink, 7],
   ["counter", drawCounter, 2],
   ["stove", drawStove, 10],
-  ["fridge", drawFridge, 4],
-  ["oven", drawOven, 4],
-  ["dishwasher", drawDishwasher, 3],
-  ["island", drawIsland, 2],
-  ["upper_cabinet", drawUpperCabinet, 2],
-  ["washer", drawWasher, 4],
+  // v1.32: carcass · door face · compartment split · handle bar (was 4 — the door face and
+  // the handle BAR replaced a handle stub, and the split moved onto an aspect branch).
+  ["fridge", drawFridge, 5],
+  // v1.32: carcass · inset · 3 knobs · door seam · window · handle bar. REF is square, so
+  // this is the built-under oven; a wide footprint adds four burners and draws 12.
+  ["oven", drawOven, 8],
+  // v1.32: carcass · inset · 2 basket lines · door leaf · control strip · handle (was 3 —
+  // a box with a dial, which is a washing machine's drawing).
+  ["dishwasher", drawDishwasher, 7],
+  // v1.32: worktop · overhang · 3 cabinet ticks · a bowl and its waste. REF is square, so
+  // this is the compact prep island; a run of aspect 1.8 or more draws four burners and 9.
+  ["island", drawIsland, 7],
+  // v1.32: dashed outline · 2 dashed hinge ticks. REF is ONE cabinet module, so the door
+  // splits are guarded out exactly as the counter's division ticks are.
+  ["upper_cabinet", drawUpperCabinet, 3],
+  // v1.32: carcass · inset · control panel · 2 knobs · drum · porthole (was 4).
+  ["washer", drawWasher, 7],
   ["dryer", drawDryer, 6],
+  // ── v1.32 F1: kitchen & bath ──
+  ["laundry_sink", drawLaundrySink, 6],
+  ["water_heater", drawWaterHeater, 4],
+  ["range_hood", drawRangeHood, 7],
+  ["microwave", drawMicrowave, 6],
+  // REF is square, so `clamp((w / h) * 1.2, 1, 8)` rounds to one stool; a 1800x600 bar
+  // draws four. Top · overhang · stools.
+  ["bar_counter", drawBarCounter, 3],
 ];
 
 /** A plausible appliance footprint: 600 mm wide, 600 mm deep. */
@@ -244,22 +268,46 @@ describe("glyphs-kitchen — the counter's cabinet divisions", () => {
 });
 
 describe("glyphs-kitchen — the dashed-overhead convention", () => {
-  it("upper_cabinet is dashed in EVERY node, outline included", () => {
-    const nodes = drawUpperCabinet(REF, ctx());
-    expect(nodes).toHaveLength(2);
-    for (const n of nodes) {
-      expect(n.lineType, "a wall cabinet is above the cut plane — every line of it is dashed").toBe("dashed");
-      // Both fields, for the reason glyph-lib's header gives: SVG follows the name, PDF the number.
-      expect(n.paint.dash).toBeDefined();
+  // Both pieces that hang above the horizontal cut a plan is taken at. The convention is the
+  // DRAWING's, not one glyph's: a dashed outline means a thing above the cut plane, which
+  // `roof`, `void`, the outdoor `pergola` and the garage door's projection all also say.
+  const OVERHEAD: readonly (readonly [string, Draw])[] = [
+    ["upper_cabinet", drawUpperCabinet],
+    ["range_hood", drawRangeHood],
+  ];
+
+  for (const [category, draw] of OVERHEAD) {
+    it(`${category} is dashed in EVERY node, outline included`, () => {
+      const nodes = draw(REF, ctx());
+      expect(nodes.length).toBeGreaterThan(1);
+      for (const n of nodes) {
+        expect(n.lineType, `${category} is above the cut plane — every line of it is dashed`).toBe("dashed");
+        // Both fields, for the reason glyph-lib's header gives: SVG follows the name, PDF the number.
+        expect(n.paint.dash).toBeDefined();
+      }
+      // The outline is unfilled, so whatever it overhangs still reads through it.
+      expect(nodes[0]!.prim.t).toBe("polygon");
+      expect(nodes[0]!.paint.fill).toBe("none");
+    });
+  }
+
+  it("a wall cabinet's ticks and a hood's fan are what tell the two apart", () => {
+    // Both are dashed unfilled rectangles at the outline; the difference has to be INSIDE.
+    // A cabinet's marks run from its back edge (every one starts on `r.y`); a hood's fan is
+    // a ring about the centre and none of its marks touch the back edge.
+    const cabinet = drawUpperCabinet(REF, ctx()).slice(1);
+    for (const n of cabinet) {
+      expect(n.prim.t).toBe("line");
+      expect((n.prim as { t: "line"; a: Point }).a.y).toBe(REF.y);
     }
-    // The outline is unfilled, so whatever it overhangs still reads through it.
-    expect(nodes[0]!.prim.t).toBe("polygon");
-    expect(nodes[0]!.paint.fill).toBe("none");
+    const hood = drawRangeHood(REF, ctx()).slice(1);
+    for (const p of hood.flatMap(extentOf)) expect(p.y).toBeGreaterThan(REF.y);
   });
 
   it("no OTHER symbol in the module dashes anything", () => {
+    const overhead = new Set(OVERHEAD.map(([c]) => c));
     for (const [category, draw] of GLYPHS) {
-      if (category === "upper_cabinet") continue;
+      if (overhead.has(category)) continue;
       for (const n of draw(REF, ctx())) {
         expect(n.lineType, `${category} dashed a node`).toBeUndefined();
       }
@@ -276,10 +324,18 @@ describe("glyphs-kitchen — round things are round", () => {
     for (const n of circles) expect(n.paint.fill).toBe("none");
   });
 
-  it("a washer's drum is a ring pair and a dryer's is a ring plus three chords", () => {
-    const rings = (draw: Draw): number => draw(REF, ctx()).filter((n) => n.prim.t === "circle").length;
-    expect(rings(drawWasher)).toBe(2);
-    expect(rings(drawDryer)).toBe(1);
+  it("a washer is a panel and a white porthole; a dryer is a ring plus three chords", () => {
+    const circles = (draw: Draw): SceneNode[] => draw(REF, ctx()).filter((n) => n.prim.t === "circle");
+    // Two panel knobs, the drum ring, and the porthole. It was a bare pair of concentric
+    // rings, which differed from the dryer only by a circle count — a difference a reader
+    // has to measure rather than see.
+    expect(circles(drawWasher)).toHaveLength(4);
+    expect(circles(drawDryer)).toHaveLength(1);
+    // The porthole is FILLED with the basin colour, and that fill is the thing you see
+    // across a utility room; the drum it sits in is an unfilled ring.
+    const [drum, porthole] = circles(drawWasher).slice(-2);
+    expect(drum!.paint.fill).toBe("none");
+    expect(porthole!.paint.fill).toBe(ctx().basin);
     // The two appliances are the same box at the same size; they must differ by SHAPE.
     expect(drawWasher(REF, ctx())).not.toEqual(drawDryer(REF, ctx()));
   });
@@ -294,10 +350,49 @@ describe("glyphs-kitchen — round things are round", () => {
   });
 });
 
+describe("glyphs-kitchen — the aspect branches", () => {
+  // Three symbols read their own footprint and draw a different object either side of a
+  // threshold. Each branch is a real appliance, so each is pinned from BOTH sides — a
+  // one-sided check would pass a rule that had silently collapsed to one branch.
+
+  it("a wide oven is a range: four burners on top of the eight-primitive oven", () => {
+    expect(drawOven({ x: 0, y: 0, w: 600, h: 600 }, ctx())).toHaveLength(8);
+    expect(drawOven({ x: 0, y: 0, w: 1000, h: 600 }, ctx())).toHaveLength(12);
+    // The threshold is aspect 1.6, written `w * 10 >= h * 16` so a 960 x 600 range — the
+    // round number an author types AT the boundary — lands on the side its own rule names.
+    expect(drawOven({ x: 0, y: 0, w: 959, h: 600 }, ctx())).toHaveLength(8);
+    expect(drawOven({ x: 0, y: 0, w: 960, h: 600 }, ctx())).toHaveLength(12);
+  });
+
+  it("a long island takes a hob and a compact one takes a bowl", () => {
+    // Aspect 1.8. Below it the end fitting is a bowl and its waste (2 prims); at or above
+    // it, four burner rings (4).
+    expect(drawIsland({ x: 0, y: 0, w: 1799, h: 1000 }, ctx())).toHaveLength(7);
+    expect(drawIsland({ x: 0, y: 0, w: 1800, h: 1000 }, ctx())).toHaveLength(9);
+  });
+
+  it("a bar's stools come from its run and are capped at eight", () => {
+    const stools = (w: number, h: number): number => drawBarCounter({ x: 0, y: 0, w, h }, ctx()).length - 2;
+    expect(stools(600, 600)).toBe(1); // a legend swatch: one stool, never none
+    expect(stools(1800, 600)).toBe(4);
+    expect(stools(4000, 600)).toBe(8);
+    expect(stools(40000, 600)).toBe(8); // the cap, not a loop to the edge
+    // `clamp` resolves NaN to its LOW bound, so a zero-by-zero footprint draws one stool
+    // rather than looping on a NaN count.
+    expect(stools(0, 0)).toBe(1);
+  });
+});
+
 describe("glyphs-kitchen — through the compiler", () => {
+  // A 5-wide grid rather than a single row: the module now has fifteen symbols, and a row of
+  // fifteen 600 mm pieces on a 700 mm pitch would run 2.6 m past the room they are declared
+  // `in`, which is a different test (a lint one) from the one this file means to run.
   const plan = (rotate: number): string =>
     `plan "K" {\n  units mm\n  wall exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }\n  room id=k at (200,200) size 7600x5600 label "Kitchen"\n` +
-    GLYPHS.map(([c], i) => `  furniture ${c} at (${400 + i * 700},400) size 600x600 rotate ${rotate} in k`).join("\n") +
+    GLYPHS.map(
+      ([c], i) =>
+        `  furniture ${c} at (${400 + (i % 5) * 1400},${400 + Math.floor(i / 5) * 1400}) size 600x600 rotate ${rotate} in k`,
+    ).join("\n") +
     `\n}`;
 
   for (const rotate of [0, 90, 180, 270]) {

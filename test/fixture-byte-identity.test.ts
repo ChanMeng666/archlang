@@ -288,8 +288,9 @@ describe("fixture symbols — the eight shipped families (re-blessed when redraw
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
       <polygon points="300,300 900,300 900,950 300,950" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.8"/>
       <polygon points="330,330 870,330 870,920 330,920" fill="none" stroke="#a8a29a" stroke-width="2.64"/>
-      <line x1="300" y1="534" x2="900" y2="534" stroke="#a8a29a" stroke-width="4.8"/>
-      <line x1="816" y1="378" x2="816" y2="482" stroke="#a8a29a" stroke-width="4.8"/>
+      <line x1="300" y1="820" x2="900" y2="820" stroke="#a8a29a" stroke-width="2.64"/>
+      <line x1="300" y1="495" x2="900" y2="495" stroke="#a8a29a" stroke-width="4.8"/>
+      <line x1="504" y1="891.5" x2="696" y2="891.5" stroke="#a8a29a" stroke-width="4.8"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
