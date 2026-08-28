@@ -362,6 +362,88 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   garden_shed: { requiresWall: false, directional: true, footprint: { along: 2400, depth: 1800 } },
   clothesline: { requiresWall: false },
   washing_line: { requiresWall: false },
+  // -------------------------------------------------------------------------
+  // ── v1.32 F2: living, bedroom, office ──
+  //
+  // Eighteen families that close the gap between "a plan can name a room" and "a plan can show
+  // what is in it". Three things are decided here rather than left to read off the rows.
+  //
+  // ## Not one of them is `requiresWall`
+  //
+  // The flag means SERVICES — supply, waste, venting, or hanging off a wall by definition — and
+  // `W_FIXTURE_FLOATING`'s remedy line says so in as many words. Two rows below would tempt a
+  // reader to set it and both are wrong. A `radiator` is genuinely plumbed, and is fed from the
+  // floor as often as from the wall; more to the point, flagging it would raise a warning on
+  // every plan that puts one under a window, which is where they go. A `fireplace` is genuinely
+  // built into a chimney, and a free-standing stove in the middle of a room is a normal drawing.
+  // Both are `directional` instead, which is the honest claim: their symbols have a front.
+  //
+  // ## `directional` is set where the SYMBOL earns it, and refused where seating is involved
+  //
+  // Twelve of the eighteen carry it, and in every case a reader can point at the linework that
+  // says which way the piece faces: a fireplace's opening, a radiator's fins against its back
+  // face, a sideboard's and a locker's handles, a dresser's drawer band, a vanity's mirror, a
+  // shoe cabinet's tilt lines, a crib's head end, a bunk's ladder, a filing cabinet's pull, a
+  // reception desk's chair inside the L, a treadmill's console, a `tv`'s bracket. `loveseat` and
+  // `chaise` deliberately do NOT carry it, for the reason `sofa`, `chair`, `bench` and
+  // `outdoor_chair` do not: seating is arranged rather than installed, and a two-seater floated
+  // with its back to the room is a room divider, not a defect. `crib` follows the `bed`
+  // precedent, and `bunk_bed` follows `crib`.
+  //
+  // ## `clearanceMm` is set for exactly four, and each one is a use-space a plan can be wrong
+  // about
+  //
+  // A dresser and a vanity need a drawer's or a chair's depth in front of them (600 mm), a
+  // filing cabinet needs a drawer pulled out (600 mm), and a treadmill needs run-off behind the
+  // user (900 mm — the largest figure in the catalog, and the only one here above the plumbed
+  // goods' 550). Nothing else gets one: a fireplace's hearth is not a use-space a lint rule can
+  // measure, and a `symmetric` piece has no front to measure one from at all, which is why
+  // `coat_rack` and `pool_table` have none.
+  //
+  // Every one carries a footprint, because every one is a piece someone would write
+  // `against wall` or `anchor` about — including the two symmetric ones, whose footprint is used
+  // for the size and not for a rotation.
+
+  // Bedroom.
+  bunk_bed: { requiresWall: false, directional: true, footprint: { along: 1000, depth: 2000 } },
+  crib: { requiresWall: false, directional: true, footprint: { along: 700, depth: 1300 } },
+  cot: { requiresWall: false, directional: true, footprint: { along: 700, depth: 1300 } },
+  dresser: { requiresWall: false, directional: true, clearanceMm: 600, footprint: { along: 1200, depth: 500 } },
+  chest_of_drawers: {
+    requiresWall: false,
+    directional: true,
+    clearanceMm: 600,
+    footprint: { along: 1200, depth: 500 },
+  },
+  vanity: { requiresWall: false, directional: true, clearanceMm: 600, footprint: { along: 1200, depth: 500 } },
+  dressing_table: {
+    requiresWall: false,
+    directional: true,
+    clearanceMm: 600,
+    footprint: { along: 1200, depth: 500 },
+  },
+
+  // Living.
+  fireplace: { requiresWall: false, directional: true, footprint: { along: 1200, depth: 400 } },
+  radiator: { requiresWall: false, directional: true, footprint: { along: 1000, depth: 100 } },
+  sideboard: { requiresWall: false, directional: true, footprint: { along: 1600, depth: 450 } },
+  buffet: { requiresWall: false, directional: true, footprint: { along: 1600, depth: 450 } },
+  loveseat: { requiresWall: false, footprint: { along: 1500, depth: 850 } },
+  sofa_2: { requiresWall: false, footprint: { along: 1500, depth: 850 } },
+  chaise: { requiresWall: false, footprint: { along: 1600, depth: 800 } },
+  tv: { requiresWall: false, directional: true, footprint: { along: 1200, depth: 80 } },
+  coat_rack: { requiresWall: false, symmetric: true, footprint: { along: 400, depth: 400 } },
+  shoe_cabinet: { requiresWall: false, directional: true, footprint: { along: 800, depth: 300 } },
+
+  // Office & commercial.
+  // Symmetric for the reason `dining_table`, `island` and `outdoor_table` are: it is approached
+  // and sat at from every side, so it has no back to find and no single frontal clearance.
+  meeting_table: { requiresWall: false, symmetric: true, footprint: { along: 2400, depth: 1200 } },
+  reception_desk: { requiresWall: false, directional: true, footprint: { along: 2400, depth: 900 } },
+  filing_cabinet: { requiresWall: false, directional: true, clearanceMm: 600, footprint: { along: 450, depth: 600 } },
+  locker: { requiresWall: false, directional: true, footprint: { along: 1200, depth: 450 } },
+  pool_table: { requiresWall: false, symmetric: true, footprint: { along: 2500, depth: 1400 } },
+  treadmill: { requiresWall: false, directional: true, clearanceMm: 900, footprint: { along: 800, depth: 1800 } },
 });
 
 /** All catalogued categories (aliases included), in declaration order. */

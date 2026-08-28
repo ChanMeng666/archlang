@@ -284,12 +284,20 @@ describe("glyphs-outdoor — what each symbol draws", () => {
     for (const c of ALL_NAMES) expect(hasFixtureGlyph(c), `${c} draws a symbol`).toBe(true);
   });
 
-  it("the twenty-one families are the tail of the canonical vocabulary", () => {
+  it("the twenty-one families are a contiguous, in-order block of the canonical vocabulary", () => {
     // Derived, not retyped: the module's own family list must be exactly what
-    // `FIXTURE_FAMILIES` appended, in order. Appending elsewhere or re-ordering the table
-    // (which is the LEGEND's order) fails here.
+    // `FIXTURE_FAMILIES` appended, in order. Re-ordering that table (which is the LEGEND's
+    // order, so a re-order moves every shipped plan's legend) or interleaving a later tranche
+    // through this one fails here.
+    //
+    // It used to assert the block was the TAIL. That was true while this was the newest tranche
+    // and stopped being true the moment v1.32 appended after it — a later tranche appending at
+    // the end is exactly what the table's own comment asks for, so "tail" was pinning the wrong
+    // property. Contiguity and order are what this suite actually owns.
     const names = GLYPHS.map(([n]) => n);
-    expect(CANONICAL_FIXTURES.slice(-names.length)).toEqual(names);
+    const start = CANONICAL_FIXTURES.indexOf(names[0]!);
+    expect(start, "the outdoor block must exist").toBeGreaterThanOrEqual(0);
+    expect(CANONICAL_FIXTURES.slice(start, start + names.length)).toEqual(names);
   });
 
   it("draws the expected number of primitives, all within the budget", () => {
