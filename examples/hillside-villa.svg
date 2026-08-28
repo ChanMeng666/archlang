@@ -132,15 +132,28 @@
 <line x1="13098" y1="6200" x2="13098" y2="6800" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="13650,6800 13650,7400 13050,7400 13050,6800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="13602,6848 13602,7352 13098,7352 13098,6848" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
-<circle cx="13350" cy="7100" r="120" fill="none" stroke="#a8a29a" stroke-width="9"/>
+<line x1="13470" y1="6896" x2="13470" y2="7304" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="13350" y1="6896" x2="13350" y2="7304" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="13230,6836 13230,7364 13074,7364 13074,6836" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="13176.96" y1="6836" x2="13176.96" y2="7364" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="13086" y1="7040" x2="13086" y2="7160" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="13650,7400 13650,8000 12950,8000 12950,7400" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="13620,7430 13620,7970 12980,7970 12980,7430" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
-<line x1="13398" y1="7400" x2="13398" y2="8000" stroke="#a8a29a" stroke-width="9"/>
-<line x1="13566" y1="7916" x2="13454" y2="7916" stroke="#a8a29a" stroke-width="9"/>
+<line x1="13090" y1="7400" x2="13090" y2="8000" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="13440" y1="7400" x2="13440" y2="8000" stroke="#a8a29a" stroke-width="9"/>
+<line x1="13013" y1="7604" x2="13013" y2="7796" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="12200,4300 12800,4300 12800,4700 12200,4700" fill="none" stroke="#a8a29a" stroke-width="9" stroke-dasharray="54 36"/>
-<line x1="12200" y1="4500" x2="12800" y2="4500" stroke="#a8a29a" stroke-width="4.95" stroke-dasharray="54 36"/>
-<polygon points="9200,5400 11000,5400 11000,6300 9200,6300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="9254,5454 10946,5454 10946,6246 9254,6246" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="12248" y1="4300" x2="12248" y2="4412" stroke="#a8a29a" stroke-width="4.95" stroke-dasharray="54 36"/>
+<line x1="12752" y1="4300" x2="12752" y2="4412" stroke="#a8a29a" stroke-width="4.95" stroke-dasharray="54 36"/>
+<polygon points="10946,5400 10966.66,5404.11 10984.18,5415.82 10995.89,5433.34 11000,5454 11000,6246 10995.89,6266.66 10984.18,6284.18 10966.66,6295.89 10946,6300 9254,6300 9233.34,6295.89 9215.82,6284.18 9204.11,6266.66 9200,6246 9200,5454 9204.11,5433.34 9215.82,5415.82 9233.34,5404.11 9254,5400" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
+<line x1="9200" y1="6102" x2="11000" y2="6102" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="9650" y1="6102" x2="9650" y2="6300" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="10100" y1="6102" x2="10100" y2="6300" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="10550" y1="6102" x2="10550" y2="6300" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="9416" cy="5652" r="117" fill="none" stroke="#a8a29a" stroke-width="9"/>
+<circle cx="9416" cy="5940" r="117" fill="none" stroke="#a8a29a" stroke-width="9"/>
+<circle cx="9776" cy="5652" r="117" fill="none" stroke="#a8a29a" stroke-width="9"/>
+<circle cx="9776" cy="5940" r="117" fill="none" stroke="#a8a29a" stroke-width="9"/>
 <circle cx="9100" cy="6700" r="200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <circle cx="9100" cy="6700" r="120" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
 <circle cx="9700" cy="6700" r="200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
@@ -149,8 +162,11 @@
 <circle cx="10300" cy="6700" r="120" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="-5350,7100 -5350,6500 -4750,6500 -4750,7100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="-5302,7052 -5302,6548 -4798,6548 -4798,7052" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
-<circle cx="-5050" cy="6800" r="180" fill="none" stroke="#a8a29a" stroke-width="9"/>
-<circle cx="-5050" cy="6800" r="108" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="-5320,7064 -5320,6536 -5224,6536 -5224,7064" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="-5272" cy="6692" r="30" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="-5272" cy="6584" r="30" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="-4990" cy="6800" r="180" fill="none" stroke="#a8a29a" stroke-width="9"/>
+<circle cx="-4990" cy="6800" r="99" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="-5350,7700 -5350,7100 -4750,7100 -4750,7700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="-5302,7652 -5302,7148 -4798,7148 -4798,7652" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
 <circle cx="-5050" cy="7400" r="180" fill="none" stroke="#a8a29a" stroke-width="9"/>
@@ -744,8 +760,9 @@
 <line x1="-3700" y1="14552.5" x2="-2350" y2="14552.5" stroke="#333333" stroke-width="4.95"/>
 <polygon points="-3673,14586.5 -3477,14586.5 -3477,14688.5 -3673,14688.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="-3667.9,14591.6 -3482.1,14591.6 -3482.1,14683.4 -3667.9,14683.4" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
-<line x1="-3673" y1="14623.22" x2="-3477" y2="14623.22" stroke="#a8a29a" stroke-width="9"/>
-<line x1="-3504.44" y1="14598.74" x2="-3504.44" y2="14615.06" stroke="#a8a29a" stroke-width="9"/>
+<line x1="-3673" y1="14668.1" x2="-3477" y2="14668.1" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="-3614.2" y1="14586.5" x2="-3614.2" y2="14668.1" stroke="#a8a29a" stroke-width="9"/>
+<line x1="-3606.36" y1="14679.32" x2="-3543.64" y2="14679.32" stroke="#a8a29a" stroke-width="9"/>
 <text x="-3423" y="14637.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">fridge</text>
 <line x1="-3700" y1="14722.5" x2="-2350" y2="14722.5" stroke="#333333" stroke-width="4.95"/>
 <polygon points="-3495.36,14756.5 -3488.33,14757.9 -3482.38,14761.88 -3478.4,14767.83 -3477,14774.86 -3477,14840.14 -3478.4,14847.17 -3482.38,14853.12 -3488.33,14857.1 -3495.36,14858.5 -3654.64,14858.5 -3661.67,14857.1 -3667.62,14853.12 -3671.6,14847.17 -3673,14840.14 -3673,14774.86 -3671.6,14767.83 -3667.62,14761.88 -3661.67,14757.9 -3654.64,14756.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
@@ -794,21 +811,36 @@
 <line x1="-3700" y1="16082.5" x2="-2350" y2="16082.5" stroke="#333333" stroke-width="4.95"/>
 <polygon points="-3673,16116.5 -3477,16116.5 -3477,16218.5 -3673,16218.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="-3664.84,16124.66 -3485.16,16124.66 -3485.16,16210.34 -3664.84,16210.34" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
-<circle cx="-3575" cy="16167.5" r="20.4" fill="none" stroke="#a8a29a" stroke-width="9"/>
+<line x1="-3641.64" y1="16147.1" x2="-3508.36" y2="16147.1" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="-3641.64" y1="16167.5" x2="-3508.36" y2="16167.5" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="-3661.24,16187.9 -3488.76,16187.9 -3488.76,16214.42 -3661.24,16214.42" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="-3661.24" y1="16196.92" x2="-3488.76" y2="16196.92" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="-3594.6" y1="16212.38" x2="-3555.4" y2="16212.38" stroke="#a8a29a" stroke-width="9"/>
 <text x="-3423" y="16167.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">dishwasher</text>
 <line x1="-3700" y1="16252.5" x2="-2350" y2="16252.5" stroke="#333333" stroke-width="4.95"/>
-<polygon points="-3673,16286.5 -3477,16286.5 -3477,16388.5 -3673,16388.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
-<polygon points="-3666.88,16292.62 -3483.12,16292.62 -3483.12,16382.38 -3666.88,16382.38" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="-3483.12,16286.5 -3480.78,16286.97 -3478.79,16288.29 -3477.47,16290.28 -3477,16292.62 -3477,16382.38 -3477.47,16384.72 -3478.79,16386.71 -3480.78,16388.03 -3483.12,16388.5 -3666.88,16388.5 -3669.22,16388.03 -3671.21,16386.71 -3672.53,16384.72 -3673,16382.38 -3673,16292.62 -3672.53,16290.28 -3671.21,16288.29 -3669.22,16286.97 -3666.88,16286.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
+<line x1="-3673" y1="16366.06" x2="-3477" y2="16366.06" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="-3624" y1="16366.06" x2="-3624" y2="16388.5" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="-3575" y1="16366.06" x2="-3575" y2="16388.5" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="-3526" y1="16366.06" x2="-3526" y2="16388.5" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="-3649.48" cy="16315.06" r="13.26" fill="none" stroke="#a8a29a" stroke-width="9"/>
+<circle cx="-3649.48" cy="16347.7" r="13.26" fill="none" stroke="#a8a29a" stroke-width="9"/>
+<circle cx="-3610.28" cy="16315.06" r="13.26" fill="none" stroke="#a8a29a" stroke-width="9"/>
+<circle cx="-3610.28" cy="16347.7" r="13.26" fill="none" stroke="#a8a29a" stroke-width="9"/>
 <text x="-3423" y="16337.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">island</text>
 <line x1="-3700" y1="16422.5" x2="-2350" y2="16422.5" stroke="#333333" stroke-width="4.95"/>
 <polygon points="-3673,16456.5 -3477,16456.5 -3477,16558.5 -3673,16558.5" fill="none" stroke="#a8a29a" stroke-width="9" stroke-dasharray="54 36"/>
-<line x1="-3673" y1="16507.5" x2="-3477" y2="16507.5" stroke="#a8a29a" stroke-width="4.95" stroke-dasharray="54 36"/>
+<line x1="-3657.32" y1="16456.5" x2="-3657.32" y2="16485.06" stroke="#a8a29a" stroke-width="4.95" stroke-dasharray="54 36"/>
+<line x1="-3492.68" y1="16456.5" x2="-3492.68" y2="16485.06" stroke="#a8a29a" stroke-width="4.95" stroke-dasharray="54 36"/>
 <text x="-3423" y="16507.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">upper_cabinet</text>
 <line x1="-3700" y1="16592.5" x2="-2350" y2="16592.5" stroke="#333333" stroke-width="4.95"/>
 <polygon points="-3673,16626.5 -3477,16626.5 -3477,16728.5 -3673,16728.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="-3664.84,16634.66 -3485.16,16634.66 -3485.16,16720.34 -3664.84,16720.34" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
-<circle cx="-3575" cy="16677.5" r="30.6" fill="none" stroke="#a8a29a" stroke-width="9"/>
-<circle cx="-3575" cy="16677.5" r="18.36" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
+<polygon points="-3661.24,16631.6 -3488.76,16631.6 -3488.76,16647.92 -3661.24,16647.92" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="-3539.72" cy="16639.76" r="5.1" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="-3504.44" cy="16639.76" r="5.1" fill="#f4f2ee" stroke="#a8a29a" stroke-width="4.95"/>
+<circle cx="-3575" cy="16687.7" r="30.6" fill="none" stroke="#a8a29a" stroke-width="9"/>
+<circle cx="-3575" cy="16687.7" r="16.83" fill="#ffffff" stroke="#a8a29a" stroke-width="4.95"/>
 <text x="-3423" y="16677.5" font-size="95" fill="#333333" text-anchor="start" dominant-baseline="central">washer</text>
 <line x1="-3700" y1="16762.5" x2="-2350" y2="16762.5" stroke="#333333" stroke-width="4.95"/>
 <polygon points="-3673,16796.5 -3477,16796.5 -3477,16898.5 -3673,16898.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>

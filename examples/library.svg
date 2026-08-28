@@ -319,8 +319,9 @@
 <line x1="49358" y1="3300" x2="49358" y2="3900" stroke="#a8a29a" stroke-width="19.8"/>
 <polygon points="49850,4900 49850,5500 49200,5500 49200,4900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <polygon points="49820,4930 49820,5470 49230,5470 49230,4930" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
-<line x1="49616" y1="4900" x2="49616" y2="5500" stroke="#a8a29a" stroke-width="36"/>
-<line x1="49772" y1="5416" x2="49668" y2="5416" stroke="#a8a29a" stroke-width="36"/>
+<line x1="49330" y1="4900" x2="49330" y2="5500" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="49655" y1="4900" x2="49655" y2="5500" stroke="#a8a29a" stroke-width="36"/>
+<line x1="49258.5" y1="5104" x2="49258.5" y2="5296" stroke="#a8a29a" stroke-width="36"/>
 <polygon points="49850,6500 49850,7100 49250,7100 49250,6500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <circle cx="49670" cy="6680" r="96" fill="none" stroke="#a8a29a" stroke-width="36"/>
 <circle cx="49670" cy="6680" r="57.6" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
@@ -1057,8 +1058,9 @@
 <line x1="7650" y1="48520" x2="13050" y2="48520" stroke="#333333" stroke-width="19.8"/>
 <polygon points="7758,48656 8542,48656 8542,49064 7758,49064" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>
 <polygon points="7778.4,48676.4 8521.6,48676.4 8521.6,49043.6 7778.4,49043.6" fill="none" stroke="#a8a29a" stroke-width="19.8"/>
-<line x1="7758" y1="48802.88" x2="8542" y2="48802.88" stroke="#a8a29a" stroke-width="36"/>
-<line x1="8432.24" y1="48704.96" x2="8432.24" y2="48770.24" stroke="#a8a29a" stroke-width="36"/>
+<line x1="7758" y1="48982.4" x2="8542" y2="48982.4" stroke="#a8a29a" stroke-width="19.8"/>
+<line x1="7993.2" y1="48656" x2="7993.2" y2="48982.4" stroke="#a8a29a" stroke-width="36"/>
+<line x1="8024.56" y1="49027.28" x2="8275.44" y2="49027.28" stroke="#a8a29a" stroke-width="36"/>
 <text x="8758" y="48860" font-size="380" fill="#333333" text-anchor="start" dominant-baseline="central">fridge</text>
 <line x1="7650" y1="49200" x2="13050" y2="49200" stroke="#333333" stroke-width="19.8"/>
 <polygon points="8501.2,49336 8516.81,49339.11 8530.05,49347.95 8538.89,49361.19 8542,49376.8 8542,49703.2 8538.89,49718.81 8530.05,49732.05 8516.81,49740.89 8501.2,49744 7798.8,49744 7783.19,49740.89 7769.95,49732.05 7761.11,49718.81 7758,49703.2 7758,49376.8 7761.11,49361.19 7769.95,49347.95 7783.19,49339.11 7798.8,49336" fill="#f4f2ee" stroke="#a8a29a" stroke-width="36"/>

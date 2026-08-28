@@ -38,8 +38,9 @@
 <line x1="3950" y1="6500" x2="3350" y2="6500" stroke="#a8a29a" stroke-width="9.94"/>
 <polygon points="150,800 150,200 850,200 850,800" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18.08"/>
 <polygon points="180,770 180,230 820,230 820,770" fill="none" stroke="#a8a29a" stroke-width="9.94"/>
-<line x1="402" y1="800" x2="402" y2="200" stroke="#a8a29a" stroke-width="18.08"/>
-<line x1="234" y1="284" x2="346" y2="284" stroke="#a8a29a" stroke-width="18.08"/>
+<line x1="710" y1="800" x2="710" y2="200" stroke="#a8a29a" stroke-width="9.94"/>
+<line x1="360" y1="800" x2="360" y2="200" stroke="#a8a29a" stroke-width="18.08"/>
+<line x1="787" y1="596" x2="787" y2="404" stroke="#a8a29a" stroke-width="18.08"/>
 <polygon points="150,1500 150,900 750,900 750,1500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="18.08"/>
 <circle cx="330" cy="1320" r="96" fill="none" stroke="#a8a29a" stroke-width="18.08"/>
 <circle cx="330" cy="1320" r="57.6" fill="none" stroke="#a8a29a" stroke-width="9.94"/>

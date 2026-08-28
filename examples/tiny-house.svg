@@ -25,8 +25,9 @@
 <line x1="900" y1="652" x2="1500" y2="652" stroke="#a8a29a" stroke-width="7.04"/>
 <polygon points="1500,100 2100,100 2100,750 1500,750" fill="#f4f2ee" stroke="#a8a29a" stroke-width="12.8"/>
 <polygon points="1530,130 2070,130 2070,720 1530,720" fill="none" stroke="#a8a29a" stroke-width="7.04"/>
-<line x1="1500" y1="334" x2="2100" y2="334" stroke="#a8a29a" stroke-width="12.8"/>
-<line x1="2016" y1="178" x2="2016" y2="282" stroke="#a8a29a" stroke-width="12.8"/>
+<line x1="1500" y1="620" x2="2100" y2="620" stroke="#a8a29a" stroke-width="7.04"/>
+<line x1="1500" y1="295" x2="2100" y2="295" stroke="#a8a29a" stroke-width="12.8"/>
+<line x1="1704" y1="691.5" x2="1896" y2="691.5" stroke="#a8a29a" stroke-width="12.8"/>
 <polygon points="5350,100 6250,100 6250,1000 5350,1000" fill="#ffffff" stroke="#a8a29a" stroke-width="12.8"/>
 <polygon points="5422,172 6178,172 6178,928 5422,928" fill="#ffffff" stroke="#a8a29a" stroke-width="7.04"/>
 <line x1="5422" y1="172" x2="6178" y2="928" stroke="#a8a29a" stroke-width="7.04"/>

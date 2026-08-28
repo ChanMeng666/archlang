@@ -9,8 +9,9 @@
 <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
 <polygon points="100,700 100,100 750,100 750,700" fill="#f4f2ee" stroke="#a8a29a" stroke-width="12.32"/>
 <polygon points="130,670 130,130 720,130 720,670" fill="none" stroke="#a8a29a" stroke-width="6.78"/>
-<line x1="334" y1="700" x2="334" y2="100" stroke="#a8a29a" stroke-width="12.32"/>
-<line x1="178" y1="184" x2="282" y2="184" stroke="#a8a29a" stroke-width="12.32"/>
+<line x1="620" y1="700" x2="620" y2="100" stroke="#a8a29a" stroke-width="6.78"/>
+<line x1="295" y1="700" x2="295" y2="100" stroke="#a8a29a" stroke-width="12.32"/>
+<line x1="691.5" y1="496" x2="691.5" y2="304" stroke="#a8a29a" stroke-width="12.32"/>
 <polygon points="100,1500 100,900 700,900 700,1500" fill="#f4f2ee" stroke="#a8a29a" stroke-width="12.32"/>
 <circle cx="280" cy="1320" r="96" fill="none" stroke="#a8a29a" stroke-width="12.32"/>
 <circle cx="280" cy="1320" r="57.6" fill="none" stroke="#a8a29a" stroke-width="6.78"/>

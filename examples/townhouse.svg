@@ -46,8 +46,9 @@
 <line x1="702" y1="8900" x2="702" y2="8300" stroke="#a8a29a" stroke-width="4.95"/>
 <polygon points="150,8100 150,7500 800,7500 800,8100" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="180,8070 180,7530 770,7530 770,8070" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
-<line x1="384" y1="8100" x2="384" y2="7500" stroke="#a8a29a" stroke-width="9"/>
-<line x1="228" y1="7584" x2="332" y2="7584" stroke="#a8a29a" stroke-width="9"/>
+<line x1="670" y1="8100" x2="670" y2="7500" stroke="#a8a29a" stroke-width="4.95"/>
+<line x1="345" y1="8100" x2="345" y2="7500" stroke="#a8a29a" stroke-width="9"/>
+<line x1="741.5" y1="7896" x2="741.5" y2="7704" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="1900,8400 3300,8400 3300,9300 1900,9300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9"/>
 <polygon points="1972,8472 3228,8472 3228,9228 1972,9228" fill="none" stroke="#a8a29a" stroke-width="4.95"/>
 </g>

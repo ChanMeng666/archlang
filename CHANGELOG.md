@@ -23,6 +23,81 @@ taken at, and every such outline now comes from one `dashedPattern()` helper. (3
 **`examples/hillside-villa.arch` changes bytes** — its garage door is the `garage` kind and its
 garage room is `uses garage`; its three deliberate lint warnings are unchanged.
 
+<!-- v1.32 F1 -->
+### Added — eight kitchen and bath fixture families
+
+Eight families, ten words with their aliases, appended to the end of `FIXTURE_FAMILIES`
+and `CATALOG` in one block. No new keyword, no new `E_*`/`W_*` code: a fixture category is
+DATA, and this is the catalogue growing, not the grammar.
+
+- **Bath** — `bidet` (400 × 700, wet, 450 mm clearance), `urinal` (400 × 350, wet, 450 mm)
+  and `mirror` (900 × 50). A bidet is a WC with no cistern: a small tap block at the back
+  where a WC has a full-width tank, and a waste on the bowl centre. A urinal is the only
+  symbol in the catalogue drawn as **half** a shape — a wall-hung urinal has no back, so
+  the chord across the top of its bowl is the wall face and the symbol runs to the very
+  edge of its footprint. A mirror is the glass with five 45° reflection ticks, which is
+  the one mark that survives being eighteen times longer than it is deep.
+- **Kitchen & utility** — `laundry_sink` (alias `laundry_tub`; 600 × 500, wet, 600 mm
+  clearance), `water_heater` (alias `boiler`; 600 × 600), `range_hood` (900 × 500,
+  kitchen), `microwave` (500 × 400, kitchen) and `bar_counter` (1800 × 600, kitchen). A
+  laundry tub is one deep double-rimmed bowl against the kitchen sink's pair. A water
+  heater is the cylinder in plan with two pipe ticks to the wall — the pipes are what make
+  it a service rather than a `fire_pit`, and they are why it is not `symmetric` though its
+  outline would be. A range hood is drawn **entirely dashed**, which makes it the second
+  overhead symbol in the kitchen module. A bar counter derives **one stool per ~1.2
+  counter-depths of run**, capped at eight, so an 1800 mm bar draws four and a 4 m bar
+  draws eight.
+
+Six of the eight are `requiresWall`, which is the flag's home ground after the outdoor
+tranche had to argue its way out of it: `bidet`/`urinal`/`laundry_sink`/`water_heater`
+are plumbed, and `mirror`/`range_hood` hang off the fabric by definition — the
+`upper_cabinet` case. `microwave` and `bar_counter` are `directional` instead: both have
+an unmistakable front and neither needs a pipe, so a bar floated in an open-plan room
+raises nothing.
+
+### Changed — six kitchen and bath symbols redrawn, and every plan that places one moves bytes
+
+`island`, `upper_cabinet`, `dishwasher`, `oven`, `fridge` and `washer` were the six that
+still read as a rectangle with a line in it. What each gained:
+
+- **`island`** (2 → 7 prims, or 9 on a long run) — an eased worktop, a seating overhang
+  along the front with cabinet ticks under it, and **by aspect** either a hob (four
+  burners, at 1.8 or over) or a sink bowl at one end. It was a slab nosed on all four
+  sides, which is a box inside a box.
+- **`upper_cabinet`** (2 → 3) — still dashed all the way round, now with a door split per
+  600 mm module (guarded exactly as the counter's division ticks are, so a legend swatch
+  degrades to the plain outline) and a hinge tick at each end of the back edge. A dashed
+  empty rectangle on a plan is a `void`; this one is now unmistakably cabinetry.
+- **`dishwasher`** (3 → 7) — two basket lines across the tub and a door leaf on the front
+  with its control strip and handle, replacing a dial in the middle of a box, which is a
+  washing machine's drawing.
+- **`oven`** (4 → 8, or 12 wide) — three control knobs on the back edge, a door seam, a
+  window and a handle bar; **a footprint of aspect 1.6 or over is a range** and gains four
+  burners.
+- **`fridge`** (4 → 5) — a door face line, a handle **bar** rather than a stub, and a
+  compartment split placed **by aspect**: down the width of a side-by-side, across the
+  depth of an upright.
+- **`washer`** (4 → 7) — a control panel across the back with two knobs, and a **white
+  porthole** at the drum's centre. `dryer` is unchanged and keeps its three chords: the
+  two are the same box at the same size, and they now differ by more than a circle count.
+
+`island` is **no longer `symmetric`** in `src/fixtures-catalog.ts`. That is a data
+correction, not a behaviour change — the flag's own doc says the drawn symbol is
+rotation-symmetric, and a seating overhang is a distinguishable front. Nothing observable
+moves: `orientationMatters` is `(requiresWall || directional) && !symmetric`, and an
+island is neither, so it still derives no rotation and still never trips
+`W_FIXTURE_BACK_TO_ROOM`.
+
+**Twelve of the twenty committed README SVGs, sixteen inline snapshots and thirteen PNG
+goldens were re-blessed after reading the diff.** Every one of the 202 changed SVG lines
+is a `<polygon>`/`<line>`/`<circle>` on the furniture layer: no wall, room, text,
+dimension or layer moved. **`describe()` and `lint()` did not change by a byte on any
+plan**, and that is proved rather than asserted — feeding each *committed* base drawing
+into the byte-identity digests, with the summary and diagnostics taken from the new code,
+reproduces every previous hex exactly. The three byte-identity law suites now carry a
+second pin over the summary half alone (`semanticDigestWith`), which a drawing change can
+never move, so the next redraw does not have to make the argument again.
+
 ### Added — ground surfaces, fences and a site lot line
 
 Three new drawing surfaces. None of them is a room, none of them obstructs anything, and
