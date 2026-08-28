@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { format, repair, lint } from "../src/index.js";
+import { resolvePlan } from "../src/analyze.js";
+import type { RFurniture } from "../src/ir.js";
 
 /**
  * `arch repair` — the explicit source-to-source corrector (ADR 0006). It emits new
@@ -210,6 +212,55 @@ describe("arch repair", () => {
       expect(c.to.y % 100).toBe(0);
     }
     expect(repair(r.source).source).toBe(r.source);
+  });
+
+  it("records a moved position as the printer will write it", () => {
+    // Regression, found by `test/fuzz.test.ts`'s round-trip property ("never reports a
+    // move its own output does not contain"), which failed on roughly one run in five
+    // and reproduces byte-for-byte against v1.30.0's `src/` — so this shipped.
+    //
+    // `planWrite` promises that the source repair is about to write resolves back to
+    // the position it reports. It computed that position in full float precision, but
+    // `formatPlan` prints every number through `fmt3`: the change log said the WC went
+    // to y = 1117.9999999999982 while the source it handed back said `y 1118`. A
+    // consumer diffing the log against the plan saw a 1.8e-12 mm disagreement, and the
+    // fuzz property — which compares the log to the RE-RESOLVED output, which is the
+    // only honest comparison — caught it. This is the exact counterexample it found
+    // (fast-check seed -2029920382).
+    //
+    // No grid statement, deliberately: `snap` is the identity without one, so nothing
+    // else rounds the coordinate on its way to the printer.
+    const src = `plan "P" {
+  units mm
+  wall id=w_shell exterior thickness 100 { (0,0) (3200,0) (3200,5400) (0,5400) close }
+  wall id=w_h1 partition thickness 80 { (0,3000) (3200,3000) }
+  room id=r0 at (0,0) size 3200x3000
+  room id=r1 at (0,3000) size 3200x2400
+  door id=o0 hinged on w_shell at 81% width 700
+  furniture id=f0 wc at (0,1152) size 300x1800
+}
+`;
+    const r = repair(src);
+    const moved = r.changes.find((c) => c.id === "f0" && c.kind === "moved");
+    expect(moved, "the counterexample must still move its WC, or it proves nothing").toBeDefined();
+
+    // The property this is here to hold: every reported destination equals the position
+    // the emitted source actually resolves to. Asserted over EVERY change, not just the
+    // one that failed — a `rotated` entry carries the same coordinates.
+    const { ir } = resolvePlan(r.source);
+    const where = new Map(
+      (ir?.elements ?? []).filter((e) => e.kind === "furniture").map((e) => [e.id, (e as RFurniture).at] as const),
+    );
+    for (const c of r.changes) {
+      const at = where.get(c.id);
+      if (!at) continue;
+      expect({ x: at.x, y: at.y }, `repair reported "${c.id}" at a place its own output does not`).toEqual(c.to);
+    }
+
+    // And the specific value, so a future rounding change has to argue with a number
+    // rather than quietly satisfy a self-comparison.
+    expect(moved!.to).toEqual({ x: 50, y: 1118 });
+    expect(r.source).toContain("at (50, 1118)");
   });
 
   it("is pure across repeated calls on the same source (parse memo untouched)", () => {

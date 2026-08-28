@@ -266,6 +266,21 @@ not yet carry the other's, so 25,911 + 1,964 + 360 predicts 28,235 while the mer
   times and overwrote every room's name with it. Found by looking at `-f txt` output rather
   than by reading the code; the ground is now excluded from the room and furniture passes
   alike.
+- **`repair()`'s change log recorded an unrounded float while the emitted source carried
+  the rounded value.** `planWrite` promises that the source repair is about to write
+  resolves back to the position it reports, but it computed that position in full float
+  precision while `formatPlan` prints every number through `fmt3` — so a log could say a
+  piece went to `y = 1117.9999999999982` while the plan it handed back said `y 1118`. A
+  consumer diffing the change log against its own plan saw a disagreement that was not
+  there. **Pre-existing since at least v1.30.0** (reproduced byte-for-byte against that
+  tag's `src/`), and found by `test/fuzz.test.ts`'s round-trip property, which failed on
+  roughly one run in five — a flake that would have failed `prepublishOnly`, not merely a
+  CI leg. Both write forms are fixed at the one place the target is planned: an absolute
+  `at` is reported as the printer will write it, and an `inset` rewrite rounds the INSET
+  — the number the source actually carries — and reads the position back out of the
+  placement's own linear model. No second rounding rule was added; `repair.ts` reads
+  `fmt3`'s output back. `src/repair.ts`, `test/repair.test.ts`.
+
 - **Two hand-typed copies of the `uses` value set in Plan JSON.** `src/plan-json.ts` kept its
   validator's allow-list **and** `PLAN_JSON_SCHEMA`'s `uses` enum as hand-typed twelve-name
   literals. Both are interpolated from `USE_KINDS` now. This was not theoretical: adding a
