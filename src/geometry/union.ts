@@ -11,6 +11,17 @@
  * loops. Angled (non-axis-aligned) rectangles are not handled here — the
  * renderer falls back to per-segment outlines for those.
  *
+ * ## Also: the rectilinear ORACLE for the joinery layer
+ *
+ * `geometry/joinery.ts` computes the same boundary for walls at ANY angle, curves
+ * included, so this module is no longer the only way to get an orthogonal plan's poché.
+ * It is kept because it is the independent second implementation of the axis-aligned
+ * case: `test/joinery-oracle.test.ts` generates random axis-aligned wall sets and
+ * requires the two to agree as quantised undirected EDGE SETS, exactly. A general
+ * algorithm checked only against its own examples is checked against the cases someone
+ * thought of; checked against a simpler algorithm that has shipped for years, it is
+ * checked against every case the generator can reach. **Do not delete it as dead code.**
+ *
  * Every rect edge lies exactly on a grid line (the grid is built from the same
  * coordinates), so coverage is rasterized once into a flat cell grid by index
  * range — equivalent to the former per-cell centre-in-rect test, without the
