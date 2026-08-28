@@ -35,6 +35,7 @@ import { ARC_STEP_DEG, arcTessellate } from "../src/geometry/arc.js";
 /** Degrees to radians — the sagitta term below needs the tessellation step in radians. */
 const rad = (deg: number): number => (deg * Math.PI) / 180;
 import { distPointToArc } from "../src/geometry/arc.js";
+import { crossesInterior } from "./joinery-laws.js";
 import { distPointToSegment, segmentRectangle, segmentsOfWall } from "../src/geometry.js";
 import { loadClipperBackend } from "../src/geometry/clipper.js";
 import type { GeometryBackend } from "../src/geometry/backend.js";
@@ -55,7 +56,7 @@ import {
   tessellateLoops,
 } from "../src/geometry/band.js";
 import { type JoineryWall, joinWalls } from "../src/geometry/joinery.js";
-import { circleCircle, lineCircleParams, lineLineParams, perp } from "../src/geometry/intersect.js";
+import { perp } from "../src/geometry/intersect.js";
 import { type WallSpec, angledWalls, renderWalls, rectilinearWalls } from "./arbitrary-joinery.js";
 
 const P = (x: number, y: number): Point => ({ x, y });
@@ -118,41 +119,6 @@ function polyEdgeKeySet(polys: readonly Point[][]): Set<string> {
 
 const inside = (loops: readonly EdgeLoop[], p: Point): boolean =>
   loops.reduce((n, l) => n + loopWinding(l, p), 0) !== 0;
-
-/** Do two edges cross at a point INTERIOR to both? Shared endpoints do not count. */
-function crossesInterior(a: Edge, b: Edge): Point | null {
-  const ends = new Set([pointKey(edgeStart(a)), pointKey(edgeEnd(a)), pointKey(edgeStart(b)), pointKey(edgeEnd(b))]);
-  const interior = (e: Edge, p: Point): boolean => {
-    if (ends.has(pointKey(p))) return false;
-    const d = e.t === "arc" ? distPointToArc(p, e.arc) : distPointToSegment(p, edgeStart(e), edgeEnd(e));
-    if (d > 1e-6) return false;
-    // Strictly interior: not within a micron of either end.
-    const s = edgeStart(e);
-    const t = edgeEnd(e);
-    return Math.hypot(p.x - s.x, p.y - s.y) > 1e-3 && Math.hypot(p.x - t.x, p.y - t.y) > 1e-3;
-  };
-  const candidates: Point[] = [];
-  if (a.t === "line" && b.t === "line") {
-    const d = { x: a.b.x - a.a.x, y: a.b.y - a.a.y };
-    const e = { x: b.b.x - b.a.x, y: b.b.y - b.a.y };
-    const r = lineLineParams(a.a, d, b.a, e);
-    if (r) candidates.push({ x: a.a.x + r.s * d.x, y: a.a.y + r.s * d.y });
-  } else if (a.t === "line" && b.t === "arc") {
-    const d = { x: a.b.x - a.a.x, y: a.b.y - a.a.y };
-    for (const s of lineCircleParams(a.a, d, b.arc.center, b.arc.r)) {
-      candidates.push({ x: a.a.x + s * d.x, y: a.a.y + s * d.y });
-    }
-  } else if (a.t === "arc" && b.t === "line") {
-    const d = { x: b.b.x - b.a.x, y: b.b.y - b.a.y };
-    for (const s of lineCircleParams(b.a, d, a.arc.center, a.arc.r)) {
-      candidates.push({ x: b.a.x + s * d.x, y: b.a.y + s * d.y });
-    }
-  } else if (a.t === "arc" && b.t === "arc") {
-    candidates.push(...circleCircle(a.arc.center, a.arc.r, b.arc.center, b.arc.r));
-  }
-  for (const p of candidates) if (interior(a, p) && interior(b, p)) return p;
-  return null;
-}
 
 /* ------------------------------------------------------------- intrinsic laws */
 

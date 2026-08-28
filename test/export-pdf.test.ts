@@ -461,19 +461,32 @@ describe("PDF export", () => {
       const s = planOf(RICH);
       const kinds = new Set(s.nodes.map((n) => n.prim.t));
       // Non-vacuity: assert the FIXTURE exercises the paths before asserting the output.
-      for (const k of ["polygon", "line", "region", "arc", "circle", "text"]) {
+      // `path` where this used to say `region`: RICH's exterior wall carries an `arc`, and
+      // since v1.30 a wall set with any curve in it is one `path` outline rather than a
+      // straight-edged `region` plus loose per-segment arcs. `region` has not gone away —
+      // it is still what an ALL-STRAIGHT plan emits, which the SHEET check below proves,
+      // so this backend keeps a witness for both.
+      for (const k of ["polygon", "line", "path", "arc", "circle", "text"]) {
         expect(kinds, `the rich fixture stopped producing a \`${k}\` primitive`).toContain(k);
       }
+      const straightKinds = new Set(planOf(SHEET).nodes.map((n) => n.prim.t));
+      expect(straightKinds, "a rectilinear plan must still lower to a `region`").toContain("region");
       expect(s.nodes.some((n) => n.paint.dash)).toBe(true);
       expect(s.nodes.some((n) => n.paint.miterLimit !== undefined)).toBe(true);
-      expect(s.nodes.some((n) => n.paint.linecap === "square")).toBe(true);
       expect(s.nodes.some((n) => n.prim.t === "text" && n.prim.rotate !== undefined)).toBe(true);
+      // The square line CAP moved fixtures in v1.30. It used to ride on the per-segment
+      // wall face lines, which had free ends that a round cap would visibly shorten; a
+      // joined outline is closed loops, where a cap has nothing to do. The one primitive
+      // still asking for it is the opt-in circulation overlay's dashed route, so that is
+      // what has to reach the page for `2 J` to be tested at all.
+      const capped = toScene(resolve(parse(RICH).plan!).ir, { overlays: ["circulation"] });
+      expect(capped.nodes.some((n) => n.paint.linecap === "square")).toBe(true);
 
       const ops = pageOps(await toPdf(s));
-      expect(ops, "no Bezier op — the arc/circle primitives did not reach the page").toMatch(/ c\n/);
+      expect(ops, "no Bezier op — the arc/circle/path primitives did not reach the page").toMatch(/ c\n/);
       expect(ops, "no dash array — a dashed opening or door leaf was drawn solid").toMatch(/\[[\d.]+ [\d.]+\] 0 d/);
       expect(ops, "no mitre-limit op — an acute wall joint can spike in print").toMatch(/[\d.]+ M\n/);
-      expect(ops, "no square line cap").toContain("2 J");
+      expect(pageOps(await toPdf(capped)), "no square line cap").toContain("2 J");
       expect(pdfStrings(await toPdf(s))).toEqual(expect.arrayContaining(["Left", "Drum"]));
     });
 

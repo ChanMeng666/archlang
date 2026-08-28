@@ -5,6 +5,7 @@ import { aiaLayer } from "../src/scene.js";
 import type { Scene, SceneNode } from "../src/scene.js";
 import { renderAscii } from "../src/backends/ascii.js";
 import { toDxf } from "../src/export/dxf.js";
+import { outlineSegments } from "./path-prim.js";
 
 /**
  * Cased `opening` — a leaf-less gap in a wall that still connects two spaces. It
@@ -109,9 +110,11 @@ const orthoOpening = `plan "Op" {
   opening id=op   at (4000,2000) width 1800 wall partition
 }`;
 
-/** The same plan plus an ANGLED partition, which drops the whole wall set out of the
- *  rectilinear boolean; with no geometry backend registered the cover polygon is then
- *  the only thing voiding the wall, so it must stay opaque. */
+/** The same plan with an ANGLED partition. Until v1.30 this dropped the whole wall set
+ *  out of the rectilinear boolean and — with no geometry backend registered — nothing
+ *  subtracted the opening, so the cover polygon had to stay OPAQUE to fake the hole. The
+ *  joinery cuts an angled host like any other, so this is now the same drawing as the
+ *  orthogonal one, at 45°. */
 const angledOpening = `plan "Angled" {
   units mm
   wall exterior  thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
@@ -122,6 +125,21 @@ const angledOpening = `plan "Angled" {
   door    id=d_in at (2000,4000) width 1000 wall exterior hinge left swing in
 }`;
 
+/** A CURVED host: the passage is attributed by ARC LENGTH and its jambs run radially.
+ *  Nothing voided a curved wall before v1.30 — an arc-bearing wall was lowered per
+ *  segment and subtracted no opening at all, on its curve or on its straight runs. */
+const arcOpening = `plan "Arc" {
+  units mm
+  wall id=w exterior thickness 300 {
+    (0,0)
+    (12000,0)
+    arc (24000,12000) radius 12000
+    (24000,24000)
+  }
+  room id=r circle at (12000,12000) radius 6000 label "Rotunda"
+  opening id=op at (15515,8485) width 900 wall w
+}`;
+
 const sceneOf = (src: string): Scene => compile(src, { noCache: true }).scene!;
 const on = (s: Scene, pass: SceneNode["layer"]): SceneNode[] => s.nodes.filter((n) => n.layer === pass);
 const coverOf = (s: Scene, pass: SceneNode["layer"]): SceneNode => on(s, pass).find((n) => n.prim.t === "polygon")!;
@@ -130,7 +148,9 @@ describe("cased opening rendering — never repaint the void the wall union open
   it("puts its primitives on the `openings` pass, which is CAD layer A-DOOR (not A-GLAZ)", () => {
     expect(aiaLayer("openings")).toBe("A-DOOR");
     const s = sceneOf(orthoOpening);
-    expect(on(s, "openings")).toHaveLength(3); // cover + two lintel lines
+    // ONE node: the unpainted cover the ASCII/DXF backends locate the passage by. It was
+    // three until v1.30 — cover plus two dashed lintel lines, which are gone.
+    expect(on(s, "openings")).toHaveLength(1);
     expect(on(s, "windows")).toHaveLength(0); // a leaf-less passage is not glazing
     // The LAYER table declares every AIA layer, so assert on the ENTITIES section:
     // the opening's linework must reference A-DOOR and nothing must sit on A-GLAZ.
@@ -151,27 +171,47 @@ describe("cased opening rendering — never repaint the void the wall union open
     expect([...new Set(pts.map((p) => p.y))].sort((a, b) => a - b)).toEqual([1100, 2900]);
   });
 
-  it("draws the head as two DASHED lintels, never a solid line bridging the gap", () => {
+  it("draws NO head line — the gap shows the capped jambs and nothing bridging them", () => {
+    // The head used to be two DASHED lines, one at each wall face, a convention borrowed
+    // from a drawing where the wall solid was NOT severed. With a real hole in the poché
+    // those two lines re-bridge the gap the joinery just opened, so they are gone.
     const s = sceneOf(orthoOpening);
-    const lines = on(s, "openings").filter((n) => n.prim.t === "line");
-    expect(lines).toHaveLength(2); // one at each wall face
-    for (const l of lines) {
-      expect(l.paint.dash).toBeDefined(); // a solid run here re-closes the passage
-      expect(l.paint.dash![0]).toBeGreaterThan(0);
-      expect(l.paint.stroke).toBe(s.theme.wallStroke);
-      // …and each lintel is exactly as long as the opening (1800), on a wall face.
-      if (l.prim.t !== "line") continue;
-      expect(Math.abs(l.prim.b.y - l.prim.a.y)).toBe(1800);
-      expect(Math.abs(l.prim.a.x - 4000)).toBe(50);
+    expect(on(s, "openings").filter((n) => n.prim.t === "line")).toHaveLength(0);
+    expect(on(s, "openings").some((n) => n.paint.dash)).toBe(false);
+  });
+
+  it("severs the wall at the passage on a STRAIGHT, an ANGLED and an ARC host alike", () => {
+    // The claim is not "no line is drawn" — it is that the outline turns the corner and
+    // runs ACROSS the wall at each jamb, which is what an opening looks like in plan. A
+    // jamb is a straight outline edge exactly one wall-thickness long whose midpoint sits
+    // half an opening-width from the opening's centre; that characterisation holds on a
+    // curve too, where the jambs are radial.
+    const cases: { name: string; src: string; at: { x: number; y: number }; t: number; w: number }[] = [
+      { name: "straight", src: orthoOpening, at: { x: 4000, y: 2000 }, t: 100, w: 1800 },
+      { name: "angled", src: angledOpening, at: { x: 3500, y: 2500 }, t: 100, w: 800 },
+      // (15515, 8485) is the arc's own midpoint — the curve bulges AWAY from the chord's
+      // far side, so its centre is (24000, 0), not the (12000, 12000) a reader guesses.
+      { name: "arc", src: arcOpening, at: { x: 15515, y: 8485 }, t: 300, w: 900 },
+    ];
+    for (const c of cases) {
+      const face = sceneOf(c.src).nodes.filter((n) => n.layer === "wallFace");
+      const jambs = outlineSegments(face).filter((seg) => {
+        const len = Math.hypot(seg.to.x - seg.from.x, seg.to.y - seg.from.y);
+        const mid = { x: (seg.from.x + seg.to.x) / 2, y: (seg.from.y + seg.to.y) / 2 };
+        const off = Math.hypot(mid.x - c.at.x, mid.y - c.at.y);
+        return Math.abs(len - c.t) < 1 && Math.abs(off - c.w / 2) < 1;
+      });
+      expect(jambs, `${c.name}: expected two jambs across the wall at the passage`).toHaveLength(2);
     }
   });
 
-  it("KEEPS the opaque cover on an angled host, where nothing else voids the wall", () => {
+  it("emits an UNPAINTED cover on an ANGLED host too — nothing repaints the floor", () => {
+    // This test used to assert the OPPOSITE, and correctly: an angled wall set subtracted
+    // nothing, so the opaque cover was the only thing that made a doorway read as a gap.
     const s = sceneOf(angledOpening);
-    // No geometry backend is registered in the suite, so the angled wall set falls
-    // back to per-segment rectangles that subtract nothing.
-    expect(coverOf(s, "openings").paint.fill).toBe(s.theme.opening);
-    expect(coverOf(s, "doors").paint.fill).toBe(s.theme.opening);
+    expect(coverOf(s, "openings").paint.fill).toBe("none");
+    expect(coverOf(s, "openings").paint.fill).not.toBe(s.theme.opening);
+    expect(coverOf(s, "doors").paint.fill).toBe("none");
   });
 
   it("reads as a door-style gap (·), not a window (=), in the ASCII plan", () => {

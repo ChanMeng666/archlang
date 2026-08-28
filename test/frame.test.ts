@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
+import { arcMidpoint, arcSweepAngle, pathArcs } from "./path-prim.js";
 import {
   IDENTITY,
   composeFrame,
@@ -786,17 +787,23 @@ const TWIN_BAY = `plan "P" {
 }`;
 
 describe("a mirrored bay is DRAWN as the mirror image, not as a curve that merely shares its ends", () => {
-  const faces = compile(TWIN_BAY, { noCache: true })
-    .scene!.nodes.filter((n) => n.layer === "wallFace" && n.prim.t === "arc")
-    .map((n) => n.prim as Extract<typeof n.prim, { t: "arc" }>);
-  const of = (cx: number) => faces.filter((p) => p.center.x === cx);
+  // Since v1.30 the two bays are ONE joined outline — a single `path` node whose loops
+  // carry the arc edges the `wallFace` pass used to scatter as separate `arc` primitives.
+  const faceNodes = compile(TWIN_BAY, { noCache: true }).scene!.nodes.filter((n) => n.layer === "wallFace");
+  const arcs = pathArcs(faceNodes);
+  const of = (cx: number) => arcs.filter((p) => p.center.x === cx);
   /** Every x a drawn face passes through: the piece ends, which include the apex. */
-  const xs = (cx: number) => of(cx).flatMap((p) => [p.start.x, p.end.x]);
+  const xs = (cx: number) => of(cx).flatMap((p) => [p.from.x, p.to.x]);
 
   it("emits each 180° face as two ≤120° pieces, per instance and per wall face", () => {
-    expect(faces).toHaveLength(8); // 2 instances × 2 faces (r ± 100) × 2 pieces
+    expect(faceNodes).toHaveLength(1);
+    expect(faceNodes[0]!.prim.t).toBe("path");
+    expect(arcs).toHaveLength(8); // 2 instances × 2 faces (r ± 100) × 2 pieces
     expect(of(0)).toHaveLength(4);
     expect(of(10_000)).toHaveLength(4);
+    // Neither the `arc` primitive nor a `path`'s arc edge carries a large-arc flag, so
+    // every piece has to be unambiguously minor.
+    for (const a of arcs) expect(Math.abs(arcSweepAngle(a))).toBeLessThanOrEqual((120 * Math.PI) / 180 + 1e-9);
   });
 
   it("bulges the mirrored bay AWAY from the plan, exactly as far as the original bulges towards it", () => {
@@ -812,12 +819,22 @@ describe("a mirrored bay is DRAWN as the mirror image, not as a curve that merel
     expect(xs(10_000)).toContain(11_900);
   });
 
-  it("flips the SVG sweep flag on the mirrored copy — the flag every backend serializes", () => {
-    // `sweep: 1` is clockwise as drawn (see the `src/geometry/arc.ts` header). The bay is
-    // authored counter-clockwise, so the plain copy is 0 throughout and the mirrored copy
-    // 1 throughout; a curve reversed in the IR but not in the primitive would render as
-    // the other arc of its own chord.
-    expect(of(0).map((p) => p.sweep)).toEqual([0, 0, 0, 0]);
-    expect(of(10_000).map((p) => p.sweep)).toEqual([1, 1, 1, 1]);
+  it("draws every piece on the correct side of its own chord — the sweep flag, by consequence", () => {
+    // The endpoints above cannot catch a flipped `sweep`: an arc and its reflection about
+    // its own chord share both ends and the radius. Its MIDPOINT is what separates them,
+    // and the midpoint is what the flag decides. Every plain-copy piece must therefore sit
+    // at or left of the wall line, and every mirrored piece at or right of it.
+    //
+    // (The old form of this test compared the flags literally — `[0,0,0,0]` against
+    // `[1,1,1,1]`. That was reading the per-segment emission, where both faces of a wall
+    // were emitted in the SAME direction. A joined boundary traverses a wall's two faces
+    // in OPPOSITE directions by construction, so a raw flag list no longer says anything
+    // about the mirror; the side of the chord still does.)
+    expect(of(0).length).toBeGreaterThan(0);
+    for (const a of of(0)) expect(arcMidpoint(a).x).toBeLessThanOrEqual(0 + 1e-6);
+    for (const a of of(10_000)) expect(arcMidpoint(a).x).toBeGreaterThanOrEqual(10_000 - 1e-6);
+    // Non-vacuity: the midpoints really do reach the far side, they are not all ~0.
+    expect(Math.min(...of(0).map((a) => arcMidpoint(a).x))).toBeLessThan(-1000);
+    expect(Math.max(...of(10_000).map((a) => arcMidpoint(a).x))).toBeGreaterThan(11_000);
   });
 });

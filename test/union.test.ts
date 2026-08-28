@@ -52,13 +52,18 @@ describe("wall rendering — clean joins", () => {
     expect((svg.match(/stroke-linejoin="miter"/g) ?? []).length).toBe(1);
   });
 
-  it("falls back to per-segment rendering for angled walls (still renders)", () => {
+  it("joins ANGLED walls into one fill and one outline, with no engine installed", () => {
+    // The retired behaviour, for the record: this drew one poché rectangle PER SEGMENT
+    // with untrimmed face lines through the shared corner, unless the optional
+    // clipper2-wasm dependency happened to be registered. Since v1.30 the shape of the
+    // wall chooses nothing — the joinery pass mitres the corner in closed form.
     const src = `plan "A" { wall exterior thickness 200 { (0,0) (3000,2000) (6000,0) } }`;
     const { svg, errors } = compile(src, { noCache: true });
     expect(errors).toEqual([]);
+    expect(getGeometryBackend()).toBe(null);
     expect(svg).toContain('fill="url(#poche)"');
-    // Per-segment fallback emits one fill polygon per segment (2 here).
-    expect((svg.match(/fill="url\(#poche\)"/g) ?? []).length).toBe(2);
+    expect((svg.match(/fill="url\(#poche\)"/g) ?? []).length).toBe(1);
+    expect((svg.match(/stroke-linejoin="miter"/g) ?? []).length).toBe(1);
   });
 
   it("is deterministic", () => {
@@ -102,7 +107,13 @@ describe("wall materials", () => {
     );
     expect(svg).toContain('id="hatch-concrete"');
     expect(svg).toContain('id="hatch-tile"');
-    expect((svg.match(/stroke-linejoin="miter"/g) ?? []).length).toBe(2);
+    // Two fills — the two materials tile without overlapping — but ONE outline for the
+    // whole set. A boundary between two materials is a boundary of neither wall's air,
+    // so the joinery keeps it on exactly one of them and the drawing has one edge there,
+    // not the two the per-group union used to stack.
+    expect((svg.match(/fill="url\(#hatch-concrete\)"/g) ?? []).length).toBe(1);
+    expect((svg.match(/fill="url\(#hatch-tile\)"/g) ?? []).length).toBe(1);
+    expect((svg.match(/stroke-linejoin="miter"/g) ?? []).length).toBe(1);
   });
 });
 
@@ -146,18 +157,21 @@ describe("hatch as data (T3.5)", () => {
   });
 });
 
-// Angled (non-axis-aligned) walls: without a backend they fall back to
-// per-segment fills (seams); with the optional clipper2-wasm engine they union
-// into one seamless region. Orthogonal output must be unaffected either way.
+// Angled (non-axis-aligned) walls. Until v1.30 these took one of two paths — per-segment
+// fills with visible seams, or a `clipper2-wasm` polygon boolean when that OPTIONAL
+// dependency was registered — so an angled plan's BYTES depended on whether an optional
+// native package happened to be installed. There is now one closed-form path and the
+// backend is not consulted at all; these tests pin that, in both directions.
 const ANGLED = `plan "A" { wall exterior thickness 200 { (0,0) (3000,2000) (6000,0) } }`;
 const ORTHO = `plan "O" { wall w thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close } }`;
 
-describe("GeometryBackend seam (T3.4) — engine absent", () => {
-  it("falls back to per-segment fills for angled walls (no backend registered)", () => {
+describe("wall joinery — no geometry engine is consulted", () => {
+  it("draws an angled plan as ONE fill and ONE mitred outline with no backend", () => {
     expect(getGeometryBackend()).toBe(null); // sanity: default is no backend
     const { svg, errors } = compile(ANGLED, { noCache: true });
     expect(errors).toEqual([]);
-    expect(pocheFills(svg)).toBe(2); // one fill per segment — the seamy fallback
+    expect(pocheFills(svg)).toBe(1);
+    expect((svg.match(/stroke-linejoin="miter"/g) ?? []).length).toBe(1);
   });
 
   it("is deterministic without a backend", () => {
@@ -165,27 +179,32 @@ describe("GeometryBackend seam (T3.4) — engine absent", () => {
   });
 });
 
-describe("GeometryBackend seam (T3.4) — clipper2-wasm engine present", () => {
+describe("wall joinery — a registered clipper2 backend changes NOTHING", () => {
   let orthoNoBackend: string;
+  let angledNoBackend: string;
   beforeAll(async () => {
-    orthoNoBackend = compile(ORTHO, { noCache: true }).svg; // capture pre-backend
+    // Capture both BEFORE the backend exists, then register it. `clipper2-wasm` is a
+    // devDependency now: the renderer never calls it, and it survives here as the
+    // rectilinear oracle in `test/joinery-oracle.test.ts`.
+    orthoNoBackend = compile(ORTHO, { noCache: true }).svg;
+    angledNoBackend = compile(ANGLED, { noCache: true }).svg;
     setGeometryBackend(await loadClipperBackend());
   });
   afterAll(() => setGeometryBackend(null));
 
-  it("unions angled walls into a single seamless region (no per-segment seams)", () => {
-    const { svg, errors } = compile(ANGLED, { noCache: true });
-    expect(errors).toEqual([]);
-    expect(pocheFills(svg)).toBe(1); // one unioned fill instead of two
-    expect((svg.match(/stroke-linejoin="miter"/g) ?? []).length).toBe(1);
+  it("leaves ANGLED output byte-identical whether or not the engine is loaded", () => {
+    // This is the one that used to be false. Before v1.30 registering the engine took an
+    // angled plan from two seamy per-segment fills to one unioned region — a different
+    // drawing, decided by an optional install.
+    expect(getGeometryBackend()).not.toBe(null); // sanity: it really is registered
+    expect(compile(ANGLED, { noCache: true }).svg).toBe(angledNoBackend);
+  });
+
+  it("leaves ORTHOGONAL output byte-identical whether or not the engine is loaded", () => {
+    expect(compile(ORTHO, { noCache: true }).svg).toBe(orthoNoBackend);
   });
 
   it("renders angled walls deterministically with the engine present", () => {
     expect(compile(ANGLED, { noCache: true }).svg).toBe(compile(ANGLED, { noCache: true }).svg);
-  });
-
-  it("leaves orthogonal output byte-identical whether or not the engine is loaded", () => {
-    // Orthogonal walls always use the zero-dep rectilinear boolean, never the backend.
-    expect(compile(ORTHO, { noCache: true }).svg).toBe(orthoNoBackend);
   });
 });

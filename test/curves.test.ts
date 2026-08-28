@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { afterAll, describe as suite, expect, it } from "vitest";
+import { arcSweepAngle, pathArcs, pathLines } from "./path-prim.js";
 import {
   applyFixes,
   compile,
@@ -42,9 +43,12 @@ import type { RRoom, RWall } from "../src/ir.js";
  * 2. **A curve compiles identically with and without the optional geometry backend.**
  *    This is THE determinism risk of the feature: `clipper2-wasm` is an optional
  *    dependency, so if a curve ever reached the polygon boolean an arc plan's output
- *    would depend on whether an optional package happened to be installed. The lowering
- *    deliberately routes every arc-bearing wall through the wall element instead — the
- *    test below is what holds that decision in place.
+ *    would depend on whether an optional package happened to be installed. v1.24 held
+ *    that by routing every arc-bearing wall through the wall element's per-segment path
+ *    instead of the boolean; **since v1.30 it holds for a stronger reason** — the
+ *    renderer does not consult a geometry backend at ALL, for any shape of plan, so the
+ *    optional dependency cannot move a byte of anything. The test below still runs, and
+ *    the law it pins now covers straight plans too.
  */
 
 const CURVE = `plan "Curve" {
@@ -393,14 +397,23 @@ suite("rendering — visible faces are TRUE arcs, fills are tessellated", () => 
   });
 
   it("splits a long curve into unambiguously-minor pieces the arc primitive can carry", () => {
-    // A full circle written as two semicircles: each 180° half becomes two ≤120° pieces,
-    // so the SVG's hardcoded large-arc flag of 0 and the DXF's minorArcDegrees stay valid.
+    // A full circle written as two semicircles. Neither the `arc` primitive nor a `path`'s
+    // arc edge carries a large-arc flag, so no piece may exceed 120° — the SVG's hardcoded
+    // large-arc flag of 0 and the DXF's minorArcDegrees both depend on it.
+    //
+    // The COUNT is 3 per face now, not 4. Until v1.30 each semicircle was emitted
+    // separately and each was cut in two; the joinery merges co-circular same-direction
+    // runs first, so each face is one full circle cut into three. Six pieces where there
+    // were eight, drawing the same two circles.
     const full = `plan "P" { wall id=w exterior thickness 200 {
       (12000,0) arc (0,0) radius 6000 arc (12000,0) radius 6000 } }`;
-    const scene = compile(full).scene!;
-    const faces = scene.nodes.filter((n) => n.layer === "wallFace" && n.prim.t === "arc");
-    // 2 semicircles × 2 faces × 2 pieces.
-    expect(faces).toHaveLength(8);
+    const faceNodes = compile(full).scene!.nodes.filter((n) => n.layer === "wallFace");
+    expect(faceNodes).toHaveLength(1);
+    const arcs = pathArcs(faceNodes);
+    expect(arcs).toHaveLength(6);
+    expect(arcs.filter((a) => a.r === 5900)).toHaveLength(3); // inner face
+    expect(arcs.filter((a) => a.r === 6100)).toHaveLength(3); // outer face
+    for (const a of arcs) expect(Math.abs(arcSweepAngle(a))).toBeLessThanOrEqual((120 * Math.PI) / 180 + 1e-9);
   });
 
   it("emits native ARC/CIRCLE entities in DXF", async () => {
@@ -690,12 +703,19 @@ suite("LAW: a curve compiles identically with and without the clipper2 backend",
     }
   });
 
-  it("keeps the STRAIGHT walls of a mixed plan on the boolean (the split is per wall)", () => {
-    // The aquarium's straight partitions still union into multi-loop `region` nodes; only
-    // the two arc-bearing walls take the per-segment path.
-    const scene = compile(AQUARIUM).scene!;
-    expect(scene.nodes.some((n) => n.layer === "wallFace" && n.prim.t === "region")).toBe(true);
-    expect(scene.nodes.some((n) => n.layer === "wallFace" && n.prim.t === "arc")).toBe(true);
+  it("joins a MIXED plan into ONE outline carrying both arc and line edges", () => {
+    // Until v1.30 the aquarium was drawn by two lowering paths at once: its straight
+    // partitions unioned into `region` nodes while its two arc-bearing walls fell to the
+    // per-segment `arc`/`line` primitives, and where a partition met the drum the two
+    // paths drew straight through one another. There is one boundary now, and a `path`
+    // is what carries a boundary with a curve in it.
+    const faceNodes = compile(AQUARIUM).scene!.nodes.filter((n) => n.layer === "wallFace");
+    expect(faceNodes).toHaveLength(1);
+    expect(faceNodes[0]!.prim.t).toBe("path");
+    // Non-vacuity: it really is MIXED — the drum's curves and the partitions' straight
+    // runs are edges of the same loops, not two nodes that happen to share a pass.
+    expect(pathArcs(faceNodes).length).toBeGreaterThan(0);
+    expect(pathLines(faceNodes).length).toBeGreaterThan(0);
   });
 });
 
