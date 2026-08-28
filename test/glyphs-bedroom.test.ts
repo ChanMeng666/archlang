@@ -31,7 +31,18 @@ import { parse } from "../src/parser.js";
 import { toScene } from "../src/scene-build.js";
 import type { GlyphCtx, Rect } from "../src/elements/glyph-lib.js";
 import { glyphCtx } from "../src/elements/glyph-lib.js";
-import { drawBed, drawDoubleBed, drawNightstand, drawWardrobe } from "../src/elements/glyphs-bedroom.js";
+import {
+  drawBed,
+  drawBunkBed,
+  drawCrib,
+  drawDoubleBed,
+  drawDresser,
+  drawNightstand,
+  drawVanity,
+  drawWardrobe,
+} from "../src/elements/glyphs-bedroom.js";
+import { CANONICAL_FIXTURES, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
+import { dashedPattern } from "../src/elements/glyph-lib.js";
 import type { SceneNode } from "../src/scene.js";
 
 const BASE = toScene(resolve(parse(`plan "G" { units mm room id=r at (0,0) size 8000x8000 label "R" }`).plan!).ir);
@@ -103,6 +114,19 @@ const ALL: [string, Draw][] = [
   ["double_bed", drawDoubleBed],
   ["nightstand", drawNightstand],
   ["wardrobe", drawWardrobe],
+  // ── v1.32 F2 ──
+  ["bunk_bed", drawBunkBed],
+  ["crib", drawCrib],
+  ["dresser", drawDresser],
+  ["vanity", drawVanity],
+];
+
+/** The v1.32 families at their catalogued footprints, with the primitive count each emits. */
+const F2_CASES: readonly (readonly [string, Draw, Rect, number])[] = [
+  ["bunk_bed", drawBunkBed, rect(1000, 2000), 6],
+  ["crib", drawCrib, rect(700, 1300), 12], // 2 + 2 x 5 rail bars
+  ["dresser", drawDresser, rect(1200, 500), 7], // 1 + band + 2 splits + 3 handles
+  ["vanity", drawVanity, rect(1200, 500), 5],
 ];
 
 describe("bedroom glyphs — the bed", () => {
@@ -154,18 +178,32 @@ describe("bedroom glyphs — the bed", () => {
 describe("bedroom glyphs — the nightstand", () => {
   const R = rect(450, 400);
 
-  it("draws a carcass, a drawer front and the lamp", () => {
+  it("draws a carcass, its top, the lamp, and the drawer front with its handle", () => {
+    // The v1.32 redraw: the old symbol was a box, an inset box and a ring in the dead centre,
+    // which said nothing about which way a `directional` piece faces.
     const n = draw(drawNightstand, R);
-    expect(kinds(n)).toEqual(["polygon", "polygon", "circle"]);
-    expect(n.map((x) => x.lineWeight)).toEqual(["thin", "extraThin", "extraThin"]);
+    expect(kinds(n)).toEqual(["polygon", "polygon", "circle", "circle", "line", "line"]);
+    expect(n[0]!.lineWeight).toBe("thin");
+    for (const x of n.slice(1)) expect(x.lineWeight).toBe("extraThin");
   });
 
-  it("sizes the lamp at 0.18 of the short side and centres it", () => {
-    const lamp = draw(drawNightstand, R)[2]!;
+  it("stands the lamp in the BACK third and puts the drawer handle at the FRONT", () => {
+    const n = draw(drawNightstand, R);
+    const lamp = n[2]!;
     if (lamp.prim.t !== "circle") throw new Error("the lamp is a circle");
-    expect(lamp.prim.r).toBeCloseTo(400 * 0.18, 9);
-    expect(lamp.prim.center).toEqual({ x: R.x + 225, y: R.y + 200 });
-    expect(lamp.paint.fill, "the lamp is an unfilled ring").toBe("none");
+    expect(lamp.prim.r).toBeCloseTo(400 * 0.2, 9);
+    expect(lamp.prim.center).toEqual({ x: R.x + 225, y: R.y + 120 });
+    expect(lamp.paint.fill, "the lamp's shade is an unfilled ring").toBe("none");
+    // Its bulb is concentric with it, so a quarter-turn cannot separate the two.
+    const bulb = n[3]!;
+    if (bulb.prim.t !== "circle") throw new Error("the bulb is a circle");
+    expect(bulb.prim.center).toEqual(lamp.prim.center);
+    expect(bulb.prim.r).toBeLessThan(lamp.prim.r);
+    // The lamp is behind the halfway line and the handle is in front of it: that pair IS the
+    // orientation claim `directional: true` makes about this category.
+    const handleY = (n[5]!.prim as { a: { y: number } }).a.y;
+    expect(lamp.prim.center.y).toBeLessThan(R.y + R.h / 2);
+    expect(handleY).toBeGreaterThan(R.y + R.h / 2);
   });
 
   it("stays inside its footprint", () => {
@@ -351,5 +389,153 @@ describe("bedroom glyphs — in a plan", () => {
     const src = plan(`furniture wardrobe at (1000,1000) size 1800x600 rotate 90 in br
       furniture double_bed at (1000,3000) size 1800x2000 in br`);
     expect(compile(src, { noCache: true }).svg).toBe(compile(src, { noCache: true }).svg);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ── v1.32 F2: the four new bedroom families ──
+
+describe("bedroom glyphs — the v1.32 families draw what they claim", () => {
+  it.each(F2_CASES)("%s emits its documented primitive count at its catalogued footprint", (name, fn, R, count) => {
+    expect(draw(fn, R), name).toHaveLength(count);
+    expectInside(draw(fn, R), R, name);
+  });
+
+  it.each(F2_CASES)("%s uses both pen weights, outlined in thin", (name, fn, R) => {
+    const weights = new Set(draw(fn, R).map((n) => n.lineWeight));
+    expect(weights, `${name} draws detail below its outline`).toEqual(new Set(["thin", "extraThin"]));
+  });
+
+  it("every new name and alias dispatches to a drawn symbol", () => {
+    for (const c of ["bunk_bed", "crib", "cot", "dresser", "chest_of_drawers", "vanity", "dressing_table"]) {
+      expect(hasFixtureGlyph(c), `${c} draws a symbol`).toBe(true);
+    }
+  });
+
+  it("the four are a contiguous block of the canonical vocabulary, in order", () => {
+    // Derived, not retyped — this table's order is the LEGEND's order, so appending elsewhere
+    // or re-ordering it moves the legend of every shipped plan that draws a robe.
+    const names = ["bunk_bed", "crib", "dresser", "vanity"];
+    const start = CANONICAL_FIXTURES.indexOf(names[0]!);
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(CANONICAL_FIXTURES.slice(start, start + names.length)).toEqual(names);
+  });
+});
+
+describe("bedroom glyphs — the bunk bed's upper deck is DASHED", () => {
+  // A dashed outline in this drawing means one thing and has meant it since `upper_cabinet`:
+  // above the horizontal cut a plan is taken at. An upper bunk is exactly that, and drawing it
+  // solid would claim the room has two mattresses of floor.
+  const R = rect(1000, 2000);
+
+  it("draws the upper deck with a dash pattern, and the lower bunk without one", () => {
+    const n = draw(drawBunkBed, R);
+    const upper = n[1]!;
+    expect(upper.lineType, "the upper deck is dashed").toBe("dashed");
+    expect(upper.paint.dash, "the named type and the raw pattern must agree").toEqual(dashedPattern(BASE.sizes));
+    expect(upper.paint.fill, "an overhead piece does not occlude what it is over").toBe("none");
+    expect(n[0]!.lineType, "the lower bunk is cut through, so it is solid").toBeUndefined();
+    expect(n[0]!.paint.dash).toBeUndefined();
+  });
+
+  it("puts the pillow at the HEAD and the ladder at the FOOT", () => {
+    const n = draw(drawBunkBed, R);
+    const pillow = n[2]!;
+    if (pillow.prim.t !== "polygon") throw new Error("the pillow is a polygon");
+    expect(Math.max(...pillow.prim.pts.map((p) => p.y))).toBeLessThan(R.y + R.h * 0.25);
+    const rungs = n.slice(3).flatMap((x) => (x.prim.t === "line" ? [x.prim.a.y] : []));
+    expect(rungs).toHaveLength(3);
+    for (const y of rungs) expect(y).toBeGreaterThan(R.y + R.h * 0.8);
+  });
+});
+
+describe("bedroom glyphs — the crib's rail bars", () => {
+  const bars = (R: Rect): number => draw(drawCrib, R).length - 2;
+
+  it("draws a clamped run down BOTH long faces", () => {
+    expect(bars(rect(700, 1300))).toBe(10); // 5 a side
+    expect(bars(rect(700, 700))).toBe(6); // aspect 1 → 2.5, clamped up to 3 a side
+    expect(bars(rect(10000, 10))).toBe(14); // clamped down to 7 a side
+  });
+
+  it("reads its own long axis, so a cot against a side wall draws the same object", () => {
+    expect(bars(rect(700, 1300))).toBe(bars(rect(1300, 700)));
+  });
+
+  it("puts the bars in the band between the carcass and the mattress, never across it", () => {
+    // Stated orientation-free — a bar's MIDPOINT must lie outside the mattress rectangle — so
+    // the assertion holds for a cot drawn either way up rather than pinning one axis and going
+    // quietly vacuous on the other.
+    for (const R of [rect(700, 1300), rect(1300, 700)]) {
+      const n = draw(drawCrib, R);
+      const mat = n[1]!;
+      if (mat.prim.t !== "polygon") throw new Error("the mattress is a polygon");
+      const x0 = Math.min(...mat.prim.pts.map((p) => p.x));
+      const x1 = Math.max(...mat.prim.pts.map((p) => p.x));
+      const y0 = Math.min(...mat.prim.pts.map((p) => p.y));
+      const y1 = Math.max(...mat.prim.pts.map((p) => p.y));
+      for (const b of n.slice(2)) {
+        if (b.prim.t !== "line") throw new Error("a rail bar is a line");
+        const mx = (b.prim.a.x + b.prim.b.x) / 2;
+        const my = (b.prim.a.y + b.prim.b.y) / 2;
+        const onMattress = mx > x0 + 1e-9 && mx < x1 - 1e-9 && my > y0 + 1e-9 && my < y1 - 1e-9;
+        expect(onMattress, `a bar was drawn over the mattress on ${R.w}x${R.h}`).toBe(false);
+      }
+    }
+  });
+});
+
+describe("bedroom glyphs — the dresser and the vanity say which way they face", () => {
+  it("the dresser's drawer band, splits and handles are all on the ROOM side", () => {
+    const R = rect(1200, 500);
+    const n = draw(drawDresser, R);
+    expect(n).toHaveLength(7);
+    for (const x of n.slice(1)) {
+      if (x.prim.t !== "line") throw new Error("everything below the carcass is a line");
+      expect(Math.min(x.prim.a.y, x.prim.b.y)).toBeGreaterThanOrEqual(R.y + R.h * 0.55 - 1e-9);
+    }
+  });
+
+  it("the vanity's mirror is dashed, at the wall side, with the stool in front of it", () => {
+    const R = rect(1200, 500);
+    const n = draw(drawVanity, R);
+    const mirror = n[1]!;
+    expect(mirror.lineType, "a mirror stands on the table, above the cut plane").toBe("dashed");
+    if (mirror.prim.t !== "polygon") throw new Error("the mirror is a polygon");
+    expect(Math.max(...mirror.prim.pts.map((p) => p.y))).toBeLessThan(R.y + R.h * 0.3);
+    const stool = n[3]!;
+    if (stool.prim.t !== "circle") throw new Error("the stool is a circle");
+    expect(stool.prim.center.y).toBeGreaterThan(R.y + R.h / 2);
+    // Drawn INSIDE the footprint, deliberately: the footprint is what every clearance and
+    // collision rule measures, and the catalogued 600 mm clearance is what reserves the room
+    // to sit down. A symbol drawn outside its box makes the drawing and `arch lint` disagree.
+    expect(stool.prim.center.y + stool.prim.r).toBeLessThanOrEqual(R.y + R.h);
+  });
+});
+
+/** A walled bedroom to drive the v1.32 families through the real pipeline. */
+const plan2 = (body: string): string => `plan "P" {
+    units mm
+    wall id=w exterior thickness 200 { (0,0) (6000,6000) (0,6000) (0,0) close }
+    room id=br at (0,0) size 6000x6000 label "Bedroom"
+    ${body}
+  }`;
+
+describe("bedroom glyphs — the v1.32 families in a plan", () => {
+  it("compile at all four rotations, drawing symbols and no labels", () => {
+    for (const deg of [0, 90, 180, 270]) {
+      const src = plan2(`furniture bunk_bed at (400,400) size 1000x2000 rotate ${deg} in br
+        furniture crib at (1800,400) size 700x1300 rotate ${deg} in br
+        furniture dresser at (2800,400) size 1200x500 rotate ${deg} in br
+        furniture vanity at (400,3000) size 1200x500 rotate ${deg} in br`);
+      const { diagnostics } = compile(src, { noCache: true });
+      expect(
+        diagnostics.filter((d) => d.severity === "error"),
+        `rotate ${deg}`,
+      ).toEqual([]);
+      expect(compile(src, { noCache: true }).svg, `rotate ${deg} is deterministic`).toBe(
+        compile(src, { noCache: true }).svg,
+      );
+    }
   });
 });

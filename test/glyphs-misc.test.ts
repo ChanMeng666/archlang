@@ -35,11 +35,24 @@ import { parse } from "../src/parser.js";
 import { toScene } from "../src/scene-build.js";
 import type { Scene, SceneNode } from "../src/scene.js";
 import { weightWidth } from "../src/scene.js";
-import { hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
+import { CANONICAL_FIXTURES, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import type { Rect } from "../src/elements/glyph-lib.js";
 import { glyphCtx } from "../src/elements/glyph-lib.js";
 import { rotateNode } from "../src/elements/furniture.js";
-import { drawBookshelf, drawCar, drawDesk, drawOfficeChair, drawPlant } from "../src/elements/glyphs-misc.js";
+import {
+  drawBookshelf,
+  drawCar,
+  drawDesk,
+  drawFilingCabinet,
+  drawLocker,
+  drawMeetingTable,
+  drawOfficeChair,
+  drawPlant,
+  drawPoolTable,
+  drawReceptionDesk,
+  drawTreadmill,
+} from "../src/elements/glyphs-misc.js";
+import { drawDiningTable } from "../src/elements/glyphs-living.js";
 
 const SRC = `plan "G" { units mm room id=r at (0,0) size 8000x6000 label "R" }`;
 const baseScene = (): Scene => toScene(resolve(parse(SRC).plan!).ir);
@@ -56,6 +69,13 @@ const GLYPHS: readonly (readonly [string, Draw])[] = [
   ["bookshelf", drawBookshelf],
   ["plant", drawPlant],
   ["car", drawCar],
+  // ── v1.32 F2: office & commercial ──
+  ["meeting_table", drawMeetingTable],
+  ["reception_desk", drawReceptionDesk],
+  ["filing_cabinet", drawFilingCabinet],
+  ["locker", drawLocker],
+  ["pool_table", drawPoolTable],
+  ["treadmill", drawTreadmill],
 ];
 
 /** A generic footprint: off the origin, wider than deep, no round-number aspect. */
@@ -67,11 +87,21 @@ const R: Rect = { x: 1000, y: 2000, w: 1600, h: 700 };
  * separately below.
  */
 const EXPECTED_PRIMS: Readonly<Record<string, number>> = {
-  desk: 3,
+  // 7 since the v1.32 redraw: the slab, the modesty line and the stepped edge, plus the drawer
+  // pedestal with its two drawer lines and the cable grommet. Three primitives was a `table`
+  // with a rule across it.
+  desk: 7,
   office_chair: 4,
   bookshelf: 3,
   plant: 10,
   car: 6,
+  // ── v1.32 F2 ──, all measured at {@link R} (1600 x 700, aspect 2.29).
+  meeting_table: 8, // 2 + 3 seats a side, no ends at aspect >= 2
+  reception_desk: 4,
+  filing_cabinet: 6,
+  locker: 4, // 2 doors at this aspect: 1 + 1 split + 2 vents
+  pool_table: 8,
+  treadmill: 5,
 };
 
 const TAU = Math.PI * 2;
@@ -219,12 +249,8 @@ describe("glyphs-misc — the desk", () => {
     expect(p.a.y - R.y).toBeLessThan(R.y + R.h - p.a.y);
   });
 
-  it("fills the slab with the furniture body colour and leaves the inset unfilled", () => {
-    const polys = draw(drawDesk, R).filter((n) => n.prim.t === "polygon");
-    expect(polys).toHaveLength(2);
-    expect(polys[0]!.paint.fill).toBe(theme.furnitureFill);
-    expect(polys[1]!.paint.fill).toBe("none");
-  });
+  // The fill law moved into the v1.32 desk describe at the foot of this file, where the third
+  // polygon (the drawer pedestal) is stated alongside it rather than in two places.
 });
 
 describe("glyphs-misc — the office chair", () => {
@@ -440,5 +466,223 @@ describe("glyphs-misc — through the compiler", () => {
   it("turns the whole symbol — each quarter-turn moves the bytes", () => {
     const seen = new Set([0, 90, 180, 270].map((rot) => compile(plan(rot), { noCache: true }).svg));
     expect(seen.size, "four distinct drawings").toBe(4);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ── v1.32 F2: the desk redraw and the six office/commercial families ──
+
+describe("glyphs-misc — the redrawn desk", () => {
+  it("carries a drawer pedestal and a cable grommet, not just a slab and a rule", () => {
+    // The old symbol was three primitives — slab, modesty line, inset outline — which at plan
+    // scale is a `table` with a rule across it, so the two categories told a reader nothing
+    // apart. The pedestal and the grommet are what make it a desk.
+    const nodes = draw(drawDesk, R);
+    expect(nodes.map((n) => n.prim.t)).toEqual(["polygon", "line", "polygon", "polygon", "line", "line", "circle"]);
+  });
+
+  it("puts the pedestal on the right, inside the stepped edge, with two drawer lines in it", () => {
+    const nodes = draw(drawDesk, R);
+    const ped = nodes[3]!;
+    if (ped.prim.t !== "polygon") throw new Error("the pedestal is a polygon");
+    const x0 = Math.min(...ped.prim.pts.map((p) => p.x));
+    const x1 = Math.max(...ped.prim.pts.map((p) => p.x));
+    expect(x0).toBeGreaterThan(R.x + R.w / 2);
+    expect(x1).toBeLessThan(R.x + R.w);
+    // Both drawer lines run ACROSS the pedestal and stay within it.
+    for (const n of [nodes[4]!, nodes[5]!]) {
+      if (n.prim.t !== "line") throw new Error("a drawer line is a line");
+      expect(n.prim.a.y).toBeCloseTo(n.prim.b.y, 9);
+      expect(n.prim.a.x).toBeCloseTo(x0, 9);
+      expect(n.prim.b.x).toBeCloseTo(x1, 9);
+    }
+  });
+
+  it("drops the grommet at the back, on the working side of the modesty panel", () => {
+    const nodes = draw(drawDesk, R);
+    const grommet = nodes[6]!;
+    if (grommet.prim.t !== "circle") throw new Error("the grommet is a circle");
+    const modestyY = (nodes[1]!.prim as Extract<SceneNode["prim"], { t: "line" }>).a.y;
+    expect(grommet.prim.center.y).toBeGreaterThan(modestyY);
+    expect(grommet.prim.center.y).toBeLessThan(R.y + R.h / 2);
+    expect(grommet.prim.center.x).toBeLessThan(R.x + R.w / 2);
+  });
+
+  it("still fills the slab and leaves the stepped edge unfilled", () => {
+    const polys = draw(drawDesk, R).filter((n) => n.prim.t === "polygon");
+    expect(polys).toHaveLength(3);
+    expect(polys[0]!.paint.fill).toBe(theme.furnitureFill);
+    expect(polys[1]!.paint.fill).toBe("none");
+    expect(polys[2]!.paint.fill, "the pedestal is a solid box under the top").toBe(theme.furnitureFill);
+  });
+});
+
+describe("glyphs-misc — the meeting table's chairs", () => {
+  const chairs = (r: Rect): number => draw(drawMeetingTable, r).length - 2;
+
+  it("seats both long sides plus the ends below aspect 2, sides only above it", () => {
+    // The same boundary `drawDiningTable` uses, and for the same reason: a square table is sat
+    // at all round, a long one is not. Measured by counting the RINGS actually emitted.
+    expect(chairs({ x: 0, y: 0, w: 2000, h: 2000 })).toBe(4); // 1 a side (1 x 1.4 → 1) + 2 ends
+    expect(chairs({ x: 0, y: 0, w: 3990, h: 2000 })).toBe(8); // aspect 1.995 → 3 a side + ends
+    expect(chairs({ x: 0, y: 0, w: 4000, h: 2000 })).toBe(6); // aspect 2.000 → 3 a side, no ends
+  });
+
+  it("clamps at six per side, so a 10000x10 boardroom is not a hatch", () => {
+    expect(chairs({ x: 0, y: 0, w: 10000, h: 10 })).toBe(12);
+    expect(chairs({ x: 0, y: 0, w: 10, h: 10000 })).toBe(12);
+  });
+
+  it("draws every seat as a RING in the chair band, never on the table top", () => {
+    const r = { x: 0, y: 0, w: 2400, h: 1200 };
+    const nodes = draw(drawMeetingTable, r);
+    const band = Math.min(r.w, r.h) * 0.2;
+    for (const n of nodes.slice(2)) {
+      if (n.prim.t !== "circle") throw new Error("a meeting seat is a ring");
+      expect(n.paint.fill, "a swivel chair is drawn as an outline").toBe("none");
+      const onTable =
+        n.prim.center.x > r.x + band &&
+        n.prim.center.x < r.x + r.w - band &&
+        n.prim.center.y > r.y + band &&
+        n.prim.center.y < r.y + r.h - band;
+      expect(onTable, "a seat was drawn on the table top").toBe(false);
+    }
+  });
+
+  it("is not the dining table: an eased top and ring seats, not a square top and square ones", () => {
+    const r = { x: 0, y: 0, w: 2400, h: 2400 };
+    const meeting = draw(drawMeetingTable, r).map((n) => n.prim.t);
+    const dining = draw(drawDiningTable, r).map((n) => n.prim.t);
+    expect(meeting).not.toEqual(dining);
+    expect(meeting.slice(2).every((t) => t === "circle")).toBe(true);
+    expect(dining.slice(2).every((t) => t === "polygon")).toBe(true);
+  });
+});
+
+describe("glyphs-misc — the reception desk is an L with the chair inside it", () => {
+  const r: Rect = { x: 0, y: 0, w: 2400, h: 900 };
+
+  it("draws one counter ring, two nosings and a chair", () => {
+    expect(draw(drawReceptionDesk, r).map((n) => n.prim.t)).toEqual(["polygon", "line", "line", "circle"]);
+  });
+
+  it("leaves the bottom-right quadrant OPEN — that is what makes it an L", () => {
+    const body = draw(drawReceptionDesk, r)[0]!;
+    if (body.prim.t !== "polygon") throw new Error("the counter is a polygon");
+    // No vertex of the counter reaches the far corner of the footprint.
+    const far = body.prim.pts.filter((p) => p.x > r.x + r.w * 0.75 && p.y > r.y + r.h * 0.75);
+    expect(far, "the open quadrant is where the staff stand").toHaveLength(0);
+  });
+
+  it("puts the chair in that open quadrant, which is the orientation claim", () => {
+    const chair = draw(drawReceptionDesk, r)[3]!;
+    if (chair.prim.t !== "circle") throw new Error("the chair is a ring");
+    expect(chair.prim.center.x).toBeGreaterThan(r.x + r.w / 2);
+    expect(chair.prim.center.y).toBeGreaterThan(r.y + r.h / 2);
+  });
+});
+
+describe("glyphs-misc — the filing cabinet, the locker run and the treadmill face the room", () => {
+  it("the filing cabinet's drawer lines run across it, with the pull on the front edge", () => {
+    const r: Rect = { x: 0, y: 0, w: 450, h: 600 };
+    const nodes = draw(drawFilingCabinet, r);
+    expect(nodes).toHaveLength(6);
+    const lines = nodes.slice(2).flatMap((n) => (n.prim.t === "line" ? [n.prim] : []));
+    expect(lines).toHaveLength(4);
+    for (const l of lines) expect(l.a.y).toBeCloseTo(l.b.y, 9);
+    // The pull is the last one, on the room side and shorter than the drawer lines.
+    const pull = lines[3]!;
+    expect(pull.a.y).toBeGreaterThan(r.y + r.h * 0.8);
+    expect(pull.b.x - pull.a.x).toBeLessThan(r.w);
+  });
+
+  it("the locker's door count is clamped, and every vent is on the front edge", () => {
+    // `1 + (doors - 1) + doors` primitives, so the count is exactly half the total — measured
+    // from what was emitted rather than re-run from the module's own formula.
+    const doors = (r: Rect): number => draw(drawLocker, r).length / 2;
+    expect(doors({ x: 0, y: 0, w: 1200, h: 450 })).toBe(3);
+    expect(doors({ x: 0, y: 0, w: 450, h: 450 })).toBe(2); // aspect 1, clamped up
+    expect(doors({ x: 0, y: 0, w: 10000, h: 10 })).toBe(6); // clamped down
+    const r: Rect = { x: 0, y: 0, w: 1200, h: 450 };
+    const vents = draw(drawLocker, r).flatMap((n) =>
+      n.prim.t === "line" && n.prim.a.y === n.prim.b.y ? [n.prim] : [],
+    );
+    expect(vents).toHaveLength(3);
+    for (const v of vents) expect(v.a.y).toBeCloseTo(r.y + r.h * 0.84, 9);
+  });
+
+  it("the treadmill's console is at the WALL end, over the belt", () => {
+    const r: Rect = { x: 0, y: 0, w: 800, h: 1800 };
+    const nodes = draw(drawTreadmill, r);
+    expect(nodes).toHaveLength(5);
+    const con = nodes[1]!;
+    const belt = nodes[2]!;
+    if (con.prim.t !== "polygon" || belt.prim.t !== "polygon") throw new Error("both are polygons");
+    expect(Math.max(...con.prim.pts.map((p) => p.y))).toBeLessThan(Math.min(...belt.prim.pts.map((p) => p.y)));
+    expect(belt.paint.fill, "the belt is a distinct surface inside the frame").toBe(theme.opening);
+  });
+});
+
+describe("glyphs-misc — the pool table's six pockets follow its own long axis", () => {
+  const pockets = (r: Rect) => draw(drawPoolTable, r).flatMap((n) => (n.prim.t === "circle" ? [n.prim] : []));
+
+  it("draws exactly six, four at the corners and two on the long rails", () => {
+    for (const r of [
+      { x: 0, y: 0, w: 2500, h: 1400 },
+      { x: 0, y: 0, w: 1400, h: 2500 },
+      { x: 0, y: 0, w: 1, h: 1 },
+    ]) {
+      expect(pockets(r), `${r.w}x${r.h}`).toHaveLength(6);
+    }
+  });
+
+  it("puts the two middle pockets on the LONG sides, whichever axis those are", () => {
+    const landscape = pockets({ x: 0, y: 0, w: 2500, h: 1400 });
+    // The two middle pockets are the ones sharing the table's own centre on one axis.
+    expect(landscape.filter((p) => Math.abs(p.center.x - 1250) < 1)).toHaveLength(2);
+    const portrait = pockets({ x: 0, y: 0, w: 1400, h: 2500 });
+    expect(portrait.filter((p) => Math.abs(p.center.y - 1250) < 1)).toHaveLength(2);
+  });
+
+  it("fills the cloth, so it does not read as a rug with dots on it", () => {
+    const cloth = draw(drawPoolTable, { x: 0, y: 0, w: 2500, h: 1400 })[1]!;
+    expect(cloth.paint.fill).toBe(theme.opening);
+  });
+});
+
+describe("glyphs-misc — the v1.32 office families in the vocabulary and in a plan", () => {
+  it("every new name dispatches to a drawn symbol", () => {
+    for (const c of ["meeting_table", "reception_desk", "filing_cabinet", "locker", "pool_table", "treadmill"]) {
+      expect(hasFixtureGlyph(c), `${c} draws a symbol`).toBe(true);
+    }
+  });
+
+  it("the six are a contiguous block of the canonical vocabulary, in order", () => {
+    const names = ["meeting_table", "reception_desk", "filing_cabinet", "locker", "pool_table", "treadmill"];
+    const start = CANONICAL_FIXTURES.indexOf(names[0]!);
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(CANONICAL_FIXTURES.slice(start, start + names.length)).toEqual(names);
+  });
+
+  it("compile clean at all four quarter-turns and are deterministic", () => {
+    const office = (rot: number): string => `plan "Office" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (12000,0) (12000,9000) (0,9000) close }
+  room id=o at (0,0) size 12000x9000 label "Office"
+  furniture meeting_table at (400,400) size 2400x1200 rotate ${rot}
+  furniture reception_desk at (3200,400) size 2400x900 rotate ${rot}
+  furniture filing_cabinet at (6200,400) size 450x600 rotate ${rot}
+  furniture locker at (7200,400) size 1200x450 rotate ${rot}
+  furniture pool_table at (400,3000) size 2500x1400 rotate ${rot}
+  furniture treadmill at (4000,3000) size 800x1800 rotate ${rot}
+}`;
+    for (const rot of [0, 90, 180, 270]) {
+      const out = compile(office(rot), { noCache: true });
+      expect(out.errors, `rotate ${rot}`).toEqual([]);
+      expect(out.svg.length).toBeGreaterThan(0);
+      expect(compile(office(rot), { noCache: true }).svg, `rotate ${rot} is deterministic`).toBe(out.svg);
+    }
+    // Four distinct drawings: a quarter-turn moves the whole symbol, not part of it.
+    expect(new Set([0, 90, 180, 270].map((rot) => compile(office(rot), { noCache: true }).svg)).size).toBe(4);
   });
 });

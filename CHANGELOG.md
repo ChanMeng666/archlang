@@ -82,6 +82,105 @@ reproduces every previous hex exactly. The three byte-identity law suites now ca
 second pin over the summary half alone (`semanticDigestWith`), which a drawing change can
 never move, so the next redraw does not have to make the argument again.
 
+<!-- v1.32 F2 -->
+
+### Added — eighteen furniture families for the living room, the bedroom and the office
+
+Every one is a table row and a catalog entry, never a new element and never a `switch` arm.
+All eighteen carry a catalogued `footprint`, so `furniture <kind> against wall <id>` needs no
+`size`; none carries `requiresWall`, which means services and nothing else.
+
+- **Bedroom** — `bunk_bed` (the lower mattress with its pillow at the head, the upper deck
+  **dashed** over it, and the ladder rungs at the foot), `crib` · `cot` (carcass, mattress and
+  the rail bars down both long faces, read off the footprint's own long axis), `dresser` ·
+  `chest_of_drawers` (the drawer band, its splits and three handles, all on the room side) and
+  `vanity` · `dressing_table` (the mirror band **dashed** at the wall side with the stool in
+  front of it).
+- **Living** — `fireplace` (the chimney breast with the firebox cut into its *room* face),
+  `radiator` (fins ticked across the depth at a clamped pitch), `sideboard` · `buffet`,
+  `loveseat` · `sofa_2`, `chaise` (a back down one long side and a raised head — the asymmetry
+  is the symbol), `tv` (wall-mounted: a bracket and a panel, and a **different kind** from
+  `tv_unit`), `coat_rack` and `shoe_cabinet` (a tilt line per door, leaning toward the room).
+- **Office & commercial** — `meeting_table` (the `dining_table` rule — the footprint includes
+  its chairs — drawn with an eased top and **ring** seats), `reception_desk` (an L counter with
+  the chair inside the L), `filing_cabinet`, `locker`, `pool_table` (six pockets, the two middle
+  ones found off the footprint's own long axis) and `treadmill`.
+
+Three decisions worth stating rather than reading off the rows:
+
+- **`fireplace` and `radiator` are `directional`, not `requiresWall`.** Both are genuinely
+  serviced and neither can be flagged without warning on a normal drawing — a radiator is as
+  often fed from the floor as from the wall and lives under a window, and a free-standing stove
+  mid-room is a plan someone drew on purpose. `requiresWall` keeps its single meaning.
+- **`loveseat` and `chaise` are NOT `directional`**, for the reason `sofa`, `chair`, `bench` and
+  `outdoor_chair` are not: seating is arranged, not installed.
+- **`tv` is a separate kind from `tv_unit` rather than an alias.** 80 mm of panel and 450 mm of
+  console are different amounts of floor, and a plan that draws the first where the second
+  belongs has taken 370 mm of walkway away.
+
+`clearanceMm` is set for exactly four — `dresser`, `vanity` and `filing_cabinet` at 600 mm (a
+drawer or a chair) and `treadmill` at 900, the largest figure in the catalogue and the one thing
+a gym plan can be wrong about in a way that matters.
+
+`glyph-lib.ts` gains `easedRing`, moved **verbatim** out of `glyphs-living.ts` now that the
+reception counter is its second caller; the L-sofa's bytes are unchanged, which is what verbatim
+buys.
+
+### Changed — eight fixture symbols redrawn, and the twenty-two examples that move with them
+
+`coffee_table`, `table`, `stool`, `bench`, `chair` and `tv_unit` were two or three primitives
+each, and `nightstand` and `desk` three; at plan scale every one of them read as a rectangle
+with a line in it, and several were not distinguishable from each other. Each now carries
+*structural* detail rather than decoration, so it survives being drawn at 40 mm on an A3 sheet:
+
+| Kind | Was | Now | What it gained |
+|---|---|---|---|
+| `coffee_table` | 2 | 6–7 | a generous corner radius, four legs, and a tray line across it past 1.6 : 1 |
+| `table` | 2 | 6–7 | square corners, four legs, and a board line **along** its length past 1.6 : 1 |
+| `stool` | 2 | 3 | the pedestal foot, as a third **concentric** circle |
+| `bench` | 3 | 6 | a clamped run of slats and a support across each end |
+| `chair` | 3 | 5 | an armrest each side, and a cushion that no longer crowds its own outline |
+| `tv_unit` | 3 | 6 | two drawer splits and a handle, below the shelf line, facing the room |
+| `nightstand` | 3 | 6 | the lamp moved into the back third, plus a drawer front and handle at the room side |
+| `desk` | 3 | 7 | a drawer pedestal with two drawer lines, and the cable grommet |
+
+`coffee_table` and `table` used to differ only by a corner radius of 0.12 against 0.08 on the
+same two primitives, which is not a difference a reader can see; `chair` was a box with a line
+across it. Both pairs are now told apart by construction.
+
+**The stool's third circle is concentric on purpose, and the obvious alternative is wrong.** A
+ring of three or four foot dots maps onto itself as a *set* under a quarter-turn while each node
+lands where its neighbour was — so the SVG bytes would move for a drawing nobody can tell apart,
+and `test/glyphs-living.test.ts`'s byte-identical-rotation law would fail. A circle centred on
+the pivot maps onto *itself*.
+
+**Twenty-two of the shipped examples render different bytes, and `describe()` and `lint()` do
+not.** Held SHA-256 identical example by example against `8fc432a`'s `src/` for all 28
+import-free examples: 22 SVGs moved, **0 summaries and 0 diagnostic sets**, so the net lint
+change across the shipped examples is zero. The re-bless was reviewed rather than blessed — the
+diff was classified by CAD layer, and only two layers move: `A-FURN` on all 22, and `A-ANNO` on
+the six plans that declare a `legend`, whose miniature swatches are drawn from the same symbols.
+**Every `<text>` element in every example is byte-identical, position included**, so no room
+label, area, dimension, schedule row or legend row moved. `studio` — which places only bath and
+kitchen fixtures — is byte-identical throughout and is the control that says the redraw stayed
+inside the glyph layer; its three byte-identity pins did not move, while `laneway-house`,
+`gallery-l`, `aquarium`, `bungalow`, `furnished-flat` and `two-bed` were re-measured with a note
+in each suite.
+
+### Fixed
+
+- **`test/cli-manifest.test.ts`'s fixture scrape skipped any category name containing a digit.**
+  Its `case "([a-z_]+)"` class has no `0-9`, so `sofa_2` — the loveseat's alias, and the first
+  catalogued name with a digit — was invisible to the guard, which then reported a category
+  advertised by `arch manifest` and "not drawn" while it was drawn three lines away. A
+  set-equality gate that under-matches fails in the direction that looks exactly like a real
+  defect, which is the worst way for one to fail.
+- **`test/glyphs-outdoor.test.ts` pinned the outdoor families as the TAIL of the canonical
+  vocabulary.** That was true only while outdoor was the newest tranche, and the table's own
+  comment asks every later tranche to append after it — so the assertion was pinning a property
+  the suite does not own. It now asserts the block is **contiguous and in order**, which is the
+  property that actually protects the legend.
+
 ## [1.31.0] - 2026-08-28
 
 **Outside the wall line.** Every previous release drew what is inside a building; this one draws

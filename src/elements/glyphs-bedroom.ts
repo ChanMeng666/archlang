@@ -38,7 +38,7 @@
 
 import type { SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
-import { clamp, insetRect, rectPoly, roundedRectPoly } from "./glyph-lib.js";
+import { clamp, dashedPoly, insetRect, rectPoly, roundedRectPoly } from "./glyph-lib.js";
 
 /** Mattress aspect (`w / h`) at or above which the bed gets two pillows. See the header. */
 const PILLOW_TWO_ASPECT = 0.6;
@@ -91,11 +91,32 @@ export function drawDoubleBed(r: Rect, g: GlyphCtx): SceneNode[] {
   return drawBedFrame(r, g);
 }
 
-/** The nightstand: a carcass, its drawer front, and the lamp on top. */
+/**
+ * The nightstand: a carcass, its top outline, the lamp standing at the BACK, and the drawer
+ * front with its handle facing the room.
+ *
+ * The old symbol was a carcass, an inset rectangle and a ring in the dead centre, which at
+ * plan scale is a box with a dot in it — it said nothing about which way the piece faces, on a
+ * category the catalog calls `directional`. Both additions fix that in the drawing rather than
+ * in a flag: the lamp is pushed into the back third (where a lamp stands, against the wall) and
+ * the drawer band with its handle tick is on the FRONT edge (where you open it from). A
+ * nightstand drawn with the handle against the wall has been turned round, and now the drawing
+ * shows it.
+ *
+ * Prim count: 6.
+ */
 export function drawNightstand(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = Math.max(0, Math.min(r.w, r.h));
   g.poly(rectPoly(r), g.body);
-  g.poly(rectPoly(insetRect(r, 0.12)), g.body, "extraThin");
-  g.ring({ x: r.x + r.w / 2, y: r.y + r.h / 2 }, Math.max(0, Math.min(r.w, r.h)) * 0.18, "extraThin");
+  g.poly(rectPoly(insetRect(r, 0.1)), "none", "extraThin");
+  // The lamp: a ring with its bulb, standing in the back third.
+  const lamp = { x: r.x + r.w / 2, y: r.y + r.h * 0.3 };
+  g.ring(lamp, s * 0.2, "extraThin");
+  g.dot(lamp, s * 0.06, g.stroke, "extraThin");
+  // The drawer front on the room side, and the handle centred on it.
+  const drawerY = r.y + r.h * 0.66;
+  g.seg({ x: r.x, y: drawerY }, { x: r.x + r.w, y: drawerY }, "extraThin");
+  g.seg({ x: r.x + r.w * 0.34, y: r.y + r.h * 0.85 }, { x: r.x + r.w * 0.66, y: r.y + r.h * 0.85 }, "extraThin");
   return g.nodes;
 }
 
@@ -141,5 +162,143 @@ export function drawWardrobe(r: Rect, g: GlyphCtx): SceneNode[] {
   }
 
   g.seg({ x: r.x + r.w / 2, y: r.y }, { x: r.x + r.w / 2, y: r.y + r.h }, "extraThin");
+  return g.nodes;
+}
+
+// ---------------------------------------------------------------------------
+// ── v1.32 F2: bedroom ──
+//
+// Four families the bedroom vocabulary was missing. Appended at the foot of the file for the
+// same reason they are appended to `FIXTURE_FAMILIES`: that table's order is the LEGEND's
+// order, so slotting `dresser` in beside `wardrobe` would re-order the legend of every shipped
+// plan that draws a robe.
+
+/**
+ * The bunk bed: the lower mattress with its pillow at the head, the upper bunk drawn DASHED
+ * above it, and the ladder rungs at the foot.
+ *
+ * **The upper bunk is dashed, and that is the drawing's one existing convention rather than a
+ * new one.** A dashed outline in this repository means *above the horizontal cut a floor plan
+ * is taken at* — it is what `upper_cabinet` has always meant, what `roof` and `void` ship, and
+ * what the outdoor `pergola` and the `shed`'s ridge say. An upper bunk is exactly that: present
+ * in the room, cut through by nothing. Drawing it solid would claim the room has two mattresses
+ * of floor area, which is the one thing a plan must not say about a bunk.
+ *
+ * The ladder is at the FOOT (the bottom edge), which is where it goes and which is also what
+ * keeps the head clear for the pillow — so the symbol says which end is which without a label,
+ * on a category the catalog calls `directional`.
+ *
+ * Prim count: 6.
+ */
+export function drawBunkBed(r: Rect, g: GlyphCtx): SceneNode[] {
+  g.poly(rectPoly(r), g.body);
+  // The upper bunk: inset all round, stopping clear of the ladder band at the foot.
+  const upper = { x: r.x + r.w * 0.07, y: r.y + r.h * 0.04, w: r.w * 0.86, h: r.h * 0.78 };
+  dashedPoly(g, roundedRectPoly(upper, Math.min(upper.w, upper.h) * 0.06), "none", "extraThin");
+  // The pillow on the lower bunk, at the head.
+  const pillowH = r.h * 0.12;
+  g.poly(
+    roundedRectPoly({ x: r.x + r.w * 0.18, y: r.y + r.h * 0.07, w: r.w * 0.64, h: pillowH }, pillowH * 0.35),
+    g.basin,
+    "extraThin",
+  );
+  // The ladder: three rungs across the foot end, inside the footprint.
+  for (const f of [0.87, 0.91, 0.95]) {
+    g.seg({ x: r.x + r.w * 0.32, y: r.y + r.h * f }, { x: r.x + r.w * 0.68, y: r.y + r.h * f }, "extraThin");
+  }
+  return g.nodes;
+}
+
+/**
+ * The crib / cot: the carcass, the mattress inside it, and the rail bars down both long faces.
+ *
+ * The bars are the symbol — a crib without them is a small `bed` with no pillow — and they are
+ * drawn on the two LONG faces read off the footprint rather than off the page, so a cot turned
+ * against a side wall draws the same object instead of a different one. Their count comes from
+ * the aspect and is clamped to `[3, 7]`: at the clamp ceiling they read as a rail, and past it
+ * they close into a solid band at plan scale.
+ *
+ * `directional` follows the `bed` precedent: the head end is the top edge, which is what an
+ * `anchor top` derives a quarter-turn from.
+ *
+ * Prim count: `2 + 2 x bars`, i.e. 12 at the catalogued 700x1300.
+ */
+export function drawCrib(r: Rect, g: GlyphCtx): SceneNode[] {
+  g.poly(rectPoly(r), g.body);
+  const mat = insetRect(r, 0.14);
+  g.poly(rectPoly(mat), g.basin, "extraThin");
+  const horizontal = r.w >= r.h;
+  const long = horizontal ? r.w : r.h;
+  const bars = clamp(Math.round((long / Math.max(1e-9, Math.min(r.w, r.h))) * 2.5), 3, 7);
+  for (let i = 0; i < bars; i++) {
+    const t = (i + 0.5) / bars;
+    if (horizontal) {
+      const x = r.x + r.w * t;
+      g.seg({ x, y: r.y }, { x, y: mat.y }, "extraThin");
+      g.seg({ x, y: mat.y + mat.h }, { x, y: r.y + r.h }, "extraThin");
+    } else {
+      const y = r.y + r.h * t;
+      g.seg({ x: r.x, y }, { x: mat.x, y }, "extraThin");
+      g.seg({ x: mat.x + mat.w, y }, { x: r.x + r.w, y }, "extraThin");
+    }
+  }
+  return g.nodes;
+}
+
+/**
+ * The dresser / chest of drawers: the carcass, the drawer band on the room side, its two
+ * division lines, and a handle tick in each of the three drawers.
+ *
+ * A chest is a box, so everything that makes it read as one is inside it — and all of it is on
+ * the FRONT (bottom) half, which is the orientation claim. A dresser drawn with its drawers
+ * against the wall has been turned round, and it is the only thing separating this symbol from
+ * a `bookshelf` of the same proportions.
+ *
+ * Prim count: 7.
+ */
+export function drawDresser(r: Rect, g: GlyphCtx): SceneNode[] {
+  g.poly(rectPoly(r), g.body);
+  const bandY = r.y + r.h * 0.55;
+  g.seg({ x: r.x, y: bandY }, { x: r.x + r.w, y: bandY }, "extraThin");
+  for (const f of [1 / 3, 2 / 3]) {
+    const x = r.x + r.w * f;
+    g.seg({ x, y: bandY }, { x, y: r.y + r.h }, "extraThin");
+  }
+  for (let i = 0; i < 3; i++) {
+    const cx = r.x + (r.w * (i + 0.5)) / 3;
+    const half = (r.w / 3) * 0.2;
+    g.seg({ x: cx - half, y: r.y + r.h * 0.86 }, { x: cx + half, y: r.y + r.h * 0.86 }, "extraThin");
+  }
+  return g.nodes;
+}
+
+/**
+ * The vanity / dressing table: the top, the mirror band DASHED across the wall side, and the
+ * stool sitting in front of it.
+ *
+ * The mirror is dashed for the reason the bunk's upper deck is: it stands on the table, above
+ * the cut plane, so drawing it solid would claim a piece of the room's section that is not
+ * there. The stool is drawn INSIDE the footprint even though a real one is pulled out — the
+ * footprint is what every clearance and collision rule measures, and a symbol that drew outside
+ * it would make the drawing and `arch lint` disagree about where the piece is. That is the same
+ * call `drawCar` makes about its wing mirrors, and the catalogued 600 mm `clearanceMm` is what
+ * actually reserves the room to sit down.
+ *
+ * Prim count: 5.
+ */
+export function drawVanity(r: Rect, g: GlyphCtx): SceneNode[] {
+  g.poly(rectPoly(r), g.body);
+  const mirror = { x: r.x + r.w * 0.14, y: r.y + r.h * 0.05, w: r.w * 0.72, h: r.h * 0.16 };
+  dashedPoly(g, rectPoly(mirror), "none", "extraThin");
+  g.seg(
+    { x: mirror.x + mirror.w / 2, y: mirror.y },
+    { x: mirror.x + mirror.w / 2, y: mirror.y + mirror.h },
+    "extraThin",
+  );
+  // Floored at 0: a negative extent would otherwise ask for a circle of negative radius.
+  const rad = Math.max(0, Math.min(r.w * 0.12, r.h * 0.18));
+  const stool = { x: r.x + r.w / 2, y: r.y + r.h - rad - r.h * 0.04 };
+  g.ring(stool, rad, "extraThin");
+  g.ring(stool, rad * 0.55, "extraThin");
   return g.nodes;
 }

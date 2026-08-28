@@ -43,22 +43,52 @@ import {
   drawWasher,
   drawWaterHeater,
 } from "./glyphs-kitchen.js";
-import { drawBed, drawDoubleBed, drawNightstand, drawWardrobe } from "./glyphs-bedroom.js";
+import {
+  drawBed,
+  drawBunkBed,
+  drawCrib,
+  drawDoubleBed,
+  drawDresser,
+  drawNightstand,
+  drawVanity,
+  drawWardrobe,
+} from "./glyphs-bedroom.js";
 import {
   drawArmchair,
   drawBench,
   drawChair,
+  drawChaise,
+  drawCoatRack,
   drawCoffeeTable,
   drawDiningTable,
+  drawFireplace,
+  drawLoveseat,
   drawPiano,
+  drawRadiator,
   drawRug,
+  drawShoeCabinet,
+  drawSideboard,
   drawSofa,
   drawSofaL,
   drawStool,
   drawTable,
+  drawTv,
   drawTvUnit,
 } from "./glyphs-living.js";
-import { drawBookshelf, drawCar, drawDesk, drawOfficeChair, drawPlant, drawSunLounger } from "./glyphs-misc.js";
+import {
+  drawBookshelf,
+  drawCar,
+  drawDesk,
+  drawFilingCabinet,
+  drawLocker,
+  drawMeetingTable,
+  drawOfficeChair,
+  drawPlant,
+  drawPoolTable,
+  drawReceptionDesk,
+  drawSunLounger,
+  drawTreadmill,
+} from "./glyphs-misc.js";
 import {
   drawBbq,
   drawBicycle,
@@ -184,6 +214,29 @@ const FIXTURE_FAMILIES: readonly (readonly [string, ...string[]])[] = [
   ["range_hood"],
   ["microwave"],
   ["bar_counter"],
+  // ── v1.32 F2: living, bedroom, office ──
+  // Eighteen families appended, again at the END and again for the one reason this table has:
+  // its order IS the legend's order, so slotting `dresser` in beside `wardrobe` would re-order
+  // the legend of every shipped plan that draws a robe. Grouped bedroom, then living, then
+  // office/commercial, which is the order the domain modules and the docs tables read in.
+  ["bunk_bed"],
+  ["crib", "cot"],
+  ["dresser", "chest_of_drawers"],
+  ["vanity", "dressing_table"],
+  ["fireplace"],
+  ["radiator"],
+  ["sideboard", "buffet"],
+  ["loveseat", "sofa_2"],
+  ["chaise"],
+  ["tv"],
+  ["coat_rack"],
+  ["shoe_cabinet"],
+  ["meeting_table"],
+  ["reception_desk"],
+  ["filing_cabinet"],
+  ["locker"],
+  ["pool_table"],
+  ["treadmill"],
 ];
 
 /**
@@ -397,6 +450,48 @@ export function fixtureGlyph(category: string, r: Rect, theme: Theme, sizes: Ren
       return drawMicrowave(r, g);
     case "bar_counter":
       return drawBarCounter(r, g);
+    // ── v1.32 F2: living, bedroom, office ──
+    case "bunk_bed":
+      return drawBunkBed(r, g);
+    case "crib":
+    case "cot":
+      return drawCrib(r, g);
+    case "dresser":
+    case "chest_of_drawers":
+      return drawDresser(r, g);
+    case "vanity":
+    case "dressing_table":
+      return drawVanity(r, g);
+    case "fireplace":
+      return drawFireplace(r, g);
+    case "radiator":
+      return drawRadiator(r, g);
+    case "sideboard":
+    case "buffet":
+      return drawSideboard(r, g);
+    case "loveseat":
+    case "sofa_2":
+      return drawLoveseat(r, g);
+    case "chaise":
+      return drawChaise(r, g);
+    case "tv":
+      return drawTv(r, g);
+    case "coat_rack":
+      return drawCoatRack(r, g);
+    case "shoe_cabinet":
+      return drawShoeCabinet(r, g);
+    case "meeting_table":
+      return drawMeetingTable(r, g);
+    case "reception_desk":
+      return drawReceptionDesk(r, g);
+    case "filing_cabinet":
+      return drawFilingCabinet(r, g);
+    case "locker":
+      return drawLocker(r, g);
+    case "pool_table":
+      return drawPoolTable(r, g);
+    case "treadmill":
+      return drawTreadmill(r, g);
     default:
       return null;
   }

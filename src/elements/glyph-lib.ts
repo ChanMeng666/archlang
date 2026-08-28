@@ -200,6 +200,57 @@ export function roundedRectPoly(r: Rect, radius: number): Point[] {
   ];
 }
 
+/**
+ * A closed ring through `pts`, with a circular fillet of radius `rad` at each vertex flagged
+ * in `ease`; a vertex flagged `false` passes through sharp.
+ *
+ * {@link roundedRectPoly} eases all four corners of a RECTANGLE, and an L has one corner that
+ * must stay sharp — the reflex corner where the two runs meet, which is a seam in the real
+ * piece rather than a radius. It lived in `glyphs-living.ts` while `drawSofaL` was its only
+ * caller; `glyphs-misc.ts`'s reception counter is the second, and a helper imported across two
+ * domain modules belongs beside {@link roundedRectPoly} rather than in one of them. **Moved
+ * VERBATIM** — the arithmetic is untouched, which is what keeps every shipped L-sofa on the
+ * bytes it had.
+ *
+ * **Right-angle corners only.** The fillet centre is `v + (u_prev + u_next) x rad`, which puts
+ * it `rad` from both incident edges exactly when they meet square; at any other angle it lands
+ * somewhere plausible and wrong. Every corner of an axis-aligned L is square.
+ *
+ * Degenerate-safe by construction: a zero-length incident edge gives a `(0,0)` unit vector and
+ * `rad` clamps to 0, so the fillet collapses onto the vertex and emits `K + 1` copies of a
+ * finite point instead of propagating a `NaN` into a coordinate.
+ */
+export function easedRing(pts: readonly Point[], ease: readonly boolean[], rad: number): Point[] {
+  const n = pts.length;
+  const K = 4;
+  const out: Point[] = [];
+  for (let i = 0; i < n; i++) {
+    const v = pts[i]!;
+    if (!ease[i]) {
+      out.push(v);
+      continue;
+    }
+    const p = pts[(i + n - 1) % n]!;
+    const q = pts[(i + 1) % n]!;
+    const lp = Math.hypot(p.x - v.x, p.y - v.y);
+    const lq = Math.hypot(q.x - v.x, q.y - v.y);
+    const rr = Math.min(rad, lp / 2, lq / 2);
+    const up = lp > 0 ? { x: (p.x - v.x) / lp, y: (p.y - v.y) / lp } : { x: 0, y: 0 };
+    const uq = lq > 0 ? { x: (q.x - v.x) / lq, y: (q.y - v.y) / lq } : { x: 0, y: 0 };
+    const c = { x: v.x + (up.x + uq.x) * rr, y: v.y + (up.y + uq.y) * rr };
+    const a0 = Math.atan2(v.y + up.y * rr - c.y, v.x + up.x * rr - c.x);
+    let sweep = Math.atan2(v.y + uq.y * rr - c.y, v.x + uq.x * rr - c.x) - a0;
+    // Take the SHORT way round: a right-angle fillet turns a quarter, never three quarters.
+    if (sweep > Math.PI) sweep -= 2 * Math.PI;
+    if (sweep < -Math.PI) sweep += 2 * Math.PI;
+    for (let k = 0; k <= K; k++) {
+      const a = a0 + (sweep * k) / K;
+      out.push({ x: c.x + rr * Math.cos(a), y: c.y + rr * Math.sin(a) });
+    }
+  }
+  return out;
+}
+
 /** The four corners of a rect as a closed polygon, clockwise from the top-left. */
 export function rectPoly(r: Rect): Point[] {
   return [

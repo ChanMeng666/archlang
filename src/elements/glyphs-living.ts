@@ -47,13 +47,39 @@
  * **The piano is the only symbol whose footprint was withheld on purpose.** Giving it one
  * would make `against wall` legal, and that form would face the keyboard into the wall.
  *
+ * ## The third tranche: what a room is arranged AROUND
+ *
+ * Eight more families sit at the very foot of the file, and they are a different kind of thing
+ * from the seating above. A `fireplace` and a `radiator` are not furniture you place — they are
+ * the fixed objects a living room is arranged around, and a plan that cannot draw them cannot
+ * say why the sofa is where it is. The rest close gaps the first two tranches left: a
+ * `sideboard` and a `shoe_cabinet` (a hall's storage), a `loveseat` and a `chaise` (the two
+ * seats that are not a three-piece sofa), a `coat_rack`, and a wall-mounted `tv` — which is a
+ * separate kind from `tv_unit` rather than an alias of it, because 80 mm of panel and 450 mm of
+ * console are different amounts of floor.
+ *
+ * That tranche also brought a redraw of six symbols in this file — `coffee_table`, `table`,
+ * `stool`, `bench`, `chair` and `tv_unit` — each of which was two or three primitives and read
+ * as a rectangle with a line in it. What they gained is stated in each function's own comment;
+ * what they share is that the additions are all *structural* (legs, supports, armrests, drawer
+ * splits) rather than decorative, so each one survives being drawn at 40 mm on an A3 sheet.
+ *
  * Pure and deterministic: every function is a total function of (rect, ctx).
  */
 
 import type { Point } from "../ast.js";
 import type { SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
-import { clamp, insetRect, rectPoly, roundedRectPoly, shortSide } from "./glyph-lib.js";
+import {
+  centerOf,
+  clamp,
+  easedRing,
+  insetRect,
+  insetRectSides,
+  rectPoly,
+  roundedRectPoly,
+  shortSide,
+} from "./glyph-lib.js";
 
 /**
  * The short side of a footprint. Every corner radius and band width below is keyed to it, so
@@ -77,17 +103,25 @@ function clampCount(v: number, lo: number, hi: number): number {
 }
 
 /**
- * The sofa: an eased body, a back band along the rear edge, an arm at each end, and the
- * cushion divisions between them.
+ * The sofa construction, with the cushion count handed IN: an eased body, a back band along
+ * the rear edge, an arm at each end, and `divisions` lines cutting the seat into
+ * `divisions + 1` cushions.
  *
  * The arms and the divisions are what make it read as a sofa rather than a long box — an
  * outlined rectangle with a line across the back is a bench. Both arm bands are filled in the
  * body colour over a body-coloured shell, so what shows is their OUTLINE; that is deliberate,
  * and it is the same trick the bathtub's inner well uses in reverse.
  *
- * Prim count: `5 + divisions`, i.e. 7 at the common 2.3:1 aspect and 11 at the clamp.
+ * The count is a PARAMETER because {@link drawLoveseat} is the same piece of furniture with
+ * two seats rather than three-or-more — a two-seater is not a different construction, and
+ * drawing it from a second one would let the pair drift apart in ways that carry no meaning.
+ * {@link drawSofa} derives its count from the aspect and passes it here, which is what keeps
+ * every shipped sofa on the bytes it had: the body of this function is the old
+ * `drawSofa` verbatim.
+ *
+ * Prim count: `5 + divisions`.
  */
-export function drawSofa(r: Rect, g: GlyphCtx): SceneNode[] {
+function sofaBody(r: Rect, g: GlyphCtx, divisions: number): SceneNode[] {
   const x1 = r.x + r.w;
   const y1 = r.y + r.h;
   const backY = r.y + r.h * 0.18;
@@ -115,15 +149,22 @@ export function drawSofa(r: Rect, g: GlyphCtx): SceneNode[] {
   // Drawn across the FULL width, over the arms: the back cushion runs behind them.
   g.seg({ x: r.x, y: backY }, { x: x1, y: backY }, "extraThin");
 
-  // `divisions` lines cut the seat into `divisions + 1` cushions, so the 2.3:1 sofa the
-  // catalogue's default footprint describes gets the conventional three.
-  const divisions = clampCount((r.w / r.h) * 0.9, 2, 6);
   for (let i = 0; i < divisions; i++) {
     const cx = innerL + ((innerR - innerL) * (i + 1)) / (divisions + 1);
     g.seg({ x: cx, y: backY }, { x: cx, y: frontY }, "extraThin");
   }
   g.seg({ x: innerL, y: frontY }, { x: innerR, y: frontY }, "extraThin");
   return g.nodes;
+}
+
+/**
+ * The sofa: {@link sofaBody} with its cushion divisions read off the footprint's aspect, so
+ * the 2.3:1 sofa the catalogue's default footprint describes gets the conventional three.
+ *
+ * Prim count: `5 + divisions`, i.e. 7 at the common 2.3:1 aspect and 11 at the clamp.
+ */
+export function drawSofa(r: Rect, g: GlyphCtx): SceneNode[] {
+  return sofaBody(r, g, clampCount((r.w / r.h) * 0.9, 2, 6));
 }
 
 /**
@@ -175,18 +216,92 @@ export function drawArmchair(r: Rect, g: GlyphCtx): SceneNode[] {
   return g.nodes;
 }
 
-/** The coffee table: an eased top with the inset that reads as its edge. Prim count: 2. */
+/**
+ * The four legs of a table, as dots at the corners of `r` inset by `frac` of its short side.
+ *
+ * Three of the tables here are otherwise the same object — a filled top with an edge inside
+ * it — and the legs are what make them read as furniture rather than as a slab of something.
+ * Sharing the placement rule is what stops the `table` and the `coffee_table` from having
+ * their legs in visibly different places for no reason.
+ *
+ * The inset is keyed to the SHORT side (see {@link insetRect}), so a long refectory table gets
+ * its legs an even distance in from all four sides rather than a wedge, and the leg radius is
+ * capped at a third of that inset — which is what keeps a leg inside the footprint on a
+ * 10000 x 10 rect, where the inset itself is a hair.
+ */
+function tableLegs(r: Rect, g: GlyphCtx, frac: number): void {
+  const inner = insetRect(r, frac);
+  const rad = short(r) * frac * 0.34;
+  for (const [x, y] of [
+    [inner.x, inner.y],
+    [inner.x + inner.w, inner.y],
+    [inner.x + inner.w, inner.y + inner.h],
+    [inner.x, inner.y + inner.h],
+  ] as const) {
+    g.dot({ x, y }, rad, g.body, "extraThin");
+  }
+}
+
+/**
+ * The coffee table: a generously eased top, the inner ring that reads as its edge, four legs
+ * at the corners, and — on an elongated top only — the centre line of a two-part tray.
+ *
+ * It is drawn ROUNDED where {@link drawTable} is drawn square, and that is the whole
+ * distinction between them at plan scale: a coffee table is a low, soft-cornered object and a
+ * dining or work table is not. The two used to differ only by a corner radius of 0.12 against
+ * 0.08 on the same two primitives, which is not a difference a reader can see.
+ *
+ * The tray line is drawn only past an aspect of 1.6, across the SHORT axis at mid-length — a
+ * squarish table has one top and a long one reads as two. Below the threshold it is simply
+ * absent, which is why the prim count is 6 or 7 rather than a fixed number.
+ *
+ * Prim count: `6 + (elongated ? 1 : 0)`.
+ */
 export function drawCoffeeTable(r: Rect, g: GlyphCtx): SceneNode[] {
   const s = short(r);
-  g.poly(roundedRectPoly(r, s * 0.12), g.body);
-  g.poly(roundedRectPoly(insetRect(r, 0.1), s * 0.09), "none", "extraThin");
+  g.poly(roundedRectPoly(r, s * 0.22), g.body);
+  const inner = insetRect(r, 0.12);
+  g.poly(roundedRectPoly(inner, short(inner) * 0.2), "none", "extraThin");
+  tableLegs(r, g, 0.16);
+  const horizontal = r.w >= r.h;
+  const long = horizontal ? r.w : r.h;
+  if (long > s * 1.6) {
+    if (horizontal) {
+      g.seg({ x: inner.x + inner.w / 2, y: inner.y }, { x: inner.x + inner.w / 2, y: inner.y + inner.h }, "extraThin");
+    } else {
+      g.seg({ x: inner.x, y: inner.y + inner.h / 2 }, { x: inner.x + inner.w, y: inner.y + inner.h / 2 }, "extraThin");
+    }
+  }
   return g.nodes;
 }
 
-/** A plain table: a square top with the same inset edge. Prim count: 2. */
+/**
+ * A plain table: a SQUARE-cornered top, the inset edge, four legs, and a centre leaf line on
+ * an elongated top.
+ *
+ * Square corners and a shallower inset are what tell it from the {@link drawCoffeeTable}
+ * beside it; the leaf line runs ALONG the long axis rather than across it, which is the other
+ * half of the distinction — a refectory table's boards run with its length, a tray's division
+ * runs across it — and it also means the two symbols never draw the same line in the same
+ * place at the same aspect. It carries no chairs, which is what tells it from
+ * {@link drawDiningTable}, whose footprint is the whole eating zone.
+ *
+ * Prim count: `6 + (elongated ? 1 : 0)`.
+ */
 export function drawTable(r: Rect, g: GlyphCtx): SceneNode[] {
   g.poly(rectPoly(r), g.body);
-  g.poly(rectPoly(insetRect(r, 0.08)), "none", "extraThin");
+  const inner = insetRect(r, 0.1);
+  g.poly(rectPoly(inner), "none", "extraThin");
+  tableLegs(r, g, 0.14);
+  const horizontal = r.w >= r.h;
+  const long = horizontal ? r.w : r.h;
+  if (long > short(r) * 1.6) {
+    if (horizontal) {
+      g.seg({ x: inner.x, y: inner.y + inner.h / 2 }, { x: inner.x + inner.w, y: inner.y + inner.h / 2 }, "extraThin");
+    } else {
+      g.seg({ x: inner.x + inner.w / 2, y: inner.y }, { x: inner.x + inner.w / 2, y: inner.y + inner.h }, "extraThin");
+    }
+  }
   return g.nodes;
 }
 
@@ -245,18 +360,48 @@ export function drawDiningTable(r: Rect, g: GlyphCtx): SceneNode[] {
   return g.nodes;
 }
 
-/** The dining chair: seat, back band along the rear edge, and the cushion. Prim count: 3. */
+/**
+ * The dining chair: seat, back band along the rear edge, the cushion, and — on a seat wide
+ * enough to have them — an armrest each side.
+ *
+ * The armrests are what make it read as a chair rather than as a small box with a line across
+ * it, which is what the three-primitive version was at plan scale. They are drawn only when
+ * the seat is at least {@link ARMREST_ASPECT} as wide as it is deep: a chair narrower than
+ * that has no room between its cushion and its edge, and drawing them anyway would put two
+ * lines through the cushion. So the count is 5 or 3, not a fixed number.
+ *
+ * It is deliberately NOT the outdoor chair: `glyphs-outdoor.ts`'s `drawOutdoorChair` is this
+ * same construction plus SLATS across the back, and the slats are the whole difference — an
+ * outdoor chair is slatted and a dining chair is upholstered. Nor is it the office chair,
+ * which is round and has a true-arc back.
+ *
+ * Prim count: `3 + (armrests ? 2 : 0)`.
+ */
 export function drawChair(r: Rect, g: GlyphCtx): SceneNode[] {
   const s = short(r);
   g.poly(roundedRectPoly(r, s * 0.15), g.body);
   g.poly(roundedRectPoly({ x: r.x, y: r.y, w: r.w, h: r.h * 0.18 }, s * 0.08), g.body);
+  // The cushion is deliberately narrow — 0.56 of the width, not 0.72 — so it does not crowd
+  // the body outline it sits inside, and so the armrests have somewhere to be. The first draft
+  // ran it to 0.86 and the symbol read as three nested boxes.
   g.poly(
-    roundedRectPoly({ x: r.x + r.w * 0.12, y: r.y + r.h * 0.3, w: r.w * 0.76, h: r.h * 0.58 }, s * 0.1),
+    roundedRectPoly({ x: r.x + r.w * 0.22, y: r.y + r.h * 0.34, w: r.w * 0.56, h: r.h * 0.5 }, s * 0.1),
     g.body,
     "extraThin",
   );
+  // `NaN >= x` is false, so a zero-area footprint takes the no-armrest branch rather than
+  // needing a second guard.
+  if (r.w >= r.h * ARMREST_ASPECT) {
+    for (const f of [0.12, 0.88]) {
+      const x = r.x + r.w * f;
+      g.seg({ x, y: r.y + r.h * 0.28 }, { x, y: r.y + r.h * 0.86 }, "extraThin");
+    }
+  }
   return g.nodes;
 }
+
+/** Seat aspect (`w / h`) at or above which {@link drawChair} draws its two armrests. */
+const ARMREST_ASPECT = 0.7;
 
 /**
  * The stool: a round seat with no back, so its symbol is rotation-symmetric.
@@ -270,52 +415,100 @@ export function drawChair(r: Rect, g: GlyphCtx): SceneNode[] {
  * same "a piece of furniture is a solid" convention as every other glyph here — an unfilled
  * seat would be the one fixture in the drawing you can see the floor through.
  *
- * Prim count: 2.
+ * **Three CONCENTRIC circles, and the concentricity is the constraint, not a preference.** The
+ * seat edge alone reads as a plain disc at plan scale, so the pedestal foot is drawn inside it
+ * — but the obvious way to say "this thing stands on legs", a ring of three or four foot dots,
+ * cannot be used here. `furniture.render()` rotates the node LIST in place: a set of dots at a
+ * 90-degree pitch maps onto itself as a SET while each node lands where its neighbour was, so
+ * the SVG bytes move even though the drawing does not. A circle centred on the pivot maps onto
+ * ITSELF, which is what makes the quarter-turn byte-identical rather than merely
+ * indistinguishable — the law `test/glyphs-living.test.ts` asserts, and the reason a stool has
+ * no feet in it.
+ *
+ * Prim count: 3.
  */
 export function drawStool(r: Rect, g: GlyphCtx): SceneNode[] {
   const c = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
   const rad = short(r) / 2;
   g.dot(c, rad, g.body);
-  g.ring(c, rad * 0.6, "extraThin");
+  g.ring(c, rad * 0.62, "extraThin");
+  g.ring(c, rad * 0.24, "extraThin");
   return g.nodes;
 }
 
 /**
- * The bench: a slab with two slat lines running LENGTHWISE — along the long axis, whichever
- * that is, so a bench authored 1800x400 and one authored 400x1800 read the same way up.
+ * The bench: a slab with its slats running LENGTHWISE — along the long axis, whichever that
+ * is, so a bench authored 1800x400 and one authored 400x1800 read the same way up — and a
+ * support across each end.
  *
- * Prim count: 3.
+ * The two supports are what tell it from a shelf or a plain slab: a bench is a board carried
+ * clear of the ground at its ends, and in plan the legs project to exactly those two
+ * transverse lines. They stand 0.1 of the run in from each end, which is where a real bench's
+ * legs are and, more usefully, clear of the slab's own outline at every aspect.
+ *
+ * The slat count is derived from the aspect — a deeper bench takes more boards — and clamped
+ * for the reason every count in this module is: an aspect is unbounded and the property suite
+ * feeds 10000 x 10, where an underived count would ask for a solid band of lines.
+ *
+ * Prim count: `3 + slats`, i.e. 6 at the common 1500x400.
  */
 export function drawBench(r: Rect, g: GlyphCtx): SceneNode[] {
   g.poly(rectPoly(r), g.body);
   const horizontal = r.w >= r.h;
-  for (const f of [1 / 3, 2 / 3]) {
+  const long = horizontal ? r.w : r.h;
+  const slats = clampCount((short(r) / long) * 12, 2, 5);
+  for (let i = 1; i <= slats; i++) {
+    const f = i / (slats + 1);
     if (horizontal) {
       g.seg({ x: r.x, y: r.y + r.h * f }, { x: r.x + r.w, y: r.y + r.h * f }, "extraThin");
     } else {
       g.seg({ x: r.x + r.w * f, y: r.y }, { x: r.x + r.w * f, y: r.y + r.h }, "extraThin");
     }
   }
+  for (const u of [0.1, 0.9]) {
+    if (horizontal) {
+      g.seg({ x: r.x + r.w * u, y: r.y }, { x: r.x + r.w * u, y: r.y + r.h }, "extraThin");
+    } else {
+      g.seg({ x: r.x, y: r.y + r.h * u }, { x: r.x + r.w, y: r.y + r.h * u }, "extraThin");
+    }
+  }
   return g.nodes;
 }
 
 /**
- * The TV unit / media console: the carcass, the screen against the back edge, and the shelf
- * line.
+ * The TV unit / media console: the carcass, the screen against the back edge, the shelf line,
+ * and the drawer bank under it with its handle tick.
  *
  * The screen is drawn in the `basin` (white interior) colour so it reads as a distinct object
  * sitting ON the unit rather than part of it — the same reason a sink's bowls are white
  * against its counter. It sits against the BACK (top) edge, which is the edge the unit is
  * placed against a wall on, so a quarter-turned unit still faces the room.
  *
- * Prim count: 3.
+ * The two drawer splits and the handle are what stop it reading as a plain box with a lid,
+ * and they say which side is the front: they are drawn BELOW the shelf line, in the half of
+ * the carcass that faces the room. A `tv_unit` is `directional` in the catalog, and this is
+ * the linework that claim rests on — a symbol whose facing nothing in the drawing shows has
+ * no business carrying the flag.
+ *
+ * It is not the wall-mounted {@link drawTv}, which is a screen on a bracket with no carcass at
+ * all; the two are separate kinds because a media wall and a mounted panel occupy different
+ * floor area — 450 mm of it against nearly none.
+ *
+ * Prim count: 6.
  */
 export function drawTvUnit(r: Rect, g: GlyphCtx): SceneNode[] {
   g.poly(rectPoly(r), g.body);
   const tvW = r.w * 0.7;
   const tvH = r.h * 0.15;
   g.poly(rectPoly({ x: r.x + (r.w - tvW) / 2, y: r.y, w: tvW, h: tvH }), g.basin, "extraThin");
-  g.seg({ x: r.x, y: r.y + r.h / 2 }, { x: r.x + r.w, y: r.y + r.h / 2 }, "extraThin");
+  const shelfY = r.y + r.h * 0.52;
+  g.seg({ x: r.x, y: shelfY }, { x: r.x + r.w, y: shelfY }, "extraThin");
+  for (const f of [1 / 3, 2 / 3]) {
+    const x = r.x + r.w * f;
+    g.seg({ x, y: shelfY }, { x, y: r.y + r.h }, "extraThin");
+  }
+  // The handle: a short tick on the middle drawer's front, centred on the carcass.
+  g.seg({ x: r.x + r.w * 0.44, y: r.y + r.h * 0.86 }, { x: r.x + r.w * 0.56, y: r.y + r.h * 0.86 }, "extraThin");
   return g.nodes;
 }
 
@@ -363,55 +556,6 @@ export function drawRug(r: Rect, g: GlyphCtx): SceneNode[] {
     }
   }
   return g.nodes;
-}
-
-/**
- * A closed ring through `pts`, with a circular fillet of radius `rad` at each vertex flagged
- * in `ease`; a vertex flagged `false` passes through sharp.
- *
- * {@link roundedRectPoly} eases all four corners of a RECTANGLE, and an L has one corner that
- * must stay sharp — the reflex corner where the two runs meet, which is a seam in the real
- * piece rather than a radius. Local to this module: nothing else draws a non-rectangular ring,
- * and a shared helper would have to answer questions (non-right corners, self-intersection)
- * that the one caller does not ask.
- *
- * **Right-angle corners only.** The fillet centre is `v + (u_prev + u_next) x rad`, which puts
- * it `rad` from both incident edges exactly when they meet square; at any other angle it lands
- * somewhere plausible and wrong. Every corner of an axis-aligned L is square.
- *
- * Degenerate-safe by construction: a zero-length incident edge gives a `(0,0)` unit vector and
- * `rad` clamps to 0, so the fillet collapses onto the vertex and emits `K + 1` copies of a
- * finite point instead of propagating a `NaN` into a coordinate.
- */
-function easedRing(pts: readonly Point[], ease: readonly boolean[], rad: number): Point[] {
-  const n = pts.length;
-  const K = 4;
-  const out: Point[] = [];
-  for (let i = 0; i < n; i++) {
-    const v = pts[i]!;
-    if (!ease[i]) {
-      out.push(v);
-      continue;
-    }
-    const p = pts[(i + n - 1) % n]!;
-    const q = pts[(i + 1) % n]!;
-    const lp = Math.hypot(p.x - v.x, p.y - v.y);
-    const lq = Math.hypot(q.x - v.x, q.y - v.y);
-    const rr = Math.min(rad, lp / 2, lq / 2);
-    const up = lp > 0 ? { x: (p.x - v.x) / lp, y: (p.y - v.y) / lp } : { x: 0, y: 0 };
-    const uq = lq > 0 ? { x: (q.x - v.x) / lq, y: (q.y - v.y) / lq } : { x: 0, y: 0 };
-    const c = { x: v.x + (up.x + uq.x) * rr, y: v.y + (up.y + uq.y) * rr };
-    const a0 = Math.atan2(v.y + up.y * rr - c.y, v.x + up.x * rr - c.x);
-    let sweep = Math.atan2(v.y + uq.y * rr - c.y, v.x + uq.x * rr - c.x) - a0;
-    // Take the SHORT way round: a right-angle fillet turns a quarter, never three quarters.
-    if (sweep > Math.PI) sweep -= 2 * Math.PI;
-    if (sweep < -Math.PI) sweep += 2 * Math.PI;
-    for (let k = 0; k <= K; k++) {
-      const a = a0 + (sweep * k) / K;
-      out.push({ x: c.x + rr * Math.cos(a), y: c.y + rr * Math.sin(a) });
-    }
-  }
-  return out;
 }
 
 /**
@@ -538,5 +682,236 @@ export function drawPiano(r: Rect, g: GlyphCtx): SceneNode[] {
   // The lid's fold line, run from under the keyboard down toward the tail. It stops at 0.40
   // of the width at 0.86 of the depth, where the outline is still at 0.65.
   g.seg({ x: x0 + r.w * 0.06, y: y0 + r.h * 0.18 }, { x: x0 + r.w * 0.4, y: y0 + r.h * 0.86 }, "extraThin");
+  return g.nodes;
+}
+
+// ---------------------------------------------------------------------------
+// ── v1.32 F2: living ──
+//
+// Eight families that furnish the rooms the tranches above already drew seating for, and each
+// of them is here because a plan cannot say the thing without it: a `fireplace` and a
+// `radiator` are the two objects a living room is arranged AROUND, a `sideboard` and a
+// `shoe_cabinet` are the storage a hall has, and a wall-mounted `tv` occupies almost no floor
+// where a `tv_unit` occupies 450 mm of it. Appended at the foot of the file for the same
+// reason they are appended to `FIXTURE_FAMILIES`: that table's order is the LEGEND's order.
+
+/**
+ * The fireplace: the chimney breast, the firebox opening cut into its room face, and the
+ * flame ticks inside it.
+ *
+ * The opening is `basin`-filled and pushed to the FRONT (bottom) half, which is the whole
+ * orientation claim: a fireplace's breast goes into the wall and its opening faces the room,
+ * so a piece drawn with the opening at the back has been turned the wrong way and the drawing
+ * says so. That is the linework the catalog's `directional: true` rests on.
+ *
+ * The three flame ticks are drawn INSIDE the opening rather than over the breast — a hearth
+ * fire is in the firebox — and they are what tell it from a `radiator` at a glance, the other
+ * long shallow directional piece that backs onto a wall.
+ *
+ * Prim count: 5.
+ */
+export function drawFireplace(r: Rect, g: GlyphCtx): SceneNode[] {
+  g.poly(rectPoly(r), g.body);
+  // The opening starts PAST the halfway line, so the breast is unmistakably the back half —
+  // which is the fact `directional: true` rests on and what `test/glyphs-living.test.ts` pins.
+  const box = insetRectSides(r, 0.18, 0.18, 0.52, 0.1);
+  g.poly(rectPoly(box), g.basin, "extraThin");
+  for (const f of [0.3, 0.5, 0.7]) {
+    const x = box.x + box.w * f;
+    g.seg({ x, y: box.y + box.h * 0.25 }, { x, y: box.y + box.h * 0.85 }, "extraThin");
+  }
+  return g.nodes;
+}
+
+/**
+ * The radiator: a shallow slab against the wall with its fins ticked off across the depth.
+ *
+ * The fin pitch is derived from the run — one fin per 1.2 depths — and clamped to `[4, 12]`,
+ * which is the same rule the bookshelf's bays and the bench's slats follow and for the same
+ * reason: the property suite feeds 10000 x 10, where an underived pitch would ask for eight
+ * hundred lines and draw a solid band.
+ *
+ * The fins run ACROSS the piece, from the back face to the front, which is how a panel
+ * radiator is drawn and what tells it from a `sideboard` — three times as deep, and carrying
+ * handle ticks on one edge only.
+ *
+ * Prim count: `1 + fins`, i.e. 9 at the catalogued 1000x100.
+ */
+export function drawRadiator(r: Rect, g: GlyphCtx): SceneNode[] {
+  g.poly(rectPoly(r), g.body);
+  const horizontal = r.w >= r.h;
+  const long = horizontal ? r.w : r.h;
+  const fins = clampCount(long / short(r) / 1.2, 4, 12);
+  for (let i = 1; i <= fins; i++) {
+    const f = i / (fins + 1);
+    if (horizontal) {
+      g.seg({ x: r.x + r.w * f, y: r.y }, { x: r.x + r.w * f, y: r.y + r.h }, "extraThin");
+    } else {
+      g.seg({ x: r.x, y: r.y + r.h * f }, { x: r.x + r.w, y: r.y + r.h * f }, "extraThin");
+    }
+  }
+  return g.nodes;
+}
+
+/**
+ * The sideboard / buffet: a carcass, the inner outline that reads as its top, the door splits
+ * along the run, and one handle tick per door on the room-facing edge.
+ *
+ * The door count comes from the aspect — roughly one door per unit of depth — and is clamped
+ * to `[2, 5]`, so the splits and the handles are both bounded. The handles are drawn on the
+ * FRONT (bottom) edge only, which is what makes the symbol directional: a sideboard whose
+ * handles face the wall has been turned round.
+ *
+ * Prim count: `2 + (doors - 1) + doors`, i.e. 9 at the catalogued 1600x450 (4 doors).
+ */
+export function drawSideboard(r: Rect, g: GlyphCtx): SceneNode[] {
+  g.poly(rectPoly(r), g.body);
+  const inner = insetRect(r, 0.08);
+  g.poly(rectPoly(inner), "none", "extraThin");
+  const doors = clampCount(r.w / r.h, 2, 5);
+  for (let i = 1; i < doors; i++) {
+    const x = r.x + (r.w * i) / doors;
+    g.seg({ x, y: r.y }, { x, y: r.y + r.h }, "extraThin");
+  }
+  for (let i = 0; i < doors; i++) {
+    const cx = r.x + (r.w * (i + 0.5)) / doors;
+    const half = (r.w / doors) * 0.16;
+    g.seg({ x: cx - half, y: r.y + r.h * 0.88 }, { x: cx + half, y: r.y + r.h * 0.88 }, "extraThin");
+  }
+  return g.nodes;
+}
+
+/**
+ * The loveseat / two-seater: {@link sofaBody} with its cushion count PINNED at one division,
+ * so it draws exactly two seats whatever its footprint.
+ *
+ * That is the whole difference from {@link drawSofa}, and stating it as a pinned count rather
+ * than as a second construction is the point: a two-seater IS a sofa, and a reader who can
+ * tell the two symbols apart is reading the number of cushions, which is the fact the category
+ * carries. `sofa` derives its count from the aspect and would draw three on this footprint;
+ * `loveseat` draws two on any.
+ *
+ * Free-standing and NOT `directional`, like every other seat in the catalogue: a two-seater
+ * floated with its back to the room is a room divider, not a defect.
+ *
+ * Prim count: 6.
+ */
+export function drawLoveseat(r: Rect, g: GlyphCtx): SceneNode[] {
+  return sofaBody(r, g, 1);
+}
+
+/**
+ * The chaise longue: an eased body with a back down ONE long side and a raised head across the
+ * top, plus the cushion and its two divisions.
+ *
+ * The asymmetry IS the symbol. A sofa has an arm at each end and a chaise has a back on one
+ * side and a head at one end, so the piece reads as something you lie along rather than sit
+ * across — and it reads that way at any aspect, because both bands are fractions of the
+ * footprint rather than a fixed depth. It is not the `sun_lounger`, whose head band spans the
+ * full width and whose seat is slatted; the side back is what separates them.
+ *
+ * The back is on the LEFT, which is the handedness `drawSofaL` chose and carries the same known
+ * limitation: `place … mirror` reflects a resolved element's position without reflecting the
+ * glyph, so a mirrored instance still draws a left-hand chaise. Turn it with `rotate`.
+ *
+ * Prim count: 6.
+ */
+export function drawChaise(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = short(r);
+  g.poly(roundedRectPoly(r, s * 0.12), g.body);
+  g.poly(roundedRectPoly({ x: r.x, y: r.y, w: r.w * 0.16, h: r.h }, s * 0.1), g.body);
+  g.poly(roundedRectPoly({ x: r.x + r.w * 0.16, y: r.y, w: r.w * 0.84, h: r.h * 0.18 }, s * 0.08), g.body);
+  const seat = { x: r.x + r.w * 0.22, y: r.y + r.h * 0.26, w: r.w * 0.72, h: r.h * 0.66 };
+  g.poly(roundedRectPoly(seat, short(seat) * 0.12), g.body, "extraThin");
+  for (const f of [1 / 3, 2 / 3]) {
+    const x = seat.x + seat.w * f;
+    g.seg({ x, y: seat.y }, { x, y: seat.y + seat.h }, "extraThin");
+  }
+  return g.nodes;
+}
+
+/**
+ * The wall-mounted television: the bracket against the wall and the panel hanging off it.
+ *
+ * It is deliberately a DIFFERENT kind from {@link drawTvUnit} rather than an alias of it,
+ * because the two occupy different floor: a media console is 450 mm deep and a mounted panel
+ * is 80, and a plan that draws the first where the second belongs has taken a walkway away.
+ * The symbol says which is which — no carcass to speak of, a `basin` panel across the room
+ * face, and two bracket ticks joining it to the back edge.
+ *
+ * The panel is on the FRONT (bottom) half and the brackets are behind it, so the drawing reads
+ * back-to-front the way the piece is: the mount is against the wall, which is the TOP edge by
+ * this module's convention, and the screen faces the room.
+ *
+ * Prim count: 4.
+ */
+export function drawTv(r: Rect, g: GlyphCtx): SceneNode[] {
+  g.poly(rectPoly(r), g.body);
+  const panel = { x: r.x + r.w * 0.04, y: r.y + r.h * 0.42, w: r.w * 0.92, h: r.h * 0.52 };
+  g.poly(rectPoly(panel), g.basin, "extraThin");
+  for (const f of [0.36, 0.64]) {
+    const x = r.x + r.w * f;
+    g.seg({ x, y: r.y + r.h * 0.06 }, { x, y: r.y + r.h * 0.42 }, "extraThin");
+  }
+  return g.nodes;
+}
+
+/**
+ * The coat rack: the post as two true circles about the footprint centre, with four hooks at a
+ * 90-degree pitch round it.
+ *
+ * The drawn SET maps onto itself under every quarter-turn, which is what the catalog's
+ * `symmetric: true` claims about this category and what `test/glyphs-living.test.ts` proves
+ * against the real `rotateNode` rather than asserting.
+ *
+ * Note the weaker word: the SET is invariant, not the node LIST. A quarter-turn carries hook
+ * `i` onto hook `i + 1`, so the SVG bytes move even though the drawing does not — unlike
+ * {@link drawStool}, whose concentric circles each map onto themselves. Both claims are true
+ * and they are not the same claim; the stool needs the stronger one because a stool is drawn on
+ * plans in numbers and a byte-identical turn is what keeps the goldens still.
+ *
+ * Prim count: 6.
+ */
+export function drawCoatRack(r: Rect, g: GlyphCtx): SceneNode[] {
+  const c = centerOf(r);
+  // A negative extent (the fuzz feeds one) would make every radius below negative, which is
+  // finite and still not a circle; the floor at 0 collapses the symbol onto its centre instead.
+  const rad = Math.max(0, short(r) / 2);
+  g.ring(c, rad * 0.34);
+  g.ring(c, rad * 0.16, "extraThin");
+  for (let i = 0; i < 4; i++) {
+    const a = ((i * 90 + 45) * Math.PI) / 180;
+    g.dot({ x: c.x + Math.cos(a) * rad * 0.72, y: c.y + Math.sin(a) * rad * 0.72 }, rad * 0.14, g.body, "extraThin");
+  }
+  return g.nodes;
+}
+
+/**
+ * The shoe cabinet: a slim carcass, the door splits along the run, and a TILT line inside each
+ * door.
+ *
+ * The tilt lines are the symbol. A shoe cabinet is a shallow box whose doors hinge at the floor
+ * and fall out toward the room, and the diagonal inside each bay is the drafting shorthand for
+ * exactly that — the same shorthand a door leaf's swing arc is. Without them the piece is a
+ * `sideboard` drawn at half the depth, which is not a distinction a reader can make.
+ *
+ * Every diagonal leans the SAME way and they lean toward the FRONT (bottom) edge, so the symbol
+ * says which side the doors fall into — the linework the catalog's `directional: true` rests
+ * on.
+ *
+ * Prim count: `1 + (doors - 1) + doors`, i.e. 6 at the catalogued 800x300 (3 doors).
+ */
+export function drawShoeCabinet(r: Rect, g: GlyphCtx): SceneNode[] {
+  g.poly(rectPoly(r), g.body);
+  const doors = clampCount(r.w / r.h, 2, 4);
+  for (let i = 1; i < doors; i++) {
+    const x = r.x + (r.w * i) / doors;
+    g.seg({ x, y: r.y }, { x, y: r.y + r.h }, "extraThin");
+  }
+  for (let i = 0; i < doors; i++) {
+    const x0 = r.x + (r.w * (i + 0.16)) / doors;
+    const x1 = r.x + (r.w * (i + 0.84)) / doors;
+    g.seg({ x: x0, y: r.y + r.h * 0.14 }, { x: x1, y: r.y + r.h * 0.86 }, "extraThin");
+  }
   return g.nodes;
 }

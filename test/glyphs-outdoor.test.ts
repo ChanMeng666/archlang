@@ -290,8 +290,8 @@ describe("glyphs-outdoor — what each symbol draws", () => {
     // (which is the LEGEND's order) fails here.
     //
     // It used to read `slice(-names.length)` — the outdoor tranche was the TAIL, because it
-    // was the last one written. v1.32 appends eight kitchen and bath families after it, so
-    // the tail is no longer this module's and never will be again. The property that
+    // was the last one written. v1.32 appends twenty-six more families after it, so the
+    // tail is no longer this module's and never will be again. The property that
     // actually matters survives the change and is the one asserted now: the twenty-one sit
     // together, in order, wherever the table has grown to put them. A family slotted in
     // beside its domain neighbours instead of appended still fails, which is the whole

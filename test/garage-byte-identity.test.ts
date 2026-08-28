@@ -44,15 +44,19 @@
  *
  * The whole-surface digests below moved, and the reason is the one this header's "when one of
  * these moves" list names third: a rendering change landed from elsewhere in the release.
- * v1.32 redraws six kitchen and bath symbols (`island`, `upper_cabinet`, `dishwasher`, `oven`,
- * `fridge`, `washer`), so every plan that places one draws different bytes ON PURPOSE.
+ * v1.32 redraws FOURTEEN symbols across both furniture tracks — `island`,
+ * `upper_cabinet`, `dishwasher`, `oven`, `fridge` and `washer` in the kitchen and bath
+ * modules, and `coffee_table`, `table`, `stool`, `bench`, `chair`, `tv_unit`, `nightstand`
+ * and `desk` in the living, bedroom and office ones, so every plan that places one
+ * draws different bytes ON PURPOSE. Four of the five below do; `studio` moved under the
+ * kitchen-and-bath track alone.
  *
  * That was not assumed. It was proved by SUBSTITUTION, and the proof is reproducible: the
  * committed `examples/<name>.svg` files are the compiler's own output and are drift-gated as
  * such, so the BASE drawing of any of these plans is `git show <the commit before the`
  * `redraw>:examples/<name>.svg`. Feeding that into this file's digest body, with `describe()`
- * and `lint()` taken from the NEW code, reproduces every old hex exactly. Only the drawing
- * moved; the summary and the diagnostics did not shift by a byte.
+ * and `lint()` taken from the MERGED code, reproduces all five pre-furniture hexes exactly.
+ * Only the drawing moved; the summary and the diagnostics did not shift by a byte.
  *
  * And so that the next such release does not have to make that argument again, each example
  * now also carries a {@link semanticDigestWith} pin — the same payload with the SVG removed.
@@ -82,13 +86,23 @@ const ROOT = join(HERE, "..");
  *     appending 21 families to `FIXTURE_FAMILIES` touched the dispatch, the legend order or
  *     the catalog lookups, it shows up here.
  *   - `two-bed` — a plain house with none of the above, as the control.
+ *
+ * ## The v1.32 re-measurement — six furniture symbols were REDRAWN
+ *
+ * Four of the five moved, and `studio` did NOT. v1.32's F2 track redraws eight fixture
+ * symbols (`coffee_table`, `table`, `stool`, `bench`, `chair`, `tv_unit`, `nightstand`,
+ * `desk`); `studio` places only bath and kitchen fixtures, so its pin is UNCHANGED — the same
+ * number, not a re-blessing — and is the control saying the redraw stayed inside the glyph
+ * layer. **`describe()` and `lint()` were held SHA-256 identical across the whole change**,
+ * measured example by example against `8fc432a`'s `src/` (extracted with `git archive`) for
+ * all 28 import-free examples: 22 SVGs moved, 0 summaries and 0 diagnostic sets.
  */
 const BASELINE: Readonly<Record<string, string>> = {
   "studio.arch": "c921a0607bf60aa2c39e27c4467d42f27660e4862a3735e8693726cdabf4e339",
-  "laneway-house.arch": "0c2e933ce347a8458e422bb1acc5e39c7af11793145e1fd91e64b7d5e08588c1",
-  "bungalow.arch": "36d62f8b5b1f005d0b8c59e1587a39c5b11dcfed09156358e0c609db3d9f0608",
-  "furnished-flat.arch": "14fdd323031e6362f10c75e5cc6f4fe27e3ce48c1f49fabbc489c72485bf91d4",
-  "two-bed.arch": "3de3901e69214a52c8ee220b916a050d956133370d5a85fdd577dedcbfac4604",
+  "laneway-house.arch": "5aac436f2df22db2ff8c7a8995a0420ca7e5d5406795ce1f9882820f1d6b61ff",
+  "bungalow.arch": "02de92a6c3b8dbe61aabcf88adfe779433830e0a902b31ab78be295ecb8b64a1",
+  "furnished-flat.arch": "d2b07d613f969252c61e0366ec571348588f650184cb8364815aff6f009ad0a1",
+  "two-bed.arch": "913b9073730bb693f803ba0774ca55ab9eeb602d807184987e87b7694cd6c984",
 };
 
 /**

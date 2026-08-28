@@ -79,7 +79,12 @@ describe("manifest — fixture categories match the glyph renderer", () => {
     const src = readFileSync("src/elements/fixtures-glyphs.ts", "utf8");
     const region = src.slice(src.indexOf("switch (category)"));
     const cases = new Set<string>();
-    for (const m of region.matchAll(/case "([a-z_]+)":/g)) cases.add(m[1]!);
+    // `[a-z0-9_]`, not `[a-z_]`: a category name may carry a DIGIT (`sofa_2`, the loveseat's
+    // alias, is the first that does), and the narrower class silently skipped that arm — so the
+    // guard reported a category advertised by `arch manifest` and "not drawn" when it was drawn
+    // three lines away. A scrape that under-matches makes a set-equality gate lie in the
+    // direction that looks like a real defect, which is the worst way for one to fail.
+    for (const m of region.matchAll(/case "([a-z0-9_]+)":/g)) cases.add(m[1]!);
     expect([...new Set(FIXTURE_CATEGORIES)].sort()).toEqual([...cases].sort());
   });
 });

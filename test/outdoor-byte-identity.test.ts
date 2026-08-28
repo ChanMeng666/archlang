@@ -30,6 +30,22 @@
  * `totals`, two fields to `site`, and two rules to the END of `LINT_RULES` — four chances
  * to move a byte on a plan that mentions none of it.
  *
+ *
+ * ## The v1.32 re-measurement — six furniture symbols were REDRAWN
+ *
+ * Three of the four moved, and `studio` did NOT — that asymmetry is the finding, so read it
+ * before touching a number. v1.32's F2 track redraws eight fixture symbols (`coffee_table`,
+ * `table`, `stool`, `bench`, `chair`, `tv_unit`, `nightstand`, `desk`), so a plan that draws
+ * one of the eight renders different bytes and a plan that does not is untouched. `studio`
+ * places only bath and kitchen fixtures, so its digest is UNCHANGED — the same number, not a
+ * re-blessing — which is the control saying the redraw stayed inside the glyph layer and did
+ * not reach the shared paths this law exists to watch.
+ *
+ * **`describe()` and `lint()` were held SHA-256 identical across the whole change**, measured
+ * example by example against `8fc432a`'s `src/` (extracted with `git archive`) for all 28
+ * import-free examples: 22 SVGs moved, 0 summaries and 0 diagnostic sets. The bytes that moved
+ * here are SVG bytes, and the net lint change across the shipped examples is zero.
+ *
  * The four examples are import-free (so no `World` is needed), none of them uses any
  * v1.31 form, and they span the shapes most likely to be disturbed: the signature
  * dwelling, the flagship, a CONCAVE polygon plan (whose ring code the ground surfaces
@@ -38,17 +54,20 @@
  *
  * ## RE-MEASURED for v1.32 (the furniture pass), and how it was proved
  *
- * Two of the four digests below moved, and it is not this law breaking. v1.32 redraws six
- * kitchen and bath symbols (`island`, `upper_cabinet`, `dishwasher`, `oven`, `fridge`,
- * `washer`), so every plan that places one draws different bytes ON PURPOSE — which is
- * `laneway-house` and `studio`. `gallery-l` and `aquarium` place none of the six and did not
- * move at all, which is itself a useful reading: the redraw is confined to the six.
+ * All four digests below moved, and it is not this law breaking. v1.32 redraws FOURTEEN symbols across both furniture tracks — `island`,
+ * `upper_cabinet`, `dishwasher`, `oven`, `fridge` and `washer` in the kitchen and bath
+ * modules, and `coffee_table`, `table`, `stool`, `bench`, `chair`, `tv_unit`, `nightstand`
+ * and `desk` in the living, bedroom and office ones, so every plan that places one draws different bytes ON
+ * PURPOSE. Which track moved which is itself a useful reading: `studio` places only bath and
+ * kitchen fixtures and moved under that track alone; `gallery-l` and `aquarium` place none of
+ * those six and moved only under the living/bedroom/office one; `laneway-house` moved under
+ * both.
  *
  * That was proved by SUBSTITUTION rather than assumed, and the proof is reproducible. The
  * committed `examples/<name>.svg` files are the compiler's own output, drift-gated as such,
  * so the BASE drawing of any of these plans is `git show <the commit before the redraw>:`
  * `examples/<name>.svg`. Feeding that into this file's digest body — with `describe()` and
- * `lint()` taken from the NEW code — reproduces the OLD hex exactly, for every plan here.
+ * `lint()` taken from the MERGED code — reproduces the OLD hex exactly, for every plan here.
  * Only the drawing moved.
  *
  * So that the next such release need not repeat the argument, each example now also carries a
@@ -65,10 +84,10 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
 
 /** SHA-256 over the SVG + `describe()` + `lint()` of one example, as measured at v1.30.0. */
 const BASELINE: [string, string][] = [
-  ["laneway-house", "e306d63d953e0f7740626e188765870024f7479fe61fd482fd209017153128f8"],
+  ["laneway-house", "3a5653e0d1306f0bdb81221d05875e8f2ca0cb6550ef9619b76ece481337acc8"],
   ["studio", "7816107d209b9ef70b49ee9ee0a2092bf7604224733f2f483ce968197f11d138"],
-  ["gallery-l", "32666c41627873f63030c0621edf31bae42a4e1f7fa0fc3ff1ddc83674b89878"],
-  ["aquarium", "b55a84953b7fa18a892cf324e0d9fc72eb06342aeb90dd498231a61f6ec07ddf"],
+  ["gallery-l", "753b39b0dc5ed5a38aa7243d4b7738257e771f95d0590f0595a2512550fcbc5f"],
+  ["aquarium", "af532f0ff575b10c355bda8f7d54b2c5ee272f88cd1e1427a5c6ca756099a57b"],
 ];
 
 /** The SUMMARY half of the same law — see the header. Unchanged since the measurement. */
