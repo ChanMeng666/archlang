@@ -76,6 +76,11 @@ function pointsOf(prim: ScenePrim): Point[] {
       return [prim.a, prim.b];
     case "region":
       return prim.loops.flat();
+    case "path":
+      return prim.loops.flatMap((lp) => [
+        lp.start,
+        ...lp.edges.flatMap((e) => (e.t === "arc" ? [e.to, e.center] : [e.to])),
+      ]);
     case "hatch":
       return prim.region.flat();
     case "arc":
@@ -97,6 +102,29 @@ function polylinesOf(prim: ScenePrim): Array<{ pts: Point[]; closed: boolean }> 
       return [{ pts: prim.pts, closed: true }];
     case "region":
       return prim.loops.map((l) => ({ pts: l, closed: true }));
+    // One closed polyline per loop. A curved edge rasterizes as its TESSELLATION, the
+    // same concession the `arc` case below makes — the ASCII grid has no curve to draw
+    // with, and the tessellator is the one in `geometry/arc.ts` so the vertex-count rule
+    // is shared rather than re-invented here.
+    case "path":
+      return prim.loops.map((lp) => {
+        const pts: Point[] = [lp.start];
+        let from = lp.start;
+        for (const e of lp.edges) {
+          if (e.t === "arc") {
+            const tess = arcTessellate(
+              arcFromPrimitive({ center: e.center, r: e.r, start: from, end: e.to, sweep: e.sweep }),
+            );
+            for (let i = 1; i < tess.length; i++) pts.push(tess[i]!);
+          } else {
+            pts.push(e.to);
+          }
+          from = e.to;
+        }
+        // The closing edge is already present, so its endpoint duplicates the start.
+        if (pts.length > 1) pts.pop();
+        return { pts, closed: true };
+      });
     case "hatch":
       return prim.region.map((l) => ({ pts: l, closed: true }));
     case "line":

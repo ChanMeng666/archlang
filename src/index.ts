@@ -267,6 +267,10 @@ export type {
   Scene,
   SceneNode,
   ScenePrim,
+  // `path` is the curved generalisation of `region`; a consumer that switches on
+  // `prim.t` needs both of its member types to name the branch it is handling.
+  PathLoop,
+  PathEdge,
   Paint,
   RenderPass,
   RenderSizes,

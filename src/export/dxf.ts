@@ -233,6 +233,23 @@ function emit(b: DxfBuilder, node: SceneNode): void {
     case "region":
       for (const lp of prim.loops) b.loop(layer, lp, lt);
       break;
+    // A `path` loop becomes the same entities a CAD user would draw by hand: a LINE per
+    // straight edge and a native ARC per curved one. Never a faceted POLYLINE — the whole
+    // reason the primitive carries arcs is that a curved wall face must stay a real curve
+    // in the file a draughtsman opens.
+    case "path":
+      for (const lp of prim.loops) {
+        let from = lp.start;
+        for (const e of lp.edges) {
+          if (e.t === "line") b.line(layer, from, e.to, lt);
+          else {
+            const [a0, a1] = minorArcDegrees(e.center, from, e.to);
+            b.arc(layer, e.center, e.r, a0, a1, lt);
+          }
+          from = e.to;
+        }
+      }
+      break;
     case "hatch":
       b.hatch(layer, prim.region, dxfPatternName(prim.material), isSolidFill(prim.material), prim.scale, prim.angle);
       break;

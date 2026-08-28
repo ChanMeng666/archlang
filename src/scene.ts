@@ -159,6 +159,23 @@ export interface Paint {
 }
 
 /**
+ * One edge of a {@link PathLoop}: a straight run to `to`, or a **minor** circular arc to
+ * `to` about `center`. `sweep` is the SVG sweep flag — `1` = clockwise as drawn, the same
+ * sense the {@link ScenePrim} `arc` variant carries, so the two never disagree.
+ */
+export type PathEdge = { t: "line"; to: Point } | { t: "arc"; to: Point; center: Point; r: number; sweep: 0 | 1 };
+
+/**
+ * One closed loop of a `path` primitive: a start point and the edges that walk back to
+ * it. The closing edge is PRESENT (the last edge's `to` is the loop's `start`), so no
+ * backend has to synthesise it — `Z` merely confirms what the last edge already drew.
+ */
+export interface PathLoop {
+  start: Point;
+  edges: PathEdge[];
+}
+
+/**
  * A positioned drawing primitive. Coordinates are absolute millimetres in the
  * plan's space (origin top-left, +x right, +y down — SVG convention); backends
  * apply their own transforms (e.g. DXF's Y-flip).
@@ -174,6 +191,23 @@ export type ScenePrim =
    * has no internal seams.
    */
   | { t: "region"; loops: Point[][] }
+  /**
+   * A multi-loop closed region **whose edges may CURVE** — the `region` primitive
+   * generalised from polylines to a real path. Emitted by the wall-joinery layer, which
+   * produces one boundary for a whole set of walls and cannot express a curved facade as
+   * a polygon without faceting it.
+   *
+   * `region` is kept, not replaced: a rectilinear plan's boundary is all straight edges,
+   * and routing it through `region` is what keeps those drawings byte-identical.
+   *
+   * Every `arc` edge is a MINOR arc of at most 120°, exactly as the {@link ScenePrim}
+   * `arc` variant is — the SVG and PDF serializers hardcode the large-arc flag to `0`
+   * and the DXF one calls `minorArcDegrees`, so a longer curve must arrive already cut
+   * into pieces (`arcPieces` does the cutting). Do not widen this contract without
+   * widening `arc`'s at the same time; two primitives disagreeing about what a stored
+   * sweep means is how a backend comes to draw the complement of the intended curve.
+   */
+  | { t: "path"; loops: PathLoop[] }
   /**
    * A circular arc (door swing). Carries the `center`/`r` a CAD backend needs to
    * emit a native arc, plus the explicit `start`/`end` points + `sweep` flag an

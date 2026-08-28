@@ -11,7 +11,7 @@
 
 import type { NorthDir, Point } from "../ast.js";
 import type { CompileOptions } from "../types.js";
-import type { LineType, Paint, RenderSizes, Scene, SceneNode } from "../scene.js";
+import type { LineType, Paint, PathLoop, RenderSizes, Scene, SceneNode } from "../scene.js";
 import { RENDER_PASSES, layerOf, weightWidth } from "../scene.js";
 import type { Bounds } from "../geometry.js";
 import { hatchPattern } from "../hatches.js";
@@ -80,6 +80,24 @@ function regionPath(loops: Point[][]): string {
   return loops.map((loop) => "M " + loop.map(pt).join(" L ") + " Z").join(" ");
 }
 
+/**
+ * The `d` of a `path` primitive — the curved generalisation of {@link regionPath}. Every
+ * arc edge is a MINOR arc by the primitive's contract, so the large-arc flag is `0` here
+ * exactly as it is for the `arc` primitive; `sweep` carries the direction.
+ */
+function loopsPath(loops: PathLoop[]): string {
+  return loops
+    .map(
+      (l) =>
+        `M ${pt(l.start)}` +
+        l.edges
+          .map((e) => (e.t === "line" ? ` L ${pt(e.to)}` : ` A ${fmt(e.r)} ${fmt(e.r)} 0 0 ${e.sweep} ${pt(e.to)}`))
+          .join("") +
+        " Z",
+    )
+    .join(" ");
+}
+
 /** Serialize one scene node to a single SVG element string. */
 function serialize(node: SceneNode, sizes: RenderSizes): string {
   const { prim, paint } = node;
@@ -92,6 +110,8 @@ function serialize(node: SceneNode, sizes: RenderSizes): string {
       return `<line x1="${fmt(prim.a.x)}" y1="${fmt(prim.a.y)}" x2="${fmt(prim.b.x)}" y2="${fmt(prim.b.y)}" stroke="${paint.stroke ?? "none"}" stroke-width="${fmt(width)}"${paint.linecap ? ` stroke-linecap="${paint.linecap}"` : ""}${dashAttr(dash)}/>`;
     case "region":
       return `<path d="${regionPath(prim.loops)}"${pathPaint(paint, width, dash)}/>`;
+    case "path":
+      return `<path d="${loopsPath(prim.loops)}"${pathPaint(paint, width, dash)}/>`;
     case "hatch":
       // Filled with the material `<pattern>` (its id encodes scale/angle); `paint`
       // already carries the `url(#…)` fill + nonzero rule, so this matches a region fill.

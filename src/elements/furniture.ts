@@ -585,6 +585,22 @@ export function rotateNode(n: SceneNode, c: Point, deg: number): SceneNode {
       return { ...n, prim: { ...prim, center: rp(prim.center), start: rp(prim.start), end: rp(prim.end) } };
     case "region":
       return { ...n, prim: { ...prim, loops: prim.loops.map((lp) => lp.map(rp)) } };
+    // `r` and `sweep` are invariant under a rotation — the radius is a length, and a
+    // rotation preserves orientation, so the sense of travel from one end to the other is
+    // unchanged. Only the three POINTS move. Same rule as the `arc` case above.
+    case "path":
+      return {
+        ...n,
+        prim: {
+          ...prim,
+          loops: prim.loops.map((lp) => ({
+            start: rp(lp.start),
+            edges: lp.edges.map((e) =>
+              e.t === "line" ? { ...e, to: rp(e.to) } : { ...e, to: rp(e.to), center: rp(e.center) },
+            ),
+          })),
+        },
+      };
     // A hatch's `angle` is measured in PATTERN space, so turning its loops without turning
     // the pattern with them would shear the poché off its own boundary. No fixture glyph
     // emits one (the furniture pass draws linework, never a material fill), so this is a

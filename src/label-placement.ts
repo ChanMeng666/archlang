@@ -175,6 +175,27 @@ function primBBox(prim: ScenePrim): BBox | null {
       return null;
     case "region":
       return bboxOfPoints(prim.loops.flat());
+    // Like `region`, a `path` is the unioned wall solid and is never asked about here
+    // (the caller substitutes per-segment wall rectangles). Boxed by its vertices plus
+    // each arc's MIDPOINT, so a bulge is not lost if it ever is asked.
+    case "path": {
+      const pts: Point[] = [];
+      for (const lp of prim.loops) {
+        let from = lp.start;
+        pts.push(from);
+        for (const e of lp.edges) {
+          pts.push(e.to);
+          if (e.t === "arc") {
+            const mx = from.x + e.to.x - 2 * e.center.x;
+            const my = from.y + e.to.y - 2 * e.center.y;
+            const len = Math.hypot(mx, my);
+            if (len > 0) pts.push({ x: e.center.x + (mx / len) * e.r, y: e.center.y + (my / len) * e.r });
+          }
+          from = e.to;
+        }
+      }
+      return bboxOfPoints(pts);
+    }
     case "hatch":
       return bboxOfPoints(prim.region.flat());
     case "circle":

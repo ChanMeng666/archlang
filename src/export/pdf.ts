@@ -38,7 +38,7 @@
  */
 
 import type { NorthDir, Point } from "../ast.js";
-import type { Paint, Scene, SceneNode } from "../scene.js";
+import type { Paint, PathLoop, Scene, SceneNode } from "../scene.js";
 import { RENDER_PASSES } from "../scene.js";
 import type { Theme } from "../theme.js";
 import { layoutChrome, type TitleRow } from "../chrome-layout.js";
@@ -73,6 +73,24 @@ function fillColor(paint: Paint, theme: Theme): string | null {
 
 function regionPath(loops: Point[][]): string {
   return loops.map((loop) => "M " + loop.map((p) => `${p.x} ${p.y}`).join(" L ") + " Z").join(" ");
+}
+
+/** The curved generalisation of {@link regionPath}, for the `path` primitive. Every arc
+ *  edge is minor by contract, so the large-arc flag is `0` — the same value this file's
+ *  `arc` case hardcodes. */
+function loopsPath(loops: PathLoop[]): string {
+  return loops
+    .map(
+      (l) =>
+        `M ${l.start.x} ${l.start.y}` +
+        l.edges
+          .map((e) =>
+            e.t === "line" ? ` L ${e.to.x} ${e.to.y}` : ` A ${e.r} ${e.r} 0 0 ${e.sweep} ${e.to.x} ${e.to.y}`,
+          )
+          .join("") +
+        " Z",
+    )
+    .join(" ");
 }
 
 /** Apply fill/stroke/width/dash to the path currently built on `doc`. */
@@ -142,6 +160,10 @@ function drawNode(doc: any, node: SceneNode, theme: Theme): void {
     case "region":
     case "hatch":
       doc.path(regionPath(prim.t === "region" ? prim.loops : prim.region));
+      applyPaint(doc, paint, theme);
+      break;
+    case "path":
+      doc.path(loopsPath(prim.loops));
       applyPaint(doc, paint, theme);
       break;
     case "arc":
