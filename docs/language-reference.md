@@ -602,10 +602,13 @@ A polyline of ≥2 points, drawn with the given thickness and a poché hatch.
 `close` connects the last point back to the first (use for exterior shells).
 `<kind>` is a free label (e.g. `exterior`, `partition`).
 
-Orthogonal walls are **boolean-unioned** so corners and T-junctions render as
-one clean outline with no internal seams. Angled walls render seamlessly too when
-the optional `clipper2-wasm` geometry engine is installed; otherwise they fall
-back to a per-segment outline.
+**Every wall — orthogonal, angled or curved — is joined by one pass**, so corners,
+T-junctions and crossings render as a single clean outline with no internal seams and no
+line drawn inside a neighbouring wall's solid. It is closed-form and zero-dependency:
+there is no geometry engine to install, and nothing you install can change the drawing.
+Where two walls of different thickness share a centreline, the thicker one owns the
+overlap — a thin partition drawn along a thick shell disappears into it rather than
+drawing its own faces inside the poché.
 
 **Materials** select the hatch pattern: `poche` (default), `concrete`, `brick`,
 `insulation`, `tile`, `none`. An unknown material warns and uses the default.
@@ -815,12 +818,10 @@ tangent with its jambs radial.
 **What a curve looks like.** The two visible faces are emitted as **true arcs** — SVG `A`
 commands, native DXF `ARC` entities — so a curve is never drawn faceted at any zoom. Only
 the poché *fill* is tessellated (a fill has to be a polygon for every backend), at a fixed
-7.5° step. A wall carrying an arc is lowered per segment rather than through the polygon
-boolean, which is what makes an arc plan's output identical whether or not the optional
-`clipper2-wasm` dependency is installed. One consequence to know: like any non-orthogonal
-wall, a curved wall's openings are drawn with an opaque cover rather than a real hole
-punched in the solid, so a doorway on a curve paints over the floor immediately either side
-of it.
+7.5° step. A curved wall goes through the same joinery every other wall does, in closed
+form, so an arc plan's output does not depend on anything being installed. A doorway on a
+curve is a **real hole**: the solid is severed and the jambs run radially, as an architect
+draws them.
 
 **What declines rather than guesses.** `furniture … against wall <id>` on an arc segment
 raises [`E_FURN_AGAINST`](error-codes.md): a curve has no single back direction, so place
@@ -1069,9 +1070,9 @@ width equals its nominal width (a door loses ~60 mm to the leaf and stop). It al
 takes the `on <wall> at <pos>` attachment form.
 
 It is drawn the way an architect draws a cased opening: the wall solid is genuinely
-severed (jambs capped, floor continuous through the passage), with a **dashed lintel**
-line at each wall face standing for the head above — never a solid line closing the
-gap back up. It lives on the CAD layer `A-DOOR`, not `A-GLAZ`.
+severed, with the floor continuous through the passage and **only the capped jambs**
+drawn. Nothing bridges the gap — no lintel line, no cover. It lives on the CAD layer
+`A-DOOR`, not `A-GLAZ`.
 
 ```
 opening id=o_living at (4000,3700) width 900 wall partition   # living ↔ hall, no door

@@ -7,6 +7,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Wall joinery — one zero-dependency pass for every wall
+
+Until now a plan's poché and wall faces came from **one of three** lowering paths chosen by the
+shape of the walls: an axis-aligned rectangle boolean for orthogonal walls, a `clipper2-wasm`
+polygon boolean for angled ones *when that optional dependency happened to be installed*, and
+per-segment rectangles with untrimmed face lines for anything curved. There is one path now, in
+closed form, with no dependency. See [ADR 0018](docs/adr/0018-zero-dep-wall-joinery.md).
+
+**Every shipped example renders different bytes.** `describe()` and `lint()` do not move: held
+SHA-256 identical across all 29 examples and every storey, measured example by example before and
+after. This is a rendering change and nothing else.
+
+#### Fixed
+
+- **Junction lines drawn inside another wall's solid.** A partition met an exterior wall and its two
+  face lines carried straight on through the poché, stopping mid-hatch. Visible at every junction in
+  every multi-material plan, and at every junction with a curve.
+- **Loose per-segment rectangles on angled and curved walls.** An oblique or curved wall was a row of
+  separate square-capped boxes; where two segments shared a corner both drew their own cap and the
+  seam showed. Corners are mitred now, exactly, at any angle, and bevelled past `MITER_LIMIT · h` so
+  the fill and the stroke agree about where a spike stops.
+- **Openings that did not open.** Only the rectilinear boolean subtracted anything, so on an angled
+  or curved wall a "doorway" was an opaque cover painted over unbroken wall, overhanging the faces
+  onto the floor. `examples/hexagon-pavilion.arch`'s 1200 mm drum drew both of its face circles
+  running *through* all six of its doorways. Every opening is cut on every host now — straight,
+  angled and curved — with radial jambs on a curve.
+- **A drawing that depended on an optional install.** Registering `clipper2-wasm` changed an angled
+  plan's bytes. It cannot any more, and `test/union.test.ts` asserts that in both directions.
+- **A closed curve was capped at its seam.** `wallBand` read the `close` keyword to decide whether a
+  run was a ring. That keyword is what makes `segmentsOfWall` *add* a closing segment, not a
+  declaration about the result — and for a curve it is unavailable, since a closed curve is written
+  as the two halves it is. The drum picked up two square caps at its seam, each standing `h` proud of
+  the curving face: a 100 mm step, 1200 mm tall, at 3 o'clock only.
+- **The cased opening's dashed lintel lines.** Two per opening, one at each wall face. They were a
+  convention borrowed from a drawing where the wall was not severed; over a real hole they re-bridge
+  the gap. Removed, with no opt-in.
+
+#### Changed
+
+- **New Scene primitive `path`** — a start point plus line and *minor* arc edges, carrying a wall
+  outline that has a curve in it. `region` is unchanged and is still what an all-straight wall set
+  emits, which is what keeps every rectilinear plan on the bytes it had. `ScenePrim` is append-only;
+  all five backends handle it.
+- **`RenderCtx.openingsVoided` is now always `true`.** It existed because the answer used to depend
+  on the shape of the plan. The field stays (append-only) and stays optional, so a hand-built
+  `RenderCtx` keeps the safe opaque default. The door's and the cased opening's covers are therefore
+  emitted `fill: "none"` at the wall's own half-extent, not painted at `h + wallStroke`.
+- **`Runtime.backend`, `setGeometryBackend`, `getGeometryBackend` and `loadClipperBackend` are
+  no-ops for rendering.** All are kept and documented deprecated in every place a reader lands.
+- **`clipper2-wasm` moves from `optionalDependencies` to `devDependencies`**, where it remains the
+  angled oracle for `test/joinery-oracle.test.ts`. The `webpackIgnore`/`@vite-ignore` comments and
+  every bundler `external` list are unchanged.
+- **`wall.bounds` measures the band**, so a plan's extent — and on a plan with no `paper` every
+  derived line weight — can move at a non-right-angled corner. `segmentRectangle` square-caps both
+  ends of every segment, and at a corner those caps are phantom. The extent SHRINKS at an obtuse
+  corner, GROWS at an acute one up to the bevel limit, and is exactly equal at a right angle. Exactly
+  two shipped examples are affected and both shrink: `gallery-l` by 61 mm each way and
+  `hexagon-pavilion` by 45 × 120 mm. No rectilinear plan moves.
+
+#### Re-blessed, every one reviewed
+
+33 SVG snapshots, 23 PNG goldens, the 19 committed README SVGs, and the four
+`test/roof-void-byte-identity.test.ts` digests. The snapshot diff was classified by primitive and
+each PNG pixel-diffed against its predecessor to confirm the changed pixels land where the geometry
+changed. `test/fixture-byte-identity.test.ts` and every rectilinear `test/__ascii__/*` golden did
+**not** move, and that is asserted rather than assumed.
+
+#### Deferred, by name
+
+- The **window's** cover still paints opaque at `h + wallStroke`; it has never consulted
+  `openingsVoided`, so nothing about a window's drawing changed here. Bringing it to `fill: "none"`
+  at half-extent is its own change, with its own golden churn.
+- **DXF `LWPOLYLINE` with bulge** for curved outlines (native `ARC` + `LINE` entities today).
+- **Join styles other than mitre** (round, square). `band.ts` mitres and bevels at the limit.
+- **Removing the `GeometryBackend` API** — a MAJOR.
+- **A near-corner lint.** Nothing warns when a door's jamb leaves less wall between it and a corner
+  than the wall is thick. The nib draws correctly; it just reads as a chamfer at page scale.
+  `W_DOOR_CLEARANCE` and `W_POCKET_RUN` ask different questions.
+
 ### Examples & galleries
 
 A source-only refresh — no `src/` change, no new keyword, no new `E_*`/`W_*` code. Four parallel

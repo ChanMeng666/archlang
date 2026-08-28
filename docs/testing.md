@@ -169,7 +169,7 @@ language, and it is why the golden files above almost never move.
 | `test/dim-stagger.test.ts` | `EM_PER_CHAR` lives in exactly ONE file (`src/text-metrics.ts`) | A fifth copy of the em-per-char factor appeared. The lint rule, the stagger and the renderer must agree about what collides |
 | `test/lint-file-provenance.test.ts` | a lint fix on an element written in an imported module carries `file`, so `applyFixes` refuses it | Red means `applyFixes` can once again splice a module's byte offsets into the importer — reproduced on an unmodified `W_DIM_INSIDE` before the fix |
 | `test/levels.test.ts` (corpus sweep) | a plan with no `level` block has no `pages`, no `LEVEL` title-block row and no `level` on any diagnostic; a plan WITH one compiles to more than one page | **The split is derived, not listed.** It used to exclude `two-storey.arch` *by filename*, which meant a second multi-storey example could silently join the level-free sweep (failing for the right reason under the wrong name) or silently dodge the paging check. `HAS_LEVEL = /^\s*level\s+-?\d+/m` reads the source instead, both sides are asserted non-empty, and `townhouse.arch` joined with no edit to the test |
-| `test/roof-void-byte-identity.test.ts` | a plan using neither `roof` nor `void` renders, describes and lints exactly as before | The digests are **hardcoded**, measured against v1.28.0's `src/` by checking that tree into the worktree — a test that compiled twice and compared would prove determinism and stay green through a change that moved every byte. Two things to carry when you measure the next one: take the baseline with the **same `digest()` body the test will run** (a scratch script whose payload separator differed by one character produced four false failures here), and keep the payload the whole agent-facing surface — SVG, `describe()` **and** `lint()` — since an element that quietly appends an empty summary key leaves the drawing untouched and still changes behaviour for every `arch describe --json` consumer. The four fixtures are chosen, not arbitrary: the two the track edits (`bungalow`, `two-storey`) are excluded on purpose, and the rest span an all-rectangle dwelling, the flagship, a CONCAVE polygon plan (whose ring code the roof's offset shares a module with) and a CURVED plan on `paper` (whose auto-fit reads the same `planBounds` a roof now grows) |
+| `test/roof-void-byte-identity.test.ts` | a plan using neither `roof` nor `void` renders, describes and lints exactly as before. **Re-measure rule:** the only sanctioned cause of a move so far is the v1.30 wall joinery, which moved all four at once; anything else is a finding first. When you do re-measure, copy the test's own `digest()` body VERBATIM and treat the green run as the proof your payload matched — that is what closes the one-character-separator trap below | The digests are **hardcoded**, measured against v1.28.0's `src/` by checking that tree into the worktree — a test that compiled twice and compared would prove determinism and stay green through a change that moved every byte. Two things to carry when you measure the next one: take the baseline with the **same `digest()` body the test will run** (a scratch script whose payload separator differed by one character produced four false failures here), and keep the payload the whole agent-facing surface — SVG, `describe()` **and** `lint()` — since an element that quietly appends an empty summary key leaves the drawing untouched and still changes behaviour for every `arch describe --json` consumer. The four fixtures are chosen, not arbitrary: the two the track edits (`bungalow`, `two-storey`) are excluded on purpose, and the rest span an all-rectangle dwelling, the flagship, a CONCAVE polygon plan (whose ring code the roof's offset shares a module with) and a CURVED plan on `paper` (whose auto-fit reads the same `planBounds` a roof now grows) |
 
 ### The fixture-symbol layer — one snapshot file, three different promises
 
@@ -177,6 +177,12 @@ language, and it is why the golden files above almost never move.
 counts, because what matters is whether the bytes a user's `arch compile` writes moved. Its three
 groups look alike and **must not be blessed alike** — read the group header before you reach for
 `-u`:
+
+> **A wall-pipeline change must leave this file alone.** Its plans have no wall, which is exactly
+> why it is the control: the v1.30 joinery moved 33 snapshots, 23 PNG goldens and all 19 README
+> SVGs, and touched **not one byte here** or in any rectilinear `test/__ascii__/*` golden. If a
+> future change to wall lowering moves either, it reached a shared path it had no business
+> reaching — a defect to find, not a snapshot to update.
 
 | Group | What it holds | When it goes red |
 |-------|---------------|------------------|
@@ -227,6 +233,26 @@ obstacle entry and the void does not.
 **Write one of these whenever two branches edit a shared literal or a shared predicate**, and put
 the control case on the identical geometry — a fixture that only shows the new behaviour cannot tell
 "it works" from "the check never ran".
+
+### The wall joinery — two oracles, and the two things they cannot check
+
+Since v1.30 one pass lowers every wall (ADR 0018), so the guards on it carry more weight than
+before: nothing else draws poché, and there is no second path to disagree with.
+
+| Guard | Law | When it goes red |
+|-------|-----|------------------|
+| `test/joinery-oracle.test.ts` | `joinWalls` over GENERATED wall sets, against **two oracles**: `geometry/union.ts` for rectilinear input (exact, compared as quantised undirected EDGE SETS so it tests the shape and not the walk order) and `clipper2-wasm` for angled/curved input (by AREA always, by SHAPE one-directionally on curves — clipper owns a 48-gon's worth of vertices the exact algorithm never had). Plus four intrinsic laws, of which the load-bearing one is **no two outline edges cross at a point interior to both** | A shrunk counterexample is a real defect in the layer. Do NOT loosen a tolerance to go green: the curved tolerance is derived from clipper's OWN longest chord, so widening it is claiming the oracle is wrong |
+| `test/joinery-pipeline.test.ts` | the same laws over the **compile path**, for all 29 examples and every storey: the `wallFace` pass is exactly ONE node, `region` iff every edge is straight and `path` iff one curves, and no two emitted edges cross except at a shared vertex | The oracle suite cannot see this — between `joinWalls` and an `.svg` sit the band/cut construction, the hatch grouping, `emitLoops`, and every other element that draws on that pass |
+| `test/band.test.ts` | a wall's band: the offset SIGN pinned by CONTINUITY (not by reading the delta back out), a lone straight segment reproducing `segmentRectangle` point for point, and **a run that ends where it began is a CYCLE whether or not `close` was written** — with a planted counterexample that moves the closing point 1 mm and shows the caps return | The cycle rule is not cosmetic: reading `close` capped `hexagon-pavilion`'s drum twice at its seam, `h` proud of the curving face, at 3 o'clock only |
+| `test/union.test.ts`, `test/miter-limit.test.ts` | **registering a `GeometryBackend` changes no byte** — angled and rectilinear alike — and an acute joint is capped TWICE, on the paint (`miterLimit`) and in the geometry (the band bevels past `MITER_LIMIT · h`) | These invert what they used to assert. Before v1.30 installing clipper2 changed an angled drawing; that is the regression they now forbid |
+
+**Two things no oracle checks, so they are asserted directly.** The clipper comparison is
+area-and-vertex based, so it would pass a drawing whose *fills overlapped* or whose openings were
+never cut — hence the pipeline suite's node-count and primitive-kind assertions, and
+`test/opening.test.ts`'s jamb check on a straight, an angled and an ARC host. And no property knows
+what a drawing should look like, so **the visual goldens are still the gate for that**; when a
+joinery change moves them, pixel-diff each against its predecessor and confirm every diff's bounding
+box lands where the geometry changed, rather than accepting a green re-bless.
 
 ### Property and fuzz suites
 

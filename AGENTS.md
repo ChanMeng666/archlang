@@ -304,9 +304,10 @@ re-propose, re-open, or contradict them anywhere.
   finds a new one is `room\.size`/`r\.size\.w` WITHOUT a nearby `r.poly` branch** — a room-shape
   consumer reading the box when the ring is the honest datum. The fix is always local and closed
   form: probe one wall thickness off each face and ask which side has floor (`pointInRoomBox` /
-  `pointInPolygon`, both poly-aware), or use `polygonLabelPoint`. Never reach for the wall boolean
-  union to answer a `describe()` question — `describe()` never builds a Scene, and doing so drags the
-  poché pipeline and the optional `clipper2-wasm` dep into a read meant to be cheap. Full inventory,
+  `pointInPolygon`, both poly-aware), or use `polygonLabelPoint`. Never reach for the wall JOINERY to
+  answer a `describe()` question — `describe()` never builds a Scene, and doing so drags the whole
+  poché pipeline into a read meant to be cheap. (It no longer drags an optional dep with it: since
+  v1.30 the joinery is zero-dependency, so the cost is time, not an install.) Full inventory,
   including what the sweep CLEARED and why, in
   [`docs/research/2026-08-06-competitor-borrowing-roadmap.md`](docs/research/2026-08-06-competitor-borrowing-roadmap.md) §9.1.
 - **`prepublishOnly` runs the WHOLE monorepo suite, so the release job must build what that suite
@@ -448,7 +449,22 @@ from one place), and `vertical.ts` (the shared `stair`/`elevator`/`escalator` se
 run is entered from — a closed-form drafting convention, `dir`-dependent, used by BOTH the symbol and
 the nav grid — what its footprint does to circulation, and `verticalConnections`/`verticalReach`, the
 same-id-on-two-levels shaft graph that `describe().vertical`, `lint`'s per-storey reachability and
-`checkGraph` all read), `site.ts` (the v1.25 orientation layer, and the ONE place a page direction becomes a compass one: `windowFacingPage` — which probes one wall thickness off each face of a window's own host segment and takes the side no room occupies, exact at any wall angle and the only rule that is right for a COURTYARD — plus `toCompass` and `deriveSite`. **`northQuarterTurns` is NOT here: it lives in `describe.ts` (`:548`), its historical home, and `site.ts`'s own header says so** — this line claimed `site.ts` for three releases. `describe()` AND the site lint rule both call `windowFacingPage`, because a second place to apply the north rotation is a second place to get it wrong), `label-placement.ts` (the post-pass inside `toScene` that moves a room's name and area text off furniture, swings, stair symbols and dimension text — it must run AFTER `lowerWalls` and after `dims auto`, because that is the only point at which a dimension number exists to avoid; it relocates only when >2% of the label box is buried, so a clear plan keeps its exact bytes), `text-metrics.ts` (`EM_PER_CHAR`/`textWidth` — the renderer has NO text metrics, so this closed-form estimate is the single source the label pass, the dimension stagger, `W_DIM_OVERLAP` and the error card all share; a test pins the literal to this one file so a fifth copy cannot appear), `lint/measure.ts` (the measured-deficit arithmetic behind the value/shortfall/remedy diagnostics), `elements/door-panels.ts` (the sliding/barn/bifold/pocket panel geometry, emitted as the SAME Scene primitives every backend already serializes — no per-backend door code exists), and `frame.ts` (the `place` transform: a frame is a 2×2 signed-permutation
+`checkGraph` all read), `site.ts` (the v1.25 orientation layer, and the ONE place a page direction becomes a compass one: `windowFacingPage` — which probes one wall thickness off each face of a window's own host segment and takes the side no room occupies, exact at any wall angle and the only rule that is right for a COURTYARD — plus `toCompass` and `deriveSite`. **`northQuarterTurns` is NOT here: it lives in `describe.ts` (`:548`), its historical home, and `site.ts`'s own header says so** — this line claimed `site.ts` for three releases. `describe()` AND the site lint rule both call `windowFacingPage`, because a second place to apply the north rotation is a second place to get it wrong), `label-placement.ts` (the post-pass inside `toScene` that moves a room's name and area text off furniture, swings, stair symbols and dimension text — it must run AFTER `lowerWalls` and after `dims auto`, because that is the only point at which a dimension number exists to avoid; it relocates only when >2% of the label box is buried, so a clear plan keeps its exact bytes), `text-metrics.ts` (`EM_PER_CHAR`/`textWidth` — the renderer has NO text metrics, so this closed-form estimate is the single source the label pass, the dimension stagger, `W_DIM_OVERLAP` and the error card all share; a test pins the literal to this one file so a fifth copy cannot appear), `lint/measure.ts` (the measured-deficit arithmetic behind the value/shortfall/remedy diagnostics), `elements/door-panels.ts` (the sliding/barn/bifold/pocket panel geometry, emitted as the SAME Scene primitives every backend already serializes — no per-backend door code exists), **the wall-joinery layer** — `wall-lowering.ts` (`lowerWallSet`, the ONE path every wall takes:
+bands, cuts, `joinWalls`, then one `hatch` node per material group and ONE outline for the plan; it
+lives outside `scene-build.ts` only because `elements/wall.ts` delegates to it and
+`scene-build → registry → defs → wall` would otherwise be an import cycle), `geometry/band.ts`
+(a wall as closed `EdgeLoop`s — two offset faces, end caps, an exact mitre at every interior vertex
+bevelled past `MITER_LIMIT · h`, true arcs on a curve — plus `openingCut`, which is a rotated
+rectangle on a straight host and an annular sector with RADIAL jambs on a curve; **every loop obeys
+the orientation law, material on `+perp` of travel**, which is what lets the classification be
+analytic), `geometry/intersect.ts` (the closed-form meets and ray crossings, no epsilon nudging) and
+`geometry/joinery.ts` (`joinWalls` — split at every mutual crossing, classify each sub-edge by
+probing off its own midpoint, keep it iff exactly ONE side has an owner, chain into canonical loops;
+**thickest-wins** is what makes a thin partition on a thick shell's centreline vanish into it, and
+**one owner per point** is what makes two materials tile without a doubled boundary). `emitLoops`
+narrows to `region` while every edge is straight and `path` once one curves — see
+[ADR 0018](docs/adr/0018-zero-dep-wall-joinery.md). `geometry/union.ts` and `geometry/clipper.ts` are
+now TEST ORACLES only, and `geometry/backend.ts` is deprecated. And `frame.ts` (the `place` transform: a frame is a 2×2 signed-permutation
 matrix + translation — exact, composable, no trig — and `transformElement` is the ONE place a
 resolved element crosses from an instance's local frame into plan coordinates, including the handed
 flips a reflection forces; see [ADR 0016](docs/adr/0016-component-instances-and-frames.md)). The CLI lives in `src/cli.ts` (dispatch) +
@@ -649,7 +665,11 @@ source (.arch)
   └─ src/import.ts      link `import`s through the World seam (the one I/O phase)
   └─ src/ir.ts          resolve(): expand scripting, grid-snap, auto-id, host openings,
                         relational placement (src/layout.ts) → ResolvedPlan
-  └─ src/scene-build.ts toScene(): wall union/offset, hatches, page sizing → Scene (src/scene.ts)
+  └─ src/scene-build.ts toScene(): elements → primitives, hatches, page sizing → Scene (src/scene.ts)
+       └─ src/wall-lowering.ts  lowerWallSet(): the WHOLE wall set in one joinery pass
+            └─ geometry/band.ts      each wall as exact mitred EdgeLoops + openingCut
+            └─ geometry/intersect.ts closed-form meets + half-open ray crossings
+            └─ geometry/joinery.ts   joinWalls(): split · classify · keep · chain → one outline
   └─ src/backends/      pure serializers of the Scene:
        svg.ts (default, zero-dep) · png.ts (optional @resvg/resvg-js)
   └─ src/export/        dxf.ts (zero-dep) · pdf.ts (optional pdfkit)
@@ -665,9 +685,14 @@ source (.arch)
   introduce non-determinism or Node-only APIs into the `src/` core. The CLI (`src/cli.ts` +
   `src/cli/`) is the one place Node APIs and real time are allowed; everything else gets its
   environment injected through the **`World`** seam (`src/world.ts`).
-- **Optional power is lazily `import()`ed.** Heavy/native deps (Clipper2 geometry, pdfkit,
-  resvg) are `optionalDependencies`, loaded only at point of use, so the default SVG path
-  pulls nothing. See ADRs in `docs/adr/`.
+- **Optional power is lazily `import()`ed.** The remaining heavy/native deps (pdfkit, resvg) are
+  `optionalDependencies`, loaded only at point of use, so the default SVG path pulls nothing.
+  **Clipper2 is no longer one of them:** since v1.30 every wall is joined by one closed-form
+  zero-dependency pass, so no `GeometryBackend` is consulted while rendering and `clipper2-wasm`
+  is a **devDependency** — the angled oracle for `test/joinery-oracle.test.ts`. The seam's exports
+  are kept and documented deprecated; removing them is a MAJOR. See
+  [ADR 0018](docs/adr/0018-zero-dep-wall-joinery.md), which amends
+  [ADR 0002](docs/adr/0002-optional-dep-geometry.md).
 - **Errors are returned, never thrown** for user-source problems. Push a `Diagnostic` (with a
   byte `span` and an `E_*`/`W_*` `code` documented in `src/error-catalog.ts`); the parser
   recovers and reports all problems in one pass.
@@ -718,7 +743,9 @@ source (.arch)
   `var(--syn-<name>, <fallback>)` (palette in `playground/src/styles/editor.css`) — recolor via the
   `scripts/gen-grammars.ts` template or `--syn-*` values + `npm run gen:grammars`, never by hand.
 - **Determinism is tested.** The suite asserts `compile(s) === compile(s)` byte-for-byte, geometry
-  engine both present and absent. Anything varying output across runs (object key order, floats, time)
+  engine both present and absent — which since v1.30 holds for the trivial reason that nothing reads
+  the engine; `test/union.test.ts` and `test/miter-limit.test.ts` now assert that registering one
+  changes no byte, on angled and rectilinear plans alike. Anything varying output across runs (object key order, floats, time)
   fails — route number formatting through `fmt()`. The one opt-in output change is
   `compile(src, { annotate: true })` (adds `data-span`); it is deterministic and leaves the **default**
   output byte-identical, so never emit annotation unconditionally (ADR 0007) — a test enforces equality.
