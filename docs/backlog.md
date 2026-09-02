@@ -654,29 +654,51 @@ turned to it. Deferred by name in v1.28.0. Related but not the same as 3.15 abov
 *measuring* against a curved wall, not drawing at an angle); both are instances of the fixture
 layer knowing only rectangles.
 
-### 5.7 · An `overhead` exemption in the furniture rules — `todo` (found in v1.32)
+### 5.7 · An `overhead` exemption in the furniture rules — `done`
 
-`W_FURNITURE_OVERLAP` has no notion of a piece that hangs ABOVE the cut plane, so the two
-correct drawings of the v1.32 kitchen and bath additions both raise it: a `range_hood` over
-the hob, and a `mirror` over the basin. Neither is in `examples/furnished-flat.arch` for
-that reason — they were placed, they warned, and they were removed rather than nudged
-somewhere false.
+Done, and the design question this entry posed — "work out which of the four consumers each flag
+feeds" — was answered rather than sidestepped. **The two flags feed different sets, which is why
+`overhead` is not `underlay` spelled backwards:**
 
-**The symmetric case is already solved and is the model to copy.** `underlay` marks a piece
-that lies flat and is stood on, and it is read through exactly one shared predicate,
-`solidFurniture()` (`src/fixtures-catalog.ts`), so the overlap rule, the clearance rule, the
-nav grid and the per-room flood fill cannot disagree about what a rug is. An `overhead` flag
-wants the same discipline and a DIFFERENT consumer set: a wall cabinet must still be excluded
-from the overlap rule, but unlike a rug it is not walked under in any sense the nav grid
-models, so the four consumers do not all want the same answer and the flag must not simply be
-`underlay` spelled backwards. Work out which of the four each flag feeds, and write the test
-as `glyphs-batch2.test.ts` wrote `underlay`'s — by its CONSEQUENCES in both directions, not by
-asserting the flag is set.
+| consumer | `underlay` (a rug) | `overhead` (hood / wall cabinet / mirror) |
+|---|---|---|
+| `W_FURNITURE_OVERLAP` | exempt (on the pair) | **exempt (on the pair)** |
+| `W_FURN_CLEARANCE` | exempt | **no arm — see below** |
+| nav grid (`analyze/circulation.ts`) | dropped | **kept as an obstacle** |
+| per-room flood fill (`analyze/occupancy.ts`) | dropped | **kept as an obstacle** |
 
-Three families would carry it today: `upper_cabinet`, `range_hood`, `mirror`. The drawing
-convention is already settled and shared (`dashedPattern()` — item 5.5 is about giving that a
-SYNTAX, which this does not need); what is missing is the semantics. It has not bitten before
-only because no shipped plan drew an overhead piece over anything.
+**The grids keep it, and that is the whole difference from a rug:** a rug is walked *on*; a wall
+cabinet is not walked *under* — a body is 1700 mm and a wall unit's underside is about 1400. So
+`solidFurniture()` is **untouched**, which also answers the hand-off from 5.8: there is no
+per-call-site exemption for its three `buildNav` callers (the main pass, `furnitureSealed`'s
+furniture-free control, `measureWaysIn`'s body-radius ladder) to diverge over.
+
+**The rule got simpler, not more conditional.** It now asks one three-valued question of the
+catalogue — `cutPlaneLayer()` → `underlay | body | overhead` — instead of comparing two flags: two
+pieces can only collide when they sit on the same side of the plane the drawing is cut at. That
+generalisation settles for free the pair neither flag's own documentation covered — **a rug with a
+wall cabinet over it** — with no third condition written for it. The test stays on the PAIR, so two
+rugs still warn and so do two wall cabinets.
+
+**The clearance rule deliberately gets no arm.** Every overhead family is also `requiresWall` and is
+already skipped one condition to the left, so a second arm would be unreachable, untested code. A
+test pins that premise instead, so a future overhead family that is NOT wall-requiring — a ceiling
+pendant hangs off the slab, not the fabric — turns it red rather than passing silently.
+
+Non-vacuity proved by planting two different faults: reverting to the `isUnderlay` comparison fails
+2 cases; adding `overhead` to `solidFurniture()` fails 3.
+
+**Corpus effect: none.** A lint sweep over all 30 examples produced 38 diagnostic lines, identical,
+twice — once for the source change alone and once with the restored pieces. `furnished-flat` keeps
+the one `W_PATH_TOO_NARROW` that item 5.8 gave it, same message and hints.
+
+The moved byte-identity digests were proved to be the SOURCE and not the code, by the substitution
+that file's own header prescribes: the pre-5.7 source, fed to the MERGED compiler, reproduces both
+old hexes exactly. `examples/furnished-flat.arch` is the only shipped drawing that moves in this
+batch, and only because its own source gained two statements.
+
+Still open and NOT closed by this: **5.5**, a *syntax* for saying an arbitrary `furniture` statement
+is overhead. This gave the semantics to three catalogued families; it did not give an author a word.
 
 ### 5.8 · `W_PATH_TOO_NARROW`'s width was non-monotonic, and went CLEAN as the obstruction grew — `done`
 

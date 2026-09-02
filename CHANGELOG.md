@@ -7,12 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Three agent-facing defects from `docs/backlog.md`, every one of which made a machine-readable
-answer quietly **wrong** rather than visibly absent. No language change: no new keyword, no new
-`E_*`/`W_*` code, nothing removed from the public surface, and **every shipped example renders
-SHA-256 identical** — no drawing moves.
+Four defects from `docs/backlog.md`. Three made a machine-readable answer quietly **wrong** rather
+than visibly absent; the fourth made a lint rule refuse two drawings that were correct. No language
+change: no new keyword, no new `E_*`/`W_*` code, nothing removed from the public surface.
+
+**Exactly one drawing moves, and only because its own source gained two statements.** All 30 shipped
+examples were compiled under v1.32.0 and under this tree and SHA-256 compared: `furnished-flat` moves
+because a `range_hood` and a `mirror` were restored to it; **the other 29 are byte-identical**. So the
+circulation rewrite below — which corrected every furniture-derived clear width by 600 mm and added
+two warnings — moved not one pixel of any drawing.
 
 ### Fixed
+
+- **`W_FURNITURE_OVERLAP` had no notion of a piece above the cut plane** (backlog 5.7), so two of
+  v1.32's own correct drawings warned: a `range_hood` over the hob and a `mirror` over the basin.
+  Both had been **removed from `examples/furnished-flat.arch` rather than nudged somewhere false** —
+  the furniture flagship was missing two correct drawings because of a rule. Both are now restored.
+
+  The rule asks one three-valued question of the catalogue — `cutPlaneLayer()` →
+  `underlay | body | overhead` — instead of comparing two flags: two pieces can only collide when
+  they sit on the same side of the plane the drawing is cut at. That also settles, for free, the pair
+  neither flag's own documentation covered — a rug with a wall cabinet over it. The test stays on the
+  **pair**, so two rugs still warn and so do two wall cabinets.
+
+  **The consumer sets deliberately differ**, which is the point of not making this `underlay` spelled
+  backwards: an overhead piece is exempt from the overlap rule but is **kept as an obstacle by both
+  walkability grids**, because a rug is walked *on* while a wall cabinet is not walked *under* (a body
+  is 1700 mm; a wall unit's underside is ~1400). `solidFurniture()` is therefore untouched, so the
+  three `buildNav` callers cannot diverge over a per-call-site exemption. The clearance rule gets no
+  new arm on purpose — every overhead family is also `requiresWall` and already skipped — and a test
+  pins that premise, so a future ceiling-hung family turns it red.
 
 - **`W_PATH_TOO_NARROW` went CLEAN as the obstruction grew** (backlog 5.8) — the failure direction
   a reader never catches by eye. Deepening one cabinet in `examples/furnished-flat.arch` took the
