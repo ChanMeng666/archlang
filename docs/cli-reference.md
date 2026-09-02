@@ -60,7 +60,7 @@ render a plan to SVG/DXF/TXT/PDF/PNG
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
 | `--charset <unicode\|ascii>` | text renderer glyph set (default unicode) |
 | `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
-| `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) |
+| `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2); it is an output like any other, so with --json and no -o nothing is written and the card is not in the payload — pass -o &lt;file&gt; to get the image |
 | `--accessible` | emit &lt;title&gt;/&lt;desc&gt;/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged |
 | `--from-json` | read the input as Plan JSON (RPLAN shape) instead of .arch, convert it, then compile |
 | `--install` | auto-install the optional dep for the chosen format if missing (PNG/PDF) |
@@ -203,7 +203,7 @@ recompile on save (interactive)
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
 | `--charset <unicode\|ascii>` | text renderer glyph set (default unicode) |
 | `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
-| `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) |
+| `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2); it is an output like any other, so with --json and no -o nothing is written and the card is not in the payload — pass -o &lt;file&gt; to get the image |
 | `--accessible` | emit &lt;title&gt;/&lt;desc&gt;/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged |
 | `--from-json` | read the input as Plan JSON (RPLAN shape) instead of .arch, convert it, then compile |
 | `--install` | auto-install the optional dep for the chosen format if missing (PNG/PDF) |

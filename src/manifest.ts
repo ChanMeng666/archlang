@@ -143,6 +143,26 @@ const ERROR_SVG_FLAG: ManifestFlag = {
   description:
     "on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2)",
 };
+/**
+ * `compile` and `watch` declare the same flag with one clause the others do not need.
+ *
+ * The card is an artifact like any other, so it follows `compile`'s one file rule: it is
+ * written when something names a file, and `--json` with no `-o` names none. The bytes
+ * are NOT smuggled into the payload instead — the `--json` envelope reports facts about
+ * a render (`ok`, `bytes`, `diagnostics`, `summary`) and has never carried content, and
+ * making the broken-plan case the sole exception would trade one surprise for a worse
+ * one: an unbounded, error-only key in a deliberately bounded envelope. So the flag does
+ * nothing visible in that one combination, and says so here rather than surprising a
+ * reader. `-o <file>` (or `-o -` without `--json`) gets the image, as it always did.
+ *
+ * `preview` and `md` keep the plain description: neither changed, and for them the
+ * sentence would be false.
+ */
+const ERROR_SVG_FLAG_COMPILE: ManifestFlag = {
+  flag: "--error-svg",
+  description:
+    "on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2); it is an output like any other, so with --json and no -o nothing is written and the card is not in the payload — pass -o <file> to get the image",
+};
 const ACCESSIBLE_FLAG: ManifestFlag = {
   flag: "--accessible",
   description:
@@ -258,7 +278,7 @@ const COMPILE_FLAGS: ManifestFlag[] = [
   COLS_FLAG,
   CHARSET_FLAG,
   OVERLAY_FLAG,
-  ERROR_SVG_FLAG,
+  ERROR_SVG_FLAG_COMPILE,
   ACCESSIBLE_FLAG,
   FROM_JSON_FLAG,
   INSTALL_FLAG,
