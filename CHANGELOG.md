@@ -7,6 +7,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Two agent-facing defects from `docs/backlog.md`, both of which made a machine-readable
+answer quietly wrong rather than visibly absent. No language change: no new keyword, no new
+`E_*`/`W_*` code, and every one of the 30 shipped examples renders, describes and lints
+SHA-256 identical to v1.32.0.
+
+### Fixed
+
+- **Plan JSON silently dropped `dims auto`** (backlog G.3). The setting lived on the resolved
+  plan as `ir.autoDims` with no field in `PlanJson`, so `planJsonToArch` never re-emitted it and
+  a round-tripped plan came back without its dimension chains. On a plan with no `paper` the
+  drawing extent **is** the reference dimension, so losing the chains rescaled every line weight
+  and moved the whole title-block band — with **no diagnostic**. Bisected to that one clause;
+  three shipped examples were affected, `garden-loft`, `one-room` and **`laneway-house`, the
+  signature plan**, the last previously unreported. `dims_auto` is projected **only when
+  declared** (the `site` rule), so every pre-existing payload is byte-identical, and
+  `AUTO_DIMS_MODES` is interpolated from `src/ast.ts` into the type, the validator and the
+  schema rather than retyped into any of them.
+
+  **Schema compatibility, measured with ajv rather than read off the text:** the change is
+  backward-compatible but **not forward-compatible**. Every existing document still validates.
+  A document the new `planToJson` produces *from a plan that declares `dims auto`* is rejected
+  by the published 1.32.0 schema, because the top level is `additionalProperties: false` — so a
+  consumer pinned to the old `schemas/plan.schema.json` will refuse payloads for exactly the
+  plans this fixes. Plans without `dims auto` emit no key and stay valid under both.
+
+- **`arch compile --json` with no `-o` wrote files nobody asked for** (backlog G.2). `--json`
+  requests a structured result on stdout and no `-o` names an output file, yet `compile` still
+  dropped `<stem>.svg` — and one `<stem>.L<n>.svg` per storey — beside the source. That is the
+  shape of a scripted "just check it compiles" loop, and it littered this repo's own `examples/`
+  during the v1.32 integration. It now writes nothing, and says so positively: **`written: false`**
+  takes the slot `output`/`outputs[]` occupied, while `bytes` still reports the size of the render.
+
+  The rule is one predicate at two call sites, applied uniformly across every branch — clean plan,
+  multi-storey fan-out, and a broken plan under `--error-svg` — because a split rule would be more
+  surprising than the behaviour it replaced. Everything that *names* a target is untouched:
+  `-o <file>` writes, `-o -` streams, the no-flag default still writes `<stem>.svg`, and
+  `preview`/`batch`/`md` are unaffected.
+
+### Changed
+
+- **`arch watch … --json` with no `-o` now re-reports on each save instead of re-writing
+  `<stem>.svg`.** `cmdWatch` re-enters `cmdCompile`, so the rule above reaches a second command.
+  Pinned by two live end-to-end cases rather than left to follow by construction — `watch` did
+  not watch at all for twenty-five releases precisely because nothing invoked it end to end.
+- **`--error-svg` is inert in exactly one combination** (`--json` with no `-o`): the card is
+  rendered, so `bytes` is real, but nothing is written and the bytes are **not** smuggled into the
+  payload. Emitting them there was weighed and rejected — the `--json` envelope reports facts
+  about a render and has never carried content, so an unbounded content key appearing only when
+  no `-o` was given would make the error path the sole exception to a deliberately bounded
+  envelope. Pass `-o <file>` to get the image. The clause is declared per-command, since the
+  sentence is false for `preview`/`batch`/`md`.
+- Note for consumers of `compile --json`: the payload has **never** carried the drawing — `output`
+  is a path and `bytes` a count — so the above removes one accidental route to the bytes. The
+  deliberate routes are `-o <file> --json` and `-o -`, both now in the manifest's worked examples.
+  It also makes the agent spec's long-standing `# stdin, no temp file` claim true for the first
+  time.
+
+### Tests
+
+- `test/plan-json.test.ts` no longer **samples** the corpus, which is why a lossy clause hid for
+  so long: every `examples/*.arch` either round-trips or sits in `CANNOT_ROUND_TRIP` with a reason
+  **and a `proof` regex asserted to still match the file**, so an exclusion cannot rot into
+  decoration. Non-vacuity is proven by reverting the emit line (7 tests fail). One exclusion is
+  labelled a **defect rather than a design boundary**: `two-bed.arch`, where `planToJson` re-emits
+  a resolver-derived position as an authored `at (x,y)` that `grid` then re-snaps.
+- `test/cli.test.ts` gains an 8-case file-writing suite asserting **both** directions with
+  `readdirSync` listings — it previously asserted nothing about side effects in either direction.
+
 ## [1.32.0] - 2026-08-28
 
 **The furniture catalogue.** v1.28.0 gave every fixture word a symbol; this release makes every
