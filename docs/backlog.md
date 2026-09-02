@@ -634,7 +634,14 @@ item introduced it. The projection is therefore unreachable for exactly the plan
 it, and the two defects mask each other.
 
 **The trap for whoever fixes the `place` round-trip:** doing so un-masks this one silently. There is
-no test that would go red, because no fixture can currently reach the code. So a `_mirror`-carrying
+no test that would go red, because no fixture can currently reach the code.
+
+**So write the failing assertion FIRST, while it is still unreachable.** Add the case that a mirrored
+placed fixture round-trips with its handedness intact, and let it fail (or skip with a reason naming
+this item) for as long as `E_DOTTED_DECL` stands. Then fixing the round-trip lands on a **red test**
+rather than in a drawing nobody re-renders. Doing it in the other order is how a masked defect
+becomes a shipped one: the round-trip fix looks complete, every suite is green, and the only witness
+is a symbol drawn the wrong way round on someone else's plan. So a `_mirror`-carrying
 field (or a decision that `place` instances project their resolved coordinates and nothing else)
 belongs in the SAME change as the `E_DOTTED_DECL` fix, not after it. Note G.4 already established
 the neighbouring rule: an authored placement clause is DROPPED at the frame crossing because plan

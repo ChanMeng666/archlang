@@ -1004,7 +1004,15 @@ source (.arch)
   handedness, `right-of` the page's +x, a room's `at` its TOP-LEFT — which a turn moves), so
   feeding rotated coordinates in would silently change what each one means and force every element
   resolver to learn about frames. Add a handed rule ⇒ add its flip to `transformElement` (`det < 0`),
-  not a frame parameter to the element. See [ADR 0016](docs/adr/0016-component-instances-and-frames.md).
+  not a frame parameter to the element. **The general question, when any fact crosses a frame, is
+  "can this be re-expressed in plan coordinates?"** — and the two answers are both legitimate, so do
+  not assume a reflection always flips. A *placement clause* (`anchor top-right`) names a corner in
+  the instance's own local vocabulary, which plan space has no word for and the reflection renames:
+  it is **dropped** (backlog G.4). A *symbol's handedness* does not exist before the crossing — the
+  frame creates it — and is re-expressible exactly, as one reflection about the footprint's own
+  centre line: it is **flipped** (backlog 5.4). Flip what can be re-expressed; drop what cannot.
+  Both land in the same arm of `transformGeometry`, on different fields, with no ordering between
+  them. See [ADR 0016](docs/adr/0016-component-instances-and-frames.md).
 - **(`place`) A bare `wing()` call is still the LEGACY MACRO and must stay byte-identical** — caller's
   coordinates, caller's GLOBAL auto-id counters, no namespace, no zone. A plan with no `place` has
   exactly one resolution group and takes the historical single pass; the SVG snapshots and visual
