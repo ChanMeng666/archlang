@@ -559,6 +559,22 @@ For calibration on how rare this class is: the agent that landed 5.8 measured th
 **1 failure in 22 runs** before its arming race was fixed in `8e1eb08`. A rate like that survives
 several green runs comfortably, which is why three greens did not clear it.
 
+**Update, 2026-09-02, measured under five concurrent agents.** The arming wait added in `8e1eb08`
+was **necessary but not sufficient**. With five agents running full suites on one machine, the case
+`` `watch -o <file> --json` still writes the artifact on every save `` failed **2 of 5** full-suite
+runs, was **3 of 3 green in isolation**, and failed **0 of 2** on a tree without the change under
+test — i.e. it is load-sensitive and belongs to nobody's diff. It now exceeds its **90 s budget**
+outright rather than losing the arming race, so the remaining cause is resource exhaustion, not
+ordering.
+
+**Read that carefully before acting on it.** That load was created by orchestrating several agents
+at once; CI runs a single job, and the case has never been observed failing there. So this is
+evidence that the resident `watch` cases are **fragile under heavy parallel load**, NOT evidence
+that CI is broken. Do not raise the budget again on the strength of it — 90 s is already three
+times the default, and a budget that grows every time someone runs agents in parallel stops being a
+timeout and becomes a hang. If it ever fails in CI, that is a different and much more interesting
+report.
+
 **When it recurs, capture the name AND the exit code** — `tail` loses both:
 
 ```bash
