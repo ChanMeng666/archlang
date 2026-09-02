@@ -179,24 +179,51 @@ raised it to **26,000** after trimming a redundant keyword bullet, and the file 
 `spec.llm.md` is injected verbatim into agent prompts, so its size is a recurring per-request token
 cost — **trim duplication before raising.**
 
-### 3.15 · `W_FURNITURE_WALL_COLLISION` does not check a CURVED wall — `todo`
+### 3.15 · `W_FURNITURE_WALL_COLLISION` did not check a CURVED wall — `done`
 
-The furniture-vs-wall rule measures in the wall segment's own frame, which is exact for a straight
-run at any angle but has no meaning on an arc: the across-wall direction turns along the run, so
-there is no single normal to project onto. `wallIntrusionDepth` therefore declines a segment
-carrying an `arc` outright, and a piece drawn straight through a curved wall lints clean.
+A piece drawn straight through a curved wall linted **clean**. `wallIntrusionDepth` measures in the
+wall segment's own frame, which has no meaning on an arc — the across-wall direction turns along the
+run — so it declined any segment carrying one. That decline was deliberate and strictly better than
+the predecessor, which measured the arc's CHORD whenever it happened to be axis-aligned: it flagged
+furniture near a straight line the wall is not on, and missed the wall itself. Both poles stay pinned.
 
-That is a **deliberate and strictly better** position than before, and worth stating plainly. An arc
-carries its CHORD in `a`/`b`, so the rule this replaced measured the chord whenever it happened
-to be axis-aligned — flagging furniture near a straight line the wall is not on, and missing the wall
-itself. Both branches are pinned in `test/furniture-lint.test.ts`.
+**The measurement, closed form, no tessellation.** A `t`-thick wall on an arc of radius `R` is the
+**annular sector** from `R − t/2` to `R + t/2`, restricted to the arc's own angular sweep — so the
+across-wall axis is the **radius** and the along-run axis is the **angle**, and both questions the
+straight branch asks carry over unchanged. The radial extremes over the intersection are attained on
+its boundary, which has exactly three kinds of piece, each with a closed-form extremum: rect edges
+inside the wedge (radius is convex along a segment, so the max is at an endpoint and the min at the
+perpendicular foot when it lies on the segment), wedge rays inside the rect (radius along a ray IS the
+ray parameter, so a slab clip returns both radii with no trigonometry), and the centre itself when the
+rect contains it. Radius is continuous on a connected region, so every value between them is genuinely
+reached.
 
-The honest fix is radial: intersect the piece's radial extent, restricted to the arc's angular
-sweep, with the band `[R − t/2, R + t/2]`. Closed form, no tessellation — the arc's own tessellated
-band is a drawing artifact and must not become the measurement (see the exact-vs-chordal note in
-`docs/analysis.md`). `examples/aquarium.arch` is the fixture to prove it on.
+**The arc's tessellated band is a drawing artifact** whose facet count is a rendering decision — the
+same reason a circular room's area is exact rather than the 48-gon the grid layer draws — so a
+measurement must not depend on it.
+
+New sibling module `src/geometry/arc-band.ts` rather than growing `rect.ts`, which advertises
+axis-aligned rectangle math and is imported by repair, occupancy and resolve. The private
+`angleOffset` became exported `arcAngleOffset`, so "how far round is this?" keeps exactly one answer.
+
+**One residual approximation, stated in the module header rather than left to be found:** on a reflex
+sweep where the piece straddles both bounding rays, the intersection can be two components and the
+hull of their radii is conservative — the same direction of error the straight branch's projection
+already carries, and reachable only by a piece that already surrounds the wall's angular gap.
+
+**`repair` does NOT gain a push direction.** A curved wall returns the existing decline branch, now
+naming a radius rather than a normal. That is required rather than optional: widening a lint rule puts
+a fault in front of a mover that would otherwise return *nothing* — neither a change entry nor an
+`unresolved` entry — which `test/repair-coverage.test.ts` forbids. Idempotence re-verified, 56 tests.
+
+**Corpus: nothing moved** — 0 of 30 lint, 0 of 30 describe, 0 of 35 SVG. Zero movement alone cannot
+distinguish "works and finds nothing" from "still declines silently", so a counter proved the four
+curved plans DO reach the new path (`library` 480 pairs, `aquarium` 33, `hillside-villa` 29,
+`hexagon-pavilion` 12) at zero depth, and a hand-built drum reproduced both poles: a piece on the true
+band warns on the fix and not on `main`, while the same piece on the chord warns on neither.
 
 ---
+
 
 ## Found while redrawing the showcase
 
@@ -439,33 +466,49 @@ a defect rather than a design boundary — see the new item below.
 Five things the G.2/G.3/5.8 work turned up. None was in scope for the item that found it, and each
 was deliberately NOT widened into — recorded here rather than half-fixed.
 
-### G.4 · `planToJson` re-emits a RESOLVER-DERIVED position as an authored `at (x,y)` — `todo`
+### G.4 · `planToJson` re-emitted a RESOLVER-DERIVED position as an authored `at (x,y)` — `done`
 
-Found while classifying the corpus for G.3's widened round-trip test.
+`planToJson` wrote every furniture position as an absolute `at (x,y)`, including one the resolver had
+DERIVED from `anchor`/`flush`/`against wall`. `grid` snaps coordinates an author *writes* — that is
+v1.27.0's fix for item 3.12, which stopped `resolve()` snapping coordinates it derived itself — so a
+derived position not already on the grid **moved on the way back in**, with no diagnostic.
 
-**Correction, measured 2026-09-02:** this entry originally said the defect is *why* `two-bed.arch`
-sits in `CANNOT_ROUND_TRIP`. That premise is **wrong** and should not be built on. `two-bed.arch`
-also declares `roof overhang 500`, which the JSON projection deliberately does not model at all, so
-that plan could never have round-tripped whatever happened to furniture — its exclusion is compound,
-and the `roof` half is a design boundary rather than a defect. The furniture defect below is real
-and separate; it is proved constructively instead, by removing only the `roof` line: that variant
-differed on **51 SVG lines** before the fix and is **byte-identical** after.
+**The authored form was NOT recoverable, and that reshaped the fix.** `RFurniture` kept only the
+coarse `_placement` marker `describe().freedom` reads — never the anchor word, the inset or the
+against-wall clause — and `inset`/`segment`/`offset` are **expressions**, so only `resolve()` can
+evaluate them and no post-pass over the AST can recover them. `resolve()` now records the clause with
+its expressions already evaluated, internal, never reaching the Scene.
 
-`planToJson` writes every furniture position as an absolute `at (x,y)`, including one the resolver
-DERIVED from `anchor`/`flush`/`against wall`. `grid` snaps coordinates an author *writes* (v1.27.0,
-item 3.12) — so a derived position that is not already on the grid MOVES on the way back in. Minimal
-repro, no example needed:
+The clause is emitted **alongside** the resolved coordinates, not instead of them: the coordinates
+stay the useful output, the clause is what gets re-emitted, so the round-trip re-*derives* the
+position and there is nothing left for `grid` to re-snap.
 
-```
-grid 100, a 300-thick shell, one `furniture wardrobe in r anchor top-right flush`
-  -> resolves to (4650,150), returns as (4700,200)
-```
+**Scope, measured rather than assumed.** `against wall` is affected too and is fixed — this entry
+named only the anchor form. Relational rooms, `strip` and opening attachment are NOT affected,
+because `resolve()` still snaps those, so re-emitting the snapped value is idempotent. Furniture is
+the only affected form *precisely because* v1.27.0 deliberately stopped snapping its two derived
+paths. The opening attachment is lossy in a different way — it re-emits the host's category rather
+than its id — and is named rather than widened into.
 
-Controls: the same plan at `grid 50`, or at `thickness 200`, round-trips clean. **`FurnitureJson`
-already ACCEPTS `anchor`/`flush`/`against_wall` on input** — `planToJson` simply never emits them, so
-the fix is plausibly to project the authored form when there was one, rather than to stop snapping.
-Note this is the same family as the iron law about derived positions: the JSON is reporting a derived
-coordinate as though a human had written it.
+**Schema compatibility, measured with ajv over 28 payloads:** backward compatible, and
+forward-incompatible for exactly **one key**. `additionalProperties: false` sits on the furniture
+ITEM as well as the top level, and every error path is `/furniture/N`. The break is **`flush` alone** —
+`anchor`, `against_wall`, `centered`, `inset`, `segment`, `offset` and `side` were already *declared*
+in the published 1.32.0 schema (declared but never emitted), so payloads carrying only those still
+validate against it. A consumer pinned to 1.32.0 rejects payloads for plans using `anchor … flush`:
+12 of the 30 shipped examples.
+
+**The correction this entry needed.** It originally said the defect is *why* `two-bed.arch` cannot
+round-trip. That was wrong: `two-bed` also declares `roof overhang 500`, which the projection
+deliberately does not model, so it could never have round-tripped whatever happened to furniture. The
+fix is proved constructively instead — with only that line removed, that variant went from **51
+differing SVG lines to byte-identical**.
+
+Non-vacuity through the real suite: with `src/` reverted, seven new cases go red, and the four corpus
+cases are exactly the four examples carrying an off-grid derived fixture while the other 26 stay
+green — the gate discriminates rather than blankets. Corpus otherwise untouched: 0 of 30 describe, 0
+of 30 lint, 0 of 35 SVG.
+
 
 ### G.5 · `describe --json` silently omits rooms from `circulation.rooms[]` — `todo`
 
@@ -567,6 +610,37 @@ grep -E "FAIL|Failed Tests|Error:" run.log
 arming race was fixed, and this one at 2 of 5 and 2 of 6. Rates like that survive several green runs
 comfortably — three greens do not clear a flake, and a single-file run clears nothing at all.
 
+### G.10 · Plan JSON carries a frame's ROTATION but not its REFLECTION — `todo` (latent)
+
+Found at the intersection of G.4 and 5.4, and **latent rather than a regression** — but it becomes
+real the day somebody makes `place` round-trip.
+
+`planToJson` projects the rotation a `place` frame imposes on a fixture, and not the reflection:
+
+```
+plain     {"category":"desk","x":2300,"y":300,"width":1400,"height":700,"room":"a.r"}
+mirror x  {"category":"desk","x":300, "y":300,"width":1400,"height":700,"room":"a.r"}
+mirror y  {"category":"desk","x":2300,"y":3000,...,"rotate":180,"room":"a.r"}
+```
+
+`mirror x` and the plain form differ only in `x`. Before item 5.4 that lost nothing, because a
+mirrored symbol drew identically to its twin; **after 5.4 it loses the symbol's handedness**, so a
+consumer reconstructing from Plan JSON would draw the wrong-handed piece.
+
+**Why it is not reachable today, and why that is not a reason to forget it.** A plan containing
+`place` has never round-tripped at all: `planFromJson` refuses a namespaced id with `E_DOTTED_DECL`.
+That was verified on `54416b7` — the base of both branches — so it predates this work and neither
+item introduced it. The projection is therefore unreachable for exactly the plans that could expose
+it, and the two defects mask each other.
+
+**The trap for whoever fixes the `place` round-trip:** doing so un-masks this one silently. There is
+no test that would go red, because no fixture can currently reach the code. So a `_mirror`-carrying
+field (or a decision that `place` instances project their resolved coordinates and nothing else)
+belongs in the SAME change as the `E_DOTTED_DECL` fix, not after it. Note G.4 already established
+the neighbouring rule: an authored placement clause is DROPPED at the frame crossing because plan
+space has no word for a local corner — the reflection is the opposite case, re-expressible exactly
+as one flip about the footprint's own centre line, which is why 5.4 flips it rather than dropping it.
+
 ### G.7 · Fixture-word completion in the VS Code extension — `todo`
 
 Deferred by name in v1.32.0's CHANGELOG and never given a backlog entry until now. The LSP completes
@@ -618,17 +692,53 @@ changing it is an argument with a test rather than an oversight — which is the
 reopening it, decide what a subtracted area means to `schedule rooms`, to the room label's `m²`
 text, and to an intent's area assertion, because those three are what would silently disagree.
 
-### 5.4 · Glyph-aware mirroring in the `place` transform — `todo`
+### 5.4 · Glyph-aware mirroring in the `place` transform — `done`
 
-**`sofa_l`'s return is always on the LEFT and there is no right-handed twin.** `place … mirror`
-will not produce one, because a reflection transforms a resolved element's *position* and not the
-symbol drawn inside it — so a mirrored wing draws a left-hand sofa. A `sofa_l_r` category was
-**rejected rather than forgotten**: it would put the fix in the vocabulary, where every future
-handed symbol then needs its own twin. The real fix is for `frame.ts` to hand the glyph its own
-chirality when `det < 0`, which is the same place the handed door/furniture rules already flip.
+Done, and **the survey is the finding — it is bigger than this entry assumed.** The entry treated
+`sofa_l` as the case. Probing all 83 catalogued families (render the symbol, reflect the marks about
+the footprint's vertical centre line, compare as an unordered multiset of canonical marks) found
+**nineteen handed**: `bathtub`, `bed`, `double_bed`, `desk`, `island`, `washer`, `sofa_l`, `piano`,
+`shrub`, `bbq`, `bicycle`, `motorcycle`, `mailbox`, `ev_charger`, `mirror`, `microwave`, `chaise`,
+`shoe_cabinet`, `reception_desk`.
 
-Note the standing rule it must obey: add a handed rule ⇒ add its flip to `transformElement`, never
-a frame parameter to the element ([ADR 0016](adr/0016-component-instances-and-frames.md)).
+**And chirality is FOOTPRINT-DEPENDENT.** `counter`, `fridge`, `upper_cabinet`, `hedge` and
+`motorcycle` are handed at some aspect ratios and symmetric at others, because their detail is tiled
+and the tile count comes from the aspect. So a per-family `chiral` flag does not merely scale badly —
+it **cannot express the truth**. That retires the rejected `sofa_l_r` category on far better grounds
+than this entry's original reasoning.
+
+So chirality is **derived**: `mirrorGlyph` reflects the marks and keeps the reflection only when it is
+a different drawing. "Different" is measured at `fmt4` — the finest precision any backend serializes —
+so *symmetric* means exactly *would emit the same bytes*, with no invented epsilon. That choice is
+evidenced rather than asserted: an exact float comparison calls **63 of 83** families handed, on the
+glyph layer's own trigonometric noise, and a hand-picked tolerance would be a magic number.
+
+The flip lives in `transformElement` beside `transformDeg`, as ADR 0016 requires, and is XORed so a
+nested reflection composes back to the identity. One reflection suffices for any reflecting frame
+because such a frame factors exactly as `M = R(m)·Fx`, hence `M·R(l) = R(m−l)·Fx` — and `m−l` is
+precisely what `transformDeg` already computes. So **`mirror x` and `mirror y` differ only in the
+derived quarter-turn**; which axis the author wrote never reaches the glyph.
+
+**Exactly two shipped drawings move, and the reason is checkable:** `clinic` (`mirror y`, a `counter`)
+and `terrace-row` (`mirror x`, a `fridge`) are the only examples that BOTH mirror a placed component
+AND contain a fixture handed at its footprint. **`museum-wings` — the mirrored-`place` flagship — has
+zero `furniture` statements**, so it could never have shown this bug; naming it as the test was a
+reviewer error. `describe()` and `lint()` do not move on any of the 30.
+
+**The `frame.ts` collision with G.4 was resolved by keeping both, and proved rather than reasoned.**
+Both items insert at the identical anchor in `transformGeometry`, and git conflicts there — but
+neither moved a body the other modified, so this is plain additive adjacency, not the v1.25 near-miss
+shape. The two facts are the same species with opposite answers: the placement CLAUSE names a corner
+in the instance's local vocabulary and **arrives** at the crossing unable to survive it (plan space
+has no word for it, and the reflection renames it), so it is **dropped**; the symbol's handedness
+**does not exist** before the crossing — the frame creates it — and is re-expressible exactly as one
+flip about the footprint's own centre line, so it is **flipped**. Flip what can be re-expressed; drop
+what cannot. `test/glyph-chirality.test.ts`'s pairing case is the fixture neither branch could produce
+alone, and disabling the chirality flip fails 5 of that file's 15 cases.
+
+Left open by name: **G.10**, Plan JSON carrying a frame's rotation but not its reflection — latent,
+because a `place` plan cannot round-trip at all today.
+
 
 ### 5.5 · A syntax for overhead dashes — `todo` (the CONVENTION is settled; the syntax is not)
 

@@ -7,17 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Four defects from `docs/backlog.md`. Three made a machine-readable answer quietly **wrong** rather
-than visibly absent; the fourth made a lint rule refuse two drawings that were correct. No language
-change: no new keyword, no new `E_*`/`W_*` code, nothing removed from the public surface.
+Seven defects from `docs/backlog.md`. Most made a machine-readable answer quietly **wrong** rather
+than visibly absent — the direction a reader never catches by eye. No language change: no new
+keyword, no new `E_*`/`W_*` code, nothing removed from the public surface.
 
-**Exactly one drawing moves, and only because its own source gained two statements.** All 30 shipped
-examples were compiled under v1.32.0 and under this tree and SHA-256 compared: `furnished-flat` moves
-because a `range_hood` and a `mirror` were restored to it; **the other 29 are byte-identical**. So the
-circulation rewrite below — which corrected every furniture-derived clear width by 600 mm and added
-two warnings — moved not one pixel of any drawing.
+**Three drawings move in total, each for a stated reason.** All 30 shipped examples were compiled
+under v1.32.0 and under this tree and SHA-256 compared: `furnished-flat` (its source gained a
+`range_hood` and a `mirror`), and `clinic` and `terrace-row` (each mirrors a placed component
+containing a fixture whose symbol is handed). Every other drawing is byte-identical — so the
+circulation rewrite, which corrected every furniture-derived clear width by 600 mm, moved not one
+pixel of anything.
 
-### Fixed
+### Fixed — silent wrong answers
+
+- **A piece drawn through a CURVED wall linted clean** (backlog 3.15). `wallIntrusionDepth` measures
+  in a wall segment's own frame, which has no meaning on an arc — the across-wall direction turns
+  along the run — so it declined any arc-bearing segment outright. It now measures, in closed form
+  and without tessellating: a `t`-thick wall on an arc of radius `R` is the **annular sector**
+  restricted to the arc's own sweep, so the across-wall axis is the **radius** and the along-run axis
+  the **angle**, and both questions the straight branch asks carry over unchanged. The arc's
+  tessellated band is a *drawing* artifact whose facet count is a rendering decision — the same
+  reason a circular room's area is exact rather than the 48-gon the grid layer draws — so the
+  measurement must not depend on it. `repair` gains no push direction: a curved wall still declines,
+  now naming a radius rather than a normal, which the lint rule's widening makes mandatory rather
+  than optional. No shipped example changes a single diagnostic.
+
+- **A mirrored `place` drew the wrong-handed symbol** (backlog 5.4) — a left-handed sofa in a
+  right-handed wing, every number right and the picture wrong. The survey is the finding: **19 of the
+  83 catalogued families are handed**, not one, and chirality is **footprint-dependent** —
+  `counter`, `fridge`, `upper_cabinet`, `hedge` and `motorcycle` are handed at some aspect ratios and
+  symmetric at others, because their detail is tiled and the tile count comes from the aspect. A
+  per-family flag therefore *cannot express the truth*, so chirality is **derived**: the glyph is
+  reflected and the reflection kept only when it is a different drawing, measured at the finest
+  precision any backend serializes, so *symmetric* means exactly *would emit the same bytes*. The
+  flip lives in `transformElement`, per ADR 0016, XORed so a nested reflection composes back to the
+  identity; `mirror x` and `mirror y` differ only in the derived quarter-turn.
+
+- **Plan JSON re-emitted a resolver-derived position as an authored one** (backlog G.4), which `grid`
+  then re-snapped — so the plan that came back was not the plan that went in. The authored form was
+  not recoverable after `resolve()` (its `inset`/`segment`/`offset` are expressions), so the clause is
+  now recorded during resolution and emitted **alongside** the resolved coordinates: the round-trip
+  re-*derives* the position and there is nothing left to re-snap. `against wall` was affected too and
+  is fixed; relational rooms, `strip` and opening attachment are not, because those are still snapped
+  at resolve time and re-emitting a snapped value is idempotent.
+
+  **Schema compatibility, measured with ajv rather than reasoned:** backward-compatible, and
+  forward-incompatible for exactly one key. `additionalProperties: false` sits on the furniture
+  **item** as well as the top level, and the break is **`flush` alone** — every other placement key
+  was already *declared* in the published 1.32.0 schema (declared but never emitted). A consumer
+  pinned to 1.32.0 rejects payloads for plans using `anchor … flush`: 12 of the 30 shipped examples.
+
+### Fixed — rules that refused correct drawings
 
 - **`W_FURNITURE_OVERLAP` had no notion of a piece above the cut plane** (backlog 5.7), so two of
   v1.32's own correct drawings warned: a `range_hood` over the hob and a `mirror` over the basin.
