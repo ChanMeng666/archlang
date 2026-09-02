@@ -280,7 +280,8 @@ describe("plan-json — `dims auto` is a carried SETTING, not a dropped word", (
   });
 
   it("advertises every parser mode in the schema, derived rather than retyped", () => {
-    const prop = (PLAN_JSON_SCHEMA as { properties: Record<string, { enum?: string[] }> }).properties.dims_auto;
+    const prop = (PLAN_JSON_SCHEMA as unknown as { properties: Record<string, { enum?: readonly string[] }> })
+      .properties.dims_auto;
     expect(prop?.enum).toEqual([...AUTO_DIMS_MODES]);
   });
 });
