@@ -406,25 +406,47 @@ anywhere. Same "a promise quietly not kept" class as v1.26.1. The fix is to incl
 Two things the villa and homes authors ran into while furnishing and re-sheeting the corpus, plus
 one found integrating their work. None blocked anything from shipping; each was worked around.
 
-### G.1 · `anchor <corner> flush` reads the wrong wall face when a thicker exterior wall shares a
-partition's centreline — `todo`
+### G.1 · `anchor <corner> flush` read the wrong wall face on a shared centreline — `done`
 
-Reported by the villa/homes authors. `furniture … anchor <corner> flush` measures its offset off
-the NEAREST wall face by distance, but when a room's partition is thin (say 100 mm) and shares a
-centreline with a thicker exterior wall (say 250 mm) on the room's far side, `flush` can resolve
-against the thinner face while the furniture-vs-wall collision check (`wallIntrusionDepth`) measures
-against the thicker one — the two rules read different walls off the same coordinate. Repro: a
-1800 × 2600 room, a 100 mm partition coincident with a 250 mm exterior shell, `furniture … anchor
-top-left flush` — the piece is drawn flush to the partition's inner face but the collision check
-still measures the extra 75 mm the thicker wall's centreline shift accounts for, and can flag an
-intrusion on a piece that reads as correctly placed in the drawing.
+**The sharper statement, which this entry did not have: the resolved position was DEPENDENT ON
+STATEMENT ORDER.** On the repro (1800 × 2600 room, a 100 mm partition coincident with the 250 mm
+shell's north run), both walls cover the full edge, so `backingWallForRoomEdge`'s largest-overlap
+tie-break fell through to declaration order:
 
-Not yet reproduced as a minimal standalone fixture or filed against a specific line in
-`src/elements/furniture.ts` — the report is from real authoring, not yet isolated. First step:
-build the repro plan above and confirm which of the two consumers (the `flush` resolver or
-`wallIntrusionDepth`) is reading the wrong wall, per the iron law that a derived position must come
-from the shape (here: the correct wall face), never an assumption that the nearest centreline is
-the nearest FACE.
+| declaration order | resolved position | `arch lint` |
+|---|---|---|
+| partition first | `y = 50` | **W_FURNITURE_WALL_COLLISION** |
+| shell first | `y = 125` | clean |
+
+Same geometry, two `wall` lines swapped, two verdicts. That is why it survived until somebody hit it
+while authoring rather than in a test: it needs two walls sharing a centreline **and** an unlucky
+order.
+
+**The fix lands on the right side of a fork the entry left open.** `wallIntrusionDepth` was
+**correct** — a piece at `y = 50` genuinely *is* 75 mm inside the shell's solid — so the position was
+wrong, not the check. Making the check agree with the resolver would have silenced a true positive.
+
+The defect was in `innerFaceOfRoomEdge` (`src/fixture-orientation.ts`), which read the ONE segment
+the scan returns. It now takes the **innermost face across every backing segment** (`max` for
+`top`/`left`, `min` for `bottom`/`right`), because **a room edge is a CENTRELINE and more than one
+wall can sit on it**: the face is a property of the SOLID at that edge, not of whichever segment a
+tie-break picked. `backingWallForRoomEdge` keeps its largest-overlap `best` unchanged — the rotation
+derivation and `W_FIXTURE_BACK_TO_ROOM` want a *segment*, not a *measurement* — so no lint verdict
+moves, and `repair.ts` re-expresses a flush move through the same function and follows with no edit.
+
+**Deliberately conservative along the run, argued rather than defaulted:** an edge backed by a thin
+wall over one half and a thick one over the other reports the thick face for the whole edge, because
+restricting the max to the run the piece covers is **circular** for a corner anchor — the extent along
+the top edge depends on the left face and vice versa. 75 mm of visible air beats a warning on a piece
+that reads as correct.
+
+**Zero corpus movement, explained constructively rather than asserted.** The face computation fires
+**228 times across 14 shipped examples**, and **0 of those 228 edges have more than one backing
+wall** — where `max`/`min` over a one-element list is the identity. Instrumentation removed and
+confirmed by `grep -c`. Independently verified: 0 of 35 drawings moved, 0 of 30 describe/lint digests
+moved, and the repro flips both ways on the merged tree. Non-vacuity: reverting
+`src/fixture-orientation.ts` alone turns 3 of the 5 new cases red.
+
 
 ### G.2 · `arch compile <file> --json` with no `-o` wrote sibling `.svg`/`.L<n>.svg` files — `done`
 
