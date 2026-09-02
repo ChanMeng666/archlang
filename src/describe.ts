@@ -75,7 +75,14 @@ export type { ScheduleRow } from "./sheet-tables.js";
 
 export type { VerticalConnection, VerticalKind, VerticalStop } from "./vertical.js";
 
-export type { CirculationModel, RoomCirculation, CirculationRoute, BlockedRoom } from "./analyze/circulation.js";
+export type {
+  CirculationModel,
+  RoomCirculation,
+  CirculationRoute,
+  BlockedRoom,
+  UnmeasuredRoom,
+  UnmeasuredReason,
+} from "./analyze/circulation.js";
 
 export type { BBox } from "./analyze.js";
 

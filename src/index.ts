@@ -102,6 +102,8 @@ export type {
   BBox,
   DescribeOptions,
   BlockedRoom,
+  UnmeasuredRoom,
+  UnmeasuredReason,
   CirculationModel,
   RoomCirculation,
   CirculationRoute,

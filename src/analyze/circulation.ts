@@ -55,6 +55,7 @@ import {
   type RoomBox,
 } from "../analyze.js";
 import { pointInRect } from "../geometry/rect.js";
+import { arcExtremes, distPointToArc } from "../geometry/arc.js";
 import { pointInPolygon, polygonEdges, polygonLabelPoint } from "../geometry/polygon.js";
 import { matchesLivingDining } from "../vocabulary.js";
 import { solidFurniture } from "../fixtures-catalog.js";
@@ -157,6 +158,65 @@ export interface CirculationModel {
    * with no door path at all is NOT listed here; that is `W_ROOM_UNREACHABLE`'s fact.
    */
   blocked?: BlockedRoom[];
+  /**
+   * Rooms with no `rooms[]` entry that {@link CirculationModel.blocked} does NOT claim —
+   * each with the reason the model could not measure a walk to it. Source order;
+   * **present only when non-empty**, so a plan whose every room measures keeps the
+   * summary bytes it had.
+   *
+   * This exists because the ABSENCE was the whole report. A consumer got circulation
+   * facts for five of seven rooms and nothing telling it two were missing, and could
+   * not tell "this room is fine, we just measure from a different front door" from
+   * "nothing can walk in here" (`docs/backlog.md` G.5). `blocked` cannot carry them:
+   * that key means *sealed by furniture*, a real plan defect with a piece to move, and
+   * widening it to mean "we did not measure this" would manufacture exactly the false
+   * positive its furniture-free control exists to prevent.
+   *
+   * Together with `rooms[]` and `blocked[]` this is TOTAL: every room in the plan's
+   * `rooms[]` appears in exactly one of the three whenever `circulation` is non-null.
+   * (A plan with no modeled entrance has no `circulation` at all — nothing to attach a
+   * reason to, and `W_NO_ENTRANCE` is the fact.)
+   */
+  unmeasured?: UnmeasuredRoom[];
+}
+
+/**
+ * Why one room has no measured walk. A closed set — five DIFFERENT facts, not five
+ * shades of "unknown", and each names the thing a reader would have to change:
+ *
+ *  - `no_door_route` — the modeled doors do not connect it to the exterior at all, so
+ *    there is no walk to measure. `W_ROOM_UNREACHABLE`'s subject; `access.rooms[]`
+ *    carries `reachable: false` for the same room.
+ *  - `below_grid_resolution` — the room is smaller than one nav-grid cell, so it holds
+ *    no cell centre and the grid cannot see it. A resolution limit, not a plan defect;
+ *    `W_ROOM_TOO_SMALL`'s subject.
+ *  - `other_entrance` — it IS walkable, from an entrance other than the one every walk
+ *    is measured from ({@link CirculationModel.entranceId}, the first in source order).
+ *    A terrace of four dwellings on one sheet is four buildings with four front doors,
+ *    and "cannot be reached from door #1" is an ordinary fact about a terrace rather
+ *    than anything wrong. A per-entrance model is the honest fix and is deliberately
+ *    NOT attempted here.
+ *  - `no_threshold` — no doorway of this room ever became a carved opening in the
+ *    walkable grid: every threshold across its connectors was refused because something
+ *    stands in the run on one side or the other. `garden-house`'s study is the specimen
+ *    — its one door opens onto the flank of a stair, whose clearance covers the hall
+ *    side of the opening. Not `blocked`, because the obstruction is not furniture and
+ *    the message would name the wrong element to move.
+ *  - `unreachable` — thresholds exist and no entrance reaches it, and the same plan
+ *    with its furniture removed does not reach it either, so furniture is not the cause
+ *    and `blocked` would be a fiction.
+ */
+export type UnmeasuredReason =
+  | "no_door_route"
+  | "below_grid_resolution"
+  | "other_entrance"
+  | "no_threshold"
+  | "unreachable";
+
+/** One room the circulation model could not measure, and why. */
+export interface UnmeasuredRoom {
+  roomId: string;
+  reason: UnmeasuredReason;
 }
 
 /** A room no route reaches, and the width of the best way in that does exist. */
@@ -214,6 +274,12 @@ interface NavGrid {
   roomIdx: Int32Array;
   /** Clear width (mm) at the cell — coarse, from the distance-to-obstacle field. */
   clearMm: Float64Array;
+  /** Room indices that got at least one CARVED threshold: a connector between two rooms
+   *  whose Manhattan run through the wall band was actually opened. A room absent here
+   *  has no modeled way in on this grid at all — every threshold across its doorways was
+   *  refused, obstructed on one side or the other. Read only to give an unmeasured room
+   *  an honest reason ({@link UnmeasuredRoom}); never by the routing itself. */
+  carved: Set<number>;
 }
 
 /** Cell index of a point, clamped into the grid. */
@@ -235,15 +301,24 @@ function centreOf(g: NavGrid, k: number): { x: number; y: number } {
  * Step inward from a connector on a room edge to the first free cell of that room
  * (mirrors occupancy.ts' inward seeding). Returns −1 when the doorway's inward run
  * is sealed by furniture, so a blocked doorway simply yields no seed.
+ *
+ * `bandMm` is how far the search may look BEYOND the adjacency tolerance: a connector
+ * sits on its host wall's CENTRELINE, so a room's floor begins half a wall thickness
+ * away from it and a thick host puts every free cell out of a tolerance-sized reach.
+ * The rectangle branch never noticed — it walks perpendicular until it leaves the grid
+ * — but the polygon branch is a bounded ring scan, and at `tol` alone it gave up 200 mm
+ * short of a 1200 mm drum's floor. Widening a bound that is only consulted when the
+ * narrower one found NOTHING is strictly additive: every seed that already resolved
+ * resolves to the same cell, because the scan is by increasing ring.
  */
-function seedCell(g: NavGrid, at: Point, rb: RoomBox, roomIndex: number, tol: number): number {
+function seedCell(g: NavGrid, at: Point, rb: RoomBox, roomIndex: number, tol: number, bandMm = 0): number {
   const { ix, iy } = cellOf(g, at.x, at.y);
   // A POLYGON room's doorway need not sit on a bounding-box side, so the "step inward
   // perpendicular to that side" walk has no direction to take. Take the room's nearest
   // free cell to the doorway instead — scanned by increasing Chebyshev ring, row-major
   // inside each ring, so the answer is deterministic and local.
   if (rb.poly) {
-    const reach = Math.ceil(tol / g.cell) + 2;
+    const reach = Math.ceil((tol + bandMm) / g.cell) + 2;
     for (let rad = 0; rad <= reach; rad++) {
       let best = -1;
       let bestD = Infinity;
@@ -538,7 +613,7 @@ function distPointToSeg(px: number, py: number, ax: number, ay: number, bx: numb
 function buildGrid(
   rooms: RRoom[],
   walls: RWall[],
-  connectors: Array<{ at: Point; between: [string, string]; clear: number }>,
+  connectors: Array<{ at: Point; between: [string, string]; clear: number; bandMm: number }>,
   furniture: RFurniture[],
   verticals: RVertical[],
   voids: RVoid[],
@@ -580,7 +655,8 @@ function buildGrid(
   const free = new Uint8Array(nx * ny);
   const roomIdx = new Int32Array(nx * ny).fill(-1);
   const eroded = new Uint8Array(nx * ny); // in-room cell blocked by furniture (never carved)
-  const g: NavGrid = { minX, minY, cell, nx, ny, free, roomIdx, clearMm: new Float64Array(nx * ny) };
+  const carved = new Set<number>();
+  const g: NavGrid = { minX, minY, cell, nx, ny, free, roomIdx, clearMm: new Float64Array(nx * ny), carved };
   const furnObstacle: number[] = []; // in-room cells eroded by furniture (clearance seeds)
 
   /** Cell-index window covering an mm range, widened by one so a boundary cell centre
@@ -640,8 +716,18 @@ function buildGrid(
 
   // Rasterise walls as blocked cells so adjacent rooms don't leak into each other
   // across a shared partition (a wall thinner than a cell occupies no cell centre);
-  // a cell within half the wall thickness of a segment is blocked. Doors carve back
+  // a cell within half the wall thickness of the segment is blocked. Doors carve back
   // through below. Furniture-eroded cells stay eroded (never reopened).
+  //
+  // A CURVED segment is blocked against the arc, not against its chord. Taking the chord
+  // is not a coarser approximation of the same shape, it is a different wall in a
+  // different place: a closed drum — two semicircular `arc` edges sharing endpoints —
+  // rasterises to a bar along its own DIAMETER, so the nav grid let a route walk through
+  // 1200 mm of masonry while severing the round room inside it into two caps. That is
+  // what dropped `hexagon-pavilion`'s three northern galleries and `aquarium`'s plant
+  // room out of the facts with nothing said (`docs/backlog.md` G.5). `arcs[i]` is the
+  // solve resolve already did for segment `i`, and `distPointToArc` is the exact
+  // analogue of the segment distance used beside it — no tessellation either side.
   for (const w of walls) {
     const half = w.thickness / 2;
     const pts = w.points;
@@ -649,10 +735,14 @@ function buildGrid(
     for (let i = 0; i < segCount; i++) {
       const a = pts[i]!;
       const b = pts[(i + 1) % pts.length]!;
-      const loX = Math.min(a.x, b.x) - half;
-      const hiX = Math.max(a.x, b.x) + half;
-      const loY = Math.min(a.y, b.y) - half;
-      const hiY = Math.max(a.y, b.y) + half;
+      const arc = w.arcs?.[i];
+      // The band's extent: a straight run spans its endpoints, a curve its endpoints
+      // plus whichever axis extremes its sweep actually reaches (closed form).
+      const span = arc ? arcExtremes(arc) : [a, b];
+      const loX = Math.min(...span.map((p) => p.x)) - half;
+      const hiX = Math.max(...span.map((p) => p.x)) + half;
+      const loY = Math.min(...span.map((p) => p.y)) - half;
+      const hiY = Math.max(...span.map((p) => p.y)) + half;
       const ix0 = clamp(Math.floor((loX - minX) / cell), 0, nx - 1);
       const ix1 = clamp(Math.floor((hiX - minX) / cell), 0, nx - 1);
       const iy0 = clamp(Math.floor((loY - minY) / cell), 0, ny - 1);
@@ -661,7 +751,8 @@ function buildGrid(
         for (let ix = ix0; ix <= ix1; ix++) {
           const cx = minX + (ix + 0.5) * cell;
           const cy = minY + (iy + 0.5) * cell;
-          if (distPointToSeg(cx, cy, a.x, a.y, b.x, b.y) <= half) free[iy * nx + ix] = 0;
+          const d = arc ? distPointToArc({ x: cx, y: cy }, arc) : distPointToSeg(cx, cy, a.x, a.y, b.x, b.y);
+          if (d <= half) free[iy * nx + ix] = 0;
         }
       }
     }
@@ -675,8 +766,8 @@ function buildGrid(
     const bi = roomIndexById.get(c.between[1]);
     if (ai === undefined || bi === undefined) continue; // exterior / unknown endpoint
     const pathAt = (at: Point): number[] | null => {
-      const a = seedCell(g, at, rects[ai]!, ai, tol);
-      const b = seedCell(g, at, rects[bi]!, bi, tol);
+      const a = seedCell(g, at, rects[ai]!, ai, tol, c.bandMm);
+      const b = seedCell(g, at, rects[bi]!, bi, tol, c.bandMm);
       return a < 0 || b < 0 ? null : carvePath(g, eroded, a, b);
     };
     const apply = (path: number[]): void => {
@@ -697,7 +788,11 @@ function buildGrid(
     const points = thresholdPoints(g, c.at, rects[ai]!, c.clear, tol);
     for (const pt of points) {
       const p = pathAt(pt);
-      if (p) apply(p);
+      if (p) {
+        apply(p);
+        carved.add(ai);
+        carved.add(bi);
+      }
     }
   }
 
@@ -792,9 +887,21 @@ function buildNav(
 
   // Internal connectors (two real room endpoints) become carved thresholds, tagged
   // with the door/opening clear width the access graph already estimated.
+  const halfThicknessById = new Map<string, number>(walls.map((w) => [w.id, w.thickness / 2]));
+  /** How far a seed may look past the adjacency tolerance for this connector's room:
+   *  the connector sits on its host's centreline, so the floor starts half a thickness
+   *  off. Unknown host → 0, i.e. exactly the pre-existing reach. */
+  const bandOf = (wallId: string | undefined): number =>
+    (wallId !== undefined ? halfThicknessById.get(wallId) : undefined) ?? 0;
+
   const connectors = access.edges
     .filter((e) => !e.ambiguous && roomIndexById.has(e.between[0]) && roomIndexById.has(e.between[1]))
-    .map((e) => ({ at: atById.get(e.doorId)!, between: e.between, clear: e.estimatedClearWidth }))
+    .map((e) => ({
+      at: atById.get(e.doorId)!,
+      between: e.between,
+      clear: e.estimatedClearWidth,
+      bandMm: bandOf(e.hostWallId),
+    }))
     .filter((c) => c.at !== undefined);
 
   const g = buildGrid(rooms, walls, connectors, furniture, verticals, voids, roomIndexById, tol, bodyRadius);
@@ -842,7 +949,7 @@ function buildNav(
     const ri = roomId !== undefined ? roomIndexById.get(roomId) : undefined;
     const at = atById.get(id);
     if (ri === undefined || at === undefined) continue;
-    const k = seedCell(g, at, rects[ri]!, ri, tol);
+    const k = seedCell(g, at, rects[ri]!, ri, tol, bandOf(edge?.hostWallId));
     if (k < 0) continue; // that doorway is sealed by furniture; the others may not be
     // A doorway in the outer wall has no exterior cells to carve, so its inner seed
     // reads a degenerate 1-cell width; stamp the connector's own clear width there.
@@ -856,7 +963,7 @@ function buildNav(
   const source =
     entranceRoomIdx === undefined || entrancePoint === undefined
       ? -1
-      : seedCell(g, entrancePoint, rects[entranceRoomIdx]!, entranceRoomIdx, tol);
+      : seedCell(g, entrancePoint, rects[entranceRoomIdx]!, entranceRoomIdx, tol, bandOf(entranceEdge?.hostWallId));
   // A sealed front door is not "no information": the grid and the other entrances still
   // have something to say about which rooms can be walked into at all.
   if (source < 0 || entrancePoint === undefined) {
@@ -1008,8 +1115,46 @@ export function computeCirculation(
     return ids.map((roomId) => ({ roomId, widestWayInMm: found.get(roomId) ?? 0 }));
   };
 
+  /**
+   * Why each room with no `rooms[]` entry has none — see {@link UnmeasuredReason}. The
+   * order of the tests IS the classification, and it is chosen so the reason names the
+   * operative fact rather than the first true one: a room reached from ANOTHER front
+   * door is reported as `other_entrance` even though no threshold of its own carved,
+   * because "you can walk in, just not from where we measure" is what a reader needs.
+   *
+   * `measured` and `sealed` are excluded by the caller, so the three lists partition the
+   * plan's rooms. Source order, so the output is deterministic.
+   */
+  const classifyUnmeasured = (nv: Nav, measured: Set<string>, sealed: Set<string>): UnmeasuredRoom[] => {
+    if (nv.kind === "none") return [];
+    const reach = reachableFromAny(nv.g, nv.sources);
+    // One pass instead of a scan per room: which room indices the grid can see at all.
+    const inGrid = new Uint8Array(rooms.length);
+    for (let k = 0; k < nv.g.roomIdx.length; k++) {
+      const ri = nv.g.roomIdx[k]!;
+      if (ri >= 0) inGrid[ri] = 1;
+    }
+    const out: UnmeasuredRoom[] = [];
+    for (let ri = 0; ri < rooms.length; ri++) {
+      const id = rooms[ri]!.id;
+      if (measured.has(id) || sealed.has(id)) continue;
+      const reason: UnmeasuredReason = !doorReachable.has(id)
+        ? "no_door_route"
+        : !inGrid[ri]
+          ? "below_grid_resolution"
+          : nv.roomCells[ri]!.some((k) => reach[k])
+            ? "other_entrance"
+            : !nv.g.carved.has(ri)
+              ? "no_threshold"
+              : "unreachable";
+      out.push({ roomId: id, reason });
+    }
+    return out;
+  };
+
   if (nav.kind === "empty") {
     const allBlocked = furnitureSealed(blockedCandidates(nav));
+    const unmeasured = classifyUnmeasured(nav, new Set(), new Set(allBlocked));
     return {
       entranceId: nav.entranceId,
       cellSizeMm: nav.cellSizeMm,
@@ -1017,6 +1162,7 @@ export function computeCirculation(
       rooms: [],
       routes: [],
       ...(allBlocked.length > 0 ? { blocked: measureWaysIn(allBlocked, nav.cellSizeMm) } : {}),
+      ...(unmeasured.length > 0 ? { unmeasured } : {}),
     };
   }
   const { g, anchor, roomCells, seed, source, entranceId } = nav;
@@ -1097,6 +1243,8 @@ export function computeCirculation(
     if (isBedroom(rooms[i]!)) addNearestRoute(i, wetRooms);
   }
 
+  const unmeasured = classifyUnmeasured(nav, new Set(roomFacts.map((r) => r.roomId)), new Set(blocked));
+
   return {
     entranceId,
     cellSizeMm,
@@ -1105,6 +1253,8 @@ export function computeCirculation(
     routes,
     // Absent rather than empty: a plan with nothing sealed keeps the bytes it had.
     ...(blocked.length > 0 ? { blocked: measureWaysIn(blocked, cellSizeMm) } : {}),
+    // Same rule, same reason: a plan whose every room measures emits no key at all.
+    ...(unmeasured.length > 0 ? { unmeasured } : {}),
   };
 }
 
