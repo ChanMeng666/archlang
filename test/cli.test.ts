@@ -219,7 +219,19 @@ describe("CLI — compile file-writing side effects", () => {
     expect(JSON.parse(r.stdout).written).toBe(false);
   }, 30000);
 
-  it("`--error-svg` on a broken plan with `--json` and no -o: still no file, still exit 2", () => {
+  /**
+   * `--error-svg` is the one flag whose whole purpose is to produce an image, so its
+   * behaviour under the new rule is a DECISION, pinned here rather than inherited.
+   *
+   * The card follows the same one rule as every other output: it is written when
+   * something names a file. The alternative — putting the card's bytes in the payload
+   * when nothing is written — was rejected, because the `--json` envelope reports facts
+   * about a render and has never carried content; an unbounded, error-only content key
+   * in a deliberately bounded envelope is a worse surprise than a flag that needs `-o`.
+   * The pair below is the pin: no file AND no content in the one case, and the flag
+   * working exactly as it always did the moment `-o` names a target.
+   */
+  it("`--error-svg` with `--json` and no -o: no file, no card in the payload, still exit 2", () => {
     const dir = mkdtempSync(join(tmpdir(), "archlang-cli-write-"));
     const plan = join(dir, "bad.arch");
     writeFileSync(plan, BAD, "utf8");
@@ -232,6 +244,26 @@ describe("CLI — compile file-writing side effects", () => {
     expect(j.written).toBe(false);
     expect(j.output).toBeUndefined();
     expect(j.diagnostics[0].code).toBe("E_ROOM_SIZE");
+    // The card was rendered — `bytes` is its real size — but its content is NOT in the
+    // envelope. No key anywhere in the payload carries SVG markup.
+    expect(j.bytes).toBeGreaterThan(0);
+    expect(r.stdout).not.toContain("<svg");
+  }, 30000);
+
+  it("`--error-svg -o <file>` still writes the card for a broken plan, exit 2", () => {
+    const dir = mkdtempSync(join(tmpdir(), "archlang-cli-write-"));
+    const plan = join(dir, "bad.arch");
+    writeFileSync(plan, BAD, "utf8");
+    const target = join(dir, "card.svg");
+    const r = runIn(dir, ["compile", plan, "--error-svg", "-o", target, "--json"]);
+    expect(r.status).toBe(2);
+    expect(readdirSync(dir).sort()).toEqual(["bad.arch", "card.svg"]);
+    const card = readFileSync(target, "utf8");
+    expect(card.startsWith("<svg ")).toBe(true);
+    expect(card).toContain("E_ROOM_SIZE");
+    const j = JSON.parse(r.stdout);
+    expect(j.output).toBe(resolve(target));
+    expect(j.written).toBeUndefined();
   }, 30000);
 
   // --- the other direction: naming a target still writes exactly what it always did ---

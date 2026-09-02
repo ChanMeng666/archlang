@@ -69,8 +69,17 @@ const pageSelect = (args: Args, whenAbsent: PageSelect): PageSelect =>
  *
  * The JSON says so positively rather than by omission: `written: false` sits exactly
  * where `output`/`outputs` would have, `bytes` still reports the size of the render,
- * and every other key is unchanged. Only `compile` is affected — `preview`, `batch`
- * and `md` keep their behaviour byte-for-byte.
+ * and every other key is unchanged. The bytes are NOT smuggled into the payload in
+ * place of the file: this envelope reports FACTS about a render and has never carried
+ * content, and an unbounded content key that appears only when no `-o` was given would
+ * be a worse surprise than a flag that needs `-o`. That is a decision, and it is pinned
+ * in `test/cli.test.ts` — including for `--error-svg`, the one flag whose whole purpose
+ * is to produce an image, which is therefore inert in exactly this combination.
+ *
+ * `preview`, `batch` and `md` keep their behaviour byte-for-byte. `watch` inherits the
+ * rule, because `cmdWatch` re-enters `cmdCompile` on every save — so `arch watch p.arch
+ * --json` now re-reports the plan on each save instead of re-writing `p.svg`, which is
+ * the same rule and not a second one.
  */
 const jsonNamesNoFile = (args: Args): boolean => args.json === true && args.o === undefined;
 
