@@ -465,6 +465,44 @@ not make. When lint reports `W_ROOM_UNREACHABLE`, `W_ROOM_DISCONNECTED`, `W_NO_E
 > `W_WINDOW_OFF_WALL` / `W_OPENING_OFF_WALL`) is a mis-coordinate, not a missing connector — run
 > `arch fix` (it rewrites it to the attachment form) rather than adding a new one.
 
+### Pick the door KIND before you widen the room
+
+A door has a kind — `hinged` (the default) · `sliding` · `barn` · `bifold` · `pocket` · `garage` —
+and it changes what the checks can say, not just the drawing. **Only `hinged` sweeps an arc**, so
+`W_SWING_OBSTRUCTED` cannot apply to any of the others.
+
+That makes the kind a legitimate answer to a diagnostic, and often the *right* one:
+
+- `W_SWING_OBSTRUCTED` on a door into a tight room — a `sliding` or `pocket` leaf sweeps nothing, so
+  the warning goes away because the plan genuinely fixed it, not because you silenced a rule. Moving
+  the furniture is the alternative; pick whichever the brief actually wants.
+- A `pocket` earns its own check instead: `W_POCKET_RUN` measures the wall the panel must slide into.
+  Swapping one warning for the other is a real trade, so read the new one rather than assuming a win.
+- Clauses are kind-specific and a wrong pairing **refuses** (`E_DOOR_KIND_CLAUSE`): `hinge` is
+  hinged-only, `slide`/`open` are sliding-family-only, and `garage` takes no clause at all — which
+  side it parks on is derived from which face has floor. A non-hinged kind on an `arc` wall also
+  refuses (`E_DOOR_KIND_CURVED`).
+
+`arch spec` has the full grammar; `examples/bungalow.arch` is the worked plan.
+
+### Declare `site` when the brief mentions orientation
+
+`site { street <north|south|east|west> [hemisphere …] }` **draws nothing**. It exists so orientation
+becomes a *fact the tools can check*, and without it two things silently cannot run:
+
+- `describe --json` gains a `site` block naming five directions — `street`, `back`, `equator_side`,
+  `sunrise_side`, `sunset_side` — and an intent's `windows.facing` may assert those names. **With no
+  `site` declared, that assertion fails with `E_INTENT_NO_SITE`** rather than passing vacuously.
+- `W_ROOM_NOT_EQUATOR_FACING` is the one rule that reads it, flagging a room whose windows all face
+  away from the equator side.
+
+So: if the brief says "south-facing living room", "morning light in the kitchen", or "faces the
+street", declare `site` first — otherwise you have written a plan whose central requirement nothing
+can verify. **It is a drafting heuristic for an aspect, not a daylight measurement**: there is no sun
+model, no latitude and no date, and `_side` names must not be read as more than an orientation.
+
+`examples/bungalow.arch` demonstrates both this and the door kinds above.
+
 ## Ask the CLI, and read only what you need
 
 The CLI documents itself, and every read can be narrowed at the source — never pull a whole plan's
