@@ -182,16 +182,17 @@ function hitsWall(fr: BBox, walls: RWall[]): boolean {
 
 /** The push that clears `fr` from the wall it most penetrates, "ambiguous" when it
  *  straddles a centreline with no majority side, `{ angled }` when the wall it hits is
- *  not axis-aligned (there is no on-grid axis push that clears it), or null when it hits
- *  nothing. */
+ *  not axis-aligned (there is no on-grid axis push that clears it — `curved` says whether
+ *  the move it declines is along a normal or along a radius, so the note names the wall
+ *  the author is looking at), or null when it hits nothing. */
 function computeWallPush(
   fr: BBox,
   walls: RWall[],
   grid: number,
-): { dx: number; dy: number; wallId: string } | { angled: string } | "ambiguous" | null {
+): { dx: number; dy: number; wallId: string } | { angled: string; curved: boolean } | "ambiguous" | null {
   let best: { depth: number; dx: number; dy: number; wallId: string } | null = null;
   let ambiguous = false;
-  let angled: string | null = null;
+  let angled: { id: string; curved: boolean } | null = null;
   const cx = fr.x + fr.w / 2;
   const cy = fr.y + fr.h / 2;
   for (const w of walls) {
@@ -200,10 +201,11 @@ function computeWallPush(
       if (!hit || hit.depth <= SLACK_MM) continue;
       const h2 = s.thickness / 2;
       // An ANGLED wall: clearing it is a move along the wall normal — off-axis and, on
-      // any real grid, off-grid. repair does not guess (ADR 0005), so the piece is
+      // any real grid, off-grid. A CURVED one is the same refusal with a different
+      // direction (a radius). repair does not guess (ADR 0005), so the piece is
       // reported rather than shoved somewhere plausible-looking.
       if (hit.axis === null) {
-        if (angled === null) angled = w.id;
+        if (angled === null) angled = { id: w.id, curved: s.arc !== undefined };
         continue;
       }
       if (hit.axis === "y") {
@@ -224,7 +226,7 @@ function computeWallPush(
     }
   }
   if (best) return { dx: best.dx, dy: best.dy, wallId: best.wallId };
-  if (angled !== null) return { angled };
+  if (angled !== null) return { angled: angled.id, curved: angled.curved };
   return ambiguous ? "ambiguous" : null;
 }
 
@@ -457,7 +459,9 @@ function nextFix(fr: BBox, ctx: FixCtx): NextFix {
     return { ambiguous: "is centred on a wall — move it onto one side, then re-run", problem: "straddles a wall" };
   if (wall && "angled" in wall)
     return {
-      ambiguous: `penetrates the angled wall "${wall.angled}" — clearing it is a move along that wall's normal, which is neither plan axis; move it by hand`,
+      ambiguous: wall.curved
+        ? `penetrates the curved wall "${wall.angled}" — clearing it is a move along that wall's radius, which is neither plan axis; move it by hand`
+        : `penetrates the angled wall "${wall.angled}" — clearing it is a move along that wall's normal, which is neither plan axis; move it by hand`,
       problem: `penetrates wall "${wall.angled}"`,
     };
   if (wall)

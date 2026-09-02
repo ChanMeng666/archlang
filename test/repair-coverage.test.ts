@@ -448,6 +448,35 @@ describe("repair — the postcondition: nothing flagged is left silent", () => {
     expect(reportedSpans(src).has(flagged[0]!.span!.start)).toBe(true);
   });
 
+  it("reports a piece through a CURVED wall instead of inventing a radial push", () => {
+    // The same postcondition one shape further out. Widening the collision rule to arcs
+    // (backlog 3.15) put a fault in front of a mover that pushes only along x/y, and
+    // clearing this one is a move along the wall's RADIUS — neither plan axis, off-grid,
+    // and different at every point of the run. A change entry OR an unresolved entry,
+    // never nothing; the note names the wall as curved rather than angled, because that
+    // is the wall the author is looking at.
+    const src = `plan "Drum" {
+  units mm
+  grid 50
+  wall id=bow exterior thickness 300 {
+    (2000,5000)
+    arc (8000,5000) radius 3000
+    arc (2000,5000) radius 3000
+    close
+  }
+  room id=r circle at (5000,5000) radius 2850 label "Hall" uses hall
+  furniture sofa at (4500,1550) size 1000x900
+}`;
+    const flagged = lint(src).filter((d) => d.code === "W_FURNITURE_WALL_COLLISION");
+    expect(flagged).toHaveLength(1);
+
+    const r = repair(src);
+    expect(r.changes).toEqual([]); // nothing was shoved somewhere plausible-looking
+    expect(r.source).toBe(src);
+    expect(r.unresolved.map((u) => u.reason).join(" ")).toContain('curved wall "bow"');
+    expect(reportedSpans(src).has(flagged[0]!.span!.start)).toBe(true);
+  });
+
   it("says so instead of returning a clean no-op when the plan does not resolve", () => {
     const broken = `plan "P" {
   units mm
