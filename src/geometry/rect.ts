@@ -271,7 +271,7 @@ export type WallIntrusion = { depth: number } & ({ axis: "x" | "y"; center: numb
 export function wallIntrusion(fr: BBox, s: { a: Point; b: Point; thickness: number; arc?: Arc }): WallIntrusion | null {
   if (s.arc) {
     const hit = arcBandIntrusion(fr, s.arc, s.thickness);
-    return hit && hit.runs.some(([lo, hi]) => hi - lo > 1) ? { depth: hit.depth, axis: null } : null;
+    return hit?.runs.some(([lo, hi]) => hi - lo > 1) ? { depth: hit.depth, axis: null } : null;
   }
   const f = segmentFrame(s);
   if (!f) return null;
