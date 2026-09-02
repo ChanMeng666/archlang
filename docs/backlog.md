@@ -647,6 +647,19 @@ What is still `todo` is the SYNTAX: an author still cannot say "draw this piece 
 plane" about an arbitrary `furniture` statement. The convention above is now the constraint any
 such design has to satisfy rather than a question it has to answer.
 
+**Item 5.7 supplied the SEMANTICS and deliberately did not touch this.** `overhead` is catalogue
+data on four families (`upper_cabinet`, `wall_cabinet`, `mirror`, `range_hood`); this item is about
+giving an author a word. So 5.5 is now a syntax problem, not a drawing one.
+
+**One tripwire to respect when you take it.** `test/overhead-furniture.test.ts` pins that the
+overhead set is exactly those four families **and that all four are `requiresWall`**. That premise
+is load-bearing: it is why `W_FURN_CLEARANCE` has no `isOverhead` arm — every overhead piece is
+already skipped one condition to the left, so an arm today would be unreachable, untested code.
+A ceiling-hung family (a pendant, a projector, a ceiling fan hangs off the slab, not the fabric)
+breaks both halves of that pin **on purpose** — and that is the moment to add the clearance arm,
+which will then be reachable enough to test by consequence. **Deleting the pin instead of adding
+the arm is the failure mode.**
+
 ### 5.6 · Angled furniture — `todo`
 
 A fixture still draws on an **axis-aligned footprint**, so a piece against a sloped wall is not
