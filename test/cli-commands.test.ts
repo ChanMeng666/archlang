@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -145,6 +145,7 @@ const labelled = (label: string): string =>
 
 /** A live child process running the real CLI, plus the bookkeeping to end it. */
 interface Child {
+  stdout: () => string;
   stderr: () => string;
   exit: () => { code: number | null; signal: NodeJS.Signals | null } | null;
   kill: (signal: NodeJS.Signals) => void;
@@ -164,13 +165,20 @@ function start(args: string[]): Child {
   child.stderr.on("data", (d: string) => {
     err += d;
   });
-  // Drained so a full pipe can never be mistaken for a hung watcher.
-  child.stdout.resume();
+  // Kept as well as drained — a `--json` watcher says what it did on stdout, and a data
+  // listener flows the stream just as `resume()` did, so a full pipe still cannot be
+  // mistaken for a hung watcher.
+  let out = "";
+  child.stdout.setEncoding("utf8");
+  child.stdout.on("data", (d: string) => {
+    out += d;
+  });
   let exit: { code: number | null; signal: NodeJS.Signals | null } | null = null;
   child.on("exit", (code, signal) => {
     exit = { code, signal };
   });
   return {
+    stdout: () => out,
     stderr: () => err,
     exit: () => exit,
     kill: (signal) => {
@@ -202,6 +210,45 @@ const peek = (f: string): string => {
     return "";
   }
 };
+
+/** The `compile --json` envelope, as much of it as the watch cases read. */
+interface CompileEnvelope {
+  ok: boolean;
+  written?: boolean;
+  output?: string;
+  bytes?: number;
+  summary?: { rooms: Array<{ label?: string }> };
+}
+
+/**
+ * Split a live stdout stream into the complete `emitJson` envelopes written so far.
+ *
+ * A resident `--json` command emits one envelope per compile, so they arrive
+ * concatenated. `emitJson` writes `JSON.stringify(obj, null, 2)`, under which a closing
+ * brace at column 0 — and nothing else — ends an envelope; every nested closer is
+ * indented. Partial trailing output is simply not yielded, which is what makes this
+ * safe to poll.
+ */
+function envelopes(stream: string): CompileEnvelope[] {
+  const done: CompileEnvelope[] = [];
+  let buf: string[] = [];
+  for (const line of stream.split(/\r?\n/)) {
+    buf.push(line);
+    if (line === "}") {
+      done.push(JSON.parse(buf.join("\n")) as CompileEnvelope);
+      buf = [];
+    }
+  }
+  return done;
+}
+
+/** The i-th complete envelope, or a failure that says how many there actually were. */
+function envelope(stream: string, i: number): CompileEnvelope {
+  const all = envelopes(stream);
+  const e = all[i];
+  if (!e) throw new Error(`expected at least ${i + 1} JSON envelope(s) on stdout, saw ${all.length}`);
+  return e;
+}
 
 describe("CLI — watch", () => {
   /**
@@ -292,6 +339,94 @@ describe("CLI — watch", () => {
       if (w.exit() === null) w.kill("SIGKILL");
     }
   }, 90000);
+
+  /**
+   * `watch` INHERITS `compile`'s one file rule, and that is asserted here rather than
+   * argued from the call graph.
+   *
+   * `cmdWatch` re-enters `cmdCompile` on every save, so the rule that `--json` with no
+   * `-o` names no output file reaches a second command: `arch watch p.arch --json`
+   * re-REPORTS the plan on each save where it used to re-WRITE `p.svg`. "It follows by
+   * construction" is exactly the reasoning that let this command not watch at all for
+   * twenty-five releases, so the claim is made the only way it can be — by running the
+   * watcher, saving twice, and looking at the directory.
+   *
+   * The liveness proof is the second envelope carrying the NEW label: only a living
+   * watcher that re-read the file can produce it, and it lands with the directory still
+   * holding nothing but the source.
+   */
+  it("`watch --json` with no -o re-REPORTS on save and writes nothing", async () => {
+    // Same 90 s budget and reasoning as the case above: a spawned child plus a
+    // filesystem watcher, under full-suite parallel load on Windows.
+    const budget = 90000;
+    const dir = tmpDir();
+    const file = tmp("w.arch", labelled("Alpha"), dir);
+    const w = start(["watch", file, "--json"]);
+    try {
+      await until("the first compile's JSON envelope", () => envelopes(w.stdout()).length >= 1, budget);
+      await until("the watching banner on stderr", () => w.stderr().includes("Ctrl+C to stop"), budget);
+
+      const first = envelope(w.stdout(), 0);
+      expect(first.ok).toBe(true);
+      expect(first.written).toBe(false);
+      expect(first.output).toBeUndefined();
+      expect(first.summary?.rooms[0]?.label).toBe("Alpha");
+      // Nothing was written for the first compile — no `w.svg` beside the source.
+      expect(readdirSync(dir).sort()).toEqual(["w.arch"]);
+
+      // Save. A living watcher recompiles; the rule says it still writes nothing.
+      writeFileSync(file, labelled("Bravissimo"), "utf8");
+      await until("a second envelope from the recompile", () => envelopes(w.stdout()).length >= 2, budget);
+      const second = envelope(w.stdout(), 1);
+      expect(second.summary?.rooms[0]?.label).toBe("Bravissimo");
+      expect(second.written).toBe(false);
+      expect(second.output).toBeUndefined();
+
+      // Twice, because one save is not a watcher — and the directory is STILL just the source.
+      writeFileSync(file, labelled("Cha"), "utf8");
+      await until("a third envelope from the second save", () => envelopes(w.stdout()).length >= 3, budget);
+      expect(envelope(w.stdout(), 2).summary?.rooms[0]?.label).toBe("Cha");
+      expect(readdirSync(dir).sort()).toEqual(["w.arch"]);
+
+      // It never exited on its own, and ends when signalled — the resident contract is
+      // unchanged by the writing rule.
+      expect(w.exit()).toBe(null);
+      w.kill("SIGTERM");
+      await until("the process to exit after SIGTERM", () => w.exit() !== null, 15000);
+      expect(w.exit()?.signal).not.toBe(null);
+    } finally {
+      if (w.exit() === null) w.kill("SIGKILL");
+    }
+  }, 240000);
+
+  /**
+   * The other half of the same rule for `watch`: name a file and it writes one, on every
+   * save, exactly as it always did. Without this the case above could be greened by a
+   * watcher that had simply stopped writing altogether.
+   */
+  it("`watch -o <file> --json` still writes the artifact on every save", async () => {
+    const budget = 90000;
+    const dir = tmpDir();
+    const file = tmp("w.arch", labelled("Alpha"), dir);
+    const out = join(dir, "w.svg");
+    const w = start(["watch", file, "-o", out, "--json"]);
+    try {
+      await until("the first compile to write the output with Alpha", () => peek(out).includes("Alpha"), budget);
+      const first = envelope(w.stdout(), 0);
+      expect(first.output).toBe(resolve(out));
+      expect(first.written).toBeUndefined();
+
+      writeFileSync(file, labelled("Bravissimo"), "utf8");
+      await until("a recompile carrying Bravissimo", () => peek(out).includes("Bravissimo"), budget);
+      expect(readdirSync(dir).sort()).toEqual(["w.arch", "w.svg"]);
+
+      expect(w.exit()).toBe(null);
+      w.kill("SIGTERM");
+      await until("the process to exit after SIGTERM", () => w.exit() !== null, 15000);
+    } finally {
+      if (w.exit() === null) w.kill("SIGKILL");
+    }
+  }, 240000);
 
   it("refuses a missing path and stdin with exit 3", () => {
     const none = run(["watch"]);
