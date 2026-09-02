@@ -719,11 +719,36 @@ because such a frame factors exactly as `M = R(m)·Fx`, hence `M·R(l) = R(m−l
 precisely what `transformDeg` already computes. So **`mirror x` and `mirror y` differ only in the
 derived quarter-turn**; which axis the author wrote never reaches the glyph.
 
-**Exactly two shipped drawings move, and the reason is checkable:** `clinic` (`mirror y`, a `counter`)
-and `terrace-row` (`mirror x`, a `fridge`) are the only examples that BOTH mirror a placed component
-AND contain a fixture handed at its footprint. **`museum-wings` — the mirrored-`place` flagship — has
-zero `furniture` statements**, so it could never have shown this bug; naming it as the test was a
-reviewer error. `describe()` and `lint()` do not move on any of the 30.
+**Exactly two shipped drawings move, and the changed pieces were identified BY ELEMENT ID** — both
+trees compiled with `annotate: true` and the furniture nodes diffed by `elementId`, not attributed by
+reading the source:
+
+```
+CHANGED: clinic / c4.f_desk, c5.f_desk, c6.f_desk
+CHANGED: terrace-row / u2.f_bed, u4.f_bed
+74 fixtures drawn across the three placed plans | 5 changed
+```
+
+Five of 74 — exactly the handed pieces sitting on a reflecting frame. `desk @ 1600x800` and
+`bed @ 1400x1900` are handed; everything else in those mirrored components is symmetric at its
+catalogued footprint (`sofa @ 700x1900`, `basin @ 600x450`, `stove @ 600x600`,
+`kitchen_sink @ 800x600`, `wardrobe @ 600x1200`, `fridge @ 600x650`).
+
+**Two attributions to get right, because both are easy to guess wrong from the source text.**
+`clinic`'s two `counter`s are `f_recept` and `f_tr_counter` — **plan-level statements with no instance
+prefix**, so no reflection can reach them. And `terrace-row`'s mirrored units DO contain a `fridge`,
+one of the five footprint-dependent families — but it is symmetric at 600×650 and did not move.
+Membership of that list is not the same as being handed *here*.
+
+**`museum-wings` is a live test of this path and it must NOT move.** Its own text has no `furniture`
+statement, but it `import`s `museum-wing.arch`, which carries two — so the compiled plan has four
+fixtures and two of them (`east.bench1`, `east.bench2`) sit inside `place wing() as east … mirror x`.
+It is byte-identical because `bench @ 1800x600` is symmetric, which is the symmetry half of the law
+holding on the drawing it matters most for — not an absence of fixtures. (An earlier revision of this
+entry said it "could never have shown this bug"; that was wrong, and came from grepping the file
+rather than following its import.)
+
+`describe()` and `lint()` do not move on any of the 30.
 
 **The `frame.ts` collision with G.4 was resolved by keeping both, and proved rather than reasoned.**
 Both items insert at the identical anchor in `transformGeometry`, and git conflicts there — but

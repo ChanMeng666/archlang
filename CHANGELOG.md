@@ -14,9 +14,10 @@ keyword, no new `E_*`/`W_*` code, nothing removed from the public surface.
 **Three drawings move in total, each for a stated reason.** All 30 shipped examples were compiled
 under v1.32.0 and under this tree and SHA-256 compared: `furnished-flat` (its source gained a
 `range_hood` and a `mirror`), and `clinic` and `terrace-row` (each mirrors a placed component
-containing a fixture whose symbol is handed). Every other drawing is byte-identical — so the
-circulation rewrite, which corrected every furniture-derived clear width by 600 mm, moved not one
-pixel of anything.
+containing a handed fixture — three `desk`s and two `bed`s, five of the 74 fixtures drawn across the
+placed plans, identified by element id rather than by eye). Every other drawing is byte-identical —
+so the circulation rewrite, which corrected every furniture-derived clear width by 600 mm, moved not
+one pixel of anything.
 
 ### Fixed — silent wrong answers
 
