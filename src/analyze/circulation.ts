@@ -104,7 +104,7 @@ export function navCellSizeMm(areaMm2: number): number {
  * A corollary worth stating rather than discovering: under this model no walkable route
  * can be narrower than `2·bodyRadius`, because a narrower one has no free cell at all
  * and is *sealed* rather than tight — which is why a sealed room is a reported fact
- * ({@link CirculationModel.blockedRoomIds}) and not an omission.
+ * ({@link CirculationModel.blocked}) carrying the width of the best way in, and not an omission.
  */
 export function centreFreedomToClearWidth(hops: number, cellMm: number, bodyRadiusMm: number): number {
   return Math.max(0, 2 * hops - 1) * cellMm + 2 * bodyRadiusMm;
@@ -147,16 +147,39 @@ export interface CirculationModel {
   routes: CirculationRoute[];
   /**
    * Rooms the modeled doors DO reach from the entrance but the WALKABLE grid does not —
-   * furniture and its clearances seal every way in, so the room has no `rooms[]` entry.
-   * Source order; **present only when non-empty**, so a plan with nothing sealed keeps
-   * the summary bytes it had.
+   * furniture and its clearances leave no way in a body fits through, so the room has no
+   * `rooms[]` entry. Source order; **present only when non-empty**, so a plan with
+   * nothing sealed keeps the summary bytes it had.
    *
    * This exists because the absence used to be the whole report: a sealed room simply
    * fell out of `rooms[]` and `W_PATH_TOO_NARROW`, whose domain is that array, went
    * silent — a plan got *cleaner* as an obstacle grew (`docs/backlog.md` 5.8). A room
    * with no door path at all is NOT listed here; that is `W_ROOM_UNREACHABLE`'s fact.
    */
-  blockedRoomIds?: string[];
+  blocked?: BlockedRoom[];
+}
+
+/** A room no route reaches, and the width of the best way in that does exist. */
+export interface BlockedRoom {
+  roomId: string;
+  /**
+   * The widest way in, in mm — the largest body that DOES reach the room, measured by
+   * {@link CirculationModel.bodyRadiusMm}'s own ruler rather than asserted.
+   *
+   * A sealed room has no widest-path reading, because the widest path never arrives; the
+   * temptation is then to print 0, and 0 is a fabrication whenever a real gap exists. It
+   * is the exact complaint `docs/backlog.md` 5.8 was filed over ("100 mm is not a width
+   * anything in that corridor actually has"), and replacing a fictional 100 with a
+   * fictional 0 would not close it. So the number is MEASURED: re-run the same grid with
+   * a smaller body and see which one gets there. The rungs are half a cell apart, so the
+   * answer is a whole cell of width, and it is monotone in an obstacle's depth for the
+   * same reason the reachable reading is — a deeper obstacle can only admit a smaller
+   * body.
+   *
+   * **0 means what it says**: not even a point-sized body finds a gap at this grid's
+   * resolution. That is the only case the diagnostic calls a seal.
+   */
+  widestWayInMm: number;
 }
 
 /** Rooms that read as a living or dining space (declared use, else a label match —
@@ -911,7 +934,7 @@ export function computeCirculation(
 
   /**
    * The rooms no front door can be walked into — the raw candidate set behind
-   * `blockedRoomIds`, before the furniture control below confirms it.
+   * `blocked`, before the furniture control below confirms it.
    *
    * Three conditions, and each one is load-bearing: the doors must SAY you can get there
    * (else it is `W_ROOM_UNREACHABLE`), the grid must be able to SEE the room at all (a
@@ -957,6 +980,34 @@ export function computeCirculation(
     return cand.filter((ri) => control.roomCells[ri]!.some((k) => reach[k])).map((ri) => rooms[ri]!.id);
   };
 
+  /**
+   * The widest way in to each sealed room — see {@link BlockedRoom.widestWayInMm}.
+   * One descending ladder shared by every blocked room, so the cost is bounded by the
+   * ladder (≤ `bodyRadius / (cell/2)` grid builds) rather than multiplied by the rooms,
+   * and it is paid only on a plan that has something sealed.
+   */
+  const measureWaysIn = (ids: string[], cell: number): BlockedRoom[] => {
+    if (ids.length === 0) return [];
+    const indexOf = new Map(rooms.map((r, i) => [r.id, i]));
+    const pending = new Set(ids);
+    const found = new Map<string, number>();
+    const step = Math.max(1, Math.round(cell / 2));
+    for (let r = bodyRadiusMm - step; r > 0 && pending.size > 0; r -= step) {
+      const nv = buildNav(rooms, walls, doors, openings, furniture, verticals, voids, access, tol, r);
+      if (nv.kind === "none") break;
+      const reach = reachableFromAny(nv.g, nv.sources);
+      for (const id of ids) {
+        if (!pending.has(id)) continue;
+        const ri = indexOf.get(id);
+        if (ri !== undefined && nv.roomCells[ri]!.some((k) => reach[k])) {
+          found.set(id, 2 * r);
+          pending.delete(id);
+        }
+      }
+    }
+    return ids.map((roomId) => ({ roomId, widestWayInMm: found.get(roomId) ?? 0 }));
+  };
+
   if (nav.kind === "empty") {
     const allBlocked = furnitureSealed(blockedCandidates(nav));
     return {
@@ -965,7 +1016,7 @@ export function computeCirculation(
       bodyRadiusMm,
       rooms: [],
       routes: [],
-      ...(allBlocked.length > 0 ? { blockedRoomIds: allBlocked } : {}),
+      ...(allBlocked.length > 0 ? { blocked: measureWaysIn(allBlocked, nav.cellSizeMm) } : {}),
     };
   }
   const { g, anchor, roomCells, seed, source, entranceId } = nav;
@@ -1053,7 +1104,7 @@ export function computeCirculation(
     rooms: roomFacts,
     routes,
     // Absent rather than empty: a plan with nothing sealed keeps the bytes it had.
-    ...(blocked.length > 0 ? { blockedRoomIds: blocked } : {}),
+    ...(blocked.length > 0 ? { blocked: measureWaysIn(blocked, cellSizeMm) } : {}),
   };
 }
 

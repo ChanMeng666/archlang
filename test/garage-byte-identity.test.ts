@@ -116,7 +116,9 @@ const ROOT = join(HERE, "..");
  * `furnished-flat.arch`, where this suite also pins one: `circulation` gains an `r_bath`
  * entry and the two bedroom->bath routes that depend on it (the room was silently dropped
  * because its label point sat in a pocket the entrance could not reach), and gains
- * `blockedRoomIds: ["r_kitchen"]` — a real, previously unreported finding about that plan.
+ * `blocked: [{ roomId: "r_kitchen", widestWayInMm: 400 }]` — a real, previously
+ * unreported finding about that plan, carrying the MEASURED width of the best way in
+ * rather than a fabricated zero.
  * Nothing else in its summary moved.
  *
  * Do not read this entry as permission either. A summary digest still moves only for a
@@ -142,7 +144,7 @@ const BASELINE: Readonly<Record<string, string>> = {
   "studio.arch": "90951a2517e141dfe28f0e12462fd29cefba5460c900304e435ef53e7f3c0f3f",
   "laneway-house.arch": "401f5a9e255e5748a2eda400569ad352ae856e1ad5c9f51b62895e30bfd5ad1f",
   "bungalow.arch": "7dacd03e5c79772836ad273f9542c1272f881df27d8afd0dadef5ef558f8f3b2",
-  "furnished-flat.arch": "40497e218753de835f5c475a132c676d9f9bc5c69c100c7f79b670af8849b63b",
+  "furnished-flat.arch": "88d5be448d4b41c09a8c7302b1f815050fa94a0fb728e0cd1c10e1d64cf03d29",
   "two-bed.arch": "dec746240dcc800c866a0dc928b451c83caa143f456adc704baa72d724ef6520",
 };
 
@@ -162,7 +164,7 @@ const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
   // edited in v1.32 -- seven of the new families were added to the flat -- so `describe()`
   // and `lint()` genuinely report a different building, which is exactly the kind of change
   // this pin exists to make visible. A redrawn SYMBOL still cannot move any number here.
-  "furnished-flat.arch": "cf5ca22ab3f5469ce57606b9673b5928edd1471a4ab99acbe669160de14ed20c",
+  "furnished-flat.arch": "d58f7a8f4207dd693de21708f3dd794f3ce31dffce96bc1a79701a5d6066c149",
   "two-bed.arch": "c8e5a430665c6ea875a94225dc062a534bebf776c28b3ffbdb0a614d3e71ff79",
 };
 

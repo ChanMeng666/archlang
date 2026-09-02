@@ -187,7 +187,9 @@ describe("a fixture across part of a wide threshold narrows it, never seals it",
     expect(ids).not.toContain("narrow");
     // Unreachable is now REPORTED, not merely absent: the omission was the whole of
     // `docs/backlog.md` 5.8, since the lint rule's domain was the array above.
-    expect(c?.blockedRoomIds).toEqual(["narrow"]);
+    expect(c?.blocked?.map((b) => b.roomId)).toEqual(["narrow"]);
+    // …and the width of the way in that does exist is MEASURED, never printed as a zero.
+    expect(c?.blocked?.[0]?.widestWayInMm).toBeGreaterThanOrEqual(0);
   });
 });
 

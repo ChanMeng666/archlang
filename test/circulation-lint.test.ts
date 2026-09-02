@@ -41,10 +41,13 @@ describe("circulation lint", () => {
     expect(warns[0]!.message).toMatch(/squeezes to \d+ mm \(\d+ mm below the 700 mm minimum\)/);
   });
 
-  it("trips W_PATH_TOO_NARROW as a SEAL when furniture closes the only way through", () => {
+  it("reports the MEASURED way in when furniture closes the only way through", () => {
     // The limit case, and the one `docs/backlog.md` 5.8 is about: two cabinets leaving a
     // 500 mm gap no body fits through. The room drops out of `circulation.rooms[]`, which
     // is exactly how this used to go silent — a plan got CLEANER as the obstacle grew.
+    // The number it reports is the 500 mm gap that is really there, measured by asking
+    // which smaller body reaches the room, NOT a fabricated 0: printing a width nothing
+    // in the plan has is the complaint 5.8 was filed over, and 0 is one of those.
     const src = `plan "Sealed" {
   units mm
   grid 100
@@ -59,7 +62,12 @@ describe("circulation lint", () => {
 }`;
     const warns = lint(src).filter((d) => d.code === "W_PATH_TOO_NARROW");
     expect(warns).toHaveLength(1);
-    expect(warns[0]!.message).toMatch(/to "Kitchen" is blocked: .+\(0 mm against the 700 mm minimum\)/);
+    expect(warns[0]!.message).toMatch(
+      /to "Kitchen" squeezes to (400|500) mm and stops there — no way in is wider, so no route reaches the room \(\d+ mm below the 700 mm minimum\)/,
+    );
+    // "Blocked", and the 0 mm that goes with it, is reserved for a room with no gap at
+    // all — the wording must not be reachable while a real dimension exists.
+    expect(warns[0]!.message).not.toContain("is blocked");
   });
 
   it("flags studio under the accessibility profile (wheelchair passage) that default does not", () => {

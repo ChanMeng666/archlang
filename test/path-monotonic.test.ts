@@ -39,7 +39,9 @@ function widths(src: string): { widths: Widths; missing: string[] } {
   const out: Widths = new Map();
   if (!c) return { widths: out, missing: [] };
   for (const r of c.rooms) out.set(r.roomId, r.bottleneckClearWidthMm);
-  for (const id of c.blockedRoomIds ?? []) out.set(id, 0);
+  // A sealed room's "width" for the monotonicity law is the widest way in that exists —
+  // measured, not asserted — so the law compares like with like across the seal boundary.
+  for (const b of c.blocked ?? []) out.set(b.roomId, b.widestWayInMm);
   const missing = s.rooms.map((r) => r.id).filter((id) => !out.has(id));
   return { widths: out, missing };
 }
@@ -141,7 +143,7 @@ describe("W_PATH_TOO_NARROW is monotone in an obstacle's depth", () => {
     const read = (d: number): number | undefined =>
       describePlan(NORTH_CABINET(d)).circulation?.rooms.find((r) => r.roomId === "r_b")?.bottleneckClearWidthMm;
     const seq = depths.map(read);
-    // Every room is measured at every depth: this plan never seals, so a `blockedRoomIds`
+    // Every room is measured at every depth: this plan never seals, so a `blocked`
     // entry here would be a different bug.
     for (const [i, v] of seq.entries()) expect(v, `depth ${depths[i]}`).toBeGreaterThan(0);
     for (let i = 1; i < seq.length; i++) {
@@ -158,15 +160,18 @@ describe("W_PATH_TOO_NARROW is monotone in an obstacle's depth", () => {
   it("names the sealed rooms rather than dropping them (the false clean itself)", () => {
     // The reported table's own rows: at 200–450 mm the hall still passes a body, at
     // 500 mm and beyond the 600 mm that is left cannot, and the plan used to go CLEAN.
-    expect(describePlan(flatWith(200)).circulation?.blockedRoomIds).not.toContain("r_live");
-    const sealed = describePlan(flatWith(500)).circulation?.blockedRoomIds ?? [];
+    const ids = (src: string): string[] => (describePlan(src).circulation?.blocked ?? []).map((b) => b.roomId);
+    expect(ids(flatWith(200))).not.toContain("r_live");
+    const sealed = ids(flatWith(500));
     expect(sealed).toContain("r_live");
     expect(sealed).toContain("r_bed1");
     const msgs = lint(flatWith(500))
       .filter((d) => d.code === "W_PATH_TOO_NARROW")
       .map((d) => d.message);
-    expect(msgs.some((m) => m.includes('"Living / Dining"') && m.includes("blocked"))).toBe(true);
-    expect(msgs.some((m) => m.includes('"Bedroom 1"') && m.includes("blocked"))).toBe(true);
+    // The message carries a MEASURED width, never a fabricated 0 — a real gap exists here
+    // (the sofa/dining-table pair leave 500 mm), it is simply narrower than a body.
+    expect(msgs.some((m) => /"Living \/ Dining" squeezes to [1-9]\d* mm and stops there/.test(m))).toBe(true);
+    expect(msgs.some((m) => /"Bedroom 1" squeezes to [1-9]\d* mm and stops there/.test(m))).toBe(true);
   });
 });
 
@@ -208,8 +213,12 @@ describe("the reported clear width is the width a body passes through", () => {
     const seq = [1200, 1000, 900, 800].map((g) => readB(g)!);
     for (let i = 1; i < seq.length; i++) expect(seq[i]!).toBeLessThanOrEqual(seq[i - 1]!);
     // Below the body's own width there is no passage at all — the model says so rather
-    // than inventing a number, and the room is named in `blockedRoomIds`.
-    expect(describePlan(PINCH(500)).circulation?.blockedRoomIds).toEqual(["b"]);
+    // than inventing a bottleneck, and the room is named in `blocked` — with the width of
+    // the way in that DOES exist measured rather than printed as a zero.
+    const sealed = describePlan(PINCH(500)).circulation?.blocked;
+    expect(sealed?.map((b) => b.roomId)).toEqual(["b"]);
+    expect(sealed?.[0]?.widestWayInMm).toBeGreaterThan(0);
+    expect(sealed?.[0]?.widestWayInMm).toBeLessThan(2 * DEFAULT_BODY_RADIUS_MM);
   });
 
   it("centreFreedomToClearWidth is the closed form, and adds exactly one body diameter", () => {
@@ -230,7 +239,7 @@ describe("a blocked room is a claim about FURNITURE, and is proved differentiall
     // reporting those as sealed rooms would hand the reader a fiction. The furniture-free
     // control is what tells the two apart.
     const src = readFileSync(new URL("../examples/hexagon-pavilion.arch", import.meta.url), "utf8");
-    expect(describePlan(src).circulation?.blockedRoomIds).toBeUndefined();
+    expect(describePlan(src).circulation?.blocked).toBeUndefined();
     expect(lint(src).map((d) => d.code)).not.toContain("W_PATH_TOO_NARROW");
   });
 
@@ -239,7 +248,7 @@ describe("a blocked room is a claim about FURNITURE, and is proved differentiall
     // are unreachable from it by construction — an ordinary fact about a terrace, and not
     // furniture sealing twelve rooms.
     const src = readFileSync(new URL("../examples/terrace-row.arch", import.meta.url), "utf8");
-    expect(describePlan(src).circulation?.blockedRoomIds).toBeUndefined();
+    expect(describePlan(src).circulation?.blocked).toBeUndefined();
     expect(lint(src).map((d) => d.code)).not.toContain("W_PATH_TOO_NARROW");
   });
 });

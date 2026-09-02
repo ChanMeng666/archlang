@@ -102,7 +102,9 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  * `furnished-flat.arch`, where this suite also pins one: `circulation` gains an `r_bath`
  * entry and the two bedroom->bath routes that depend on it (the room was silently dropped
  * because its label point sat in a pocket the entrance could not reach), and gains
- * `blockedRoomIds: ["r_kitchen"]` — a real, previously unreported finding about that plan.
+ * `blocked: [{ roomId: "r_kitchen", widestWayInMm: 400 }]` — a real, previously
+ * unreported finding about that plan, carrying the MEASURED width of the best way in
+ * rather than a fabricated zero.
  * Nothing else in its summary moved.
  *
  * Do not read this entry as permission either. A summary digest still moves only for a

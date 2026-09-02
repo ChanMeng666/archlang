@@ -101,6 +101,7 @@ export type {
   FurniturePlacement,
   BBox,
   DescribeOptions,
+  BlockedRoom,
   CirculationModel,
   RoomCirculation,
   CirculationRoute,

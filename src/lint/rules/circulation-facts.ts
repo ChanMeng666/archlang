@@ -10,7 +10,9 @@
  * iterated that array went quiet exactly when the plan got worse, and deepening one
  * cabinet took `examples/furnished-flat.arch` from "squeezes to 300 mm" to CLEAN. A
  * blocked route is the limit case of a narrow one — 0 mm of clear width — so it is the
- * same code, and `circulation.blockedRoomIds` is what carries it.
+ * same code, and `circulation.blocked` is what carries it — with the width of the best
+ * way in MEASURED rather than printed as a zero, because a fabricated 0 mm is the same
+ * defect 5.8 was filed over, one digit smaller.
  *
  * Both rules read the same circulation model, so it is built once per `lint()` run and
  * memoised on the (per-run) LintContext identity.
@@ -73,17 +75,20 @@ export const pathTooNarrow: LintRule = {
     // of nowhere. `circ.rooms` is itself in source order, so a plan with nothing blocked
     // emits exactly the diagnostics, in exactly the order, it emitted before.
     const factOf = new Map(circ.rooms.map((rc) => [rc.roomId, rc]));
-    const blocked = new Set(circ.blockedRoomIds ?? []);
+    const blocked = new Map((circ.blocked ?? []).map((b) => [b.roomId, b.widestWayInMm]));
     for (const r of rooms) {
-      if (blocked.has(r.id)) {
+      const wayIn = blocked.get(r.id);
+      if (wayIn !== undefined) {
         warned.add(r.id);
-        out.push({
-          severity: "warning",
-          code: "W_PATH_TOO_NARROW",
-          ...at(r),
-          message: `The walk from the entrance to "${labelOf(r)}" is blocked: furniture and its clearances seal every way in, so no clear width survives at all (0 mm against the ${mm(min)} mm minimum).`,
-          hints: narrowHints(min),
-        });
+        // Two different claims, and saying the stronger one when the weaker is true is
+        // the whole of 5.8. A room with a real but too-narrow way in gets that width, in
+        // the same measured-deficit style as every other rule; only a room with no gap
+        // at all is called a seal.
+        const message =
+          wayIn > 0
+            ? `The walk from the entrance to "${labelOf(r)}" squeezes to ${mm(wayIn)} mm and stops there — no way in is wider, so no route reaches the room (${mm(shortfall(min, wayIn))} mm below the ${mm(min)} mm minimum).`
+            : `The walk from the entrance to "${labelOf(r)}" is blocked: furniture and its clearances leave no gap at all (0 mm against the ${mm(min)} mm minimum).`;
+        out.push({ severity: "warning", code: "W_PATH_TOO_NARROW", ...at(r), message, hints: narrowHints(min) });
         continue;
       }
       const rc = factOf.get(r.id);
