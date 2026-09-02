@@ -416,6 +416,16 @@ describe("CLI — watch", () => {
       expect(first.output).toBe(resolve(out));
       expect(first.written).toBeUndefined();
 
+      // WAIT FOR THE BANNER BEFORE SAVING. The first compile finishing is NOT readiness:
+      // `cmdWatch` awaits `cmdCompile` and only then calls `watchFile`, which takes its
+      // baseline stat at that moment — so a save landing in between is folded into the
+      // baseline and never produces a change event, silently and only for the first save.
+      // The banner is printed after arming (`cmdWatch`, and `test/watch-arming.test.ts`
+      // pins the ordering), which makes it the only true readiness signal. Without this
+      // the case is a RACE: it passes when run alone and times out at 90 s under full
+      // parallel suite load, on the exact window that ordering exists to close.
+      await until("the watching banner on stderr", () => w.stderr().includes("Ctrl+C to stop"), budget);
+
       writeFileSync(file, labelled("Bravissimo"), "utf8");
       await until("a recompile carrying Bravissimo", () => peek(out).includes("Bravissimo"), budget);
       expect(readdirSync(dir).sort()).toEqual(["w.arch", "w.svg"]);
