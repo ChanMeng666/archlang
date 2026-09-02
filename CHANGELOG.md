@@ -7,12 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Two agent-facing defects from `docs/backlog.md`, both of which made a machine-readable
-answer quietly wrong rather than visibly absent. No language change: no new keyword, no new
-`E_*`/`W_*` code, and every one of the 30 shipped examples renders, describes and lints
-SHA-256 identical to v1.32.0.
+Three agent-facing defects from `docs/backlog.md`, every one of which made a machine-readable
+answer quietly **wrong** rather than visibly absent. No language change: no new keyword, no new
+`E_*`/`W_*` code, nothing removed from the public surface, and **every shipped example renders
+SHA-256 identical** — no drawing moves.
 
 ### Fixed
+
+- **`W_PATH_TOO_NARROW` went CLEAN as the obstruction grew** (backlog 5.8) — the failure direction
+  a reader never catches by eye. Deepening one cabinet in `examples/furnished-flat.arch` took the
+  plan from "squeezes to 300 mm" through "100 mm" to **clean**. Three independent defects, and the
+  backlog entry named the cause of none of them:
+
+  1. **The false clean.** An unreachable room was `continue`d out of the circulation facts, and the
+     rule iterated exactly that array — so a room sealed by furniture left the rule's domain and
+     warned about nothing. `W_ROOM_NO_CLEAR_PATH` did not catch it either: at 500 mm the whole plan
+     returned **zero diagnostics of any code**. The rule now walks rooms in source order and reads
+     `circulation.blocked`; a plan with nothing blocked emits byte-identical diagnostics in
+     identical order.
+  2. **The number was one body diameter short — on every plan ArchLang has ever measured.** The
+     clearance distance transform is seeded on body-radius-eroded cells, so its hop count is a
+     body *centre's* freedom, and that was being read as a width.
+  3. **The threshold carve tried an opening's centre and stopped.** A cabinet whose halo just missed
+     the midpoint left a one-cell doorway; a **deeper** cabinet fell through to a fallback that
+     opened the whole threshold. *The plan with more furniture measured wider.*
+
+  **The reported width is measured, not fabricated.** A sealed room has no widest-path reading, so
+  the model re-runs the grid with a descending body radius and reports the widest way in — paid only
+  when something is sealed. "Seals every way in / 0 mm" is now reserved for a genuine zero.
+
+  **Two shipped examples gain a warning**, both true positives verified from source coordinates:
+  `furnished-flat`'s Kitchen and `tiny-house`'s Wet room, each sealed at 400 mm against a 700 mm
+  minimum. Nothing loses a warning; no `ok` flag or exit code moves anywhere in the corpus.
 
 - **Plan JSON silently dropped `dims auto`** (backlog G.3). The setting lived on the resolved
   plan as `ir.autoDims` with no field in `PlanJson`, so `planJsonToArch` never re-emitted it and
@@ -47,6 +73,13 @@ SHA-256 identical to v1.32.0.
 
 ### Changed
 
+- **`describe --json`'s circulation numbers move on 23 of the 30 shipped examples**, and this is a
+  correction rather than a regression: every furniture-derived `bottleneckClearWidthMm` had been one
+  body diameter (600 mm) short, and walk distances fall or stay equal because the threshold fix gives
+  routes strictly more options. A field-level diff confirms **only** circulation fields changed — no
+  room, area, adjacency, opening, freedom or totals value moves. `circulation.blockedRoomIds` did not
+  exist in a release, so nothing published changes shape; the field ships as `circulation.blocked`,
+  an array of `{ roomId, widestWayInMm }`.
 - **`arch watch … --json` with no `-o` now re-reports on each save instead of re-writing
   `<stem>.svg`.** `cmdWatch` re-enters `cmdCompile`, so the rule above reaches a second command.
   Pinned by two live end-to-end cases rather than left to follow by construction — `watch` did

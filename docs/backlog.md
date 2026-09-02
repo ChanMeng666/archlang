@@ -494,8 +494,14 @@ Two distinct causes remain in that residual, and they want different answers:
   dwellings are legitimately unreachable from the first front door — the plan is four buildings, and
   the model has one entrance. A per-entrance (or per-building) model is the real fix; reporting them
   as blocked would be a false positive, which is why 5.8 guards against exactly that.
-- **Some connectors never become carved thresholds.** `hexagon-pavilion`'s 1200 mm curved drum has
-  openings touching three rooms each, so the stitch never opens them.
+- **Some connectors never become carved thresholds** — 9 of the 21, and unlike the above this one is
+  a REPAIR, not a decision. Mostly `doorConnections` marking a point `ambiguous` when it touches 3+
+  rooms; `hexagon-pavilion`'s 1200 mm curved drum openings are the clean specimen.
+
+**Do not let the first cause swallow the second.** The 12 will dominate any count and make the 9 look
+like noise, and they want opposite kinds of work: the 12 need somebody to decide what a multi-dwelling
+sheet means before a line of code is written, while the 9 are a defect with a specimen already
+identified.
 
 The defect is the SILENCE, not the omission — a consumer reading `describe --json` gets circulation
 facts for five of seven rooms and nothing telling it two are missing. Decide what the honest report
@@ -637,42 +643,58 @@ convention is already settled and shared (`dashedPattern()` — item 5.5 is abou
 SYNTAX, which this does not need); what is missing is the semantics. It has not bitten before
 only because no shipped plan drew an overhead piece over anything.
 
-### 5.8 · `W_PATH_TOO_NARROW`'s width is non-monotonic in the obstacle — `todo` (found in v1.32)
+### 5.8 · `W_PATH_TOO_NARROW`'s width was non-monotonic, and went CLEAN as the obstruction grew — `done`
 
-Sweeping ONLY the depth of one cabinet against the hall's north wall in
-`examples/furnished-flat.arch`, with nothing else changed:
+**Three independent defects, and this entry named the cause of none of them.** Both of its stated
+leads were false. Recorded rather than deleted, because this file drives the `/loop` burn-down and a
+confident wrong cause sends the next agent down the wrong path.
 
-| cabinet depth | reported clear width |
-|---|---|
-| 200 mm | squeezes to 300 mm |
-| 300 mm | squeezes to 100 mm |
-| 400 mm | squeezes to 100 mm |
-| 500 mm | **clean** |
-| 600 mm | **clean** |
+- **"Points at the area-scaled nav-grid resolution" — impossible.** `navCellSizeMm` is
+  `max(MIN_CELL_MM, ceil(sqrt(area / MAX_CELLS)))` with `MIN_CELL_MM = 100` and `MAX_CELLS = 250_000`,
+  so the pitch only leaves 100 mm **above 2500 m²**. The flat is 90.7 m² and the repro hall 15.6 m² —
+  both sit on 100 mm cells. Grid pitch could not have been the difference.
+- **"Does not reproduce in a small hand-written corridor" — it does.** An 8 × 3 m two-room plan
+  reproduced it immediately, and that probe is what found the third defect below.
 
-A deeper obstruction cannot leave more room, and it must not turn a warning into a pass. Two
-distinct defects are visible here: the reported NUMBER is not monotonic (and 100 mm is not a
-width anything in that corridor actually has), and 500/600 mm is a **false clean**, which is
-the direction that matters — a plan going green as its obstruction grows is the failure mode
-a reader will never catch by eye.
+The lesson worth keeping: **a localisation written from two observations is a hypothesis, and this one
+was wrong in a way that read as authoritative.** Check the arithmetic of a stated cause before building
+on it.
 
-It does **not** reproduce in a small hand-written corridor of the same clear width
-(a 6000 x 1200 hall is clean at every depth from 200 to 700 mm), which points at the
-**area-scaled nav-grid resolution** (`src/analyze/circulation.ts`, and the formulas
-`test/nav-grid-scale.test.ts` pins) rather than at the rule's arithmetic: the flat is
-8.4 x 10.8 m and the repro is 6 x 2.6 m, so they land on different grid pitches. Suspect the
-quantisation of an obstacle's footprint onto grid cells — an obstacle that half-covers a cell
-and one that fully covers it are not being treated consistently.
+**1. The false clean.** `src/analyze/circulation.ts` dropped an unreachable room from `roomFacts` with
+a `continue`, and `pathTooNarrow` iterated exactly that array — so a room sealed by furniture left the
+rule's domain and warned about nothing. `W_ROOM_NO_CLEAR_PATH` did **not** catch it either: at 500 mm
+the whole plan returned zero diagnostics of any code. The rule now walks rooms in SOURCE order and
+reads `circulation.blocked`; since `circ.rooms` is itself source-ordered, a plan with nothing blocked
+emits byte-identical diagnostics in identical order.
 
-**Reproduce it** by adding one statement to `examples/furnished-flat.arch` and sweeping `<D>`:
+**2. The number.** The clearance distance transform is seeded on **body-radius-eroded** cells, so its
+hop count is a body *centre's* freedom — and `(2·hops−1)·cell` was read as a width. **Every
+furniture-derived clear width ArchLang had ever reported was one body diameter (600 mm) short.**
 
-```
-furniture shoe_cabinet against wall w_hall_n offset 3400 size 800x<D> in r_hall
-```
+**3. The threshold carve.** The connector stitch carved an opening's **centre** first and, if that was
+walkable, stopped — the rest of its width was never tried. So a cabinet whose halo just missed the
+midpoint left a one-cell doorway pinned at its own corner, while a **deeper** cabinet fell through to a
+fallback that opened the whole threshold. *The plan with more furniture measured wider.* Found by the
+probe, not by reading. Every walkable part is now carved — strictly more free cells, so a route can
+only gain options.
 
-The verdict at 300-400 mm is right on the merits, which is why no hall furniture is in that
-example — an 1100 mm corridor should not take a cabinet. It is the number and the false clean
-that are wrong.
+**The message is measured, not fabricated.** A sealed room has no widest-path reading, so
+`computeCirculation` re-runs the grid with a descending body radius and reports `widestWayInMm` — paid
+only when something is sealed. "Seals every way in / 0 mm" is now reserved for a genuine zero; a room
+with a real but too-narrow way in gets that width in the measured-deficit style every other rule uses.
+An intermediate revision printed `0 mm` for a kitchenette with a real 300 mm way in, which would have
+been **the same defect this item was filed over, one digit smaller** — "100 mm is not a width anything
+in that corridor actually has".
+
+**Corpus effect**, swept before and after over all 30 shipped examples: exactly two gain a diagnostic —
+`furnished-flat`'s Kitchen (400 mm) and `tiny-house`'s Wet room (400 mm) — both verified from source
+coordinates by deletion differential. Nothing loses one; no `ok` flag or exit code moves. 23 of 30
+`describe --json` digests move, because the +600 mm correction reaches every plan with circulation; a
+field-level diff confirms **only** circulation fields changed, and walk distances fall or stay equal.
+22 byte-identity digests were re-blessed with a field-level diff written into each header.
+
+`furnished-flat`'s Kitchen is a real finding in the furniture flagship, whose header claims
+strict-clean. Its residual — the rooms still silently absent from `circulation.rooms[]` — is **G.5**.
 
 ---
 
