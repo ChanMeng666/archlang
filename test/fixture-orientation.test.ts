@@ -274,13 +274,22 @@ describe("derived orientation for room-anchored placement", () => {
 describe("W_FIXTURE_BACK_TO_ROOM", () => {
   // The studio's old WC line, in the same geometry: a 400x700 WC flush against the
   // south wall with no `rotate`, so its cistern faced north into the room.
+  //
+  // The door sat at (3000,4000) from the v1.33 `W_DOOR_NEAR_CORNER` work onward; it
+  // used to sit at (500,4000), which put its 900 mm leaf's jamb 50 mm from the ring's
+  // corner at (0,4000) on a 200 mm wall. That was a real defect in this fixture rather
+  // than a false positive — 50 mm of wall carries no door lining, let alone an
+  // architrave, and at 1:50 it draws as a 1 mm sliver — and it was invisible because
+  // this block's subject is fixture ORIENTATION, so the door went wherever was handy.
+  // (3000,4000) leaves 550 mm of nib, and keeps the WC clear of the doorway landing so
+  // every assertion below is about the thing it was written for.
   const southWall = (furn: string) =>
     `plan "P" {
       units mm
       grid 50
       wall exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
       room id=r at (0,0) size 4000x4000 label "Bath" uses bath
-      door at (500,4000) width 900 wall exterior hinge left swing out
+      door at (3000,4000) width 900 wall exterior hinge left swing out
       ${furn}
     }`;
   const misOriented = southWall(`furniture wc at (1800,3200) size 400x700`);

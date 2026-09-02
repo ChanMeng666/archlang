@@ -8,13 +8,7 @@ import { rectOf } from "../../analyze.js";
 import type { Point } from "../../ast.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { doorHingeFlipFix, fixesFrom, pocketRunFix } from "../../fix-producers.js";
-import {
-  doorSwing,
-  sectorIntersectsRect,
-  swingsCollide,
-  type DoorSwing,
-  type WallSegment,
-} from "../../geometry.js";
+import { doorSwing, sectorIntersectsRect, swingsCollide, type DoorSwing, type WallSegment } from "../../geometry.js";
 import { arcOpeningVoid } from "../../geometry/arc-band.js";
 import { type Arc, arcLength, arcTangentAt } from "../../geometry/arc.js";
 import { doorLandingRect, rectsOverlap } from "../../geometry/rect.js";

@@ -86,9 +86,9 @@ describe("W_DOOR_NEAR_CORNER — a straight run", () => {
 describe("W_DOOR_NEAR_CORNER — what is not a corner", () => {
   it("a wall's free END is not a corner (nothing to mitre into)", () => {
     // The identical door 150 mm from the end of a run that simply stops.
-    expect(corners(plan(`  wall id=w1 exterior thickness 250 { (0,0) (5000,0) }\n  door on w1 at 4400 width 900`))).toEqual(
-      [],
-    );
+    expect(
+      corners(plan(`  wall id=w1 exterior thickness 250 { (0,0) (5000,0) }\n  door on w1 at 4400 width 900`)),
+    ).toEqual([]);
   });
 
   it("a redundant COLLINEAR vertex is not a corner", () => {
