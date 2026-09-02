@@ -5,7 +5,7 @@ import { FURNITURE_ANCHORS } from "../ast.js";
 import type { Span } from "../diagnostics.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
-import type { RFurniture, RRoom } from "../ir.js";
+import type { FurnitureAuthored, RFurniture, RRoom } from "../ir.js";
 import { rectCorners, segmentsOfWall, unit, normal, add, mul, sub, length } from "../geometry.js";
 import { pointInPolygon } from "../geometry/polygon.js";
 import { fixtureGlyph } from "./fixtures-glyphs.js";
@@ -203,6 +203,11 @@ export const furniture: ElementDef = {
     let at: Point;
     let size = { w: dw, h: dh };
     let roomOut = n.room;
+    // The authored placement clause, with its expressions evaluated — recorded so a
+    // projection can hand back the STATEMENT rather than the coordinate it resolved
+    // to. Only the absolute `at (x,y)` form leaves it absent, because there the
+    // coordinate IS what the author wrote. See {@link FurnitureAuthored}.
+    let authored: FurnitureAuthored | undefined;
     if (n.against) {
       if (rotate !== undefined) {
         ctx.diag({
@@ -212,6 +217,13 @@ export const furniture: ElementDef = {
           span: n.span,
         });
       }
+      authored = {
+        mode: "against",
+        wall: n.against.wall,
+        ...(n.against.segment !== undefined ? { segment: Math.floor(ctx.eval(n.against.segment)) } : {}),
+        ...(n.against.offset !== undefined ? { offset: ctx.eval(n.against.offset) } : {}),
+        ...(n.against.side !== undefined ? { side: n.against.side } : {}),
+      };
       // NOT grid-snapped — see the note on the `place` branch below.
       const placed = placeAgainst(id, n.against, dw, dh, n.room, ctx, n.span);
       at = placed ? placed.at : { x: 0, y: 0 };
@@ -220,6 +232,14 @@ export const furniture: ElementDef = {
         rotate = placed.rotate;
       }
     } else if (n.place) {
+      authored =
+        n.place.mode === "centered"
+          ? { mode: "centered" }
+          : {
+              mode: "anchor",
+              anchor: n.place.anchor,
+              ...(n.place.inset !== undefined ? { inset: ctx.eval(n.place.inset) } : {}),
+            };
       // Room-relative: closed-form corner/edge/centre placement inside the room box.
       // The anchor also names which room edge the piece backs onto, so for a fixture
       // whose facing means something and that the author did not turn by hand, the
@@ -261,6 +281,7 @@ export const furniture: ElementDef = {
       ...(rotate ? { rotate } : {}),
       ...(n.place?.flush ? { flush: true } : {}),
       ...(roomOut ? { room: roomOut } : {}),
+      ...(authored ? { _authored: authored } : {}),
       ...(n.rotateSpan ? { _rotateSpan: n.rotateSpan } : {}),
       span: n.span,
     };

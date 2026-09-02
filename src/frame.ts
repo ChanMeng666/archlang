@@ -347,6 +347,12 @@ function transformGeometry(f: Frame, el: ResolvedElement, id: string, reflected:
       const out: RFurniture = { ...el, id, at: r.at, size: r.size };
       if (deg) out.rotate = deg;
       else delete out.rotate;
+      // The authored placement clause names LOCAL ids in LOCAL coordinates (`anchor
+      // top-right` is a corner of the instance's own room, and a reflection turns it
+      // into a different corner), so it does not survive the crossing into plan space.
+      // Dropping it leaves a placed instance projecting its resolved `at (x,y)`, which
+      // is what it has always done.
+      delete out._authored;
       if (el.room !== undefined) out.room = nsId(f, el.room);
       return out;
     }

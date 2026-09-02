@@ -26,8 +26,8 @@
  * plan's compiled interior-door connectivity.
  */
 
-import type { AutoDimsMode, CompassWord, Hemisphere, NorthDir, PlanNode, UseKind } from "./ast.js";
-import { AUTO_DIMS_MODES, COMPASS_DIRECTIONS, HEMISPHERES, USE_KINDS } from "./ast.js";
+import type { AutoDimsMode, CompassWord, FurnitureAnchor, Hemisphere, NorthDir, PlanNode, UseKind } from "./ast.js";
+import { AUTO_DIMS_MODES, COMPASS_DIRECTIONS, FURNITURE_ANCHORS, HEMISPHERES, USE_KINDS } from "./ast.js";
 import type { RRoom, RDoor, RWindow, ROpening, RFurniture, RDim, RColumn, RWall, ResolvedPlan } from "./ir.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { DoorEnumClause, DoorHinge, DoorKind, DoorSlideDir, DoorSwingDir } from "./grammar/tokens.js";
@@ -247,6 +247,22 @@ export interface OpeningJson {
   open?: number;
 }
 
+/**
+ * One fixture.
+ *
+ * `x`/`y`/`width`/`height` are always the RESOLVED plan-space footprint, so a reader
+ * that only wants to know where the piece ended up can stop there. The placement
+ * clause beside them — `centered`/`anchor` (with `room`), or `against_wall` — is the
+ * one the author WROTE, and it is what `planJsonToArch` re-emits, because a derived
+ * coordinate re-authored as `at (x,y)` is re-snapped by `grid` and lands somewhere
+ * else (see {@link import("./ir.js").FurnitureAuthored}). A payload carrying both is
+ * not contradictory: the clause is the statement, the coordinates are its result.
+ *
+ * The one place the two frames differ is `against wall`, whose `.arch` `size` is
+ * wall-relative (along × depth) while `width`/`height` here stay plan-axis. `rotate`
+ * carries the derived quarter-turn, so the emitter un-turns them; a hand-written
+ * payload that gives `against_wall` without `rotate` is read exactly as before.
+ */
 export interface FurnitureJson {
   category: string;
   id?: string;
@@ -259,8 +275,12 @@ export interface FurnitureJson {
   /** Room-relative placement: centre the fixture inside `room`. */
   centered?: boolean;
   /** Room-relative placement: anchor the fixture to a corner/edge of `room`. */
-  anchor?: string;
+  anchor?: FurnitureAnchor;
   inset?: number;
+  /** Measure the anchored edge(s) from the backing wall's inner FACE rather than the
+   *  room rectangle's centerline edge (`anchor <a> flush`). Emitted only when the
+   *  author wrote it, so every payload a flush-free plan produces is unchanged. */
+  flush?: boolean;
   /** Wall-anchored placement: back the fixture onto a wall by id/category. */
   against_wall?: string;
   segment?: number;
@@ -476,17 +496,43 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
       return base;
     });
 
-  const furniture: FurnitureJson[] = furnEls.map((f) => ({
-    category: f.category,
-    id: f.id,
-    x: f.at.x,
-    y: f.at.y,
-    width: f.size.w,
-    height: f.size.h,
-    ...(f.rotate ? { rotate: f.rotate } : {}),
-    ...(f.room !== undefined ? { room: f.room } : {}),
-    ...(f.label !== undefined ? { label: f.label } : {}),
-  }));
+  // The resolved footprint, PLUS the placement clause the author wrote when there was
+  // one. Emitting only the coordinate made this projection lossy in a way nothing
+  // reported: `grid` snaps the numbers an author writes, so a position the resolver
+  // DERIVED from wall geometry — `anchor … flush`, `against wall …` — came back on the
+  // grid instead of on the wall (docs/backlog.md G.4). The clause keys appear only for a
+  // piece that was authored with one, so an absolute `at (x,y)` fixture's payload is
+  // byte-identical, key order included.
+  const furniture: FurnitureJson[] = furnEls.map((f) => {
+    const a = f._authored;
+    return {
+      category: f.category,
+      id: f.id,
+      x: f.at.x,
+      y: f.at.y,
+      width: f.size.w,
+      height: f.size.h,
+      ...(f.rotate ? { rotate: f.rotate } : {}),
+      ...(f.room !== undefined ? { room: f.room } : {}),
+      ...(a?.mode === "centered" ? { centered: true } : {}),
+      ...(a?.mode === "anchor"
+        ? {
+            anchor: a.anchor,
+            ...(f.flush ? { flush: true } : {}),
+            ...(a.inset !== undefined ? { inset: a.inset } : {}),
+          }
+        : {}),
+      ...(a?.mode === "against"
+        ? {
+            against_wall: a.wall,
+            ...(a.segment !== undefined ? { segment: a.segment } : {}),
+            ...(a.offset !== undefined ? { offset: a.offset } : {}),
+            ...(a.side !== undefined ? { side: a.side } : {}),
+          }
+        : {}),
+      ...(f.label !== undefined ? { label: f.label } : {}),
+    };
+  });
 
   const dims: DimJson[] = dimEls.map((d) => ({
     from: { x: d.from.x, y: d.from.y },
@@ -771,6 +817,17 @@ function validateFurniture(f: unknown, path: string, val: Validator): void {
   if (f.rotate !== undefined && !isNum(f.rotate)) val.err(`${path}/rotate`, "expected a number");
   if (f.side !== undefined && f.side !== "left" && f.side !== "right")
     val.err(`${path}/side`, 'expected "left" or "right"');
+  // The anchor accept-list is DERIVED from the parser's own `FURNITURE_ANCHORS`, never
+  // retyped — the same law `uses` and `dims auto` follow above. It was unchecked here and
+  // hand-listed in the schema below, so the two could have disagreed about the language.
+  if (f.anchor !== undefined && !(isStr(f.anchor) && (FURNITURE_ANCHORS as readonly string[]).includes(f.anchor)))
+    val.err(`${path}/anchor`, `expected ${enumList(FURNITURE_ANCHORS)}`);
+  if (f.flush !== undefined && typeof f.flush !== "boolean") val.err(`${path}/flush`, "expected a boolean");
+  // `flush` measures from the wall face behind an ANCHORED edge; with no anchor there is
+  // no edge, which is the same refusal `.arch` makes (`E_FURN_FLUSH`) — said here rather
+  // than emitted into source that would fail later with a span pointing at generated text.
+  if (f.flush === true && !isStr(f.anchor))
+    val.err(`${path}/flush`, "needs an `anchor` — it measures from an anchored edge");
 }
 
 function validateDim(d: unknown, path: string, val: Validator): void {
@@ -922,6 +979,17 @@ function emitOpening(o: OpeningJson): string {
 function emitFurniture(f: FurnitureJson): string {
   let line = `  furniture ${idAttr(f.id)}${f.category}`;
   let placedIn = false;
+  // `against wall`'s `size` is WALL-relative (along × depth) while `width`/`height`
+  // carry the plan-axis footprint, so a piece the resolver turned a quarter has them
+  // swapped; `rotate` is that quarter-turn, and un-turning by it recovers the pair the
+  // author wrote. A payload with no `rotate` — every hand-written one — is unswapped,
+  // so this reads exactly as it always did.
+  let sizeW = f.width;
+  let sizeH = f.height;
+  if (f.against_wall && (f.rotate === 90 || f.rotate === 270)) {
+    sizeW = f.height;
+    sizeH = f.width;
+  }
   if (f.against_wall) {
     line += ` against wall ${f.against_wall}`;
     if (typeof f.segment === "number") line += ` segment ${num(f.segment)}`;
@@ -931,16 +999,22 @@ function emitFurniture(f: FurnitureJson): string {
     line += ` in ${f.room} centered`;
     placedIn = true;
   } else if (f.anchor && f.room) {
+    // `flush` before `inset` — it re-bases it (room centerline → wall face), and the
+    // parser refuses the other order outright.
     line += ` in ${f.room} anchor ${f.anchor}`;
+    if (f.flush) line += " flush";
     if (typeof f.inset === "number") line += ` inset ${num(f.inset)}`;
     placedIn = true;
   } else {
     line += ` at (${num(f.x ?? 0)},${num(f.y ?? 0)})`;
   }
-  if (typeof f.width === "number" && typeof f.height === "number") line += ` size ${num(f.width)}x${num(f.height)}`;
+  if (typeof sizeW === "number" && typeof sizeH === "number") line += ` size ${num(sizeW)}x${num(sizeH)}`;
   if (f.label !== undefined) line += ` label ${q(f.label)}`;
   if (typeof f.rotate === "number" && !f.against_wall) line += ` rotate ${num(f.rotate)}`;
-  if (!placedIn && !f.against_wall && f.room) line += ` in ${f.room}`;
+  // The trailing `in <room>` is what an `against wall` piece with no explicit `side`
+  // infers its wall FACE from, so it has to survive — it used to be suppressed here,
+  // which was invisible only because nothing ever emitted `against_wall` alongside it.
+  if (!placedIn && f.room) line += ` in ${f.room}`;
   return line;
 }
 
@@ -1352,17 +1426,22 @@ export const PLAN_JSON_SCHEMA = {
           category: { type: "string", description: "Furniture category, e.g. bed, sofa, wc, basin, stove." },
           id: { type: "string", description: "Unique furniture id." },
           room: { type: "string", description: "Owning room id (`in <room>`)." },
-          x: { type: "number", description: "Top-left corner X in millimetres (absolute placement)." },
-          y: { type: "number", description: "Top-left corner Y in millimetres (absolute placement)." },
-          width: { type: "number", description: "Width in millimetres." },
-          height: { type: "number", description: "Height in millimetres." },
+          x: { type: "number", description: "Top-left corner X in millimetres (resolved footprint)." },
+          y: { type: "number", description: "Top-left corner Y in millimetres (resolved footprint)." },
+          width: { type: "number", description: "Plan-axis width in millimetres." },
+          height: { type: "number", description: "Plan-axis height in millimetres." },
           rotate: { enum: [0, 90, 180, 270], description: "Quarter-turn rotation of the drawn symbol." },
           centered: { type: "boolean", description: "Room-relative placement: centre inside `room`." },
           anchor: {
-            enum: ["top-left", "top", "top-right", "left", "center", "right", "bottom-left", "bottom", "bottom-right"],
+            // DERIVED from the parser's own `FURNITURE_ANCHORS`, never retyped.
+            enum: [...FURNITURE_ANCHORS],
             description: "Room-relative placement: anchor to a corner/edge of `room`.",
           },
           inset: { type: "number", description: "Inset (mm) from the anchored edge." },
+          flush: {
+            type: "boolean",
+            description: "Measure the anchored edge from the backing wall's inner face (needs `anchor`).",
+          },
           against_wall: { type: "string", description: "Wall-anchored placement: back onto this wall id/category." },
           segment: { type: "number", description: "Which segment of a multi-segment wall (for against_wall)." },
           offset: { type: "number", description: "Distance (mm) along the segment (for against_wall)." },

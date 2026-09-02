@@ -447,19 +447,19 @@
           },
           "x": {
             "type": "number",
-            "description": "Top-left corner X in millimetres (absolute placement)."
+            "description": "Top-left corner X in millimetres (resolved footprint)."
           },
           "y": {
             "type": "number",
-            "description": "Top-left corner Y in millimetres (absolute placement)."
+            "description": "Top-left corner Y in millimetres (resolved footprint)."
           },
           "width": {
             "type": "number",
-            "description": "Width in millimetres."
+            "description": "Plan-axis width in millimetres."
           },
           "height": {
             "type": "number",
-            "description": "Height in millimetres."
+            "description": "Plan-axis height in millimetres."
           },
           "rotate": {
             "enum": [
@@ -491,6 +491,10 @@
           "inset": {
             "type": "number",
             "description": "Inset (mm) from the anchored edge."
+          },
+          "flush": {
+            "type": "boolean",
+            "description": "Measure the anchored edge from the backing wall's inner face (needs `anchor`)."
           },
           "against_wall": {
             "type": "string",
