@@ -35,6 +35,7 @@ over the 2026-09 burn-down:
 | G.4 | the defect is why `two-bed.arch` cannot round-trip | `two-bed` also declares a `roof` the projection does not model, so it could never have round-tripped; the exclusion is compound |
 | 3.13 | constrained by `spec.llm.md`'s character cap | `SKILL.md` feeds the **uncapped** `llms-full.txt`; the capped artifact never moved |
 | G.1 | `flush` "can resolve against the thinner face" | true but weak — the resolved position was **order-dependent**, and which consumer was at fault (the resolver, not the check) was the load-bearing question |
+| G.5 | `doorConnections` marking a point `ambiguous` on 3+ rooms; a 12/9 split | **zero** `ambiguous` edges exist in any plan it blamed — that cause explains 0 of 9. The split is 16/4/1. The real defect was a curved wall rasterised into the nav grid as its **chord** |
 
 So: **check the arithmetic of a stated cause before building on it**, re-measure any number an entry
 quotes (several have gone stale twice), and when an entry leaves open *which* of two components is
@@ -565,53 +566,59 @@ green — the gate discriminates rather than blankets. Corpus otherwise untouche
 of 30 lint, 0 of 35 SVG.
 
 
-### G.5 · `describe --json` silently omits rooms from `circulation.rooms[]` — `todo`
+### G.5 · `describe --json` silently omitted rooms from `circulation` — `done` (the repair half)
 
-Measured on clean `main` at v1.32.0: **10 of the 30 shipped examples drop 29 rooms** between them
-from `.circulation.rooms[]`, with `lint` clean and no diagnostic of any kind.
+23 of 185 rooms across the corpus were absent from `.circulation.rooms[]` with **nothing said**.
 
-```
-terrace-row      12/16   hexagon-pavilion  4/7    hillside-villa  3/11
-furnished-flat    2/7    parametric        2/3    themed          2/2
-accessible        1/2    aquarium          1/8    garden-house    1/6
-tiny-house        1/2
-```
+**This entry's cause was wrong, and so was its split** — both falsified by measurement, not argued
+around. **Zero `ambiguous` edges exist in any of the five plans** holding the rooms it blamed: every
+one has a clean two-real-room connector and `reachable: true`, so `doorConnections`' 3+-room
+classification accounts for **0 of 9**. The real partition is **16 / 4 / 1**, not 12 / 9 —
+`hillside-villa`'s garage and utility and `parametric`'s two rooms are the same `entrances[0]` fact as
+`terrace-row`'s twelve, not a carve defect.
 
-Item 5.8 closed **one** cause of this (a room sealed by furniture, and a representative cell chosen
-without regard to reachability) and is why `furnished-flat` and `tiny-house` now report. The rest are
-STRUCTURAL and still silent: `circulation` measures from `entrances[0]`, so `terrace-row`'s three
-other dwellings are legitimately unreachable from the first front door and vanish rather than being
-reported as a separate building; `hexagon-pavilion`'s 1200 mm curved drum has openings touching three
-rooms each, which never become carved thresholds.
+**The real defect: a curved wall was rasterised into the nav grid as the straight CHORD between its
+arc endpoints.** That is not a coarser shape — it is a wall somewhere else. A closed drum (two
+semicircular `arc` edges sharing endpoints) rasterises to **a bar along its own diameter**: the grid
+let a route walk through 1200 mm of masonry while severing the round room inside into two caps. The
+corpus carried the signature plainly — `hexagon-pavilion` measured its three SOUTH galleries and
+silently dropped the three NORTH ones, because the chord is the horizontal diameter and only the
+entrance's cap survived. Fixed with `distPointToArc` and the band extent from `arcExtremes`, reusing
+the solve `resolve` had already done.
 
-Counting note, so the next measurement matches: the 29 above counts `themed.arch`'s two rooms, whose
-`circulation` is `null` outright because the plan has no entrance (`W_NO_ENTRANCE`, see G.6). Excluding
-those the figure is 27 silent rooms of 183 across the corpus, which is the number to compare against.
+**Every curved plan therefore had a wrong circulation model**, including everything item 5.8 measured
+on one. 5.8's laws still hold, but the numbers they produced for curved plans were wrong in a way
+nothing could see.
 
-**Measured before and after 5.8**, same method: `main` 156 measured / 0 blocked / **27 silent**; after
-5.8, 160 measured / 2 blocked / **21 silent**. So 5.8 recovered four rooms into the facts and turned
-two into reported findings, leaving 21 — and those 21 are exactly what 5.8's guards deliberately
-decline to claim, which is why they are filed here rather than left implied.
+A second fix was required or the first made things worse: `seedCell`'s polygon branch is a ring scan
+bounded by `tol` (200 mm), and a connector sits on its host's **centreline**, so the floor starts half
+a thickness away — 400 mm short on a 1200 mm drum. The scan now reaches `tol + host half-thickness`.
+Strictly additive: it scans by increasing ring, so every seed that already resolved resolves to the
+same cell.
 
-Two distinct causes remain in that residual, and they want different answers:
+**The residual is now reported: `circulation.unmeasured[]`**, `{ roomId, reason }` from a closed set
+of five, emitted only when non-empty so every existing payload is byte-identical. Deliberately **not**
+`blocked`, which means *sealed by furniture* — a defect with a piece to move — so widening it would be
+the false positive 5.8's furniture-free control exists to prevent. **The classifier order is
+load-bearing:** `other_entrance` is tested before `no_threshold`, because a garage with no carved
+threshold that is walkable from its own door is better described by "you can walk in, just not from
+where we measure".
 
-- **`computeCirculation` measures every walk from `entrances[0]` only.** `terrace-row`'s other three
-  dwellings are legitimately unreachable from the first front door — the plan is four buildings, and
-  the model has one entrance. A per-entrance (or per-building) model is the real fix; reporting them
-  as blocked would be a false positive, which is why 5.8 guards against exactly that.
-- **Some connectors never become carved thresholds** — 9 of the 21, and unlike the above this one is
-  a REPAIR, not a decision. Mostly `doorConnections` marking a point `ambiguous` when it touches 3+
-  rooms; `hexagon-pavilion`'s 1200 mm curved drum openings are the clean specimen.
+**The law pinned is TOTALITY, not a count** — every room appears in exactly one of `rooms[]`,
+`blocked[]`, `unmeasured[]` whenever `circulation` is non-null. A count rots as the corpus changes;
+the law does not.
 
-**Do not let the first cause swallow the second.** The 12 will dominate any count and make the 9 look
-like noise, and they want opposite kinds of work: the 12 need somebody to decide what a multi-dwelling
-sheet means before a line of code is written, while the 9 are a defect with a specimen already
-identified.
+Census, reproduced independently: `rooms=185 measured=160 blocked=2 unmeasured=0 SILENT=23` →
+`measured=164 blocked=2 unmeasured=17 SILENT=2`. The remaining two are `themed`'s, whose plan has no
+entrance at all, so there is no `circulation` object to attach a reason to (see G.6). Zero lint
+movement and zero of 35 drawings moved.
 
-The defect is the SILENCE, not the omission — a consumer reading `describe --json` gets circulation
-facts for five of seven rooms and nothing telling it two are missing. Decide what the honest report
-is (an `unreachable[]` key beside `rooms[]`, with a reason per room? a per-entrance model?) before
-widening any rule.
+**Still open (deliberately, and it is now 16 rooms not 12):** `computeCirculation` measures every walk
+from `entrances[0]` only. That needs somebody to decide what a multi-dwelling sheet means — a
+per-entrance model, or nearest-entrance-per-room — before a line of code is written. Those 16 are
+reported as `other_entrance` rather than silently dropped, so the gap is now visible rather than
+invisible.
+
 
 ### G.6 · Three shipped examples carry unaddressed lint warnings — `todo`
 
@@ -1142,22 +1149,43 @@ two implementations of the ownership rule to keep in step.
 `test/joinery-pipeline.test.ts` and the whole golden set are the proof, and a re-bless is a red
 flag, not a step.
 
-### 4.2 · A door within its own wall thickness of a corner is unflagged — `todo`
+### 4.2 · A door within its own wall thickness of a corner was unflagged — `done`
 
-Nothing warns when a door's jamb leaves less wall between it and a wall's corner than the wall is
-thick. The drawing is *correct* — the nib is drawn, mitred into the neighbouring run — but at page
-scale it reads as a chamfer rather than as wall, which is what made it look like a rendering defect
-during the v1.30 review before it was measured and turned out to be the plan.
+`W_DOOR_NEAR_CORNER`. The **drawing was always correct** — the nib is drawn and mitred into the
+neighbouring run — which is why this was first mis-diagnosed as a rendering fault during the v1.30
+joinery review, before it was measured and turned out to be the plan. At page scale such a sliver
+stops reading as wall and reads as a chamfer on the corner, and its returned face has nowhere to
+carry the frame and architrave a jamb fixes to.
 
-Found on a probe plan whose door centre sat 675 mm from an arc/straight junction with a half-width
-plus half-thickness of 575: it *cleared*, by 100 mm, and still left only a 227 mm nib on a 250 mm
-wall. Deferred by name in `CHANGELOG.md`'s v1.30 entry and in ADR 0018.
+**The threshold is the wall's own thickness** (× `minCornerNibRatio`, default 1.0), and the reasoning
+is why it needed no new constant: thickness is the only length in the drawing **intrinsic to the wall
+being measured**, so it self-scales — a 100 mm partition asks for 100 mm, a 400 mm shell for 400 —
+and it is the dimension the defect is about. **One-limbed**, unlike `W_POCKET_RUN`, which needs an
+absolute second limb because it compares a door's *width* against a wall's *run*; here both sides
+belong to the same wall and there is no narrow-door pathology to guard against.
 
-The nearest existing rules ask different questions and must not be widened into this one:
-`W_DOOR_CLEARANCE` measures swing space, and `W_POCKET_RUN` measures the run a pocket panel needs
-(kind-specific). A new rule has to state its threshold in the same measured-deficit style the v1.25
-rules use, and be right on a CURVE — where the remaining wall is an arc length, not a chord, and
-the jambs are radial.
+**What counts as a corner is defined by exclusion**, so the rule cannot fire where nothing is mitred:
+the host segment's run must END at the point and the wall must go somewhere else from it. A wall's
+free end, a redundant collinear vertex, a partition teeing into a wall that carries straight past, and
+a tangent arc/straight hand-over are all excluded. **On a curve the nib is an ARC LENGTH, not a
+chord** — measured at the centreline radius from the radial jambs, in closed form, so the number
+cannot move with a facet count.
+
+**No machine fix, deliberately.** Every remedy rewrites a number the author chose. Narrowing the leaf
+would also close the gap and is **refused by name** as the constraint-laundering pattern this project
+rules out — rewriting the width you asked for to satisfy a checker.
+
+**Zero of the 30 shipped examples fire it**, so no threshold was tuned to keep the corpus quiet — and
+the rule is proven to fire on the catalogued case rather than assumed from silence: required 250 mm,
+measured 150 mm, 100 mm short, with the corner named by coordinate.
+
+**It found two true positives in TEST fixtures**, both a 900 mm leaf's jamb 50 mm from a 200 mm ring
+wall's corner, in plans written for another subject where the door went wherever was handy. Both moved
+with every assertion preserved. It also caught an **order pin whose reason had become false** —
+`doors.test.ts` asserted that rules after `pocket-run` are harmless *because* they cannot fire on a
+plan predating them, true of the two outdoor rules and false of this one — and restated it rather than
+extending it in silence.
+
 
 ### Not scheduled — recorded so they are not lost
 

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Seven defects from `docs/backlog.md`. Most made a machine-readable answer quietly **wrong** rather
+Twelve defects from `docs/backlog.md`. Most made a machine-readable answer quietly **wrong** rather
 than visibly absent — the direction a reader never catches by eye. No language change: no new
 keyword, no new `E_*`/`W_*` code, nothing removed from the public surface.
 
@@ -20,6 +20,39 @@ so the circulation rewrite, which corrected every furniture-derived clear width 
 one pixel of anything.
 
 ### Fixed — silent wrong answers
+
+- **The nav grid rasterised every CURVED wall as its chord** (backlog G.5), which is not a coarser
+  shape but a wall in a different place. A closed drum — two semicircular `arc` edges sharing
+  endpoints — became **a bar along its own diameter**, so a route could walk through 1200 mm of
+  masonry while the round room inside was severed into two caps. The corpus carried the signature:
+  `hexagon-pavilion` measured its three *south* galleries and silently dropped the three *north* ones.
+  **Every curved plan had a wrong circulation model**, including everything measured on one.
+
+  The reporting gap it surfaced through is closed too. `describe --json` omitted **23 of 185 rooms**
+  from `.circulation.rooms[]` with nothing said; it now emits `circulation.unmeasured[]` —
+  `{ roomId, reason }` from a closed set — so the invariant is **totality**: every room appears in
+  exactly one of `rooms[]`, `blocked[]`, `unmeasured[]` whenever circulation exists. Not reported as
+  `blocked`, which means *sealed by furniture*, a defect with a piece to move. 23 silent → 2, and
+  those two belong to a plan with no entrance at all.
+
+- **`anchor <corner> flush` resolved a position that depended on STATEMENT ORDER** (backlog G.1).
+  Where a thin partition shares a room edge's centreline with a thicker shell, both walls cover the
+  full edge, so a largest-overlap tie-break fell through to declaration order — swapping two `wall`
+  lines moved the piece 75 mm and turned a clean plan into a `W_FURNITURE_WALL_COLLISION`. The
+  collision check was **correct**; the position was wrong. A room edge is a *centreline* and more than
+  one wall can sit on it, so the face is a property of the **solid** at that edge, not of whichever
+  segment a tie-break picked.
+
+### Added
+
+- **`W_DOOR_NEAR_CORNER`** (backlog 4.2) — a door leaving less wall between its jamb and a corner than
+  the wall is thick. The drawing was always correct, which is why it was first mis-diagnosed as a
+  rendering fault; at page scale the sliver reads as a chamfer, and its returned face has nowhere to
+  carry a frame and architrave. **The threshold is the wall's own thickness**, the only length
+  intrinsic to the wall being measured, so it needs no new constant and self-scales. On a curve the
+  nib is an **arc length**, not a chord. No machine fix is offered, and narrowing the leaf is refused
+  by name as constraint-laundering.
+
 
 - **A piece drawn through a CURVED wall linted clean** (backlog 3.15). `wallIntrusionDepth` measures
   in a wall segment's own frame, which has no meaning on an arc — the across-wall direction turns
