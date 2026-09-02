@@ -318,18 +318,30 @@ describe("CLI — watch", () => {
    * discards the first compile's exit code on purpose, and this pins that it does.
    */
   it("keeps watching after a failing first compile, and compiles the fix", async () => {
+    // The same 90 s budget, and the same reasoning, as the three resident cases above:
+    // a spawned child plus a filesystem watcher, under full-suite parallel load on
+    // Windows. This case was left on `until`'s 30 s default when the others were raised
+    // — the identical shape with a third of the headroom — which makes it the most
+    // likely author of a full-suite failure that appears once and will not reproduce.
+    // As there: the budget moves and not one assertion, so a watcher that never fires
+    // still fails, just later.
+    const budget = 90000;
     const dir = tmpDir();
     const file = tmp("broken.arch", 'plan "B" {\n  units mm\n  garbage nonsense here\n}\n', dir);
     const out = join(dir, "broken.svg");
     const w = start(["watch", file, "-o", out]);
     try {
       // It reported the error AND still announced the watch.
-      await until("the watching banner after a failed first compile", () => w.stderr().includes("Ctrl+C to stop"));
+      await until(
+        "the watching banner after a failed first compile",
+        () => w.stderr().includes("Ctrl+C to stop"),
+        budget,
+      );
       expect(w.exit()).toBe(null);
       expect(existsSync(out)).toBe(false);
 
       writeFileSync(file, labelled("Repaired"), "utf8");
-      await until("the repaired plan to compile", () => peek(out).includes("Repaired"));
+      await until("the repaired plan to compile", () => peek(out).includes("Repaired"), budget);
 
       // SIGINT is the interrupt the banner actually advertises ("Ctrl+C to stop").
       w.kill("SIGINT");
