@@ -541,8 +541,23 @@ also built the VS Code bundle in the same command, and a git worktree was being 
 `arch watch` cases in `test/cli-commands.test.ts` (90 s budgets, live child processes), one of which
 had a real arming race fixed the same day in `8e1eb08`.
 
-**When it recurs, capture it properly:** `npx vitest run --reporter=dot > out.txt 2>&1` and read the
-`FAIL`/`Failed Tests` block — never pipe a suite run through `tail`, which is what cost the name here.
+**A likely author has since been found and narrowed** (`ce3c383`), though not proven, because the
+name was lost. Three of the four resident `CLI — watch` cases were raised to a 90 s budget on
+2026-08-28 with the reason recorded in the file — a spawned child plus a filesystem watcher exceeded
+30 s under full-suite parallel load on Windows. The fourth, "keeps watching after a failing first
+compile", has the **identical shape** and had been left on `until`'s 30 s default: a third of the
+headroom for the same work, with nothing defending the asymmetry. It now carries the same budget.
+
+For calibration on how rare this class is: the agent that landed 5.8 measured the sibling case at
+**1 failure in 22 runs** before its arming race was fixed in `8e1eb08`. A rate like that survives
+several green runs comfortably, which is why three greens did not clear it.
+
+**When it recurs, capture the name AND the exit code** — `tail` loses both:
+
+```bash
+npx vitest run --reporter=verbose 2>&1 | tee run.log; echo "exit=${PIPESTATUS[0]}"
+grep -E "^ *(×|FAIL)" run.log
+```
 
 ### G.7 · Fixture-word completion in the VS Code extension — `todo`
 
