@@ -96,13 +96,56 @@ const ROOT = join(HERE, "..");
  * layer. **`describe()` and `lint()` were held SHA-256 identical across the whole change**,
  * measured example by example against `8fc432a`'s `src/` (extracted with `git archive`) for
  * all 28 import-free examples: 22 SVGs moved, 0 summaries and 0 diagnostic sets.
+ *
+ *
+ * ## The backlog-5.8 re-measurement — the SUMMARY moved, and that is the point
+ *
+ * This is the case the message on the summary half describes: **a moved lint rule and a
+ * changed `describe()` value**, not a drawing. Nothing in the circulation fix touches a
+ * glyph, and the SVG half moved only because its payload contains `describe()`.
+ *
+ * Exactly what changed on `studio.arch`, measured field by field against the previous
+ * commit: **one number.** `circulation.rooms[r_bath].bottleneckClearWidthMm` and the
+ * `r_bed -> r_bath` route's copy of it both go **700 -> 740**. Every other key of the whole
+ * summary — rooms, areas, adjacency, openings, freedom, totals — is byte-identical, and
+ * `lint(studio)` is unchanged (still empty). 740 is the interior door's own clear width
+ * (800 - 60); the old 700 was a FURNITURE pinch reported one body diameter short, so the
+ * flagship sat exactly on the 700 mm minimum by arithmetic accident and one cell of drift
+ * would have made it warn.
+ *
+ * `furnished-flat.arch`, where this suite also pins one: `circulation` gains an `r_bath`
+ * entry and the two bedroom->bath routes that depend on it (the room was silently dropped
+ * because its label point sat in a pocket the entrance could not reach), and gains
+ * `blocked: [{ roomId: "r_kitchen", widestWayInMm: 400 }]` — a real, previously
+ * unreported finding about that plan, carrying the MEASURED width of the best way in
+ * rather than a fabricated zero.
+ * Nothing else in its summary moved.
+ *
+ * Do not read this entry as permission either. A summary digest still moves only for a
+ * named, measured reason, written down here.
+ *
+ * ## Amendment — the threshold carve, and why more plans moved
+ *
+ * The connector carve was centre-first-then-stop: if the opening's midpoint happened to
+ * be walkable, ONE cell of the threshold was opened and the rest of its width was never
+ * tried. Every walkable part is now carved. That is strictly MORE free cells, so a route
+ * can only gain options, and the measured effect across the shipped examples is exactly
+ * that: **every `walkDistanceMm` and `detourRatio` on the affected plans falls or stays
+ * equal, and every `bottleneckClearWidthMm` is unchanged — with one exception**,
+ * `aquarium`'s `rotunda_r`, 2340 -> 1740. That one is the carve's stamp, not the route: a
+ * carved cell is stamped with `min(existing, connector clear width)`, so opening more of
+ * a narrower connector's threshold stamps more cells at its width. It is a lower number
+ * for a real reason and it moves no diagnostic.
+ *
+ * **`lint()` over all 30 shipped examples is byte-identical across this amendment** —
+ * the only two diagnostics this branch adds were already added before it.
  */
 const BASELINE: Readonly<Record<string, string>> = {
-  "studio.arch": "c921a0607bf60aa2c39e27c4467d42f27660e4862a3735e8693726cdabf4e339",
-  "laneway-house.arch": "5aac436f2df22db2ff8c7a8995a0420ca7e5d5406795ce1f9882820f1d6b61ff",
-  "bungalow.arch": "02de92a6c3b8dbe61aabcf88adfe779433830e0a902b31ab78be295ecb8b64a1",
-  "furnished-flat.arch": "b445592561e294dce47ba59a419fb2625be80dd0ffac61b8d37f334181f9d631",
-  "two-bed.arch": "913b9073730bb693f803ba0774ca55ab9eeb602d807184987e87b7694cd6c984",
+  "studio.arch": "90951a2517e141dfe28f0e12462fd29cefba5460c900304e435ef53e7f3c0f3f",
+  "laneway-house.arch": "401f5a9e255e5748a2eda400569ad352ae856e1ad5c9f51b62895e30bfd5ad1f",
+  "bungalow.arch": "7dacd03e5c79772836ad273f9542c1272f881df27d8afd0dadef5ef558f8f3b2",
+  "furnished-flat.arch": "88d5be448d4b41c09a8c7302b1f815050fa94a0fb728e0cd1c10e1d64cf03d29",
+  "two-bed.arch": "dec746240dcc800c866a0dc928b451c83caa143f456adc704baa72d724ef6520",
 };
 
 /**
@@ -113,16 +156,16 @@ const BASELINE: Readonly<Record<string, string>> = {
  * allowed to move {@link BASELINE}; nothing in this release is allowed to move these.
  */
 const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
-  "studio.arch": "b065cbe49d364414b340639fc06922eb14f472c9f4470134bb6f2b4489ada364",
-  "laneway-house.arch": "ac2df20e15d2e4fbcc73e34a15d4e34578aa89a859860561b85361db170040b6",
-  "bungalow.arch": "4835ae875c03ea01d8ec44ece1a3ecdcb3b324775c503bed0fad224e81fad93d",
+  "studio.arch": "7ed53b6e0925e21fe4c4fad7351ce7e80635818395fc79cf661ba095db8129b3",
+  "laneway-house.arch": "bde186c2290e5aa19ea60c3ec9e8ad7cfa3f5237e7d2a0a80cdca393fa3ab85a",
+  "bungalow.arch": "242307d21b82d129acb6317df03702d2044f0c8e05f9a78374c9de9a9f01f4fd",
   // `furnished-flat.arch` is the ONE value in this table that is not the original v1.30.0
   // measurement, and the exception proves the rule rather than bending it. Its SOURCE was
   // edited in v1.32 -- seven of the new families were added to the flat -- so `describe()`
   // and `lint()` genuinely report a different building, which is exactly the kind of change
   // this pin exists to make visible. A redrawn SYMBOL still cannot move any number here.
-  "furnished-flat.arch": "a38b6ef53e0de401c6d7e09039a7f1bfcdbb8305686052f84844d4e3fdc23476",
-  "two-bed.arch": "a118170f4549ccd89aa1dce2274363e9444c13d1667d679877cb2d460ac2e070",
+  "furnished-flat.arch": "d58f7a8f4207dd693de21708f3dd794f3ce31dffce96bc1a79701a5d6066c149",
+  "two-bed.arch": "c8e5a430665c6ea875a94225dc062a534bebf776c28b3ffbdb0a614d3e71ff79",
 };
 
 suite("the outdoor tranche — the byte-identity law", () => {

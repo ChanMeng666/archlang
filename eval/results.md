@@ -25,7 +25,7 @@ Subscores per row: **R**ooms · **L**abels · **A**rea · **Adj**acency (– = u
 | `l-shaped-flat` | ⚠️ warns | yes | 2 | R1 L1 A– Adj1 | 2 lint warning(s) |
 | `accessible-flat` | ⚠️ warns | yes | 1 | R1 L1 A– Adj1 | 1 lint warning(s) |
 | `accessible-bath` | ✅ pass | yes | 0 | R1 L1 A– Adj– | — |
-| `compact-studio` | ⚠️ warns | yes | 1 | R1 L1 A– Adj1 | 1 lint warning(s) |
+| `compact-studio` | ⚠️ warns | yes | 2 | R1 L1 A– Adj1 | 2 lint warning(s) |
 | `bungalow` | ⚠️ warns | yes | 4 | R1 L1 A– Adj1 | 4 lint warning(s) |
 | `reception-suite` | ⚠️ warns | yes | 4 | R1 L1 A– Adj1 | 4 lint warning(s) |
 | `strip-corridor` | ✅ pass | yes | 0 | R1 L1 A– Adj1 | — |

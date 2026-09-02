@@ -98,16 +98,19 @@ const TWO_CORRIDORS = (narrowGap: number, wideGap: number): string => {
   room id=hall   at (0,0)      size 100000x40000 label "Hall" uses entry hall
   room id=narrow at (0,40000)  size 50000x20000 label "Narrow Wing"
   room id=wide   at (50000,40000) size 50000x20000 label "Wide Wing"
-  door id=entry at (50000,0) width 2000 swing in
+  door id=entry at (50000,0) width 3000 swing in
   opening id=o_narrow at (25000,40000) width ${OPENING}
   opening id=o_wide   at (75000,40000) width ${OPENING}
 ${pair(25000, narrowGap, "n")}${pair(75000, wideGap, "w")}}`;
 };
 
 describe("a large plan can tell a narrow route from a wide one", () => {
-  const src = TWO_CORRIDORS(1000, 1800);
-  /** The entrance door's own clear width — the cap on every route in the plan. */
-  const ENTRANCE_CLEAR = 1940;
+  const src = TWO_CORRIDORS(1000, 2400);
+  /** The entrance door's own clear width — the cap on every route in the plan. It is
+   *  deliberately wider than either corridor: the reported width is now the width a BODY
+   *  passes through rather than that minus its own diameter, so a 2000 mm door capped
+   *  BOTH readings at 1940 and the discrimination below measured nothing. */
+  const ENTRANCE_CLEAR = 2940;
 
   it("measures distinguishably different bottlenecks (the point of the item)", () => {
     const c = describePlan(src).circulation;
@@ -125,21 +128,35 @@ describe("a large plan can tell a narrow route from a wide one", () => {
     // otherwise the assertions below would pass without measuring the corridors at all.
     expect(wide).toBeLessThan(ENTRANCE_CLEAR);
     // Ordering plus a real gap, not exact values: the numbers are honestly coarse, but a
-    // 1.0 m squeeze and an 1.8 m one must never round to the same reading. They did —
+    // 1.0 m squeeze and a 2.4 m one must never round to the same reading. They did —
     // with a 775 mm cell both read 1940 mm, i.e. neither pinch registered at all.
     expect(wide!).toBeGreaterThan(narrow!);
     expect(wide! - narrow!).toBeGreaterThan(500);
+    // And each reading is in the neighbourhood of the gap it measures rather than one
+    // body diameter under it. The slack is a whole 155 mm cell either way — the free band
+    // is measured at cell CENTRES, so at this resolution the phase of the grid against
+    // the gap is worth two cells — but 1000 mm can no longer come back as 400.
+    expect(narrow!).toBeGreaterThan(1000 - 2 * 155);
+    expect(wide!).toBeGreaterThan(2400 - 2 * 155);
   });
 
   it("fires W_PATH_TOO_NARROW for the narrow route only", () => {
+    // 600 mm is the body's own width, so this route is genuinely impassable while the
+    // 2.4 m one is not — and at a 155 mm cell that is the honest place to draw the line.
+    // The gap used to be 1000 mm here, which the rule flagged under a 900 mm threshold
+    // only because every furniture-derived width came back 600 mm short: a 1.0 m gap is
+    // wider than the rule asks for, and flagging it was a false positive, not a catch.
+    const impassable = TWO_CORRIDORS(600, 2400);
     const codes = (profile: string) =>
-      lint(src, { profile })
+      lint(impassable, { profile })
         .filter((d) => d.code === "W_PATH_TOO_NARROW")
         .map((d) => d.message);
     // Under the accessibility-advisory profile's 900 mm continuous clear width.
     const advisory = codes("accessibility-advisory");
     expect(advisory.some((m) => m.includes("Narrow Wing"))).toBe(true);
     expect(advisory.some((m) => m.includes("Wide Wing"))).toBe(false);
+    // …and at the default profile too: a sealed room is not a threshold question.
+    expect(codes("default").some((m) => m.includes("Narrow Wing"))).toBe(true);
   });
 
   it("is deterministic at budget resolution (two runs deep-equal)", () => {
@@ -168,6 +185,11 @@ describe("a fixture across part of a wide threshold narrows it, never seals it",
     const ids = c?.rooms.map((r) => r.roomId) ?? [];
     expect(ids).toContain("wide");
     expect(ids).not.toContain("narrow");
+    // Unreachable is now REPORTED, not merely absent: the omission was the whole of
+    // `docs/backlog.md` 5.8, since the lint rule's domain was the array above.
+    expect(c?.blocked?.map((b) => b.roomId)).toEqual(["narrow"]);
+    // …and the width of the way in that does exist is MEASURED, never printed as a zero.
+    expect(c?.blocked?.[0]?.widestWayInMm).toBeGreaterThanOrEqual(0);
   });
 });
 

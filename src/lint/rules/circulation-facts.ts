@@ -4,6 +4,16 @@
  * that wanders far from a straight line (`W_CIRCUITOUS_PATH`). Facts → advisory only,
  * never a layout change (ADR 0005/0006).
  *
+ * `W_PATH_TOO_NARROW`'s domain is every room the modeled doors reach — **not** the rooms
+ * the model happened to produce a measurement for. The distinction is the whole of
+ * `docs/backlog.md` 5.8: a sealed room has no `circulation.rooms[]` entry, so a rule that
+ * iterated that array went quiet exactly when the plan got worse, and deepening one
+ * cabinet took `examples/furnished-flat.arch` from "squeezes to 300 mm" to CLEAN. A
+ * blocked route is the limit case of a narrow one — 0 mm of clear width — so it is the
+ * same code, and `circulation.blocked` is what carries it — with the width of the best
+ * way in MEASURED rather than printed as a zero, because a fabricated 0 mm is the same
+ * defect 5.8 was filed over, one digit smaller.
+ *
  * Both rules read the same circulation model, so it is built once per `lint()` run and
  * memoised on the (per-run) LintContext identity.
  */
@@ -60,11 +70,30 @@ export const pathTooNarrow: LintRule = {
     // One warning per room: entrance-walk pinches first, then a key route's pinch on a
     // from-room not already flagged (dedupe deterministically — rooms, then routes).
     const warned = new Set<string>();
-    for (const rc of circ.rooms) {
-      if (rc.bottleneckClearWidthMm >= min) continue;
-      const r = roomById.get(rc.roomId);
-      if (!r) continue;
-      warned.add(rc.roomId);
+    // Walk the rooms in SOURCE order rather than walking `circ.rooms`, so a blocked room
+    // — which by construction has no `circ.rooms` entry — lands where it belongs instead
+    // of nowhere. `circ.rooms` is itself in source order, so a plan with nothing blocked
+    // emits exactly the diagnostics, in exactly the order, it emitted before.
+    const factOf = new Map(circ.rooms.map((rc) => [rc.roomId, rc]));
+    const blocked = new Map((circ.blocked ?? []).map((b) => [b.roomId, b.widestWayInMm]));
+    for (const r of rooms) {
+      const wayIn = blocked.get(r.id);
+      if (wayIn !== undefined) {
+        warned.add(r.id);
+        // Two different claims, and saying the stronger one when the weaker is true is
+        // the whole of 5.8. A room with a real but too-narrow way in gets that width, in
+        // the same measured-deficit style as every other rule; only a room with no gap
+        // at all is called a seal.
+        const message =
+          wayIn > 0
+            ? `The walk from the entrance to "${labelOf(r)}" squeezes to ${mm(wayIn)} mm and stops there — no way in is wider, so no route reaches the room (${mm(shortfall(min, wayIn))} mm below the ${mm(min)} mm minimum).`
+            : `The walk from the entrance to "${labelOf(r)}" is blocked: furniture and its clearances leave no gap at all (0 mm against the ${mm(min)} mm minimum).`;
+        out.push({ severity: "warning", code: "W_PATH_TOO_NARROW", ...at(r), message, hints: narrowHints(min) });
+        continue;
+      }
+      const rc = factOf.get(r.id);
+      if (!rc || rc.bottleneckClearWidthMm >= min) continue;
+      warned.add(r.id);
       out.push({
         severity: "warning",
         code: "W_PATH_TOO_NARROW",

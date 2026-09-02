@@ -914,7 +914,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   W_PATH_TOO_NARROW: W(
     "W_PATH_TOO_NARROW",
     "The walk to a room squeezes below a passable width.",
-    "The widest route from the entrance into a room (or between a key pair of rooms, e.g. bedroom→bath) has an unavoidable pinch narrower than the minimum passable clear width — a too-narrow door/opening, or furniture crowding the way. A coarse fact from the circulation nav grid (ADR 0008); the number is grid-quantised.",
+    "The widest route from the entrance into a room (or between a key pair of rooms, e.g. bedroom→bath) has an unavoidable pinch narrower than the minimum passable clear width — a too-narrow door/opening, or furniture crowding the way. The limit case is reported too: when no route reaches the room at all, the message gives the MEASURED width of the best way in that does exist (found by asking which smaller body does get there) rather than a fabricated zero, and calls the walk blocked only when there is no gap at all. A coarse fact from the circulation nav grid (ADR 0008); the number is grid-quantised, and it is the width a body passes through, not the room left over after its own clearance.",
     "Widen the tightest door/opening on the route to at least the minimum, move the furniture pinching it, or add a second way in so the pinch is avoidable. There is no machine-applicable fix: the bottleneck is a nav-grid cell, not a named element, so nothing can be rewritten for you.",
     "door at (4000,1500) width 600\nfurniture cabinet at (3600,300) size 700x1200   # lint: the way through squeezes below 700 mm",
   ),
