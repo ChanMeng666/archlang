@@ -479,9 +479,28 @@ other dwellings are legitimately unreachable from the first front door and vanis
 reported as a separate building; `hexagon-pavilion`'s 1200 mm curved drum has openings touching three
 rooms each, which never become carved thresholds.
 
+Counting note, so the next measurement matches: the 29 above counts `themed.arch`'s two rooms, whose
+`circulation` is `null` outright because the plan has no entrance (`W_NO_ENTRANCE`, see G.6). Excluding
+those the figure is 27 silent rooms of 183 across the corpus, which is the number to compare against.
+
+**Measured before and after 5.8**, same method: `main` 156 measured / 0 blocked / **27 silent**; after
+5.8, 160 measured / 2 blocked / **21 silent**. So 5.8 recovered four rooms into the facts and turned
+two into reported findings, leaving 21 — and those 21 are exactly what 5.8's guards deliberately
+decline to claim, which is why they are filed here rather than left implied.
+
+Two distinct causes remain in that residual, and they want different answers:
+
+- **`computeCirculation` measures every walk from `entrances[0]` only.** `terrace-row`'s other three
+  dwellings are legitimately unreachable from the first front door — the plan is four buildings, and
+  the model has one entrance. A per-entrance (or per-building) model is the real fix; reporting them
+  as blocked would be a false positive, which is why 5.8 guards against exactly that.
+- **Some connectors never become carved thresholds.** `hexagon-pavilion`'s 1200 mm curved drum has
+  openings touching three rooms each, so the stitch never opens them.
+
 The defect is the SILENCE, not the omission — a consumer reading `describe --json` gets circulation
 facts for five of seven rooms and nothing telling it two are missing. Decide what the honest report
-is (a `unreachable[]` key beside `rooms[]`? a per-entrance model?) before widening any rule.
+is (an `unreachable[]` key beside `rooms[]`, with a reason per room? a per-entrance model?) before
+widening any rule.
 
 ### G.6 · Three shipped examples carry unaddressed lint warnings — `todo`
 
