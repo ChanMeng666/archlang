@@ -385,6 +385,39 @@ invocations checked against the manifest. Publishing a page means adding it to
 
 ## 4. Gotchas
 
+**Prove an ad-hoc sweep can FAIL before you trust it to pass.** This applies to the throwaway
+comparison scripts written to answer "did anything move?", not to the committed suites — those have
+their own non-vacuity discipline. A sweep that cannot detect a change reports "identical" forever,
+and it reports it in exactly the reassuring voice a real result would use. Both halves of that went
+wrong in one afternoon during the 2026-09 burn-down:
+
+- A baseline was built with `sha256sum … | sed 's|.*/prefix-||'`. The `.*` matched **greedily**,
+  eating the digest along with the path, so two *lists of filenames* were being diffed. It could only
+  ever say "identical", and it did — twice, in support of a claim about 35 drawings.
+- Another sweep hashed `arch compile <f> -o -`, which is a **usage error on a multi-storey plan**, so
+  four examples were silently hashing empty stdout. Same reassuring "identical".
+
+The fix is not more careful shell — it is a **planted change**. Append a few bytes to one baseline
+file, re-run the comparison, and confirm it reports that one file as moved; then restore it:
+
+```
+MOVED: studio.svg  aee709be92023915 -> 754b0f5ccd0c77ac
+identical: 34   moved: 1
+```
+
+That costs one command and converts "nothing moved" from a claim compatible with *the check never
+worked* into evidence. Pair each basename to its **own** digest (`join` on the filename field rather
+than stripping text), and remember the corpus fans out: 30 `examples/*.arch` produce **35** SVG files,
+because `garden-house`, `hillside-villa`, `townhouse` and `two-storey` emit one per storey. A sweep
+that finds 30 has already lost the multi-storey plans.
+
+The same instinct applies to the code under test: **zero corpus movement is not evidence the new path
+ran.** Instrument it with a counter, show which examples reach it and how often, then remove the
+counter and confirm with `grep -c`. Backlog G.1 is the worked example — the changed path fires 228
+times across 14 examples, and 0 of those 228 edges have more than one backing wall, which is *why*
+nothing moved rather than a coincidence.
+
+
 **A file's compiler options come from the PROGRAM compiling it, not from the tsconfig nearest it —
 and `exclude` cannot hold a file out of a program it was IMPORTED into.** `tsconfig.dev.json`
 checks `test/` and excludes the workspaces, but a root test importing
