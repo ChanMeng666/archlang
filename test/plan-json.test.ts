@@ -576,32 +576,34 @@ describe("plan-json — G.10 tripwire: a frame's reflection is not projected", (
 }`;
 
   it("STILL LOSES the reflection — a mirrored placed fixture projects no handedness", () => {
-    const plain = planToJson(placed("")).json.furniture ?? [];
-    const flipped = planToJson(placed(" mirror x")).json.furniture ?? [];
+    const plain = planToJson(placed("")).json?.furniture ?? [];
+    const flipped = planToJson(placed(" mirror x")).json?.furniture ?? [];
     expect(plain).toHaveLength(1);
     expect(flipped).toHaveLength(1);
+    const a = plain[0];
+    const b = flipped[0];
+    if (!a || !b) throw new Error("expected one projected fixture on each side");
 
     // `desk` is one of the 19 families backlog 5.4 found to be handed, so these two
     // pieces are drawn as mirror images of one another…
-    expect(plain[0]?.category).toBe("desk");
+    expect(a.category).toBe("desk");
 
     // …yet the two payloads differ ONLY in `x`. Strip the position and they are equal:
     // nothing in the projection records that one of them is reflected.
-    const shape = (f: Record<string, unknown>): Record<string, unknown> => {
-      const { x, y, id, ...rest } = f;
-      void x;
-      void y;
-      void id;
+    const shape = (f: unknown): Record<string, unknown> => {
+      const { x: _x, y: _y, id: _id, ...rest } = f as Record<string, unknown>;
       return rest;
     };
-    expect(shape(flipped[0] as Record<string, unknown>)).toEqual(shape(plain[0] as Record<string, unknown>));
+    expect(shape(b)).toEqual(shape(a));
 
     // WHEN THIS FAILS: the projection learned to carry the reflection. Good — now make
     // the assertion the real one (the two shapes must DIFFER) and delete this comment.
   });
 
   it("is MASKED because a `place`d plan cannot round-trip at all (E_DOTTED_DECL)", () => {
-    const back = planFromJson(planToJson(placed(" mirror x")).json);
+    const payload = planToJson(placed(" mirror x")).json;
+    if (!payload) throw new Error("expected the plan to project");
+    const back = planFromJson(payload);
     const codes = back.diagnostics.map((d) => d.code);
     expect(codes).toContain("E_DOTTED_DECL");
 
