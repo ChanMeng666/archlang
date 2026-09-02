@@ -536,3 +536,76 @@ describe("plan-json — schema object", () => {
     expect(PLAN_JSON_SCHEMA.properties.room_types.items.enum).toEqual([...ROOM_TYPES]);
   });
 });
+
+/**
+ * Backlog G.10 — Plan JSON carries a frame's ROTATION but not its REFLECTION.
+ *
+ * This is a TRIPWIRE, not a passing feature test. Both assertions below pin the
+ * CURRENT, WRONG state on purpose, because the defect is currently unreachable and
+ * would otherwise be un-masked silently by an unrelated fix.
+ *
+ * The situation: `planToJson` projects the rotation a `place` frame imposes on a
+ * fixture, and not the reflection. Before backlog 5.4 that lost nothing — a mirrored
+ * symbol drew identically to its twin — but 5.4 made 19 of the 83 catalogued families
+ * genuinely handed, so the projection now loses a fact the drawing depends on.
+ *
+ * It cannot bite today because a plan containing `place` never round-trips at all:
+ * `planFromJson` refuses a namespaced id with `E_DOTTED_DECL`. The two defects mask
+ * each other, and there is no fixture that can reach the projection bug.
+ *
+ * THE TRAP THIS FILE EXISTS TO CLOSE: fixing `E_DOTTED_DECL` un-masks the missing
+ * reflection with NO test going red, because nothing can currently reach it — the
+ * only witness would be a symbol drawn the wrong way round on someone else's plan.
+ *
+ * So when you make a `place`d plan round-trip, THIS SUITE GOES RED, here, and the
+ * failure names the work: teach the projection to carry the reflection (or decide,
+ * and record, that a placed instance projects resolved coordinates and nothing else),
+ * then invert both assertions below into the real round-trip test.
+ *
+ * Do not "fix" this file by deleting it. See `docs/backlog.md` G.10.
+ */
+describe("plan-json — G.10 tripwire: a frame's reflection is not projected", () => {
+  const placed = (mirror: string): string => `plan "p" {
+  units mm
+  component c() {
+    wall id=w exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+    room id=r at (0,0) size 4000x3000 label "Room"
+    furniture id=d desk in r anchor top-right inset 300 size 1400x700
+  }
+  place c() as a at (4000,0)${mirror}
+}`;
+
+  it("STILL LOSES the reflection — a mirrored placed fixture projects no handedness", () => {
+    const plain = planToJson(placed("")).json.furniture ?? [];
+    const flipped = planToJson(placed(" mirror x")).json.furniture ?? [];
+    expect(plain).toHaveLength(1);
+    expect(flipped).toHaveLength(1);
+
+    // `desk` is one of the 19 families backlog 5.4 found to be handed, so these two
+    // pieces are drawn as mirror images of one another…
+    expect(plain[0]?.category).toBe("desk");
+
+    // …yet the two payloads differ ONLY in `x`. Strip the position and they are equal:
+    // nothing in the projection records that one of them is reflected.
+    const shape = (f: Record<string, unknown>): Record<string, unknown> => {
+      const { x, y, id, ...rest } = f;
+      void x;
+      void y;
+      void id;
+      return rest;
+    };
+    expect(shape(flipped[0] as Record<string, unknown>)).toEqual(shape(plain[0] as Record<string, unknown>));
+
+    // WHEN THIS FAILS: the projection learned to carry the reflection. Good — now make
+    // the assertion the real one (the two shapes must DIFFER) and delete this comment.
+  });
+
+  it("is MASKED because a `place`d plan cannot round-trip at all (E_DOTTED_DECL)", () => {
+    const back = planFromJson(planToJson(placed(" mirror x")).json);
+    const codes = back.diagnostics.map((d) => d.code);
+    expect(codes).toContain("E_DOTTED_DECL");
+
+    // WHEN THIS FAILS: someone taught `planFromJson` to accept a namespaced id, which
+    // un-masks the assertion above. That is the moment G.10 becomes reachable and real.
+  });
+});
