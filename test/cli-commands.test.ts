@@ -424,6 +424,13 @@ describe("CLI — watch", () => {
     const w = start(["watch", file, "-o", out, "--json"]);
     try {
       await until("the first compile to write the output with Alpha", () => peek(out).includes("Alpha"), budget);
+      // …and then for the ENVELOPE, which is a separate signal arriving later. `cmdCompile`
+      // writes the artifact and only then `emitJson`s to stdout, and stdout is a pipe whose
+      // data reaches this process asynchronously — so the file containing "Alpha" says
+      // nothing about whether the envelope has been received yet. Reading it here without
+      // this wait is a RACE that fails as "expected at least 1 JSON envelope(s), saw 0",
+      // NOT as a timeout: the same defect as the arming wait below, one signal further on.
+      await until("the first compile's JSON envelope on stdout", () => envelopes(w.stdout()).length >= 1, budget);
       const first = envelope(w.stdout(), 0);
       expect(first.output).toBe(resolve(out));
       expect(first.written).toBeUndefined();
