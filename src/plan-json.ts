@@ -26,8 +26,8 @@
  * plan's compiled interior-door connectivity.
  */
 
-import type { CompassWord, Hemisphere, NorthDir, PlanNode, UseKind } from "./ast.js";
-import { COMPASS_DIRECTIONS, HEMISPHERES, USE_KINDS } from "./ast.js";
+import type { AutoDimsMode, CompassWord, Hemisphere, NorthDir, PlanNode, UseKind } from "./ast.js";
+import { AUTO_DIMS_MODES, COMPASS_DIRECTIONS, HEMISPHERES, USE_KINDS } from "./ast.js";
 import type { RRoom, RDoor, RWindow, ROpening, RFurniture, RDim, RColumn, RWall, ResolvedPlan } from "./ir.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { DoorEnumClause, DoorHinge, DoorKind, DoorSlideDir, DoorSwingDir } from "./grammar/tokens.js";
@@ -313,6 +313,17 @@ export interface PlanJson {
    * `compile --from-json` would silently drop the site and every derived fact with it.
    */
   site?: { street: CompassWord; hemisphere?: Hemisphere };
+  /**
+   * `dims auto [overall|rooms|walls|all]` — which automatic dimension chains the render
+   * draws. A plan-level SETTING, like `grid`/`scale`/`north`/`site`, and emitted only when
+   * the plan declares one, so every pre-existing payload is byte-identical. It is here
+   * because it is load-bearing on OUTPUT: the chains it synthesizes grow the drawing
+   * extent, so dropping the word silently reflows the whole sheet (a plan that declares
+   * `dims auto all` and one that declares nothing render different bytes with no
+   * diagnostic). `dims[]` beside it is the unrelated list of EXPLICIT `dim` statements;
+   * the two compose exactly as they do in `.arch`.
+   */
+  dims_auto?: AutoDimsMode;
   /** Output-only enrichments (ignored on input). */
   room_count?: number;
   total_area?: number;
@@ -505,6 +516,9 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
     ...(northIsDefault(ir.north) ? {} : { north: ir.north }),
     // Emitted only when declared, so every payload a pre-site plan produced is unchanged.
     ...(ir.site ? { site: { street: ir.site.street, hemisphere: ir.site.hemisphere } } : {}),
+    // Same rule as `site`: emitted only when declared, so a plan that never asked for
+    // automatic dimensioning produces exactly the payload it always did.
+    ...(ir.autoDims !== undefined ? { dims_auto: ir.autoDims } : {}),
     room_count: rooms.length,
     total_area: totalArea,
     room_types: roomTypes,
@@ -617,6 +631,15 @@ function validatePlanJson(json: unknown, val: Validator): PlanJson | null {
   if (!isStr(json.plan) && json.plan !== undefined) val.err("/plan", "expected a string");
 
   if (json.site !== undefined) validateSite(json.site, "/site", val);
+
+  // Accept-list DERIVED from the parser's own `AUTO_DIMS_MODES`, never retyped — the same
+  // law the `uses` enum learned when a thirteenth use kind made `planToJson` emit a
+  // document its own `planFromJson` refused.
+  if (
+    json.dims_auto !== undefined &&
+    !(isStr(json.dims_auto) && (AUTO_DIMS_MODES as readonly string[]).includes(json.dims_auto))
+  )
+    val.err("/dims_auto", `expected one of ${AUTO_DIMS_MODES.join(", ")}`);
 
   const rooms = json.rooms;
   if (rooms !== undefined && !Array.isArray(rooms)) val.err("/rooms", "expected an array");
@@ -810,6 +833,9 @@ function emitArch(p: PlanJson): string {
   if (p.site) {
     L.push(`  site { street ${p.site.street} hemisphere ${p.site.hemisphere ?? "north"} }`);
   }
+  // The round-trip half of `dims auto`. Without this line the chains vanish and the
+  // drawing extent shrinks around them — a silently smaller sheet, no diagnostic.
+  if (p.dims_auto !== undefined) L.push(`  dims auto ${p.dims_auto}`);
 
   for (const w of p.walls ?? []) {
     const parts = [
@@ -1181,6 +1207,11 @@ export const PLAN_JSON_SCHEMA = {
         street: { enum: [...COMPASS_DIRECTIONS], description: "Compass direction the street frontage faces." },
         hemisphere: { enum: [...HEMISPHERES], description: "Hemisphere the building sits in. Defaults to north." },
       },
+    },
+    dims_auto: {
+      enum: [...AUTO_DIMS_MODES],
+      description:
+        "`dims auto <mode>` — draw automatic dimension chains: `overall` (the two exterior chains), `rooms`, `walls`, or `all`. Omit it and no chains are drawn. This is a SETTING, not the `dims` array beside it: `dims` lists explicit `dim` statements, and the two compose. It affects output — the chains grow the drawing extent — so a document that drops it renders a differently-sized sheet.",
     },
     room_count: { type: "integer", description: "Output-only: number of rooms." },
     total_area: { type: "number", description: "Output-only: total floor area in square metres." },
