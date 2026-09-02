@@ -24,6 +24,24 @@ green suite): one worktree per item, never two concurrent items on the same file
 renamed bodies against the newer version, not just the conflict set; run both branches' fixtures
 together before merging; `npm run typecheck:all` after **every** merge.
 
+**READ AN ENTRY'S OBSERVATIONS AS EVIDENCE AND ITS DIAGNOSIS AS A HYPOTHESIS.** This file's
+*symptoms* have been reliable — reproducible, with real numbers. Its *stated causes* have been wrong
+about as often as right, and each wrong one cost a detour because it read as authoritative. Measured
+over the 2026-09 burn-down:
+
+| item | the entry said | it actually was |
+|---|---|---|
+| 5.8 | the area-scaled nav-grid pitch; "does not reproduce in a small hand-written corridor" | arithmetically impossible (every plan under 2500 m² sits on the same 100 mm floor) — and it reproduces in an 8 × 3 m plan immediately. **Three** defects, none of them the pitch |
+| G.4 | the defect is why `two-bed.arch` cannot round-trip | `two-bed` also declares a `roof` the projection does not model, so it could never have round-tripped; the exclusion is compound |
+| 3.13 | constrained by `spec.llm.md`'s character cap | `SKILL.md` feeds the **uncapped** `llms-full.txt`; the capped artifact never moved |
+| G.1 | `flush` "can resolve against the thinner face" | true but weak — the resolved position was **order-dependent**, and which consumer was at fault (the resolver, not the check) was the load-bearing question |
+
+So: **check the arithmetic of a stated cause before building on it**, re-measure any number an entry
+quotes (several have gone stale twice), and when an entry leaves open *which* of two components is
+wrong, treat settling that as the first deliverable rather than a detail. Correct the entry in place
+when you close it — this file drives the `/loop` burn-down, and a confident wrong cause sends the
+next agent down the wrong path.
+
 ---
 
 ## Wave 2 — coverage where a wrong sign ships silently
