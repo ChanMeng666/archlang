@@ -1197,7 +1197,7 @@
     {
       "id": "compact-studio",
       "valid": true,
-      "lintWarnings": 1,
+      "lintWarnings": 2,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
