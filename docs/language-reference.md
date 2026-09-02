@@ -1886,7 +1886,9 @@ storey, ascending — and `svg`/`scene`/`ast` keep meaning **page 1** (the lowes
 a level-unaware consumer still gets a complete drawing. On the CLI:
 
 ```bash
-arch compile house.arch --json          # writes house.L1.svg, house.L2.svg …; reports outputs[]
+arch compile house.arch                          # writes house.L1.svg, house.L2.svg …
+arch compile house.arch -o house.svg --json      # …and reports outputs[] + pages[]
+arch compile house.arch --json                   # check only: WRITES NOTHING (no -o), reports written:false
 arch compile house.arch --level 2 -o upper.svg   # just that storey, to the plain target
 arch compile house.arch --level 1 -o -           # `-o -` streams ONE drawing, so it needs --level
 arch describe house.arch --json                  # top-level facts = lowest storey, plus levels[]

@@ -46,9 +46,12 @@ function scratch(): { dir: string; plan: string } {
 }
 
 suite("v1.21 CLI — compile writes one file per storey", () => {
+  // `-o` is load-bearing here, not decoration: `--json` with no `-o` names no output
+  // file and so writes nothing at all (see `test/cli.test.ts`'s side-effect contract).
+  // The fan-out this case is about only happens when a target was asked for.
   it("writes <stem>.L<level>.<ext> and reports outputs[] + pages[]", () => {
     const { dir, plan } = scratch();
-    const r = run(["compile", plan, "--json"]);
+    const r = run(["compile", plan, "-o", join(dir, "house.svg"), "--json"]);
     expect(r.status).toBe(0);
     const out = JSON.parse(r.stdout);
     expect(out.ok).toBe(true);
