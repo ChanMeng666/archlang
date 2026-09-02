@@ -384,44 +384,135 @@ build the repro plan above and confirm which of the two consumers (the `flush` r
 from the shape (here: the correct wall face), never an assumption that the nearest centreline is
 the nearest FACE.
 
-### G.2 · `arch compile <file> --json` with no `-o` silently writes sibling `.svg`/`.L<n>.svg` files
-— `todo`
+### G.2 · `arch compile <file> --json` with no `-o` wrote sibling `.svg`/`.L<n>.svg` files — `done`
 
-Reported by the villa/homes authors, and independently reproduced during this integration: running
-`arch compile examples/hillside-villa.arch --json` (no `-o`) — a perfectly reasonable "just check it
-compiles" invocation, and exactly the shape a scripted loop over many files would use — writes
-`examples/hillside-villa.svg` **and** `examples/hillside-villa.L1.svg` / `.L2.svg` alongside the
-source, even though `--json` asks for structured output on stdout and names no output file. This
-integration hit it firsthand: a stray pair of per-level SVGs appeared in `examples/` from an
-earlier diagnostic `compile --json` call and had to be deleted by hand before the real
-`gen:example-svgs` output could be reviewed cleanly.
+Fixed. `compile --json` with no `-o` now writes nothing and says so positively — `written: false`
+takes the slot `output`/`outputs[]` occupied, `bytes` still reports the size of the render. One
+predicate (`jsonNamesNoFile`) at two call sites, applied uniformly across every branch — clean plan,
+multi-storey fan-out, and a broken plan under `--error-svg` — because a split rule would be more
+surprising than the behaviour it replaced. `-o <file>`, `-o -` and the no-flag default are untouched,
+as are `preview`/`batch`/`md`.
 
-The footgun is `--json` implying "give me data, not files" while the CLI still defaults to writing
-`<stem>.svg` (and `<stem>.L<n>.svg` for a multi-storey plan) whenever `-o` is absent, `--json` or
-not. Proposal: `compile --json` with no `-o` should not write any file (the SVG already rides in the
-JSON payload's `output`/`outputs[]`), or at minimum should warn on stderr that it wrote files a
-script did not ask for. Whichever direction is chosen, `test/cli.test.ts`'s existing `--json`
-coverage is the place to pin the new contract — it does not currently assert anything about
-file-writing side effects one way or the other.
+Three consequences worth carrying, none of them obvious from the entry as filed:
 
-### G.3 · `examples/garden-loft.arch` and `examples/one-room.arch` do not round-trip byte-identically
-through `planToJson`/`planFromJson` — `todo`
+- **`watch` inherits the rule**, because `cmdWatch` re-enters `cmdCompile` on every save. Pinned by two
+  LIVE end-to-end cases rather than left to follow by construction — `watch` did not watch at all for
+  twenty-five releases precisely because nothing invoked it end to end.
+- **The payload never carried the drawing.** `output` is a path and `bytes` a count, so this removes
+  one accidental route to the bytes rather than a redundant one; the deliberate routes are
+  `-o <file> --json` and `-o -`. The original proposal's premise ("the SVG already rides in the JSON
+  payload") was simply wrong, and worth knowing before the next person reasons from it.
+- **`--error-svg` is inert in exactly one combination** (`--json`, no `-o`). Emitting the card bytes
+  into the payload instead was weighed and rejected: the envelope reports facts about a render and has
+  never carried content, so an unbounded content key appearing only when no `-o` was given would make
+  the error path the sole exception to a deliberately bounded envelope. The clause is declared
+  per-command, since it is false for `preview`/`batch`/`md`.
 
-Found while fixing `test/plan-json.test.ts`'s third round-trip case after `two-bed.arch` picked up a
-`roof overhang` (see the Unreleased changelog entry — that part is by design, `roof`/`void` are
-deliberately absent from the JSON projection). Looking for another untouched, import-free shipped
-example to take `two-bed`'s slot, `garden-loft.arch` and `one-room.arch` were tried and BOTH failed
-`compile(planFromJson(planToJson(src)).source).svg === compile(src).svg` — not with a diagnostic, but
-with a shifted drawing extent (the whole title-block/scale-bar band moves by roughly a thousand
-units in the garden-loft case). `attached.arch` was used instead, confirmed clean.
+`test/cli.test.ts` gained an 8-case side-effect suite pinning BOTH directions with `readdirSync`
+listings, where it previously asserted nothing about file writing either way. Bonus finding: the agent
+spec's `echo '…' | arch compile - --json   # stdin, no temp file` had been a FALSE statement shipped to
+every model reading it, and the stdin case is now what keeps it true.
 
-Not yet isolated to a cause. `garden-loft.arch`'s shell is four independent two-point `wall`
-segments (`w_north`/`w_east`/`w_south`/`w_west`) rather than one closed ring, and it has no `paper`
-(auto-sized extent) — either property, or something else about its `dims auto all` chain count, is
-a plausible suspect, but `attached.arch` ALSO uses four independent wall segments and DOES round-trip
-clean, which rules out "multi-segment shell" as the sole cause. First step: bisect `garden-loft.arch`
-statement-by-statement against a round-tripping copy to find the one clause the JSON projection loses
-or reorders.
+### G.3 · `garden-loft.arch` / `one-room.arch` did not round-trip through `planToJson` — `done`
+
+Bisected to one clause: **`dims auto`** lived on the resolved plan as `ir.autoDims` with no field in
+`PlanJson`, so `planJsonToArch` never re-emitted it. With no `paper` the drawing extent IS `refDim`, so
+losing the chains rescaled every line weight and moved the whole title-block band — with no diagnostic.
+The entry's "no `paper`" suspicion was a symptom, not the cause; `north up` is correctly omitted (it is
+the default). A THIRD example was affected and unreported: **`laneway-house.arch`, the signature plan.**
+
+`dims_auto` is projected only when declared (the `site` rule), so every pre-existing payload is
+byte-identical, and `AUTO_DIMS_MODES` is interpolated from `src/ast.ts` into the type, the validator and
+the schema rather than retyped into any of them. **The schema change is backward- but NOT
+forward-compatible** (measured with ajv, not read off the text): a document the new `planToJson`
+produces from a plan that declares `dims auto` is REJECTED by the published 1.32.0 schema, because the
+top level is `additionalProperties: false`.
+
+`test/plan-json.test.ts` no longer **samples** — which is why a lossy clause hid for so long. Every
+`examples/*.arch` either round-trips or sits in `CANNOT_ROUND_TRIP` with a reason AND a `proof` regex
+asserted to still match the file, so an exclusion cannot rot into decoration. One exclusion is labelled
+a defect rather than a design boundary — see the new item below.
+
+
+## Found while burning down the gallery items (2026-09-02)
+
+Five things the G.2/G.3/5.8 work turned up. None was in scope for the item that found it, and each
+was deliberately NOT widened into — recorded here rather than half-fixed.
+
+### G.4 · `planToJson` re-emits a RESOLVER-DERIVED position as an authored `at (x,y)` — `todo`
+
+Found while classifying the corpus for G.3's widened round-trip test, and the reason `two-bed.arch`
+sits in `CANNOT_ROUND_TRIP` as a **defect** rather than a design boundary.
+
+`planToJson` writes every furniture position as an absolute `at (x,y)`, including one the resolver
+DERIVED from `anchor`/`flush`/`against wall`. `grid` snaps coordinates an author *writes* (v1.27.0,
+item 3.12) — so a derived position that is not already on the grid MOVES on the way back in. Minimal
+repro, no example needed:
+
+```
+grid 100, a 300-thick shell, one `furniture wardrobe in r anchor top-right flush`
+  -> resolves to (4650,150), returns as (4700,200)
+```
+
+Controls: the same plan at `grid 50`, or at `thickness 200`, round-trips clean. **`FurnitureJson`
+already ACCEPTS `anchor`/`flush`/`against_wall` on input** — `planToJson` simply never emits them, so
+the fix is plausibly to project the authored form when there was one, rather than to stop snapping.
+Note this is the same family as the iron law about derived positions: the JSON is reporting a derived
+coordinate as though a human had written it.
+
+### G.5 · `describe --json` silently omits rooms from `circulation.rooms[]` — `todo`
+
+Measured on clean `main` at v1.32.0: **10 of the 30 shipped examples drop 29 rooms** between them
+from `.circulation.rooms[]`, with `lint` clean and no diagnostic of any kind.
+
+```
+terrace-row      12/16   hexagon-pavilion  4/7    hillside-villa  3/11
+furnished-flat    2/7    parametric        2/3    themed          2/2
+accessible        1/2    aquarium          1/8    garden-house    1/6
+tiny-house        1/2
+```
+
+Item 5.8 closed **one** cause of this (a room sealed by furniture, and a representative cell chosen
+without regard to reachability) and is why `furnished-flat` and `tiny-house` now report. The rest are
+STRUCTURAL and still silent: `circulation` measures from `entrances[0]`, so `terrace-row`'s three
+other dwellings are legitimately unreachable from the first front door and vanish rather than being
+reported as a separate building; `hexagon-pavilion`'s 1200 mm curved drum has openings touching three
+rooms each, which never become carved thresholds.
+
+The defect is the SILENCE, not the omission — a consumer reading `describe --json` gets circulation
+facts for five of seven rooms and nothing telling it two are missing. Decide what the honest report
+is (a `unreachable[]` key beside `rooms[]`? a per-entrance model?) before widening any rule.
+
+### G.6 · Three shipped examples carry unaddressed lint warnings — `todo`
+
+The same shape `two-bed.arch` was in before the 2026-08 gallery refresh repaired it:
+
+| example | diagnostics |
+|---|---|
+| `relational.arch` | `W_ROOM_DISCONNECTED` x3, `W_ROOM_NO_FIXTURE` x2, `W_BEDROOM_NO_WINDOW` x1, `W_ROOM_NOT_ENCLOSED` x1 |
+| `themed.arch` | `W_NO_ENTRANCE` x1 |
+| `imports.arch` | `W_SWING_OBSTRUCTED` x1 |
+
+`relational.arch` is the worst: three of its rooms cannot be entered at all. These are demonstration
+plans for `right-of`/`below`, `theme` and `import` respectively, so the warnings are incidental to
+what each teaches — but a reader who compiles the relational example and lints it is told the plan is
+unsound, which is not what an example should teach. Either repair them (as `two-bed` was) or state in
+each source header that the warning is deliberate, the way `hillside-villa` and `garden-house` do.
+
+### G.7 · Fixture-word completion in the VS Code extension — `todo`
+
+Deferred by name in v1.32.0's CHANGELOG and never given a backlog entry until now. The LSP completes
+keywords and ids but not the **129 category words**, which is the largest closed vocabulary a plan
+author has to remember and the one most worth offering. The bundled server already knows every family
+(hover and the fixture lint rules read `FIXTURE_FAMILIES`), so this is a completion-provider change,
+not a data one.
+
+### G.8 · A per-category `style` — `todo`
+
+Also deferred by name in v1.32.0 and previously untracked. `style <kind> { … }` reaches the fixture
+layer as ONE kind, so there is no way to give `tree` a different pen from `sofa`. The symbols are
+drawn with named line weights already, so the seam exists — the syntax does not. Any design has to
+say how a per-category rule composes with the existing per-kind one.
 
 ---
 
