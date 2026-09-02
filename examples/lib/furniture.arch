@@ -51,8 +51,8 @@ plan "furniture" {
   }
 
   # The whole bounding rectangle of the L, at the common three-seat-plus-chaise size.
-  # The return is always on the LEFT — turn it with `rotate`, since a mirrored `place`
-  # reflects the position and not the symbol.
+  # The return is on the LEFT — turn it with `rotate`, or place the whole component with
+  # `place … mirror` for the right-handed piece (a reflecting frame mirrors the symbol too).
   component sofa_l(x, y) {
     furniture sofa_l at (x, y) size 2600x1600
   }
