@@ -50,6 +50,30 @@ const byteLen = (b: string | Uint8Array): number => (typeof b === "string" ? Buf
 const pageSelect = (args: Args, whenAbsent: PageSelect): PageSelect =>
   args.level !== undefined ? { level: args.level } : whenAbsent;
 
+/**
+ * `compile --json` with no `-o` writes NOTHING.
+ *
+ * `--json` says "give me the structured result on stdout" and no `-o` names no output
+ * file, so there is nothing in the invocation that asks for bytes on disk — yet for
+ * every release up to this one `compile` still fell back to `defaultOut()` and dropped
+ * `<stem>.svg` (and one `<stem>.L<n>.svg` per storey) beside the source. That is exactly
+ * the shape of a scripted "just check it compiles" loop, and it littered this repo's own
+ * `examples/` with stray per-level SVGs that had to be deleted by hand before
+ * `gen:example-svgs` output could be reviewed.
+ *
+ * The rule is deliberately uniform across every branch of `compile` — clean plan,
+ * broken plan with `--error-svg`, single storey and multi-storey alike — because a
+ * split rule ("no file, unless the plan is broken and --error-svg is on") would be
+ * more surprising than the behaviour it replaced. Ask for a file and you get one:
+ * `-o <file>` writes, `-o -` streams (and is a usage error with `--json`, unchanged).
+ *
+ * The JSON says so positively rather than by omission: `written: false` sits exactly
+ * where `output`/`outputs` would have, `bytes` still reports the size of the render,
+ * and every other key is unchanged. Only `compile` is affected — `preview`, `batch`
+ * and `md` keep their behaviour byte-for-byte.
+ */
+const jsonNamesNoFile = (args: Args): boolean => args.json === true && args.o === undefined;
+
 // ---------------------------------------------------------------------------
 // compile
 // ---------------------------------------------------------------------------
@@ -135,13 +159,19 @@ export async function cmdCompile(args: Args): Promise<number> {
   const bytes = r.bytes;
   const diagnostics = r.diagnostics;
 
+  // `--json` with no `-o` asked for no file — see {@link jsonNamesNoFile}.
+  const noWrite = jsonNamesNoFile(args);
   const target = args.o ?? defaultOut(input, format);
 
   // `--error-svg` produced an error-card image for a *broken* plan: write it (so an
   // agent/embed has visual feedback) but keep the user-source exit code and report
-  // the diagnostics — a broken plan never counts as a successful compile.
+  // the diagnostics — a broken plan never counts as a successful compile. With
+  // `--json` and no `-o` the card is still *rendered* (so `bytes` is real) and still
+  // not written, because no one named a place to put it.
   if (errored) {
-    if (target === "-") {
+    if (noWrite) {
+      // nothing on disk: the invocation named no output file
+    } else if (target === "-") {
       process.stdout.write(bytes);
     } else {
       try {
@@ -156,9 +186,12 @@ export async function cmdCompile(args: Args): Promise<number> {
         format,
         diagnostics: diagnostics.map((d) => diagnosticToJson(source, d)),
       };
-      if (target !== "-") {
+      if (noWrite) {
+        o.written = false;
+        o.bytes = byteLen(bytes);
+      } else if (target !== "-") {
         o.output = resolvePath(target);
-        o.bytes = typeof bytes === "string" ? Buffer.byteLength(bytes) : bytes.length;
+        o.bytes = byteLen(bytes);
       }
       emitJson(o);
     } else {
@@ -170,14 +203,16 @@ export async function cmdCompile(args: Args): Promise<number> {
     return EXIT.USER;
   }
 
-  if (target === "-") {
-    process.stdout.write(bytes);
-    return EXIT.OK;
-  }
-  try {
-    writeFileSync(resolvePath(target), bytes);
-  } catch (e) {
-    return ioError((e as Error).message, args.json, { format });
+  if (!noWrite) {
+    if (target === "-") {
+      process.stdout.write(bytes);
+      return EXIT.OK;
+    }
+    try {
+      writeFileSync(resolvePath(target), bytes);
+    } catch (e) {
+      return ioError((e as Error).message, args.json, { format });
+    }
   }
 
   const warnings = diagnostics.filter((d) => d.severity === "warning");
@@ -187,8 +222,9 @@ export async function cmdCompile(args: Args): Promise<number> {
     emitJson({
       ok: true,
       format,
-      output: resolvePath(target),
-      bytes: typeof bytes === "string" ? Buffer.byteLength(bytes) : bytes.length,
+      // `written: false` takes `output`'s slot when the invocation named no file.
+      ...(noWrite ? { written: false } : { output: resolvePath(target) }),
+      bytes: byteLen(bytes),
       diagnostics: warnings.map((d) => diagnosticToJson(source, d)),
       summary,
     });
@@ -208,6 +244,11 @@ export async function cmdCompile(args: Args): Promise<number> {
  * The `--json` envelope reports `outputs[]` (every path, in level order) plus a `pages[]`
  * row per storey — there is no single `output`, and inventing one would be a lie. The
  * `summary` stays the whole-plan `describe()`, whose `levels[]` mirrors these pages.
+ *
+ * With `--json` and no `-o` nothing is written at all ({@link jsonNamesNoFile}): the
+ * whole set is rendered and reported (`pages[]` keeps its `level`/`name`/`bytes`), but
+ * `outputs[]` and each row's `output` are absent because no such file exists — the
+ * envelope says `written: false` instead.
  */
 function writePages(
   pages: NonNullable<Awaited<ReturnType<typeof renderArtifact>>["pages"]>,
@@ -217,19 +258,22 @@ function writePages(
   format: Format,
   args: Args,
 ): number {
+  const noWrite = jsonNamesNoFile(args);
   const base = args.o ?? defaultOut(input, format);
   const written: Array<Record<string, unknown>> = [];
   for (const p of pages) {
     const target = levelTarget(base, p.level);
-    try {
-      writeFileSync(resolvePath(target), p.bytes);
-    } catch (e) {
-      return ioError((e as Error).message, args.json, { format });
+    if (!noWrite) {
+      try {
+        writeFileSync(resolvePath(target), p.bytes);
+      } catch (e) {
+        return ioError((e as Error).message, args.json, { format });
+      }
     }
     written.push({
       level: p.level,
       ...(p.name !== undefined ? { name: p.name } : {}),
-      output: resolvePath(target),
+      ...(noWrite ? {} : { output: resolvePath(target) }),
       bytes: byteLen(p.bytes),
     });
   }
@@ -243,7 +287,8 @@ function writePages(
     emitJson({
       ok: true,
       format,
-      outputs: written.map((w) => w.output),
+      // `written: false` takes `outputs[]`'s slot when the invocation named no file.
+      ...(noWrite ? { written: false } : { outputs: written.map((w) => w.output) }),
       pages: written,
       diagnostics: warnings.map((d) => diagnosticToJson(source, d)),
       summary,

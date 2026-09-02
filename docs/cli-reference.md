@@ -48,7 +48,7 @@ arch manifest --json               # this page, as data
 
 render a plan to SVG/DXF/TXT/PDF/PNG
 
-**Input:** `<file.arch|-> (Plan JSON with --from-json)` · **Output:** file (or stdout with -o -)
+**Input:** `<file.arch|-> (Plan JSON with --from-json)` · **Output:** file (or stdout with -o -) — with --json and no -o nothing is written
 
 | Flag | Does |
 | --- | --- |
@@ -70,17 +70,23 @@ render a plan to SVG/DXF/TXT/PDF/PNG
 **Examples**
 
 ```bash
-# render SVG next to the input; structured result on stdout
+# render to the named file; structured result on stdout
+$ arch compile plan.arch -o plan.svg --json
+
+# check it compiles and WRITE NOTHING (no -o names a file) — reports written:false, bytes, diagnostics, summary
 $ arch compile plan.arch --json
+
+# render SVG next to the input (plan.svg)
+$ arch compile plan.arch
 
 # compile source from stdin straight to SVG on stdout
 $ arch compile - -o - < plan.arch
 
 # rasterize to PNG, fetching the optional renderer if it is missing
-$ arch compile plan.arch -f png --install --json
+$ arch compile plan.arch -f png -o plan.png --install --json
 
 # a multi-storey plan writes one sheet per level (house.L1.svg, house.L2.svg …) and reports outputs[]
-$ arch compile house.arch --json
+$ arch compile house.arch -o house.svg --json
 
 # render just the upper storey of a multi-storey plan to one file
 $ arch compile house.arch --level 2 -o upper.svg

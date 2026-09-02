@@ -278,16 +278,24 @@ const COMMANDS: ManifestCommand[] = [
     summary: "render a plan to SVG/DXF/TXT/PDF/PNG",
     flags: COMPILE_FLAGS,
     input: "<file.arch|-> (Plan JSON with --from-json)",
-    output: "file (or stdout with -o -)",
+    output: "file (or stdout with -o -) — with --json and no -o nothing is written",
     examples: [
-      { cmd: "arch compile plan.arch --json", note: "render SVG next to the input; structured result on stdout" },
+      {
+        cmd: "arch compile plan.arch -o plan.svg --json",
+        note: "render to the named file; structured result on stdout",
+      },
+      {
+        cmd: "arch compile plan.arch --json",
+        note: "check it compiles and WRITE NOTHING (no -o names a file) — reports written:false, bytes, diagnostics, summary",
+      },
+      { cmd: "arch compile plan.arch", note: "render SVG next to the input (plan.svg)" },
       { cmd: "arch compile - -o - < plan.arch", note: "compile source from stdin straight to SVG on stdout" },
       {
-        cmd: "arch compile plan.arch -f png --install --json",
+        cmd: "arch compile plan.arch -f png -o plan.png --install --json",
         note: "rasterize to PNG, fetching the optional renderer if it is missing",
       },
       {
-        cmd: "arch compile house.arch --json",
+        cmd: "arch compile house.arch -o house.svg --json",
         note: "a multi-storey plan writes one sheet per level (house.L1.svg, house.L2.svg …) and reports outputs[]",
       },
       {
