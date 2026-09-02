@@ -4,7 +4,7 @@ import { compile, format, lint } from "../src/index.js";
 import { parse } from "../src/parser.js";
 import { resolve } from "../src/ir.js";
 import type { RFurniture } from "../src/ir.js";
-import { innerFaceOfRoomEdge } from "../src/analyze.js";
+import { backingWallForRoomEdge, innerFaceOfRoomEdge } from "../src/analyze.js";
 
 /**
  * `flush` — wall-FACE-referenced room-anchored placement.
@@ -278,5 +278,82 @@ describe("the flagship example's WC", () => {
   it("stays lint-clean", () => {
     expect(lint(studio)).toEqual([]);
     expect(compile(studio, { noCache: true }).errors).toEqual([]);
+  });
+});
+
+/**
+ * Item G.1 — **two rules read different wall FACES off the same centreline.**
+ *
+ * A room edge is a wall CENTERLINE, and more than one wall can sit on it: write a
+ * 100 mm partition along a 250 mm exterior shell's run and the solid at that edge
+ * reaches 125 mm into the room while the partition alone reaches 50. `flush` used to
+ * read ONE backing segment — the one covering the most of the edge, first-declared on
+ * a tie — so on the repro below it referenced the partition's face at y = 50 and put
+ * the bed 75 mm inside the shell, which `W_FURNITURE_WALL_COLLISION` measures against
+ * the solid and duly flagged. The verdict therefore depended on the ORDER of two
+ * `wall` statements, which is the tell: a derived position must come from the shape,
+ * and the nearest CENTERLINE is not the nearest FACE.
+ *
+ * The collision check was right; `flush` was wrong. The face is now the innermost of
+ * every wall backing the edge.
+ */
+describe("G.1 — `flush` clears every wall on the edge, not the one it picked", () => {
+  // The backlog's repro, verbatim: 1800 x 2600 room, a 100 mm partition coincident
+  // with the 250 mm shell's north run. `partitionFirst` is the order that used to fail.
+  const coincident = (partitionFirst: boolean) => {
+    const part = `wall id=part partition thickness 100 { (0,0) (1800,0) }`;
+    const shell = `wall id=shell exterior thickness 250 { (0,0) (1800,0) (1800,2600) (0,2600) close }`;
+    return `plan "G1" {
+      units mm
+      grid 50
+      ${partitionFirst ? `${part}\n      ${shell}` : `${shell}\n      ${part}`}
+      room id=r at (0,0) size 1800x2600 label "Room" uses bedroom
+      furniture bed in r anchor top-left flush size 1400x2000
+    }`;
+  };
+
+  const rect = { x: 0, y: 0, w: 1800, h: 2600 };
+  const wallsOf = (src: string) => resolve(parse(src).plan!).ir.walls;
+
+  it("takes the innermost face of the two coincident walls, either way round", () => {
+    // 250/2 = 125 (the shell) beats 100/2 = 50 (the partition) — the 75 mm the report names.
+    expect(innerFaceOfRoomEdge(rect, "top", wallsOf(coincident(true)))).toBe(125);
+    expect(innerFaceOfRoomEdge(rect, "top", wallsOf(coincident(false)))).toBe(125);
+  });
+
+  it("still answers `which wall backs this edge?` with the largest-overlap pick", () => {
+    // Unchanged on purpose: the rotation derivation and `W_FIXTURE_BACK_TO_ROOM` ask
+    // for a segment, not a measurement, and a coverage tie still resolves by order.
+    expect(backingWallForRoomEdge(rect, "top", wallsOf(coincident(true)))?.thickness).toBe(100);
+    expect(backingWallForRoomEdge(rect, "top", wallsOf(coincident(false)))?.thickness).toBe(250);
+  });
+
+  it("places the piece on the solid's face, independent of statement order", () => {
+    for (const partitionFirst of [true, false]) {
+      // x = 125 off the shell's west run; y = 125 off the coincident north walls.
+      expect(furnOf(coincident(partitionFirst)).at).toEqual({ x: 125, y: 125 });
+    }
+  });
+
+  it("no longer collides — and the two orderings are byte-identical", () => {
+    for (const partitionFirst of [true, false]) {
+      expect(codes(coincident(partitionFirst))).not.toContain("W_FURNITURE_WALL_COLLISION");
+    }
+    expect(compile(coincident(true), { noCache: true }).svg).toBe(compile(coincident(false), { noCache: true }).svg);
+  });
+
+  it("is not `always the thickest wall in the plan` — a lone partition still reads 50", () => {
+    // Non-vacuity: drop the shell's coincident north run and the same 250 mm shell is
+    // still in the plan, but the top edge's own solid is the partition's 100 mm.
+    const partitionOnly = `plan "G1" {
+      units mm
+      grid 50
+      wall id=part partition thickness 100 { (0,0) (1800,0) }
+      wall id=shell exterior thickness 250 { (0,0) (0,2600) (1800,2600) (1800,0) }
+      room id=r at (0,0) size 1800x2600 label "Room" uses bedroom
+      furniture bed in r anchor top-left flush size 1400x2000
+    }`;
+    expect(innerFaceOfRoomEdge(rect, "top", wallsOf(partitionOnly))).toBe(50);
+    expect(furnOf(partitionOnly).at).toEqual({ x: 125, y: 50 });
   });
 });
