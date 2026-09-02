@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.33.0] - 2026-09-03
+
+**Twelve silent wrong answers.** Every defect here was the compiler giving a confident, wrong
+answer rather than failing visibly — a plan going clean as its obstruction grew, a round-trip
+returning a different building, a symbol drawn the wrong way round with every number right, and a
+nav grid measuring a building it was not drawing. One new advisory code, two new `describe()`
+keys, no removals.
+
 Twelve defects from `docs/backlog.md`. Most made a machine-readable answer quietly **wrong** rather
 than visibly absent — the direction a reader never catches by eye. No language change: no new
 keyword, no new `E_*`/`W_*` code, nothing removed from the public surface.
