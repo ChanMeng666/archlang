@@ -524,6 +524,26 @@ what each teaches — but a reader who compiles the relational example and lints
 unsound, which is not what an example should teach. Either repair them (as `two-bed` was) or state in
 each source header that the warning is deliberate, the way `hillside-villa` and `garden-house` do.
 
+### G.9 · One unidentified full-suite failure, seen once and not reproduced — `todo`
+
+Recorded because an unnamed flake is worse than a named one: the next person to see a red CI leg
+should know it has been seen before, and should capture the name rather than re-running until green.
+
+At `bdf0d13` (2026-09-02), one full-suite run returned `1 failed | 3889 passed (3890)`. **The failing
+test's name was lost** — the run was piped through `tail`, which discarded the failure block and also
+swallowed vitest's exit code, so the summary line was the only surviving evidence. Three subsequent
+full runs at the same commit returned `3890 passed (3890)`, and `test/cli-commands.test.ts` passes
+run alone 3/3. So it is a race, seen once, not reproduced.
+
+Two circumstantial details, offered as leads and not as conclusions: that run was the only one that
+also built the VS Code bundle in the same command, and a git worktree was being created concurrently
+— so resource contention is plausible. The suite's known timing-sensitive surface is the resident
+`arch watch` cases in `test/cli-commands.test.ts` (90 s budgets, live child processes), one of which
+had a real arming race fixed the same day in `8e1eb08`.
+
+**When it recurs, capture it properly:** `npx vitest run --reporter=dot > out.txt 2>&1` and read the
+`FAIL`/`Failed Tests` block — never pipe a suite run through `tail`, which is what cost the name here.
+
 ### G.7 · Fixture-word completion in the VS Code extension — `todo`
 
 Deferred by name in v1.32.0's CHANGELOG and never given a backlog entry until now. The LSP completes
