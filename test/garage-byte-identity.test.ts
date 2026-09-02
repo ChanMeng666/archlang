@@ -144,7 +144,12 @@ const BASELINE: Readonly<Record<string, string>> = {
   "studio.arch": "90951a2517e141dfe28f0e12462fd29cefba5460c900304e435ef53e7f3c0f3f",
   "laneway-house.arch": "401f5a9e255e5748a2eda400569ad352ae856e1ad5c9f51b62895e30bfd5ad1f",
   "bungalow.arch": "7dacd03e5c79772836ad273f9542c1272f881df27d8afd0dadef5ef558f8f3b2",
-  "furnished-flat.arch": "88d5be448d4b41c09a8c7302b1f815050fa94a0fb728e0cd1c10e1d64cf03d29",
+  // Re-measured for backlog 5.7 (the `overhead` flag). Its SOURCE gained two statements —
+  // a `range_hood` over the stove and a `mirror` over the basin, the two correct drawings
+  // the missing flag had kept out of the flagship — so this plan is a different building
+  // and both its digests move. See the SEMANTIC_BASELINE note for the proof that the CODE
+  // is innocent: the pre-5.7 source reproduces the OLD hexes exactly under the NEW compiler.
+  "furnished-flat.arch": "6bca2fc18883e3dd6278cc03e0aa7a334ad6c26e67563c578344a77731a0ec05",
   "two-bed.arch": "dec746240dcc800c866a0dc928b451c83caa143f456adc704baa72d724ef6520",
 };
 
@@ -160,11 +165,21 @@ const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
   "laneway-house.arch": "bde186c2290e5aa19ea60c3ec9e8ad7cfa3f5237e7d2a0a80cdca393fa3ab85a",
   "bungalow.arch": "242307d21b82d129acb6317df03702d2044f0c8e05f9a78374c9de9a9f01f4fd",
   // `furnished-flat.arch` is the ONE value in this table that is not the original v1.30.0
-  // measurement, and the exception proves the rule rather than bending it. Its SOURCE was
-  // edited in v1.32 -- seven of the new families were added to the flat -- so `describe()`
-  // and `lint()` genuinely report a different building, which is exactly the kind of change
-  // this pin exists to make visible. A redrawn SYMBOL still cannot move any number here.
-  "furnished-flat.arch": "d58f7a8f4207dd693de21708f3dd794f3ce31dffce96bc1a79701a5d6066c149",
+  // measurement, and the exception proves the rule rather than bending it. Its SOURCE keeps
+  // being edited -- seven of the new families in v1.32, then a `range_hood` and a `mirror`
+  // for backlog 5.7 -- so `describe()` and `lint()` genuinely report a different building,
+  // which is exactly the kind of change this pin exists to make visible. A redrawn SYMBOL,
+  // or a lint rule learning a new exemption, still cannot move any number here.
+  //
+  // The 5.7 re-measure (d58f7a8f -> 9ec50513) was proved to be the SOURCE and not the code,
+  // by the substitution this file's header prescribes: feed `git show <pre-5.7>:examples/
+  // furnished-flat.arch` to THIS body under the MERGED compiler and it reproduces
+  // d58f7a8f42... and 88d5be44... exactly, both halves, to the byte. Field by field, the new
+  // summary differs by exactly two entries -- `range_hood_14` and `mirror_36` -- plus the
+  // auto-id renumbering that inserting two statements mid-file forces on every later piece;
+  // `lint()` still returns ONE diagnostic, the same `W_PATH_TOO_NARROW` with the same
+  // message and hints, its byte span shifted by the comment lines added above it.
+  "furnished-flat.arch": "9ec505138f1d6d817a55e45aef46c0145639f68d577cacf7214dc2b06cfb0dc9",
   "two-bed.arch": "c8e5a430665c6ea875a94225dc062a534bebf776c28b3ffbdb0a614d3e71ff79",
 };
 

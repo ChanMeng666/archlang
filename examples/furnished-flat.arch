@@ -1,14 +1,19 @@
 # The FURNITURE flagship — a two-bedroom flat, furnished with the whole symbol catalogue.
 #
 # Every other example draws a fixture or two in passing. This one is here for the drawn
-# symbols themselves: thirty-six of the eighty-three catalogued kinds, across all five
+# symbols themselves: thirty-eight of the eighty-three catalogued kinds, across all five
 # indoor domains (bath, kitchen/utility, bedroom, living/dining, office/misc). It is a
 # two-bedroom flat rather than a showroom, so the ceiling on that number is the FLOOR
 # AREA, not the catalogue: every piece here is somewhere a real one would go, and the
-# linter is what says so -- `arch validate --strict` is clean, which means no piece
-# floats off its wall, blocks a door, eats a clearance or narrows the only walk.
+# linter is what says so -- no piece floats off its wall, backs onto the room, blocks a
+# door, eats a clearance or collides with anything. `arch validate --strict` reports
+# exactly ONE warning, named here so it is not mistaken for rot: `W_PATH_TOO_NARROW` on
+# the walk into the kitchen, which the nav grid measures at 400 mm through the 1200 mm
+# opening. It appeared when that rule started reporting a MEASURED way in instead of a
+# fabricated 0 mm, and it is left standing rather than nudged away -- moving a piece to
+# silence a measurement is how a plan stops being evidence.
 #
-# Three things to read off the source rather than the picture:
+# Four things to read off the source rather than the picture:
 #
 #   1. NO LABELS. A drawn symbol ignores `label` — the word reaches `describe()` and
 #      nothing else — so the only text in this drawing comes from the rooms.
@@ -25,6 +30,13 @@
 #      on it raise no overlap warning and the circulation flood-fill crosses it. Rugs,
 #      alone among the symbols, are drawn unfilled — nothing they are written after can
 #      be hidden by them.
+#   4. THREE PIECES ARE OVERHEAD, and the drawing says so with a dashed outline: the
+#      range hood sits over the stove at the same offset, the mirror over the basin at
+#      the same offset, and the wall cabinet over its length of the east wall. A thing
+#      above the cut plane and a thing below it cannot collide, so those pairs raise no
+#      overlap warning — but unlike the rug they are still obstacles to a walk, because a
+#      body is taller than a wall unit's underside. That is the whole difference between
+#      the two flags, and it is why this plan can draw a kitchen that is actually fitted.
 plan "Furnished Flat" {
   units mm
   grid 50
@@ -92,6 +104,7 @@ plan "Furnished Flat" {
   furniture counter       against wall w_north offset 5650 size 1200x600 in r_kitchen
   furniture kitchen_sink  against wall w_north offset 6650 in r_kitchen
   furniture stove         against wall w_north offset 7350 in r_kitchen
+  furniture range_hood    against wall w_north offset 7350 in r_kitchen
   furniture dishwasher    against wall w_north offset 7950 in r_kitchen
   furniture fridge        against wall w_east  offset 1000 in r_kitchen
   furniture upper_cabinet against wall w_east  offset 1800 in r_kitchen
@@ -121,6 +134,7 @@ plan "Furnished Flat" {
   # --- Bath -------------------------------------------------------------------
   furniture shower  against wall w_bath  offset 1350 in r_bath
   furniture basin   against wall w_east  offset 7800 in r_bath
+  furniture mirror  against wall w_east  offset 7800 in r_bath
   furniture wc      against wall w_east  offset 9200 in r_bath
   furniture bathtub against wall w_south offset 7450 in r_bath
   furniture bidet   against wall w_east  offset 8500 in r_bath
