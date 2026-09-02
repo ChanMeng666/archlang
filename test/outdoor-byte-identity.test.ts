@@ -125,12 +125,38 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  *
  * **`lint()` over all 30 shipped examples is byte-identical across this amendment** —
  * the only two diagnostics this branch adds were already added before it.
+ *
+ * ## The G.5 re-measurement — a curved wall stopped being rasterised as its chord
+ *
+ * ONE example moved: `aquarium`, on BOTH halves. `studio`, `gallery-l` and `laneway-house`
+ * are unchanged, and that is the control — none of them has an `arc`.
+ *
+ * The nav grid blocked every wall segment against the straight CHORD between its endpoints,
+ * ignoring the `arcs[]` solve `resolve` had already done. For a curve that is not a coarser
+ * version of the same wall, it is a DIFFERENT wall somewhere else: `aquarium`'s rotunda is
+ * two semicircular `arc` edges sharing endpoints, so it rasterised to a bar along its own
+ * DIAMETER — a route could walk through the masonry, while the round room inside was severed
+ * into two caps and the `plant` room beyond one of them dropped out of the facts with nothing
+ * said (`docs/backlog.md` G.5). Segments now block against `distPointToArc`.
+ *
+ * Field by field against the previous commit, `aquarium`'s summary changes ONLY inside
+ * `circulation`: a new `rooms[]` entry for `plant` (walk 36 900, bottleneck 1140 — exactly
+ * `d_rot_n`'s own clear width, which is the narrowest thing on the only route in), and
+ * `rotunda_r`'s walk 25 600 -> 25 700, one cell, for having to use the carved threshold
+ * instead of walking through the wall. Every other key — rooms, areas, adjacency, openings,
+ * freedom, totals — is byte-identical.
+ *
+ * **The SVG is byte-identical**, which is the constructive half of the argument: the DRAWING
+ * always had the arc. Only the nav grid had a chord. And `lint()` over all 30 shipped
+ * examples is byte-identical across the change.
+ *
+ * Do not read this entry as permission either.
  */
 const BASELINE: [string, string][] = [
   ["laneway-house", "2052f41a371dc7164ad7534142338f92a6abb516b8ec488a0ebbad20158c5292"],
   ["studio", "28e8de0bce723f8822d966fbb4a1fe9e533c21dd0c68f22e7f2ff2d57cd1ad44"],
   ["gallery-l", "753b39b0dc5ed5a38aa7243d4b7738257e771f95d0590f0595a2512550fcbc5f"],
-  ["aquarium", "720c96b31189d1d2c5c7b47bef31db5702d1f319e0fc07511b53b85fd4cdfbf4"],
+  ["aquarium", "87a5c9dccb68dfb26c33f61214ef21c284f6a1aaa12a7901a96231d4f11c1890"],
 ];
 
 /** The SUMMARY half of the same law — see the header. Unchanged since the measurement. */
@@ -138,7 +164,7 @@ const SEMANTIC_BASELINE: [string, string][] = [
   ["laneway-house", "bde186c2290e5aa19ea60c3ec9e8ad7cfa3f5237e7d2a0a80cdca393fa3ab85a"],
   ["studio", "7ed53b6e0925e21fe4c4fad7351ce7e80635818395fc79cf661ba095db8129b3"],
   ["gallery-l", "cef0ee1863a505bb831aa2512ca204547117872a61cf1a1ddd293361f0b688be"],
-  ["aquarium", "b5cff84318d41aacffb95a8db8835909aa3b6c504c7bfdbec9cc86fa77e7f50d"],
+  ["aquarium", "45f491a88fa4d1f259d61005220264b0d217e245f482786c842300aa92e1cc6e"],
 ];
 
 /** The compiler surface the summary-half pins are taken over. */
