@@ -11,6 +11,7 @@
 
 import type { Point } from "../ast.js";
 import type { Arc } from "./arc.js";
+import { arcBandIntrusion, arcOpeningVoid } from "./arc-band.js";
 import type { Vec, WallSegment } from "../geometry.js";
 import { normal, sub, unit } from "../geometry.js";
 
@@ -102,11 +103,15 @@ interface SegFrame {
  * The frame of a STRAIGHT wall segment, or `null` when there is none to speak of.
  *
  * `null` for a degenerate (zero-length) segment and — deliberately — for a CURVED one:
- * an arc's across-wall direction turns along the run, so a single `n` would be a
- * fiction. The honest consequence is that a curved wall does not participate in the
- * furniture-collision rule at all (the pre-existing behaviour was to measure its chord,
- * which is worse than measuring nothing). Recorded as a known gap in docs/backlog.md
- * item 3.15 and pinned by `test/furniture-lint.test.ts`.
+ * an arc's across-wall direction turns along the run, so a single `n` would be a fiction,
+ * and an arc's `a`/`b` are its CHORD (measuring which flags furniture near a straight
+ * line the wall is not on, and misses the wall itself).
+ *
+ * A curve is not skipped any more, it is measured in the coordinates it actually has:
+ * `wallIntrusionDepth` routes an arc segment to {@link arcBandIntrusion}, where the
+ * across-wall axis is the RADIUS and the along-run axis is the ANGLE. See
+ * `./arc-band.ts` for the derivation, and `test/furniture-lint.test.ts` for the pins in
+ * both directions — a piece through the true band warns, one on the chord does not.
  */
 function segmentFrame(s: { a: Point; b: Point; arc?: Arc }): SegFrame | null {
   if (s.arc) return null;
@@ -128,11 +133,16 @@ function rectSpan(r: BBox, u: Vec): [number, number] {
 }
 
 /**
- * How deep (mm) a furniture rectangle `fr` intrudes into a straight wall segment's
- * solid band **at any angle**, counting only the run that is *not* an opening (a door or
- * window voids the wall there). A piece flush against the wall face intrudes ~0; one
- * straddling the centerline intrudes by up to the wall thickness. Returns 0 for a
- * curved or degenerate segment (see {@link segmentFrame}).
+ * How deep (mm) a furniture rectangle `fr` intrudes into a wall segment's solid band
+ * **at any angle, straight or curved**, counting only the run that is *not* an opening
+ * (a door or window voids the wall there). A piece flush against the wall face intrudes
+ * ~0; one straddling the centerline intrudes by up to the wall thickness. Returns 0 for
+ * a degenerate segment (see {@link segmentFrame}).
+ *
+ * A CURVED segment is measured in polar coordinates by {@link arcBandIntrusion} —
+ * radius across, arc length along — because an arc has no single across-wall normal to
+ * project onto. Both branches answer the same question and return the same units, so
+ * the caller never learns which kind of edge it asked about.
  *
  * "Intrusion" is the across-wall overlap; it is only meaningful when the along-wall
  * overlap survives opening subtraction, so a counter under a window or a piece in a
@@ -152,6 +162,7 @@ export function wallIntrusionDepth(
   s: WallSegment,
   openings: Array<{ at: { x: number; y: number }; width: number }>,
 ): number {
+  if (s.arc) return arcIntrusionDepth(fr, s.arc, s.thickness, openings);
   const f = segmentFrame(s);
   if (!f) return 0;
   const half = s.thickness / 2;
@@ -171,6 +182,36 @@ export function wallIntrusionDepth(
     voids.push([along - o.width / 2, along + o.width / 2]);
   }
   return solidRemains(lo, hi, voids) ? band : 0;
+}
+
+/**
+ * {@link wallIntrusionDepth} for a curved segment: the radial overlap with the annular
+ * band, kept only where the arc length the piece covers still has solid left after the
+ * openings hosted on that curve are subtracted.
+ *
+ * The two axes swap kind but not role — `solidRemains` is the SAME void arithmetic the
+ * straight branch runs, applied to arc length instead of distance along a chord, so a
+ * piece standing in a curved doorway is no more a collision than one standing in a
+ * straight doorway.
+ */
+function arcIntrusionDepth(
+  fr: BBox,
+  arc: Arc,
+  thickness: number,
+  openings: Array<{ at: { x: number; y: number }; width: number }>,
+): number {
+  const hit = arcBandIntrusion(fr, arc, thickness);
+  if (!hit) return 0;
+  const voids: Array<[number, number]> = [];
+  for (const o of openings) {
+    const v = arcOpeningVoid(arc, o.at, o.width, thickness);
+    if (v) voids.push(v);
+  }
+  for (const [lo, hi] of hit.runs) {
+    if (hi - lo <= 1) continue;
+    if (solidRemains(lo, hi, voids)) return hit.depth;
+  }
+  return 0;
 }
 
 /**
@@ -210,22 +251,28 @@ function solidRemains(lo: number, hi: number, voids: Array<[number, number]>): b
 }
 
 /**
- * The across-wall intrusion of `fr` into one straight wall segment (null if there is
- * none), at any angle. Deliberately DISTINCT semantics from
+ * The across-wall intrusion of `fr` into one wall segment (null if there is none), at any
+ * angle and on a curve. Deliberately DISTINCT semantics from
  * {@link wallIntrusionDepth}: this one **ignores openings** (the repair corrector
  * moves a piece out of the wall band whether or not a door voids part of it) —
  * do not merge the two.
  *
  * An ORTHOGONAL wall reports the plan `axis` the push runs along plus the wall's
  * centerline on it, which is everything `repair` needs to compute a closed-form move.
- * An ANGLED one reports `axis: null`: clearing it means moving along the wall's normal,
- * which is neither plan axis and lands off-grid, so `repair` declines and REPORTS the
- * piece instead of inventing a diagonal push (`test/repair-coverage.test.ts` pins that
- * every piece lint flags gets a change entry or an `unresolved` entry — never nothing).
+ * An ANGLED one — and a CURVED one, whose clearing move is along a radius — reports
+ * `axis: null`: the push is neither plan axis and lands off-grid, so `repair` declines
+ * and REPORTS the piece instead of inventing a diagonal push
+ * (`test/repair-coverage.test.ts` pins that every piece lint flags gets a change entry or
+ * an `unresolved` entry — never nothing, which is why the curved branch exists here at
+ * all rather than leaving `repair` silent on a collision `lint` now raises).
  */
 export type WallIntrusion = { depth: number } & ({ axis: "x" | "y"; center: number } | { axis: null });
 
 export function wallIntrusion(fr: BBox, s: { a: Point; b: Point; thickness: number; arc?: Arc }): WallIntrusion | null {
+  if (s.arc) {
+    const hit = arcBandIntrusion(fr, s.arc, s.thickness);
+    return hit && hit.runs.some(([lo, hi]) => hi - lo > 1) ? { depth: hit.depth, axis: null } : null;
+  }
   const f = segmentFrame(s);
   if (!f) return null;
   const h2 = s.thickness / 2;

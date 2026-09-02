@@ -441,8 +441,15 @@ was deliberately NOT widened into — recorded here rather than half-fixed.
 
 ### G.4 · `planToJson` re-emits a RESOLVER-DERIVED position as an authored `at (x,y)` — `todo`
 
-Found while classifying the corpus for G.3's widened round-trip test, and the reason `two-bed.arch`
-sits in `CANNOT_ROUND_TRIP` as a **defect** rather than a design boundary.
+Found while classifying the corpus for G.3's widened round-trip test.
+
+**Correction, measured 2026-09-02:** this entry originally said the defect is *why* `two-bed.arch`
+sits in `CANNOT_ROUND_TRIP`. That premise is **wrong** and should not be built on. `two-bed.arch`
+also declares `roof overhang 500`, which the JSON projection deliberately does not model at all, so
+that plan could never have round-tripped whatever happened to furniture — its exclusion is compound,
+and the `roof` half is a design boundary rather than a defect. The furniture defect below is real
+and separate; it is proved constructively instead, by removing only the `roof` line: that variant
+differed on **51 SVG lines** before the fix and is **byte-identical** after.
 
 `planToJson` writes every furniture position as an absolute `at (x,y)`, including one the resolver
 DERIVED from `anchor`/`flush`/`against wall`. `grid` snaps coordinates an author *writes* (v1.27.0,

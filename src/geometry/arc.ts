@@ -179,8 +179,13 @@ export function arcOffset(arc: Arc, delta: number): Arc {
  * Signed offset from the arc's start angle to the angle of `p`, expressed in the
  * arc's own rotational direction and normalised into `[0, 2π)`. `≤ |sweep|` means the
  * radial through `p` is inside the swept range.
+ *
+ * Exported because it is the ONE rule that says where a point sits along a curve:
+ * `arcContainsRay`, `arcParamAt` and the curved-wall band measurement in
+ * `./arc-band.ts` all read it, so "how far round is this?" cannot be answered two ways.
+ * Multiply by `arc.r` for the along-run coordinate in millimetres (arc length).
  */
-function angleOffset(arc: Arc, p: Point): number {
+export function arcAngleOffset(arc: Arc, p: Point): number {
   const th = Math.atan2(p.y - arc.center.y, p.x - arc.center.x);
   const d = (arc.sweep >= 0 ? th - arc.start : arc.start - th) % TAU;
   return d < 0 ? d + TAU : d;
@@ -188,7 +193,7 @@ function angleOffset(arc: Arc, p: Point): number {
 
 /** Is the radial through `p` inside the arc's swept range? (Endpoints count.) */
 export function arcContainsRay(arc: Arc, p: Point): boolean {
-  return angleOffset(arc, p) <= Math.abs(arc.sweep);
+  return arcAngleOffset(arc, p) <= Math.abs(arc.sweep);
 }
 
 /**
@@ -223,7 +228,7 @@ export function arcTangentAt(arc: Arc, p: Point): Point {
 export function arcParamAt(arc: Arc, p: Point): number {
   const mag = Math.abs(arc.sweep);
   if (mag === 0) return 0;
-  const off = angleOffset(arc, p);
+  const off = arcAngleOffset(arc, p);
   if (off <= mag) return off / mag;
   // Outside the sweep: snap to whichever end the radial is nearer, the long way round.
   return TAU - off < off - mag ? 0 : 1;
