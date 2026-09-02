@@ -531,56 +531,41 @@ what each teaches — but a reader who compiles the relational example and lints
 unsound, which is not what an example should teach. Either repair them (as `two-bed` was) or state in
 each source header that the warning is deliberate, the way `hillside-villa` and `garden-house` do.
 
-### G.9 · One unidentified full-suite failure, seen once and not reproduced — `todo`
+### G.9 · A full-suite flake, DIAGNOSED — and twice mis-diagnosed first — `done`
 
-Recorded because an unnamed flake is worse than a named one: the next person to see a red CI leg
-should know it has been seen before, and should capture the name rather than re-running until green.
+Kept as a write-up because the two wrong diagnoses are more instructive than the fix.
 
-At `bdf0d13` (2026-09-02), one full-suite run returned `1 failed | 3889 passed (3890)`. **The failing
-test's name was lost** — the run was piped through `tail`, which discarded the failure block and also
-swallowed vitest's exit code, so the summary line was the only surviving evidence. Three subsequent
-full runs at the same commit returned `3890 passed (3890)`, and `test/cli-commands.test.ts` passes
-run alone 3/3. So it is a race, seen once, not reproduced.
+**What it actually was.** `test/cli-commands.test.ts`'s `` `watch -o <file> --json` still writes the
+artifact on every save `` waited for the output FILE to contain "Alpha", then immediately read
+stdout. But `cmdCompile` writes the artifact and only THEN `emitJson`s, and stdout is a pipe whose
+data reaches the parent asynchronously — so the file existing says nothing about whether the
+envelope has arrived. Fixed by waiting for the envelope, which is what the sibling no-`-o` case
+always did, having no file to be misled by. 10/10 green over three consecutive runs.
 
-Two circumstantial details, offered as leads and not as conclusions: that run was the only one that
-also built the VS Code bundle in the same command, and a git worktree was being created concurrently
-— so resource contention is plausible. The suite's known timing-sensitive surface is the resident
-`arch watch` cases in `test/cli-commands.test.ts` (90 s budgets, live child processes), one of which
-had a real arming race fixed the same day in `8e1eb08`.
+**Wrong diagnosis 1 — an arming race.** `cmdWatch` awaits `cmdCompile`, then calls `watchFile`,
+then prints the banner, so a save landing before the baseline stat is folded into it. That is a real
+defect and the case really did have it (fixed in `8e1eb08`), but it was **necessary and not
+sufficient**, and fixing it made the remaining failures look like something else.
 
-**A likely author has since been found and narrowed** (`ce3c383`), though not proven, because the
-name was lost. Three of the four resident `CLI — watch` cases were raised to a 90 s budget on
-2026-08-28 with the reason recorded in the file — a spawned child plus a filesystem watcher exceeded
-30 s under full-suite parallel load on Windows. The fourth, "keeps watching after a failing first
-compile", has the **identical shape** and had been left on `until`'s 30 s default: a third of the
-headroom for the same work, with nothing defending the asymmetry. It now carries the same budget.
+**Wrong diagnosis 2 — self-inflicted concurrency.** With five agents running suites at once, the
+90 s budget looked exhausted, and this entry previously said so and told the reader not to raise the
+budget. Wrong: **the budget was never reached.** The case fails in the primary checkout with every
+other agent idle.
 
-For calibration on how rare this class is: the agent that landed 5.8 measured the sibling case at
-**1 failure in 22 runs** before its arming race was fixed in `8e1eb08`. A rate like that survives
-several green runs comfortably, which is why three greens did not clear it.
-
-**Update, 2026-09-02, measured under five concurrent agents.** The arming wait added in `8e1eb08`
-was **necessary but not sufficient**. With five agents running full suites on one machine, the case
-`` `watch -o <file> --json` still writes the artifact on every save `` failed **2 of 5** full-suite
-runs, was **3 of 3 green in isolation**, and failed **0 of 2** on a tree without the change under
-test — i.e. it is load-sensitive and belongs to nobody's diff. It now exceeds its **90 s budget**
-outright rather than losing the arming race, so the remaining cause is resource exhaustion, not
-ordering.
-
-**Read that carefully before acting on it.** That load was created by orchestrating several agents
-at once; CI runs a single job, and the case has never been observed failing there. So this is
-evidence that the resident `watch` cases are **fragile under heavy parallel load**, NOT evidence
-that CI is broken. Do not raise the budget again on the strength of it — 90 s is already three
-times the default, and a budget that grows every time someone runs agents in parallel stops being a
-timeout and becomes a hang. If it ever fails in CI, that is a different and much more interesting
-report.
-
-**When it recurs, capture the name AND the exit code** — `tail` loses both:
+**The lesson, which is the point of keeping this entry.** Both wrong diagnoses came from reasoning
+about the *shape* of the symptom — "a resident process, a filesystem watcher, 90 s, under load" —
+when the assertion message said plainly `expected at least 1 JSON envelope(s) on stdout, saw 0`.
+That is not a timeout and never was. **Read the assertion text before theorising about timing**, and
+never pipe a suite run through `tail`, which discards the failure block AND the exit code:
 
 ```bash
-npx vitest run --reporter=verbose 2>&1 | tee run.log; echo "exit=${PIPESTATUS[0]}"
-grep -E "^ *(×|FAIL)" run.log
+npx vitest run --reporter=dot > run.log 2>&1; echo "exit=$?"
+grep -E "FAIL|Failed Tests|Error:" run.log
 ```
+
+**A calibration worth keeping:** the sibling case was measured at **1 failure in 22 runs** before its
+arming race was fixed, and this one at 2 of 5 and 2 of 6. Rates like that survive several green runs
+comfortably — three greens do not clear a flake, and a single-file run clears nothing at all.
 
 ### G.7 · Fixture-word completion in the VS Code extension — `todo`
 
