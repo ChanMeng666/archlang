@@ -9,6 +9,7 @@ import type { FurnitureAuthored, RFurniture, RRoom } from "../ir.js";
 import { rectCorners, segmentsOfWall, unit, normal, add, mul, sub, length } from "../geometry.js";
 import { pointInPolygon } from "../geometry/polygon.js";
 import { fixtureGlyph } from "./fixtures-glyphs.js";
+import { mirrorGlyph } from "./glyph-chirality.js";
 import { defaultFootprint, orientationMatters } from "../fixtures-catalog.js";
 import {
   ANCHOR_BACK_EDGES,
@@ -311,6 +312,13 @@ export const furniture: ElementDef = {
     // (`furniture hammock …`) falls back to the labelled rectangle below, which is now the
     // ONLY path that renders a furniture `label` at all.
     let nodes = fixtureGlyph(f.category, rect, theme, sizes);
+    // A REFLECTED instance (`place … mirror`) draws the symbol's mirror image, about the
+    // footprint's own vertical centre line and BEFORE the quarter-turn — the two together
+    // are the exact factorisation of the frame (`elements/glyph-chirality.ts`). A symbol
+    // with a vertical mirror axis is returned untouched, so a mirrored `table` keeps its
+    // exact bytes; the fallback rectangle below is symmetric and its label is centred, so
+    // it is deliberately outside this branch and mirrors to itself by construction.
+    if (nodes && f._mirror) nodes = mirrorGlyph(nodes, cx);
     if (!nodes) {
       nodes = [];
       nodes.push({

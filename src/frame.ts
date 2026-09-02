@@ -236,8 +236,9 @@ function degFromBack(v: Point): 0 | 90 | 180 | 270 {
  * the symbol's back vector is transformed by the frame's linear part and read back as a
  * quarter-turn, so a mirrored instance's fixtures face the mirrored way round.
  *
- * (The glyph itself is re-ORIENTED, not reflected — reflection is not a Scene primitive.
- * For ArchLang's rectilinear fixture symbols the two differ only for a handed glyph.)
+ * This is the ROTATION only. Under a reflection the symbol is also handed, and that half
+ * rides on {@link import("./ir.js").RFurniture._mirror}, set beside this call — the two
+ * together are the exact factorisation `M · R(l) = R(m − l) · Fx`.
  */
 export function transformDeg(f: Frame, deg: number | undefined): 0 | 90 | 180 | 270 {
   const v = backVector(deg ?? 0);
@@ -285,7 +286,8 @@ function transformSegment(f: Frame, s: WallSegment): WallSegment {
  *
  * Handed properties are flipped when the frame reflects (`det < 0`): a door's `swing` is
  * measured from the host wall's LEFT normal, and a `dim`'s `offset` from the measured
- * segment's left normal, so both reverse under a reflection. `hinge` does NOT flip — it is
+ * segment's left normal, so both reverse under a reflection; and a fixture's drawn SYMBOL
+ * is handed, which `_mirror` carries to the renderer. `hinge` does NOT flip — it is
  * defined along the wall's traversal direction, which the transform carries with it.
  */
 export function transformElement(f: Frame, el: ResolvedElement): ResolvedElement {
@@ -347,12 +349,36 @@ function transformGeometry(f: Frame, el: ResolvedElement, id: string, reflected:
       const out: RFurniture = { ...el, id, at: r.at, size: r.size };
       if (deg) out.rotate = deg;
       else delete out.rotate;
+      // TWO handed facts cross here, and they are INDEPENDENT — different fields,
+      // opposite answers, no ordering between them. Backlog G.4 and 5.4 landed them
+      // separately and `test/glyph-chirality.test.ts`'s pairing case is the fixture
+      // neither could produce alone: a plan whose piece carries an authored clause AND
+      // a handed symbol, asserting the position lands at the MIRRORED corner while the
+      // marks become the mirror IMAGE.
       // The authored placement clause names LOCAL ids in LOCAL coordinates (`anchor
       // top-right` is a corner of the instance's own room, and a reflection turns it
       // into a different corner), so it does not survive the crossing into plan space.
       // Dropping it leaves a placed instance projecting its resolved `at (x,y)`, which
       // is what it has always done.
       delete out._authored;
+      // The symbol's own CHIRALITY — the handed rule this module used to miss. A
+      // quarter-turn carries a fixture's facing (that is `transformDeg` above), but a
+      // reflection also swaps the drawing's left and right, and nothing said so: a
+      // mirrored wing drew a left-handed `sofa_l` in a right-handed room, every number
+      // right and the picture wrong (`docs/backlog.md` 5.4).
+      //
+      // `M · R(l) = R(m − l) · Fx` for any reflecting frame — see the derivation in
+      // `elements/glyph-chirality.ts` — so `transformDeg` above is already the whole
+      // rotation, and what is left over is exactly ONE reflection of the glyph in its own
+      // frame. Which axis the author wrote does not survive the factorisation and must
+      // not: `mirror x` and `mirror y` differ only in the quarter-turn.
+      //
+      // XORed rather than assigned, so a nested reflection composes back to the identity.
+      // Today `transformElement` is applied once per element with the FULLY COMPOSED
+      // frame, so `el._mirror` is always absent and this reads as an assignment; it is
+      // written as the group law because that is what makes it true either way.
+      if (reflected !== (el._mirror === true)) out._mirror = true;
+      else delete out._mirror;
       if (el.room !== undefined) out.room = nsId(f, el.room);
       return out;
     }

@@ -340,6 +340,16 @@ export interface RFurniture extends RBase {
    *  can be inserted — copied from {@link import("./ast.js").FurnitureNode.rotateSpan}
    *  so an orientation lint fix can rewrite it. Internal; never reaches the Scene. */
   _rotateSpan?: Span;
+  /**
+   * This piece's instance frame REFLECTS (`place … mirror`), so its drawn symbol is the
+   * mirror image of the one the catalogue draws. Set by `frame.ts`'s `transformElement`
+   * — the one place a handed rule is flipped — and read by `furniture.render()`, which
+   * reflects the glyph about its own vertical centre line before applying the derived
+   * quarter-turn. A symbol with a vertical mirror axis is unaffected at every footprint,
+   * because the reflection is DERIVED from the drawing rather than declared per family
+   * (see `elements/glyph-chirality.ts`). Internal; never reaches `describe()` or Plan JSON.
+   */
+  _mirror?: true;
 }
 export interface RDim extends RBase {
   kind: "dim";

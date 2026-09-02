@@ -257,12 +257,24 @@ someone drew on purpose. Both are `directional` instead, which is the claim the 
 back: a fireplace's opening faces the room, and a radiator's fins run from its back face to its
 front.
 
-**`sofa_l`'s return is always on the LEFT, and there is no right-handed twin.** Turn it with
-`rotate` where that reads right. `place … mirror` will *not* do it: a reflection transforms a
-resolved element's position, not the symbol drawn inside it, so a mirrored instance still
-draws a left-hand sofa. A `sofa_l_r` category was rejected rather than forgotten — it would
-put the fix in the vocabulary, where every future handed symbol would need its own twin; the
-real fix is glyph-aware mirroring in the `place` transform.
+**`sofa_l`'s return is always on the LEFT, and there is no right-handed twin — but
+`place … mirror` now draws one.** A `sofa_l_r` category was rejected rather than forgotten:
+it would put the fix in the vocabulary, where every future handed symbol would need its own
+twin. So a reflecting instance frame hands the glyph its own chirality instead, in
+`frame.ts` — the one place the handed rules are flipped — and the symbol is drawn as its own
+mirror image. Turn it with `rotate` where a quarter-turn is what you want; reach for
+`place … mirror` when you want the mirror-image piece.
+
+**Handedness is DERIVED from the drawing, not declared per family.** Nineteen of the 83
+shipped families have no vertical mirror axis (`bed`, `desk`, `bathtub`, `island`, `washer`,
+`microwave`, `mirror`, `chaise`, `shoe_cabinet`, `reception_desk`, `piano`, `sofa_l`, `bbq`,
+`shrub`, `bicycle`, `motorcycle`, `mailbox`, `ev_charger`, `double_bed`) at their catalogued
+footprints. Handedness is a property of the drawing rather than of the family, though:
+`counter`, `fridge`, `upper_cabinet`, `hedge` and `motorcycle` are handed at some footprints
+and symmetric at others, because their detail is tiled and the tile count comes from the
+aspect ratio — which a per-family flag simply cannot express. **A symbol that has a mirror
+axis renders byte-identical whether its instance was reflected or not**, at every footprint;
+see `src/elements/glyph-chirality.ts` and `test/glyph-chirality.test.ts`.
 
 **Its footprint is the whole bounding rectangle, empty quadrant included**, which is what
 every furniture rule measures — so a coffee table tucked inside the L raises
