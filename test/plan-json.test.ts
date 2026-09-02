@@ -59,16 +59,19 @@ const FIXTURE_B = `plan "Fixture B" {
   title { project "B" drawn_by "T" date "2026-07-10" }
 }`;
 
+/** Project a plan out to JSON, back to `.arch`, and require the same bytes of SVG. */
+const roundTripsSvg = (src: string): void => {
+  const { json, diagnostics } = planToJson(src);
+  expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  expect(json).toBeDefined();
+  const { source, diagnostics: fromDiags } = planFromJson(json as PlanJson);
+  expect(fromDiags.filter((d) => d.severity === "error")).toEqual([]);
+  expect(source).toBeDefined();
+  expect(compile(source!).svg).toBe(compile(src).svg);
+};
+
 describe("plan-json — round-trip byte-identity (SVG)", () => {
-  const roundTrips = (src: string): void => {
-    const { json, diagnostics } = planToJson(src);
-    expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
-    expect(json).toBeDefined();
-    const { source, diagnostics: fromDiags } = planFromJson(json as PlanJson);
-    expect(fromDiags.filter((d) => d.severity === "error")).toEqual([]);
-    expect(source).toBeDefined();
-    expect(compile(source!).svg).toBe(compile(src).svg);
-  };
+  const roundTrips = roundTripsSvg;
 
   it("round-trips two hand-written fixtures to identical SVG", () => {
     roundTrips(FIXTURE_A);
@@ -149,19 +152,14 @@ describe("plan-json — round-trip byte-identity (SVG)", () => {
       proof: /^\s*import\b/m,
     },
     "museum-wings.arch": { because: "`import` + `place` — refused by design", proof: /^\s*import\b/m },
-    // --- the one genuine DEFECT in this list, named rather than hidden ---------------
-    // `planToJson` projects a RESOLVER-DERIVED position as an authored `at (x,y)`, and
-    // `grid` snaps coordinates an author WRITES (v1.27) — so a derived position that is
-    // not already on the grid moves on the way back in. Here `furniture wardrobe in
-    // r_bed1 anchor top-right flush` resolves to (8650,150) against a 300-thick shell
-    // and re-snaps to (8700,200) under `grid 100`. Minimal repro, no example needed:
-    //   plan with `grid 100`, a 300-thick shell, one `anchor top-right flush` fixture.
-    // Independent of this file's `roof overhang`, which excludes it on its own.
-    "two-bed.arch": {
-      because:
-        "DEFECT (not by design): a resolver-derived furniture position is re-emitted as an authored `at` and re-snapped by `grid` — plus `roof`",
-      proof: /^\s*roof\b/m,
-    },
+    // This entry used to name the ONE genuine defect in this list — `planToJson`
+    // projected a RESOLVER-DERIVED furniture position as an authored `at (x,y)`, which
+    // `grid` then re-snapped (backlog G.4), moving eight of this plan's twelve fixtures.
+    // That is fixed: the projection now carries the placement CLAUSE, and this file
+    // round-trips byte-identical once its `roof overhang` line is removed — which is the
+    // ordinary by-design loss the rest of this list describes, and all that is left here.
+    // The derived-position half is pinned below, under "derived furniture positions".
+    "two-bed.arch": { because: "`roof` is deliberately absent from the projection", proof: /^\s*roof\b/m },
   };
 
   const EXAMPLES = readdirSync("examples")
@@ -188,6 +186,132 @@ describe("plan-json — round-trip byte-identity (SVG)", () => {
 
   it.each(COVERED)("round-trips examples/%s to identical SVG", (name) => {
     roundTrips(readFileSync(`examples/${name}`, "utf8"));
+  });
+});
+
+/**
+ * A derived furniture position must survive the round-trip — docs/backlog.md G.4.
+ *
+ * `grid` snaps the coordinates an author WRITES, and deliberately does not snap one the
+ * resolver DERIVED from wall geometry (v1.27.0, item 3.12 — snapping a `flush` piece
+ * rounded it straight back into the wall it was measured off). So a projection that
+ * re-emits a derived position as an authored `at (x,y)` hands it to the snapper on the
+ * way back in, and the plan that comes out is not the plan that went in. Silently: no
+ * diagnostic, just moved furniture. The fix is to project the placement CLAUSE, so the
+ * round-trip re-DERIVES the position instead of re-authoring its result.
+ *
+ * The repro is minimal on purpose, and its two CONTROLS are what make a red run legible:
+ * at `grid 50`, and at `thickness 200`, the same statement lands on the grid already, so
+ * both round-trip whether or not the defect is present. Repro red + controls green means
+ * the projection; all three red means something else entirely.
+ */
+describe("plan-json — derived furniture positions", () => {
+  /** 300 thick puts the shell's inner face on a …50, which `grid 100` cannot represent. */
+  const repro = (grid: number, thickness: number): string => `plan "G4" {
+  units mm
+  grid ${grid}
+  wall id=shell exterior thickness ${thickness} { (0,0) (5000,0) (5000,3000) (0,3000) close }
+  room id=r at (0,0) size 5000x3000 label "Room" uses bedroom
+  furniture id=f wardrobe in r anchor top-right flush size 1200x600
+}`;
+
+  /** Where the one fixture actually resolved to — `x`/`y` are the resolved footprint. */
+  const furnAt = (src: string): { x: number; y: number } => {
+    const f = planToJson(src).json?.furniture.find((x) => x.id === "f");
+    expect(f, "the repro plan must resolve its one fixture").toBeDefined();
+    return { x: f!.x!, y: f!.y! };
+  };
+
+  it("the repro really is off-grid — otherwise it proves nothing", () => {
+    // Non-vacuity: `grid 100` cannot represent this position, so a re-snap MOVES it.
+    const at = furnAt(repro(100, 300));
+    expect(at).toEqual({ x: 3650, y: 150 });
+    expect(at.x % 100 === 0 && at.y % 100 === 0).toBe(false);
+    // …and both controls are on the grid, which is why they are controls.
+    for (const control of [repro(50, 300), repro(100, 200)]) {
+      const c = furnAt(control);
+      expect(c.x % 50).toBe(0);
+      expect(c.y % 50).toBe(0);
+    }
+  });
+
+  it("re-emits the anchor clause, not the coordinate it resolved to", () => {
+    const { json } = planToJson(repro(100, 300));
+    const f = json!.furniture[0]!;
+    // The resolved footprint is still reported — a reader that only wants to know where
+    // the piece ended up can stop at x/y — but the CLAUSE is what comes back out.
+    expect({ x: f.x, y: f.y }).toEqual({ x: 3650, y: 150 });
+    expect(f.room).toBe("r");
+    expect(f.anchor).toBe("top-right");
+    expect(f.flush).toBe(true);
+    const { source } = planFromJson(json as PlanJson);
+    expect(source).toContain("in r anchor top-right flush");
+    expect(source).not.toContain("at (3700,200)");
+  });
+
+  it("round-trips the repro and both controls to identical SVG", () => {
+    roundTripsSvg(repro(100, 300)); // the repro — red before the fix
+    roundTripsSvg(repro(50, 300)); // control: the same position, on the grid
+    roundTripsSvg(repro(100, 200)); // control: a thickness the grid can represent
+  });
+
+  it("carries an `against wall` clause, un-turning its wall-relative size", () => {
+    // `against wall` derives BOTH the position and a quarter-turn, and its `.arch` `size`
+    // is wall-relative (along × depth) while the JSON's width/height stay plan-axis — so
+    // a piece on a vertical wall has them swapped. Emitting the pair unswapped would put
+    // a 1600 mm counter 400 mm along the wall and 1600 mm out into the room.
+    const src = `plan "G4b" {
+  units mm
+  grid 100
+  wall id=w_west exterior thickness 300 { (0,0) (0,4000) }
+  wall id=w_south exterior thickness 300 { (0,4000) (5000,4000) }
+  room id=r at (0,0) size 5000x4000 label "Kitchen" uses kitchen
+  furniture id=c counter against wall w_west offset 1550 size 1600x400 in r
+}`;
+    const { json } = planToJson(src);
+    const f = json!.furniture[0]!;
+    expect(f.against_wall).toBe("w_west");
+    expect(f.offset).toBe(1550);
+    expect(f.room).toBe("r"); // and the trailing `in <room>` must survive — it is what
+    expect(f.side).toBeUndefined(); // an unstated `side` infers the wall FACE from
+    // The 300-thick shell puts this piece on x=150, which `grid 100` cannot represent —
+    // so this is the `against wall` arm of the same defect, not just a shape check.
+    expect({ x: f.x, y: f.y }).toEqual({ x: 150, y: 750 });
+    // plan-axis, i.e. the along/depth pair turned by the derived quarter-turn
+    expect(f.rotate).toBe(270);
+    expect({ w: f.width, h: f.height }).toEqual({ w: 400, h: 1600 });
+    const { source } = planFromJson(json as PlanJson);
+    expect(source).toContain("against wall w_west offset 1550 size 1600x400 in r");
+    roundTripsSvg(src);
+  });
+
+  /**
+   * The corpus gate. It reaches every shipped example the SVG round-trip above cannot —
+   * `roof`, `paper`, `theme`, `level` and the rest all cost that comparison its
+   * byte-identity while leaving furniture untouched — so a moved fixture cannot hide
+   * behind an unrelated by-design loss. It is not vacuous: measured against the code
+   * this test shipped with, 30 fixtures across `two-bed`, `garden-house`,
+   * `hillside-villa` and `materials` came back somewhere else.
+   */
+  it.each(
+    readdirSync("examples")
+      .filter((f) => f.endsWith(".arch"))
+      .sort(),
+  )("keeps every fixture of examples/%s where the source put it", (name) => {
+    const src = readFileSync(`examples/${name}`, "utf8");
+    const { json, diagnostics } = planToJson(src);
+    // `import`/`place` plans are refused by the projection itself, by design; they have
+    // no furniture answer to check, so the case is a no-op rather than a skip.
+    if (!json || diagnostics.some((d) => d.severity === "error")) return;
+    const { source, diagnostics: back } = planFromJson(json);
+    if (!source || back.some((d) => d.severity === "error")) return;
+    const pos = (s: string): Record<string, string> => {
+      const out: Record<string, string> = {};
+      for (const f of planToJson(s).json?.furniture ?? [])
+        out[f.id ?? ""] = `${f.x},${f.y} ${f.width}x${f.height} r${f.rotate ?? 0}`;
+      return out;
+    };
+    expect(pos(source)).toEqual(pos(src));
   });
 });
 

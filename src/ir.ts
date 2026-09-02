@@ -13,6 +13,7 @@ import type {
   ElementKind,
   ExprPoint,
   FenceStyle,
+  FurnitureAnchor,
   FurnitureNode,
   OutdoorKind,
   RailSide,
@@ -202,6 +203,25 @@ export type RoomPlacement = "absolute" | "relational" | "strip";
 export type OpeningPlacement = "attached" | "absolute";
 export type FurniturePlacement = "anchored" | "against-wall" | "absolute";
 
+/**
+ * The furniture placement an author actually WROTE, with every expression already
+ * evaluated — the room-relative or wall-anchored clause, never the coordinate it
+ * resolved to.
+ *
+ * It exists because a projection that re-emits a DERIVED position as an authored
+ * `at (x,y)` is not a faithful projection: `grid` snaps the numbers an author writes
+ * (v1.27, item 3.12), so a derived coordinate that is not already on the grid MOVES
+ * on the way back in. Carrying the clause lets `planToJson` hand back the statement
+ * rather than its result, so the round-trip re-derives the same position instead of
+ * re-snapping a different one. Internal: set during resolve, never serialized into
+ * the Scene/SVG/exports, and dropped when an element crosses a `place` frame (see
+ * `transformElement` — the clause names local ids in local coordinates).
+ */
+export type FurnitureAuthored =
+  | { mode: "centered" }
+  | { mode: "anchor"; anchor: FurnitureAnchor; inset?: number }
+  | { mode: "against"; wall: string; segment?: number; offset?: number; side?: "left" | "right" };
+
 export interface RRoom extends RBase {
   kind: "room";
   /** Top-left of the room. For a {@link RRoom.poly} room this is the ring's BOUNDING
@@ -313,6 +333,9 @@ export interface RFurniture extends RBase {
   /** `anchored` (`in <room> anchor|centered`), `against-wall` (`against wall …`),
    *  or `absolute` (`at (x,y)`). Internal marker for `describe().freedom`. */
   _placement?: FurniturePlacement;
+  /** The authored placement CLAUSE, expressions evaluated — see {@link FurnitureAuthored}.
+   *  Absent for the absolute `at (x,y)` form, whose coordinate IS what the author wrote. */
+  _authored?: FurnitureAuthored;
   /** Byte span of the authored `rotate` clause, or the zero-width point where one
    *  can be inserted — copied from {@link import("./ast.js").FurnitureNode.rotateSpan}
    *  so an orientation lint fix can rewrite it. Internal; never reaches the Scene. */
