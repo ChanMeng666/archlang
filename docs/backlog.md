@@ -37,6 +37,14 @@ over the 2026-09 burn-down:
 | G.1 | `flush` "can resolve against the thinner face" | true but weak — the resolved position was **order-dependent**, and which consumer was at fault (the resolver, not the check) was the load-bearing question |
 | G.5 | `doorConnections` marking a point `ambiguous` on 3+ rooms; a 12/9 split | **zero** `ambiguous` edges exist in any plan it blamed — that cause explains 0 of 9. The split is 16/4/1. The real defect was a curved wall rasterised into the nav grid as its **chord** |
 
+A sharper reading of the G.1 row, from the agent that fixed it: "resolves against the thinner face"
+did not merely understate the problem, it **presupposed the answer** — it framed the thin face as the
+anomaly, when that face is picked correctly by a rule doing exactly what it was written to do. The
+defect was that a *measurement* was taken from a segment chosen to answer a *different question*. An
+entry worded that way sends the next reader to `flush`'s distance test, which is the wrong function
+in the right file. **A directionally-right diagnosis is the expensive kind**, because it survives a
+sanity check.
+
 So: **check the arithmetic of a stated cause before building on it**, re-measure any number an entry
 quotes (several have gone stale twice), and when an entry leaves open *which* of two components is
 wrong, treat settling that as the first deliverable rather than a detail. Correct the entry in place
@@ -702,6 +710,49 @@ placement clause cannot (plan space has no word for a local corner) so it is dro
 handedness can, exactly, as one reflection about the footprint's own centre line — so it is flipped.
 This item is the third case, and the answer is the same as the handedness one.
 
+
+### G.11 · A measurement that disagrees with the drawing has NO gate — `todo`
+
+Found while closing G.5, and it is the general form of that defect rather than a leftover of it.
+
+G.5's chord bug — the nav grid rasterising a curved wall as the straight line between its arc
+endpoints — surfaced because four rooms went *silently missing* from `circulation.rooms[]`. That was
+**luck, not coverage.** A curve only announces itself when it happens to sever a route; where it does
+not, the model simply measures a different building and says nothing.
+
+**Measured on `examples/library.arch`, whose eight-arc drum rasterised as an inscribed octagon sitting
+up to 608 mm inside the true circle:**
+
+```
+r_ref  walkDistanceMm  37900 -> 37100   (-800)
+```
+
+No room dropped out. No diagnostic changed. No drawing moved. `describe --json` reported a walk
+**800 mm wrong** and had done since curved walls existed, and nothing in three tiers of testing could
+see it.
+
+**What is missing is a gate on the agreement between what is DRAWN and what is MEASURED.** Every
+existing guard checks one side against its own history: byte-identity digests pin the drawing, the
+circulation suites pin the model, and both can be internally consistent while describing different
+buildings. Some candidates, none obviously right:
+
+- **A geometric residual**: for each wall, sample the rasterised obstacle set against the lowered
+  Scene's own geometry and assert the maximum disagreement is under a cell. Expensive, but it is the
+  property that actually matters and it would have caught this at any facet count.
+- **A curved-plan fixture with hand-derived expected walks** — cheap, but it only guards the plans
+  somebody thought to write down.
+- **A differential**: measure a curved plan and its polygonal approximation and assert the answers
+  converge as the approximation refines. Catches "the model uses a different shape" directly.
+
+**Checked and NEGATIVE, so nobody re-checks it:** `src/analyze/occupancy.ts` does **not** have the
+sibling instance. It takes `_walls` and never reads it — the per-room flood fill is bounded by the
+room box with furniture as the only obstacles — so there is no second chord-wise rasterisation to fix.
+That was worth confirming because the two grids are otherwise close cousins and share
+`solidFurniture()`.
+
+Related: item 5.8's laws (the monotonicity property, the body-radius ladder, the blocked-room report)
+were all measured on the pre-fix grid. They still hold, but every number they produced for a curved
+plan was wrong in exactly this invisible way — which is the sharpest argument for the gate.
 
 ### G.7 · Fixture-word completion in the VS Code extension — `todo`
 
