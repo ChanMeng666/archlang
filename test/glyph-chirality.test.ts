@@ -136,6 +136,46 @@ describe("a mirrored `place` draws the mirror-image symbol", () => {
     // …and one reflection alone is still a reflection (so the pin above is not vacuous).
     expect(svgOf(nest(" mirror x", ""))).not.toBe(svgOf(nest("", "")));
   });
+
+  it("an AUTHORED placement clause and a handed symbol reflect together", () => {
+    // The pairing fixture for the collision with backlog G.4, which drops `_authored` in
+    // the same arm of `transformGeometry` this change writes `_mirror` in. Two handed
+    // facts meet the reflection here and get OPPOSITE answers, and only a plan that
+    // carries BOTH can show they do not interfere:
+    //
+    //   * the placement CLAUSE (`in r anchor top-right`) names a corner of the instance's
+    //     OWN room, which the reflection renames — so the piece must land at the mirrored
+    //     corner, resolved in the local frame and carried across as a coordinate;
+    //   * the drawn SYMBOL (`desk`, handed) must be the mirror image of the plain one.
+    //
+    // Neither branch can produce this fixture alone, which is exactly why it lives here:
+    // a clean auto-merge is not evidence, and this is what would fail if one answer were
+    // ever applied to the other's fact.
+    const src = (m: "" | " mirror x"): string => `plan "cross" {
+  component c() {
+    wall id=w exterior thickness 200 { (0,0) (${W},0) (${W},${H}) (0,${H}) close }
+    room id=r at (0,0) size ${W}x${H} label "Room"
+    furniture id=d desk in r anchor top-right inset 300 size 1400x700
+  }
+  place c() as a at ${m ? `(${W},0)` : "(0,0)"}${m}
+}`;
+    const plain = furnitureNodes(src(""));
+    const flipped = furnitureNodes(src(" mirror x"));
+    // POSITION: `anchor top-right` puts the plain piece at x 2300..3700 and the mirrored
+    // one at 300..1700 — the reflected corner, not the same one.
+    expect(spanX(plain)).toEqual([2300, 3700]);
+    expect(spanX(flipped)).toEqual([300, 1700]);
+    // SYMBOL: translate the plain drawing onto the mirrored footprint, then reflect it.
+    const onto = plain.map((n) => translateX(n, -2000));
+    expect(
+      marksEqual(
+        flipped,
+        onto.map((n) => mirrorNode(n, (300 + 1700) / 2)),
+      ),
+    ).toBe(true);
+    // …and NOT merely moved, which is what the defect looked like.
+    expect(marksEqual(flipped, onto)).toBe(false);
+  });
 });
 
 describe("a symbol with no handedness is not perturbed", () => {
@@ -273,6 +313,34 @@ describe("the handedness survey", () => {
     expect(handedAt("fridge", 1000, 600)).toBe(true);
   });
 });
+
+/** The x extent of a node list, for asserting WHERE a clause put the piece. */
+function spanX(nodes: readonly SceneNode[]): [number, number] {
+  const xs: number[] = [];
+  for (const n of nodes) {
+    const p = n.prim;
+    if (p.t === "polygon") for (const q of p.pts) xs.push(q.x);
+    else if (p.t === "line") xs.push(p.a.x, p.b.x);
+    else if (p.t === "circle") xs.push(p.center.x - p.r, p.center.x + p.r);
+  }
+  return [Math.min(...xs), Math.max(...xs)];
+}
+
+/** Slide a node along x — the plain instance's drawing onto the mirrored footprint. */
+function translateX(n: SceneNode, dx: number): SceneNode {
+  const t = (p: { x: number; y: number }) => ({ x: p.x + dx, y: p.y });
+  const prim = n.prim;
+  switch (prim.t) {
+    case "polygon":
+      return { ...n, prim: { ...prim, pts: prim.pts.map(t) } };
+    case "line":
+      return { ...n, prim: { ...prim, a: t(prim.a), b: t(prim.b) } };
+    case "circle":
+      return { ...n, prim: { ...prim, center: t(prim.center) } };
+    default:
+      return n;
+  }
+}
 
 /** A 180° turn about `(cx, cy)` — exact, and only used to spell out what `mirror y` is. */
 function rotate180(n: SceneNode, cx: number, cy: number): SceneNode {
