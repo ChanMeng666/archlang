@@ -147,20 +147,36 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  *
  * Do not read this entry as permission either. A summary digest still moves only for a
  * named, measured reason, written down here.
+ *
+ * ## Amendment — the threshold carve, and why more plans moved
+ *
+ * The connector carve was centre-first-then-stop: if the opening's midpoint happened to
+ * be walkable, ONE cell of the threshold was opened and the rest of its width was never
+ * tried. Every walkable part is now carved. That is strictly MORE free cells, so a route
+ * can only gain options, and the measured effect across the shipped examples is exactly
+ * that: **every `walkDistanceMm` and `detourRatio` on the affected plans falls or stays
+ * equal, and every `bottleneckClearWidthMm` is unchanged — with one exception**,
+ * `aquarium`'s `rotunda_r`, 2340 -> 1740. That one is the carve's stamp, not the route: a
+ * carved cell is stamped with `min(existing, connector clear width)`, so opening more of
+ * a narrower connector's threshold stamps more cells at its width. It is a lower number
+ * for a real reason and it moves no diagnostic.
+ *
+ * **`lint()` over all 30 shipped examples is byte-identical across this amendment** —
+ * the only two diagnostics this branch adds were already added before it.
  */
 const BASELINE: [string, string][] = [
-  ["laneway-house", "3a5653e0d1306f0bdb81221d05875e8f2ca0cb6550ef9619b76ece481337acc8"],
-  ["studio", "230392f562ad97b4da05d5f812350651c1f2d7bd0f10f2df80a8bccad41ed0dd"],
+  ["laneway-house", "2052f41a371dc7164ad7534142338f92a6abb516b8ec488a0ebbad20158c5292"],
+  ["studio", "28e8de0bce723f8822d966fbb4a1fe9e533c21dd0c68f22e7f2ff2d57cd1ad44"],
   ["gallery-l", "753b39b0dc5ed5a38aa7243d4b7738257e771f95d0590f0595a2512550fcbc5f"],
-  ["aquarium", "af532f0ff575b10c355bda8f7d54b2c5ee272f88cd1e1427a5c6ca756099a57b"],
+  ["aquarium", "720c96b31189d1d2c5c7b47bef31db5702d1f319e0fc07511b53b85fd4cdfbf4"],
 ];
 
 /** The SUMMARY half of the same law — see the header. Unchanged since the measurement. */
 const SEMANTIC_BASELINE: [string, string][] = [
-  ["laneway-house", "ac2df20e15d2e4fbcc73e34a15d4e34578aa89a859860561b85361db170040b6"],
-  ["studio", "19e14aff19562e4198f300fa342b4404e29f790b586f7d3d711eed8936865ddf"],
+  ["laneway-house", "bde186c2290e5aa19ea60c3ec9e8ad7cfa3f5237e7d2a0a80cdca393fa3ab85a"],
+  ["studio", "7ed53b6e0925e21fe4c4fad7351ce7e80635818395fc79cf661ba095db8129b3"],
   ["gallery-l", "cef0ee1863a505bb831aa2512ca204547117872a61cf1a1ddd293361f0b688be"],
-  ["aquarium", "2cc0778dbc3b1127e0e478d8e08d12a766de6a73458748ee40bd5f43473f1e1f"],
+  ["aquarium", "b5cff84318d41aacffb95a8db8835909aa3b6c504c7bfdbec9cc86fa77e7f50d"],
 ];
 
 /** The compiler surface the summary-half pins are taken over. */

@@ -105,9 +105,54 @@ const flatWith = (depth: number): string =>
     `  furniture shoe_cabinet against wall w_hall_n offset 3400 size 800x${depth} in r_hall\n\n  title {`,
   );
 
+/**
+ * The second, independently-written repro: an 8 x 3 m two-room plan whose cabinet hangs
+ * from the north wall, sweeping its depth so the gap below it closes from 1500 mm to
+ * 500 mm. It falsifies the backlog's claim that 5.8 "does not reproduce in a small
+ * hand-written corridor", and it is a THIRD mechanism, not a second instance of the other
+ * two — on `main` it reads 100, 840, 840, 840, 500, 100, which is erratic rather than a
+ * constant offset.
+ *
+ * The cause is the threshold carve, not the clearance transform. The connector's centre
+ * was carved FIRST and, if it happened to be walkable, nothing else was: a cabinet whose
+ * 300 mm halo just misses the opening's midpoint therefore left a one-cell doorway pinned
+ * at the cabinet's own corner, while a DEEPER cabinet — one whose halo covered the
+ * midpoint — fell through to the fallback loop and opened the whole metre of threshold
+ * still walkable beside it. The plan with more furniture measured wider. Which part of a
+ * connector a route may use cannot depend on the phase of its midpoint.
+ */
+const NORTH_CABINET = (depth: number): string => `plan "probe" {
+  wall id=shell exterior thickness 100 { (0,0) (8000,0) (8000,3000) (0,3000) close }
+  wall id=mid partition thickness 100 { (4000,0) (4000,3000) }
+  room id=r_a at (50,50) size 3900x2900 label "A"
+  room id=r_b at (4050,50) size 3900x2900 label "B"
+  door id=d_in on shell at 77% width 900
+  opening id=o_mid on mid at 50% width 2400
+  furniture cabinet at (600,50) size 3000x${depth} in r_a
+}`;
+
 describe("W_PATH_TOO_NARROW is monotone in an obstacle's depth", () => {
   it("holds over the backlog 5.8 repro — one cabinet in the flat's 1100 mm hall", () => {
     assertMonotone([200, 300, 400, 500, 600, 700].map(flatWith), "furnished-flat hall");
+  });
+
+  it("holds over the hand-written 8 x 3 m probe, whose cause is the threshold carve", () => {
+    const depths = [1400, 1600, 1800, 2000, 2200, 2400];
+    const read = (d: number): number | undefined =>
+      describePlan(NORTH_CABINET(d)).circulation?.rooms.find((r) => r.roomId === "r_b")?.bottleneckClearWidthMm;
+    const seq = depths.map(read);
+    // Every room is measured at every depth: this plan never seals, so a `blockedRoomIds`
+    // entry here would be a different bug.
+    for (const [i, v] of seq.entries()) expect(v, `depth ${depths[i]}`).toBeGreaterThan(0);
+    for (let i = 1; i < seq.length; i++) {
+      expect(seq[i]!, `depth ${depths[i]} widened over depth ${depths[i - 1]}`).toBeLessThanOrEqual(seq[i - 1]!);
+    }
+    // Non-vacuity: the sequence must actually DROP somewhere, or a constant would pass.
+    expect(seq[seq.length - 1]!).toBeLessThan(seq[0]!);
+    // And the first reading is no longer the corner pinch a one-cell doorway forced: at
+    // 1500 mm of gap the walk is limited by the 900 mm entrance door, not by 700 mm of
+    // squeeze past a cabinet it never has to go near.
+    expect(seq[0]).toBe(840);
   });
 
   it("names the sealed rooms rather than dropping them (the false clean itself)", () => {

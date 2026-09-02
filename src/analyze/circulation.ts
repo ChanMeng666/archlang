@@ -662,17 +662,18 @@ function buildGrid(
         clearAt.set(k, Math.min(clearAt.get(k) ?? Infinity, c.clear));
       }
     };
+    // Carve EVERY walkable part of the connector's width, the centre included. Stopping
+    // at the centre when the centre happened to be walkable is what made the reported
+    // width non-monotone in an obstacle's depth: a cabinet whose halo just misses the
+    // opening's midpoint left a ONE-CELL doorway pinned at the cabinet's own corner,
+    // while a deeper cabinet — one whose halo covered the midpoint — fell through to
+    // this loop and opened the whole metre of threshold still walkable beside it. So the
+    // plan with MORE furniture measured WIDER (`docs/backlog.md` 5.8: 1500 mm of gap
+    // read 700 mm and 1100 mm of gap read 840). A connector is a width, not a point, and
+    // which part of it a route may use cannot depend on the phase of its midpoint.
     const points = thresholdPoints(g, c.at, rects[ai]!, c.clear, tol);
-    const centre = pathAt(points[0]!);
-    if (centre) {
-      apply(centre); // the canonical one-cell threshold slit at the opening's centre
-      continue;
-    }
-    // The centre of the opening is sealed by furniture. Carve every part of the rest of
-    // its width that IS walkable, so a fixture across half a wide threshold narrows the
-    // way (the widest path then finds the clear half) instead of closing the room off.
-    for (let i = 1; i < points.length; i++) {
-      const p = pathAt(points[i]!);
+    for (const pt of points) {
+      const p = pathAt(pt);
       if (p) apply(p);
     }
   }
