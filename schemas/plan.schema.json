@@ -85,6 +85,15 @@
         }
       }
     },
+    "dims_auto": {
+      "enum": [
+        "overall",
+        "rooms",
+        "walls",
+        "all"
+      ],
+      "description": "`dims auto <mode>` — draw automatic dimension chains: `overall` (the two exterior chains), `rooms`, `walls`, or `all`. Omit it and no chains are drawn. This is a SETTING, not the `dims` array beside it: `dims` lists explicit `dim` statements, and the two compose. It affects output — the chains grow the drawing extent — so a document that drops it renders a differently-sized sheet."
+    },
     "room_count": {
       "type": "integer",
       "description": "Output-only: number of rooms."

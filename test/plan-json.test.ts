@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import {
   planFromJson,
   planToJson,
@@ -15,6 +15,9 @@ import {
   PLAN_JSON_SCHEMA,
   type PlanJson,
 } from "../src/index.js";
+// The parser's own accept-list, imported rather than retyped — the same law the
+// projection itself follows, so a fifth `dims auto` mode cannot pass this suite unnoticed.
+import { AUTO_DIMS_MODES } from "../src/ast.js";
 
 /**
  * Structured JSON I/O (v1.13): planFromJson / planToJson / astToJson.
@@ -72,22 +75,119 @@ describe("plan-json — round-trip byte-identity (SVG)", () => {
     roundTrips(FIXTURE_B);
   });
 
-  it("round-trips examples/studio.arch to identical SVG", () => {
-    roundTrips(readFileSync("examples/studio.arch", "utf8"));
+  /**
+   * EVERY shipped example, partitioned — never sampled.
+   *
+   * This suite used to name three examples by hand, and that is exactly how the `dims
+   * auto` gap survived: `garden-loft.arch` and `one-room.arch` both declare it, both
+   * silently lost it through the JSON, and both rendered a differently-sized sheet with
+   * no diagnostic — and neither was in the sample. So the corpus is now the DIRECTORY:
+   * every `examples/*.arch` either round-trips, or appears in {@link CANNOT_ROUND_TRIP}
+   * with a reason and a `proof` pattern that must still match the file. A future example
+   * is covered the moment it is added; a lossy clause cannot hide in an unsampled file.
+   *
+   * The exclusions are not a skip list. Plan JSON is deliberately a FLAT, SINGLE-STOREY,
+   * SHEET-FREE, STRAIGHT-EDGED geometry projection: it carries walls, rooms, openings,
+   * furniture, columns, explicit `dim`s and the plan-level settings (`grid`, `scale`,
+   * `north`, `site`, `dims auto`, `title`), and nothing else. Everything named below is
+   * a language surface it does not model, so the loss is by construction and visible in
+   * the schema rather than a defect — with ONE exception, `two-bed.arch`, called out as
+   * a defect in its own reason string.
+   */
+  const CANNOT_ROUND_TRIP: Record<string, { because: string; proof: RegExp }> = {
+    // --- the sheet layer: `paper`/`axes`/`schedule`/`legend` have no JSON field ------
+    "furnished-flat.arch": { because: "sheet layer — `paper` + `schedule`", proof: /^\s*paper\b/m },
+    "museum-wing.arch": { because: "sheet layer — `paper`", proof: /^\s*paper\b/m },
+    "museum.arch": { because: "sheet layer — `paper`", proof: /^\s*paper\b/m },
+    // --- the style layer: `theme`/`style` select paint, which the JSON does not carry -
+    "themed.arch": { because: "style layer — `theme`", proof: /^\s*theme\b/m },
+    "gallery-l.arch": { because: "style layer — `theme`; and the sheet layer — `paper`", proof: /^\s*theme\b/m },
+    "materials.arch": {
+      because: "style layer — `style <kind> { … }`; and `paper`/`schedule`/`legend`",
+      proof: /^\s*style\b/m,
+    },
+    // --- curved geometry: `WallJson.points` is straight-edged; there is no `circle` ---
+    "aquarium.arch": {
+      because: "curved geometry — wall `arc` + `room circle`; and the sheet layer",
+      proof: /\barc\s*\(/,
+    },
+    "hexagon-pavilion.arch": { because: "curved geometry — wall `arc` + `room circle`", proof: /\barc\s*\(/ },
+    "library.arch": {
+      because: "curved geometry — wall `arc`; and the sheet layer, `zone`, `stair`/`elevator`",
+      proof: /\barc\s*\(/,
+    },
+    // --- drawing-only and ground elements: no JSON element kind ----------------------
+    "tiny-house.arch": { because: "`roof` is deliberately absent from the projection", proof: /^\s*roof\b/m },
+    "bungalow.arch": { because: "`roof`; and the sheet layer — `paper` + `schedule`", proof: /^\s*roof\b/m },
+    "courtyard-house.arch": { because: "`roof`; and the sheet layer + `zone`", proof: /^\s*roof\b/m },
+    // --- storeys and composition -----------------------------------------------------
+    "two-storey.arch": {
+      because: "`level` — the projection is single-storey; also `roof`/`void`/`stair`",
+      proof: /^\s*level\b/m,
+    },
+    "townhouse.arch": {
+      because: "`level` — the projection is single-storey; also `roof`/`stair`/`paper`",
+      proof: /^\s*level\b/m,
+    },
+    "garden-house.arch": {
+      because: "`level`, `outdoor`/`fence`/`roof`, `site … boundary` and the sheet layer",
+      proof: /^\s*level\b/m,
+    },
+    "hillside-villa.arch": {
+      because: "`level`, `place`, `roof`/`void`, `arc` and the sheet layer",
+      proof: /^\s*level\b/m,
+    },
+    "terrace-row.arch": {
+      because: "`component` + `place` — composition is authored in .arch, not JSON",
+      proof: /^\s*place\b/m,
+    },
+    "clinic.arch": { because: "`component` + `place`; and the sheet layer + `zone`", proof: /^\s*place\b/m },
+    "transit-hall.arch": { because: "sheet layer + `zone` + `elevator`/`escalator`", proof: /^\s*escalator\b/m },
+    // `import` is refused outright, by design — `planFromJson` says so in its own doc.
+    "imports.arch": {
+      because: "`import` — refused by design (`E_IMPORT_NOT_FOUND` on projection)",
+      proof: /^\s*import\b/m,
+    },
+    "museum-wings.arch": { because: "`import` + `place` — refused by design", proof: /^\s*import\b/m },
+    // --- the one genuine DEFECT in this list, named rather than hidden ---------------
+    // `planToJson` projects a RESOLVER-DERIVED position as an authored `at (x,y)`, and
+    // `grid` snaps coordinates an author WRITES (v1.27) — so a derived position that is
+    // not already on the grid moves on the way back in. Here `furniture wardrobe in
+    // r_bed1 anchor top-right flush` resolves to (8650,150) against a 300-thick shell
+    // and re-snaps to (8700,200) under `grid 100`. Minimal repro, no example needed:
+    //   plan with `grid 100`, a 300-thick shell, one `anchor top-right flush` fixture.
+    // Independent of this file's `roof overhang`, which excludes it on its own.
+    "two-bed.arch": {
+      because:
+        "DEFECT (not by design): a resolver-derived furniture position is re-emitted as an authored `at` and re-snapped by `grid` — plus `roof`",
+      proof: /^\s*roof\b/m,
+    },
+  };
+
+  const EXAMPLES = readdirSync("examples")
+    .filter((f) => f.endsWith(".arch"))
+    .sort();
+  const COVERED = EXAMPLES.filter((f) => !(f in CANNOT_ROUND_TRIP));
+
+  it("names only exclusions that exist and still use the feature their reason cites", () => {
+    for (const [name, { proof }] of Object.entries(CANNOT_ROUND_TRIP)) {
+      expect(EXAMPLES, `exclusion "${name}" names no shipped example`).toContain(name);
+      expect(
+        proof.test(readFileSync(`examples/${name}`, "utf8")),
+        `exclusion "${name}": ${proof} no longer matches`,
+      ).toBe(true);
+    }
   });
 
-  // `two-bed.arch` used to be the third round-trip case, but the 2026-08 gallery refresh
-  // gave it a `roof overhang` — and `roof`/`void` are deliberately absent from the Plan
-  // JSON projection (see `test/roof-void-byte-identity.test.ts`'s "absent from the Plan
-  // JSON projection" suite), so a plan using either can never round-trip byte-identically
-  // by design. `attached.arch` takes its slot: a real shipped one-bedroom flat with a
-  // `strip`, on-wall openings and anchored furniture, untouched by the refresh, free of
-  // both keywords, and confirmed to round-trip (unlike a couple of other untouched
-  // candidates tried here — `garden-loft.arch` and `one-room.arch` do NOT round-trip
-  // byte-identically today; that looks like a pre-existing gap in the JSON projection
-  // unrelated to this branch, not something to paper over by picking around it silently).
-  it("round-trips examples/attached.arch to identical SVG", () => {
-    roundTrips(readFileSync("examples/attached.arch", "utf8"));
+  it("keeps a non-vacuous covered set", () => {
+    // A regression must not be greenable by moving a file into the exclusion list.
+    expect(COVERED.length).toBeGreaterThanOrEqual(8);
+    for (const must of ["one-room.arch", "garden-loft.arch", "studio.arch", "attached.arch", "laneway-house.arch"])
+      expect(COVERED, `${must} must round-trip`).toContain(must);
+  });
+
+  it.each(COVERED)("round-trips examples/%s to identical SVG", (name) => {
+    roundTrips(readFileSync(`examples/${name}`, "utf8"));
   });
 });
 
@@ -131,6 +231,58 @@ describe("plan-json — planToJson projection & enrichments", () => {
     // The front door (exterior→r_a) is a `front` edge, not an interior adjacency.
     expect(p.edges).toContainEqual({ from: "exterior", to: "r_a", via: "door", type: "front" });
     expect(p.edges).toContainEqual({ from: "r_a", to: "r_b", via: "door", type: "interior" });
+  });
+});
+
+/**
+ * `dims auto <mode>` — the plan-level setting the projection used to drop.
+ *
+ * It is load-bearing on OUTPUT, which is what made the loss silent and serious: the
+ * chains it synthesizes grow the drawing extent, so a plan that declared `dims auto all`
+ * came back through the JSON declaring nothing and rendered a smaller sheet — with zero
+ * diagnostics, on a PUBLISHED machine interface (`arch compile --from-json`).
+ */
+describe("plan-json — `dims auto` is a carried SETTING, not a dropped word", () => {
+  const withDims = (mode: string) => `plan "D" {
+  units mm
+  grid 50
+  dims auto ${mode}
+  wall id=s exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }
+  room id=r at (0,0) size 5000x4000 label "Room" uses living
+}`;
+  const noDims = withDims("all").replace(/\n\s*dims auto all/, "");
+
+  it.each(AUTO_DIMS_MODES)("projects and re-emits `dims auto %s`", (mode) => {
+    const { json } = planToJson(withDims(mode));
+    expect(json?.dims_auto).toBe(mode);
+    expect(planJsonToArch(json!).source).toContain(`dims auto ${mode}`);
+  });
+
+  it("is absent from the payload of a plan that never asked for it", () => {
+    // The `site` rule: emitted only when declared, so every pre-existing payload is
+    // byte-identical and no consumer sees a new key appear on an unchanged plan.
+    expect("dims_auto" in planToJson(noDims).json!).toBe(false);
+    expect(planJsonToArch(planToJson(noDims).json!).source).not.toContain("dims auto");
+  });
+
+  it("actually moves the drawing — so the round-trip law has something to protect", () => {
+    // Non-vacuity: if the two rendered the same, the round-trip assertion above would
+    // pass no matter what the projection did with the word.
+    expect(compile(withDims("all")).svg).not.toBe(compile(noDims).svg);
+  });
+
+  it("refuses an unknown mode with a path-bearing E_JSON_SCHEMA", () => {
+    const { json } = planToJson(withDims("all"));
+    const bad = { ...(json as PlanJson), dims_auto: "everything" } as unknown as PlanJson;
+    const { source, diagnostics } = planFromJson(bad);
+    expect(source).toBeUndefined();
+    expect(diagnostics.some((d) => d.code === "E_JSON_SCHEMA" && d.message.includes("/dims_auto"))).toBe(true);
+  });
+
+  it("advertises every parser mode in the schema, derived rather than retyped", () => {
+    const prop = (PLAN_JSON_SCHEMA as unknown as { properties: Record<string, { enum?: readonly string[] }> })
+      .properties.dims_auto;
+    expect(prop?.enum).toEqual([...AUTO_DIMS_MODES]);
   });
 });
 
