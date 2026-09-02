@@ -165,19 +165,34 @@ fixtures sitting 5 mm *inside* the wall face, and `terrace-row.arch` (`grid 50`)
 fixture 25 mm *off* it. `bungalow.arch` keeps `grid 50` — its numbers were already on that grid, so
 it is byte-identical — and its comment now records the workaround as history.
 
-### 3.13 · `SKILL.md` never mentions `site` or the door kinds — `todo`
+### 3.13 · `SKILL.md` never mentioned `site` or the door kinds — `done`
 
-The agent Skill — the loop a cold-start model follows — documents neither the v1.25 orientation
-layer nor the four non-default door kinds. `examples/bungalow.arch` now demonstrates both, but
-there is nowhere in `SKILL.md` to reference it from.
+Confirmed before fixing: `grep` counted **0** for `site` and **0** for every door kind in `SKILL.md`,
+so a cold-start agent following the loop had no reason to reach for either, and `examples/bungalow.arch`
+demonstrated both with nowhere to be referenced from.
 
-Note the constraint before starting: `SKILL.md` feeds `gen:llms`, and `spec.llm.md` is under a hard
-character cap asserted by `test/llm-spec-drift.test.ts`. **Re-measure both numbers rather than
-trusting this line** — they have moved twice since it was written (the cap was 25,000; v1.29.0
-raised it to **26,000** after trimming a redundant keyword bullet, and the file is **25,636** as of
-2026-08-27, leaving 364). The standing instruction is unchanged and is the point of the cap:
-`spec.llm.md` is injected verbatim into agent prompts, so its size is a recurring per-request token
-cost — **trim duplication before raising.**
+Written as **workflow, not grammar** — `arch spec` already covers both surfaces in full, and
+duplicating a reference here would create a second place to drift. Each is framed by what it changes
+about the LOOP:
+
+- **Door kinds are an answer to a diagnostic.** Only `hinged` sweeps an arc, so `W_SWING_OBSTRUCTED`
+  cannot apply to the others — swapping to a `sliding` or `pocket` leaf removes the warning because
+  the plan genuinely fixed it, not because a rule was silenced. The entry says plainly that a
+  `pocket` earns `W_POCKET_RUN` instead: trading one warning for another is a real trade to read,
+  not a win.
+- **`site` is framed by what silently cannot run without it.** An intent's `windows.facing` fails
+  with `E_INTENT_NO_SITE` rather than passing vacuously, and `W_ROOM_NOT_EQUATOR_FACING` is the one
+  rule that reads it — so a brief saying "south-facing living room" needs `site` declared or its
+  central requirement is unverifiable. The no-sun-model caveat is restated, because the `_side`
+  names invite being read as a daylight measurement.
+
+**The constraint this entry warned about does NOT apply, and the entry was wrong to imply it.**
+`SKILL.md` feeds `gen:llms` → `llms-full.txt`, which is **uncapped** (92,043 → 94,484 here). The
+capped artifact is `spec.llm.md`, fed by `gen:spec` from `tokens.ts` + `examples/`, and it is
+**unchanged at 28,486 against a cap of 28,600**. The entry's own instruction — *re-measure both
+numbers rather than trusting this line* — was the right instruction and is what caught this: both
+had moved again (it guessed 26,000 and 25,636).
+
 
 ### 3.15 · `W_FURNITURE_WALL_COLLISION` did not check a CURVED wall — `done`
 
@@ -610,43 +625,36 @@ grep -E "FAIL|Failed Tests|Error:" run.log
 arming race was fixed, and this one at 2 of 5 and 2 of 6. Rates like that survive several green runs
 comfortably — three greens do not clear a flake, and a single-file run clears nothing at all.
 
-### G.10 · Plan JSON carries a frame's ROTATION but not its REFLECTION — `todo` (latent)
+### G.10 · Plan JSON carries a frame's ROTATION but not its REFLECTION — `todo` (tripwire ARMED)
 
-Found at the intersection of G.4 and 5.4, and **latent rather than a regression** — but it becomes
-real the day somebody makes `place` round-trip.
+`planToJson` projects the rotation a `place` frame imposes on a fixture and not the reflection.
+Before item 5.4 that lost nothing — a mirrored symbol drew identically to its twin — but 5.4 made
+**19 of the 83 catalogued families genuinely handed**, so the projection now drops a fact the drawing
+depends on. Measured: a plain and a `mirror x` placed `desk` produce payloads differing **only in
+`x`**.
 
-`planToJson` projects the rotation a `place` frame imposes on a fixture, and not the reflection:
+**Still unreachable, and therefore still `todo`.** A plan containing `place` never round-trips at
+all: `planFromJson` refuses a namespaced id with `E_DOTTED_DECL` (×3 on the minimal fixture). The two
+defects mask each other and no fixture can reach the projection bug.
 
-```
-plain     {"category":"desk","x":2300,"y":300,"width":1400,"height":700,"room":"a.r"}
-mirror x  {"category":"desk","x":300, "y":300,"width":1400,"height":700,"room":"a.r"}
-mirror y  {"category":"desk","x":2300,"y":3000,...,"rotate":180,"room":"a.r"}
-```
+**The tripwire is now armed** (`test/plan-json.test.ts`, "G.10 tripwire"), which is the part of this
+entry that has been actioned. Two assertions pin the CURRENT, WRONG state on purpose, each carrying
+the sentence that says what its failure means:
 
-`mirror x` and the plain form differ only in `x`. Before item 5.4 that lost nothing, because a
-mirrored symbol drew identically to its twin; **after 5.4 it loses the symbol's handedness**, so a
-consumer reconstructing from Plan JSON would draw the wrong-handed piece.
+1. the two payloads are equal once position is stripped — **fails when the projection learns to carry
+   the reflection**;
+2. the round-trip is refused with `E_DOTTED_DECL` — **fails when a placed plan starts round-tripping**.
 
-**Why it is not reachable today, and why that is not a reason to forget it.** A plan containing
-`place` has never round-tripped at all: `planFromJson` refuses a namespaced id with `E_DOTTED_DECL`.
-That was verified on `54416b7` — the base of both branches — so it predates this work and neither
-item introduced it. The projection is therefore unreachable for exactly the plans that could expose
-it, and the two defects mask each other.
+So whoever fixes `E_DOTTED_DECL` lands on a **red test that names this work**, instead of un-masking
+the defect silently with no witness but a symbol drawn the wrong way round on someone else's plan.
+Do not "fix" that suite by deleting the block; invert it into the real round-trip assertion.
 
-**The trap for whoever fixes the `place` round-trip:** doing so un-masks this one silently. There is
-no test that would go red, because no fixture can currently reach the code.
+The neighbouring rule, from [ADR 0016](adr/0016-component-instances-and-frames.md) and now stated in
+`AGENTS.md`: when a fact crosses a frame, ask **can this be re-expressed in plan coordinates?** A
+placement clause cannot (plan space has no word for a local corner) so it is dropped; a symbol's
+handedness can, exactly, as one reflection about the footprint's own centre line — so it is flipped.
+This item is the third case, and the answer is the same as the handedness one.
 
-**So write the failing assertion FIRST, while it is still unreachable.** Add the case that a mirrored
-placed fixture round-trips with its handedness intact, and let it fail (or skip with a reason naming
-this item) for as long as `E_DOTTED_DECL` stands. Then fixing the round-trip lands on a **red test**
-rather than in a drawing nobody re-renders. Doing it in the other order is how a masked defect
-becomes a shipped one: the round-trip fix looks complete, every suite is green, and the only witness
-is a symbol drawn the wrong way round on someone else's plan. So a `_mirror`-carrying
-field (or a decision that `place` instances project their resolved coordinates and nothing else)
-belongs in the SAME change as the `E_DOTTED_DECL` fix, not after it. Note G.4 already established
-the neighbouring rule: an authored placement clause is DROPPED at the frame crossing because plan
-space has no word for a local corner — the reflection is the opposite case, re-expressible exactly
-as one flip about the footprint's own centre line, which is why 5.4 flips it rather than dropping it.
 
 ### G.7 · Fixture-word completion in the VS Code extension — `todo`
 
