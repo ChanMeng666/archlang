@@ -87,6 +87,56 @@ export interface FixtureSpec {
    * runner with a border pattern would carry this flag and not that one.
    */
   underlay?: boolean;
+  /**
+   * The piece hangs **above the horizontal plane a floor plan is cut at** — a wall cabinet, an
+   * extract hood, a mirror. Its rectangle on the drawing is a PROJECTION of something over the
+   * floor, not a thing standing on it, which is why every one of them is drawn with the
+   * `dashedPattern()` outline the drawing reserves for exactly that meaning.
+   *
+   * ## Exactly ONE consumer, and the other three are refusals stated on purpose
+   *
+   * This flag is deliberately NOT {@link underlay} spelled backwards. An underlay and an
+   * overhead piece are both "not where a body is", but they are not where a body is in
+   * different directions, and the four consumers that read `underlay` split three-to-one on it:
+   *
+   *   - `W_FURNITURE_OVERLAP` **exempts** the pair, exactly as it does for an underlay, and by
+   *     the same pair-shaped test: two things on DIFFERENT sides of the cut plane cannot
+   *     collide, so a hood over a hob and a mirror over a basin are the arrangement rather than
+   *     a defect. Two overhead pieces overlapping EACH OTHER still warn — that pair is not the
+   *     exempt case, and one wall cabinet half through another is a drawing mistake, which is
+   *     the rule two rugs already obey. Read through {@link cutPlaneLayer}, never by testing
+   *     this flag beside `underlay` at the call site.
+   *   - Both walkability grids (`analyze/circulation.ts`'s nav grid and
+   *     `analyze/occupancy.ts`'s per-room flood fill) **keep it as an obstacle**, which is the
+   *     whole difference from an underlay. A rug is walked ON. A wall cabinet is not walked
+   *     UNDER in any sense those grids model: they ask whether a BODY fits, and a body is
+   *     1700 mm tall while a wall unit's underside is at about 1400 mm. So `solidFurniture()`
+   *     — the one predicate both grids share — is untouched by this flag, which is also what
+   *     keeps the furniture-free control in `furnitureSealed` and the body-radius ladder in
+   *     `measureWaysIn` agreeing with the main grid: they call `buildNav` again with different
+   *     parameters, and there is no per-call-site exemption for them to disagree about.
+   *   - `W_FURN_CLEARANCE` needs nothing added. An overhead piece is above a fixture's frontal
+   *     use-space rather than in it, so it should never be the thing blocking one — and today
+   *     it never is, because all three overhead families are also {@link requiresWall} and that
+   *     rule already skips every services fixture as an obstruction. A second, currently
+   *     unreachable arm would be untested code. **Revisit the moment an overhead family is NOT
+   *     wall-requiring** — a ceiling pendant or a projector hangs off the slab, not the fabric,
+   *     and would be the first to need it.
+   *
+   * `W_FURNITURE_WALL_COLLISION` deliberately still applies, on the underlay precedent: a piece
+   * drawn through a wall solid is a drawing error at any height.
+   *
+   * ## Not the same set as "draws dashed"
+   *
+   * Four shipped symbols draw a dashed outline and only three families carry this flag. A bunk
+   * bed's upper deck and a vanity's mirror band are dashed BITS of a piece that stands on the
+   * floor; the piece itself is at the cut plane and collides with everything a bed or a chest
+   * of drawers would. The flag is about the whole fixture, not about a line in its symbol.
+   *
+   * A category is never both this and {@link underlay} — they name opposite sides of the same
+   * plane, and {@link cutPlaneLayer} would have to pick one.
+   */
+  overhead?: boolean;
 }
 
 /** A room zone a fixture can satisfy (see {@link FixtureSpec.zones}). */
@@ -225,10 +275,11 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   // `test/fixture-orientation.test.ts` pins directly.
   island: { requiresWall: false, zones: ["kitchen"] },
   // Hangs OFF the wall, so it is the one non-plumbed piece here that genuinely cannot exist
-  // without one. Above the cut plane, so it is shallower than a base unit and needs no
-  // floor clearance.
-  upper_cabinet: { requiresWall: true, footprint: { along: 600, depth: 350 } },
-  wall_cabinet: { requiresWall: true, footprint: { along: 600, depth: 350 } },
+  // without one. Above the cut plane — which is now a FLAG rather than a remark in this
+  // comment ({@link FixtureSpec.overhead}), so a base unit drawn under it is no longer a
+  // collision — hence shallower than a base unit, and needing no floor clearance.
+  upper_cabinet: { requiresWall: true, overhead: true, footprint: { along: 600, depth: 350 } },
+  wall_cabinet: { requiresWall: true, overhead: true, footprint: { along: 600, depth: 350 } },
   washer: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
   washing_machine: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
   dryer: { requiresWall: true, clearanceMm: 550, footprint: { along: 600, depth: 600 } },
@@ -418,8 +469,13 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   laundry_tub: { requiresWall: true, clearanceMm: 600, footprint: { along: 600, depth: 500 }, zones: ["wet"] },
   water_heater: { requiresWall: true, footprint: { along: 600, depth: 600 } },
   boiler: { requiresWall: true, footprint: { along: 600, depth: 600 } },
-  mirror: { requiresWall: true, footprint: { along: 900, depth: 50 } },
-  range_hood: { requiresWall: true, footprint: { along: 900, depth: 500 }, zones: ["kitchen"] },
+  // The two OVERHEAD pieces of this tranche, and the reason the flag exists: both are drawn
+  // over the fixture they serve — a hood over the hob, a mirror over the basin — so both used
+  // to raise `W_FURNITURE_OVERLAP` on a correct drawing, and both were left OUT of
+  // `examples/furnished-flat.arch` rather than nudged somewhere false. See
+  // {@link FixtureSpec.overhead} for why that is the only rule they change.
+  mirror: { requiresWall: true, overhead: true, footprint: { along: 900, depth: 50 } },
+  range_hood: { requiresWall: true, overhead: true, footprint: { along: 900, depth: 500 }, zones: ["kitchen"] },
   microwave: { requiresWall: false, directional: true, footprint: { along: 500, depth: 400 }, zones: ["kitchen"] },
   bar_counter: { requiresWall: false, directional: true, footprint: { along: 1800, depth: 600 }, zones: ["kitchen"] },
   // -------------------------------------------------------------------------
@@ -560,6 +616,41 @@ export function isUnderlay(category: string): boolean {
 }
 
 /**
+ * Is this category **overhead** — a piece hanging above the horizontal plane the drawing is
+ * cut at, whose rectangle is a projection rather than a floor obstruction (see
+ * {@link FixtureSpec.overhead})?
+ *
+ * Exported for the same reason {@link isUnderlay} is — a test asserts the catalogue directly —
+ * but no lint rule calls it: the one rule this flag changes reads {@link cutPlaneLayer}, so
+ * "which side of the cut plane is this on?" is asked in exactly one place.
+ */
+export function isOverhead(category: string): boolean {
+  return CATALOG[category]?.overhead === true;
+}
+
+/** Where a fixture sits relative to the horizontal plane a floor plan is cut at. */
+export type CutPlaneLayer = "underlay" | "body" | "overhead";
+
+/**
+ * Which side of the drawing's cut plane a category occupies: `underlay` below it (a rug, lying
+ * on the floor and stood on), `overhead` above it (a wall cabinet, a hood, a mirror), and
+ * `body` — everything else — at it, where a person and the furniture they move round both are.
+ *
+ * **Two pieces can only collide when they share a layer.** That is the whole of
+ * `W_FURNITURE_OVERLAP`'s exemption, and stating it as one three-valued function rather than as
+ * two flag comparisons is deliberate: the pairwise test then reads as the physical claim it is,
+ * and adding a fourth layer later cannot leave one rule comparing two flags and another three.
+ * It also keeps the two exemptions honest in the case neither flag's own doc covers — a rug and
+ * a wall cabinet over it do not collide either, and nothing had to be written for that.
+ */
+export function cutPlaneLayer(category: string): CutPlaneLayer {
+  const spec = CATALOG[category];
+  if (spec?.underlay === true) return "underlay";
+  if (spec?.overhead === true) return "overhead";
+  return "body";
+}
+
+/**
  * The pieces a walkability grid must treat as obstacles — everything that is not an
  * {@link isUnderlay}.
  *
@@ -567,6 +658,13 @@ export function isUnderlay(category: string): boolean {
  * whole-plan nav grid and `analyze/occupancy.ts`'s per-room flood fill both need it, and two
  * copies of "is a rug an obstacle?" is exactly the shape of drift this repository keeps
  * finding. Generic over the element type so this module keeps importing nothing.
+ *
+ * An **overhead** piece is deliberately NOT dropped here: a body is taller than a wall unit's
+ * underside, so a hood and a wall cabinet obstruct a walk exactly as the base units below them
+ * do (see {@link FixtureSpec.overhead}). That asymmetry is the point of the two flags being
+ * separate, and it is what lets every caller of the nav grid — the main pass, the
+ * furniture-free control, and the body-radius ladder that re-runs it — read one predicate and
+ * agree.
  */
 export function solidFurniture<T extends { category: string }>(furniture: readonly T[]): T[] {
   return furniture.filter((f) => !isUnderlay(f.category));

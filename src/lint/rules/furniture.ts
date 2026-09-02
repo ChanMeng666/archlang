@@ -21,6 +21,7 @@ import { rectsOverlap, wallIntrusionDepth } from "../../geometry/rect.js";
 import { pointInPolygon } from "../../geometry/polygon.js";
 import { fixesFrom, fixtureRotateFix } from "../../fix-producers.js";
 import {
+  cutPlaneLayer,
   defaultFootprint,
   frontClearanceMm,
   isUnderlay,
@@ -41,17 +42,23 @@ const WALL_COLLISION_SLACK_MM = 30;
 /** Furniture that overlaps another piece — a physical collision (each unordered
  *  pair reported once, in source order, against the second piece's span).
  *
- *  An **underlay** (a rug) and a piece standing on it are exempt: that overlap is the
- *  arrangement, not a collision. The test is on the pair, not on either piece — two rugs
- *  overlapping each other still warn, because one rug half over another is a drawing
- *  mistake and nothing about `underlay` says otherwise. */
+ *  **Two pieces can only collide when they sit on the same side of the plane the drawing is
+ *  cut at**, which is the one question this rule asks of the catalogue ({@link cutPlaneLayer}).
+ *  An underlay (a rug) is below it and a piece standing on the rug is at it; an extract hood
+ *  and a wall cabinet are above it and the hob and worktop under them are at it. Both of those
+ *  overlaps are the arrangement rather than a collision, and neither is a special case of the
+ *  other — a rug is walked on, a hood is walked under.
+ *
+ *  The test is on the PAIR, not on either piece, so two rugs overlapping each other still warn,
+ *  and so do two wall cabinets: those pairs are not the exempt case, and one piece half through
+ *  another at the same height is a drawing mistake whatever height that is. */
 export const furnitureOverlap: LintRule = {
   name: "furniture-overlap",
   check({ furniture, at }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
     for (let i = 0; i < furniture.length; i++) {
       for (let j = i + 1; j < furniture.length; j++) {
-        if (isUnderlay(furniture[i]!.category) !== isUnderlay(furniture[j]!.category)) continue;
+        if (cutPlaneLayer(furniture[i]!.category) !== cutPlaneLayer(furniture[j]!.category)) continue;
         if (rectsOverlap(rectOf(furniture[i]!), rectOf(furniture[j]!))) {
           const nameI = furniture[i]!.label ?? furniture[i]!.category;
           const nameJ = furniture[j]!.label ?? furniture[j]!.category;
@@ -94,6 +101,13 @@ export const furnClearance: LintRule = {
       for (const g of furniture) {
         // Ignore other services fixtures — and an underlay, which you stand on rather than
         // step round, so a rug reaching under the basin blocks nothing.
+        //
+        // An OVERHEAD piece (a hood, a wall cabinet, a mirror) is above the use-space rather
+        // than in it and should never block one either — but it needs no arm here, because
+        // every overhead family is also `requiresWall` and is already skipped one test to the
+        // left. Adding a second, currently unreachable condition would ship untested code.
+        // Revisit if an overhead family is ever NOT wall-requiring (a ceiling pendant hangs
+        // off the slab, not the fabric) — see `FixtureSpec.overhead`.
         if (g === f || requiresWall(g.category) || isUnderlay(g.category)) continue;
         if (rectsOverlap(zone, rectOf(g))) {
           const fn = f.label ?? f.category;
