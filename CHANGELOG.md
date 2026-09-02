@@ -26,7 +26,10 @@ one pixel of anything.
   endpoints — became **a bar along its own diameter**, so a route could walk through 1200 mm of
   masonry while the round room inside was severed into two caps. The corpus carried the signature:
   `hexagon-pavilion` measured its three *south* galleries and silently dropped the three *north* ones.
-  **Every curved plan had a wrong circulation model**, including everything measured on one.
+  **Every curved plan had a circulation model that disagreed with its own drawing**, including
+  everything measured on one — and where a curve did not happen to sever a route, nothing signalled
+  it at all: `library`'s `r_ref` walk moves 800 mm on this fix, with no room dropped, no diagnostic
+  changed and no drawing moved. That class of defect has no gate; it is filed as backlog G.11.
 
   The reporting gap it surfaced through is closed too. `describe --json` omitted **23 of 185 rooms**
   from `.circulation.rooms[]` with nothing said; it now emits `circulation.unmeasured[]` —

@@ -727,22 +727,38 @@ up to 608 mm inside the true circle:**
 r_ref  walkDistanceMm  37900 -> 37100   (-800)
 ```
 
-No room dropped out. No diagnostic changed. No drawing moved. `describe --json` reported a walk
-**800 mm wrong** and had done since curved walls existed, and nothing in three tiers of testing could
-see it.
+No room dropped out. No diagnostic changed. No drawing moved. Nothing in three tiers of testing saw
+it.
 
-**What is missing is a gate on the agreement between what is DRAWN and what is MEASURED.** Every
-existing guard checks one side against its own history: byte-identity digests pin the drawing, the
-circulation suites pin the model, and both can be internally consistent while describing different
-buildings. Some candidates, none obviously right:
+**State that claim precisely, because the imprecise version is the trap this item is about.** What
+was measured is that the figure **moved by 800 mm**, and that the new grid agrees with the drawn wall
+where the old one did not. That makes 37,100 *the reading from a grid that matches the drawing* — it
+is **not** an independently derived answer. Nobody has computed `r_ref`'s true walk from the geometry
+by hand. Saying "the truth is 37,100" would be asserting the new system's output as ground truth,
+which is the same move this entry exists to forbid.
+
+**Why every existing guard is blind to this, stated generally — it is not about curves.** The
+circulation laws are all **relative**: the monotonicity property, the body-radius ladder and the
+blocked-room verdict each compare the grid *to itself* under a perturbation. Every one of them stays
+green on a grid that models the wrong building. That is how item 5.8 could be entirely correct in its
+own terms and still have produced wrong numbers for every curved plan. **A gate that only ever
+compares a system to its own history cannot see a systematic offset** — the byte-identity digests pin
+the drawing, the circulation suites pin the model, and both can be internally consistent while
+describing different buildings.
+
+Three candidate gates, and the distinction that separates them:
 
 - **A geometric residual**: for each wall, sample the rasterised obstacle set against the lowered
   Scene's own geometry and assert the maximum disagreement is under a cell. Expensive, but it is the
-  property that actually matters and it would have caught this at any facet count.
-- **A curved-plan fixture with hand-derived expected walks** — cheap, but it only guards the plans
-  somebody thought to write down.
-- **A differential**: measure a curved plan and its polygonal approximation and assert the answers
-  converge as the approximation refines. Catches "the model uses a different shape" directly.
+  property that actually matters, and it would have caught this at any facet count. Still relative —
+  it checks the model against the *drawing*, so it fails if both are wrong together.
+- **A differential**: measure a curved plan and its polygonal approximation, and assert the answers
+  converge as the approximation refines. Catches "the model uses a different shape" directly, and
+  also relative.
+- **A curved-plan fixture with HAND-DERIVED expected walks.** Cheap, and it only guards the plans
+  somebody thought to write down — but it is **the only one of the three that can catch both sides
+  being wrong together**, because the expectation comes from outside the system. That is the exercise
+  this work did not do, and it is the reason to do it.
 
 **Checked and NEGATIVE, so nobody re-checks it:** `src/analyze/occupancy.ts` does **not** have the
 sibling instance. It takes `_walls` and never reads it — the per-room flood fill is bounded by the
