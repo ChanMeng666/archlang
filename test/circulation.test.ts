@@ -54,9 +54,10 @@ describe("circulation — facts on the nav grid", () => {
   });
 
   it("reads a narrower bottleneck when furniture squeezes the route", () => {
-    // A wide (1500 mm) cased opening between two rooms, then the same plan with two
-    // fixtures pinching the way through it. The obstructed plan's far-room bottleneck
-    // must drop below the clear one's.
+    // Two 2000 mm connectors between two rooms, then the same plan with two fixtures
+    // pinching a 1000 mm gap in the way through. The doors are deliberately wide so the
+    // FURNITURE is what binds: with a 900 mm entrance the door capped every reading and
+    // the assertions below passed without measuring the pinch at all.
     const base = (obstruct: string) => `plan "Squeeze" {
   units mm
   grid 100
@@ -64,8 +65,8 @@ describe("circulation — facts on the nav grid", () => {
   wall partition thickness 100 { (4000,0) (4000,4000) }
   room id=a at (0,0)    size 4000x4000 label "Living"
   room id=b at (4000,0) size 4000x4000 label "Kitchen"
-  door id=entry at (0,2000)  width 900  wall exterior hinge left swing in
-  opening id=gap at (4000,2000) width 1500 wall partition
+  door id=entry at (0,2000)  width 2000 wall exterior hinge left swing in
+  opening id=gap at (4000,2000) width 2000 wall partition
 ${obstruct}}`;
     const clear = describePlan(base("")).circulation;
     const squeezed = describePlan(
@@ -79,12 +80,17 @@ ${obstruct}}`;
 
     const clearB = byId(clear.rooms).b!.bottleneckClearWidthMm;
     const squeezedB = byId(squeezed.rooms).b!.bottleneckClearWidthMm;
-    // Unobstructed, the tightest point reaching b is the 900 mm entrance (the 1500 mm
-    // opening is wider); the fixtures then pinch the way well below that.
-    expect(clearB).toBe(840);
+    // Unobstructed, the tightest point reaching b is the entrance (2000 − 60); the
+    // fixtures then pinch the way to the 1000 mm they actually leave between them. That
+    // last number is the point of the pin: the reading is the width a BODY passes
+    // through, so it tracks the real gap to within a cell. It used to come back 100 mm —
+    // the transform was seeded on the body-radius-eroded cells and its result read as a
+    // width, subtracting the body twice (`docs/backlog.md` 5.8).
+    expect(clearB).toBe(1940);
     expect(squeezedB).toBeGreaterThan(0);
     expect(squeezedB).toBeLessThan(clearB);
-    expect(squeezedB).toBeLessThanOrEqual(500);
+    expect(squeezedB).toBeGreaterThanOrEqual(800);
+    expect(squeezedB).toBeLessThanOrEqual(1100);
   });
 
   it("routes a bedroom to its nearest bath", () => {

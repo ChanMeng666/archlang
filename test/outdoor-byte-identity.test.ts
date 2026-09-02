@@ -82,10 +82,35 @@ import { describe, expect, it } from "vitest";
 import { compile, describe as describePlan, lint, planToJson } from "../src/index.js";
 import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js";
 
-/** SHA-256 over the SVG + `describe()` + `lint()` of one example, as measured at v1.30.0. */
+/** SHA-256 over the SVG + `describe()` + `lint()` of one example, as measured at v1.30.0.*
+ *
+ * ## The backlog-5.8 re-measurement — the SUMMARY moved, and that is the point
+ *
+ * This is the case the message on the summary half describes: **a moved lint rule and a
+ * changed `describe()` value**, not a drawing. Nothing in the circulation fix touches a
+ * glyph, and the SVG half moved only because its payload contains `describe()`.
+ *
+ * Exactly what changed on `studio.arch`, measured field by field against the previous
+ * commit: **one number.** `circulation.rooms[r_bath].bottleneckClearWidthMm` and the
+ * `r_bed -> r_bath` route's copy of it both go **700 -> 740**. Every other key of the whole
+ * summary — rooms, areas, adjacency, openings, freedom, totals — is byte-identical, and
+ * `lint(studio)` is unchanged (still empty). 740 is the interior door's own clear width
+ * (800 - 60); the old 700 was a FURNITURE pinch reported one body diameter short, so the
+ * flagship sat exactly on the 700 mm minimum by arithmetic accident and one cell of drift
+ * would have made it warn.
+ *
+ * `furnished-flat.arch`, where this suite also pins one: `circulation` gains an `r_bath`
+ * entry and the two bedroom->bath routes that depend on it (the room was silently dropped
+ * because its label point sat in a pocket the entrance could not reach), and gains
+ * `blockedRoomIds: ["r_kitchen"]` — a real, previously unreported finding about that plan.
+ * Nothing else in its summary moved.
+ *
+ * Do not read this entry as permission either. A summary digest still moves only for a
+ * named, measured reason, written down here.
+ */
 const BASELINE: [string, string][] = [
   ["laneway-house", "3a5653e0d1306f0bdb81221d05875e8f2ca0cb6550ef9619b76ece481337acc8"],
-  ["studio", "7816107d209b9ef70b49ee9ee0a2092bf7604224733f2f483ce968197f11d138"],
+  ["studio", "230392f562ad97b4da05d5f812350651c1f2d7bd0f10f2df80a8bccad41ed0dd"],
   ["gallery-l", "753b39b0dc5ed5a38aa7243d4b7738257e771f95d0590f0595a2512550fcbc5f"],
   ["aquarium", "af532f0ff575b10c355bda8f7d54b2c5ee272f88cd1e1427a5c6ca756099a57b"],
 ];
@@ -93,7 +118,7 @@ const BASELINE: [string, string][] = [
 /** The SUMMARY half of the same law — see the header. Unchanged since the measurement. */
 const SEMANTIC_BASELINE: [string, string][] = [
   ["laneway-house", "ac2df20e15d2e4fbcc73e34a15d4e34578aa89a859860561b85361db170040b6"],
-  ["studio", "b065cbe49d364414b340639fc06922eb14f472c9f4470134bb6f2b4489ada364"],
+  ["studio", "19e14aff19562e4198f300fa342b4404e29f790b586f7d3d711eed8936865ddf"],
   ["gallery-l", "cef0ee1863a505bb831aa2512ca204547117872a61cf1a1ddd293361f0b688be"],
   ["aquarium", "2cc0778dbc3b1127e0e478d8e08d12a766de6a73458748ee40bd5f43473f1e1f"],
 ];

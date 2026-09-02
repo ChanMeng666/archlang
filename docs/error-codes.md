@@ -1555,7 +1555,7 @@ outdoor paving at (1000,1000) size 3000x2000   # warning: on the living-room flo
 
 *warning* — The walk to a room squeezes below a passable width.
 
-**Cause.** The widest route from the entrance into a room (or between a key pair of rooms, e.g. bedroom→bath) has an unavoidable pinch narrower than the minimum passable clear width — a too-narrow door/opening, or furniture crowding the way. A coarse fact from the circulation nav grid (ADR 0008); the number is grid-quantised.
+**Cause.** The widest route from the entrance into a room (or between a key pair of rooms, e.g. bedroom→bath) has an unavoidable pinch narrower than the minimum passable clear width — a too-narrow door/opening, or furniture crowding the way. The limit case is reported too: when furniture and its clearances seal every way in, the pinch is 0 mm and the message says the walk is BLOCKED rather than tight. A coarse fact from the circulation nav grid (ADR 0008); the number is grid-quantised, and it is the width a body passes through, not the room left over after its own clearance.
 
 **Fix.** Widen the tightest door/opening on the route to at least the minimum, move the furniture pinching it, or add a second way in so the pinch is avoidable. There is no machine-applicable fix: the bottleneck is a nav-grid cell, not a named element, so nothing can be rewritten for you.
 

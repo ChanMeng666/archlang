@@ -96,12 +96,37 @@ const ROOT = join(HERE, "..");
  * layer. **`describe()` and `lint()` were held SHA-256 identical across the whole change**,
  * measured example by example against `8fc432a`'s `src/` (extracted with `git archive`) for
  * all 28 import-free examples: 22 SVGs moved, 0 summaries and 0 diagnostic sets.
+ *
+ *
+ * ## The backlog-5.8 re-measurement — the SUMMARY moved, and that is the point
+ *
+ * This is the case the message on the summary half describes: **a moved lint rule and a
+ * changed `describe()` value**, not a drawing. Nothing in the circulation fix touches a
+ * glyph, and the SVG half moved only because its payload contains `describe()`.
+ *
+ * Exactly what changed on `studio.arch`, measured field by field against the previous
+ * commit: **one number.** `circulation.rooms[r_bath].bottleneckClearWidthMm` and the
+ * `r_bed -> r_bath` route's copy of it both go **700 -> 740**. Every other key of the whole
+ * summary — rooms, areas, adjacency, openings, freedom, totals — is byte-identical, and
+ * `lint(studio)` is unchanged (still empty). 740 is the interior door's own clear width
+ * (800 - 60); the old 700 was a FURNITURE pinch reported one body diameter short, so the
+ * flagship sat exactly on the 700 mm minimum by arithmetic accident and one cell of drift
+ * would have made it warn.
+ *
+ * `furnished-flat.arch`, where this suite also pins one: `circulation` gains an `r_bath`
+ * entry and the two bedroom->bath routes that depend on it (the room was silently dropped
+ * because its label point sat in a pocket the entrance could not reach), and gains
+ * `blockedRoomIds: ["r_kitchen"]` — a real, previously unreported finding about that plan.
+ * Nothing else in its summary moved.
+ *
+ * Do not read this entry as permission either. A summary digest still moves only for a
+ * named, measured reason, written down here.
  */
 const BASELINE: Readonly<Record<string, string>> = {
-  "studio.arch": "c921a0607bf60aa2c39e27c4467d42f27660e4862a3735e8693726cdabf4e339",
+  "studio.arch": "57a3d533c667d1797fce416b1515dd1ef75af927c4cdb13d2e34f6458cc8b912",
   "laneway-house.arch": "5aac436f2df22db2ff8c7a8995a0420ca7e5d5406795ce1f9882820f1d6b61ff",
   "bungalow.arch": "02de92a6c3b8dbe61aabcf88adfe779433830e0a902b31ab78be295ecb8b64a1",
-  "furnished-flat.arch": "b445592561e294dce47ba59a419fb2625be80dd0ffac61b8d37f334181f9d631",
+  "furnished-flat.arch": "a2a9b288a278d6266a8139e11938ab142518ab995f146b875524e0d08b59663d",
   "two-bed.arch": "913b9073730bb693f803ba0774ca55ab9eeb602d807184987e87b7694cd6c984",
 };
 
@@ -113,7 +138,7 @@ const BASELINE: Readonly<Record<string, string>> = {
  * allowed to move {@link BASELINE}; nothing in this release is allowed to move these.
  */
 const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
-  "studio.arch": "b065cbe49d364414b340639fc06922eb14f472c9f4470134bb6f2b4489ada364",
+  "studio.arch": "19e14aff19562e4198f300fa342b4404e29f790b586f7d3d711eed8936865ddf",
   "laneway-house.arch": "ac2df20e15d2e4fbcc73e34a15d4e34578aa89a859860561b85361db170040b6",
   "bungalow.arch": "4835ae875c03ea01d8ec44ece1a3ecdcb3b324775c503bed0fad224e81fad93d",
   // `furnished-flat.arch` is the ONE value in this table that is not the original v1.30.0
@@ -121,7 +146,7 @@ const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
   // edited in v1.32 -- seven of the new families were added to the flat -- so `describe()`
   // and `lint()` genuinely report a different building, which is exactly the kind of change
   // this pin exists to make visible. A redrawn SYMBOL still cannot move any number here.
-  "furnished-flat.arch": "a38b6ef53e0de401c6d7e09039a7f1bfcdbb8305686052f84844d4e3fdc23476",
+  "furnished-flat.arch": "91a007169e348eec3f496d15e89a6ddd4e0f9dcbe80bdb9f93907934a7f23b68",
   "two-bed.arch": "a118170f4549ccd89aa1dce2274363e9444c13d1667d679877cb2d460ac2e070",
 };
 
