@@ -1,12 +1,16 @@
 /**
- * Door rules: obstructed swing arcs, blocked walk-through landings, and
- * sub-passable widths — in that (pinned) order via `rules/index.ts`.
+ * Door rules: obstructed swing arcs, blocked walk-through landings,
+ * sub-passable widths, a pocket panel with nowhere to go, and a jamb that leaves
+ * too little wall at a corner — in that (pinned) order via `rules/index.ts`.
  */
 
 import { rectOf } from "../../analyze.js";
+import type { Point } from "../../ast.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { doorHingeFlipFix, fixesFrom, pocketRunFix } from "../../fix-producers.js";
-import { doorSwing, sectorIntersectsRect, swingsCollide, type DoorSwing } from "../../geometry.js";
+import { doorSwing, sectorIntersectsRect, swingsCollide, type DoorSwing, type WallSegment } from "../../geometry.js";
+import { arcOpeningVoid } from "../../geometry/arc-band.js";
+import { type Arc, arcLength, arcTangentAt } from "../../geometry/arc.js";
 import { doorLandingRect, rectsOverlap } from "../../geometry/rect.js";
 import type { RDoor } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
@@ -261,3 +265,190 @@ export const doorClearance: LintRule = {
     return out;
   },
 };
+
+/**
+ * A door whose jamb leaves less wall between it and a **corner** than the wall is thick.
+ *
+ * The drawing is not wrong — the nib is drawn and mitred into the neighbouring run. What
+ * is wrong is the plan: at page scale a sliver of wall shorter than the wall's own
+ * thickness stops reading as *wall continuing to the corner* and starts reading as a
+ * chamfer on the corner, which is exactly how it was first mis-diagnosed as a rendering
+ * defect during the v1.30 joinery review, before it was measured and turned out to be
+ * the geometry the author asked for (`docs/backlog.md` 4.2, ADR 0018).
+ *
+ * ## Why the threshold is the wall's own thickness
+ *
+ * The wall's thickness is the only length in the drawing intrinsic to the wall being
+ * measured, so a rule stated in it needs no new absolute constant and is scale-free — a
+ * 100 mm partition asks for a 100 mm nib and a 400 mm shell asks for 400. It is also the
+ * dimension the defect is *about*: a piece of wall whose length along the run is under
+ * its own across-run depth is drawn deeper than it is long, and the mitre at the corner
+ * removes material from its outer face on top of that. Architecturally it is the same
+ * line: the returned face of such a nib has nowhere to carry the frame and architrave a
+ * door jamb is fixed to. The probe that opened the backlog item lands where the framing
+ * says it should — a 227 mm nib on a 250 mm wall, 23 mm short.
+ *
+ * {@link LintRuleset.minCornerNibRatio} scales it for a project that wants to be stricter
+ * or laxer; it is one-limbed on purpose. `W_POCKET_RUN` needs its second, absolute limb
+ * because it compares a wall run against the DOOR's width, which can be small enough to
+ * make a pure ratio meaningless. Here both sides of the comparison belong to the same
+ * wall, so there is no narrow-door pathology to guard and a second constant would be
+ * invented rather than evidenced.
+ *
+ * ## What counts as a corner
+ *
+ * The host segment's run has to **end** at that point and the wall has to **go somewhere
+ * else** from it. So: some other segment (this wall's next edge, or a separate wall
+ * meeting it) leaves the point, and none leaves it within {@link COLLINEAR_TURN_RAD} of
+ * straight on. That excludes the three shapes that are not corners and would otherwise be
+ * false positives — a wall's free END (nothing to mitre into; a stub at a wall's end is a
+ * different shape and, if it is worth a rule, a different rule), a redundant COLLINEAR
+ * vertex, and a **tangent** arc/straight junction, where the curve hands over to the
+ * straight run with no turn at all and the material simply continues. A partition teeing
+ * into a wall that carries straight past it is likewise not a corner, for the same reason:
+ * nothing is mitred, so nothing reads as a chamfer.
+ *
+ * ## On a curve
+ *
+ * The remaining wall is an **arc length, not a chord**, and the jambs are **radial** — so
+ * the along-run coordinate comes from {@link arcOpeningVoid}, which is built on
+ * `arcAngleOffset`, the one rule in the codebase for "how far round is this?". Nothing
+ * tessellates: the arc's facet count is a rendering decision and a measurement must not
+ * move with it (the same reason a circular room's area is exact `piR^2`). The nib is
+ * quoted at the wall's **centreline** radius — the datum the straight case projects onto
+ * and the one `at <pos>` walks — so a concave nib is a little shorter at its inner face
+ * and a convex one a little longer.
+ *
+ * Kind-independent: a jamb is a jamb, whether the leaf swings, slides, folds or parks
+ * overhead. No machine-applicable fix is offered — every remedy rewrites a number the
+ * author chose (the door's position, the wall's extent, the leaf's width), and there is no
+ * second reading of the plan that satisfies the check without changing the design.
+ * Deliberately scoped to doors, as the backlog item is: a window nib is a different
+ * detail with no frame to hang, and widening this rule to openings needs its own evidence.
+ */
+export const doorNearCorner: LintRule = {
+  name: "door-near-corner",
+  check({ doors, wallSegs, rules, at }: LintContext): Diagnostic[] {
+    const out: Diagnostic[] = [];
+    for (const d of doors) {
+      const seg = d.host;
+      if (!seg) continue;
+      const runs = jambRuns(d, seg);
+      if (!runs) continue;
+      const need = seg.thickness * rules.minCornerNibRatio;
+      if (!(need > 0)) continue;
+      /** The tightest CORNER of the two ends — the one the warning is about. */
+      let worst: { have: number; corner: Point } | null = null;
+      for (const end of ["a", "b"] as const) {
+        const have = Math.max(0, end === "a" ? runs.toA : runs.toB);
+        if (have >= need) continue;
+        if (!isCorner(seg, end, wallSegs)) continue;
+        if (!worst || have < worst.have) worst = { have, corner: seg[end] };
+      }
+      if (!worst) continue;
+      const short = shortfall(need, worst.have);
+      out.push({
+        severity: "warning",
+        code: "W_DOOR_NEAR_CORNER",
+        ...at(d),
+        message:
+          `Door leaves too little wall at a corner — the nib between its jamb and the corner of wall ` +
+          `"${seg.wallId}" at (${mm(worst.corner.x)}, ${mm(worst.corner.y)}) should be at least ` +
+          `${mm(need)} mm, the wall's own thickness, but measures ${mm(worst.have)} mm ` +
+          `(${mm(short)} mm short).`,
+        hints: [
+          `Move the door ${mm(short)} mm further from that corner — \`on ${seg.wallId} at <pos>\` measures along the run, so the position is the one number to change.`,
+          `Or lengthen wall "${seg.wallId}" past the door, so the corner moves away from the jamb instead.`,
+          "Narrowing the leaf would also close the gap and is deliberately NOT offered as a fix: rewriting the width you asked for to satisfy a checker is constraint laundering, and it heads toward `W_DOOR_CLEARANCE`.",
+        ],
+      });
+    }
+    return out;
+  },
+};
+
+/**
+ * Below this turn two runs are one straight wall. 5 degrees — at a wall's half-thickness
+ * the mitre then moves the outer face by `h*tan(theta/2)`, i.e. 5.5 mm on a 250 mm wall,
+ * which is nothing at page scale — and it comfortably absorbs the float residue in an
+ * arc's tangent, so a curve that hands over to a straight run smoothly reads as smooth.
+ */
+const COLLINEAR_TURN_RAD = (5 * Math.PI) / 180;
+
+/**
+ * Along-run distance (mm) from each of a door's jambs to the two ends of its host
+ * segment — arc length on a curve, projection on a straight run. `null` when the door is
+ * not on this segment at all (a degenerate run, or an `at (x,y)` door off its own wall,
+ * which `W_DOOR_OFF_WALL` owns).
+ *
+ * A negative result means the opening runs PAST that end; the caller floors it at zero,
+ * so the warning reports the nib that exists rather than a negative length.
+ */
+function jambRuns(d: RDoor, seg: WallSegment): { toA: number; toB: number } | null {
+  if (seg.arc) {
+    // `arcOpeningVoid` is the single existing answer for where an opening lands along a
+    // curve — the same one the curved band measurement uses — so the jamb positions here
+    // cannot disagree with the ones the drawing cuts.
+    const span = arcOpeningVoid(seg.arc, d.at, d.width, seg.thickness);
+    if (!span) return null;
+    return { toA: span[0], toB: arcLength(seg.arc) - span[1] };
+  }
+  const vx = seg.b.x - seg.a.x;
+  const vy = seg.b.y - seg.a.y;
+  const len = Math.hypot(vx, vy);
+  if (!(len > 0)) return null;
+  const u = ((d.at.x - seg.a.x) * vx + (d.at.y - seg.a.y) * vy) / len;
+  return { toA: u - d.width / 2, toB: len - u - d.width / 2 };
+}
+
+/** Unit tangent at one end of a segment, pointing INTO it. Arc-aware. */
+function tangentInto(seg: { a: Point; b: Point; arc?: Arc }, end: "a" | "b"): Point | null {
+  if (seg.arc) {
+    const t = arcTangentAt(seg.arc, seg.arc[end]);
+    return end === "a" ? t : { x: -t.x, y: -t.y };
+  }
+  const vx = seg.b.x - seg.a.x;
+  const vy = seg.b.y - seg.a.y;
+  const l = Math.hypot(vx, vy);
+  if (!(l > 0)) return null;
+  const s = end === "a" ? 1 : -1;
+  return { x: (s * vx) / l, y: (s * vy) / l };
+}
+
+/** Unsigned angle (rad) between two unit vectors, via `atan2` so it stays exact near 0. */
+const angleBetween = (u: Point, v: Point): number => Math.abs(Math.atan2(u.x * v.y - u.y * v.x, u.x * v.x + u.y * v.y));
+
+/**
+ * Does the wall TURN at this end of `seg` — i.e. does its run stop here and set off in
+ * another direction?
+ *
+ * True only when at least one other segment leaves the point and NONE leaves it straight
+ * on. A run that carries straight through (a collinear vertex, a tangent arc/straight
+ * hand-over, or a partition teeing into a wall that continues) is not a corner however
+ * many other segments meet there — nothing is mitred, so nothing reads as a chamfer. A
+ * free end with no neighbour at all is not a corner either.
+ *
+ * Two ends count as meeting when they are within half a wall thickness of each other:
+ * that is close enough that the two solids overlap and the joinery draws one corner, so
+ * the test matches what a reader sees rather than demanding byte-equal coordinates.
+ */
+function isCorner(seg: WallSegment, end: "a" | "b", all: readonly WallSegment[]): boolean {
+  const into = tangentInto(seg, end);
+  if (!into) return false;
+  const p = seg[end];
+  // The direction a run continuing straight on would leave `p` in.
+  const straight = { x: -into.x, y: -into.y };
+  const tol = Math.max(1, seg.thickness / 2);
+  let turns = false;
+  for (const s of all) {
+    if (s.wallId === seg.wallId && s.index === seg.index) continue;
+    for (const oe of ["a", "b"] as const) {
+      if (Math.hypot(s[oe].x - p.x, s[oe].y - p.y) > tol) continue;
+      const away = tangentInto(s, oe);
+      if (!away) continue;
+      if (angleBetween(away, straight) <= COLLINEAR_TURN_RAD) return false; // the wall carries on
+      turns = true;
+    }
+  }
+  return turns;
+}

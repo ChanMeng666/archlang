@@ -401,11 +401,33 @@ suite("doors — W_POCKET_RUN", () => {
     // statements were the same sentence, because `pocket-run` was genuinely last.
     //
     // They are not the same sentence any more, and asserting the weaker one would have
-    // been the wrong repair: a rule appended after `pocket-run` is only harmless because
-    // it CANNOT FIRE on a plan that predates it (the two below need an `outdoor`
-    // statement, which did not exist), so the list of what may follow is exactly that
-    // set — named here, one line per rule, rather than left open.
-    expect(names.slice(i + 1)).toEqual(["outdoor-overlaps-room", "balcony-no-door"]);
+    // been the wrong repair: the two `outdoor` rules are harmless because they CANNOT
+    // FIRE on a plan that predates them (they need an `outdoor` statement, which did not
+    // exist), so the list of what may follow is exactly that set — named here, one line
+    // per rule, rather than left open.
+    //
+    // `door-near-corner` (v1.33, `docs/backlog.md` 4.2) is the FIRST entry that breaks
+    // that argument and it is listed anyway, because the argument is not the claim. It
+    // needs no new syntax, so it CAN fire on a plan written years before it — that is a
+    // stated behaviour change, the same kind v1.27.0 shipped when three rules widened,
+    // and it is what the corpus sweep is for (all 30 shipped examples lint identically).
+    // What still holds, and is what this pin is really about, is that no EXISTING
+    // diagnostic moves: a rule that runs last can only append.
+    expect(names.slice(i + 1)).toEqual(["outdoor-overlaps-room", "balcony-no-door", "door-near-corner"]);
+  });
+
+  it("a rule that runs last can only append — an older plan's diagnostics keep their index", async () => {
+    const { LINT_RULES } = await import("../src/lint/rules/index.js");
+    expect(LINT_RULES[LINT_RULES.length - 1]!.name).toBe("door-near-corner");
+    // A plan carrying an unrelated pre-existing warning (a sub-passable door width) AND
+    // tripping the new rule: the old diagnostic must still be first, byte-for-byte.
+    // centre 4500 on a 250 mm wall whose corner is at 5000: a 600 mm leaf leaves a
+    // 200 mm nib (and is itself sub-passable), a 900 mm one leaves 50 mm.
+    const src = `plan "P" {\n  units mm\n  wall id=w1 exterior thickness 250 { (0,0) (5000,0) (5000,4000) }\n  door on w1 at 4500 width 600\n}`;
+    const ds = lint(src);
+    expect(ds.map((d) => d.code)).toEqual(["W_DOOR_CLEARANCE", "W_DOOR_NEAR_CORNER"]);
+    const widened = lint(src.replace("width 600", "width 900"));
+    expect(widened.map((d) => d.code)).toEqual(["W_DOOR_NEAR_CORNER"]);
   });
 
   it("cannot fire on any kind but `pocket`", () => {
