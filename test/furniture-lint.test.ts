@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { lint, compile, describe as describePlan } from "../src/index.js";
 import { format } from "../src/format.js";
+import { arcBandIntrusion } from "../src/geometry/arc-band.js";
+import { arcFromChord } from "../src/geometry/arc.js";
 
 /**
  * Furniture professionalism lint: pieces that overlap each other
@@ -238,14 +240,25 @@ describe("furniture-vs-wall collision on an ANGLED wall", () => {
 });
 
 /**
- * ARCS ARE DELIBERATELY CONSERVATIVE — pinned so the choice cannot become an accident.
+ * A CURVED WALL IS MEASURED, NOT SKIPPED — and measured in the coordinates it has.
  *
- * A curved segment carries its chord in `a`/`b`, so the rule this replaced measured the
- * chord: it flagged furniture near a straight line the wall is not on, and missed the
- * wall itself. Measuring the chord is worse than measuring nothing, so a curved segment
- * is now skipped outright. See `wallIntrusionDepth` and docs/backlog.md item 3.14.
+ * Two wrong answers were available here and both are pinned against. A curved segment
+ * carries its CHORD in `a`/`b`, so measuring that flags furniture near a straight line
+ * the wall is not on and misses the wall itself; declining outright (what this replaced)
+ * is silent on a piece drawn straight through a curved wall, which is the false negative
+ * this project ranks worst.
+ *
+ * The right answer is polar: intersect the piece's radial extent, restricted to the arc's
+ * angular sweep, with the band `R ± thickness/2` (`src/geometry/arc-band.ts`). It is
+ * closed form — the arc's tessellated band is a drawing artifact whose facet count is a
+ * rendering decision, so a measurement that read it would be wrong by construction.
+ * docs/backlog.md item 3.15.
  */
-describe("furniture-vs-wall collision declines to measure an ARC", () => {
+describe("furniture-vs-wall collision measures an ARC in polar coordinates", () => {
+  // A drum: two semicircles about (5000,5000) at R 3000, walls 300 thick, so the solid
+  // band is exactly [2850, 3150] from the centre. The upper arc runs (8000,5000) →
+  // (2000,5000); the CHORD of both is the horizontal line y = 5000, through the middle
+  // of the open floor.
   const drum = (furn: string) =>
     `plan "P" {
       units mm
@@ -259,15 +272,101 @@ describe("furniture-vs-wall collision declines to measure an ARC", () => {
       ${furn}
     }`;
 
-  it("does not flag a piece straddling the curved wall's true band (the known blind spot)", () => {
+  it("flags a piece straddling the curved wall's true band", () => {
     // Centred on (5000,2000) — the top of the circle, dead on the arc's centreline.
-    expect(codes(drum(`furniture sofa at (4500,1550) size 1000x900`))).not.toContain("W_FURNITURE_WALL_COLLISION");
+    expect(codes(drum(`furniture sofa at (4500,1550) size 1000x900`))).toContain("W_FURNITURE_WALL_COLLISION");
   });
 
-  it("does not flag a piece on the arc's CHORD either (the old false positive)", () => {
+  it("does not flag a piece on the arc's CHORD (the pre-decline false positive)", () => {
     // The chord runs (2000,5000)→(8000,5000); this piece straddles that line and is
     // nowhere near the wall. Measuring the chord would have called it a collision.
     expect(codes(drum(`furniture sofa at (4500,4550) size 1000x900`))).not.toContain("W_FURNITURE_WALL_COLLISION");
+  });
+
+  /**
+   * The depth is a real measurement, not a boolean dressed up as one — asserted in closed
+   * form against numbers derived from the geometry rather than read back off the rule.
+   * The band is [2850, 3150] exactly, so every figure below is exact in binary.
+   */
+  describe("the measured radial depth", () => {
+    const upper = arcFromChord({ x: 8000, y: 5000 }, { x: 2000, y: 5000 }, 3000, "ccw", false)!;
+
+    it("solves to the drum's own circle", () => {
+      expect(upper.center).toEqual({ x: 5000, y: 5000 });
+      expect(upper.r).toBe(3000);
+    });
+
+    it("reads the FULL thickness for a piece straddling the whole band", () => {
+      // y 1550…2450 spans radii 2550…3486, which swallows [2850, 3150] whole.
+      const hit = arcBandIntrusion({ x: 4500, y: 1550, w: 1000, h: 900 }, upper, 300);
+      expect(hit?.depth).toBe(300);
+    });
+
+    it("reads the shortfall for a piece that only breaks the outer face", () => {
+      // y 1000…1900: the nearest point of the rect is 3100 from the centre, 50 mm inside
+      // the outer face at 3150. Not the thickness, not a boolean — 50.
+      const hit = arcBandIntrusion({ x: 4500, y: 1000, w: 1000, h: 900 }, upper, 300);
+      expect(hit?.depth).toBe(50);
+    });
+
+    it("reads NOTHING for a piece flush against the outer face", () => {
+      // y 1000…1850: the nearest point is exactly 3150 — on the face, not in the solid.
+      expect(arcBandIntrusion({ x: 4500, y: 1000, w: 1000, h: 850 }, upper, 300)).toBeNull();
+    });
+
+    it("reads nothing on the chord, where the radii are nowhere near the band", () => {
+      // The rect contains the centre, so it reaches radii 0…673 — the band starts at 2850.
+      expect(arcBandIntrusion({ x: 4500, y: 4550, w: 1000, h: 900 }, upper, 300)).toBeNull();
+    });
+  });
+
+  /**
+   * THE SWEEP IS HONOURED. A quarter-arc from (5000,2000) to (8000,5000) about the same
+   * centre covers only the top-RIGHT quadrant of the circle. A piece in the top-LEFT
+   * quadrant crosses the same radii — the band is the same distance from the centre all
+   * the way round — and is not on this wall at all. The pair is the point: identical
+   * geometry, mirrored about the centre, opposite verdicts.
+   */
+  describe("restricted to the arc's angular sweep", () => {
+    const quarter = (furn: string) =>
+      `plan "P" {
+        units mm
+        wall id=bow exterior thickness 300 {
+          (5000,2000)
+          arc (8000,5000) radius 3000 cw
+        }
+        ${furn}
+      }`;
+
+    it("flags the piece INSIDE the sweep", () => {
+      // Centred at 45° round from the top — (7121,2879), on the wall's centreline.
+      expect(codes(quarter(`furniture sofa at (6621,2429) size 1000x900`))).toContain("W_FURNITURE_WALL_COLLISION");
+    });
+
+    it("does not flag its mirror image OUTSIDE the sweep", () => {
+      // (2879,2879) — the same distance from the centre, on the quadrant the wall
+      // does not occupy. Its radial extent crosses the band; the wall is not there.
+      expect(codes(quarter(`furniture sofa at (2379,2429) size 1000x900`))).not.toContain("W_FURNITURE_WALL_COLLISION");
+    });
+
+    it("subtracts an opening hosted on the curve, measured along the ARC", () => {
+      // The same flagged piece, with a window centred where it sits. 1600 mm of arc is
+      // enough to void the ~1325 mm of run the piece covers; 1200 mm is not, and the
+      // sliver of solid left over still counts — the same all-or-nothing rule a straight
+      // run applies, on arc length instead of distance along a chord.
+      const withWindow = (w: number) =>
+        `plan "P" {
+          units mm
+          wall id=bow exterior thickness 300 {
+            (5000,2000)
+            arc (8000,5000) radius 3000 cw
+          }
+          window at (7121,2879) width ${w} wall exterior
+          furniture sofa at (6621,2429) size 1000x900
+        }`;
+      expect(codes(withWindow(1200))).toContain("W_FURNITURE_WALL_COLLISION");
+      expect(codes(withWindow(1600))).not.toContain("W_FURNITURE_WALL_COLLISION");
+    });
   });
 });
 
