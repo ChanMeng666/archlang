@@ -74,6 +74,24 @@ export interface LintRuleset {
    * limb is kept so a wide opening still scales.
    */
   pocketRunClearanceMm: number;
+  /**
+   * The shortest nib of wall a door's jamb may leave at a **corner**, as a multiple of
+   * that wall's own thickness. `W_DOOR_NEAR_CORNER` requires
+   * `thickness × minCornerNibRatio`. Default 1.0 — a nib at least as long along the run
+   * as the wall is deep across it.
+   *
+   * **Why the wall's own thickness, and why one limb.** The thickness is the only length
+   * in the drawing intrinsic to the wall being measured, so the threshold needs no new
+   * absolute constant and scales by itself: a 100 mm partition asks for 100 mm, a 400 mm
+   * shell for 400. It is also the dimension the defect is about — a piece of wall drawn
+   * deeper than it is long stops reading as wall and reads as a chamfer on the corner,
+   * and its returned face has nowhere to carry a door frame and architrave.
+   * {@link pocketRunClearanceMm} needs a second, absolute limb because it compares a
+   * wall run against the DOOR's width, which can be narrow enough to make a pure ratio
+   * meaningless; here both sides of the comparison belong to the same wall, so a second
+   * constant would be invented rather than evidenced.
+   */
+  minCornerNibRatio: number;
 }
 
 export const DEFAULT_RULESET: LintRuleset = {
@@ -88,6 +106,7 @@ export const DEFAULT_RULESET: LintRuleset = {
   minPathClearWidthMm: 700,
   maxDetourRatio: 3.0,
   pocketRunClearanceMm: 50,
+  minCornerNibRatio: 1.0,
 };
 
 /**

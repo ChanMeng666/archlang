@@ -681,6 +681,12 @@ const NEGATIVE: Negative[] = [
       `  wall id=w1 partition thickness 100 { (0,0) (2000,0) }\n  door pocket on w1 at 80% width 900 slide right`,
     ),
   },
+  {
+    code: "W_DOOR_NEAR_CORNER",
+    channel: "lint",
+    note: "the nib between a jamb and a corner must be at least the wall's own thickness",
+    src: plan(`  wall id=w1 exterior thickness 250 { (0,0) (5000,0) (5000,4000) }\n  door on w1 at 4400 width 900`),
+  },
   // --- roof + void: every refusal the two new lines name ---------------------
   {
     code: "E_ROOF_OVERHANG",

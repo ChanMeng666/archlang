@@ -1088,6 +1088,18 @@ slide-side jamb, or [`W_POCKET_RUN`](error-codes.md#w_pocket_run) — measured, 
 truncated at any other opening inside the run, because a panel cannot slide through
 a window either.
 
+**Every kind** — a jamb is a jamb — must leave at least the wall's own thickness of
+wall between it and a **corner**, or
+[`W_DOOR_NEAR_CORNER`](error-codes.md#w_door_near_corner). The drawing is correct
+either way (the nib is drawn, and mitred into the neighbouring run); what the warning
+says is that at page scale a sliver shorter than the wall is deep stops reading as
+wall and reads as a chamfer on the corner, and has no returned face to carry a frame
+and architrave. A corner means the run **ends** there and the wall goes somewhere
+else, so a wall's free end, a redundant collinear vertex, a partition teeing into a
+run that carries straight past it, and a **tangent** arc/straight hand-over are none
+of them corners. On a curve the nib is an **arc length**, not a chord, measured at
+the wall's centreline between the radial jambs.
+
 ```arch
 plan "Door kinds" {
   units mm

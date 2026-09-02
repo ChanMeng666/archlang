@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**89 errors** · **45 warnings**
+**89 errors** · **46 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -107,6 +107,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_DIM_NO_WALL`](#w_dim_no_wall) | warning | A `dim faces`/`dim clear` endpoint has no wall to measure to. |
 | [`W_DIM_OVERLAP`](#w_dim_overlap) | warning | Two hand-written dimensions are drawn on top of each other. |
 | [`W_DOOR_CLEARANCE`](#w_door_clearance) | warning | Door is narrower than the minimum clear width. |
+| [`W_DOOR_NEAR_CORNER`](#w_door_near_corner) | warning | A door leaves less wall between its jamb and a corner than the wall is thick. |
 | [`W_DOOR_OFF_WALL`](#w_door_off_wall) | warning | Door does not lie on any wall. |
 | [`W_DOORWAY_BLOCKED`](#w_doorway_blocked) | warning | A doorway's landing is blocked. |
 | [`W_DUP_ACC_METADATA`](#w_dup_acc_metadata) | warning | Duplicate `accTitle`/`accDescr`. |
@@ -1351,6 +1352,19 @@ dim (0,-100)->(4000,-100) offset -300 text "4000"   # warning: both in the same 
 
 ```arch static
 door at (0,0) width 500 wall exterior   # lint: under 700 mm
+```
+
+## W_DOOR_NEAR_CORNER
+
+*warning* — A door leaves less wall between its jamb and a corner than the wall is thick.
+
+**Cause.** The nib of wall between a door's jamb and the corner its host wall turns at is shorter, along the run, than the wall is thick across it. **The drawing is correct** — the nib IS drawn, and mitred into the neighbouring run — so this is a fact about the plan, not a rendering fault; it was first mis-diagnosed as one during the v1.30 joinery review before it was measured. At page scale such a sliver stops reading as wall continuing to the corner and reads as a chamfer on the corner, and its returned face has nowhere to carry the frame and architrave a jamb is fixed to. The warning states the nib required, the nib measured, and the shortfall. **The threshold is the wall's own thickness** (× `minCornerNibRatio` in the lint ruleset, default 1.0): it is the only length in the drawing intrinsic to the wall being measured, so the rule needs no new absolute constant and scales by itself — a 100 mm partition asks for 100 mm, a 400 mm shell for 400 — and it is the dimension the defect is about. Unlike `W_POCKET_RUN` the threshold is one-limbed, because both sides of the comparison belong to the same wall and there is no narrow-door pathology to guard against. **What counts as a corner:** the host segment's run must END at that point and the wall must go somewhere else from it, so a wall's free end, a redundant collinear vertex, a partition teeing into a wall that carries straight past it, and a TANGENT arc/straight hand-over are all excluded — nothing is mitred at any of them. **On a curve the nib is an arc length, not a chord**, measured at the wall's centreline radius from the radial jambs, in closed form (nothing tessellates, so the number cannot move with a facet count). Kind-independent: a jamb is a jamb whether the leaf swings, slides, folds or parks overhead. Scoped to doors deliberately — a window nib is a different detail with no frame to hang.
+
+**Fix.** Move the door further from the corner by the shortfall the warning quotes (`on <wall> at <pos>` measures along the run, so the position is the one number to change), or lengthen the wall past the door so the corner moves away from the jamb instead. There is no machine-applicable fix: every remedy rewrites a number the author chose. Narrowing the leaf would also close the gap and is deliberately NOT offered — rewriting the width you asked for to satisfy a checker is the constraint-laundering pattern this project rules out, and it heads toward `W_DOOR_CLEARANCE`.
+
+```arch static
+wall w1 thickness 250 { (0,0) (5000,0) (5000,4000) }
+door on w1 at 4400 width 900   # lint: a 150 mm nib on a 250 mm wall
 ```
 
 ## W_DOOR_OFF_WALL

@@ -9,7 +9,7 @@ import { aliasMatch } from "./alias-match.js";
 import { roomNoClearPath } from "./circulation.js";
 import { dimInside, dimOverlap } from "./dims.js";
 import { circuitousPath, pathTooNarrow } from "./circulation-facts.js";
-import { doorClearance, doorwayBlocked, pocketRun, swingObstructed } from "./doors.js";
+import { doorClearance, doorNearCorner, doorwayBlocked, pocketRun, swingObstructed } from "./doors.js";
 import { noEntrance } from "./entrance.js";
 import {
   fixtureBackToRoom,
@@ -75,6 +75,10 @@ export const LINT_RULES: readonly LintRule[] = [
   // one.
   outdoorOverlapsRoom,
   balconyNoDoor,
+  // Drafting advisory (backlog 4.2): a door jamb leaving less wall between it and a
+  // corner than the wall is thick. Appended LAST, for the same reason as every rule
+  // above it — no existing plan's diagnostic ORDER may move.
+  doorNearCorner,
 ];
 
 export type { LintContext, LintRule } from "../context.js";
