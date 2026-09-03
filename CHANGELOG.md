@@ -68,6 +68,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The nightly secret scan can signal again** (backlog 3.1, issue #66). It had been failing on three
+  findings in `paper/experiments/ecosystem/results-2026-08-22.json`, all matched by
+  `sourcegraph-access-token`, which fires on a bare 40-character hex run — and a git commit SHA is
+  one. Two are SHA-pinned GitHub Action references inside a third party's workflow diff (the
+  recommended supply-chain practice); the third is a public npm package's `revision`. All three are
+  other people's public commit SHAs and none is a credential. They cannot be deleted, because
+  `paper/` moved to a private repository on 2026-08-26 and gitleaks scans the FULL history, so they
+  are allowlisted in a new `.gitleaksignore` **by commit-pinned fingerprint** — nothing else in that
+  file, or anywhere else, is suppressed. Verified rather than assumed: 648 commits, 0 findings, and
+  removing one fingerprint makes exactly that one reappear. A permanently red gate is a disabled
+  gate that still costs CI minutes. (Backlog 3.1 also blamed the wrong job — the dependency audit is
+  report-only and passes — and its advisory count was stale by 3x; both corrected in place.)
+
 - **`examples/imports.arch` no longer ships an obstructed door swing** (backlog G.6). The front
   door hangs its leaf on the x=2500 jamb of the south wall and needs 1000 mm of clear radius; the
   imported `sofa(300, 2800)` left the piece’s near corner 361 mm away, so `W_SWING_OBSTRUCTED`
