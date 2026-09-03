@@ -262,6 +262,25 @@ export const FIXTURE_CATEGORIES: readonly string[] = FIXTURE_FAMILIES.flatMap((f
 export const CANONICAL_FIXTURES: readonly string[] = FIXTURE_FAMILIES.map((f) => f[0]);
 
 /**
+ * Every catalogued word mapped to the canonical name of the family it belongs to (a canonical
+ * name maps to itself). Derived from {@link FIXTURE_FAMILIES}, so an alias can never drift
+ * away from the family whose symbol it draws.
+ *
+ * Exists because a consumer that has one WORD sometimes needs the family: the LSP category
+ * completion tells an author that `tub` and `bath` are the same piece as `bathtub`, which is
+ * a fact only this table holds — the catalog stores a duplicate row per alias and so cannot
+ * say which of the three is the canonical one.
+ */
+const FAMILY_OF: ReadonlyMap<string, string> = new Map(
+  FIXTURE_FAMILIES.flatMap((f) => f.map((word) => [word, f[0]] as const)),
+);
+
+/** The canonical name of `category`'s family, or `undefined` if it is not catalogued. */
+export function canonicalFixture(category: string): string | undefined {
+  return FAMILY_OF.get(category);
+}
+
+/**
  * Scene primitives drawing a plan symbol for fixture `category` inside footprint `r`, or
  * `null` if the category has no special symbol (the caller draws a labelled rectangle).
  */

@@ -206,6 +206,30 @@ describe("completion", () => {
     expect(comp?.kind).toBe(CompletionItemKind.Module);
     expect(items.find((i) => i.label === "room")?.kind).toBe(CompletionItemKind.Class);
   });
+
+  // G.7 — the core's category-slot completion, seen through the adapter. Both directions are
+  // asserted on the SAME source and the SAME handler, because the failure this guards against
+  // is the 129 words being offered everywhere, which a presence-only case would pass.
+  it("offers the fixture vocabulary in a `furniture` statement's category slot", () => {
+    const items = h.completion(SRC, atText(SRC, "furniture bed", "furniture ".length));
+    for (const word of ["bathtub", "wardrobe", "range_hood", "tub"]) {
+      expect(items.map((i) => i.label)).toContain(word);
+    }
+    // One icon for the whole slot, and it is not the Text fallback.
+    expect(new Set(items.map((i) => i.kind))).toEqual(new Set([CompletionItemKind.EnumMember]));
+    // The core's `detail`/`doc` survive the conversion — `documentation`, not `doc`.
+    const tub = items.find((i) => i.label === "tub")!;
+    expect(tub.detail).toContain("bathtub");
+    expect(String(tub.documentation)).toContain("another name for");
+  });
+
+  it("keeps the fixture vocabulary OUT of a plan-scope completion", () => {
+    const items = h.completion(SRC, pos(SRC, SRC.indexOf("  bed(300, 300)") + 2));
+    for (const word of ["bathtub", "wardrobe", "range_hood", "tub"]) {
+      expect(items.map((i) => i.label)).not.toContain(word);
+    }
+    expect(items.some((i) => i.kind === CompletionItemKind.EnumMember)).toBe(false);
+  });
 });
 
 // -------------------------------------------------------------- signatureHelp

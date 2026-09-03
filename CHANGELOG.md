@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Fixture-category completion, in the CORE** (backlog G.7). `completion()` now offers the 129
+  catalogued fixture words in the one place they are legal — a `furniture` statement's category slot
+  — so `arch complete --at <offset> --json`, the VS Code extension and the playground all gain them
+  from one change, and the extension needs only a rebuild. The entry filed this as a VS Code task; the
+  provider is `src/lsp.ts`, and it is corrected in place.
+
+  This is the core's **first position-sensitive completion**, and the restriction is the feature:
+  `completion()` is otherwise context-free, so offering 129 words unconditionally would flood every
+  other completion in the language. The slot is detected over the **token stream** — the word directly
+  after `furniture`, or after its optional `id = <name>` prefix — never a regex on the raw text, so a
+  `label "furniture …"` and a comment cannot open it and an unparseable half-typed statement still
+  can. The full set is returned mid-word, because both shipped clients filter by the typed prefix
+  themselves. Items are `kind: "enum"` (reused rather than appending to the exported
+  `COMPLETION_KINDS`, whose `enum` member had no producer until now), and each one's `detail`/`doc` is
+  **derived** from `FIXTURE_FAMILIES` and the catalogue — the family an alias belongs to, the default
+  footprint that lets `against wall …` omit `size`, and the `requiresWall`/`directional`/`underlay`/
+  `overhead` flags. Every item also says the slot is not closed: an uncatalogued word is legal and
+  draws a labelled rectangle.
+
+  **A plan-scope completion is unchanged**, and that is pinned as a law rather than assumed — by name
+  (no fixture word appears) and structurally (no `enum`-kind item exists outside the slot), alongside
+  an every-offset sweep whose expected ranges are hand-derived from the source text.
+
 ## [1.33.0] - 2026-09-03
 
 **Twelve silent wrong answers.** Every defect here was the compiler giving a confident, wrong

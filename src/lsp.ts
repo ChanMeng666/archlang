@@ -23,6 +23,8 @@ import { eachExpr, eachStatement } from "./cursor.js";
 import { resolvePlan } from "./analyze.js";
 import { diagnosticToJson, type DiagnosticJson } from "./diagnostic-json.js";
 import { rankFixes } from "./fix-apply.js";
+import { canonicalFixture, FIXTURE_CATEGORIES, hasFixtureGlyph } from "./elements/fixtures-glyphs.js";
+import { defaultFootprint, fixtureSpec } from "./fixtures-catalog.js";
 
 // ---- keyword catalog (one place; T5.4 will source this from grammar/tokens) ----
 
@@ -282,8 +284,128 @@ export function hover(source: string, offset: number, registry: Registry = BUILT
   return null;
 }
 
-/** Completion items in scope at `offset`. */
+// ---- the fixture category slot (the one position-sensitive completion) ----
+
+/**
+ * `furniture <category>` is the ONE slot in the language whose legal content is a word from a
+ * named vocabulary rather than an expression, an id or a keyword — the parser reads it with a
+ * bare `ctx.eatIdent()`, so no `let`, loop variable or component is usable there. That cuts
+ * both ways, and both halves are the point: the whole-language item list {@link completion}
+ * otherwise returns is noise in this position, and offering the 129 category words
+ * UNCONDITIONALLY would flood every other completion in the language and make the feature
+ * worse than nothing.
+ *
+ * Detection is over the TOKEN stream, never a regex on the raw text, for three reasons the
+ * lexer has already settled: it has classified comments and string literals out (a
+ * `label "furniture "` cannot match), it knows exactly where an identifier begins and ends —
+ * so "the cursor is inside the word being typed" is a span test rather than a second
+ * implementation of the identifier rule — and it survives an unparseable statement, which is
+ * the normal state of the line a completion is requested on.
+ */
+const isIdentTok = (t: Token | undefined, value?: string): boolean =>
+  t !== undefined && t.type === "ident" && (value === undefined || t.value === value);
+
+/**
+ * Does the token at `j` close a `furniture …` prefix — is the NEXT word the category? Two
+ * shapes, mirroring `furniture.parse()`: `furniture ▸` and `furniture id = <name> ▸`, since
+ * `parseIdOpt()` consumes the optional id BEFORE the category. `set furniture(…)` is excluded:
+ * `furniture` there names the element kind whose defaults are being set, not a statement.
+ */
+function closesFurniturePrefix(tokens: Token[], j: number): boolean {
+  if (j < 0) return false;
+  if (isIdentTok(tokens[j], "furniture")) return !isIdentTok(tokens[j - 1], "set");
+  return (
+    isIdentTok(tokens[j]) &&
+    tokens[j - 1]?.type === "equals" &&
+    isIdentTok(tokens[j - 2], "id") &&
+    isIdentTok(tokens[j - 3], "furniture") &&
+    !isIdentTok(tokens[j - 4], "set")
+  );
+}
+
+/** Is `offset` in a `furniture` statement's category slot — just after the prefix, or inside
+ *  the partially-typed word that follows it? */
+function inFixtureCategorySlot(tokens: Token[], offset: number): boolean {
+  // The last token that CLOSED before the cursor. A token the cursor sits inside (or at either
+  // end of) is the word being TYPED: it stops the scan without ever becoming the anchor, which
+  // is what separates `furniture be|d` (the slot) from `furniture bed |` (the `at` after it).
+  let anchor = -1;
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i]!;
+    if (t.type === "eof" || t.start > offset) break;
+    if (inTok(t, offset)) break;
+    anchor = i;
+  }
+  return closesFurniturePrefix(tokens, anchor);
+}
+
+/** `1700 × 700 mm`, or null when the family has no conventional footprint. */
+function footprintText(category: string): string | null {
+  const fp = defaultFootprint(category);
+  return fp ? `${fp.along} × ${fp.depth} mm` : null;
+}
+
+/**
+ * The fixture vocabulary as completion items, DERIVED from {@link FIXTURE_CATEGORIES} and the
+ * catalog rather than retyped — a hardcoded copy of a language fact reproduces the same wrong
+ * list forever however green the drift gate is (the v1.26.0 defect class).
+ *
+ * `kind` is the existing `"enum"` rather than a new {@link COMPLETION_KINDS} member: a category
+ * is a word from a named value vocabulary, which is what `enum` already means here, and
+ * appending to that exported array is a permanent public-surface commitment (three total icon
+ * maps and their tests) bought for nothing but a different icon. It also gives that kind its
+ * first producer — `enum` was declared and emitted by nothing.
+ *
+ * The list is a suggestion, not a closed set, and every item's doc says so in its last line:
+ * the slot accepts any identifier, and an uncatalogued word deliberately falls back to a
+ * labelled rectangle.
+ */
+function fixtureCategoryItems(): CompletionItem[] {
+  return FIXTURE_CATEGORIES.map((word) => {
+    const canon = canonicalFixture(word);
+    const alias = canon !== undefined && canon !== word ? canon : null;
+    const spec = fixtureSpec(word);
+    const fp = footprintText(word);
+    const facts: string[] = [];
+    if (alias) facts.push(`another name for \`${alias}\` — one family, one symbol`);
+    if (fp) facts.push(`default footprint ${fp}, so \`against wall …\` may omit \`size\``);
+    if (spec?.requiresWall) facts.push("needs a wall behind it (supply / waste / venting)");
+    if (spec?.directional) facts.push("has a back worth turning to a wall");
+    if (spec?.underlay) facts.push("lies flat and is walked over rather than round");
+    if (spec?.overhead) facts.push("hangs above the plan's cut plane, and draws dashed");
+    if (spec?.clearanceMm) facts.push(`wants ${spec.clearanceMm} mm of clear floor in front`);
+    for (const zone of spec?.zones ?? []) facts.push(`counts as the ${zone} fixture such a room needs`);
+    if (hasFixtureGlyph(word)) facts.push("drawn as a plan symbol, so a `label` on it is not drawn");
+    const detail = [alias ? `= ${alias}` : null, fp].filter((x): x is string => x !== null).join(" · ");
+    return {
+      label: word,
+      kind: "enum" as const,
+      detail: detail === "" ? undefined : detail,
+      doc: [
+        `**${word}** — a catalogued fixture category.`,
+        facts.map((f) => `- ${f}`).join("\n"),
+        "Any word is legal here; an uncatalogued one draws as a labelled rectangle.",
+      ].join("\n\n"),
+    };
+  });
+}
+
+/**
+ * Completion items in scope at `offset`.
+ *
+ * Context-free everywhere except one place: in a `furniture` statement's category slot it
+ * returns the fixture vocabulary and nothing else (see {@link inFixtureCategorySlot}). The
+ * full set is returned mid-word too — both shipped clients filter by the typed prefix
+ * themselves (VS Code's handler maps items 1:1 with no `filterText`, and the playground's
+ * CodeMirror source anchors the popup at the matched word's start with a `validFor` pattern),
+ * so narrowing here would only fight them.
+ */
 export function completion(source: string, offset: number, registry: Registry = BUILTIN_REGISTRY): CompletionItem[] {
+  // The one position-sensitive branch. It returns EARLY and completely, which is what keeps
+  // the law below it true: everywhere that is not a category slot, this function still builds
+  // exactly the context-free list it always has.
+  if (inFixtureCategorySlot(lex(source).tokens, offset)) return fixtureCategoryItems();
+
   const items: CompletionItem[] = [];
   for (const kw of Object.keys(SETTING_KW)) items.push({ label: kw, kind: "keyword", doc: SETTING_KW[kw] });
   for (const kw of Object.keys(CONTROL_KW)) items.push({ label: kw, kind: "keyword", doc: CONTROL_KW[kw] });

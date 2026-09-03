@@ -770,13 +770,54 @@ Related: item 5.8's laws (the monotonicity property, the body-radius ladder, the
 were all measured on the pre-fix grid. They still hold, but every number they produced for a curved
 plan was wrong in exactly this invisible way — which is the sharpest argument for the gate.
 
-### G.7 · Fixture-word completion in the VS Code extension — `todo`
+### G.7 · Fixture-word completion — `done`
 
-Deferred by name in v1.32.0's CHANGELOG and never given a backlog entry until now. The LSP completes
-keywords and ids but not the **129 category words**, which is the largest closed vocabulary a plan
-author has to remember and the one most worth offering. The bundled server already knows every family
-(hover and the fixture lint rules read `FIXTURE_FAMILIES`), so this is a completion-provider change,
-not a data one.
+**The title used to read "in the VS Code extension", and that was the entry's one wrong claim.** The
+provider is `completion()` in the **CORE** (`src/lsp.ts`, re-exported from `src/index.ts`), not in
+the extension — which holds a 1:1 adapter and nothing semantic. So the fix lands once and reaches
+three surfaces: `arch complete --at <offset> --json` (the one an AGENT uses, and the entry did not
+mention it), the playground's CodeMirror popup, and the extension, which needs only a rebuild. The
+rest of the entry was right: the 129 category words are the largest vocabulary a plan author has to
+remember, and the data was already there.
+
+**What the entry did not anticipate is the design problem, and it is the whole of the work.**
+`completion()` is **context-free**: it returns every setting keyword, control keyword, registry
+element, builtin and in-scope binding regardless of where the cursor is. Adding 129 words to that
+list unconditionally would flood every completion in the language and be **worse than not shipping
+it**. So this is the core's first POSITION-SENSITIVE completion: the fixture vocabulary is offered in
+a `furniture` statement's category slot and nowhere else, and the slot returns that vocabulary
+*alone* — the parser reads the category with a bare `ctx.eatIdent()`, so no `let`, loop variable or
+component is usable there and the whole-language list is noise in that position.
+
+Three decisions worth not re-deriving:
+
+- **Detection is over the TOKEN stream** (`inFixtureCategorySlot`), not a regex on the raw text. The
+  lexer has already classified comments and string literals out, so `label "furniture …"` cannot open
+  the slot; it knows where an identifier begins and ends, so "the cursor is inside the word being
+  typed" is a span test rather than a second implementation of the identifier rule; and it survives an
+  unparseable statement, which is the normal state of the line a completion is requested on. Both
+  prefix shapes are matched, mirroring `furniture.parse()`: `furniture ▸` and `furniture id = <name> ▸`.
+- **`kind` is the existing `"enum"`, not a new `COMPLETION_KINDS` member.** A category is a word from
+  a named value vocabulary, which is what `enum` already means here; appending to that exported array
+  is a permanent public-surface commitment across three total icon maps and their tests, bought for
+  nothing but a different icon. It also gives `enum` its first producer — it was declared and emitted
+  by nothing.
+- **`detail`/`doc` are DERIVED from `FIXTURE_FAMILIES` and `fixtures-catalog.ts`**, never retyped: the
+  family an alias belongs to (`tub` → `bathtub`, which only the families table knows, since the
+  catalogue stores a duplicate row per alias), the default footprint that lets `against wall …` omit
+  `size`, and the `requiresWall`/`directional`/`underlay`/`overhead` flags. Every item's last line says
+  the slot is **not** closed — an uncatalogued word is legal and draws a labelled rectangle.
+
+**The gate is bidirectional on purpose**, because a one-directional test passes if the words are
+simply added everywhere: presence is set equality against `FIXTURE_CATEGORIES` (a new family with no
+completion goes red with no test edit), absence is stated both by name and structurally (no
+`enum`-kind item exists outside the slot), and an every-offset sweep uses ranges hand-derived from the
+source text. Non-vacuity was measured, not asserted — forcing the detector always-true kills 8 cases
+(2 of them pre-existing), always-false kills 11, and the two sets barely overlap.
+
+One behaviour is deliberate and looked like a bug at first: while the cursor is inside the `id` of
+`furniture id=b2 …` the slot IS open, because nothing distinguishes it from a category being typed
+until the `=` exists. From the `=` onward the slot is shut.
 
 ### G.8 · A per-category `style` — `todo`
 
