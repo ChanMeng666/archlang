@@ -609,18 +609,33 @@ function distPointToSeg(px: number, py: number, ax: number, ay: number, bx: numb
   return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
 }
 
-/** Build the clearance-eroded nav grid, then stitch it through the connectors. */
-function buildGrid(
-  rooms: RRoom[],
-  walls: RWall[],
-  connectors: Array<{ at: Point; between: [string, string]; clear: number; bandMm: number }>,
-  furniture: RFurniture[],
-  verticals: RVertical[],
-  voids: RVoid[],
-  roomIndexById: Map<string, number>,
-  tol: number,
-  bodyRadius: number,
-): NavGrid | null {
+/**
+ * The nav grid's EXTENT and resolution: the union of the room boxes, and the closed-form
+ * cell size {@link navCellSizeMm} derives from its area. `null` for a plan with no room,
+ * or one whose rooms span no area — the two cases that have no grid at all.
+ *
+ * Split out of {@link buildGrid} (which is its only production caller, and passes the
+ * result straight back into the same locals it used to compute) so that
+ * {@link rasteriseWallSegments} can be handed the same extent OUTSIDE a full grid build.
+ * `test/nav-grid-residual.test.ts` is what needs that: it compares the wall mask against
+ * the drawn wall solid, and must therefore see the whole mask — including the parts of
+ * every wall that fall outside a room box, where `NavGrid.free` is `0` for a completely
+ * unrelated reason (`docs/backlog.md` G.11). Not part of the public surface;
+ * `src/index.ts` does not re-export it.
+ */
+export interface NavExtent {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+  /** Cell size (mm) — `navCellSizeMm` of the extent's area. */
+  cell: number;
+  nx: number;
+  ny: number;
+}
+
+/** {@link NavExtent} for a plan's rooms — see that interface for why it is separable. */
+export function navExtent(rooms: readonly RRoom[]): NavExtent | null {
   const rects = rooms.map((r) => roomBox(r));
   let minX = Infinity;
   let minY = Infinity;
@@ -640,6 +655,83 @@ function buildGrid(
   const cell = navCellSizeMm(W * H);
   const nx = Math.max(1, Math.ceil(W / cell));
   const ny = Math.max(1, Math.ceil(H / cell));
+  return { minX, minY, maxX, maxY, cell, nx, ny };
+}
+
+/**
+ * Rasterise walls as blocked cells so adjacent rooms don't leak into each other
+ * across a shared partition (a wall thinner than a cell occupies no cell centre);
+ * a cell within half the wall thickness of the segment is blocked. Doors carve back
+ * through afterwards, in {@link buildGrid}. Furniture-eroded cells stay eroded (never
+ * reopened) — which is the caller's business, not this pass's: it only ever says
+ * "block this cell", through `block`, and never reads what is already blocked.
+ *
+ * A CURVED segment is blocked against the arc, not against its chord. Taking the chord
+ * is not a coarser approximation of the same shape, it is a different wall in a
+ * different place: a closed drum — two semicircular `arc` edges sharing endpoints —
+ * rasterises to a bar along its own DIAMETER, so the nav grid let a route walk through
+ * 1200 mm of masonry while severing the round room inside it into two caps. That is
+ * what dropped `hexagon-pavilion`'s three northern galleries and `aquarium`'s plant
+ * room out of the facts with nothing said (`docs/backlog.md` G.5). `arcs[i]` is the
+ * solve resolve already did for segment `i`, and `distPointToArc` is the exact
+ * analogue of the segment distance used beside it — no tessellation either side.
+ *
+ * Separated from {@link buildGrid} for `test/nav-grid-residual.test.ts`, which runs this
+ * exact pass into a mask of its own and compares it against the DRAWN wall solid. The
+ * callback (rather than an out-array) is what keeps `buildGrid`'s allocation profile
+ * unchanged: it passes `(k) => { free[k] = 0; }`, exactly the assignment that was here.
+ */
+export function rasteriseWallSegments(ex: NavExtent, walls: readonly RWall[], block: (k: number) => void): void {
+  const { minX, minY, cell, nx, ny } = ex;
+  for (const w of walls) {
+    const half = w.thickness / 2;
+    const pts = w.points;
+    const segCount = w.closed ? pts.length : pts.length - 1;
+    for (let i = 0; i < segCount; i++) {
+      const a = pts[i]!;
+      const b = pts[(i + 1) % pts.length]!;
+      const arc = w.arcs?.[i];
+      // The band's extent: a straight run spans its endpoints, a curve its endpoints
+      // plus whichever axis extremes its sweep actually reaches (closed form).
+      const span = arc ? arcExtremes(arc) : [a, b];
+      const loX = Math.min(...span.map((p) => p.x)) - half;
+      const hiX = Math.max(...span.map((p) => p.x)) + half;
+      const loY = Math.min(...span.map((p) => p.y)) - half;
+      const hiY = Math.max(...span.map((p) => p.y)) + half;
+      const ix0 = clamp(Math.floor((loX - minX) / cell), 0, nx - 1);
+      const ix1 = clamp(Math.floor((hiX - minX) / cell), 0, nx - 1);
+      const iy0 = clamp(Math.floor((loY - minY) / cell), 0, ny - 1);
+      const iy1 = clamp(Math.floor((hiY - minY) / cell), 0, ny - 1);
+      for (let iy = iy0; iy <= iy1; iy++) {
+        for (let ix = ix0; ix <= ix1; ix++) {
+          const cx = minX + (ix + 0.5) * cell;
+          const cy = minY + (iy + 0.5) * cell;
+          const d = arc ? distPointToArc({ x: cx, y: cy }, arc) : distPointToSeg(cx, cy, a.x, a.y, b.x, b.y);
+          if (d <= half) block(iy * nx + ix);
+        }
+      }
+    }
+  }
+}
+
+/** Build the clearance-eroded nav grid, then stitch it through the connectors. */
+function buildGrid(
+  rooms: RRoom[],
+  walls: RWall[],
+  connectors: Array<{ at: Point; between: [string, string]; clear: number; bandMm: number }>,
+  furniture: RFurniture[],
+  verticals: RVertical[],
+  voids: RVoid[],
+  roomIndexById: Map<string, number>,
+  tol: number,
+  bodyRadius: number,
+): NavGrid | null {
+  const rects = rooms.map((r) => roomBox(r));
+  const ex = navExtent(rooms);
+  if (!ex) return null;
+  const { minX, minY, cell, nx, ny } = ex;
+  const W = ex.maxX - minX;
+  const H = ex.maxY - minY;
 
   // Obstacles: furniture footprints (halo on every side) plus each vertical run's
   // footprint, whose halo is suppressed outside its entry edge(s) — you have to be able
@@ -714,49 +806,12 @@ function buildGrid(
   // below is a multi-source BFS, so its result is seed-order independent anyway.
   for (let k = 0; k < eroded.length; k++) if (eroded[k]) furnObstacle.push(k);
 
-  // Rasterise walls as blocked cells so adjacent rooms don't leak into each other
-  // across a shared partition (a wall thinner than a cell occupies no cell centre);
-  // a cell within half the wall thickness of the segment is blocked. Doors carve back
-  // through below. Furniture-eroded cells stay eroded (never reopened).
-  //
-  // A CURVED segment is blocked against the arc, not against its chord. Taking the chord
-  // is not a coarser approximation of the same shape, it is a different wall in a
-  // different place: a closed drum — two semicircular `arc` edges sharing endpoints —
-  // rasterises to a bar along its own DIAMETER, so the nav grid let a route walk through
-  // 1200 mm of masonry while severing the round room inside it into two caps. That is
-  // what dropped `hexagon-pavilion`'s three northern galleries and `aquarium`'s plant
-  // room out of the facts with nothing said (`docs/backlog.md` G.5). `arcs[i]` is the
-  // solve resolve already did for segment `i`, and `distPointToArc` is the exact
-  // analogue of the segment distance used beside it — no tessellation either side.
-  for (const w of walls) {
-    const half = w.thickness / 2;
-    const pts = w.points;
-    const segCount = w.closed ? pts.length : pts.length - 1;
-    for (let i = 0; i < segCount; i++) {
-      const a = pts[i]!;
-      const b = pts[(i + 1) % pts.length]!;
-      const arc = w.arcs?.[i];
-      // The band's extent: a straight run spans its endpoints, a curve its endpoints
-      // plus whichever axis extremes its sweep actually reaches (closed form).
-      const span = arc ? arcExtremes(arc) : [a, b];
-      const loX = Math.min(...span.map((p) => p.x)) - half;
-      const hiX = Math.max(...span.map((p) => p.x)) + half;
-      const loY = Math.min(...span.map((p) => p.y)) - half;
-      const hiY = Math.max(...span.map((p) => p.y)) + half;
-      const ix0 = clamp(Math.floor((loX - minX) / cell), 0, nx - 1);
-      const ix1 = clamp(Math.floor((hiX - minX) / cell), 0, nx - 1);
-      const iy0 = clamp(Math.floor((loY - minY) / cell), 0, ny - 1);
-      const iy1 = clamp(Math.floor((hiY - minY) / cell), 0, ny - 1);
-      for (let iy = iy0; iy <= iy1; iy++) {
-        for (let ix = ix0; ix <= ix1; ix++) {
-          const cx = minX + (ix + 0.5) * cell;
-          const cy = minY + (iy + 0.5) * cell;
-          const d = arc ? distPointToArc({ x: cx, y: cy }, arc) : distPointToSeg(cx, cy, a.x, a.y, b.x, b.y);
-          if (d <= half) free[iy * nx + ix] = 0;
-        }
-      }
-    }
-  }
+  // Walls block (see `rasteriseWallSegments`, which is this pass verbatim and is shared
+  // with the residual gate). Doors carve back through below; the furniture-eroded cells
+  // collected above stay eroded, because the carve — not this pass — is what reopens.
+  rasteriseWallSegments(ex, walls, (k) => {
+    free[k] = 0;
+  });
 
   // Stitch: carve a threshold through the wall band at each internal connector,
   // recording the connector's clear width at the (grid-degenerate) carved cells.

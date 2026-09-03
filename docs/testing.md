@@ -254,6 +254,44 @@ what a drawing should look like, so **the visual goldens are still the gate for 
 joinery change moves them, pixel-diff each against its predecessor and confirm every diff's bounding
 box lands where the geometry changed, rather than accepting a green re-bless.
 
+### The circulation model — and the two gates that are not RELATIVE
+
+Every circulation law written before v1.33.0 compares the model **to itself**:
+`test/path-monotonic.test.ts` perturbs one obstacle and compares the grid to the grid,
+`test/nav-grid-scale.test.ts` compares one resolution to another, and the byte-identity digests
+compare today's output to yesterday's. All of them stay green on a grid that models the **wrong
+building** — which is how the nav grid could rasterise every curved wall as the straight CHORD
+between its arc endpoints for nine releases. `examples/library.arch`'s `r_ref` walk moved 800 mm on
+the fix with no room dropped, no diagnostic changed and no drawing moved (`docs/backlog.md` G.5,
+generalised as G.11).
+
+That premise is reproducible: reintroduce the chord bug with the two files below removed and the
+full suite goes red in six cases, **none of them a circulation gate** — four are hardcoded SHA-256
+digests that happen to include `aquarium`'s `describe()`, one is the qualitative case the G.5 repair
+itself added, one is the worktree-only `wrong-core`. `library`'s 800 mm is pinned by nothing.
+
+The two gates below are the ones that can see that class, because neither takes its expected answer
+from the system's own history.
+
+| Guard | Law | When it goes red |
+|-------|-----|------------------|
+| `test/circulation-hand-derived.test.ts` | **the only expected numbers in the repository derived by hand, outside the compiler.** Two fixtures, each with its cell size, blocked-cell arithmetic, both measured endpoints and a matching lower/upper bound written out in the header. The primary is a closed drum: **161 hops, 16,100 mm**, carrying a proof that no rounding can move it — every cell centre puts `u² + v²` at `2 (mod 8)` while both annulus bounds are `4 (mod 8)`, so neither is attainable. Deleting the drum gives 9,900, so it contributes 6,200 and that control re-derives both endpoints; the same circle written as EIGHT arcs still reads 16,100, which is the polygonal-refinement differential in exact form. The second fixture is an open arc with a free END — the round cap the drum has none of — forcing the detour on the other axis: 16,500 against 5,900 for its own chord | The derivations are the specification and the compiler is under test. **Never re-bless a number.** Work the header's steps against current code and say which one stopped holding — the cell size, the rasterisation rule, the seeding/anchor, or the search. Any of those is a change to what `describe().circulation` MEANS and belongs in `CHANGELOG.md` before this file is touched |
+| `test/nav-grid-residual.test.ts` (+ `test/wall-solid.ts`) | **the model against the DRAWING**, over all 30 examples and all 35 storeys: `rasteriseWallSegments` run into a mask of its own, against `loopsContain` on the same `wallBand` `EdgeLoop`s `wall-lowering.ts` lowers. **Exact equality, no magnitude tolerance.** Three structural decisions carry it: openings are NOT cut (the grid does not subtract them either, so no neighbourhood around a door — the very place a chord error would hide — is excluded); the per-wall union rather than `joinWalls`' outline (a trim deletes a face LINE, never solid, so the two point sets are equal); and caps and mitres excluded by a vertex disc of `MITER_LIMIT · h + cell`, read off stated constants rather than tuned | Measured as a report before any assertion existed: over **1,186,861** examined cells the worst residual is **0.000 mm**, with 8,758 measure-zero boundary ties counted separately (worst offset 2.6e-13 mm). A red run names a place where the model and the drawing describe different buildings. Read the residual first: hundreds of mm is a wall in the wrong place; anything else is a structural difference to name and excise **by geometry**. **Never enlarge the vertex radius, add a tolerance, or drop an example** — in the under direction the residual is capped by the wall's own half-thickness, so any tolerance admitting a legitimate mitre already swallows a curved wall's whole error |
+
+**Non-vacuity, measured.** Planting `distPointToSeg` for arcs fires on **exactly 4 of 35** storeys —
+every curved source, zero on the other 31 — at 7,829 mm; `d <= half ± cell` fires on 33 of 35 in the
+opposite direction, along wall runs, so the gate is sensitive to the predicate and not merely to
+curves. Two calibrations worth keeping: **scale a plant to the CELL, not the thickness** (`half * 1.5`
+was predicted invisible and is not — the corpus's commonest wall is `thickness 200`, so `150` lands
+on the next ring of cell centres), and `d <= half + 1` moves **0 of 95** corpus artifacts yet is still
+caught here at 0.9 mm, so this gate is finer than anything the shipped examples can express.
+
+A known residual of the same class is deliberately **not** gated yet: a `room circle` draws as a true
+circle but rasterises onto the nav grid as its inscribed 48-gon, so 32 rim cells per 8 m drum sit on
+different sides of the boundary in the two models (worst offset 13.4 mm, bounded by `r/467` and
+scaling with the radius). It is filed inside `docs/backlog.md` G.11; a room-membership residual gate
+is the obvious sibling to the wall one and is blocked on it.
+
 ### Property and fuzz suites
 
 | Guard | Law |

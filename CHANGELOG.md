@@ -32,6 +32,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (no fixture word appears) and structurally (no `enum`-kind item exists outside the slot), alongside
   an every-offset sweep whose expected ranges are hand-derived from the source text.
 
+- **Two circulation gates that are not RELATIVE** — the closure of backlog G.11, the general form of
+  v1.33.0's chord bug. Every circulation law written before this compares the model *to itself* (the
+  monotonicity property perturbs one obstacle, the resolution ladder compares two grids, the
+  byte-identity digests compare today's output to yesterday's), so all of them stay green on a grid
+  that models the wrong building — which is how the nav grid could rasterise every curved wall as
+  its chord for nine releases while `examples/library.arch`'s walk was 800 mm out with nothing said.
+  - `test/nav-grid-residual.test.ts` (+ the shared `test/wall-solid.ts`) checks the model against the
+    **drawing**: over all 30 examples and all 35 storeys, the wall rasterisation run into a mask of
+    its own against `loopsContain` on the same `wallBand` `EdgeLoop`s `wall-lowering.ts` lowers, as
+    **exact equality with no magnitude tolerance**. Openings are deliberately not cut (the grid does
+    not subtract them either), the per-wall union stands in for `joinWalls`' outline (a trim deletes
+    a face line, never solid), and caps and mitres are excluded by a vertex disc of
+    `MITER_LIMIT · h + cell` — derived from stated constants, not tuned. Measured as a report before
+    anything was asserted: over 1,186,861 examined cells the worst residual is **0.000 mm**, with
+    8,758 measure-zero boundary ties counted separately (worst offset 2.6e-13 mm). Planting the chord
+    bug fires on exactly the four curved sources and none of the other 31 storeys, at **7,829 mm**.
+  - `test/circulation-hand-derived.test.ts` carries the only expected numbers in the repository
+    **derived by hand, outside the compiler**. The primary fixture is a closed drum whose 161-hop,
+    16,100 mm walk is worked out in the file header, with a proof that no rounding can move it (every
+    cell centre puts `u² + v²` at `2 (mod 8)` while both annulus bounds are `4 (mod 8)`); deleting the
+    drum gives 9,900, and the same circle written as eight arcs still reads 16,100. A second fixture,
+    an open arc with a free end, forces the detour on the other axis: 16,500 against 5,900 for its own
+    chord.
+  - `navExtent` and `rasteriseWallSegments` are extracted verbatim from `buildGrid` in
+    `src/analyze/circulation.ts` and exported so the gate runs the production pass rather than a
+    copy of it. Pure code motion, proved by a SHA-256 sweep of `describe()`, `lint()` and every
+    storey's SVG over all 30 examples — **95 of 95 artifacts byte-identical**. **Not public
+    surface** — `src/index.ts` is unchanged.
+  - A residual of the same class is reported rather than gated: a `room circle` draws as a true
+    circle but rasterises onto the nav grid as its inscribed 48-gon, so 32 rim cells per 8 m drum sit
+    on different sides of the boundary in the two models (worst offset 13.4 mm, bounded by `r/467`
+    and scaling with the radius). Detail and both possible fixes in `docs/backlog.md` G.11.
+
+
 ### Fixed
 
 - **`examples/imports.arch` no longer ships an obstructed door swing** (backlog G.6). The front
