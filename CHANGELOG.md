@@ -127,6 +127,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Two MORE shipped examples state their deliberate warnings in their own headers** (backlog G.13,
+  closed). `tiny-house.arch` carries `W_PATH_TOO_NARROW` on its Wet room — `describe --json` reports
+  a **measured** `widestWayInMm` of 400 against the 700 mm minimum, and the pinch is the room
+  (1700 x 2800 mm holding a shower, a WC and a basin), not the 800 mm barn door. It only became
+  visible in 1.33.0, when the rule stopped going silent on a room it could not reach.
+  `materials.arch` carries `W_SCALE_OVERFLOW`, and the note corrects an imprecise reading of it: the
+  emitted page **is exactly A3 landscape** and nothing is clipped, so what the rule reports is a
+  margin encroachment inside its own fit budget, not a page that outgrew its paper. The scale stays
+  at 1:50 deliberately — the diagnostic's remedy is a coarser scale, and at 1:100 six wall materials
+  stop reading side by side, which is the only thing that file exists to show. Both edits are
+  comment-only: across all 30 examples the sole movement is one `span` per file, shifted by exactly
+  the inserted comment's byte length, with every SVG byte-identical.
+
 - **Two shipped examples now state their deliberate warnings in their own headers** (backlog G.6),
   the way `hillside-villa` and `garden-house` already did. `examples/themed.arch` explains its one
   `W_NO_ENTRANCE`: the file is a two-room fragment whose only door is on the partition, and it is

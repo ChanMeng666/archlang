@@ -37,6 +37,23 @@
 # material and the table grows a row on its own. `schedule rooms` beside it is derived the
 # same way: its NO./NAME/AREA rows and its total are the rooms below, and they are the
 # same numbers `arch describe --json` reports under `schedule[]`.
+#
+# ONE DELIBERATE WARNING, left in on purpose:
+#
+#   W_SCALE_OVERFLOW x1 — and it is about the MARGIN, not the page. The sheet this file
+#   emits is exactly A3 landscape (420 x 297 mm, viewBox 21000 x 14850 at 1:50) and
+#   nothing is clipped; what the fit rule reports is its budget, 16300 x 8300 mm of
+#   building against 17675 x 7305 mm of drawing area once the margins, the dimension
+#   bands, the title block and the two margin tables are taken out. It appeared in
+#   v1.27.0, when `usablePlanMm` started reserving the band its own `schedule` and
+#   `legend` occupy — a true positive that three releases of drawings had been quietly
+#   spending.
+#
+#   The diagnostic's remedy is a coarser scale, and taking it would defeat the file. At
+#   1:100 six wall materials no longer read side by side, and this header's own sentence
+#   is that a hatch you cannot see is a specification you have not written. So the scale
+#   stands and the sampler is issued with its legend tight to the margin. `arch validate`
+#   is clean; `arch validate --strict` reports this one.
 plan "Workshop" {
   units mm
   # 10, not 50: a 230 brick wall has a 115 half-thickness, and the WC fixtures are placed

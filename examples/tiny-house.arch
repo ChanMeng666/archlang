@@ -31,6 +31,18 @@
 # of the north shell — so the number is the built clear width, derived, never typed.
 # Take 600 mm of worktop out of it and 1250 mm of walkway is left, which is why the
 # fridge door and the wardrobe leaves can both be open at once.
+#
+# ONE DELIBERATE WARNING, left in on purpose:
+#
+#   W_PATH_TOO_NARROW x1 — the walk to the Wet room. `arch describe --json` reports it
+#   under `circulation.blocked` with a MEASURED `widestWayInMm` of 400 against the
+#   700 mm minimum. The 800 mm barn door is not the pinch; the room is: 1700 x 2800 mm
+#   holding a shower, a WC and a basin, which is what a wet room in a 7.2 x 3.0 m house
+#   costs. The warning appeared in v1.33.0, when the rule stopped going silent on a room
+#   it could not reach — before that this plan reported nothing at all, which was worse
+#   than reporting 400 mm. It stands rather than being nudged away: moving a piece to
+#   silence a measurement is how a plan stops being evidence. `arch validate` is clean;
+#   `arch validate --strict` reports this one.
 plan "Tiny House" {
   units mm
   # `grid 50`, not 100: every partition here is 100 thick, so a fixture placed `flush`

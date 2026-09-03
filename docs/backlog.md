@@ -97,6 +97,31 @@ working from any of this.** It splits into three jobs that must not be one PR:
   full four-workspace suite plus both E2E legs as the gate.
 - **(c) `vitepress`, `fixAvailable: false`** — record it as accepted with a reason; do not force it.
 
+**(b) IS DEFERRED, and the reason is a measurement rather than a preference (owner call,
+2026-09-04).** After (a), **`npm audit --omit=dev` reports 0 vulnerabilities** — every one of the
+seven residuals is a DEV dependency. That is not an aside: `nightly.yml`'s dependency job runs
+exactly `npm audit --omit=dev --audit-level=high`, which now exits 0, so the residuals do not appear
+in this project's own security gate at all. Neither critical ships: `vitest` and
+`@vitest/coverage-v8` are the test runner, absent from every published artifact, and the `vitest`
+advisory itself is against the **UI server** (`--ui`), which nothing here starts — CI runs
+`vitest run`.
+
+Against that, (b) costs more than it first looked: it is `vitest` **2.1.9 → 5.0.0, three majors**,
+across 203 test files and four workspaces, with the snapshot-format risk that carries in a repository
+that treats a moved golden as a finding to explain rather than a diff to bless. It does **not** clear
+`esbuild` (tsup's node, see above), and it **splits** the `vite` tree that `vitepress@1.6.4` currently
+shares, so (c) gets no better either. Five of seven advisories clear, all of them dev-only.
+
+**Take (b) when one of these fires — not before:**
+1. `npm audit --omit=dev` stops reporting 0, i.e. an advisory reaches a shipped dependency.
+2. `vitepress` ships a release that wants `vite` 8, so (b) and (c) stop pulling apart.
+3. Something else needs `vitest` 3+ on its own merits (a feature, a Node version, a plugin).
+4. `tsup` ships a major that can reach `esbuild` 0.28, making a single pass clear all four groups.
+
+Do **not** treat "two criticals outstanding" as a trigger on its own — that number is `npm audit`'s
+default all-dependency reading, and the honest one for this repo is the `--omit=dev` figure, which
+is 0.
+
 **(a) is DONE (2026-09-04), and it was lockfile-only — no manifest moved.** All twelve
 `fixAvailable: true` roots cleared with a plain `npm audit fix` (never `--force`), a 45-line
 `package-lock.json` diff and nothing else:
@@ -1156,28 +1181,45 @@ from what the example currently states honestly in its header.
 Until then `examples/relational.arch` is this item's live reproduction: it carries the four
 warnings on purpose and says why.
 
-### G.13 · Two more examples carry an undocumented warning — `todo`
+### G.13 · Two more examples carry an undocumented warning — `done`
 
-Found by the corpus sweep that closed G.6, whose own table said three examples and was measured at
-five. Both of these are **deliberate and already explained in `CHANGELOG.md`** — what is missing is
-the note in the source header, which is the remedy G.6 settled on and the only one a reader who
-lints the example will ever see.
+Closed 2026-09-04, on G.6's rule: **document where the warning IS the teaching.** Both were already
+explained in `CHANGELOG.md`; what was missing is the note in the source, which is the only place a
+reader who lints the example will ever look. Neither plan's geometry moved — proved rather than
+asserted, by a 95-artifact sweep in which **the only movement is one `span` per file**, shifted by
+exactly the inserted comment's byte length (1073 and 793), with every SVG byte-identical.
 
-| example | diagnostic | already explained in | needs |
-|---|---|---|---|
-| `tiny-house.arch` | `W_PATH_TOO_NARROW` x1 — the wet room is sealed at 400 mm against a 700 mm minimum | `CHANGELOG.md` [1.33.0] | a header note, in `furnished-flat`'s style |
-| `materials.arch` | `W_SCALE_OVERFLOW` x1 — 16300x8300 mm against 17675x7305 mm of A3 landscape drawing area at 1:50 | `CHANGELOG.md` [1.20.0] and later | an **owner call** first |
+**`tiny-house.arch` — `W_PATH_TOO_NARROW` x1.** `describe --json` reports the Wet room under
+`circulation.blocked` with a **measured** `widestWayInMm` of 400 against the 700 mm minimum. The
+800 mm barn door is not the pinch; the room is — 1700 x 2800 mm holding a shower, a WC and a basin.
+It appeared in v1.33.0 when item 5.8 stopped the rule going silent on a room it could not reach, so
+before that this plan reported **nothing at all**, which was strictly worse. Left standing.
 
-`tiny-house` is the cheap half and is a straight copy of what `furnished-flat` already does for its
-own `W_PATH_TOO_NARROW` — the two are siblings, both turned from a false clean into a true report
-by the item-5.8 fix in v1.33.0, and only one of them was documented. **That warning post-dates
-G.6**, which is why that entry never listed it.
+**`materials.arch` — `W_SCALE_OVERFLOW` x1, and the owner call this entry asked for is: KEEP THE
+SCALE.** The framing in the old entry ("the plan really does not fit the sheet it declares") is
+imprecise and was corrected by measurement: **the emitted page is exactly A3 landscape** —
+`width="420mm" height="297mm"`, viewBox `21000 x 14850`, which is 420 x 50 by 297 x 50 — and nothing
+is clipped. What the rule reports is its own budget: 16300 x 8300 mm of building against
+17675 x 7305 mm of drawing area once the margins, the dimension bands, the title block and the two
+margin tables are removed. That is a MARGIN encroachment, exactly as item S.5 recorded when v1.27.0
+made `usablePlanMm` reserve the table band.
 
-`materials` is not: the plan really does not fit the sheet it declares. Documenting it says "this
-sampler is issued at a scale where the poche survives and the sheet gives way", which is defensible
-and is what the source already argues for the scale. Re-fitting it (A2, or 1:75) says the opposite.
-That is a drafting decision, not a lint decision, so it wants the owner rather than the next agent.
+The decision turns on what the file is for. Its own header says *a hatch you cannot see is a
+specification you have not written*, and 1:50 is what lets six wall materials read side by side; the
+diagnostic's remedy is a coarser scale, and taking it defeats the example. Re-sheeting to A2 says
+the opposite of what the file argues. So the scale stands, the sampler is issued with its legend
+tight to the margin, and the header says so.
 
+**A coupling worth knowing before the next comment-only example edit.** The README's playground
+permalinks embed the example's SOURCE (`#z=base64url(deflate-raw(utf8))`), so *any* byte change to a
+linked example — a comment included — makes the link open a stale plan while the page shows the
+current one. `test/readme-permalink.test.ts` catches it and names the remedy in its own assertion
+message; both links were regenerated with `node scripts/gen-permalink.mjs examples/<name>.arch`. Two
+of the thirty examples turned out to be linked this way, and nothing in the source of either says so.
+
+**One reason not to have re-sheeted it now, beyond the argument above:** item 4.9 is open and may
+change what `fits` even claims. Re-scaling a shipped example to satisfy a rule that is under review
+would be work done twice, in the wrong direction.
 
 ### G.7 · Fixture-word completion — `done`
 
