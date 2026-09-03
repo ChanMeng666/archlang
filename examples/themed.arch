@@ -1,5 +1,16 @@
 # Theming + materials: a two-room plan with a brick exterior, a partition,
 # and a dark "blueprint" theme. Try CompileOptions.theme to override at runtime.
+#
+# ONE DELIBERATE WARNING, left in on purpose:
+#
+#   W_NO_ENTRANCE x1 — this plan has exactly one door and it is on the PARTITION, so
+#   the two rooms open onto each other and neither opens onto the outside. That is not
+#   an oversight: the file is a two-room fragment whose subject is the `theme` block
+#   and the `material brick` clause, and it is deliberately the corpus's one example of
+#   a building with no way in, so the rule has a shipped positive case to fire on
+#   (`test/lint.test.ts` pins `themed.arch` as the SOLE `W_NO_ENTRANCE` example across
+#   all thirty examples — cutting a front door here would silence that pin as well as
+#   the warning). `arch validate` is clean; `arch validate --strict` reports this one.
 plan "Themed Duplex" {
   units mm
   grid 50
