@@ -1747,6 +1747,38 @@ auto-fit cannot start seeing ground.
 generator's size cap, and the full catalogue reaches a model through `llms-full.txt` /
 `arch context --section errors` either way, which DID regenerate.
 
+### 4.10 · A 5 s test budget on a heavy optional import — `todo`
+
+Found 2026-09-04 while gating item 4.9, and worth filing because `AGENTS.md` currently records that
+the suite has **no known flake**.
+
+`test/roof.test.ts` → "PDF export draws it" opens with `await import("pdfkit")`, a heavy optional
+dependency, under vitest's default **5000 ms** per-test budget. Measured on this machine:
+
+| condition | duration | verdict |
+|---|---|---|
+| file run alone, machine idle | **674 ms** | passes, 7.4x margin |
+| inside a full-suite run under heavy parallel load | **5821 ms** | **fails: `Test timed out in 5000ms`** |
+
+So the margin is real but it is a margin on an **import**, not on the assertion — the same run had
+`test/zones.test.ts` take 105 s. It reproduced twice under load and passed 32/32 three times when run
+alone, including on `main`, so it is not a defect in `roof` and was not introduced by 4.9, which does
+not touch that file.
+
+**The trap this entry exists to mark.** The failure text says `Test timed out in 5000ms`, which is
+exactly the diagnosis item G.9 records being WRONG about twice — there, the text said
+`expected at least 1 JSON envelope(s) on stdout, saw 0`, which is not a timeout at all, and two agents
+theorised about load from the *shape* of the symptom without reading it. Here the text really is a
+timeout and the margin was measured, so the reading holds. **Read the assertion, then measure the
+margin; do not pattern-match either way.**
+
+Options, in the order they are worth trying: give this one case an explicit timeout that reflects what
+it does (a dynamic import of an optional native-ish package is not a 5 ms unit test); or hoist the
+capability probe so the import is paid once per file rather than inside the timed case; or leave it and
+say plainly in `AGENTS.md` that the suite has one load-sensitive case, since a number nobody can
+reproduce on a quiet machine is worse than a documented one. **Do not raise the global
+`testTimeout`** — that hides every future instance of the same shape.
+
 ### 4.1 · Joinery pass performance — `todo`
 
 `toScene` got roughly **3× slower** when v1.30 replaced the three wall-lowering paths with one

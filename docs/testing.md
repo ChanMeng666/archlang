@@ -449,6 +449,31 @@ than stripping text), and remember the corpus fans out: 30 `examples/*.arch` pro
 because `garden-house`, `hillside-villa`, `townhouse` and `two-storey` emit one per storey. A sweep
 that finds 30 has already lost the multi-storey plans.
 
+**The house corpus sweep has a BLIND SPOT, and it is not small.** The sweep everyone reaches for is
+`describe()` + `lint()` + every storey's SVG — 95 artifacts over the 30 examples. Those three payloads
+between them carry **no parse- or resolve-stage diagnostic**, because `lint()` is the soundness layer
+alone. Measured:
+
+```
+arch lint    examples/materials.arch  ->  []
+arch compile examples/materials.arch  ->  ["W_SCALE_OVERFLOW"]
+```
+
+So a change to `W_SCALE_OVERFLOW`, `W_DRAWING_OVERFLOW`, any `W_*_OFF_WALL`, `E_PARSE` or anything
+else raised before `lint()` runs is **invisible to a clean 95-artifact sweep**, and the sweep will
+report "nothing moved" in the same reassuring voice it uses when nothing did. Found in 2026-09 while
+closing backlog 4.9, whose whole subject is a resolve-stage diagnostic: the specified sweep could not
+see the item's own change.
+
+**Sweep 125 when a change can reach the resolver**: add `compile().diagnostics` as a fourth payload,
+one row per example. The two sets are complements — `lint()` covers the lint rules and nothing else,
+`compile()` covers parse and resolve and nothing else — so neither alone is a corpus check.
+
+Prove that one non-vacuous the same way, and pick the plant with care: a lint-stage change (repairing
+an example's furniture, say) moves **nothing** in the diagnostic sweep and would wrongly read as a
+broken check. Perturb something the resolver decides — moving `materials.arch` from A3 to A2 drops
+its `W_SCALE_OVERFLOW` and the sweep names exactly that row.
+
 The same instinct applies to the code under test: **zero corpus movement is not evidence the new path
 ran.** Instrument it with a counter, show which examples reach it and how often, then remove the
 counter and confirm with `grep -c`. Backlog G.1 is the worked example — the changed path fires 228
