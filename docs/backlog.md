@@ -1515,29 +1515,107 @@ succeeded with **no change**, which is the signature of a race rather than of a 
 That step now retries up to **6 times, 20 s apart**, and only that step. A genuinely bad manifest
 (a case-wrong owner segment, an over-long `description`) still fails loudly, two minutes later.
 
-### 4.8 · A `dims auto` chain runs across an `outdoor` surface attached to the facade — `todo`
+### 4.8 · A `dims auto` chain runs across an `outdoor` surface attached to the facade — `done`
 
-Found while reviewing `examples/garden-house.arch` for the v1.31 release, and named in that
-release's **Deferred by name** list rather than fixed on release eve.
+Fixed. `src/scene-build.ts` gains `groundStandoff()`: a facade's chain band is now offset from the
+outermost thing that facade shows — its own outer wall face, **or** the furthest any `outdoor`
+surface reaches beyond it within the along-span the chain measures — instead of from the wall face
+alone. Test: `test/dims-ground.test.ts` (9 cases). The offsets it asserts are written as
+`outer + dimFont × (CHAIN_BASE + slot × CHAIN_STEP)` rather than as constants, so the "no ground
+⇒ nothing moves" half is a statement about the formula. Run against the pre-fix `src/`, those 9
+split **5 red / 4 green**, and the 4 green ones are exactly the four that assert the old behaviour.
 
-`dims auto` places its exterior chains at an offset computed from the **building's** extent, which
-is right in every plan drawn before this release, because nothing existed outside the wall line to
-collide with. It is no longer sufficient: on `garden-house` the level-1 chain crosses the paving
-that abuts the front and rear facades, and the level-2 chain crosses the `balcony` slab attached to
-the bedroom wall. Nothing is illegible — a dimension line is a thin dark stroke and ground is a
-tint under a hatch — but it is not what a drafter would issue: a dimension chain belongs in clear
-paper outside everything the drawing shows, not on top of the terrace.
+**What was measured.**
 
-**Why it is not a one-line offset.** The chain offset feeds every plan that asks for `dims auto`, so
-widening it unconditionally moves dimension geometry in all 30 shipped examples and every golden.
-The honest fix is per-facade: for each chain, take the outdoor extent of the surfaces whose own
-extent touches the facade being measured, and push that chain past it — which needs a
-facade-to-ground adjacency the dimension pass does not currently compute. Note the same iron law
-applies to how "touches the facade" is decided: probe the facade, do not compare bounding boxes.
+- **The corpus.** 30 sources → **35** SVGs (four plans are multi-storey). Exactly **2** move:
+  `garden-house.L1` and `garden-house.L2`. The other 33 are SHA-256 identical.
+- **What moved inside them**, attributed at the Scene-node level with `annotate: true`: **6 `dims`
+  nodes per storey** (two witness lines, the baseline, two ticks, the value) and, on L1 only, **339
+  `annotations` nodes** — the room schedule, the legend, the title block and the scale bar, every
+  one of them a **pure translation**: across all 339 the set of per-field numeric deltas is exactly
+  `{0, 1525}`, so no shape changed and nothing on any other layer moved at all. L1's chain goes
+  13650 → 23100 (a standoff of 8050 — the south planting bed's far edge at 21700), L2's
+  15050 → 16900 (1850 — the balcony's far edge at 15500).
+- **The cost, stated rather than hidden.** L1's page **grows past its declared A2**, 42000 → 42425
+  plan mm (420 → 424.25 sheet mm, +1.01%), `sheet.grown` flipping `false` → `true`. L2's does not.
+  Its golden re-bless is therefore a resize; L2's is 546 changed pixels (0.245%) in one band.
 
-Related, and worth settling in the same pass: an `outdoor` surface already grows the drawing extent
-(that is why a site plan wants a `paper`), so the chain's own paper offset and the ground's extent
-are computed from two different notions of "the drawing".
+**Two things this entry got wrong, and one it got right.**
+
+1. *"the level-1 chain crosses the paving that abuts the front and rear facades"* — the front
+   (north) facade **carries no chain at all**. `garden-house` asks for `dims auto overall`, and
+   `synthGbChains` emits a top or right chain only when an openings chain will be drawn there,
+   which `overall` never does. Only the bottom and left chains exist on this plan, and only the
+   bottom one was ever on the ground.
+2. *"take the outdoor extent of the surfaces whose own extent touches the facade"* — adjacency is
+   the wrong predicate, and it does not close the defect. On `garden-house` the surfaces abutting
+   the south facade end at y = 17000; a chain pushed to 17000 lands **on the lawn** (17400–21000).
+   Nearest-surface is not a fixed point. Taking the **maximum** over every surface in the span is,
+   and it is also what this entry's own opening paragraph asks for — "clear paper outside
+   everything the drawing shows". So no facade-to-ground adjacency is computed at all. The iron law
+   is still honoured, in the place that actually needs it: a surface's reach is read off its
+   **ring, clipped to the along-span** — each edge cut at `lo`/`hi` and its cross coordinate
+   evaluated at the cut, which is exact because an edge's cross coordinate is linear in its along
+   coordinate — never off its bounding box. A test plants an L-shaped surface whose bounding box
+   reaches 4000 mm further out than any part of it that lies under the chain.
+3. It was right that this is not a one-line offset, and right about why: the standoff is **per
+   facade** and is 0 wherever there is no ground beyond it, which is what leaves the other 29
+   examples untouched.
+
+**Three decisions, taken rather than defaulted.**
+
+- **Every slot moves as one.** The standoff is added to `chainOffset(sizes, slot)` for all slots, so
+  openings / axis / overall translate together and keep their exact `CHAIN_STEP` spacing. Shifting
+  only the innermost would leave the outer chains where they were — which is further out, i.e.
+  still over the ground — and reflowing them independently would break the fixed slot geometry
+  that `DIM_BAND_FONTS` and `W_DIM_OVERLAP`'s tier arithmetic both read.
+- **A surface covering part of the run pushes the whole chain.** A chain is one line at one offset:
+  it cannot step around an obstruction halfway along, and splitting it into two collinear pieces at
+  different offsets would stop reading as one chain. The conservative whole-edge answer, as in G.1.
+- **Nothing was done about the two notions of "the drawing", deliberately.** `measureExtent` stays
+  building-only because it decides what the chain SAYS — the overall value is the building's width,
+  and a lawn is not part of it. Ground is read only to decide where the chain SITS. And there is
+  **no unit conversion** in the join, contrary to what `sheet.ts`'s "sheet millimetres" prose
+  suggests: `chainOffset` is `dimFont` times a dimensionless multiple, and `dimFont` is already in
+  plan millimetres in **both** `RenderSizes` constructors (`refDim * 0.02` in `toScene`, and
+  `SHEET_MM.dimText * denom` in `sizesFromPaper`, where the sheet millimetres are multiplied by the
+  scale denominator). A ground extent is plan millimetres too, so the two are directly
+  commensurable.
+
+**One pre-existing gap this surfaced but did not create — filed as 4.9.**
+
+### 4.9 · `sheet.fits` is `true` on a plan whose page grew past its own paper — `todo`
+
+Found while closing 4.8, and independent of it: it reproduces with no `dims` statement anywhere.
+
+`resolveSheetSpec` → `fitsOnSheet` → `usablePlanMm` decides whether a drawing fits its declared
+`paper` from `SheetFitInput.extent`, which is **the building's outer-face extent**. Since v1.31 a
+plan draws a great deal that is not the building — `outdoor` ground, a `fence`, a
+`site … boundary` — and none of it is in that extent, so none of it can make the fit test say no.
+
+**Reproduction** (single storey, no `dims`, no `axes`):
+
+```
+plan "g" { units mm paper A4 portrait scale 1:100
+  wall id=s exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+  room id=r at (0,0) size 4000x3000 label "R" uses living
+  outdoor id=y lawn at (0,3500) size 4000x40000 label "Yard"
+}
+```
+
+`scene.sheet.fits === true`, `scene.sheet.grown === true`, page height **46600** plan mm against a
+paper height of **29700** — a drawing issued 57% taller than the A4 it declares, with **no
+diagnostic of any kind**. That is the v1.27.0 `tableRows` defect's shape (a band the layout draws
+and the rule does not reserve) one layer out. `garden-house` joined the same set in 4.8, at 1% over.
+
+**What makes it a decision rather than a patch.** Feeding ground into `SheetFitInput.extent` is not
+free: it changes which denominator auto-fit picks on every site plan, and it would raise
+`W_SCALE_OVERFLOW` on drawings that are perfectly issuable today (`garden-house` among them). The
+options worth weighing are (a) include ground in the fit extent and accept the auto-fit and lint
+movement, (b) keep `fits` as a building-vs-paper claim and add a separate, honestly-named signal for
+"the page grew" — `sheet.grown` already exists on the Scene but reaches no diagnostic and no
+`describe()` key, or (c) narrow what `fits` is documented to mean so it stops reading as a promise
+about the sheet. Measure the auto-fit movement across all 30 examples before choosing.
 
 ### 4.1 · Joinery pass performance — `todo`
 
