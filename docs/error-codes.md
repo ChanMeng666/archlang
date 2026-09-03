@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**89 errors** · **46 warnings**
+**89 errors** · **47 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -110,6 +110,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_DOOR_NEAR_CORNER`](#w_door_near_corner) | warning | A door leaves less wall between its jamb and a corner than the wall is thick. |
 | [`W_DOOR_OFF_WALL`](#w_door_off_wall) | warning | Door does not lie on any wall. |
 | [`W_DOORWAY_BLOCKED`](#w_doorway_blocked) | warning | A doorway's landing is blocked. |
+| [`W_DRAWING_OVERFLOW`](#w_drawing_overflow) | warning | The whole drawing does not fit the declared paper, even though the building does. |
 | [`W_DUP_ACC_METADATA`](#w_dup_acc_metadata) | warning | Duplicate `accTitle`/`accDescr`. |
 | [`W_EMPTY_PLAN`](#w_empty_plan) | warning | Empty plan. |
 | [`W_FIXTURE_BACK_TO_ROOM`](#w_fixture_back_to_room) | warning | A fixture stands against a wall but faces the wrong way. |
@@ -1390,6 +1391,20 @@ door at (9999,9999) width 900   # warning: not on a wall
 ```arch static
 door at (6000,3000) width 800
 furniture wc at (5800,3050) size 700x400   # lint: WC blocks the doorway
+```
+
+## W_DRAWING_OVERFLOW
+
+*warning* — The whole drawing does not fit the declared paper, even though the building does.
+
+**Cause.** Same ruler as `W_SCALE_OVERFLOW`, different subject. That rule measures the BUILDING's outer-face extent against the sheet minus its margins, dimension bands, title block and margin tables. This one measures **everything the plan draws** against that same area — and a plan draws more than its building: `outdoor` ground, a `fence`, a `site … boundary`, a `roof` eaves line, a fixture set down outside the shell. None of that is in the building's extent, so none of it can make the fit test say no, and `sheet.fits` stays `true` while the sheet cannot hold the drawing. The two are mutually exclusive by design: the drawn extent CONTAINS the building, so when the building itself overflows you get `W_SCALE_OVERFLOW` instead and this would only repeat it. The warning quotes the whole drawing's extent, the drawing area it is measured against, and the overflow on each axis — a millimetre of eaves and a 40 m yard want different answers. **It does not claim the page grows:** nothing is clipped, the reserved sheet margin gives way first, and only a large overrun pushes the page past the paper. `describe().sheet.drawing_fits` is this fact; `scene.sheet.page` is the page that actually came out. Advisory: a site plan you intend to issue oversize, trim or tile is legitimate.
+
+**Fix.** Move up a paper size or pick a coarser scale — both also shrink the building, so check the drawing still reads — or draw less ground. There is deliberately NO machine fix: every remedy rewrites a decision the author made, and unlike a building overflow there is no defensible default, since re-scaling shrinks a building that was already sized correctly for the sheet (ADR 0005).
+
+```arch static
+paper A4 portrait
+scale 1:100
+outdoor lawn at (0,3500) size 4000x40000 label "Yard"   # warning on a 4 m cottage: the yard is 40 m long
 ```
 
 ## W_DUP_ACC_METADATA

@@ -399,7 +399,34 @@ export interface SheetSummary {
   scale_denominator: number;
   /** True when the denominator was chosen by auto-fit (the plan declared no `scale`). */
   scale_auto: boolean;
+  /** Does the BUILDING's outer-face extent fit the sheet's drawing area at this scale? */
   fits: boolean;
+  /**
+   * `false` when **everything the plan draws** does not fit the sheet's drawing area at
+   * this scale — **present only then** (backlog 4.9). Absent means the whole drawing fits;
+   * read it as `sheet.drawing_fits === false`, never as a tri-state.
+   *
+   * It is the residual {@link fits} cannot report. `fits` measures the BUILDING's
+   * outer-face extent, and a plan draws more than its building — `outdoor` ground, a
+   * `fence`, a `site … boundary`, a `roof` eaves line — so a 4 × 3 m cottage with a 40 m
+   * yard reported `fits: true` with nothing anywhere saying its sheet could not hold the
+   * drawing. Same ruler, wider extent: `fits === false` implies this is `false` too, and
+   * the case worth acting on is `fits` true with this present, which raises
+   * `W_DRAWING_OVERFLOW`.
+   *
+   * **It is not a claim that the page grew.** Like `fits` it is measured against the area
+   * the sheet RESERVES for the drawing, and a marginal overflow eats the reserved margin
+   * rather than growing the page — of the three shipped examples that report it, only one
+   * is actually issued on a larger page. The page rectangle is `scene.sheet.page`, which
+   * needs a laid-out Scene; `describe()` never builds one.
+   *
+   * **Emitted conditionally on purpose.** An always-present key would move every
+   * `describe()` payload for every plan that declares `paper`, which the standing
+   * byte-identity law forbids — a plan that does not use a feature must describe exactly as
+   * before. This follows `circulation.unmeasured[]` (backlog G.5), which omits itself when
+   * empty for the same reason.
+   */
+  drawing_fits?: false;
 }
 
 /**
@@ -1059,6 +1086,9 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
             scale_denominator: ir.sheet.denom,
             scale_auto: ir.sheet.auto,
             fits: ir.sheet.fits,
+            // Conditional, so a sheet whose whole drawing fits describes byte-identically
+            // to every payload before this key existed. See `SheetSummary.drawing_fits`.
+            ...(ir.sheet.drawingFits ? {} : { drawing_fits: false as const }),
           },
         }
       : {}),

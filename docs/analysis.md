@@ -207,6 +207,7 @@ on a real sheet at a real scale, and `describe()` reports which:
 | `scale_denominator` | the **operative** denominator — the `200` of `1:200`. Every annotation size is a fixed sheet-millimetre value times this |
 | `scale_auto` | `true` when the plan declared no `scale` and the sheet auto-fitted one (the finest of 1:50 / 1:100 / 1:200 / 1:500 that fits) |
 | `fits` | does the building's `bbox_outer` fit the sheet at this scale, after the margins, the `dims auto` bands, the bottom chrome band **and the margin-table row `schedule rooms` / `legend` add below it**? `false` is the [`W_SCALE_OVERFLOW`](errors.md#w-scale-overflow) condition — the drawing is still produced, and the page grows past the sheet rather than clip it |
+| `drawing_fits` | the same question about **everything the plan draws** — the building plus the `outdoor` ground, `fence`, `site … boundary` and `roof` eaves that `bbox_outer` does not contain. **Present only when it is `false`**, so an existing summary is unchanged; absent means the whole drawing fits. `false` with `fits: true` is the [`W_DRAWING_OVERFLOW`](errors.md#w-drawing-overflow) condition |
 
 `fits` is a question about the **sheet**, not only about the building: a plan whose walls
 fit comfortably can still answer `false` because the schedule and legend it asked for take
@@ -214,6 +215,15 @@ the band below the drawing. Adding `schedule rooms` to a tight sheet can therefo
 `fits` and raise `W_SCALE_OVERFLOW` with no change to the plan's geometry at all — which is
 the honest answer, and was not reported before v1.27.0 (the tables were laid out but never
 measured, so a page could be emitted taller than its own `paper` with `fits: true` on it).
+
+What `fits` measures is still only the **building**, and that is deliberate — it is what
+auto-fit picks a denominator against, so widening it would re-scale every site plan. A plan
+draws more than its building, though, and none of that could ever make `fits` say no: a
+4 × 3 m cottage with a 40 m yard answered `true` and was issued on a page 57% taller than
+its A4. `drawing_fits` is that residual, measured by the same rule on the wider extent.
+Neither is a claim that the page **grew**: both are measured against the area the sheet
+reserves, and a marginal overrun eats the reserved margin and comes out exactly paper-sized.
+The page that was actually emitted is `scene.sheet.page`.
 
 The whole `sheet` key is **absent** for a plan with no `paper`, so an existing summary is
 unchanged. `scale` and `sheet` always agree: the operative scale is resolved once, before

@@ -1698,38 +1698,54 @@ split **5 red / 4 green**, and the 4 green ones are exactly the four that assert
 
 **One pre-existing gap this surfaced but did not create — filed as 4.9.**
 
-### 4.9 · `sheet.fits` is `true` on a plan whose page grew past its own paper — `todo`
+### 4.9 · `sheet.fits` was `true` on a plan the sheet could not hold — `done`
 
-Found while closing 4.8, and independent of it: it reproduces with no `dims` statement anywhere.
+Closed by `sheet.drawingFits` + `describe().sheet.drawing_fits` + the advisory
+`W_DRAWING_OVERFLOW`. **Option (b)**: report the residual, do not widen `fits`. Same move G.5 made
+for `circulation.unmeasured[]`.
 
-`resolveSheetSpec` → `fitsOnSheet` → `usablePlanMm` decides whether a drawing fits its declared
-`paper` from `SheetFitInput.extent`, which is **the building's outer-face extent**. Since v1.31 a
-plan draws a great deal that is not the building — `outdoor` ground, a `fence`, a
-`site … boundary` — and none of it is in that extent, so none of it can make the fit test say no.
+**The observation was exact and reproduces verbatim.** The entry's plan compiles with
+`sheet.fits === true`, a page of **21000 × 46600** plan mm against a paper of 21000 × 29700 (56.9%
+taller), and **no diagnostic of any kind**. Measured again before any code was written.
 
-**Reproduction** (single storey, no `dims`, no `axes`):
+**One thing the entry got wrong, and it decided the naming.** It proposed
+"`sheet.grown` already exists on the Scene but reaches no diagnostic and no `describe()` key" — true,
+and the trap is that `SceneSheet.grown` is measured from the LAID-OUT page, which needs a Scene, and
+`describe()` never builds one. The closed-form residual that *can* live in `resolve()` is a different
+claim: the same `fitsOnSheet` rule on the extent of everything drawn, measured against the drawing
+area the sheet RESERVES. That is **conservative**, and by how much is the point:
 
-```
-plan "g" { units mm paper A4 portrait scale 1:100
-  wall id=s exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
-  room id=r at (0,0) size 4000x3000 label "R" uses living
-  outdoor id=y lawn at (0,3500) size 4000x40000 label "Yard"
-}
-```
+| example | why it overruns | over by | page actually issued |
+|---|---|---|---|
+| `garden-house` | the 22 × 22 m `site … boundary` | 4050 mm down | **+1.01%** — grew |
+| `hillside-villa` | `roof overhang 700 wall shell` | 715 mm down (14.3 mm of sheet at 1:50) | exactly A2 |
+| `courtyard-house` | `roof overhang 600` | 90 mm down (0.9 mm of sheet at 1:100) | exactly A3 |
 
-`scene.sheet.fits === true`, `scene.sheet.grown === true`, page height **46600** plan mm against a
-paper height of **29700** — a drawing issued 57% taller than the A4 it declares, with **no
-diagnostic of any kind**. That is the v1.27.0 `tableRows` defect's shape (a band the layout draws
-and the rule does not reserve) one layer out. `garden-house` joined the same set in 4.8, at 1% over.
+So a signal named `grown` would have been **wrong on two of the three plans that raise it** — the
+class this whole release line exists to remove. It ships as `drawing_fits` / `W_DRAWING_OVERFLOW`,
+and the message says the reserved margin gives way first and only a large overrun grows the page.
+`W_SCALE_OVERFLOW`'s own docstring already said exactly this about itself; the new rule inherits it.
+`test/drawing-overflow.test.ts` pins both halves so the rename cannot happen later.
 
-**What makes it a decision rather than a patch.** Feeding ground into `SheetFitInput.extent` is not
-free: it changes which denominator auto-fit picks on every site plan, and it would raise
-`W_SCALE_OVERFLOW` on drawings that are perfectly issuable today (`garden-house` among them). The
-options worth weighing are (a) include ground in the fit extent and accept the auto-fit and lint
-movement, (b) keep `fits` as a building-vs-paper claim and add a separate, honestly-named signal for
-"the page grew" — `sheet.grown` already exists on the Scene but reaches no diagnostic and no
-`describe()` key, or (c) narrow what `fits` is documented to mean so it stops reading as a promise
-about the sheet. Measure the auto-fit movement across all 30 examples before choosing.
+**What did NOT move, measured, not assumed.** A 125-artifact before/after sweep over all 30 examples
+(`describe()`, `lint()`, every storey's SVG, and `compile().diagnostics`): **7 moved**, all four
+`describe()` payloads that gain `drawing_fits: false` and the three `diagnostics` sets that gain the
+warning. **Zero SVGs, zero `lint()` digests, and `materials::diag` unmoved** — so `fits`,
+`W_SCALE_OVERFLOW` and the auto-fit denominator are all exactly where they were. (The sweep was
+proved non-vacuous first: a one-example plant named 1 of 125, an SVG plant named 2.)
+
+**Two mechanics worth carrying.** (1) The 95-artifact set of SVG + `describe()` + `lint()` is
+**blind to this whole change**: `lint()` does not carry `W_SCALE_OVERFLOW` or its new sibling — both
+are resolve-stage diagnostics reaching consumers through `compile().diagnostics`. "0 lint digests
+moved" must not be read as "no diagnostic changed"; sweep the diagnostics separately.
+(2) `SheetFitInput` was deliberately NOT given a `drawn` field — the drawn extent is a positional
+argument to `resolveSheetSpec` instead, so `fitsOnSheet`/`chooseScaleDenominator` cannot reach it and
+auto-fit cannot start seeing ground.
+
+**Deferred, named rather than silent:** `spec.llm.md`'s `paper` paragraph still names only
+`W_SCALE_OVERFLOW`. Adding the sibling costs ~100 characters against 409 of headroom under the
+generator's size cap, and the full catalogue reaches a model through `llms-full.txt` /
+`arch context --section errors` either way, which DID regenerate.
 
 ### 4.1 · Joinery pass performance — `todo`
 

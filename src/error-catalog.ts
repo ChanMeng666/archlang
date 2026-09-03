@@ -967,6 +967,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Pick a coarser scale (a larger denominator draws the building smaller), move up a paper size, drop a margin table you can do without, or drop the `scale` line and let the sheet auto-fit choose the finest scale from 1:50 / 1:100 / 1:200 / 1:500.",
     "paper A4 landscape\nscale 1:50   # warning on a 20 m building: 1:100 or `paper A2` fits, or omit `scale` to auto-fit",
   ),
+  W_DRAWING_OVERFLOW: W(
+    "W_DRAWING_OVERFLOW",
+    "The whole drawing does not fit the declared paper, even though the building does.",
+    "Same ruler as `W_SCALE_OVERFLOW`, different subject. That rule measures the BUILDING's outer-face extent against the sheet minus its margins, dimension bands, title block and margin tables. This one measures **everything the plan draws** against that same area — and a plan draws more than its building: `outdoor` ground, a `fence`, a `site … boundary`, a `roof` eaves line, a fixture set down outside the shell. None of that is in the building's extent, so none of it can make the fit test say no, and `sheet.fits` stays `true` while the sheet cannot hold the drawing. The two are mutually exclusive by design: the drawn extent CONTAINS the building, so when the building itself overflows you get `W_SCALE_OVERFLOW` instead and this would only repeat it. The warning quotes the whole drawing's extent, the drawing area it is measured against, and the overflow on each axis — a millimetre of eaves and a 40 m yard want different answers. **It does not claim the page grows:** nothing is clipped, the reserved sheet margin gives way first, and only a large overrun pushes the page past the paper. `describe().sheet.drawing_fits` is this fact; `scene.sheet.page` is the page that actually came out. Advisory: a site plan you intend to issue oversize, trim or tile is legitimate.",
+    "Move up a paper size or pick a coarser scale — both also shrink the building, so check the drawing still reads — or draw less ground. There is deliberately NO machine fix: every remedy rewrites a decision the author made, and unlike a building overflow there is no defensible default, since re-scaling shrinks a building that was already sized correctly for the sheet (ADR 0005).",
+    'paper A4 portrait\nscale 1:100\noutdoor lawn at (0,3500) size 4000x40000 label "Yard"   # warning on a 4 m cottage: the yard is 40 m long',
+  ),
   W_STAIR_UNMATCHED: W(
     "W_STAIR_UNMATCHED",
     "A run of vertical circulation appears on only one storey.",
