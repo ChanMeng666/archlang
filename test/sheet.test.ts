@@ -145,12 +145,12 @@ suite("sheet — the ISO 216 table", () => {
 suite("sheet — sizesFromPaper is <sheet mm> × <denominator>", () => {
   it("scales every constant by the denominator", () => {
     for (const denom of [50, 100, 200]) {
-      const sheet = resolveSheetSpec({ size: "A1", orientation: "landscape" }, `1:${denom}`, {
-        extent: { w: 1000, h: 1000 },
-        autoDims: false,
-        titleRows: 0,
-        tableRows: 0,
-      });
+      const sheet = resolveSheetSpec(
+        { size: "A1", orientation: "landscape" },
+        `1:${denom}`,
+        { extent: { w: 1000, h: 1000 }, autoDims: false, titleRows: 0, tableRows: 0 },
+        { w: 1000, h: 1000 },
+      );
       const s = sizesFromPaper(sheet, 1);
       expect(s.roomFont).toBe(SHEET_MM.roomLabel * denom);
       expect(s.areaFont).toBe(SHEET_MM.areaText * denom);
@@ -166,12 +166,12 @@ suite("sheet — sizesFromPaper is <sheet mm> × <denominator>", () => {
   });
 
   it("applies the theme pen multiplier to strokes only, never to type", () => {
-    const sheet = resolveSheetSpec({ size: "A3", orientation: "landscape" }, "1:100", {
-      extent: { w: 1000, h: 1000 },
-      autoDims: false,
-      titleRows: 0,
-      tableRows: 0,
-    });
+    const sheet = resolveSheetSpec(
+      { size: "A3", orientation: "landscape" },
+      "1:100",
+      { extent: { w: 1000, h: 1000 }, autoDims: false, titleRows: 0, tableRows: 0 },
+      { w: 1000, h: 1000 },
+    );
     const a = sizesFromPaper(sheet, 1);
     const b = sizesFromPaper(sheet, 2);
     expect(b.wallStroke).toBe(a.wallStroke * 2);

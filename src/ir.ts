@@ -51,7 +51,7 @@ import { NULL_WORLD } from "./world.js";
 import { idToken } from "./identity.js";
 import type { WallSegment } from "./geometry.js";
 import type { Arc } from "./geometry/arc.js";
-import { outerFaceBounds, segmentsOfWall, WallGrid } from "./geometry.js";
+import { extendBounds, outerFaceBounds, segmentsOfWall, WallGrid } from "./geometry.js";
 import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
 import type { ResolvedSheet, SheetFitInput } from "./sheet.js";
@@ -1377,13 +1377,53 @@ function tableRowsOf(ir: ResolvedPlan): number {
   });
 }
 
-/** The outer-wall-face extent of a resolved plan (what a sheet fit is measured on). */
-function outerExtent(ir: ResolvedPlan): { w: number; h: number } {
-  const rects = ir.elements
+/**
+ * The two extents a sheet is decided from.
+ *
+ * `building` is the outer-wall-face extent — what a builder and a GB/T overall dimension
+ * see, and what the fit rule has always measured. `drawn` is that plus **everything else
+ * the plan puts on the page**: every non-wall element's own registry `bounds()` (ground,
+ * fences, roof eaves, a fixture pushed outside the shell, a stair landing) and the
+ * `site … boundary` ring, which is a plan-level datum with no `ElementDef` of its own.
+ *
+ * `drawn` therefore CONTAINS `building` by construction, which is what makes
+ * `fits === false ⟹ grown === true` a fact rather than a coincidence.
+ *
+ * Two things it deliberately is not. It is not `scene-build.ts`'s `planBounds`: the
+ * building half is measured by {@link outerFaceBounds}, the same call `fits` uses, so the
+ * new signal and the old one differ by their EXTENT and not by their ruler. And it takes
+ * no wall band — the joinery is a rendering concern and this runs in `resolve()`, which
+ * `describe()` and `lint()` both go through.
+ */
+function sheetExtents(
+  elements: readonly ResolvedElement[],
+  walls: readonly RWall[],
+  siteBoundary: readonly Point[] | undefined,
+  registry: Registry,
+): { building: { w: number; h: number }; drawn: { w: number; h: number } } {
+  const rects = elements
     .filter((e): e is RRoom => e.kind === "room")
     .map((r) => ({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h }));
-  const ob = outerFaceBounds(ir.walls, rects);
-  return Number.isFinite(ob.minX) ? { w: ob.maxX - ob.minX, h: ob.maxY - ob.minY } : { w: 0, h: 0 };
+  const ob = outerFaceBounds(walls, rects);
+  const building = Number.isFinite(ob.minX) ? { w: ob.maxX - ob.minX, h: ob.maxY - ob.minY } : { w: 0, h: 0 };
+
+  const db = { ...ob };
+  for (const el of elements) {
+    // Walls are already in `ob` on their outer faces; taking their band here would
+    // measure the building with a second ruler.
+    if (el.kind === "wall") continue;
+    const def = registry.byKind.get(el.kind);
+    if (!def) continue;
+    for (const p of def.bounds(el)) extendBounds(db, p.x, p.y);
+  }
+  for (const p of siteBoundary ?? []) extendBounds(db, p.x, p.y);
+  const drawn = Number.isFinite(db.minX) ? { w: db.maxX - db.minX, h: db.maxY - db.minY } : { w: 0, h: 0 };
+  return { building, drawn };
+}
+
+/** The outer-wall-face extent of a resolved plan (what a sheet fit is measured on). */
+function outerExtent(ir: ResolvedPlan, registry: Registry): ReturnType<typeof sheetExtents> {
+  return sheetExtents(ir.elements, ir.walls, ir.siteBoundary, registry);
 }
 
 /**
@@ -1404,6 +1444,10 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
   if (ast.paper) {
     let w = 0;
     let h = 0;
+    // The DRAWN extent is maximised over the storeys the same way the building's is: a
+    // ground-floor terrace and a second-floor balcony each grow the shared page.
+    let dw = 0;
+    let dh = 0;
     // The tables are per-STOREY (each page draws its own rooms), but the sheet is shared —
     // so the band reserved is the DEEPEST any page will draw, exactly as the extent is the
     // largest any page occupies. Reserving the ground floor's would let a taller schedule
@@ -1411,9 +1455,11 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
     let tableRows = 0;
     for (const b of blocks) {
       const probe = resolveCached(levelPlanFor(ast, b, true), registry, world, { level: stampOf(b) });
-      const e = outerExtent(probe.ir);
-      w = Math.max(w, e.w);
-      h = Math.max(h, e.h);
+      const e = outerExtent(probe.ir, registry);
+      w = Math.max(w, e.building.w);
+      h = Math.max(h, e.building.h);
+      dw = Math.max(dw, e.drawn.w);
+      dh = Math.max(dh, e.drawn.h);
       tableRows = Math.max(tableRows, tableRowsOf(probe.ir));
     }
     const fit: SheetFitInput = {
@@ -1424,12 +1470,10 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
       titleRows: titleRows(ast.title, "1:1", stampOf(blocks[0]!)).length,
       tableRows,
     };
-    sheet = resolveSheetSpec(ast.paper, ast.scale, fit);
-    if (!sheet.fits) {
-      shared.push(
-        scaleOverflowDiagnostic(ast, sheet, { w, h }, usablePlanMm(sheet.widthMm, sheet.heightMm, sheet.denom, fit)),
-      );
-    }
+    sheet = resolveSheetSpec(ast.paper, ast.scale, fit, { w: dw, h: dh });
+    const usable = usablePlanMm(sheet.widthMm, sheet.heightMm, sheet.denom, fit);
+    if (!sheet.fits) shared.push(scaleOverflowDiagnostic(ast, sheet, { w, h }, usable));
+    else if (!sheet.drawingFits) shared.push(drawingOverflowDiagnostic(ast, sheet, { w: dw, h: dh }, usable));
   }
 
   const levels: ResolvedLevel[] = blocks.map((b) => {
@@ -1712,6 +1756,8 @@ function resolveImpl(
       walls,
       diagnostics,
       zoneFrame.declared.size > 0 ? [...zoneFrame.declared.values()] : undefined,
+      siteBoundary,
+      registry,
     );
 
   const ir: ResolvedPlan = {
@@ -1781,12 +1827,12 @@ function resolveSheet(
   walls: RWall[],
   diagnostics: Diagnostic[],
   zones: readonly RZone[] | undefined,
+  siteBoundary: readonly Point[] | undefined,
+  registry: Registry,
 ): ResolvedSheet | undefined {
   if (!ast.paper) return undefined;
   const rooms = elements.filter((e): e is RRoom => e.kind === "room");
-  const rects = rooms.map((r) => ({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h }));
-  const ob = outerFaceBounds(walls, rects);
-  const extent = Number.isFinite(ob.minX) ? { w: ob.maxX - ob.minX, h: ob.maxY - ob.minY } : { w: 0, h: 0 };
+  const { building: extent, drawn } = sheetExtents(elements, walls, siteBoundary, registry);
   // A sheet always carries a SCALE row (the effective scale is stamped in below), so the
   // row count is scale-independent — pass a placeholder so the band reserved for the
   // title block does not depend on which denominator we are testing.
@@ -1807,12 +1853,15 @@ function resolveSheet(
       outdoor: elements.filter((e): e is ROutdoor => e.kind === "outdoor"),
     }),
   };
-  const sheet = resolveSheetSpec(ast.paper, ast.scale, fit);
-  if (!sheet.fits) {
-    diagnostics.push(
-      scaleOverflowDiagnostic(ast, sheet, extent, usablePlanMm(sheet.widthMm, sheet.heightMm, sheet.denom, fit)),
-    );
-  }
+  const sheet = resolveSheetSpec(ast.paper, ast.scale, fit, drawn);
+  const usable = usablePlanMm(sheet.widthMm, sheet.heightMm, sheet.denom, fit);
+  // Exactly one of the two, never both. The drawn extent CONTAINS the building, so
+  // `fits === false` implies `drawingFits === false`, and the second warning would repeat
+  // the first on every plan it already covers — noise, and `W_SCALE_OVERFLOW` already names
+  // the same remedies. What `W_DRAWING_OVERFLOW` reports is the case nothing else could
+  // see: the building fits and the drawing still does not.
+  if (!sheet.fits) diagnostics.push(scaleOverflowDiagnostic(ast, sheet, extent, usable));
+  else if (!sheet.drawingFits) diagnostics.push(drawingOverflowDiagnostic(ast, sheet, drawn, usable));
   return sheet;
 }
 
@@ -1846,6 +1895,55 @@ function scaleOverflowDiagnostic(
       `Nothing is clipped — the sheet margin gives way first, and the page grows past the paper if ` +
       `that is not enough; use a larger sheet, a coarser scale, or one fewer margin table.`,
     span: ast.scaleSpan ?? ast.paperSpan,
+  };
+}
+
+/**
+ * The advisory `W_DRAWING_OVERFLOW` — the residual `W_SCALE_OVERFLOW` cannot see.
+ *
+ * Same ruler, different subject. `W_SCALE_OVERFLOW` measures the BUILDING against the
+ * sheet's drawing area; this measures **everything the plan draws** against that same
+ * area, because a plan draws ground, fences, a lot line and eaves the building's
+ * outer-face extent does not contain, and none of it can make the fit test say no. It
+ * quotes the whole drawing's extent, the same drawing area the other rule quotes, and the
+ * OVERFLOW ITSELF on each axis, so a reader can tell a millimetre of eaves from a 40 m
+ * yard — the two want different answers.
+ *
+ * **It does not promise the page grows**, and that is measurement rather than caution: of
+ * the three shipped examples that raise it, only `garden-house` is actually issued on a
+ * larger page (+1.01%); `courtyard-house`'s eaves overrun by 90 plan mm at 1:100 and
+ * `hillside-villa`'s by 715 at 1:50, and both come out exactly paper-sized because the
+ * reserved margin gives way first. `W_SCALE_OVERFLOW` words its own consequence the same
+ * way for the same reason. The measured page fact is `SceneSheet.grown`, which needs a
+ * laid-out Scene.
+ *
+ * It carries no machine-applicable fix, for the reason `W_SCALE_OVERFLOW` carries none:
+ * every remedy rewrites a decision the author made (which paper, which scale, how much
+ * ground to draw), and picking one for them is exactly the invisible architect ADR 0005
+ * refuses. Unlike `W_SCALE_OVERFLOW` there is not even a defensible default — a coarser
+ * scale shrinks a building the author had already sized correctly for the sheet.
+ */
+function drawingOverflowDiagnostic(
+  ast: PlanNode,
+  sheet: ResolvedSheet,
+  drawn: { w: number; h: number },
+  usable: { w: number; h: number },
+): Diagnostic {
+  const over = (d: number, u: number): string => (d > u ? `${Math.round(d - u)} mm` : "none");
+  return {
+    severity: "warning",
+    code: "W_DRAWING_OVERFLOW",
+    message:
+      `The BUILDING fits ${sheet.size} ${sheet.orientation} at 1:${fmtDenom(sheet.denom)}, but the whole ` +
+      `DRAWING does not — everything drawn measures ${Math.round(drawn.w)}×${Math.round(drawn.h)} mm ` +
+      `against ${Math.round(usable.w)}×${Math.round(usable.h)} mm of drawing area, over by ` +
+      `${over(drawn.w, usable.w)} across and ${over(drawn.h, usable.h)} down. ` +
+      `The excess is the part of the drawing that is not the building — \`outdoor\` ground, a \`fence\`, ` +
+      `a \`site … boundary\`, a \`roof\` eaves line — none of which the fit test measures, which is ` +
+      `why \`sheet.fits\` is still true. Nothing is clipped: the reserved sheet margin gives way first, and ` +
+      `only if that is not enough does the page grow past the paper. Use a larger sheet, a coarser scale, ` +
+      `or draw less ground.`,
+    span: ast.paperSpan ?? ast.scaleSpan,
   };
 }
 

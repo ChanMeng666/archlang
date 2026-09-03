@@ -158,6 +158,39 @@ export interface ResolvedSheet extends PaperSpec {
   auto: boolean;
   /** Does the building's outer-face extent fit the sheet at this denominator? */
   fits: boolean;
+  /**
+   * Does **everything the plan draws** fit that same drawing area?
+   *
+   * {@link fits} is a claim about the BUILDING, and deliberately stays one: it is what
+   * auto-fit chooses a denominator against and what `W_SCALE_OVERFLOW` reports. But a plan
+   * draws more than its building — since v1.31 an `outdoor` surface, a `fence` and a
+   * `site … boundary`, since v1.29 a `roof` eaves line — and none of that is in the
+   * building's outer-face extent, so none of it could ever make `fits` say no. A 4 × 3 m
+   * cottage with a 40 m yard reported `fits: true` and was issued on a page 57% taller than
+   * the A4 it declares, with no diagnostic of any kind (backlog 4.9).
+   *
+   * **Same ruler, different extent.** This is {@link fitsOnSheet} again, on the extent of
+   * everything drawn, so `fits === false` implies `drawingFits === false` and the
+   * interesting case is the other one — `fits` true, `drawingFits` false, which raises
+   * `W_DRAWING_OVERFLOW`.
+   *
+   * **It is NOT "the page grew", and must never be renamed to suggest it is.** Like `fits`
+   * it is measured against the drawing area the sheet RESERVES (margins, dimension bands,
+   * chrome, margin tables), and a marginal overflow eats the reserved margin instead of
+   * growing the page. Measured over the shipped examples at the time of writing: three
+   * plans report `drawingFits: false` and only one of them (`garden-house`, +1.01%)
+   * actually comes out on a larger page — `courtyard-house` overruns by 90 plan mm at
+   * 1:100 (0.9 mm of sheet) and `hillside-villa` by 715 at 1:50, and both are issued
+   * exactly paper-sized. The measured page fact is `SceneSheet.grown` (`src/scene.ts`),
+   * which needs a laid-out Scene and therefore cannot exist here; `describe()` never
+   * builds one.
+   *
+   * Reporting the residual rather than widening `fits` is deliberate. Feeding ground into
+   * the fit extent would change which denominator auto-fit picks on every site plan and
+   * raise `W_SCALE_OVERFLOW` on drawings that are perfectly issuable today — a
+   * false-positive generator. See {@link resolveSheetSpec}.
+   */
+  drawingFits: boolean;
 }
 
 /** What the fit test needs to know about a plan besides its size. */
@@ -253,15 +286,30 @@ export function scaleDenominator(scale: string | undefined): number | null {
  * An authored `scale` is **never overridden** — a drawing is issued at the scale the
  * author put in the title block. If it does not fit, the caller raises the advisory
  * `W_SCALE_OVERFLOW` and the page grows to contain the drawing.
+ *
+ * `drawn` is the extent of everything the plan DRAWS — the building, plus the ground,
+ * fences, lot line and eaves the building extent does not contain. It decides
+ * {@link ResolvedSheet.drawingFits} and **nothing else**: the denominator, `fits` and
+ * `W_SCALE_OVERFLOW` are all measured on `input.extent` exactly as before, so widening
+ * what a page reports cannot move what a page IS. It is a positional parameter rather
+ * than a field on {@link SheetFitInput} for that reason — the fit test must not be able
+ * to reach it — and it is required rather than optional for the reason `tableRows` is
+ * (see there): a caller that can forget it is how the gap opened.
  */
-export function resolveSheetSpec(paper: PaperSpec, scale: string | undefined, input: SheetFitInput): ResolvedSheet {
+export function resolveSheetSpec(
+  paper: PaperSpec,
+  scale: string | undefined,
+  input: SheetFitInput,
+  drawn: { w: number; h: number },
+): ResolvedSheet {
   const { w: widthMm, h: heightMm } = paperMm(paper.size, paper.orientation);
   const declared = scaleDenominator(scale);
   const { denom, fits } =
     declared !== null
       ? { denom: declared, fits: fitsOnSheet(widthMm, heightMm, declared, input) }
       : chooseScaleDenominator(widthMm, heightMm, input);
-  return { ...paper, widthMm, heightMm, denom, auto: declared === null, fits };
+  const drawingFits = fitsOnSheet(widthMm, heightMm, denom, { ...input, extent: drawn });
+  return { ...paper, widthMm, heightMm, denom, auto: declared === null, fits, drawingFits };
 }
 
 /**

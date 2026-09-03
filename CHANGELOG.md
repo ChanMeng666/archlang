@@ -9,6 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A plan can no longer be issued on a sheet that cannot hold it while `sheet.fits` says `true`**
+  (backlog 4.9). `resolveSheetSpec` decided the fit from the BUILDING's outer-face extent, and since
+  v1.29 a plan draws a `roof` eaves line and since v1.31 `outdoor` ground, a `fence` and a
+  `site … boundary` — none of it in that extent, so none of it could make the fit test say no. A
+  4 × 3 m cottage with a 40 m yard reported `fits: true` and was issued on a page **46,600 plan mm
+  tall against a 29,700 mm A4**, 57% over, with no diagnostic of any kind. This is the v1.27.0
+  `tableRows` defect's shape — a band the layout draws and the rule does not reserve — one layer
+  out.
+
+  `fits` is **unchanged**, deliberately: it is what auto-fit picks a denominator against, and feeding
+  ground into it would re-scale every site plan and raise `W_SCALE_OVERFLOW` on drawings that are
+  perfectly issuable today. The residual is reported beside it instead — the move
+  `circulation.unmeasured[]` made in v1.33.0 — as **`describe().sheet.drawing_fits`** (the same
+  `fitsOnSheet` rule on the extent of everything drawn) and the advisory **`W_DRAWING_OVERFLOW`**.
+  The key is emitted **only when `false`**, so every existing `describe()` payload is byte-identical;
+  the warning stands down when `W_SCALE_OVERFLOW` already covers the plan, which it can do safely
+  because the drawn extent contains the building by construction.
+
+  **It does not claim the page grew, and that is measurement rather than caution.** Like `fits` it is
+  measured against the area the sheet RESERVES, so a marginal overrun eats the reserved margin
+  instead. Three shipped examples raise it — `garden-house` (its 22 × 22 m lot line, 4050 mm over,
+  and the only one actually issued larger, at **+1.01%**), `hillside-villa` (`roof overhang 700`,
+  715 mm) and `courtyard-house` (`roof overhang 600`, 90 mm, i.e. 0.9 mm of sheet) — and the last two
+  come out exactly paper-sized. Naming the signal `grown` would have been wrong on two of the three,
+  and `test/drawing-overflow.test.ts` pins that so it cannot be renamed later.
+
+  **Nothing else moved, measured over a 125-artifact sweep** of all 30 examples (`describe()`,
+  `lint()`, every storey's SVG, `compile().diagnostics`): 7 artifacts move, being the four
+  `describe()` payloads that gain the key and the three diagnostic sets that gain the warning. **Zero
+  drawings, zero `lint()` digests**, and `materials` keeps its `W_SCALE_OVERFLOW` and nothing else.
+  `SheetFitInput` is unchanged and the drawn extent is a **positional** argument to `resolveSheetSpec`
+  (a type-level breaking change to a public function, like v1.27.0's `tableRows`), precisely so the
+  fit test and auto-fit cannot reach it.
+
 - **Fixture-category completion, in the CORE** (backlog G.7). `completion()` now offers the 129
   catalogued fixture words in the one place they are legal — a `furniture` statement's category slot
   — so `arch complete --at <offset> --json`, the VS Code extension and the playground all gain them

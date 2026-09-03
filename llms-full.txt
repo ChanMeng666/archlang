@@ -709,7 +709,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**89 errors** (abort rendering) · **46 warnings** (advisory; `validate --strict` fails on them too).
+**89 errors** (abort rendering) · **47 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -817,6 +817,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `W_DOOR_NEAR_CORNER` — A door leaves less wall between its jamb and a corner than the wall is thick. **Fix:** Move the door further from the corner by the shortfall the warning quotes (`on <wall> at <pos>` measures along the run, so the position is the one number to change), or lengthen the wall past the door so the corner moves away from the jamb instead. There is no machine-applicable fix: every remedy rewrites a number the author chose. Narrowing the leaf would also close the gap and is deliberately NOT offered — rewriting the width you asked for to satisfy a checker is the constraint-laundering pattern this project rules out, and it heads toward `W_DOOR_CLEARANCE`.
 - `W_DOOR_OFF_WALL` — Door does not lie on any wall. **Fix:** Move the door onto a wall, or name its host with `wall <id|category>`. The diagnostic points at the nearest wall.
 - `W_DOORWAY_BLOCKED` — A doorway's landing is blocked. **Fix:** Move the obstruction clear of the opening by the shortfall the warning quotes (`arch repair` computes the smallest clearing shift), shrink it by that much on the axis facing the door, or move the door along its wall so its landing misses it.
+- `W_DRAWING_OVERFLOW` — The whole drawing does not fit the declared paper, even though the building does. **Fix:** Move up a paper size or pick a coarser scale — both also shrink the building, so check the drawing still reads — or draw less ground. There is deliberately NO machine fix: every remedy rewrites a decision the author made, and unlike a building overflow there is no defensible default, since re-scaling shrinks a building that was already sized correctly for the sheet (ADR 0005).
 - `W_DUP_ACC_METADATA` — Duplicate `accTitle`/`accDescr`. **Fix:** Keep a single `accTitle` and a single `accDescr`; delete the extra line(s).
 - `W_EMPTY_PLAN` — Empty plan. **Fix:** Add at least one element (wall, room, …).
 - `W_FIXTURE_BACK_TO_ROOM` — A fixture stands against a wall but faces the wrong way. **Fix:** Add the `rotate` that puts the back on the walled edge — the machine-applicable fix inserts it when exactly one edge is walled. Better still, place the piece with `against wall <id>` or `in <room> anchor <edge>` and let the rotation be derived.
