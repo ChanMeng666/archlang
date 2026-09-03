@@ -61,22 +61,70 @@ _All items landed._
 
 ## Wave 3 — hygiene, freshness, and the missing example
 
-### 3.1 · Nightly dependency audit red (issue #66) — `todo`
+### 3.1 · Nightly is red — and NOT for the reason this entry said (issue #66) — `todo`
 
-All six advisories trace to exactly two roots: `@modelcontextprotocol/sdk@1.29.0`
-(→ `@hono/node-server`, `hono`, `fast-uri` via `ajv`, `ip-address` via `express-rate-limit`) and
-`jspdf@4.2.1 → dompurify@3.4.11` in the playground. Both are dependency bumps.
+**Corrected 2026-09-04 by reading the job list, and the entry was wrong twice over.**
 
-The shim is **stdio-only**, so the hono and rate-limit code paths are unreachable at runtime —
-record that in the issue rather than implying exposure. A shim bump also means the pack-time
-resource law applies: version in `packages/mcp/package.json` **and both** `server.json` fields.
+**Wrong about WHICH job.** The failing job is **`Secret scan (gitleaks)`**. `Dependency audit
+(report-only)` **passes** — it is report-only by design and cannot fail the night. So every night
+this entry has been blamed for was a secret-scan failure.
+
+**The gitleaks half is now fixed** (`.gitleaksignore`): three findings, all in
+`paper/experiments/ecosystem/results-2026-08-22.json` at commit `ba3bbc4c`, all matched by the
+`sourcegraph-access-token` rule, which fires on a bare 40-character hex run — and a git commit SHA
+is one. Two are SHA-pinned GitHub Action references in a third party's workflow diff, the third is a
+public npm package's `revision`. All three are other people's public commit SHAs; none is a
+credential. They cannot be deleted, because `paper/` moved to the private repo on 2026-08-26 and
+gitleaks scans the FULL HISTORY. Allowlisted by commit-pinned fingerprint, so nothing else in that
+file — or anywhere else — is suppressed. Verified locally: 648 commits, 0 findings; removing one
+fingerprint makes exactly that one reappear.
+
+**Wrong about the ADVISORY COUNT, which has quadrupled.** The entry says six advisories tracing to
+exactly two roots. Measured 2026-09-04:
+
+```
+npm audit → 19 vulnerabilities: 2 critical, 9 high, 8 moderate
+```
+
+across a dozen roots — `brace-expansion`, `fast-uri`, `ip-address`, `js-yaml`, `linkify-it`,
+`nanoid`, `postcss`, `undici`, `qs`, `hono`, `@hono/node-server`, `dompurify`, `esbuild`, `vite`,
+`vite-node`, `vitest`, `@vitest/mocker`, `@vitest/coverage-v8`, `vitepress`. **Re-measure before
+working from any of this.** It splits into three jobs that must not be one PR:
+
+- **(a)** the leaf/transitive bumps with `fixAvailable: true` — the bulk, lockfile-only where possible.
+- **(b) `vitest` 5.0.0, a MAJOR**, dragging `vite`, `esbuild`, `vite-node`, `@vitest/mocker` and
+  `@vitest/coverage-v8`. The only route past both criticals. Its own worktree, its own PR, with the
+  full four-workspace suite plus both E2E legs as the gate.
+- **(c) `vitepress`, `fixAvailable: false`** — record it as accepted with a reason; do not force it.
+
+**A separate finding, not a vulnerability:** `docs-site/.vercel/.env.production.local` holds a JWT.
+It is gitignored (`docs-site/.gitignore:48`), has never been tracked and appears nowhere in history —
+a local Vercel CLI artifact, no exposure. Noted so the next person who runs a directory-mode scan
+does not re-investigate it.
+
+**The lesson this entry is now an instance of:** a permanently red gate is a disabled gate that still
+costs CI minutes. Left alone, the secret scan would have failed every night forever over three public
+SHAs, training every reader to scroll past the job where a real finding would eventually appear.
+
+**One framing from the original entry survives and still matters:** the shim is **stdio-only**, so
+the `hono` and rate-limit code paths are unreachable at runtime — record that in the issue rather
+than implying exposure. And a shim bump drags the pack-time resource law with it: the version must
+land in `packages/mcp/package.json` **and both** of `server.json`'s version fields, or the release
+workflow `npm view`-skips it and nothing reaches either registry.
 
 ### 3.2 · Nine stale dependabot PRs — `todo`
 
-Oldest is 2026-07-20. Batch the safe ones (`actions/checkout`, `actions/setup-node`,
-`github/codeql-action` ×2, `@fontsource/ibm-plex-mono`). Review separately, each on its own:
-**zod 3→4** (#27), **vite 6→8** (#26), and `@types/node` 22→26 (#28) — the last interacts with
-`noUncheckedIndexedAccess` across every leg of `typecheck:all`.
+Still nine, still oldest 2026-07-20 — but **the roster has turned over since this entry was
+written**, so re-measure with `gh pr list` rather than working from the list below. Measured
+2026-09-04: #80 / #79 (`github/codeql-action` init + analyze, 4.37.4→4.37.9), #78 (the
+dev-dependencies group, 7 updates), #60 (`actions/checkout` 7.0.0→7.0.1), #28 (`@types/node`
+22→26), #27 (`zod` 3→4), #26 (`vite` 6→8), #25 (`@fontsource/ibm-plex-mono`), #23
+(`actions/setup-node` 6→7).
+
+Batch the action bumps and the fontsource one. Each of these gets its own PR: **`zod` 3→4**;
+**`@types/node` 22→26**, because it interacts with `noUncheckedIndexedAccess` across *every* leg
+of `typecheck:all`; and **`vite` 6→8**, which is probably superseded by 3.1's `vitest` 5 major
+and should be checked against it before being reviewed on its own.
 
 ### 3.14 · A worktree build silently bundles the WRONG core — `done` (v1.27.0)
 

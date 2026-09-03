@@ -1,0 +1,48 @@
+# gitleaks findings that are verified FALSE POSITIVES, allowlisted by fingerprint.
+#
+# Read this before adding a line. A fingerprint is `<commit>:<path>:<ruleID>:<line>` and is
+# pinned to ONE line of ONE blob in ONE commit, so an entry here cannot suppress a future
+# finding — not even a real secret on the next line of the same file. That is the only form
+# an entry may take: never a path glob, never a bare rule name, never a regex allowlist.
+#
+# The rule that produced every entry below is `sourcegraph-access-token`, which matches a
+# bare 40-character hex string in a plausible-looking context. A git commit SHA is also a
+# 40-character hex string, so any corpus that records git revisions will trip it.
+#
+# ---------------------------------------------------------------------------------------
+# 2026-09-04 — three findings, all in `paper/experiments/ecosystem/results-2026-08-22.json`
+# at commit ba3bbc4c, the 7,272-package ecosystem census captured for the ArchLang papers.
+# Each was opened and read before being listed here:
+#
+#   119236  "-  - uses: memi-design/memi@74fc6ce8…<32 more hex> # v2.7.7"
+#   119237  "+  - uses: memi-design/memi@5fcbf39e…<32 more hex> # v2.7.9"
+#           A third party's workflow diff, captured verbatim by the census. These are
+#           SHA-PINNED GitHub Action references — the recommended supply-chain practice —
+#           and the trailing `# v2.7.x` comment is the convention that goes with it.
+#
+#   254081  "revision": "c74576c4…<32 more hex>"
+#           The git revision of a public npm package (github.com/taygunsavas/patina-unity-mcp),
+#           read out of that package's own metadata.
+#
+# All three are public commit SHAs belonging to other people's public repositories. None is
+# a credential, none grants access to anything, and none was ever ours.
+#
+# The SHAs above are TRUNCATED on purpose, and must stay that way. Quoted in full they are
+# 40-character hex strings, so this file trips the very rule it exists to quiet — the first
+# draft did, at these three lines, and would have turned the nightly red again on the commit
+# that added it. Found by running gitleaks against the working tree, not by reading the file.
+# The fingerprint lines at the bottom are unaffected: a fingerprint is not a hex run in a
+# scannable context, and they are what actually does the work.
+#
+# WHY THIS FILE HAD TO EXIST RATHER THAN THE FINDINGS BEING DELETED: `paper/` moved to the
+# private repository ChanMeng666/archlang-paper on 2026-08-26, so the file is gone from the
+# working tree — but gitleaks scans the FULL HISTORY, and history is not being rewritten for
+# three public SHAs. Left alone, the nightly secret scan fails every night forever, which
+# does not protect anything; it trains every reader to ignore a security gate, so the next
+# finding — a real one — arrives in a job everybody already scrolls past. A permanently red
+# gate is a disabled gate that still costs CI minutes.
+# ---------------------------------------------------------------------------------------
+
+ba3bbc4c98f4a7be21139a3963e4dcd34c6476f4:paper/experiments/ecosystem/results-2026-08-22.json:sourcegraph-access-token:119236
+ba3bbc4c98f4a7be21139a3963e4dcd34c6476f4:paper/experiments/ecosystem/results-2026-08-22.json:sourcegraph-access-token:119237
+ba3bbc4c98f4a7be21139a3963e4dcd34c6476f4:paper/experiments/ecosystem/results-2026-08-22.json:sourcegraph-access-token:254081
