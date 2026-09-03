@@ -711,7 +711,7 @@ handedness can, exactly, as one reflection about the footprint's own centre line
 This item is the third case, and the answer is the same as the handedness one.
 
 
-### G.11 · A measurement that disagrees with the drawing has NO gate — `todo`
+### G.11 · A measurement that disagrees with the drawing has NO gate — `done` (both gates built)
 
 Found while closing G.5, and it is the general form of that defect rather than a leftover of it.
 
@@ -769,6 +769,170 @@ That was worth confirming because the two grids are otherwise close cousins and 
 Related: item 5.8's laws (the monotonicity property, the body-radius ladder, the blocked-room report)
 were all measured on the pre-fix grid. They still hold, but every number they produced for a curved
 plan was wrong in exactly this invisible way — which is the sharpest argument for the gate.
+
+---
+
+**CLOSED 2026-09-04. Two of the three candidate gates were built; the third is subsumed.**
+
+**One pure extraction in `src/`, proved a no-op.** `navExtent(rooms)` and
+`rasteriseWallSegments(ex, walls, block)` are lifted verbatim out of `buildGrid`
+(`src/analyze/circulation.ts`), which now calls both; the callback keeps its allocation
+profile identical. Nothing enters `src/index.ts`. Proved by a SHA-256 sweep of `describe()`,
+`lint()` and every storey's SVG over all 30 examples — **95 of 95 artifacts byte-identical**
+— on a sweep proved non-vacuous first, in all three payloads (a `half + cell` plant moves 10
+`describe` hashes, `MITER_LIMIT 4 -> 2` moves all 35 SVGs, `DEFAULT_BODY_RADIUS_MM 300 -> 450`
+moves a `lint`).
+
+**The seam matters, the obvious one is wrong, and it was a NEAR-MISS worth recording.** The
+first comparand tried was `NavGrid.free`, restricted to `roomIdx >= 0`. That array conflates
+room membership, furniture erosion and carved thresholds, and it is `0` everywhere OUTSIDE the
+room boxes — so most of every wall's rasterisation is simply not expressible in it, and the
+gate could only ever examine the fraction of a wall that happens to overlap a room rectangle.
+**It passed, cleanly, and reported a corpus-wide worst residual of 0.000 mm.**
+
+Measured: that version examined **2,824 of `hexagon-pavilion`'s 18,000** window cells. The
+shipped one examines **13,260** there, and 1,186,861 across the corpus rather than 1,023,246.
+This is `docs/testing.md` §4's failure exactly — *a gate that cannot fail reports success in the
+same reassuring voice as one that can* — and nothing about reading the code said so; it took
+printing the examined-cell count per storey. **A coverage census is not paperwork before the
+law, it is the only thing that distinguishes the two.** The shipped gate therefore asserts a
+per-storey coverage floor and an empty skipped-storey list, so the same narrowing cannot happen
+again silently.
+
+**`test/nav-grid-residual.test.ts` — the geometric residual**, over all 30 examples and all
+35 storeys: `rasteriseWallSegments` run into a mask of its own, against `loopsContain` on the
+same `wallBand` `EdgeLoop`s `src/wall-lowering.ts` lowers. Three decisions are worth not
+re-deriving, and none of them is a tolerance:
+
+- **The openings are NOT cut, and no neighbourhood around a door is excluded.** The nav grid
+  does not subtract openings either — it models them separately as thresholds carved from the
+  access graph's connectors — so the pre-carve mask and the un-cut band union are like for
+  like. That is not merely tidier: a doorway is exactly where an excluded neighbourhood would
+  hide a chord error.
+- **The per-wall union, not `joinWalls`' outline.** A junction trim deletes a FACE LINE, never
+  solid (an edge is kept iff exactly one side has an owner), so the two point sets are equal.
+  No trim tolerance is needed because a trim is not a point-set difference.
+- **Caps and mitres are excluded STRUCTURALLY, by a vertex disc of `MITER_LIMIT * h + cell`** —
+  read off stated constants, not tuned. `wallBand` extends an open run's end faces by `h`
+  along their tangents, so the drawn square cap CONTAINS the mask's round one, and a mitre
+  reaches at most `MITER_LIMIT * h` before bevelling. Away from a vertex the two predicates are
+  literally the same formula.
+
+**The census, run as a report BEFORE any assertion existed:**
+
+```
+storeys 35   skipped 0
+cells 1,209,653   examined 1,186,861   agree 1,178,103
+onBoundary 8,758   inexplicable 0
+maxOnBoundaryOffset 2.558e-13 mm      2.0 s
+```
+
+**`inexplicable = 0` on the first run**, so nothing needed triage and the law ships with **no
+magnitude tolerance at all**: exact equality. The 8,758 exceptions are boundary TIES — a
+100 mm partition on a 100 mm grid puts cell centres exactly on its faces, where the mask's
+inclusive `d <= half` and the winding rule's half-open crossing are simply undefined — and
+they are counted and reported separately, never folded in. Their worst offset from the face is
+2.6e-13 mm, seven orders of magnitude under the `1e-6` shell, which is the measured headroom.
+
+**Why no magnitude tolerance could work**, which is the part of this that generalises: in the
+OVER direction a chord error is large, but in the UNDER direction the residual is **capped by
+the wall's own half-thickness** — a cell in the middle of a `thickness 200` drum is only
+100 mm from the boundary. Any blanket tolerance able to admit a legitimate mitre (which
+reaches `MITER_LIMIT * h` = 400 mm on that wall) would already swallow it. Exclude by
+geometry; then assert equality.
+
+**Non-vacuity — four plants, all measured against that census:**
+
+| plant | storeys firing | worst residual |
+|---|---|---|
+| `distPointToSeg` for arcs (the chord bug) | **4 of 35** | 7829.3 mm |
+| `d <= half + cell` | 33 of 35 | 100.0 mm |
+| `d <= half - cell` | 33 of 35 | 100.0 mm |
+| `d <= half * 1.5` | 33 of 35 | 299.4 mm |
+| `d <= half + 1` | 1 of 35 | 0.9 mm |
+
+The chord bug **discriminates**: the four are exactly `aquarium` L0, `hexagon-pavilion` L0,
+`hillside-villa` L0 and `library` L0 — every curved source — and zero on the other 31,
+`hillside-villa` L1 included, whose storey carries no arc. The `+ cell` / `- cell` plants have
+the opposite signature (over- and under-blocking along wall RUNS, on nearly every storey), so
+the gate is sensitive to the PREDICATE and not merely to arcs.
+
+**Two calibration results worth keeping.** `d <= half * 1.5` was predicted to be invisible on
+a 100 mm grid; it is not, because the corpus's commonest wall is `thickness 200` (`h = 100`)
+and `half * 1.5 = 150` lands exactly on the next ring of cell centres, which the inclusive
+`<=` admits — **scale a plant to the CELL, never to the thickness**. And `d <= half + 1` is
+invisible to the CORPUS (0 of 95 artifacts move) yet still caught here, 8 cells at up to
+0.9 mm, because a curved wall puts cell centres at arbitrary distances. The gate's resolution
+on curved geometry is sub-millimetre, and finer than anything the shipped examples express.
+
+**Two things this entry got wrong, both cheaply.** It called the residual "expensive" — the
+whole sweep is **2.0 s** over 1.2 M candidate cells, once iteration is confined to the
+rasteriser's own per-wall windows with a visited mask and the loops are bbox-prefiltered. And
+it proposed asserting "the maximum disagreement is under a cell"; a cell is 100 mm, which
+would have blessed `hillside-villa`'s 571 mm and `library`'s 812 mm chord errors on the
+under-direction half and is looser than the code actually is by an unbounded factor.
+
+**`test/circulation-hand-derived.test.ts` — the expectation from outside the system.** Two
+fixtures, both with the walk derived in the file header and neither taking a number from the
+compiler.
+
+The primary is a **drum**: a 200 mm closed circle, R 3000 at (5000,5000), in a 20100 x 10100
+room, with the entrance west of it and the room's own measured point east. Chord = 2R exactly,
+so the centre is the chord midpoint with no floating residue. Its virtue is a **proof that no
+rounding can move the answer**: with `u = (x-5000)/50` and `v = (y-5000)/50`, every cell centre
+has both ODD, so `u^2 + v^2 = 2 (mod 8)`, while the annulus bounds are `3364` and `3844`, both
+`4 (mod 8)` — **neither bound is attainable**, so the production `<=` and the derivation can
+never disagree. Lower bound 99 horizontal + 62 vertical, upper bound attained by three monotone
+legs: **161 hops, 16,100 mm**, `detourRatio` 1.63. Deleting the drum gives **9,900** — so the
+drum contributes 6,200 mm, and 9,900 = (100-1) x 100 independently re-derives both endpoints.
+The same circle written as **eight** arcs on 3-4-5 lattice points reads exactly 16,100 too,
+which is the degenerate exact form of the polygonal-refinement differential — **the third
+candidate gate, subsumed rather than skipped.**
+
+**The trap this fixture had to avoid, which the entry did not anticipate: under a Manhattan
+metric a convex detour is FREE.** Routing round an obstacle costs nothing unless the obstacle
+forces motion *away* from the target, so a fixture can assert a number the curve had no part
+in. Both fixtures here are constructed against that, and the control in each says so
+numerically.
+
+The second fixture is a different shape class on purpose — an open arc with a **free end**
+(exercising the round cap the drum has none of) forcing backtracking on the **x** axis:
+**165 hops, 16,500 mm** against 5,900 for the same wall written as its own literal chord. It
+has no mod-8 argument (its tightest load-bearing decision is 29.3 mm, the best a round cap can
+do on a lattice corner) and leans on eight ±1 mm jitters instead — which is precisely why the
+drum is the primary.
+
+**`examples/library.arch`'s `r_ref` walk is still not known by hand**, deliberately: computing
+it would take a day and prove one plan.
+
+**The premise, reproduced.** With the chord bug planted back in and these two files removed,
+the full suite goes red in **6 cases across 3 files** — but not one of them is a circulation
+gate. Four are hardcoded SHA-256 digests that happen to include `aquarium`'s `describe()`
+(`roof-void-byte-identity`, `outdoor-byte-identity`), one is the qualitative case the G.5
+repair itself added, and the sixth is the worktree-only `wrong-core`. Meanwhile `library`'s
+`r_ref` moves **37,100 -> 37,900** and is pinned by nothing: `library` is in neither digest
+suite, and its SVG does not move. That 800 mm is exactly what this item exists about.
+
+**One REAL defect of this class found while closing the item, deliberately not fixed here.** A
+`room circle` is drawn as a **true circle** — `elements/room.ts` emits a `circle` primitive, and
+`describe()` measures exact πR² — but it rasterises onto the nav grid as its **inscribed
+48-gon** (`poly: arcTessellate(fullCircleArc(...))`, `room.ts` ~:520), which `buildGrid` then
+tests with `pointInPolygon`. Sagitta = `r(1 - cos(3.75°)) ≈ r/467`. Measured today:
+
+```
+library  r_reading   R=8000  cell=100  sagitta 17.1 mm  32 cells disagree  worst offset 13.4 mm
+aquarium rotunda_r   R=8000  cell=100  sagitta 17.1 mm  32 cells disagree  worst offset 13.4 mm
+hexagon-pavilion rotunda R=3000 cell=100 sagitta  6.4 mm   0 cells disagree
+```
+
+So 32 rim cells per 8 m drum are inside the drawn floor and outside the modelled one. Harmless
+today (rim cells, far from any route bottleneck), **scaling with the radius** — at r ≈ 47 m
+the sagitta reaches a whole cell — and unguarded, which is the same combination the chord bug
+had. Two ways to close it: give `buildGrid`'s membership test the `r.circle` branch it already
+has the data for (`pointInRoomBox` is circle-aware; the nav grid is not), or resolve the ring
+at a radius-dependent step. **A room-membership residual gate is the obvious sibling of the
+wall one and is blocked on this**, because it would go red on the corpus today. Filed here
+rather than as a new number so the two halves stay together.
 
 ### G.7 · Fixture-word completion in the VS Code extension — `todo`
 
