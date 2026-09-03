@@ -3,6 +3,34 @@
 # absolute coordinates by pure arithmetic in dependency order. Only `living` is
 # anchored with `at`; every other room derives its position from a neighbour, so
 # changing the anchor or a size reflows the whole plan deterministically.
+#
+# FOUR DELIBERATE WARNINGS, and all four are one fact about the language:
+#
+#   W_ROOM_DISCONNECTED x3 (Kitchen, Bedroom, Bath) + W_ROOM_NOT_ENCLOSED x1 (Bath)
+#
+# A relationally-laid plan cannot carry partitions that reflow with it. Rooms resolve to
+# coordinates, but nothing can read a resolved room boundary back OUT: a wall point is an
+# expression, expressions see `let` constants and the nine built-ins, and there is no
+# `kitchen.x` — writing one is `E_UNKNOWN_REF`, not a coordinate. So the four interior
+# boundaries here (living|kitchen, living|bedroom, kitchen|bath, bedroom|bath) carry no
+# wall, no wall is there to host a door, and three of the four rooms have no way in.
+#
+# Both obvious repairs were measured, and both cost more than they buy:
+#
+#   * A cased `opening` on a wall-free boundary clears W_ROOM_DISCONNECTED from
+#     `arch lint` and raises W_OPENING_OFF_WALL from `arch validate` — `lint` is the
+#     soundness layer alone, `validate` is parse + resolve + lint. That is one warning
+#     traded for another, and the second one is the true one.
+#   * Absolute partitions at x=5000 and y=4000 would compile clean and would make this
+#     file a plan whose ROOMS reflow and whose WALLS silently do not — the trap the file
+#     exists to warn about. Hoisting every dimension into `let` constants and writing the
+#     walls as arithmetic over them fixes the *size* case only: change `bath right-of bed`
+#     to `bath below kitchen` and the walls stay exactly where they were. It also rebuilds
+#     by hand the coordinate model `right-of` exists to remove.
+#
+# So these four stand. `arch validate` is clean; `arch validate --strict` reports them.
+# Everything NOT caused by that limitation was repaired rather than documented: the
+# kitchen and the bath have their serviced fixtures, and the bedroom has a window.
 plan "Relational 1BR" {
   units mm
   grid 50
@@ -19,6 +47,7 @@ plan "Relational 1BR" {
 
   door   at (1000,0) width 1000 wall exterior hinge left swing in
   window at (6500,0) width 1800 wall exterior
+  window at (3200,7500) width 1600 wall exterior
 
   # Head against the south wall — the only edge of this room the bed's 1500 mm head can
   # back onto, since the boundary it shares with the living room carries no wall.
@@ -32,6 +61,18 @@ plan "Relational 1BR" {
   furniture dining_table at (5300,300)  size 2400x1200 label "Table" in kitchen
   furniture chair        at (5600,1700) size 450x450               in kitchen
   furniture chair        at (6800,1700) size 450x450               in kitchen
+
+  # The serviced pieces. Every one of these is `requiresWall` — a sink, a stove, a WC and
+  # a basin are plumbed or vented, so each backs onto the only wall this plan has, the
+  # exterior shell. That is also why the kitchen run and the bathroom run both sit on the
+  # EAST facade: the boundaries these two rooms share with their neighbours carry no wall
+  # to back onto (see the note in the header).
+  furniture sink   at (7300,2400) size 600x800 rotate 90 in kitchen
+  furniture stove  at (7300,3300) size 600x600 rotate 90 in kitchen
+
+  furniture wc     at (7200,4300) size 700x400 rotate 90 in bath
+  furniture basin  at (7450,5000) size 450x600 rotate 90 in bath
+  furniture shower at (5200,6500) size 900x900            in bath
 
   # Overall width, outside face to outside face (`faces` projects each endpoint onto
   # the wall it runs into, so it prints the true 8200 rather than the 8000 room grid).

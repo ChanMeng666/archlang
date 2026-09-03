@@ -14,7 +14,13 @@ plan "Imports Demo" {
   room id=r_main at (0,0) size 5000x4000 label "Studio"
 
   bed(3000, 300)
-  sofa(300, 2800)
+  # The sofa clears the front door's swing. `single(2000, 4000, 1000)` hangs its leaf on
+  # the x=2500 jamb of the south wall and needs 1000 mm of clear radius; at the obvious
+  # y=2800 the sofa's near corner sits 361 mm away and `W_SWING_OBSTRUCTED` fires. The
+  # component takes a position and nothing else, so the piece moves rather than the leaf
+  # — and the warning's own `file` is `lib/doors.arch`, because that is where the `door`
+  # statement is written, while the element to move lives here.
+  sofa(300, 2000)
   stove(300, 300)
 
   single(2000, 4000, 1000)

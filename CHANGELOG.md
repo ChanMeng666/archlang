@@ -32,6 +32,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (no fixture word appears) and structurally (no `enum`-kind item exists outside the slot), alongside
   an every-offset sweep whose expected ranges are hand-derived from the source text.
 
+### Fixed
+
+- **`examples/imports.arch` no longer ships an obstructed door swing** (backlog G.6). The front
+  door hangs its leaf on the x=2500 jamb of the south wall and needs 1000 mm of clear radius; the
+  imported `sofa(300, 2800)` left the piece’s near corner 361 mm away, so `W_SWING_OBSTRUCTED`
+  fired on every compile of the imports demo. The component takes a position and nothing else, so
+  the piece moved rather than the leaf — `sofa(300, 2000)`, corner at 1118 mm. The example is now
+  clean. It has no SVG snapshot, no PNG golden and is not in `README_SVGS`, so no committed
+  artifact moved.
+- **`examples/relational.arch` has its serviced fixtures and a bedroom window** (backlog G.6).
+  Three of its seven warnings had nothing to do with what the file teaches — the kitchen had no
+  sink, the bath no WC, the bedroom no window — so `W_ROOM_NO_FIXTURE` x2 and
+  `W_BEDROOM_NO_WINDOW` x1 are repaired: a `sink` and a `stove` backed onto the kitchen’s east
+  facade, a `wc`, a `basin` and a `shower` in the bath, and a 1600 mm window on the bedroom’s
+  south wall. Its SVG snapshot and PNG golden move for exactly those five symbols and that one
+  window opening, and nothing else.
+
+### Changed
+
+- **Two shipped examples now state their deliberate warnings in their own headers** (backlog G.6),
+  the way `hillside-villa` and `garden-house` already did. `examples/themed.arch` explains its one
+  `W_NO_ENTRANCE`: the file is a two-room fragment whose only door is on the partition, and it is
+  the corpus’s single positive case for that rule — `test/lint.test.ts` pins it as the SOLE
+  example that raises it, so cutting a front door would silence the pin as well as the warning.
+  `examples/relational.arch` explains its remaining four (`W_ROOM_DISCONNECTED` x3 +
+  `W_ROOM_NOT_ENCLOSED` x1), which are all one fact: **a wall cannot be derived from a resolved
+  room boundary**, so a relationally-laid plan gets rooms that reflow or interior partitions, never
+  both. Both edits are comment-only and change no byte of either drawing.
+
+### Documentation
+
+- **New backlog items G.12 and G.13.** G.12 is the language gap behind `relational.arch`’s four
+  remaining warnings, with the two obvious workarounds measured and rejected: a cased `opening` on
+  a wall-free boundary trades `W_ROOM_DISCONNECTED` for `W_OPENING_OFF_WALL`, and `let`-hoisted
+  dimensions with the walls written as arithmetic fix a size change while a change to a
+  *relational* clause silently moves nothing. G.13 records that G.6’s own table was stale — the
+  corpus carries **five** examples with an unaddressed warning, not three: `tiny-house`
+  (`W_PATH_TOO_NARROW`, which post-dates the entry, having been turned from a false clean into a
+  true report by the item-5.8 fix in 1.33.0) and `materials` (`W_SCALE_OVERFLOW`).
+
 ## [1.33.0] - 2026-09-03
 
 **Twelve silent wrong answers.** Every defect here was the compiler giving a confident, wrong

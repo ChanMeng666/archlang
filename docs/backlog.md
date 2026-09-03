@@ -628,21 +628,64 @@ reported as `other_entrance` rather than silently dropped, so the gap is now vis
 invisible.
 
 
-### G.6 · Three shipped examples carry unaddressed lint warnings — `todo`
+### G.6 · Three shipped examples carry unaddressed lint warnings — `done`
 
-The same shape `two-bed.arch` was in before the 2026-08 gallery refresh repaired it:
+Closed 2026-09-04, on the rule **repair where the warning is incidental, document where the warning
+IS the teaching**. Nine diagnostics over the three examples became five, and the five that remain
+each have a written reason in the source a reader is already looking at.
 
-| example | diagnostics |
-|---|---|
-| `relational.arch` | `W_ROOM_DISCONNECTED` x3, `W_ROOM_NO_FIXTURE` x2, `W_BEDROOM_NO_WINDOW` x1, `W_ROOM_NOT_ENCLOSED` x1 |
-| `themed.arch` | `W_NO_ENTRANCE` x1 |
-| `imports.arch` | `W_SWING_OBSTRUCTED` x1 |
+| example | before | after | how |
+|---|---|---|---|
+| `imports.arch` | `W_SWING_OBSTRUCTED` x1 | clean | repaired — the sofa moved |
+| `themed.arch` | `W_NO_ENTRANCE` x1 | `W_NO_ENTRANCE` x1 | documented in the header |
+| `relational.arch` | 7 (4 codes) | 4 (2 codes) | 3 repaired, 4 documented |
 
-`relational.arch` is the worst: three of its rooms cannot be entered at all. These are demonstration
-plans for `right-of`/`below`, `theme` and `import` respectively, so the warnings are incidental to
-what each teaches — but a reader who compiles the relational example and lints it is told the plan is
-unsound, which is not what an example should teach. Either repair them (as `two-bed` was) or state in
-each source header that the warning is deliberate, the way `hillside-villa` and `garden-house` do.
+**`imports.arch` — repaired.** `single(2000, 4000, 1000)` hangs its leaf on the x=2500 jamb of the
+south wall and needs 1000 mm of clear radius; `sofa(300, 2800)` left the piece's near corner 361 mm
+away. The component takes a position and nothing else, so the piece moved rather than the leaf —
+`sofa(300, 2000)`, corner at 1118 mm. Two things worth carrying: the diagnostic's `file` is
+`lib/doors.arch`, which is **correct provenance** (the `door` statement is written in the component)
+while the element to move lives in `imports.arch` — that is not a defect and was not "fixed"; and
+`y = 2100` also clears, at 1020 mm, which is the LAST grid-aligned position that does (2150 fails at
+971 mm), so the extra 100 mm is deliberate margin. `imports.arch` has no SVG snapshot, no PNG golden
+and is not in `README_SVGS` — checked, not assumed — so the repair moved no committed artifact.
+
+**`themed.arch` — documented.** Its only door is on the partition, so there is no way into the
+building. Repairing it would have moved an SVG snapshot, a PNG golden **and** `test/lint.test.ts`'s
+corpus-wide pin that `themed.arch` is the SOLE `W_NO_ENTRANCE` example across all thirty — the
+rule's only shipped positive case. The header now says all of that. The edit is comment-only and
+that is measured rather than asserted: `themed.svg`'s SHA-256 is unchanged and both of its suites
+stayed green through the re-bless of the other example.
+
+**`relational.arch` — split, and the split is the finding.** Three of its seven warnings had nothing
+to do with relational placement — the kitchen had no sink, the bath no WC, the bedroom no window —
+so they were repaired: five `requiresWall` fixtures backed onto the east facade plus a south window.
+(All five need `rotate 90` or `W_FIXTURE_BACK_TO_ROOM` fires on four of them, which it did on the
+first attempt.) The remaining four — `W_ROOM_DISCONNECTED` x3 + `W_ROOM_NOT_ENCLOSED` x1 — are one
+language limitation, now filed as **G.12** and stated in the file's own header.
+
+**Both obvious repairs for those four were measured, and both cost more than they buy.**
+
+- A cased `opening` on a wall-free boundary clears `W_ROOM_DISCONNECTED` from `arch lint` and raises
+  `W_OPENING_OFF_WALL` from `arch validate`: one warning traded for another, and the second is the
+  true one. (`lint` staying quiet there is BY DESIGN — `lint` is the soundness layer alone,
+  `validate` is parse + resolve + lint. Checked; not a defect.)
+- Absolute partitions would compile clean and would make the file a plan whose ROOMS reflow and
+  whose WALLS silently do not — the trap the file exists to warn about. Hoisting every dimension
+  into `let` constants and writing the walls as arithmetic over them was tried and **works**
+  (`size LW x LH` parses; `size LWxLH` does not, the lexer takes it as one identifier), and it fixes
+  the *size* case only: change `bath right-of bed` to `bath below kitchen` and every wall, door and
+  fixture stays exactly where it was. It also rebuilds by hand the coordinate model `right-of`
+  exists to remove, which is what would hollow the example out.
+
+**The table above was STALE, and that is the entry's own lesson applied to itself.** A sweep of all
+30 examples found **five** carrying an unaddressed warning, not three: `tiny-house`
+(`W_PATH_TOO_NARROW` x1) and `materials` (`W_SCALE_OVERFLOW` x1) are both deliberate and both
+explained in `CHANGELOG.md`, but neither says so in its own source header — which is the remedy this
+entry proposed. They are filed separately as **G.13** rather than folded in, because `materials`
+wants an owner call and `tiny-house`'s warning POST-DATES this entry: it is one of the two the
+item-5.8 fix in v1.33.0 turned from a false clean into a true report. Re-measure a table like this
+before working from it.
 
 ### G.9 · A full-suite flake, DIAGNOSED — and twice mis-diagnosed first — `done`
 
@@ -769,6 +812,73 @@ That was worth confirming because the two grids are otherwise close cousins and 
 Related: item 5.8's laws (the monotonicity property, the body-radius ladder, the blocked-room report)
 were all measured on the pre-fix grid. They still hold, but every number they produced for a curved
 plan was wrong in exactly this invisible way — which is the sharpest argument for the gate.
+
+### G.12 · A wall cannot be derived from a resolved room boundary — `todo`
+
+Found while closing G.6. It is why `examples/relational.arch` ships four warnings that cannot be
+repaired without giving up the thing the example exists to teach.
+
+**Relational placement and interior walls are mutually exclusive.** `room id=kitchen right-of
+living align top gap 0` resolves to real coordinates — and nothing can read them back out. A wall
+point is an `Expr`; the only name-bearing `Expr` node is `ref`, which resolves against the `let`
+environment and the nine built-ins (`min` `max` `abs` `sqrt` `floor` `ceil` `round` `len` `str`).
+There is no member access in the grammar at all. Measured, not read off the source:
+
+```
+wall partition thickness 100 { (kitchen.x, 0) (kitchen.x, 4000) }
+  → E_UNKNOWN_REF  Unknown name "kitchen.x"   (x2, one per point)
+```
+
+So a relationally-laid plan gets rooms that reflow **or** partitions, never both, and the
+consequence is not cosmetic: with no wall on a shared boundary there is nothing for a `door` to be
+hosted on, so `W_ROOM_DISCONNECTED` is unavoidable for every room whose only neighbour-boundary is
+an internal one. In `relational.arch` that is three of four rooms, plus `W_ROOM_NOT_ENCLOSED` on
+the bath.
+
+**Two workarounds, both measured and both rejected — do not re-derive these.**
+
+- **A cased `opening` on the wall-free boundary.** Clears `W_ROOM_DISCONNECTED` from `arch lint`,
+  raises `W_OPENING_OFF_WALL` from `arch validate`. A warning trade, not a fix. The asymmetry is by
+  design (`lint` is the soundness layer; `validate` is parse + resolve + lint) and is not a defect.
+- **`let`-hoisted dimensions with the walls written as arithmetic over them.** This WORKS —
+  `size LW x LH` parses, and `wall … { (LW,0) (LW,LH) }` places a partition exactly on the shared
+  boundary — and it fixes only the case where a SIZE changes. Change a relational clause instead
+  (`bath right-of bed` → `bath below kitchen`) and the rooms move while every wall, door and
+  fixture stays put, silently. It also reconstructs by hand the coordinate model `right-of` exists
+  to eliminate, at which point the relational clauses are decorative.
+
+**What would actually close this** is a way for a wall to name a resolved boundary rather than a
+number — something in the shape of `wall partition between living and kitchen`, or a room-edge
+reference legal in wall-point position. That is a language design question, not a bug fix, and it
+interacts with `place` frames (an instance-local room edge crossing into plan coordinates) and with
+`grid` snapping. **Do not treat the workarounds above as the answer**; either is a step backwards
+from what the example currently states honestly in its header.
+
+Until then `examples/relational.arch` is this item's live reproduction: it carries the four
+warnings on purpose and says why.
+
+### G.13 · Two more examples carry an undocumented warning — `todo`
+
+Found by the corpus sweep that closed G.6, whose own table said three examples and was measured at
+five. Both of these are **deliberate and already explained in `CHANGELOG.md`** — what is missing is
+the note in the source header, which is the remedy G.6 settled on and the only one a reader who
+lints the example will ever see.
+
+| example | diagnostic | already explained in | needs |
+|---|---|---|---|
+| `tiny-house.arch` | `W_PATH_TOO_NARROW` x1 — the wet room is sealed at 400 mm against a 700 mm minimum | `CHANGELOG.md` [1.33.0] | a header note, in `furnished-flat`'s style |
+| `materials.arch` | `W_SCALE_OVERFLOW` x1 — 16300x8300 mm against 17675x7305 mm of A3 landscape drawing area at 1:50 | `CHANGELOG.md` [1.20.0] and later | an **owner call** first |
+
+`tiny-house` is the cheap half and is a straight copy of what `furnished-flat` already does for its
+own `W_PATH_TOO_NARROW` — the two are siblings, both turned from a false clean into a true report
+by the item-5.8 fix in v1.33.0, and only one of them was documented. **That warning post-dates
+G.6**, which is why that entry never listed it.
+
+`materials` is not: the plan really does not fit the sheet it declares. Documenting it says "this
+sampler is issued at a scale where the poche survives and the sheet gives way", which is defensible
+and is what the source already argues for the scale. Re-fitting it (A2, or 1:75) says the opposite.
+That is a drafting decision, not a lint decision, so it wants the owner rather than the next agent.
+
 
 ### G.7 · Fixture-word completion — `done`
 
