@@ -97,6 +97,48 @@ working from any of this.** It splits into three jobs that must not be one PR:
   full four-workspace suite plus both E2E legs as the gate.
 - **(c) `vitepress`, `fixAvailable: false`** — record it as accepted with a reason; do not force it.
 
+**(a) is DONE (2026-09-04), and it was lockfile-only — no manifest moved.** All twelve
+`fixAvailable: true` roots cleared with a plain `npm audit fix` (never `--force`), a 45-line
+`package-lock.json` diff and nothing else:
+
+```
+before:  19 vulnerabilities (2 critical, 9 high, 8 moderate)
+after:    7 vulnerabilities (2 critical, 1 high, 4 moderate)
+```
+
+Every move was a patch or minor: `@hono/node-server` 1.19.14→1.19.17, `brace-expansion`
+2.1.1→2.1.4 and 5.0.6→5.0.9, `dompurify` 3.4.11→3.4.14, `fast-uri` 3.1.2→3.1.7, `hono`
+4.12.29→4.13.5, `ip-address` 10.2.0→10.7.0, `js-yaml` 4.2.0→4.3.2, `linkify-it` 5.0.1→5.0.2,
+`nanoid` 3.3.15→3.3.18, `postcss` 8.5.15→8.5.28, `qs` 6.15.3→6.16.0, `undici` 7.28.0→7.29.0.
+**Not one output byte moved** — a 95-artifact SHA-256 sweep (`describe()` + `lint()` + every
+storey's SVG across all 30 examples) is identical before and after, proved non-vacuous in both
+directions first. `hono`/`@hono/node-server` are `@modelcontextprotocol/sdk`'s, i.e. `packages/mcp`'s
+transitive tree; **the shim needs no version bump for this**, because its own `package.json` is
+byte-unchanged and a consumer resolves its own transitive tree from the published manifest, not from
+this lockfile.
+
+**A correction to (b) that the next agent needs: `vitest` 5 will NOT clear the `esbuild` advisory.**
+npm reports `esbuild`'s `fixAvailable` as `vitest@5.0.0`, but that only reaches
+`node_modules/vite/node_modules/esbuild@0.21.5`. The **other** node in the advisory,
+`node_modules/esbuild@0.27.7`, is **tsup's** — and `tsup@8.5.1`, the latest 8, pins `esbuild ^0.27.0`,
+which cannot reach the fixed `0.28.1`. So that one has **no fix at any version of tsup 8** and is a
+fourth group, not part of (b). Exposure is nil either way: both `esbuild` advisories
+(GHSA-67mh-4wv8-2f99, GHSA-g7r4-m6w7-qqqr) are against `esbuild serve`, a dev server tsup never
+starts. Note also that the root is on **`vitest` ^2.1.8** (resolved 2.1.9), so (b) is a *three*-major
+jump, and `vitepress@1.6.4` pins `vite ^5.4.14` — it shares the one hoisted `vite@5.4.21` with
+vitest 2 today, but `vitest` 5 wants `vite` 8, so (b) will **split** that tree rather than fix
+`vitepress`. (c) clears only on a `vitepress` release.
+
+**Residual after (a), grouped by why — 7 advisories:**
+
+| root | sev | why it stays |
+|---|---|---|
+| `vitest`, `@vitest/coverage-v8` | critical | needs the `vitest` 5 MAJOR — job (b) |
+| `vite` | high | ditto (via `vitest` 2's `vite ^5.0.0`) |
+| `@vitest/mocker`, `vite-node` | moderate | ditto |
+| `esbuild` | moderate | **two nodes, only one fixable by (b)** — tsup's `0.27.7` has no fix in tsup 8 |
+| `vitepress` | moderate | `fixAvailable: false`; accepted — its only `via` is `vite`, and it pins `vite ^5.4.14` |
+
 **A separate finding, not a vulnerability:** `docs-site/.vercel/.env.production.local` holds a JWT.
 It is gitignored (`docs-site/.gitignore:48`), has never been tracked and appears nowhere in history —
 a local Vercel CLI artifact, no exposure. Noted so the next person who runs a directory-mode scan
@@ -139,6 +181,36 @@ Batch the action bumps and the fontsource one. Each of these gets its own PR: **
 **`@types/node` 22→26**, because it interacts with `noUncheckedIndexedAccess` across *every* leg
 of `typecheck:all`; and **`vite` 6→8**, which is probably superseded by 3.1's `vitest` 5 major
 and should be checked against it before being reviewed on its own.
+
+**The batch is DONE (2026-09-04) — #60, #23 and #25 are superseded and can be closed.** Applied
+directly rather than by merging the PRs, which were based on an older `main`. Every SHA was resolved
+against GitHub (`gh api repos/<o>/<r>/git/ref/tags/<tag>`) rather than taken from the bot; both tags
+are **lightweight** (`type: "commit"`), so nothing needed peeling, and both matched what dependabot
+proposed byte-for-byte:
+
+| action | tag | SHA | sites |
+|---|---|---|---|
+| `actions/checkout` | v7.0.1 | `3d3c42e5aac5ba805825da76410c181273ba90b1` | 18, across 9 workflows |
+| `actions/setup-node` | v7.0.0 | `820762786026740c76f36085b0efc47a31fe5020` | 16, across 8 workflows |
+
+**On `setup-node` being a MAJOR — read, not assumed: nothing in `.github/workflows/*.yml` is
+affected.** The v6.4.0 → v7.0.0 `action.yml` diff is **purely additive** (two new outputs,
+`cache-primary-key` / `cache-matched-key`); no input was removed or re-defaulted, and `runs.using`
+is `node24` on both sides, so no runner or Node default moves. Of the four behaviour changes: the
+ESM migration is internal; `mirror`/`mirror-token` (#1548) is unused here; `@actions/cache` 5.1.0
+adds a log line; and **"Remove dummy `NODE_AUTH_TOKEN` export" (#1558) is a net positive for
+`release.yml`** — it stops the action injecting a placeholder token into `.npmrc`, which is exactly
+the OIDC-publish path this repo uses, and no workflow reads `NODE_AUTH_TOKEN` at all. The new
+`package-manager-cache` auto-enable cannot fire either: the root `package.json` declares neither
+`packageManager` nor `devEngines`, and every step wanting a cache passes `cache: npm` explicitly
+(`nightly.yml`'s smoke job deliberately omits it and runs no `npm ci`).
+
+`@fontsource/ibm-plex-mono` went `^5.2.7` → `^5.3.0` in **both** `docs-site/package.json` and
+`playground/package.json` (resolved 5.3.0). Both E2E legs re-ran green afterwards — 50 playground,
+61 passed + 2 gated skips docs.
+
+While there: `release.yml`'s house-style comment claimed `actions/checkout@v5, actions/setup-node@v5`,
+already two and three majors stale before this bump; corrected to the versions actually pinned.
 
 ### 3.14 · A worktree build silently bundles the WRONG core — `done` (v1.27.0)
 

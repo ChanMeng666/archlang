@@ -137,6 +137,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   room boundary**, so a relationally-laid plan gets rooms that reflow or interior partitions, never
   both. Both edits are comment-only and change no byte of either drawing.
 
+### Security
+
+- **Twelve transitive advisories cleared, lockfile-only** (backlog 3.1 (a)) — `npm audit` goes
+  **19 vulnerabilities (2 critical, 9 high, 8 moderate) → 7 (2 critical, 1 high, 4 moderate)** with
+  no manifest change and no `--force`: `@hono/node-server`, `brace-expansion`, `dompurify`,
+  `fast-uri`, `hono`, `ip-address`, `js-yaml`, `linkify-it`, `nanoid`, `postcss`, `qs` and `undici`,
+  every one a patch or minor. **No output byte moved** — `describe()`, `lint()` and every storey's
+  SVG across all 30 shipped examples (95 artifacts) are SHA-256 identical before and after, with the
+  sweep proved able to fail first. `hono`/`@hono/node-server` reach the tree only through
+  `@modelcontextprotocol/sdk`; `packages/mcp`'s own manifest is byte-unchanged, so **no shim version
+  bump is due** — and those code paths are unreachable anyway, the shim being stdio-only.
+
+  The seven that remain are recorded in `docs/backlog.md` 3.1 with why, and one of those reasons is a
+  correction: **the `vitest` 5 major will not clear the `esbuild` advisory.** It has two nodes, and
+  the one npm's `fixAvailable` does not name is **tsup's** `esbuild@0.27.7` — `tsup@8.5.1` pins
+  `esbuild ^0.27.0` and cannot reach the fixed `0.28.1`. Both `esbuild` advisories are against
+  `esbuild serve`, a dev server tsup never starts.
+
+### Changed
+
+- **GitHub Action pins bumped, still SHA-pinned** (backlog 3.2, superseding dependabot #60 and #23):
+  `actions/checkout` v7.0.0 → **v7.0.1** (`3d3c42e5aac5ba805825da76410c181273ba90b1`, 18 sites) and
+  `actions/setup-node` v6.4.0 → **v7.0.0** (`820762786026740c76f36085b0efc47a31fe5020`, 16 sites).
+  Each SHA was resolved from GitHub's own tag ref rather than taken from the bot; both tags are
+  lightweight, so neither needed peeling. **`setup-node` is a MAJOR and nothing here is affected**:
+  its `action.yml` diff is purely additive (two new cache outputs), `runs.using` stays `node24`, no
+  workflow reads `NODE_AUTH_TOKEN` or uses `mirror`, and the root `package.json` declares no
+  `packageManager`/`devEngines`, so v7's automatic package-manager caching cannot switch itself on
+  where a step deliberately omits `cache: npm`. Its "remove dummy `NODE_AUTH_TOKEN` export" fix is a
+  net positive for `release.yml`'s OIDC publish. Also `@fontsource/ibm-plex-mono` `^5.2.7` → `^5.3.0`
+  in both site workspaces (dependabot #25), and a stale house-style comment in `release.yml` that
+  still named `actions/checkout@v5` / `actions/setup-node@v5` now names what is pinned.
+
 ### Documentation
 
 - **New backlog items G.12 and G.13.** G.12 is the language gap behind `relational.arch`’s four
