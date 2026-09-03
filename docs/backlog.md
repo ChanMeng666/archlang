@@ -121,6 +121,20 @@ dev-dependencies group, 7 updates), #60 (`actions/checkout` 7.0.0→7.0.1), #28 
 22→26), #27 (`zod` 3→4), #26 (`vite` 6→8), #25 (`@fontsource/ibm-plex-mono`), #23
 (`actions/setup-node` 6→7).
 
+**#79 and #80 are DONE, and why they were stuck is the useful part.** `codeql-action/init` and
+`codeql-action/analyze` must be pinned to the SAME version; dependabot files them as two PRs, so
+each one ALONE creates a mismatch and fails:
+
+```
+##[error]Loaded a configuration file for version '4.37.9', but running version '4.37.4'
+```
+
+Neither could ever go green on its own, so both sat from 2026-08-31 looking broken. Closed by one
+commit bumping both lines together — which is exactly the union of the two PRs, so both can be
+closed as superseded. The target SHA was verified against GitHub rather than taken from the bot: the
+annotated tag `v4.37.9` peels to `cdf488f5…`, the SHA both PRs propose. **Any future
+`codeql-action` bump has the same shape — bump every step in one commit, never one PR at a time.**
+
 Batch the action bumps and the fontsource one. Each of these gets its own PR: **`zod` 3→4**;
 **`@types/node` 22→26**, because it interacts with `noUncheckedIndexedAccess` across *every* leg
 of `typecheck:all`; and **`vite` 6→8**, which is probably superseded by 3.1's `vitest` 5 major
