@@ -34,6 +34,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A `dims auto` chain no longer runs across the `outdoor` ground attached to the facade it
+  measures** (backlog 4.8). A facade's chain band is now offset from the outermost thing that
+  facade shows — its own outer wall face, **or** the furthest any `outdoor` surface reaches beyond
+  it within the along-span the chain measures — instead of from the wall face alone. On
+  `examples/garden-house.arch` the ground-floor overall chain and its value used to sit on the
+  patio, the paving link and the deck, and the first-floor one on the balcony slab; both now land
+  in clear paper.
+
+  **The rule is the MAXIMUM over every surface in the span, not the nearest one**, because only the
+  maximum is a fixed point: pushing past just the surfaces that abut the facade moves
+  `garden-house`'s ground-floor chain off the patio (ending y = 17000) and onto the lawn
+  (17400–21000). The reach of a surface is read off its **ring clipped to the along-span** — each
+  edge cut at the span ends and its cross coordinate evaluated at the cut, exact because that
+  coordinate is linear in the along one — never off a bounding box. The standoff is **per facade**
+  and is 0 wherever no ground lies beyond one, so a plan that declares no `outdoor` keeps the exact
+  offsets it had; it is added to **every** slot, so a `dims auto all` facade's three chains
+  translate together and keep their `CHAIN_STEP` spacing.
+
+  **Two drawings move, and nothing else does.** Across the 35 SVGs the 30 shipped examples produce,
+  exactly `garden-house.L1` and `garden-house.L2` change; the other 33 are SHA-256 identical.
+  Inside those two, attributed at the Scene-node level: 6 `dims` nodes per storey, plus — on L1
+  only — the schedule/legend/title/scale-bar band, as a **pure 1525 mm translation** (the set of
+  per-field numeric deltas across all 339 of its nodes is exactly `{0, 1525}`). L1's page grows
+  past its declared A2 by 1.01% (420 → 424.25 sheet mm) and `sheet.grown` flips to `true`, which
+  is the sheet layer's designed response to content taller than its paper — a drawing is never
+  clipped to make a sheet fit. `describe()` and `lint()` are untouched: `dims auto` is presentation
+  only.
+
 - **`examples/imports.arch` no longer ships an obstructed door swing** (backlog G.6). The front
   door hangs its leaf on the x=2500 jamb of the south wall and needs 1000 mm of clear radius; the
   imported `sofa(300, 2800)` left the piece’s near corner 361 mm away, so `W_SWING_OBSTRUCTED`

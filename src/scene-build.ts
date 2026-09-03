@@ -312,6 +312,87 @@ const witnessPt = (s: SideGeom, v: number): Point => {
  *  the band these chains occupy. */
 const chainOffset = (sizes: RenderSizes, slot: number): number => sizes.dimFont * (CHAIN_BASE + slot * CHAIN_STEP);
 
+/**
+ * How far outboard of its wall face a facade's dimension BAND has to start so its
+ * chains land in clear paper rather than on the ground the plan draws.
+ *
+ * Until v1.31 nothing existed outside the wall line for a chain to cross, so
+ * {@link chainOffset} alone was the whole answer. `outdoor` changed that: on
+ * `garden-house` the ground-floor chain runs across the patio, the paving link and the
+ * deck, and the first-floor chain across the balcony slab. Nothing is illegible — a
+ * dimension line is a thin dark stroke and ground is a tint under a hatch — but it is
+ * not what a drafter would issue.
+ *
+ * **The rule.** The band is offset from the outermost thing this facade shows: its own
+ * outer wall face, or the furthest any `outdoor` surface reaches beyond it. That
+ * maximum is the FIXED POINT of "push the chain past whatever it would cross", so the
+ * chain ends up crossing no ground at all. Pushing only past the surfaces that ABUT the
+ * facade is not a fixed point and does not close the defect — measured on
+ * `garden-house`, it moves the ground-floor chain off the patio and onto the lawn.
+ *
+ * **Per facade, and zero without ground.** Every side of every plan that declares no
+ * `outdoor` gets 0 here, which is what keeps the chain offsets — and therefore the
+ * bytes — of the other shipped examples exactly as they were.
+ *
+ * **The whole stack moves together.** The caller adds this to `chainOffset(sizes, slot)`
+ * for every slot, so the openings / axis / overall chains keep their exact `CHAIN_STEP`
+ * spacing and simply translate outward. Reflowing them independently would leave the
+ * inner chains on the ground and would break the fixed slot geometry that
+ * `DIM_BAND_FONTS` and `W_DIM_OVERLAP`'s tier arithmetic both read.
+ *
+ * **A surface covering part of the run pushes the whole chain.** A chain is one line at
+ * one offset: it cannot step around an obstruction halfway along, and splitting it into
+ * two collinear pieces at different offsets would stop reading as one chain. So any
+ * surface overlapping the measured along-span counts, as far as it reaches.
+ *
+ * **Units.** `chainOffset` is `sizes.dimFont` times a dimensionless multiple, and
+ * `dimFont` is already in PLAN millimetres in both `RenderSizes` constructors —
+ * `refDim * 0.02` in `toScene`, and `SHEET_MM.dimText * denom` in `sizesFromPaper`,
+ * where the sheet millimetres are multiplied by the scale denominator. A ground extent
+ * is plan millimetres too, so the two are directly commensurable and there is no
+ * conversion here.
+ *
+ * **From the shape, never the bounding box.** A surface's reach is read off its own
+ * ring, CLIPPED to the along-span the chain measures: each ring edge is cut at `lo`/`hi`
+ * and its cross coordinate evaluated at the cut, which is exact because an edge's cross
+ * coordinate is linear in its along coordinate. A polygon whose far corner sits outside
+ * the measured span therefore contributes the reach it actually has under the chain,
+ * not the reach its bounding box would claim.
+ */
+function groundStandoff(outdoors: readonly ROutdoor[], g: SideGeom): number {
+  const along = (p: Point): number => (g.axis === "h" ? p.x : p.y);
+  const cross = (p: Point): number => (g.axis === "h" ? p.y : p.x);
+  /** Outward depth of a cross coordinate past this facade's outer face (negative = inboard). */
+  const reach = (c: number): number => g.out * (c - g.outer);
+  let depth = 0;
+  for (const o of outdoors) {
+    const ring = outdoorRing(o);
+    for (let i = 0; i < ring.length; i++) {
+      const a = ring[i]!;
+      const b = ring[(i + 1) % ring.length]!;
+      const a0 = along(a);
+      const a1 = along(b);
+      if (a0 === a1) {
+        // Perpendicular to the chain: the edge states one along coordinate and two
+        // cross ones, so there is nothing to clip — it is either in the span or out.
+        if (a0 >= g.lo && a0 <= g.hi) depth = Math.max(depth, reach(cross(a)), reach(cross(b)));
+        continue;
+      }
+      // Clip the edge's parameter range (t runs a -> b) to [lo, hi]. The extremes of a
+      // linear function on an interval are at its ends, so the two clipped endpoints
+      // are the only cross coordinates worth evaluating.
+      const tLo = (g.lo - a0) / (a1 - a0);
+      const tHi = (g.hi - a0) / (a1 - a0);
+      const t0 = Math.max(0, Math.min(tLo, tHi));
+      const t1 = Math.min(1, Math.max(tLo, tHi));
+      if (t0 > t1) continue; // the edge never enters the measured span
+      const dc = cross(b) - cross(a);
+      depth = Math.max(depth, reach(cross(a) + t0 * dc), reach(cross(a) + t1 * dc));
+    }
+  }
+  return Math.max(0, depth);
+}
+
 /** Ticks closer than this (mm) are the same tick — a corner and an opening edge
  *  landing together must not emit a zero-length span. */
 const TICK_TOL = 0.5;
@@ -568,6 +649,11 @@ function synthGbChains(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void
   const geoms = sideGeoms(ir, ext);
   const openings = facadeOpenings(ir);
   const rooms = ir.elements.filter((el): el is RRoom => el.kind === "room");
+  // Ground is not measured — `measureExtent` above is deliberately building-only, because
+  // it decides what the overall chain SAYS and a lawn is not part of the building's width.
+  // It is read here, and only here, to decide where the chain SITS. The two notions of
+  // "the drawing" stay distinct on purpose: one is a measurement, the other a placement.
+  const outdoors = ir.elements.filter((el): el is ROutdoor => el.kind === "outdoor");
 
   for (const side of SIDES) {
     const g = geoms[side];
@@ -579,9 +665,15 @@ function synthGbChains(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void
     // Top/right are only dimensioned when an openings chain will be drawn there.
     if ((side === "top" || side === "right") && !(wantOpenings && mine.length > 0)) continue;
 
+    // One standoff for the whole facade, added to every slot, so the chains translate
+    // outward as a set and keep their `CHAIN_STEP` spacing. 0 on a facade with no ground
+    // beyond it, which is every facade of every plan that declares no `outdoor`.
+    const stand = groundStandoff(outdoors, g);
+    const slotAt = (slot: number): number => chainOffset(sizes, slot) + stand;
+
     if (wantOpenings && mine.length > 0) {
       const edges = mine.flatMap((op) => [op.along - op.width / 2, op.along + op.width / 2]);
-      emitChain(g, cleanTicks([g.lo, ...edges, g.hi], g.lo, g.hi), chainOffset(sizes, 0), sizes.dimFont, dims);
+      emitChain(g, cleanTicks([g.lo, ...edges, g.hi], g.lo, g.hi), slotAt(0), sizes.dimFont, dims);
     }
     if (wantAxis) {
       // Declared axes on this direction win: the middle chain becomes the true GB/T
@@ -601,9 +693,9 @@ function synthGbChains(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void
                   ? [r.at.x, r.at.x + r.size.w]
                   : [r.at.y, r.at.y + r.size.h],
             );
-      emitChain(g, cleanTicks(ticks, g.lo, g.hi), chainOffset(sizes, 1), sizes.dimFont, dims);
+      emitChain(g, cleanTicks(ticks, g.lo, g.hi), slotAt(1), sizes.dimFont, dims);
     }
-    if (wantOverall) emitChain(g, [g.lo, g.hi], chainOffset(sizes, 2), sizes.dimFont, dims);
+    if (wantOverall) emitChain(g, [g.lo, g.hi], slotAt(2), sizes.dimFont, dims);
   }
 }
 
