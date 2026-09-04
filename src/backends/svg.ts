@@ -203,14 +203,21 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
   // collection order kept within a layer). Each <g> is an Inkscape layer so a
   // viewer can toggle walls/doors/annotations independently.
   const groups = new Map<string, string[]>();
+  // An axonometric's node order IS a painter's algorithm, far to near, so it goes into
+  // ONE flat bucket instead — see the guard below.
+  const flat: string[] = [];
   for (const pass of RENDER_PASSES) {
     for (const node of scene.nodes) {
       if (node.layer !== pass) continue;
       const lyr = layerOf(node);
-      let bucket = groups.get(lyr);
-      if (!bucket) {
-        bucket = [];
-        groups.set(lyr, bucket);
+      let bucket = flat;
+      if (!scene.view) {
+        const found = groups.get(lyr);
+        if (found) bucket = found;
+        else {
+          bucket = [];
+          groups.set(lyr, bucket);
+        }
       }
       let el = serialize(node, sizes);
       // Opt-in editor affordance: stamp the source byte-span onto the element so a
@@ -227,17 +234,38 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
       bucket.push(el);
     }
   }
-  for (const [lyr, els] of groups) {
-    out.push(`<g id="${lyr}" inkscape:groupmode="layer" inkscape:label="${lyr}">`);
-    out.push(...els);
+  if (scene.view) {
+    // **The layer grouping RE-ORDERS nodes within a pass**, and an axonometric cannot
+    // survive that: its node order IS a painter's algorithm, far to near, and bucketing
+    // it into one `<g>` per CAD layer draws every floor plate, then every wall, then all
+    // the glazing — so a floor is painted over the near wall standing on it. (That is not
+    // hypothetical: it is what this view drew before the guard, and the picture read as
+    // an open box.) So a view emits one group, in collection order. The per-node
+    // `layerName` still reaches the DXF export, which has no order to lose.
+    out.push(`<g id="V-3D" inkscape:groupmode="layer" inkscape:label="V-3D">`);
+    out.push(...flat);
     out.push("</g>");
+  } else {
+    for (const [lyr, els] of groups) {
+      out.push(`<g id="${lyr}" inkscape:groupmode="layer" inkscape:label="${lyr}">`);
+      out.push(...els);
+      out.push("</g>");
+    }
   }
 
   // Plan-level annotations (after element passes): north, scale bar, title block.
-  out.push(northArrow(scene.north, b, margin, refDim, THEME));
-  out.push(scaleBar(chrome.scaleBar, thin, THEME));
-  const tb = titleBlock(chrome.titleBlock, thin, THEME);
-  if (tb) out.push(tb);
+  //
+  // All three are PLAN chrome, and all three would be false on an axonometric: an arrow
+  // points at a compass direction on a drawing whose plan has been turned, a scale bar
+  // measures an axis the projection foreshortens, and a title block makes a drawing look
+  // issuable — which an illustrative view must never do. `Scene.view` is set only by
+  // `toIso`, so every plan drawing takes the branch it always has.
+  if (!scene.view) {
+    out.push(northArrow(scene.north, b, margin, refDim, THEME));
+    out.push(scaleBar(chrome.scaleBar, thin, THEME));
+    const tb = titleBlock(chrome.titleBlock, thin, THEME);
+    if (tb) out.push(tb);
+  }
 
   out.push("</svg>");
   return out.join("\n");

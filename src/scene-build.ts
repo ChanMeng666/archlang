@@ -78,8 +78,10 @@ function planBounds(ir: ResolvedPlan, registry: Registry): Bounds {
  * page chrome (north/scale/title). `opts.width` does not affect the Scene (it is
  * an SVG-only attribute) — only `opts.theme` participates.
  */
-/** Resolve `theme <name>` to its colours: per-call registered themes win over built-in THEMES. */
-function themeBaseLookup(name: string | undefined, runtime: Runtime): Partial<Theme> {
+/** Resolve `theme <name>` to its colours: per-call registered themes win over built-in THEMES.
+ *  Exported so the axonometric view (`src/view/iso.ts`) runs the SAME cascade rather than a
+ *  second copy of it — a theme resolved two ways is two ways for a colour to be wrong. */
+export function themeBaseLookup(name: string | undefined, runtime: Runtime): Partial<Theme> {
   if (!name) return {};
   const reg = runtime.themes?.find((t) => t.name === name);
   return reg ? reg.theme : (THEMES[name] ?? {});

@@ -32,35 +32,59 @@
  * `emitRegion` produced.
  */
 
-import type { RWall } from "./ir.js";
+import type { Opening, RWall } from "./ir.js";
 import type { RenderCtx } from "./registry.js";
 import type { SceneNode } from "./scene.js";
 import { MITER_LIMIT } from "./scene.js";
 import type { HatchSpec } from "./hatches.js";
 import { hatchKey, hatchOf, patternId } from "./hatches.js";
 import { PointInterner, loopBBox, openingCut, wallBand } from "./geometry/band.js";
-import type { JoineryCut, JoineryWall } from "./geometry/joinery.js";
+import type { EdgeLoop } from "./geometry/band.js";
+import type { JoineryCut, JoineryResult, JoineryWall } from "./geometry/joinery.js";
 import { bandBBox, emitLoops, joinWalls, loopsToPolygons } from "./geometry/joinery.js";
 
+/** One opening's cut volume, joined back to the wall it was cut from. */
+export interface JoinedCut {
+  /** Index into the `walls` array {@link joinWallSet} was given. */
+  wall: number;
+  /** The resolved opening, so a consumer can read its `kind`/`sill`/`head`. */
+  opening: Opening;
+  /** The plan footprint the opening removes — `openingCut`'s loop. */
+  loop: EdgeLoop;
+}
+
+/** What {@link joinWallSet} produces: the joinery result, plus the cuts that made it. */
+export interface JoinedWallSet {
+  result: JoineryResult;
+  /** Every opening's cut, in the order they were cut (the `JoineryCut.index` order). */
+  cuts: JoinedCut[];
+}
+
 /**
- * Wall fill + outline for a whole set of walls, joined.
+ * **Wall set → joined geometry.** `wallBand` → `openingCut` → `joinWalls`, and nothing
+ * else: no theme, no paint, no Scene.
  *
- * `walls` is the plan's wall list in source order — that index is `joinWalls`'s canonical
- * tie-break, so it must be the caller's own and stable. `hatches` is `hatchesUsed(walls)`:
- * it fixes both which fills are produced and the order they are emitted in.
+ * Split out of {@link lowerWallSet} in v1.35 so the axonometric view (`src/view/`) can
+ * consume {@link JoineryResult.outline} — the exact `EdgeLoop[]` the plan view lowers —
+ * *before* `emitLoops` narrows it to a `region`/`path`. A 3D extrusion needs the edges,
+ * not the primitive: it lifts each one to a side quad and caps the whole loop set at the
+ * wall's height, so the third dimension computes no new footprint. Re-deriving the
+ * footprint in the view would be a second joinery, and two of those is exactly how a
+ * drawing and its own extrusion come to disagree.
  *
- * Every opening on every wall is cut, on a straight, angled or curved host alike — which
- * is why `RenderCtx.openingsVoided` is now unconditionally true and no element paints an
- * opaque cover any more.
+ * `groupKeys` fixes which fills are produced and in what order; pass `[]` when only the
+ * outline is wanted. Returns `null` for a set with no bandable wall, which is what
+ * `lowerWallSet` has always treated as "draw nothing".
  *
  * Pure and deterministic: one {@link PointInterner} for the whole call (see `joinWalls`
  * for why that matters), no clock, no randomness, no Map-order dependence.
  */
-export function lowerWallSet(walls: readonly RWall[], hatches: readonly HatchSpec[], ctx: RenderCtx): SceneNode[] {
-  if (walls.length === 0) return [];
+export function joinWallSet(walls: readonly RWall[], groupKeys: readonly string[]): JoinedWallSet | null {
+  if (walls.length === 0) return null;
   const intern = new PointInterner();
   const jwalls: JoineryWall[] = [];
   const cuts: JoineryCut[] = [];
+  const joined: JoinedCut[] = [];
   for (let i = 0; i < walls.length; i++) {
     const w = walls[i]!;
     const loops = wallBand(w, intern);
@@ -79,12 +103,34 @@ export function lowerWallSet(walls: readonly RWall[], hatches: readonly HatchSpe
     // running counter is canonical.
     for (const op of w.openings) {
       const loop = openingCut(w, op, intern);
-      if (loop) cuts.push({ index: cuts.length, loop, bbox: loopBBox(loop) });
+      if (loop) {
+        cuts.push({ index: cuts.length, loop, bbox: loopBBox(loop) });
+        joined.push({ wall: i, opening: op, loop });
+      }
     }
   }
-  if (jwalls.length === 0) return [];
+  if (jwalls.length === 0) return null;
+  return { result: joinWalls(jwalls, cuts, groupKeys), cuts: joined };
+}
 
-  const result = joinWalls(jwalls, cuts, hatches.map(hatchKey));
+/**
+ * Wall fill + outline for a whole set of walls, joined.
+ *
+ * `walls` is the plan's wall list in source order — that index is `joinWalls`'s canonical
+ * tie-break, so it must be the caller's own and stable. `hatches` is `hatchesUsed(walls)`:
+ * it fixes both which fills are produced and the order they are emitted in.
+ *
+ * Every opening on every wall is cut, on a straight, angled or curved host alike — which
+ * is why `RenderCtx.openingsVoided` is now unconditionally true and no element paints an
+ * opaque cover any more.
+ *
+ * Pure and deterministic: one {@link PointInterner} for the whole call (see `joinWalls`
+ * for why that matters), no clock, no randomness, no Map-order dependence.
+ */
+export function lowerWallSet(walls: readonly RWall[], hatches: readonly HatchSpec[], ctx: RenderCtx): SceneNode[] {
+  const joined = joinWallSet(walls, hatches.map(hatchKey));
+  if (!joined) return [];
+  const result = joined.result;
   const nodes: SceneNode[] = [];
   for (const h of hatches) {
     const k = hatchKey(h);

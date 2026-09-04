@@ -66,6 +66,7 @@ render a plan to SVG/DXF/TXT/PDF/PNG
 | `--install` | auto-install the optional dep for the chosen format if missing (PNG/PDF) |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
+| `--view <iso\|axon>` | render an illustrative axonometric of the building instead of the plan (iso = true isometric, axon = the 30/60 plan oblique) — a picture, never a measured drawing: no scale, no title block, no dimensions, and `describe`/`lint` are unaffected |
 
 **Examples**
 
@@ -90,6 +91,9 @@ $ arch compile house.arch -o house.svg --json
 
 # render just the upper storey of a multi-storey plan to one file
 $ arch compile house.arch --level 2 -o upper.svg
+
+# an illustrative isometric of the whole building (every storey in ONE drawing, so no per-level fan-out)
+$ arch compile house.arch --view iso -o house-iso.svg
 ```
 
 ### `arch batch`
@@ -171,6 +175,7 @@ render a PNG you can look at (zero-install where the optional binary is present)
 | `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
 | `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) |
 | `--install` | auto-install @resvg/resvg-js if missing, then render |
+| `--view <iso\|axon>` | render an illustrative axonometric of the building instead of the plan (iso = true isometric, axon = the 30/60 plan oblique) — a picture, never a measured drawing: no scale, no title block, no dimensions, and `describe`/`lint` are unaffected |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -185,6 +190,9 @@ $ arch preview plan.arch -o plan.png --json
 
 # look at one storey of a multi-storey plan
 $ arch preview house.arch --level 2 -o upper.png --json
+
+# raster an illustrative plan-oblique of the building so a vision model can look at it
+$ arch preview house.arch --view axon -o house-axon.png --json
 ```
 
 ### `arch watch`

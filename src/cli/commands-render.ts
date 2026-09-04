@@ -26,6 +26,7 @@ import {
   makeNodeWorld,
   parseFormat,
   readInput,
+  resolveView,
   sourceFromJson,
   stdoutJsonConflict,
   stdoutMultiPage,
@@ -122,9 +123,17 @@ export async function cmdCompile(args: Args): Promise<number> {
     source = conv.source;
   }
 
+  // `--view iso|axon` (v1.35): the illustrative axonometric. It is a WHOLE-BUILDING
+  // drawing, so it collapses the per-storey fan-out to one artifact — `compile()` returns
+  // no `pages` for it, and `-o <file>` therefore writes exactly the file it names rather
+  // than one `<stem>.L<n>` per level. Validated here so a bad value or `-f txt` is an
+  // exit-3 usage error before anything is read.
+  const rv = resolveView(args, format, "compile");
+  if ("code" in rv) return rv.code;
+
   // A multi-storey plan (`level` blocks) renders one artifact per storey unless `--level`
   // narrows it to one; a single-storey plan is unaffected by either.
-  const r = await renderArtifact(source, format, args, baseDirOf(input), pageSelect(args, "all"));
+  const r = await renderArtifact(source, format, args, baseDirOf(input), pageSelect(args, "all"), rv.view);
   if (r.badLevel) return unknownLevel("compile", args.level!, r.levels);
 
   if (r.error) {
@@ -385,6 +394,10 @@ export async function cmdWatch(args: Args): Promise<CommandResult> {
  */
 async function cmdPreviewAscii(args: Args, input: string): Promise<number> {
   const format: Format = "txt";
+  // `--ascii` IS the txt backend, so `--view` is refused here for the same reason
+  // `-f txt` is: a projection has no plan for the ASCII room pass to read.
+  const rv = resolveView(args, format, "preview");
+  if ("code" in rv) return rv.code;
   let source: string;
   try {
     source = readInput(input);
@@ -421,6 +434,8 @@ export async function cmdPreview(args: Args): Promise<number> {
 
   const format: Format = "png";
   if (args.json && args.o === "-") return stdoutJsonConflict("preview");
+  const rv = resolveView(args, format, "preview");
+  if ("code" in rv) return rv.code;
   // Target a sensible on-screen size by default: the native render is high-res
   // (thousands of px), so render the page at ~1600px wide unless the caller set
   // an explicit width/scale. That keeps the PNG legible *and* small enough for an
@@ -435,8 +450,9 @@ export async function cmdPreview(args: Args): Promise<number> {
     return ioError(`cannot read ${input}`, args.json, { format });
   }
 
-  // Multi-storey: preview the storey `--level` names, else the lowest (page 1).
-  const r = await renderArtifact(source, format, args, baseDirOf(input), pageSelect(args, "first"));
+  // Multi-storey: preview the storey `--level` names, else the lowest (page 1). With
+  // `--view` there is one page — the whole building — so `--level` has nothing to narrow.
+  const r = await renderArtifact(source, format, args, baseDirOf(input), pageSelect(args, "first"), rv.view);
   if (r.badLevel) return unknownLevel("preview", args.level!, r.levels);
 
   if (r.error) {
