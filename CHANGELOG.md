@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.34.0] - 2026-09-04
+
+**What the gates could not see.** Every item here is a check that was running, green, and
+blind — or one that did not exist. The circulation model had no gate that was not relative to
+itself. The sheet fit rule measured the building and nothing else the plan draws, so a page could be
+issued **57% taller than its own paper** while `sheet.fits` said `true`. The nightly secret scan had
+failed every night for a week over three public commit SHAs, which is a disabled gate that still
+costs CI minutes. Two dependabot PRs could never have gone green individually, by construction. And
+the corpus sweep this repository leans on turned out to carry **no parse- or resolve-stage
+diagnostic at all**.
+
+One new advisory code (`W_DRAWING_OVERFLOW`), one new `describe()` key (`sheet.drawing_fits`), no
+removals. **One type-level breaking change to a public function**, the v1.27.0 `tableRows` shape:
+`resolveSheetSpec` takes the drawn extent as a required fourth argument. Nothing changes for
+`compile()` or the CLI, and the argument is positional and required deliberately — so the fit test
+and auto-fit cannot reach it, and a caller that forgets it cannot compile.
+
+**The headline is a gate, not a feature.** `test/nav-grid-residual.test.ts` and
+`test/circulation-hand-derived.test.ts` close backlog G.11, the general form of v1.33.0's chord bug:
+every circulation law written before them compares the model *to itself* under a perturbation, so
+all of them stay green on a grid that models the wrong building. The residual compares the model to
+the **drawing** — 1,186,861 cells over 35 storeys, **exact equality, no magnitude tolerance** — and
+the hand-derived fixture takes its expected walk from arithmetic done outside the compiler, which is
+the only thing that can catch both sides being wrong together.
+
+**One drawing moves** (`garden-house`, both storeys, for a dimension chain that had been running
+across its own terrace); three examples gain the new warning; five gain or lose an advisory of their
+own. `npm audit` goes 19 → 7 and **`npm audit --omit=dev` to 0**.
+
 ### Added
 
 - **A plan can no longer be issued on a sheet that cannot hold it while `sheet.fits` says `true`**
@@ -99,6 +128,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     on different sides of the boundary in the two models (worst offset 13.4 mm, bounded by `r/467`
     and scaling with the radius). Detail and both possible fixes in `docs/backlog.md` G.11.
 
+### Changed
+
+- **Two MORE shipped examples state their deliberate warnings in their own headers** (backlog G.13,
+  closed). `tiny-house.arch` carries `W_PATH_TOO_NARROW` on its Wet room — `describe --json` reports
+  a **measured** `widestWayInMm` of 400 against the 700 mm minimum, and the pinch is the room
+  (1700 x 2800 mm holding a shower, a WC and a basin), not the 800 mm barn door. It only became
+  visible in 1.33.0, when the rule stopped going silent on a room it could not reach.
+  `materials.arch` carries `W_SCALE_OVERFLOW`, and the note corrects an imprecise reading of it: the
+  emitted page **is exactly A3 landscape** and nothing is clipped, so what the rule reports is a
+  margin encroachment inside its own fit budget, not a page that outgrew its paper. The scale stays
+  at 1:50 deliberately — the diagnostic's remedy is a coarser scale, and at 1:100 six wall materials
+  stop reading side by side, which is the only thing that file exists to show. Both edits are
+  comment-only: across all 30 examples the sole movement is one `span` per file, shifted by exactly
+  the inserted comment's byte length, with every SVG byte-identical.
+
+- **Two shipped examples now state their deliberate warnings in their own headers** (backlog G.6),
+  the way `hillside-villa` and `garden-house` already did. `examples/themed.arch` explains its one
+  `W_NO_ENTRANCE`: the file is a two-room fragment whose only door is on the partition, and it is
+  the corpus’s single positive case for that rule — `test/lint.test.ts` pins it as the SOLE
+  example that raises it, so cutting a front door would silence the pin as well as the warning.
+  `examples/relational.arch` explains its remaining four (`W_ROOM_DISCONNECTED` x3 +
+  `W_ROOM_NOT_ENCLOSED` x1), which are all one fact: **a wall cannot be derived from a resolved
+  room boundary**, so a relationally-laid plan gets rooms that reflow or interior partitions, never
+  both. Both edits are comment-only and change no byte of either drawing.
+
+- **GitHub Action pins bumped, still SHA-pinned** (backlog 3.2, superseding dependabot #60 and #23):
+  `actions/checkout` v7.0.0 → **v7.0.1** (`3d3c42e5aac5ba805825da76410c181273ba90b1`, 18 sites) and
+  `actions/setup-node` v6.4.0 → **v7.0.0** (`820762786026740c76f36085b0efc47a31fe5020`, 16 sites).
+  Each SHA was resolved from GitHub's own tag ref rather than taken from the bot; both tags are
+  lightweight, so neither needed peeling. **`setup-node` is a MAJOR and nothing here is affected**:
+  its `action.yml` diff is purely additive (two new cache outputs), `runs.using` stays `node24`, no
+  workflow reads `NODE_AUTH_TOKEN` or uses `mirror`, and the root `package.json` declares no
+  `packageManager`/`devEngines`, so v7's automatic package-manager caching cannot switch itself on
+  where a step deliberately omits `cache: npm`. Its "remove dummy `NODE_AUTH_TOKEN` export" fix is a
+  net positive for `release.yml`'s OIDC publish. Also `@fontsource/ibm-plex-mono` `^5.2.7` → `^5.3.0`
+  in both site workspaces (dependabot #25), and a stale house-style comment in `release.yml` that
+  still named `actions/checkout@v5` / `actions/setup-node@v5` now names what is pinned.
 
 ### Fixed
 
@@ -159,31 +225,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gate that still costs CI minutes. (Backlog 3.1 also blamed the wrong job — the dependency audit is
   report-only and passes — and its advisory count was stale by 3x; both corrected in place.)
 
-### Changed
-
-- **Two MORE shipped examples state their deliberate warnings in their own headers** (backlog G.13,
-  closed). `tiny-house.arch` carries `W_PATH_TOO_NARROW` on its Wet room — `describe --json` reports
-  a **measured** `widestWayInMm` of 400 against the 700 mm minimum, and the pinch is the room
-  (1700 x 2800 mm holding a shower, a WC and a basin), not the 800 mm barn door. It only became
-  visible in 1.33.0, when the rule stopped going silent on a room it could not reach.
-  `materials.arch` carries `W_SCALE_OVERFLOW`, and the note corrects an imprecise reading of it: the
-  emitted page **is exactly A3 landscape** and nothing is clipped, so what the rule reports is a
-  margin encroachment inside its own fit budget, not a page that outgrew its paper. The scale stays
-  at 1:50 deliberately — the diagnostic's remedy is a coarser scale, and at 1:100 six wall materials
-  stop reading side by side, which is the only thing that file exists to show. Both edits are
-  comment-only: across all 30 examples the sole movement is one `span` per file, shifted by exactly
-  the inserted comment's byte length, with every SVG byte-identical.
-
-- **Two shipped examples now state their deliberate warnings in their own headers** (backlog G.6),
-  the way `hillside-villa` and `garden-house` already did. `examples/themed.arch` explains its one
-  `W_NO_ENTRANCE`: the file is a two-room fragment whose only door is on the partition, and it is
-  the corpus’s single positive case for that rule — `test/lint.test.ts` pins it as the SOLE
-  example that raises it, so cutting a front door would silence the pin as well as the warning.
-  `examples/relational.arch` explains its remaining four (`W_ROOM_DISCONNECTED` x3 +
-  `W_ROOM_NOT_ENCLOSED` x1), which are all one fact: **a wall cannot be derived from a resolved
-  room boundary**, so a relationally-laid plan gets rooms that reflow or interior partitions, never
-  both. Both edits are comment-only and change no byte of either drawing.
-
 ### Security
 
 - **Twelve transitive advisories cleared, lockfile-only** (backlog 3.1 (a)) — `npm audit` goes
@@ -202,21 +243,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `esbuild ^0.27.0` and cannot reach the fixed `0.28.1`. Both `esbuild` advisories are against
   `esbuild serve`, a dev server tsup never starts.
 
-### Changed
-
-- **GitHub Action pins bumped, still SHA-pinned** (backlog 3.2, superseding dependabot #60 and #23):
-  `actions/checkout` v7.0.0 → **v7.0.1** (`3d3c42e5aac5ba805825da76410c181273ba90b1`, 18 sites) and
-  `actions/setup-node` v6.4.0 → **v7.0.0** (`820762786026740c76f36085b0efc47a31fe5020`, 16 sites).
-  Each SHA was resolved from GitHub's own tag ref rather than taken from the bot; both tags are
-  lightweight, so neither needed peeling. **`setup-node` is a MAJOR and nothing here is affected**:
-  its `action.yml` diff is purely additive (two new cache outputs), `runs.using` stays `node24`, no
-  workflow reads `NODE_AUTH_TOKEN` or uses `mirror`, and the root `package.json` declares no
-  `packageManager`/`devEngines`, so v7's automatic package-manager caching cannot switch itself on
-  where a step deliberately omits `cache: npm`. Its "remove dummy `NODE_AUTH_TOKEN` export" fix is a
-  net positive for `release.yml`'s OIDC publish. Also `@fontsource/ibm-plex-mono` `^5.2.7` → `^5.3.0`
-  in both site workspaces (dependabot #25), and a stale house-style comment in `release.yml` that
-  still named `actions/checkout@v5` / `actions/setup-node@v5` now names what is pinned.
-
 ### Documentation
 
 - **New backlog items G.12 and G.13.** G.12 is the language gap behind `relational.arch`’s four
@@ -227,7 +253,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   corpus carries **five** examples with an unaddressed warning, not three: `tiny-house`
   (`W_PATH_TOO_NARROW`, which post-dates the entry, having been turned from a false clean into a
   true report by the item-5.8 fix in 1.33.0) and `materials` (`W_SCALE_OVERFLOW`).
-
 ## [1.33.0] - 2026-09-03
 
 **Twelve silent wrong answers.** Every defect here was the compiler giving a confident, wrong
