@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.35.0] - 2026-09-04
+
+**The third dimension, added twice — once as a number nothing draws, once as a picture nothing
+measures.** A floor plan is a horizontal cut, and until now that cut was all ArchLang had: a wall
+carried a thickness and no height, a window a width and no sill. This release adds the missing
+datum and then, separately, the first thing that consumes it. They are deliberately independent —
+the datum ships with **nothing drawing differently**, pinned over all thirty shipped examples and
+every storey of each, and the view ships **taking no part in any measurement**, with `describe()`
+and `lint()` structurally unable to read it.
+
+Two new keywords (`sill`, `head`), `height` reused at three new sites rather than a fourth spelling
+invented, three new `E_*` refusal codes, and one new opt-in flag (`--view iso|axon`). **No
+removals.** A plan that authors no height and passes no `--view` is byte-identical in SVG,
+`describe()` and `lint()` — held as a law on both digests, not asserted.
+
+**The two findings worth carrying past this release.** No test in this repository had ever
+**executed** an error-catalog example: the drift gate proves `docs/error-codes.md` reproduces the
+catalog, never that the catalog is true, and `E_HEIGHT_RANGE`'s own example documented a refusal
+the compiler does not make. `test/error-catalog-examples.test.ts` now runs every one, holding 95 of
+139 to raising their own code and pruning the 44 excuses in **both** directions — which already
+paid for itself, four entries excused on sight turning out to raise their code anyway. And the
+SVG backend's per-CAD-layer `<g>` grouping **re-orders nodes within a pass**, which a painter's
+algorithm cannot survive: the first axonometric render drew every floor plate after every wall and
+read as an open box seen from inside.
+
 ### Added — the opt-in axonometric view
 
 `compile(source, { view: "iso" | "axon" })`, and `arch compile|preview --view iso|axon`, draw the
@@ -208,6 +233,31 @@ resolver does not keep. And in Plan JSON, `rooms[].height` / `furniture[].height
 while `storey_height` and `walls[].height` are vertical — the same word for two dimensions. `height`
 is kept on the wall because it is the `.arch` clause the payload round-trips to and the word a model
 has to produce; both schema descriptions say which is which.
+
+### Shipped alongside
+
+- **MCP shim `@chanmeng666/archlang-mcp` 0.2.15** — a **twelfth consecutive version-bump-only
+  release** (`git diff v1.34.0..main -- packages/mcp` is empty), and the sharpest instance of the
+  pack-time law since 0.2.11. Measured by SHA-256 against the v1.34.0 tag, **four of the five baked
+  resources moved** and one did not:
+
+  | Baked resource | vs v1.34.0 |
+  |---|---|
+  | `spec.llm.md` | moved |
+  | `llms-full.txt` | moved |
+  | `grammars/archlang.gbnf` | moved |
+  | `schemas/plan.schema.json` | moved |
+  | `schemas/intent.schema.json` | unchanged |
+
+  The grammar moving is what makes this the sharp case: `sill` and `head` are real tokens, so a
+  constrained decoder pointed at published 0.2.14's GBNF **cannot derive either clause at all** —
+  not mis-taught, unable to emit the syntax. `plan.schema.json` moved for the four new keys
+  (`storey_height`, `walls[].height`, `openings[].sill`, `openings[].head`), so a host reading the
+  published 0.2.14 schema rejects payloads this core emits. `intent.schema.json` is unchanged, and
+  correctly: a height is not an intent assertion. Dep range re-pinned to `^1.35.0`.
+- **VS Code extension `ChanMeng.archlang` 0.24.0** — packaged against core 1.35.0, carrying the two
+  new keywords, the three new `E_*` codes and the `--view` surface in the bundled server. The
+  Marketplace upload is a human web step and is **not** performed by this repository.
 
 ## [1.34.0] - 2026-09-04
 

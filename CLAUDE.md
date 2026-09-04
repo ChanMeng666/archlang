@@ -66,7 +66,8 @@ than memory.
   union to answer a `describe()` question. Inventory: `docs/research/2026-08-06-competitor-borrowing-roadmap.md` §9.1.
 - **Every new language form ships with a byte-identity law, pinned by test:** a plan that does not
   use it renders, describes and lints exactly as before. `site`, the door kinds, `zone`, `paper`,
-  `polygon`, `arc`, `roof` and `void` all have one. Prove it with a SHA-256 sweep over the shipped
+  `polygon`, `arc`, `roof`, `void`, the v1.35 `height`/`sill`/`head` datum and the v1.35 `--view`
+  all have one. Prove it with a SHA-256 sweep over the shipped
   examples, not by eyeballing — and if a golden moves, that is a finding to explain before it is a
   diff to bless. Take the baseline with the **same digest body the test will run**, not a lookalike
   in a throwaway script: `test/roof-void-byte-identity.test.ts`'s first attempt used a scratch script
@@ -140,7 +141,14 @@ whole design (`arch lint --code E_ROOF_CURVED` / `arch explain E_ROOF_CURVED` �
 refused rather than approximated, and `roof polygon` is the answer); and the **underlay walkability
 check**, which is the one furniture claim a drawing cannot show — put a `rug` and then a `sofa` on
 the same rectangle across a plan's only route and confirm `arch describe --json`'s circulation walks
-THROUGH the first and `arch lint` raises `W_ROOM_NO_CLEAR_PATH` on the second. Keep the flagship
+THROUGH the first and `arch lint` raises `W_ROOM_NO_CLEAR_PATH` on the second. For the v1.35
+surfaces, drive the two things a reading gets wrong: **`arch describe --json --select heights`** on a
+plan that authors a `height` and on one that does not — the whole block is gated on one whole-plan
+flag, so a plan authoring nothing must emit nothing, and elevation ACCUMULATES the storeys below
+rather than being `level × storey_height` (write two `level … height` blocks of different heights and
+read the third floor); and **`arch compile --view iso`**, which is a picture and not a drawing —
+confirm `describe()`/`lint()` are unmoved by it, and that all four refusals exit 3 rather than falling
+back to the plan (`--view` with `-f txt`, with `--ascii`, with `--level`, with `--overlay`). Keep the flagship
 `examples/studio.arch` **lint-clean and import-free**, and update snapshots/goldens
 (`vitest -u`, `UPDATE_GOLDENS=1 vitest run test/visual.test.ts`, `ASCII_UPDATE=1 vitest run
 test/ascii.test.ts`) only after reviewing the diff — never to green a red suite.

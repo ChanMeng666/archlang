@@ -88,7 +88,7 @@ test.describe("machine-readable root artifacts", { tag: "@prod" }, () => {
 
 test.describe("the raw /<page>.md copies serve the canonical markdown", { tag: "@prod" }, () => {
   test("there are as many routes as sync-docs publishes pages", () => {
-    expect(PAGE_ROUTES.length).toBe(8);
+    expect(PAGE_ROUTES.length).toBe(9);
   });
 
   for (const { route, source } of PAGE_ROUTES) {
