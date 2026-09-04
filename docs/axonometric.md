@@ -35,6 +35,11 @@ below follows from it.
 - **It has no hidden-line algorithm.** Faces are opaque and drawn far to near, which is the
   classic painter's method. It reads correctly on ordinary buildings and can put a face on
   the wrong side of another where two solids interpenetrate.
+- **A curved wall shows its facets.** Arcs are flattened through the compiler's one
+  tessellator before they are projected, and each chord becomes its own stroked quad, so a
+  bay reads as if it were mullioned. That is a cost of culling per chord — which is what
+  keeps a curve that turns away partway from being drawn or dropped whole — and it is
+  cosmetic, not a wrong answer. The plan view still draws true arcs.
 
 ## The two presets
 
