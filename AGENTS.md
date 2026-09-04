@@ -841,7 +841,8 @@ npm run gen:llms     # regenerate llms-full.txt from spec + SKILL.md + manifest 
 npm run gen:gbnf     # regenerate grammars/archlang.gbnf from src/grammar/tokens.ts (CI checks drift)
 npm run gen:plan-schema  # regenerate schemas/plan.schema.json from PLAN_JSON_SCHEMA (CI checks drift)
 npm run gen:intent-schema  # regenerate schemas/intent.schema.json from INTENT_JSON_SCHEMA (CI checks drift)
-npm run gen:example-svgs   # re-render the twenty committed examples/*.svg the README embeds, from
+npm run gen:example-svgs   # re-render the twenty committed examples/*.svg the README embeds — plus the
+                     # two axonometric renders docs/axonometric.md embeds (VIEW_SVGS) — from
                      # their .arch sources (README_SVGS in scripts/gen-example-svgs.ts; CI checks
                      # drift). Run it after ANY rendering-pipeline change — the three drawings that
                      # existed before this generator had rotted for months with nothing watching.

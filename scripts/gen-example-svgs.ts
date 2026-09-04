@@ -32,6 +32,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compile } from "../src/index.js";
+import type { ViewName } from "../src/index.js";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const ROOT = resolve(HERE, "..");
@@ -67,6 +68,23 @@ export const README_SVGS = [
 
 export type ReadmeSvgName = (typeof README_SVGS)[number];
 
+/**
+ * The committed AXONOMETRIC renders `docs/axonometric.md` embeds (v1.35).
+ *
+ * They exist for the same reason {@link README_SVGS} does, and they are the same hazard:
+ * a hand-committed drawing that nothing compares to the compiler rots, and the only way
+ * to notice is to look at the picture. These are pictures of a feature whose whole point
+ * is what it draws, so a stale one would illustrate a camera the code no longer has.
+ *
+ * They live under the docs site's `public/` rather than in `examples/`, because they are
+ * page assets and not the drawing of an example — `examples/<name>.svg` means "the plan",
+ * unqualified, in twenty places.
+ */
+export const VIEW_SVGS: ReadonlyArray<{ name: string; view: ViewName; dest: string }> = [
+  { name: "studio", view: "iso", dest: "docs-site/public/view/studio-iso.svg" },
+  { name: "two-storey", view: "axon", dest: "docs-site/public/view/two-storey-axon.svg" },
+];
+
 /** Repo-relative path of the generated SVG for an example name. */
 export function svgPath(name: string): string {
   return `examples/${name}.svg`;
@@ -88,8 +106,8 @@ export function archPath(name: string): string {
  * @throws if the plan raises any error diagnostic — a broken example must never be
  * silently committed as a red error card.
  */
-export function renderExampleSvg(name: string, source: string): string {
-  const result = compile(source, { noCache: true });
+export function renderExampleSvg(name: string, source: string, view?: ViewName): string {
+  const result = compile(source, { noCache: true, ...(view ? { view } : {}) });
   if (result.errors.length > 0) {
     // `errors` is the message/line/col projection; the catalogued `E_*` code lives on the
     // parallel `diagnostics` entries, so report from those and fall back to `errors`.
@@ -109,12 +127,17 @@ export function readExampleSource(name: string): string {
   return readFileSync(resolve(ROOT, archPath(name)), "utf8").replace(/\r\n/g, "\n");
 }
 
-/** Write every curated SVG (CLI entry). */
+/** Write every curated SVG — the README plans, then the docs page's two views (CLI entry). */
 function main(): void {
   for (const name of README_SVGS) {
     writeFileSync(resolve(ROOT, svgPath(name)), renderExampleSvg(name, readExampleSource(name)));
   }
-  process.stdout.write(`✓ generated ${README_SVGS.length} example SVGs in examples/ from their .arch sources\n`);
+  for (const v of VIEW_SVGS) {
+    writeFileSync(resolve(ROOT, v.dest), renderExampleSvg(v.name, readExampleSource(v.name), v.view));
+  }
+  process.stdout.write(
+    `✓ generated ${README_SVGS.length} example SVGs in examples/ + ${VIEW_SVGS.length} axonometric renders\n`,
+  );
 }
 
 // Run only when invoked directly (not when imported by the drift test / check-drift).
