@@ -49,6 +49,16 @@ LAYER table conditional.
    reference implementation this borrows from sorts on depth alone with no tie-break; `test/iso-sort.test.ts`
    proves the difference by REVERSING and shuffling the input, not by checking that ties are broken
    (`Array.sort` is only stable with respect to the array it was given).
+   **That family of laws compares the sort to a perturbation of its own input, so all of them stay
+   green on an order keyed off the wrong quantity** — the general shape of backlog G.11. So
+   `test/iso-painter-order.test.ts` takes its expected answer from the geometry instead: over all
+   thirty examples in both presets it re-derives each drawn face's true depth RANGE from its own
+   vertices and requires that no face is drawn before one it is entirely behind, with screen overlap
+   over-approximated by bounding box so the gate errs strict. The shipped corpus scores **zero**,
+   and the same detector run over the reversed draw order scores **10,761** — which is what makes
+   the zero a measurement rather than a vacuous pass. It also covers the case the centroid key is
+   weakest at: one `Face` can carry several DISJOINT solid pieces (a wall ring cut by two openings
+   comes back as two separate loops on one cap), and `boundaryDepth` reads only `loops[0]`.
 3. **The view computes no footprint of its own.** A wall solid is the joined wall outline — the
    very `EdgeLoop[]` the plan view lowers, consumed before `emitLoops` narrows it — so junction
    trimming, exact mitres and opening subtraction are identical in the two drawings by construction
