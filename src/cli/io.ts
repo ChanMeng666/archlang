@@ -370,13 +370,22 @@ export function parseFormat(args: Args): Format | null {
 /**
  * Resolve `--view <iso|axon>` (v1.35), or say precisely why it cannot be honoured.
  *
- * Two refusals, both exit-3 usage errors rather than a silent fallback to the plan — a
- * flag that quietly does nothing is how a user comes to believe they are looking at a
- * drawing they are not:
+ * Four refusals, every one an exit-3 usage error rather than a silent fallback to the
+ * plan — a flag that quietly does nothing is how a user comes to believe they are looking
+ * at a drawing they are not:
  *
  *  - an unrecognised value, with a did-you-mean, exactly as an unknown verb is treated;
  *  - `-f txt`, because the ASCII backend reads a plan (it identifies a room as a polygon
- *    on the `floor` pass) and would print a meaningless grid from a projection.
+ *    on the `floor` pass) and would print a meaningless grid from a projection;
+ *  - `--level`, because the view is ONE drawing of the whole building and has no per-storey
+ *    page to narrow to. This one has to be refused *here* and not left to the render path:
+ *    a view returns no `pages`, so the generic handler saw an empty level list and told the
+ *    author that a plan with two `level` blocks "declares no `level` blocks (it is
+ *    single-storey)" — a confident wrong answer about their own source, which is worse
+ *    than any silence;
+ *  - `--overlay`, because a diagnostic overlay is a MEASUREMENT drawn on a plan — routes,
+ *    bottleneck markers — and the whole contract of this view is that nothing measured
+ *    reaches it. `toIso` does not draw one, so accepting the flag would ignore it.
  *
  * Returns `{ view: undefined }` when the flag is absent, which is every existing call.
  */
@@ -398,6 +407,22 @@ export function resolveView(args: Args, format: Format, command: string): { view
       code: usageErrorFor(
         command,
         "--view cannot be combined with -f txt — the ASCII backend draws a PLAN, not a projection (use svg, pdf, png or dxf)",
+      ),
+    };
+  }
+  if (args.level !== undefined) {
+    return {
+      code: usageErrorFor(
+        command,
+        `--view draws ONE picture of the whole building, with every storey stacked, so --level ${args.level} has nothing to narrow — drop one of the two (\`--level\` alone renders that storey's PLAN)`,
+      ),
+    };
+  }
+  if (args.overlay !== undefined) {
+    return {
+      code: usageErrorFor(
+        command,
+        `--view cannot be combined with --overlay ${args.overlay} — an overlay draws a MEASUREMENT (routes, bottlenecks) and nothing measured is drawn on a projection`,
       ),
     };
   }

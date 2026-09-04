@@ -72,18 +72,24 @@ LAYER table conditional.
 
 **Deliberately not drawn, and named rather than half-answered:** the roof (ArchLang stores an eaves
 *outline*, not a pitch, so there is no datum to build a surface from — inventing one is the move
-`roof` itself refuses), furniture, ground, fences, the site boundary, stairs, labels, dimensions,
-schedules, legends, axes and hatches. And the painter's algorithm has no answer for two
-interpenetrating solids.
+`roof` itself refuses), furniture, **columns**, the `stair`/`elevator`/`escalator` shafts, ground,
+fences, the site boundary, labels, dimensions, schedules, legends, axes and hatches. Walls and floor
+plates are the whole of what is solid. The column is the nearest of the deferrals — it is already a
+solid with a footprint and a resolved height, and `examples/museum.arch` draws eleven in plan and
+none here. And the painter's algorithm has no answer for two interpenetrating solids.
 
 **Surface changes.** New `CompileOptions.view` (folded into the compile cache key) and an optional
 `Scene.view` read only by the two backends that draw page chrome; both additive. `CompileResult`
 gains no key — and a multi-storey plan under `--view` returns **no `pages`**, because the view is
 one drawing of the whole building rather than a set of sheets, so `-o house.svg` writes exactly
 that file. New `--view <iso|axon>` on `compile` and `preview` only (not `watch`, not `batch`), with
-two exit-3 refusals rather than a silent fall back to the plan: an unrecognised value, with a
-did-you-mean, and `--view` with `-f txt` / `preview --ascii`, since the ASCII backend draws a plan
-and would print a meaningless grid from a projection. New public exports `toIso`, `cameraFor`,
+**four** exit-3 refusals rather than a silent fall back to the plan: an unrecognised value, with a
+did-you-mean; `--view` with `-f txt` / `preview --ascii`, since the ASCII backend draws a plan and
+would print a meaningless grid from a projection; `--view` with `--level`, because there is no
+per-storey page to narrow to (and the generic handler, seeing a view's empty level list, told an
+author that a plan with two `level` blocks "declares no `level` blocks (it is single-storey)" — a
+confident wrong answer about their own source); and `--view` with `--overlay`, because an overlay
+draws a measurement and nothing measured reaches this drawing. New public exports `toIso`, `cameraFor`,
 `isViewName`, `projectedArea2`, `VIEW_NAMES`, `VIEW_LAYERS`, `VIEW_LAYER_NAMES` and the `ViewName`,
 `Camera`, `Point3` and `Projected` types. New page `docs/axonometric.md`. Backlog **P3-3 closes**;
 P3-2 stays open, and now records what building the first consumer of the height datum discovered:

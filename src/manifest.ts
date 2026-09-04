@@ -294,7 +294,9 @@ const SECTION_FLAG: ManifestFlag = {
  *
  * On `compile` and `preview` only, and deliberately not on `watch` or `batch`: this is a
  * picture to look at once, not a drawing to iterate on. It is not an export FORMAT — every
- * format still applies, and `-f txt` is the one refusal (the ASCII backend reads a plan).
+ * raster and vector format still applies. Four combinations are refused with exit 3 rather
+ * than silently ignored, and `resolveView` (`src/cli/io.ts`) states why each one is: an
+ * unknown value, `-f txt`/`--ascii`, `--level` and `--overlay`.
  */
 const VIEW_FLAG: ManifestFlag = {
   flag: "--view",

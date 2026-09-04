@@ -30,8 +30,13 @@ below follows from it.
 - **No roof.** ArchLang stores an eaves *outline*, not a pitch, so there is no datum from
   which to build a roof surface. Inventing one would be approximating where the language
   refuses — the same reason `roof` declines an `arc` edge. Deferred by name.
-- **No furniture, ground, fences, site boundary, stairs, labels, schedules or legends.**
-  Some of those are annotation; the rest are deferred.
+- **Only walls and floor plates are solid.** Everything else a plan can carry is left out,
+  and the list is complete rather than indicative: furniture, **columns**, `stair` /
+  `elevator` / `escalator` shafts, outdoor ground, fences, the site boundary, wall hatches,
+  and every annotation layer — room labels, areas, dimensions, axes, schedules and legends.
+  Some of those are annotation, which a pictorial view has no business carrying; the rest
+  are deferred. A column is the nearest of them: it is already a solid with a footprint and
+  a height, and `examples/museum.arch` draws eleven of them in plan and none here.
 - **It has no hidden-line algorithm.** Faces are opaque and drawn far to near, which is the
   classic painter's method. It reads correctly on ordinary buildings and can put a face on
   the wrong side of another where two solids interpenetrate.
@@ -122,16 +127,17 @@ drawing that actually uses them, so a plan DXF is unchanged.
 `--view` is on `compile` and `preview` only. It is not on `watch` (a watcher exists to
 re-render the plan you are editing) and not on `batch`.
 
-Two combinations exit **3** with a usage error rather than quietly falling back:
+Four combinations exit **3** with a usage error rather than quietly falling back:
 
 - an unrecognised value, with a did-you-mean;
 - `--view` with `-f txt` or `preview --ascii`. The ASCII backend draws a *plan* — it
   identifies a room as a polygon on the floor pass — and would print a meaningless grid
-  from a projection.
-
-A multi-storey plan renders as **one drawing of the whole building**, so `-o house.svg`
-writes exactly that file rather than one `house.L<n>.svg` per storey, and `--level` has
-nothing to narrow.
+  from a projection;
+- `--view` with `--level`. A multi-storey plan renders as **one drawing of the whole
+  building**, so `-o house.svg` writes exactly that file rather than one `house.L<n>.svg`
+  per storey, and there is no per-storey page for `--level` to select;
+- `--view` with `--overlay`. An overlay draws a measurement — circulation routes,
+  bottleneck markers — and nothing measured is drawn on a projection.
 
 ## From the library
 

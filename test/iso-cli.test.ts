@@ -2,14 +2,23 @@
  * **`--view iso|axon` on the CLI** — where it works, where it REFUSES, and what it changes
  * about the shape of a render.
  *
- * Two refusals are the substance of this file, because a flag that quietly does nothing is
+ * Four refusals are the substance of this file, because a flag that quietly does nothing is
  * how a user comes to believe they are looking at a drawing they are not:
  *
  *  - an unrecognised value exits **3** with a did-you-mean, exactly as an unknown verb
  *    does — never a silent fall back to the plan;
  *  - `--view … -f txt` exits **3**, because the ASCII backend draws a PLAN (it identifies
  *    a room as a polygon on the `floor` pass) and would print a meaningless grid from a
- *    projection. `preview --ascii` is the same backend and refuses on the same grounds.
+ *    projection. `preview --ascii` is the same backend and refuses on the same grounds;
+ *  - `--view … --level <n>` exits **3**. This one is pinned by its FAILURE MODE, not only
+ *    by its exit code: a view returns no `pages`, so before the refusal existed the generic
+ *    `--level` handler read an empty level list and told the author of a two-`level` plan
+ *    that it "declares no `level` blocks (it is single-storey)". The assertion below is
+ *    therefore that the message does NOT say that — an exit-code-only check would have
+ *    passed on the wrong answer;
+ *  - `--view … --overlay circulation` exits **3**: an overlay draws a measurement, and the
+ *    contract of this view is that nothing measured reaches it. `toIso` draws no overlay,
+ *    so accepting the flag meant ignoring it — which it did, silently, exit 0.
  *
  * And one shape change worth pinning: a multi-storey plan under `--view` writes the ONE
  * file `-o` names, not `<stem>.L<n>` per storey. That is the whole-building rule in the
@@ -106,6 +115,42 @@ suite("arch compile --view", () => {
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("--view");
   });
+
+  it("`--view … --level` exits 3, and does NOT claim a two-storey plan is single-storey", () => {
+    // `two-storey.arch` declares two `level` blocks. A view returns no `pages`, so the
+    // generic handler used to read an empty level list and say the opposite — the exact
+    // class of confident wrong answer this project ranks worst. Assert the wrong sentence
+    // is gone, not merely that something failed.
+    const r = run(["compile", "examples/two-storey.arch", "--view", "iso", "--level", "2"]);
+    expect(r.status).toBe(3);
+    expect(r.stderr).not.toContain("declares no `level` blocks");
+    expect(r.stderr).toContain("--view draws ONE picture of the whole building");
+  });
+
+  it("`--level` alone still works on that same plan — the refusal is about the PAIR", () => {
+    const dir = scratch();
+    const out = join(dir, "upper.svg");
+    const r = run(["compile", "examples/two-storey.arch", "--level", "2", "-o", out]);
+    expect(r.status).toBe(0);
+    expect(existsSync(out)).toBe(true);
+  });
+
+  it("`--view … --overlay` exits 3 — an overlay is a measurement drawn on a plan", () => {
+    const r = run(["compile", "examples/studio.arch", "--view", "iso", "--overlay", "circulation"]);
+    expect(r.status).toBe(3);
+    expect(r.stderr).toContain("--view cannot be combined with --overlay");
+  });
+
+  it("`--overlay` alone still draws the overlay — again, the refusal is about the PAIR", () => {
+    const dir = scratch();
+    const plain = join(dir, "plain.svg");
+    const over = join(dir, "over.svg");
+    expect(run(["compile", "examples/studio.arch", "-o", plain]).status).toBe(0);
+    expect(run(["compile", "examples/studio.arch", "--overlay", "circulation", "-o", over]).status).toBe(0);
+    // Non-vacuity: the overlay really does change the drawing, so the pair-refusal above
+    // is withholding something real rather than nothing.
+    expect(readFileSync(over, "utf8")).not.toBe(readFileSync(plain, "utf8"));
+  });
 });
 
 suite("arch preview --view", () => {
@@ -119,6 +164,13 @@ suite("arch preview --view", () => {
     const r = run(["preview", "examples/studio.arch", "--view", "nope"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain('unknown view "nope"');
+  });
+
+  it("refuses `--level` here too, with the same true sentence", () => {
+    const r = run(["preview", "examples/two-storey.arch", "--view", "axon", "--level", "1"]);
+    expect(r.status).toBe(3);
+    expect(r.stderr).not.toContain("declares no `level` blocks");
+    expect(r.stderr).toContain("--view draws ONE picture of the whole building");
   });
 
   it("`--help` lists the flag with its two values", () => {
