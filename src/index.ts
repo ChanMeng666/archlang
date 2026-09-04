@@ -9,6 +9,7 @@
 import { parse } from "./parser.js";
 import { resolveAll } from "./ir.js";
 import { toScene } from "./scene-build.js";
+import { toIso } from "./view/iso.js";
 import { renderSvg } from "./backends/svg.js";
 import { renderErrorSvg } from "./backends/error-svg.js";
 import { offsetToLineCol } from "./diagnostics.js";
@@ -265,6 +266,12 @@ export type {
 // a Scene: `toDxf(scene)` / `toPdf(scene)`; build one with `toScene(ir)` or read
 // `compile().scene`.
 export { toScene } from "./scene-build.js";
+// The opt-in axonometric view (v1.35): a SIBLING of `toScene` producing the same Scene
+// type, so every backend draws it unchanged. Illustrative only — see `src/view/`.
+export { toIso } from "./view/iso.js";
+export { VIEW_NAMES, isViewName, cameraFor, projectedArea2 } from "./view/camera.js";
+export type { ViewName, Camera, Point3, Projected } from "./view/camera.js";
+export { VIEW_LAYERS, VIEW_LAYER_NAMES } from "./view/paint.js";
 // Positioning axes (定位轴线): the GB/T numbering rules, exposed so a tool can label an
 // axis grid the same way the drawing does (`ir.axes` already carries the labels).
 export { numberAxes, axisLetter, AXIS_LETTERS } from "./axes.js";
@@ -434,6 +441,7 @@ export function compile(source: string, opts: CompileOptions = {}): CompileResul
     opts.overlays ?? null,
     opts.onError ?? null,
     opts.accessible ?? null,
+    opts.view ?? null,
   ]);
   if (!opts.noCache) {
     const hit = cache.get(key);
@@ -490,7 +498,19 @@ function compileUncached(source: string, opts: CompileOptions): CompileResult {
   let scene: Scene | undefined;
   let pages: CompilePage[] | undefined;
   if (resolved && errs.length === 0) {
-    if (resolved.levels.length > 0) {
+    if (opts.view) {
+      // The opt-in axonometric (v1.35). One drawing of the WHOLE building, so a
+      // multi-storey plan yields no `pages` — its storeys are stacked into this one
+      // Scene rather than issued as a set. `describe()`/`lint()` are untouched above and
+      // never see the option.
+      scene = toIso(
+        resolved.levels.length > 0 ? resolved.levels.map((l) => l.ir) : [resolved.ir],
+        opts.view,
+        opts,
+        runtime,
+      );
+      svg = renderSvg(scene, opts);
+    } else if (resolved.levels.length > 0) {
       pages = resolved.levels.map((l) => {
         const s = toScene(l.ir, opts, runtime);
         return { level: l.level, ...(l.name !== undefined ? { name: l.name } : {}), svg: renderSvg(s, opts), scene: s };

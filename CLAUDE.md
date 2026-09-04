@@ -40,8 +40,9 @@ than memory.
   `playground/src/arch-language.js`, `docs-site/.vitepress/theme/arch-highlight.js`,
   `docs/error-codes.md`, `docs/cli-reference.md`, `spec.llm.md`,
   `llms-full.txt`, `schemas/plan.schema.json`, `schemas/intent.schema.json`,
-  `grammars/archlang.gbnf`, and the twenty committed `examples/*.svg` the README embeds (the
-  `README_SVGS` list in `scripts/gen-example-svgs.ts`) are generated — edit the source
+  `grammars/archlang.gbnf`, the twenty committed `examples/*.svg` the README embeds (the
+  `README_SVGS` list in `scripts/gen-example-svgs.ts`) and the two axonometric renders
+  `docs/axonometric.md` embeds (`VIEW_SVGS`, same generator) are generated — edit the source
   (`src/grammar/tokens.ts`, `src/error-catalog.ts`, `src/manifest.ts`, `PLAN_JSON_SCHEMA`,
   `INTENT_JSON_SCHEMA`, `examples/`, `SKILL.md`) and run the matching `npm run gen:grammars` /
   `gen:errors` / `gen:cli` / `gen:spec` / `gen:llms` / `gen:plan-schema` / `gen:intent-schema` /
@@ -83,6 +84,15 @@ than memory.
   is whole-PLAN rather than per-storey. The fallback chain wall → level → plan → `STOREY_HEIGHT` has
   exactly one implementation (`ResolveCtx.storeyHeight`) — never re-derive it in an element — and
   **elevation accumulates the storeys below, never `level × height`**.
+- **The axonometric view (`src/view/`) is a PICTURE, never a measurement.** `compile(src, { view })`
+  and `arch compile|preview --view iso|axon` draw extruded walls, floors and stacked storeys as
+  ordinary Scene primitives — and three things are law: **`describe()`/`lint()` never import
+  `src/view/`** and take no view option; **no `Math.cos`/`sin`/`tan`/`atan` under `src/view/`**
+  (implementation-approximated in ECMAScript, and CI spans two OSes × three Node versions —
+  `Math.sqrt` is exactly rounded, so both cameras are square-root expressions); and the painter's
+  order is TOTAL, its depth quantised through `fmt2`. A compile with no `view` is byte-identical
+  everywhere (pinned over all 30 examples). The view computes no footprint of its own: `joinWallSet`
+  hands it the plan's own wall outline. See `docs/axonometric.md`.
 - **A drawn fixture symbol ignores its `label`, and fixture categories are DATA, not keywords.** The
   129 catalogued words across 83 families live in one `FIXTURE_FAMILIES` table
   (`src/elements/fixtures-glyphs.ts`) with their semantics in `src/fixtures-catalog.ts`; an

@@ -9,6 +9,7 @@ showcase.md
 cli.md
 furniture.md
 analysis.md
+axonometric.md
 intent.md
 errors.md
 spec.md
@@ -39,6 +40,7 @@ public/showcase.md
 public/cli.md
 public/furniture.md
 public/analysis.md
+public/axonometric.md
 public/intent.md
 public/errors.md
 public/spec.md

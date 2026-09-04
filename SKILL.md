@@ -266,6 +266,7 @@ arch help <cmd>                        # flags + worked examples for one command
 arch manifest --json                   # the whole CLI API as data: commands, flags, formats, lint rules, error codes
 arch compile plan.arch -o out.svg --json   # render (also -f dxf|txt|pdf|png)
 arch compile plan.arch -f txt          # zero-dependency ASCII text plan on stdout (also `preview --ascii`)
+arch compile plan.arch --view iso -o iso.svg    # an ILLUSTRATIVE axonometric of the building (also --view axon; `preview --view` rasters it). A picture to look at, never a measurement: no scale, no dimensions, no roof, and `describe`/`lint` are unaffected
 arch compile plan.json --from-json -o out.svg   # compile structured Plan JSON (see /plan.schema.json)
 echo '<source>' | arch compile - -o - -f svg    # compile stdin → SVG on stdout
 arch fix plan.arch --dry-run --json    # preview the machine-applicable fixes as a unified diff (drop --dry-run to apply; --backup keeps <file>.bak)

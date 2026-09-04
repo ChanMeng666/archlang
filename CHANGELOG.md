@@ -7,6 +7,105 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the opt-in axonometric view
+
+`compile(source, { view: "iso" | "axon" })`, and `arch compile|preview --view iso|axon`, draw the
+**building the plan describes** instead of the plan: extruded walls with their doors and windows
+cut, floor plates, and every storey stacked into one picture. It produces ordinary 2D
+`SceneNode`s in the existing `Scene`, so SVG, PDF, PNG and DXF all serialize it with no backend
+change at all.
+
+**It is a picture, not a drawing, and that is the whole design.** `describe()` and `lint()` take
+no view option and never learn it exists — no area, adjacency, route or diagnostic is derived from
+a projection. The view carries no scale, no `sheet`, no title block, no north arrow and no
+dimensions: all four would make it look issuable, and two of them would be false (an arrow points
+at a compass direction on a drawing whose plan has been turned; a scale bar measures an axis the
+projection foreshortens). `test/iso-describe-blind.test.ts` makes the case structurally rather than
+behaviourally — it greps the five summary modules for any import of `src/view/`, because a
+behavioural check would go green again the moment someone read a view number and had not yet
+exposed it.
+
+**Nothing about a compile that passes no `view` moves.** Pinned over all thirty shipped examples,
+every storey of each, on both the whole-surface digest and the summary-only one
+(`test/iso-byte-identity.test.ts`), against the same measured table the height law uses. That
+matters because the change did not stay inside a new directory: it extracted `joinWallSet` out of
+`lowerWallSet` — the path every wall in every drawing takes — added a field to `Scene`, put a
+branch in the SVG backend's layer grouping and another in the PDF's chrome, and made the DXF
+LAYER table conditional.
+
+**Three decisions worth not re-litigating.**
+
+1. **No trigonometry under `src/view/`.** `Math.sin`/`cos`/`tan`/`atan` are
+   *implementation-approximated* in ECMAScript — the specification requires only a close result, so
+   two engines may differ in the last bits — while `Math.sqrt` is exactly rounded by IEEE-754. CI
+   spans Windows and Linux across Node 18/20/22 and the whole verification system rests on
+   byte-identical output, so both cameras are written as square-root expressions and a grep test
+   keeps them that way. `iso` is a yaw of −45° with a pitch of `atan(1/√2)`; `axon` the 30°/60° plan
+   oblique. Two presets, no free angles.
+2. **The painter's order is TOTAL, and its depth is quantised through `fmt2`** — the formatter the
+   SVG coordinates themselves print at — so two faces that serialise identically are *equal* to the
+   sort rather than merely close, and cannot swap on a 1e-15 difference no output byte records. The
+   tie-break tail (element id, loop index, face index) is unique per face by construction. The
+   reference implementation this borrows from sorts on depth alone with no tie-break; `test/iso-sort.test.ts`
+   proves the difference by REVERSING and shuffling the input, not by checking that ties are broken
+   (`Array.sort` is only stable with respect to the array it was given).
+   **That family of laws compares the sort to a perturbation of its own input, so all of them stay
+   green on an order keyed off the wrong quantity** — the general shape of backlog G.11. So
+   `test/iso-painter-order.test.ts` takes its expected answer from the geometry instead: over all
+   thirty examples in both presets it re-derives each drawn face's true depth RANGE from its own
+   vertices and requires that no face is drawn before one it is entirely behind, with screen overlap
+   over-approximated by bounding box so the gate errs strict. The shipped corpus scores **zero**,
+   and the same detector run over the reversed draw order scores **10,761** — which is what makes
+   the zero a measurement rather than a vacuous pass. It also covers the case the centroid key is
+   weakest at: one `Face` can carry several DISJOINT solid pieces (a wall ring cut by two openings
+   comes back as two separate loops on one cap), and `boundaryDepth` reads only `loops[0]`.
+3. **The view computes no footprint of its own.** A wall solid is the joined wall outline — the
+   very `EdgeLoop[]` the plan view lowers, consumed before `emitLoops` narrows it — so junction
+   trimming, exact mitres and opening subtraction are identical in the two drawings by construction
+   rather than by agreement. An opening's hole is the same `openingCut` the plan subtracts, and the
+   glazing band is that same function asked for a wall 20% as thick, which is right on a curved host
+   where an inset is an annular sector and not an offset rectangle. Openings get the **real
+   millimetres** the v1.35 datum resolved, never a fraction of the wall.
+
+**Two findings the work turned up, both fixed where they bit.**
+
+- **The SVG backend's per-CAD-layer `<g>` grouping RE-ORDERS nodes within a pass.** A painter's
+  algorithm cannot survive that: every floor plate was drawn after every wall, and the first render
+  read as an open box seen from inside. A view now emits one group, in collection order; the plan
+  view's grouping is untouched, and the DXF export keeps the per-node layer, having no order to
+  lose. Any future consumer of node order must know this.
+- **`V-3D-WALL` / `V-3D-FLOR` / `V-3D-GLAZ` are declared in the DXF LAYER table only on a drawing
+  that uses them.** `V-` sits outside the `A-`/`L-`/`C-` NCS discipline namespace on purpose — a CAD
+  user freezes by discipline, and an illustrative view is not a discipline's drawing — and making
+  the rows conditional keeps the "declares no dead layer" guard that caught `A-ROOF`'s two-release
+  absence a real guard, while leaving a plan-view DXF byte-identical.
+
+**Deliberately not drawn, and named rather than half-answered:** the roof (ArchLang stores an eaves
+*outline*, not a pitch, so there is no datum to build a surface from — inventing one is the move
+`roof` itself refuses), furniture, **columns**, the `stair`/`elevator`/`escalator` shafts, ground,
+fences, the site boundary, labels, dimensions, schedules, legends, axes and hatches. Walls and floor
+plates are the whole of what is solid. The column is the nearest of the deferrals — it is already a
+solid with a footprint and a resolved height, and `examples/museum.arch` draws eleven in plan and
+none here. And the painter's algorithm has no answer for two interpenetrating solids.
+
+**Surface changes.** New `CompileOptions.view` (folded into the compile cache key) and an optional
+`Scene.view` read only by the two backends that draw page chrome; both additive. `CompileResult`
+gains no key — and a multi-storey plan under `--view` returns **no `pages`**, because the view is
+one drawing of the whole building rather than a set of sheets, so `-o house.svg` writes exactly
+that file. New `--view <iso|axon>` on `compile` and `preview` only (not `watch`, not `batch`), with
+**four** exit-3 refusals rather than a silent fall back to the plan: an unrecognised value, with a
+did-you-mean; `--view` with `-f txt` / `preview --ascii`, since the ASCII backend draws a plan and
+would print a meaningless grid from a projection; `--view` with `--level`, because there is no
+per-storey page to narrow to (and the generic handler, seeing a view's empty level list, told an
+author that a plan with two `level` blocks "declares no `level` blocks (it is single-storey)" — a
+confident wrong answer about their own source); and `--view` with `--overlay`, because an overlay
+draws a measurement and nothing measured reaches this drawing. New public exports `toIso`, `cameraFor`,
+`isViewName`, `projectedArea2`, `VIEW_NAMES`, `VIEW_LAYERS`, `VIEW_LAYER_NAMES` and the `ViewName`,
+`Camera`, `Point3` and `Projected` types. New page `docs/axonometric.md`. Backlog **P3-3 closes**;
+P3-2 stays open, and now records what building the first consumer of the height datum discovered:
+nothing was missing for a 2.5D slice, but there is still no slab thickness.
+
+
 ### Added — the vertical datum layer (heights, sills and heads)
 
 A floor plan is a horizontal cut, so ArchLang has never had a third dimension: a wall had a

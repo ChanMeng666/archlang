@@ -11,7 +11,7 @@
 import { execSync } from "node:child_process";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { README_SVGS, svgPath } from "./gen-example-svgs.js";
+import { README_SVGS, VIEW_SVGS, svgPath } from "./gen-example-svgs.js";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const ROOT = resolve(HERE, "..");
@@ -45,7 +45,7 @@ const GENERATORS: readonly { script: string; artifacts: readonly string[] }[] = 
   // papers document, so it was not dropped.
   // Imported, never retyped: the curated README drawing list lives in the generator, so a
   // name added there is drift-gated here with no second edit (and cannot be forgotten).
-  { script: "gen:example-svgs", artifacts: README_SVGS.map(svgPath) },
+  { script: "gen:example-svgs", artifacts: [...README_SVGS.map(svgPath), ...VIEW_SVGS.map((v) => v.dest)] },
 ];
 
 const ALL_ARTIFACTS = GENERATORS.flatMap((g) => g.artifacts);

@@ -351,4 +351,17 @@ export interface Scene {
    * and every existing plan keep working (append-only).
    */
   sheet?: SceneSheet;
+  /**
+   * The axonometric view this Scene draws (v1.35), or absent for the ordinary plan —
+   * which is every Scene `toScene` has ever produced, so existing output is untouched.
+   *
+   * It is a **presentation flag for the page chrome, and nothing else**: the backends
+   * skip the north arrow, the scale bar and the title block when it is set, because all
+   * three are false on a pictorial view (an arrow points at a compass direction on a
+   * drawing whose plan has been turned; a scale bar measures a foreshortened axis; a
+   * title block makes a drawing look issuable, which this one must never be). No
+   * geometry reads it — every face is already an ordinary Scene primitive by the time it
+   * gets here. See `src/view/`.
+   */
+  view?: import("./view/camera.js").ViewName;
 }

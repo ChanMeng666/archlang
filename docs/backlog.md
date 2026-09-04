@@ -1913,16 +1913,26 @@ extending it in silence.
   learn arcs. Build it on its own merits, not to honour a version number.
 - **P2-4** addressable structural grid · **P2-5** measured-vs-drawn edge separation ·
   **P2-6** multi-flight stairs — each needs its own design pass.
-- **All of P3** (IFC4 export, occupancy-grid export, 3D axonometric, `arch vary`, `--why`,
-  anchor-relative coordinates) — each is a project, not a task. **P3-2's and P3-3's shared
-  prerequisite is DONE**: element heights and opening sill/head heights landed as the v1.35 vertical
+- **P3-3, the 3D axonometric, is DONE** (v1.35, branch `feat/view-iso`): `compile(src, { view })`
+  and `arch compile|preview --view iso|axon` draw extruded walls with their openings cut, floor
+  plates and stacked storeys, as ordinary Scene primitives so every backend serializes them
+  unchanged (`src/view/`, `docs/axonometric.md`). The roadmap's two hard constraints are both met
+  and both pinned: the painter's order is **total**, its depth quantised through the same `fmt2`
+  the coordinates print at, and `describe()`/`lint()` never learn the view exists (a grep guard,
+  not merely a behavioural one). **Deferred inside it, by name:** the roof (there is no pitch
+  datum, only an eaves outline — approximating one is the move `roof` itself refuses), furniture,
+  ground, fences, stairs and every annotation layer; and the painter's algorithm has no answer for
+  two interpenetrating solids.
+- **The rest of P3** (IFC4 export, occupancy-grid export, `arch vary`, `--why`, anchor-relative
+  coordinates) — each is a project, not a task. **P3-2's prerequisite is DONE**: element heights and
+  opening sill/head heights landed as the v1.35 vertical
   datum layer (`src/datum.ts`, branch `feat/height-datum`) — `RWall.height`, `sill`/`head` on every
   resolved opening, `ResolvedPlan.storeyHeight`/`elevation`, and `Opening.kind`/`sill`/`head` on the
   list a wall keeps of what is cut into it, which is what a 2.5D slice at a sensor height reads.
-  **P3-2 and P3-3 themselves stay open**: the datum is a fact layer and nothing consumes it yet.
-  Two things it deliberately does not have and either project may need to add: a **slab thickness**
-  (v1 has none — storey height is floor-to-floor and a wall runs the full storey), and any
-  **consumer** at all, so the first one built gets to discover what the shape is missing.
+  **P3-2 itself stays open.** The datum now has ONE consumer — the axonometric — and what building
+  it discovered is worth carrying: nothing was missing for a 2.5D slice, but a **slab thickness**
+  still does not exist (v1's storey height is floor-to-floor and a wall runs the full storey), so
+  a consumer that must separate structural depth from clear height has to add it.
 - **P3-7 arbitrary rotation** is deliberately NOT built; the trade-off is recorded in the roadmap.
   Any future design must first answer what the handed rules (`hinge left`,
   `against wall … side left`, `anchor top-left`, `right-of`) mean at non-axis angles, plus grid snap

@@ -9,7 +9,9 @@ import { readFileSync, existsSync } from "node:fs";
 import { resolve as resolvePath, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatDiagnostic, EXPORT_FORMATS, planFromJson, buildManifest, ERROR_CATALOG } from "../index.js";
-import type { Diagnostic, World, ExportFormat, ManifestCommand, ManifestFlag } from "../index.js";
+import type { Diagnostic, World, ExportFormat, ManifestCommand, ManifestFlag, ViewName } from "../index.js";
+import { VIEW_NAMES, isViewName } from "../index.js";
+import { closest } from "../expr.js";
 import { findCommand, usageLine } from "./help.js";
 
 export type Format = ExportFormat;
@@ -110,6 +112,8 @@ export interface Args {
   section?: string;
   /** `--level <n>`: (compile/watch/preview/describe) narrow a multi-storey plan to one storey. */
   level?: number;
+  /** `--view <iso|axon>`: (compile/preview) render the illustrative axonometric instead of the plan. */
+  view?: string;
   /** `--help`/`-h`: print the command's help instead of running it (handled in `main`). */
   help?: boolean;
   /** Tokens that look like flags but this command does not accept — `main` exits 3 on any. */
@@ -158,6 +162,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--code": { key: "code", kind: "string" },
   "--severity": { key: "severity", kind: "string" },
   "--section": { key: "section", kind: "string" },
+  "--view": { key: "view", kind: "string" },
   "--graph": { key: "graph", kind: "string" },
   "--intent": { key: "intent", kind: "string" },
   "--brief": { key: "brief", kind: "string" },
@@ -360,6 +365,68 @@ export function unknownLevel(command: string, want: number, levels: readonly num
 export function parseFormat(args: Args): Format | null {
   const fmt = (args.format ?? "svg").toLowerCase();
   return FORMAT_IDS.has(fmt) ? (fmt as Format) : null;
+}
+
+/**
+ * Resolve `--view <iso|axon>` (v1.35), or say precisely why it cannot be honoured.
+ *
+ * Four refusals, every one an exit-3 usage error rather than a silent fallback to the
+ * plan — a flag that quietly does nothing is how a user comes to believe they are looking
+ * at a drawing they are not:
+ *
+ *  - an unrecognised value, with a did-you-mean, exactly as an unknown verb is treated;
+ *  - `-f txt`, because the ASCII backend reads a plan (it identifies a room as a polygon
+ *    on the `floor` pass) and would print a meaningless grid from a projection;
+ *  - `--level`, because the view is ONE drawing of the whole building and has no per-storey
+ *    page to narrow to. This one has to be refused *here* and not left to the render path:
+ *    a view returns no `pages`, so the generic handler saw an empty level list and told the
+ *    author that a plan with two `level` blocks "declares no `level` blocks (it is
+ *    single-storey)" — a confident wrong answer about their own source, which is worse
+ *    than any silence;
+ *  - `--overlay`, because a diagnostic overlay is a MEASUREMENT drawn on a plan — routes,
+ *    bottleneck markers — and the whole contract of this view is that nothing measured
+ *    reaches it. `toIso` does not draw one, so accepting the flag would ignore it.
+ *
+ * Returns `{ view: undefined }` when the flag is absent, which is every existing call.
+ */
+export function resolveView(args: Args, format: Format, command: string): { view?: ViewName } | { code: number } {
+  if (args.view === undefined) return {};
+  const name = args.view;
+  if (!isViewName(name)) {
+    const hint = closest(name, [...VIEW_NAMES]);
+    return {
+      code: usageErrorFor(
+        command,
+        `unknown view "${name}" — expected one of: ${VIEW_NAMES.join(", ")}` +
+          (hint === null ? "" : ` (did you mean "${hint}"?)`),
+      ),
+    };
+  }
+  if (format === "txt") {
+    return {
+      code: usageErrorFor(
+        command,
+        "--view cannot be combined with -f txt — the ASCII backend draws a PLAN, not a projection (use svg, pdf, png or dxf)",
+      ),
+    };
+  }
+  if (args.level !== undefined) {
+    return {
+      code: usageErrorFor(
+        command,
+        `--view draws ONE picture of the whole building, with every storey stacked, so --level ${args.level} has nothing to narrow — drop one of the two (\`--level\` alone renders that storey's PLAN)`,
+      ),
+    };
+  }
+  if (args.overlay !== undefined) {
+    return {
+      code: usageErrorFor(
+        command,
+        `--view cannot be combined with --overlay ${args.overlay} — an overlay draws a MEASUREMENT (routes, bottlenecks) and nothing measured is drawn on a projection`,
+      ),
+    };
+  }
+  return { view: name };
 }
 
 /** Normalize the `--charset` flag to the text backend's union (unknown → unicode). */

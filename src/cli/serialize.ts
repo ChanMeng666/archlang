@@ -19,7 +19,7 @@ import {
   diagnosticToJson,
   ERROR_CATALOG,
 } from "../index.js";
-import type { Diagnostic, Scene } from "../index.js";
+import type { Diagnostic, Scene, ViewName } from "../index.js";
 import { type Args, type Format, EXIT, asciiCharset, baseDirOf, hasErrors, makeNodeWorld, readInput } from "./io.js";
 
 /** Does this error mean a lazy optional render dependency (resvg/pdfkit) is absent? */
@@ -128,6 +128,7 @@ export async function renderArtifact(
   args: Args,
   baseDir: string,
   page: PageSelect = "first",
+  view?: ViewName,
 ): Promise<Rendered> {
   const { svg, diagnostics, scene, pages } = compile(source, {
     width: args.width,
@@ -146,6 +147,10 @@ export async function renderArtifact(
     // recover a fixture's identity from the geometry-only Scene. Other formats never
     // set it, so their output stays byte-identical.
     ...(format === "txt" || args.ascii ? { annotate: true } : {}),
+    // `--view iso|axon`: the illustrative axonometric (v1.35). Validated by the command
+    // before it gets here, and absent on every ordinary render — so the compile options,
+    // and therefore the bytes, are what they were.
+    ...(view ? { view } : {}),
   });
   const levels = pages?.map((p) => p.level) ?? [];
   if (hasErrors(diagnostics) || !scene) {

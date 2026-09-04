@@ -63,6 +63,23 @@ export interface CompileOptions {
    */
   accessible?: boolean;
   /**
+   * Render an **illustrative axonometric** of the plan instead of the plan (v1.35):
+   * extruded walls with their door and window openings cut, floor plates, storeys
+   * stacked. `"iso"` is a true isometric; `"axon"` is the 30°/60° plan oblique. See
+   * `src/view/` and `docs/axonometric.md`.
+   *
+   * **Opt-in and total**: when set, `svg` and `scene` carry the view and nothing else —
+   * there is no side-by-side. When absent, every byte of every surface is what it was
+   * before this option existed, which `test/iso-byte-identity.test.ts` pins over all
+   * thirty shipped examples. Folded into the compile cache key.
+   *
+   * It is a **picture, not a measurement**. `describe()` and `lint()` take no view
+   * option and never learn it exists; nothing derived from the view is reported
+   * anywhere. A multi-storey plan renders as ONE drawing of the whole building rather
+   * than one page per storey, so `pages` is absent.
+   */
+  view?: import("./view/camera.js").ViewName;
+  /**
    * Theme overrides applied on top of the plan's `theme { … }` directive and
    * the built-in defaults (these win). Any subset of keys may be supplied.
    */

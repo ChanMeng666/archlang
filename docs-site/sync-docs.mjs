@@ -41,6 +41,7 @@ const PAGES = [
   ["docs/cli-reference.md", "cli.md"],
   ["docs/furniture.md", "furniture.md"],
   ["docs/analysis.md", "analysis.md"],
+  ["docs/axonometric.md", "axonometric.md"],
   ["docs/intent.md", "intent.md"],
   ["docs/error-codes.md", "errors.md"],
   ["spec.llm.md", "spec.md"],
