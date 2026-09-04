@@ -58,6 +58,7 @@ plan "My Home" {
 | `axes { x at … y at … }` | The plan's **positioning axes** (定位轴线) — declared structural datum lines, drawn dash-dot with a labelled bubble and used as the ticks of the middle dimension chain. See [Positioning axes](#positioning-axes-定位轴线). | none |
 | `schedule rooms` | Draw the **ROOM SCHEDULE** table in the sheet's bottom band — number, name and area per room, closed by a total. Rows are derived from the rooms, never authored. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
 | `legend` | Draw the **LEGEND** table beside the schedule — one row per wall hatch material and per fixture symbol the drawing actually uses, each with a real swatch. Fully derived; nothing to configure. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
+| `height <mm>` | The building's default **floor-to-floor** storey height. The vertical datum: it draws nothing at all, because a floor plan is a horizontal cut. A `level` may override it and a `wall` may override that. See [Heights (the datum layer)](#heights-the-datum-layer). | `3000` |
 
 ### Paper and scale (the sheet)
 
@@ -1914,6 +1915,113 @@ a multi-page PDF is deliberately not built — one file per storey is one drawin
 carries a `level`, so `lint`/`validate` gate on the whole building while still saying which
 floor a warning is about; `arch repair` walks into every level and tags its changes the same
 way.
+
+## Heights (the datum layer)
+
+A floor plan is a horizontal cut through a building, so until v1.35 ArchLang had no third
+dimension at all: a wall had a thickness and no height, a window a width and no sill. It has
+one now, and it is deliberately a **datum rather than a feature**.
+
+**Nothing here changes the drawing.** A plan that puts a height on every wall renders
+byte-for-byte identically to the same plan without them. Heights are *facts* — for
+`describe --json`, for Plan JSON, and for the views that will read them later.
+
+```arch
+plan "Heights" {
+  units mm
+  height 2700
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall id=parapet exterior thickness 100 height 1100 { (0,5000) (6000,5000) }
+  room id=r1 at (0,0) size 6000x4000 label "Living" uses living
+  door id=d on shell at 20% width 900 head 2100
+  window id=w on shell at 60% width 1500 sill 600 head 2400
+  opening id=o on shell at 85% width 1000
+}
+```
+
+### The six defaults
+
+| Thing | Default | Where it comes from |
+|-------|---------|---------------------|
+| storey floor-to-floor | `3000` | The common drawn residential figure. GB 50352-2019 §5.2 puts floor-to-floor at 2800 mm and clear height at not less than 2400; 3000 is what a plan is read at once a slab and a finish are allowed for. |
+| door `head` | `2100` | A 2000 mm leaf on a 100 mm frame — the ordinary door. |
+| window `sill` | `900` | GB 50352-2019 requires a residential external window sill to be **at least** 900 mm above the floor, so 900 is the floor of the convention. |
+| window `head` | `2100` | Heads align with doors on an ordinary elevation. Equal to the door head on purpose. |
+| cased-opening `head` | the host wall's own height | A leaf-less opening is drawn full height unless you say otherwise. This one is a **rule, not a constant**: in a 2200 mm parapet the default is 2200. |
+| maximum | `100000` | A cap so a typo is refused rather than accepted. Anything taller is `E_HEIGHT_RANGE`. |
+
+Read them from the compiler rather than copying them: `arch manifest --json` publishes them
+under `datum`. **A plan that authors no height reports none** (see the gate below), so the
+manifest is the only place to learn what the compiler would have used.
+
+### The three places `height` may be written
+
+The chain is **wall → level → plan → 3000**, innermost wins.
+
+- `height <expr>` as a **plan setting**, beside `units`/`grid`/`paper`/`scale`.
+- `level <n> ["Name"] height <expr> { … }` — in the level's **header**, after the optional
+  name. It cannot go in the body: a plan-level setting sitting there is `E_LEVEL_MIX`.
+- `wall … thickness <mm> [material …] height <expr> { … }` — last before the wall's body.
+
+All three take a full **expression**, exactly as `thickness` does, so `let h = 3200` once and
+`height h` everywhere. None of them is grid-snapped: `grid` snaps plan coordinates so rooms
+line up with each other, and a height shares no axis with them.
+
+### `sill` and `head` on an opening
+
+Both trail every clause the statement already had, and `sill` precedes `head`:
+
+- `window … [sill <expr>] [head <expr>]`
+- `door … [head <expr>]` — after `open`, if there is one.
+- `opening … [head <expr>]`
+
+Only a window takes a `sill`. A door and a cased opening start at the floor, so a clause that
+could only ever be written `sill 0` is not in the language. On a window, `sill 0` *is* legal
+and means a floor-length window — it is the one height that may be zero.
+
+### Elevation, and why it accumulates
+
+`describe --json` reports a storey's `elevation`: its floor above the building's **lowest**
+floor. It is the sum of the heights of the storeys below, **not** `level × storey_height`.
+The two agree on a building whose storeys share one height, and disagree on exactly the plans
+that bothered to write `level … height`: a 3600 mm ground floor puts the first floor at 3600
+however tall the floors above it are. A single-storey plan, and the ground storey of any plan,
+is `0`.
+
+### The gate: heights are reported only when you write one
+
+`describe --json` and Plan JSON emit height keys **only when the source authored at least one
+`height`, `sill` or `head` clause** — anywhere in the plan: a wall, a storey, an opening, an
+imported module. This is the `doors[].kind` rule (present only when it is not the default)
+applied to a whole block, and it is what makes the byte-identity law total: every plan written
+before this layer describes exactly as it did.
+
+When the gate is open, `describe --json` gains:
+
+- a top-level `heights` block — `storey_height`, `elevation`, and `walls[]` with each wall's
+  resolved height (walls have no summary array of their own, so the datum lives here);
+- `head` on each entry of `doors[]` and `openings[]`, and `sill`/`head` on each of `windows[]`.
+
+Plan JSON gains `storey_height` at the top, `height` on each wall (a **vertical** height, not
+a plan extent like a room's `height`), and `sill`/`head` on the openings. All of it round-trips
+through `compile --from-json`.
+
+### The three refusals
+
+Each **refuses rather than clamping** — the `E_ROOF_*` precedent. A refused clause still falls
+back to its inherited default, so a consumer downstream of a failed compile never meets a
+nonsense number.
+
+| Code | When |
+|------|------|
+| `E_HEIGHT_RANGE` | A `height`, `sill` or `head` at zero or below, or above 100 m. A window `sill` of exactly 0 is legal and excluded. |
+| `E_SILL_ABOVE_HEAD` | A window whose `sill` is at or above its `head` — there is no opening between them. |
+| `E_OPENING_ABOVE_WALL` | An opening whose `head` exceeds its **host wall's** height. Measured against the wall, not the storey: 2400 is fine in a 3000 storey and wrong in a 2200 parapet. |
+
+One thing the range check deliberately does **not** catch is a unit slip. `height 3` is three
+millimetres, which is inside the range; the plausible intent is three metres, and a compiler
+that guessed would be inventing a number nobody wrote. The range guards the ends; the units
+are yours.
 
 ## Zones — wings and departments (v1.22)
 

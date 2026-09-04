@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the vertical datum layer (heights, sills and heads)
+
+A floor plan is a horizontal cut, so ArchLang has never had a third dimension: a wall had a
+thickness and no height, a window a width and no sill, and a consumer asking "how tall is this?"
+had nothing to read. It has one now, and it is deliberately a **datum rather than a feature**.
+
+**Nothing draws differently.** That is the headline, not a caveat: it is what makes the layer
+cheap to adopt, and it is pinned rather than asserted. `test/height-byte-identity.test.ts` covers
+**all 30 shipped examples, every storey of each**, on both the whole-surface digest (SVG +
+`describe()` + `lint()`) and the summary-only one, against numbers measured on `f4548db` before a
+line of `src/` moved. `npm run gen:example-svgs` re-renders the twenty committed drawings and git
+reports no change, which is the constructive half of the same claim.
+
+**The language.** `height` is reused at three new sites rather than a fourth spelling being
+invented for the same idea — a plan setting, a `level` header clause, and a `wall` clause — and
+exactly two new keywords are added, `sill` and `head`, as trailing clauses of `window` / `door` /
+`opening`. All take a full expression, as `thickness` does. The fallback chain is **wall → level →
+plan → 3000**, with one implementation (`ResolveCtx.storeyHeight`, fed by `levelPlanFor` folding a
+storey's height into its synthetic plan) so it cannot have two.
+
+**Elevation ACCUMULATES the storeys below; it is not `level × storey_height`.** The two agree on a
+building whose storeys share a height and disagree on exactly the plans that write `level … height`
+— a 3600 mm ground floor puts the first floor at 3600 however tall the floors above it are.
+
+**Three refusals, never clamps** (the `E_ROOF_*` precedent), each with a machine-applicable fix:
+`E_HEIGHT_RANGE` (at or below zero, or above 100 m), `E_SILL_ABOVE_HEAD`, and
+`E_OPENING_ABOVE_WALL` — measured against the **host wall**, not the storey, so a 2400 head is fine
+in a 3000 storey and refused in a 2200 parapet. A window `sill` of exactly 0 is legal and means a
+floor-length window, which is why the range check is two predicates rather than one `> 0`. What it
+deliberately does **not** catch is a unit slip: `height 3` is three millimetres, inside the range,
+and a compiler that guessed the author meant metres would be inventing a number.
+
+**The gating decision, and why it is one boolean.** `describe()` and Plan JSON emit height keys
+**only when the source authored a `height`/`sill`/`head` anywhere** — the `doors[].kind` rule
+(present only when not the default) applied to a whole block. Both surfaces read the same flag,
+`ResolvedPlan._heightsAuthored`, so they cannot disagree, and the flag is whole-PLAN rather than
+per-storey: a height written on the second floor alone must not leave two pages disagreeing about
+whether the third dimension exists. `strip … height <mm>` is excluded, because that clause shares
+the keyword and means a plan extent.
+
+`describe --json` gains a top-level `heights` block (`storey_height`, `elevation`, and `walls[]`
+with each resolved height — walls have no summary array of their own) plus `head` on `doors[]` and
+`openings[]` and `sill`/`head` on `windows[]`. Plan JSON gains `storey_height`, `WallJson.height`
+(a **vertical** height, not a plan extent like a room's `height`) and `sill`/`head` on the
+openings, all round-tripping through `compile --from-json`. `arch manifest` gains a `datum` block
+carrying the six defaults, because a plan that authors none reports none and an agent still needs
+to know what the compiler would have used.
+
+`arch fmt` round-trips every new clause, checked as a **fixed point** rather than a string match —
+v1.26.1 shipped a formatter that silently returned a pocket door as a hinged one, and the same
+failure here would return a 2200 mm parapet as a full-height wall.
+
+Two things this v1 does **not** do, deferred by name rather than half-answered: there is no slab
+thickness (separating structural depth from clear height needs a second number and a rule for which
+one every consumer means), and nothing consumes the datum yet — the 2.5D occupancy export and the
+axonometric preview it unblocks (`docs/backlog.md` P3-2 / P3-3) are their own projects.
+
 ## [1.34.0] - 2026-09-04
 
 **What the gates could not see.** Every item here is a check that was running, green, and

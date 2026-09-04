@@ -108,6 +108,15 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "furniture",
   "verticals",
   "voids",
+  // The vertical datum (v1.35). Conditional like `voids` — present only when the plan
+  // authored a height clause — and therefore exactly the shape that let `voids` ship
+  // UNSELECTABLE with the drift test green, so the set-equality fixture below now writes a
+  // `height` (see `test/cli-narrow.test.ts`).
+  //
+  // It is NOT in `PER_STOREY_OPTIONAL_KEYS`: the gate is whole-PLAN, so when the block
+  // exists it exists on every storey and a `--level N` spread always overwrites it with
+  // that storey's own numbers. There is never a stale one left standing.
+  "heights",
   "access",
   "circulation",
   "totals",

@@ -48,7 +48,7 @@
  */
 
 import { readFileSync, readdirSync } from "node:fs";
-import { dirname, join, resolve as resolvePath } from "node:path";
+import { join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
 import type { World } from "../src/world.js";
@@ -199,7 +199,7 @@ suite("height byte-identity — the datum exists even when the summary hides it"
   it("every wall of a silent plan resolved to the 3000 default", async () => {
     const { resolve: resolvePlan } = await import("../src/ir.js");
     const { parse } = await import("../src/parser.js");
-    const { ir } = resolvePlan(parse(srcOf("studio")).plan);
+    const { ir } = resolvePlan(parse(srcOf("studio")).plan!);
     expect(ir.storeyHeight).toBe(3000);
     expect(ir.elevation).toBe(0);
     expect(ir._heightsAuthored).toBe(false);

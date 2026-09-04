@@ -239,8 +239,10 @@ const POSITIVE: Snippet[] = [
     // opening elements. A snippet that wrote it earlier would pass by accident only if the
     // parser were order-insensitive, which it is not.
     note: "the vertical `head`, trailing even `open` on a sliding leaf",
-    src: plan(`${BOX}\n  door on w1 at 50% width 900 hinge left swing in head 2100\n` +
-      `  door sliding on w1 at 20% width 900 slide left open 0.5 head 2400`),
+    src: plan(
+      `${BOX}\n  door on w1 at 50% width 900 hinge left swing in head 2100\n` +
+        `  door sliding on w1 at 20% width 900 slide left open 0.5 head 2400`,
+    ),
   },
   {
     keyword: "door",

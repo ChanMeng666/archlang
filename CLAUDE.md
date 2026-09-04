@@ -74,6 +74,15 @@ than memory.
   `describe()` **and** `lint()` — because a form that quietly appends an empty key to every summary
   leaves the drawing untouched and is still a behaviour change for every `arch describe --json`
   consumer.
+- **Heights DRAW NOTHING, and `describe()` reports them only when the source wrote one.** The v1.35
+  vertical datum (`src/datum.ts`) puts `height` on a plan, a `level` and a `wall`, and `sill`/`head`
+  on the openings — a floor plan is a horizontal cut, so **a plan with no height clause is
+  byte-identical everywhere**, SVG, `describe()` and `lint()` alike (pinned over all 30 examples and
+  every storey by `test/height-byte-identity.test.ts`). The gate is ONE boolean,
+  `ResolvedPlan._heightsAuthored`, read by `describe()` and Plan JSON so they cannot disagree, and it
+  is whole-PLAN rather than per-storey. The fallback chain wall → level → plan → `STOREY_HEIGHT` has
+  exactly one implementation (`ResolveCtx.storeyHeight`) — never re-derive it in an element — and
+  **elevation accumulates the storeys below, never `level × height`**.
 - **A drawn fixture symbol ignores its `label`, and fixture categories are DATA, not keywords.** The
   129 catalogued words across 83 families live in one `FIXTURE_FAMILIES` table
   (`src/elements/fixtures-glyphs.ts`) with their semantics in `src/fixtures-catalog.ts`; an

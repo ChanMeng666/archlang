@@ -706,7 +706,17 @@ exact at any angle and on either winding, refusing an `arc` edge rather than app
 `VerticalObstacle` while lifting its walkable halo on all four edges, does **not** reduce the
 containing room's area — `describe().voids[]` gives the extent so a consumer can subtract — and finds
 its room through the poly-aware containment test, never a bounding box). Both are drawing-only and
-neither adds a `Theme` key: they reach existing paint through `STYLE_KEYS`. **The v1.31 GROUND layer
+neither adds a `Theme` key: they reach existing paint through `STYLE_KEYS`. **The v1.35 VERTICAL
+DATUM — `datum.ts`** (the six drafting defaults, `elevationOf`, the two range predicates and
+`plansAuthorHeights`): `height` at three sites (a plan setting, a `level` header clause, a `wall`
+clause) and `sill`/`head` on the three opening elements, all of which **draw nothing at all**
+because a floor plan is a horizontal cut. The fallback chain is wall → level → plan →
+`STOREY_HEIGHT`, resolved ONCE into `ResolveCtx.storeyHeight` and never re-derived per element;
+**elevation ACCUMULATES the storeys below rather than multiplying a level number by one height**,
+which is the whole reason `level … height` exists; and heights are deliberately NOT grid-snapped
+(`grid` snaps plan coordinates so rooms line up with each other, and a height shares no axis with
+them). Its refusals are refusals, not clamps: `E_HEIGHT_RANGE`, `E_SILL_ABOVE_HEAD` and
+`E_OPENING_ABOVE_WALL` — the last measured against the HOST WALL, not the storey. **The v1.31 GROUND layer
 — `elements/outdoor.ts` and `elements/fence.ts`** (nine ground kinds and three fence styles, drawn on
 `L-PLNT`/`L-SITE`/`A-FLOR-BALC`; the seven ground hatches live in `hatches.ts`'s one shared `META`
 table beside the wall materials, each **scale-aware** off `c.gap * k * c.scale` and each painting no
