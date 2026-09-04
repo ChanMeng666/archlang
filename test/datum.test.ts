@@ -269,6 +269,21 @@ suite("datum — the three refusals, each beside the plan that does not raise it
     expect(codes(plan(`  height ${MAX_HEIGHT}\n${BOX}`))).toEqual([]);
   });
 
+  it("a SILL's refusal says `0 or greater`, because 0 is legal for a sill and only a sill", () => {
+    // A shared "must be greater than 0" sentence would be a remedy the compiler itself
+    // contradicts one line later — `sill 0` compiles clean. A wrong remedy in a diagnostic
+    // is worse than a vague one, so the sill gets its own wording.
+    expect(codes(plan(`${BOX}\n  window on w1 at 50% width 1200 sill 0`))).toEqual([]);
+    const bad = plan(`${BOX}\n  window on w1 at 50% width 1200 sill -50`);
+    const d = compile(bad, { noCache: true }).diagnostics.find((x) => x.code === "E_HEIGHT_RANGE");
+    expect(d?.message).toContain("a sill must be 0 or greater");
+    expect(d?.message).not.toContain("greater than 0 and");
+    // …while every OTHER height keeps the strict bound, on the same code.
+    const wall = plan(`  wall id=w exterior thickness 200 height 0 { (0,0) (4000,0) }`);
+    const dw = compile(wall, { noCache: true }).diagnostics.find((x) => x.code === "E_HEIGHT_RANGE");
+    expect(dw?.message).toContain("a height must be greater than 0");
+  });
+
   it("E_HEIGHT_RANGE does NOT fire on a unit slip, and that is deliberate", () => {
     // `height 3` is three millimetres and is inside the range. The plausible intent is
     // three metres, and a compiler that guessed would be inventing a number the author
@@ -321,6 +336,34 @@ suite("datum — the three refusals, each beside the plan that does not raise it
     const edit = d!.fixes![0]!.edits[0]!;
     expect(edit.newText).toBe("head 2200");
     expect(codes(low.slice(0, edit.span.start) + edit.newText + low.slice(edit.span.end))).toEqual([]);
+  });
+
+  it("E_OPENING_ABOVE_WALL names the SETTING when the wall inherited its height", () => {
+    // The failure mode this hint exists for: a plan-level `height 300` makes every
+    // opening's DEFAULT head exceed its wall, so the errors fan out across openings the
+    // author wrote nothing wrong on — and the number they are measured against is not on
+    // any line the diagnostics point at.
+    const inherited = plan(
+      `  height 300\n${BOX}\n` +
+        `  door on w1 at 20% width 900\n  window on w1 at 50% width 1200\n  opening on w1 at 80% width 1000`,
+    );
+    const ds = compile(inherited, { noCache: true }).diagnostics.filter((d) => d.code === "E_OPENING_ABOVE_WALL");
+    // The fan-out is real and is NOT fixed here — the hint is. Asserted so the count is a
+    // recorded fact rather than an assumption: two of the three (the cased opening takes
+    // the wall's own height as its default, so it never exceeds it).
+    expect(ds.length).toBe(2);
+    for (const d of ds) {
+      expect(d.hints?.[0]).toContain("does NOT declare a height");
+      expect(d.hints?.[0]).toContain("height 300");
+    }
+    // …and when the wall DOES declare one, the hint points at the wall instead.
+    const authored = plan(
+      `  height 3000\n  wall id=w1 exterior thickness 200 height 800 { (0,0) (8000,0) (8000,5000) (0,5000) close }\n` +
+        `  door on w1 at 50% width 900`,
+    );
+    const d2 = compile(authored, { noCache: true }).diagnostics.find((d) => d.code === "E_OPENING_ABOVE_WALL");
+    expect(d2?.hints?.[0]).toContain("host wall's own `height`");
+    expect(d2?.hints?.[0]).not.toContain("inherited");
   });
 
   it("a refused head still leaves a usable number, and never one below the sill", () => {

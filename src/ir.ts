@@ -208,6 +208,17 @@ export interface RWall extends RBase {
    * 100 mm grid would silently redraw the section nobody asked for.
    */
   height: number;
+  /**
+   * True when {@link RWall.height} came from this wall's OWN `height` clause rather than
+   * being inherited from the storey or the plan (v1.35).
+   *
+   * It exists for one diagnostic. `E_OPENING_ABOVE_WALL` fires once per opening, and when
+   * the wall inherited its height the author's mistake is a plan-level `height`, not any
+   * of the openings named in the errors — so the message has to say where the number
+   * really came from or it sends them to the wrong line. Internal: set during resolve,
+   * never serialized into the Scene/SVG/exports (the `_` prefix keeps it out).
+   */
+  _heightAuthored?: boolean;
   /** Openings (doors/windows) hosted on this wall; subtracted from its solid. */
   openings: Opening[];
   /** True when this wall's `id` was author-declared, not an assigned positional

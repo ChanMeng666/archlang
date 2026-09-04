@@ -467,6 +467,14 @@ export function formatPlan(plan: PlanNode, source: string): string {
   // the drawing's other dimension — so it sits after `scale` and before `north`. Emitted
   // only when authored: a plan with no `height` must format back to a plan with no
   // `height`, or every existing file gains a line on its first `arch fmt`.
+  //
+  // This HOISTS `height h` above the `let h = …` that defines it, since the settings block
+  // is printed before the span-ordered body — and that re-parses correctly, which is worth
+  // saying rather than leaving a reader to worry. Plan-level settings are not evaluated
+  // where they are written: `resolveImpl` expands the whole scope first and evaluates
+  // `ast.height` against `globalScope.flatten()`, exactly as it already does for the `axes`
+  // block and the `site` lot line. A plan-level `let` is therefore in scope regardless of
+  // source order, before and after formatting alike.
   if (plan.height !== undefined) settings.push(`height ${exprStr(plan.height)}`);
   settings.push(`north ${northStr(plan.north)}`);
   // `site` reads as a rider on the north declaration — it is the other half of "which way

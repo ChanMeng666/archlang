@@ -196,6 +196,9 @@ export const wall: ElementDef = {
       hatchScale,
       hatchAngle,
       height: isDrawableHeight(height) ? height : ctx.storeyHeight,
+      // Whether that number is the wall's own or the storey's — read only by
+      // `E_OPENING_ABOVE_WALL`, so it can name the clause the author actually has to edit.
+      ...(n.height !== undefined && isDrawableHeight(height) ? { _heightAuthored: true } : {}),
       points,
       ...(arcs ? { arcs } : {}),
       closed: n.closed,
