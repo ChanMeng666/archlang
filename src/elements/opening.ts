@@ -8,6 +8,7 @@ import type { ROpening } from "../ir.js";
 import { add, mul, nearestWallNote, normal, segmentDirAt } from "../geometry.js";
 import { parseAttachTarget, resolveAttachment } from "../attach.js";
 import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
+import { hostWallHeight, parseOpeningHeights, resolveOpeningHeights } from "../datum.js";
 
 export const opening: ElementDef = {
   kind: "opening",
@@ -37,6 +38,8 @@ export const opening: ElementDef = {
       ctx.next();
       node.wall = ctx.eatIdent().value;
     }
+    // The vertical datum (v1.35): `head` only. A cased opening's sill is the floor.
+    Object.assign(node, parseOpeningHeights(ctx, { sill: false }));
     return node;
   },
 
@@ -56,11 +59,20 @@ export const opening: ElementDef = {
         ...fixesFrom(openingWidthFix("opening", n)),
       });
     }
+    // A cased opening is drawn FULL HEIGHT unless the author says otherwise, so its `head`
+    // default is the host wall's own height rather than a constant — the one opening whose
+    // default is a lookup (see `CASED_OPENING_HEAD`, which is only what this evaluates to
+    // in a default storey).
+    const heights = (host: ReturnType<typeof ctx.hostSegment>): { head: number } => {
+      const full = hostWallHeight(host, ctx.walls, ctx.storeyHeight);
+      return { head: resolveOpeningHeights(ctx, `Opening "${id}"`, n, { sill: 0, head: full }, host, n.span).head };
+    };
     // Attached: the point + host come from walking the named wall (no off-wall check).
     if (n.attach) {
       const a = resolveAttachment(n.attach, ctx.walls, ctx.snapPt, ctx.diag, `Opening "${id}"`, (e) => ctx.eval(e));
       const at = a ? a.at : { x: 0, y: 0 };
-      return { kind: "opening", id, at, width, host: a ? a.host : null, span: n.span };
+      const host = a ? a.host : null;
+      return { kind: "opening", id, at, width, host, ...heights(host), span: n.span };
     }
     const at = ctx.snapPt(ctx.evalPt(n.at!));
     if (ctx.walls.length > 0 && !ctx.isOnWall(at, n.wall)) {
@@ -74,7 +86,8 @@ export const opening: ElementDef = {
         ...fixesFrom(offWallFix("opening", n, at, ctx.walls)),
       });
     }
-    return { kind: "opening", id, at, width, host: ctx.hostSegment(at, n.wall), span: n.span };
+    const host = ctx.hostSegment(at, n.wall);
+    return { kind: "opening", id, at, width, host, ...heights(host), span: n.span };
   },
 
   bounds: () => [],

@@ -339,6 +339,28 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Give it a positive `size W x H` — the hole's extent in plan.",
     "void id=well at (2000,1000) size 0x3000   # error: zero width",
   ),
+  // ---- the vertical datum layer (v1.35) ----------------------------------------
+  E_HEIGHT_RANGE: E(
+    "E_HEIGHT_RANGE",
+    "A height is outside the range a storey can be built at.",
+    "A `height`, `sill` or `head` clause evaluated to a number no building has: zero or negative, not finite, or above 100 m. Heights are millimetres like every other number in the language, so this is nearly always a unit slip (`height 3` meaning 3 metres) or an expression that resolved to something unintended. A window `sill` of exactly 0 is legal and means a floor-length window; everything else must be greater than zero.",
+    "Write the height in millimetres, or drop the clause and inherit the default (the fix does exactly that) — 3000 for a storey, 2100 for a door or window head, 900 for a window sill.",
+    "wall id=w1 exterior thickness 200 height 3 { (0,0) (4000,0) close }   # error: 3 mm, not 3 m",
+  ),
+  E_SILL_ABOVE_HEAD: E(
+    "E_SILL_ABOVE_HEAD",
+    "A window's sill sits at or above its head.",
+    "A `window`'s `sill` is the bottom of the glazing and its `head` is the top, both measured from this storey's floor. When the sill is not below the head there is no opening between them — the statement describes a window with no glass in it. Refused rather than silently swapped: which of the two numbers is wrong is not something the compiler can know.",
+    "Lower the `sill` below the `head`, or raise the `head`. Dropping the `sill` clause (the fix) restores the 900 mm default.",
+    "window id=w on wall1 at 50% width 1200 sill 2400 head 2100   # error: sill above head",
+  ),
+  E_OPENING_ABOVE_WALL: E(
+    "E_OPENING_ABOVE_WALL",
+    "An opening's head is above the wall it is cut in.",
+    "A `door`/`window`/`opening` whose `head` exceeds its host wall's own `height` would run out through the top of the wall. The wall's height is the authored `wall … height`, else this storey's, else the 3000 mm default — so this fires on a low parapet or a short storey as readily as on a mistyped head.",
+    "Lower the `head` to the wall's height (the fix does exactly that), or raise the wall with `wall … height`.",
+    "wall id=w1 exterior thickness 200 height 2200 { (0,0) (4000,0) close }\n  door id=d on w1 at 50% width 900 head 2400   # error: head above a 2200 wall",
+  ),
   // ---- ground surfaces, fences and the lot line (v1.31) ------------------------
   E_OUTDOOR_SIZE: E(
     "E_OUTDOOR_SIZE",

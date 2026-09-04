@@ -68,6 +68,22 @@ export type { RVertical, VerticalLevelInput, VerticalObstacle, VerticalReach } f
 // (areas, bboxes, adjacency), doors (what they connect), windows, and totals —
 // the channel a text-only agent uses to verify a plan without rendering it.
 export { describe } from "./describe.js";
+// The vertical datum layer (v1.35): the six drafting defaults, the elevation rule and the
+// range predicates. Exported because a consumer reading `describe().heights` — or writing
+// Plan JSON — needs the same numbers the compiler uses, and a retyped copy of a language
+// fact is exactly the drift `check:drift` cannot see. Nothing here draws.
+export {
+  CASED_OPENING_HEAD,
+  DOOR_HEAD,
+  elevationOf,
+  isDrawableHeight,
+  isPlacedHeight,
+  MAX_HEIGHT,
+  plansAuthorHeights,
+  STOREY_HEIGHT,
+  WINDOW_HEAD,
+  WINDOW_SILL,
+} from "./datum.js";
 export type {
   SceneSummary,
   LevelSummary,
@@ -85,6 +101,7 @@ export type {
   DoorKind,
   WindowSummary,
   OpeningSummary,
+  HeightFacts,
   FurnitureSummary,
   InstanceSummary,
   AccessGraph,

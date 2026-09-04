@@ -33,6 +33,7 @@ import type { Diagnostic } from "./diagnostics.js";
 import type { DoorEnumClause, DoorHinge, DoorKind, DoorSlideDir, DoorSwingDir } from "./grammar/tokens.js";
 import { DOOR_ENUMS, DOOR_KIND_CLAUSES, DOOR_KINDS, enumList } from "./grammar/tokens.js";
 import { parse } from "./parser.js";
+import { isDrawableHeight, isPlacedHeight, MAX_HEIGHT } from "./datum.js";
 import {
   resolvePlan,
   roomUses,
@@ -209,6 +210,19 @@ export interface WallJson {
   category?: string;
   points: PointJson[];
   thickness?: number;
+  /**
+   * How tall the wall stands, in mm (v1.35, the vertical datum layer) — a VERTICAL
+   * height, not a plan extent.
+   *
+   * It is spelled `height` because that is the `.arch` clause it round-trips to, and a
+   * model writing this payload has to produce that word. Do not read it as the sibling of
+   * {@link RoomJson.height} / {@link FurnitureJson.height}, which are y-axis extents in
+   * plan: a wall is a polyline and has no such extent.
+   *
+   * Emitted only when the plan authored a height somewhere, so every payload written
+   * before this layer is byte-identical; honoured on input.
+   */
+  height?: number;
   /** Whether the polyline closes into a loop. */
   closed?: boolean;
   /** Hatch material (omitted when the default poché). */
@@ -245,6 +259,15 @@ export interface OpeningJson {
   slide?: DoorSlideDir;
   /** How far the panel is drawn open, 0–1. A drawing fact; nothing measured reads it. */
   open?: number;
+  /**
+   * Bottom of the glazing above this storey's floor, in mm (v1.35) — `window` only. `0` is
+   * legal and means a floor-length window. Emitted only when the plan authored a height
+   * somewhere; honoured on input.
+   */
+  sill?: number;
+  /** Top of the opening above this storey's floor, in mm (v1.35). Same gating; must sit
+   *  above {@link OpeningJson.sill} and no higher than the host wall. */
+  head?: number;
 }
 
 /**
@@ -344,6 +367,17 @@ export interface PlanJson {
    * the two compose exactly as they do in `.arch`.
    */
   dims_auto?: AutoDimsMode;
+  /**
+   * The plan's default floor-to-floor storey height, in mm (v1.35) — the `height <mm>`
+   * plan setting. Emitted only when the plan authored a height somewhere, so every
+   * existing payload is byte-identical, and accepted on input because Plan JSON is a
+   * ROUND-TRIP surface: without it `compile --from-json` would silently drop the datum and
+   * hand every wall the 3000 default back.
+   *
+   * Plan JSON is a SINGLE-STOREY projection (the lowest level of a multi-storey plan), so
+   * there is no per-level height here and no elevation.
+   */
+  storey_height?: number;
   /** Output-only enrichments (ignored on input). */
   room_count?: number;
   total_area?: number;
@@ -460,11 +494,16 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
     };
   });
 
+  // The vertical datum's gate (v1.35) — one boolean, the same one `describe()` reads, so
+  // the two surfaces can never disagree about whether this plan has heights.
+  const heights = ir._heightsAuthored;
+
   const walls: WallJson[] = ir.walls.map((w: RWall) => ({
     id: w.id,
     category: w.category,
     points: w.points.map((p) => ({ x: p.x, y: p.y })),
     thickness: w.thickness,
+    ...(heights ? { height: w.height } : {}),
     closed: w.closed,
     ...(w.material !== DEFAULT_MATERIAL ? { material: w.material } : {}),
     ...(w.material !== DEFAULT_MATERIAL && w.hatchScale !== 1 ? { material_scale: w.hatchScale } : {}),
@@ -492,6 +531,13 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
           if (allowed.slide && e.slide !== undefined) base.slide = e.slide;
           if (allowed.open && e.open !== undefined) base.open = e.open;
         }
+      }
+      // The vertical datum (v1.35), under the one gate. `sill` is a window's alone — a
+      // door's and a cased opening's sill is the floor, and emitting `sill: 0` for them
+      // would round-trip into a clause the grammar does not offer.
+      if (heights) {
+        if (e.kind === "window") base.sill = e.sill;
+        base.head = e.head;
       }
       return base;
     });
@@ -565,6 +611,9 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
     // Same rule as `site`: emitted only when declared, so a plan that never asked for
     // automatic dimensioning produces exactly the payload it always did.
     ...(ir.autoDims !== undefined ? { dims_auto: ir.autoDims } : {}),
+    // Same rule again for the vertical datum (v1.35): emitted only under the one gate, so
+    // a plan that declares no height produces exactly the payload it always did.
+    ...(heights ? { storey_height: ir.storeyHeight } : {}),
     room_count: rooms.length,
     total_area: totalArea,
     room_types: roomTypes,
@@ -687,6 +736,12 @@ function validatePlanJson(json: unknown, val: Validator): PlanJson | null {
   )
     val.err("/dims_auto", `expected one of ${AUTO_DIMS_MODES.join(", ")}`);
 
+  // The vertical datum (v1.35). Range-checked HERE as well as at resolve, because a
+  // payload is a surface a model writes directly and `storey_height: 3` should be refused
+  // with a JSON pointer rather than turned into a plan that then refuses itself.
+  if (json.storey_height !== undefined && !(isNum(json.storey_height) && isDrawableHeight(json.storey_height)))
+    val.err("/storey_height", `expected a number greater than 0 and no more than ${MAX_HEIGHT}`);
+
   const rooms = json.rooms;
   if (rooms !== undefined && !Array.isArray(rooms)) val.err("/rooms", "expected an array");
   if (Array.isArray(rooms)) rooms.forEach((r, i) => void validateRoom(r, `/rooms/${i}`, val));
@@ -773,6 +828,9 @@ function validateWall(w: unknown, path: string, val: Validator): void {
   }
   if (w.thickness !== undefined && !isNum(w.thickness)) val.err(`${path}/thickness`, "expected a number");
   if (w.category !== undefined && !isStr(w.category)) val.err(`${path}/category`, "expected a string");
+  // A VERTICAL height (v1.35), not a plan extent — see `WallJson.height`.
+  if (w.height !== undefined && !(isNum(w.height) && isDrawableHeight(w.height)))
+    val.err(`${path}/height`, `expected a number greater than 0 and no more than ${MAX_HEIGHT}`);
 }
 
 function validateOpening(o: unknown, path: string, val: Validator): void {
@@ -801,6 +859,17 @@ function validateOpening(o: unknown, path: string, val: Validator): void {
     val.err(`${path}/door_kind`, `expected ${enumList(DOOR_KINDS)}`);
   if (o.open !== undefined && !(isNum(o.open) && o.open >= 0 && o.open <= 1))
     val.err(`${path}/open`, "expected a number in [0,1]");
+  // The vertical datum (v1.35). `sill` may be exactly 0 (a floor-length window); `head`
+  // may not. The sill-below-head and head-within-wall rules are NOT re-implemented here —
+  // they need the host wall, so they stay at resolve where `E_SILL_ABOVE_HEAD` and
+  // `E_OPENING_ABOVE_WALL` already own them, and a payload that violates one is refused
+  // with a span rather than a pointer.
+  if (o.sill !== undefined && !(isNum(o.sill) && isPlacedHeight(o.sill)))
+    val.err(`${path}/sill`, `expected a number from 0 to ${MAX_HEIGHT}`);
+  if (o.sill !== undefined && o.kind !== "window")
+    val.err(`${path}/sill`, "only a window has a sill — a door and a cased opening start at the floor");
+  if (o.head !== undefined && !(isNum(o.head) && isDrawableHeight(o.head)))
+    val.err(`${path}/head`, `expected a number greater than 0 and no more than ${MAX_HEIGHT}`);
 }
 
 function validateFurniture(f: unknown, path: string, val: Validator): void {
@@ -893,6 +962,10 @@ function emitArch(p: PlanJson): string {
   // The round-trip half of `dims auto`. Without this line the chains vanish and the
   // drawing extent shrinks around them — a silently smaller sheet, no diagnostic.
   if (p.dims_auto !== undefined) L.push(`  dims auto ${p.dims_auto}`);
+  // The round-trip half of the vertical datum (v1.35). Without this line every wall in the
+  // re-emitted source silently inherits the 3000 default, and a 2400 storey comes back as
+  // a 3000 one with no diagnostic — the `dims auto` failure above, one layer down.
+  if (p.storey_height !== undefined) L.push(`  height ${num(p.storey_height)}`);
 
   for (const w of p.walls ?? []) {
     const parts = [
@@ -905,6 +978,8 @@ function emitArch(p: PlanJson): string {
       if (typeof w.material_scale === "number") parts.push(`scale ${num(w.material_scale)}`);
       if (typeof w.material_angle === "number") parts.push(`angle ${num(w.material_angle)}`);
     }
+    // Last before the body, the grammar's own order.
+    if (typeof w.height === "number") parts.push(`height ${num(w.height)}`);
     const pts = (w.points ?? []).map((pt) => `(${num(pt.x)},${num(pt.y)})`).join(" ");
     parts.push(`{ ${pts}${w.closed ? " close" : ""} }`);
     L.push(parts.join(" "));
@@ -973,6 +1048,11 @@ function emitOpening(o: OpeningJson): string {
     if (o.slide) line += ` slide ${o.slide}`;
     if (o.open !== undefined) line += ` open ${num(o.open)}`;
   }
+  // The vertical clauses trail every other one, in `sill` then `head` order — the
+  // grammar's, so the emitted line re-parses. `sill` is a window's alone; the validator
+  // above refuses it anywhere else, so this needs no second check.
+  if (o.kind === "window" && o.sill !== undefined) line += ` sill ${num(o.sill)}`;
+  if (o.head !== undefined) line += ` head ${num(o.head)}`;
   return line;
 }
 
@@ -1287,6 +1367,13 @@ export const PLAN_JSON_SCHEMA = {
       description:
         "`dims auto <mode>` — draw automatic dimension chains: `overall` (the two exterior chains), `rooms`, `walls`, or `all`. Omit it and no chains are drawn. This is a SETTING, not the `dims` array beside it: `dims` lists explicit `dim` statements, and the two compose. It affects output — the chains grow the drawing extent — so a document that drops it renders a differently-sized sheet.",
     },
+    storey_height: {
+      type: "number",
+      exclusiveMinimum: 0,
+      maximum: MAX_HEIGHT,
+      description:
+        "`height <mm>` — the plan's default floor-to-floor storey height in millimetres (default 3000). The VERTICAL datum: it draws nothing at all, because a floor plan is a horizontal cut, and exists so heights are readable facts. A wall's own `height` overrides it. Plan JSON is a single-storey projection, so per-level heights and elevations are not representable here — author those with `level <n> height <mm>` in .arch source.",
+    },
     room_count: { type: "integer", description: "Output-only: number of rooms." },
     total_area: { type: "number", description: "Output-only: total floor area in square metres." },
     room_types: {
@@ -1352,6 +1439,13 @@ export const PLAN_JSON_SCHEMA = {
           },
           points: { type: "array", minItems: 2, description: "Polyline vertices in order.", items: POINT_SCHEMA },
           thickness: { type: "number", description: "Wall thickness in millimetres." },
+          height: {
+            type: "number",
+            exclusiveMinimum: 0,
+            maximum: MAX_HEIGHT,
+            description:
+              "How tall the wall STANDS, in millimetres — a vertical height, NOT a plan extent like a room's `height`. Defaults to the plan's `storey_height` (3000). It draws nothing: a floor plan is a horizontal cut. An opening's `head` may not exceed it.",
+          },
           closed: { type: "boolean", description: "Whether the polyline closes back to its first vertex." },
           material: {
             type: "string",
@@ -1411,6 +1505,20 @@ export const PLAN_JSON_SCHEMA = {
             maximum: 1,
             description:
               "How far the panel is DRAWN open, 0–1 (default 0.5). A drawing fact only — no measured output reads it. Sliding family only.",
+          },
+          sill: {
+            type: "number",
+            minimum: 0,
+            maximum: MAX_HEIGHT,
+            description:
+              "Bottom of the glazing above this storey's floor, in millimetres (default 900 — GB 50352-2019's minimum for a residential external window). WINDOW ONLY: a door and a cased opening start at the floor. 0 is legal and means a floor-length window. Draws nothing.",
+          },
+          head: {
+            type: "number",
+            exclusiveMinimum: 0,
+            maximum: MAX_HEIGHT,
+            description:
+              "Top of the opening above this storey's floor, in millimetres — 2100 for a door or a window, the host wall's own height for a cased opening. Must be above `sill` and no higher than the host wall. Draws nothing.",
           },
         },
       },

@@ -33,6 +33,7 @@ export type ExportFormat = (typeof EXPORT_FORMATS)[number]["id"];
 import { ERROR_CODES, ERROR_CATALOG } from "./error-catalog.js";
 import { LINT_PROFILE_NAMES, LINT_PROFILES, DEFAULT_RULESET } from "./lint.js";
 import { FIXTURE_CATEGORIES } from "./elements/fixtures-glyphs.js";
+import { CASED_OPENING_HEAD, DOOR_HEAD, MAX_HEIGHT, STOREY_HEIGHT, WINDOW_HEAD, WINDOW_SILL } from "./datum.js";
 
 export interface ManifestFlag {
   flag: string;
@@ -88,6 +89,30 @@ export interface Manifest {
     profileOverrides: Record<string, Partial<typeof DEFAULT_RULESET>>;
   };
   errorCodes: Array<{ code: string; severity: "error" | "warning" }>;
+  /**
+   * The vertical datum's DEFAULTS in millimetres (v1.35), so a consumer reads them once
+   * from the compiler rather than hard-coding six numbers that would then drift.
+   *
+   * They are here, in the manifest, rather than in `describe()` for a reason worth
+   * keeping: `describe()` reports what a PLAN is, and a default is a property of the
+   * LANGUAGE. A plan that authors no height reports no heights at all (the byte-identity
+   * law) — and an agent still needs to know what the compiler would use if it did.
+   */
+  datum: {
+    /** Floor-to-floor height of a storey when the plan declares none. */
+    storeyHeight: number;
+    /** Head height of a door leaf when the statement declares none. */
+    doorHead: number;
+    /** Sill height of a window when the statement declares none. */
+    windowSill: number;
+    /** Head height of a window when the statement declares none. */
+    windowHead: number;
+    /** Head height of a cased opening in a default-height storey — the RULE is "as tall
+     *  as the host wall", and this is what that evaluates to when the wall is default. */
+    casedOpeningHead: number;
+    /** The largest height any clause may name; anything above is `E_HEIGHT_RANGE`. */
+    maxHeight: number;
+  };
 }
 
 const JSON_FLAG: ManifestFlag = { flag: "--json", description: "structured result on stdout, messages on stderr" };
@@ -758,6 +783,16 @@ export function buildManifest(version: string): Manifest {
       profileOverrides: Object.fromEntries(LINT_PROFILE_NAMES.map((name) => [name, LINT_PROFILES[name] ?? {}])),
     },
     errorCodes: ERROR_CODES.map((code) => ({ code, severity: ERROR_CATALOG[code]!.severity })),
+    // Interpolated from `src/datum.ts`, never retyped — the drift `check:drift` cannot
+    // see is a language fact typed a second time into something that describes it.
+    datum: {
+      storeyHeight: STOREY_HEIGHT,
+      doorHead: DOOR_HEAD,
+      windowSill: WINDOW_SILL,
+      windowHead: WINDOW_HEAD,
+      casedOpeningHead: CASED_OPENING_HEAD,
+      maxHeight: MAX_HEIGHT,
+    },
   };
 }
 

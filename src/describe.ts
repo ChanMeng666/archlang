@@ -159,6 +159,14 @@ export interface DoorSummary {
    * and the second is purely how far the panel is drawn.
    */
   kind?: DoorKind;
+  /**
+   * Top of the doorway above this storey's floor, in mm (v1.35, the vertical datum).
+   *
+   * Present **only when the plan authored a height clause somewhere** — see
+   * {@link SceneSummary.heights}. A door's sill is the floor by definition, so there is no
+   * `sill` here to pair with it.
+   */
+  head?: number;
 }
 
 export interface WindowSummary {
@@ -198,6 +206,11 @@ export interface WindowSummary {
    * to before. Append-only. (v1.25)
    */
   facingPage?: "N" | "S" | "E" | "W";
+  /** Bottom of the glazing above this storey's floor, in mm (v1.35). Present only when
+   *  the plan authored a height clause somewhere — see {@link SceneSummary.heights}. */
+  sill?: number;
+  /** Top of the glazing above this storey's floor, in mm (v1.35). Same gating. */
+  head?: number;
 }
 
 export interface OpeningSummary {
@@ -205,6 +218,52 @@ export interface OpeningSummary {
   /** The one or two spaces this cased opening connects (room ids and/or `"exterior"`). */
   between: string[];
   width: number;
+  /** Top of the cased opening above this storey's floor, in mm (v1.35) — by default the
+   *  host wall's own height. Present only when the plan authored a height somewhere. */
+  head?: number;
+}
+
+/**
+ * The **vertical datum** of one storey (v1.35) — `describe().heights`.
+ *
+ * ## Why it is here at all, and why it is gated
+ *
+ * ArchLang draws a horizontal cut, so heights change nothing in the drawing: a plan with a
+ * `height` on every wall renders byte-for-byte identically to the same plan without them.
+ * They are FACTS, for the consumers a drawing cannot serve — a 2.5D occupancy slice at a
+ * sensor height, a section, an extruded preview — and for an agent that has just authored
+ * a 2200 mm parapet and has no other way to confirm it landed.
+ *
+ * The block is present **only when the source authored at least one `height`, `sill` or
+ * `head` clause**, anywhere in the plan: a wall, a storey, an opening, an imported module.
+ * That is the `doors[].kind` rule (present only when it is not the default) applied to a
+ * whole block, and it is what makes the byte-identity law total — every plan written
+ * before this layer existed describes exactly as it did.
+ *
+ * ## Why the walls are here rather than on a `walls[]` array
+ *
+ * `describe()` has never reported walls as objects; a room is a space and a wall is the
+ * fabric between spaces, and the summary is about spaces. Rather than mint a whole new
+ * top-level array to carry one number each, the heights that have nowhere else to live sit
+ * here. The opening heights do have somewhere else to live — `doors[]`, `windows[]`,
+ * `openings[]` — and are reported there, beside the width they belong with.
+ */
+export interface HeightFacts {
+  /** This storey's floor-to-floor height in mm: the `level`'s own `height`, else the
+   *  plan's, else 3000. What a wall inherits when it declares none. */
+  storey_height: number;
+  /**
+   * This storey's floor above the building's LOWEST floor, in mm — `0` for a
+   * single-storey plan and for the ground storey of any plan.
+   *
+   * The sum of the heights of the storeys below, so a 3600 ground floor puts the first
+   * floor at 3600 whatever the storeys above it declare. It is NOT `level ×
+   * storey_height`, and a consumer that computes it that way will be wrong on exactly the
+   * plans that bothered to declare per-storey heights.
+   */
+  elevation: number;
+  /** Every wall on this storey, in source order, with the height it resolved to. */
+  walls: { id: string; height: number }[];
 }
 
 export interface FurnitureSummary {
@@ -583,6 +642,14 @@ export interface SceneSummary {
    *  wall: it hosts nothing and joins no graph. */
   fences?: FenceSummary[];
   /**
+   * The storey's vertical datum (v1.35) — storey height, elevation, and every wall's
+   * height. **Absent unless the plan authored a height, sill or head somewhere**, which
+   * is what keeps every summary written before this layer byte-identical. See
+   * {@link HeightFacts}; the opening heights ride on `doors[]`/`windows[]`/`openings[]`
+   * under the same gate.
+   */
+  heights?: HeightFacts;
+  /**
    * The modeled access graph: entrances, room reachability/depth from the exterior,
    * and connector edges (doors and cased openings) with estimated clear widths.
    */
@@ -899,12 +966,20 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
 
   // Which rooms' perimeters does this opening sit on? (≤2 for a door, 1 for a window.)
   // Shared with the lint connectivity rules — see analyze.ts.
+  // The vertical datum's gate (v1.35). ONE boolean decides whether any height key appears
+  // anywhere in this summary — every `...(heights ? …)` below reads this and nothing else,
+  // so there is no second rule to disagree with the first. It is whole-PLAN (see
+  // `ResolvedPlan._heightsAuthored`), which is why a building whose upper floor alone
+  // declares a height reports heights on every page.
+  const heights = ir._heightsAuthored;
+
   const doors: DoorSummary[] = doorEls.map((d) => ({
     id: d.id,
     ...(d._instance !== undefined ? { instance: d._instance } : {}),
     between: doorConnections(d, roomRects, tol),
     width: d.width,
     ...(d.doorKind !== undefined ? { kind: d.doorKind } : {}),
+    ...(heights ? { head: d.head } : {}),
   }));
 
   // Plan centre (bounding-box midpoint of the union of room rectangles). Its ONLY reader
@@ -934,6 +1009,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
       width: w.width,
       facing: toCompass(facingPage, northTurns),
       ...(northTurns !== 0 ? { facingPage } : {}),
+      ...(heights ? { sill: w.sill, head: w.head } : {}),
     };
   });
 
@@ -941,6 +1017,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     id: o.id,
     between: doorConnections(o, roomRects, tol),
     width: o.width,
+    ...(heights ? { head: o.head } : {}),
   }));
 
   const furniture: FurnitureSummary[] = furnEls.map((f) => ({
@@ -1123,6 +1200,19 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     ...(voids.length > 0 ? { voids } : {}),
     ...(outdoor.length > 0 ? { outdoor } : {}),
     ...(fences.length > 0 ? { fences } : {}),
+    // The vertical datum (v1.35), under the one gate. `walls` is present even when empty,
+    // unlike the lists above: an empty `voids` means "this storey has no holes in it", but
+    // an empty `walls` here would be indistinguishable from "heights are not reported",
+    // and the block's presence is already the answer to that question.
+    ...(heights
+      ? {
+          heights: {
+            storey_height: ir.storeyHeight,
+            elevation: ir.elevation,
+            walls: ir.walls.map((w) => ({ id: w.id, height: w.height })),
+          },
+        }
+      : {}),
     access,
     circulation,
     totals,
