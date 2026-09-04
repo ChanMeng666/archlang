@@ -1619,15 +1619,47 @@ Tests: `test/vertical.test.ts` — "a balcony door is not an arrival point (back
 counterexample PAIR (the plan with the balcony grounds via the stair's landing; the identical plan
 with the balcony removed grounds via the door again, and `W_BATH_VIA_BEDROOM` returns).
 
-### 4.7 · The MCP registry publish races npm — `done` (v1.31, in `release.yml`)
+### 4.7 · The MCP registry publish races npm — `todo` (RE-OPENED 2026-09-04)
 
-The v1.30.0 release failed at `mcp-publisher publish` because the registry's validation of
-`server.json` against the just-published npm package 404'd — the npm registry had not yet made a
-version this same job had published visible to a third party. `gh run rerun --failed` then
-succeeded with **no change**, which is the signature of a race rather than of a bad manifest.
+**Closed in v1.31.0 with a bounded retry; RE-OPENED by v1.34.0, which the retry did not save.** Three
+consecutive clean runs had made this look settled — and the AGENTS.md rows were right to keep saying
+a clean run is *evidence the retry works, not proof the race is gone*. Here is the counterexample.
 
-That step now retries up to **6 times, 20 s apart**, and only that step. A genuinely bad manifest
-(a case-wrong owner segment, an over-long `description`) still fails loudly, two minutes later.
+**What happens.** `mcp-publisher publish` hands the registry a `server.json`, and the registry
+validates it by looking the package up on npm — the package this same job published seconds earlier.
+npm's registry has not yet made that version visible to a third party, so it 404s:
+
+```
+registry validation failed for package 0 (@chanmeng666/archlang-mcp):
+NPM package '@chanmeng666/archlang-mcp' exists, but version '0.2.14' was not found (status: 404).
+```
+
+**The budget is the defect, and it is now measured rather than guessed.** The retry is 6 attempts
+20 s apart — **a 2-minute window**. On v1.34.0 every one of the six 404'd. The publish itself was
+fine: `npm view @chanmeng666/archlang-mcp version` read `0.2.14` immediately afterwards, and a manual
+`gh run rerun --failed` succeeded with no change, which is the signature of a race and not of a bad
+manifest.
+
+| release | outcome |
+|---|---|
+| v1.30.0 | failed, manual `gh run rerun --failed` |
+| v1.31.0 · v1.32.0 · v1.33.0 | green on attempt 1 |
+| **v1.34.0** | **all 6 retries 404'd; manual re-run needed** |
+
+**Blast radius, which is why this is worth fixing rather than living with.** The registry step sits
+*before* the GitHub Release step, so its failure also left the Release uncreated while both npm
+packages were already public — a half-published state that reads, from `gh release list`, exactly
+like "the release never happened".
+
+**Directions, in order of how much they actually address the cause.** Widen the window well past two
+minutes with backoff (cheap, and npm visibility is measured in minutes, not seconds); or poll
+`npm view <pkg>@<version> version` until it answers *before* invoking `mcp-publisher`, which turns a
+blind retry into a precondition; or move the GitHub Release step **ahead of** the registry step, so a
+registry race can never again hide a successful npm publish. The last one is independent of the other
+two and worth doing regardless.
+
+**Do not** narrow this to "re-run it by hand" — that is the workaround, and it has now been needed
+twice in five releases.
 
 ### 4.8 · A `dims auto` chain runs across an `outdoor` surface attached to the facade — `done`
 
