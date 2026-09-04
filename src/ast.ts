@@ -92,6 +92,18 @@ export interface WallNode extends NodeBase {
    * is what keeps their geometry and bytes unchanged.
    */
   arcs?: Array<WallArcNode | undefined>;
+  /**
+   * `height <expr>` — how tall this wall stands, in mm (v1.35, the vertical datum layer).
+   *
+   * Absent unless the author wrote it, in which case the wall inherits its storey's
+   * height, then the plan's, then {@link import("./datum.js").STOREY_HEIGHT}. **It draws
+   * nothing**: a floor plan is a horizontal cut, so no 2D byte moves either way. It is a
+   * FACT — read by `describe()` and Plan JSON, and the number an opening's `head` is
+   * checked against (`E_OPENING_ABOVE_WALL`).
+   */
+  height?: Expr;
+  /** Byte span of the `height` clause, for `E_HEIGHT_RANGE`. */
+  heightSpan?: Span;
   /** Whether the polyline closes back to its first vertex. */
   closed: boolean;
 }
@@ -363,6 +375,15 @@ export interface DoorNode extends NodeBase {
   /** `open <0..1>` — how far the panel is DRAWN open. A drawing fact only: nothing
    *  measured (lint, `describe()`, the intent channel) may ever read it. */
   open?: Expr;
+  /**
+   * `head <expr>` — the top of the doorway above this storey's floor, in mm (v1.35).
+   * Absent unless authored, in which case it defaults to
+   * {@link import("./datum.js").DOOR_HEAD}. Draws nothing; a fact for `describe()` and
+   * Plan JSON, refused above its host wall's height (`E_OPENING_ABOVE_WALL`).
+   */
+  head?: Expr;
+  /** Byte span of the `head` clause, for its two refusals. */
+  headSpan?: Span;
 }
 
 export interface WindowNode extends NodeBase {
@@ -371,6 +392,22 @@ export interface WindowNode extends NodeBase {
   attach?: OpeningAttach;
   width: Expr;
   wall?: string;
+  /**
+   * `sill <expr>` — the bottom of the glazing above this storey's floor, in mm (v1.35).
+   * Absent unless authored, in which case it defaults to
+   * {@link import("./datum.js").WINDOW_SILL} — 900, which is GB 50352-2019's minimum for a
+   * residential external window rather than a taste. `0` is legal and means a
+   * floor-length window; a negative sill is `E_HEIGHT_RANGE`.
+   */
+  sill?: Expr;
+  /** Byte span of the `sill` clause, for `E_HEIGHT_RANGE`/`E_SILL_ABOVE_HEAD`. */
+  sillSpan?: Span;
+  /** `head <expr>` — the top of the glazing, in mm; defaults to
+   *  {@link import("./datum.js").WINDOW_HEAD}. Must sit above {@link WindowNode.sill}
+   *  (`E_SILL_ABOVE_HEAD`) and no higher than the host wall (`E_OPENING_ABOVE_WALL`). */
+  head?: Expr;
+  /** Byte span of the `head` clause. */
+  headSpan?: Span;
 }
 
 /** `opening [id=] (at (x,y) [wall ref] | on <wall> at <pos>) width N` — a leaf-less
@@ -382,6 +419,16 @@ export interface OpeningNode extends NodeBase {
   attach?: OpeningAttach;
   width: Expr;
   wall?: string;
+  /**
+   * `head <expr>` — the top of the cased opening, in mm (v1.35). Absent unless authored,
+   * and its default is **the host wall's own height** rather than a constant: a leaf-less
+   * opening is drawn full height unless the author says otherwise
+   * ({@link import("./datum.js").CASED_OPENING_HEAD} is only what that rule evaluates to
+   * in a default storey).
+   */
+  head?: Expr;
+  /** Byte span of the `head` clause. */
+  headSpan?: Span;
 }
 
 /** `against wall <id> [segment <n>] [offset <d>] [side left|right]` — anchor a fixture
@@ -812,6 +859,19 @@ export interface LevelNode extends NodeBase {
   level: number;
   /** Optional storey name (`level 1 "Ground floor"`) — a fact + a title-block row. */
   name?: string;
+  /**
+   * `level 2 ["Name"] height <expr> { … }` — this storey's floor-to-floor height, in mm
+   * (v1.35). It sits in the HEADER, before the block, because the body is an ordinary
+   * statement list and a plan-level setting inside it would be `E_LEVEL_MIX`.
+   *
+   * Absent unless authored, in which case the storey takes the plan's `height`, then
+   * {@link import("./datum.js").STOREY_HEIGHT}. It is what every wall on this storey
+   * inherits, and what the storeys ABOVE it are elevated by — which is why elevation
+   * accumulates rather than multiplying (see `elevationOf`).
+   */
+  height?: Expr;
+  /** Byte span of the `height` clause, for `E_HEIGHT_RANGE`. */
+  heightSpan?: Span;
   body: Statement[];
 }
 
@@ -1177,6 +1237,20 @@ export interface PlanNode {
   scale?: string;
   /** Byte span of the `scale` statement, for the sheet diagnostics. */
   scaleSpan?: Span;
+  /**
+   * `height <expr>` — the building's default floor-to-floor height, in mm (v1.35, the
+   * vertical datum layer). A plan-level SETTING beside `units`/`grid`/`paper`/`scale`, so
+   * it applies to every storey; a `level` may override it and a `wall` may override that.
+   *
+   * Absent unless authored, in which case the datum is
+   * {@link import("./datum.js").STOREY_HEIGHT}. **Nothing here draws.** A floor plan is a
+   * horizontal cut, so declaring a height moves no 2D byte; it makes the number readable
+   * from `describe()` and Plan JSON, and it is the prerequisite for the views that do use
+   * it.
+   */
+  height?: Expr;
+  /** Byte span of the `height` statement, for `E_HEIGHT_RANGE`. */
+  heightSpan?: Span;
   north: NorthDir;
   /**
    * `site { street … [hemisphere …] }` — the building's relation to its street, and the

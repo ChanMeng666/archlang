@@ -95,6 +95,7 @@ suite("DESCRIBE_KEYS — no drift vs the real describe() result", () => {
       paper A3 landscape
       accTitle "T"
       accDescr "D"
+      height 2700
       site { street north }
       axes { x at 0 y at 0 }
       schedule rooms
@@ -124,7 +125,11 @@ suite("DESCRIBE_KEYS — no drift vs the real describe() result", () => {
       }
     }`);
     // The fixtures are only evidence if they really produced the conditional keys.
-    for (const k of ["sheet", "site", "axes", "schedule", "zones", "instances", "verticals", "voids"]) {
+    // `heights` (v1.35) joins this list for the reason the comment above gives: it is
+    // conditional on the SOURCE having written a height clause, so a fixture that writes
+    // none would let it ship unselectable with this whole suite green — the `voids` failure
+    // exactly. The `height 2700` line above is what makes the claim non-vacuous.
+    for (const k of ["sheet", "site", "axes", "schedule", "zones", "instances", "verticals", "voids", "heights"]) {
       expect(Object.keys(single), `the single-storey fixture stopped emitting "${k}"`).toContain(k);
     }
     for (const k of ["levels", "vertical"]) {

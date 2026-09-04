@@ -94,6 +94,12 @@
       ],
       "description": "`dims auto <mode>` — draw automatic dimension chains: `overall` (the two exterior chains), `rooms`, `walls`, or `all`. Omit it and no chains are drawn. This is a SETTING, not the `dims` array beside it: `dims` lists explicit `dim` statements, and the two compose. It affects output — the chains grow the drawing extent — so a document that drops it renders a differently-sized sheet."
     },
+    "storey_height": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 100000,
+      "description": "`height <mm>` — the plan's default floor-to-floor storey height in millimetres (default 3000). The VERTICAL datum: it draws nothing at all, because a floor plan is a horizontal cut, and exists so heights are readable facts. A wall's own `height` overrides it. Plan JSON is a single-storey projection, so per-level heights and elevations are not representable here — author those with `level <n> height <mm>` in .arch source."
+    },
     "room_count": {
       "type": "integer",
       "description": "Output-only: number of rooms."
@@ -305,6 +311,12 @@
             "type": "number",
             "description": "Wall thickness in millimetres."
           },
+          "height": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000,
+            "description": "How tall the wall STANDS, in millimetres — a vertical height, NOT a plan extent like a room's `height`. Defaults to the plan's `storey_height` (3000). It draws nothing: a floor plan is a horizontal cut. An opening's `head` may not exceed it."
+          },
           "closed": {
             "type": "boolean",
             "description": "Whether the polyline closes back to its first vertex."
@@ -419,6 +431,18 @@
             "minimum": 0,
             "maximum": 1,
             "description": "How far the panel is DRAWN open, 0–1 (default 0.5). A drawing fact only — no measured output reads it. Sliding family only."
+          },
+          "sill": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000,
+            "description": "Bottom of the glazing above this storey's floor, in millimetres (default 900 — GB 50352-2019's minimum for a residential external window). WINDOW ONLY: a door and a cased opening start at the floor. 0 is legal and means a floor-length window. Draws nothing."
+          },
+          "head": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000,
+            "description": "Top of the opening above this storey's floor, in millimetres — 2100 for a door or a window, the host wall's own height for a cased opening. Must be above `sill` and no higher than the host wall. Draws nothing."
           }
         }
       }

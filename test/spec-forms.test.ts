@@ -123,6 +123,11 @@ const POSITIVE: Snippet[] = [
     note: "`scale`/`angle`: either order, each once — the reverse order the line promises",
     src: plan(`  wall id=w1 exterior thickness 200 material concrete angle 30 scale 2 { (0,0) (4000,0) close }`),
   },
+  {
+    keyword: "wall",
+    note: "the vertical `height` clause, last before the body and after `material`",
+    src: plan(`  wall id=w1 exterior thickness 200 material brick height 2400 { (0,0) (4000,0) close }`),
+  },
 
   // --- room -----------------------------------------------------------------
   {
@@ -230,6 +235,17 @@ const POSITIVE: Snippet[] = [
   },
   {
     keyword: "door",
+    // AFTER `open`, which is where the grammar puts every vertical clause on all three
+    // opening elements. A snippet that wrote it earlier would pass by accident only if the
+    // parser were order-insensitive, which it is not.
+    note: "the vertical `head`, trailing even `open` on a sliding leaf",
+    src: plan(
+      `${BOX}\n  door on w1 at 50% width 900 hinge left swing in head 2100\n` +
+        `  door sliding on w1 at 20% width 900 slide left open 0.5 head 2400`,
+    ),
+  },
+  {
+    keyword: "door",
     note: "<pos> is an EXPRESSION — a `for`-generated run places itself along the wall",
     src: plan(
       `${BOX}\n  let bay = 1200\n  for i in 0..4 { door on w1 at bay * i + 600 width 800 }\n` +
@@ -244,9 +260,25 @@ const POSITIVE: Snippet[] = [
     src: plan(`${BOX}\n  window id=win1 on w1 at 30% width 1200\n  window at (6000,0) width 1000 wall w1`),
   },
   {
+    keyword: "window",
+    // `sill 0` is in here on purpose: it is the one height the language lets be zero, and
+    // a range check written `> 0` for every clause alike would refuse a floor-length
+    // window.
+    note: "the vertical clauses, trailing everything — incl. the legal `sill 0`",
+    src: plan(
+      `${BOX}\n  window id=win1 on w1 at 30% width 1200 sill 600 head 2100\n` +
+        `  window on w1 at 70% width 1000 sill 0\n  window at (6000,0) width 1000 wall w1 head 2400`,
+    ),
+  },
+  {
     keyword: "opening",
     note: "both placement forms; `wall` pairs with `at` only",
     src: plan(`${BOX}\n  opening id=o1 on w1 at 60% width 1000\n  opening at (2000,0) width 1000 wall w1`),
+  },
+  {
+    keyword: "opening",
+    note: "the vertical `head`, trailing everything — no `sill`, it starts at the floor",
+    src: plan(`${BOX}\n  opening id=o1 on w1 at 60% width 1000 head 2400`),
   },
 
   // --- furniture -------------------------------------------------------------
@@ -317,6 +349,11 @@ const POSITIVE: Snippet[] = [
   },
   { keyword: "north", note: "one of the four page directions", src: plan(`  north up`) },
   {
+    keyword: "height",
+    note: "the plan-level storey datum, an EXPRESSION like `thickness` rather than a literal",
+    src: plan(`  let h = 3200\n  height h\n  room id=r1 at (0,0) size 4000x3000`),
+  },
+  {
     keyword: "accTitle",
     note: "plan-level accessible name",
     src: plan(`  accTitle "Studio"\n  room id=r1 at (0,0) size 4000x3000`),
@@ -359,6 +396,21 @@ const POSITIVE: Snippet[] = [
     note: "a whole plan of storeys, plan-global settings outside them",
     src: plan(
       `  north up\n  level 1 "Ground" { room id=r1 at (0,0) size 4000x3000 }\n  level 2 "Upper" { room id=r2 at (0,0) size 4000x3000 }`,
+    ),
+  },
+  {
+    keyword: "level",
+    // The whole fallback chain in one plan, which is the part a reader most needs to see
+    // work: the wall's own clause beats the storey's, which beats the plan's — and the
+    // header `height` sits after the optional name, where the grammar puts it.
+    note: "`level … height` in the header, overriding the plan's and overridden by a wall's",
+    src: plan(
+      `  height 3000\n` +
+        `  level 1 "Ground" height 3600 {\n` +
+        `    wall id=w1 exterior thickness 200 height 2400 { (0,0) (6000,0) (6000,4000) (0,4000) close }\n` +
+        `    room id=r1 at (0,0) size 6000x4000 uses living\n` +
+        `  }\n` +
+        `  level 2 "Upper" { room id=r2 at (0,0) size 6000x4000 uses bedroom }`,
     ),
   },
   {
@@ -738,6 +790,32 @@ const NEGATIVE: Negative[] = [
     channel: "compile",
     note: "a hole with no extent is not a hole",
     src: plan(`${ROOM}\n  void at (2000,1500) size 0x2000`),
+  },
+  // --- the vertical datum: all three refusals it names ------------------------
+  {
+    code: "E_HEIGHT_RANGE",
+    channel: "compile",
+    // A wall at zero, not the unit slip that motivates the code. The slip a reader thinks
+    // of — `height 3` for three metres — is NOT caught and must not be implied to be:
+    // 3 mm is inside the range, and a compiler that guessed the author meant metres would
+    // be inventing a number. The range guards the ends; the units are the author's.
+    note: "a wall at zero height is not a low wall, it is a missing one",
+    src: plan(`  wall id=w1 exterior thickness 200 height 0 { (0,0) (4000,0) (4000,3000) (0,3000) close }`),
+  },
+  {
+    code: "E_SILL_ABOVE_HEAD",
+    channel: "compile",
+    note: "glazing whose bottom is above its top has no glass in it",
+    src: plan(`${BOX}\n  window on w1 at 50% width 1200 sill 2400 head 2100`),
+  },
+  {
+    code: "E_OPENING_ABOVE_WALL",
+    channel: "compile",
+    note: "a 2400 head runs out through the top of a 2200 parapet",
+    src: plan(
+      `  wall id=w1 exterior thickness 200 height 2200 { (0,0) (8000,0) (8000,5000) (0,5000) close }\n` +
+        `  door on w1 at 50% width 900 head 2400`,
+    ),
   },
   // --- outdoor / fence / the lot line: every refusal the three lines name -----
   {

@@ -214,6 +214,14 @@ model, no latitude and no date, and `_side` names must not be read as more than 
 
 `examples/bungalow.arch` demonstrates both this and the door kinds above.
 
+### Write a `height` only when the brief gives one
+
+`height <mm>` (plan, `level` or `wall`) and `sill`/`head` on an opening are the vertical **datum**:
+they draw nothing, because a plan is a horizontal cut, and `describe --json` reports them **only if
+the source wrote one** — so adding a height you were not asked for changes what every consumer sees
+for no gain. Write them when the brief names a ceiling, a parapet or a cill line; otherwise leave
+them out and read the defaults from `arch manifest --json`'s `datum` block.
+
 ## Ask the CLI, and read only what you need
 
 The CLI documents itself, and every read can be narrowed at the source — never pull a whole plan's

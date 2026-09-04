@@ -56,6 +56,7 @@ import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
 import type { ResolvedSheet, SheetFitInput } from "./sheet.js";
 import { resolveSheetSpec, usablePlanMm } from "./sheet.js";
+import { elevationOf, heightRangeDiagnostic, isDrawableHeight, plansAuthorHeights, STOREY_HEIGHT } from "./datum.js";
 import { planTableRows } from "./sheet-tables.js";
 import type { GridBox } from "./geometry/grid-index.js";
 import { GridIndex } from "./geometry/grid-index.js";
@@ -153,6 +154,24 @@ export interface Opening {
   at: Point;
   /** Opening width along the wall. */
   width: number;
+  /**
+   * Which of the three opening elements this is (v1.35). Append-only, and the wall
+   * lowering does not read it: the hole a door cuts and the hole a window cuts are the
+   * same hole, which is why this field could be absent for eight releases.
+   *
+   * It is here because the {@link Opening} list is the ONLY place a wall knows what is in
+   * it, and the vertical datum makes that worth knowing — a 2.5D slice through a wall at
+   * a given height has to ask whether each hole is a door (open from the floor) or a
+   * window (open between {@link sill} and {@link head}).
+   */
+  kind?: "door" | "window" | "opening";
+  /** The opening element's own id, so a consumer can join this back to `describe()`. */
+  ownerId?: string;
+  /** Bottom of the opening above this storey's floor, in mm. `0` for a door and a cased
+   *  opening; the glazing's sill for a window. */
+  sill?: number;
+  /** Top of the opening above this storey's floor, in mm. */
+  head?: number;
 }
 
 export interface RWall extends RBase {
@@ -174,6 +193,32 @@ export interface RWall extends RBase {
    */
   arcs?: Array<Arc | undefined>;
   closed: boolean;
+  /**
+   * How tall this wall stands, in mm (v1.35, the vertical datum layer) — **always
+   * resolved**, never absent: the authored `height` clause, else this storey's height,
+   * else the plan's, else {@link import("./datum.js").STOREY_HEIGHT}.
+   *
+   * It is a required number rather than an optional one on purpose. An optional field
+   * makes every consumer re-implement the fallback chain, and the fallback is exactly the
+   * thing that must not have two implementations. Nothing in scene-build reads it, so a
+   * plan that declares no height renders the same bytes with a 3000 sitting here.
+   *
+   * Deliberately NOT grid-snapped. `grid` snaps plan coordinates so rooms line up with
+   * each other; a storey height shares no axis with them, and snapping `height 2850` to a
+   * 100 mm grid would silently redraw the section nobody asked for.
+   */
+  height: number;
+  /**
+   * True when {@link RWall.height} came from this wall's OWN `height` clause rather than
+   * being inherited from the storey or the plan (v1.35).
+   *
+   * It exists for one diagnostic. `E_OPENING_ABOVE_WALL` fires once per opening, and when
+   * the wall inherited its height the author's mistake is a plan-level `height`, not any
+   * of the openings named in the errors — so the message has to say where the number
+   * really came from or it sends them to the wrong line. Internal: set during resolve,
+   * never serialized into the Scene/SVG/exports (the `_` prefix keeps it out).
+   */
+  _heightAuthored?: boolean;
   /** Openings (doors/windows) hosted on this wall; subtracted from its solid. */
   openings: Opening[];
   /** True when this wall's `id` was author-declared, not an assigned positional
@@ -299,6 +344,12 @@ export interface RDoor extends RBase {
    * for a door with no span. Internal: never reaches the Scene, so it changes no bytes.
    */
   _flipHingeText?: string;
+  /**
+   * Top of the doorway above this storey's floor, in mm (v1.35) — always resolved, the
+   * authored `head` clause or {@link import("./datum.js").DOOR_HEAD}. A door's sill is
+   * `0` by definition (you walk through it), so there is no `sill` here.
+   */
+  head: number;
 }
 export interface RWindow extends RBase {
   kind: "window";
@@ -307,6 +358,12 @@ export interface RWindow extends RBase {
   host: WallSegment | null;
   /** `attached` vs `absolute` — see {@link RDoor._placement}. */
   _placement?: OpeningPlacement;
+  /** Bottom of the glazing above this storey's floor, in mm (v1.35) — always resolved,
+   *  the authored `sill` or {@link import("./datum.js").WINDOW_SILL}. */
+  sill: number;
+  /** Top of the glazing, in mm — the authored `head` or
+   *  {@link import("./datum.js").WINDOW_HEAD}. Always above {@link RWindow.sill}. */
+  head: number;
 }
 export interface ROpening extends RBase {
   kind: "opening";
@@ -315,6 +372,12 @@ export interface ROpening extends RBase {
   host: WallSegment | null;
   /** `attached` vs `absolute` — see {@link RDoor._placement}. */
   _placement?: OpeningPlacement;
+  /**
+   * Top of the cased opening above this storey's floor, in mm (v1.35) — always resolved.
+   * Its default is the HOST WALL's own height (a leaf-less opening is drawn full height),
+   * falling back to the storey height when the opening sits on no wall at all.
+   */
+  head: number;
 }
 export interface RFurniture extends RBase {
   kind: "furniture";
@@ -624,6 +687,33 @@ export interface ResolvedPlan {
    * {@link RBase._zone}; nothing here has geometric meaning.
    */
   zones?: RZone[];
+  /**
+   * This storey's floor-to-floor height, in mm (v1.35) — always resolved: the `level`'s
+   * own `height`, else the plan's, else {@link import("./datum.js").STOREY_HEIGHT}. It is
+   * what every wall on this storey inherits when it declares none.
+   */
+  storeyHeight: number;
+  /**
+   * This storey's floor level above the building's LOWEST floor, in mm (v1.35) — `0` for a
+   * single-storey plan and for the ground storey of any plan.
+   *
+   * The sum of the heights of the storeys below, not `level × storeyHeight`: `level 1
+   * height 3600` puts level 2 at 3600 however tall the storeys above it are. See
+   * `elevationOf` in `src/datum.ts`.
+   */
+  elevation: number;
+  /**
+   * Did the SOURCE author a height anywhere — this storey's or any other's, a wall's, an
+   * opening's, an imported module's?
+   *
+   * The gate behind the byte-identity law: `describe()` emits its height block only when
+   * this is true, so every plan written before the datum layer produces the summary it
+   * always did. It is whole-PLAN rather than per-storey on purpose — a building whose
+   * second floor declares a height and whose ground floor does not should report heights
+   * for both, or the two pages disagree about whether the third dimension exists.
+   * Internal: never serialized into the Scene/SVG/exports.
+   */
+  _heightsAuthored: boolean;
   /** Resolved elements, in source order (for rendering). */
   elements: ResolvedElement[];
   /** Resolved walls (for bounds/hosting), in source order. */
@@ -1260,6 +1350,20 @@ interface ResolveExtras {
   level?: LevelStamp;
   /** A pre-resolved sheet to adopt verbatim (skips deriving one + its overflow warning). */
   sheet?: ResolvedSheet;
+  /**
+   * This storey's floor level above the building's lowest, in mm (v1.35) — the sum of the
+   * heights of the storeys BELOW it, which only the multi-storey caller can know because
+   * it is the only thing that has seen the other storeys. Absent = `0`, the single-storey
+   * plan and the ground floor of every plan.
+   */
+  elevation?: number;
+  /**
+   * Did the WHOLE plan author a height anywhere (v1.35)? Same reason: a `level 2 height
+   * 3200` is invisible from inside level 1's synthetic plan, and the two pages must agree
+   * about whether the third dimension exists. Absent = derive it from the plan at hand,
+   * which is exactly right for a single-storey plan.
+   */
+  heightsAuthored?: boolean;
 }
 
 /** A value-based key for {@link ResolveExtras}, so the memo hits across calls (an
@@ -1270,7 +1374,11 @@ function extrasKey(extras: ResolveExtras | undefined): string {
   const s = extras.sheet
     ? `S${extras.sheet.size}/${extras.sheet.orientation}/${extras.sheet.denom}/${extras.sheet.auto ? 1 : 0}/${extras.sheet.fits ? 1 : 0}`
     : "";
-  return `${l}|${s}`;
+  // The vertical datum rides in the key too — two storeys of the same shape at different
+  // elevations are different resolutions, and a memo that could not tell them apart would
+  // hand the upper floor the ground floor's facts.
+  const h = `E${extras.elevation ?? 0}/${extras.heightsAuthored === undefined ? "-" : extras.heightsAuthored ? 1 : 0}`;
+  return `${l}|${s}|${h}`;
 }
 
 export function resolve(
@@ -1356,6 +1464,10 @@ function levelPlanFor(ast: PlanNode, block: LevelNode, dropPaper: boolean): Plan
   const plan: PlanNode = {
     ...ast,
     ...(dropPaper ? { paper: undefined } : {}),
+    // `level <n> height <h>` folds into the synthetic plan's own `height` (v1.35), so the
+    // resolver reads ONE field and the fallback chain wall → level → plan → constant has
+    // exactly one implementation. A storey that declares none keeps the plan's.
+    ...(block.height !== undefined ? { height: block.height, heightSpan: block.heightSpan } : {}),
     body: [...shared, ...block.body],
   };
   if (levelPlanCache.size >= RESOLVE_CACHE_MAX * 4) levelPlanCache.clear();
@@ -1476,9 +1588,29 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
     else if (!sheet.drawingFits) shared.push(drawingOverflowDiagnostic(ast, sheet, { w: dw, h: dh }, usable));
   }
 
+  // The vertical datum (v1.35), decided ONCE for the building rather than per storey.
+  //
+  // `blocks` is ascending, so walking it in order means every storey's elevation is the
+  // sum of the heights of the storeys already resolved below it — which is the rule, and
+  // is NOT `level × storeyHeight`: `level 1 height 3600` puts level 2 at 3600 however tall
+  // the floors above are. Each storey is resolved exactly once; the accumulator is what
+  // makes that enough.
+  //
+  // `heightsAuthored` is whole-plan for a reason a per-storey answer gets wrong: a `height`
+  // written on the second floor alone would otherwise switch the summary's height block on
+  // for page 2 and off for page 1, and the two pages would disagree about whether the third
+  // dimension exists.
+  const heightsAuthored = plansAuthorHeights(ast);
+  const heightsBelow: number[] = [];
   const levels: ResolvedLevel[] = blocks.map((b) => {
-    const extras: ResolveExtras = { level: stampOf(b), ...(sheet ? { sheet } : {}) };
+    const extras: ResolveExtras = {
+      level: stampOf(b),
+      ...(sheet ? { sheet } : {}),
+      elevation: elevationOf(heightsBelow),
+      heightsAuthored,
+    };
     const { ir, diagnostics } = resolveCached(levelPlanFor(ast, b, false), registry, world, extras);
+    heightsBelow.push(ir.storeyHeight);
     return {
       level: b.level,
       ...(b.name !== undefined ? { name: b.name } : {}),
@@ -1590,6 +1722,27 @@ function resolveImpl(
   let wallGrid: WallGrid | null = null;
   let hiKey = "";
   let hiVal: { host: WallSegment | null; onWall: boolean } | null = null;
+
+  // ---- the vertical datum (v1.35) ------------------------------------------------
+  // This storey's floor-to-floor height, resolved BEFORE any element so every wall can
+  // inherit it. The expression is evaluated against the plan's GLOBAL bindings — it is a
+  // plan setting, not a body statement, so it sees every plan-level `let` wherever that
+  // sits in the file — exactly as the `axes` block and the lot line are.
+  //
+  // `levelPlanFor` has already folded a `level <n> height <h>` into `ast.height` for the
+  // storey being resolved, so there is one place to read and one chain to get wrong.
+  //
+  // It is NOT grid-snapped. `grid` snaps plan coordinates so rooms line up with each
+  // other; a height shares no axis with them, and snapping `height 2850` onto a 100 mm
+  // grid would silently redraw a section nobody asked for.
+  let storeyHeight = STOREY_HEIGHT;
+  if (ast.height !== undefined) {
+    activeEnv = globalScope.flatten();
+    const h = evalNum(ast.height);
+    if (isDrawableHeight(h)) storeyHeight = h;
+    else diagnostics.push(heightRangeDiagnostic("The plan", "height", h, ast.heightSpan));
+  }
+
   const ctx: ResolveCtx = {
     grid: g,
     snap,
@@ -1598,6 +1751,7 @@ function resolveImpl(
     evalStr,
     evalPt,
     id: "",
+    storeyHeight,
     walls,
     rooms: rooms2,
     hostSegment: (at, ref) => hostInfo(at, ref).host,
@@ -1792,6 +1946,14 @@ function resolveImpl(
     themeBase: ast.themeBase,
     themeFrom: ast.themeFrom,
     styles: ast.styles,
+    // The vertical datum (v1.35). All three are ALWAYS present — unlike every optional
+    // key above, they are not "absent when undeclared", because a storey always has a
+    // height whether or not anyone wrote one down. The byte-identity law is kept a layer
+    // out instead: `describe()` reads `_heightsAuthored` and emits nothing when it is
+    // false, so an IR field costs no consumer a byte.
+    storeyHeight,
+    elevation: extras.elevation ?? 0,
+    _heightsAuthored: extras.heightsAuthored ?? plansAuthorHeights(ast),
     elements,
     walls,
     ...(instances.length > 0 ? { instances } : {}),
@@ -2048,7 +2210,18 @@ function registerOpenings(elements: ResolvedElement[], walls: RWall[]): void {
     );
   for (const el of elements) {
     if ((el.kind === "door" || el.kind === "window" || el.kind === "opening") && el.host) {
-      wallOfSegment(el.host)?.openings.push({ at: el.at, width: el.width });
+      // `kind`/`ownerId`/`sill`/`head` (v1.35) are APPENDED facts: the wall lowering reads
+      // `at` and `width` and nothing else — a door's hole and a window's hole are the same
+      // hole — so no drawing moves. They are here because this list is the only place a
+      // wall knows what is cut into it, which is what a 2.5D slice at a given height needs.
+      wallOfSegment(el.host)?.openings.push({
+        at: el.at,
+        width: el.width,
+        kind: el.kind,
+        ownerId: el.id,
+        sill: el.kind === "window" ? el.sill : 0,
+        head: el.head,
+      });
     }
   }
 }

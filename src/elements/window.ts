@@ -7,6 +7,7 @@ import type { RWindow } from "../ir.js";
 import { add, mul, nearestWallNote, normal, segmentDirAt } from "../geometry.js";
 import { parseAttachTarget, resolveAttachment } from "../attach.js";
 import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
+import { parseOpeningHeights, resolveOpeningHeights, WINDOW_HEAD, WINDOW_SILL } from "../datum.js";
 
 export const windowEl: ElementDef = {
   kind: "window",
@@ -36,6 +37,8 @@ export const windowEl: ElementDef = {
       ctx.next();
       node.wall = ctx.eatIdent().value;
     }
+    // The vertical datum (v1.35): `sill` then `head`, both trailing every existing clause.
+    Object.assign(node, parseOpeningHeights(ctx, { sill: true }));
     return node;
   },
 
@@ -55,10 +58,13 @@ export const windowEl: ElementDef = {
         ...fixesFrom(openingWidthFix("window", n)),
       });
     }
+    const heights = (host: ReturnType<typeof ctx.hostSegment>): { sill: number; head: number } =>
+      resolveOpeningHeights(ctx, `Window "${id}"`, n, { sill: WINDOW_SILL, head: WINDOW_HEAD }, host, n.span);
     if (n.attach) {
       const a = resolveAttachment(n.attach, ctx.walls, ctx.snapPt, ctx.diag, `Window "${id}"`, (e) => ctx.eval(e));
       const at = a ? a.at : { x: 0, y: 0 };
-      return { kind: "window", id, at, width, host: a ? a.host : null, span: n.span };
+      const host = a ? a.host : null;
+      return { kind: "window", id, at, width, host, ...heights(host), span: n.span };
     }
     const at = ctx.snapPt(ctx.evalPt(n.at!));
     if (ctx.walls.length > 0 && !ctx.isOnWall(at, n.wall)) {
@@ -72,7 +78,8 @@ export const windowEl: ElementDef = {
         ...fixesFrom(offWallFix("window", n, at, ctx.walls)),
       });
     }
-    return { kind: "window", id, at, width, host: ctx.hostSegment(at, n.wall), span: n.span };
+    const host = ctx.hostSegment(at, n.wall);
+    return { kind: "window", id, at, width, host, ...heights(host), span: n.span };
   },
 
   bounds: () => [],

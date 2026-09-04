@@ -146,6 +146,18 @@ function blockDoc(stmts: Statement[], span: { start: number; end: number }, comm
   return concat(["{", indent(concat([hardline, join(hardline, lines)])), hardline, "}"]);
 }
 
+/**
+ * The trailing vertical clauses of an opening statement (v1.35), in the grammar's own
+ * order: `sill` then `head`, both after every other clause.
+ *
+ * They MUST be printed. `fmt` returning a window with its sill dropped is the v1.26.1
+ * pocket-door failure exactly — the one operation a user may assume is safe, silently
+ * changing what the source says.
+ */
+function heightsStr(s: { sill?: Expr; head?: Expr }): string {
+  return `${s.sill !== undefined ? ` sill ${exprStr(s.sill)}` : ""}${s.head !== undefined ? ` head ${exprStr(s.head)}` : ""}`;
+}
+
 function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
   const id = "id" in s && s.id ? `id=${s.id} ` : "";
   switch (s.kind) {
@@ -156,6 +168,10 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
         if (s.materialScale !== undefined) head += ` scale ${exprStr(s.materialScale)}`;
         if (s.materialAngle !== undefined) head += ` angle ${exprStr(s.materialAngle)}`;
       }
+      // The vertical datum (v1.35), last before the body — the grammar's own order, so
+      // `fmt` stays a fixed point. Dropping it would silently return a 2200 parapet as a
+      // full-height wall, which is the v1.26.1 pocket-door failure in a new place.
+      if (s.height !== undefined) head += ` height ${exprStr(s.height)}`;
       // A curved edge re-emits as `arc (x,y) radius R [cw|ccw] [major]` — the canonical
       // clause order, so formatting is idempotent (a `fmt` of a `fmt` is a fixed point).
       const pts: Doc[] = s.points.map((p, i) => {
@@ -187,12 +203,12 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       const swing = s.swing ? ` swing ${s.swing}` : s.swingInto ? ` swing into ${s.swingInto}` : "";
       const slide = s.slide ? ` slide ${s.slide}` : "";
       const open = s.open !== undefined ? ` open ${exprStr(s.open)}` : "";
-      return `door ${id}${doorKind}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${hinge}${swing}${slide}${open}`;
+      return `door ${id}${doorKind}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${hinge}${swing}${slide}${open}${heightsStr(s)}`;
     }
     case "window":
-      return `window ${id}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}`;
+      return `window ${id}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${heightsStr(s)}`;
     case "opening":
-      return `opening ${id}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}`;
+      return `opening ${id}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${heightsStr(s)}`;
     case "furniture": {
       const pos = s.against ? againstStr(s.against) : s.place ? placeStr(s.place, s.room!) : `at ${ptStr(s.at!)}`;
       const roomTail = s.place ? "" : s.room ? ` in ${s.room}` : "";
@@ -283,7 +299,8 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       // multi-storey shape survives `fmt` untouched (dropping it would silently merge two
       // floors into one drawing).
       return concat([
-        `level ${numStr(s.level)}${s.name !== undefined ? ` ${JSON.stringify(s.name)}` : ""} `,
+        `level ${numStr(s.level)}${s.name !== undefined ? ` ${JSON.stringify(s.name)}` : ""}` +
+          `${s.height !== undefined ? ` height ${exprStr(s.height)}` : ""} `,
         blockDoc(s.body, s.span!, comments, source),
       ]);
     case "zone":
@@ -446,6 +463,19 @@ export function formatPlan(plan: PlanNode, source: string): string {
   // emitted — the default is a real choice a reader should not have to remember.
   if (plan.paper) settings.push(`paper ${plan.paper.size} ${plan.paper.orientation}`);
   if (plan.scale) settings.push(`scale ${plan.scale}`);
+  // The plan-level storey height (v1.35) reads as a rider on the sheet settings — it is
+  // the drawing's other dimension — so it sits after `scale` and before `north`. Emitted
+  // only when authored: a plan with no `height` must format back to a plan with no
+  // `height`, or every existing file gains a line on its first `arch fmt`.
+  //
+  // This HOISTS `height h` above the `let h = …` that defines it, since the settings block
+  // is printed before the span-ordered body — and that re-parses correctly, which is worth
+  // saying rather than leaving a reader to worry. Plan-level settings are not evaluated
+  // where they are written: `resolveImpl` expands the whole scope first and evaluates
+  // `ast.height` against `globalScope.flatten()`, exactly as it already does for the `axes`
+  // block and the `site` lot line. A plan-level `let` is therefore in scope regardless of
+  // source order, before and after formatting alike.
+  if (plan.height !== undefined) settings.push(`height ${exprStr(plan.height)}`);
   settings.push(`north ${northStr(plan.north)}`);
   // `site` reads as a rider on the north declaration — it is the other half of "which way
   // does this building point" — so it sits immediately after it. `hemisphere` is always

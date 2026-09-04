@@ -306,7 +306,13 @@ function transformGeometry(f: Frame, el: ResolvedElement, id: string, reflected:
         ...el,
         id,
         points: el.points.map((p) => tp(f, p)),
-        openings: el.openings.map((o) => ({ at: tp(f, o.at), width: o.width })),
+        // A frame moves the opening's POINT and nothing else: its width is along the wall
+        // and a frame is an isometry, and its vertical facts (`kind`/`ownerId`/`sill`/
+        // `head`, v1.35) are heights — a rotation in PLAN cannot touch them, and a
+        // reflection about a vertical axis cannot either. `...o` first, then the moved
+        // point, so a field added to `Opening` later rides through by default rather than
+        // being silently dropped the way these four would have been.
+        openings: el.openings.map((o) => ({ ...o, at: tp(f, o.at) })),
       };
       // Curved edges ride along exactly (see `transformArc`): a placed component's
       // curved facade is the same curve, turned or mirrored, never a re-fitted one.

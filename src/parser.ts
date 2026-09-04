@@ -256,6 +256,9 @@ class Parser {
           case "scale":
             this.parseScaleSetting(plan, t);
             break;
+          case "height":
+            this.parseHeightSetting(plan, t);
+            break;
           case "north":
             this.next();
             plan.north = this.parseNorth();
@@ -436,8 +439,27 @@ class Parser {
       this.fail(`Level number must be a whole number (got ${n})`, numTok);
     }
     const name = this.isType("string") ? this.eatString() : undefined;
+    // `level 2 ["Name"] height <expr> { … }` — the storey's floor-to-floor height, in the
+    // HEADER and after the optional name (v1.35). It cannot go in the body: the body is an
+    // ordinary statement list and a plan-level setting sitting there is `E_LEVEL_MIX`.
+    let height: Expr | undefined;
+    let heightSpan: Span | undefined;
+    if (this.isKeyword("height")) {
+      const hk = this.next();
+      height = parseExprPratt(this.ctx);
+      heightSpan = { start: hk.start, end: this.peek(-1).end };
+    }
     const body = this.parseBlockBody(components, undefined);
-    return { kind: "level", id: "", level: n, ...(name !== undefined ? { name } : {}), body, line: kw.line };
+    return {
+      kind: "level",
+      id: "",
+      level: n,
+      ...(name !== undefined ? { name } : {}),
+      ...(height !== undefined ? { height } : {}),
+      ...(heightSpan !== undefined ? { heightSpan } : {}),
+      body,
+      line: kw.line,
+    };
   }
 
   /**
@@ -476,6 +498,20 @@ class Parser {
     const u = this.eatIdent().value;
     if (u !== "mm") this.fail(`Unsupported units "${u}" (only "mm" is supported)`, t);
     plan.units = "mm";
+  }
+
+  /**
+   * `height <expr>` — the plan's default floor-to-floor storey height, in mm (v1.35).
+   *
+   * A full EXPRESSION rather than a bare number, exactly as `thickness` is, so a plan can
+   * write `let h = 3200` once and `height h` everywhere. The value is not checked here:
+   * range refusals belong at resolve, where the expression has a number
+   * (`E_HEIGHT_RANGE`).
+   */
+  private parseHeightSetting(plan: PlanNode, t: Token): void {
+    this.next();
+    plan.height = parseExprPratt(this.ctx);
+    plan.heightSpan = this.spanFrom(t.start);
   }
 
   private parseScaleSetting(plan: PlanNode, t: Token): void {

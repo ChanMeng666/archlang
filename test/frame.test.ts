@@ -433,6 +433,12 @@ const wall = (): RWall => ({
     { x: 4000, y: 3000 },
   ],
   closed: false,
+  // The vertical datum (v1.35) is a REQUIRED field on `RWall`, which is what forces a
+  // hand-built fixture like this one to state it — an optional field would have let this
+  // file keep compiling while the frame layer silently dropped the height on every placed
+  // instance. Here it is the default storey, and the point of the case below is that a
+  // frame does not move it: a rotation and a reflection are transformations in PLAN.
+  height: 3000,
   openings: [{ at: { x: 2000, y: 0 }, width: 900 }],
 });
 
@@ -452,6 +458,9 @@ const door = (swing: "in" | "out" = "in"): RDoor => ({
   width: 900,
   hinge: "left",
   swing,
+  // Required on `RDoor` since v1.35, for the reason spelled out on `wall()` above. A
+  // doorway's head is a height and a frame is a plan isometry, so it rides through.
+  head: 2100,
   host: segment(),
 });
 

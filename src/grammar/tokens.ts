@@ -134,6 +134,17 @@ export const KEYWORDS = {
     // rule that put `street`/`hemisphere`/`overhang` here and their VALUES in `enum`.
     "rail",
     "boundary",
+    // v1.35 — the vertical datum layer. `sill` and `head` LEAD a clause of a `window` /
+    // `door` / `opening` line (`window … sill 900 head 2100`), which is the rule that put
+    // `thickness` and `overhang` here rather than in `enum`: those hold the VALUES a
+    // clause takes, and a height's value is a number, not a word.
+    //
+    // `height` itself is NOT added — it has been in this table since `strip … height <mm>`
+    // shipped, and the datum layer reuses that same word at three new sites (a plan
+    // setting, a `level` header and a `wall` clause) rather than inventing a fourth
+    // spelling for the same idea.
+    "sill",
+    "head",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
   enum: [
@@ -435,4 +446,10 @@ export const STATEMENT_STARTS: readonly string[] = [
   "schedule",
   "legend",
   "site",
+  // The plan-level `height <expr>` setting (v1.35, the vertical datum layer). It is here
+  // for the same reason `paper` is: the parser's plan-statement switch leads with it, and
+  // error recovery has to know the word can start a statement. `strip … height <mm>` is
+  // unaffected — that clause is consumed inside `parseStrip`, which never re-enters this
+  // dispatch.
+  "height",
 ];

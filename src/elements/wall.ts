@@ -1,6 +1,8 @@
 /** `wall <category> thickness N { (x,y)… [close] }` — poché fill + crisp faces. */
 
 import type { ArcDirWord, ExprPoint, Point, WallArcNode, WallNode } from "../ast.js";
+import type { Span } from "../diagnostics.js";
+import { heightRangeDiagnostic, isDrawableHeight } from "../datum.js";
 import { ARC_DIRS } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
@@ -60,6 +62,17 @@ export const wall: ElementDef = {
         } else break;
       }
     }
+    // `height <expr>` — how tall the wall stands (v1.35, the vertical datum layer). It is
+    // the LAST head clause, immediately before the body, so the wall line reads
+    // thickness → material → height → points, and it draws nothing at all: a floor plan is
+    // a horizontal cut. Absent, the wall inherits its storey's height.
+    let height: ReturnType<ParseCtx["parseExpr"]> | undefined;
+    let heightSpan: Span | undefined;
+    if (ctx.isKeyword("height")) {
+      const hk = ctx.next();
+      height = ctx.parseExpr();
+      heightSpan = { start: hk.start, end: ctx.peek(-1).end };
+    }
     ctx.eat("lcurly");
     const points: ExprPoint[] = [];
     // Segment-indexed curve clauses: `arcs[k]` is the edge from points[k] to points[k+1].
@@ -118,6 +131,8 @@ export const wall: ElementDef = {
       material,
       materialScale,
       materialAngle,
+      ...(height !== undefined ? { height } : {}),
+      ...(heightSpan !== undefined ? { heightSpan } : {}),
       points,
       ...(arcs.some((a) => a !== undefined) ? { arcs } : {}),
       closed,
@@ -164,6 +179,13 @@ export const wall: ElementDef = {
       hatchScale = 1;
     }
     const hatchAngle = n.materialAngle !== undefined ? ctx.eval(n.materialAngle) : 0;
+    // The vertical datum (v1.35): the authored clause, else the storey's height. NOT
+    // grid-snapped — `grid` snaps plan coordinates so rooms line up with each other, and a
+    // height shares no axis with them.
+    const height = n.height !== undefined ? ctx.eval(n.height) : ctx.storeyHeight;
+    if (n.height !== undefined && !isDrawableHeight(height)) {
+      ctx.diag(heightRangeDiagnostic(`Wall "${id}"`, "height", height, n.heightSpan ?? n.span));
+    }
     const arcs = n.arcs ? resolveArcs(n, id, points, ctx) : undefined;
     return {
       kind: "wall",
@@ -173,6 +195,10 @@ export const wall: ElementDef = {
       material,
       hatchScale,
       hatchAngle,
+      height: isDrawableHeight(height) ? height : ctx.storeyHeight,
+      // Whether that number is the wall's own or the storey's — read only by
+      // `E_OPENING_ABOVE_WALL`, so it can name the clause the author actually has to edit.
+      ...(n.height !== undefined && isDrawableHeight(height) ? { _heightAuthored: true } : {}),
       points,
       ...(arcs ? { arcs } : {}),
       closed: n.closed,

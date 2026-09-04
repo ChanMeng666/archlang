@@ -7,6 +7,109 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the vertical datum layer (heights, sills and heads)
+
+A floor plan is a horizontal cut, so ArchLang has never had a third dimension: a wall had a
+thickness and no height, a window a width and no sill, and a consumer asking "how tall is this?"
+had nothing to read. It has one now, and it is deliberately a **datum rather than a feature**.
+
+**Nothing draws differently.** That is the headline, not a caveat: it is what makes the layer
+cheap to adopt, and it is pinned rather than asserted. `test/height-byte-identity.test.ts` covers
+**all 30 shipped examples, every storey of each**, on both the whole-surface digest (SVG +
+`describe()` + `lint()`) and the summary-only one, against numbers measured on `f4548db` before a
+line of `src/` moved. `npm run gen:example-svgs` re-renders the twenty committed drawings and git
+reports no change, which is the constructive half of the same claim.
+
+**The language.** `height` is reused at three new sites rather than a fourth spelling being
+invented for the same idea — a plan setting, a `level` header clause, and a `wall` clause — and
+exactly two new keywords are added, `sill` and `head`, as trailing clauses of `window` / `door` /
+`opening`. All take a full expression, as `thickness` does. The fallback chain is **wall → level →
+plan → 3000**, with one implementation (`ResolveCtx.storeyHeight`, fed by `levelPlanFor` folding a
+storey's height into its synthetic plan) so it cannot have two.
+
+**Elevation ACCUMULATES the storeys below; it is not `level × storey_height`.** The two agree on a
+building whose storeys share a height and disagree on exactly the plans that write `level … height`
+— a 3600 mm ground floor puts the first floor at 3600 however tall the floors above it are.
+
+**Three refusals, never clamps** (the `E_ROOF_*` precedent), each with a machine-applicable fix:
+`E_HEIGHT_RANGE` (at or below zero, or above 100 m), `E_SILL_ABOVE_HEAD`, and
+`E_OPENING_ABOVE_WALL` — measured against the **host wall**, not the storey, so a 2400 head is fine
+in a 3000 storey and refused in a 2200 parapet, and its hint names the plan-level `height` setting
+when the wall inherited its own. A window `sill` of exactly 0 is legal and means a floor-length
+window, which is why the range check is two predicates rather than one `> 0` and why a sill's
+refusal says "0 or greater" where every other height's says "greater than 0". What
+`E_HEIGHT_RANGE` deliberately does **not** catch is a unit slip: `height 3` is three millimetres,
+inside the range, and a compiler that guessed the author meant metres would be inventing a number.
+
+### Fixed — a catalog example that documented an error the compiler does not raise
+
+`E_HEIGHT_RANGE`'s own `arch explain` example was `wall … height 3 { … }`, commented "3 mm, not
+3 m", and it **raises nothing**: three millimetres is inside the range, and the entry's prose claimed
+a unit slip is caught when the paragraph above says it is not. Both are corrected.
+
+**Nothing in the repository could have caught it, so a gate now does.** `test/explain.test.ts`
+checks each catalog field is non-empty; its drift check proves `docs/error-codes.md` reproduces the
+catalog, never that the catalog is true; `test/docs-fences.test.ts` skips these snippets on purpose
+(`gen-error-codes.ts` emits them as `arch static`, since v1.26 when 104 of them rendered parse-error
+cards on the public page); and `test/spec-forms.test.ts`'s negative corpus is hand-written in that
+file and never reads `ERROR_CATALOG[code].example`. **No test had ever executed a catalog example.**
+
+`test/error-catalog-examples.test.ts` now runs every one and requires it to raise its own code, or
+to be named with a reason. **95 of the 139 are held to it**; the 44 excused are the intent-channel
+codes (raised by `validateIntent`, unreachable from `.arch` source), the `import` codes (they need a
+`World`), the Plan JSON codes, `E_PNG_DEPENDENCY`, and one-line fragments whose code needs a whole
+building. The excuse list is pruned in **both** directions, which already paid for itself: four
+entries excused on sight for containing a literal `…` turned out to raise their code anyway, and the
+reverse check caught all four rather than letting them sit ungated on a guess.
+
+**The gating decision, and why it is one boolean.** `describe()` and Plan JSON emit height keys
+**only when the source authored a `height`/`sill`/`head` anywhere** — the `doors[].kind` rule
+(present only when not the default) applied to a whole block. Both surfaces read the same flag,
+`ResolvedPlan._heightsAuthored`, so they cannot disagree, and the flag is whole-PLAN rather than
+per-storey: a height written on the second floor alone must not leave two pages disagreeing about
+whether the third dimension exists. `strip … height <mm>` is excluded, because that clause shares
+the keyword and means a plan extent.
+
+`describe --json` gains a top-level `heights` block (`storey_height`, `elevation`, and `walls[]`
+with each resolved height — walls have no summary array of their own) plus `head` on `doors[]` and
+`openings[]` and `sill`/`head` on `windows[]`. Plan JSON gains `storey_height`, `WallJson.height`
+(a **vertical** height, not a plan extent like a room's `height`) and `sill`/`head` on the
+openings, all round-tripping through `compile --from-json`. `arch manifest` gains a `datum` block
+carrying the six defaults, because a plan that authors none reports none and an agent still needs
+to know what the compiler would have used.
+
+**Schema compatibility, measured with ajv** (the v1.33.0 method, both directions, over all 30
+shipped examples plus a plan that authors heights):
+
+| Direction | Result |
+|---|---|
+| Backward — the new schema against every payload this core emits | compatible, 0 rejections |
+| Forward — the **published 1.34.0** schema against the 30 shipped examples | compatible, 0 rejections |
+| Forward — the published 1.34.0 schema against a plan that authors a height | **rejected** |
+
+The zero in the middle row is the byte-identity law showing up in a second place: no shipped example
+authors a height, so none emits a new key. The rejection in the third is `additionalProperties:
+false` at the root and on `walls[]`/`openings[]`, on exactly the four new keys — `storey_height`,
+`walls[].height`, `openings[].sill` and `openings[].head`. A consumer pinned to the published 1.34.0
+schema therefore rejects payloads from a plan that uses this release's syntax, and must re-pin.
+
+`arch fmt` round-trips every new clause, checked as a **fixed point** rather than a string match —
+v1.26.1 shipped a formatter that silently returned a pocket door as a hinged one, and the same
+failure here would return a 2200 mm parapet as a full-height wall.
+
+Two things this v1 does **not** do, deferred by name rather than half-answered: there is no slab
+thickness (separating structural depth from clear height needs a second number and a rule for which
+one every consumer means), and nothing consumes the datum yet — the 2.5D occupancy export and the
+axonometric preview it unblocks (`docs/backlog.md` P3-2 / P3-3) are their own projects.
+
+Two rough edges accepted rather than fixed, both recorded so they are not rediscovered as bugs.
+`E_OPENING_ABOVE_WALL` still fans out one diagnostic per opening when a single plan-level `height`
+is the real cause; only the hint was improved, because deduplicating needs cross-element state the
+resolver does not keep. And in Plan JSON, `rooms[].height` / `furniture[].height` are plan-Y extents
+while `storey_height` and `walls[].height` are vertical — the same word for two dimensions. `height`
+is kept on the wall because it is the `.arch` clause the payload round-trips to and the word a model
+has to produce; both schema descriptions say which is which.
+
 ## [1.34.0] - 2026-09-04
 
 **What the gates could not see.** Every item here is a check that was running, green, and

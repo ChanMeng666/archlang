@@ -64,6 +64,15 @@ export interface ResolveCtx {
   evalPt(p: ExprPoint): Point;
   /** Resolved id of the element currently being resolved. */
   id: string;
+  /**
+   * This storey's floor-to-floor height in mm (v1.35, the vertical datum layer) — the
+   * `level`'s own `height`, else the plan's, else `STOREY_HEIGHT` (`src/datum.ts`).
+   *
+   * It is on the context rather than looked up per element because the fallback chain must
+   * have exactly one implementation: a wall with no `height` clause is this tall, and an
+   * element that re-derived it would be the second place to get it wrong.
+   */
+  storeyHeight: number;
   /** Resolved walls, ready before openings resolve (walls resolve first). */
   walls: RWall[];
   /** Resolved rooms (absolute ones carry final coords; relational ones are placed

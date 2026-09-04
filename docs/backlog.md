@@ -1914,8 +1914,15 @@ extending it in silence.
 - **P2-4** addressable structural grid · **P2-5** measured-vs-drawn edge separation ·
   **P2-6** multi-flight stairs — each needs its own design pass.
 - **All of P3** (IFC4 export, occupancy-grid export, 3D axonometric, `arch vary`, `--why`,
-  anchor-relative coordinates) — each is a project, not a task. P3-2 is **blocked** on element
-  heights and opening sill/head heights, which the language does not have.
+  anchor-relative coordinates) — each is a project, not a task. **P3-2's and P3-3's shared
+  prerequisite is DONE**: element heights and opening sill/head heights landed as the v1.35 vertical
+  datum layer (`src/datum.ts`, branch `feat/height-datum`) — `RWall.height`, `sill`/`head` on every
+  resolved opening, `ResolvedPlan.storeyHeight`/`elevation`, and `Opening.kind`/`sill`/`head` on the
+  list a wall keeps of what is cut into it, which is what a 2.5D slice at a sensor height reads.
+  **P3-2 and P3-3 themselves stay open**: the datum is a fact layer and nothing consumes it yet.
+  Two things it deliberately does not have and either project may need to add: a **slab thickness**
+  (v1 has none — storey height is floor-to-floor and a wall runs the full storey), and any
+  **consumer** at all, so the first one built gets to discover what the shape is missing.
 - **P3-7 arbitrary rotation** is deliberately NOT built; the trade-off is recorded in the roadmap.
   Any future design must first answer what the handed rules (`hinge left`,
   `against wall … side left`, `anchor top-left`, `right-of`) mean at non-axis angles, plus grid snap

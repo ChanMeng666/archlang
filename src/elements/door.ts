@@ -25,6 +25,7 @@ import {
   openingWidthFix,
 } from "../fix-producers.js";
 import { renderDoorPanels } from "./door-panels.js";
+import { DOOR_HEAD, parseOpeningHeights, resolveOpeningHeights } from "../datum.js";
 
 /**
  * Read the next ident and check it against a closed value set from
@@ -256,6 +257,11 @@ export const door: ElementDef = {
       ctx.next();
       node.open = ctx.parseExpr();
     }
+    // The vertical datum (v1.35): `head` only, and after `open` — the height clauses
+    // trail every clause the statement already had, on all three opening elements, which
+    // is what keeps `slideSpan`'s insertion point (recorded above, before `open`)
+    // meaning exactly what it meant.
+    Object.assign(node, parseOpeningHeights(ctx, { sill: false }));
     return node;
   },
 
@@ -381,6 +387,9 @@ export const door: ElementDef = {
     // only the IR, and re-emitting here keeps the authored placement/width expressions
     // (rather than baking in resolved numbers). Internal field — no Scene, no bytes.
     const flipText = n.span ? emitOpening("door", n, { hinge: hinge === "left" ? "right" : "left" }) : undefined;
+    // The vertical datum (v1.35). A door's sill is the floor by definition, so only the
+    // head is authorable and the `sill: 0` below is the fact, not a default.
+    const { head } = resolveOpeningHeights(ctx, `Door "${id}"`, n, { sill: 0, head: DOOR_HEAD }, host, n.span);
     return {
       kind: "door",
       id,
@@ -389,6 +398,7 @@ export const door: ElementDef = {
       hinge,
       swing,
       host,
+      head,
       span: n.span,
       ...(flipText ? { _flipHingeText: flipText } : {}),
       // Everything below is present ONLY on a non-hinged door, so a plan that names
