@@ -523,6 +523,36 @@ const AGREEMENT: [string, string][] = [
   ["void with id=", P(`  void id=well at (1000,1000) size 2000x2000`)],
   ["void without size", P(`  void at (1000,1000)`)],
   ["void size before at", P(`  void size 2000x2000 at (1000,1000)`)],
+  // —— the vertical datum: one setting, three clause sites, two opening clauses ————
+  //
+  // The negatives are the ORDER, which is the half a grammar most easily gets wrong: the
+  // three parsers read a fixed SEQUENCE of optional clauses, so `head` before `sill` and
+  // a height clause before the one it must follow are parse errors, not re-orderings. A
+  // grammar that offered them would hand a constrained decoder output the parser refuses.
+  ["height setting", P(`  height 3000`)],
+  ["height setting, expression", P(`  let h = 3200\n  height h * 1`)],
+  ["wall height clause", `plan "p" {\n  wall w thickness 200 height 2400 { (0,0) (100,0) }\n}\n`],
+  [
+    "wall height after material",
+    `plan "p" {\n  wall w thickness 200 material brick height 2400 { (0,0) (100,0) }\n}\n`,
+  ],
+  ["level height in the header", `plan "p" {\n  level 1 height 3600 { room at (0,0) size 100x100 }\n}\n`],
+  ["level name then height", `plan "p" {\n  level 1 "G" height 3600 { room at (0,0) size 100x100 }\n}\n`],
+  ["window sill + head", P(`  window on w1 at 50% width 1200 sill 900 head 2100`)],
+  ["window sill alone", P(`  window on w1 at 50% width 1200 sill 0`)],
+  ["window head alone", P(`  window on w1 at 50% width 1200 head 2100`)],
+  ["opening head", P(`  opening on w1 at 50% width 1000 head 2400`)],
+  ["door head after open", P(`  door sliding on w1 at 50% width 900 slide left open 0.5 head 2100`)],
+  ["door head after swing", P(`  door on w1 at 50% width 900 hinge left swing in head 2100`)],
+  // …and the shapes neither the parser nor a decoder may produce.
+  ["window head before sill", P(`  window on w1 at 50% width 1200 head 2100 sill 900`)],
+  ["window sill before width", P(`  window on w1 at 50% sill 900 width 1200`)],
+  ["door sill", P(`  door on w1 at 50% width 900 sill 0`)],
+  ["opening sill", P(`  opening on w1 at 50% width 1000 sill 0`)],
+  ["door head before hinge", P(`  door on w1 at 50% width 900 head 2100 hinge left`)],
+  ["wall height after the body", `plan "p" {\n  wall w thickness 200 { (0,0) (100,0) } height 2400\n}\n`],
+  ["level height after the block", `plan "p" {\n  level 1 { room at (0,0) size 100x100 } height 3600\n}\n`],
+  ["height setting, no value", P(`  height`)],
   // —— outdoor: the same two-spelling shape `room` has ————————————————
   ["outdoor rect", P(`  outdoor lawn at (0,0) size 8000x6000`)],
   ["outdoor rect + id + label", P(`  outdoor id=g lawn at (0,0) size 8000x6000 label "Garden"`)],

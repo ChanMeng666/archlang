@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**89 errors** · **47 warnings**
+**92 errors** · **47 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -34,6 +34,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_FURN_ROOM`](#e_furn_room) | error | Furniture placed `in` an unknown room. |
 | [`E_FURN_ROTATE`](#e_furn_rotate) | error | Furniture rotation must be a quarter-turn. |
 | [`E_FURN_SIZE`](#e_furn_size) | error | Furniture must have a positive size. |
+| [`E_HEIGHT_RANGE`](#e_height_range) | error | A height is outside the range a storey can be built at. |
 | [`E_IMPORT_BAD_SPEC`](#e_import_bad_spec) | error | Malformed import spec. |
 | [`E_IMPORT_CONFLICT`](#e_import_conflict) | error | Imported name conflicts with an existing component. |
 | [`E_IMPORT_CYCLE`](#e_import_cycle) | error | Cyclic import. |
@@ -57,6 +58,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_LEVEL_DUP`](#e_level_dup) | error | Two `level` blocks declare the same storey number. |
 | [`E_LEVEL_MIX`](#e_level_mix) | error | A drawable statement sits beside `level` blocks. |
 | [`E_LEVEL_NEST`](#e_level_nest) | error | `level` used inside a block or component. |
+| [`E_OPENING_ABOVE_WALL`](#e_opening_above_wall) | error | An opening's head is above the wall it is cut in. |
 | [`E_OPENING_WIDTH`](#e_opening_width) | error | Opening must have a positive width. |
 | [`E_OUTDOOR_POLY_DEGENERATE`](#e_outdoor_poly_degenerate) | error | An outdoor ring is degenerate, or a balcony was given one. |
 | [`E_OUTDOOR_POLY_SELF_INTERSECT`](#e_outdoor_poly_self_intersect) | error | An outdoor ring crosses itself. |
@@ -82,6 +84,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_ROOM_POLY_SELF_INTERSECT`](#e_room_poly_self_intersect) | error | Polygon room intersects itself. |
 | [`E_ROOM_RADIUS`](#e_room_radius) | error | Circular room needs a positive radius. |
 | [`E_ROOM_SIZE`](#e_room_size) | error | Room must have a positive size. |
+| [`E_SILL_ABOVE_HEAD`](#e_sill_above_head) | error | A window's sill sits at or above its head. |
 | [`E_SITE_BOUNDARY_DEGENERATE`](#e_site_boundary_degenerate) | error | The site `boundary` encloses no lot. |
 | [`E_SITE_BOUNDARY_SELF_INTERSECT`](#e_site_boundary_self_intersect) | error | The site `boundary` crosses itself. |
 | [`E_SITE_DUP`](#e_site_dup) | error | Two `site` blocks in one plan. |
@@ -450,6 +453,18 @@ furniture wc at (0,0) size 400x700 rotate 45   # error: not a quarter-turn
 furniture bed at (0,0) size 0x2000   # error
 ```
 
+## E_HEIGHT_RANGE
+
+*error* — A height is outside the range a storey can be built at.
+
+**Cause.** A `height`, `sill` or `head` clause evaluated to a number no building has: zero or negative, not finite, or above 100 m. Heights are millimetres like every other number in the language, so this is nearly always a unit slip (`height 3` meaning 3 metres) or an expression that resolved to something unintended. A window `sill` of exactly 0 is legal and means a floor-length window; everything else must be greater than zero.
+
+**Fix.** Write the height in millimetres, or drop the clause and inherit the default (the fix does exactly that) — 3000 for a storey, 2100 for a door or window head, 900 for a window sill.
+
+```arch static
+wall id=w1 exterior thickness 200 height 3 { (0,0) (4000,0) close }   # error: 3 mm, not 3 m
+```
+
 ## E_IMPORT_BAD_SPEC
 
 *error* — Malformed import spec.
@@ -733,6 +748,19 @@ plan "H" {
 
 ```arch static
 component c() { level 1 { } }   # error: only allowed at plan level
+```
+
+## E_OPENING_ABOVE_WALL
+
+*error* — An opening's head is above the wall it is cut in.
+
+**Cause.** A `door`/`window`/`opening` whose `head` exceeds its host wall's own `height` would run out through the top of the wall. The wall's height is the authored `wall … height`, else this storey's, else the 3000 mm default — so this fires on a low parapet or a short storey as readily as on a mistyped head.
+
+**Fix.** Lower the `head` to the wall's height (the fix does exactly that), or raise the wall with `wall … height`.
+
+```arch static
+wall id=w1 exterior thickness 200 height 2200 { (0,0) (4000,0) close }
+  door id=d on w1 at 50% width 900 head 2400   # error: head above a 2200 wall
 ```
 
 ## E_OPENING_WIDTH
@@ -1041,6 +1069,18 @@ room circle at (5000,5000) radius 0   # error: no floor
 
 ```arch static
 room at (0,0) size 0x4000   # error: width is 0
+```
+
+## E_SILL_ABOVE_HEAD
+
+*error* — A window's sill sits at or above its head.
+
+**Cause.** A `window`'s `sill` is the bottom of the glazing and its `head` is the top, both measured from this storey's floor. When the sill is not below the head there is no opening between them — the statement describes a window with no glass in it. Refused rather than silently swapped: which of the two numbers is wrong is not something the compiler can know.
+
+**Fix.** Lower the `sill` below the `head`, or raise the `head`. Dropping the `sill` clause (the fix) restores the 900 mm default.
+
+```arch static
+window id=w on wall1 at 50% width 1200 sill 2400 head 2100   # error: sill above head
 ```
 
 ## E_SITE_BOUNDARY_DEGENERATE

@@ -375,6 +375,26 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // footprint costs this document about 10 characters, so a tranche this size will need
     // another raise; that is the honest signal rather than a defect, since the list is derived
     // and so cannot silently disagree with the catalogue.
-    expect(spec.length).toBeLessThan(28_600);
+    //
+    // ## v1.35 — the vertical datum layer: 28,191 -> 29,778, and the trim that came first
+    //
+    // A raise with the growth named, and the trim done BEFORE it, as the instruction
+    // requires. The first draft of this tranche measured **30,385** — it said "DRAWS
+    // NOTHING — a plan is a horizontal cut" on four separate lines, spelled the six
+    // defaults out twice, and named all three refusal codes in three places. Saying each of
+    // those ONCE, in the `height` SETTING line, and pointing the four element lines at it
+    // took 607 characters back off. What is left is not duplication: a plan setting, three
+    // element clauses, six defaults, three codes, the override chain and the gating rule.
+    //
+    // The remaining 1,587 is the honest cost of a new language surface, and it is
+    // distributed the way the surface is: ~700 on the `height` setting (the one place the
+    // datum is explained), ~250 across the four element lines that take a clause, ~200 on
+    // `level`, and the rest in the keyword and error-code lists this file derives.
+    //
+    // 30,000 buys **222 chars of headroom** on the measured 29,778 — tighter than the 409
+    // the last raise bought, deliberately: this tranche adds no derived LIST that will grow
+    // on its own (unlike the fixture catalogue, which costs ~10 characters a family), so
+    // the next raise should be triggered by a real new surface rather than by drift.
+    expect(spec.length).toBeLessThan(30_000);
   });
 });

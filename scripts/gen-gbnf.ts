@@ -264,7 +264,7 @@ function rules(): [string, string][] {
     // ---- plan settings ---------------------------------------------------
     [
       "setting",
-      `units-stmt | grid-stmt | paper-stmt | scale-stmt | north-stmt | site-stmt | dims-stmt | schedule-stmt | legend-stmt`,
+      `units-stmt | grid-stmt | paper-stmt | scale-stmt | height-stmt | north-stmt | site-stmt | dims-stmt | schedule-stmt | legend-stmt`,
     ],
     ["units-stmt", `"units" rws "mm"`],
     ["grid-stmt", `"grid" rws number`],
@@ -272,6 +272,11 @@ function rules(): [string, string][] {
     ["paper-size", paperSize],
     ["paper-orientation", paperOrientation],
     ["scale-stmt", `"scale" rws number ws ":" ws number`],
+    // The vertical datum's plan-level setting (v1.35). A full `expr`, not a bare `number`,
+    // because the parser reads one — a plan writes `let h = 3200` once and `height h`
+    // everywhere, and a grammar that offered only a literal would forbid the form the
+    // language accepts.
+    ["height-stmt", `"height" rws expr`],
     ["north-stmt", `"north" rws north-dir`],
     ["north-dir", `"up" | "down" | "left" | "right" | number`],
     // `site { street … [hemisphere …] }` — both value sets INJECTED from the closed
@@ -369,7 +374,10 @@ function rules(): [string, string][] {
     ["strip-size", `expr ( ws "x" ws expr )?`],
 
     // ---- level (one storey; a plan-level block, body = ordinary statements) ----
-    ["level-stmt", `"level" rws ( "-" ws )? number ( rws string )? ws block`],
+    // The optional `height <expr>` sits in the HEADER, after the name and before the
+    // block — the body is an ordinary statement list and a plan setting inside it is
+    // `E_LEVEL_MIX`, so there is nowhere else it could go.
+    ["level-stmt", `"level" rws ( "-" ws )? number ( rws string )? ( rws "height" ws expr )? ws block`],
 
     // ---- zone (a wing/department grouping; legal wherever a statement is) ----
     ["zone-stmt", `"zone" rws ident ( rws string )? ws block`],
@@ -377,7 +385,7 @@ function rules(): [string, string][] {
     // ---- elements --------------------------------------------------------
     [
       "wall-stmt",
-      `"wall" rws id-opt ident rws "thickness" ws expr ( ws wall-material )? ws "{" ws point ws ( wall-vertex ws )+ ( "close" ws )? "}"`,
+      `"wall" rws id-opt ident rws "thickness" ws expr ( ws wall-material )? ( ws "height" ws expr )? ws "{" ws point ws ( wall-vertex ws )+ ( "close" ws )? "}"`,
     ],
     ["wall-material", `"material" rws ident ( rws ( "scale" | "angle" ) ws expr ){0,2}`],
     // A wall vertex is a plain point or a CURVED edge arriving at one (v1.24).
@@ -417,15 +425,25 @@ function rules(): [string, string][] {
     // The non-enum prefixes — `hinge near <vertex>`, `swing into <ref>` — are grammar
     // structure rather than enum members, so they are stated here beside the injection.
     // `open <0..1>` is a number, not a closed value set, so it is structure too.
+    // The vertical `head` (v1.35) is appended after `open`, because the three opening
+    // elements all take their height clauses LAST — which is what keeps every clause
+    // before it parsing exactly as it did.
     [
       "door-clauses",
-      [...DOOR_CLAUSES.map((c) => `( ws ${lit(c)} rws ${c}-val )?`), `( ws "open" ws expr )?`].join(" "),
+      [
+        ...DOOR_CLAUSES.map((c) => `( ws ${lit(c)} rws ${c}-val )?`),
+        `( ws "open" ws expr )?`,
+        `( ws "head" ws expr )?`,
+      ].join(" "),
     ],
     ["hinge-val", `"near" rws ( ${litAlt(DOOR_HINGE_NEAR)} ) | ${litAlt(DOOR_ENUMS.hinge)}`],
     ["swing-val", `"into" rws ref | ${litAlt(DOOR_ENUMS.swing)}`],
     ["slide-val", litAlt(DOOR_ENUMS.slide)],
-    ["window-stmt", `"window" rws id-opt opening-placement`],
-    ["opening-stmt", `"opening" rws id-opt opening-placement`],
+    // `sill` is a WINDOW's alone and precedes `head`: the parsers read a fixed sequence,
+    // so a re-ordering is a parse error, and a door or a cased opening starts at the
+    // floor — a `sill` clause there is not a redundant one, it is not in the language.
+    ["window-stmt", `"window" rws id-opt opening-placement ( ws "sill" ws expr )? ( ws "head" ws expr )?`],
+    ["opening-stmt", `"opening" rws id-opt opening-placement ( ws "head" ws expr )?`],
     /*
      * The shared placement of `door`/`window`/`opening`, and the ONE place the
      * either/or between the two forms is stated.
