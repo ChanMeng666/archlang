@@ -204,7 +204,7 @@ const AIA_LAYERS: { name: string; color: number }[] = [
  * table only grows when a `V-` node is present. The names come from `src/view/paint.ts`
  * rather than being retyped here.
  */
-const VIEW_LAYER_COLORS: Record<string, number> = { "V-3D-WALL": 7, "V-3D-FLOOR": 8, "V-3D-GLAZ": 5 };
+const VIEW_LAYER_COLORS: Record<string, number> = { "V-3D-WALL": 7, "V-3D-FLOR": 8, "V-3D-GLAZ": 5 };
 
 /** Dash definitions (drawing units = mm): name, descriptive text, and pattern.
  *  Positive = dash, negative = gap. Solid CONTINUOUS has an empty pattern. */

@@ -34,7 +34,7 @@
  *
  * ## The `V-` layers
  *
- * `V-3D-WALL`, `V-3D-FLOOR`, `V-3D-GLAZ` — deliberately **outside** the `A-`/`L-`/`C-`
+ * `V-3D-WALL`, `V-3D-FLOR`, `V-3D-GLAZ` — deliberately **outside** the `A-`/`L-`/`C-`
  * NCS discipline namespace the plan view uses. A CAD user freezes by discipline, and an
  * illustrative view is not a discipline's drawing: putting an extruded wall on `A-WALL`
  * would make a 3D face appear and disappear with the architectural plan it is not part
@@ -53,15 +53,17 @@ import type { Face, FaceKind } from "./extrude.js";
 /** The CAD layer each kind of face lands on. Exported so the DXF table is derived, not retyped. */
 export const VIEW_LAYERS: Record<FaceKind, string> = {
   wall: "V-3D-WALL",
-  floor: "V-3D-FLOOR",
+  floor: "V-3D-FLOR",
   glaz: "V-3D-GLAZ",
 };
 
 /** Every `V-` layer the view can emit, in a stable order — the DXF table's source. */
-export const VIEW_LAYER_NAMES: readonly string[] = ["V-3D-WALL", "V-3D-FLOOR", "V-3D-GLAZ"];
+export const VIEW_LAYER_NAMES: readonly string[] = ["V-3D-WALL", "V-3D-FLOR", "V-3D-GLAZ"];
 
-/** A face, projected once: its screen loops and the depth its sort key rounds. */
-interface Drawn {
+/** A face, projected once: its screen loops and the depth its sort key rounds. Exported
+ *  so `test/iso-sort.test.ts` can assert the ORDER, which is the property, rather than the
+ *  bytes that happen to fall out of it. */
+export interface Drawn {
   face: Face;
   loops: Projected[][];
   depth: number;
