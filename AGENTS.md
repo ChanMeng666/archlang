@@ -716,7 +716,24 @@ because a floor plan is a horizontal cut. The fallback chain is wall → level �
 which is the whole reason `level … height` exists; and heights are deliberately NOT grid-snapped
 (`grid` snaps plan coordinates so rooms line up with each other, and a height shares no axis with
 them). Its refusals are refusals, not clamps: `E_HEIGHT_RANGE`, `E_SILL_ABOVE_HEAD` and
-`E_OPENING_ABOVE_WALL` — the last measured against the HOST WALL, not the storey. **The v1.31 GROUND layer
+`E_OPENING_ABOVE_WALL` — the last measured against the HOST WALL, not the storey.
+**The v1.35 AXONOMETRIC VIEW — `src/view/{camera,extrude,paint,iso}.ts`**, `toIso` being a
+SIBLING of `toScene` that produces the same `Scene` type, so every backend draws it unchanged.
+Three laws, all pinned: **`describe()` never imports `src/view/`** (a grep guard, plus
+`DescribeOptions` not admitting a `view` at all — an illustrative projection must never become a
+measurement); **no `Math.cos`/`sin`/`tan`/`atan` anywhere under `src/view/`**, because those are
+implementation-approximated in ECMAScript while `Math.sqrt` is exactly rounded, and CI spans two
+operating systems and three Node versions; and the painter's order is **TOTAL**, its depth
+quantised through the same `fmt2` the coordinates print at so two faces that serialise identically
+cannot swap. It computes NO footprint of its own — `joinWallSet` (extracted from `lowerWallSet`)
+hands it the drawing's own `EdgeLoop[]` before `emitLoops` narrows them, and an opening's glazing
+band is `openingCut` asked for a wall 20% as thick. Two things a future editor must know: the SVG
+backend's per-CAD-layer `<g>` grouping **RE-ORDERS nodes within a pass**, which is why a view emits
+one flat group (the first render read as an open box); and the `V-3D-*` layers sit outside the
+`A-`/`L-`/`C-` NCS discipline namespace and are declared in the DXF table only on a drawing that
+uses them. Roof, furniture, ground, stairs and every annotation are deliberately NOT drawn —
+`roof` most pointedly, because ArchLang stores an eaves outline and no pitch. See
+`docs/axonometric.md`. **The v1.31 GROUND layer
 — `elements/outdoor.ts` and `elements/fence.ts`** (nine ground kinds and three fence styles, drawn on
 `L-PLNT`/`L-SITE`/`A-FLOR-BALC`; the seven ground hatches live in `hatches.ts`'s one shared `META`
 table beside the wall materials, each **scale-aware** off `c.gap * k * c.scale` and each painting no

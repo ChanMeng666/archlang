@@ -92,4 +92,3 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["two-bed", "c8e5a430665c6ea875a94225dc062a534bebf776c28b3ffbdb0a614d3e71ff79"],
   ["two-storey", "494341efa9edaa35f76d17b293023a87b9b1e68567d87b2e4445ebf9b6579f93"],
 ];
-

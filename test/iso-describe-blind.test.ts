@@ -89,6 +89,10 @@ suite("describe()/lint() are blind to the axonometric", () => {
   it("no `describe()` key mentions the view, and no diagnostic code does either", () => {
     const src = readFileSync(resolvePath("examples/two-storey.arch"), "utf8");
     expect(JSON.stringify(describePlan(src))).not.toMatch(/"(view|iso|axon|axonometric)"/);
-    expect(lint(src).map((d) => d.code ?? "").filter((c) => /VIEW|ISO|AXON/.test(c))).toEqual([]);
+    expect(
+      lint(src)
+        .map((d) => d.code ?? "")
+        .filter((c) => /VIEW|ISO|AXON/.test(c)),
+    ).toEqual([]);
   });
 });

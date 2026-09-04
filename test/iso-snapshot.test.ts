@@ -78,7 +78,10 @@ suite("iso snapshots", () => {
     for (const name of PLANS) {
       const src = readFileSync(resolvePath(EXAMPLES, `${name}.arch`), "utf8");
       const out = compile(src, { view: "iso", world, noCache: true });
-      expect(out.scene!.nodes.filter((n) => n.prim.t === "text"), name).toEqual([]);
+      expect(
+        out.scene!.nodes.filter((n) => n.prim.t === "text"),
+        name,
+      ).toEqual([]);
       expect(out.svg, name).not.toContain("<text");
     }
   });
@@ -88,7 +91,10 @@ suite("iso snapshots", () => {
       const src = readFileSync(resolvePath(EXAMPLES, `${name}.arch`), "utf8");
       const out = compile(src, { view: "iso", world, noCache: true });
       expect(out.scene!.hatches, name).toEqual([]);
-      expect(out.scene!.nodes.filter((n) => n.prim.t === "hatch"), name).toEqual([]);
+      expect(
+        out.scene!.nodes.filter((n) => n.prim.t === "hatch"),
+        name,
+      ).toEqual([]);
     }
   });
 });
