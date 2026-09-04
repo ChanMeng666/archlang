@@ -135,12 +135,15 @@ export function isPlacedHeight(h: number): boolean {
  * thing nobody can guess is what the author meant instead.
  */
 export function heightRangeDiagnostic(subject: string, clause: string, value: number, span?: Span): Diagnostic {
+  // A `sill` is the ONE height measured from the floor that may sit ON it, so it gets its
+  // own sentence. Telling an author that a sill "must be greater than 0" is a lie the
+  // compiler itself contradicts one line later — `sill 0` is a floor-length window and is
+  // accepted — and a wrong remedy in a diagnostic is worse than a vague one.
+  const bound = clause === "sill" ? "a sill must be 0 or greater" : "a height must be greater than 0";
   return {
     severity: "error",
     code: "E_HEIGHT_RANGE",
-    message:
-      `${subject} has a \`${clause}\` of ${value} mm — a height must be greater than 0 and no more than ` +
-      `${MAX_HEIGHT} mm (100 m)`,
+    message: `${subject} has a \`${clause}\` of ${value} mm — ${bound} and no more than ${MAX_HEIGHT} mm (100 m)`,
     ...(span ? { span } : {}),
     ...(span
       ? {
@@ -202,6 +205,20 @@ export function parseOpeningHeights(ctx: ParseCtx, opts: { sill: boolean }): Ope
 export function hostWallHeight(host: WallSegment | null, walls: readonly RWall[], fallback: number): number {
   if (!host) return fallback;
   return walls.find((w) => w.id === host.wallId)?.height ?? fallback;
+}
+
+/**
+ * Did the host wall's height come from its OWN clause, or was it inherited?
+ *
+ * Read by `E_OPENING_ABOVE_WALL` alone. A plan-level `height 300` makes EVERY opening's
+ * default head exceed its wall, so the errors fan out across openings the author wrote
+ * nothing wrong on — and none of them names the setting that caused it. The hint below is
+ * the cheap half of the fix: the diagnostics still fan out, but each one says where the
+ * wall's height really came from instead of implying the opening is at fault.
+ */
+function hostHeightAuthored(host: WallSegment | null, walls: readonly RWall[]): boolean {
+  if (!host) return false;
+  return walls.find((w) => w.id === host.wallId)?._heightAuthored === true;
 }
 
 /**
@@ -267,12 +284,20 @@ export function resolveOpeningHeights(
   // storey: a 2400 head in a 2200 parapet is wrong even in a 3000 storey.
   if (head > wallHeight) {
     const span = clauses.headSpan ?? stmtSpan;
+    const authoredHere = hostHeightAuthored(host, ctx.walls);
+    const inheritedNote = authoredHere
+      ? "Raise the host wall's own `height`, or lower this `head`."
+      : `The host wall does NOT declare a height — the ${wallHeight} mm is inherited from the ` +
+        `storey's \`height ${ctx.storeyHeight}\` setting, so that plan-level line is what to change ` +
+        `(every opening on this storey is measured against it). Giving this wall its own \`height\` ` +
+        "clause overrides it for this wall alone.";
     ctx.diag({
       severity: "error",
       code: "E_OPENING_ABOVE_WALL",
       message:
         `${subject} has a \`head\` of ${head} mm but its host wall is only ${wallHeight} mm tall — ` +
         `the opening would run out through the top of the wall`,
+      hints: [inheritedNote],
       ...(span ? { span } : {}),
       ...(clauses.headSpan
         ? {
