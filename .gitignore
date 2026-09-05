@@ -25,6 +25,12 @@ dataset/out/
 # local env & agent-session artifacts
 .env
 .env.*
+
+# Wrangler's local state/cache, written beside each site's wrangler.jsonc by
+# `wrangler deploy` / `wrangler dev`. The workspace .gitignore files that used to
+# ignore Vercel's `.vercel` equivalent were removed in the Cloudflare migration;
+# this is the replacement, kept at the root so it covers both sites.
+.wrangler/
 .claude/settings.local.json
 .superpowers/
 .agents/
