@@ -1,0 +1,52 @@
+# Cloudflare `_headers` — parsed by the Worker's static-asset layer, never served
+# (a request for /_headers is a 404, verified).
+#
+# Every rule here was written against a MEASURED difference between what Vercel
+# sent and what Cloudflare sends by default. None of it is decorative, and the
+# first block is the one that matters: nothing in the test suite can see it.
+
+# Vercel set all three of these implicitly on every response. Cloudflare sets none.
+#
+#   Access-Control-Allow-Origin — the JSON Schemas are published under their
+#     canonical $id URLs (https://archlang.uk/plan.schema.json is what
+#     src/plan-json.ts writes into every Plan JSON document), and llms.txt
+#     advertises the whole root as machine-fetchable. Dropping CORS silently
+#     breaks any browser-context validator or agent. NO TEST IN THIS REPO WOULD
+#     CATCH IT: scripts/smoke.mjs is Node fetch and Playwright's `request`
+#     fixture are both exempt from CORS.
+#   Content-Disposition — without it a `text/markdown` response is offered as a
+#     download instead of shown, which defeats the append-`.md` convention.
+#   Strict-Transport-Security — browsers hold Vercel's two-year max-age today.
+#     Matching it keeps the header refreshing instead of silently expiring in
+#     2028. `includeSubDomains` is deliberately ABSENT, as it was on Vercel:
+#     turning it on would newly bind every subdomain of archlang.uk.
+/*
+  Access-Control-Allow-Origin: *
+  Content-Disposition: inline
+  Strict-Transport-Security: max-age=63072000
+
+# Cloudflare's default for every asset is `public, max-age=0, must-revalidate` —
+# correct, but it revalidates every hashed bundle on every page load, where Vercel
+# marked fingerprinted files immutable. Vite/VitePress fingerprint everything under
+# /assets/, so those URLs can never change identity: cache them for a year. Every
+# other route keeps the revalidating default, which is what makes a deploy visible
+# immediately.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The raw markdown copies (`/<page>.md`, the append-`.md` convention llms.txt
+# advertises). Cloudflare types these `text/markdown` with NO charset, where Vercel
+# sent `text/markdown; charset=utf-8`. A `text/*` response with no charset is
+# latin-1 by default in some clients, which mojibakes every em-dash on these pages.
+# The pattern matches by extension, so a page added to sync-docs.mjs's PAGES table
+# is covered without editing this file.
+/*.md
+  Content-Type: text/markdown; charset=utf-8
+
+# The GBNF grammar has an extension no static host knows: Cloudflare sends no
+# Content-Type at all and Vercel sent `application/octet-stream` — both deliver a
+# machine-readable route as an opaque download. It is UTF-8 text, published
+# alongside /llms.txt, so say so. (scripts/smoke.mjs still asserts on the BODY and
+# never on this header, deliberately — see its comment.)
+/archlang.gbnf
+  Content-Type: text/plain; charset=utf-8

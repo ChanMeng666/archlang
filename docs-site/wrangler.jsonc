@@ -1,0 +1,38 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+
+  // The VitePress docs site, served as static assets by a Worker with NO script.
+  // `main` is deliberately absent: with no code to invoke, every request is a
+  // static-asset request, which Cloudflare bills at zero and exempts from the
+  // free plan's 100,000-requests/day Worker cap.
+  //
+  // The NAME is the npm workspace / historical project identifier, NOT the URL —
+  // the custom domain is attached on top of it and is fully decoupled from it.
+  // See docs/hosting-and-domains.md; never rename this to match the domain.
+  "name": "archlang-docs",
+  "compatibility_date": "2026-09-05",
+
+  // The apex is the only public host. workers.dev is off so the site is not also
+  // reachable — and indexable, robots.txt says `Allow: /` — at a second origin.
+  "workers_dev": false,
+
+  "assets": {
+    // Built by `npm run docs:build` from the repo root (core first, then the
+    // site — sync-docs.mjs hard-exits if dist/ is missing).
+    "directory": ".vitepress/dist",
+
+    // The equivalent of Vercel's `cleanUrls: true` + `trailingSlash: false`:
+    // VitePress emits `guide.html` and links to `/guide`, so `/guide` must serve
+    // that file and `/guide/` must redirect to the extensionless form.
+    "html_handling": "drop-trailing-slash",
+
+    // VitePress emits its own 404.html. docs-site/e2e/routes.spec.ts and
+    // scripts/smoke.mjs both use a text/html 404 as a NEGATIVE signal, so an
+    // unmatched path must 404 rather than 200 with index.html.
+    "not_found_handling": "404-page"
+  },
+
+  // Attaching the custom domain creates the proxied DNS record in the
+  // archlang.uk zone (same Cloudflare account) and uses its Universal SSL cert.
+  "routes": [{ "pattern": "archlang.uk", "custom_domain": true }]
+}

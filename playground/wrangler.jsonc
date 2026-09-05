@@ -1,0 +1,37 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+
+  // The Vite playground, served as static assets by a Worker with NO script.
+  // See docs-site/wrangler.jsonc for why `main` is absent; the NAME here is
+  // likewise the npm workspace identifier and not the URL.
+  "name": "archlang-playground",
+  "compatibility_date": "2026-09-05",
+
+  "workers_dev": false,
+
+  "assets": {
+    // Built by `npm run playground:build` from the repo root (core first).
+    "directory": "dist",
+
+    // "none" is an EXACT-PATH lookup, chosen for one measured reason: it keeps
+    // `/embed.html` a literal 200. Every other mode drops the `.html` and 307s
+    // to `/embed` — and `/embed.html` is a PUBLISHED url, pasted into
+    // third-party <iframe> snippets, so a redirect would cost every embed on
+    // the internet a round trip and gain nothing. Vercel served it literally.
+    //
+    // The cost of "none" is that `/` is not itself a file and would otherwise
+    // fall through to not_found_handling — which is what public/_redirects
+    // fixes, with a status-200 REWRITE that runs before the asset lookup.
+    "html_handling": "none",
+
+    // Explicit, because the absence is the decision. There is no 404.html here,
+    // and this is NOT a single-page application: index.html and embed.html are
+    // two real entries and all state lives in the `#z=` hash, which never
+    // reaches the server. "single-page-application" would answer every mistyped
+    // path with a 200 and the editor shell, turning a 404 into a false success.
+    // "none" returns a bare 404, which is what Vercel does today.
+    "not_found_handling": "none"
+  },
+
+  "routes": [{ "pattern": "playground.archlang.uk", "custom_domain": true }]
+}

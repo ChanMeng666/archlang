@@ -5,7 +5,7 @@
  *   node scripts/smoke.mjs --site docs       --base https://archlang.uk
  *   node scripts/smoke.mjs --site playground --base https://playground.archlang.uk
  *
- * Why more than `curl -o /dev/null`: a Vercel deploy can serve a 200 on `/` while the
+ * Why more than `curl -o /dev/null`: a deploy can serve a 200 on `/` while the
  * things machines actually consume are gone — the raw `/<page>.md` copies, `/llms-full.txt`,
  * the JSON schemas, the GBNF grammar, the example SVGs, or (on the playground) the hashed
  * JS bundle the shell page loads. Those are the site's real contract, so they are what we
@@ -14,7 +14,7 @@
  * retyped by hand is exactly how a template goes stale — AGENTS.md).
  *
  * Retry envelope: a request is retried up to 6 times, 5s apart, on a network error or a
- * non-200 (alias propagation after `vercel deploy` takes a few seconds). A 200 whose BODY
+ * non-200 (a `wrangler deploy` takes a few seconds to propagate to every edge). A 200 whose BODY
  * fails its assertion is a real failure and is never retried — waiting can't fix wrong bytes.
  *
  * Exit codes: 0 all checks passed · 1 at least one check failed · 2 bad usage.

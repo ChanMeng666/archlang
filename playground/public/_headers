@@ -1,0 +1,21 @@
+# Cloudflare `_headers` — parsed by the Worker's static-asset layer, never served.
+# See docs-site/public/_headers for the full reasoning; both sites must send the
+# same three headers Vercel set implicitly and Cloudflare does not set at all.
+
+# `Access-Control-Allow-Origin` matters here too: embed.html is designed to be
+# framed by other sites, and the playground is the target of every `#z=` permalink
+# the README and the docs emit. `Strict-Transport-Security` matches the two-year
+# max-age browsers already hold from Vercel, without `includeSubDomains` — as
+# Vercel sent it.
+/*
+  Access-Control-Allow-Origin: *
+  Content-Disposition: inline
+  Strict-Transport-Security: max-age=63072000
+
+# Cloudflare revalidates every asset by default; Vercel marked fingerprinted files
+# immutable. Vite fingerprints everything under /assets/ (both entry bundles, the
+# CodeMirror and jspdf chunks, and all 46 font files), so those URLs can never
+# change identity: cache them for a year. The two HTML entries keep the
+# revalidating default, which is what makes a deploy visible immediately.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

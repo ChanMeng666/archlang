@@ -81,8 +81,9 @@ export default defineConfig({
     ["meta", { name: "twitter:card", content: "summary_large_image" }],
     ["meta", { name: "twitter:image", content: "https://archlang.uk/brand/archlang-og.png" }],
   ],
-  // Built into a subdir under the eventual GitHub Pages / Vercel project; "./"
-  // keeps asset URLs relative so it works under any base path.
+  // Could be built into a subdir under any static host; "./" keeps asset URLs
+  // relative so it works under any base path. (Today it is served at the apex by
+  // the archlang-docs Cloudflare Worker — see docs/hosting-and-domains.md.)
   base: "/",
   cleanUrls: true,
   lastUpdated: true,
@@ -148,7 +149,8 @@ export default defineConfig({
   },
   // Let theme components (ArchLive) import the built core directly, so docs
   // examples compile client-side — the same alias the playground uses. The core
-  // is built before the site (see vercel.json → docs:build), so dist/ exists.
+  // is built before the site (`npm run docs:build` builds the core first), so
+  // dist/ exists.
   // The optional Node-only backends are reached only via lazy import()s that never
   // run in the browser — exclude them from prebundling so esbuild doesn't choke on
   // native binaries.
