@@ -161,6 +161,33 @@ Cloudflare feature that transforms responses or interposes a challenge, check it
 `scripts/smoke.mjs` and the `@prod` Playwright subset — those are the two things that read this
 site as a machine rather than as a browser.
 
+### What the 2026-09-05 audit actually found
+
+This is not hypothetical. The zone had been DNS-only since 2026-07-15, so nothing in it had ever
+been in a request path — and **four settings were live that would have broken something the moment
+the records went orange.** All four were changed during the cutover, before the first record was
+flipped:
+
+| Setting | Was | Now | What it would have done |
+|---------|-----|-----|-------------------------|
+| `browser_check` | `on` | **`off`** | Browser Integrity Check challenges clients whose headers do not look like a browser. `scripts/smoke.mjs` sends `user-agent: archlang-smoke/1` from a shared GitHub Actions IP — every deploy and every nightly would have gone red. |
+| `email_obfuscation` | `on` | **`off`** | Injects a decoder script into every HTML response. Cloudflare editing our bytes is precisely what the old grey-cloud rule existed to prevent. |
+| `browser_cache_ttl` | `14400` | **`0`** | A 4-hour browser TTL that **overrides** the origin's `max-age=0, must-revalidate`. A deploy would have appeared not to ship for four hours, and the nightly staleness probe would have been measuring a browser cache instead of the deploy. |
+| `always_use_https` | `off` | **`on`** | Vercel forced HTTPS; the Workers asset router does not redirect `http:` on its own, so `http://archlang.uk` would have served plaintext. |
+| `security_level` | `medium` | **`essentially_off`** | Free-plan "medium" challenges bad-reputation IPs, and Actions runners share IPs with the whole internet. A public static site has nothing to protect. |
+
+`rocket_loader`, `always_online`, `development_mode`, `polish` and `mirage` were already `off`, and
+`ssl` was already `strict`. **Bot Fight Mode is NOT readable with the migration token's scopes** — it
+lives behind the Bot Management API — so it was verified empirically instead, and that is the check
+to repeat: `curl -A "archlang-smoke/1" -o /dev/null -w '%{http_code}' https://archlang.uk/` must
+return `200`. It did, on both hostnames.
+
+**Two settings were deliberately left alone.** Zone-level HSTS stays **disabled**: the header is sent
+by `_headers` instead, which is where Vercel sent it from, keeps it in version control, and avoids a
+two-year commitment made from a dashboard. And `min_tls_version` stays at `1.0` — it is weak, but it
+was weak before the migration too, and changing it is a client-compatibility decision, not a hosting
+one.
+
 ## Deploy pipeline
 
 Push to `main` triggers **`.github/workflows/deploy.yml`** (the "Deploy (Cloudflare)" workflow),
