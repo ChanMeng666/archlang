@@ -164,10 +164,18 @@ vitest 2 today, but `vitest` 5 wants `vite` 8, so (b) will **split** that tree r
 | `esbuild` | moderate | **two nodes, only one fixable by (b)** — tsup's `0.27.7` has no fix in tsup 8 |
 | `vitepress` | moderate | `fixAvailable: false`; accepted — its only `via` is `vite`, and it pins `vite ^5.4.14` |
 
-**A separate finding, not a vulnerability:** `docs-site/.vercel/.env.production.local` holds a JWT.
-It is gitignored (`docs-site/.gitignore:48`), has never been tracked and appears nowhere in history —
-a local Vercel CLI artifact, no exposure. Noted so the next person who runs a directory-mode scan
-does not re-investigate it.
+**A separate finding, not a vulnerability — RESOLVED 2026-09 by the hosting migration:**
+`docs-site/.vercel/.env.production.local` held a JWT. It was gitignored (by a `.vercel` line in
+`docs-site/.gitignore`), never tracked, and appears nowhere in history — a local Vercel CLI
+artifact, no exposure. Both `.vercel/` directories were **deleted** when the sites moved to
+Cloudflare Workers, along with the two gitignore lines that covered them (`playground/.gitignore`
+held nothing else and went with them), so the file no longer exists on any machine that pulls this
+branch. Kept here rather than removed because a directory-mode scan of an older checkout, or of a
+working copy that never cleaned up, will still surface it — and the answer is still "a local CLI
+artifact, no exposure". **The Cloudflare equivalent is `.wrangler/`** — local state and caches that
+`wrangler` writes beside each `wrangler.jsonc`. It holds no credential (`wrangler` reads
+`CLOUDFLARE_API_TOKEN` from the environment; in CI that is a repository secret, never a file), but
+unlike `.vercel/` it is **not currently gitignored anywhere**. Add it before someone commits one.
 
 **The lesson this entry is now an instance of:** a permanently red gate is a disabled gate that still
 costs CI minutes. Left alone, the secret scan would have failed every night forever over three public

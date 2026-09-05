@@ -120,7 +120,7 @@ in [docs/npm-oidc-publishing-playbook.md](docs/npm-oidc-publishing-playbook.md).
 > management — is an interactive human-with-2FA operation by npm policy (token-based bypass of
 > these is being retired through 2026–2027); agents cannot and should not automate it.
 
-Pushing to `main` auto-deploys the playground and docs sites (Vercel) — no manual step.
+Pushing to `main` auto-deploys the playground and docs sites (Cloudflare Workers) — no manual step.
 
 ### VS Code extension — `ChanMeng.archlang` (Marketplace)
 

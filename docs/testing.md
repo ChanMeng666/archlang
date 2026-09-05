@@ -57,7 +57,7 @@ Checks that talk to the outside world, are too slow per-PR, or would be noise as
 
 | Job | What it is for |
 |-----|----------------|
-| `prod-smoke` | `scripts/smoke.mjs` against both live origins. A deploy can go green and the site rot later (DNS, cert, project setting) |
+| `prod-smoke` | `scripts/smoke.mjs` against both live origins. A deploy can go green and the site rot later (DNS, cert, a Worker route/custom-domain change, a Cloudflare zone setting) |
 | `audit` | `npm audit --omit=dev --audit-level=high` + `npm audit signatures`. **Report-only** — advisories never fail the workflow; a broken `npm ci` does |
 | `secrets` | gitleaks over the WHOLE history (`fetch-depth: 0`) — a credential committed and later removed is still leaked |
 | `full-matrix` | ubuntu 18/20/22 + windows 22. Deliberately redundant with the PR matrix; nightly is where the extra OS leg is worth paying for |
@@ -347,7 +347,7 @@ machine route, every raw `/<page>.md` copy and one SVG per gallery example; on t
 shell page and the embed page — each including the hashed JS entry parsed out of its own HTML — plus
 a brand asset. Route lists are **parsed out
 of `sync-docs.mjs`'s tables**, so a new page or example joins the smoke test the day it lands.
-Retries 6× / 5s apart on a network error or non-200 (alias propagation); a 200 whose **body** fails
+Retries 6× / 5s apart on a network error or non-200 (deploy propagation); a 200 whose **body** fails
 its assertion is never retried — waiting cannot fix wrong bytes.
 
 ### Coverage — a map, not a gate

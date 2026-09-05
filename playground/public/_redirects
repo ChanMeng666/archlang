@@ -1,0 +1,12 @@
+# Cloudflare `_redirects` — parsed by the static-asset layer, never served.
+#
+# The playground uses `html_handling: "none"` (exact-path lookup) so that
+# /embed.html stays a LITERAL 200, as it was on Vercel: it is a published URL,
+# pasted into third-party <iframe> snippets, and a 307 to /embed would add a
+# round trip to every embed on the internet for no gain.
+#
+# The cost of "none" is that `/` is not itself a file and would fall through to
+# not_found_handling. A status-200 rule is a REWRITE, not a redirect, and the
+# redirect layer runs before the asset lookup — so this serves index.html at the
+# site root with no redirect and no 404.
+/    /index.html    200

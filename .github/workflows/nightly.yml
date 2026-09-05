@@ -30,7 +30,8 @@ jobs:
   # ---------------------------------------------------------------------------
   # Is production actually serving what it promises — right now, not at deploy time?
   # A deploy can go green and the site rot later (a domain/DNS change, an expired
-  # cert, a Vercel project setting). Same script the deploy uses.
+  # cert, a Worker route/custom-domain change, a Cloudflare zone setting that starts
+  # rewriting bytes or challenging clients). Same script the deploy uses.
   # ---------------------------------------------------------------------------
   prod-smoke:
     name: Production smoke

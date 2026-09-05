@@ -1,20 +1,24 @@
-name: Deploy (Vercel)
+name: Deploy (Cloudflare)
 
-# Cross-account deploy. The Vercel team that hosts archlang-docs / archlang-playground
-# is linked to a *different* GitHub account than this repo, so Vercel's own Git
-# integration can't see this repo. Instead we deploy from CI with a Vercel token.
+# Both public sites are static assets served by a Worker with NO script, in the
+# Cloudflare account that also holds the archlang.uk zone. `main` is absent from
+# each wrangler.jsonc on purpose: with no code to invoke, every request is a
+# static-asset request — free, unmetered, and exempt from the Workers free-plan
+# request cap.
 #
-# The org/project IDs below are non-secret identifiers (useless without the token).
-# The ONLY secret required is VERCEL_TOKEN:
-#   1. Create it at https://vercel.com/account/settings/tokens with the she-sharp1
-#      scope (the team that owns the projects).
-#   2. Add it to this repo: Settings → Secrets and variables → Actions →
-#      New repository secret → name: VERCEL_TOKEN.
+# We deploy from CI rather than from Cloudflare's Git integration because the
+# build is a monorepo build: `npm run docs:build` / `npm run playground:build`
+# build the CORE first and then the site (docs-site/sync-docs.mjs hard-exits if
+# dist/ is missing), and because the smoke check below belongs welded to the
+# deploy that produced it.
+#
+# Two repository secrets are required:
+#   CLOUDFLARE_API_TOKEN   — Workers Scripts:Edit + Workers Routes:Edit on the
+#                            account, DNS:Edit + Zone:Read on the archlang.uk zone.
+#                            Create at https://dash.cloudflare.com/profile/api-tokens
+#   CLOUDFLARE_ACCOUNT_ID  — the account the Workers live in (not a secret value,
+#                            kept as one so the workflow reads the same way).
 # Then push to main (or run this workflow manually) to deploy.
-#
-# Each project builds via its committed vercel.json (which builds the core first,
-# then the site) and deploys with `--prebuilt`, so the monorepo `cd ..` works on
-# the Linux runner where the whole repo is checked out.
 
 on:
   push:
@@ -22,7 +26,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: vercel-deploy-${{ github.ref }}
+  group: cloudflare-deploy-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -38,48 +42,56 @@ jobs:
         include:
           - name: docs
             dir: docs-site
-            project_id: prj_BQBn15EITtFL5hw4bGBcEBm6gb91
+            build: docs:build
             url: https://archlang.uk
           - name: playground
             dir: playground
-            project_id: prj_fKCyuxicxftbsIqgh6M7AxBAwEE0
+            build: playground:build
             url: https://playground.archlang.uk
     env:
-      VERCEL_ORG_ID: team_B067BUpWFoVPBxfQ0TWllunK
-      VERCEL_PROJECT_ID: ${{ matrix.project_id }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
-      - name: Check VERCEL_TOKEN is set
+      - name: Check Cloudflare credentials are set
         run: |
-          if [ -z "$VERCEL_TOKEN" ]; then
-            echo "::error::VERCEL_TOKEN secret is not set. Add it in Settings → Secrets and variables → Actions, then re-run this workflow."
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are not set. Add them in Settings → Secrets and variables → Actions, then re-run this workflow."
             exit 1
           fi
 
+      # fetch-depth: 0 is load-bearing, not caution: docs-site/.vitepress/config.ts
+      # sets `lastUpdated: true`, which reads each page's git commit time at BUILD
+      # time. A depth-1 clone has no history, so every "Last updated" stamp would
+      # silently collapse to the deploy commit.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
 
-      - name: Install Vercel CLI
+      - name: Install dependencies
+        run: npm ci
+
+      # Builds the core, then the site. Run from the repo ROOT — both scripts are
+      # `npm run build && npm -w <workspace> run build`.
+      - name: Build
+        run: npm run ${{ matrix.build }}
+
+      - name: Install Wrangler
         # pinned for reproducibility in a token-bearing job; bump deliberately
-        run: npm i -g vercel@55.0.0
+        run: npm i -g wrangler@4.108.0
 
-      - name: Pull Vercel project settings
+      # Uploads the asset directory named by ${{ matrix.dir }}/wrangler.jsonc and
+      # attaches/keeps its custom domain. Idempotent: an unchanged asset set
+      # uploads nothing.
+      - name: Deploy to Cloudflare
         working-directory: ${{ matrix.dir }}
-        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+        run: wrangler deploy
 
-      - name: Build (vercel.json builds the core first, then the site)
-        working-directory: ${{ matrix.dir }}
-        run: vercel build --prod --token="$VERCEL_TOKEN"
-
-      - name: Deploy to production
-        working-directory: ${{ matrix.dir }}
-        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
-
-      - name: Smoke check (machine routes + assets; retries ~30s for alias propagation)
+      - name: Smoke check (machine routes + assets; retries ~30s for propagation)
         # A 200 on `/` proved almost nothing — the site's real contract is the machine
         # routes (/llms-full.txt, the raw /<page>.md copies, the schemas, the GBNF grammar,
         # the example SVGs) and, on the playground, the hashed JS bundle the shell loads.

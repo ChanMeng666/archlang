@@ -7,6 +7,104 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — both public sites moved from Vercel to Cloudflare Workers
+
+Infrastructure only; this ships no version of its own. **No public URL changed**, and nothing
+downstream of a URL moved — no JSON Schema `$id`, no `sitemap.hostname`, no README `#z=` permalink,
+no hard-coded origin, no core or language change. `https://archlang.uk` and
+`https://playground.archlang.uk` are exactly what they were.
+
+- **Hosting.** Both sites are now **Cloudflare Workers with static assets**, in the same Cloudflare
+  account that already held the `archlang.uk` DNS zone (and `archcanvas.uk`). New
+  `docs-site/wrangler.jsonc` (Worker `archlang-docs`, assets from `.vitepress/dist`, custom domain
+  `archlang.uk`) and `playground/wrangler.jsonc` (Worker `archlang-playground`, assets from `dist`,
+  custom domain `playground.archlang.uk`). **Neither declares a `main` script**, deliberately: with
+  no code to invoke, every request is a static-asset request — free, unmetered, and exempt from the
+  Workers free plan's 100,000-requests/day cap. `workers_dev: false` on both, so neither site is
+  also reachable and indexable at a second origin. Removed: `docs-site/vercel.json`,
+  `playground/vercel.json`, both `.vercel/` directories and the gitignore lines covering them.
+  Rationale, alternatives and the deferred items are in
+  [ADR 0019](docs/adr/0019-cloudflare-workers-hosting.md); the operational map is
+  `docs/hosting-and-domains.md`.
+- **The proxy iron law INVERTED.** The DNS records are now **proxied (orange cloud)** — a Workers
+  custom domain necessarily is one. The previous law ("DNS only, never proxied — proxying breaks
+  Vercel's SSL") was right for a Vercel origin and is now superseded rather than deleted, so a
+  reader who meets it in an archived doc knows why it existed. Universal SSL on the active zone
+  already covered the apex and every first-level subdomain, so the cutover required **no
+  certificate issuance at all**. A consequence worth naming: a proxied zone *can* rewrite bytes and
+  challenge clients where the grey cloud never touched a response, so Bot Fight Mode, Email
+  Obfuscation, Rocket Loader and Browser Integrity Check must stay **off** — each would break
+  either `scripts/smoke.mjs` (a bare zero-dependency `fetch`) or the nightly raw-`.md`
+  byte-equality staleness probe.
+- **Three headers Vercel sent implicitly are now declared explicitly, and one of them no gate in
+  this repository can see.** Cloudflare sets none of `Access-Control-Allow-Origin`,
+  `Content-Disposition` or `Strict-Transport-Security`; all three are restored under `/*` on both
+  sites. **The CORS header is the finding**: the JSON Schemas are fetched by browser-context
+  validators at their canonical `$id` URLs and `llms.txt` advertises the whole site root as
+  machine-fetchable, but `scripts/smoke.mjs` is a Node `fetch` and Playwright's `request` fixture
+  are **both exempt from CORS enforcement** — so losing that header would have read as a healthy
+  200 to every check here while being broken for every browser consumer. Recorded as a standing gap
+  in `docs/hosting-and-domains.md`, not closed: closing it needs a response-header assertion from a
+  real browser origin, a tier this repo does not have. `Strict-Transport-Security` matches the
+  two-year max-age browsers already hold, **without** `includeSubDomains` — exactly as Vercel sent
+  it, since adding it would newly bind every subdomain of `archlang.uk`.
+- **Two more response headers are now *better* than they were, and both were measured rather than
+  assumed.** New `docs-site/public/_headers` and `playground/public/_headers`. Cloudflare types
+  `.md` as `text/markdown` with **no charset** where Vercel sent one — and a `text/*` response
+  without a charset is latin-1 in some clients, which mojibakes every em-dash in the raw markdown
+  copies — and sends **no `Content-Type` at all** for `.gbnf` where Vercel sent
+  `application/octet-stream`, both of which hand a machine-readable route over as an opaque
+  download. `/*.md` and `/archlang.gbnf` now carry correct UTF-8 text types. Fingerprinted
+  `/assets/*` regained `Cache-Control: public, max-age=31536000, immutable` (Cloudflare's default
+  revalidates every hashed bundle on every page load); every other route keeps the revalidating
+  default, so a deploy stays immediately visible.
+- **`/embed.html` stays a literal 200.** The playground uses `html_handling: "none"` (exact-path
+  lookup) rather than any mode that drops the `.html` and 307s to `/embed`: that URL is *published*,
+  pasted into third-party `<iframe>` snippets, and a redirect would cost every embed on the internet
+  a round trip for nothing. The cost of `"none"` — that `/` is not itself a file — is paid by one
+  line in the new `playground/public/_redirects`, `/  /index.html  200`, which is a **rewrite, not a
+  redirect**: status-200 rules run before the asset lookup, so the root serves `index.html` with no
+  redirect and no 404. The docs site instead uses `html_handling: "drop-trailing-slash"` (the
+  equivalent of Vercel's `cleanUrls` + `trailingSlash: false`) and `not_found_handling: "404-page"`,
+  because `docs-site/e2e/routes.spec.ts` and `scripts/smoke.mjs` both read a `text/html` 404 as a
+  negative signal.
+- **`.github/workflows/deploy.yml` rewritten as "Deploy (Cloudflare)".** Same push-to-`main`
+  trigger, same two-site matrix, same welded `scripts/smoke.mjs` step: `npm ci` → `npm run
+  docs:build` / `playground:build` → `wrangler deploy` (pinned `wrangler@4.108.0`) → smoke. Secrets
+  are `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`. **A finding, not a precaution:
+  `actions/checkout` now uses `fetch-depth: 0`** — `docs-site/.vitepress/config.ts` sets
+  `lastUpdated: true`, which reads each page's git commit time **at build time**, so a depth-1
+  clone silently collapses every "Last updated" stamp to the deploy commit with no error. Deploys
+  stay in GitHub Actions rather than moving to Cloudflare's Git integration because the build is a
+  monorepo build (the core must be built first; `docs-site/sync-docs.mjs` hard-exits without
+  `dist/`) and because the smoke check belongs welded to the deploy that produced it.
+- **`www.archlang.uk` → `301` → `archlang.uk` is now zone state, not repository state** — a
+  Cloudflare Single Redirect Rule in the `http_request_dynamic_redirect` phase. Cloudflare's
+  `_redirects` file matches on **path only** and cannot express a scheme+host source. The rule's
+  target is an *expression*, `concat("https://archlang.uk", http.request.uri.path)`, with
+  `preserve_query_string: true`; a static value would flatten every `www` deep link onto the home
+  page. Its exact API shape is recorded in `docs/hosting-and-domains.md`, since it is the one piece
+  of the setup that lives outside this repository.
+- **Lost, permanently: `archlang-docs.vercel.app` and `archlang-playground.vercel.app`.** They used
+  to `301` onward, and this repository's docs promised they were kept "so no external link ever
+  breaks". **That promise is withdrawn** — those hostnames belong to Vercel and die with the
+  projects. No `archlang.uk` link breaks. One known casualty is immutable: the MCP registry's
+  first-published entry for `io.github.ChanMeng666/archlang-mcp` (`0.1.1`, 2026-07-10) still names
+  `archlang-docs.vercel.app` as its website URL, and registry history cannot be edited. It was
+  already stale before this move — every later version points at `archlang.uk`.
+- **Verified on staging before any DNS change**, which is the order to keep: both Workers were
+  deployed to `*.workers.dev` origins and driven through this repository's own production checks
+  with the live sites untouched — 42/42 docs smoke checks, 3/3 playground, 46/46 docs `@prod`
+  Playwright cases (including the byte-equality staleness probes) and 9/9 playground; `/guide` →
+  200 `text/html`, `/guide/` → 307 to `/guide`, `/nope` → 404 with the VitePress 404 page,
+  `/_headers` → 404 (never served), hashed assets immutable. Every production check here takes an
+  origin as an argument, which is what makes a staging rehearsal possible at all.
+
+Docs updated in step: `docs/hosting-and-domains.md` (rewritten), new
+`docs/adr/0019-cloudflare-workers-hosting.md`, plus `AGENTS.md`, `CONTRIBUTING.md`,
+`docs/testing.md`, `docs/backlog.md`, `.github/workflows/nightly.yml`, `scripts/smoke.mjs` and
+`docs-site/.vitepress/config.ts` comments.
+
 ## [1.35.0] - 2026-09-04
 
 **The third dimension, added twice — once as a number nothing draws, once as a picture nothing

@@ -585,14 +585,21 @@ re-propose, re-open, or contradict them anywhere.
   `playground/src/styles/tokens.css` (no shared import — change one, change the other).
 - **`eval/rubric.md` policies are frozen** (blind-drafted, then approved) and **`npm run eval:live` is
   paid and owner-only** — the offline `npm run eval:ci` golden gate is what runs in CI.
-- **Custom domain `archlang.uk` (Cloudflare DNS + Vercel), live since 2026-07-15.** Docs → `archlang.uk`
-  (apex), playground → `playground.archlang.uk`. Two things a future agent must not get wrong: (1) the
-  Vercel **project names** and npm **workspace names** are still `archlang-docs` / `archlang-playground`
-  — those are NOT the URLs and must never be renamed to match the domain (a grep for them legitimately
-  hits `package.json`/`deploy.yml`); (2) the Cloudflare records must stay **"DNS only" (grey cloud), never
-  proxied** — proxying breaks Vercel's SSL. The old `*.vercel.app` hosts are kept and **301**-redirect to
-  the new ones. Full recipe (DNS records, TLS = Full strict, redirects, and how to change a public URL in
-  code without the escaped-dot grep trap): `docs/hosting-and-domains.md`.
+- **Custom domain `archlang.uk` (Cloudflare DNS + Cloudflare Workers), live since 2026-07-15, moved off
+  Vercel onto Workers static assets in 2026-09 with NO URL change.** Docs → `archlang.uk` (apex),
+  playground → `playground.archlang.uk`. Three things a future agent must not get wrong: (1) the
+  **Cloudflare Worker names** and npm **workspace names** are still `archlang-docs` /
+  `archlang-playground` — those are NOT the URLs and must never be renamed to match the domain (a grep
+  for them legitimately hits `package.json`/`wrangler.jsonc`/`deploy.yml`); (2) **the proxy rule
+  INVERTED** — the records are now **proxied (orange cloud)**, because a Workers custom domain
+  necessarily is one; the old iron law ("DNS only, never proxied — proxying breaks Vercel's SSL") was
+  right for a Vercel origin and is superseded, so if you meet it in an archived doc, it is history;
+  (3) because the zone is now proxied, Cloudflare CAN rewrite bytes and challenge clients, so Bot Fight
+  Mode, Email Obfuscation, Rocket Loader and Browser Integrity Check must stay OFF or `scripts/smoke.mjs`
+  and the nightly byte-equality staleness probe break. Neither Worker has a `main` script, which is what
+  keeps every request a free, unmetered static-asset request. Full recipe (DNS, TLS, the `www` redirect
+  rule's exact API shape, `_headers`, and how to change a public URL in code without the escaped-dot grep
+  trap): `docs/hosting-and-domains.md` and [ADR 0019](docs/adr/0019-cloudflare-workers-hosting.md).
 - **A derived POSITION must come from the shape, never from its bounding box or centroid — this is a
   defect CLASS, not a bug.** Six instances shipped and were fixed in v1.25.0, every one of them SILENT
   (`arch lint` reported none): the room label point, the circulation routing anchor (a 10.9 m walk
@@ -1223,9 +1230,11 @@ source (.arch)
   why the CTAs and the terminal once carried literal `#b3261e` / `#f0705f`. ADR 0014 retired all of
   them.) The one legitimate literal left is the CodeMirror lint squiggle's data-URI hex — a `var()`
   cannot cross into an SVG — so keep it in step with `--redline` / `--warn-ink` by hand.
-- **(Sites) The public hosts are `archlang.uk` / `playground.archlang.uk` — the old `*.vercel.app`
-  URLs are gone from source (only 301 redirects + the Vercel project names remain).** If you ever
-  change a public host again: grep the host **prefix without dots** (`archlang-playground`, not
+- **(Sites) The public hosts are `archlang.uk` / `playground.archlang.uk`, served by Cloudflare
+  Workers — the old `*.vercel.app` URLs are gone from source AND gone from the internet** (they used
+  to 301 onward; they died with the Vercel projects in the 2026-09 hosting migration, which changed
+  no URL of ours). If you ever change a public host again: grep the host **prefix without dots**
+  (`archlang-playground`, not
   `archlang-playground.vercel.app`) — some references are regexes with escaped dots (e.g.
   `test/readme-permalink.test.ts`) that a literal-dot grep misses. Edit sources and regenerate (schema
   `$id`s in `src/plan-json.ts`/`src/intent.ts` → `gen:*-schema`; agent-context URLs in `SKILL.md` →
