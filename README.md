@@ -131,7 +131,7 @@ The compiler is **pure TypeScript with zero runtime dependencies** and is isomor
 runs in Node and in the browser, which is why the [playground](https://playground.archlang.uk)
 is fully client-side.
 
-> ArchLang is the floor-plan engine behind [ArchCanvas](https://github.com/chanmeng666/archcanvas),
+> ArchLang is the floor-plan engine behind [ArchCanvas](https://github.com/archcanvas/archcanvas),
 > an AI design agent — but it stands alone and is useful in any app or script.
 
 ## 💡 Why it is different
