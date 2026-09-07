@@ -1,113 +1,79 @@
 # CLAUDE.md
 
-Guidance for Claude Code (and any AI agent) working in this repository.
+## Two instruction files, and the one rule that keeps them apart
 
-The **canonical, always-current** project status, architecture, commands, and conventions live in
-**[AGENTS.md](AGENTS.md)** — read it first. It is imported below so it loads with this file; for the
-exact shipped state and versions, defer to AGENTS.md → "Project status" and `CHANGELOG.md` rather
-than memory.
+Claude Code hardcodes discovery of **both** `CLAUDE.md` and `AGENTS.md`, loads each once, and puts
+both in context. So it makes no difference to a session which of the two a fact lives in — what
+matters is that it lives in **exactly one of them**.
+
+- **[AGENTS.md](AGENTS.md) is the MAP, and it has to stand alone.** Every project *fact* belongs
+  there: shipped state and live versions, iron laws, commands, architecture, gotchas, repo layout.
+  It is what a non-Claude agent and a human contributor read, and what `README.md`, `llms.txt`,
+  `docs/testing.md`, several ADRs and `test/docs-table-pipes.test.ts` all point at.
+- **This file is the OPERATING BRIEF and asserts no fact of its own.** It carries the two things
+  AGENTS.md deliberately does not: a *ranked* list of the rules that actually get broken here, each
+  naming where AGENTS.md states it in full, and the procedure for **proving** a change is right.
+- **The rule: a new project fact goes in AGENTS.md.** If you catch yourself writing the same rule in
+  both files, delete the copy here and leave a pointer. Two always-loaded files paying for the same
+  sentence twice is how they drift apart — and it is why this file was deduplicated on 2026-09-07.
 
 @AGENTS.md
 
-## Orientation (the rest is in AGENTS.md)
+That import is belt-and-braces. Claude Code 2.x discovers `AGENTS.md` natively as a project doc, so
+the line changes nothing today and does not double-load it; it is kept only so this file still pulls
+the map in if that ever stops being true.
 
-- **What this is:** ArchLang — a small declarative language that compiles `.arch` floor-plan source
-  to professional **SVG** (also DXF/PDF/PNG). Pure TypeScript, **zero runtime dependencies**,
-  isomorphic (runs in Node and the browser). A published, deployed monorepo, not a WIP.
-- **Build & run:** `npm run build` · `npm test` (vitest) ·
-  `npm run cli -- compile examples/studio.arch -o out.svg`. A single root `npm install` bootstraps
-  every workspace.
-- **Brand:** the logo is an "A" drawn as an A-frame house floor plan.
-  `brand/archlang-logo-master.svg` is the byte-sacred source — every variant is a **fill-swap only**
-  (never re-trace/simplify/re-fit path data, no small-size tier). The two public sites run the shared
-  **"The Compile Boundary"** design system — a cool source surface and a warm sheet surface split by a
-  compile seam, **both LIGHT: there is no dark mode and no dark surface on either site**. Its token
-  block is **duplicated byte-identically** in `docs-site/.vitepress/theme/style.css` and
-  `playground/src/styles/tokens.css` (change one, change the other). See
-  [ADR 0014](docs/adr/0014-one-light-world.md) — which supersedes
-  [ADR 0010](docs/adr/0010-compile-boundary-design-system.md) §1/§2/§6/§7, so read 0010's carbon/mylar
-  prose as history — and `brand/README.md` first.
+## Orientation
 
-## Non-negotiable invariants (break these and CI fails)
+ArchLang is a small declarative language that compiles `.arch` floor-plan source to professional
+**SVG** (also DXF/PDF/PNG) — pure TypeScript, **zero runtime dependencies**, isomorphic (Node and
+the browser), and a published, deployed monorepo rather than a WIP. `npm run build` · `npm test`
+(vitest) · `npm run cli -- compile examples/studio.arch -o out.svg`; a single root `npm install`
+bootstraps every workspace. For the exact shipped state and versions defer to AGENTS.md → "Project
+status" and `CHANGELOG.md`, never to memory — and probe the live artifacts rather than trusting
+either.
 
-- **`compile()` is pure, synchronous, deterministic.** No I/O, no `Date.now()`, no `Math.random()`
-  in `src/` core; output is byte-for-byte stable and snapshot/golden-tested. Node APIs and real time
-  are allowed **only** in `src/cli.ts` + `src/cli/`; everything else gets its environment via the `World` seam.
-  Route number formatting through `fmt()` so floats don't drift. The parse-stage memo's `PlanNode`
-  is shared and must never be mutated downstream — clone before mutating (a `repair()` in-place edit
-  made output history-dependent; fixed in `51a47ee`).
-- **Don't hand-edit generated files.** `dist/`, `editors/*.tmLanguage.json`,
-  `playground/src/arch-language.js`, `docs-site/.vitepress/theme/arch-highlight.js`,
-  `docs/error-codes.md`, `docs/cli-reference.md`, `spec.llm.md`,
-  `llms-full.txt`, `schemas/plan.schema.json`, `schemas/intent.schema.json`,
-  `grammars/archlang.gbnf`, the twenty committed `examples/*.svg` the README embeds (the
-  `README_SVGS` list in `scripts/gen-example-svgs.ts`) and the two axonometric renders
-  `docs/axonometric.md` embeds (`VIEW_SVGS`, same generator) are generated — edit the source
-  (`src/grammar/tokens.ts`, `src/error-catalog.ts`, `src/manifest.ts`, `PLAN_JSON_SCHEMA`,
-  `INTENT_JSON_SCHEMA`, `examples/`, `SKILL.md`) and run the matching `npm run gen:grammars` /
-  `gen:errors` / `gen:cli` / `gen:spec` / `gen:llms` / `gen:plan-schema` / `gen:intent-schema` /
-  `gen:gbnf` / `gen:example-svgs`. CI fails on drift. The SVGs joined this list late and are the
-  clearest case for it: hand-committed and never re-rendered, three of them showed the README a
-  building compiled before four separate rendering fixes, and nothing was watching.
-- **A generator's TEMPLATE can go stale even when `check:drift` is green.** The gate compares
-  generator *output* to the committed file — it proves reproducibility, not correctness. A generator
-  that hardcodes a language fact reproduces the same *wrong* text forever: `gen-llm-spec.ts` shipped a
-  v1.12 CLI + no `strip` for three releases, and `gen-grammars.ts` hardcoded a number regex without the
-  unit suffixes. **Derive from the source of truth (`KEYWORDS`/`RULES`/`buildManifest()`), never
-  retype it**, and give each generator a guard that fails when a source-of-truth entry has no
-  rendering (as `gen-llm-spec.ts` now does for every `KEYWORDS.control` entry, not just `element`).
-- **A derived POSITION comes from the shape, never from its bounding box or centroid.** Six silent
-  bugs shipped this way and were fixed in v1.25.0 — a label drawn off its own floor, a walk reported
-  at half its true length, witness lines hanging metres off a sloped facade, a door swung into a wall
-  its room does not touch, a fixture backed onto a wall outside its room, and every courtyard-wall
-  window facing backwards. **`arch lint` reported none of them.** The grep that finds the next one is
-  `room.size`/`r.size.w` with no nearby `r.poly` branch. Fix locally and in closed form — probe one
-  wall thickness off each face and ask which side has floor — and never reach for the wall boolean
-  union to answer a `describe()` question. Inventory: `docs/research/2026-08-06-competitor-borrowing-roadmap.md` §9.1.
-- **Every new language form ships with a byte-identity law, pinned by test:** a plan that does not
-  use it renders, describes and lints exactly as before. `site`, the door kinds, `zone`, `paper`,
-  `polygon`, `arc`, `roof`, `void`, the v1.35 `height`/`sill`/`head` datum and the v1.35 `--view`
-  all have one. Prove it with a SHA-256 sweep over the shipped
-  examples, not by eyeballing — and if a golden moves, that is a finding to explain before it is a
-  diff to bless. Take the baseline with the **same digest body the test will run**, not a lookalike
-  in a throwaway script: `test/roof-void-byte-identity.test.ts`'s first attempt used a scratch script
-  whose payload separator differed by one character and produced four "failures" over artifacts that
-  were in fact byte-identical. And the sweep's payload is the whole agent-facing surface — SVG,
-  `describe()` **and** `lint()` — because a form that quietly appends an empty key to every summary
-  leaves the drawing untouched and is still a behaviour change for every `arch describe --json`
-  consumer.
-- **Heights DRAW NOTHING, and `describe()` reports them only when the source wrote one.** The v1.35
-  vertical datum (`src/datum.ts`) puts `height` on a plan, a `level` and a `wall`, and `sill`/`head`
-  on the openings — a floor plan is a horizontal cut, so **a plan with no height clause is
-  byte-identical everywhere**, SVG, `describe()` and `lint()` alike (pinned over all 30 examples and
-  every storey by `test/height-byte-identity.test.ts`). The gate is ONE boolean,
-  `ResolvedPlan._heightsAuthored`, read by `describe()` and Plan JSON so they cannot disagree, and it
-  is whole-PLAN rather than per-storey. The fallback chain wall → level → plan → `STOREY_HEIGHT` has
-  exactly one implementation (`ResolveCtx.storeyHeight`) — never re-derive it in an element — and
-  **elevation accumulates the storeys below, never `level × height`**.
-- **The axonometric view (`src/view/`) is a PICTURE, never a measurement.** `compile(src, { view })`
-  and `arch compile|preview --view iso|axon` draw extruded walls, floors and stacked storeys as
-  ordinary Scene primitives — and three things are law: **`describe()`/`lint()` never import
-  `src/view/`** and take no view option; **no `Math.cos`/`sin`/`tan`/`atan` under `src/view/`**
-  (implementation-approximated in ECMAScript, and CI spans two OSes × three Node versions —
-  `Math.sqrt` is exactly rounded, so both cameras are square-root expressions); and the painter's
-  order is TOTAL, its depth quantised through `fmt2`. A compile with no `view` is byte-identical
-  everywhere (pinned over all 30 examples). The view computes no footprint of its own: `joinWallSet`
-  hands it the plan's own wall outline. See `docs/axonometric.md`.
-- **A drawn fixture symbol ignores its `label`, and fixture categories are DATA, not keywords.** The
-  129 catalogued words across 83 families live in one `FIXTURE_FAMILIES` table
-  (`src/elements/fixtures-glyphs.ts`) with their semantics in `src/fixtures-catalog.ts`; an
-  uncatalogued word falls back to the labelled rectangle on purpose. Adding a family is a table row
-  and a catalog entry — never a new element, never a `switch` arm. Keep the three catalog flags
-  distinct: `requiresWall` means **services only**, `directional` means the symbol has a back worth
-  turning to a wall, and `underlay` (a piece that lies flat and is stood on) is read **only** through
-  the shared `solidFurniture()` predicate, so the overlap rule, the clearance rule, the nav grid and
-  the per-room flood fill cannot disagree about what a rug is.
-- **Errors are returned, never thrown** for user-source problems: push a `Diagnostic` with a byte
-  `span` and a catalogued `E_*`/`W_*` code (`src/error-catalog.ts` — a test enforces every raised
-  code has an entry and vice-versa).
-- **Adding an element = one module** in `src/elements/` exporting an `ElementDef`, registered in
-  `src/elements/defs.ts`. Dispatch goes through the registry, not a switch.
+Before touching the brand or either public site, read `brand/README.md` and
+[ADR 0014](docs/adr/0014-one-light-world.md) first. Two things are settled there and cost a build
+each when forgotten: the logo master is **byte-sacred** (every variant is a fill-swap, never a
+re-trace), and **both sites are LIGHT — there is no dark mode and no dark surface on either.**
+
+## The rules most often broken here — checklist (each stated in full in AGENTS.md)
+
+These are the ones this repo has actually shipped violations of. The pointer after each names the
+AGENTS.md section that states it in full, with its evidence and its grep.
+
+1. **`compile()` is pure, synchronous, deterministic.** No I/O, no `Date.now()`, no `Math.random()`
+   in `src/`; Node APIs and real time only in `src/cli.ts` + `src/cli/`, everything else through the
+   `World` seam; route number formatting through `fmt()`; never mutate the shared parse-stage
+   `PlanNode` — clone first. → § "Architecture & Conventions", plus the determinism and
+   parse-stage-memo entries in § "Gotchas & Anti-patterns".
+2. **Don't hand-edit generated files.** Edit the source and run the matching `npm run gen:*`; CI
+   fails on drift. → § "Gotchas & Anti-patterns" (the list of artifacts and their sources).
+3. **A generator's TEMPLATE can go stale even when `check:drift` is green** — the gate proves
+   reproducibility, not correctness. Derive from the source of truth, never retype it.
+   → § "Standing decisions & iron laws".
+4. **A derived POSITION comes from the shape, never from its bounding box or centroid.** A defect
+   CLASS, not a bug: six shipped silently and `arch lint` reported none of them.
+   → § "Standing decisions & iron laws".
+5. **Every new language form ships with a byte-identity law, pinned by test** — proved with a
+   SHA-256 sweep over the whole agent-facing surface (SVG **and** `describe()` **and** `lint()`),
+   never by eyeballing, and a moved golden is a finding to explain before it is a diff to bless.
+   → § "Standing decisions & iron laws".
+6. **Heights draw nothing; the axonometric view measures nothing.** The v1.35 datum is reported only
+   when the source authored one (a single whole-plan flag), and `describe()`/`lint()` never learn
+   `--view` exists. → the `datum.ts` and `src/view/` entries in the module map inside § "Standing
+   decisions & iron laws", and `docs/axonometric.md`.
+7. **A drawn fixture symbol ignores its `label`, and fixture categories are DATA, not keywords** —
+   one `FIXTURE_FAMILIES` row plus one `CATALOG` entry, never a new element and never a `switch`
+   arm; the three catalog flags mean different things. → § "Gotchas & Anti-patterns".
+8. **Errors are returned, never thrown** for user-source problems — a `Diagnostic` carrying a byte
+   `span` and a catalogued `E_*`/`W_*` code. → § "Architecture & Conventions".
+9. **Adding an element = one module** in `src/elements/`, registered in `defs.ts`; dispatch goes
+   through the registry, not a switch. → § "Architecture & Conventions".
+10. **A clean auto-merge is not evidence** when one branch MOVED a function another MODIFIED — diff
+    the moved body against the newer version and run both branches' fixtures together.
+    → § "Gotchas & Anti-patterns" (parallel worktrees).
 
 ## Verify your work the way the tool is used
 
@@ -168,5 +134,6 @@ response for each — is mapped in [docs/testing.md](docs/testing.md).**
 ## Conventions
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/). Run the lint/test commands
-before proposing changes. Commit or push only when asked. Keep AGENTS.md and this file accurate when
-you change build steps, structure, or conventions.
+before proposing changes. Commit or push only when asked. When you change build steps, structure or
+conventions, **update AGENTS.md** — this file only gains a line when a rule joins the checklist
+above, and it never gains a fact.
