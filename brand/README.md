@@ -23,13 +23,13 @@ It is meant to be read three ways at once — a **letter**, a **house**, and a
 
 ## The family grammar — "Designs that compile"
 
-ArchLang and [ArchCanvas](https://github.com/chanmeng666/archcanvas) share **one
+ArchLang and [ArchCanvas](https://github.com/archcanvas/archcanvas) share **one
 identity family**, split along the compile boundary that defines both products:
 
 | | State | Mark |
 |---|---|---|
 | **ArchLang** (this repo) | the **SOURCE** | the full technical drawing — every drafting line, wall, swing arc, fixture, and window notch visible |
-| **ArchCanvas** | the **COMPILED** result | a solid tile with a plan **knocked out** of it (lives in the `archcanvas` repo) |
+| **ArchCanvas** | the **COMPILED** result | a solid tile with a plan **knocked out** of it (lives in the `archcanvas/archcanvas` repo) |
 
 Same "A", two states of the same idea: you author the drawing on the left, the
 compiler hands you the solid artifact on the right. **"Designs that compile"** is
