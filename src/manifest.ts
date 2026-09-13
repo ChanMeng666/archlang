@@ -193,6 +193,12 @@ const ACCESSIBLE_FLAG: ManifestFlag = {
   description:
     "emit <title>/<desc>/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged",
 };
+const ACC_ID_PREFIX_FLAG: ManifestFlag = {
+  flag: "--acc-id-prefix",
+  arg: "<prefix>",
+  description:
+    "with --accessible, prefix the <title>/<desc> element ids (default arch, giving arch-title/arch-desc) so several plans inlined in one HTML page do not share them; ignored without --accessible",
+};
 const FROM_JSON_FLAG: ManifestFlag = {
   flag: "--from-json",
   description: "read the input as Plan JSON (RPLAN shape) instead of .arch, convert it, then compile",
@@ -324,6 +330,7 @@ const COMPILE_FLAGS: ManifestFlag[] = [
   OVERLAY_FLAG,
   ERROR_SVG_FLAG_COMPILE,
   ACCESSIBLE_FLAG,
+  ACC_ID_PREFIX_FLAG,
   FROM_JSON_FLAG,
   INSTALL_FLAG,
   JSON_FLAG,
@@ -394,6 +401,7 @@ const COMMANDS: ManifestCommand[] = [
       OVERLAY_FLAG,
       ERROR_SVG_FLAG,
       ACCESSIBLE_FLAG,
+      ACC_ID_PREFIX_FLAG,
       INSTALL_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
@@ -428,6 +436,7 @@ const COMMANDS: ManifestCommand[] = [
       OVERLAY_FLAG,
       ERROR_SVG_FLAG,
       ACCESSIBLE_FLAG,
+      ACC_ID_PREFIX_FLAG,
       INSTALL_FLAG,
       JSON_FLAG,
       QUIET_FLAG,

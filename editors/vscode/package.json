@@ -57,7 +57,7 @@
     "vscode:prepublish": "npm run build"
   },
   "devDependencies": {
-    "@chanmeng666/archlang": "^1.35.0",
+    "@chanmeng666/archlang": "^1.36.0",
     "@types/node": "^22.20.0",
     "@types/vscode": "^1.75.0",
     "@vscode/vsce": "^3.2.1",

@@ -5,127 +5,127 @@ exports[`annotate (opt-in data-span) > renders studio.arch annotated determinist
 <defs><pattern id="poche" patternUnits="userSpaceOnUse" width="93.6" height="93.6" patternTransform="rotate(45)"><rect width="93.6" height="93.6" fill="#e9e4db"/><line x1="0" y1="0" x2="0" y2="93.6" stroke="#b9b1a4" stroke-width="8.06"/></pattern></defs>
 <rect x="-1324" y="-1324" width="9648" height="10213.6" fill="#ffffff"/>
 <g id="A-FLOR" inkscape:groupmode="layer" inkscape:label="A-FLOR">
-<polygon data-span="863:954" data-arch-id="r_living" data-arch-kind="room" points="0,0 4000,0 4000,6000 0,6000" fill="#fbfaf7"/>
-<polygon data-span="957:1042" data-arch-id="r_bed" data-arch-kind="room" points="4000,0 7000,0 7000,3000 4000,3000" fill="#fbfaf7"/>
-<polygon data-span="1045:1126" data-arch-id="r_hall" data-arch-kind="room" points="4000,3000 7000,3000 7000,4400 4000,4400" fill="#fbfaf7"/>
-<polygon data-span="1129:1210" data-arch-id="r_bath" data-arch-kind="room" points="4000,4400 7000,4400 7000,6000 4000,6000" fill="#fbfaf7"/>
+<polygon data-span="863:954" data-arch-id="r_living" data-arch-kind="room" data-arch-label="Living / Kitchen" data-arch-primary="" points="0,0 4000,0 4000,6000 0,6000" fill="#fbfaf7"/>
+<polygon data-span="957:1042" data-arch-id="r_bed" data-arch-kind="room" data-arch-label="Bedroom" data-arch-primary="" points="4000,0 7000,0 7000,3000 4000,3000" fill="#fbfaf7"/>
+<polygon data-span="1045:1126" data-arch-id="r_hall" data-arch-kind="room" data-arch-label="Hall" data-arch-primary="" points="4000,3000 7000,3000 7000,4400 4000,4400" fill="#fbfaf7"/>
+<polygon data-span="1129:1210" data-arch-id="r_bath" data-arch-kind="room" data-arch-label="Bath" data-arch-primary="" points="4000,4400 7000,4400 7000,6000 4000,6000" fill="#fbfaf7"/>
 </g>
 <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
-<polygon data-span="1984:2033" data-arch-id="kitchen_sink_1" data-arch-kind="furniture" points="300,250 1100,250 1100,850 300,850" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
-<polygon data-span="1984:2033" data-arch-id="kitchen_sink_1" data-arch-kind="furniture" points="636.08,406 644.47,407.67 651.58,412.42 656.33,419.53 658,427.92 658,744.08 656.33,752.47 651.58,759.58 644.47,764.33 636.08,766 405.92,766 397.53,764.33 390.42,759.58 385.67,752.47 384,744.08 384,427.92 385.67,419.53 390.42,412.42 397.53,407.67 405.92,406" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
-<circle data-span="1984:2033" data-arch-id="kitchen_sink_1" data-arch-kind="furniture" cx="521" cy="586" r="32.88" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.34"/>
-<polygon data-span="1984:2033" data-arch-id="kitchen_sink_1" data-arch-kind="furniture" points="994.08,406 1002.47,407.67 1009.58,412.42 1014.33,419.53 1016,427.92 1016,744.08 1014.33,752.47 1009.58,759.58 1002.47,764.33 994.08,766 763.92,766 755.53,764.33 748.42,759.58 743.67,752.47 742,744.08 742,427.92 743.67,419.53 748.42,412.42 755.53,407.67 763.92,406" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
-<circle data-span="1984:2033" data-arch-id="kitchen_sink_1" data-arch-kind="furniture" cx="879" cy="586" r="32.88" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.34"/>
-<circle data-span="1984:2033" data-arch-id="kitchen_sink_1" data-arch-kind="furniture" cx="700" cy="286" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="11.52"/>
-<line data-span="1984:2033" data-arch-id="kitchen_sink_1" data-arch-kind="furniture" x1="700" y1="286" x2="700" y2="418" stroke="#a8a29a" stroke-width="6.34"/>
-<polygon data-span="2036:2085" data-arch-id="counter_2" data-arch-kind="furniture" points="1200,250 1800,250 1800,850 1200,850" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
-<line data-span="2036:2085" data-arch-id="counter_2" data-arch-kind="furniture" x1="1200" y1="742" x2="1800" y2="742" stroke="#a8a29a" stroke-width="6.34"/>
-<polygon data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" points="1950,250 2550,250 2550,850 1950,850" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
-<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" cx="2130" cy="430" r="96" fill="none" stroke="#a8a29a" stroke-width="11.52"/>
-<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" cx="2130" cy="430" r="57.6" fill="none" stroke="#a8a29a" stroke-width="6.34"/>
-<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" cx="2130" cy="670" r="96" fill="none" stroke="#a8a29a" stroke-width="11.52"/>
-<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" cx="2130" cy="670" r="57.6" fill="none" stroke="#a8a29a" stroke-width="6.34"/>
-<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" cx="2370" cy="430" r="96" fill="none" stroke="#a8a29a" stroke-width="11.52"/>
-<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" cx="2370" cy="430" r="57.6" fill="none" stroke="#a8a29a" stroke-width="6.34"/>
-<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" cx="2370" cy="670" r="96" fill="none" stroke="#a8a29a" stroke-width="11.52"/>
-<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" cx="2370" cy="670" r="57.6" fill="none" stroke="#a8a29a" stroke-width="6.34"/>
-<line data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" x1="1950" y1="802" x2="2550" y2="802" stroke="#a8a29a" stroke-width="6.34"/>
-<polygon data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" points="2700,250 3300,250 3300,900 2700,900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
-<polygon data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" points="2730,280 3270,280 3270,870 2730,870" fill="none" stroke="#a8a29a" stroke-width="6.34"/>
-<line data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" x1="2700" y1="770" x2="3300" y2="770" stroke="#a8a29a" stroke-width="6.34"/>
-<line data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" x1="2700" y1="445" x2="3300" y2="445" stroke="#a8a29a" stroke-width="11.52"/>
-<line data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" x1="2904" y1="841.5" x2="3096" y2="841.5" stroke="#a8a29a" stroke-width="11.52"/>
-<polygon data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" points="2260,4300 2294.44,4306.85 2323.64,4326.36 2343.15,4355.56 2350,4390 2350,5110 2343.15,5144.44 2323.64,5173.64 2294.44,5193.15 2260,5200 440,5200 405.56,5193.15 376.36,5173.64 356.85,5144.44 350,5110 350,4390 356.85,4355.56 376.36,4326.36 405.56,4306.85 440,4300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
-<polygon data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" points="350,4390 590,4390 590,5200 350,5200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
-<polygon data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" points="2110,4390 2350,4390 2350,5200 2110,5200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
-<line data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" x1="350" y1="4462" x2="2350" y2="4462" stroke="#a8a29a" stroke-width="6.34"/>
-<line data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" x1="1096.67" y1="4462" x2="1096.67" y2="5110" stroke="#a8a29a" stroke-width="6.34"/>
-<line data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" x1="1603.33" y1="4462" x2="1603.33" y2="5110" stroke="#a8a29a" stroke-width="6.34"/>
-<line data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" x1="590" y1="5110" x2="2110" y2="5110" stroke="#a8a29a" stroke-width="6.34"/>
-<polygon data-span="2315:2370" data-arch-id="bed_6" data-arch-kind="furniture" points="4300,300 5800,300 5800,2300 4300,2300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
-<polygon data-span="2315:2370" data-arch-id="bed_6" data-arch-kind="furniture" points="4300,300 5800,300 5800,420 4300,420" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
-<polygon data-span="2315:2370" data-arch-id="bed_6" data-arch-kind="furniture" points="4907,480 4944.5,487.46 4976.3,508.7 4997.54,540.5 5005,578 5005,662 4997.54,699.5 4976.3,731.3 4944.5,752.54 4907,760 4533,760 4495.5,752.54 4463.7,731.3 4442.46,699.5 4435,662 4435,578 4442.46,540.5 4463.7,508.7 4495.5,487.46 4533,480" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
-<polygon data-span="2315:2370" data-arch-id="bed_6" data-arch-kind="furniture" points="5567,480 5604.5,487.46 5636.3,508.7 5657.54,540.5 5665,578 5665,662 5657.54,699.5 5636.3,731.3 5604.5,752.54 5567,760 5193,760 5155.5,752.54 5123.7,731.3 5102.46,699.5 5095,662 5095,578 5102.46,540.5 5123.7,508.7 5155.5,487.46 5193,480" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
-<line data-span="2315:2370" data-arch-id="bed_6" data-arch-kind="furniture" x1="4300" y1="940" x2="5800" y2="940" stroke="#a8a29a" stroke-width="6.34"/>
-<line data-span="2315:2370" data-arch-id="bed_6" data-arch-kind="furniture" x1="4300" y1="1020" x2="5800" y2="1020" stroke="#a8a29a" stroke-width="6.34"/>
-<line data-span="2315:2370" data-arch-id="bed_6" data-arch-kind="furniture" x1="5800" y1="940" x2="5470" y2="1020" stroke="#a8a29a" stroke-width="6.34"/>
-<polygon data-span="2893:2937" data-arch-id="shower_7" data-arch-kind="furniture" points="6000,5000 6900,5000 6900,5900 6000,5900" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
-<polygon data-span="2893:2937" data-arch-id="shower_7" data-arch-kind="furniture" points="6072,5072 6828,5072 6828,5828 6072,5828" fill="#ffffff" stroke="#a8a29a" stroke-width="6.34"/>
-<line data-span="2893:2937" data-arch-id="shower_7" data-arch-kind="furniture" x1="6072" y1="5072" x2="6828" y2="5828" stroke="#a8a29a" stroke-width="6.34"/>
-<line data-span="2893:2937" data-arch-id="shower_7" data-arch-kind="furniture" x1="6828" y1="5072" x2="6072" y2="5828" stroke="#a8a29a" stroke-width="6.34"/>
-<circle data-span="2893:2937" data-arch-id="shower_7" data-arch-kind="furniture" cx="6450" cy="5450" r="45" fill="none" stroke="#a8a29a" stroke-width="11.52"/>
-<circle data-span="2893:2937" data-arch-id="shower_7" data-arch-kind="furniture" cx="6450" cy="5450" r="16.2" fill="#a8a29a" stroke="#a8a29a" stroke-width="6.34"/>
-<polygon data-span="2977:3021" data-arch-id="basin_8" data-arch-kind="furniture" points="5200,4450 5800,4450 5800,4900 5200,4900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
-<polygon data-span="2977:3021" data-arch-id="basin_8" data-arch-kind="furniture" points="5704,4702 5697.05,4739.27 5676.67,4774 5644.25,4803.82 5602,4826.71 5552.8,4841.09 5500,4846 5447.2,4841.09 5398,4826.71 5355.75,4803.82 5323.33,4774 5302.95,4739.27 5296,4702 5302.95,4664.73 5323.33,4630 5355.75,4600.18 5398,4577.29 5447.2,4562.91 5500,4558 5552.8,4562.91 5602,4577.29 5644.25,4600.18 5676.67,4630 5697.05,4664.73" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
-<polygon data-span="2977:3021" data-arch-id="basin_8" data-arch-kind="furniture" points="5663.2,4702 5657.64,4731.82 5641.34,4759.6 5615.4,4783.46 5581.6,4801.77 5542.24,4813.27 5500,4817.2 5457.76,4813.27 5418.4,4801.77 5384.6,4783.46 5358.66,4759.6 5342.36,4731.82 5336.8,4702 5342.36,4672.18 5358.66,4644.4 5384.6,4620.54 5418.4,4602.23 5457.76,4590.73 5500,4586.8 5542.24,4590.73 5581.6,4602.23 5615.4,4620.54 5641.34,4644.4 5657.64,4672.18" fill="#ffffff" stroke="#a8a29a" stroke-width="6.34"/>
-<polygon data-span="2977:3021" data-arch-id="basin_8" data-arch-kind="furniture" points="5470,4463.5 5530,4463.5 5530,4508.5 5470,4508.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
-<line data-span="2977:3021" data-arch-id="basin_8" data-arch-kind="furniture" x1="5500" y1="4508.5" x2="5500" y2="4644.4" stroke="#a8a29a" stroke-width="6.34"/>
-<polygon data-span="3055:3114" data-arch-id="wc_9" data-arch-kind="furniture" points="5700,5900 5300,5900 5300,5746 5700,5746" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
-<line data-span="3055:3114" data-arch-id="wc_9" data-arch-kind="furniture" x1="5676" y1="5853.8" x2="5324" y2="5853.8" stroke="#a8a29a" stroke-width="6.34"/>
-<polygon data-span="3055:3114" data-arch-id="wc_9" data-arch-kind="furniture" points="5340,5462.08 5345.45,5397.08 5361.44,5336.5 5386.86,5284.48 5420,5244.57 5458.59,5219.48 5500,5210.92 5541.41,5219.48 5580,5244.57 5613.14,5284.48 5638.56,5336.5 5654.55,5397.08 5660,5462.08 5654.55,5527.08 5638.56,5587.66 5613.14,5639.68 5580,5679.59 5541.41,5704.68 5500,5713.24 5458.59,5704.68 5420,5679.59 5386.86,5639.68 5361.44,5587.66 5345.45,5527.08" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
-<polygon data-span="3055:3114" data-arch-id="wc_9" data-arch-kind="furniture" points="5375.2,5462.08 5379.45,5411.38 5391.92,5364.13 5411.75,5323.55 5437.6,5292.42 5467.7,5272.85 5500,5266.18 5532.3,5272.85 5562.4,5292.42 5588.25,5323.55 5608.08,5364.13 5620.55,5411.38 5624.8,5462.08 5620.55,5512.78 5608.08,5560.03 5588.25,5600.61 5562.4,5631.74 5532.3,5651.31 5500,5657.98 5467.7,5651.31 5437.6,5631.74 5411.75,5600.61 5391.92,5560.03 5379.45,5512.78" fill="#ffffff" stroke="#a8a29a" stroke-width="6.34"/>
-<circle data-span="3055:3114" data-arch-id="wc_9" data-arch-kind="furniture" cx="5500" cy="5823" r="20" fill="#a8a29a" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon data-span="1984:2033" data-arch-id="kitchen_sink_1" data-arch-kind="furniture" data-arch-label="kitchen_sink" data-arch-primary="" points="300,250 1100,250 1100,850 300,850" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon data-span="1984:2033" data-arch-id="kitchen_sink_1" data-arch-kind="furniture" data-arch-label="kitchen_sink" points="636.08,406 644.47,407.67 651.58,412.42 656.33,419.53 658,427.92 658,744.08 656.33,752.47 651.58,759.58 644.47,764.33 636.08,766 405.92,766 397.53,764.33 390.42,759.58 385.67,752.47 384,744.08 384,427.92 385.67,419.53 390.42,412.42 397.53,407.67 405.92,406" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
+<circle data-span="1984:2033" data-arch-id="kitchen_sink_1" data-arch-kind="furniture" data-arch-label="kitchen_sink" cx="521" cy="586" r="32.88" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.34"/>
+<polygon data-span="1984:2033" data-arch-id="kitchen_sink_1" data-arch-kind="furniture" data-arch-label="kitchen_sink" points="994.08,406 1002.47,407.67 1009.58,412.42 1014.33,419.53 1016,427.92 1016,744.08 1014.33,752.47 1009.58,759.58 1002.47,764.33 994.08,766 763.92,766 755.53,764.33 748.42,759.58 743.67,752.47 742,744.08 742,427.92 743.67,419.53 748.42,412.42 755.53,407.67 763.92,406" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
+<circle data-span="1984:2033" data-arch-id="kitchen_sink_1" data-arch-kind="furniture" data-arch-label="kitchen_sink" cx="879" cy="586" r="32.88" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.34"/>
+<circle data-span="1984:2033" data-arch-id="kitchen_sink_1" data-arch-kind="furniture" data-arch-label="kitchen_sink" cx="700" cy="286" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="11.52"/>
+<line data-span="1984:2033" data-arch-id="kitchen_sink_1" data-arch-kind="furniture" data-arch-label="kitchen_sink" x1="700" y1="286" x2="700" y2="418" stroke="#a8a29a" stroke-width="6.34"/>
+<polygon data-span="2036:2085" data-arch-id="counter_2" data-arch-kind="furniture" data-arch-label="counter" data-arch-primary="" points="1200,250 1800,250 1800,850 1200,850" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<line data-span="2036:2085" data-arch-id="counter_2" data-arch-kind="furniture" data-arch-label="counter" x1="1200" y1="742" x2="1800" y2="742" stroke="#a8a29a" stroke-width="6.34"/>
+<polygon data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" data-arch-label="stove" data-arch-primary="" points="1950,250 2550,250 2550,850 1950,850" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" data-arch-label="stove" cx="2130" cy="430" r="96" fill="none" stroke="#a8a29a" stroke-width="11.52"/>
+<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" data-arch-label="stove" cx="2130" cy="430" r="57.6" fill="none" stroke="#a8a29a" stroke-width="6.34"/>
+<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" data-arch-label="stove" cx="2130" cy="670" r="96" fill="none" stroke="#a8a29a" stroke-width="11.52"/>
+<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" data-arch-label="stove" cx="2130" cy="670" r="57.6" fill="none" stroke="#a8a29a" stroke-width="6.34"/>
+<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" data-arch-label="stove" cx="2370" cy="430" r="96" fill="none" stroke="#a8a29a" stroke-width="11.52"/>
+<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" data-arch-label="stove" cx="2370" cy="430" r="57.6" fill="none" stroke="#a8a29a" stroke-width="6.34"/>
+<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" data-arch-label="stove" cx="2370" cy="670" r="96" fill="none" stroke="#a8a29a" stroke-width="11.52"/>
+<circle data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" data-arch-label="stove" cx="2370" cy="670" r="57.6" fill="none" stroke="#a8a29a" stroke-width="6.34"/>
+<line data-span="2088:2137" data-arch-id="stove_3" data-arch-kind="furniture" data-arch-label="stove" x1="1950" y1="802" x2="2550" y2="802" stroke="#a8a29a" stroke-width="6.34"/>
+<polygon data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" data-arch-label="fridge" data-arch-primary="" points="2700,250 3300,250 3300,900 2700,900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" data-arch-label="fridge" points="2730,280 3270,280 3270,870 2730,870" fill="none" stroke="#a8a29a" stroke-width="6.34"/>
+<line data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" data-arch-label="fridge" x1="2700" y1="770" x2="3300" y2="770" stroke="#a8a29a" stroke-width="6.34"/>
+<line data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" data-arch-label="fridge" x1="2700" y1="445" x2="3300" y2="445" stroke="#a8a29a" stroke-width="11.52"/>
+<line data-span="2140:2189" data-arch-id="fridge_4" data-arch-kind="furniture" data-arch-label="fridge" x1="2904" y1="841.5" x2="3096" y2="841.5" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" data-arch-label="Sofa" data-arch-primary="" points="2260,4300 2294.44,4306.85 2323.64,4326.36 2343.15,4355.56 2350,4390 2350,5110 2343.15,5144.44 2323.64,5173.64 2294.44,5193.15 2260,5200 440,5200 405.56,5193.15 376.36,5173.64 356.85,5144.44 350,5110 350,4390 356.85,4355.56 376.36,4326.36 405.56,4306.85 440,4300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" data-arch-label="Sofa" points="350,4390 590,4390 590,5200 350,5200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" data-arch-label="Sofa" points="2110,4390 2350,4390 2350,5200 2110,5200" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<line data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" data-arch-label="Sofa" x1="350" y1="4462" x2="2350" y2="4462" stroke="#a8a29a" stroke-width="6.34"/>
+<line data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" data-arch-label="Sofa" x1="1096.67" y1="4462" x2="1096.67" y2="5110" stroke="#a8a29a" stroke-width="6.34"/>
+<line data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" data-arch-label="Sofa" x1="1603.33" y1="4462" x2="1603.33" y2="5110" stroke="#a8a29a" stroke-width="6.34"/>
+<line data-span="2256:2312" data-arch-id="sofa_5" data-arch-kind="furniture" data-arch-label="Sofa" x1="590" y1="5110" x2="2110" y2="5110" stroke="#a8a29a" stroke-width="6.34"/>
+<polygon data-span="2315:2370" data-arch-id="bed_6" data-arch-kind="furniture" data-arch-label="Bed" data-arch-primary="" points="4300,300 5800,300 5800,2300 4300,2300" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon data-span="2315:2370" data-arch-id="bed_6" data-arch-kind="furniture" data-arch-label="Bed" points="4300,300 5800,300 5800,420 4300,420" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon data-span="2315:2370" data-arch-id="bed_6" data-arch-kind="furniture" data-arch-label="Bed" points="4907,480 4944.5,487.46 4976.3,508.7 4997.54,540.5 5005,578 5005,662 4997.54,699.5 4976.3,731.3 4944.5,752.54 4907,760 4533,760 4495.5,752.54 4463.7,731.3 4442.46,699.5 4435,662 4435,578 4442.46,540.5 4463.7,508.7 4495.5,487.46 4533,480" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon data-span="2315:2370" data-arch-id="bed_6" data-arch-kind="furniture" data-arch-label="Bed" points="5567,480 5604.5,487.46 5636.3,508.7 5657.54,540.5 5665,578 5665,662 5657.54,699.5 5636.3,731.3 5604.5,752.54 5567,760 5193,760 5155.5,752.54 5123.7,731.3 5102.46,699.5 5095,662 5095,578 5102.46,540.5 5123.7,508.7 5155.5,487.46 5193,480" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
+<line data-span="2315:2370" data-arch-id="bed_6" data-arch-kind="furniture" data-arch-label="Bed" x1="4300" y1="940" x2="5800" y2="940" stroke="#a8a29a" stroke-width="6.34"/>
+<line data-span="2315:2370" data-arch-id="bed_6" data-arch-kind="furniture" data-arch-label="Bed" x1="4300" y1="1020" x2="5800" y2="1020" stroke="#a8a29a" stroke-width="6.34"/>
+<line data-span="2315:2370" data-arch-id="bed_6" data-arch-kind="furniture" data-arch-label="Bed" x1="5800" y1="940" x2="5470" y2="1020" stroke="#a8a29a" stroke-width="6.34"/>
+<polygon data-span="2893:2937" data-arch-id="shower_7" data-arch-kind="furniture" data-arch-label="shower" data-arch-primary="" points="6000,5000 6900,5000 6900,5900 6000,5900" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon data-span="2893:2937" data-arch-id="shower_7" data-arch-kind="furniture" data-arch-label="shower" points="6072,5072 6828,5072 6828,5828 6072,5828" fill="#ffffff" stroke="#a8a29a" stroke-width="6.34"/>
+<line data-span="2893:2937" data-arch-id="shower_7" data-arch-kind="furniture" data-arch-label="shower" x1="6072" y1="5072" x2="6828" y2="5828" stroke="#a8a29a" stroke-width="6.34"/>
+<line data-span="2893:2937" data-arch-id="shower_7" data-arch-kind="furniture" data-arch-label="shower" x1="6828" y1="5072" x2="6072" y2="5828" stroke="#a8a29a" stroke-width="6.34"/>
+<circle data-span="2893:2937" data-arch-id="shower_7" data-arch-kind="furniture" data-arch-label="shower" cx="6450" cy="5450" r="45" fill="none" stroke="#a8a29a" stroke-width="11.52"/>
+<circle data-span="2893:2937" data-arch-id="shower_7" data-arch-kind="furniture" data-arch-label="shower" cx="6450" cy="5450" r="16.2" fill="#a8a29a" stroke="#a8a29a" stroke-width="6.34"/>
+<polygon data-span="2977:3021" data-arch-id="basin_8" data-arch-kind="furniture" data-arch-label="basin" data-arch-primary="" points="5200,4450 5800,4450 5800,4900 5200,4900" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon data-span="2977:3021" data-arch-id="basin_8" data-arch-kind="furniture" data-arch-label="basin" points="5704,4702 5697.05,4739.27 5676.67,4774 5644.25,4803.82 5602,4826.71 5552.8,4841.09 5500,4846 5447.2,4841.09 5398,4826.71 5355.75,4803.82 5323.33,4774 5302.95,4739.27 5296,4702 5302.95,4664.73 5323.33,4630 5355.75,4600.18 5398,4577.29 5447.2,4562.91 5500,4558 5552.8,4562.91 5602,4577.29 5644.25,4600.18 5676.67,4630 5697.05,4664.73" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon data-span="2977:3021" data-arch-id="basin_8" data-arch-kind="furniture" data-arch-label="basin" points="5663.2,4702 5657.64,4731.82 5641.34,4759.6 5615.4,4783.46 5581.6,4801.77 5542.24,4813.27 5500,4817.2 5457.76,4813.27 5418.4,4801.77 5384.6,4783.46 5358.66,4759.6 5342.36,4731.82 5336.8,4702 5342.36,4672.18 5358.66,4644.4 5384.6,4620.54 5418.4,4602.23 5457.76,4590.73 5500,4586.8 5542.24,4590.73 5581.6,4602.23 5615.4,4620.54 5641.34,4644.4 5657.64,4672.18" fill="#ffffff" stroke="#a8a29a" stroke-width="6.34"/>
+<polygon data-span="2977:3021" data-arch-id="basin_8" data-arch-kind="furniture" data-arch-label="basin" points="5470,4463.5 5530,4463.5 5530,4508.5 5470,4508.5" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<line data-span="2977:3021" data-arch-id="basin_8" data-arch-kind="furniture" data-arch-label="basin" x1="5500" y1="4508.5" x2="5500" y2="4644.4" stroke="#a8a29a" stroke-width="6.34"/>
+<polygon data-span="3055:3114" data-arch-id="wc_9" data-arch-kind="furniture" data-arch-label="wc" data-arch-primary="" points="5700,5900 5300,5900 5300,5746 5700,5746" fill="#f4f2ee" stroke="#a8a29a" stroke-width="11.52"/>
+<line data-span="3055:3114" data-arch-id="wc_9" data-arch-kind="furniture" data-arch-label="wc" x1="5676" y1="5853.8" x2="5324" y2="5853.8" stroke="#a8a29a" stroke-width="6.34"/>
+<polygon data-span="3055:3114" data-arch-id="wc_9" data-arch-kind="furniture" data-arch-label="wc" points="5340,5462.08 5345.45,5397.08 5361.44,5336.5 5386.86,5284.48 5420,5244.57 5458.59,5219.48 5500,5210.92 5541.41,5219.48 5580,5244.57 5613.14,5284.48 5638.56,5336.5 5654.55,5397.08 5660,5462.08 5654.55,5527.08 5638.56,5587.66 5613.14,5639.68 5580,5679.59 5541.41,5704.68 5500,5713.24 5458.59,5704.68 5420,5679.59 5386.86,5639.68 5361.44,5587.66 5345.45,5527.08" fill="#ffffff" stroke="#a8a29a" stroke-width="11.52"/>
+<polygon data-span="3055:3114" data-arch-id="wc_9" data-arch-kind="furniture" data-arch-label="wc" points="5375.2,5462.08 5379.45,5411.38 5391.92,5364.13 5411.75,5323.55 5437.6,5292.42 5467.7,5272.85 5500,5266.18 5532.3,5272.85 5562.4,5292.42 5588.25,5323.55 5608.08,5364.13 5620.55,5411.38 5624.8,5462.08 5620.55,5512.78 5608.08,5560.03 5588.25,5600.61 5562.4,5631.74 5532.3,5651.31 5500,5657.98 5467.7,5651.31 5437.6,5631.74 5411.75,5600.61 5391.92,5560.03 5379.45,5512.78" fill="#ffffff" stroke="#a8a29a" stroke-width="6.34"/>
+<circle data-span="3055:3114" data-arch-id="wc_9" data-arch-kind="furniture" data-arch-label="wc" cx="5500" cy="5823" r="20" fill="#a8a29a" stroke="#a8a29a" stroke-width="11.52"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -100,-100 L 7100,-100 L 7100,900 L 6900,900 L 6900,100 L 4050,100 L 4050,2950 L 6000,2950 L 6000,3050 L 4050,3050 L 4050,3250 L 3950,3250 L 3950,100 L 100,100 L 100,1250 L -100,1250 Z M -100,2750 L 100,2750 L 100,5900 L 2500,5900 L 2500,6100 L -100,6100 Z M 3500,5900 L 3950,5900 L 3950,4150 L 4050,4150 L 4050,4350 L 4200,4350 L 4200,4450 L 4050,4450 L 4050,5900 L 6900,5900 L 6900,5550 L 7100,5550 L 7100,6100 L 3500,6100 Z M 5000,4350 L 6900,4350 L 6900,3050 L 6800,3050 L 6800,2950 L 6900,2950 L 6900,2100 L 7100,2100 L 7100,4850 L 6900,4850 L 6900,4450 L 5000,4450 Z" fill="url(#poche)" fill-rule="nonzero"/>
 <path d="M -100,-100 L 7100,-100 L 7100,900 L 6900,900 L 6900,100 L 4050,100 L 4050,2950 L 6000,2950 L 6000,3050 L 4050,3050 L 4050,3250 L 3950,3250 L 3950,100 L 100,100 L 100,1250 L -100,1250 Z M -100,2750 L 100,2750 L 100,5900 L 2500,5900 L 2500,6100 L -100,6100 Z M 3500,5900 L 3950,5900 L 3950,4150 L 4050,4150 L 4050,4350 L 4200,4350 L 4200,4450 L 4050,4450 L 4050,5900 L 6900,5900 L 6900,5550 L 7100,5550 L 7100,6100 L 3500,6100 Z M 5000,4350 L 6900,4350 L 6900,3050 L 6800,3050 L 6800,2950 L 6900,2950 L 6900,2100 L 7100,2100 L 7100,4850 L 6900,4850 L 6900,4450 L 5000,4450 Z" fill="none" stroke="#1b1b1b" stroke-width="20.16" stroke-linejoin="miter" stroke-miterlimit="4"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
-<polygon data-span="1428:1509" data-arch-id="d_main" data-arch-kind="door" points="3500,5900 2500,5900 2500,6100 3500,6100" fill="none"/>
+<polygon data-span="1428:1509" data-arch-id="d_main" data-arch-kind="door" data-arch-primary="" points="3500,5900 2500,5900 2500,6100 3500,6100" fill="none"/>
 <line data-span="1428:1509" data-arch-id="d_main" data-arch-kind="door" x1="3500" y1="6000" x2="3500" y2="5000" stroke="#555555" stroke-width="14.98"/>
 <path data-span="1428:1509" data-arch-id="d_main" data-arch-kind="door" d="M 3500,5000 A 1000 1000 0 0 0 2500,6000" fill="none" stroke="#555555" stroke-width="11.52" stroke-dasharray="46.08 34.56"/>
-<polygon data-span="1575:1657" data-arch-id="d_bed" data-arch-kind="door" points="6000,3050 6800,3050 6800,2950 6000,2950" fill="none"/>
+<polygon data-span="1575:1657" data-arch-id="d_bed" data-arch-kind="door" data-arch-primary="" points="6000,3050 6800,3050 6800,2950 6000,2950" fill="none"/>
 <line data-span="1575:1657" data-arch-id="d_bed" data-arch-kind="door" x1="6800" y1="3000" x2="6800" y2="2200" stroke="#555555" stroke-width="14.98"/>
 <path data-span="1575:1657" data-arch-id="d_bed" data-arch-kind="door" d="M 6800,2200 A 800 800 0 0 0 6000,3000" fill="none" stroke="#555555" stroke-width="11.52" stroke-dasharray="46.08 34.56"/>
-<polygon data-span="1660:1742" data-arch-id="d_bath" data-arch-kind="door" points="4200,4450 5000,4450 5000,4350 4200,4350" fill="none"/>
+<polygon data-span="1660:1742" data-arch-id="d_bath" data-arch-kind="door" data-arch-primary="" points="4200,4450 5000,4450 5000,4350 4200,4350" fill="none"/>
 <line data-span="1660:1742" data-arch-id="d_bath" data-arch-kind="door" x1="4200" y1="4400" x2="4200" y2="3600" stroke="#555555" stroke-width="14.98"/>
 <path data-span="1660:1742" data-arch-id="d_bath" data-arch-kind="door" d="M 4200,3600 A 800 800 0 0 1 5000,4400" fill="none" stroke="#555555" stroke-width="11.52" stroke-dasharray="46.08 34.56"/>
-<polygon data-span="1512:1572" data-arch-id="o_living" data-arch-kind="opening" points="3950,3250 3950,4150 4050,4150 4050,3250" fill="none"/>
+<polygon data-span="1512:1572" data-arch-id="o_living" data-arch-kind="opening" data-arch-primary="" points="3950,3250 3950,4150 4050,4150 4050,3250" fill="none"/>
 </g>
 <g id="A-GLAZ" inkscape:groupmode="layer" inkscape:label="A-GLAZ">
-<polygon data-span="1746:1792" data-arch-id="window_1" data-arch-kind="window" points="120.16,2750 120.16,1250 -120.16,1250 -120.16,2750" fill="#ffffff"/>
+<polygon data-span="1746:1792" data-arch-id="window_1" data-arch-kind="window" data-arch-primary="" points="120.16,2750 120.16,1250 -120.16,1250 -120.16,2750" fill="#ffffff"/>
 <line data-span="1746:1792" data-arch-id="window_1" data-arch-kind="window" x1="100" y1="2750" x2="100" y2="1250" stroke="#1b1b1b" stroke-width="11.52"/>
 <line data-span="1746:1792" data-arch-id="window_1" data-arch-kind="window" x1="-100" y1="2750" x2="-100" y2="1250" stroke="#1b1b1b" stroke-width="11.52"/>
 <line data-span="1746:1792" data-arch-id="window_1" data-arch-kind="window" x1="0" y1="2750" x2="0" y2="1250" stroke="#3a6ea5" stroke-width="11.52"/>
-<polygon data-span="1795:1841" data-arch-id="window_2" data-arch-kind="window" points="6879.84,900 6879.84,2100 7120.16,2100 7120.16,900" fill="#ffffff"/>
+<polygon data-span="1795:1841" data-arch-id="window_2" data-arch-kind="window" data-arch-primary="" points="6879.84,900 6879.84,2100 7120.16,2100 7120.16,900" fill="#ffffff"/>
 <line data-span="1795:1841" data-arch-id="window_2" data-arch-kind="window" x1="6900" y1="900" x2="6900" y2="2100" stroke="#1b1b1b" stroke-width="11.52"/>
 <line data-span="1795:1841" data-arch-id="window_2" data-arch-kind="window" x1="7100" y1="900" x2="7100" y2="2100" stroke="#1b1b1b" stroke-width="11.52"/>
 <line data-span="1795:1841" data-arch-id="window_2" data-arch-kind="window" x1="7000" y1="900" x2="7000" y2="2100" stroke="#3a6ea5" stroke-width="11.52"/>
-<polygon data-span="1844:1890" data-arch-id="window_3" data-arch-kind="window" points="6879.84,4850 6879.84,5550 7120.16,5550 7120.16,4850" fill="#ffffff"/>
+<polygon data-span="1844:1890" data-arch-id="window_3" data-arch-kind="window" data-arch-primary="" points="6879.84,4850 6879.84,5550 7120.16,5550 7120.16,4850" fill="#ffffff"/>
 <line data-span="1844:1890" data-arch-id="window_3" data-arch-kind="window" x1="6900" y1="4850" x2="6900" y2="5550" stroke="#1b1b1b" stroke-width="11.52"/>
 <line data-span="1844:1890" data-arch-id="window_3" data-arch-kind="window" x1="7100" y1="4850" x2="7100" y2="5550" stroke="#1b1b1b" stroke-width="11.52"/>
 <line data-span="1844:1890" data-arch-id="window_3" data-arch-kind="window" x1="7000" y1="4850" x2="7000" y2="5550" stroke="#3a6ea5" stroke-width="11.52"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-<text data-span="863:954" data-arch-id="r_living" data-arch-kind="room" x="2000" y="2956.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living / Kitchen</text>
-<text data-span="863:954" data-arch-id="r_living" data-arch-kind="room" x="2000" y="3194.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">24.0 m²</text>
-<text data-span="957:1042" data-arch-id="r_bed" data-arch-kind="room" x="6400" y="556.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
-<text data-span="957:1042" data-arch-id="r_bed" data-arch-kind="room" x="6400" y="794.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">9.0 m²</text>
-<text data-span="1045:1126" data-arch-id="r_hall" data-arch-kind="room" x="5500" y="3656.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Hall</text>
-<text data-span="1045:1126" data-arch-id="r_hall" data-arch-kind="room" x="5500" y="3894.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">4.2 m²</text>
-<text data-span="1129:1210" data-arch-id="r_bath" data-arch-kind="room" x="4600" y="5156.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bath</text>
-<text data-span="1129:1210" data-arch-id="r_bath" data-arch-kind="room" x="4600" y="5394.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">4.8 m²</text>
+<text data-span="863:954" data-arch-id="r_living" data-arch-kind="room" data-arch-label="Living / Kitchen" x="2000" y="2956.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living / Kitchen</text>
+<text data-span="863:954" data-arch-id="r_living" data-arch-kind="room" data-arch-label="Living / Kitchen" x="2000" y="3194.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">24.0 m²</text>
+<text data-span="957:1042" data-arch-id="r_bed" data-arch-kind="room" data-arch-label="Bedroom" x="6400" y="556.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
+<text data-span="957:1042" data-arch-id="r_bed" data-arch-kind="room" data-arch-label="Bedroom" x="6400" y="794.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">9.0 m²</text>
+<text data-span="1045:1126" data-arch-id="r_hall" data-arch-kind="room" data-arch-label="Hall" x="5500" y="3656.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Hall</text>
+<text data-span="1045:1126" data-arch-id="r_hall" data-arch-kind="room" data-arch-label="Hall" x="5500" y="3894.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">4.2 m²</text>
+<text data-span="1129:1210" data-arch-id="r_bath" data-arch-kind="room" data-arch-label="Bath" x="4600" y="5156.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bath</text>
+<text data-span="1129:1210" data-arch-id="r_bath" data-arch-kind="room" data-arch-label="Bath" x="4600" y="5394.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">4.8 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
-<line data-span="3498:3549" data-arch-id="dim_1" data-arch-kind="dim" x1="4000" y1="-100" x2="4000" y2="-350" stroke="#0E5484" stroke-width="8.06"/>
+<line data-span="3498:3549" data-arch-id="dim_1" data-arch-kind="dim" data-arch-primary="" x1="4000" y1="-100" x2="4000" y2="-350" stroke="#0E5484" stroke-width="8.06"/>
 <line data-span="3498:3549" data-arch-id="dim_1" data-arch-kind="dim" x1="0" y1="-100" x2="0" y2="-350" stroke="#0E5484" stroke-width="8.06"/>
 <line data-span="3498:3549" data-arch-id="dim_1" data-arch-kind="dim" x1="4000" y1="-350" x2="0" y2="-350" stroke="#0E5484" stroke-width="11.52"/>
 <line data-span="3498:3549" data-arch-id="dim_1" data-arch-kind="dim" x1="3938.91" y1="-411.09" x2="4061.09" y2="-288.91" stroke="#0E5484" stroke-width="11.52"/>
 <line data-span="3498:3549" data-arch-id="dim_1" data-arch-kind="dim" x1="-61.09" y1="-411.09" x2="61.09" y2="-288.91" stroke="#0E5484" stroke-width="11.52"/>
 <text data-span="3498:3549" data-arch-id="dim_1" data-arch-kind="dim" x="2000" y="-450.8" font-size="144" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 2000 -450.8)">4000</text>
-<line data-span="3552:3603" data-arch-id="dim_2" data-arch-kind="dim" x1="7000" y1="-100" x2="7000" y2="-350" stroke="#0E5484" stroke-width="8.06"/>
+<line data-span="3552:3603" data-arch-id="dim_2" data-arch-kind="dim" data-arch-primary="" x1="7000" y1="-100" x2="7000" y2="-350" stroke="#0E5484" stroke-width="8.06"/>
 <line data-span="3552:3603" data-arch-id="dim_2" data-arch-kind="dim" x1="4000" y1="-100" x2="4000" y2="-350" stroke="#0E5484" stroke-width="8.06"/>
 <line data-span="3552:3603" data-arch-id="dim_2" data-arch-kind="dim" x1="7000" y1="-350" x2="4000" y2="-350" stroke="#0E5484" stroke-width="11.52"/>
 <line data-span="3552:3603" data-arch-id="dim_2" data-arch-kind="dim" x1="6938.91" y1="-411.09" x2="7061.09" y2="-288.91" stroke="#0E5484" stroke-width="11.52"/>
 <line data-span="3552:3603" data-arch-id="dim_2" data-arch-kind="dim" x1="3938.91" y1="-411.09" x2="4061.09" y2="-288.91" stroke="#0E5484" stroke-width="11.52"/>
 <text data-span="3552:3603" data-arch-id="dim_2" data-arch-kind="dim" x="5500" y="-450.8" font-size="144" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 5500 -450.8)">3000</text>
-<line data-span="3606:3657" data-arch-id="dim_3" data-arch-kind="dim" x1="0" y1="6100" x2="0" y2="6600" stroke="#0E5484" stroke-width="8.06"/>
+<line data-span="3606:3657" data-arch-id="dim_3" data-arch-kind="dim" data-arch-primary="" x1="0" y1="6100" x2="0" y2="6600" stroke="#0E5484" stroke-width="8.06"/>
 <line data-span="3606:3657" data-arch-id="dim_3" data-arch-kind="dim" x1="7000" y1="6100" x2="7000" y2="6600" stroke="#0E5484" stroke-width="8.06"/>
 <line data-span="3606:3657" data-arch-id="dim_3" data-arch-kind="dim" x1="0" y1="6600" x2="7000" y2="6600" stroke="#0E5484" stroke-width="11.52"/>
 <line data-span="3606:3657" data-arch-id="dim_3" data-arch-kind="dim" x1="61.09" y1="6661.09" x2="-61.09" y2="6538.91" stroke="#0E5484" stroke-width="11.52"/>
 <line data-span="3606:3657" data-arch-id="dim_3" data-arch-kind="dim" x1="7061.09" y1="6661.09" x2="6938.91" y2="6538.91" stroke="#0E5484" stroke-width="11.52"/>
 <text data-span="3606:3657" data-arch-id="dim_3" data-arch-kind="dim" x="3500" y="6700.8" font-size="144" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 3500 6700.8)">7000</text>
-<line data-span="3660:3711" data-arch-id="dim_4" data-arch-kind="dim" x1="7100" y1="6000" x2="7600" y2="6000" stroke="#0E5484" stroke-width="8.06"/>
+<line data-span="3660:3711" data-arch-id="dim_4" data-arch-kind="dim" data-arch-primary="" x1="7100" y1="6000" x2="7600" y2="6000" stroke="#0E5484" stroke-width="8.06"/>
 <line data-span="3660:3711" data-arch-id="dim_4" data-arch-kind="dim" x1="7100" y1="0" x2="7600" y2="0" stroke="#0E5484" stroke-width="8.06"/>
 <line data-span="3660:3711" data-arch-id="dim_4" data-arch-kind="dim" x1="7600" y1="6000" x2="7600" y2="0" stroke="#0E5484" stroke-width="11.52"/>
 <line data-span="3660:3711" data-arch-id="dim_4" data-arch-kind="dim" x1="7661.09" y1="5938.91" x2="7538.91" y2="6061.09" stroke="#0E5484" stroke-width="11.52"/>

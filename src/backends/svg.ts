@@ -28,6 +28,38 @@ const pt = (p: Point): string => `${fmt(p.x)},${fmt(p.y)}`;
 export { xmlText as xml } from "../text-safe.js";
 import { xmlText as xml } from "../text-safe.js";
 
+/**
+ * The `<title>`/`<desc>` id prefix for this compile: the caller's `idPrefix` reduced to
+ * id-safe characters, else `"arch"`. Whitespace is the reason this sanitises rather than
+ * rejects — a prefix containing a space would split the `aria-labelledby` token list and
+ * silently name the drawing nothing, and a rendering option must never fail a compile.
+ */
+function accIdPrefix(accessible: CompileOptions["accessible"]): string {
+  if (typeof accessible !== "object" || accessible === null) return "arch";
+  const cleaned = (accessible.idPrefix ?? "").replace(/[^A-Za-z0-9_-]/g, "");
+  return cleaned === "" ? "arch" : cleaned;
+}
+
+/**
+ * The accessible NAME of one plan element: the KIND first, then what the plan calls it,
+ * then — for a fixture — the room it stands in. "Room Kitchen" · "Furniture bed, Kitchen"
+ * · "Door".
+ *
+ * The kind leads because this string is read by someone who cannot see the drawing, where
+ * a bare "Bed" among thirty controls says nothing about what sort of thing it is; and the
+ * room trails a fixture because a family plan has four beds and the room is the half that
+ * tells them apart. An element the language names nothing (every door, window and cased
+ * opening) is announced by its kind alone — two doors on one plan legitimately share the
+ * name "Door", which is what the drawing itself says about them.
+ */
+function a11yName(node: SceneNode): string {
+  const kind = node.elementKind ?? "";
+  const word = kind === "" ? "" : kind.charAt(0).toUpperCase() + kind.slice(1);
+  const label = node.elementLabel;
+  const head = label === undefined ? word : word === "" ? label : `${word} ${label}`;
+  return node.elementRoomLabel !== undefined ? `${head}, ${node.elementRoomLabel}` : head;
+}
+
 /** Named line type → dash pattern in mm (undefined = solid). */
 function dashPattern(t: LineType, sizes: RenderSizes): number[] | undefined {
   const u = sizes.thin;
@@ -180,13 +212,19 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
   // <title>/<desc> emitted just below to fixed, deterministic ids. Off by default →
   // no attributes, output byte-identical. (Inlining several accessible SVGs in one
   // HTML page would duplicate these ids; an embedder that does so should rewrite them.)
-  const a11yAttrs = opts.accessible ? ` role="img" aria-labelledby="arch-title arch-desc"` : "";
+  //
+  // The ids default to the historical `arch-title`/`arch-desc`; `accessible: { idPrefix }`
+  // makes them per-drawing so a page showing several plans does not point every
+  // `aria-labelledby` at the first one's title.
+  const titleId = `${accIdPrefix(opts.accessible)}-title`;
+  const descId = `${accIdPrefix(opts.accessible)}-desc`;
+  const a11yAttrs = opts.accessible ? ` role="img" aria-labelledby="${titleId} ${descId}"` : "";
   out.push(
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" ${svgAttrs} viewBox="${fmt(vbX)} ${fmt(vbY)} ${fmt(vbW)} ${fmt(vbH)}" font-family="${THEME.font}"${a11yAttrs}>`,
   );
   if (opts.accessible) {
-    out.push(`<title id="arch-title">${xml(scene.name)}</title>`);
-    out.push(`<desc id="arch-desc">${xml(scene.caption ?? "")}</desc>`);
+    out.push(`<title id="${titleId}">${xml(scene.name)}</title>`);
+    out.push(`<desc id="${descId}">${xml(scene.caption ?? "")}</desc>`);
   }
 
   // Defs: a hatch <pattern> for each distinct hatch spec in use (material + scale
@@ -228,8 +266,35 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
         if (node.span) attrs.push(`data-span="${node.span.start}:${node.span.end}"`);
         if (node.elementId !== undefined) {
           attrs.push(`data-arch-id="${xml(node.elementId)}" data-arch-kind="${xml(node.elementKind ?? "")}"`);
+          // The element's human name, and the ONE shape that stands for it. Both are
+          // plain data an embedder can key off without a second model of the drawing
+          // (which is how a consumer's "the polygon, else the first non-text node"
+          // guess drifts from what the compiler actually drew).
+          if (node.elementLabel !== undefined) attrs.push(`data-arch-label="${xml(node.elementLabel)}"`);
+          if (node.elementPrimary) attrs.push(`data-arch-primary=""`);
+          // …and, with `accessible` as well, the attributes that make that shape a
+          // CONTROL. `tabindex="-1"` is deliberate: the drawing is a roving tabstop
+          // group, so the embedder promotes exactly one node to `0` — emitting `0` on
+          // every element here would put a hundred tab stops in one page.
+          if (opts.accessible) {
+            if (node.elementPrimary) {
+              attrs.push(`role="button" tabindex="-1" aria-label="${xml(a11yName(node))}"`);
+            } else if (node.prim.t === "text") {
+              // A drawn label repeats a name its primary node already carries; hidden,
+              // it is announced once instead of twice. Never the primary node itself.
+              attrs.push(`aria-hidden="true"`);
+            }
+          }
         }
-        if (attrs.length > 0) el = el.replace(/^(<[a-z]+)/, `$1 ${attrs.join(" ")}`);
+        // A FUNCTION replacement, never a replacement STRING. `String.replace` reads `$&`,
+        // `$'`, `` $` `` and `$1` inside a replacement string as substitution patterns, and
+        // these attribute values carry author text: a room labelled `$&` spliced the literal
+        // `<polygon` back into its own `data-arch-label`, and `$'` would have spliced in the
+        // rest of the element — raw quotes and all — which is an attribute breakout. The
+        // hazard was unreachable while the only stamped values were digits and identifiers;
+        // `data-arch-label` is the first one that can be any string the author wrote.
+        // `test/escape-fuzz.test.ts` found it and now pins it.
+        if (attrs.length > 0) el = el.replace(/^<[a-z]+/, (tag) => `${tag} ${attrs.join(" ")}`);
       }
       bucket.push(el);
     }

@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — a compiled plan you can reach with a keyboard (`annotate` + `accessible`)
+
+An embedder that wants a keyboard- and screen-reader-operable plan has had to decide, per
+element and from the outside, which of its several drawn primitives is "the thing" and what to
+call it. Every consumer that has tried has landed on the same guess — the polygon, else the
+first non-`text` node, named from whatever `<text>` happens to sit nearby — which is a second
+model of a drawing the compiler already knows everything about, and it drifts. The compiler now
+answers both questions itself.
+
+- **`annotate: true` stamps two more element anchors.** **`data-arch-label`** is what the plan
+  *calls* the element: the authored `label` — the very string the drawing's own `<text>` prints
+  — falling back to the catalogue `category` / `surface` word for an unlabelled fixture or
+  ground surface, emitted **verbatim** (snake_case included; casing is a consumer's
+  presentation choice). It is **absent** where the language names nothing, which is every
+  `door`, `window` and `opening`. **`data-arch-primary`** (an empty attribute) marks **exactly
+  one node per `data-arch-id`** — the element's first non-`text` primitive, so a room's floor
+  polygon and a fixture's symbol outline, never a drawn name.
+- **`accessible: true` alongside `annotate` makes that primary a control**: `role="button"`,
+  `tabindex="-1"` and an `aria-label` that leads with the KIND — `Room Kitchen`,
+  `Furniture bed, Kitchen`, `Door` — because the string is read by someone who cannot see the
+  drawing, and a fixture trails the room it stands in because a family plan has four beds. Every
+  other `<text>` carrying a `data-arch-id` is `aria-hidden`, so a name is announced once rather
+  than three times. `tabindex` is always `-1`: a plan is ONE roving tab stop and which element
+  holds it is the embedder's to decide. The `<svg>` root keeps `role="img"` — a drawing is one
+  image until a consumer makes it something else.
+- **`accessible` now takes an object.** `{ idPrefix: "plan-7" }` names the `<title>`/`<desc>`
+  ids `plan-7-title`/`plan-7-desc` instead of the fixed `arch-title`/`arch-desc`, which is what
+  several plans inlined in one HTML page need — otherwise every `aria-labelledby` on the page
+  resolves to the FIRST drawing's title. `true` is exactly `{ idPrefix: "arch" }`, so no
+  existing caller moves a byte. The prefix is reduced to `[A-Za-z0-9_-]` and an empty result
+  falls back to `arch`: a rendering option must never be able to fail a compile. Also
+  `arch compile --accessible --acc-id-prefix plan-7`.
+- **Purely additive, as the two options have always been.** Default output is byte-identical;
+  `accessible` only adds attributes to elements `annotate` already stamped, so the
+  `data-arch-id` set and its document order are unmoved across all four combinations —
+  `test/plan-a11y.test.ts` pins that, one-primary-per-id and never-a-`<text>`-primary over
+  every shipped example.
+
+### Fixed — an attribute stamped under `annotate` could splice markup back into itself
+
+The annotate attributes are spliced into an already-serialized element with `String.replace`,
+whose replacement **string** reads `$&`, `$'`, `` $` `` and `$1` as substitution patterns. A room
+labelled `$&` put the literal `<polygon` back inside its own `data-arch-label`, and `$'` would
+have spliced in the rest of the element — raw quotes included, which is an attribute breakout.
+The hazard was unreachable for the whole life of `annotate`, whose stamped values were byte
+offsets and identifiers; `data-arch-label` is the first that can be any string an author wrote.
+Found by `test/escape-fuzz.test.ts`, which now also exercises `annotate` + `accessible`
+together — the only combination that emits the composed `aria-label` — and pinned
+deterministically in `test/plan-a11y.test.ts`. The splice is now a function replacement, which
+substitutes nothing.
+
 ### Changed — both public sites moved from Vercel to Cloudflare Workers
 
 Infrastructure only; this ships no version of its own. **No public URL changed**, and nothing

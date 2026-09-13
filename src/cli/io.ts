@@ -74,6 +74,8 @@ export interface Args {
   errorSvg?: boolean;
   /** `--accessible`: emit <title>/<desc>/role/aria accessibility metadata into the SVG. */
   accessible?: boolean;
+  /** `--acc-id-prefix <p>`: with `--accessible`, the `<title>`/`<desc>` id prefix. */
+  accIdPrefix?: string;
   /** `--ascii`: (preview) print the plan as ASCII text instead of a PNG. */
   ascii?: boolean;
   /** `--cols <n>`: target grid width for the `txt` / `--ascii` text renderer. */
@@ -180,6 +182,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--force": { key: "force", kind: "boolean" },
   "--error-svg": { key: "errorSvg", kind: "boolean" },
   "--accessible": { key: "accessible", kind: "boolean" },
+  "--acc-id-prefix": { key: "accIdPrefix", kind: "string" },
   "--strict": { key: "strict", kind: "boolean" },
   "--fail-on-warning": { key: "strict", kind: "boolean" },
 };

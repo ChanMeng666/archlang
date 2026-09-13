@@ -141,7 +141,10 @@ export async function renderArtifact(
     ...(args.errorSvg ? { onError: "svg" as const } : {}),
     // `--accessible`: stamp <title>/<desc>/role/aria into the SVG (SVG-only; a raster
     // format simply drops the metadata). Default output is byte-identical.
-    ...(args.accessible ? { accessible: true } : {}),
+    // `--acc-id-prefix` only refines the metadata `--accessible` emits; on its own there
+    // is no <title> for it to name, so it is deliberately inert rather than implying the
+    // other flag.
+    ...(args.accessible ? { accessible: args.accIdPrefix !== undefined ? { idPrefix: args.accIdPrefix } : true } : {}),
     // The text renderer (`-f txt` / `preview --ascii`) needs the opt-in annotate
     // metadata (elementId/elementKind) to place furniture markers — the only way to
     // recover a fixture's identity from the geometry-only Scene. Other formats never

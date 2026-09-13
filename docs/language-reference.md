@@ -2389,7 +2389,15 @@ error[E_ROOM_SIZE]: room "bed" must have a positive size
   the description is a derived one-sentence caption (`describe().caption` — the same sentence,
   or [`accDescr`](#accessible-metadata-acctitle-accdescr) when declared). Also via
   `arch compile --accessible`. **Default output is byte-identical** without it (see
-  [ADR 0009](adr/0009-ai-first-context-and-distribution.md)).
+  [ADR 0009](adr/0009-ai-first-context-and-distribution.md)). Pass an object,
+  `{ idPrefix: "plan-7" }`, to name the `<title>`/`<desc>` ids `plan-7-title`/`plan-7-desc`
+  instead of the fixed `arch-title`/`arch-desc` — which is what several plans inlined in one
+  HTML page need, or every `aria-labelledby` on the page resolves to the FIRST drawing's
+  title. `true` is exactly `{ idPrefix: "arch" }`. The prefix is reduced to
+  `[A-Za-z0-9_-]` (an id with a space would split the `aria-labelledby` token list) and an
+  empty result falls back to `arch`; it never fails a compile. Also via
+  `arch compile --accessible --acc-id-prefix plan-7`. **Together with `annotate` it also
+  makes each element a control** — see [Keyboard and screen-reader operability](#keyboard-and-screen-reader-operability-annotate--accessible).
 - `onError` — set to `"svg"` to render a **broken** plan as a deterministic, self-describing
   error-card SVG (severity, code, `line:col`, message, catalogued fix) instead of returning
   an empty `svg`. Errors, diagnostics, and exit codes are unchanged; **without this opt-in a
@@ -2403,10 +2411,11 @@ snapshot-tested.
 
 ### Source anchors (annotate mode)
 
-Alongside `data-span`, `annotate` also stamps two element-identity attributes on every
-element primitive — **`data-arch-id`** and **`data-arch-kind`** — so a hit-testing or
-selection UI can map a clicked SVG shape back to the element (and thence its source) it
-came from:
+Alongside `data-span`, `annotate` also stamps element-identity attributes on every
+element primitive — **`data-arch-id`**, **`data-arch-kind`** and **`data-arch-label`**, plus
+**`data-arch-primary`** on one node per element — so a hit-testing or selection UI can map a
+clicked SVG shape back to the element (and thence its source) it came from, and can name and
+focus it without a second model of the drawing:
 
 - **`data-arch-id`** is the element's **resolved id** — the explicit `id=` if you wrote one,
   otherwise the deterministic auto id (e.g. `room_1`).
@@ -2416,12 +2425,64 @@ came from:
   is exactly the non-wall members of the compiler's `ElementKind` union and grows whenever a
   new element kind is added, so a consumer should switch on the kinds it knows and tolerate
   unrecognized ones rather than assume a fixed list.
+- **`data-arch-label`** is what the plan *calls* this element: the authored `label`, which is
+  the very string the drawing's own `<text>` prints. An unlabelled fixture or ground surface
+  falls back to its catalogue `category` / `surface` word — a catalogued symbol draws no text
+  at all, so that word is the only name there is, and it is emitted **verbatim**, snake_case
+  included; casing and word-splitting are a consumer's presentation choice. **The attribute is
+  absent when the plan names the element nothing**, which is every `door`, `window` and
+  `opening`: the language gives them no label and the compiler will not invent one.
+- **`data-arch-primary`** (an empty attribute, so match it as `[data-arch-primary]`) marks
+  **exactly one node per `data-arch-id`** — the shape that stands for the element. It is the
+  element's first non-`text` primitive: a room's floor polygon, a fixture's symbol outline. A
+  drawn name is never the primary, because a label *describes* a control rather than being
+  one. Use it instead of guessing "the polygon, else the first non-`text` node" from outside:
+  that guess is a second model of a drawing the compiler already knows, and it drifts.
 
 **Walls carry no anchors.** A single wall in the SVG is unioned geometry stitched across
 many source statements, so there is no one element to point back to; anchors are stamped on
 the discrete element primitives only. Like `data-span`, these attributes appear **only** under
 `annotate` — default output stays byte-identical (see
 [ADR 0007](adr/0007-opt-in-source-annotation.md)).
+
+### Keyboard and screen-reader operability (`annotate` + `accessible`)
+
+With **both** options on, the compiler also stamps the attributes that turn each element's
+primary node into a control, so an embedder does not have to derive a name or choose a
+focusable node for itself:
+
+| Attribute | Where | Value |
+|---|---|---|
+| `role="button"` | each `[data-arch-primary]` | — |
+| `tabindex="-1"` | each `[data-arch-primary]` | always `-1` |
+| `aria-label` | each `[data-arch-primary]` | `<Kind> <label>`, and `, <room>` for a fixture |
+| `aria-hidden="true"` | every non-primary `<text>` with a `data-arch-id` | — |
+
+**The name leads with the KIND**: `Room Kitchen`, `Furniture bed, Kitchen`, `Door`. It is read
+by someone who cannot see the drawing, where a bare "Bed" among thirty controls says nothing
+about what sort of thing it is — and the room trails a fixture because a family plan has four
+beds and the room is the half that tells them apart (from the element's declared
+`in <room>`, when that room is itself labelled). An element the language names nothing is
+announced by its kind alone, so two doors on one plan legitimately share the name `Door`,
+which is exactly what the drawing says about them.
+
+**`tabindex` is always `-1`, never `0`.** A plan is one roving tab stop: the embedder promotes
+whichever element currently holds it to `0`. Emitting `0` here would put a hundred tab stops
+in a single page.
+
+**The drawn labels are hidden** because the primary node's `aria-label` already announces the
+name; left visible they would be read a second and third time (a room draws its name *and* its
+area). The primary node itself is never `aria-hidden` — that on a focusable element is a
+keyboard trap.
+
+**The `<svg>` root keeps `role="img"`.** A drawing is one image until a consumer makes it
+something else; a consumer that wires up selection should override the root to `role="group"`
+so the controls beneath it are not hidden, and only where they really are controls — a
+read-only embed keeps `img`.
+
+**`accessible` never moves the `data-arch-id` set.** It only adds attributes to elements
+`annotate` already stamped, so a consumer's id-stability regression test holds across the
+two combinations.
 
 ## Worked example
 

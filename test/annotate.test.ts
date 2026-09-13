@@ -36,7 +36,9 @@ describe("annotate (opt-in data-span)", () => {
     expect(annotated).toContain('data-span="');
     const stripped = annotated
       .replace(/ data-span="\d+:\d+"/g, "")
-      .replace(/ data-arch-id="[^"]*" data-arch-kind="[^"]*"/g, "");
+      .replace(/ data-arch-id="[^"]*" data-arch-kind="[^"]*"/g, "")
+      .replace(/ data-arch-label="[^"]*"/g, "")
+      .replace(/ data-arch-primary=""/g, "");
     expect(stripped).toBe(plain);
   });
 

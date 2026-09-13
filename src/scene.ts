@@ -296,6 +296,28 @@ export interface SceneNode {
   elementId?: string;
   /** Element kind ("room" | "door" | ...). Annotate mode only. */
   elementKind?: string;
+  /**
+   * The element's human NAME — the authored `label` (the very string the drawing's
+   * own `<text>` prints), falling back to the furniture `category` / outdoor
+   * `surface`, which is the only name the compiler knows for an unlabelled one.
+   * Absent when the plan names the element nothing at all (every door, window and
+   * cased opening). Annotate mode only; metadata, never read by geometry.
+   */
+  elementLabel?: string;
+  /**
+   * The label of the room this element sits IN — furniture only, from the declared
+   * `in <room>` clause, and only when that room is itself labelled. It exists so a
+   * consumer can say "Bed, Kitchen" without a second index of the plan. Annotate
+   * mode only.
+   */
+  elementRoomLabel?: string;
+  /**
+   * Set on **exactly one node per `elementId`**: the shape a consumer should make
+   * clickable/focusable. It is the element's first non-`text` primitive — the floor
+   * polygon of a room, the symbol outline of a fixture — so a drawn name is never
+   * the thing that carries a control's role. Annotate mode only.
+   */
+  elementPrimary?: true;
 }
 
 /** Effective CAD layer for a node: explicit `layerName`, else the pass default. */

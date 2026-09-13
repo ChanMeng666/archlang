@@ -62,6 +62,7 @@ render a plan to SVG/DXF/TXT/PDF/PNG
 | `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
 | `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2); it is an output like any other, so with --json and no -o nothing is written and the card is not in the payload — pass -o &lt;file&gt; to get the image |
 | `--accessible` | emit &lt;title&gt;/&lt;desc&gt;/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged |
+| `--acc-id-prefix <prefix>` | with --accessible, prefix the &lt;title&gt;/&lt;desc&gt; element ids (default arch, giving arch-title/arch-desc) so several plans inlined in one HTML page do not share them; ignored without --accessible |
 | `--from-json` | read the input as Plan JSON (RPLAN shape) instead of .arch, convert it, then compile |
 | `--install` | auto-install the optional dep for the chosen format if missing (PNG/PDF) |
 | `--json` | structured result on stdout, messages on stderr |
@@ -114,6 +115,7 @@ render many .arch files in one call, concurrently
 | `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
 | `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) |
 | `--accessible` | emit &lt;title&gt;/&lt;desc&gt;/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged |
+| `--acc-id-prefix <prefix>` | with --accessible, prefix the &lt;title&gt;/&lt;desc&gt; element ids (default arch, giving arch-title/arch-desc) so several plans inlined in one HTML page do not share them; ignored without --accessible |
 | `--install` | auto-install the optional dep for the chosen format if missing (PNG/PDF) |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
@@ -143,6 +145,7 @@ render every ```arch block in a Markdown file and rewrite to image links
 | `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
 | `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) |
 | `--accessible` | emit &lt;title&gt;/&lt;desc&gt;/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged |
+| `--acc-id-prefix <prefix>` | with --accessible, prefix the &lt;title&gt;/&lt;desc&gt; element ids (default arch, giving arch-title/arch-desc) so several plans inlined in one HTML page do not share them; ignored without --accessible |
 | `--install` | auto-install the optional dep for the chosen format if missing (PNG/PDF) |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
@@ -213,6 +216,7 @@ recompile on save (interactive)
 | `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
 | `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2); it is an output like any other, so with --json and no -o nothing is written and the card is not in the payload — pass -o &lt;file&gt; to get the image |
 | `--accessible` | emit &lt;title&gt;/&lt;desc&gt;/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged |
+| `--acc-id-prefix <prefix>` | with --accessible, prefix the &lt;title&gt;/&lt;desc&gt; element ids (default arch, giving arch-title/arch-desc) so several plans inlined in one HTML page do not share them; ignored without --accessible |
 | `--from-json` | read the input as Plan JSON (RPLAN shape) instead of .arch, convert it, then compile |
 | `--install` | auto-install the optional dep for the chosen format if missing (PNG/PDF) |
 | `--json` | structured result on stdout, messages on stderr |
