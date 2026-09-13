@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.36.0] - 2026-09-13
+
 ### Added — a compiled plan you can reach with a keyboard (`annotate` + `accessible`)
 
 An embedder that wants a keyboard- and screen-reader-operable plan has had to decide, per
@@ -26,8 +28,16 @@ answers both questions itself.
   polygon and a fixture's symbol outline, never a drawn name.
 - **`accessible: true` alongside `annotate` makes that primary a control**: `role="button"`,
   `tabindex="-1"` and an `aria-label` that leads with the KIND — `Room Kitchen`,
-  `Furniture bed, Kitchen`, `Door` — because the string is read by someone who cannot see the
-  drawing, and a fixture trails the room it stands in because a family plan has four beds. Every
+  `Furniture Bed, Kitchen`, `Door` — because the string is read by someone who cannot see the
+  drawing, and a fixture trails the room it stands in because a family plan has four beds. That
+  name is a SENTENCE, so a catalogue word opens like one (`Furniture Bed`) while an authored
+  label is repeated exactly as the author cased it — their words are not ours to retitle, and
+  `data-arch-label` still carries the raw `bed` for a consumer that wants the token. A room the
+  plan never named answers to its POSITION among the unnamed rooms — `Room 1`, `Room 2`, dense
+  and in document order — so three anonymous rooms are three distinguishable controls rather
+  than three called `Room`. The ordinal reaches `aria-label` only: `data-arch-label` reports
+  what the plan CALLS a thing, and the plan calls these nothing. No other kind is numbered, so
+  two doors still share `Door`, which is what the drawing says about them. Every
   other `<text>` carrying a `data-arch-id` is `aria-hidden`, so a name is announced once rather
   than three times. `tabindex` is always `-1`: a plan is ONE roving tab stop and which element
   holds it is the embedder's to decide. The `<svg>` root keeps `role="img"` — a drawing is one

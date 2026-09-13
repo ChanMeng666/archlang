@@ -305,6 +305,22 @@ export interface SceneNode {
    */
   elementLabel?: string;
   /**
+   * The {@link SceneNode.elementLabel} came from the CATALOGUE (a fixture's `category`,
+   * a surface's `surface`) rather than from an authored `label`. Read only by the SVG
+   * backend's composed `aria-label`, which capitalises a catalogue word because that
+   * string is a sentence read aloud, and leaves an authored one as the author cased it.
+   * Annotate mode only.
+   */
+  elementLabelDerived?: true;
+  /**
+   * This room's position among the rooms the plan never NAMED — 1, 2, 3 … in element
+   * order. Present only on an unlabelled room, so several of them are still told apart by
+   * ear. It is not a `data-arch-label` (the plan calls the room nothing, and that
+   * attribute reports what the plan calls things) — it reaches the SVG only through the
+   * composed `aria-label`. Annotate mode only.
+   */
+  elementOrdinal?: number;
+  /**
    * The label of the room this element sits IN — furniture only, from the declared
    * `in <room>` clause, and only when that room is itself labelled. It exists so a
    * consumer can say "Bed, Kitchen" without a second index of the plan. Annotate

@@ -2455,16 +2455,31 @@ focusable node for itself:
 |---|---|---|
 | `role="button"` | each `[data-arch-primary]` | — |
 | `tabindex="-1"` | each `[data-arch-primary]` | always `-1` |
-| `aria-label` | each `[data-arch-primary]` | `<Kind> <label>`, and `, <room>` for a fixture |
+| `aria-label` | each `[data-arch-primary]` | `<Kind> <label>`, and `, <room>` for a fixture; an unnamed room gets `<Kind> <n>` |
 | `aria-hidden="true"` | every non-primary `<text>` with a `data-arch-id` | — |
 
-**The name leads with the KIND**: `Room Kitchen`, `Furniture bed, Kitchen`, `Door`. It is read
+**The name leads with the KIND**: `Room Kitchen`, `Furniture Bed, Kitchen`, `Door`. It is read
 by someone who cannot see the drawing, where a bare "Bed" among thirty controls says nothing
 about what sort of thing it is — and the room trails a fixture because a family plan has four
 beds and the room is the half that tells them apart (from the element's declared
 `in <room>`, when that room is itself labelled). An element the language names nothing is
 announced by its kind alone, so two doors on one plan legitimately share the name `Door`,
 which is exactly what the drawing says about them.
+
+**A catalogue word is capitalised here and nowhere else.** This string is a sentence somebody
+hears, so a fixture the plan did not label opens like one — `Furniture Bed`, from the catalogue
+`bed`. An **authored** label is repeated exactly as the author cased it: those are their words,
+and `grandma's sofa` is not ours to retitle. Only the first letter changes, so `dining_table`
+becomes `Dining_table` — splitting a catalogue token into words is a guess the compiler does
+not make, and `data-arch-label` still carries the raw token for a consumer that wants it.
+
+**An unnamed room answers to its position**: `Room 1`, `Room 2`, `Room 3` — dense over the
+rooms the plan never labelled, in document order — so three anonymous rooms present three
+distinguishable controls rather than three called `Room`. Renaming one of them therefore
+renumbers the unnamed rooms after it, which is the price of a dense sequence and is why the
+ordinal is **not** written to `data-arch-label`: that attribute reports what the plan CALLS a
+thing, and the plan calls these nothing. No other element kind is numbered — the drawing says
+nothing that would distinguish two doors, and this is not the place to invent it.
 
 **`tabindex` is always `-1`, never `0`.** A plan is one roving tab stop: the embedder promotes
 whichever element currently holds it to `0`. Emitting `0` here would put a hundred tab stops

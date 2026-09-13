@@ -209,11 +209,63 @@ describe("accessible + annotate — the element roles", () => {
   it("names an element kind-first, and a fixture by its room", () => {
     const names = ariaLabels(compile(SRC, A11Y).svg);
     expect(names.get("r_kit")).toBe("Room Kitchen");
-    // Nothing named it, so the kind stands alone rather than a coordinate being invented.
-    expect(names.get("r_spare")).toBe("Room");
+    // Nothing named it, so it answers to its POSITION among the unnamed rooms rather
+    // than to a bare "Room" shared with every other one.
+    expect(names.get("r_spare")).toBe("Room 1");
     expect(names.get("f_bed")).toBe("Furniture Bed, Kitchen");
-    // Declared in no room → the piece is named, the room clause is simply absent.
-    expect(names.get("f_sink")).toBe("Furniture kitchen_sink");
+    // Declared in no room → the piece is named, the room clause is simply absent. The
+    // catalogue word opens like the sentence it is; the underscore is left alone, since
+    // splitting it into words is a guess the compiler does not make.
+    expect(names.get("f_sink")).toBe("Furniture Kitchen_sink");
+    expect(names.get("d_main")).toBe("Door");
+    expect(names.get("w_east")).toBe("Window");
+  });
+
+  it("capitalises a CATALOGUE word and never an authored one", () => {
+    const src = `plan "T" {
+  units mm
+  room id=r1 at (0,0) size 4000x4000 label "Kitchen"
+  furniture id=f1 bed in r1 anchor top-left size 1500x2000
+  furniture id=f2 sofa in r1 anchor bottom-left size 1500x800 label "grandma's sofa"
+}`;
+    const svg = compile(src, A11Y).svg;
+    const names = ariaLabels(svg);
+    expect(names.get("f1")).toBe("Furniture Bed, Kitchen");
+    // The author's words, cased the way the author cased them — the drawing prints them
+    // that way and this string must not quietly retitle somebody's furniture.
+    expect(names.get("f2")).toBe("Furniture grandma's sofa, Kitchen");
+    // …and `data-arch-label` stays the raw token either way.
+    expect(svg).toContain('data-arch-id="f1" data-arch-kind="furniture" data-arch-label="bed"');
+  });
+
+  it("numbers the unnamed rooms 1, 2, 3 … in document order", () => {
+    const src = `plan "T" {
+  units mm
+  room id=a at (0,0) size 3000x3000
+  room id=b at (3000,0) size 3000x3000 label "Kitchen"
+  room id=c at (6000,0) size 3000x3000
+  room id=d at (9000,0) size 3000x3000
+}`;
+    const svg = compile(src, A11Y).svg;
+    const names = ariaLabels(svg);
+    // Dense over the UNNAMED rooms, so a plan with three of them presents three
+    // distinguishable controls rather than three called "Room".
+    expect(names.get("a")).toBe("Room 1");
+    expect(names.get("b")).toBe("Room Kitchen");
+    expect(names.get("c")).toBe("Room 2");
+    expect(names.get("d")).toBe("Room 3");
+    expect(new Set([...names.values()]).size).toBe(names.size);
+    // The ordinal is a naming device, not a fact about the plan: the plan calls these
+    // rooms nothing, and `data-arch-label` reports what the plan calls things.
+    for (const [id, tag] of idTags(svg)) {
+      if (id !== "b") expect(tag, id).not.toContain("data-arch-label");
+    }
+  });
+
+  it("numbers no element kind but rooms", () => {
+    const names = ariaLabels(compile(SRC, A11Y).svg);
+    // Two doors on one plan legitimately share "Door" — that is what the drawing says
+    // about them, and inventing a distinction here would be inventing a fact.
     expect(names.get("d_main")).toBe("Door");
     expect(names.get("w_east")).toBe("Window");
   });

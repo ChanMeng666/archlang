@@ -53,12 +53,22 @@ function accIdPrefix(accessible: CompileOptions["accessible"]): string {
  * name "Door", which is what the drawing itself says about them.
  */
 function a11yName(node: SceneNode): string {
-  const kind = node.elementKind ?? "";
-  const word = kind === "" ? "" : kind.charAt(0).toUpperCase() + kind.slice(1);
-  const label = node.elementLabel;
-  const head = label === undefined ? word : word === "" ? label : `${word} ${label}`;
+  const word = cap(node.elementKind ?? "");
+  // An AUTHORED label is repeated exactly as the author cased it — it is their words, and
+  // "iMac corner" is not ours to retitle. A CATALOGUE word is the compiler's own, and this
+  // string is a sentence someone hears, so it opens like one: "Furniture Bed, Bedroom".
+  // `data-arch-label` still carries the raw `bed`, for a consumer that wants the token.
+  const label =
+    node.elementLabelDerived && node.elementLabel !== undefined ? cap(node.elementLabel) : node.elementLabel;
+  // A room the plan never named answers to its position instead of to nothing, so a plan
+  // with three unnamed rooms does not present three controls all called "Room".
+  const named = label ?? (node.elementOrdinal !== undefined ? String(node.elementOrdinal) : undefined);
+  const head = named === undefined ? word : word === "" ? named : `${word} ${named}`;
   return node.elementRoomLabel !== undefined ? `${head}, ${node.elementRoomLabel}` : head;
 }
+
+/** First letter upper-cased, the rest left exactly as it came. */
+const cap = (s: string): string => (s === "" ? "" : s.charAt(0).toUpperCase() + s.slice(1));
 
 /** Named line type → dash pattern in mm (undefined = solid). */
 function dashPattern(t: LineType, sizes: RenderSizes): number[] | undefined {
