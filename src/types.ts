@@ -19,6 +19,24 @@ export interface CompileError {
 
 export type CompileWarning = CompileError;
 
+/**
+ * Fine control over {@link CompileOptions.accessible}. Passing `true` is exactly
+ * `{ idPrefix: "arch" }` — the historical, fixed ids.
+ */
+export interface AccessibleOptions {
+  /**
+   * Prefix for the `<title>`/`<desc>` element ids, which are emitted as
+   * `<prefix>-title` and `<prefix>-desc` and referenced by `aria-labelledby`.
+   * Defaults to `"arch"`.
+   *
+   * An id may not contain whitespace (it would split the `aria-labelledby` token list
+   * and point at nothing), so the prefix is reduced to `[A-Za-z0-9_-]` and an empty
+   * result falls back to `"arch"` — a deterministic sanitisation, never a rejection:
+   * `accessible` is a rendering option and must not be able to fail a compile.
+   */
+  idPrefix?: string;
+}
+
 export interface CompileOptions {
   /**
    * Width attribute (in px) for the produced `<svg>`. Height is derived from
@@ -60,8 +78,20 @@ export interface CompileOptions {
    * consumers — get a self-describing drawing. **Opt-in and purely additive**:
    * default output is byte-identical (no `<title>`/`<desc>`/`role`), so shipped SVGs
    * stay clean; folded into the compile cache key. Only affects the SVG backend.
+   *
+   * Pass an **object** to control the `<title>`/`<desc>` element ids, which are
+   * otherwise the fixed strings `arch-title`/`arch-desc`. Two accessible plans inlined
+   * in one HTML document would then share both ids and every `aria-labelledby` would
+   * resolve to the FIRST drawing's title — so an embedder that shows more than one plan
+   * at a time passes a per-drawing {@link AccessibleOptions.idPrefix}. `true` is exactly
+   * `{ idPrefix: "arch" }`, so nothing that already passes a boolean moves a byte.
+   *
+   * Together with {@link CompileOptions.annotate} it also stamps each element's primary
+   * shape as a control (`role="button"`, `tabindex="-1"`, `aria-label`) and hides the
+   * drawn labels from assistive tech — see `docs/language-reference.md`, "Keyboard and
+   * screen-reader operability".
    */
-  accessible?: boolean;
+  accessible?: boolean | AccessibleOptions;
   /**
    * Render an **illustrative axonometric** of the plan instead of the plan (v1.35):
    * extruded walls with their door and window openings cut, floor plates, storeys

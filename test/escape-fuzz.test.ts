@@ -299,7 +299,10 @@ describe("escaping fuzz — SVG", () => {
     fc.assert(
       fc.property(fc.constantFrom(...SITE_NAMES), hostile, (site, payload) => {
         const src = INJECTION_SITES[site]!(payload);
-        for (const opts of [{}, { annotate: true }, { accessible: true }]) {
+        // The FOURTH combination is not redundant: `annotate` + `accessible` together are
+        // the only way the per-element `aria-label` is emitted, and that string is COMPOSED
+        // from the payload (kind + label + room) before it is escaped.
+        for (const opts of [{}, { annotate: true }, { accessible: true }, { annotate: true, accessible: true }]) {
           const { svg } = compile(src, { noCache: true, ...opts });
           if (svg === "") continue; // errored plan renders nothing — the default contract
           assertSafeSvg(svg);

@@ -863,6 +863,48 @@ function synthWallDims(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void
   }
 }
 
+/** Shared empty map for the non-annotate path — no allocation on the default compile. */
+const EMPTY_LABELS: ReadonlyMap<string, string> = new Map();
+
+/** Room id → its authored label, for the rooms that have one. Annotate mode only. */
+function roomLabelIndex(ir: ResolvedPlan): ReadonlyMap<string, string> {
+  const m = new Map<string, string>();
+  for (const el of ir.elements) {
+    if (el.kind !== "room") continue;
+    const label = (el as RRoom).label;
+    if (label !== undefined && label !== "") m.set(el.id, label);
+  }
+  return m;
+}
+
+/**
+ * The element's human NAME for {@link SceneNode.elementLabel} — what a consumer should
+ * call this thing when it cannot show the drawing.
+ *
+ * The authored `label` always wins, because it is the exact string the drawing itself
+ * prints. Furniture and ground surfaces fall back to their `category` / `surface`: an
+ * uncatalogued `furniture hammock …` draws no text at all (iron law — a catalogued
+ * fixture symbol ignores its `label`), so the catalogue word is the only name the
+ * compiler knows, and it is a truer answer than none. `data-arch-label` carries it
+ * **verbatim**, the snake_case of the catalogue included, because that attribute answers
+ * "what does the plan call this" and the catalogue spelling IS the answer.
+ *
+ * `derived` records which of the two it was, and exists for exactly one reader: the
+ * composed `aria-label`, which is a SENTENCE read aloud and so capitalises a catalogue
+ * word ("Furniture Bed") while leaving an authored one exactly as the author cased it. A
+ * consumer that wants the raw word still has `data-arch-label`.
+ *
+ * A door, window or cased opening is named NOTHING. The language gives them no label,
+ * so this returns `undefined` and the attribute is simply absent rather than invented.
+ */
+function elementLabelOf(el: ResolvedPlan["elements"][number]): { label: string; derived: boolean } | undefined {
+  const authored = (el as { label?: unknown }).label;
+  if (typeof authored === "string" && authored !== "") return { label: authored, derived: false };
+  if (el.kind === "furniture") return { label: (el as RFurniture).category, derived: true };
+  if (el.kind === "outdoor") return { label: (el as ROutdoor).surface, derived: true };
+  return undefined;
+}
+
 export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): Scene {
   const registry = runtime.registry;
 
@@ -940,6 +982,14 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // drawn exactly like a room's and want the same treatment, and the pass is written
   // against a ring + an anchor rather than against either element type.
   const labelGroups: LabelGroup[] = [];
+  // Annotate-only lookups, built once. `roomLabels` answers "which room is this piece of
+  // furniture in, and what is that room called" without a second scan per element;
+  // `primaried` enforces the ONE-primary-per-id law across the whole scene rather than
+  // per render group, so two groups that somehow share an id still yield one primary.
+  const roomLabels = opts.annotate ? roomLabelIndex(ir) : EMPTY_LABELS;
+  const primaried = new Set<string>();
+  /** How many unnamed rooms have been seen, so the next one can be told from them. */
+  let unnamedRooms = 0;
   for (const el of ir.elements) {
     if (el.kind === "wall") continue;
     const def = registry.byKind.get(el.kind);
@@ -953,12 +1003,35 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     const rendered = def.render(el, ctxFor(el.kind));
     if (opts.annotate) {
       const span = (el as { span?: SceneNode["span"] }).span;
+      const named = elementLabelOf(el);
+      const label = named?.label;
+      // A room the plan never named gets a POSITION instead, so several of them are still
+      // told apart by ear ("Room 1", "Room 2"). Dense and in element order, which is the
+      // order the floor polygons reach the document. It is deliberately NOT written to
+      // `data-arch-label`: that attribute is what the PLAN calls the element, and the plan
+      // calls this one nothing — the ordinal is a naming device for the accessibility
+      // tree, and `aria-label` is where naming devices belong.
+      const ordinal = el.kind === "room" && label === undefined ? ++unnamedRooms : undefined;
+      // The owning room's NAME, not its id — and only for furniture, which is the one
+      // element a reader cannot place from its own name ("Bed" — which bed?).
+      const roomLabel = el.kind === "furniture" ? roomLabels.get((el as RFurniture).room ?? "") : undefined;
+      // The ONE interactive shape: the first primitive that is not TEXT. A room's floor
+      // polygon comes first in its own render, a fixture's symbol outline likewise — and
+      // a drawn name must never be the focusable node, because a label DESCRIBES a
+      // control rather than being one.
+      const primary = primaried.has(el.id) ? -1 : rendered.findIndex((n) => n.prim.t !== "text");
+      if (primary >= 0) primaried.add(el.id);
       nodes.push(
-        ...rendered.map((n) => ({
+        ...rendered.map((n, i) => ({
           ...n,
           elementId: el.id,
           elementKind: el.kind,
           span: n.span !== undefined ? n.span : span,
+          ...(label !== undefined ? { elementLabel: label } : {}),
+          ...(named?.derived ? { elementLabelDerived: true as const } : {}),
+          ...(ordinal !== undefined ? { elementOrdinal: ordinal } : {}),
+          ...(roomLabel !== undefined ? { elementRoomLabel: roomLabel } : {}),
+          ...(i === primary ? { elementPrimary: true as const } : {}),
         })),
       );
     } else {
