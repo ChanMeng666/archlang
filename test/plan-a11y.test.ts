@@ -57,17 +57,32 @@ const A11Y = { annotate: true, accessible: true, noCache: true } as const;
 /** Every `data-arch-id` in document order, one entry per drawn node. */
 const idsOf = (svg: string): string[] => [...svg.matchAll(/data-arch-id="([^"]*)"/g)].map((m) => m[1]!);
 
+/**
+ * Every markup tag in the document, as a flat list.
+ *
+ * `<[^<>]*>` on purpose, rather than the `<[a-z]+[^>]*>` this file first used: the latter
+ * is ambiguous (`[a-z]+` and `[^>]*` both match letters), so matching it against a long
+ * attribute run is polynomial and CodeQL rightly failed the build on it. This form is
+ * unambiguous and linear, and every later question is asked with a plain `includes`.
+ */
+const tagsOf = (svg: string): string[] => svg.match(/<[^<>]*>/g) ?? [];
+
+/** The tags of the nodes carrying `data-arch-id`, each paired with that id. */
+const idTags = (svg: string): [string, string][] =>
+  tagsOf(svg).flatMap((t) => {
+    const id = /data-arch-id="([^"]*)"/.exec(t);
+    return id ? [[id[1]!, t] as [string, string]] : [];
+  });
+
 /** The opening tag of each node carrying `data-arch-primary`. */
-const primaryTags = (svg: string): string[] =>
-  [...svg.matchAll(/<([a-z]+)[^>]*\sdata-arch-primary=""[^>]*>/g)].map((m) => m[0]!);
+const primaryTags = (svg: string): string[] => tagsOf(svg).filter((t) => t.includes('data-arch-primary=""'));
 
 /** id → its `aria-label`, for the nodes that carry one. */
 function ariaLabels(svg: string): Map<string, string> {
   const m = new Map<string, string>();
-  for (const tag of svg.matchAll(/<[a-z]+[^>]*>/g)) {
-    const id = /data-arch-id="([^"]*)"/.exec(tag[0]);
-    const label = /aria-label="([^"]*)"/.exec(tag[0]);
-    if (id && label) m.set(id[1]!, label[1]!);
+  for (const [id, tag] of idTags(svg)) {
+    const label = /aria-label="([^"]*)"/.exec(tag);
+    if (label) m.set(id, label[1]!);
   }
   return m;
 }
@@ -82,7 +97,9 @@ describe("data-arch-label (annotate)", () => {
 
   it("omits the attribute entirely for a room the plan never named", () => {
     const { svg } = compile(SRC, { annotate: true, noCache: true });
-    const spare = svg.match(/<[a-z]+[^>]*data-arch-id="r_spare"[^>]*>/g) ?? [];
+    const spare = idTags(svg)
+      .filter(([id]) => id === "r_spare")
+      .map(([, t]) => t);
     expect(spare.length).toBeGreaterThan(0);
     for (const tag of spare) expect(tag).not.toContain("data-arch-label");
   });
@@ -97,7 +114,9 @@ describe("data-arch-label (annotate)", () => {
   it("names no door, window or cased opening — the language gives them none", () => {
     const { svg } = compile(SRC, { annotate: true, noCache: true });
     for (const id of ["d_main", "w_east"]) {
-      const tags = svg.match(new RegExp(`<[a-z]+[^>]*data-arch-id="${id}"[^>]*>`, "g")) ?? [];
+      const tags = idTags(svg)
+        .filter(([got]) => got === id)
+        .map(([, t]) => t);
       expect(tags.length).toBeGreaterThan(0);
       for (const tag of tags) expect(tag).not.toContain("data-arch-label");
     }
@@ -132,9 +151,9 @@ describe("data-arch-primary (annotate)", () => {
   it("marks exactly ONE node per element id", () => {
     const { svg } = compile(SRC, { annotate: true, noCache: true });
     const perId = new Map<string, number>();
-    for (const tag of svg.matchAll(/<[a-z]+[^>]*data-arch-id="([^"]*)"[^>]*>/g)) {
-      if (!tag[0].includes('data-arch-primary=""')) continue;
-      perId.set(tag[1]!, (perId.get(tag[1]!) ?? 0) + 1);
+    for (const [id, tag] of idTags(svg)) {
+      if (!tag.includes('data-arch-primary=""')) continue;
+      perId.set(id, (perId.get(id) ?? 0) + 1);
     }
     expect(new Set(idsOf(svg)).size).toBeGreaterThan(0);
     expect([...perId.values()]).toEqual([...perId.values()].map(() => 1));
@@ -147,8 +166,8 @@ describe("data-arch-primary (annotate)", () => {
     for (const [name, src] of CORPUS) {
       const { svg } = compile(src, { annotate: true, noCache: true });
       const seen = new Map<string, number>();
-      for (const tag of svg.matchAll(/<[a-z]+[^>]*data-arch-id="([^"]*)"[^>]*>/g)) {
-        if (tag[0].includes('data-arch-primary=""')) seen.set(tag[1]!, (seen.get(tag[1]!) ?? 0) + 1);
+      for (const [id, tag] of idTags(svg)) {
+        if (tag.includes('data-arch-primary=""')) seen.set(id, (seen.get(id) ?? 0) + 1);
       }
       expect([...new Set(idsOf(svg))].sort(), name).toEqual([...seen.keys()].sort());
       for (const [id, n] of seen) expect(n, `${name} / ${id}`).toBe(1);
@@ -203,10 +222,11 @@ describe("accessible + annotate — the element roles", () => {
     const svg = compile(SRC, A11Y).svg;
     // The room's name and its area text are announced by the primary's aria-label; left
     // visible to assistive tech they would be read a second and third time.
-    expect(svg).toMatch(/<text[^>]*data-arch-id="r_kit"[^>]*aria-hidden="true"[^>]*>Kitchen<\/text>/);
-    for (const tag of svg.matchAll(/<[a-z]+[^>]*>/g)) {
-      if (tag[0].includes('data-arch-primary=""')) expect(tag[0]).not.toContain("aria-hidden");
-    }
+    const drawnName = idTags(svg).find(
+      ([id, t]) => id === "r_kit" && t.startsWith("<text") && !t.includes('data-arch-primary=""'),
+    );
+    expect(drawnName?.[1]).toContain('aria-hidden="true"');
+    for (const tag of primaryTags(svg)) expect(tag).not.toContain("aria-hidden");
   });
 
   it("adds nothing per element when annotate is off", () => {
