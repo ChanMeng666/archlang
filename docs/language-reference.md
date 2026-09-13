@@ -2451,6 +2451,11 @@ With **both** options on, the compiler also stamps the attributes that turn each
 primary node into a control, so an embedder does not have to derive a name or choose a
 focusable node for itself:
 
+⚠ **This is a library-only combination.** `accessible` has a flag (`arch compile --accessible`)
+and `annotate` has none, so the CLI stops at the `<title>`/`<desc>` pair and never emits a
+control. Call `compile(source, { annotate: true, accessible: true })` — see
+`docs/backlog.md` (§A.7).
+
 | Attribute | Where | Value |
 |---|---|---|
 | `role="button"` | each `[data-arch-primary]` | — |
@@ -2498,6 +2503,72 @@ read-only embed keeps `img`.
 **`accessible` never moves the `data-arch-id` set.** It only adds attributes to elements
 `annotate` already stamped, so a consumer's id-stability regression test holds across the
 two combinations.
+
+### What the embedder still owns
+
+The compiler names each element and marks which node is the control. What it cannot
+know is everything about the page the drawing is on, so it emits none of it:
+
+- **The roving tab stop.** Every primary is `tabindex="-1"`; exactly one element per
+  drawing is promoted to `0`, and which one is page state. A page showing three plans
+  has three rovers, not one.
+- **Selection state.** `aria-pressed` (or `aria-selected`) is the consumer's — the
+  compiler has no idea what is selected, or that anything can be.
+- **Focus.** Where focus goes when an element is activated, where Escape returns it,
+  and where it lands when the drawing is replaced are all page behaviour.
+- **A read-only render has to take the controls back OFF.** `role="button"` and
+  `tabindex` are stamped whenever `annotate` and `accessible` are both on, whether or
+  not anything is listening: a viewer that only *displays* a plan therefore ships a
+  screenful of buttons whose Enter does nothing. Strip `role` and `tabindex` from every
+  `[data-arch-primary]` and leave the `<svg>` root at `role="img"`. **Keep the
+  `aria-label`.** Once the SVG is injected into a page that attribute is the only place
+  the compiler's name survives, so dropping it forces the consumer back onto a name it
+  derives itself — the very derivation these attributes exist to retire. (ArchCanvas
+  shipped the un-stripped version to a public share page — 61 inert buttons over a root
+  demoted from `img` — and corrected it the same day.)
+- **One `idPrefix` per drawing.** Several plans inlined in one document must each pass
+  their own `accessible: { idPrefix }`, or every `aria-labelledby` on the page resolves
+  to the first drawing's `<title>`.
+- **Browse mode may need a scope.** A screen reader in its own browsing mode takes the
+  arrow keys for itself, so a consumer that binds arrows to move the roving stop may
+  need the drawing's wrapper (not the `<svg>`) to be `role="application"` with an
+  `aria-roledescription` and an instruction for the reader. That is a page decision
+  about a keyboard contract the compiler does not define, which is why the compiler
+  never emits `application` itself.
+
+### Known limitations (screen readers)
+
+Measured against the shipped examples with `{ annotate: true, accessible: true }`.
+These are real gaps, not subtleties, and every one of them is a consumer's problem
+today; the backlog entries that would close them upstream are in
+`docs/backlog.md`
+§ "A11y of the compiled drawing".
+
+- **`dims auto` text is announced as a bare number.** An automatic dimension chain
+  draws its readings as `<text>` carrying **no `data-arch-id`**, so it is neither named
+  by the compiler nor hidden by it: a reader announces `3400`, `600`, `5600` with
+  nothing saying what they measure. `bungalow.arch` emits 87 such unowned texts.
+  Consumers hide them (`aria-hidden`) today. The upstream fix is for the compiler to
+  emit either `aria-label="3.4 metres"` or `aria-hidden="true"` on its own annotation
+  text.
+- **An authored `dim` becomes a control called `Dim`.** A `dim` statement *is* an
+  element, so its first non-`text` primitive — a witness line — gets
+  `role="button"` and the kind-only name `Dim`. Its drawn number is correctly hidden,
+  which leaves a focusable control with no useful name. `studio.arch` has four.
+- **The `<desc>` sentence contains raw element ids.** `describe().caption` reads
+  *"…entrance via `d_front`, `d_garden`"* — an author's identifier, spoken. Consumers
+  rewrite the sentence client-side. The caption should name the element the way
+  `aria-label` does.
+- **The sheet's own text is unowned.** The title block, the room schedule, the legend,
+  the north arrow and the scale bar are `<text>` with no `data-arch-id`, so they are
+  neither named nor hidden. In ordinary browse mode that is fine — they read as the
+  drawing's printed matter, which is what they are — but inside a consumer's
+  `role="application"` scope they become unreachable.
+- **NVDA's browse mode drops the accessible name of an SVG `role="button"`.** It
+  announces the first character of `aria-label` and stops. The markup is correct and
+  other readers announce it in full; a consumer that needs it read in browse mode has
+  to leave browse mode (the `application` scope above). Reported as a reader
+  limitation, not a compiler one.
 
 ## Worked example
 

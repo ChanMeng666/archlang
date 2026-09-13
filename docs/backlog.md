@@ -1540,6 +1540,119 @@ strict-clean. Its residual — the rooms still silently absent from `circulation
 
 ---
 
+## A11y of the compiled drawing (found downstream, 2026-09-13)
+
+v1.36.0 made an element a named control; the first consumer to wire a real screen reader to the
+output (ArchCanvas, NVDA) then found what the compiler still leaves unnamed. **Every item here has
+a consumer-side workaround today**, which is why none of them blocked the release and why each one
+should be weighed against the cost of a new emitted attribute rather than fixed on sight. The
+limitations are documented for consumers in
+[`docs/language-reference.md`](language-reference.md) § "Known limitations (screen readers)" — an
+entry closed here must be struck there in the same PR.
+
+### A.1 · `dims auto` text is announced as a bare number — `todo`
+
+An automatic dimension chain draws its readings as `<text>` carrying **no `data-arch-id`**, so
+`accessible` neither names them nor hides them: a reader announces `3400`, `600`, `5600` with
+nothing saying what they measure or that they belong together. Measured with
+`{ annotate: true, accessible: true }`: `bungalow.arch` emits **87** unowned `<text>` nodes, most of
+them dimension readings; `furnished-flat.arch` 40; `studio.arch` 11.
+
+Two candidate answers, and they are not the same decision. `aria-hidden="true"` says a dimension is
+decoration, which is wrong for a drawing whose whole point is measurement. `aria-label="3.4 metres"`
+says it in words, which needs a unit-to-prose rule (and a language for it) the compiler does not
+have. **Whichever is chosen, the annotation layer's own text is the scope** — the title block, the
+schedule and the legend are A.4 and must not be folded in by accident.
+
+An **authored** `dim` element is already correctly handled on this half: its drawn number carries a
+`data-arch-id` and is `aria-hidden`. See A.2 for the other half of that case.
+
+### A.2 · An authored `dim` becomes a control called `Dim` — `todo`
+
+A `dim` statement is an element, so under `annotate` + `accessible` its first non-`text` primitive —
+a witness line — is stamped `role="button"` with the kind-only name `Dim`. `studio.arch` has four.
+A focusable control named for its kind alone is defensible for a door (`Door` is what the drawing
+says about it) and not for a dimension, which exists to report a number a reader cannot get from
+that name.
+
+The cheap answer is to exclude `dim` from the primary stamping, the way `wall` is already excluded
+— but `wall` is excluded because unioned geometry has no one element to point at, which is a
+different reason, and a selection UI may legitimately want to click a dimension. The honest answer
+is probably the measured value in the name, which makes this the same unit-to-prose question as A.1;
+settle that one first.
+
+### A.3 · `describe().caption` names elements by raw id, and it is SPOKEN — `todo`
+
+The `<desc>` under `accessible` is the caption, and the caption ends *"…entrance via `d_front`,
+`d_garden`"* — an author's identifiers, read aloud to someone who cannot see the drawing.
+Consumers rewrite the sentence client-side, which is a second model of a fact the compiler owns.
+The caption should name a door the way `aria-label` does, and it already knows how: the naming rule
+landed in v1.36 and `describe()` does not use it.
+
+⚠ **The caption is not only an a11y string.** It is `describe().caption`, an agent-facing field with
+its own consumers and its own goldens; changing its wording moves the `<desc>` bytes of every plan
+compiled with `accessible`, and the byte-identity law covers the DEFAULT output, not this one. It
+needs the same treatment any `describe()` change gets, not an a11y-shaped patch.
+
+### A.4 · The sheet's own text is unowned — `todo` (may be CORRECT as it stands)
+
+The title block, the room schedule, the legend, the north arrow and the scale bar are `<text>` with
+no `data-arch-id`: neither named nor hidden. In ordinary browse mode that is **right** — they read
+as the drawing's printed matter, which is what they are, and a schedule read linearly is genuinely
+useful. It only breaks inside a consumer's `role="application"` scope, where a reader stops
+browsing and nothing reaches them.
+
+So this may need no compiler change at all, and the entry exists to stop the next agent from
+"fixing" it by hiding the schedule. If anything is owed upstream it is a document structure the
+scope can expose — the tables are already built in one place (`sheet-tables.ts`) — not an
+`aria-hidden`.
+
+### A.5 · NVDA browse mode drops an SVG `role="button"`'s name — `todo` (NOT OURS; file upstream)
+
+NVDA announces the first character of `aria-label` on an SVG `role="button"` and stops. The markup
+is correct and other readers announce it in full. **Nothing in this repository should change for
+it**; the action is to file it with NVDA and cite the issue here, so the next consumer that meets
+the symptom stops looking for a compiler bug. Recorded because an undocumented reader limitation
+reads exactly like one of ours.
+
+---
+
+### A.6 · The MCP shim cannot ask for an operable drawing — `todo`
+
+`packages/mcp`'s `compile` tool takes `accessible` as a **boolean** and passes `annotate` only for
+`format:"txt"`, so an MCP host can get the `<title>`/`<desc>` pair and nothing else: no
+`data-arch-primary`, no `role="button"`, no `aria-label`, and no `{ idPrefix }` for a page holding
+several plans. The core has all of it; the shim's schema is what is behind.
+
+Cheap to close — `accessible: z.union([z.boolean(), z.object({ idPrefix: z.string() })])` plus an
+`annotate` passthrough — but it is a **schema change on a published tool**, so it ships under the
+shim's own rules: a bump in `packages/mcp/package.json` AND both `server.json` version fields, or it
+never reaches npm or the registry. Documented as a limitation in `packages/mcp/README.md` until then.
+
+---
+
+### A.7 · `--accessible` cannot produce an operable drawing, because `annotate` has no flag — `todo`
+
+**The whole v1.36 feature is library-only, and nothing said so.** The element controls need
+`annotate` and `accessible` together; `accessible` has a flag and `annotate` does not exist as one.
+`src/cli/serialize.ts` turns `annotate` on for `-f txt` / `--ascii` alone, where the ASCII renderer
+needs it — so `arch compile --accessible --acc-id-prefix plan-7` emits a `<title>`, a `<desc>`,
+`role="img"`, and not one `role="button"`.
+
+Found by `test/docs-flags.test.ts` while writing the docs for this, which is the guard working: the
+README had promised a `--annotate` flag for some time and the file it does not cover is the one that
+made the claim. Every doc now says library-only; the flag is what is missing, not the sentence.
+
+Closing it is a flag (`--annotate`, on `compile`/`preview`/`md`) plus a manifest row, a
+`FLAG_KEYS` entry and the bidirectional drift pin those bring with them — small, but it puts a
+**new public flag** on the primary agent interface and regenerates `docs/cli-reference.md`,
+`llms-full.txt` and every baked MCP resource, so it wants its own PR and a version of its own.
+⚠ It must not silently widen what `-f txt` does: `annotate` is already forced there, and a flag
+that reaches the same option needs to be a no-op for that format rather than a second path to it.
+Pairs with **A.6** (the MCP shim has the matching gap on the same option).
+
+---
+
 ## Wave 4 — P2 language features
 
 Designed and evidenced in `docs/research/2026-08-06-competitor-borrowing-roadmap.md` §5. Each one
