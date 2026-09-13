@@ -321,9 +321,15 @@ suffixes (`4m` / `40cm` / `20mm`) fold exactly to millimetres at lex time.
 
 **SVG**, **DXF** and a **TXT** ASCII plan with zero dependencies; **PDF** (vector, selectable text)
 and **PNG** (deterministic raster) via optional, lazily-loaded add-ons the default install never
-pulls. `arch compile --accessible` stamps the SVG with `<title>`/`<desc>` + `role="img"`;
-add `--annotate`'s element anchors and every room, opening and fixture becomes a named,
-focusable control (`data-arch-primary`, `role="button"`, `aria-label`).
+pulls. `arch compile --accessible` stamps the SVG with `<title>`/`<desc>` + `role="img"`
+(`--acc-id-prefix` renames those ids, so several plans can share one page). Add the
+library's `annotate` beside it — `compile(src, { annotate: true, accessible: true })`, an
+option the CLI does not expose — and every room, opening and fixture becomes a named,
+focusable control (`data-arch-primary`, `role="button"`, `aria-label`). What the embedder
+still owns — the roving tab stop, selection state, and taking the controls back off for a
+read-only render — is in
+[the language reference](docs/language-reference.md#keyboard-and-screen-reader-operability-annotate--accessible),
+with the known screen-reader limitations beside it.
 
 A full **LSP** (hover, completion, go-to-definition, rename, signature help), an `arch fmt`
 formatter, an `arch explain <CODE>` catalog, a self-documenting CLI (`arch <cmd> --help`, rendered

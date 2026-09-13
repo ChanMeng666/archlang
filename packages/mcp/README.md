@@ -43,6 +43,27 @@ structured JSON. `compile` also accepts `plan_json` (the Plan-JSON / RPLAN shape
 | `suggest` | Advisory door/window statements (each referencing its wall by a stable ref — an authored id or a unique category — or absolute coordinates, never a re-bindable positional id) to resolve unreachable rooms / windowless bedrooms — data, never applied. |
 | `complete` | LSP completion items in scope at a source byte offset. |
 
+### What `compile`'s `accessible` does here — and what it does not
+
+`accessible: true` gives the SVG its `<title>`/`<desc>` pair and `role="img"` on the root, which
+is the whole of the option as this shim exposes it. **The v1.36 element controls are not reachable
+through MCP.** They need `annotate` alongside `accessible`, and this tool passes `annotate` only
+for `format:"txt"`; it also takes `accessible` as a boolean, so the `{ idPrefix }` form that keeps
+several plans on one HTML page from sharing `arch-title`/`arch-desc` cannot be requested either.
+
+A host that needs a keyboard- and screen-reader-operable drawing — `data-arch-primary`,
+`role="button"`, `aria-label` on each element — has to call the **library**. The CLI cannot
+produce it either: `annotate` has no flag, so `arch compile --accessible` stops at the
+`<title>`/`<desc>` pair too.
+
+```ts
+import { compile } from "@chanmeng666/archlang";
+compile(src, { annotate: true, accessible: { idPrefix: "plan-7" } });
+```
+
+The output contract, what an embedder still owns, and the known screen-reader limitations are in
+the [language reference](https://archlang.uk/reference#keyboard-and-screen-reader-operability-annotate--accessible).
+
 ## Resources
 
 | URI | Content |
