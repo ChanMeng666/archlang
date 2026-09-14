@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ArchLang — embedded floor plan</title>
     <meta name="description" content="An embedded ArchLang floor plan — compiled client-side from declarative source to SVG." />
+    <!-- This is an <iframe> target, not a destination. Every plan it can show lives in the
+         `#z=` fragment, which never reaches a crawler, so an indexed /embed.html is a
+         chrome-less page with no content of its own competing with the playground itself.
+         `follow` keeps its outbound links live; the belt-and-braces half is the
+         `X-Robots-Tag: noindex, follow` header in public/_headers, which reaches a crawler
+         that never parses the markup. Note there is deliberately NO robots.txt Disallow —
+         see public/robots.txt. -->
+    <meta name="robots" content="noindex, follow" />
+    <link rel="canonical" href="https://playground.archlang.uk/" />
     <link rel="icon" type="image/svg+xml" href="/brand/archlang-icon-plum.svg" />
     <meta name="theme-color" content="#f5f2ea" />
     <meta name="color-scheme" content="light" />
