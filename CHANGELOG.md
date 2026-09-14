@@ -153,6 +153,15 @@ human signs into).
   batch) and the exit codes, by spawning the script rather than trusting a reading of it.
   `docs/hosting-and-domains.md` gains an "IndexNow" subsection.
 
+### Docs — the SEO/GEO surface is mapped, not folklore
+
+- New `docs/seo.md` (contributor documentation, deliberately absent from `sync-docs.mjs`'s `PAGES`):
+  every crawler-facing surface with the file that owns it and the gate that catches its drift, the
+  allow-everything crawler policy and the reason for it, the wording law and its killed-claim
+  regexes, the blunt note that no engine is known to read `llms.txt`, what measurement exists, and
+  what was deliberately not built. `docs/testing.md` gains the new guards in its map and
+  `AGENTS.md` a pointer plus the three rules that get broken. No language surface, no site change.
+
 ## [1.36.0] - 2026-09-13
 
 ### Added — a compiled plan you can reach with a keyboard (`annotate` + `accessible`)
