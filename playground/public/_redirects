@@ -10,3 +10,12 @@
 # redirect layer runs before the asset lookup — so this serves index.html at the
 # site root with no redirect and no 404.
 /    /index.html    200
+
+# Same mechanism, same reason, for the static example index that
+# `scripts/gen-static.mjs` writes to dist/examples/index.html. With exact-path
+# lookup a directory URL is not a file, so `/examples/` would 404 — and that URL
+# is the one the playground's intro band, every example page's breadcrumb and the
+# sitemap all point at. The 27 example pages themselves need no rule: they are
+# real files at their own `.html` paths, which is why the canonical links and the
+# sitemap entries carry the extension.
+/examples/    /examples/index.html    200

@@ -6,7 +6,7 @@
   "description": "Live web playground for ArchLang — CodeMirror 6 editor + SVG preview. Not published; depends on the built core.",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/gen-static.mjs",
     "typecheck": "tsc -p . --noEmit && tsc -p tsconfig.e2e.json --noEmit",
     "preview": "vite preview"
   },
