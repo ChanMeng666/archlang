@@ -47,6 +47,17 @@ touching the compile path.
   is attributed, a real `examples/one-room.arch` permalink is not, dismissal survives no reload, and
   no console errors.
 
+### Changed — README and npm description lead with the approved one-liner (docs only)
+
+No code, no language surface. The repository README's display line and the package `description`
+both opened with *"like Typst/LaTeX, but for architecture"* — an analogy the positioning work keeps
+in **body copy** and out of every tagline, title and structured description (the same rule
+`test/docs-page-meta.test.ts` already enforces for the docs site's per-page metadata). Both now lead
+with the approved wording — *floor plans as code, compiled to SVG, DXF and PDF* — followed by the
+25-word boilerplate. The comparison is not deleted: it moves one section down, into the
+Introduction, where it explains rather than announces. The npm package page only picks this up on
+the next `v*` release, because npm freezes both fields at pack time.
+
 ### Changed — the playground says what it is before its JavaScript runs (site chrome only)
 
 No language surface moves here: this is the playground's served HTML, plus the crawler policy
@@ -192,6 +203,15 @@ human signs into).
   query string forces, de-duplication, off-host URLs — one stray absolute link would 422 the whole
   batch) and the exit codes, by spawning the script rather than trusting a reading of it.
   `docs/hosting-and-domains.md` gains an "IndexNow" subsection.
+
+### Docs — the SEO/GEO surface is mapped, not folklore
+
+- New `docs/seo.md` (contributor documentation, deliberately absent from `sync-docs.mjs`'s `PAGES`):
+  every crawler-facing surface with the file that owns it and the gate that catches its drift, the
+  allow-everything crawler policy and the reason for it, the wording law and its killed-claim
+  regexes, the blunt note that no engine is known to read `llms.txt`, what measurement exists, and
+  what was deliberately not built. `docs/testing.md` gains the new guards in its map and
+  `AGENTS.md` a pointer plus the three rules that get broken. No language surface, no site change.
 
 ## [1.36.0] - 2026-09-13
 

@@ -13,10 +13,12 @@
   <img src="./brand/archlang-wordmark-black.svg" alt="ArchLang" width="440" />
 </picture>
 
-### Floor plans as code — like Typst/LaTeX, but for architecture.
+### Floor plans as code — compiled to SVG, DXF and PDF.
 
-**Text in, a precise architectural drawing out.** Deterministic, zero-dependency,
-and built so an **AI agent can verify its own plan without ever looking at an image**.
+**An open-source (MIT) DSL for floor plans that compiles `.arch` source to SVG/DXF/PDF with linting
+and geometric validation — diffable, reproducible, and LLM-writable.** Text in, a precise
+architectural drawing out: deterministic, zero-dependency, and built so an
+**AI agent can verify its own plan without ever looking at an image**.
 
 [![npm](https://img.shields.io/npm/v/@chanmeng666/archlang?style=flat-square&logo=npm&color=CB3837)](https://www.npmjs.com/package/@chanmeng666/archlang)
 [![CI](https://img.shields.io/github/actions/workflow/status/chanmeng666/archlang/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/chanmeng666/archlang/actions/workflows/ci.yml)
@@ -120,7 +122,8 @@ the compiler runs in your browser, nothing is sent to a server.
 
 **ArchLang** is a small declarative language for floor plans. You *declare* a plan — walls, rooms,
 doors, windows, furniture — and the compiler renders a clean, professional **SVG** (also DXF, PDF,
-PNG, and a zero-dependency ASCII plan).
+PNG, and a zero-dependency ASCII plan). It works the way Typst and LaTeX work for documents: the
+source is the thing you keep, and the drawing is what the compiler makes of it.
 
 Coordinates are integer **millimetres**, so output is **deterministic**: the same source always
 produces byte-identical bytes, and changing one number changes exactly one thing. *"Make the bedroom
