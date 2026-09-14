@@ -105,6 +105,22 @@ const header = (name, sub) => (_body, res) => {
   }
 };
 
+/**
+ * A response header is ABSENT. The mirror of `header()`, and the reason it exists is
+ * that one of our rules is an asymmetry rather than a value: the playground shell
+ * refuses to be framed, `/embed.html` deliberately does not, and a `_headers` file
+ * has no way to say "not this path" — it is said by NOT writing a rule. A future
+ * edit that widens the shell's rule to `/*` would protect the shell exactly as well
+ * and silently break every third-party embed on the internet, with no other check in
+ * this repo able to see it. So the absence is asserted, not assumed.
+ */
+const noHeader = (name) => (_body, res) => {
+  const value = res.headers.get(name);
+  if (value !== null) {
+    throw new Error(`response carries ${name}: ${JSON.stringify(value)}, expected it to be absent`);
+  }
+};
+
 const contains = (sub) => (body) => {
   if (!body.includes(sub)) throw new Error(`body does not contain ${JSON.stringify(sub)}`);
 };
@@ -255,8 +271,17 @@ function playgroundChecks() {
       contains('id="editor"'),
       contains("<h1"),
       contains("compiles in your browser"),
+      // The shell may be framed only by us. It comes from public/_headers, which
+      // nothing else here executes — and it must be asserted on `/` specifically,
+      // because `_headers` matches the REQUEST path and `/` is served through the
+      // `/  /index.html  200` rewrite, which does NOT carry /index.html's headers.
+      header("x-frame-options", "SAMEORIGIN"),
+      header("content-security-policy", "frame-ancestors 'self'"),
       entryScript(),
     ),
+    // The same file by its own path: a real, reachable asset under
+    // `html_handling: "none"`, and a framing bypass if only `/` were covered.
+    route("/index.html", header("x-frame-options", "SAMEORIGIN")),
     route("/robots.txt", contains("Sitemap:")),
     // The static half: one crawlable page per example plan, written by
     // playground/scripts/gen-static.mjs after `vite build`. These three routes are the
@@ -278,6 +303,12 @@ function playgroundChecks() {
       contentType("text/html"),
       contains('id="embedSrc"'),
       header("x-robots-tag", "noindex"),
+      // THE CONTRACT, stated as an absence: the embed viewer is the one surface
+      // meant to be framed by other people's sites, so it must carry NEITHER
+      // framing restriction. If this ever fails, every <iframe> embed on the
+      // internet is already broken.
+      noHeader("x-frame-options"),
+      noHeader("content-security-policy"),
       entryScript(),
     ),
     route("/brand/archlang-icon-plum.svg", isSvg()),

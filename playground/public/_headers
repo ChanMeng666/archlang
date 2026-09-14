@@ -28,3 +28,35 @@
 # `follow` keeps the outbound links (the brand link back to the playground) live.
 /embed.html
   X-Robots-Tag: noindex, follow
+
+# The playground SHELL may only be framed by us; `/embed.html` deliberately may be
+# framed by anyone. That asymmetry is the whole rule. A `#z=` fragment is
+# third-party content — a crafted plan compiles to an SVG whose labels can read like
+# anything, including a security warning — and what turns such a drawing into a
+# working deception is framing the full editor chrome inside someone else's page, so
+# the surrounding address bar says something other than ours. The embed viewer is
+# the surface that IS meant to sit in other people's pages (the README, blogs,
+# Confluence), so it keeps no framing restriction at all, and scripts/smoke.mjs
+# asserts that ABSENCE — the negative check is the contract.
+#
+# BOTH paths are listed because `_headers` matches the REQUEST path, not the file
+# the asset layer ends up serving. Measured on a local `wrangler dev` against this
+# exact config, with two probe rules carrying distinguishable values: `/` came back
+# with only the `/` rule's header and `/index.html` with only the `/index.html`
+# rule's — so the `/  /index.html  200` rewrite in _redirects does NOT carry
+# `/index.html`'s headers to `/`. Either rule alone would leave the other path
+# unprotected, and `/index.html` is a real, reachable file under
+# `html_handling: "none"`.
+#
+# `X-Frame-Options` and the `frame-ancestors` directive say the same thing to two
+# generations of browser: one that understands CSP ignores XFO, one that does not
+# still honours it. No other CSP directive is set — a policy that also constrained
+# scripts or styles would have to be kept in step with Vite's output by hand, and
+# framing is the only thing being restricted here.
+/
+  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: frame-ancestors 'self'
+
+/index.html
+  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: frame-ancestors 'self'

@@ -251,6 +251,21 @@ The rest of the rules:
 - **`/  /index.html  200`** (playground only, in `_redirects`). Not a redirect: a **status-200 rule
   is a rewrite**, and the redirect layer runs before the asset lookup. It exists to give `/` a file
   under `html_handling: "none"` — see below.
+- **`X-Frame-Options: SAMEORIGIN` + `Content-Security-Policy: frame-ancestors 'self'`** on the
+  playground's `/` **and** `/index.html` — and deliberately **not** on `/embed.html`. The asymmetry
+  is the rule, not an oversight: a `#z=` permalink carries a whole plan in the fragment and a room
+  `label` is author text, so what turns a compiled drawing into a working deception is the full
+  editor chrome framed inside someone else's page. The chrome-less embed viewer is the surface that
+  is *meant* to be framed (the README's `<iframe>` snippet, blogs, Confluence), so it carries
+  neither header. `scripts/smoke.mjs` asserts both directions, the absence included — a widened
+  `/*` rule would protect the shell and silently break every embed on the internet, and nothing
+  else in this repo can see that.
+- **`_headers` matches the REQUEST path, not the file the asset layer resolves to.** Measured on a
+  local `wrangler dev` against the playground's own config, with two probe rules carrying different
+  values: `/` came back with only the `/` rule's header and `/index.html` with only the
+  `/index.html` rule's. So the `/  /index.html  200` **rewrite carries no headers across** — a rule
+  written at one of those paths leaves the other bare, which is why the framing rule is written at
+  both. Worth re-checking by the same method before assuming any future rule covers `/`.
 
 ### Asset routing (`html_handling`), and why the two sites differ
 

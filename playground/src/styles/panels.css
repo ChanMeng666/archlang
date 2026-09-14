@@ -162,6 +162,49 @@
   margin: 0 1px;
 }
 
+/* shared-plan notice — the attribution strip above a drawing that came out of
+   somebody else's `#z=` link (shared-notice.ts). Deliberately NOT redline: the
+   plan is not wrong and nothing failed, so this is an annotation in the margin
+   voice — paper ground, hairline rule, muted ink — not an alarm. Mounted by
+   both the playground (top of #preview) and the embed page (top of
+   .embed-preview), which is why it lives in the file they share. */
+.shared-notice {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--paper-panel);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+.shared-notice-text {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+.shared-notice-dismiss {
+  flex: none;
+  padding: 3px 9px;
+  border: 1px solid var(--src-rule);
+  border-radius: 3px;
+  background: var(--paper);
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 85;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  cursor: pointer;
+}
+.shared-notice-dismiss:hover {
+  border-color: var(--redline);
+  color: var(--redline-ink);
+}
+
 /* facts strip — always-visible plan totals under the preview, read as a
    drafting SCHEDULE row: caps micro-labels, tabular-nums mono figures,
    hairline column separators. */

@@ -12,6 +12,7 @@ import { compile } from "archlang";
 import { embedCompileOptions, hashParam, isEditable, renderDecision } from "./embed-params.js";
 import { createPanZoom } from "./pan-zoom.js";
 import { srcFromHash } from "./share.js";
+import { createSharedNotice, SHARED_PLAN_NOTICE_SHORT, shouldShowSharedNotice } from "./shared-notice.js";
 // The fallback plan for a hash-less embed: the canonical smallest complete plan,
 // imported verbatim (`?raw`) so it can never drift from examples/one-room.arch.
 import fallbackPlan from "../../examples/one-room.arch?raw";
@@ -24,6 +25,7 @@ import "./styles/embed.css";
 
 const stage = document.querySelector<HTMLElement>(".pz-stage")!;
 const viewport = document.querySelector<HTMLElement>(".pz-viewport")!;
+const previewWrap = document.querySelector<HTMLElement>(".embed-preview")!;
 const toolbar = document.querySelector<HTMLElement>(".pz-toolbar");
 const editorWrap = document.querySelector<HTMLElement>(".embed-editor")!;
 const textarea = document.getElementById("embedSrc") as HTMLTextAreaElement;
@@ -61,7 +63,20 @@ toolbar?.addEventListener("click", (e) => {
 });
 
 async function init() {
-  const source = (await srcFromHash()) ?? fallbackPlan;
+  const shared = await srcFromHash();
+  const source = shared ?? fallbackPlan;
+
+  // This page IS the third-party surface: it exists to be framed by someone else's
+  // site, showing a plan that arrived in the fragment. So it carries the same
+  // attribution notice the playground does, as one compact line above the drawing.
+  // The "bundled" set here is the single plan this entry actually bundles — the
+  // one-room fallback — rather than the playground's 27 presets: importing those
+  // would ship a quarter of a megabyte of example text into every iframe on the
+  // internet to silence a notice that, on this page, is almost always correct.
+  if (shouldShowSharedNotice(shared, [fallbackPlan])) {
+    previewWrap.prepend(createSharedNotice(SHARED_PLAN_NOTICE_SHORT));
+  }
+
   const editable = isEditable(location.hash);
   if (editable) {
     editorWrap.hidden = false;
