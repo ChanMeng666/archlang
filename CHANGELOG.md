@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — README and npm description lead with the approved one-liner (docs only)
+
+No code, no language surface. The repository README's display line and the package `description`
+both opened with *"like Typst/LaTeX, but for architecture"* — an analogy the positioning work keeps
+in **body copy** and out of every tagline, title and structured description (the same rule
+`test/docs-page-meta.test.ts` already enforces for the docs site's per-page metadata). Both now lead
+with the approved wording — *floor plans as code, compiled to SVG, DXF and PDF* — followed by the
+25-word boilerplate. The comparison is not deleted: it moves one section down, into the
+Introduction, where it explains rather than announces. The npm package page only picks this up on
+the next `v*` release, because npm freezes both fields at pack time.
+
 ### Changed — the playground says what it is before its JavaScript runs (site chrome only)
 
 No language surface moves here: this is the playground's served HTML, plus the crawler policy
