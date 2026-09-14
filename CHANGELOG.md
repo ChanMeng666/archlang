@@ -118,6 +118,41 @@ answer engine does.
   before any script runs, with no console error and no 4xx — the case that would catch a
   `./assets/` reference resolving one directory down.
 
+### Added — a deploy tells the search engines it happened (deploy infrastructure only)
+
+No language surface, no site bytes: this is one step at the end of `deploy.yml`. Until now a
+deployed page waited for a crawler to come back on its own schedule — days, for a site nobody links
+to often. IndexNow replaces that wait with a push, and it is the only part of this repo's search
+surface that a deploy can perform for itself (Search Console and Bing Webmaster are dashboards a
+human signs into).
+
+- **`scripts/indexnow.mjs`** (zero-dep, plain Node, the same `--site docs|playground --base <url>`
+  shape `scripts/smoke.mjs` takes) reads the freshly-deployed site's own `sitemap.xml`, keeps the
+  `<loc>` URLs that belong to that host, and POSTs one batch — `{ host, key, keyLocation, urlList }`,
+  capped at the protocol's 10,000 — to `https://api.indexnow.org/IndexNow`. Nothing is hardcoded:
+  the URL list is whatever the sitemap says today, so a page added tomorrow is announced tomorrow.
+- **It always exits 0.** A key file that has not reached the edge yet, a site with no sitemap,
+  `api.indexnow.org` down, a 429: each prints a `::warning::` annotation and returns 0. A
+  search-engine ping is not part of the deploy's contract with its readers — the site is live and
+  correct before this step runs, and painting that deploy red would train everyone to ignore it. The
+  check that *does* gate is `scripts/smoke.mjs`, which runs immediately before. The one non-zero exit
+  is `2`, for a malformed command line: a broken workflow step, which cannot be read as a ping result.
+  The first live run of the script proved that claim is not free: `AbortSignal.timeout()` leaves a
+  live libuv timer behind, and closing it inside `process.exit()` aborted Node with
+  `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)` and exit **127** — a correct, complete,
+  exit-0 ping that would have failed the step anyway. It now uses an explicit `AbortController` with
+  a `clearTimeout`, and sets `process.exitCode` instead of calling `process.exit()`.
+- **The key is public on purpose.** IndexNow proves ownership by asking for the key at
+  `https://<host>/<key>.txt`, so the file is committed to `docs-site/public/` and
+  `playground/public/` (content exactly the key, no trailing newline) and the key itself is a
+  repository **variable**, `INDEXNOW_KEY` — not a secret, which would only mask it in the log and
+  make a 403 or 422 unreadable. With the variable unset the script says so and exits 0 without
+  touching the network.
+- Gates: `test/indexnow-script.test.ts` covers the sitemap reader (attributes, CDATA, the `&amp;` a
+  query string forces, de-duplication, off-host URLs — one stray absolute link would 422 the whole
+  batch) and the exit codes, by spawning the script rather than trusting a reading of it.
+  `docs/hosting-and-domains.md` gains an "IndexNow" subsection.
+
 ## [1.36.0] - 2026-09-13
 
 ### Added — a compiled plan you can reach with a keyboard (`annotate` + `accessible`)

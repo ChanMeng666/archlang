@@ -318,3 +318,28 @@ the hosting migration untouched, because the hostname did not move.
 
 `workers_dev: false` on both Workers is part of this: without it each site would also be reachable —
 and indexable, since `robots.txt` says `Allow: /` — at a second `*.workers.dev` origin.
+
+### IndexNow
+
+Every deploy ends by telling the IndexNow participants (Bing, Yandex, Seznam, Naver and the rest)
+which URLs changed, instead of waiting for a crawler to come back on its own schedule. The step is
+`scripts/indexnow.mjs`, run per matrix leg in `.github/workflows/deploy.yml` immediately **after**
+the smoke check — there is no point announcing a deploy that has not been proven to be serving. It
+reads the URL list out of the site's own freshly-deployed `sitemap.xml` (nothing is hardcoded, so a
+new page is announced the day it ships) and POSTs one batch to `https://api.indexnow.org/IndexNow`.
+
+**The key is public, deliberately.** IndexNow authenticates by asking the submitter to serve the key
+at `https://<host>/<key>.txt`; controlling that URL is the whole proof of ownership. So the key file
+is committed — `docs-site/public/<key>.txt` and `playground/public/<key>.txt`, content exactly the
+key — and the key itself is a GitHub repository **variable** (`INDEXNOW_KEY`), not a secret. A secret
+would be masked in the workflow log for no benefit, and would make a 403 or 422 unreadable at exactly
+the moment the log is what you have.
+
+**The step can never fail the deploy.** `scripts/indexnow.mjs` always exits 0. A key file that has
+not propagated to the edge yet, a site with no sitemap, `api.indexnow.org` being down, a 429 — every
+one of those prints a `::warning::` line and returns 0, because the site is already live and already
+correct by the time this runs. The check that *does* gate is `scripts/smoke.mjs`, the step before it.
+With `INDEXNOW_KEY` unset (a fork, or a checkout predating the variable) the script says so and exits
+0 without touching the network; `test/indexnow-script.test.ts` pins that path by spawning the script.
+The one non-zero exit is `2`, for a malformed command line — a broken workflow step to fix, which
+could never be mistaken for a ping result.
