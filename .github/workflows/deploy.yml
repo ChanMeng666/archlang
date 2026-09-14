@@ -98,3 +98,18 @@ jobs:
         # scripts/smoke.mjs checks those; it is zero-dep Node and derives the docs route
         # list from docs-site/sync-docs.mjs, so a new page is covered automatically.
         run: node scripts/smoke.mjs --site ${{ matrix.name }} --base ${{ matrix.url }}
+
+      - name: Ping IndexNow (never fails the deploy)
+        # One POST telling Bing, Yandex, Seznam and every other IndexNow participant
+        # that this site's sitemap URLs changed. It runs AFTER the smoke check on
+        # purpose: there is no point announcing a deploy we have not yet proven is
+        # serving. scripts/indexnow.mjs always exits 0 — a key file that has not
+        # propagated, a missing sitemap or a 429 prints a `::warning::` and nothing
+        # more, because the site is already live and correct by the time we get here.
+        #
+        # INDEXNOW_KEY is a repository VARIABLE, not a secret: the protocol requires
+        # the same key to be served publicly at https://<host>/<key>.txt (committed
+        # in each site's public/), so masking it would only make the log unreadable.
+        env:
+          INDEXNOW_KEY: ${{ vars.INDEXNOW_KEY }}
+        run: node scripts/indexnow.mjs --site ${{ matrix.name }} --base ${{ matrix.url }}
