@@ -24,6 +24,7 @@ import { renderDiagnostics } from "./diagnostics-panel.js";
 import { renderIntent, STARTER_INTENT } from "./intent-panel.js";
 import { renderSuggest } from "./suggest-panel.js";
 import { srcFromHash, updateHash } from "./share.js";
+import { createSharedNotice, shouldShowSharedNotice } from "./shared-notice.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 import { DEFAULT_EXAMPLE, EXAMPLE_GROUPS, EXAMPLES } from "./examples.js";
 // Self-hosted brand fonts (no CDN) — shared with the docs site.
@@ -294,6 +295,14 @@ async function init() {
   const savedSrc = sharedSrc ? null : readStr(KEYS.source);
   const initialDoc = sharedSrc ?? savedSrc ?? EXAMPLES[DEFAULT_EXAMPLE];
   if (!sharedSrc && !savedSrc) select.value = DEFAULT_EXAMPLE;
+
+  // A `#z=` payload that is not one of the bundled examples is third-party text on
+  // our page — say so, once, at the top of the preview. Silent for a stock-example
+  // permalink and for a hash-less visit. See shared-notice.ts for why it is not
+  // remembered.
+  if (shouldShowSharedNotice(sharedSrc, Object.values(EXAMPLES))) {
+    preview.prepend(createSharedNotice());
+  }
 
   // Restore persisted UI prefs (advisory — never block on storage).
   const savedTheme = readStr(KEYS.theme);

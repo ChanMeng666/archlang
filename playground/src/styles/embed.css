@@ -95,6 +95,17 @@ body.embed {
 .embed-brand:hover .embed-brand-name {
   color: var(--redline-ink);
 }
+/* shared-plan notice, embed variant — the same strip panels.css defines, tightened
+   for someone else's iframe. It carries the SHORT sentence (shared-notice.ts), which
+   fits one line at the widths embeds actually use, and it deliberately WRAPS rather
+   than clipping when it does not: an ellipsis here ate the second half of the
+   sentence — the "not by ArchLang" half — which is the only part that matters. */
+.embed .shared-notice {
+  padding: 6px 10px;
+  gap: 10px;
+  font-size: 12px;
+}
+
 /* error bar — redline treatment on paper */
 .embed-err {
   position: fixed;

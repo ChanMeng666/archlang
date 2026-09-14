@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — a shared plan is somebody else's writing, and the playground now says so (site chrome only)
+
+No language surface moves: `compile()`, `describe()` and `lint()` are byte-unmoved, and so is every
+rendered SVG. What changes is how the playground presents a plan that arrived from **outside**.
+
+Google Safe Browsing classified the docs apex as *"Deceptive pages"* with no sample URL, and the only
+mechanism on either of our hosts that can produce a deceptive page is this: a `#z=` permalink carries
+a whole plan in the URL fragment, we compile it in the visitor's browser, and a room `label` is
+author text. A plan whose rooms are called `Session expired — sign in` is lint-clean and always will
+be — the language cannot police the words, and should not try. Two mitigations, both cheap, neither
+touching the compile path.
+
+- **The playground shell refuses to be framed; `/embed.html` deliberately still allows it.** The
+  root page now serves `X-Frame-Options: SAMEORIGIN` and `Content-Security-Policy: frame-ancestors
+  'self'` from `playground/public/_headers`. What makes a drawing into a working deception is the
+  full editor chrome inside someone else's page, under someone else's address bar; a chrome-less
+  embed in a blog post is the thing that is *supposed* to be framed, so it carries neither header and
+  the README's `<iframe src=".../embed.html#z=…">` contract is untouched. The rule is written at
+  **both `/` and `/index.html`**: `_headers` matches the REQUEST path, not the file the asset layer
+  resolves to — measured on a local `wrangler dev` with two probe rules carrying different values,
+  where `/` came back with only the `/` rule's header, so the `/  /index.html  200` rewrite in
+  `_redirects` carries nothing across.
+- **A shared plan is attributed on the page.** When a load decodes a `#z=` payload that is *not*
+  byte-equal to one of the bundled examples, a dismissible `role="status"` strip appears above the
+  drawing: *"This plan was compiled from a shared link. Its text and labels were written by whoever
+  shared it, not by ArchLang."* The embed page — the exact third-party surface — carries a one-line
+  variant, *shortened* rather than truncated: an `ellipsis` cut it at "not by ArchLan…" in a 720 px
+  iframe and left only the opening clause at 380 px, which is the half that does no work. Silent for
+  a stock-example permalink and for a hash-less visit — a
+  notice on content we wrote ourselves is how a notice becomes furniture. The dismissal is
+  deliberately **not** persisted: the next shared link is a different stranger's text.
+- Gates: `scripts/smoke.mjs` gains a `noHeader()` assertion and asserts the asymmetry in both
+  directions — `X-Frame-Options` + the CSP present on `/` and on `/index.html`, and **absent** on
+  `/embed.html`. That negative check is the contract; it was proved non-vacuous by widening the rule
+  to `/*` against a local `wrangler dev`, which failed it. `playground/test/shared-notice.test.ts`
+  pins the predicate (byte equality, not resemblance; an empty shared document still counts) and the
+  sentence; `playground/e2e/shared-notice.spec.ts` drives both pages in Chromium — a stranger's plan
+  is attributed, a real `examples/one-room.arch` permalink is not, dismissal survives no reload, and
+  no console errors.
+
 ### Changed — the playground says what it is before its JavaScript runs (site chrome only)
 
 No language surface moves here: this is the playground's served HTML, plus the crawler policy
