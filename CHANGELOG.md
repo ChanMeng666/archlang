@@ -77,6 +77,47 @@ reference, the error catalog and the home page were indistinguishable.
   `head metadata` describe in `docs-site/e2e/routes.spec.ts`, and two more routes in
   `scripts/smoke.mjs`.
 
+### Added — a URL per plan a crawler can read (site chrome only)
+
+The playground intro band two sections above gave that site a heading; this gives every example
+plan a page. Still no language surface: the compiler is unchanged and these are build outputs,
+not source. A `#z=` fragment never reaches a server, so a shared plan has never been indexable
+at all — the drawing, the source and the numbers existed only after JavaScript ran, which no
+answer engine does.
+
+- **27 static pages at `/examples/<name>.html`**, plus an index at `/examples/` and the site's
+  first `sitemap.xml` (29 urls). Each page is self-contained — its own inline `<style>`, no
+  script, no app bundle — and carries an `<h1>`, the plan's blurb, one statistics sentence built
+  from `describe()` (rooms, floor area, windows, and "every room is reachable from the entrance"
+  **only when `describe()` says so** — two shipped examples have no entrance at all), the
+  compiled SVG inlined with `role="img"` and the compiler's own caption as its `aria-label`, the
+  `.arch` source in a `<pre>`, a permalink into the editor, a canonical URL, OG/Twitter tags and
+  JSON-LD (`SoftwareSourceCode` + `BreadcrumbList`).
+- **New `playground/scripts/gen-static.mjs`** (zero-dep) writes them after `vite build`, so
+  `playground/package.json`'s one-line `build` change is all that puts them in every deploy. It
+  imports the BUILT core for `compile`/`describe` and hard-exits 1 when `dist/` is missing or any
+  plan fails, collecting every failure first — a page with prose and no drawing is worse than no
+  page. It reuses `encodePlanHash` from `scripts/gen-permalink.mjs` rather than adding a fourth
+  implementation of the share codec.
+- **`playground/src/examples.ts` is now a literal `EXAMPLE_ROWS` table** (basename, menu label,
+  group, blurb) with `EXAMPLE_GROUPS` / `EXAMPLES` / `DEFAULT_EXAMPLE` derived from it, so the
+  menu, the pages and the sitemap cannot disagree. The new two-way gate
+  `test/playground-examples-rows.test.ts` immediately found what a one-way one could not:
+  **`garden-house`, the v1.31 outdoor flagship, had no row** — it has shipped to npm, the docs
+  site and the README since v1.31 while being invisible in the playground, because this file was
+  last edited before the example existed. It is now the 27th preset ("Garden House (site plan)",
+  appended to *Homes*); every other label and its order are byte-identical.
+- Also here: the two `archcanvas.chanmeng.org` links in the header nav now point at
+  `archcanvas.uk` (the old host 301s there), and `public/_redirects` gains a status-200 rewrite
+  for `/examples/` — the same mechanism the site root already uses, because `html_handling:
+  "none"` makes a directory URL not a file.
+- Gates: the new row test (both directions, blurb length band, killed-claim regexes, and the
+  generator's own shape); `scripts/smoke.mjs` checks `/examples/one-room.html` for a heading and
+  an inlined `<svg>`, `/examples/` for a heading, and `/sitemap.xml` for the example URL; new
+  `playground/e2e/examples-static.spec.ts` (`@prod`, read-only) asserts the page is complete
+  before any script runs, with no console error and no 4xx — the case that would catch a
+  `./assets/` reference resolving one directory down.
+
 ## [1.36.0] - 2026-09-13
 
 ### Added — a compiled plan you can reach with a keyboard (`annotate` + `accessible`)

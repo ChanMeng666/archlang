@@ -258,6 +258,19 @@ function playgroundChecks() {
       entryScript(),
     ),
     route("/robots.txt", contains("Sitemap:")),
+    // The static half: one crawlable page per example plan, written by
+    // playground/scripts/gen-static.mjs after `vite build`. These three routes are the
+    // whole contract in miniature. The `.html` is REQUIRED — `html_handling: "none"`
+    // is an exact-path lookup, so `/examples/one-room` does not exist — and the page
+    // must carry both a heading and an inlined `<svg>`, because a page that reached
+    // production with the prose but no drawing (a missing repo-root `dist/`, a
+    // generator that silently wrote a shell) is exactly the failure nothing else sees.
+    route("/examples/one-room.html", contentType("text/html"), contains("<h1"), contains("<svg")),
+    // A directory URL, served through the status-200 rewrite in public/_redirects —
+    // the same mechanism the site root uses, and the one the sitemap and every
+    // breadcrumb point at.
+    route("/examples/", contentType("text/html"), contains("<h1")),
+    route("/sitemap.xml", contains("<urlset"), contains("/examples/one-room.html")),
     // The header, not the meta tag: it is what a crawler that never parses the markup
     // acts on, and it comes from public/_headers, which nothing else here executes.
     route(
