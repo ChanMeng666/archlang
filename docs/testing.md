@@ -138,6 +138,23 @@ Each of these is a place two copies must agree because they *cannot* share an im
 | `test/docs-flags.test.ts` | every `arch <cmd> … --flag` written in a hand-maintained doc is a flag that command actually declares in `src/manifest.ts` (the `docs-site/agents.md` page once told agents to run a flag `fix` never accepted) | fix the prose or add the flag properly. Its scanned list is the `DOCS` array at the top of the file — it includes `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `README.md`, `SKILL.md`, `llms.txt` and the `.claude/` command files |
 | `test/readme-permalink.test.ts` | every playground `#z=` permalink in README / `SKILL.md` / `llms.txt` / hand-written docs-site pages decodes to an example's exact bytes AND compiles clean | regenerate the link with `scripts/gen-permalink.mjs`; never hand-edit a hash |
 
+### Published-site metadata — the SEO / GEO surface
+
+What the two sites serve to a crawler is **static bytes**: no AI crawler executes JavaScript, so a
+heading painted by script is a heading nobody reads. The surfaces below are hand-written editorial
+text feeding public pages, which is the shape that rots, so each carries a mechanical guard. The
+whole map — every surface, its owning file, the crawler policy, the wording law and the
+measurement plan — is [`seo.md`](seo.md); this table is only the gates.
+
+| Guard | Law | Red ⇒ |
+|-------|-----|-------|
+| `test/docs-page-meta.test.ts` | `PAGE_META` in `docs-site/.vitepress/config.ts` covers exactly the routes the site builds, **both ways** (derived from `docs-site/*.md`, `sync-docs.mjs`'s `PAGES` and `docs/adr/*.md`, never retyped); each description is 80–170 chars, reads as a sentence rather than a keyword list, and matches none of the killed-claim regexes; the head wiring itself — title template, no static `og:*` that could outrank a page's own, a `transformHead` that falls back instead of throwing, a `robots.txt` naming every crawler and the sitemap | write or delete the row; rewrite the description as prose. A killed claim means the copy left the approved boilerplate — **never widen a regex to green it**. The table is PARSED out of config.ts, so a formatting change that breaks the parse fails loudly rather than silently checking nothing |
+| `test/playground-examples-rows.test.ts` | `EXAMPLE_ROWS` in `playground/src/examples.ts` and `examples/*.arch` agree in **both** directions, minus `sync-docs.mjs`'s own `EXCLUDED_EXAMPLES`; every blurb is 40–160 chars of sentence prose passing the same killed-claim regexes; `gen-static.mjs` parses this table with the same pattern, reuses the shared `#z=` codec, and hard-fails rather than publishing a page with no drawing | add the row (or the exclusion, with a reason). This direction is the one that catches the real failure: `garden-house` shipped to npm, the docs and the README while being invisible in the playground, because the list was last edited before the example existed |
+| `test/indexnow-script.test.ts` | `scripts/indexnow.mjs` reads every `<loc>` out of a sitemap correctly (attributes, CDATA, the `&amp;` a query string forces, de-duplication, off-host URLs) and **always exits 0** — checked by spawning the process, because an exit code is the one thing a reading of the script cannot assert. The first live run proved that is not free: an `AbortSignal.timeout()` timer left alive across `process.exit()` aborted Node with exit 127 after a complete, successful ping | fix the script, not the test. A search-engine ping that can fail a deploy is worse than no ping |
+| `scripts/smoke.mjs` — the `header()` assertion | `/embed.html` answers with `X-Robots-Tag: noindex, follow`. It is the one assertion in that file reading a response **header** rather than a body, because the rule lives in `playground/public/_headers`, which nothing else in the repo executes, and a body check cannot see it | the header is missing at the edge: check `_headers` and the deploy. Note the page is deliberately NOT disallowed in `robots.txt` — a `Disallow` stops the fetch, and a header nobody fetches de-indexes nothing |
+| `docs-site/e2e/routes.spec.ts` `@prod` "head metadata" | on `/`, `/reference` and `/errors`: exactly one canonical link carrying that route's URL, a non-empty `og:description` that **differs** between pages, and one parseable JSON-LD block whose `@context` is schema.org | as with every `@prod` case, red means production is broken or stale, not that a pull request is bad |
+| `playground/e2e/boot.spec.ts` + `examples-static.spec.ts` `@prod` | the playground serves one `<h1>` and the lede **before hydration** (`waitUntil: "commit"`), and each static example page serves a heading, a compiled `<svg>`, its statistics sentence, a self-canonical link and parseable JSON-LD with no JavaScript at all | the pre-hydration reading is the only one that proves anything about a crawler — do not "fix" it by waiting for load |
+
 ### Public-surface closure — `test/public-surface.test.ts`
 
 `src/index.ts` is the only public surface, and it can be *incomplete* without anything inside the
@@ -349,6 +366,11 @@ a brand asset. Route lists are **parsed out
 of `sync-docs.mjs`'s tables**, so a new page or example joins the smoke test the day it lands.
 Retries 6× / 5s apart on a network error or non-200 (deploy propagation); a 200 whose **body** fails
 its assertion is never retried — waiting cannot fix wrong bytes.
+
+It also checks the crawler-facing surface, which nothing else in this repo executes: `robots.txt`
+and `sitemap.xml` on both sites, the playground's `<h1>` and lede, one static example page (heading
+plus an inlined drawing) and the `/examples/` directory rewrite, and — through the `header()`
+assertion — the `X-Robots-Tag` on `/embed.html`. See [`seo.md`](seo.md).
 
 ### Coverage — a map, not a gate
 

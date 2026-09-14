@@ -815,6 +815,13 @@ source (.arch)
   `$id`s in `src/plan-json.ts`/`src/intent.ts` → `gen:*-schema`; agent-context URLs in `SKILL.md` →
   `gen:llms`); never hand-edit `schemas/*.json` or `llms-full.txt`. The README `#z=` permalinks are
   base-independent, so only the host prefix swaps. Full playbook: `docs/hosting-and-domains.md`.
+- **(Sites) The two sites have an SEO/GEO surface, mapped in [`docs/seo.md`](docs/seo.md)** — robots,
+  sitemaps, canonical + `PAGE_META`, JSON-LD, the playground intro band and its 27 static example
+  pages. Three rules get broken. **Static bytes are all an AI crawler sees**: none of them executes
+  JavaScript, so anything a script paints is invisible. **The hand-written copy tables** (`PAGE_META`,
+  `EXAMPLE_ROWS`) are gated by killed-claim regexes — fix the copy, never widen the regex. And
+  **`/embed.html` is de-indexed by an `X-Robots-Tag` header, not a `robots.txt` Disallow**: a Disallow
+  stops the fetch, and a header nobody fetches de-indexes nothing.
 - **(Parallel worktrees) A clean auto-merge is NOT evidence of correctness when one branch MOVED a
   function another MODIFIED.** v1.25.0's closest call: one agent fixed `windowFacing` in
   `describe.ts` while a second, branched earlier, *extracted that function into a new
