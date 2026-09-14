@@ -161,6 +161,34 @@ Cloudflare feature that transforms responses or interposes a challenge, check it
 `scripts/smoke.mjs` and the `@prod` Playwright subset — those are the two things that read this
 site as a machine rather than as a browser.
 
+### AI Crawl Control — the fifth setting, and it is not where the docs say
+
+A crawler block is the one part of this surface **no test in this repository can see**, so it is
+audited by hand. What is live on the `archlang.uk` zone, read on 2026-09-14:
+
+| Surface | Where | State |
+|---------|-------|-------|
+| Per-crawler allow/block | zone → AI → Security: a table of 32 named crawlers, each with a `Block Crawler` switch and a read-only category label | **0 of 32 blocked** |
+| `Block AI training bots` | zone Overview → "Manage AI bot access" | **Do not block** (allow crawlers) |
+| Managed robots.txt | zone → AI → Overview | **OFF** — its `Content Signals Policy` dropdown is selected but inert while the master toggle is off, proved by fetching `robots.txt` as GPTBot and getting the repo's own bytes back, byte for byte |
+| Legacy `Block AI bots` managed rule | Security → Settings → Bot traffic | untouched; labelled deprecated as of 2026-09-15 |
+
+Two things to expect. **There are no Search / Agent / Training category toggles** — the category
+words are read-only labels on each crawler row, so any instruction naming those switches describes a
+surface that no longer exists. And a **cache-busted fetch under each crawler's user-agent is the
+check that actually settles it**: six answer-engine user-agents against each host returned 200 both
+before and after the audit, and Cloudflare's own per-crawler counters showed every one of them
+allowed. If Managed robots.txt is ever switched on, Cloudflare's default content-signals policy says
+`ai-train=no`, which contradicts the allow-everything decision in [`seo.md`](seo.md) § "Crawler
+policy" — that is the trap to watch for.
+
+**Two write classes on Cloudflare are owner-by-hand, not agent work.** A session's permission
+classifier refuses an agent both `Security Weaken` (touching the zone security settings — the four
+toggles above) and `DNS / Domain / Cert Changes` (adding a record, including a Search Console
+verification TXT). Both were refused in practice, in two separate sessions, while read-only
+navigation of the same zone was allowed. So an agent can audit and report these; the owner performs
+them.
+
 ### What the 2026-09-05 audit actually found
 
 This is not hypothetical. The zone had been DNS-only since 2026-07-15, so nothing in it had ever
