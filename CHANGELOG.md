@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Docs — the SEO/GEO surface, its dashboards and the Safe Browsing incident (documentation only)
+
+`docs/seo.md` gains the dashboards (two Search Console Domain properties, the same two in Bing, the
+three sitemaps and their 34 / 29 / 18 URL counts, and the fact that Bing's Search Console import
+never carries a sitemap across), the 2026-09-14 Safe Browsing "Deceptive pages" incident with the
+audit that found nothing, the review requested on 2026-09-15 and what to do if it recurs, the
+off-site position (five awesome-list pull requests open, Wikidata on hold for want of an independent
+source) and the frozen 25-prompt panel's first baseline. `docs/hosting-and-domains.md` records what
+Cloudflare's AI Crawl Control actually looks like — a 32-row per-crawler table with no Search / Agent
+/ Training category switches, nothing blocked, Managed robots.txt off — and the two write classes an
+agent is refused there. `docs/testing.md` picks up PR #99's guards: `smoke.mjs`'s `noHeader()`
+framing assertion and the shared-notice unit and E2E specs. `AGENTS.md` gains one status row and the
+`_headers` request-path law.
+
 ### Changed — a shared plan is somebody else's writing, and the playground now says so (site chrome only)
 
 No language surface moves: `compile()`, `describe()` and `lint()` are byte-unmoved, and so is every
