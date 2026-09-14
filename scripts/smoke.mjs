@@ -190,6 +190,17 @@ function docsChecks() {
     // Homepage marker: the hand-written "built for agents" band in docs-site/index.md.
     // It is prose in the page source (not a component), so it survives a theme refactor.
     route("/", contentType("text/html"), contains("An interface, not just an image.")),
+    // The crawler policy and the sitemap that carries it. Both are static files, so
+    // the only way they break is a deploy that dropped public/ — which is exactly the
+    // class of failure this script runs after a deploy to catch.
+    route(
+      "/robots.txt",
+      contains("Sitemap: https://archlang.uk/sitemap.xml"),
+      // One named answer-engine crawler proves we got the current policy file rather
+      // than the two-line placeholder it replaced.
+      contains("OAI-SearchBot"),
+    ),
+    route("/sitemap.xml", contains("<urlset"), contains("<loc>https://archlang.uk/reference</loc>")),
     route("/llms.txt", contentType("text"), nonEmpty()),
     // Heading emitted by scripts/gen-llms-full.ts — its presence proves we got the bundle,
     // not an SPA fallback page.

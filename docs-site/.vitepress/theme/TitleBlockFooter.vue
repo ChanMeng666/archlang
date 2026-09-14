@@ -13,7 +13,7 @@
 // the 24px here without changing the calc there breaks the alignment.
 const ECOSYSTEM = [
   { href: "https://playground.archlang.uk", label: "Playground ↗" },
-  { href: "https://archcanvas.chanmeng.org", label: "ArchCanvas ↗" },
+  { href: "https://archcanvas.uk", label: "ArchCanvas ↗" },
   { href: "https://www.npmjs.com/package/@chanmeng666/archlang", label: "npm ↗" },
   { href: "https://github.com/chanmeng666/archlang", label: "GitHub ↗" },
 ];

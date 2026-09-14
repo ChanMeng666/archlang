@@ -20,6 +20,10 @@ adr/index.md
 # .vitepress/config.ts (so the sidebar can never freeze behind the ADR directory).
 .vitepress/theme/adr-data.js
 
+# Sitemap <lastmod> dates for the GENERATED pages, written by sync-docs.mjs from each
+# canonical source's git history and read by .vitepress/config.ts's transformItems.
+.vitepress/lastmod.json
+
 # Example-gallery SVGs + the live-widget source data are regenerated from
 # examples/*.arch by sync-docs.mjs.
 public/examples/

@@ -8,6 +8,7 @@
 // requirement: a missing dist/ or a broken example EXITS 1 rather than warning and
 // carrying on, because the alternative is a site that builds and deploys with an
 // examples page whose every image 404s.
+import { execFileSync } from "node:child_process";
 import { copyFileSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -140,6 +141,45 @@ writeFileSync(
     `export const ADRS = ${JSON.stringify(adrEntries, null, 2)};\n`,
 );
 console.log(`  ${adrs.length} ADRs → adr/  (+ .vitepress/theme/adr-data.js)`);
+
+// ───────────────────────────────────────────────────────────────────────────────
+// SITEMAP DATES for the pages this script GENERATES.
+//
+// VitePress dates each sitemap entry from the git history of the built page — and
+// every page above is untracked build output, so `git log` on it returns nothing and
+// the entry shipped with no <lastmod> at all. The honest date is the CANONICAL
+// source's last commit, which only this script knows the mapping for. Write it as
+// data; `.vitepress/config.ts` stamps it through `sitemap.transformItems`.
+//
+// A fabricated date would be worse than none (a build-time `new Date()` on unchanged
+// content is noise search engines discount), so a file git cannot date is OMITTED,
+// and any git failure at all — a shallow clone, no git, an export tarball — leaves
+// the map empty rather than failing the docs build.
+// ───────────────────────────────────────────────────────────────────────────────
+const lastmod = {};
+try {
+  const commitDate = (src) =>
+    execFileSync("git", ["log", "-1", "--format=%cI", "--", src], { cwd: repo, encoding: "utf8" }).trim();
+  for (const [src, dest] of PAGES) {
+    const iso = commitDate(src);
+    if (iso) lastmod[`/${dest.replace(/\.md$/, "")}`] = iso;
+  }
+  for (const f of adrs) {
+    const iso = commitDate(`docs/adr/${f}`);
+    if (iso) lastmod[`/adr/${f.replace(/\.md$/, "")}`] = iso;
+  }
+  // The ADR index is generated from the directory, so it is as new as its newest ADR.
+  const newestAdr = adrs
+    .map((f) => lastmod[`/adr/${f.replace(/\.md$/, "")}`])
+    .filter(Boolean)
+    .sort()
+    .pop();
+  if (newestAdr) lastmod["/adr/"] = newestAdr;
+} catch (e) {
+  console.warn(`  (no sitemap lastmod dates: ${e.message.split("\n")[0]})`);
+}
+writeFileSync(join(here, ".vitepress", "lastmod.json"), `${JSON.stringify(lastmod, null, 2)}\n`);
+console.log(`  ${Object.keys(lastmod).length} sitemap lastmod dates → .vitepress/lastmod.json`);
 
 // Example gallery: compile each example to SVG through the built core, and emit a
 // data module with each example's *source* so the docs pages can seed live,
