@@ -22,7 +22,7 @@ import { highlightArch } from "./arch-highlight.js";
 const HERO = "laneway-house";
 const raw: string = EXAMPLES[HERO];
 
-const ARCHCANVAS = "https://archcanvas.chanmeng.org";
+const ARCHCANVAS = "https://archcanvas.uk";
 // The playground, opened on THIS plan rather than on an empty editor: a `#z=` permalink
 // minted at build time by sync-docs.mjs from the same file the hero types. A reader who
 // has just watched laneway-house.arch compile can carry it across the seam and keep going.
@@ -193,7 +193,14 @@ onBeforeUnmount(() => {
             <span class="eyebrow__arrow" aria-hidden="true">↗</span>
           </a>
 
-          <h1 class="headline">Designs that <span class="headline__accent">compile.</span></h1>
+          <!-- The brand line stays verbatim (brand/README.md, ADR 0010): it is the
+               identity line, not a slogan to be rewritten. The second line inside the
+               same <h1> is the one a crawler and an answer engine can read the subject
+               off — "Designs that compile." alone names no category. -->
+          <h1 class="headline">
+            Designs that <span class="headline__accent">compile.</span>
+            <span class="headline__sub">A declarative language for floor plans.</span>
+          </h1>
 
           <p class="tagline">
             A small declarative language that compiles to professional SVG floor plans.
@@ -344,6 +351,16 @@ onBeforeUnmount(() => {
      can finally appear at full saturation (4.1:1 on --src-bg). Body-size plum
      must still use --plum-deep. */
   color: var(--plum);
+}
+.headline__sub {
+  /* Inside the <h1>, so it is part of the page's one top-level heading — and sized
+     down to read as the sub-line it is. Tokens only; no dark-mode variant exists. */
+  display: block;
+  margin-top: 0.5em;
+  font-size: 0.42em;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--src-muted);
 }
 
 .tagline {

@@ -45,6 +45,85 @@ test.describe("the homepage renders", { tag: "@prod" }, () => {
   });
 });
 
+/**
+ * HEAD METADATA — the half of the SEO surface that only exists in the BUILT html.
+ *
+ * `test/docs-page-meta.test.ts` gates the PAGE_META table itself (coverage, length,
+ * killed claims); nothing there proves the table actually reaches a page. The wiring
+ * between them is three VitePress hooks — `transformPageData`, `transformHead` and
+ * `sitemap.transformItems` — and a hook that silently returns nothing produces a site
+ * that builds, deploys and looks perfect while every page shares one description
+ * again. These cases read the rendered head.
+ *
+ * The canonical href is an absolute PRODUCTION URL by construction, so the assertion
+ * is identical against `vitepress preview` in CI and against the live site at night.
+ */
+test.describe("head metadata", { tag: "@prod" }, () => {
+  const ORIGIN = "https://archlang.uk";
+
+  for (const route of ["/", "/reference", "/errors"]) {
+    test(`${route} carries one canonical, a description and parseable JSON-LD`, async ({ page }) => {
+      const res = await page.goto(route);
+      expect(res?.status()).toBe(200);
+
+      const canonical = page.locator('link[rel="canonical"]');
+      // Two canonicals are the same as none — a search engine discards the signal.
+      await expect(canonical).toHaveCount(1);
+      expect(await canonical.getAttribute("href")).toBe(ORIGIN + route);
+
+      const ogUrl = page.locator('meta[property="og:url"]');
+      await expect(ogUrl).toHaveCount(1);
+      expect(await ogUrl.getAttribute("content")).toBe(ORIGIN + route);
+
+      for (const selector of ['meta[name="description"]', 'meta[property="og:description"]']) {
+        const meta = page.locator(selector);
+        await expect(meta, `${route} must carry exactly one ${selector}`).toHaveCount(1);
+        expect((await meta.getAttribute("content"))?.length ?? 0).toBeGreaterThan(60);
+      }
+
+      const ld = page.locator('script[type="application/ld+json"]');
+      await expect(ld).toHaveCount(1);
+      const parsed = JSON.parse((await ld.textContent()) ?? "");
+      expect(parsed["@context"]).toBe("https://schema.org");
+      expect(Array.isArray(parsed["@graph"])).toBe(true);
+    });
+  }
+
+  test("the description actually differs per page", async ({ page }) => {
+    // The defect this whole surface exists to fix: one description for 34 routes.
+    const read = async (route: string) => {
+      await page.goto(route);
+      return page.locator('meta[property="og:description"]').getAttribute("content");
+    };
+    const home = await read("/");
+    const reference = await read("/reference");
+    const errors = await read("/errors");
+    expect(home).toBeTruthy();
+    expect(new Set([home, reference, errors]).size, "these three pages share a description").toBe(3);
+  });
+
+  test("/robots.txt allows the answer engines and names the sitemap", async ({ request }) => {
+    const body = await (await request.get("/robots.txt")).text();
+    expect(body).toContain("Sitemap: https://archlang.uk/sitemap.xml");
+    expect(body).toContain("OAI-SearchBot");
+  });
+
+  test("/sitemap.xml lists every page route", async ({ request }) => {
+    const res = await request.get("/sitemap.xml");
+    expect(res.status()).toBe(200);
+    const body = await res.text();
+    expect(body).toContain("<urlset");
+    // Derived: every raw-markdown route has a page route beside it.
+    for (const { route } of PAGE_ROUTES) {
+      const pageRoute = route.replace(/\.md$/, "");
+      expect(body, `${pageRoute} is missing from the sitemap`).toContain(`<loc>https://archlang.uk${pageRoute}</loc>`);
+    }
+    // The generated pages are untracked build output, so VitePress cannot date them
+    // from git — sync-docs.mjs writes their canonical source's commit date instead.
+    expect(body, "no <lastmod> at all means the lastmod.json writer stopped working").toContain("<lastmod>");
+  });
+});
+
 test.describe("machine-readable root artifacts", { tag: "@prod" }, () => {
   test("every ROOT_COPIES route is served and non-empty", async ({ request }) => {
     // Derived, so /llms.txt, /llms-full.txt, both schemas and the grammar are all covered

@@ -43,6 +43,40 @@ that one contentless URL.
   `waitUntil: "commit"` and asserts exactly one visible `<h1>` and the lede — before hydration,
   which is the only reading that proves anything about a crawler.
 
+### Added — the docs site says which page it is (site chrome only; no language surface)
+
+Every one of the docs site's 34 routes shipped the same `<title>`, the same meta description
+and the same social card, with no canonical URL, no structured data and no `Sitemap:` line in
+`robots.txt`. To a crawler — and to an answer engine, none of which executes JavaScript — the
+reference, the error catalog and the home page were indistinguishable.
+
+- **`PAGE_META` in `docs-site/.vitepress/config.ts`** — one row per route carrying a `<title>`
+  fragment and a meta description, rendered through a new `titleTemplate: ":title — ArchLang"`
+  (the home page opts out; its title is fixed wording). `transformPageData` applies them,
+  frontmatter always winning; `transformHead` emits the canonical URL, `og:url`/`og:site_name`,
+  per-page `og:*`/`twitter:*`, `rel=alternate` links to the raw `/<page>.md` copy and to
+  `/llms.txt`, and JSON-LD — `WebSite` + `SoftwareApplication` + `SoftwareSourceCode` on `/`,
+  `TechArticle` + `BreadcrumbList` elsewhere. The four static `og:title`/`og:description`/
+  `twitter:*` entries are **gone from `head:`**, since a static value there describes all 34
+  routes identically. The lookup falls back to the site defaults rather than throwing: a
+  `transformHead` exception fails `docs:build` with no page context, and the 404 reaches it.
+- **Sitemap dates that are not invented.** `sync-docs.mjs` now writes
+  `.vitepress/lastmod.json` — each generated page's CANONICAL source's last commit date, read
+  from `git log` — and `sitemap.transformItems` stamps it. The nine synced pages and all 19 ADR
+  copies are untracked build output, so VitePress could not date them from git and shipped them
+  with no `<lastmod>` at all. A page git cannot date is omitted rather than stamped with the
+  build time.
+- **`docs-site/public/robots.txt` states the policy instead of implying it**: every search,
+  answer and training crawler allowed by name, and the `Sitemap:` line.
+- **The home `<h1>` gains a second line** — "A declarative language for floor plans." inside the
+  same element. "Designs that compile." stays verbatim (it is the brand identity line) but on
+  its own it names no category.
+- **Gated** by a new `test/docs-page-meta.test.ts` (two-way route coverage against
+  `docs-site/*.md` + sync-docs' `PAGES` + `docs/adr/*.md`, 80–170-character sentence-shaped
+  descriptions, killed-claim and hype-word regexes, and the head wiring itself), a new `@prod`
+  `head metadata` describe in `docs-site/e2e/routes.spec.ts`, and two more routes in
+  `scripts/smoke.mjs`.
+
 ## [1.36.0] - 2026-09-13
 
 ### Added — a compiled plan you can reach with a keyboard (`annotate` + `accessible`)
