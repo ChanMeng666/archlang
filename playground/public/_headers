@@ -19,3 +19,12 @@
 # revalidating default, which is what makes a deploy visible immediately.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# The embed viewer is a chrome-less <iframe> target, not a page anyone should reach
+# from a search result — the canonical experience is the playground itself, and the
+# plan an embed shows lives in a `#z=` fragment a crawler never receives anyway.
+# `noindex, follow`, not a robots.txt Disallow: a Disallow would stop the crawler
+# fetching the page at all, and a header it never reads cannot de-index anything.
+# `follow` keeps the outbound links (the brand link back to the playground) live.
+/embed.html
+  X-Robots-Tag: noindex, follow

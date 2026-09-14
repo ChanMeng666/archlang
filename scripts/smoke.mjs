@@ -90,6 +90,21 @@ const nonEmpty = () => (body) => {
   if (body.trim().length === 0) throw new Error("body is empty");
 };
 
+/**
+ * A response HEADER carries a substring (case-insensitively). Unlike every other
+ * assertion here this one reads nothing from the body — which is the point: an
+ * `X-Robots-Tag` is invisible to a body check, is what actually de-indexes a page,
+ * and is set by a `_headers` file that no test in this repo compiles or executes.
+ * A typo there fails silently in exactly the way nobody notices for a year.
+ */
+const header = (name, sub) => (_body, res) => {
+  const value = res.headers.get(name);
+  if (value === null) throw new Error(`response has no ${name} header`);
+  if (!value.toLowerCase().includes(sub.toLowerCase())) {
+    throw new Error(`${name} is ${JSON.stringify(value)}, expected it to contain ${JSON.stringify(sub)}`);
+  }
+};
+
 const contains = (sub) => (body) => {
   if (!body.includes(sub)) throw new Error(`body does not contain ${JSON.stringify(sub)}`);
 };
@@ -219,8 +234,28 @@ const entryScript = () => async (body, _res, ctx) => {
 function playgroundChecks() {
   return [
     // Markers are the app's mount points in playground/index.html + embed.html.
-    route("/", contentType("text/html"), contains('id="editor"'), entryScript()),
-    route("/embed.html", contentType("text/html"), contains('id="embedSrc"'), entryScript()),
+    // The `<h1` and lede assertions cover the crawlable intro band: a crawler runs no
+    // JavaScript, so if those bytes are not in the SERVED html the page has no prose at
+    // all — and a bundler config change or a stray `display: none` is exactly how that
+    // would happen without any other check noticing.
+    route(
+      "/",
+      contentType("text/html"),
+      contains('id="editor"'),
+      contains("<h1"),
+      contains("compiles in your browser"),
+      entryScript(),
+    ),
+    route("/robots.txt", contains("Sitemap:")),
+    // The header, not the meta tag: it is what a crawler that never parses the markup
+    // acts on, and it comes from public/_headers, which nothing else here executes.
+    route(
+      "/embed.html",
+      contentType("text/html"),
+      contains('id="embedSrc"'),
+      header("x-robots-tag", "noindex"),
+      entryScript(),
+    ),
     route("/brand/archlang-icon-plum.svg", isSvg()),
   ];
 }

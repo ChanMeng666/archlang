@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the playground says what it is before its JavaScript runs (site chrome only)
+
+No language surface moves here: this is the playground's served HTML, plus the crawler policy
+around it. The playground is a Vite SPA, and no AI crawler executes JavaScript — so what every
+search and answer engine has been reading at `playground.archlang.uk` is a `<body>` containing a
+header, five empty mount points and no `<h1>` at all. The `#z=` permalink fragment never reaches
+a server either, so the roughly fifty plan links the README and the docs emit all collapse onto
+that one contentless URL.
+
+- **A small visible intro band** sits between the header and the panes: one line of `<h1>`
+  (`ArchLang Playground — write floor plans, compile them in your browser`), a three-sentence
+  lede, and a row of links to the guide, the language reference, the one-page spec, the coming
+  static example pages, npm and GitHub. It is folded, not hidden — a `<details open>` whose
+  summary is the `<h1>`, so the heading is always on screen and only the lede and links can be
+  put away. There is no `display: none` anywhere in it and nothing is painted by script; the
+  bytes are in `index.html`. Tokens only, source-world colours, no new hex (ADR 0014).
+- **A `<noscript>` paragraph** points a JavaScript-less reader at the reference, the static
+  example pages and the npm package, instead of at a blank editor.
+- **Head completion**: `rel=canonical`, `og:url`, `og:site_name`, `og:image:width/height/alt`,
+  `twitter:title`/`twitter:description`/`twitter:image:alt`, and a JSON-LD `@graph`
+  (`SoftwareApplication` + `WebSite`, the latter `isPartOf` the docs site's `WebSite`).
+- **`/embed.html` is now `noindex, follow`** — a `<meta name="robots">` and, for the crawler that
+  never parses the markup, an `X-Robots-Tag` in `public/_headers`. It is deliberately NOT
+  disallowed in `robots.txt`: a `Disallow` stops the fetch, and a header nobody fetches de-indexes
+  nothing. `_redirects` is untouched, so `/embed.html` stays the literal 200 third-party iframes
+  depend on.
+- **`robots.txt` now names the search, answer and training crawlers explicitly and allows every
+  one of them**, and carries a `Sitemap:` line. The GitHub links in the header nav were pointing
+  at the lowercase `chanmeng666` owner; they now match the real one, `ChanMeng666`.
+- Gates: `scripts/smoke.mjs` gains a `header()` assertion (the first one in the file that reads a
+  response header rather than a body — an `X-Robots-Tag` is invisible to a body check and comes
+  from a `_headers` file nothing else executes) and checks `<h1`, the lede, `robots.txt` and the
+  embed header. `playground/e2e/boot.spec.ts` gains a `@prod` case that navigates with
+  `waitUntil: "commit"` and asserts exactly one visible `<h1>` and the lede — before hydration,
+  which is the only reading that proves anything about a crawler.
+
 ## [1.36.0] - 2026-09-13
 
 ### Added — a compiled plan you can reach with a keyboard (`annotate` + `accessible`)

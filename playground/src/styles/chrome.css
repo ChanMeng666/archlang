@@ -263,6 +263,91 @@ header {
   outline-offset: -1px;
 }
 
+/* ── the intro band — the page's crawlable prose ───────────────────────────
+   A quiet source-world strip between the header and the panes: one line of H1,
+   a short lede, one row of links. It is deliberately SMALL and deliberately
+   VISIBLE — no `display: none`, no off-screen text, no `visibility: hidden`.
+   Everything here is served in the HTML, because no crawler runs the editor.
+
+   `flex: none` is what keeps `main`'s `flex: 1` doing all the growing, so the
+   editor still fills the rest of the viewport exactly as it did before. */
+.intro {
+  flex: none;
+  padding: 9px 14px 10px;
+  background: var(--src-bg);
+  color: var(--src-fg);
+  border-bottom: 1px solid var(--hairline);
+}
+.intro__summary {
+  /* the native disclosure triangle is replaced by the ::after chevron below —
+     `list-style: none` handles Firefox, the -webkit pseudo handles Chromium */
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.intro__summary::-webkit-details-marker {
+  display: none;
+}
+.intro__summary::after {
+  content: "▴";
+  font-size: 12.5px;
+  line-height: 1;
+  color: var(--src-muted);
+}
+.intro__summary:hover::after {
+  color: var(--src-fg);
+}
+.intro__disclosure:not([open]) .intro__summary::after {
+  content: "▾";
+}
+.intro__summary:focus-visible {
+  outline: 2px solid var(--plum-deep);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.intro h1 {
+  font-family: var(--font-display);
+  font-variation-settings:
+    "wdth" 95,
+    "wght" 600;
+  font-size: 1.1rem;
+  line-height: 1.25;
+  letter-spacing: 0.005em;
+  margin: 0;
+  color: var(--src-fg);
+}
+.intro .lede {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  margin: 5px 0 0;
+  max-width: 88ch;
+  color: var(--src-muted);
+}
+.intro__links {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin: 5px 0 0;
+  color: var(--src-muted);
+}
+.intro a {
+  /* --plum-deep, not --plum: this is body-size text (the brand token rule) */
+  color: var(--plum-deep);
+  text-decoration: none;
+  border-bottom: 1px solid var(--src-border);
+}
+.intro a:hover {
+  border-bottom-color: var(--plum-deep);
+}
+.intro a:focus-visible {
+  outline: 2px solid var(--plum-deep);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 main {
   position: relative;
   flex: 1;

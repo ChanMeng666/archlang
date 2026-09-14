@@ -16,15 +16,85 @@
     <!-- Light-only (ADR 0014). The real Chromium Auto-Dark opt-out is the CSS
          `color-scheme: only light` in styles/tokens.css; this states the same intent. -->
     <meta name="color-scheme" content="light" />
+    <!-- One URL, one page. The `#z=` permalink fragment never reaches the server, so every
+         shared plan collapses onto this address: it is the canonical one, and the static
+         per-example pages under /examples/ are what carries a plan into an index. -->
+    <link rel="canonical" href="https://playground.archlang.uk/" />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://playground.archlang.uk/" />
+    <meta property="og:site_name" content="ArchLang" />
     <meta property="og:title" content="ArchLang Playground — code to floor plans" />
     <meta
       property="og:description"
       content="Write ArchLang in the browser and watch it compile to a professional SVG floor plan — live, client-side."
     />
     <meta property="og:image" content="https://playground.archlang.uk/brand/archlang-og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="The ArchLang playground: declarative .arch source on the left, the compiled SVG floor plan on the right."
+    />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ArchLang Playground — code to floor plans" />
+    <meta
+      name="twitter:description"
+      content="Write ArchLang in the browser and watch it compile to a professional SVG floor plan — live, client-side."
+    />
     <meta name="twitter:image" content="https://playground.archlang.uk/brand/archlang-og.png" />
+    <meta
+      name="twitter:image:alt"
+      content="The ArchLang playground: declarative .arch source on the left, the compiled SVG floor plan on the right."
+    />
+    <!-- Structured data for search and answer engines. No crawler executes this page's
+         JavaScript, so everything a machine can learn here has to be in the served bytes:
+         this block plus the intro band below. Keep it in step with the docs site's own
+         graph — the same WebSite @id is the parent of both hosts. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Person",
+            "@id": "https://archlang.uk/#chan-meng",
+            "name": "Chan Meng",
+            "url": "https://github.com/ChanMeng666",
+            "sameAs": ["https://github.com/ChanMeng666"]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://playground.archlang.uk/#website",
+            "url": "https://playground.archlang.uk/",
+            "name": "ArchLang Playground",
+            "description": "Write ArchLang floor-plan source in the browser and compile it to a dimensioned SVG plan, client-side.",
+            "inLanguage": "en",
+            "isPartOf": {
+              "@type": "WebSite",
+              "@id": "https://archlang.uk/#website",
+              "url": "https://archlang.uk/",
+              "name": "ArchLang"
+            },
+            "publisher": { "@id": "https://archlang.uk/#chan-meng" }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://playground.archlang.uk/#app",
+            "name": "ArchLang Playground",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "Any",
+            "url": "https://playground.archlang.uk/",
+            "description": "An in-browser editor for ArchLang, an open-source (MIT) declarative language for floor plans: write .arch source and it compiles to a dimensioned SVG plan, with linting and geometric analysis.",
+            "browserRequirements": "Requires JavaScript.",
+            "inLanguage": "en",
+            "license": "https://opensource.org/licenses/MIT",
+            "isPartOf": { "@id": "https://archlang.uk/#website" },
+            "author": { "@id": "https://archlang.uk/#chan-meng" },
+            "softwareHelp": { "@type": "CreativeWork", "url": "https://archlang.uk/guide" },
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <!-- Header = source-world chrome (cool grey): one row of title-block cells,
@@ -90,7 +160,7 @@
       <nav class="tb-nav" aria-label="Related sites">
         <a href="https://archlang.uk" target="_blank" rel="noopener">Docs ↗</a>
         <a href="https://archlang.uk/spec" target="_blank" rel="noopener">Spec</a>
-        <a href="https://github.com/chanmeng666/archlang" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/ChanMeng666/archlang" target="_blank" rel="noopener">GitHub</a>
         <a href="https://archcanvas.chanmeng.org" target="_blank" rel="noopener">ArchCanvas ↗</a>
       </nav>
       <details class="tb-nav-more">
@@ -98,11 +168,49 @@
         <div class="tb-nav-panel">
           <a href="https://archlang.uk" target="_blank" rel="noopener">Docs ↗</a>
           <a href="https://archlang.uk/spec" target="_blank" rel="noopener">Spec</a>
-          <a href="https://github.com/chanmeng666/archlang" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://github.com/ChanMeng666/archlang" target="_blank" rel="noopener">GitHub</a>
           <a href="https://archcanvas.chanmeng.org" target="_blank" rel="noopener">ArchCanvas ↗</a>
         </div>
       </details>
     </header>
+    <!-- The crawlable shell. No AI or search crawler executes this page's JavaScript, so
+         without these ~90px the playground served an empty body with no heading at all.
+         It is a SMALL VISIBLE band, never hidden text: the heading is always on screen and
+         the disclosure only folds the lede and the links away for someone who wants the
+         height back. `open` is the default on every load — collapsing is not remembered,
+         because the served bytes are the point.
+         NB the tag names are spelled out in prose here on purpose: scripts/smoke.mjs
+         asserts the served page contains a literal opening h1 tag, and a comment that
+         happened to contain one would make that check pass over a page that had lost it. -->
+    <section class="intro">
+      <details class="intro__disclosure" open>
+        <summary class="intro__summary">
+          <h1>ArchLang Playground — write floor plans, compile them in your browser</h1>
+        </summary>
+        <p class="lede">
+          ArchLang is an open-source (MIT) DSL for floor plans. Write .arch source in the editor below
+          and it compiles in your browser to a dimensioned SVG plan — no install, no account. The same
+          source also compiles to DXF, PDF and PNG from the command line.
+        </p>
+        <p class="intro__links">
+          <a href="https://archlang.uk/guide">Guide</a> ·
+          <a href="https://archlang.uk/reference">Language reference</a> ·
+          <a href="https://archlang.uk/spec">One-page spec</a> ·
+          <a href="/examples/">26 example plans</a> ·
+          <a href="https://www.npmjs.com/package/@chanmeng666/archlang">npm</a> ·
+          <a href="https://github.com/ChanMeng666/archlang">GitHub</a>
+        </p>
+      </details>
+      <noscript>
+        <p class="lede">
+          The editor compiles in the browser, so it needs JavaScript. Without it, the language is
+          documented in full at <a href="https://archlang.uk/reference">archlang.uk/reference</a>, every
+          example plan is published as a static page under <a href="/examples/">/examples/</a>, and the
+          same compiler runs offline from the command line via
+          <a href="https://www.npmjs.com/package/@chanmeng666/archlang">npm</a>.
+        </p>
+      </noscript>
+    </section>
     <main>
       <section class="pane">
         <h2 class="src-tab">SOURCE.ARCH</h2>
