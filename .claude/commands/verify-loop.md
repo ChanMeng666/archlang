@@ -32,7 +32,7 @@ scripts and report a pass/fail table.
    job.
    - A `TS2345 … | undefined` on a workspace file that `tsc -p <workspace>` calls clean means a
      ROOT test imported that module into the strict root program. Fix it in the shared module —
-     never by relaxing the root option (AGENTS.md → Gotchas; `docs/testing.md` §4).
+     never by relaxing the root option (`docs/agents/gotchas.md` → (Typecheck); `docs/testing.md` §4).
 
 4. **Conditional gates — run the ones the diff earns:**
    - touched `docs/*.md` or `docs-site/` ⇒ **`npm run docs:build`** (the core suite never compiles

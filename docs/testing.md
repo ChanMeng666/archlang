@@ -183,7 +183,7 @@ language, and it is why the golden files above almost never move.
 |-------|-----|------------------|
 | `test/site.test.ts` | a plan with no `site` block renders, describes and lints exactly as before; and `north` is **deliberately absent** from `KEYWORDS.enum` | The absence pin is the interesting one: three of four compass words sit in `enum`, which looks like an oversight and invites a "fix" that would make `north` the first word in two categories and force both generators to learn about duplicates. **Do not delete this test to add the word** |
 | `test/doors.test.ts` | a plan naming no door kind is byte-identical, and `door hinged …` is identical to omitting the word | A diff here means a kind leaked into the default path |
-| `test/window-facing-probe.test.ts` | a window's outward side comes from probing its own wall, not the plan's bbox centre — with both courtyard reproductions and both tie-break branches | See the bbox-derived-position iron law in AGENTS.md |
+| `test/window-facing-probe.test.ts` | a window's outward side comes from probing its own wall, not the plan's bbox centre — with both courtyard reproductions and both tie-break branches | See the bbox-derived-position iron law in `docs/agents/iron-laws.md` |
 | `test/bbox-derived-position.test.ts` | `swing into <room>` and `furniture … against wall` ask the room's ring, not its box; rectangles stay byte-identical | Also pins the two `dimReach` properties that make leaving it alone safe — it was measured as a provable no-op and deliberately NOT "fixed" |
 | `test/dim-stagger.test.ts` | `EM_PER_CHAR` lives in exactly ONE file (`src/text-metrics.ts`) | A fifth copy of the em-per-char factor appeared. The lint rule, the stagger and the renderer must agree about what collides |
 | `test/lint-file-provenance.test.ts` | a lint fix on an element written in an imported module carries `file`, so `applyFixes` refuses it | Red means `applyFixes` can once again splice a module's byte offsets into the importer — reproduced on an unmodified `W_DIM_INSIDE` before the fix |
@@ -516,7 +516,7 @@ So any workspace module a root test imports is compiled once per leg of `typeche
 option sets, and must satisfy the stricter one. Symptom: a `TS2345 … | undefined` on workspace
 source that `tsc -p <workspace>` calls clean. Probe with `tsc -p tsconfig.dev.json --listFiles` to
 see which files the program really pulls in, and fix it IN the shared module — never by relaxing
-the root option or adding an exclude. (Also in AGENTS.md → "Gotchas & Anti-patterns".)
+the root option or adding an exclude. (Also in `docs/agents/gotchas.md` → "(Typecheck)".)
 
 **The core suite never compiles the docs site.** `npm run docs:build` is the only gate for a
 `docs/*.md` edit's effect on the site; the pipe and fence tripwires catch the two failure classes

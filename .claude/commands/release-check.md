@@ -10,7 +10,7 @@ you observed. Do NOT push anything — this command only verifies.
 ## Checklist
 
 1. **Establish the TRUE latest release before anything else — MANDATORY FIRST STEP.** Never take the
-   current version from AGENTS.md, a plan doc, or the prompt. Probe all four:
+   current version from `docs/agents/project-status.md`, AGENTS.md, a plan doc, or the prompt. Probe all four:
 
    ```bash
    npm view @chanmeng666/archlang version      # what is actually on the registry
@@ -26,7 +26,7 @@ you observed. Do NOT push anything — this command only verifies.
      `git diff --stat <lasttag>..main`, not the plan's number. New grammar/keyword, new `E_*`/`W_*`
      code, new public field ⇒ MINOR at least.
 
-   If AGENTS.md disagrees with the probe, **AGENTS.md is wrong** — fix it (item 5) and carry on.
+   If `docs/agents/project-status.md` disagrees with the probe, **it is wrong** — fix it (item 5) and carry on.
    *(2026-07-25: AGENTS.md sat stale at v1.17.0 while v1.18.0 was already published, so an approved
    plan targeted 1.18.0; the batch actually shipped as 1.19.0.)*
 
@@ -51,7 +51,7 @@ you observed. Do NOT push anything — this command only verifies.
    fails with `E422` if the owner segment casing differs from the real repo — this has already
    cost a same-day re-tag. Confirm it reads `github.com/ChanMeng666/archlang`, not `chanmeng666`.
 
-5. **AGENTS.md status table is updated** — the "Project status" table's version column, the tests
+5. **`docs/agents/project-status.md` status table is updated** (moved out of AGENTS.md 2026-09-18) — the table's version column, the tests
    count, the tags row, **and the "Latest release:" line** reflect the version being released. That
    line is the one that goes stale (it claimed v1.17.0 through two releases) and it is what the next
    agent will read as truth.
