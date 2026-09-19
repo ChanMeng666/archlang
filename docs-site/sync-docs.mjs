@@ -230,7 +230,22 @@ console.log(`  ${examples.length} example sources + permalinks → .vitepress/th
 // `scripts/smoke.mjs` only catches it AFTER the deploy is live. Every failure is now
 // collected (so one run reports ALL the broken examples, not just the first) and the
 // script exits 1.
+/**
+ * A STOREY's file name inside the gallery: `<stem>.L<level>.svg`.
+ *
+ * This is the CLI's own law — `levelTarget()` in `src/cli/io.ts`, which is what
+ * `arch compile townhouse.arch` applies when it writes `townhouse.L1.svg` — restated
+ * here because this is a plain `.mjs` build script and cannot import the TypeScript
+ * CLI (`dist/cli.js` runs `main()` on import). A restatement rots, so it is PROVED
+ * rather than trusted, twice: `test/docs-level-svgs.test.ts` extracts this very arrow
+ * and asserts it agrees with `levelTarget()` across a spread of levels, and
+ * `docs-site/e2e/routes.spec.ts` derives the routes it fetches from `levelTarget()`
+ * itself. A level file on the site and a level file from the CLI cannot disagree.
+ */
+const levelSvgName = (name, level) => `${name}.L${level}.svg`;
+
 const failures = [];
+let levelSvgCount = 0;
 let compile = null;
 try {
   ({ compile } = await import(pathToFileURL(join(repo, "dist", "index.js")).href));
@@ -240,7 +255,7 @@ try {
 if (compile) {
   for (const name of examples) {
     try {
-      const { svg, diagnostics } = compile(sources[name], { noCache: true });
+      const { svg, diagnostics, pages } = compile(sources[name], { noCache: true });
       const errs = diagnostics.filter((d) => d.severity === "error");
       if (errs.length) {
         // A recovered parse error carries no `code` — don't print "[undefined]".
@@ -249,6 +264,14 @@ if (compile) {
         continue;
       }
       writeFileSync(join(exDest, `${name}.svg`), svg);
+      // A multi-storey plan is one drawing PER STOREY, and `.svg` above is only page 1
+      // (the lowest level) — so a page that wants to show a building's floors has
+      // nothing to point at. `pages` is absent for a single-storey plan, so this is
+      // append-only and picks a NEW multi-storey example up for free.
+      for (const p of pages ?? []) {
+        writeFileSync(join(exDest, levelSvgName(name, p.level)), p.svg);
+        levelSvgCount++;
+      }
     } catch (e) {
       failures.push(`examples/${name}.arch threw while compiling: ${e.message}`);
     }
@@ -264,4 +287,4 @@ if (failures.length > 0) {
   );
   process.exit(1);
 }
-console.log(`  ${examples.length} example SVGs → public/examples/`);
+console.log(`  ${examples.length} example SVGs (+ ${levelSvgCount} per-storey pages) → public/examples/`);
