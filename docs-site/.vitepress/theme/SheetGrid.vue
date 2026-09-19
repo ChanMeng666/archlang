@@ -51,12 +51,26 @@ interface Sheet {
   hint?: string;
 }
 
-/** Every site route a card's art occupies, derived from its one `example` name. */
-function artSrcs(s: Sheet): string[] {
+/** Every drawing a card shows: its site route and its OWN alt text, both derived from
+ *  the one `example` name. The alt is per-drawing on purpose — three images captioned
+ *  with one string tells a screen-reader user there are three of something and nothing
+ *  about which storey is which. */
+function artSrcs(s: Sheet): Array<{ src: string; alt: string }> {
   if (!s.example) return [];
-  if (!s.art) return [`/examples/${s.example}.svg`];
-  if ("view" in s.art) return [`/view/${s.example}-${s.art.view}.svg`];
-  return s.art.levels.map((n) => `/examples/${s.example}.L${n}.svg`);
+  if (!s.art) return [{ src: `/examples/${s.example}.svg`, alt: `${s.title} — a compiled ArchLang floor plan` }];
+  if ("view" in s.art) {
+    return [
+      {
+        src: `/view/${s.example}-${s.art.view}.svg`,
+        alt: `An axonometric view compiled from ${s.example}.arch — extruded walls with their openings cut`,
+      },
+    ];
+  }
+  const { levels } = s.art;
+  return levels.map((n) => ({
+    src: `/examples/${s.example}.L${n}.svg`,
+    alt: `${s.example}.arch storey ${n} of ${levels.length} — a compiled ArchLang floor plan`,
+  }));
 }
 
 /** Every figure below is `arch describe --json` on the file the card draws — never a
@@ -73,7 +87,12 @@ const showpiece: Sheet[] = [
   },
 ];
 
-const row2: Sheet[] = [
+/** A-102 takes a full-width band of its own. Three A3-PORTRAIT sheets across a 3-column
+ *  card cap at ~100px each — narrower than the 150px box this redesign replaced, and the
+ *  card's whole claim is that a reader can see one storey differing from another, which
+ *  at 100px they cannot. The trio is WIDTH-bound, not height-bound, so a taller box buys
+ *  nothing; only more horizontal room does. Full width takes each storey to ~263×372. */
+const levels: Sheet[] = [
   {
     no: "A-102",
     tag: "Levels",
@@ -83,6 +102,10 @@ const row2: Sheet[] = [
     example: "townhouse",
     art: { levels: [1, 2, 3] },
   },
+];
+
+/** The 3-column band. */
+const row3: Sheet[] = [
   {
     no: "A-103",
     tag: "The sheet",
@@ -99,9 +122,6 @@ const row2: Sheet[] = [
       "Polygon rooms measured by exact shoelace area, circular rooms measured as πR², and true arc wall edges — SVG A commands and native DXF arcs, never faceted at any zoom. Six trapezoid galleries ring a drum here: 7 rooms, 122.79 m², and a rotunda of exactly 28.27 m² inside a wall of arc edges on a radius of 3000. Nothing in this plan is rectangular, and the hexagon is irregular on purpose — a 3-4-5 shell lands every vertex on the 50 mm grid, where a regular one would measure 7504 and have to be called 7500.",
     example: "hexagon-pavilion",
   },
-];
-
-const row3: Sheet[] = [
   {
     no: "A-105",
     tag: "Site",
@@ -110,6 +130,10 @@ const row3: Sheet[] = [
       "A lot line, ground materials, fences and a roof: 14 outdoor surfaces across eight kinds, two fence runs and a 484 m² lot around a house of 6 rooms and 136.5 m². Floor, ground and lot are three different numbers and the language keeps them apart — a terrace is not floor area, so a ground surface appears in no rooms[] entry, no schedule row and no access graph. Every hatch is scale-aware: the same pattern size on the sheet at 1:100 as it would be at 1:50.",
     example: "garden-house",
   },
+];
+
+/** The first 2-column band. */
+const row4: Sheet[] = [
   {
     no: "A-106",
     tag: "Fixtures",
@@ -128,7 +152,8 @@ const row3: Sheet[] = [
   },
 ];
 
-const row4: Sheet[] = [
+/** The second 2-column band. */
+const row5: Sheet[] = [
   {
     no: "A-108",
     tag: "Axonometric",
@@ -155,9 +180,10 @@ const row4: Sheet[] = [
  *  row's card silently left the other row's behind. */
 const BANDS: ReadonlyArray<{ rows: Sheet[]; row: string; art: string }> = [
   { rows: showpiece, row: "sheets__row--1", art: "card__art--full" },
-  { rows: row2, row: "sheets__row--3", art: "card__art--trio" },
+  { rows: levels, row: "sheets__row--1", art: "card__art--full" },
   { rows: row3, row: "sheets__row--3", art: "card__art--trio" },
   { rows: row4, row: "sheets__row--2", art: "card__art--duo" },
+  { rows: row5, row: "sheets__row--2", art: "card__art--duo" },
 ];
 </script>
 
@@ -190,10 +216,10 @@ const BANDS: ReadonlyArray<{ rows: Sheet[]; row: string; art: string }> = [
             :class="[band.art, { 'card__art--poche': !s.example, 'card__art--multi': artSrcs(s).length > 1 }]"
           >
             <img
-              v-for="src in artSrcs(s)"
-              :key="src"
-              :src="src"
-              :alt="`${s.title} — a compiled ArchLang floor plan`"
+              v-for="a in artSrcs(s)"
+              :key="a.src"
+              :src="a.src"
+              :alt="a.alt"
               loading="lazy"
             />
           </div>
@@ -369,6 +395,28 @@ const BANDS: ReadonlyArray<{ rows: Sheet[]; row: string; art: string }> = [
   }
   .card__art--full {
     height: 320px;
+  }
+  /* A-102's three storeys STACK on a phone rather than staying three-across. Side by
+     side inside a ~299px card they would be ~93px each — narrower than anywhere else on
+     the page, and unreadable. Stacked, each storey gets the card's full width. The card
+     grows tall, which on a phone costs a scroll; three illegible slivers cost the point
+     of the card. `height: auto` releases the fixed box, so the column is as tall as the
+     drawings need. */
+  .card__art--multi {
+    flex-direction: column;
+    height: auto;
+    gap: 14px;
+  }
+  .card__art--multi img {
+    flex: none;
+    width: 100%;
+    /* …but not without a ceiling. Unbounded, a 560px-wide phone gives each storey a
+       682px-tall drawing and a 2100px card — four screens of scrolling for one of nine
+       sheets. Capping the width caps the height with it (these are A3 portrait), and
+       narrower viewports are already under the cap, so 375px is unaffected. */
+    max-width: 340px;
+    height: auto;
+    margin-inline: auto;
   }
 }
 .card__meta {

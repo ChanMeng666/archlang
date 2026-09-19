@@ -19,16 +19,22 @@ language at all — two restated project principles (deterministic, zero-depende
 ("reads its own plans") duplicated the `describe()`/`lint()` band immediately below it, and another
 re-showed `laneway-house`, which is already the hero typing itself at the top of the same page.
 
-It is now **nine sheets, A-101 — A-109**, one capability each, on a full-width showpiece plus two rows
-of three and a row of two, with art boxes of 400 / 230 / 300 px. The principles moved into the bodies
-of the cards that actually demonstrate them. Every figure on a card is `arch describe --json` on the
-file it draws.
+It is now **nine sheets, A-101 — A-109**, one capability each, across five bands — two full-width
+sheets, then a row of three and two rows of two — with art boxes of 400 / 230 / 300 px. The principles
+moved into the bodies of the cards that actually demonstrate them. Every figure on a card is
+`arch describe --json` on the file it draws.
 
 - **A-101 Showpiece** `hillside-villa` · **A-102 Levels** `townhouse` · **A-103 The sheet** `library` ·
   **A-104 Geometry** `hexagon-pavilion` · **A-105 Site** `garden-house` · **A-106 Fixtures**
   `furnished-flat` · **A-107 Composition** `terrace-row` · **A-108 Axonometric** `two-storey` ·
   **A-109 Materials** `materials`.
-- **A-102 shows three drawings, because that is what the language produces.** `sync-docs.mjs` now also
+- **A-102 shows three drawings, because that is what the language produces — and it takes a full-width
+  band to do it.** Three A3-*portrait* sheets across a 3-column card cap at ~100 px each, narrower than
+  the 150 px box this release replaces, and the card's claim is precisely that a reader can see one
+  storey differing from another. The trio is **width-bound, not height-bound**, so a taller box buys
+  nothing; only more horizontal room does. Full-width takes each storey to **262 × 371 px — 6.9× the
+  drawn area**. On a phone the three stack instead of shrinking to ~93 px each, capped so one sheet
+  cannot turn into four screens of scrolling. `sync-docs.mjs` now also
   writes each **storey** of a multi-storey example — `docs-site/public/examples/<name>.L<n>.svg`, nine
   new files across four examples — so the "one storey is one drawing" card can picture `townhouse.L1`,
   `.L2` and `.L3` rather than the ground floor three times. The name is the CLI's own: `levelTarget()`
