@@ -238,6 +238,10 @@
               <button data-pz="full" type="button" title="Fullscreen" aria-label="Fullscreen">⛶</button>
               <span class="pz-sep"></span>
               <button data-pz="paths" type="button" aria-pressed="false" title="Toggle circulation paths overlay" aria-label="Toggle circulation paths">Paths</button>
+              <!-- Storey switcher for a multi-storey plan. Empty and hidden until a
+                   plan with `level` blocks is compiled; preview.ts fills it. -->
+              <span class="pz-sep" id="pzLevelsSep" hidden></span>
+              <span class="pz-levels" id="pzLevels" role="group" aria-label="Storey" hidden></span>
               <span class="pz-sep"></span>
               <button data-pz="copysvg" type="button" title="Copy SVG markup" aria-label="Copy SVG">SVG</button>
               <button data-pz="copypng" type="button" title="Copy PNG image" aria-label="Copy PNG">PNG</button>

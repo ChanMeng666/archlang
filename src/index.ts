@@ -69,6 +69,12 @@ export type { RVertical, VerticalLevelInput, VerticalObstacle, VerticalReach } f
 // (areas, bboxes, adjacency), doors (what they connect), windows, and totals —
 // the channel a text-only agent uses to verify a plan without rendering it.
 export { describe } from "./describe.js";
+// `describeLevel(summary, n)` narrows a multi-storey summary to ONE storey — that
+// level's facts become the top-level ones. A DISPLAY filter: `ok`/`diagnostics` stay
+// whole-plan. Exported because `arch describe --level` and the playground's storey
+// switcher must not each own a copy (a second copy is a second place to forget a
+// per-storey key, and that failure is silent — it reports the wrong floor's facts).
+export { describeLevel, PER_STOREY_OPTIONAL_KEYS } from "./describe.js";
 // The vertical datum layer (v1.35): the six drafting defaults, the elevation rule and the
 // range predicates. Exported because a consumer reading `describe().heights` — or writing
 // Plan JSON — needs the same numbers the compiler uses, and a retyped copy of a language

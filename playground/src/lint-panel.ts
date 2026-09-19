@@ -12,27 +12,53 @@
 import { escapeHtml } from "./escape.js";
 import { rankFixes, type Diagnostic } from "archlang";
 
-/** Renders the rows and returns them in display order — `data-i` indexes into this. */
-export function renderLint(el: HTMLElement, lintDiags: Diagnostic[], ok: boolean): Diagnostic[] {
+/**
+ * Renders the rows and returns them in display order — `data-i` indexes into this.
+ *
+ * `level`/`total` are the storey-switcher's narrowing: `lintDiags` is then only the rows
+ * raised on the storey being previewed, out of `total` for the whole building. The panel
+ * SAYS so, because a filtered panel that went quiet and a sound building look identical
+ * otherwise — and the building's verdict never moved, only this view of it.
+ */
+export function renderLint(
+  el: HTMLElement,
+  lintDiags: Diagnostic[],
+  ok: boolean,
+  level: number | null = null,
+  total: number = lintDiags.length,
+): Diagnostic[] {
   if (!ok) {
     el.innerHTML = `<p class="empty">Fix the errors to run the soundness check.</p>`;
     return [];
   }
+  // The narrowing marker — only for a storey-narrowed read, so a single-storey plan's
+  // panel is byte-for-byte what it always was.
+  const hidden = total - lintDiags.length;
+  const note =
+    level === null
+      ? ""
+      : `<p class="lint-narrowed">Showing level ${level}${
+          hidden > 0 ? ` — ${hidden} more warning${hidden === 1 ? "" : "s"} on the other storeys` : ""
+        }.</p>`;
   if (lintDiags.length === 0) {
-    el.innerHTML = `<p class="ok">✓ No soundness warnings — every room is reachable, bedrooms have windows, the building has an entrance.</p>`;
+    el.innerHTML =
+      note +
+      `<p class="ok">✓ No soundness warnings — every room is reachable, bedrooms have windows, the building has an entrance.</p>`;
     return [];
   }
-  el.innerHTML = lintDiags
-    .map((d, i) => {
-      // Multiple fixes on one diagnostic are mutually-exclusive ALTERNATIVES — offer the
-      // best-ranked one, which is the one `arch fix` would take.
-      const best = d.fixes?.length ? rankFixes(d.fixes)[0] : undefined;
-      const apply = best
-        ? `<button class="diag-apply" type="button" data-i="${i}" title="${escapeHtml(best.title)}">Apply fix</button>`
-        : "";
-      const hint = d.hints?.length ? `<span class="hint">${escapeHtml(d.hints[0])}</span>` : "";
-      return `<div class="lintrow" data-i="${i}"><code>${d.code}</code> ${escapeHtml(d.message)}${hint}${apply}</div>`;
-    })
-    .join("");
+  el.innerHTML =
+    note +
+    lintDiags
+      .map((d, i) => {
+        // Multiple fixes on one diagnostic are mutually-exclusive ALTERNATIVES — offer the
+        // best-ranked one, which is the one `arch fix` would take.
+        const best = d.fixes?.length ? rankFixes(d.fixes)[0] : undefined;
+        const apply = best
+          ? `<button class="diag-apply" type="button" data-i="${i}" title="${escapeHtml(best.title)}">Apply fix</button>`
+          : "";
+        const hint = d.hints?.length ? `<span class="hint">${escapeHtml(d.hints[0])}</span>` : "";
+        return `<div class="lintrow" data-i="${i}"><code>${d.code}</code> ${escapeHtml(d.message)}${hint}${apply}</div>`;
+      })
+      .join("");
   return lintDiags;
 }

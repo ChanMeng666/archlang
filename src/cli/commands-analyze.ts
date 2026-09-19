@@ -9,6 +9,7 @@ import { readFileSync } from "node:fs";
 import { resolve as resolvePath } from "node:path";
 import {
   describe,
+  describeLevel,
   lint,
   LINT_PROFILE_NAMES,
   ERROR_CODES,
@@ -128,16 +129,6 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "vertical",
 ];
 
-/**
- * Top-level `describe()` keys that are OPTIONAL and vary from storey to storey.
- *
- * `describe --level N` spreads that storey's facts over the whole-plan ones, so a key
- * this storey does not have must be DELETED rather than left standing from the previous
- * spread — otherwise the narrowed read reports another floor's facts under its own name.
- * Exported so `test/cli-levels.test.ts` can hold each one to that rule.
- */
-export const PER_STOREY_OPTIONAL_KEYS = ["verticals", "voids"] as const satisfies readonly (keyof SceneSummary)[];
-
 /** Tally a {@link FreedomReport} bucket without fighting the placement unions. */
 const bump = (bucket: object, key: string): void => {
   const b = bucket as Record<string, number>;
@@ -249,31 +240,6 @@ function selectKeys(obj: Record<string, unknown>, keys: string[]): Record<string
   return out;
 }
 
-/**
- * `describe --level N` — read ONE storey of a multi-storey plan: that level's facts become
- * the top-level ones (they are the same shape) and `levels` narrows to it alone.
- *
- * A DISPLAY filter like `--room`/`--select`: `ok`, `diagnostics` and the exit code still
- * come from the whole plan, so reading one floor can never make a broken building look
- * sound. The `filtered`/`selected_level` markers say the read was narrowed.
- */
-function narrowToLevel(s: SceneSummary, level: number): SceneSummary {
-  const want = s.levels?.find((l) => l.level === level);
-  if (!want) return s;
-  const { level: _l, name: _n, ...facts } = want;
-  const out: SceneSummary = { ...s, ...facts, levels: [want] };
-  // Optional per-storey keys are absent from `facts` when THIS storey has none, so the
-  // spread would leave the previous top-level value (page 1's) standing and the narrowed
-  // read would lie. Whole-BUILDING keys (`vertical`) legitimately survive; per-storey
-  // ones must not. A LIST rather than one `if`, because there are two of these now
-  // (`voids` joined in v1.29) and the failure mode of forgetting the next one is silent:
-  // the narrowed read reports the wrong storey's facts and says nothing.
-  for (const k of PER_STOREY_OPTIONAL_KEYS) {
-    if (facts[k] === undefined) delete out[k];
-  }
-  return out;
-}
-
 export function cmdDescribe(args: Args): number {
   // Both narrowing flags are validated BEFORE any work: a typo'd room id or key is a
   // usage error (exit 3), not a silently empty result.
@@ -308,7 +274,7 @@ export function cmdDescribe(args: Args): number {
             : `unknown --level ${args.level} (plan has ${echoList(have.map(String))})`,
         );
       }
-      summary = narrowToLevel(full, args.level);
+      summary = describeLevel(full, args.level);
       filtered = true;
     }
     // `--zone` sits between `--level` and `--room`: it picks the wing, `--room` may then

@@ -3,12 +3,18 @@
  * and the multi-format download (PNG/PDF). The core's PNG/PDF backends are
  * Node-only, so the playground rasterizes the SVG through a <canvas> instead.
  */
+import { levelFileName } from "./levels.js";
 
-/** Trigger a browser download of `blob` as `floorplan.<ext>`. */
-export function saveBlob(blob: Blob, ext: string): void {
+/**
+ * Trigger a browser download of `blob` as `floorplan.<ext>` — or, when a storey of a
+ * multi-storey plan is on screen, `floorplan.L<n>.<ext>`, which is the name
+ * `arch compile -o floorplan.<ext>` gives that same page. `level` is `null` for every
+ * single-storey plan, so the existing name is unchanged.
+ */
+export function saveBlob(blob: Blob, ext: string, level: number | null = null): void {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `floorplan.${ext}`;
+  a.download = levelFileName(`floorplan.${ext}`, level);
   a.click();
   URL.revokeObjectURL(a.href);
 }

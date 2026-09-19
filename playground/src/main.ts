@@ -2,6 +2,7 @@ import {
   applyFixes,
   compile,
   describe,
+  describeLevel,
   lint,
   rankFixes,
   suggestTopology,
@@ -16,6 +17,7 @@ import {
 import type { EditorView } from "@codemirror/view";
 import { createEditor } from "./editor-setup.js";
 import { createPreview } from "./preview.js";
+import { selectPage } from "./levels.js";
 import { mountActions } from "./actions.js";
 import { renderFacts } from "./facts-strip.js";
 import { renderDescribe } from "./describe-panel.js";
@@ -73,6 +75,8 @@ const downloadBtn = document.getElementById("download")!;
 const pzViewport = document.querySelector<HTMLElement>(".pz-viewport")!;
 const pzStage = document.querySelector<HTMLElement>(".pz-stage")!;
 const pzToolbar = document.querySelector<HTMLElement>(".pz-toolbar")!;
+const pzLevels = document.getElementById("pzLevels");
+const pzLevelsSep = document.getElementById("pzLevelsSep");
 
 // ---- output tabs (Preview · Describe · Lint · Intent) ----
 const tabs = [...document.querySelectorAll<HTMLElement>(".tab")];
@@ -125,6 +129,21 @@ syncLintCaption();
 let lastSvg = "";
 let lastScene: ReturnType<typeof compile>["scene"] | null = null;
 let lastRooms: RoomSummary[] = [];
+/**
+ * The storey on screen for a multi-storey plan, or `null` for "the lowest one" — which
+ * is also what a single-storey plan always has, since `compile().pages` does not exist
+ * for it and nothing here ever runs.
+ *
+ * Deliberately NOT persisted (it is not in `storage.ts`): a saved storey number means
+ * nothing once the source has changed, and restoring level 3 onto a plan that now has
+ * two floors is a worse first frame than simply starting at the bottom. It resets to
+ * `null` whenever the DOCUMENT is replaced — an example picked, a format/repair/fix
+ * applied, a snapshot restored — but survives ordinary typing, so editing the top floor
+ * does not throw you back to the ground one on every keystroke.
+ */
+let selectedLevel: number | null = null;
+/** The level whose facts the panels are currently reporting (`null` = whole plan). */
+let activeLevel: number | null = null;
 /** Diagnostics in panel display order — `data-i` on a row indexes into this. */
 let lastDiagRows: Diagnostic[] = [];
 /** Same, for the Lint tab's rows (some lint rules carry their own applicable fix). */
@@ -164,6 +183,9 @@ function currentSource() {
 }
 function loadSource(src: string, refit = true) {
   if (!view) return;
+  // A wholesale document replacement is a new plan as far as the storey switcher is
+  // concerned — its level numbers may mean nothing here. Back to the lowest storey.
+  selectedLevel = null;
   view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: src } });
   render(src, refit);
 }
@@ -185,18 +207,34 @@ const previewCtl = createPreview({
   jumpToOffset,
   flash,
   onPathsChange: () => render(currentSource()),
+  levelsEl: pzLevels,
+  levelsSepEl: pzLevelsSep,
+  onLevelChange: (level) => {
+    if (level === selectedLevel) return;
+    selectedLevel = level;
+    // Keep the current pan/zoom: the storeys of one building share a page box, so
+    // re-fitting would jump the drawing for no reason.
+    render(currentSource());
+  },
 });
 
 /** Update the Describe (semantic facts) and Lint (soundness) tabs for `source`. */
 function updateAnalysis(source: string, ok: boolean) {
-  const summary = describe(source, { noCache: true } as DescribeOptions & { noCache?: boolean });
+  const whole = describe(source, { noCache: true } as DescribeOptions & { noCache?: boolean });
+  // The panels report the storey on screen. `describeLevel` is the CORE's narrowing —
+  // the same function behind `arch describe --level N` — so the playground and the CLI
+  // cannot disagree about what one floor's facts are. A single-storey plan never gets
+  // here with a level, and `activeLevel === null` leaves the summary untouched.
+  const summary = activeLevel === null ? whole : describeLevel(whole, activeLevel);
   const { diagnostics: _d, ...facts } = summary;
   lastRooms = ok ? (summary.rooms ?? []) : [];
   renderFacts(factsEl, summary, ok);
   renderDescribe(describeEl, facts, ok);
 
   // Lint — architectural soundness warnings (habitability rules), under the chosen
-  // advisory profile.
+  // advisory profile. Run over the WHOLE plan, always: `ok`, the status text and the
+  // repair/suggest offers below are verdicts, and a display filter must never move a
+  // verdict (the law `arch describe --level` obeys).
   const lintDiags = ok
     ? lint(source, { profile: lintProfileSelect.value, noCache: true } as LintOptions & { noCache?: boolean })
     : [];
@@ -212,7 +250,13 @@ function updateAnalysis(source: string, ok: boolean) {
   if (suggestBtn) suggestBtn.hidden = !suggestable;
   if (!suggestable && suggestPanel) suggestPanel.hidden = true;
 
-  lastLintRows = renderLint(lintOutput, lintDiags, ok);
+  // …but the ROWS follow the storey on screen, so the panel is about the drawing beside
+  // it. A diagnostic carries the level that raised it; one with no level is a whole-plan
+  // problem and shows on every storey. `renderLint` says out loud that it is narrowed,
+  // so a quiet panel can never be misread as a clean building.
+  const shown =
+    activeLevel === null ? lintDiags : lintDiags.filter((d) => d.level === undefined || d.level === activeLevel);
+  lastLintRows = renderLint(lintOutput, shown, ok, activeLevel, lintDiags.length);
 }
 
 /**
@@ -246,8 +290,21 @@ function render(source: string, refit = false) {
   const opts: CompileOptions = themeKey
     ? { noCache: true, annotate: true, accessible, theme: THEMES[themeKey] }
     : { noCache: true, annotate: true, accessible };
-  const { svg, errors, diagnostics, scene } = compile(source, opts);
+  const { svg, errors, diagnostics, scene, pages } = compile(source, opts);
   const ok = errors.length === 0;
+  // `pages` exists ONLY for a plan with `level` blocks; a single-storey plan has no such
+  // key, `selectPage` returns undefined for it, and everything below takes the exact
+  // path it always took — the drawing, the exports and the panels are all unmoved.
+  //
+  // It is also absent while the source does not compile, so the switcher is rebuilt only
+  // on a GOOD compile — same doctrine as the preview below, which keeps the last good
+  // drawing. Otherwise a half-typed statement would blink the storey buttons away and
+  // back under a drawing that never changed.
+  const page = ok ? selectPage(pages, selectedLevel) : undefined;
+  if (ok) {
+    activeLevel = page?.level ?? null;
+    previewCtl.setLevels(pages, activeLevel);
+  }
   updateAnalysis(source, ok);
   lastDiagRows = renderDiagnostics(errorsEl, diagnostics ?? [], source);
   // Keep an already-run intent verdict live as the source changes (but don't run it
@@ -265,10 +322,17 @@ function render(source: string, refit = false) {
   // The export SVG (lastSvg) is always overlay-free; the "Paths" toggle re-compiles
   // with the circulation overlay for the on-screen preview only, so downloads/copies
   // never carry it (matching how annotate is stripped for export).
-  const displaySvg = previewCtl.pathsEnabled() ? compile(source, { ...opts, overlays: ["circulation"] }).svg : svg;
+  const pageSvg = page ? page.svg : svg;
+  let displaySvg = pageSvg;
+  if (previewCtl.pathsEnabled()) {
+    const overlaid = compile(source, { ...opts, overlays: ["circulation"] });
+    // Pick the SAME storey out of the overlay compile — reading `.svg` would silently
+    // draw page 1's circulation over whatever storey is selected.
+    displaySvg = selectPage(overlaid.pages, activeLevel)?.svg ?? overlaid.svg;
+  }
   previewCtl.show(displaySvg, refit);
-  lastSvg = svg;
-  lastScene = scene ?? null;
+  lastSvg = pageSvg;
+  lastScene = (page ? page.scene : scene) ?? null;
 }
 
 let debounce: ReturnType<typeof setTimeout>;
@@ -344,6 +408,7 @@ async function init() {
     flash,
     getCleanSvg: cleanSvg,
     getScene: () => lastScene,
+    getLevel: () => activeLevel,
     onExportError,
     els: {
       formatBtn,

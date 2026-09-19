@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe as suite, expect, it } from "vitest";
-import { PER_STOREY_OPTIONAL_KEYS } from "../src/cli/commands-analyze.js";
+import { PER_STOREY_OPTIONAL_KEYS } from "../src/index.js";
 
 /**
  * The multi-storey CLI surface (v1.21).
