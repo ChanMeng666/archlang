@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — the v1.35 height datum now has an example, and the law that forbade one is stronger for it
+
+- **`examples/two-storey.arch` authors the vertical datum.** v1.35 shipped `height`/`sill`/`head` and
+  `--view iso|axon` as headline features and **no `.arch` file in the repository declared a height**,
+  so both committed axonometric renders were drawn on the 3000 mm default and the docs described a
+  datum nothing demonstrated. The plan now writes all three tiers: `height 2700` for the building,
+  `height 3000` on `level 2` (so `heights.elevation` reports 2700 for the first floor — the storey
+  below it, not `level x height`), a `sill 300 head 2400` window in the living room and a
+  `sill 1500` bathroom window whose head still defaults to 2100.
+- **`examples/two-storey.svg` is byte-identical** — `4933956f…` before and after. A plan is a
+  horizontal cut, so heights move no byte of one; the only committed artifacts that moved are
+  `docs-site/public/view/two-storey-axon.svg` and the two `two-storey` records in
+  `test/__snapshots__/iso-snapshot.test.ts.snap`, which are pictures and are supposed to. Each was
+  reviewed rather than blessed: compiling the plan's height-free derivation reproduced the previous
+  bytes exactly, in all three cases, with identical element counts.
+- **The byte-identity corpus is split rather than weakened** (`test/height-byte-identity.test.ts`,
+  `test/iso-byte-identity.test.ts`, new `test/height-free-source.ts`). The old law asserted that
+  every shipped example authors no height — right, because the law is vacuous otherwise, and also the
+  reason no example could ever demonstrate the feature. It was proving the weaker of two available
+  claims. The plans that author nothing keep it, with their v1.34.0 hashes untouched; the plans in
+  the new `AUTHORS_HEIGHT` are held to the stronger one: **a plan that DOES author heights draws
+  byte-identically to the same plan with its height clauses removed.** Both sides of that are
+  computed at test time, so it carries no measured hash — it cannot go stale and cannot be
+  re-blessed to green a suite.
+- **No baseline row was retired.** `two-storey`'s v1.34.0 rows in both tables are still checked,
+  against its mechanically-derived height-free variant, which is behaviourally the text that shipped.
+  Nothing was re-measured or re-typed. The derivation is guarded in both directions (it must change
+  the source, and the result must scan clean of every vertical spelling), and the guard was verified
+  non-vacuous by making the derivation a no-op: six assertions went red across the two laws.
+- **`examples/aquarium.arch` described itself as `~60 x 46 m`; its shell is 60 x 40 m** — the ring
+  closes at `(60000,40000)` and `describe --json` reports `bbox` 60000x40000. A sweep of every
+  example's header comment against `arch describe --json` found this one contradiction and no others;
+  in particular `examples/townhouse.arch`'s "5.5 x 11 m" is **correct** — it is the outer-face figure
+  the file's own comment states at `:55` and that `describe --json` reports as `bbox_outer`, while
+  `let W = 5200` / `let D = 10700` are wall centerlines.
+- README permalinks for `two-storey` and `aquarium` regenerated (`scripts/gen-permalink.mjs`), and
+  the docs home page's A-108 card no longer claims the plan authors no height.
+
 ### Added — one core export, and a storey switcher in the playground preview (no language surface moves)
 
 **Nothing about the language, the drawing or the CLI's bytes changes.** No new keyword, no new flag,
