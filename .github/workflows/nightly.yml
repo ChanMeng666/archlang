@@ -127,6 +127,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Free for individual accounts and public repos; a GITLEAKS_LICENSE is only
           # required for repos owned by a GitHub *organization*. Left unset on purpose.
+          #
+          # Named explicitly rather than left to gitleaks' auto-detection so that a bare
+          # `gitleaks detect` on a laptop and this job read the SAME allowlist. A gate that
+          # can pass locally and fail in CI teaches people to ignore it; one that passes in
+          # CI and fails locally is worse. See `.gitleaks.toml` (verified false positives,
+          # path AND secret-shape scoped) and `.gitleaksignore` (per-finding fingerprints).
+          GITLEAKS_CONFIG: .gitleaks.toml
 
   # ---------------------------------------------------------------------------
   # Deliberately redundant with ci.yml's Node 18/20/22 matrix — this adds the Windows

@@ -3,7 +3,24 @@
 # Read this before adding a line. A fingerprint is `<commit>:<path>:<ruleID>:<line>` and is
 # pinned to ONE line of ONE blob in ONE commit, so an entry here cannot suppress a future
 # finding — not even a real secret on the next line of the same file. That is the only form
-# an entry may take: never a path glob, never a bare rule name, never a regex allowlist.
+# an entry IN THIS FILE may take: never a path glob, never a bare rule name, never a regex
+# allowlist.
+#
+# 2026-09-20: `.gitleaks.toml` now exists beside this file and holds the other kind of
+# exception. That is not a loosening of the rule above, it is a division of labour, and the
+# dividing line is whether the blob is DEAD or LIVE:
+#
+#   dead history  → here. A fingerprint is exact and the blob will never be rewritten, so
+#                   the entry can never go stale or widen. Still the default.
+#   a live file   → `.gitleaks.toml`. A fingerprint names a commit, so the next edit of the
+#                   file mints a new one and the nightly goes red again until somebody
+#                   appends another line — a treadmill, and one whose steps all look like
+#                   routine noise, which is how a real finding gets waved through.
+#
+# Every allowlist there is scoped to a path AND a regex over the matched secret itself
+# (`matchCondition = "AND"`), so it is narrower than the phrase "regex allowlist" suggests:
+# it cannot swallow a credential of a different shape in the same file. Read that file's
+# header before adding to either.
 #
 # The rule that produced every entry below is `sourcegraph-access-token`, which matches a
 # bare 40-character hex string in a plausible-looking context. A git commit SHA is also a
