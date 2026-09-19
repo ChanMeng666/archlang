@@ -41,9 +41,15 @@ export function renderLint(
           hidden > 0 ? ` — ${hidden} more warning${hidden === 1 ? "" : "s"} on the other storeys` : ""
         }.</p>`;
   if (lintDiags.length === 0) {
+    // The clean verdict is a claim about the BUILDING — every room reachable, every
+    // bedroom windowed, an entrance somewhere — and it may only be made from the whole
+    // diagnostic set. With storeys hidden it would be a whole-building claim drawn from
+    // partial data, which is the exact failure this workstream exists to prevent, so the
+    // panel reports the storey and says nothing about the rest.
     el.innerHTML =
-      note +
-      `<p class="ok">✓ No soundness warnings — every room is reachable, bedrooms have windows, the building has an entrance.</p>`;
+      hidden > 0
+        ? `${note}<p class="empty">Nothing to report on this storey. The other storeys are not covered by this view — switch to one to read it.</p>`
+        : `${note}<p class="ok">✓ No soundness warnings — every room is reachable, bedrooms have windows, the building has an entrance.</p>`;
     return [];
   }
   el.innerHTML =

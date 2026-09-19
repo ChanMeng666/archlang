@@ -429,6 +429,53 @@ main {
   outline-offset: 1px;
 }
 
+/* storey switcher — one `L<n>` toggle per `level` block, sitting at the right end
+   of the tab strip because every tab's contents follow it. Mono, because the face
+   is a number (`L1`, `L-1` for a basement), and it wears the tabs' own active
+   language — a redline underline rule, no pill, no fill — so the strip reads as
+   one row rather than two. Hidden ENTIRELY, rule included, for a single-storey
+   plan: `[hidden]` has to beat the inline-flex, and a leftover separator would be
+   a gap with nothing after it. */
+.lv-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 10px;
+}
+.lv-sep {
+  width: 1px;
+  height: 14px;
+  margin-left: 10px;
+  background: var(--hairline);
+}
+.lv-group[hidden],
+.lv-sep[hidden] {
+  display: none;
+}
+.lv-btn {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 4px 7px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+.lv-btn:hover {
+  color: var(--ink);
+}
+.lv-btn.active {
+  color: var(--ink);
+  border-bottom-color: var(--redline-ink);
+}
+.lv-btn:focus-visible {
+  outline: 2px solid var(--redline-ink);
+  outline-offset: 1px;
+}
+
 /* ── the compile seam — the visible boundary between SOURCE and SHEET ───────
    Keep the transparent hit-area pattern (9px, absolute, positioned by JS at
    left:r*100%); the ::after is the drawn rule: a carbon-to-hairline gradient

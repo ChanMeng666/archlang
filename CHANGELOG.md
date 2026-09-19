@@ -27,19 +27,24 @@ playground chrome built on it.
   the plan declares no such level. `test/describe-level.test.ts` pins all of that, including the
   deletion branch driven off `PER_STOREY_OPTIONAL_KEYS` so a third key added there is covered for
   free; `test/cli-levels.test.ts` now imports the constant from the public surface.
-- **The playground preview has a storey switcher.** `compile().pages` carries one rendered sheet per
-  `level` block and the playground threw it away, showing page 1 of a three-storey house with no way
-  to reach the other two. The preview toolbar now grows one `L<n>` button per storey (named in its
-  `title`/`aria-label` — `level 1 "Ground floor"`), wearing the same `.active` + `aria-pressed`
-  clothes the Paths toggle wears. Pressing one re-renders the preview against **that page's** SVG and
-  Scene — including the circulation overlay, which picks the same storey out of its own compile
+- **The playground has a storey switcher.** `compile().pages` carries one rendered sheet per `level`
+  block and the playground threw it away, showing page 1 of a three-storey house with no way to reach
+  the other two. The output pane's tab strip now grows one `L<n>` button per storey (named in its
+  `title`/`aria-label` — `level 1 "Ground floor"`), announced as pressed toggles in a `role="group"`
+  that sits deliberately OUTSIDE the `role="tablist"` — they are not tabs. It is in the strip rather
+  than the preview toolbar because every tab's contents follow it: a control you cannot see while
+  reading the facts it selects does half its job. Pressing one re-renders against **that page's** SVG
+  and Scene — including the circulation overlay, which picks the same storey out of its own compile
   rather than drawing page 1's routes over another floor.
 - **The facts strip, Describe and Lint follow the storey on screen**, through the new
   `describeLevel()` — so the playground and `arch describe --level` cannot disagree about what one
   floor's facts are. The verdicts do not follow: `lint()` runs over the whole plan, the status dot
   and its warning count come from the unfiltered diagnostics, and the Lint tab says out loud that it
   is showing one level, because a filtered panel that went quiet and a sound building look identical
-  otherwise.
+  otherwise. The panel's **clean tick is a claim about the building** — "every room is reachable,
+  bedrooms have windows, the building has an entrance" — so it is printed only when nothing is
+  hidden; with warnings on another storey the panel says "Nothing to report on this storey" and
+  makes no claim about the rest.
 - **An export is named for the page it contains** — `floorplan.L3.svg`, which is what
   `arch compile -o floorplan.svg` writes for that storey. The rule has two implementations (the
   CLI's `levelTarget` is Node-only), so `test/level-filename-lockstep.test.ts` drives both over the

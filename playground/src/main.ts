@@ -18,6 +18,7 @@ import type { EditorView } from "@codemirror/view";
 import { createEditor } from "./editor-setup.js";
 import { createPreview } from "./preview.js";
 import { selectPage } from "./levels.js";
+import { mountLevelSwitcher } from "./level-switcher.js";
 import { mountActions } from "./actions.js";
 import { renderFacts } from "./facts-strip.js";
 import { renderDescribe } from "./describe-panel.js";
@@ -75,8 +76,8 @@ const downloadBtn = document.getElementById("download")!;
 const pzViewport = document.querySelector<HTMLElement>(".pz-viewport")!;
 const pzStage = document.querySelector<HTMLElement>(".pz-stage")!;
 const pzToolbar = document.querySelector<HTMLElement>(".pz-toolbar")!;
-const pzLevels = document.getElementById("pzLevels");
-const pzLevelsSep = document.getElementById("pzLevelsSep");
+const storeysEl = document.getElementById("storeys");
+const storeysSepEl = document.getElementById("storeysSep");
 
 // ---- output tabs (Preview · Describe · Lint · Intent) ----
 const tabs = [...document.querySelectorAll<HTMLElement>(".tab")];
@@ -207,9 +208,16 @@ const previewCtl = createPreview({
   jumpToOffset,
   flash,
   onPathsChange: () => render(currentSource()),
-  levelsEl: pzLevels,
-  levelsSepEl: pzLevelsSep,
-  onLevelChange: (level) => {
+});
+
+// The storey switcher sits in the OUTPUT PANE'S TAB STRIP, not the preview toolbar, so
+// it is visible and operable from all four tabs — the storey it picks drives every one
+// of them. ONE control for one piece of state: a second copy inside the preview would be
+// two things to keep in sync.
+const levelSwitch = mountLevelSwitcher({
+  el: storeysEl,
+  sepEl: storeysSepEl,
+  onChange: (level) => {
     if (level === selectedLevel) return;
     selectedLevel = level;
     // Keep the current pan/zoom: the storeys of one building share a page box, so
@@ -303,7 +311,7 @@ function render(source: string, refit = false) {
   const page = ok ? selectPage(pages, selectedLevel) : undefined;
   if (ok) {
     activeLevel = page?.level ?? null;
-    previewCtl.setLevels(pages, activeLevel);
+    levelSwitch.set(pages, activeLevel);
   }
   updateAnalysis(source, ok);
   lastDiagRows = renderDiagnostics(errorsEl, diagnostics ?? [], source);

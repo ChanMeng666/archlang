@@ -155,28 +155,6 @@
   background: var(--redline);
   color: #fff;
 }
-
-/* storey switcher — one button per `level` block, only for a multi-storey plan
-   (main.ts hides the group and its separator otherwise). Mono and narrow, because
-   the face is a number: `L1`, `L-1` for a basement. The pressed storey wears the
-   same `.active` redline the Paths toggle does — one stateful look in this
-   toolbar, not two. */
-.pz-levels {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
-.pz-levels[hidden],
-.pz-sep[hidden] {
-  display: none;
-}
-.pz-toolbar button[data-pz="level"] {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  min-width: 24px;
-  padding: 0 5px;
-}
 .pz-sep {
   width: 1px;
   height: 16px;

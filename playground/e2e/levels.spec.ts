@@ -2,14 +2,19 @@ import { expect, type Download, type Page, test } from "@playwright/test";
 import { waitForPlan, watchForProblems } from "./fixtures.js";
 
 /**
- * The preview's STOREY SWITCHER — the control that picks which level of a multi-storey
- * plan the playground is showing.
+ * The STOREY SWITCHER — the control that picks which level of a multi-storey plan the
+ * playground is showing.
  *
  * What is proved here can only be proved against the assembled page: that the drawing
  * actually swaps, that the facts strip under it swaps WITH it (it used to be able to
  * show one storey's numbers beside another storey's drawing — the whole reason the core
  * grew `describeLevel`), that a download of level 3 is NAMED for level 3 the way
  * `arch compile` names it, and that a single-storey plan grows no control at all.
+ *
+ * The switcher lives in the output pane's TAB STRIP, not the preview toolbar, so a
+ * storey can be changed while reading Describe or Lint — the tabs whose contents it
+ * selects. One of the cases below switches from the Describe tab and never returns to
+ * Preview, which is the whole reason it moved.
  *
  * UNTAGGED (no `@prod`). Two reasons: the nightly production subset is deliberately
  * load-and-look, and this spec drives a download, which is not something to fire at the
@@ -18,8 +23,8 @@ import { waitForPlan, watchForProblems } from "./fixtures.js";
  * editor-timing-sensitive.
  */
 
-/** The storey buttons, in toolbar order. */
-const levelButtons = (page: Page) => page.locator("#pzLevels button");
+/** The storey buttons, in strip order. */
+const levelButtons = (page: Page) => page.locator("#storeys button");
 
 /** Load a bundled example by its menu label and wait for the plan to land. */
 async function pickExample(page: Page, label: string): Promise<void> {
@@ -93,13 +98,13 @@ test.describe("storey switcher", () => {
     // Level 1 holds the hall and the entrance; level 3 does not.
     await expect(page.locator("#describe")).toContainText("Hall");
 
-    // The switcher lives in the PREVIEW toolbar, so the storey is chosen there and the
-    // other panels follow — they are read after the switch, not switched from.
-    await page.locator("#tab-preview").click();
+    // Switched FROM the Describe tab, without going back to Preview: the control is in
+    // the tab strip, so the facts can be re-aimed while you are reading them.
     await levelButtons(page).nth(2).click();
-
-    await page.locator("#tab-describe").click();
     await expect(page.locator("#describe")).not.toContainText("Hall");
+    // Still on Describe, and still exactly one panel showing — the switcher is not a tab.
+    await expect(page.locator("#describe")).toHaveClass(/active/);
+    await expect(page.locator(".tabview.active")).toHaveCount(1);
 
     // The Lint tab narrows too — and SAYS it is narrowed, so a quiet panel can never be
     // read as a clean building. The building's verdict itself never moved: the status
@@ -127,15 +132,68 @@ test.describe("storey switcher", () => {
     await waitForPlan(page);
     await pickExample(page, "Studio (1BR)");
 
-    // Hidden ENTIRELY — the group and the separator in front of it — because there is
-    // no storey to choose. `compile()` does not even emit a `pages` key for this plan.
-    await expect(page.locator("#pzLevels")).toBeHidden();
-    await expect(page.locator("#pzLevelsSep")).toBeHidden();
+    // Hidden ENTIRELY — the group and the rule in front of it — because there is no
+    // storey to choose. `compile()` does not even emit a `pages` key for this plan.
+    await expect(page.locator("#storeys")).toBeHidden();
+    await expect(page.locator("#storeysSep")).toBeHidden();
+    // The tablist still contains only tabs, so a screen reader is told there are four.
+    expect(await page.locator('[role="tablist"] > *').count()).toBe(4);
     await expect(levelButtons(page)).toHaveCount(0);
 
-    // And the panels are the whole-plan read: no narrowing marker anywhere.
+    // And the panels are the whole-plan read: no narrowing marker anywhere, and the
+    // full whole-building tick, which is only sayable when nothing is hidden.
     await page.locator("#tab-lint").click();
     await expect(page.locator("#lintOutput .lint-narrowed")).toHaveCount(0);
+    await expect(page.locator("#lintOutput .ok")).toContainText("every room is reachable");
+  });
+
+  /**
+   * The Lint tab's clean verdict — "every room is reachable, bedrooms have windows, the
+   * building has an entrance" — is a claim about the BUILDING. Narrowed to one storey
+   * with warnings hidden on another, saying it would be a whole-building claim drawn
+   * from partial data, which is the exact failure this workstream exists to prevent.
+   *
+   * `examples/hillside-villa.arch` is the fixture the repo already ships for it: two
+   * storeys, three deliberate lint warnings, ALL of them on level 2.
+   */
+  test("a quiet storey never claims the BUILDING is sound", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await pickExample(page, "Hillside Villa");
+    await expect(levelButtons(page)).toHaveCount(2);
+
+    const out = page.locator("#lintOutput");
+    await page.locator("#tab-lint").click();
+
+    // Level 1 raises nothing of its own — and three warnings are out of sight.
+    await expect(out.locator(".lint-narrowed")).toContainText("Showing level 1 — 3 more warnings on the other storeys");
+    await expect(out.locator(".empty")).toContainText("Nothing to report on this storey");
+    await expect(out.locator(".lintrow")).toHaveCount(0);
+    // The claim that must NOT be made from a partial set.
+    await expect(out.locator(".ok")).toHaveCount(0);
+
+    // Level 2 owns all three, so nothing is hidden and every row is shown.
+    await levelButtons(page).nth(1).click();
+    await expect(out.locator(".lintrow")).toHaveCount(3);
+    await expect(out.locator(".lint-narrowed")).toHaveText("Showing level 2.");
+  });
+
+  /**
+   * The other half of the split: narrowed, but with NOTHING hidden. Every storey of
+   * `examples/two-storey.arch` is clean, so the whole-building tick is true of the
+   * whole building and is the right thing to print.
+   */
+  test("a narrowed panel with nothing hidden still gives the full verdict", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await pickExample(page, "Two-storey (2 levels)");
+    await page.locator("#tab-lint").click();
+
+    const out = page.locator("#lintOutput");
+    // No "— N more warnings" clause, because there are none anywhere.
+    await expect(out.locator(".lint-narrowed")).toHaveText("Showing level 1.");
+    await expect(out.locator(".ok")).toContainText("every room is reachable");
+    await expect(out.locator(".empty")).toHaveCount(0);
   });
 
   test("the selection resets to the lowest storey when another example is loaded", async ({ page }) => {
