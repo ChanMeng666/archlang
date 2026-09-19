@@ -82,7 +82,7 @@ const showpiece: Sheet[] = [
     tag: "Showpiece",
     title: "The whole language on one sheet",
     body:
-      "Two storeys, an attached garage, one A2 sheet at 1:50 — 11 rooms and 196.54 m² on the ground floor, nine rooms and 140.76 m² above. Nearly every sheet below appears here at once: site orientation, a polygon reading nook, an L-shaped master suite, an arc-bowed bay off the living room, all five door kinds, one stair shaft declared by a shared id on both level blocks, a void over the double-height living room, roof eaves, and a mirrored pair of ensuites placed from a single component. arch lint still raises three warnings, left in and named in the source — the honest cost of a real site, not a plan tuned to hide them.",
+      "Two storeys, an attached garage, one A2 sheet at 1:50 — 11 rooms and 196.54 m² on the ground floor, nine rooms and 140.76 m² above. Nearly every sheet below appears here at once: site orientation, a polygon reading nook, an L-shaped master suite, an arc-bowed bay off the living room, all six door kinds — the five that have to be named, plus the hinged default on the rest — one stair shaft declared by a shared id on both level blocks, a void over the double-height living room, roof eaves, and a mirrored pair of ensuites placed from a single component. arch lint still raises three warnings, left in and named in the source — the honest cost of a real site, not a plan tuned to hide them.",
     example: "hillside-villa",
   },
 ];
