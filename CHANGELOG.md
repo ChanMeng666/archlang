@@ -156,6 +156,47 @@ Guarded by `test/docs-hero-source.test.ts` (the strip's edge cases, and that str
 `compile()` and `describe()`) and `docs-site/e2e/page-chrome.spec.ts` (paint-level: nothing from the
 aside is ever the topmost element over the title block).
 
+### Fixed — the Examples page quotes the compiler again, and the nav stops scrolling the page sideways (docs + site chrome only)
+
+No language surface moves: `compile()`, `describe()` and `lint()` are byte-unmoved, no `.arch` file is
+touched and no rendered SVG shifts a byte. Both faults are ones the repo's existing gates are
+structurally unable to see.
+
+- **`/examples` had drifted from the plans it describes, in ten places.** The page's own preamble
+  promises *"Every figure quoted below comes from `arch describe --json` on the file itself, so the
+  prose and the drawing cannot disagree"*, and that promise was false. Every figure on the page —
+  ~27 sections' worth of room counts, areas, doors, windows, sheet sizes, scales, zone subtotals,
+  warning counts and feature counts — was re-derived from the compiler and the wrong ones corrected:
+  the furniture flagship claimed **twenty-six of thirty-two** catalogued furniture kinds against a
+  catalogue of **83** (it places 39 pieces across 38 families) and claimed `arch validate --strict`
+  was clean when the file's own header names one deliberate `W_PATH_TOO_NARROW`; the garden house
+  counted **twelve** outdoor surfaces over **eight of nine** kinds where the file draws **fifteen**
+  over **all nine**, and claimed **two** lint warnings where one has since been fixed away; the
+  two-bedroom flat under-reported its own doors and windows by two each; the hillside villa listed
+  five door kinds where it exercises all **six** (`garage` is the one it forgot — the same slip as
+  the A-101 fix two commits earlier) and said its ensuite component is placed twice when it is
+  placed three times; `two-storey` and `gallery-l` were quoted at a `scale` neither file writes (both
+  declare only `paper`, and the sheet auto-fits); and the transit hall credited a `for` loop with
+  nine gate openings where it punches eight.
+- **The docs nav scrolled every page sideways between 768px and 960px.** VitePress reveals the whole
+  desktop nav row the instant the hamburger is dismissed, at `min-width: 768px`, and ours carries
+  eight destinations — **684px of menu** beside a 105px title — so the page overflowed by **272px at
+  768, 240 at 800, 140 at 900**, on `/` and on every doc page alike. The reveal now waits for
+  **960px**: not a number picked to hide the symptom, but VitePress's own next breakpoint — where the
+  sidebar appears, where `.VPNav` becomes `position: fixed` and where the doc layout goes wide. The
+  top nav was simply arriving 192px before the layout it belongs to. Below 960 the hamburger persists
+  and its drawer carries all 21 destinations plus the social links, so nothing becomes unreachable at
+  any width, and no hex, token or surface changes. Rejected and recorded in the CSS: shrinking the row
+  (tightening padding and type buys ~110px of the 272 needed, and degrades the bar at 1440 where
+  nothing is wrong) and cutting nav items (a product decision the `nav` block in `config.ts` reasons
+  about in prose).
+
+Guarded by `test/docs-examples-figures.test.ts` — which links each `###` section to the example its
+own `<ArchLive>` widget names and re-derives every headline figure from `describe()`, so the page's
+promise is now executed rather than proofread — and by a third block in
+`docs-site/e2e/page-chrome.spec.ts` that measures `scrollWidth - clientWidth` on two routes across the
+overflow band. Both were proved non-vacuous by breaking what they guard and watching them go red.
+
 ### Docs — the SEO/GEO surface, its dashboards and the Safe Browsing incident (documentation only)
 
 `docs/seo.md` gains the dashboards (two Search Console Domain properties, the same two in Bing, the
