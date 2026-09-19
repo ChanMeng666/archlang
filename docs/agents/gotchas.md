@@ -182,6 +182,21 @@
   stops the fetch, and a header nobody fetches de-indexes nothing. A fourth, learned in PR #99:
   **`_headers` binds to the REQUEST path**, so `/` and `/index.html` each need their own rule — the
   `/ → /index.html` rewrite carries none across (measured on a local `wrangler dev`).
+- **(Sites) `vitepress preview` caches its file index at STARTUP, so a server left running across a
+  rebuild serves a 200 for the page and a 404 for the new hashed CSS.** The asset name carries a
+  content hash, so a rebuild renames it; the old server has never heard of the new name and the
+  browser gets an entirely unstyled page. What that looks like in a probe is the trap: every
+  measurement comes back plausible and wrong — `.aside-container` computes to `position: static`
+  rather than `fixed` OR `sticky`, the outline has zero links, the footer's own `z-index` reads
+  `auto` — which is indistinguishable from "the change broke the site", and is exactly the false
+  negative a fix would be reverted over. **Restart the preview after every build**, and confirm a
+  POSITIVE marker off the wire before trusting a number (`curl` the page, pull its
+  `assets/style.*.css` and grep for a declaration only the new build has). A second edge with the
+  same shape: the port. Both sites' preview servers and both E2E configs use fixed ports, and a
+  parallel worktree running its own `preview` will hold one — a `--strictPort` loser started in the
+  background dies into its log while `curl` still answers 200 **from the other checkout**, so the
+  numbers describe somebody else's branch. Give a measurement server a port of its own and gate it on
+  a marker, never on a status code.
 - **(Parallel worktrees) A clean auto-merge is NOT evidence of correctness when one branch MOVED a
   function another MODIFIED.** v1.25.0's closest call: one agent fixed `windowFacing` in
   `describe.ts` while a second, branched earlier, *extracted that function into a new
