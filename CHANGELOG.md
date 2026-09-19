@@ -7,6 +7,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — the nightly secret scan was red on five false positives, and the first fix for it was a hole
+
+- **The nightly `secrets` job had been RED since 2026-09-18** with every other nightly job
+  green — production smoke, all four Node/OS matrices, E2E against production. All five
+  gitleaks findings were rule `generic-api-key` and all five are false: four are 64-character
+  SHA-256 **byte-identity baselines** (`test/byte-identity-baseline.ts`, and
+  `test/height-byte-identity.test.ts` where the table used to live — the scan covers the full
+  history), which are digests of PUBLIC OUTPUT that anyone can recompute from this
+  repository; the fifth is the **IndexNow key**, which is public by protocol — IndexNow
+  authenticates a submitter by requiring the key to be fetchable at the domain root, and the
+  file is committed under `docs-site/public/` and served on purpose.
+- **New `.gitleaks.toml`**, scoped to those three paths and to `generic-api-key` alone via
+  `targetRules`, with `[extend] useDefault` so every default rule survives.
+  `.gitleaksignore` keeps its fingerprint-only policy for dead history and its header now
+  states the division of labour, so the two files no longer contradict each other.
+  `GITLEAKS_CONFIG: .gitleaks.toml` is set on the action so a local `gitleaks detect` and CI
+  provably read the same allowlist.
+- **The first version of that config was a blanket hole, and the probe is what found it.**
+  It scoped each exception to a path AND an anchored shape regex with
+  `matchCondition = "AND"`. **gitleaks 8.30.1 ignores `matchCondition` on a top-level
+  `[[allowlists]]` block and ORs the conditions**, so adding the regex exempted every 64-hex
+  `generic-api-key` finding anywhere in the repository. Measured: default rules with no
+  allowlist, 6 findings (the 5 real ones plus a planted probe); path+regex+AND, **0**;
+  path+`targetRules`, 1 — the probe, correctly reported. The conditions are now paths only,
+  because one condition cannot be OR-ed into a hole.
+- **`test/gitleaks-allowlist.test.ts` closes the gap gitleaks cannot express.** It derives
+  its file list FROM `.gitleaks.toml` rather than retyping it, so widening the config without
+  saying what the new file may contain fails there, and it asserts the shape half: the
+  baseline file carries only 64-hex digests and names of examples that actually ship, the
+  historical law file carries nothing opaque at all, and the IndexNow test carries exactly
+  one 32-hex string which must equal the key published at `docs-site/public/<key>.txt` —
+  which also catches a rotation done in only one place. It runs in `npm run check`.
+- **Proved non-vacuous with four planted credentials**, each on a throwaway branch scanned
+  the way CI scans (full history): a GitHub PAT in an allowlisted file → gitleaks RED
+  (`github-pat`); a Stripe live key in an allowlisted file → gitleaks RED
+  (`stripe-access-token`); a 64-hex key in an unlisted file → gitleaks RED
+  (`generic-api-key`); a 32-hex key in an allowlisted file → gitleaks green, which is the
+  documented residual, and the vitest guard RED. Every planted credential is caught by at
+  least one gate.
+
+### Fixed — a second self-description drift, on the feature-count axis
+
+- **A prose edit moved a byte-identity digest, which exposed a class worth naming.** The
+  `hillside-villa` fix is comment-only, and it turned two byte-identity rows red. Cause,
+  proved before anything was re-measured: a `lint()`/`describe()` diagnostic carries a byte
+  `span` into the source, so 251 bytes of added prose shifted all three of that plan's
+  diagnostics by exactly 251 — every other field unchanged, and **every storey's SVG
+  byte-identical**. The two rows were re-measured with that reason recorded in
+  `test/byte-identity-baseline.ts`'s header, which now states the two sanctioned causes of a
+  moved digest and how to tell them apart (a non-uniform shift, a moved SVG, or a moved
+  non-`span` field is a compiler change, not a prose edit). Only examples that lint
+  non-clean are affected — `aquarium` and `two-storey` had prose edited in this same branch
+  and did not move, because a plan with no diagnostics has no spans to shift.
+
+- **`examples/hillside-villa.arch` claimed five door kinds; it exercises six.** The header
+  listed "hinged/sliding/pocket/bifold/barn" and the file writes `door id=d_garage garage` at
+  `:119`; `DOOR_KINDS` has six and `describe()` reports six on that plan. Same error and same
+  cause as landing-page card A-101 (`11b69fc`): `hinged` is the kind you never write, so
+  counting `door <kind>` lines gives five. The new wording names the five that must be
+  written, names the default separately, and says why the naive count is wrong.
+- The self-description sweep now covers **counts of language features**, not only dimensions
+  and areas. Everything else it checked is correct and was left alone: `clinic` six consulting
+  rooms placed six times, `bungalow` five site directions and three non-default door kinds,
+  `library` eight arcs in the drum, `hillside-villa` ~30 furniture families (30),
+  `hexagon-pavilion` six galleries plus a rotunda, `terrace-row` four dwellings,
+  `courtyard-house` a three-segment courtyard wall, `furnished-flat` "thirty-eight of the
+  eighty-three catalogued kinds" (38 used; `FIXTURE_FAMILIES` has exactly 83 drawn symbol
+  families), and `materials`' "all six" materials — five written plus `poche` by omission,
+  which that file's own `:23` states.
+
 ### Fixed — the v1.35 height datum now has an example, and the law that forbade one is stronger for it
 
 - **`examples/two-storey.arch` authors the vertical datum.** v1.35 shipped `height`/`sill`/`head` and

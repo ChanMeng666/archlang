@@ -210,6 +210,19 @@ real file), so it carries no hash, cannot go stale and cannot be re-blessed to g
 `examples/two-storey.arch`'s v1.34.0 rows in both tables are still checked — against that derivation,
 which is behaviourally the text that shipped — so nothing was re-measured, re-typed or dropped.
 
+**A prose edit to an example can move its byte-identity digest, and that is not a compiler
+bug.** A `lint()`/`describe()` diagnostic carries a byte `span` into the source, so adding a
+line to a header comment shifts every span below it. Fixing a wrong sentence in
+`examples/hillside-villa.arch` on 2026-09-20 added 251 bytes and moved all three of its
+diagnostics by exactly 251, with every other field unchanged and every storey's SVG
+byte-identical; its two rows were re-measured with that reason recorded in
+`test/byte-identity-baseline.ts`'s header. Before re-measuring anything, tell the two cases
+apart — diff the two `lint()` payloads field by field. If the SVG also moved, or a non-`span`
+field moved, or the shift is not UNIFORM across every diagnostic, it is a compiler change
+wearing a prose edit's clothes and must be explained first. Only examples that lint non-clean
+are affected; a plan with no diagnostics has no spans to shift, which is why `aquarium` and
+`two-storey` had their prose edited in the same branch without moving.
+
 **If you add a height-authoring example**, name it in `AUTHORS_HEIGHT` and nowhere else: the tests
 cross-check that list against a scan of the sources in both directions, so a plan that quietly grows
 a `height` fails the no-height half's vacuity guard and a name whose plan authors nothing fails its
@@ -218,6 +231,7 @@ cannot drift into describing different buildings. The derivation is itself guard
 the text, and the result must scan clean, so a derivation that became a no-op goes red loudly rather
 than green quietly (verified 2026-09-20 by making it a no-op — six assertions failed across the two
 laws).
+| `test/gitleaks-allowlist.test.ts` | the SHAPE half of the secret-scanning gate. `.gitleaks.toml` exempts rule `generic-api-key` in three files whose findings are verified false (measured SHA-256 baselines; the IndexNow key, which is public by protocol). gitleaks 8.30.1 **ignores `matchCondition` on a top-level allowlist and ORs the conditions**, so a path-plus-shape entry exempts that shape everywhere — the config is therefore paths-only, and this test asserts what each exempted file may contain. Its file list is DERIVED from `.gitleaks.toml` | Someone widened the allowlist without adding a shape rule, or an opaque string that is not a digest, an example name or the published IndexNow key landed in an exempted file. Add the rule — do not delete the assertion. Re-prove the allowlist by planting a credential and scanning history the way CI does |
 
 ### The fixture-symbol layer — one snapshot file, three different promises
 

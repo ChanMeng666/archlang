@@ -109,7 +109,10 @@ describe("the gitleaks allowlist is scoped by SHAPE as well as by path", () => {
     // …and it is public, which is the entire reason it is exempt. The proof is that the
     // repository serves it: IndexNow accepts a submission only when `<key>.txt` is
     // fetchable at the domain root. This also catches a rotation done in one place only.
-    expect(() => read(`docs-site/public/${key}.txt`), `the key in the test is not the one published at the domain root`).not.toThrow();
+    expect(
+      () => read(`docs-site/public/${key}.txt`),
+      `the key in the test is not the one published at the domain root`,
+    ).not.toThrow();
     expect(read(`docs-site/public/${key}.txt`).trim()).toBe(key);
   });
 });
