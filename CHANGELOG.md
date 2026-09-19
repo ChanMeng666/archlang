@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — the outline stops where the article stops, and the hero draws in a second (site chrome only)
+
+No language surface moves: `compile()`, `describe()` and `lint()` are byte-unmoved, no rendered SVG
+shifts a byte, and `examples/laneway-house.arch` is untouched on disk. Both faults were in the docs
+site's chrome, and both were invisible to every gate the repo had — `docs:build` proves the site
+compiles, `typecheck:all` proves it types, and neither can see where a box lands at one scroll
+position or how long a pane stays empty.
+
+- **The "On this page" outline painted over the title-block footer.** VitePress ships the aside as
+  `position: fixed` with `height: 100vh`, so its containing block is the viewport and it has no bottom
+  bound at any scroll offset. Their own `VPFooter` survives that because it carries
+  `position: relative; z-index: 10` and an opaque background — ours, injected through the
+  `layout-bottom` slot and therefore OUTSIDE the `.VPDoc` flex row, carried neither. At the foot of
+  `/reference` at 1280px, five outline links and the 32px curtain were painting on top of PROJECT /
+  DRAWN BY / LICENSE. `doc-pages.css` §8 now re-bounds the aside with `position: sticky` against
+  `.aside` (already `position: relative`, and a flex item stretched to the doc column's full height),
+  with the nav clearance moved from the inner `padding-top` onto the sticky `top` so the stuck and
+  unstuck states render identically. The internal scroll for a taller-than-the-viewport outline
+  survives on a `max-height`; the stock `.aside-curtain` — a preceding SIBLING of the scroll box, so
+  nothing can anchor it to what it is meant to soften — is replaced by a mask on the box itself. §12
+  gives `.tblock` the `position: relative; z-index: 10` guard VitePress's footer always had.
+  Measured: aside bottom 900px against a title block starting at 522px, five links over it → aside
+  bottom 522px, zero `elementFromPoint` hits over the title block at 1280 / 1440 / 1920 on three
+  pages.
+- **The hero's sheet was blank for the first 5.3 seconds.** `CompileSeam.vue` types the hero example
+  at 90 chars/s and only paints when a completed line compiles clean, and
+  `examples/laneway-house.arch` opens with a 7-line, 458-character prose header — so the right-hand
+  pane, which a visitor reads as a broken panel, stayed empty until the first compilable prefix. The
+  hero now types the source with that leading comment block stripped (`stripHeaderComments`); the
+  file on disk keeps its header, which is what the `#z=` permalink, the gallery, the README hero and
+  `docs-site/e2e/homepage-links.spec.ts`'s byte comparison all still read. The INLINE comments stay —
+  they are half of what the hero demonstrates, and by the time they type there is a drawing to read
+  them against. Measured warm, same harness: first ink 6462 ms → 896 ms from navigation (5361 ms →
+  279 ms from the animation's own rewind), first wall 8777 ms → 3229 ms. SSR and
+  `prefers-reduced-motion: reduce` still render the final drawing statically.
+
+Guarded by `test/docs-hero-source.test.ts` (the strip's edge cases, and that stripping is a no-op for
+`compile()` and `describe()`) and `docs-site/e2e/page-chrome.spec.ts` (paint-level: nothing from the
+aside is ever the topmost element over the title block).
+
 ### Docs — the SEO/GEO surface, its dashboards and the Safe Browsing incident (documentation only)
 
 `docs/seo.md` gains the dashboards (two Search Console Domain properties, the same two in Bing, the
