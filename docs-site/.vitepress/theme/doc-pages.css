@@ -449,6 +449,73 @@
   border-radius: 0; /* squared active tick */
 }
 
+/* ── The outline stops where the article stops ─────────────────────────────
+   VitePress ships the aside as `position: fixed` (VPDoc.vue): `top: 0`,
+   `height: 100vh`, the nav cleared by a padding-top, and an `.aside-curtain`
+   fixed to `bottom: 0`. A fixed box's containing block is the VIEWPORT, so it
+   has no bottom bound at ANY scroll offset — it keeps painting a full 100vh
+   column after the article has ended. Their own `VPFooter` survives that only
+   because it defends itself with `position: relative; z-index: 10` and an
+   opaque background; our `TitleBlockFooter.vue` is injected through the
+   `layout-bottom` slot, OUTSIDE the `.VPDoc` flex row, and carried neither. The
+   result at the foot of a long page: outline links and the curtain painting on
+   top of PROJECT / DRAWN BY / LICENSE.
+
+   The fix is to bound the aside by its own column instead of by the viewport.
+   `.aside` is already `position: relative` and, as a flex item, stretches to
+   the full height of the `.VPDoc` row — so a STICKY child travels with the
+   viewport exactly as the fixed one did and then stops dead at the bottom of
+   the doc column, after `.VPDocFooter` (prev/next) and above the title block.
+   Once the article ends, the outline stops following.
+
+   Three things move together and none is optional:
+     · the nav clearance migrates from `padding-top` to the sticky `top` — with
+       `position: sticky` an inner padding no longer collapses against the
+       viewport edge, so keeping both would offset the outline TWICE before it
+       sticks. The expression is VitePress's own, verbatim; `.aside`'s flow
+       position is already `--vp-nav-height` (VPContent's ≥960 padding-top) plus
+       48px (VPDoc's padding), so stuck and unstuck render identically.
+     · `height: auto` + a `max-height` of what is left of the viewport keeps the
+       internal `overflow-y: auto` working for an outline taller than the screen
+       (/errors has 130 entries) while letting a short one shrink to its content
+       — a literal `100vh` box would be clipped by the column's bottom instead.
+     · `.aside-content`'s `min-height: 100vh - …` has to go to 0. It exists to
+       push the fixed column's contents apart; left in place it forces the
+       sticky box past its own max-height and re-creates the overflow.
+
+   The curtain is the one piece that cannot be re-bounded in place: it is a
+   SIBLING that precedes `.aside-container` in the DOM, so nothing anchors it to
+   the scroll box it is meant to soften (in-flow it would displace the outline,
+   and a negative margin to cancel that also cancels sticky's clamp). Its job —
+   fading the clipped edge of an internally-scrolled outline — is done exactly by
+   a mask on the scroll box itself, which is guaranteed to travel with it. The
+   `black`/`transparent` stops below are an ALPHA CHANNEL, not paint: no colour
+   is named, so this is not the fixed-hex fossil the rest of this file hunts. */
+@media (min-width: 960px) {
+  .VPDoc .aside-container {
+    position: sticky;
+    top: calc(var(--vp-nav-height) + var(--vp-layout-top-height, 0px) + var(--vp-doc-top-height, 0px) + 48px);
+    padding-top: 0;
+    height: auto;
+    max-height: calc(
+      100vh -
+      (var(--vp-nav-height) + var(--vp-layout-top-height, 0px) + var(--vp-doc-top-height, 0px) + 48px)
+    );
+    -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 32px), transparent 100%);
+    mask-image: linear-gradient(to bottom, black calc(100% - 32px), transparent 100%);
+  }
+
+  .VPDoc .aside-content {
+    min-height: 0;
+  }
+
+  /* Replaced by the mask above — see the note. Kept as a rule rather than an
+     unused element so a VitePress upgrade that restyles it still lands here. */
+  .VPDoc .aside-curtain {
+    display: none;
+  }
+}
+
 /* ============================================================================
    9 · LOCAL SEARCH + DocSearch button (non-home chrome)
    ========================================================================== */
@@ -573,6 +640,20 @@
    These are longhands on a 0,3,0 selector, so they beat the `padding` shorthand
    in TitleBlockFooter.vue's scoped block (0,2,0). Don't "tidy" that shorthand
    into longhands without re-checking here. */
+/* Belt and braces to §8's sticky aside: the guard VitePress's own `VPFooter`
+   carries and ours never did. `.tblock` paints `var(--paper)` but sat at
+   `position: static; z-index: auto`, so ANY positioned chrome above it in the
+   document won — which is how the fixed outline came to paint over DRAWN BY. §8
+   is the actual fix; this is what stops the next one. The 10 is written out
+   rather than taken from `--vp-z-index-footer` (which is 10 today): `.tblock`
+   is OUR element in OUR slot, not the `.VPFooter` that token ranks — and that
+   `.VPFooter` is `display: none` on every sidebar page, so borrowing its token
+   would tie this to a stack we do not participate in. */
+.tblock {
+  position: relative;
+  z-index: 10;
+}
+
 @media (min-width: 960px) {
   .VPContent.has-sidebar ~ .tblock {
     padding-left: calc(var(--vp-sidebar-width) + 24px);
