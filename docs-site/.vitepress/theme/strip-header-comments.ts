@@ -3,7 +3,7 @@
  * pane only.
  *
  * WHY THIS EXISTS. `CompileSeam.vue` types `examples/laneway-house.arch` character
- * by character at 90 chars/s and compiles only when a line completes, painting the
+ * by character at 140 chars/s and compiles only when a line completes, painting the
  * sheet from the first prefix that compiles clean. That file opens with a 7-line,
  * 458-character prose header explaining how the plan is authored — real
  * documentation, and the reason the file reads well in the gallery, the README hero

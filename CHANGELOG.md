@@ -32,16 +32,22 @@ position or how long a pane stays empty.
   bottom 522px, zero `elementFromPoint` hits over the title block at 1280 / 1440 / 1920 on three
   pages.
 - **The hero's sheet was blank for the first 5.3 seconds.** `CompileSeam.vue` types the hero example
-  at 90 chars/s and only paints when a completed line compiles clean, and
-  `examples/laneway-house.arch` opens with a 7-line, 458-character prose header — so the right-hand
-  pane, which a visitor reads as a broken panel, stayed empty until the first compilable prefix. The
-  hero now types the source with that leading comment block stripped (`stripHeaderComments`); the
-  file on disk keeps its header, which is what the `#z=` permalink, the gallery, the README hero and
+  and only paints when a completed line compiles clean, and `examples/laneway-house.arch` opens with
+  a 7-line, 458-character prose header — so the right-hand pane, which a visitor reads as a broken
+  panel, stayed empty until the first compilable prefix. The hero now types the source with that
+  leading comment block stripped (`stripHeaderComments`); the file on disk keeps its header, which is
+  what the `#z=` permalink, the gallery, the README hero and
   `docs-site/e2e/homepage-links.spec.ts`'s byte comparison all still read. The INLINE comments stay —
   they are half of what the hero demonstrates, and by the time they type there is a drawing to read
-  them against. Measured warm, same harness: first ink 6462 ms → 896 ms from navigation (5361 ms →
-  279 ms from the animation's own rewind), first wall 8777 ms → 3229 ms. SSR and
-  `prefers-reduced-motion: reduce` still render the final drawing statically.
+  them against. The typing cadence also goes 90 → 140 chars/s: the metric a visitor actually waits on
+  is not the first SVG (an 880-byte title block with no geometry) but the first drawn WALL, which the
+  compiler does not produce until char 233. That is arithmetic on `SPEED`, so it was the only lever
+  left once the header was gone — and the cadence is not a legibility budget, because the typed text
+  persists and the reader's time with it is bounded by how long they stay, not by how fast it
+  arrives. Measured warm, same harness throughout: **first wall 8777 ms → 2152 ms from navigation**
+  (7700 ms → 1682 ms from the animation's own rewind), first ink 6462 ms → 652 ms, and the whole run
+  28.4 s → 18.2 s, which matters because a visitor who leaves at 20 s never saw the plan finish. SSR
+  and `prefers-reduced-motion: reduce` still render the final drawing statically.
 
 Guarded by `test/docs-hero-source.test.ts` (the strip's edge cases, and that stripping is a no-op for
 `compile()` and `describe()`) and `docs-site/e2e/page-chrome.spec.ts` (paint-level: nothing from the

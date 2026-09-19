@@ -38,7 +38,18 @@ const PLAYGROUND = EXAMPLE_LINKS[HERO];
 
 // ── The source text and its final compiled drawing (computed once, at setup,
 //    so it exists during SSR and initial hydration alike). ──────────────────
-const SPEED = 90; // characters/second — a calm, readable typing cadence
+// Characters/second. Bounded at both ends, and NOT by legibility of the source —
+// the typed text PERSISTS, so how long a reader has to take in the inline comments
+// is set by how long they stay on the page, never by this. What this governs is the
+// aesthetic of watching a plan compile.
+//   · Fast enough that geometry lands in ~2 s: the first `<path>` appears at char
+//     233 (the end of the first `wall` statement), and the whole run is 18 s rather
+//     than 28 — a visitor who leaves at 20 s used to never see the plan finish.
+//   · Slow enough that it still reads as TYPING and not as a paste: at 60 fps this
+//     is 2.3 characters per frame, so the per-character texture survives.
+// Was 90 ("a calm, readable typing cadence") until the same round that stripped the
+// example's prose header; measured at both values before changing it.
+const SPEED = 140;
 const finalResult = compile(raw, { noCache: true });
 const finalSvg = finalResult.svg;
 

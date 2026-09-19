@@ -17,7 +17,7 @@
  *    aside on top of it?
  *
  * 2. THE HERO DOES NOT OPEN WITH ITS ESSAY. `CompileSeam.vue` types the hero example
- *    at 90 chars/s and only paints the sheet when a typed line compiles, so
+ *    at 140 chars/s and only paints the sheet when a typed line compiles, so
  *    `examples/laneway-house.arch`'s 7-line prose header was 5.3 seconds of empty
  *    paper. `stripHeaderComments` narrows what the ANIMATION types; the file, the
  *    gallery, the README and the `#z=` permalink are untouched (that last one is
@@ -127,7 +127,7 @@ test.describe("the On this page outline is bounded by its own column", () => {
 
 test.describe("the hero types the plan, not its prose header", () => {
   // NB none of these waits out the animation. The stripped source is still 2 553
-  // characters at 90 chars/s — a little over 28 s — so "wait for `compiled`" would
+  // characters at 140 chars/s — a little over 18 s — so "wait for `compiled`" would
   // sit right on Playwright's 30 s test timeout and turn a passing guard into a
   // stopwatch. Each case below reads the state it actually needs instead.
 
