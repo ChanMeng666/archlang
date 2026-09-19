@@ -47,6 +47,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   documented residual, and the vitest guard RED. Every planted credential is caught by at
   least one gate.
 
+### Fixed — three landing-page cards quoted a real number that answered a different question
+
+These are not arithmetic errors and no re-derivation gate would have caught one of them. In each
+case the figure is genuinely produced by the compiler; it just is not the figure the sentence
+around it claims. **That is the class** — *the number is real but answers a different question than
+the sentence asks* — and it has now produced three defects on one page from three different
+mechanisms.
+
+- **A-102 quoted a CENTRELINE as a FOOTPRINT.** The card said "a 5.2 × 10.7 m terrace footprint";
+  `let W`/`let D` in `townhouse.arch` are wall centrelines and a footprint is the outer face, which
+  `describe --json` reports as `bbox_outer` 5500 × 11000. Now 5.5 × 11 m, and the card says which
+  convention it is using and that both numbers exist — because every plan with a `wall … thickness`
+  has two legitimate "sizes" and nothing in prose says which is meant.
+- **A-105 quoted PAGE-1 facts as whole-building facts**, in both halves of one sentence.
+  `describe()`'s top-level block is the LOWEST STOREY, so a two-storey plan read at the top level
+  loses everything above. `garden-house` has 15 outdoor surfaces across all **nine** kinds
+  (the 15th is the L2 `balcony`, which is also the ninth kind) and 11 rooms over 240 m²; the card
+  claimed 14 surfaces, eight kinds, 6 rooms and 136.5 m² — every one of those the ground floor
+  alone. Fixed, and the card now names where to read the totals from (`levels[]`, not the top
+  level), since this is the same trap the playground storey-switcher work exists to close.
+- **A-101 dropped a DEFAULT-VALUED enum member from a count** (fixed earlier in `11b69fc`): `hinged`
+  is the door kind you never write, so counting `door <kind>` lines gives five of six. The same
+  undercount in `examples/hillside-villa.arch`'s header is fixed below.
+- **A-107 had the A-102 confusion in a milder form** — "across 22.2 × 9.6 m", the centreline extent
+  of the terrace row; now 22.45 × 9.85 m over the outer faces.
+- `examples/aquarium.arch`'s corrected figure gains its tilde back: 60 × 40 m is exact on
+  centrelines but the outer face is 60.3 × 40.3, and `~60 x 40` is true under both — which is the
+  convention `library` (`~50 x 32`) and `museum` (`~100 x 60`) already use.
+
+**A sweep of every quoted dimension on both axes found no others.** Honest because they say which
+convention they mean: `townhouse` "outer faces 5500 x 11000" (stated at `:55`), `courtyard-house`
+16.3 × 11.8 and `tiny-house` 7.2 × 3.0 (both outer), `gallery-l` "12 × 14 m bounding box" (names it),
+`garden-house` "22 × 22 m suburban lot" (the lot, not the building), and the tilde'd round figures
+in `library`, `museum` and `transit-hall`. On the multi-storey axis, all four multi-storey examples
+appear on the landing page and the other three are correct: A-101 gives `hillside-villa` per storey
+("11 rooms and 196.54 m² on the ground floor, nine rooms and 140.76 m² above"), A-102's "4 rooms and
+55.64 m² each" holds for all three `townhouse` storeys, and A-108 quotes no counts.
+
 ### Fixed — a second self-description drift, on the feature-count axis
 
 - **A prose edit moved a byte-identity digest, which exposed a class worth naming.** The
