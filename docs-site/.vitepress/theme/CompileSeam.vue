@@ -14,13 +14,21 @@ import { ref, shallowRef, computed, onMounted, onBeforeUnmount, watch } from "vu
 import { compile, describe } from "archlang";
 import { EXAMPLES, EXAMPLE_LINKS } from "./examples-data.js";
 import { highlightArch } from "./arch-highlight.js";
+import { stripHeaderComments } from "./strip-header-comments.js";
 
 // The hero example, already synced into examples-data.js by sync-docs.mjs (no
 // `?raw` / fs.allow dependency). This is the source that types itself; the name is
 // bound ONCE so the source, the file-name chip and the aspect fallback below can
 // never name three different plans.
 const HERO = "laneway-house";
-const raw: string = EXAMPLES[HERO];
+// …minus its leading prose header. The file opens with seven comment lines the
+// reader of the FILE wants and the watcher of the ANIMATION cannot use: at 90
+// chars/s they are 5.3 seconds of an empty sheet before the first prefix that
+// compiles, which reads as a broken panel. The inline comments further down stay —
+// by then there is a drawing to read them against. See strip-header-comments.ts;
+// `examples/laneway-house.arch` itself is untouched, and the "Open this plan ↗"
+// permalink below still carries the whole file.
+const raw: string = stripHeaderComments(EXAMPLES[HERO]);
 
 const ARCHCANVAS = "https://archcanvas.uk";
 // The playground, opened on THIS plan rather than on an empty editor: a `#z=` permalink
@@ -30,7 +38,18 @@ const PLAYGROUND = EXAMPLE_LINKS[HERO];
 
 // ── The source text and its final compiled drawing (computed once, at setup,
 //    so it exists during SSR and initial hydration alike). ──────────────────
-const SPEED = 90; // characters/second — a calm, readable typing cadence
+// Characters/second. Bounded at both ends, and NOT by legibility of the source —
+// the typed text PERSISTS, so how long a reader has to take in the inline comments
+// is set by how long they stay on the page, never by this. What this governs is the
+// aesthetic of watching a plan compile.
+//   · Fast enough that geometry lands in ~2 s: the first `<path>` appears at char
+//     233 (the end of the first `wall` statement), and the whole run is 18 s rather
+//     than 28 — a visitor who leaves at 20 s used to never see the plan finish.
+//   · Slow enough that it still reads as TYPING and not as a paste: at 60 fps this
+//     is 2.3 characters per frame, so the per-character texture survives.
+// Was 90 ("a calm, readable typing cadence") until the same round that stripped the
+// example's prose header; measured at both values before changing it.
+const SPEED = 140;
 const finalResult = compile(raw, { noCache: true });
 const finalSvg = finalResult.svg;
 
