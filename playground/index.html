@@ -227,6 +227,15 @@
             <button class="tab" id="tab-lint" data-tab="lint" type="button" role="tab" aria-selected="false" aria-controls="lint">Lint</button>
             <button class="tab" id="tab-intent" data-tab="intent" type="button" role="tab" aria-selected="false" aria-controls="intent">Intent</button>
           </span>
+          <!-- Storey switcher for a multi-storey plan. It sits in the tab strip rather
+               than in the preview toolbar because every tab's contents follow it: a
+               control the reader cannot see while reading the facts it selects only
+               does half its job. OUTSIDE the role="tablist" above on purpose — these
+               are toggle buttons, not tabs, and a tablist must contain only tabs.
+               Empty and hidden until a plan with `level` blocks is compiled;
+               level-switcher.ts fills it. -->
+          <span class="lv-sep" id="storeysSep" hidden></span>
+          <span class="lv-group" id="storeys" role="group" aria-label="Storey" hidden></span>
         </h2>
         <div id="preview" class="tabview active" role="tabpanel" aria-labelledby="tab-preview">
           <div class="pz-viewport">

@@ -1321,3 +1321,48 @@ export function describe(source: string, opts: DescribeOptions = {}): SceneSumma
     diagnostics,
   };
 }
+
+/**
+ * Top-level {@link SceneSummary} keys that are OPTIONAL and vary from storey to storey.
+ *
+ * {@link describeLevel} spreads that storey's facts over the whole-plan ones, so a key
+ * this storey does not have must be DELETED rather than left standing from the previous
+ * spread — otherwise the narrowed read reports another floor's facts under its own name.
+ * Exported so a test can hold each one to that rule.
+ *
+ * `heights` is deliberately NOT here: its gate is whole-PLAN (`_heightsAuthored`), so
+ * when the block exists at all it exists on every storey.
+ */
+export const PER_STOREY_OPTIONAL_KEYS = ["verticals", "voids"] as const satisfies readonly (keyof SceneSummary)[];
+
+/**
+ * Narrow a whole-plan summary to ONE storey: that level's facts become the top-level
+ * ones (they are the same shape — see {@link LevelSummary}) and `levels` narrows to it
+ * alone. A plan that declares no such level is returned unchanged.
+ *
+ * This is a DISPLAY filter, and the law it carries is that a display filter never
+ * changes a verdict: `ok` and `diagnostics` still come from the whole plan, so reading
+ * one floor can never make a broken building look sound. Callers that report an exit
+ * code or a status must take it from the UNFILTERED summary.
+ *
+ * Pure and deterministic like everything else here — it reshapes an existing summary
+ * and never re-resolves the plan. Behind `arch describe --level N` and the playground's
+ * storey switcher, which is why it lives in the core rather than in one of them: a
+ * second copy is a second place to forget a per-storey key.
+ */
+export function describeLevel(summary: SceneSummary, level: number): SceneSummary {
+  const want = summary.levels?.find((l) => l.level === level);
+  if (!want) return summary;
+  const { level: _l, name: _n, ...facts } = want;
+  const out: SceneSummary = { ...summary, ...facts, levels: [want] };
+  // Optional per-storey keys are absent from `facts` when THIS storey has none, so the
+  // spread would leave the previous top-level value (page 1's) standing and the narrowed
+  // read would lie. Whole-BUILDING keys (`vertical`) legitimately survive; per-storey
+  // ones must not. A LIST rather than one `if`, because there are two of these now
+  // (`voids` joined in v1.29) and the failure mode of forgetting the next one is silent:
+  // the narrowed read reports the wrong storey's facts and says nothing.
+  for (const k of PER_STOREY_OPTIONAL_KEYS) {
+    if (facts[k] === undefined) delete out[k];
+  }
+  return out;
+}

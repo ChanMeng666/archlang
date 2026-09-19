@@ -141,10 +141,53 @@ const allRoomsReachable = (d) =>
  */
 function statisticsSentence(d) {
   const t = d.totals ?? {};
-  const head =
-    `This plan compiles to ${plural(t.rooms ?? 0, "room")}, ${num(t.floor_area_m2 ?? 0)} m² of floor area ` +
+  const figures =
+    `${plural(t.rooms ?? 0, "room")}, ${num(t.floor_area_m2 ?? 0)} m² of floor area ` +
     `and ${plural(t.windows ?? 0, "window")}`;
+  // On a MULTI-STOREY plan these numbers are the LOWEST storey's, not the building's:
+  // `describe()`'s top-level facts are page 1 and `levels[0]` repeats them verbatim
+  // (src/describe.ts). So the sentence names the storey it is actually measuring, and
+  // `storeyFigures` below prints the rest. Saying "this plan" here would be a claim the
+  // compiler never made.
+  const levels = storeys(d);
+  const head =
+    levels.length > 1
+      ? `Level ${levels[0].level}${levels[0].name ? ` (${levels[0].name})` : ""} compiles to ${figures}`
+      : `This plan compiles to ${figures}`;
   return allRoomsReachable(d) ? `${head}; every room is reachable from the entrance.` : `${head}.`;
+}
+
+/** The plan's storeys, ascending — empty for a single-storey plan, which has no `levels`. */
+const storeys = (d) => (Array.isArray(d.levels) ? d.levels : []);
+
+/**
+ * The per-storey figures for a multi-storey plan, and nothing at all for a single one.
+ *
+ * This page used to tell the reader that "the figures below count every storey". They
+ * never did, and they were not even below — `describe()`'s top-level totals are the
+ * LOWEST storey alone. A `LevelSummary` is the same fact shape as a whole plan
+ * (src/describe.ts), so each storey's own numbers are already here in `levels[i]`;
+ * printing them is both honest and strictly more than the false sentence promised.
+ */
+function storeyFigures(d) {
+  const levels = storeys(d);
+  if (levels.length < 2) return "";
+  const rows = levels
+    .map((l) => {
+      const t = l.totals ?? {};
+      const name = l.name ? ` (${escapeHtml(l.name)})` : "";
+      return (
+        `<li><strong>Level ${l.level}</strong>${name} — ${plural(t.rooms ?? 0, "room")}, ` +
+        `${num(t.floor_area_m2 ?? 0)} m² of floor area, ${plural(t.windows ?? 0, "window")}.</li>`
+      );
+    })
+    .join("\n        ");
+  return (
+    `<p class="stats">This is a ${levels.length}-level plan: a storey is a drawing, so the compiler ` +
+    `produces one sheet per level and the drawing above is level ${levels[0].level}. ` +
+    `The command line writes one file per level, and the playground's preview has a storey switcher. ` +
+    `Each storey measures:</p>\n      <ul class="storeys">\n        ${rows}\n      </ul>`
+  );
 }
 
 /**
@@ -211,6 +254,8 @@ const STYLE = `
   }
   .cta:hover, .cta:focus { background: #8052ff; border-color: #8052ff; }  /* --plum */
   ul.links { padding-left: 1.1rem; }
+  ul.storeys { padding-left: 1.1rem; margin: 0 0 1.5rem; color: #464d59; }  /* --syn-operator */
+  ul.storeys li { padding: .15rem 0; }
   ul.plans { list-style: none; padding: 0; margin: 0 0 1.5rem; }
   ul.plans li { padding: .4rem 0; border-bottom: 1px solid #cfc9bb; }
   ul.plans .blurb { display: block; color: #5a616e; font-size: .9rem; }
@@ -310,14 +355,10 @@ function examplePage(row, source, result, d) {
     ],
   };
 
-  // A multi-storey plan draws one page per level and `compile().svg` is level 1,
-  // while `describe()`'s totals count the whole building. Say so rather than let
-  // the drawing and the numbers appear to disagree.
-  const storeyNote =
-    pages > 1
-      ? `<p class="stats">This is a ${pages}-level plan: the drawing above is level 1, and the figures ` +
-        "below count every storey. The command line writes one file per level.</p>"
-      : "";
+  // A multi-storey plan draws one page per level and `compile().svg` is level 1. The
+  // figures come from `describe()` storey by storey — see `storeyFigures`, which
+  // replaced a sentence claiming the numbers above counted the whole building.
+  const storeyNote = pages > 1 ? storeyFigures(d) : "";
 
   return `<!doctype html>
 <html lang="en">

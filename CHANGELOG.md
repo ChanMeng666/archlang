@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — one core export, and a storey switcher in the playground preview (no language surface moves)
+
+**Nothing about the language, the drawing or the CLI's bytes changes.** No new keyword, no new flag,
+no new diagnostic; every rendered SVG is byte-identical, and `arch describe … --level N --json`
+emits exactly the bytes it emitted before — proved by diffing 36 captures (four multi-storey
+examples × three levels × plain / `--select` / human) taken before and after the move, which came
+back with no differences at all. This is one function lifted out of the CLI into the core, plus
+playground chrome built on it.
+
+- **`describeLevel(summary, level)` is now part of the public surface** (`src/describe.ts`, exported
+  from `src/index.ts` with `PER_STOREY_OPTIONAL_KEYS`). It is the narrowing that already sat behind
+  `arch describe --level N` — a private `narrowToLevel` in `src/cli/commands-analyze.ts` — moved
+  VERBATIM so the browser cannot grow a second copy of it. Its own comment says why that mattered:
+  a per-storey optional key the selected storey does not have must be **deleted**, not left standing
+  from page 1's spread, and forgetting one is silent — the narrowed read reports another floor's
+  facts under its own name and says nothing. Pure and deterministic like everything else in the
+  module, a DISPLAY filter throughout (`ok` and `diagnostics` stay whole-plan), and an identity when
+  the plan declares no such level. `test/describe-level.test.ts` pins all of that, including the
+  deletion branch driven off `PER_STOREY_OPTIONAL_KEYS` so a third key added there is covered for
+  free; `test/cli-levels.test.ts` now imports the constant from the public surface.
+- **The playground has a storey switcher.** `compile().pages` carries one rendered sheet per `level`
+  block and the playground threw it away, showing page 1 of a three-storey house with no way to reach
+  the other two. The output pane's tab strip now grows one `L<n>` button per storey (named in its
+  `title`/`aria-label` — `level 1 "Ground floor"`), announced as pressed toggles in a `role="group"`
+  that sits deliberately OUTSIDE the `role="tablist"` — they are not tabs. It is in the strip rather
+  than the preview toolbar because every tab's contents follow it: a control you cannot see while
+  reading the facts it selects does half its job. Pressing one re-renders against **that page's** SVG
+  and Scene — including the circulation overlay, which picks the same storey out of its own compile
+  rather than drawing page 1's routes over another floor.
+- **The facts strip, Describe and Lint follow the storey on screen**, through the new
+  `describeLevel()` — so the playground and `arch describe --level` cannot disagree about what one
+  floor's facts are. The verdicts do not follow: `lint()` runs over the whole plan, the status dot
+  and its warning count come from the unfiltered diagnostics, and the Lint tab says out loud that it
+  is showing one level, because a filtered panel that went quiet and a sound building look identical
+  otherwise. The panel's **clean tick is a claim about the building** — "every room is reachable,
+  bedrooms have windows, the building has an entrance" — so it is printed only when nothing is
+  hidden; with warnings on another storey the panel says "Nothing to report on this storey" and
+  makes no claim about the rest.
+- **An export is named for the page it contains** — `floorplan.L3.svg`, which is what
+  `arch compile -o floorplan.svg` writes for that storey. The rule has two implementations (the
+  CLI's `levelTarget` is Node-only), so `test/level-filename-lockstep.test.ts` drives both over the
+  same awkward inputs — a dot in a directory name, no extension, level 0, a basement — and asserts
+  they agree character for character.
+- **A single-storey plan is untouched by all of it.** `compile()` emits no `pages` key for one, the
+  control is hidden entirely, no narrowing runs, and every download keeps its exact name.
+  `playground/e2e/levels.spec.ts` asserts the absence as well as the presence, and
+  `playground/test/levels.test.ts` covers the selection arithmetic in Node — including the storey
+  that stops existing when a three-level plan is edited down to two.
+- **Fixed a false claim on the static example pages.** Every multi-storey page told its reader that
+  "the figures below count every storey". They never did — `describe()`'s top-level totals are the
+  LOWEST storey alone, and they were above, not below. The sentence now names the storey it is
+  actually measuring (*"Level 1 (Ground floor) compiles to …"*) and the page prints **per-storey
+  figures** for the rest, straight out of `describe().levels[]`.
+
 ### Docs — the SEO/GEO surface, its dashboards and the Safe Browsing incident (documentation only)
 
 `docs/seo.md` gains the dashboards (two Search Console Domain properties, the same two in Bing, the

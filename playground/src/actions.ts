@@ -9,6 +9,7 @@ import { buildLlmPrompt } from "./llm-prompt.js";
 import { encodeSrc, updateHash } from "./share.js";
 import { mountSnapshots } from "./snapshots.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
+import { levelFileName } from "./levels.js";
 import { saveBlob, svgToCanvas } from "./raster-export.js";
 
 interface ActionsCtx {
@@ -18,6 +19,12 @@ interface ActionsCtx {
   /** The export-clean SVG (annotations stripped); empty when nothing is rendered. */
   getCleanSvg: () => string;
   getScene: () => Scene | null | undefined;
+  /**
+   * The storey currently previewed, or `null` for a single-storey plan. Every export
+   * writes the SELECTED page — `getCleanSvg`/`getScene` already carry it — so the file
+   * must be NAMED for it too, with the CLI's own `<stem>.L<n>.<ext>` scheme.
+   */
+  getLevel: () => number | null;
   /** Surface an export failure in the status/errors UI. */
   onExportError: (format: string, err: unknown) => void;
   els: {
@@ -34,7 +41,7 @@ interface ActionsCtx {
 }
 
 export function mountActions(ctx: ActionsCtx): void {
-  const { getSource, loadSource, flash, getCleanSvg, getScene, onExportError, els } = ctx;
+  const { getSource, loadSource, flash, getCleanSvg, getScene, getLevel, onExportError, els } = ctx;
 
   // Format (idempotent, comment-preserving) — rewrite the source in place.
   els.formatBtn?.addEventListener("click", () => {
@@ -177,22 +184,23 @@ export function mountActions(ctx: ActionsCtx): void {
   async function downloadCurrent(format: string) {
     const clean = getCleanSvg();
     if (!clean) return;
+    const level = getLevel();
     try {
       if (format === "svg") {
-        saveBlob(new Blob([clean], { type: "image/svg+xml" }), "svg");
+        saveBlob(new Blob([clean], { type: "image/svg+xml" }), "svg", level);
       } else if (format === "dxf") {
         const scene = getScene();
         if (!scene) return;
-        saveBlob(new Blob([toDxf(scene)], { type: "application/dxf" }), "dxf");
+        saveBlob(new Blob([toDxf(scene)], { type: "application/dxf" }), "dxf", level);
       } else if (format === "txt") {
         // The zero-dep ASCII plan — the same bytes `arch compile -f txt` emits.
         const scene = getScene();
         if (!scene) return;
-        saveBlob(new Blob([renderAscii(scene)], { type: "text/plain" }), "txt");
+        saveBlob(new Blob([renderAscii(scene)], { type: "text/plain" }), "txt", level);
       } else if (format === "png") {
         const canvas = await svgToCanvas(clean);
         const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
-        saveBlob(blob!, "png");
+        saveBlob(blob!, "png", level);
       } else if (format === "pdf") {
         // Vector PDF needs Node-only pdfkit; in-browser we embed a high-res raster
         // via jsPDF (lazy-loaded so it never bloats the initial bundle).
@@ -207,7 +215,9 @@ export function mountActions(ctx: ActionsCtx): void {
         // "FAST" compression on the embedded raster keeps the PDF a sane size
         // (an uncompressed full-res PNG embed runs to tens of MB).
         pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, canvas.width, canvas.height, undefined, "FAST");
-        pdf.save("floorplan.pdf");
+        // jsPDF names its own download, so the level suffix is applied here rather than
+        // through `saveBlob` — same rule, one spelling (`levelFileName`).
+        pdf.save(levelFileName("floorplan.pdf", level));
       }
     } catch (err) {
       onExportError(format, err);
