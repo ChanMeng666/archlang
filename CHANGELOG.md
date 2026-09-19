@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the docs home page's feature gallery is nine sheets, and the drawings are legible (site chrome only)
+
+No language surface moves. `compile()`, `describe()` and `lint()` are byte-unmoved, and **no rendered
+SVG changed**: `npm run check:drift` is green with `examples/*.svg` and both committed axonometric
+renders untouched.
+
+The landing page's gallery was six cards in two rows of three, each drawing boxed at **150 px tall**.
+A 50 × 32 m library in a 150 px box is a grey smudge, and three of the six cards were not about the
+language at all — two restated project principles (deterministic, zero-dependency), one
+("reads its own plans") duplicated the `describe()`/`lint()` band immediately below it, and another
+re-showed `laneway-house`, which is already the hero typing itself at the top of the same page.
+
+It is now **nine sheets, A-101 — A-109**, one capability each, on a full-width showpiece plus two rows
+of three and a row of two, with art boxes of 400 / 230 / 300 px. The principles moved into the bodies
+of the cards that actually demonstrate them. Every figure on a card is `arch describe --json` on the
+file it draws.
+
+- **A-101 Showpiece** `hillside-villa` · **A-102 Levels** `townhouse` · **A-103 The sheet** `library` ·
+  **A-104 Geometry** `hexagon-pavilion` · **A-105 Site** `garden-house` · **A-106 Fixtures**
+  `furnished-flat` · **A-107 Composition** `terrace-row` · **A-108 Axonometric** `two-storey` ·
+  **A-109 Materials** `materials`.
+- **A-102 shows three drawings, because that is what the language produces.** `sync-docs.mjs` now also
+  writes each **storey** of a multi-storey example — `docs-site/public/examples/<name>.L<n>.svg`, nine
+  new files across four examples — so the "one storey is one drawing" card can picture `townhouse.L1`,
+  `.L2` and `.L3` rather than the ground floor three times. The name is the CLI's own: `levelTarget()`
+  in `src/cli/io.ts`, the function `arch compile` uses to name the files it writes. sync-docs is a
+  plain `.mjs` script and cannot import the TypeScript CLI, so it restates the law in one arrow — and
+  `test/docs-level-svgs.test.ts` extracts that arrow, evaluates it and compares it with `levelTarget()`
+  across levels 1/2/3/10/0/−1/−2, while `docs-site/e2e/routes.spec.ts` derives the routes it fetches
+  from `levelTarget()` itself. `pages` is absent on a single-storey plan, so a multi-storey example
+  added later picks all of this up for free.
+- **A-108 says what it is showing.** Its art is the committed `--view axon` render, but its control
+  strip opens the **plan**; the card says so and gives the command (`arch compile two-storey.arch
+  --view axon`) rather than letting a reader assume the playground will draw a picture.
+- **The gallery's guards grew with it.** `docs-site/e2e/homepage-links.spec.ts` now expects twelve
+  per-plan playground links (hero CTA + hero sheet + nine cards + the facts band), holds every drawing
+  on a card to a route derived from that card's own source file — `/examples/<stem>.svg`,
+  `/examples/<stem>.L<n>.svg` or `/view/<stem>-axon.svg`, so a multi-drawing card still cannot picture
+  one plan and open another — and asserts every image on the page actually **loads**
+  (`naturalWidth > 0` after scrolling it in, because the art is `loading="lazy"`). `routes.spec.ts`
+  fetches each new storey route and checks a plan's three storeys are three **different** drawings,
+  not one page written under three names.
+
 ### Docs — the SEO/GEO surface, its dashboards and the Safe Browsing incident (documentation only)
 
 `docs/seo.md` gains the dashboards (two Search Console Domain properties, the same two in Bing, the

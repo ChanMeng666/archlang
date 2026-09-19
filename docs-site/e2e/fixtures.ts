@@ -14,6 +14,11 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, type Page } from "@playwright/test";
+// The compiler and the CLI's own per-storey naming law, both imported rather than
+// re-implemented: the storey routes below are exactly what `arch compile` would write,
+// so a drift between the site's file names and the CLI's fails as a 404 here.
+import { compile } from "../../src/index.js";
+import { levelTarget } from "../../src/cli/io.js";
 
 /** Repo root, from this file (`docs-site/e2e/`). */
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -48,6 +53,29 @@ export const GALLERY_EXAMPLES: readonly string[] = (() => {
     .map((f) => f.replace(/\.arch$/, ""))
     .sort();
 })();
+
+/**
+ * Every PER-STOREY gallery route: `/examples/<name>.L<level>.svg`, one per page of every
+ * multi-storey example, as site routes.
+ *
+ * DERIVED all the way down, which is the point. Which examples are multi-storey comes from
+ * `compile()` (a plan has pages or it does not — no `level` regex, no hand list), and the
+ * file name comes from `levelTarget()`, the same function `arch compile` uses to name the
+ * files it writes. So this list is "what the CLI would have written", and the spec that
+ * fetches it fails if `sync-docs.mjs` writes anything else. A new multi-storey example is
+ * covered the day it lands.
+ *
+ * Lazy: it compiles the whole gallery, and only one spec needs it.
+ */
+export function galleryLevelSvgRoutes(): string[] {
+  const routes: string[] = [];
+  for (const name of GALLERY_EXAMPLES) {
+    const src = readFileSync(join(ROOT, "examples", `${name}.arch`), "utf8").replace(/\r\n/g, "\n");
+    const { pages } = compile(src, { noCache: true });
+    for (const p of pages ?? []) routes.push(`/${levelTarget(`examples/${name}.svg`, p.level)}`);
+  }
+  return routes;
+}
 
 /** Read a repo file, normalised to LF so a CRLF checkout can't fail a byte comparison. */
 export const readRepoFile = (repoRelPath: string): string =>

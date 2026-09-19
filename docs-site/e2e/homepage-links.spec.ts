@@ -27,12 +27,16 @@ import { ROOT } from "./fixtures.js";
 
 /** Every plan the landing page pictures, in the order the page presents them. */
 const PICTURED = [
+  "laneway-house", // the hero that types itself
   "hillside-villa", // card A-101, the showpiece
-  "laneway-house", // the hero, and card A-102
-  "courtyard-house", // A-103
-  "library", // A-104
-  "hexagon-pavilion", // A-105
-  "materials", // A-106
+  "townhouse", // A-102, pictured as its three storey pages
+  "library", // A-103
+  "hexagon-pavilion", // A-104
+  "garden-house", // A-105
+  "furnished-flat", // A-106
+  "terrace-row", // A-107
+  "two-storey", // A-108 — pictured as its AXON render, linked as its plan
+  "materials", // A-109
   "garden-loft", // the "Reads its own plans" band
 ] as const;
 
@@ -46,8 +50,8 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
     await page.goto("/");
     const links = page.locator('a[href*="playground.archlang.uk/#z="]');
     const n = await links.count();
-    // hero CTA + hero sheet control + 6 cards + the facts band.
-    expect(n, "the home page must offer a per-plan playground link on every drawing").toBe(9);
+    // hero CTA + hero sheet control + 9 cards + the facts band.
+    expect(n, "the home page must offer a per-plan playground link on every drawing").toBe(12);
 
     const onDisk = new Map(PICTURED.map((name) => [exampleSource(name), name]));
     for (let i = 0; i < n; i++) {
@@ -65,20 +69,63 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
 
   test("a card shows and opens the SAME plan", async ({ page }) => {
     await page.goto("/");
-    // The card names its source file on the strip, and its art is derived from the same
-    // key — so "shows X, opens Y" is checkable from the page alone.
-    for (const card of await page.locator(".card").all()) {
+    // The card names its source file on the strip, and every drawing on it is derived from
+    // that same key — so "shows X, opens Y" is checkable from the page alone.
+    //
+    // A card may carry MORE than one drawing, and not always the plan view: A-102 shows
+    // townhouse's three storey pages (`<stem>.L<n>.svg`) and A-108 shows two-storey's
+    // committed axonometric render (`/view/<stem>-axon.svg`) while still linking the plan.
+    // Both stay welded to the stem — that is what the pattern below enforces.
+    const cards = await page.locator(".card").all();
+    expect(cards.length, "the sheet gallery must render its cards").toBe(9);
+    for (const card of cards) {
       const named = (await card.locator(".card__open-file").textContent())?.trim();
       if (!named) continue; // an art-less sheet (none today, but the shape allows it)
       const stem = named.replace(/\.arch$/, "");
-      expect(await card.locator(".card__art img").getAttribute("src")).toBe(`/examples/${stem}.svg`);
+      const art = await card
+        .locator(".card__art img")
+        .evaluateAll((els) => els.map((el) => (el as HTMLImageElement).getAttribute("src") ?? ""));
+      expect(art.length, `card "${named}" draws nothing`).toBeGreaterThan(0);
+      const derived = new RegExp(`^/(examples/${stem}(\\.L-?\\d+)?|view/${stem}-(iso|axon))\\.svg$`);
+      for (const src of art) {
+        expect(src, `card "${named}" draws ${src}, which is not derived from ${stem}`).toMatch(derived);
+      }
       const href = (await card.locator(".card__open").getAttribute("href")) as string;
       const decoded = await srcFromHash(href.slice(href.indexOf("#")));
       expect(decoded, `card "${named}" mints a hash the playground cannot read`).not.toBeNull();
       expect(
         (decoded as string).replace(/\r\n/g, "\n"),
-        `card "${named}" pictures ${stem}.svg but opens a different plan`,
+        `card "${named}" pictures ${art.join(", ")} but opens a different plan`,
       ).toBe(exampleSource(stem));
+    }
+  });
+
+  /**
+   * Every drawing on the page must actually LOAD.
+   *
+   * The card art is `<img src>`, which is the right call for a crawler — static bytes are
+   * all an AI crawler ever sees — and the wrong call for confidence: a route that 404s
+   * leaves a card with an empty box and fails nothing. `routes.spec.ts` fetches the
+   * gallery routes it DERIVES; this asserts the ones the page actually asks for, which is
+   * the other half (a typo'd `src` passes there and fails here).
+   */
+  test("every drawing the landing page asks for actually renders", async ({ page }) => {
+    await page.goto("/");
+    const imgs = page.locator(".card__art img");
+    const n = await imgs.count();
+    // 8 single-drawing cards + A-102's three storeys.
+    expect(n, "the sheet gallery must draw one image per card, and three on A-102").toBe(11);
+    for (let i = 0; i < n; i++) {
+      const img = imgs.nth(i);
+      const src = await img.getAttribute("src");
+      // The art is `loading="lazy"`, so a card below the fold has not fetched anything
+      // yet — scroll it in and poll, rather than reading a 0 that only means "not asked
+      // for". A genuinely missing route stays 0 until the timeout.
+      await img.scrollIntoViewIfNeeded();
+      await expect
+        .poll(() => img.evaluate((el) => (el as HTMLImageElement).naturalWidth), { timeout: 10_000 })
+        .toBeGreaterThan(0);
+      expect(src, "every drawing must be served from the site's own routes").toMatch(/^\/(examples|view)\//);
     }
   });
 

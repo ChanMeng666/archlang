@@ -29,6 +29,7 @@ import {
   BANNER_MARKER,
   firstHeading,
   GALLERY_EXAMPLES,
+  galleryLevelSvgRoutes,
   PAGE_ROUTES,
   readRepoFile,
   ROOT_COPY_ROUTES,
@@ -209,6 +210,46 @@ test.describe("the example gallery", { tag: "@prod" }, () => {
       expect(body.length).toBeGreaterThan(500);
     });
   }
+
+  /**
+   * THE PER-STOREY PAGES. `/examples/<name>.svg` is only page 1 of a multi-storey plan —
+   * the lowest level, which is what `compile().svg` returns — so the home page's "one
+   * storey is one drawing" card would have nothing to picture but the ground floor three
+   * times. sync-docs now also writes each page.
+   *
+   * The route list is derived from `compile()` (which plans have pages) and from
+   * `levelTarget()` (what the CLI names them), never from the directory it is checking, so
+   * a site that wrote `<name>-L1.svg` while the CLI wrote `<name>.L1.svg` fails here as a
+   * 404 rather than shipping two names for one artifact.
+   */
+  const levelRoutes = galleryLevelSvgRoutes();
+
+  test("the gallery actually has multi-storey examples to page (so the cases below are not vacuous)", () => {
+    expect(levelRoutes.length).toBeGreaterThanOrEqual(5);
+    expect(levelRoutes).toContain("/examples/townhouse.L3.svg");
+  });
+
+  for (const route of levelRoutes) {
+    test(`${route} is that storey's own drawing`, async ({ request }) => {
+      const res = await request.get(route);
+      expect(res.status()).toBe(200);
+      const body = await res.text();
+      expect(body.trimStart().startsWith("<svg"), `expected SVG, got ${JSON.stringify(body.slice(0, 60))}`).toBe(true);
+      expect(body).toContain("</svg>");
+      expect(body.length).toBeGreaterThan(500);
+    });
+  }
+
+  test("a plan's storeys are DIFFERENT drawings, not the same page three times", async ({ request }) => {
+    // The failure this guards is silent: writing `pages[0].svg` three times under three
+    // names produces three 200s, three valid SVGs and a card showing one floor thrice.
+    const bodies = await Promise.all(
+      ["/examples/townhouse.L1.svg", "/examples/townhouse.L2.svg", "/examples/townhouse.L3.svg"].map(async (r) =>
+        (await request.get(r)).text(),
+      ),
+    );
+    expect(new Set(bodies).size, "townhouse's three storeys are serving identical bytes").toBe(3);
+  });
 });
 
 /**
