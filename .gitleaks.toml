@@ -1,45 +1,84 @@
 # gitleaks configuration for ArchLang — a NARROW allowlist for verified false positives.
 #
-# Read `.gitleaksignore` first: it holds the other half of this story and the two files
-# divide the work on a rule that is stated in both places.
+# Read `.gitleaksignore` first: it holds the other half of this story, and its header states
+# the division of labour between the two files (dead history → a fingerprint there; a live
+# file → an entry here).
 #
-#   `.gitleaksignore`  — one FINGERPRINT per finding (`<commit>:<path>:<ruleID>:<line>`),
-#                        pinned to one line of one blob in one commit. Use it whenever the
-#                        finding sits on a blob that will never be written again, which is
-#                        every finding in dead history. It is the narrower instrument and
-#                        stays the default.
-#   this file          — for findings in LIVE files, where a fingerprint would be a
-#                        treadmill: the entry is pinned to a commit, so the next edit of the
-#                        file mints a new fingerprint and the nightly goes red again until
-#                        someone appends another line.
+# ---------------------------------------------------------------------------------------
+# WHAT WENT WRONG IN THE FIRST DRAFT, AND WHY THIS FILE IS SHAPED THE WAY IT IS
+# ---------------------------------------------------------------------------------------
 #
-# `.gitleaksignore`'s header says an entry there may "never [be] a path glob, never a bare
-# rule name, never a regex allowlist". That rule governs THAT file and still does. This file
-# is the sanctioned exception to it, and it is narrower than the words "regex allowlist"
-# suggest, because of one setting: every allowlist below sets `matchCondition = "AND"`.
+# The first version of this file scoped each exception to a path AND an anchored regex over
+# the matched secret, with `matchCondition = "AND"`, on the reasoning that path-alone would
+# exempt every future finding in the file. That reasoning was right. The implementation was
+# not: **gitleaks 8.30.1 ignores `matchCondition` on a top-level `[[allowlists]]` block and
+# ORs the conditions together.** Adding the regex therefore made the allowlist WIDER, not
+# narrower — it exempted every 64-hex `generic-api-key` finding *anywhere in the repository*.
 #
-# WHY THAT SETTING IS THE WHOLE SAFETY ARGUMENT. A gitleaks allowlist defaults to
-# `matchCondition = "OR"`, which means a `paths` entry alone would exempt EVERY finding in
-# that file, of that rule, forever — a real credential committed to one of these test files
-# would be swallowed in silence. With "AND", a finding is exempt only when the path matches
-# AND the matched secret itself matches the shape regex. The regexes below are anchored
-# (`^…$`) and describe exactly the benign string, so a credential that is not that exact
-# shape still fails the build. Never relax a `matchCondition` here, and never add `paths`
-# without a `regexes` beside it.
+# That was not caught by reading. It was caught by planting a baseline-shaped 64-hex secret
+# in `test/height-free-source.ts` — a file this config does not name — and finding the scan
+# still green. Measured, on this tree:
 #
-# VERIFIED NON-VACUOUS on 2026-09-20 by pasting a realistic fake credential into
-# `test/byte-identity-baseline.ts` — one of the allowlisted files — and confirming the scan
-# still reported it. An allowlist that cannot go red is worth nothing, and this repository
-# has shipped a vacuous guard before.
+#   default rules, no allowlist            6 findings (the 5 real ones + the planted probe)
+#   paths + regexes + matchCondition=AND   0 findings   ← the hole: the probe was swallowed
+#   paths + targetRules (this file)        1 finding    ← the probe, correctly reported
+#
+# So the conditions below are PATHS ONLY. One condition cannot be OR-ed into a hole.
+#
+# ---------------------------------------------------------------------------------------
+# WHAT THIS EXEMPTS, AND WHAT IT DOES NOT — state both, or a reader cannot audit it
+# ---------------------------------------------------------------------------------------
+#
+# Exempted: findings of the rule `generic-api-key` ONLY, in the three named files ONLY.
+# `targetRules` is what keeps that narrow, and it is load-bearing: a GitHub PAT or a Stripe
+# live key pasted into one of these same files is a different rule and is still reported.
+# Every other rule, and every other path, is untouched.
+#
+# NOT exempted by any honest reading: a real `generic-api-key`-shaped credential added to
+# one of these three files would now be missed, because gitleaks cannot express the
+# path-AND-shape condition this needs. That gap is closed OUTSIDE gitleaks, by
+# `test/gitleaks-allowlist.test.ts`, which derives its file list FROM THIS FILE and asserts
+# that each one carries only the opaque strings it is supposed to: 64-hex byte-identity
+# digests, none at all, and the one published IndexNow key respectively. It runs in
+# `npm run check`, so it fails in seconds on a PR rather than overnight.
+#
+# If you add a path here, add its shape rule to that test in the same commit. An entry here
+# without one is a hole with a comment on it.
+#
+# ---------------------------------------------------------------------------------------
+# WHY THESE FIVE FINDINGS ARE FALSE
+# ---------------------------------------------------------------------------------------
 #
 # The nightly secret scan (`.github/workflows/nightly.yml`, job `secrets`) was RED on
-# 2026-09-18 and 2026-09-19 on these five findings alone, with every other nightly job
-# green. A permanently red gate is a disabled gate that still costs CI minutes: it trains
-# every reader to scroll past the one job whose next finding might be real.
+# 2026-09-18 and 2026-09-19 on these alone, with every other nightly job green. A
+# permanently red gate is a disabled gate that still costs CI minutes: it trains every
+# reader to scroll past the one job whose next finding might be real.
+#
+# 1. THE BYTE-IDENTITY BASELINES — measured SHA-256 digests, not credentials.
+#    `docs/agents/iron-laws.md`: every new language form ships with a byte-identity law
+#    proved by a SHA-256 sweep over the shipped examples. Those digests ARE the law. They
+#    are recorded as `["<example-name>", "<64 hex>"]` rows, so the rule sees a long hex
+#    string beside a quoted name and reads the pair as key-and-value. Each is a hash OF
+#    PUBLIC OUTPUT — the SVG, `describe()` and `lint()` of a `.arch` file committed in
+#    `examples/` — and anyone can recompute every one from this repository. The digest body
+#    is `test/byte-identity-digest.ts`.
+#
+#    Both paths are listed because the scan covers the FULL HISTORY: the tables were
+#    extracted from `test/height-byte-identity.test.ts` into `test/byte-identity-baseline.ts`
+#    when a second law began importing them, and the historical blob is still scanned at the
+#    commit that introduced it.
+#
+# 2. THE INDEXNOW KEY — public BY PROTOCOL, and useless to whoever takes it.
+#    IndexNow authenticates a submitter by requiring the key to be FETCHABLE at the domain
+#    root: the search engine reads `https://archlang.uk/<key>.txt` and accepts the
+#    submission only if that file is there and contains the key. Publishing it IS the
+#    mechanism. The file is committed under `docs-site/public/` and served to the whole
+#    internet on purpose; see `scripts/indexnow.mjs` and `docs/seo.md`. What the key permits
+#    is asking Bing to re-crawl pages on a domain the holder already controls — no read
+#    access, no write access, no account.
 #
 # The workflow passes `GITLEAKS_CONFIG: .gitleaks.toml` explicitly so that a bare
-# `gitleaks detect` run locally and the CI action read this same file. Without it the gate
-# could pass on a laptop and fail in CI, or worse, the reverse.
+# `gitleaks detect` run locally and the CI action read this same file.
 
 title = "ArchLang"
 
@@ -49,54 +88,15 @@ title = "ArchLang"
 [extend]
 useDefault = true
 
-# ---------------------------------------------------------------------------------------
-# 1. The byte-identity baselines — measured SHA-256 digests, not credentials.
-#
-# `docs/agents/iron-laws.md`: every new language form ships with a byte-identity law proved
-# by a SHA-256 sweep over the shipped examples. Those digests are the law. They are recorded
-# as `["<example-name>", "<64 hex>"]` rows, so the rule sees a 64-character hex string next
-# to a quoted name and reads the pair as key-and-value.
-#
-# They grant access to nothing: each is a hash OF PUBLIC OUTPUT — the SVG, `describe()` and
-# `lint()` of a `.arch` file committed in `examples/` — and anyone can recompute every one
-# of them from this repository. See `test/byte-identity-digest.ts` for the digest body.
-#
-# Both paths are listed because the scan covers the FULL HISTORY: the tables were extracted
-# from `test/height-byte-identity.test.ts` into `test/byte-identity-baseline.ts` when a
-# second law began importing them, and the historical blob is still scanned at the commit
-# that introduced it.
 [[allowlists]]
-description = "Measured SHA-256 byte-identity baselines for the example corpus — public digests of public output, not credentials"
+description = "Measured SHA-256 byte-identity baselines for the example corpus — public digests of public output, not credentials. Shape enforced by test/gitleaks-allowlist.test.ts."
 targetRules = ["generic-api-key"]
-matchCondition = "AND"
 paths = [
   '''^test/byte-identity-baseline\.ts$''',
   '''^test/height-byte-identity\.test\.ts$''',
 ]
-regexTarget = "secret"
-regexes = ['''^[0-9a-f]{64}$''']
 
-# ---------------------------------------------------------------------------------------
-# 2. The IndexNow key — public BY PROTOCOL, and useless to anyone who takes it.
-#
-# IndexNow authenticates a submitter by requiring the key to be FETCHABLE at the domain
-# root: the search engine reads `https://archlang.uk/<key>.txt` and accepts the submission
-# only if the file is there and contains the key. Publishing it IS the mechanism. The file
-# is committed at `docs-site/public/0aecad134b55ec669a7ef97b24f9e672.txt` and served to the
-# whole internet on purpose; see `scripts/indexnow.mjs` and `docs/seo.md`.
-#
-# What the key permits is asking Bing to re-crawl pages on a domain the holder already
-# controls. It confers no read access, no write access and no account. The only thing a
-# thief could do with it is tell a search engine to look at this site.
-#
-# The regex is the literal value rather than a shape, so this entry cannot cover any other
-# 32-character string that ever lands in that file. If the key is ever rotated, the value
-# here must be updated in step — a stale entry fails safe (the scan goes red) rather than
-# quietly widening.
 [[allowlists]]
-description = "The public IndexNow verification key — published at the domain root by protocol design"
+description = "The public IndexNow verification key — published at the domain root by protocol design. Shape enforced by test/gitleaks-allowlist.test.ts."
 targetRules = ["generic-api-key"]
-matchCondition = "AND"
 paths = ['''^test/indexnow-script\.test\.ts$''']
-regexTarget = "secret"
-regexes = ['''^0aecad134b55ec669a7ef97b24f9e672$''']
