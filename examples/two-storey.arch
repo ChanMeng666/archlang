@@ -6,9 +6,21 @@
 # at the same coordinates, and that shared id is what declares one shaft: `describe --json`
 # reports it under `vertical.connections`, and it is why the first floor needs no front
 # door of its own to lint clean.
+#
+# THE HEIGHTS DRAW NOTHING, AND THAT IS THE POINT. A plan is a horizontal cut, so the
+# `height` below moves no byte of either drawing — `examples/two-storey.svg` is the same
+# file it was before these clauses existed. What the datum feeds is `describe --json
+# --select heights` and `arch compile --view axon`. It is written in three tiers, narrowing:
+# the plan's `height 2700` is every storey's floor-to-floor, the upper `level … height 3000`
+# overrides it for that storey alone, and a `sill`/`head` on a window bounds that one piece
+# of glazing. `heights.elevation` ACCUMULATES the storeys below rather than multiplying, so
+# the first floor sits at 2700 — the ground floor's height — not at 2 x 3000. Most windows
+# here write nothing and take the 900/2100 defaults; the two that do write are the two a
+# drawing cannot tell you about.
 plan "Two-storey house" {
   units mm
   grid 50
+  height 2700         # floor-to-floor for every storey that does not override it
   paper A3 landscape
   north up
   dims auto all
@@ -31,7 +43,9 @@ plan "Two-storey house" {
     door id=d_living on hall_w at 1800 width 900 swing into living
     door id=d_kitchen on hall_w at 5300 width 900 swing into kitchen
 
-    window id=w_living on shell at 5000 width 1800
+    # A tall window onto the garden: 300 off the floor and up to 2400, inside this
+    # storey's 2700. The kitchen window beside it writes neither and takes 900/2100.
+    window id=w_living on shell at 5000 width 1800 sill 300 head 2400
     window id=w_kitchen on shell at 13300 width 1200
 
     furniture sofa in living anchor top flush inset 300 size 2000x850 label "Sofa"
@@ -39,7 +53,9 @@ plan "Two-storey house" {
     stair id=stair at (100,1500) size 900x2600 dir up
   }
 
-  level 2 "First floor" {
+  # A taller first floor than the ground: `height` in the level HEADER overrides the plan's
+  # 2700 for this storey only (a `height` in the body would be E_LEVEL_MIX).
+  level 2 "First floor" height 3000 {
     wall id=shell exterior thickness T { (0,0) (W,0) (W,D) (0,D) close }
     wall id=hall_w partition thickness 100 { (HALL,0) (HALL,D) }
     wall id=bath_w partition thickness 100 { (0,4600) (HALL,4600) }
@@ -60,7 +76,9 @@ plan "Two-storey house" {
 
     window id=w_bed1 on shell at 5000 width 1500
     window id=w_bed2 on shell at 13300 width 1200
-    window id=w_bath on shell at 24200 width 600
+    # A bathroom window set high for privacy: `sill` alone, so the head still defaults to
+    # 2100 — an authored bound and a defaulted one on the same opening.
+    window id=w_bath on shell at 24200 width 600 sill 1500
 
     furniture bed in bed1 anchor top-right flush inset 300 size 1500x2000 label "Double"
     furniture bed in bed2 anchor bottom flush inset 300 size 1000x2000 label "Single"

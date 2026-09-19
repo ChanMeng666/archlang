@@ -13,6 +13,18 @@
  * Both numbers were measured on `f4548db` — the tree `v1.34.0` shipped — by a script that
  * imported the digest bodies in `./byte-identity-digest.ts`, never a lookalike. See
  * `height-byte-identity.test.ts`'s header for why that matters and what to do if one moves.
+ *
+ * ## Every row still stands, including the one whose example now authors heights
+ *
+ * A shipped example gaining a `height` clause looks, at first, like a row that must be
+ * retired: the plan's surfaces are no longer what `v1.34.0` measured, because `describe()`
+ * grows a `heights` block and a `head`/`sill` on every opening. It is not. The row is
+ * honoured against that plan's **height-free derivation** (`./height-free-source.ts`) —
+ * the same file with its datum clauses mechanically removed — which is behaviourally the
+ * text that shipped. So the measurement keeps its full force: nothing about the plan moved
+ * except what authoring the datum is supposed to move, and no hash was re-measured or
+ * re-typed to make room for the new example. {@link AUTHORS_HEIGHT} names the plans read
+ * that way.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -92,3 +104,23 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["two-bed", "c8e5a430665c6ea875a94225dc062a534bebf776c28b3ffbdb0a614d3e71ff79"],
   ["two-storey", "494341efa9edaa35f76d17b293023a87b9b1e68567d87b2e4445ebf9b6579f93"],
 ];
+
+/**
+ * The shipped examples that AUTHOR the vertical datum — the second half of the corpus.
+ *
+ * It is a list, not a scan of the sources, on purpose: it is the declared intent, and the
+ * corpus tests cross-check it against an actual scan in BOTH directions, so a plan that
+ * quietly grows a `height` without being named here fails the no-height group's vacuity
+ * guard, and a name here whose plan authors nothing fails its own.
+ *
+ * Its rows are read differently from the rest by `height-byte-identity.test.ts` and
+ * `iso-byte-identity.test.ts`: their `BASELINE`/`SEMANTIC_BASELINE` hashes are checked
+ * against the plan's height-free derivation (see this file's header), and the plan AS
+ * WRITTEN is held to a stronger law that needs no measurement at all — its drawing must
+ * equal the derivation's, byte for byte, on every storey.
+ *
+ * **This list must not be empty.** A corpus split where one side has no members makes the
+ * stronger law vacuous, which is the failure this whole restructure exists to avoid; the
+ * tests assert it.
+ */
+export const AUTHORS_HEIGHT: readonly string[] = ["two-storey"];
