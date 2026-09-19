@@ -198,3 +198,72 @@ test.describe("the hero types the plan, not its prose header", () => {
     expect(ink.reInk - ink.blanked, "the sheet stayed empty too long after the hero rewound").toBeLessThan(2000);
   });
 });
+
+/**
+ * 3. THE NAV BAR DOES NOT SCROLL THE PAGE SIDEWAYS BETWEEN 768 AND 960.
+ *
+ *    VitePress reveals the whole desktop nav row the instant the hamburger is dismissed,
+ *    at `min-width: 768px`. Our bar carries eight destinations — 684px of menu beside a
+ *    105px title — so from v1.36 every page scrolled sideways across [768, 960): 272px of
+ *    overflow at 768, 240 at 800, 140 at 900. It is site chrome, so it was on `/` and on
+ *    every doc page alike. `style.css` moves the reveal to 960 — VitePress's own next
+ *    breakpoint, where the sidebar appears and `.VPNav` becomes `position: fixed`.
+ *
+ *    Unlike the full-bleed-band gate above, this one does NOT skip under overlay
+ *    scrollbars: the overhang is hundreds of pixels, not one scrollbar, so headless
+ *    Chromium reproduces it exactly. It was verified non-vacuous by reverting the CSS and
+ *    watching all six cases go red.
+ *
+ *    KNOWN, SEPARATELY TRACKED: at >= 960 `.VPNav` is `position: fixed`, and a fixed
+ *    element's overflow never grows the document — so above 960 the same row stops
+ *    scrolling the page and starts being CLIPPED at the viewport edge, silently, with
+ *    `scrollWidth - clientWidth` reading 0. The last nav item is cut off across
+ *    [960, 1003] on `/` and [960, 1138] on a doc page. That is a pre-existing defect with
+ *    no fix that does not either collapse the bar to a hamburger up to 1152px or cut
+ *    top-level nav items; it is in `docs/backlog.md` with its measurements. Do not "fix"
+ *    it by widening this gate — assert the clip directly when it is decided.
+ */
+test.describe("the nav bar does not scroll the page sideways", () => {
+  // The band VitePress opens the desktop row in, plus the two edges either side of it.
+  for (const width of [768, 800, 900, 959]) {
+    for (const route of ["/", "/guide"]) {
+      test(`no horizontal overflow on ${route} at ${width}px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(route);
+        const over = await page.evaluate(() => {
+          const de = document.documentElement;
+          return de.scrollWidth - de.clientWidth;
+        });
+        expect(over, `${route} overflows its client width by ${over}px at ${width}px`).toBe(0);
+      });
+    }
+  }
+
+  test("below 960 the hamburger is present and reaches every nav destination", async ({ page }) => {
+    await page.setViewportSize({ width: 900, height: 900 });
+    await page.goto("/");
+    await expect(page.locator(".VPNavBarHamburger")).toBeVisible();
+    await expect(page.locator(".VPNavBarMenu")).toBeHidden();
+    await page.locator(".VPNavBarHamburger").click();
+    const screen = page.locator(".VPNavScreen");
+    await expect(screen).toBeVisible();
+    // Every top-level entry the desktop bar would have shown, reachable in the drawer.
+    for (const item of ["Guide", "Reference", "Examples", "Showcase", "AI Agents", "Playground", "Ecosystem"]) {
+      await expect(
+        screen.getByText(item, { exact: true }).first(),
+        `"${item}" is unreachable below 960px`,
+      ).toBeVisible();
+    }
+  });
+
+  test("at 960 the desktop row is back, with every entry", async ({ page }) => {
+    await page.setViewportSize({ width: 960, height: 900 });
+    await page.goto("/");
+    await expect(page.locator(".VPNavBarHamburger")).toBeHidden();
+    const menu = page.locator(".VPNavBarMenu");
+    await expect(menu).toBeVisible();
+    for (const item of ["Guide", "Reference", "Examples", "Showcase", "AI Agents", "Playground", "Ecosystem"]) {
+      await expect(menu.getByText(item, { exact: true }).first(), `"${item}" left the desktop bar`).toBeVisible();
+    }
+  });
+});

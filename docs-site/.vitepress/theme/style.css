@@ -155,3 +155,72 @@
 .ahl-operator {
   color: var(--syn-operator);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   The desktop nav appears at 960px, not 768px.
+
+   VitePress reveals the whole desktop nav row the instant the hamburger is
+   dismissed, at `min-width: 768px`. That is right for a three-item bar and
+   wrong for ours: eight destinations (Guide / Reference / Examples / Showcase /
+   AI Agents / Playground / Ecosystem, plus the "…" flyout) measure 684 px of
+   menu beside a 105 px title, and the row's narrowest overflow-free viewport
+   is 960 px — MEASURED, by binary search on `document.scrollWidth -
+   clientWidth`, identically on `/` and `/guide`. So the site shipped a window
+   of exactly [768, 960) in which every page scrolled sideways: 272 px of page
+   overflow at 768, 240 at 800, 140 at 900, zero at 960. It is site chrome, so
+   it was on every route, not just the landing page.
+
+   960 is not a number chosen to make the symptom go away. It is VitePress's own
+   NEXT layout breakpoint — where the sidebar appears, where `.VPNav` becomes
+   `position: fixed`, where the doc layout goes wide. The top nav was simply
+   arriving 192 px before the rest of the desktop layout it belongs to. Below
+   960 the hamburger persists, and its nav screen carries every destination the
+   bar does (21 links, all keyboard-focusable) plus the social links, so nothing
+   becomes unreachable at any width.
+
+   Rejected, for the record. (a) SHRINKING the row: fitting 768 needs 272 px —
+   40 % — off a 684 px menu; tightening the 12 px item padding to 6 px and the
+   14 px label to 13 px buys about 110 px, which moves the cliff to ~850 and
+   leaves 768–850 broken, while degrading the labels at 1440 where nothing is
+   wrong. (b) DROPPING or REGROUPING nav items: that would buy the width, but it
+   hides Showcase and AI Agents behind a second click at EVERY width including
+   1920, and which destinations earn a top-level slot is a product decision the
+   `nav` block in config.ts already reasons about — not something a layout fix
+   should settle quietly.
+
+   SPECIFICITY. Each rule below overrides a VitePress `<style scoped>` rule of
+   the form `.VPNavBarMenu[data-v-…]` — an attribute selector counts as a class,
+   so theirs is (0,2,0). A bare `.VPNavBarMenu` would only tie and then depend on
+   bundle order, which is the trap ADR 0014 §7 documents. The `header.VPNav`
+   prefix makes every rule here at least (0,2,1), so it wins on specificity
+   rather than on which stylesheet happened to load last.
+
+   KNOWN EDGE, inherited: VitePress's `closeScreenOnTabletWindow` closes an open
+   nav screen on any resize while `window.outerWidth >= 768`. In the new band
+   that means resizing with the menu open closes it — which is the behaviour you
+   want on a rotate (the desktop bar takes over) and costs one tap otherwise.
+   Fixing it would mean forking `VPNav.vue` + `useNav()`, a far larger surface to
+   keep in step with VitePress than this is worth.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (min-width: 768px) and (max-width: 959.98px) {
+  header.VPNav .VPNavBar .VPNavBarMenu {
+    display: none;
+  }
+
+  /* The "…" flyout that carries the social links between 768 and 1280; below
+     960 they live in the nav screen instead, so it must not double up. */
+  header.VPNav .VPNavBar .VPNavBarExtra {
+    display: none;
+  }
+
+  header.VPNav .VPNavBar .VPNavBarHamburger {
+    display: flex;
+  }
+
+  /* VitePress hides the screen outright at >= 768, so the hamburger we just kept
+     would open nothing. No new surface: this is the same light panel the screen
+     already uses below 768. */
+  header.VPNav .VPNavScreen {
+    display: block;
+  }
+}
