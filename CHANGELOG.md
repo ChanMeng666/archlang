@@ -7,45 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed — the nightly secret scan was red on five false positives, and the first fix for it was a hole
+### Fixed — the nightly secret scan was red on five false positives, excluded by fingerprint
 
 - **The nightly `secrets` job had been RED since 2026-09-18** with every other nightly job
   green — production smoke, all four Node/OS matrices, E2E against production. All five
-  gitleaks findings were rule `generic-api-key` and all five are false: four are 64-character
-  SHA-256 **byte-identity baselines** (`test/byte-identity-baseline.ts`, and
-  `test/height-byte-identity.test.ts` where the table used to live — the scan covers the full
-  history), which are digests of PUBLIC OUTPUT that anyone can recompute from this
-  repository; the fifth is the **IndexNow key**, which is public by protocol — IndexNow
-  authenticates a submitter by requiring the key to be fetchable at the domain root, and the
-  file is committed under `docs-site/public/` and served on purpose.
-- **New `.gitleaks.toml`**, scoped to those three paths and to `generic-api-key` alone via
-  `targetRules`, with `[extend] useDefault` so every default rule survives.
-  `.gitleaksignore` keeps its fingerprint-only policy for dead history and its header now
-  states the division of labour, so the two files no longer contradict each other.
-  `GITLEAKS_CONFIG: .gitleaks.toml` is set on the action so a local `gitleaks detect` and CI
-  provably read the same allowlist.
-- **The first version of that config was a blanket hole, and the probe is what found it.**
-  It scoped each exception to a path AND an anchored shape regex with
-  `matchCondition = "AND"`. **gitleaks 8.30.1 ignores `matchCondition` on a top-level
-  `[[allowlists]]` block and ORs the conditions**, so adding the regex exempted every 64-hex
-  `generic-api-key` finding anywhere in the repository. Measured: default rules with no
-  allowlist, 6 findings (the 5 real ones plus a planted probe); path+regex+AND, **0**;
-  path+`targetRules`, 1 — the probe, correctly reported. The conditions are now paths only,
-  because one condition cannot be OR-ed into a hole.
-- **`test/gitleaks-allowlist.test.ts` closes the gap gitleaks cannot express.** It derives
-  its file list FROM `.gitleaks.toml` rather than retyping it, so widening the config without
-  saying what the new file may contain fails there, and it asserts the shape half: the
-  baseline file carries only 64-hex digests and names of examples that actually ship, the
-  historical law file carries nothing opaque at all, and the IndexNow test carries exactly
-  one 32-hex string which must equal the key published at `docs-site/public/<key>.txt` —
-  which also catches a rotation done in only one place. It runs in `npm run check`.
+  gitleaks findings are rule `generic-api-key` and all five are false. Four are 64-character
+  SHA-256 **byte-identity baselines**, which are digests of PUBLIC OUTPUT that anyone can
+  recompute from this repository; the fifth is the **IndexNow key**, which is public by
+  protocol — IndexNow authenticates a submitter by requiring the key to be fetchable at the
+  domain root, and the file is committed under `docs-site/public/` and served on purpose.
+- **Excluded the repo's own way: one fingerprint per finding in `.gitleaksignore`.** That
+  file and its policy already existed. A fingerprint is `<commit>:<path>:<ruleID>:<line>`,
+  pinned to one line of one blob in one commit, so it cannot suppress a future finding — not
+  even a real secret on the next line of the same file. Each entry carries the same written
+  justification the 2026-09-04 entries do, including why only two rows of each thirty-row
+  digest table ever trip: the tables are keyed by example name and the first example is
+  `accessible`, which contains "access", one of the rule's key-ish words. No other example
+  name does.
+- **A `.gitleaks.toml` was tried first and reverted, and the reason is the point.** Scoping
+  an exception to a path AND a secret shape looked narrower and was catastrophically wider:
+  **gitleaks 8.30.1 silently ignores `matchCondition` on a top-level `[[allowlists]]` block
+  and ORs the conditions**, so the entry exempted that shape in every file in the repository.
+  Measured — no allowlist, 6 findings (the 5 real plus a planted probe); path+regex+AND,
+  **0**, the probe swallowed; the config was a security gate with a repo-wide hole. Found
+  only by planting a credential, never by reading. A mechanism whose safe form depends on
+  knowing that is a mechanism that will be got wrong again; a fingerprint cannot fail that
+  way. `b33c54e` and `9a7fdb3` are left in the log rather than rewritten, because they
+  document a real failure mode.
+- **`test/opaque-literal-guard.test.ts` is kept, reframed as what it always was: a CONTENT
+  guard, not an exclusion.** A fingerprint cannot say whether the line it excludes was
+  benign, nor whether the file has since grown something that is not. This asserts the other
+  direction — each excluded file holds only what it is supposed to: 64-hex digests and names
+  of examples that ship, nothing opaque at all, and exactly one 32-hex string that must equal
+  the key published at `docs-site/public/<key>.txt`. That last one catches an IndexNow
+  rotation done in only one place, which no fingerprint could and which would otherwise break
+  submissions silently. Its file list is derived from `.gitleaksignore`'s fingerprints, so
+  excluding a finding in a new file fails there until someone says what that file may hold.
 - **Proved non-vacuous with four planted credentials**, each on a throwaway branch scanned
-  the way CI scans (full history): a GitHub PAT in an allowlisted file → gitleaks RED
-  (`github-pat`); a Stripe live key in an allowlisted file → gitleaks RED
-  (`stripe-access-token`); a 64-hex key in an unlisted file → gitleaks RED
-  (`generic-api-key`); a 32-hex key in an allowlisted file → gitleaks green, which is the
-  documented residual, and the vitest guard RED. Every planted credential is caught by at
-  least one gate.
+  the way CI scans (full history): a GitHub PAT in a fingerprinted file → RED; a Stripe live
+  key in a fingerprinted file → RED; a 64-hex generic key in a file named by no fingerprint →
+  RED; a second 64-hex generic key on a different LINE of a fingerprinted file → RED, which
+  is the property a path-scoped allowlist could never have. Every planted credential is
+  caught, and the content guard independently goes red on three of the four.
+- `docs/backlog.md` records the four findings that only a FILESYSTEM-mode scan reports (git
+  commit SHAs in prose in `CHANGELOG.md` and `docs/backlog.md`) and why they must not be
+  excluded: CI scans git history and never sees them.
 
 ### Fixed — three landing-page cards quoted a real number that answered a different question
 

@@ -3,28 +3,19 @@
 # Read this before adding a line. A fingerprint is `<commit>:<path>:<ruleID>:<line>` and is
 # pinned to ONE line of ONE blob in ONE commit, so an entry here cannot suppress a future
 # finding — not even a real secret on the next line of the same file. That is the only form
-# an entry IN THIS FILE may take: never a path glob, never a bare rule name, never a regex
-# allowlist.
+# an entry may take: never a path glob, never a bare rule name, never a regex allowlist.
 #
-# 2026-09-20: `.gitleaks.toml` now exists beside this file and holds the other kind of
-# exception. That is not a loosening of the rule above, it is a division of labour, and the
-# dividing line is whether the blob is DEAD or LIVE:
+# Two rules have produced entries here, and both match a bare hex run in a context that
+# looks like an assignment:
 #
-#   dead history  → here. A fingerprint is exact and the blob will never be rewritten, so
-#                   the entry can never go stale or widen. Still the default.
-#   a live file   → `.gitleaks.toml`. A fingerprint names a commit, so the next edit of the
-#                   file mints a new one and the nightly goes red again until somebody
-#                   appends another line — a treadmill, and one whose steps all look like
-#                   routine noise, which is how a real finding gets waved through.
+#   `sourcegraph-access-token`  a 40-character hex string. A git commit SHA is also 40 hex
+#                               characters, so any corpus recording git revisions trips it.
+#   `generic-api-key`           a longer opaque value next to a key-ish word.
 #
-# Every allowlist there is scoped to a path AND a regex over the matched secret itself
-# (`matchCondition = "AND"`), so it is narrower than the phrase "regex allowlist" suggests:
-# it cannot swallow a credential of a different shape in the same file. Read that file's
-# header before adding to either.
-#
-# The rule that produced every entry below is `sourcegraph-access-token`, which matches a
-# bare 40-character hex string in a plausible-looking context. A git commit SHA is also a
-# 40-character hex string, so any corpus that records git revisions will trip it.
+# A file's CONTENT is not guarded by an entry here — an entry excludes one line of one blob
+# and says nothing about what that file may hold in future. `test/opaque-literal-guard.test.ts`
+# is the separate, positive guard that asserts what each of these files is allowed to
+# contain; it runs in `npm run check`. Neither replaces the other.
 #
 # ---------------------------------------------------------------------------------------
 # 2026-09-04 — three findings, all in `paper/experiments/ecosystem/results-2026-08-22.json`
@@ -43,6 +34,13 @@
 #
 # All three are public commit SHAs belonging to other people's public repositories. None is
 # a credential, none grants access to anything, and none was ever ours.
+#
+# EVERY quoted match in this file is TRUNCATED on purpose, and must stay that way. The
+# 2026-09-20 entry below was drafted with the IndexNow key written out in full, inside the
+# very `key: "…"` context that produced the finding — so the justification reproduced the
+# finding, and the scan reported `.gitleaksignore` itself. Caught by planting probes and
+# reading the whole report, not by reading the file. Quote a match the way the entries here
+# do: enough to recognise, never enough to re-trigger.
 #
 # The SHAs above are TRUNCATED on purpose, and must stay that way. Quoted in full they are
 # 40-character hex strings, so this file trips the very rule it exists to quiet — the first
@@ -63,3 +61,59 @@
 ba3bbc4c98f4a7be21139a3963e4dcd34c6476f4:paper/experiments/ecosystem/results-2026-08-22.json:sourcegraph-access-token:119236
 ba3bbc4c98f4a7be21139a3963e4dcd34c6476f4:paper/experiments/ecosystem/results-2026-08-22.json:sourcegraph-access-token:119237
 ba3bbc4c98f4a7be21139a3963e4dcd34c6476f4:paper/experiments/ecosystem/results-2026-08-22.json:sourcegraph-access-token:254081
+
+# ---------------------------------------------------------------------------------------
+# 2026-09-20 — five findings, all rule `generic-api-key`, all in `test/`. Each was opened
+# and read before being listed. The nightly secret scan had been RED on these alone since
+# 2026-09-18, with every other nightly job green.
+#
+#   test/byte-identity-baseline.ts:20,64   at a5e4be08
+#   test/height-byte-identity.test.ts:59,103  at aa6da412
+#
+#           `accessible", "5602b128…<56 more hex>"` and one more per table.
+#           MEASURED SHA-256 BYTE-IDENTITY BASELINES, not credentials.
+#           `docs/agents/iron-laws.md`: every new language form ships with a byte-identity
+#           law proved by a SHA-256 sweep over the shipped examples, and these digests ARE
+#           the law. Each is a hash OF PUBLIC OUTPUT — the SVG, `describe()` and `lint()`
+#           of a `.arch` file committed in `examples/` — so anyone can recompute every one
+#           of them from this repository; the digest body is `test/byte-identity-digest.ts`.
+#           They grant access to nothing and are not secret in any sense.
+#
+#           WHY ONLY TWO ROWS OF EACH THIRTY-ROW TABLE TRIP: the row is keyed by example
+#           name, and the first example is `accessible`, which CONTAINS "access" — one of
+#           the rule's key-ish words. No other example name does, so `aquarium`, `studio`
+#           and the rest are never flagged. A row re-measured later mints no new finding
+#           unless it is the `accessible` one (confirmed 2026-09-20: `hillside-villa`'s two
+#           rows were re-measured in this same branch and the scan still reports five).
+#
+#           BOTH PATHS appear because the scan covers the FULL HISTORY. The tables were
+#           extracted from `height-byte-identity.test.ts` into `byte-identity-baseline.ts`
+#           when a second law began importing them; the old blob is still scanned at the
+#           commit that introduced it.
+#
+#   test/indexnow-script.test.ts:78 at 51db42a9
+#
+#           `key: "0aecad13…<24 more hex>"` — THE INDEXNOW VERIFICATION KEY, and
+#           it is PUBLIC BY PROTOCOL DESIGN. IndexNow authenticates a submitter by requiring
+#           the key to be fetchable at the domain root: the search engine reads
+#           `https://archlang.uk/<key>.txt` and accepts the submission only if that file is
+#           there and contains the key. PUBLISHING IT IS THE MECHANISM. The file is committed
+#           at `docs-site/public/<that key>.txt` and served to the whole
+#           internet on purpose; see `scripts/indexnow.mjs` and `docs/seo.md`. What the key
+#           permits is asking Bing to re-crawl pages on a domain its holder already controls —
+#           no read access, no write access, no account. Do not "discover" this again and do
+#           not rotate it as if it had leaked.
+#
+# A `.gitleaks.toml` was tried for these first and REVERTED, because it became the hole this
+# file's header exists to prevent: gitleaks 8.30.1 silently ignores `matchCondition` on a
+# top-level `[[allowlists]]` block and ORs the conditions, so an entry scoped to a path AND
+# a secret shape exempted that shape in EVERY file. Measured on this tree — no allowlist, 6
+# findings (these 5 plus a planted probe); path+regex+AND, 0; the probe was swallowed. A
+# fingerprint cannot fail that way, which is the argument for the rule above. See CHANGELOG.
+# ---------------------------------------------------------------------------------------
+
+a5e4be08f691200488704e1ebab3dae0c0d84655:test/byte-identity-baseline.ts:generic-api-key:20
+a5e4be08f691200488704e1ebab3dae0c0d84655:test/byte-identity-baseline.ts:generic-api-key:64
+aa6da412c4355a333198e3d6c94bebb4478b2aa7:test/height-byte-identity.test.ts:generic-api-key:59
+aa6da412c4355a333198e3d6c94bebb4478b2aa7:test/height-byte-identity.test.ts:generic-api-key:103
+51db42a99a53069e5c953e79fb0f9609ced0ce0e:test/indexnow-script.test.ts:generic-api-key:78
