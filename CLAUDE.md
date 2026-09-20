@@ -46,7 +46,8 @@ These are the ones this repo has actually shipped violations of. The pointer aft
 
 Prove a change through the CLI (`arch compile|describe|lint --json`), not by eyeballing SVG.
 `npm run check` + `npm run check:drift` is the floor; add `npm run typecheck:all` outside
-`src/`+`test/`, `npm run docs:build` for any `docs/*.md` edit, and the Playwright E2E for the apps.
+`src/` — **including `test/`, which the root tsconfig excludes, so `check` never compiles it** —
+`npm run docs:build` for any `docs/*.md` edit, and the Playwright E2E for the apps.
 Update snapshots/goldens only after reviewing the diff — never to green a red suite. **Before calling
 a change done, read `docs/agents/verification.md`** (per-surface CLI checks, prose gates).
 

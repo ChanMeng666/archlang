@@ -29,7 +29,8 @@ snapshot, and before believing a green run means more than it does.
 | `npm run eval:fidelity` | the **intent-fidelity slice** (v1.25): deliberately infeasible briefs where *declaring infeasibility* is the scored-correct answer, plus a **judge-free, deterministic** laundering detector. Its own corpus (`eval/corpus-fidelity.json`) and its own scorecard; **it shares no ruler with `eval:ci` and the two numbers must never be compared** |
 
 `npm run check` + `npm run check:drift` is the honest local minimum. Add `typecheck:all` when you
-touched anything outside `src/`+`test/`, and the matching E2E when you touched `playground/` or
+touched anything outside `src/` — **`test/` included**, because the root tsconfig excludes it and
+`check` therefore never typechecks a test file you just wrote — and the matching E2E when you touched `playground/` or
 `docs-site/`.
 
 ### Tier 2 — PR (every push to `main`, every pull request)

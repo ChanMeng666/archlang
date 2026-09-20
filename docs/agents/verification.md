@@ -46,7 +46,9 @@ test/ascii.test.ts`) only after reviewing the diff — never to green a red suit
 
 Beyond the CLI, prove the surfaces the core suite does not compile. `npm run check` +
 `npm run check:drift` is the floor; add **`npm run typecheck:all`** when you touch anything outside
-`src/`+`test/` (it is the only thing that compiles the playground, docs-site, MCP shim and VS Code
+`src/` — **`test/` included**: the root `tsconfig.json` lists `test` in `exclude`, so `npm run check`
+(`tsc --noEmit`) never typechecks the suite, and only `typecheck:dev` inside `typecheck:all` does.
+A test file that does not compile passes the floor gate (it is the only thing that compiles the playground, docs-site, MCP shim and VS Code
 extension), **`npm run docs:build`** for any `docs/*.md` edit, and **`npm run e2e:playground` /
 `npm run e2e:docs`** (Playwright, against the BUILT sites — build the core first) when you touch
 those apps. Prose is gated too: `test/docs-table-pipes.test.ts` scans every tracked `.md` for a bare
