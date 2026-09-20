@@ -127,7 +127,7 @@ const row3: Sheet[] = [
     tag: "Site",
     title: "Everything outside the wall line",
     body:
-      "A lot line, ground materials, fences and a roof: 15 outdoor surfaces across all nine kinds — 14 on the ground and the balcony a storey up — two fence runs and a 484 m² lot around a house of 11 rooms and 240 m², of which the 6 rooms and 136.5 m² above are the ground floor the drawing shows. Read those totals off describe --json's levels[], not off its top level: the top-level facts are the LOWEST STOREY, so a page-1 read of this plan loses the balcony and with it the ninth ground kind. Floor, ground and lot are three different numbers and the language keeps them apart — a terrace is not floor area, so a ground surface appears in no rooms[] entry, no schedule row and no access graph. Every hatch is scale-aware: the same pattern size on the sheet at 1:100 as it would be at 1:50.",
+      "A lot line, ground materials, fences and a roof: 15 outdoor surfaces across all nine kinds — 14 on the ground and the balcony a storey up — two fence runs and a 484 m² lot around a house of 11 rooms and 240 m² over two storeys, 6 rooms and 136.5 m² of that on the ground floor the drawing shows. Read those totals off describe --json's levels[], not off its top level: the top-level facts are the LOWEST STOREY, so a page-1 read of this plan loses the balcony and with it the ninth ground kind. Floor, ground and lot are three different numbers and the language keeps them apart — a terrace is not floor area, so a ground surface appears in no rooms[] entry, no schedule row and no access graph. Every hatch is scale-aware: the same pattern size on the sheet at 1:100 as it would be at 1:50.",
     example: "garden-house",
   },
 ];

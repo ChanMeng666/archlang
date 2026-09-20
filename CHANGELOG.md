@@ -82,6 +82,13 @@ mechanisms.
   centrelines but the outer face is 60.3 × 40.3, and `~60 x 40` is true under both — which is the
   convention `library` (`~50 x 32`) and `museum` (`~100 x 60`) already use.
 
+**The rule behind all of this is now written down**, as an untagged entry in
+`docs/agents/gotchas.md`: a quoted dimension must name its convention (the qualified form, or a
+tilde on a round figure true either way), settled with `arch describe --json --select
+bbox,bbox_outer`. It is deliberately NOT gated — whether a number is the right one for the sentence
+around it is not decidable from prose, and a guard that cannot decide would pass everything or
+block honest wording.
+
 **A sweep of every quoted dimension on both axes found no others.** Honest because they say which
 convention they mean: `townhouse` "outer faces 5500 x 11000" (stated at `:55`), `courtyard-house`
 16.3 × 11.8 and `tiny-house` 7.2 × 3.0 (both outer), `gallery-l` "12 × 14 m bounding box" (names it),
