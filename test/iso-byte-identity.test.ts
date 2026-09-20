@@ -21,6 +21,14 @@
  * `f4548db`, the tree `v1.34.0` shipped, by a script that imported the digest bodies in
  * `./byte-identity-digest.ts` — never a lookalike.
  *
+ * The corpus is still all thirty, and the ones named in `AUTHORS_HEIGHT` are read the way
+ * that module's header describes: their `v1.34.0` rows are checked against the plan's
+ * height-free derivation, because a plan that authors the vertical datum reports it and so
+ * is no longer the text that was measured. That is a fact about the DATUM, not about the
+ * view, and it leaves this law's own claim untouched — the derivation is compiled here with
+ * no `view` exactly as every other row is. The plan as actually written is not left
+ * unguarded either: the suite below drives `two-storey.arch` itself through both presets.
+ *
  * ## If one of these moves
  *
  * It is a finding to explain, never a value to re-bless, and the two most likely culprits
@@ -40,8 +48,9 @@ import { join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
 import type { World } from "../src/world.js";
-import { BASELINE, SEMANTIC_BASELINE } from "./byte-identity-baseline.js";
+import { AUTHORS_HEIGHT, BASELINE, SEMANTIC_BASELINE } from "./byte-identity-baseline.js";
 import { type CompilerApi, allStoreysDigestWith, semanticDigestWith } from "./byte-identity-digest.js";
+import { heightFreeSource } from "./height-free-source.js";
 
 const API: CompilerApi = { compile, describe: describePlan, lint };
 const EXAMPLES = resolvePath("examples");
@@ -60,6 +69,13 @@ const world: World = {
 
 const srcOf = (name: string): string => readFileSync(join(EXAMPLES, `${name}.arch`), "utf8");
 
+const authorsHeight = new Set(AUTHORS_HEIGHT);
+
+/** The text a `v1.34.0` row is checked against — see the header: for a plan that authors
+ *  the vertical datum it is the height-free derivation, which is behaviourally the text
+ *  that was measured. Nothing about the VIEW is derived away. */
+const measuredText = (name: string): string => (authorsHeight.has(name) ? heightFreeSource(srcOf(name)) : srcOf(name));
+
 suite("iso byte-identity — a compile with no `view` is unchanged everywhere", () => {
   it("covers the whole shipped corpus (a law over an empty list is not a law)", () => {
     expect(BASELINE.length).toBe(30);
@@ -68,13 +84,13 @@ suite("iso byte-identity — a compile with no `view` is unchanged everywhere", 
 
   for (const [name, sha] of BASELINE) {
     it(`${name}.arch renders, describes and lints exactly as on v1.34.0 — every storey`, () => {
-      expect(allStoreysDigestWith(API, srcOf(name), { world })).toBe(sha);
+      expect(allStoreysDigestWith(API, measuredText(name), { world })).toBe(sha);
     });
   }
 
   for (const [name, sha] of SEMANTIC_BASELINE) {
     it(`${name}.arch's describe() + lint() are unchanged (blind to the drawing)`, () => {
-      expect(semanticDigestWith(API, srcOf(name), { world })).toBe(sha);
+      expect(semanticDigestWith(API, measuredText(name), { world })).toBe(sha);
     });
   }
 });

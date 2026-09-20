@@ -127,6 +127,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Free for individual accounts and public repos; a GITLEAKS_LICENSE is only
           # required for repos owned by a GitHub *organization*. Left unset on purpose.
+          #
+          # There is deliberately NO config file: verified false positives are excluded one
+          # fingerprint at a time in `.gitleaksignore`, which gitleaks reads by default, so a
+          # bare `gitleaks detect` on a laptop and this job see exactly the same exclusions.
+          # Read that file's header before adding to it.
 
   # ---------------------------------------------------------------------------
   # Deliberately redundant with ci.yml's Node 18/20/22 matrix — this adds the Windows

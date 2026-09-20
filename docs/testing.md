@@ -197,6 +197,42 @@ language, and it is why the golden files above almost never move.
 | `test/lint-file-provenance.test.ts` | a lint fix on an element written in an imported module carries `file`, so `applyFixes` refuses it | Red means `applyFixes` can once again splice a module's byte offsets into the importer — reproduced on an unmodified `W_DIM_INSIDE` before the fix |
 | `test/levels.test.ts` (corpus sweep) | a plan with no `level` block has no `pages`, no `LEVEL` title-block row and no `level` on any diagnostic; a plan WITH one compiles to more than one page | **The split is derived, not listed.** It used to exclude `two-storey.arch` *by filename*, which meant a second multi-storey example could silently join the level-free sweep (failing for the right reason under the wrong name) or silently dodge the paging check. `HAS_LEVEL = /^\s*level\s+-?\d+/m` reads the source instead, both sides are asserted non-empty, and `townhouse.arch` joined with no edit to the test |
 | `test/roof-void-byte-identity.test.ts` | a plan using neither `roof` nor `void` renders, describes and lints exactly as before. **Re-measure rule:** the only sanctioned cause of a move so far is the v1.30 wall joinery, which moved all four at once; anything else is a finding first. When you do re-measure, copy the test's own `digest()` body VERBATIM and treat the green run as the proof your payload matched — that is what closes the one-character-separator trap below | The digests are **hardcoded**, measured against v1.28.0's `src/` by checking that tree into the worktree — a test that compiled twice and compared would prove determinism and stay green through a change that moved every byte. Two things to carry when you measure the next one: take the baseline with the **same `digest()` body the test will run** (a scratch script whose payload separator differed by one character produced four false failures here), and keep the payload the whole agent-facing surface — SVG, `describe()` **and** `lint()` — since an element that quietly appends an empty summary key leaves the drawing untouched and still changes behaviour for every `arch describe --json` consumer. The four fixtures are chosen, not arbitrary: the two the track edits (`bungalow`, `two-storey`) are excluded on purpose, and the rest span an all-rectangle dwelling, the flagship, a CONCAVE polygon plan (whose ring code the roof's offset shares a module with) and a CURVED plan on `paper` (whose auto-fit reads the same `planBounds` a roof now grows) |
+| `test/height-byte-identity.test.ts` + `test/iso-byte-identity.test.ts` | the v1.35 vertical datum and the axonometric, over **all thirty** shipped examples and every storey of each, against one shared measured table (`test/byte-identity-baseline.ts`, taken on `f4548db` = the v1.34.0 tree). Since 2026-09-20 the corpus is SPLIT: the plans that author no height keep the original law and their measured hashes untouched, and the plans named in `AUTHORS_HEIGHT` are held to a stronger one — **a plan that DOES author heights draws byte-identically to itself with the height clauses removed** | A move in the no-height half means the datum leaked into a plan that never asked for it: suspect `describe()`'s `_heightsAuthored` gate, the `Opening` fields reaching a serialized surface, or the resolve memo's `extrasKey`. A move in the authors-height half is worse and simpler — a height moved a drawing, and a plan is a horizontal cut |
+
+**Why the height corpus is split, and why no baseline row was retired.** As first shipped the height
+law asserted that *every* shipped example authors no `height` — correct, and load-bearing, because
+the law is vacuous for a plan that uses the syntax. It also made the corpus a closed set: **no
+shipped example could demonstrate the headline feature of v1.35, and for a release none did.** The
+docs claimed a datum that nothing in `examples/` declared and both committed axonometric renders
+stood silently on the 3000 mm default. The fix was not to drop the assertion but to notice it was
+proving the weaker of two claims, and to prove both. The stronger one's two sides are **computed at
+test time** (`test/height-free-source.ts` derives the height-free variant mechanically from the one
+real file), so it carries no hash, cannot go stale and cannot be re-blessed to green a suite.
+`examples/two-storey.arch`'s v1.34.0 rows in both tables are still checked — against that derivation,
+which is behaviourally the text that shipped — so nothing was re-measured, re-typed or dropped.
+
+**A prose edit to an example can move its byte-identity digest, and that is not a compiler
+bug.** A `lint()`/`describe()` diagnostic carries a byte `span` into the source, so adding a
+line to a header comment shifts every span below it. Fixing a wrong sentence in
+`examples/hillside-villa.arch` on 2026-09-20 added 251 bytes and moved all three of its
+diagnostics by exactly 251, with every other field unchanged and every storey's SVG
+byte-identical; its two rows were re-measured with that reason recorded in
+`test/byte-identity-baseline.ts`'s header. Before re-measuring anything, tell the two cases
+apart — diff the two `lint()` payloads field by field. If the SVG also moved, or a non-`span`
+field moved, or the shift is not UNIFORM across every diagnostic, it is a compiler change
+wearing a prose edit's clothes and must be explained first. Only examples that lint non-clean
+are affected; a plan with no diagnostics has no spans to shift, which is why `aquarium` and
+`two-storey` had their prose edited in the same branch without moving.
+
+**If you add a height-authoring example**, name it in `AUTHORS_HEIGHT` and nowhere else: the tests
+cross-check that list against a scan of the sources in both directions, so a plan that quietly grows
+a `height` fails the no-height half's vacuity guard and a name whose plan authors nothing fails its
+own. Do not add a hand-written height-free copy of a plan — the derivation exists so the two sides
+cannot drift into describing different buildings. The derivation is itself guarded: it must change
+the text, and the result must scan clean, so a derivation that became a no-op goes red loudly rather
+than green quietly (verified 2026-09-20 by making it a no-op — six assertions failed across the two
+laws).
+| `test/opaque-literal-guard.test.ts` | a CONTENT guard, not an exclusion. Verified false positives are excluded one fingerprint at a time in `.gitleaksignore` (there is deliberately no `.gitleaks.toml`); a fingerprint is pinned to one line of one blob in one commit, so it cannot suppress a future finding — and equally cannot say whether the file has since grown something that is not benign. This asserts the other direction: what each excluded file is ALLOWED to hold. Its file list is DERIVED from `.gitleaksignore`'s fingerprints | Someone excluded a finding in a new file without saying what that file may contain, or an opaque string that is not a digest, a shipped example name or the published IndexNow key appeared in a guarded file. Add the rule — do not delete the assertion |
 
 ### The fixture-symbol layer — one snapshot file, three different promises
 

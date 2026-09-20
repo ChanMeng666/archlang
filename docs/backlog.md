@@ -1653,6 +1653,28 @@ Pairs with **A.6** (the MCP shim has the matching gap on the same option).
 
 ---
 
+## Not a defect — gitleaks in FILESYSTEM mode reports four more (2026-09-20)
+
+**Deliberately not excluded. Do not "fix" this.** `gitleaks dir .` (filesystem mode) reports four
+`sourcegraph-access-token` findings — two in `CHANGELOG.md`, two in `docs/backlog.md` — where a git
+commit SHA appears in prose. That rule matches a bare 40-character hex string, and a commit SHA is
+one; `.gitleaksignore`'s header already records the same rule firing on the ecosystem census.
+
+They do not affect CI. The nightly `secrets` job runs `gitleaks-action`, which scans GIT history,
+and history mode does not surface them: it reads commit diffs, where the leading `+` changes the
+context the rule needs. Verified 2026-09-20 — a full-history scan of this branch is clean
+(`no leaks found`, 708 commits) while a filesystem scan of the same tree reports these four.
+
+The reason to leave them is the cost of excluding them. `CHANGELOG.md` and `docs/backlog.md` are
+long-lived prose files that a real token could plausibly land in one day, and gitleaks cannot scope
+an allowlist to a path AND a shape (see `.gitleaks.toml`'s header: `matchCondition` is ignored on a
+top-level allowlist and the conditions OR together). Excluding these two paths would therefore
+switch the rule off for two files that must keep it. A finding that CI never sees is not worth that.
+
+If a future filesystem-mode scan is wanted as a gate, the answer is a per-finding fingerprint in
+`.gitleaksignore`, not a path in `.gitleaks.toml`.
+
+
 ## Wave 4 — P2 language features
 
 Designed and evidenced in `docs/research/2026-08-06-competitor-borrowing-roadmap.md` §5. Each one

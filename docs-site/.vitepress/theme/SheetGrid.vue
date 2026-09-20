@@ -98,7 +98,7 @@ const levels: Sheet[] = [
     tag: "Levels",
     title: "One storey is one drawing",
     body:
-      "A plan written as level blocks compiles to a complete sheet per storey — three here, 4 rooms and 55.64 m² each, on a 5.2 × 10.7 m terrace footprint. arch compile writes townhouse.L1.svg, .L2.svg and .L3.svg; the three drawings above are those files. The stair is one object written three times: ids are unique within a level, so the same id=st on all three storeys is not a clash but the declaration that these are one shaft — and it is why the upper floors lint clean with no front door of their own.",
+      "A plan written as level blocks compiles to a complete sheet per storey — three here, 4 rooms and 55.64 m² each, on a 5.5 × 11 m terrace footprint. That is the outer face, which is what a footprint means; the plan's own let W and let D are the 5.2 × 10.7 m wall centrelines, and every plan here has both numbers. arch compile writes townhouse.L1.svg, .L2.svg and .L3.svg; the three drawings above are those files. The stair is one object written three times: ids are unique within a level, so the same id=st on all three storeys is not a clash but the declaration that these are one shaft — and it is why the upper floors lint clean with no front door of their own.",
     example: "townhouse",
     art: { levels: [1, 2, 3] },
   },
@@ -127,7 +127,7 @@ const row3: Sheet[] = [
     tag: "Site",
     title: "Everything outside the wall line",
     body:
-      "A lot line, ground materials, fences and a roof: 14 outdoor surfaces across eight kinds, two fence runs and a 484 m² lot around a house of 6 rooms and 136.5 m². Floor, ground and lot are three different numbers and the language keeps them apart — a terrace is not floor area, so a ground surface appears in no rooms[] entry, no schedule row and no access graph. Every hatch is scale-aware: the same pattern size on the sheet at 1:100 as it would be at 1:50.",
+      "A lot line, ground materials, fences and a roof: 15 outdoor surfaces across all nine kinds — 14 on the ground and the balcony a storey up — two fence runs and a 484 m² lot around a house of 11 rooms and 240 m², of which the 6 rooms and 136.5 m² above are the ground floor the drawing shows. Read those totals off describe --json's levels[], not off its top level: the top-level facts are the LOWEST STOREY, so a page-1 read of this plan loses the balcony and with it the ninth ground kind. Floor, ground and lot are three different numbers and the language keeps them apart — a terrace is not floor area, so a ground surface appears in no rooms[] entry, no schedule row and no access graph. Every hatch is scale-aware: the same pattern size on the sheet at 1:100 as it would be at 1:50.",
     example: "garden-house",
   },
 ];
@@ -147,7 +147,7 @@ const row4: Sheet[] = [
     tag: "Composition",
     title: "Write the unit, place the row",
     body:
-      "Four terrace dwellings from one component — 16 rooms, 199.8 m², 16 doors and 18 windows across 22.2 × 9.6 m, written as component unit(w, d, gable) in its own coordinates and then four place statements with mirror x on alternate units. The offsets are a running sum over an array rather than typed coordinates, and an if inside the component puts a side window on the two free gables only. A pinned label is a point like any other, so the mirrored units get their mirrored label positions for free.",
+      "Four terrace dwellings from one component — 16 rooms, 199.8 m², 16 doors and 18 windows across 22.45 × 9.85 m over the outer faces, written as component unit(w, d, gable) in its own coordinates and then four place statements with mirror x on alternate units. The offsets are a running sum over an array rather than typed coordinates, and an if inside the component puts a side window on the two free gables only. A pinned label is a point like any other, so the mirrored units get their mirrored label positions for free.",
     example: "terrace-row",
   },
 ];
@@ -159,7 +159,7 @@ const row5: Sheet[] = [
     tag: "Axonometric",
     title: "Heights are a datum, not a drawing",
     body:
-      "A plan is a horizontal cut, so a height moves no byte of one: the datum is reported by arch describe --json --select heights and drawn nowhere. --view axon spends it on a picture instead — extruded walls with their doors and windows cut, floor plates, both storeys stacked. This plan authors no height, so the picture above stands on the default 3000 mm storey. It is illustrative and nothing measures it either way: describe() and lint() take no --view and never learn it exists, and the view carries no scale bar, no north arrow, no title block and no dimensions, because each of those would make a picture look issuable.",
+      "A plan is a horizontal cut, so a height moves no byte of one: the datum is reported by arch describe --json --select heights and drawn nowhere. --view axon spends it on a picture instead — extruded walls with their doors and windows cut, floor plates, both storeys stacked. This plan authors the datum in all three tiers, and the picture above is what it buys: height 2700 for the building, height 3000 on level 2, and a sill 300 head 2400 window in the living room beside a bathroom window that writes sill 1500 and takes the 2100 default head. Adding those clauses left two-storey.svg byte-identical and moved only this render. Elevation accumulates the storeys below, so the first floor sits at 2700, not at 2 x 3000. It is illustrative and nothing measures it either way: describe() and lint() take no --view and never learn it exists, and the view carries no scale bar, no north arrow, no title block and no dimensions, because each of those would make a picture look issuable.",
     example: "two-storey",
     art: { view: "axon" },
     hint: "The strip below opens the plan, not this picture — for the picture, arch compile two-storey.arch --view axon",

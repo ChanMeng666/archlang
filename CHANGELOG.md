@@ -7,6 +7,158 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — the nightly secret scan was red on five false positives, excluded by fingerprint
+
+- **The nightly `secrets` job had been RED since 2026-09-18** with every other nightly job
+  green — production smoke, all four Node/OS matrices, E2E against production. All five
+  gitleaks findings are rule `generic-api-key` and all five are false. Four are 64-character
+  SHA-256 **byte-identity baselines**, which are digests of PUBLIC OUTPUT that anyone can
+  recompute from this repository; the fifth is the **IndexNow key**, which is public by
+  protocol — IndexNow authenticates a submitter by requiring the key to be fetchable at the
+  domain root, and the file is committed under `docs-site/public/` and served on purpose.
+- **Excluded the repo's own way: one fingerprint per finding in `.gitleaksignore`.** That
+  file and its policy already existed. A fingerprint is `<commit>:<path>:<ruleID>:<line>`,
+  pinned to one line of one blob in one commit, so it cannot suppress a future finding — not
+  even a real secret on the next line of the same file. Each entry carries the same written
+  justification the 2026-09-04 entries do, including why only two rows of each thirty-row
+  digest table ever trip: the tables are keyed by example name and the first example is
+  `accessible`, which contains "access", one of the rule's key-ish words. No other example
+  name does.
+- **A `.gitleaks.toml` was tried first and reverted, and the reason is the point.** Scoping
+  an exception to a path AND a secret shape looked narrower and was catastrophically wider:
+  **gitleaks 8.30.1 silently ignores `matchCondition` on a top-level `[[allowlists]]` block
+  and ORs the conditions**, so the entry exempted that shape in every file in the repository.
+  Measured — no allowlist, 6 findings (the 5 real plus a planted probe); path+regex+AND,
+  **0**, the probe swallowed; the config was a security gate with a repo-wide hole. Found
+  only by planting a credential, never by reading. A mechanism whose safe form depends on
+  knowing that is a mechanism that will be got wrong again; a fingerprint cannot fail that
+  way. `b33c54e` and `9a7fdb3` are left in the log rather than rewritten, because they
+  document a real failure mode.
+- **`test/opaque-literal-guard.test.ts` is kept, reframed as what it always was: a CONTENT
+  guard, not an exclusion.** A fingerprint cannot say whether the line it excludes was
+  benign, nor whether the file has since grown something that is not. This asserts the other
+  direction — each excluded file holds only what it is supposed to: 64-hex digests and names
+  of examples that ship, nothing opaque at all, and exactly one 32-hex string that must equal
+  the key published at `docs-site/public/<key>.txt`. That last one catches an IndexNow
+  rotation done in only one place, which no fingerprint could and which would otherwise break
+  submissions silently. Its file list is derived from `.gitleaksignore`'s fingerprints, so
+  excluding a finding in a new file fails there until someone says what that file may hold.
+- **Proved non-vacuous with four planted credentials**, each on a throwaway branch scanned
+  the way CI scans (full history): a GitHub PAT in a fingerprinted file → RED; a Stripe live
+  key in a fingerprinted file → RED; a 64-hex generic key in a file named by no fingerprint →
+  RED; a second 64-hex generic key on a different LINE of a fingerprinted file → RED, which
+  is the property a path-scoped allowlist could never have. Every planted credential is
+  caught, and the content guard independently goes red on three of the four.
+- `docs/backlog.md` records the four findings that only a FILESYSTEM-mode scan reports (git
+  commit SHAs in prose in `CHANGELOG.md` and `docs/backlog.md`) and why they must not be
+  excluded: CI scans git history and never sees them.
+
+### Fixed — three landing-page cards quoted a real number that answered a different question
+
+These are not arithmetic errors and no re-derivation gate would have caught one of them. In each
+case the figure is genuinely produced by the compiler; it just is not the figure the sentence
+around it claims. **That is the class** — *the number is real but answers a different question than
+the sentence asks* — and it has now produced three defects on one page from three different
+mechanisms.
+
+- **A-102 quoted a CENTRELINE as a FOOTPRINT.** The card said "a 5.2 × 10.7 m terrace footprint";
+  `let W`/`let D` in `townhouse.arch` are wall centrelines and a footprint is the outer face, which
+  `describe --json` reports as `bbox_outer` 5500 × 11000. Now 5.5 × 11 m, and the card says which
+  convention it is using and that both numbers exist — because every plan with a `wall … thickness`
+  has two legitimate "sizes" and nothing in prose says which is meant.
+- **A-105 quoted PAGE-1 facts as whole-building facts**, in both halves of one sentence.
+  `describe()`'s top-level block is the LOWEST STOREY, so a two-storey plan read at the top level
+  loses everything above. `garden-house` has 15 outdoor surfaces across all **nine** kinds
+  (the 15th is the L2 `balcony`, which is also the ninth kind) and 11 rooms over 240 m²; the card
+  claimed 14 surfaces, eight kinds, 6 rooms and 136.5 m² — every one of those the ground floor
+  alone. Fixed, and the card now names where to read the totals from (`levels[]`, not the top
+  level), since this is the same trap the playground storey-switcher work exists to close.
+- **A-101 dropped a DEFAULT-VALUED enum member from a count** (fixed earlier in `11b69fc`): `hinged`
+  is the door kind you never write, so counting `door <kind>` lines gives five of six. The same
+  undercount in `examples/hillside-villa.arch`'s header is fixed below.
+- **A-107 had the A-102 confusion in a milder form** — "across 22.2 × 9.6 m", the centreline extent
+  of the terrace row; now 22.45 × 9.85 m over the outer faces.
+- `examples/aquarium.arch`'s corrected figure gains its tilde back: 60 × 40 m is exact on
+  centrelines but the outer face is 60.3 × 40.3, and `~60 x 40` is true under both — which is the
+  convention `library` (`~50 x 32`) and `museum` (`~100 x 60`) already use.
+
+**A sweep of every quoted dimension on both axes found no others.** Honest because they say which
+convention they mean: `townhouse` "outer faces 5500 x 11000" (stated at `:55`), `courtyard-house`
+16.3 × 11.8 and `tiny-house` 7.2 × 3.0 (both outer), `gallery-l` "12 × 14 m bounding box" (names it),
+`garden-house` "22 × 22 m suburban lot" (the lot, not the building), and the tilde'd round figures
+in `library`, `museum` and `transit-hall`. On the multi-storey axis, all four multi-storey examples
+appear on the landing page and the other three are correct: A-101 gives `hillside-villa` per storey
+("11 rooms and 196.54 m² on the ground floor, nine rooms and 140.76 m² above"), A-102's "4 rooms and
+55.64 m² each" holds for all three `townhouse` storeys, and A-108 quotes no counts.
+
+### Fixed — a second self-description drift, on the feature-count axis
+
+- **A prose edit moved a byte-identity digest, which exposed a class worth naming.** The
+  `hillside-villa` fix is comment-only, and it turned two byte-identity rows red. Cause,
+  proved before anything was re-measured: a `lint()`/`describe()` diagnostic carries a byte
+  `span` into the source, so 251 bytes of added prose shifted all three of that plan's
+  diagnostics by exactly 251 — every other field unchanged, and **every storey's SVG
+  byte-identical**. The two rows were re-measured with that reason recorded in
+  `test/byte-identity-baseline.ts`'s header, which now states the two sanctioned causes of a
+  moved digest and how to tell them apart (a non-uniform shift, a moved SVG, or a moved
+  non-`span` field is a compiler change, not a prose edit). Only examples that lint
+  non-clean are affected — `aquarium` and `two-storey` had prose edited in this same branch
+  and did not move, because a plan with no diagnostics has no spans to shift.
+
+- **`examples/hillside-villa.arch` claimed five door kinds; it exercises six.** The header
+  listed "hinged/sliding/pocket/bifold/barn" and the file writes `door id=d_garage garage` at
+  `:119`; `DOOR_KINDS` has six and `describe()` reports six on that plan. Same error and same
+  cause as landing-page card A-101 (`11b69fc`): `hinged` is the kind you never write, so
+  counting `door <kind>` lines gives five. The new wording names the five that must be
+  written, names the default separately, and says why the naive count is wrong.
+- The self-description sweep now covers **counts of language features**, not only dimensions
+  and areas. Everything else it checked is correct and was left alone: `clinic` six consulting
+  rooms placed six times, `bungalow` five site directions and three non-default door kinds,
+  `library` eight arcs in the drum, `hillside-villa` ~30 furniture families (30),
+  `hexagon-pavilion` six galleries plus a rotunda, `terrace-row` four dwellings,
+  `courtyard-house` a three-segment courtyard wall, `furnished-flat` "thirty-eight of the
+  eighty-three catalogued kinds" (38 used; `FIXTURE_FAMILIES` has exactly 83 drawn symbol
+  families), and `materials`' "all six" materials — five written plus `poche` by omission,
+  which that file's own `:23` states.
+
+### Fixed — the v1.35 height datum now has an example, and the law that forbade one is stronger for it
+
+- **`examples/two-storey.arch` authors the vertical datum.** v1.35 shipped `height`/`sill`/`head` and
+  `--view iso|axon` as headline features and **no `.arch` file in the repository declared a height**,
+  so both committed axonometric renders were drawn on the 3000 mm default and the docs described a
+  datum nothing demonstrated. The plan now writes all three tiers: `height 2700` for the building,
+  `height 3000` on `level 2` (so `heights.elevation` reports 2700 for the first floor — the storey
+  below it, not `level x height`), a `sill 300 head 2400` window in the living room and a
+  `sill 1500` bathroom window whose head still defaults to 2100.
+- **`examples/two-storey.svg` is byte-identical** — `4933956f…` before and after. A plan is a
+  horizontal cut, so heights move no byte of one; the only committed artifacts that moved are
+  `docs-site/public/view/two-storey-axon.svg` and the two `two-storey` records in
+  `test/__snapshots__/iso-snapshot.test.ts.snap`, which are pictures and are supposed to. Each was
+  reviewed rather than blessed: compiling the plan's height-free derivation reproduced the previous
+  bytes exactly, in all three cases, with identical element counts.
+- **The byte-identity corpus is split rather than weakened** (`test/height-byte-identity.test.ts`,
+  `test/iso-byte-identity.test.ts`, new `test/height-free-source.ts`). The old law asserted that
+  every shipped example authors no height — right, because the law is vacuous otherwise, and also the
+  reason no example could ever demonstrate the feature. It was proving the weaker of two available
+  claims. The plans that author nothing keep it, with their v1.34.0 hashes untouched; the plans in
+  the new `AUTHORS_HEIGHT` are held to the stronger one: **a plan that DOES author heights draws
+  byte-identically to the same plan with its height clauses removed.** Both sides of that are
+  computed at test time, so it carries no measured hash — it cannot go stale and cannot be
+  re-blessed to green a suite.
+- **No baseline row was retired.** `two-storey`'s v1.34.0 rows in both tables are still checked,
+  against its mechanically-derived height-free variant, which is behaviourally the text that shipped.
+  Nothing was re-measured or re-typed. The derivation is guarded in both directions (it must change
+  the source, and the result must scan clean of every vertical spelling), and the guard was verified
+  non-vacuous by making the derivation a no-op: six assertions went red across the two laws.
+- **`examples/aquarium.arch` described itself as `~60 x 46 m`; its shell is 60 x 40 m** — the ring
+  closes at `(60000,40000)` and `describe --json` reports `bbox` 60000x40000. A sweep of every
+  example's header comment against `arch describe --json` found this one contradiction and no others;
+  in particular `examples/townhouse.arch`'s "5.5 x 11 m" is **correct** — it is the outer-face figure
+  the file's own comment states at `:55` and that `describe --json` reports as `bbox_outer`, while
+  `let W = 5200` / `let D = 10700` are wall centerlines.
+- README permalinks for `two-storey` and `aquarium` regenerated (`scripts/gen-permalink.mjs`), and
+  the docs home page's A-108 card no longer claims the plan authors no height.
+
 ### Added — one core export, and a storey switcher in the playground preview (no language surface moves)
 
 **Nothing about the language, the drawing or the CLI's bytes changes.** No new keyword, no new flag,

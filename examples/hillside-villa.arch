@@ -4,8 +4,11 @@
 # `site` (five derived compass names) · `paper`+`scale`+`axes`+`schedule`+`legend` (a real
 # sheet with a title block) · `zone` (living/service/sleeping wings, rolled up in the
 # schedule subtotals) · `room polygon` (a chamfered nook off the study, and the L-shaped
-# master suite) · `arc` wall edge (a bowed bay off the living room) · every door kind —
-# hinged/sliding/pocket/bifold/barn, each where a builder would actually put it · `window
+# master suite) · `arc` wall edge (a bowed bay off the living room) · all SIX door kinds —
+# the five that have to be named (sliding/pocket/bifold/barn/garage), plus the `hinged`
+# default on the rest, each where a builder would actually put it. Count them off the
+# `door` lines and you get five, because `hinged` is the kind you never write: ask
+# `arch describe --json` instead, which reports the kind on every door · `window
 # on <wall> at <pos>` plus a `for` loop (a street-facing ribbon of study windows) ·
 # `level 1`/`level 2` · `stair` (same id both levels, one shaft) · `void` (a double-height
 # gap over the living room) · `roof overhang` (the eaves, drawn on the upper storey) ·
