@@ -1655,50 +1655,58 @@ Pairs with **A.6** (the MCP shim has the matching gap on the same option).
 
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 
-### N.1 · The desktop nav row is CLIPPED from 960px to 1138px on every doc page — `todo`
+### N.1 · The nav row needs 1152px, and the hamburger persists until then — `todo` (a WANT, not a bug)
 
-The 768–960 half of this shipped fixed: the desktop nav now appears at 960 rather than 768, so
-`document.scrollWidth - clientWidth` is 0 at every width (gated by `docs-site/e2e/page-chrome.spec.ts`
-— "the nav bar does not scroll the page sideways"). **This entry is the other half, and it is
-pre-existing and unfixed.**
+**The defect is fixed; this entry is the better answer that was deliberately not taken.** Nothing is
+broken at any width today — `docs-site/e2e/page-chrome.spec.ts` ("the nav bar fits the viewport")
+asserts zero page overflow AND zero last-item overhang on `/` and `/guide` across 768 → 1152. Do not
+treat N.1 as a red.
 
-At `min-width: 960px` VitePress makes `.VPNav` `position: fixed`, and a fixed element's overflow
-never grows the document. So above 960 the same too-wide nav row stops scrolling the page and starts
-being **clipped at the viewport edge** — silently, with `scrollWidth - clientWidth` reading 0. That
-is why no probe of the page's overflow can see it. Measured overhang of the last nav item
-("Ecosystem"), Playwright/Chromium against the built site:
+What shipped, and why 1152. VitePress reveals the desktop nav row at `min-width: 768px`; our
+eight-destination bar does not fit until 1152, so the reveal was moved there. The fault had two faces
+and **only one of them scrolled**, which is the part worth carrying forward: below 960 `.VPNav` is
+`position: relative`, so the too-wide row grew the document and the page scrolled sideways (272px at
+768, 240 at 800, 140 at 900); at 960 VitePress makes `.VPNav` `position: fixed`, and **a fixed
+element's overflow never grows the document** — so the row did not start fitting there, it started
+being CLIPPED at the viewport edge while `scrollWidth - clientWidth` read 0. Measured overhang of the
+last nav item ("Ecosystem"), Playwright/Chromium, reproduced independently on the live site:
 
 ```
-/        960:+44  980:+24  1000:+4  1024:ok                  → clipped across [960, 1003]
-/guide   960:+179 1000:+139 1024:+115 1100:+39 1152:ok        → clipped across [960, 1138]
+/        960:+44  980:+24  1000:+4  1024:ok                  → was clipped across [960, 1003]
+/guide   960:+179 1000:+139 1024:+115 1100:+39 1152:ok        → was clipped across [960, 1138]
 ```
 
-So on every doc page at 1024 and at 1100 — ordinary laptop and tablet-landscape widths — the last
-nav entry is cut off and its dropdown, anchored `right: 0` to a button that is half off-screen, opens
-where it cannot be read.
+⚠ **Never set this breakpoint from `scrollWidth` alone.** That number is 0 across the whole clipped
+band; a binary search on it lands on 960 and ships a page whose last nav entry is severed at 1024.
 
-The arithmetic, so nobody re-derives it: the menu is **684px** intrinsic (Guide 63 · Reference 110 ·
-Examples 88 · Showcase 91 · AI Agents 106 · Playground 114 · Ecosystem 113). On a doc page at 960 the
-space left after the 272px sidebar gutter, the 183px search box and the 32px right padding is
-**473px** — a **179px deficit**. Every fix that keeps the current seven top-level items was costed and
-none reaches it: item padding 12→6 buys 84px, 14px→13px labels ~30px, dropping the `Ctrl K` chip
-~40px — 154px, at the cost of degrading the bar at 1440 where nothing is wrong.
+**The cost of the answer taken, which is what remains open:** the hamburger persists to 1151px, so a
+1024 iPad landscape and a 1100px laptop window get a hamburger beside ~500px of empty bar. That is
+cosmetic, not broken — every destination is reachable and keyboard-focusable there (measured: 22
+controls, 17 distinct hrefs) — but it is not what a docs site should look like at 1100.
 
-Two answers actually work, and choosing between them is a product call, not a layout one:
+**The recommended long-term fix is (B): cut the top level from seven items to five, and move the
+breakpoint back down.** The arithmetic, so nobody re-derives it. The menu is **684px** intrinsic
+(Guide 63 · Reference 110 · Examples 88 · Showcase 91 · AI Agents 106 · Playground 114 ·
+Ecosystem 113). On a doc page at 960 the space left after the 272px sidebar gutter, the 183px search
+box and the 32px right padding is **473px** — a **179px deficit**. Every saving that keeps all seven
+items was costed and they do not reach it: item padding 12→6 buys 84px, 14px→13px labels ~30px,
+dropping the `Ctrl K` chip ~40px — **154px ceiling**, at the cost of degrading the bar at 1440 where
+nothing is wrong. Dropping Showcase (91px) and Ecosystem (113px) buys **204px** against the 179px
+deficit, so the row would fit from 960 with room to spare; Showcase would move under an "Examples"
+dropdown, and ArchCanvas/npm/GitHub stay reachable through the footer, the nav screen and
+`socialLinks`.
 
-- **(A) Move the desktop-nav breakpoint to 1152 instead of 960.** Fixes it exactly, no IA change, no
-  chrome robbed. Cost: the hamburger persists to 1151px, so a 1024 iPad landscape and a 1100px window
-  get a hamburger beside 500px of empty bar.
-- **(B) Cut the top level from seven items to five and keep 960.** Dropping Showcase (91px) and
-  Ecosystem (113px) buys 204px against the 179px deficit, so the row would fit from 960 with room to
-  spare; Showcase would move under an "Examples" dropdown, and ArchCanvas/npm/GitHub stay reachable
-  through the footer, the nav screen and `socialLinks`. Structurally the right answer — but the `nav`
-  block in `docs-site/.vitepress/config.ts` reasons about this IA in prose ("Playground is the
-  standalone CTA — it is intentionally NOT repeated inside Ecosystem"), so it needs an owner's yes.
+Why it was not taken now (owner, 2026-09-20): **Showcase is deliberate outreach material** — the
+famous-building plans — and demoting it from the top level is a content-strategy decision that should
+not be forced by the schedule of a CSS fix. Decoupling them was the point: the defect is fixed today,
+and the IA can be reconsidered on its own merits. The `nav` block in `docs-site/.vitepress/config.ts`
+reasons about this IA in prose ("Playground is the standalone CTA — it is intentionally NOT repeated
+inside Ecosystem"), so whoever picks this up should read that first.
 
-⚠ **Do not close this by widening the existing overflow gate.** That gate measures page scroll, which
-is 0 here by construction. The assertion this needs is the last `.VPNavBarMenu` child's
-`getBoundingClientRect().right` against `documentElement.clientWidth`, on a route **with** a sidebar.
+Closing it means: change the `max-width` in the nav block at the foot of
+`docs-site/.vitepress/theme/style.css`, change the `nav` array in `config.ts`, and widen the E2E's
+width list — the overhang assertion already there is what proves the row fits, and it must keep
+running on a route **with** a sidebar, which is the tight case.
 
 ---
 

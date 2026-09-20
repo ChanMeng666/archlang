@@ -156,7 +156,7 @@ Guarded by `test/docs-hero-source.test.ts` (the strip's edge cases, and that str
 `compile()` and `describe()`) and `docs-site/e2e/page-chrome.spec.ts` (paint-level: nothing from the
 aside is ever the topmost element over the title block).
 
-### Fixed — the Examples page quotes the compiler again, and the nav stops scrolling the page sideways (docs + site chrome only)
+### Fixed — the Examples page quotes the compiler again, and the nav fits the viewport (docs + site chrome only)
 
 No language surface moves: `compile()`, `describe()` and `lint()` are byte-unmoved, no `.arch` file is
 touched and no rendered SVG shifts a byte. Both faults are ones the repo's existing gates are
@@ -178,24 +178,39 @@ structurally unable to see.
   placed three times; `two-storey` and `gallery-l` were quoted at a `scale` neither file writes (both
   declare only `paper`, and the sheet auto-fits); and the transit hall credited a `for` loop with
   nine gate openings where it punches eight.
-- **The docs nav scrolled every page sideways between 768px and 960px.** VitePress reveals the whole
-  desktop nav row the instant the hamburger is dismissed, at `min-width: 768px`, and ours carries
-  eight destinations — **684px of menu** beside a 105px title — so the page overflowed by **272px at
-  768, 240 at 800, 140 at 900**, on `/` and on every doc page alike. The reveal now waits for
-  **960px**: not a number picked to hide the symptom, but VitePress's own next breakpoint — where the
-  sidebar appears, where `.VPNav` becomes `position: fixed` and where the doc layout goes wide. The
-  top nav was simply arriving 192px before the layout it belongs to. Below 960 the hamburger persists
-  and its drawer carries all 21 destinations plus the social links, so nothing becomes unreachable at
-  any width, and no hex, token or surface changes. Rejected and recorded in the CSS: shrinking the row
-  (tightening padding and type buys ~110px of the 272 needed, and degrades the bar at 1440 where
-  nothing is wrong) and cutting nav items (a product decision the `nav` block in `config.ts` reasons
-  about in prose).
+- **The docs nav did not fit the viewport below 1152px, and half of that was invisible to the obvious
+  measurement.** VitePress reveals the whole desktop nav row the instant the hamburger is dismissed,
+  at `min-width: 768px`, and ours carries eight destinations — **684px of menu** beside a 105px title.
+  The fault had two faces. Below 960 `.VPNav` is `position: relative`, so the overflowing row grew the
+  document and every page scrolled sideways: **272px at 768, 240 at 800, 140 at 900**, on `/` and on
+  every doc page alike. At 960 VitePress makes `.VPNav` `position: fixed` — and **a fixed element's
+  overflow never grows the document**. The row did not start fitting there; it started being *clipped*
+  at the viewport edge, silently, while `scrollWidth - clientWidth` read **0**. Measured by the metric
+  that can see it — the last nav item's right edge against `clientWidth` — "Ecosystem" overhung by
+  **+179 at 960, +139 at 1000, +115 at 1024 and +39 at 1100** on a doc page, so at ordinary laptop and
+  tablet-landscape widths the last entry was severed and its dropdown, anchored `right: 0` to a button
+  half off-screen, opened where it could not be read. The reveal now waits for **1152px**, the width
+  at which the row clears both faces on the tight layout (a doc page, whose `.content` reserves a
+  272px padding-left for the sidebar column); at exactly 1152 the last item clears by 13px there and
+  64px on `/`. Below 1152 the hamburger persists and its drawer carries all 21 destinations plus the
+  social links — measured 22 focusable controls over 17 distinct hrefs at 375 and at 1024 — so nothing
+  becomes unreachable at any width, and no hex, token or surface changes. Rejected and recorded in the
+  CSS: shrinking the row (the whole non-IA budget is 154px against a 211px deficit, and it degrades
+  the bar at 1440 where nothing is wrong) and cutting the top level from seven items to five — which
+  *would* reach, and is the structurally better answer, but demoting Showcase is a content-strategy
+  call rather than something a CSS fix should settle on its own schedule. It is costed in
+  `docs/backlog.md` § N.1.
 
-Guarded by `test/docs-examples-figures.test.ts` — which links each `###` section to the example its
-own `<ArchLive>` widget names and re-derives every headline figure from `describe()`, so the page's
-promise is now executed rather than proofread — and by a third block in
-`docs-site/e2e/page-chrome.spec.ts` that measures `scrollWidth - clientWidth` on two routes across the
-overflow band. Both were proved non-vacuous by breaking what they guard and watching them go red.
+Guarded by `test/docs-examples-figures.test.ts`, which links each `###` section to the example its own
+`<ArchLive>` widget names and checks three kinds of claim against the tools: headline figures against
+`describe()`, an inline-code `scale`/`paper` against the file's own source syntax, and
+`lint`/`validate` claims against `lint()` and `compile().diagnostics + lint()`. The second and third
+exist because of what the audit found: **only six of the eleven drifts were wrong numbers.** The rest
+were right values presented as the wrong KIND of fact — an auto-fitted scale quoted as if the source
+wrote it — or stale claims about tool output. A counts-only gate would have caught two of the eleven.
+The nav is guarded by a third block in `docs-site/e2e/page-chrome.spec.ts` that asserts **both**
+metrics at ten widths on two routes, because `scrollWidth` alone reads 0 across the entire clipped
+band. Every one of them was proved non-vacuous by breaking what it guards and watching it go red.
 
 ### Docs — the SEO/GEO surface, its dashboards and the Safe Browsing incident (documentation only)
 
