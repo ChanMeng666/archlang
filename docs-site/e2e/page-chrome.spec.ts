@@ -198,3 +198,103 @@ test.describe("the hero types the plan, not its prose header", () => {
     expect(ink.reInk - ink.blanked, "the sheet stayed empty too long after the hero rewound").toBeLessThan(2000);
   });
 });
+
+/**
+ * 3. THE NAV BAR FITS THE VIEWPORT, MEASURED TWO WAYS BECAUSE ONE OF THEM IS BLIND.
+ *
+ *    VitePress reveals the whole desktop nav row the instant the hamburger is dismissed,
+ *    at `min-width: 768px`. Our bar carries eight destinations — 684px of menu beside a
+ *    105px title — and does not fit until 1152. `style.css` moves the reveal there.
+ *
+ *    The fault had two faces and only one of them scrolled, which is the reason this block
+ *    asserts TWO metrics:
+ *
+ *    - Below 960 `.VPNav` is `position: relative`, so the overflowing row grows the
+ *      document: `scrollWidth - clientWidth` was 272 at 768, 240 at 800, 140 at 900, on
+ *      `/` and on every doc page alike.
+ *    - At 960 VitePress makes `.VPNav` `position: fixed`, and **a fixed element's overflow
+ *      never grows the document**. The row did not start fitting there — it started being
+ *      CLIPPED at the viewport edge, silently, while `scrollWidth - clientWidth` read 0.
+ *      The last item ("Ecosystem") overhung by +179 at 960, +139 at 1000, +115 at 1024 and
+ *      +39 at 1100 on a doc page; its dropdown, anchored `right: 0` to a button half
+ *      off-screen, opened where it could not be read.
+ *
+ *    So `scrollWidth` alone cannot gate this: it reports zero across the entire clipped
+ *    band. The second metric — the last menu child's `getBoundingClientRect().right`
+ *    against `clientWidth` — is the one that can see it, and a doc page is the tight case
+ *    because `.content` reserves a 272px padding-left for the sidebar column.
+ *
+ *    Unlike the full-bleed-band gate in routes.spec.ts, neither metric here skips under
+ *    overlay scrollbars: the overhang is hundreds of pixels, not one scrollbar. Both were
+ *    verified non-vacuous by putting the breakpoint back and watching them go red.
+ */
+test.describe("the nav bar fits the viewport", () => {
+  /** The last real child of the desktop menu, or `null` when the hamburger is up. */
+  const lastItemOverhang = (page: import("@playwright/test").Page) =>
+    page.evaluate(() => {
+      const items = [...document.querySelectorAll(".VPNavBarMenu > *")].filter(
+        (e) => e.getBoundingClientRect().width > 3,
+      );
+      if (items.length === 0) return null;
+      const r = items[items.length - 1]!.getBoundingClientRect();
+      return Math.round(r.right) - document.documentElement.clientWidth;
+    });
+
+  // The band VitePress used to open the desktop row in, its edges, and the first width
+  // where the row is meant to be back.
+  for (const width of [768, 800, 900, 959, 960, 1000, 1024, 1100, 1151, 1152]) {
+    for (const route of ["/", "/guide"]) {
+      test(`${route} at ${width}px: no page overflow, and no nav item off the edge`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(route);
+        const m = await page.evaluate(() => {
+          const de = document.documentElement;
+          return { over: de.scrollWidth - de.clientWidth };
+        });
+        expect(m.over, `${route} overflows its client width by ${m.over}px at ${width}px`).toBe(0);
+        // The metric `scrollWidth` cannot provide: above 960 the nav is `position: fixed`,
+        // so a too-wide row is clipped rather than scrolled and `over` stays 0.
+        const overhang = await lastItemOverhang(page);
+        if (overhang !== null) {
+          expect(
+            overhang,
+            `the last nav item hangs ${overhang}px past the viewport on ${route} at ${width}px — ` +
+              `clipped, not scrolled, so page overflow is still 0`,
+          ).toBeLessThanOrEqual(0);
+        }
+      });
+    }
+  }
+
+  for (const width of [375, 1024]) {
+    test(`below 1152 (${width}px) the hamburger reaches every nav destination`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/");
+      await expect(page.locator(".VPNavBarHamburger")).toBeVisible();
+      await expect(page.locator(".VPNavBarMenu")).toBeHidden();
+      await page.locator(".VPNavBarHamburger").click();
+      const screen = page.locator(".VPNavScreen");
+      await expect(screen).toBeVisible();
+      for (const item of ["Guide", "Reference", "Examples", "Showcase", "AI Agents", "Playground", "Ecosystem"]) {
+        await expect(
+          screen.getByText(item, { exact: true }).first(),
+          `"${item}" is unreachable at ${width}px`,
+        ).toBeVisible();
+      }
+    });
+  }
+
+  for (const width of [1152, 1440]) {
+    test(`at ${width}px the desktop row is back, whole and on screen`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/guide");
+      await expect(page.locator(".VPNavBarHamburger")).toBeHidden();
+      const menu = page.locator(".VPNavBarMenu");
+      await expect(menu).toBeVisible();
+      for (const item of ["Guide", "Reference", "Examples", "Showcase", "AI Agents", "Playground", "Ecosystem"]) {
+        await expect(menu.getByText(item, { exact: true }).first(), `"${item}" left the desktop bar`).toBeVisible();
+      }
+      expect(await lastItemOverhang(page), `the desktop row is clipped at ${width}px`).toBeLessThanOrEqual(0);
+    });
+  }
+});

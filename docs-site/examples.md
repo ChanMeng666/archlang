@@ -13,8 +13,9 @@ going with the full editor.
 They are ordered as a tour rather than an inventory: a plan you can read in one screen
 first, then houses, then the large public buildings, then the drawings that exist to
 prove one language feature. Every figure quoted below comes from
-[`arch describe --json`](/analysis) on the file itself, so the prose and the drawing
-cannot disagree.
+[`arch describe --json`](/analysis) on the file itself — and every warning from
+`arch lint` / `arch validate` on the same file — so the prose and the drawing cannot
+disagree.
 
 Two things worth knowing before you start. A plan written as
 [`level` blocks](/reference#levels-a-multi-storey-building-v1-21) compiles to **one
@@ -37,12 +38,13 @@ It is the plan to read when you want to see how the surfaces above fit together 
 than in isolation: `site { street north }` names the facades a plot orientation lint
 rule can reason about; a `room … polygon` chamfers a reading nook off the study and an
 L-shaped master suite wraps its own ensuite; an `arc` wall edge bows a bay window off the
-living room; every door kind ships somewhere a builder would actually put it — hinged,
-sliding, pocket, bifold, barn; a `stair` carries the same id on both `level` blocks, so
-it is one shaft, not two symbols that happen to line up; a `void` opens a double-height
-gap over the living room; `roof overhang` draws the eaves on the upper storey; and a
-`component` authored once — `ensuite() { … }` — is `place`d twice with `mirror x`, so a
-pair of bathrooms share one definition and face opposite ways.
+living room; all six door kinds ship somewhere a builder would actually put one — hinged,
+sliding, pocket, bifold, barn and the `garage` door on the wing; a `stair` carries the
+same id on both `level` blocks, so it is one shaft, not two symbols that happen to line
+up; a `void` opens a double-height gap over the living room; `roof overhang` draws the
+eaves on the upper storey; and a `component` authored once — `ensuite() { … }` — is
+`place`d three times: twice on the bedroom band, the second with `mirror x` so the pair
+face opposite ways, and once more inside the master suite.
 
 `arch lint` still raises three warnings on it, on purpose: a bathroom reachable only
 through a bedroom, and two bedrooms whose windows don't face the equator side. Every
@@ -61,13 +63,14 @@ outside the wall line**. A two-storey family house on a 22 × 22 m suburban lot,
 them apart: a terrace is not floor area, so a ground surface appears in no `rooms[]`, no
 `schedule rooms` row and no access graph.
 
-Twelve [`outdoor`](/reference#outdoor-ground-outside-the-building-v1-31) surfaces cover
-eight of the nine kinds — the driveway that runs to the garage door, paving to the front
-door, a patio behind the living room and a deck off the kitchen, a `water` pool, lawns
-front and back, gravel for the bin and shed yard, planting on three boundaries, and a
-`balcony` off the main bedroom whose railing is derived on the three edges with no wall
-behind them. Each draws a **scale-aware** material hatch, so the pattern is the same size
-on the sheet here as it would be at 1:50. Two
+Fifteen [`outdoor`](/reference#outdoor-ground-outside-the-building-v1-31) surfaces cover
+all nine kinds — the driveway that runs to the garage door, paving to the front door and
+again between the patio and the deck, a patio behind the living room and a deck off the
+kitchen, a `water` pool, lawns front and back, gravel for the bin and shed yard, planting
+on two front beds and three boundaries, and — on the upper storey — a `balcony` off the
+main bedroom whose railing is derived on the three edges with no wall behind them. Each
+draws a **scale-aware** material hatch, so the pattern is the same size on the sheet here
+as it would be at 1:50. Two
 [`fence`](/reference#fence-a-boundary-line-on-the-ground-v1-31) runs post the lot: a
 `panel` enclosure round the pool — which is the drawing saying what the model does not,
 since ground obstructs nothing, water included — and a `picket` street frontage that
@@ -82,12 +85,12 @@ Which side that is is derived rather than written: the resolver asks which face 
 twenty-one outdoor fixture families furnish the garden, all at their catalogued
 footprints and none of them labelled.
 
-`arch lint` raises two warnings, both left in and named in the source. One is an aspect
-heuristic (the one bedroom with no equator-facing window). The other is a **finding**: the
-bathroom opens straight off the landing, and `describe --json`'s own `doors[].between`
-says so, but a balcony door counts as an exterior door, which grounds level 2 and stops
-the stair from being its arrival point — so the reachability walk starts inside a bedroom.
-The plan is right and the rule is not yet.
+`arch lint` raises exactly one warning, left in and named in the source: an aspect
+heuristic — `W_ROOM_NOT_EQUATOR_FACING` on the one habitable room with no south window,
+Bedroom 2 on level 2. On a two-band plan one bedroom has to take the street aspect, and
+the two rooms people sleep in longest get the garden, so this is the case where the
+drafter overrules the rule. `arch validate` is clean; `arch validate --strict` reports
+that one.
 
 <ArchLive :src="EXAMPLES['garden-house']" :rows="20" />
 
@@ -178,7 +181,7 @@ compile from nothing. Run `arch describe` / `arch lint` on it to see the
 
 ### Two-bedroom flat
 
-**5 rooms, 80 m², 3 doors, 4 windows** on a 10 × 8 m footprint at `scale 1:100` — a
+**5 rooms, 80 m², 5 doors, 5 windows** on a 10 × 8 m footprint at `scale 1:100` — a
 larger plan with a central corridor and several openings, placed absolutely at a real
 apartment's scale, with `north` reoriented.
 
@@ -197,10 +200,10 @@ door that opens toward a named room (`swing into`), and furniture anchored insid
 
 ### Furnished Flat (the drawn symbol catalogue)
 
-**7 rooms, 90.7 m², 6 doors, 6 windows** on an 8.4 × 10.8 m footprint — and
-**twenty-six of the thirty-two catalogued furniture kinds**, which is what it is here for.
-Every other example draws a fixture or two in passing; this one exercises all five symbol
-domains at once: a fitted kitchen run with an island and a dashed
+**7 rooms, 90.72 m², 6 doors, 6 windows** on an 8.4 × 10.8 m footprint — and **39 pieces
+across 38 of the 83 catalogued furniture families**, which is what it is here for. Every
+other example draws a fixture or two in passing; this one exercises all five *indoor*
+symbol domains at once: a fitted kitchen run with an island and a dashed
 [overhead cabinet](/furniture#how-a-symbol-is-drawn), a plumbed bathroom, two furnished
 bedrooms, a lounge and dining zone, and a utility room with a washer beside a dryer (the
 same box, told apart by the chords across its drum).
@@ -211,8 +214,11 @@ Two things to read in the source rather than the drawing. **Not one piece carrie
 [catalogued footprint](/furniture#the-symbol-catalogue) and derives the rotation from the
 wall, so the whole kitchen, bathroom and both beds are written without a hand-computed
 number. `offset` is where a piece's **centre** lands along the wall run, which is why a
-fitted run reads as a sequence of centres rather than corners. `arch validate --strict`
-is clean.
+fitted run reads as a sequence of centres rather than corners. `arch validate` is clean;
+`arch validate --strict` reports exactly one warning, named in the source so it is not
+mistaken for rot — `W_PATH_TOO_NARROW` on the walk into the kitchen, which the nav grid
+measures at 400 mm through the 1200 mm opening, and which is left standing rather than
+nudged away.
 
 <ArchLive :src="EXAMPLES['furnished-flat']" :rows="30" />
 
@@ -301,7 +307,8 @@ plan with `W_PATH_TOO_NARROW`.
 
 A compact house written as two
 [`level` blocks](/reference#levels-a-multi-storey-building-v1-21) — **3 rooms and 56 m² on
-the ground floor**, `paper A3` at `scale 1:50`. It compiles to two sheets
+the ground floor**, on `paper A3 landscape`. No `scale` is written: the sheet auto-fits,
+and the title block reports the 1:50 it chose. It compiles to two sheets
 (`two-storey.L1.svg`, `two-storey.L2.svg`), each with its own dimension chains and a title
 block stamped `LEVEL 1 — Ground floor` / `LEVEL 2 — First floor`. The settings and the
 `let`s sit *outside* the levels and apply to both: one building, one sheet spec, one scale.
@@ -381,8 +388,9 @@ A 90 × 40 m metro concourse — **12 rooms, 3600 m², 7 doors, 19 windows**, A2
 the big-public-building example. One fact organises the whole plan: a transit hall is two
 buildings that share a roof. The unpaid side is street, and anyone may stand in it; the paid
 side is platform, and the only way across is the gate line. So the drawing is a single
-300 mm partition running the full 90 m width, with nine `opening`s punched in it by a `for`
-loop — eight 800 mm gates and one 1200 mm wide aisle. Nothing else joins the two halves.
+300 mm partition running the full 90 m width, with nine `opening`s punched in it — eight
+800 mm gates from a `for` loop, and one 1200 mm wide aisle written beside them. Nothing
+else joins the two halves.
 
 That split is [declared](/reference#zones-wings-and-departments-v1-22), never inferred from
 position: `paid` is 1260 m² over 1 room, `unpaid` 1948 m² over 5, and back-of-house 80 m²
@@ -427,9 +435,10 @@ the default ruleset.
 
 ### Gallery L (rooms that are not rectangles)
 
-Two [polygonal rooms](/reference#polygonal-rooms-v1-23) — **2 rooms, 153 m²** at
-`scale 1:100`: an **L**-shaped gallery wrapping a **trapezoid** lobby, so the building has
-an angled south-west facade. `room polygon (x,y) …` replaces `at` + `size` with the room's
+Two [polygonal rooms](/reference#polygonal-rooms-v1-23) — **2 rooms, 153 m²** on
+`paper A3 landscape`, which auto-fits to 1:100: an **L**-shaped gallery wrapping a
+**trapezoid** lobby, so the building has an angled south-west facade.
+`room polygon (x,y) …` replaces `at` + `size` with the room's
 own ring, and everything downstream follows the ring rather than a bounding box — the
 gallery reports its exact **132 m²** (its box would claim 168), the two rooms read as
 adjacent across the boundary they actually share, and the label sits at the polygon's
