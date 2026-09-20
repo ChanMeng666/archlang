@@ -252,7 +252,12 @@
               <button data-pz="copypng" type="button" title="Copy PNG image" aria-label="Copy PNG">PNG</button>
             </div>
           </div>
-          <div id="facts" class="facts" aria-label="Plan facts"></div>
+          <!-- `role="group"` is what makes the `aria-label` count: `aria-label` on a bare
+               <div> with no role is not reliably exposed, so the strip had an accessible
+               name on paper and none in practice. It matters more since the storey
+               switcher landed — these figures now describe the SELECTED storey, not the
+               whole building, and the name is what says so. -->
+          <div id="facts" class="facts" role="group" aria-label="Plan facts"></div>
         </div>
         <div id="describe" class="tabview" role="tabpanel" aria-labelledby="tab-describe"></div>
         <div id="lint" class="tabview" role="tabpanel" aria-labelledby="tab-lint">

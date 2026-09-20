@@ -1731,6 +1731,42 @@ running on a route **with** a sidebar, which is the tight case.
 
 ---
 
+## Accessibility — axe findings that are NOT ours (2026-09-20)
+
+Found by the first `a11y-loop` pass over the rebuilt landing page, a doc page and the playground
+(five passes each: default, dark, forced-colors, reduced-motion, 320px reflow; the playground also
+driven through three storey-switcher states). **Everything this batch built came back clean** — the
+nine-sheet landing page reported 0 violations, and all three switcher states reported 0. The
+findings below pre-date it and are logged so they are not rediscovered from scratch.
+
+### A.1 · VitePress sidebar section headers promise button behaviour they do not keep — `todo`
+
+5 × **SC 2.1.1 Keyboard (Level A)**. `#VPSidebarNav … div.item` carries `role="button"` and
+`tabindex="0"` but activates on neither Enter nor Space, so a keyboard user can focus a collapsible
+section and not collapse it. Upstream `VPSidebarItem.vue` (`data-v-b3fd67f8`), not our theme — the
+fix means shadowing the component or adding a keydown handler, so it wants its own change. Real,
+and live.
+
+### A.2 · Playground — three pre-existing violations — `todo`
+
+`scrollable-region-focusable` ×2 (SC 2.1.1) on two scrollable panes with no keyboard access;
+`focus-not-visible` (SC 2.4.7) on CodeMirror's `.cm-content`; `reflow-horizontal-scroll`
+(SC 1.4.10) on `header > .tb-cell:nth-of-type(2)` at 320 px. That header cell is the View select —
+nothing this batch touched. The CodeMirror one is upstream CM6.
+
+### A.3 · Do NOT re-report these two — they are measurement artifacts
+
+**21 `keyboard-unreachable` on `/guide` are a tool budget, not a focus trap.** The walk gives up
+after 60 Tab steps and the sidebar alone spends most of them. Driven manually: the code copy button
+takes focus at step **62**, the footer credit link at **77**, and the cycle repeats every 82 steps
+(77 → 159 → 241 → 323). The tab order is complete.
+
+**91 `color-contrast` needsReview on the landing page are inside the compiled SVG plans.** axe
+cannot resolve a background through the shape stack and says so — "could not be determined because
+it is overlapped by another element". The room labels are `#222222` on sheet paper: **15.90:1** on
+white, **14.22:1** on `--paper`. Both pass AA and AAA. Resolve by reasoning about the source, never
+by widening a rule.
+
 ## Wave 4 — P2 language features
 
 Designed and evidenced in `docs/research/2026-08-06-competitor-borrowing-roadmap.md` §5. Each one
