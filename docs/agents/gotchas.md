@@ -15,6 +15,22 @@
   config (`tsc -p tsconfig.dev.json --listFiles` names every file the program actually pulls in),
   and fix it IN the shared module (guard or a provably-safe assertion), never by relaxing the root
   option or adding an exclude.
+- **A quoted dimension must name its convention, or carry a tilde.** Every plan with a
+  `wall … thickness` has TWO legitimate sizes — the wall centrelines (`describe --json`'s `bbox`,
+  and what the `let W`/`let D` in an example usually are) and the outer faces (`bbox_outer`) — so a
+  bare "5.2 × 10.7 m" is under-specified by construction, and a reader cannot tell a convention
+  choice from an error. Two instances shipped. Landing-page card A-102 said "a 5.2 × 10.7 m terrace
+  **footprint**" for `townhouse`, which is the centreline pair under a word that means the outside
+  face (`bbox_outer` is 5500 × 11000); and `examples/aquarium.arch` opened with "~60 x 46 m" for a
+  shell that closes at `(60000,40000)` — wrong under either convention, and shipped since v1.24
+  while `docs-site/examples.md` had 60 × 40 right all along. **Settle it with
+  `arch describe <file> --json --select bbox,bbox_outer`** and then write one of: the qualified form
+  ("outer faces 5500 x 11000", "12 × 14 m bounding box", "22 × 22 m suburban lot"), or a tilde on a
+  round figure that is true either way ("~50 x 32 m" — the outer face is 50.3 × 32.3). Both forms
+  are already in the corpus and are why the other sixteen quoted dimensions survived the 2026-09-20
+  sweep. **Deliberately NOT gated:** whether a number is the right one for the sentence around it is
+  not decidable from prose, and a guard that cannot decide would either pass everything or block
+  honest wording — don't build one.
 - **Don't edit `dist/` or generated files.** `dist/` is a build output. The generated artifacts —
   editor grammars (`editors/archlang.tmLanguage.json`, `playground/src/arch-language.js`,
   `docs-site/.vitepress/theme/arch-highlight.js`),
