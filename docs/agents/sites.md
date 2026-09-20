@@ -32,7 +32,13 @@ read 0010's carbon/mylar prose as history) and `brand/README.md`.
   Variable** (body) + **IBM Plex Mono** (code).
 - **Token-lockstep law.** The brand token block is **duplicated byte-identically** in
   `docs-site/.vitepress/theme/style.css` and `playground/src/styles/tokens.css` — change one, change
-  the other (the brand iron law in [iron-laws.md](iron-laws.md)).
+  the other (the brand iron law in [iron-laws.md](iron-laws.md)). The playground's static example pages are a
+  THIRD consumer and deliberately not a third copy: `playground/scripts/gen-static.mjs` slices the
+  block out of `tokens.css` on the same content anchor `test/site-lockstep.test.ts` uses and inlines it
+  into each page's own `<style>`, so every rule there is a `var()`. It harvests its `@font-face` rules
+  the same way — from `playground/dist/assets/*.css`, i.e. vite's own output, unioned across ALL of
+  them — and exits 1 if a family `tokens.css` names has no face. Both are guarded; see the two `(Sites)`
+  font/token entries in [gotchas.md](gotchas.md) for what shipped before they existed.
 - **Machine-readable routes.** `sync-docs.mjs` publishes at the docs-site root a raw markdown copy of
   every generated page at `/<route>.md` plus **`/plan.schema.json`** + **`/archlang.gbnf`** — the copies
   live in `public/`, excluded from page parsing so they serve verbatim.

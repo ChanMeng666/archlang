@@ -29,6 +29,7 @@ const STYLE_CSS = "docs-site/.vitepress/theme/style.css";
 const GEN_GRAMMARS = "scripts/gen-grammars.ts";
 const VP_CONFIG = "docs-site/.vitepress/config.ts";
 const EDITOR_SETUP = "playground/src/editor-setup.ts";
+const GEN_STATIC = "playground/scripts/gen-static.mjs";
 
 const read = (f: string) => readFileSync(f, "utf8");
 
@@ -231,5 +232,87 @@ describe("the CodeMirror lint squiggles keep the redline/warn hexes they inline 
       `${EDITOR_SETUP}'s warning squiggle no longer matches \`--warn-ink\` in ${TOKENS_CSS} (same ` +
         `hand-inlined data-URI hex law as the error squiggle).`,
     ).toBe(tokenValue(block, "warn-ink"));
+  });
+});
+
+describe("the static example pages INLINE the token block — they no longer retype it", () => {
+  const gen = read(GEN_STATIC);
+  const block = sharedTokenBlock(TOKENS_CSS, read(TOKENS_CSS));
+
+  /**
+   * `gen-static.mjs`'s inline stylesheet, sliced on its own content anchors. These pages
+   * load no CSS FILE, which is why every colour in here used to be a hand-typed hex
+   * carrying the token's name in a trailing comment — and why nothing could tell when a
+   * copy drifted. `--font-mono` had in fact already lost `"Cascadia Code"` against
+   * tokens.css by the time this gate was written. A `var()` cannot reach ACROSS to
+   * tokens.css, but it resolves perfectly against the real block inlined into the page's
+   * own `<style>`, so the generator inlines it and references it. This describe holds
+   * that shape: no literal may creep back.
+   */
+  const style = (() => {
+    const open = gen.indexOf("const STYLE = `");
+    expect(open, `${GEN_STATIC} no longer declares \`const STYLE = \``).toBeGreaterThan(-1);
+    const end = gen.indexOf("`.trim();", open);
+    expect(end, `${GEN_STATIC}: the STYLE template literal is unterminated.`).toBeGreaterThan(open);
+    return gen.slice(open, end);
+  })();
+
+  it("carries no colour literal at all — every colour is a var()", () => {
+    expect(
+      style.match(/#[0-9a-fA-F]{3,8}\b/g) ?? [],
+      `a literal colour in ${GEN_STATIC}'s STYLE is a COPY of a token in ${TOKENS_CSS}, and nothing ` +
+        `diffs the two. Use \`var(--token)\` — the real block is inlined above these rules.`,
+    ).toEqual([]);
+    expect(
+      style.match(/\b(?:rgba?|hsla?|oklch|oklab)\s*\(/g) ?? [],
+      `same law as the hexes: a literal colour function in STYLE is an un-diffed copy. ` +
+        `\`color-mix(in oklab, var(--token) …)\` is the supported way to derive one.`,
+    ).toEqual([]);
+  });
+
+  it("retypes none of the three font stacks", () => {
+    expect(
+      style.match(/Archivo|Public Sans|IBM Plex|Segoe UI|ui-monospace|sans-serif|monospace/g) ?? [],
+      `${GEN_STATIC}'s STYLE names a font family directly. The three stacks live in ${TOKENS_CSS} as ` +
+        `--font-display/--font-body/--font-mono; a retyped copy is what silently dropped "Cascadia Code" ` +
+        `from the mono stack on 27 published pages.`,
+    ).toEqual([]);
+  });
+
+  it("re-declares no shared token — it inherits them", () => {
+    for (const name of ["src-bg", "src-fg", "paper", "ink", "hairline", "redline", "plum-deep", "font-mono"]) {
+      expect(
+        style,
+        `${GEN_STATIC}'s STYLE re-declares \`--${name}\` instead of inheriting it from the inlined block.`,
+      ).not.toMatch(new RegExp(`--${name}s*:`));
+    }
+    expect(
+      gen,
+      `${GEN_STATIC} must READ ${TOKENS_CSS} (readTokenBlock) rather than embed a copy of its values.`,
+    ).toMatch(/"styles",\s*"tokens\.css"/);
+  });
+
+  it("every var() it uses is declared — by the token block or by its own local scale", () => {
+    const declared = new Set([
+      ...[...block.matchAll(/--([a-z0-9-]+)\s*:/g)].map((m) => m[1]!),
+      ...[...style.matchAll(/--([a-z0-9-]+)\s*:/g)].map((m) => m[1]!),
+    ]);
+    const used = [...new Set([...style.matchAll(/var\(--([a-z0-9-]+)/g)].map((m) => m[1]!))];
+    expect(
+      used.filter((name) => !declared.has(name)),
+      `${GEN_STATIC}'s STYLE references var(--…) names that neither ${TOKENS_CSS} nor its own local ` +
+        `scale declares. On these pages an undeclared var() resolves to nothing and the rule silently ` +
+        `does not apply — exactly the failure mode this file exists to make loud.`,
+    ).toEqual([]);
+  });
+
+  it("the theme-color meta — the one literal that cannot be a var() — is --src-bg", () => {
+    const m = /name="theme-color" content="(#[0-9a-f]{3,8})"/.exec(gen);
+    expect(m, `${GEN_STATIC} no longer emits a \`theme-color\` meta.`).toBeTruthy();
+    expect(
+      m![1],
+      `${GEN_STATIC}'s \`theme-color\` drifted from \`--src-bg\` in ${TOKENS_CSS}. A meta ATTRIBUTE ` +
+        `cannot hold a var(), so this hex is inlined by hand — same law as the CodeMirror squiggles above.`,
+    ).toBe(tokenValue(block, "src-bg"));
   });
 });

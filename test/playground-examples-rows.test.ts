@@ -226,6 +226,34 @@ describe("the static page generator reads this table, and nothing else hand-list
     expect(gen).toMatch(/examples\/\$\{r\.name\}\.html/);
   });
 
+  it("the @font-face rules are DERIVED from vite's output, never hand-typed", () => {
+    // These pages load no stylesheet, so a family they NAME but never DECLARE falls back
+    // to the system UI stack — silently, with a 200 on every route. That is what they
+    // shipped with. The fix must stay a derivation: a hand-written @font-face block goes
+    // stale the day a weight is added, and nothing here would see it.
+    expect(genCode, "a hand-typed @font-face src").not.toMatch(/src:\s*url\(/);
+    expect(gen, "the generator must READ vite's emitted stylesheets").toMatch(/readdirSync/);
+    expect(gen).toMatch(/@font-face/);
+    // ...and hard-fail rather than publish a page whose fonts silently did not load.
+    expect(gen).toMatch(/no @font-face for/);
+  });
+
+  it("a gallery thumbnail is compiled, never hand-sized", () => {
+    expect(gen, "the thumbnail's pixel box must come from compile(), not from arithmetic here").toMatch(
+      /compile\(source, \{ width:/,
+    );
+    expect(gen, "a lazily loaded thumbnail with no intrinsic size reflows the whole grid").toMatch(/loading="lazy"/);
+    expect(gen).toMatch(/width="\$\{t\.w\}" height="\$\{t\.h\}"/);
+  });
+
+  it("each gallery card carries exactly one link", () => {
+    // The e2e asserts `ul.plans a[href="/examples/studio.html"]` resolves to ONE element,
+    // and a second <a> per card would also give a screen reader 27 duplicated stops.
+    // Scoped to anchor hrefs — `sitemap()` builds its <loc>s from the same template.
+    expect(gen.match(/href="\/examples\/\$\{r\.name\}\.html"/g) ?? []).toHaveLength(1);
+    expect(gen, "the thumbnail is decorative: the link text already names the plan").toMatch(/alt=""/);
+  });
+
   it("the reachability clause is gated on describe(), not asserted for every plan", () => {
     // "every room is reachable from the entrance" is one of exactly three claimable
     // measurements, and two shipped examples (themed, relational) have no entrance

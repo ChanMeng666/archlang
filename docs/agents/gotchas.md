@@ -179,6 +179,23 @@
   why the CTAs and the terminal once carried literal `#b3261e` / `#f0705f`. ADR 0014 retired all of
   them.) The one legitimate literal left is the CodeMirror lint squiggle's data-URI hex — a `var()`
   cannot cross into an SVG — so keep it in step with `--redline` / `--warn-ink` by hand.
+- **(Sites) A page that NAMES a font but never DECLARES it fails silently, everywhere, forever.** The
+  playground's 27 static example pages load no stylesheet, so for 27 releases their inline `<style>`
+  asked for Archivo / Public Sans / IBM Plex Mono and shipped **zero** `@font-face` — every heading and
+  every listing rendered in the system UI stack, with a 200 on every route, a green suite and a green
+  `check:drift`. Nothing that reads BYTES can see it; only something that RENDERS them can. The pages
+  now harvest their `@font-face` rules out of `playground/dist/assets/*.css` (vite's own output — one
+  copy of each file, and `/assets/*` is already `immutable` in `_headers`) and `gen-static.mjs` exits 1
+  if a family `tokens.css` names has no face. Union EVERY stylesheet under `dist/assets/`, not just the
+  entry chunk: **Public Sans, the body face, is only in the lazily loaded `panels-*.css`**, so a
+  single-file parse ships a display font and no body font and looks like it worked. The standing gate is
+  `playground/e2e/examples-static.spec.ts`'s `document.fonts` case.
+- **(Sites) That same stylesheet used to RETYPE the token block, and it had already drifted** — its
+  `--font-mono` had lost `"Cascadia Code"` against `tokens.css`. These pages cannot `var()` ACROSS to
+  `tokens.css`, but a `var()` resolves fine against the real block inlined into the page's own
+  `<style>` — which is what `readTokenBlock()` now does, so there is no copy to drift. `theme-color` is
+  the one literal left (a meta ATTRIBUTE cannot hold a `var()`), pinned like the squiggle hexes by
+  `test/site-lockstep.test.ts`.
 - **(Sites) The public hosts are `archlang.uk` / `playground.archlang.uk`, served by Cloudflare
   Workers — the old `*.vercel.app` URLs are gone from source AND gone from the internet** (they used
   to 301 onward; they died with the Vercel projects in the 2026-09 hosting migration, which changed

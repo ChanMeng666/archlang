@@ -7,6 +7,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — the playground's 27 static example pages had never had a layout pass, and had never loaded a font
+
+- **Header and footer sat flush against the viewport edge.** Both were siblings of
+  `main.wrap` with no container of their own, so at a 1422 px viewport `footer.site`
+  measured `left: 0, width: 1405px` — its text started at x=0 while the body copy above it
+  started at x≈200 — and, being the last box in the document, it had no bottom padding at
+  all. Both now use the docs site's band/inner pattern (a full-bleed band carries the
+  background and the vertical padding, an inner carries the 1152 px width and the gutters),
+  so header, content and footer content begin on the same x at every width — measured at
+  320/375/768/1152/1440 px.
+- **The pages NAMED three brand faces and DECLARED none of them.** They load no stylesheet
+  and carried zero `@font-face`, so for 27 releases every heading and every source listing
+  rendered in the system UI stack — with a 200 on every route, a green suite and a green
+  `check:drift`. Every `font-variation-settings` rule the house style depends on was a
+  no-op. Nothing that reads bytes could see it; only something that renders them can, which
+  is why the new gate is a `document.fonts` assertion in
+  `playground/e2e/examples-static.spec.ts`. The rules are now harvested from
+  `playground/dist/assets/*.css` — vite's own output, so there is one copy of each file and
+  `/assets/*` is already `immutable` in `_headers` — unioned across **every** stylesheet,
+  because Public Sans (the body face) lives only in the lazily loaded `panels-*.css` and a
+  single-file parse would have shipped a display font and no body font. `gen-static.mjs`
+  exits 1 if a family `tokens.css` names has no face.
+- **The stylesheet retyped the token block, and it had already drifted:** its `--font-mono`
+  had lost `"Cascadia Code"` against `tokens.css`, and nothing compared the two. A `var()`
+  cannot reach across to `tokens.css`, but it resolves fine against the real block inlined
+  into the page's own `<style>` — so the block is now sliced out of `tokens.css` (on the same
+  content anchor `test/site-lockstep.test.ts` uses) and every colour is a `var()`. A new
+  describe there fails on any colour literal, any retyped font stack, any re-declared token
+  and any undeclared `var()`; all six clauses were fault-injected and shown to go red.
+  `theme-color` is the one literal left — a meta attribute cannot hold a `var()` — and is
+  pinned to `--src-bg` like the CodeMirror squiggle hexes.
+- **`pre.source` scrolled sideways on a narrow screen with no way to reach it by keyboard**
+  (WCAG 2.1.1). It now carries `tabindex="0"` and a focus ring. Present on production today;
+  found by axe's reflow pass. Breadcrumb links were distinguished from the surrounding text
+  by hue alone at 1.01:1 (WCAG 1.4.1) and are now underlined. `/examples/` goes from one
+  automatically detectable failure to none; the detail page's remaining one is axe's
+  forced-colors artifact, which production reports identically with the old CTA.
+
+### Added — the example index is a gallery, and each page is a drawing sheet
+
+- **`/examples/` is a responsive card grid, each card a real miniature of the compiled plan**
+  (`/examples/thumbs/<name>.svg`, lazily loaded, 715 KB for all 27). The thumbnail is
+  `compile(source, { width: 480 })` — so the compiler writes the pixel box from its own
+  viewBox, and a `paper` plan's millimetre sheet size is overridden — with the `A-ANNO*`
+  layers dropped by the layer id the renderer itself wrote. At card size the schedules and
+  dimension strings are sub-pixel fuzz that reads as a dirty tile; what is left is the poché
+  massing, which is legible, and it halves the bytes. Open/close parity is asserted, and a
+  row that cannot produce a drawing stops the build rather than publishing a blank tile. The
+  `<img>` carries the intrinsic `width`/`height` parsed off that root tag, so a lazy
+  thumbnail cannot reflow the grid; it is `alt=""` with exactly one `<a>` per card, because
+  the link's visible text already names the plan.
+- **The footer is a drawing's title block** — the docs site's device, ported: an ident row
+  and a fully ruled cell grid (Project · Drawn by · Licence · Plans · Sheet · Ecosystem),
+  with `Sheet` a real per-page value. It uses flex rather than the docs' `auto-fit` grid,
+  whose tracks size to the widest row and left the top rule hanging past a five-cell row.
+- **The header is a product bar** echoing the editor's own toolbar (mark, `Arch`Lang
+  wordmark, `Playground` chip), so arriving from the app does not feel like arriving
+  somewhere else. The `h2` rules are the docs site's dimension line, witness ticks included.
+  The CTA moves from plum to **REDLINE**, which `docs/agents/sites.md` has always said is the
+  single attention accent for CTAs — `--src-surface` on `--redline` is 5.26:1, and the hover
+  darkens to `--redline-ink` so contrast rises rather than falls.
+
+
 ### Fixed — the nightly secret scan was red on five false positives, excluded by fingerprint
 
 - **The nightly `secrets` job had been RED since 2026-09-18** with every other nightly job

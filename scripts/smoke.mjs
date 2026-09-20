@@ -258,6 +258,25 @@ const entryScript = () => async (body, _res, ctx) => {
   ctx.notes.push(`entry ${entry} (${js.length} bytes)`);
 };
 
+/**
+ * Pull the first `url(/assets/*.woff2)` out of a page's inline @font-face rules and
+ * fetch it. The static example pages load no stylesheet, so a family they NAME but never
+ * DECLARE — or declare against a path that 404s — renders in the system UI stack with a
+ * 200 on every HTML route and nothing else here the wiser. Same shape as `entryScript`:
+ * the page is fine, the pipeline behind it is not.
+ */
+const inlineFont = () => async (body, _res, ctx) => {
+  const m = /url\((\/assets\/[^)"']+\.woff2)\)/.exec(body);
+  if (!m) throw new Error(`no inline @font-face url(/assets/*.woff2) in ${ctx.path}`);
+  const url = new URL(m[1], ctx.base).href;
+  const { res } = await fetchOk(url);
+  const ct = res.headers.get("content-type") ?? "";
+  if (!ct.toLowerCase().includes("font") && !ct.toLowerCase().includes("woff")) {
+    throw new Error(`${url} served as "${ct}", expected a font`);
+  }
+  ctx.notes.push(`font ${m[1]}`);
+};
+
 function playgroundChecks() {
   return [
     // Markers are the app's mount points in playground/index.html + embed.html.
@@ -290,11 +309,23 @@ function playgroundChecks() {
     // must carry both a heading and an inlined `<svg>`, because a page that reached
     // production with the prose but no drawing (a missing repo-root `dist/`, a
     // generator that silently wrote a shell) is exactly the failure nothing else sees.
-    route("/examples/one-room.html", contentType("text/html"), contains("<h1"), contains("<svg")),
+    route(
+      "/examples/one-room.html",
+      contentType("text/html"),
+      contains("<h1"),
+      contains("<svg"),
+      // The page declares its own faces and serves them from /assets/ — see inlineFont.
+      contains("@font-face"),
+      inlineFont(),
+    ),
     // A directory URL, served through the status-200 rewrite in public/_redirects —
     // the same mechanism the site root uses, and the one the sitemap and every
     // breadcrumb point at.
-    route("/examples/", contentType("text/html"), contains("<h1")),
+    route("/examples/", contentType("text/html"), contains("<h1"), contains("/examples/thumbs/")),
+    // A gallery thumbnail: the one asset these pages reference from a second path, so a
+    // generator that stopped writing them leaves an index of 27 broken tiles behind a
+    // perfectly healthy 200.
+    route("/examples/thumbs/one-room.svg", contentType("image/svg+xml"), isSvg()),
     route("/sitemap.xml", contains("<urlset"), contains("/examples/one-room.html")),
     // The header, not the meta tag: it is what a crawler that never parses the markup
     // acts on, and it comes from public/_headers, which nothing else here executes.

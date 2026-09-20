@@ -89,4 +89,45 @@ test.describe("static example pages", { tag: "@prod" }, () => {
     expect(await links.count()).toBeGreaterThanOrEqual(20);
     await expect(page.locator('ul.plans a[href="/examples/studio.html"]')).toHaveCount(1);
   });
+
+  test("the index's gallery thumbnails all resolve, at a declared intrinsic size", async ({ page }) => {
+    // The thumbnails are the one thing on these pages served from a SECOND path
+    // (`/examples/thumbs/<name>.svg`), so this is the case that catches a generator
+    // that stopped writing them, or wrote them somewhere the site does not serve.
+    const problems = watchForProblems(page);
+    await page.goto("/examples/", { waitUntil: "networkidle" });
+
+    const thumbs = page.locator('ul.plans a[href^="/examples/"] img');
+    expect(await thumbs.count()).toBeGreaterThanOrEqual(20);
+
+    const first = thumbs.first();
+    // Integer width/height, so a lazily loaded thumbnail cannot reflow the grid under
+    // the reader as it arrives.
+    await expect(first).toHaveAttribute("width", /^\d+$/);
+    await expect(first).toHaveAttribute("height", /^\d+$/);
+    // Decorative: the link's own text already names the plan, and the compiler's
+    // caption is served twice on the page the card opens.
+    await expect(first).toHaveAttribute("alt", "");
+    await expect(first).toHaveAttribute("loading", "lazy");
+
+    expect(problems.badResponses, "4xx/5xx responses").toEqual([]);
+    expect(problems.failedRequests, "failed requests").toEqual([]);
+  });
+
+  test("the brand faces actually LOAD — not a silent fall back to the system stack", async ({ page }) => {
+    // These pages load no stylesheet, so for 27 releases they NAMED three families and
+    // declared none of them: every heading and every code listing rendered in the system
+    // UI font, with a 200 on every route and a green suite. Nothing in the repo could
+    // see it, because every other check reads bytes rather than rendering them.
+    // `document.fonts` is the one observation that can tell the difference.
+    await page.goto("/examples/studio.html", { waitUntil: "networkidle" });
+
+    const loaded = await page.evaluate(async () => {
+      await document.fonts.ready;
+      return [...document.fonts].filter((f) => f.status === "loaded").map((f) => f.family);
+    });
+    for (const family of ["Archivo Variable", "Public Sans Variable", "IBM Plex Mono"]) {
+      expect(loaded, `${family} is named by the stylesheet but never actually loaded`).toContain(family);
+    }
+  });
 });
