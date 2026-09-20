@@ -157,36 +157,50 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   The desktop nav appears at 960px, not 768px.
+   The desktop nav appears at 1152px, not 768px — the width at which it FITS.
 
    VitePress reveals the whole desktop nav row the instant the hamburger is
    dismissed, at `min-width: 768px`. That is right for a three-item bar and
    wrong for ours: eight destinations (Guide / Reference / Examples / Showcase /
    AI Agents / Playground / Ecosystem, plus the "…" flyout) measure 684 px of
-   menu beside a 105 px title, and the row's narrowest overflow-free viewport
-   is 960 px — MEASURED, by binary search on `document.scrollWidth -
-   clientWidth`, identically on `/` and `/guide`. So the site shipped a window
-   of exactly [768, 960) in which every page scrolled sideways: 272 px of page
-   overflow at 768, 240 at 800, 140 at 900, zero at 960. It is site chrome, so
-   it was on every route, not just the landing page.
+   menu beside a 105 px title, so the row does not fit until 1152.
 
-   960 is not a number chosen to make the symptom go away. It is VitePress's own
-   NEXT layout breakpoint — where the sidebar appears, where `.VPNav` becomes
-   `position: fixed`, where the doc layout goes wide. The top nav was simply
-   arriving 192 px before the rest of the desktop layout it belongs to. Below
-   960 the hamburger persists, and its nav screen carries every destination the
-   bar does (21 links, all keyboard-focusable) plus the social links, so nothing
-   becomes unreachable at any width.
+   THE FAULT HAS TWO FACES, AND ONLY ONE OF THEM SCROLLS. Below 960 `.VPNav` is
+   `position: relative`, so the overflowing row grows the document and the whole
+   page scrolls sideways: 272 px at 768, 240 at 800, 140 at 900. At 960 VitePress
+   makes `.VPNav` `position: fixed` — and a fixed element's overflow NEVER grows
+   the document. The row does not start fitting there; it starts being CLIPPED at
+   the viewport edge instead, silently, while `scrollWidth - clientWidth` reads
+   zero. Measured overhang of the last nav item ("Ecosystem"), which is the metric
+   that can see it:
 
-   Rejected, for the record. (a) SHRINKING the row: fitting 768 needs 272 px —
-   40 % — off a 684 px menu; tightening the 12 px item padding to 6 px and the
-   14 px label to 13 px buys about 110 px, which moves the cliff to ~850 and
-   leaves 768–850 broken, while degrading the labels at 1440 where nothing is
-   wrong. (b) DROPPING or REGROUPING nav items: that would buy the width, but it
-   hides Showcase and AI Agents behind a second click at EVERY width including
-   1920, and which destinations earn a top-level slot is a product decision the
-   `nav` block in config.ts already reasons about — not something a layout fix
-   should settle quietly.
+       /        960:+44  980:+24  1000:+4  1024:ok
+       /guide   960:+179 1000:+139 1024:+115 1100:+39 1152:ok
+
+   So on every doc page at 1024 and 1100 — ordinary laptop and tablet-landscape
+   widths — the last entry was severed and its dropdown, anchored `right: 0` to a
+   button half off-screen, opened where it could not be read. A doc page is the
+   tight case because `.content` reserves a 272 px padding-left for the sidebar
+   column; 1152 is the first width at which the row clears BOTH faces on BOTH
+   layouts, and it is a real device width rather than a bare `+1` off the
+   measurement. Never set this breakpoint from `scrollWidth` alone: that number
+   is 0 across the entire clipped band.
+
+   Below 1152 the hamburger persists, and its nav screen carries every
+   destination the bar does (21 links, all keyboard-focusable) plus the social
+   links, so nothing becomes unreachable at any width.
+
+   Rejected, for the record. (a) SHRINKING the row: on a doc page at 960 the space
+   left after the sidebar gutter, the 183 px search box and the padding is 473 px
+   against 684 px of menu — a 211 px deficit, and the whole non-IA budget is
+   84 px (item padding 12 → 6) + ~30 px (14 px → 13 px labels) + ~40 px (dropping
+   the `Ctrl K` chip) = 154 px. It cannot reach, and it degrades the bar at 1440
+   where nothing is wrong. (b) CUTTING the top level from seven items to five
+   (Showcase 91 px + Ecosystem 113 px = 204 px) DOES reach, and is the
+   structurally right answer — but Showcase is deliberate outreach material and
+   demoting it is a content-strategy call, not something a CSS fix should settle
+   on its own schedule. Owner decision 2026-09-20: take the breakpoint now, keep
+   the IA; (b) is logged in `docs/backlog.md` § N.1 with its costing.
 
    SPECIFICITY. Each rule below overrides a VitePress `<style scoped>` rule of
    the form `.VPNavBarMenu[data-v-…]` — an attribute selector counts as a class,
@@ -202,13 +216,13 @@
    Fixing it would mean forking `VPNav.vue` + `useNav()`, a far larger surface to
    keep in step with VitePress than this is worth.
    ══════════════════════════════════════════════════════════════════════════ */
-@media (min-width: 768px) and (max-width: 959.98px) {
+@media (min-width: 768px) and (max-width: 1151.98px) {
   header.VPNav .VPNavBar .VPNavBarMenu {
     display: none;
   }
 
-  /* The "…" flyout that carries the social links between 768 and 1280; below
-     960 they live in the nav screen instead, so it must not double up. */
+  /* The "…" flyout that carries the social links between 768 and 1280; while the
+     hamburger is up they live in the nav screen instead, so it must not double up. */
   header.VPNav .VPNavBar .VPNavBarExtra {
     display: none;
   }
