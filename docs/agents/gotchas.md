@@ -213,6 +213,19 @@
   background dies into its log while `curl` still answers 200 **from the other checkout**, so the
   numbers describe somebody else's branch. Give a measurement server a port of its own and gate it on
   a marker, never on a status code.
+- **(Parallel worktrees) A worktree is isolated from OTHER worktrees, not from a second actor in
+  the SAME one.** A reviewer verifying a branch and the agent writing it share one working directory,
+  and `git checkout` there is global to it: a throwaway `git checkout -b probe` silently redirects
+  every commit the other party makes until they check back out. Measured on 2026-09-20 — a reviewer
+  planted a secret-scanner probe on a temporary branch inside a live worktree; the agent's next
+  `git add -A && git commit` landed on the PROBE branch, the checkout back left the real branch
+  without that work, and the agent nearly reported it as delivered. The branch was then merged at its
+  stale tip and pushed, shipping a card sentence whose "above" inverted its own meaning. Nothing
+  fails: the commit succeeds, the tree is clean, and `git log` on the branch simply does not show it.
+  **Verify a branch from a SEPARATE checkout** (another worktree, or a clone), never by switching
+  branches inside one somebody is working in; if you must, `git -C` a different path rather than
+  `cd`+`checkout`. Before merging an agent's branch, re-read its tip — `git rev-parse` it against
+  what the agent last reported — because a stale tip merges cleanly and says nothing.
 - **(Parallel worktrees) A clean auto-merge is NOT evidence of correctness when one branch MOVED a
   function another MODIFIED.** v1.25.0's closest call: one agent fixed `windowFacing` in
   `describe.ts` while a second, branched earlier, *extracted that function into a new
