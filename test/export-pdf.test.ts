@@ -53,6 +53,15 @@
  * metres. Unreachable today (every `toScene` Scene carries `chrome`), so it is a latent trap
  * in a documented hand-built-Scene path rather than a shipped bug — pinned, and flipped when
  * fixed.
+ *
+ * **(d) Text is embedded, not Helvetica.** The backend drew with pdfkit's default
+ * standard-14 Helvetica (`/Encoding /WinAnsiEncoding`) and never registered a face, so every
+ * glyph outside Windows-1252 was silently dropped or remapped — Polish, Czech, Turkish,
+ * Greek and Cyrillic labels came out as mojibake. It now embeds the same bundled Roboto
+ * face the PNG backend uses (`doc.registerFont` + `doc.font`). That also means the content
+ * stream carries `/Identity-H` glyph IDs resolved through a `/ToUnicode` CMap — which is why
+ * {@link pdfStrings} decodes through that CMap rather than reading the hex back as character
+ * codes.
  */
 
 import { inflateSync } from "node:zlib";
@@ -125,23 +134,67 @@ function pageOps(pdf: Uint8Array): string {
   return ops;
 }
 
-const unhex = (hex: string) => {
+/** Decode a PDF hex string of UTF-16BE code units to text. */
+const uni = (hex: string) => {
   let s = "";
-  for (let i = 0; i + 1 < hex.length; i += 2) s += String.fromCharCode(Number.parseInt(hex.slice(i, i + 2), 16));
+  for (let i = 0; i + 3 < hex.length; i += 4) s += String.fromCharCode(Number.parseInt(hex.slice(i, i + 4), 16));
   return s;
 };
 
 /**
- * Every string drawn on the page, in draw order. pdfkit emits Helvetica text as hex
- * glyph runs inside one `TJ` array (`[<4C> -20 <656674> 0] TJ`); for a standard-14 font
- * the glyph codes are the character codes, so the hex decodes straight back to the label.
- * The runs of ONE array must be joined — kerning splits a word across several of them,
- * which is why "Left" is not a single `<…>`.
+ * The embedded font's `/ToUnicode` CMap, code point → text. An embedded TrueType
+ * face uses `/Encoding /Identity-H`, so a content-stream code is a GLYPH ID, not a
+ * character code; this map (written by pdfkit) is the only way back to the label.
+ * Handles both `beginbfchar` (`<src> <dst>`) and `beginbfrange` (`<lo> <hi> <dst>`
+ * plus the `<lo> <hi> [<dst> …]` array form the subset face emits).
+ */
+function toUnicodeMap(pdf: Uint8Array): Map<number, string> {
+  const map = new Map<number, string>();
+  for (const stream of inflatedStreams(pdf)) {
+    for (const block of stream.matchAll(/beginbfchar([\s\S]*?)endbfchar/g)) {
+      for (const m of block[1]!.matchAll(/<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]+)>/g)) {
+        map.set(Number.parseInt(m[1]!, 16), uni(m[2]!));
+      }
+    }
+    for (const block of stream.matchAll(/beginbfrange([\s\S]*?)endbfrange/g)) {
+      const body = block[1]!;
+      for (const m of body.matchAll(/<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]+)>\s*\[([\s\S]*?)\]/g)) {
+        const lo = Number.parseInt(m[1]!, 16);
+        [...m[3]!.matchAll(/<([0-9a-fA-F]+)>/g)].forEach((x, i) => {
+          map.set(lo + i, uni(x[1]!));
+        });
+      }
+      const scalar = body.replace(/\[[\s\S]*?\]/g, "");
+      for (const m of scalar.matchAll(/<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]+)>/g)) {
+        const lo = Number.parseInt(m[1]!, 16);
+        const hi = Number.parseInt(m[2]!, 16);
+        const dst = Number.parseInt(m[3]!, 16);
+        for (let c = lo; c <= hi; c++) map.set(c, String.fromCharCode(dst + (c - lo)));
+      }
+    }
+  }
+  return map;
+}
+
+/**
+ * Every string drawn on the page, in draw order. pdfkit emits text as hex glyph-ID
+ * runs inside one `TJ` array (`[<0001…> 0] TJ`); the codes resolve through the
+ * embedded font's `/ToUnicode` CMap (see {@link toUnicodeMap}). The runs of ONE
+ * array must be joined — kerning splits a word across several of them, which is why
+ * "Left" is not a single `<…>`.
  */
 function pdfStrings(pdf: Uint8Array): string[] {
+  const cmap = toUnicodeMap(pdf);
+  const decode = (hex: string) => {
+    let s = "";
+    for (let i = 0; i + 3 < hex.length; i += 4) {
+      s += cmap.get(Number.parseInt(hex.slice(i, i + 4), 16)) ?? "";
+    }
+    return s;
+  };
   const out: string[] = [];
   for (const m of pageOps(pdf).matchAll(/\[([^\]]*)\]\s*TJ/g)) {
-    out.push([...m[1]!.matchAll(/<([0-9a-fA-F]*)>/g)].map((h) => unhex(h[1]!)).join(""));
+    out.push([...m[1]!.matchAll(/<([0-9a-fA-F]*)>/g)].map((h) => decode(h[1]!)).join(""));
   }
   return out;
 }
@@ -269,13 +322,28 @@ describe("PDF export", () => {
   it("emits vector content with selectable text (no rasterized image)", async () => {
     const pdf = await toPdf(scene);
     const bytes = new TextDecoder("latin1").decode(pdf);
-    // A real text font (selectable text), and no image XObject (true vector).
-    // Note: pdfkit always lists /ImageB /ImageC /ImageI in /ProcSet — that is not
-    // an embedded image, so we check specifically for an image XObject subtype.
-    expect(bytes).toContain("Helvetica");
+    // A real, EMBEDDED text font (selectable text), and no image XObject (true
+    // vector). The bundled Unicode face replaces pdfkit's standard-14 Helvetica,
+    // which could not represent any label outside Windows-1252.
+    expect(bytes).toContain("Roboto");
+    expect(bytes).toContain("/FontFile2");
+    expect(bytes).toContain("/Identity-H");
     expect(bytes).not.toContain("/Subtype /Image");
     // …and the label really is text, not outlined into paths.
     expect(pdfStrings(pdf)).toContain("Room");
+  });
+
+  it("embeds a Unicode font so labels outside WinAnsiEncoding survive", async () => {
+    // The shipped bug: the PDF backend used pdfkit's default Helvetica
+    // (`/Encoding /WinAnsiEncoding`), so every glyph outside Windows-1252 was
+    // dropped or remapped — Polish came out as mojibake. The same bundled face the
+    // PNG backend uses now carries the text; this is the round-trip through the
+    // embedded subset's `/ToUnicode` CMap. Built from a string literal so the
+    // fixture itself proves the encoder, not an ASCII escape.
+    const label = "Łazienka ĄĆĘŁŃÓŚŹŻ ąćęłńóśźż";
+    const s = sceneOf(`plan "P" { room id=r at (0,0) size 4000x3000 label "${label}" }`);
+    const pdf = await toPdf(s);
+    expect(pdfStrings(pdf)).toContain(label);
   });
 
   // -------------------------------------------------------------------------

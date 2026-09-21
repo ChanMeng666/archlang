@@ -3,6 +3,10 @@
  *
  * Walks the Scene's positioned primitives into pdfkit drawing ops, so strokes
  * are real vector paths and text is selectable (no SVG rasterization round-trip).
+ * Text is drawn with the SAME bundled Unicode font the PNG backend embeds
+ * (Roboto) via `doc.registerFont`, so the two Node-only backends agree and labels
+ * outside Windows-1252 survive; pdfkit's standard-14 Helvetica fallback
+ * (`/Encoding /WinAnsiEncoding`) silently dropped or remapped them.
  * `pdfkit` is an OPTIONAL dependency, lazy-`import()`ed so the zero-dep core never
  * hard-requires it; a clear error is thrown if it is absent. Async + Node-oriented
  * — NOT part of `compile()`. Build a Scene with `toScene(ir)` or `compile().scene`.
@@ -43,6 +47,7 @@ import { RENDER_PASSES } from "../scene.js";
 import type { Theme } from "../theme.js";
 import { layoutChrome, type TitleRow } from "../chrome-layout.js";
 import { plainText } from "../text-safe.js";
+import { BUNDLED_FONT_FAMILY, bundledFontPath } from "../backends/font.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -234,6 +239,16 @@ export async function toPdf(scene: Scene): Promise<Uint8Array> {
     margin: 0,
     info: { CreationDate: new Date(PDF_EPOCH_MS) },
   });
+
+  // Embed the bundled Unicode font and select it for the whole page, exactly as the
+  // PNG backend does. Without this pdfkit draws with its standard-14 Helvetica face
+  // (`/Encoding /WinAnsiEncoding`), which cannot represent a single glyph outside
+  // Windows-1252 — Polish, Czech, Turkish, Greek and Cyrillic labels were silently
+  // dropped or remapped. The face ships with the package (repo `assets/fonts`, copied
+  // to `dist/assets`), so a missing file is a broken install: throw rather than fall
+  // back to the lossy face that caused the bug.
+  doc.registerFont(BUNDLED_FONT_FAMILY, await bundledFontPath());
+  doc.font(BUNDLED_FONT_FAMILY);
   const chunks: Uint8Array[] = [];
   const done = new Promise<void>((resolve, reject) => {
     doc.on("data", (c: Uint8Array) => chunks.push(c));
