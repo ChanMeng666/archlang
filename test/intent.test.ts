@@ -206,6 +206,103 @@ describe("validateIntent — window facing", () => {
   });
 });
 
+/** Issue #104 repro: two rooms of room_type Storage, one `uses storage`, one `uses utility`. */
+const STORAGE_UTILITY = `plan "repro" {
+  units mm
+  wall id=w exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+  room id=storage1 at (0,0)    size 2000x4000 label "Pantry"    uses storage
+  room id=tech1    at (2000,0) size 2000x4000 label "Tech room" uses utility
+  door on w at 50% width 900 swing into storage1
+  window on w at 25% width 800
+}`;
+
+/** Three Storage-type rooms: two stores and a tech room. */
+const TWO_STORES_ONE_TECH = `plan "stores" {
+  units mm
+  wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  room id=store_a at (0,0)    size 2000x4000 label "Store A"   uses storage
+  room id=store_b at (2000,0) size 2000x4000 label "Store B"   uses storage
+  room id=tech1   at (4000,0) size 2000x4000 label "Tech room" uses utility
+  door on w at 50% width 900 swing into store_b
+}`;
+
+const claimedFound = (r: ReturnType<typeof validateIntent>, concept: string): string | undefined =>
+  r.assertions.find((a) => a.predicate.kind === "room-exists" && a.predicate.concept === concept)?.detail;
+
+describe("validateIntent — room assignment (one room, one concept; #104)", () => {
+  it("both concepts are satisfied when a distinct room exists for each, in either array order", () => {
+    for (const roomsInclude of [
+      [{ concept: "storage" }, { concept: "utility" }],
+      [{ concept: "utility" }, { concept: "storage" }],
+    ]) {
+      const r = validateIntent(STORAGE_UTILITY, { roomsInclude });
+      expect(r.violations).toEqual([]);
+      expect(r.ok).toBe(true);
+      expect(r.satisfied).toBe(2);
+      expect(r.total).toBe(2);
+      expect(claimedFound(r, "storage")).toBe('label: concept "storage" ok (found 1)');
+      expect(claimedFound(r, "utility")).toBe('label: concept "utility" ok (found 1)');
+    }
+  });
+
+  it("still lets one room clear at most one concept: a lone WC can't satisfy bathroom AND wc", () => {
+    const r = validateIntent(`plan "P" { units mm room at (0,0) size 2000x2000 label "WC" }`, {
+      roomsInclude: [{ concept: "bathroom" }, { concept: "wc" }],
+    });
+    expect(r.ok).toBe(false);
+    expect(claimedFound(r, "bathroom")).toBe('label: concept "bathroom" ok (found 1)');
+    expect(claimedFound(r, "wc")).toBe('label: no room matching concept "wc" (needed 1, found 0)');
+    expect(r.violations.map((v) => v.code)).toEqual(["E_INTENT_ROOM_MISSING"]);
+  });
+
+  it("a counted concept no longer starves a later one (greedy took all three rooms)", () => {
+    const r = validateIntent(TWO_STORES_ONE_TECH, {
+      roomsInclude: [{ concept: "storage", count: { min: 2 } }, { concept: "utility" }],
+    });
+    expect(r.violations).toEqual([]);
+    expect(claimedFound(r, "storage")).toBe('label: concept "storage" ok (found 2)');
+    expect(claimedFound(r, "utility")).toBe('label: concept "utility" ok (found 1)');
+    // Needing three rooms from three is feasible; needing four is not, and the LATER
+    // concept is the one reported short.
+    const short = validateIntent(TWO_STORES_ONE_TECH, {
+      roomsInclude: [
+        { concept: "storage", count: { min: 2 } },
+        { concept: "utility", count: { min: 2 } },
+      ],
+    });
+    expect(claimedFound(short, "storage")).toBe('label: concept "storage" ok (found 2)');
+    expect(claimedFound(short, "utility")).toBe('label: no room matching concept "utility" (needed 2, found 1)');
+  });
+
+  it("spare rooms still go to the first concept that matches them (greedy's claim when nothing later needs them)", () => {
+    // Alone, `storage` claims every Storage-type room, exactly as before.
+    const alone = validateIntent(TWO_STORES_ONE_TECH, { roomsInclude: [{ concept: "storage" }] });
+    expect(claimedFound(alone, "storage")).toBe('label: concept "storage" ok (found 3)');
+    // With `utility` after it, only the room utility needs moves; `max` counts the claim.
+    const capped = validateIntent(TWO_STORES_ONE_TECH, {
+      roomsInclude: [{ concept: "storage", count: { min: 1, max: 2 } }, { concept: "utility" }],
+    });
+    expect(capped.ok).toBe(true);
+    expect(claimedFound(capped, "storage")).toBe('label: concept "storage" ok (found 2)');
+  });
+
+  it("area and window checks score over the rooms a concept was credited with", () => {
+    const r = validateIntent(STORAGE_UTILITY, {
+      roomsInclude: [
+        { concept: "storage", windows: { min: 0 } },
+        { concept: "utility", windows: { min: 0 } },
+      ],
+    });
+    const found = r.assertions
+      .filter((a) => a.predicate.kind === "room-windows")
+      .map((a) => Number(/found (\d+)/.exec(a.detail)?.[1]));
+    // The plan's single window sits in one of the two rooms. Each concept is credited with
+    // its own room, so the window is counted exactly once across the two — never twice.
+    expect(found).toHaveLength(2);
+    expect(found[0]! + found[1]!).toBe(1);
+  });
+});
+
 describe("roomsMatchingConcept — unknown-concept literal fallback", () => {
   const room = (over: Partial<RoomSummary>): RoomSummary => ({
     id: "r",
@@ -273,6 +370,15 @@ describe("intentFromJson", () => {
     );
     // Any error nulls the intent.
     expect(intentFromJson({ rooms: -1 }).intent).toBeNull();
+  });
+
+  it("accepts optional string $schema / $id keys, and rejects non-string ones", () => {
+    const value = { $schema: "https://archlang.uk/intent.schema.json", $id: "brief-7", rooms: 2 };
+    const { intent, errors } = intentFromJson(value);
+    expect(errors).toEqual([]);
+    expect(intent).toEqual(value);
+    expect(intentFromJson({ $schema: 5 }).errors).toEqual(["/$schema: expected a string"]);
+    expect(intentFromJson({ $id: {} }).errors).toEqual(["/$id: expected a string"]);
   });
 
   it("accepts a valid windows.facing enum and rejects a bad one with a pathed error", () => {

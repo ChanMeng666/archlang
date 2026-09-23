@@ -81,6 +81,10 @@ function facingLetter(f: IntentFacing, site: SiteFacts | undefined): CompassLett
  * the brief ENUMERATES the rooms.
  */
 export interface Intent {
+  /** Optional schema URI for editor tooling; ignored by the check. */
+  $schema?: string;
+  /** Optional identifier for the intent file; ignored by the check. */
+  $id?: string;
   /** Exact expected room count. Assert only when the brief enumerates the rooms. */
   rooms?: number;
   /** Rooms the brief names, as concepts, with optional count/area/window bands. */
@@ -354,21 +358,110 @@ function checkOne(
   }
 }
 
-/** A `room-exists` check against the pool of rooms not yet claimed by an earlier
- *  concept (rubric §2 one-room-one-concept). Consumes its available matches so a later
- *  concept can't re-count them — a single "WC" room can't clear both a `bathroom` and a
- *  `wc` expectation — and records the claim so this concept's `room-area`/`room-windows`
+/** Assign rooms to the brief's `room-exists` predicates under rubric §2's
+ *  one-room-one-concept rule. Returns one claim list per predicate index (an entry only
+ *  for `room-exists` predicates); every room is claimed by at most one predicate.
+ *
+ *  Two phases, both deterministic:
+ *
+ *  1. **Feasibility matching.** Each `room-exists` predicate needs `min` distinct rooms, so
+ *     it contributes `min` slots; a maximum bipartite matching of slots to matching rooms
+ *     (Kuhn augmenting paths) credits as many of those needs as the plan can meet at once.
+ *     Slots are tried in predicate order, so an earlier slot, once matched, stays matched
+ *     (it may be moved to another room, never dropped). Each slot ranks its candidates as
+ *     the rooms its predicate would have claimed on its own — rooms no EARLIER predicate
+ *     matches — then the rest, each group in source order; it takes the first FREE room
+ *     in that ranking, and only when none is free walks an augmenting path.
+ *  2. **Leftovers.** Every room the matching did not use goes to the FIRST predicate, in
+ *     predicate order, that matches it.
+ *
+ *  A room's first matching predicate is the one the old greedy pass handed it to, so when
+ *  greedy already met every `min` the matching only picks rooms greedy gave the same
+ *  predicate, and phase 2 hands back the rest — the claims are exactly greedy's. They
+ *  differ only when a concept used to swallow a room a later concept needed (#104: rooms
+ *  `uses storage` and `uses utility` share a room_type, and greedy let `storage` claim
+ *  both, starving `utility`). */
+function assignRooms(preds: Predicate[], summary: SceneSummary): Map<number, RoomSummary[]> {
+  const rooms = summary.rooms;
+  const idx = new Map<RoomSummary, number>(rooms.map((r, i) => [r, i]));
+
+  // Which rooms each room-exists predicate matches, as source-ordered room indices.
+  const exists: { pi: number; min: number; matches: number[] }[] = [];
+  preds.forEach((p, pi) => {
+    if (p.kind !== "room-exists") return;
+    const matches = roomsMatchingConcept(p.concept, rooms)
+      .map((r) => idx.get(r))
+      .filter((i): i is number => i !== undefined);
+    exists.push({ pi, min: p.min, matches });
+  });
+
+  // The first predicate (position in `exists`) that matches each room — its greedy owner.
+  const firstOwner = new Array<number>(rooms.length).fill(-1);
+  exists.forEach((e, k) => {
+    for (const ri of e.matches) if (firstOwner[ri] === -1) firstOwner[ri] = k;
+  });
+
+  // Phase 1 — Kuhn's algorithm. `prefs[k]` lists predicate k's candidate rooms in
+  // preference order: the rooms it owns, then the rooms an earlier predicate owns.
+  const prefs = exists.map((e, k) => [
+    ...e.matches.filter((ri) => firstOwner[ri] === k),
+    ...e.matches.filter((ri) => firstOwner[ri] !== k),
+  ]);
+  const slotOwner: number[] = []; // slot → predicate position in `exists`
+  exists.forEach((e, k) => {
+    for (let n = 0; n < e.min; n++) slotOwner.push(k);
+  });
+  const roomSlot = new Array<number>(rooms.length).fill(-1); // room → matched slot
+  const tryAugment = (slot: number, seen: boolean[]): boolean => {
+    const cands = prefs[slotOwner[slot] as number] as number[];
+    // A free room first, so a claim is only moved when no free room will do.
+    for (const ri of cands) {
+      if (!seen[ri] && roomSlot[ri] === -1) {
+        roomSlot[ri] = slot;
+        return true;
+      }
+    }
+    for (const ri of cands) {
+      if (seen[ri]) continue;
+      seen[ri] = true;
+      const held = roomSlot[ri] as number;
+      if (held === -1 || tryAugment(held, seen)) {
+        roomSlot[ri] = slot;
+        return true;
+      }
+    }
+    return false;
+  };
+  for (let slot = 0; slot < slotOwner.length; slot++) {
+    tryAugment(slot, new Array<boolean>(rooms.length).fill(false));
+  }
+
+  // Phase 2 — each room's claimant: its matched slot's predicate, else its first owner.
+  const claimant = rooms.map((_, ri) => {
+    const slot = roomSlot[ri] as number;
+    return slot !== -1 ? (slotOwner[slot] as number) : (firstOwner[ri] as number);
+  });
+  const claims = new Map<number, RoomSummary[]>();
+  exists.forEach((e, k) => {
+    claims.set(
+      e.pi,
+      e.matches.filter((ri) => claimant[ri] === k).map((ri) => rooms[ri] as RoomSummary),
+    );
+  });
+  return claims;
+}
+
+/** A `room-exists` check over the rooms {@link assignRooms} credited to this predicate
+ *  (rubric §2 one-room-one-concept — a single "WC" room can't clear both a `bathroom` and
+ *  a `wc` expectation). Records the claim so this concept's `room-area`/`room-windows`
  *  checks score over exactly the rooms it was credited with. */
 function checkRoomExists(
   p: Extract<Predicate, { kind: "room-exists" }>,
-  summary: SceneSummary,
-  consumed: Set<string>,
+  assigned: RoomSummary[],
   claims: Map<string, RoomSummary[]>,
 ): AssertionResult {
-  const available = roomsMatchingConcept(p.concept, summary.rooms).filter((r) => !consumed.has(r.id));
-  for (const r of available) consumed.add(r.id);
-  claims.set(p.concept, available);
-  const n = available.length;
+  claims.set(p.concept, assigned);
+  const n = assigned.length;
   const pass = n >= p.min && (p.max === undefined || n <= p.max);
   const want = p.max !== undefined ? `${p.min}–${p.max}` : `${p.min}`;
   const detail = pass
@@ -442,16 +535,17 @@ function checkRoomWindows(
 
 /**
  * Check every predicate against a plan summary. `room-exists`/`room-area`/`room-windows`
- * are resolved with a GREEDY one-room-one-concept assignment in predicate order (rubric
- * §2): each concept claims its still-unclaimed matching rooms, and a claimed room is
- * unavailable to later concepts. `adjacent` deliberately matches over ALL rooms (rubric
- * §4 — required-edge subset semantics); `total-area`/`room-count` are plan-wide.
+ * are resolved over a one-room-one-concept assignment (rubric §2) computed up front by
+ * {@link assignRooms}: a matching that lets every concept reach its `min` wherever the
+ * plan's rooms allow it, then each spare room to the first concept that matches it.
+ * `adjacent` deliberately matches over ALL rooms (rubric §4 — required-edge subset
+ * semantics); `total-area`/`room-count` are plan-wide.
  */
 export function checkPredicates(preds: Predicate[], summary: SceneSummary): AssertionResult[] {
-  const consumed = new Set<string>();
+  const assignment = assignRooms(preds, summary);
   const claims = new Map<string, RoomSummary[]>();
-  return preds.map((p) => {
-    if (p.kind === "room-exists") return checkRoomExists(p, summary, consumed, claims);
+  return preds.map((p, i) => {
+    if (p.kind === "room-exists") return checkRoomExists(p, assignment.get(i) ?? [], claims);
     if (p.kind === "room-area") return checkRoomArea(p, summary, claims);
     if (p.kind === "room-windows") return checkRoomWindows(p, summary, claims);
     return checkOne(p, summary);
@@ -673,7 +767,9 @@ const FACING_VALUES: readonly string[] = ["N", "S", "E", "W", ...SYMBOLIC_FACING
 const FACINGS = new Set(FACING_VALUES);
 
 const ROOMS_INCLUDE_KEYS = new Set(["concept", "count", "areaM2", "windows"]);
-const INTENT_KEYS = new Set(["rooms", "roomsInclude", "totalAreaM2", "adjacency", "reachable"]);
+/** `$schema`/`$id` are accepted (as strings) so an intent file can point an editor at
+ *  `schemas/intent.schema.json`; they carry no meaning for the check. */
+const INTENT_KEYS = new Set(["$schema", "$id", "rooms", "roomsInclude", "totalAreaM2", "adjacency", "reachable"]);
 
 /**
  * Validate an untrusted value as an {@link Intent} (zero-dep, no throw). Returns the typed
@@ -689,6 +785,9 @@ export function intentFromJson(value: unknown): { intent: Intent | null; errors:
     return { intent: null, errors: errs.errors };
   }
   for (const k of Object.keys(value)) if (!INTENT_KEYS.has(k)) errs.push(`/${k}`, "unknown key");
+  for (const k of ["$schema", "$id"] as const) {
+    if (value[k] !== undefined && !isStr(value[k])) errs.push(`/${k}`, "expected a string");
+  }
 
   if (value.rooms !== undefined && (!isInt(value.rooms) || value.rooms < 0)) {
     errs.push("/rooms", "expected an integer ≥ 0");
@@ -778,6 +877,15 @@ export const INTENT_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
   properties: {
+    $schema: {
+      type: "string",
+      description:
+        "Optional. The URI of the schema this file follows (e.g. this schema's `$id`), for editor tooling; ignored by the check.",
+    },
+    $id: {
+      type: "string",
+      description: "Optional. An identifier for this intent file; ignored by the check.",
+    },
     rooms: {
       type: "integer",
       minimum: 0,

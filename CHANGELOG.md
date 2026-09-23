@@ -22,6 +22,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `pdfStrings` helper now resolves glyph IDs through that CMap instead of reading the hex back
   as character codes.
 
+### Fixed — an intent concept no longer swallows the room a later concept needs (#104)
+
+- **`roomsInclude` passed or failed by array order.** The one-room-one-concept rule (rubric
+  §2) was implemented greedily: each `room-exists` claimed EVERY still-unclaimed room that
+  matched it, so the first concept ate every room of a shared `room_type`. A `Pantry`
+  (`uses storage`) and a `Tech room` (`uses utility`) are both `room_type` Storage; the brief
+  `[{"concept":"storage"},{"concept":"utility"}]` failed `utility` with
+  `E_INTENT_ROOM_MISSING`, and swapping the two failed `storage` instead. Reported by
+  @ZygmuntJakub. The rule stays; only the over-consuming implementation changed.
+  `checkPredicates` now assigns rooms up front: a maximum bipartite matching (Kuhn augmenting
+  paths, predicate order, each concept's own rooms first, then source order) gives every
+  concept its `min` distinct rooms wherever the plan allows, and each spare room then goes to
+  the first concept that matches it. When greedy already met every `min` the claims are
+  byte-identical to greedy's, so `eval/judge-fixture.json` passes unchanged and
+  `JUDGE_VERSION` stays `"2"`; a lone "WC" still cannot clear both `bathroom` and `wc`.
+- **An intent file could not name its own schema.** `intentFromJson` rejected `$schema`
+  as `/$schema: unknown key`. Optional string `$schema` and `$id` keys are now accepted at
+  the top level (and declared in `schemas/intent.schema.json`); they are ignored by the check.
+
 ### Fixed — the playground's 27 static example pages had never had a layout pass, and had never loaded a font
 
 - **Header and footer sat flush against the viewport edge.** Both were siblings of

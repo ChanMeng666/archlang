@@ -139,11 +139,14 @@ maps common concept keys (`bathroom`, `bedroom`, `living-room`, `hall`, …) to 
 literal match — the plan's room `id` → `label` → `uses` → `room_type` — so a niche concept
 still works, it just matches by name.
 
-Matching is a **greedy, one-room-one-concept assignment** in predicate order: each concept
-claims its still-unclaimed matching rooms, and a claimed room is unavailable to later
-concepts. A single "WC" room cannot clear both a `bathroom` and a separate `wc`
-expectation, and a concept's area/window checks score over exactly the rooms it was
-credited with.
+Matching is a **one-room-one-concept assignment**: a room is credited to at most one
+concept. The assignment first gives every concept the number of distinct rooms its `count`
+asks for (a bipartite matching), wherever the plan's rooms allow it, then hands each spare
+room to the first concept in the brief that matches it. So the order of `roomsInclude` does
+not decide which concept passes: a `storage` room and a `utility` room that share a
+`room_type` satisfy both concepts, whichever the brief names first. A single "WC" room
+still cannot clear both a `bathroom` and a separate `wc` expectation, and a concept's
+area/window checks score over exactly the rooms it was credited with.
 
 The room-count check applies **policy B**: an exact count passes; a count one over the
 target passes *only* when the surplus room is pure circulation (a hall or corridor) beyond
