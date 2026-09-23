@@ -16,53 +16,8 @@
 
 import type { CompileOptions } from "../types.js";
 import type { Scene } from "../scene.js";
+import { BUNDLED_FONT_FAMILY, bundledFontPath } from "./font.js";
 import { renderSvg } from "./svg.js";
-
-// NB: node:fs / node:url are imported LAZILY inside fontPath() (not at module
-// top) so this module stays browser-safe and honours the §0 invariant "no
-// Node-only APIs in src/ except cli.ts". The Node path only runs when renderPng
-// is actually called (it is Node-only — resvg is a native binding).
-
-/** The bundled font's family name — pinned as resvg's default so it is used for
- *  every `<text>` regardless of the SVG's `font-family` (Helvetica/Arial/…). */
-const BUNDLED_FONT_FAMILY = "Roboto";
-
-let fontPathCache: string | null = null;
-
-/**
- * Resolve the bundled font's path once. The same module runs both bundled
- * (`dist/…`) and straight from source (vitest / `tsx`), so try both layouts:
- * `dist/assets/` next to the emitted chunk, and `assets/fonts/` at the repo root
- * relative to `src/backends/`.
- */
-async function fontPath(): Promise<string> {
-  if (fontPathCache) return fontPathCache;
-  // Namespace access (not destructuring) so browser bundlers that stub `node:*`
-  // don't fail their static named-export check — this code never runs in a browser.
-  // The ignore comments keep webpack/Vite from trying to resolve `node:fs`/`node:url`
-  // for a browser bundle at all (same rule as the optional-dep imports; without them
-  // a webpack consumer importing the core client-side fails its build on this
-  // Node-only, never-reached-in-browser path).
-  const fs = await import(/* webpackIgnore: true */ /* @vite-ignore */ "node:fs");
-  const url = await import(/* webpackIgnore: true */ /* @vite-ignore */ "node:url");
-  // String-CONCAT paths (not literals or template literals) so browser bundlers'
-  // `new URL(..., import.meta.url)` asset plugins don't statically pick the font
-  // up — it ships only in the npm tarball (dist/assets) and is read here at
-  // runtime under Node. (Vite/Rollup match literal/template forms, not `+`.)
-  const file = "Roboto-Regular.ttf";
-  const candidates = [
-    new URL("./assets/" + file, import.meta.url), // bundled: dist/assets
-    new URL("../.." + "/assets/fonts/" + file, import.meta.url), // source: repo/assets/fonts
-  ];
-  for (const u of candidates) {
-    const p = url.fileURLToPath(u);
-    if (fs.existsSync(p)) {
-      fontPathCache = p;
-      return p;
-    }
-  }
-  throw new Error("PNG export: bundled font 'Roboto-Regular.ttf' could not be located");
-}
 
 /** Options for {@link renderPng}: the SVG options plus an optional pixel scale. */
 export interface PngOptions extends CompileOptions {
@@ -90,7 +45,7 @@ export async function renderPngFromSvg(svg: string, opts: PngOptions = {}): Prom
   const scale = opts.scale && opts.scale > 0 ? opts.scale : 1;
   const resvg = new Resvg(svg, {
     font: {
-      fontFiles: [await fontPath()],
+      fontFiles: [await bundledFontPath()],
       loadSystemFonts: false,
       defaultFontFamily: BUNDLED_FONT_FAMILY,
     },

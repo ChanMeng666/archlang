@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — PDF text used standard-14 Helvetica, dropping every glyph outside Windows-1252
+
+- **`arch compile -f pdf` mangled any label the base-14 face could not encode.** The backend
+  never registered a font, so pdfkit fell back to `/BaseFont /Helvetica` with
+  `/Encoding /WinAnsiEncoding`: Polish `Łazienka` came out `¡-Væefl`, and Czech, Turkish, Greek
+  and Cyrillic labels fared no better — while the same source rendered correctly in SVG and
+  PNG. `toPdf` now registers the same bundled Roboto face the PNG backend embeds
+  (`doc.registerFont` + `doc.font`), resolved through a new shared `src/backends/font.ts` so
+  both Node-only backends read one copy of the asset. The PDF embeds a SUBSET
+  (`/Type0` + `/Identity-H` + `/FontFile2` + `/ToUnicode`), so it stays small (≈7 KB, not the
+  515 KB face) and byte-reproducible — the whole-file determinism assertion still holds.
+  `test/export-pdf.test.ts` gained a Polish round-trip through the `/ToUnicode` CMap, and its
+  `pdfStrings` helper now resolves glyph IDs through that CMap instead of reading the hex back
+  as character codes.
+
 ### Fixed — the playground's 27 static example pages had never had a layout pass, and had never loaded a font
 
 - **Header and footer sat flush against the viewport edge.** Both were siblings of
