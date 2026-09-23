@@ -154,7 +154,7 @@ also checks a seventh kind (`room-windows`) that no corpus entry uses:
 | Predicate | Gates? | Rule |
 | --- | --- | --- |
 | `room-count` | **yes** | Policy B: exact, or `+1` **only** when the surplus room is pure circulation (see rubric §1). |
-| `room-exists` | **yes** | Concept present, `min`..`max` count, greedy one-room-one-concept assignment. |
+| `room-exists` | **yes** | Concept present, `min`..`max` count, one-room-one-concept assignment (matching first, then spare rooms to the first matching concept). |
 | `room-area` | **yes** | Per-room area band, over the rooms that concept was *credited with*. |
 | `total-area` | **yes** | Total floor area within the brief's stated band. |
 | `adjacent` | no (subscore) | Required-edge subset: every licensed interior-door edge present; extras never penalized. |
@@ -173,7 +173,7 @@ with the live experiment permanently declined, they stay advisory permanently.)
   normalized **label** (token-bounded whole-word, so "hall" matches "Entrance Hall" but not
   "Hallmark") → **`room_type`** → **`uses[]`**. Label wins so a specifically-labelled room is not
   miscounted by a broad type. Assignment is **one-room-one-concept**: a single "WC" room clears
-  `bathroom` *or* `wc`, not both (greedy, corpus order).
+  `bathroom` *or* `wc`, not both; a room a later concept needs is not swallowed by an earlier one.
 - **Subscores column legend:** `R`ooms · `L`abels · `A`rea · `Adj`acency, e.g. `R1 L0.67 A– Adj1`.
   A `–` means the dimension is unasserted (`null`), not a failure — `rooms`/`labels` default to a
   full score when the brief pins neither, `area`/`adjacency` stay `null`.

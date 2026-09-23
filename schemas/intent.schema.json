@@ -6,6 +6,14 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional. The URI of the schema this file follows (e.g. this schema's `$id`), for editor tooling; ignored by the check."
+    },
+    "$id": {
+      "type": "string",
+      "description": "Optional. An identifier for this intent file; ignored by the check."
+    },
     "rooms": {
       "type": "integer",
       "minimum": 0,

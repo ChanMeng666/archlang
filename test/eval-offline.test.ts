@@ -120,7 +120,7 @@ describe("eval — committed goldens still author correctly", () => {
     expect(bedroomSurplus.failures.some((f) => f.includes("not a circulation room"))).toBe(true);
   });
 
-  // One room may satisfy at most one roomsInclude concept (greedy, corpus order).
+  // One room may satisfy at most one roomsInclude concept (the lone room goes to the first).
   it("one-room-one-concept: a single WC room can't clear both a bathroom and a wc expectation", () => {
     const s = scoreSource(
       {

@@ -55,6 +55,12 @@ beforeAll(() => {
     rooms: 2,
     roomsInclude: [{ concept: "bedroom", windows: { min: 1 } }, { concept: "bathroom" }],
   });
+  // The same brief pointing an editor at the published schema (`$schema` is accepted).
+  writeJson("with-schema.json", {
+    $schema: "https://archlang.uk/intent.schema.json",
+    rooms: 2,
+    roomsInclude: [{ concept: "bedroom", windows: { min: 1 } }, { concept: "bathroom" }],
+  });
   // A gating miss: the brief enumerates 7 rooms, the plan draws 2.
   writeJson("count7.json", { rooms: 7 });
   // Advisory-only miss: every gating assertion holds, but the brief licenses a
@@ -89,6 +95,14 @@ describe("arch validate --intent", () => {
     expect(j.intent.satisfied).toBe(j.intent.total);
     expect(j.intent.violations).toEqual([]);
     expect(j.intent.subscores).toHaveProperty("rooms");
+  }, 30000);
+
+  it("loads an intent file that carries a $schema key", () => {
+    const r = run(["validate", "-", "--intent", p("with-schema.json"), "--json"], PLAN);
+    expect(r.status).toBe(0);
+    const j = JSON.parse(r.stdout);
+    expect(j.intent.ok).toBe(true);
+    expect(j.intent.satisfied).toBe(j.intent.total);
   }, 30000);
 
   it("fails (exit 2) on a gating room-count miss with E_INTENT_ROOM_COUNT naming the path + fact", () => {
