@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — dependencies: zod 4 in the MCP shim, pdfkit 0.20 for PDF export
+
+- **The MCP shim moves to zod 4 (#114).** `@modelcontextprotocol/sdk@1.29` accepts
+  `^3.25 || ^4.0`, and four `z.record(...)` schemas gained the explicit string key zod 4
+  requires. One behaviour gets better: an argument object with an own `constructor` key
+  used to crash the SDK's protocol layer with an INTERNAL error (-32603) before the shim ran.
+  Now it gets the ordinary -32602 invalid-params result, or runs normally with the stray key
+  dropped. The tool JSON Schemas hosts see change shape but not meaning: records gain
+  `propertyNames: {type: string}`, integers gain safe-integer bounds, and the tool input
+  objects no longer advertise `additionalProperties: false` (unknown keys are still dropped).
+  This ships with the next shim release, which needs its usual pack-contents check.
+- **pdfkit 0.15 → 0.20 (#89)**, the optional PDF backend. Nothing ArchLang calls changed, and
+  0.16/0.18 fix font embedding and text extraction for PDFs with more than 256 distinct
+  characters, which helps CJK. pdfkit 0.19 declares Node 20+ while the core supports 18;
+  the PDF tests pass on the Node 18 CI leg, so this is a soft risk, not a break.
+
 ### Fixed — the `aquarium` example counted floor outside its own curved wall
 
 - **Its `cafe` claimed 200 m² where the building holds about 169.** The cafe and the concourse
