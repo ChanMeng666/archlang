@@ -54,7 +54,8 @@ npm run check
 ```
 
 The sites are separate Vite apps: `npm run playground:dev` and `npm run docs:dev` (each builds the
-core first).
+core first). The playground is on Vite 8, which needs Node `^20.19` or `>=22.12` to build or serve;
+the core itself still supports Node 18.
 
 ## Quality gates
 
