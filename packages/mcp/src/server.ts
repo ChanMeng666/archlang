@@ -137,7 +137,7 @@ export function createServer(): McpServer {
       inputSchema: {
         source: z.string().optional().describe('ArchLang source (a `plan "…" { … }`). Provide this OR plan_json.'),
         plan_json: z
-          .record(z.any())
+          .record(z.string(), z.any())
           .optional()
           .describe("Plan JSON (RPLAN shape) as an alternative to `source`; converted to .arch then compiled."),
         format: z.enum(["svg", "txt"]).optional().describe("svg (default) or txt (zero-dependency ASCII)."),
@@ -237,11 +237,11 @@ export function createServer(): McpServer {
         source: z.string().describe("ArchLang source."),
         strict: z.boolean().optional().describe("Advisory warnings fail too."),
         graph: z
-          .record(z.array(z.string()))
+          .record(z.string(), z.array(z.string()))
           .optional()
           .describe("Intended interior-door adjacency: { room: [neighbour rooms] }."),
         intent: z
-          .record(z.any())
+          .record(z.string(), z.any())
           .optional()
           .describe("A brief's intent JSON (per /intent.schema.json); gating assertions fail validate."),
       },
@@ -304,7 +304,9 @@ export function createServer(): McpServer {
         "The continuous intent-satisfaction METER: check a brief's intent JSON (per /intent.schema.json) against a plan and report how much it satisfies. Returns { ok, satisfied, total, score, subscores, violations } where `score` is satisfied/total in [0,1] (an empty intent scores 1). It MEASURES, it never gates — so you can watch a plan approach the brief across edits. A malformed intent returns `{ ok:false, intentErrors }` (data, never a throw).",
       inputSchema: {
         source: z.string().describe("ArchLang source."),
-        brief: z.record(z.any()).describe("A brief's intent JSON (per /intent.schema.json) to measure against."),
+        brief: z
+          .record(z.string(), z.any())
+          .describe("A brief's intent JSON (per /intent.schema.json) to measure against."),
       },
     },
     async ({ source, brief }) => {
