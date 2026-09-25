@@ -26,12 +26,13 @@ type: software
 authors:
   - family-names: Meng
     given-names: Chan
-    email: chanmeng.dev@gmail.com
-    # TODO before the Zenodo deposit: add `orcid: "https://orcid.org/0000-...."`.
-    # Zenodo validates creators against ORCID, and it is the cheapest thing an
-    # unaffiliated author can do for attribution. See ZENODO.md in archlang-paper.
-version: 1.26.1
-date-released: "2026-08-13"
+    email: chanmeng.career@gmail.com
+    orcid: "https://orcid.org/0009-0002-1446-778X"
+# Snapshot is main on 2026-09-25. package.json is still 1.36.0; this tree includes
+# commits after the npm tag v1.36.0 (2026-09-13). The GitHub tag is archive-1.36.0
+# and does not start with v, so .github/workflows/release.yml does not publish.
+version: 1.36.0
+date-released: "2026-09-25"
 license: MIT
 repository-code: "https://github.com/ChanMeng666/archlang"
 url: "https://archlang.uk"
@@ -53,6 +54,6 @@ keywords:
 #   - description: The concept DOI for all archived versions of ArchLang
 #     type: doi
 #     value: "10.5281/zenodo.XXXXXXX"
-#   - description: The archived snapshot of ArchLang v1.26.1
+#   - description: The archived snapshot of ArchLang 1.36.0 (main, 2026-09-25)
 #     type: doi
 #     value: "10.5281/zenodo.YYYYYYY"
