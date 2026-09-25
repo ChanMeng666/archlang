@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed — dependencies: zod 4 in the MCP shim, pdfkit 0.20 for PDF export
+### Changed — dependencies: zod 4 in the MCP shim, pdfkit 0.20, Vite 8 for the playground
 
 - **The MCP shim moves to zod 4 (#114).** `@modelcontextprotocol/sdk@1.29` accepts
   `^3.25 || ^4.0`, and four `z.record(...)` schemas gained the explicit string key zod 4
@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   0.16/0.18 fix font embedding and text extraction for PDFs with more than 256 distinct
   characters, which helps CJK. pdfkit 0.19 declares Node 20+ while the core supports 18;
   the PDF tests pass on the Node 18 CI leg, so this is a soft risk, not a break.
+- **The playground moves to Vite 8 (#115)**, which builds with Rolldown instead of Rollup:
+  `build.rollupOptions` became `build.rolldownOptions`, and both pages (the playground and the
+  embed) build as before. Vite 8 needs Node `^20.19` or `>=22.12` for playground work; the
+  published core and CLI still support Node 18. The docs site is unaffected, since VitePress
+  brings its own Vite.
 
 ### Fixed — the `aquarium` example counted floor outside its own curved wall
 

@@ -187,7 +187,7 @@ than implying exposure. And a shim bump drags the pack-time resource law with it
 land in `packages/mcp/package.json` **and both** of `server.json`'s version fields, or the release
 workflow `npm view`-skips it and nothing reaches either registry.
 
-### 3.2 · Nine stale dependabot PRs — `todo`
+### 3.2 · Nine stale dependabot PRs — `done` (2026-09-26)
 
 Still nine, still oldest 2026-07-20 — but **the roster has turned over since this entry was
 written**, so re-measure with `gh pr list` rather than working from the list below. Measured
@@ -244,6 +244,34 @@ the OIDC-publish path this repo uses, and no workflow reads `NODE_AUTH_TOKEN` at
 
 While there: `release.yml`'s house-style comment claimed `actions/checkout@v5, actions/setup-node@v5`,
 already two and three majors stale before this bump; corrected to the versions actually pinned.
+
+**The 2026-09-26 roster is DONE: no dependabot PR is open.** Of the eight open that morning:
+three merged as-is (#81 `@codemirror/view`, #87 fontsource public-sans, #89 `pdfkit` 0.15→0.20);
+#101/#103 (`codeql-action` 4.37.9→4.38.1) were superseded by one commit bumping both steps, the
+target verified against the annotated tag (`v4.38.1` peels to `1c5b6756…`). Changing
+`.github/dependabot.yml` made dependabot re-run immediately and supersede the other three with
+fresh PRs, all merged green: #112 (the group), #114 (`zod` 4.6.5), #115 (`vite` 8.3.0). Two late
+arrivals, #113 and #116, merged as-is. What was learned, and is now config rather than memory:
+
+- **`codeql-action` is grouped** (`groups.codeql-action` on the github-actions entry), so
+  `init` and `analyze` can no longer arrive as two PRs that each fail alone.
+- **The dev group was red because of two packages, not the group.** `vscode-languageserver-protocol`
+  3.18 belongs to the LSP 10 set: `vscode-languageserver@9` pins 3.17.5 exactly, so a lone bump
+  installs two protocol copies whose types clash (TS2322) and breaks `editors/vscode/test/stdio.test.ts`
+  (`Missing "./node.js" specifier`). `@types/vscode` must not pass `engines.vscode` (^1.75.0), or
+  `vsce package` refuses at release time, and no CI job runs `vsce package`, so CI cannot catch
+  it. Both are now in dependabot's `ignore` list for minor/major; moving to LSP 10 or raising
+  the engine floor is a planned change, not a bump.
+- **zod 4** needed four `z.record(k, v)` two-argument fixes in `packages/mcp/src/server.ts`, and
+  it fixed the upstream -32603 crash `packages/mcp/test/fuzz.test.ts` had pinned (now the -32602
+  contract). The shim's published tool schemas change shape; see CHANGELOG. The next shim release
+  carries it.
+- **Vite 8** is playground-only (VitePress brings its own vite 5). It needed the
+  `rollupOptions` → `rolldownOptions` rename and raises the playground's Node floor to 20.19; the
+  core stays on 18.
+- **Pushing fixes onto a dependabot branch races the bot.** Its re-run after a config change
+  superseded #88 minutes after a fix was pushed there, and rebased #115 under a second push. Push
+  fixes after the bot's churn settles, and cherry-pick onto its latest head.
 
 ### 3.14 · A worktree build silently bundles the WRONG core — `done` (v1.27.0)
 
