@@ -81,10 +81,20 @@ plan "Harbour Aquarium" {
   room id=reef      at (0,6000)      size 21000x16000 label "Reef Gallery"    uses living
   room id=kelp      at (39000,6000)  size 21000x16000 label "Kelp Forest"     uses living
   room id=plant     at (21000,0)     size 18000x6000  label "Filtration"      uses utility
-  room id=concourse at (0,22000)     size 60000x8000  label "Concourse"       uses circulation
+  # The two rooms against the bowed south-east corner follow the curve, because a
+  # rectangle there would claim floor OUTSIDE the building: the cafe's would count
+  # 200 m² for about 169. A `room polygon` cannot take an `arc` edge, so its curved side
+  # is a run of vertices ON the arc, every 7.5°, snapped inward to the 100 mm grid.
+  # Inscribed in the curve, the area can only err a fraction under (168.0 m²), never
+  # over. The concourse only clips the arc's first 2 m, so one vertex does it.
+  room id=concourse polygon (0,22000) (60000,22000) (60000,28000) (59800,30000) (0,30000)
+    label "Concourse" uses circulation
   room id=foyer     at (20000,30000) size 20000x10000 label "Entrance Foyer"  uses entry
   room id=shop      at (0,30000)     size 20000x10000 label "Shop"            uses office
-  room id=cafe      at (40000,30000) size 20000x10000 label "Cafe"            uses dining
+  room id=cafe polygon (40000,30000) (59800,30000) (59400,31600) (58800,33000) (58100,34400)
+    (57100,35700) (56100,36800) (54800,37800) (53500,38600) (52100,39200) (50500,39700)
+    (49000,39900) (48000,40000) (40000,40000)
+    label "Cafe" uses dining
 
   # ---- openings -------------------------------------------------------------
   #
@@ -121,8 +131,8 @@ plan "Harbour Aquarium" {
   # ---- fit-out ----------------------------------------------------------------
   # Benches ring the rotunda at the four quadrants clear of the cardinal doors
   # (25%/75% north/south on the drum). A ticket desk sits in the foyer, and the
-  # cafe gets a few tables — kept west of the curved south-east facade, where the
-  # shell's mitred `arc` corner does not intrude on the room's rectangle.
+  # cafe gets a few tables, kept west of the curved south-east facade where its floor
+  # narrows.
   furniture bench at (34450,9550)  size 1200x450 in rotunda_r
   furniture bench at (25550,9550)  size 1200x450 in rotunda_r
   furniture bench at (25550,18450) size 1200x450 in rotunda_r

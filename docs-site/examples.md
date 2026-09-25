@@ -336,7 +336,7 @@ no coordinate is hand-computed.
 
 ### Harbour Aquarium (curves)
 
-A 60 × 40 m public aquarium — **8 rooms, 2061.06 m², 3 doors, 6 windows**, A2 at 1:200 —
+A 60 × 40 m public aquarium — **8 rooms, 2028.83 m², 3 doors, 6 windows**, A2 at 1:200 —
 and the [curved-geometry](/reference#curved-walls-arc-edges-v1-24) flagship. Everything
 above is rectilinear; an aquarium is the building type that is not. Its centrepiece is a
 cylindrical tank you walk around, written as a

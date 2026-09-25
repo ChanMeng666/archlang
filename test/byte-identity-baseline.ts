@@ -74,12 +74,24 @@
  *
  * Every other row was left alone, and the whole corpus was swept by SHA-256 over every
  * storey's SVG + `describe()` + `lint()` before and after, to show that nothing else moved.
+ *
+ * ## `aquarium`'s SUMMARY row moved too: the example over-reported its floor (2026-09-26)
+ *
+ * The only summary row ever re-measured for an example's own content, and deliberately:
+ * the numbers it pinned were wrong. `cafe` and `concourse` were rectangles running into
+ * the bowed south-east corner, so they claimed floor OUTSIDE the curved wall: the cafe
+ * was 200 m² against about 169 m² inside the wall. Both are now polygons whose vertices
+ * sit on the arc, snapped inward. Field by field, `describe()` changes only by what that
+ * implies: cafe 200 → 167.97 m², concourse 480 → 479.8 m², the total and caption
+ * 2061.06 → 2028.83 m², `w_arc1`/`w_arc2` now light `cafe` instead of no room (and
+ * `w_arc1` faces E, not S), and two walk distances move by one nav-grid cell, because the
+ * grid scales with floor area. `lint()` is still clean. The compiler did not change.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
 export const BASELINE: [string, string][] = [
   ["accessible", "5602b128c5e8df74a5d3d85b1eb5d1b8778c4dfa03eafd39c62cade55d472d4f"],
-  ["aquarium", "71abfea807ef37dd0f869cd426d2e95827de4693a6a813bc3aad22824a024078"],
+  ["aquarium", "08ec8795f152a7355b44fec7e968e0371140509856badcc416c2e830dfc666c6"],
   ["attached", "c8a219486b2c76c2ba3ecb8649b29ce77a6fd732e03da5e14013a386c6e701b9"],
   ["bungalow", "7dacd03e5c79772836ad273f9542c1272f881df27d8afd0dadef5ef558f8f3b2"],
   ["clinic", "28fd1cb7e889a199d5e014df771848567612f1e0a93a9355524a871961a11b43"],
@@ -123,7 +135,7 @@ export const BASELINE: [string, string][] = [
  */
 export const SEMANTIC_BASELINE: [string, string][] = [
   ["accessible", "68484c56bb156de1e79654600b428779227547e5a44d46653217b34ab0364c9e"],
-  ["aquarium", "45f491a88fa4d1f259d61005220264b0d217e245f482786c842300aa92e1cc6e"],
+  ["aquarium", "129653fb293bb4b79108f660577b7ce56dd96b8409943a5ffa0e6f2fd378817f"],
   ["attached", "ccfcf88d1703b8793fe062dffe347511426f45ed1ece2152f1ecb78ccf15e17f"],
   ["bungalow", "242307d21b82d129acb6317df03702d2044f0c8e05f9a78374c9de9a9f01f4fd"],
   ["clinic", "68f5145df6c36c66cd8d5411f79df440a3f31c97af6d6b98d1ca194a92d67c6d"],

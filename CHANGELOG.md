@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — the `aquarium` example counted floor outside its own curved wall
+
+- **Its `cafe` claimed 200 m² where the building holds about 169.** The cafe and the concourse
+  were rectangles running into the bowed south-east corner, so part of each lay outside the
+  curved wall, and the floor tint was drawn there too. Both are now `room polygon`s whose
+  vertices sit on the arc, every 7.5°, snapped inward to the grid. A polygon cannot take an
+  `arc` edge, and one inscribed in the curve can only err a fraction under, never over. The
+  published figures move: cafe **167.97 m²**, concourse **479.8 m²**, total
+  **2028.83 m²** (was 2061.06). The two windows on the curve now report that they light the
+  cafe rather than no room. The compiler did not change, and the example is still lint-clean.
+
 ### Fixed — `dims auto all` dropped every opening on a stepped facade, silently (#109)
 
 - **A stepped facade lost its whole openings chain, with no diagnostic.** Each facade's chain

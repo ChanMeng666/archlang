@@ -162,21 +162,30 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  * the warning, so both plans lint exactly as before. `studio` and `laneway-house` are the
  * control and are unchanged.
  *
+ * ## `aquarium` again, on BOTH halves: its rooms stopped overhanging the curve (2026-09-26)
+ *
+ * The example's `cafe` and `concourse` rectangles ran into the bowed south-east corner and
+ * claimed floor outside the curved wall (cafe 200 m² against about 169 m² inside it). They
+ * are now polygons following the arc, so the SUMMARY moves, and only by what that implies:
+ * cafe 167.97 m², concourse 479.8 m², total 2028.83 m², the two arc windows now lighting
+ * `cafe`, and two walk distances one nav-grid cell different. The compiler did not change;
+ * `test/byte-identity-baseline.ts` has the field-by-field account.
+ *
  * Do not read this entry as permission either.
  */
 const BASELINE: [string, string][] = [
   ["laneway-house", "2052f41a371dc7164ad7534142338f92a6abb516b8ec488a0ebbad20158c5292"],
   ["studio", "28e8de0bce723f8822d966fbb4a1fe9e533c21dd0c68f22e7f2ff2d57cd1ad44"],
   ["gallery-l", "fd7ee33e2787e3f5099ed6b533111754aa8b62761d3540940414c94822cac4f6"],
-  ["aquarium", "6dbe6c105a29c0020a8404b75aa579df4399b3fc6f0f6ef1737db8ca31f52f8c"],
+  ["aquarium", "4f01142d8bb57e0e8c0df5635d63af3afcbc2d52570288230fc6785dc46ea8ff"],
 ];
 
-/** The SUMMARY half of the same law — see the header. Unchanged since the measurement. */
+/** The SUMMARY half of the same law — see the header. Re-measured once, for `aquarium`, because its rooms were wrong. */
 const SEMANTIC_BASELINE: [string, string][] = [
   ["laneway-house", "bde186c2290e5aa19ea60c3ec9e8ad7cfa3f5237e7d2a0a80cdca393fa3ab85a"],
   ["studio", "7ed53b6e0925e21fe4c4fad7351ce7e80635818395fc79cf661ba095db8129b3"],
   ["gallery-l", "cef0ee1863a505bb831aa2512ca204547117872a61cf1a1ddd293361f0b688be"],
-  ["aquarium", "45f491a88fa4d1f259d61005220264b0d217e245f482786c842300aa92e1cc6e"],
+  ["aquarium", "129653fb293bb4b79108f660577b7ce56dd96b8409943a5ffa0e6f2fd378817f"],
 ];
 
 /** The compiler surface the summary-half pins are taken over. */

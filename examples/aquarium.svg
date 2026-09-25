@@ -6,10 +6,10 @@
 <polygon points="0,6000 21000,6000 21000,22000 0,22000" fill="#fbfaf7"/>
 <polygon points="39000,6000 60000,6000 60000,22000 39000,22000" fill="#fbfaf7"/>
 <polygon points="21000,0 39000,0 39000,6000 21000,6000" fill="#fbfaf7"/>
-<polygon points="0,22000 60000,22000 60000,30000 0,30000" fill="#fbfaf7"/>
+<polygon points="0,22000 60000,22000 60000,28000 59800,30000 0,30000" fill="#fbfaf7"/>
 <polygon points="20000,30000 40000,30000 40000,40000 20000,40000" fill="#fbfaf7"/>
 <polygon points="0,30000 20000,30000 20000,40000 0,40000" fill="#fbfaf7"/>
-<polygon points="40000,30000 60000,30000 60000,40000 40000,40000" fill="#fbfaf7"/>
+<polygon points="40000,30000 59800,30000 59400,31600 58800,33000 58100,34400 57100,35700 56100,36800 54800,37800 53500,38600 52100,39200 50500,39700 49000,39900 48000,40000 40000,40000" fill="#fbfaf7"/>
 </g>
 <g id="A-GRID" inkscape:groupmode="layer" inkscape:label="A-GRID">
 <line x1="0" y1="-750" x2="0" y2="44500" stroke="#0E5484" stroke-width="36" stroke-dasharray="432 108 108 108"/>
@@ -176,14 +176,14 @@
 <text x="49500" y="14630" font-size="500" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">336.0 m²</text>
 <text x="30000" y="2860" font-size="700" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Filtration</text>
 <text x="30000" y="3630" font-size="500" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">108.0 m²</text>
-<text x="30000" y="25860" font-size="700" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Concourse</text>
-<text x="30000" y="26630" font-size="500" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">480.0 m²</text>
+<text x="29987.52" y="25858.61" font-size="700" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Concourse</text>
+<text x="29987.52" y="26628.61" font-size="500" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">479.8 m²</text>
 <text x="30000" y="34860" font-size="700" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Entrance Foyer</text>
 <text x="30000" y="35630" font-size="500" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">200.0 m²</text>
 <text x="10000" y="34860" font-size="700" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Shop</text>
 <text x="10000" y="35630" font-size="500" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">200.0 m²</text>
-<text x="50000" y="34860" font-size="700" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Cafe</text>
-<text x="50000" y="35630" font-size="500" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">200.0 m²</text>
+<text x="48620.14" y="34420.06" font-size="700" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Cafe</text>
+<text x="48620.14" y="35190.06" font-size="500" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">168.0 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
 <line x1="59100" y1="32400" x2="59700" y2="30500" stroke="#0E5484" stroke-width="36"/>
@@ -422,7 +422,7 @@
 <line x1="-150" y1="51720" x2="7050" y2="51720" stroke="#333333" stroke-width="19.8"/>
 <text x="400" y="52740" font-size="380" fill="#333333" text-anchor="middle" dominant-baseline="central">05</text>
 <text x="1094" y="52740" font-size="380" fill="#333333" text-anchor="start" dominant-baseline="central">Concourse</text>
-<text x="6906" y="52740" font-size="380" fill="#333333" text-anchor="end" dominant-baseline="central">480.00</text>
+<text x="6906" y="52740" font-size="380" fill="#333333" text-anchor="end" dominant-baseline="central">479.80</text>
 <line x1="-150" y1="52400" x2="7050" y2="52400" stroke="#333333" stroke-width="19.8"/>
 <text x="400" y="53420" font-size="380" fill="#333333" text-anchor="middle" dominant-baseline="central">06</text>
 <text x="1094" y="53420" font-size="380" fill="#333333" text-anchor="start" dominant-baseline="central">Entrance Foyer</text>
@@ -434,11 +434,11 @@
 <line x1="-150" y1="53760" x2="7050" y2="53760" stroke="#333333" stroke-width="19.8"/>
 <text x="400" y="54780" font-size="380" fill="#333333" text-anchor="middle" dominant-baseline="central">08</text>
 <text x="1094" y="54780" font-size="380" fill="#333333" text-anchor="start" dominant-baseline="central">Cafe</text>
-<text x="6906" y="54780" font-size="380" fill="#333333" text-anchor="end" dominant-baseline="central">200.00</text>
+<text x="6906" y="54780" font-size="380" fill="#333333" text-anchor="end" dominant-baseline="central">167.97</text>
 <line x1="-150" y1="54440" x2="7050" y2="54440" stroke="#333333" stroke-width="19.8"/>
 <line x1="-150" y1="55120" x2="7050" y2="55120" stroke="#333333" stroke-width="36"/>
 <text x="-6" y="55460" font-size="380" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">TOTAL</text>
-<text x="6906" y="55460" font-size="380" fill="#333333" text-anchor="end" dominant-baseline="central" font-weight="600">2061.06</text>
+<text x="6906" y="55460" font-size="380" fill="#333333" text-anchor="end" dominant-baseline="central" font-weight="600">2028.83</text>
 </g>
 <g><polygon points="59250,-2700 58800,-1260 59250,-1575 59700,-1260" fill="#333333" transform="rotate(0 59250 -1800)"/><text x="59250" y="-3116" font-size="520" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
 <g><rect x="-150" y="46400" width="2500" height="280" fill="#333333"/><rect x="2350" y="46400" width="2500" height="280" fill="none" stroke="#333333" stroke-width="36"/><text x="-150" y="47080" font-size="400" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="4850" y="47080" font-size="400" fill="#333333" text-anchor="middle" dominant-baseline="central">5 m</text></g>
