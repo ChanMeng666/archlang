@@ -16,7 +16,7 @@
     "@codemirror/language": "^6.10.8",
     "@codemirror/lint": "^6.8.4",
     "@codemirror/state": "^6.7.1",
-    "@codemirror/view": "^6.43.6",
+    "@codemirror/view": "^6.43.11",
     "@fontsource-variable/archivo": "^5.2.8",
     "@fontsource-variable/public-sans": "^5.2.7",
     "@fontsource/ibm-plex-mono": "^5.3.0",
