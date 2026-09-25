@@ -10,8 +10,25 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # `vscode-languageserver@9` pins the protocol at exactly 3.17.5. 3.18 belongs to the
+      # LSP 10 set (`vscode-languageclient@10` needs engines.vscode ^1.91), so moving is a
+      # planned migration of the whole set, not a bump. A lone 3.18 installs two protocol
+      # copies whose types clash and breaks the extension's stdio test (#102).
+      - dependency-name: "vscode-languageserver-protocol"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      # Must not run ahead of editors/vscode `engines.vscode` (^1.75.0): `vsce package`
+      # refuses @types/vscode newer than the engine, and no CI job runs `vsce package`.
+      - dependency-name: "@types/vscode"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
+    groups:
+      # `init` and `analyze` must run the same version: bumped as two PRs, each one fails
+      # CodeQL on its own ("Loaded a configuration file for version X, but running Y").
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
