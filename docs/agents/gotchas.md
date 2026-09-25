@@ -31,6 +31,13 @@
   sweep. **Deliberately NOT gated:** whether a number is the right one for the sentence around it is
   not decidable from prose, and a guard that cannot decide would either pass everything or block
   honest wording — don't build one.
+- **(Releasing) `packages/font-cjk/ArchLangCJKSans-Regular.otf` is generated too, but OUTSIDE the
+  drift gate.** `npm run gen:font-cjk` (Python + fonttools 4.63.0 + network) rebuilds it from a
+  pinned upstream Noto Sans CJK; `test/export-font-cjk.test.ts` pins the committed file to the
+  `.sha256` beside it. Never hand-edit or swap it. Also: the PDF/PNG backends register that
+  face ONLY when a drawn string needs it, which is what keeps every non-CJK PDF/PNG byte-identical.
+  A change that loads it unconditionally moves every PDF golden, and that is a finding, not a
+  re-pin.
 - **Don't edit `dist/` or generated files.** `dist/` is a build output. The generated artifacts —
   editor grammars (`editors/archlang.tmLanguage.json`, `playground/src/arch-language.js`,
   `docs-site/.vitepress/theme/arch-highlight.js`),

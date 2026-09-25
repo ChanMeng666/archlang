@@ -58,6 +58,8 @@ const INTENT =
 const IMPORT = "needs a `World` serving the named module; a bare snippet cannot have one";
 const JSON_CHANNEL = "raised by `planFromJson()` on a JSON payload, not by compiling `.arch` source";
 const DEP = "raised only when an OPTIONAL native dependency is absent, which a test process cannot arrange";
+const RENDER =
+  "raised by the PDF/PNG backends at render time (a glyph no embedded font covers), never by compile()/lint(); pinned in test/export-font-cjk.test.ts";
 const FRAGMENT =
   "a one-line fragment: the code needs a building around it (a wall to be off, rooms to be unreachable between, a sheet to overflow), and the whole-plan spatial rules are owned by test/lint.test.ts";
 
@@ -91,6 +93,8 @@ const NOT_REPRODUCED: ReadonlyMap<string, string> = new Map([
   ["E_JSON_SCHEMA", JSON_CHANNEL],
 
   ["E_PNG_DEPENDENCY", DEP],
+  ["W_CJK_FONT_MISSING", RENDER],
+  ["W_GLYPH_UNSUPPORTED", RENDER],
 
   ["E_ATTACH_POS_RANGE", FRAGMENT],
   ["E_CALL_DEPTH", FRAGMENT],
@@ -181,6 +185,9 @@ suite("error catalog — every example that can raise its code does", () => {
     // gate has been hollowed out, and this is what says so out loud.
     const reproduced = ERROR_CODES.length - NOT_REPRODUCED.size;
     expect(reproduced).toBeGreaterThan(ERROR_CODES.length / 2);
-    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(44);
+    // 44 → 46 (issue #107): W_CJK_FONT_MISSING and W_GLYPH_UNSUPPORTED are raised by the
+    // PDF/PNG backends at render time, which compile() never reaches. They are not excused
+    // untested: test/export-font-cjk.test.ts raises both through toPdf/renderPng.
+    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(46);
   });
 });

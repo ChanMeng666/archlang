@@ -1,0 +1,46 @@
+{
+  "name": "@chanmeng666/archlang-font-cjk",
+  "version": "1.0.0",
+  "description": "The optional CJK face ArchLang's PDF and PNG backends fall back to: a renamed subset of Noto Sans CJK SC covering GB 2312, Big5, JIS X 0208, KS X 1001 and every Hangul syllable.",
+  "keywords": [
+    "archlang",
+    "font",
+    "cjk",
+    "chinese",
+    "japanese",
+    "korean",
+    "noto-sans-cjk",
+    "otf"
+  ],
+  "license": "OFL-1.1",
+  "author": "Chan Meng <chanmeng.dev@gmail.com>",
+  "homepage": "https://github.com/ChanMeng666/archlang/tree/main/packages/font-cjk#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChanMeng666/archlang.git",
+    "directory": "packages/font-cjk"
+  },
+  "bugs": {
+    "url": "https://github.com/ChanMeng666/archlang/issues"
+  },
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "ArchLangCJKSans-Regular.otf",
+    "ArchLangCJKSans-Regular.otf.sha256",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

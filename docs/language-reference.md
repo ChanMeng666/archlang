@@ -2320,6 +2320,19 @@ them and a default install emits SVG, DXF and TXT with nothing extra. The PNG ba
 rasterizes the SVG with a bundled font (no system fonts), so output is
 byte-identical across machines.
 
+**Non-Latin text in PDF and PNG.** Both backends draw text with embedded fonts, never
+the host's. The bundled Roboto covers Latin (including Polish, Czech, Turkish and the
+rest of Latin Extended), Greek and Cyrillic. **Chinese, Japanese and Korean** labels
+use the optional `@chanmeng666/archlang-font-cjk` package, a renamed subset of Noto
+Sans CJK covering GB 2312, Big5, JIS X 0208, KS X 1001 and every Hangul syllable. npm
+installs it by default alongside `pdfkit` and `@resvg/resvg-js`, and it is loaded only
+when a label needs it, so a plan without CJK text renders exactly as before. Kanji and
+Traditional characters use the Simplified Chinese glyph forms of that face. A character
+no embedded font can draw still renders as an empty box, and the CLI names it with a
+warning: `W_CJK_FONT_MISSING` when the CJK package was left out (e.g.
+`--omit=optional`), `W_GLYPH_UNSUPPORTED` for any other script (Thai, Arabic, …).
+SVG output is unaffected either way: it uses the viewer's own fonts.
+
 The **TXT** backend draws the plan as an ASCII/Unicode grid — no image, no binary, no
 dependency. It exists so a text-only agent (or a terminal) can *see* the layout at a
 glance; tune it with `--cols <n>` and `--charset unicode|ascii`.

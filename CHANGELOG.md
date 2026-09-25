@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Chinese, Japanese and Korean labels in PDF and PNG, with no setup (#107)
+
+- **CJK labels used to come out as empty boxes, silently.** PDF and PNG draw text with embedded
+  fonts so the output never depends on the host, and the bundled Roboto has no Han, kana or Hangul.
+  `厨房`, `キッチン` and `주방` therefore rendered as .notdef boxes, with no diagnostic, and
+  vanished from PDF text extraction. This was the gap left after the Latin fix below.
+- **A new package, `@chanmeng666/archlang-font-cjk`, carries the CJK face.** It is "ArchLang CJK
+  Sans", a renamed subset of Noto Sans CJK SC (OFL-1.1; renamed because *Noto* is a Google
+  trademark). It covers GB 2312, Big5, JIS X 0208, KS X 1001 and all 11,172 Hangul syllables:
+  11 MB, 9 MB gzipped. The core lists it **exactly** in `optionalDependencies`, the same
+  mechanism as `pdfkit` and `@resvg/resvg-js`, so `npm i` and `npx` install it by default. Keeping
+  it out of the core tarball keeps it out of the browser and playground, and means an SVG-only
+  user can skip it with `--omit=optional`.
+- **It is loaded only when a label needs it.** Each font's coverage is read from its own `cmap`
+  (a small, zero-dependency reader in `src/backends/font.ts` that touches only the table
+  directory and the `cmap` bytes), and the text a render will draw is planned before drawing:
+  - The PDF backend collects its strings by running its own draw code against a recording stub,
+    so the list cannot drift from what it draws. A string Roboto can't cover goes wholly in the
+    CJK face, so a mixed "주방 Kitchen" keeps one consistent face.
+  - The PNG backend appends the face to resvg's font list, and resvg falls back glyph by glyph.
+  - **Every PDF and PNG of a plan without CJK text is byte-identical to before.** A SHA-256
+    sweep over all 70 PDF/PNG outputs of the 30 examples, compared against `main`, showed 0
+    differences.
+- **Nothing is silently lost any more.** What no embedded font can draw still renders, as empty
+  boxes, but the CLI (`--json` and stderr) now names it:
+  - `W_CJK_FONT_MISSING`, with the install fix, when the package was left out;
+  - `W_GLYPH_UNSUPPORTED` for any other script (Thai, Arabic, …).
+  `toPdf` and `renderPng` take an `onDiagnostic` option for library callers. Kanji and
+  Traditional characters use the Simplified Chinese glyph forms of the face.
+- **Reproducible font.** `npm run gen:font-cjk` (`scripts/gen-font-cjk.py`) rebuilds the font
+  from a pinned upstream commit. It verifies the SHA-256 of the TTC, the licence and the derived
+  character set, pins fonttools, and records the output's SHA-256, which a test holds the
+  committed file to. Two runs reproduce the committed file byte for byte. `release.yml`
+  publishes the font package before the core and refuses a pin/version mismatch. **The
+  package's first version must be published once by hand by the owner** (npm's Trusted
+  Publisher setting needs an existing package, and this repo holds no token). See
+  CONTRIBUTING.md#releasing.
+
 ### Fixed — PDF text used standard-14 Helvetica, dropping every glyph outside Windows-1252
 
 - **`arch compile -f pdf` mangled any label the base-14 face could not encode.** The backend

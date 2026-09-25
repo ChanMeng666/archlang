@@ -10,7 +10,7 @@ export default defineConfig({
   target: "es2022",
   // Optional export-backend deps are lazy-imported; never bundle them so the
   // core build stays self-contained and they remain truly optional.
-  external: ["pdfkit", "clipper2-wasm", "@resvg/resvg-js"],
+  external: ["pdfkit", "clipper2-wasm", "@resvg/resvg-js", "@chanmeng666/archlang-font-cjk"],
   // CLI needs a shebang; library entry stays clean.
   banner: ({ format }) => (format === "esm" ? {} : {}),
   // Ship the PNG backend's bundled font next to the emitted chunks so

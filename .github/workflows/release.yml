@@ -2,6 +2,9 @@
 #
 # WHAT THIS DOES
 #   On a version tag (v*) — or a manual dispatch — this publishes, in order:
+#     0. the CJK font      @chanmeng666/archlang-font-cjk (packages/font-cjk) → npm, with
+#        provenance — FIRST, because the core names it (exact version) in optionalDependencies,
+#        so a core release must never reach npm pointing at a font version that is not there
 #     1. the core package  @chanmeng666/archlang       (repo root)   → npm, with provenance
 #     2. the MCP shim      @chanmeng666/archlang-mcp    (packages/mcp) → npm, with provenance
 #     3. the MCP server manifest (packages/mcp/server.json) → the official MCP registry
@@ -16,8 +19,11 @@
 #   publisher on npmjs.com:
 #     npmjs.com → each package → Settings → Trusted Publisher → GitHub Actions, with
 #       Owner/Repo = ChanMeng666/archlang  and  Workflow filename = release.yml
-#   Both @chanmeng666/archlang AND @chanmeng666/archlang-mcp must have that one-time
-#   registration pointing at THIS file. Without it, `npm publish` here fails with an auth
+#   @chanmeng666/archlang, @chanmeng666/archlang-mcp AND @chanmeng666/archlang-font-cjk must
+#   each have that one-time registration pointing at THIS file. npm only offers the Trusted
+#   Publisher setting on a package that already EXISTS, so a brand-new package's very first
+#   version is published once BY HAND by the owner (`npm publish -w packages/font-cjk
+#   --access public`, with 2FA) — see CONTRIBUTING.md#releasing — and only then registered. Without it, `npm publish` here fails with an auth
 #   error — that is the expected signal to (re)do the npmjs registration, not to add a token.
 #
 #   The MCP registry publish (step 3) also uses GitHub OIDC (`mcp-publisher login
@@ -70,8 +76,25 @@ jobs:
       - name: Resolve versions and decide what to publish
         id: check
         run: |
+          font_version=$(node -p "require('./packages/font-cjk/package.json').version")
           core_version=$(node -p "require('./package.json').version")
           mcp_version=$(node -p "require('./packages/mcp/package.json').version")
+
+          # The core pins the font EXACTLY in optionalDependencies; a mismatch would publish a
+          # core whose CJK font can never resolve. Fail before anything reaches npm.
+          pinned_font=$(node -p "require('./package.json').optionalDependencies['@chanmeng666/archlang-font-cjk']")
+          if [ "$pinned_font" != "$font_version" ]; then
+            echo "::error::package.json pins @chanmeng666/archlang-font-cjk@$pinned_font but packages/font-cjk is $font_version."
+            exit 1
+          fi
+          font_on_registry=$(npm view "@chanmeng666/archlang-font-cjk@$font_version" version 2>/dev/null || true)
+          if [ "$font_on_registry" = "$font_version" ]; then
+            echo "font_exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::@chanmeng666/archlang-font-cjk@$font_version already on npm — skipping font publish."
+          else
+            echo "font_exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Will publish @chanmeng666/archlang-font-cjk@$font_version to npm."
+          fi
           echo "core_version=$core_version" >> "$GITHUB_OUTPUT"
           echo "mcp_version=$mcp_version" >> "$GITHUB_OUTPUT"
 
@@ -119,6 +142,14 @@ jobs:
       # tests landed, and the first to hit this.)
       - name: Build the core and the VS Code bundle (prepublishOnly runs the bundle tests)
         run: npm run build && npm run vscode:build:only
+
+      # The CJK font goes BEFORE the core (see the header). It has no build step; the package
+      # is the committed, generator-pinned font file. If this is the package's first-ever
+      # version and the owner has not yet published it by hand, this fails with an auth
+      # error and the core is NOT published — the intended stop.
+      - name: Publish CJK font to npm (@chanmeng666/archlang-font-cjk)
+        if: ${{ success() && steps.check.outputs.font_exists != 'true' }}
+        run: npm publish -w packages/font-cjk --provenance --access public
 
       # prepublishOnly (build + full test suite) is the release gate for the core.
       - name: Publish core to npm (@chanmeng666/archlang)
