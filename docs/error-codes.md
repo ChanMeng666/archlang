@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**92 errors** · **47 warnings**
+**92 errors** · **49 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -106,6 +106,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_BATH_VIA_BEDROOM`](#w_bath_via_bedroom) | warning | Bathroom is reachable only through a bedroom. |
 | [`W_BEDROOM_NO_WINDOW`](#w_bedroom_no_window) | warning | Bedroom has no window. |
 | [`W_CIRCUITOUS_PATH`](#w_circuitous_path) | warning | A room is reached by a very roundabout path. |
+| [`W_CJK_FONT_MISSING`](#w_cjk_font_missing) | warning | PDF/PNG text has CJK characters, but the optional CJK font package is not installed. |
 | [`W_DIM_INSIDE`](#w_dim_inside) | warning | A hand-written dimension line lands inside the building. |
 | [`W_DIM_NO_WALL`](#w_dim_no_wall) | warning | A `dim faces`/`dim clear` endpoint has no wall to measure to. |
 | [`W_DIM_OVERLAP`](#w_dim_overlap) | warning | Two hand-written dimensions are drawn on top of each other. |
@@ -123,6 +124,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_FURNITURE_OVERLAP`](#w_furniture_overlap) | warning | Two pieces of furniture overlap. |
 | [`W_FURNITURE_WALL_COLLISION`](#w_furniture_wall_collision) | warning | Furniture penetrates a wall. |
 | [`W_GARAGE_TOO_NARROW`](#w_garage_too_narrow) | warning | A garage is too narrow to park in. |
+| [`W_GLYPH_UNSUPPORTED`](#w_glyph_unsupported) | warning | PDF/PNG text has characters no embedded font can draw. |
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
 | [`W_IMPORT_EMPTY_FILE`](#w_import_empty_file) | warning | Whole-file import binds an empty component. |
 | [`W_NO_ENTRANCE`](#w_no_entrance) | warning | The plan has no exterior door. |
@@ -1345,6 +1347,18 @@ room at (0,0) size 3000x4000 label "Bedroom"   # lint: no window
 room id=bed at (0,0) size 3000x3000 label "Bed"   # only door is on the far side, forcing a long detour
 ```
 
+## W_CJK_FONT_MISSING
+
+*warning* — PDF/PNG text has CJK characters, but the optional CJK font package is not installed.
+
+**Cause.** PDF and PNG draw text with an embedded font so the output does not depend on the host. The bundled Roboto has no Chinese, Japanese or Korean glyphs; those come from the optional `@chanmeng666/archlang-font-cjk` package, which npm installs by default but which is absent here (e.g. `--omit=optional`). The file still renders; the CJK characters come out as empty boxes.
+
+**Fix.** Install the font package (`npm install @chanmeng666/archlang-font-cjk`), or render to SVG, which uses the viewer's fonts.
+
+```arch static
+room at (0,0) size 4000x3000 label "厨房"   # -f pdf / -f png warns when the CJK font package is absent
+```
+
 ## W_DIM_INSIDE
 
 *warning* — A hand-written dimension line lands inside the building.
@@ -1557,6 +1571,18 @@ furniture sofa at (350,2300) size 2000x900   # lint: crosses the partition at y3
 ```arch static
 room id=g at (0,0) size 2500x6000 label "Garage" uses garage
 furniture car at (300,300) size 1800x4600 in g   # lint: 2500 mm across, one bay wants 2700
+```
+
+## W_GLYPH_UNSUPPORTED
+
+*warning* — PDF/PNG text has characters no embedded font can draw.
+
+**Cause.** PDF and PNG draw text with embedded fonts only: Roboto (Latin, Greek, Cyrillic) and the optional CJK face (Chinese, Japanese, Korean). A character outside both — Thai, Arabic, Hebrew, Devanagari, emoji, a rare ideograph — has no glyph. The file still renders; those characters come out as empty boxes.
+
+**Fix.** Render to SVG, which uses the viewer's fonts, or rewrite the label in a covered script.
+
+```arch static
+room at (0,0) size 4000x3000 label "ห้องครัว"   # -f pdf / -f png warns: Thai has no embedded glyphs
 ```
 
 ## W_HATCH_SCALE

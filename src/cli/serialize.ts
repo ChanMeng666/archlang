@@ -73,12 +73,27 @@ async function runWithInstall<T>(fn: () => Promise<T>, pkg: string, args: Args):
  * asked). This is the output-format seam: adding a format = a row in `EXPORT_FORMATS`
  * (`src/manifest.ts`) + a serializer line here.
  */
-async function serialize(scene: Scene, svg: string, format: Format, args: Args): Promise<string | Uint8Array> {
+async function serialize(
+  scene: Scene,
+  svg: string,
+  format: Format,
+  args: Args,
+  warnings: Diagnostic[] = [],
+): Promise<string | Uint8Array> {
+  // Render-time warnings (a glyph no embedded font can draw — issue #107) are collected
+  // into `warnings`, deduplicated, so a multi-storey render names each problem once.
+  const onDiagnostic = (d: Diagnostic): void => {
+    if (!warnings.some((w) => w.code === d.code && w.message === d.message)) warnings.push(d);
+  };
   if (format === "dxf") return toDxf(scene);
   if (format === "txt") return renderAscii(scene, { cols: args.cols, charset: asciiCharset(args) });
-  if (format === "pdf") return runWithInstall(() => toPdf(scene), "pdfkit", args);
+  if (format === "pdf") return runWithInstall(() => toPdf(scene, { onDiagnostic }), "pdfkit", args);
   if (format === "png")
-    return runWithInstall(() => renderPng(scene, { width: args.width, scale: args.scale }), "@resvg/resvg-js", args);
+    return runWithInstall(
+      () => renderPng(scene, { width: args.width, scale: args.scale, onDiagnostic }),
+      "@resvg/resvg-js",
+      args,
+    );
   return svg;
 }
 
@@ -186,6 +201,10 @@ export async function renderArtifact(
   try {
     // Multi-storey: serialize the requested page(s). A single-storey plan has no `pages`,
     // so it takes the one-artifact path below exactly as before.
+    // Render-time warnings ride after the compile diagnostics; with none, the list is
+    // the same array it always was.
+    const warnings: Diagnostic[] = [];
+    const withWarnings = (): Diagnostic[] => (warnings.length > 0 ? [...diagnostics, ...warnings] : diagnostics);
     if (pages && pages.length > 0) {
       if (page === "all") {
         const out: RenderedPage[] = [];
@@ -193,18 +212,20 @@ export async function renderArtifact(
           out.push({
             level: p.level,
             ...(p.name !== undefined ? { name: p.name } : {}),
-            bytes: await serialize(p.scene, p.svg, format, args),
+            bytes: await serialize(p.scene, p.svg, format, args, warnings),
           });
         }
-        return { pages: out, levels, diagnostics };
+        return { pages: out, levels, diagnostics: withWarnings() };
       }
       const want = page === "first" ? pages[0]! : pages.find((p) => p.level === page.level);
       if (!want) return { diagnostics, levels, badLevel: true };
-      return { bytes: await serialize(want.scene, want.svg, format, args), levels, diagnostics };
+      const bytes = await serialize(want.scene, want.svg, format, args, warnings);
+      return { bytes, levels, diagnostics: withWarnings() };
     }
     // A `--level` on a single-storey plan is a usage error, not a silently ignored flag.
     if (typeof page === "object") return { diagnostics, levels, badLevel: true };
-    return { bytes: await serialize(scene, svg, format, args), levels, diagnostics };
+    const bytes = await serialize(scene, svg, format, args, warnings);
+    return { bytes, levels, diagnostics: withWarnings() };
   } catch (e) {
     const message = (e as Error).message;
     if (isOptionalDepError(e)) {

@@ -698,6 +698,20 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Install the optional dependency (`npm install @resvg/resvg-js`), or re-run with `--install` to fetch it automatically, or render to SVG/DXF (zero-dependency).",
     "arch preview plan.arch --install   # fetches @resvg/resvg-js, then renders the PNG",
   ),
+  W_CJK_FONT_MISSING: W(
+    "W_CJK_FONT_MISSING",
+    "PDF/PNG text has CJK characters, but the optional CJK font package is not installed.",
+    "PDF and PNG draw text with an embedded font so the output does not depend on the host. The bundled Roboto has no Chinese, Japanese or Korean glyphs; those come from the optional `@chanmeng666/archlang-font-cjk` package, which npm installs by default but which is absent here (e.g. `--omit=optional`). The file still renders; the CJK characters come out as empty boxes.",
+    "Install the font package (`npm install @chanmeng666/archlang-font-cjk`), or render to SVG, which uses the viewer's fonts.",
+    'room at (0,0) size 4000x3000 label "厨房"   # -f pdf / -f png warns when the CJK font package is absent',
+  ),
+  W_GLYPH_UNSUPPORTED: W(
+    "W_GLYPH_UNSUPPORTED",
+    "PDF/PNG text has characters no embedded font can draw.",
+    "PDF and PNG draw text with embedded fonts only: Roboto (Latin, Greek, Cyrillic) and the optional CJK face (Chinese, Japanese, Korean). A character outside both — Thai, Arabic, Hebrew, Devanagari, emoji, a rare ideograph — has no glyph. The file still renders; those characters come out as empty boxes.",
+    "Render to SVG, which uses the viewer's fonts, or rewrite the label in a covered script.",
+    'room at (0,0) size 4000x3000 label "ห้องครัว"   # -f pdf / -f png warns: Thai has no embedded glyphs',
+  ),
 
   W_IMPORT_EMPTY_FILE: W(
     "W_IMPORT_EMPTY_FILE",

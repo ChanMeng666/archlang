@@ -47,7 +47,8 @@ import { RENDER_PASSES } from "../scene.js";
 import type { Theme } from "../theme.js";
 import { layoutChrome, type TitleRow } from "../chrome-layout.js";
 import { plainText } from "../text-safe.js";
-import { BUNDLED_FONT_FAMILY, bundledFontPath } from "../backends/font.js";
+import { BUNDLED_FONT_FAMILY, bundledFontPath, glyphDiagnostics, planFonts } from "../backends/font.js";
+import type { Diagnostic } from "../diagnostics.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -116,9 +117,35 @@ function applyPaint(doc: any, paint: Paint, theme: Theme): void {
   else doc.stroke();
 }
 
+/**
+ * How {@link drawText} chooses a face. `pick` is `null` on every render whose text Roboto
+ * fully covers — then no `doc.font` call is made at all, which is what keeps a plan with
+ * no CJK byte-identical to the single-font exporter. `record`, when set, turns the whole
+ * draw into a dry run that only collects the strings (see {@link collectTexts}).
+ */
+interface TextCtx {
+  pick: ((text: string) => string) | null;
+  record?: string[];
+}
+
+/** The ordinary context: everything in Roboto. */
+const ROBOTO_ONLY: TextCtx = { pick: null };
+
+/** Options for {@link toPdf}. */
+export interface PdfOptions {
+  /**
+   * Receives the render-time warnings — `W_CJK_FONT_MISSING` when a label needs the
+   * optional `@chanmeng666/archlang-font-cjk` package and it is absent, and
+   * `W_GLYPH_UNSUPPORTED` for characters no embedded face can draw. Rendering still
+   * succeeds either way; those characters come out as empty boxes.
+   */
+  onDiagnostic?: (d: Diagnostic) => void;
+}
+
 /** Draw text honouring the primitive's anchor/baseline/rotation (selectable). */
 function drawText(
   doc: any,
+  ctx: TextCtx,
   at: Point,
   rawValue: string,
   size: number,
@@ -129,6 +156,11 @@ function drawText(
   // Same rule as the DXF backend: a control character or unpaired surrogate in a
   // label must never reach the container's encoder. Identity on well-formed text.
   const value = plainText(rawValue);
+  if (ctx.record) {
+    ctx.record.push(value);
+    return;
+  }
+  if (ctx.pick) doc.font(ctx.pick(value));
   doc.undash();
   doc.fontSize(size).fillColor(color);
   const w = doc.widthOfString(value);
@@ -147,7 +179,7 @@ function drawText(
   }
 }
 
-function drawNode(doc: any, node: SceneNode, theme: Theme): void {
+function drawNode(doc: any, node: SceneNode, theme: Theme, ctx: TextCtx): void {
   const { prim, paint } = node;
   switch (prim.t) {
     case "polygon":
@@ -180,7 +212,16 @@ function drawNode(doc: any, node: SceneNode, theme: Theme): void {
       applyPaint(doc, paint, theme);
       break;
     case "text":
-      drawText(doc, prim.at, prim.value, prim.size, prim.anchor, prim.rotate, fillColor(paint, theme) ?? "#000000");
+      drawText(
+        doc,
+        ctx,
+        prim.at,
+        prim.value,
+        prim.size,
+        prim.anchor,
+        prim.rotate,
+        fillColor(paint, theme) ?? "#000000",
+      );
       break;
     default: {
       // Exhaustiveness guard. A `ScenePrim` with no case here used to be dropped in
@@ -193,7 +234,7 @@ function drawNode(doc: any, node: SceneNode, theme: Theme): void {
 }
 
 /** Convert a {@link Scene} to a vector PDF (Uint8Array). Requires optional `pdfkit`. */
-export async function toPdf(scene: Scene): Promise<Uint8Array> {
+export async function toPdf(scene: Scene, opts: PdfOptions = {}): Promise<Uint8Array> {
   let PDFDocument: any;
   try {
     PDFDocument = (await import(/* webpackIgnore: true */ /* @vite-ignore */ "pdfkit" as string)).default;
@@ -249,6 +290,18 @@ export async function toPdf(scene: Scene): Promise<Uint8Array> {
   // back to the lossy face that caused the bug.
   doc.registerFont(BUNDLED_FONT_FAMILY, await bundledFontPath());
   doc.font(BUNDLED_FONT_FAMILY);
+
+  // Roboto has no CJK glyphs (issue #107). Plan the faces from the exact strings this
+  // render will draw: the optional CJK face is resolved, registered and embedded ONLY when
+  // some string needs it, so every other PDF is byte-identical to the single-font one.
+  // Whatever no face can draw is reported, never silently lost.
+  const fonts = await planFonts(collectTexts(scene));
+  for (const d of glyphDiagnostics(fonts.missing, "PDF")) opts.onDiagnostic?.(d);
+  let ctx = ROBOTO_ONLY;
+  if (fonts.cjk) {
+    doc.registerFont(fonts.cjk.family, fonts.cjk.path);
+    ctx = { pick: (text) => fonts.faceFor(text).family };
+  }
   const chunks: Uint8Array[] = [];
   const done = new Promise<void>((resolve, reject) => {
     doc.on("data", (c: Uint8Array) => chunks.push(c));
@@ -266,10 +319,10 @@ export async function toPdf(scene: Scene): Promise<Uint8Array> {
 
   // Element/wall primitives, bucketed by layer (deterministic draw order).
   for (const pass of RENDER_PASSES) {
-    for (const node of scene.nodes) if (node.layer === pass) drawNode(doc, node, theme);
+    for (const node of scene.nodes) if (node.layer === pass) drawNode(doc, node, theme, ctx);
   }
 
-  drawChrome(doc, scene);
+  drawChrome(doc, scene, ctx);
 
   doc.restore();
   doc.end();
@@ -277,8 +330,32 @@ export async function toPdf(scene: Scene): Promise<Uint8Array> {
   return concat(chunks);
 }
 
+/**
+ * Every string {@link toPdf} will draw, in draw order — found by running the SAME draw
+ * code (nodes, then chrome) against a do-nothing document with a recording
+ * {@link TextCtx}, so the list cannot drift from what is actually drawn when a new piece
+ * of chrome or a new text source appears.
+ */
+function collectTexts(scene: Scene): string[] {
+  const record: string[] = [];
+  const ctx: TextCtx = { pick: null, record };
+  // Every property is a method that returns the recorder itself, so chained pdfkit calls
+  // (`doc.polygon(…).fill(…)`) are absorbed. `drawText` returns before touching it.
+  const recorder: any = new Proxy(
+    {},
+    {
+      get: () => () => recorder,
+    },
+  );
+  for (const pass of RENDER_PASSES) {
+    for (const node of scene.nodes) if (node.layer === pass) drawNode(recorder, node, scene.theme, ctx);
+  }
+  drawChrome(recorder, scene, ctx);
+  return record;
+}
+
 /** North arrow + scale bar + title block — PDF parity with the SVG chrome. */
-function drawChrome(doc: any, scene: Scene): void {
+function drawChrome(doc: any, scene: Scene, ctx: TextCtx): void {
   // An axonometric carries no plan chrome — see the same guard in `backends/svg.ts`.
   // `Scene.view` is set only by `toIso`, so every plan drawing is untouched.
   if (scene.view) return;
@@ -303,7 +380,7 @@ function drawChrome(doc: any, scene: Scene): void {
     const rad = (deg * Math.PI) / 180;
     const lx = cx + Math.sin(rad) * (r + fs * 0.8);
     const ly = cy - Math.cos(rad) * (r + fs * 0.8);
-    drawText(doc, { x: lx, y: ly }, "N", fs, "middle", undefined, theme.annotation);
+    drawText(doc, ctx, { x: lx, y: ly }, "N", fs, "middle", undefined, theme.annotation);
   }
 
   // Scale bar + title block come from the shared chrome layout (placed below the
@@ -326,9 +403,10 @@ function drawChrome(doc: any, scene: Scene): void {
     doc.rect(x0, y0, half, hgt).fill(theme.annotation);
     doc.lineWidth(thin).undash();
     doc.rect(x0 + half, y0, half, hgt).stroke(theme.annotation);
-    drawText(doc, { x: x0, y: y0 + hgt + fs }, "0", fs, "start", undefined, theme.annotation);
+    drawText(doc, ctx, { x: x0, y: y0 + hgt + fs }, "0", fs, "start", undefined, theme.annotation);
     drawText(
       doc,
+      ctx,
       { x: x0 + barLen, y: y0 + hgt + fs },
       `${barLen / 1000} m`,
       fs,
@@ -345,8 +423,8 @@ function drawChrome(doc: any, scene: Scene): void {
     doc.rect(x0, y0, boxW, boxH).stroke(theme.annotation);
     rows.forEach((ln: TitleRow, i: number) => {
       const ly = y0 + rowH * (i + 0.5);
-      drawText(doc, { x: x0 + pad, y: ly }, ln.k, fs * 0.8, "start", undefined, theme.annotationMuted);
-      drawText(doc, { x: x0 + boxW - pad, y: ly }, ln.v, fs, "end", undefined, theme.annotation);
+      drawText(doc, ctx, { x: x0 + pad, y: ly }, ln.k, fs * 0.8, "start", undefined, theme.annotationMuted);
+      drawText(doc, ctx, { x: x0 + boxW - pad, y: ly }, ln.v, fs, "end", undefined, theme.annotation);
       if (i > 0) {
         doc
           .lineWidth(thin * 0.5)

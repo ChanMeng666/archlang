@@ -719,7 +719,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**92 errors** (abort rendering) · **47 warnings** (advisory; `validate --strict` fails on them too).
+**92 errors** (abort rendering) · **49 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -823,6 +823,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `W_BATH_VIA_BEDROOM` — Bathroom is reachable only through a bedroom. **Fix:** Add a door connecting the bathroom to a hall/living space, or route circulation so it is not reached only via a bedroom.
 - `W_BEDROOM_NO_WINDOW` — Bedroom has no window. **Fix:** Add a `window` on an exterior wall of the room.
 - `W_CIRCUITOUS_PATH` — A room is reached by a very roundabout path. **Fix:** Add a more direct connection — a door or a hall — so the room is not reached the long way round.
+- `W_CJK_FONT_MISSING` — PDF/PNG text has CJK characters, but the optional CJK font package is not installed. **Fix:** Install the font package (`npm install @chanmeng666/archlang-font-cjk`), or render to SVG, which uses the viewer's fonts.
 - `W_DIM_INSIDE` — A hand-written dimension line lands inside the building. **Fix:** Swap the two endpoints — the machine-applicable fix does it for you, but only when the swap actually moves the line out. Swapping mirrors the line across the segment being measured (negating the `offset` does the same thing), so it reaches the outside only when that segment is at the building's edge. A dimension whose measured run cuts THROUGH the plan reads inside either way and carries no automatic fix: measure along a facade instead, or raise the `offset` until the line clears the building.
 - `W_DIM_NO_WALL` — A `dim faces`/`dim clear` endpoint has no wall to measure to. **Fix:** Put the endpoint on the centerline of the wall the dimension runs into (the room-rectangle corner coordinate), or drop the `faces`/`clear` keyword and write the face coordinate yourself.
 - `W_DIM_OVERLAP` — Two hand-written dimensions are drawn on top of each other. **Fix:** Move one of them out a tier: raise the magnitude of its `offset` (keeping its sign, which is the side it reads on). The machine-applicable fix computes the smallest whole number of chain tiers that clears the other dimension's line and text.
@@ -840,6 +841,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `W_FURNITURE_OVERLAP` — Two pieces of furniture overlap. **Fix:** Move or resize one so they no longer intersect; leave a walkway between them.
 - `W_FURNITURE_WALL_COLLISION` — Furniture penetrates a wall. **Fix:** Move or resize the piece so it sits fully inside the room (against the wall face, not through it), or anchor it with `against wall <id>`.
 - `W_GARAGE_TOO_NARROW` — A garage is too narrow to park in. **Fix:** Widen the room to the figure the warning quotes, park fewer cars in it, or drop the `uses garage` tag if the room is not one (a store that happens to be called a garage classifies as one from its label alone — an explicit `uses storage` overrides that).
+- `W_GLYPH_UNSUPPORTED` — PDF/PNG text has characters no embedded font can draw. **Fix:** Render to SVG, which uses the viewer's fonts, or rewrite the label in a covered script.
 - `W_HATCH_SCALE` — Hatch scale must be positive; using 1. **Fix:** Use a positive `scale`.
 - `W_IMPORT_EMPTY_FILE` — Whole-file import binds an empty component. **Fix:** Draw in the module's plan body, or import one of its named components with `import "<file>": <name>`.
 - `W_NO_ENTRANCE` — The plan has no exterior door. **Fix:** Add a `door` on an `exterior` wall.
