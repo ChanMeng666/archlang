@@ -434,12 +434,12 @@
 <line x1="65.49" y1="12429.89" x2="-315.49" y2="12048.91" stroke="#eaf2fb" stroke-width="35.92"/>
 <line x1="22515.49" y1="12429.89" x2="22134.51" y2="12048.91" stroke="#eaf2fb" stroke-width="35.92"/>
 <text x="11100" y="12553.7" font-size="449" fill="#eaf2fb" text-anchor="middle" dominant-baseline="central" transform="rotate(0 11100 12553.7)">22450</text>
-<line x1="5275" y1="0" x2="-2639.4" y2="0" stroke="#eaf2fb" stroke-width="25.14"/>
+<line x1="5275" y1="-125" x2="-2639.4" y2="-125" stroke="#eaf2fb" stroke-width="25.14"/>
 <line x1="-125" y1="9725" x2="-2639.4" y2="9725" stroke="#eaf2fb" stroke-width="25.14"/>
-<line x1="-2639.4" y1="0" x2="-2639.4" y2="9725" stroke="#eaf2fb" stroke-width="35.92"/>
-<line x1="-2829.89" y1="190.49" x2="-2448.91" y2="-190.49" stroke="#eaf2fb" stroke-width="35.92"/>
+<line x1="-2639.4" y1="-125" x2="-2639.4" y2="9725" stroke="#eaf2fb" stroke-width="35.92"/>
+<line x1="-2829.89" y1="65.49" x2="-2448.91" y2="-315.49" stroke="#eaf2fb" stroke-width="35.92"/>
 <line x1="-2829.89" y1="9915.49" x2="-2448.91" y2="9534.51" stroke="#eaf2fb" stroke-width="35.92"/>
-<text x="-2953.7" y="4862.5" font-size="449" fill="#eaf2fb" text-anchor="middle" dominant-baseline="central" transform="rotate(90 -2953.7 4862.5)">9725</text>
+<text x="-2953.7" y="4800" font-size="449" fill="#eaf2fb" text-anchor="middle" dominant-baseline="central" transform="rotate(90 -2953.7 4800)">9850</text>
 </g>
 <g><polygon points="21314.75,-3234.32 20809.63,-1617.93 21314.75,-1971.51 21819.88,-1617.93" fill="#eaf2fb" transform="rotate(0 21314.75 -2224.08)"/><text x="21314.75" y="-3701.29" font-size="583.7" fill="#eaf2fb" text-anchor="middle" dominant-baseline="central">N</text></g>
 <g><rect x="-125" y="14125.2" width="2500" height="314.3" fill="#eaf2fb"/><rect x="2375" y="14125.2" width="2500" height="314.3" fill="none" stroke="#eaf2fb" stroke-width="35.92"/><text x="-125" y="14888.5" font-size="449" fill="#eaf2fb" text-anchor="start" dominant-baseline="central">0</text><text x="4875" y="14888.5" font-size="449" fill="#eaf2fb" text-anchor="middle" dominant-baseline="central">5 m</text></g>

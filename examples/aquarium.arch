@@ -102,6 +102,11 @@ plan "Harbour Aquarium" {
   door id=d_main at (30000,40000) width 2400 wall shell swing in
   window id=w_arc1 on shell at 47% width 2000
   window id=w_arc2 on shell at 50% width 2000
+  # No facade chain can tick an opening on a curve, so `lint` reports each one
+  # (W_OPENING_NOT_DIMENSIONED) until it is dimensioned by hand. These are drawn ON the
+  # openings, jamb to jamb (offset 0), and state the width along the arc as written.
+  dim (59100,32400)->(59700,30500) offset 0 text "2000"
+  dim (55800,37200)->(57200,35800) offset 0 text "2000"
   window at (10000,0) width 3000 wall shell
   window at (50000,0) width 3000 wall shell
   window at (0,14000) width 3000 wall shell

@@ -76,6 +76,10 @@
 <text x="8200" y="10515" font-size="250" fill="#8a7f70" text-anchor="middle" dominant-baseline="central">21.0 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
+<line x1="8400" y1="12000" x2="9600" y2="11000" stroke="#3c6b8a" stroke-width="19.8"/>
+<line x1="8519.51" y1="12010.86" x2="8280.49" y2="11989.14" stroke="#3c6b8a" stroke-width="19.8"/>
+<line x1="9719.51" y1="11010.86" x2="9480.49" y2="10989.14" stroke="#3c6b8a" stroke-width="19.8"/>
+<text x="9112.03" y="11634.44" font-size="250" fill="#3c6b8a" text-anchor="middle" dominant-baseline="central" transform="rotate(-39.81 9112.03 11634.44)">1500</text>
 <line x1="0" y1="14150" x2="0" y2="15000" stroke="#3c6b8a" stroke-width="13.86"/>
 <line x1="6000" y1="14150" x2="6000" y2="15000" stroke="#3c6b8a" stroke-width="13.86"/>
 <line x1="0" y1="15000" x2="6000" y2="15000" stroke="#3c6b8a" stroke-width="19.8"/>

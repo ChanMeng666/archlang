@@ -7,7 +7,7 @@
 import type { LintRule } from "../context.js";
 import { aliasMatch } from "./alias-match.js";
 import { roomNoClearPath } from "./circulation.js";
-import { dimInside, dimOverlap } from "./dims.js";
+import { dimInside, dimOverlap, openingNotDimensioned } from "./dims.js";
 import { circuitousPath, pathTooNarrow } from "./circulation-facts.js";
 import { doorClearance, doorNearCorner, doorwayBlocked, pocketRun, swingObstructed } from "./doors.js";
 import { noEntrance } from "./entrance.js";
@@ -79,6 +79,10 @@ export const LINT_RULES: readonly LintRule[] = [
   // corner than the wall is thick. Appended LAST, for the same reason as every rule
   // above it — no existing plan's diagnostic ORDER may move.
   doorNearCorner,
+  // Annotation advisory (issue #109): an opening on the outside of the building that no
+  // `dims auto all` chain measures. Appended LAST, for the same reason as every rule above
+  // it, and it cannot fire unless the plan says `dims auto all`.
+  openingNotDimensioned,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

@@ -151,12 +151,24 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  * examples is byte-identical across the change.
  *
  * Do not read this entry as permission either.
+ *
+ * ## Issue #109 — two example SOURCES gained hand dimensions (2026-09-26)
+ *
+ * `aquarium` and `gallery-l` moved in the DRAWING half only, and not because the compiler
+ * changed under them: each example gained hand-written `dim`s on the openings no
+ * `dims auto` chain can measure (two windows on the curve, a door on the angled face).
+ * That is the remedy the new `W_OPENING_NOT_DIMENSIONED` asks for, and the dims draw. The
+ * SEMANTIC rows below did not move: the dims do not appear in `describe()`, and they close
+ * the warning, so both plans lint exactly as before. `studio` and `laneway-house` are the
+ * control and are unchanged.
+ *
+ * Do not read this entry as permission either.
  */
 const BASELINE: [string, string][] = [
   ["laneway-house", "2052f41a371dc7164ad7534142338f92a6abb516b8ec488a0ebbad20158c5292"],
   ["studio", "28e8de0bce723f8822d966fbb4a1fe9e533c21dd0c68f22e7f2ff2d57cd1ad44"],
-  ["gallery-l", "753b39b0dc5ed5a38aa7243d4b7738257e771f95d0590f0595a2512550fcbc5f"],
-  ["aquarium", "87a5c9dccb68dfb26c33f61214ef21c284f6a1aaa12a7901a96231d4f11c1890"],
+  ["gallery-l", "fd7ee33e2787e3f5099ed6b533111754aa8b62761d3540940414c94822cac4f6"],
+  ["aquarium", "6dbe6c105a29c0020a8404b75aa579df4399b3fc6f0f6ef1737db8ca31f52f8c"],
 ];
 
 /** The SUMMARY half of the same law — see the header. Unchanged since the measurement. */

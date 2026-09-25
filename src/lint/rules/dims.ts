@@ -2,7 +2,9 @@
  * Annotation-quality advisories over the plan's HAND-WRITTEN dimensions: `W_DIM_INSIDE`
  * (a dimension line landing inside the building) and `W_DIM_OVERLAP` (two dimensions
  * drawn on top of each other). Both are advisory with a machine-applicable fix — the
- * compiler never re-stages an author's `dim` on its own (ADR 0005).
+ * compiler never re-stages an author's `dim` on its own (ADR 0005). The third rule here,
+ * `W_OPENING_NOT_DIMENSIONED`, is the one exception to "hand-written only": it reports an
+ * opening the `dims auto all` chains leave out (see {@link openingNotDimensioned}).
  *
  * `W_DIM_INSIDE` — a hand-written dimension line lands inside the building.
  *
@@ -41,7 +43,8 @@ import {
   unit,
 } from "../../geometry.js";
 import type { Point } from "../../ast.js";
-import type { RDim } from "../../ir.js";
+import type { RDim, RDoor, ROpening, RWindow } from "../../ir.js";
+import { unchainedOpenings } from "../../facade.js";
 import { dimBumpFix, dimSwapFix, fixesFrom } from "../../fix-producers.js";
 import { CHAIN_STEP, SHEET_MM } from "../../sheet.js";
 import { fmt2 } from "../../num-format.js";
@@ -177,6 +180,54 @@ export const dimOverlap: LintRule = {
           ...fixesFrom(dimBumpFix(later.dm, newOffset)),
         });
       }
+    }
+    return out;
+  },
+};
+
+/**
+ * `W_OPENING_NOT_DIMENSIONED` — `dims auto all` promises an openings chain on every
+ * facade, and an opening on the outside of the building that no chain measures is a
+ * silent gap in that promise (issue #109). The auto-dimensioner cannot place every
+ * opening. A chain measures along x or y, so an opening on a curved or angled wall has no
+ * coordinate on it. An opening on a face that is not the building's outline, such as a
+ * courtyard or a recess another wall stands in front of, is on no facade chain at all.
+ * An author can draw their own `dim` for any of these; what they cannot do is notice the
+ * gap without this warning.
+ *
+ * Unlike the two rules above, this one IS about the `dims auto` chains, which never enter
+ * the IR. It does not re-derive them: {@link unchainedOpenings} is the SAME facade model
+ * `scene-build.ts` synthesizes the chains from, so the warning fires exactly when the
+ * drawing leaves an opening out. Advisory, with no machine-applicable fix: the remedy is a
+ * dimension only the author can stage.
+ */
+export const openingNotDimensioned: LintRule = {
+  name: "opening-not-dimensioned",
+  check({ ir, doors, windows, openings, at }: LintContext): Diagnostic[] {
+    if (ir.autoDims !== "all") return [];
+    const missed = unchainedOpenings(ir);
+    if (missed.length === 0) return [];
+    const byId = new Map<string, RDoor | RWindow | ROpening>();
+    for (const el of [...doors, ...windows, ...openings]) byId.set(el.id, el);
+    const out: Diagnostic[] = [];
+    for (const m of missed) {
+      const el = byId.get(m.ownerId);
+      if (!el) continue;
+      const why =
+        m.reason === "curve"
+          ? "it sits on a curved wall, and a chain measures along x or y, so a curve has no coordinate to tick (`dims auto` gives the curve an R call-out instead)"
+          : m.reason === "angled"
+            ? "it sits on an angled wall, and the facade chains measure along x or y only"
+            : "its wall is not the building's outer outline there (a courtyard or a recessed face), so no facade chain runs past it";
+      out.push({
+        severity: "warning",
+        code: "W_OPENING_NOT_DIMENSIONED",
+        ...at(el),
+        message: `The ${el.kind} "${el.id}" on wall "${m.wallId}" is on no \`dims auto all\` chain: ${why}.`,
+        hints: [
+          `Dimension it by hand: a \`dim\` from the nearest corner to each jamb of "${el.id}" states the position the auto chains cannot.`,
+        ],
+      });
     }
     return out;
   },

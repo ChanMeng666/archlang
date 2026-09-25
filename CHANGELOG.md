@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `dims auto all` dropped every opening on a stepped facade, silently (#109)
+
+- **A stepped facade lost its whole openings chain, with no diagnostic.** Each facade's chain
+  was hung on ONE wall line, probed at the middle of the rooms' bounding box. When a facade's
+  two legs straddle that point, the probe finds neither leg, because the nearer one is further
+  than a wall thickness away. Every opening on that side, on both legs, was then filtered out.
+  Reported with three minimal plans: a door on the protruding leg, the control with no step,
+  and the door moved to the other leg. The third also failed, which the "wrong leg" reading of
+  the report did not predict and the probe explains. Now an opening joins a side's chain when
+  its wall is the outermost wall standing at its position, read from the facade outline. Plans
+  whose probe succeeded keep their bytes exactly.
+- **The same fallback put chains on the wrong baseline, and two shipped numbers were wrong.**
+  A side with no probed line fell back to the room bounding box for its outer face, and that
+  face also supplies the neighbouring sides' corner-to-corner span. It now uses the outermost
+  wall face on the facade outline. Two examples move, both corrections: `terrace-row`'s stepped
+  top facade made its left overall dimension read **9725**, measured from a wall centerline to
+  an outer face, where every other overall reads face to face. It now reads **9850**.
+  `hexagon-pavilion`'s angled sides made its overall width read **15000**, the centerline
+  vertices, with witness lines ending inside the wall. It now reads **15375**, the drawn
+  mitred corners. No other example, and no `describe()` output, moves.
+- **New `W_OPENING_NOT_DIMENSIONED` lint warning, as the report asked.** Under `dims auto all`,
+  an opening on the outside of the building that no chain measures is now reported: one on a
+  curved or angled wall, or on a face that is not the outline, such as a courtyard. It reads the
+  same facade model the chains are drawn from, so it fires exactly when the drawing leaves an
+  opening out. A door joining two rooms is never reported, even on a wall categorised
+  `exterior`. A hand-written `dim` with an endpoint on the opening clears it, so a plan that
+  follows the hint can pass `--strict`. Across the shipped examples it found three genuine
+  gaps: two windows on `aquarium`'s curved facade and the angled entry door of `gallery-l`.
+  Both examples now dimension those openings by hand, jamb to jamb, and stay lint-clean. Their
+  `describe()` and `lint()` output is byte-identical to before.
+
 ### Added — Chinese, Japanese and Korean labels in PDF and PNG, with no setup (#107)
 
 - **CJK labels used to come out as empty boxes, silently.** PDF and PNG draw text with embedded

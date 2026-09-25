@@ -186,6 +186,14 @@
 <text x="50000" y="35630" font-size="500" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">200.0 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
+<line x1="59100" y1="32400" x2="59700" y2="30500" stroke="#0E5484" stroke-width="36"/>
+<line x1="59312.93" y1="32289.28" x2="58887.07" y2="32510.72" stroke="#0E5484" stroke-width="36"/>
+<line x1="59912.93" y1="30389.28" x2="59487.07" y2="30610.72" stroke="#0E5484" stroke-width="36"/>
+<text x="59733.75" y="31555.4" font-size="500" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-72.47 59733.75 31555.4)">2000</text>
+<line x1="55800" y1="37200" x2="57200" y2="35800" stroke="#0E5484" stroke-width="36"/>
+<line x1="56040" y1="37200" x2="55560" y2="37200" stroke="#0E5484" stroke-width="36"/>
+<line x1="57440" y1="35800" x2="56960" y2="35800" stroke="#0E5484" stroke-width="36"/>
+<text x="56747.49" y="36747.49" font-size="500" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-45 56747.49 36747.49)">2000</text>
 <line x1="-150" y1="40150" x2="-150" y2="40750" stroke="#0E5484" stroke-width="25.2"/>
 <line x1="28800" y1="40150" x2="28800" y2="40750" stroke="#0E5484" stroke-width="25.2"/>
 <line x1="-150" y1="40750" x2="28800" y2="40750" stroke="#0E5484" stroke-width="36"/>

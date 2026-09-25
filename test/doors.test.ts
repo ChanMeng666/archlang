@@ -413,12 +413,25 @@ suite("doors — W_POCKET_RUN", () => {
     // and it is what the corpus sweep is for (all 30 shipped examples lint identically).
     // What still holds, and is what this pin is really about, is that no EXISTING
     // diagnostic moves: a rule that runs last can only append.
-    expect(names.slice(i + 1)).toEqual(["outdoor-overlaps-room", "balcony-no-door", "door-near-corner"]);
+    //
+    // `opening-not-dimensioned` (issue #109) is in the same position as
+    // `door-near-corner`: it needs no new syntax beyond `dims auto all`, so an older plan
+    // can trip it, and it is appended after everything for exactly that reason. Across the
+    // shipped examples it found two real gaps, which those examples now dimension by hand.
+    expect(names.slice(i + 1)).toEqual([
+      "outdoor-overlaps-room",
+      "balcony-no-door",
+      "door-near-corner",
+      "opening-not-dimensioned",
+    ]);
   });
 
   it("a rule that runs last can only append — an older plan's diagnostics keep their index", async () => {
     const { LINT_RULES } = await import("../src/lint/rules/index.js");
-    expect(LINT_RULES[LINT_RULES.length - 1]!.name).toBe("door-near-corner");
+    // `door-near-corner` was last when this pin was written; `opening-not-dimensioned`
+    // (issue #109) now follows it, and only fires under `dims auto all`, which this
+    // plan does not write.
+    expect(LINT_RULES.map((r) => r.name).slice(-2)).toEqual(["door-near-corner", "opening-not-dimensioned"]);
     // A plan carrying an unrelated pre-existing warning (a sub-passable door width) AND
     // tripping the new rule: the old diagnostic must still be first, byte-for-byte.
     // centre 4500 on a 250 mm wall whose corner is at 5000: a 600 mm leaf leaves a

@@ -1296,8 +1296,17 @@ span, and `dims auto all` all three (plus the `walls` thickness call-outs). The
 bottom and left facades are always dimensioned; the top and right are added when
 `all` finds openings of their own to chain there. A chain with fewer than two
 distinct ticks is skipped, and nothing is ever drawn inside the building.
-Dimensioning is presentation only: it never changes `describe()`, `lint()` or the
-resolved plan.
+Dimensioning is presentation only: it never changes `describe()` or the resolved
+plan.
+
+A facade is read from its **outline**, not from one wall line. On a stepped facade,
+openings on every leg that is outermost at the opening's position join the same
+chain, and the chains are offset from the outermost face. Some openings no chain can
+measure: one on a curved or angled wall, or one on a face that is not the outline,
+such as a courtyard. For `dims auto all`, `lint()` reports each such opening on the
+outside of the building as
+[`W_OPENING_NOT_DIMENSIONED`](error-codes.md#w_opening_not_dimensioned), so you can
+dimension it by hand. A hand-written `dim` with an endpoint on the opening clears it.
 
 ### Column
 

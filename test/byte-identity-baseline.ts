@@ -51,21 +51,44 @@
  * (2)'s clothes. Only `hillside-villa` was affected here, because it is the one example
  * deliberately left with warnings — `aquarium` and `two-storey` had their prose edited in
  * the same branch and did not move, since a plan that lints clean has no spans to shift.
+ *
+ * ## Four drawing rows re-measured for issue #109 (2026-09-26); no summary row moved
+ *
+ * The four summary rows below (`describe()` + `lint()`) were checked against this table and
+ * are unchanged. Only the whole-surface rows moved, and only in the SVG, for two named
+ * reasons:
+ *
+ *   - `hexagon-pavilion` and `terrace-row` — case (1), the compiler changed. A `dims auto`
+ *     side whose wall probe finds no line (an angled or stepped facade) used to take its
+ *     outer face from the ROOM bounding box, so the chains hung off a line inside the wall.
+ *     It now takes the outermost wall face on the facade outline. Two published numbers
+ *     were wrong and are corrected: hexagon-pavilion's overall width 15000 → 15375 (the
+ *     drawn mitred corners, not the centerline vertices) and terrace-row's left overall
+ *     9725 → 9850 (face to face, like every other overall). `test/stepped-facade-dims.test.ts`
+ *     pins both.
+ *   - `aquarium` and `gallery-l` — case (2)'s sibling: the example SOURCE changed. Each
+ *     gained hand-written `dim`s on the openings no chain can measure (two windows on the
+ *     curve, a door on the angled face), which is the remedy `W_OPENING_NOT_DIMENSIONED`
+ *     asks for. The new dims draw, so the SVG moves. They do not appear in `describe()`,
+ *     and they close the warning, so both plans lint exactly as `v1.34.0` did.
+ *
+ * Every other row was left alone, and the whole corpus was swept by SHA-256 over every
+ * storey's SVG + `describe()` + `lint()` before and after, to show that nothing else moved.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
 export const BASELINE: [string, string][] = [
   ["accessible", "5602b128c5e8df74a5d3d85b1eb5d1b8778c4dfa03eafd39c62cade55d472d4f"],
-  ["aquarium", "fdffa445acbbf0f9c10f30a021cc1ecc26733d9b00d3155e1014caca5a9676b1"],
+  ["aquarium", "71abfea807ef37dd0f869cd426d2e95827de4693a6a813bc3aad22824a024078"],
   ["attached", "c8a219486b2c76c2ba3ecb8649b29ce77a6fd732e03da5e14013a386c6e701b9"],
   ["bungalow", "7dacd03e5c79772836ad273f9542c1272f881df27d8afd0dadef5ef558f8f3b2"],
   ["clinic", "28fd1cb7e889a199d5e014df771848567612f1e0a93a9355524a871961a11b43"],
   ["courtyard-house", "4e487e68dda210d7433cbb9b7f6fcff47d80bbd8156bb4c6bcd4bab8107a7ba2"],
   ["furnished-flat", "6bca2fc18883e3dd6278cc03e0aa7a334ad6c26e67563c578344a77731a0ec05"],
-  ["gallery-l", "f9c63bb070331c349628fa8a58c6dd1f16fadbede3b7f07b287f560f7a81c840"],
+  ["gallery-l", "9cdfa47c8d0f0a1a1d1ecf998877ca4ed2b029289730c028065d9ca5f92af2f1"],
   ["garden-house", "2d9d6637b6d52802d9c03b09ddd33feaa35c565edf95f8d65e31a8ad15db7677"],
   ["garden-loft", "0273b238de6d7c0ad84f3d517febcec01338ebe9033fcfb9cbe06c8307389350"],
-  ["hexagon-pavilion", "1b2ad44c3346bdc4fc6d11c322d0fa7b075cb8fc17d87345f27046415255a32f"],
+  ["hexagon-pavilion", "3bf51877721eb526f3533c38d47add4dcfa492f82e3773df3f18dfac46e2f25e"],
   ["hillside-villa", "0a52a08b20550d5887377a391ad5e842712167896e48a38960071d16e0cdc641"], // re-measured 2026-09-20, see header
   ["imports", "65f847d3309cfb25274bf45d07b854c703061a666627cdab56984e8ed5b1bab4"],
   ["laneway-house", "401f5a9e255e5748a2eda400569ad352ae856e1ad5c9f51b62895e30bfd5ad1f"],
@@ -78,7 +101,7 @@ export const BASELINE: [string, string][] = [
   ["parametric", "2227a10cba690442987dc6dc9f7aa9af393a613432b6a7ea30d67d93eb736e82"],
   ["relational", "e6e1f0a6fb9589b3a6eaaa6491bd97620567d6fbdb35d162f25720e9da940b07"],
   ["studio", "90951a2517e141dfe28f0e12462fd29cefba5460c900304e435ef53e7f3c0f3f"],
-  ["terrace-row", "e05e70108e6b0529a8028cf5dea768357c7c6ca1603c54acfa0630694e002d7a"],
+  ["terrace-row", "83033a5111c86ea0c240de8173493c23afb1a947fa235d3bf768b8ef363e2df2"],
   ["themed", "55e8723dd35cc3ec24b73a7bbf8052bea24f1fdaddd6d90012cffb81d7d00057"],
   ["tiny-house", "a2e03e5262814a5566deb23fedcfe493b053d98ae49026336c75f3cb1ec104b5"],
   ["townhouse", "f3cccd631ffbfa4afbce7bba5cbd71e012fd33a0b28905e4b6d6eeb15c127ddd"],

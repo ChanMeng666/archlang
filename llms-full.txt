@@ -719,7 +719,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**92 errors** (abort rendering) · **49 warnings** (advisory; `validate --strict` fails on them too).
+**92 errors** (abort rendering) · **50 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -845,6 +845,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `W_HATCH_SCALE` — Hatch scale must be positive; using 1. **Fix:** Use a positive `scale`.
 - `W_IMPORT_EMPTY_FILE` — Whole-file import binds an empty component. **Fix:** Draw in the module's plan body, or import one of its named components with `import "<file>": <name>`.
 - `W_NO_ENTRANCE` — The plan has no exterior door. **Fix:** Add a `door` on an `exterior` wall.
+- `W_OPENING_NOT_DIMENSIONED` — An opening on the outside of the building is on no `dims auto all` chain. **Fix:** Dimension the opening by hand: a `dim` from the nearest corner to a jamb states the position the auto chains cannot, and one drawn on the opening itself (`offset 0`, jamb to jamb) states its width. Either clears the warning. There is no machine-applicable fix, because where that dimension reads is a drafting decision.
 - `W_OPENING_OFF_WALL` — Opening does not lie on any wall. **Fix:** Move the opening onto a wall, or name its host with `wall <id|category>`. The diagnostic points at the nearest wall.
 - `W_OUTDOOR_OVERLAPS_ROOM` — A ground surface is laid over a room's floor. **Fix:** Move or resize the surface so it sits outside the building's rooms. If the overlap is deliberate (a covered terrace drawn under a room), the two are genuinely different things and one of them is the wrong element.
 - `W_PATH_TOO_NARROW` — The walk to a room squeezes below a passable width. **Fix:** Widen the tightest door/opening on the route to at least the minimum, move the furniture pinching it, or add a second way in so the pinch is avoidable. There is no machine-applicable fix: the bottleneck is a nav-grid cell, not a named element, so nothing can be rewritten for you.

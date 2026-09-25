@@ -996,6 +996,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Move one of them out a tier: raise the magnitude of its `offset` (keeping its sign, which is the side it reads on). The machine-applicable fix computes the smallest whole number of chain tiers that clears the other dimension's line and text.",
     'dim (0,-100)->(7000,-100) offset -300 text "7000"\ndim (0,-100)->(4000,-100) offset -300 text "4000"   # warning: both in the same tier',
   ),
+  W_OPENING_NOT_DIMENSIONED: W(
+    "W_OPENING_NOT_DIMENSIONED",
+    "An opening on the outside of the building is on no `dims auto all` chain.",
+    "`dims auto all` draws an openings chain on each facade, and this door, window or cased opening is on none of them, so the drawing states its width nowhere and its position nowhere. The auto-dimensioner cannot place three kinds of opening: one on a CURVED wall (a chain measures along x or y, so a curve has no coordinate to tick; the curve gets an `R` call-out instead), one on an ANGLED wall (the facade chains run along x and y only), and one on a face that is not the building's outer outline, such as a courtyard or a recess another wall stands in front of. The warning reads the same facade model the chains are drawn from, so it fires exactly when the drawing leaves the opening out. Only openings on `exterior` walls that open to the outside are considered: a door joining two rooms is not a facade opening, even on a wall categorised `exterior`. A hand-written `dim` with an endpoint on the opening (a jamb, its centre, anywhere across its void) counts as dimensioning it, and the warning stands down. Until issue #109 a STEPPED facade dropped every opening on that side the same way, silently. Those openings are now chained, and this warning exists so the remaining gaps cannot be silent either.",
+    "Dimension the opening by hand: a `dim` from the nearest corner to a jamb states the position the auto chains cannot, and one drawn on the opening itself (`offset 0`, jamb to jamb) states its width. Either clears the warning. There is no machine-applicable fix, because where that dimension reads is a drafting decision.",
+    "dims auto all\nwall id=w1 exterior thickness 200 { (0,0) (6000,0) (6000,4000) (2000,6000) (0,4000) close }\nwindow on w1 at 12000 width 1200   # lint: on the angled wall, no chain can measure it",
+  ),
   W_SCALE_OVERFLOW: W(
     "W_SCALE_OVERFLOW",
     "The drawing does not fit the declared paper at the declared scale.",

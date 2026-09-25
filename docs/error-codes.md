@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**92 errors** · **49 warnings**
+**92 errors** · **50 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -128,6 +128,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
 | [`W_IMPORT_EMPTY_FILE`](#w_import_empty_file) | warning | Whole-file import binds an empty component. |
 | [`W_NO_ENTRANCE`](#w_no_entrance) | warning | The plan has no exterior door. |
+| [`W_OPENING_NOT_DIMENSIONED`](#w_opening_not_dimensioned) | warning | An opening on the outside of the building is on no `dims auto all` chain. |
 | [`W_OPENING_OFF_WALL`](#w_opening_off_wall) | warning | Opening does not lie on any wall. |
 | [`W_OUTDOOR_OVERLAPS_ROOM`](#w_outdoor_overlaps_room) | warning | A ground surface is laid over a room's floor. |
 | [`W_PATH_TOO_NARROW`](#w_path_too_narrow) | warning | The walk to a room squeezes below a passable width. |
@@ -1619,6 +1620,20 @@ import "lib.arch" as lib   # warning when lib.arch only declares components
 
 ```arch static
 wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }   # lint: no way in
+```
+
+## W_OPENING_NOT_DIMENSIONED
+
+*warning* — An opening on the outside of the building is on no `dims auto all` chain.
+
+**Cause.** `dims auto all` draws an openings chain on each facade, and this door, window or cased opening is on none of them, so the drawing states its width nowhere and its position nowhere. The auto-dimensioner cannot place three kinds of opening: one on a CURVED wall (a chain measures along x or y, so a curve has no coordinate to tick; the curve gets an `R` call-out instead), one on an ANGLED wall (the facade chains run along x and y only), and one on a face that is not the building's outer outline, such as a courtyard or a recess another wall stands in front of. The warning reads the same facade model the chains are drawn from, so it fires exactly when the drawing leaves the opening out. Only openings on `exterior` walls that open to the outside are considered: a door joining two rooms is not a facade opening, even on a wall categorised `exterior`. A hand-written `dim` with an endpoint on the opening (a jamb, its centre, anywhere across its void) counts as dimensioning it, and the warning stands down. Until issue #109 a STEPPED facade dropped every opening on that side the same way, silently. Those openings are now chained, and this warning exists so the remaining gaps cannot be silent either.
+
+**Fix.** Dimension the opening by hand: a `dim` from the nearest corner to a jamb states the position the auto chains cannot, and one drawn on the opening itself (`offset 0`, jamb to jamb) states its width. Either clears the warning. There is no machine-applicable fix, because where that dimension reads is a drafting decision.
+
+```arch static
+dims auto all
+wall id=w1 exterior thickness 200 { (0,0) (6000,0) (6000,4000) (2000,6000) (0,4000) close }
+window on w1 at 12000 width 1200   # lint: on the angled wall, no chain can measure it
 ```
 
 ## W_OPENING_OFF_WALL
