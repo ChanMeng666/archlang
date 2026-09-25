@@ -46,14 +46,13 @@ keywords:
   - LLM code generation
   - program repair
   - SVG
-# TODO after the first Zenodo deposit: record both DOIs here. The concept DOI resolves to
-# the latest version and is the one to cite; the version DOI names one archived release.
-# See ZENODO.md in the archlang-paper repository for the deposit sequence.
-#
-# identifiers:
-#   - description: The concept DOI for all archived versions of ArchLang
-#     type: doi
-#     value: "10.5281/zenodo.XXXXXXX"
-#   - description: The archived snapshot of ArchLang 1.36.0 (main, 2026-09-25)
-#     type: doi
-#     value: "10.5281/zenodo.YYYYYYY"
+# The concept DOI resolves to the latest version and is the one to cite. The version
+# DOI names the archive-1.36.0 release. The preprint is a separate Zenodo record
+# (10.5281/zenodo.22958002) and is not an identifier of this software.
+identifiers:
+  - description: The concept DOI for all archived versions of ArchLang
+    type: doi
+    value: "10.5281/zenodo.22950936"
+  - description: The archived snapshot of ArchLang 1.36.0 (main, 2026-09-25)
+    type: doi
+    value: "10.5281/zenodo.22950937"
