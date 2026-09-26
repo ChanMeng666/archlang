@@ -213,7 +213,7 @@ export const room: ElementDef = {
       if (ctx.isKeyword("arc")) {
         ctx.fail(
           "An `arc` edge is not supported inside a `room polygon` ring — no release is promised; " +
-            "it is tracked in docs/research/2026-08-06-competitor-borrowing-roadmap.md — " +
+            "it is tracked in docs/backlog.md — " +
             "use `room circle at (cx,cy) radius R` for a round floor, or a curved `wall … { … arc (x,y) radius R … }` " +
             "with a straight-edged room behind it",
           ctx.peek(),
