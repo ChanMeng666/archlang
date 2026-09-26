@@ -13,8 +13,7 @@
  *   from walls. The compiler does not guess where your structural grid is.
  * - **Labels are always derived** and never authorable: they fall out of sorted
  *   position, so an axis inserted in the middle renumbers everything after it exactly
- *   as a draughtsman would. (A future release may add an explicit label override; the
- *   v1.20 surface stays minimal.)
+ *   as a draughtsman would. (There is deliberately no explicit label override.)
  *
  * Pure and deterministic: sorting, deduping, and label assignment are closed-form,
  * and every emitted size derives from {@link RenderSizes} so axes scale with the rest

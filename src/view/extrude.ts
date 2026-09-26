@@ -225,8 +225,7 @@ const GLAZING_FRACTION = 0.2;
  * One floor plate per room, at the storey's elevation, with any `void` in it as a hole.
  *
  * A void is attributed to the room whose floor CONTAINS its centre, tested against the
- * room's ring rather than its bounding box — the v1.25 defect class, restated: a
- * bounding-box test would punch a hole in the wrong room on any L-shaped or courtyard
+ * room's ring rather than its bounding box: a bounding-box test would punch a hole in the wrong room on any L-shaped or courtyard
  * plan. A void in no room is skipped rather than floated: it is a hole in a floor plate
  * that is not being drawn.
  */

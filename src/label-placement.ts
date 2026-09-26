@@ -63,8 +63,7 @@ import { textWidth } from "./text-metrics.js";
  * while it lowers the elements — the exact, order-independent alternative to matching
  * text nodes back to their owner by coordinate (two areas can share an anchor).
  *
- * **It carries geometry, not an element.** It used to hold an `RRoom` and reach into it
- * for the ring, the anchor and the authored-label flag. Since v1.31 an `outdoor` surface
+ * **It carries geometry, not an element.** An `outdoor` surface as well as a room
  * has a name and an area drawn the same way and wants the same treatment, and the pass
  * has no business knowing which of the two it is looking at: a label sits inside a ring,
  * at an anchor, and is sometimes the author's decision. Three fields, both element kinds,
@@ -262,7 +261,7 @@ function crowding(rect: BBox, obstacles: readonly BBox[], placed: readonly BBox[
  * visited in ELEMENT order and each placed label becomes an obstacle for the next, so two
  * labels can never be relocated onto each other — and an `outdoor` surface takes its turn
  * among the rooms rather than after them, which is what keeps a plan with no ground on
- * exactly the group list, and therefore exactly the bytes, it had before v1.31.
+ * exactly the group list, and therefore exactly the bytes, it would have without ground.
  */
 export function relocateLabels(
   nodes: SceneNode[],
@@ -309,7 +308,7 @@ export function relocateLabels(
     // also nothing a label collides WITH — an overhang is drawn above the plane the names
     // are written on.
     if (n.layerName === ROOF_LAYER) continue;
-    // The same argument, for the same reason, for the ground (v1.31). A `fence` node's
+    // The same argument, for the same reason, for the ground. A `fence` node's
     // bounding box is its whole run — often the entire site — and a balcony's rail ticks
     // sit outside the building; neither is something a room name can collide with, and
     // treating either as an obstacle would set the relocation pass loose on every label

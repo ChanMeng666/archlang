@@ -263,7 +263,7 @@ export const furniture: ElementDef = {
       // the piece on a `…50` coordinate, which `grid 100` rounded straight back INTO the
       // wall — raising `W_FURNITURE_WALL_COLLISION` on a correct plan, and making the one
       // clause that exists so nobody writes a half-thickness by hand useless at the most
-      // ordinary grid there is (docs/backlog.md 3.12). The absolute `at (x,y)` path below
+      // ordinary grid there is. The absolute `at (x,y)` path below
       // still snaps, which is where the grid belongs. `describe().freedom` already draws
       // this same line between authored-absolute and resolver-derived placement.
       at = placed ? placed.at : { x: 0, y: 0 };

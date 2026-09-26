@@ -1,6 +1,5 @@
 /**
- * The intent channel — author-time checking of a brief's INTENT against a plan
- * (v1.14, Tranche 4).
+ * The intent channel — author-time checking of a brief's INTENT against a plan.
  *
  * This lifts the eval's judge-v2 scoring core into the core package so the same
  * intent contract a brief is measured against is checkable while authoring. A brief's
@@ -12,7 +11,7 @@
  *
  * Gating mirrors judge v2: room count / existence / area / total-area / windows gate
  * (a real deliverable miss); adjacency and reachability score as subscores but never
- * gate — one-shot topology is what v1.13's LOOP tools (`arch fix`/`suggest`/`validate
+ * gate — one-shot topology is what the LOOP tools (`arch fix`/`suggest`/`validate
  * --graph`) address, not one-shot generation. Whether a diagnostic feedback loop beats
  * equal-budget resampling is an open question; nothing here decides it.
  *
@@ -378,8 +377,8 @@ function checkOne(
  *  A room's first matching predicate is the one the old greedy pass handed it to, so when
  *  greedy already met every `min` the matching only picks rooms greedy gave the same
  *  predicate, and phase 2 hands back the rest — the claims are exactly greedy's. They
- *  differ only when a concept used to swallow a room a later concept needed (#104: rooms
- *  `uses storage` and `uses utility` share a room_type, and greedy let `storage` claim
+ *  differ only when greedy would let a concept swallow a room a later concept needs (rooms
+ *  `uses storage` and `uses utility` share a room_type, so greedy lets `storage` claim
  *  both, starving `utility`). */
 function assignRooms(preds: Predicate[], summary: SceneSummary): Map<number, RoomSummary[]> {
   const rooms = summary.rooms;

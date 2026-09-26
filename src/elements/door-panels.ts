@@ -1,5 +1,5 @@
 /**
- * How each NON-HINGED door kind is drawn in its reveal (v1.25).
+ * How each NON-HINGED door kind is drawn in its reveal.
  *
  * A door kind changes two things and only two: whether a swing arc exists (that is
  * `doorSwing`'s two-line early return in `src/geometry.ts`) and what is drawn between

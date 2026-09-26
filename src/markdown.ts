@@ -1,5 +1,5 @@
 /**
- * Markdown embedding helpers (v1.8) — extract ` ```arch ` fenced blocks from a
+ * Markdown embedding helpers — extract ` ```arch ` fenced blocks from a
  * Markdown document and rewrite each to an image reference, mirroring
  * mermaid-cli's markdown mode.
  *

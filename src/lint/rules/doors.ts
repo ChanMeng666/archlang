@@ -89,10 +89,7 @@ export const swingObstructed: LintRule = {
           narrowTo >= min
             ? `Narrow the door to ${mm(narrowTo)} mm or less, which still clears the ${min} mm minimum.`
             : `Narrowing the door is not a fix here — the leaf would have to drop to ${mm(narrowTo)} mm, under the ${min} mm minimum passable width.`,
-          // P1-5 deleted "or use a sliding door" from this hint set, and was right to:
-          // the language could not write one, so the remedy named a door that did not
-          // exist. v1.25 makes it expressible, so the remedy comes back — but named
-          // by the property that solves THIS warning (a panel that sweeps nothing)
+          // The remedy is named by the property that solves THIS warning (a panel that sweeps nothing)
           // and by statements the author can paste, not as a vague suggestion.
           "Or hang no swinging leaf at all — a `sliding`, `pocket` or `barn` door sweeps nothing, so this warning cannot apply to it (`door pocket on <wall> at <pos> width <mm>`).",
           "If no leaf is wanted here, make it a leafless `opening` instead.",
@@ -272,9 +269,8 @@ export const doorClearance: LintRule = {
  * The drawing is not wrong — the nib is drawn and mitred into the neighbouring run. What
  * is wrong is the plan: at page scale a sliver of wall shorter than the wall's own
  * thickness stops reading as *wall continuing to the corner* and starts reading as a
- * chamfer on the corner, which is exactly how it was first mis-diagnosed as a rendering
- * defect during the v1.30 joinery review, before it was measured and turned out to be
- * the geometry the author asked for (`docs/backlog.md` 4.2, ADR 0018).
+ * chamfer on the corner, which is easy to mis-diagnose as a rendering defect when it is
+ * the geometry the author asked for (ADR 0018).
  *
  * ## Why the threshold is the wall's own thickness
  *
@@ -285,8 +281,7 @@ export const doorClearance: LintRule = {
  * its own across-run depth is drawn deeper than it is long, and the mitre at the corner
  * removes material from its outer face on top of that. Architecturally it is the same
  * line: the returned face of such a nib has nowhere to carry the frame and architrave a
- * door jamb is fixed to. The probe that opened the backlog item lands where the framing
- * says it should — a 227 mm nib on a 250 mm wall, 23 mm short.
+ * door jamb is fixed to. The reference probe lands where the framing says it should — a 227 mm nib on a 250 mm wall, 23 mm short.
  *
  * {@link LintRuleset.minCornerNibRatio} scales it for a project that wants to be stricter
  * or laxer; it is one-limbed on purpose. `W_POCKET_RUN` needs its second, absolute limb
@@ -323,7 +318,7 @@ export const doorClearance: LintRule = {
  * overhead. No machine-applicable fix is offered — every remedy rewrites a number the
  * author chose (the door's position, the wall's extent, the leaf's width), and there is no
  * second reading of the plan that satisfies the check without changing the design.
- * Deliberately scoped to doors, as the backlog item is: a window nib is a different
+ * Deliberately scoped to doors: a window nib is a different
  * detail with no frame to hang, and widening this rule to openings needs its own evidence.
  */
 export const doorNearCorner: LintRule = {

@@ -7,8 +7,8 @@
  * cannot represent anything outside Windows-1252 — Polish, Czech, Turkish, Greek
  * and Cyrillic labels all lose glyphs — so the PDF embeds this TrueType face too.
  *
- * Roboto has no CJK glyphs, so a Chinese, Japanese or Korean label used to render as
- * .notdef boxes with no warning (issue #107). The CJK face ships as a SEPARATE optional
+ * Roboto has no CJK glyphs, so a Chinese, Japanese or Korean label would render as
+ * .notdef boxes with no warning. The CJK face ships as a SEPARATE optional
  * package, `@chanmeng666/archlang-font-cjk` (~11 MB — too big for the core tarball), in
  * the core's `optionalDependencies`, the same mechanism as pdfkit and resvg. It is
  * resolved lazily by {@link cjkFont} and only when some text actually needs it, so a

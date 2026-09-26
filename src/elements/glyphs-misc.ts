@@ -185,7 +185,7 @@ export function drawCar(r: Rect, g: GlyphCtx): SceneNode[] {
  * work — `rotate 90` lays the lounger along an east wall with its head to the east, and
  * `in <room> anchor …` never derives a turn for it, because the catalog leaves it neither
  * `requiresWall` nor `directional`: a lounger is aimed at the sun, and ArchLang has no sun
- * model (the v1.25 `site` layer names an aspect, not a daylight measurement). So which way it
+ * model (the `site` layer names an aspect, not a daylight measurement). So which way it
  * faces is the author's to state and nothing here will second-guess it.
  *
  * The slats run TRANSVERSE — across the short axis of the drawn rectangle — and their count
@@ -215,7 +215,7 @@ export function drawSunLounger(r: Rect, g: GlyphCtx): SceneNode[] {
 }
 
 // ---------------------------------------------------------------------------
-// ── v1.32 F2: office & commercial ──
+// ── office & commercial ──
 //
 // Six families that take the drawing out of a house and into a workplace: the table a meeting
 // happens round, the counter someone is met at, the two boxes an office stores things in, and

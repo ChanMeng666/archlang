@@ -1,6 +1,6 @@
 /** `dim [faces|clear] (x,y)->(x,y) [offset N] [text "…"]` — dimension line with ticks + length,
  *  or `dim radius <wallId> [segment <n>]` / `dim diameter <roomId>` — a GB/T curve call-out
- *  whose geometry and text are DERIVED from the referenced element (v1.24). */
+ *  whose geometry and text are DERIVED from the referenced element. */
 
 import type { DimNode, DimRef, ExprPoint, Point } from "../ast.js";
 import { DIM_REFS } from "../ast.js";

@@ -17,8 +17,8 @@
  *  - **Not a wall or an obstacle.** It obstructs nothing. It contributes nothing to the
  *    nav grid, to the circulation flood fill, or to any clearance rule. You can walk on a
  *    lawn; a v1 that decided otherwise for `water` would have to decide it for a pond
- *    with a bridge next, so the whole question is deferred by name (see `docs/backlog.md`)
- *    rather than half-answered.
+ *    with a bridge next, so the whole question is deferred by name rather
+ *    than half-answered.
  *  - **It IS part of the drawing.** It joins {@link ElementDef.bounds}, so a plan's page
  *    (and, on a `paper` plan, its auto-fit scale) contains the ground. That is exactly
  *    what a `roof` already does, and the consequence is the same and is pinned by test: a
@@ -35,8 +35,8 @@
  * element carries `at`/`size` even on the polygon spelling (a great deal of shared code
  * indexes by box), but the area is the exact shoelace, the label point is
  * `polygonLabelPoint` — the pole of inaccessibility, which returns the centroid whenever
- * the centroid is legal — and containment is `pointInPolygon`. This is the v1.25 defect
- * class stated for a new element before it can produce an instance of it.
+ * the centroid is legal — and containment is `pointInPolygon` — a derived position comes from the
+ * shape, never its bounding box.
  *
  * ## Tint UNDER hatch
  *
@@ -374,7 +374,7 @@ export const outdoor: ElementDef = {
       }
       // A balcony is rectangle-only in v1 (the rail derivation and the frame transform are
       // both written on four named edges), so the ring spelling is refused rather than
-      // silently railed wrong. Deferred by name in `docs/backlog.md`.
+      // silently railed wrong.
       if (n.surface === "balcony") {
         ctx.diag({
           severity: "error",
@@ -485,7 +485,7 @@ export const outdoor: ElementDef = {
     for (const side of o.rail ?? []) nodes.push(...railNodes(o, side, ctx, spec.layer));
 
     // 5. Label + area, at {@link outdoorLabelAnchor} — the SHAPE, never the bounding box.
-    //    Both on the `labels` pass, and since v1.31 `scene-build.ts` registers a label
+    //    Both on the `labels` pass, and `scene-build.ts` registers a label
     //    GROUP for a labelled surface, so this pair really is moved off a fixture, a door
     //    swing or a `dims auto` number drawn over the ground, exactly as a room's is. The
     //    anchor above is the group's candidate zero, which is why it has one owner.

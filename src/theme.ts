@@ -27,7 +27,7 @@ export interface Theme {
   annotationMuted: string;
   column: string;
   /**
-   * The ground tints (v1.31) — the flat colour an `outdoor` surface is filled with,
+   * The ground tints — the flat colour an `outdoor` surface is filled with,
    * UNDER its hatch. Three, not nine: the nine `OUTDOOR_KINDS` map onto them
    * (`src/elements/outdoor.ts`'s `GROUND` table) because a palette entry per kind would
    * be nine numbers to keep consistent across four themes for a distinction the eye
@@ -235,7 +235,7 @@ export const STYLE_KEYS: Readonly<Record<string, Readonly<Record<string, keyof T
   // exception stops being exactly one word.
   roof: { stroke: "annotationMuted" },
   void: { stroke: "annotation" },
-  // v1.31. `fill` names the TINT under the hatch; the hatch's own ink rides `pocheHatch`
+  // Ground surfaces. `fill` names the TINT under the hatch; the hatch's own ink rides `pocheHatch`
   // (the SVG backend builds every pattern from one base/line pair — see `src/hatches.ts`),
   // so it is deliberately not offered here: a per-kind hatch colour would need a second
   // pattern set per style block, and `style wall { hatch … }` already moves that ink for

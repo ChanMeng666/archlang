@@ -5,10 +5,10 @@
  * never a layout change (ADR 0005/0006).
  *
  * `W_PATH_TOO_NARROW`'s domain is every room the modeled doors reach — **not** the rooms
- * the model happened to produce a measurement for. The distinction is the whole of
- * `docs/backlog.md` 5.8: a sealed room has no `circulation.rooms[]` entry, so a rule that
- * iterated that array went quiet exactly when the plan got worse, and deepening one
- * cabinet took `examples/furnished-flat.arch` from "squeezes to 300 mm" to CLEAN. A
+ * the model happened to produce a measurement for. The distinction matters: a
+ * sealed room has no `circulation.rooms[]` entry, so a rule that iterated that array would
+ * go quiet exactly when the plan got worse — deepening one cabinet would take a plan from
+ * "squeezes to 300 mm" to CLEAN. A
  * blocked route is the limit case of a narrow one — 0 mm of clear width — so it is the
  * same code, and `circulation.blocked` is what carries it — with the width of the best
  * way in MEASURED rather than printed as a zero, because a fabricated 0 mm is the same

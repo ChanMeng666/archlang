@@ -43,8 +43,8 @@ export { LINT_RULES } from "./lint/rules/index.js";
  * **Multi-storey** (`level <n> { … }`): every storey is a building in its own right —
  * each needs its own reachable rooms and its own windows — so the rules run per level and
  * the results are concatenated in level order, each warning tagged with
- * {@link Diagnostic.level}. What a storey does NOT need is its own front door: since
- * v1.21 a `stair`/`elevator`/`escalator` with the same id on two storeys is a shaft, and a
+ * {@link Diagnostic.level}. What a storey does NOT need is its own front door: a
+ * `stair`/`elevator`/`escalator` with the same id on two storeys is a shaft, and a
  * storey joined by one to a storey that reaches the outside is itself reached — you arrive
  * in the room the shaft lands in. That building-level fact is computed once here (see
  * {@link buildingContexts}) and handed to each storey's rules; a single-storey plan takes

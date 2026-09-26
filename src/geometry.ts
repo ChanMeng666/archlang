@@ -156,7 +156,7 @@ export interface DoorLike {
   swing: DoorSwingDir;
   host: { a: Point; b: Point; thickness: number; arc?: Arc } | null;
   /**
-   * The door's kind, when it is not the default `hinged` (v1.25). OPTIONAL on
+   * The door's kind, when it is not the default `hinged`. OPTIONAL on
    * purpose: every existing caller and fixture omits it and behaves exactly as
    * before, and the one new rule below is a two-line early return.
    */
@@ -175,7 +175,7 @@ export interface DoorLike {
  * relative to the direction of travel along the wall, which on an arc is the direction
  * the arc turns (`ccw` by default), not the chord.
  *
- * Returns `null` for every NON-HINGED kind (v1.25): a bypass, barn, bifold or pocket
+ * Returns `null` for every NON-HINGED kind: a bypass, barn, bifold or pocket
  * leaf sweeps no quarter-disc, so there is no hinge, no leaf radius and no arc to
  * report. Every caller already handles `null` — the renderer draws no leaf,
  * `W_SWING_OBSTRUCTED` stops flagging it (correctly: there is nothing to obstruct) and
@@ -324,7 +324,7 @@ export interface WallSegment {
   /** Index of this segment within its wall's point list (0-based). */
   index: number;
   /**
-   * Present only when this edge is a circular **arc** (`arc (x,y) radius R`, v1.24).
+   * Present only when this edge is a circular **arc** (`arc (x,y) radius R`).
    * `a`/`b` stay the CHORD endpoints, so every consumer written against a straight
    * run still reads a truthful, in-place edge and degrades gracefully; a consumer
    * that must be exact on a curve reads this and generalises (or declines with a
@@ -335,10 +335,8 @@ export interface WallSegment {
    * True on EVERY segment of a wall that carries at least one `arc` edge — including its
    * straight ones.
    *
-   * **Informational; no renderer reads it since v1.30.** It existed because a curved wall
-   * was lowered per-segment and voided none of its openings, so an opening on such a
-   * wall's straight run still needed an opaque cover. The joinery pass now cuts every
-   * opening on every host, so there is nothing to branch on. Kept as a truthful fact
+   * **Informational; no renderer reads it.** The joinery pass cuts every opening on
+   * every host, curved or not, so there is nothing to branch on. Kept as a truthful fact
    * about the segment (and pinned by `test/curves.test.ts`) rather than removed from a
    * shape other code reads.
    */
@@ -354,8 +352,8 @@ export interface WallLike {
   closed: boolean;
   /**
    * Curved edges, indexed by SEGMENT index: entry `k` is the arc from `points[k]` to
-   * `points[k+1]`. Absent (or an absent entry) = a straight run, which is every plan
-   * written before v1.24 — that is what keeps their geometry byte-identical.
+   * `points[k+1]`. Absent (or an absent entry) = a straight run — that is what keeps a
+   * straight wall's geometry byte-identical.
    */
   arcs?: ReadonlyArray<Arc | undefined>;
 }

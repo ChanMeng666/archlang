@@ -71,7 +71,7 @@ export async function renderPngFromSvg(svg: string, opts: PngOptions = {}): Prom
     );
   }
 
-  // Roboto has no CJK glyphs (issue #107). resvg falls back glyph by glyph across the
+  // Roboto has no CJK glyphs. resvg falls back glyph by glyph across the
   // font files it is given, so the optional CJK face is simply appended — but ONLY when
   // some drawn string needs it, so every other PNG is byte-identical and an 11 MB face is
   // never parsed for nothing. Whatever no face can draw is reported, never silently lost.

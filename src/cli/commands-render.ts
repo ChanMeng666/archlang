@@ -123,7 +123,7 @@ export async function cmdCompile(args: Args): Promise<number> {
     source = conv.source;
   }
 
-  // `--view iso|axon` (v1.35): the illustrative axonometric. It is a WHOLE-BUILDING
+  // `--view iso|axon`: the illustrative axonometric. It is a WHOLE-BUILDING
   // drawing, so it collapses the per-storey fan-out to one artifact — `compile()` returns
   // no `pages` for it, and `-o <file>` therefore writes exactly the file it names rather
   // than one `<stem>.L<n>` per level. Validated here so a bad value or `-f txt` is an
@@ -329,9 +329,8 @@ function writePages(
  * until a signal ends it. Everything else in this CLI is one-shot.
  *
  * It returns {@link RESIDENT} rather than `EXIT.OK` because the dispatcher cannot tell
- * those apart from a number — and for twenty-five releases it did not: `process.exit(await
- * cmdWatch(args))` killed the watcher the instant it was installed (v1.1.0's switch
- * refactor; the pre-refactor `if/else` chain simply fell off the end of `main`).
+ * those apart from a number: `process.exit(await cmdWatch(args))` on an `EXIT.OK` would
+ * kill the watcher the instant it was installed.
  *
  * Two behaviours here are deliberate, not incidental:
  *

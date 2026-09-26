@@ -37,7 +37,7 @@
  * to read a true parallel. A ring whose offset crosses itself is `E_ROOF_SELF_INTERSECT`:
  * a 900 mm overhang on a 600 mm-wide light well eats the well, and the honest answer is
  * that the shape is not a simple polygon rather than a self-overlapping outline drawn
- * anyway. Both are the v1.23 `room polygon` precedent.
+ * anyway. Both follow the `room polygon` precedent.
  */
 
 import type { ExprPoint, Point, RoofNode } from "../ast.js";
@@ -262,7 +262,7 @@ export const roof: ElementDef = {
 
     // `overhang` is a number the AUTHOR writes, so it snaps to the grid like every other
     // authored length. The RING it produces is resolver-derived and is deliberately NOT
-    // snapped — the v1.27.0 rule that `flush` stopped fighting `grid`.
+    // snapped — the same rule that keeps `flush` from fighting `grid`.
     const overhang = ctx.snap(ctx.eval(n.overhang!));
     if (overhang <= 0) {
       ctx.diag({

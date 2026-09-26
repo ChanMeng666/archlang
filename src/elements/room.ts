@@ -3,9 +3,9 @@
  *  or `room [id=] circle at (cx,cy) radius R [label "…"]`
  *  — floor fill + label + computed area. The absolute `at` path is the default;
  *  the relational clause is resolved to absolute coords in `placeRelational`; the
- *  `polygon` form carries its own vertex ring (v1.23) and derives `at`/`size` as the
+ *  `polygon` form carries its own vertex ring and derives `at`/`size` as the
  *  ring's bounding box, so every rect-shaped consumer still sees a sane extent; the
- *  `circle` form (v1.24) adds an exact centre+radius, a tessellated ring for the grid
+ *  `circle` form adds an exact centre+radius, a tessellated ring for the grid
  *  layer, and that same derived bounding box. */
 
 import type { ExprPoint, Point, RelAlign, RelDir, RoomNode, UseKind } from "../ast.js";
@@ -208,9 +208,8 @@ export const room: ElementDef = {
       // ring's whole analysis layer (effective-vertex count, self-intersection,
       // centroid, adjacency) is written on literal vertices, and splicing a
       // tessellation in would make every one of those answers about a 48-gon. Say so.
-      // The message names the ROADMAP, never a release: it shipped saying "planned for
-      // v1.25" and v1.25 came and went without it, so the one thing a user running that
-      // version was told was to wait for the release they were already on.
+      // The message names where the item is tracked, never a release: a promised
+      // version goes stale the moment it ships without the feature.
       if (ctx.isKeyword("arc")) {
         ctx.fail(
           "An `arc` edge is not supported inside a `room polygon` ring — no release is promised; " +
@@ -295,7 +294,7 @@ export const room: ElementDef = {
     if (n.circle) return resolveCircle(n, id, ctx);
     if (n.polygon) return resolvePolygon(n, id, ctx);
     if (n.at) {
-      // —— Absolute / "manual" path — UNCHANGED, byte-identical to v0.11. ——
+      // —— Absolute / "manual" path — no constraint, never moved by the solver. ——
       const at = ctx.snapPt(ctx.evalPt(n.at));
       const size = { w: ctx.snap(ctx.eval(n.size!.w)), h: ctx.snap(ctx.eval(n.size!.h)) };
       if (size.w <= 0 || size.h <= 0) {
@@ -307,9 +306,9 @@ export const room: ElementDef = {
         });
       }
       // An explicit `label … at (x,y)` is recorded here exactly as the `polygon` and
-      // `circle` forms record theirs. Before v1.25 the rectangle parsed the clause and
-      // then dropped it, so the anchor silently did nothing and `W_ROOM_LABEL_OUTSIDE`
-      // could not fire on the commonest room form in the language.
+      // `circle` forms record theirs. Parsing the clause and then dropping it would make
+      // the anchor silently do nothing and leave `W_ROOM_LABEL_OUTSIDE` unable to fire on
+      // the commonest room form in the language.
       const labelAt = n.labelAt ? ctx.snapPt(ctx.evalPt(n.labelAt)) : undefined;
       const room: RRoom = {
         kind: "room",
@@ -479,12 +478,12 @@ export const room: ElementDef = {
 };
 
 /**
- * The `circle` form (v1.24). The resolved room carries THREE views of the same floor,
+ * The `circle` form. The resolved room carries THREE views of the same floor,
  * each for the consumer that needs it:
  *
  *  - `circle` — the exact centre + radius. `describe()` measures πR² from this, and the
  *    drawing emits a true `circle` primitive, so neither is ever a facet count.
- *  - `poly` — the 48-gon tessellation, so every ring-shaped consumer written for v1.23's
+ *  - `poly` — the 48-gon tessellation, so every ring-shaped consumer written for
  *    polygon rooms (occupancy grid, circulation flood-fill, adjacency, containment,
  *    overlap) works VERBATIM on a curve with no second code path.
  *  - `at`/`size` — the bounding box, so every older rect-shaped consumer still reads a
@@ -526,7 +525,7 @@ function resolveCircle(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
 }
 
 /**
- * The `polygon` form (v1.23). Vertices are grid-snapped like every other coordinate,
+ * The `polygon` form. Vertices are grid-snapped like every other coordinate,
  * and the resolved room ALSO carries `at`/`size` = the ring's bounding box, so every
  * consumer written against a rectangle still reads a truthful extent (and the ones
  * that must not approximate a polygon check `poly` and either generalise or decline).

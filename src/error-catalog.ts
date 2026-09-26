@@ -339,7 +339,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Give it a positive `size W x H` — the hole's extent in plan.",
     "void id=well at (2000,1000) size 0x3000   # error: zero width",
   ),
-  // ---- the vertical datum layer (v1.35) ----------------------------------------
+  // ---- the vertical datum layer ----------------------------------------
   E_HEIGHT_RANGE: E(
     "E_HEIGHT_RANGE",
     "A height is outside the range a storey can be built at.",
@@ -361,7 +361,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Lower the `head` to the wall's height (the fix does exactly that), or raise the wall with `wall … height`.",
     "wall id=w1 exterior thickness 200 height 2200 { (0,0) (4000,0) close }\n  door id=d on w1 at 50% width 900 head 2400   # error: head above a 2200 wall",
   ),
-  // ---- ground surfaces, fences and the lot line (v1.31) ------------------------
+  // ---- ground surfaces, fences and the lot line ------------------------
   E_OUTDOOR_SIZE: E(
     "E_OUTDOOR_SIZE",
     "An outdoor surface must have a positive size.",
@@ -812,7 +812,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     'room at (5000,0) size 3000x3000 label "Store"   # lint: no path from the entrance',
   ),
 
-  // Architectural lint rules (v1.1) — habitability checks raised by `arch lint`,
+  // Architectural lint rules — habitability checks raised by `arch lint`,
   // not the core compile pass. See src/lint.ts.
   W_BEDROOM_NO_WINDOW: W(
     "W_BEDROOM_NO_WINDOW",

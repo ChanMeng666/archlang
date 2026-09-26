@@ -206,8 +206,7 @@ export function applyFixes(source: string, suggestions: FixSuggestion[], opts: A
   for (const { suggestion } of admissible) {
     // NEVER edit the wrong file. A suggestion carrying `file` was produced from a
     // statement written in an `import`ed module: its spans are offsets into THAT source,
-    // so splicing them here would corrupt unrelated bytes of this one (exactly what
-    // happened before v1.22). Skipped with a reason rather than silently dropped, so
+    // so splicing them here would corrupt unrelated bytes of this one. Skipped with a reason rather than silently dropped, so
     // `arch fix` can tell the author where the real edit belongs.
     if (suggestion.file !== undefined) {
       skipped.push({ suggestion, reason: `fix belongs to imported module "${suggestion.file}" — edit that file` });

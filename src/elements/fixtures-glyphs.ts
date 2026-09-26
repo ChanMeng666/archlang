@@ -200,7 +200,7 @@ const FIXTURE_FAMILIES: readonly (readonly [string, ...string[]])[] = [
   ["fire_pit"],
   ["shed", "garden_shed"],
   ["clothesline", "washing_line"],
-  // ── v1.32 F1: kitchen & bath ──
+  // ── kitchen & bath ──
   // Eight families that finish the two wet domains: the three sanitary fixtures a bathroom
   // or a WC block needs beside the four that shipped, the two services a utility room is
   // built around, and the three worktop pieces a kitchen has and the language had no word
@@ -214,7 +214,7 @@ const FIXTURE_FAMILIES: readonly (readonly [string, ...string[]])[] = [
   ["range_hood"],
   ["microwave"],
   ["bar_counter"],
-  // ── v1.32 F2: living, bedroom, office ──
+  // ── living, bedroom, office ──
   // Eighteen families appended, again at the END and again for the one reason this table has:
   // its order IS the legend's order, so slotting `dresser` in beside `wardrobe` would re-order
   // the legend of every shipped plan that draws a robe. Grouped bedroom, then living, then
@@ -254,10 +254,9 @@ export const FIXTURE_CATEGORIES: readonly string[] = FIXTURE_FAMILIES.flatMap((f
 
 /**
  * One name per family — the word to print when a document has to NAME the vocabulary rather
- * than accept it. Derived from {@link FIXTURE_FAMILIES}, never retyped: `spec.llm.md`'s
- * furniture line used to spell a hand-typed eight-word list, which is prose inside a
- * generator and therefore invisible to `check:drift` (it reproduces its own output, right or
- * wrong — the v1.26.0 defect class).
+ * than accept it. Derived from {@link FIXTURE_FAMILIES}, never retyped: a hand-typed list
+ * inside a generator is invisible to `check:drift`, which reproduces its own output, right
+ * or wrong.
  */
 export const CANONICAL_FIXTURES: readonly string[] = FIXTURE_FAMILIES.map((f) => f[0]);
 
@@ -450,7 +449,7 @@ export function fixtureGlyph(category: string, r: Rect, theme: Theme, sizes: Ren
     case "clothesline":
     case "washing_line":
       return drawClothesline(r, g);
-    // ── v1.32 F1: kitchen & bath ──
+    // ── kitchen & bath ──
     case "bidet":
       return drawBidet(r, g);
     case "urinal":
@@ -469,7 +468,7 @@ export function fixtureGlyph(category: string, r: Rect, theme: Theme, sizes: Ren
       return drawMicrowave(r, g);
     case "bar_counter":
       return drawBarCounter(r, g);
-    // ── v1.32 F2: living, bedroom, office ──
+    // ── living, bedroom, office ──
     case "bunk_bed":
       return drawBunkBed(r, g);
     case "crib":

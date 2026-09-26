@@ -100,7 +100,7 @@ export function navCellSizeMm(areaMm2: number): number {
  * band, not of the passage. The passage is wider by exactly one body diameter, which is
  * the term this adds. Closed form, exact by construction and monotone in `hops`: leaving
  * it off subtracted the body radius twice and reported a 900 mm corridor as 300 mm, a
- * number nothing in the corridor had (`docs/backlog.md` 5.8).
+ * number nothing in the corridor had.
  *
  * A corollary worth stating rather than discovering: under this model no walkable route
  * can be narrower than `2·bodyRadius`, because a narrower one has no free cell at all
@@ -152,9 +152,9 @@ export interface CirculationModel {
    * `rooms[]` entry. Source order; **present only when non-empty**, so a plan with
    * nothing sealed keeps the summary bytes it had.
    *
-   * This exists because the absence used to be the whole report: a sealed room simply
-   * fell out of `rooms[]` and `W_PATH_TOO_NARROW`, whose domain is that array, went
-   * silent — a plan got *cleaner* as an obstacle grew (`docs/backlog.md` 5.8). A room
+   * Without it the absence would be the whole report: a sealed room would simply fall
+   * out of `rooms[]` and `W_PATH_TOO_NARROW`, whose domain is that array, would go
+   * silent — a plan would get *cleaner* as an obstacle grew. A room
    * with no door path at all is NOT listed here; that is `W_ROOM_UNREACHABLE`'s fact.
    */
   blocked?: BlockedRoom[];
@@ -167,7 +167,7 @@ export interface CirculationModel {
    * This exists because the ABSENCE was the whole report. A consumer got circulation
    * facts for five of seven rooms and nothing telling it two were missing, and could
    * not tell "this room is fine, we just measure from a different front door" from
-   * "nothing can walk in here" (`docs/backlog.md` G.5). `blocked` cannot carry them:
+   * "nothing can walk in here". `blocked` cannot carry them:
    * that key means *sealed by furniture*, a real plan defect with a piece to move, and
    * widening it to mean "we did not measure this" would manufacture exactly the false
    * positive its furniture-free control exists to prevent.
@@ -227,11 +227,8 @@ export interface BlockedRoom {
    * {@link CirculationModel.bodyRadiusMm}'s own ruler rather than asserted.
    *
    * A sealed room has no widest-path reading, because the widest path never arrives; the
-   * temptation is then to print 0, and 0 is a fabrication whenever a real gap exists. It
-   * is the exact complaint `docs/backlog.md` 5.8 was filed over ("100 mm is not a width
-   * anything in that corridor actually has"), and replacing a fictional 100 with a
-   * fictional 0 would not close it. So the number is MEASURED: re-run the same grid with
-   * a smaller body and see which one gets there. The rungs are half a cell apart, so the
+   * temptation is then to print 0, and 0 is a fabrication whenever a real gap exists. So
+   * the number is MEASURED: re-run the same grid with a smaller body and see which one gets there. The rungs are half a cell apart, so the
    * answer is a whole cell of width, and it is monotone in an obstacle's depth for the
    * same reason the reachable reading is — a deeper obstacle can only admit a smaller
    * body.
@@ -620,7 +617,7 @@ function distPointToSeg(px: number, py: number, ax: number, ay: number, bx: numb
  * `test/nav-grid-residual.test.ts` is what needs that: it compares the wall mask against
  * the drawn wall solid, and must therefore see the whole mask — including the parts of
  * every wall that fall outside a room box, where `NavGrid.free` is `0` for a completely
- * unrelated reason (`docs/backlog.md` G.11). Not part of the public surface;
+ * unrelated reason. Not part of the public surface;
  * `src/index.ts` does not re-export it.
  */
 export interface NavExtent {
@@ -672,7 +669,7 @@ export function navExtent(rooms: readonly RRoom[]): NavExtent | null {
  * rasterises to a bar along its own DIAMETER, so the nav grid let a route walk through
  * 1200 mm of masonry while severing the round room inside it into two caps. That is
  * what dropped `hexagon-pavilion`'s three northern galleries and `aquarium`'s plant
- * room out of the facts with nothing said (`docs/backlog.md` G.5). `arcs[i]` is the
+ * room out of the facts with nothing said. `arcs[i]` is the
  * solve resolve already did for segment `i`, and `distPointToArc` is the exact
  * analogue of the segment distance used beside it — no tessellation either side.
  *
@@ -837,7 +834,7 @@ function buildGrid(
     // opening's midpoint left a ONE-CELL doorway pinned at the cabinet's own corner,
     // while a deeper cabinet — one whose halo covered the midpoint — fell through to
     // this loop and opened the whole metre of threshold still walkable beside it. So the
-    // plan with MORE furniture measured WIDER (`docs/backlog.md` 5.8: 1500 mm of gap
+    // plan with MORE furniture measured WIDER (1500 mm of gap
     // read 700 mm and 1100 mm of gap read 840). A connector is a width, not a point, and
     // which part of it a route may use cannot depend on the phase of its midpoint.
     const points = thresholdPoints(g, c.at, rects[ai]!, c.clear, tol);
@@ -1082,10 +1079,10 @@ export function computeCirculation(
   tol: number,
   bodyRadiusMm: number = DEFAULT_BODY_RADIUS_MM,
   /** Vertical runs on this storey — obstacles with a walkable entry side. Append-only:
-   *  omitting it is exactly the pre-v1.21 behaviour. */
+   *  omitting it means a storey with no vertical runs. */
   verticals: RVertical[] = [],
   /** Floor voids on this storey — blocked cells with a walkable edge on all four sides.
-   *  Append-only: omitting it is exactly the pre-v1.29 behaviour. */
+   *  Append-only: omitting it means a storey with no voids. */
   voids: RVoid[] = [],
 ): CirculationModel | null {
   const nav = buildNav(rooms, walls, doors, openings, furniture, verticals, voids, access, tol, bodyRadiusMm);

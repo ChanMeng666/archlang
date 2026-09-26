@@ -1,5 +1,5 @@
 /**
- * Structured JSON I/O for ArchLang plans (v1.13) — the machine-native channel an
+ * Structured JSON I/O for ArchLang plans — the machine-native channel an
  * LLM uses to author and read a floor plan without touching `.arch` syntax.
  *
  * The shape follows the **RPLAN / DStruct2Design** convention LLMs are demonstrably
@@ -192,7 +192,7 @@ export interface RoomJson {
   width: number;
   height: number;
   /**
-   * An explicit, implicitly-closed simple polygon of ≥3 vertices (v1.23) — the room's
+   * An explicit, implicitly-closed simple polygon of ≥3 vertices — the room's
    * floor when it is not a rectangle. Present on OUTPUT for a `room polygon`, and
    * honoured on INPUT, where it replaces `x`/`y`/`width`/`height` (which stay on output
    * as the polygon's bounding box, so a rect-only reader still sees a truthful extent).
@@ -260,12 +260,12 @@ export interface OpeningJson {
   /** How far the panel is drawn open, 0–1. A drawing fact; nothing measured reads it. */
   open?: number;
   /**
-   * Bottom of the glazing above this storey's floor, in mm (v1.35) — `window` only. `0` is
+   * Bottom of the glazing above this storey's floor, in mm — `window` only. `0` is
    * legal and means a floor-length window. Emitted only when the plan authored a height
    * somewhere; honoured on input.
    */
   sill?: number;
-  /** Top of the opening above this storey's floor, in mm (v1.35). Same gating; must sit
+  /** Top of the opening above this storey's floor, in mm. Same gating; must sit
    *  above {@link OpeningJson.sill} and no higher than the host wall. */
   head?: number;
 }
@@ -368,7 +368,7 @@ export interface PlanJson {
    */
   dims_auto?: AutoDimsMode;
   /**
-   * The plan's default floor-to-floor storey height, in mm (v1.35) — the `height <mm>`
+   * The plan's default floor-to-floor storey height, in mm — the `height <mm>`
    * plan setting. Emitted only when the plan authored a height somewhere, so every
    * existing payload is byte-identical, and accepted on input because Plan JSON is a
    * ROUND-TRIP surface: without it `compile --from-json` would silently drop the datum and
@@ -494,7 +494,7 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
     };
   });
 
-  // The vertical datum's gate (v1.35) — one boolean, the same one `describe()` reads, so
+  // The vertical datum's gate — one boolean, the same one `describe()` reads, so
   // the two surfaces can never disagree about whether this plan has heights.
   const heights = ir._heightsAuthored;
 
@@ -532,7 +532,7 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
           if (allowed.open && e.open !== undefined) base.open = e.open;
         }
       }
-      // The vertical datum (v1.35), under the one gate. `sill` is a window's alone — a
+      // The vertical datum, under the one gate. `sill` is a window's alone — a
       // door's and a cased opening's sill is the floor, and emitting `sill: 0` for them
       // would round-trip into a clause the grammar does not offer.
       if (heights) {
@@ -611,7 +611,7 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
     // Same rule as `site`: emitted only when declared, so a plan that never asked for
     // automatic dimensioning produces exactly the payload it always did.
     ...(ir.autoDims !== undefined ? { dims_auto: ir.autoDims } : {}),
-    // Same rule again for the vertical datum (v1.35): emitted only under the one gate, so
+    // Same rule again for the vertical datum: emitted only under the one gate, so
     // a plan that declares no height produces exactly the payload it always did.
     ...(heights ? { storey_height: ir.storeyHeight } : {}),
     room_count: rooms.length,
@@ -736,7 +736,7 @@ function validatePlanJson(json: unknown, val: Validator): PlanJson | null {
   )
     val.err("/dims_auto", `expected one of ${AUTO_DIMS_MODES.join(", ")}`);
 
-  // The vertical datum (v1.35). Range-checked HERE as well as at resolve, because a
+  // The vertical datum. Range-checked HERE as well as at resolve, because a
   // payload is a surface a model writes directly and `storey_height: 3` should be refused
   // with a JSON pointer rather than turned into a plan that then refuses itself.
   if (json.storey_height !== undefined && !(isNum(json.storey_height) && isDrawableHeight(json.storey_height)))
@@ -828,7 +828,7 @@ function validateWall(w: unknown, path: string, val: Validator): void {
   }
   if (w.thickness !== undefined && !isNum(w.thickness)) val.err(`${path}/thickness`, "expected a number");
   if (w.category !== undefined && !isStr(w.category)) val.err(`${path}/category`, "expected a string");
-  // A VERTICAL height (v1.35), not a plan extent — see `WallJson.height`.
+  // A VERTICAL height, not a plan extent — see `WallJson.height`.
   if (w.height !== undefined && !(isNum(w.height) && isDrawableHeight(w.height)))
     val.err(`${path}/height`, `expected a number greater than 0 and no more than ${MAX_HEIGHT}`);
 }
@@ -859,7 +859,7 @@ function validateOpening(o: unknown, path: string, val: Validator): void {
     val.err(`${path}/door_kind`, `expected ${enumList(DOOR_KINDS)}`);
   if (o.open !== undefined && !(isNum(o.open) && o.open >= 0 && o.open <= 1))
     val.err(`${path}/open`, "expected a number in [0,1]");
-  // The vertical datum (v1.35). `sill` may be exactly 0 (a floor-length window); `head`
+  // The vertical datum. `sill` may be exactly 0 (a floor-length window); `head`
   // may not. The sill-below-head and head-within-wall rules are NOT re-implemented here —
   // they need the host wall, so they stay at resolve where `E_SILL_ABOVE_HEAD` and
   // `E_OPENING_ABOVE_WALL` already own them, and a payload that violates one is refused
@@ -962,7 +962,7 @@ function emitArch(p: PlanJson): string {
   // The round-trip half of `dims auto`. Without this line the chains vanish and the
   // drawing extent shrinks around them — a silently smaller sheet, no diagnostic.
   if (p.dims_auto !== undefined) L.push(`  dims auto ${p.dims_auto}`);
-  // The round-trip half of the vertical datum (v1.35). Without this line every wall in the
+  // The round-trip half of the vertical datum. Without this line every wall in the
   // re-emitted source silently inherits the 3000 default, and a 2400 storey comes back as
   // a 3000 one with no diagnostic — the `dims auto` failure above, one layer down.
   if (p.storey_height !== undefined) L.push(`  height ${num(p.storey_height)}`);
@@ -1191,7 +1191,7 @@ export interface GraphCheck {
  * room source order, so results are deterministic. On a fatal compile error every
  * intended room is reported missing.
  *
- * **Multi-storey** (`level <n> { … }`, v1.21): the graph is the WHOLE BUILDING's, not
+ * **Multi-storey** (`level <n> { … }`): the graph is the WHOLE BUILDING's, not
  * page 1's — storeys are scanned in ascending level order and their rooms pooled in that
  * order (a room id that repeats on two storeys resolves to the LOWER storey's room, which
  * is also the rank used for output ordering). Nodes stay rooms: a `stair`/`elevator`/

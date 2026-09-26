@@ -155,9 +155,9 @@ export interface Opening {
   /** Opening width along the wall. */
   width: number;
   /**
-   * Which of the three opening elements this is (v1.35). Append-only, and the wall
+   * Which of the three opening elements this is. Append-only, and the wall
    * lowering does not read it: the hole a door cuts and the hole a window cuts are the
-   * same hole, which is why this field could be absent for eight releases.
+   * same hole.
    *
    * It is here because the {@link Opening} list is the ONLY place a wall knows what is in
    * it, and the vertical datum makes that worth knowing — a 2.5D slice through a wall at
@@ -186,15 +186,15 @@ export interface RWall extends RBase {
   hatchAngle: number;
   points: Point[];
   /**
-   * Solved curved edges (v1.24), indexed by SEGMENT index: entry `k` is the arc from
+   * Solved curved edges, indexed by SEGMENT index: entry `k` is the arc from
    * `points[k]` to `points[k+1]`. Solved ONCE here at resolve (centre, radius, signed
-   * sweep) so no consumer re-derives a curve. Absent for an all-straight polyline —
-   * which is every wall written before v1.24, and why their bytes are unchanged.
+   * sweep) so no consumer re-derives a curve. Absent for an all-straight polyline, so
+   * a straight wall's bytes do not depend on arcs existing.
    */
   arcs?: Array<Arc | undefined>;
   closed: boolean;
   /**
-   * How tall this wall stands, in mm (v1.35, the vertical datum layer) — **always
+   * How tall this wall stands, in mm (the vertical datum layer) — **always
    * resolved**, never absent: the authored `height` clause, else this storey's height,
    * else the plan's, else {@link import("./datum.js").STOREY_HEIGHT}.
    *
@@ -210,7 +210,7 @@ export interface RWall extends RBase {
   height: number;
   /**
    * True when {@link RWall.height} came from this wall's OWN `height` clause rather than
-   * being inherited from the storey or the plan (v1.35).
+   * being inherited from the storey or the plan.
    *
    * It exists for one diagnostic. `E_OPENING_ABOVE_WALL` fires once per opening, and when
    * the wall inherited its height the author's mistake is a plan-level `height`, not any
@@ -254,8 +254,8 @@ export type FurniturePlacement = "anchored" | "against-wall" | "absolute";
  * resolved to.
  *
  * It exists because a projection that re-emits a DERIVED position as an authored
- * `at (x,y)` is not a faithful projection: `grid` snaps the numbers an author writes
- * (v1.27, item 3.12), so a derived coordinate that is not already on the grid MOVES
+ * `at (x,y)` is not a faithful projection: `grid` snaps the numbers an author writes,
+ * so a derived coordinate that is not already on the grid MOVES
  * on the way back in. Carrying the clause lets `planToJson` hand back the statement
  * rather than its result, so the round-trip re-derives the same position instead of
  * re-snapping a different one. Internal: set during resolve, never serialized into
@@ -276,21 +276,21 @@ export interface RRoom extends RBase {
   size: { w: number; h: number };
   /**
    * The room's floor as an explicit, implicitly-closed simple polygon (`room polygon
-   * (x,y) …`, v1.23). Absent for a rectangular room, which is what keeps every existing
+   * (x,y) …`). Absent for a rectangular room, which is what keeps every existing
    * plan byte-identical: a consumer must read this before assuming `at`/`size` IS the
    * floor. Vertices are grid-snapped, in source order, with no repeated last point.
    */
   poly?: Point[];
   /**
-   * A CIRCULAR floor (`room circle at (cx,cy) radius R`, v1.24) — the exact centre and
+   * A CIRCULAR floor (`room circle at (cx,cy) radius R`) — the exact centre and
    * radius. When present, {@link RRoom.poly} also holds the 48-gon tessellation (so every
    * ring consumer works unchanged) and `at`/`size` the bounding box; the AREA must be
    * taken from this in closed form (πR²), never from the tessellation.
    */
   circle?: { c: Point; r: number };
   /** Explicit label/area anchor (`label "…" at (x,y)`); absent = the derived centre.
-   *  Recorded for EVERY room shape — a rectangle's was parsed and then dropped before
-   *  v1.25, which silently disabled both the anchor and `W_ROOM_LABEL_OUTSIDE` there. */
+   *  Recorded for EVERY room shape — dropping a rectangle's would silently disable both
+   *  the anchor and `W_ROOM_LABEL_OUTSIDE` there. */
   labelAt?: Point;
   /** Byte span of the `at (x,y)` clause behind {@link RRoom.labelAt}, so a diagnostic
    *  raised about it blames the clause and not the whole `room` statement. Recorded on
@@ -318,7 +318,7 @@ export interface RDoor extends RBase {
   host: WallSegment | null;
   /**
    * The door's kind, present ONLY when it is not the default `hinged` — so every
-   * door written before v1.25 (and every explicit `door hinged …`) carries no field
+   * kind-free door (and every explicit `door hinged …`) carries no field
    * at all and every downstream payload is byte-identical. A kind changes what is
    * drawn in the reveal and whether a swing arc exists; it changes nothing else
    * (the wall boolean, the opening cover, adjacency and the walk-through landing
@@ -345,7 +345,7 @@ export interface RDoor extends RBase {
    */
   _flipHingeText?: string;
   /**
-   * Top of the doorway above this storey's floor, in mm (v1.35) — always resolved, the
+   * Top of the doorway above this storey's floor, in mm — always resolved, the
    * authored `head` clause or {@link import("./datum.js").DOOR_HEAD}. A door's sill is
    * `0` by definition (you walk through it), so there is no `sill` here.
    */
@@ -358,7 +358,7 @@ export interface RWindow extends RBase {
   host: WallSegment | null;
   /** `attached` vs `absolute` — see {@link RDoor._placement}. */
   _placement?: OpeningPlacement;
-  /** Bottom of the glazing above this storey's floor, in mm (v1.35) — always resolved,
+  /** Bottom of the glazing above this storey's floor, in mm — always resolved,
    *  the authored `sill` or {@link import("./datum.js").WINDOW_SILL}. */
   sill: number;
   /** Top of the glazing, in mm — the authored `head` or
@@ -373,7 +373,7 @@ export interface ROpening extends RBase {
   /** `attached` vs `absolute` — see {@link RDoor._placement}. */
   _placement?: OpeningPlacement;
   /**
-   * Top of the cased opening above this storey's floor, in mm (v1.35) — always resolved.
+   * Top of the cased opening above this storey's floor, in mm — always resolved.
    * Its default is the HOST WALL's own height (a leaf-less opening is drawn full height),
    * falling back to the storey height when the opening sits on no wall at all.
    */
@@ -538,8 +538,7 @@ export interface RVoid extends RBase {
  * `at`/`size` are always populated, because a great deal of downstream code (the frame
  * transform, the balcony rail derivation, the grid index the lint rules use) is written
  * on a box; but they are the polygon's BOUNDING box when `poly` is set, and **no derived
- * position may be taken from them in that case**. That is the v1.25 defect class stated
- * for this element: area comes from the shoelace, the label point from
+ * position may be taken from them in that case**: area comes from the shoelace, the label point from
  * `polygonLabelPoint`, containment from `pointInPolygon`. The bbox is for indexing only.
  */
 export interface ROutdoor extends RBase {
@@ -633,7 +632,7 @@ export interface ResolvedPlan {
    */
   site?: SiteNode;
   /**
-   * The `site { boundary … }` LOT LINE, resolved (v1.31): expressions evaluated,
+   * The `site { boundary … }` LOT LINE, resolved: expressions evaluated,
    * grid-snapped, implicitly closed, no repeated last vertex.
    *
    * Separate from {@link site} — which stays the verbatim AST node — because this is the
@@ -682,19 +681,19 @@ export interface ResolvedPlan {
   levelName?: string;
   /**
    * The `zone` blocks this plan declares, in first-declaration order — the wing/department
-   * grouping (v1.22). Absent when the plan declares none, so an existing IR (and therefore
+   * grouping. Absent when the plan declares none, so an existing IR (and therefore
    * its Scene and its bytes) is unchanged. Each element's membership rides on
    * {@link RBase._zone}; nothing here has geometric meaning.
    */
   zones?: RZone[];
   /**
-   * This storey's floor-to-floor height, in mm (v1.35) — always resolved: the `level`'s
+   * This storey's floor-to-floor height, in mm — always resolved: the `level`'s
    * own `height`, else the plan's, else {@link import("./datum.js").STOREY_HEIGHT}. It is
    * what every wall on this storey inherits when it declares none.
    */
   storeyHeight: number;
   /**
-   * This storey's floor level above the building's LOWEST floor, in mm (v1.35) — `0` for a
+   * This storey's floor level above the building's LOWEST floor, in mm — `0` for a
    * single-storey plan and for the ground storey of any plan.
    *
    * The sum of the heights of the storeys below, not `level × storeyHeight`: `level 1
@@ -720,7 +719,7 @@ export interface ResolvedPlan {
   walls: RWall[];
   /**
    * The plan's `place`d component instances, in source order. Absent when the plan places
-   * none, so a pre-v1.22 plan's IR — and therefore its Scene and its bytes — is unchanged.
+   * none, so a component-free plan's IR — and therefore its Scene and its bytes — is unaffected.
    */
   instances?: RInstance[];
 }
@@ -1351,14 +1350,14 @@ interface ResolveExtras {
   /** A pre-resolved sheet to adopt verbatim (skips deriving one + its overflow warning). */
   sheet?: ResolvedSheet;
   /**
-   * This storey's floor level above the building's lowest, in mm (v1.35) — the sum of the
+   * This storey's floor level above the building's lowest, in mm — the sum of the
    * heights of the storeys BELOW it, which only the multi-storey caller can know because
    * it is the only thing that has seen the other storeys. Absent = `0`, the single-storey
    * plan and the ground floor of every plan.
    */
   elevation?: number;
   /**
-   * Did the WHOLE plan author a height anywhere (v1.35)? Same reason: a `level 2 height
+   * Did the WHOLE plan author a height anywhere? Same reason: a `level 2 height
    * 3200` is invisible from inside level 1's synthetic plan, and the two pages must agree
    * about whether the third dimension exists. Absent = derive it from the plan at hand,
    * which is exactly right for a single-storey plan.
@@ -1464,7 +1463,7 @@ function levelPlanFor(ast: PlanNode, block: LevelNode, dropPaper: boolean): Plan
   const plan: PlanNode = {
     ...ast,
     ...(dropPaper ? { paper: undefined } : {}),
-    // `level <n> height <h>` folds into the synthetic plan's own `height` (v1.35), so the
+    // `level <n> height <h>` folds into the synthetic plan's own `height`, so the
     // resolver reads ONE field and the fallback chain wall → level → plan → constant has
     // exactly one implementation. A storey that declares none keeps the plan's.
     ...(block.height !== undefined ? { height: block.height, heightSpan: block.heightSpan } : {}),
@@ -1588,7 +1587,7 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
     else if (!sheet.drawingFits) shared.push(drawingOverflowDiagnostic(ast, sheet, { w: dw, h: dh }, usable));
   }
 
-  // The vertical datum (v1.35), decided ONCE for the building rather than per storey.
+  // The vertical datum, decided ONCE for the building rather than per storey.
   //
   // `blocks` is ascending, so walking it in order means every storey's elevation is the
   // sum of the heights of the storeys already resolved below it — which is the rule, and
@@ -1723,7 +1722,7 @@ function resolveImpl(
   let hiKey = "";
   let hiVal: { host: WallSegment | null; onWall: boolean } | null = null;
 
-  // ---- the vertical datum (v1.35) ------------------------------------------------
+  // ---- the vertical datum ------------------------------------------------
   // This storey's floor-to-floor height, resolved BEFORE any element so every wall can
   // inherit it. The expression is evaluated against the plan's GLOBAL bindings — it is a
   // plan setting, not a body statement, so it sees every plan-level `let` wherever that
@@ -1863,7 +1862,7 @@ function resolveImpl(
     if (labelled.length > 0) axes = labelled;
   }
 
-  // 5b. The lot line (v1.31). Same shape as the axes above and for the same reasons: a
+  // 5b. The lot line. Same shape as the axes above and for the same reasons: a
   //     plan-level datum whose coordinates are expressions, evaluated against the plan's
   //     GLOBAL bindings and snapped like every other authored coordinate. It REFUSES
   //     rather than approximating — a degenerate or self-crossing ring encloses no single
@@ -1933,7 +1932,7 @@ function resolveImpl(
     // opted-out plan has no key at all and the IR stays byte-identical to before.
     ...(ast.schedule ? { schedule: ast.schedule } : {}),
     ...(ast.legend ? { legend: true } : {}),
-    // Declared wing/department grouping (v1.22) — metadata only, absent when the plan
+    // Declared wing/department grouping — metadata only, absent when the plan
     // declares no `zone`, so an existing IR is byte-identical.
     ...(zoneFrame.declared.size > 0 ? { zones: [...zoneFrame.declared.values()] } : {}),
     // Page identity for a multi-storey plan (absent otherwise → byte-identical IR).
@@ -1946,7 +1945,7 @@ function resolveImpl(
     themeBase: ast.themeBase,
     themeFrom: ast.themeFrom,
     styles: ast.styles,
-    // The vertical datum (v1.35). All three are ALWAYS present — unlike every optional
+    // The vertical datum. All three are ALWAYS present — unlike every optional
     // key above, they are not "absent when undeclared", because a storey always has a
     // height whether or not anyone wrote one down. The byte-identity law is kept a layer
     // out instead: `describe()` reads `_heightsAuthored` and emits nothing when it is
@@ -2210,7 +2209,7 @@ function registerOpenings(elements: ResolvedElement[], walls: RWall[]): void {
     );
   for (const el of elements) {
     if ((el.kind === "door" || el.kind === "window" || el.kind === "opening") && el.host) {
-      // `kind`/`ownerId`/`sill`/`head` (v1.35) are APPENDED facts: the wall lowering reads
+      // `kind`/`ownerId`/`sill`/`head` are APPENDED facts: the wall lowering reads
       // `at` and `width` and nothing else — a door's hole and a window's hole are the same
       // hole — so no drawing moves. They are here because this list is the only place a
       // wall knows what is cut into it, which is what a 2.5D slice at a given height needs.

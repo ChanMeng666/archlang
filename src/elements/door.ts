@@ -257,7 +257,7 @@ export const door: ElementDef = {
       ctx.next();
       node.open = ctx.parseExpr();
     }
-    // The vertical datum (v1.35): `head` only, and after `open` — the height clauses
+    // The vertical datum: `head` only, and after `open` — the height clauses
     // trail every clause the statement already had, on all three opening elements, which
     // is what keeps `slideSpan`'s insertion point (recorded above, before `open`)
     // meaning exactly what it meant.
@@ -306,8 +306,8 @@ export const door: ElementDef = {
     }
     // —— Kind, and the clauses it does and does not accept ——
     // `hinged` is dropped: an omitted kind word and an explicit `door hinged …` must be
-    // indistinguishable from here down, which is what makes every pre-v1.25 plan's
-    // bytes (and its `describe`/`lint`/Plan JSON payloads) unchanged.
+    // indistinguishable from here down, which is what keeps a kind-free plan's bytes
+    // (and its `describe`/`lint`/Plan JSON payloads) independent of door kinds.
     const named: DoorKind = n.doorKind ?? "hinged";
     const doorKind = named === "hinged" ? undefined : named;
     const allowed = DOOR_KIND_CLAUSES[named];
@@ -387,7 +387,7 @@ export const door: ElementDef = {
     // only the IR, and re-emitting here keeps the authored placement/width expressions
     // (rather than baking in resolved numbers). Internal field — no Scene, no bytes.
     const flipText = n.span ? emitOpening("door", n, { hinge: hinge === "left" ? "right" : "left" }) : undefined;
-    // The vertical datum (v1.35). A door's sill is the floor by definition, so only the
+    // The vertical datum. A door's sill is the floor by definition, so only the
     // head is authorable and the `sill: 0` below is the fact, not a default.
     const { head } = resolveOpeningHeights(ctx, `Door "${id}"`, n, { sill: 0, head: DOOR_HEAD }, host, n.span);
     return {
@@ -403,7 +403,7 @@ export const door: ElementDef = {
       ...(flipText ? { _flipHingeText: flipText } : {}),
       // Everything below is present ONLY on a non-hinged door, so a plan that names
       // no kind produces exactly the IR (and therefore exactly the bytes, exactly the
-      // `describe()` payload and exactly the Plan JSON) it produced before v1.25.
+      // `describe()` payload and exactly the Plan JSON) as if door kinds did not exist.
       ...(doorKind !== undefined
         ? {
             doorKind,
@@ -433,7 +433,7 @@ export const door: ElementDef = {
     // (computed from the same tangent inside `doorSwing`) can never disagree with it.
     const d = segmentDirAt(seg, dr.at);
     const n = normal(d);
-    // The wall solid is ALWAYS severed at a doorway: since v1.30 the joinery pass
+    // The wall solid is ALWAYS severed at a doorway: the joinery pass
     // (`wall-lowering.ts`) cuts every opening on every host — straight, angled or curved
     // — so the floor runs continuously through the reveal and only the capped jambs are
     // drawn. The cover is therefore never painted: `theme.opening` is the page

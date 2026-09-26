@@ -3,7 +3,7 @@
  * (rooms + the literal "exterior") once, then — per room, in source order — emits
  * W_BATH_VIA_BEDROOM and W_ROOM_UNREACHABLE, preserving the historical interleaving.
  *
- * On a storey with no exterior door that a shaft nevertheless reaches (v1.21), the room
+ * On a storey with no exterior door that a shaft nevertheless reaches, the room
  * the shaft lands in is joined to "exterior" as an arrival point — coming down the stairs
  * and out of the front door below IS a way out — so the same BFS answers the same
  * question one storey up. A single-storey plan contributes no such edge and is unchanged.

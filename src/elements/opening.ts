@@ -38,7 +38,7 @@ export const opening: ElementDef = {
       ctx.next();
       node.wall = ctx.eatIdent().value;
     }
-    // The vertical datum (v1.35): `head` only. A cased opening's sill is the floor.
+    // The vertical datum: `head` only. A cased opening's sill is the floor.
     Object.assign(node, parseOpeningHeights(ctx, { sill: false }));
     return node;
   },
@@ -101,7 +101,7 @@ export const opening: ElementDef = {
     const n = normal(d);
     const h = seg.thickness / 2;
     const hw = op.width / 2;
-    // The wall solid is ALWAYS severed here: since v1.30 the joinery pass
+    // The wall solid is ALWAYS severed here: the joinery pass
     // (`wall-lowering.ts`) cuts every opening on every host — straight, angled or
     // curved — with the floor running continuously through the gap and the capped jambs
     // the only lines left. So the cover is never painted: `theme.opening` is the page

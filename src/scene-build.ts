@@ -156,9 +156,8 @@ const chainOffset = (sizes: RenderSizes, slot: number): number => sizes.dimFont 
  * How far outboard of its wall face a facade's dimension BAND has to start so its
  * chains land in clear paper rather than on the ground the plan draws.
  *
- * Until v1.31 nothing existed outside the wall line for a chain to cross, so
- * {@link chainOffset} alone was the whole answer. `outdoor` changed that: on
- * `garden-house` the ground-floor chain runs across the patio, the paving link and the
+ * {@link chainOffset} alone is not the whole answer once `outdoor` draws ground outside
+ * the wall line: on `garden-house` the ground-floor chain runs across the patio, the paving link and the
  * deck, and the first-floor chain across the balcony slab. Nothing is illegible — a
  * dimension line is a thin dark stroke and ground is a tint under a hatch — but it is
  * not what a drafter would issue.
@@ -443,7 +442,7 @@ function segmentBand(s: WallSegment): Bounds {
  * run clear of every other wall.
  *
  * The segment midpoint is the obvious station and the wrong one — on a shell it is very
- * often exactly where a partition tees in, which is the case the backlog reported. The
+ * often exactly where a partition tees in, which is the common case. The
  * number is written past the wall face, so a wall crossing there puts the digits straight
  * back into poché, this time somebody else's.
  *
@@ -652,16 +651,14 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
         hatchGap: refDim * 0.013,
       };
 
-  // Collect non-wall elements (source order), then lower walls — exactly the v0.1
-  // op order, so layer-bucketing in a backend reproduces the original draw order.
+  // Collect non-wall elements (source order), then lower walls — the canonical op
+  // order, so layer-bucketing in a backend reproduces the canonical draw order.
   // Each kind gets its styled theme when `style <kind>` applies, else the base ctx.
-  // Will the wall lowering below actually void the wall solid at every opening? Since
-  // v1.30, ALWAYS: `lowerWallSet` cuts every opening on every host — straight, angled
-  // and curved alike — so the floor runs continuously through each passage and only the
-  // capped jambs are drawn. It used to depend on the plan's shape (only the rectilinear
-  // boolean subtracted), which is why `RenderCtx.openingsVoided` exists at all; the
-  // field stays, and stays true, because the interface is append-only and a hand-built
-  // `RenderCtx` must keep its safe opaque default.
+  // Will the wall lowering below actually void the wall solid at every opening? ALWAYS:
+  // `lowerWallSet` cuts every opening on every host — straight, angled and curved alike —
+  // so the floor runs continuously through each passage and only the capped jambs are
+  // drawn. `RenderCtx.openingsVoided` stays, and stays true, because the interface is
+  // append-only and a hand-built `RenderCtx` must keep its safe opaque default.
   const baseCtx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm, openingsVoided: true };
   const ctxFor = (kind: string): RenderCtx => {
     const st = styledByKind.get(kind);
@@ -671,7 +668,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   const outdoorEls = ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
   // Which nodes each LABELLED AREA contributed, so the label post-pass at the end can
   // find its text without matching coordinates back to elements (two areas can share an
-  // anchor). Rooms and, since v1.31, `outdoor` surfaces: a terrace's name and area are
+  // anchor). Rooms and `outdoor` surfaces: a terrace's name and area are
   // drawn exactly like a room's and want the same treatment, and the pass is written
   // against a ring + an anchor rather than against either element type.
   const labelGroups: LabelGroup[] = [];
@@ -731,7 +728,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
       nodes.push(...rendered);
     }
     // Pushed in ELEMENT order, so a plan with no ground produces exactly the group list
-    // it produced before v1.31 and therefore exactly the same bytes.
+    // (and therefore the bytes) it would with no ground support at all.
     if (el.kind === "room") {
       const r = el as RRoom;
       labelGroups.push({
@@ -791,7 +788,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     nodes.push(...axesNodes(ir.axes, b, sizes, theme, dimReach(b, nodes, ["dims"])));
   }
 
-  // The lot line (v1.31), after the axes so the two datum conventions read in a stable
+  // The lot line, after the axes so the two datum conventions read in a stable
   // order and before the label pass so a boundary can never move a room name (the pass
   // skips `C-PROP` outright — see `label-placement.ts`). Nothing is emitted for a plan
   // with no `boundary`, so every existing drawing is byte-identical.

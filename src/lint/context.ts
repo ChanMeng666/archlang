@@ -13,7 +13,7 @@ import { type RVertical, verticalsOf } from "../vertical.js";
 import type { LintRuleset } from "./ruleset.js";
 
 /**
- * What one storey's rules need to know about the BUILDING around it (v1.21). A
+ * What one storey's rules need to know about the BUILDING around it. A
  * single-storey plan has none of this, and the defaults below are exactly "no vertical
  * circulation anywhere", so every existing plan lints identically.
  */
@@ -42,14 +42,14 @@ export interface LintContext {
   furniture: RFurniture[];
   /** Vertical-circulation runs on this storey, in source order. */
   verticals: RVertical[];
-  /** Floor voids on this storey (v1.29) — circulation obstacles, in source order. No rule
+  /** Floor voids on this storey — circulation obstacles, in source order. No rule
    *  keys off them directly; they reach the nav grid through `circulation-facts.ts`. */
   voids: RVoid[];
   /** The multi-storey facts this storey's rules read; inert for a single-storey plan. */
   building: BuildingContext;
   /** Both doors and cased openings connect a room to its neighbours. */
   connectors: Array<RDoor | ROpening>;
-  /** Per-room extent: bbox, plus the floor ring for a `room polygon` (v1.23). */
+  /** Per-room extent: bbox, plus the floor ring for a `room polygon`. */
   roomRects: Map<string, RoomBox>;
   /** Every wall segment, hoisted once (several rules scan them per room/fixture). */
   wallSegs: WallSegment[];

@@ -8,7 +8,7 @@
  * fence is not in `ir.walls` at all), has no thickness and no poché, never enters
  * `describe().walls` or the wall joinery, and takes no part in the access graph, the nav
  * grid or any clearance rule. A gate is a real thing and it is deferred BY NAME
- * (`docs/backlog.md`) rather than approximated by letting a `door` host onto a fence —
+ * rather than approximated by letting a `door` host onto a fence —
  * which would drag a fence into the room-connectivity graph and make a garden a room's
  * neighbour.
  *

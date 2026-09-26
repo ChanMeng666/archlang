@@ -100,7 +100,7 @@ export interface SiteFacts {
   /**
    * The LOT's area in m², 2 dp — the EXACT shoelace of the declared `boundary` ring,
    * never its bounding box. Present only when the plan declares a boundary, so a `site`
-   * with only `street`/`hemisphere` describes byte-identically to before (v1.31).
+   * with only `street`/`hemisphere` describes byte-identically to before.
    */
   lot_area_m2?: number;
   /** The lot's extent, as top-left + size. A convenience for framing a viewport; every
@@ -238,7 +238,7 @@ export function planCenterOfRooms(roomRects: Map<string, RoomBox>): Point {
   return minX === Number.POSITIVE_INFINITY ? { x: 0, y: 0 } : { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
 }
 
-// ---- the lot line (v1.31) ----------------------------------------------------
+// ---- the lot line ----------------------------------------------------
 
 /**
  * The CAD layer a `site { boundary … }` property line lands on — the AIA/NCS civil layer

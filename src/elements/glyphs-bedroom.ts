@@ -166,7 +166,7 @@ export function drawWardrobe(r: Rect, g: GlyphCtx): SceneNode[] {
 }
 
 // ---------------------------------------------------------------------------
-// ── v1.32 F2: bedroom ──
+// ── bedroom ──
 //
 // Four families the bedroom vocabulary was missing. Appended at the foot of the file for the
 // same reason they are appended to `FIXTURE_FAMILIES`: that table's order is the LEGEND's

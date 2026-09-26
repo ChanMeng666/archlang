@@ -62,7 +62,7 @@ export const wall: ElementDef = {
         } else break;
       }
     }
-    // `height <expr>` — how tall the wall stands (v1.35, the vertical datum layer). It is
+    // `height <expr>` — how tall the wall stands (the vertical datum layer). It is
     // the LAST head clause, immediately before the body, so the wall line reads
     // thickness → material → height → points, and it draws nothing at all: a floor plan is
     // a horizontal cut. Absent, the wall inherits its storey's height.
@@ -179,7 +179,7 @@ export const wall: ElementDef = {
       hatchScale = 1;
     }
     const hatchAngle = n.materialAngle !== undefined ? ctx.eval(n.materialAngle) : 0;
-    // The vertical datum (v1.35): the authored clause, else the storey's height. NOT
+    // The vertical datum: the authored clause, else the storey's height. NOT
     // grid-snapped — `grid` snaps plan coordinates so rooms line up with each other, and a
     // height shares no axis with them.
     const height = n.height !== undefined ? ctx.eval(n.height) : ctx.storeyHeight;

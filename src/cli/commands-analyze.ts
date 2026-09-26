@@ -48,7 +48,7 @@ import {
 } from "./io.js";
 
 // ---------------------------------------------------------------------------
-// Bounded output (v1.17) — the narrowing filters behind `describe --room/--select`
+// Bounded output — the narrowing filters behind `describe --room/--select`
 // and `lint`/`validate` `--code/--severity`.
 //
 // These live in the CLI layer on purpose: `describe()` and `lint()` stay pure,
@@ -109,7 +109,7 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "furniture",
   "verticals",
   "voids",
-  // The vertical datum (v1.35). Conditional like `voids` — present only when the plan
+  // The vertical datum. Conditional like `voids` — present only when the plan
   // authored a height clause — and therefore exactly the shape that let `voids` ship
   // UNSELECTABLE with the drift test green, so the set-equality fixture below now writes a
   // `height` (see `test/cli-narrow.test.ts`).
@@ -213,7 +213,7 @@ function narrowToRooms(s: SceneSummary, ids: string[]): SceneSummary {
 }
 
 /**
- * `describe --zone west,east` — read one wing/department of a zoned plan (v1.22).
+ * `describe --zone west,east` — read one wing/department of a zoned plan.
  *
  * A zone is a DECLARED grouping with no geometry of its own, so this is defined entirely
  * in terms of the rooms the zone lists (nested zones roll up — see `ZoneSummary`): it

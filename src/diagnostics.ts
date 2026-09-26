@@ -76,9 +76,9 @@ export interface FixSuggestion {
    * overwhelmingly common case) means "the source you passed in", exactly as before.
    *
    * {@link import("./fix-apply.js").applyFixes} **refuses** to apply a suggestion that
-   * carries one. Applying it would splice bytes measured in another file into this one:
-   * before v1.22 that is precisely what happened, and an off-wall door inside an imported
-   * component rewrote the middle of the importer's `wall` statement. Append-only field.
+   * carries one. Applying it would splice bytes measured in another file into this one —
+   * an off-wall door inside an imported component would rewrite the middle of the
+   * importer's `wall` statement. Append-only field.
    */
   file?: string;
 }
@@ -121,8 +121,7 @@ export interface Diagnostic {
   /**
    * The FILE this diagnostic's `span` (and every `fixes[].edits[].span`) is measured in,
    * when that is not the compiled source: the module path of the `import`ed `.arch` file
-   * whose component body raised it. Absent = the source passed to `compile()` — every
-   * pre-v1.22 diagnostic, unchanged.
+   * whose component body raised it. Absent = the source passed to `compile()`.
    *
    * This exists because a component's body statements carry spans into the file they were
    * WRITTEN in, while the diagnostic is reported against the file being COMPILED. Without

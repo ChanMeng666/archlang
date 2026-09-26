@@ -1,6 +1,6 @@
 /**
  * The intent channel's concept vocabulary — production name resolution for the
- * NL→ArchLang intent contract (v1.14, Tranche 4).
+ * NL→ArchLang intent contract.
  *
  * A "concept" is a brief-level room idea ("bathroom", "master bedroom", "tea point").
  * A produced room (a {@link RoomSummary}) matches a concept by, in order:

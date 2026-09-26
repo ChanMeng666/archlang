@@ -2,15 +2,9 @@
  * **The one wall-lowering path** — a set of resolved walls to the Scene nodes that draw
  * them: one poché fill per material group, and ONE outline for the whole set.
  *
- * Until v1.30 there were three paths, chosen by shape: an axis-aligned rectangle union
- * for orthogonal walls, a `clipper2-wasm` polygon boolean for angled ones (only when
- * that OPTIONAL dependency happened to be installed), and — for anything curved — the
- * wall element's own per-segment rectangles with untrimmed face lines. Three paths meant
- * three sets of corner cases, an optional dependency that could move a drawing's bytes,
- * and a curved or angled plan whose junctions were drawn wrong by construction (a face
- * line straight through the neighbouring wall's solid).
- *
- * This is one path, for every wall: `geometry/band.ts` turns each wall into exact mitred
+ * One path, for every wall, so there is one set of corner cases, no optional dependency
+ * that could move a drawing's bytes, and no shape of plan whose junctions are drawn wrong
+ * by construction: `geometry/band.ts` turns each wall into exact mitred
  * edge loops, `geometry/joinery.ts` intersects them and keeps only the edges with solid
  * on exactly one side. It is closed form and zero-dependency, so a curved plan renders
  * identically with and without clipper2, and exact on rectilinear input (checked against
@@ -64,7 +58,7 @@ export interface JoinedWallSet {
  * **Wall set → joined geometry.** `wallBand` → `openingCut` → `joinWalls`, and nothing
  * else: no theme, no paint, no Scene.
  *
- * Split out of {@link lowerWallSet} in v1.35 so the axonometric view (`src/view/`) can
+ * Split out of {@link lowerWallSet} so the axonometric view (`src/view/`) can
  * consume {@link JoineryResult.outline} — the exact `EdgeLoop[]` the plan view lowers —
  * *before* `emitLoops` narrows it to a `region`/`path`. A 3D extrusion needs the edges,
  * not the primitive: it lifts each one to a side quad and caps the whole loop set at the
@@ -151,8 +145,8 @@ export function lowerWallSet(walls: readonly RWall[], hatches: readonly HatchSpe
   if (result.outline.length > 0) {
     nodes.push({
       layer: "wallFace",
-      // `region` while every edge is straight — the primitive every backend has
-      // serialized since v0.9, and what keeps a rectilinear plan on the bytes it had.
+      // `region` while every edge is straight — the primitive every backend
+      // serializes, and what keeps a rectilinear plan's bytes independent of curves.
       // `path` as soon as one edge curves, so a face is never faceted.
       prim: emitLoops(result.outline),
       paint: {

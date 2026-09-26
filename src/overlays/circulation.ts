@@ -54,7 +54,7 @@ export function circulationOverlayNodes(ir: ResolvedPlan, theme: Theme, sizes: R
     if (!r.pinch) continue;
     const rad = sizes.dimFont * 0.55;
     const { x, y } = r.pinch.at;
-    // A small diamond marker (no circle primitive exists — scene.ts §Phase v0.7).
+    // A small diamond marker.
     nodes.push({
       layer: "annotations",
       prim: {

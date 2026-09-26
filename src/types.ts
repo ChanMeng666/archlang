@@ -93,7 +93,7 @@ export interface CompileOptions {
    */
   accessible?: boolean | AccessibleOptions;
   /**
-   * Render an **illustrative axonometric** of the plan instead of the plan (v1.35):
+   * Render an **illustrative axonometric** of the plan instead of the plan:
    * extruded walls with their door and window openings cut, floor plates, storeys
    * stacked. `"iso"` is a true isometric; `"axon"` is the 30°/60° plan oblique. See
    * `src/view/` and `docs/axonometric.md`.

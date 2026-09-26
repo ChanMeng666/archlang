@@ -65,7 +65,7 @@ export interface ResolveCtx {
   /** Resolved id of the element currently being resolved. */
   id: string;
   /**
-   * This storey's floor-to-floor height in mm (v1.35, the vertical datum layer) — the
+   * This storey's floor-to-floor height in mm (the vertical datum layer) — the
    * `level`'s own `height`, else the plan's, else `STOREY_HEIGHT` (`src/datum.ts`).
    *
    * It is on the context rather than looked up per element because the fallback chain must
@@ -114,12 +114,9 @@ export interface RenderCtx {
    * solid** — i.e. the wall lowering has already opened a real hole at each
    * door/opening, jamb end-caps included, with the floor continuous through it.
    *
-   * **Since v1.30 `toScene` always sets it.** The joinery pass (`wall-lowering.ts`)
-   * cuts every opening on every host — straight, angled and curved alike — so there is
-   * no longer a shape of plan whose passages are unvoided. It used to be conditional:
-   * only the rectilinear rectangle boolean subtracted, so an angled or curved plan fell
-   * back to per-segment wall rectangles with **no** subtraction and the cover had to be
-   * painted opaque.
+   * **`toScene` always sets it.** The joinery pass (`wall-lowering.ts`) cuts every
+   * opening on every host — straight, angled and curved alike — so there is no shape of
+   * plan whose passages are unvoided.
    *
    * The field stays because {@link RenderCtx} is append-only, and it stays OPTIONAL
    * because absent must keep meaning "assume nothing was voided" — a hand-built
@@ -221,7 +218,7 @@ export interface Runtime {
   /**
    * Per-call geometry backend; overrides the module-global `getGeometryBackend()`.
    *
-   * **DEPRECATED: nothing reads it since v1.30.** `toScene` no longer looks a backend up,
+   * **DEPRECATED: nothing reads it.** `toScene` does not look a backend up,
    * because `wall-lowering.ts` joins every wall in closed form. Setting it is a no-op for
    * rendering; the field stays because {@link Runtime} is append-only. See ADR 0018.
    */

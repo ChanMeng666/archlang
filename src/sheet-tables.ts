@@ -61,7 +61,7 @@ export interface ScheduleRow {
   /** Floor area in m², rounded to 2dp — byte-identical to `describe().rooms[].area_m2`. */
   area_m2: number;
   /**
-   * Dotted path of the **innermost** `zone` the room was declared in (v1.22), when the
+   * Dotted path of the **innermost** `zone` the room was declared in, when the
    * plan declares zones. Absent for an unzoned room and for every plan that declares no
    * zone at all, so an existing schedule is unchanged.
    */
@@ -381,10 +381,10 @@ export function planTableRows(input: {
   walls: readonly { material: string; hatchScale: number; hatchAngle: number }[];
   furniture: readonly RFurniture[];
   /**
-   * The ground surfaces (v1.31), whose materials add legend rows exactly as a wall's do.
+   * The ground surfaces, whose materials add legend rows exactly as a wall's do.
    *
-   * Optional and defaulting to none, because that is what keeps every pre-v1.31 caller —
-   * and every plan with no `outdoor` — reserving the identical number of rows. It is NOT
+   * Optional and defaulting to none, because that is what keeps every caller that passes
+   * none — and every plan with no `outdoor` — reserving the identical number of rows. It is NOT
    * optional in effect: the fit rule reserving fewer rows than the layout draws is the
    * precise bug this whole function exists to prevent (a page issued taller than its
    * declared paper while `sheet.fits` says `true`), and a lawn adds a row.
@@ -625,7 +625,7 @@ function scheduleNodes(t: ScheduleTableBox, theme: Theme, sizes: RenderSizes, ou
 }
 
 /**
- * The ZONE-GROUPED ROOM SCHEDULE (v1.22): the same table, with each zone's rooms under a
+ * The ZONE-GROUPED ROOM SCHEDULE: the same table, with each zone's rooms under a
  * merged heading row and closed by a SUBTOTAL row, before the TOTAL that closes the table.
  *
  * The subtotals **partition** the rooms (each room sits under its innermost zone exactly
