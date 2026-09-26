@@ -159,5 +159,5 @@ Two standing rules for anything written in this directory or the card:
   [`0006-solver-as-explicit-transform.md`](../docs/adr/0006-solver-as-explicit-transform.md) — the
   fix/repair boundary `fix_kind` preserves.
 - [`eval/README.md`](../eval/README.md) — the holdout and its contamination warning.
-- [`docs/research/2026-07-roadmap-proposal.md`](../docs/research/2026-07-roadmap-proposal.md) →
+- `archcanvas-growth/archive/archlang/docs-archive/research/2026-07-roadmap-proposal.md` (archived) →
   Tranche 5.

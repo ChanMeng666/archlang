@@ -8,14 +8,14 @@
 
 ## Context
 
-The round-2 research (`docs/research/2026-07-roadmap-proposal.md`, deep-dive H4) asked whether
+The round-2 research (`archcanvas-growth/archive/archlang/docs-archive/research/2026-07-roadmap-proposal.md`, deep-dive H4) asked whether
 ArchLang should invest in fine-tuning or RLVR to lift what was then believed to be a single-digit
 one-shot **intent** number (later shown to be mostly a judge-v1 measurement artifact — the
 calibrated judge-v2 rate is 54%; the honest-eval read that recorded this has since been archived
 out of `AGENTS.md` to `archcanvas-growth/archive/archlang/docs-archive/agents-status-history-2026-07.md`
 in the private growth repository, and the live number is
 `eval/live-baseline.json`. The two rates are **not comparable** — the judge changed between them;
-see AGENTS.md § "Standing decisions & iron laws").
+see `docs/agents/iron-laws.md`).
 The verdict was **no training now**: a deployment mismatch (the shipped value is a zero-dependency
 compiler and its deterministic tools, not a hosted model) plus real cost, against evidence that is
 subject-mismatched (SFT corpora lift *validity*; RLVR targets *intent/geometry/topology* — neither
@@ -105,4 +105,4 @@ reproducible byte-for-byte from the seed.
 Full operational detail lives in [`dataset/README.md`](../../dataset/README.md) (regeneration,
 upload, invariants) and [`dataset/CARD.md`](../../dataset/CARD.md) (the HF consumer view); the
 holdout's side of the law is in [`eval/README.md`](../../eval/README.md)'s contamination warning; the
-motivation is `docs/research/2026-07-roadmap-proposal.md` → Tranche 5 (deep-dive H4).
+motivation is `archcanvas-growth/archive/archlang/docs-archive/research/2026-07-roadmap-proposal.md` → Tranche 5 (deep-dive H4).

@@ -280,8 +280,8 @@ disagreements). This clears T4 (`src/intent.ts` + `arch validate --intent`). Ful
   policies (F1 hard bounds only, F2 worst-item/empty-scope, F3 the infeasible-brief scoring rule,
   F4 derived-not-asserted infeasibility) as a *separate instrument*; §1–§6 and the rubric version
   are untouched.
-- **`docs/research/`** — the round-2 research report and roadmap that motivated rebuilding the judge
+- **`archcanvas-growth/archive/archlang/docs-archive/research/`** (archived) — the round-2 research report and roadmap that motivated rebuilding the judge
   (why the 9% number was ~55–65% measurement artifact, and the T3/T4/T5 open questions).
-- **Standing harness lessons** (in `AGENTS.md` gotchas): reasoning models spend thinking tokens out
+- **Standing harness lessons** (in `docs/agents/gotchas.md`): reasoning models spend thinking tokens out
   of the completion cap (use 16384, both providers, or a bogus low baseline results); and never
   compare rates across a judge change.

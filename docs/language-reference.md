@@ -870,7 +870,7 @@ draws them.
 raises [`E_FURN_AGAINST`](error-codes.md): a curve has no single back direction, so place
 the piece with `at (x,y)` and an explicit `rotate`. An arc edge inside a `room polygon`
 ring is not supported and says so at parse time — no release is promised for it; it is
-tracked on the roadmap (`docs/research/2026-08-06-competitor-borrowing-roadmap.md` in the
+tracked in the backlog (`docs/backlog.md` in the
 repository). Use a [circular room](#circular-rooms-v1-24), or a curved wall with a
 straight-edged room behind it.
 

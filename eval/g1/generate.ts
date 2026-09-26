@@ -1,5 +1,5 @@
 /**
- * Gate G1 — intent generation harness (roadmap `docs/research/2026-07-roadmap-proposal.md`).
+ * Gate G1 — intent generation harness (roadmap `archcanvas-growth/archive/archlang/docs-archive/research/2026-07-roadmap-proposal.md`).
  *
  * Asks a strong model to translate each NL brief into machine-checkable *intent JSON*
  * (the {@link Expect} shape from `run.ts`, lowerable to the six judge-v2 predicates by

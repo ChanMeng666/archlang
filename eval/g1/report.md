@@ -1,6 +1,6 @@
 # Gate G1 — NL→intent-JSON faithfulness: **PASS** (with one recorded sensitivity caveat)
 
-**Date:** 2026-07-12 · **Roadmap:** `docs/research/2026-07-roadmap-proposal.md` Gate G1 (deep-dive
+**Date:** 2026-07-12 · **Roadmap:** `archcanvas-growth/archive/archlang/docs-archive/research/2026-07-roadmap-proposal.md` Gate G1 (deep-dive
 H1 verdict: "instrument first, channel gated") · **Generator:** `gpt-5.5-2026-04-23`, seed
 20260711, 26 briefs, one call each (run
 [29154585163](https://github.com/ChanMeng666/archlang/actions/runs/29154585163), 26/26 parsed,
