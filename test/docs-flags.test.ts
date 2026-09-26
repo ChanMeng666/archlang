@@ -6,7 +6,7 @@
  * reads to learn the self-correction loop — told it to run `arch fix --write`. But
  * `--write` belongs to `fmt`; `fix` never accepted it. The old parser silently
  * swallowed the unknown flag as a positional, so the wrong instruction sat there
- * unnoticed. v1.17 made an undeclared flag a usage error (exit 3), which turned that
+ * unnoticed. An undeclared flag is now a usage error (exit 3), which turned that
  * stale sentence into a hard failure for every agent following the page.
  *
  * The lesson is that prose drifts from the CLI in exactly the way generated files
@@ -33,8 +33,6 @@ const DOCS = [
   "docs/agents/commands.md",
   "docs/agents/gotchas.md",
   "docs/agents/iron-laws.md",
-  "docs/agents/project-status.md",
-  "docs/agents/verification.md",
   "CONTRIBUTING.md",
   "docs-site/agents.md",
   "docs-site/guide.md",
@@ -108,7 +106,7 @@ describe("docs never document a flag the command doesn't take", () => {
  * Docs↔suggest gate: a `door`/`window` example that reads as an `arch suggest`
  * candidate must NEVER reference a wall by its positional auto-id (`on partition_3`).
  *
- * Since v1.18 `suggestTopology` composes every candidate's `insertText` from a STABLE
+ * `suggestTopology` composes every candidate's `insertText` from a STABLE
  * ref only — an author-declared id, else a unique category, else absolute `at (x, y)` —
  * because a positional id (`<category>_<n>`) re-indexes when a later same-category wall
  * is inserted, silently corrupting a suggestion a downstream product persisted. The code

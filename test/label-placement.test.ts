@@ -101,7 +101,7 @@ describe("label placement — a clear label never moves", () => {
     // flagship, and a relationally-placed plan. Almost none of them has furniture or a
     // swing under a room name, so almost none of them may move a byte.
     //
-    // Two exceptions, both from the 2026-08 gallery refresh's furnishing pass, both a
+    // Two exceptions, both from the gallery refresh's furnishing pass, both a
     // real obstruction and not a regression: `museum.arch`'s cafe got two tables that now
     // sit under "Cafe", and `relational.arch`'s kitchen got a dining table and two chairs
     // that now sit under "Kitchen". Both labels are CORRECTLY relocated by this same pass
@@ -177,7 +177,7 @@ describe("label placement — a buried label moves", () => {
 
   it("moves off REAL SHIPPED furniture — museum's cafe and relational's kitchen", () => {
     // The companion half of the exclusion in the "obstacle-free" corpus test above: these
-    // two rooms are excluded from "must not move" specifically because the 2026-08
+    // two rooms are excluded from "must not move" specifically because the
     // gallery refresh gave each one furniture that now sits under its name, so this
     // asserts what actually happens to them instead of merely skipping them.
     const { dx: mdx, dy: mdy } = drift(example("museum.arch"), "cafe", "Cafe");
@@ -232,7 +232,7 @@ describe("label placement — what it is not allowed to touch", () => {
     // The pin sits squarely on the bed; an unpinned twin in the same plan moves off it.
     // NOTE the room form: `labelAt` reaches the IR only from the `polygon` and `circle`
     // resolvers — a RECTANGLE's `label … at` is parsed and then dropped at resolve, and
-    // has been since v1.23. That is a pre-existing gap, not something this pass created
+    // has been since polygon rooms landed. That is a pre-existing gap, not something this pass created
     // (a rect room with a pin behaves exactly as an unpinned one, before and after).
     const pinned = plan(`room id=r polygon (0,0) (5000,0) (5000,4000) (0,4000) label "Hall" at (2500,2000)
   furniture bed at (1000,1000) size 3000x2000 label "Bed"`);
@@ -338,7 +338,7 @@ describe("label placement — an `outdoor` label joins the same pass (v1.31)", (
   it("a plan with NO `outdoor` label is untouched — the room's own labels still behave exactly as before", () => {
     // The group list is built in ELEMENT order and an unlabelled/absent outdoor
     // contributes no group at all, so a room-only plan takes the identical path it took
-    // before v1.31 — pinned here as the same anchor-equality property, and by the whole
+    // before ground surfaces existed — pinned here as the same anchor-equality property, and by the whole
     // `outdoor-byte-identity.test.ts` suite elsewhere.
     expect(drift(CLEAR, "r", "Hall")).toEqual({ dx: 0, dy: 0 });
     const unlabelled = plan(`room id=r at (0,0) size 5000x4000 label "Hall"

@@ -1,5 +1,5 @@
 /**
- * The byte-identity law for `roof` and `void` (v1.29).
+ * The byte-identity law for `roof` and `void`.
  *
  * **Every new language form ships with a byte-identity law, pinned by test: a plan that
  * does not use it renders, describes and lints exactly as before.** `site`, the door
@@ -9,7 +9,7 @@
  *
  * A test that compiled each example twice and compared would prove determinism, not
  * identity — it would stay green through a change that moved every byte. The numbers
- * below were measured against **`main`'s `src/`** (v1.28.0, the branch point), by
+ * below were measured against **`main`'s `src/`** (the branch point), by
  * checking that tree out into this worktree and running the exact `digest()` below on
  * it, so they are a genuine before-and-after: if one moves, the two new elements changed
  * a drawing that never mentions them, and that is a finding to explain rather than a diff
@@ -35,9 +35,9 @@
  * a module with) and a CURVED sheet plan on `paper` (whose auto-fit reads the same
  * `planBounds` the roof now contributes to).
  *
- * ## RE-MEASURED for v1.32 (the furniture pass), and how it was proved
+ * ## RE-MEASURED for the furniture pass, and how it was proved
  *
- * All four digests below moved, and it is not this law breaking. v1.32 redraws FOURTEEN symbols across both furniture tracks — `island`,
+ * All four digests below moved, and it is not this law breaking. The furniture pass redraws FOURTEEN symbols across both furniture tracks — `island`,
  * `upper_cabinet`, `dishwasher`, `oven`, `fridge` and `washer` in the kitchen and bath
  * modules, and `coffee_table`, `table`, `stool`, `bench`, `chair`, `tv_unit`, `nightstand`
  * and `desk` in the living, bedroom and office ones, so every plan that places one draws different bytes ON
@@ -68,7 +68,7 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
 /**
  * SHA-256 over the SVG + `describe()` + `lint()` of one example, as measured on main.
  *
- * Two changes on 2026-08-28, for the gallery refresh:
+ * Two changes for the gallery refresh:
  *
  * `laneway-house` and `aquarium` kept their slot but got new CONTENT unrelated to
  * `roof`/`void` — a rug (laneway-house) and furniture (aquarium) — so their digests were
@@ -83,12 +83,12 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  * by `roof`/`void` — takes its slot; its digest is a fresh measurement, not a carry-over
  * (the refresh gave it furniture too).
  *
- * `studio` is untouched by the refresh and its digest is unchanged from the v1.28.0
+ * `studio` is untouched by the refresh and its digest is unchanged from the branch-point
  * measurement.
  *
- * ## The v1.30 re-measurement — wall joinery, and the ONLY sanctioned cause so far
+ * ## The wall-joinery re-measurement — the ONLY sanctioned cause so far
  *
- * All four moved again on 2026-08-28, and this time for a reason that is neither a content
+ * All four moved again, and this time for a reason that is neither a content
  * edit nor a regression: **the wall-lowering pipeline was replaced.** One `joinWalls` pass
  * now produces a plan's poché and its single outline, every opening is cut on every host
  * (so the cased opening's two dashed lintel lines are gone and no cover is painted), and
@@ -103,14 +103,14 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  * `describe()`/`lint()` change on a plan that mentions neither keyword is not.
  *
  *
- * ## The v1.32 re-measurement — six furniture symbols were REDRAWN
+ * ## The furniture-pass re-measurement — six furniture symbols were REDRAWN
  *
  * Three of the four moved again, and `studio` did NOT — which is the whole shape of the
- * finding and the reason to read it before touching a number. v1.32's F2 track redraws six
+ * finding and the reason to read it before touching a number. The living/bedroom/office track redraws six
  * living-room symbols (`coffee_table`, `table`, `stool`, `bench`, `chair`, `tv_unit`) plus
  * `nightstand` and `desk`, so any plan that draws one of those eight renders different bytes
  * and every plan that does not is untouched. `studio` places only bath and kitchen fixtures,
- * so its digest is UNCHANGED from the v1.30 measurement — the same number, not a re-blessing —
+ * so its digest is UNCHANGED from the wall-joinery measurement — the same number, not a re-blessing —
  * which is the control that says the redraw stayed inside the glyph layer.
  *
  * **`describe()` and `lint()` were held SHA-256 identical across the whole change**, measured
@@ -124,7 +124,7 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  * moved before touching a number here, and write down what it was.
  *
  *
- * ## The backlog-5.8 re-measurement — the SUMMARY moved, and that is the point
+ * ## The circulation-fix re-measurement — the SUMMARY moved, and that is the point
  *
  * This is the case the message on the summary half describes: **a moved lint rule and a
  * changed `describe()` value**, not a drawing. Nothing in the circulation fix touches a
@@ -164,7 +164,7 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  * **`lint()` over all 30 shipped examples is byte-identical across this amendment** —
  * the only two diagnostics this branch adds were already added before it.
  *
- * ## The G.5 re-measurement — a curved wall stopped being rasterised as its chord
+ * ## The curved-wall re-measurement — a curved wall stopped being rasterised as its chord
  *
  * ONE example moved: `aquarium`, on BOTH halves. `studio`, `gallery-l` and `laneway-house`
  * are unchanged, and that is the control — none of them has an `arc`.
@@ -175,7 +175,7 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  * two semicircular `arc` edges sharing endpoints, so it rasterised to a bar along its own
  * DIAMETER — a route could walk through the masonry, while the round room inside was severed
  * into two caps and the `plant` room beyond one of them dropped out of the facts with nothing
- * said (`docs/backlog.md` G.5). Segments now block against `distPointToArc`.
+ * said. Segments now block against `distPointToArc`.
  *
  * Field by field against the previous commit, `aquarium`'s summary changes ONLY inside
  * `circulation`: a new `rooms[]` entry for `plant` (walk 36 900, bottleneck 1140 — exactly
@@ -190,7 +190,7 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  *
  * Do not read this entry as permission either.
  *
- * ## Issue #109 — two example SOURCES gained hand dimensions (2026-09-26)
+ * ## Stepped-facade dimensions — two example SOURCES gained hand dimensions
  *
  * `aquarium` and `gallery-l` moved in the DRAWING half only, and not because the compiler
  * changed under them: each example gained hand-written `dim`s on the openings no
@@ -200,7 +200,7 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  * the warning, so both plans lint exactly as before. `studio` and `laneway-house` are the
  * control and are unchanged.
  *
- * ## `aquarium` again, on BOTH halves: its rooms stopped overhanging the curve (2026-09-26)
+ * ## `aquarium` again, on BOTH halves: its rooms stopped overhanging the curve
  *
  * The example's `cafe` and `concourse` rectangles ran into the bowed south-east corner and
  * claimed floor outside the curved wall (cafe 200 m² against about 169 m² inside it). They

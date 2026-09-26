@@ -6,7 +6,7 @@ import { describe as suite, expect, it } from "vitest";
 import { PER_STOREY_OPTIONAL_KEYS } from "../src/index.js";
 
 /**
- * The multi-storey CLI surface (v1.21).
+ * The multi-storey CLI surface.
  *
  * A plan with `level` blocks is a drawing SET, so `compile` writes one file per storey
  * (`<stem>.L<level>.<ext>`) and reports `outputs[]`. The properties pinned here:

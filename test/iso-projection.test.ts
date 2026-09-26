@@ -4,7 +4,7 @@
  * closed form and written here as literals, so the test's expected column comes from
  * outside the code it checks.
  *
- * That is the distinction v1.34.0's `nav-grid-residual` work made explicit and this file
+ * That is the distinction the `nav-grid-residual` gate made explicit and this file
  * applies to the view: a test that projects a point and compares it against the projection
  * of the same point proves determinism, not correctness. A sign error in `sy`, a `√3` where
  * a `√6` belongs, or a yaw taken the other way round would all pass such a test and fail

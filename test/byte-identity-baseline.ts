@@ -10,14 +10,14 @@
  * true, and the whole point of these tables is that they are measured once and never
  * edited to go green.
  *
- * Both numbers were measured on `f4548db` — the tree `v1.34.0` shipped — by a script that
+ * Both numbers were measured on `f4548db` — the last tree before the datum layer — by a script that
  * imported the digest bodies in `./byte-identity-digest.ts`, never a lookalike. See
  * `height-byte-identity.test.ts`'s header for why that matters and what to do if one moves.
  *
  * ## Every row still stands, including the one whose example now authors heights
  *
  * A shipped example gaining a `height` clause looks, at first, like a row that must be
- * retired: the plan's surfaces are no longer what `v1.34.0` measured, because `describe()`
+ * retired: the plan's surfaces are no longer what the baseline measured, because `describe()`
  * grows a `heights` block and a `head`/`sill` on every opening. It is not. The row is
  * honoured against that plan's **height-free derivation** (`./height-free-source.ts`) —
  * the same file with its datum clauses mechanically removed — which is behaviourally the
@@ -26,7 +26,7 @@
  * re-typed to make room for the new example. {@link AUTHORS_HEIGHT} names the plans read
  * that way.
  *
- * ## The one row that WAS re-measured, and the class it exposed (2026-09-20)
+ * ## The one row that WAS re-measured, and the class it exposed
  *
  * `hillside-villa`'s two rows moved, and the cause is worth knowing before the next red run
  * sends someone hunting a compiler bug: **a `lint()`/`describe()` diagnostic carries a byte
@@ -46,13 +46,12 @@
  *   2. a shipped example's SOURCE BYTES moved above a diagnostic. The SVG is byte-identical
  *      and the ONLY delta is a uniform shift of every span by the byte count added.
  *
- * Check (2) by diffing the two `lint()` payloads field by field, as
- * `docs/testing.md` describes; if the shift is not uniform, it is case (1) wearing case
+ * Check (2) by diffing the two `lint()` payloads field by field; if the shift is not uniform, it is case (1) wearing case
  * (2)'s clothes. Only `hillside-villa` was affected here, because it is the one example
  * deliberately left with warnings — `aquarium` and `two-storey` had their prose edited in
  * the same branch and did not move, since a plan that lints clean has no spans to shift.
  *
- * ## Four drawing rows re-measured for issue #109 (2026-09-26); no summary row moved
+ * ## Four drawing rows re-measured for stepped-facade dimensions; no summary row moved
  *
  * The four summary rows below (`describe()` + `lint()`) were checked against this table and
  * are unchanged. Only the whole-surface rows moved, and only in the SVG, for two named
@@ -70,12 +69,12 @@
  *     gained hand-written `dim`s on the openings no chain can measure (two windows on the
  *     curve, a door on the angled face), which is the remedy `W_OPENING_NOT_DIMENSIONED`
  *     asks for. The new dims draw, so the SVG moves. They do not appear in `describe()`,
- *     and they close the warning, so both plans lint exactly as `v1.34.0` did.
+ *     and they close the warning, so both plans lint exactly as the baseline did.
  *
  * Every other row was left alone, and the whole corpus was swept by SHA-256 over every
  * storey's SVG + `describe()` + `lint()` before and after, to show that nothing else moved.
  *
- * ## `aquarium`'s SUMMARY row moved too: the example over-reported its floor (2026-09-26)
+ * ## `aquarium`'s SUMMARY row moved too: the example over-reported its floor
  *
  * The only summary row ever re-measured for an example's own content, and deliberately:
  * the numbers it pinned were wrong. `cafe` and `concourse` were rectangles running into
@@ -101,7 +100,7 @@ export const BASELINE: [string, string][] = [
   ["garden-house", "2d9d6637b6d52802d9c03b09ddd33feaa35c565edf95f8d65e31a8ad15db7677"],
   ["garden-loft", "0273b238de6d7c0ad84f3d517febcec01338ebe9033fcfb9cbe06c8307389350"],
   ["hexagon-pavilion", "3bf51877721eb526f3533c38d47add4dcfa492f82e3773df3f18dfac46e2f25e"],
-  ["hillside-villa", "0a52a08b20550d5887377a391ad5e842712167896e48a38960071d16e0cdc641"], // re-measured 2026-09-20, see header
+  ["hillside-villa", "0a52a08b20550d5887377a391ad5e842712167896e48a38960071d16e0cdc641"], // re-measured, see header
   ["imports", "65f847d3309cfb25274bf45d07b854c703061a666627cdab56984e8ed5b1bab4"],
   ["laneway-house", "401f5a9e255e5748a2eda400569ad352ae856e1ad5c9f51b62895e30bfd5ad1f"],
   ["library", "c6cc5c95ab3d19aed79ccd37f0102ff42083c7542ce2ad2ed9fbc3507a825b7b"],
@@ -145,7 +144,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["garden-house", "320b6d0aa637b941ccfd7705df4cd77ef76e8994e3ec07e04ecbb595014a2174"],
   ["garden-loft", "fcfd3d6eff4014d553670aa6fbbbffb0cc07e42b8ac9a9664f374a3a6f75a20e"],
   ["hexagon-pavilion", "da4ae66c401e5ce77b0a35a9cb4d75ae3af19a31d49be76608923454584ffbdf"],
-  ["hillside-villa", "b1172a3d3a9f2b27deccdd7513da707547fa6c8b299239ae6e35e5574e6ad27a"], // re-measured 2026-09-20, see header
+  ["hillside-villa", "b1172a3d3a9f2b27deccdd7513da707547fa6c8b299239ae6e35e5574e6ad27a"], // re-measured, see header
   ["imports", "25899f6f578488bbdfe9929a743ff2b64f85ba1e318f06b542865b5d7d4d8136"],
   ["laneway-house", "bde186c2290e5aa19ea60c3ec9e8ad7cfa3f5237e7d2a0a80cdca393fa3ab85a"],
   ["library", "e1daef38bb73cd65cd723bf45d52f407a3a0412759cf34dd37cc6cb0d5503d39"],

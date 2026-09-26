@@ -6,7 +6,7 @@ import { parse } from "../src/parser.js";
 import { resolve } from "../src/ir.js";
 
 /**
- * `zone <id> ["Label"] { … }` (v1.22) — the wing/department grouping.
+ * `zone <id> ["Label"] { … }` — the wing/department grouping.
  *
  * The load-bearing law, pinned first and hardest below, is **byte-identity**: a `zone`
  * has ZERO geometric semantics, so wrapping statements in one (or several, nested) must

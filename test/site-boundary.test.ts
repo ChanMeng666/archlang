@@ -1,7 +1,7 @@
 /**
- * The `site { … boundary … }` lot line (v1.31).
+ * The `site { … boundary … }` lot line.
  *
- * `site` shipped in v1.25 as a block that draws NOTHING and moves nothing, and that law
+ * `site` is otherwise a block that draws NOTHING and moves nothing, and that law
  * is pinned by `test/site.test.ts`. `boundary` is the first field that breaks it — it
  * draws a property line and it grows the page — so the first thing this suite establishes
  * is that the law still holds for every `site` block that does not use it.
@@ -26,7 +26,7 @@ const LOT = `  site {\n    street south\n    boundary (-4000,-4000) (14000,-4000
 const NO_LOT = `  site {\n    street south\n  }\n`;
 
 // ---------------------------------------------------------------------------
-// 1 — the v1.25 law is intact
+// 1 — the draws-nothing law is intact
 // ---------------------------------------------------------------------------
 
 describe("site boundary — a `site` without one still draws and describes exactly as before", () => {

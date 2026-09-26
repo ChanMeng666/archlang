@@ -69,7 +69,7 @@ const GLYPHS: readonly (readonly [string, Draw])[] = [
   ["bookshelf", drawBookshelf],
   ["plant", drawPlant],
   ["car", drawCar],
-  // ── v1.32 F2: office & commercial ──
+  // ── office & commercial additions ──
   ["meeting_table", drawMeetingTable],
   ["reception_desk", drawReceptionDesk],
   ["filing_cabinet", drawFilingCabinet],
@@ -87,7 +87,7 @@ const R: Rect = { x: 1000, y: 2000, w: 1600, h: 700 };
  * separately below.
  */
 const EXPECTED_PRIMS: Readonly<Record<string, number>> = {
-  // 7 since the v1.32 redraw: the slab, the modesty line and the stepped edge, plus the drawer
+  // 7 since the redraw: the slab, the modesty line and the stepped edge, plus the drawer
   // pedestal with its two drawer lines and the cable grommet. Three primitives was a `table`
   // with a rule across it.
   desk: 7,
@@ -95,7 +95,7 @@ const EXPECTED_PRIMS: Readonly<Record<string, number>> = {
   bookshelf: 3,
   plant: 10,
   car: 6,
-  // ── v1.32 F2 ──, all measured at {@link R} (1600 x 700, aspect 2.29).
+  // ── office & commercial additions ──, all measured at {@link R} (1600 x 700, aspect 2.29).
   meeting_table: 8, // 2 + 3 seats a side, no ends at aspect >= 2
   reception_desk: 4,
   filing_cabinet: 6,
@@ -249,7 +249,7 @@ describe("glyphs-misc — the desk", () => {
     expect(p.a.y - R.y).toBeLessThan(R.y + R.h - p.a.y);
   });
 
-  // The fill law moved into the v1.32 desk describe at the foot of this file, where the third
+  // The fill law lives in the desk describe at the foot of this file, where the third
   // polygon (the drawer pedestal) is stated alongside it rather than in two places.
 });
 
@@ -470,7 +470,7 @@ describe("glyphs-misc — through the compiler", () => {
 });
 
 // ---------------------------------------------------------------------------
-// ── v1.32 F2: the desk redraw and the six office/commercial families ──
+// ── the desk redraw and the six office/commercial families ──
 
 describe("glyphs-misc — the redrawn desk", () => {
   it("carries a drawer pedestal and a cable grommet, not just a slab and a rule", () => {

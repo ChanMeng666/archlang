@@ -5,7 +5,7 @@
  * things at once: the editor's `<select>` menu, the 27 static per-example pages
  * `playground/scripts/gen-static.mjs` writes, and the playground's `sitemap.xml`.
  * A hand-written list that feeds all three is exactly the shape that freezes, and
- * it DID: `garden-house` — the v1.31 outdoor flagship — shipped to npm, the docs
+ * it DID: `garden-house` — the outdoor flagship — shipped to npm, the docs
  * site and the README while being invisible in the playground, because that file
  * was last edited before the example existed and nothing compared the two. This
  * test is what makes that impossible again, and the reason it checks both

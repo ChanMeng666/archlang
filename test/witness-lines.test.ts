@@ -16,7 +16,7 @@ const example = (name: string): string => readFileSync(join(__dirname, "..", "ex
  * `dims auto` extension (witness) lines terminate ON the facade they point at.
  *
  * A dimension CHAIN measures along one straight baseline, so its endpoints are
- * projections of the building onto that baseline. Before v1.25 the witness lines
+ * projections of the building onto that baseline. The witness lines once
  * started at those projections, which is right only when the facade is a single
  * straight line at the extent's edge: on `gallery-l`, whose south facade exists only
  * for x in [0, 6000] before a 40 degree run climbs away, the two right-hand ticks began
@@ -128,7 +128,7 @@ suite("dims auto — witness lines terminate on the facade", () => {
   });
 
   it("a CURVED facade is deferred by name: the flat baseline is kept, never approximated", () => {
-    // v1.25 does not solve the circle for a face coordinate, so a tick standing over an
+    // The chain does not solve the circle for a face coordinate, so a tick standing over an
     // `arc` keeps `SideGeom.outer` — the same declining-rather-than-approximating stance
     // `probeSide`, `facadeOpenings` and `synthWallDims` already take on curves. On
     // `aquarium` the south-east corner is a R12000 quarter arc, so the x = 60000 tick

@@ -7,13 +7,13 @@
  *      (so a keyword/enum change in the single source must be regenerated).
  *   2. ACCEPTANCE — every top-level plan file under `examples/` is fully derivable
  *      from `root` (fed character-by-character). This is the hard "never reject a
- *      valid .arch" test, including the v1.13 placement sugar (strip / `on … at %` /
+ *      valid .arch" test, including the placement sugar (strip / `on … at %` /
  *      `swing into` / `anchor … inset`).
  *   3. REJECTION — a set of malformed snippets have no valid derivation.
  *   4. PARSER AGREEMENT — a corpus is run through BOTH this grammar and the real
  *      `compile()`, and the two must agree about whether each snippet PARSES. See
  *      "The agreement corpus" below; this is the guard that would have caught the
- *      v1.25 defect where the grammar offered `door on <wall> at <pos> … wall <ref>`,
+ *      defect where the grammar offered `door on <wall> at <pos> … wall <ref>`,
  *      a form the parser has never accepted.
  *
  * ## Why a bundled recognizer instead of the `gbnf` npm package
@@ -322,7 +322,7 @@ function accepts(rules: Map<string, Expr>, input: string): boolean {
 //
 // The grammar exists to make invalid output impossible for a constrained decoder,
 // so the property that matters is not "it looks right" but "it and the parser
-// agree". Nothing checked that until v1.25, and the gap shipped: `check:drift`
+// agree". Without this check the gap ships: `check:drift`
 // only proves the generator reproduces its own output, so a hand-typed production
 // can encode a form the language has never had and stay green forever.
 //
@@ -352,8 +352,8 @@ function accepts(rules: Map<string, Expr>, input: string): boolean {
 /**
  * Does the real compiler PARSE this source? (Resolve-time codes don't count.)
  *
- * The marker is `E_PARSE`, the code every lexer/parser refusal carries. Until v1.27.0
- * it was the ABSENCE of a code, which worked only because parse errors were the one
+ * The marker is `E_PARSE`, the code every lexer/parser refusal carries. It was once
+ * the ABSENCE of a code, which worked only because parse errors were the one
  * uncoded diagnostic in the system — a property nothing asserted and any new uncoded
  * `diag()` call would have quietly broken, turning a refusal into a "parses". Naming
  * the marker also makes it selectable: `arch lint --code E_PARSE`.
@@ -382,7 +382,7 @@ const P = (body: string): string =>
  * balance is asserted below so the suite cannot pass by being all-positive.
  */
 const AGREEMENT: [string, string][] = [
-  // —— openings: the `wall` clause is `at`-form-only (the v1.25 defect) ————
+  // —— openings: the `wall` clause is `at`-form-only (a defect the grammar once had) ————
   ["door at + wall clause", P(`  door at (2500,0) width 900 wall w1`)],
   ["door on + wall clause", P(`  door on w1 at 50% width 900 wall w1`)],
   ["door on, no wall clause", P(`  door on w1 at 50% width 900`)],

@@ -24,8 +24,8 @@ async function hasResvg(): Promise<boolean> {
  * `optionalDependencies`, which is the one situation where the silence matters.
  *
  * So the dep is probed ONCE and its absence is reported, not swallowed — the same rule
- * `test/visual.test.ts` and `editors/vscode/test/stdio.test.ts` already follow, and the
- * one `docs/testing.md` §3 states:
+ * `test/visual.test.ts` and `editors/vscode/test/stdio.test.ts` already follow (the
+ * optional-dep rule):
  *   - in CI it is REQUIRED (`npm ci` installs optionalDependencies), so a missing dep
  *     FAILS loudly as the broken-install bug it is;
  *   - locally it degrades to a VISIBLE skip in the reporter, never silence.

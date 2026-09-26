@@ -1,5 +1,5 @@
 /**
- * v1.21 — vertical circulation: `stair`, `elevator`, `escalator`.
+ * Vertical circulation: `stair`, `elevator`, `escalator`.
  *
  * The contract this suite pins:
  *  - each of the three is a registry element (parse → resolve → render), dispatched by
@@ -491,7 +491,7 @@ suite("vertical circulation — byte identity and determinism", () => {
 });
 
 // ---------------------------------------------------------------------------
-// a balcony door is not an arrival point (backlog 4.6)
+// a balcony door is not an arrival point
 // ---------------------------------------------------------------------------
 
 /**
@@ -527,7 +527,7 @@ const balconyHouse = (outdoorClause: string): string => `plan "House" {
 
 const WITH_BALCONY = `outdoor id=g_bal balcony at (500,6100) size 2000x1200`;
 
-suite("vertical circulation — a balcony door is not an arrival point (backlog 4.6)", () => {
+suite("vertical circulation — a balcony door is not an arrival point", () => {
   it("a bedroom's balcony door does NOT ground the upper storey — no false W_BATH_VIA_BEDROOM", () => {
     const src = balconyHouse(WITH_BALCONY);
     const codes = lint(src).map((d) => d.code);

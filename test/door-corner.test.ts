@@ -1,6 +1,6 @@
 /**
  * `W_DOOR_NEAR_CORNER` — a door jamb leaving less wall between it and a corner than the
- * wall is thick (`docs/backlog.md` 4.2).
+ * wall is thick.
  *
  * Three things are proved here that a reading cannot settle:
  *

@@ -10,10 +10,10 @@
  *  - `test/explain.test.ts` asserts each field is non-EMPTY. A wrong example is non-empty.
  *  - `test/explain.test.ts`'s drift check compares `renderErrorCodes()` to the committed
  *    `docs/error-codes.md`. That proves reproducibility, never correctness — the exact
- *    blindness AGENTS.md warns about, one layer out from the generators.
+ *    blindness of a reflexive drift gate, one layer out from the generators.
  *  - `test/docs-fences.test.ts` compiles published ```` ```arch ```` fences, but
- *    `scripts/gen-error-codes.ts` emits them as `arch static` **on purpose** (v1.26: 104
- *    error examples each rendered a generic parse-error card on the public page), so the
+ *    `scripts/gen-error-codes.ts` emits them as `arch static` **on purpose** (otherwise 104
+ *    error examples each render a generic parse-error card on the public page), so the
  *    one gate that runs doc snippets deliberately skips exactly these.
  *  - `test/spec-forms.test.ts` has a NEGATIVE corpus, but its snippets are hand-written in
  *    that file. It never reads `ERROR_CATALOG[code].example`.
@@ -67,7 +67,7 @@ const FRAGMENT =
  * Every code whose example does not reproduce it, with why.
  *
  * 44 of 139, so **95 catalog examples are now executed and held to their own code**. That
- * ratio is the honest state of a field documented as illustrative, not a backlog: adding a
+ * ratio is the honest state of a field documented as illustrative, not a to-do list: adding a
  * building to each fragment would make the catalog's snippets longer than the prose they
  * illustrate, which is the opposite of what `arch explain` is for.
  */
@@ -185,7 +185,7 @@ suite("error catalog — every example that can raise its code does", () => {
     // gate has been hollowed out, and this is what says so out loud.
     const reproduced = ERROR_CODES.length - NOT_REPRODUCED.size;
     expect(reproduced).toBeGreaterThan(ERROR_CODES.length / 2);
-    // 44 → 46 (issue #107): W_CJK_FONT_MISSING and W_GLYPH_UNSUPPORTED are raised by the
+    // The cap includes W_CJK_FONT_MISSING and W_GLYPH_UNSUPPORTED, which are raised by the
     // PDF/PNG backends at render time, which compile() never reaches. They are not excused
     // untested: test/export-font-cjk.test.ts raises both through toPdf/renderPng.
     expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(46);

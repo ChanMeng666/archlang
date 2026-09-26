@@ -1,5 +1,5 @@
 /**
- * The v1.29 CROSS-FEATURE gate — the two tracks that shipped in this release, exercised
+ * The roof/void CROSS-FEATURE gate — the two tracks that shipped together, exercised
  * TOGETHER rather than each against its own fixtures.
  *
  * `roof`/`void` and the second furniture tranche were authored on parallel branches and

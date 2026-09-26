@@ -1,5 +1,5 @@
 /**
- * The `fence` element (v1.31).
+ * The `fence` element.
  *
  * The load-bearing claim is a NEGATIVE one — a fence is not a thin wall — and a suite
  * that only checked "it draws a line" would pass while `fence` quietly hosted a door,

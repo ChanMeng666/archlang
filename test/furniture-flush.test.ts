@@ -199,7 +199,7 @@ describe("flush round-trips and stays deterministic", () => {
 });
 
 /**
- * `flush` and `grid` used to fight (docs/backlog.md 3.12). `flush` against a 100 mm
+ * `flush` and `grid` used to fight. `flush` against a 100 mm
  * partition lands the piece on a `…50` coordinate; the resolver then grid-snapped that
  * DERIVED coordinate like a hand-authored one, and a `grid 100` plan pulled the fixture
  * straight back into the wall — raising `W_FURNITURE_WALL_COLLISION` on a correct plan.
@@ -282,7 +282,7 @@ describe("the flagship example's WC", () => {
 });
 
 /**
- * Item G.1 — **two rules read different wall FACES off the same centreline.**
+ * **Two rules read different wall FACES off the same centreline.**
  *
  * A room edge is a wall CENTERLINE, and more than one wall can sit on it: write a
  * 100 mm partition along a 250 mm exterior shell's run and the solid at that edge
@@ -298,7 +298,7 @@ describe("the flagship example's WC", () => {
  * every wall backing the edge.
  */
 describe("G.1 — `flush` clears every wall on the edge, not the one it picked", () => {
-  // The backlog's repro, verbatim: 1800 x 2600 room, a 100 mm partition coincident
+  // The original repro, verbatim: 1800 x 2600 room, a 100 mm partition coincident
   // with the 250 mm shell's north run. `partitionFirst` is the order that used to fail.
   const coincident = (partitionFirst: boolean) => {
     const part = `wall id=part partition thickness 100 { (0,0) (1800,0) }`;

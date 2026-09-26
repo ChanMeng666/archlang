@@ -9,7 +9,7 @@
  * an assertion that **every** shipped example authors no height. That second assertion was
  * load-bearing — the law is vacuous for a plan that uses the syntax — but it also made the
  * corpus a closed set: no shipped example could ever demonstrate the headline feature of
- * v1.35, and for one release none did. The docs claimed a datum that nothing in `examples/`
+ * the datum layer, and for a while none did. The docs claimed a datum that nothing in `examples/`
  * declared, and both committed axonometric renders stood on defaults.
  *
  * The way out is not to weaken the law. It is to notice that the law being proved is the
@@ -39,7 +39,7 @@
  * 1. {@link authorsVerticalDatum} must be `true` for the source and `false` for the
  *    derivation. A derivation that quietly became a no-op fails here — which is the
  *    non-vacuity guard this repository has shipped a law without before.
- * 2. The derivation's digest must equal the plan's **v1.34.0 measured hash**, the one taken
+ * 2. The derivation's digest must equal the plan's **pre-datum measured hash**, the one taken
  *    before a line of the datum layer existed. So the derived text is not merely
  *    height-free, it is behaviourally the plan that shipped — which is what lets the
  *    original baseline row survive the example gaining heights, rather than being retired.

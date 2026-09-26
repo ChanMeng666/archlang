@@ -1,5 +1,5 @@
 /**
- * The door vocabulary (v1.25) — four kinds beside `hinged`, `slide`, `open`, and the
+ * The door vocabulary — four kinds beside `hinged`, `slide`, `open`, and the
  * `W_POCKET_RUN` soundness rule.
  *
  * The properties, in the order they matter:
@@ -188,8 +188,8 @@ suite("doors — the four kind-independent invariants", () => {
     const d = lint(plan("door id=d on mid at 50% width 900", "  furniture wc at (5500,2800) size 700x400")).find(
       (x) => x.code === "W_SWING_OBSTRUCTED",
     )!;
-    // P1-5 removed "use a sliding door" because the language could not write one.
-    // v1.25 can, so the remedy is back — named by the property that solves it.
+    // The "use a sliding door" hint was removed while the language could not write one.
+    // It now can, so the remedy is back — named by the property that solves it.
     expect(d.hints?.some((h) => /sweeps nothing/.test(h))).toBe(true);
   });
 });
@@ -397,8 +397,8 @@ suite("doors — W_POCKET_RUN", () => {
     expect(i).toBeGreaterThanOrEqual(0);
     // The claim this pin was written for is ORDER STABILITY, not the literal last slot:
     // every rule that existed when `pocket-run` shipped must still run BEFORE it, so no
-    // plan written before v1.25 sees its diagnostics move. Until v1.31 those two
-    // statements were the same sentence, because `pocket-run` was genuinely last.
+    // older plan sees its diagnostics move. Those two
+    // statements were once the same sentence, because `pocket-run` was genuinely last.
     //
     // They are not the same sentence any more, and asserting the weaker one would have
     // been the wrong repair: the two `outdoor` rules are harmless because they CANNOT
@@ -406,15 +406,15 @@ suite("doors — W_POCKET_RUN", () => {
     // exist), so the list of what may follow is exactly that set — named here, one line
     // per rule, rather than left open.
     //
-    // `door-near-corner` (v1.33, `docs/backlog.md` 4.2) is the FIRST entry that breaks
+    // `door-near-corner` is the FIRST entry that breaks
     // that argument and it is listed anyway, because the argument is not the claim. It
     // needs no new syntax, so it CAN fire on a plan written years before it — that is a
-    // stated behaviour change, the same kind v1.27.0 shipped when three rules widened,
+    // stated behaviour change, the same kind as when three rules once widened,
     // and it is what the corpus sweep is for (all 30 shipped examples lint identically).
     // What still holds, and is what this pin is really about, is that no EXISTING
     // diagnostic moves: a rule that runs last can only append.
     //
-    // `opening-not-dimensioned` (issue #109) is in the same position as
+    // `opening-not-dimensioned` is in the same position as
     // `door-near-corner`: it needs no new syntax beyond `dims auto all`, so an older plan
     // can trip it, and it is appended after everything for exactly that reason. Across the
     // shipped examples it found two real gaps, which those examples now dimension by hand.
@@ -429,7 +429,7 @@ suite("doors — W_POCKET_RUN", () => {
   it("a rule that runs last can only append — an older plan's diagnostics keep their index", async () => {
     const { LINT_RULES } = await import("../src/lint/rules/index.js");
     // `door-near-corner` was last when this pin was written; `opening-not-dimensioned`
-    // (issue #109) now follows it, and only fires under `dims auto all`, which this
+    // now follows it, and only fires under `dims auto all`, which this
     // plan does not write.
     expect(LINT_RULES.map((r) => r.name).slice(-2)).toEqual(["door-near-corner", "opening-not-dimensioned"]);
     // A plan carrying an unrelated pre-existing warning (a sub-passable door width) AND

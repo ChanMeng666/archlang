@@ -1,7 +1,7 @@
 /**
  * Brand-asset copy-fidelity gate.
  *
- * `brand/` is the byte-sacred logo kit (AGENTS.md's brand iron law: one master SVG, every
+ * `brand/` is the byte-sacred logo kit (the brand iron law: one master SVG, every
  * variant a fill-swap only — never re-traced, re-simplified or re-fitted). The two public
  * sites cannot import from it, so each keeps its own COPY under `public/brand/`, served
  * verbatim as favicons, apple-touch icons and the OG social card. Nothing kept those copies

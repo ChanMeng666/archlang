@@ -7,7 +7,7 @@ import { buildManifest, compile, describe as describePlan } from "../src/index.j
 
 /**
  * End-to-end execution of the three shipped commands no test ever invoked:
- * `fmt`, `watch` and `manifest`/`capabilities` (backlog 2.5).
+ * `fmt`, `watch` and `manifest`/`capabilities`.
  *
  * The gap is not hypothetical. `format.test.ts` exercises the LIBRARY `format()` and
  * `cli-manifest.test.ts` exercises `buildManifest()`; neither runs the command. `arch fmt`
@@ -254,7 +254,7 @@ describe("CLI — watch", () => {
   /**
    * The inverted KNOWN-GAP pin.
    *
-   * For twenty-five releases (v1.1.0 → v1.26.0) `arch watch` did not watch: the v1.1.0
+   * `arch watch` once did not watch, for many releases: a
    * switch refactor put every command behind `process.exit(await cmdX(args))`, and
    * `cmdWatch` returned `EXIT.OK` the moment `watchFile()` was installed — so its own
    * dispatcher killed it immediately after it announced the watch, and the callback
@@ -272,8 +272,8 @@ describe("CLI — watch", () => {
   it("stays alive and recompiles on save, then ends only when signalled", async () => {
     // 90 s per wait, not the shared 30 s default: this case spawns a child and waits on
     // a filesystem watcher, and under full-suite parallel load on Windows that latency
-    // exceeded 30 s (observed 2026-08-28; the case passes 5/5 in isolation, and neither
-    // it nor `src/cli/` had changed). Load-sensitive and pre-existing, so the budget
+    // can exceed 30 s (the case passes 5/5 in isolation, with neither
+    // it nor `src/cli/` changed). Load-sensitive and pre-existing, so the budget
     // moves and not one assertion — a watcher that never fires still fails, just later.
     const budget = 90000;
     const dir = tmpDir();

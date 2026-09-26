@@ -1,5 +1,5 @@
 /**
- * CJK text in the Node-only backends (issue #107).
+ * CJK text in the Node-only backends.
  *
  * The PDF and PNG backends draw text with embedded fonts so the output never depends on the
  * host. The bundled Roboto has no Chinese, Japanese or Korean glyphs, so those labels used to

@@ -114,14 +114,14 @@ const ALL: [string, Draw][] = [
   ["double_bed", drawDoubleBed],
   ["nightstand", drawNightstand],
   ["wardrobe", drawWardrobe],
-  // ── v1.32 F2 ──
+  // ── bedroom additions ──
   ["bunk_bed", drawBunkBed],
   ["crib", drawCrib],
   ["dresser", drawDresser],
   ["vanity", drawVanity],
 ];
 
-/** The v1.32 families at their catalogued footprints, with the primitive count each emits. */
+/** The new bedroom families at their catalogued footprints, with the primitive count each emits. */
 const F2_CASES: readonly (readonly [string, Draw, Rect, number])[] = [
   ["bunk_bed", drawBunkBed, rect(1000, 2000), 6],
   ["crib", drawCrib, rect(700, 1300), 12], // 2 + 2 x 5 rail bars
@@ -179,7 +179,7 @@ describe("bedroom glyphs — the nightstand", () => {
   const R = rect(450, 400);
 
   it("draws a carcass, its top, the lamp, and the drawer front with its handle", () => {
-    // The v1.32 redraw: the old symbol was a box, an inset box and a ring in the dead centre,
+    // The redraw: the old symbol was a box, an inset box and a ring in the dead centre,
     // which said nothing about which way a `directional` piece faces.
     const n = draw(drawNightstand, R);
     expect(kinds(n)).toEqual(["polygon", "polygon", "circle", "circle", "line", "line"]);
@@ -393,7 +393,7 @@ describe("bedroom glyphs — in a plan", () => {
 });
 
 // ---------------------------------------------------------------------------
-// ── v1.32 F2: the four new bedroom families ──
+// ── the four new bedroom families ──
 
 describe("bedroom glyphs — the v1.32 families draw what they claim", () => {
   it.each(F2_CASES)("%s emits its documented primitive count at its catalogued footprint", (name, fn, R, count) => {
@@ -513,7 +513,7 @@ describe("bedroom glyphs — the dresser and the vanity say which way they face"
   });
 });
 
-/** A walled bedroom to drive the v1.32 families through the real pipeline. */
+/** A walled bedroom to drive the new bedroom families through the real pipeline. */
 const plan2 = (body: string): string => `plan "P" {
     units mm
     wall id=w exterior thickness 200 { (0,0) (6000,6000) (0,6000) (0,0) close }

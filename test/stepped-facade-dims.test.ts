@@ -1,5 +1,5 @@
 /**
- * Issue #109: `dims auto all` dropped every opening on a STEPPED facade, with no diagnostic.
+ * `dims auto all` on a STEPPED facade: no opening may drop out of the chains without a diagnostic.
  *
  * Each facade's openings chain used to hang on ONE wall line, probed at the middle of the
  * rooms' bounding box. The reporter's bedroom has a south facade in two legs (y=5389 west,

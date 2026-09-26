@@ -131,7 +131,7 @@ describe("relational placement — diagnostics", () => {
  * `alignOffset` answers an axis-mismatched edge by returning the LEADING edge, which is
  * the same thing it returns for no `align` at all. That made `right-of a align left` and
  * `right-of a align top` byte-identical plans with zero diagnostics: a derived position
- * silently wrong, the class AGENTS.md names, one level below the geometry cases. The
+ * silently wrong, the bbox-derived-position defect class, one level below the geometry cases. The
  * membership check in `1213e08` could not see it — `left` IS in `REL_ALIGNS`.
  *
  * A per-case matrix rather than a few examples because the accept-sets are **4/4, not

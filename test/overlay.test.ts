@@ -17,7 +17,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const example = (name: string) => readFileSync(join(__dirname, "..", "examples", name), "utf8");
 const STUDIO = example("studio.arch"); // entrance + rooms → a drawable overlay
 // A door-free room, inline rather than a shipped example: `two-bed.arch` used to have no
-// exterior entrance and served this fixture, but the 2026-08 gallery refresh repaired its
+// exterior entrance and served this fixture, but the gallery refresh repaired its
 // topology and gave it a real front door — so it now HAS a drawable overlay and can no
 // longer stand in for "no modeled entrance". A minimal inline plan makes the fixture's
 // own claim self-evident and immune to any future example edit.

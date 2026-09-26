@@ -238,8 +238,8 @@ describe("repair — `in <room>` placements", () => {
     // `inset` at all. The placement becomes `at`, and the rotation the anchor DERIVED
     // (back to the south wall = 180) is written out — dropping it would spin the WC.
     //
-    // `entry` sits at (1000,0) rather than the (500,0) it carried until the v1.33
-    // `W_DOOR_NEAR_CORNER` work: a 900 mm leaf centred 500 mm from the ring's corner at
+    // `entry` sits at (1000,0) rather than the (500,0) it once carried, because of
+    // `W_DOOR_NEAR_CORNER`: a 900 mm leaf centred 500 mm from the ring's corner at
     // (0,0) left a 50 mm nib on a 200 mm wall, which is not a buildable jamb. That was a
     // defect in the fixture, not in the new rule, and this test's closing
     // `expect(lint(...)).toEqual([])` is exactly the assertion that surfaced it.
@@ -394,7 +394,7 @@ describe("repair — the postcondition: nothing flagged is left silent", () => {
 
   it("a component `place`d TWICE is reported once, never rewritten in silence", () => {
     // One `furniture` statement, two drawn pieces — and the two are in different places
-    // on the page, so no single edit to the component body can fix both. The v1.19
+    // on the page, so no single edit to the component body can fix both. The repair
     // postcondition still has to hold: the piece lint flags gets an entry, and it is an
     // `unresolved` one naming the component, not a change that would move both instances.
     const src = `plan "Twins" {
@@ -456,7 +456,7 @@ describe("repair — the postcondition: nothing flagged is left silent", () => {
 
   it("reports a piece through a CURVED wall instead of inventing a radial push", () => {
     // The same postcondition one shape further out. Widening the collision rule to arcs
-    // (backlog 3.15) put a fault in front of a mover that pushes only along x/y, and
+    // put a fault in front of a mover that pushes only along x/y, and
     // clearing this one is a move along the wall's RADIUS — neither plan axis, off-grid,
     // and different at every point of the run. A change entry OR an unresolved entry,
     // never nothing; the note names the wall as curved rather than angled, because that

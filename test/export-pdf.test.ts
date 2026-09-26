@@ -9,8 +9,8 @@
  * reports a skip, so it never claimed to have asserted — but it does not FAIL in CI either,
  * so an install that quietly stopped pulling `optionalDependencies` would silently stop
  * testing a published output format and nothing would go red. `skipIf` has nowhere to hang
- * the CI throw, so the gate is restructured the way `test/png.test.ts` does it and
- * `docs/testing.md` §3 states: **required in CI** (a missing dep is the broken-install bug
+ * the CI throw, so the gate is restructured the way `test/png.test.ts` does it, under the
+ * optional-dep rule: **required in CI** (a missing dep is the broken-install bug
  * it is), a **visible named skip** locally.
  *
  * **2. What the drawing actually contains.** Assertions go through the inflated page
@@ -530,7 +530,7 @@ describe("PDF export", () => {
       const kinds = new Set(s.nodes.map((n) => n.prim.t));
       // Non-vacuity: assert the FIXTURE exercises the paths before asserting the output.
       // `path` where this used to say `region`: RICH's exterior wall carries an `arc`, and
-      // since v1.30 a wall set with any curve in it is one `path` outline rather than a
+      // a wall set with any curve in it is one `path` outline rather than a
       // straight-edged `region` plus loose per-segment arcs. `region` has not gone away —
       // it is still what an ALL-STRAIGHT plan emits, which the SHEET check below proves,
       // so this backend keeps a witness for both.
@@ -542,7 +542,7 @@ describe("PDF export", () => {
       expect(s.nodes.some((n) => n.paint.dash)).toBe(true);
       expect(s.nodes.some((n) => n.paint.miterLimit !== undefined)).toBe(true);
       expect(s.nodes.some((n) => n.prim.t === "text" && n.prim.rotate !== undefined)).toBe(true);
-      // The square line CAP moved fixtures in v1.30. It used to ride on the per-segment
+      // The square line CAP moved fixtures with the joinery rewrite. It used to ride on the per-segment
       // wall face lines, which had free ends that a round cap would visibly shorten; a
       // joined outline is closed loops, where a cap has nothing to do. The one primitive
       // still asking for it is the opt-in circulation overlay's dashed route, so that is
@@ -573,7 +573,7 @@ describe("PDF export", () => {
      *
      * `drawNode`'s switch handled polygon/line/region/arc/circle/text with no `hatch`
      * case and no `default`, and the `wallFill` layer is a single `hatch` primitive — so
-     * every PDF ArchLang exported through v1.26.0 had hollow walls, contradicting its own
+     * every PDF ArchLang once exported had hollow walls, contradicting its own
      * module header, and `fillColor`'s `url(…) → theme.pocheBase` branch was dead code.
      * `hatch` now shares the `region` case and that branch is what colours it.
      *
@@ -593,8 +593,8 @@ describe("PDF export", () => {
       expect(
         ops.includes(`${rgbOp(s.theme.pocheBase)} scn`),
         "The poche base colour is missing from the PDF again — `drawNode` is dropping the " +
-          "`hatch` primitive, so every wall prints as a hollow outline. This is the shipped bug " +
-          "fixed in backlog 3.8; do not re-pin it as a known gap.",
+          "`hatch` primitive, so every wall prints as a hollow outline. This is a shipped bug " +
+          "that was fixed; do not re-pin it as a known gap.",
       ).toBe(true);
     });
 

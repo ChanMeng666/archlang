@@ -252,7 +252,6 @@ describe("furniture-vs-wall collision on an ANGLED wall", () => {
  * angular sweep, with the band `R ± thickness/2` (`src/geometry/arc-band.ts`). It is
  * closed form — the arc's tessellated band is a drawing artifact whose facet count is a
  * rendering decision, so a measurement that read it would be wrong by construction.
- * docs/backlog.md item 3.15.
  */
 describe("furniture-vs-wall collision measures an ARC in polar coordinates", () => {
   // A drum: two semicircles about (5000,5000) at R 3000, walls 300 thick, so the solid

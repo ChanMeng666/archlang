@@ -116,7 +116,7 @@ describe("T5.2 — formatter never corrupts broken input", () => {
 
 describe("`style <kind> { … }` round-trips through the formatter", () => {
   // `plan.styles` stores CANONICAL Theme keys; the grammar only accepts the FRIENDLY
-  // attribute. The formatter therefore has to invert the mapping, and until v1.26.x it did
+  // attribute. The formatter therefore has to invert the mapping, and once it did
   // not — it printed `wallStroke:` where the author wrote `stroke:`, so the SECOND format
   // emitted an empty block and the plan lost its colours. Both directions of the law are
   // asserted below, over STYLE_KEYS itself rather than a retyped copy, so a new kind or

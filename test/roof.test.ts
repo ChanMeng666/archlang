@@ -1,5 +1,5 @@
 /**
- * `roof` — the eaves projection line (v1.29).
+ * `roof` — the eaves projection line.
  *
  * The element is drawing-only, so the things worth pinning are the ones a rendered SVG
  * would let you eyeball and get wrong:
@@ -13,7 +13,7 @@
  *  3. **The node carries BOTH halves of the dash convention** (`lineType` and `paint.dash`),
  *     which is the cross-backend divergence `glyph-lib.ts` documents: the SVG serializer
  *     follows the name, the PDF serializer follows the number.
- *  4. **`fmt` round-trips both spellings.** The v1.26.1 lesson — a formatter that drops a
+ *  4. **`fmt` round-trips both spellings.** A formatter that drops a
  *     clause has changed the drawing, not the layout.
  */
 

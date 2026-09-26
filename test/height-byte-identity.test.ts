@@ -1,5 +1,5 @@
 /**
- * The byte-identity law for the **vertical datum layer** (v1.35).
+ * The byte-identity law for the **vertical datum layer**.
  *
  * **Every new language form ships with a byte-identity law, pinned by test: a plan that
  * does not use it renders, describes and lints exactly as before.** `site`, the door
@@ -21,12 +21,12 @@
  * `svg` would leave `townhouse`'s levels 2 and 3 unmeasured, on exactly the feature whose
  * elevation rule is per-storey. {@link allStoreysDigestWith} joins every page.
  *
- * ## The corpus is SPLIT, and that is the point (2026-09-20)
+ * ## The corpus is SPLIT, and that is the point
  *
  * As first shipped, this file asserted that every one of the thirty examples authors no
  * `height` — because the law is vacuous for a plan that does use the syntax. That assertion
  * was correct and load-bearing, and it also made the corpus a closed set: **no shipped
- * example could ever demonstrate the headline feature of v1.35, and for a release none
+ * example could ever demonstrate the datum layer, and for a while none
  * did.** The docs claimed a datum that nothing in `examples/` declared, and both committed
  * axonometric renders stood silently on the 3000 mm default.
  *
@@ -38,18 +38,18 @@
  *     plan with its height clauses removed.
  *
  * So the corpus is now two groups and both claims are proved. The no-height group keeps the
- * vacuity guard and the measured `v1.34.0` hashes exactly as they were. The authors-height
+ * vacuity guard and the measured pre-datum hashes exactly as they were. The authors-height
  * group ({@link AUTHORS_HEIGHT}) is held to the strong law, whose **two sides are both
  * computable at test time** — it needs no measured baseline, so it cannot go stale and
  * cannot be re-blessed to green a suite. That is a strictly better guard than a frozen hash.
  *
  * ## No baseline row was retired to make room
  *
- * `two-storey`'s `v1.34.0` rows in both tables are still checked, against its **height-free
+ * `two-storey`'s pre-datum rows in both tables are still checked, against its **height-free
  * derivation** (`./height-free-source.ts`) rather than against the file as written. The
  * derivation is behaviourally the text that shipped, so the measurement keeps its full
  * force: it still says that everything about that plan other than the datum is where
- * `v1.34.0` left it. Nothing was re-measured, re-typed or dropped.
+ * the baseline left it. Nothing was re-measured, re-typed or dropped.
  *
  * ## If one of these moves
  *
@@ -63,7 +63,7 @@
  * ## Where the numbers came from
  *
  * They were measured **before a single line of `src/` changed**, on `f4548db` (the tree
- * `v1.34.0` shipped), by a script that imported these very digest bodies from
+ * before the datum layer), by a script that imported these very digest bodies from
  * `test/byte-identity-digest.ts` — never a lookalike. That is the lesson
  * `test/roof-void-byte-identity.test.ts` records: its first attempt measured its baseline
  * with a scratch script whose payload separator differed by one character, and reported

@@ -2,14 +2,13 @@ import { describe, expect, it } from "vitest";
 import { compile, describe as describePlan } from "../src/index.js";
 
 /**
- * The ONE circulation gate whose expected answer does not come out of the compiler
- * (`docs/backlog.md` G.11).
+ * The ONE circulation gate whose expected answer does not come out of the compiler.
  *
  * Every other circulation law in this repository is RELATIVE. `test/path-monotonic.test.ts`
  * compares the grid to itself under a perturbation; `test/nav-grid-scale.test.ts` compares
  * one resolution to another; the byte-identity digests pin today's output against
  * yesterday's. All of them stay green on a grid that models the wrong building — which is
- * exactly what shipped for every curved plan until v1.33.0, when the nav grid was found to
+ * exactly what once shipped for every curved plan, when the nav grid was found to
  * be rasterising each curved wall as the straight CHORD between its arc endpoints. On
  * `examples/library.arch` that moved one walk by 800 mm with no room dropped, no diagnostic
  * changed and no drawing moved, and NOTHING saw it.
@@ -184,7 +183,7 @@ import { compile, describe as describePlan } from "../src/index.js";
  * of N, of S and of the tail; row j=40 is free from i=51 east, the arc crossing it at
  * cx = 5000.4. Straight line = 5900, so `detourRatio` = 16500/5900 = 2.80.
  *
- * Its control is the same wall written as its own literal CHORD — the wall the pre-v1.33
+ * Its control is the same wall written as its own literal CHORD — the wall the old chord
  * rasteriser modelled — which puts the target WEST of the barrier and collapses the walk to
  * the unobstructed row-j=40 line, 5900 mm.
  *

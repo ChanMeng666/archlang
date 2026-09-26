@@ -1,7 +1,7 @@
 /**
  * Reading a `path` primitive back out of a Scene, for tests.
  *
- * Since v1.30 a plan whose walls carry any curve draws its whole outline as ONE `path`
+ * A plan whose walls carry any curve draws its whole outline as ONE `path`
  * node instead of a scatter of `arc` and `line` primitives, so the tests that used to
  * filter `n.prim.t === "arc"` on the `wallFace` pass have to walk the path's edges
  * instead. A {@link PathEdge} carries only where it goes — `from` is the previous edge's

@@ -11,7 +11,7 @@
  *
  * NB it evaluates the GENERATOR's output rather than importing the generated `.js`. A
  * static import would drag a `docs-site` module into the ROOT tsconfig program — where
- * `allowJs` is off — and fail `typecheck:all` with a TS2307 (AGENTS.md: `exclude` cannot
+ * `allowJs` is off — and fail `typecheck:all` with a TS2307 (`exclude` cannot
  * hold a file out of a program it was imported into). `test/share-codec.test.ts` uses the
  * same `new Function` idiom on `ArchLive.vue`'s inline codec for the same reason.
  */

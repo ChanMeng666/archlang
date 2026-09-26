@@ -290,7 +290,7 @@ describe("glyphs-outdoor — what each symbol draws", () => {
     // (which is the LEGEND's order) fails here.
     //
     // It used to read `slice(-names.length)` — the outdoor tranche was the TAIL, because it
-    // was the last one written. v1.32 appends twenty-six more families after it, so the
+    // was the last one written. Twenty-six more families now follow it, so the
     // tail is no longer this module's and never will be again. The property that
     // actually matters survives the change and is the one asserted now: the twenty-one sit
     // together, in order, wherever the table has grown to put them. A family slotted in
@@ -366,7 +366,7 @@ describe("glyphs-outdoor — the catalog's claims about these symbols are true",
    * radial ones hold at ANY aspect (they are built from the centre and the short side, both of
    * which a quarter-turn preserves); the four rectangle-built ones hold on a square, which is
    * the honest scope of the claim — `coffee_table` is symmetric on the same terms. (`island`
-   * used to be named here too. It stopped being `symmetric` in v1.32, when its symbol gained
+   * used to be named here too. It stopped being `symmetric` when its symbol gained
    * a seating overhang along one side; see `fixtures-catalog.ts`.)
    *
    * `shrub` is the tenth and is deliberately ABSENT: its outline is an irregular cloud, so it

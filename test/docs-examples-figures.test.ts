@@ -4,7 +4,7 @@
  *
  * `docs-site/examples.md` opens with a promise: *"Every figure quoted below comes from
  * `arch describe --json` on the file itself, so the prose and the drawing cannot
- * disagree."* Nothing enforced it, and by 2026-09 the promise was false in eleven places.
+ * disagree."* Nothing enforced it, and the promise went false in eleven places.
  * This is the repo's documented drift class (a hand-typed self-description going stale
  * while every gate stays green), and the fix for that class is to EXECUTE the
  * documentation rather than proofread it.
@@ -66,7 +66,7 @@
  * counts and every dimension quoted in running prose. They sit where a number can be a
  * counterfactual ("its box would claim 168") or a worked example ("halve that to 1:100"),
  * and a gate that fires on prose is one that gets widened until it stops firing at all.
- * They stay a review item; see `docs/testing.md`.
+ * They stay a review item.
  *
  * A multi-storey plan's headline figures are its LEVEL 1 figures, which is what
  * `describe()` returns and what the live widget draws — the page says so in its preamble.

@@ -1,7 +1,7 @@
 /**
  * A RECTANGULAR room's `label "…" at (x,y)` — the explicit label/area anchor.
  *
- * The clause has parsed on every room form since v1.23 (`parseTail` is shared by the
+ * The clause parses on every room form (`parseTail` is shared by the
  * rect, `polygon` and `circle` forms alike), but only `resolveCircle` / `resolvePolygon`
  * ever carried it into the IR. On a rectangle it was **parsed and then dropped**: the
  * label sat at the computed centre as if the clause were absent, with no diagnostic, and

@@ -34,8 +34,8 @@ export interface CompilerApi {
  *
  * `world` exists so a law can cover the examples that `import` — `imports.arch` and
  * `museum-wings.arch` are shipped plans like any other and a sweep that silently skips
- * them is a corpus with a hole in it (AGENTS.md: "a gate is only as strong as its
- * corpus"). Nothing else may be varied: the digest bodies below are pinned shapes.
+ * them is a corpus with a hole in it (a gate is only as strong as its
+ * corpus). Nothing else may be varied: the digest bodies below are pinned shapes.
  */
 export interface DigestOptions {
   world?: World;
@@ -72,13 +72,13 @@ export function allStoreysDigestWith(api: CompilerApi, src: string, opts: Digest
 /**
  * The same digest with the DRAWING left out — `describe()` and `lint()` only.
  *
- * ## Why the whole-surface digest was not enough on its own (v1.32)
+ * ## Why the whole-surface digest is not enough on its own
  *
  * {@link digestWith} answers "did anything move", which is the right question and has one
  * weakness: a release that legitimately redraws a symbol moves every pin taken with it, and
  * then the only available response is to re-measure every hex — at which point the law has
- * stopped guarding the two surfaces it was mostly written for. v1.32's furniture pass is
- * exactly that release: it redraws six kitchen and bath symbols, so the SVG of every plan
+ * stopped guarding the two surfaces it was mostly written for. A furniture pass is
+ * exactly that change: one that redraws six kitchen and bath symbols, so the SVG of every plan
  * that places one is different by design, while `describe()` and `lint()` must not move by so
  * much as a key.
  *

@@ -6,7 +6,7 @@ import { compile, lint } from "../src/index.js";
 import { l1Pipeline } from "../eval/l1.js";
 
 /**
- * Fault-injection gate (roadmap Tranche 2; deep-dive H3). Each fixture in
+ * Fault-injection gate. Each fixture in
  * `eval/faults/` is an otherwise-sound plan carrying exactly one seeded defect (two
  * for `combined`). The gate proves the *deterministic* pipeline — `arch fix` then
  * `arch repair`, wrapped by {@link l1Pipeline} — heals every seeded fault to a plan

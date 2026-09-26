@@ -12,7 +12,7 @@ import type { Scene, SceneNode } from "../src/scene.js";
 import { DESCRIBE_KEYS } from "../src/cli/commands-analyze.js";
 
 /**
- * Sheet tables (v1.20) — the opt-in `schedule rooms` ROOM SCHEDULE and the derived
+ * Sheet tables — the opt-in `schedule rooms` ROOM SCHEDULE and the derived
  * `legend`. Three things carry the weight here:
  *
  * 1. **Byte-identity.** A plan that opts into neither must be untouched: no node, no

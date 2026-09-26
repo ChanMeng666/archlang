@@ -10,8 +10,8 @@ import { generateAll } from "../dataset/generate.js";
 import { recordTrajectory } from "../dataset/trajectory.js";
 
 /**
- * Permanent CI guard for the repair-trajectory / authoring dataset generator
- * (roadmap Tranche 5). Four groups:
+ * Permanent CI guard for the repair-trajectory / authoring dataset generator.
+ * Four groups:
  *   a. LEAKAGE — the contamination iron law: a freshly generated small corpus must share
  *      no holdout brief/golden text or structure (the private holdout must stay private).
  *   b. CANARY — every row carries the canary field AND a first-line source comment.
@@ -53,7 +53,7 @@ const corpus: { id: string; prompt: string; golden: string }[] = JSON.parse(
 );
 
 /**
- * The FIDELITY holdout (roadmap P0-3) — `eval/corpus-fidelity.json` and its committed
+ * The FIDELITY holdout — `eval/corpus-fidelity.json` and its committed
  * reference plans. These briefs are holdout material on exactly the same terms as the 26:
  * private forever, never published, and the public dataset must stay disjoint from them
  * too. Without this they would be an **unguarded leak channel**, because the enforcement

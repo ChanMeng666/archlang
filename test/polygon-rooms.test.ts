@@ -22,7 +22,7 @@ import { computeRoomClearances } from "../src/analyze/occupancy.js";
 import { fmt2 } from "../src/num-format.js";
 
 /**
- * Polygonal rooms (v1.23) — `room polygon (x,y) …`.
+ * Polygonal rooms — `room polygon (x,y) …`.
  *
  * The discipline this suite exists to hold: a polygon room is measured EXACTLY where the
  * feature generalises (area, centroid, adjacency, containment, occupancy, door

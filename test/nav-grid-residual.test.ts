@@ -3,11 +3,11 @@ import { censusOf, EPS_MM, shippedStoreys, type Census } from "./wall-solid.js";
 
 /**
  * The GEOMETRIC RESIDUAL: the nav grid's wall mask against the DRAWN wall solid, over
- * every shipped example and every storey (`docs/backlog.md` G.11).
+ * every shipped example and every storey.
  *
  * ## Why this exists
  *
- * Until v1.33.0 the nav grid rasterised each curved wall as the straight CHORD between its
+ * The nav grid once rasterised each curved wall as the straight CHORD between its
  * arc endpoints — not a coarser version of the wall, a wall somewhere else. It survived
  * three tiers of testing because every circulation law in the suite is RELATIVE: the
  * monotonicity property, the resolution ladder and the byte-identity digests each compare
@@ -19,7 +19,7 @@ import { censusOf, EPS_MM, shippedStoreys, type Census } from "./wall-solid.js";
  * two structural exclusions and the argument for why there is **no magnitude tolerance at
  * all** are documented in `test/wall-solid.ts`; read that header before touching this one.
  *
- * ## The census, measured BEFORE any assertion existed (2026-09-04, 30 examples)
+ * ## The census, measured BEFORE any assertion existed (30 examples)
  *
  *   storeys 35   skipped 0
  *   cells 1,209,653   examined 1,186,861   agree 1,178,103
@@ -62,7 +62,7 @@ import { censusOf, EPS_MM, shippedStoreys, type Census } from "./wall-solid.js";
  * 111.80 / 158.11 and are nowhere near multiples of 50. Measured, rather than reasoned:
  * `test/circulation-hand-derived.test.ts` moves 16500 -> 16400 and this file goes red on 33
  * storeys at 299.4 mm. **Scale a plant to the CELL, never to the thickness — and check the
- * arithmetic of a stated cause before building on it** (`docs/backlog.md`'s preamble).
+ * arithmetic of a stated cause before building on it.**
  *
  * And `d <= half + 1` — one millimetre — is invisible to the CORPUS but not to this gate. A
  * SHA-256 sweep of `describe()`, `lint()` and every storey's SVG over all 30 examples moves

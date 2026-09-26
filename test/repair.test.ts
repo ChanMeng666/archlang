@@ -131,7 +131,7 @@ describe("arch repair", () => {
 
   // -------------------------------------------------------------------------
   // Idempotence: the two ping-pongs that used to make `arch repair`'s output
-  // depend on how many times you had run it (docs/backlog.md 3.11).
+  // depend on how many times you had run it.
   // -------------------------------------------------------------------------
 
   /**
@@ -217,7 +217,7 @@ describe("arch repair", () => {
   it("records a moved position as the printer will write it", () => {
     // Regression, found by `test/fuzz.test.ts`'s round-trip property ("never reports a
     // move its own output does not contain"), which failed on roughly one run in five
-    // and reproduces byte-for-byte against v1.30.0's `src/` — so this shipped.
+    // and reproduced byte-for-byte against an older released `src/` — so this shipped.
     //
     // `planWrite` promises that the source repair is about to write resolves back to
     // the position it reports. It computed that position in full float precision, but

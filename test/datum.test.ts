@@ -1,5 +1,5 @@
 /**
- * The **vertical datum layer** (v1.35) — heights, sills and heads.
+ * The **vertical datum layer** — heights, sills and heads.
  *
  * The law this layer is built on lives next door in `test/height-byte-identity.test.ts`:
  * a plan that writes none of this syntax is unchanged in all three agent-facing surfaces.
@@ -18,7 +18,7 @@
  *     height clause: not one key named `height`/`sill`/`head`/`elevation`/`storey_height`
  *     anywhere, at any depth, on any storey. A spot check on the top level would pass a
  *     leak inside `levels[]` or `doors[]`.
- *  4. **`fmt` round-trips every new clause.** v1.26.1 shipped a formatter that silently
+ *  4. **`fmt` round-trips every new clause.** A formatter once shipped that silently
  *     returned a pocket door as a hinged one; the same failure here would return a 2200 mm
  *     parapet as a full-height wall. Round-tripping is checked by re-parsing and
  *     re-formatting to a FIXED POINT, not by string-matching the emitted line — a fixed
@@ -457,7 +457,7 @@ suite("datum — describe() emits height keys only when the source authored one"
 });
 
 // ---------------------------------------------------------------------------
-// 7. `arch fmt` — the v1.26.1 lesson applied before the fact
+// 7. `arch fmt` — a dropped clause changes the drawing, checked before the fact
 // ---------------------------------------------------------------------------
 
 suite("datum — `arch fmt` round-trips every new clause", () => {

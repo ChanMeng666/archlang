@@ -28,7 +28,7 @@
  * {@link GUARDED} is read out of `.gitleaksignore`'s fingerprints rather than retyped, so
  * excluding a finding in a new file fails HERE until someone says what that file may hold —
  * `docs/agents/iron-laws.md`: derive from the source of truth, never retype it. Paths whose
- * blob no longer exists in the working tree (the 2026-09-04 `paper/` entries, whose
+ * blob no longer exists in the working tree (the `paper/` entries, whose
  * directory moved to a private repository) are skipped, and the skip is asserted to be
  * because the file is gone rather than because nobody wrote a rule.
  *
@@ -83,7 +83,7 @@ describe("every gitleaks-excluded file is guarded for what it may CONTAIN", () =
     expect(GUARDED.length).toBeGreaterThan(0);
     expect(LIVE).toEqual(HAVE_RULES);
     // The remainder must be absent because the blob left the tree, not because a rule is
-    // missing — `paper/` moved to the private archlang-paper repository on 2026-08-26.
+    // missing — `paper/` moved to the private archlang-paper repository.
     for (const p of GUARDED.filter((x) => !LIVE.includes(x))) {
       expect(existsSync(resolve(ROOT, p)), `${p} exists but has no content rule`).toBe(false);
     }

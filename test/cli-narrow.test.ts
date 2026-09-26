@@ -4,7 +4,7 @@ import { describe } from "../src/index.js";
 import { DESCRIBE_KEYS } from "../src/cli/commands-analyze.js";
 
 /**
- * Bounded output (v1.17) — the narrowing filters.
+ * Bounded output — the narrowing filters.
  *
  * `describe --room/--select` and `lint`/`validate` `--code/--severity` exist so an agent
  * can read one room, or one diagnostic class, without pulling a whole building into its
@@ -125,7 +125,7 @@ suite("DESCRIBE_KEYS — no drift vs the real describe() result", () => {
       }
     }`);
     // The fixtures are only evidence if they really produced the conditional keys.
-    // `heights` (v1.35) joins this list for the reason the comment above gives: it is
+    // `heights` joins this list for the reason the comment above gives: it is
     // conditional on the SOURCE having written a height clause, so a fixture that writes
     // none would let it ship unselectable with this whole suite green — the `voids` failure
     // exactly. The `height 2700` line above is what makes the claim non-vacuous.

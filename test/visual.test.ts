@@ -46,20 +46,20 @@ const EXAMPLES = [
   // The wing on its own — the same file the composed building imports, so this golden
   // pins the component's own drawing independently of the transform applied to it.
   "museum-wing.arch",
-  // v1.23: the polygon-room flagship. This is the golden that would move if a room's
+  // The polygon-room flagship. This is the golden that would move if a room's
   // ring, its centroid label anchor or the wall outline's mitre cap ever drifted.
   "gallery-l.arch",
-  // v1.24: the curved-geometry flagship. This is the golden that would move if the arc
+  // The curved-geometry flagship. This is the golden that would move if the arc
   // solve, the tessellation step, the true-arc faces, the tangent-borne openings or the
   // R/φ call-outs ever drifted — and, because it mixes a curved facade with straight
   // service wings, it also pins the per-wall split that keeps the straight walls on the
   // rectilinear boolean.
   "aquarium.arch",
-  // v1.25: the orientation-and-openings example. Its golden is the only one that would
+  // The orientation-and-openings example. Its golden is the only one that would
   // move if a NON-HINGED leaf's drawing drifted — the sliding, pocket and bifold panels
   // are Scene primitives with no swing arc, and nothing else under examples/ draws one.
   "bungalow.arch",
-  // v1.27 showcase: the twelve examples added when the gallery was redrawn. They exist
+  // Showcase: the twelve examples added when the gallery was redrawn. They exist
   // here for the same reason the older entries do — each is the only shipped plan that
   // exercises some part of the drawing pipeline, so its golden is where that part's
   // drift would first become visible.
@@ -74,7 +74,7 @@ const EXAMPLES = [
   "tiny-house.arch",
   "garden-loft.arch",
   // A ring of rooms round a void: the only shipped plan where the outward face of a
-  // window is NOT the side its bounding box suggests (the v1.25 courtyard case).
+  // window is NOT the side its bounding box suggests (the courtyard case).
   "courtyard-house.arch",
   // Non-rectilinear rooms that are not the polygon flagship — six-sided rooms packed
   // round a hexagonal core, so the mitres are all oblique.
@@ -90,7 +90,7 @@ const EXAMPLES = [
   // A `for`-generated run of four identical units — the golden that would move if the
   // scripting expansion or its auto-id numbering drifted.
   "terrace-row.arch",
-  // v1.28: the furniture flagship. Twenty-six drawn symbols on one sheet, which is what
+  // The furniture flagship. Twenty-six drawn symbols on one sheet, which is what
   // makes it the visual golden for the glyph layer — a scallop that stopped tiling, a
   // burner ring that faceted, a pillow branch that flipped, all draw the same STRING
   // length and would slip past a snapshot while moving pixels here.
@@ -194,7 +194,7 @@ describe("visual regression — golden PNG pixel-diff", () => {
     for (const p of pages!) await diffAgainstGolden(`townhouse.arch.L${p.level}`, p.scene);
   });
 
-  // v1.29 gallery refresh: the SHOWPIECE flagship, two levels. Unlike the multi-storey
+  // The SHOWPIECE flagship, two levels. Unlike the multi-storey
   // goldens above, this one combines `site`, an `arc` bay, a `void`, a `roof` and a
   // mirrored `place` component on the SAME sheet — the pixel-diff catches an interaction
   // between them that a byte-identity or geometry unit test would not.
@@ -205,12 +205,12 @@ describe("visual regression — golden PNG pixel-diff", () => {
     for (const p of pages!) await diffAgainstGolden(`hillside-villa.arch.L${p.level}`, p.scene);
   });
 
-  // v1.31: the OUTDOOR flagship, two levels. It is the only shipped plan that draws
+  // The OUTDOOR flagship, two levels. It is the only shipped plan that draws
   // GROUND — eight of the nine `outdoor` materials, two `fence` styles and a `site`
   // boundary — so a drift in a ground hatch's scale-aware tile, in the fence post pitch,
   // in the derived balcony railing or in the dash-dot property line has nowhere else to
   // become visible. Level 1 additionally carries the `garage` door's overhead projection
-  // over a driveway, which is the one place the two v1.31 tracks draw on top of each
+  // over a driveway, which is the one place the ground and garage tracks draw on top of each
   // other.
   it("garden-house.arch matches a golden per level", async () => {
     const { pages, errors } = compile(example("garden-house.arch"), { noCache: true });

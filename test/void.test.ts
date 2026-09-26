@@ -1,5 +1,5 @@
 /**
- * `void` — a hole in this storey's floor plate (v1.29).
+ * `void` — a hole in this storey's floor plate.
  *
  * Three of the four decisions in `src/elements/void.ts` are behavioural claims that would
  * be invisible in a rendered SVG, so each is executed here rather than described:
@@ -13,7 +13,7 @@
  *     pinned here so a later "improvement" that deducts it has to argue with a test.
  *  3. **The room it belongs to is found by the POLY-AWARE containment test** — a void in
  *     the notch of a U-shaped room is inside that room's bounding box and outside its
- *     floor, which is the v1.25.0 bbox-derived-position defect class exactly.
+ *     floor, which is the bbox-derived-position defect class exactly.
  */
 
 import { describe, expect, it } from "vitest";

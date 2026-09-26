@@ -4,8 +4,7 @@ import { describe as describePlan, lint } from "../src/index.js";
 import { centreFreedomToClearWidth, DEFAULT_BODY_RADIUS_MM } from "../src/analyze/circulation.js";
 
 /**
- * The circulation model's MONOTONICITY LAW, and the two defects it was written against
- * (`docs/backlog.md` 5.8).
+ * The circulation model's MONOTONICITY LAW, and the two defects it was written against.
  *
  * Deepening one obstacle can only ever make a walk worse. So over a sweep of an
  * obstacle's depth:
@@ -99,7 +98,7 @@ function assertMonotone(sources: string[], label: string): void {
 }
 
 /** The reported repro: one shoe cabinet in `examples/furnished-flat.arch`'s 1100 mm
- *  hall, swept over the exact depths `docs/backlog.md` 5.8 tabulates. */
+ *  hall, swept over the exact depths the original report tabulated. */
 const FLAT = readFileSync(new URL("../examples/furnished-flat.arch", import.meta.url), "utf8");
 const flatWith = (depth: number): string =>
   FLAT.replace(
@@ -110,7 +109,7 @@ const flatWith = (depth: number): string =>
 /**
  * The second, independently-written repro: an 8 x 3 m two-room plan whose cabinet hangs
  * from the north wall, sweeping its depth so the gap below it closes from 1500 mm to
- * 500 mm. It falsifies the backlog's claim that 5.8 "does not reproduce in a small
+ * 500 mm. It falsifies the claim that the defect "does not reproduce in a small
  * hand-written corridor", and it is a THIRD mechanism, not a second instance of the other
  * two — on `main` it reads 100, 840, 840, 840, 500, 100, which is erratic rather than a
  * constant offset.
@@ -134,7 +133,7 @@ const NORTH_CABINET = (depth: number): string => `plan "probe" {
 }`;
 
 describe("W_PATH_TOO_NARROW is monotone in an obstacle's depth", () => {
-  it("holds over the backlog 5.8 repro — one cabinet in the flat's 1100 mm hall", () => {
+  it("holds over the original repro — one cabinet in the flat's 1100 mm hall", () => {
     assertMonotone([200, 300, 400, 500, 600, 700].map(flatWith), "furnished-flat hall");
   });
 
