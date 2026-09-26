@@ -5,7 +5,7 @@
  * script itself cannot be imported by a test, because importing it deletes `dist/`
  * and starts a build.
  *
- * ── The defect this exists to stop (docs/backlog.md 3.14) ──
+ * ── The defect this exists to stop ──
  *
  * The extension bundles the core at build time, so `npm run package` in the wrong
  * directory ships the wrong language. Running `vscode:build:only` from inside a
@@ -123,7 +123,7 @@ export function assertCoreIsOurs(core, repoRoot) {
       `  building   ${repoRoot}`,
       `  would bundle core from  ${core.dir}  (version ${core.version})`,
       ``,
-      `This is docs/backlog.md 3.14. A git worktree has no node_modules of its own, so`,
+      `A git worktree has no node_modules of its own, so`,
       `node walks up to the shared checkout's — and junctioning node_modules does not help,`,
       `because npm links a workspace package by ABSOLUTE path to the main tree's root. The`,
       `bundled language would be the other checkout's while the __CORE_VERSION__ stamp`,
