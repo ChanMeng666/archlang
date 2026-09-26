@@ -98,7 +98,7 @@ const ROOT = join(HERE, "..");
  * all 28 import-free examples: 22 SVGs moved, 0 summaries and 0 diagnostic sets.
  *
  *
- * ## The backlog-5.8 re-measurement — the SUMMARY moved, and that is the point
+ * ## The circulation-fix re-measurement — the SUMMARY moved, and that is the point
  *
  * This is the case the message on the summary half describes: **a moved lint rule and a
  * changed `describe()` value**, not a drawing. Nothing in the circulation fix touches a
@@ -144,7 +144,7 @@ const BASELINE: Readonly<Record<string, string>> = {
   "studio.arch": "90951a2517e141dfe28f0e12462fd29cefba5460c900304e435ef53e7f3c0f3f",
   "laneway-house.arch": "401f5a9e255e5748a2eda400569ad352ae856e1ad5c9f51b62895e30bfd5ad1f",
   "bungalow.arch": "7dacd03e5c79772836ad273f9542c1272f881df27d8afd0dadef5ef558f8f3b2",
-  // Re-measured for backlog 5.7 (the `overhead` flag). Its SOURCE gained two statements —
+  // Re-measured for the `overhead` flag. Its SOURCE gained two statements —
   // a `range_hood` over the stove and a `mirror` over the basin, the two correct drawings
   // the missing flag had kept out of the flagship — so this plan is a different building
   // and both its digests move. See the SEMANTIC_BASELINE note for the proof that the CODE
@@ -167,7 +167,7 @@ const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
   // `furnished-flat.arch` is the ONE value in this table that is not the original v1.30.0
   // measurement, and the exception proves the rule rather than bending it. Its SOURCE keeps
   // being edited -- seven of the new families in v1.32, then a `range_hood` and a `mirror`
-  // for backlog 5.7 -- so `describe()` and `lint()` genuinely report a different building,
+  // for the `overhead` flag -- so `describe()` and `lint()` genuinely report a different building,
   // which is exactly the kind of change this pin exists to make visible. A redrawn SYMBOL,
   // or a lint rule learning a new exemption, still cannot move any number here.
   //

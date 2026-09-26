@@ -460,7 +460,7 @@ ${rooms}
     expect(tableBandRows(null, null)).toBe(0);
   });
 
-  it("REPRODUCES the backlog case: a schedule can push a page past its own paper", () => {
+  it("REPRODUCES the reported case: a schedule can push a page past its own paper", () => {
     // The recorded symptom, stated as a property rather than as `library.arch`'s numbers:
     // take a plan that fits its sheet with room to spare, add enough schedule rows to eat
     // the remaining band, and the page must NOT come back reporting `fits: true`.
@@ -568,7 +568,7 @@ suite("sheet — the SVG root carries the true paper size", () => {
  * that a `paper` plan prints at its true ISO size, in a PUBLISHED output format, with
  * nothing going red. `skipIf` has nowhere to hang the CI throw, so the gate takes the
  * `if (!HAS) { … return; }` shape `test/png.test.ts` and `test/export-pdf.test.ts` use, and
- * `docs/testing.md` §3 states: REQUIRED in CI, a VISIBLE named skip locally.
+ * the optional-dep rule states: REQUIRED in CI, a VISIBLE named skip locally.
  */
 const HAS_PDFKIT = await (async () => {
   try {

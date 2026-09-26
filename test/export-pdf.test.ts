@@ -9,8 +9,8 @@
  * reports a skip, so it never claimed to have asserted — but it does not FAIL in CI either,
  * so an install that quietly stopped pulling `optionalDependencies` would silently stop
  * testing a published output format and nothing would go red. `skipIf` has nowhere to hang
- * the CI throw, so the gate is restructured the way `test/png.test.ts` does it and
- * `docs/testing.md` §3 states: **required in CI** (a missing dep is the broken-install bug
+ * the CI throw, so the gate is restructured the way `test/png.test.ts` does it, under the
+ * optional-dep rule: **required in CI** (a missing dep is the broken-install bug
  * it is), a **visible named skip** locally.
  *
  * **2. What the drawing actually contains.** Assertions go through the inflated page
@@ -593,8 +593,8 @@ describe("PDF export", () => {
       expect(
         ops.includes(`${rgbOp(s.theme.pocheBase)} scn`),
         "The poche base colour is missing from the PDF again — `drawNode` is dropping the " +
-          "`hatch` primitive, so every wall prints as a hollow outline. This is the shipped bug " +
-          "fixed in backlog 3.8; do not re-pin it as a known gap.",
+          "`hatch` primitive, so every wall prints as a hollow outline. This is a shipped bug " +
+          "that was fixed; do not re-pin it as a known gap.",
       ).toBe(true);
     });
 

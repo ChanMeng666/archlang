@@ -21,7 +21,7 @@
  *
  * ## The missing-dep rule
  *
- * The clipper gate follows the repo's `png.test.ts` pattern (`docs/testing.md` §3): in CI
+ * The clipper gate follows the repo's `png.test.ts` pattern (the optional-dep rule): in CI
  * the optional dep is REQUIRED and its absence throws, because a CI install that quietly
  * stopped pulling `optionalDependencies` would otherwise leave a green suite that
  * asserted nothing about the angled path. Locally it degrades to a visible skip.

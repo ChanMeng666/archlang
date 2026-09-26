@@ -8,7 +8,7 @@
  * projection side is DERIVED from which face has floor, and 21 furniture families that are
  * placed outdoors.
  *
- * Git merged them cleanly. `docs/backlog.md`'s merge protocol says in as many words that a
+ * Git merged them cleanly. A
  * clean auto-merge is not evidence, and the v1.25.0 near-miss is why. So the two places the
  * tracks touch the same question get a test that only exists after the merge:
  *

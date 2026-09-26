@@ -9,7 +9,7 @@ import type { World } from "../src/world.js";
 
 /**
  * Shared machinery for `test/nav-grid-residual.test.ts` — the gate that compares the nav
- * grid's WALL MASK against the DRAWN wall solid (`docs/backlog.md` G.11).
+ * grid's WALL MASK against the DRAWN wall solid.
  *
  * Not a `.test.ts`, so vitest does not collect it (the `test/joinery-laws.ts` precedent).
  *

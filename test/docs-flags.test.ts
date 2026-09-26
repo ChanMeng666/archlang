@@ -33,8 +33,6 @@ const DOCS = [
   "docs/agents/commands.md",
   "docs/agents/gotchas.md",
   "docs/agents/iron-laws.md",
-  "docs/agents/project-status.md",
-  "docs/agents/verification.md",
   "CONTRIBUTING.md",
   "docs-site/agents.md",
   "docs-site/guide.md",

@@ -154,7 +154,7 @@ describe("plan-json — round-trip byte-identity (SVG)", () => {
     "museum-wings.arch": { because: "`import` + `place` — refused by design", proof: /^\s*import\b/m },
     // This entry used to name the ONE genuine defect in this list — `planToJson`
     // projected a RESOLVER-DERIVED furniture position as an authored `at (x,y)`, which
-    // `grid` then re-snapped (backlog G.4), moving eight of this plan's twelve fixtures.
+    // `grid` then re-snapped, moving eight of this plan's twelve fixtures.
     // That is fixed: the projection now carries the placement CLAUSE, and this file
     // round-trips byte-identical once its `roof overhang` line is removed — which is the
     // ordinary by-design loss the rest of this list describes, and all that is left here.
@@ -190,7 +190,7 @@ describe("plan-json — round-trip byte-identity (SVG)", () => {
 });
 
 /**
- * A derived furniture position must survive the round-trip — docs/backlog.md G.4.
+ * A derived furniture position must survive the round-trip.
  *
  * `grid` snaps the coordinates an author WRITES, and deliberately does not snap one the
  * resolver DERIVED from wall geometry (v1.27.0, item 3.12 — snapping a `flush` piece
@@ -545,8 +545,8 @@ describe("plan-json — schema object", () => {
  * would otherwise be un-masked silently by an unrelated fix.
  *
  * The situation: `planToJson` projects the rotation a `place` frame imposes on a
- * fixture, and not the reflection. Before backlog 5.4 that lost nothing — a mirrored
- * symbol drew identically to its twin — but 5.4 made 19 of the 83 catalogued families
+ * fixture, and not the reflection. That once lost nothing — a mirrored
+ * symbol drew identically to its twin — but handed-symbol mirroring made 19 of the 83 catalogued families
  * genuinely handed, so the projection now loses a fact the drawing depends on.
  *
  * It cannot bite today because a plan containing `place` never round-trips at all:
@@ -562,7 +562,7 @@ describe("plan-json — schema object", () => {
  * and record, that a placed instance projects resolved coordinates and nothing else),
  * then invert both assertions below into the real round-trip test.
  *
- * Do not "fix" this file by deleting it. See `docs/backlog.md` G.10.
+ * Do not "fix" this file by deleting it: it is the tripwire for the unprojected reflection.
  */
 describe("plan-json — G.10 tripwire: a frame's reflection is not projected", () => {
   const placed = (mirror: string): string => `plan "p" {
@@ -584,7 +584,7 @@ describe("plan-json — G.10 tripwire: a frame's reflection is not projected", (
     const b = flipped[0];
     if (!a || !b) throw new Error("expected one projected fixture on each side");
 
-    // `desk` is one of the 19 families backlog 5.4 found to be handed, so these two
+    // `desk` is one of the 19 families measured to be handed, so these two
     // pieces are drawn as mirror images of one another…
     expect(a.category).toBe("desk");
 

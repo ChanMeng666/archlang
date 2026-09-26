@@ -3,7 +3,7 @@ import { censusOf, EPS_MM, shippedStoreys, type Census } from "./wall-solid.js";
 
 /**
  * The GEOMETRIC RESIDUAL: the nav grid's wall mask against the DRAWN wall solid, over
- * every shipped example and every storey (`docs/backlog.md` G.11).
+ * every shipped example and every storey.
  *
  * ## Why this exists
  *
@@ -62,7 +62,7 @@ import { censusOf, EPS_MM, shippedStoreys, type Census } from "./wall-solid.js";
  * 111.80 / 158.11 and are nowhere near multiples of 50. Measured, rather than reasoned:
  * `test/circulation-hand-derived.test.ts` moves 16500 -> 16400 and this file goes red on 33
  * storeys at 299.4 mm. **Scale a plant to the CELL, never to the thickness — and check the
- * arithmetic of a stated cause before building on it** (`docs/backlog.md`'s preamble).
+ * arithmetic of a stated cause before building on it.**
  *
  * And `d <= half + 1` — one millimetre — is invisible to the CORPUS but not to this gate. A
  * SHA-256 sweep of `describe()`, `lint()` and every storey's SVG over all 30 examples moves

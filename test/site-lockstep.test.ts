@@ -1,6 +1,6 @@
 /**
- * Site lockstep gate — the "change one, change the other" laws AGENTS.md states in prose
- * but nothing enforced.
+ * Site lockstep gate — the "change one, change the other" laws for the two sites. This
+ * test is the authority for them; no doc restates them.
  *
  * Three duplications exist on purpose (the two site build systems cannot share a CSS
  * import, and a `var()` cannot cross into an SVG data URI), so each one is a place the
@@ -8,14 +8,14 @@
  *
  *   1. the shared brand TOKEN BLOCK, duplicated byte-identically in
  *      `playground/src/styles/tokens.css` and `docs-site/.vitepress/theme/style.css`
- *      (AGENTS.md → "Token-lockstep law" + the brand iron law);
+ *      (the token-lockstep law: change one, change the other);
  *   2. the eight `--syn-*` syntax colours, which additionally appear as literal
  *      fallbacks in `scripts/gen-grammars.ts` and as the `archlangLight` Shiki theme in
- *      `docs-site/.vitepress/config.ts` — AGENTS.md: "Change a syntax colour in ALL FOUR
- *      places, then `npm run gen:grammars`";
+ *      `docs-site/.vitepress/config.ts` — one syntax palette, three renderers: a syntax
+ *      colour changes in ALL FOUR places, then `npm run gen:grammars` runs;
  *   3. the two CodeMirror lint-squiggle hexes in `playground/src/editor-setup.ts`, the one
  *      legitimate fixed hex left in the site sources (ADR 0014 retired the rest), which
- *      AGENTS.md says to "keep in step with `--redline` / `--warn-ink` by hand".
+ *      must be kept in step with `--redline` / `--warn-ink` by hand.
  *
  * Everything is located by CONTENT anchors (comment markers, token names, CSS selectors),
  * never by line number, so moving a block around is fine and changing a value is not.
@@ -46,8 +46,8 @@ function sharedTokenBlock(file: string, text: string): string {
   expect(
     start,
     `${file} no longer contains the shared brand token block's header comment ` +
-      `(${JSON.stringify(BLOCK_MARKER)}). That comment IS the anchor for the AGENTS.md ` +
-      `"Token-lockstep law" — the block must stay byte-identical in ${TOKENS_CSS} and ${STYLE_CSS}.`,
+      `(${JSON.stringify(BLOCK_MARKER)}). That comment IS the anchor for the ` +
+      `token-lockstep law — the block must stay byte-identical in ${TOKENS_CSS} and ${STYLE_CSS}.`,
   ).toBeGreaterThanOrEqual(0);
   const end = text.indexOf("\n}", start);
   expect(end, `${file}: the shared token block's enclosing \`:root { … }\` rule is unterminated.`).toBeGreaterThan(
@@ -75,7 +75,7 @@ function tokenValue(text: string, name: string): string {
   return m![1]!.trim();
 }
 
-describe("brand token block stays byte-identical across the two sites (AGENTS.md: Token-lockstep law)", () => {
+describe("brand token block stays byte-identical across the two sites (token-lockstep law)", () => {
   const tokens = read(TOKENS_CSS);
   const style = read(STYLE_CSS);
 
@@ -91,7 +91,7 @@ describe("brand token block stays byte-identical across the two sites (AGENTS.md
       b,
       `The shared brand token block has FORKED.\n` +
         `  ${TOKENS_CSS}\n  ${STYLE_CSS}\n` +
-        `AGENTS.md's "Token-lockstep law" (and the brand iron law) require this block to be ` +
+        `The token-lockstep law requires this block to be ` +
         `duplicated BYTE-IDENTICALLY in both files — the two build systems cannot share a CSS ` +
         `import, so the duplication is the source of truth. Change one, change the other.`,
     ).toBe(a);
@@ -107,7 +107,7 @@ describe("brand token block stays byte-identical across the two sites (AGENTS.md
   });
 });
 
-describe("the --syn-* palette is the same in all four places (AGENTS.md: one syntax palette, three renderers)", () => {
+describe("the --syn-* palette is the same in all four places (one syntax palette, three renderers)", () => {
   const tokens = read(TOKENS_CSS);
   const canonical = synFromCss(sharedTokenBlock(TOKENS_CSS, tokens));
 
@@ -221,7 +221,7 @@ describe("the CodeMirror lint squiggles keep the redline/warn hexes they inline 
     expect(
       squiggleHex("error"),
       `${EDITOR_SETUP}'s error squiggle no longer matches \`--redline\` in ${TOKENS_CSS}. A \`var()\` ` +
-        `cannot cross into an SVG data URI, so this hex is inlined by hand — AGENTS.md says to keep it ` +
+        `cannot cross into an SVG data URI, so this hex is inlined by hand and must be kept ` +
         `in step with the token. Update the URL-encoded \`%23<hex>\` to the token's value.`,
     ).toBe(tokenValue(block, "redline"));
   });

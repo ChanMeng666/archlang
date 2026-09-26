@@ -43,7 +43,7 @@ import {
  * what the compiler *produces* — determinism, cache transparency, byte-identity under an
  * inert addition, the round-trips — is stated over it. Before it existed, the flagship
  * determinism property fed `fc.string()` into a plan body and so asserted, in practice,
- * only that the ERROR path is deterministic (backlog 2.4).
+ * only that the ERROR path is deterministic.
  *
  * ## Three findings this file records rather than asserts
  *
@@ -57,7 +57,7 @@ import {
  *     gone. Invisible until now because every fixture that formats a door uses the
  *     `hinged` default — the one word the resolver drops anyway. Pinned below by
  *     "format preserves the drawing" plus a per-kind example.
- *  2. **FIXED — `W_DIM_INSIDE`'s fix 2-CYCLED** (backlog 3.10). The producer offered an
+ *  2. **FIXED — `W_DIM_INSIDE`'s fix 2-CYCLED.** The producer offered an
  *     endpoint swap it had never evaluated, so on a dimension running THROUGH the
  *     building — inside whichever way round it reads — `arch fix` swapped it back and
  *     forth until the pass budget ran out, leaving the result dependent on the PARITY of
@@ -65,7 +65,7 @@ import {
  *     `src/geometry.ts`) of the swapped geometry and offers nothing when the answer is
  *     still "inside": the warning stands, the edit does not. The exclusion list this file
  *     used to carry is gone, and its reproducer is inverted below into a fixpoint pin.
- *  3. **FIXED — `repair(repair(s)) !== repair(s)`** (backlog 3.11). Two rules whose
+ *  3. **FIXED — `repair(repair(s)) !== repair(s)`.** Two rules whose
  *     grid-snapped remedies undid each other left a piece ping-ponging, and the pass
  *     banked whichever end it happened to reach; a second call banked the other. Both
  *     levels now park on the CANONICAL member of the cycle they are walking, and the
@@ -343,7 +343,7 @@ describe("repair — round-trip", () => {
   // (and up to 4), so which arrangement `arch repair` shipped depended on how many times
   // you happened to have run it. It was recorded rather than asserted for a while, on
   // the grounds that `expect(...).not.toBe(...)` would only pin the defect in place
-  // (docs/backlog.md 3.11). Both halves of the cause are now closed — see `repair`'s
+  // in place. Both halves of the cause are now closed — see `repair`'s
   // header for the cycle canonicalisation, and `planWrite` for the second half, a
   // written `at` the resolver snapped somewhere repair had never evaluated — so the
   // property below is what stands in that comment's place.
@@ -439,7 +439,7 @@ describe("applyFixes — convergence", () => {
     //
     // There is NO exclusion list. There used to be one — `NON_CONVERGENT_FIX_CODES`,
     // whose single member was `W_DIM_INSIDE` — and it is gone because the defect it
-    // named is fixed (backlog 3.10), not because it was inconvenient. If this property
+    // named is fixed, not because it was inconvenient. If this property
     // ever goes red on a new code, that is a finding about that fix producer: a
     // machine-applicable fix that does not reduce its own diagnostic is worse than no
     // fix at all, since `arch fix` is a fixpoint loop (ADR 0011). Fix the producer —
@@ -467,7 +467,7 @@ describe("applyFixes — convergence", () => {
   });
 
   it("settles on the plan whose W_DIM_INSIDE fix used to 2-cycle", () => {
-    // The regression pin for backlog 3.10, kept on the EXACT plan that failed. Its
+    // The regression pin for the 2-cycle, kept on the EXACT plan that failed. Its
     // `dim clear` measures a line at y4000 through a 7700 × 5000 room, so the drawn line
     // lands at y4500 — inside — and swapping the endpoints only mirrors it to y3500,
     // inside as well. The producer used to offer the swap anyway: `arch fix` then spent

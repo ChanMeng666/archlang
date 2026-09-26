@@ -406,7 +406,7 @@ suite("doors — W_POCKET_RUN", () => {
     // exist), so the list of what may follow is exactly that set — named here, one line
     // per rule, rather than left open.
     //
-    // `door-near-corner` (v1.33, `docs/backlog.md` 4.2) is the FIRST entry that breaks
+    // `door-near-corner` is the FIRST entry that breaks
     // that argument and it is listed anyway, because the argument is not the claim. It
     // needs no new syntax, so it CAN fire on a plan written years before it — that is a
     // stated behaviour change, the same kind v1.27.0 shipped when three rules widened,

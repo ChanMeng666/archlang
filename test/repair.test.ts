@@ -131,7 +131,7 @@ describe("arch repair", () => {
 
   // -------------------------------------------------------------------------
   // Idempotence: the two ping-pongs that used to make `arch repair`'s output
-  // depend on how many times you had run it (docs/backlog.md 3.11).
+  // depend on how many times you had run it.
   // -------------------------------------------------------------------------
 
   /**

@@ -34,8 +34,8 @@ export interface CompilerApi {
  *
  * `world` exists so a law can cover the examples that `import` — `imports.arch` and
  * `museum-wings.arch` are shipped plans like any other and a sweep that silently skips
- * them is a corpus with a hole in it (AGENTS.md: "a gate is only as strong as its
- * corpus"). Nothing else may be varied: the digest bodies below are pinned shapes.
+ * them is a corpus with a hole in it (a gate is only as strong as its
+ * corpus). Nothing else may be varied: the digest bodies below are pinned shapes.
  */
 export interface DigestOptions {
   world?: World;

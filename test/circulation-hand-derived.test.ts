@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest";
 import { compile, describe as describePlan } from "../src/index.js";
 
 /**
- * The ONE circulation gate whose expected answer does not come out of the compiler
- * (`docs/backlog.md` G.11).
+ * The ONE circulation gate whose expected answer does not come out of the compiler.
  *
  * Every other circulation law in this repository is RELATIVE. `test/path-monotonic.test.ts`
  * compares the grid to itself under a perturbation; `test/nav-grid-scale.test.ts` compares

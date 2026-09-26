@@ -10,7 +10,7 @@
  *  - `test/explain.test.ts` asserts each field is non-EMPTY. A wrong example is non-empty.
  *  - `test/explain.test.ts`'s drift check compares `renderErrorCodes()` to the committed
  *    `docs/error-codes.md`. That proves reproducibility, never correctness — the exact
- *    blindness AGENTS.md warns about, one layer out from the generators.
+ *    blindness of a reflexive drift gate, one layer out from the generators.
  *  - `test/docs-fences.test.ts` compiles published ```` ```arch ```` fences, but
  *    `scripts/gen-error-codes.ts` emits them as `arch static` **on purpose** (v1.26: 104
  *    error examples each rendered a generic parse-error card on the public page), so the
@@ -67,7 +67,7 @@ const FRAGMENT =
  * Every code whose example does not reproduce it, with why.
  *
  * 44 of 139, so **95 catalog examples are now executed and held to their own code**. That
- * ratio is the honest state of a field documented as illustrative, not a backlog: adding a
+ * ratio is the honest state of a field documented as illustrative, not a to-do list: adding a
  * building to each fragment would make the catalog's snippets longer than the prose they
  * illustrate, which is the opposite of what `arch explain` is for.
  */

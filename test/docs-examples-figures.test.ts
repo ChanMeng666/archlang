@@ -66,7 +66,7 @@
  * counts and every dimension quoted in running prose. They sit where a number can be a
  * counterfactual ("its box would claim 168") or a worked example ("halve that to 1:100"),
  * and a gate that fires on prose is one that gets widened until it stops firing at all.
- * They stay a review item; see `docs/testing.md`.
+ * They stay a review item.
  *
  * A multi-storey plan's headline figures are its LEVEL 1 figures, which is what
  * `describe()` returns and what the live widget draws — the page says so in its preamble.

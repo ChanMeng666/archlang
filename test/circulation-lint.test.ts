@@ -42,7 +42,7 @@ describe("circulation lint", () => {
   });
 
   it("reports the MEASURED way in when furniture closes the only way through", () => {
-    // The limit case, and the one `docs/backlog.md` 5.8 is about: two cabinets leaving a
+    // The limit case for a furnished route: two cabinets leaving a
     // 500 mm gap no body fits through. The room drops out of `circulation.rooms[]`, which
     // is exactly how this used to go silent — a plan got CLEANER as the obstacle grew.
     // The number it reports is the 500 mm gap that is really there, measured by asking

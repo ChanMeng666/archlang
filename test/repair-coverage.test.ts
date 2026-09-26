@@ -456,7 +456,7 @@ describe("repair — the postcondition: nothing flagged is left silent", () => {
 
   it("reports a piece through a CURVED wall instead of inventing a radial push", () => {
     // The same postcondition one shape further out. Widening the collision rule to arcs
-    // (backlog 3.15) put a fault in front of a mover that pushes only along x/y, and
+    // put a fault in front of a mover that pushes only along x/y, and
     // clearing this one is a move along the wall's RADIUS — neither plan axis, off-grid,
     // and different at every point of the run. A change entry OR an unresolved entry,
     // never nothing; the note names the wall as curved rather than angled, because that

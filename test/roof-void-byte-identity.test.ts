@@ -124,7 +124,7 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  * moved before touching a number here, and write down what it was.
  *
  *
- * ## The backlog-5.8 re-measurement — the SUMMARY moved, and that is the point
+ * ## The circulation-fix re-measurement — the SUMMARY moved, and that is the point
  *
  * This is the case the message on the summary half describes: **a moved lint rule and a
  * changed `describe()` value**, not a drawing. Nothing in the circulation fix touches a
@@ -175,7 +175,7 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  * two semicircular `arc` edges sharing endpoints, so it rasterised to a bar along its own
  * DIAMETER — a route could walk through the masonry, while the round room inside was severed
  * into two caps and the `plant` room beyond one of them dropped out of the facts with nothing
- * said (`docs/backlog.md` G.5). Segments now block against `distPointToArc`.
+ * said. Segments now block against `distPointToArc`.
  *
  * Field by field against the previous commit, `aquarium`'s summary changes ONLY inside
  * `circulation`: a new `rooms[]` entry for `plant` (walk 36 900, bottleneck 1140 — exactly

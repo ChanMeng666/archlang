@@ -85,7 +85,7 @@ ${obstruct}}`;
     // last number is the point of the pin: the reading is the width a BODY passes
     // through, so it tracks the real gap to within a cell. It used to come back 100 mm —
     // the transform was seeded on the body-radius-eroded cells and its result read as a
-    // width, subtracting the body twice (`docs/backlog.md` 5.8).
+    // width, subtracting the body twice.
     expect(clearB).toBe(1940);
     expect(squeezedB).toBeGreaterThan(0);
     expect(squeezedB).toBeLessThan(clearB);

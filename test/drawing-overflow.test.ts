@@ -1,5 +1,5 @@
 /**
- * `sheet.drawing_fits` and `W_DRAWING_OVERFLOW` — backlog 4.9.
+ * `sheet.drawing_fits` and `W_DRAWING_OVERFLOW`.
  *
  * ## The defect
  *
@@ -54,7 +54,7 @@ function worldFor(dir: string): World {
   };
 }
 
-/** The backlog entry's own reproduction, verbatim. */
+/** The original reproduction, verbatim. */
 const REPRO = `plan "g" { units mm paper A4 portrait scale 1:100
   wall id=s exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
   room id=r at (0,0) size 4000x3000 label "R" uses living

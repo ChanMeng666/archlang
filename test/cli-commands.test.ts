@@ -7,7 +7,7 @@ import { buildManifest, compile, describe as describePlan } from "../src/index.j
 
 /**
  * End-to-end execution of the three shipped commands no test ever invoked:
- * `fmt`, `watch` and `manifest`/`capabilities` (backlog 2.5).
+ * `fmt`, `watch` and `manifest`/`capabilities`.
  *
  * The gap is not hypothetical. `format.test.ts` exercises the LIBRARY `format()` and
  * `cli-manifest.test.ts` exercises `buildManifest()`; neither runs the command. `arch fmt`

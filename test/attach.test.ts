@@ -167,7 +167,7 @@ describe("S.2 — an attachment position is an expression", () => {
   });
 
   it("a `for`-generated run places itself along the wall — the case the form exists for", () => {
-    // The red-then-green case from docs/backlog.md S.2. Every door lands where the
+    // The red-then-green case for a `for` run on a wall. Every door lands where the
     // arithmetic says, which is what makes the absolute-coordinate fallback unnecessary.
     const src = plan(`let bay = 900\n  for i in 0..4 { door on w1 at bay * i + 600 width 700 }`);
     const { diagnostics } = compile(src, { noCache: true });
@@ -217,7 +217,7 @@ describe("S.2 — an attachment position is an expression", () => {
 /**
  * S.2, second half — every refusal the slot has left carries a CATALOGUED code.
  *
- * The backlog entry's parting note was that the two reported failures came back with no
+ * The two failures that motivated the attachment slot came back with no
  * `E_*` at all. Both now compile, so what is audited here is what REMAINS refusable, and
  * the requirement is the project's standing one: a byte span and a code the catalog
  * documents. `E_PARSE` is that code for a SHAPE refusal (see `src/error-catalog.ts`);

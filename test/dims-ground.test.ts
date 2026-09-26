@@ -4,7 +4,7 @@ import type { SceneNode } from "../src/scene.js";
 import { CHAIN_BASE, CHAIN_STEP, SHEET_MM } from "../src/sheet.js";
 
 /**
- * `dims auto` chains vs. `outdoor` ground (backlog 4.8).
+ * `dims auto` chains vs. `outdoor` ground.
  *
  * The law, in both directions:
  *
@@ -62,7 +62,7 @@ function bottomChainYs(src: string): number[] {
   return [...new Set(ys)].sort((p, q) => p - q);
 }
 
-describe("`dims auto` chains clear the ground attached to the facade they measure (backlog 4.8)", () => {
+describe("`dims auto` chains clear the ground attached to the facade they measure", () => {
   it("no `outdoor` at all → the chain sits at exactly the pre-4.8 offset", () => {
     expect(bottomChainYs(plan(""))).toEqual([BOTTOM_OUTER + slotOffset(2)]);
   });

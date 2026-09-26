@@ -1,5 +1,5 @@
 /**
- * A mirrored `place` draws the mirror-image SYMBOL — `docs/backlog.md` 5.4.
+ * A mirrored `place` draws the mirror-image SYMBOL.
  *
  * The defect was silent: `place … mirror` reflected a fixture's footprint, its owning room
  * and its derived quarter-turn, and left the drawing inside that footprint alone, so a
@@ -138,7 +138,7 @@ describe("a mirrored `place` draws the mirror-image symbol", () => {
   });
 
   it("an AUTHORED placement clause and a handed symbol reflect together", () => {
-    // The pairing fixture for the collision with backlog G.4, which drops `_authored` in
+    // The pairing fixture for the derived-position round-trip fix, which drops `_authored` in
     // the same arm of `transformGeometry` this change writes `_mirror` in. Two handed
     // facts meet the reflection here and get OPPOSITE answers, and only a plan that
     // carries BOTH can show they do not interfere:
@@ -253,7 +253,7 @@ describe("the handedness survey", () => {
   /**
    * The families whose plan symbol has NO vertical mirror axis at its catalogued footprint,
    * measured by reflecting the drawing rather than read off a flag. `sofa_l` is the one
-   * `docs/backlog.md` 5.4 names; the other eighteen are what looking rather than assuming
+   * originally reported; the other eighteen are what looking rather than assuming
    * turned up.
    *
    * This is a RECORD of the survey, not the mechanism — `mirrorGlyph` derives handedness per

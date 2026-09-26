@@ -4,8 +4,7 @@ import { compile, describe as describePlan, type SceneSummary } from "../src/ind
 import { NULL_WORLD, type World } from "../src/world.js";
 
 /**
- * Two laws about what `describe().circulation` is allowed to leave OUT
- * (`docs/backlog.md` G.5).
+ * Two laws about what `describe().circulation` is allowed to leave OUT.
  *
  * The defect this file exists against was the SILENCE, not the omission. A consumer got
  * circulation facts for five of seven rooms and nothing whatever telling it two were

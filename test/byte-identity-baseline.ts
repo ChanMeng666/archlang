@@ -46,8 +46,7 @@
  *   2. a shipped example's SOURCE BYTES moved above a diagnostic. The SVG is byte-identical
  *      and the ONLY delta is a uniform shift of every span by the byte count added.
  *
- * Check (2) by diffing the two `lint()` payloads field by field, as
- * `docs/testing.md` describes; if the shift is not uniform, it is case (1) wearing case
+ * Check (2) by diffing the two `lint()` payloads field by field; if the shift is not uniform, it is case (1) wearing case
  * (2)'s clothes. Only `hillside-villa` was affected here, because it is the one example
  * deliberately left with warnings — `aquarium` and `two-storey` had their prose edited in
  * the same branch and did not move, since a plan that lints clean has no spans to shift.

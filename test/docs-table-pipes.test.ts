@@ -6,9 +6,8 @@
  * written as `` `anchor|centered` `` is split mid-span: the backtick pair is severed, the
  * text stops being code, and anything angle-bracketed inside it — `<room>`, `<pos>` — leaks
  * out as raw HTML. VitePress hands that to Vue's template compiler, which fails the WHOLE
- * build with "Element is missing end tag". That is not hypothetical: it took the docs site
- * down for four consecutive pushes on 2026-07-12, and the resulting rule is an AGENTS.md
- * gotcha — "write `\|` inside table cells".
+ * build with "Element is missing end tag" — one such cell takes the docs deploy down. The
+ * rule is "write `\|` inside table cells".
  *
  * Nothing enforced it. The core suite never compiles the site (`npm run docs:build` is the
  * only thing that would catch it), so the fault reaches CI's site-build job at best and the
@@ -162,8 +161,7 @@ describe("no Markdown table cell severs an inline code span with a bare `|`", ()
             `GFM splits table cells on \`|\` BEFORE inline-code parsing, so each caret above severs a ` +
             `backtick pair. Whatever follows stops being code, and any \`<token>\` inside it leaks out ` +
             `as raw HTML — VitePress/Vue then fails the ENTIRE docs build with "Element is missing end ` +
-            `tag". This exact fault took the docs deploy down for four pushes on 2026-07-12; it is a ` +
-            `standing AGENTS.md gotcha.\n\n` +
+            `tag". A single severed cell is enough to take the docs deploy down.\n\n` +
             `FIX: escape it — write \`\\|\` inside the code span (e.g. \`<svg\\|dxf\\|png>\`), which is ` +
             `what docs/cli-reference.md already does everywhere. Then re-run \`npm run docs:build\`: ` +
             `the core test suite does not compile the site, so that is the only full verification.`,
