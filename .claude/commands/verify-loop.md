@@ -32,7 +32,7 @@ scripts and report a pass/fail table.
    job.
    - A `TS2345 … | undefined` on a workspace file that `tsc -p <workspace>` calls clean means a
      ROOT test imported that module into the strict root program. Fix it in the shared module —
-     never by relaxing the root option (`docs/agents/gotchas.md` → (Typecheck); `docs/testing.md` §4).
+     never by relaxing the root option (`docs/agents/gotchas.md` → (Typecheck)).
 
 4. **Conditional gates — run the ones the diff earns:**
    - touched `docs/*.md` or `docs-site/` ⇒ **`npm run docs:build`** (the core suite never compiles
@@ -51,7 +51,7 @@ scripts and report a pass/fail table.
      snapshot/golden-tested; an unexplained golden change is a real regression, not a snapshot to
      bless.
    - For any other red guard — a lockstep pin, a docs tripwire, an MCP gate — look up its row in
-     **`docs/testing.md` §2** before touching it: each says whether the answer is *fix the source*,
+     **`docs/testing.md` §3** before touching it: each says whether the answer is *fix the source*,
      *regenerate*, or *consciously update the pin*.
 
 ## Report
@@ -79,4 +79,4 @@ Add a row for each conditional gate you ran (`typecheck:all`, `docs:build`, `e2e
 
 Note: `npm run check` covers neither `check:drift` nor `typecheck:all` nor `docs:build` — the core
 suite does not compile the docs site or any workspace. Full map of what each gate catches, and the
-red-run response for every guard: `docs/testing.md`.
+red-run response for each class of guard: `docs/testing.md`.

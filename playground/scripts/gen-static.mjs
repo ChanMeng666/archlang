@@ -160,7 +160,7 @@ function readTokenBlock() {
   if (start < 0) {
     fail(
       `playground/src/styles/tokens.css no longer contains ${JSON.stringify(BLOCK_MARKER)}.\n` +
-        "  That comment is the anchor for the token-lockstep law (docs/agents/sites.md), and these\n" +
+        "  That comment is the anchor for the token-lockstep law (.claude/rules/sites.md), and these\n" +
         "  pages inline the block it opens. Restore the marker, or update this slice and\n" +
         "  test/site-lockstep.test.ts together.",
     );
@@ -542,7 +542,7 @@ ${TOKEN_BLOCK}
   }
   pre.source:focus-visible { outline: 2px solid var(--src-fg); outline-offset: 2px; }
 
-  /* ── The CTA. REDLINE is the one attention accent (docs/agents/sites.md); plum
+  /* ── The CTA. REDLINE is the one attention accent (docs/adr/0014-one-light-world.md); plum
      stays the colour of an inline prose link. --src-surface on --redline is 5.4:1,
      and the hover DARKENS to --redline-ink, so contrast rises rather than falls. */
   .cta {

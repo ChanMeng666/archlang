@@ -1,585 +1,112 @@
 # Testing & verification
 
-The map of everything that proves this repo correct: what runs where, what each guard is *for*,
-and — the part a checklist usually omits — **what to do when one goes red**.
-
-This is contributor documentation. It is not published to the docs site (it is absent from
-`sync-docs.mjs`'s `PAGES` table on purpose), so nothing here is agent-facing language surface;
-for that read `spec.llm.md` / `SKILL.md`. Read this before adding a test, before blessing a
-snapshot, and before believing a green run means more than it does.
-
----
-
-## 1. The three tiers
-
-### Tier 1 — local
-
-| Command | What it runs |
-|---------|--------------|
-| `npm test` | the whole vitest suite: `test/`, `playground/test/`, `packages/*/test/`, `editors/vscode/test/` (the include list lives in `vitest.config.ts`) |
-| `npm run check` | `typecheck` + `lint` (Biome) + `check:test-wiring` + `npm test` — the pre-push gate. **Its `typecheck` does not compile `test/`** — only `typecheck:all` does, so a type error in a test file passes `check` |
-| `npm run check:test-wiring` | fails if a tracked `*.test.ts` falls outside `vitest.config.ts`'s `test.include` globs (it would silently never run), or if an include glob matches nothing. Parses the globs out of the config rather than duplicating them |
-| `npm run check:drift` | every `gen:*` generator re-run and byte-compared against its committed artifact. **Separate from `check` — it is its own CI gate** |
-| `npm run typecheck:all` | the full-repo typecheck: root `tsconfig.dev.json` (`src` + `test` + `eval` + `dataset` + `scripts` + `bench`) then playground, docs-site (vue-tsc), `packages/mcp`, `editors/vscode` |
-| `npm run docs:build` | the only thing that compiles the VitePress site. **The core suite never does** — any `docs/*.md` edit needs this |
-| `npm run test:coverage` | vitest + v8 coverage over `src/` only. Report-only: no thresholds, nothing fails on a number |
-| `npm run e2e:playground` | Playwright (chromium) against the **built** playground. Needs `npm run build && npm run playground:build:only` first — `vite preview` only serves `playground/dist/` |
-| `npm run e2e:docs` | Playwright against the **built** docs site. Needs `npm run build && npm run docs:build:only` first |
-| `npm run eval:ci` | the offline 26-brief authorability golden gate (no API key). The live harnesses are owner-only and paid |
-| `npm run eval:fidelity` | the **intent-fidelity slice** (v1.25): deliberately infeasible briefs where *declaring infeasibility* is the scored-correct answer, plus a **judge-free, deterministic** laundering detector. Its own corpus (`eval/corpus-fidelity.json`) and its own scorecard; **it shares no ruler with `eval:ci` and the two numbers must never be compared** |
-
-`npm run check` + `npm run check:drift` is the honest local minimum. Add `typecheck:all` when you
-touched anything outside `src/` — **`test/` included**, because the root tsconfig excludes it and
-`check` therefore never typechecks a test file you just wrote — and the matching E2E when you touched `playground/` or
-`docs-site/`.
-
-### Tier 2 — PR (every push to `main`, every pull request)
-
-`ci.yml` runs five **gating** jobs in parallel plus one informational one; `codeql.yml` is a
-sixth check on the same events. Each row says what that job **alone** catches — the reason it is
-not redundant with the others.
-
-| Job (workflow) | Gates? | What it alone catches |
-|----------------|--------|-----------------------|
-| `build` — Node 18/20/22 matrix (`ci.yml`) | yes | everything the suite asserts, on all three supported runtimes; plus `typecheck`, `lint:ci`, `check:drift` and `eval:ci`. The Node 22 leg swaps `npm test` for `test:coverage` and posts a report-only step summary + artifact |
-| `builds` — workspace builds (`ci.yml`) | yes | the four downstream workspaces actually COMPILE (docs site, playground, MCP shim, VS Code extension) — the core suite compiles none of them. Also `typecheck:all`, the MCP baked-resource freshness check, and the VS Code bundle tests (which need the built `dist/server.js`) |
-| `windows` (`ci.yml`) | yes | line-ending and path regressions, at the runner's DEFAULT git settings — no `core.autocrlf` override, because the point is to fail if `.gitattributes`' `* text=auto eol=lf` ever stops holding |
-| `e2e-playground` (`ci.yml`) | yes | the assembled page in a real browser: boot, edit, apply a fix, download every format, the embed page. Its first run found a live bug (`setPointerCapture` retargeting click-to-source) that `tsc`, vitest and `vite build` are all structurally blind to |
-| `e2e-docs` (`ci.yml`) | yes | the machine routes (`/<page>.md`, `/llms-full.txt`, both schemas, the GBNF, the gallery SVGs) actually resolve, and `<ArchLive>` hydrates into a live compiler — a `srcExclude` mistake 404s a machine route while the site still builds and looks perfect |
-| `analyze` (`codeql.yml`) | yes | injection/taint paths, default query suite. Also runs weekly on cron: an existing path gets re-flagged when GitHub ships new queries, with no code change |
-| `bench` (`ci.yml`) | **no** | per-stage timing deltas vs `bench/baseline.json`, posted as a create-or-update PR comment. Runner-dependent, so it never gates — and that is the right shape, because a correctness change can legitimately move the baseline. **v1.30's wall joinery did exactly that**: replacing three lowering paths with one exact pass made `toScene` roughly 3× slower (57.5 → 162.0 ms over all 29 examples; the `OPENING_HEAVY` synthetic 5.96 → 116.3 ms, since 400 disjoint axis-aligned segments is precisely what the retired rectangle sweep was fastest at). Measured, **accepted** on 2026-08-28, and tracked as backlog 4.1 — so a `bench` comment showing those numbers against an older baseline is expected, not a regression to chase |
-
-The core build once ran alone. The three jobs added around it exist because a green suite proved
-nothing about the sites, the shim, the extension, Windows, or a real browser.
-
-### Tier 3 — nightly (`nightly.yml`, cron 03:00 UTC + `workflow_dispatch`)
-
-Checks that talk to the outside world, are too slow per-PR, or would be noise as a merge gate.
-
-| Job | What it is for |
-|-----|----------------|
-| `prod-smoke` | `scripts/smoke.mjs` against both live origins. A deploy can go green and the site rot later (DNS, cert, a Worker route/custom-domain change, a Cloudflare zone setting) |
-| `audit` | `npm audit --omit=dev --audit-level=high` + `npm audit signatures`. **Report-only** — advisories never fail the workflow; a broken `npm ci` does |
-| `secrets` | gitleaks over the WHOLE history (`fetch-depth: 0`) — a credential committed and later removed is still leaked |
-| `full-matrix` | ubuntu 18/20/22 + windows 22. Deliberately redundant with the PR matrix; nightly is where the extra OS leg is worth paying for |
-| `e2e-prod` | the `@prod`-tagged READ-ONLY Playwright subset against production via `E2E_BASE_URL`. No build, no preview server. Its docs half is also a **deploy-staleness probe**: it compares production's raw `/<page>.md` bytes against this checkout of `main` |
-| `report` | the single writer for the pinned issue (marker `<!-- archlang-nightly -->`). One `always()` job, so two jobs can never race to create the issue twice |
-
----
-
-## 2. Guard inventory
-
-Each entry: the law it enforces, where it lives, and the red-run response. **"Regenerate" and
-"consciously update the pin" are different actions** — the third column says which one applies.
-
-### Goldens and snapshots — three kinds, three update paths
-
-| Kind | Where | When it goes red |
-|------|-------|------------------|
-| vitest inline/file snapshots | `test/__snapshots__/*.snap` (SVG, Scene IR, error-SVG, accessible SVG) | **Read the diff first.** `compile()` is byte-stable by iron law, so an unexplained change is a regression, not a snapshot to bless. Only then `vitest -u` |
-| visual-regression goldens (PNG) | `test/__goldens__/*.png`, driven by `test/visual.test.ts` (resvg + pixelmatch) | same rule, then `UPDATE_GOLDENS=1 vitest run test/visual.test.ts`. **A missing `@resvg/resvg-js` is a HARD FAILURE under `CI`** and a visible skip locally — it used to be a silent vacuous pass |
-| ASCII plan goldens | `test/__ascii__/*.txt`, driven by `test/ascii.test.ts` | same rule, then `ASCII_UPDATE=1 vitest run test/ascii.test.ts` |
-
-Never run an update env var to make a red suite green. Justify every changed byte or fix the
-source.
-
-### Drift generators — `npm run check:drift`
-
-Nine generators, twenty-three artifacts (the gate prints the total on every run — `✓ all 23
-generated artifacts are in sync with their sources`, so read it there rather than counting); the
-authoritative list is the `GENERATORS` table in
-`scripts/check-drift.ts` and it is mirrored in [CONTRIBUTING.md](../CONTRIBUTING.md#ci-drift-gates-regenerate-before-you-push).
-
-**Red ⇒ regenerate, never hand-edit.** Run the matching `npm run gen:*` (or `npm run gen:all`,
-which orders `gen:spec` before `gen:llms`) and commit the output.
-
-**The limit of this gate, which matters more than the gate:** it compares generator *output* to
-the committed file, so it proves **reproducibility, not correctness**. A generator that hardcodes
-a language fact reproduces the same wrong text forever (`gen-llm-spec.ts` shipped a v1.12 CLI for
-three releases while drift stayed green). Derive from the source of truth; give each generator a
-guard that fails when a source-of-truth entry has no rendering.
-
-**`gen:example-svgs` — the thirteen drawings the README embeds.** The newest generator, and the one
-that shows what an *un*-gated derived artifact costs. `examples/studio.svg`, `two-bed.svg` and
-`attached.svg` were hand-committed and never re-rendered, so for months the README's hero and
-gallery showed a building compiled before the opening-void fix, the fixture-orientation fix, the
-miter-limit cap and the label-placement pass — four separate rendering changes, invisible because
-the only way to notice was to look at the picture. `scripts/gen-example-svgs.ts` renders them from
-their `.arch` sources; `test/example-svgs-drift.test.ts` is the gate and does two jobs:
-
-| Law | Red ⇒ |
-|-----|-------|
-| every `README_SVGS` file on disk equals an in-memory `compile()` of its source | `npm run gen:example-svgs`, then **look at the drawing** before committing — a moved golden here is a rendering change, and the picture is the review |
-| the curated list and the README's `<img>` tags agree **in both directions** | a `./examples/<n>.svg` in the README with no `README_SVGS` entry is an ungated drawing that will rot; a listed name the README never embeds is dead weight. Add or remove the `<img>`, or edit the list |
-
-The list is curated on purpose — committing an SVG per `.arch` would put 28 large blobs in every
-diff for no reader — which is exactly why the second law exists: a curated list is only honest
-while something pins it to what the page actually shows.
-
-### Lockstep pins — duplications that exist on purpose
-
-Each of these is a place two copies must agree because they *cannot* share an import.
-
-| Guard | Law | Red ⇒ |
-|-------|-----|-------|
-| `test/site-lockstep.test.ts` | the brand token block is byte-identical in `playground/src/styles/tokens.css` and `docs-site/.vitepress/theme/style.css`; the eight `--syn-*` colours agree across **four** places (both token blocks, `scripts/gen-grammars.ts` fallbacks, the `archlangLight` Shiki theme); the CodeMirror squiggle data-URI hexes track `--redline` / `--warn-ink` | change the OTHER copy too, then `npm run gen:grammars`. Located by content anchors, so moving a block is fine and changing a value is not |
-| `test/brand-assets.test.ts` | every file the two sites publish under `public/brand/` is byte-identical to `brand/`, and both sites publish the same set | re-copy from the master kit. Never edit a copy. A genuinely site-only file goes in `SITE_ONLY` with a comment |
-| `test/share-codec.test.ts` | the `#z=` permalink codec's three implementations (`playground/src/share.ts` — canonical, `scripts/gen-permalink.mjs`, the inline copy in `ArchLive.vue`) decode each other | a changed pinned hash means the SCHEME changed, which breaks every link ever shared. Fix the copy, do not re-pin. Documented non-law: level-9 vs level-6 deflate means large payloads differ byte-wise — decode-compatibility is the contract |
-| `packages/mcp/test/lockstep.test.ts` | both of `server.json`'s version fields equal `package.json`'s; `mcpName` equals `server.json`'s `name`; the core dep range is exactly `^` + the root version; the copy-resources list equals the server's registrations | see "MCP pack gates" below — the dep-range assertion is **intentional friction**, not a bug |
-| `editors/vscode/test/stdio.test.ts` (bundle freshness) | esbuild stamps `__CORE_VERSION__` into `dist/server.js`; the test asserts it equals the resolved core version | rebuild the extension (`npm run vscode:build:only`). This replaced the by-hand "count symbols in the bundle" release probe |
-| `editors/vscode/test/lockstep.test.ts` | the extension declares `@chanmeng666/archlang` in exactly one dependency map, and that range is a **string** equal to `^` + the root version | **intentional friction**, same as the MCP shim's — re-pin the range, never relax the check. Distinct from `stdio.test.ts` above: that one asserts the BUNDLE is fresh, this one asserts the MANIFEST is honest. The distinction is not academic — the range sat two releases stale at `^1.24.0` while the stamp test stayed green the whole time, because esbuild resolves the workspace symlink regardless of what the manifest declares |
-| `test/level-filename-lockstep.test.ts` | the per-storey download name has ONE spelling: `playground/src/levels.ts`'s `levelFileName` equals `src/cli/io.ts`'s `levelTarget` over every awkward target (a dot in a DIRECTORY name, no extension at all, a dotted stem) and every awkward storey (0, a basement, two digits). They cannot share an import — `levelTarget` is part of the CLI's Node-only path layer and `levels.ts` runs in a browser | fix the MIRROR in `levels.ts`, never the CLI: `arch compile -o floorplan.svg` is the scheme, and a playground download called anything else leaves a reader holding two files with no way to tell which storey either is. The `level === null` arm is playground-only (a single-storey plan keeps its plain name) and is pinned separately, not compared |
-| `test/docs-sync-list.test.ts` | the docs gallery is DERIVED from `readdirSync("examples")` minus a documented `EXCLUDED_EXAMPLES` table; nothing `sync-docs.mjs` writes is git-tracked; `examples.md` has an `<ArchLive>` per gallery example | a new example needs a paragraph on `examples.md`; a new exclusion needs a reason that would survive review; a tracked generated file needs untracking |
-| `test/docs-level-svgs.test.ts` | the per-storey gallery file `sync-docs.mjs` writes (`<stem>.L<n>.svg`) is named by the CLI's own law — it extracts sync-docs' one-line `levelSvgName` arrow, evaluates it, and compares it with `levelTarget()` from `src/cli/io.ts` across levels 1/2/3/10/0/−1/−2 | fix whichever side drifted. sync-docs is a `.mjs` build script and cannot import the TypeScript CLI, so the law is restated there on purpose; this gate is what makes the restatement proved rather than hoped. Two names for one artifact is the failure — both sides would still write files and both would still be served. The end-to-end half is `docs-site/e2e/routes.spec.ts`, which derives the routes it fetches from `levelTarget()` itself |
-
-### Docs tripwires — prose that can break a build or lie to an agent
-
-| Guard | Law | Red ⇒ |
-|-------|-----|-------|
-| `test/docs-table-pipes.test.ts` | no bare `\|` inside a code span inside a Markdown table row. GFM splits cells before inline parsing, so the backtick pair is severed and any `<token>` leaks as raw HTML — VitePress then fails the whole build with "Element is missing end tag" (four dead deploys, 2026-07-12) | write `\|` in the cell. Scans **every tracked `.md`**, with no exclusions at all, this file included. Re-adding an exclusion means a file stops being checked |
-| `test/docs-fences.test.ts` | every ```` ```arch ```` fence on a **published** page compiles with zero errors, or carries the `static` opt-out. The site rewrites plain fences into live `<ArchLive>` widgets, so an illustrative fragment renders a red error card to readers | fix the example, or mark it ```` ```arch static ````. Its scan set is the hand-written `docs-site/*.md`, the repo sources in `sync-docs.mjs`'s `PAGES`, and `docs/adr/*.md`. `npm run docs:build` cannot catch this — the compile happens at runtime in the reader's browser |
-| `test/docs-flags.test.ts` | every `arch <cmd> … --flag` written in a hand-maintained doc is a flag that command actually declares in `src/manifest.ts` (the `docs-site/agents.md` page once told agents to run a flag `fix` never accepted) | fix the prose or add the flag properly. Its scanned list is the `DOCS` array at the top of the file — it includes `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `README.md`, `SKILL.md`, `llms.txt` and the `.claude/` command files |
-| `test/readme-permalink.test.ts` | every playground `#z=` permalink in README / `SKILL.md` / `llms.txt` / hand-written docs-site pages decodes to an example's exact bytes AND compiles clean | regenerate the link with `scripts/gen-permalink.mjs`; never hand-edit a hash |
-| `test/docs-examples-figures.test.ts` | three kinds of claim on `docs-site/examples.md`, each re-derived from the plan that section's own `<ArchLive>` widget names. **(1) Headline figures** — bold runs that START with `N rooms, N m²[, N doors][, N windows]` (or `N doors and N windows`), against `describe()`. **(2) Provenance** — an inline-code `` `scale 1:N` `` is a quotation of source syntax, so the `.arch` must literally declare that statement, and an inline `` `paper <SIZE> [<orientation>]` `` must match `describe().sheet`. **(3) Tool state** — `` `arch lint` raises N warnings ``, `lint-clean`, `` `arch validate` is clean ``, `` `arch validate --strict` reports N warnings `` against `lint()` and `compile().diagnostics + lint()` (what `cmdValidate` composes). The page promises exactly this in its preamble and had drifted in eleven places by 2026-09 — and only six were wrong NUMBERS: two files were quoted at an auto-fitted `scale` as if the source wrote it, and two claims about tool output were simply stale. A counts-only gate would have caught two of the eleven, which is why (2) and (3) exist | fix the PROSE from the tool's answer, never the plan to suit the prose. A `scale` failure usually means an auto-fitted denominator (`describe().sheet.scale_auto: true`) is being passed off as authored — say the sheet auto-fits, do not author a `scale` to match the page. Footprints, zone subtotals, per-level figures and fixture-family counts are deliberately **not** gated: they sit in free-form prose where a number can be a counterfactual ("its box would claim 168") or a worked example ("halve that to 1:100"), and a gate that fires on prose is one that gets widened until it stops firing |
-
-### Published-site metadata — the SEO / GEO surface
-
-What the two sites serve to a crawler is **static bytes**: no AI crawler executes JavaScript, so a
-heading painted by script is a heading nobody reads. The surfaces below are hand-written editorial
-text feeding public pages, which is the shape that rots, so each carries a mechanical guard. The
-whole map — every surface, its owning file, the crawler policy, the wording law and the
-measurement plan — is [`seo.md`](seo.md); this table is only the gates.
-
-| Guard | Law | Red ⇒ |
-|-------|-----|-------|
-| `test/docs-page-meta.test.ts` | `PAGE_META` in `docs-site/.vitepress/config.ts` covers exactly the routes the site builds, **both ways** (derived from `docs-site/*.md`, `sync-docs.mjs`'s `PAGES` and `docs/adr/*.md`, never retyped); each description is 80–170 chars, reads as a sentence rather than a keyword list, and matches none of the killed-claim regexes; the head wiring itself — title template, no static `og:*` that could outrank a page's own, a `transformHead` that falls back instead of throwing, a `robots.txt` naming every crawler and the sitemap | write or delete the row; rewrite the description as prose. A killed claim means the copy left the approved boilerplate — **never widen a regex to green it**. The table is PARSED out of config.ts, so a formatting change that breaks the parse fails loudly rather than silently checking nothing |
-| `test/playground-examples-rows.test.ts` | `EXAMPLE_ROWS` in `playground/src/examples.ts` and `examples/*.arch` agree in **both** directions, minus `sync-docs.mjs`'s own `EXCLUDED_EXAMPLES`; every blurb is 40–160 chars of sentence prose passing the same killed-claim regexes; `gen-static.mjs` parses this table with the same pattern, reuses the shared `#z=` codec, and hard-fails rather than publishing a page with no drawing | add the row (or the exclusion, with a reason). This direction is the one that catches the real failure: `garden-house` shipped to npm, the docs and the README while being invisible in the playground, because the list was last edited before the example existed |
-| `test/indexnow-script.test.ts` | `scripts/indexnow.mjs` reads every `<loc>` out of a sitemap correctly (attributes, CDATA, the `&amp;` a query string forces, de-duplication, off-host URLs) and **always exits 0** — checked by spawning the process, because an exit code is the one thing a reading of the script cannot assert. The first live run proved that is not free: an `AbortSignal.timeout()` timer left alive across `process.exit()` aborted Node with exit 127 after a complete, successful ping | fix the script, not the test. A search-engine ping that can fail a deploy is worse than no ping |
-| `scripts/smoke.mjs` — the `header()` assertion | `/embed.html` answers with `X-Robots-Tag: noindex, follow`. It is the one assertion in that file reading a response **header** rather than a body, because the rule lives in `playground/public/_headers`, which nothing else in the repo executes, and a body check cannot see it | the header is missing at the edge: check `_headers` and the deploy. Note the page is deliberately NOT disallowed in `robots.txt` — a `Disallow` stops the fetch, and a header nobody fetches de-indexes nothing |
-| `scripts/smoke.mjs` — the `noHeader()` assertion | the framing asymmetry, in **both** directions: `X-Frame-Options: SAMEORIGIN` and `frame-ancestors 'self'` present on `/` **and** on `/index.html`, and **absent** on `/embed.html`. The absence is the contract — the embed viewer is the surface other people's pages are meant to frame — and it was proved non-vacuous by widening the rule to `/*` against a local `wrangler dev`, which failed it | a missing header on `/` means `_headers` lost a rule: **it binds to the REQUEST path**, so `/` and `/index.html` each need their own, and the `/  /index.html  200` rewrite carries none across. A header appearing on `/embed.html` breaks every third-party `<iframe>` — revert it, do not relax the test |
-| `playground/test/shared-notice.test.ts` + `playground/e2e/shared-notice.spec.ts` | a `#z=` payload is third-party content, so a decoded plan that is **not byte-equal** to a bundled example is attributed on the page. The unit test pins the predicate (byte equality, not resemblance; an empty shared document still counts) and both sentences; the E2E drives Chromium on both pages — a stranger's plan is attributed, a real `examples/one-room.arch` permalink is not, the dismissal deliberately does **not** survive a reload, and no console errors | a stock permalink that now shows the notice means the `?raw` example sources drifted from the files the CLI ships; fix the source list, never loosen the equality. The embed's short sentence is **shortened, not truncated** — a CSS ellipsis ate exactly the clause the notice exists for |
-| `test/describe-level.test.ts` | `describeLevel(summary, n)` is a DISPLAY filter that never moves `ok` or `diagnostics`; it narrows `levels` to the one storey, keeps whole-BUILDING facts (`vertical`), returns the summary UNCHANGED for a level the plan does not declare, mutates nothing — and **deletes** every `PER_STOREY_OPTIONAL_KEYS` entry the selected storey does not have. The deletion case is driven off that exported list, so a third key added there is covered for free | the deletion branch is the one that fails SILENTLY: a narrowed read then reports another floor's `voids`/`verticals` under its own name and says nothing. `arch describe --level` and the playground's storey switcher are both this one function — fix it here, never in a caller |
-| `playground/test/levels.test.ts` | the storey-switcher arithmetic: `undefined` pages (a single-storey plan) select NO page at all, nothing selected means the LOWEST storey, a selection that no longer exists falls back to the lowest, and the level NUMBER is what is matched — `0` is a legal storey and a basement is `-1`, neither of which is an array index | a fallback that stopped working shows up as a blank preview after an edit removes the selected storey, which no unit elsewhere would see |
-| `playground/e2e/levels.spec.ts` | against the BUILT app: the three-level example grows three `L<n>` buttons carrying the storey's own name, pressing L3 changes the drawing AND the facts strip under it (level 3 of `examples/townhouse.arch` has 3 doors, 3 windows and no entrance), the storey can be changed **from the Describe tab** without returning to Preview, the SVG download is named `floorplan.L3.svg`, a single-storey example grows no control at all (and the `role="tablist"` still holds exactly four children), the selection resets when another example is loaded, and no console errors. Two cases pin the LINT TICK SPLIT: on `hillside-villa` (three warnings, all on level 2) level 1 shows "Nothing to report on this storey" and **no** `.ok` tick, while `two-storey` (clean throughout) narrows with nothing hidden and keeps the full one | the whole-building tick — "every room is reachable, bedrooms have windows, the building has an entrance" — may only be printed from the UNFILTERED set. A `.ok` node appearing beside a "N more warnings on the other storeys" marker is a whole-building claim drawn from partial data; fix `lint-panel.ts`, never the assertion. UNTAGGED on purpose: it drives a download and types into nothing, and the nightly `@prod` subset stays load-and-look |
-| `docs-site/e2e/routes.spec.ts` `@prod` "head metadata" | on `/`, `/reference` and `/errors`: exactly one canonical link carrying that route's URL, a non-empty `og:description` that **differs** between pages, and one parseable JSON-LD block whose `@context` is schema.org | as with every `@prod` case, red means production is broken or stale, not that a pull request is bad |
-| `playground/e2e/boot.spec.ts` + `examples-static.spec.ts` `@prod` | the playground serves one `<h1>` and the lede **before hydration** (`waitUntil: "commit"`), and each static example page serves a heading, a compiled `<svg>`, its statistics sentence, a self-canonical link and parseable JSON-LD with no JavaScript at all | the pre-hydration reading is the only one that proves anything about a crawler — do not "fix" it by waiting for load |
-| `docs-site/e2e/page-chrome.spec.ts` — the outline | scrolled to the very bottom of `/reference`, `/errors` and `/showcase`, at 1280 / 1440 / 1920, **nothing belonging to the aside is the topmost element anywhere over `.tblock`** — asserted with `elementFromPoint`, not rects, because the aside is a scroll container and a clipped link's layout rect legitimately sits below the box. Plus: the box ends at or above the title block, `/errors`' 130-entry outline still overflows and scrolls INSIDE the aside, the outline's viewport position is identical unstuck and stuck, and `.tblock` carries `position: relative; z-index: 10` | the aside is back on VitePress's `position: fixed` default (or `.aside-content { min-height: 0 }` was lost, which forces the sticky box past its own `max-height`). Fix `doc-pages.css` §8 — **do not** shadow `VPDoc.vue` in `node_modules`, and do not delete the internal-scroll case to green it |
-| `docs-site/e2e/page-chrome.spec.ts` — the nav row | **two metrics, because one of them is blind.** On `/` and `/guide` at 768 / 800 / 900 / 959 / 960 / 1000 / 1024 / 1100 / 1151 / 1152: `document.scrollWidth - clientWidth` is 0, **and** the last `.VPNavBarMenu` child's `getBoundingClientRect().right` does not pass `clientWidth`. Below 1152 the hamburger is up and its drawer reaches all seven top-level destinations (checked at 375 and 1024); at 1152 and 1440 the desktop row is back, whole and on screen. Why two: below 960 `.VPNav` is `position: relative` and a too-wide row scrolls the page (272px at 768); at 960 VitePress makes it `position: fixed`, **a fixed element's overflow never grows the document**, and the same row is silently CLIPPED instead while `scrollWidth` reads 0 (the last item overhung by +179 at 960 and +115 at 1024 on a doc page). Neither metric skips under overlay scrollbars — the overhang is hundreds of pixels, not one scrollbar | the nav block at the foot of `style.css` was lost or out-specified (each rule beats a VitePress `<style scoped>` (0,2,0) only through its `header.VPNav` prefix). **Never re-derive this breakpoint from `scrollWidth` alone** — it is 0 across the entire clipped band, so a binary search on it lands on 960 and ships a severed nav at 1024. `docs/backlog.md` § N.1 has the costing for the IA change that would let the breakpoint come back down |
-| `docs-site/e2e/page-chrome.spec.ts` + `test/docs-hero-source.test.ts` — the hero | the landing hero types `examples/laneway-house.arch` with its leading `#` header stripped and its INLINE comments kept; stripping is a no-op for `compile()` and `describe()`; and after the animation rewinds the sheet re-inks in under 2 s (the header used to cost 5.3 s there). None of these waits out the ~18 s typing run — a "wait for `compiled`" guard sits on Playwright's 30 s test timeout and measures the stopwatch, not the fix | the header is back in the hero's input, or `stripHeaderComments` stopped at the wrong line. Fix `CompileSeam.vue` / `strip-header-comments.ts` — **never** edit `examples/laneway-house.arch` to suit the hero: `docs-site/e2e/homepage-links.spec.ts` byte-compares the `#z=` permalink against that file, and the two specs pull in opposite directions on purpose |
-
-### Public-surface closure — `test/public-surface.test.ts`
-
-`src/index.ts` is the only public surface, and it can be *incomplete* without anything inside the
-repo noticing: every module here imports its neighbour by real path, so a type that never leaves
-`index.ts` still resolves everywhere except in a downstream consumer's editor. That is how five
-types reachable from `describe()`'s result — including the `Access*` trio the self-correction loop
-tells models to read — shipped readable but **unnameable**.
-
-The guard runs the TypeScript compiler over `src/index.ts`, walks `SceneSummary`'s declaration
-transitively through every type reference into whatever `src/` module declares it, and asserts each
-name is in `index.ts`'s export set. **The requirement list is derived, never retyped** — add a
-field whose type lives in an unexported module and this goes red with no edit to the test. **Red ⇒
-re-export the named type, routed through the module that surfaces it** (the `Access*` types are
-declared in `analyze.ts` but leave through `describe.ts`, because `describe()` is the only public
-value that hands them to you).
-
-### Byte-identity laws — the shape every language feature ships with
-
-Every feature added since v1.20 carries the same law: **a plan that does not use the new form is
-byte-identical**, and a test pins it. That is what makes a new keyword safe to add to a published
-language, and it is why the golden files above almost never move.
-
-| Guard | Law | When it goes red |
-|-------|-----|------------------|
-| `test/site.test.ts` | a plan with no `site` block renders, describes and lints exactly as before; and `north` is **deliberately absent** from `KEYWORDS.enum` | The absence pin is the interesting one: three of four compass words sit in `enum`, which looks like an oversight and invites a "fix" that would make `north` the first word in two categories and force both generators to learn about duplicates. **Do not delete this test to add the word** |
-| `test/doors.test.ts` | a plan naming no door kind is byte-identical, and `door hinged …` is identical to omitting the word | A diff here means a kind leaked into the default path |
-| `test/window-facing-probe.test.ts` | a window's outward side comes from probing its own wall, not the plan's bbox centre — with both courtyard reproductions and both tie-break branches | See the bbox-derived-position iron law in `docs/agents/iron-laws.md` |
-| `test/bbox-derived-position.test.ts` | `swing into <room>` and `furniture … against wall` ask the room's ring, not its box; rectangles stay byte-identical | Also pins the two `dimReach` properties that make leaving it alone safe — it was measured as a provable no-op and deliberately NOT "fixed" |
-| `test/dim-stagger.test.ts` | `EM_PER_CHAR` lives in exactly ONE file (`src/text-metrics.ts`) | A fifth copy of the em-per-char factor appeared. The lint rule, the stagger and the renderer must agree about what collides |
-| `test/lint-file-provenance.test.ts` | a lint fix on an element written in an imported module carries `file`, so `applyFixes` refuses it | Red means `applyFixes` can once again splice a module's byte offsets into the importer — reproduced on an unmodified `W_DIM_INSIDE` before the fix |
-| `test/levels.test.ts` (corpus sweep) | a plan with no `level` block has no `pages`, no `LEVEL` title-block row and no `level` on any diagnostic; a plan WITH one compiles to more than one page | **The split is derived, not listed.** It used to exclude `two-storey.arch` *by filename*, which meant a second multi-storey example could silently join the level-free sweep (failing for the right reason under the wrong name) or silently dodge the paging check. `HAS_LEVEL = /^\s*level\s+-?\d+/m` reads the source instead, both sides are asserted non-empty, and `townhouse.arch` joined with no edit to the test |
-| `test/roof-void-byte-identity.test.ts` | a plan using neither `roof` nor `void` renders, describes and lints exactly as before. **Re-measure rule:** the only sanctioned cause of a move so far is the v1.30 wall joinery, which moved all four at once; anything else is a finding first. When you do re-measure, copy the test's own `digest()` body VERBATIM and treat the green run as the proof your payload matched — that is what closes the one-character-separator trap below | The digests are **hardcoded**, measured against v1.28.0's `src/` by checking that tree into the worktree — a test that compiled twice and compared would prove determinism and stay green through a change that moved every byte. Two things to carry when you measure the next one: take the baseline with the **same `digest()` body the test will run** (a scratch script whose payload separator differed by one character produced four false failures here), and keep the payload the whole agent-facing surface — SVG, `describe()` **and** `lint()` — since an element that quietly appends an empty summary key leaves the drawing untouched and still changes behaviour for every `arch describe --json` consumer. The four fixtures are chosen, not arbitrary: the two the track edits (`bungalow`, `two-storey`) are excluded on purpose, and the rest span an all-rectangle dwelling, the flagship, a CONCAVE polygon plan (whose ring code the roof's offset shares a module with) and a CURVED plan on `paper` (whose auto-fit reads the same `planBounds` a roof now grows) |
-| `test/height-byte-identity.test.ts` + `test/iso-byte-identity.test.ts` | the v1.35 vertical datum and the axonometric, over **all thirty** shipped examples and every storey of each, against one shared measured table (`test/byte-identity-baseline.ts`, taken on `f4548db` = the v1.34.0 tree). Since 2026-09-20 the corpus is SPLIT: the plans that author no height keep the original law and their measured hashes untouched, and the plans named in `AUTHORS_HEIGHT` are held to a stronger one — **a plan that DOES author heights draws byte-identically to itself with the height clauses removed** | A move in the no-height half means the datum leaked into a plan that never asked for it: suspect `describe()`'s `_heightsAuthored` gate, the `Opening` fields reaching a serialized surface, or the resolve memo's `extrasKey`. A move in the authors-height half is worse and simpler — a height moved a drawing, and a plan is a horizontal cut |
-
-**Why the height corpus is split, and why no baseline row was retired.** As first shipped the height
-law asserted that *every* shipped example authors no `height` — correct, and load-bearing, because
-the law is vacuous for a plan that uses the syntax. It also made the corpus a closed set: **no
-shipped example could demonstrate the headline feature of v1.35, and for a release none did.** The
-docs claimed a datum that nothing in `examples/` declared and both committed axonometric renders
-stood silently on the 3000 mm default. The fix was not to drop the assertion but to notice it was
-proving the weaker of two claims, and to prove both. The stronger one's two sides are **computed at
-test time** (`test/height-free-source.ts` derives the height-free variant mechanically from the one
-real file), so it carries no hash, cannot go stale and cannot be re-blessed to green a suite.
-`examples/two-storey.arch`'s v1.34.0 rows in both tables are still checked — against that derivation,
-which is behaviourally the text that shipped — so nothing was re-measured, re-typed or dropped.
-
-**A prose edit to an example can move its byte-identity digest, and that is not a compiler
-bug.** A `lint()`/`describe()` diagnostic carries a byte `span` into the source, so adding a
-line to a header comment shifts every span below it. Fixing a wrong sentence in
-`examples/hillside-villa.arch` on 2026-09-20 added 251 bytes and moved all three of its
-diagnostics by exactly 251, with every other field unchanged and every storey's SVG
-byte-identical; its two rows were re-measured with that reason recorded in
-`test/byte-identity-baseline.ts`'s header. Before re-measuring anything, tell the two cases
-apart — diff the two `lint()` payloads field by field. If the SVG also moved, or a non-`span`
-field moved, or the shift is not UNIFORM across every diagnostic, it is a compiler change
-wearing a prose edit's clothes and must be explained first. Only examples that lint non-clean
-are affected; a plan with no diagnostics has no spans to shift, which is why `aquarium` and
-`two-storey` had their prose edited in the same branch without moving.
-
-**If you add a height-authoring example**, name it in `AUTHORS_HEIGHT` and nowhere else: the tests
-cross-check that list against a scan of the sources in both directions, so a plan that quietly grows
-a `height` fails the no-height half's vacuity guard and a name whose plan authors nothing fails its
-own. Do not add a hand-written height-free copy of a plan — the derivation exists so the two sides
-cannot drift into describing different buildings. The derivation is itself guarded: it must change
-the text, and the result must scan clean, so a derivation that became a no-op goes red loudly rather
-than green quietly (verified 2026-09-20 by making it a no-op — six assertions failed across the two
-laws).
-| `test/opaque-literal-guard.test.ts` | a CONTENT guard, not an exclusion. Verified false positives are excluded one fingerprint at a time in `.gitleaksignore` (there is deliberately no `.gitleaks.toml`); a fingerprint is pinned to one line of one blob in one commit, so it cannot suppress a future finding — and equally cannot say whether the file has since grown something that is not benign. This asserts the other direction: what each excluded file is ALLOWED to hold. Its file list is DERIVED from `.gitleaksignore`'s fingerprints | Someone excluded a finding in a new file without saying what that file may contain, or an opaque string that is not a digest, a shipped example name or the published IndexNow key appeared in a guarded file. Add the rule — do not delete the assertion |
-
-### The fixture-symbol layer — one snapshot file, three different promises
-
-`test/fixture-byte-identity.test.ts` pins WHOLE SVG documents rather than scene objects or primitive
-counts, because what matters is whether the bytes a user's `arch compile` writes moved. Its three
-groups look alike and **must not be blessed alike** — read the group header before you reach for
-`-u`:
-
-> **A wall-pipeline change must leave this file alone.** Its plans have no wall, which is exactly
-> why it is the control: the v1.30 joinery moved 33 snapshots, 23 PNG goldens and all 19 README
-> SVGs, and touched **not one byte here** or in any rectilinear `test/__ascii__/*` golden. If a
-> future change to wall lowering moves either, it reached a shared path it had no business
-> reaching — a defect to find, not a snapshot to update.
-
-| Group | What it holds | When it goes red |
-|-------|---------------|------------------|
-| 1 — **PERMANENT** | a plan with no furniture, and a plan whose category the language does not know | **A bug, never a re-blessing.** Neither has any business changing when a glyph is drawn: the first never reaches the glyph layer, the second is the labelled-rectangle fallback. If a phase that draws a bed moves one of these it did something to the shared path — a changed factory default, a stray node, a re-tagged paint. Find out why |
-| 2 — the eight shipped families | one minimal plan each, at the family's catalogued footprint | Deliberately re-blessable. A phase that redraws these WILL move them, and each diff is to be read and explained rather than accepted |
-| 3 — the four v1.29 families | `rug`, `sofa_l`, `piano`, `sun_lounger` | Same terms as group 2. Three of the four have no catalogued footprint on purpose, so their sizes are stated where the group is written rather than looked up |
-
-Around it sit three more guards, each answering a question the snapshots cannot:
-
-- **`test/glyph-lib.test.ts`** — the two laws that let the eight shipped families be re-tagged with
-  semantic line weights without moving a byte. A factory's named `lineWeight` and its raw
-  `paint.width` must agree (**the SVG serializer follows the name, the PDF serializer follows the
-  number**, so setting one and not the other makes the two exports draw different thicknesses from
-  the same node), and a dashed segment's two dash fields must agree — read back OUT of the rendered
-  SVG, never by comparing the module's constant to itself. It isolates a node by **difference**:
-  same plan rendered with and without it, on a furniture-free base, so "the first `<polygon>`" can
-  never silently be the room floor.
-- **`test/furniture-curves-backends.test.ts`** — the v1.26.1 lesson applied *before* the fact. The
-  furniture pass had only ever carried polygons, lines and text; `glyph-lib` was about to put the
-  first `circle` and `arc` on it, so all four serializers are proven to actually DRAW one. It
-  hand-builds the Scene rather than waiting for a glyph to exist (no test-only `ElementDef`, no
-  registry mutation, nothing in `src/` that ships), every assertion is **differential** against the
-  same Scene without the two nodes, and the plan is deliberately door-free so the base drawing
-  contains no curve of its own — a backend that silently dropped the primitives would otherwise
-  produce identical output and pass. Its pdfkit half follows the optional-dep rule below: required
-  in CI, a visible named skip locally.
-- **`test/glyphs-batch2.test.ts`** — `underlay` proved by its **consequences, in both directions**,
-  because the exemption must not degrade into "overlap checking is off". A rug under a sofa raises
-  nothing; two ordinary pieces overlapping still raise `W_FURNITURE_OVERLAP`; and two *rugs*
-  overlapping each other still raise it too. The walkability half runs the same plan, same
-  footprint, same position with one word different — through a `rug` the far room is reachable,
-  through a `piano` it is cut off and `W_ROOM_NO_CLEAR_PATH` fires — and drives **both** the
-  whole-plan nav grid and the per-room flood fill, since they are separate code paths that must not
-  disagree about what a rug is.
-
-### Cross-feature gates — what neither branch can prove alone
-
-`test/v129-cross.test.ts` exists because of the merge law in AGENTS.md: **a clean auto-merge is not
-evidence.** The v1.29 tracks were authored on parallel branches and touched one file in common, the
-nav grid's obstacle list in `src/analyze/circulation.ts` — one branch appended the void obstacles to
-that literal, the other wrapped the furniture entry in `solidFurniture()`. Git merged both cleanly,
-and neither branch's suite can fail if the other half of the literal is dropped, because neither has
-a fixture using both. The discriminating case puts a rug and a void on the **same rectangle**,
-spanning the only route between two rooms, with a `sofa` control on that identical rectangle to
-prove the geometry really does seal: drop `solidFurniture` and the rug seals the plan, drop the void
-obstacle entry and the void does not.
-
-**Write one of these whenever two branches edit a shared literal or a shared predicate**, and put
-the control case on the identical geometry — a fixture that only shows the new behaviour cannot tell
-"it works" from "the check never ran".
-
-### The wall joinery — two oracles, and the two things they cannot check
-
-Since v1.30 one pass lowers every wall (ADR 0018), so the guards on it carry more weight than
-before: nothing else draws poché, and there is no second path to disagree with.
-
-| Guard | Law | When it goes red |
-|-------|-----|------------------|
-| `test/joinery-oracle.test.ts` | `joinWalls` over GENERATED wall sets, against **two oracles**: `geometry/union.ts` for rectilinear input (exact, compared as quantised undirected EDGE SETS so it tests the shape and not the walk order) and `clipper2-wasm` for angled/curved input (by AREA always, by SHAPE one-directionally on curves — clipper owns a 48-gon's worth of vertices the exact algorithm never had). Plus four intrinsic laws, of which the load-bearing one is **no two outline edges cross at a point interior to both** | A shrunk counterexample is a real defect in the layer. Do NOT loosen a tolerance to go green: the curved tolerance is derived from clipper's OWN longest chord, so widening it is claiming the oracle is wrong |
-| `test/joinery-pipeline.test.ts` | the same laws over the **compile path**, for all 29 examples and every storey: the `wallFace` pass is exactly ONE node, `region` iff every edge is straight and `path` iff one curves, and no two emitted edges cross except at a shared vertex | The oracle suite cannot see this — between `joinWalls` and an `.svg` sit the band/cut construction, the hatch grouping, `emitLoops`, and every other element that draws on that pass |
-| `test/band.test.ts` | a wall's band: the offset SIGN pinned by CONTINUITY (not by reading the delta back out), a lone straight segment reproducing `segmentRectangle` point for point, and **a run that ends where it began is a CYCLE whether or not `close` was written** — with a planted counterexample that moves the closing point 1 mm and shows the caps return | The cycle rule is not cosmetic: reading `close` capped `hexagon-pavilion`'s drum twice at its seam, `h` proud of the curving face, at 3 o'clock only |
-| `test/union.test.ts`, `test/miter-limit.test.ts` | **registering a `GeometryBackend` changes no byte** — angled and rectilinear alike — and an acute joint is capped TWICE, on the paint (`miterLimit`) and in the geometry (the band bevels past `MITER_LIMIT · h`) | These invert what they used to assert. Before v1.30 installing clipper2 changed an angled drawing; that is the regression they now forbid |
-
-**Two things no oracle checks, so they are asserted directly.** The clipper comparison is
-area-and-vertex based, so it would pass a drawing whose *fills overlapped* or whose openings were
-never cut — hence the pipeline suite's node-count and primitive-kind assertions, and
-`test/opening.test.ts`'s jamb check on a straight, an angled and an ARC host. And no property knows
-what a drawing should look like, so **the visual goldens are still the gate for that**; when a
-joinery change moves them, pixel-diff each against its predecessor and confirm every diff's bounding
-box lands where the geometry changed, rather than accepting a green re-bless.
-
-### The circulation model — and the two gates that are not RELATIVE
-
-Every circulation law written before v1.33.0 compares the model **to itself**:
-`test/path-monotonic.test.ts` perturbs one obstacle and compares the grid to the grid,
-`test/nav-grid-scale.test.ts` compares one resolution to another, and the byte-identity digests
-compare today's output to yesterday's. All of them stay green on a grid that models the **wrong
-building** — which is how the nav grid could rasterise every curved wall as the straight CHORD
-between its arc endpoints for nine releases. `examples/library.arch`'s `r_ref` walk moved 800 mm on
-the fix with no room dropped, no diagnostic changed and no drawing moved (`docs/backlog.md` G.5,
-generalised as G.11).
-
-That premise is reproducible: reintroduce the chord bug with the two files below removed and the
-full suite goes red in six cases, **none of them a circulation gate** — four are hardcoded SHA-256
-digests that happen to include `aquarium`'s `describe()`, one is the qualitative case the G.5 repair
-itself added, one is the worktree-only `wrong-core`. `library`'s 800 mm is pinned by nothing.
-
-The two gates below are the ones that can see that class, because neither takes its expected answer
-from the system's own history.
-
-| Guard | Law | When it goes red |
-|-------|-----|------------------|
-| `test/circulation-hand-derived.test.ts` | **the only expected numbers in the repository derived by hand, outside the compiler.** Two fixtures, each with its cell size, blocked-cell arithmetic, both measured endpoints and a matching lower/upper bound written out in the header. The primary is a closed drum: **161 hops, 16,100 mm**, carrying a proof that no rounding can move it — every cell centre puts `u² + v²` at `2 (mod 8)` while both annulus bounds are `4 (mod 8)`, so neither is attainable. Deleting the drum gives 9,900, so it contributes 6,200 and that control re-derives both endpoints; the same circle written as EIGHT arcs still reads 16,100, which is the polygonal-refinement differential in exact form. The second fixture is an open arc with a free END — the round cap the drum has none of — forcing the detour on the other axis: 16,500 against 5,900 for its own chord | The derivations are the specification and the compiler is under test. **Never re-bless a number.** Work the header's steps against current code and say which one stopped holding — the cell size, the rasterisation rule, the seeding/anchor, or the search. Any of those is a change to what `describe().circulation` MEANS and belongs in `CHANGELOG.md` before this file is touched |
-| `test/nav-grid-residual.test.ts` (+ `test/wall-solid.ts`) | **the model against the DRAWING**, over all 30 examples and all 35 storeys: `rasteriseWallSegments` run into a mask of its own, against `loopsContain` on the same `wallBand` `EdgeLoop`s `wall-lowering.ts` lowers. **Exact equality, no magnitude tolerance.** Three structural decisions carry it: openings are NOT cut (the grid does not subtract them either, so no neighbourhood around a door — the very place a chord error would hide — is excluded); the per-wall union rather than `joinWalls`' outline (a trim deletes a face LINE, never solid, so the two point sets are equal); and caps and mitres excluded by a vertex disc of `MITER_LIMIT · h + cell`, read off stated constants rather than tuned | Measured as a report before any assertion existed: over **1,186,861** examined cells the worst residual is **0.000 mm**, with 8,758 measure-zero boundary ties counted separately (worst offset 2.6e-13 mm). A red run names a place where the model and the drawing describe different buildings. Read the residual first: hundreds of mm is a wall in the wrong place; anything else is a structural difference to name and excise **by geometry**. **Never enlarge the vertex radius, add a tolerance, or drop an example** — in the under direction the residual is capped by the wall's own half-thickness, so any tolerance admitting a legitimate mitre already swallows a curved wall's whole error |
-
-**Non-vacuity, measured.** Planting `distPointToSeg` for arcs fires on **exactly 4 of 35** storeys —
-every curved source, zero on the other 31 — at 7,829 mm; `d <= half ± cell` fires on 33 of 35 in the
-opposite direction, along wall runs, so the gate is sensitive to the predicate and not merely to
-curves. Two calibrations worth keeping: **scale a plant to the CELL, not the thickness** (`half * 1.5`
-was predicted invisible and is not — the corpus's commonest wall is `thickness 200`, so `150` lands
-on the next ring of cell centres), and `d <= half + 1` moves **0 of 95** corpus artifacts yet is still
-caught here at 0.9 mm, so this gate is finer than anything the shipped examples can express.
-
-A known residual of the same class is deliberately **not** gated yet: a `room circle` draws as a true
-circle but rasterises onto the nav grid as its inscribed 48-gon, so 32 rim cells per 8 m drum sit on
-different sides of the boundary in the two models (worst offset 13.4 mm, bounded by `r/467` and
-scaling with the radius). It is filed inside `docs/backlog.md` G.11; a room-membership residual gate
-is the obvious sibling to the wall one and is blocked on it.
-
-### Property and fuzz suites
-
-| Guard | Law |
-|-------|-----|
-| `test/escape-fuzz.test.ts` | hostile strings (control chars, lone surrogates, `]]>`, breakout payloads) through eight injection sites × the SVG paths (default / annotate / accessible / error-SVG), the ASCII plan and DXF: the payload never becomes structure, the output is well-formed in its own format, and determinism holds. Backed by `src/text-safe.ts` (`xmlText` / `plainText`), which is the identity on well-formed text — hence zero golden churn |
-| `test/fuzz.test.ts`, `test/security.test.ts` | parser robustness and known-payload spot checks. Fuzz asserts properties; `security.test.ts` asserts specific payloads |
-| `test/dataset.test.ts` | the permanent contamination iron law (holdout never published, canary never regenerated, double dedup). Getting this wrong voids the eval forever |
-
-A shrunk counterexample that fast-check finds gets **pinned as a regression case** in the suite —
-that is what the "shrunk regressions" block at the bottom of `escape-fuzz.test.ts` is, each one a
-concrete bug the properties found, next to a control asserting a well-formed plan is untouched. Do
-not delete a pin to go green.
-
-### MCP pack gates — the 0.2.2 staleness class
-
-The shim bakes the agent-context artifacts (spec, `llms-full`, both schemas, the GBNF grammar)
-into `dist/` at build/pack time, so a stale-but-well-formed resource is indistinguishable from a
-fresh one to any host. Published 0.2.2 handed hosts a v1.19 grammar that could not decode
-`paper`/`level`/`place`/`zone`/`polygon`/`arc` beside a `^1.14.0` range resolving to a current core.
-
-Two automated gates now cover it, and they replaced a by-hand `npm pack` probe:
-
-- `packages/mcp/scripts/check-dist-resources.mjs` — run in CI's `builds` job right after
-  `mcp:build:only`, byte-compares every copied resource against its repo source and prints which
-  file diverged at which byte. **Red ⇒ `npm run mcp:build`.** If the repo artifact is itself stale,
-  `npm run gen:all` first.
-- the dep-range assertion in `packages/mcp/test/lockstep.test.ts` — a **string** equality against
-  `^` + the root version, not a semver-satisfies check. **Every core release turns this red on
-  purpose**, so the shim cannot silently keep serving last release's resources. **Red ⇒ consciously
-  re-pin the range, rebuild the resources, and bump the shim's version in BOTH
-  `packages/mcp/package.json` and BOTH of `server.json`'s version fields.** Never relax it to a
-  range check to green a core release.
-
-Remember the standing law that makes this matter: a refreshed resource only reaches a host **with
-a version bump** — `release.yml` `npm view`-skips a version already on the registry.
-
-### E2E — the same specs, two modes
-
-| Mode | How | What it means |
-|------|-----|---------------|
-| local / PR | `npm run e2e:playground` / `npm run e2e:docs`; the config's `webServer` runs `vite preview` / `vitepress preview` over the BUILT output | the artifact that deploys is under test — asset paths, chunk splitting, the `base: "./"` rewrite |
-| production | `E2E_BASE_URL=<origin>` + `--grep @prod` (nightly's `e2e-prod`) | the `webServer` key is **omitted** (not disabled — Playwright would still start it), so there is no build and no server. This is why every spec navigates relatively, e.g. `page.goto("/")` |
-
-**Red in `e2e-prod` means production is broken or STALE, not that a PR is bad.** The docs
-byte-equality cases compare the live origin against the checkout, so a silently-failed deploy fails
-the night. Reports upload as artifacts on failure (`playwright-report*`).
-
-### Post-deploy smoke — `scripts/smoke.mjs`
-
-Zero-dependency plain Node, used by both `deploy.yml` and nightly. It replaced a root-URL `curl`,
-which proved only that *something* answered. It checks the machine contract: on the docs site every
-machine route, every raw `/<page>.md` copy and one SVG per gallery example; on the playground the
-shell page and the embed page — each including the hashed JS entry parsed out of its own HTML — plus
-a brand asset. Route lists are **parsed out
-of `sync-docs.mjs`'s tables**, so a new page or example joins the smoke test the day it lands.
-Retries 6× / 5s apart on a network error or non-200 (deploy propagation); a 200 whose **body** fails
-its assertion is never retried — waiting cannot fix wrong bytes.
-
-It also checks the crawler-facing surface, which nothing else in this repo executes: `robots.txt`
-and `sitemap.xml` on both sites, the playground's `<h1>` and lede, one static example page (heading
-plus an inlined drawing) and the `/examples/` directory rewrite, and — through the `header()` and
-`noHeader()` assertions, the only ones in the file that read a response header rather than a body —
-the `X-Robots-Tag` on `/embed.html` and the framing asymmetry between the playground shell and that
-embed. See [`seo.md`](seo.md).
-
-### Coverage — a map, not a gate
-
-`npm run test:coverage` (CI: the Node 22 leg only) measures v8 line/branch coverage over `src/`
-alone — the harnesses do the measuring, counting them would inflate the number and say nothing
-about the compiler. **There are no thresholds and nothing can fail on a coverage number**, by
-design: `npm test` stays the single pass/fail signal and nobody games a percentage. Read it as a
-map of what the suite reaches.
-
-The one thing a total cannot show is a module that fell to **zero** — it is one row among the ~120
-under `src/` and invisible in a four-line summary. `scripts/coverage-zero-report.mjs` names them in the Node-22 step
-summary. It is advisory in the strongest sense: it catches its own errors and forces exit 0, so it
-can never turn a green run red, and it adds no thresholds.
-
-Read its output with one caveat it states itself: a module lands on that list either because it is
-genuinely unexercised **or because it only ever runs in a child process**. The four current entries
-are all the second case — `test/cli*.test.ts` `spawnSync`s the real `arch`, so v8's in-process
-counters never see `src/cli.ts` or `src/cli/` however well they are tested. There is deliberately no
-allowlist: suppressing the known entries would recreate, one level up, exactly the "nobody notices
-the zero" failure the report exists to fix.
-
----
-
-## 3. Adding tests for new code — the house patterns
-
-**Derive, never retype.** A guard that hand-lists what it checks is the next stale generator. The
-in-repo pattern is to **parse the source of truth**: `test/docs-fences.test.ts`,
-`test/docs-sync-list.test.ts` and `scripts/smoke.mjs` all parse `sync-docs.mjs`'s literal
-`["src", "dest"]` tuple tables; `check-dist-resources.mjs` extracts its resource list from
-`copy-resources.mjs`; `test/docs-flags.test.ts` reads `buildManifest()`. If you must parse a
-literal table, assert the shape too, with an error message that tells the next person to fix both
-parsers together.
-
-**Anchor on content, not line numbers.** `site-lockstep.test.ts` finds the token block by its
-header comment and the enclosing `:root {`. Moving code is then free; changing a value is not.
-
-**MCP: drive the server, don't call the handlers.** `packages/mcp/test/helpers.ts` links a real
-`Client` to a real server over the SDK's in-process `InMemoryTransport`. What is under test is the
-*wiring* — tool registration, zod input schemas, the text-content projection — not the core
-functions, which have their own root-level suites. Malformed args must come back as an MCP error
-result, never a throw (`fuzz.test.ts`).
-
-**VS Code: inject, don't import.** Language services arrive through the `CoreLsp` interface in
-`editors/vscode/src/handlers.ts`, so a handler takes document TEXT and returns an LSP payload with
-no `Connection`, no `TextDocuments`, no process. `server.ts` is pure plumbing. Test the logic
-there; test the ARTIFACT in `stdio.test.ts`, which spawns the built bundle with `--stdio` and
-speaks real LSP to it.
-
-**Playground: extract the pure part.** Behaviour-preserving refactors moved the view math, hit
-testing, embed params and raster clamping into pure modules (`pan-zoom.ts`, `interact.ts`,
-`embed-params.ts`, `raster-export.ts`, …) which `playground/test/` unit-tests directly. Anything
-needing a real DOM, a real pointer or a real download belongs in `playground/e2e/`.
-
-**A missing optional dependency must SKIP visibly and FAIL in CI.** The rule both
-`test/visual.test.ts` (resvg) and `editors/vscode/test/stdio.test.ts` (the built bundle) follow: a
-suite may never go green having asserted nothing. Gate on `process.env.CI` (or an equivalent
-"CI has built this" signal) and make the missing prerequisite a hard failure there.
-
-**Tagging `@prod`.** Only tag a case if it **purely navigates, reads and asserts**: no downloads,
-no clipboard, no form submission, no persisted state, no typing flows. It runs against the live
-sites. Tag placement is per-file policy and each spec documents its own choice in a header comment
-(whole-file, one describe, or per test) — follow the file's stated rule, and a new `describe` in a
-per-describe file must opt in explicitly.
-
-**Docs you write are scanned too.** Any Markdown you add is checked by
-`test/docs-table-pipes.test.ts` (all tracked `.md`); a *published* page is additionally checked by
-`test/docs-fences.test.ts`; a doc on `docs-flags.test.ts`'s `DOCS` list has its `arch …`
-invocations checked against the manifest. Publishing a page means adding it to
-`sync-docs.mjs`'s `PAGES` — which also enrols it in the smoke test and the docs E2E.
-
----
-
-## 4. Gotchas
-
-**Prove an ad-hoc sweep can FAIL before you trust it to pass.** This applies to the throwaway
-comparison scripts written to answer "did anything move?", not to the committed suites — those have
-their own non-vacuity discipline. A sweep that cannot detect a change reports "identical" forever,
-and it reports it in exactly the reassuring voice a real result would use. Both halves of that went
-wrong in one afternoon during the 2026-09 burn-down:
-
-- A baseline was built with `sha256sum … | sed 's|.*/prefix-||'`. The `.*` matched **greedily**,
-  eating the digest along with the path, so two *lists of filenames* were being diffed. It could only
-  ever say "identical", and it did — twice, in support of a claim about 35 drawings.
-- Another sweep hashed `arch compile <f> -o -`, which is a **usage error on a multi-storey plan**, so
-  four examples were silently hashing empty stdout. Same reassuring "identical".
-
-The fix is not more careful shell — it is a **planted change**. Append a few bytes to one baseline
-file, re-run the comparison, and confirm it reports that one file as moved; then restore it:
-
-```
-MOVED: studio.svg  aee709be92023915 -> 754b0f5ccd0c77ac
-identical: 34   moved: 1
-```
-
-That costs one command and converts "nothing moved" from a claim compatible with *the check never
-worked* into evidence. Pair each basename to its **own** digest (`join` on the filename field rather
-than stripping text), and remember the corpus fans out: 30 `examples/*.arch` produce **35** SVG files,
-because `garden-house`, `hillside-villa`, `townhouse` and `two-storey` emit one per storey. A sweep
-that finds 30 has already lost the multi-storey plans.
-
-**The house corpus sweep has a BLIND SPOT, and it is not small.** The sweep everyone reaches for is
-`describe()` + `lint()` + every storey's SVG — 95 artifacts over the 30 examples. Those three payloads
-between them carry **no parse- or resolve-stage diagnostic**, because `lint()` is the soundness layer
-alone. Measured:
-
-```
-arch lint    examples/materials.arch  ->  []
-arch compile examples/materials.arch  ->  ["W_SCALE_OVERFLOW"]
-```
-
-So a change to `W_SCALE_OVERFLOW`, `W_DRAWING_OVERFLOW`, any `W_*_OFF_WALL`, `E_PARSE` or anything
-else raised before `lint()` runs is **invisible to a clean 95-artifact sweep**, and the sweep will
-report "nothing moved" in the same reassuring voice it uses when nothing did. Found in 2026-09 while
-closing backlog 4.9, whose whole subject is a resolve-stage diagnostic: the specified sweep could not
-see the item's own change.
-
-**Sweep 125 when a change can reach the resolver**: add `compile().diagnostics` as a fourth payload,
-one row per example. The two sets are complements — `lint()` covers the lint rules and nothing else,
-`compile()` covers parse and resolve and nothing else — so neither alone is a corpus check.
-
-Prove that one non-vacuous the same way, and pick the plant with care: a lint-stage change (repairing
-an example's furniture, say) moves **nothing** in the diagnostic sweep and would wrongly read as a
-broken check. Perturb something the resolver decides — moving `materials.arch` from A3 to A2 drops
-its `W_SCALE_OVERFLOW` and the sweep names exactly that row.
-
-The same instinct applies to the code under test: **zero corpus movement is not evidence the new path
-ran.** Instrument it with a counter, show which examples reach it and how often, then remove the
-counter and confirm with `grep -c`. Backlog G.1 is the worked example — the changed path fires 228
-times across 14 examples, and 0 of those 228 edges have more than one backing wall, which is *why*
-nothing moved rather than a coincidence.
-
-
-**A file's compiler options come from the PROGRAM compiling it, not from the tsconfig nearest it —
-and `exclude` cannot hold a file out of a program it was IMPORTED into.** `tsconfig.dev.json`
-checks `test/` and excludes the workspaces, but a root test importing
-`../playground/src/share.js` pulls that module into the ROOT program, where
-`noUncheckedIndexedAccess` is ON; the playground config's deliberate relaxation does not travel.
-So any workspace module a root test imports is compiled once per leg of `typecheck:all`, under two
-option sets, and must satisfy the stricter one. Symptom: a `TS2345 … | undefined` on workspace
-source that `tsc -p <workspace>` calls clean. Probe with `tsc -p tsconfig.dev.json --listFiles` to
-see which files the program really pulls in, and fix it IN the shared module — never by relaxing
-the root option or adding an exclude. (Also in `docs/agents/gotchas.md` → "(Typecheck)".)
-
-**The core suite never compiles the docs site.** `npm run docs:build` is the only gate for a
-`docs/*.md` edit's effect on the site; the pipe and fence tripwires catch the two failure classes
-that reach readers, not the whole build.
-
-**Node below 21.2 has no `deflate-raw` in the Web streams API.** The `#z=` codec correctly falls
-back to the uncompressed `#src=` form there, so compressed expectations are **capability-gated**
-(`test/share-codec.test.ts`, `playground/test/share.test.ts`) and the pinned payloads decode via
-`node:zlib` unconditionally. The docs E2E legs pin Node 22 for the same reason.
-
-**The vitest include list spans four workspaces.** A test placed outside `test/`,
-`playground/test/`, `packages/*/test/` or `editors/vscode/test/` silently never runs. Check
-`vitest.config.ts`.
-
-**`editors/vscode` tests need the built extension.** The plain test matrix builds nothing and skips
-`stdio.test.ts` by design; CI's `builds` job runs `npx vitest run editors/vscode` *after* building
-it. Locally: `npm run vscode:build:only` first, or accept the visible skip.
-
-**`npm run dev` at the repo root is `tsup --watch`, not a web server.** The sites are separate Vite
-apps (`npm run playground:dev` / `npm run docs:dev`).
+What runs where, what to do when a guard goes red, and how to add a test. Contributor
+documentation — not published to the docs site. Each guard's own header comment and failure message
+say what it enforces; this file does not inventory them.
+
+## 1. Tiers
+
+**Local.**
+
+| Command | Notes |
+|---|---|
+| `npm run check` | typecheck (`src/` only) + Biome + `check:test-wiring` + `npm test`. The floor |
+| `npm run check:drift` | every generator re-run and byte-compared. Separate from `check`; its own CI gate |
+| `npm run typecheck:all` | the only typecheck of `test/`, `eval/`, `dataset/`, `scripts/`, `bench/` and the workspaces. `npm run build` first |
+| `npm run docs:build` | the only thing that compiles the VitePress site |
+| `npm run e2e:playground` / `e2e:docs` | Playwright against the BUILT site: `npm run build && npm run playground:build:only` (or `docs:build:only`) first |
+| `npm run eval:ci` / `eval:fidelity` | offline eval gates; separate corpora, never compared |
+| `npm run test:coverage` | report-only v8 coverage over `src/`; no thresholds, nothing fails on a number |
+
+Minimum: `check` + `check:drift`. Add `typecheck:all` for anything outside `src/` (including
+`test/`), `docs:build` for `docs/*.md`, and the matching E2E for `playground/` or `docs-site/`.
+
+**PR** (`ci.yml`, `codeql.yml`) and **nightly** (`nightly.yml`): the job map is in
+[`docs/agents/commands.md`](agents/commands.md). Red in nightly's `e2e-prod` means production is
+broken or stale, not that a PR is bad.
+
+## 2. Goldens and snapshots
+
+| Kind | Where | Update (only after reading the diff) |
+|---|---|---|
+| vitest snapshots | `test/__snapshots__/*.snap` | `vitest -u` |
+| PNG visual goldens | `test/__goldens__/*.png` (`test/visual.test.ts`) | `UPDATE_GOLDENS=1 vitest run test/visual.test.ts` |
+| ASCII goldens | `test/__ascii__/*.txt` (`test/ascii.test.ts`) | `ASCII_UPDATE=1 vitest run test/ascii.test.ts` |
+| README/docs SVGs | `examples/*.svg` (`test/example-svgs-drift.test.ts`) | `npm run gen:example-svgs`, then look at the drawing |
+
+**Policy.** `compile()` is byte-stable, so an unexplained golden change is a regression, not a
+snapshot to bless. Justify every changed byte or fix the source; never run an update to make a red
+suite green. When a rendering change legitimately moves a PNG golden, pixel-diff it and confirm the
+diff's bounding box lands where the geometry changed.
+
+## 3. A guard went red — what now
+
+"Regenerate" and "consciously update the pin" are different actions.
+
+| Guard class | Examples | Red ⇒ |
+|---|---|---|
+| Generated-artifact drift | `check:drift`, `example-svgs-drift` | run the matching `gen:*` and commit. Never hand-edit |
+| Lockstep pins (two copies that cannot share an import) | `site-lockstep`, `brand-assets`, `share-codec`, `level-filename-lockstep`, `docs-level-svgs` | change the OTHER copy. A changed `share-codec` hash breaks every shared link — fix the copy, never re-pin |
+| Intentional-friction pins | `packages/mcp/test/lockstep.test.ts` and `editors/vscode/test/lockstep.test.ts` dep range (string `^` + root version) | red on every core release by design: re-pin the range, rebuild, bump the shim (`package.json` + both `server.json` versions). Never relax to a semver check |
+| MCP baked resources | `packages/mcp/scripts/check-dist-resources.mjs` | `npm run mcp:build` (`gen:all` first if the repo artifact is stale) |
+| VS Code bundle freshness | `editors/vscode/test/stdio.test.ts` | `npm run vscode:build:only` |
+| Docs tripwires | `docs-table-pipes`, `docs-fences`, `docs-flags`, `readme-permalink`, `docs-examples-figures`, `docs-page-meta`, `playground-examples-rows` | fix the prose from the tool's answer, never the plan to suit the prose; never widen a killed-claim regex; regenerate a permalink with `scripts/gen-permalink.mjs` |
+| Byte-identity digests | `roof-void-byte-identity`, `height-byte-identity`, `iso-byte-identity` (baseline `test/byte-identity-baseline.ts`), `site`, `doors` | a finding to explain before anything is re-measured (see below) |
+| Model-vs-truth gates | `circulation-hand-derived`, `nav-grid-residual`, `joinery-oracle`, `joinery-pipeline` | a real defect. Never re-bless a number, add a tolerance, enlarge a radius or drop an example |
+| Fixture symbol snapshots | `fixture-byte-identity` | group 1 (PERMANENT) red is always a bug; groups 2–3 are re-blessable only with each diff explained |
+| Property/fuzz | `escape-fuzz`, `fuzz`, `security`, `dataset` | a shrunk counterexample is pinned as a regression case; never delete a pin |
+| Public surface | `public-surface` | re-export the named type from `src/index.ts` |
+
+**Re-measuring a byte-identity digest.** A prose edit to an example can move its digest without a
+compiler change: a diagnostic's `span` shifts by the bytes added above it. Diff the `lint()` payloads
+field by field — if only `span`s moved, uniformly, and the SVG did not, re-measure and record the
+reason in the baseline file's header. Anything else is a compiler change and must be explained. Copy
+the test's own `digest()` body verbatim for the baseline. A new height-authoring example goes in
+`AUTHORS_HEIGHT` only.
+
+## 4. Adding a test
+
+- **Derive, never retype.** Parse the source of truth (`sync-docs.mjs`'s tuple tables,
+  `buildManifest()`, `copy-resources.mjs`); if you parse a literal table, assert its shape too.
+- **Anchor on content, not line numbers**, so moving code is free and changing a value is not.
+- **A byte-identity law for every new language form**, and a cross-feature test whenever two
+  branches edit a shared literal or predicate — with a control case on the identical geometry, so the
+  test can tell "it works" from "the check never ran".
+- **MCP: drive the server** through `packages/mcp/test/helpers.ts` (real `Client`, in-memory
+  transport); malformed args must return an MCP error result, never throw.
+- **VS Code: inject, don't import.** Test handlers in `editors/vscode/src/handlers.ts` with text in,
+  LSP payload out; test the artifact in `stdio.test.ts`.
+- **Playground: extract the pure part** into a module `playground/test/` can unit-test; real DOM,
+  pointer or download belongs in `playground/e2e/`.
+- **A missing optional dependency skips visibly locally and fails under `CI`.** A suite must never
+  go green having asserted nothing.
+- **`@prod`** only for a case that purely navigates, reads and asserts (no downloads, clipboard,
+  forms, persisted state or typing). Follow each spec file's stated tagging rule.
+- **Docs are scanned too**: every tracked `.md` by `docs-table-pipes`; published pages by
+  `docs-fences`; the `DOCS` list in `docs-flags.test.ts` for `arch …` flags. Publishing a page means
+  adding it to `sync-docs.mjs`'s `PAGES`, which also enrols it in the smoke test and the docs E2E.
+- **Place tests inside `vitest.config.ts`'s include globs** or they never run.
+
+## 5. Ad-hoc sweeps ("did anything move?")
+
+- **Prove a sweep can fail before trusting it to pass.** Plant a change (append bytes to one baseline
+  file), confirm the sweep names that file, then restore. Pair each file with its own digest (join on
+  the name) rather than stripping text.
+- **Multi-storey examples emit one SVG per storey**, and `arch compile <f> -o -` is a usage error on
+  them — hash every storey, and count storeys, not files.
+- **An SVG + `describe()` + `lint()` sweep carries no parse- or resolve-stage diagnostic.** When a
+  change can reach the resolver, add `compile().diagnostics` as a fourth payload.
+- **Zero corpus movement is not evidence the new path ran.** Instrument it with a counter, show which
+  examples reach it, then remove the counter.
+
+## 6. Environment notes
+
+- `editors/vscode` tests need the built bundle (`npm run vscode:build:only`); without it they skip.
+  In a `.claude/worktrees/*` checkout `wrong-core.test.ts` fails by design — the bundler refuses to
+  bundle another checkout's core — so a worktree's test count is not the repo's.
+- Node below 21.2 has no `deflate-raw` in Web streams; the `#z=` codec falls back to `#src=`, so
+  compressed expectations are capability-gated.
+- `test/roof.test.ts`'s PDF export (a dynamic `import("pdfkit")`) can time out under heavy parallel
+  load. Do not raise the global `testTimeout` (`docs/backlog.md` 4.10).
+- `scripts/coverage-zero-report.mjs` lists modules at zero coverage; CLI modules appear there because
+  `test/cli*.test.ts` spawn the real `arch` in a child process.

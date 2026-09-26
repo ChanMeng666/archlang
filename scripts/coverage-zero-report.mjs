@@ -4,7 +4,7 @@
  *
  * `vitest.config.ts` runs coverage with `all: true` and **deliberately no thresholds** —
  * nobody games a percentage, and `npm test` stays the single pass/fail signal (see
- * `docs/testing.md` §2 "Coverage — a map, not a gate"). The cost of that choice is that a
+ * `docs/testing.md` §1: coverage is report-only). The cost of that choice is that a
  * module can sit at 0% forever and nothing says so: the `text` reporter prints 111 rows and
  * the step summary prints four totals, so a zero is one line in a wall of lines.
  *

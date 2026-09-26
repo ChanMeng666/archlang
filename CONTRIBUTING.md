@@ -83,10 +83,9 @@ analysis on the same events. A separate `nightly.yml` runs production smoke, a r
 dependency audit, a full-history secret scan, a wider OS×Node matrix and the read-only E2E subset
 against the live sites.
 
-**Full reference: [docs/testing.md](docs/testing.md)** — the three tiers, every guard (goldens,
-drift generators, lockstep pins, the docs tripwires, the fuzz suites, the MCP pack gates), the
-house patterns for adding tests, and **what to do when each one goes red**. Read it before
-regenerating a golden or updating a pin.
+**Full reference: [docs/testing.md](docs/testing.md)** — the tiers, the golden/snapshot update
+policy, **what to do when each class of guard goes red**, and the house patterns for adding tests.
+Read it before regenerating a golden or updating a pin.
 
 ## Releasing
 
