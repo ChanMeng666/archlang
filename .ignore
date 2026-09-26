@@ -1,0 +1,45 @@
+# ripgrep ignore file (also honoured by Claude Code's Grep/Glob, fd, ag). NOT read by git, npm,
+# vitest, tsc, Biome or any build step — it only keeps history, generated copies and goldens out of
+# symbol searches so a search lands on source first. Name a path explicitly to search it anyway
+# (`rg foo CHANGELOG.md`), or pass `--no-ignore-dot`.
+
+# Release history
+CHANGELOG.md
+
+# Generated artifacts (sources: scripts/check-drift.ts GENERATORS; regenerate with `npm run gen:*`)
+spec.llm.md
+llms-full.txt
+docs/cli-reference.md
+docs/error-codes.md
+grammars/archlang.gbnf
+schemas/*.schema.json
+editors/archlang.tmLanguage.json
+playground/src/arch-language.js
+docs-site/.vitepress/theme/arch-highlight.js
+examples/**/*.svg
+package-lock.json
+
+# Docs-site build output and pages copied in by docs-site/sync-docs.mjs
+docs-site/.vitepress/dist/
+docs-site/.vitepress/cache/
+docs-site/public/examples/
+docs-site/public/llms*.txt
+docs-site/public/*.md
+docs-site/public/*.schema.json
+docs-site/public/archlang.gbnf
+docs-site/reference.md
+docs-site/showcase.md
+docs-site/cli.md
+docs-site/furniture.md
+docs-site/analysis.md
+docs-site/axonometric.md
+docs-site/intent.md
+docs-site/errors.md
+docs-site/spec.md
+docs-site/adr/0*.md
+
+# Test snapshots and goldens
+test/__snapshots__/
+test/__goldens__/
+test/__ascii__/
+eval/goldens/
