@@ -1,95 +1,51 @@
 # AGENTS.md
 
-This file provides project guidance to AI coding assistants (Claude Code, GitHub Copilot, Cursor,
-Codex, etc.) working with this repository. Read it before writing or changing any code.
-
-**This is the short entry point; detail lives in `docs/agents/`, read on demand via the index
-below.** A new project fact goes in exactly ONE place: here only if it binds nearly every task.
-`CLAUDE.md` is the Claude Code operating brief and asserts no fact of its own.
-
-## Project Overview
-
-ArchLang — A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.
-
-- **Primary language / stack:** TypeScript (Node 18+; the core also runs in the browser)
-- **Default branch:** `main`
-- **Repository:** https://github.com/ChanMeng666/archlang
-
-**Shipped and launched** — a published, deployed npm-workspaces monorepo. Never quote a version or
-test count from a doc: probe npm, `git ls-remote --tags origin`, `gh release list`; `CHANGELOG.md`
-is the canonical release notes.
-
-## Commands
+ArchLang: a declarative language (`.arch`) that compiles to SVG floor plans. TypeScript, Node 18+,
+npm-workspaces monorepo; the core (repo root, `@chanmeng666/archlang`) also runs in the browser.
+Code and tests are the documentation; this file holds only what they cannot say.
 
 ```bash
-npm install          # bootstraps ALL workspaces
-npm run build        # core library + CLI into dist/
-npm test             # whole vitest suite
+npm run build         # core + CLI → dist/ (before typecheck:all, e2e)
 npm run cli -- compile examples/studio.arch -o studio.svg
-npm run check        # typecheck + lint + test-wiring + test (pre-push gate)
-npm run check:drift  # fail if any generated artifact drifted (CI gate)
-npm run typecheck:all  # incl. workspaces; `npm run build` FIRST
-npm run docs:build   # after any docs/*.md edit
-npm run gen:all      # every gen:* generator
+npm run check         # typecheck + lint + test-wiring + vitest (floor)
+npm run check:drift   # generated artifacts == generator output (CI gate)
+npm run typecheck:all # the only typecheck that compiles test/ and the workspaces
+npm run docs:build    # after any docs/*.md edit
+npm run gen:all       # every gen:* generator
 ```
 
-Everything else (`gen:*`, `e2e:*`, `eval:*`, CI map, CLI contract): `docs/agents/commands.md`.
+## Hard rules
 
-## Rules that bind every task
+- `compile()` is pure, sync, deterministic: no I/O, time, randomness or Node APIs in `src/` outside
+  `src/cli.ts`+`src/cli/`; environment via the `World` seam; numbers via `src/num-format.ts`; never
+  mutate the memoised parse-stage `PlanNode` (clone). Zero runtime deps.
+- User-source errors are returned as a `Diagnostic` (byte `span` + catalogued `E_*`/`W_*`), never thrown.
+- New element = one `src/elements/` module registered in `defs.ts`, no switch. New fixture category =
+  a `FIXTURE_FAMILIES` row + a `CATALOG` entry; a drawn symbol ignores its `label`.
+- Never hand-edit `dist/` or a generated file; run `gen:*`. Drift-green proves reproducibility, not
+  correctness: derive generator templates from the source of truth, never retype.
+- A derived position comes from the shape, never its bounding box or centroid.
+- Every new language form ships a byte-identity law pinned by test (SHA-256 of SVG + `describe()` +
+  `lint()` over the examples). Never bless a golden to green a suite.
+- Heights draw nothing; `--view` measures nothing (`describe()`/`lint()` never learn it).
+- `npm run check` does not typecheck `test/`; `typecheck:all` does.
+- A clean auto-merge of a MOVED function another branch MODIFIED is not evidence: diff the moved
+  body, run both branches' fixtures together.
+- Releases are tokenless OIDC (`v*` tag); never an npm token, never automate npmjs account/2FA.
+  Pushing `main` deploys the sites. Before a tag: `/release-check`.
+- Eval: T3 live run declined forever; `eval:live` is paid, owner-only; holdout never published;
+  dataset canary never regenerated.
+- Sites are light-only (no dark mode); `brand/archlang-logo-master.svg` is byte-sacred.
+- No secrets in this public repo. Versions come from npm/tags/`gh release`, never a doc; release
+  narrative lives only in `CHANGELOG.md`.
 
-- **`compile()` is pure and deterministic** — no I/O, time, randomness or Node APIs in `src/`
-  outside `src/cli*`; errors returned, never thrown; zero runtime deps. → `architecture.md`
-- **Never hand-edit `dist/` or a generated file** — edit the source, run `gen:*`. → `gotchas.md`
-- **Never bless a golden/snapshot to green a suite**; every new language form ships a byte-identity
-  law. → `iron-laws.md`
-- **Releases are tokenless OIDC only** (`v*` tag push). Never add an npm token or automate npmjs
-  account/2FA management. Pushing `main` deploys the docs site. → `iron-laws.md`
-- **Eval & dataset:** T3 live run declined forever; `eval:live` is paid, owner-only; holdout never
-  published, canary never regenerated. → `iron-laws.md`
-- **Brand & sites:** logo master byte-sacred; both sites LIGHT, no dark mode. → `sites.md`
-- **No secrets** (tokens, account ids) in this public repo.
+## Where to look
 
-## Where things live
+`src/index.ts` public surface · `docs/adr/` decisions · `docs/backlog.md` open work · `.claude/rules/` path-scoped rules (auto-loaded).
+`docs/agents/`: `architecture.md` (pipeline, module map) · `gotchas.md` (traps) · `iron-laws.md`
+(owner decisions) · `commands.md` (CI, scripts). `docs/testing.md`: red guards, golden policy.
+A root `.ignore` hides CHANGELOG, generated files and goldens from ripgrep; name the path to search them.
+Authoring `.arch` (not contributing): `spec.llm.md`, `SKILL.md`.
 
-`src/` core (`index.ts` = public surface; `cli.ts`+`cli/` = CLI) · `test/` · `examples/` ·
-`docs/` (`adr/`, `research/`, `testing.md`) · `docs-site/` · `playground/` · `packages/mcp/` ·
-`editors/vscode/` · `eval/` · `dataset/` · `scripts/` · `brand/` · agent context: `SKILL.md`,
-`spec.llm.md`, `llms*.txt`, `schemas/`, `grammars/`.
-
-## Index of agent docs (`docs/agents/`) — read when …
-
-| File | Read when … |
-|------|-------------|
-| `project-status.md` | releasing; touching MCP shim, VS Code extension, dataset, SEO |
-| `iron-laws.md` | any design change, new language form, derived geometry, eval/dataset/release/hosting/brand |
-| `architecture.md` | changing `src/`; adding an element/format/generator; finding a module |
-| `commands.md` | any other script, CI jobs, the CLI contract |
-| `gotchas.md` | before changing code (entries tagged by area) |
-| `sites.md` | touching `docs-site/`, `playground/`, `brand/` |
-| `verification.md` | proving a change works before calling it done |
-| `../testing.md` | adding a test, updating a pin, a red guard |
-
-## Reading Order
-
-**To USE ArchLang (author/edit floor plans as an agent):** read `spec.llm.md` (the whole language
-in one page — or run `arch spec`), then follow `SKILL.md`'s loop: `spec` → write `.arch` →
-`arch compile --json` → fix from each `diagnostics[].fix` → `arch describe --json` to confirm
-intent. Zero install: `npx @chanmeng666/archlang …`.
-
-**To CONTRIBUTE (work on this repo), read in this order:**
-1. `README.md` — what the project is and how to run it
-2. This `AGENTS.md` — how to work in it
-3. `CONTRIBUTING.md` — contribution workflow and quality gates
-4. `docs/testing.md` — the verification system: what runs locally, on a PR and nightly, what each
-   guard enforces, and what to do when one goes red (read before adding a test or updating a pin)
-
-## Conventions for Changes
-
-- Follow [Conventional Commits](https://www.conventionalcommits.org/).
-- Run the project's lint/test commands before proposing changes.
-- Keep this file and `docs/agents/` current when build steps, structure or conventions change.
-- Release narrative and work history go in `CHANGELOG.md` **only** — never re-grow per-release prose
-  here or in `docs/agents/project-status.md`, and no per-session work logs under `docs/`. (Re-grown
-  and archived twice; archives in `archcanvas-growth/archive/archlang/docs-archive/`.)
-- **`AGENTS.md` + `CLAUDE.md` load every session: 10,000 bytes together is a hard budget**
-  (`wc -c AGENTS.md CLAUDE.md`). New detail goes in `docs/agents/` with an index row.
+Conventional Commits. `AGENTS.md` + `CLAUDE.md` ≤ 5,000 bytes together (`wc -c`); detail goes in
+`docs/agents/`.
