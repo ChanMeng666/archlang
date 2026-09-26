@@ -44,7 +44,7 @@ export const BUILTIN_DEFS: readonly ElementDef[] = [
   // resolved when it runs (the same contract openings host against).
   roof,
   voidEl,
-  // v1.31, appended at the END — `KEYWORDS.element` must equal this list's keywords
+  // Appended at the END — `KEYWORDS.element` must equal this list's keywords
   // element for element AND in order (`test/element-keyword-drift.test.ts`). Neither
   // reads a wall, so neither needs to sit before or after `roof`; the end is simply
   // where a new element goes.

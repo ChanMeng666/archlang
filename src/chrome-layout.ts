@@ -229,7 +229,7 @@ export function layoutChrome(input: ChromeInput): ChromeLayout {
   // Sheet tables (`schedule rooms` / `legend`) — a second row under the band. They are
   // annotation-pass geometry, so they never feed `dimReach`; instead their extent grows
   // the bottom/right margins directly here. Null when the plan opted into neither, in
-  // which case every expression below reduces to exactly the pre-v1.20 arithmetic.
+  // which case every expression below reduces to the table-free arithmetic.
   const bandBottom = Math.max(scaleBottom, titleBottom);
   const tables = layoutSheetTables({
     bounds: b,

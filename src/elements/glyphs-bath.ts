@@ -181,7 +181,7 @@ export function drawBathtub(r: Rect, g: GlyphCtx): SceneNode[] {
   return g.nodes;
 }
 
-// ── v1.32 F1: kitchen & bath ──
+// ── kitchen & bath ──
 //
 // Three more bathroom symbols, appended at the END for the reason `FIXTURE_FAMILIES` appends:
 // this file's reading order follows that table's, and that table's order is the legend's.

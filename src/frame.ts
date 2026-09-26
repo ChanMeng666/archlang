@@ -308,7 +308,7 @@ function transformGeometry(f: Frame, el: ResolvedElement, id: string, reflected:
         points: el.points.map((p) => tp(f, p)),
         // A frame moves the opening's POINT and nothing else: its width is along the wall
         // and a frame is an isometry, and its vertical facts (`kind`/`ownerId`/`sill`/
-        // `head`, v1.35) are heights — a rotation in PLAN cannot touch them, and a
+        // `head`) are heights — a rotation in PLAN cannot touch them, and a
         // reflection about a vertical axis cannot either. `...o` first, then the moved
         // point, so a field added to `Opening` later rides through by default rather than
         // being silently dropped the way these four would have been.
@@ -371,7 +371,7 @@ function transformGeometry(f: Frame, el: ResolvedElement, id: string, reflected:
       // quarter-turn carries a fixture's facing (that is `transformDeg` above), but a
       // reflection also swaps the drawing's left and right, and nothing said so: a
       // mirrored wing drew a left-handed `sofa_l` in a right-handed room, every number
-      // right and the picture wrong (`docs/backlog.md` 5.4).
+      // right and the picture wrong.
       //
       // `M · R(l) = R(m − l) · Fx` for any reflecting frame — see the derivation in
       // `elements/glyph-chirality.ts` — so `transformDeg` above is already the whole

@@ -188,7 +188,7 @@ export const dimOverlap: LintRule = {
 /**
  * `W_OPENING_NOT_DIMENSIONED` — `dims auto all` promises an openings chain on every
  * facade, and an opening on the outside of the building that no chain measures is a
- * silent gap in that promise (issue #109). The auto-dimensioner cannot place every
+ * silent gap in that promise. The auto-dimensioner cannot place every
  * opening. A chain measures along x or y, so an opening on a curved or angled wall has no
  * coordinate on it. An opening on a face that is not the building's outline, such as a
  * courtyard or a recess another wall stands in front of, is on no facade chain at all.

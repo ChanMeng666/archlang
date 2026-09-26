@@ -55,7 +55,7 @@ export const KEYWORDS = {
     "escalator",
     "roof",
     "void",
-    // v1.31, appended at the END: `KEYWORDS.element` must equal `BUILTIN_DEFS`'s keyword
+    // Appended at the END: `KEYWORDS.element` must equal `BUILTIN_DEFS`'s keyword
     // list ELEMENT FOR ELEMENT AND IN ORDER (`test/element-keyword-drift.test.ts`), so a
     // new element goes on the end of both lists or neither.
     "outdoor",
@@ -118,23 +118,22 @@ export const KEYWORDS = {
     "clear",
     "dir",
     // `site { street <compass> [hemisphere <h>] }` — the two clause introducers inside
-    // the v1.25 site block. They belong here, beside `north`, for the same reason: a word
+    // the site block. They belong here, beside `north`, for the same reason: a word
     // that LEADS a clause is a setting keyword, not one of its values (the values —
-    // `south`/`east`/`west` — are in `enum` below). They shipped in v1.25 documented in
-    // the spec's `site` grammar line but absent from this table, so every renderer drew
-    // them as bare identifiers.
+    // `south`/`east`/`west` — are in `enum` below). Absent from this table, every
+    // renderer would draw them as bare identifiers.
     "street",
     "hemisphere",
     // `roof overhang <len>` — the clause that introduces the projection distance. A word
     // that LEADS a clause is a setting keyword, so it sits here beside `thickness` and
     // `width` rather than in `enum` (which holds the VALUES a clause takes).
     "overhang",
-    // v1.31. `rail <edges>` leads a clause of the `outdoor balcony` line and `boundary
+    // `rail <edges>` leads a clause of the `outdoor balcony` line and `boundary
     // (x,y) …` leads one of the `site` block, so both are settings, not values — the same
     // rule that put `street`/`hemisphere`/`overhang` here and their VALUES in `enum`.
     "rail",
     "boundary",
-    // v1.35 — the vertical datum layer. `sill` and `head` LEAD a clause of a `window` /
+    // The vertical datum layer. `sill` and `head` LEAD a clause of a `window` /
     // `door` / `opening` line (`window … sill 900 head 2100`), which is the rule that put
     // `thickness` and `overhang` here rather than in `enum`: those hold the VALUES a
     // clause takes, and a height's value is a number, not a word.
@@ -172,10 +171,10 @@ export const KEYWORDS = {
     // `dims auto <mode>` selectors (AUTO_DIMS_MODES) and the `schedule <subject>` subject
     // (SCHEDULE_SUBJECTS, whose one value `rooms` is the same word). Values following a
     // keyword, so they sit here beside `auto` itself rather than in `attribute`. They are
-    // the reason `test/closed-vocabularies.test.ts` exists: both sets have lived in
-    // `src/ast.ts` since v1.20/v1.26 as the parser's accept-list AND the spec's grammar
-    // line, but nothing checked that the highlighting bucket had heard of them — so
-    // `dims auto overall` drew its own mode word as an identifier in every renderer.
+    // the reason `test/closed-vocabularies.test.ts` exists: both sets live in
+    // `src/ast.ts` as the parser's accept-list AND the spec's grammar line, and without a
+    // check that the highlighting bucket has heard of them `dims auto overall` draws its
+    // own mode word as an identifier in every renderer.
     "overall",
     "rooms",
     "walls",
@@ -183,7 +182,7 @@ export const KEYWORDS = {
     "cw",
     "ccw",
     "major",
-    // Door kinds (v1.25) — the bare word that leads a `door` statement. Values, not
+    // Door kinds — the bare word that leads a `door` statement. Values, not
     // clause introducers, so they live here beside `left`/`in`; the per-kind grouping
     // is `DOOR_KINDS` below (this bag is flat highlighting only).
     "hinged",
@@ -220,13 +219,12 @@ export const KEYWORDS = {
     "south",
     "east",
     "west",
-    // v1.31 — the `outdoor` ground surfaces (`OUTDOOR_KINDS`) and the `fence` styles
+    // The `outdoor` ground surfaces (`OUTDOOR_KINDS`) and the `fence` styles
     // (`FENCE_STYLES`). Values that follow a keyword, so they sit here. The `rail` edge
     // words (`RAIL_EDGES`) are deliberately NOT repeated: all six — `top`, `bottom`,
     // `left`, `right`, `all`, `none` — are already in this bucket for other clauses, and
     // this file's standing rule is that a word appears in exactly one category once.
-    // `none` is the only one that had to be ADDED, and it earns its place twice over: it
-    // is also the `wall … material none` value, which has been unhighlighted since v0.9.
+    // `none` earns its place twice over: it is also the `wall … material none` value.
     "none",
     "lawn",
     "planting",
@@ -317,7 +315,7 @@ export type DoorClauseName = "hinge" | "swing" | "slide" | "open";
  * clause it would then refuse on the way back in) and by the docs.
  *
  * The rule is REFUSE, never approximate: a clause a kind has no meaning for is an
- * error, not a silently-ignored word — the v1.23 precedent, where rectangle-only
+ * error, not a silently-ignored word — the `room polygon` precedent, where rectangle-only
  * clauses refuse a polygon room rather than approximate it. "A pocket door with a
  * `hinge left` clause draws as if the clause were absent" is silent-error design.
  *
@@ -446,7 +444,7 @@ export const STATEMENT_STARTS: readonly string[] = [
   "schedule",
   "legend",
   "site",
-  // The plan-level `height <expr>` setting (v1.35, the vertical datum layer). It is here
+  // The plan-level `height <expr>` setting (the vertical datum layer). It is here
   // for the same reason `paper` is: the parser's plan-statement switch leads with it, and
   // error recovery has to know the word can start a statement. `strip … height <mm>` is
   // unaffected — that clause is consumed inside `parseStrip`, which never re-enters this

@@ -242,11 +242,10 @@ export function probeSide(walls: RWall[], ext: Bounds, side: Side): { line: numb
  * the facade outline has anywhere across the measured extent, and never inboard of the
  * extent edge `base` itself.
  *
- * This is the stepped facade of issue #109 again. The probe fails there because the
- * legs straddle the bounding-box midpoint. The old fallback was the extent edge, which is
- * the ROOM boundary, a wall thickness or more inside the outermost leg. Every chain on
- * that side was then offset from a line inside the wall, and the innermost chain landed
- * on the outer leg's face. Reading the outline puts the baseline where the building
+ * This is the stepped facade: the probe fails there because the legs straddle the
+ * bounding-box midpoint. Falling back to the extent edge — the ROOM boundary, a wall
+ * thickness or more inside the outermost leg — would offset every chain on that side
+ * from a line inside the wall, landing the innermost chain on the outer leg's face. Reading the outline puts the baseline where the building
  * actually ends. Evaluated per segment at its clipped ends: a straight line's cross
  * coordinate is linear along it, so its extremes are at the ends. A curve contributes
  * nothing (its face is not a line); `base` still bounds the answer from inside.
@@ -366,11 +365,11 @@ function outlineLineAt(profile: FacadeProfile, out: 1 | -1, v: number): number |
  * position on that side. The second test reads the facade OUTLINE, not one line probed
  * at the middle of the bounding box.
  *
- * The second clause is issue #109. A stepped facade has two parallel legs, and the
+ * The second clause is for a stepped facade. A stepped facade has two parallel legs, and the
  * bounding-box probe can find at most one of them. On a facade whose legs straddle the
  * probe point it finds neither, because the nearest leg is further away than a wall
- * thickness. Until this rule, every opening on that side, on both legs, was dropped with
- * no diagnostic. A chain measures ALONG the side, so openings on two legs chain together
+ * thickness. Without this rule, every opening on that side, on both legs, would be
+ * dropped with no diagnostic. A chain measures ALONG the side, so openings on two legs chain together
  * exactly as openings on one leg do; the witness lines already reach back to each leg
  * through {@link facadeAt}. Both clauses are needed: the first keeps every plan whose
  * probe succeeds byte-identical, and the second adds only what the probe missed.

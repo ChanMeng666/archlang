@@ -924,8 +924,8 @@ export const bandBBox = (loops: readonly EdgeLoop[]): GridBox => unionBBox(loops
 /**
  * Loops → the Scene primitive that carries them.
  *
- * An ALL-STRAIGHT set becomes a `region`, the primitive every backend has serialized
- * since v0.9 — which is what keeps a rectilinear plan's bytes exactly where they were.
+ * An ALL-STRAIGHT set becomes a `region`, the primitive every backend serializes —
+ * which is what keeps a rectilinear plan's bytes independent of curve support.
  * A set with any curve becomes a `path`, with each arc cut into unambiguously MINOR
  * pieces by the same `arcPieces` rule the `arc` primitive uses, because neither
  * primitive carries a large-arc flag.

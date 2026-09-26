@@ -714,7 +714,7 @@ export function drawFirePit(r: Rect, g: GlyphCtx): SceneNode[] {
  * A garden shed: the carcass, the ridge of its roof, and the door on the front.
  *
  * The ridge is DASHED because it is above the cut plane — the same convention the pergola
- * and `upper_cabinet` follow, and the same one the v1.29 `roof` and `void` elements ship.
+ * and `upper_cabinet` follow, and the same one the `roof` and `void` elements use.
  * The door tick is on the BOTTOM edge, so `directional` means something: `anchor top`
  * derives the turn that puts the shed's back against the fence and its door on the garden.
  */

@@ -112,19 +112,19 @@ export interface RoomSummary {
   label?: string;
   /** Declared or inferred function(s) of the room (e.g. `["living","kitchen"]`). */
   uses: string[];
-  /** Canonical RPLAN-style room category derived from {@link uses} (v1.13). */
+  /** Canonical RPLAN-style room category derived from {@link uses}. */
   room_type: string;
   /** Floor area in square metres, rounded to 2 decimals. */
   area_m2: number;
   bbox: BBox;
   /**
-   * The room's FLOOR as a closed ring (v1.13): a rectangle's four corners clockwise from
-   * top-left, or — for a `room polygon` (v1.23) — its authored vertices in source order.
+   * The room's FLOOR as a closed ring: a rectangle's four corners clockwise from
+   * top-left, or — for a `room polygon` — its authored vertices in source order.
    * This, not `bbox`, is the room's actual shape; `bbox` is the vertex extent.
    */
   floor_polygon: { x: number; y: number }[];
   /**
-   * A CIRCULAR room's exact centre + radius (v1.24), present only for `room … circle`.
+   * A CIRCULAR room's exact centre + radius, present only for `room … circle`.
    * Such a room reports this INSTEAD of a 48-vertex ring: the tessellation is an
    * implementation detail of the grid layer, so `floor_polygon` is `[]` here and
    * `area_m2` is the exact πR². Append-only, like the rest of the summary.
@@ -132,7 +132,7 @@ export interface RoomSummary {
   floor_circle?: { cx: number; cy: number; r: number };
   /** Ids of rooms whose edges touch this one (within the adjacency tolerance). */
   adjacent: string[];
-  /** The `place`d instance this room was drawn inside (v1.22); absent at plan level. */
+  /** The `place`d instance this room was drawn inside; absent at plan level. */
   instance?: string;
   /** The component {@link RoomSummary.instance} was made from. */
   component?: string;
@@ -140,7 +140,7 @@ export interface RoomSummary {
 
 export interface DoorSummary {
   id: string;
-  /** The `place`d instance this door was drawn inside (v1.22); absent at plan level. */
+  /** The `place`d instance this door was drawn inside; absent at plan level. */
   instance?: string;
   /**
    * The one or two spaces this door connects: room ids, and/or the literal
@@ -149,7 +149,7 @@ export interface DoorSummary {
   between: string[];
   width: number;
   /**
-   * The door's kind (v1.25) — emitted **only when it is not the default `hinged`**,
+   * The door's kind — emitted **only when it is not the default `hinged`**,
    * so every payload written before kinds existed is byte-identical.
    *
    * It is here because a kind is a SEMANTIC fact, not a drawing one: it decides
@@ -160,7 +160,7 @@ export interface DoorSummary {
    */
   kind?: DoorKind;
   /**
-   * Top of the doorway above this storey's floor, in mm (v1.35, the vertical datum).
+   * Top of the doorway above this storey's floor, in mm (the vertical datum).
    *
    * Present **only when the plan authored a height clause somewhere** — see
    * {@link SceneSummary.heights}. A door's sill is the floor by definition, so there is no
@@ -192,8 +192,7 @@ export interface WindowSummary {
    *
    * Always one of the four; pure and deterministic. This is the direction an intent
    * `windows.facing` assertion is checked against. When the two differ, the page-relative
-   * answer is still available as {@link WindowSummary.facingPage}. (v1.14; made
-   * north-aware in v1.25)
+   * answer is still available as {@link WindowSummary.facingPage}.
    */
   facing: "N" | "S" | "E" | "W";
   /**
@@ -203,13 +202,13 @@ export interface WindowSummary {
    * Present **only** when the declared `north` actually turns the compass answer (i.e.
    * {@link northQuarterTurns} is non-zero), so a plan on the default `north up` — where
    * this would always equal {@link WindowSummary.facing} — has a byte-identical summary
-   * to before. Append-only. (v1.25)
+   * to before. Append-only.
    */
   facingPage?: "N" | "S" | "E" | "W";
-  /** Bottom of the glazing above this storey's floor, in mm (v1.35). Present only when
+  /** Bottom of the glazing above this storey's floor, in mm. Present only when
    *  the plan authored a height clause somewhere — see {@link SceneSummary.heights}. */
   sill?: number;
-  /** Top of the glazing above this storey's floor, in mm (v1.35). Same gating. */
+  /** Top of the glazing above this storey's floor, in mm. Same gating. */
   head?: number;
 }
 
@@ -218,13 +217,13 @@ export interface OpeningSummary {
   /** The one or two spaces this cased opening connects (room ids and/or `"exterior"`). */
   between: string[];
   width: number;
-  /** Top of the cased opening above this storey's floor, in mm (v1.35) — by default the
+  /** Top of the cased opening above this storey's floor, in mm — by default the
    *  host wall's own height. Present only when the plan authored a height somewhere. */
   head?: number;
 }
 
 /**
- * The **vertical datum** of one storey (v1.35) — `describe().heights`.
+ * The **vertical datum** of one storey — `describe().heights`.
  *
  * ## Why it is here at all, and why it is gated
  *
@@ -275,17 +274,17 @@ export interface FurnitureSummary {
   /**
    * The quarter-turn the drawn symbol carries (0/90/180/270), when it is not 0 — either
    * authored (`rotate`), derived from the backing wall, or carried through a `place`d
-   * instance's own turn. Absent for an upright symbol. (v1.22)
+   * instance's own turn. Absent for an upright symbol.
    */
   rotate?: number;
-  /** The `place`d instance this piece was drawn inside (v1.22); absent at plan level. */
+  /** The `place`d instance this piece was drawn inside; absent at plan level. */
   instance?: string;
   /** The component {@link FurnitureSummary.instance} was made from. */
   component?: string;
 }
 
 /**
- * One run of vertical circulation ON THIS STOREY (v1.21). Present in the summary only
+ * One run of vertical circulation ON THIS STOREY. Present in the summary only
  * when the storey draws at least one `stair`/`elevator`/`escalator`, so every existing
  * summary is unchanged. The cross-storey view is {@link SceneSummary.vertical}.
  */
@@ -302,7 +301,7 @@ export interface VerticalSummary {
 }
 
 /**
- * One hole in this storey's floor plate (`void`, v1.29). Present in the summary only when
+ * One hole in this storey's floor plate (`void`). Present in the summary only when
  * the storey declares at least one, so every existing summary is unchanged.
  *
  * The room's own `area_m2` is NOT reduced by the void — see `src/elements/void.ts` for
@@ -323,7 +322,7 @@ export interface VoidSummary {
 }
 
 /**
- * One ground surface (`outdoor`, v1.31). Present in the summary only when the storey
+ * One ground surface (`outdoor`). Present in the summary only when the storey
  * declares at least one, so every existing summary is unchanged.
  *
  * **Its area is NOT part of `totals.floor_area_m2`, and must never become so.** A terrace
@@ -352,7 +351,7 @@ export interface OutdoorSummary {
   rail?: RailSide[];
 }
 
-/** One fence run (v1.31). Present only when the storey declares at least one. */
+/** One fence run. Present only when the storey declares at least one. */
 export interface FenceSummary {
   id: string;
   style: FenceStyle;
@@ -362,7 +361,7 @@ export interface FenceSummary {
 }
 
 /**
- * The building's **vertical connections** (v1.21): every `stair`/`elevator`/`escalator`
+ * The building's **vertical connections**: every `stair`/`elevator`/`escalator`
  * id drawn on two or more storeys. Identity is the whole rule — same id, same shaft —
  * so nothing is inferred from geometry (ADR 0005). Present only on a multi-storey plan
  * that actually has one; a run on a single storey is not a connection and is what
@@ -379,7 +378,7 @@ export interface VerticalReport {
 }
 
 /**
- * One `place`d component instance as a fact (v1.22): its addressable name — which is also
+ * One `place`d component instance as a fact: its addressable name — which is also
  * the id namespace of everything inside it — the component it was made from, where its
  * local `(0,0)` landed, and the exact rigid transform applied.
  */
@@ -393,7 +392,7 @@ export interface InstanceSummary {
 
 export type { RoomPlacement, OpeningPlacement, FurniturePlacement } from "./ir.js";
 
-/** How a single placed element's position was authored vs derived (v1.14). */
+/** How a single placed element's position was authored vs derived. */
 export interface FreedomElement {
   id: string;
   kind: "room" | "door" | "window" | "opening" | "furniture";
@@ -401,7 +400,7 @@ export interface FreedomElement {
    *  resolver from a higher-level clause (relational/strip/attach/anchor/wall). */
   placement: RoomPlacement | OpeningPlacement | FurniturePlacement;
   /**
-   * The `place`d instance this element lives in (v1.22). When present, `placement`
+   * The `place`d instance this element lives in. When present, `placement`
    * describes how the element was authored **inside its component** — its position ON
    * THE PAGE additionally derives from the instance frame, which is the authored-absolute
    * thing (see {@link SceneSummary.instances}). So: an instance is a degree of freedom,
@@ -412,7 +411,7 @@ export interface FreedomElement {
 }
 
 /**
- * Degrees-of-freedom report (v1.14): for each placed element, whether its
+ * Degrees-of-freedom report: for each placed element, whether its
  * position was authored **absolutely** or **derived** by the resolver — the
  * "how constrained is this plan" fact an agent reads before editing. Facts only
  * (ADR 0005): no advice, no scoring, no thresholds. Counts per family plus one
@@ -446,7 +445,7 @@ export interface AxesSummary {
 }
 
 /**
- * The sheet facts for a plan that declares `paper` (v1.20): which sheet, which way
+ * The sheet facts for a plan that declares `paper`: which sheet, which way
  * round, the operative scale denominator, and whether the building fits on it at that
  * scale. `fits: false` is the `W_SCALE_OVERFLOW` condition — the drawing is still
  * produced, on a page grown past the sheet.
@@ -462,7 +461,7 @@ export interface SheetSummary {
   fits: boolean;
   /**
    * `false` when **everything the plan draws** does not fit the sheet's drawing area at
-   * this scale — **present only then** (backlog 4.9). Absent means the whole drawing fits;
+   * this scale — **present only then**. Absent means the whole drawing fits;
    * read it as `sheet.drawing_fits === false`, never as a tri-state.
    *
    * It is the residual {@link fits} cannot report. `fits` measures the BUILDING's
@@ -482,14 +481,14 @@ export interface SheetSummary {
    * **Emitted conditionally on purpose.** An always-present key would move every
    * `describe()` payload for every plan that declares `paper`, which the standing
    * byte-identity law forbids — a plan that does not use a feature must describe exactly as
-   * before. This follows `circulation.unmeasured[]` (backlog G.5), which omits itself when
+   * before. This follows `circulation.unmeasured[]`, which omits itself when
    * empty for the same reason.
    */
   drawing_fits?: false;
 }
 
 /**
- * One declared **zone** — a wing, a department, a phase — and the rooms it groups (v1.22).
+ * One declared **zone** — a wing, a department, a phase — and the rooms it groups.
  *
  * Membership is by DECLARATION, never geometry (ADR 0005): a room is listed here because
  * it was written inside that `zone` block, not because the compiler decided it looks like
@@ -603,7 +602,7 @@ export interface SceneSummary {
    */
   site?: SiteFacts;
   /**
-   * The `place`d component instances this drawing is made of (v1.22), in source order:
+   * The `place`d component instances this drawing is made of, in source order:
    * where each one's local origin landed and the rigid transform it carries. Present only
    * when the plan places at least one, so existing summaries are unchanged.
    *
@@ -619,18 +618,18 @@ export interface SceneSummary {
   openings: OpeningSummary[];
   furniture: FurnitureSummary[];
   /**
-   * The vertical-circulation runs drawn on this storey (v1.21) — `stair`, `elevator`,
+   * The vertical-circulation runs drawn on this storey — `stair`, `elevator`,
    * `escalator`. Absent when the storey draws none, so existing summaries are unchanged.
    */
   verticals?: VerticalSummary[];
   /**
-   * The holes in this storey's floor plate (v1.29) — `void`. Absent when the storey
+   * The holes in this storey's floor plate — `void`. Absent when the storey
    * declares none, so existing summaries are unchanged. A void obstructs circulation and
    * does NOT reduce the containing room's reported area.
    */
   voids?: VoidSummary[];
   /**
-   * The ground surfaces outside the building (`outdoor`, v1.31). Absent when the storey
+   * The ground surfaces outside the building (`outdoor`). Absent when the storey
    * declares none, so existing summaries are unchanged.
    *
    * Ground is reported here and NOWHERE else: it is not in {@link rooms}, not in
@@ -638,11 +637,11 @@ export interface SceneSummary {
    * is not in `totals.floor_area_m2`.
    */
   outdoor?: OutdoorSummary[];
-  /** The fence runs (v1.31). Absent when the storey declares none. A fence is not a
+  /** The fence runs. Absent when the storey declares none. A fence is not a
    *  wall: it hosts nothing and joins no graph. */
   fences?: FenceSummary[];
   /**
-   * The storey's vertical datum (v1.35) — storey height, elevation, and every wall's
+   * The storey's vertical datum — storey height, elevation, and every wall's
    * height. **Absent unless the plan authored a height, sill or head somewhere**, which
    * is what keeps every summary written before this layer byte-identical. See
    * {@link HeightFacts}; the opening heights ride on `doors[]`/`windows[]`/`openings[]`
@@ -667,7 +666,7 @@ export interface SceneSummary {
     windows: number;
     floor_area_m2: number;
     /**
-     * Total `outdoor` area in m², 2 dp (v1.31) — present ONLY when the storey declares a
+     * Total `outdoor` area in m², 2 dp — present ONLY when the storey declares a
      * ground surface, so every existing `totals` object is byte-identical.
      *
      * Deliberately a sibling of `floor_area_m2` rather than a component of it. See
@@ -677,19 +676,19 @@ export interface SceneSummary {
     outdoor_area_m2?: number;
   };
   /**
-   * Interior-door adjacency dict (v1.13): every room id → the ids of rooms it shares
+   * Interior-door adjacency dict: every room id → the ids of rooms it shares
    * a door / cased opening with (exterior entrances excluded). Keys in room source
    * order; each neighbour list sorted by room source order. Empty when the plan
    * failed to resolve. The RPLAN-style `input_graph` an intent check compares against.
    */
   input_graph: Record<string, string[]>;
   /**
-   * Degrees-of-freedom placement report (v1.14): which elements were positioned
+   * Degrees-of-freedom placement report: which elements were positioned
    * absolutely vs derived by the resolver. Facts only — see {@link FreedomReport}.
    */
   freedom: FreedomReport;
   /**
-   * The ROOM SCHEDULE exactly as the sheet draws it (v1.20) — `{ no, id, name, area_m2 }`
+   * The ROOM SCHEDULE exactly as the sheet draws it — `{ no, id, name, area_m2 }`
    * per room in source order, so an agent can read the numbered table it just rendered
    * without OCR'ing the SVG. Present **only when the plan sets `schedule rooms`**; absent
    * otherwise, so existing summaries are unchanged. `area_m2` matches
@@ -700,7 +699,7 @@ export interface SceneSummary {
    */
   schedule?: ScheduleRow[];
   /**
-   * The plan's declared **zones** (v1.22) — wings, departments, phases — in
+   * The plan's declared **zones** — wings, departments, phases — in
    * first-declaration order, with the rooms each groups. Present **only** when the plan
    * declares a `zone` block, so every existing summary is unchanged. See
    * {@link ZoneSummary} for the nesting-rollup caveat.
@@ -717,7 +716,7 @@ export interface SceneSummary {
    */
   levels?: LevelSummary[];
   /**
-   * The BUILDING's vertical connections (v1.21) — which shafts join which storeys, and
+   * The BUILDING's vertical connections — which shafts join which storeys, and
    * which storeys that makes reachable from outside. A whole-building fact, so it exists
    * only at the top level (never inside `levels[i]`) and only when the plan is
    * multi-storey AND a run appears on two or more of its storeys. See
@@ -966,7 +965,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
 
   // Which rooms' perimeters does this opening sit on? (≤2 for a door, 1 for a window.)
   // Shared with the lint connectivity rules — see analyze.ts.
-  // The vertical datum's gate (v1.35). ONE boolean decides whether any height key appears
+  // The vertical datum's gate. ONE boolean decides whether any height key appears
   // anywhere in this summary — every `...(heights ? …)` below reads this and nothing else,
   // so there is no second rule to disagree with the first. It is whole-PLAN (see
   // `ResolvedPlan._heightsAuthored`), which is why a building whose upper floor alone
@@ -1040,15 +1039,14 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
 
   // A void's owning room is the room whose FLOOR holds the opening's CENTRE — through the
   // poly-aware `pointInRoomBox`, never the bounding box. The box is the wrong datum for a
-  // concave room (its notch is inside the box and outside the floor), which is the
-  // defect class v1.25.0 closed six instances of.
+  // concave room (its notch is inside the box and outside the floor).
   const voids: VoidSummary[] = voidEls.map((v) => {
     const centre = { x: v.at.x + v.size.w / 2, y: v.at.y + v.size.h / 2 };
     const owner = roomEls.find((r) => pointInRoomBox(centre, roomRects.get(r.id)!));
     return { id: v.id, at: { ...v.at }, size: { ...v.size }, room: owner ? owner.id : null };
   });
 
-  // Ground surfaces (v1.31). The area is the EXACT shoelace for a ring and w x h for a
+  // Ground surfaces. The area is the EXACT shoelace for a ring and w x h for a
   // rectangle — never the bounding box, which for a garden edge would be wildly wrong and
   // is exactly the derived-position defect class the project closed six instances of.
   const outdoor: OutdoorSummary[] = outdoorEls.map((o) => ({
@@ -1181,10 +1179,10 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
       : {}),
     // Append-only: present only for a plan that declares `site`, so every existing summary
     // is unchanged. Five names, derived in closed form (`src/site.ts`) — nothing measured.
-    // The two LOT facts (v1.31) are appended to the five direction names rather than
+    // The two LOT facts are appended to the five direction names rather than
     // living beside them, because they come from a different half of the block: the
     // directions are a closed-form table lookup on two words, the lot is measured
-    // geometry. Both absent unless the plan declares a `boundary`, so v1.25's law — a
+    // geometry. Both absent unless the plan declares a `boundary`, so the `site` law — a
     // `site` with only `street`/`hemisphere` describes exactly as before — still holds.
     ...(ir.site ? { site: { ...deriveSite(ir.site), ...lotFacts(ir.siteBoundary) } } : {}),
     // Append-only: present only for a plan that `place`s a component, so every existing
@@ -1200,7 +1198,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     ...(voids.length > 0 ? { voids } : {}),
     ...(outdoor.length > 0 ? { outdoor } : {}),
     ...(fences.length > 0 ? { fences } : {}),
-    // The vertical datum (v1.35), under the one gate. `walls` is present even when empty,
+    // The vertical datum, under the one gate. `walls` is present even when empty,
     // unlike the lists above: an empty `voids` means "this storey has no holes in it", but
     // an empty `walls` here would be indistinguishable from "heights are not reported",
     // and the block's presence is already the answer to that question.
@@ -1239,8 +1237,8 @@ function inZone(member: string | undefined, path: string): boolean {
  * The building-level vertical report for a multi-storey plan, or `undefined` when no run
  * spans two storeys. A storey is *grounded* when it has its own exterior entrance that is
  * a real arrival point — {@link levelIsGrounded}, the same predicate `lint` builds its
- * `grounded()` callback from, discounting a door that opens onto an `outdoor balcony`
- * (backlog 4.6). Reachability then spreads along the shafts. This is deliberately NOT the
+ * `grounded()` callback from, discounting a door that opens onto an `outdoor balcony`.
+ * Reachability then spreads along the shafts. This is deliberately NOT the
  * same thing as this storey's own `access.hasEntrance` below, which stays the honest,
  * undiscounted fact that the floor has an exterior door.
  */
@@ -1359,7 +1357,7 @@ export function describeLevel(summary: SceneSummary, level: number): SceneSummar
   // spread would leave the previous top-level value (page 1's) standing and the narrowed
   // read would lie. Whole-BUILDING keys (`vertical`) legitimately survive; per-storey
   // ones must not. A LIST rather than one `if`, because there are two of these now
-  // (`voids` joined in v1.29) and the failure mode of forgetting the next one is silent:
+  // (`voids` too) and the failure mode of forgetting the next one is silent:
   // the narrowed read reports the wrong storey's facts and says nothing.
   for (const k of PER_STOREY_OPTIONAL_KEYS) {
     if (facts[k] === undefined) delete out[k];

@@ -1,8 +1,8 @@
 /**
- * Ground-surface soundness (v1.31) — two advisory rules over `outdoor`.
+ * Ground-surface soundness — two advisory rules over `outdoor`.
  *
- * Both are `W_*`, both are pure, and both key off a form no plan written before v1.31
- * can contain, so no existing plan can see either.
+ * Both are `W_*`, both are pure, and both key off `outdoor`, so a plan without it can
+ * see neither.
  */
 
 import type { Point } from "../../ast.js";

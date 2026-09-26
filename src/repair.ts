@@ -159,9 +159,8 @@ const numExpr = (value: number): Expr => ({ t: "num", value });
  * Reading the printer's own output back is what keeps the two one number — there is
  * deliberately no second rounding rule here to drift from `fmt3`.
  *
- * Found by `test/fuzz.test.ts`'s round-trip property, which failed roughly one run in
- * five; pre-existing since at least v1.30.0. See `test/repair.test.ts` → "records a
- * moved position as the printer will write it".
+ * Pinned by `test/fuzz.test.ts`'s round-trip property and `test/repair.test.ts` →
+ * "records a moved position as the printer will write it".
  */
 const printed = (v: number): number => Number(numStr(v));
 
@@ -907,8 +906,8 @@ type SpanBook = Map<string, Span>;
  * started: a piece 1800 mm wide in an 1800 mm gap whose only exact position is off the
  * grid is pushed off the left wall onto the right one and back for ever, and the pass
  * banks whichever of the two it happened to reach. Run the pass again from there and it
- * banks the other. So which arrangement `arch repair` shipped depended on how many times
- * you had run it (`docs/backlog.md` 3.11).
+ * banks the other. So which arrangement `arch repair` returns would depend on how many times
+ * you had run it.
  *
  * There is no closed-form cause fix for that, because nothing is miscomputed: on a
  * gridded plan the two constraints are jointly **unsatisfiable**, and each remedy is
@@ -1377,9 +1376,8 @@ function repairStorey(
         // this pass will walk for ever. Which of them it happens to be standing on right
         // now is an accident of where it started, so it is parked on the cycle's
         // CANONICAL member instead — the lowest `(x, y)`, a key that reads only the
-        // cycle. Leaving it at the arrival point is what made `arch repair` ship a
-        // different arrangement depending on how many times it had been run
-        // (`docs/backlog.md` 3.11); parking it here keeps the pass its own fixpoint for
+        // cycle. Leaving it at the arrival point would make `arch repair` return a
+        // different arrangement depending on how many times it had been run; parking it here keeps the pass its own fixpoint for
         // this piece, so a plan's cycles cannot multiply into one long orbit.
         const cycle = p.trail.slice(back).map((k) => {
           const [x, y] = k.split(",");

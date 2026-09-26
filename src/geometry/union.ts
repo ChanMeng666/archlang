@@ -3,8 +3,8 @@
  * boundary loops.
  *
  * Zero-dependency, synchronous, deterministic. Used to merge wall segment
- * rectangles into clean outlines (no internal seams at corners/T-junctions) and,
- * since v0.9, to subtract door/window opening rectangles so openings truly void
+ * rectangles into clean outlines (no internal seams at corners/T-junctions) and to
+ * subtract door/window opening rectangles so openings truly void
  * the wall solid. Works via coordinate compression: the union of all rectangle
  * edges forms a grid; a cell is "in" when it is covered by a solid rect and not
  * by any hole rect; the boundary between in/out cells is then walked into closed

@@ -25,7 +25,7 @@
  * Nothing here tessellates. The arc's tessellated band (`arcBandRing`) is a DRAWING
  * artifact whose vertex count is a rendering decision — a measurement that read it would
  * change with the facet count, which is the same reason a circular room's area is exact
- * `πR²` rather than the 48-gon the grid layer draws (v1.24, `docs/analysis.md`).
+ * `πR²` rather than the 48-gon the grid layer draws (`docs/analysis.md`).
  *
  * The radial extremes over the region `rect ∩ wedge` are attained on its boundary, and
  * that boundary has only three kinds of piece, each with a closed-form extremum:
@@ -189,7 +189,7 @@ export function arcBandIntrusion(fr: BBox, arc: Arc, thickness: number): ArcBand
  * The along-run interval (arc length from the arc's start) an opening centred at `at`
  * voids on this curve, or `null` when it is not on this arc at all — radially off the
  * band, or outside its sweep. Its width is measured along the arc, which is how `at
- * <pos>` walks a curved host in the first place (v1.24).
+ * <pos>` walks a curved host in the first place.
  */
 export function arcOpeningVoid(
   arc: Arc,

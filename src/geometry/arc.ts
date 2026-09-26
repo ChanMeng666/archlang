@@ -1,5 +1,5 @@
 /**
- * Circular-arc math for **curved geometry** (v1.24) — arc wall edges and circular rooms.
+ * Circular-arc math for **curved geometry** — arc wall edges and circular rooms.
  *
  * ONE tessellator, ONE containment rule, ONE tangent rule. Everything a curve needs
  * downstream (hosting an opening, walking a wall by run length, a nav-grid ring, a
@@ -30,7 +30,7 @@
  * verbatim (never re-derived through `cos`/`sin`), so a chord's ends are exact. The
  * interior vertices use `Math.cos`/`Math.sin`, which every consumer then routes
  * through `fmt()` — the same trig precedent the door swing, the dimension text angle
- * and the fixture ellipse glyphs have shipped on since v0.7.
+ * and the fixture ellipse glyphs use.
  *
  * Nothing here reads a geometry backend, so an arc renders and measures IDENTICALLY
  * with and without the optional `clipper2-wasm` dependency.

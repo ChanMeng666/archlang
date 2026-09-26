@@ -13,11 +13,8 @@
  * render target consumed by independent backends). ArchLang has no nested
  * transforms, so unlike Typst's `Frame` the node list is flat (no sub-frames).
  *
- * Phase v0.7 kept this deliberately small: line-weight/line-type/named-layer
- * metadata and hatch primitives arrived in Phase v0.9 (roadmap §6), and the `circle`
- * primitive in v1.20 with the positioning-axis bubbles. Poché stays an SVG
- * `<pattern>` fill string; page chrome (north arrow, scale bar, title block) stays in
- * the backends for now.
+ * Deliberately small: poché stays an SVG `<pattern>` fill string, and page chrome
+ * (north arrow, scale bar, title block) stays in the backends.
  */
 
 import type { NorthDir, Point, TitleNode } from "./ast.js";
@@ -31,7 +28,7 @@ import type { Theme } from "./theme.js";
 
 /**
  * Ordered draw layers. Nodes are bucketed by `layer` and emitted in this order,
- * preserving collection order within a layer — this exactly reproduces the v0.1
+ * preserving collection order within a layer — this reproduces the canonical
  * global draw order (all wall fills, then all wall faces, doors before windows,
  * labels above fills, …). Doubles as the discriminant of {@link SceneNode.layer}.
  */
@@ -217,8 +214,7 @@ export type ScenePrim =
   /**
    * A full circle (an axis bubble). Kept distinct from `arc` so a CAD backend emits one
    * native `CIRCLE` entity rather than two half-arcs, and so a raster/vector backend
-   * needs no sweep bookkeeping. Added in v1.20 (the deferral note above); nothing else
-   * emits one, so existing output is unaffected.
+   * needs no sweep bookkeeping. Nothing else emits one.
    */
   | { t: "circle"; center: Point; r: number }
   /**
@@ -278,9 +274,8 @@ export function aiaLayer(pass: RenderPass): string {
 
 /** One drawable: a primitive on a layer, with paint and an optional source span.
  *
- * `lineWeight`/`lineType`/`layerName` are optional *semantic* style metadata
- * (added in Phase v0.9). When `lineWeight` is set a backend derives the stroke
- * width from the named ramp (overriding `paint.width`); when `lineType` is set
+ * `lineWeight`/`lineType`/`layerName` are optional *semantic* style metadata.
+ * When `lineWeight` is set a backend derives the stroke width from the named ramp (overriding `paint.width`); when `lineType` is set
  * (and not `continuous`) it derives the dash pattern. `layerName` names the CAD
  * layer (AIA) the node belongs to. All are additive: a node that sets none
  * renders exactly as before. */
@@ -390,7 +385,7 @@ export interface Scene {
    */
   sheet?: SceneSheet;
   /**
-   * The axonometric view this Scene draws (v1.35), or absent for the ordinary plan —
+   * The axonometric view this Scene draws, or absent for the ordinary plan —
    * which is every Scene `toScene` has ever produced, so existing output is untouched.
    *
    * It is a **presentation flag for the page chrome, and nothing else**: the backends

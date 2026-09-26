@@ -80,7 +80,7 @@ async function serialize(
   args: Args,
   warnings: Diagnostic[] = [],
 ): Promise<string | Uint8Array> {
-  // Render-time warnings (a glyph no embedded font can draw — issue #107) are collected
+  // Render-time warnings (a glyph no embedded font can draw) are collected
   // into `warnings`, deduplicated, so a multi-storey render names each problem once.
   const onDiagnostic = (d: Diagnostic): void => {
     if (!warnings.some((w) => w.code === d.code && w.message === d.message)) warnings.push(d);
@@ -165,7 +165,7 @@ export async function renderArtifact(
     // recover a fixture's identity from the geometry-only Scene. Other formats never
     // set it, so their output stays byte-identical.
     ...(format === "txt" || args.ascii ? { annotate: true } : {}),
-    // `--view iso|axon`: the illustrative axonometric (v1.35). Validated by the command
+    // `--view iso|axon`: the illustrative axonometric. Validated by the command
     // before it gets here, and absent on every ordinary render — so the compile options,
     // and therefore the bytes, are what they were.
     ...(view ? { view } : {}),

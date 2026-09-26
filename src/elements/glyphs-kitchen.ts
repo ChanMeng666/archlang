@@ -418,7 +418,7 @@ export function drawDryer(r: Rect, g: GlyphCtx): SceneNode[] {
   return g.nodes;
 }
 
-// ── v1.32 F1: kitchen & bath ──
+// ── kitchen & bath ──
 //
 // Five more kitchen and utility symbols. They are appended at the END of the module for the
 // same reason `FIXTURE_FAMILIES` appends: reading order here follows the table's order, which

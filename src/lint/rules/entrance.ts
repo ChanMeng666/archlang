@@ -14,8 +14,8 @@
  *
  * On a multi-storey plan a storey reached by a `stair`/`elevator`/`escalator` from a
  * storey that itself reaches the outside HAS a way in — it just isn't a door on this
- * floor — so the rule stands down there (see `src/vertical.ts`). Before v1.21 an upper
- * floor had to fake a front door to lint clean.
+ * floor — so the rule stands down there (see `src/vertical.ts`) rather than making an upper
+ * floor fake a front door to lint clean.
  */
 
 import type { Diagnostic } from "../../diagnostics.js";

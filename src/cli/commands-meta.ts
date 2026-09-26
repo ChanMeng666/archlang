@@ -89,7 +89,7 @@ function readContext(): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Bounded context (v1.17) — `arch context --section <name>`.
+// Bounded context — `arch context --section <name>`.
 //
 // `llms-full.txt` is ~50KB: an agent that only needs the diagnostic catalog used to
 // pay for the spec + workflow + CLI reference too. The bundle is a concatenation

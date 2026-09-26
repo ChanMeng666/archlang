@@ -4,7 +4,7 @@
  * predefined DXF HATCH pattern name (so the hatch survives to CAD as a real
  * `HATCH` entity, not just boundary lines).
  *
- * Zero-dependency and deterministic. `poche` is the default (the v0.1 45° hatch);
+ * Zero-dependency and deterministic. `poche` is the default (a 45° hatch);
  * the rest are selectable via `wall <kind> thickness N material <name> { … }`,
  * optionally scaled/rotated with `material <name> scale <s> angle <a>`. Patterns
  * are monochrome (base + line colours) so they stay theme-driven.
@@ -12,7 +12,7 @@
  * A {@link HatchSpec} (material + scale + angle) is the data the Scene carries;
  * `scale` multiplies the tile size and `angle` is added to the pattern's natural
  * rotation. The default spec (`scale 1`, `angle 0`) renders byte-identically to
- * the pre-v0.9 hatches.
+ * the unparameterised hatch.
  */
 
 export interface HatchCtx {
@@ -37,7 +37,7 @@ export type Material = (typeof KNOWN_MATERIALS)[number];
 export const DEFAULT_MATERIAL: Material = "poche";
 
 /**
- * The GROUND materials (v1.31) — the patterns `outdoor <kind>` fills with.
+ * The GROUND materials — the patterns `outdoor <kind>` fills with.
  *
  * A separate list from {@link KNOWN_MATERIALS} on purpose, and the separation is the
  * design decision worth stating here:
@@ -108,10 +108,10 @@ export function hatchesUsed(
     const k = hatchKey(h);
     if (!seen.has(k)) seen.set(k, h);
   }
-  // Ground materials (v1.31) always take the DEFAULT scale/angle — there is no authorable
+  // Ground materials always take the DEFAULT scale/angle — there is no authorable
   // `scale`/`angle` on an `outdoor` statement — so they are appended as bare specs. The
-  // parameter defaults to empty, which is what makes every pre-v1.31 caller (and every
-  // plan with no `outdoor`) produce a byte-identical list: same entries, same sort key.
+  // parameter defaults to empty, which is what makes every caller that passes none (and
+  // every plan with no `outdoor`) produce a byte-identical list: same entries, same sort key.
   for (const material of ground) {
     const h: HatchSpec = { material, scale: 1, angle: 0 };
     const k = hatchKey(h);
@@ -278,7 +278,7 @@ const META: Record<string, HatchMeta> = {
     },
   },
 
-  // ---- ground materials (v1.31) ----------------------------------------------
+  // ---- ground materials ----------------------------------------------
   // None of the seven paints a background rectangle: each is drawn over the flat tint
   // the `outdoor` element emits beneath it. See the META doc comment above.
 

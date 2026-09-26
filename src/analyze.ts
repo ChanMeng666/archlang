@@ -112,7 +112,7 @@ export function rectOf(e: { at: Point; size: { w: number; h: number } }): BBox {
 
 /**
  * A room's extent for the analysis layer: its bounding box, plus the floor RING when
- * the room is polygonal (v1.23). Carrying the ring on the box — rather than threading a
+ * the room is polygonal. Carrying the ring on the box — rather than threading a
  * second map through a dozen signatures — is what keeps a rectangular plan's behaviour
  * (and its bytes) untouched: `poly` is simply absent, and every `x/y/w/h` reader is
  * unchanged. The shape-aware helpers below (`roomsAdjacent`, `pointOnRoomEdge`,
@@ -488,8 +488,7 @@ function doorFacesBalcony(d: RDoor, rooms: readonly RRoom[], balconies: readonly
  * onto the ground, and treating it as an arrival point suppresses the stair's own
  * `arrivalRooms` entry — on `examples/garden-house.arch` the reachability BFS then enters
  * the upper storey through the main bedroom instead of the landing, and
- * `W_BATH_VIA_BEDROOM` fires on a bathroom that in fact opens straight off the landing
- * (backlog 4.6).
+ * `W_BATH_VIA_BEDROOM` fires on a bathroom that in fact opens straight off the landing.
  *
  * The fix is narrow, on purpose: an entrance door whose {@link doorFacesBalcony} probe
  * lands inside an `outdoor balcony` is discounted from grounding; every other exterior
@@ -505,7 +504,7 @@ function doorFacesBalcony(d: RDoor, rooms: readonly RRoom[], balconies: readonly
  * are read together deliberately: `lint.ts` and `describe.ts` both call this function to
  * build their `grounded()` callback, so the cross-storey answer (`vertical.reachable_levels`,
  * and the reachability lint rules that key off it) can never disagree with itself between
- * the CLI and the lint pass — see backlog 4.6's second caution.
+ * the CLI and the lint pass.
  *
  * Lives here, next to {@link buildDoorAccessGraph}, rather than in `vertical.ts`: this
  * needs `pointInRoomBox`/`roomBox` (this module) and the door-normal probe geometry, and

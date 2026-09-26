@@ -4,10 +4,9 @@
  * ## The defect this closes
  *
  * `place … mirror x` reflects a resolved element's **position** — its footprint, its
- * quarter-turn, the handed rules `frame.ts` flips explicitly. It never touched the SYMBOL
- * drawn inside that footprint, so a mirrored wing drew a LEFT-handed `sofa_l` in a
- * right-handed room: every number right, the drawing wrong, and nothing to fail
- * (`docs/backlog.md` 5.4).
+ * quarter-turn, the handed rules `frame.ts` flips explicitly. It does not touch the SYMBOL
+ * drawn inside that footprint, so without this a mirrored wing draws a LEFT-handed `sofa_l`
+ * in a right-handed room: every number right, the drawing wrong, and nothing to fail.
  *
  * ## Where the flip belongs, and why it is one reflection and not "rotation plus a mirror"
  *

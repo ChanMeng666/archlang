@@ -132,9 +132,9 @@ function polylinesOf(prim: ScenePrim): Array<{ pts: Point[]; closed: boolean }> 
       return [{ pts: [prim.a, prim.b], closed: false }];
     case "arc":
       // A CURVED WALL FACE rasterizes as its tessellation. This is reached only for arcs
-      // on the wall passes (the caller filters to `wallFill`/`wallFace`), and until v1.24
-      // the only arc in the language was a door swing on the `doors` pass — so every
-      // pre-existing plan's ASCII output is unchanged.
+      // on the wall passes (the caller filters to `wallFill`/`wallFace`); a door swing
+      // arc lives on the `doors` pass and never reaches here, so a plan with no curved
+      // walls rasterizes exactly as if this arm did not exist.
       return [{ pts: arcTessellate(arcFromPrimitive(prim)), closed: false }];
     default:
       return []; // text contributes no wall linework
@@ -259,7 +259,7 @@ export function renderAscii(scene: Scene, opts: AsciiOptions = {}): string {
   const furn = new Map<string, FurnGroup>();
   let anon = 0;
   /**
-   * Is this node part of the v1.31 GROUND layer — an `outdoor` surface, a balcony rail or
+   * Is this node part of the GROUND layer — an `outdoor` surface, a balcony rail or
    * a `fence`?
    *
    * Read by two passes below, which is why it is one predicate rather than two copies of
@@ -306,8 +306,7 @@ export function renderAscii(scene: Scene, opts: AsciiOptions = {}): string {
   //
   // This pass identifies a room STRUCTURALLY — "a polygon on the `floor` pass" — and
   // names it with the first weighted `labels` text whose anchor falls inside its box.
-  // That was exact while rooms were the only thing on that pass. Since v1.31 they are
-  // not: an `outdoor` ground surface puts a tint, a hatch and an edge there too, and a
+  // Rooms are not the only thing on that pass: an `outdoor` ground surface puts a tint, a hatch and an edge there too, and a
   // ground surface is emphatically not a room.
   //
   // Left alone, the damage was not subtle and not confined to the ground. A lawn drawn
@@ -322,7 +321,7 @@ export function renderAscii(scene: Scene, opts: AsciiOptions = {}): string {
       n.layer === "labels" && n.prim.t === "text" && n.prim.weight !== undefined && !isGround(n),
   );
   for (const node of scene.nodes) {
-    // A room floor is a polygon (rect / polygon room) or — since v1.24 — a true `circle`
+    // A room floor is a polygon (rect / polygon room) or a true `circle`
     // (a circular room). Both reduce to the box the label is centred in.
     if (node.layer !== "floor" || (node.prim.t !== "polygon" && node.prim.t !== "circle")) continue;
     if (isGround(node)) continue;

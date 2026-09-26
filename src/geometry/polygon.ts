@@ -1,5 +1,5 @@
 /**
- * Simple-polygon math for **polygonal rooms** (v1.23).
+ * Simple-polygon math for **polygonal rooms**.
  *
  * A rectangular room is a special case of a polygon, but the whole analysis layer was
  * written against `{at, size}` rectangles, so the rules here are deliberately kept in
@@ -14,8 +14,8 @@
  *
  * The one sampled rule is {@link polygonLabelPoint}'s concave fallback, and it is worth
  * being precise about why that is allowed where "iterate to a tolerance" is not. A
- * tolerance loop stops when it is happy, so its answer depends on when you stopped —
- * that is the thing v1.23 rejected. The fallback here instead spends a **budget pinned in
+ * tolerance loop stops when it is happy, so its answer depends on when you stopped,
+ * which is not deterministic. The fallback here instead spends a **budget pinned in
  * source** ({@link LABEL_GRID} / {@link LABEL_REFINE_ROUNDS} / {@link LABEL_REFINE_STEPS}),
  * visits its candidates in one fixed order and keeps the first strict winner, so it is a
  * total function of the ring: same ring, same point, every run, on every platform. It is

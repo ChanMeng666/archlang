@@ -163,11 +163,10 @@ export interface ResolvedSheet extends PaperSpec {
    *
    * {@link fits} is a claim about the BUILDING, and deliberately stays one: it is what
    * auto-fit chooses a denominator against and what `W_SCALE_OVERFLOW` reports. But a plan
-   * draws more than its building — since v1.31 an `outdoor` surface, a `fence` and a
-   * `site … boundary`, since v1.29 a `roof` eaves line — and none of that is in the
-   * building's outer-face extent, so none of it could ever make `fits` say no. A 4 × 3 m
-   * cottage with a 40 m yard reported `fits: true` and was issued on a page 57% taller than
-   * the A4 it declares, with no diagnostic of any kind (backlog 4.9).
+   * draws more than its building — an `outdoor` surface, a `fence`, a `site … boundary`,
+   * a `roof` eaves line — and none of that is in the building's outer-face extent, so
+   * none of it can make `fits` say no. Without this, a 4 × 3 m cottage with a 40 m yard
+   * reports `fits: true` on a page 57% taller than the A4 it declares, with no diagnostic.
    *
    * **Same ruler, different extent.** This is {@link fitsOnSheet} again, on the extent of
    * everything drawn, so `fits === false` implies `drawingFits === false` and the
@@ -206,9 +205,9 @@ export interface SheetFitInput {
    * and `legend` tables, `0` when the plan opted into neither. Counted by
    * {@link import("./sheet-tables.js").tableBandRows}.
    *
-   * Required, not optional, on purpose: the tables were invisible to this rule for three
-   * releases and a plan could be issued taller than its own declared paper with
-   * `sheet.fits === true`. A caller that cannot forget the field cannot reintroduce that.
+   * Required, not optional, on purpose: a table invisible to this rule lets a plan be
+   * issued taller than its own declared paper with `sheet.fits === true`. A caller that
+   * cannot forget the field cannot introduce that.
    */
   tableRows: number;
 }
@@ -223,11 +222,9 @@ export interface SheetFitInput {
  * `describe().sheet.fits` without building a Scene — and `toScene()` never re-derives
  * a second, subtly different answer.
  *
- * The table row was missing from it until v1.27.0, and the failure mode is worth stating
- * because it is the reason the whole module exists: everything here is a promise about the
- * bytes, so a band the layout draws and the rule does not reserve is a page taller than its
- * own `paper` with `fits === true` on it. `library.arch` on A3 emitted 420 × 322.6 mm onto
- * a 420 × 297 mm sheet and no diagnostic anywhere said so.
+ * Every band the layout draws — the table row included — must be reserved here, because
+ * everything in this module is a promise about the bytes: a band the layout draws and the
+ * rule does not reserve is a page taller than its own `paper` with `fits === true` on it.
  */
 export function usablePlanMm(
   widthMm: number,

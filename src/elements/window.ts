@@ -37,7 +37,7 @@ export const windowEl: ElementDef = {
       ctx.next();
       node.wall = ctx.eatIdent().value;
     }
-    // The vertical datum (v1.35): `sill` then `head`, both trailing every existing clause.
+    // The vertical datum: `sill` then `head`, both trailing every existing clause.
     Object.assign(node, parseOpeningHeights(ctx, { sill: true }));
     return node;
   },

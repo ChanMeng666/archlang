@@ -2,7 +2,7 @@
  * Optional polygon-geometry backend seam.
  *
  * ---------------------------------------------------------------------------
- * **DEPRECATED: not consulted by the renderer since v1.30.** Retained for API
+ * **DEPRECATED: not consulted by the renderer.** Retained for API
  * compatibility only.
  *
  * `src/wall-lowering.ts` joins every wall — orthogonal, angled and curved alike —

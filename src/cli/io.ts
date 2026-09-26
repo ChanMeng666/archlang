@@ -29,9 +29,9 @@ export const EXIT = { OK: 0, INTERNAL: 1, USER: 2, USAGE: 3 } as const;
  * process is now MINE — do not exit."
  *
  * Every dispatch arm in `src/cli.ts` ends in `process.exit(...)`, which is right for
- * a one-shot command and fatal for a resident one: `watch` announced itself and was
- * then killed by its own dispatcher for twenty-five releases (v1.1.0 → v1.26.0),
- * because "returned `EXIT.OK`" and "finished" had been silently identified.
+ * a one-shot command and fatal for a resident one: `watch` would announce itself and
+ * then be killed by its own dispatcher if "returned `EXIT.OK`" and "finished" were
+ * the same thing.
  *
  * This sentinel separates them at the only moment the distinction is known — inside
  * the command, right after the handle is installed — instead of leaving the caller to
@@ -371,7 +371,7 @@ export function parseFormat(args: Args): Format | null {
 }
 
 /**
- * Resolve `--view <iso|axon>` (v1.35), or say precisely why it cannot be honoured.
+ * Resolve `--view <iso|axon>`, or say precisely why it cannot be honoured.
  *
  * Four refusals, every one an exit-3 usage error rather than a silent fallback to the
  * plan — a flag that quietly does nothing is how a user comes to believe they are looking

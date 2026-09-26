@@ -2,7 +2,7 @@
  * Optional {@link GeometryBackend} adapter over `clipper2-wasm`.
  *
  * ---------------------------------------------------------------------------
- * **DEPRECATED: not consulted by the renderer since v1.30.** Retained for API
+ * **DEPRECATED: not consulted by the renderer.** Retained for API
  * compatibility only.
  *
  * `src/wall-lowering.ts` joins every wall — orthogonal, angled and curved alike —
@@ -19,8 +19,7 @@
  * why the seam existed and what replaced it.
  * ---------------------------------------------------------------------------
  *
- * `clipper2-wasm` is a **devDependency** since v1.30 (it was an `optionalDependency`
- * while the renderer used it; it is pinned for determinism either way). This module is the only place
+ * `clipper2-wasm` is a **devDependency**, pinned for determinism. This module is the only place
  * that references it, and it does so via a lazy `import()` so the core bundle
  * never hard-requires it — exactly how `export/pdf.ts` loads `pdfkit`. When the
  * package is absent, {@link loadClipperBackend} rejects with an actionable error

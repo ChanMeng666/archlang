@@ -22,11 +22,9 @@
  * poché regions fill with the solid poché base colour in PDF: a `hatch` is the same
  * multi-loop nonzero path a `region` is, so both share one `case` in {@link drawNode}
  * and `fillColor` collapses the `url(#…)` pattern ref to {@link Theme.pocheBase}.
- * That claim was false in every release through v1.26.0 — the switch simply had no
- * `hatch` case and no `default`, the `wallFill` layer is exactly one `hatch`
- * primitive, and so every PDF this project ever exported drew hollow walls. The
- * `default` below is now an exhaustiveness guard so a new `ScenePrim` cannot be
- * dropped the same silent way.
+ * The `wallFill` layer is exactly one `hatch` primitive, so a switch with no `hatch`
+ * case draws every wall hollow; the `default` below is an exhaustiveness guard so a
+ * new `ScenePrim` cannot be dropped that silent way.
  *
  * **Output is byte-reproducible.** pdfkit defaults `info.CreationDate` to
  * `new Date()` and derives the trailer `/ID` as an MD5 over the whole info dict, so
@@ -291,7 +289,7 @@ export async function toPdf(scene: Scene, opts: PdfOptions = {}): Promise<Uint8A
   doc.registerFont(BUNDLED_FONT_FAMILY, await bundledFontPath());
   doc.font(BUNDLED_FONT_FAMILY);
 
-  // Roboto has no CJK glyphs (issue #107). Plan the faces from the exact strings this
+  // Roboto has no CJK glyphs. Plan the faces from the exact strings this
   // render will draw: the optional CJK face is resolved, registered and embedded ONLY when
   // some string needs it, so every other PDF is byte-identical to the single-font one.
   // Whatever no face can draw is reported, never silently lost.

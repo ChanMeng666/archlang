@@ -86,14 +86,14 @@ export interface WallNode extends NodeBase {
   /** Polyline vertices in order. */
   points: ExprPoint[];
   /**
-   * Curved edges (`arc (x,y) radius R [cw|ccw] [major]`, v1.24), indexed by SEGMENT
+   * Curved edges (`arc (x,y) radius R [cw|ccw] [major]`), indexed by SEGMENT
    * index: entry `k` describes the edge from `points[k]` to `points[k+1]`. Absent for
-   * an all-straight polyline, which is every wall written before v1.24 — that absence
-   * is what keeps their geometry and bytes unchanged.
+   * an all-straight polyline — that absence is what keeps a straight wall's geometry and
+   * bytes identical to a plan with no arcs at all.
    */
   arcs?: Array<WallArcNode | undefined>;
   /**
-   * `height <expr>` — how tall this wall stands, in mm (v1.35, the vertical datum layer).
+   * `height <expr>` — how tall this wall stands, in mm (the vertical datum layer).
    *
    * Absent unless the author wrote it, in which case the wall inherits its storey's
    * height, then the plan's, then {@link import("./datum.js").STOREY_HEIGHT}. **It draws
@@ -274,11 +274,10 @@ export interface RoomRel {
    * its own byte span so resolve can raise `E_ROOM_ALIGN` against the OFFENDING WORD
    * (and `format.ts` can re-emit the source it was given rather than deleting it).
    *
-   * Until v1.26 the parser did `ctx.eatIdent().value as RelAlign` — an unchecked cast —
-   * so `align sideways` produced a `RelAlign` that matched no branch of
-   * `layout.ts`'s `alignOffset` and fell through to the leading edge. The plan drew
-   * itself as `align top` with **zero diagnostics**: the project's own "silent wrong
-   * position" family, and the one member of it the author can see in their own source.
+   * Without it the parser would have to cast the word to `RelAlign` unchecked, and
+   * `align sideways` would match no branch of `layout.ts`'s `alignOffset` and fall
+   * through to the leading edge — the plan drawing itself as `align top` with **zero
+   * diagnostics**, a silent wrong position.
    * Mutually exclusive with {@link align} — a legal word sets that and leaves this
    * undefined.
    */
@@ -297,13 +296,13 @@ export interface RoomNode extends NodeBase {
   /** Relational placement clause (when `at` is absent). */
   rel?: RoomRel;
   /**
-   * `room polygon (x,y) (x,y) (x,y) …` — an explicit, implicitly-closed simple polygon
-   * (v1.23). Mutually exclusive with `at`/`rel`, and it replaces `size` (the room's
+   * `room polygon (x,y) (x,y) (x,y) …` — an explicit, implicitly-closed simple polygon.
+   * Mutually exclusive with `at`/`rel`, and it replaces `size` (the room's
    * extent IS its vertex ring), so `size` is absent exactly when this is present.
    */
   polygon?: ExprPoint[];
   /**
-   * `room circle at (cx,cy) radius R` — a circular floor (v1.24). Mutually exclusive
+   * `room circle at (cx,cy) radius R` — a circular floor. Mutually exclusive
    * with `at`/`rel`/`polygon`, and it replaces `size`. Its area is measured in CLOSED
    * FORM (πR²), never from the tessellation the grids use.
    */
@@ -376,7 +375,7 @@ export interface DoorNode extends NodeBase {
    *  measured (lint, `describe()`, the intent channel) may ever read it. */
   open?: Expr;
   /**
-   * `head <expr>` — the top of the doorway above this storey's floor, in mm (v1.35).
+   * `head <expr>` — the top of the doorway above this storey's floor, in mm.
    * Absent unless authored, in which case it defaults to
    * {@link import("./datum.js").DOOR_HEAD}. Draws nothing; a fact for `describe()` and
    * Plan JSON, refused above its host wall's height (`E_OPENING_ABOVE_WALL`).
@@ -393,7 +392,7 @@ export interface WindowNode extends NodeBase {
   width: Expr;
   wall?: string;
   /**
-   * `sill <expr>` — the bottom of the glazing above this storey's floor, in mm (v1.35).
+   * `sill <expr>` — the bottom of the glazing above this storey's floor, in mm.
    * Absent unless authored, in which case it defaults to
    * {@link import("./datum.js").WINDOW_SILL} — 900, which is GB 50352-2019's minimum for a
    * residential external window rather than a taste. `0` is legal and means a
@@ -420,7 +419,7 @@ export interface OpeningNode extends NodeBase {
   width: Expr;
   wall?: string;
   /**
-   * `head <expr>` — the top of the cased opening, in mm (v1.35). Absent unless authored,
+   * `head <expr>` — the top of the cased opening, in mm. Absent unless authored,
    * and its default is **the host wall's own height** rather than a constant: a leaf-less
    * opening is drawn full height unless the author says otherwise
    * ({@link import("./datum.js").CASED_OPENING_HEAD} is only what that rule evaluates to
@@ -528,7 +527,7 @@ export const DIM_REFS = ["faces", "clear"] as const;
 export type DimRef = (typeof DIM_REFS)[number];
 
 /**
- * A `dim radius <wallId> [segment <n>]` / `dim diameter <roomId>` call-out (v1.24) — the
+ * A `dim radius <wallId> [segment <n>]` / `dim diameter <roomId>` call-out — the
  * GB/T form for a round thing, which a linear chain cannot express. The measured geometry
  * is looked up from the referenced element at resolve, so the author never retypes a
  * radius the compiler already knows (and the two can never disagree).
@@ -860,8 +859,8 @@ export interface LevelNode extends NodeBase {
   /** Optional storey name (`level 1 "Ground floor"`) — a fact + a title-block row. */
   name?: string;
   /**
-   * `level 2 ["Name"] height <expr> { … }` — this storey's floor-to-floor height, in mm
-   * (v1.35). It sits in the HEADER, before the block, because the body is an ordinary
+   * `level 2 ["Name"] height <expr> { … }` — this storey's floor-to-floor height, in mm.
+   * It sits in the HEADER, before the block, because the body is an ordinary
    * statement list and a plan-level setting inside it would be `E_LEVEL_MIX`.
    *
    * Absent unless authored, in which case the storey takes the plan's `height`, then
@@ -1154,8 +1153,8 @@ export interface AxesNode {
 }
 
 /**
- * What a `schedule <subject>` statement tabulates. **Only `rooms` exists in v1.20** —
- * the keyword takes an explicit subject purely so a later release can add `doors`,
+ * What a `schedule <subject>` statement tabulates. **Only `rooms` exists** — the
+ * keyword takes an explicit subject purely so a later release can add `doors`,
  * `windows` or `finishes` without a second keyword or a breaking respelling. An
  * unrecognised subject is a parse error with a did-you-mean over this list, never a
  * silently ignored word.
@@ -1204,7 +1203,7 @@ export interface SiteNode {
    * of ground the building sits on. The one part of `site` that DRAWS anything (a
    * dash-dot property line on `C-PROP`) and the one part that joins the page bounds.
    *
-   * Absent unless written, which is what keeps the v1.25 byte-identity law intact: a
+   * Absent unless written, which is what keeps the `site` byte-identity law intact: a
    * `site` block with only `street`/`hemisphere` still draws nothing at all.
    */
   boundary?: ExprPoint[];
@@ -1238,8 +1237,8 @@ export interface PlanNode {
   /** Byte span of the `scale` statement, for the sheet diagnostics. */
   scaleSpan?: Span;
   /**
-   * `height <expr>` — the building's default floor-to-floor height, in mm (v1.35, the
-   * vertical datum layer). A plan-level SETTING beside `units`/`grid`/`paper`/`scale`, so
+   * `height <expr>` — the building's default floor-to-floor height, in mm (the vertical
+   * datum layer). A plan-level SETTING beside `units`/`grid`/`paper`/`scale`, so
    * it applies to every storey; a `level` may override it and a `wall` may override that.
    *
    * Absent unless authored, in which case the datum is

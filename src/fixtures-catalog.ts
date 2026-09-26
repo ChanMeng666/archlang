@@ -264,12 +264,10 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   // An island is free-standing BY DEFINITION — that is what makes it an island — so it needs
   // no wall and carries no single frontal clearance.
   //
-  // It is NO LONGER `symmetric`, and that is a data correction rather than a behaviour
-  // change. The flag's own doc says the DRAWN SYMBOL is rotation-symmetric; the symbol used
-  // to be a slab nosed on all four sides, and since v1.32 it has a seating overhang along one
-  // side, cabinet ticks under that side, and a hob or a bowl at one end (`glyphs-kitchen.ts`
-  // `drawIsland`). None of that maps onto itself under a quarter-turn, so the claim was about
-  // to become false. Nothing observable moves with it: `orientationMatters` is
+  // It is NOT `symmetric`: the flag says the DRAWN SYMBOL is rotation-symmetric, and the
+  // island symbol has a seating overhang along one side, cabinet ticks under that side, and
+  // a hob or a bowl at one end (`glyphs-kitchen.ts` `drawIsland`). None of that maps onto
+  // itself under a quarter-turn. Nothing observable depends on it: `orientationMatters` is
   // `(requiresWall || directional) && !symmetric`, and an island is neither — so it still
   // derives no rotation and still never trips `W_FIXTURE_BACK_TO_ROOM`, which
   // `test/fixture-orientation.test.ts` pins directly.
@@ -425,7 +423,7 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   washing_line: { requiresWall: false },
 
   // -------------------------------------------------------------------------
-  // ── v1.32 F1: kitchen & bath ──
+  // ── kitchen & bath ──
   //
   // Eight families that finish the two WET domains. Where the outdoor tranche above had to
   // argue its way OUT of `requiresWall` — outdoors the wall is the exception — this one is
@@ -479,7 +477,7 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   microwave: { requiresWall: false, directional: true, footprint: { along: 500, depth: 400 }, zones: ["kitchen"] },
   bar_counter: { requiresWall: false, directional: true, footprint: { along: 1800, depth: 600 }, zones: ["kitchen"] },
   // -------------------------------------------------------------------------
-  // ── v1.32 F2: living, bedroom, office ──
+  // ── living, bedroom, office ──
   //
   // Eighteen families that close the gap between "a plan can name a room" and "a plan can show
   // what is in it". Three things are decided here rather than left to read off the rows.

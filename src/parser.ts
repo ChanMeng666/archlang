@@ -440,7 +440,7 @@ class Parser {
     }
     const name = this.isType("string") ? this.eatString() : undefined;
     // `level 2 ["Name"] height <expr> { … }` — the storey's floor-to-floor height, in the
-    // HEADER and after the optional name (v1.35). It cannot go in the body: the body is an
+    // HEADER and after the optional name. It cannot go in the body: the body is an
     // ordinary statement list and a plan-level setting sitting there is `E_LEVEL_MIX`.
     let height: Expr | undefined;
     let heightSpan: Span | undefined;
@@ -501,7 +501,7 @@ class Parser {
   }
 
   /**
-   * `height <expr>` — the plan's default floor-to-floor storey height, in mm (v1.35).
+   * `height <expr>` — the plan's default floor-to-floor storey height, in mm.
    *
    * A full EXPRESSION rather than a bare number, exactly as `thickness` is, so a plan can
    * write `let h = 3200` once and `height h` everywhere. The value is not checked here:
@@ -612,9 +612,9 @@ class Parser {
     this.eat("lcurly");
     let street: CompassWord | undefined;
     let hemisphere: Hemisphere = "north";
-    // `boundary (x,y) (x,y) …` — the LOT LINE (v1.31). The one field of `site` that draws
+    // `boundary (x,y) (x,y) …` — the LOT LINE. The one field of `site` that draws
     // anything and the one that joins the page bounds; absent unless written, which is
-    // what preserves v1.25's law that a `site` block moves nothing.
+    // what preserves the law that a `site` block moves nothing.
     let boundary: ExprPoint[] | undefined;
     let boundarySpan: Span | undefined;
     const FIELDS = ["street", "hemisphere", "boundary"];

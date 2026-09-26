@@ -12,7 +12,7 @@
  * Determinism: rooms are processed in declaration order within each pass, and
  * computed coordinates are grid-snapped exactly like absolute ones, so the same
  * source always yields byte-identical output. Rooms with an absolute `at` carry
- * no constraint and are untouched — the manual path is byte-identical to v0.11.
+ * no constraint and are untouched by the solver.
  */
 
 import type { Point } from "./ast.js";

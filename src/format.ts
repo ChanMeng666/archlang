@@ -147,12 +147,11 @@ function blockDoc(stmts: Statement[], span: { start: number; end: number }, comm
 }
 
 /**
- * The trailing vertical clauses of an opening statement (v1.35), in the grammar's own
+ * The trailing vertical clauses of an opening statement, in the grammar's own
  * order: `sill` then `head`, both after every other clause.
  *
- * They MUST be printed. `fmt` returning a window with its sill dropped is the v1.26.1
- * pocket-door failure exactly — the one operation a user may assume is safe, silently
- * changing what the source says.
+ * They MUST be printed. `fmt` returning a window with its sill dropped would be the one
+ * operation a user may assume is safe silently changing what the source says.
  */
 function heightsStr(s: { sill?: Expr; head?: Expr }): string {
   return `${s.sill !== undefined ? ` sill ${exprStr(s.sill)}` : ""}${s.head !== undefined ? ` head ${exprStr(s.head)}` : ""}`;
@@ -168,9 +167,9 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
         if (s.materialScale !== undefined) head += ` scale ${exprStr(s.materialScale)}`;
         if (s.materialAngle !== undefined) head += ` angle ${exprStr(s.materialAngle)}`;
       }
-      // The vertical datum (v1.35), last before the body — the grammar's own order, so
+      // The vertical datum, last before the body — the grammar's own order, so
       // `fmt` stays a fixed point. Dropping it would silently return a 2200 parapet as a
-      // full-height wall, which is the v1.26.1 pocket-door failure in a new place.
+      // full-height wall.
       if (s.height !== undefined) head += ` height ${exprStr(s.height)}`;
       // A curved edge re-emits as `arc (x,y) radius R [cw|ccw] [major]` — the canonical
       // clause order, so formatting is idempotent (a `fmt` of a `fmt` is a fixed point).
@@ -243,8 +242,7 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       // Both spellings must round-trip. Printing the `overhang` form's derived ring
       // instead would freeze a plan's outline against later edits to the wall it follows,
       // and dropping the `wall` clause would silently re-point the roof at whichever ring
-      // the inference picks — the v1.26.1 pocket-door lesson, where `fmt` returned a
-      // pocket door as a hinged one.
+      // the inference picks.
       return s.polygon
         ? `roof polygon ${s.polygon.map(ptStr).join(" ")}`
         : `roof overhang ${exprStr(s.overhang!)}${s.wall ? ` wall ${s.wall}` : ""}`;
@@ -253,8 +251,7 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
     case "outdoor": {
       // Every clause the author wrote must come back, in the grammar's own order. The
       // `rail` clause in particular: dropping it would turn an authored `rail none` into
-      // a DERIVED railing on three edges, which is the v1.26.1 pocket-door failure
-      // exactly — `fmt` silently returning a different drawing.
+      // a DERIVED railing on three edges — `fmt` silently returning a different drawing.
       const shape = s.polygon
         ? `polygon ${s.polygon.map(ptStr).join(" ")}`
         : `at ${ptStr(s.at!)} size ${sizeStr(s.size!)}`;
@@ -463,7 +460,7 @@ export function formatPlan(plan: PlanNode, source: string): string {
   // emitted — the default is a real choice a reader should not have to remember.
   if (plan.paper) settings.push(`paper ${plan.paper.size} ${plan.paper.orientation}`);
   if (plan.scale) settings.push(`scale ${plan.scale}`);
-  // The plan-level storey height (v1.35) reads as a rider on the sheet settings — it is
+  // The plan-level storey height reads as a rider on the sheet settings — it is
   // the drawing's other dimension — so it sits after `scale` and before `north`. Emitted
   // only when authored: a plan with no `height` must format back to a plan with no
   // `height`, or every existing file gains a line on its first `arch fmt`.

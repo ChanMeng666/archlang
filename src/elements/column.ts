@@ -1,7 +1,7 @@
 /**
  * `column [id=] at (x,y) size WxH` — a solid structural column.
  *
- * This module is the extensibility proof for the v0.3 registry: a brand-new
+ * This module is the extensibility proof for the registry: a brand-new
  * element type added as ONE file + one `register` line in `index.ts`, with no
  * edits to the parser, resolver, or renderer cores.
  */

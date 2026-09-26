@@ -348,7 +348,7 @@ function footprintText(category: string): string | null {
 /**
  * The fixture vocabulary as completion items, DERIVED from {@link FIXTURE_CATEGORIES} and the
  * catalog rather than retyped — a hardcoded copy of a language fact reproduces the same wrong
- * list forever however green the drift gate is (the v1.26.0 defect class).
+ * list forever however green the drift gate is.
  *
  * `kind` is the existing `"enum"` rather than a new {@link COMPLETION_KINDS} member: a category
  * is a word from a named value vocabulary, which is what `enum` already means here, and

@@ -686,7 +686,7 @@ export function drawPiano(r: Rect, g: GlyphCtx): SceneNode[] {
 }
 
 // ---------------------------------------------------------------------------
-// ── v1.32 F2: living ──
+// ── living ──
 //
 // Eight families that furnish the rooms the tranches above already drew seating for, and each
 // of them is here because a plan cannot say the thing without it: a `fireplace` and a

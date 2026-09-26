@@ -1,5 +1,5 @@
 /**
- * CLI capability manifest (v1.8) — the whole `arch` API surface as one structured
+ * CLI capability manifest — the whole `arch` API surface as one structured
  * document, so an AI agent can discover commands, flags, formats, elements, lint
  * profiles, error codes, and fixture categories in a single `arch manifest --json`
  * call instead of parsing `--help`/`SKILL.md` prose.
@@ -90,7 +90,7 @@ export interface Manifest {
   };
   errorCodes: Array<{ code: string; severity: "error" | "warning" }>;
   /**
-   * The vertical datum's DEFAULTS in millimetres (v1.35), so a consumer reads them once
+   * The vertical datum's DEFAULTS in millimetres, so a consumer reads them once
    * from the compiler rather than hard-coding six numbers that would then drift.
    *
    * They are here, in the manifest, rather than in `describe()` for a reason worth
@@ -231,7 +231,7 @@ const BRIEF_FLAG: ManifestFlag = {
 };
 
 /**
- * `--level <n>` — the multi-storey selector (v1.21). A plan with `level` blocks compiles to
+ * `--level <n>` — the multi-storey selector. A plan with `level` blocks compiles to
  * ONE FILE PER STOREY (`<stem>.L<level>.<ext>`); this narrows the call to a single storey,
  * which is also the only way to stream a multi-storey plan to stdout (`-o -`).
  */
@@ -248,7 +248,7 @@ const INSTALL_FLAG: ManifestFlag = {
 };
 
 /**
- * The narrowing flags (v1.17) — bounded, high-signal output. On a large plan an agent
+ * The narrowing flags — bounded, high-signal output. On a large plan an agent
  * used to have to pull EVERY room / diagnostic into its context and filter client-side;
  * these do it at the source. `--code`/`--severity` are DISPLAY filters only: the exit
  * code and `ok` are always computed from the unfiltered diagnostic set, so narrowing
@@ -261,7 +261,7 @@ const ROOM_FLAG: ManifestFlag = {
     "keep only these rooms; doors/windows/openings/furniture narrow to the ones touching them (plan-level facts — bbox, totals, caption — stay whole-plan)",
 };
 /**
- * `--zone <path[,path…]>` — read one wing/department of a zoned plan (v1.22). A DISPLAY
+ * `--zone <path[,path…]>` — read one wing/department of a zoned plan. A DISPLAY
  * filter over the rooms the zone DECLARES (nested zones roll up), so it narrows exactly
  * what `--room` would with that zone's member list typed out by hand.
  */
@@ -296,7 +296,7 @@ const SECTION_FLAG: ManifestFlag = {
 };
 
 /**
- * `--view <iso|axon>` (v1.35) — render an ILLUSTRATIVE axonometric instead of the plan.
+ * `--view <iso|axon>` — render an ILLUSTRATIVE axonometric instead of the plan.
  *
  * On `compile` and `preview` only, and deliberately not on `watch` or `batch`: this is a
  * picture to look at once, not a drawing to iterate on. It is not an export FORMAT — every

@@ -42,7 +42,7 @@ export { formatDiagnostic, offsetToLineCol } from "./diagnostics.js";
 // consumers (playground, LSP embedders, SDK users).
 export { diagnosticToJson } from "./diagnostic-json.js";
 export type { DiagnosticJson, FixSuggestionJson } from "./diagnostic-json.js";
-// Machine-applicable fixes (v1.13): the `Diagnostic.fixes` model + a deterministic,
+// Machine-applicable fixes: the `Diagnostic.fixes` model + a deterministic,
 // pure piece-table applier (ported from rustfix). `applyFixes` filters by
 // `Applicability`, applies each `FixSuggestion` atomically, and reports what it
 // skipped. Fix PRODUCERS attach these; `applyFixes` consumes them.
@@ -50,9 +50,9 @@ export type { Applicability, FixEdit, FixSuggestion } from "./diagnostics.js";
 export { applyFixes, rankFixes } from "./fix-apply.js";
 export type { ApplyReport, ApplyFixesOptions } from "./fix-apply.js";
 export type * from "./ast.js";
-// Source formatter (v0.11): pure text→text, comment-preserving, idempotent.
+// Source formatter: pure text→text, comment-preserving, idempotent.
 export { format } from "./format.js";
-// Vertical circulation (v1.21): the shared semantics of `stair`/`elevator`/`escalator` —
+// Vertical circulation: the shared semantics of `stair`/`elevator`/`escalator` —
 // which end a run is entered from, what it does to the nav grid, and (the part that only
 // exists across storeys) which shafts join which `level` blocks. Pure, zero-dep.
 export {
@@ -65,7 +65,7 @@ export {
   VERTICAL_KINDS,
 } from "./vertical.js";
 export type { RVertical, VerticalLevelInput, VerticalObstacle, VerticalReach } from "./vertical.js";
-// Semantic summary (v1.1): pure source→facts. `describe(source)` returns rooms
+// Semantic summary: pure source→facts. `describe(source)` returns rooms
 // (areas, bboxes, adjacency), doors (what they connect), windows, and totals —
 // the channel a text-only agent uses to verify a plan without rendering it.
 export { describe } from "./describe.js";
@@ -75,7 +75,7 @@ export { describe } from "./describe.js";
 // switcher must not each own a copy (a second copy is a second place to forget a
 // per-storey key, and that failure is silent — it reports the wrong floor's facts).
 export { describeLevel, PER_STOREY_OPTIONAL_KEYS } from "./describe.js";
-// The vertical datum layer (v1.35): the six drafting defaults, the elevation rule and the
+// The vertical datum layer: the six drafting defaults, the elevation rule and the
 // range predicates. Exported because a consumer reading `describe().heights` — or writing
 // Plan JSON — needs the same numbers the compiler uses, and a retyped copy of a language
 // fact is exactly the drift `check:drift` cannot see. Nothing here draws.
@@ -132,7 +132,7 @@ export type {
   RoomCirculation,
   CirculationRoute,
 } from "./describe.js";
-// Structured JSON I/O (v1.13): the machine-native RPLAN/DStruct2Design plan shape.
+// Structured JSON I/O: the machine-native RPLAN/DStruct2Design plan shape.
 // `planFromJson` builds a PlanNode from JSON (catalogued E_JSON_* on bad shape),
 // `planToJson` projects a resolved plan OUT with enrichments (area/floor_polygon/
 // input_graph/edges), `astToJson` is a span-bearing AST projection, and `checkGraph`
@@ -168,7 +168,7 @@ export type {
   RoomType,
   GraphCheck,
 } from "./plan-json.js";
-// Intent channel (v1.14): author-time checking of a brief's INTENT against a plan.
+// Intent channel: author-time checking of a brief's INTENT against a plan.
 // `validateIntent(source, intent)` compiles the intent to predicates, checks them over
 // `describe()`'s facts, and returns catalogued E_INTENT_* violations with Nickel-style
 // blame; `feedbackForResult` turns them into advisory correction prompts (ADR 0005).
@@ -203,7 +203,7 @@ export {
   SYNONYMS_VERSION,
 } from "./intent-concepts.js";
 export type { Concept } from "./intent-concepts.js";
-// Semantic diff (v1.11): pure two-source→delta on top of `describe()`. `diffPlans`
+// Semantic diff: pure two-source→delta on top of `describe()`. `diffPlans`
 // returns which rooms/openings/furniture were added/removed/resized/relabeled, per-room
 // bbox edge deltas, circulation deltas, and frozen human-readable summary sentences —
 // the channel ArchCanvas uses to narrate an iteration without re-rendering.
@@ -214,7 +214,7 @@ export type { PlanDiff, RoomChange, OpeningChange, FurnitureChange, CirculationC
 // preview (`--dry-run`) exactly which bytes a fix pass would rewrite, and what the
 // dataset generator records as each repair trajectory's patch.
 export { unifiedDiff } from "./unified-diff.js";
-// Architectural lint (v1.1): habitability rules as `W_*` diagnostics — every room
+// Architectural lint: habitability rules as `W_*` diagnostics — every room
 // enterable, bedrooms have a window, doors wide enough, the building has an entrance.
 // Pure; the ruleset is data. Surfaced as `arch lint`.
 export { lint, DEFAULT_RULESET, LINT_PROFILES, LINT_PROFILE_NAMES } from "./lint.js";
@@ -222,25 +222,25 @@ export type { LintOptions, LintRuleset } from "./lint.js";
 // Explicit opt-in source-to-source corrector (ADR 0006): never part of compile().
 export { repair } from "./repair.js";
 export type { RepairResult, RepairChange, RepairNote } from "./repair.js";
-// CLI capability manifest (v1.8): the whole `arch` API surface as structured data,
+// CLI capability manifest: the whole `arch` API surface as structured data,
 // for agent discovery (`arch manifest --json`). Pure; assembles existing exports.
 export { buildManifest, MANIFEST_COMMAND_NAMES, EXPORT_FORMATS } from "./manifest.js";
 export type { Manifest, ManifestCommand, ManifestExample, ManifestFlag, ExportFormat } from "./manifest.js";
-// Markdown embedding (v1.8): extract ```arch blocks and rewrite them to image
+// Markdown embedding: extract ```arch blocks and rewrite them to image
 // links. Pure text helpers behind `arch md`.
 export { extractArchBlocks, rewriteMarkdown } from "./markdown.js";
 export type { ArchBlock } from "./markdown.js";
-// Language services (v0.11): pure LSP core (hover/completion/definition/rename/
+// Language services: pure LSP core (hover/completion/definition/rename/
 // signature help) over the CST cursor + registry schemas. The VS Code server is
 // a thin adapter; these are isomorphic and unit-testable.
 export { hover, completion, definition, rename, signatureHelp, codeActions, COMPLETION_KINDS } from "./lsp.js";
 export type { HoverResult, CompletionItem, CompletionKind, TextEdit, SignatureResult, CodeAction } from "./lsp.js";
-// Topology suggestions (v1.13): advisory, never-applied `.arch` statements that
+// Topology suggestions: advisory, never-applied `.arch` statements that
 // would resolve a room-unreachable / bedroom-no-window fault (`arch suggest`).
 // Data only (ADR 0005) — pure, deterministic, zero-dep.
 export { suggestTopology } from "./suggest.js";
 export type { Suggestion, SuggestionCandidate, SuggestOptions } from "./suggest.js";
-// Error catalog (v0.11): every E_*/W_* code with cause/fix/example. Backs
+// Error catalog: every E_*/W_* code with cause/fix/example. Backs
 // `arch explain <CODE>` and the generated docs/error-codes.md.
 export { explain, ERROR_CATALOG, ERROR_CODES } from "./error-catalog.js";
 export type { CatalogEntry } from "./error-catalog.js";
@@ -249,7 +249,7 @@ export type { CatalogEntry } from "./error-catalog.js";
 // output formats). `resolve`/`toDxf` are pure & zero-dep; `toPdf` lazily loads
 // optional deps. None of these are part of `compile()`.
 export { resolve } from "./ir.js";
-// Multi-storey resolve (v1.21): `resolveAll` is the level-aware entry — one
+// Multi-storey resolve: `resolveAll` is the level-aware entry — one
 // `ResolvedPlan` per `level` block (`levels: []` for a single-storey plan, whose `ir` is
 // exactly what `resolve()` returns). `levelBlocks(ast)` is the AST-side helper: the plan's
 // storeys in drawing order (ascending, duplicates dropped).
@@ -272,7 +272,7 @@ export type {
 // a Scene: `toDxf(scene)` / `toPdf(scene)`; build one with `toScene(ir)` or read
 // `compile().scene`.
 export { toScene } from "./scene-build.js";
-// The opt-in axonometric view (v1.35): a SIBLING of `toScene` producing the same Scene
+// The opt-in axonometric view: a SIBLING of `toScene` producing the same Scene
 // type, so every backend draws it unchanged. Illustrative only — see `src/view/`.
 export { toIso } from "./view/iso.js";
 export { VIEW_NAMES, isViewName, cameraFor, projectedArea2 } from "./view/camera.js";
@@ -313,7 +313,7 @@ export type {
   LineWeight,
   LineType,
 } from "./scene.js";
-// Sheet layer (v1.20): `paper A1 landscape` makes `scale` OPERATIVE — every annotation
+// Sheet layer: `paper A1 landscape` makes `scale` OPERATIVE — every annotation
 // size becomes a fixed number of millimetres on the sheet × the scale denominator,
 // instead of a fraction of the drawing's own size. Pure arithmetic; a plan with no
 // `paper` never touches it and renders byte-identically. `sizesFromPaper` is the second
@@ -333,14 +333,14 @@ export {
   usablePlanMm,
 } from "./sheet.js";
 export type { PaperOrientation, PaperSize, PaperSpec, ResolvedSheet, SheetFitInput } from "./sheet.js";
-// Sheet tables (v1.20): the `schedule rooms` room schedule and the `legend` derived from
+// Sheet tables: the `schedule rooms` room schedule and the `legend` derived from
 // the plan's hatches + fixture symbols. Exposed so a tool can render or audit the same
 // rows the drawing prints (`describe().schedule` is the schedule half as data).
 export { roomSchedule, legendEntries } from "./sheet-tables.js";
 export type { RoomSchedule, ScheduleGroup, LegendEntry } from "./sheet-tables.js";
 export { toDxf } from "./export/dxf.js";
 export { toPdf } from "./export/pdf.js";
-// PNG raster backend (v1.0). Rasterizes the Scene's SVG with the OPTIONAL,
+// PNG raster backend. Rasterizes the Scene's SVG with the OPTIONAL,
 // lazy-loaded `@resvg/resvg-js`; deterministic via a bundled font. Node-only.
 export { renderPng, renderPngFromSvg } from "./backends/png.js";
 export type { PngOptions } from "./backends/png.js";
@@ -350,13 +350,13 @@ export type { PngOptions } from "./backends/png.js";
 // deterministic, zero-dep; never touches the default (error-free) output.
 export { renderErrorSvg } from "./backends/error-svg.js";
 export type { ErrorSvgOptions } from "./backends/error-svg.js";
-// ASCII text backend (v1.13). `renderAscii(scene)` serializes a Scene to a
+// ASCII text backend. `renderAscii(scene)` serializes a Scene to a
 // fixed-width text floor plan — the channel a sandboxed, text-only agent uses to
 // *see* its plan. Pure, deterministic, zero-dep; behind `arch compile -f txt` and
 // `arch preview --ascii`. Furniture markers use opt-in `annotate` metadata.
 export { renderAscii } from "./backends/ascii.js";
 export type { AsciiOptions } from "./backends/ascii.js";
-// DEPRECATED: not consulted by the renderer since v1.30; retained for API
+// DEPRECATED: not consulted by the renderer; retained for API
 // compatibility. Every wall — orthogonal, angled and curved — is now joined in one
 // closed-form zero-dependency pass (`geometry/joinery.ts`), so registering a backend
 // changes no byte of any output. Kept because `src/index.ts` is append-only and a
@@ -364,7 +364,7 @@ export type { AsciiOptions } from "./backends/ascii.js";
 export { setGeometryBackend, getGeometryBackend } from "./geometry/backend.js";
 export type { GeometryBackend, JoinKind } from "./geometry/backend.js";
 export { loadClipperBackend } from "./geometry/clipper.js";
-// Extensibility surface (v0.10). `compile(src, { plugins, backend, hatches, themes })`
+// Extensibility surface. `compile(src, { plugins, backend, hatches, themes })`
 // adds third-party elements/backends/hatches/themes per call — cache-safe, with no
 // global mutation. The `register*` helpers validate + tag an extension for an opts field.
 export {
@@ -386,15 +386,15 @@ export type {
   HatchPlugin,
   HatchMetaInput,
 } from "./registry.js";
-// World seam (v0.10): the compiler's window onto its environment (import reads,
+// World seam: the compiler's window onto its environment (import reads,
 // `now`). Pass `compile(src, { world })`; default is a pure no-op World.
 export { NULL_WORLD, makeVirtualWorld } from "./world.js";
 export type { World } from "./world.js";
-// Theming (v0.10): named bases (`theme <name>`), per-element `style`, and opt-in
+// Theming: named bases (`theme <name>`), per-element `style`, and opt-in
 // one-colour poché derivation. THEMES are the built-in named bases.
 export { THEMES, DEFAULT_THEME, mergeTheme, derivePoche, hexToHsl, hslToHex } from "./theme.js";
 export type { Theme, StyleMap } from "./theme.js";
-// Config sanitization (v0.10): denylist for untrusted .arch config; trusted
+// Config sanitization: denylist for untrusted .arch config; trusted
 // CompileOptions skip it. `fnv1a` keys the per-stage memo caches.
 export { sanitizeConfig, isDisallowedConfigValue } from "./sanitize.js";
 export { fnv1a } from "./hash.js";
@@ -505,7 +505,7 @@ function compileUncached(source: string, opts: CompileOptions): CompileResult {
   let pages: CompilePage[] | undefined;
   if (resolved && errs.length === 0) {
     if (opts.view) {
-      // The opt-in axonometric (v1.35). One drawing of the WHOLE building, so a
+      // The opt-in axonometric. One drawing of the WHOLE building, so a
       // multi-storey plan yields no `pages` — its storeys are stacked into this one
       // Scene rather than issued as a set. `describe()`/`lint()` are untouched above and
       // never see the option.
