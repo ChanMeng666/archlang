@@ -1,5 +1,5 @@
 /**
- * v1.21 — vertical circulation: `stair`, `elevator`, `escalator`.
+ * Vertical circulation: `stair`, `elevator`, `escalator`.
  *
  * The contract this suite pins:
  *  - each of the three is a registry element (parse → resolve → render), dispatched by

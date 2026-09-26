@@ -282,7 +282,7 @@ describe("the flagship example's WC", () => {
 });
 
 /**
- * Item G.1 — **two rules read different wall FACES off the same centreline.**
+ * **Two rules read different wall FACES off the same centreline.**
  *
  * A room edge is a wall CENTERLINE, and more than one wall can sit on it: write a
  * 100 mm partition along a 250 mm exterior shell's run and the solid at that edge

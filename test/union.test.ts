@@ -55,7 +55,7 @@ describe("wall rendering — clean joins", () => {
   it("joins ANGLED walls into one fill and one outline, with no engine installed", () => {
     // The retired behaviour, for the record: this drew one poché rectangle PER SEGMENT
     // with untrimmed face lines through the shared corner, unless the optional
-    // clipper2-wasm dependency happened to be registered. Since v1.30 the shape of the
+    // clipper2-wasm dependency happened to be registered. Now the shape of the
     // wall chooses nothing — the joinery pass mitres the corner in closed form.
     const src = `plan "A" { wall exterior thickness 200 { (0,0) (3000,2000) (6000,0) } }`;
     const { svg, errors } = compile(src, { noCache: true });
@@ -157,7 +157,7 @@ describe("hatch as data (T3.5)", () => {
   });
 });
 
-// Angled (non-axis-aligned) walls. Until v1.30 these took one of two paths — per-segment
+// Angled (non-axis-aligned) walls. These once took one of two paths — per-segment
 // fills with visible seams, or a `clipper2-wasm` polygon boolean when that OPTIONAL
 // dependency was registered — so an angled plan's BYTES depended on whether an optional
 // native package happened to be installed. There is now one closed-form path and the
@@ -193,7 +193,7 @@ describe("wall joinery — a registered clipper2 backend changes NOTHING", () =>
   afterAll(() => setGeometryBackend(null));
 
   it("leaves ANGLED output byte-identical whether or not the engine is loaded", () => {
-    // This is the one that used to be false. Before v1.30 registering the engine took an
+    // This is the one that used to be false. Registering the engine once took an
     // angled plan from two seamy per-segment fills to one unioned region — a different
     // drawing, decided by an optional install.
     expect(getGeometryBackend()).not.toBe(null); // sanity: it really is registered

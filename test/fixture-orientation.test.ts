@@ -275,7 +275,7 @@ describe("W_FIXTURE_BACK_TO_ROOM", () => {
   // The studio's old WC line, in the same geometry: a 400x700 WC flush against the
   // south wall with no `rotate`, so its cistern faced north into the room.
   //
-  // The door sat at (3000,4000) from the v1.33 `W_DOOR_NEAR_CORNER` work onward; it
+  // The door sits at (3000,4000) so `W_DOOR_NEAR_CORNER` stays quiet; it
   // used to sit at (500,4000), which put its 900 mm leaf's jamb 50 mm from the ring's
   // corner at (0,4000) on a 200 mm wall. That was a real defect in this fixture rather
   // than a false positive — 50 mm of wall carries no door lining, let alone an

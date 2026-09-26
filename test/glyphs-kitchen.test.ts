@@ -64,25 +64,25 @@ const GLYPHS: readonly (readonly [category: string, draw: Draw, prims: number])[
   ["kitchen_sink", drawKitchenSink, 7],
   ["counter", drawCounter, 2],
   ["stove", drawStove, 10],
-  // v1.32: carcass · door face · compartment split · handle bar (was 4 — the door face and
+  // carcass · door face · compartment split · handle bar (was 4 — the door face and
   // the handle BAR replaced a handle stub, and the split moved onto an aspect branch).
   ["fridge", drawFridge, 5],
-  // v1.32: carcass · inset · 3 knobs · door seam · window · handle bar. REF is square, so
+  // carcass · inset · 3 knobs · door seam · window · handle bar. REF is square, so
   // this is the built-under oven; a wide footprint adds four burners and draws 12.
   ["oven", drawOven, 8],
-  // v1.32: carcass · inset · 2 basket lines · door leaf · control strip · handle (was 3 —
+  // carcass · inset · 2 basket lines · door leaf · control strip · handle (was 3 —
   // a box with a dial, which is a washing machine's drawing).
   ["dishwasher", drawDishwasher, 7],
-  // v1.32: worktop · overhang · 3 cabinet ticks · a bowl and its waste. REF is square, so
+  // worktop · overhang · 3 cabinet ticks · a bowl and its waste. REF is square, so
   // this is the compact prep island; a run of aspect 1.8 or more draws four burners and 9.
   ["island", drawIsland, 7],
-  // v1.32: dashed outline · 2 dashed hinge ticks. REF is ONE cabinet module, so the door
+  // dashed outline · 2 dashed hinge ticks. REF is ONE cabinet module, so the door
   // splits are guarded out exactly as the counter's division ticks are.
   ["upper_cabinet", drawUpperCabinet, 3],
-  // v1.32: carcass · inset · control panel · 2 knobs · drum · porthole (was 4).
+  // carcass · inset · control panel · 2 knobs · drum · porthole (was 4).
   ["washer", drawWasher, 7],
   ["dryer", drawDryer, 6],
-  // ── v1.32 F1: kitchen & bath ──
+  // ── kitchen & bath additions ──
   ["laundry_sink", drawLaundrySink, 6],
   ["water_heater", drawWaterHeater, 4],
   ["range_hood", drawRangeHood, 7],

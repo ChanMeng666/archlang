@@ -6,7 +6,7 @@
  *    and windows. The base case, and the one a reader can check against the picture.
  *  - `two-storey` — two `level` blocks and a `void`. It is the only case that proves the
  *    storeys STACK: they land in one Scene at their own elevations, and `pages` is absent.
- *    Since 2026-09-20 it is also the only case standing on AUTHORED heights rather than the
+ *    It is also the only case standing on AUTHORED heights rather than the
  *    3000 mm default — `height 2700` for the plan, `height 3000` on level 2, and two windows
  *    with written `sill`/`head` — so these two snapshots are where a reader sees that the
  *    datum reaches the picture at all. Its plan drawings are unmoved by that and are still

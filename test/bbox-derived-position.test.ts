@@ -123,7 +123,7 @@ describe("`furniture … against wall <w> in <room>` probes the floor, not the b
 
 /**
  * `dimReach` bounds a text node by its anchor inflated by its font size — a SQUARE of
- * the font size, which ignores the string's length entirely. Audited 2026-08-07 and
+ * the font size, which ignores the string's length entirely. Audited and
  * deliberately left as it is; this test pins the two facts that make that safe, so a
  * future change to the annotation geometry that breaks either of them shows up here
  * rather than as a clipped drawing.

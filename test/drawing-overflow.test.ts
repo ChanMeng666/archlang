@@ -4,12 +4,12 @@
  * ## The defect
  *
  * `resolveSheetSpec` → `fitsOnSheet` → `usablePlanMm` decided whether a drawing fits its
- * declared `paper` from **the building's outer-face extent**. Since v1.29 a plan draws a
- * `roof` eaves line and since v1.31 `outdoor` ground, a `fence` and a `site … boundary` —
+ * declared `paper` from **the building's outer-face extent**. A plan also draws a
+ * `roof` eaves line, `outdoor` ground, a `fence` and a `site … boundary` —
  * none of it in that extent, so none of it could make the fit test say no. A 4 × 3 m
  * cottage with a 40 m yard reported `sheet.fits === true` and was issued on a page 46,600
  * plan mm tall against a paper height of 29,700 — 57% over, with **no diagnostic of any
- * kind**. That is the v1.27.0 `tableRows` defect's shape (a band the layout draws and the
+ * kind**. That is the `tableRows` defect's shape (a band the layout draws and the
  * rule does not reserve) one layer out.
  *
  * ## What is reported, and what is deliberately NOT claimed
@@ -19,7 +19,7 @@
  * beside it rather than folded into it. Widening `fits` would move which denominator
  * auto-fit picks on every site plan and raise `W_SCALE_OVERFLOW` on drawings that are
  * perfectly issuable today, which is a false-positive generator. Reporting the residual is
- * the move `circulation.unmeasured[]` made for G.5.
+ * the move `circulation.unmeasured[]` made for silently dropped rooms.
  *
  * **The signal is `drawingFits`, and it is NOT "the page grew".** That distinction is the
  * whole reason this file names what it names. The measured page fact needs a laid-out

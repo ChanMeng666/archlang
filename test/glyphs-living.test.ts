@@ -110,7 +110,7 @@ function expectInside(nodes: SceneNode[], r: Rect, what: string): void {
 const CASES: readonly (readonly [string, Rect, number])[] = [
   ["sofa", { x: 1000, y: 1000, w: 2100, h: 900 }, 7], // aspect 2.33 → 2 divisions
   ["armchair", { x: 1000, y: 1000, w: 900, h: 850 }, 3],
-  // The v1.32 redraws. Every count below moved because the symbol gained STRUCTURE — legs,
+  // The redraws. Every count below moved because the symbol gained STRUCTURE — legs,
   // supports, armrests, drawer splits — not decoration; what each one gained and why is in the
   // module's own doc comment, and the drawing-specific laws are pinned in their own describes
   // further down rather than left to these numbers.
@@ -121,7 +121,7 @@ const CASES: readonly (readonly [string, Rect, number])[] = [
   ["stool", { x: 1000, y: 1000, w: 400, h: 400 }, 3], // seat, seat edge, pedestal foot
   ["bench", { x: 1000, y: 1000, w: 1500, h: 400 }, 6], // 1 + 3 slats + 2 end supports
   ["tv_unit", { x: 1000, y: 1000, w: 1500, h: 450 }, 6], // + 2 drawer splits + the handle
-  // The v1.32 additions, at their catalogued footprints.
+  // The living additions, at their catalogued footprints.
   ["fireplace", { x: 1000, y: 1000, w: 1200, h: 400 }, 5],
   ["radiator", { x: 1000, y: 1000, w: 1000, h: 100 }, 9], // 1 + 8 fins at 10:1
   ["sideboard", { x: 1000, y: 1000, w: 1600, h: 450 }, 9], // 2 + 3 splits + 4 handles
@@ -282,7 +282,7 @@ describe("glyphs-living — the stool is rotation-symmetric", () => {
   });
 
   it("is THREE concentric circles — seat, seat edge, pedestal foot", () => {
-    // The third circle is what the v1.32 redraw added, and the concentricity is what makes the
+    // The third circle is what the redraw added, and the concentricity is what makes the
     // quarter-turn byte-identical rather than merely indistinguishable. The obvious alternative
     // — a ring of three or four foot dots — maps onto itself as a SET while each node lands
     // where its neighbour was, so the bytes would move; the two tests above would fail and the
@@ -332,7 +332,7 @@ describe("glyphs-living — degenerate footprints", () => {
 });
 
 // ---------------------------------------------------------------------------
-// ── v1.32 F2: the six redraws and the eight new living families ──
+// ── the six redraws and the eight new living families ──
 
 describe("glyphs-living — the redrawn tables carry legs, and a leaf line only when elongated", () => {
   const legs = (category: string, r: Rect): number => glyph(category, r).filter((n) => n.prim.t === "circle").length;

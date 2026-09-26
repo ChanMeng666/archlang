@@ -1,5 +1,5 @@
 /**
- * **The byte-identity law for the axonometric view (v1.35).**
+ * **The byte-identity law for the axonometric view.**
  *
  * Every new form ships with one: a plan that does not use it renders, describes and lints
  * exactly as before. The view is not a language form — it is a compile OPTION — so its law
@@ -18,11 +18,11 @@
  * `height-byte-identity.test.ts` uses — imported from `./byte-identity-baseline.js` rather
  * than retyped, because two hand-typed copies of thirty hashes is two things to keep true
  * and the point of a measured baseline is that it is measured once. It was taken on
- * `f4548db`, the tree `v1.34.0` shipped, by a script that imported the digest bodies in
+ * `f4548db`, the last tree before the datum layer, by a script that imported the digest bodies in
  * `./byte-identity-digest.ts` — never a lookalike.
  *
  * The corpus is still all thirty, and the ones named in `AUTHORS_HEIGHT` are read the way
- * that module's header describes: their `v1.34.0` rows are checked against the plan's
+ * that module's header describes: their baseline rows are checked against the plan's
  * height-free derivation, because a plan that authors the vertical datum reports it and so
  * is no longer the text that was measured. That is a fact about the DATUM, not about the
  * view, and it leaves this law's own claim untouched — the derivation is compiled here with
@@ -71,7 +71,7 @@ const srcOf = (name: string): string => readFileSync(join(EXAMPLES, `${name}.arc
 
 const authorsHeight = new Set(AUTHORS_HEIGHT);
 
-/** The text a `v1.34.0` row is checked against — see the header: for a plan that authors
+/** The text a baseline row is checked against — see the header: for a plan that authors
  *  the vertical datum it is the height-free derivation, which is behaviourally the text
  *  that was measured. Nothing about the VIEW is derived away. */
 const measuredText = (name: string): string => (authorsHeight.has(name) ? heightFreeSource(srcOf(name)) : srcOf(name));

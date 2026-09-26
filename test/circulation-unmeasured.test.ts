@@ -86,7 +86,7 @@ describe("G.5 — circulation reports every room it cannot measure", () => {
         }
       }
     }
-    expect(offenders, "a room reported twice, or not at all — G.5 is the second one").toEqual([]);
+    expect(offenders, "a room reported twice, or not at all — the second is the silent drop").toEqual([]);
   });
 
   it("emits no `unmeasured` key at all when every room measures — the byte-identity rule", () => {

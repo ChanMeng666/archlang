@@ -13,14 +13,14 @@ import { MITER_LIMIT } from "../src/scene.js";
  * 1. **On the PAINT** (`Paint.miterLimit`), because the backends' own defaults disagree —
  *    SVG's is 4, PDF's is 10 — so the same drawing spiked in one export and not the other.
  *    That caps how far the STROKE's join may run past the geometry.
- * 2. **In the GEOMETRY** (`geometry/band.ts`), because since v1.30 the wall solid itself is
+ * 2. **In the GEOMETRY** (`geometry/band.ts`), because the wall solid itself is
  *    mitred: an outward offset at an acute vertex meets at a point `h / sin(θ/2)` from it,
  *    and that is a real vertex in a real fill, not a stroke artifact. Past `MITER_LIMIT · h`
  *    the band BEVELS instead — the two faces keep their own offset endpoints and a straight
  *    edge joins them. The same constant on purpose, so the fill and the stroke agree about
  *    where a spike stops.
  *
- * Neither depends on a geometry backend any more. Until v1.30 an angled plan reached a
+ * Neither depends on a geometry backend any more. An angled plan once reached a
  * mitrable outline only when the optional `clipper2-wasm` package happened to be
  * registered; without it the drawing was per-segment lines with no joins at all, and the
  * test below asserted exactly that absence.

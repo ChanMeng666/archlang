@@ -51,7 +51,7 @@ const GLYPHS: readonly (readonly [string, Draw])[] = [
   ["basin", drawBasin],
   ["shower", drawShower],
   ["bathtub", drawBathtub],
-  // -- v1.32 F1: kitchen & bath --
+  // -- kitchen & bath additions --
   ["bidet", drawBidet],
   ["urinal", drawUrinal],
   ["mirror", drawMirror],

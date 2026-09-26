@@ -7,7 +7,7 @@ import { censusOf, EPS_MM, shippedStoreys, type Census } from "./wall-solid.js";
  *
  * ## Why this exists
  *
- * Until v1.33.0 the nav grid rasterised each curved wall as the straight CHORD between its
+ * The nav grid once rasterised each curved wall as the straight CHORD between its
  * arc endpoints — not a coarser version of the wall, a wall somewhere else. It survived
  * three tiers of testing because every circulation law in the suite is RELATIVE: the
  * monotonicity property, the resolution ladder and the byte-identity digests each compare
@@ -19,7 +19,7 @@ import { censusOf, EPS_MM, shippedStoreys, type Census } from "./wall-solid.js";
  * two structural exclusions and the argument for why there is **no magnitude tolerance at
  * all** are documented in `test/wall-solid.ts`; read that header before touching this one.
  *
- * ## The census, measured BEFORE any assertion existed (2026-09-04, 30 examples)
+ * ## The census, measured BEFORE any assertion existed (30 examples)
  *
  *   storeys 35   skipped 0
  *   cells 1,209,653   examined 1,186,861   agree 1,178,103

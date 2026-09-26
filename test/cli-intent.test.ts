@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 /**
- * CLI integration for the v1.14 Tranche 4 intent surface: `arch validate --intent`
+ * CLI integration for the intent surface: `arch validate --intent`
  * (+ `--feedback`) and the `arch score` meter. Spawns the real CLI via the tsx loader
  * (no build) and checks the agent contract: `--json` parses on stdout, the documented
  * exit codes (0 ok · 2 gating violation · 1 IO · 3 usage), the intent/graph blocks

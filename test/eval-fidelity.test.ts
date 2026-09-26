@@ -27,7 +27,7 @@ import {
 import { renderFidelityResults, runFidelity } from "../eval/fidelity-run.js";
 
 /**
- * Constraint-laundering hardening — the offline gate for the fidelity slice (roadmap P0-3).
+ * Constraint-laundering hardening — the offline gate for the fidelity slice.
  *
  * This file is where CI actually catches the slice: `npm run check` runs vitest, and the
  * `npm run eval:fidelity` runner is a scorecard writer, not a gate anyone runs in CI. The

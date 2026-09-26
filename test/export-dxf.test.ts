@@ -162,8 +162,8 @@ function entityLayers(dxf: string): Set<string> {
  * ## Why it now carries a roof, a void, ground and a fence
  *
  * Because a closure test is only as strong as its fixture, and this one proved it. The
- * assertions below have said "declares every layer an entity actually references" since
- * v1.21 — and `A-ROOF` shipped in v1.29 without a row in `AIA_LAYERS`, so
+ * assertions below have said "declares every layer an entity actually references" for
+ * a long time — and `A-ROOF` still shipped without a row in `AIA_LAYERS`, so
  * `examples/bungalow.arch` exported a DXF referencing an undeclared layer for two
  * releases while this suite stayed green. Nothing was wrong with the assertion; the
  * fixture simply had no `roof` in it, so there was no entity to catch.
@@ -251,7 +251,7 @@ describe("AIA CAD layers", () => {
 
   it("names every layer in the NCS form: a discipline letter + a 4-char major group [+ a 4-char minor]", () => {
     // The discipline prefix was hardcoded `A-` while architectural was the only one. The
-    // v1.31 ground layers use the other two standard disciplines and earn them: `L-` is
+    // ground layers use the other two standard disciplines and earn them: `L-` is
     // LANDSCAPE (a lawn, a planting bed, hard landscape) and `C-` is CIVIL (the property
     // line). A CAD user freezes by discipline, so forcing a lawn onto an `A-` layer to
     // satisfy a regex would have hidden it behind the wrong switch — the rule is widened

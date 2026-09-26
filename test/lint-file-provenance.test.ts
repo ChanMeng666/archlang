@@ -2,7 +2,7 @@
  * Lint-raised fixes must carry the FILE their spans are measured in.
  *
  * `applyFixes` refuses any `FixSuggestion` carrying a `file` — that guard is what stops an
- * imported component's edit from being spliced into the importer (the v1.22 bug class).
+ * imported component's edit from being spliced into the importer (the cross-file fix bug class).
  * But the guard could never fire for a LINT fix: resolve-raised diagnostics get provenance
  * from `stampProvenance`, and lint runs *after* resolve, over a `ResolvedElement` that
  * carried no file at all. So every lint fix was minted with no `file`, and `applyFixes`

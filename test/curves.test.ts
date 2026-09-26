@@ -32,7 +32,7 @@ import {
 import type { RRoom, RWall } from "../src/ir.js";
 
 /**
- * Curved geometry (v1.24) — `arc (x,y) radius R [cw|ccw] [major]` wall edges and
+ * Curved geometry — `arc (x,y) radius R [cw|ccw] [major]` wall edges and
  * `room circle at (cx,cy) radius R` floors.
  *
  * Two laws are pinned harder than anything else here.
@@ -43,9 +43,9 @@ import type { RRoom, RWall } from "../src/ir.js";
  * 2. **A curve compiles identically with and without the optional geometry backend.**
  *    This is THE determinism risk of the feature: `clipper2-wasm` is an optional
  *    dependency, so if a curve ever reached the polygon boolean an arc plan's output
- *    would depend on whether an optional package happened to be installed. v1.24 held
- *    that by routing every arc-bearing wall through the wall element's per-segment path
- *    instead of the boolean; **since v1.30 it holds for a stronger reason** — the
+ *    would depend on whether an optional package happened to be installed. That was first held
+ *    by routing every arc-bearing wall through the wall element's per-segment path
+ *    instead of the boolean; **it now holds for a stronger reason** — the
  *    renderer does not consult a geometry backend at ALL, for any shape of plan, so the
  *    optional dependency cannot move a byte of anything. The test below still runs, and
  *    the law it pins now covers straight plans too.
@@ -401,7 +401,7 @@ suite("rendering — visible faces are TRUE arcs, fills are tessellated", () => 
     // arc edge carries a large-arc flag, so no piece may exceed 120° — the SVG's hardcoded
     // large-arc flag of 0 and the DXF's minorArcDegrees both depend on it.
     //
-    // The COUNT is 3 per face now, not 4. Until v1.30 each semicircle was emitted
+    // The COUNT is 3 per face, not 4. Once each semicircle was emitted
     // separately and each was cut in two; the joinery merges co-circular same-direction
     // runs first, so each face is one full circle cut into three. Six pieces where there
     // were eight, drawing the same two circles.
@@ -541,8 +541,8 @@ suite("guards on a curve (crisp diagnostics, no silent degradation)", () => {
     expect(msg).toContain("docs/backlog.md");
     expect(msg).toContain("room circle");
     expect(msg).toContain("arc (x,y) radius R");
-    // The original message promised "planned for v1.25" and v1.25 shipped without it, so
-    // a user on 1.25.0 was told to wait for the release they were already running. A
+    // A message that promises a release goes stale the day that release ships without
+    // the feature, telling a user to wait for the version they already run. A
     // deferral may name a tracker; it may never name a release.
     expect(msg).not.toMatch(/v\d+\.\d+/);
   });
@@ -704,7 +704,7 @@ suite("LAW: a curve compiles identically with and without the clipper2 backend",
   });
 
   it("joins a MIXED plan into ONE outline carrying both arc and line edges", () => {
-    // Until v1.30 the aquarium was drawn by two lowering paths at once: its straight
+    // The aquarium was once drawn by two lowering paths at once: its straight
     // partitions unioned into `region` nodes while its two arc-bearing walls fell to the
     // per-segment `arc`/`line` primitives, and where a partition met the drum the two
     // paths drew straight through one another. There is one boundary now, and a `path`

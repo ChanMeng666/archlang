@@ -232,7 +232,7 @@ describe("lint — shipped examples", () => {
    * silenced, so this names the exact set rather than counting it.
    *
    * `two-bed` used to be on this list — it shipped `ok:false` with six warnings,
-   * including this one, until the 2026-08 gallery refresh repaired its topology and gave
+   * including this one, until the gallery refresh repaired its topology and gave
    * it a real front door. It is off the list on purpose, not because the rule loosened.
    */
   it("only `themed` reports W_NO_ENTRANCE across the whole corpus", () => {

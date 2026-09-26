@@ -198,7 +198,7 @@ describe("the `path` primitive", () => {
       const b = await toPdf(withPath);
       expect(Buffer.from(a)).not.toEqual(Buffer.from(b));
       expect(b.length).toBeGreaterThan(100);
-      // `toPdf` is byte-deterministic (v1.26.1), so this must hold across two renders.
+      // `toPdf` is byte-deterministic, so this must hold across two renders.
       expect(Buffer.from(await toPdf(withPath))).toEqual(Buffer.from(b));
     });
   }

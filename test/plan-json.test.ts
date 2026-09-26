@@ -20,7 +20,7 @@ import {
 import { AUTO_DIMS_MODES } from "../src/ast.js";
 
 /**
- * Structured JSON I/O (v1.13): planFromJson / planToJson / astToJson.
+ * Structured JSON I/O: planFromJson / planToJson / astToJson.
  *
  * The shape follows the RPLAN / DStruct2Design convention (snake_case, room_type
  * enum, input_graph). The load-bearing guarantees: shape errors are catalogued and
@@ -193,7 +193,7 @@ describe("plan-json — round-trip byte-identity (SVG)", () => {
  * A derived furniture position must survive the round-trip.
  *
  * `grid` snaps the coordinates an author WRITES, and deliberately does not snap one the
- * resolver DERIVED from wall geometry (v1.27.0, item 3.12 — snapping a `flush` piece
+ * resolver DERIVED from wall geometry (snapping a `flush` piece
  * rounded it straight back into the wall it was measured off). So a projection that
  * re-emits a derived position as an authored `at (x,y)` hands it to the snapper on the
  * way back in, and the plan that comes out is not the plan that went in. Silently: no
@@ -538,7 +538,7 @@ describe("plan-json — schema object", () => {
 });
 
 /**
- * Backlog G.10 — Plan JSON carries a frame's ROTATION but not its REFLECTION.
+ * Plan JSON carries a frame's ROTATION but not its REFLECTION.
  *
  * This is a TRIPWIRE, not a passing feature test. Both assertions below pin the
  * CURRENT, WRONG state on purpose, because the defect is currently unreachable and
@@ -608,6 +608,6 @@ describe("plan-json — G.10 tripwire: a frame's reflection is not projected", (
     expect(codes).toContain("E_DOTTED_DECL");
 
     // WHEN THIS FAILS: someone taught `planFromJson` to accept a namespaced id, which
-    // un-masks the assertion above. That is the moment G.10 becomes reachable and real.
+    // un-masks the assertion above. That is the moment the lost reflection becomes reachable and real.
   });
 });

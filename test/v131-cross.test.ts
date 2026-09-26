@@ -1,7 +1,7 @@
 /**
- * The v1.31 CROSS-FEATURE gate — the cases neither track could produce on its own.
+ * The outdoor/garage CROSS-FEATURE gate — the cases neither track could produce on its own.
  *
- * v1.31 landed on two parallel branches from `v1.30.0`. Track A added the GROUND: `outdoor
+ * The feature landed on two parallel branches from one base. Track A added the GROUND: `outdoor
  * <kind>` surfaces, `fence`, `site … boundary`, and the `OUTDOOR_LAYERS` list that tells the
  * rest of the tree "this node is not a room". Track B added the GARAGE and the outdoor
  * FIXTURES: `uses garage`, `W_GARAGE_TOO_NARROW`, the `door garage` kind whose overhead
@@ -9,7 +9,8 @@
  * placed outdoors.
  *
  * Git merged them cleanly. A
- * clean auto-merge is not evidence, and the v1.25.0 near-miss is why. So the two places the
+ * clean auto-merge is not evidence: a branch that MOVED a function another MODIFIED can merge
+ * cleanly and silently revert the fix. So the two places the
  * tracks touch the same question get a test that only exists after the merge:
  *
  *  1. **`roomSideOf` vs. the ground.** A `garage` door parks its panel overhead INSIDE the

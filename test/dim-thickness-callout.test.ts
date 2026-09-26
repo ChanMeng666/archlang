@@ -47,7 +47,7 @@ const example = (name: string): string => readFileSync(join(examplesDir, name), 
  *  an ODD number of its rings, exactly as the backends' fill rule paints it. Testing rings
  *  one at a time would call every room interior "poché".
  *
- *  **The `wallFill` filter is load-bearing, and it was not needed until v1.31.** A `hatch`
+ *  **The `wallFill` filter is load-bearing, and it was not needed until ground surfaces existed.** A `hatch`
  *  node used to mean exactly one thing — wall solid. It now means three: the wall poché on
  *  `wallFill`, an `outdoor` ground material on `floor`, and a legend swatch on
  *  `annotations`. Without the filter this sweep reads a dimension number drawn over a lawn

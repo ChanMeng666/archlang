@@ -1,5 +1,5 @@
 /**
- * v1.21 — multi-storey `level` blocks: one drawing per storey.
+ * Multi-storey `level` blocks: one drawing per storey.
  *
  * The contract this suite pins:
  *  - a plan with NO `level` block compiles byte-identically (the whole shipped corpus);
@@ -233,7 +233,7 @@ suite("v1.21 levels — describe()/lint() per storey", () => {
     const upper = s.levels![1]!;
     expect(upper.rooms.map((r) => r.id)).toEqual(["landing", "bath", "bed1", "bed2"]);
     // The upper storey has NO exterior door of its own — its own door access graph says
-    // so, honestly — and is reached by the stair instead (v1.21). `access` stays a
+    // so, honestly — and is reached by the stair instead. `access` stays a
     // per-storey fact; the cross-storey answer lives in the building's `vertical` block.
     expect(upper.access.hasEntrance).toBe(false);
     expect(s.vertical!.reachable_levels).toEqual([1, 2]);

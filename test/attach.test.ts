@@ -132,7 +132,7 @@ describe("T1b — swing into / hinge near", () => {
 });
 
 /**
- * S.2 — the attachment position is an EXPRESSION (v1.27.0).
+ * The attachment position is an EXPRESSION.
  *
  * Before this, `at` in the `on <wall> at <pos>` form read a single `number` token, so
  * neither a `let` binding nor any arithmetic was legal there. That is not a cosmetic gap:
@@ -215,7 +215,7 @@ describe("S.2 — an attachment position is an expression", () => {
 });
 
 /**
- * S.2, second half — every refusal the slot has left carries a CATALOGUED code.
+ * Second half — every refusal the slot has left carries a CATALOGUED code.
  *
  * The two failures that motivated the attachment slot came back with no
  * `E_*` at all. Both now compile, so what is audited here is what REMAINS refusable, and

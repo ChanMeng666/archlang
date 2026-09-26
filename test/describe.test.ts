@@ -91,7 +91,7 @@ describe("describe — semantic facts", () => {
 
 /**
  * `facing` is a TRUE COMPASS direction, not "toward the top of the page": the plan's
- * `north` setting turns it. Before v1.25 a plan declaring `north right` still reported a
+ * `north` setting turns it. A plan declaring `north right` once still reported a
  * top-edge window as `"N"`, which silently mis-answered every intent
  * `windows: { facing: … }` assertion.
  */

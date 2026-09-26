@@ -5,7 +5,7 @@
  *
  * A closed value set is a frozen list of literal words the parser accepts in one
  * position — `AUTO_DIMS_MODES`, `NORTH_DIRS`, `PAPER_SIZES`, `DOOR_KINDS`, and the rest.
- * Since v1.26.0 each lives ONCE, in `src/ast.ts` (or beside `KEYWORDS` for the door
+ * Each lives ONCE, in `src/ast.ts` (or beside `KEYWORDS` for the door
  * tables), and interpolates into every description of the language. This asserts the
  * other half of that arrangement: every value in every such set also appears in
  * `KEYWORDS`, the flat highlighting bucket the three editor grammars are generated from.
@@ -14,10 +14,10 @@
  * parser accepts, the spec documents, and every renderer then draws as if it were a
  * user-chosen identifier. That is exactly what happened to `dims auto overall`: `all`,
  * `overall`, `rooms` and `walls` had been the parser's accept-list AND the spec's grammar
- * line since v1.20, and were in no editor grammar at all. Nothing could notice, because
+ * line for many releases, and were in no editor grammar at all. Nothing could notice, because
  * `check:drift` proves a generator reproduces its own output, never that the output is
  * complete — the same structural blindness `test/spec-forms.test.ts` was built for, one
- * layer down. `site`'s `street` / `hemisphere` shipped the same way in v1.25.
+ * layer down. `site`'s `street` / `hemisphere` once shipped the same way.
  *
  * ## Why it is DERIVED, not a list
  *

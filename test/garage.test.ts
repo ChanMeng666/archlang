@@ -7,8 +7,8 @@
  *
  * **1. The word reaches every layer that spells the closed set out.** `USE_KINDS` is the
  * parser's accept list, the formatter's print order, both generators' alternation and the Plan
- * JSON projection's key set; a value present in one and missing from another is the v1.26.0
- * defect class. The additions are asserted at the END of the list, because that order is what
+ * JSON projection's key set; a value present in one and missing from another is the
+ * self-description drift class. The additions are asserted at the END of the list, because that order is what
  * a published grammar renders.
  *
  * **2. The label classifier's emission order did not move.** `describe().rooms[].uses` is an

@@ -3,7 +3,7 @@
  *
  * The furniture layer has only ever carried polygons, lines and text. `elements/glyph-lib.ts`
  * gives the glyph authors `dot`/`ring`/`arcSeg`, so `circle` and `arc` are about to appear
- * there for the first time — and the v1.26.1 lesson is that a shipped surface is proven by
+ * there for the first time — and a shipped surface is proven by
  * INVOCATION, not by reading the switch that looks like it handles it. Poché was missing from
  * every PDF ArchLang ever exported because `drawNode` had no `hatch` case and no `default`,
  * and reading the file did not find it for twenty-five releases.

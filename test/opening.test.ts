@@ -110,7 +110,7 @@ const orthoOpening = `plan "Op" {
   opening id=op   at (4000,2000) width 1800 wall partition
 }`;
 
-/** The same plan with an ANGLED partition. Until v1.30 this dropped the whole wall set
+/** The same plan with an ANGLED partition. This once dropped the whole wall set
  *  out of the rectilinear boolean and — with no geometry backend registered — nothing
  *  subtracted the opening, so the cover polygon had to stay OPAQUE to fake the hole. The
  *  joinery cuts an angled host like any other, so this is now the same drawing as the
@@ -126,7 +126,7 @@ const angledOpening = `plan "Angled" {
 }`;
 
 /** A CURVED host: the passage is attributed by ARC LENGTH and its jambs run radially.
- *  Nothing voided a curved wall before v1.30 — an arc-bearing wall was lowered per
+ *  Nothing once voided a curved wall — an arc-bearing wall was lowered per
  *  segment and subtracted no opening at all, on its curve or on its straight runs. */
 const arcOpening = `plan "Arc" {
   units mm
@@ -149,7 +149,7 @@ describe("cased opening rendering — never repaint the void the wall union open
     expect(aiaLayer("openings")).toBe("A-DOOR");
     const s = sceneOf(orthoOpening);
     // ONE node: the unpainted cover the ASCII/DXF backends locate the passage by. It was
-    // three until v1.30 — cover plus two dashed lintel lines, which are gone.
+    // once three — cover plus two dashed lintel lines, which are gone.
     expect(on(s, "openings")).toHaveLength(1);
     expect(on(s, "windows")).toHaveLength(0); // a leaf-less passage is not glazing
     // The LAYER table declares every AIA layer, so assert on the ENTITIES section:

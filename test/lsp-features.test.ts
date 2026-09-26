@@ -74,7 +74,7 @@ describe("T5.3 — completion", () => {
 });
 
 // ---------------------------------------------------------------------------
-// G.7 — the fixture category slot: the core's first POSITION-SENSITIVE completion.
+// The fixture category slot: the core's first POSITION-SENSITIVE completion.
 //
 // `completion()` was context-free — every setting keyword, control keyword, registry element,
 // builtin and in-scope binding, wherever the cursor was. These cases pin the one exception and,

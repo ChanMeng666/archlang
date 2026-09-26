@@ -1,5 +1,5 @@
 /**
- * The byte-identity law for the v1.31 outdoor tranche: **a plan that uses none of it
+ * The byte-identity law for the outdoor tranche: **a plan that uses none of it
  * renders, describes and lints exactly as it did before it existed.**
  *
  * Every new language form ships with this law, and the form it takes here matters. A twin
@@ -11,7 +11,7 @@
  * different property and one already pinned elsewhere.
  *
  * So the digests below are **hardcoded, and measured against `src/` at `5298b99`** — the
- * v1.30.0 release commit — by extracting that tree with `git archive` and running the SAME
+ * last commit before the outdoor tranche — by extracting that tree with `git archive` and running the SAME
  * {@link digestWith} against it. That helper lives in `test/byte-identity-digest.ts` rather
  * than in this file for exactly that reason: a baseline generator has to load the OLD `src/`,
  * so it cannot import a test file (which pulls in vitest and runs its own suite the moment it
@@ -40,11 +40,11 @@
  * change landed from elsewhere in the release (re-measure against the commit that made it,
  * and say so in the same breath), or the law is genuinely broken.
  *
- * ## RE-MEASURED for v1.32 (the furniture pass), and how it was proved
+ * ## RE-MEASURED for the furniture pass, and how it was proved
  *
  * The whole-surface digests below moved, and the reason is the one this header's "when one of
  * these moves" list names third: a rendering change landed from elsewhere in the release.
- * v1.32 redraws FOURTEEN symbols across both furniture tracks — `island`,
+ * The furniture pass redraws FOURTEEN symbols across both furniture tracks — `island`,
  * `upper_cabinet`, `dishwasher`, `oven`, `fridge` and `washer` in the kitchen and bath
  * modules, and `coffee_table`, `table`, `stool`, `bench`, `chair`, `tv_unit`, `nightstand`
  * and `desk` in the living, bedroom and office ones, so every plan that places one
@@ -75,21 +75,21 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
 
 /**
- * The pins, measured at `5298b99` (v1.30.0). Each plan is here for what it would catch:
+ * The pins, measured at `5298b99`. Each plan is here for what it would catch:
  *
  *   - `studio` — the lint-clean, import-free flagship. Furniture, doors, windows, no kinds.
  *   - `laneway-house` — every opening on a wall run and every fixture on a room or wall, so
  *     it exercises the derived-placement paths the new room-side probe sits beside.
  *   - `bungalow` — the DOOR-KIND flagship, which already uses four of the five older kinds:
  *     a sixth kind leaking into the shared door path would move this one first.
- *   - `furnished-flat` — the FURNITURE flagship, 29 of the 36 pre-v1.31 glyph families. If
+ *   - `furnished-flat` — the FURNITURE flagship, 29 of the 36 pre-outdoor glyph families. If
  *     appending 21 families to `FIXTURE_FAMILIES` touched the dispatch, the legend order or
  *     the catalog lookups, it shows up here.
  *   - `two-bed` — a plain house with none of the above, as the control.
  *
- * ## The v1.32 re-measurement — six furniture symbols were REDRAWN
+ * ## The furniture-pass re-measurement — six furniture symbols were REDRAWN
  *
- * Four of the five moved, and `studio` did NOT. v1.32's F2 track redraws eight fixture
+ * Four of the five moved, and `studio` did NOT. The living/bedroom/office track redraws eight fixture
  * symbols (`coffee_table`, `table`, `stool`, `bench`, `chair`, `tv_unit`, `nightstand`,
  * `desk`); `studio` places only bath and kitchen fixtures, so its pin is UNCHANGED — the same
  * number, not a re-blessing — and is the control saying the redraw stayed inside the glyph
@@ -148,7 +148,7 @@ const BASELINE: Readonly<Record<string, string>> = {
   // a `range_hood` over the stove and a `mirror` over the basin, the two correct drawings
   // the missing flag had kept out of the flagship — so this plan is a different building
   // and both its digests move. See the SEMANTIC_BASELINE note for the proof that the CODE
-  // is innocent: the pre-5.7 source reproduces the OLD hexes exactly under the NEW compiler.
+  // is innocent: the pre-`overhead` source reproduces the OLD hexes exactly under the NEW compiler.
   "furnished-flat.arch": "6bca2fc18883e3dd6278cc03e0aa7a334ad6c26e67563c578344a77731a0ec05",
   "two-bed.arch": "dec746240dcc800c866a0dc928b451c83caa143f456adc704baa72d724ef6520",
 };
@@ -156,7 +156,7 @@ const BASELINE: Readonly<Record<string, string>> = {
 /**
  * The SUMMARY half of the same law: `describe()` and `lint()` with the drawing removed.
  *
- * These are the original v1.30.0 measurement, carried through the v1.32 furniture pass
+ * These are the original `5298b99` measurement, carried through the furniture pass
  * UNCHANGED — which is the claim, not an accident of the arithmetic. A drawing change is
  * allowed to move {@link BASELINE}; nothing in this release is allowed to move these.
  */
@@ -164,15 +164,15 @@ const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
   "studio.arch": "7ed53b6e0925e21fe4c4fad7351ce7e80635818395fc79cf661ba095db8129b3",
   "laneway-house.arch": "bde186c2290e5aa19ea60c3ec9e8ad7cfa3f5237e7d2a0a80cdca393fa3ab85a",
   "bungalow.arch": "242307d21b82d129acb6317df03702d2044f0c8e05f9a78374c9de9a9f01f4fd",
-  // `furnished-flat.arch` is the ONE value in this table that is not the original v1.30.0
+  // `furnished-flat.arch` is the ONE value in this table that is not the original `5298b99`
   // measurement, and the exception proves the rule rather than bending it. Its SOURCE keeps
-  // being edited -- seven of the new families in v1.32, then a `range_hood` and a `mirror`
+  // being edited -- seven of the new families in the furniture pass, then a `range_hood` and a `mirror`
   // for the `overhead` flag -- so `describe()` and `lint()` genuinely report a different building,
   // which is exactly the kind of change this pin exists to make visible. A redrawn SYMBOL,
   // or a lint rule learning a new exemption, still cannot move any number here.
   //
-  // The 5.7 re-measure (d58f7a8f -> 9ec50513) was proved to be the SOURCE and not the code,
-  // by the substitution this file's header prescribes: feed `git show <pre-5.7>:examples/
+  // The `overhead` re-measure (d58f7a8f -> 9ec50513) was proved to be the SOURCE and not the code,
+  // by the substitution this file's header prescribes: feed `git show <pre-overhead>:examples/
   // furnished-flat.arch` to THIS body under the MERGED compiler and it reproduces
   // d58f7a8f42... and 88d5be44... exactly, both halves, to the byte. Field by field, the new
   // summary differs by exactly two entries -- `range_hood_14` and `mirror_36` -- plus the

@@ -1,5 +1,5 @@
 /**
- * The sheet layer (v1.20) — `paper <size> [orientation]` + the OPERATIVE drawing scale.
+ * The sheet layer — `paper <size> [orientation]` + the OPERATIVE drawing scale.
  *
  * Three things this suite exists to hold down:
  *

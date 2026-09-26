@@ -2,7 +2,7 @@
  * **`describe()` and `lint()` never learn the view exists.** The one permanent constraint
  * on this feature, and the reason it is a picture rather than a surface.
  *
- * The 2026-08 roadmap entry that proposed the axonometric wrote the rule down before a line
+ * The design that proposed the axonometric wrote the rule down before a line
  * of it was built: *it is illustrative only, forever — a marketing render, never a measured
  * surface; `describe()` must not learn it exists.* Everything else about the view can be
  * revised; that cannot, because the moment a derived number is read off a projection, an

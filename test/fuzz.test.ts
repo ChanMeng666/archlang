@@ -299,7 +299,7 @@ describe("format — round-trip", () => {
     // not print a door's leading KIND word or its `slide`/`open` clauses, so `arch fmt`
     // rewrote `door pocket … slide left` as a plain hinged door — a different SVG, a
     // swing arc that should not exist, `describe().doors[].kind` gone and `W_POCKET_RUN`
-    // no longer applying. A FORMATTER changing semantics, live in v1.26.0.
+    // no longer applying. A FORMATTER changing semantics, once shipped.
     //
     // Nothing in the suite could see it: every hand-written fixture that formats a door
     // uses `hinged`, which is the default and the one word the resolver drops anyway. It

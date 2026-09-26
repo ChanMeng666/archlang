@@ -1,14 +1,14 @@
 /**
- * The byte-identity law for `outdoor`, `fence` and `site { boundary … }` (v1.31).
+ * The byte-identity law for `outdoor`, `fence` and `site { boundary … }`.
  *
  * **Every new language form ships with a byte-identity law, pinned by test: a plan that
  * does not use it renders, describes and lints exactly as before.** `site`, the door
  * kinds, `zone`, `paper`, `polygon`, `arc`, `roof` and `void` each have one; this is the
- * three v1.31 forms'.
+ * three ground forms'.
  *
  * ## Where the hashes came from
  *
- * They were measured on this worktree's HEAD — `5298b99`, the v1.30.0 release commit —
+ * They were measured on `5298b99`, the last commit before the ground forms,
  * **before the first `src/` edit of this branch**, by running the existing
  * `test/roof-void-byte-identity.test.ts` and confirming its four digests green. That
  * suite's `BASELINE` covers the same four examples with the same `digest()` body, so the
@@ -18,7 +18,7 @@
  * "fresh" baseline from a tree that already contains the change would prove determinism,
  * not identity, and would stay green through a change that moved every byte. The standing
  * warning applies unchanged — take a baseline with the SAME `digest()` body the test will
- * run, never a lookalike in a throwaway script; the first attempt at the v1.29 law used a
+ * run, never a lookalike in a throwaway script; the first attempt at the `roof`/`void` law used a
  * scratch script whose payload separator differed by one character and produced four
  * "failures" over artifacts that were in fact byte-identical.
  *
@@ -31,10 +31,10 @@
  * to move a byte on a plan that mentions none of it.
  *
  *
- * ## The v1.32 re-measurement — six furniture symbols were REDRAWN
+ * ## The furniture-pass re-measurement — six furniture symbols were REDRAWN
  *
  * Three of the four moved, and `studio` did NOT — that asymmetry is the finding, so read it
- * before touching a number. v1.32's F2 track redraws eight fixture symbols (`coffee_table`,
+ * before touching a number. The living/bedroom/office track redraws eight fixture symbols (`coffee_table`,
  * `table`, `stool`, `bench`, `chair`, `tv_unit`, `nightstand`, `desk`), so a plan that draws
  * one of the eight renders different bytes and a plan that does not is untouched. `studio`
  * places only bath and kitchen fixtures, so its digest is UNCHANGED — the same number, not a
@@ -47,14 +47,14 @@
  * here are SVG bytes, and the net lint change across the shipped examples is zero.
  *
  * The four examples are import-free (so no `World` is needed), none of them uses any
- * v1.31 form, and they span the shapes most likely to be disturbed: the signature
+ * ground form, and they span the shapes most likely to be disturbed: the signature
  * dwelling, the flagship, a CONCAVE polygon plan (whose ring code the ground surfaces
  * share a module with) and a CURVED sheet plan on `paper` (whose auto-fit reads the same
  * `planBounds` and the same legend row count the ground now contributes to).
  *
- * ## RE-MEASURED for v1.32 (the furniture pass), and how it was proved
+ * ## RE-MEASURED for the furniture pass, and how it was proved
  *
- * All four digests below moved, and it is not this law breaking. v1.32 redraws FOURTEEN symbols across both furniture tracks — `island`,
+ * All four digests below moved, and it is not this law breaking. The furniture pass redraws FOURTEEN symbols across both furniture tracks — `island`,
  * `upper_cabinet`, `dishwasher`, `oven`, `fridge` and `washer` in the kitchen and bath
  * modules, and `coffee_table`, `table`, `stool`, `bench`, `chair`, `tv_unit`, `nightstand`
  * and `desk` in the living, bedroom and office ones, so every plan that places one draws different bytes ON
@@ -82,7 +82,7 @@ import { describe, expect, it } from "vitest";
 import { compile, describe as describePlan, lint, planToJson } from "../src/index.js";
 import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js";
 
-/** SHA-256 over the SVG + `describe()` + `lint()` of one example, as measured at v1.30.0.*
+/** SHA-256 over the SVG + `describe()` + `lint()` of one example, as measured at `5298b99`.*
  *
  * ## The circulation-fix re-measurement — the SUMMARY moved, and that is the point
  *
@@ -126,7 +126,7 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  * **`lint()` over all 30 shipped examples is byte-identical across this amendment** —
  * the only two diagnostics this branch adds were already added before it.
  *
- * ## The G.5 re-measurement — a curved wall stopped being rasterised as its chord
+ * ## The curved-wall re-measurement — a curved wall stopped being rasterised as its chord
  *
  * ONE example moved: `aquarium`, on BOTH halves. `studio`, `gallery-l` and `laneway-house`
  * are unchanged, and that is the control — none of them has an `arc`.
@@ -152,7 +152,7 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  *
  * Do not read this entry as permission either.
  *
- * ## Issue #109 — two example SOURCES gained hand dimensions (2026-09-26)
+ * ## Stepped-facade dimensions — two example SOURCES gained hand dimensions
  *
  * `aquarium` and `gallery-l` moved in the DRAWING half only, and not because the compiler
  * changed under them: each example gained hand-written `dim`s on the openings no
@@ -162,7 +162,7 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  * the warning, so both plans lint exactly as before. `studio` and `laneway-house` are the
  * control and are unchanged.
  *
- * ## `aquarium` again, on BOTH halves: its rooms stopped overhanging the curve (2026-09-26)
+ * ## `aquarium` again, on BOTH halves: its rooms stopped overhanging the curve
  *
  * The example's `cafe` and `concourse` rectangles ran into the bowed south-east corner and
  * claimed floor outside the curved wall (cafe 200 m² against about 169 m² inside it). They
@@ -242,10 +242,10 @@ describe("the three forms are absent from the Plan JSON projection", () => {
   /**
    * The control carries the `site` block already, and that is the whole point of it.
    *
-   * `site` HAS entered Plan JSON since v1.25 — as `{street, hemisphere}` — so a control
-   * with no `site` at all would differ from the test plan for a reason that predates this
-   * branch by six releases, and the first draft of this test failed exactly that way.
-   * Holding the block fixed and adding only the three v1.31 forms to it isolates the
+   * `site` HAS entered Plan JSON — as `{street, hemisphere}` — so a control
+   * with no `site` at all would differ from the test plan for a reason unrelated to the
+   * ground forms, and the first draft of this test failed exactly that way.
+   * Holding the block fixed and adding only the three ground forms to it isolates the
    * claim being made, which is sharper than the version that accidentally passed would
    * have been: it says `boundary` does not join the projection even though the block it
    * sits in already does.

@@ -1,13 +1,13 @@
 /**
- * The `outdoor` ground-surface layer (v1.31).
+ * The `outdoor` ground-surface layer.
  *
  * What this suite is for, in one line each:
  *
  *  - Every kind parses, resolves and DRAWS — including the `<pattern>` it references,
  *    which is the trap that made the first working draft render every surface invisibly.
  *  - Every measurement comes from the SHAPE: exact shoelace area, a label point inside
- *    the ring, containment by `pointInPolygon`. Never the bounding box (the defect class
- *    v1.25.0 closed six instances of).
+ *    the ring, containment by `pointInPolygon`. Never the bounding box (the bbox-derived-position
+ *    defect class).
  *  - The separation from `room` is asserted as ABSENCE, not just as presence: a ground
  *    surface must not appear in `rooms[]`, in `totals.floor_area_m2`, in the access
  *    graph or in Plan JSON, and no test that only checks `outdoor[]` would notice if it
@@ -475,8 +475,7 @@ describe("outdoor — `arch fmt` returns the same plan", () => {
     const once = format(src);
     // Idempotent (a fmt of a fmt is a fixed point) …
     expect(format(once)).toBe(once);
-    // …and semantically identical, which is the claim that matters: the v1.26.1 lesson
-    // is that a dropped clause makes `fmt` silently return a DIFFERENT drawing.
+    // …and semantically identical, which is the claim that matters: a dropped clause makes `fmt` silently return a DIFFERENT drawing.
     expect(compile(once, { noCache: true }).svg).toBe(compile(src, { noCache: true }).svg);
     expect(JSON.stringify(describePlan(once))).toBe(JSON.stringify(describePlan(src)));
   };

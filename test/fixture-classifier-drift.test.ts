@@ -26,7 +26,7 @@ describe("fixture classifier — single source", () => {
         "bath",
         "bathtub",
         "tub",
-        // v1.32 F1. All three are plumbed sanitary fixtures, so all three are a deliberate
+        // All three are plumbed sanitary fixtures, so all three are a deliberate
         // MEMBERSHIP change: a WC block whose only fixture is a urinal, or a utility room
         // with a laundry tub in it, no longer raises `W_ROOM_NO_FIXTURE`. `water_heater`
         // and `mirror` are deliberately NOT here — a cupboard with a boiler in it is not a
@@ -58,7 +58,7 @@ describe("fixture classifier — single source", () => {
         // appliance is a dishwasher or an island no longer raises `W_ROOM_NO_FIXTURE`.
         "dishwasher",
         "island",
-        // v1.32 F1, on the same terms: a kitchen whose only appliance is a microwave, an
+        // On the same terms: a kitchen whose only appliance is a microwave, an
         // extract hood or a bar counter is a kitchen.
         "range_hood",
         "microwave",

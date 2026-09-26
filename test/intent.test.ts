@@ -206,7 +206,7 @@ describe("validateIntent — window facing", () => {
   });
 });
 
-/** Issue #104 repro: two rooms of room_type Storage, one `uses storage`, one `uses utility`. */
+/** Repro: two rooms of room_type Storage, one `uses storage`, one `uses utility`. */
 const STORAGE_UTILITY = `plan "repro" {
   units mm
   wall id=w exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }

@@ -21,14 +21,14 @@ describe("golden SVG snapshots", () => {
     "attached.arch",
     "museum.arch",
     "museum-wing.arch",
-    // v1.23: the polygon-room flagship — an L and a trapezoid, an angled facade, and
+    // The polygon-room flagship — an L and a trapezoid, an angled facade, and
     // `dims auto` measured off vertex coordinates rather than room rectangles.
     "gallery-l.arch",
-    // v1.25: the orientation-and-openings example. `site` draws nothing, so this
+    // The orientation-and-openings example. `site` draws nothing, so this
     // snapshot pins the half that DOES reach the SVG — the sliding/pocket/bifold panel
     // geometry, and the absence of a swing arc on all three.
     "bungalow.arch",
-    // v1.27 showcase — the twelve examples added when the gallery was redrawn. Each is
+    // Showcase — the twelve examples added when the gallery was redrawn. Each is
     // here because it is the only shipped plan that exercises some part of the pipeline:
     // laneway-house resolves EVERY position (no `at (x,y)` on an opening or a fixture),
     // one-room is the minimum that renders, courtyard-house is the outward-face case a
@@ -47,7 +47,7 @@ describe("golden SVG snapshots", () => {
     "clinic.arch",
     "materials.arch",
     "terrace-row.arch",
-    // v1.28: the furniture flagship — twenty-six of the thirty-two catalogued kinds in
+    // The furniture flagship — twenty-six of the thirty-two catalogued kinds in
     // one plan, so this is the golden where a drawn symbol's geometry, its derived
     // quarter-turn or the `against wall` footprint default would show up as a string
     // diff. No other shipped example draws more than a handful.
@@ -95,7 +95,7 @@ describe("golden SVG snapshots", () => {
     for (const p of pages!) expect(p.svg).toMatchSnapshot(`townhouse.arch L${p.level}`);
   });
 
-  // v1.29 gallery refresh: the SHOWPIECE flagship — every surface of the language on one
+  // The SHOWPIECE flagship — every surface of the language on one
   // A2 sheet, across two levels. This is where a roof/void/arc/mirrored-component
   // interaction would show up as a string diff; the other multi-level goldens above don't
   // combine those with `site`, curves or `place … mirror`.

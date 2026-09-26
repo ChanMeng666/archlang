@@ -10,7 +10,7 @@ import { findCommand, renderCommandHelp, renderTopHelp, usageLine } from "../src
 /**
  * Help, `--version`, and flag strictness — the discoverability contract.
  *
- * Before v1.17 `arch compile --help` printed no help at all: `--help` fell through the
+ * `arch compile --help` once printed no help at all: `--help` fell through the
  * parser's if/else chain into the positional bucket and was read as a filename. The same
  * fall-through silently accepted `--jsn` as an input file. Both are now usage errors, and
  * help is rendered from the manifest — which the drift guards below pin to the parse table.
