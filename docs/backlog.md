@@ -375,12 +375,9 @@ handedness from `RDim._mirror` (XORed in `dim.transform`, which writes `0 - offs
 makes a `-0`); an evaluated `-0` is folded to `0` at resolve. `W_DIM_OVERLAP`'s band follows the
 same side. No shipped example has a negative offset.
 
-`W_DIM_OVERLAP` measures the same convention: its band puts each number on +n. So under a
-reflection an opposite-normal pair collides differently. At A3 1:50,
-`dim (0,3000)->(4000,3000) offset 550` + `dim (4000,3000)->(0,3000) offset -550` bumps to `offset -1100`
-unplaced and to `-825` mirrored, and `550`/`-650` warns unplaced but not mirrored. Each offered fix
-clears its own warning. The class also covers `lint.dim-overlap[.fixes]` under a reflection, with
-a witness in `test/equivariance-corpus.test.ts`; moving the band's text side closes both.
+The lint half W5c moved here closed with it: `W_DIM_OVERLAP`'s band (`Band.m`) now puts the number
+on the drawn side, so the A3 1:50 opposite-normal pairs (`550`/`-550` bumped `-1100` unplaced and
+`-825` mirrored; `550`/`-650` warned only unplaced) give one verdict and one bump under every g.
 
 ### E.15 · `dim-tick-hand` — a mirrored dim draws its ticks on the other diagonal — `declared`
 
