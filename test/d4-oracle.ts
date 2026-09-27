@@ -111,7 +111,7 @@ import {
   type World,
 } from "../src/index.js";
 import { buildLintContext } from "../src/lint/context.js";
-import { LINT_RULES } from "../src/lint.js";
+import { LINT_RULES, reconcileSharedFixes } from "../src/lint.js";
 import { parse } from "../src/parser.js";
 
 // ---------------------------------------------------------------------------
@@ -423,10 +423,15 @@ function withFixProvenance(d: Diagnostic): Diagnostic {
 }
 
 /** Each rule's own output, in `LINT_RULES` order, over one shared context — the fold
- *  `lint()` performs, unfolded so a violation names its rule. */
+ *  `lint()` performs, unfolded so a violation names its rule. `lint()`'s shared-statement
+ *  post-pass is applied per rule, which is the same thing: it groups by diagnostic code,
+ *  and a code belongs to one rule. */
 export function lintByRule(ir: ResolvedPlan): { name: string; diags: Diagnostic[] }[] {
   const ctx = buildLintContext(ir, DEFAULT_RULESET);
-  return LINT_RULES.map((r) => ({ name: r.name, diags: r.check(ctx).map(withFixProvenance) }));
+  return LINT_RULES.map((r) => ({
+    name: r.name,
+    diags: reconcileSharedFixes(r.check(ctx).map(withFixProvenance), [{ ir }]),
+  }));
 }
 
 /** Everything the oracle reads off one compiled source (tiers T1/T2). */
