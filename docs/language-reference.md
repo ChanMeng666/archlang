@@ -2624,4 +2624,6 @@ coordinates with `transform(el, t)`, where `t` is a `TransformCtx`: `t.point`,
 `compile(src, { plugins })` may omit it: one that replaces a built-in kind
 inherits the built-in's, and a new kind without one is refused inside a `place`
 with `E_INSTANCE_NO_TRANSFORM` (the instance's copy is dropped, never drawn
-untransformed).
+untransformed). The inherited action assumes the built-in's resolved shape, so a
+replacement whose `resolve` returns a different shape must provide its own
+`transform`.

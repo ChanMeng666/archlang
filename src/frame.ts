@@ -289,8 +289,10 @@ export function makeTransformCtx(f: Frame, id: string): TransformCtx {
 
 /**
  * The action that carries `el` across a frame: its own def's `transform`, else — for a
- * plugin that REPLACES a built-in kind without supplying one — the built-in's. `undefined`
- * means the element cannot be placed (a plugin kind with no `transform`).
+ * plugin that REPLACES a built-in kind without supplying one — the built-in's. That fallback
+ * reads the built-in's resolved shape, so a replacement whose `resolve` returns a different
+ * shape must supply its own `transform`. `undefined` means the element cannot be placed (a
+ * plugin kind with no `transform`).
  */
 export function transformOf(el: ResolvedElement, def?: ElementDef): ElementDef["transform"] {
   return def?.transform ?? BUILTIN_REGISTRY.byKind.get(el.kind)?.transform;
@@ -322,9 +324,11 @@ export function tryTransformElement(f: Frame, el: ResolvedElement, def?: Element
 }
 
 /**
- * {@link tryTransformElement} for a caller that has already established the element has
- * an action (every built-in kind does). Calling it for one that does not is a programming
- * error, never a user-source one — `compile()` goes through `tryTransformElement`.
+ * {@link tryTransformElement} that THROWS (a `TypeError`) on a kind with no action,
+ * instead of returning `null`. It exists for tests (`test/frame.test.ts` drives every
+ * built-in kind through it) and has no caller in `src/`: production code — the resolver
+ * behind `compile()` — calls `tryTransformElement` and turns a `null` into
+ * `E_INSTANCE_NO_TRANSFORM`, because a user-source problem is returned, never thrown.
  */
 export function transformElement(f: Frame, el: ResolvedElement, def?: ElementDef): ResolvedElement {
   const out = tryTransformElement(f, el, def);

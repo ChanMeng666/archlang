@@ -212,7 +212,9 @@ export interface ElementDef {
    * `_component` afterwards. Optional for a plugin: a plugin that replaces a built-in
    * kind inherits the built-in's action, and a new kind without one is refused inside a
    * `place` with `E_INSTANCE_NO_TRANSFORM` (the element is dropped, never drawn
-   * untransformed).
+   * untransformed). An inherited action reads the BUILT-IN's resolved shape (its `at`,
+   * `size`, `points`, …), so a replacement whose `resolve` returns a different shape must
+   * provide its own `transform`.
    */
   transform?(el: ResolvedElement, t: TransformCtx): ResolvedElement;
 }
