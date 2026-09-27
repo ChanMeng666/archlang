@@ -130,6 +130,30 @@ const RECT_WINDOWS = `${RECT}
     window id=w3 at (2000,4000) width 1200 wall shell
     window id=w4 at (6000,4000) width 1200 wall shell`;
 
+/**
+ * The rectangle with two sliding doors arranged C2 (each the other turned a half), so
+ * `full` is C2 and the law has a non-trivial group whose record reads the track.
+ */
+const RECT_SLIDERS = `${RECT}
+    door id=d1 sliding at (2000,4000) width 1200 wall shell slide left
+    door id=d2 sliding at (6000,0) width 1200 wall shell slide left`;
+
+/**
+ * A unit with a stair, placed twice stacked, the second `mirror y` — `full` is D1 y only
+ * when the carried `_tail` (arrow down) and `_mirror` (break hand) are read. Declared as
+ * the witness component itself, so the law places this whole composition by every g and
+ * the nested frames compose with it.
+ */
+const STAIR_PAIR_DECL = `component u() {
+    wall id=shell exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+    room id=r at (0,0) size 4000x4000 label "R" uses hall
+    stair id=s at (1500,500) size 1000x3000 dir up
+  }
+  component c() {
+    place u() as a at (0,0)
+    place u() as b at (0,8000) mirror y
+  }`;
+
 const plan = (body: string): string => `plan "hand" {\n  units mm\n  grid 50\n${body}\n}\n`;
 
 suite("symmetry — hand cases", () => {
@@ -271,6 +295,91 @@ suite("symmetry — hand cases", () => {
   });
 });
 
+/**
+ * The handed facts a `place` frame carries on a resolved element (`RDoor._mirror`,
+ * `RStair._tail`/`_mirror`): `full` must read them, because the drawing does.
+ *
+ * Each case is a PAIR on the same symmetric shell: one placed plainly at the mirrored
+ * position (whose handed part is NOT the mirror image) and one placed `mirror x` (whose
+ * handed part is). A module that ignored the fact would answer the same for both.
+ */
+suite("symmetry — frame-carried handedness in `full`", () => {
+  /** Two 4 m square units side by side, each with its own shell; `b` plain or mirrored. */
+  const pair = (body: string, mirrored: boolean): string =>
+    plan(`
+  component c() {
+    wall id=shell exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+${body}
+  }
+  place c() as a at (0,0)
+  place c() as b at ${mirrored ? "(8000,0) mirror x" : "(4000,0)"}`);
+
+  /** The element must really have hosted — else its record is one bare point and the case proves nothing. */
+  const hosted = (src: string, id: string): void => {
+    const s = facts(src);
+    expect(s.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(s.access.edges.find((e) => e.doorId === id)?.hostWallId, `${id} hosts on its unit's shell`).toBeDefined();
+  };
+
+  it("a sliding door's track: two ROOT doors with mirrored slides are not mirror images", () => {
+    // The fixed panel's track is `slide` times the wall's left normal — so on one wall,
+    // `slide left` and `slide right` put it on OPPOSITE faces, and no root pair mirrors.
+    const root = `${RECT}
+    door id=d1 sliding at (2000,4000) width 1200 wall shell slide left
+    door id=d2 sliding at (6000,4000) width 1200 wall shell slide right`;
+    expect(groupOf(sym(plan(root)).layers.full)).toBe("C1");
+  });
+
+  it("a sliding door's track: `place … mirror x` makes the true mirror image (`RDoor._mirror`)", () => {
+    // Centred on its unit's south wall, so the plain copy's jambs DO mirror the first's and
+    // only the slide side and the track can tell the two placements apart.
+    const body = `
+    room id=r at (0,0) size 4000x4000 label "R" uses living
+    door id=d sliding at (2000,4000) width 1200 wall shell slide left`;
+    for (const m of [false, true]) hosted(pair(body, m), `${m ? "b" : "a"}.d`);
+    const mirrored = sym(pair(body, true));
+    const plain = sym(pair(body, false));
+    expect(groupOf(mirrored.layers.rooms)).toBe("D2 x/y");
+    expect(groupOf(mirrored.layers.full)).toBe("D1 x");
+    expect(groupOf(plain.layers.full)).toBe("C1");
+    // The TRACK alone decides it: a pocket door (slide side read, no track) in the same
+    // pair mirrors as well — so it is the `_mirror`-reversed track, not the slide side,
+    // that the sliding case above leans on.
+    const pocket = body.replace("sliding", "pocket");
+    expect(groupOf(sym(pair(pocket, true)).layers.full)).toBe("D1 x");
+  });
+
+  it("a stair's tail and break hand (`RStair._tail`, `_mirror`)", () => {
+    const body = `
+    room id=r at (0,0) size 4000x4000 label "R" uses hall
+    stair id=s at (500,500) size 1000x3000 dir up`;
+    const mirrored = sym(pair(body, true));
+    const plain = sym(pair(body, false));
+    expect(groupOf(mirrored.layers.rooms)).toBe("D2 x/y");
+    // Mirrored: the footprint, arrow and break line are all the mirror image.
+    expect(groupOf(mirrored.layers.full)).toBe("D1 x");
+    // Plain at the mirrored position: footprint and arrow match, the break line does not.
+    expect(groupOf(plain.layers.full)).toBe("C1");
+  });
+
+  it("a stair's tail under `mirror y`: the carried tail, not the root page rule", () => {
+    // Stacked, `b` reflected about y = 4000. The root rule would enter b's portrait `up`
+    // flight from its bottom again (arrow up); the carried `_tail` is its TOP (arrow down),
+    // the true mirror image of a's — and only that reading makes the pair D1 y.
+    const src = plan(`
+  component c() {
+    wall id=shell exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+    room id=r at (0,0) size 4000x4000 label "R" uses hall
+    stair id=s at (1500,500) size 1000x3000 dir up
+  }
+  place c() as a at (0,0)
+  place c() as b at (0,8000) mirror y`);
+    const s = sym(src);
+    expect(groupOf(s.layers.rooms)).toBe("D2 x/y");
+    expect(groupOf(s.layers.full)).toBe("D1 y");
+  });
+});
+
 suite("symmetry — repeats", () => {
   it("a translational run: ≥3 congruent rooms at a constant step, sorted by (y, x)", () => {
     const s = sym(
@@ -332,7 +441,22 @@ suite("symmetry — repeats", () => {
 // ---------------------------------------------------------------------------
 
 suite("symmetry — Stab(gP) = g·Stab(P)·g⁻¹ (the W1 wrapper)", () => {
-  const HAND = { SQUARE, RECT, L_SHAPE, PINWHEEL, RECT_WINDOWS } as const;
+  const HAND = { SQUARE, RECT, L_SHAPE, PINWHEEL, RECT_WINDOWS, RECT_SLIDERS } as const;
+
+  it("the frame-carried witnesses have non-trivial `full` groups at the identity", () => {
+    expect(groupOf(sym(plan(RECT_SLIDERS)).layers.full)).toBe("C2");
+    const { p0 } = witnessPair("", TRANSLATION, { declare: STAIR_PAIR_DECL });
+    expect(groupOf(sym(p0).layers.full)).toBe("D1 y");
+  });
+
+  it("the stacked mirrored stair pair (nested frames), under all eight elements and a translation", () => {
+    const bad: string[] = [];
+    for (const g of [...D4_ELEMENTS.filter((e) => e.name !== "e"), TRANSLATION]) {
+      const { p0, gP } = witnessPair("", g, { declare: STAIR_PAIR_DECL });
+      bad.push(...conjugationViolations(sym(p0), sym(gP), g, 50).map((v) => `${g.name}: ${v}`));
+    }
+    expect(bad).toEqual([]);
+  });
   it.each(Object.keys(HAND))("hand case %s, under all eight elements and a translation", (name) => {
     const body = HAND[name as keyof typeof HAND];
     const bad: string[] = [];

@@ -682,7 +682,7 @@ Three layers, each with its own group:
 |-------|----------------|-------------|
 | `shell` | the walls, in **maximal-line normal form**: collinear pieces of one thickness that overlap or touch merge into one segment, so splitting a wall into statements changes nothing | wall thickness |
 | `rooms` | each room's floor — a rectangle's or polygon's ring, a circle's centre and radius | the room's `uses`, never its label text |
-| `full` | the rooms, plus every opening (a door's hinge jamb, far jamb and open-leaf tip — so its hinge side and swing count; a window's and a cased opening's jambs) and the furniture (footprint, category, the back vector when the catalogue gives the symbol a back, and the handedness of a symbol that is drawn handed) | as `rooms`, plus kind and width, or category |
+| `full` | the rooms, plus every opening (each handed choice its symbol draws: a hinged door's hinge side and swing, a non-hinged door's slide side, a sliding door's track, a barn, bifold or garage panel's face; a window's and a cased opening's jambs), the furniture (footprint, category, the back vector when the catalogue gives the symbol a back, and the handedness of a symbol that is drawn handed) and the stairs, lifts and escalators (footprint, the way the arrow points, a stair's break-line hand) — each read as a placed, mirrored instance really draws it | as `rooms`, plus kind and width, or category, or run kind and direction |
 
 Each layer reports:
 
@@ -696,7 +696,8 @@ Each layer reports:
 
 A layer holding nothing (no walls, say) is `null`. A furniture piece is compared on its
 attributes rather than its drawn marks, so a symbol with more symmetry than they record
-can only make the group smaller, never larger.
+can only make the group smaller, never larger. Dimensions, columns, voids and ground
+surfaces are in no layer: a dimension is annotation, not the building.
 
 **Repeats.** `repeats[]` lists the rooms that recur. A `translate` run is three or more
 **congruent** rooms — the same floor, the same `uses`, the same furniture laid out the same

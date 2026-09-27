@@ -41,11 +41,15 @@
  *  - `rooms` — each room's floor (a rectangle's or polygon's ring with collinear vertices
  *    removed, a circle's centre and radius), labelled by its `uses` — the room's function,
  *    never its label text.
- *  - `full` — the rooms plus every opening (a door's hinge jamb, far jamb and open-leaf
- *    tip, which carry its hinge side and swing; a window's and a cased opening's jambs and
- *    width) plus the furniture (footprint, category, the back vector when the catalogue
- *    gives the symbol a back, and the handedness of a HANDED symbol — asked of the drawing
- *    itself, `glyph-chirality.ts`'s predicate, and flipped by a reflection).
+ *  - `full` — the rooms plus every opening (a door's handed choices as the drawing reads
+ *    them — hinge side and swing, slide side, a sliding door's track, a panel's face; see
+ *    {@link doorRec}; a window's and a cased opening's jambs and width) plus the furniture
+ *    (footprint, category, the back vector when the catalogue gives the symbol a back, and
+ *    the handedness of a HANDED symbol — asked of the drawing itself, `glyph-chirality.ts`'s
+ *    predicate, and flipped by a reflection) plus the vertical runs (footprint, kind, the
+ *    direction the frame-carried tail edge gives, a stair's break-line hand). Dimensions,
+ *    columns, voids and ground surfaces are in no layer: a dimension is annotation, and the
+ *    others are left for a later layer rather than half-modelled here.
  *
  * A furniture piece is compared on those attributes, not on its drawn marks, so a symbol
  * with more symmetry than its attributes say can only make the answer SMALLER, never
@@ -66,7 +70,7 @@
 
 import type { Point } from "../ast.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RWall, RWindow, ResolvedPlan } from "../ir.js";
-import { D4_ELEMENTS, type D4, det, toMatrix, toSpelling, backVectorOfDeg } from "../algebra/d4.js";
+import { D4_ELEMENTS, type D4, det, toMatrix, toSpelling, backVectorOfDeg, SIDE_NORMAL } from "../algebra/d4.js";
 import { fmt4 } from "../num-format.js";
 import { doorSwing, normal, segmentDirAt, segmentsOfWall } from "../geometry.js";
 import { pointInRoomBox, roomBox, roomUses } from "../analyze.js";
@@ -75,6 +79,7 @@ import { fixtureGlyph } from "../elements/fixtures-glyphs.js";
 import { marksEqual, mirrorNode } from "../elements/glyph-chirality.js";
 import type { RenderSizes } from "../scene.js";
 import { DEFAULT_THEME } from "../theme.js";
+import { type RVertical, tailEdge, travelVector, verticalsOf } from "../vertical.js";
 
 // ---------------------------------------------------------------------------
 // Output shapes
@@ -156,11 +161,12 @@ export interface SymmetryFacts {
 // ---------------------------------------------------------------------------
 
 /**
- * How a record's points are compared: `set` unordered, `seq` in order, `ring` up to a
- * cyclic shift and reversal, `arc` as `[centre, a, b]` traversed in the sense `hand` gives
- * (`+1` clockwise on the sheet), so the same curve traced backwards is the same record.
+ * How a record's points are compared: `set` unordered, `seq` in order, `head` the first
+ * point in place and the rest unordered, `ring` up to a cyclic shift and reversal, `arc` as
+ * `[centre, a, b]` traversed in the sense `hand` gives (`+1` clockwise on the sheet), so
+ * the same curve traced backwards is the same record.
  */
-type Form = "set" | "seq" | "ring" | "arc";
+type Form = "set" | "seq" | "head" | "ring" | "arc";
 
 interface Rec<P> {
   form: Form;
@@ -204,6 +210,9 @@ function recKey(r: Rec<IP>): string {
       break;
     case "ring":
       body = ringKey(r.pts);
+      break;
+    case "head":
+      body = `${pk(r.pts[0]!)} ; ${r.pts.slice(1).map(pk).sort().join(" ")}`;
       break;
     case "arc": {
       const [c, a, b] = r.pts as [IP, IP, IP];
@@ -490,13 +499,25 @@ function jambs(at: Point, width: number, host: RDoor["host"]): Point[] {
 }
 
 /**
- * A door as `[primary jamb, far jamb, leaf tip]`: the hinge jamb and the open leaf's tip
- * for a hinged door (the very points {@link doorSwing} draws), the jamb the panel parks
- * toward and the face it runs on for any other kind. Those three points carry the hinge
- * side, the slide side and the swing, so a reflection that swaps them is seen.
+ * A door as the points that carry each of its HANDED choices, read the way the drawing
+ * reads them (`geometry.ts`'s `doorSwing`, `elements/door-panels.ts`):
+ *
+ *  - `hinged` — `[hinge jamb, far jamb, open leaf's tip]`, the very points `doorSwing` draws;
+ *  - `sliding` — `[slide-side jamb, other jamb, tip]`, the tip one width off the slide-side
+ *    jamb on the FIXED PANEL'S TRACK side: `slide` times the wall's left normal, reversed by
+ *    `RDoor._mirror`. `swing` draws nothing here, so it is not read;
+ *  - `barn` / `bifold` — `[slide-side jamb, other jamb, tip]`, the tip on the `swing` face
+ *    (the face the panel hangs on / folds toward);
+ *  - `pocket` — `[slide-side jamb, other jamb]`: the cavity's side; the symbol is symmetric
+ *    across the wall line, so the face is not read;
+ *  - `garage` — `[tip, jamb, jamb]` with the jambs unordered: the overhead projection's face
+ *    and nothing along the wall, which the symbol is symmetric about.
+ *
+ * So a reflection that swaps any of those choices is seen, and one the drawing ignores is not.
  */
 function doorRec(d: RDoor): Rec<Point> {
-  const label = `door ${d.doorKind ?? "hinged"} w=${fmt4(d.width)}`;
+  const kind = d.doorKind ?? "hinged";
+  const label = `door ${kind} w=${fmt4(d.width)}`;
   const swing = doorSwing(d);
   if (swing) return { form: "seq", label, pts: [swing.hinge, swing.farJamb, swing.leafEnd] };
   if (!d.host) return { form: "set", label, pts: [d.at] };
@@ -507,7 +528,54 @@ function doorRec(d: RDoor): Rec<Point> {
   const p = { x: d.at.x + dir.x * hw * s, y: d.at.y + dir.y * hw * s };
   const o = { x: d.at.x - dir.x * hw * s, y: d.at.y - dir.y * hw * s };
   const face = d.swing === "in" ? n : { x: -n.x, y: -n.y };
-  return { form: "seq", label, pts: [p, o, { x: p.x + face.x * d.width, y: p.y + face.y * d.width }] };
+  const off = (from: Point, v: Point): Point => ({ x: from.x + v.x * d.width, y: from.y + v.y * d.width });
+  switch (kind) {
+    case "sliding": {
+      const track = d._mirror ? -s : s;
+      return { form: "seq", label, pts: [p, o, off(p, { x: n.x * track, y: n.y * track })] };
+    }
+    case "pocket":
+      return { form: "seq", label, pts: [p, o] };
+    case "garage":
+      return { form: "head", label, pts: [off(d.at, face), p, o] };
+    default:
+      return { form: "seq", label, pts: [p, o, off(p, face)] };
+  }
+}
+
+/**
+ * A vertical run as its footprint, labelled by kind (and a stair's `dir` and flight width,
+ * which change what it draws), carrying:
+ *
+ *  - `vec` — the way its arrow or chevrons point, `travelVector` off the tail edge the frame
+ *    carried (`RStair._tail`); for a lift, the outward normal of its entry edge, which is
+ *    what the nav grid opens;
+ *  - `hand` — a stair's break line, the one handed part of its symbol: `runFrame` is a
+ *    proper rotation for every tail edge, so the drawn chirality is exactly `RStair._mirror`.
+ *    An escalator's chevrons and a lift's diagonals are mirror-symmetric, so they carry none.
+ */
+function verticalRec(v: RVertical): Rec<Point> {
+  const { x, y } = v.at;
+  const { w, h } = v.size;
+  const label =
+    v.kind === "stair"
+      ? `stair ${v.dir} w=${fmt4(v.width)}`
+      : v.kind === "escalator"
+        ? `escalator ${v.dir}`
+        : "elevator";
+  const vec = v.kind === "elevator" ? SIDE_NORMAL[tailEdge(v)] : travelVector(v);
+  return {
+    form: "set",
+    label,
+    pts: [
+      { x, y },
+      { x: x + w, y },
+      { x: x + w, y: y + h },
+      { x, y: y + h },
+    ],
+    vec: { x: vec.x, y: vec.y },
+    ...(v.kind === "stair" ? { hand: v._mirror ? -1 : 1 } : {}),
+  };
 }
 
 /** Pen sizes for the handedness question. Glyph GEOMETRY never reads them (they are paint
@@ -760,6 +828,7 @@ export function symmetryFacts(ir: ResolvedPlan): SymmetryFacts {
       (o): Rec<Point> => ({ form: "set", label: `opening w=${fmt4(o.width)}`, pts: jambs(o.at, o.width, o.host) }),
     ),
     ...furniture.map(furnitureRec),
+    ...verticalsOf(ir).map(verticalRec),
   ];
   const tidyLayer = (raw: readonly Rec<Point>[]): LayerSymmetry | null => {
     const f = frameOf(raw);
