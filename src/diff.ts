@@ -83,9 +83,16 @@ function matchRooms(before: RoomSummary[], after: RoomSummary[]): Array<[RoomSum
       unmatchedAfter.delete(a.id);
     } else leftoverBefore.push(a);
   }
-  // Fallback: positional auto-ids can shift; rescue pairs whose label matches uniquely.
+  // Fallback: positional auto-ids can shift; rescue pairs whose label matches uniquely —
+  // on BOTH sides. Checking only the after side made this order-dependent (and so not
+  // antisymmetric: `diffPlans(A, B)` could rescue a pair that `diffPlans(B, A)` could
+  // not, purely because `leftoverBefore`'s OTHER entries differ by direction). Two
+  // same-labelled rooms on either side are an equally real ambiguity — the label alone
+  // does not say which pairs with which — so neither side rescues, and every one of them
+  // reports as a separate add/remove instead of a guessed match.
   for (const a of leftoverBefore) {
-    const byLabel = a.label ? [...unmatchedAfter.values()].filter((r) => r.label === a.label) : [];
+    const uniqueBefore = a.label !== undefined && leftoverBefore.filter((r) => r.label === a.label).length === 1;
+    const byLabel = uniqueBefore ? [...unmatchedAfter.values()].filter((r) => r.label === a.label) : [];
     if (byLabel.length === 1) {
       const b = byLabel[0]!;
       pairs.push([a, b]);
