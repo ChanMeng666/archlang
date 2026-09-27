@@ -22,6 +22,7 @@ import {
 } from "../index.js";
 import type {
   DescribeFact,
+  LayerSymmetry,
   Diagnostic,
   World,
   Intent,
@@ -269,6 +270,13 @@ export function cmdDescribe(args: Args): number {
       );
     }
   }
+  // An opt-in fact is absent unless computed, so selecting one without asking for it would
+  // silently print nothing — a usage error with the fix, rather than an empty answer.
+  for (const k of selected ?? []) {
+    if ((DESCRIBE_FACTS as readonly string[]).includes(k) && !facts.includes(k)) {
+      return usageError(`--select ${k} needs the fact computed: add --facts ${k}`);
+    }
+  }
 
   return withSource(args, (source, input) => {
     const full = describe(source, {
@@ -354,11 +362,25 @@ export function cmdDescribe(args: Args): number {
           (r) =>
             `  ${r.id}${r.label ? ` "${r.label}"` : ""}: ${r.area_m2} m²${r.adjacent.length ? ` — adj: ${r.adjacent.join(", ")}` : ""}`,
         ),
+        ...factLines(summary),
       ];
       process.stdout.write(lines.join("\n") + "\n");
     }
     return summary.ok ? EXIT.OK : EXIT.USER;
   });
+}
+
+/** One compact human line per requested opt-in fact (`--facts` without `--json`). */
+function factLines(s: SceneSummary): string[] {
+  const out: string[] = [];
+  if (s.symmetry) {
+    const g = (l: LayerSymmetry | null): string =>
+      l === null ? "—" : `${l.group}${l.axis ? ` ${l.axis}` : ""}${l.axes ? ` ${l.axes.join("/")}` : ""}`;
+    const { shell, rooms, full } = s.symmetry.layers;
+    out.push(`symmetry: shell ${g(shell)} · rooms ${g(rooms)} · full ${g(full)}; repeats ${s.symmetry.repeats.length}`);
+  }
+  if (s.syntax) out.push(`syntax: k=${s.syntax.k} cycleRank=${s.syntax.cycleRank}`);
+  return out;
 }
 
 /**

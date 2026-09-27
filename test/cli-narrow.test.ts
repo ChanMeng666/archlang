@@ -173,6 +173,24 @@ suite("describe --facts", () => {
     expect(o.syntax.k).toBeGreaterThan(0);
   }, 30000);
 
+  it("--select of an opt-in fact without --facts is a usage error naming the fix, never a silent absence", () => {
+    for (const k of DESCRIBE_FACTS) {
+      const r = run(["describe", "-", "--select", k, "--json"], TWO_ROOM);
+      expect(r.status, k).toBe(3);
+      expect(r.stderr).toContain(`add --facts ${k}`);
+    }
+  }, 30000);
+
+  it("--facts without --json prints one compact line per fact", () => {
+    const r = run(["describe", "-", "--facts", "symmetry,syntax"], TWO_ROOM);
+    expect(r.status).toBe(0);
+    const lines = r.stdout.trim().split("\n");
+    expect(lines.at(-2)).toMatch(/^symmetry: shell \S.* · rooms \S.* · full \S.*; repeats \d+$/);
+    expect(lines.at(-1)).toMatch(/^syntax: k=\d+ cycleRank=\d+$/);
+    // …and nothing of the sort without --facts.
+    expect(run(["describe", "-"], TWO_ROOM).stdout).not.toMatch(/^(symmetry|syntax):/m);
+  }, 30000);
+
   it("an unknown fact name is a usage error (exit 3) with a did-you-mean", () => {
     const r = run(["describe", "-", "--facts", "symetry", "--json"], TWO_ROOM);
     expect(r.status).toBe(3);
