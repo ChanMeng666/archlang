@@ -826,6 +826,39 @@ export function overlayOf(ir: ResolvedPlan): CirculationOverlay | null {
   );
 }
 
+/** Which entrances seed a walk on each side, with each entrance's connector clear width. */
+export interface EntranceSides {
+  /** Entrances whose doorway seeds on P₀ but not on gP, and vice versa. */
+  only0: ReadonlyArray<{ id: string; clear: number }>;
+  onlyG: ReadonlyArray<{ id: string; clear: number }>;
+  /** The widest clear width among entrances that seed on BOTH sides (0 if none). */
+  bothClear: number;
+  /** The widest clear width among the entrances seeding on each side (0 if none). */
+  widest0: number;
+  widestG: number;
+}
+
+/** See {@link EntranceSides}. Empty sides when either side has no overlay. */
+export function entranceSides(obs0: Observation, obsG: Observation): EntranceSides {
+  const none: EntranceSides = { only0: [], onlyG: [], bothClear: 0, widest0: 0, widestG: 0 };
+  if (!obs0.ir || !obsG.ir) return none;
+  const o0 = overlayOf(obs0.ir);
+  const oG = overlayOf(obsG.ir);
+  if (!o0 || !oG) return none;
+  const clear = new Map(obs0.summary.access.edges.map((e) => [e.doorId, e.estimatedClearWidth] as const));
+  const ids0 = new Set(o0.entrances.map((e) => e.entranceId));
+  const idsG = new Set(oG.entrances.map((e) => e.entranceId));
+  const w = (id: string) => clear.get(id) ?? 0;
+  const max = (xs: number[]) => xs.reduce((a, b) => Math.max(a, b), 0);
+  return {
+    only0: [...ids0].filter((id) => !idsG.has(id)).map((id) => ({ id, clear: w(id) })),
+    onlyG: [...idsG].filter((id) => !ids0.has(id)).map((id) => ({ id, clear: w(id) })),
+    bothClear: max([...ids0].filter((id) => idsG.has(id)).map(w)),
+    widest0: max([...ids0].map(w)),
+    widestG: max([...idsG].map(w)),
+  };
+}
+
 /** See {@link CaseContext.entranceShift}. 0 when either side has no overlay. */
 export function entranceSeedShift(obs0: Observation, obsG: Observation, f: Frame): number {
   if (!obs0.ir || !obsG.ir) return 0;
@@ -1022,6 +1055,8 @@ export interface CaseContext {
   /** The largest entrance seed shift in cells (gP's seed against the image of P₀'s), over
    *  every entrance; `Infinity` when an entrance seeds on one side only (lazy). */
   entranceShift(): number;
+  /** Which entrances seed on each side (lazy) — see {@link EntranceSides}. */
+  entranceSides(): EntranceSides;
   /**
    * P₀ carries geometry a translation re-rounds: a circle room or an arc edge (whose
    * tessellation and tangents are irrational), or a resolved coordinate `x` with
@@ -1055,6 +1090,7 @@ export function caseContext(
   let walks: Map<string, WalkAttribution> | null = null;
   let endpoints: Map<string, WalkAttribution> | null = null;
   let shift: number | null = null;
+  let sides: EntranceSides | null = null;
   return {
     g,
     f,
@@ -1072,6 +1108,7 @@ export function caseContext(
     walks: () => (walks ??= new Map(attributeWalks(obs0, obsG, f).map((a) => [a.roomId, a]))),
     endpoints: () => (endpoints ??= new Map(attributeWalks(obs0, obsG, f, true).map((a) => [a.roomId, a]))),
     entranceShift: () => (shift ??= entranceSeedShift(obs0, obsG, f)),
+    entranceSides: () => (sides ??= entranceSides(obs0, obsG)),
     floatSensitive: g.translate === true && floatSensitive(obs0, f.tx),
   };
 }

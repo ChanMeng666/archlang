@@ -334,6 +334,18 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
         expect(ctx.entranceShift()).toBe(Number.POSITIVE_INFINITY);
         const v = reproduce("entrance-seed-walk", body, "r270", "circulation.rooms[g.r].bottleneck");
         expect([v.expected, v.actual]).toEqual(["1400", "740"]);
+        // The class is BOUNDED to exactly this: a planted regression in the bottleneck —
+        // any other value on either side — is not absorbed.
+        const cls = KNOWN_CLASSES["entrance-seed-walk"];
+        const { ctx: c2 } = witnessCase(body, elementNamed("r270"));
+        for (const [expected, actual] of <[string, string][]>[
+          ["1400", "600"], // narrower than the widest entrance seeding on both sides (740)
+          ["1400", "1234"], // wider than any entrance seeding on gP's side
+          ["1300", "740"], // the wider reading is no one-sided entrance's width
+          ["740", "1400"], // the one-sided entrance seeds on P₀, not on gP
+        ]) {
+          expect(cls.covers({ ...v, expected, actual }, c2), `${expected} -> ${actual}`).toBe(false);
+        }
       },
     ],
   ],

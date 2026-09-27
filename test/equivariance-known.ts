@@ -94,6 +94,22 @@ const endpointTie = (v: Violation, c: CaseContext): boolean => {
   );
 };
 
+/**
+ * A bottleneck change explained by an entrance that seeds on one side only (see
+ * `entrance-seed-walk`): the wider side's value is that entrance's own clear width, and the
+ * narrower side's value lies in [widest entrance seeding on both sides, widest entrance
+ * seeding on the narrower side].
+ */
+export function seedLossBottleneck(v: Violation, c: CaseContext): boolean {
+  const e0 = Number(v.expected);
+  const eG = Number(v.actual);
+  if (!Number.isFinite(e0) || !Number.isFinite(eG) || e0 === eG) return false;
+  const s = c.entranceSides();
+  const [wide, narrow, onlyWide, widestNarrowSide] =
+    e0 > eG ? [e0, eG, s.only0, s.widestG] : [eG, e0, s.onlyG, s.widest0];
+  return onlyWide.some((e) => e.clear === wide) && narrow >= s.bothClear && narrow <= widestNarrowSide;
+}
+
 /** Whether this class covers each circulation violation of the case; raster lint rules
  *  are covered by a raster class only when the whole raster change is. */
 const rasterClasses: readonly ClassName[] = [
@@ -167,9 +183,12 @@ export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass & Partial<Rast
       const measured = (o: CaseContext["obs0"]) => (o.summary.circulation?.rooms.length ?? 0) > 0;
       if (measured(c.obs0) !== measured(c.obsG)) return true;
       // With several entrances the bottleneck is the widest from ANY of them, so an entrance
-      // whose tied seed lands in a sealed pocket on one side only (or walks in past eroded
-      // cells) drops its width out of — or into — every room's bottleneck on that side.
-      if (v.path === "circulation.rooms[].bottleneck") return c.entranceShift() > 1;
+      // whose tied seed lands in a sealed pocket on one side only drops its width out of a
+      // room's bottleneck on that side. Bounded to exactly that: the wider reading IS the
+      // clear width of an entrance that seeds on its side only, and the narrower one lies
+      // between the widest entrance seeding on BOTH sides and the widest seeding on its own
+      // side — so a change of any other size or value is NEW.
+      if (v.path === "circulation.rooms[].bottleneck") return seedLossBottleneck(v, c);
       // Otherwise the seed moved more than a step: its magnitude is the geodesic between the
       // two tied seeds, which no straight-line bound holds — and a room whose nearest cell
       // lies in the pocket one seed cannot reach measures to a different reachable cell,
