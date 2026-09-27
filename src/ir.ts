@@ -51,6 +51,7 @@ import { NULL_WORLD } from "./world.js";
 import { idToken } from "./identity.js";
 import type { WallSegment } from "./geometry.js";
 import type { Arc } from "./geometry/arc.js";
+import type { Side } from "./algebra/d4.js";
 import { extendBounds, outerFaceBounds, segmentsOfWall, WallGrid } from "./geometry.js";
 import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
@@ -495,6 +496,17 @@ export interface RStair extends RBase {
   dir: VerticalDir;
   /** Flight width across the run (mm). */
   width: number;
+  /**
+   * The footprint edge the run is entered across, in PLAN coordinates, once a `place` frame
+   * has carried it: the local tail (`tailEdge`) acted on by the frame. Absent at the root,
+   * where `tailEdge` applies its fixed page rule. Internal; never reaches `describe()`.
+   */
+  _tail?: Side;
+  /**
+   * The frame REFLECTS, so the break line's diagonals (the one handed part of the symbol)
+   * read their mirror. XOR-composed by `stair.transform`. Internal; never reaches `describe()`.
+   */
+  _mirror?: true;
 }
 
 /** A resolved lift shaft. */
@@ -502,6 +514,8 @@ export interface RElevator extends RBase {
   kind: "elevator";
   at: Point;
   size: { w: number; h: number };
+  /** The entry edge the frame carried — see {@link RStair._tail}. */
+  _tail?: Side;
 }
 
 /** A resolved escalator run. */
@@ -510,6 +524,8 @@ export interface REscalator extends RBase {
   at: Point;
   size: { w: number; h: number };
   dir: VerticalDir;
+  /** The tail edge the frame carried — see {@link RStair._tail}. */
+  _tail?: Side;
 }
 
 /**

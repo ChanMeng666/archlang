@@ -12,6 +12,7 @@ import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "
 import type { SceneNode } from "../scene.js";
 import type { RElevator } from "../ir.js";
 import { rectCorners } from "../geometry.js";
+import { tailEdge } from "../vertical.js";
 import { elevatorGlyph } from "./vertical-glyphs.js";
 
 export const elevator: ElementDef = {
@@ -64,6 +65,7 @@ export const elevator: ElementDef = {
     const el = resolved as RElevator;
     const { id } = t;
     const r = t.rect(el.at, el.size);
-    return { ...el, id, at: r.at, size: r.size };
+    // The car's entry side (its local south edge) acted on — see `stair.transform`.
+    return { ...el, id, at: r.at, size: r.size, _tail: t.side(tailEdge(el)) };
   },
 };

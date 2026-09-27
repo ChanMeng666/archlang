@@ -13,6 +13,7 @@ import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "
 import type { SceneNode } from "../scene.js";
 import type { REscalator } from "../ir.js";
 import { rectCorners } from "../geometry.js";
+import { tailEdge } from "../vertical.js";
 import { parseVerticalDir } from "./stair.js";
 import { escalatorGlyph } from "./vertical-glyphs.js";
 
@@ -68,6 +69,8 @@ export const escalator: ElementDef = {
     const el = resolved as REscalator;
     const { id } = t;
     const r = t.rect(el.at, el.size);
-    return { ...el, id, at: r.at, size: r.size };
+    // The tail, read in the LOCAL frame and acted on — see `stair.transform`. The chevrons
+    // and arrow are symmetric across the centreline, so a reflection needs nothing more.
+    return { ...el, id, at: r.at, size: r.size, _tail: t.side(tailEdge(el)) };
   },
 };

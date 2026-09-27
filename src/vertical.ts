@@ -68,6 +68,17 @@ export function flightAxis(size: { w: number; h: number }): "x" | "y" {
 }
 
 /**
+ * The axis a run's flight lies along, as DRAWN: read off its tail edge once a `place`
+ * frame has carried one ({@link RStair._tail} — a top/bottom tail runs along `"y"`), else
+ * {@link flightAxis} of its footprint. The two agree except on a SQUARE footprint, whose
+ * `flightAxis` tie reads `"y"` whichever way the frame turned it.
+ */
+export function runAxis(v: RVertical): "x" | "y" {
+  if (v._tail !== undefined) return v._tail === "left" || v._tail === "right" ? "x" : "y";
+  return flightAxis(v.size);
+}
+
+/**
  * The end of a run's long axis that a RISING flight starts from: the bottom of a portrait
  * footprint, the right of a landscape one. The fixed half of the convention — see
  * {@link tailEdge} for the half that depends on `dir`.
@@ -78,7 +89,9 @@ function footEdge(size: { w: number; h: number }): RectEdge {
 
 /**
  * The footprint edge the direction arrow's TAIL sits on — the end of the run you are
- * standing at, on this storey.
+ * standing at, on this storey. A run inside a `place` carries its own ({@link RStair._tail}:
+ * the rule below applied in the component's LOCAL frame, then acted on by the frame), so a
+ * turned or mirrored flight is entered from the image of its authored end.
  *
  * Two rules compose. First, geometry: the flight lies along the footprint's LONG axis and
  * a RISING flight starts at that axis's larger-coordinate end (bottom / right), so an `up`
@@ -97,6 +110,7 @@ function footEdge(size: { w: number; h: number }): RectEdge {
  * changing this default.
  */
 export function tailEdge(v: RVertical): RectEdge {
+  if (v._tail !== undefined) return v._tail;
   const foot = footEdge(v.size);
   if (v.kind === "elevator") return "bottom";
   return v.dir === "down" ? oppositeSide(foot) : foot;
