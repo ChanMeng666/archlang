@@ -59,7 +59,7 @@ import { arcExtremes, distPointToArc } from "../geometry/arc.js";
 import { pointInPolygon, polygonEdges, polygonLabelPoint } from "../geometry/polygon.js";
 import { matchesLivingDining } from "../vocabulary.js";
 import { solidFurniture } from "../fixtures-catalog.js";
-import { forEachNeighbour4 } from "./grid.js";
+import { neighbours4 } from "./grid.js";
 
 /** Radius (mm) of the walking body obstacles are inflated by (clearance erosion). */
 export const DEFAULT_BODY_RADIUS_MM = 300;
@@ -439,17 +439,17 @@ export function bfs(g: NavGrid, source: number): { dist: Int32Array; parent: Int
   const parent = new Int32Array(g.nx * g.ny).fill(-1);
   dist[source] = 0;
   const queue = [source];
-  let k = source;
-  const visit = (nb: number): void => {
-    if (g.free[nb] && dist[nb]! < 0) {
-      dist[nb] = dist[k]! + 1;
-      parent[nb] = k;
-      queue.push(nb);
-    }
-  };
+  const nb4 = new Int32Array(4);
   for (let h = 0; h < queue.length; h++) {
-    k = queue[h]!;
-    forEachNeighbour4(k, g.nx, g.ny, visit);
+    const k = queue[h]!;
+    for (let i = 0, m = neighbours4(k, g.nx, g.ny, nb4); i < m; i++) {
+      const nb = nb4[i]!;
+      if (g.free[nb] && dist[nb]! < 0) {
+        dist[nb] = dist[k]! + 1;
+        parent[nb] = k;
+        queue.push(nb);
+      }
+    }
   }
   return { dist, parent };
 }
@@ -471,13 +471,16 @@ export function reachableFromAny(g: NavGrid, sources: number[]): Uint8Array {
       queue.push(s);
     }
   }
-  const visit = (nb: number): void => {
-    if (g.free[nb] && !seen[nb]) {
-      seen[nb] = 1;
-      queue.push(nb);
+  const nb4 = new Int32Array(4);
+  for (let h = 0; h < queue.length; h++) {
+    for (let i = 0, m = neighbours4(queue[h]!, g.nx, g.ny, nb4); i < m; i++) {
+      const nb = nb4[i]!;
+      if (g.free[nb] && !seen[nb]) {
+        seen[nb] = 1;
+        queue.push(nb);
+      }
     }
-  };
-  for (let h = 0; h < queue.length; h++) forEachNeighbour4(queue[h]!, g.nx, g.ny, visit);
+  }
   return seen;
 }
 
@@ -566,22 +569,22 @@ export function widestBottleneck(g: NavGrid, sources: number[], seed: number, pi
     }
   }
 
-  let u = -1;
-  const relax = (nb: number): void => {
-    if (!g.free[nb] || done[nb]) return;
-    const cand = Math.min(best[u]!, g.clearMm[nb]!);
-    if (cand > best[nb]!) {
-      best[nb] = cand;
-      // The limiting cell is nb when it is the new narrowest, else u's limiter.
-      if (pinch) pinch[nb] = g.clearMm[nb]! < best[u]! ? nb : pinch[u]!;
-      push(cand, nb);
-    }
-  };
+  const nb4 = new Int32Array(4);
   while (hk.length > 0) {
-    u = pop();
+    const u = pop();
     if (done[u]) continue;
     done[u] = 1;
-    forEachNeighbour4(u, g.nx, g.ny, relax);
+    for (let i = 0, m = neighbours4(u, g.nx, g.ny, nb4); i < m; i++) {
+      const nb = nb4[i]!;
+      if (!g.free[nb] || done[nb]) continue;
+      const cand = Math.min(best[u]!, g.clearMm[nb]!);
+      if (cand > best[nb]!) {
+        best[nb] = cand;
+        // The limiting cell is nb when it is the new narrowest, else u's limiter.
+        if (pinch) pinch[nb] = g.clearMm[nb]! < best[u]! ? nb : pinch[u]!;
+        push(cand, nb);
+      }
+    }
   }
   return best;
 }
@@ -600,16 +603,16 @@ export function distanceTransform4(nx: number, ny: number, seeds: readonly numbe
     D[k] = 0;
     q.push(k);
   }
-  let k = -1;
-  const visit = (nb: number): void => {
-    if (D[nb]! < 0) {
-      D[nb] = D[k]! + 1;
-      q.push(nb);
-    }
-  };
+  const nb4 = new Int32Array(4);
   for (let h = 0; h < q.length; h++) {
-    k = q[h]!;
-    forEachNeighbour4(k, nx, ny, visit);
+    const k = q[h]!;
+    for (let i = 0, m = neighbours4(k, nx, ny, nb4); i < m; i++) {
+      const nb = nb4[i]!;
+      if (D[nb]! < 0) {
+        D[nb] = D[k]! + 1;
+        q.push(nb);
+      }
+    }
   }
   return D;
 }

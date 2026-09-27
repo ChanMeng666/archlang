@@ -9,7 +9,7 @@ import {
   reachableFromAny,
   widestBottleneck,
 } from "../src/analyze/circulation.js";
-import { forEachNeighbour4 } from "../src/analyze/grid.js";
+import { neighbours4 } from "../src/analyze/grid.js";
 
 /**
  * The path-algebra ORACLE: one engine, `bestPaths`, against every specialised search.
@@ -24,7 +24,7 @@ import { forEachNeighbour4 } from "../src/analyze/grid.js";
  *  - `distanceTransform4`  ≡ multi-source unit `MIN_PLUS`.
  *
  * The grid adapter below spells the neighbour order out (W, E, N, S) instead of calling
- * `forEachNeighbour4`, so a change to that order fails here: the overlay's drawn walk is
+ * `neighbours4`, so a change to that order fails here: the overlay's drawn walk is
  * made of `bfs` parents, and a parent depends on which neighbour is discovered first.
  *
  * The first block checks the engine itself against brute force on random digraphs.
@@ -176,11 +176,13 @@ describe("bestPaths equals brute force on random digraphs", () => {
 // The specialised grid searches against the engine.
 // ---------------------------------------------------------------------------------------
 
-describe("forEachNeighbour4 visits W, E, N, S and stays in bounds", () => {
+describe("neighbours4 lists W, E, N, S and stays in bounds", () => {
   const nbrs = (k: number, nx: number, ny: number): number[] => {
-    const out: number[] = [];
-    forEachNeighbour4(k, nx, ny, (nb) => out.push(nb));
-    return out;
+    const out = new Int32Array(4).fill(-7);
+    const n = neighbours4(k, nx, ny, out);
+    // Slots past the count are untouched: the caller reads only the first `n`.
+    expect([...out.slice(n)].every((x) => x === -7)).toBe(true);
+    return [...out.slice(0, n)];
   };
   it("pinned order", () => {
     expect(nbrs(4, 3, 3)).toEqual([3, 5, 1, 7]);
