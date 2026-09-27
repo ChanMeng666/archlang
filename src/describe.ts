@@ -54,6 +54,8 @@ import {
 import { outerFaceBounds } from "./geometry.js";
 import type { PaperOrientation, PaperSize } from "./sheet.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
+import { symmetryFacts, type SymmetryFacts } from "./analyze/symmetry.js";
+import { syntaxFacts, type SyntaxFacts } from "./analyze/syntax.js";
 import { roomTypeForUses, buildInputGraph } from "./plan-json.js";
 import { roomSchedule, type ScheduleRow } from "./sheet-tables.js";
 // The page→compass conversion and the `site` derivation live in ONE module: the site
@@ -87,6 +89,18 @@ export type {
 
 export type { BBox } from "./analyze.js";
 
+export type {
+  LayerSymmetry,
+  MirrorAxis,
+  MirrorRepeat,
+  Repeat,
+  SymmetryElement,
+  SymmetryFacts,
+  SymmetryGroup,
+  TranslationRepeat,
+} from "./analyze/symmetry.js";
+export type { SyntaxFacts, SyntaxRoom } from "./analyze/syntax.js";
+
 // The access graph and its two node/edge shapes are DECLARED in `analyze.js`, but
 // `describe()` is the only public value that surfaces them ({@link SceneSummary.access}),
 // so they leave through the same door they arrive by. Without this a consumer could read
@@ -106,7 +120,19 @@ export interface DescribeOptions extends AnalyzeOptions {
    * adjacent, narrow enough to avoid joining clearly separate rooms.
    */
   adjacencyTolMm?: number;
+  /**
+   * Opt-in derived facts, each computed only when named here: `"symmetry"` adds
+   * {@link SceneSummary.symmetry}, `"syntax"` adds {@link SceneSummary.syntax}. Absent or
+   * empty (the default), the summary is byte-identical to one written before either existed.
+   */
+  facts?: readonly DescribeFact[];
 }
+
+/** Every opt-in fact {@link DescribeOptions.facts} can name — `arch describe --facts` reads this list. */
+export const DESCRIBE_FACTS = ["symmetry", "syntax"] as const;
+
+/** One opt-in fact of {@link DESCRIBE_FACTS}. */
+export type DescribeFact = (typeof DESCRIBE_FACTS)[number];
 
 export interface RoomSummary {
   id: string;
@@ -734,6 +760,16 @@ export interface SceneSummary {
    * {@link VerticalReport}.
    */
   vertical?: VerticalReport;
+  /**
+   * The storey's symmetry group per layer (shell, rooms, full) and its repeated rooms.
+   * Present **only when requested** (`facts: ["symmetry"]`). See {@link SymmetryFacts}.
+   */
+  symmetry?: SymmetryFacts;
+  /**
+   * Space-syntax metrics on the access graph (depth, mean depth, RA, integration,
+   * control, cycle rank). Present **only when requested** (`facts: ["syntax"]`).
+   */
+  syntax?: SyntaxFacts;
   /** All problems from parse/link/resolve, with byte spans and codes. */
   diagnostics: Diagnostic[];
 }
@@ -893,7 +929,11 @@ function inst(instance: string | undefined): { instance?: string } {
 }
 
 /** Build the summary from a fully resolved plan. */
-function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "diagnostics"> {
+function summarize(
+  ir: ResolvedPlan,
+  tol: number,
+  facts: readonly DescribeFact[] = [],
+): Omit<SceneSummary, "ok" | "diagnostics"> {
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doorEls = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const windowEls = ir.elements.filter((e): e is RWindow => e.kind === "window");
@@ -1201,6 +1241,10 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     // exactly the same reason: the rows here must be the rows drawn, grouping included.
     ...(ir.schedule === "rooms" ? { schedule: roomSchedule(roomEls, ir.zones).rows } : {}),
     ...(zones ? { zones } : {}),
+    // Opt-in derived facts: computed and present ONLY when requested, so the default
+    // summary is byte-identical. The logic lives in `analyze/symmetry.ts`/`analyze/syntax.ts`.
+    ...(facts.includes("symmetry") ? { symmetry: symmetryFacts(ir) } : {}),
+    ...(facts.includes("syntax") ? { syntax: syntaxFacts(access) } : {}),
   };
 }
 
@@ -1277,7 +1321,7 @@ export function describe(source: string, opts: DescribeOptions = {}): SceneSumma
       ? levels.map((l) => ({
           level: l.level,
           ...(l.name !== undefined ? { name: l.name } : {}),
-          ...summarize(l.ir, tol),
+          ...summarize(l.ir, tol, opts.facts),
         }))
       : undefined;
 
@@ -1287,7 +1331,7 @@ export function describe(source: string, opts: DescribeOptions = {}): SceneSumma
 
   return {
     ok: true,
-    ...summarize(ir, tol),
+    ...summarize(ir, tol, opts.facts),
     ...(perLevel ? { levels: perLevel } : {}),
     ...(vertical ? { vertical } : {}),
     diagnostics,

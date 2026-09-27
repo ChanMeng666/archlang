@@ -274,6 +274,7 @@ semantic facts: rooms, areas, adjacency, what doors connect
 | `--zone <path[,path…]>` | keep only the rooms declared in these `zone` blocks (nested zones roll up; paths are dotted, e.g. west.galleries) — a DISPLAY filter: `ok` and the exit code still weigh the whole plan |
 | `--select <key[,key…]>` | emit only these top-level keys of the --json object (rooms, doors, totals, access, circulation, freedom, …); the ok/plan/units/diagnostics envelope is always kept |
 | `--level <n>` | report this storey of a multi-storey plan as the top-level facts (a DISPLAY filter — `ok` and the exit code still weigh the whole plan) |
+| `--facts <symmetry\|syntax[,…]>` | also compute these opt-in facts: `symmetry` (the plan's symmetry group per layer — shell, rooms, full — and its repeated rooms) and `syntax` (space-syntax depth, mean depth, RA, integration and control on the access graph); absent by default |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -297,6 +298,9 @@ $ arch describe museum.arch --zone west --json
 
 # the upper storey's rooms/areas/access as the top-level facts (`levels[]` carries every storey)
 $ arch describe house.arch --level 2 --json
+
+# add the symmetry group per layer, repeated rooms, and space-syntax integration on the access graph
+$ arch describe plan.arch --facts symmetry,syntax --json
 ```
 
 ### `arch score`

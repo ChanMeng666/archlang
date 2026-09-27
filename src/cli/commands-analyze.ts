@@ -10,6 +10,7 @@ import { resolve as resolvePath } from "node:path";
 import {
   describe,
   describeLevel,
+  DESCRIBE_FACTS,
   lint,
   LINT_PROFILE_NAMES,
   ERROR_CODES,
@@ -20,6 +21,7 @@ import {
   feedbackForResult,
 } from "../index.js";
 import type {
+  DescribeFact,
   Diagnostic,
   World,
   Intent,
@@ -127,6 +129,9 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "zones",
   "levels",
   "vertical",
+  // Opt-in: present only under `--facts`, so selectable only alongside it.
+  "symmetry",
+  "syntax",
 ];
 
 /** Tally a {@link FreedomReport} bucket without fighting the placement unions. */
@@ -255,9 +260,21 @@ export function cmdDescribe(args: Args): number {
   }
   const wantRooms = args.room === undefined ? null : csv(args.room);
   const wantZones = args.zone === undefined ? null : csv(args.zone);
+  // `--facts` names opt-in derived facts; like `--select`, an unknown name is a usage error.
+  const facts = args.facts === undefined ? [] : csv(args.facts);
+  for (const f of facts) {
+    if (!(DESCRIBE_FACTS as readonly string[]).includes(f)) {
+      return usageError(
+        `unknown --facts name "${f}"${didYouMean(f, DESCRIBE_FACTS)} (available: ${echoList(DESCRIBE_FACTS)})`,
+      );
+    }
+  }
 
   return withSource(args, (source, input) => {
-    const full = describe(source, { world: makeNodeWorld(baseDirOf(input)) });
+    const full = describe(source, {
+      world: makeNodeWorld(baseDirOf(input)),
+      ...(facts.length > 0 ? { facts: facts as DescribeFact[] } : {}),
+    });
 
     // A plan that failed to resolve has no rooms to narrow: report ITS diagnostics
     // rather than a misleading `unknown room` (the room list is empty for a reason).

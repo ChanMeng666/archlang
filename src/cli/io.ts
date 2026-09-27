@@ -106,6 +106,8 @@ export interface Args {
   zone?: string;
   /** `--select <key[,key…]>`: (describe) emit only these top-level keys of the JSON. */
   select?: string;
+  /** `--facts <fact[,fact…]>`: (describe) also compute these opt-in derived facts. */
+  facts?: string;
   /** `--code <CODE[,…]>`: (lint/validate) DISPLAY-filter diagnostics by code — never gating. */
   code?: string;
   /** `--severity <error|warning>`: (lint/validate) DISPLAY-filter diagnostics — never gating. */
@@ -161,6 +163,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--room": { key: "room", kind: "string" },
   "--zone": { key: "zone", kind: "string" },
   "--select": { key: "select", kind: "string" },
+  "--facts": { key: "facts", kind: "string" },
   "--code": { key: "code", kind: "string" },
   "--severity": { key: "severity", kind: "string" },
   "--section": { key: "section", kind: "string" },
