@@ -295,18 +295,17 @@ statement per placement so each instance answers for itself. Pin deleted; the wi
 also absorbed, `W_DIM_OVERLAP` measuring a mirrored opposite-normal pair differently, is the text
 side's, not the pullback's: it moved to E.14.
 
-### E.2 · `stair-tail` — a vertical run's arrow and entry edge ignore the frame — `todo`
+### E.2 · `stair-tail` — a vertical run's arrow and entry edge ignore the frame — closed by W5b
 
-`tailEdge` (`src/vertical.ts:98`) is the fixed page rule "larger-coordinate end of the long axis", so
-a turned `stair`/`escalator` draws its arrow the wrong way and the nav grid opens the wrong landing.
-ADR 0016 already records this as "Limitation, inherited"; it is pinned as a defect, not a declared
-convention, because it is scheduled to close — by carrying the tail edge through the frame, or with
-the `entry <edge>` clause the module already anticipates.
+Each run's `transform` (`src/elements/{stair,escalator,elevator}.ts`) carries its local tail as
+`_tail`; `tailEdge` reads it and `runAxis` replaces `flightAxis` for the drawn axis (a square
+footprint's tie). Pins deleted; law: `test/vertical-frames.test.ts`, "closed classes" in
+`test/equivariance-corpus.test.ts`. The fixed page rule still decides the tail at the root.
 
-### E.3 · `stair-break-hand` — a mirrored stair keeps its break line's hand — `todo`
+### E.3 · `stair-break-hand` — a mirrored stair keeps its break line's hand — closed by W5b
 
-The break-line diagonals (`src/elements/vertical-glyphs.ts:144`) are drawn in the run frame with a
-fixed handedness; nothing tells a reflected stair to mirror them, as `_mirror` does for fixtures.
+`stair.transform` XORs `_mirror` on a reflection; `stairGlyph` negates the break line's cross
+coordinate for it. Pins deleted; law as E.2.
 
 ### E.4 · `plugin-throw` — a plugin element inside `place` throws — closed by W2
 
@@ -356,26 +355,24 @@ tessellation (`aquarium` detour 1.01 → 1, `library` reading-room walk 25500 �
 flips `W_POCKET_RUN`'s `>= need` and makes its reverse-slide fix appear. Close by measuring relative
 to the plan's own origin and snapping resolved positions.
 
-### E.12 · `slide-track` — a mirrored sliding door swaps its panels' tracks — `todo`
+### E.12 · `slide-track` — a mirrored sliding door swaps its panels' tracks — closed by W5b
 
-`renderDoorPanels` (`src/elements/door-panels.ts:135-136`) puts the fixed panel on `n * off * sd`,
-the wall's left normal times `slide`; a reflection flips the normal and not `slide`. Close by
-flipping with the frame's determinant, as `swing` is.
+`door.transform` XORs `_mirror`; the `sliding` case of `renderDoorPanels` puts the fixed panel on
+`n · off · (_mirror ? −slide : slide)`. `slide` itself still does not flip. No root spelling
+draws a mirrored sliding door (reversing the wall reverses the normal with the traversal); the
+`test/place.test.ts` twin case encoded the defect and now excludes the sliding kind.
 
-### E.13 · `column-corner` — the frame carries a column's corner as a centre — `todo`
+### E.13 · `column-corner` — the frame carried a column's corner as a centre — closed by W5b
 
-`transformGeometry`'s `column` arm (`src/frame.ts:393-398`) treats `at` as the centre;
-`src/elements/column.ts` lays it out as the top-left. Every element but the identity and the
-transposition draws the column one size off (and can move the drawing extent the sheet fit reads).
-Close with `transformRect`.
+`column.transform` carries `at`/`size` through `t.rect`, as every top-left rectangle is. Pins
+deleted; law: "closed classes" in `test/equivariance-corpus.test.ts`, `test/frame.test.ts`.
 
-### E.14 · `dim-text-side` — a dim's number is drawn inside its line for a negative offset — `todo`
+### E.14 · `dim-text-side` — a dim's number was drawn inside its line for a negative offset — closed by W5b
 
-A root renderer defect, with no `place` involved: `dim.render` (`src/elements/dim.ts:259-262,320`)
-always puts the number on the from→to left normal, whatever the offset's sign. At the root,
-`dim (0,3000)->(4000,3000) offset -400` draws its line at y = 2600 and its number at y = 2658.8,
-between the line and the wall at 3000. The oracle meets it because a reflection negates every placed
-dim's offset (`src/frame.ts:392`). Close by drawing on `sign(offset)` of the normal.
+`dim.render` puts the number on the side the offset's SIGN BIT points (`pointsRight`), so a
+negative offset reads outside its line at the root, and a reflected zero-offset call-out (`-0`)
+reads mirrored. `W_DIM_OVERLAP`'s band follows the same side. No shipped example has a
+negative offset.
 
 `W_DIM_OVERLAP` measures the same convention: its band puts each number on +n. So under a
 reflection an opposite-normal pair collides differently. At A3 1:50,

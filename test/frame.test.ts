@@ -646,13 +646,22 @@ describe("transformElement — an instance's resolved element crossing into plan
     expect("rotate" in back).toBe(false);
   });
 
-  it("treats a column's `at` as its CENTRE — no corner correction, only the extents swap", () => {
+  it("carries a column's TOP-LEFT `at` as the rectangle it is — re-cornered, extents swapped", () => {
+    // This case used to assert the corner rode as a CENTRE (`tp(f, at)`), which is the
+    // `column-corner` defect (backlog E.13): `column.ts` lays the column out from `at` as
+    // its top-left, so every frame but the identity and the transposition drew it one size off.
     const f = F({ rotate: 90, at: { x: 0, y: 0 } });
     const out = transformElement(f, column()) as RColumn;
-    expect(pt(out.at)).toEqual(pt(tp(f, { x: 1000, y: 1000 })));
+    // (1000,1000) + 400×600 turned 90° clockwise: x ∈ [-1600,-1000], y ∈ [1000,1400].
+    expect(pt(out.at)).toEqual(pt({ x: -1600, y: 1000 }));
     expect(out.size).toEqual({ w: 600, h: 400 });
-    expect(transformElement(F({ rotate: 180 }), column()).kind).toBe("column");
-    expect((transformElement(F({ rotate: 180 }), column()) as RColumn).size).toEqual({ w: 400, h: 600 });
+    for (const { label, f: g } of PLACEMENTS) {
+      const c = transformElement(g, column()) as RColumn;
+      expect({ at: pt(c.at), size: c.size }, label).toEqual({
+        at: pt(transformRect(g, column().at, column().size).at),
+        size: transformRect(g, column().at, column().size).size,
+      });
+    }
   });
 
   it("is exactly invertible on geometry: transforming by f then by inverse(f) restores every coordinate", () => {

@@ -30,6 +30,7 @@ import { LINT_RULES } from "../src/lint.js";
 import { entryEdges, verticalsOf } from "../src/vertical.js";
 import {
   astOf,
+  canonPrim,
   compareObservations,
   CURATED_EXAMPLES,
   D4_ELEMENTS,
@@ -253,44 +254,6 @@ const DRUM = (r: number): string =>
 /** One `it` per witness, keyed by class — the type makes a class without a witness a
  *  compile error, and the last test makes it a red one too. */
 const WITNESSES: Record<ClassName, [string, () => void][]> = {
-  "stair-tail": [
-    [
-      "STILL enters a turned stair from the fixed page end (ADR 0016: 'Limitation, inherited')",
-      () => {
-        const body = `${room(6000, 4000)}
-    door id=d at (3000,4000) width 900 wall shell
-    stair id=st at (1000,500) size 1200x3000 dir up`;
-        const g = elementNamed("r90");
-        const f = frameFor(g, 50);
-        const { p0, gP } = witnessPair(body, g);
-        const tail = (src: string) => entryEdges(verticalsOf(observe(src).ir!)[0]!);
-        const side = { top: { x: 0, y: -1 }, bottom: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
-        const turned = tail(p0).map((e) => {
-          const v = lin(f, side[e]);
-          return (Object.keys(side) as (keyof typeof side)[]).find((k) => side[k].x === v.x && side[k].y === v.y);
-        });
-        expect(tail(p0)).toEqual(["bottom"]);
-        expect(turned).toEqual(["left"]); // what the group predicts…
-        expect(tail(gP)).toEqual(["right"]); // …and what the fixed page rule answers
-        reproduce("stair-tail", body, "r90", "scene.stair[g.st]");
-      },
-    ],
-  ],
-  "stair-break-hand": [
-    [
-      "STILL draws a mirrored stair's break line with its original hand",
-      () => {
-        const body = `${room(6000, 4000)}
-    stair id=st at (1000,500) size 1200x3000 dir up`;
-        // Under `mirror x` the tail edge (bottom) maps to itself, so the arrow agrees and only
-        // the two break-line diagonals differ.
-        const v = reproduce("stair-break-hand", body, "mx", "scene.stair[g.st]");
-        expect(v.expected.split(" ; ")).toHaveLength(2);
-        expect(v.actual.split(" ; ")).toHaveLength(2);
-        expect(KNOWN_CLASSES["stair-tail"].covers(v, witnessCase(body, elementNamed("mx")).ctx)).toBe(false);
-      },
-    ],
-  ],
   "facing-tie": [
     [
       "(DECLARED) STILL resolves a corner window's tie N/S-first, so a quarter-turn changes it",
@@ -417,99 +380,6 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
       },
     ],
   ],
-  "slide-track": [
-    [
-      "STILL swaps a mirrored sliding door's panel tracks",
-      () => {
-        const body = `${room(4000, 3000)}
-    door id=d sliding at (2000,3000) width 1600 wall shell slide left`;
-        reproduce("slide-track", body, "mx", "scene.door[g.d]");
-      },
-    ],
-  ],
-  "column-corner": [
-    [
-      "STILL lands a turned column one size away",
-      () => {
-        const body = `${room(4000, 3000)}
-    column id=k at (1000,1000) size 400x600`;
-        const v = reproduce("column-corner", body, "r90", "scene.column[g.k]");
-        // Top-left (1000,1000), 400×600, turned 90°: the true footprint is x ∈ [-1600,-1000];
-        // carried as a centre it is drawn at x ∈ [-1000,-400].
-        expect(v.expected).toContain("x=-1600");
-        expect(v.actual).toContain("x=-400");
-      },
-    ],
-  ],
-  "dim-text-side": [
-    [
-      "STILL puts a ROOT dim's number inside its line for a negative offset — no `place` at all",
-      () => {
-        const src = `plan "root" {\n  units mm\n  paper A0 landscape\n  scale 1:100\n${room(4000, 3000)}\n    dim (0,3000)->(4000,3000) offset -400\n}\n`;
-        const nodes = sceneOf(src).nodes.filter((n) => n.layer === "dims");
-        const text = nodes.find((n) => n.prim.t === "text");
-        const lineY = nodes
-          .map((n) => (n.prim.t === "line" && n.prim.a.y === n.prim.b.y ? n.prim.a.y : Number.NaN))
-          .find((y) => y === 2600);
-        // The dimension line is at y = 2600 (offset −400 from the wall at 3000); its number
-        // is drawn at +n, BETWEEN the line and the wall it measures.
-        expect(lineY).toBe(2600);
-        const y = text?.prim.t === "text" ? text.prim.at.y : Number.NaN;
-        expect(y).toBeGreaterThan(2600);
-        expect(y).toBeLessThan(3000);
-      },
-    ],
-    [
-      "STILL puts a mirrored dim's number between its line and the building",
-      () => {
-        const body = `${room(4000, 3000)}
-    dim (0,3000)->(4000,3000) offset 400`;
-        const { p0, gP } = witnessPair(body, elementNamed("mx"), { fixedSheet: true });
-        const numberY = (src: string): number => {
-          const n = sceneOf(src).nodes.find((x) => x.elementKind === "dim" && x.prim.t === "text");
-          return n?.prim.t === "text" ? n.prim.at.y : Number.NaN;
-        };
-        // The line sits at y = 3400 on both sides (a reflection in x keeps y). As drawn the
-        // number is outside it; mirrored, it is between the line and the wall at y = 3000.
-        expect(numberY(p0)).toBeGreaterThan(3400);
-        expect(numberY(gP)).toBeLessThan(3400);
-        expect(numberY(gP)).toBeGreaterThan(3000);
-        reproduce("dim-text-side", body, "mx", "scene.dim[g.dim_1].text");
-      },
-    ],
-    [
-      "STILL measures W_DIM_OVERLAP with the text on +n, so an opposite-normal pair bumps differently mirrored",
-      () => {
-        // Two dims on one wall, written in opposite directions with opposite offsets: the
-        // same drawn line. `W_DIM_OVERLAP`'s band carries each number on its +n side
-        // whatever the offset's sign (the drawing's convention, measured), so a reflection —
-        // which negates both offsets — changes which bands overlap and by how much. Each
-        // offered fix clears its own warning; the VALUE is not frame-invariant. Not the
-        // pullback (backlog E.1): with the text on the offset's side this closes too.
-        const sheet = "paper A3 landscape\n  scale 1:50\n  ";
-        const pair = (a: number, b: number) => {
-          const body = `${room(4000, 3000)}
-    dim (0,3000)->(4000,3000) offset ${a}
-    dim (4000,3000)->(0,3000) offset ${b}`;
-          return { body, opts: { declare: `${sheet}component c() {\n${body}\n  }` } };
-        };
-        const bump = (src: string) =>
-          lint(src)
-            .filter((d) => d.code === "W_DIM_OVERLAP")
-            .flatMap((d) => d.fixes?.[0]?.edits.map((e) => e.newText) ?? []);
-        const moved = pair(550, -550);
-        const w = witnessPair(moved.body, elementNamed("mx"), moved.opts);
-        expect(bump(w.p0)).toEqual(["offset -1100"]);
-        expect(bump(w.gP)).toEqual(["offset -825"]);
-        reproduce("dim-text-side", moved.body, "mx", "lint.dim-overlap.fixes", moved.opts);
-        const fired = pair(550, -650);
-        const f = witnessPair(fired.body, elementNamed("mx"), fired.opts);
-        expect(lint(f.p0).filter((d) => d.code === "W_DIM_OVERLAP")).toHaveLength(1);
-        expect(lint(f.gP).filter((d) => d.code === "W_DIM_OVERLAP")).toHaveLength(0);
-        reproduce("dim-text-side", fired.body, "mx", "lint.dim-overlap", fired.opts);
-      },
-    ],
-  ],
   "dim-tick-hand": [
     [
       "(DECLARED) STILL draws a mirrored dim's station ticks on the other diagonal — and only them",
@@ -518,12 +388,9 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
     dim (0,3000)->(4000,3000) offset 400`;
         const { vs } = witnessCase(body, elementNamed("mx"));
         reproduce("dim-tick-hand", body, "mx", "scene.dim[g.dim_1].ticks");
-        // The dimension line and its witness lines are exact: the declared class is the
-        // tick hand alone, and the text side is its own (defect) class.
-        expect(vs.map((v) => v.key).filter((k) => k.startsWith("scene.dim"))).toEqual([
-          "scene.dim[g.dim_1].text",
-          "scene.dim[g.dim_1].ticks",
-        ]);
+        // The dimension line, its witness lines and (since dim-text-side closed) its number
+        // are exact: the declared class is the tick hand alone.
+        expect(vs.map((v) => v.key).filter((k) => k.startsWith("scene.dim"))).toEqual(["scene.dim[g.dim_1].ticks"]);
         expect(KNOWN_CLASSES["dim-tick-hand"].status).toBe("declared");
       },
     ],
@@ -614,5 +481,136 @@ describe("closed classes — each former witness is now the law", () => {
     expect({ at: b?.at, size: b?.size }).toEqual({ at: a?.at, size: a?.size });
     // Every shipped example that reaches into its instances survives being placed.
     for (const rel of ["clinic.arch", "museum-wings.arch"]) expect(t0Violations(rel), rel).toEqual([]);
+  });
+
+  /** The keys of a witness's violations that start with `prefix`. */
+  const keysOf = (body: string, g: string, prefix: string): string[] =>
+    witnessCase(body, elementNamed(g))
+      .vs.map((v) => v.key)
+      .filter((k) => k.startsWith(prefix));
+
+  it("stair-tail (backlog E.2): a turned stair is entered from the IMAGE of its authored end", () => {
+    const body = `${room(6000, 4000)}
+    door id=d at (3000,4000) width 900 wall shell
+    stair id=st at (1000,500) size 1200x3000 dir up`;
+    const g = elementNamed("r90");
+    const f = frameFor(g, 50);
+    const { p0, gP } = witnessPair(body, g);
+    const tail = (src: string) => entryEdges(verticalsOf(observe(src).ir!)[0]!);
+    const side = { top: { x: 0, y: -1 }, bottom: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
+    const turned = tail(p0).map((e) => {
+      const v = lin(f, side[e]);
+      return (Object.keys(side) as (keyof typeof side)[]).find((k) => side[k].x === v.x && side[k].y === v.y);
+    });
+    expect(tail(p0)).toEqual(["bottom"]);
+    expect(turned).toEqual(["left"]); // what the group predicts…
+    expect(tail(gP)).toEqual(["left"]); // …is what the placed stair answers (the page rule said "right")
+    expect(keysOf(body, "r90", "scene.stair")).toEqual([]);
+  });
+
+  it("stair-break-hand (backlog E.3): a mirrored stair's break line is the mirror image", () => {
+    const body = `${room(6000, 4000)}
+    stair id=st at (1000,500) size 1200x3000 dir up`;
+    expect(keysOf(body, "mx", "scene.stair")).toEqual([]);
+    // Not vacuous: the SAME footprint authored at the root draws the other hand, so the
+    // placed stair's lines really did change.
+    const { gP } = witnessPair(body, elementNamed("mx"), { fixedSheet: true });
+    const root = `plan "witness" {\n  units mm\n  grid 50\n  paper A0 landscape\n  scale 1:100\n    stair id=st at (-2200,500) size 1200x3000 dir up\n}\n`;
+    const lines = (src: string) =>
+      sceneOf(src)
+        .nodes.filter((n) => n.elementKind === "stair" && n.prim.t === "line")
+        .map((n) => canonPrim(n.prim))
+        .sort();
+    expect(lines(gP)).not.toEqual(lines(root));
+  });
+
+  it("slide-track (backlog E.12): a mirrored sliding door's fixed panel keeps its track's side", () => {
+    for (const slide of ["left", "right"]) {
+      const body = `${room(4000, 3000)}
+    door id=d sliding at (2000,3000) width 1600 wall shell slide ${slide} open 0.3`;
+      for (const g of D4_ELEMENTS) expect(keysOf(body, g.name, "scene.door"), `${slide} ${g.name}`).toEqual([]);
+    }
+    // The control: a hinged door never read the track, and was already equivariant.
+    const hinged = `${room(4000, 3000)}
+    door id=d at (2000,3000) width 900 wall shell hinge left swing in`;
+    for (const g of D4_ELEMENTS) expect(keysOf(hinged, g.name, "scene.door"), g.name).toEqual([]);
+  });
+
+  it("column-corner (backlog E.13): a column is carried as the TOP-LEFT rectangle it is", () => {
+    const body = `${room(4000, 3000)}
+    column id=k at (1000,1000) size 400x600`;
+    for (const g of D4_ELEMENTS) expect(keysOf(body, g.name, "scene.column"), g.name).toEqual([]);
+    // Top-left (1000,1000), 400×600, turned 90°: the footprint is x ∈ [-1600,-1000].
+    const { gP } = witnessPair(body, elementNamed("r90"));
+    const k = observe(gP).ir!.elements.find((e) => e.kind === "column") as { at: { x: number }; size: { w: number } };
+    expect([k.at.x, k.at.x + k.size.w]).toEqual([-1600, -1000]);
+  });
+
+  it("dim-text-side (backlog E.14): a ROOT dim's number rides outside its line for either sign of offset", () => {
+    const at = (offset: number): { text: number; line: number } => {
+      const src = `plan "root" {\n  units mm\n  paper A0 landscape\n  scale 1:100\n${room(4000, 3000)}\n    dim (0,3000)->(4000,3000) offset ${offset}\n}\n`;
+      const nodes = sceneOf(src).nodes.filter((n) => n.layer === "dims");
+      const text = nodes.find((n) => n.prim.t === "text");
+      const line = nodes.find((n) => n.prim.t === "line" && n.prim.a.y === n.prim.b.y);
+      return {
+        text: text?.prim.t === "text" ? text.prim.at.y : Number.NaN,
+        line: line?.prim.t === "line" ? line.prim.a.y : Number.NaN,
+      };
+    };
+    // from→to runs +x and its left normal is (0, 1) on screen (+y down), so a positive offset
+    // draws the line below the wall at y = 3000 and a negative one above it.
+    const pos = at(400);
+    const neg = at(-400);
+    expect([pos.line, neg.line]).toEqual([3400, 2600]);
+    expect(pos.text).toBeGreaterThan(3400); // outside, away from the wall
+    expect(neg.text).toBeLessThan(2600); // outside, away from the wall — never between
+    expect(pos.text - 3400).toBeCloseTo(2600 - neg.text, 9); // the same standoff, mirrored
+  });
+
+  it("dim-text-side (backlog E.14): a mirrored dim's number is the mirror image of its own", () => {
+    const body = `${room(4000, 3000)}
+    dim (0,3000)->(4000,3000) offset 400
+    dim (0,0)->(4000,0) offset 0 text "4000"`;
+    const { p0, gP } = witnessPair(body, elementNamed("mx"), { fixedSheet: true });
+    const numberYs = (src: string): number[] =>
+      sceneOf(src)
+        .nodes.filter((x) => x.elementKind === "dim" && x.prim.t === "text")
+        .map((n) => (n.prim.t === "text" ? n.prim.at.y : Number.NaN));
+    // `mirror x` keeps y, so each number keeps its y — including the ZERO-offset call-out,
+    // whose side rides the sign bit of the `-0` the reflection leaves on its offset.
+    expect(numberYs(gP)).toEqual(numberYs(p0));
+    expect(keysOf(body, "mx", "scene.dim").filter((k) => k.endsWith(".text"))).toEqual([]);
+  });
+
+  it("dim-text-side (backlog E.14): W_DIM_OVERLAP measures the number where it is drawn, so its verdict and bump are frame-invariant", () => {
+    // Two dims on one wall, written in opposite directions with opposite offsets: the SAME
+    // drawn line, and (text on `sign(offset) · n`) the same number side. Under the old +n
+    // band model a reflection changed the bump (550/−550: −1100 unplaced, −825 mirrored) and
+    // the verdict (550/−650: warned unplaced, not mirrored).
+    const sheet = "paper A3 landscape\n  scale 1:50\n  ";
+    const pair = (a: number, b: number) => {
+      const body = `${room(4000, 3000)}
+    dim (0,3000)->(4000,3000) offset ${a}
+    dim (4000,3000)->(0,3000) offset ${b}`;
+      return { body, opts: { declare: `${sheet}component c() {\n${body}\n  }` } };
+    };
+    const overlaps = (src: string) => lint(src).filter((d) => d.code === "W_DIM_OVERLAP");
+    const bump = (src: string) => overlaps(src).flatMap((d) => d.fixes?.[0]?.edits.map((e) => e.newText) ?? []);
+    for (const [a, b] of [
+      [550, -550],
+      [550, -650],
+    ] as const) {
+      const { body, opts } = pair(a, b);
+      for (const g of D4_ELEMENTS) {
+        const { p0, gP } = witnessPair(body, g, opts);
+        expect(overlaps(p0).length, `${a}/${b} ${g.name}`).toBeGreaterThan(0);
+        expect(bump(gP), `${a}/${b} ${g.name}`).toEqual(bump(p0));
+        const { vs } = witnessCase(body, g, opts);
+        expect(
+          vs.filter((v) => v.path.startsWith("lint.dim-overlap")).map((v) => v.key),
+          `${a}/${b} ${g.name}`,
+        ).toEqual([]);
+      }
+    }
   });
 });

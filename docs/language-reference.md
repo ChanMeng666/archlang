@@ -1260,6 +1260,10 @@ so it is offered only when that actually reaches the outside: a dimension whose
 run cuts through the plan reads inside either way, and keeps the warning with no
 automatic edit.
 
+The number rides just outside its line, on the side the offset points, so a negative
+`offset` puts the line *and* its number on the right normal: `dim a->b offset -k` draws
+exactly what `dim b->a offset k` draws.
+
 #### `faces` / `clear` — let the walls place the endpoints
 
 A room rectangle's edges are wall **centerlines**, so a hand-written overall dim
@@ -1369,6 +1373,9 @@ it is the same answer in the renderer and in the analysis layer, on every storey
 else the plan contains. A flight genuinely approached from the north or the west therefore
 draws its arrow the wrong way round in v1; swap the footprint's authored coordinates, or
 wait for the `entry <edge>` clause a later release can add without changing this default.
+Inside a `place`d component the rule is read in the component's own frame and carried by
+the `rotate`/`mirror`, so a turned or mirrored run is entered from the image of the end it
+was authored with, and a mirrored stair's break line is drawn mirrored.
 
 **`width` (stairs only)** is the FLIGHT width measured across the run. It defaults to the
 footprint's cross-axis extent, and may not exceed it
