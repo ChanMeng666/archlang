@@ -139,11 +139,16 @@ const ROOT = join(HERE, "..");
  *
  * **`lint()` over all 30 shipped examples is byte-identical across this amendment** —
  * the only two diagnostics this branch adds were already added before it.
+ *
+ * **Re-measured for circulation (W3b):** both plans have more than one entrance, and each
+ * room now walks from its nearest (`bungalow` r_living 13000 → 4000, `laneway-house` r_bed
+ * 9200 → 4400). Only `describe().circulation` moved; SVG and `lint()` are byte-identical.
+ * `test/byte-identity-baseline.ts` has the account ("Fourteen rows re-measured").
  */
 const BASELINE: Readonly<Record<string, string>> = {
   "studio.arch": "90951a2517e141dfe28f0e12462fd29cefba5460c900304e435ef53e7f3c0f3f",
-  "laneway-house.arch": "401f5a9e255e5748a2eda400569ad352ae856e1ad5c9f51b62895e30bfd5ad1f",
-  "bungalow.arch": "7dacd03e5c79772836ad273f9542c1272f881df27d8afd0dadef5ef558f8f3b2",
+  "laneway-house.arch": "0eab9c214b43f76765f55e10b0909047aaee34544fc5d78e27e4afc176b8e0d9",
+  "bungalow.arch": "4a5fbd670b2ed36a48309a4f76adf736f0b2fc1bb7dbfe1ea393de5496629245",
   // Re-measured for the `overhead` flag. Its SOURCE gained two statements —
   // a `range_hood` over the stove and a `mirror` over the basin, the two correct drawings
   // the missing flag had kept out of the flagship — so this plan is a different building
@@ -162,8 +167,8 @@ const BASELINE: Readonly<Record<string, string>> = {
  */
 const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
   "studio.arch": "7ed53b6e0925e21fe4c4fad7351ce7e80635818395fc79cf661ba095db8129b3",
-  "laneway-house.arch": "bde186c2290e5aa19ea60c3ec9e8ad7cfa3f5237e7d2a0a80cdca393fa3ab85a",
-  "bungalow.arch": "242307d21b82d129acb6317df03702d2044f0c8e05f9a78374c9de9a9f01f4fd",
+  "laneway-house.arch": "d3ab0140b1f474997ff52c711e9c539e92a23a6d65003b656f9b72b6a7ad0cca",
+  "bungalow.arch": "cc3dc56c65a9baa34f57ae766ad702b4e538db62419b4881c55ad84abfe39870",
   // `furnished-flat.arch` is the ONE value in this table that is not the original `5298b99`
   // measurement, and the exception proves the rule rather than bending it. Its SOURCE keeps
   // being edited -- seven of the new families in the furniture pass, then a `range_hood` and a `mirror`
