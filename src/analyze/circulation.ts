@@ -59,6 +59,7 @@ import { arcExtremes, distPointToArc } from "../geometry/arc.js";
 import { pointInPolygon, polygonEdges, polygonLabelPoint } from "../geometry/polygon.js";
 import { matchesLivingDining } from "../vocabulary.js";
 import { solidFurniture } from "../fixtures-catalog.js";
+import { neighbours4 } from "./grid.js";
 
 /** Radius (mm) of the walking body obstacles are inflated by (clearance erosion). */
 export const DEFAULT_BODY_RADIUS_MM = 300;
@@ -258,7 +259,8 @@ function distPointToRect(px: number, py: number, r: BBox): number {
   return Math.hypot(dx, dy);
 }
 
-interface NavGrid {
+/** @internal The whole-plan nav grid; exported only so the grid searches' signatures can be. */
+export interface NavGrid {
   minX: number;
   minY: number;
   cell: number;
@@ -426,24 +428,23 @@ function thresholdPoints(g: NavGrid, at: Point, rb: RoomBox, clear: number, tol:
   return out;
 }
 
-/** 4-connected uniform-cost BFS from `source`; returns hop distance + parent. */
-function bfs(g: NavGrid, source: number): { dist: Int32Array; parent: Int32Array } {
+/**
+ * 4-connected uniform-cost BFS from `source`; returns hop distance + parent.
+ *
+ * @internal Exported for `test/path-algebra.test.ts`, which proves it equals the
+ * `bestPaths` engine (unit `MIN_PLUS`, constant rank). Not re-exported by `src/index.ts`.
+ */
+export function bfs(g: NavGrid, source: number): { dist: Int32Array; parent: Int32Array } {
   const dist = new Int32Array(g.nx * g.ny).fill(-1);
   const parent = new Int32Array(g.nx * g.ny).fill(-1);
   dist[source] = 0;
   const queue = [source];
+  const nb4 = new Int32Array(4);
   for (let h = 0; h < queue.length; h++) {
     const k = queue[h]!;
-    const ix = k % g.nx;
-    const iy = (k - ix) / g.nx;
-    const nbrs = [
-      ix > 0 ? k - 1 : -1,
-      ix < g.nx - 1 ? k + 1 : -1,
-      iy > 0 ? k - g.nx : -1,
-      iy < g.ny - 1 ? k + g.nx : -1,
-    ];
-    for (const nb of nbrs) {
-      if (nb >= 0 && g.free[nb] && dist[nb]! < 0) {
+    for (let i = 0, m = neighbours4(k, g.nx, g.ny, nb4); i < m; i++) {
+      const nb = nb4[i]!;
+      if (g.free[nb] && dist[nb]! < 0) {
         dist[nb] = dist[k]! + 1;
         parent[nb] = k;
         queue.push(nb);
@@ -458,8 +459,10 @@ function bfs(g: NavGrid, source: number): { dist: Int32Array; parent: Int32Array
  * multi-source flood, not `sources.length` separate BFSs. Used for exactly one question:
  * is this room walkable-into from some front door? (Distances stay measured from the
  * first entrance; only the blocked/not-blocked verdict is plan-wide.)
+ *
+ * @internal Exported for `test/path-algebra.test.ts` (the `BOOLEAN` closure).
  */
-function reachableFromAny(g: NavGrid, sources: number[]): Uint8Array {
+export function reachableFromAny(g: NavGrid, sources: number[]): Uint8Array {
   const seen = new Uint8Array(g.nx * g.ny);
   const queue: number[] = [];
   for (const s of sources) {
@@ -468,18 +471,11 @@ function reachableFromAny(g: NavGrid, sources: number[]): Uint8Array {
       queue.push(s);
     }
   }
+  const nb4 = new Int32Array(4);
   for (let h = 0; h < queue.length; h++) {
-    const k = queue[h]!;
-    const ix = k % g.nx;
-    const iy = (k - ix) / g.nx;
-    const nbrs = [
-      ix > 0 ? k - 1 : -1,
-      ix < g.nx - 1 ? k + 1 : -1,
-      iy > 0 ? k - g.nx : -1,
-      iy < g.ny - 1 ? k + g.nx : -1,
-    ];
-    for (const nb of nbrs) {
-      if (nb >= 0 && g.free[nb] && !seen[nb]) {
+    for (let i = 0, m = neighbours4(queue[h]!, g.nx, g.ny, nb4); i < m; i++) {
+      const nb = nb4[i]!;
+      if (g.free[nb] && !seen[nb]) {
         seen[nb] = 1;
         queue.push(nb);
       }
@@ -511,8 +507,10 @@ function perRoomMax(g: NavGrid, vals: Float64Array, nRooms: number): Float64Arra
  * affect the result. When `pinch` is supplied it is filled with, per cell, the index
  * of the limiting (narrowest) cell on that cell's widest route — used to place the
  * overlay's bottleneck marker.
+ *
+ * @internal Exported for `test/path-algebra.test.ts` (values equal the `MAX_MIN` engine).
  */
-function widestBottleneck(g: NavGrid, sources: number[], seed: number, pinch?: Int32Array): Float64Array {
+export function widestBottleneck(g: NavGrid, sources: number[], seed: number, pinch?: Int32Array): Float64Array {
   const n = g.nx * g.ny;
   const best = new Float64Array(n).fill(-Infinity);
   const done = new Uint8Array(n);
@@ -571,20 +569,14 @@ function widestBottleneck(g: NavGrid, sources: number[], seed: number, pinch?: I
     }
   }
 
+  const nb4 = new Int32Array(4);
   while (hk.length > 0) {
     const u = pop();
     if (done[u]) continue;
     done[u] = 1;
-    const ix = u % g.nx;
-    const iy = (u - ix) / g.nx;
-    const nbrs = [
-      ix > 0 ? u - 1 : -1,
-      ix < g.nx - 1 ? u + 1 : -1,
-      iy > 0 ? u - g.nx : -1,
-      iy < g.ny - 1 ? u + g.nx : -1,
-    ];
-    for (const nb of nbrs) {
-      if (nb < 0 || !g.free[nb] || done[nb]) continue;
+    for (let i = 0, m = neighbours4(u, g.nx, g.ny, nb4); i < m; i++) {
+      const nb = nb4[i]!;
+      if (!g.free[nb] || done[nb]) continue;
       const cand = Math.min(best[u]!, g.clearMm[nb]!);
       if (cand > best[nb]!) {
         best[nb] = cand;
@@ -595,6 +587,34 @@ function widestBottleneck(g: NavGrid, sources: number[], seed: number, pinch?: I
     }
   }
   return best;
+}
+
+/**
+ * 4-connected hop distance from the nearest of `seeds` to every cell of an `nx` × `ny`
+ * grid, walls and all (−1 when there is no seed). A multi-source BFS, so the result does
+ * not depend on the seeds' order.
+ *
+ * @internal Exported for `test/path-algebra.test.ts` (multi-source `MIN_PLUS`).
+ */
+export function distanceTransform4(nx: number, ny: number, seeds: readonly number[]): Int32Array {
+  const D = new Int32Array(nx * ny).fill(-1);
+  const q: number[] = [];
+  for (const k of seeds) {
+    D[k] = 0;
+    q.push(k);
+  }
+  const nb4 = new Int32Array(4);
+  for (let h = 0; h < q.length; h++) {
+    const k = q[h]!;
+    for (let i = 0, m = neighbours4(k, nx, ny, nb4); i < m; i++) {
+      const nb = nb4[i]!;
+      if (D[nb]! < 0) {
+        D[nb] = D[k]! + 1;
+        q.push(nb);
+      }
+    }
+  }
+  return D;
 }
 
 /** Euclidean distance from a point to a segment. */
@@ -855,24 +875,7 @@ function buildGrid(
   // the erosion took out. A cell with no furniture in reach reads BIG (an open room),
   // so it never sets the bottleneck — only doors and furniture gaps do.
   const BIG = W + H;
-  const D = new Int32Array(nx * ny).fill(-1);
-  const q: number[] = [];
-  for (const k of furnObstacle) {
-    D[k] = 0;
-    q.push(k);
-  }
-  for (let h = 0; h < q.length; h++) {
-    const k = q[h]!;
-    const ix = k % nx;
-    const iy = (k - ix) / nx;
-    const nbrs = [ix > 0 ? k - 1 : -1, ix < nx - 1 ? k + 1 : -1, iy > 0 ? k - nx : -1, iy < ny - 1 ? k + nx : -1];
-    for (const nb of nbrs) {
-      if (nb >= 0 && D[nb]! < 0) {
-        D[nb] = D[k]! + 1;
-        q.push(nb);
-      }
-    }
-  }
+  const D = distanceTransform4(nx, ny, furnObstacle);
   for (let k = 0; k < free.length; k++) {
     g.clearMm[k] = free[k] ? (D[k]! >= 0 ? centreFreedomToClearWidth(D[k]!, cell, bodyRadius) : BIG) : 0;
   }

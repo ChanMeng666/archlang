@@ -41,6 +41,7 @@ import {
   buildDoorAccessGraph,
   EXTERIOR_NODE,
   DEFAULT_TOL,
+  type AccessGraph,
   type AnalyzeOptions,
 } from "./analyze.js";
 import { verticalConnections } from "./vertical.js";
@@ -421,18 +422,18 @@ function rectPolygon(x: number, y: number, w: number, h: number): PointJson[] {
  * rooms it shares a door / cased opening with (exterior entrances excluded). Keys
  * are in room source order; each neighbour list is sorted by room source order, so
  * the result is deterministic. Shared by {@link planToJson}, {@link checkGraph}, and
- * `describe()`.
+ * `describe()`. A caller already holding the plan's access graph passes it as `access`.
  */
 export function buildInputGraph(
   rooms: RRoom[],
   doors: RDoor[],
   openings: ROpening[],
   tol: number = DEFAULT_TOL,
+  access: AccessGraph = buildDoorAccessGraph(rooms, doors, tol, undefined, openings),
 ): Record<string, string[]> {
   const order = rooms.map((r) => r.id);
   const rank = new Map<string, number>(order.map((id, i) => [id, i]));
   const adj = new Map<string, Set<string>>(order.map((id) => [id, new Set<string>()]));
-  const access = buildDoorAccessGraph(rooms, doors, tol, undefined, openings);
   for (const e of access.edges) {
     if (e.ambiguous) continue;
     const [a, b] = e.between;
@@ -449,8 +450,7 @@ export function buildInputGraph(
 }
 
 /** Project the modeled access graph to output-only connector {@link EdgeJson}s. */
-function buildEdges(rooms: RRoom[], doors: RDoor[], openings: ROpening[], tol: number): EdgeJson[] {
-  const access = buildDoorAccessGraph(rooms, doors, tol, undefined, openings);
+function buildEdges(access: AccessGraph): EdgeJson[] {
   const edges: EdgeJson[] = [];
   for (const e of access.edges) {
     if (e.ambiguous || e.between[0] === "" || e.between[1] === "") continue;
@@ -607,6 +607,7 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
   const roomTypes: RoomType[] = [];
   for (const rm of rooms) if (!roomTypes.includes(rm.room_type)) roomTypes.push(rm.room_type);
   const totalArea = r2(rooms.reduce((s, rm) => s + (rm.area ?? 0), 0));
+  const access = buildDoorAccessGraph(roomEls, doorEls, tol, undefined, openingEls);
 
   const out: PlanJson = {
     version: 1,
@@ -633,8 +634,8 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
     ...(dims.length > 0 ? { dims } : {}),
     ...(columns.length > 0 ? { columns } : {}),
     ...(ir.title ? { title: titleToJson(ir.title) } : {}),
-    edges: buildEdges(roomEls, doorEls, openingEls, tol),
-    input_graph: buildInputGraph(roomEls, doorEls, openingEls, tol),
+    edges: buildEdges(access),
+    input_graph: buildInputGraph(roomEls, doorEls, openingEls, tol, access),
   };
   // `windowEls` intentionally unused beyond its inclusion in `openings`; keep the
   // binding for symmetry with the resolved-element filters above.

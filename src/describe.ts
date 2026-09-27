@@ -45,7 +45,7 @@ import {
   roomUses,
   buildDoorAccessGraph,
   DEFAULT_TOL,
-  levelIsGrounded,
+  storeyGrounded,
   type AnalyzeOptions,
   type AccessGraph,
   type BBox,
@@ -1194,7 +1194,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     access,
     circulation,
     totals,
-    input_graph: buildInputGraph(roomEls, doorEls, openingEls, tol),
+    input_graph: buildInputGraph(roomEls, doorEls, openingEls, tol, access),
     freedom: buildFreedom(roomEls, doorEls, windowEls, openingEls, furnEls),
     // The drawn schedule, from the same pure derivation the renderer uses — so the table
     // in the SVG and this JSON can never disagree. Opt-in only. `ir.zones` is passed for
@@ -1216,7 +1216,7 @@ function inZone(member: string | undefined, path: string): boolean {
 /**
  * The building-level vertical report for a multi-storey plan, or `undefined` when no run
  * spans two storeys. A storey is *grounded* when it has its own exterior entrance that is
- * a real arrival point — {@link levelIsGrounded}, the same predicate `lint` builds its
+ * a real arrival point — {@link storeyGrounded}, the same predicate `lint` builds its
  * `grounded()` callback from, discounting a door that opens onto an `outdoor balcony`.
  * Reachability then spreads along the shafts. This is deliberately NOT the
  * same thing as this storey's own `access.hasEntrance` below, which stays the honest,
@@ -1228,13 +1228,7 @@ function buildVerticalReport(levels: readonly ResolvedLevel[], tol: number): Ver
   if (connections.length === 0) return undefined;
   const grounded = (n: number): boolean => {
     const l = levels.find((x) => x.level === n);
-    if (!l) return false;
-    const rooms = l.ir.elements.filter((e): e is RRoom => e.kind === "room");
-    const doors = l.ir.elements.filter((e): e is RDoor => e.kind === "door");
-    const openings = l.ir.elements.filter((e): e is ROpening => e.kind === "opening");
-    const outdoors = l.ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
-    const graph = buildDoorAccessGraph(rooms, doors, tol, undefined, openings);
-    return levelIsGrounded(graph, rooms, doors, outdoors);
+    return l ? storeyGrounded(l.ir, tol) : false;
   };
   const reach = verticalReach(inputs, grounded);
   return { connections, reachable_levels: [...reach.reachable].sort((a, b) => a - b) };
