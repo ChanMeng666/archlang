@@ -24,6 +24,9 @@ import type { Diagnostic, FixSuggestion } from "../index.js";
 // `arch ast` parses without resolving/rendering; parse() is not on the public
 // surface, so the CLI reaches for it directly (as it does resolvePlan).
 import { parse } from "../parser.js";
+// The W7 `while`→`for` fix is proved OUTSIDE `compile()` (see `src/while-fix.ts`'s
+// header) — `arch fix` is its one caller, on the public surface or not.
+import { proveWhileFixes } from "../while-fix.js";
 import {
   type Args,
   EXIT,
@@ -191,10 +194,20 @@ export async function cmdFix(args: Args): Promise<number> {
   // the architectural-soundness lint warnings (some of which now carry a machine-applicable
   // fix, e.g. W_ALIAS_MATCH). lint() is silent on an unresolvable plan, so this is exactly
   // compile's diagnostics whenever there is a fatal error.
-  const diagsOf = (src: string): Diagnostic[] => [
-    ...compile(src, { noCache: true, world }).diagnostics,
-    ...lint(src, { world }),
-  ];
+  const diagsOf = (src: string): Diagnostic[] => {
+    const ds = [...compile(src, { noCache: true, world }).diagnostics, ...lint(src, { world })];
+    // Only `arch fix` ever proves a `while`→`for` rewrite — never `compile()` itself (see
+    // `src/while-fix.ts`'s header) — so it is the one place a `W_WHILE_DEPRECATED`
+    // diagnostic gains a `fixes` array, matched back onto it by span.
+    if (!ds.some((d) => d.code === "W_WHILE_DEPRECATED" && d.file === undefined)) return ds;
+    const proven = proveWhileFixes(src, { world });
+    if (proven.length === 0) return ds;
+    return ds.map((d) => {
+      if (d.code !== "W_WHILE_DEPRECATED" || !d.span) return d;
+      const p = proven.find((x) => x.span.start === d.span!.start && x.span.end === d.span!.end);
+      return p ? { ...d, fixes: [p.fix] } : d;
+    });
+  };
 
   const errorsOf = (src: string): Diagnostic[] =>
     compile(src, { noCache: true, world }).diagnostics.filter((d) => d.severity === "error");

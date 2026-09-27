@@ -743,6 +743,19 @@ export interface ResolvedPlan {
    * Internal: never serialized into the Scene/SVG/exports.
    */
   _heightsAuthored: boolean;
+  /**
+   * Every `while` statement that ran at least one iteration in THIS resolve, keyed by
+   * {@link whileSpanKey} (its own span, qualified by the file it was written in).
+   *
+   * The non-vacuity gate for W7's `while`→`for` machine fix (`src/while-fix.ts`): a
+   * candidate shape is proved only for a `while` this compile actually reached and
+   * entered — never one inside a component this file never instantiates (a library
+   * compiled standalone, or an unreachable branch of `place`), never one inside a dead
+   * `if` branch (which `expandScope` never visits), and never one whose own condition was
+   * false on entry (an empty loop proves nothing about the body it never ran).
+   * Internal: never serialized into the Scene/SVG/exports/Plan JSON.
+   */
+  _executedWhileSpans: ReadonlySet<string>;
   /** Resolved elements, in source order (for rendering). */
   elements: ResolvedElement[];
   /** Resolved walls (for bounds/hosting), in source order. */
@@ -801,6 +814,23 @@ interface ExpandCtx {
   snap(v: number): number;
   /** Instance paths already taken, so `as west` twice is an error, not a silent merge. */
   seenInstances: Set<string>;
+  /**
+   * `while` statements that ran at least one iteration in THIS expansion, keyed by
+   * {@link whileSpanKey} — shared by reference across every recursive `expandScope` call
+   * in one `resolveImpl`, so it ends up recording every `while` this compile actually
+   * reached and entered, wherever it sits (plan level, a `for`/`if`/`zone` body, or a
+   * component's — including one never instantiated here, whose body is simply never
+   * visited). Read by `src/while-fix.ts`'s non-vacuity gate; never serialized (see
+   * {@link ResolvedPlan._executedWhileSpans}).
+   */
+  executedWhiles: Set<string>;
+}
+
+/** The key {@link ExpandCtx.executedWhiles} records a `while` statement under — its own
+ *  span, qualified by the file it was written in (absent = the compiled source), so two
+ *  different files' statements at coincidentally equal offsets never collide. */
+function whileSpanKey(stmt: { span?: Span }, file: string | undefined): string {
+  return `${file ?? ""}\u0000${stmt.span?.start ?? -1}\u0000${stmt.span?.end ?? -1}`;
 }
 
 /**
@@ -1047,6 +1077,7 @@ function expandScope(
               ...(comp.file !== undefined ? { file: comp.file } : { file: undefined }),
               snap: ectx.snap,
               seenInstances: ectx.seenInstances,
+              executedWhiles: ectx.executedWhiles,
             },
             // No label: the instance NAME is already the heading a reader wants, and
             // inventing one ("wing instance") would print the same text for every
@@ -1096,6 +1127,10 @@ function expandScope(
             break;
           }
           out.push(...expandScope(stmt.body, new Scope(scope), global, components, diagnostics, depth, ectx, zone));
+          // Recorded on every completed iteration, not just the first — a Set, so it
+          // costs nothing beyond the first — because this only needs to answer "did it
+          // run >= 1 time", which is exactly what reaching here at all proves.
+          ectx.executedWhiles.add(whileSpanKey(stmt, ectx.file));
         }
         break;
       }
@@ -1696,6 +1731,7 @@ function resolveImpl(
   // up holding every `zone` the plan declares — and every `place`d instance, which is
   // implicitly one — in first-declaration order.
   const zoneFrame = rootZoneFrame();
+  const executedWhiles = new Set<string>();
   const entries = expandScope(
     ast.body,
     globalScope,
@@ -1703,7 +1739,7 @@ function resolveImpl(
     ast.components,
     diagnostics,
     0,
-    { snap, seenInstances: new Set<string>() },
+    { snap, seenInstances: new Set<string>(), executedWhiles },
     zoneFrame,
   );
 
@@ -2058,6 +2094,7 @@ function resolveImpl(
     storeyHeight,
     elevation: extras.elevation ?? 0,
     _heightsAuthored: extras.heightsAuthored ?? plansAuthorHeights(ast),
+    _executedWhileSpans: executedWhiles,
     elements,
     walls,
     ...(instances.length > 0 ? { instances } : {}),

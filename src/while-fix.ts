@@ -2,28 +2,55 @@
  * W7's machine-applicable fix: `let I = A; while I < B { …; I = I + 1 }` rewritten to
  * `for I in A..B { … }`.
  *
- * A red-team review of the first cut (attaching this fix straight from the syntactic
- * shape check, at parse time) found it unsound: ArchLang scoping is not local to one
- * statement list — a component called from BODY can read or write the loop counter, a
- * `zone` is scope-transparent, the loop can already be at its 10,000-iteration cap (where
- * `while` refuses but `for`'s 100,000-item cap would not), and a body containing a
- * recovered parse `error` node silently DELETED that token when reprinted. None of that
- * is visible to a check that only looks at the `while`/`let` statements themselves.
+ * Two red-team rounds moved this fix further and further from `compile()`. Round one
+ * found attaching it straight from the syntactic shape check (at parse time) unsound —
+ * ArchLang scoping is not local to one statement list. Round two found that even a
+ * compile-and-compare proof INSIDE `compile()` was unsound in a different way: `compile()`
+ * is supposed to be a pure function of its source text, but a fix depends on facts about
+ * THIS PARTICULAR RUN's expansion (did the loop actually iterate? is it inside a component
+ * this file happens to instantiate?) — baking that into `compile()`'s own result made the
+ * fix's presence a hidden, non-obvious input-dependent side channel, and cost every caller
+ * of `compile()` a second, hidden compile for every `while` whether or not anyone wanted
+ * the fix.
  *
- * So this module supplies only the CHEAP PRE-FILTER — {@link canonicalShapeAt} decides
- * whether the syntactic shape matches at all, purely from the AST, and
- * {@link buildCandidateEdit} renders the candidate text. Neither attaches a fix. The
- * actual proof — compile the candidate, and check it behaves identically — is
- * `src/index.ts`'s job, because only the full `compile()` pipeline has the resolved
- * scoping, the rendered SVG and `describe()`/`lint()` to compare against.
+ * So the proof lives ENTIRELY OUTSIDE `compile()` now. `compile()` (`src/index.ts`) only
+ * ever emits the two advisory warnings, from `src/while-deprecation.ts`, never a fix.
+ * {@link proveWhileFixes} is a separate, opt-in entry point — today, the only caller is
+ * `arch fix` (`src/cli/commands-author.ts`) — that:
+ *
+ *   1. Uses {@link canonicalShapeAt} as a cheap syntactic pre-filter (unchanged from
+ *      round one).
+ *   2. Applies a NON-VACUITY gate: a candidate is considered only if its `while` actually
+ *      ran at least one iteration in THIS compile of THIS file — recorded by the resolver
+ *      itself as it expands (`ResolvedPlan._executedWhileSpans`, `src/ir.ts`), which for
+ *      free also declines a site inside a component this file never instantiates (a
+ *      library compiled standalone, or one behind a dead `if` branch: `expandScope` never
+ *      visits either, so nothing is ever recorded for them) and a plan that resolved to
+ *      nothing (`W_EMPTY_PLAN`) or that failed to resolve at all.
+ *   3. Tiers the result: `machine-applicable` only for a site at PLAN LEVEL (not inside
+ *      any component) — a component's own fix is `maybe-incorrect`, because the proof
+ *      only ever covers how THIS file instantiates it, and an importer may call it with
+ *      different arguments that make a different number of iterations run.
+ *   4. Proves the survivors by compiling a candidate rewrite (the "twin") and comparing
+ *      SVG/`describe()`/`lint()` to the original — computed ONCE, not per candidate.
+ *
+ * The BODY the fix keeps is the ORIGINAL SOURCE BYTES, sliced verbatim (comments, blank
+ * lines and all) between the `while`'s `{` and the increment statement it drops — never
+ * reprinted from the AST — so a fix never has to reconcile a comment against a rebuilt
+ * tree; it only ever has to decide whether one sits somewhere it cannot faithfully keep it
+ * (see {@link buildCandidateEdit}), and declines rather than silently drop it.
  */
 
 import type { AssignNode, LetNode, PlanNode, Statement, WhileNode } from "./ast.js";
-import type { FixEdit } from "./diagnostics.js";
+import type { Comment } from "./lexer.js";
+import type { FixEdit, FixSuggestion } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
 import { exprToSource } from "./expr-source.js";
-import { printDoc } from "./doc.js";
-import { statementText, type LeafStatement } from "./statement-print.js";
+import { resolvePlan } from "./analyze.js";
+import type { AnalyzeOptions } from "./analyze.js";
+import { compile } from "./index.js";
+import { describe as describePlan } from "./describe.js";
+import { lint as lintPlan } from "./lint.js";
 
 /** Deep structural search: does `node` (an AST subtree, arbitrarily nested) contain a
  *  `{ t: "ref", name }` referencing `name`? Generic over every statement/expr shape, so it
@@ -40,10 +67,10 @@ export function referencesName(node: unknown, name: string): boolean {
 }
 
 /** Deep structural collection of every `assign`-kind statement reachable from `node`
- *  (arbitrarily nested through `if`/`for`/`while`/`zone` bodies, INCLUDING a called
- *  component's own body is deliberately NOT reached here — this is a syntactic
- *  pre-filter over one statement list's own text; a component call's effects are
- *  exactly the kind of thing only the compile-and-compare proof can see). */
+ *  (arbitrarily nested through `if`/`for`/`while`/`zone` bodies — a called component's own
+ *  body is deliberately NOT reached here: this is a syntactic pre-filter over one
+ *  statement list's own text, and a component call's effects are exactly the kind of
+ *  thing only the compile-and-compare proof can see). */
 function collectAssigns(node: unknown, out: AssignNode[]): void {
   if (node === null || typeof node !== "object") return;
   if (Array.isArray(node)) {
@@ -57,29 +84,18 @@ function collectAssigns(node: unknown, out: AssignNode[]): void {
   }
 }
 
-/** Deep structural search for a recovered parse `error` node anywhere in `node` — the
- *  fix must never reprint a `.arch` region the parser could not read (B2: reprinting an
- *  `error` node loses the source bytes it recovered around). */
-export function containsErrorNode(node: unknown): boolean {
-  if (node === null || typeof node !== "object") return false;
-  if (Array.isArray(node)) return node.some(containsErrorNode);
-  const obj = node as Record<string, unknown>;
-  if (obj.kind === "error") return true;
-  for (const k in obj) {
-    if (Object.hasOwn(obj, k) && containsErrorNode(obj[k])) return true;
-  }
-  return false;
-}
-
 /** Is `e` literally `<name> + 1`? (The one progress step the machine fix rewrites.) */
 function isIncrementByOne(e: Expr, name: string): boolean {
   return e.t === "bin" && e.op === "+" && e.l.t === "ref" && e.l.name === name && e.r.t === "num" && e.r.value === 1;
 }
 
-/** The canonical counted-loop shape the machine fix rewrites, once matched. */
+/** The canonical counted-loop shape the machine fix rewrites, once matched. `cond` is
+ *  carried as the matched `bin "<"` node (not just its parts) so callers can read its own
+ *  `span` — where the fix looks for the loop's opening `{`. */
 export interface CanonicalShape {
   letStmt: LetNode;
   whileStmt: WhileNode;
+  cond: Extract<Expr, { t: "bin" }>;
   name: string;
   a: Expr;
   b: Expr;
@@ -92,15 +108,15 @@ export interface CanonicalShape {
  * this same body?
  *
  * This is the CHEAP PRE-FILTER only. It says nothing about a component called from the
- * body reading/writing `i`, a `zone`'s scope-transparency, the 10,000-iteration cap, or a
- * recovered parse error elsewhere in the body — those need the compile-and-compare proof
- * this function's caller (`src/index.ts`) runs before ever attaching the result as a fix.
+ * body reading/writing `i`, a `zone`'s scope-transparency, whether the loop ran at all, or
+ * whether it is at plan level — {@link proveWhileFixes} checks every one of those before a
+ * candidate this function matches may ever become a fix.
  */
 export function canonicalShapeAt(body: readonly Statement[], i: number): CanonicalShape | null {
   const w = body[i];
   if (w?.kind !== "while") return null;
   const cond = w.cond;
-  if (cond.t !== "bin" || cond.op !== "<" || cond.l.t !== "ref") return null;
+  if (cond.t !== "bin" || cond.op !== "<" || cond.l.t !== "ref" || !cond.span) return null;
   const name = cond.l.name;
   const b = cond.r;
 
@@ -127,11 +143,6 @@ export function canonicalShapeAt(body: readonly Statement[], i: number): Canonic
     if (referencesName(body[j], name)) return null;
   }
 
-  // The candidate BODY (without its increment) must contain no recovered parse error —
-  // reprinting one would silently delete the bytes it could not read (B2).
-  const candidateBody = wbody.slice(0, -1);
-  if (containsErrorNode(candidateBody)) return null;
-
   // A and B must be re-printable. `exprToSource` is total over today's `Expr` union;
   // this is a defensive belt for a future variant that might not be.
   try {
@@ -141,107 +152,230 @@ export function canonicalShapeAt(body: readonly Statement[], i: number): Canonic
     return null;
   }
 
-  return { letStmt: prev, whileStmt: w, name, a, b };
+  return { letStmt: prev, whileStmt: w, cond, name, a, b };
 }
 
-/** `{ body: <the array a while/if/for/zone/let sits in>, index: <its position>, whileStmt }`
- *  for every `while` reachable from a plan's own body and its locally-declared components
- *  (never through an imported component — those are a different file's parse). */
+/** `{ body: <the array a while/if/for/zone/let sits in>, index: <its position>,
+ *  whileStmt, insideComponent }` for every `while` reachable from a plan's own body and
+ *  its locally-declared components (never through an imported component — those are a
+ *  different file's parse). `insideComponent` is true for a site reached through ANY
+ *  `component` body, however deeply nested inside further `if`/`for`/`zone`/`while` —
+ *  the plan-level-vs-component distinction {@link proveWhileFixes} tiers applicability on. */
 export interface WhileSite {
   body: readonly Statement[];
   index: number;
   whileStmt: WhileNode;
+  insideComponent: boolean;
 }
 
-function collectSites(body: readonly Statement[], out: WhileSite[]): void {
+function collectSites(body: readonly Statement[], insideComponent: boolean, out: WhileSite[]): void {
   for (let i = 0; i < body.length; i++) {
     const stmt = body[i]!;
     if (stmt.kind === "while") {
-      out.push({ body, index: i, whileStmt: stmt });
-      collectSites(stmt.body, out);
+      out.push({ body, index: i, whileStmt: stmt, insideComponent });
+      collectSites(stmt.body, insideComponent, out);
     } else if (stmt.kind === "if") {
-      collectSites(stmt.then, out);
-      if (stmt.else) collectSites(stmt.else, out);
+      collectSites(stmt.then, insideComponent, out);
+      if (stmt.else) collectSites(stmt.else, insideComponent, out);
     } else if (stmt.kind === "for" || stmt.kind === "zone" || stmt.kind === "level") {
-      collectSites(stmt.body, out);
+      collectSites(stmt.body, insideComponent, out);
     }
   }
 }
 
 /** Every `while` site in `plan`'s own body plus its locally-declared components (mirrors
  *  `while-deprecation.ts`'s traversal, so every `W_WHILE_DEPRECATED` diagnostic has a
- *  matching site here — by span — for `src/index.ts` to re-derive the candidate shape. */
+ *  matching site here — by span — to re-derive the candidate shape from). */
 export function collectWhileSites(plan: PlanNode): WhileSite[] {
   const out: WhileSite[] = [];
-  collectSites(plan.body, out);
-  for (const def of plan.components.values()) collectSites(def.body, out);
+  collectSites(plan.body, false, out);
+  for (const def of plan.components.values()) collectSites(def.body, true, out);
   return out;
 }
 
-/** Leading whitespace of the line containing `offset` — the column the replacement's
- *  first line already sits at (untouched), and the column every one of its OWN later
- *  lines must be reindented to, so the fixed file is already `fmt`-stable at the loop's
- *  real nesting depth (never a flat, always-zero indent). */
+/** The key {@link import("./ir.js")}'s resolver records an executed `while` under — kept
+ *  in lockstep with `src/ir.ts`'s own (private) `whileSpanKey`, which is why this is a
+ *  literal string template rather than an import: the resolver has no reason to export
+ *  a formatting helper across a layer, and the format itself (file-qualified span) is
+ *  documented on `ResolvedPlan._executedWhileSpans`. A local drift test pins the two
+ *  producing the same key for the same input. */
+function executedKey(span: { start: number; end: number }, file: string | undefined): string {
+  return `${file ?? ""}\u0000${span.start}\u0000${span.end}`;
+}
+
+/** Comments starting in `[from, to)`, in source order. */
+function commentsIn(comments: readonly Comment[], from: number, to: number): Comment[] {
+  return comments.filter((c) => c.span.start >= from && c.span.start < to).sort((x, y) => x.span.start - y.span.start);
+}
+
+/** Byte offset just past the end of the line containing `offset` (the newline, if any,
+ *  is NOT included — matches `diagnostics.ts`'s own `lineEnd`). */
+function lineEndOf(source: string, offset: number): number {
+  const nl = source.indexOf("\n", offset);
+  return nl === -1 ? source.length : nl;
+}
+
+/**
+ * The candidate edit for a matched {@link CanonicalShape}: one span from `let I = A`
+ * through the end of the `while`, replaced by `for I in A..B { … }`.
+ *
+ * The BODY between `{` and the dropped increment is the ORIGINAL SOURCE BYTES, sliced
+ * verbatim (comments, blank lines, exact original indentation, all of it) — never
+ * reprinted from the AST — so a comment leading the body, between two kept statements, on
+ * its own line, or following the whole `while` is simply never touched and survives for
+ * free. The HEADER is rebuilt, so a comment trailing the `let` line, trailing the `while`
+ * line (either side of its own `{`), or on its own line between the two statements — all
+ * of which the merge would otherwise swallow — are carried as the body's new FIRST lines,
+ * in original source order. (Not trailing the new header's own `{`: `arch fmt` itself
+ * moves a comment there onto the following line, so putting one there would make the fix
+ * its own `fmt`-instability; leading lines are what the formatter already agrees with.)
+ *
+ * Returns `null` — decline, no fix — only when a comment sits on the INCREMENT's own
+ * line: that statement is deleted, and unlike the header's two source lines merging into
+ * one, there is no corresponding position left for a comment attached to gone text.
+ */
+export function buildCandidateEdit(
+  shape: CanonicalShape,
+  source: string,
+  comments: readonly Comment[],
+): FixEdit | null {
+  const { letStmt, whileStmt, cond, name, a, b } = shape;
+  const braceIdx = source.indexOf("{", cond.span!.end);
+  if (braceIdx < 0) return null; // defensive; the grammar guarantees one
+
+  const bodyStmts = whileStmt.body;
+  const increment = bodyStmts[bodyStmts.length - 1]!;
+  if (commentsIn(comments, increment.span!.end, lineEndOf(source, increment.span!.end)).length > 0) return null;
+
+  // Every comment the merge would otherwise swallow: trailing `let`, trailing the `while`
+  // header (either side of its own `{`), and any standalone one between the two
+  // statements — collected in ORIGINAL SOURCE ORDER, not by which bucket they fall in.
+  const carried = [
+    ...commentsIn(comments, letStmt.span!.end, whileStmt.span!.start),
+    ...commentsIn(comments, cond.span!.end, braceIdx),
+    ...commentsIn(comments, braceIdx + 1, lineEndOf(source, braceIdx + 1)),
+  ].sort((x, y) => x.span.start - y.span.start);
+
+  const indent = baseIndentOf(source, letStmt.span!.start);
+  const carriedLines = carried.map((c) => `\n${indent}  ${c.text}`).join("");
+
+  // Verbatim: everything from just after `{` up to the START of the increment, with only
+  // its own trailing indentation (never a newline) trimmed off — the increment's line
+  // disappears, the blank line it leaves does not.
+  const inner = source.slice(braceIdx + 1, increment.span!.start).replace(/[ \t]*$/, "");
+
+  // The closing `}`'s OWN original indentation, read from the source rather than assumed
+  // — faithful even when the block's indent style is unusual.
+  const closeIdx = whileStmt.span!.end - 1; // the "}" itself
+  let closeLineStart = closeIdx;
+  while (closeLineStart > 0 && source[closeLineStart - 1] !== "\n") closeLineStart--;
+  const closeIndent = source.slice(closeLineStart, closeIdx);
+
+  const header = `for ${name} in ${exprToSource(a)}..${exprToSource(b)} {`;
+  const newText = `${header}${carriedLines}${inner}${closeIndent}}`;
+  return { span: { start: letStmt.span!.start, end: whileStmt.span!.end }, newText };
+}
+
+/** Leading whitespace of the line containing `offset` — used only to indent a carried
+ *  between-statements comment one level into the body. */
 function baseIndentOf(source: string, offset: number): string {
   let start = offset;
   while (start > 0 && source[start - 1] !== "\n") start--;
   return /^[ \t]*/.exec(source.slice(start, offset))?.[0] ?? "";
 }
 
-/** Render one statement back to source, recursing through the block kinds
- *  (`for`/`if`/`while`/`zone`) that {@link statementText} does not cover — the fix's
- *  BODY may nest arbitrarily deep (nothing in the shape above forbids it). No comment
- *  preservation: a machine fix on this exact shape is not expected to carry any, and the
- *  proof obligation (`src/index.ts`) is `compile()`/`describe()`/`lint()` equality, not
- *  source-text fidelity. */
-function stmtSource(s: Statement, indent: string): string {
-  switch (s.kind) {
-    case "for":
-      return `for ${s.varName} in ${exprToSource(s.iter)} ${blockSource(s.body, indent)}`;
-    case "while":
-      return `while ${exprToSource(s.cond)} ${blockSource(s.body, indent)}`;
-    case "if": {
-      const out = `if ${exprToSource(s.cond)} ${blockSource(s.then, indent)}`;
-      return s.else ? `${out} else ${blockSource(s.else, indent)}` : out;
-    }
-    case "zone":
-      return `zone ${s.id}${s.label !== undefined ? ` ${JSON.stringify(s.label)}` : ""} ${blockSource(s.body, indent)}`;
-    case "level":
-    case "error":
-      // `level` cannot appear inside a control-flow body; `error` is excluded by
-      // `canonicalShapeAt`'s explicit `containsErrorNode` check before this ever runs.
-      return "";
-    default:
-      return printDoc(statementText(s as LeafStatement), 80, "  ");
-  }
+/** Diagnostic codes stripped from a `describe()`/`lint()` comparison — a `while`→`for`
+ *  rewrite always drops these two from the twin (that is the point), and always shifts
+ *  byte spans below it, so codes/messages are compared, never spans. */
+const isDeprecationCode = (code: string | undefined): boolean =>
+  code === "W_WHILE_DEPRECATED" || code === "W_REASSIGN_DEPRECATED";
+
+/** A `{code, message}` multiset, deprecation codes excluded, order-independent. */
+function diagnosticKeys(ds: readonly { code?: string; message: string }[]): string[] {
+  return ds
+    .filter((d) => !isDeprecationCode(d.code))
+    .map((d) => `${d.code ?? ""}\u0000${d.message}`)
+    .sort();
 }
 
-/** Render a `{ … }` block body, one statement per indented line, relative to `indent`
- *  (the block's OWN opening line's indent — callers add one level for its contents). */
-function blockSource(stmts: readonly Statement[], indent: string): string {
-  if (stmts.length === 0) return "{ }";
-  const inner = `${indent}  `;
-  const lines = stmts.map((s) => `${inner}${stmtSource(s, inner)}`);
-  return `{\n${lines.join("\n")}\n${indent}}`;
+/** Options {@link proveWhileFixes} takes — the same two fields a compile's own scoping
+ *  can vary (`AnalyzeOptions` is `Pick<CompileOptions, "plugins" | "world">`). */
+export type ProveWhileFixesOptions = AnalyzeOptions;
+
+/** One proven fix, paired with the `W_WHILE_DEPRECATED` diagnostic span it belongs to —
+ *  a caller (`arch fix`) matches it back onto that diagnostic by `span.start`/`span.end`. */
+export interface ProvenWhileFix {
+  span: { start: number; end: number };
+  fix: FixSuggestion;
 }
 
 /**
- * The candidate edit for a matched {@link CanonicalShape}: one span from `let I = A`
- * through the end of the `while`, replaced by `for I in A..B { BODY-without-its-last-
- * statement }`, reindented to the loop's REAL column in `source` (so a fixed file is
- * already `fmt`-stable — never a flat, always-zero indent regardless of nesting).
+ * Prove every candidate `while`→`for` rewrite `source` offers, and return the ones that
+ * pass — see this module's header for the full design. NEVER called by `compile()`;
+ * today's only caller is `arch fix` (`src/cli/commands-author.ts`).
  *
- * Not yet a {@link import("./diagnostics.js").FixSuggestion} — this is the CANDIDATE
- * text `src/index.ts` compiles and compares before it may ever be attached as one.
+ * `describe()`/`lint()` of the ORIGINAL are computed once, hoisted out of the per-
+ * candidate loop — proving N candidates costs one extra parse/resolve pass (for the
+ * non-vacuity gate) plus N twin compiles, not N times the whole original pipeline.
  */
-export function buildCandidateEdit(shape: CanonicalShape, source: string): FixEdit {
-  const { letStmt, whileStmt, name, a, b } = shape;
-  const bodyWithoutIncrement = whileStmt.body.slice(0, -1);
-  const raw = `for ${name} in ${exprToSource(a)}..${exprToSource(b)} ${blockSource(bodyWithoutIncrement, "")}`;
-  const indent = baseIndentOf(source, letStmt.span!.start);
-  const newText = raw
-    .split("\n")
-    .map((line, i) => (i === 0 ? line : `${indent}${line}`))
-    .join("\n");
-  return { span: { start: letStmt.span!.start, end: whileStmt.span!.end }, newText };
+export function proveWhileFixes(source: string, opts: ProveWhileFixesOptions = {}): ProvenWhileFix[] {
+  const original = compile(source, { ...opts, noCache: true });
+  if (!original.ast || original.diagnostics.some((d) => d.severity === "error")) return [];
+  const whileDiags = original.diagnostics.filter(
+    (d) => d.code === "W_WHILE_DEPRECATED" && d.file === undefined && d.span,
+  );
+  if (whileDiags.length === 0) return [];
+
+  // Non-vacuity: which `while` spans actually ran >= 1 iteration in THIS compile, across
+  // every storey. A separate resolve (parse is memoized, so this is one extra link+resolve
+  // pass, not a second full pipeline) — `compile()` does not expose the internal IR this
+  // needs, by design (see this module's header on why that proof stays out of `compile()`).
+  const analysis = resolvePlan(source, opts);
+  const irs = analysis.levels.length > 0 ? analysis.levels.map((l) => l.ir) : analysis.ir ? [analysis.ir] : [];
+  const executed = new Set<string>();
+  for (const ir of irs) for (const k of ir._executedWhileSpans) executed.add(k);
+
+  const plan = original.ast;
+  const comments = plan.comments ?? [];
+  const sites = collectWhileSites(plan);
+  const origPages = original.pages ? original.pages.map((p) => p.svg) : [original.svg];
+  const origDesc = describePlan(source, opts);
+  const origLintKeys = diagnosticKeys(lintPlan(source, opts));
+
+  const out: ProvenWhileFix[] = [];
+  for (const d of whileDiags) {
+    const site = sites.find((s) => s.whileStmt.span!.start === d.span!.start && s.whileStmt.span!.end === d.span!.end);
+    if (!site) continue;
+    if (!executed.has(executedKey(site.whileStmt.span!, undefined))) continue; // never ran
+
+    const shape = canonicalShapeAt(site.body, site.index);
+    if (!shape) continue;
+    const edit = buildCandidateEdit(shape, source, comments);
+    if (!edit) continue; // an unplaceable comment — decline rather than drop it
+
+    const candidateSource = source.slice(0, edit.span.start) + edit.newText + source.slice(edit.span.end);
+    const twin = compile(candidateSource, { ...opts, noCache: true });
+    if (twin.diagnostics.some((x) => x.severity === "error")) continue;
+
+    const twinPages = twin.pages ? twin.pages.map((p) => p.svg) : [twin.svg];
+    if (twinPages.length !== origPages.length || twinPages.some((s, i) => s !== origPages[i])) continue;
+
+    const twinDesc = describePlan(candidateSource, opts);
+    const stripDesc = (s: typeof origDesc) => ({ ...s, diagnostics: diagnosticKeys(s.diagnostics) });
+    if (JSON.stringify(stripDesc(origDesc)) !== JSON.stringify(stripDesc(twinDesc))) continue;
+
+    const twinLintKeys = diagnosticKeys(lintPlan(candidateSource, opts));
+    if (JSON.stringify(origLintKeys) !== JSON.stringify(twinLintKeys)) continue;
+
+    out.push({
+      span: { start: d.span!.start, end: d.span!.end },
+      fix: {
+        title: `rewrite the counted \`while\` loop over "${shape.name}" as \`for\``,
+        applicability: site.insideComponent ? "maybe-incorrect" : "machine-applicable",
+        fixId: "while-to-for",
+        edits: [edit],
+      },
+    });
+  }
+  return out;
 }

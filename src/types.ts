@@ -138,14 +138,6 @@ export interface CompileOptions {
    * browser/tests pass a virtual map. See {@link import("./world.js").World}.
    */
   world?: import("./world.js").World;
-  /**
-   * @internal Disables the W7 `while`→`for` fix-soundness proof for THIS compile only
-   * (see `src/index.ts`'s `attachWhileFixes`). Set only on the internal "twin" compile
-   * that proof performs on a candidate rewrite — without it, proving a fix would compile
-   * a twin that tries to prove its own fixes, recursing without bound. Never set this from
-   * outside the compiler; it is not part of the public contract and may change shape.
-   */
-  _skipWhileFixProof?: boolean;
 }
 
 /**

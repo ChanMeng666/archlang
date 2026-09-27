@@ -8,9 +8,8 @@
  * see that module's header for why this split exists) over the whole corpus: every
  * shipped `examples/*.arch` plus every `test/fixtures/*.arch`. None of these plans uses
  * `while` or a bare reassignment, so the measurement is the same on the tree before W7
- * existed and after — proved directly, not merely argued, by
- * `D:\.claude-scratch\2026-09-27\archlang-algebra\w7\sweep.ts`'s before/after run against
- * `feat/algebra` `38b2d9e` (0 files moved) earlier in this same task.
+ * existed and after — proved directly, not merely argued, by an ad-hoc before/after sweep
+ * against `feat/algebra` (0 files moved) as part of this change.
  */
 export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/accessible.arch", "a8b70a680754e431524037dc3a936bba2ec7c0e2cba8df0c72a16f45e5d1e27b"],

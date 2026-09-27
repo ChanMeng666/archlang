@@ -184,13 +184,26 @@ function lineEnd(source: string, offset: number): number {
  * ```
  *
  * With no `span`, only the header line is produced.
+ *
+ * A diagnostic carrying `file` is measured in ANOTHER module's source (an imported
+ * component's body — see {@link Diagnostic.file}), so `source` — the string this
+ * function was handed — cannot be indexed for line/col or a source excerpt without
+ * confidently pointing at the wrong bytes. That case prints `--> <file> [start..end]`
+ * instead, no excerpt, matching the JSON projection's rule
+ * ({@link import("./diagnostic-json.js").diagnosticToJson}: `file` present means no
+ * `line`/`col`).
  */
 export function formatDiagnostic(source: string, d: Diagnostic): string {
   const codeTag = d.code ? `[${d.code}]` : "";
   const header = `${d.severity}${codeTag}: ${d.message}`;
   const lines: string[] = [header];
 
-  if (d.span) {
+  if (d.span && d.file !== undefined) {
+    lines.push(` --> ${d.file} [${d.span.start}..${d.span.end}]`);
+    for (const hint of d.hints ?? []) {
+      lines.push(` = help: ${hint}`);
+    }
+  } else if (d.span) {
     const { line, col } = offsetToLineCol(source, d.span.start);
     const ls = lineStart(source, d.span.start);
     const le = lineEnd(source, d.span.start);
