@@ -3,7 +3,21 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { codeActions, compile, format, makeVirtualWorld, reroll } from "../src/index.js";
+import {
+  codeActions,
+  compile,
+  describe as describePlan,
+  format,
+  lint,
+  makeVirtualWorld,
+  reroll,
+} from "../src/index.js";
+// `proves`/`compileForProof` are internal (not re-exported from src/index.js —
+// see their doc comments in reroll.ts): imported directly here so the mutant-
+// proofing tests below can drive the proof obligation with a deliberately
+// WRONG replacement, not just observe reroll()'s own always-correct ones.
+import { compileForProof, proves } from "../src/reroll.js";
+import type { CompileOptions, Span } from "../src/index.js";
 
 /**
  * `reroll(source)` (W6b): detect ≥3 consecutive statements in arithmetic
@@ -33,6 +47,33 @@ const FLAT_ROW = format(`plan "Row" {
 
 function applyOne(source: string, s: ReturnType<typeof reroll>[number]): string {
   return source.slice(0, s.span.start) + s.replacement + source.slice(s.span.end);
+}
+
+const diagTriples = (ds: { code?: string; severity: string; message: string }[]): string[] =>
+  ds.map((d) => JSON.stringify([d.code, d.severity, d.message])).sort();
+const diagPairs = (ds: { code?: string; message: string }[]): string[] =>
+  ds.map((d) => JSON.stringify([d.code, d.message])).sort();
+
+/**
+ * Build the exact shape `proves()` expects for its `baseline` parameter, from
+ * the PUBLIC `compile`/`describe`/`lint` — mirroring `reroll.ts`'s own
+ * (internal, unexported) `getBaseline` so a test can call `proves()` directly
+ * without depending on any of reroll.ts's non-exported types.
+ */
+function makeBaseline(source: string, opts: CompileOptions = {}) {
+  const c = compile(source, opts);
+  const d = describePlan(source, opts);
+  const { diagnostics, ...describeFacts } = d;
+  return {
+    pipeline: {
+      ok: c.errors.length === 0,
+      diagnostics: c.diagnostics,
+      pages: c.pages ? c.pages.map((p) => p.svg) : [c.svg],
+    },
+    describeFacts,
+    describeDiagTriples: diagTriples(diagnostics),
+    lintPairs: diagPairs(lint(source, opts)),
+  };
 }
 
 describe("reroll — the flat parametric row", () => {
@@ -236,6 +277,254 @@ describe("reroll — refused cases", () => {
       column at (8000,0) size 300x300
     }`);
     expect(reroll(src)).toEqual([]);
+  });
+});
+
+describe("reroll — comment loss (MAJOR 2: format() preserves comments, so must reroll)", () => {
+  it("refuses a run with a comment BETWEEN two of its statements", () => {
+    const src = format(`plan "C1" {
+      units mm
+      grid 50
+      north up
+      column at (0,0) size 300x300
+      # a comment between the first and second statement
+      column at (4000,0) size 300x300
+      column at (8000,0) size 300x300
+    }`);
+    expect(reroll(src)).toEqual([]);
+  });
+
+  it("refuses a run with a comment trailing a NON-last statement (same line)", () => {
+    const src = format(`plan "C2" {
+      units mm
+      grid 50
+      north up
+      column at (0,0) size 300x300 # trails the first statement
+      column at (4000,0) size 300x300
+      column at (8000,0) size 300x300
+    }`);
+    expect(reroll(src)).toEqual([]);
+  });
+
+  it("refuses a run with a comment trailing its LAST statement (same line)", () => {
+    const src = format(`plan "C3" {
+      units mm
+      grid 50
+      north up
+      column at (0,0) size 300x300
+      column at (4000,0) size 300x300
+      column at (8000,0) size 300x300 # trails the last statement
+    }`);
+    expect(reroll(src)).toEqual([]);
+  });
+
+  it("still offers when a comment LEADS the run (before the first statement, its own line)", () => {
+    const src = format(`plan "C4" {
+      units mm
+      grid 50
+      north up
+      # a comment before the run — outside it, nothing is lost by rerolling
+      column at (0,0) size 300x300
+      column at (4000,0) size 300x300
+      column at (8000,0) size 300x300
+    }`);
+    expect(reroll(src).length).toBe(1);
+  });
+
+  it("still offers when a comment follows the run on the NEXT line (not trailing it)", () => {
+    const src = format(`plan "C5" {
+      units mm
+      grid 50
+      north up
+      column at (0,0) size 300x300
+      column at (4000,0) size 300x300
+      column at (8000,0) size 300x300
+      # a comment after the run, on its own line — not trailing the last statement
+      wall partition thickness 100 { (0,2000) (9000,2000) }
+    }`);
+    expect(reroll(src).length).toBe(1);
+  });
+});
+
+describe("reroll — exact arithmetic progression (MINOR 5)", () => {
+  it("refuses a progression that only agrees once PRINTED, not in exact binary (100.1, 100.2, 100.3)", () => {
+    // IEEE-754: 100.2 - 100.1 !== 100.3 - 100.2 in binary, though fmt3 prints
+    // all three deltas as "0.1". The public `scene` must be byte-identical to
+    // the one the original literals produced, not merely equal once rounded.
+    const src = format(`plan "Float" {
+      units mm
+      grid 50
+      north up
+      column at (100.1,0) size 300x300
+      column at (100.2,0) size 300x300
+      column at (100.3,0) size 300x300
+    }`);
+    expect(100.1 + 2 * (100.2 - 100.1)).not.toBe(100.3); // the premise: binary rounding really does break this
+    expect(reroll(src)).toEqual([]);
+  });
+
+  it("still offers an EXACT integer progression", () => {
+    const src = format(`plan "Int" {
+      units mm
+      grid 50
+      north up
+      column at (0,0) size 300x300
+      column at (4000,0) size 300x300
+      column at (8000,0) size 300x300
+    }`);
+    expect(reroll(src).length).toBe(1);
+  });
+});
+
+describe("reroll — CRLF (MINOR 7)", () => {
+  it("prints the replacement with the source's own CRLF line endings", () => {
+    const lfSrc = format(`plan "CRLF" {
+      units mm
+      grid 50
+      north up
+      column at (0,0) size 300x300
+      column at (4000,0) size 300x300
+      column at (8000,0) size 300x300
+    }`);
+    const crlfSrc = lfSrc.replace(/\n/g, "\r\n");
+    const suggestions = reroll(crlfSrc);
+    expect(suggestions.length).toBe(1);
+    const replacement = suggestions[0]!.replacement;
+    expect(replacement).toContain("\r\n");
+    // No BARE LF: every "\n" is immediately preceded by "\r".
+    expect(replacement.split("\r\n").join("").includes("\n")).toBe(false);
+
+    const twin = crlfSrc.slice(0, suggestions[0]!.span.start) + replacement + crlfSrc.slice(suggestions[0]!.span.end);
+    expect(compile(twin).errors).toEqual([]);
+  });
+});
+
+describe("reroll — the detection gate (token-shortening; MAJOR 4)", () => {
+  it("refuses a run whose loop wrapper would be LONGER than the statements it replaces", () => {
+    // Three single-argument instance calls: `unit(0)`, `unit(4000)`, `unit(8000)`
+    // — the `for i in 0..3 { … }` wrapper's own overhead (7 tokens) outweighs
+    // the saving on a run this short.
+    const src = format(`plan "Short" {
+      units mm
+      grid 50
+      north up
+      component unit(x) {
+        column at (x,0) size 300x300
+      }
+      unit(0)
+      unit(4000)
+      unit(8000)
+    }`);
+    expect(reroll(src)).toEqual([]);
+  });
+});
+
+describe("reroll — the proof obligation rejects a WRONG replacement (MAJOR 4, mutant-proofing)", () => {
+  // Three columns in an exact AP (0, 4000, 8000) — every test below proves()
+  // a deliberately WRONG replacement over this same run and expects `false`.
+  const SRC = format(`plan "Mutant" {
+    units mm
+    grid 50
+    north up
+    wall exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+    column at (0,0) size 300x300
+    column at (4000,0) size 300x300
+    column at (8000,0) size 300x300
+  }`);
+  const start = SRC.indexOf("column at (0, 0)");
+  const end = SRC.indexOf("column at (8000, 0)") + "column at (8000, 0) size 300x300".length;
+  const SPAN: Span = { start, end };
+  const OPTS: CompileOptions = {};
+  const BASELINE = makeBaseline(SRC, OPTS);
+
+  it("sanity: the CORRECT replacement proves", () => {
+    const correct = "for i in 0..3 {\n    column at (i * 4000,0) size 300x300\n  }";
+    expect(proves(SRC, SPAN, correct, OPTS, BASELINE)).toBe(true);
+  });
+
+  it("rejects a replacement whose SVG differs (wrong delta: 5000 instead of 4000)", () => {
+    const wrong = "for i in 0..3 {\n    column at (i * 5000,0) size 300x300\n  }";
+    const twin = SRC.slice(0, start) + wrong + SRC.slice(end);
+    expect(compile(twin, OPTS).svg).not.toBe(compile(SRC, OPTS).svg);
+    expect(proves(SRC, SPAN, wrong, OPTS, BASELINE)).toBe(false);
+  });
+
+  it("rejects a source whose diagnostics differ — SVG, describe() facts and lint all UNCHANGED (an unknown wall material still draws the default hatch)", () => {
+    // Verified premise: adding an unrecognized `material` word to a wall with
+    // none draws the SAME default hatch (SVG unchanged), reports no new
+    // describe()/lint() fact, and adds exactly one W_UNKNOWN_MATERIAL warning.
+    const sourceWithBadMaterial = SRC.replace(
+      "wall exterior thickness 200",
+      "wall exterior thickness 200 material bogus_unknown_material_xyz",
+    );
+    expect(compile(sourceWithBadMaterial, OPTS).svg).toBe(compile(SRC, OPTS).svg);
+    // The material insertion sits BEFORE the run, so the run's own byte span
+    // shifted in this source — recompute it (never reuse SPAN across a source
+    // edit that lands earlier in the file than the run). BASELINE (computed
+    // from SRC, the TRUE original with no bad material) still applies: the
+    // question is whether this twin — correct loop, but still carrying the
+    // injected bad-material wall — proves equivalent to the real original.
+    const s2 = sourceWithBadMaterial.indexOf("column at (0, 0)");
+    const e2 = sourceWithBadMaterial.indexOf("column at (8000, 0)") + "column at (8000, 0) size 300x300".length;
+    const correct = "for i in 0..3 {\n    column at (i * 4000,0) size 300x300\n  }";
+    expect(proves(sourceWithBadMaterial, { start: s2, end: e2 }, correct, OPTS, BASELINE)).toBe(false);
+  });
+
+  it("rejects a source whose describe() facts differ — SVG, diagnostics and lint all UNCHANGED (heights draw nothing: a window sill is a fact only)", () => {
+    // Verified premise: a window's `sill` is a fact `describe()` reports and
+    // NOTHING draws (docs/agents/architecture.md: "heights draw nothing"), so
+    // changing it alone changes describe() and nothing else.
+    const srcWithWindow = format(`plan "SillMutant" {
+      units mm
+      grid 50
+      north up
+      wall exterior thickness 200 { (0,0) (12000,0) (12000,4000) (0,4000) close }
+      window at (2000,0) width 1200 wall exterior sill 900
+      column at (0,2000) size 300x300
+      column at (4000,2000) size 300x300
+      column at (8000,2000) size 300x300
+    }`);
+    const baseline = makeBaseline(srcWithWindow, OPTS);
+    const sourceWithChangedSill = srcWithWindow.replace("sill 900", "sill 1200");
+    expect(compile(sourceWithChangedSill, OPTS).svg).toBe(compile(srcWithWindow, OPTS).svg);
+    expect(diagPairs(lint(sourceWithChangedSill, OPTS))).toEqual(diagPairs(lint(srcWithWindow, OPTS)));
+    // The sill edit sits BEFORE the run, so the run's own byte span shifted in
+    // this source ("sill 900" -> "sill 1200" is one byte longer) — recompute
+    // it here rather than reusing an offset from `srcWithWindow`.
+    const s2 = sourceWithChangedSill.indexOf("column at (0, 2000)");
+    const e2 = sourceWithChangedSill.indexOf("column at (8000, 2000)") + "column at (8000, 2000) size 300x300".length;
+    const correct = "for i in 0..3 {\n    column at (i * 4000,2000) size 300x300\n  }";
+    expect(proves(sourceWithChangedSill, { start: s2, end: e2 }, correct, OPTS, baseline)).toBe(false);
+  });
+
+  it("rejects a source whose lint warnings differ (a shrunk room trips W_ROOM_TOO_SMALL)", () => {
+    const srcWithRoom = format(`plan "LintMutant" {
+      units mm
+      grid 50
+      north up
+      wall exterior thickness 200 { (0,0) (16000,0) (16000,4000) (0,4000) close }
+      room at (0,0) size 3000x3000 label "Room"
+      column at (4000,0) size 300x300
+      column at (8000,0) size 300x300
+      column at (12000,0) size 300x300
+    }`);
+    const baseline = makeBaseline(srcWithRoom, OPTS);
+    // A wrong SOURCE (a room-size shrink, unrelated to the run) proved against
+    // the correct replacement for the run itself — shrinking is not part of
+    // `replacement`, so this checks `proves()` against a whole-plan lint delta.
+    const shrunkSource = srcWithRoom.replace("size 3000x3000", "size 400x400");
+    expect(lint(shrunkSource, OPTS).map((d) => d.code)).toContain("W_ROOM_TOO_SMALL");
+    const s2 = shrunkSource.indexOf("column at (4000, 0)");
+    const e2 = shrunkSource.indexOf("column at (12000, 0)") + "column at (12000, 0) size 300x300".length;
+    const correct = "for i in 0..3 {\n    column at (i * 4000 + 4000,0) size 300x300\n  }";
+    expect(proves(shrunkSource, { start: s2, end: e2 }, correct, OPTS, baseline)).toBe(false);
+  });
+
+  it("compileForProof reports a compile error for an unresolvable twin", () => {
+    const brokenReplacement = "for i in 0..3 {\n    column at (i * unbound_name,0) size 300x300\n  }";
+    const twin = SRC.slice(0, start) + brokenReplacement + SRC.slice(end);
+    expect(compileForProof(twin, OPTS).ok).toBe(false);
+    expect(proves(SRC, SPAN, brokenReplacement, OPTS, BASELINE)).toBe(false);
   });
 });
 
