@@ -384,14 +384,21 @@ room at (0, 0) size W x H
   body or a control-flow block) may **shadow** an outer name.
 - Unknown names produce a `did you mean …?` hint.
 
-**Reassignment.** Once a name is bound, `name = <expr>` updates it (this is how a
-`while` loop makes progress — see [Control flow](#control-flow)). Assigning a
-name that was never `let`-bound is an error.
+**Reassignment (deprecated).** Once a name is bound, `name = <expr>` updates it
+(this is how a `while` loop makes progress — see [Control flow](#control-flow)).
+Assigning a name that was never `let`-bound is an error.
 
 ```
 let i = 0
 i = i + 1            # reassigns the existing binding
 ```
+
+Reassignment breaks the one property every equational tool in ArchLang relies
+on — that a `let` names a value, substitutable wherever it is used — so it is
+**deprecated** (`W_REASSIGN_DEPRECATED`) and scheduled for removal in 2.0. It
+still parses, compiles and renders exactly as before; a counted `while` loop
+that only reassigns to make progress rewrites to a `for` over a range (see
+[Control flow](#control-flow)) — the machine-applicable fix does this for you.
 
 ### Functions
 
@@ -605,6 +612,23 @@ while i < COUNT {
   boolean.
 - `while <cond> { … }` repeats until the condition is false; it is capped at
   10,000 iterations (a runaway loop is reported, not hung).
+
+**`while` is deprecated** (`W_WHILE_DEPRECATED`) and scheduled for removal in
+2.0: it is the one construct that needs a reassignment to make progress, and
+`for x in a..b` covers every counted loop `while` is used for. It still
+parses, compiles and renders exactly as before. The canonical shape above —
+`let i = 0` immediately before `while i < COUNT { …; i = i + 1 }`, with no
+other reassignment in the body — has a machine-applicable fix that rewrites
+it to the equivalent, and equally shorter, range form:
+
+```
+for i in 0..COUNT {
+  column at (i * 600, 0) size 300x300
+}
+```
+
+Anything that does not fit that shape (a decrementing counter, a second
+reassignment, a condition other than `<`) needs a hand rewrite before 2.0.
 
 ## Built-in functions
 

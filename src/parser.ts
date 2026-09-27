@@ -52,6 +52,7 @@ import { BUILTIN_REGISTRY } from "./registry.js";
 import { STATEMENT_STARTS } from "./grammar/tokens.js";
 import type { PaperOrientation, PaperSize } from "./sheet.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "./sheet.js";
+import { checkWhileDeprecation } from "./while-deprecation.js";
 
 export interface ParseOutcome {
   plan?: PlanNode;
@@ -113,7 +114,11 @@ function parseImpl(src: string, registry: Registry): ParseOutcome {
   const p = new Parser(tokens, registry);
   const plan = p.parsePlan();
   plan.comments = comments;
-  return { plan, diagnostics: [...lexDiags, ...p.diagnostics] };
+  const diagnostics = [...lexDiags, ...p.diagnostics];
+  // W7: `while`/reassignment soft-deprecation — purely syntactic, over the plan body
+  // and every locally-declared component; see `src/while-deprecation.ts`'s header.
+  checkWhileDeprecation(plan, (d) => diagnostics.push(d));
+  return { plan, diagnostics };
 }
 
 class Parser {

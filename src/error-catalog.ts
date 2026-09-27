@@ -1052,6 +1052,20 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Widen the room to the figure the warning quotes, park fewer cars in it, or drop the `uses garage` tag if the room is not one (a store that happens to be called a garage classifies as one from its label alone — an explicit `uses storage` overrides that).",
     'room id=g at (0,0) size 2500x6000 label "Garage" uses garage\nfurniture car at (300,300) size 1800x4600 in g   # lint: 2500 mm across, one bay wants 2700',
   ),
+  W_WHILE_DEPRECATED: W(
+    "W_WHILE_DEPRECATED",
+    "`while` is deprecated and will be removed in 2.0.",
+    "`while` plus a reassignment to make it terminate is the one construct in ArchLang's expand-time language that breaks referential transparency: a `let` binding reassigned later is no longer a value that can be substituted, which every equational tool (LSP rename, `arch fix`'s rewrite-in-your-form, the planned re-roll refactor) relies on. `for x in a..b` covers every counted loop `while` is used for in practice, and the construct ships in 0 shipped examples.",
+    "Rewrite the loop as `for I in A..B { … }`. The machine-applicable fix does this for the canonical shape `let I = A` immediately before `while I < B { …; I = I + 1 }`; anything else needs a hand rewrite before 2.0.",
+    "let i = 0\nwhile i < 5 {\n  room at (0, i * 3000) size 3000x3000\n  i = i + 1\n}   # warning: deprecated; rewrites to `for i in 0..5 { … }`",
+  ),
+  W_REASSIGN_DEPRECATED: W(
+    "W_REASSIGN_DEPRECATED",
+    "Reassignment (`NAME = expr`) is deprecated and will be removed in 2.0.",
+    "Reassigning an existing `let` binding exists only to make a `while` loop progress. Outside that role it is the same referential-transparency break `while` is deprecated for: a name bound with `let` can no longer be trusted to keep its first value, which breaks the equational tools (rename, `arch fix`, the planned re-roll refactor) that treat a `let` as a substitutable value. A `while` loop's own progress step (its body's last statement, updating the name the condition tests) does not also raise this — that reassignment is already covered by `W_WHILE_DEPRECATED` on the loop itself.",
+    "Bind a new name with `let` instead of reassigning it, or express the loop as `for NAME in A..B { … }` (the machine-applicable fix on `W_WHILE_DEPRECATED` does this for the canonical shape).",
+    "let total = 0\ntotal = total + 100   # warning: deprecated reassignment; bind a new name instead",
+  ),
 });
 
 /** All catalog codes, sorted (errors then warnings, alphabetically within). */
