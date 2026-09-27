@@ -281,9 +281,11 @@ say how a per-category rule composes with the existing per-kind one.
 
 `place … rotate r mirror m` must carry every fact through the frame's D4 ⋉ Z² action. The oracle
 (`test/d4-oracle.ts`; suites `test/equivariance-{corpus,scene,fuzz}.test.ts`) measures that law, and
-every violation it finds is pinned in `test/equivariance-known.ts`: a new one fails as `NEW`, a
-closed one as `FIXED` until its pin and its `STILL …` witness are deleted. Each entry below is one
-pinned class; the gate for closing it is that suite going `FIXED` for exactly that class.
+every violation it finds is pinned in `test/equivariance-known.ts`, per element and, for the raster,
+with a size bound: a new one fails as `NEW`, a closed one as `FIXED` until its pin and its `STILL …`
+witness are deleted, and each pin's class predicate must account for what it pins. Each entry below
+is one pinned class; the gate for closing it is that suite going `FIXED` for exactly that class.
+Status is `todo` for a defect and `declared` for a convention that is not a group fact.
 
 ### E.1 · `fix-pullback` — lint fixes rewrite a shared component in plan coordinates — `todo`
 
@@ -297,8 +299,9 @@ pulling the fix back through the inverse frame.
 
 `tailEdge` (`src/vertical.ts:98`) is the fixed page rule "larger-coordinate end of the long axis", so
 a turned `stair`/`escalator` draws its arrow the wrong way and the nav grid opens the wrong landing.
-Close by carrying the tail edge through the frame, or with the `entry <edge>` clause the module
-already anticipates.
+ADR 0016 already records this as "Limitation, inherited"; it is pinned as a defect, not a declared
+convention, because it is scheduled to close — by carrying the tail edge through the frame, or with
+the `entry <edge>` clause the module already anticipates.
 
 ### E.3 · `stair-break-hand` — a mirrored stair keeps its break line's hand — `todo`
 
@@ -316,45 +319,80 @@ transform hook (or a catalogued diagnostic), never a thrown error.
 `windowFacingPage` (`src/site.ts:191,206`) breaks a tie horizontal-first by stated convention, which
 an axis swap does not commute with. Not a defect; the pin moves only if the convention does.
 
-### E.6 · `raster-tie` — the nav grid breaks ties in page order — `todo`
+### E.6–E.10 · the nav grid breaks its ties in page order — `todo`
 
-Even on a lattice every D4 element maps onto itself, `cellOf` (`src/analyze/circulation.ts:285`)
-floors a boundary point to the +x/+y cell and a room's anchor (`:962-986`) is the lowest-index of
-equidistant cells, so a turn or flip moves walks, bottlenecks and the sealed set by a cell and
-flips the raster lint rules. Close with a D4-symmetric tie-break.
+ADR 0008 makes circulation facts deterministic by row-major iteration and calls them "coarse and
+advisory: grid-quantised to the cell size". That licenses a cell of noise; it does not license a
+turned plan measuring the same room 7.3 m further away (`courtyard-house`'s gallery), which is
+outside any reading of "coarse". Five mechanisms, each its own class with a predicate the fuzz suite
+applies and a witness:
 
-### E.7 · `float-translation` — circulation changes under a pure translation — `todo`
+- **E.6 `raster-tie`** — an entrance on a lattice line is floored to its +x/+y side
+  (`src/analyze/circulation.ts:285`), and a room whose seed point is equidistant from several cells
+  measures to the row-major first (`:962-986`). Each endpoint moves at most one lattice step per tied
+  axis, so a walk moves at most 3 cells (a single-room plan with no furniture: 1500 → 1400 mm).
+- **E.7 `entrance-seed-walk`** — the tied entrance cell's row is eroded, so `seedCell` keeps walking
+  inward: the walk origin moves several cells (1800 → 1100 mm), or lands in a pocket from which no
+  room measures at all.
+- **E.8 `anchor-far-tie`** — furniture covers a room's centre, so its nearest free cells form a ring
+  round the obstacle, all equidistant; the row-major first lands on another side of it (the corpus:
+  up to 3600 mm in `laneway-house`).
+- **E.9 `label-point-tie`** — a concave room is measured to `polygonLabelPoint`'s pole of
+  inaccessibility, whose scan keeps the first of equally wide arms (`src/geometry/polygon.ts:207`):
+  `courtyard-house`'s gallery, +7300 mm.
+- **E.10 `threshold-carve`** — a doorway centred on a lattice line (or near a room corner, where
+  seeding steps diagonally and `carvePath` joins seeds by an x-then-y L) is tried on a set of rows
+  that shifts by one under a turn or flip: the grid itself differs, walks detour (`hexagon-pavilion`
+  −1200 mm), and a room can carve on one side only and be sealed.
 
-The nav grid samples curved and tessellated boundaries in absolute float coordinates, so a 20 m
-translation moves a boundary across a cell centre by an ulp (`aquarium` detour 1.01 → 1, `library`
-reading-room walk 25500 → 25300). Close by sampling relative to the grid's own origin.
+Close with D4-symmetric tie-breaks: seed both sides of a line, choose among equidistant cells by a
+rule the group preserves, carve thresholds on a symmetric row set.
 
-### E.8 · `slide-track` — a mirrored sliding door swaps its panels' tracks — `todo`
+### E.11 · `float-translation` — facts change under a pure translation — `todo`
+
+The compiler measures in absolute float coordinates, and a translation re-rounds geometry: a curve's
+tessellation (`aquarium` detour 1.01 → 1, `library` reading-room walk 25500 → 25300 mm), or an
+`on <wall> at 55%` position that resolved an ulp off its integer and rounds back 20 m away — which
+flips `W_POCKET_RUN`'s `>= need` and makes its reverse-slide fix appear. Close by measuring relative
+to the plan's own origin and snapping resolved positions.
+
+### E.12 · `slide-track` — a mirrored sliding door swaps its panels' tracks — `todo`
 
 `renderDoorPanels` (`src/elements/door-panels.ts:135-136`) puts the fixed panel on `n * off * sd`,
 the wall's left normal times `slide`; a reflection flips the normal and not `slide`. Close by
 flipping with the frame's determinant, as `swing` is.
 
-### E.9 · `column-corner` — the frame carries a column's corner as a centre — `todo`
+### E.13 · `column-corner` — the frame carries a column's corner as a centre — `todo`
 
 `transformGeometry`'s `column` arm (`src/frame.ts:393-398`) treats `at` as the centre;
 `src/elements/column.ts` lays it out as the top-left. Every element but the identity and the
 transposition draws the column one size off (and can move the drawing extent the sheet fit reads).
 Close with `transformRect`.
 
-### E.10 · `dim-text-side` — a mirrored dim's number lands inside its line — `todo`
+### E.14 · `dim-text-side` — a dim's number is drawn inside its line for a negative offset — `todo`
 
-A reflection negates `offset` (`src/frame.ts:392`) but the number is always drawn on the from→to
-left normal (`src/elements/dim.ts:320`), so it moves between the line and what it measures. Close by
-drawing on `sign(offset)` of the normal, or by reflecting through the endpoint order.
+A root renderer defect, with no `place` involved: `dim.render` (`src/elements/dim.ts:259-262,320`)
+always puts the number on the from→to left normal, whatever the offset's sign. At the root,
+`dim (0,3000)->(4000,3000) offset -400` draws its line at y = 2600 and its number at y = 2658.8,
+between the line and the wall at 3000. The oracle meets it because a reflection negates every placed
+dim's offset (`src/frame.ts:392`). Close by drawing on `sign(offset)` of the normal.
 
-### E.11 · `nested-ref` — a reference into a nested instance fails once its plan is placed — `todo`
+### E.15 · `dim-tick-hand` — a mirrored dim draws its ticks on the other diagonal — `declared`
 
-An instance group resolves against its own walls and rooms only (`src/ir.ts:1773`), and a nested
-instance's elements go straight to plan space, so `in c2.main anchor …` and `on west.shell at …`
-work at the root and fail inside a component (`E_PLACE_REF`, `E_ATTACH_WALL_REF`). This is why
-`clinic.arch` and `museum-wings.arch` do not survive being imported whole. Close by resolving a
-component's references against its nested instances' transformed elements.
+Each 45° station tick is drawn along `dir + n` (`src/elements/dim.ts:290-291`), a slash of fixed page
+sense relative to the line — a drafting convention, like a hatch angle. Its mirror image is the
+other diagonal. Not a defect; the pin moves only if the tick convention does.
+
+### E.16 · `nested-ref` — a reference into a nested instance fails once its plan is placed — `todo`
+
+A COMPOSITION defect, found by the oracle but not an equivariance one: it fails at the identity
+frame (tier T0). An instance group resolves against its own walls and rooms only
+(`src/ir.ts:1773`), and a nested instance's elements go straight to plan space, so
+`in c2.main anchor …` and `on west.shell at …` work at the root and fail inside a component
+(`E_PLACE_REF`, `E_ATTACH_WALL_REF`) — contradicting ADR 0016 §3's "the parent can reach in" and the
+`museum-wings.arch` pattern. This is why `clinic.arch` and `museum-wings.arch` do not survive being
+imported whole. Close by resolving a component's references against its nested instances'
+transformed elements.
 
 ---
 
