@@ -103,9 +103,10 @@ describe("emitOpening preserves every clause it was not asked to change (incl. s
           failures.push(`${node.kind} ${node.id ?? "<anon>"}: missing ${missing.join(", ")} in "${out}"`);
         }
       }
-      expect(failures.length, `${failures.length}/${HEIGHTS_OPENINGS.length} dropped a clause:\n\n${failures.slice(0, 10).join("\n")}`).toBe(
-        0,
-      );
+      expect(
+        failures.length,
+        `${failures.length}/${HEIGHTS_OPENINGS.length} dropped a clause:\n\n${failures.slice(0, 10).join("\n")}`,
+      ).toBe(0);
     });
   }
 });
