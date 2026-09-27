@@ -13,9 +13,9 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   `file`, or it splices a module's byte offsets into the importer.
 - **`place`: never pre-transform a resolver's input.** Every derived rule is stated in plan terms
   (`anchor top-left`, `side left`, `hinge left`, `right-of`), so an instance resolves in its own
-  frame and `transformElement` carries the result. A new handed rule adds its flip there
-  (`det < 0`). Flip what can be re-expressed in plan coordinates (a symbol's handedness); drop what
-  cannot (a local `anchor` corner).
+  frame and `transformElement` carries the result. A new handed rule adds its flip in the element
+  module's `transform`, under `t.reflected`. Flip what can be re-expressed in plan coordinates (a
+  symbol's handedness); drop what cannot (a local `anchor` corner).
 - **Room-label classification goes through `src/vocabulary.ts`**; the corpus classification is pinned
   by `test/vocabulary-equivalence.test.ts`. A red pin means fix the vocabulary, never regenerate it.
 - **The PNG backend is Node-only and async**; keep `node:*` imports lazy so the module stays
