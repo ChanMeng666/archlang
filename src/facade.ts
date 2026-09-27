@@ -22,15 +22,23 @@ import {
 } from "./geometry.js";
 import { pointInRoomBox, roomBox } from "./analyze.js";
 import type { Point } from "./ast.js";
+import { SIDE_NORMAL } from "./algebra/d4.js";
 
 /** The four facades a dimension chain can run along. */
 export type Side = "bottom" | "left" | "top" | "right";
 export const SIDES: readonly Side[] = ["bottom", "left", "top", "right"];
 
-/** Which axis a side measures along: `h` = along x (bottom/top), `v` = along y. */
-export const SIDE_AXIS: Record<Side, "h" | "v"> = { bottom: "h", top: "h", left: "v", right: "v" };
-/** Outward direction along the side's CROSS axis (+1 = increasing coordinate). */
-export const SIDE_OUT: Record<Side, 1 | -1> = { bottom: 1, right: 1, top: -1, left: -1 };
+/** Which axis a side measures along: `h` = along x (bottom/top), `v` = along y. Derived
+ *  from the side's outward normal (D4's `SIDE_NORMAL`): a vertical normal means a
+ *  horizontal side. */
+export const SIDE_AXIS: Record<Side, "h" | "v"> = Object.fromEntries(
+  SIDES.map((s) => [s, SIDE_NORMAL[s].y !== 0 ? "h" : "v"]),
+) as Record<Side, "h" | "v">;
+/** Outward direction along the side's CROSS axis (+1 = increasing coordinate) — the
+ *  normal's one non-zero component. */
+export const SIDE_OUT: Record<Side, 1 | -1> = Object.fromEntries(
+  SIDES.map((s) => [s, SIDE_NORMAL[s].x + SIDE_NORMAL[s].y]),
+) as Record<Side, 1 | -1>;
 
 /**
  * Where one facade's chains live: the axis they measure along, the outer-face

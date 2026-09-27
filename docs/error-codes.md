@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**92 errors** · **50 warnings**
+**94 errors** · **50 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -42,6 +42,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_IMPORT_NOT_FOUND`](#e_import_not_found) | error | Import path could not be resolved. |
 | [`E_IMPORT_PARSE`](#e_import_parse) | error | Imported module has a parse error. |
 | [`E_INDEX`](#e_index) | error | Array index out of range. |
+| [`E_INSTANCE_NO_TRANSFORM`](#e_instance_no_transform) | error | A plugin element inside a `place`d component has no `transform()`. |
 | [`E_INTENT_NO_DOOR`](#e_intent_no_door) | error | The plan has no modeled entrance, so `reachable` cannot hold. |
 | [`E_INTENT_NO_SITE`](#e_intent_no_site) | error | An intent asserts a SYMBOLIC window facing against a plan with no `site`. |
 | [`E_INTENT_NO_WINDOW`](#e_intent_no_window) | error | A room the brief wants a window in has too few. |
@@ -52,6 +53,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_INTENT_TOTAL_AREA`](#e_intent_total_area) | error | The plan's total floor area is outside the brief's band. |
 | [`E_INTENT_UNREACHABLE`](#e_intent_unreachable) | error | A room cannot be reached from the entrance through modeled doors. |
 | [`E_JSON_KIND`](#e_json_kind) | error | Unknown element kind in plan JSON. |
+| [`E_JSON_MIRROR`](#e_json_mirror) | error | Plan JSON furniture is `mirror: true`, which `.arch` source cannot state. |
 | [`E_JSON_SCHEMA`](#e_json_schema) | error | Plan JSON does not match the schema. |
 | [`E_LAYOUT_CYCLE`](#e_layout_cycle) | error | Relational room placement forms a cycle. |
 | [`E_LAYOUT_REF`](#e_layout_ref) | error | Relational placement references an unknown room. |
@@ -553,6 +555,19 @@ let a = [1, 2]
 let x = a[5]   # error
 ```
 
+## E_INSTANCE_NO_TRANSFORM
+
+*error* — A plugin element inside a `place`d component has no `transform()`.
+
+**Cause.** A `place` carries every element of its component from the component's own frame into plan coordinates, and each element kind supplies that action as `ElementDef.transform`. A third-party element kind registered through `compile(src, { plugins })` without one cannot be turned, mirrored or moved, so the instance's copy is dropped from the drawing (never drawn at its local coordinates) and this is reported once per instance and kind, at the `place` statement.
+
+**Fix.** Give the plugin's `ElementDef` a `transform(el, t)` that maps its geometry with the `TransformCtx` it is handed (`t.point`, `t.rect`, `t.side`, `t.id`, …) — or write the element at plan level instead of inside the component.
+
+```arch static
+component c() { gazebo at (0,0) }   # `gazebo` is a plugin kind with no transform()
+place c() as g at (5000,0)   # error: cannot be placed
+```
+
 ## E_INTENT_NO_DOOR
 
 *error* — The plan has no modeled entrance, so `reachable` cannot hold.
@@ -674,6 +689,18 @@ door on wall_hall_store width 800   # connect the isolated room
 
 ```arch static
 { "openings": [ { "kind": "portal", "width": 900 } ] }   # error at /openings/0/kind: unknown kind "portal"
+```
+
+## E_JSON_MIRROR
+
+*error* — Plan JSON furniture is `mirror: true`, which `.arch` source cannot state.
+
+**Cause.** `planToJson` reports `mirror: true` on EVERY fixture inside a reflecting `place` (`mirror x|y`, or a nested composition that reflects) — the flag records the FRAME's reflection, not the glyph's handedness, so a symmetric symbol that draws the same either way carries it too. A `place` frame is the only thing that can reflect a symbol — the grammar has no per-furniture `mirror` — so converting that payload back to source would lose the reflection (a handed family such as `desk` or `sofa_l` would draw unmirrored), and it is refused instead.
+
+**Fix.** Keep the instance in `.arch` source (the `place … mirror x|y` that produced it), or drop `mirror` from the fixture if the unmirrored symbol is what you want.
+
+```arch static
+{ "furniture": [ { "category": "desk", "x": 0, "y": 0, "width": 1400, "height": 700, "mirror": true } ] }   # error at /furniture/0/mirror
 ```
 
 ## E_JSON_SCHEMA

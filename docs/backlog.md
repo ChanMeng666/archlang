@@ -193,29 +193,25 @@ per-entrance model, or nearest-entrance-per-room — before a line of code is wr
 reported as `other_entrance` rather than silently dropped, so the gap is now visible rather than
 invisible.
 
-### G.10 · Plan JSON carries a frame's ROTATION but not its REFLECTION — `todo` (tripwire ARMED)
+### G.10 · A `place`d plan does not round-trip through Plan JSON — `todo` (the projection half is done)
 
-`planToJson` projects the rotation a `place` frame imposes on a fixture and not the reflection.
-Before item 5.4 that lost nothing — a mirrored symbol drew identically to its twin — but 5.4 made
-**19 of the 83 catalogued families genuinely handed**, so the projection now drops a fact the drawing
-depends on. Measured: a plain and a `mirror x` placed `desk` produce payloads differing **only in
-`x`**.
+**Landed: the projection carries the reflection.** `planToJson` now emits `mirror: true` on every
+fixture inside a reflecting `place` frame (the IR's `_mirror`), beside the quarter-turn it already
+carried as `rotate` — the `Fx` in `M · R(l) = R(m − l) · Fx` that `rotate` cannot say. The key rides
+the frame's fact, not the glyph's: symmetric families carry it too, though only a handed one draws
+differently. A reflection-free plan's payload is byte-identical (no key).
 
-**Still unreachable, and therefore still `todo`.** A plan containing `place` never round-trips at
-all: `planFromJson` refuses a namespaced id with `E_DOTTED_DECL` (×3 on the minimal fixture). The two
-defects mask each other and no fixture can reach the projection bug.
+**Landed: the way back refuses rather than approximates.** Source has no per-furniture `mirror` — only
+a `place … mirror x|y` frame reflects a symbol — so `planJsonToArch`/`planFromJson` answer a
+`mirror: true` piece with `E_JSON_MIRROR` instead of emitting the unmirrored symbol. `mirror: false`
+is accepted as the absent key.
 
-**The tripwire is now armed** (`test/plan-json.test.ts`, "G.10 tripwire"), which is the part of this
-entry that has been actioned. Two assertions pin the CURRENT, WRONG state on purpose, each carrying
-the sentence that says what its failure means:
-
-1. the two payloads are equal once position is stripped — **fails when the projection learns to carry
-   the reflection**;
-2. the round-trip is refused with `E_DOTTED_DECL` — **fails when a placed plan starts round-tripping**.
-
-So whoever fixes `E_DOTTED_DECL` lands on a **red test that names this work**, instead of un-masking
-the defect silently with no witness but a symbol drawn the wrong way round on someone else's plan.
-Do not "fix" that suite by deleting the block; invert it into the real round-trip assertion.
+**Still open: a placed plan does not round-trip at all.** `planFromJson` refuses the namespaced ids
+with `E_DOTTED_DECL` (×3 on the minimal fixture). The tripwire stays armed (`test/plan-json.test.ts`,
+"G.10"): its second test pins `E_DOTTED_DECL` on an UNMIRRORED placement (a mirrored one is now
+refused earlier, by `E_JSON_MIRROR`) and goes red when a placed plan starts round-tripping. Whoever
+fixes that still has to decide what a mirrored fixture becomes on the way back, since source has no
+word for it outside a `place`.
 
 The neighbouring rule, from [ADR 0016](adr/0016-component-instances-and-frames.md) and now stated in
 `AGENTS.md`: when a fact crosses a frame, ask **can this be re-expressed in plan coordinates?** A
@@ -308,11 +304,11 @@ the `entry <edge>` clause the module already anticipates.
 The break-line diagonals (`src/elements/vertical-glyphs.ts:144`) are drawn in the run frame with a
 fixed handedness; nothing tells a reflected stair to mirror them, as `_mirror` does for fixtures.
 
-### E.4 · `plugin-throw` — a plugin element inside `place` throws — `todo`
+### E.4 · `plugin-throw` — a plugin element inside `place` throws — closed by W2
 
-`transformGeometry` (`src/frame.ts:303`) has no arm for a registry kind it does not know, so
-`transformElement` dereferences `undefined` and `compile()` throws. Close with an element-module
-transform hook (or a catalogued diagnostic), never a thrown error.
+Each element module owns its frame action (`ElementDef.transform`); a plugin kind without one is
+dropped inside a `place` with `E_INSTANCE_NO_TRANSFORM`, never thrown. Pin deleted; the witness is now
+the law (`test/equivariance-corpus.test.ts`, "closed classes"; `test/transform-seam.test.ts`).
 
 ### E.5 · `facing-tie` — a corner or 45° window resolves its tie N/S-first — `declared`
 

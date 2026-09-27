@@ -10,7 +10,9 @@ goes through `src/elements/defs.ts`.
 ## Steps
 
 1. **Create `src/elements/<name>.ts`** exporting an `ElementDef` (follow an existing module in
-   `src/elements/` as the template — e.g. a simple leaf element).
+   `src/elements/` as the template — e.g. a simple leaf element). Give it a `transform(el, t)`
+   so a `place`d component can carry it (`test/transform-seam.test.ts` requires one on every
+   built-in); flip any handed fact when `t.reflected`.
 
 2. **Register it in `src/elements/defs.ts`.** Add it to the registry so parse, resolve, and
    render all dispatch to it automatically. Do not add a `switch` branch anywhere.

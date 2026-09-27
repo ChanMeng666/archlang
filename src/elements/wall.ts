@@ -4,7 +4,7 @@ import type { ArcDirWord, ExprPoint, Point, WallArcNode, WallNode } from "../ast
 import type { Span } from "../diagnostics.js";
 import { heightRangeDiagnostic, isDrawableHeight } from "../datum.js";
 import { ARC_DIRS } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RWall } from "../ir.js";
 import { segmentFaceExtremes, segmentsOfWall } from "../geometry.js";
@@ -263,6 +263,27 @@ export const wall: ElementDef = {
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const w = resolved as RWall;
     return lowerWallSet([w], hatchesUsed([w]), ctx);
+  },
+  /** The frame's action on a wall (`frame.ts`'s `transformElement` calls this). */
+  transform(resolved, t: TransformCtx): RWall {
+    const el = resolved as RWall;
+    const { id } = t;
+    const w: RWall = {
+      ...el,
+      id,
+      points: el.points.map((p) => t.point(p)),
+      // A frame moves the opening's POINT and nothing else: its width is along the wall
+      // and a frame is an isometry, and its vertical facts (`kind`/`ownerId`/`sill`/
+      // `head`) are heights — a rotation in PLAN cannot touch them, and a
+      // reflection about a vertical axis cannot either. `...o` first, then the moved
+      // point, so a field added to `Opening` later rides through by default rather than
+      // being silently dropped the way these four would have been.
+      openings: el.openings.map((o) => ({ ...o, at: t.point(o.at) })),
+    };
+    // Curved edges ride along exactly (see `transformArc`): a placed component's
+    // curved facade is the same curve, turned or mirrored, never a re-fitted one.
+    if (el.arcs) w.arcs = el.arcs.map((arc) => (arc ? t.arc(arc) : undefined));
+    return w;
   },
 };
 

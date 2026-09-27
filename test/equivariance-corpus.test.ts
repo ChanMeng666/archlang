@@ -324,18 +324,6 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
       },
     ],
   ],
-  "plugin-throw": [
-    [
-      "STILL makes compile() throw for a plugin element inside a placed component",
-      () => {
-        const flat = `plan "p" {\n  units mm\n  room at (0,0) size 4000x3000\n  tree (1000,1000)\n}`;
-        const placed = `plan "p" {\n  units mm\n  component c() {\n    room at (0,0) size 4000x3000\n    tree (1000,1000)\n  }\n  place c() as g at (0,0)\n}`;
-        expect(compile(flat, { plugins: [TREE], noCache: true }).errors).toEqual([]); // the control
-        // A user-source situation must come back as a Diagnostic (AGENTS.md); this throws.
-        expect(() => compile(placed, { plugins: [TREE], noCache: true })).toThrow();
-      },
-    ],
-  ],
   "facing-tie": [
     [
       "(DECLARED) STILL resolves a corner window's tie N/S-first, so a quarter-turn changes it",
@@ -566,5 +554,21 @@ describe("the pinned classes — each STILL reproduced by a minimal witness", ()
   it("every class in KNOWN_CLASSES has a witness here, and nothing else does", () => {
     expect(Object.keys(WITNESSES).sort()).toEqual(Object.keys(KNOWN_CLASSES).sort());
     for (const ws of Object.values(WITNESSES)) expect(ws.length).toBeGreaterThan(0);
+  });
+});
+
+/** Closed classes: each former `STILL …` witness, inverted into the law it was waiting for. */
+describe("closed classes — each former witness is now the law", () => {
+  it("plugin-throw (backlog E.4): a plugin element inside a placed component is E_INSTANCE_NO_TRANSFORM, never a throw", () => {
+    const flat = `plan "p" {\n  units mm\n  room at (0,0) size 4000x3000\n  tree (1000,1000)\n}`;
+    const placed = `plan "p" {\n  units mm\n  component c() {\n    room at (0,0) size 4000x3000\n    tree (1000,1000)\n  }\n  place c() as g at (0,0)\n}`;
+    expect(compile(flat, { plugins: [TREE], noCache: true }).errors).toEqual([]); // the control
+    // A user-source situation comes back as a Diagnostic (AGENTS.md), even at the IDENTITY frame.
+    let out: ReturnType<typeof compile> | undefined;
+    expect(() => {
+      out = compile(placed, { plugins: [TREE], noCache: true });
+    }).not.toThrow();
+    expect(out!.diagnostics.map((d) => d.code)).toEqual(["E_INSTANCE_NO_TRANSFORM"]);
+    expect(out!.diagnostics[0]).toMatchObject({ severity: "error", instance: "g", component: "c" });
   });
 });

@@ -75,6 +75,10 @@ export { describe } from "./describe.js";
 // switcher must not each own a copy (a second copy is a second place to forget a
 // per-storey key, and that failure is silent — it reports the wrong floor's facts).
 export { describeLevel, PER_STOREY_OPTIONAL_KEYS } from "./describe.js";
+// An instance's rigid map as one canonical D4 value: `mirror y` and `rotate 180 mirror x`
+// describe differently (the summary echoes the spelling) and compare equal here.
+export { instanceTransform } from "./describe.js";
+export type { D4, QuarterTurn } from "./algebra/d4.js";
 // The vertical datum layer: the six drafting defaults, the elevation rule and the
 // range predicates. Exported because a consumer reading `describe().heights` — or writing
 // Plan JSON — needs the same numbers the compiler uses, and a retyped copy of a language
@@ -382,6 +386,7 @@ export type {
   ParseCtx,
   ResolveCtx,
   RenderCtx,
+  TransformCtx,
   ThemePlugin,
   HatchPlugin,
   HatchMetaInput,

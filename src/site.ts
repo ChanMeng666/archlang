@@ -20,8 +20,9 @@
  * that step explicitly, in the open, where it can be disagreed with.
  *
  * Pure, synchronous, deterministic, zero-dependency; no trigonometry beyond the single
- * `Math.floor` in {@link northQuarterTurns} (which lives in `describe.ts`, its historical
- * home, and is passed in here as `turns`).
+ * `Math.floor` in {@link northQuarterTurns} (which lives in `src/algebra/d4.ts` with the
+ * rest of the four-direction arithmetic, is re-exported by `describe.ts`, and is passed in
+ * here as `turns`).
  */
 
 import type { CompassWord, Hemisphere, SiteNode } from "./ast.js";
@@ -33,12 +34,15 @@ import type { RWindow } from "./ir.js";
 import type { RenderSizes, SceneNode } from "./scene.js";
 import { weightWidth } from "./scene.js";
 import type { Theme } from "./theme.js";
+import { actOnLetter, D4_HALF_TURN, LETTERS_CW, toCompass as d4ToCompass } from "./algebra/d4.js";
 
 /** A TRUE compass facing, the spelling every machine surface uses. */
 export type CompassLetter = "N" | "S" | "E" | "W";
 
-/** The four letters in CLOCKWISE order from the top — the index space `toCompass` turns in. */
-export const FACINGS: readonly CompassLetter[] = ["N", "E", "S", "W"];
+/** The four letters in CLOCKWISE order from the top — the index space `toCompass` turns in.
+ *  A copy of D4's `LETTERS_CW` (`src/algebra/d4.ts`), so a consumer holding this array
+ *  cannot reach the group's own table. */
+export const FACINGS: readonly CompassLetter[] = [...LETTERS_CW];
 
 /** Source spells a WORD, every machine surface keeps the LETTER. The one mapping, applied
  *  at the IR→facts boundary so nothing downstream ever sees a word. */
@@ -55,18 +59,9 @@ export function compassLetter(word: CompassWord): CompassLetter {
   }
 }
 
-/** The opposite letter — one negation, no arithmetic on strings. */
+/** The opposite letter — the half-turn's action on a direction, no arithmetic on strings. */
 export function oppositeLetter(l: CompassLetter): CompassLetter {
-  switch (l) {
-    case "N":
-      return "S";
-    case "S":
-      return "N";
-    case "E":
-      return "W";
-    case "W":
-      return "E";
-  }
+  return actOnLetter(D4_HALF_TURN, l);
 }
 
 /** The equator-facing side: `"S"` in the northern hemisphere, `"N"` in the southern. The
@@ -139,7 +134,7 @@ export function resolveSymbolicFacing(name: SymbolicFacing, facts: SiteFacts): C
 
 /**
  * Turn a PAGE-relative facing into a true COMPASS facing, given the plan's north as
- * clockwise quarter-turns from the page top (`northQuarterTurns`, `src/describe.ts`).
+ * clockwise quarter-turns from the page top (`northQuarterTurns`, `src/algebra/d4.ts`).
  *
  * Compass north sits `turns` quarter-turns clockwise of the page's top, so a page
  * direction that is `i` quarter-turns clockwise of the top is `i - turns` quarter-turns
@@ -147,8 +142,7 @@ export function resolveSymbolicFacing(name: SymbolicFacing, facts: SiteFacts): C
  * compass `"N"`, and a page-NORTH one face `"W"`.
  */
 export function toCompass(pageFacing: CompassLetter, turns: 0 | 1 | 2 | 3): CompassLetter {
-  const i = FACINGS.indexOf(pageFacing);
-  return FACINGS[(i - turns + 4) % 4] as CompassLetter;
+  return d4ToCompass(pageFacing, turns);
 }
 
 /**

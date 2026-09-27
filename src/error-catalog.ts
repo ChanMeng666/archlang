@@ -474,6 +474,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Clamp or check the index against `len(arr)`.",
     "let a = [1, 2]\nlet x = a[5]   # error",
   ),
+  E_INSTANCE_NO_TRANSFORM: E(
+    "E_INSTANCE_NO_TRANSFORM",
+    "A plugin element inside a `place`d component has no `transform()`.",
+    "A `place` carries every element of its component from the component's own frame into plan coordinates, and each element kind supplies that action as `ElementDef.transform`. A third-party element kind registered through `compile(src, { plugins })` without one cannot be turned, mirrored or moved, so the instance's copy is dropped from the drawing (never drawn at its local coordinates) and this is reported once per instance and kind, at the `place` statement.",
+    "Give the plugin's `ElementDef` a `transform(el, t)` that maps its geometry with the `TransformCtx` it is handed (`t.point`, `t.rect`, `t.side`, `t.id`, …) — or write the element at plan level instead of inside the component.",
+    "component c() { gazebo at (0,0) }   # `gazebo` is a plugin kind with no transform()\nplace c() as g at (5000,0)   # error: cannot be placed",
+  ),
   E_INTENT_NOT_ADJACENT: E(
     "E_INTENT_NOT_ADJACENT",
     "Two rooms the brief wants adjacent share no interior door.",
@@ -550,6 +557,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "An element in the JSON names a `kind` (or lives in an array) the builder does not recognize — e.g. an opening whose `kind` is not `door`, `window`, or `opening`.",
     "Use one of the supported kinds: opening `kind` must be `door` | `window` | `opening`.",
     '{ "openings": [ { "kind": "portal", "width": 900 } ] }   # error at /openings/0/kind: unknown kind "portal"',
+  ),
+  E_JSON_MIRROR: E(
+    "E_JSON_MIRROR",
+    "Plan JSON furniture is `mirror: true`, which `.arch` source cannot state.",
+    "`planToJson` reports `mirror: true` on EVERY fixture inside a reflecting `place` (`mirror x|y`, or a nested composition that reflects) — the flag records the FRAME's reflection, not the glyph's handedness, so a symmetric symbol that draws the same either way carries it too. A `place` frame is the only thing that can reflect a symbol — the grammar has no per-furniture `mirror` — so converting that payload back to source would lose the reflection (a handed family such as `desk` or `sofa_l` would draw unmirrored), and it is refused instead.",
+    "Keep the instance in `.arch` source (the `place … mirror x|y` that produced it), or drop `mirror` from the fixture if the unmirrored symbol is what you want.",
+    '{ "furniture": [ { "category": "desk", "x": 0, "y": 0, "width": 1400, "height": 700, "mirror": true } ] }   # error at /furniture/0/mirror',
   ),
   E_LAYOUT_CYCLE: E(
     "E_LAYOUT_CYCLE",

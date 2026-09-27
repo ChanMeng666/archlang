@@ -5,7 +5,7 @@
 import type { DimNode, DimRef, ExprPoint, Point } from "../ast.js";
 import { DIM_REFS } from "../ast.js";
 import type { Expr } from "../expr.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RDim } from "../ir.js";
 import { add, length, mul, normal, projectToWallFace, segmentsOfWall, sub, unit } from "../geometry.js";
@@ -338,6 +338,12 @@ export const dim: ElementDef = {
       paint: { fill: theme.dim },
     });
     return nodes;
+  },
+  /** The frame's action on a dimension (`frame.ts`'s `transformElement` calls this). */
+  transform(resolved, t: TransformCtx): RDim {
+    const el = resolved as RDim;
+    const { id, reflected } = t;
+    return { ...el, id, from: t.point(el.from), to: t.point(el.to), offset: reflected ? -el.offset : el.offset };
   },
 };
 

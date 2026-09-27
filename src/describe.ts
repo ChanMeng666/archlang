@@ -29,7 +29,7 @@ import type {
   OpeningPlacement,
   FurniturePlacement,
 } from "./ir.js";
-import type { FenceStyle, NorthDir, OutdoorKind, Point, RailSide, VerticalDir } from "./ast.js";
+import type { FenceStyle, OutdoorKind, Point, RailSide, VerticalDir } from "./ast.js";
 import { polygonArea, polygonBounds } from "./geometry/polygon.js";
 import type { DoorKind } from "./grammar/tokens.js";
 import type { Diagnostic } from "./diagnostics.js";
@@ -70,6 +70,7 @@ import {
   verticalsOf,
 } from "./vertical.js";
 import { fmt2 } from "./num-format.js";
+import { type D4, fromSpelling, northQuarterTurns } from "./algebra/d4.js";
 
 export type { ScheduleRow } from "./sheet-tables.js";
 
@@ -388,6 +389,16 @@ export interface InstanceSummary {
   at: { x: number; y: number };
   rotate: 0 | 90 | 180 | 270;
   mirror?: "x" | "y";
+}
+
+/**
+ * The rigid map an instance applies, as ONE canonical value: the D4 element its
+ * `(rotate, mirror)` spelling denotes (`src/algebra/d4.ts`). Two spellings of one map —
+ * `mirror y` and `rotate 180 mirror x` — describe differently (the summary echoes what was
+ * written) and have equal transforms, so compare instances with this, never by spelling.
+ */
+export function instanceTransform(i: Pick<InstanceSummary, "rotate" | "mirror">): D4 {
+  return fromSpelling(i.rotate, i.mirror);
 }
 
 export type { RoomPlacement, OpeningPlacement, FurniturePlacement } from "./ir.js";
@@ -746,40 +757,9 @@ function lotFacts(ring: readonly Point[] | undefined): Pick<SiteFacts, "lot_area
 /** Round to 2 decimals, deterministically (avoids float drift in output). */
 const r2 = (n: number): number => Math.round(n * 100) / 100;
 
-/**
- * How many CLOCKWISE quarter-turns separate the top of the page from compass north, for
- * the plan's declared `north` — `0` for `up` (the default), `1` for `right`, `2` for
- * `down`, `3` for `left`. This is the same page bearing the north arrow is drawn at
- * (`src/backends/svg.ts`), quantised to the four cardinals.
- *
- * A `{ deg }` bearing is **snapped to the nearest cardinal**, because a facing can only
- * be one of four letters and ArchLang geometry is rectilinear: `north 80` is reported as
- * if north were `right`. **An exact 45° tie rounds CLOCKWISE** — `north 45` snaps to
- * `right` (1), `north -45` to `up` (0), `north 135` to `down` (2). A bearing outside
- * [0,360) is normalised, so `north 450` == `north 90`. Pure, closed-form, deterministic:
- * no trigonometry and no floating-point comparisons beyond one `Math.floor`.
- */
-export function northQuarterTurns(north: NorthDir): 0 | 1 | 2 | 3 {
-  let q: number;
-  switch (north) {
-    case "up":
-      q = 0;
-      break;
-    case "right":
-      q = 1;
-      break;
-    case "down":
-      q = 2;
-      break;
-    case "left":
-      q = 3;
-      break;
-    default:
-      // Nearest cardinal, ties clockwise: floor((deg + 45) / 90).
-      q = Math.floor((north.deg + 45) / 90);
-  }
-  return (((q % 4) + 4) % 4) as 0 | 1 | 2 | 3;
-}
+/** Compass north as page quarter-turns — D4 arithmetic, so it lives in `src/algebra/d4.ts`;
+ *  re-exported here, its historical home, where `lint` and the tests import it from. */
+export { northQuarterTurns };
 
 /** How many rooms to name in a caption before collapsing the rest to "and N more". */
 const CAPTION_ROOM_CAP = 8;

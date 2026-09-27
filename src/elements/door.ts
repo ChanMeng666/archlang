@@ -6,7 +6,7 @@
 
 import type { DoorNode, Point } from "../ast.js";
 import type { Span } from "../diagnostics.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RDoor, RRoom } from "../ir.js";
 import type { Value } from "../expr.js";
@@ -486,5 +486,17 @@ export const door: ElementDef = {
       });
     }
     return nodes;
+  },
+  /** The frame's action on a door (`frame.ts`'s `transformElement` calls this). */
+  transform(resolved, t: TransformCtx): RDoor {
+    const el = resolved as RDoor;
+    const { id, reflected } = t;
+    return {
+      ...el,
+      id,
+      at: t.point(el.at),
+      host: el.host ? t.segment(el.host) : null,
+      swing: reflected ? (el.swing === "in" ? "out" : "in") : el.swing,
+    };
   },
 };

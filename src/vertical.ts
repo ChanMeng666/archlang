@@ -30,6 +30,7 @@ import type { Point, VerticalDir } from "./ast.js";
 import type { RElevator, REscalator, ResolvedElement, ResolvedPlan, RRoom, RStair } from "./ir.js";
 import type { BBox } from "./geometry/rect.js";
 import type { RectEdge } from "./fixture-orientation.js";
+import { oppositeSide, SIDE_NORMAL } from "./algebra/d4.js";
 
 /** The element kinds that model vertical circulation, in registration order. */
 export const VERTICAL_KINDS = ["stair", "elevator", "escalator"] as const;
@@ -73,8 +74,6 @@ function footEdge(size: { w: number; h: number }): RectEdge {
   return flightAxis(size) === "y" ? "bottom" : "right";
 }
 
-const OPPOSITE: Record<RectEdge, RectEdge> = { bottom: "top", top: "bottom", right: "left", left: "right" };
-
 /**
  * The footprint edge the direction arrow's TAIL sits on — the end of the run you are
  * standing at, on this storey.
@@ -98,7 +97,7 @@ const OPPOSITE: Record<RectEdge, RectEdge> = { bottom: "top", top: "bottom", rig
 export function tailEdge(v: RVertical): RectEdge {
   const foot = footEdge(v.size);
   if (v.kind === "elevator") return "bottom";
-  return v.dir === "down" ? OPPOSITE[foot] : foot;
+  return v.dir === "down" ? oppositeSide(foot) : foot;
 }
 
 /**
@@ -109,26 +108,19 @@ export function tailEdge(v: RVertical): RectEdge {
  */
 export function entryEdges(v: RVertical): RectEdge[] {
   const tail = tailEdge(v);
-  if (v.kind === "escalator") return [tail, OPPOSITE[tail]];
+  if (v.kind === "escalator") return [tail, oppositeSide(tail)];
   return [tail];
 }
 
 /**
  * The direction of travel in the PLAN, as a unit vector pointing from the entry edge
  * toward the far end of the run — the way the UP/DN arrow points. +y is down, so a
- * portrait flight's arrow points north (`{x: 0, y: -1}`).
+ * portrait flight's arrow points north (`{x: 0, y: -1}`) — the outward normal of the side
+ * OPPOSITE the tail. A fresh object, so a caller may keep it.
  */
 export function travelVector(v: RVertical): Point {
-  switch (tailEdge(v)) {
-    case "bottom":
-      return { x: 0, y: -1 };
-    case "top":
-      return { x: 0, y: 1 };
-    case "right":
-      return { x: -1, y: 0 };
-    default:
-      return { x: 1, y: 0 };
-  }
+  const n = SIDE_NORMAL[oppositeSide(tailEdge(v))];
+  return { x: n.x, y: n.y };
 }
 
 /** The text a run's arrow carries on the storey it is drawn on. */

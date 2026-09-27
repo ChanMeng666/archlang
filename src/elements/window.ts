@@ -1,7 +1,7 @@
 /** `window [id=] at (x,y) width N [wall ref]` — opening + glazing panes. */
 
 import type { Point, WindowNode } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RWindow } from "../ir.js";
 import { add, mul, nearestWallNote, normal, segmentDirAt } from "../geometry.js";
@@ -118,5 +118,11 @@ export const windowEl: ElementDef = {
       paint: { stroke: theme.windowPane, width: sizes.thin },
     });
     return nodes;
+  },
+  /** The frame's action on a window (`frame.ts`'s `transformElement` calls this). */
+  transform(resolved, t: TransformCtx): RWindow {
+    const el = resolved as RWindow;
+    const { id } = t;
+    return { ...el, id, at: t.point(el.at), host: el.host ? t.segment(el.host) : null };
   },
 };
