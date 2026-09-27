@@ -318,7 +318,7 @@ the law (`test/equivariance-corpus.test.ts`, "closed classes"; `test/transform-s
 `windowFacingPage` (`src/site.ts:191,206`) breaks a tie horizontal-first by stated convention, which
 an axis swap does not commute with. Not a defect; the pin moves only if the convention does.
 
-### E.6–E.10 · the nav grid breaks its ties in page order — `todo`
+### E.6–E.10 · the nav grid breaks its ties in page order — `todo` (E.9 closed by W3b)
 
 ADR 0008 makes circulation facts deterministic by row-major iteration and calls them "coarse and
 advisory: grid-quantised to the cell size". That licenses a cell of noise; it does not license a
@@ -354,6 +354,12 @@ five-row budget): among equidistant nearest cells take the one the walk reaches 
 covered — 14; seed an entrance on both sides of its lattice line — 22 examples, 119 walks; try
 threshold points on both sides of a lattice line — 5 (`courtyard-house`, `garden-house`,
 `laneway-house`, `terrace-row`, `townhouse`), 9 walks, halves E.10 without closing it.
+
+W3b also widened two predicates, each with a `STILL` witness from the fuzz case that found it: E.7
+covers an entrance that seeds on one side only and so drops its width out of a room's
+widest-from-any-entrance bottleneck (1 in 3000 random plans); E.10 covers a room split by furniture
+whose nearest free cell is in a pocket on one side (`fallback`), so it measures to the nearest
+reachable cell instead (2 in 12 000).
 
 ### E.11 · `float-translation` — facts change under a pure translation — `todo` (circulation half closed by W3b)
 
@@ -411,6 +417,27 @@ clinic's T1–T3 runs, vacuous until then, surfaced only existing classes (`rast
 `threshold-carve`, `slide-track`, `dim-text-side`, `dim-tick-hand`), pinned per element. Pins
 deleted; the witness is now the law (`test/equivariance-corpus.test.ts`, "closed classes";
 `test/compose-assoc.test.ts`).
+
+## Circulation findings (found while landing W3b)
+
+Two pre-existing defects W3b's agreement law and corpus sweep ran into. Neither was in its scope.
+
+### C.1 · A partition thinner than a nav cell does not block the walk — `todo`
+
+`rasteriseWallSegments` blocks a cell only when its CENTRE is within half a wall's thickness of the
+wall, so a partition thinner than one cell (the random plans draw 80 mm walls on a 100 mm grid)
+blocks no cell at all, and the walk leaks through it into a room no door reaches. The access graph
+says the room is unreachable while circulation measures a walk to it. `test/access-policy.test.ts`
+therefore asserts only one direction (a `no_door_route` room is unreachable), not equality. Close by
+blocking every cell the wall band crosses, not only those whose centre it covers — a measured corpus
+change, since dwelling partitions are 100 mm on 100 mm cells.
+
+### C.2 · `--overlay circulation` ignores floor voids — `todo`
+
+`src/overlays/circulation.ts` calls `computeCirculationOverlay` without the storey's voids, while
+`describe()` and lint pass them, so on a plan with a `void` the drawn walks and pinches come from a
+different grid than the numbers they illustrate. Close by passing `voids` (every plan without a
+`void` is unaffected).
 
 ## Wall-face probe findings
 

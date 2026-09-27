@@ -25,8 +25,11 @@ copies had drifted:
 | wall-face queries ("which side of this wall has floor") | five copies (three took the tangent, two took the chord) across `site.ts`, `analyze.ts` and the facade dimension chain | — | a door's `swing into` an arc-hosted room disagreed with the leaf it actually drew, because `swing into`'s chord probe and the leaf's tangent probe chose opposite faces near a major arc's ends |
 | plan diff | one `diffPlans` pass with an id-then-position match | — | rescued a moved room by label even when the label was **not** unique, silently pairing the wrong rooms |
 
-<!-- W3b: the access-graph `probe` policy closes the traversal row's drift, unifying the
-     "ambiguous connector" answer describe/circulation and lint/suggest currently disagree on -->
+The traversal row's drift is closed (W3b): every consumer now builds its edges through one
+`connectorConnection`, whose `probe` policy joins a three-room connector to the room on
+each face of its host wall and leaves it `ambiguous` only when a probe lands on a room
+boundary, so `describe().access`, circulation, lint reachability, `suggestTopology` and
+the intent channel give one reachability answer (`test/access-policy.test.ts`).
 
 The equivariance oracle built to check the first row (`test/d4-oracle.ts`; every example and
 random plan placed under each of the eight group elements, every fact checked to transform
@@ -159,12 +162,14 @@ apart. Neither `compile()` nor `pipeline.ts` carries any proof state of its own 
   match, exact arithmetic progression), then PROVE it through the one pipeline (byte-identical
   SVG per page, `describe()` facts, `lint()`/diagnostic multisets) before it is ever offered.
   <!-- W6b -->
-- **Open.** W3b (an access `probe` policy, nearest-entrance circulation, circulation
-  translation/rotation fixes) is designed against this same algebra and has not landed.
-  <!-- W3b -->
-  The equivariance findings this work did **not** close (the nav grid's tie-breaks,
-  E.6–E.10; float-translation re-rounding, E.11) stay open in `docs/backlog.md` and are
-  unaffected by anything in this ADR.
+- **Landed.** W3b: the access `probe` policy (the traversal row above), nearest-entrance
+  circulation (backlog G.5, a `MIN_PLUS` sum over the entrances), circulation sampled in
+  its own snapped frame (E.11's circulation half) and a concave room measured over its
+  label-point orbit, picked D4-symmetrically (E.9).
+- **Open.** The equivariance findings this work did **not** close (the nav grid's remaining
+  tie-breaks, E.6–E.8 and E.10, whose measured fixes each move more example digests than
+  was approved; E.11's lint half) stay open in `docs/backlog.md` and are unaffected by
+  anything in this ADR.
 
 ## Rejected (recorded, not built)
 

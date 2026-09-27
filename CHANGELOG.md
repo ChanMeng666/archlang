@@ -50,6 +50,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   span points into an imported module, rather than an offset that silently addressed the
   wrong file's bytes.
 
+### Changed — circulation walks each room from its nearest entrance
+
+- **Every room is measured from the entrance nearest it.** A plan with several front doors
+  (a terrace of houses on one sheet, a street door and a garden door) used to measure every
+  walk from the first entrance in the source, so a room another door serves was reported
+  the long way round, or not at all (`unmeasured: other_entrance`). The walk now starts at
+  all entrances at once; each room's `walkDistanceMm` is from its nearest one (ties to the
+  one written first), its `bottleneckClearWidthMm` is the widest way in from any entrance,
+  and its `detourRatio` is measured from its own entrance.
+- **`circulation.rooms[].entranceId`** names that entrance. It appears only on a plan with
+  more than one entrance, so a single-entrance plan's output is unchanged. The top-level
+  `circulation.entranceId` is still there and means the first entrance.
+- **`other_entrance` is no longer emitted**: a room any entrance reaches is measured. The
+  value stays in the `UnmeasuredReason` type.
+- `W_PATH_TOO_NARROW`, `W_CIRCUITOUS_PATH` and `arch compile --overlay circulation` read the
+  same per-room values; the overlay draws each walk from its own entrance.
+- **Behaviour change.** Circulation numbers change on every multi-entrance example:
+  `bungalow`, `garden-house`, `hillside-villa`, `laneway-house`, `library`, `materials`,
+  `museum`, `museum-wings`, `parametric`, `terrace-row`, `townhouse` and `transit-hall`
+  (`terrace-row`'s other three houses are now measured at all). No drawing and no lint
+  diagnostic of a shipped example changes.
+
+### Changed — one answer to "which rooms does this doorway join"
+
+- **A door or opening where three rooms meet now joins the room on each side of its own
+  wall.** The edge-touch test alone cannot say which two of the three it connects, and two
+  policies used to answer differently: `describe().access`, Plan JSON and circulation
+  dropped the connector, while lint reachability and `suggest` joined the first two rooms
+  in source order — so `describe()` could call a room unreachable that lint called
+  reachable. Every surface now probes one wall thickness off each face of the host wall and
+  joins the rooms whose floors it lands in; when a probe lands on a room boundary the
+  connector stays `ambiguous` and joins nothing, for everyone. `describe()`, lint's
+  `W_ROOM_UNREACHABLE`/`W_BATH_VIA_BEDROOM`, `suggest` and the intent channel's `reachable`
+  now agree. No shipped example has such a connector, so none changes.
+
+### Fixed — circulation no longer changes when a plan is moved, or turned with a concave room
+
+- **Moving a whole plan changes no circulation number.** The navigation grid sampled in
+  absolute coordinates, and a curve's vertices round slightly differently 20 m from the
+  origin, which could flip an exact tie. It now samples relative to the plan's own corner
+  on a fine fixed lattice. Three examples move to the translation-invariant value by one grid
+  step: `aquarium` (rotunda detour 1.01 → 1), `hexagon-pavilion` (rotunda walk 5800 → 5700
+  mm) and `library` (reading room 25500 → 25400 mm).
+- **Turning or mirroring a plan no longer measures a concave room in its other arm.** A
+  U- or C-shaped room whose centre falls outside its floor is measured to the middle of its
+  widest part, and when two parts are equally wide the choice depended on page order:
+  `courtyard-house`'s gallery walk jumped by 7.3 m under a half-turn. It is now measured to
+  the nearest of every equally wide candidate, a set the turn cannot change. No shipped
+  example's numbers move.
+
 ### Fixed — lint fixes inside a turned or mirrored `place` now write in the component's own frame
 
 - **`W_FIXTURE_BACK_TO_ROOM` and `W_DIM_OVERLAP`** used to write their suggested fix in plan
