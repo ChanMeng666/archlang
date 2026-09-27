@@ -426,6 +426,39 @@ on an arc. Reproduced: room `at (0,0) size 4000x4000`, wall `(4000,1000) arc (40
 cw major`, a door at 1–5% or 95–99% with `swing into` the room resolves `in` and its leaf is drawn
 outside the room. Close by probing as the ring path does, behind a corpus sweep.
 
+## Axonometric view findings
+
+Left open by W9, which made `compile(src, { view })` stop throwing on a wall set its openings
+consume and stop painting an empty ring. None of these throws; each draws or reports wrongly.
+
+### V.1 · Mixed-height joints interpenetrate and draw in the wrong order — `todo`
+
+`extrudeWalls` (`src/view/extrude.ts`) joins each wall-height subset on its own, so walls of
+different heights are never trimmed against each other: each runs to its own centreline. The painter
+keys on one centroid per face, so a short partition's quads sort nearer than a long, unsplit shell
+face and are drawn over it. Reproduced: a 4200 shell `(0,0)…(2300,5700) close` with a 3000 partition
+`(0,3700) (2300,3700)` paints the partition across the shell's near outer face; the same plan at one
+height draws correctly. No example mixes heights within a storey. A candidate: join by height
+BAND (every wall at least as tall as the band) rather than by equal height.
+
+### V.2 · A header or sill block overhangs its wall's end — `todo`
+
+`openingCut` (`src/geometry/band.ts`) is not clipped to its host segment, and the view extrudes the
+opening's fill-back blocks from that loop, so an opening running past a wall end puts a header or
+sill block out past it. The plan view does not show it: it only subtracts the cut.
+
+### V.3 · No diagnostic for an opening wider than, or consuming, its host — `todo`
+
+`wall … { (0,0) (1000,0) }` + `opening on w at center width 1200`, or overlapping openings that
+cover a wall end to end, are diagnostic-free. The wall is silently gone from both drawings.
+
+### V.4 · The joinery emits an UNCLOSED chain for a door consuming an arc wall under `grid` — `todo`
+
+`finishLoops` (`src/geometry/joinery.ts`) passes an unclosed chain through by design, so the defect
+it exposes reaches the drawing as an open outline. Found by the W9 red team: 11 of 8739 generated
+iso/axon compiles hit it. Its header says a dead-end chain means the classification was
+inconsistent, and closing the chain there would fabricate an edge; start from the classification.
+
 ---
 
 ## Wave 5 — deferred by name in v1.28.0 / v1.29.0
