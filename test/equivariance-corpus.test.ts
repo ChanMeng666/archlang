@@ -350,20 +350,6 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
       },
     ],
   ],
-  "label-point-tie": [
-    [
-      "STILL measures a mirrored U-shaped room in its other arm",
-      () => {
-        const ring = "(0,0) (6000,0) (6000,4000) (4000,4000) (4000,1000) (2000,1000) (2000,4000) (0,4000)";
-        const body = `    wall id=shell exterior thickness 200 { ${ring} close }
-    room id=u polygon ${ring} label "Gallery"
-    door id=d at (3050,0) width 900 wall shell`;
-        const { ctx } = witnessCase(body, elementNamed("mx"));
-        reproduce("label-point-tie", body, "mx", "circulation.rooms[g.u].walk");
-        expect(ctx.walks().get("g.u")?.seedMoved).toBe(true);
-      },
-    ],
-  ],
   "threshold-carve": [
     [
       "STILL seals a turned store whose only doorway carves on one side only",
@@ -381,6 +367,39 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
         const v = reproduce("threshold-carve", body, "r180", "circulation.rooms[g.b].walk");
         expect([v.expected, v.actual]).toEqual(["3600", "<absent>"]);
         reproduce("threshold-carve", body, "r180", "circulation.blocked");
+      },
+    ],
+    [
+      "STILL measures a turned room split by furniture in the other part its doorway carved into",
+      () => {
+        // Fuzz seed 22, case 991 (with seed 43 case 447: 2 in 12 000). Furniture splits the
+        // bath (r1); the opening o2 has a threshold point on a lattice line, so the part of r1
+        // it carves into differs under r90mx — the room's own widest way in changes (700 →
+        // 840 mm), and the cell nearest its centre is in a pocket on one side (`fallback`), so
+        // that side measures to the nearest REACHABLE cell 23 cells away: no tie, +3600 mm.
+        const body = `    wall id=w_shell exterior thickness 100 { (0,0) (6500,0) (6500,6300) (0,6300) close }
+    wall id=w_v1 partition thickness 100 { (3000,0) (3000,6300) }
+    wall id=w_h1 partition thickness 100 { (0,3500) (6500,3500) }
+    room id=r0 at (0,0) size 3000x3500 label "Living" uses utility
+    room id=r1 at (3000,0) size 3500x3500 label "Bed 1" uses bath
+    room id=r2 at (0,3500) size 3000x2800
+    room id=r3 at (3000,3500) size 3500x2800
+    opening id=o0 on w_h1 at 16% width 1200
+    door id=o1 garage on w_shell at 88% width 900 head 2400
+    opening id=o2 on w_v1 at 29% width 1100
+    furniture id=f0 urinal in r1 centered size 500x1100
+    furniture id=f1 crib in r1 anchor left inset 400 size 900x600
+    furniture id=f2 plant at (4136,2632) size 1800x1600 label "Hall" rotate 180 in r3
+    furniture id=f3 water_heater against wall w_v1 segment 0 offset 5292 side left size 800x400
+    furniture id=f4 outdoor_chair against wall w_v1 segment 0 offset 3024 side left size 900x300
+    furniture id=f5 dryer at (0,2989) size 300x1400 label "Living" rotate 0 in r0
+    room id=r_circ circle at (11500,8000) radius 1500
+    room id=r_base at (9500,16000) size 3000x2500
+    room id=r_rel left-of r_base align bottom gap 0 size 2000x2000`;
+        const v = reproduce("threshold-carve", body, "r90mx", "circulation.rooms[g.r1].walk", { grid: 100 });
+        expect([v.expected, v.actual]).toEqual(["4200", "7800"]);
+        const { ctx } = witnessCase(body, elementNamed("r90mx"), { grid: 100 });
+        expect(ctx.walks().get("g.r1")).toMatchObject({ anchorTie: false, seedMoved: false, fallback: true });
       },
     ],
   ],
@@ -430,6 +449,31 @@ describe("the pinned classes — each STILL reproduced by a minimal witness", ()
 
 /** Closed classes: each former `STILL …` witness, inverted into the law it was waiting for. */
 describe("closed classes — each former witness is now the law", () => {
+  it("label-point-tie (W3b): a concave room is measured over its pole ORBIT, so no turn or flip moves its seed", () => {
+    // The former witness: a U-shaped gallery whose centroid is in its notch. The pole of
+    // inaccessibility scan keeps the first of two equally wide arms, so mirrored the room was
+    // measured in its other arm. It is now measured to the nearest of every pole the scan
+    // finds on the ring turned or flipped — a set no page order can change.
+    const u = "(0,0) (6000,0) (6000,4000) (4000,4000) (4000,1000) (2000,1000) (2000,4000) (0,4000)";
+    const c = "(0,0) (5000,0) (5000,1500) (1500,1500) (1500,3500) (5000,3500) (5000,5000) (0,5000)";
+    for (const [ring, door] of [
+      [u, "(3050,0)"],
+      [c, "(0,2450)"],
+    ] as const) {
+      const body = `    wall id=shell exterior thickness 200 { ${ring} close }
+    room id=u polygon ${ring} label "Gallery"
+    door id=d at ${door} width 900 wall shell`;
+      for (const g of D4_ELEMENTS) {
+        const { vs, ctx } = witnessCase(body, g);
+        expect(ctx.walks().get("g.u")?.seedMoved ?? false, `${ring} ${g.name}`).toBe(false);
+        // Anything left is an endpoint tie of the cell measured to, never an arm swap.
+        for (const v of vs.filter((x) => x.path === "circulation.rooms[].walk")) {
+          expect(KNOWN_CLASSES["raster-tie"].covers(v, ctx), `${ring} ${g.name} ${v.key}`).toBe(true);
+        }
+      }
+    }
+  });
+
   it("float-translation, circulation half (W3b): a curved room's walk is exactly invariant under translation", () => {
     // The former witness: a drum 20 m out measured 3200 mm against 3100 at the origin,
     // because its tessellated ring re-rounds. The nav grid now samples in its extent's own

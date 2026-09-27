@@ -336,9 +336,10 @@ applies and a witness:
 - **E.8 `anchor-far-tie`** — furniture covers a room's centre, so its nearest free cells form a ring
   round the obstacle, all equidistant; the row-major first lands on another side of it (the corpus:
   up to 3600 mm in `laneway-house`).
-- **E.9 `label-point-tie`** — a concave room is measured to `polygonLabelPoint`'s pole of
-  inaccessibility, whose scan keeps the first of equally wide arms (`src/geometry/polygon.ts:207`):
-  `courtyard-house`'s gallery, +7300 mm.
+- **E.9 `label-point-tie`** — closed by W3b. A concave room whose centroid is off its floor is
+  measured to the nearest of its pole ORBIT (`polygonLabelPoint` on the ring turned and flipped by
+  each element of D4, carried back), a set no page order changes; `courtyard-house`'s gallery went
+  from +7300 mm to a one-cell endpoint tie, and no shipped digest moved.
 - **E.10 `threshold-carve`** — a doorway centred on a lattice line (or near a room corner, where
   seeding steps diagonally and `carvePath` joins seeds by an x-then-y L) is tried on a set of rows
   that shifts by one under a turn or flip: the grid itself differs, walks detour (`hexagon-pavilion`
@@ -346,6 +347,13 @@ applies and a witness:
 
 Close with D4-symmetric tie-breaks: seed both sides of a line, choose among equidistant cells by a
 rule the group preserves, carve thresholds on a symmetric row set.
+
+Measured by W3b (examples whose `describe()` digest moves; owner decision pending, each exceeds the
+five-row budget): among equidistant nearest cells take the one the walk reaches first — 24 examples,
+217 walks (mostly −100/−200 mm), closes E.8 in the corpus; the same only when the seed point is
+covered — 14; seed an entrance on both sides of its lattice line — 22 examples, 119 walks; try
+threshold points on both sides of a lattice line — 5 (`courtyard-house`, `garden-house`,
+`laneway-house`, `terrace-row`, `townhouse`), 9 walks, halves E.10 without closing it.
 
 ### E.11 · `float-translation` — facts change under a pure translation — `todo` (circulation half closed by W3b)
 

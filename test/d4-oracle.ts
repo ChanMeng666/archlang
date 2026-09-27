@@ -87,7 +87,6 @@ import { join, relative, resolve as resolvePath, sep } from "node:path";
 import type { NorthDir, PlaceNode, PlaceRotate, PlanNode, Point } from "../src/ast.js";
 import { buildDoorAccessGraph, DEFAULT_TOL, resolvePlan } from "../src/analyze.js";
 import { type CirculationOverlay, computeCirculationOverlay, navExtent } from "../src/analyze/circulation.js";
-import { polygonLabelPoint } from "../src/geometry/polygon.js";
 import type { RDoor, RFurniture, ROpening, RVoid } from "../src/ir.js";
 import { verticalsOf } from "../src/vertical.js";
 import { northQuarterTurns } from "../src/describe.js";
@@ -790,8 +789,8 @@ export function circulationFacts(s: SceneSummary, translation: boolean): Facts {
  *  - `anchor` — how far gP's measured cell is from the image of P₀'s (Manhattan);
  *  - `anchorTie` — whether the two measured cells are EXACTLY equidistant from the room's
  *    seed point, i.e. both are nearest cells and the choice between them was a tie;
- *  - `seedMoved` — whether the seed point itself failed to map (a concave room's
- *    pole-of-inaccessibility search, `polygonLabelPoint`, broke a tie between two arms);
+ *  - `seedMoved` — whether the point the room is measured to failed to map (the overlay's
+ *    `seed`: the label point, or the orbit pole of a concave room the walk reached first);
  *  - `delta` — the walk change.
  */
 export interface WalkAttribution {
@@ -801,6 +800,9 @@ export interface WalkAttribution {
   anchor: number;
   anchorTie: boolean;
   seedMoved: boolean;
+  /** On either side the room's nearest free cell is in a pocket no entrance reaches, so it
+   *  was measured to the nearest REACHABLE cell instead (the overlay's `fallback`). */
+  fallback: boolean;
 }
 
 function overlayOf(ir: ResolvedPlan): CirculationOverlay | null {
@@ -823,10 +825,6 @@ function overlayOf(ir: ResolvedPlan): CirculationOverlay | null {
     voids,
   );
 }
-
-/** The point a room's walk is measured to: its label point (poly-aware), as `circulation.ts` seeds it. */
-const roomSeed = (r: RRoom): Point =>
-  r.poly ? polygonLabelPoint(r.poly) : { x: r.at.x + r.size.w / 2, y: r.at.y + r.size.h / 2 };
 
 /** See {@link CaseContext.entranceShift}. 0 when either side has no overlay. */
 export function entranceSeedShift(obs0: Observation, obsG: Observation, f: Frame): number {
@@ -880,8 +878,10 @@ export function attributeWalks(obs0: Observation, obsG: Observation, f: Frame, a
     if (!rG || w0 === undefined || wG === undefined || (w0 === wG && !all) || !room0 || !roomG) continue;
     const a0 = tp(f, r0.path[r0.path.length - 1]!);
     const aG = rG.path[rG.path.length - 1]!;
-    const seed = roomSeed(roomG);
-    const seed0 = tp(f, roomSeed(room0));
+    // The point each side measured the room to (its label point, or the orbit pole the walk
+    // reached first); a room's label point alone would call an orbit pole's choice a move.
+    const seed = rG.seed;
+    const seed0 = tp(f, r0.seed);
     const dist = (p: Point): number => Math.hypot(p.x - seed.x, p.y - seed.y);
     out.push({
       roomId: r0.roomId,
@@ -890,6 +890,7 @@ export function attributeWalks(obs0: Observation, obsG: Observation, f: Frame, a
       anchor: man(a0, aG),
       anchorTie: Math.abs(dist(a0) - dist(aG)) <= 1e-6,
       seedMoved: Math.hypot(seed.x - seed0.x, seed.y - seed0.y) > 1e-6,
+      fallback: r0.fallback || rG.fallback,
     });
   }
   return out;

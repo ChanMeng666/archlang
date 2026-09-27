@@ -56,7 +56,13 @@ import {
 } from "../analyze.js";
 import { pointInRect } from "../geometry/rect.js";
 import { arcExtremes, distPointToArc } from "../geometry/arc.js";
-import { pointInPolygon, polygonEdges, polygonLabelPoint } from "../geometry/polygon.js";
+import {
+  distToPolygonEdge,
+  pointInPolygon,
+  polygonCentroid,
+  polygonEdges,
+  polygonLabelPoint,
+} from "../geometry/polygon.js";
 import { matchesLivingDining } from "../vocabulary.js";
 import { solidFurniture } from "../fixtures-catalog.js";
 import { neighbours4 } from "./grid.js";
@@ -1025,6 +1031,10 @@ type Nav =
        *  name is drawn at (poly-aware). Kept so a room whose anchor turns out to be
        *  unreachable can re-pick the nearest cell that is. */
       seed: Point[];
+      /** Per room, the widest poles of inaccessibility its label-point scan finds on the
+       *  ring turned and flipped ({@link labelPointOrbit}); empty unless the room is
+       *  concave with its centroid off its floor. */
+      poles: Point[][];
       /**
        * Every entrance's seed cell whose doorway is not sealed, in entrance (source)
        * order — the walk's sources, all at once: each room is measured from its NEAREST
@@ -1098,6 +1108,10 @@ function buildNav(
   const anchorDist = new Float64Array(rooms.length).fill(Infinity);
   const roomCells: number[][] = rooms.map(() => []);
   const seed = rects.map((rb) => (rb.poly ? polygonLabelPoint(rb.poly) : { x: rb.x + rb.w / 2, y: rb.y + rb.h / 2 }));
+  // A pole of inaccessibility is found by a scan that keeps the FIRST of equally wide arms
+  // (a page-order tie), so such a room is measured to every widest pole the same scan finds
+  // on the ring turned or flipped — the orbit — and its walk is the shortest of them.
+  const poles = rects.map((rb) => (rb.poly ? labelPointOrbit(rb.poly) : []));
   for (let k = 0; k < g.free.length; k++) {
     const ri = g.roomIdx[k]!;
     if (!g.free[k] || ri < 0) continue;
@@ -1143,7 +1157,7 @@ function buildNav(
     return { kind: "empty", entranceId, cellSizeMm: g.cell, g, roomCells, sources };
   }
 
-  return { kind: "ok", g, anchor, roomCells, seed, sources, sourceIds, sourceClear, entranceId, entrancePoint };
+  return { kind: "ok", g, anchor, roomCells, seed, poles, sources, sourceIds, sourceClear, entranceId, entrancePoint };
 }
 
 /**
@@ -1182,6 +1196,92 @@ function reachableRep(g: NavGrid, cells: number[], seed: Point, dist: Int32Array
   return best;
 }
 
+/** The eight signed permutations of D4 as `[a, b, c, d]`: `(x, y) ↦ (a·x + b·y, c·x + d·y)`. */
+const D4_MATS: readonly (readonly [number, number, number, number])[] = [
+  [1, 0, 0, 1],
+  [0, -1, 1, 0],
+  [-1, 0, 0, -1],
+  [0, 1, -1, 0],
+  [-1, 0, 0, 1],
+  [0, 1, 1, 0],
+  [1, 0, 0, -1],
+  [0, -1, -1, 0],
+];
+
+/**
+ * The poles of inaccessibility a concave ring whose centroid is off its floor is measured
+ * to: `polygonLabelPoint` run on the ring turned and flipped by each element of D4 about
+ * its bounding-box centre and carried back, keeping the WIDEST of them — or `[]` when the
+ * centroid is on the floor (the label point is then the centroid, and nothing is scanned).
+ *
+ * The label-point scan keeps the first of equally wide arms, which is a page-order
+ * choice: a U-shaped gallery turned 180° is measured in its other arm. The ORBIT is not a
+ * choice — it is the same set however the ring is drawn, because turning the ring first
+ * only permutes the eight scans. Centring on the bounding box keeps every transformed
+ * coordinate exact (a signed permutation of values that are already on the snapped
+ * lattice), so the orbit of a turned ring is exactly the turned orbit.
+ */
+function labelPointOrbit(poly: readonly Point[]): Point[] {
+  // The centroid is the scan's answer whenever it is on the floor: no scan, no tie.
+  const centroid = polygonCentroid(poly);
+  if (pointInPolygon(centroid.x, centroid.y, poly)) return [];
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const p of poly) {
+    minX = Math.min(minX, p.x);
+    minY = Math.min(minY, p.y);
+    maxX = Math.max(maxX, p.x);
+    maxY = Math.max(maxY, p.y);
+  }
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  const centred = poly.map((p) => ({ x: p.x - cx, y: p.y - cy }));
+  // The scan is a coarse grid search refined locally, so on some turns it settles on a
+  // worse local maximum; only the widest poles found (to a micron) are genuine ties.
+  const found = D4_MATS.map(([a, b, c, d]) => {
+    const ring = centred.map((p) => ({ x: a * p.x + b * p.y, y: c * p.x + d * p.y }));
+    const l = polygonLabelPoint(ring);
+    // The inverse of a signed permutation is its transpose.
+    return { at: { x: a * l.x + c * l.y + cx, y: b * l.x + d * l.y + cy }, width: distToPolygonEdge(l, ring) };
+  });
+  const widest = Math.max(...found.map((f) => f.width));
+  const out: Point[] = [];
+  const seen = new Set<string>();
+  for (const f of found) {
+    const key = `${f.at.x},${f.at.y}`;
+    if (f.width < widest - 1e-3 || seen.has(key)) continue;
+    seen.add(key);
+    out.push(f.at);
+  }
+  return out;
+}
+
+/**
+ * The cell a room's facts are measured at, and the point it was chosen for. A room with
+ * {@link labelPointOrbit} poles is measured to each pole's {@link reachableRep} and keeps
+ * the one the walk reaches first (ties to the lowest cell index); every other room is its
+ * label point's `reachableRep`, exactly as before.
+ */
+function roomRep(
+  g: NavGrid,
+  cells: number[],
+  seed: Point,
+  poles: readonly Point[],
+  dist: Int32Array,
+  anchor: number,
+): { k: number; seed: Point } {
+  if (poles.length === 0) return { k: reachableRep(g, cells, seed, dist, anchor), seed };
+  let best = { k: -1, seed: poles[0]! };
+  for (const p of poles) {
+    const k = reachableRep(g, cells, p, dist, -1);
+    if (k < 0) continue;
+    if (best.k < 0 || dist[k]! < dist[best.k]! || (dist[k] === dist[best.k] && k < best.k)) best = { k, seed: p };
+  }
+  return best;
+}
+
 /**
  * Whole-plan circulation facts. Deterministic; returns null when the plan has no
  * modeled exterior entrance (there is nothing to measure a walk from — mirrors how
@@ -1206,6 +1306,7 @@ export function computeCirculation(
    *  Append-only: omitting it means a storey with no voids. */
   voids: RVoid[] = [],
 ): CirculationModel | null {
+  if (rooms.length === 0 || !access.hasEntrance) return null; // buildNav's "none", before any copy
   // Every sample in the nav extent's own frame, so a translation moves no fact.
   ({ rooms, walls, doors, openings, furniture, verticals, voids } = toExtentFrame(extentOrigin(rooms), {
     rooms,
@@ -1344,7 +1445,7 @@ export function computeCirculation(
       ...(unmeasured.length > 0 ? { unmeasured } : {}),
     };
   }
-  const { g, anchor, roomCells, seed, sources, sourceIds, sourceClear, entranceId } = nav;
+  const { g, anchor, roomCells, seed, poles, sources, sourceIds, sourceClear, entranceId } = nav;
   const cellSizeMm = g.cell;
 
   // One multi-source walk: every room is measured from its NEAREST entrance.
@@ -1361,7 +1462,7 @@ export function computeCirculation(
   // same point or the drawing and the numbers disagree.
   const rep = new Int32Array(rooms.length);
   for (let ri = 0; ri < rooms.length; ri++) {
-    rep[ri] = reachableRep(g, roomCells[ri]!, seed[ri]!, dist, anchor[ri]!);
+    rep[ri] = roomRep(g, roomCells[ri]!, seed[ri]!, poles[ri]!, dist, anchor[ri]!).k;
   }
 
   const blocked = furnitureSealed(blockedCandidates(nav));
@@ -1451,6 +1552,12 @@ export interface OverlayRoom {
   roomId: string;
   /** The entrance the walk starts at: the room's nearest (ties to the lowest index). */
   entranceId: string;
+  /** The point the room is measured to: its label point, or the {@link labelPointOrbit} pole
+   *  whose cell the walk reaches first. */
+  seed: Point;
+  /** The free cell nearest `seed` is NOT reachable (a pocket), so the walk ends at the
+   *  nearest reachable cell instead — see `reachableRep`. */
+  fallback: boolean;
   /** Shortest-walk polyline (mm, collinear-merged) from the room's nearest entrance to the room target. */
   path: Point[];
   /** The tightest unavoidable squeeze on the widest route in, or null if none. */
@@ -1524,6 +1631,7 @@ export function computeCirculationOverlay(
 ): CirculationOverlay | null {
   // Measured in the nav extent's own frame, exactly as the facts are; every point drawn
   // is moved back by the same origin (`o + (i + ½)·cell` is the old absolute centre).
+  if (rooms.length === 0 || !access.hasEntrance) return null; // buildNav's "none", before any copy
   const o = extentOrigin(rooms);
   const entranceAt = [...doors, ...openings].find((d) => d.id === access.entrances[0])?.at;
   ({ rooms, walls, doors, openings, furniture, verticals, voids } = toExtentFrame(o, {
@@ -1549,10 +1657,14 @@ export function computeCirculationOverlay(
   // The same reachability-aware representative the facts measure to — a drawing that
   // ends somewhere else from the number it illustrates is worse than no drawing.
   const rep = new Int32Array(rooms.length);
+  const repSeed: Point[] = [];
   for (let ri = 0; ri < rooms.length; ri++) {
-    rep[ri] = reachableRep(g, nav.roomCells[ri]!, seed[ri]!, dist, anchor[ri]!);
+    const r = roomRep(g, nav.roomCells[ri]!, seed[ri]!, nav.poles[ri]!, dist, anchor[ri]!);
+    rep[ri] = r.k;
+    repSeed.push(r.seed);
   }
 
+  const everyCell = new Int32Array(g.nx * g.ny); // all 0: "reached"
   const overlayRooms: OverlayRoom[] = [];
   for (let ri = 0; ri < rooms.length; ri++) {
     const a = rep[ri]!;
@@ -1571,6 +1683,10 @@ export function computeCirculationOverlay(
       roomId: rooms[ri]!.id,
       entranceId: sourceIds[from[a]!]!,
       path: reconstructPath(g, parent, a).map(back),
+      seed: back(repSeed[ri]!),
+      // The free cell nearest the seed, reachable or not: the same scan with every cell
+      // counted as reached.
+      fallback: a !== reachableRep(g, nav.roomCells[ri]!, repSeed[ri]!, everyCell, -1),
       pinch: pinchCell >= 0 ? { at: back(centreOf(g, pinchCell)), clearMm: Math.round(bestVal) } : null,
     });
   }

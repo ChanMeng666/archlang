@@ -34,7 +34,6 @@ export type ClassName =
   | "raster-tie"
   | "entrance-seed-walk"
   | "anchor-far-tie"
-  | "label-point-tie"
   | "threshold-carve"
   | "float-translation"
   | "dim-tick-hand";
@@ -101,7 +100,6 @@ const rasterClasses: readonly ClassName[] = [
   "raster-tie",
   "entrance-seed-walk",
   "anchor-far-tie",
-  "label-point-tie",
   "threshold-carve",
   "float-translation",
 ];
@@ -144,7 +142,7 @@ export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass & Partial<Rast
   "raster-tie": raster("raster-tie", {
     status: "defect",
     law: "equivariance",
-    site: `src/analyze/circulation.ts:285 (cellOf floors a point on a lattice line to its +x/+y side), :962-986 (a room's measured cell is the row-major first of equidistant cells); ${ADR_0008}`,
+    site: `src/analyze/circulation.ts cellOf (floors a point on a lattice line to its +x/+y side), buildNav anchor + reachableRep (a room's measured cell is the row-major first of equidistant cells); ${ADR_0008}`,
     summary:
       "the nav grid breaks ENDPOINT ties in page order: an entrance on a lattice line is seeded on its +x/+y side, and a room whose seed point is equidistant from several cells measures to the row-major first — so a turn or flip moves the entrance one step and the measured cell one step per axis, and the walk by at most those displacements (≤ 3 cells)",
     // Bounded by the endpoints' own measured displacement, with the measured/unmeasured
@@ -159,7 +157,7 @@ export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass & Partial<Rast
   "entrance-seed-walk": raster("entrance-seed-walk", {
     status: "defect",
     law: "equivariance",
-    site: "src/analyze/circulation.ts:285 (cellOf floors the tied entrance to one side), :340-352 (seedCell then walks inward), :996-1010 (the walk origin is the first entrance's seed)",
+    site: "src/analyze/circulation.ts cellOf (floors the tied entrance to one side), seedCell (then walks inward), buildNav sources (every entrance's seed is a walk origin)",
     summary:
       "an entrance is seeded across a tie (a lattice line, or a corner's diagonal step) and the tied side's inward walk goes elsewhere: further in past eroded cells, or into a pocket sealed from every room — so a walk origin moves several cells, no room measures at all on one side, or (with several entrances) that entrance's width drops out of every room's widest-from-any-entrance bottleneck",
     coversFact: (v, c) => {
@@ -183,7 +181,7 @@ export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass & Partial<Rast
   "anchor-far-tie": raster("anchor-far-tie", {
     status: "defect",
     law: "equivariance",
-    site: `src/analyze/circulation.ts:962-986,1049-1060 (anchor/reachableRep: row-major first of equidistant cells); ${ADR_0008}`,
+    site: `src/analyze/circulation.ts buildNav anchor + reachableRep (row-major first of equidistant cells); ${ADR_0008}`,
     summary:
       "a room whose seed point is covered by an obstacle measures to the nearest free cell, and the nearest free cells form a RING round the obstacle — every one equidistant — so the row-major first lands on another side of it under a turn or flip and the walk changes by the way round the obstacle, metres, not a cell",
     // The measured cell moved more than one step per axis, to a cell EXACTLY as far from
@@ -201,21 +199,10 @@ export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass & Partial<Rast
       );
     },
   }),
-  "label-point-tie": raster("label-point-tie", {
-    status: "defect",
-    law: "equivariance",
-    site: "src/geometry/polygon.ts:207-236 (polygonLabelPoint: strict `>` over a scan-ordered grid), read by src/analyze/circulation.ts:975",
-    summary:
-      "a concave room whose centroid is off its floor is measured to its pole of inaccessibility, found by a scan-ordered search that keeps the FIRST of equally wide arms — so under a turn or flip the room is measured in its other arm",
-    coversFact: (v, c) => {
-      const a = walkOf(v, c);
-      return !c.g.translate && a !== undefined && a.seedMoved;
-    },
-  }),
   "threshold-carve": raster("threshold-carve", {
     status: "defect",
     law: "equivariance",
-    site: "src/analyze/circulation.ts:398-441 (thresholdPoints steps whole cells from a centre on a lattice line), :285 (each point floored to one side); :313-338 (a polygon room's ring-scan seed)",
+    site: "src/analyze/circulation.ts thresholdPoints (whole-cell steps from a centre on a lattice line), cellOf (each point floored to one side), seedCell (a polygon room's ring-scan seed)",
     summary:
       "a doorway whose centre lies on a lattice line has every threshold point on a line, each floored to one side, so the set of rows a threshold is tried on shifts by one under a turn or flip — a doorway can carve in P₀ and not in gP (or vice versa): walks detour, and a room can become unmeasured",
     // The walk moved by more than its endpoints did (so the GRID itself differs), or a
@@ -228,6 +215,11 @@ export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass & Partial<Rast
       if (v.path.startsWith("circulation.rooms[]") && measuredSetChanged(c)) return true;
       if (v.path === "circulation.rooms[].bottleneck") return numDelta(v) > 2 * c.cellMm;
       const a = walkOf(v, c);
+      // Furniture splits the room and the doorway carves into a different part of it on
+      // each side, so the cell nearest its seed sits in a pocket on (at least) one side and
+      // that side measures to the nearest REACHABLE cell instead: no tie, a jump of many
+      // cells (fuzz seed 22 case 991 and seed 43 case 447: 2 in 12 000 cases).
+      if (a !== undefined && !a.seedMoved && a.ent <= 1 && a.fallback) return true;
       return (
         a !== undefined &&
         !a.seedMoved &&
@@ -280,7 +272,6 @@ const CLOSES: Readonly<Record<ClassName, string>> = {
   "raster-tie": "break nav-grid endpoint ties by a D4-symmetric rule (or measure every tied endpoint)",
   "entrance-seed-walk": "seed the entrance symmetrically across its lattice line (both sides, nearest free)",
   "anchor-far-tie": "choose a room's measured cell by a D4-symmetric rule among equidistant cells",
-  "label-point-tie": "a D4-symmetric tie-break in polygonLabelPoint (or measure to every tied arm)",
   "threshold-carve": "try threshold points on BOTH sides of a lattice line (a symmetric seed set)",
   "float-translation":
     "compare resolved coordinates in lint through a snapped relative frame, as the nav grid now does",
@@ -521,62 +512,62 @@ export const KNOWN: readonly KnownViolation[] = [
   },
   {
     where: "courtyard-house.arch",
+    g: ["r180", "r90mx", "r180+N"],
+    path: "circulation.rooms[].walk",
+    ids: ["g.r_bed1", "g.r_bed2", "g.r_bed3", "g.r_gallery", "g.r_study"],
+    maxDelta: 200,
+    cls: "raster-tie",
+    why: "r_bed1, r_bed2, r_bed3, r_gallery, r_study: entrance moved ≤0 step, measured cell ≤2 steps (exact ties); walk ≤±200 mm (2 cells)",
+    closesWith: CLOSES["raster-tie"],
+  },
+  {
+    where: "courtyard-house.arch",
+    g: ["r90", "r180mx", "r90+N"],
+    path: "circulation.rooms[].walk",
+    ids: ["g.r_bed1", "g.r_bed2", "g.r_bed3", "g.r_study"],
+    maxDelta: 100,
+    cls: "raster-tie",
+    why: "r_bed1, r_bed2, r_bed3, r_study: entrance moved ≤0 step, measured cell ≤1 steps (exact ties); walk ≤±100 mm (1 cells)",
+    closesWith: CLOSES["raster-tie"],
+  },
+  {
+    where: "courtyard-house.arch",
+    g: ["r270", "mx", "r270+N"],
+    path: "circulation.rooms[].walk",
+    ids: ["g.r_bed3", "g.r_gallery"],
+    maxDelta: 100,
+    cls: "raster-tie",
+    why: "r_bed3, r_gallery: entrance moved ≤0 step, measured cell ≤1 steps (exact ties); walk ≤+100 mm (1 cells)",
+    closesWith: CLOSES["raster-tie"],
+  },
+  {
+    where: "courtyard-house.arch",
     g: ["r90", "r180", "r90mx", "r180mx", "r90+N", "r180+N"],
     path: "circulation.rooms[].walk",
     ids: ["g.r_dining"],
     maxDelta: 1400,
     cls: "anchor-far-tie",
-    why: "r_dining: a table covers its centre — the measured cell jumps 16 cells round the tie ring; walk −1400 mm (14 cells)",
+    why: "r_dining: an obstacle covers the seed point — the measured cell jumps ≤16 cells round the tie ring; walk ≤−1400 mm (14 cells)",
     closesWith: CLOSES["anchor-far-tie"],
   },
   {
     where: "courtyard-house.arch",
-    g: ["r180", "r270", "mx", "r90mx", "r180+N", "r270+N"],
-    path: "circulation.rooms[].walk",
-    ids: ["g.r_gallery"],
-    maxDelta: 7300,
-    cls: "label-point-tie",
-    why: "r_gallery: the concave room's label point flips to its other arm; walk +7300 mm (73 cells)",
-    closesWith: CLOSES["label-point-tie"],
-  },
-  {
-    where: "courtyard-house.arch",
-    g: ["r90", "r180", "r90mx", "r180mx", "r90+N", "r180+N"],
-    path: "circulation.rooms[].walk",
-    ids: ["g.r_bed1", "g.r_bed2", "g.r_study"],
-    maxDelta: 100,
-    cls: "raster-tie",
-    why: "r_bed1, r_bed2, r_study: entrance moved ≤0 step, measured cell ≤1 steps (exact ties); walk ≤±100 mm (1 cells)",
-    closesWith: CLOSES["raster-tie"],
-  },
-  {
-    where: "courtyard-house.arch",
-    g: ["r90", "r180", "r270", "mx", "r90mx", "r180mx", "r90+N", "r180+N", "r270+N"],
-    path: "circulation.rooms[].walk",
-    ids: ["g.r_bed3"],
-    maxDelta: 200,
-    cls: "raster-tie",
-    why: "r_bed3: entrance moved ≤0 step, measured cell ≤2 steps (exact ties); walk ≤+200 mm (2 cells)",
-    closesWith: CLOSES["raster-tie"],
-  },
-  {
-    where: "courtyard-house.arch",
-    g: ["r270", "mx", "r270mx", "r270+N"],
+    g: "mx",
     path: "circulation.rooms[].walk",
     ids: ["g.r_bed1"],
     maxDelta: 200,
     cls: "threshold-carve",
-    why: "r_bed1: a doorway seeded across a lattice line carves on another row, beyond the endpoints' ≤0+0 steps; walk ±200 mm (2 cells)",
+    why: "r_bed1: a doorway centred on a lattice line carves on shifted rows, so the walk moves past its endpoints' ties; walk ≤−200 mm (2 cells)",
     closesWith: CLOSES["threshold-carve"],
   },
   {
     where: "courtyard-house.arch",
     g: ["r270", "r270mx", "r270+N"],
     path: "circulation.rooms[].walk",
-    ids: ["g.r_study"],
+    ids: ["g.r_bed1", "g.r_study"],
     maxDelta: 200,
     cls: "threshold-carve",
-    why: "r_study: a doorway seeded across a lattice line carves on another row, beyond the endpoints' ≤0+0 steps; walk −200 mm (2 cells)",
+    why: "r_bed1, r_study: a doorway centred on a lattice line carves on shifted rows, so the walk moves past its endpoints' ties; walk ≤±200 mm (2 cells)",
     closesWith: CLOSES["threshold-carve"],
   },
   {
@@ -586,7 +577,7 @@ export const KNOWN: readonly KnownViolation[] = [
     ids: ["g.r_util"],
     maxDelta: 200,
     cls: "threshold-carve",
-    why: "r_util: a doorway seeded across a lattice line carves on another row, beyond the endpoints' ≤0+0 steps; walk +200 mm (2 cells)",
+    why: "r_util: a doorway centred on a lattice line carves on shifted rows, so the walk moves past its endpoints' ties; walk ≤+200 mm (2 cells)",
     closesWith: CLOSES["threshold-carve"],
   },
   {
