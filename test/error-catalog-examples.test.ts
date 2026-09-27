@@ -58,6 +58,8 @@ const INTENT =
 const IMPORT = "needs a `World` serving the named module; a bare snippet cannot have one";
 const JSON_CHANNEL = "raised by `planFromJson()` on a JSON payload, not by compiling `.arch` source";
 const DEP = "raised only when an OPTIONAL native dependency is absent, which a test process cannot arrange";
+const PLUGIN =
+  "needs a third-party `ElementDef` passed through `compile(src, { plugins })`, which a bare snippet cannot have; pinned in test/transform-seam.test.ts";
 const RENDER =
   "raised by the PDF/PNG backends at render time (a glyph no embedded font covers), never by compile()/lint(); pinned in test/export-font-cjk.test.ts";
 const FRAGMENT =
@@ -66,7 +68,7 @@ const FRAGMENT =
 /**
  * Every code whose example does not reproduce it, with why.
  *
- * 44 of 139, so **95 catalog examples are now executed and held to their own code**. That
+ * 47 of 143, so **96 catalog examples are now executed and held to their own code**. That
  * ratio is the honest state of a field documented as illustrative, not a to-do list: adding a
  * building to each fragment would make the catalog's snippets longer than the prose they
  * illustrate, which is the opposite of what `arch explain` is for.
@@ -91,6 +93,8 @@ const NOT_REPRODUCED: ReadonlyMap<string, string> = new Map([
 
   ["E_JSON_KIND", JSON_CHANNEL],
   ["E_JSON_SCHEMA", JSON_CHANNEL],
+
+  ["E_INSTANCE_NO_TRANSFORM", PLUGIN],
 
   ["E_PNG_DEPENDENCY", DEP],
   ["W_CJK_FONT_MISSING", RENDER],
@@ -187,7 +191,9 @@ suite("error catalog — every example that can raise its code does", () => {
     expect(reproduced).toBeGreaterThan(ERROR_CODES.length / 2);
     // The cap includes W_CJK_FONT_MISSING and W_GLYPH_UNSUPPORTED, which are raised by the
     // PDF/PNG backends at render time, which compile() never reaches. They are not excused
-    // untested: test/export-font-cjk.test.ts raises both through toPdf/renderPng.
-    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(46);
+    // untested: test/export-font-cjk.test.ts raises both through toPdf/renderPng. Likewise
+    // E_INSTANCE_NO_TRANSFORM (a plugin), the code that took the cap from 46 to 47: no
+    // `.arch` snippet can reach it, and it is raised in test/transform-seam.test.ts.
+    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(47);
   });
 });

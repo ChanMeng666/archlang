@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**92 errors** · **50 warnings**
+**93 errors** · **50 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -42,6 +42,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_IMPORT_NOT_FOUND`](#e_import_not_found) | error | Import path could not be resolved. |
 | [`E_IMPORT_PARSE`](#e_import_parse) | error | Imported module has a parse error. |
 | [`E_INDEX`](#e_index) | error | Array index out of range. |
+| [`E_INSTANCE_NO_TRANSFORM`](#e_instance_no_transform) | error | A plugin element inside a `place`d component has no `transform()`. |
 | [`E_INTENT_NO_DOOR`](#e_intent_no_door) | error | The plan has no modeled entrance, so `reachable` cannot hold. |
 | [`E_INTENT_NO_SITE`](#e_intent_no_site) | error | An intent asserts a SYMBOLIC window facing against a plan with no `site`. |
 | [`E_INTENT_NO_WINDOW`](#e_intent_no_window) | error | A room the brief wants a window in has too few. |
@@ -551,6 +552,19 @@ import "lib/missing.arch": a   # error
 ```arch static
 let a = [1, 2]
 let x = a[5]   # error
+```
+
+## E_INSTANCE_NO_TRANSFORM
+
+*error* — A plugin element inside a `place`d component has no `transform()`.
+
+**Cause.** A `place` carries every element of its component from the component's own frame into plan coordinates, and each element kind supplies that action as `ElementDef.transform`. A third-party element kind registered through `compile(src, { plugins })` without one cannot be turned, mirrored or moved, so the instance's copy is dropped from the drawing (never drawn at its local coordinates) and this is reported once per instance and kind, at the `place` statement.
+
+**Fix.** Give the plugin's `ElementDef` a `transform(el, t)` that maps its geometry with the `TransformCtx` it is handed (`t.point`, `t.rect`, `t.side`, `t.id`, …) — or write the element at plan level instead of inside the component.
+
+```arch static
+component c() { gazebo at (0,0) }   # `gazebo` is a plugin kind with no transform()
+place c() as g at (5000,0)   # error: cannot be placed
 ```
 
 ## E_INTENT_NO_DOOR

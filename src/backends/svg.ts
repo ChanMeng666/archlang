@@ -27,6 +27,7 @@ const pt = (p: Point): string => `${fmt(p.x)},${fmt(p.y)}`;
  *  error-card backend and `sanitizeTheme` so every escaping site behaves alike. */
 export { xmlText as xml } from "../text-safe.js";
 import { xmlText as xml } from "../text-safe.js";
+import { northBearingDeg } from "../algebra/d4.js";
 
 /**
  * The `<title>`/`<desc>` id prefix for this compile: the caller's `idPrefix` reduced to
@@ -350,23 +351,7 @@ function northArrow(north: NorthDir, b: Bounds, margin: number, refDim: number, 
   const r = refDim * 0.045;
   const cx = b.maxX - r;
   const cy = b.minY - margin * 0.55;
-  let deg: number;
-  switch (north) {
-    case "up":
-      deg = 0;
-      break;
-    case "down":
-      deg = 180;
-      break;
-    case "left":
-      deg = 270;
-      break;
-    case "right":
-      deg = 90;
-      break;
-    default:
-      deg = typeof north === "object" ? north.deg : 0;
-  }
+  const deg = northBearingDeg(north);
   const fs = refDim * 0.026;
   // Triangle points "up" before rotation; only the arrow rotates — the "N"
   // label stays upright at the pointing end so it always reads correctly.

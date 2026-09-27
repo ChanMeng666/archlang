@@ -474,6 +474,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Clamp or check the index against `len(arr)`.",
     "let a = [1, 2]\nlet x = a[5]   # error",
   ),
+  E_INSTANCE_NO_TRANSFORM: E(
+    "E_INSTANCE_NO_TRANSFORM",
+    "A plugin element inside a `place`d component has no `transform()`.",
+    "A `place` carries every element of its component from the component's own frame into plan coordinates, and each element kind supplies that action as `ElementDef.transform`. A third-party element kind registered through `compile(src, { plugins })` without one cannot be turned, mirrored or moved, so the instance's copy is dropped from the drawing (never drawn at its local coordinates) and this is reported once per instance and kind, at the `place` statement.",
+    "Give the plugin's `ElementDef` a `transform(el, t)` that maps its geometry with the `TransformCtx` it is handed (`t.point`, `t.rect`, `t.side`, `t.id`, …) — or write the element at plan level instead of inside the component.",
+    "component c() { gazebo at (0,0) }   # `gazebo` is a plugin kind with no transform()\nplace c() as g at (5000,0)   # error: cannot be placed",
+  ),
   E_INTENT_NOT_ADJACENT: E(
     "E_INTENT_NOT_ADJACENT",
     "Two rooms the brief wants adjacent share no interior door.",

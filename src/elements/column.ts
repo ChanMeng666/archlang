@@ -7,7 +7,7 @@
  */
 
 import type { ColumnNode, Point } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RColumn } from "../ir.js";
 import { rectCorners } from "../geometry.js";
@@ -71,5 +71,14 @@ export const column: ElementDef = {
         paint: { fill: theme.column, stroke: theme.wallStroke, width: sizes.thin },
       },
     ];
+  },
+  /** The frame's action on a column (`frame.ts`'s `transformElement` calls this). */
+  transform(resolved, t: TransformCtx): RColumn {
+    const el = resolved as RColumn;
+    const { id } = t;
+    // `column`'s `at` is its CENTRE, so it needs no corner correction — only the
+    // cross-axis extents swap on a quarter-turn.
+    const size = t.swapsAxes ? { w: el.size.h, h: el.size.w } : el.size;
+    return { ...el, id, at: t.point(el.at), size };
   },
 };

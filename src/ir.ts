@@ -39,7 +39,7 @@ import type { DoorHinge, DoorKind, DoorSlideDir, DoorSwingDir } from "./grammar/
 import { placeRelational } from "./layout.js";
 import { numberAxes } from "./axes.js";
 import type { Frame } from "./frame.js";
-import { composeFrame, makeFrame, transformElement } from "./frame.js";
+import { composeFrame, makeFrame, tryTransformElement } from "./frame.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Env, Expr, Value } from "./expr.js";
 import { asBool, asNum, asStr, closest, evalExpr, exprSpan } from "./expr.js";
@@ -1704,6 +1704,8 @@ function resolveImpl(
   const walls: RWall[] = [];
   const rooms2: RRoom[] = [];
   const instances: RInstance[] = [];
+  /** Entries a `place` could not carry into plan coordinates — excluded from `elements`. */
+  const dropped = new Set<Entry>();
   let activeEnv: Env = new Map();
   /** The entry being resolved — the provenance every diagnostic below inherits. */
   let activeEntry: Entry | undefined;
@@ -1817,16 +1819,43 @@ function resolveImpl(
     // read the page's right instead (ADR 0004 arithmetic, one frame at a time).
     placeRelational(grpRooms, snapPt, (d) => diagnostics.push(stampProvenance(d, grp.frame, undefined)));
     const f = grp.frame;
+    // Kinds already refused in THIS instance: a component with ten plugin elements of one
+    // kind is one fact, reported once per (instance, kind).
+    const refusedKinds = new Set<string>();
     for (const e of grp.entries) {
-      const t = transformElement(f, e.resolved!);
+      const local = e.resolved!;
+      const t = tryTransformElement(f, local, registry.byKind.get(local.kind));
+      if (!t) {
+        // A plugin kind whose `ElementDef` has no `transform()`: the frame cannot carry it,
+        // and drawing it at its LOCAL coordinates would put it somewhere the author never
+        // wrote. So it is dropped from the drawing and reported at the `place`.
+        dropped.add(e);
+        if (!refusedKinds.has(local.kind)) {
+          refusedKinds.add(local.kind);
+          diagnostics.push(
+            stampProvenance(
+              {
+                severity: "error",
+                message: `Element kind "${local.kind}" in component "${f.component}" cannot be placed: its plugin ElementDef has no transform()`,
+                code: "E_INSTANCE_NO_TRANSFORM",
+                span: f.span,
+              },
+              f,
+              f.file,
+            ),
+          );
+        }
+        continue;
+      }
       e.resolved = t;
       if (t.kind === "wall") walls.push(t);
       else if (t.kind === "room") rooms2.push(t);
     }
   }
 
-  // 3. IR element list in source order (for rendering).
-  const elements = entries.map((e) => e.resolved!);
+  // 3. IR element list in source order (for rendering), less any element a `place` could
+  //    not carry (`E_INSTANCE_NO_TRANSFORM` above).
+  const elements = entries.filter((e) => !dropped.has(e)).map((e) => e.resolved!);
 
   // 3a. Relational placement: rooms positioned with `right-of`/`below`/… get
   //     absolute coordinates here, by pure arithmetic in dependency order

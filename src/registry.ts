@@ -15,6 +15,9 @@ import type { Theme } from "./theme.js";
 import type { GeometryBackend } from "./geometry/backend.js";
 import type { HatchDef } from "./hatches.js";
 import type { RenderPass, RenderSizes, Paint, ScenePrim, SceneNode, Scene } from "./scene.js";
+import type { Frame } from "./frame.js";
+import type { Arc } from "./geometry/arc.js";
+import type { Side } from "./algebra/d4.js";
 import { BUILTIN_DEFS } from "./elements/defs.js";
 
 // The layer ordering + Scene types now live in `scene.ts` (the backend-neutral
@@ -127,6 +130,41 @@ export interface RenderCtx {
 }
 
 /**
+ * Frame facade handed to `ElementDef.transform` — the rigid map a `place`d instance
+ * applies to its resolved elements, so an element module (or a plugin) carries its own
+ * fields across without importing `frame.ts`.
+ *
+ * The frame is a signed permutation plus a translation: exact, no trig, no float
+ * introduced. Every method maps LOCAL (instance) coordinates to PLAN coordinates. Handed
+ * facts — a door's swing, a dim's signed offset, a symbol's chirality — are the element's
+ * own business: flip them when {@link TransformCtx.reflected} is true.
+ */
+export interface TransformCtx {
+  /** The instance frame (read it; never mutate it). */
+  readonly frame: Readonly<Frame>;
+  /** The element's id, already namespaced by the instance path (`west.main`). */
+  readonly id: string;
+  /** Does the frame reverse orientation (`det < 0`)? */
+  readonly reflected: boolean;
+  /** Does the frame swap the x and y axes (a 90°/270° turn)? Then a centred `w`/`h` swap. */
+  readonly swapsAxes: boolean;
+  /** Map a point. */
+  point(p: Point): Point;
+  /** Map an axis-aligned rectangle given as TOP-LEFT + size (re-cornered, extents swapped). */
+  rect(at: Point, size: { w: number; h: number }): { at: Point; size: { w: number; h: number } };
+  /** Map a solved arc (sweep reverses under a reflection). */
+  arc(a: Arc): Arc;
+  /** Map a wall segment (a hosted opening's resolved host), namespacing its wall id. */
+  segment(s: WallSegment): WallSegment;
+  /** Carry a fixture's quarter-turn through the frame (the rotation part only). */
+  quarterTurn(d?: number): 0 | 90 | 180 | 270;
+  /** The side a rectangle side becomes (its outward normal pushed through the frame). */
+  side(s: Side): Side;
+  /** Namespace an id with the instance prefix (`main` → `west.main`). */
+  nsId(id: string): string;
+}
+
+/**
  * Documentation for one element parameter — the single source consumed by the
  * LSP (hover, completion, signature help) and the docs. `optional` params render
  * in `[brackets]` in the synthesized signature.
@@ -167,6 +205,16 @@ export interface ElementDef {
   params?: readonly ParamDoc[];
   /** One-line summary of what the element draws (for hover). */
   doc?: string;
+  /**
+   * Carry a resolved element from a `place`d instance's local frame into plan
+   * coordinates, returning a NEW element (never mutate `el`: a door's `host` aliases its
+   * wall's points). Use `t.id` as the new id; `transformElement` stamps `_instance` /
+   * `_component` afterwards. Optional for a plugin: a plugin that replaces a built-in
+   * kind inherits the built-in's action, and a new kind without one is refused inside a
+   * `place` with `E_INSTANCE_NO_TRANSFORM` (the element is dropped, never drawn
+   * untransformed).
+   */
+  transform?(el: ResolvedElement, t: TransformCtx): ResolvedElement;
 }
 
 /**
@@ -243,6 +291,8 @@ export function registerElement(def: ElementDef): ElementDef {
   for (const m of ["parse", "idPrefix", "resolve", "bounds", "render"] as const) {
     if (typeof def[m] !== "function") throw new TypeError(`registerElement: def.${m} must be a function`);
   }
+  if (def.transform !== undefined && typeof def.transform !== "function")
+    throw new TypeError("registerElement: def.transform must be a function when given");
   return def;
 }
 

@@ -2613,3 +2613,15 @@ which keeps it backend-ready.
 `ElementDef`, then add one `register()` line in `src/elements/index.ts`. No
 edits to the parser, resolver, or renderer cores are needed — `column` is the
 worked example.
+
+**`transform` — carrying an element through `place`.** A component instance
+resolves in its own frame, and each element then maps itself into plan
+coordinates with `transform(el, t)`, where `t` is a `TransformCtx`: `t.point`,
+`t.rect` (top-left + size, re-cornered), `t.arc`, `t.segment`, `t.side`,
+`t.quarterTurn`, `t.nsId`, plus `t.id` (the namespaced id), `t.reflected` and
+`t.swapsAxes`. Return a new element and flip any handed fact yourself when
+`t.reflected` is true. Every built-in has one. A plugin passed through
+`compile(src, { plugins })` may omit it: one that replaces a built-in kind
+inherits the built-in's, and a new kind without one is refused inside a `place`
+with `E_INSTANCE_NO_TRANSFORM` (the instance's copy is dropped, never drawn
+untransformed).

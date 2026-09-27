@@ -54,61 +54,29 @@
 
 import type { Point } from "../ast.js";
 import { fmt4 } from "../num-format.js";
-import type { PathEdge, SceneNode, ScenePrim } from "../scene.js";
+import type { SceneNode, ScenePrim } from "../scene.js";
+import { mapSceneNode } from "./glyph-lib.js";
 
 /**
  * Reflect one scene node about the vertical line `x = axis`.
  *
- * The switch is **exhaustive with no `default`** on purpose — the same guard
- * `furniture.ts`'s `rotateNode` and `pdf.ts`'s `drawNode` carry. A new `ScenePrim` variant
- * fails the typecheck here rather than being silently passed through unreflected.
+ * The traversal is `glyph-lib.ts`'s `mapSceneNode` — shared with `furniture.ts`'s
+ * `rotateNode` — whose switch is **exhaustive with no `default`** on purpose, the guard
+ * `pdf.ts`'s `drawNode` also carries. A new `ScenePrim` variant fails the typecheck there
+ * rather than being silently passed through unreflected.
  *
  * A reflection REVERSES orientation, so every `sweep` flag flips: an arc drawn clockwise
  * from `start` to `end` is drawn counter-clockwise once mirrored. `r` is a length and is
  * invariant. Point ORDER within a polygon is left alone (as `rotateNode` leaves it), which
  * flips the winding — nothing downstream reads a furniture polygon's winding, and
- * {@link marksEqual} compares up to it.
+ * {@link marksEqual} compares up to it. A glyph draws no text — the shared drawing
+ * contract in the `glyphs-*` suites pins that — so a text anchor moves and the string
+ * stays upright and unreversed, for totality.
  */
 export function mirrorNode(n: SceneNode, axis: number): SceneNode {
   const mp = (p: Point): Point => ({ x: axis + (axis - p.x), y: p.y });
-  const me = (e: PathEdge): PathEdge =>
-    e.t === "line" ? { ...e, to: mp(e.to) } : { ...e, to: mp(e.to), center: mp(e.center), sweep: flip(e.sweep) };
-  const prim = n.prim;
-  switch (prim.t) {
-    case "polygon":
-      return { ...n, prim: { ...prim, pts: prim.pts.map(mp) } };
-    case "line":
-      return { ...n, prim: { ...prim, a: mp(prim.a), b: mp(prim.b) } };
-    // A glyph draws no text — the shared drawing contract in the `glyphs-*` suites pins
-    // that — so this arm exists for totality. The anchor point moves and the string stays
-    // upright and unreversed, which is the same treatment `rotateNode` gives it.
-    case "text":
-      return { ...n, prim: { ...prim, at: mp(prim.at) } };
-    case "circle":
-      return { ...n, prim: { ...prim, center: mp(prim.center) } };
-    case "arc":
-      return {
-        ...n,
-        prim: { ...prim, center: mp(prim.center), start: mp(prim.start), end: mp(prim.end), sweep: flip(prim.sweep) },
-      };
-    case "region":
-      return { ...n, prim: { ...prim, loops: prim.loops.map((lp) => lp.map(mp)) } };
-    case "path":
-      return {
-        ...n,
-        prim: { ...prim, loops: prim.loops.map((lp) => ({ start: mp(lp.start), edges: lp.edges.map(me) })) },
-      };
-    // A hatch's `angle` is measured in PATTERN space, so reflecting its loops without
-    // reflecting the pattern would shear the fill off its own boundary. No fixture glyph
-    // emits one (the furniture pass draws linework, never a material fill), so this is a
-    // declared non-case rather than an omission — give a glyph a hatch and the angle rule
-    // has to be written first. Same declaration `rotateNode` makes.
-    case "hatch":
-      return n;
-  }
+  return mapSceneNode(n, mp, true);
 }
-
-const flip = (s: 0 | 1): 0 | 1 => (s === 0 ? 1 : 0);
 
 /**
  * The glyph `nodes` as a mirrored instance should draw them: reflected about the vertical

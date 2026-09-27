@@ -59,7 +59,7 @@
 
 import type { ExprPoint, OutdoorKind, OutdoorNode, Point, RailEdge, RailSide } from "../ast.js";
 import { OUTDOOR_KINDS, RAIL_EDGES, RAIL_SIDES } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import { weightWidth } from "../scene.js";
 import type { ROutdoor, RWall } from "../ir.js";
@@ -74,6 +74,7 @@ import {
 } from "../geometry/polygon.js";
 import { closest } from "../expr.js";
 import { patternId } from "../hatches.js";
+import { SIDE_NORMAL } from "../algebra/d4.js";
 
 /**
  * CAD layers. Three, not one, because a CAD user freezes by trade: planting is the
@@ -163,14 +164,6 @@ export function groundMaterialsUsed(outdoors: readonly ROutdoor[]): string[] {
   }
   return out;
 }
-
-/** The outward unit normal of one rectangle edge, in page terms (+x right, +y down). */
-const EDGE_NORMAL: Readonly<Record<RailSide, Point>> = {
-  top: { x: 0, y: -1 },
-  bottom: { x: 0, y: 1 },
-  left: { x: -1, y: 0 },
-  right: { x: 1, y: 0 },
-};
 
 /** The MIDPOINT of one rectangle edge — the probe origin. Derived from the four corners,
  *  so the same expression serves a polygon balcony the day one is allowed. */
@@ -531,6 +524,27 @@ export const outdoor: ElementDef = {
     }
     return nodes;
   },
+  /** The frame's action on a ground surface (`frame.ts`'s `transformElement` calls this). */
+  transform(resolved, t: TransformCtx): ROutdoor {
+    // A ground surface is a rectangle-plus-optional-ring, exactly like a polygon `room`:
+    // the box re-corners and swaps extents, the ring rides through vertex by vertex, and
+    // an integer isometry preserves the area exactly. `outdoor` and `fence` ARE allowed
+    // inside a component — a placed wing may legitimately carry its own terrace and its
+    // own boundary — which is why these two arms exist rather than a parse refusal.
+    const el = resolved as ROutdoor;
+    const { id } = t;
+    const r = t.rect(el.at, el.size);
+    const out: ROutdoor = { ...el, id, at: r.at, size: r.size };
+    if (el.poly) out.poly = el.poly.map((p) => t.point(p));
+    // A rail EDGE is a handed rule: `top` names the smaller-y side of the PAGE, and a
+    // frame turns the page. So the four names are carried across by their outward
+    // NORMALS through the frame's linear part — the same treatment a fixture's
+    // quarter-turn and a door's swing get, and the reason `transformElement` exists at
+    // all rather than pre-rotating the resolver's inputs. A reflection is covered for
+    // free: the matrix already carries it, so no `det < 0` branch is needed here.
+    if (el.rail) out.rail = el.rail.map((s) => t.side(s));
+    return out;
+  },
 };
 
 /**
@@ -549,7 +563,7 @@ function railNodes(o: ROutdoor, side: RailSide, ctx: RenderCtx, layer: string): 
   if (len <= 0) return [];
   const ux = (b.x - a.x) / len;
   const uy = (b.y - a.y) / len;
-  const n = EDGE_NORMAL[side];
+  const n = SIDE_NORMAL[side];
   // The balustrade sits just INSIDE the slab edge, which is where a railing is built.
   const depth = Math.min(len / 8, sizes.thin * 6);
   const off = (d: number): [Point, Point] => [

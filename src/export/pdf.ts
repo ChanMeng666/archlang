@@ -39,12 +39,13 @@
  * that), which is also why `SOURCE_DATE_EPOCH` is deliberately not honoured here.
  */
 
-import type { NorthDir, Point } from "../ast.js";
+import type { Point } from "../ast.js";
 import type { Paint, PathLoop, Scene, SceneNode } from "../scene.js";
 import { RENDER_PASSES } from "../scene.js";
 import type { Theme } from "../theme.js";
 import { layoutChrome, type TitleRow } from "../chrome-layout.js";
 import { plainText } from "../text-safe.js";
+import { northBearingDeg } from "../algebra/d4.js";
 import { BUNDLED_FONT_FAMILY, bundledFontPath, glyphDiagnostics, planFonts } from "../backends/font.js";
 import type { Diagnostic } from "../diagnostics.js";
 
@@ -367,7 +368,7 @@ function drawChrome(doc: any, scene: Scene, ctx: TextCtx): void {
     const r = refDim * 0.045;
     const cx = b.maxX - r;
     const cy = b.minY - margin * 0.55;
-    const deg = northDegrees(scene.north);
+    const deg = northBearingDeg(scene.north);
     const fs = refDim * 0.026;
     doc.save();
     doc.rotate(deg, { origin: [cx, cy] });
@@ -431,21 +432,6 @@ function drawChrome(doc: any, scene: Scene, ctx: TextCtx): void {
           .stroke(theme.annotation);
       }
     });
-  }
-}
-
-function northDegrees(north: NorthDir): number {
-  switch (north) {
-    case "up":
-      return 0;
-    case "down":
-      return 180;
-    case "left":
-      return 270;
-    case "right":
-      return 90;
-    default:
-      return typeof north === "object" ? north.deg : 0;
   }
 }
 

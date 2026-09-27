@@ -8,9 +8,11 @@
  *  - {@link Frame} is a 2×2 integer matrix plus a translation. Every entry is `-1|0|1`
  *    and `|det| = 1`, so a frame is EXACT — no trig, no floats introduced, and the
  *    composition of two frames is another such frame (nested `place` just multiplies).
+ *    Its linear part is an element of the group D4 (`src/algebra/d4.ts`).
  *  - {@link transformElement} maps a resolved element from its instance's local frame to
  *    plan-global coordinates. It is applied to the element the resolver already produced,
- *    NOT to the resolver's inputs — see the note below.
+ *    NOT to the resolver's inputs — see the note below. Each element module owns its own
+ *    action (`ElementDef.transform`, handed a {@link makeTransformCtx} facade).
  *
  * **Why transform the OUTPUT and not the input coordinates.** Every derived-geometry rule
  * in the resolver is stated in world terms — `anchor top-left` names a corner of the page,
@@ -20,8 +22,14 @@
  * would have to learn what a frame is. Resolving the instance in its own frame and then
  * applying one rigid transform keeps all of that code untouched and is exactly
  * equivalent, because a rotation/reflection is an isometry of the rectilinear world: the
- * only rules that are not equivariant are the handed ones, and this module flips those
- * explicitly (a door's `swing`, a `dim`'s signed `offset`, a fixture's quarter-turn).
+ * only rules that are not equivariant are the handed ones, and each element's `transform`
+ * flips those explicitly (a door's `swing`, a `dim`'s signed `offset`, a fixture's
+ * quarter-turn).
+ *
+ * **Grid snapping happens in the author's frame, BEFORE the transform**, so a round-half-up
+ * tie (`50` on a 100 grid snaps to `100`, and `mirror x` then carries it to `-100`, where
+ * authoring `-50` in plan space would have snapped to `0`) is a property of the authored
+ * frame, not a defect of the group action.
  *
  * Determinism: pure integer arithmetic on the matrix; the only division is the `/ 2`
  * already present in the resolved geometry. `transform(transform(p, f), inverse(f)) === p`
@@ -33,7 +41,20 @@ import type { Span } from "./diagnostics.js";
 import type { WallSegment } from "./geometry.js";
 import type { Arc } from "./geometry/arc.js";
 import type { RailSide } from "./ast.js";
-import type { ResolvedElement, RFurniture, ROutdoor, RRoom, RWall } from "./ir.js";
+import type { ResolvedElement } from "./ir.js";
+import type { ElementDef, TransformCtx } from "./registry.js";
+import { BUILTIN_REGISTRY } from "./registry.js";
+import {
+  D4_IDENTITY,
+  backVectorOfDeg,
+  degOfBackVector,
+  fromMatrix,
+  fromSpelling,
+  SIDE_NORMAL,
+  sideOfNormal,
+  toMatrix,
+  toSpelling,
+} from "./algebra/d4.js";
 
 /**
  * A placed instance's coordinate frame: `p_global = M · p_local + t`.
@@ -66,20 +87,6 @@ export interface Frame {
 /** The identity frame (the root plan). Exposed so callers can spell "no transform". */
 export const IDENTITY: Frame = { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0, prefix: "", component: "", rotate: 0 };
 
-/** Linear part of a quarter-turn, CLOCKWISE on screen (+x right, +y down). */
-function rotationMatrix(deg: 0 | 90 | 180 | 270): [number, number, number, number] {
-  switch (deg) {
-    case 90:
-      return [0, -1, 1, 0]; // (x,y) → (−y, x)
-    case 180:
-      return [-1, 0, 0, -1];
-    case 270:
-      return [0, 1, -1, 0]; // (x,y) → (y, −x)
-    default:
-      return [1, 0, 0, 1];
-  }
-}
-
 /**
  * Build the frame for one `place`: reflect first (in the component's own axes), then
  * turn, then translate. `mirror x` negates x (a left↔right flip); `mirror y` negates y.
@@ -93,10 +100,14 @@ export function makeFrame(opts: {
   span?: Span;
   file?: string;
 }): Frame {
-  const [ra, rb, rc, rd] = rotationMatrix(opts.rotate ?? 0);
+  // The quarter-turn's matrix, CLOCKWISE on screen (+x right, +y down).
+  const [ra, rb, rc, rd] = toMatrix(fromSpelling(opts.rotate ?? 0));
   const mx = opts.mirror === "x" ? -1 : 1;
   const my = opts.mirror === "y" ? -1 : 1;
-  // R · Mir  (Mir is diagonal, so this is a column scale of R).
+  // R · Mir  (Mir is diagonal, so this is a column scale of R). Kept as arithmetic rather
+  // than read from `toMatrix(fromSpelling(rotate, mirror))`: the product writes `0 · −1`
+  // as `-0`, and a signed zero can reach an arc's `atan2`, so the table (plain zeros) is
+  // equal but not byte-identical.
   return {
     a: ra * mx,
     b: rb * my,
@@ -138,12 +149,13 @@ export function composeFrame(parent: Frame, child: Frame): Frame {
     ...(child.span ? { span: child.span } : {}),
     ...(child.file !== undefined ? { file: child.file } : {}),
   };
-  // Re-derive the human-facing (rotate, mirror) pair from the composed matrix, so
-  // `describe()` reports the transform the instance actually carries.
-  const flipped = det(composed) < 0;
-  const [ra, rb] = flipped ? [a * -1, b] : [a, b];
-  composed.rotate = rb === -1 ? 90 : ra === -1 ? 180 : rb === 1 ? 270 : 0;
-  if (flipped) composed.mirror = "x";
+  // Re-derive the human-facing (rotate, mirror) pair from the composed matrix — D4's
+  // normal form `R^k · Fx^f` — so `describe()` reports the transform the instance
+  // actually carries. The product of two D4 matrices is in D4, so the fallback is
+  // unreachable; it keeps this total rather than throwing inside a pure transform.
+  const spelled = toSpelling(fromMatrix([a, b, c, d]) ?? D4_IDENTITY);
+  composed.rotate = spelled.rotate;
+  if (spelled.mirror) composed.mirror = spelled.mirror;
   return composed;
 }
 
@@ -206,43 +218,18 @@ export function transformRect(
 }
 
 /**
- * The unit vector a fixture's BACK points along at quarter-turn `deg` — the drawn symbol
- * starts back-north and turns clockwise (see `furniture.render`). Used to carry a symbol's
- * orientation through a frame without ever asking "what is rotation plus a reflection?".
- */
-function backVector(deg: number): Point {
-  switch (((deg % 360) + 360) % 360) {
-    case 90:
-      return { x: 1, y: 0 };
-    case 180:
-      return { x: 0, y: 1 };
-    case 270:
-      return { x: -1, y: 0 };
-    default:
-      return { x: 0, y: -1 };
-  }
-}
-
-/** Inverse of {@link backVector}. */
-function degFromBack(v: Point): 0 | 90 | 180 | 270 {
-  if (v.x === 1) return 90;
-  if (v.y === 1) return 180;
-  if (v.x === -1) return 270;
-  return 0;
-}
-
-/**
  * Carry a fixture's quarter-turn through the frame. Exact for rotations AND reflections:
- * the symbol's back vector is transformed by the frame's linear part and read back as a
- * quarter-turn, so a mirrored instance's fixtures face the mirrored way round.
+ * the symbol's back vector (`backVectorOfDeg`, D4's action on a facing) is transformed by
+ * the frame's linear part and read back as a quarter-turn, so a mirrored instance's
+ * fixtures face the mirrored way round.
  *
  * This is the ROTATION only. Under a reflection the symbol is also handed, and that half
  * rides on {@link import("./ir.js").RFurniture._mirror}, set beside this call — the two
  * together are the exact factorisation `M · R(l) = R(m − l) · Fx`.
  */
 export function transformDeg(f: Frame, deg: number | undefined): 0 | 90 | 180 | 270 {
-  const v = backVector(deg ?? 0);
-  return degFromBack({ x: f.a * v.x + f.b * v.y, y: f.c * v.x + f.d * v.y });
+  const v = backVectorOfDeg(deg ?? 0);
+  return degOfBackVector({ x: f.a * v.x + f.b * v.y, y: f.c * v.x + f.d * v.y });
 }
 
 /** Namespace an id with the frame's instance prefix (`west` + `main` → `west.main`). */
@@ -280,192 +267,83 @@ function transformSegment(f: Frame, s: WallSegment): WallSegment {
 }
 
 /**
+ * The {@link TransformCtx} an element's `transform` receives for frame `f`: the frame's
+ * maps, closed over `f`, and the element's already-namespaced `id`. This is the whole
+ * surface an element module needs, so none of them imports this file.
+ */
+export function makeTransformCtx(f: Frame, id: string): TransformCtx {
+  return {
+    frame: f,
+    id,
+    reflected: det(f) < 0,
+    swapsAxes: swapsAxes(f),
+    point: (p) => tp(f, p),
+    rect: (at, size) => transformRect(f, at, size),
+    arc: (a) => transformArc(f, a),
+    segment: (s) => transformSegment(f, s),
+    quarterTurn: (d) => transformDeg(f, d),
+    side: (s) => transformRailSide(f, s),
+    nsId: (x) => nsId(f, x),
+  };
+}
+
+/**
+ * The action that carries `el` across a frame: its own def's `transform`, else — for a
+ * plugin that REPLACES a built-in kind without supplying one — the built-in's. `undefined`
+ * means the element cannot be placed (a plugin kind with no `transform`).
+ */
+export function transformOf(el: ResolvedElement, def?: ElementDef): ElementDef["transform"] {
+  return def?.transform ?? BUILTIN_REGISTRY.byKind.get(el.kind)?.transform;
+}
+
+/**
  * Map one resolved element from its instance's local frame into plan-global coordinates,
  * returning a NEW element (the local one stays intact — a door's `host` aliases its wall's
- * point objects, so transforming in place would double-apply the frame).
+ * point objects, so transforming in place would double-apply the frame). `null` when the
+ * element has no action ({@link transformOf}); the resolver turns that into
+ * `E_INSTANCE_NO_TRANSFORM` and drops the element.
  *
- * Handed properties are flipped when the frame reflects (`det < 0`): a door's `swing` is
- * measured from the host wall's LEFT normal, and a `dim`'s `offset` from the measured
- * segment's left normal, so both reverse under a reflection; and a fixture's drawn SYMBOL
- * is handed, which `_mirror` carries to the renderer. `hinge` does NOT flip — it is
- * defined along the wall's traversal direction, which the transform carries with it.
+ * The element's own `transform` flips its handed properties when the frame reflects
+ * (`det < 0`): a door's `swing` is measured from the host wall's LEFT normal, and a `dim`'s
+ * `offset` from the measured segment's left normal, so both reverse under a reflection; and
+ * a fixture's drawn SYMBOL is handed, which `_mirror` carries to the renderer. `hinge` does
+ * NOT flip — it is defined along the wall's traversal direction, which the transform
+ * carries with it. The id namespacing and the `_instance`/`_component` stamps happen here,
+ * once, for every kind.
  */
-export function transformElement(f: Frame, el: ResolvedElement): ResolvedElement {
-  const reflected = det(f) < 0;
+export function tryTransformElement(f: Frame, el: ResolvedElement, def?: ElementDef): ResolvedElement | null {
+  const action = transformOf(el, def);
+  if (!action) return null;
   const id = nsId(f, el.id);
-  const out = transformGeometry(f, el, id, reflected);
+  const out = action(el, makeTransformCtx(f, id));
   out._instance = f.prefix;
   out._component = f.component;
   return out;
 }
 
-function transformGeometry(f: Frame, el: ResolvedElement, id: string, reflected: boolean): ResolvedElement {
-  switch (el.kind) {
-    case "wall": {
-      const w: RWall = {
-        ...el,
-        id,
-        points: el.points.map((p) => tp(f, p)),
-        // A frame moves the opening's POINT and nothing else: its width is along the wall
-        // and a frame is an isometry, and its vertical facts (`kind`/`ownerId`/`sill`/
-        // `head`) are heights — a rotation in PLAN cannot touch them, and a
-        // reflection about a vertical axis cannot either. `...o` first, then the moved
-        // point, so a field added to `Opening` later rides through by default rather than
-        // being silently dropped the way these four would have been.
-        openings: el.openings.map((o) => ({ ...o, at: tp(f, o.at) })),
-      };
-      // Curved edges ride along exactly (see `transformArc`): a placed component's
-      // curved facade is the same curve, turned or mirrored, never a re-fitted one.
-      if (el.arcs) w.arcs = el.arcs.map((arc) => (arc ? transformArc(f, arc) : undefined));
-      return w;
-    }
-    case "room": {
-      const r = transformRect(f, el.at, el.size);
-      const out: RRoom = { ...el, id, at: r.at, size: r.size };
-      // A polygon room's ring is carried through vertex by vertex — a frame is an
-      // integer isometry, so the turned/mirrored ring is EXACT (same area, same shape,
-      // no float drift) and its bbox above still bounds it. Ring ORDER is preserved,
-      // which flips the winding under a reflection; nothing downstream reads winding
-      // (area is taken absolute, containment is a crossing count).
-      if (el.poly) out.poly = el.poly.map((p) => tp(f, p));
-      // A circle is invariant under an isometry apart from where its centre lands, so
-      // the radius carries over untouched and the area stays EXACTLY πR².
-      if (el.circle) out.circle = { c: tp(f, el.circle.c), r: el.circle.r };
-      if (el.labelAt) out.labelAt = tp(f, el.labelAt);
-      // The relational constraint is DISCHARGED by the instance's own placement pass
-      // (which ran in the local frame, where `right-of` means the component's right).
-      // Keeping it would let the plan-level pass re-place the room in global terms.
-      delete out._rel;
-      return out;
-    }
-    case "door":
-      return {
-        ...el,
-        id,
-        at: tp(f, el.at),
-        host: el.host ? transformSegment(f, el.host) : null,
-        swing: reflected ? (el.swing === "in" ? "out" : "in") : el.swing,
-      };
-    case "window":
-    case "opening":
-      return { ...el, id, at: tp(f, el.at), host: el.host ? transformSegment(f, el.host) : null };
-    case "furniture": {
-      const r = transformRect(f, el.at, el.size);
-      const deg = transformDeg(f, el.rotate);
-      const out: RFurniture = { ...el, id, at: r.at, size: r.size };
-      if (deg) out.rotate = deg;
-      else delete out.rotate;
-      // TWO handed facts cross here, and they are INDEPENDENT — different fields,
-      // opposite answers, no ordering between them. Backlog G.4 and 5.4 landed them
-      // separately and `test/glyph-chirality.test.ts`'s pairing case is the fixture
-      // neither could produce alone: a plan whose piece carries an authored clause AND
-      // a handed symbol, asserting the position lands at the MIRRORED corner while the
-      // marks become the mirror IMAGE.
-      // The authored placement clause names LOCAL ids in LOCAL coordinates (`anchor
-      // top-right` is a corner of the instance's own room, and a reflection turns it
-      // into a different corner), so it does not survive the crossing into plan space.
-      // Dropping it leaves a placed instance projecting its resolved `at (x,y)`, which
-      // is what it has always done.
-      delete out._authored;
-      // The symbol's own CHIRALITY — the handed rule this module used to miss. A
-      // quarter-turn carries a fixture's facing (that is `transformDeg` above), but a
-      // reflection also swaps the drawing's left and right, and nothing said so: a
-      // mirrored wing drew a left-handed `sofa_l` in a right-handed room, every number
-      // right and the picture wrong.
-      //
-      // `M · R(l) = R(m − l) · Fx` for any reflecting frame — see the derivation in
-      // `elements/glyph-chirality.ts` — so `transformDeg` above is already the whole
-      // rotation, and what is left over is exactly ONE reflection of the glyph in its own
-      // frame. Which axis the author wrote does not survive the factorisation and must
-      // not: `mirror x` and `mirror y` differ only in the quarter-turn.
-      //
-      // XORed rather than assigned, so a nested reflection composes back to the identity.
-      // Today `transformElement` is applied once per element with the FULLY COMPOSED
-      // frame, so `el._mirror` is always absent and this reads as an assignment; it is
-      // written as the group law because that is what makes it true either way.
-      if (reflected !== (el._mirror === true)) out._mirror = true;
-      else delete out._mirror;
-      if (el.room !== undefined) out.room = nsId(f, el.room);
-      return out;
-    }
-    case "dim":
-      return { ...el, id, from: tp(f, el.from), to: tp(f, el.to), offset: reflected ? -el.offset : el.offset };
-    case "column": {
-      // `column`'s `at` is its CENTRE, so it needs no corner correction — only the
-      // cross-axis extents swap on a quarter-turn.
-      const size = swapsAxes(f) ? { w: el.size.h, h: el.size.w } : el.size;
-      return { ...el, id, at: tp(f, el.at), size };
-    }
-    case "stair":
-    case "elevator":
-    case "escalator":
-    // A void is an axis-aligned rectangle given as TOP-LEFT + size, exactly like the
-    // vertical runs — so a quarter-turn swaps its extents and re-derives the corner.
-    case "void": {
-      const r = transformRect(f, el.at, el.size);
-      return { ...el, id, at: r.at, size: r.size };
-    }
-    // A roof's ring rides through vertex by vertex, like a polygon room's: a frame is an
-    // exact integer isometry, so the turned/mirrored outline is the same outline. Its
-    // OFFSET was already discharged in the instance's own frame, which is the point — an
-    // overhang is measured off the wall face, and a face is a face after a rotation.
-    //
-    // A `roof` inside a `component` body is refused at parse (`E_ROOF_PLACEMENT`), so the
-    // only way to reach this arm is a whole-FILE `import "x.arch" as w` + `place w()`,
-    // where the roof was written as a plan statement in the imported module. That case is
-    // carried correctly rather than refused a second time, deeper, where the diagnostic
-    // would have nowhere useful to point.
-    case "roof":
-      return { ...el, id, ring: el.ring.map((p) => tp(f, p)) };
-    // A ground surface is a rectangle-plus-optional-ring, exactly like a polygon `room`:
-    // the box re-corners and swaps extents, the ring rides through vertex by vertex, and
-    // an integer isometry preserves the area exactly. `outdoor` and `fence` ARE allowed
-    // inside a component — a placed wing may legitimately carry its own terrace and its
-    // own boundary — which is why these two arms exist rather than a parse refusal.
-    case "outdoor": {
-      const r = transformRect(f, el.at, el.size);
-      const out: ROutdoor = { ...el, id, at: r.at, size: r.size };
-      if (el.poly) out.poly = el.poly.map((p) => tp(f, p));
-      // A rail EDGE is a handed rule: `top` names the smaller-y side of the PAGE, and a
-      // frame turns the page. So the four names are carried across by their outward
-      // NORMALS through the frame's linear part — the same treatment a fixture's
-      // quarter-turn and a door's swing get, and the reason `transformElement` exists at
-      // all rather than pre-rotating the resolver's inputs. A reflection is covered for
-      // free: the matrix already carries it, so no `det < 0` branch is needed here.
-      if (el.rail) out.rail = el.rail.map((s) => transformRailSide(f, s));
-      return out;
-    }
-    case "fence":
-      return { ...el, id, points: el.points.map((p) => tp(f, p)) };
-  }
+/**
+ * {@link tryTransformElement} for a caller that has already established the element has
+ * an action (every built-in kind does). Calling it for one that does not is a programming
+ * error, never a user-source one — `compile()` goes through `tryTransformElement`.
+ */
+export function transformElement(f: Frame, el: ResolvedElement, def?: ElementDef): ResolvedElement {
+  const out = tryTransformElement(f, el, def);
+  if (!out) throw new TypeError(`transformElement: element kind "${el.kind}" has no transform()`);
+  return out;
 }
 
-/** The outward unit normal of each rectangle side, in page terms (+x right, +y down). */
-const SIDE_NORMAL: Readonly<Record<RailSide, readonly [number, number]>> = {
-  top: [0, -1],
-  bottom: [0, 1],
-  left: [-1, 0],
-  right: [1, 0],
-};
-
 /**
- * Which side a rail edge becomes under a frame: push its outward normal through the
- * matrix's LINEAR part (no translation — a direction has no position) and read back the
- * side that normal names.
+ * Which side a rail edge becomes under a frame: push its outward normal (`SIDE_NORMAL`)
+ * through the matrix's LINEAR part (no translation — a direction has no position) and read
+ * back the side that normal names.
  *
  * Exact by construction: the frame is a signed permutation, so a unit axis vector maps to
  * a unit axis vector and the lookup below always hits. There is no rounding, no
  * tolerance, and `transformRailSide(inverse(f), transformRailSide(f, s)) === s`.
  */
 function transformRailSide(f: Frame, side: RailSide): RailSide {
-  const [nx, ny] = SIDE_NORMAL[side];
-  const x = f.a * nx + f.b * ny;
-  const y = f.c * nx + f.d * ny;
-  for (const s of Object.keys(SIDE_NORMAL) as RailSide[]) {
-    const [ux, uy] = SIDE_NORMAL[s];
-    if (ux === x && uy === y) return s;
-  }
-  // Unreachable for a signed-permutation matrix; returning the input keeps the function
-  // total rather than throwing inside a pure transform.
-  return side;
+  const n = SIDE_NORMAL[side];
+  // Unreachable fallback for a signed-permutation matrix; returning the input keeps the
+  // function total rather than throwing inside a pure transform.
+  return sideOfNormal({ x: f.a * n.x + f.b * n.y, y: f.c * n.x + f.d * n.y }) ?? side;
 }

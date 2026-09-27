@@ -11,7 +11,7 @@
 
 import type { Point, StairNode, VerticalDir } from "../ast.js";
 import { VERTICAL_DIRS } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RStair } from "../ir.js";
 import { rectCorners } from "../geometry.js";
@@ -103,5 +103,12 @@ export const stair: ElementDef = {
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
     return stairGlyph(resolved as RStair, ctx.theme, ctx.sizes);
+  },
+  /** The frame's action on a stair (`frame.ts`'s `transformElement` calls this). */
+  transform(resolved, t: TransformCtx): RStair {
+    const el = resolved as RStair;
+    const { id } = t;
+    const r = t.rect(el.at, el.size);
+    return { ...el, id, at: r.at, size: r.size };
   },
 };
