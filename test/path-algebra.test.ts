@@ -28,6 +28,13 @@ import { neighbours4 } from "../src/analyze/grid.js";
  * made of `bfs` parents, and a parent depends on which neighbour is discovered first.
  *
  * The first block checks the engine itself against brute force on random digraphs.
+ *
+ * Not pinned here: the ways-in ladder (`measureWaysIn`). It rebuilds the grid per body
+ * radius, and each rebuild re-seeds the entrances and re-carves the thresholds, so the
+ * grids are not nested. A single `MAX_MIN` over the most permissive grid (each cell
+ * valued by the largest radius at which it is free) therefore does not equal it by
+ * construction, and on random plans it sometimes reads narrower. That is a measurement,
+ * not a law, so nothing here asserts it.
  */
 
 // ---------------------------------------------------------------------------------------
