@@ -19,10 +19,17 @@
  *    rather than recomputed;
  *  - `meanDepth` MD = (Σ over the other k − 1 system nodes of the step distance) / (k − 1);
  *  - `ra` (relative asymmetry) RA = 2(MD − 1) / (k − 2), in [0, 1]; `null` when k ≤ 2;
- *  - `integration` = 1 / RA (Hillier & Hanson's integration value, the reciprocal of RA —
- *    NOT the D-value-normalised 1/RRA, whose normaliser needs a logarithm). `null` when RA
- *    is `null`, and when RA is 0 — a space adjacent to every other one, whose reciprocal is
- *    unbounded; `ra: 0` beside it says which;
+ *  - `rra` (real relative asymmetry) RRA = RA / D_k, where D_k is the RA of the root of a
+ *    k-node DIAMOND — the reference graph Hillier & Hanson normalise by (1984, ch. 4),
+ *    and the definition depthmapX uses:
+ *
+ *      D_k = 2·(k·(log₂((k + 2) / 3) − 1) + 1) / ((k − 1)(k − 2))
+ *
+ *    `null` when RA is;
+ *  - `integration` = 1 / RRA — Hillier & Hanson's integration value, comparable across
+ *    systems of different sizes. `null` when RRA is `null`, and when RA is 0 (a space
+ *    adjacent to every other one, whose reciprocal is unbounded; `ra: 0` beside it says
+ *    which);
  *  - `control` = Σ over its neighbours j of 1 / deg(j).
  *
  * Graph-level: `k`, and `cycleRank` = E − V + C, the first Betti number of the whole
@@ -31,6 +38,10 @@
  *
  * Step distances are all-pairs MIN_PLUS on the one path engine (`src/algebra/paths.ts`),
  * unit weights — exact integers. Ratios print through `fmt4`. Pure and deterministic.
+ * D_k is the one non-rational step: `Math.log2` of a small rational. V8 computes it with its
+ * own fdlibm port, the same bits on every platform, and the result is rounded to 4 decimals
+ * before it is reported; an engine whose `log2` differed in the last bit could move a
+ * printed digit only on an exact 4-decimal tie.
  */
 
 import { accessDigraph, EXTERIOR_NODE, type AccessGraph } from "../analyze.js";
@@ -44,6 +55,7 @@ export interface SyntaxRoom {
   depth: number | null;
   meanDepth: number | null;
   ra: number | null;
+  rra: number | null;
   integration: number | null;
   control: number | null;
 }
@@ -85,16 +97,19 @@ export function syntaxFacts(access: AccessGraph): SyntaxFacts {
   const system = new Set<string>([EXTERIOR_NODE]);
   for (const r of access.rooms) if (r.depthFromEntrance !== null) system.add(r.id);
   const k = system.size;
+  // The diamond D-value (see the module header); defined for k ≥ 3, where it is positive.
+  const dk = k > 2 ? (2 * (k * (Math.log2((k + 2) / 3) - 1) + 1)) / ((k - 1) * (k - 2)) : null;
 
   const rooms: SyntaxRoom[] = access.rooms.map((r) => {
     if (r.depthFromEntrance === null) {
-      return { id: r.id, depth: null, meanDepth: null, ra: null, integration: null, control: null };
+      return { id: r.id, depth: null, meanDepth: null, ra: null, rra: null, integration: null, control: null };
     }
     const dist = bestPaths(g, { s: MIN_PLUS, weight: () => 1, sources: [[r.id, 0]], rank: () => 0 }).value;
     let total = 0;
     for (const [n, d] of dist) if (n !== r.id) total += d;
     const md = total / (k - 1);
     const ra = k > 2 ? (2 * (md - 1)) / (k - 2) : null;
+    const rra = ra === null || dk === null ? null : ra / dk;
     let control = 0;
     for (const j of nbrs.get(r.id)!) control += 1 / nbrs.get(j)!.length;
     return {
@@ -102,7 +117,8 @@ export function syntaxFacts(access: AccessGraph): SyntaxFacts {
       depth: r.depthFromEntrance,
       meanDepth: r4(md),
       ra: ra === null ? null : r4(ra),
-      integration: ra === null || ra === 0 ? null : r4(1 / ra),
+      rra: rra === null ? null : r4(rra),
+      integration: rra === null || rra === 0 ? null : r4(1 / rra),
       control: r4(control),
     };
   });

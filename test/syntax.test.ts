@@ -4,9 +4,19 @@
  *
  * Every number below is HAND-DERIVED from the graph drawn in the comment above it, never
  * read back off the implementation: depth from `exterior`, mean depth MD = Σd/(k−1),
- * RA = 2(MD−1)/(k−2), integration = 1/RA, control = Σ 1/deg(neighbour), and the cycle rank
- * E − V + C. The law: syntax is a graph fact, so it is INVARIANT under every g in D4 ⋉ Z²
- * (checked through the W1 wrapper, where both sides carry the same `g.` ids).
+ * RA = 2(MD−1)/(k−2), RRA = RA/D_k with the diamond value
+ * D_k = 2(k(log₂((k+2)/3) − 1) + 1)/((k−1)(k−2)), integration = 1/RRA,
+ * control = Σ 1/deg(neighbour), and the cycle rank E − V + C.
+ *
+ * Every hand case here has k = 5, so one D-value serves them all:
+ *   D_5 = 2(5(log₂(7/3) − 1) + 1)/(4·3) = (5·0.2223924 + 1)/6 = 0.3519937
+ * and 1/RRA = D_5/RA gives, for the RAs that occur (4 decimals):
+ *   RA 1/6 → RRA 0.4735, integration 2.112     RA 1/3 → RRA 0.947,  integration 1.056
+ *   RA 1/2 → RRA 1.4205, integration 0.704     RA 2/3 → RRA 1.894,  integration 0.528
+ *   RA 5/6 → RRA 2.3675, integration 0.4224
+ *
+ * The law: syntax is a graph fact, so it is INVARIANT under every g in D4 ⋉ Z² (checked
+ * through the W1 wrapper, where both sides carry the same `g.` ids).
  */
 
 import { describe as suite, expect, it } from "vitest";
@@ -51,56 +61,81 @@ function block(ring: boolean): string {
 const plan = (body: string): string => `plan "syntax" {\n  units mm\n  grid 50\n${body}\n}\n`;
 
 suite("syntax — hand-derived", () => {
+  it("the diamond D-value normalisation, stated on its own: D_4 = 1/3 exactly", () => {
+    // k = 4: log₂(6/3) = 1, so D_4 = 2(4·0 + 1)/(3·2) = 1/3. Any system of four nodes has
+    // RRA = 3·RA; a 3-node system (exterior + two rooms) is the RA = 0 case below.
+    const s = syntax(
+      plan(
+        block(false)
+          .split("\n")
+          .filter((l) => !/id=(d|cd) /.test(l))
+          .join("\n"),
+      ),
+    );
+    // Exterior–A, A–B, A–C. A: 1,1,1 → MD 1, RA 0. B: 2,1,2 → MD 5/3, RA 2(2/3)/2 = 2/3,
+    // RRA = 2, integration 0.5. Control A = 1 + 1 + 1 (ext, B, C each of degree 1) = 3.
+    expect(s.k).toBe(4);
+    expect(s.rooms.find((r) => r.id === "b")).toEqual({
+      id: "b",
+      depth: 2,
+      meanDepth: 1.6667,
+      ra: 0.6667,
+      rra: 2,
+      integration: 0.5,
+      control: 0.3333,
+    });
+  });
+
   it("a 4-room tree: exterior–A, A–B, A–C, C–D", () => {
     // Distances (ext, A, B, C, D):
-    //   A: 1,–,1,1,2 = 5 → MD 1.25, RA 2(0.25)/3 = 1/6, integration 6
-    //   B: 2,1,–,2,3 = 8 → MD 2,    RA 2/3,            integration 1.5
-    //   C: 2,1,2,–,1 = 6 → MD 1.5,  RA 1/3,            integration 3
-    //   D: 3,2,3,1,– = 9 → MD 2.25, RA 2(1.25)/3 = 5/6, integration 1.2
+    //   A: 1,–,1,1,2 = 5 → MD 1.25, RA 2(0.25)/3 = 1/6
+    //   B: 2,1,–,2,3 = 8 → MD 2,    RA 2/3
+    //   C: 2,1,2,–,1 = 6 → MD 1.5,  RA 1/3
+    //   D: 3,2,3,1,– = 9 → MD 2.25, RA 2(1.25)/3 = 5/6
     // Degrees ext 1, A 3, B 1, C 2, D 1 → control A = 1 + 1 + 1/2, B = 1/3, C = 1/3 + 1, D = 1/2.
     expect(syntax(plan(block(false)))).toEqual({
       k: 5,
       cycleRank: 0,
       rooms: [
-        { id: "a", depth: 1, meanDepth: 1.25, ra: 0.1667, integration: 6, control: 2.5 },
-        { id: "b", depth: 2, meanDepth: 2, ra: 0.6667, integration: 1.5, control: 0.3333 },
-        { id: "c", depth: 2, meanDepth: 1.5, ra: 0.3333, integration: 3, control: 1.3333 },
-        { id: "d", depth: 3, meanDepth: 2.25, ra: 0.8333, integration: 1.2, control: 0.5 },
+        { id: "a", depth: 1, meanDepth: 1.25, ra: 0.1667, rra: 0.4735, integration: 2.112, control: 2.5 },
+        { id: "b", depth: 2, meanDepth: 2, ra: 0.6667, rra: 1.894, integration: 0.528, control: 0.3333 },
+        { id: "c", depth: 2, meanDepth: 1.5, ra: 0.3333, rra: 0.947, integration: 1.056, control: 1.3333 },
+        { id: "d", depth: 3, meanDepth: 2.25, ra: 0.8333, rra: 2.3675, integration: 0.4224, control: 0.5 },
       ],
     });
   });
 
   it("a 4-room ring: the tree plus B–D", () => {
     // E 5, V 5, C 1 → cycle rank 1.
-    //   A: 1,–,1,1,2 = 5 → MD 1.25, RA 1/6, integration 6
-    //   B: 2,1,–,2,1 = 6 → MD 1.5,  RA 1/3, integration 3
-    //   C: 2,1,2,–,1 = 6 → MD 1.5,  RA 1/3, integration 3
-    //   D: 3,2,1,1,– = 7 → MD 1.75, RA 1/2, integration 2
+    //   A: 1,–,1,1,2 = 5 → MD 1.25, RA 1/6
+    //   B: 2,1,–,2,1 = 6 → MD 1.5,  RA 1/3
+    //   C: 2,1,2,–,1 = 6 → MD 1.5,  RA 1/3
+    //   D: 3,2,1,1,– = 7 → MD 1.75, RA 1/2
     // Degrees ext 1, A 3, B 2, C 2, D 2 → control A = 1 + 1/2 + 1/2, B = C = 1/3 + 1/2, D = 1.
     expect(syntax(plan(block(true)))).toEqual({
       k: 5,
       cycleRank: 1,
       rooms: [
-        { id: "a", depth: 1, meanDepth: 1.25, ra: 0.1667, integration: 6, control: 2 },
-        { id: "b", depth: 2, meanDepth: 1.5, ra: 0.3333, integration: 3, control: 0.8333 },
-        { id: "c", depth: 2, meanDepth: 1.5, ra: 0.3333, integration: 3, control: 0.8333 },
-        { id: "d", depth: 3, meanDepth: 1.75, ra: 0.5, integration: 2, control: 1 },
+        { id: "a", depth: 1, meanDepth: 1.25, ra: 0.1667, rra: 0.4735, integration: 2.112, control: 2 },
+        { id: "b", depth: 2, meanDepth: 1.5, ra: 0.3333, rra: 0.947, integration: 1.056, control: 0.8333 },
+        { id: "c", depth: 2, meanDepth: 1.5, ra: 0.3333, rra: 0.947, integration: 1.056, control: 0.8333 },
+        { id: "d", depth: 3, meanDepth: 1.75, ra: 0.5, rra: 1.4205, integration: 0.704, control: 1 },
       ],
     });
   });
 
   it("the studio: exterior–living–hall, hall–bed, hall–bath", () => {
-    // living: 1,–,1,2,2 = 6 → MD 1.5, RA 1/3, integration 3;  control 1 + 1/3
-    // hall:   2,1,–,1,1 = 5 → MD 1.25, RA 1/6, integration 6; control 1/2 + 1 + 1
-    // bed/bath: 3,2,1,–,2 = 8 → MD 2, RA 2/3, integration 1.5; control 1/3
+    // living: 1,–,1,2,2 = 6 → MD 1.5, RA 1/3;  control 1 + 1/3
+    // hall:   2,1,–,1,1 = 5 → MD 1.25, RA 1/6; control 1/2 + 1 + 1
+    // bed/bath: 3,2,1,–,2 = 8 → MD 2, RA 2/3; control 1/3
     expect(syntax(EXAMPLE_FILES["studio.arch"]!)).toEqual({
       k: 5,
       cycleRank: 0,
       rooms: [
-        { id: "r_living", depth: 1, meanDepth: 1.5, ra: 0.3333, integration: 3, control: 1.3333 },
-        { id: "r_bed", depth: 3, meanDepth: 2, ra: 0.6667, integration: 1.5, control: 0.3333 },
-        { id: "r_hall", depth: 2, meanDepth: 1.25, ra: 0.1667, integration: 6, control: 2.5 },
-        { id: "r_bath", depth: 3, meanDepth: 2, ra: 0.6667, integration: 1.5, control: 0.3333 },
+        { id: "r_living", depth: 1, meanDepth: 1.5, ra: 0.3333, rra: 0.947, integration: 1.056, control: 1.3333 },
+        { id: "r_bed", depth: 3, meanDepth: 2, ra: 0.6667, rra: 1.894, integration: 0.528, control: 0.3333 },
+        { id: "r_hall", depth: 2, meanDepth: 1.25, ra: 0.1667, rra: 0.4735, integration: 2.112, control: 2.5 },
+        { id: "r_bath", depth: 3, meanDepth: 2, ra: 0.6667, rra: 1.894, integration: 0.528, control: 0.3333 },
       ],
     });
   });
@@ -123,6 +158,7 @@ suite("syntax — hand-derived", () => {
       depth: null,
       meanDepth: null,
       ra: null,
+      rra: null,
       integration: null,
       control: null,
     });
@@ -131,7 +167,7 @@ suite("syntax — hand-derived", () => {
     expect(JSON.stringify(s)).not.toContain("NaN");
   });
 
-  it("k ≤ 2: RA is undefined, so RA and integration are null", () => {
+  it("k ≤ 2: RA is undefined, so RA, RRA and integration are null", () => {
     const s = syntax(
       plan(
         block(false)
@@ -143,12 +179,12 @@ suite("syntax — hand-derived", () => {
     expect(s).toEqual({
       k: 2,
       cycleRank: 0,
-      rooms: [{ id: "a", depth: 1, meanDepth: 1, ra: null, integration: null, control: 1 }],
+      rooms: [{ id: "a", depth: 1, meanDepth: 1, ra: null, rra: null, integration: null, control: 1 }],
     });
   });
 
-  it("RA = 0 (a space adjacent to every other): integration is null, ra says why", () => {
-    // Exterior–A and A–B only: A is adjacent to both other nodes, MD 1, RA 0.
+  it("RA = 0 (a space adjacent to every other): integration is null, ra and rra say why", () => {
+    // Exterior–A and A–B only: A is adjacent to both other nodes, MD 1, RA 0, RRA 0.
     const s = syntax(
       plan(
         block(false)
@@ -157,7 +193,7 @@ suite("syntax — hand-derived", () => {
           .join("\n"),
       ),
     );
-    expect(s.rooms[0]).toEqual({ id: "a", depth: 1, meanDepth: 1, ra: 0, integration: null, control: 2 });
+    expect(s.rooms[0]).toEqual({ id: "a", depth: 1, meanDepth: 1, ra: 0, rra: 0, integration: null, control: 2 });
   });
 
   it("two doors between the same pair are one permeability, not a ring", () => {
