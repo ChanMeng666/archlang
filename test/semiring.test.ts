@@ -157,3 +157,30 @@ describe("shortest-widest is NOT isotone, so bestPaths must not be used for it",
     expect(after).toBe(before);
   });
 });
+
+describe("lexicographic: a pair whose first component is zero is no path", () => {
+  /**
+   * `pairOf` above normalises every such pair to `zero`, so the laws never see one.
+   * `times` still can: from an edge weight that means "no edge" (`[Infinity, 5]`), or from
+   * a MIN_PLUS sum that overflows. Such a pair is not `zero` under `compare`, so unless
+   * `times` sends it to `zero`, `bestPaths` records it as a reached node.
+   */
+  const raw = fc.tuple(minPlusValue, maxMinValue);
+  const noPath = maxMinValue.map((y) => [Number.POSITIVE_INFINITY, y] as const);
+
+  it("times sends it to zero from either side (un-normalised input)", () => {
+    fc.assert(
+      fc.property(raw, noPath, (a, n) => {
+        expect(WIDEST_SHORTEST.times(a, n)).toEqual(WIDEST_SHORTEST.zero);
+        expect(WIDEST_SHORTEST.times(n, a)).toEqual(WIDEST_SHORTEST.zero);
+      }),
+      RUNS,
+    );
+  });
+
+  it("pinned: a no-edge weight and an overflowing length", () => {
+    expect(WIDEST_SHORTEST.compare([Number.POSITIVE_INFINITY, 5], WIDEST_SHORTEST.zero)).toBeLessThan(0);
+    expect(WIDEST_SHORTEST.times([3, 7], [Number.POSITIVE_INFINITY, 5])).toEqual(WIDEST_SHORTEST.zero);
+    expect(WIDEST_SHORTEST.times([1e308, 7], [1e308, 5])).toEqual(WIDEST_SHORTEST.zero);
+  });
+});

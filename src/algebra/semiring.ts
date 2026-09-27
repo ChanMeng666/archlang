@@ -77,8 +77,11 @@ export const MAX_MIN: OrderedSemiring<number> = {
  * The lexicographic product: rank by `s`, break ties by `t`. `times` works on each
  * component; `plus` picks the better pair.
  *
- * A pair whose first component is `s.zero` is not a path, so `times` returns `zero` for it.
- * That rule keeps `zero` an annihilator.
+ * A pair whose first component is `s.zero` is not a path, whatever its second component,
+ * so `times` returns `zero` for it. Such a pair is not `zero` under `compare`
+ * (`[Infinity, 5]` beats `[Infinity, -Infinity]`), and it reaches `times` from an edge
+ * weight that means "no edge", or from a `MIN_PLUS` sum that overflows to Infinity.
+ * Without the rule, `bestPaths` would record it as a reached node.
  *
  * The product is a semiring only when `s`'s `times` preserves strict order, which
  * `MIN_PLUS` does on finite values. `lexicographic(MIN_PLUS, MAX_MIN)` (shortest, then
