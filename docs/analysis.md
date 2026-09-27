@@ -666,9 +666,9 @@ acts by — combined with translations. A finite plan has no translational symme
 symmetry group fixes a point: its **stabiliser** is a subgroup of D4 about a centre `c`.
 Any symmetry maps the plan's extent onto itself, so `c` can only be the centre of that
 extent, and the seven non-identity candidates about it are each **tested on the shape**:
-the whole labelled set of walls, rooms, openings or furniture must map onto itself
-exactly. The extent only nominates the candidate centre; no reported symmetry and no
-position is derived from it.
+the whole labelled set of walls, rooms or drawn elements must map onto itself exactly.
+The extent only nominates the candidate centre; no reported symmetry and no position is
+derived from it, which is why a layer with no symmetry reports no `centre` at all.
 
 Comparison is exact on integers — in doubled, centred coordinates `u = 4(p − c)`, so a
 centre on a half-millimetre stays exact — whenever every coordinate is a multiple of half a
@@ -680,9 +680,9 @@ Three layers, each with its own group:
 
 | Layer | The set tested | Labelled by |
 |-------|----------------|-------------|
-| `shell` | the walls, in **maximal-line normal form**: collinear pieces of one thickness that overlap or touch merge into one segment, so splitting a wall into statements changes nothing | wall thickness |
-| `rooms` | each room's floor — a rectangle's or polygon's ring, a circle's centre and radius | the room's `uses`, never its label text |
-| `full` | the rooms, plus every opening (each handed choice its symbol draws: a hinged door's hinge side and swing, a non-hinged door's slide side, a sliding door's track, a barn, bifold or garage panel's face; a window's and a cased opening's jambs), the furniture (footprint, category, the back vector when the catalogue gives the symbol a back, and the handedness of a symbol that is drawn handed) and the stairs, lifts and escalators (footprint, the way the arrow points, a stair's break-line hand) — each read as a placed, mirrored instance really draws it | as `rooms`, plus kind and width, or category, or run kind and direction |
+| `shell` | the walls, in **maximal-line normal form**: collinear pieces of one thickness that overlap or touch merge into one segment, so splitting a wall into statements changes nothing | wall thickness only — a wall's category, material and hatch are not read (a hatch is laid on page axes and does not turn with the building) |
+| `rooms` | each room's floor — a rectangle's or polygon's ring, a circle's centre and radius | the room's `uses`, never its label text; a room with no `uses` clause takes the uses `describe().rooms[].uses` reports for it, classified from its label (or its id when it has none) |
+| `full` | everything drawn as building: the rooms, every opening (each handed choice its symbol draws: a hinged door's hinge side and swing, a non-hinged door's slide side, a sliding door's track, a barn, bifold or garage panel's face, and how far a sliding, barn, bifold or pocket panel is drawn `open`; a window's and a cased opening's jambs), the furniture (footprint, category, the back vector when the catalogue gives the symbol a back, and the handedness of a symbol that is drawn handed), the stairs, lifts and escalators (footprint, the way the arrow points, a stair's break-line hand), the columns, floor voids and roof outlines (footprints), the ground surfaces (outline and kind, and a balcony's railed edges) and the fences (each run's segments) — each read as a placed, mirrored instance really draws it | as `rooms`, plus kind and width, category, run kind and direction, surface kind or fence style |
 
 Each layer reports:
 
@@ -690,14 +690,14 @@ Each layer reports:
 |-------|---------|
 | `group` | `C1` (none) · `C2` (half-turn) · `C4` (quarter-turns) · `D1` (one mirror) · `D2` (two mirrors and the half-turn) · `D4` (all eight) |
 | `axis` (D1) / `axes` (D2) | the mirror line through `centre`: `x` is the `mirror x` reflection (the line is vertical, `x = centre.x`), `y` is `mirror y` (horizontal), `diag` runs top-left to bottom-right and `antidiag` bottom-left to top-right |
-| `centre` | the fixed point, in plan mm: the centre of that layer's own extent, which for `full` includes every door leaf's tip |
+| `centre` | the fixed point every element turns or reflects about, in plan mm. **Absent on a `C1` layer**: nothing is fixed there, and the point would only be the midpoint of the layer's extent — a box position, not a fact of the shape |
 | `elements` | every group element, identity first, in `place`'s spelling (`{ rotate, mirror? }`, reflect in x then turn) |
 | `exact` | integer-exact comparison, or 4-decimal |
 
 A layer holding nothing (no walls, say) is `null`. A furniture piece is compared on its
 attributes rather than its drawn marks, so a symbol with more symmetry than they record
-can only make the group smaller, never larger. Dimensions, columns, voids and ground
-surfaces are in no layer: a dimension is annotation, not the building.
+can only make the group smaller, never larger. Dimensions are in no layer: a dimension is
+annotation about the building, not part of it.
 
 **Repeats.** `repeats[]` lists the rooms that recur. A `translate` run is three or more
 **congruent** rooms — the same floor, the same `uses`, the same furniture laid out the same
@@ -705,7 +705,10 @@ way, up to a translation — whose positions, sorted top to bottom then left to 
 by a constant offset (`step`, mm). A `mirror` run is the terrace pattern A, mirror-A, A, …:
 each room the exact reflection of the one before about an axis-parallel line (`axis`, as
 above), with the lines (`lines`, their x for `x`, their y for `y`) evenly spaced; `step`
-is the translation from each room to the one two along.
+is the translation from each room to the one two along. Runs are cut **greedily**: in scan
+order each run is extended as far as its step holds, and the next starts after it — so
+runs are maximal-first and never overlap, and five congruent rooms at offsets 0, 1, 2, 4
+and 6 m report the run `0, 1, 2` and not `2, 4, 6`.
 
 For [`examples/museum-wing.arch`](../examples/museum-wing.arch), a symmetric example:
 
@@ -716,8 +719,7 @@ For [`examples/museum-wing.arch`](../examples/museum-wing.arch), a symmetric exa
                "elements": [{ "rotate": 0 }, { "rotate": 0, "mirror": "x" }], "exact": true },
     "rooms": { "group": "D1", "axis": "x", "centre": { "x": 9000, "y": 6000 },
                "elements": [{ "rotate": 0 }, { "rotate": 0, "mirror": "x" }], "exact": true },
-    "full":  { "group": "C1", "centre": { "x": 8400, "y": 6000 },
-               "elements": [{ "rotate": 0 }], "exact": true }
+    "full":  { "group": "C1", "elements": [{ "rotate": 0 }], "exact": true }
   },
   "repeats": [
     { "kind": "translate", "count": 3, "step": { "x": 6000, "y": 0 }, "ids": ["g1", "g2", "g3"] }
@@ -726,8 +728,8 @@ For [`examples/museum-wing.arch`](../examples/museum-wing.arch), a symmetric exa
 ```
 
 The walls and rooms mirror about `x = 9000`; the fit-out does not, because the one exit
-door is on the west wall (its leaf swings out to `x = −1200`, which is also why `full`'s
-centre sits at `8400`). The three galleries are one room repeated at a 6 m step.
+door is on the west wall, so `full` is `C1` and reports no centre. The three galleries
+are one room repeated at a 6 m step.
 
 [`examples/terrace-row.arch`](../examples/terrace-row.arch) is four dwellings placed from
 one component, alternately mirrored — and `--facts symmetry` reports that the row, as
@@ -740,9 +742,9 @@ arch describe examples/terrace-row.arch --facts symmetry,syntax --json
 ```json
 "symmetry": {
   "layers": {
-    "shell": { "group": "C1", "centre": { "x": 11100, "y": 4800 }, "elements": [{ "rotate": 0 }], "exact": true },
-    "rooms": { "group": "C1", "centre": { "x": 11100, "y": 4800 }, "elements": [{ "rotate": 0 }], "exact": true },
-    "full":  { "group": "C1", "centre": { "x": 11100, "y": 4800 }, "elements": [{ "rotate": 0 }], "exact": true }
+    "shell": { "group": "C1", "elements": [{ "rotate": 0 }], "exact": true },
+    "rooms": { "group": "C1", "elements": [{ "rotate": 0 }], "exact": true },
+    "full":  { "group": "C1", "elements": [{ "rotate": 0 }], "exact": true }
   },
   "repeats": []
 }
@@ -754,6 +756,11 @@ translate or mirror image of its neighbour. Make the four widths equal and the s
 and the same row is `D1` about `x = 10800` on every layer, with a `translate` run of the
 four halls and a `mirror` run each of the beds, baths and living rooms, reflected about
 `x = 5400, 10800, 16200`.
+
+Without `--json`, `--facts` adds one line per fact to the human summary, e.g.
+`symmetry: shell D1 x · rooms D1 x · full C1; repeats 2` and `syntax: k=17 cycleRank=4`.
+`--select symmetry` (or `syntax`) without the matching `--facts` is a usage error rather
+than a silently missing key.
 
 ## Space syntax — integration on the access graph
 
@@ -775,11 +782,14 @@ are all-pairs shortest paths at unit cost.
 | `rooms[].depth` | steps from `exterior` — exactly `access.rooms[].depthFromEntrance` |
 | `rooms[].meanDepth` | MD = the sum of steps to the other k − 1 nodes, over k − 1 |
 | `rooms[].ra` | relative asymmetry RA = 2(MD − 1) / (k − 2), from 0 (adjacent to everything) to 1 (the end of a corridor); `null` when k ≤ 2 |
-| `rooms[].integration` | Hillier and Hanson's integration value **1 / RA** — higher is more integrated. Not the D-value-normalised 1/RRA. `null` when RA is `null`, or `0` (the reciprocal is unbounded; `ra: 0` beside it says which) |
+| `rooms[].rra` | real relative asymmetry RRA = RA / D_k, where D_k = 2(k(log₂((k + 2) / 3) − 1) + 1) / ((k − 1)(k − 2)) is the RA of the root of a k-node **diamond**, the reference graph Hillier and Hanson normalise by (the definition depthmapX uses). It makes systems of different sizes comparable; `null` when RA is |
+| `rooms[].integration` | Hillier and Hanson's integration value **1 / RRA** — higher is more integrated. `null` when RRA is `null`, or when RA is `0` (the reciprocal is unbounded; `ra: 0` beside it says which) |
 | `rooms[].control` | Σ over the room's neighbours of 1 / (the neighbour's degree): how much of its neighbours' access it commands |
 
 A room the system does not reach has every metric `null`, never `NaN`. Ratios are rounded
-to 4 decimals.
+to 4 decimals. D_k is the one non-rational step (a base-2 logarithm); it is rounded with
+everything else, so a last-bit difference between JavaScript engines could move a printed
+digit only on an exact 4-decimal tie.
 
 For the terrace row above, `k` is 17 (sixteen rooms and the outside) and `cycleRank` is 4:
 each dwelling is one ring — street, living room, hall, bedroom, garden door, back to the
@@ -790,10 +800,10 @@ street. Every unit reads the same, so one suffices:
   "k": 17,
   "cycleRank": 4,
   "rooms": [
-    { "id": "u1.bed",    "depth": 1, "meanDepth": 2.4375, "ra": 0.1917, "integration": 5.2174, "control": 0.4583 },
-    { "id": "u1.bath",   "depth": 3, "meanDepth": 4.0625, "ra": 0.4083, "integration": 2.449,  "control": 0.3333 },
-    { "id": "u1.hall",   "depth": 2, "meanDepth": 3.125,  "ra": 0.2833, "integration": 3.5294, "control": 2 },
-    { "id": "u1.living", "depth": 1, "meanDepth": 2.4375, "ra": 0.1917, "integration": 5.2174, "control": 0.4583 }
+    { "id": "u1.bed",    "depth": 1, "meanDepth": 2.4375, "ra": 0.1917, "rra": 0.7858, "integration": 1.2726, "control": 0.4583 },
+    { "id": "u1.bath",   "depth": 3, "meanDepth": 4.0625, "ra": 0.4083, "rra": 1.674,  "integration": 0.5974, "control": 0.3333 },
+    { "id": "u1.hall",   "depth": 2, "meanDepth": 3.125,  "ra": 0.2833, "rra": 1.1616, "integration": 0.8609, "control": 2 },
+    { "id": "u1.living", "depth": 1, "meanDepth": 2.4375, "ra": 0.1917, "rra": 0.7858, "integration": 1.2726, "control": 0.4583 }
   ]
 }
 ```
