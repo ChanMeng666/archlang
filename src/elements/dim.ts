@@ -16,12 +16,12 @@ import { fmt2 } from "../num-format.js";
 import { DIM_TEXT_GAP, textWidth } from "../text-metrics.js";
 
 /**
- * Does a dim's offset point along the RIGHT normal of from→to? Read off the SIGN BIT, so a
- * zero offset that a reflecting `place` negated (`-0`, from `transform`) reads right too: that
- * bit is the only thing that says which side a mirrored zero-offset call-out's number is on.
+ * Does a dim's number ride the RIGHT normal of from→to? A negative offset draws the line
+ * there. A ZERO offset has no side of its own, so it takes the frame's handedness
+ * (`_mirror`): the mirror image of a call-out's number is on the other side.
  */
-function pointsRight(offset: number): boolean {
-  return offset < 0 || Object.is(offset, -0);
+function pointsRight(dm: RDim): boolean {
+  return dm.offset < 0 || (dm.offset === 0 && dm._mirror === true);
 }
 
 /**
@@ -207,7 +207,7 @@ export const dim: ElementDef = {
           id: ctx.id,
           from,
           to,
-          offset: ctx.eval(n.offset),
+          offset: ctx.eval(n.offset) + 0,
           text: n.text !== undefined ? ctx.evalStr(n.text) : undefined,
           span: n.span,
         };
@@ -243,7 +243,8 @@ export const dim: ElementDef = {
       id: ctx.id,
       from,
       to,
-      offset: ctx.eval(n.offset),
+      // `+ 0` folds an evaluated `-0` (`offset -0`, `0 * -1`) to `0`, and is exact otherwise.
+      offset: ctx.eval(n.offset) + 0,
       // An explicit `text "…"` still wins over the derived `R…`/`φ…`.
       text: n.text !== undefined ? ctx.evalStr(n.text) : derivedText,
       span: n.span,
@@ -333,7 +334,7 @@ export const dim: ElementDef = {
     // "The side the offset points" is `sign(offset) · n`: a NEGATIVE offset draws its line on
     // the right normal, and its number must ride outside that line too, never between the
     // line and what it measures.
-    const side = pointsRight(dm.offset) !== (dm.stagger === true) ? -1 : 1;
+    const side = pointsRight(dm) !== (dm.stagger === true) ? -1 : 1;
     const tp =
       push === 0
         ? add(mid, mul(n, side * sizes.dimFont * 0.7))
@@ -357,7 +358,18 @@ export const dim: ElementDef = {
   transform(resolved, t: TransformCtx): RDim {
     const el = resolved as RDim;
     const { id, reflected } = t;
-    return { ...el, id, from: t.point(el.from), to: t.point(el.to), offset: reflected ? -el.offset : el.offset };
+    // `0 - offset`, never `-offset`: a reflected zero stays `0`, not `-0`. Its handedness
+    // rides `_mirror` (XORed, so a nested reflection composes back to the identity).
+    const out: RDim = {
+      ...el,
+      id,
+      from: t.point(el.from),
+      to: t.point(el.to),
+      offset: reflected ? 0 - el.offset : el.offset,
+    };
+    if (reflected !== (el._mirror === true)) out._mirror = true;
+    else delete out._mirror;
+    return out;
   },
 };
 

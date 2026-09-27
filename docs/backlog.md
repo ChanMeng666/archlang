@@ -369,10 +369,11 @@ deleted; law: "closed classes" in `test/equivariance-corpus.test.ts`, `test/fram
 
 ### E.14 · `dim-text-side` — a dim's number was drawn inside its line for a negative offset — closed by W5b
 
-`dim.render` puts the number on the side the offset's SIGN BIT points (`pointsRight`), so a
-negative offset reads outside its line at the root, and a reflected zero-offset call-out (`-0`)
-reads mirrored. `W_DIM_OVERLAP`'s band follows the same side. No shipped example has a
-negative offset.
+`dim.render` puts the number on the side a negative offset points (`pointsRight`), so it reads
+outside its line at the root. A zero offset has no sign, so a reflected call-out takes the frame's
+handedness from `RDim._mirror` (XORed in `dim.transform`, which writes `0 - offset` and so never
+makes a `-0`); an evaluated `-0` is folded to `0` at resolve. `W_DIM_OVERLAP`'s band follows the
+same side. No shipped example has a negative offset.
 
 `W_DIM_OVERLAP` measures the same convention: its band puts each number on +n. So under a
 reflection an opposite-normal pair collides differently. At A3 1:50,

@@ -487,6 +487,13 @@ export interface RDim extends RBase {
    * `W_DIM_OVERLAP` lint fix can re-tier the dimension. Internal; never reaches the Scene.
    */
   _offsetSpan?: Span;
+  /**
+   * This dim's instance frame REFLECTS (`place … mirror`). XOR-composed by `dim.transform`.
+   * The transform already negates `offset`, which carries the line and a non-zero offset's
+   * number; this bit is what carries a ZERO-offset call-out's number to the mirrored side.
+   * Internal; never reaches `describe()` or Plan JSON.
+   */
+  _mirror?: true;
 }
 export interface RColumn extends RBase {
   kind: "column";

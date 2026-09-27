@@ -536,6 +536,21 @@ describe("closed classes — each former witness is now the law", () => {
     for (const g of D4_ELEMENTS) expect(keysOf(hinged, g.name, "scene.door"), g.name).toEqual([]);
   });
 
+  it("slide-track (backlog E.12): a mirrored door inside a mirrored component takes the UNPLACED track", () => {
+    const inner = `  component inner() {\n${room(4000, 3000)}\n    door id=d sliding at (2000,3000) width 1600 wall shell slide left\n  }`;
+    const src = (outer: string, child: string) =>
+      `plan "n" {\n  units mm\n  grid 50\n  paper A0 landscape\n  scale 1:100\n${inner}\n  component outer() {\n    place inner() as i at (0,0)${child}\n  }\n  place outer() as g at (0,0)${outer}\n}\n`;
+    const panels = (s: string) =>
+      sceneOf(s)
+        .nodes.filter((n) => n.elementKind === "door")
+        .map((n) => canonPrim(n.prim))
+        .sort();
+    // mirror x ∘ mirror x is the identity, so the door is drawn exactly as never placed…
+    expect(panels(src(" mirror x", " mirror x"))).toEqual(panels(src("", "")));
+    // …and a single reflection is not (the check can fail).
+    expect(panels(src(" mirror x", ""))).not.toEqual(panels(src("", "")));
+  });
+
   it("column-corner (backlog E.13): a column is carried as the TOP-LEFT rectangle it is", () => {
     const body = `${room(4000, 3000)}
     column id=k at (1000,1000) size 400x600`;
@@ -577,7 +592,7 @@ describe("closed classes — each former witness is now the law", () => {
         .nodes.filter((x) => x.elementKind === "dim" && x.prim.t === "text")
         .map((n) => (n.prim.t === "text" ? n.prim.at.y : Number.NaN));
     // `mirror x` keeps y, so each number keeps its y — including the ZERO-offset call-out,
-    // whose side rides the sign bit of the `-0` the reflection leaves on its offset.
+    // which has no offset sign to carry and takes the frame's handedness (`_mirror`).
     expect(numberYs(gP)).toEqual(numberYs(p0));
     expect(keysOf(body, "mx", "scene.dim").filter((k) => k.endsWith(".text"))).toEqual([]);
   });
@@ -611,6 +626,17 @@ describe("closed classes — each former witness is now the law", () => {
           `${a}/${b} ${g.name}`,
         ).toEqual([]);
       }
+    }
+  });
+
+  it("dim-text-side (backlog E.14): at the ROOT, every spelling of a zero offset draws `offset 0`", () => {
+    // A `-0` must never pick the number's side: only a reflecting frame does (`_mirror`).
+    const plan = (offset: string) =>
+      `plan "root" {\n  units mm\n  let z = 0\n${room(4000, 3000)}\n    dim (0,3000)->(4000,3000) offset ${offset} text "4000"\n}\n`;
+    const zero = compile(plan("0"), { noCache: true });
+    expect(zero.errors).toEqual([]);
+    for (const spelling of ["-0", "-z", "0 * -1", "-1 * 0", "0 / -5", "-(z)"]) {
+      expect(compile(plan(spelling), { noCache: true }).svg, spelling).toBe(zero.svg);
     }
   });
 });
