@@ -16,8 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or a row of identical units, now says so.
 - **Space syntax on the access graph.** Opt-in (`--facts syntax`): depth, mean depth, real
   relative asymmetry (RRA), integration (`1 / RRA`), control and cycle rank, read from the
-  same connectivity graph `describe().access` already builds. Reading Hillier & Hanson's
-  *The Social Logic of Space* against the plan's own door graph.
+  same connectivity graph `describe().access` already builds — Hillier & Hanson's
+  *The Social Logic of Space* read against the plan's own door graph.
 - Default `describe()` output is unchanged; both facts are opt-in and additive.
 
 ### Changed — `place` now composes: a component can reference the instances it places itself
@@ -59,7 +59,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A statement drawn by several placements of the same component keeps one fix only when
   every placement agrees on it**; when they disagree the diagnostic stays and the fix is
   declined, rather than emitting an edit that is only correct for one of the instances that
-  share it. Every hint and message now quotes the source values it is talking about.
+  share it. The `W_SWING_OBSTRUCTED` hint and the `W_DIM_INSIDE`/`W_DIM_OVERLAP` messages
+  now quote the source values they are talking about.
 
 ### Fixed — a placed vertical run, column and mirrored fixture now follow the frame correctly
 
@@ -87,6 +88,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   circular room, rather than to whichever room's bounding box happens to overlap its
   footprint.
 
+### Fixed — LSP rename and find-references now find every use of a name
+
+- `cursor.ts`'s statement-expression walk used to miss fields it never listed, so renaming
+  or finding references to a name silently skipped uses inside a `sill`/`head` clause, an
+  attach position (`on w at <expr>`), an arc's radius, a wall or level's `height`, a
+  relational `gap`, and a furniture statement's `rotate`/`against`/`inset` clauses, as well
+  as a plan-level `height`, `axes` or site boundary. The walk is now exhaustive — checked
+  against an independent reflective oracle, not just a fixed field list — so a rename can no
+  longer leave a use behind.
+
+### Changed — `diffPlans` rescues a moved room by label only when the label is unique on both sides
+
+- A room moved between two plan revisions used to be "rescued" (matched to its old self, so
+  the diff reports a move rather than a delete+add) by label alone, even when two rooms
+  shared that label — silently pairing the wrong rooms. **Behaviour change:** the rescue now
+  requires the label to be unique among the unmatched rooms on BOTH sides; a plan with
+  duplicate labels gets a delete+add instead of a guessed match (`test/diff-laws.test.ts`).
+
 ### Fixed — a fix that rebuilds a door, window or opening statement no longer drops its authored `sill`/`head`
 
 - Applying a machine-applicable fix to a door, window or opening statement that also
@@ -97,8 +116,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed — `compile(src, { view: "iso" | "axon" })` no longer throws on a fully-consumed or zero-length wall
 
 - A wall whose openings consumed its entire length, or a host with no length at all, used to
-  make the axonometric or isometric view throw instead of returning a `Diagnostic`. Every
-  face the view draws is now well-formed and painted in a total order.
+  make the axonometric or isometric view throw instead of rendering. It now draws no solid
+  for that wall (its opening blocks still stand), and every remaining face is well-formed
+  and painted in a total order.
 
 ### Fixed — a plugin element with no frame action inside a `place` now returns a diagnostic instead of crashing
 
