@@ -466,9 +466,18 @@ inconsistent, and closing the chain there would fabricate an edge; start from th
 ### 6.1 · D4-orbit `reroll` for a component or a `place … mirror` — `todo`
 
 <!-- W6b -->
-`arch reroll` and its LSP refactor are designed against `src/algebra/d4.ts`'s normal form
-(propose an orbit member, prove it sound against `compile()`, apply) but the `reroll()` API
-and `src/pipeline.ts` have not landed. Track under W6b; do not build ahead of it.
+W6b landed `arch reroll` + the LSP `refactor.rewrite` action + the `reroll()` API
+(`src/reroll.ts`, sharing `src/pipeline.ts`'s one `compileUncached` with `compile()`), but
+only for a **translation** arithmetic progression — same statement, same structure, a numeric
+slot advancing by a constant delta each iteration (`for i in 0..N { … i*d … }`). It does not
+recognise a run related by a D4 group element other than the identity: three `place`d
+instances of the same component at `rotate 0`, `rotate 90`, `rotate 180` (or a mirrored pair)
+are a real repetition — an ORBIT under `src/algebra/d4.ts`'s normal form — that a reader would
+also fold into a loop by hand, but nothing here proposes `for r in [0, 90, 180] { place C(...)
+rotate r ... }`. Detecting it needs a second structural-match mode (same statement/args, an
+`at`/`rotate`/`mirror` triple forming a D4 orbit rather than an AP) ahead of the same proof
+obligation `reroll.ts` already has; the proof machinery (`proves`/`compileUncached`) carries
+over unchanged. Track under a new work-package; do not build ahead of it.
 
 ### 6.2 · A `mirror` fact on `describe()` furniture — `todo`
 

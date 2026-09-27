@@ -92,9 +92,12 @@ can check — identical SVG on every page, equal `describe()`, equal diagnostics
 warning removed — with the loop body kept byte-for-byte. `compile()` itself does none of
 that proof work; the fix lives one layer up specifically so `compile()` stays a pure function
 of its source text (see `src/while-fix.ts`'s header for the red-team rounds that moved
-it there). The planned `reroll()` refactor (W6b, not yet landed — see
-<!-- W6b --> below) is designed to share this same shape: propose a rewrite, prove it against
-one pipeline, never bake proof state into `compile()`'s own result.
+it there). `reroll()` (W6b, `src/reroll.ts`) shares this same shape and, once a red-team
+round found it re-deriving parse→link→resolve→render a second time, shares the literal
+PIPELINE too: `src/pipeline.ts`'s `compileUncached` is the one function `compile()`'s
+memo-cache wrapper and `reroll()`'s twin-compile proof both call, so the two can never drift
+apart. Neither `compile()` nor `pipeline.ts` carries any proof state of its own — the LSP
+`refactor.rewrite` action and `arch reroll` are where the proving happens, one layer up.
 
 ### 5. Laws pinned by test, not by convention
 
@@ -150,10 +153,14 @@ one pipeline, never bake proof state into `compile()`'s own result.
   bug: a contributor now needs `src/algebra/d4.ts`'s normal form, not just the call site
   they're fixing. `docs/agents/architecture.md` and `docs/agents/gotchas.md` carry the two
   sentences that make that fast.
-- **Open.** W6b (`arch reroll` + the LSP refactor + a `reroll()` API, behind `src/pipeline.ts`)
-  and W3b (an access `probe` policy, nearest-entrance circulation, circulation
-  translation/rotation fixes) are designed against this same algebra and have not landed.
+- **Landed.** W6b — `arch reroll`, the LSP `refactor.rewrite` action, and the `reroll()` API
+  (`src/reroll.ts`), sharing `src/pipeline.ts`'s one `compileUncached` with `compile()` — is
+  built against this same algebra: detect a candidate rewrite (span-blind AST structural
+  match, exact arithmetic progression), then PROVE it through the one pipeline (byte-identical
+  SVG per page, `describe()` facts, `lint()`/diagnostic multisets) before it is ever offered.
   <!-- W6b -->
+- **Open.** W3b (an access `probe` policy, nearest-entrance circulation, circulation
+  translation/rotation fixes) is designed against this same algebra and has not landed.
   <!-- W3b -->
   The equivariance findings this work did **not** close (the nav grid's tie-breaks,
   E.6–E.10; float-translation re-rounding, E.11) stay open in `docs/backlog.md` and are
@@ -161,10 +168,10 @@ one pipeline, never bake proof state into `compile()`'s own result.
 
 ## Rejected (recorded, not built)
 
-- **E-graphs** for the rewrite/proof work (W7, the planned `reroll()`). An e-graph earns its
-  cost on a search space with many equivalent forms to rank; `while`→`for` and the planned
-  re-roll refactor are each a single proposed rewrite proven by compile-and-compare, not a
-  search — the machinery would cost more than the one rewrite it verifies.
+- **E-graphs** for the rewrite/proof work (W7's `while`→`for` fix; W6b's `reroll()`). An
+  e-graph earns its cost on a search space with many equivalent forms to rank; both are each
+  a single proposed rewrite proven by compile-and-compare, not a search — the machinery would
+  cost more than the one rewrite it verifies.
 - **PGA / `ganja.js`** (projective geometric algebra) for the frame representation. D4 ⋉ Z²
   on a rectilinear grid is exactly a signed-permutation matrix plus a translation — no
   trigonometry, so no float is introduced and output stays byte-stable (ADR 0016 §2). A
@@ -219,8 +226,8 @@ one pipeline, never bake proof state into `compile()`'s own result.
   textbook non-isotone counterexample.
 - **Szalinski** (PLDI 2020, uwplse) — rewrites flat, unrolled CAD programs into loops via
   equality saturation plus "inverse transformations" that recognise an arithmetic
-  progression in a sequence of translated/rotated copies. This informed the DESIGN of the
-  planned `reroll()` refactor (W6b) — propose a rewrite, prove it, without adopting an
+  progression in a sequence of translated/rotated copies. This informed the DESIGN of
+  `reroll()` (W6b, `src/reroll.ts`) — propose a rewrite, prove it, without adopting an
   e-graph (see "Rejected" above) — not the statement printer.
 - **Hillier & Hanson (1984)**, *The Social Logic of Space* — the permeability-graph reading
   behind `src/analyze/syntax.ts`'s depth/RA/RRA/integration facts.

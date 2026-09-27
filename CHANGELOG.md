@@ -143,6 +143,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tracked as data (`test/equivariance-known.ts`) so a regression here is a specific, named
   failure rather than a vague one.
 
+### Added — `arch reroll`: re-roll a repeated statement run into a proven-equivalent `for` loop
+
+- **`reroll(source, opts?)`** (new public export) detects a run of ≥3 consecutive statements
+  in the same statement list — the plan body, a component body, a `for`/`if`/`while` body, a
+  `level`, or a `zone` — that share the same kind and structure and differ only in numeric
+  literals forming an EXACT arithmetic progression (`vals[0] + j*d === vals[j]`, binary, not
+  merely equal once rounded for display), with no explicit `id=` and no `#` comment inside the
+  run or trailing its last statement. Each candidate is offered only after a PROOF obligation:
+  compile the twin and require byte-identical SVG on every page, `describe()` facts equal
+  (diagnostics compared separately, as a `{code,severity,message}` multiset, so a warning on
+  the run itself does not fail the proof over a byte span that legitimately shifted), and
+  matching lint/compile diagnostic multisets — plus a token-count gate (the lexer's own count)
+  so a loop that would be longer than what it replaces is never offered. `opts.world`/
+  `opts.plugins` mirror `compile()`'s own, so a plan whose statements come from an `import`ed
+  module can still be proven. Never rewrites silently (ADR 0005): `reroll` only proposes.
+- **`arch reroll <file> [--write] [--json]`** prints each candidate as `{ span, replacement,
+  count, loopVar, tokensBefore, tokensAfter }`; `--write` applies every non-overlapping
+  suggestion and re-verifies the COMBINED result's compiled SVG is byte-identical to the
+  original (not just "still compiles") before writing — `{ ok, wrote, target, applied,
+  skipped }`, the same `wrote`/`target` names `arch fix` uses. No `--dry-run`/`--backup`: every
+  suggestion is already proven byte-for-byte before it is offered, so a failed re-verify simply
+  writes nothing.
+- **The LSP gains a `refactor.rewrite` code action** (never `isPreferred`) for a `reroll`
+  suggestion whose span touches the request's range. `codeActions(source, range, only?)` now
+  filters candidates to the range BEFORE proving any of them (proving — compiling, describing
+  and linting the twin — is the expensive step, and an editor asks on every selection change),
+  and skips `reroll` entirely when the request's `only` (mirroring LSP's own
+  `CodeActionContext.only`) excludes every refactor kind. The original source's own
+  compile/describe/lint is memoized in one slot per source text, so repeat requests on an
+  unchanged document recompute nothing. Absent `only` (the historical call shape) is unchanged.
+- **Internals: `src/pipeline.ts`.** `compile()`'s uncached parse→link→resolve→render pipeline
+  moved into this one leaf module, verbatim; `compile()`'s memo-cache wrapper and `reroll()`'s
+  twin-compile proof both call the SAME function, so the two can never drift apart. No
+  behaviour change — see [ADR 0020](docs/adr/0020-algebraic-core.md) §4.
+
 ### Changed — dependencies: zod 4 in the MCP shim, pdfkit 0.20, Vite 8 for the playground
 
 - **The MCP shim moves to zod 4 (#114).** `@modelcontextprotocol/sdk@1.29` accepts
