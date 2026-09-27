@@ -736,6 +736,24 @@ const COMMANDS: ManifestCommand[] = [
     ],
   },
   {
+    name: "reroll",
+    summary: "offer a proven-equivalent `for` loop for a run of ≥3 statements in arithmetic progression",
+    flags: [
+      { flag: "--write", description: "apply every non-overlapping suggestion in place and re-verify" },
+      JSON_FLAG,
+      QUIET_FLAG,
+    ],
+    input: "<file.arch|->",
+    output: "suggestions (JSON or a summary), or the rewritten file with --write",
+    examples: [
+      {
+        cmd: "arch reroll plan.arch --json",
+        note: "each candidate run as { span, replacement, count, loopVar, tokensBefore, tokensAfter }",
+      },
+      { cmd: "arch reroll plan.arch --write", note: "splice in every proven loop and re-verify the result compiles" },
+    ],
+  },
+  {
     name: "suggest",
     summary: "advisory topology suggestions as data (door/window statements that resolve reachability/window faults)",
     flags: [JSON_FLAG, QUIET_FLAG],

@@ -25,6 +25,7 @@ import { diagnosticToJson, type DiagnosticJson } from "./diagnostic-json.js";
 import { rankFixes } from "./fix-apply.js";
 import { canonicalFixture, FIXTURE_CATEGORIES, hasFixtureGlyph } from "./elements/fixtures-glyphs.js";
 import { defaultFootprint, fixtureSpec } from "./fixtures-catalog.js";
+import { reroll } from "./reroll.js";
 
 // ---- keyword catalog (one place; T5.4 will source this from grammar/tokens) ----
 
@@ -482,12 +483,16 @@ export function rename(
  */
 export interface CodeAction {
   title: string;
-  kind: "quickfix";
-  /** The diagnostic this action resolves (agent-facing JSON projection). */
-  diagnostic: DiagnosticJson;
+  /** `quickfix` resolves a diagnostic (carries {@link diagnostic}); `refactor.rewrite`
+   *  is an opt-in transform with no diagnostic behind it (a {@link reroll} suggestion) —
+   *  never `isPreferred`, since nothing is WRONG with the source it offers to rewrite. */
+  kind: "quickfix" | "refactor.rewrite";
+  /** The diagnostic this action resolves (agent-facing JSON projection). Present
+   *  on every `quickfix`; absent on a `refactor.rewrite`. */
+  diagnostic?: DiagnosticJson;
   edits: TextEdit[];
   /** True only when this is the single machine-applicable fix on offer — the
-   *  editor may then apply it with one keystroke. */
+   *  editor may then apply it with one keystroke. Always false for `refactor.rewrite`. */
   isPreferred: boolean;
 }
 
@@ -529,7 +534,19 @@ export function codeActions(source: string, range: Span): CodeAction[] {
   // the editor never elevates an ambiguous/placeholder choice to a one-key apply.
   const machine = built.filter((b) => b.machine);
   if (machine.length === 1) machine[0]!.action.isPreferred = true;
-  return built.map((b) => b.action);
+
+  // `reroll` suggestions whose span touches the range — a `refactor.rewrite`, never
+  // `isPreferred` (nothing here is wrong; it is an opt-in restructuring, ADR 0005).
+  const rerollActions: CodeAction[] = reroll(source)
+    .filter((s) => spansTouch(s.span, range))
+    .map((s) => ({
+      title: `Re-roll ${s.count} statements into a \`for\` loop`,
+      kind: "refactor.rewrite",
+      edits: [{ span: s.span, newText: s.replacement }],
+      isPreferred: false,
+    }));
+
+  return [...built.map((b) => b.action), ...rerollActions];
 }
 
 /** Signature help for an enclosing `callee(…)` at `offset`, or null. */

@@ -14,6 +14,7 @@ import {
   repair,
   applyFixes,
   rankFixes,
+  reroll,
   suggestTopology,
   astToJson,
   completion,
@@ -331,6 +332,67 @@ export async function cmdFix(args: Args): Promise<number> {
     }
   }
   return ok ? EXIT.OK : EXIT.USER;
+}
+
+/**
+ * `arch reroll` — offer a proven-equivalent `for` loop for a run of ≥3
+ * consecutive statements in arithmetic progression (Szalinski-style; see
+ * `src/reroll.ts`). Each suggestion is already twin-compiled and byte-checked
+ * before it reaches here, so `--write` applies every non-overlapping one
+ * unconditionally through `applyFixes` and re-verifies with a plain `compile()`
+ * of the result before writing — belt and braces on top of the per-suggestion
+ * proof, never a substitute for it. Never rewrites silently (ADR 0005): with no
+ * `--write`, this only prints what it found.
+ */
+export function cmdReroll(args: Args): number {
+  return withSource(args, (source, input) => {
+    const suggestions = reroll(source);
+
+    if (args.write && input !== "-") {
+      const fixes: FixSuggestion[] = suggestions.map((s) => ({
+        title: `re-roll ${s.count} statements into a \`for ${s.loopVar}\` loop`,
+        applicability: "machine-applicable",
+        edits: [{ span: s.span, newText: s.replacement }],
+      }));
+      const report = applyFixes(source, fixes, { maxApplicability: "machine-applicable" });
+      const changed = report.output !== source;
+      // Belt and braces: the per-suggestion proof already checked each edit in
+      // isolation; re-verify the COMBINED result compiles clean before writing it.
+      const verified = !changed || compile(report.output, { noCache: true }).errors.length === 0;
+      if (changed && verified) writeFileSync(resolvePath(input), report.output, "utf8");
+
+      if (args.json) {
+        emitJson({
+          ok: verified,
+          changed: changed && verified,
+          applied: verified ? report.applied.length : 0,
+          skipped: report.skipped.length,
+          output: resolvePath(input),
+        });
+      } else if (!args.quiet) {
+        if (!verified) process.stderr.write("  ⚠ combined result failed re-verification — nothing written\n");
+        else if (!changed) process.stdout.write(`${input}: no reroll suggestions\n`);
+        else
+          process.stdout.write(
+            `✓ ${input} rerolled (${report.applied.length} loop${report.applied.length === 1 ? "" : "s"})\n`,
+          );
+      }
+      return verified ? EXIT.OK : EXIT.INTERNAL;
+    }
+
+    if (args.json) {
+      emitJson({ ok: true, suggestions });
+    } else if (!args.quiet) {
+      if (suggestions.length === 0) process.stdout.write("no reroll suggestions\n");
+      for (const s of suggestions) {
+        process.stdout.write(
+          `[${s.span.start},${s.span.end}) ${s.count} statements → for ${s.loopVar} ` +
+            `(tokens ${s.tokensBefore} → ${s.tokensAfter})\n${s.replacement}\n\n`,
+        );
+      }
+    }
+    return EXIT.OK;
+  });
 }
 
 /**

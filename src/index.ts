@@ -52,6 +52,11 @@ export type { ApplyReport, ApplyFixesOptions } from "./fix-apply.js";
 export type * from "./ast.js";
 // Source formatter: pure text→text, comment-preserving, idempotent.
 export { format } from "./format.js";
+// `reroll`: detect ≥3 consecutive statements in arithmetic progression and offer
+// a proven-equivalent `for` loop (twin-compiled and byte-checked before it is
+// offered; ADR 0005 — never rewritten silently).
+export { reroll } from "./reroll.js";
+export type { RerollOptions, RerollSuggestion } from "./reroll.js";
 // Vertical circulation: the shared semantics of `stair`/`elevator`/`escalator` —
 // which end a run is entered from, what it does to the nav grid, and (the part that only
 // exists across storeys) which shafts join which `level` blocks. Pure, zero-dep.
