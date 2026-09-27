@@ -16,6 +16,7 @@ import {
   rotateForBackEdge,
   wallBackedEdges,
 } from "../../analyze.js";
+import { actOnQuarterTurn, inverse } from "../../algebra/d4.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { rectsOverlap, wallIntrusionDepth } from "../../geometry/rect.js";
 import { pointInPolygon } from "../../geometry/polygon.js";
@@ -174,7 +175,7 @@ export const fixtureFloating: LintRule = {
  */
 export const fixtureBackToRoom: LintRule = {
   name: "fixture-back-to-room",
-  check({ furniture, ir, rooms, rules, wallSegs, at }: LintContext): Diagnostic[] {
+  check({ furniture, ir, rooms, rules, wallSegs, at, frameOf }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
     // A POLYGON room has no north/south/east/west sides, so "which edge is the back?"
     // has no answer there — the rule declines rather than derive a rotation from a
@@ -193,7 +194,12 @@ export const fixtureBackToRoom: LintRule = {
       const name = f.label ?? f.category;
       const shape = backCandidateEdges(f.size, defaultFootprint(f.category));
       const targets = walled.filter((e) => shape.includes(e));
-      const unique = targets.length === 1 ? rotateForBackEdge(targets[0]!) : null;
+      const facing = targets.length === 1 ? rotateForBackEdge(targets[0]!) : null;
+      // `facing` is the quarter-turn in PLAN space, but the edit lands in the statement's
+      // own source, which for a placed component is its local frame: pull it back through
+      // g⁻¹ (the identity at root, which returns `facing` unchanged).
+      const g = frameOf(f);
+      const unique = facing !== null && g !== null ? actOnQuarterTurn(inverse(g), facing) : null;
       out.push({
         severity: "warning",
         code: "W_FIXTURE_BACK_TO_ROOM",

@@ -32,7 +32,6 @@ import { type CaseContext, lin, type Violation, windowOnTie } from "./d4-oracle.
 
 /** Every pinned class. */
 export type ClassName =
-  | "fix-pullback"
   | "stair-tail"
   | "stair-break-hand"
   | "facing-tie"
@@ -142,19 +141,6 @@ function raster(self: ClassName, def: Omit<RasterClass, "covers">): RasterClass 
 const ADR_0008 = "ADR 0008 (circulation facts are coarse and grid-quantised, ties row-major)";
 
 export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass & Partial<RasterClass>>> = {
-  "fix-pullback": {
-    status: "defect",
-    law: "equivariance",
-    site: "src/lint/rules/furniture.ts:196,207; src/lint/rules/dims.ts:180",
-    summary:
-      "a lint fix is computed from PLAN-space geometry (a fixture's global quarter-turn, a dim's reflected offset) but edits the SHARED component source, so the rewrite is wrong for every placed instance but the unturned one",
-    // Only the two fix-bearing rules that compute from transformed geometry, and only when
-    // the diagnostics themselves agree (a fix difference that follows a diagnostic
-    // difference is that difference's business).
-    covers: (v, c) =>
-      (v.path === "lint.fixture-back-to-room.fixes" || v.path === "lint.dim-overlap.fixes") &&
-      !c.paths.has(v.path.replace(/\.fixes$/, "")),
-  },
   "stair-tail": {
     status: "defect",
     law: "equivariance",
@@ -375,7 +361,6 @@ export interface KnownViolation {
 
 /** What closes each class — one sentence, shared by its rows. */
 const CLOSES: Readonly<Record<ClassName, string>> = {
-  "fix-pullback": "pull the fix back through the inverse frame before editing the component source",
   "stair-tail": "carry the tail edge through the frame (or an authored `entry <edge>`)",
   "stair-break-hand": "mirror the break line when the frame reflects (a `_mirror` flag, as fixtures carry)",
   "facing-tie": "never — declared convention (src/site.ts); the pin moves only if the tie rule does",

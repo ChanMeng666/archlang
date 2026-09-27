@@ -252,40 +252,6 @@ const DRUM = (r: number): string =>
 /** One `it` per witness, keyed by class — the type makes a class without a witness a
  *  compile error, and the last test makes it a red one too. */
 const WITNESSES: Record<ClassName, [string, () => void][]> = {
-  "fix-pullback": [
-    [
-      "STILL rewrites the SHARED component source with a plan-space rotation",
-      () => {
-        const world = makeVirtualWorld({ "lib.arch": MULTI_LIB });
-        const opts = { declare: `import "lib.arch": wing as c`, world };
-        const { p0, gP } = witnessPair("", elementNamed("r90"), opts);
-        const fix = (src: string) =>
-          lint(src, { world })
-            .find((d) => d.code === "W_FIXTURE_BACK_TO_ROOM")
-            ?.fixes?.[0]?.edits.map((e) => e.newText);
-        // Both edits land on the same bytes of lib.arch, so they must say the same thing.
-        expect(fix(p0)).toEqual(["rotate 270"]);
-        expect(fix(gP)).toEqual(["rotate 0"]);
-        reproduce("fix-pullback", "", "r90", "lint.fixture-back-to-room.fixes", opts);
-      },
-    ],
-    [
-      "STILL bumps a mirrored dim's offset with the reflected sign",
-      () => {
-        const body = `${room(4000, 3000)}
-    dim (0,3000)->(4000,3000) offset 400
-    dim (0,3000)->(4000,3000) offset 450`;
-        const { p0, gP } = witnessPair(body, elementNamed("mx"));
-        const bump = (src: string) =>
-          lint(src)
-            .filter((d) => d.code === "W_DIM_OVERLAP")
-            .flatMap((d) => d.fixes?.[0]?.edits.map((e) => e.newText) ?? []);
-        expect(bump(p0)).toEqual(["offset 626"]);
-        expect(bump(gP)).toEqual(["offset -626"]);
-        reproduce("fix-pullback", body, "mx", "lint.dim-overlap.fixes");
-      },
-    ],
-  ],
   "stair-tail": [
     [
       "STILL enters a turned stair from the fixed page end (ADR 0016: 'Limitation, inherited')",
@@ -570,5 +536,46 @@ describe("closed classes — each former witness is now the law", () => {
     }).not.toThrow();
     expect(out!.diagnostics.map((d) => d.code)).toEqual(["E_INSTANCE_NO_TRANSFORM"]);
     expect(out!.diagnostics[0]).toMatchObject({ severity: "error", instance: "g", component: "c" });
+  });
+
+  it("fix-pullback (backlog E.1): a placed component's fixture fix writes the LOCAL quarter-turn, under every g", () => {
+    const world = makeVirtualWorld({ "lib.arch": MULTI_LIB });
+    const opts = { declare: `import "lib.arch": wing as c`, world };
+    const fix = (src: string) =>
+      lint(src, { world })
+        .find((d) => d.code === "W_FIXTURE_BACK_TO_ROOM")
+        ?.fixes?.[0]?.edits.map((e) => e.newText);
+    for (const g of D4_ELEMENTS) {
+      const { p0, gP } = witnessPair("", g, opts);
+      // Both edits land on the same bytes of lib.arch, so they say the same thing.
+      expect(fix(p0), g.name).toEqual(["rotate 270"]);
+      expect(fix(gP), g.name).toEqual(["rotate 270"]);
+      const { vs } = witnessCase("", g, opts);
+      expect(
+        vs.filter((v) => v.path === "lint.fixture-back-to-room.fixes").map((v) => v.key),
+        g.name,
+      ).toEqual([]);
+    }
+  });
+
+  it("fix-pullback (backlog E.1): a placed component's dim bump writes the LOCAL offset, under every g", () => {
+    const body = `${room(4000, 3000)}
+    dim (0,3000)->(4000,3000) offset 400
+    dim (0,3000)->(4000,3000) offset 450`;
+    const bump = (src: string) =>
+      lint(src)
+        .filter((d) => d.code === "W_DIM_OVERLAP")
+        .flatMap((d) => d.fixes?.[0]?.edits.map((e) => e.newText) ?? []);
+    for (const g of D4_ELEMENTS) {
+      const { p0, gP } = witnessPair(body, g);
+      expect(bump(p0), g.name).toEqual(["offset 626"]);
+      // A reflection negated the offset on the way into plan space; the fix negates it back.
+      expect(bump(gP), g.name).toEqual(["offset 626"]);
+      const { vs } = witnessCase(body, g);
+      expect(
+        vs.filter((v) => v.path === "lint.dim-overlap.fixes").map((v) => v.key),
+        g.name,
+      ).toEqual([]);
+    }
   });
 });

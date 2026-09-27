@@ -42,6 +42,7 @@ import {
   sub,
   unit,
 } from "../../geometry.js";
+import { det } from "../../algebra/d4.js";
 import type { Point } from "../../ast.js";
 import type { RDim, RDoor, ROpening, RWindow } from "../../ir.js";
 import { unchainedOpenings } from "../../facade.js";
@@ -164,20 +165,30 @@ export const dimOverlap: LintRule = {
         const other = later === b ? a : b;
         if (seen.has(later.key)) continue;
         seen.add(later.key);
-        const newOffset = retier(later, other, { back, fore, step });
+        // Every offset below is quoted or written in its statement's OWN source. A frame
+        // that reflects negated `offset` on the way into plan space (`dim.transform`), so
+        // the source value is the plan value times det(g); a turn leaves it alone. At root
+        // the sign is 1, and `1 * x` is `x` exactly.
+        const sLater = offsetSign(ctx, later.dm);
+        const sOther = offsetSign(ctx, other.dm);
+        const newOffset = sLater === null ? null : retier(later, other, { back, fore, step }, sLater);
         out.push({
           severity: "warning",
           code: "W_DIM_OVERLAP",
           ...ctx.at(later.dm),
-          message: `Dimension "${later.dm.id}" is drawn over "${other.dm.id}" — both land in the same chain tier (\`offset ${fmt2(later.dm.offset)}\` and \`offset ${fmt2(other.dm.offset)}\`), so their lines and texts collide.`,
-          hints: [`Move one of them out a tier — \`offset ${fmt2(newOffset)}\` clears the other's line and text.`],
+          message: `Dimension "${later.dm.id}" is drawn over "${other.dm.id}" — both land in the same chain tier (\`offset ${fmt2((sLater ?? 1) * later.dm.offset)}\` and \`offset ${fmt2((sOther ?? 1) * other.dm.offset)}\`), so their lines and texts collide.`,
+          hints: [
+            newOffset === null
+              ? "Move one of them out a tier — a larger `offset` on one of them clears the other's line and text."
+              : `Move one of them out a tier — \`offset ${fmt2(newOffset)}\` clears the other's line and text.`,
+          ],
           // A related span is read in the diagnostic's OWN file, so only offer one when the
           // colliding dim was written in that same source — otherwise it would frame
           // unrelated bytes. Same rule `stampProvenance` applies to a `place` span.
           ...(later.dm._file === other.dm._file
             ? { relatedSpans: [{ span: other.span, message: "overlaps this dimension" }] }
             : {}),
-          ...fixesFrom(dimBumpFix(later.dm, newOffset)),
+          ...(newOffset === null ? {} : fixesFrom(dimBumpFix(later.dm, newOffset))),
         });
       }
     }
@@ -322,8 +333,12 @@ function crossBand(t: number, sameSide: boolean, back: number, fore: number): [n
  * 1 in the ordinary case — two dims stacked in one tier — and more only when the
  * neighbour already sits further out. Rounded to whole millimetres, which keeps the
  * rewritten source readable and is orders of magnitude below the clearance it just bought.
+ *
+ * `sign` is {@link offsetSign}: the value is pulled back into the statement's own frame
+ * BEFORE it is rounded, because `Math.round` is not odd (`Math.round(-2.5)` is `-2`), so
+ * negating a rounded plan-space value could miss the source value by 1 mm on a tie.
  */
-function retier(later: Band, other: Band, size: { back: number; fore: number; step: number }): number {
+function retier(later: Band, other: Band, size: { back: number; fore: number; step: number }, sign: 1 | -1): number {
   const { back, fore, step } = size;
   const off = later.dm.offset;
   const dir = off > 0 ? 1 : -1;
@@ -336,7 +351,17 @@ function retier(later: Band, other: Band, size: { back: number; fore: number; st
   // (never `ceil`) so an exact multiple still lands strictly beyond, never touching.
   const need = dir > 0 ? hi + back - off : off - (lo - fore);
   const k = Math.max(1, Math.floor(need / step) + 1);
-  return Math.round(off + dir * k * step);
+  return Math.round(sign * (off + dir * k * step));
+}
+
+/**
+ * The factor that takes a dim's plan-space `offset` back to the one written in its source:
+ * `det(g)` of its instance frame (`-1` under a reflection, which `dim.transform` negates the
+ * offset for; `1` for a turn and at root), or `null` when the frame is unknown.
+ */
+function offsetSign(ctx: LintContext, dm: RDim): 1 | -1 | null {
+  const g = ctx.frameOf(dm);
+  return g === null ? null : det(g);
 }
 
 /**
