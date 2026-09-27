@@ -395,7 +395,9 @@ other diagonal. Not a defect; the pin moves only if the tick convention does.
 Every level now reaches into its own descendants the way the root does: instance groups resolve
 deepest first, and each sees its descendants' walls and rooms carried into its local frame by the
 composed authored `place` frames, named relative to it (`src/ir.ts`, `descendantView`). None
-reaches out. `clinic.arch` and `museum-wings.arch` survive being imported whole (T0 is clean);
+reaches out. Every position or category search sees descendants too (ADR 0016 §3 addendum), and
+an opening registers on its wall by the host's wall id, not its endpoint coordinates (which two
+float evaluation orders can split at grid 0). `clinic.arch` and `museum-wings.arch` survive being imported whole (T0 is clean);
 clinic's T1–T3 runs, vacuous until then, surfaced only existing classes (`raster-tie`,
 `threshold-carve`, `slide-track`, `dim-text-side`, `dim-tick-hand`), pinned per element. Pins
 deleted; the witness is now the law (`test/equivariance-corpus.test.ts`, "closed classes";
