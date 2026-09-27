@@ -277,6 +277,87 @@ say how a per-category rule composes with the existing per-kind one.
 
 ---
 
+## Equivariance findings
+
+`place … rotate r mirror m` must carry every fact through the frame's D4 ⋉ Z² action. The oracle
+(`test/d4-oracle.ts`; suites `test/equivariance-{corpus,scene,fuzz}.test.ts`) measures that law, and
+every violation it finds is pinned in `test/equivariance-known.ts`: a new one fails as `NEW`, a
+closed one as `FIXED` until its pin and its `STILL …` witness are deleted. Each entry below is one
+pinned class; the gate for closing it is that suite going `FIXED` for exactly that class.
+
+### E.1 · `fix-pullback` — lint fixes rewrite a shared component in plan coordinates — `todo`
+
+`W_FIXTURE_BACK_TO_ROOM` (`src/lint/rules/furniture.ts:196,207`) and `W_DIM_OVERLAP`
+(`src/lint/rules/dims.ts:180`) compute their edit from the resolved, frame-transformed element, but
+the edit lands in the component's own source. A `rotate 90` instance proposes `rotate 0` where the
+unturned one proposes `rotate 270`; a mirrored dim proposes `offset -626` for `offset 626`. Close by
+pulling the fix back through the inverse frame.
+
+### E.2 · `stair-tail` — a vertical run's arrow and entry edge ignore the frame — `todo`
+
+`tailEdge` (`src/vertical.ts:98`) is the fixed page rule "larger-coordinate end of the long axis", so
+a turned `stair`/`escalator` draws its arrow the wrong way and the nav grid opens the wrong landing.
+Close by carrying the tail edge through the frame, or with the `entry <edge>` clause the module
+already anticipates.
+
+### E.3 · `stair-break-hand` — a mirrored stair keeps its break line's hand — `todo`
+
+The break-line diagonals (`src/elements/vertical-glyphs.ts:144`) are drawn in the run frame with a
+fixed handedness; nothing tells a reflected stair to mirror them, as `_mirror` does for fixtures.
+
+### E.4 · `plugin-throw` — a plugin element inside `place` throws — `todo`
+
+`transformGeometry` (`src/frame.ts:303`) has no arm for a registry kind it does not know, so
+`transformElement` dereferences `undefined` and `compile()` throws. Close with an element-module
+transform hook (or a catalogued diagnostic), never a thrown error.
+
+### E.5 · `facing-tie` — a corner or 45° window resolves its tie N/S-first — `declared`
+
+`windowFacingPage` (`src/site.ts:191,206`) breaks a tie horizontal-first by stated convention, which
+an axis swap does not commute with. Not a defect; the pin moves only if the convention does.
+
+### E.6 · `raster-tie` — the nav grid breaks ties in page order — `todo`
+
+Even on a lattice every D4 element maps onto itself, `cellOf` (`src/analyze/circulation.ts:285`)
+floors a boundary point to the +x/+y cell and a room's anchor (`:962-986`) is the lowest-index of
+equidistant cells, so a turn or flip moves walks, bottlenecks and the sealed set by a cell and
+flips the raster lint rules. Close with a D4-symmetric tie-break.
+
+### E.7 · `float-translation` — circulation changes under a pure translation — `todo`
+
+The nav grid samples curved and tessellated boundaries in absolute float coordinates, so a 20 m
+translation moves a boundary across a cell centre by an ulp (`aquarium` detour 1.01 → 1, `library`
+reading-room walk 25500 → 25300). Close by sampling relative to the grid's own origin.
+
+### E.8 · `slide-track` — a mirrored sliding door swaps its panels' tracks — `todo`
+
+`renderDoorPanels` (`src/elements/door-panels.ts:135-136`) puts the fixed panel on `n * off * sd`,
+the wall's left normal times `slide`; a reflection flips the normal and not `slide`. Close by
+flipping with the frame's determinant, as `swing` is.
+
+### E.9 · `column-corner` — the frame carries a column's corner as a centre — `todo`
+
+`transformGeometry`'s `column` arm (`src/frame.ts:393-398`) treats `at` as the centre;
+`src/elements/column.ts` lays it out as the top-left. Every element but the identity and the
+transposition draws the column one size off (and can move the drawing extent the sheet fit reads).
+Close with `transformRect`.
+
+### E.10 · `dim-text-side` — a mirrored dim's number lands inside its line — `todo`
+
+A reflection negates `offset` (`src/frame.ts:392`) but the number is always drawn on the from→to
+left normal (`src/elements/dim.ts:320`), so it moves between the line and what it measures. Close by
+drawing on `sign(offset)` of the normal, or by reflecting through the endpoint order.
+
+### E.11 · `nested-ref` — a reference into a nested instance fails once its plan is placed — `todo`
+
+An instance group resolves against its own walls and rooms only (`src/ir.ts:1773`), and a nested
+instance's elements go straight to plan space, so `in c2.main anchor …` and `on west.shell at …`
+work at the root and fail inside a component (`E_PLACE_REF`, `E_ATTACH_WALL_REF`). This is why
+`clinic.arch` and `museum-wings.arch` do not survive being imported whole. Close by resolving a
+component's references against its nested instances' transformed elements.
+
+---
+
 ## Wave 5 — deferred by name in v1.28.0 / v1.29.0
 
 Each of these was **named in `CHANGELOG.md` at the time it was skipped**, not quietly omitted, so
