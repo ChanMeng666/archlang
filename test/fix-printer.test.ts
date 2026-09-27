@@ -84,17 +84,29 @@ describe("emitOpening preserves every clause it was not asked to change (incl. s
     { name: "hinge flip (right)", run: (k, n) => emitOpening(k, n, { hinge: "right" }) },
   ];
 
-  for (const node of HEIGHTS_OPENINGS) {
-    const original = printDoc(statementText(node));
-    const sillClause = /\bsill [^\s]+/.exec(original)?.[0];
-    const headClause = /\bhead [^\s]+/.exec(original)?.[0];
-    for (const { name, run } of OPS) {
-      it(`${node.kind} ${node.id ?? "<anon>"} — ${name} keeps ${sillClause ? "`" + sillClause + "` " : ""}${headClause ? "`" + headClause + "`" : ""}`, () => {
+  // One `it()` per op, looping every heights-carrying opening internally and
+  // collecting every failure — one `it()` per (opening, op) pair would otherwise put
+  // thousands of cases in the suite for no more signal than a single assertion over
+  // the whole set gives.
+  for (const { name, run } of OPS) {
+    it(`${name} (over ${HEIGHTS_OPENINGS.length} heights-carrying openings)`, () => {
+      const failures: string[] = [];
+      for (const node of HEIGHTS_OPENINGS) {
+        const original = printDoc(statementText(node));
+        const sillClause = /\bsill [^\s]+/.exec(original)?.[0];
+        const headClause = /\bhead [^\s]+/.exec(original)?.[0];
         const out = run(node.kind, node);
-        if (sillClause) expect(out).toContain(sillClause);
-        if (headClause) expect(out).toContain(headClause);
-      });
-    }
+        const missing: string[] = [];
+        if (sillClause && !out.includes(sillClause)) missing.push(sillClause);
+        if (headClause && !out.includes(headClause)) missing.push(headClause);
+        if (missing.length > 0) {
+          failures.push(`${node.kind} ${node.id ?? "<anon>"}: missing ${missing.join(", ")} in "${out}"`);
+        }
+      }
+      expect(failures.length, `${failures.length}/${HEIGHTS_OPENINGS.length} dropped a clause:\n\n${failures.slice(0, 10).join("\n")}`).toBe(
+        0,
+      );
+    });
   }
 });
 

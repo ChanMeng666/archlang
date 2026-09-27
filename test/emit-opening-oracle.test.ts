@@ -159,35 +159,45 @@ const REAL_OPTS: { name: string; opts: LegacyEmitOpts; onlyDoors?: boolean }[] =
   { name: "door hinge-flip right", opts: { hinge: "right" }, onlyDoors: true },
 ];
 
+/** Only assert byte-identity for statements the old printer could have handled
+ *  faithfully — i.e. no sill/head. A statement WITH one is exactly the case W4b
+ *  fixes, and is counted (and pinned by its own, separate law) in `fix-printer.test.ts`. */
+const HEIGHTS_FREE_OPENINGS = ALL_OPENINGS.filter(
+  (n) => !(("sill" in n && n.sill !== undefined) || n.head !== undefined),
+);
+const HEIGHTS_CARRYING_COUNT = ALL_OPENINGS.length - HEIGHTS_FREE_OPENINGS.length;
+
 describe("emitOpening === legacyEmitOpening (byte-identity, no sill/head/heights)", () => {
   it(`ran over a non-trivial corpus (${ALL_OPENINGS.length} openings, ${CORPUS_SOURCES.length} files + ${FUZZ_SOURCES.length} fuzz seeds)`, () => {
     expect(ALL_OPENINGS.length).toBeGreaterThan(20);
   });
 
-  let heightsCarryingCount = 0;
-
-  for (const node of ALL_OPENINGS) {
-    // Only assert byte-identity for statements the old printer could have handled
-    // faithfully — i.e. no sill/head. A statement WITH one is exactly the case W4b
-    // fixes, and is counted (and its own, separate law) below.
-    const hasHeights = ("sill" in node && node.sill !== undefined) || node.head !== undefined;
-    if (hasHeights) {
-      heightsCarryingCount++;
-      continue;
-    }
-    for (const { name, opts, onlyDoors } of REAL_OPTS) {
-      if (onlyDoors && node.kind !== "door") continue;
-      const id = node.id ?? "<anon>";
-      it(`${node.kind} ${id} — ${name}`, () => {
-        expect(emitOpening(node.kind, node, opts)).toBe(legacyEmitOpening(node.kind, node, opts));
-      });
-    }
-  }
-
-  it("counted the heights-carrying openings excluded from the byte-identity assertion above", () => {
+  it("counted the heights-carrying openings excluded from the byte-identity assertion below", () => {
     // See the report for the exact count and which files/seeds carry one — this
     // count is a fact about today's corpus, not a law, so it is not pinned to a
     // literal here (a corpus change should not need this test edited).
-    expect(heightsCarryingCount).toBeGreaterThanOrEqual(0);
+    expect(HEIGHTS_CARRYING_COUNT).toBeGreaterThanOrEqual(0);
   });
+
+  // One `it()` per real `EmitOpts` combination, looping every heights-free opening
+  // internally and collecting every mismatch, rather than one `it()` per
+  // (opening, opts) pair — thousands of cases would otherwise balloon the suite's
+  // test count for no more signal than a single assertion over the whole set gives.
+  for (const { name, opts, onlyDoors } of REAL_OPTS) {
+    it(`${name} (over ${HEIGHTS_FREE_OPENINGS.length} heights-free openings${onlyDoors ? ", doors only" : ""})`, () => {
+      const failures: string[] = [];
+      let ran = 0;
+      for (const node of HEIGHTS_FREE_OPENINGS) {
+        if (onlyDoors && node.kind !== "door") continue;
+        ran++;
+        const got = emitOpening(node.kind, node, opts);
+        const want = legacyEmitOpening(node.kind, node, opts);
+        if (got !== want) {
+          failures.push(`${node.kind} ${node.id ?? "<anon>"}:\n  got:  ${got}\n  want: ${want}`);
+        }
+      }
+      expect(ran, "the filter above matched zero openings — this assertion is vacuous").toBeGreaterThan(0);
+      expect(failures.length, `${failures.length}/${ran} mismatched:\n\n${failures.slice(0, 10).join("\n\n")}`).toBe(0);
+    });
+  }
 });
