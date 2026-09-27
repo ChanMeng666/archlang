@@ -922,7 +922,12 @@ function validateColumn(c: unknown, path: string, val: Validator): void {
 
 // ---- canonical .arch emission ---------------------------------------------
 
-/** Deterministic number → source token (no scientific notation; normalize -0). */
+/** Deterministic number → source token (no scientific notation; normalize -0).
+ *  Deliberately full-precision `String(n)`, NOT `src/num-format.ts`'s 3-dp `fmt3`
+ *  (`statement-print.ts`'s `numStr`): Plan JSON round-trips a RESOLVED, already-rounded
+ *  number, so re-quantizing it here would only lose precision a second time for
+ *  nothing — this emitter also never touches `statement-print.ts`, since it prints from
+ *  validated JSON values, not the `Expr` AST that module's leaf printer takes. */
 function num(n: number): string {
   if (Object.is(n, -0)) return "0";
   return String(n);

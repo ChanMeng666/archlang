@@ -10,7 +10,8 @@ import type { SceneNode } from "../scene.js";
 import type { RDim } from "../ir.js";
 import { add, length, mul, normal, projectToWallFace, segmentsOfWall, sub, unit } from "../geometry.js";
 import { arcPointAt, diameterText, radiusText } from "../geometry/arc.js";
-import { exprToSource } from "../expr-source.js";
+import { printDoc } from "../doc.js";
+import { statementText } from "../statement-print.js";
 import { fmt2 } from "../num-format.js";
 import { DIM_TEXT_GAP, textWidth } from "../text-metrics.js";
 
@@ -57,13 +58,17 @@ function outsideStations(dm: RDim, label: string, dimFont: number): number {
 
 /** Re-emit a dim statement with its two endpoints SWAPPED — the machine-applicable
  *  fix for `W_DIM_INSIDE` (endpoint order is what chooses the offset side, so
- *  swapping flips the dimension line to the outside). Every clause the node can
- *  carry is enumerated here, so a rebuild never silently drops one. */
+ *  swapping flips the dimension line to the outside). Delegates to the one shared
+ *  leaf-statement printer (`statement-print.ts`) rather than re-enumerating `dim`'s
+ *  clauses a second time, so a rebuild can never silently drop one that `arch fmt`
+ *  still prints. */
 function emitSwapped(n: DimNode): string {
-  const pt = (p: ExprPoint): string => `(${exprToSource(p.x)}, ${exprToSource(p.y)})`;
-  const ref = n.ref ? `${n.ref} ` : "";
-  const text = n.text !== undefined ? ` text ${exprToSource(n.text)}` : "";
-  return `dim ${ref}${pt(n.to)}->${pt(n.from)} offset ${exprToSource(n.offset)}${text}`;
+  const swapped = statementText({ ...n, from: n.to, to: n.from });
+  // Every leaf kind except `wall`/`strip` prints flat text (no `group`/`line` — `dim`
+  // has no point list to wrap), and `dim` is the one this call site actually uses, so
+  // this never takes the `printDoc` branch; it exists only so the TYPE admits what is
+  // already true at runtime, without an unsound cast.
+  return typeof swapped === "string" ? swapped : printDoc(swapped, 80);
 }
 
 /**
