@@ -149,6 +149,14 @@ describe("the public type surface is closed", () => {
     expect(reachable.get("AccessRoomNode")).toBe("src/analyze.ts");
   });
 
+  it("exports the LSP code-action surface: the quickfix pair and the separate refactor pair", () => {
+    // `codeActions`/`CodeAction` keep their historical quickfix-only contract; the re-roll
+    // refactor is its own additive pair, so an embedder can name both result types.
+    for (const name of ["codeActions", "CodeAction", "refactorActions", "RefactorAction"]) {
+      expect(exportedFromIndex.has(name), `${name} must be exported from src/index.ts`).toBe(true);
+    }
+  });
+
   it("exports every src/ type reachable from SceneSummary", () => {
     const missing = [...reachable.entries()]
       .filter(([name]) => !exportedFromIndex.has(name))

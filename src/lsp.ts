@@ -27,10 +27,10 @@ import { canonicalFixture, FIXTURE_CATEGORIES, hasFixtureGlyph } from "./element
 import { defaultFootprint, fixtureSpec } from "./fixtures-catalog.js";
 // `rerollInRange`, not the public `reroll`: it filters candidate runs to those
 // touching the request's range BEFORE proving any of them — see its own doc
-// comment in reroll.ts. `codeActions` is called on every selection change, so
+// comment in reroll.ts. `refactorActions` is called on selection changes, so
 // proving a candidate the request doesn't even overlap would be wasted work
 // on a large plan (library.arch, museum.arch).
-import { rerollInRange } from "./reroll.js";
+import { rerollInRange, type RerollOptions } from "./reroll.js";
 
 // ---- keyword catalog (one place; T5.4 will source this from grammar/tokens) ----
 
@@ -488,16 +488,12 @@ export function rename(
  */
 export interface CodeAction {
   title: string;
-  /** `quickfix` resolves a diagnostic (carries {@link diagnostic}); `refactor.rewrite`
-   *  is an opt-in transform with no diagnostic behind it (a {@link reroll} suggestion) —
-   *  never `isPreferred`, since nothing is WRONG with the source it offers to rewrite. */
-  kind: "quickfix" | "refactor.rewrite";
-  /** The diagnostic this action resolves (agent-facing JSON projection). Present
-   *  on every `quickfix`; absent on a `refactor.rewrite`. */
-  diagnostic?: DiagnosticJson;
+  kind: "quickfix";
+  /** The diagnostic this action resolves (agent-facing JSON projection). */
+  diagnostic: DiagnosticJson;
   edits: TextEdit[];
   /** True only when this is the single machine-applicable fix on offer — the
-   *  editor may then apply it with one keystroke. Always false for `refactor.rewrite`. */
+   *  editor may then apply it with one keystroke. */
   isPreferred: boolean;
 }
 
@@ -505,94 +501,73 @@ export interface CodeAction {
 const spansTouch = (a: Span, b: Span): boolean => a.start <= b.end && a.end >= b.start;
 
 /**
- * The action kinds this module produces — `quickfix` (resolves a diagnostic)
- * and `refactor.rewrite` (a {@link reroll} suggestion). Mirrors LSP's own
- * hierarchical kind strings (`"refactor"` is an ancestor of
- * `"refactor.rewrite"`), so {@link kindWanted} matches a `codeActions(…,
- * only: ["refactor"])` request the way a real LSP client's `only` filter
- * would.
+ * Quickfix code actions for the diagnostics overlapping `range` — one action per
+ * {@link import("./diagnostics.js").FixSuggestion} on those diagnostics. Pure: it
+ * re-resolves the source (the fixes are attached during resolve) and projects each
+ * suggestion's edits (already in original-source byte coordinates) to
+ * {@link TextEdit}s. `isPreferred` is set only when exactly one machine-applicable
+ * action is produced, so the editor never auto-elevates an ambiguous choice.
  */
-const ACTION_KIND: Record<"quickfix" | "refactorRewrite", string> = {
-  quickfix: "quickfix",
-  refactorRewrite: "refactor.rewrite",
-};
-
-/** Is `kind` requested by an LSP `CodeActionContext.only` list? Absent `only`
- *  (`undefined`) wants everything — the backward-compatible default. An entry
- *  matches `kind` exactly, or as an ANCESTOR in the dotted hierarchy
- *  (`"refactor"` wants `"refactor.rewrite"`, mirroring how real LSP clients
- *  request "refactor.*"). */
-function kindWanted(kind: string, only: readonly string[] | undefined): boolean {
-  if (only === undefined) return true;
-  return only.some((o) => o === kind || kind.startsWith(`${o}.`));
-}
-
-/**
- * Code actions touching `range`: `quickfix`es for the diagnostics overlapping
- * it — one action per {@link import("./diagnostics.js").FixSuggestion} on
- * those diagnostics — and `refactor.rewrite`s for the {@link reroll}
- * suggestions whose span touches it. Pure: it re-resolves the source (the
- * fixes are attached during resolve) and projects each suggestion's edits
- * (already in original-source byte coordinates) to {@link TextEdit}s.
- * `isPreferred` is set only when exactly one machine-applicable quickfix is
- * produced, so the editor never auto-elevates an ambiguous choice; a
- * `refactor.rewrite` is never preferred (ADR 0005 — nothing is WRONG with the
- * source it offers to restructure).
- *
- * `only` mirrors the LSP request's `CodeActionContext.only` (the kinds the
- * CLIENT is asking for): when it excludes every refactor kind, `reroll` is
- * never even called — not just filtered out afterward — since PROVING a
- * candidate (compiling/describing/linting its twin) is the expensive part of
- * this call and an editor asks on every selection change. Absent `only`
- * (`undefined`, the historical call shape) still offers refactors, filtered
- * to `range` before they are proven either way — see `rerollInRange`.
- */
-export function codeActions(source: string, range: Span, only?: readonly string[]): CodeAction[] {
-  const built: CodeAction[] = [];
-  if (kindWanted(ACTION_KIND.quickfix, only)) {
-    const { diagnostics } = resolvePlan(source);
-    // Build each action, remembering its applicability so a lone machine-applicable
-    // one can be marked preferred afterward.
-    const quickfixes: Array<{ action: CodeAction; machine: boolean }> = [];
-    for (const d of diagnostics) {
-      if (!d.span || !d.fixes?.length || !spansTouch(d.span, range)) continue;
-      const dj = diagnosticToJson(source, d);
-      // Present a diagnostic's mutually-exclusive alternatives in one canonical
-      // order (identity on today's singleton arrays).
-      for (const fix of rankFixes(d.fixes)) {
-        quickfixes.push({
-          machine: fix.applicability === "machine-applicable",
-          action: {
-            title: fix.title,
-            kind: "quickfix",
-            diagnostic: dj,
-            edits: fix.edits.map((e) => ({ span: e.span, newText: e.newText })),
-            isPreferred: false,
-          },
-        });
-      }
-    }
-    // A lone machine-applicable fix is the preferred action; otherwise none is, so
-    // the editor never elevates an ambiguous/placeholder choice to a one-key apply.
-    const machine = quickfixes.filter((b) => b.machine);
-    if (machine.length === 1) machine[0]!.action.isPreferred = true;
-    built.push(...quickfixes.map((b) => b.action));
-  }
-
-  if (kindWanted(ACTION_KIND.refactorRewrite, only)) {
-    // Filters candidates to `range` BEFORE proving any of them (see its own
-    // doc comment) — the point of threading `only` through at all.
-    for (const s of rerollInRange(source, range)) {
+export function codeActions(source: string, range: Span): CodeAction[] {
+  const { diagnostics } = resolvePlan(source);
+  // Build each action, remembering its applicability so a lone machine-applicable
+  // one can be marked preferred afterward.
+  const built: Array<{ action: CodeAction; machine: boolean }> = [];
+  for (const d of diagnostics) {
+    if (!d.span || !d.fixes?.length || !spansTouch(d.span, range)) continue;
+    const dj = diagnosticToJson(source, d);
+    // Present a diagnostic's mutually-exclusive alternatives in one canonical
+    // order (identity on today's singleton arrays).
+    for (const fix of rankFixes(d.fixes)) {
       built.push({
-        title: `Re-roll ${s.count} statements into a \`for\` loop`,
-        kind: "refactor.rewrite",
-        edits: [{ span: s.span, newText: s.replacement }],
-        isPreferred: false,
+        machine: fix.applicability === "machine-applicable",
+        action: {
+          title: fix.title,
+          kind: "quickfix",
+          diagnostic: dj,
+          edits: fix.edits.map((e) => ({ span: e.span, newText: e.newText })),
+          isPreferred: false,
+        },
       });
     }
   }
+  // A lone machine-applicable fix is the preferred action; otherwise none is, so
+  // the editor never elevates an ambiguous/placeholder choice to a one-key apply.
+  const machine = built.filter((b) => b.machine);
+  if (machine.length === 1) machine[0]!.action.isPreferred = true;
+  return built.map((b) => b.action);
+}
 
-  return built;
+// ---- refactor actions (re-roll) ----
+
+/**
+ * An editor refactor derived from a `reroll` suggestion: a titled bundle of
+ * {@link TextEdit}s that rewrites a run of statements in arithmetic progression as one
+ * proven-equivalent `for` loop. Structurally what an LSP `CodeAction` of kind
+ * `refactor.rewrite` needs. It carries no diagnostic — nothing is WRONG with the source
+ * it offers to restructure (ADR 0005) — so it is never preferred and is a separate type
+ * from the diagnostic-bound {@link CodeAction}.
+ */
+export interface RefactorAction {
+  title: string;
+  kind: "refactor.rewrite";
+  edits: TextEdit[];
+}
+
+/**
+ * Refactor actions touching `range`: one `refactor.rewrite` per `reroll`
+ * suggestion whose span touches it. Pure and synchronous. Candidates are filtered to
+ * `range` BEFORE any of them is proven (`rerollInRange`), since the proof — compiling,
+ * describing and linting each candidate's twin — is the expensive part and an editor
+ * asks on selection changes. `opts.world`/`opts.plugins` are threaded through as
+ * `reroll` takes them. `[]` on a plan that fails to parse or carries any error.
+ */
+export function refactorActions(source: string, range: Span, opts: RerollOptions = {}): RefactorAction[] {
+  return rerollInRange(source, range, opts).map((s) => ({
+    title: `Re-roll ${s.count} statements into a \`for\` loop`,
+    kind: "refactor.rewrite",
+    edits: [{ span: s.span, newText: s.replacement }],
+  }));
 }
 
 /** Signature help for an enclosing `callee(…)` at `offset`, or null. */

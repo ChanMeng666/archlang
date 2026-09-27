@@ -14,6 +14,7 @@ import { compileUncached } from "./pipeline.js";
 import { clearLexCache } from "./lexer.js";
 import { clearParseCache } from "./parser.js";
 import { clearResolveCache } from "./ir.js";
+import { resetRerollCache } from "./reroll.js";
 import { idToken } from "./identity.js";
 import type { CompileOptions, CompileResult } from "./types.js";
 
@@ -247,8 +248,25 @@ export type { ArchBlock } from "./markdown.js";
 // Language services: pure LSP core (hover/completion/definition/rename/
 // signature help) over the CST cursor + registry schemas. The VS Code server is
 // a thin adapter; these are isomorphic and unit-testable.
-export { hover, completion, definition, rename, signatureHelp, codeActions, COMPLETION_KINDS } from "./lsp.js";
-export type { HoverResult, CompletionItem, CompletionKind, TextEdit, SignatureResult, CodeAction } from "./lsp.js";
+export {
+  hover,
+  completion,
+  definition,
+  rename,
+  signatureHelp,
+  codeActions,
+  refactorActions,
+  COMPLETION_KINDS,
+} from "./lsp.js";
+export type {
+  HoverResult,
+  CompletionItem,
+  CompletionKind,
+  TextEdit,
+  SignatureResult,
+  CodeAction,
+  RefactorAction,
+} from "./lsp.js";
 // Topology suggestions: advisory, never-applied `.arch` statements that
 // would resolve a room-unreachable / bedroom-no-window fault (`arch suggest`).
 // Data only (ADR 0005) — pure, deterministic, zero-dep.
@@ -481,10 +499,11 @@ export function compile(source: string, opts: CompileOptions = {}): CompileResul
   return result;
 }
 
-/** Clear the internal compile cache + all per-stage memos (lex/parse/resolve). */
+/** Clear the internal compile cache + all per-stage memos (lex/parse/resolve) and the `reroll` baseline memo. */
 export function clearCache(): void {
   cache.clear();
   clearLexCache();
   clearParseCache();
   clearResolveCache();
+  resetRerollCache();
 }

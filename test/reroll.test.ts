@@ -4,12 +4,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  clearCache,
   codeActions,
   compile,
   describe as describePlan,
   format,
   lint,
   makeVirtualWorld,
+  refactorActions,
   reroll,
 } from "../src/index.js";
 // `proves`/`compileForProof` are internal (not re-exported from src/index.js —
@@ -529,26 +531,85 @@ describe("reroll — the proof obligation rejects a WRONG replacement (MAJOR 4, 
 });
 
 // --------------------------------------------------------------------------
-// LSP: codeActions offers a reroll suggestion as a refactor.rewrite action.
+// LSP: `refactorActions` offers a reroll suggestion as a refactor.rewrite
+// action; `codeActions` keeps its historical quickfix-only contract.
 // --------------------------------------------------------------------------
 
-describe("reroll — LSP code action", () => {
-  it("codeActions offers the suggestion, as kind refactor.rewrite, never preferred", () => {
+describe("reroll — LSP refactor action", () => {
+  it("refactorActions offers the suggestion, as kind refactor.rewrite, with no diagnostic", () => {
     const at = FLAT_ROW.indexOf("wall exterior");
-    const actions = codeActions(FLAT_ROW, { start: at, end: at });
-    const rerollActions = actions.filter((a) => a.kind === "refactor.rewrite");
-    expect(rerollActions.length).toBeGreaterThan(0);
-    for (const a of rerollActions) {
-      expect(a.isPreferred).toBe(false);
-      expect(a.diagnostic).toBeUndefined();
-      expect(a.edits.length).toBe(1);
-    }
+    const actions = refactorActions(FLAT_ROW, { start: at, end: at });
+    expect(actions.length).toBe(1);
+    const [a] = actions;
+    const [s] = reroll(FLAT_ROW).filter((r) => r.span.start <= at && r.span.end >= at);
+    expect(a).toEqual({
+      title: `Re-roll ${s!.count} statements into a \`for\` loop`,
+      kind: "refactor.rewrite",
+      edits: [{ span: s!.span, newText: s!.replacement }],
+    });
+    expect(a).not.toHaveProperty("diagnostic");
+    expect(a).not.toHaveProperty("isPreferred");
   });
 
-  it("offers nothing when the range does not touch any suggestion's span", () => {
+  it("refactorActions offers nothing when the range does not touch any suggestion's span", () => {
     // Offset 0 is the `plan` keyword — before every statement's span.
-    const actions = codeActions(FLAT_ROW, { start: 0, end: 1 });
-    expect(actions.filter((a) => a.kind === "refactor.rewrite")).toEqual([]);
+    expect(refactorActions(FLAT_ROW, { start: 0, end: 1 })).toEqual([]);
+  });
+
+  it("codeActions on a plan with a re-rollable run returns quickfixes only, each with a diagnostic", () => {
+    // The historical call shape: an embedder mapping `a.diagnostic.code` must never meet
+    // an action without one. The row plus one off-wall door (a warning with a quick fix,
+    // so the plan still re-rolls); the whole-document range touches all three runs.
+    const src = FLAT_ROW.replace(/\n\}\s*$/, "\n  door id=stray at (2500,9000) width 900\n}\n");
+    expect(reroll(src).length).toBe(3);
+    const actions = codeActions(src, { start: 0, end: src.length });
+    expect(actions.length).toBeGreaterThan(0);
+    for (const a of actions) {
+      expect(a.kind).toBe("quickfix");
+      expect(typeof a.diagnostic.code).toBe("string");
+    }
+    expect(actions.map((a) => a.diagnostic.code)).toContain("W_DOOR_OFF_WALL");
+  });
+});
+
+describe("reroll — baseline memo", () => {
+  // A World whose module text the test mutates in place: the SAME world object (identity
+  // is the memo key) reads a broken module first, then a fixed one.
+  const files: Record<string, string> = {};
+  const world = { read: (p: string) => files[p.replace(/^\.\//, "")] ?? null };
+  const GOOD_LIB = `plan "Lib" {\n  units mm\n  component marker() {\n    column at (0, 0) size 100x100\n  }\n}`;
+  const src = format(`plan "Imports" {
+    units mm
+    grid 50
+    north up
+    import "lib.arch": marker
+    marker()
+    furniture bed at (0, 0) size 1000x2000
+    furniture bed at (4000, 0) size 1000x2000
+    furniture bed at (8000, 0) size 1000x2000
+  }`);
+
+  afterEach(() => clearCache());
+
+  it("never memoizes a failed baseline: fixing the imported module is seen on the next call", () => {
+    clearCache();
+    delete files["lib.arch"];
+    expect(reroll(src, { world })).toEqual([]);
+    files["lib.arch"] = GOOD_LIB;
+    // No clearCache() in between: the failure was never cached.
+    expect(reroll(src, { world }).length).toBe(1);
+  });
+
+  it("clearCache() empties the memo: a module changed after a success is re-baselined once the cache is cleared", () => {
+    clearCache();
+    files["lib.arch"] = GOOD_LIB;
+    expect(reroll(src, { world }).length).toBe(1);
+    // Still a valid module, but it draws a different column. A stale baseline (the OLD
+    // column) would disagree with every twin (the NEW column), so the proof would refuse
+    // the re-roll; a fresh one agrees with it.
+    files["lib.arch"] = GOOD_LIB.replace("size 100x100", "size 200x200");
+    clearCache();
+    expect(reroll(src, { world }).length).toBe(1);
   });
 });
 

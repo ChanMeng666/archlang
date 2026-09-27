@@ -309,10 +309,7 @@ export function makeTransformCtx(f: Frame, id: string): TransformCtx {
  * plugin kind with no `transform`). `inherited` marks the fallback: the action belongs to
  * a DIFFERENT def than the one that resolved `el`.
  */
-function transformOf(
-  el: ResolvedElement,
-  def?: ElementDef,
-): { action: ElementDef["transform"]; inherited: boolean } {
+function transformOf(el: ResolvedElement, def?: ElementDef): { action: ElementDef["transform"]; inherited: boolean } {
   if (def?.transform) return { action: def.transform, inherited: false };
   const builtin = BUILTIN_REGISTRY.byKind.get(el.kind);
   return { action: builtin?.transform, inherited: def !== undefined && def !== builtin };
