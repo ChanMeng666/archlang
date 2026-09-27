@@ -195,11 +195,11 @@ invisible.
 
 ### G.10 · A `place`d plan does not round-trip through Plan JSON — `todo` (the projection half is done)
 
-**Landed: the projection carries the reflection.** `planToJson` now emits `mirror: true` on a fixture
-a reflecting `place` frame drew as the mirror image of its symbol (the IR's `_mirror`), beside the
-quarter-turn it already carried as `rotate` — the `Fx` in `M · R(l) = R(m − l) · Fx` that `rotate`
-cannot say. The key rides the frame's fact, not the glyph's: every fixture in a reflecting instance
-gets it, symmetric families included. A reflection-free plan's payload is byte-identical (no key).
+**Landed: the projection carries the reflection.** `planToJson` now emits `mirror: true` on every
+fixture inside a reflecting `place` frame (the IR's `_mirror`), beside the quarter-turn it already
+carried as `rotate` — the `Fx` in `M · R(l) = R(m − l) · Fx` that `rotate` cannot say. The key rides
+the frame's fact, not the glyph's: symmetric families carry it too, though only a handed one draws
+differently. A reflection-free plan's payload is byte-identical (no key).
 
 **Landed: the way back refuses rather than approximates.** Source has no per-furniture `mirror` — only
 a `place … mirror x|y` frame reflects a symbol — so `planJsonToArch`/`planFromJson` answer a

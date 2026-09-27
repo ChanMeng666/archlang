@@ -496,7 +496,7 @@
           },
           "mirror": {
             "type": "boolean",
-            "description": "The drawn symbol is the mirror image of the catalogued one (a reflecting `place` frame). Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR."
+            "description": "True on every fixture inside a reflecting `place` frame: it records the frame's reflection, not the glyph's handedness, so a symmetric symbol carries it too (a handed one is drawn as its mirror image). Absent otherwise. Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR."
           },
           "centered": {
             "type": "boolean",

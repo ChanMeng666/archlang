@@ -591,6 +591,15 @@ describe("plan-json — G.10: a frame's reflection is projected", () => {
     expect("mirror" in a).toBe(false);
     expect(shape(b)).toEqual({ ...shape(a), mirror: true });
 
+    // The flag records the FRAME's reflection, not the glyph's handedness: a `table` at
+    // 1600x900 draws byte-identically mirrored or not (test/glyph-chirality.test.ts), and a
+    // reflecting instance still marks it.
+    const withTable = (m: string): string =>
+      placed(m).replace("size 1400x700\n", "size 1400x700\n    furniture id=t table at (500,1500) size 1600x900\n");
+    const table = (m: string) => planToJson(withTable(m)).json?.furniture?.find((f) => f.category === "table");
+    expect(table(" mirror x")?.mirror).toBe(true);
+    expect(table("") && "mirror" in table("")!).toBe(false);
+
     // `mirror y` is `rotate 180 mirror x` (one D4 element, two spellings): same payload.
     const y = planToJson(placed(" mirror y")).json?.furniture?.[0];
     const x180 = planToJson(placed(" rotate 180 mirror x")).json?.furniture?.[0];
