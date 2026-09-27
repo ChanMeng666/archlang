@@ -121,7 +121,8 @@ describe("ElementDef.transform — the seam", () => {
     const registry = createRegistry([treePlugin(true)]);
     const { ir, diagnostics } = resolve(parse(placed, registry).plan!, registry);
     expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
-    const trees = ir.elements.filter((e) => e.kind === "tree") as unknown as {
+    // A plugin kind is outside the built-in `ResolvedElement` union, so compare as a string.
+    const trees = ir.elements.filter((e) => (e.kind as string) === "tree") as unknown as {
       id: string;
       at: { x: number; y: number };
       _instance?: string;
