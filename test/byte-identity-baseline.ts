@@ -85,6 +85,20 @@
  * 2061.06 → 2028.83 m², `w_arc1`/`w_arc2` now light `cafe` instead of no room (and
  * `w_arc1` faces E, not S), and two walk distances move by one nav-grid cell, because the
  * grid scales with floor area. `lint()` is still clean. The compiler did not change.
+ *
+ * ## `terrace-row`'s drawing row moved: a mirrored sliding door takes the other track
+ *
+ * Case (1), the compiler changed, in the drawing only (backlog E.12, `slide-track`). The
+ * example places `unit()` twice with `mirror x` (`u2`, `u4`), and each unit has a `sliding`
+ * rear door. A sliding door's fixed panel runs on the track `slide × left normal`, a handed
+ * product the reflection used to leave alone, so the mirrored units drew their panels on
+ * the wrong faces. Field by field: exactly four `<polygon>`s change, the fixed and moving
+ * panels of `u2.rear` and `u4.rear`, each moving from one track to the other (centre
+ * y = +37.5 ↔ −37.5 about the wall line) with its x-extent unchanged, so each mirrored
+ * door now matches the unmirrored units' `u1.rear`/`u3.rear`. Every other SVG byte is
+ * unchanged, and `describe()` + `lint()` are identical: the summary row below did not move.
+ * The PNG golden's changed pixels lie within x ∈ [9194, 10318] ∪ [20594, 21718],
+ * y ∈ [−82, 82] mm, the two doorways.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -112,7 +126,7 @@ export const BASELINE: [string, string][] = [
   ["parametric", "2227a10cba690442987dc6dc9f7aa9af393a613432b6a7ea30d67d93eb736e82"],
   ["relational", "e6e1f0a6fb9589b3a6eaaa6491bd97620567d6fbdb35d162f25720e9da940b07"],
   ["studio", "90951a2517e141dfe28f0e12462fd29cefba5460c900304e435ef53e7f3c0f3f"],
-  ["terrace-row", "83033a5111c86ea0c240de8173493c23afb1a947fa235d3bf768b8ef363e2df2"],
+  ["terrace-row", "b00ec362508b77ebcb343903e6286d0efb4aa29cad885b3c542cfc37d3b4fdc3"], // re-measured, see header
   ["themed", "55e8723dd35cc3ec24b73a7bbf8052bea24f1fdaddd6d90012cffb81d7d00057"],
   ["tiny-house", "a2e03e5262814a5566deb23fedcfe493b053d98ae49026336c75f3cb1ec104b5"],
   ["townhouse", "f3cccd631ffbfa4afbce7bba5cbd71e012fd33a0b28905e4b6d6eeb15c127ddd"],
