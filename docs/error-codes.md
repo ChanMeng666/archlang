@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**94 errors** · **50 warnings**
+**94 errors** · **52 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -135,6 +135,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_OUTDOOR_OVERLAPS_ROOM`](#w_outdoor_overlaps_room) | warning | A ground surface is laid over a room's floor. |
 | [`W_PATH_TOO_NARROW`](#w_path_too_narrow) | warning | The walk to a room squeezes below a passable width. |
 | [`W_POCKET_RUN`](#w_pocket_run) | warning | A pocket door has no wall to slide into. |
+| [`W_REASSIGN_DEPRECATED`](#w_reassign_deprecated) | warning | Reassignment (`NAME = expr`) is deprecated and will be removed in 2.0. |
 | [`W_ROOM_DISCONNECTED`](#w_room_disconnected) | warning | Room has no door — it can't be entered. |
 | [`W_ROOM_LABEL_OUTSIDE`](#w_room_label_outside) | warning | A room's explicit label anchor falls outside the room. |
 | [`W_ROOM_NO_CLEAR_PATH`](#w_room_no_clear_path) | warning | A room cannot be entered or crossed. |
@@ -152,6 +153,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material; using the default hatch. |
 | [`W_UNKNOWN_STYLE_KEY`](#w_unknown_style_key) | warning | Unknown style key. |
 | [`W_UNKNOWN_THEME_KEY`](#w_unknown_theme_key) | warning | Unknown theme key. |
+| [`W_WHILE_DEPRECATED`](#w_while_deprecated) | warning | `while` is deprecated and will be removed in 2.0. |
 | [`W_WINDOW_OFF_WALL`](#w_window_off_wall) | warning | Window does not lie on any wall. |
 
 ## E_ACC_PLACEMENT
@@ -1714,6 +1716,19 @@ wall w1 thickness 200 { (0,0) (3000,0) }
 door pocket on w1 at 80% width 900 slide right   # lint: only ~600 mm of run
 ```
 
+## W_REASSIGN_DEPRECATED
+
+*warning* — Reassignment (`NAME = expr`) is deprecated and will be removed in 2.0.
+
+**Cause.** Reassigning an existing `let` binding exists only to make a `while` loop progress. Outside that role it is the same referential-transparency break `while` is deprecated for: a name bound with `let` can no longer be trusted to keep its first value, which breaks the equational tools (rename, `arch fix`, the planned re-roll refactor) that treat a `let` as a substitutable value. A `while` loop's own progress step (its body's last statement, updating the name the condition tests) does not also raise this — that reassignment is already covered by `W_WHILE_DEPRECATED` on the loop itself.
+
+**Fix.** Bind a new name with `let` instead of reassigning it, or express the loop as `for NAME in A..B { … }` (the machine-applicable fix on `W_WHILE_DEPRECATED` does this for the canonical shape).
+
+```arch static
+let total = 0
+total = total + 100   # warning: deprecated reassignment; bind a new name instead
+```
+
 ## W_ROOM_DISCONNECTED
 
 *warning* — Room has no door — it can't be entered.
@@ -1921,6 +1936,22 @@ style room { nope: "#000" }   # warning
 
 ```arch static
 theme { nope: "#000" }   # warning
+```
+
+## W_WHILE_DEPRECATED
+
+*warning* — `while` is deprecated and will be removed in 2.0.
+
+**Cause.** `while` plus a reassignment to make it terminate is the one construct in ArchLang's expand-time language that breaks referential transparency: a `let` binding reassigned later is no longer a value that can be substituted, which every equational tool (LSP rename, `arch fix`'s rewrite-in-your-form, the planned re-roll refactor) relies on. `for x in a..b` covers every counted loop `while` is used for in practice, and the construct ships in 0 shipped examples.
+
+**Fix.** Rewrite the loop as `for I in A..B { … }`. The machine-applicable fix does this for the canonical shape `let I = A` immediately before `while I < B { …; I = I + 1 }`; anything else needs a hand rewrite before 2.0.
+
+```arch static
+let i = 0
+while i < 5 {
+  room at (0, i * 3000) size 3000x3000
+  i = i + 1
+}   # warning: deprecated; rewrites to `for i in 0..5 { … }`
 ```
 
 ## W_WINDOW_OFF_WALL

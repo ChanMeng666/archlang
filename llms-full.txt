@@ -98,10 +98,12 @@ site { street north|south|east|west [hemisphere north|south] [boundary (x,y) (x,
 
 ## Scripting (all expand-time, deterministic)
 
-- `let NAME = expr` — bind a constant. `NAME = expr` — reassign an existing binding.
+- `let NAME = expr` — bind a constant. `NAME = expr` — reassign an existing binding
+  (**deprecated**, removed in 2.0: `W_REASSIGN_DEPRECATED`; bind a new name instead).
 - `let f(a, b) = expr` — a pure value-function. Built-ins: `min max abs sqrt floor ceil round len str`.
 - `for i in lo..hi { … }` — loop over a half-open integer range (`0..3` → 0,1,2).
-- `if cond { … } else { … }` · `while cond { … }`.
+- `if cond { … } else { … }` · `while cond { … }` (**deprecated**, removed in 2.0:
+  `W_WHILE_DEPRECATED`; use `for` — a machine fix rewrites the canonical counted-loop shape).
 - `set <element>(attr: value)` — scoped default for following elements (e.g. `set door(swing: out)`).
 - Arrays: `[a, b, c]`, indexed `arr[i]`. Operators: `+ - * / %`, `== != < > <= >=`, `&& ||`. Comments: `# …`.
 - `import "lib/x.arch": name` and `component name(args) { … }` for reuse.
@@ -719,7 +721,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**94 errors** (abort rendering) · **50 warnings** (advisory; `validate --strict` fails on them too).
+**94 errors** (abort rendering) · **52 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -852,6 +854,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `W_OUTDOOR_OVERLAPS_ROOM` — A ground surface is laid over a room's floor. **Fix:** Move or resize the surface so it sits outside the building's rooms. If the overlap is deliberate (a covered terrace drawn under a room), the two are genuinely different things and one of them is the wrong element.
 - `W_PATH_TOO_NARROW` — The walk to a room squeezes below a passable width. **Fix:** Widen the tightest door/opening on the route to at least the minimum, move the furniture pinching it, or add a second way in so the pinch is avoidable. There is no machine-applicable fix: the bottleneck is a nav-grid cell, not a named element, so nothing can be rewritten for you.
 - `W_POCKET_RUN` — A pocket door has no wall to slide into. **Fix:** Reverse the slide (`slide left` ↔ `slide right`) — a machine-applicable fix, emitted only after the reverse run is recomputed and proved to satisfy; move the door along its wall so the pocket lands on solid wall; or lengthen the wall. Narrowing the door is deliberately NOT offered as a fix: rewriting the author's stated width to satisfy a checker is the constraint-laundering pattern this project rules out, and it would also walk into `W_DOOR_CLEARANCE`.
+- `W_REASSIGN_DEPRECATED` — Reassignment (`NAME = expr`) is deprecated and will be removed in 2.0. **Fix:** Bind a new name with `let` instead of reassigning it, or express the loop as `for NAME in A..B { … }` (the machine-applicable fix on `W_WHILE_DEPRECATED` does this for the canonical shape).
 - `W_ROOM_DISCONNECTED` — Room has no door — it can't be entered. **Fix:** Add a `door` on one of the room's walls.
 - `W_ROOM_LABEL_OUTSIDE` — A room's explicit label anchor falls outside the room. **Fix:** Move the anchor inside the room, or drop the `at (…)` — automatic placement uses the rectangle's centre, the circle's centre, or a polygon's area centroid (falling back to the interior point furthest from any edge where a concave ring puts that centroid off its own floor), so it lands inside either way.
 - `W_ROOM_NO_CLEAR_PATH` — A room cannot be entered or crossed. **Fix:** Open up the layout: move or shrink the furniture nearest the door so there is a continuous walkable strip from each entrance into the room.
@@ -869,4 +872,5 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `W_UNKNOWN_MATERIAL` — Unknown wall material; using the default hatch. **Fix:** Use a known material (e.g. brick, concrete, insulation, tile) or omit it.
 - `W_UNKNOWN_STYLE_KEY` — Unknown style key. **Fix:** Use a valid key (e.g. fill / stroke / label, depending on the kind).
 - `W_UNKNOWN_THEME_KEY` — Unknown theme key. **Fix:** Use a known theme key (see the language reference / hover).
+- `W_WHILE_DEPRECATED` — `while` is deprecated and will be removed in 2.0. **Fix:** Rewrite the loop as `for I in A..B { … }`. The machine-applicable fix does this for the canonical shape `let I = A` immediately before `while I < B { …; I = I + 1 }`; anything else needs a hand rewrite before 2.0.
 - `W_WINDOW_OFF_WALL` — Window does not lie on any wall. **Fix:** Move the window onto a wall, or name its host with `wall <id|category>`. The diagnostic points at the nearest wall.
