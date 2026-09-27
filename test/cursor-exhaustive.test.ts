@@ -20,8 +20,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { parse } from "../src/parser.js";
-import { eachStatement, statementExprs } from "../src/cursor.js";
-import type { Statement } from "../src/ast.js";
+import { eachExpr, eachStatement, statementExprs } from "../src/cursor.js";
+import type { PlanNode, Statement } from "../src/ast.js";
 import type { Expr } from "../src/expr.js";
 import { archPlan } from "./arbitrary-plan.js";
 
@@ -100,11 +100,39 @@ function checkStatement(s: Statement): void {
   }
 }
 
+/** The plan-level fields that hold, or contain, a nested {@link Statement}/component
+ *  list — `eachStatement`'s job, not a plain reflective walk's; everything else on
+ *  {@link PlanNode} is fair game, so a FUTURE plan-level `Expr` field is caught here
+ *  automatically, the same way {@link BODY_FIELDS} catches one on a statement. */
+const PLAN_BODY_FIELDS = new Set(["body", "components", "imports", "comments"]);
+
+/**
+ * Assert `eachExpr` visits every `Expr`-shaped value reachable on the PLAN's own
+ * fields (outside any statement/component body) — `height`, `axes { x/y }` and
+ * `site { boundary }` today. `eachExpr` visits strictly more than this (every
+ * statement's exprs too, and every expr's own children), so this is a one-way
+ * subset check: reflective ⊆ eachExpr, which is exactly "eachExpr forgot nothing".
+ */
+function checkPlanLevelExprs(plan: PlanNode): void {
+  const visited = new Set<Expr>();
+  eachExpr(plan, (e) => visited.add(e));
+
+  const reflective: Expr[] = [];
+  for (const [key, value] of Object.entries(plan)) {
+    if (PLAN_BODY_FIELDS.has(key)) continue;
+    reflectiveExprs(value, reflective);
+  }
+  for (const e of reflective) {
+    expect(visited.has(e), "eachExpr did not visit a plan-level Expr field (outside any statement)").toBe(true);
+  }
+}
+
 function checkSource(src: string): void {
   const { plan } = parse(src);
   expect(plan, "fixture failed to parse").toBeTruthy();
   // `eachStatement` already walks every component body, not just the plan body.
   eachStatement(plan!, checkStatement);
+  checkPlanLevelExprs(plan!);
 }
 
 const EXAMPLES = readdirSync("examples").filter((f) => f.endsWith(".arch"));
@@ -123,5 +151,63 @@ describe("cursor.ts — statementExprs matches a reflective AST walk", () => {
 
   it("also holds over fc.sample(archPlan) — wall/room/door/window/opening/furniture/dim/column", () => {
     for (const src of fc.sample(archPlan, { numRuns: 200, seed: 20260927 })) checkSource(src);
+  });
+});
+
+describe("cursor.ts — statementExprs emits in the grammar's own order (regression pin)", () => {
+  it("a wall with a material scale/angle, a height and an arc pins the exact sequence", () => {
+    const src = [
+      'plan "P" {',
+      "  units mm",
+      "  wall id=w1 exterior thickness 200 material brick scale 2 angle 45 height 2500 {",
+      "    (0,0) arc (1000,500) radius 800 close",
+      "  }",
+      "}",
+    ].join("\n");
+    const { plan } = parse(src);
+    expect(plan).toBeTruthy();
+    const wall = plan!.body.find((s) => s.kind === "wall");
+    expect(wall).toBeDefined();
+    const values = statementExprs(wall!).map((e) => (e.t === "num" ? e.value : e));
+    // thickness, materialScale, materialAngle, height, then per vertex (x, y, [radius]):
+    // point0 has no arriving arc; point1 arrives via the one arc, so its radius trails it.
+    expect(values).toEqual([200, 2, 45, 2500, 0, 0, 1000, 500, 800]);
+  });
+});
+
+describe("cursor.ts — eachExpr visits plan-level settings, not just statements", () => {
+  it("a plan-level height, axes and site.boundary Expr are each visited", () => {
+    const src = [
+      'plan "P" {',
+      "  units mm",
+      "  let H = 3000",
+      "  let AXX = 1000",
+      "  let BW = 6000",
+      "  height H",
+      "  north up",
+      "  site { street north boundary (0,0) (BW,0) (BW,5000) (0,5000) }",
+      "  axes { x at AXX  y at 0 }",
+      "  wall id=w1 exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }",
+      "}",
+    ].join("\n");
+    const { plan, diagnostics } = parse(src);
+    expect(
+      diagnostics.some((d) => d.severity === "error"),
+      JSON.stringify(diagnostics),
+    ).toBe(false);
+    expect(plan).toBeTruthy();
+
+    const refNames: string[] = [];
+    eachExpr(plan!, (e) => {
+      if (e.t === "ref") refNames.push(e.name);
+    });
+    expect(refNames).toContain("H"); // plan.height
+    expect(refNames).toContain("AXX"); // axes.x
+    expect(refNames).toContain("BW"); // site.boundary
+
+    // The generic reflective check (checkSource, above) also covers this plan, so a
+    // future plan-level Expr field failing to be visited fails there automatically —
+    // this test just pins the three known fields concretely, by name.
+    checkPlanLevelExprs(plan!);
   });
 });

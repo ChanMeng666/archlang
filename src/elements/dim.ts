@@ -64,10 +64,10 @@ function outsideStations(dm: RDim, label: string, dimFont: number): number {
  *  still prints. */
 function emitSwapped(n: DimNode): string {
   const swapped = statementText({ ...n, from: n.to, to: n.from });
-  // `dim` is the one leaf kind whose printed Doc is always flat text (no
-  // `group`/`line` — it has no point list to wrap), so this never actually takes
-  // the `printDoc` branch; it exists only so the TYPE admits what is already true
-  // at runtime, without an unsound cast.
+  // Every leaf kind except `wall`/`strip` prints flat text (no `group`/`line` — `dim`
+  // has no point list to wrap), and `dim` is the one this call site actually uses, so
+  // this never takes the `printDoc` branch; it exists only so the TYPE admits what is
+  // already true at runtime, without an unsound cast.
   return typeof swapped === "string" ? swapped : printDoc(swapped, 80);
 }
 

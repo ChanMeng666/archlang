@@ -49,15 +49,29 @@ const openingLead = (out: ExprSink, s: { at?: ExprPoint; attach?: OpeningAttach 
  * (verified against `src/ast.ts`), never a subset convenient for the first caller —
  * this is also what `eachExpr`/`eachStatement`/the LSP rename walk see, so a field
  * missing here is a use `arch lsp rename` silently drops.
+ *
+ * Each handler pushes in the grammar's own left-to-right order (the order
+ * `statement-print.ts` prints, since that IS the source order) wherever doing so costs
+ * nothing extra — `collectRefs` (`lsp.ts`) feeds this straight into rename/references,
+ * so a caller that reports "first use" or diffs two runs is reading a real position, not
+ * an implementation accident. The one place this is not quite true: a `dim
+ * radius|diameter` call-out's `from`/`to` are a parse-time PLACEHOLDER with no source
+ * position of their own (`elements/dim.ts`) and are always emitted first, ahead of the
+ * real `segment`/`offset`/`text` clauses that follow them in the source.
  */
 const STATEMENT_EXPRS: { [K in Statement["kind"]]: (s: Extract<Statement, { kind: K }>, out: ExprSink) => void } = {
   wall: (s, out) => {
     out.push(s.thickness);
     if (s.materialScale !== undefined) out.push(s.materialScale);
     if (s.materialAngle !== undefined) out.push(s.materialAngle);
-    for (const arc of s.arcs ?? []) if (arc) out.push(arc.radius);
     if (s.height !== undefined) out.push(s.height);
-    for (const p of s.points) pt(out, p);
+    // Each vertex, then (source order: the arc clause trails the point it arrives at)
+    // the radius of the arc arriving at it, if any.
+    s.points.forEach((p, i) => {
+      pt(out, p);
+      const arc = i > 0 ? s.arcs?.[i - 1] : undefined;
+      if (arc) out.push(arc.radius);
+    });
   },
   room: (s, out) => {
     pt(out, s.at);
@@ -66,8 +80,10 @@ const STATEMENT_EXPRS: { [K in Statement["kind"]]: (s: Extract<Statement, { kind
       pt(out, s.circle.c);
       out.push(s.circle.r);
     }
-    if (s.size) out.push(s.size.w, s.size.h);
+    // A relational room's `gap` sits INSIDE the `DIR ref align E gap G` clause, which
+    // the grammar prints before `size` — so it comes first here too.
     if (s.rel?.gap !== undefined) out.push(s.rel.gap);
+    if (s.size) out.push(s.size.w, s.size.h);
     if (s.label) out.push(s.label);
     pt(out, s.labelAt);
   },
@@ -100,11 +116,14 @@ const STATEMENT_EXPRS: { [K in Statement["kind"]]: (s: Extract<Statement, { kind
     if (s.rotate !== undefined) out.push(s.rotate);
   },
   dim: (s, out) => {
+    // `from`/`to` are placeholders with no source position on the curve form — see the
+    // handler-table doc comment. `segment` (curve form only) trails the reference in the
+    // grammar and leads `offset`, which the non-curve form's written points precede.
     pt(out, s.from);
     pt(out, s.to);
+    if (s.curve?.segment !== undefined) out.push(s.curve.segment);
     out.push(s.offset);
     if (s.text) out.push(s.text);
-    if (s.curve?.segment !== undefined) out.push(s.curve.segment);
   },
   column: (s, out) => {
     pt(out, s.at);
@@ -179,7 +198,9 @@ const STATEMENT_EXPRS: { [K in Statement["kind"]]: (s: Extract<Statement, { kind
   },
 };
 
-/** The expression-bearing fields of a statement, in source order. */
+/** The expression-bearing fields of a statement, in the grammar's own left-to-right
+ *  order — see the {@link STATEMENT_EXPRS} table's doc comment for the one named
+ *  exception (a `dim radius|diameter` call-out's placeholder `from`/`to`). */
 export function statementExprs(s: Statement): Expr[] {
   const out: Expr[] = [];
   const handler = STATEMENT_EXPRS[s.kind] as (s: Statement, out: ExprSink) => void;
