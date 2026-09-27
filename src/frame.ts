@@ -306,18 +306,35 @@ export function makeTransformCtx(f: Frame, id: string): TransformCtx {
  * plugin that REPLACES a built-in kind without supplying one — the built-in's. That fallback
  * reads the built-in's resolved shape, so a replacement whose `resolve` returns a different
  * shape must supply its own `transform`. `undefined` means the element cannot be placed (a
- * plugin kind with no `transform`).
+ * plugin kind with no `transform`). `inherited` marks the fallback: the action belongs to
+ * a DIFFERENT def than the one that resolved `el`.
  */
-export function transformOf(el: ResolvedElement, def?: ElementDef): ElementDef["transform"] {
-  return def?.transform ?? BUILTIN_REGISTRY.byKind.get(el.kind)?.transform;
+function transformOf(el: ResolvedElement, def?: ElementDef): { action: ElementDef["transform"]; inherited: boolean } {
+  if (def?.transform) return { action: def.transform, inherited: false };
+  const builtin = BUILTIN_REGISTRY.byKind.get(el.kind);
+  return { action: builtin?.transform, inherited: def !== undefined && def !== builtin };
 }
+
+/**
+ * Why {@link tryTransformElement} could not carry an element: `"none"` — its kind has no
+ * action at all (a plugin kind with no `transform`); `"inherited-threw"` — a plugin that
+ * REPLACES a built-in kind without its own `transform` inherited the built-in's, and that
+ * action threw reading the plugin's resolved shape (a `resolve` returning a different
+ * shape from the built-in's).
+ */
+export type TransformRefusal = "none" | "inherited-threw";
 
 /**
  * Map one resolved element from its instance's local frame into plan-global coordinates,
  * returning a NEW element (the local one stays intact — a door's `host` aliases its wall's
- * point objects, so transforming in place would double-apply the frame). `null` when the
- * element has no action ({@link transformOf}); the resolver turns that into
- * `E_INSTANCE_NO_TRANSFORM` and drops the element.
+ * point objects, so transforming in place would double-apply the frame). A
+ * {@link TransformRefusal} when the element cannot be carried ({@link transformOf}); the
+ * resolver turns that into `E_INSTANCE_NO_TRANSFORM` and drops the element.
+ *
+ * Only an INHERITED action runs under a `try`: it is a built-in's code reading a plugin's
+ * data, the one place a plan the parser and resolver accepted could otherwise make
+ * `compile()` throw. An element's own `transform` (every built-in's, or a plugin's) is
+ * called bare.
  *
  * The element's own `transform` flips its handed properties when the frame reflects
  * (`det < 0`): a door's `swing` is measured from the host wall's LEFT normal, and a `dim`'s
@@ -327,26 +344,42 @@ export function transformOf(el: ResolvedElement, def?: ElementDef): ElementDef["
  * carries with it. The id namespacing and the `_instance`/`_component` stamps happen here,
  * once, for every kind.
  */
-export function tryTransformElement(f: Frame, el: ResolvedElement, def?: ElementDef): ResolvedElement | null {
-  const action = transformOf(el, def);
-  if (!action) return null;
+export function tryTransformElement(
+  f: Frame,
+  el: ResolvedElement,
+  def?: ElementDef,
+): ResolvedElement | TransformRefusal {
+  const { action, inherited } = transformOf(el, def);
+  if (!action) return "none";
   const id = nsId(f, el.id);
-  const out = action(el, makeTransformCtx(f, id));
+  let out: ResolvedElement;
+  if (inherited) {
+    try {
+      out = action(el, makeTransformCtx(f, id));
+    } catch {
+      return "inherited-threw";
+    }
+  } else {
+    out = action(el, makeTransformCtx(f, id));
+  }
   out._instance = f.prefix;
   out._component = f.component;
   return out;
 }
 
 /**
- * {@link tryTransformElement} that THROWS (a `TypeError`) on a kind with no action,
- * instead of returning `null`. It exists for tests (`test/frame.test.ts` drives every
- * built-in kind through it) and has no caller in `src/`: production code — the resolver
- * behind `compile()` — calls `tryTransformElement` and turns a `null` into
- * `E_INSTANCE_NO_TRANSFORM`, because a user-source problem is returned, never thrown.
+ * {@link tryTransformElement} that THROWS (a `TypeError`) when the element cannot be
+ * carried, instead of returning a {@link TransformRefusal}. It exists for tests
+ * (`test/frame.test.ts` drives every built-in kind through it) and has no caller in `src/`:
+ * production code — the resolver behind `compile()` — calls `tryTransformElement` and turns
+ * a refusal into `E_INSTANCE_NO_TRANSFORM`, because a user-source problem is returned,
+ * never thrown.
  */
 export function transformElement(f: Frame, el: ResolvedElement, def?: ElementDef): ResolvedElement {
   const out = tryTransformElement(f, el, def);
-  if (!out) throw new TypeError(`transformElement: element kind "${el.kind}" has no transform()`);
+  if (out === "none") throw new TypeError(`transformElement: element kind "${el.kind}" has no transform()`);
+  if (out === "inherited-threw")
+    throw new TypeError(`transformElement: the inherited built-in "${el.kind}" transform() threw`);
   return out;
 }
 

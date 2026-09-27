@@ -42,12 +42,15 @@
  * (structural matching + printing a replacement) is cheap; PROVING a candidate
  * — compiling, describing and linting the twin — is not. `detectCandidates`
  * therefore never proves; {@link reroll} proves every candidate it found,
- * while `rerollInRange` (used by `codeActions`) filters candidates to those
+ * while `rerollInRange` (used by `refactorActions`) filters candidates to those
  * touching a byte range FIRST and proves only the survivors. The ORIGINAL
  * source's own compile/describe/lint (`getBaseline`) is memoized in a single
  * slot keyed by source text (+ `world`/`plugins` identity), so repeat requests
  * on an unchanged document (an editor re-asking on every selection change)
- * recompute nothing.
+ * recompute nothing. A FAILED baseline (a parse error or any error diagnostic)
+ * is never memoized — the failure may live in an imported module the same
+ * `world` will read fixed on the next call — and `clearCache()` empties the
+ * slot (`resetRerollCache`), as it does the compile cache.
  */
 
 import type { PlanNode, Statement } from "./ast.js";
@@ -532,31 +535,39 @@ interface BaselineContext {
   baseline: Baseline;
 }
 
-let cachedSource: string | undefined;
-let cachedWorld: CompileOptions["world"] | undefined;
-let cachedPlugins: CompileOptions["plugins"] | undefined;
-let cachedContext: BaselineContext | null | undefined; // `null` = source has errors (cached miss)
+/** The one memo slot: a SUCCESSFUL baseline and the key it was computed under. */
+let cached:
+  | { source: string; world: CompileOptions["world"]; plugins: CompileOptions["plugins"]; ctx: BaselineContext }
+  | undefined;
+
+/**
+ * Empty the baseline memo. `clearCache()` (`src/index.ts`) calls it, so an embedder that
+ * clears the compile cache after an imported module changed under the same `World`
+ * never gets a stale baseline back.
+ *
+ * @internal Not part of the public surface (`src/index.ts` does not re-export it).
+ */
+export function resetRerollCache(): void {
+  cached = undefined;
+}
 
 /** The original source's own compile/describe/lint, needed by every candidate's
  *  proof — computed once and kept in a SINGLE slot keyed by source text (and
  *  `world`/`plugins` identity, compared by reference: the LSP always passes the
  *  same `undefined`, so its repeat requests on an unchanged document hit this
  *  every time). Returns `null` when the source fails to parse or carries any
- *  error diagnostic — nothing is ever offered against a broken plan. */
+ *  error diagnostic — nothing is ever offered against a broken plan — and that
+ *  `null` is never memoized (the error may be in an imported module that the
+ *  same `world` reads fixed next time). */
 function getBaseline(source: string, opts: RerollOptions): BaselineContext | null {
-  if (cachedSource === source && cachedWorld === opts.world && cachedPlugins === opts.plugins) {
-    return cachedContext ?? null;
+  if (cached && cached.source === source && cached.world === opts.world && cached.plugins === opts.plugins) {
+    return cached.ctx;
   }
-  cachedSource = source;
-  cachedWorld = opts.world;
-  cachedPlugins = opts.plugins;
+  cached = undefined;
 
   const pipelineOpts: CompileOptions = { world: opts.world, plugins: opts.plugins };
   const compiled = compileUncached(source, pipelineOpts);
-  if (!compiled.ast || compiled.errors.length > 0) {
-    cachedContext = null;
-    return null;
-  }
+  if (!compiled.ast || compiled.errors.length > 0) return null;
   const plan = compiled.ast;
   const describeResult = describe(source, pipelineOpts);
   const baseline: Baseline = {
@@ -565,8 +576,9 @@ function getBaseline(source: string, opts: RerollOptions): BaselineContext | nul
     describeDiagTriples: diagTriples(describeResult.diagnostics),
     lintPairs: lintPairs(lint(source, pipelineOpts)),
   };
-  cachedContext = { plan, bound: collectBoundNames(plan), pipelineOpts, baseline };
-  return cachedContext;
+  const ctx: BaselineContext = { plan, bound: collectBoundNames(plan), pipelineOpts, baseline };
+  cached = { source, world: opts.world, plugins: opts.plugins, ctx };
+  return ctx;
 }
 
 /**
@@ -592,10 +604,10 @@ export function reroll(source: string, opts: RerollOptions = {}): RerollSuggesti
 /**
  * `reroll`, filtered to candidates whose span touches `range` BEFORE the
  * (expensive) proof obligation runs — a candidate outside the request's range
- * is never compiled/described/linted at all. Used by `lsp.ts`'s `codeActions`,
+ * is never compiled/described/linted at all. Used by `lsp.ts`'s `refactorActions`,
  * which an editor calls on every selection change; a candidate far from the
  * cursor costs nothing here beyond the cheap structural detection every
- * `codeActions` call already needs to decide what touches the range.
+ * `refactorActions` call already needs to decide what touches the range.
  *
  * @internal Not part of the public surface (`src/index.ts` does not re-export
  * it) — `lsp.ts` is a sibling module in `src/` and imports it directly.

@@ -168,6 +168,63 @@ describe("ElementDef.transform — the seam", () => {
     expect(viaPlugin.map((c) => [c.id, c.size])).toEqual([["a.c", { w: 600, h: 400 }]]);
   });
 
+  it("plugin replacing a built-in kind with a DIFFERENT resolved shape → E_INSTANCE_NO_TRANSFORM, never throws", () => {
+    // The inherited built-in `column` action reads `el.at`/`el.size`; this replacement
+    // resolves to `{ centre }` instead, so the inherited action throws a TypeError on it.
+    // That throw is caught at the plugin boundary and becomes the same drop + refusal as a
+    // plugin kind with no transform at all.
+    const builtinColumn = BUILTIN_DEFS.find((d) => d.kind === "column")!;
+    const { transform: _dropped, ...rest } = builtinColumn;
+    const centreColumn = registerElement({
+      ...rest,
+      doc: "a column that resolves to its centre",
+      resolve(node, ctx) {
+        const c = builtinColumn.resolve(node, ctx) as RColumn;
+        return {
+          kind: "column",
+          id: c.id,
+          centre: { x: c.at.x + c.size.w / 2, y: c.at.y + c.size.h / 2 },
+        } as unknown as ResolvedElement;
+      },
+      bounds: (r: any) => [r.centre, r.centre],
+      render: () => [],
+    });
+    expect(centreColumn.transform).toBeUndefined();
+    const src = `plan "P" {
+  units mm
+  component bay() {
+    room id=r at (0,0) size 4000x3000 label "Bay"
+    column id=c at (1000,500) size 400x600
+  }
+  place bay() as a at (5000,0) rotate 90
+}`;
+    const plugins = [centreColumn];
+    let out: ReturnType<typeof compile> | undefined;
+    expect(() => {
+      out = compile(src, { plugins, noCache: true });
+    }).not.toThrow();
+    const refusals = out!.diagnostics.filter((d) => d.code === "E_INSTANCE_NO_TRANSFORM");
+    expect(refusals.map((d) => [d.instance, d.component, d.severity])).toEqual([["a", "bay", "error"]]);
+    expect(refusals[0]!.message).toBe(
+      'Element kind "column" in component "bay" cannot be placed: its plugin ElementDef has no transform(), ' +
+        'and the built-in "column" transform() it inherits could not read the plugin\'s resolved shape — ' +
+        "the plugin must define its own transform()",
+    );
+    expect(src.slice(refusals[0]!.span!.start, refusals[0]!.span!.end)).toMatch(/^place bay\(\) as a\b/);
+    // Dropped, never drawn: the resolved element list carries the room only.
+    const registry = createRegistry(plugins);
+    const { ir } = resolve(parse(src, registry).plan!, registry);
+    expect(ir.elements.map((e) => `${e.kind}:${e.id}`)).toEqual(["room:a.r"]);
+    expect(() => describePlan(src, { plugins })).not.toThrow();
+    expect(() => lint(src, { plugins })).not.toThrow();
+    // Control: the same replacement at PLAN level resolves and compiles (no frame to cross).
+    const flat = compile(`plan "P" {\n  units mm\n  column id=c at (1000,500) size 400x600\n}`, {
+      plugins,
+      noCache: true,
+    });
+    expect(flat.diagnostics.map((d) => d.code)).not.toContain("E_INSTANCE_NO_TRANSFORM");
+  });
+
   it("registerElement refuses a transform that is not a function", () => {
     expect(() => registerElement({ ...treePlugin(false), transform: 42 as any })).toThrow(/transform/);
   });

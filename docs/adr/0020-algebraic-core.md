@@ -65,10 +65,13 @@ dependency cycle.
 
 ### 2. Elements own their frame action
 
-`ElementDef.transform` (`frame.ts`'s `TransformCtx` facade) makes the D4 ⋉ Z² action part of
-an element module's own contract, alongside `parse`/`resolve`/`render`. A plugin element
-registered without a `transform` and used inside a `place` is refused with a `Diagnostic`
-(`E_INSTANCE_NO_TRANSFORM`) — never the `TypeError` `compile()` used to throw. This is the
+`ElementDef.transform` (handed a `TransformCtx` facade — declared in `src/registry.ts`, built
+per frame by `frame.ts`'s `makeTransformCtx`) makes the D4 ⋉ Z² action part of an element
+module's own contract, alongside `parse`/`resolve`/`render`. A plugin element registered
+without a `transform` and used inside a `place` is refused with a `Diagnostic`
+(`E_INSTANCE_NO_TRANSFORM`) — never the `TypeError` `compile()` used to throw; so is a plugin
+that replaces a built-in kind, inherits its action, and resolves to a shape that action
+cannot read. This is the
 mechanism, not merely the fix: it is what makes "does this element carry correctly through a
 turn or mirror" a property of the module that draws it, checkable in isolation, rather than
 a fact some central switch has to keep in sync with every new element.
@@ -100,7 +103,8 @@ round found it re-deriving parse→link→resolve→render a second time, shares
 PIPELINE too: `src/pipeline.ts`'s `compileUncached` is the one function `compile()`'s
 memo-cache wrapper and `reroll()`'s twin-compile proof both call, so the two can never drift
 apart. Neither `compile()` nor `pipeline.ts` carries any proof state of its own — the LSP
-`refactor.rewrite` action and `arch reroll` are where the proving happens, one layer up.
+`refactor.rewrite` action (`refactorActions`) and `arch reroll` are where the proving happens,
+one layer up.
 
 ### 5. Laws pinned by test, not by convention
 
@@ -145,23 +149,32 @@ apart. Neither `compile()` nor `pipeline.ts` carries any proof state of its own 
   (ADR 0016 §3 addendum) turned "does this component still work once it's placed inside
   another component" from a question nobody could answer without trying it into a law a
   test states.
-- **Cost.** Five behaviour changes ship with this work and are called out explicitly in
-  `CHANGELOG.md`: `diffPlans` with duplicate labels, `validate --strict` now exiting 2 for
-  `while`/reassignment, W8's composition search order (a component that places a child can
-  resolve differently, or newly raise `E_FURN_AGAINST`), `terrace-row.arch`'s redraw (its
-  mirrored units' rear doors were on the wrong track), and negative `dim` offsets moving
-  which side the number is drawn on. None is silent; each has its own test and its own
-  CHANGELOG entry.
+- **Cost.** Behaviour changes ship with this work, each called out in `CHANGELOG.md`:
+  - `diffPlans` rescues a moved room by label only when the label is unique on both sides;
+  - `validate --strict` now exits 2 for `while`/reassignment;
+  - W8's composition search order: a component that places a child can resolve
+    differently, or newly raise `E_FURN_AGAINST`;
+  - `terrace-row.arch` is redrawn (its mirrored units' rear doors were on the wrong track);
+  - negative `dim` offsets: the number is drawn on the side the offset points to, and
+    `W_DIM_OVERLAP`'s band follows it — at the plan root too, not only inside a `place`;
+  - nearest-entrance circulation changes the numbers of 12 multi-entrance examples;
+  - `no_door_route`: `relational.arch`'s kitchen, bedroom and bath lose their walks;
+  - the 1/1024 mm circulation sampling lattice moves `aquarium`, `hexagon-pavilion` and
+    `library` by one grid step each;
+  - `AccessEdge.ambiguous` now means "the wall-face probe could not decide", not "touches
+    three or more rooms".
+
+  None is silent; each has its own test and its own CHANGELOG entry.
 - **Cost.** The algebra leaf is one more layer to learn before touching a `place`-adjacent
   bug: a contributor now needs `src/algebra/d4.ts`'s normal form, not just the call site
   they're fixing. `docs/agents/architecture.md` and `docs/agents/gotchas.md` carry the two
   sentences that make that fast.
-- **Landed.** W6b — `arch reroll`, the LSP `refactor.rewrite` action, and the `reroll()` API
-  (`src/reroll.ts`), sharing `src/pipeline.ts`'s one `compileUncached` with `compile()` — is
+- **Landed.** W6b — `arch reroll`, the LSP `refactor.rewrite` action (`refactorActions`), and
+  the `reroll()` API (`src/reroll.ts`), sharing `src/pipeline.ts`'s one `compileUncached` with
+  `compile()` — is
   built against this same algebra: detect a candidate rewrite (span-blind AST structural
   match, exact arithmetic progression), then PROVE it through the one pipeline (byte-identical
   SVG per page, `describe()` facts, `lint()`/diagnostic multisets) before it is ever offered.
-  <!-- W6b -->
 - **Landed.** W3b: the access `probe` policy (the traversal row above), nearest-entrance
   circulation (backlog G.5, a `MIN_PLUS` sum over the entrances), circulation sampled in
   its own snapped frame (E.11's circulation half) and a concave room measured over its
@@ -225,10 +238,11 @@ apart. Neither `compile()` nor `pipeline.ts` carries any proof state of its own 
 - **Mohri (2002)**, "Semiring Frameworks and Algorithms for Shortest-Distance Problems" —
   the selective/isotone/monotone conditions `paths.ts` states and checks.
 - **Sobrinho (2002)**, "Algebra and Algorithms for QoS Path Computation and Hop-by-Hop
-  Routing in the Internet" — a second, independent source for the same conditions, and the
-  sharper claim `test/semiring.test.ts` pins: isotonicity is necessary AND sufficient for a
-  label-setting (generalised Dijkstra) search to be correct, with shortest-widest as the
-  textbook non-isotone counterexample.
+  Routing in the Internet" — a second, independent source for the same conditions, and for
+  the theorem that isotonicity is necessary and sufficient for a label-setting (generalised
+  Dijkstra) search to be correct. `test/semiring.test.ts` does not pin that theorem (a test
+  cannot pin an "if and only if"); it pins the four named semirings' laws and the
+  shortest-widest counterexample, the textbook non-isotone case.
 - **Szalinski** (PLDI 2020, uwplse) — rewrites flat, unrolled CAD programs into loops via
   equality saturation plus "inverse transformations" that recognise an arithmetic
   progression in a sequence of translated/rotated copies. This informed the DESIGN of
