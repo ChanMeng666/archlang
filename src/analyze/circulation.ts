@@ -968,9 +968,18 @@ const FRAME_QUANTUM_MM = 1 / 1024;
  * So each coordinate is taken relative to the min corner and then snapped to a dyadic
  * lattice of {@link FRAME_QUANTUM_MM} — far coarser than any ulp a translation can cost
  * (≈ 1e-10 mm at a kilometre), far finer than anything a 100 mm grid can see. Both sides
- * of a translation then read the SAME number, so every fact is bit-for-bit invariant. An
- * integer or dyadic coordinate — every rectangle, every authored point — is unchanged by
- * the snap, and so is every plan whose extent starts at (0, 0) and draws no curve.
+ * of a translation then read the same number, so every fact is invariant EXCEPT when a
+ * relative coordinate's residue lies within about an ulp of a half-quantum — the one place
+ * a rounding still depends on the ulp (measured: 0 moves over 69 non-integer translations
+ * of 8 examples; `test/circulation-translation.test.ts`). An integer or dyadic coordinate —
+ * every rectangle, every authored point — is unchanged by the snap, and so is every plan
+ * whose extent starts at (0, 0) and draws no curve.
+ *
+ * Translated, exactly: `rooms[].at`, `.poly`, `.circle.c`; `walls[].points` and each arc's
+ * `center`, `a`, `b`; `at` of every door, opening, furniture, vertical and void. Left in
+ * ABSOLUTE coordinates because nothing on the nav grid reads them: `door.host`/
+ * `opening.host` (the wall segment — the grid reads the wall list, and only `hostWallId`
+ * through the access graph), `room.labelAt`, `_placement` and every span.
  */
 function toExtentFrame(
   origin: Point,
@@ -1018,8 +1027,9 @@ function extentOrigin(rooms: readonly RRoom[]): Point {
  *  one with a walkable cell behind it (facts return an empty model). */
 type Nav =
   | { kind: "none" }
-  /** No entrance has a walkable cell behind it, so there is no walk to measure. The grid
-   *  still comes back, because "nothing can be measured from a front door" is not the
+  /** ALL entrances are sealed — not one has a walkable cell behind it — so there is no walk
+   *  to measure. (One sealed entrance among several is `ok`: the others seed the walk.) The
+   *  grid still comes back, because "nothing can be measured from a front door" is not the
    *  same as "nothing can be said". */
   | { kind: "empty"; entranceId: string; cellSizeMm: number; g: NavGrid; roomCells: number[][]; sources: number[] }
   | {
@@ -1349,7 +1359,8 @@ export function computeCirculation(
   voids: RVoid[] = [],
 ): CirculationModel | null {
   if (rooms.length === 0 || !access.hasEntrance) return null; // buildNav's "none", before any copy
-  // Every sample in the nav extent's own frame, so a translation moves no fact.
+  // Every sample in the nav extent's own frame, so a translation moves no fact (see
+  // `toExtentFrame` for the one ulp-level exception).
   ({ rooms, walls, doors, openings, furniture, verticals, voids } = toExtentFrame(extentOrigin(rooms), {
     rooms,
     walls,
@@ -1710,7 +1721,16 @@ export function computeCirculationOverlay(
   // The same door-route gate as the facts: a room `access` cannot reach draws no walk.
   const doorReachable = new Set(access.rooms.filter((n) => n.reachable).map((n) => n.id));
   for (let ri = 0; ri < rooms.length; ri++) {
-    const r = roomRep(g, nav.roomCells[ri]!, seed[ri]!, nav.poles[ri]!, dist, anchor[ri]!, originOf, bboxCentre(rooms[ri]!));
+    const r = roomRep(
+      g,
+      nav.roomCells[ri]!,
+      seed[ri]!,
+      nav.poles[ri]!,
+      dist,
+      anchor[ri]!,
+      originOf,
+      bboxCentre(rooms[ri]!),
+    );
     rep[ri] = doorReachable.has(rooms[ri]!.id) ? r.k : -1;
     repSeed.push(r.seed);
   }

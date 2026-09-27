@@ -102,10 +102,12 @@
  *
  * ## Fourteen rows re-measured for circulation (W3b): `describe().circulation` only
  *
- * Case (1), the compiler changed, and deliberately. For every row below the SVG and `lint()`
- * are byte-identical (swept per storey, with `compile().diagnostics` and the circulation
- * overlay); the ONLY fields that moved are under `describe().circulation` (and each storey's
- * `levels[].circulation`). Two changes are responsible:
+ * Case (1), the compiler changed, and deliberately. For every row below the default SVG,
+ * `lint()` and `compile().diagnostics` are byte-identical (swept per storey); the ONLY
+ * `describe()` fields that moved are under `describe().circulation` (and each storey's
+ * `levels[].circulation`). The opt-in `--overlay circulation` drawing (not part of these
+ * digests) moves with them on the same fourteen plans, since it draws the same walks. Two
+ * changes are responsible:
  *
  *   - **Every room walks from its NEAREST entrance** (owner decision, backlog G.5). On the
  *     twelve examples with more than one entrance, each room is measured from the entrance
@@ -134,7 +136,8 @@
  *     - `transit-hall`: every room walks from its nearest of the entrances (r_control
  *       43440 → 5160, …).
  *   - **The nav grid samples in its extent's own frame, snapped to 2⁻¹⁰ mm**, so a pure
- *     translation moves no circulation fact. The snap moves a curve's tessellated vertices
+ *     translation moves no circulation fact (short of an ulp-level residue at a
+ *     half-quantum). The snap moves a curve's tessellated vertices
  *     by under a micron, which re-resolves one exact tie on each of three plans, to the value
  *     the translated plan also reads:
  *     - `aquarium`: rotunda_r detour 1.01 → 1 (its only moved field);

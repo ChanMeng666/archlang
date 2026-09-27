@@ -304,12 +304,20 @@ entrance. For the studio:
 | `rooms[].bottleneckClearWidthMm` | the narrowest unavoidable clear width on the widest way in from **any** entrance (a door width, or a furniture pinch) |
 | `rooms[].detourRatio` | `walkDistance ÷ straight-line` from the room's own entrance — how far the route wanders from a beeline (`≥ ~1`) |
 | `rooms[].entranceId` | the entrance this room's walk starts at: its nearest, ties to the one written first. **Present only when the plan has more than one entrance** |
+| `routes[]` | key functional routes (kitchen → nearest living/dining, bedroom → nearest bath), same three metrics |
 
 A plan with several front doors — a terrace of houses on one sheet, a building with a
 street door and a garden door — is walked from all of them at once: every room is measured
 from whichever entrance is nearest, so no room is reported the long way round, or left out,
 because a different door happens to come first in the source.
-| `routes[]` | key functional routes (kitchen → nearest living/dining, bedroom → nearest bath), same three metrics |
+
+The three per-room numbers answer two different questions, on purpose. `walkDistanceMm`,
+`detourRatio` and `entranceId` all come from the room's **nearest entrance by walk** — the
+route a person would take. `bottleneckClearWidthMm` is the widest way in from **any**
+entrance — what you can get a sofa or a wheelchair through, whichever door that means. So a
+room can report a wide bottleneck through one door and a walk from another, and its detour is
+measured from its nearest door even when another door is in a straighter line (the museum's
+`g3` reads 2.32, from a door that is nearest by walk but roundabout).
 
 A room the grid cannot reach at all is simply **absent** from `rooms[]`. Three things
 obstruct it: furniture (halo on every side), a
@@ -329,7 +337,8 @@ tells you how coarse.** Room areas, adjacency and the access graph come from exa
 rectangle arithmetic. Circulation distances and clear widths are read off a raster, so
 they are quantised to the cell — treat them as "about", never as a dimension to build to.
 The grid is anchored at the rooms' min corner and samples everything relative to it (snapped
-to 1/1024 mm), so moving a whole plan — by any distance — changes no circulation number.
+to 1/1024 mm), so moving a whole plan changes no circulation number — exactly, except in the
+vanishing case of a relative coordinate within about one float ulp of a half-quantum.
 
 The cell is derived from the plan's own area: a **target cell size bounded by a total
 cell budget**, `cell = max(100 mm, ceil(sqrt(planArea / 250 000)))`. So resolution is

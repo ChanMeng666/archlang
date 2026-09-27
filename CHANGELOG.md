@@ -84,13 +84,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   connector stays `ambiguous` and joins nothing, for everyone. `describe()`, lint's
   `W_ROOM_UNREACHABLE`/`W_BATH_VIA_BEDROOM`, `suggest` and the intent channel's `reachable`
   now agree. No shipped example has such a connector, so none changes.
+- **Circulation measures no walk to a room the doors do not reach.** Where no partition is
+  drawn (or one is thinner than a grid cell) the navigation grid could walk straight into a
+  doorless room, so `describe().circulation` reported a walk to a room `access` and lint
+  call unreachable. Such a room is now `unmeasured` with reason `no_door_route`.
+  **Behaviour change:** `examples/relational.arch`'s kitchen, bedroom and bath (an open plan
+  with no interior walls and a single door) lose their walks and their two key routes.
 
 ### Fixed — circulation no longer changes when a plan is moved, or turned with a concave room
 
-- **Moving a whole plan changes no circulation number.** The navigation grid sampled in
-  absolute coordinates, and a curve's vertices round slightly differently 20 m from the
-  origin, which could flip an exact tie. It now samples relative to the plan's own corner
-  on a fine fixed lattice. Three examples move to the translation-invariant value by one grid
+- **Moving a whole plan no longer changes circulation numbers.** The navigation grid
+  sampled in absolute coordinates, and a curve's vertices round slightly differently 20 m
+  from the origin, which could flip an exact tie. It now samples relative to the plan's own
+  corner on a fine fixed lattice (1/1024 mm); only a coordinate within one float ulp of a
+  lattice half-step could still round differently. Three examples move to the translation-invariant value by one grid
   step: `aquarium` (rotunda detour 1.01 → 1), `hexagon-pavilion` (rotunda walk 5800 → 5700
   mm) and `library` (reading room 25500 → 25400 mm).
 - **Turning or mirroring a plan no longer measures a concave room in its other arm.** A

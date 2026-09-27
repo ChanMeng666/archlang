@@ -548,7 +548,8 @@ describe("closed classes — each former witness is now the law", () => {
       expect(walk(ctx.obsG), `r = ${r}`).toEqual(walk(ctx.obs0));
       expect(walk(ctx.obs0), `r = ${r}: the room is measured`).toBeDefined();
     }
-    // …and a translation that is not a whole number of cells, or even of millimetres.
+    // …and whole-millimetre translations that are not a whole number of cells. (A
+    // non-integer translation of the resolved plan is `test/circulation-translation.test.ts`.)
     const odd = (dx: number) =>
       `plan "w" {\n  units mm\n  component c() {\n${DRUM(3400)}\n  }\n  place c() as g at (${dx},${dx})\n}`;
     const at0 = describePlan(odd(0)).circulation?.rooms;

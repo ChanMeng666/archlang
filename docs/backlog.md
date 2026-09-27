@@ -338,8 +338,11 @@ applies and a witness:
   up to 3600 mm in `laneway-house`).
 - **E.9 `label-point-tie`** — closed by W3b. A concave room whose centroid is off its floor is
   measured to the nearest of its pole ORBIT (`polygonLabelPoint` on the ring turned and flipped by
-  each element of D4, carried back), a set no page order changes; `courtyard-house`'s gallery went
-  from +7300 mm to a one-cell endpoint tie, and no shipped digest moved.
+  each element of D4, carried back), a set no page order changes, and the pick within it is
+  D4-symmetric too (fewest hops, then straight line from the walk's own entrance, then the sorted
+  offsets from the room's centre; the cell index settles only a tie a symmetry of the whole plan
+  maps onto itself, where every fact is equal). `courtyard-house`'s gallery went from +7300 mm to
+  exactly equivariant, and no shipped digest moved.
 - **E.10 `threshold-carve`** — a doorway centred on a lattice line (or near a room corner, where
   seeding steps diagonally and `carvePath` joins seeds by an x-then-y L) is tried on a set of rows
   that shifts by one under a turn or flip: the grid itself differs, walks detour (`hexagon-pavilion`
@@ -367,8 +370,10 @@ reachable cell instead (2 in 12 000).
 vertex keeps one ulp less of its fraction), so the nav grid, sampling in absolute floats, resolved
 exact ties the other way (`aquarium` detour 1.01 → 1, `library` reading-room walk 25500 → 25300 mm).
 The grid now samples in its extent's own frame, each coordinate taken relative to the min corner and
-snapped to a 2⁻¹⁰ mm lattice (`toExtentFrame`), so every circulation fact is bit-for-bit invariant
-under any translation (`test/equivariance-corpus.test.ts`, "closed classes"). The snap moved three
+snapped to a 2⁻¹⁰ mm lattice (`toExtentFrame`), so every circulation fact is invariant under a
+translation unless a relative residue lies within about an ulp of a half-quantum (0 moves over 69
+non-integer translations of 8 examples; `test/equivariance-corpus.test.ts` "closed classes",
+`test/circulation-translation.test.ts`). The snap moved three
 P₀ values to their translation-invariant readings (the baseline header names them).
 
 **Still open for lint:** an `on <wall> at 55%` position that resolved an ulp off its integer rounds
@@ -420,7 +425,8 @@ deleted; the witness is now the law (`test/equivariance-corpus.test.ts`, "closed
 
 ## Circulation findings (found while landing W3b)
 
-Two pre-existing defects W3b's agreement law and corpus sweep ran into. Neither was in its scope.
+Pre-existing defects and one owner decision that W3b and its red-team review ran into; none was in
+W3b's scope.
 
 ### C.1 · A partition thinner than a nav cell does not block the walk — `todo`
 
@@ -439,6 +445,38 @@ measured corpus change, since dwelling partitions are 100 mm on 100 mm cells.
 `describe()` and lint pass them, so on a plan with a `void` the drawn walks and pinches come from a
 different grid than the numbers they illustrate. Close by passing `voids` (every plan without a
 `void` is unaffected).
+
+### C.3 · The detour ratio is taken from the nearest-by-walk entrance, which can be roundabout — `owner decision`
+
+Since G.5, a room's `detourRatio` divides its walk by the straight line from the entrance nearest
+it BY WALK. That door can sit behind the room's back: the museum's `g3` went 1.36 → 2.32 because the
+door it is now walked from is nearer on foot but not in a line. The alternative is "detour as the
+minimum over entrances" (each entrance's walk ÷ its own straight line), which would call `g3`
+direct again but would no longer describe the walk that `walkDistanceMm` reports. Not changed;
+`docs/analysis.md` documents the current semantics.
+
+### C.4 · An exterior door at the corner of two rooms joins them and gives no entrance — `todo`
+
+A connector touching TWO rooms keeps `doorConnections`' answer (the ≤2-room carve-out of the
+`probe` policy), and that answer is the two rooms — so an exterior door whose point is within the
+adjacency tolerance of a partition's end joins the rooms to each other and the plan reports
+`W_NO_ENTRANCE`. The probe would say "exterior" on the outer face. Repro:
+
+```arch static
+plan "corner" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,3000) (0,3000) close }
+  wall id=mid partition thickness 100 { (4000,0) (4000,3000) }
+  room id=a at (0,0) size 4000x3000 label "Hall"
+  room id=b at (4000,0) size 4000x3000 label "Living"
+  door id=d at (4100,3000) width 900 wall shell
+  door id=d2 at (4000,1500) width 800 wall mid
+}
+```
+
+`describe().doors[d].between` is `["a", "b"]`, `access.entrances` is `[]`, lint: `W_NO_ENTRANCE`.
+Close by probing a two-room connector on an EXTERIOR host too (a measured change for any plan
+with a door that close to a partition end).
 
 ## Wall-face probe findings
 
