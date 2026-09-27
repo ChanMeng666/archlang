@@ -17,15 +17,16 @@
  *  2. on a major-arc host, the side `swing into` chooses is the side the leaf is drawn on;
  *  3. the three call sites that already used the tangent (`site.ts` `windowFacingPage`,
  *     `analyze.ts` `doorFacesBalcony`, `facade.ts` `unchainedOpenings`) compute what they
- *     computed before, bit for bit. The corpus-level half of that claim is the examples'
- *     byte-identity pin (`test/byte-identity-baseline.ts`), which every example reaching
- *     these sites is in.
+ *     computed before, bit for bit, on straight AND arc hosts. The corpus-level half of
+ *     that claim is the examples' byte-identity pin (`test/byte-identity-baseline.ts`),
+ *     which every example reaching these sites is in.
  */
 
 import { describe as suite, expect, it } from "vitest";
 import type { Point } from "../src/ast.js";
 import { type RoomBox, pointInRoomBox, resolvePlan } from "../src/analyze.js";
 import { doorSwing, normal, segmentDirAt, sub, unit, type WallSegment, wallFaceProbes } from "../src/geometry.js";
+import { arcFromChord, arcPointAt } from "../src/geometry/arc.js";
 import { pointInPolygon } from "../src/geometry/polygon.js";
 import type { RDoor, RRoom, RWindow } from "../src/ir.js";
 import { windowFacingPage } from "../src/site.js";
@@ -61,6 +62,35 @@ function straightCases(seed: number, n: number): { seg: WallSegment; at: Point }
   out.push({
     seg: { a: { x: 5, y: 5 }, b: { x: 5, y: 5 }, thickness: 200, category: "p", wallId: "w", index: 0 },
     at: { x: 5, y: 5 },
+  });
+  return out;
+}
+
+/** Random ARC hosts (`arcFromChord`, as the resolver builds them): any chord angle, minor and
+ *  major, cw and ccw, radius from exactly half the chord (a semicircle) upward, each with a
+ *  point on the arc — its two ends included — and a thickness. Plus a point at the centre,
+ *  where `arcTangentAt`'s zero radial takes its `|| 1` guard. */
+function arcCases(seed: number, n: number): { seg: WallSegment; at: Point }[] {
+  const r = rng(seed);
+  const coord = () => (r() - 0.5) * 40000 + (r() < 0.5 ? r() : 0);
+  const out: { seg: WallSegment; at: Point }[] = [];
+  while (out.length < n) {
+    const i = out.length;
+    const a = { x: coord(), y: coord() };
+    const kind = i % 4;
+    const b = kind === 0 ? { x: a.x, y: coord() } : kind === 1 ? { x: coord(), y: a.y } : { x: coord(), y: coord() };
+    const half = Math.hypot(b.x - a.x, b.y - a.y) / 2;
+    const radius = i % 5 === 0 ? half : half * (1 + r() * 3);
+    const arc = arcFromChord(a, b, radius, r() < 0.5 ? "cw" : "ccw", r() < 0.5);
+    if (!arc) continue;
+    const at = arcPointAt(arc, i % 7 === 0 ? 0 : i % 7 === 1 ? 1 : r());
+    const thickness = [0, 0.5, 100, 200, 300.7, r() * 1200][i % 6]!;
+    out.push({ seg: { a, b, arc, thickness, category: "partition", wallId: "w", index: 0 }, at });
+  }
+  const arc = arcFromChord({ x: 0, y: 0 }, { x: 4000, y: 0 }, 3000, "cw", true)!;
+  out.push({
+    seg: { a: arc.a, b: arc.b, arc, thickness: 200, category: "p", wallId: "w", index: 0 },
+    at: arc.center,
   });
   return out;
 }
@@ -107,9 +137,33 @@ suite("wallFaceProbes on a straight segment is the old chord probe, bit for bit"
   });
 });
 
-suite("the three tangent call sites compute what they computed before", () => {
-  const cases = straightCases(0xfacade, 600);
+/**
+ * Straight AND arc hosts. The three sites always took `segmentDirAt` — the tangent on an
+ * arc — so an arc host is where a reordered or chord-substituted migration would show and
+ * a straight one cannot. `segmentDirAt` itself is untouched by the migration, so calling
+ * it from the verbatim oracles below is not circular.
+ */
+const TANGENT_SITE_FAMILIES = [
+  { host: "straight", cases: straightCases(0xfacade, 600), roomSeed: 0x517e },
+  { host: "arc", cases: arcCases(0xa2c5, 600), roomSeed: 0xa2c517e },
+] as const;
 
+suite("the arc family discriminates", () => {
+  it("most arc cases' tangent normal is not the chord normal", () => {
+    const { cases } = TANGENT_SITE_FAMILIES[1];
+    let off = 0;
+    for (const { seg, at } of cases) {
+      const chord = normal(unit(sub(seg.b, seg.a)));
+      const { n } = wallFaceProbes(seg, at, 1);
+      if (!Object.is(n.x, chord.x) || !Object.is(n.y, chord.y)) off++;
+      expect(seg.arc).toBeDefined();
+    }
+    expect(off).toBeGreaterThan(cases.length * 0.9);
+  });
+});
+
+const TANGENT_SITES_TITLE = "the three tangent call sites compute what they computed before, on $host hosts";
+suite.each(TANGENT_SITE_FAMILIES)(TANGENT_SITES_TITLE, ({ cases, roomSeed }) => {
   it("`doorFacesBalcony` (analyze.ts): d = max(thickness, 1)", () => {
     for (const { seg, at } of cases) {
       // Verbatim from the pre-migration `doorFacesBalcony`.
@@ -175,17 +229,20 @@ suite("the three tangent call sites compute what they computed before", () => {
       return at.x <= planCenter.x ? "W" : "E";
     }
 
-    const r = rng(0x517e);
+    const r = rng(roomSeed);
     let probed = 0;
     for (const { seg, at } of cases) {
       // A room on one side of the wall only, as a polygon (so it falls through to the probe),
-      // and a rectangle elsewhere so the rooms map is never trivially a single entry.
-      const n = normal(unit(sub(seg.b, seg.a)));
+      // and a rectangle elsewhere so the rooms map is never trivially a single entry. On an
+      // arc the room is laid out along the tangent at `at`, so the probe can reach it.
+      const tangent = seg.arc ? segmentDirAt(seg, at) : null;
+      const along = tangent ? { x: tangent.x * 4000, y: tangent.y * 4000 } : sub(seg.b, seg.a);
+      const n = tangent ? normal(tangent) : normal(unit(sub(seg.b, seg.a)));
       const side = r() < 0.5 ? 1 : -1;
       const reach = 400 + r() * 3000;
       const q = (u: number, v: number): Point => ({
-        x: at.x + (seg.b.x - seg.a.x) * u + side * n.x * v,
-        y: at.y + (seg.b.y - seg.a.y) * u + side * n.y * v,
+        x: at.x + along.x * u + side * n.x * v,
+        y: at.y + along.y * u + side * n.y * v,
       });
       const poly = [q(-0.5, 0.5), q(0.5, 0.5), q(0.5, reach), q(-0.5, reach)];
       const xs = poly.map((p) => p.x);
