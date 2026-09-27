@@ -30,7 +30,7 @@
  * solids are NOT trimmed against each other: where a wall of one height meets a wall of
  * another, each runs to its own centreline and the two interpenetrate. The centroid-keyed
  * painter can then draw the nearer-by-centroid solid over a face that really hides it, so
- * a mixed-height joint is drawn wrongly (open in `docs/backlog.md`).
+ * a mixed-height joint is drawn wrongly (`docs/backlog.md` V.1).
  *
  * ## Openings are filled back in, they are not re-cut
  *
