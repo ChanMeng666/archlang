@@ -449,6 +449,7 @@ function placeAgainst(
     if (!room) return err("needs `side left|right` (or `in <room>` to infer the wall face to back onto)");
     if (room._rel)
       return err(`can't infer \`side\` from a relationally-placed room "${roomId}" — give \`side left|right\``);
+    // Not `wallFaceProbes`: it lands on the piece's footprint CENTRE (thickness/2 + depth/2), not past a face.
     const probe = (n: { x: number; y: number }) => add(add(seg.a, mul(d, off)), mul(n, seg.thickness / 2 + depth / 2));
     // The probe is tested against the room's FLOOR, not its bounding box. For a
     // rectangle the two are the same and the arithmetic below is the historical one; for
