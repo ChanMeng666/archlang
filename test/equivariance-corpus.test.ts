@@ -23,7 +23,7 @@
 
 import { describe, expect, it } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
-import { composeFrame } from "../src/frame.js";
+import { composeFrame, tp } from "../src/frame.js";
 import {
   compile,
   describe as describePlan,
@@ -52,6 +52,7 @@ import {
   lin,
   type Observed,
   observe,
+  overlayOf,
   pinAudit,
   pinDiff,
   RULE_CLASS,
@@ -471,6 +472,52 @@ describe("closed classes — each former witness is now the law", () => {
           expect(KNOWN_CLASSES["raster-tie"].covers(v, ctx), `${ring} ${g.name} ${v.key}`).toBe(true);
         }
       }
+    }
+  });
+
+  it("label-point-tie (W3b): the PICK within the orbit is D4-symmetric — the chosen point maps to the chosen point", () => {
+    // The orbit is a set; the pole the room is measured to is chosen from it by fewest hops,
+    // then straight-line distance from the walk's own entrance, then the candidate's offsets
+    // from the room's centre as a sorted multiset — never by cell index (that settles only a
+    // tie some symmetry of the whole plan maps onto itself, where every fact is equal).
+    const ring = "(0,0) (6000,0) (6000,4000) (4000,4000) (4000,1000) (2000,1000) (2000,4000) (0,4000)";
+    const body = (x: number) => `    wall id=shell exterior thickness 200 { ${ring} close }
+    room id=u polygon ${ring} label "Gallery"
+    door id=d at (${x},0) width 900 wall shell`;
+    const measured = (src: string) => overlayOf(observe(src).ir!)!.rooms.find((r) => r.roomId === "g.u")!;
+    const ends = (path: readonly { x: number; y: number }[]) => [path[0], path[path.length - 1]];
+    for (const g of D4_ELEMENTS) {
+      const f = frameFor(g, 50);
+      // A door off the lattice line: the entrance seeds without a tie, so the chosen seed and
+      // the walk's two ends (entrance cell, measured cell) are exactly equivariant.
+      const off = witnessPair(body(3050), g);
+      const m0 = measured(off.p0);
+      const mG = measured(off.gP);
+      expect(mG.seed, g.name).toEqual(tp(f, m0.seed));
+      expect(ends(mG.path), g.name).toEqual(ends(m0.path.map((p) => tp(f, p))));
+      // A door dead on the axis of the mirror-symmetric U: the entrance itself seeds across a
+      // lattice line (E.6), so the nearer arm — and the seed — follows that tie; the facts
+      // (walk, detour) are still equal under every element.
+      const on = witnessPair(body(3000), g);
+      const c0 = observe(on.p0).summary.circulation!.rooms[0]!;
+      const cG = observe(on.gP).summary.circulation!.rooms[0]!;
+      expect([cG.walkDistanceMm, cG.detourRatio], g.name).toEqual([c0.walkDistanceMm, c0.detourRatio]);
+      // The case the row-major pick got wrong: an asymmetric U whose pole (1015, 1000) sits
+      // on a lattice line, so two cells are equally near it (rows 950 and 1050), and a
+      // second pole (1015, 3000) is as many hops away as the farther of them. The first
+      // cell in row-major order was taken; under a half-turn that is the image of the other
+      // cell, and the walk moved by a cell. Fewest hops decides it now, under every element.
+      const asym = "(0,0) (7000,0) (7000,5000) (5000,5000) (5000,1000) (2000,1000) (2000,4000) (0,4000)";
+      const side = `    wall id=shell exterior thickness 200 { ${asym} close }
+    room id=u polygon ${asym} label "Gallery"
+    door id=d at (0,1950) width 900 wall shell`;
+      const a = witnessPair(side, g);
+      const a0 = measured(a.p0);
+      const aG = measured(a.gP);
+      expect(a0.path.at(-1), "P₀ measures to the cell fewer hops away").toEqual({ x: 1050, y: 1050 });
+      expect(aG.seed, g.name).toEqual(tp(f, a0.seed));
+      expect(ends(aG.path), g.name).toEqual(ends(a0.path.map((p) => tp(f, p))));
+      expect(observe(a.gP).summary.circulation!.rooms[0], g.name).toEqual(observe(a.p0).summary.circulation!.rooms[0]);
     }
   });
 

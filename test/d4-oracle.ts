@@ -805,7 +805,7 @@ export interface WalkAttribution {
   fallback: boolean;
 }
 
-function overlayOf(ir: ResolvedPlan): CirculationOverlay | null {
+export function overlayOf(ir: ResolvedPlan): CirculationOverlay | null {
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");

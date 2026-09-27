@@ -1264,6 +1264,9 @@ function labelPointOrbit(poly: readonly Point[]): Point[] {
  * the one the walk reaches first (ties to the lowest cell index); every other room is its
  * label point's `reachableRep`, exactly as before.
  */
+/** A room's bounding-box centre (exact: a half-sum of snapped coordinates). */
+const bboxCentre = (r: RRoom): Point => ({ x: r.at.x + r.size.w / 2, y: r.at.y + r.size.h / 2 });
+
 function roomRep(
   g: NavGrid,
   cells: number[],
@@ -1271,13 +1274,52 @@ function roomRep(
   poles: readonly Point[],
   dist: Int32Array,
   anchor: number,
+  /** Where the walk to cell `k` starts (its entrance seed cell's centre). */
+  originOf: (k: number) => Point,
+  /** The room's bounding-box centre — the point the D4-invariant key is taken about. */
+  centre: Point,
 ): { k: number; seed: Point } {
   if (poles.length === 0) return { k: reachableRep(g, cells, seed, dist, anchor), seed };
-  let best = { k: -1, seed: poles[0]! };
+  // Every reachable cell nearest to ANY pole of the orbit — the whole tie set, not the
+  // row-major first — so the candidates are the same set however the plan is drawn.
+  const cand: Array<{ k: number; seed: Point }> = [];
   for (const p of poles) {
-    const k = reachableRep(g, cells, p, dist, -1);
-    if (k < 0) continue;
-    if (best.k < 0 || dist[k]! < dist[best.k]! || (dist[k] === dist[best.k] && k < best.k)) best = { k, seed: p };
+    let bestD = Infinity;
+    const at: number[] = [];
+    for (const k of cells) {
+      if (dist[k]! < 0) continue;
+      const c = centreOf(g, k);
+      const d = (c.x - p.x) ** 2 + (c.y - p.y) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        at.length = 0;
+      }
+      if (d === bestD) at.push(k);
+    }
+    for (const k of at) cand.push({ k, seed: p });
+  }
+  if (cand.length === 0) return { k: -1, seed: poles[0]! };
+  // Then a D4-symmetric order: fewest hops, then nearest (straight line) to the walk's own
+  // entrance, then the candidate's offsets from the room's centre as a sorted multiset of
+  // magnitudes (what a turn or flip about that centre preserves). Only a candidate some
+  // symmetry of the whole plan maps onto another survives all three, and the facts read
+  // off either are identical; the cell index settles that last, page-order tie.
+  const key = (k: number): [number, number, number, number] => {
+    const c = centreOf(g, k);
+    const o = originOf(k);
+    const [lo, hi] = [Math.abs(c.x - centre.x), Math.abs(c.y - centre.y)].sort((a, b) => a - b);
+    return [dist[k]!, (c.x - o.x) ** 2 + (c.y - o.y) ** 2, lo!, hi!];
+  };
+  let best = cand[0]!;
+  let bk = key(best.k);
+  for (const c of cand.slice(1)) {
+    const ck = key(c.k);
+    let cmp = 0;
+    for (let i = 0; i < 4 && cmp === 0; i++) cmp = ck[i]! - bk[i]!;
+    if (cmp < 0 || (cmp === 0 && c.k < best.k)) {
+      best = c;
+      bk = ck;
+    }
   }
   return best;
 }
@@ -1460,9 +1502,10 @@ export function computeCirculation(
   // One representative cell per room, reachability-aware (see `reachableRep`). Computed
   // once: the room facts, the key routes and the render overlay must all measure to the
   // same point or the drawing and the numbers disagree.
+  const originOf = (k: number): Point => centreOf(g, sources[from[k]!]!);
   const rep = new Int32Array(rooms.length);
   for (let ri = 0; ri < rooms.length; ri++) {
-    rep[ri] = roomRep(g, roomCells[ri]!, seed[ri]!, poles[ri]!, dist, anchor[ri]!).k;
+    rep[ri] = roomRep(g, roomCells[ri]!, seed[ri]!, poles[ri]!, dist, anchor[ri]!, originOf, bboxCentre(rooms[ri]!)).k;
   }
 
   const blocked = furnitureSealed(blockedCandidates(nav));
@@ -1656,10 +1699,11 @@ export function computeCirculationOverlay(
 
   // The same reachability-aware representative the facts measure to — a drawing that
   // ends somewhere else from the number it illustrates is worse than no drawing.
+  const originOf = (k: number): Point => centreOf(g, sources[from[k]!]!);
   const rep = new Int32Array(rooms.length);
   const repSeed: Point[] = [];
   for (let ri = 0; ri < rooms.length; ri++) {
-    const r = roomRep(g, nav.roomCells[ri]!, seed[ri]!, nav.poles[ri]!, dist, anchor[ri]!);
+    const r = roomRep(g, nav.roomCells[ri]!, seed[ri]!, nav.poles[ri]!, dist, anchor[ri]!, originOf, bboxCentre(rooms[ri]!));
     rep[ri] = r.k;
     repSeed.push(r.seed);
   }
